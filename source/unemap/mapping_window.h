@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.h
 
-LAST MODIFIED : 23 July 2001
+LAST MODIFIED : 1 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -174,7 +174,7 @@ int open_mapping_window(struct Mapping_window **mapping_address,
 	struct Mapping_window **current_mapping_window_address,char *open,
 	enum Mapping_associate *current_associate,enum Map_type *map_type,
 	enum Colour_option colour_option,enum Contours_option contours_option,
-	enum Electrodes_option electrodes_option,enum Fibres_option fibres_option,
+	enum Electrodes_label_type electrodes_label_type,enum Fibres_option fibres_option,
 	enum Landmarks_option landmarks_option,enum Extrema_option extrema_option,
 	int maintain_aspect_ratio,int print_spectrum,
 	enum Projection_type projection_type,enum Contour_thickness contour_thickness,

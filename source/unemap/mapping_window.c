@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.c
 
-LAST MODIFIED : 27 October 2001
+LAST MODIFIED : 31 November 2001
 
 DESCRIPTION :
 ???DB.  Missing settings ?
@@ -213,7 +213,7 @@ necessary.
 	char map_settings_changed,*value_string,temp_string[20];
 	enum Contour_thickness contour_thickness;
 	enum Electrodes_marker_type electrodes_marker_type;
-	enum Electrodes_option electrodes_option;
+	enum Electrodes_label_type electrodes_label_type;
 	enum Fibres_option fibres_option;
 	enum Interpolation_type interpolation_type;
 	float buffer_end_time,buffer_start_time,frame_end_time,frame_start_time,
@@ -539,37 +539,37 @@ necessary.
 				map_settings_changed=1;
 			}
 		}
-		XtVaGetValues(map_dialog->electrodes.option_menu,
+		XtVaGetValues(map_dialog->electrodes.label_menu,
 			XmNmenuHistory,&option_widget,
 			NULL);
-		if (option_widget==map_dialog->electrodes.option.name)
+		if (option_widget==map_dialog->electrodes.label.name)
 		{
-			electrodes_option=SHOW_ELECTRODE_NAMES;
+			electrodes_label_type=SHOW_ELECTRODE_NAMES;
 		}
 		else
 		{
-			if (option_widget==map_dialog->electrodes.option.value)
+			if (option_widget==map_dialog->electrodes.label.value)
 			{
-				electrodes_option=SHOW_ELECTRODE_VALUES;
+				electrodes_label_type=SHOW_ELECTRODE_VALUES;
 			}
 			else
 			{
-				if (option_widget==map_dialog->electrodes.option.channel)
+				if (option_widget==map_dialog->electrodes.label.channel)
 				{
-					electrodes_option=SHOW_CHANNEL_NUMBERS;
+					electrodes_label_type=SHOW_CHANNEL_NUMBERS;
 				}
 				else
 				{
-					if (option_widget==map_dialog->electrodes.option.hide)
+					if (option_widget==map_dialog->electrodes.label.hide)
 					{
-						electrodes_option=HIDE_ELECTRODES;
+						electrodes_label_type=HIDE_ELECTRODE_LABELS;
 					}
 				}
 			}
 		}
-		if (map->electrodes_option!=electrodes_option)
+		if (map->electrodes_label_type!=electrodes_label_type)
 		{
-			map->electrodes_option=electrodes_option;
+			map->electrodes_label_type=electrodes_label_type;
 			map_settings_changed=1;
 		}
 		if (XmToggleButtonGadgetGetState(map_dialog->electrodes.marker_colour_toggle))
@@ -994,6 +994,47 @@ necessary.
 	}
 	LEAVE;
 } /* update_map_from_dialog */
+
+static void update_dialog_elec_options(Widget widget,XtPointer mapping_window,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 31 October 2001
+
+DESCRIPTION :
+Dims the map dialog electrode label menu if we've hidden the electrode markers,
+as if not showinf markers, not showing labels either.
+==============================================================================*/
+{			
+	struct Map_dialog *map_dialog;
+	struct Mapping_window *mapping;
+	Widget option_widget;
+	ENTER(update_dialog_elec_options);	
+	map_dialog=(struct Map_dialog *)NULL;
+	mapping=(struct Mapping_window *)NULL;
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget);
+	if ((mapping=(struct Mapping_window *)mapping_window)&&
+		(map_dialog=mapping->map_dialog))
+	{
+		XtVaGetValues(map_dialog->electrodes.marker_type_menu,XmNmenuHistory,
+			&option_widget,NULL);
+		if(option_widget==map_dialog->electrodes.marker_type.none)
+		{
+			/* If hiding the marker, hiding the label too, so dim the label select*/
+			XtSetSensitive(map_dialog->electrodes.label_menu,False);
+		}		
+		else
+		{
+			XtSetSensitive(map_dialog->electrodes.label_menu,True);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"update_dialog_elec_options. Invalid or missing mapping_window");
+	}
+	LEAVE;
+} /* update_dialog_elec_options */
 
 static void configure_map(Widget widget,XtPointer mapping_window,
 	XtPointer call_data)
@@ -4443,7 +4484,8 @@ the created mapping window.  If unsuccessful, NULL is returned.
 		{
 			{"create_simple_rig_from_dialog",
 				(XtPointer)create_simple_rig_from_dialog},
-			{"update_map_from_dialog",(XtPointer)update_map_from_dialog}
+			{"update_map_from_dialog",(XtPointer)update_map_from_dialog},
+			{"update_dialog_elec_options",(XtPointer)update_dialog_elec_options}
 		},
 		identifier_list[]=
 		{
@@ -4815,7 +4857,7 @@ int open_mapping_window(struct Mapping_window **mapping_address,
 	struct Mapping_window **current_mapping_window_address,char *open,
 	enum Mapping_associate *current_associate,enum Map_type *map_type,
 	enum Colour_option colour_option,enum Contours_option contours_option,
-	enum Electrodes_option electrodes_option,enum Fibres_option fibres_option,
+	enum Electrodes_label_type electrodes_label_type,enum Fibres_option fibres_option,
 	enum Landmarks_option landmarks_option,enum Extrema_option extrema_option,
 	int maintain_aspect_ratio,int print_spectrum,
 	enum Projection_type projection_type,enum Contour_thickness contour_thickness,
@@ -4908,7 +4950,7 @@ properties.  Then the mapping window is opened.
 			{
 				if (create_Mapping_window(mapping_address,open,
 					current_mapping_window_address,activation,*outer_form,
-					create_Map(map_type,colour_option,contours_option,electrodes_option,
+					create_Map(map_type,colour_option,contours_option,electrodes_label_type,
 					fibres_option,landmarks_option,extrema_option,maintain_aspect_ratio,
 					print_spectrum,projection_type,contour_thickness,rig_address,
 					event_number_address,potential_time_address,datum_address,
@@ -5577,7 +5619,8 @@ window.
 		}
 		if (map&&(electrode_number>=0)&&(map->electrode_drawn)&&
 			((map->electrode_drawn)[electrode_number])&&mapping&&
-			(mapping->map_drawing_area_2d)&&(mapping->map_drawing))
+			(mapping->map_drawing_area_2d)&&(mapping->map_drawing)
+			&&map->electrodes_marker_type!=HIDE_ELECTRODE_MARKER)
 		{
 			/* loop through sub maps */
 			for(j=0;j<map->number_of_sub_maps;j++)
@@ -5585,9 +5628,9 @@ window.
 				sub_map=map->sub_map[j];
 
 				f_value=(sub_map->electrode_value)[electrode_number];
-				switch (map->electrodes_option)
+				switch (map->electrodes_label_type)
 				{	
-					case HIDE_ELECTRODES:
+					case HIDE_ELECTRODE_LABELS:
 					{
 						electrode_drawn=1;
 						/*do nothing at the moment*/
@@ -5631,7 +5674,7 @@ window.
 				}
 				else
 				{
-					if ((map->electrodes_option==SHOW_ELECTRODE_VALUES)&&
+					if ((map->electrodes_label_type==SHOW_ELECTRODE_VALUES)&&
 						(HIDE_COLOUR==map->colour_option)&&
 						(SHOW_CONTOURS==map->contours_option))
 					{
