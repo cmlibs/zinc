@@ -334,6 +334,7 @@ calculating the inverse of the Jacobian matrix <dxdxi> and multiplying.
 			{
 				delta_xi[i] = 0.0;
 			}
+			return_code = 1;
 		}
 		else if (element_dimension < vector_dimension)
 		{
@@ -371,6 +372,7 @@ calculating the inverse of the Jacobian matrix <dxdxi> and multiplying.
 			{
 				delta_xi[i] = 0.0;
 			}
+			return_code = 1;
 		}
 		else
 		{
