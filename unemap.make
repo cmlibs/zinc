@@ -4,8 +4,9 @@ PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source
 MAILFILE_PATH=mailfiles
 
 #Build defaults
-USER_INTERFACE=USER_INTERFACE=MOTIF_USER_INTERFACE
-DEBUG=DEBUG=true
+USER_INTERFACE=MOTIF_USER_INTERFACE
+DYNAMIC_GL_LINUX=false
+DEBUG=true
 ABI=
 MEMORYCHECK=
 USE_UNEMAP_NODES=
@@ -29,60 +30,70 @@ endif # CMISS_ROOT_DEFINED
 #Developers default
 unemap-debug :
 
-unemap unemap-debug unemap-debug-memorycheck unemap-nodes unemap-3d unemap-3d-debug unemap64 unemap64-debug : USER_INTERFACE=USER_INTERFACE=MOTIF_USER_INTERFACE
-unemap unemap-nodes unemap-3d unemap64 : DEBUG=DEBUG=false
-unemap-debug unemap-debug-memorycheck unemap-3d-debug unemap64-debug : DEBUG=DEBUG=true
-unemap64 unemap64-debug : ABI=ABI=64
-unemap-debug-memorycheck : MEMORYCHECK=MEMORYCHECK=true
-unemap-nodes : USE_UNEMAP_NODES=USE_UNEMAP_NODES=true
-unemap-nodes unemap-3d : USE_UNEMAP_3D=USE_UNEMAP_3D=true
+unemap unemap-debug unemap-debug-memorycheck unemap-nodes unemap-3d unemap-3d-debug unemap64 unemap64-debug : USER_INTERFACE_OPTION=USER_INTERFACE=MOTIF_USER_INTERFACE
+unemap unemap-nodes unemap-3d unemap64 : DEBUG_OPTION=DEBUG=false
+unemap-debug unemap-debug-memorycheck unemap-3d-debug unemap64-debug : DEBUG_OPTION=DEBUG=true
+unemap64 unemap64-debug : ABI_OPTION=ABI=64
+unemap-debug-memorycheck : MEMORYCHECK_OPTION=MEMORYCHECK=true
+unemap-nodes : USE_UNEMAP_NODES_OPTION=USE_UNEMAP_NODES=true
+unemap-nodes unemap-3d : USE_UNEMAP_3D_OPTION=USE_UNEMAP_3D=true
 
 utilities: TARGET=utilities
 utilities: force
 
+ifdef TARGET
+   TARGET_OPTION = $(TARGET)
+endif
+ifdef USER_INTERFACE
+   USER_INTERFACE_OPTION = USER_INTERFACE=$(USER_INTERFACE)
+endif
+ifdef DYNAMIC_GL_LINUX
+   DYNAMIC_GL_OPTION = DYNAMIC_GL_LINUX=$(DYNAMIC_GL_LINUX)
+endif
+ifdef DEBUG
+   DEBUG_OPTION = DEBUG=$(DEBUG)
+endif
+ifdef ABI
+   ABI_OPTION = ABI=$(ABI)
+endif
+ifdef MEMORYCHECK
+   MEMORYCHECK_OPTION = MEMORYCHECK=$(MEMORYCHECK)
+endif
+ifdef USE_UNEMAP_NODES
+   USE_UNEMAP_NODES_OPTION = USE_UNEMAP_NODES=$(USE_UNEMAP_NODES)
+endif
+ifdef USE_UNEMAP_3D
+   USE_UNEMAP_3D_OPTION = USE_UNEMAP_3D=$(USE_UNEMAP_3D)
+endif
+OPTIONS = $(TARGET_OPTION) $(USER_INTERFACE_OPTION) $(DYNAMIC_GL_LINUX_OPTION) $(DEBUG_OPTION) $(ABI_OPTION) $(MEMORYCHECK_OPTION) $(USE_UNEMAP_NODES_OPTION) $(USE_UNEMAP_3D_OPTION)
+
 unemap unemap-debug unemap-debug-memorycheck unemap-nodes unemap-3d unemap-3d-debug unemap64 unemap64-debug utilities :
 	cd source ; \
-	$(MAKE) -f $(SUBMAKEFILE) $(TARGET) $(USER_INTERFACE) $(ABI) $(DEBUG) $(MEMORYCHECK) $(USE_UNEMAP_NODES) $(USE_UNEMAP_3D) ;
-
-update_sources :
-	if ( [ "$(PWD)" -ef "$(PRODUCT_PATH)" ] && [ "$(USER)" = "cmiss" ] ); then \
-		cvs update && \
-		cd $(PRODUCT_SOURCE_PATH) && \
-		chgrp -R cmgui_programmers * && \
-		cd $(PRODUCT_PATH) && \
-		ssh 130.216.191.92 'export CVS_RSH=ssh; cd $(CMISS_ROOT)/cmgui ; $(CMISS_ROOT)/bin/cvs update ' ; \
-	else \
-		echo "Must be cmiss and in $(PRODUCT_PATH)"; \
-	fi
+	$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
 
 ESU_BUILD_LIST = unemap unemap-debug unemap-debug-memorycheck unemap64 unemap-nodes unemap-3d unemap-3d-debug utilities
+ESU_BUILD_PATH = '\${CMISS_ROOT}/cmgui'
+ESU_BUILD_MACHINE = 130.216.208.35 #esu35
 ESP_BUILD_LIST = unemap unemap-debug unemap-debug-memorycheck unemap-3d unemap-3d-debug utilities
+ESP_BUILD_PATH = '\${CMISS_ROOT}/cmgui'
+ESP_BUILD_MACHINE = 130.216.208.156 #esp56
 HPC1_BUILD_LIST = unemap unemap-debug unemap64 unemap64-debug unemap-3d
+HPC1_BUILD_PATH = '\${CMISS_ROOT}/cmgui'
+HPC1_BUILD_MACHINE = 130.216.191.92 #hpc1
 
-update : update_sources
-	if ( [ "$(PWD)" -ef "$(PRODUCT_PATH)" ] && [ "$(USER)" = "cmiss" ] ); then \
-		cd $(PRODUCT_SOURCE_PATH) && \
-		chgrp -R cmgui_programmers * && \
-		cd $(PRODUCT_PATH) && \
-		$(MAKE) -f $(MAKEFILE) $(ESU_BUILD_LIST) && \
-		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESP_BUILD_LIST)' && \
-		ssh 130.216.191.92 'export CMISS_ROOT=/product/cmiss ; export CMGUI_DEV_ROOT=$(PWD) ; cd $(CMISS_ROOT)/cmgui ; gmake -f  $(MAKEFILE) $(HPC1_BUILD_LIST) ;  ' && \
-		cd $(PRODUCT_SOURCE_PATH) && \
-		chgrp -R cmgui_programmers *; \
-	else \
-		echo "Must be cmiss and in $(PRODUCT_PATH)"; \
-	fi
+update_sources :
+	ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH)/source ; cvs update' && \
+	ssh cmiss@$(HPC1_BUILD_MACHINE) 'cd $(HPC1_BUILD_PATH)/source ; cvs update' ;
 
-depend: update_sources
-	if [ "$(USER)" = "cmiss" ]; then \
-		CMGUI_DEV_ROOT=$(PWD) ; \
-		export CMGUI_DEV_ROOT ; \
-		$(MAKE) -f $(MAKEFILE) $(ESU_BUILD_LIST) TARGET=depend ; \
-		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; setenv CMGUI_DEV_ROOT $(PWD) ; $(MAKE) -f $(MAKEFILE) $(ESP_BUILD_LIST) TARGET=depend ; ' ; \
-		ssh 130.216.191.92 'export CMISS_ROOT=/product/cmiss ; export CMGUI_DEV_ROOT=$(PWD) ; cd $(CMISS_ROOT)/cmgui ; gmake -f $(MAKEFILE) $(HPC1_BUILD_LIST) TARGET=depend ;  ' ; \
-	else \
-		echo "Must be cmiss"; \
-	fi
+update :
+	ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESU_BUILD_LIST)' && \
+	ssh cmiss@$(ESP_BUILD_MACHINE) 'cd $(ESP_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESP_BUILD_LIST)' && \
+	ssh cmiss@$(HPC1_BUILD_MACHINE) 'cd $(HPC1_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(HPC1_BUILD_LIST)' ;
+
+depend:
+	ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESU_BUILD_LIST) TARGET=depend' && \
+	ssh cmiss@$(ESP_BUILD_MACHINE) 'cd $(ESP_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESP_BUILD_LIST) TARGET=depend' && \
+	ssh cmiss@$(HPC1_BUILD_MACHINE) 'cd $(HPC1_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(HPC1_BUILD_LIST) TARGET=depend' ;
 
 cronjob:
 	if [ "$(USER)" = "cmiss" ]; then \
