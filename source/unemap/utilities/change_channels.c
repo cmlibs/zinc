@@ -64,13 +64,13 @@ int main()
 				else
 				{
 					display_message(ERROR_MESSAGE,"Could not open %s",temp_string);
-					return_code = 3;
+					return_code = 1;
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,"Invalid translation table\n");
-				return_code = 2;
+				return_code = 1;
 			}
 			fclose(translation_table_file);
 		}

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : change_events.h
 
-LAST MODIFIED : 16 October 1997
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Reads in an events file and a table giving the new electrode name for each
@@ -17,7 +17,8 @@ electrode.  Writes out the new events file.
 Main program
 ------------
 */
-main()
+
+int main()
 {
 	char *amplifier_table[256]=
 		{
@@ -62,10 +63,12 @@ main()
 	char temp_string[10000];
 	FILE *input_file,*output_file,*translation_table_file;
 	int i,new_electrode,*new_electrodes,number_of_characters,number_of_electrodes,
-		old_electrode,*old_electrodes;
+		old_electrode,*old_electrodes, return_code;
 	struct Device **device;
 	struct Rig *rig;
 
+	/* zero is a successful return */
+	return_code = 0;
 	printf("Events file ?\n");
 	scanf("%s",temp_string);
 	if (input_file=fopen(temp_string,"r"))
@@ -161,27 +164,34 @@ main()
 					else
 					{
 						printf("Could not open %s\n",temp_string);
+						return_code = 1;
 					}
 				}
 				else
 				{
 					printf("Insufficient memory\n");
+					return_code = 1;
 				}
 			}
 			else
 			{
 				printf("Invalid translation table\n");
+				return_code = 1;
 			}
 			fclose(translation_table_file);
 		}
 		else
 		{
 			printf("Could not open %s\n",temp_string);
+			return_code = 1;
 		}
 		fclose(input_file);
 	}
 	else
 	{
 		printf("Could not open %s\n",temp_string);
+		return_code = 1;
 	}
+
+	return (return_code);
 } /* main */

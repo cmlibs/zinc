@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : change_frequency.c
 
-LAST MODIFIED : 18 February 1998
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Allow the user to change the frequency for a signal file.  Does not use
@@ -17,9 +17,9 @@ X-windows.
 Main program
 ------------
 */
-main(int argc,char *argv[])
+int main(int argc,char *argv[])
 /*******************************************************************************
-LAST MODIFIED : 18 February 1998
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -30,6 +30,8 @@ DESCRIPTION :
 	int return_code;
 	struct Rig *signal_rig;
 
+	/* zero is a successful return */
+	return_code = 0;
 	signal_rig=(struct Rig *)NULL;
 	/* read the signal file */
 	printf("Signal file name ? ");
@@ -59,10 +61,14 @@ DESCRIPTION :
 		else
 		{
 			printf("ERROR.  Writing new signal file\n");
+			return_code = 1;
 		}
 	}
 	else
 	{
 		printf("ERROR.  Could not read signal file\n");
+		return_code = 1;
 	}
+
+	return (return_code);
 } /* main */

@@ -87,13 +87,13 @@ DESCRIPTION :
 			else
 			{
 				printf("ERROR.  Writing new signal file\n");
-				return_code = 3;
+				return_code = 1;
 			}
 		}
 		else
 		{
 			printf("ERROR.  Could not read calibration file\n");
-			return_code = 2;
+			return_code = 1;
 		}
 	}
 	else
