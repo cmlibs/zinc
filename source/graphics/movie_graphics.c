@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : movie_graphics.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -324,7 +324,7 @@ DESCRIPTION :
 int Movie_graphics_add_frame_to_movie(struct Movie_graphics *movie,
 	int width, int height, int force_onscreen)
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 Ensures that the source is up to date and then adds a frame to the X3d_movie.
@@ -334,7 +334,7 @@ graphics_window size.  If <force_onscreen> is non zero the pixels will always
 be grabbed from the graphics window on screen.
 ==============================================================================*/
 {
-	char *frame_data;
+	unsigned char *frame_data;
 	int mleft, mbottom, mwidth, mheight;
 	int return_code;
 
@@ -352,7 +352,8 @@ be grabbed from the graphics window on screen.
 			if (Graphics_window_get_frame_pixels(movie->graphics_window, TEXTURE_ABGR,
 				&width, &height, &frame_data, force_onscreen))
 			{
-				X3d_movie_add_frame(movie->x3d_movie, width, height, frame_data);
+				X3d_movie_add_frame(movie->x3d_movie, width, height,
+					(char *)frame_data);
 				DEALLOCATE(frame_data);
 			}
 			else
