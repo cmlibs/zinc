@@ -1018,7 +1018,7 @@ controls graying out widgets not currently in use.
 				native_discretization_field);
 		}
 		XtVaSetValues(gelem_editor->native_discretization_button,
-			XmNset,(XtPointer)field_set,NULL);
+			XmNset,field_set,NULL);
 		XtSetSensitive(gelem_editor->native_discretization_field_widget,field_set);
 	}
 	else

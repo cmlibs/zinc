@@ -3388,7 +3388,10 @@ DESCRIPTION :
 Sets the command_field to be executed when the node is clicked on in the <node_tool>.
 ==============================================================================*/
 {
-	int field_set, return_code;
+#if defined (MOTIF)
+	int field_set;
+#endif /* defined (MOTIF) */
+	int return_code;
 
 	ENTER(Node_tool_set_command_field);
 	if (node_tool && ((!command_field) ||
@@ -3404,11 +3407,9 @@ Sets the command_field to be executed when the node is clicked on in the <node_t
 				CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
 					node_tool->command_field_widget,node_tool->command_field);
 			}
-#endif /* defined (MOTIF) */
 			field_set = ((struct Computed_field *)NULL != command_field);
-#if defined (MOTIF)
 			XtVaSetValues(node_tool->command_field_button,
-				XmNset, (XtPointer)field_set, NULL);
+				XmNset, field_set, NULL);
 			XtSetSensitive(node_tool->command_field_widget, field_set);
 #endif /* defined (MOTIF) */
 		}
@@ -3423,4 +3424,3 @@ Sets the command_field to be executed when the node is clicked on in the <node_t
 
 	return (return_code);
 } /* Node_tool_set_command_field */
-

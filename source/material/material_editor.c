@@ -606,7 +606,7 @@ Called when the texture field toggle button value changes.
 		texture_set=((struct Texture *)NULL != texture);
 		/* (un)gray texture widget */
 		XtVaSetValues(material_editor->texture_button,
-			XmNset,(XtPointer)texture_set,NULL);
+			XmNset,texture_set,NULL);
 		XtSetSensitive(material_editor->texture_widget,texture_set);
 		material_editor_update_picture(material_editor);
 		material_editor_update(material_editor);
@@ -1233,7 +1233,7 @@ Sets the <material> to be edited by the <material_editor>.
 					texture_set=False;
 				}
 				XtVaSetValues(material_editor->texture_button,
-					XmNset,(XtPointer)texture_set,NULL);
+					XmNset,texture_set,NULL);
 				XtSetSensitive(material_editor->texture_widget,texture_set);
 				/* need to check window is there the first time else error occurs */
 				if (XtWindow(material_editor->a3d_widget))

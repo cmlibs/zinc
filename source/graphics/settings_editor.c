@@ -164,7 +164,7 @@ Sets the current face_number on the option menu and button.
 		face_selected=GT_element_settings_get_face(
 			settings_editor->current_settings,&face);
 		XtVaSetValues(settings_editor->face_button,
-			XmNset,(XtPointer)face_selected,NULL);
+			XmNset,face_selected,NULL);
 		if (!face_selected)
 		{
 			face=0;
@@ -769,7 +769,7 @@ Called when the variable radius toggle button value changes.
 			&scale_factor,&radius_scalar_field);
 		field_set=((struct Computed_field *)NULL != radius_scalar_field);
 		XtVaSetValues(settings_editor->radius_scalar_field_button,
-			XmNset,(XtPointer)field_set,NULL);
+			XmNset,field_set,NULL);
 		XtSetSensitive(settings_editor->radius_scalar_field_widget,field_set);
 		XtSetSensitive(settings_editor->radius_scale_factor_entry,field_set);
 		if (radius_scalar_field != start_field)
@@ -1087,7 +1087,7 @@ Called when the native_discretization_field toggle button value changes.
 				settings_editor->current_settings);
 		field_set=((struct FE_field *)NULL != native_discretization_field);
 		XtVaSetValues(settings_editor->native_discretization_button,
-			XmNset,(XtPointer)field_set,NULL);
+			XmNset,field_set,NULL);
 		XtSetSensitive(settings_editor->native_discretization_field_widget,
 			field_set);
 	}
@@ -1303,7 +1303,7 @@ settings. Does nothing if current settings type does not use glyphs.
 						orientation_scale_field);
 				}
 				XtVaSetValues(settings_editor->glyph_orientation_scale_button,
-					XmNset, (XtPointer)field_set1, NULL);
+					XmNset, field_set1, NULL);
 				XtSetSensitive(settings_editor->glyph_orientation_scale_field_widget,
 					field_set1);
 
@@ -1315,7 +1315,7 @@ settings. Does nothing if current settings type does not use glyphs.
 						variable_scale_field);
 				}
 				XtVaSetValues(settings_editor->glyph_variable_scale_button,
-					XmNset, (XtPointer)field_set2, NULL);
+					XmNset, field_set2, NULL);
 				XtSetSensitive(settings_editor->glyph_variable_scale_field_widget,
 					field_set2);
 
@@ -1857,7 +1857,7 @@ Called when the label field toggle button value changes.
 			GT_element_settings_get_label_field(settings_editor->current_settings);
 		field_set=((struct Computed_field *)NULL != label_field);
 		XtVaSetValues(settings_editor->label_field_button,
-			XmNset,(XtPointer)field_set,NULL);
+			XmNset,field_set,NULL);
 		XtSetSensitive(settings_editor->label_field_widget,field_set);
 		if (label_field != start_field)
 		{
@@ -2446,7 +2446,7 @@ Callback for change of streamline_data_type.
 				field_set=((struct Computed_field *)NULL != data_field);
 				spectrum_set=(STREAM_NO_DATA != streamline_data_type);
 				XtVaSetValues(settings_editor->data_field_button,
-					XmNset,(XtPointer)field_set,NULL);
+					XmNset,field_set,NULL);
 				XtSetSensitive(settings_editor->data_field_widget,field_set);
 				XtSetSensitive(settings_editor->spectrum_entry,spectrum_set);
 				/* inform the client of the change */
@@ -2556,7 +2556,7 @@ Called when the texture coordinate field toggle button value changes.
 			(settings_editor->current_settings);
 		field_set=((struct Computed_field *)NULL != texture_coord_field);
 		XtVaSetValues(settings_editor->texture_coord_field_button,
-			XmNset,(XtPointer)field_set,NULL);
+			XmNset,field_set,NULL);
 		XtSetSensitive(settings_editor->texture_coord_field_widget,field_set);
 		if (texture_coord_field != start_field)
 		{
@@ -2650,7 +2650,7 @@ Called when the scalar data field toggle button value changes.
 			settings_editor->current_settings,&data_field,&spectrum);
 		field_set=((struct Computed_field *)NULL != data_field);
 		XtVaSetValues(settings_editor->data_field_button,
-			XmNset,(XtPointer)field_set,NULL);
+			XmNset,field_set,NULL);
 		XtSetSensitive(settings_editor->data_field_widget,field_set);
 		XtSetSensitive(settings_editor->spectrum_entry,field_set);
 		if (data_field != start_field)
@@ -3670,7 +3670,7 @@ Changes the currently chosen settings.
 								field_set=False;
 							}
 							XtVaSetValues(settings_editor->coordinate_button,
-								XmNset,(XtPointer)field_set,NULL);
+								XmNset,field_set,NULL);
 							XtSetSensitive(settings_editor->coordinate_field_widget,
 								field_set);
 							/* turn on callbacks */
@@ -3693,7 +3693,7 @@ Changes the currently chosen settings.
 								/* variable radius */
 								field_set=((struct Computed_field *)NULL!=radius_scalar_field);
 								XtVaSetValues(settings_editor->radius_scalar_field_button,
-									XmNset,(XtPointer)field_set,NULL);
+									XmNset,field_set,NULL);
 								if (field_set)
 								{
 									CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
@@ -3809,7 +3809,7 @@ Changes the currently chosen settings.
 								label_field=GT_element_settings_get_label_field(new_settings);
 								field_set=((struct Computed_field *)NULL != label_field);
 								XtVaSetValues(settings_editor->label_field_button,
-									XmNset,(XtPointer)field_set,NULL);
+									XmNset,field_set,NULL);
 								if (field_set)
 								{
 									CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
@@ -3885,7 +3885,7 @@ Changes the currently chosen settings.
 								field_set=
 									((struct FE_field *)NULL != native_discretization_field);
 								XtVaSetValues(settings_editor->native_discretization_button,
-									XmNset, (XtPointer)field_set, NULL);
+									XmNset, field_set, NULL);
 								if (field_set)
 								{
 									FE_REGION_CHOOSE_OBJECT_SET_OBJECT(FE_field)(
@@ -4115,7 +4115,7 @@ Changes the currently chosen settings.
 									&data_field,&spectrum);
 								field_set=((struct Computed_field *)NULL != data_field);
 								XtVaSetValues(settings_editor->data_field_button,
-									XmNset,(XtPointer)field_set,NULL);
+									XmNset,field_set,NULL);
 								if (field_set)
 								{
 									CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
@@ -4155,7 +4155,7 @@ Changes the currently chosen settings.
 									(new_settings);
 								field_set=((struct Computed_field *)NULL != texture_coord_field);
 								XtVaSetValues(settings_editor->texture_coord_field_button,
-									XmNset,(XtPointer)field_set,NULL);
+									XmNset,field_set,NULL);
 								if (field_set)
 								{
 									CHOOSE_OBJECT_SET_OBJECT(Computed_field)(

@@ -892,7 +892,7 @@ Sets the command_field to be executed when the element is clicked on in the
 			}
 			field_set = ((struct Computed_field *)NULL != command_field);
 			XtVaSetValues(element_point_tool->command_field_button,
-				XmNset, (XtPointer)field_set, NULL);
+				XmNset, field_set, NULL);
 			XtSetSensitive(element_point_tool->command_field_widget, field_set);
 		}
 	}

@@ -1281,7 +1281,7 @@ on in the <element_tool>.
 			}
 			field_set = ((struct Computed_field *)NULL != command_field);
 			XtVaSetValues(element_tool->command_field_button,
-				XmNset, (XtPointer)field_set, NULL);
+				XmNset, field_set, NULL);
 			XtSetSensitive(element_tool->command_field_widget, field_set);
 		}
 	}
