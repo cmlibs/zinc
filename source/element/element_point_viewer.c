@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_viewer.c
 
-LAST MODIFIED : 30 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 Dialog for selecting an element point, viewing and editing its fields and
@@ -37,7 +37,7 @@ static MrmHierarchy element_point_viewer_hierarchy;
 
 struct Element_point_viewer
 /*******************************************************************************
-LAST MODIFIED : 25 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 Contains all the information carried by the element_point_viewer widget.
@@ -48,6 +48,8 @@ Contains all the information carried by the element_point_viewer widget.
 	struct Element_point_viewer **element_point_viewer_address;
 	struct MANAGER(FE_element) *element_manager;
 	void *element_manager_callback_id;
+	struct MANAGER(FE_node) *node_manager;
+	void *node_manager_callback_id;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct User_interface *user_interface;
 	/* information about the element point being edited; note element in
@@ -180,7 +182,7 @@ Ensures xi is correct for the currently selected element point, if any.
 static int Element_point_viewer_set_viewer_element_point(
 	struct Element_point_viewer *element_point_viewer)
 /*******************************************************************************
-LAST MODIFIED : 29 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 Gets the current element_point, makes a copy of its element if not NULL,
@@ -188,6 +190,7 @@ and passes it to the element_point_viewer_widget.
 ==============================================================================*/
 {
 	int return_code;
+	struct Element_point_ranges_identifier temp_element_point_identifier;
 
 	ENTER(Element_point_viewer_set_viewer_element_point);
 	if (element_point_viewer)
@@ -200,9 +203,14 @@ and passes it to the element_point_viewer_widget.
 				element_point_viewer->element_point_identifier.element->identifier,
 				element_point_viewer->element_point_identifier.element));
 		}
+		/* pass identifier with copy_element to viewer widget */
+		COPY(Element_point_ranges_identifier)(
+			&temp_element_point_identifier,
+			&(element_point_viewer->element_point_identifier));
+		temp_element_point_identifier.element=element_point_viewer->element_copy;
 		element_point_viewer_widget_set_element_point(
-			element_point_viewer->viewer_widget,element_point_viewer->element_copy,
-			element_point_viewer->xi);
+			element_point_viewer->viewer_widget,&temp_element_point_identifier,
+			element_point_viewer->element_point_number);
 		return_code=1;
 	}
 	else
@@ -1118,6 +1126,55 @@ object cause updates.
 	LEAVE;
 } /* Element_point_viewer_element_change */
 
+static void Element_point_viewer_node_change(
+	struct MANAGER_MESSAGE(FE_node) *message,
+	void *element_point_viewer_void)
+/*******************************************************************************
+LAST MODIFIED : 31 May 2000
+
+DESCRIPTION :
+Callback from the node manager for changes to nodes. If the element
+currently being viewed is affected by the change, re-send to viewer.
+==============================================================================*/
+{
+	struct Element_point_viewer *element_point_viewer;
+
+	ENTER(Element_point_viewer_node_change);
+	if (message&&(element_point_viewer=
+		(struct Element_point_viewer *)element_point_viewer_void))
+	{
+		if (element_point_viewer->element_point_identifier.element)
+		{
+			switch (message->change)
+			{
+				case MANAGER_CHANGE_ALL(FE_node):
+				case MANAGER_CHANGE_OBJECT(FE_node):
+				case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_node):
+				{
+					if (!(message->object_changed)||FE_element_or_parent_contains_node(
+						element_point_viewer->element_point_identifier.element,
+						message->object_changed))
+					{
+						Element_point_viewer_set_viewer_element_point(element_point_viewer);
+					}
+				} break;
+				case MANAGER_CHANGE_ADD(FE_node):
+				case MANAGER_CHANGE_DELETE(FE_node):
+				case MANAGER_CHANGE_IDENTIFIER(FE_node):
+				{
+					/* do nothing */
+				} break;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_viewer_node_change.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Element_point_viewer_node_change */
+
 static int Element_point_viewer_apply_changes(
 	struct Element_point_viewer *element_point_viewer)
 /*******************************************************************************
@@ -1289,12 +1346,13 @@ Global functions
 struct Element_point_viewer *CREATE(Element_point_viewer)(
 	struct Element_point_viewer **element_point_viewer_address,
 	struct MANAGER(FE_element) *element_manager,
+	struct MANAGER(FE_node) *node_manager,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct Computed_field_package *computed_field_package,
 	struct MANAGER(FE_field) *fe_field_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 30 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 Creates a dialog for choosing element points and displaying and editing their
@@ -1309,6 +1367,7 @@ fields.
 	MrmType element_point_viewer_dialog_class;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Callback_data callback;
+	struct Element_point_ranges_identifier temp_element_point_identifier;
 	struct Element_point_ranges *element_point_ranges;
 	struct Element_point_viewer *element_point_viewer;
 	struct Computed_field *grid_field;
@@ -1355,7 +1414,7 @@ fields.
 
 	ENTER(CREATE(Element_point_viewer));
 	element_point_viewer=(struct Element_point_viewer *)NULL;
-	if (element_point_viewer_address&&element_manager&&
+	if (element_point_viewer_address&&element_manager&&node_manager&&
 		element_point_ranges_selection&&computed_field_package&&
 		(computed_field_manager=Computed_field_package_get_computed_field_manager(
 			computed_field_package))&&fe_field_manager&&user_interface)
@@ -1371,6 +1430,8 @@ fields.
 					element_point_viewer_address;
 				element_point_viewer->element_manager=element_manager;
 				element_point_viewer->element_manager_callback_id=(void *)NULL;
+				element_point_viewer->node_manager=node_manager;
+				element_point_viewer->node_manager_callback_id=(void *)NULL;
 				element_point_viewer->element_point_ranges_selection=
 					element_point_ranges_selection;
 				element_point_viewer->user_interface=user_interface;
@@ -1529,12 +1590,18 @@ fields.
 								{
 									init_widgets=0;
 								}
+								/* pass identifier with copy_element to viewer widget */
+								COPY(Element_point_ranges_identifier)(
+									&temp_element_point_identifier,
+									&(element_point_viewer->element_point_identifier));
+								temp_element_point_identifier.element=
+									element_point_viewer->element_copy;
 								if (!create_element_point_viewer_widget(
 									&(element_point_viewer->viewer_widget),
 									element_point_viewer->viewer_form,
 									computed_field_package,
-									element_point_viewer->element_copy,
-									element_point_viewer->xi))
+									&temp_element_point_identifier,
+									element_point_viewer->element_point_number))
 								{
 									init_widgets=0;
 								}
@@ -1557,7 +1624,10 @@ fields.
 									element_point_viewer->element_manager_callback_id=
 										MANAGER_REGISTER(FE_element)(
 											Element_point_viewer_element_change,
-											element_point_viewer,element_manager);
+											(void *)element_point_viewer,element_manager);
+									element_point_viewer->node_manager_callback_id=
+										MANAGER_REGISTER(FE_node)(Element_point_viewer_node_change,
+											(void *)element_point_viewer,node_manager);
 									XtRealizeWidget(element_point_viewer->window_shell);
 									XtPopup(element_point_viewer->window_shell,XtGrabNone);
 								}
@@ -1625,7 +1695,7 @@ fields.
 int DESTROY(Element_point_viewer)(
 	struct Element_point_viewer **element_point_viewer_address)
 /*******************************************************************************
-LAST MODIFIED : 24 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION:
 Destroys the Element_point_viewer. See also Element_point_viewer_close_CB.
@@ -1643,6 +1713,12 @@ Destroys the Element_point_viewer. See also Element_point_viewer_close_CB.
 			MANAGER_DEREGISTER(FE_element)(
 				element_point_viewer->element_manager_callback_id,
 				element_point_viewer->element_manager);
+		}
+		if (element_point_viewer->node_manager_callback_id)
+		{
+			MANAGER_DEREGISTER(FE_node)(
+				element_point_viewer->node_manager_callback_id,
+				element_point_viewer->node_manager);
 		}
 		/* end callbacks from global element_point selection */
 		Element_point_ranges_selection_remove_callback(

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_viewer.h
 
-LAST MODIFIED : 24 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 Dialog for selecting an element point, viewing and editing its fields and
@@ -14,6 +14,7 @@ selected element point, or set it if entered in this dialog.
 #include "general/callback.h"
 #include "finite_element/computed_field.h"
 #include "finite_element/finite_element.h"
+#include "graphics/element_point_ranges.h"
 #include "selection/element_point_ranges_selection.h"
 
 /*
@@ -38,12 +39,13 @@ Global Functions
 struct Element_point_viewer *CREATE(Element_point_viewer)(
 	struct Element_point_viewer **element_point_viewer_address,
 	struct MANAGER(FE_element) *element_manager,
+	struct MANAGER(FE_node) *node_manager,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct Computed_field_package *computed_field_package,
 	struct MANAGER(FE_field) *fe_field_manager,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 24 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 Creates a dialog for choosing element points and displaying and editing their
