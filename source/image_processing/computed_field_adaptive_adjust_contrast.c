@@ -438,6 +438,8 @@ Perform a automatic thresholding operation on the image cache.
 			{
 			        for(k = 0; k < image->depth; k++)
 				{
+				        Lmean = 0.0;
+					Lstd = 0.0;
 				        for (j = 0; j < kernel_size; j++)
 					{
 					        if (result_index + offsets[j] < ((FE_value *)storage))
