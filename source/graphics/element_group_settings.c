@@ -5639,7 +5639,7 @@ Converts a finite element into a graphics object with the supplied settings.
 								settings_to_object_data->wrapper_stream_vector_field,
 								settings->reverse_track, settings->streamline_length,
 								settings->streamline_data_type, settings->data_field,
-								settings_to_object_data->time))
+									settings_to_object_data->time,settings_to_object_data->fe_region))
 							{
 								if (!GT_OBJECT_ADD(GT_polyline)(settings->graphics_object,
 									time, polyline))
@@ -5664,7 +5664,7 @@ Converts a finite element into a graphics object with the supplied settings.
 								settings->reverse_track, settings->streamline_length,
 								settings->streamline_width, settings->streamline_type,
 								settings->streamline_data_type, settings->data_field,
-								settings_to_object_data->time))
+									settings_to_object_data->time,settings_to_object_data->fe_region))
 							{
 								if (!GT_OBJECT_ADD(GT_surface)(settings->graphics_object,
 									time,surface))
