@@ -6540,8 +6540,11 @@ NULL if not successful.
 				map->interpolation_type=BICUBIC_INTERPOLATION;
 			}
 			else
-			{if (POTENTIAL== *(map->type))
-				map->interpolation_type=NO_INTERPOLATION;
+			{
+				if (POTENTIAL== *(map->type))
+				{
+					map->interpolation_type=NO_INTERPOLATION;
+				}
 			}
 			XtVaGetApplicationResources(user_interface->application_shell,
 				&electrodes_marker_type,resources_5,XtNumber(resources_5),
@@ -6590,11 +6593,11 @@ NULL if not successful.
 				&draw_on_update,resources_10,XtNumber(resources_10),NULL);
 			if (fuzzy_string_compare(draw_on_update,"true"))
 			{
-				map->draw_map_on_maunal_time_update=1;			
+				map->draw_map_on_manual_time_update=1;			
 			}
 			else
 			{
-				map->draw_map_on_maunal_time_update=0;				
+				map->draw_map_on_manual_time_update=0;				
 			}
 			map->colour_electrodes_with_signal=1;
 			/*??? calculate from rig ? */
