@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_vector_operations.c
 
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 1 July 2000
 
 DESCRIPTION :
 Implements a number of basic vector operations on computed fields.
