@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : input_module_dialog.c
 
-LAST MODIFIED : 9 November 1998
+LAST MODIFIED : 23 March 2000
 
 DESCRIPTION :
 Brings up a window which holds a data_grabber.  Allows the user to change what
@@ -20,6 +20,7 @@ data is accepted - pos,tangent,normal.
 #include "general/debug.h"
 #include "general/list_private.h"
 #include "general/manager.h"
+#include "general/simple_list.h"
 #include "graphics/graphics_object.h"
 #include "graphics/scene.h"
 #include "io_devices/input_module_dialog.h"
