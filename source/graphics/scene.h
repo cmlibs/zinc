@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.h
 
-LAST MODIFIED : 12 November 2001
+LAST MODIFIED : 4 December 2001
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -21,6 +21,7 @@ December 1997. Created MANAGER(Scene).
 #include "general/enumerator.h"
 #include "graphics/element_point_ranges.h"
 #include "graphics/graphical_element.h"
+#include "graphics/graphics_library.h"
 #include "graphics/graphics_object.h"
 #include "general/list.h"
 #include "general/manager.h"
@@ -199,6 +200,9 @@ Contains all information necessary for an input callback from the scene.
 	void *data;
 }; /* struct Scene_input_callback */
 
+DECLARE_CALLBACK_TYPES(Scene_object_transformation, struct Scene_object *, \
+	gtMatrix *);
+
 /*
 Global functions
 ----------------
@@ -254,6 +258,28 @@ LAST MODIFIED : 19 November 1997
 
 DESCRIPTION :
 Sets the visibility of <scene_object>.
+==============================================================================*/
+
+int Scene_object_add_transformation_callback(struct Scene_object *scene_object,
+	CALLBACK_FUNCTION(Scene_object_transformation) *function, void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 4 December 2001
+
+DESCRIPTION :
+Adds a callback to <scene_object> for when its transformation is changed.
+<function> should have 3 arguments: struct Scene_object *, a gtMatrix * and the
+given void *user_data.
+==============================================================================*/
+
+int Scene_object_remove_transformation_callback(
+	struct Scene_object *scene_object,
+	CALLBACK_FUNCTION(Scene_object_transformation) *function, void *user_data);
+/*******************************************************************************
+LAST MODIFIED : 4 December 2001
+
+DESCRIPTION :
+Removes the transformation callback calling <function> with <user_data> from
+<scene_object>.
 ==============================================================================*/
 
 int Scene_object_has_transformation(struct Scene_object *scene_object);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 12 November 2001
+LAST MODIFIED : 4 December 2001
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -30,6 +30,7 @@ November 1997. Created from Scene description part of Drawing.
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
+#include "general/callback_private.h"
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/enumerator_private.h"
@@ -41,7 +42,7 @@ November 1997. Created from Scene description part of Drawing.
 #include "general/object.h"
 /*#include "graphics/auxiliary_graphics_types.h"*/
 #include "graphics/element_group_settings.h"
-/*#include "graphics/graphics_library.h"*/
+#include "graphics/graphics_library.h"
 #include "graphics/glyph.h"
 #include "graphics/graphics_object.h"
 #include "graphics/graphical_element.h"
@@ -75,9 +76,12 @@ Module types
 ------------
 */
 
+FULL_DECLARE_CALLBACK_TYPES(Scene_object_transformation, \
+	struct Scene_object *, gtMatrix *);
+
 struct Scene_object
 /*******************************************************************************
-LAST MODIFIED : 23 August 2000
+LAST MODIFIED : 4 December 2001
 
 DESCRIPTION :
 Scenes store a list of these wrappers to GT_objects so that the same
@@ -106,6 +110,8 @@ graphics object may have different visibility on different scenes.
 		 never accessed as the scene that owns this object destroys it before
 		 the scene itself is destroyed. */
 	struct Scene *scene;
+	/* callback list for transformation changes */
+	struct LIST(CALLBACK_ITEM(Scene_object_transformation)) *transformation_callback_list;
 	/* the optional global object which this Scene_object represents */
 	struct Any_object *represented_object;
 	int access_count;
@@ -222,6 +228,11 @@ Module functions
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Scene_object,position,int,compare_int)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Scene)
+
+DEFINE_CALLBACK_MODULE_FUNCTIONS(Scene_object_transformation)
+
+DEFINE_CALLBACK_FUNCTIONS(Scene_object_transformation, \
+	struct Scene_object *, gtMatrix *)
 
 static int execute_child_Scene(struct Scene *scene)
 /*******************************************************************************
@@ -931,7 +942,7 @@ scene on this window are modified, redraw.
 
 static struct Scene_object *CREATE(Scene_object)(char *name)
 /*******************************************************************************
-LAST MODIFIED : 23 August 2000
+LAST MODIFIED : 4 December 2001
 
 DESCRIPTION :
 Creates a vanilla Scene_object that is able to be DESTROYed, must be properly
@@ -945,7 +956,9 @@ and is visible.
 	if (name)
 	{
 		if (ALLOCATE(scene_object,struct Scene_object,1) &&
-			(scene_object->name=duplicate_string(name)))
+			(scene_object->name=duplicate_string(name)) &&
+			(scene_object->transformation_callback_list =
+				CREATE(LIST(CALLBACK_ITEM(Scene_object_transformation)))()))
 		{
 			scene_object->position=0;
 			scene_object->type = SCENE_OBJECT_TYPE_INVALID;
@@ -1103,7 +1116,7 @@ Creates a Scene_object with ACCESSed <gt_object> and visibility on.
 
 static int DESTROY(Scene_object)(struct Scene_object **scene_object_ptr)
 /*******************************************************************************
-LAST MODIFIED : 25 August 2000
+LAST MODIFIED : 4 December 2001
 
 DESCRIPTION :
 DEACCESSes the member GT_object and removes any other dynamic fields.
@@ -1120,6 +1133,11 @@ DEACCESSes the member GT_object and removes any other dynamic fields.
 		{
 			if (0==scene_object->access_count)
 			{
+				if (scene_object->transformation_callback_list)
+				{
+					DESTROY(LIST(CALLBACK_ITEM(Scene_object_transformation)))(
+						&(scene_object->transformation_callback_list));
+				}
 				if (scene_object->transformation)
 				{
 					DEALLOCATE(scene_object->transformation);
@@ -2974,6 +2992,85 @@ Sets the visibility of <scene_object>.
 	return (return_code);
 } /* Scene_object_set_visibility */
 
+int Scene_object_add_transformation_callback(struct Scene_object *scene_object,
+	CALLBACK_FUNCTION(Scene_object_transformation) *function, void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 4 December 2001
+
+DESCRIPTION :
+Adds a callback to <scene_object> for when its transformation is changed.
+<function> should have 3 arguments: struct Scene_object *, a gtMatrix * and the
+given void *user_data.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_object_add_transformation_callback);
+	if (scene_object && function)
+	{
+		if (CALLBACK_LIST_ADD_CALLBACK(Scene_object_transformation)(
+			scene_object->transformation_callback_list, function, user_data))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_object_add_transformation_callback.  Could not add callback");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_object_add_transformation_callback.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_object_add_transformation_callback */
+
+int Scene_object_remove_transformation_callback(
+	struct Scene_object *scene_object,
+	CALLBACK_FUNCTION(Scene_object_transformation) *function, void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 4 December 2001
+
+DESCRIPTION :
+Removes the transformation callback calling <function> with <user_data> from
+<scene_object>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_object_remove_transformation_callback);
+	if (scene_object && function)
+	{
+		if (CALLBACK_LIST_REMOVE_CALLBACK(Scene_object_transformation)(
+			scene_object->transformation_callback_list, function,user_data))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_object_remove_transformation_callback.  "
+				"Could not remove callback");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_object_remove_transformation_callback.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_object_remove_transformation_callback */
+
 int Scene_object_has_transformation(struct Scene_object *scene_object)
 /*******************************************************************************
 LAST MODIFIED : 8 October 1998
@@ -3010,7 +3107,7 @@ Returns 1 if the <scene_object> has a nonidentity transformation matrix
 int Scene_object_get_transformation(struct Scene_object *scene_object,
 	gtMatrix *transformation)
 /*******************************************************************************
-LAST MODIFIED : 8 October 1998
+LAST MODIFIED : 3 December 2001
 
 DESCRIPTION :
 Returns the transformation of <scene_object>.
@@ -3067,7 +3164,7 @@ Returns the transformation of <scene_object>.
 int Scene_object_set_transformation(struct Scene_object *scene_object,
 	gtMatrix *transformation)
 /*******************************************************************************
-LAST MODIFIED : 19 November 1997
+LAST MODIFIED : 4 December 2001
 
 DESCRIPTION :
 Sets the transformation of <scene_object>.
@@ -3078,34 +3175,44 @@ Sets the transformation of <scene_object>.
 	ENTER(Scene_object_set_transformation);
 	if (scene_object)
 	{
-		if(!scene_object->transformation)
+		return_code = 1;
+		if ((!transformation) || gtMatrix_is_identity(transformation))
 		{
-			if(!ALLOCATE(scene_object->transformation, gtMatrix, 1))
+			if (scene_object->transformation)
 			{
-				display_message(ERROR_MESSAGE,
-					"Scene_object_set_transformation.  Unable to allocate transformation");
-				return_code=0;				
+				DEALLOCATE(scene_object->transformation);
 			}
 		}
-		if(scene_object->transformation)
+		else if (scene_object->transformation ||
+			ALLOCATE(scene_object->transformation, gtMatrix, 1))
 		{
-			for (i=0;i<4;i++)
+			if (!gtMatrix_match(transformation, scene_object->transformation))
 			{
-				for (j=0;j<4;j++)
+				for (i = 0; i < 4; i++)
 				{
-					(*scene_object->transformation)[i][j] = (*transformation)[i][j];
+					for (j = 0; j < 4; j++)
+					{
+						(*scene_object->transformation)[i][j] = (*transformation)[i][j];
+					}
 				}
 			}
-			Scene_object_changed_external(scene_object);
-			return_code = 1;
 		}
-		  
+		else
+		{
+			display_message(ERROR_MESSAGE, "Scene_object_set_transformation.  "
+				"Unable to allocate transformation");
+			return_code = 0;				
+		}
+		CALLBACK_LIST_CALL(Scene_object_transformation)(
+			scene_object->transformation_callback_list, scene_object,
+			scene_object->transformation);
+		Scene_object_changed_external(scene_object);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_object_set_transformation.  Missing scene_object");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
