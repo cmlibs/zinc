@@ -4010,6 +4010,7 @@ if no coordinate field. Currently only write if we have a field.
 		{
 			sprintf(temp_string," xi %g,%g,%g",
 				settings->seed_xi[0],settings->seed_xi[1],settings->seed_xi[2]);
+			append_string(&settings_string,temp_string,&error);			
 		}
 
 		/* for streamlines only */
