@@ -356,12 +356,8 @@ static int Image_cache_canny_filter(struct Image_cache *image, double sigma)
 /*******************************************************************************
 LAST MODIFIED : 17 March 2004
 
-DESCRIPTION : Implement edge detection with Canny operator.
-        1) nxn Gaussian mask for noise removal
-        2) Use Sobel masks to approximate gradient
-        3) Find orientation of gradient
-        4) Implement nonmaximum suppression to assign edges
-        5) Hysteresis thresholding (2 thresholds)
+DESCRIPTION : Implement image smoothing using Gaussian filter.
+        
 ==============================================================================*/
 {
 	char *storage;
@@ -376,7 +372,7 @@ DESCRIPTION : Implement edge detection with Canny operator.
 	FE_value highThreshold, lowThreshold;
 
 	ENTER(Image_cache_canny_filter);
-	if (image && (image->dimension == 2) && (image->depth > 0))
+	if (image && (image->dimension > 0) && (image->depth > 0))
 	{
 		return_code = 1;
 		kernel_size = 1 + 2 *((int) ceil(2.5 * sigma));
@@ -869,7 +865,6 @@ Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
 	char *command_string, *field_name, temp_string[40];
-	char temp_string1[40], temp_string2[40], temp_string3[40], temp_string4[40];
 	int error;
 	struct Computed_field_canny_filter_type_specific_data *data;
 
@@ -899,20 +894,20 @@ Returns allocated command string for reproducing field. Includes type.
 		sprintf(temp_string, " dimension %d", data->image->dimension);
 		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string1, " sigma %f", data->sigma);
-		append_string(&command_string, temp_string1, &error);
+		sprintf(temp_string, " sigma %f", data->sigma);
+		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string2, " sizes %d %d",
+		sprintf(temp_string, " sizes %d %d",
 		                    data->image->sizes[0],data->image->sizes[1]);
-		append_string(&command_string, temp_string2, &error);
+		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string3, " minimums %f %f",
+		sprintf(temp_string, " minimums %f %f",
 		                    data->image->minimums[0], data->image->minimums[1]);
-		append_string(&command_string, temp_string3, &error);
+		append_string(&command_string, temp_string, &error);
 
-		sprintf(temp_string4, " maximums %f %f",
+		sprintf(temp_string, " maximums %f %f",
 		                    data->image->maximums[0], data->image->maximums[1]);
-		append_string(&command_string, temp_string4, &error);
+		append_string(&command_string, temp_string, &error);
 
 	}
 	else
@@ -1120,9 +1115,8 @@ already) and allows its contents to be modified.
 		set_source_field_data.computed_field_manager =
 			computed_field_canny_filter_package->computed_field_manager;
 		set_source_field_data.conditional_function =
-			Computed_field_has_n_components;
-		set_source_field_data.conditional_function_user_data = 
-		  /*number_of_components*/(void *)2;
+			Computed_field_has_numerical_components;
+		set_source_field_data.conditional_function_user_data = (void *)NULL;
 		/* texture_coordinate_field */
 		set_texture_coordinate_field_data.computed_field_manager =
 			computed_field_canny_filter_package->computed_field_manager;

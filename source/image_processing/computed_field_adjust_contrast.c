@@ -431,10 +431,9 @@ int Image_cache_adjust_contrast(struct Image_cache *image, int gain, double cuto
 			else
 			{
                                 DEALLOCATE(storage);
-				DEALLOCATE(Max);
-				DEALLOCATE(Min);
 			}
-
+			DEALLOCATE(Max);
+			DEALLOCATE(Min);
                 }
                 else
                 {

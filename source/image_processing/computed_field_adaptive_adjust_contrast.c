@@ -476,10 +476,10 @@ Perform a automatic thresholding operation on the image cache.
 			{
 				DEALLOCATE(storage);
 			}
-
 			DEALLOCATE(kernel);
 			DEALLOCATE(Gmean);
 			DEALLOCATE(Gstd);
+			DEALLOCATE(offsets);
 		}
 		else
 		{
