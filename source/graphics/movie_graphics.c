@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : movie_graphics.c
 
-LAST MODIFIED : 21 December 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -235,6 +235,9 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Movie_graphics,name,char *)
 } /* MANAGER_COPY_IDENTIFIER(Movie_graphics,name) */
 
 DECLARE_MANAGER_FUNCTIONS(Movie_graphics)
+
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Movie_graphics)
+
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Movie_graphics,name,char *)
 
 struct X3d_movie *Movie_graphics_get_X3d_movie(

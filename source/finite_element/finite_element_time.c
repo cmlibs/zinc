@@ -1,13 +1,13 @@
 /*******************************************************************************
 FILE : finite_element_time.c
 
-LAST MODIFIED : 9 November 2001
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Representing time in finite elements.
 ==============================================================================*/
-#include "finite_element.h"
-#include "finite_element_time.h"
+#include "finite_element/finite_element.h"
+#include "finite_element/finite_element_time.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/list_private.h"
@@ -369,6 +369,8 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(FE_time_version,self,struct FE_time_v
 } /* MANAGER_COPY_IDENTIFIER(FE_time_version,name) */
 
 DECLARE_MANAGER_FUNCTIONS(FE_time_version)
+
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(FE_time_version)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(FE_time_version,self,struct FE_time_version *)
 

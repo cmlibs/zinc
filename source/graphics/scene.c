@@ -5113,6 +5113,9 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Scene,name,char *)
 /*       pointer to its manager while it is managed. */
 
 DECLARE_OBJECT_WITH_MANAGER_MANAGER_FUNCTIONS(Scene,scene_manager)
+
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Scene)
+
 DECLARE_OBJECT_WITH_MANAGER_MANAGER_IDENTIFIER_FUNCTIONS( \
 	Scene,name,char *,scene_manager)
 

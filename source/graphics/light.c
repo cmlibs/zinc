@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : light.c
 
-LAST MODIFIED : 30 May 2001
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 The functions for manipulating lights.
@@ -957,6 +957,9 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Light,name,char *)
 } /* MANAGER_COPY_IDENTIFIER(Light,name) */
 
 DECLARE_MANAGER_FUNCTIONS(Light)
+
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Light)
+
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Light,name,char *)
 
 int get_Light_colour(struct Light *light,struct Colour *colour)

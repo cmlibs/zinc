@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture.c
 
-LAST MODIFIED : 27 November 2001
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 The functions for manipulating graphical textures.
@@ -1585,6 +1585,9 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Texture,name,char *)
 } /* MANAGER_COPY_IDENTIFIER(Texture,name) */
 
 DECLARE_MANAGER_FUNCTIONS(Texture)
+
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Texture)
+
 DECLARE_OBJECT_WITH_MANAGER_MANAGER_IDENTIFIER_FUNCTIONS( \
 	Texture,name,char *,texture_manager)
 

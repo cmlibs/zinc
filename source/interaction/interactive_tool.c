@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : interactive_tool.c
 
-LAST MODIFIED : 21 December 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Active CMGUI tools should create a wrapper Interactive_tool that supplies a
@@ -306,6 +306,9 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Interactive_tool,name,char *)
 } /* MANAGER_COPY_IDENTIFIER(Interactive_tool,name) */
 
 DECLARE_MANAGER_FUNCTIONS(Interactive_tool)
+
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Interactive_tool)
+
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Interactive_tool,name,char *)
 
 char *Interactive_tool_get_display_name(

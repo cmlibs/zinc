@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : digitiser_window.c
 
-LAST MODIFIED : 21 December 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION:
 Routines for generating and managing digitiser_windows. The digitiser window
@@ -1065,6 +1065,9 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Digitiser_window,name,char *)
 /* NOTE: Using special ADD_OBJECT_TO_MANAGER function so that object keeps */
 /*       pointer to its manager while it is managed. */
 DECLARE_MANAGER_FUNCTIONS(Digitiser_window)
+
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Digitiser_window)
+
 DECLARE_OBJECT_WITH_MANAGER_MANAGER_IDENTIFIER_FUNCTIONS( \
 	Digitiser_window,name,char *,digitiser_window_manager)
 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : environment_map.c
 
-LAST MODIFIED : 21 December 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 The functions for manipulating environment maps.
@@ -22,13 +22,16 @@ The functions for manipulating environment maps.
 Module types
 ------------
 */
+
 FULL_DECLARE_LIST_TYPE(Environment_map);
+
 FULL_DECLARE_MANAGER_TYPE(Environment_map);
 
 /*
 Module functions
 ----------------
 */
+
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Environment_map)
 
 static int set_Environment_map_face_materials(struct Parse_state *state,
@@ -656,6 +659,8 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Environment_map,name,char *)
 } /* MANAGER_COPY_IDENTIFIER(Environment_map,name) */
 
 DECLARE_MANAGER_FUNCTIONS(Environment_map)
+
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Environment_map)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Environment_map,name,char *)
 

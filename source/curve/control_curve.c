@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : control_curve.c
 
-LAST MODIFIED : 19 December 2001
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Definition of struct Control_curve used to describe time-value or x-y functions.
@@ -74,13 +74,16 @@ It is designed to be flexible rather than fast.
 }; /* struct Control_curve */
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Control_curve);
+
 FULL_DECLARE_MANAGER_TYPE(Control_curve);
 
 /*
 Module functions
 ----------------
 */
+
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Control_curve,name,char *,strcmp)
+
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Control_curve)
 
 static struct FE_element *cc_get_element(struct Control_curve *curve,
@@ -1715,6 +1718,9 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Control_curve,name,char *)
 } /* MANAGER_COPY_IDENTIFIER(Control_curve,name) */
 
 DECLARE_MANAGER_FUNCTIONS(Control_curve)
+
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Control_curve)
+
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Control_curve,name,char *)
 
 int Control_curve_unitize_vector(FE_value *vector,int number_of_components,

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : light_model.c
 
-LAST MODIFIED : 22 December 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 The functions for manipulating light models.
@@ -524,6 +524,9 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Light_model,name,char *)
 } /* MANAGER_COPY_IDENTIFIER(Light_model,name) */
 
 DECLARE_MANAGER_FUNCTIONS(Light_model)
+
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Light_model)
+
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Light_model,name,char *)
 
 int Light_model_get_ambient(struct Light_model *light_model,

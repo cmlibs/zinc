@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : spectrum.c
 
-LAST MODIFIED : 21 December 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Spectrum functions and support code.
@@ -207,6 +207,8 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Spectrum,name,char *)
 } /* MANAGER_COPY_IDENTIFIER(Spectrum,name) */
 
 DECLARE_MANAGER_FUNCTIONS(Spectrum)
+
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Spectrum)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Spectrum,name,char *)
 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material.c
 
-LAST MODIFIED : 6 June 2001
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 The functions for manipulating graphical materials.
@@ -554,6 +554,9 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Graphical_material,name,char *)
 } /* MANAGER_COPY_IDENTIFIER(Graphical_material,name) */
 
 DECLARE_MANAGER_FUNCTIONS(Graphical_material)
+
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Graphical_material)
+
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Graphical_material,name,char *)
 
 char *Graphical_material_name(struct Graphical_material *material)

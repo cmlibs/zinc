@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_window.c
 
-LAST MODIFIED : 26 November 2001
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION:
 Code for opening, closing and working a CMISS 3D display window.
@@ -3110,6 +3110,9 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Graphics_window,name,char *)
 /* NOTE: Using special ADD_OBJECT_TO_MANAGER function so that object keeps
 	pointer to its manager while it is managed. */
 DECLARE_MANAGER_FUNCTIONS(Graphics_window)
+
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Graphics_window)
+
 DECLARE_OBJECT_WITH_MANAGER_MANAGER_IDENTIFIER_FUNCTIONS(Graphics_window,name, \
 	char *,graphics_window_manager)
 

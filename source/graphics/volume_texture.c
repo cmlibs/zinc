@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : volume_texture.c
 
-LAST MODIFIED : 21 December 2000
+LAST MODIFIED : 21 January 2002
 
 DESCRIPTION :
 Contains data structures for the 3d volumetric textures to be mapped onto
@@ -2365,6 +2365,8 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(VT_volume_texture,name,char *)
 } /* MANAGER_COPY_IDENTIFIER(VT_volume_texture,name) */
 
 DECLARE_MANAGER_FUNCTIONS(VT_volume_texture)
+
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(VT_volume_texture)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(VT_volume_texture,name,char *)
 
