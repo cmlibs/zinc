@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.c
 
-LAST MODIFIED : 15 October 2001
+LAST MODIFIED : 12 March 2002
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
@@ -3335,7 +3335,7 @@ struct GT_voltex *create_GT_voltex_from_FE_element(struct FE_element *element,
 	struct Computed_field *blur_field, struct Computed_field *texture_coordinate_field,
 	FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 12 March 2002
 
 DESCRIPTION :
 Creates a <GT_voltex> from a 3-D finite <element> <block> and volume texture
@@ -3355,6 +3355,7 @@ faces.
 		rmag,vector1[3],vector2[3],result[3],vectorsum[3],vertex0[3],vertex1[3],
 		vertex2[3];
 	FE_value colour_data[4];
+	struct Graphical_material *material;
 	struct GT_voltex *voltex;
 	int *adjacency_table,data_index,*deform,i,ii,j,jj,k,kk,m,n_iso_polys,
 		n_data_components,number_of_elements,number_of_faces,n_xi_rep[3],return_code,
@@ -3363,7 +3364,6 @@ faces.
 		*triangle_list,*triangle_list2,acc_triangle_index,
 		*dont_draw;
 	struct FE_element **element_block,**element_block_ptr;
-	struct Graphical_material **iso_poly_material;
 	struct Environment_map **iso_env_map;
 	struct VT_iso_vertex *vertex_list;
 
@@ -3384,7 +3384,7 @@ faces.
 	voltex=(struct GT_voltex *)NULL;
 	if (element&&(element->shape)&&(3==element->shape->dimension)&&vtexture&&
 		coordinate_field&&
-		Computed_field_has_up_to_3_numerical_components(coordinate_field,NULL)&&
+		Computed_field_has_3_components(coordinate_field,NULL)&&
 		((!blur_field)||
 			Computed_field_has_up_to_4_numerical_components(blur_field,NULL))&&
 		((!displacement_field)||
@@ -3546,7 +3546,6 @@ faces.
 							n_vertices=vtexture->mc_iso_surface->n_vertices;
 							triangle_list=(int *)NULL;
 							triangle_list2=(int *)NULL;
-							iso_poly_material=(struct Graphical_material **)NULL;
 							iso_poly_cop=(double *)NULL;
 							texturemap_coord=(float *)NULL;
 							texturemap_index=(int *)NULL;
@@ -3554,8 +3553,7 @@ faces.
 							iso_env_map=(struct Environment_map **)NULL;
 							if (ALLOCATE(triangle_list,int,3*n_iso_polys)&&
 								ALLOCATE(triangle_list2,int,3*n_iso_polys)&&
-								ALLOCATE(iso_poly_material,struct Graphical_material *,
-								3*n_iso_polys)&&ALLOCATE(iso_poly_cop,double,3*n_iso_polys*3)
+								ALLOCATE(iso_poly_cop,double,3*n_iso_polys*3)
 								&&ALLOCATE(texturemap_coord,float,3*n_iso_polys*3)
 								&&ALLOCATE(texturemap_index,int,3*n_iso_polys)
 								&&ALLOCATE(vertex_list,struct VT_iso_vertex,
@@ -3578,7 +3576,7 @@ faces.
 									case RENDER_TYPE_SHADED:
 									{
 										if (!(voltex=CREATE(GT_voltex)(n_iso_polys,n_vertices,
-											triangle_list2,vertex_list,iso_poly_material,iso_env_map,
+											triangle_list2,vertex_list,iso_env_map,
 											iso_poly_cop,texturemap_coord,texturemap_index,
 											n_xi_rep[0]*n_xi_rep[1]*n_xi_rep[2],n_data_components,
 											data, g_VOLTEX_SHADED_TEXMAP)))
@@ -3587,7 +3585,6 @@ faces.
 												"create_GT_voltex_from_FE_element.   Could not create voltex");
 											DEALLOCATE(triangle_list);
 											DEALLOCATE(triangle_list2);
-											DEALLOCATE(iso_poly_material);
 											DEALLOCATE(iso_poly_cop);
 											DEALLOCATE(texturemap_coord);
 											DEALLOCATE(texturemap_index);
@@ -3602,7 +3599,7 @@ faces.
 									case RENDER_TYPE_WIREFRAME:
 									{
 										if (!(voltex=CREATE(GT_voltex)(n_iso_polys,n_vertices,
-											triangle_list2,vertex_list,iso_poly_material,iso_env_map,
+											triangle_list2,vertex_list,iso_env_map,
 											iso_poly_cop,texturemap_coord,texturemap_index,
 											n_xi_rep[0]*n_xi_rep[1]*n_xi_rep[2],n_data_components,
 											data, g_VOLTEX_WIREFRAME_SHADED_TEXMAP)))
@@ -3611,7 +3608,6 @@ faces.
 												"create_GT_voltex_from_FE_element.   Could not create voltex");
 											DEALLOCATE(triangle_list);
 											DEALLOCATE(triangle_list2);
-											DEALLOCATE(iso_poly_material);
 											DEALLOCATE(iso_poly_cop);
 											DEALLOCATE(texturemap_coord);
 											DEALLOCATE(texturemap_index);
@@ -3629,7 +3625,6 @@ faces.
 											"create_GT_voltex_from_FE_element.  Unknown render type.");
 										DEALLOCATE(triangle_list);
 										DEALLOCATE(triangle_list2);
-										DEALLOCATE(iso_poly_material);
 										DEALLOCATE(iso_poly_cop);
 										DEALLOCATE(texturemap_coord);
 										DEALLOCATE(texturemap_index);
@@ -3651,7 +3646,6 @@ faces.
 									n_iso_polys,n_vertices,n_xi_rep[0],n_xi_rep[1],n_xi_rep[2]);
 								DEALLOCATE(triangle_list);
 								DEALLOCATE(triangle_list2);
-								DEALLOCATE(iso_poly_material);
 								DEALLOCATE(iso_poly_cop);
 								DEALLOCATE(texturemap_coord);
 								DEALLOCATE(texturemap_index);
@@ -3731,9 +3725,12 @@ faces.
 											triangle_list2[3*acc_triangle_index+j]=
 												vtexture->mc_iso_surface->
 												compiled_triangle_list[i]->vertex_index[j];
-											iso_poly_material[3*acc_triangle_index+j]=
-												vtexture->mc_iso_surface->
-												compiled_triangle_list[i]->material[j];
+											if (material = vtexture->mc_iso_surface->
+												compiled_triangle_list[i]->material[j])
+											{
+												GT_voltex_set_vertex_material(voltex,
+													3*acc_triangle_index+j, material);
+											}
 											iso_env_map[3*acc_triangle_index+j]=
 												vtexture->mc_iso_surface->
 												compiled_triangle_list[i]->env_map[j];
@@ -7776,7 +7773,7 @@ int create_iso_surfaces_from_FE_element(struct FE_element *element,
 	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
 	struct MANAGER(Computed_field) *computed_field_manager)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 12 March 2002
 
 DESCRIPTION :
 Converts a 3-D element into an iso_surface (via a volume_texture).
@@ -7797,6 +7794,7 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 	/* default return_code */
 	return_code=0;
 	if (element&&(element->shape)&&(3==element->shape->dimension)&&
+		Computed_field_has_3_components(coordinate_field,NULL)&&
 		number_in_xi&&(0<number_in_xi[0])&&(0<number_in_xi[1])&&(0<number_in_xi[2])
 		&&scalar_field&&(1==Computed_field_get_number_of_components(scalar_field)))
 	{
