@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.h
 
-LAST MODIFIED : 15 May 2000
+LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
 Functions for mouse controlled node selection and position and vector editing
@@ -44,16 +44,16 @@ Global functions
 
 struct Node_tool *CREATE(Node_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
-	struct MANAGER(FE_node) *node_manager,int data_manager,
+	struct MANAGER(FE_node) *node_manager,int use_data,
 	struct FE_node_selection *node_selection,
 	struct Computed_field_package *computed_field_package);
 /*******************************************************************************
-LAST MODIFIED : 15 May 2000
+LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
 Creates a Node_tool for editing nodes/data in the <node_manager>,
 using the <node_selection>.
-The <data_manager> flag indicates that <node_manager> and <node_selection>
+The <use_data> flag indicates that <node_manager> and <node_selection>
 refer to data, not nodes, needed since different GT_element_settings types are
 used to represent them. 
 ==============================================================================*/

@@ -47,7 +47,7 @@ changes in node position and derivatives etc.
 	struct Interactive_tool *interactive_tool;
 	struct MANAGER(FE_node) *node_manager;
 	/* flag indicating that the above manager is actually the data manager */
-	int data_manager;
+	int use_data;
 	struct FE_node_selection *node_selection;
 	struct Computed_field_package *computed_field_package;
 	/* user-settable flags */
@@ -806,7 +806,7 @@ the new node.
 	{
 		if (Node_tool_create_template_node(node_tool))
 		{
-			if (node_tool->data_manager)
+			if (node_tool->use_data)
 			{
 				scene_object_conditional_function=Scene_object_has_data_group;
 				gt_element_settings_type=GT_ELEMENT_SETTINGS_DATA_POINTS;
@@ -980,9 +980,9 @@ release.
 						if (node_tool->select_enabled)
 						{
 							picked_node=Scene_picked_object_list_get_nearest_node(
-								scene_picked_object_list,node_tool->node_manager,
-								node_tool->data_manager,(struct GROUP(FE_node) *)NULL,
-								&scene_picked_object,&gt_element_group,&gt_element_settings);
+								scene_picked_object_list,node_tool->use_data,
+								(struct GROUP(FE_node) *)NULL,&scene_picked_object,
+								&gt_element_group,&gt_element_settings);
 						}
 						if (picked_node)
 						{
@@ -1053,7 +1053,7 @@ release.
 								node_tool->last_interaction_volume;
 							edit_info.final_interaction_volume=interaction_volume;
 							edit_info.node_manager=node_tool->node_manager;
-							if (node_tool->data_manager)
+							if (node_tool->use_data)
 							{
 								edit_info.node_group=GT_element_group_get_data_group(
 									node_tool->gt_element_group);
@@ -1186,8 +1186,7 @@ release.
 								Scene_pick_objects(scene,temp_interaction_volume))
 							{
 								if (node_list=Scene_picked_object_list_get_picked_nodes(
-									scene_picked_object_list,node_tool->node_manager,
-									node_tool->data_manager))
+									scene_picked_object_list,node_tool->use_data))
 								{
 									FE_node_selection_begin_cache(node_tool->node_selection);
 									FOR_EACH_OBJECT_IN_LIST(FE_node)(
@@ -1292,7 +1291,7 @@ and as a child of <parent>.
 		if (MrmOpenHierarchy_base64_string(node_tool_uidh,
 			&node_tool_hierarchy,&node_tool_hierarchy_open))
 		{
-			if (node_tool->data_manager)
+			if (node_tool->use_data)
 			{
 				widget_name="data_tool_button";
 			}
@@ -1334,16 +1333,16 @@ Global functions
 
 struct Node_tool *CREATE(Node_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
-	struct MANAGER(FE_node) *node_manager,int data_manager,
+	struct MANAGER(FE_node) *node_manager,int use_data,
 	struct FE_node_selection *node_selection,
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
-LAST MODIFIED : 15 May 2000
+LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
 Creates a Node_tool for editing nodes/data in the <node_manager>,
 using the <node_selection>.
-The <data_manager> flag indicates that <node_manager> and <node_selection>
+The <use_data> flag indicates that <node_manager> and <node_selection>
 refer to data, not nodes, needed since different GT_element_settings types are
 used to represent them. 
 ==============================================================================*/
@@ -1359,7 +1358,7 @@ used to represent them.
 		{
 			node_tool->interactive_tool_manager=interactive_tool_manager;
 			node_tool->node_manager=node_manager;
-			node_tool->data_manager=data_manager;
+			node_tool->use_data=use_data;
 			node_tool->node_selection=node_selection;
 			node_tool->computed_field_package=computed_field_package;
 			node_tool->scene_picked_object=(struct Scene_picked_object *)NULL;
@@ -1376,7 +1375,7 @@ used to represent them.
 			node_tool->coordinate_field=(struct FE_field *)NULL;
 			node_tool->template_node=(struct FE_node *)NULL;
 			/* interactive_tool */
-			if (data_manager)
+			if (use_data)
 			{
 				tool_name="data_tool";
 				tool_display_name="Data tool";
