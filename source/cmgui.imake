@@ -44,6 +44,9 @@ SHELL=bash.exe
 #if defined (mips)
 #undef mips
 #endif
+#if defined (i386)
+#undef i386
+#endif
 SOURCE_PATH=$(CMGUI_DEV_ROOT)/source
 UTILITIES_PATH=$(CMGUI_DEV_ROOT)/utilities
 #if defined (CMISS_ROOT_DEFINED)
@@ -366,7 +369,7 @@ PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/i386-win32/cmgui-console
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/i386-win32/cmgui-console
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/i386-win32/cmgui-console
 #else /* defined (CONSOLE) */
-#if defined (GTK_ONLY_INTERFACE)
+#if defined (GTK_USER_INTERFACE)
 #define Target cmgui-gtk.exe
 #define SpacesToTabsTarget spaces_to_tabs_win32.exe
 #define TabsToSpacesTarget tabs_to_spaces_win32.exe
@@ -379,7 +382,7 @@ OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/i386-win32/cmgui-gtk
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/i386-win32/cmgui-gtk
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/i386-win32/cmgui-gtk
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/i386-win32/cmgui-gtk
-#else /* defined (GTK_ONLY_INTERFACE) */
+#else /* defined (GTK_USER_INTERFACE) */
 #if defined (OPTIMISED)
 #define Target cmgui.exe
 #define SpacesToTabsTarget spaces_to_tabs_win32.exe
