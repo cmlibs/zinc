@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : unemap.Makefile
 #
-# LAST MODIFIED : 2 April 2003
+# LAST MODIFIED : 20 May 2003
 #
 # DESCRIPTION :
 #
@@ -297,6 +297,8 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
          USER_INTERFACE_INC += -I/usr/X11R6/include
       endif # SYSNAME != IRIX%=
       ifeq ($(SYSNAME),Linux)
+         X_LIB = /usr/X11R6/lib
+         USER_INTERFACE_LIB += -L$(X_LIB)
          #Mandrake 8.2 static libs are incompatible, this works around it by
          #comparing the size of the symbols and forcing Xmu to preload its
          #version if they differ in size.  Older greps don't have -o option.
