@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element.c
 
-LAST MODIFIED : 14 December 1999
+LAST MODIFIED : 15 February 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -36,7 +36,7 @@ struct GT_element_group_callback_data
 
 struct GT_element_group
 /*******************************************************************************
-LAST MODIFIED : 20 July 1999
+LAST MODIFIED : 11 February 2000
 
 DESCRIPTION :
 Structure for maintaining a graphical rendition of an element group.
@@ -49,6 +49,8 @@ Structure for maintaining a graphical rendition of an element group.
 	struct GROUP(FE_node) *node_group;
 	/* the data group - of the same name as the element group */
 	struct GROUP(FE_node) *data_group;
+	/* picked/selected object lists */
+	struct LIST(FE_node) *picked_nodes,*selected_nodes;
 	/* settings shared by whole rendition */
 	/* curve approximation with line segments over elements */
 	struct Element_discretization element_discretization;
@@ -78,7 +80,7 @@ struct GT_element_group *CREATE(GT_element_group)(
 	struct GROUP(FE_element) *element_group,struct GROUP(FE_node) *node_group,
 	struct GROUP(FE_node) *data_group)
 /*******************************************************************************
-LAST MODIFIED : 20 July 1999
+LAST MODIFIED : 11 February 2000
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphical finite element group for
@@ -97,32 +99,50 @@ precede removing the node and data groups from their respective managers.
 	ENTER(CREATE(GT_element_group));
 	if (element_group&&node_group&&data_group)
 	{
-		if (ALLOCATE(gt_element_group,struct GT_element_group,1)&&
-			(gt_element_group->list_of_settings=CREATE(LIST(GT_element_settings))()))
+		if (ALLOCATE(gt_element_group,struct GT_element_group,1))
 		{
-			gt_element_group->element_group=element_group;
+			gt_element_group->list_of_settings=
+				(struct LIST(GT_element_settings) *)NULL;
+			gt_element_group->picked_nodes=(struct LIST(FE_node) *)NULL;
+			gt_element_group->selected_nodes=(struct LIST(FE_node) *)NULL;
+			if ((gt_element_group->list_of_settings=
+				CREATE(LIST(GT_element_settings))())&&
+				(gt_element_group->picked_nodes=CREATE(LIST(FE_node))())&&
+				(gt_element_group->selected_nodes=CREATE(LIST(FE_node))()))
+			{
+				gt_element_group->element_group=element_group;
 #if defined (OLD_CODE)
-			/*???DB.  element_group can recover if group is destroyed because will be
-			told.  So does not need to ACCESS */
-			gt_element_group->element_group=ACCESS(GROUP(FE_element))(element_group);
+				/*???DB.  element_group can recover if group is destroyed because will
+					be told.  So does not need to ACCESS */
+				gt_element_group->element_group=
+					ACCESS(GROUP(FE_element))(element_group);
 #endif /* defined (OLD_CODE) */
-			gt_element_group->node_group=ACCESS(GROUP(FE_node))(node_group);
-			gt_element_group->data_group=ACCESS(GROUP(FE_node))(data_group);
-			/* set settings shared by whole rendition */
-			gt_element_group->element_discretization.number_in_xi1=2;
-			gt_element_group->element_discretization.number_in_xi2=2;
-			gt_element_group->element_discretization.number_in_xi3=2;
-			gt_element_group->circle_discretization=3;
-			gt_element_group->default_coordinate_field=(struct Computed_field *)NULL;
-			gt_element_group->native_discretization_field=(struct FE_field *)NULL;
-			gt_element_group->update_callback_list=
-				(struct GT_element_group_callback_data *)NULL;
-			gt_element_group->changed=1;
-			gt_element_group->access_count=0;
+				gt_element_group->node_group=ACCESS(GROUP(FE_node))(node_group);
+				gt_element_group->data_group=ACCESS(GROUP(FE_node))(data_group);
+				/* set settings shared by whole rendition */
+				gt_element_group->element_discretization.number_in_xi1=2;
+				gt_element_group->element_discretization.number_in_xi2=2;
+				gt_element_group->element_discretization.number_in_xi3=2;
+				gt_element_group->circle_discretization=3;
+				gt_element_group->default_coordinate_field=
+					(struct Computed_field *)NULL;
+				gt_element_group->native_discretization_field=(struct FE_field *)NULL;
+				gt_element_group->update_callback_list=
+					(struct GT_element_group_callback_data *)NULL;
+				gt_element_group->changed=1;
+				gt_element_group->access_count=0;
+			}
+			else
+			{
+				DESTROY(LIST(GT_element_settings))(
+					&(gt_element_group->list_of_settings));
+				DESTROY(LIST(FE_node))(&(gt_element_group->picked_nodes));
+				DESTROY(LIST(FE_node))(&(gt_element_group->selected_nodes));
+				DEALLOCATE(gt_element_group);
+			}
 		}
-		else
+		if (!gt_element_group)
 		{
-			DEALLOCATE(gt_element_group);
 			display_message(ERROR_MESSAGE,
 				"CREATE(GT_element_group).  Insufficient memory");
 		}
@@ -138,59 +158,63 @@ precede removing the node and data groups from their respective managers.
 	return (gt_element_group);
 } /* CREATE(GT_element_group) */
 
-int DESTROY(GT_element_group)(struct GT_element_group **gt_element_group)
+int DESTROY(GT_element_group)(
+	struct GT_element_group **gt_element_group_address)
 /*******************************************************************************
-LAST MODIFIED : 20 July 1999
+LAST MODIFIED : 11 February 2000
 
 DESCRIPTION :
 Frees the memory for <**gt_element_group> and sets <*gt_element_group> to NULL.
 ==============================================================================*/
 {
 	int return_code;
+	struct GT_element_group *gt_element_group;
 	struct GT_element_group_callback_data *callback_data, *next;
 
 	ENTER(DESTROY(GT_element_group));
-	if (gt_element_group)
+	if (gt_element_group_address)
 	{
 		return_code=1;
-		if (*gt_element_group)
+		if (gt_element_group = *gt_element_group_address)
 		{
-			if (0 != (*gt_element_group)->access_count)
+			if (0 != gt_element_group->access_count)
 			{
 				display_message(ERROR_MESSAGE,
 					"DESTROY(GT_element_group).  Access count = %d",
-					(*gt_element_group)->access_count);
+					gt_element_group->access_count);
 				return_code=0;
 			}
 			else
 			{
 				DESTROY(LIST(GT_element_settings))(
-					&((*gt_element_group)->list_of_settings));
+					&(gt_element_group->list_of_settings));
+				DESTROY(LIST(FE_node))(&(gt_element_group->picked_nodes));
+				DESTROY(LIST(FE_node))(&(gt_element_group->selected_nodes));
 #if defined (OLD_CODE)
 				/*???DB.  element_group can recover if group is destroyed because will
 					be told.  So does not need to ACCESS */
-				DEACCESS(GROUP(FE_element))(&((*gt_element_group)->element_group));
+				DEACCESS(GROUP(FE_element))(&(gt_element_group->element_group));
 #endif /* defined (OLD_CODE) */
-				DEACCESS(GROUP(FE_node))(&((*gt_element_group)->node_group));
-				DEACCESS(GROUP(FE_node))(&((*gt_element_group)->data_group));
-				if ((*gt_element_group)->default_coordinate_field)
+				DEACCESS(GROUP(FE_node))(&(gt_element_group->node_group));
+				DEACCESS(GROUP(FE_node))(&(gt_element_group->data_group));
+				if (gt_element_group->default_coordinate_field)
 				{
 					DEACCESS(Computed_field)(
-						&((*gt_element_group)->default_coordinate_field));
+						&(gt_element_group->default_coordinate_field));
 				}
-				if ((*gt_element_group)->native_discretization_field)
+				if (gt_element_group->native_discretization_field)
 				{
 					DEACCESS(FE_field)(
-						&((*gt_element_group)->native_discretization_field));
+						&(gt_element_group->native_discretization_field));
 				}
-				callback_data = (*gt_element_group)->update_callback_list;
+				callback_data = gt_element_group->update_callback_list;
 				while(callback_data)
 				{
 					next = callback_data->next;
 					DEALLOCATE(callback_data);
 					callback_data = next;
 				}
-				DEALLOCATE(*gt_element_group);
+				DEALLOCATE(*gt_element_group_address);
 			}
 		}
 	}
@@ -1565,4 +1589,342 @@ DESCRIPTION :
 
 	return (return_code);
 } /* execute_GT_element_group */
+
+int GT_element_group_clear_picked(struct GT_element_group *gt_element_group)
+/*******************************************************************************
+LAST MODIFIED : 11 February 2000
+
+DESCRIPTION :
+Clears all the picked objects in the <gt_element_group>.
+Only parent scene is authorised to do this.
+Should only be called by Scene_object_clear_picked, otherwise need callback to
+inform it of change.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_element_group_clear_picked);
+	if (gt_element_group)
+	{
+		return_code=REMOVE_ALL_OBJECTS_FROM_LIST(FE_node)(
+			gt_element_group->picked_nodes);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_group_clear_picked.  Invalid GT_element_group");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_group_clear_picked */
+
+int GT_element_group_clear_selected(struct GT_element_group *gt_element_group)
+/*******************************************************************************
+LAST MODIFIED : 11 February 2000
+
+DESCRIPTION :
+Clears all the selected objects in the <gt_element_group>.
+Only parent scene is authorised to do this.
+Should only be called by Scene_object_clear_selected, otherwise need callback to
+inform it of change.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_element_group_clear_selected);
+	if (gt_element_group)
+	{
+		return_code=REMOVE_ALL_OBJECTS_FROM_LIST(FE_node)(
+			gt_element_group->selected_nodes);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_group_clear_selected.  Invalid GT_element_group");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_group_clear_selected */
+
+int GT_element_group_pick_subobject(struct GT_element_group *gt_element_group,
+	int number_of_subobject_names,int *subobject_names)
+/*******************************************************************************
+LAST MODIFIED : 15 February 2000
+
+DESCRIPTION :
+Finds the settings with the position/identifier given in the first position in
+the <subobject_names> in <gt_element_group>, picking any objects it refers to
+based on the remainder of the subobject names.
+For example, if there are "node_points" in the first position, and there are
+three subobject_names 1 0 5, node 5 will be added to the picked list.
+==============================================================================*/
+{
+	enum GT_element_settings_type settings_type;
+	int node_number,return_code;
+	struct FE_node *node;
+	struct GT_element_settings *settings;
+
+	ENTER(GT_element_group_pick_subobject);
+	if (gt_element_group&&(0<number_of_subobject_names)&&subobject_names)
+	{
+		/*???debug*/
+		{
+			int i;
+			
+			printf("GT_element_group_pick_subobject:");
+			for (i=0;i<number_of_subobject_names;i++)
+			{
+				printf(" %d",subobject_names[i]);
+			}
+			printf("\n");
+		}
+		if (settings=FIND_BY_IDENTIFIER_IN_LIST(GT_element_settings,position)(
+			*subobject_names,gt_element_group->list_of_settings))
+		{
+			return_code=1;
+			settings_type=GT_element_settings_get_settings_type(settings);
+			switch (settings_type)
+			{
+				case GT_ELEMENT_SETTINGS_NODE_POINTS:
+				{
+					if (3==number_of_subobject_names)
+					{
+						node_number=subobject_names[2];
+						if (node=FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
+							node_number,gt_element_group->node_group))
+						{
+							if (!FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
+								node_number,gt_element_group->picked_nodes))
+							{
+								if (!ADD_OBJECT_TO_LIST(FE_node)(node,
+									gt_element_group->picked_nodes))
+								{
+									display_message(ERROR_MESSAGE,
+										"GT_element_group_pick_subobject.  Could not pick node");
+									return_code=0;
+								}
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"GT_element_group_pick_subobject.  "
+								"No node with number %d in group",node_number);
+							return_code=0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"GT_element_group_pick_subobject.  "
+							"Invalid number_of_subobject_names, %d, for %s",
+							number_of_subobject_names,
+							GT_element_settings_type_string(settings_type));
+						return_code=0;
+					}
+				} break;
+				default:
+				{
+					/*???temporary*/
+					printf("GT_element_group_pick_subobject can't pick %s!\n",
+						GT_element_settings_type_string(settings_type));
+				} break;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"GT_element_group_pick_subobject.  "
+				"No settings found at position %d",*subobject_names);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_group_pick_subobject.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_group_pick_subobject */
+
+int GT_element_group_get_picked_nodes(
+	struct GT_element_group *gt_element_group,struct LIST(FE_node) *node_list)
+/*******************************************************************************
+LAST MODIFIED : 15 February 2000
+
+DESCRIPTION :
+Ensures all the picked nodes in <gt_element_group> are in <node_list>. Does
+not clear <node_list> first.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_element_group_get_picked_nodes);
+	if (gt_element_group&&node_list)
+	{
+		return_code=FOR_EACH_OBJECT_IN_LIST(FE_node)(ensure_FE_node_is_in_list,
+			(void *)node_list,gt_element_group->picked_nodes);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_group_get_picked_nodes.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_group_get_picked_nodes */
+
+int GT_element_group_get_selected_nodes(
+	struct GT_element_group *gt_element_group,struct LIST(FE_node) *node_list)
+/*******************************************************************************
+LAST MODIFIED : 15 February 2000
+
+DESCRIPTION :
+Ensures all the selected nodes in <gt_element_group> are in <node_list>. Does
+not clear <node_list> first.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_element_group_get_selected_nodes);
+	if (gt_element_group&&node_list)
+	{
+		return_code=FOR_EACH_OBJECT_IN_LIST(FE_node)(ensure_FE_node_is_in_list,
+			(void *)node_list,gt_element_group->selected_nodes);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_group_get_selected_nodes.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_group_get_selected_nodes */
+
+int GT_element_group_modify_selected_nodes(
+	struct GT_element_group *gt_element_group,
+	enum GT_element_group_select_modify_mode modify_mode,
+	struct LIST(FE_node) *node_list)
+/*******************************************************************************
+LAST MODIFIED : 15 February 2000
+
+DESCRIPTION :
+Modifies the list of selected nodes in <gt_element_group> with <node_list>
+according to the <modify_mode>: add, remove, replace, toggle etc.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_element_group_modify_selected_nodes);
+	if (gt_element_group&&node_list)
+	{
+		switch (modify_mode)
+		{
+			case GT_ELEMENT_GROUP_SELECT_ADD:
+			{
+				return_code=FOR_EACH_OBJECT_IN_LIST(FE_node)(ensure_FE_node_is_in_list,
+					(void *)gt_element_group->selected_nodes,node_list);
+			} break;
+			case GT_ELEMENT_GROUP_SELECT_REMOVE:
+			{
+				return_code=FOR_EACH_OBJECT_IN_LIST(FE_node)(
+					ensure_FE_node_is_not_in_list,
+					(void *)gt_element_group->selected_nodes,node_list);
+			} break;
+			case GT_ELEMENT_GROUP_SELECT_REPLACE:
+			{
+				return_code=
+					REMOVE_ALL_OBJECTS_FROM_LIST(FE_node)(
+						gt_element_group->selected_nodes)&&
+					FOR_EACH_OBJECT_IN_LIST(FE_node)(ensure_FE_node_is_in_list,
+						(void *)gt_element_group->selected_nodes,node_list);
+			} break;
+			case GT_ELEMENT_GROUP_SELECT_TOGGLE:
+			{
+				return_code=FOR_EACH_OBJECT_IN_LIST(FE_node)(toggle_FE_node_in_list,
+					(void *)gt_element_group->selected_nodes,node_list);
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"GT_element_group_modify_selected_nodes.  Unknown modify_mode");
+				return_code=0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_group_modify_selected_nodes.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_group_modify_selected_nodes */
+
+struct FE_node *GT_element_group_get_nearest_node(
+	struct GT_element_group *gt_element_group,FE_value centre[3],
+	struct GT_element_settings **settings_address,int *edit_vector)
+/*******************************************************************************
+LAST MODIFIED : 15 February 2000
+
+DESCRIPTION :
+Returns the picked node in <gt_element_group> closest to <centre>. Evaluates the
+coordinate field for each node with every NODE_POINTS settings, as well as the
+end point of the vector if an orientation_scale field is used. Note that the end
+of the node vector will be chosen first if it is at the same location as the
+node coordinates. The <settings> with the nearest node are returned, and the
+<edit_vector> flag will be set if the end of the node vector was selected over
+the node coordinates.
+Note that the centre given must be in the coordinate area of <gt_element_group>,
+ie. any transformations of the graphics must be inverted.
+==============================================================================*/
+{
+	struct GT_element_settings_nearest_node_data settings_nearest_node_data;
+	struct FE_node *node;
+
+	ENTER(GT_element_group_get_nearest_node);
+	if (gt_element_group&&centre&&settings_address&&edit_vector)
+	{
+		settings_nearest_node_data.centre[0]=centre[0];
+		settings_nearest_node_data.centre[1]=centre[1];
+		settings_nearest_node_data.centre[2]=centre[2];
+		settings_nearest_node_data.default_coordinate_field=
+			gt_element_group->default_coordinate_field;
+		settings_nearest_node_data.node=(struct FE_node *)NULL;
+		settings_nearest_node_data.node_list=gt_element_group->picked_nodes;
+		if (FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+			GT_element_settings_get_nearest_node,(void *)&settings_nearest_node_data,
+			gt_element_group->list_of_settings))
+		{
+			node=settings_nearest_node_data.node;
+			*settings_address=settings_nearest_node_data.settings;
+			*edit_vector=settings_nearest_node_data.edit_vector;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"GT_element_group_get_nearest_node.  Could not get nearest node");
+			node=(struct FE_node *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_group_get_nearest_node.  Invalid argument(s)");
+		node=(struct FE_node *)NULL;
+	}
+	LEAVE;
+
+	return (node);
+} /* GT_element_group_get_nearest_node */
 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 4 February 2000
+LAST MODIFIED : 15 February 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -65,7 +65,7 @@ Module types
 
 struct Scene_object
 /*******************************************************************************
-LAST MODIFIED : 9 October 1998
+LAST MODIFIED : 10 February 2000
 
 DESCRIPTION :
 Scenes store a list of these wrappers to GT_objects so that the same
@@ -89,6 +89,9 @@ graphics object may have different visibility on different scenes.
 	struct MANAGER(Scene) *scene_manager;
 	/* this is the scene to which the scene_object belongs */
 	struct Scene *scene;
+	/* flags indicating if this scene_object was picked in the current input phase
+		 or if it is selected */
+	int picked,selected;
 	int access_count;
 }; /* struct Scene_object */
 
@@ -189,43 +192,6 @@ display hierarchy.
 }; /* struct Scene_picked_object */
 
 FULL_DECLARE_LIST_TYPE(Scene_picked_object);
-
-struct Selected_object
-/*******************************************************************************
-LAST MODIFIED : 16 September 1999
-
-DESCRIPTION :
-General class for storing graphically selected objects of any type.
-==============================================================================*/
-{
-	/* identifier points at id for indexing in lists */
-	struct Selected_object_identifier id,*identifier;
-	union
-	{
-#if defined (FUTURE_CODE)
-		/* SELECTED_ELEMENT_POINTS: */
-		struct
-		{
-			struct FE_element *element;
-			struct FE_field *native_discretization_field;
-			struct Multi_range *point_numbers;
-		} element_points;
-#endif /* defined (FUTURE_CODE) */
-		/* SELECTED_NODE: */
-		struct
-		{
-			struct FE_node *node;
-		} node;
-		/* SELECTED_SCENE_OBJECT: */
-		struct
-		{
-			struct Scene_object *scene_object;
-		} scene_object;
-	} properties;
-	int access_count;
-}; /* struct Selected_object */
-
-FULL_DECLARE_INDEXED_LIST_TYPE(Selected_object);
 
 /*
 Module functions
@@ -679,29 +645,27 @@ scene on this window are modified, redraw.
 	LEAVE;
 } /* Scene_object_scene_change */
 
-static struct Scene_object *create_Scene_object_with_Graphics_object(
-	char *name, struct GT_object *gt_object, struct Scene *scene)
+static struct Scene_object *CREATE(Scene_object)(char *name,struct Scene *scene)
 /*******************************************************************************
-LAST MODIFIED : 12 October 1998
+LAST MODIFIED : 10 February 2000
 
 DESCRIPTION :
-Creates a Scene_object with ACCESSed <gt_object> and visibility on.
+Creates a vanilla Scene_object that is able to be DESTROYed, must be properly
+defined by a specific creator. It is given the <name> and the parent <scene>
+and is visible.
 ==============================================================================*/
 {
 	struct Scene_object *scene_object;
-
 	ENTER(CREATE(Scene_object));
-	if (name && gt_object && scene)
+	if (name && scene)
 	{
 		if (ALLOCATE(scene_object,struct Scene_object,1) &&
 			ALLOCATE(scene_object->name, char, strlen(name) + 1))
 		{
-			scene_object->type = SCENE_OBJECT_GRAPHICS_OBJECT;
+			scene_object->type = SCENE_OBJECT_TYPE_INVALID;
 			strcpy(scene_object->name, name);
 			scene_object->position=0;
-			scene_object->gt_object=ACCESS(GT_object)(gt_object);
-			GT_object_add_callback(gt_object, Scene_object_graphics_object_update_callback,
-				(void *)scene_object);
+			scene_object->gt_object=(struct GT_object *)NULL;
 			scene_object->visibility=g_VISIBLE;
 			scene_object->time_object = (struct Time_object *)NULL;
 			scene_object->transformation = (gtMatrix *)NULL;
@@ -710,12 +674,52 @@ Creates a Scene_object with ACCESSed <gt_object> and visibility on.
 			scene_object->scene = ACCESS(Scene)(scene);
 			scene_object->scene_manager = (struct MANAGER(Scene) *)NULL;
 			scene_object->scene_manager_callback_id = NULL;
+			scene_object->picked=0;
+			scene_object->selected=0;
 			scene_object->access_count=0;
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"create_Scene_object_with_Graphics_object.  "
-				"Insufficient memory");
+			display_message(ERROR_MESSAGE,
+				"CREATE(Scene_object).  Insufficient memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"CREATE(Scene_object).  Invalid arguments");
+		scene_object=(struct Scene_object *)NULL;
+	}
+	LEAVE;
+
+	return (scene_object);
+} /* CREATE(Scene_object) */
+
+static struct Scene_object *create_Scene_object_with_Graphics_object(
+	char *name, struct GT_object *gt_object, struct Scene *scene)
+/*******************************************************************************
+LAST MODIFIED : 10 February 2000
+
+DESCRIPTION :
+Creates a Scene_object with ACCESSed <gt_object> and visibility on.
+==============================================================================*/
+{
+	struct Scene_object *scene_object;
+
+	ENTER(CREATE(Scene_object));
+	if (gt_object)
+	{
+		if (scene_object=CREATE(Scene_object)(name,scene))
+		{
+			scene_object->type = SCENE_OBJECT_GRAPHICS_OBJECT;
+			scene_object->gt_object=ACCESS(GT_object)(gt_object);
+			GT_object_add_callback(gt_object,
+				Scene_object_graphics_object_update_callback,(void *)scene_object);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"create_Scene_object_with_Graphics_object.  Failed");
 		}
 	}
 	else
@@ -732,7 +736,7 @@ Creates a Scene_object with ACCESSed <gt_object> and visibility on.
 static struct Scene_object *create_Scene_object_with_Graphical_element_group(
 	char *name, struct GT_element_group *gt_element_group, struct Scene *scene)
 /*******************************************************************************
-LAST MODIFIED : 20 July 1999
+LAST MODIFIED : 10 February 2000
 
 DESCRIPTION :
 Creates a Scene_object with <gt_element_group> and visibility on.
@@ -740,52 +744,41 @@ Creates a Scene_object with <gt_element_group> and visibility on.
 {
 	struct Scene_object *scene_object;
 
-	ENTER(CREATE(Scene_object));
-	if (name && gt_element_group && scene)
+	ENTER(create_Scene_object_with_Graphical_element_group);
+	if (gt_element_group)
 	{
-		if (ALLOCATE(scene_object,struct Scene_object,1) &&
-			ALLOCATE(scene_object->name, char, strlen(name) + 1))
+		if (scene_object=CREATE(Scene_object)(name,scene))
 		{
 			scene_object->type = SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP;
-			strcpy(scene_object->name, name);
-			scene_object->position=0;
-			scene_object->gt_object=(struct GT_object *)NULL;
-			scene_object->visibility=g_VISIBLE;
-			scene_object->time_object = (struct Time_object *)NULL;
-			scene_object->transformation = (gtMatrix *)NULL;
 			scene_object->gt_element_group=
 				ACCESS(GT_element_group)(gt_element_group);
 			GT_element_group_add_callback(gt_element_group,
 				Scene_object_element_group_update_callback,
 				(void *)scene_object);
-			scene_object->child_scene = (struct Scene *)NULL;
-			scene_object->scene = ACCESS(Scene)(scene);
-			scene_object->scene_manager = (struct MANAGER(Scene) *)NULL;
-			scene_object->scene_manager_callback_id = NULL;
-			scene_object->access_count=0;
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"create_Scene_object_with_Graphics_object.  "
-				"Insufficient memory");
+			display_message(ERROR_MESSAGE,
+				"create_Scene_object_with_Graphical_element_group.  Failed");
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"create_Scene_object_with_Graphics_object.  "
-			"Missing graphics object");
+		display_message(ERROR_MESSAGE,
+			"create_Scene_object_with_Graphical_element_group.  "
+			"Missing graphical element group");
 		scene_object=(struct Scene_object *)NULL;
 	}
 	LEAVE;
 
 	return (scene_object);
-} /* create_Scene_object_with_Graphics_object */
+} /* create_Scene_object_with_Graphical_element_group */
 
 static struct Scene_object *create_Scene_object_with_Scene(
 	char *name, struct Scene *child_scene, struct Scene *scene,
 	struct MANAGER(Scene) *scene_manager)
 /*******************************************************************************
-LAST MODIFIED : 12 October 1998
+LAST MODIFIED : 10 February 2000
 
 DESCRIPTION :
 Creates a Scene_object with ACCESSed <gt_object> and visibility on.
@@ -793,49 +786,38 @@ Creates a Scene_object with ACCESSed <gt_object> and visibility on.
 {
 	struct Scene_object *scene_object;
 
-	ENTER(CREATE(Scene_object));
-	if (name && child_scene && scene)
+	ENTER(create_Scene_object_with_Scene);
+	if (child_scene)
 	{
-		if (ALLOCATE(scene_object,struct Scene_object,1) &&
-			ALLOCATE(scene_object->name, char, strlen(name) + 1))
+		if (scene_object=CREATE(Scene_object)(name,scene))
 		{
 			scene_object->type = SCENE_OBJECT_SCENE;
-			strcpy(scene_object->name, name);
-			scene_object->position=0;
-			scene_object->gt_object=(struct GT_object *)NULL;
-			scene_object->visibility=g_VISIBLE;
-			scene_object->time_object = (struct Time_object *)NULL;
-			scene_object->transformation = (gtMatrix *)NULL;
-			scene_object->gt_element_group = (struct GT_element_group *)NULL;
 			scene_object->child_scene = ACCESS(Scene)(child_scene);
-			scene_object->scene = ACCESS(Scene)(scene);
 			/* register for any scene changes */
 			scene_object->scene_manager = scene_manager;
 			scene_object->scene_manager_callback_id=
 				MANAGER_REGISTER(Scene)(Scene_object_child_scene_change,
-				(void *)scene_object, scene_manager);
-			scene_object->access_count=0;
+					(void *)scene_object, scene_manager);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"create_Scene_object_with_Graphics_object.  "
-				"Insufficient memory");
+			display_message(ERROR_MESSAGE,"create_Scene_object_with_Scene.  Failed");
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"create_Scene_object_with_Graphics_object.  "
-			"Missing graphics object");
+		display_message(ERROR_MESSAGE,
+			"create_Scene_object_with_Scene.  Missing Scene");
 		scene_object=(struct Scene_object *)NULL;
 	}
 	LEAVE;
 
 	return (scene_object);
-} /* create_Scene_object_with_Graphics_object */
+} /* create_Scene_object_with_Scene */
 
 static int DESTROY(Scene_object)(struct Scene_object **scene_object_ptr)
 /*******************************************************************************
-LAST MODIFIED : 20 July 1999
+LAST MODIFIED : 10 February 2000
 
 DESCRIPTION :
 DEACCESSes the member GT_object and removes any other dynamic fields.
@@ -847,52 +829,56 @@ DEACCESSes the member GT_object and removes any other dynamic fields.
 	ENTER(DESTROY(Scene_object));
 	if (scene_object_ptr)
 	{
+		return_code=1;
 		if (scene_object= *scene_object_ptr)
 		{
-			if(scene_object->child_scene)
+			if (0==scene_object->access_count)
 			{
-				DEACCESS(Scene)(&(scene_object->child_scene));
+				if(scene_object->child_scene)
+				{
+					DEACCESS(Scene)(&(scene_object->child_scene));
+				}
+				DEACCESS(Scene)(&(scene_object->scene));
+				if (scene_object->scene_manager_callback_id &&
+					scene_object->scene_manager)
+				{
+					MANAGER_DEREGISTER(Scene)(
+						scene_object->scene_manager_callback_id,
+						scene_object->scene_manager);
+					scene_object->scene_manager_callback_id=(void *)NULL;
+				}
+				if(scene_object->gt_object)
+				{
+					GT_object_remove_callback(scene_object->gt_object, 
+						Scene_object_graphics_object_update_callback,
+						(void *)scene_object);
+					DEACCESS(GT_object)(&(scene_object->gt_object));
+				}
+				if(scene_object->gt_element_group)
+				{
+					DEACCESS(GT_element_group)(&(scene_object->gt_element_group));
+				}
+				if(scene_object->time_object)
+				{
+					Time_object_remove_callback(scene_object->time_object, 
+						Scene_object_time_update_callback, scene_object);
+					DEACCESS(Time_object)(&(scene_object->time_object));
+				}
+				DEALLOCATE(*scene_object_ptr);
 			}
-			DEACCESS(Scene)(&(scene_object->scene));
-			if (scene_object->scene_manager_callback_id &&
-				scene_object->scene_manager)
-			{
-				MANAGER_DEREGISTER(Scene)(
-					scene_object->scene_manager_callback_id,
-					scene_object->scene_manager);
-				scene_object->scene_manager_callback_id=(void *)NULL;
-			}
-			if(scene_object->gt_object)
-			{
-				GT_object_remove_callback(scene_object->gt_object, 
-					Scene_object_graphics_object_update_callback,
-					(void *)scene_object);
-				DEACCESS(GT_object)(&(scene_object->gt_object));
-			}
-			if(scene_object->gt_element_group)
-			{
-				DEACCESS(GT_element_group)(&(scene_object->gt_element_group));
-			}
-			if(scene_object->time_object)
-			{
-				Time_object_remove_callback(scene_object->time_object, 
-					Scene_object_time_update_callback, scene_object);
-				DEACCESS(Time_object)(&(scene_object->time_object));
-			}
-			/*???RC temp check access_count is zero! */
-			if (0!=scene_object->access_count)
+			else
 			{
 				display_message(ERROR_MESSAGE,
 					"DESTROY(Scene_object).  Non-zero access_count");
+				*scene_object_ptr=(struct Scene_object *)NULL;
+				return_code=0;
 			}
-			DEALLOCATE(*scene_object_ptr);
 		}
-		return_code=1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"DESTROY(Scene_object).  "
-			"Invalid argument(s)");
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Scene_object).  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -1004,6 +990,8 @@ Copies the scene_object and adds it to the list.
 		{
 			scene_object_copy->type = scene_object->type;
 			scene_object_copy->visibility=scene_object->visibility;
+			scene_object_copy->picked=scene_object->picked;
+			scene_object_copy->selected=scene_object->selected;
 			if(scene_object->transformation)
 			{
 				if(ALLOCATE(scene_object_copy->transformation, gtMatrix, 1))
@@ -1046,82 +1034,6 @@ Copies the scene_object and adds it to the list.
 
 	return (return_code);
 } /* Scene_object_copy_to_list */
-
-static int compare_Selected_object_identifier(
-	struct Selected_object_identifier *identifier1,
-	struct Selected_object_identifier *identifier2)
-/*******************************************************************************
-LAST MODIFIED : 16 September 1999
-
-DESCRIPTION :
-Returns -1 (identifier1 less), 0 (equal) or +1 (identifier1 greater) for
-indexing LIST(Selected_object).
-First the type is compared, then the void *s in order, depending on the type.
-==============================================================================*/
-{
-	int i,number_of_objects,return_code;
-
-	ENTER(compare_Selected_object_identifier);
-	if (identifier1&&identifier2)
-	{
-		if (identifier1->type < identifier2->type)
-		{
-			return_code = -1;
-		}
-		else if (identifier1->type > identifier2->type)
-		{
-			return_code = 1;
-		}
-		else
-		{
-			/* same type; now compare object pointers according to type */
-			/* default to the same - may not have any further objects for one-offs */
-			return_code=0;
-			switch (identifier1->type)
-			{
-				case SELECTED_OBJECT_UNDEFINED:
-				{
-					number_of_objects=0;
-				} break;
-				case SELECTED_NODE:
-				case SELECTED_SCENE_OBJECT:
-				{
-					number_of_objects=1;
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,"compare_Selected_object_identifier.  "
-						"Unknown selected_object_type");
-					number_of_objects=0;
-				} break;
-			}
-			for (i=0;(i<number_of_objects)&&(!return_code);i++)
-			{
-				if (identifier1->objects[i] < identifier2->objects[i])
-				{
-					return_code=-1;
-				}
-				else if (identifier1->objects[i] > identifier2->objects[i])
-				{
-					return_code=1;
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"compare_Selected_object_identifier.  Invalid argument(s)");
-		/* error defaults to the same? */
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* compare_Selected_object_identifier */
-
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Selected_object,identifier,
-	struct Selected_object_identifier *,compare_Selected_object_identifier)
 
 static struct GT_object *make_axis_graphics_object(
 	struct Graphical_material *default_material,
@@ -4149,6 +4061,251 @@ as a command, using the given <command_prefix>.
 	return (return_code);
 } /* list_Scene_object_transformation_commands */
 
+int Scene_object_clear_picked(struct Scene_object *scene_object,void *dummy)
+/*******************************************************************************
+LAST MODIFIED : 10 February 2000
+
+DESCRIPTION :
+Clears the picked flag of the <scene_object>, and unselects any picked
+objects it contains.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_object_clear_picked);
+	USE_PARAMETER(dummy);
+	if (scene_object)
+	{
+		scene_object->picked=0;
+		switch(scene_object->type)
+		{
+			case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
+			{
+				return_code=
+					GT_element_group_clear_picked(scene_object->gt_element_group);
+			} break;
+			case SCENE_OBJECT_GRAPHICS_OBJECT:
+			{
+				/* nothing to do */
+				return_code=1;
+			} break;
+			case SCENE_OBJECT_SCENE:
+			{
+				return_code=Scene_clear_picked(scene_object->child_scene);
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Scene_object_clear_picked.  Unknown scene object type");
+				return_code=0;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_object_clear_picked.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_object_clear_picked */
+
+int Scene_object_clear_selected(struct Scene_object *scene_object,void *dummy)
+/*******************************************************************************
+LAST MODIFIED : 10 February 2000
+
+DESCRIPTION :
+Clears the selected flag of the <scene_object>, and unselects any selected
+objects it contains.
+???RC Later only allow change if current input_client passed to authorise it.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_object_clear_selected);
+	USE_PARAMETER(dummy);
+	if (scene_object)
+	{
+		scene_object->selected=0;
+		switch(scene_object->type)
+		{
+			case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
+			{
+				return_code=
+					GT_element_group_clear_selected(scene_object->gt_element_group);
+			} break;
+			case SCENE_OBJECT_GRAPHICS_OBJECT:
+			{
+				/* nothing to do */
+				return_code=1;
+			} break;
+			case SCENE_OBJECT_SCENE:
+			{
+				return_code=Scene_clear_selected(scene_object->child_scene);
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Scene_object_clear_selected.  Unknown scene object type");
+				return_code=0;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_object_clear_selected.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_object_clear_selected */
+
+int Scene_object_is_picked(struct Scene_object *scene_object,void *dummy)
+/*******************************************************************************
+LAST MODIFIED : 10 February 2000
+
+DESCRIPTION :
+Returns true if the picked flag of the <scene_object> is set.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_object_is_picked);
+	USE_PARAMETER(dummy);
+	if (scene_object)
+	{
+		return_code=scene_object->picked;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_object_is_picked.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_object_is_picked */
+
+int Scene_object_is_selected(struct Scene_object *scene_object,void *dummy)
+/*******************************************************************************
+LAST MODIFIED : 10 February 2000
+
+DESCRIPTION :
+Returns true if the selected flag of the <scene_object> is set.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_object_is_selected);
+	USE_PARAMETER(dummy);
+	if (scene_object)
+	{
+		return_code=scene_object->selected;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_object_is_selected.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_object_is_selected */
+
+int Scene_object_set_picked(struct Scene_object *scene_object,
+	int number_of_subobject_names,int *subobject_names)
+/*******************************************************************************
+LAST MODIFIED : 10 February 2000
+
+DESCRIPTION :
+Sets the <picked> flag of the <scene_object>. If there are an <subobject_names>,
+the object wrapped by the <scene_object> is asked to pick them.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_object_set_picked);
+	if (scene_object)
+	{
+		scene_object->picked=1;
+		if (0<number_of_subobject_names)
+		{
+			switch(scene_object->type)
+			{
+				case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
+				{
+					return_code=GT_element_group_pick_subobject(
+						scene_object->gt_element_group,
+						number_of_subobject_names,subobject_names);
+				} break;
+				case SCENE_OBJECT_GRAPHICS_OBJECT:
+				{
+					/* nothing to do */
+					return_code=1;
+				} break;
+				case SCENE_OBJECT_SCENE:
+				{
+					return_code=Scene_pick_subobject(scene_object->child_scene,
+						number_of_subobject_names,subobject_names);
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"Scene_object_clear_picked.  Unknown scene object type");
+					return_code=0;
+				} break;
+			}
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_object_set_picked.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_object_set_picked */
+
+int Scene_object_set_selected(struct Scene_object *scene_object)
+/*******************************************************************************
+LAST MODIFIED : 10 February 2000
+
+DESCRIPTION :
+Sets the <selected> flag of the <scene_object>.
+???RC Later only allow change if current input_client passed to authorise it.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_object_set_selected);
+	if (scene_object)
+	{
+		scene_object->selected=1;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_object_set_selected.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_object_set_selected */
+
 struct Scene *CREATE(Scene)(char *name)
 /*******************************************************************************
 LAST MODIFIED : 4 February 2000
@@ -4302,6 +4459,103 @@ Closes the scene and disposes of the scene data structure.
 
 	return (return_code);
 } /* DESTROY(Scene) */
+
+int Scene_clear_picked(struct Scene *scene)
+/*******************************************************************************
+LAST MODIFIED : 14 February 2000
+
+DESCRIPTION :
+Unpicks all objects in <scene>.
+???RC Later only allow change if current input_client passed to authorise it.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_clear_picked);
+	if (scene)
+	{
+		return_code=FOR_EACH_OBJECT_IN_LIST(Scene_object)(
+			Scene_object_clear_picked,(void *)NULL,scene->scene_object_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_clear_picked.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_clear_picked */
+
+int Scene_clear_selected(struct Scene *scene)
+/*******************************************************************************
+LAST MODIFIED : 14 February 2000
+
+DESCRIPTION :
+Unselects all objects in <scene>.
+???RC Later only allow change if current input_client passed to authorise it.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_clear_selected);
+	if (scene)
+	{
+		return_code=FOR_EACH_OBJECT_IN_LIST(Scene_object)(
+			Scene_object_clear_selected,(void *)NULL,scene->scene_object_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_clear_selected.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_clear_selected */
+
+int Scene_pick_subobject(struct Scene *scene,
+	int number_of_subobject_names,int *subobject_names)
+/*******************************************************************************
+LAST MODIFIED : 14 February 2000
+
+DESCRIPTION :
+Sets the <picked> flag of the scene_object with the position/identifier given
+in the first position in the <subobject_names> in <scene>, passing on any
+remaining subobject_names to be picked by the scene_object.
+==============================================================================*/
+{
+	int return_code;
+	struct Scene_object *scene_object;
+
+	ENTER(Scene_pick_subobject);
+	if (scene&&(0<number_of_subobject_names)&&subobject_names)
+	{
+		if (scene_object=FIND_BY_IDENTIFIER_IN_LIST(Scene_object,position)(
+			*subobject_names,scene->scene_object_list))
+		{
+			return_code=Scene_object_set_picked(scene_object,
+				number_of_subobject_names-1,subobject_names+1);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Scene_pick_subobject.  "
+				"No scene_object found at position %d",*subobject_names);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_pick_subobject.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_pick_subobject */
 
 int Scene_enable_graphics(struct Scene *scene,
 	struct LIST(GT_object) *glyph_list,
@@ -5690,255 +5944,6 @@ DECLARE_OBJECT_FUNCTIONS(Scene_picked_object)
 
 DECLARE_LIST_FUNCTIONS(Scene_picked_object)
 
-
-struct Selected_object *CREATE(Selected_object)(void)
-/*******************************************************************************
-LAST MODIFIED : 16 September 1999
-
-DESCRIPTION :
-Creates a Selected_object for storing any object that we care to interact with
-on the graphical display.
-New Selected_object is of type SELECTED_OBJECT_UNDEFINED - it must be
-established properly with a Selected_object_set_type_* call.
-==============================================================================*/
-{
-	struct Selected_object *selected_object;
-
-	ENTER(CREATE(Selected_object));
-	if (ALLOCATE(selected_object,struct Selected_object,1))
-	{
-		selected_object->id.type=SELECTED_OBJECT_UNDEFINED;
-		/* ensure identifier points at id for indexed lists */
-		selected_object->identifier = &(selected_object->id);
-		selected_object->access_count=0;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(Selected_object).  Not enough memory");
-	}
-	LEAVE;
-
-	return (selected_object);
-} /* CREATE(Selected_object) */
-
-int DESTROY(Selected_object)(struct Selected_object **selected_object_address)
-/*******************************************************************************
-LAST MODIFIED : 16 September 1999
-
-DESCRIPTION :
-Destroys the Selected_object.
-==============================================================================*/
-{
-	int return_code;
-	struct Selected_object *selected_object;
-
-	ENTER(DESTROY(Selected_object));
-	if (selected_object_address&&(selected_object= *selected_object_address))
-	{
-		if (0==selected_object->access_count)
-		{
-			switch (selected_object->id.type)
-			{
-				case SELECTED_OBJECT_UNDEFINED:
-				{
-					/* do nothing */
-				} break;
-				case SELECTED_SCENE_OBJECT:
-				{
-					DEACCESS(Scene_object)(
-						&(selected_object->properties.scene_object.scene_object));
-				} break;
-				case SELECTED_NODE:
-				{
-					DEACCESS(FE_node)(&(selected_object->properties.node.node));
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"DESTROY(Selected_object).  Unknown selected_object_type");
-				} break;
-			}
-			DEALLOCATE(*selected_object_address);
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"DESTROY(Selected_object).  Non-zero access count!");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(Selected_object).  Missing scene");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(Selected_object) */
-
-enum Selected_object_type Selected_object_get_type(
-	struct Selected_object *selected_object)
-/*******************************************************************************
-LAST MODIFIED : 16 September 1999
-
-DESCRIPTION :
-Returns the type of object contained in <selected_object>.
-==============================================================================*/
-{
-	enum Selected_object_type selected_object_type;
-
-	ENTER(Selected_object_get_type);
-	if (selected_object)
-	{
-		selected_object_type=selected_object->id.type;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Selected_object_get_type.  Invalid argument(s)");
-		selected_object_type=SELECTED_OBJECT_INVALID;
-	}
-	LEAVE;
-
-	return (selected_object_type);
-} /* Selected_object_get_type */
-
-int Selected_object_get_type_node(
-	struct Selected_object *selected_object,struct FE_node **node_address)
-/*******************************************************************************
-LAST MODIFIED : 16 September 1999
-
-DESCRIPTION :
-If the <selected_object> is of type SELECTED_NODE, its <node> is returned.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Selected_object_get_type_node);
-	if (selected_object&&(SELECTED_NODE==selected_object->id.type)&&
-		node_address)
-	{
-		*node_address=selected_object->properties.node.node;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Selected_object_get_type_node.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Selected_object_get_type_node */
-
-int Selected_object_set_type_node(
-	struct Selected_object *selected_object,struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 16 September 1999
-
-DESCRIPTION :
-Makes the <selected_object> into a SELECTED_NODE for <node>.
-The <selected_object> must currently be of type SELECTED_OBJECT_UNDEFINED.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Selected_object_set_type_node);
-	if (selected_object&&(SELECTED_OBJECT_UNDEFINED==selected_object->id.type)&&
-		node)
-	{
-		selected_object->id.type=SELECTED_NODE;
-		selected_object->id.objects[0]=(void *)node;
-		selected_object->properties.node.node=ACCESS(FE_node)(node);
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Selected_object_set_type_node.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Selected_object_set_type_node */
-
-int Selected_object_get_type_scene_object(
-	struct Selected_object *selected_object,
-	struct Scene_object **scene_object_address)
-/*******************************************************************************
-LAST MODIFIED : 16 September 1999
-
-DESCRIPTION :
-If the <selected_object> is of type SELECTED_SCENE_OBJECT, its <scene_object>
-is returned.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Selected_object_get_type_scene_object);
-	if (selected_object&&(SELECTED_SCENE_OBJECT==selected_object->id.type)&&
-		scene_object_address)
-	{
-		*scene_object_address=selected_object->properties.scene_object.scene_object;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Selected_object_get_type_scene_object.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Selected_object_get_type_scene_object */
-
-int Selected_object_set_type_scene_object(
-	struct Selected_object *selected_object,struct Scene_object *scene_object)
-/*******************************************************************************
-LAST MODIFIED : 16 September 1999
-
-DESCRIPTION :
-Makes the <selected_object> into a SELECTED_SCENE_OBJECT for <scene_object>.
-The <selected_object> must currently be of type SELECTED_OBJECT_UNDEFINED.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Selected_object_set_type_scene_object);
-	if (selected_object&&(SELECTED_OBJECT_UNDEFINED==selected_object->id.type)&&
-		scene_object)
-	{
-		selected_object->id.type=SELECTED_SCENE_OBJECT;
-		selected_object->id.objects[0]=(void *)scene_object;
-		selected_object->properties.scene_object.scene_object=
-			ACCESS(Scene_object)(scene_object);
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Selected_object_set_type_scene_object.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Selected_object_set_type_scene_object */
-
-DECLARE_OBJECT_FUNCTIONS(Selected_object)
-
-DECLARE_INDEXED_LIST_FUNCTIONS(Selected_object)
-
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Selected_object,identifier,
-	struct Selected_object_identifier *,compare_Selected_object_identifier)
-
 int Scene_get_input_callback(struct Scene *scene,
 	struct Scene_input_callback *scene_input_callback)
 /*******************************************************************************
@@ -6003,7 +6008,7 @@ int Scene_input(struct Scene *scene,enum Scene_input_type input_type,
 	double nearx,double neary,double nearz,double farx,double fary,double farz,
 	int num_hits,GLuint *select_buffer)
 /*******************************************************************************
-LAST MODIFIED : 18 July 1999
+LAST MODIFIED : 15 February 2000
 
 DESCRIPTION :
 Routine called by Scene_viewers - and in future possibly other Scene clients -
@@ -6021,7 +6026,7 @@ Scene_picked_objects to pass to clients of the scene, eg. node editor.
 {
 	GLuint *select_buffer_ptr,scene_object_no;
 	int hit_no,number_of_names,return_code;
-	struct Scene_input_callback_data scene_input_callback_data;
+	struct Scene_input_callback_data scene_input_data;
 	struct Scene_picked_object *scene_picked_object;
 	struct Scene_object *scene_object;
 
@@ -6036,7 +6041,7 @@ Scene_picked_objects to pass to clients of the scene, eg. node editor.
 			case SCENE_MOTION_NOTIFY:
 			case SCENE_BUTTON_RELEASE:
 			{
-				if (scene_input_callback_data.picked_object_list=
+				if (scene_input_data.picked_object_list=
 					CREATE(LIST(Scene_picked_object))())
 				{
 					select_buffer_ptr=select_buffer;
@@ -6090,7 +6095,7 @@ Scene_picked_objects to pass to clients of the scene, eg. node editor.
 							{
 								if (!ADD_OBJECT_TO_LIST(Scene_picked_object)(
 									scene_picked_object,
-									scene_input_callback_data.picked_object_list))
+									scene_input_data.picked_object_list))
 								{
 									return_code=0;
 								}
@@ -6109,27 +6114,27 @@ Scene_picked_objects to pass to clients of the scene, eg. node editor.
 						if ((scene->input_callback).procedure)
 						{
 							/* complete members of callback data structure */
-							scene_input_callback_data.viewx=viewx;
-							scene_input_callback_data.viewy=viewy;
-							scene_input_callback_data.viewz=viewz;
-							scene_input_callback_data.nearx=nearx;
-							scene_input_callback_data.neary=neary;
-							scene_input_callback_data.nearz=nearz;
-							scene_input_callback_data.farx=farx;
-							scene_input_callback_data.fary=fary;
-							scene_input_callback_data.farz=farz;
-							scene_input_callback_data.input_type=input_type;
-							scene_input_callback_data.button_number=button_number;
-							scene_input_callback_data.input_modifier=input_modifier;
+							scene_input_data.viewx=viewx;
+							scene_input_data.viewy=viewy;
+							scene_input_data.viewz=viewz;
+							scene_input_data.nearx=nearx;
+							scene_input_data.neary=neary;
+							scene_input_data.nearz=nearz;
+							scene_input_data.farx=farx;
+							scene_input_data.fary=fary;
+							scene_input_data.farz=farz;
+							scene_input_data.input_type=input_type;
+							scene_input_data.button_number=button_number;
+							scene_input_data.input_modifier=input_modifier;
 							if (scene->input_callback.procedure)
 							{
 								(scene->input_callback.procedure)(scene,
-									scene->input_callback.data,&scene_input_callback_data);
+									scene->input_callback.data,&scene_input_data);
 							}
 						}
 					}
 					DESTROY(LIST(Scene_picked_object))(
-						&(scene_input_callback_data.picked_object_list));
+						&(scene_input_data.picked_object_list));
 				}
 				else
 				{

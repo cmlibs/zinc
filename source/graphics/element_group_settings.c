@@ -6630,3 +6630,220 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	return (return_code);
 } /* gfx_modify_g_element_streamlines */
 
+struct Nearest_node_data
+{
+	/* centre must be in the coordinate space of the fields below */
+	FE_value centre[3],distance,glyph_centre[3],glyph_size[3],
+		glyph_scale_factors[3];
+	int edit_vector;
+	struct Computed_field *rc_coordinate_field,*wrapper_orientation_scale_field;
+	struct FE_node *node;
+};
+
+static int get_nearest_FE_node(struct FE_node *node,
+	void *nearest_node_data_void)
+/*******************************************************************************
+LAST MODIFIED : 15 February 2000
+
+DESCRIPTION :
+Up to calling function to clear cache for the passed field.
+==============================================================================*/
+{
+	FE_value a[3],b[3],c[3],coordinates[3],delta,distance,end_coordinates[3],
+		orientation_scale[9],size[3];
+	int i,number_of_orientation_scale_components,return_code;
+	struct Computed_field *coordinate_field,*orientation_scale_field;
+	struct Nearest_node_data *nearest_node_data;
+
+	ENTER(get_nearest_FE_node);
+	/* must set following to 0 = valid if no orientation_scale_field */
+	number_of_orientation_scale_components=0;
+	if (node&&(nearest_node_data=
+		(struct Nearest_node_data *)nearest_node_data_void)&&
+		(coordinate_field=nearest_node_data->rc_coordinate_field)&&
+		(3>=Computed_field_get_number_of_components(coordinate_field))&&
+		((!(orientation_scale_field=
+			nearest_node_data->wrapper_orientation_scale_field))||
+			(9>=(number_of_orientation_scale_components=
+				Computed_field_get_number_of_components(orientation_scale_field))))&&
+		nearest_node_data->centre)
+	{
+		/* in case less than 3 coordinates */
+		coordinates[1]=0.0;
+		coordinates[2]=0.0;
+		if (Computed_field_evaluate_at_node(coordinate_field,node,coordinates)&&
+			((!orientation_scale_field)||Computed_field_evaluate_at_node(
+				orientation_scale_field,node,orientation_scale))&&
+				make_glyph_orientation_scale_axes(
+					number_of_orientation_scale_components,orientation_scale,a,b,c,size))
+		{
+			/* size = base_size + variable_size * scale_factor */
+			for (i=0;i<3;i++)
+			{
+				size[i] = nearest_node_data->glyph_size[i] +
+					size[i]*nearest_node_data->glyph_scale_factors[i];
+			}
+			for (i=0;i<3;i++)
+			{
+				a[i] *= size[0];
+				b[i] *= size[1];
+				c[i] *= size[2];
+				coordinates[i] -= (
+					nearest_node_data->glyph_centre[0]*a[i] +
+					nearest_node_data->glyph_centre[1]*b[i] +
+					nearest_node_data->glyph_centre[2]*c[i]);
+			}
+			if (orientation_scale_field)
+			{
+				distance=0.0;
+				for (i=0;i<3;i++)
+				{
+					end_coordinates[i] = coordinates[i] + a[i];
+					delta = (end_coordinates[i] - nearest_node_data->centre[i]);
+					distance += delta*delta;
+				}
+				distance = sqrt(distance);
+				if ((!nearest_node_data->node)||
+					(distance < nearest_node_data->distance))
+				{
+					nearest_node_data->node = node;
+					nearest_node_data->distance = distance;
+					nearest_node_data->edit_vector = 1;
+				}
+			}
+			distance=0.0;
+			for (i=0;i<3;i++)
+			{
+				delta = (coordinates[i] - nearest_node_data->centre[i]);
+				distance += delta*delta;
+			}
+			distance = sqrt(distance);
+			if ((!nearest_node_data->node)||
+				(distance < nearest_node_data->distance))
+			{
+				nearest_node_data->node = node;
+				nearest_node_data->distance = distance;
+				nearest_node_data->edit_vector = 0;
+			}
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"get_nearest_FE_node.  Could not evaluate fields");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_nearest_FE_node.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_nearest_FE_node */
+
+int GT_element_settings_get_nearest_node(
+	struct GT_element_settings *settings,void *settings_nearest_node_data_void)
+/*******************************************************************************
+LAST MODIFIED : 15 February 2000
+
+DESCRIPTION :
+If the settings is of type GT_ELEMENT_SETTINGS_NODE_POINTS, calculates the
+coordinate field of the nodes in the given list, and the end point of the
+first vector if there is an orientation_scale field. Remembers the nearest of
+any of these points to the given centre. Returns the nearest node, settings
+and edit_vector flag which is true if the end of the vector is picked.
+Note that the centre given must be in the coordinate area of the nodes/settings
+referred to, ie. any transformations of the graphics must be inverted.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field *coordinate_field;
+	struct FE_node *last_node;
+	struct GT_element_settings_nearest_node_data *settings_nearest_node_data;
+	struct Nearest_node_data nearest_node_data;
+
+	ENTER(GT_element_settings_get_nearest_node);
+	if (settings&&(settings_nearest_node_data=
+		(struct GT_element_settings_nearest_node_data *)
+		settings_nearest_node_data_void)&&
+		settings_nearest_node_data->default_coordinate_field&&
+		settings_nearest_node_data->node_list)
+	{
+		if (GT_ELEMENT_SETTINGS_NODE_POINTS==settings->settings_type)
+		{
+			nearest_node_data.centre[0]=settings_nearest_node_data->centre[0];
+			nearest_node_data.centre[1]=settings_nearest_node_data->centre[1];
+			nearest_node_data.centre[2]=settings_nearest_node_data->centre[2];
+			nearest_node_data.distance=settings_nearest_node_data->distance;
+			nearest_node_data.glyph_centre[0]=settings->glyph_centre[0];
+			nearest_node_data.glyph_centre[1]=settings->glyph_centre[1];
+			nearest_node_data.glyph_centre[2]=settings->glyph_centre[2];
+			nearest_node_data.glyph_size[0]=settings->glyph_size[0];
+			nearest_node_data.glyph_size[1]=settings->glyph_size[1];
+			nearest_node_data.glyph_size[2]=settings->glyph_size[2];
+			nearest_node_data.glyph_scale_factors[0]=settings->glyph_scale_factors[0];
+			nearest_node_data.glyph_scale_factors[1]=settings->glyph_scale_factors[1];
+			nearest_node_data.glyph_scale_factors[2]=settings->glyph_scale_factors[2];
+			nearest_node_data.edit_vector=settings_nearest_node_data->edit_vector;
+			nearest_node_data.node=last_node=settings_nearest_node_data->node;
+			if (!(coordinate_field=
+				GT_element_settings_get_coordinate_field(settings)))
+			{
+				coordinate_field=settings_nearest_node_data->default_coordinate_field;
+			}
+			/* make sure we are passing RC coordinates */
+			nearest_node_data.rc_coordinate_field=
+				Computed_field_begin_wrap_coordinate_field(coordinate_field);
+			nearest_node_data.wrapper_orientation_scale_field=
+				(struct Computed_field *)NULL;
+			if (settings->orientation_scale_field)
+			{
+				nearest_node_data.wrapper_orientation_scale_field=
+					Computed_field_begin_wrap_orientation_scale_field(
+						settings->orientation_scale_field,
+						nearest_node_data.rc_coordinate_field);
+			}
+			if (FOR_EACH_OBJECT_IN_LIST(FE_node)(get_nearest_FE_node,
+				(void *)&nearest_node_data,settings_nearest_node_data->node_list))
+			{
+				if (nearest_node_data.node != last_node)
+				{
+					settings_nearest_node_data->node = nearest_node_data.node;
+					settings_nearest_node_data->edit_vector =
+						nearest_node_data.edit_vector;
+					settings_nearest_node_data->settings = settings;
+				}
+				return_code=1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"GT_element_settings_get_nearest_node.  Could not get nearest node");
+				return_code=0;
+			}
+			if (nearest_node_data.wrapper_orientation_scale_field)
+			{
+				Computed_field_end_wrap(
+					&(nearest_node_data.wrapper_orientation_scale_field));
+			}
+			Computed_field_end_wrap(&(nearest_node_data.rc_coordinate_field));
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_get_nearest_node.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_get_nearest_node */
+

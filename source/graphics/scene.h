@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.h
 
-LAST MODIFIED : 4 February 2000
+LAST MODIFIED : 14 February 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -96,48 +96,6 @@ The contents of this object are private.
 ==============================================================================*/
 
 DECLARE_LIST_TYPES(Scene_picked_object);
-
-enum Selected_object_type
-/*******************************************************************************
-LAST MODIFIED : 16 September 1999
-
-DESCRIPTION :
-Type of object stored in a Selected_object.
-==============================================================================*/
-{
-	SELECTED_OBJECT_INVALID,
-	SELECTED_OBJECT_UNDEFINED, /* type of newly created object */
-	SELECTED_ELEMENT_POINTS,
-	SELECTED_NODE,
-	SELECTED_SCENE_OBJECT
-}; /* enum Selected_object_type */
-
-struct Selected_object_identifier
-/*******************************************************************************
-LAST MODIFIED : 16 September 1999
-
-DESCRIPTION :
-Identifier created to allow LIST(Selected_object) to be indexed for quick access
-to objects. Objects are indexed by type first, then by a number of void *
-addresses to objects dependent on the type. Most types will need only 1, eg.
-SELECTED_NODE has the node address cast to void; following void * addresses are
-unused. See compare_Selected_object_identifier function.
-==============================================================================*/
-{
-	enum Selected_object_type type;
-	void *objects[2]; /* can adjust the number of objects as needed */
-}; /* Selected_object_identifier */
-
-struct Selected_object;
-/*******************************************************************************
-LAST MODIFIED : 16 September 1999
-
-DESCRIPTION :
-General class for storing graphically selected objects of any type.
-The contents of this object are private.
-==============================================================================*/
-
-DECLARE_LIST_TYPES(Selected_object);
 
 struct Scene;
 /*******************************************************************************
@@ -259,7 +217,6 @@ PROTOTYPE_LIST_FUNCTIONS(Scene_object);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Scene_object, \
 	position,int);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Scene_object);
-
 
 enum GT_visibility_type Scene_object_get_visibility(
 	struct Scene_object *scene_object);
@@ -510,6 +467,60 @@ Iterator function for writing the transformation in effect for <scene_object>
 as a command, using the given <command_prefix>.
 ==============================================================================*/
 
+int Scene_object_clear_picked(struct Scene_object *scene_object,void *dummy);
+/*******************************************************************************
+LAST MODIFIED : 10 February 2000
+
+DESCRIPTION :
+Clears the picked flag of the <scene_object>, and unselects any picked
+objects it contains.
+==============================================================================*/
+
+int Scene_object_clear_selected(struct Scene_object *scene_object,void *dummy);
+/*******************************************************************************
+LAST MODIFIED : 10 February 2000
+
+DESCRIPTION :
+Clears the selected flag of the <scene_object>, and unselects any selected
+objects it contains.
+???RC Later only allow change if current input_client passed to authorise it.
+==============================================================================*/
+
+int Scene_object_is_picked(struct Scene_object *scene_object,void *dummy);
+/*******************************************************************************
+LAST MODIFIED : 10 February 2000
+
+DESCRIPTION :
+Returns true if the picked flag of the <scene_object> is set.
+==============================================================================*/
+
+int Scene_object_is_selected(struct Scene_object *scene_object,void *dummy);
+/*******************************************************************************
+LAST MODIFIED : 10 February 2000
+
+DESCRIPTION :
+Returns true if the selected flag of the <scene_object> is set.
+==============================================================================*/
+
+int Scene_object_set_picked(struct Scene_object *scene_object,
+	int number_of_subobject_names,int *subobject_names);
+/*******************************************************************************
+LAST MODIFIED : 10 February 2000
+
+DESCRIPTION :
+Sets the <picked> flag of the <scene_object>. If there are an <subobject_names>,
+the object wrapped by the <scene_object> is asked to pick them.
+==============================================================================*/
+
+int Scene_object_set_selected(struct Scene_object *scene_object);
+/*******************************************************************************
+LAST MODIFIED : 10 February 2000
+
+DESCRIPTION :
+Sets the <selected> flag of the <scene_object>.
+???RC Later only allow change if current input_client passed to authorise it.
+==============================================================================*/
+
 struct Scene *CREATE(Scene)(char *name);
 /*******************************************************************************
 LAST MODIFIED : 8 February 1998
@@ -526,6 +537,35 @@ int DESTROY(Scene)(struct Scene **scene);
 LAST MODIFIED : 19 November 1997
 
 DESCRIPTION :
+==============================================================================*/
+
+int Scene_clear_picked(struct Scene *scene);
+/*******************************************************************************
+LAST MODIFIED : 14 February 2000
+
+DESCRIPTION :
+Unpicks all objects in <scene>.
+???RC Later only allow change if current input_client passed to authorise it.
+==============================================================================*/
+
+int Scene_clear_selected(struct Scene *scene);
+/*******************************************************************************
+LAST MODIFIED : 11 February 2000
+
+DESCRIPTION :
+Unselects all objects in <scene>.
+???RC Later only allow change if current input_client passed to authorise it.
+==============================================================================*/
+
+int Scene_pick_subobject(struct Scene *scene,
+	int number_of_subobject_names,int *subobject_names);
+/*******************************************************************************
+LAST MODIFIED : 14 February 2000
+
+DESCRIPTION :
+Sets the <picked> flag of the scene_object with the position/identifier given
+in the first position in the <subobject_names> in <scene>, passing on any
+remaining subobject_names to be picked by the scene_object.
 ==============================================================================*/
 
 int Scene_enable_graphics(struct Scene *scene,
@@ -841,79 +881,6 @@ coordinates [x y z h(=1)] to give [x' y' z' h'], with xm = x'/h', etc. as in:
 However, if none of the scene objects have transformations, the flag
 <transformation_required> will be set to 0 and the <transformation_matrix> will
 be set to the identity.
-==============================================================================*/
-
-PROTOTYPE_OBJECT_FUNCTIONS(Selected_object);
-PROTOTYPE_LIST_FUNCTIONS(Selected_object);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Selected_object,identifier, \
-	struct Selected_object_identifier *);
-
-struct Selected_object *CREATE(Selected_object)(void);
-/*******************************************************************************
-LAST MODIFIED : 16 September 1999
-
-DESCRIPTION :
-Creates a Selected_object for storing any object that we care to interact with
-on the graphical display.
-New Selected_object is of type SELECTED_OBJECT_UNDEFINED - it must be
-established properly with a Selected_object_set_type_* call.
-==============================================================================*/
-
-int DESTROY(Selected_object)(struct Selected_object **selected_object_address);
-/*******************************************************************************
-LAST MODIFIED : 16 September 1999
-
-DESCRIPTION :
-Destroys the Selected_object.
-==============================================================================*/
-
-enum Selected_object_type Selected_object_get_type(
-	struct Selected_object *selected_object);
-/*******************************************************************************
-LAST MODIFIED : 16 September 1999
-
-DESCRIPTION :
-Returns the type of object contained in <selected_object>.
-==============================================================================*/
-
-int Selected_object_get_type_node(
-	struct Selected_object *selected_object,struct FE_node **node_address);
-/*******************************************************************************
-LAST MODIFIED : 16 September 1999
-
-DESCRIPTION :
-If the <selected_object> is of type SELECTED_NODE, its <node> is returned.
-==============================================================================*/
-
-int Selected_object_set_type_node(
-	struct Selected_object *selected_object,struct FE_node *node);
-/*******************************************************************************
-LAST MODIFIED : 16 September 1999
-
-DESCRIPTION :
-Makes the <selected_object> into a SELECTED_NODE for <node>.
-The <selected_object> must currently be of type SELECTED_OBJECT_UNDEFINED.
-==============================================================================*/
-
-int Selected_object_get_type_scene_object(
-	struct Selected_object *selected_object,
-	struct Scene_object **scene_object_address);
-/*******************************************************************************
-LAST MODIFIED : 16 September 1999
-
-DESCRIPTION :
-If the <selected_object> is of type SELECTED_SCENE_OBJECT, its <scene_object>
-is returned.
-==============================================================================*/
-
-int Selected_object_set_type_scene_object(
-	struct Selected_object *selected_object,struct Scene_object *scene_object);
-/*******************************************************************************
-LAST MODIFIED : 16 September 1999
-
-DESCRIPTION :
-Makes the <selected_object> into a SELECTED_SCENE_OBJECT for <scene_object>.
-The <selected_object> must currently be of type SELECTED_OBJECT_UNDEFINED.
 ==============================================================================*/
 
 int Scene_get_input_callback(struct Scene *scene,

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.h
 
-LAST MODIFIED : 28 January 2000
+LAST MODIFIED : 15 February 2000
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -158,6 +158,24 @@ User data for function GT_element_settings_computed_field_change.
 		 by settings->coordinate_field */
 	struct Computed_field *changed_field,*default_coordinate_field;
 }; /* struct GT_element_settings_computed_field_change_data */
+
+struct GT_element_settings_nearest_node_data
+/*******************************************************************************
+LAST MODIFIED : 15 February 2000
+
+DESCRIPTION :
+Structure for passing to GT_element_settings_get_nearest_node iterator.
+==============================================================================*/
+{
+	/* centre must be in the coordinate space of the fields in the settings */
+	FE_value centre[3],distance;
+	/* flag indicating if the end of a node vector was closest, not position */
+	int edit_vector;
+	struct Computed_field *default_coordinate_field;
+	struct FE_node *node;
+	struct GT_element_settings *settings;
+	struct LIST(FE_node) *node_list;
+}; /* struct GT_element_settings_get_nearest_node_data */
 
 /*
 Global functions
@@ -1163,5 +1181,20 @@ DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT STREAMLINES command.
 If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
+==============================================================================*/
+
+int GT_element_settings_get_nearest_node(
+	struct GT_element_settings *settings,void *settings_nearest_node_data_void);
+/*******************************************************************************
+LAST MODIFIED : 15 February 2000
+
+DESCRIPTION :
+If the settings is of type GT_ELEMENT_SETTINGS_NODE_POINTS, calculates the
+coordinate field of the nodes in the given list, and the end point of the
+first vector if there is an orientation_scale field. Remembers the nearest of
+any of these points to the given centre. Returns the nearest node, settings
+and edit_vector flag which is true if the end of the vector is picked.
+Note that the centre given must be in the coordinate area of the nodes/settings
+referred to, ie. any transformations of the graphics must be inverted.
 ==============================================================================*/
 #endif /* !defined (ELEMENT_GROUP_SETTINGS_H) */
