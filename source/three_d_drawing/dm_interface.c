@@ -44,14 +44,18 @@ typedef struct USTMSCpair
 
 struct Dm_buffer
 {
-#if defined (SGI_DIGITAL_MEDIA)
+	struct User_interface *user_interface;
+#if defined (GLX_SGIX_dm_pbuffer)
 	DMbuffer dmbuffer;
 	DMbufferpool dmpool;
+#endif /* defined (GLX_SGIX_dm_pbuffer) */
 	GLXContext context;
+#if defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer)
 	GLXPbufferSGIX pbuffer;
-	struct User_interface *user_interface;
+#endif /* defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) */
 	XVisualInfo *visual_info;
-#endif /* defined (SGI_DIGITAL_MEDIA) */
+	Pixmap pixmap;
+	GLXPixmap glx_pixmap;
 
 	int access_count;
 };
@@ -59,33 +63,41 @@ struct Dm_buffer
 DECLARE_OBJECT_FUNCTIONS(Dm_buffer)
 
 struct Dm_buffer *CREATE(Dm_buffer)(int width, int height, int depth_buffer,
-	struct User_interface *user_interface)
+	int shared_display_buffer, struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 23 July 1999
+LAST MODIFIED : 23 June 2000
 
 DESCRIPTION :
 The <depth_buffer> flag specifies whether the visual selected is requested to
 have a depth buffer or not.
+The <shared_display_buffer> flag specifies whether the created buffer must
+share display_lists with the main_display or not.  If not then a pixel buffer
+supported on displays other than SGI will do.
 ==============================================================================*/
 {
 	struct Dm_buffer *buffer;
-#if defined (SGI_DIGITAL_MEDIA)
-	DMparams *imageFormat, *poolSpec;
 	int count = 1;
+#if defined (GLX_SGIX_dm_pbuffer)
+	DMparams *imageFormat, *poolSpec;
 	DMboolean cacheable = DM_FALSE;
 	DMboolean mapped = DM_FALSE;
-	GLXFBConfigSGIX config;
 	int dm_pbuffer_attribs [] = 
 	{
 		GLX_DIGITAL_MEDIA_PBUFFER_SGIX, True,
 		GLX_PRESERVED_CONTENTS_SGIX, True,
 		(int) None
-	},
-		pbuffer_attribs [] = 
+	};
+#endif /* defined (GLX_SGIX_dm_pbuffer) */
+#if defined (GLX_SGIX_fbconfig)
+	GLXFBConfigSGIX config;
+#endif /* defined (GLX_SGIX_fbconfig) */
+#if defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer)
+	int pbuffer_attribs [] = 
 	{
 		GLX_PRESERVED_CONTENTS_SGIX, True,
 		(int) None
 	};
+#endif /* defined (GLX_SGIX_pbuffer) || (GLX_SGIX_pbuffer) */
 	static int visattrsRGB_with_depth[] =
 	{
 		GLX_RGBA,
@@ -106,11 +118,9 @@ have a depth buffer or not.
 		None
 	};
 	int *visattrs;
-#endif /* defined (SGI_DIGITAL_MEDIA) */
 
 	ENTER(CREATE(Dm_buffer));
-#if defined (SGI_DIGITAL_MEDIA)
-	/* checking arguments */
+
 	if(user_interface)
 	{
 		if (depth_buffer)
@@ -124,9 +134,20 @@ have a depth buffer or not.
 		if (ALLOCATE(buffer, struct Dm_buffer, 1))
 		{
 			buffer->user_interface = user_interface;
+#if defined (GLX_SGIX_dm_pbuffer)
 			buffer->dmbuffer = (DMbuffer)NULL;
 			buffer->dmpool = (DMbufferpool)NULL;
+#endif /* defined (GLX_SGIX_dm_pbuffer) */
+			buffer->context = (GLXContext)NULL;
+#if defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer)
+			buffer->pbuffer = (GLXPbufferSGIX)NULL;
+#endif /* defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) */
+			buffer->visual_info = (XVisualInfo *)NULL;
+			buffer->pixmap = (Pixmap)NULL;
+			buffer->glx_pixmap = (GLXPixmap)NULL;
 			buffer->access_count = 0;
+
+#if defined (GLX_SGIX_dm_pbuffer)
 			if(query_glx_extension("GLX_SGIX_dm_pbuffer", user_interface->display,
 				DefaultScreen(user_interface->display)))
 			{
@@ -221,10 +242,15 @@ have a depth buffer or not.
 			}
 			else
 			{
+#endif /* defined (GLX_SGIX_dm_pbuffer) */
+#if defined (GLX_SGIX_pbuffer)
 				if(query_glx_extension("GLX_SGIX_pbuffer", user_interface->display,
 					DefaultScreen(user_interface->display)))
 				{
+#if defined (DEBUG)
+					/* This message causes many problems as people wonder if something is wrong. */
 					display_message(INFORMATION_MESSAGE,"CREATE(Dm_buffer). DM_PBuffer Unavailable, using plain Pbuffer\n");
+#endif /* defined (DEBUG) */
 					if((buffer->visual_info = glXChooseVisual(user_interface->display,
 						DefaultScreen(user_interface->display), visattrs))
 						&& (config = glXGetFBConfigFromVisualSGIX(
@@ -263,11 +289,50 @@ have a depth buffer or not.
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). GLX Pbuffer extensions not available");
-					DEALLOCATE(buffer);
-					buffer = (struct Dm_buffer *)NULL;
+#endif /* defined (GLX_SGIX_pbuffer) */
+					if (shared_display_buffer)
+					{
+						display_message(ERROR_MESSAGE,"CREATE(Dm_buffer).  Unable to create shared display offscreen buffer.");
+						DEALLOCATE(buffer);
+						buffer = (struct Dm_buffer *)NULL;						
+					}
+					else
+					{
+						/* Try a pixmap buffer */
+						if(buffer->pixmap = XCreatePixmap(user_interface->display,
+							DefaultRootWindow(user_interface->display), width, height, 24))
+						{
+							if(buffer->visual_info = glXChooseVisual(user_interface->display,
+								DefaultScreen(user_interface->display), visattrs))
+							{
+								printf("CREATE(Dm_buffer). openGL visual id = %d\n",
+									buffer->visual_info->visualid);
+
+								if (buffer->glx_pixmap = glXCreateGLXPixmap(user_interface->display,
+									buffer->visual_info, buffer->pixmap))
+								{
+									if (buffer->context = glXCreateContext(
+										user_interface->display, buffer->visual_info,
+										(GLXContext)NULL , GL_TRUE))
+									{
+										/* Finished I think, hooray! */
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Unable to get config.");
+										DEALLOCATE(buffer);
+										buffer = (struct Dm_buffer *)NULL;
+									}
+								}
+							}
+						}
+					}
+#if defined (GLX_SGIX_pbuffer)
 				}
+#endif /* defined (GLX_SGIX_pbuffer) */
+#if defined (GLX_SGIX_dm_pbuffer)
 			}
+#endif /* defined (GLX_SGIX_dm_pbuffer) */
 		}
 		else
 		{
@@ -280,11 +345,7 @@ have a depth buffer or not.
 		display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Invalid arguments");
 		buffer = (struct Dm_buffer *)NULL;
 	}
-#else /* defined (SGI_DIGITAL_MEDIA) */
-	display_message(ERROR_MESSAGE,
-		"SGI Digital Media not available");
-	buffer = (struct Dm_buffer *)NULL;
-#endif /* defined (SGI_DIGITAL_MEDIA) */
+
 	LEAVE;
 
 	return (buffer);
@@ -292,28 +353,56 @@ have a depth buffer or not.
 
 int Dm_buffer_glx_make_current(struct Dm_buffer *buffer)
 /*******************************************************************************
-LAST MODIFIED : 10 September 1998
+LAST MODIFIED : 23 June 2000
 DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
 
 	ENTER(Dm_buffer_glx_make_current);
-#if defined (SGI_DIGITAL_MEDIA)
-	/* checking arguments */
-	if (buffer && buffer->context && buffer->pbuffer)
+	if (buffer && buffer->context)
 	{
-		if (glXMakeCurrent(buffer->user_interface->display,
-			buffer->pbuffer, buffer->context))
+#if defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer)
+		if (buffer->pbuffer)
 		{
-			return_code=1;
+			if (glXMakeCurrent(buffer->user_interface->display,
+				buffer->pbuffer, buffer->context))
+			{
+				return_code=1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Dm_buffer_glx_make_current.  Unable to make pbuffer current.");
+				return_code=0;
+			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Dm_buffer_glx_make_current.  Unable to make current");
-			return_code=0;
+#endif /* defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) */
+			if (buffer->glx_pixmap)
+			{
+				if (glXMakeCurrent(buffer->user_interface->display,
+					buffer->glx_pixmap, buffer->context))
+				{
+					return_code=1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Dm_buffer_glx_make_current.  Unable to make pixmap current.");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Dm_buffer_glx_make_current.  No drawable in buffer.");
+				return_code=0;
+			}
+#if defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer)
 		}
+#endif /* defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) */
 	}
 	else
 	{
@@ -321,11 +410,6 @@ DESCRIPTION :
 			"Dm_buffer_glx_make_current.  Invalid buffer");
 		return_code=0;
 	}
-#else /* defined (SGI_DIGITAL_MEDIA) */
-	display_message(ERROR_MESSAGE,
-		"SGI Digital Media not available");
-		return_code=0;
-#endif /* defined (SGI_DIGITAL_MEDIA) */
 	LEAVE;
 
 	return (return_code);
@@ -333,7 +417,7 @@ DESCRIPTION :
 
 int Dm_buffer_glx_make_read_current(struct Dm_buffer *buffer)
 /*******************************************************************************
-LAST MODIFIED : 10 September 1998
+LAST MODIFIED : 23 June 2000
 DESCRIPTION :
 Sets this buffer to be the GLX source and the current ThreeDWindow (the one last
 made current) to be the GLX destination.
@@ -342,11 +426,31 @@ made current) to be the GLX destination.
 	int return_code;
 
 	ENTER(Dm_buffer_glx_make_current);
-#if defined (SGI_DIGITAL_MEDIA)
-	/* checking arguments */
-	if (buffer && buffer->context && buffer->pbuffer)
+	if (buffer && buffer->context)
 	{
-		X3dThreeDDrawingAddReadContext(buffer->pbuffer);
+#if defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer)
+		if (buffer->pbuffer)
+		{
+			X3dThreeDDrawingAddReadContext(buffer->pbuffer);
+			return_code = 1;
+		}
+		else
+		{
+#endif /* defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) */
+			if (buffer->glx_pixmap)
+			{
+				X3dThreeDDrawingAddReadContext(buffer->glx_pixmap);
+				return_code = 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Dm_buffer_glx_make_read_current.  No drawable in buffer.");
+				return_code = 0;
+			}
+#if defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer)
+		}
+#endif /* defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) */
 	}
 	else
 	{
@@ -354,11 +458,6 @@ made current) to be the GLX destination.
 			"Dm_buffer_glx_make_read_current.  Invalid buffer");
 		return_code=0;
 	}
-#else /* defined (SGI_DIGITAL_MEDIA) */
-	display_message(ERROR_MESSAGE,
-		"SGI Digital Media not available");
-		return_code=0;
-#endif /* defined (SGI_DIGITAL_MEDIA) */
 	LEAVE;
 
 	return (return_code);
@@ -366,7 +465,7 @@ made current) to be the GLX destination.
 
 enum Dm_buffer_type Dm_buffer_get_type(struct Dm_buffer *buffer)
 /*******************************************************************************
-LAST MODIFIED : 14 September 1998
+LAST MODIFIED : 23 June 2000
 DESCRIPTION :
 Returns information about the type of buffer that was created.  (Only the O2
 currently supports Dm_pbuffer so to operate on the Octane a different 
@@ -375,22 +474,35 @@ mechanism needs to be supported.
 	enum Dm_buffer_type return_code;
 
 	ENTER(Dm_buffer_get_type);
-#if defined (SGI_DIGITAL_MEDIA)
-	/* checking arguments */
 	if (buffer)
 	{
 		return_code = DM_BUFFER_INVALID_TYPE;
-		if (buffer->pbuffer)
+#if defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer)
+#if defined (GLX_SGIX_dm_pbuffer)
+		if (buffer->pbuffer && buffer->dmbuffer)
 		{
-			if (buffer->dmbuffer)
-			{
-				return_code = DM_BUFFER_DM_PBUFFER;
-			}
-			else
+			return_code = DM_BUFFER_DM_PBUFFER;
+		}
+		else
+		{
+#endif /* defined (GLX_SGIX_dm_pbuffer) */
+			if (buffer->pbuffer)
 			{
 				return_code = DM_BUFFER_GLX_PBUFFER;
 			}
+			else
+			{
+#endif /* defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) */
+				if (buffer->glx_pixmap)
+				{
+					return_code = DM_BUFFER_GLX_PIXMAP;
+				}
+#if defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer)
+			}
+#if defined (GLX_SGIX_dm_pbuffer)
 		}
+#endif /* defined (GLX_SGIX_dm_pbuffer) */
+#endif /* defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) */
 	}
 	else
 	{
@@ -398,11 +510,6 @@ mechanism needs to be supported.
 			"Dm_buffer_get_display.  Invalid buffer");
 		return_code=DM_BUFFER_INVALID_TYPE;
 	}
-#else /* defined (SGI_DIGITAL_MEDIA) */
-	display_message(ERROR_MESSAGE,
-		"SGI Digital Media not available");
-		return_code=DM_BUFFER_INVALID_TYPE;
-#endif /* defined (SGI_DIGITAL_MEDIA) */
 	LEAVE;
 
 	return (return_code);
@@ -410,15 +517,13 @@ mechanism needs to be supported.
 
 Display *Dm_buffer_get_display(struct Dm_buffer *buffer)
 /*******************************************************************************
-LAST MODIFIED : 11 September 1998
+LAST MODIFIED : 23 June 2000
 DESCRIPTION :
 ==============================================================================*/
 {
 	Display *return_code;
 
 	ENTER(Dm_buffer_get_display);
-#if defined (SGI_DIGITAL_MEDIA)
-	/* checking arguments */
 	if (buffer && buffer->user_interface)
 	{
 		return_code = buffer->user_interface->display;
@@ -429,11 +534,6 @@ DESCRIPTION :
 			"Dm_buffer_get_display.  Invalid buffer");
 		return_code=0;
 	}
-#else /* defined (SGI_DIGITAL_MEDIA) */
-	display_message(ERROR_MESSAGE,
-		"SGI Digital Media not available");
-		return_code=0;
-#endif /* defined (SGI_DIGITAL_MEDIA) */
 	LEAVE;
 
 	return (return_code);
@@ -441,15 +541,13 @@ DESCRIPTION :
 
 Screen *Dm_buffer_get_screen(struct Dm_buffer *buffer)
 /*******************************************************************************
-LAST MODIFIED : 11 September 1998
+LAST MODIFIED : 23 June 2000
 DESCRIPTION :
 ==============================================================================*/
 {
 	Screen *return_code;
 
 	ENTER(Dm_buffer_);
-#if defined (SGI_DIGITAL_MEDIA)
-	/* checking arguments */
 	if (buffer && buffer->user_interface)
 	{
 		return_code = DefaultScreenOfDisplay(buffer->user_interface->display);
@@ -460,11 +558,6 @@ DESCRIPTION :
 			"Dm_buffer_glx_make_read_current.  Invalid buffer");
 		return_code=0;
 	}
-#else /* defined (SGI_DIGITAL_MEDIA) */
-	display_message(ERROR_MESSAGE,
-		"SGI Digital Media not available");
-		return_code=0;
-#endif /* defined (SGI_DIGITAL_MEDIA) */
 	LEAVE;
 
 	return (return_code);
@@ -472,15 +565,13 @@ DESCRIPTION :
 
 GLXContext Dm_buffer_get_glxcontext(struct Dm_buffer *buffer)
 /*******************************************************************************
-LAST MODIFIED : 11 September 1998
+LAST MODIFIED : 23 June 2000
 DESCRIPTION :
 ==============================================================================*/
 {
 	GLXContext return_code;
 
 	ENTER(Dm_buffer_);
-#if defined (SGI_DIGITAL_MEDIA)
-	/* checking arguments */
 	if (buffer && buffer->context)
 	{
 		return_code = buffer->context;
@@ -491,11 +582,6 @@ DESCRIPTION :
 			"Dm_buffer_glx_make_read_current.  Invalid buffer");
 		return_code=0;
 	}
-#else /* defined (SGI_DIGITAL_MEDIA) */
-	display_message(ERROR_MESSAGE,
-		"SGI Digital Media not available");
-		return_code=0;
-#endif /* defined (SGI_DIGITAL_MEDIA) */
 	LEAVE;
 
 	return (return_code);
@@ -503,15 +589,14 @@ DESCRIPTION :
 
 XVisualInfo *Dm_buffer_get_visual_info(struct Dm_buffer *buffer)
 /*******************************************************************************
-LAST MODIFIED : 11 September 1998
+LAST MODIFIED : 23 June 2000
 DESCRIPTION :
 ==============================================================================*/
 {
 	XVisualInfo *return_code;
 
 	ENTER(Dm_buffer_);
-#if defined (SGI_DIGITAL_MEDIA)
-	/* checking arguments */
+
 	if (buffer && buffer->visual_info)
 	{
 		return_code = buffer->visual_info;
@@ -522,20 +607,15 @@ DESCRIPTION :
 			"Dm_buffer_glx_make_read_current.  Invalid buffer");
 		return_code=0;
 	}
-#else /* defined (SGI_DIGITAL_MEDIA) */
-	display_message(ERROR_MESSAGE,
-		"SGI Digital Media not available");
-		return_code=0;
-#endif /* defined (SGI_DIGITAL_MEDIA) */
 	LEAVE;
 
 	return (return_code);
 } /* Dm_buffer_get_visual_info */
 
-#if defined (SGI_DIGITAL_MEDIA)
+#if defined (GLX_SGIX_pbuffer)
 GLXPbufferSGIX Dm_buffer_get_pbuffer(struct Dm_buffer *buffer)
 /*******************************************************************************
-LAST MODIFIED : 11 September 1998
+LAST MODIFIED : 23 June 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -543,8 +623,6 @@ DESCRIPTION :
 	GLXPbufferSGIX return_code;
 
 	ENTER(Dm_buffer_);
-#if defined (SGI_DIGITAL_MEDIA)
-	/* checking arguments */
 	if (buffer && buffer->pbuffer)
 	{
 		return_code = buffer->pbuffer;
@@ -555,20 +633,15 @@ DESCRIPTION :
 			"Dm_buffer_glx_make_read_current.  Invalid buffer");
 		return_code=0;
 	}
-#else /* defined (SGI_DIGITAL_MEDIA) */
-	display_message(ERROR_MESSAGE,
-		"SGI Digital Media not available");
-		return_code=0;
-#endif /* defined (SGI_DIGITAL_MEDIA) */
 	LEAVE;
 
 	return (return_code);
 } /* Dm_buffer_get_pbuffer */
-#endif /* defined (SGI_DIGITAL_MEDIA) */
+#endif /* defined (GLX_SGIX_pbuffer) */
 
 int DESTROY(Dm_buffer)(struct Dm_buffer **buffer)
 /*******************************************************************************
-LAST MODIFIED : 10 September 1998
+LAST MODIFIED : 23 June 2000
 
 DESCRIPTION :
 Closes a Digital Media buffer instance
@@ -577,27 +650,12 @@ x==============================================================================*
 	int return_code;
 
 	ENTER(DESTROY(Dm_buffer));
-#if defined (SGI_DIGITAL_MEDIA)
-	/* checking arguments */
 	if (buffer && *buffer)
 	{
 		return_code=1;
 
 		X3dThreeDDrawingRemakeCurrent();
-		if((*buffer)->visual_info)
-		{
-			XFree((*buffer)->visual_info);
-		}
-		if((*buffer)->context)
-		{
-			glXDestroyContext((*buffer)->user_interface->display,
-				(*buffer)->context);
-		}
-		if((*buffer)->pbuffer)
-		{
-			glXDestroyGLXPbufferSGIX((*buffer)->user_interface->display,
-				(*buffer)->pbuffer );
-		}
+#if defined (GLX_SGIX_dm_pbuffer)
 		if((*buffer)->dmbuffer)
 		{
 			dmBufferFree((*buffer)->dmbuffer);
@@ -605,6 +663,31 @@ x==============================================================================*
 		if((*buffer)->dmpool)
 		{
 			dmBufferDestroyPool((*buffer)->dmpool);
+		}
+#endif /* defined (GLX_SGIX_dm_pbuffer) */
+		if((*buffer)->context)
+		{
+			glXDestroyContext((*buffer)->user_interface->display,
+				(*buffer)->context);
+		}
+#if defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer)
+		if((*buffer)->pbuffer)
+		{
+			glXDestroyGLXPbufferSGIX((*buffer)->user_interface->display,
+				(*buffer)->pbuffer );
+		}
+#endif /* defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) */
+		if((*buffer)->visual_info)
+		{
+			XFree((*buffer)->visual_info);
+		}
+		if((*buffer)->glx_pixmap)
+		{
+			glXDestroyGLXPixmap((*buffer)->user_interface->display, (*buffer)->glx_pixmap);
+		}
+		if((*buffer)->pixmap)
+		{
+			XFreePixmap((*buffer)->user_interface->display, (*buffer)->pixmap);
 		}
 
 		DEALLOCATE(*buffer);
@@ -616,11 +699,6 @@ x==============================================================================*
 			"DESTROY(Dm_buffer).  Missing buffer");
 		return_code=0;
 	}
-#else /* defined (SGI_DIGITAL_MEDIA) */
-	display_message(ERROR_MESSAGE,
-		"DESTROY(Dm_buffer). SGI Digital Media not available");
-	return_code=0;
-#endif /* defined (SGI_DIGITAL_MEDIA) */
 	LEAVE;
 
 	return (return_code);

@@ -16,7 +16,8 @@ enum Dm_buffer_type
 	DM_BUFFER_INVALID_TYPE,
 	DM_BUFFER_DM_PBUFFER, /* O2 only at the moment,
 									 is a superset of a GLX_PBUFFER*/
-	DM_BUFFER_GLX_PBUFFER
+	DM_BUFFER_GLX_PBUFFER,/* SGI extensions */
+	DM_BUFFER_GLX_PIXMAP  /* Standard GLX, cannot share display lists */
 };
 
 struct Dm_buffer;
@@ -24,7 +25,7 @@ struct Dm_buffer;
 PROTOTYPE_OBJECT_FUNCTIONS(Dm_buffer);
 
 struct Dm_buffer *CREATE(Dm_buffer)(int width, int height, int depth_buffer,
-	struct User_interface *user_interface);
+	int shared_display_buffer, struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 23 July 1999
 
@@ -69,13 +70,13 @@ LAST MODIFIED : 11 September 1998
 DESCRIPTION :
 ==============================================================================*/
 
-#if defined (SGI_DIITAL_MEDIA)
+#if defined (GLX_SGIX_pbuffer)
 GLXPbufferSGIX Dm_buffer_get_pbuffer(struct Dm_buffer *buffer);
 /*******************************************************************************
 LAST MODIFIED : 14 September 1998
 DESCRIPTION :
 ==============================================================================*/
-#endif /* defined (SGI_DIITAL_MEDIA) */
+#endif /* defined (GLX_SGIX_pbuffer) */
 
 GLXContext Dm_buffer_get_glxcontext(struct Dm_buffer *buffer);
 /*******************************************************************************
