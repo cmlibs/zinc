@@ -65,8 +65,6 @@ sub require_library_actual
   }
 }
 
-
-
 {
   no strict 'vars';
   if (defined ($cmgui_command_data))
@@ -79,29 +77,8 @@ sub require_library_actual
 	 #This pointer must be initialised before requiring any of the 
 	 #libraries further down as they depend on it.
 	 *require_library = \&require_library_actual;
-	 require Cmiss::Perl_cmiss;
-	 require_library("cmgui");
-    require Cmiss::cmgui_command_data;
-	 my $tmp_command_data = new Cmiss::cmgui_command_data("cmgui", "-console") or 
-		croak("Unable to initialise cmgui");
-	 #Bless this into some undefined class so that no destructor will be called.
-	 #$Cmiss::cmgui_command_data is set as a side effect of creating the 
-	 #cmgui_command_data at the moment.
-	 bless($tmp_command_data, "SomethingThatWillNOTMatchAnything");
-	 sub cmiss
-		{
-		  $Cmiss::cmgui_command_data->cmiss(@_);
-		}
-	 *cmiss::cmiss = \&Cmiss::cmiss;
   }
 }
-
-sub cmgui_command_data
-{
-  no strict 'vars';
-  $cmgui_command_data;
-}
-
 
 # Autoload methods go after =cut, and are processed by the autosplit program.
 
