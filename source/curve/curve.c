@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : control_curve.c
 
-LAST MODIFIED : 9 February 2000
+LAST MODIFIED : 28 November 2000
 
 DESCRIPTION :
 Definition of struct Control_curve used to describe time-value or x-y functions.
@@ -4884,7 +4884,7 @@ Executes a GFX DESTROY CURVE command.
 int gfx_list_Control_curve(struct Parse_state *state,
 	void *dummy_to_be_modified,void *control_curve_manager_void)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 28 November 2000
 
 DESCRIPTION :
 Executes a GFX LIST CURVE.
@@ -4892,21 +4892,43 @@ Executes a GFX LIST CURVE.
 {
 	int return_code;
 	struct MANAGER(Control_curve) *control_curve_manager;
+	struct Control_curve *curve;
+	struct Option_table *option_table;
 
 	ENTER(gfx_list_Control_curve);
 	USE_PARAMETER(dummy_to_be_modified);
-	if (state&&(control_curve_manager=
+	if (state && (control_curve_manager=
 		(struct MANAGER(Control_curve) *)control_curve_manager_void))
 	{
-		display_message(INFORMATION_MESSAGE,"curves:\n");
-		return_code=FOR_EACH_OBJECT_IN_MANAGER(Control_curve)(
-			list_Control_curve,(void *)NULL,control_curve_manager);
+		curve = (struct Control_curve *)NULL;
+		option_table=CREATE(Option_table)();
+		/* default option: curve name */
+		Option_table_add_entry(option_table, (char *)NULL, &curve,
+			control_curve_manager_void, set_Control_curve);
+		if (return_code = Option_table_multi_parse(option_table,state))
+		{
+			if (curve)
+			{
+				return_code = list_Control_curve(curve, (void *)NULL);
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE,"Control curves:\n");
+				return_code = FOR_EACH_OBJECT_IN_MANAGER(Control_curve)(
+					list_Control_curve, (void *)NULL, control_curve_manager);
+			}
+		}
+		DESTROY(Option_table)(&option_table);
+		if (curve)
+		{
+			DEACCESS(Control_curve)(&curve);
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"gfx_list_Control_curve.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
