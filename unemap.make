@@ -50,7 +50,7 @@ update_sources :
 		cd $(PRODUCT_SOURCE_PATH) && \
 		chgrp -R cmgui_programmers * && \
 		cd $(PRODUCT_PATH) && \
-		ssh 130.216.191.92 'export CVS_RSH=ssh; export CVS_SERVER=/product/cmiss/bin/cvs ; cd $(CMISS_ROOT)/cmgui ; $(CMISS_ROOT)/bin/cvs update ' ; \
+		ssh 130.216.191.92 'export CVS_RSH=ssh; cd $(CMISS_ROOT)/cmgui ; $(CMISS_ROOT)/bin/cvs update ' ; \
 	else \
 		echo "Must be cmiss and in $(PRODUCT_PATH)"; \
 	fi
