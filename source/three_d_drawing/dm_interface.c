@@ -48,8 +48,9 @@ typedef struct USTMSCpair
 #include "user_interface/message.h"
 
 /* These calls should be available in every system with GLX 1.3 or greater.
-	The code should still run on an older GLX even if it is compiled on a GLX 1.3. */
-#if defined (GLX_VERSION_1_3)
+	The code should still run on an older GLX even if it is compiled on a GLX 1.3.
+   This macro is set for esp56 but not implemented.  Should be OK when we update Mesa */
+#if defined (GLX_VERSION_1_3) && !(GENERIC_PC)
 #define GLX_pbuffer 1
 #define GLX_fbconfig 1
 #endif /* defined (GLX_VERSION_1_3) */
