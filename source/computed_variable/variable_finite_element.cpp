@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_finite_element.cpp
 //
-// LAST MODIFIED : 26 November 2003
+// LAST MODIFIED : 28 November 2003
 //
 // DESCRIPTION :
 // Finite element types - element/xi and finite element field.
@@ -283,7 +283,7 @@ the <node>.
 
 class Variable_input_nodal_values : public Variable_input
 //******************************************************************************
-// LAST MODIFIED : 26 November 2003
+// LAST MODIFIED : 28 November 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -343,8 +343,7 @@ class Variable_input_nodal_values : public Variable_input
 				(fe_region=FE_field_get_FE_region(fe_field))&&
 				(0<(number_of_components=get_FE_field_number_of_components(fe_field))))
 			{
-				//???DB.  Have component_number in variable_finite_element?
-				component_number= -1;
+				component_number=variable_finite_element->component_number;
 				count_nodal_values_data.number_of_values=0;
 				count_nodal_values_data.value_type=value_type;
 				count_nodal_values_data.version=version;
