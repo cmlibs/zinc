@@ -3059,6 +3059,7 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 				}
 
 				/* assign values in the texture */
+				texture->image = texture_image;
 				texture->dimension = dimension;
 				/* original size is intended to specify useful part of texture */
 				texture->original_width_texels = final_width;
