@@ -340,7 +340,6 @@ LIB = -lMrm -lXm -lXt -lX11 -lXpm -lm
 LIB = -lMrm -lXm -lXt -lX11 -lPW -lftn -lm
 #elif defined(LINUX) /* switch OperatingSystem */
 LIB = -lMrm -lXm -lXt -lX11 -lXpm -lXext -lm -ldl -lXp -lSM -lICE
-XCOMM LIB = /usr/X11R6/lib/libMrm.a /usr/X11R6/lib/libXm.a /usr/X11R6/lib/libXpm.a -lXt -lXext -lX11 -lXp -lSM -lICE -lm -ldl
 #endif /* switch OperatingSystem */
 
 #if defined (OLD_CODE)
