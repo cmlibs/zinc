@@ -103,9 +103,9 @@ Executes a command when the node is changed.
 		interactive_node_editor_modify_global(temp_interactive_node_editor_dialog->editor_widget);
 		if(temp_interactive_node_editor_dialog->command)
 		{
-			(*(temp_interactive_node_editor_dialog->execute_command->function))(
-				temp_interactive_node_editor_dialog->command,
-				temp_interactive_node_editor_dialog->execute_command->data);
+		  Execute_command_execute_string(
+			  temp_interactive_node_editor_dialog->execute_command,
+			  temp_interactive_node_editor_dialog->command);
 		}
 		in_editor_dialog_update(temp_interactive_node_editor_dialog);
 	}
@@ -267,8 +267,7 @@ the materials contained in the global list.
 	ENTER(create_interactive_node_editor_dialog);
 	return_widget=(Widget)NULL;
 	/* check arguments */
-	if (in_editor_dialog_widget&&parent&&manager&&execute_command&&
-		(execute_command->function))
+	if (in_editor_dialog_widget&&parent&&manager&&execute_command)
 	{
 		if (MrmOpenHierarchy_base64_string(interactive_node_editor_dialog_uidh,
 			&in_editor_dialog_hierarchy,

@@ -9,6 +9,7 @@ Functions and types associated with commands.
 #if !defined (COMMAND_H)
 #define COMMAND_H
 
+#include "general/object.h"
 #if defined (MOTIF)
 #include <X11/Intrinsic.h>
 #endif /* defined (MOTIF) */
@@ -27,16 +28,7 @@ Global types
 */
 typedef int (Execute_command_function)(char *command,void *user_data);
 
-struct Execute_command
-/*******************************************************************************
-LAST MODIFIED : 5 June 1996
-
-DESCRIPTION :
-==============================================================================*/
-{
-	Execute_command_function *function;
-	void *data;
-}; /* struct Execute_command */
+struct Execute_command;
 
 /*
 Global functions
@@ -54,6 +46,30 @@ Allows easy execution of <command>s from menu buttons.
 int read_iod_file_via_selection_box(char *file_name, void *dummy);
 /*******************************************************************************
 LAST MODIFIED : 15 June 1993
+
+DESCRIPTION :
+==============================================================================*/
+
+struct Execute_command *CREATE(Execute_command)(
+	Execute_command_function *execute_command_function, void *command_function_data);
+/*******************************************************************************
+LAST MODIFIED : 8 December 1999
+
+DESCRIPTION :
+==============================================================================*/
+
+int Execute_command_execute_string(struct Execute_command *execute_command,
+	char *string);
+/*******************************************************************************
+LAST MODIFIED : 8 December 1999
+
+DESCRIPTION :
+Executes the given string using the Execute_command stucture
+==============================================================================*/
+
+int DESTROY(Execute_command)(struct Execute_command **execute_command_address);
+/*******************************************************************************
+LAST MODIFIED : 8 December 1999
 
 DESCRIPTION :
 ==============================================================================*/

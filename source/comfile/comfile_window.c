@@ -50,6 +50,8 @@ Destroy the comfile_window structure.
 	char **command;
 
 	ENTER(destroy_Comfile_window);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 	/* check the arguments */
 	if (comfile_window=(struct Comfile_window *)comfile_window_structure)
 	{
@@ -93,6 +95,7 @@ commands from the comfile into the list.
 	struct Comfile_window *comfile_window;
 
 	ENTER(identify_command_list);
+	USE_PARAMETER(call_data);
 	if (comfile_window=(struct Comfile_window *)comfile_window_structure)
 	{
 		comfile_window->command_list=widget;
@@ -171,6 +174,8 @@ Closes the comfile window.
 	struct Comfile_window *comfile_window;
 
 	ENTER(close_comfile_window);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 	if (comfile_window=(struct Comfile_window *)comfile_window_structure)
 	{
 		XtPopdown(comfile_window->shell);
@@ -201,6 +206,7 @@ Called when a command is selected (clicked).
 	XmListCallbackStruct *list_callback;
 
 	ENTER(item_selected);
+	USE_PARAMETER(widget);
 	/* check arguments */
 	if ((list_callback=(XmListCallbackStruct *)call_data)&&
 		(comfile_window=(struct Comfile_window *)comfile_window_structure))
@@ -217,9 +223,8 @@ Called when a command is selected (clicked).
 			(comfile_window->commands)[position]=command_string;
 		}
 		/* put command in command window's command entry box */
-		(*(comfile_window->set_command->function))(
-			(comfile_window->commands)[position],
-			comfile_window->set_command->data);
+		Execute_command_execute_string(comfile_window->set_command,
+			(comfile_window->commands)[position]);
 	}
 	else
 	{
@@ -245,7 +250,7 @@ Called when a command is double-clicked.
 	XmListCallbackStruct *list_callback;
 
 	ENTER(execute_one);
-	/* check arguments */
+	USE_PARAMETER(widget);
 	if ((list_callback=(XmListCallbackStruct *)call_data)&&
 		(comfile_window=(struct Comfile_window *)comfile_window_structure))
 	{
@@ -261,9 +266,8 @@ Called when a command is double-clicked.
 			(comfile_window->commands)[position]=command_string;
 		}
 		/* execute the command */
-		(*(comfile_window->execute_command->function))(
-			(comfile_window->commands)[position],
-			comfile_window->execute_command->data);
+		Execute_command_execute_string(comfile_window->execute_command,
+			(comfile_window->commands)[position]);
 	}
 	else
 	{
@@ -289,7 +293,8 @@ Executes all commands in a comfile window.
 	XmStringTable command_strings=(XmStringTable)NULL;
 
 	ENTER(execute_all);
-	/* check arguments */
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 	if (comfile_window=(struct Comfile_window *)comfile_window_structure)
 	{
 		/* execute each command in the file */
@@ -318,8 +323,8 @@ Executes all commands in a comfile window.
 			if (*command)
 			{
 				/* execute the command */
-				(*(comfile_window->execute_command->function))(*command,
-					comfile_window->execute_command->data);
+				Execute_command_execute_string(comfile_window->execute_command,
+					*command);
 			}
 			command++;
 		}
@@ -348,7 +353,8 @@ Executes selected commands in a comfile window.
 	XmStringTable command_strings=(XmStringTable)NULL;
 
 	ENTER(execute_selected);
-	/* check arguments */
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 	if (comfile_window=(struct Comfile_window *)comfile_window_structure)
 	{
 		/* get the number of selected commands and their positions */
@@ -381,9 +387,8 @@ Executes selected commands in a comfile window.
 				if ((comfile_window->commands)[position])
 				{
 					/* execute the command */
-					(*(comfile_window->execute_command->function))(
-						(comfile_window->commands)[position],
-						comfile_window->execute_command->data);
+					Execute_command_execute_string(comfile_window->execute_command,					
+						(comfile_window->commands)[position]);
 				}
 			}
 			XtFree((char *)selected_commands);
@@ -490,9 +495,7 @@ resource manager hierarchy.
 	ENTER(create_Comfile_window);
 	/* check the arguments */
 	if (file_name&&(comfile=fopen(file_name,"r"))&&
-		execute_command&&(execute_command->function)&&
-		set_command&&(set_command->function)&&
-		user_interface)
+		execute_command&&set_command&&user_interface)
 	{
 		fclose(comfile);
 		if (MrmOpenHierarchy_base64_string(comfile_window_uidh,
@@ -617,33 +620,33 @@ Opens, executes and then closes a com file.  No window is created.
 
 	ENTER(execute_comfile);
 	if (file_name)
-  {
-    if (execute_command&&(execute_command->function))
-    {
-      if (comfile=fopen(file_name,"r"))
-      {
-        fscanf(comfile," ");
-        while (!feof(comfile)&&(read_string(comfile,"[^\n]",&command_string)))
-        {
-          (*(execute_command->function))(command_string,execute_command->data);
-          DEALLOCATE(command_string);
-          fscanf(comfile," ");
-        }
-        fclose(comfile);
-      }
-      else
-      {
-        display_message(ERROR_MESSAGE,"Could not open: %s",file_name);
-        return_code=1;
-      }
-    }
-    else
-    {
-      display_message(ERROR_MESSAGE,"execute_comfile.  "
-        "Invalid execute command");
-      return_code=0;
-    }
-  }
+	{
+		if (execute_command)
+		{
+			if (comfile=fopen(file_name,"r"))
+			{
+				fscanf(comfile," ");
+				while (!feof(comfile)&&(read_string(comfile,"[^\n]",&command_string)))
+				{
+					Execute_command_execute_string(execute_command, command_string);
+					DEALLOCATE(command_string);
+					fscanf(comfile," ");
+				}
+				fclose(comfile);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"Could not open: %s",file_name);
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"execute_comfile.  "
+				"Invalid execute command");
+			return_code=0;
+		}
+	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"execute_comfile.  Missing file name");

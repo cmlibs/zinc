@@ -679,8 +679,8 @@ Slider scrollbar callback.  Updates the node locations and then executes
 	if (node_group_slider=(struct Node_group_slider *)node_group_slider_structure)
 	{
 		update_node_group_slider(node_group_slider);
-		(*(node_group_slider->execute_command->function))(
-			"open comfile redraw execute",node_group_slider->execute_command->data);
+		Execute_command_execute_string(node_group_slider->execute_command,
+			"open comfile redraw execute");
 	}
 	else
 	{
@@ -728,9 +728,8 @@ the Control_curve from the EM
 					set_node_group_slider_function ( update_em_slider_data->node_group_slider_dialog->sliders[i], shape_vector[i] );
 					update_em_slider_data->shared_data->count++;
 				}
-				(*(update_em_slider_data->node_group_slider_dialog->execute_command->function))(
-					"open comfile redraw execute",
-					update_em_slider_data->node_group_slider_dialog->execute_command->data);
+				Execute_command_execute_string(update_em_slider_data->node_group_slider_dialog->execute_command,
+					"open comfile redraw execute");
 			}
 			DEALLOCATE( shape_vector );
 		}
@@ -819,9 +818,8 @@ Reset button callback.  Updates the node locations and then executes
 			}
 			slider++;
 		}
-		(*(node_group_slider_dialog->execute_command->function))(
-			"open comfile redraw execute",
-			node_group_slider_dialog->execute_command->data);
+		Execute_command_execute_string(node_group_slider_dialog->execute_command,
+			"open comfile redraw execute");
 	}
 	else
 	{
@@ -2068,9 +2066,9 @@ DESCRIPTION :
 													((node_group_slider->maximum)-
 														(node_group_slider->minimum))),NULL);
 											update_node_group_slider(node_group_slider);
-											(*(node_group_slider_dialog->execute_command->function))(
-												"open comfile redraw execute",
-												node_group_slider_dialog->execute_command->data);
+											Execute_command_execute_string(
+												node_group_slider_dialog->execute_command,
+												"open comfile redraw execute");
 										}
 										else
 										{

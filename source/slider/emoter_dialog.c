@@ -3477,9 +3477,7 @@ DESCRIPTION :
 				emoter_set_play_slider_value ( emoter_dialog, time );
 				emoter_update_face( shared );
 				sprintf(command, "gfx write nodes %s.%05d", filename, (int)time );
-				(*(shared->execute_command->function))(
-					command,
-					shared->execute_command->data);
+				Execute_command_execute_string(shared->execute_command,command);
 			}
 			DEALLOCATE(command);
 		}

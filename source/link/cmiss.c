@@ -2504,8 +2504,7 @@ the CMISS_connection being valid after a call to this routine.
 	/* this MUST be the last portion of code */
 	if (commit_suicide)
 	{
-		(*(connection->execute_command->function))(suicide_string,
-			connection->execute_command->data);
+		Execute_command_execute_string(connection->execute_command, suicide_string);
 		/* and we now do not exist anymore */
 	}
 	LEAVE;

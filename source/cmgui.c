@@ -229,8 +229,7 @@ Executes the comfile specified on the command line.
 				strcat(global_temp_string,example_symbol);
 				strcat(global_temp_string,"=");
 				strcat(global_temp_string,example_id);
-				(*(execute_command->function))(global_temp_string,
-					execute_command->data);
+				Execute_command_execute_string(execute_command,global_temp_string);
 				sprintf(global_temp_string,"open comfile ");
 				if (comfile_name)
 				{
@@ -244,8 +243,7 @@ Executes the comfile specified on the command line.
 				strcat(global_temp_string,";");
 				strcat(global_temp_string,example_symbol);
 				strcat(global_temp_string," execute");
-				return_code=(*(execute_command->function))(global_temp_string,
-					execute_command->data);
+				return_code=Execute_command_execute_string(execute_command,global_temp_string);
 #if defined (OLD_CODE)
 				/* strip the path */
 				temp_char_2=comfile_name;
@@ -296,8 +294,7 @@ Executes the comfile specified on the command line.
 						}
 						*temp_char_2='\0';
 						temp_char_2[count]='\0';
-						(*(execute_command->function))(command_string,
-							execute_command->data);
+						Execute_command_execute_string(execute_command, command_string);
 						/* open the comfile */
 						temp_char_2=command_string;
 						strcpy(temp_char_2,"example_");
@@ -309,8 +306,7 @@ Executes the comfile specified on the command line.
 						strcat(global_temp_string,";");
 						strcat(global_temp_string,example_symbol);
 						strcat(global_temp_string," execute");
-						return_code=(*(execute_command->function))(global_temp_string,
-							execute_command->data);
+						Execute_command_execute_string(execute_command, global_temp_string);
 						DEALLOCATE(command_string);
 					}
 					else
@@ -338,8 +334,7 @@ Executes the comfile specified on the command line.
 			sprintf(global_temp_string,"open comfile ");
 			strcat(global_temp_string,comfile_name);
 			strcat(global_temp_string," execute");
-			return_code=(*(execute_command->function))(global_temp_string,
-				execute_command->data);
+			return_code=Execute_command_execute_string(execute_command, global_temp_string);
 		}
 	}
 	else
@@ -586,7 +581,7 @@ Main program for the CMISS Graphical User Interface
 	struct Computed_field *computed_field;
 	struct Command_window *command_window;
 	struct MANAGER(Computed_field) *computed_field_manager;
-	struct Execute_command execute_command,set_command;
+	struct Execute_command *execute_command, *set_command;
 	struct GT_object *glyph;
 #if !defined (WINDOWS_DEV_FLAG)
 	struct Modifier_entry set_file_name_option_table[]=
@@ -641,12 +636,12 @@ Main program for the CMISS Graphical User Interface
 	}
 
 	/* initialize application specific global variables */
-	execute_command.function=cmiss_execute_command;
-	execute_command.data=(void *)(&command_data);
-	command_data.execute_command= &execute_command;
-	set_command.function=cmiss_set_command;
-	set_command.data=(void *)(&command_data);
-	command_data.set_command= &set_command;
+	execute_command = CREATE(Execute_command)(cmiss_execute_command,
+		(void *)(&command_data));
+	command_data.execute_command= execute_command;
+	set_command = CREATE(Execute_command)(cmiss_set_command,
+		(void *)(&command_data));
+	command_data.set_command= set_command;
 	if(batch_mode || command_list)
 	{
 		command_data.user_interface= (struct User_interface *)NULL;
@@ -1534,8 +1529,6 @@ Main program for the CMISS Graphical User Interface
 #endif /* defined (OLD_CODE) */
 #endif /* defined (MOTIF) */
 							/* create the main window */
-							execute_command.function=cmiss_execute_command;
-							execute_command.data=(void *)(&command_data);
 							/* construct the version ID string which is exported in the command
 								windows version atom */
 							strcpy(version_id_string,"cmiss*");
@@ -1574,7 +1567,7 @@ Main program for the CMISS Graphical User Interface
 							strcat(version_id_string,"xvg ");
 #endif /* defined (INCLUDE_XVG) */
 
-							if (command_window=CREATE(Command_window)(&execute_command,
+							if (command_window=CREATE(Command_window)(execute_command,
 								&user_interface,version_id_string))
 							{
 								command_data.command_window=command_window;
@@ -1639,14 +1632,14 @@ Main program for the CMISS Graphical User Interface
 					{
 						/* Can't get the startupComfile name without X at the moment */
 						cmgui_execute_comfile(user_settings.startup_comfile, NULL,
-							NULL, NULL, &execute_command);
+							NULL, NULL, execute_command);
 					}
 					if (example_id||comfile_name)
 					{
 						/* open the command line comfile */
 						cmgui_execute_comfile(comfile_name,example_id,
 							command_data.examples_directory,
-							CMGUI_EXAMPLE_DIRECTORY_SYMBOL,&execute_command);
+							CMGUI_EXAMPLE_DIRECTORY_SYMBOL,execute_command);
 						DEALLOCATE(comfile_name);
 						DEALLOCATE(example_id);
 					}

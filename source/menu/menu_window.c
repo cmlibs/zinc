@@ -281,7 +281,7 @@ Create the structures and retrieve the menu window from the uil file.
 
 	ENTER(create_Menu_window);
 	/* check arguments */
-	if (file_name&&user_interface&&execute_command&&(execute_command->function))
+	if (file_name&&user_interface&&execute_command)
 	{
 		if (MrmOpenHierarchy_base64_string(menu_window_uidh,
 			&menu_window_hierarchy,&menu_window_hierarchy_open))
@@ -491,9 +491,8 @@ Executes a double-clicked menu item.
 		{
 			for (comm=0;comm<menu_window->macros[position]->number_of_commands;comm++)
 			{
-				(*(menu_window->execute_command->function))(
-					menu_window->macros[position]->commands[comm],
-					menu_window->execute_command->data);
+				Execute_command_execute_string(menu_window->execute_command,
+					menu_window->macros[position]->commands[comm]);
 			}
 			XtVaGetValues(widget,XmNitemCount,&num_items,NULL);
 			if (list_callback->item_position>=num_items)
@@ -758,7 +757,7 @@ on the command line, a file selection box is presented to the user.
 
 	ENTER(open_menu);
 	/* check arguments */
-	if (state&&execute_command&&(execute_command->function)&&
+	if (state&&execute_command&&
 		(entry=set_file_name_option_table))
 	{
 		if (state->current_token)
@@ -857,8 +856,7 @@ Submits a command to open a menu.
 	ENTER(open_menu_from_fsb);
 	/* check arguments */
 	if (file_name&&
-		(execute_command=(struct Execute_command *)execute_command_void)&&
-		(execute_command->function))
+		(execute_command=(struct Execute_command *)execute_command_void))
 	{
 		/* remove the file extension */
 		if (file_extension=strrchr(file_name,'.'))
@@ -874,7 +872,7 @@ Submits a command to open a menu.
 			strcpy(command_string,"open menu ");
 			strncpy(command_string+10,file_name,length);
 			command_string[length+10]='\0';
-			(*(execute_command->function))(command_string,execute_command->data);
+			Execute_command_execute_string(execute_command,command_string);
 			DEALLOCATE(command_string);
 			return_code=1;
 		}

@@ -1146,8 +1146,7 @@ Loads the correct image into xvg and filters out the correct nodes.
 			if (ALLOCATE(command_string,char,strlen(global_temp_string)+1))
 			{
 				strcpy(command_string,global_temp_string);
-				(*(temp_data->execute_command->function))(command_string,
-					temp_data->execute_command->data);
+				Execute_command_execute_string(temp_data->execute_command, command_string);
 				/* do we have a source group */
 				if (temp_data->source_node_group)
 				{

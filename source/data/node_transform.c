@@ -1382,8 +1382,8 @@ Exports a given node to 3d.
 				" z="FE_VALUE_INPUT_STRING,
 				temp_data->base_number,
 				image_values[0],image_values[1],image_values[2]);
-			(*(temp_data->execute_command->function))(global_temp_string,
-				temp_data->execute_command->data);
+			Execute_command_execute_string(temp_data->execute_command,
+				global_temp_string);
 			/* increment the data number */
 			temp_data->base_number++;
 			return_code=1;

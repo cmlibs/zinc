@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : error_handler.c
 
-LAST MODIFIED : 19 May 1998
+LAST MODIFIED : 17 September 1999
 
 DESCRIPTION :
 Error handling routines.

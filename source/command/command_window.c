@@ -140,6 +140,7 @@ Stores the id of the command areas.
 	struct Command_window *command_window;
 
 	ENTER(identify_command_box);
+	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
 		command_window->command_box=widget;
@@ -168,6 +169,7 @@ DESCRIPTION:
 	struct Command_window *command_window;
 
 	ENTER(identify_output_pane);
+ 	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
 		command_window->output_pane=widget;
@@ -191,6 +193,7 @@ DESCRIPTION:
 	struct Command_window *command_window;
 
 	ENTER(identify_message_pane);
+ 	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
 		command_window->message_pane=widget;
@@ -214,6 +217,7 @@ Stores the id of the command areas.
 	struct Command_window *command_window;
 
 	ENTER(id_three_d_window_create_button);
+ 	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
 		command_window->main_menu.windows_menu.three_d_window_create_button=widget;
@@ -238,6 +242,7 @@ Stores the id of the command areas.
 	struct Command_window *command_window;
 
 	ENTER(id_image_processing_create_butt);
+ 	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
 		command_window->main_menu.windows_menu.image_processing_create_button=
@@ -263,6 +268,7 @@ Stores the id of the unemap create button
 	struct Command_window *command_window;
 
 	ENTER(id_unemap_create_button);
+ 	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
 		command_window->main_menu.windows_menu.unemap_create_button=widget;
@@ -287,6 +293,7 @@ Stores the id of the cell create button
 	struct Command_window *command_window;
 
 	ENTER(id_cell_create_button);
+ 	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
 		command_window->main_menu.windows_menu.cell_create_button=widget;
@@ -311,6 +318,7 @@ Stores the id of the unemap create button
 	struct Command_window *command_window;
 
 	ENTER(id_time_editor_create_butto);
+ 	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
 		command_window->main_menu.windows_menu.time_editor_create_button=widget;
@@ -335,6 +343,7 @@ Stores the id of the unemap create button
 	struct Command_window *command_window;
 
 	ENTER(id_tracking_editor_create_butto);
+ 	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
 		command_window->main_menu.windows_menu.tracking_editor_create_button=widget;
@@ -358,6 +367,7 @@ DESCRIPTION:
 	struct Command_window *command_window;
 
 	ENTER(id_volume_editor_create_button);
+ 	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
 		command_window->main_menu.windows_menu.volume_editor_create_button=widget;
@@ -381,6 +391,7 @@ DESCRIPTION:
 	struct Command_window *command_window;
 
 	ENTER(id_g_element_editor_create_butt);
+ 	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
 		command_window->main_menu.windows_menu.g_element_editor_create_button
@@ -405,6 +416,7 @@ DESCRIPTION:
 	struct Command_window *command_window;
 
 	ENTER(id_material_editor_create_butto);
+ 	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
 		command_window->main_menu.windows_menu.material_editor_create_button=widget;
@@ -428,6 +440,7 @@ DESCRIPTION:
 	struct Command_window *command_window;
 
 	ENTER(id_interactive_node_editor_cbut);
+ 	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
 		command_window->main_menu.windows_menu.
@@ -452,6 +465,7 @@ DESCRIPTION:
 	struct Command_window *command_window;
 
 	ENTER(id_interactive_data_editor_cbut);
+ 	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
 		command_window->main_menu.windows_menu.
@@ -476,6 +490,7 @@ DESCRIPTION:
 	struct Command_window *command_window;
 
 	ENTER(id_node_editor_create_button);
+ 	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
 		command_window->main_menu.windows_menu.node_editor_create_button=widget;
@@ -499,6 +514,7 @@ DESCRIPTION:
 	struct Command_window *command_window;
 
 	ENTER(id_data_editor_create_button);
+ 	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
 		command_window->main_menu.windows_menu.data_editor_create_button=widget;
@@ -522,6 +538,7 @@ DESCRIPTION:
 	struct Command_window *command_window;
 
 	ENTER(id_spectrum_editor_create_butto);
+ 	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
 		command_window->main_menu.windows_menu.spectrum_editor_create_button=widget;
@@ -545,6 +562,7 @@ DESCRIPTION:
 	struct Command_window *command_window;
 
 	ENTER(id_3d_digitizer_create_button);
+ 	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
 		command_window->main_menu.windows_menu.digitizer_3d_create_button=widget;
@@ -568,6 +586,7 @@ DESCRIPTION:
 	struct Command_window *command_window;
 
 	ENTER(id_im_control_create_button);
+ 	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
 		command_window->main_menu.windows_menu.im_control_create_button=widget;
@@ -592,6 +611,8 @@ Called when a command is changed in the command entry area.
 	struct Command_window *command_window;
 
 	ENTER(command_changed);
+ 	USE_PARAMETER(widget);
+ 	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)command_window_structure)
 	{
 		XmProcessTraversal(command_window->command_entry,XmTRAVERSE_CURRENT);
@@ -617,7 +638,7 @@ Called when a command is entered in the command entry area.
 	XmCommandCallbackStruct *command_callback;
 
 	ENTER(command_entered);
-	/* check arguments */
+ 	USE_PARAMETER(widget);
 	if ((command_window=(struct Command_window *)command_window_structure)&&
 		(command_callback=(XmCommandCallbackStruct *)call_data))
 	{
@@ -629,8 +650,8 @@ Called when a command is entered in the command entry area.
 			/*???DB.  Short term solution ?  Stop using XmCommand ? */
 			/* delete last element */
 			XmListDeletePos(command_window->command_history,0);
-			(*(command_window->execute_command->function))(command,
-				command_window->execute_command->data);
+			Execute_command_execute_string(command_window->execute_command,
+				command);
 /*      reset_command_box(command_window);*/
 		}
 		else
@@ -661,10 +682,11 @@ Called when the Close function is selected from the window manager menu.
 	struct Command_window *command_window;
 
 	ENTER(command_window_close);
+ 	USE_PARAMETER(widget);
+ 	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)command_window_structure)
 	{
-		(*(command_window->execute_command->function))("QUIT",
-			command_window->execute_command->data);
+		Execute_command_execute_string(command_window->execute_command, "QUIT");
 #if !defined (WINDOWS_DEV_FLAG)
 		/*???DB.  To allow restarting of back end */
 #if !defined (NO_HELP)
@@ -696,6 +718,8 @@ Destroy the command_window structure and remove the window
 	struct Command_window *command_window;
 
 	ENTER(destroy_Command_window);
+ 	USE_PARAMETER(widget);
+ 	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)command_window_structure)
 	{
 		if (command_window->out_file)
@@ -806,6 +830,8 @@ Change from scrolling to not and back.
 	struct Command_window *command_window;
 
 	ENTER(change_scrolling);
+ 	USE_PARAMETER(widget);
+ 	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)command_window_structure)
 	{
 		display_message(WARNING_MESSAGE,"change_scrolling.	Not implemented");
@@ -833,7 +859,6 @@ Create the structures and retrieve the command window from the uil file.
 	Display *display;
 	int count,data_unit,result,return_code;
 	struct Command_window *command_window;
-	unsigned char *command;
 	unsigned long bytes_left,number_of_units;
 
 	ENTER(command_window_property_notify_callback);
@@ -909,8 +934,8 @@ Create the structures and retrieve the command window from the uil file.
 											*(command_string+(strlen(command_string)+count))='\0';
 											strncpy(command_string+strlen(command_string),temp_char,
 												count);
-											(*(command_window->execute_command->function))(
-												command_string,command_window->execute_command->data);
+											Execute_command_execute_string(command_window->execute_command,
+												command_string);
 											DEALLOCATE(command_string);
 										}
 										else
@@ -923,8 +948,8 @@ Create the structures and retrieve the command window from the uil file.
 								else
 								{
 									/* assume we have a command */
-									(*(command_window->execute_command->function))(
-										example_string,command_window->execute_command->data);
+									Execute_command_execute_string(command_window->execute_command,
+										example_string);
 								}
 								XChangeProperty(display,XtWindow(command_window->shell),
 									XA_CMGUI_RESPONSE,XA_STRING,8,PropModeReplace,
@@ -977,8 +1002,8 @@ DESCRIPTION :
 	struct Command_window *command_window;
 
 	ENTER(modify_Command_window_out_file_open);
+	USE_PARAMETER(dummy);
 	return_code=0;
-	/* check arguments */
 	if (state)
 	{
 		file_name=(char *)NULL;
@@ -1037,6 +1062,7 @@ DESCRIPTION :
 	struct Command_window *command_window;
 
 	ENTER(modify_Command_window_out_file_close);
+	USE_PARAMETER(dummy);
 	return_code=0;
 	if (state)
 	{
@@ -1105,8 +1131,8 @@ DESCRIPTION :
 	};
 
 	ENTER(modify_Command_window_out_file);
+	USE_PARAMETER(dummy);
 	return_code=0;
-	/* check arguments */
 	if (state)
 	{
 		i=0;
@@ -1199,7 +1225,7 @@ Create the structures and retrieve the command window from the uil file.
 
 	ENTER(CREATE(Command_window));
 	/* check arguments */
-	if (execute_command&&(execute_command->function)&&user_interface)
+	if (execute_command&&user_interface)
 	{
 #if defined (MOTIF)
 		if (MrmOpenHierarchy_base64_string(command_window_uidh,
@@ -1687,8 +1713,8 @@ Modifys the <command_window_void> according to the command in the <state>.
 	};
 
 	ENTER(modify_Command_window);
+	USE_PARAMETER(dummy);
 	return_code=0;
-	/* check arguments */
 	if (state)
 	{
 		i=0;

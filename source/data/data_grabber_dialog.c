@@ -157,8 +157,8 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 				current_data->normal.data[2]);
 			strcat(command_string,temp_string);
 		}
-		(*(data_grabber_dialog->execute_command->function))(command_string,
-			data_grabber_dialog->execute_command->data);
+		Execute_command_execute_string(data_grabber_dialog->execute_command,
+			command_string);
 #endif /* defined (BACK_END_CREATE_NODE) */
 
 		/* Create the node in CMGUI */
@@ -795,8 +795,7 @@ points.
 	ENTER(create_data_grabber_dialog);
 	return_widget=(Widget)NULL;
 	/* check arguments */
-	if (data_grabber_dialog_widget&&parent&&execute_command&&
-		(execute_command->function))
+	if (data_grabber_dialog_widget&&parent&&execute_command)
 	{
 		if (MrmOpenHierarchy_base64_string(data_grabber_dialog_uidh,
 			&data_grabber_hierarchy,&data_grabber_hierarchy_open))
