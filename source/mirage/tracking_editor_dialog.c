@@ -1022,18 +1022,15 @@ Draws the bar chart if there is a movie.
 static int tracking_editor_update_bar_chart(
 	struct Tracking_editor_dialog *track_ed)
 /*******************************************************************************
-LAST MODIFIED : 6 April 1998
+LAST MODIFIED : 1 September 2000
 
 DESCRIPTION :
 Redraws the bar chart with MakeCurrent and SwapBuffer instructions.
-Except for in the expose callback, to draw the chart this routine and not
-tracking_editor_draw_bar_chart should be called.
 ==============================================================================*/
 {
 	int return_code;
 
 	ENTER(tracking_editor_update_bar_chart);
-	/* checking arguments */
 	if (track_ed)
 	{
 		X3dThreeDDrawingMakeCurrent(track_ed->drawing_widget);
@@ -4502,7 +4499,7 @@ This is the configuration callback for the GL widget.
 static void tracking_editor_bar_chart_expose_callback(Widget drawing_widget,
 	XtPointer track_ed_void,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 3 April 1998
+LAST MODIFIED : 1 September 2000
 
 DESCRIPTION :
 Redraws the bar chart if there are no more expose events pending.
@@ -4522,7 +4519,7 @@ Redraws the bar chart if there are no more expose events pending.
 		/* if no more expose events in series */
 		if (0==expose_event->count)
 		{
-			tracking_editor_draw_bar_chart(track_ed);
+			tracking_editor_update_bar_chart(track_ed);
 		}
 	}
 	else
