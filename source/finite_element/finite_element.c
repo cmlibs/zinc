@@ -24032,6 +24032,35 @@ Returns true if <element> is in <element_group>.
 	return (return_code);
 } /* FE_element_is_in_group */
 
+int FE_element_is_not_in_group(struct FE_element *element,
+	void *element_group_void)
+/*******************************************************************************
+LAST MODIFIED : 15 June 2001
+
+DESCRIPTION :
+Returns true if <element> is not in <element_group>.
+==============================================================================*/
+{
+	int return_code;
+	struct GROUP(FE_element) *element_group;
+
+	ENTER(FE_element_is_not_in_group);
+	if (element&&(element_group=(struct GROUP(FE_element) *)element_group_void))
+	{
+		return_code = (struct FE_element *)NULL == 
+			IS_OBJECT_IN_GROUP(FE_element)(element,element_group);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_is_not_in_group.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_is_not_in_group */
+
 int FE_element_is_in_list(struct FE_element *element,void *element_list_void)
 /*******************************************************************************
 LAST MODIFIED : 22 March 2000

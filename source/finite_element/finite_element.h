@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 1 June 2001
+LAST MODIFIED : 15 June 2001
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -2840,6 +2840,15 @@ LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Returns true if <element> is in <element_group>.
+==============================================================================*/
+
+int FE_element_is_not_in_group(struct FE_element *element,
+	void *element_group_void);
+/*******************************************************************************
+LAST MODIFIED : 15 June 2001
+
+DESCRIPTION :
+Returns true if <element> is not in <element_group>.
 ==============================================================================*/
 
 int FE_element_is_in_list(struct FE_element *element,void *element_list_void);
