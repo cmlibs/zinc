@@ -71,7 +71,7 @@ ESU_BUILD_PATH = '$${CMISS_ROOT}/cmgui'
 ESU_BUILD_MACHINE = 130.216.208.35 #esu35
 ESP_BUILD_LIST = cell cell-debug cell-debug-memorycheck utilities
 ESP_BUILD_PATH = '$${CMISS_ROOT}/cmgui'
-ESP_BUILD_MACHINE = 130.216.209.169 #esp169
+ESP_BUILD_MACHINE = 130.216.208.169 #bioeng69
 
 update_sources :
 	ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH)/source ; cvs update'
