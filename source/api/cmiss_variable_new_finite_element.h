@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_variable_new_finite_element.h
 
-LAST MODIFIED : 12 November 2003
+LAST MODIFIED : 4 November 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_variable_new finite_element object.
@@ -10,6 +10,7 @@ The public interface to the Cmiss_variable_new finite_element object.
 #define __API_CMISS_VARIABLE_NEW_FINITE_ELEMENT_H__
 
 #include "api/cmiss_finite_element.h"
+#include "api/cmiss_region.h"
 #include "api/cmiss_variable_new.h"
 
 /*
@@ -53,13 +54,13 @@ then the input refers to all values.
 ==============================================================================*/
 
 Cmiss_variable_new_id Cmiss_variable_new_finite_element_create(
-	struct Cmiss_FE_field *field,char *component_name);
+	Cmiss_region_id region,char *field_name,char *component_name);
 /*******************************************************************************
-LAST MODIFIED : 11 November 2003
+LAST MODIFIED : 4 November 2004
 
 DESCRIPTION :
-Creates a Cmiss_variable_new finite_element which represents the supplied
-<field>.  If <component_name> is not NULL then that is used to select a
+Creates a Cmiss_variable_new finite_element which represents the <field_name> in
+<region>.  If <component_name> is not NULL then that is used to select a
 particular component.
 ==============================================================================*/
 

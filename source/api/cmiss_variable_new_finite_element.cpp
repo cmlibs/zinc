@@ -1,12 +1,15 @@
 /*******************************************************************************
 FILE : api/cmiss_variable_new_finite_element.cpp
 
-LAST MODIFIED : 2 February 2004
+LAST MODIFIED : 4 November 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_variable_new finite_element object.
 ==============================================================================*/
 
+extern "C" {
+#include "finite_element/finite_element_region.h"
+}
 #include "api/cmiss_variable_new_finite_element.h"
 #include "computed_variable/variable_finite_element.hpp"
 
@@ -191,36 +194,42 @@ then the input refers to all values.
 }
 
 Cmiss_variable_new_id Cmiss_variable_new_finite_element_create(
-	struct Cmiss_FE_field *field,char *component_name)
+	Cmiss_region_id region,char *field_name,char *component_name)
 /*******************************************************************************
-LAST MODIFIED : 12 November 2003
+LAST MODIFIED : 4 November 2004
 
 DESCRIPTION :
-Creates a Cmiss_variable_new finite_element which represents the supplied
-<field>.  If <component_name> is not NULL then that is used to select a
+Creates a Cmiss_variable_new finite_element which represents the <field_name> in
+<region>.  If <component_name> is not NULL then that is used to select a
 particular component.
 ==============================================================================*/
 {
 	Cmiss_variable_new_id result=0;
+	struct FE_field *fe_field;
+	struct FE_region *fe_region;
 
-	if (field)
+	if (region&&field_name)
 	{
-		if (component_name)
+		if ((fe_region=Cmiss_region_get_FE_region(region))&&
+			(fe_field=FE_region_get_FE_field_from_name(fe_region,field_name)))
 		{
-			result=reinterpret_cast<Cmiss_variable_new_id>(
+			if (component_name)
+			{
+				result=reinterpret_cast<Cmiss_variable_new_id>(
 #if defined (USE_SMART_POINTER)
-				new
+					new
 #endif /* defined (USE_SMART_POINTER) */
-				Variable_handle(new Variable_finite_element(field,
-				std::string(component_name))));
-		}
-		else
-		{
-			result=reinterpret_cast<Cmiss_variable_new_id>(
+					Variable_handle(new Variable_finite_element(fe_field,
+					std::string(component_name))));
+			}
+			else
+			{
+				result=reinterpret_cast<Cmiss_variable_new_id>(
 #if defined (USE_SMART_POINTER)
-				new
+					new
 #endif /* defined (USE_SMART_POINTER) */
-				Variable_handle(new Variable_finite_element(field)));
+					Variable_handle(new Variable_finite_element(fe_field)));
+			}
 		}
 	}
 

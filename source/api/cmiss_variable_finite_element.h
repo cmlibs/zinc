@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_variable_finite_element.h
 
-LAST MODIFIED : 13 August 2003
+LAST MODIFIED : 4 November 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_variable_finite_element object.
@@ -11,17 +11,18 @@ The public interface to the Cmiss_variable_finite_element object.
 
 /* If this is going to be in the API then it needs to have an interface there */
 #include "general/object.h"
-#include "api/cmiss_variable.h"
 #include "api/cmiss_finite_element.h"
+#include "api/cmiss_variable.h"
+#include "api/cmiss_region.h"
 
-Cmiss_variable_id CREATE(Cmiss_variable_finite_element)(struct Cmiss_FE_field *field,
-	char *component_name);
+Cmiss_variable_id CREATE(Cmiss_variable_finite_element)(Cmiss_region_id region,
+	char *field_name,char *component_name);
 /*******************************************************************************
-LAST MODIFIED : 13 August 2003
+LAST MODIFIED : 4 November 2004
 
 DESCRIPTION :
-Creates a Cmiss_variable which represents the supplied <field>.  If <component_name>
-is not NULL then that is used to select a particular component.
+Creates a Cmiss_variable which represents the <field_name> in <region>.  If
+<component_name> is not NULL then that is used to select a particular component.
 ==============================================================================*/
 
 Cmiss_variable_id CREATE(Cmiss_variable_element_xi)(char *name, int dimension);
