@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 21 April 2001
+XCOMM LAST MODIFIED : 4 May 2001
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -795,6 +795,7 @@ GENERAL_SRCS = \
 	general/mystring.c \
 	general/photogrammetry.c \
 	general/postscript.c \
+	general/statistics.c \
 	general/value.c 
 GRAPHICS_SRCS = \
 	graphics/animation_window.c \
