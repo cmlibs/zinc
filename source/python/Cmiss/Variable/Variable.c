@@ -148,6 +148,7 @@ CmissVariable_evaluate(PyObject* self, PyObject* args)
 				}
 				if (class_string)
 				{
+					printf ("Creating a result in class %s\n", class_string);
 					/* Load the module of the class that we want to cast the pointer into */
 					if (value_module = PyImport_ImportModule(class_string))
 					{

@@ -174,12 +174,108 @@ CmissRegion_get_element(PyObject* self, PyObject* args)
 	return((PyObject *)fe_element);
 }
 
+static PyObject*
+CmissRegion_get_node(PyObject* self, PyObject* args)
+{
+	char *name;
+	CmissRegionObject *cmiss_region;
+	int node_number;
+	PyObject *fe_node, *fe_node_module;
+	struct FE_node *fe_node_ptr;
+	struct FE_region *fe_region;
+
+	if (!(fe_node_module = PyImport_ImportModule("Cmiss.FE_node")))
+	{
+		PyErr_SetString(PyExc_ImportError, "Unable to import Cmiss.FE_node module");
+		return NULL;
+	}
+	 
+	if (!(PyArg_ParseTuple(args,"i:get_node", &node_number)))
+	{
+		PyErr_SetString(PyExc_AttributeError, "Integer argument required for get_node method.");
+		return NULL;			 
+	}
+
+
+	fe_node = (PyObject *)NULL;
+	if (_CmissRegion_check(self))
+	{
+		cmiss_region = (CmissRegionObject *)self;
+		printf("CmissRegion_get_node %p\n", cmiss_region->region);
+		if (fe_region = Cmiss_region_get_FE_region(cmiss_region->region))
+		{
+			fe_node_ptr = FE_region_get_FE_node_from_identifier(fe_region, node_number);
+			fe_node = PyObject_CallMethod(fe_node_module, "wrap", "O",
+				PyCObject_FromVoidPtr(fe_node_ptr, NULL));
+		}
+		else
+		{
+			PyErr_SetString(PyExc_AttributeError, "Unable to get fe_region.");
+		}
+	}
+	else
+	{
+		PyErr_SetString(PyExc_AttributeError, "self is not type Cmiss.Region.");
+	}
+
+	return((PyObject *)fe_node);
+}
+
+static PyObject*
+CmissRegion_read_file(PyObject* self, PyObject* args)
+{
+	char *file_name;
+	CmissRegionObject *cmiss_region;
+	int return_code;
+	PyObject *return_object;
+	struct Cmiss_region *temp_region;
+	struct MANAGER(FE_basis) *basis_manager;
+
+	if (!(PyArg_ParseTuple(args,"s:read_file", &file_name)))
+	{
+		PyErr_SetString(PyExc_AttributeError, "Integer argument required for get_node method.");
+		return NULL;			 
+	}
+
+	return_code = 0;
+	if (_CmissRegion_check(self))
+	{
+		cmiss_region = (CmissRegionObject *)self;
+		printf("CmissRegion_read_file %p\n", cmiss_region->region);
+		if (cmiss_region->region&&file_name&&
+			(basis_manager=FE_region_get_basis_manager(Cmiss_region_get_FE_region(cmiss_region->region))))
+		{
+			if (temp_region=read_exregion_file_of_name(file_name,basis_manager,
+				(struct FE_import_time_index *)NULL))
+			{
+				ACCESS(Cmiss_region)(temp_region);
+				if (Cmiss_regions_FE_regions_can_be_merged(cmiss_region->region,temp_region))
+				{
+					return_code=Cmiss_regions_merge_FE_regions(cmiss_region->region,temp_region);
+				}
+				DEACCESS(Cmiss_region)(&temp_region);
+			}
+		}
+	}
+	if (return_code)
+	{
+		return_object = PyInt_FromLong(1);
+	}
+	else
+	{
+		return_object = PyInt_FromLong(0);
+	}
+	return((PyObject *)return_object);
+}
+
 static struct PyMethodDef CmissRegion_methods[] =
 	{
-		{"get_region_cpointer", CmissRegion_get_region_cpointer, 1},
-		{"get_sub_region", CmissRegion_get_sub_region, 1},
-		{"get_field", CmissRegion_get_field, 1},
-		{"get_element", CmissRegion_get_element, 1},
+		{"get_region_cpointer", CmissRegion_get_region_cpointer, METH_VARARGS},
+		{"get_sub_region", CmissRegion_get_sub_region, METH_VARARGS},
+		{"get_field", CmissRegion_get_field, METH_VARARGS},
+		{"get_element", CmissRegion_get_element, METH_VARARGS},
+		{"get_node", CmissRegion_get_node, METH_VARARGS},
+		{"read_file", CmissRegion_read_file, METH_VARARGS},
 		{NULL, NULL, 0}
 	};
 

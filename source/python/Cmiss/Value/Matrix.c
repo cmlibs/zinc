@@ -19,7 +19,7 @@ static PyObject*
 CmissValueMatrix_get_matrix_cpointer(PyObject* self, PyObject* args)
 {
 	CmissValueMatrixObject *cmiss_value_matrix;
-	PyObject *object, *return_code;
+	PyObject *return_code;
 	struct Matrix *matrix;
 
 	printf("CmissValueMatrix_get_value_matrix_cpointer\n");
@@ -37,9 +37,52 @@ CmissValueMatrix_get_matrix_cpointer(PyObject* self, PyObject* args)
 	return(return_code);
 }
 
+static PyObject*
+CmissValueMatrix_sub_matrix(PyObject* self, PyObject* args, PyObject *keywds)
+{
+	CmissValueMatrixObject *cmiss_value_matrix, *return_code;
+	int column_high,column_low,number_of_columns,number_of_rows,row_high,
+		row_low;
+	static char *kwlist[] = {"row_low", "row_high", "column_low", "column_high", NULL};
+
+
+	printf("CmissValueMatrix_sub_matrix\n");
+
+	return_code = (CmissValueMatrixObject *)NULL;
+	if (_CmissValueMatrix_check(self))
+	{
+		cmiss_value_matrix = (CmissValueMatrixObject *)self;
+
+		if (Cmiss_value_matrix_get_dimensions(cmiss_value_matrix->value, &number_of_rows,
+			&number_of_columns))
+		{
+			row_low=1;
+			row_high=number_of_rows;
+			column_low=1;
+			column_high=number_of_columns;
+
+			PyArg_ParseTupleAndKeywords(args, keywds, "|iiii:sub_matrix", kwlist,
+				&row_low, &row_high, &column_low, &column_high);
+
+			return_code = PyObject_New(CmissValueMatrixObject, &CmissValueMatrixType);
+			if (!(return_code->value = ACCESS(Cmiss_value)(
+				Cmiss_value_matrix_get_submatrix(cmiss_value_matrix->value,row_low,row_high,
+				column_low,column_high))))
+			{
+				PyErr_SetString(PyExc_AttributeError, "Unable to create sub_matrix Cmiss value.");
+				Py_DECREF(return_code);
+				return_code = (CmissValueMatrixObject *)NULL;
+			}
+		}
+	}
+
+	return((PyObject *)return_code);
+}
+
 static struct PyMethodDef CmissValueMatrix_methods[] =
 	{
-		{"get_matrix_cpointer", CmissValueMatrix_get_matrix_cpointer, 1},
+		{"get_matrix_cpointer", CmissValueMatrix_get_matrix_cpointer, METH_VARARGS},
+		{"sub_matrix", CmissValueMatrix_sub_matrix, METH_VARARGS|METH_KEYWORDS},
 		{NULL, NULL, 0}
 	};
 
@@ -54,12 +97,12 @@ CmissValueMatrix_new(PyObject* self, PyObject* args)
 	 PyObject *float_item, *values_array, *values_array_item;
 	 struct Matrix *matrix;
 
-    if (!PyArg_ParseTuple(args,"iO:new", &number_of_columns, &values_array)) 
+    if (!PyArg_ParseTuple(args,"Oi:new", &values_array, &number_of_columns)) 
         return NULL;
 
 	 if (!PyList_Check(values_array))
 	 {
-		 PyErr_SetString(PyExc_AttributeError, "Second argument must be a list");
+		 PyErr_SetString(PyExc_AttributeError, "First argument must be a list");
 		 return NULL;
 	 }
 
@@ -86,7 +129,7 @@ CmissValueMatrix_new(PyObject* self, PyObject* args)
 							 values_array_item = PyList_GetItem(values_array, k);
 							 if (!(float_item = PyNumber_Float(values_array_item)))
 							 {
-								 PyErr_SetString(PyExc_AttributeError, "Second argument must be a list containing only numeric values");
+								 PyErr_SetString(PyExc_AttributeError, "First argument must be a list containing only numeric values");
 								 return NULL;
 							 }
 							 *value = (Matrix_value)PyFloat_AsDouble(float_item);

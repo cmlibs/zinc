@@ -15,6 +15,87 @@ typedef struct {
     struct Cmiss_value *value;
 } CmissValueDerivativematrixObject;
 
+/* Object Methods */
+static PyObject*
+CmissValueDerivativematrix_matrix(PyObject* self, PyObject* args)
+{
+	CmissValueDerivativematrixObject *cmiss_derivative_matrix;
+	Cmiss_value_id matrix;
+	Cmiss_variable_id *independent_variable_ptrs;
+	int i, order;
+	PyObject *independent_variable, *independent_variables_array, *return_code,
+		*value_matrix_module, *variable_cpointer, *variable_module;
+
+	printf("CmissValueDerivativematrix_matrix\n");
+
+	return_code = (PyObject *)NULL;
+
+	if (!PyArg_ParseTuple(args,"O:new", &independent_variables_array))
+		return NULL;
+
+	/* Make sure we load the variable module */
+	if (!(variable_module = PyImport_ImportModule("Cmiss.Variable.Variable")))
+	{
+		PyErr_SetString(PyExc_AttributeError, "Unable to import Cmiss.Variable.Variable module");
+		return NULL;
+	}
+
+	if (!(value_matrix_module = PyImport_ImportModule("Cmiss.Value.Matrix")))
+	{
+		PyErr_SetString(PyExc_AttributeError, "Unable to import Cmiss.Value.Matrix module");
+		return NULL;
+	}
+	 
+	if (!PyList_Check(independent_variables_array))
+	{
+		PyErr_SetString(PyExc_AttributeError, "Second argument must be a list");
+		return NULL;
+	}
+
+	if (_CmissValueDerivativematrix_check(self))
+	{
+		cmiss_derivative_matrix = (CmissValueDerivativematrixObject *)self;
+		if ( 0 < (order = PyList_Size(independent_variables_array)))
+		{
+			if (independent_variable_ptrs=(Cmiss_variable_id *)malloc(order*
+					 sizeof(Cmiss_variable_id)))
+			{
+				i=0;
+				while ((i < order) && (independent_variable = PySequence_GetItem(independent_variables_array, i)))
+				{
+					if (!((variable_cpointer = PyObject_CallMethod(independent_variable,
+								 "get_variable_cpointer", (char *)NULL)) &&
+							 PyCObject_Check(variable_cpointer)))
+					{
+						PyErr_SetString(PyExc_AttributeError, "Unable to extract variable pointer from variable value array.");
+						return NULL;
+					}
+					independent_variable_ptrs[i] = PyCObject_AsVoidPtr(variable_cpointer);
+					i++;
+				}
+				if (i == order)
+				{
+					Cmiss_value_derivative_matrix_get_matrix(cmiss_derivative_matrix->value,
+						order, independent_variable_ptrs, &matrix);
+					return_code = PyObject_CallMethod(value_matrix_module, "wrap", "O",
+						PyCObject_FromVoidPtr(matrix, NULL));
+				}
+				free(independent_variable_ptrs);
+			}
+		}
+	}
+
+	return(return_code);
+}
+
+static struct PyMethodDef CmissValueDerivativematrix_methods[] =
+	{
+		{"matrix", CmissValueDerivativematrix_matrix, 1},
+		{NULL, NULL, 0}
+	};
+
+/* Type Methods */
+
 static PyObject*
 CmissValueDerivativematrix_new(PyObject* self, PyObject* args)
 {
@@ -173,6 +254,39 @@ CmissValueDerivativematrix_dealloc(PyObject* self)
     PyObject_Del(self);
 }
 
+static PyObject*
+CmissValueDerivativematrix_wrap(PyObject* self, PyObject* args)
+{
+	char *name;
+	CmissValueDerivativematrixObject *cmiss_value;
+	PyObject *cmiss_value_cpointer;
+
+	if (!(PyArg_ParseTuple(args,"O:wrap", &cmiss_value_cpointer)
+		&& PyCObject_Check(cmiss_value_cpointer)))
+	{
+		PyErr_SetString(PyExc_AttributeError, "Incorrect argument for wrap function.");
+		return NULL;			 
+	}
+
+	cmiss_value = PyObject_New(CmissValueDerivativematrixObject, &CmissValueDerivativematrixType);
+	if (!(cmiss_value->value = ACCESS(Cmiss_value)(
+		(Cmiss_value_id)PyCObject_AsVoidPtr(cmiss_value_cpointer))))
+	{
+		PyErr_SetString(PyExc_AttributeError, "Unable to extract Cmiss.Value pointer.");
+		return NULL;			 
+	}
+
+	printf("Wrapping CmissValueDerivativematrix\n");
+
+	return (PyObject*)cmiss_value;
+}
+
+static PyObject *
+CmissValueDerivativematrix_getattr(PyObject *self, char *name)
+{
+	return Py_FindMethod(CmissValueDerivativematrix_methods, (PyObject *)self, name);
+}
+
 static PyObject *
 CmissValueDerivativematrix_repr(PyObject* self)
 {
@@ -297,26 +411,28 @@ CmissValueDerivativematrix_str(PyObject* self)
 static PyTypeObject CmissValueDerivativematrixType = {
     PyObject_HEAD_INIT(NULL)
     0,
-    "Derivativematrix",
+    "Derivative_matrix",
     sizeof(CmissValueDerivativematrixObject),
     0,
     CmissValueDerivativematrix_dealloc, /*tp_dealloc*/
     0,          /*tp_print*/
-    0,          /*tp_getattr*/
+    CmissValueDerivativematrix_getattr,  /*tp_getattr*/
     0,          /*tp_setattr*/
     0,          /*tp_compare*/
-    CmissValueDerivativematrix_repr,          /*tp_repr*/
+    CmissValueDerivativematrix_repr,    /*tp_repr*/
     0,          /*tp_as_number*/
     0,          /*tp_as_sequence*/
     0,          /*tp_as_mapping*/
     0,          /*tp_hash */
 	 0,          /*tp_call */
-	 CmissValueDerivativematrix_str,         /* tp_str */
+	 CmissValueDerivativematrix_str,    /* tp_str */
 };
 
 static PyMethodDef CmissValueDerivativematrixType_methods[] = {
     {"new", CmissValueDerivativematrix_new, METH_VARARGS,
      "Create a new Cmiss Value Derivative_matrix object."},
+    {"wrap", CmissValueDerivativematrix_wrap, METH_VARARGS,
+     "Wrap a C CmissValue in a python Cmiss Value Derivative_matrix object."},
     {NULL, NULL, 0, NULL}
 };
 
