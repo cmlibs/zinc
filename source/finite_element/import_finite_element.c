@@ -70,6 +70,12 @@ number_of_values in the array; the real values follow.
 							DEALLOCATE(*values);
 							return_code=0;
 						}
+						if (!finite((*values)[i]))
+						{
+							display_message(ERROR_MESSAGE,"read_FE_value_array.  "
+								"Infinity or NAN value read from file.");
+							return_code=0;
+						}
 					}
 				}
 				else
@@ -165,7 +171,16 @@ E<lement>/F<ace>/L<ine> ELEMENT_NUMBER DIMENSION xi1 xi2... xiDIMENSION
 							{
 								if (1==fscanf(input_file,FE_VALUE_INPUT_STRING,&(xi[k])))
 								{
-									k++;
+									if (finite(xi[k]))
+									{
+										k++;
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,"read_element_xi_value.  "
+											"Infinity or NAN xi coordinates read from file.");
+										return_code=0;
+									}
 								}
 								else
 								{
@@ -516,7 +531,8 @@ not have any component names; these must be set by the calling function.
 			{
 				coordinate_system.type=PROLATE_SPHEROIDAL;
 				fscanf(input_file," focus=");
-				if (1!=fscanf(input_file,FE_VALUE_INPUT_STRING,&focus))
+				if ((1!=fscanf(input_file,FE_VALUE_INPUT_STRING,&focus))||
+					(!finite(focus)))
 				{
 					focus=1.0;
 				}
@@ -527,7 +543,8 @@ not have any component names; these must be set by the calling function.
 			{
 				coordinate_system.type=OBLATE_SPHEROIDAL;
 				fscanf(input_file," focus=");
-				if (1!=fscanf(input_file,FE_VALUE_INPUT_STRING,&focus))
+				if ((1!=fscanf(input_file,FE_VALUE_INPUT_STRING,&focus))||
+					(!finite(focus)))
 				{
 					focus=1.0;
 				}
