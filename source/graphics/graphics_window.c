@@ -2498,9 +2498,9 @@ will be printed on the windows title bar.
 				/* I have accessed the time_keeper further down */
 				graphics_window->time_keeper = Scene_get_default_time_keeper(scene);
 				graphics_window->interactive_tool_manager=interactive_tool_manager;
-				graphics_window->interactive_tool=ACCESS(Interactive_tool)(
+				graphics_window->interactive_tool=
 					FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(
-						"transform_tool",graphics_window->interactive_tool_manager));
+						"transform_tool",graphics_window->interactive_tool_manager);
 				graphics_window->user_interface=user_interface;
 				graphics_window->default_viewing_height=512;
 				graphics_window->default_viewing_width=512;

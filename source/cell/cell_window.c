@@ -39,6 +39,7 @@ Functions for using the Cell_window structure.
 #include "graphics/colour.h"
 #include "graphics/import_graphics_object.h"
 #include "finite_element/import_finite_element.h"
+#include "graphics/transform_tool.h"
 #include "interaction/interactive_toolbar_widget.h"
 #include "unemap/unemap_package.h"
 #include "user_interface/user_interface.h"
@@ -82,14 +83,6 @@ Destroy the cell_window structure and remove the window.
 	USE_PARAMETER(call_data);
   if (cell = (struct Cell_window *)cell_window)
   {
-		if (cell->select_tool)
-		{
-			DEACCESS(Interactive_tool)(&cell->select_tool);
-		}
-		if (cell->transform_tool)
-		{
-			DEACCESS(Interactive_tool)(&cell->tranform_tool);
-		}
     if (cell->output_file)
     {
       fclose(cell->output_file);
@@ -807,13 +800,10 @@ toolbar to match the selection.
 			(cell->cell_3d).toolbar_widget,interactive_tool))
 		{
 			(cell->cell_3d).interactive_tool=interactive_tool;
-			if (interactive_tool == (cell->cell_3d).transform_tool)
+			if (Interactive_tool_is_Transform_tool(interactive_tool))
 			{
 				Scene_viewer_set_input_mode((cell->cell_3d).scene_viewer,
 					SCENE_VIEWER_TRANSFORM);
-				/* transform_tool is just a placeholder for transform mode so pass
-					 NULL to the scene_viewers */
-				interactive_tool=(struct Interactive_tool *)NULL;
 			}
 			else
 			{
@@ -1700,8 +1690,6 @@ Initialise the scene viewer for Cell 3D.
     0.371067,8.52279,-63.3145,-0.884569,0.135409,0.298719,1,0,0);
   Scene_viewer_set_view_simple((cell->cell_3d).scene_viewer,
     0,0,0,15,43.412,100);
-	/* make sure the select_tool is initially set */
-	Cell_window_set_interactive_tool(cell,(cell->cell_3d).select_tool);
   /* turn off the axis */
   Scene_set_axis_visibility((cell->cell_3d).scene,g_INVISIBLE);
   LEAVE;
@@ -2731,6 +2719,7 @@ specifies a file to print messages to, if non-NULL.
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Element_point_ranges *element_point_ranges;
 	struct Computed_field *grid_field;
+	struct Interactive_tool *select_tool, *transform_tool;
 	struct Multi_range *ranges;
   int i,number_of_faces,start,stop;
   
@@ -2809,15 +2798,9 @@ specifies a file to print messages to, if non-NULL.
         (cell->control_curve).control_curve_manager = control_curve_manager;
         (cell->control_curve).control_curve_editor_dialog = (Widget)NULL;
         /* initialise Cell 3D */
-				(cell->cell_3d).any_object_selection=any_object_selection;
-				(cell->cell_3d).interactive_tool_manager=interactive_tool_manager;
-				(cell->cell_3d).transform_tool=ACCESS(Interactive_tool)(
-					FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(
-						"transform_tool",interactive_tool_manager));
-				(cell->cell_3d).select_tool=ACCESS(Interactive_tool)(
-					FIND_BY_IDENTIFIER_IN_MANAGER(Interactive_tool,name)(
-						"select_tool",interactive_tool_manager));
-				(cell->cell_3d).interactive_tool=(cell->cell_3d).select_tool;
+		  (cell->cell_3d).any_object_selection=any_object_selection;
+		  (cell->cell_3d).interactive_tool_manager=interactive_tool_manager;
+		  (cell->cell_3d).interactive_tool=(struct Interactive_tool *)NULL;
         (cell->cell_3d).form = (Widget)NULL;
         (cell->cell_3d).toolbar_form = (Widget)NULL;
         (cell->cell_3d).toolbar_widget = (Widget)NULL;
@@ -3031,17 +3014,19 @@ specifies a file to print messages to, if non-NULL.
 										(cell->cell_3d).toolbar_form,interactive_tool_manager,
 										INTERACTIVE_TOOLBAR_HORIZONTAL))
 								{
-									if ((cell->cell_3d).transform_tool)
+									if (transform_tool=FIND_BY_IDENTIFIER_IN_MANAGER
+									  (Interactive_tool,name)(
+									  "transform_tool",interactive_tool_manager))
 									{
 										add_interactive_tool_to_interactive_toolbar_widget(
-											(cell->cell_3d).transform_tool,
-											(void *)(cell->cell_3d).toolbar_widget);
+											transform_tool, (void *)(cell->cell_3d).toolbar_widget);
 									}
-									if ((cell->cell_3d).select_tool)
+									if (select_tool=FIND_BY_IDENTIFIER_IN_MANAGER
+									  (Interactive_tool,name)(
+									  "select_tool",interactive_tool_manager))
 									{
 										add_interactive_tool_to_interactive_toolbar_widget(
-											(cell->cell_3d).select_tool,
-											(void *)(cell->cell_3d).toolbar_widget);
+											select_tool, (void *)(cell->cell_3d).toolbar_widget);
 									}
 								}
 								else
@@ -3243,7 +3228,7 @@ specifies a file to print messages to, if non-NULL.
                     initialise_cell_3d_scene(cell);
 										/* make sure the select_tool is initially set */
 										Cell_window_set_interactive_tool(cell,
-											(cell->cell_3d).select_tool);
+											select_tool);
 										/* get callbacks from interactive toolbar */
 										callback.data=(void *)cell;
 										callback.procedure=Cell_window_update_interactive_tool;

@@ -121,7 +121,7 @@ Main structure containing all CELL data.
   {
 		struct Any_object_selection *any_object_selection;
 		struct MANAGER(Interactive_tool) *interactive_tool_manager;
-		struct Interactive_tool *interactive_tool,*select_tool,*transform_tool;
+		struct Interactive_tool *interactive_tool;
     Widget form,toolbar_form,toolbar_widget;
     struct Scene_viewer *scene_viewer;
     struct Colour *background_colour;
