@@ -33,7 +33,7 @@ int draw_glyphsetGL(int number_of_points,Triple *point_list,Triple *axis1_list,
 	struct Graphical_material *material,struct Spectrum *spectrum,
 	int draw_selected,struct Multi_range *selected_name_ranges)
 /*******************************************************************************
-LAST MODIFIED : 20 February 2000
+LAST MODIFIED : 30 March 2000
 
 DESCRIPTION :
 Draws graphics object <glyph> at <number_of_points> points given by the
@@ -61,9 +61,10 @@ are drawn, otherwise only those names not there are drawn. A NULL pointer for
 
 	ENTER(draw_glyphsetGL);
 	if (((0==number_of_points)||(0<number_of_points)&&point_list&&axis1_list&&
-		axis2_list&&axis3_list)&&glyph&&((!selected_name_ranges)||names))
+		axis2_list&&axis3_list)&&glyph)
 	{
-		if ((0==number_of_points)||(draw_selected&&(!selected_name_ranges)))
+		if ((0==number_of_points)||(draw_selected&&
+			((!names) || (!selected_name_ranges))))
 		{
 			/* nothing to draw */
 			return_code=1;
