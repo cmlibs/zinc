@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : input_module.c
 
-LAST MODIFIED : 16 May 1998
+LAST MODIFIED : 25 August 2000
 
 DESCRIPTION :
 Contains all the code needed to handle input from any of a number of devices,
@@ -1194,7 +1194,7 @@ Returns a true if the source is valid.
 
 int input_module_update(struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 6 January 1998
+LAST MODIFIED : 25 August 2000
 
 DESCRIPTION :
 Forces the input_module to see if there are any periodic updates
@@ -1215,14 +1215,12 @@ Forces the input_module to see if there are any periodic updates
 #endif /* defined (FARO) */
 	ENTER(input_module_update);
 	return_code=0;
-	/* check arguments */
 	if (user_interface)
 	{
-		/* first allocate memory for a message */
-		if (ALLOCATE(message,struct Input_module_message_struct,1))
-		{
 #if defined (POLHEMUS)
-			if (polhemus_valid)
+		if (polhemus_valid)
+		{
+			if (ALLOCATE(message,struct Input_module_message_struct,1))
 			{
 				/* send request for data record */
 				write(RS232,&polhemus_get_record,1);
@@ -1280,7 +1278,7 @@ Forces the input_module to see if there are any periodic updates
 						}
 						matrix_premult_vector(message->data,&polhemus_origin_direction);
 						matrix_premult((Gmatrix *)&message->data[3],
-						&polhemus_origin_direction);
+							&polhemus_origin_direction);
 						/* now send the clients the data */
 						input_module_do_callback(message,IM_DEVICE_POLHEMUS1+station,
 							user_interface);
@@ -1315,35 +1313,44 @@ Forces the input_module to see if there are any periodic updates
 					display_message(WARNING_MESSAGE,
 						"input_module_update(polhemus).  Incorrect data record.");
 				}
+				DEALLOCATE(message);
 			}
+			else
+			{
+				display_message(WARNING_MESSAGE,
+					"input_module_update.  Could not allocate polhemus message");
+			}
+		}
 #endif
 #if defined (FARO)
-			if (faro_valid)
+		if (faro_valid)
+		{
+			if (ALLOCATE(message,struct Input_module_message_struct,1))
 			{
 #if defined (PHANTOM_FARO)
-			  /* SAB Generates a series of numbers for testing when Faro Arm
-				  isn't available */
-			  message->source=IM_SOURCE_FARO;
-			  message->type=IM_TYPE_MOTION;
-			  message->data[0] = faro_position_current[0];
-			  message->data[1] = faro_position_current[1];
-			  message->data[2] = faro_position_current[2];
-			  faro_position_current[0] += 0.1;
-			  faro_position_current[1] *= 1.0001;
-			  faro_position_current[2] -= 0.01;
-			  /* tangent */
-			  message->data[3] = 0;
-			  message->data[4] = 4;
-			  message->data[5] = 8;
-			  /* normal */
-			  message->data[6] = 1;
-			  message->data[7] = 3;
-			  message->data[8] = 7;
+				/* SAB Generates a series of numbers for testing when Faro Arm
+					 isn't available */
+				message->source=IM_SOURCE_FARO;
+				message->type=IM_TYPE_MOTION;
+				message->data[0] = faro_position_current[0];
+				message->data[1] = faro_position_current[1];
+				message->data[2] = faro_position_current[2];
+				faro_position_current[0] += 0.1;
+				faro_position_current[1] *= 1.0001;
+				faro_position_current[2] -= 0.01;
+				/* tangent */
+				message->data[3] = 0;
+				message->data[4] = 4;
+				message->data[5] = 8;
+				/* normal */
+				message->data[6] = 1;
+				message->data[7] = 3;
+				message->data[8] = 7;
 
-			  /* now send the clients the data */
-			  input_module_do_callback(message,IM_DEVICE_FARO,user_interface);
+				/* now send the clients the data */
+				input_module_do_callback(message,IM_DEVICE_FARO,user_interface);
 			  
-			  return_code=1;
+				return_code=1;
 #else /* defined (PHANTOM_FARO) */
 				/* send request for data record */
 				write(faro_serial_port,&faro_get_record,4);
@@ -1407,9 +1414,9 @@ Forces the input_module to see if there are any periodic updates
 					message->data[5] = cosB;
 					/* normal */
 					message->data[6] = cosC * cosA +
-					   sinC * cosB * sinA;
+					sinC * cosB * sinA;
 					message->data[7] = - cosC * sinA +
-					   sinC * cosB * cosA;
+					sinC * cosB * cosA;
 					message->data[8] = sinC * sinB;
 
 #if defined (OLD_CODE)
@@ -1432,14 +1439,23 @@ Forces the input_module to see if there are any periodic updates
 						"input_module_update(faro).  Incorrect response from faro arm.");
 				}
 #endif /* defined (PHANTOM_FARO) */
+				DEALLOCATE(message);
 			}
+			else
+			{
+				display_message(WARNING_MESSAGE,
+					"input_module_update.  Could not allocate faro message");
+			}
+		}
 #endif /* defined (FARO) */
 #if defined (HAPTIC)
-			if (haptic_valid)
+		if (haptic_valid)
+		{
+			if (ALLOCATE(message,struct Input_module_message_struct,1))
 			{
 				return_code=input_module_haptic_position(user_interface,message);
 				/* debug */
-						/*printf("x coord %f,y coord %f,z coord %f\n",message->data[0],
+				/*printf("x coord %f,y coord %f,z coord %f\n",message->data[0],
 					message->data[1],message->data[2]);*/
 				message->data[0] = (message->data[0] - haptic_position_offset[0]) * haptic_position_scale[0];
 				message->data[1] = (message->data[1] - haptic_position_offset[1]) * haptic_position_scale[1];
@@ -1449,15 +1465,15 @@ Forces the input_module to see if there are any periodic updates
 				haptic_position_current[2] = message->data[2];
 				/* now send the clients the data */
 				input_module_do_callback(message,IM_DEVICE_HAPTIC,user_interface);
+				DEALLOCATE(message);
 			}
+			else
+			{
+				display_message(WARNING_MESSAGE,
+					"input_module_update.  Could not allocate haptic message");
+			}
+		}
 #endif /* defined (HAPTIC) */
-			DEALLOCATE(message);
-		}
-		else
-		{
-			display_message(WARNING_MESSAGE,
-				"input_module_update.  Could not allocate memory for message");
-		}
 	}
 	else
 	{
@@ -1495,127 +1511,150 @@ message and then sends it to do_callback.
 	/* check arguments */
 	if (event&&user_interface)
 	{
-		/* first allocate memory for a message */
-		if (ALLOCATE(message,struct Input_module_message_struct,1))
-		{
 #if defined (SPACEBALL)
 #if defined (IBM)
-			if (ClientMessage==event->type)
+		if ((ClientMessage==event->type)&&
+			(spaceball_motion_event_type==CM->message_type)&&
+			!XtAppPending(app_context))
+#endif
+#if defined (SGI)
+		if ((spaceball_motion_event_type==event->type)&&
+			!XtAppPending(user_interface->application_context))
+		/*      !(XtIMAlternateInput&XtAppPending(app_context)))*/
+			/*???DB.  Need to think some more about reducing the number of
+				events */
+#endif
+		{
+			if (ALLOCATE(message,struct Input_module_message_struct,1))
 			{
-#endif
-#if defined (IBM)
-				if ((spaceball_motion_event_type==CM->message_type)&&
-					!XtAppPending(app_context))
-#endif
 #if defined (SGI)
-				/*    if (event->type==spaceball_motion_event_type) */
-				if ((spaceball_motion_event_type==event->type)&&
-					!XtAppPending(user_interface->application_context))
-				/*      !(XtIMAlternateInput&XtAppPending(app_context)))*/
-					/*???DB.  Need to think some more about reducing the number of
-						events */
-#endif
+				if (M->deviceid==spaceball_device->device_id)
 				{
-#if defined (SGI)
-					if (M->deviceid==spaceball_device->device_id)
 #endif
+#if defined (SGI)
+					for (i=0;i<M->axes_count;i++)
 					{
-#if defined (SGI)
-						for (i=0;i<M->axes_count;i++)
-						{
-							sbdata[(M->first_axis)+i]=(M->axis_data)[i];
-						}
-#endif
-						/* go through and set values (any value less than 20 is 0, ie not
-							registered. Values range approx -500->500 */
-						for (i=0;i<6;i++)
-						{
-							temp_spaceball_motion[i]=
-#if defined (IBM)
-								(((CM->data).s)[i+2])/IM_SPACEBALL_SCALE;
-#endif
-#if defined (SGI)
-								(sbdata[i])/IM_SPACEBALL_SCALE;
-#endif
-						}
-						message->source=IM_SOURCE_SPACEBALL;
-						message->type=IM_TYPE_MOTION;
-						message->data[0]=(double)temp_spaceball_motion[0];
-						message->data[1]=(double)temp_spaceball_motion[1];
-						message->data[2]= -(double)temp_spaceball_motion[2];
-						message->data[3]= -(double)temp_spaceball_motion[4];
-						message->data[4]=(double)temp_spaceball_motion[3];
-						message->data[5]=(double)temp_spaceball_motion[5];
-						/* make sure we need to send the message */
-						if (fabs(message->data[0])+fabs(message->data[1])+
-							fabs(message->data[2])+fabs(message->data[3])+
-							fabs(message->data[4])+fabs(message->data[5])>0)
-						{
-							input_module_do_callback(message,IM_DEVICE_SPACEBALL,
-								user_interface);
-						}
-						return_code=1;
-					}
-#if defined (SGI)
-					else
-					{
-						display_message(WARNING_MESSAGE,
-							"input_module_process.  Spaceball device id's don't match");
-						return_code=0;
+						sbdata[(M->first_axis)+i]=(M->axis_data)[i];
 					}
 #endif
-				}
+					/* go through and set values (any value less than 20 is 0, ie not
+						 registered. Values range approx -500->500 */
+					for (i=0;i<6;i++)
+					{
+						temp_spaceball_motion[i]=
 #if defined (IBM)
-				else if (spaceball_button_press_event_type==CM->message_type)
+							(((CM->data).s)[i+2])/IM_SPACEBALL_SCALE;
 #endif
 #if defined (SGI)
-				else if (spaceball_button_press_event_type==event->type)
+							(sbdata[i])/IM_SPACEBALL_SCALE;
 #endif
-				{
+					}
 					message->source=IM_SOURCE_SPACEBALL;
-					message->type=IM_TYPE_BUTTON_PRESS;
-#if defined (IBM)
-					message->data[0]=((CM->data).s)[2];
-#endif
-#if defined (SGI)
-					message->data[0]=((XDeviceButtonEvent *)event)->button;
-#endif
-					input_module_do_callback(message,IM_DEVICE_SPACEBALL,
-						user_interface);
+					message->type=IM_TYPE_MOTION;
+					message->data[0]=(double)temp_spaceball_motion[0];
+					message->data[1]=(double)temp_spaceball_motion[1];
+					message->data[2]= -(double)temp_spaceball_motion[2];
+					message->data[3]= -(double)temp_spaceball_motion[4];
+					message->data[4]=(double)temp_spaceball_motion[3];
+					message->data[5]=(double)temp_spaceball_motion[5];
+					/* make sure we need to send the message */
+					if (fabs(message->data[0])+fabs(message->data[1])+
+						fabs(message->data[2])+fabs(message->data[3])+
+						fabs(message->data[4])+fabs(message->data[5])>0)
+					{
+						input_module_do_callback(message,IM_DEVICE_SPACEBALL,
+							user_interface);
+					}
 					return_code=1;
-				}
-#if defined (IBM)
-				else if (spaceball_button_release_event_type==CM->message_type)
-#endif
 #if defined (SGI)
-				else if (spaceball_button_release_event_type==event->type)
-#endif
+				}
+				else
 				{
-					message->source=IM_SOURCE_SPACEBALL;
-					message->type=IM_TYPE_BUTTON_RELEASE;
-#if defined (IBM)
-					message->data[0]=((CM->data).s)[2];
-#endif
-#if defined (SGI)
-					message->data[0]=((XDeviceButtonEvent *)event)->button;
-#endif
-					input_module_do_callback(message,IM_DEVICE_SPACEBALL,
-						user_interface);
-					return_code=1;
+					display_message(WARNING_MESSAGE,
+						"input_module_process.  Spaceball device id's don't match");
+					return_code=0;
 				}
-#if defined (IBM)
+#endif
+				DEALLOCATE(message);
 			}
-#endif
 			else
+			{
+				display_message(ERROR_MESSAGE,
+					"input_module_process.  Could not allocate memory for message");
+				return_code=0;
+			}
+		}
+#if defined (IBM)
+		else if (spaceball_button_press_event_type==CM->message_type)
+#endif
+#if defined (SGI)
+		else if (spaceball_button_press_event_type==event->type)
+#endif
+		{
+			if (ALLOCATE(message,struct Input_module_message_struct,1))
+			{
+				message->source=IM_SOURCE_SPACEBALL;
+				message->type=IM_TYPE_BUTTON_PRESS;
+#if defined (IBM)
+				message->data[0]=((CM->data).s)[2];
+#endif
+#if defined (SGI)
+				message->data[0]=((XDeviceButtonEvent *)event)->button;
+#endif
+				input_module_do_callback(message,IM_DEVICE_SPACEBALL,
+					user_interface);
+				return_code=1;
+				DEALLOCATE(message);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"input_module_process.  Could not allocate memory for message");
+				return_code=0;
+			}
+		}
+#if defined (IBM)
+		else if (spaceball_button_release_event_type==CM->message_type)
+#endif
+#if defined (SGI)
+		else if (spaceball_button_release_event_type==event->type)
+#endif
+		{
+			if (ALLOCATE(message,struct Input_module_message_struct,1))
+			{
+				message->source=IM_SOURCE_SPACEBALL;
+				message->type=IM_TYPE_BUTTON_RELEASE;
+#if defined (IBM)
+				message->data[0]=((CM->data).s)[2];
+#endif
+#if defined (SGI)
+				message->data[0]=((XDeviceButtonEvent *)event)->button;
+#endif
+				input_module_do_callback(message,IM_DEVICE_SPACEBALL,
+					user_interface);
+				return_code=1;
+				DEALLOCATE(message);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"input_module_process.  Could not allocate memory for message");
+				return_code=0;
+			}
+		}
+		else
 #endif /* SPACEBALL */
 #if defined (DIALS)
-			if ((event->type==dials_motion_event_type)&&
+		if ((event->type==dials_motion_event_type)&&
 				!XtAppPending(user_interface->application_context))
 /*        !(XtIMAlternateInput&XtAppPending(user_interface->application_context)))*/
 			/*???DB.  Need to think some more about reducing the number of events */
+		{
+			XDeviceMotionEvent *M=(XDeviceMotionEvent *)event;
+			if (M->deviceid==dials_device->device_id)
 			{
-				XDeviceMotionEvent *M=(XDeviceMotionEvent *)event;
-				if (M->deviceid==dials_device->device_id)
+				/* first allocate memory for a message */
+				if (ALLOCATE(message,struct Input_module_message_struct,1))
 				{
 					/* There are eight dials on the box, we only want to use dials
 					0-5 (6 dof) */
@@ -1665,30 +1704,38 @@ message and then sends it to do_callback.
 						input_module_do_callback(message,IM_DEVICE_DIALS,
 							user_interface);
 					}
+					DEALLOCATE(message);
 				}
 				else
 				{
-					display_message(WARNING_MESSAGE,
-						"input_module_process.  Dial device id's don't match");
+					display_message(ERROR_MESSAGE,
+						"input_module_process.  Could not allocate memory for message");
 					return_code=0;
 				}
 			}
 			else
+			{
+				display_message(WARNING_MESSAGE,
+					"input_module_process.  Dial device id's don't match");
+				return_code=0;
+			}
+		}
+		else
 #endif /* DIALS */
-			if (event->type==ButtonPress)
-			{
+		if (event->type==ButtonPress)
+		{
 /*        XButtonPressedEvent *B=(XButtonPressedEvent *)event;*/
-				return_code=1;
-			}
-			else if (event->type==ButtonRelease)
-			{
+			return_code=1;
+		}
+		else if (event->type==ButtonRelease)
+		{
 /*        XButtonReleasedEvent *B=(XButtonReleasedEvent *)event;*/
-				return_code=1;
-			}
-			else
+			return_code=1;
+		}
+		else
 #if defined (KEYBOARD)
-			if (event->type==KeyRelease)
-			{
+		if (event->type==KeyRelease)
+		{
 				/* do some stuff here ..... */
 /*???debug */
 /*if (XK_Escape==XKeycodeToKeysym(display,((XKeyReleasedEvent *)event)->keycode,
@@ -1700,21 +1747,13 @@ else
 {
 	printf("key released\n");
 }*/
-				return_code=1;
-			}
-			else
-#endif /* KEYBOARD */
-			{
-/*???debug.  This will print out every other x event */
-/*printf("unclassified event type = %d\n",event->type);*/
-				return_code=0;
-			}
-			DEALLOCATE(message);
+			return_code=1;
 		}
 		else
+#endif /* KEYBOARD */
 		{
-			display_message(ERROR_MESSAGE,
-				"input_module_process.  Could not allocate memory for message");
+/*???debug.  This will print out every other x event */
+/*printf("unclassified event type = %d\n",event->type);*/
 			return_code=0;
 		}
 	}
