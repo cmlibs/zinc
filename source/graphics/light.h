@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : light.h
 
-LAST MODIFIED : 22 January 2002
+LAST MODIFIED : 8 October 2002
 
 DESCRIPTION :
 The data structures used for representing graphical lights.
@@ -9,6 +9,7 @@ The data structures used for representing graphical lights.
 #if !defined (LIGHT_H)
 #define LIGHT_H
 
+#include "general/enumerator.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
@@ -19,6 +20,7 @@ The data structures used for representing graphical lights.
 Global types
 ------------
 */
+
 enum Light_type
 /*******************************************************************************
 LAST MODIFIED : 24 November 1994
@@ -61,6 +63,9 @@ DESCRIPTION :
 Global functions
 ----------------
 */
+
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Light_type);
+
 struct Light *CREATE(Light)(char *name);
 /*******************************************************************************
 LAST MODIFIED : 4 December 1995
@@ -87,6 +92,32 @@ PROTOTYPE_MANAGER_COPY_FUNCTIONS(Light,name,char *);
 PROTOTYPE_MANAGER_FUNCTIONS(Light);
 PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Light,name,char *);
 
+int get_Light_attenuation(struct Light *light, float *constant_attenuation,
+	float *linear_attenuation, float *quadratic_attenuation);
+/*******************************************************************************
+LAST MODIFIED : 8 October 2002
+
+DESCRIPTION :
+Returns the constant, linear and quadratic attentuation factors which control
+the falloff in intensity of <light> according to 1/(c + l*d + q*d*d)
+where d=distance, c=constant, l=linear, q=quadratic.
+Values 1 0 0 (ie. only constant attenuation of 1) gives no attenuation.
+Infinite/directional lights are not affected by these values.
+==============================================================================*/
+
+int set_Light_attenuation(struct Light *light, float constant_attenuation,
+	float linear_attenuation, float quadratic_attenuation);
+/*******************************************************************************
+LAST MODIFIED : 8 October 2002
+
+DESCRIPTION :
+Sets the constant, linear and quadratic attentuation factors which control
+the falloff in intensity of <light> according to 1/(c + l*d + q*d*d)
+where d=distance, c=constant, l=linear, q=quadratic.
+Values 1 0 0 (ie. only constant attenuation of 1) gives no attenuation.
+Infinite/directional lights are not affected by these values.
+==============================================================================*/
+
 int get_Light_colour(struct Light *light,struct Colour *colour);
 /*******************************************************************************
 LAST MODIFIED : 4 December 1997
@@ -101,22 +132,6 @@ LAST MODIFIED : 4 December 1997
 
 DESCRIPTION :
 Sets the colour of the light.
-==============================================================================*/
-
-int get_Light_cutoff(struct Light *light,float *cutoff);
-/*******************************************************************************
-LAST MODIFIED : 4 December 1997
-
-DESCRIPTION :
-Returns the spotlight cutoff angle in degrees from 0 to 90.
-==============================================================================*/
-
-int set_Light_cutoff(struct Light *light,float cutoff);
-/*******************************************************************************
-LAST MODIFIED : 4 December 1997
-
-DESCRIPTION :
-Sets the spotlight cutoff angle in degrees from 0 to 90.
 ==============================================================================*/
 
 int get_Light_direction(struct Light *light,float direction[3]);
@@ -151,6 +166,42 @@ DESCRIPTION :
 Sets the position of the light, relevent for point and spot lights.
 ==============================================================================*/
 
+int get_Light_spot_cutoff(struct Light *light, float *spot_cutoff);
+/*******************************************************************************
+LAST MODIFIED : 8 October 2002
+
+DESCRIPTION :
+Returns the spotlight cutoff angle in degrees from 0 to 90.
+==============================================================================*/
+
+int set_Light_spot_cutoff(struct Light *light, float spot_cutoff);
+/*******************************************************************************
+LAST MODIFIED : 8 October 2002
+
+DESCRIPTION :
+Sets the spotlight cutoff angle in degrees from 0 to 90.
+==============================================================================*/
+
+int get_Light_spot_exponent(struct Light *light, float *spot_exponent);
+/*******************************************************************************
+LAST MODIFIED : 8 October 2002
+
+DESCRIPTION :
+Returns the spotlight exponent which controls how concentrated the spotlight
+becomes as one approaches its axis. A value of 0.0 gives even illumination
+throughout the cutoff angle.
+==============================================================================*/
+
+int set_Light_spot_exponent(struct Light *light, float spot_exponent);
+/*******************************************************************************
+LAST MODIFIED : 8 October 2002
+
+DESCRIPTION :
+Sets the spotlight exponent which controls how concentrated the spotlight
+becomes as one approaches its axis. A value of 0.0 gives even illumination
+throughout the cutoff angle.
+==============================================================================*/
+
 int get_Light_type(struct Light *light,enum Light_type *light_type);
 /*******************************************************************************
 LAST MODIFIED : 4 December 1997
@@ -165,22 +216,6 @@ LAST MODIFIED : 4 December 1997
 
 DESCRIPTION :
 Sets the light_type of the light (infinite/point/spot).
-==============================================================================*/
-
-int get_Light_colour(struct Light *light,struct Colour *colour);
-/*******************************************************************************
-LAST MODIFIED : 4 December 1997
-
-DESCRIPTION :
-Returns the colour of the light.
-==============================================================================*/
-
-int set_Light_colour(struct Light *light,struct Colour *colour);
-/*******************************************************************************
-LAST MODIFIED : 4 December 1997
-
-DESCRIPTION :
-Sets the colour of the light.
 ==============================================================================*/
 
 int modify_Light(struct Parse_state *state,void *light_void,
