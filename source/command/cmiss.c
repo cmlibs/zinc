@@ -8423,14 +8423,14 @@ Modifies the properties of a texture.
 					  NULL,set_Colour);
 					/* depth */
 					Option_table_add_entry(option_table, "depth", &depth,
-					  NULL, set_float_positive);
+					  NULL, set_float_non_negative);
 					/* distortion */
 					Option_table_add_entry(option_table, "distortion",
 						&texture_distortion,
 					  &texture_distortion_data,set_double_vector_with_help);
 					/* height */
 					Option_table_add_entry(option_table, "height", &height,
-					  NULL,set_float_positive);
+					  NULL,set_float_non_negative);
 					/* image */
 					Option_table_add_entry(option_table, "image",
 						&image_data, command_data->set_file_name_option_table,
@@ -8486,7 +8486,7 @@ Modifies the properties of a texture.
 					  NULL,set_int_non_negative);
 					/* width */
 					Option_table_add_entry(option_table, "width", &width,
-					  NULL,set_float_positive);
+					  NULL,set_float_non_negative);
 					/* evaluate_image */
 					Option_table_add_entry(option_table, "evaluate_image",
 					  &evaluate_data, command_data, gfx_modify_Texture_evaluate_image);

@@ -301,20 +301,41 @@ GL_EXT_texture_object extension.
 	if (texture)
 	{
 #if defined (OPENGL_API)
-		texture_coordinate_transform[0][0] = texture->original_width_texels/
-			(texture->width_texels*texture->width);
+		if (texture->width)
+		{
+			texture_coordinate_transform[0][0] = texture->original_width_texels/
+				(texture->width_texels*texture->width);
+		}
+		else
+		{
+			texture_coordinate_transform[0][0] = 1.0;
+		}
 		texture_coordinate_transform[1][0]=0.;
 		texture_coordinate_transform[2][0]=0.;
 		texture_coordinate_transform[3][0]=0.;
 		texture_coordinate_transform[0][1]=0.;
-		texture_coordinate_transform[1][1] = texture->original_height_texels/
-			(texture->height_texels*texture->height);
+		if (texture->height)
+		{
+			texture_coordinate_transform[1][1] = texture->original_height_texels/
+				(texture->height_texels*texture->height);
+		}
+		else
+		{
+			texture_coordinate_transform[1][1] = 1.0;
+		}
 		texture_coordinate_transform[2][1]=0.;
 		texture_coordinate_transform[3][1]=0.;
 		texture_coordinate_transform[0][2]=0.;
 		texture_coordinate_transform[1][2]=0.;
-		texture_coordinate_transform[2][2] = texture->original_depth_texels/
-			(texture->depth_texels*texture->depth);
+		if (texture->depth)
+		{
+			texture_coordinate_transform[2][2] = texture->original_depth_texels/
+				(texture->depth_texels*texture->depth);
+		}
+		else
+		{
+			texture_coordinate_transform[2][2] = 1.0;
+		}
 		texture_coordinate_transform[3][2]=0.;
 		texture_coordinate_transform[0][3]=0.;
 		texture_coordinate_transform[1][3]=0.;
@@ -3576,7 +3597,7 @@ real image data and not padding to make image sizes up to powers of 2.
 	int return_code;
 
 	ENTER(Texture_set_physical_size);
-	if (texture && (0.0 != width) && (0.0 != height) && (0.0 != depth))
+	if (texture)
 	{
 		if ((width != texture->width) || (height != texture->height) ||
 			(depth != texture->depth))
