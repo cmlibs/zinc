@@ -2602,7 +2602,7 @@ Builds any graphics objects for settings without them in <gt_element_group>.
 				if (!return_code)
 				{
 					display_message(ERROR_MESSAGE,
-						"build_GT_object.  Could not build edit element list");
+						"build_GT_element_group.  Could not build edit element list");
 				}
 				/* Must clear the ranges! */
 				Multi_range_clear(gt_element_group->element_ranges);
@@ -2631,10 +2631,6 @@ Builds any graphics objects for settings without them in <gt_element_group>.
 							{
 								return_code = ADD_OBJECT_TO_LIST(FE_node)(node, node_list);
 							}
-							else
-							{
-								return_code = 0;
-							}
 						}
 					}
 					else
@@ -2645,7 +2641,7 @@ Builds any graphics objects for settings without them in <gt_element_group>.
 				if (!return_code)
 				{
 					display_message(ERROR_MESSAGE,
-						"build_GT_object.  Could not build edit node list");
+						"build_GT_element_group.  Could not build edit node list");
 				}
 				/* Must clear the ranges! */
 				Multi_range_clear(gt_element_group->node_ranges);
@@ -2675,13 +2671,13 @@ Builds any graphics objects for settings without them in <gt_element_group>.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "build_GT_object.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "build_GT_element_group. Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* build_GT_object */
+} /*build_GT_element_group  */
 
 int compile_GT_element_group(struct GT_element_group *gt_element_group,
 	float time)
