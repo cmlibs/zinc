@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : output.c
 
-LAST MODIFIED : 16 June 2000
+LAST MODIFIED : 16 August 2000
 
 DESCRIPTION :
 Functions for handling all file output for CELL.
@@ -268,7 +268,8 @@ of group data structures, with the grid point numbers appropriately grouped.
       {
         length = 0;
         int_value = sorting[i].value.integer_value;
-        while (int_value == sorting[i].value.integer_value)
+        while ((i<sorting_data_length) &&
+          (int_value == sorting[i].value.integer_value))
         {
           length++;
           /* add the current grid point to the array */
@@ -286,7 +287,8 @@ of group data structures, with the grid point numbers appropriately grouped.
             sort[length-1].grid_point_number = sorting[i].grid_point_number;
           }
           i++;
-        } /* while (int_value == sorting_data[i].value.integer_value) */
+        } /* while ((i<sorting_data_length) &&
+             (int_value == sorting[i].value.integer_value)) */
         if (sort)
         {
           (*group_data_length)++;
@@ -457,6 +459,10 @@ Iterator function for writing out the variant of each element point in the
         {
           number_of_grid_values=
             get_FE_element_field_number_of_grid_values(element,field);
+          /*
+           * all this needs to be fixed up for multiple elements
+           */
+#if defined (FIX_THIS_UP)
           /* create the array to store the grid point numbers and their cell
            * type for sorting */
           if (ALLOCATE(sorting,struct Sorting_data,number_of_grid_values))
@@ -500,6 +506,16 @@ Iterator function for writing out the variant of each element point in the
               "Unable to allocate memory for sorting the variants");
             return_code = 0;
           }
+#endif /* defined (FIX_THIS_UP) */
+          for (i=0;i<number_of_grid_values;i++)
+          {
+            fprintf(output_data->file," Enter collocation point "
+              "#s/name [EXIT]: ");
+            fprintf(output_data->file,"%d\n",grid_point_numbers[i]);
+            fprintf(output_data->file," The cell variant number is "
+              "[1]: %d\n",variants[i]);            
+          }
+          return_code = 1;
         }
         else
         {
@@ -632,7 +648,7 @@ node in the group.
 static int write_FE_element_spatially_varying(struct FE_element *element,
 	void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 22 September 1999
+LAST MODIFIED : 16 August 2000
 
 DESCRIPTION :
 Iterator function for writing out the spatially varying parameters at each
@@ -673,7 +689,7 @@ element point in all the elements
            * ????????????????????????????????
            */
         
-          /* get the variant numbers and grid point numbers for all the
+          /* get the field values and grid point numbers for all the
            * element points in the element */
           if (get_FE_element_field_component_grid_FE_value_values(element,
             output_data->field,/*component_number*/0,&fe_values) &&
@@ -684,6 +700,10 @@ element point in all the elements
             number_of_grid_values=
               get_FE_element_field_number_of_grid_values(element,
                 output_data->field);
+            /*
+             * This needs to be fixed for multiple elements
+             */
+#if defined (FIX_THIS_UP)
             /* create the array to store the grid point numbers and their cell
              * type for sorting */
             if (ALLOCATE(sorting,struct Sorting_data,number_of_grid_values))
@@ -740,6 +760,17 @@ element point in all the elements
                 "Unable to allocate memory for sorting the values");
               return_code = 0;
             }
+#endif /* defined (FIX_THIS_UP) */
+            for (i=0;i<number_of_grid_values;i++)
+            {
+              fprintf(output_data->file," Enter collocation point "
+                "#s/name [EXIT]: ");
+              fprintf(output_data->file,"%d\n",grid_point_numbers[i]);
+              fprintf(output_data->file," The value for parameter %d is "
+                "[ 0.00000D+00]: ",output_data->number);
+              fprintf(output_data->file,"%g\n",(float)(fe_values[i]));
+            }
+            return_code = 1;
           }
           else
           {
@@ -955,7 +986,7 @@ should be 1 for real and 2 for integer.
 					fprintf(file,"   (2) Piecewise linear (defined by nodes)\n");
 					fprintf(file,"   (3) Defined by grid points\n");
 					fprintf(file,"    3\n");
-					/* write out the nodal values */
+					/* write out the element point values */
 					output_data.file = file;
 					output_data.cell = cell;
 					output_data.number = current->number;
@@ -1202,8 +1233,6 @@ to the start of the list.
 
   ENTER(add_parameters_to_array_information);
   *number_added = 0;
-  new = array_info;
-  tmp = array_info;
   current = parameters;
   while (current != (struct Cell_parameter *)NULL)
   {
@@ -1214,6 +1243,7 @@ to the start of the list.
       {
         if (ALLOCATE(new->label,char,strlen(current->spatial_label)))
         {
+          new->next = (struct Cell_array_information *)NULL;
           new->type = type;
           new->number = current->position;
           if (current->spatial_switch)
@@ -1236,8 +1266,19 @@ to the start of the list.
               "add_parameters_to_array_information. "
               "non-reals not yet implemented");*/
           }
-          new->next = tmp;
-          tmp = new;
+          if (array_info == (struct Cell_array_information *)NULL)
+          {
+            array_info = new;
+          }
+          else
+          {
+            tmp = array_info;
+            while (tmp->next != (struct Cell_array_information *)NULL)
+            {
+              tmp = tmp->next;
+            }
+            tmp->next = new;
+          }
           *number_added = *number_added + 1;
         }
         else
@@ -1257,7 +1298,7 @@ to the start of the list.
     current = current->next;
   }
   LEAVE;
-  return (new);
+  return(array_info);
 } /* END add_parameters_to_array_information() */
 
 #if defined (OLD_CODE)
