@@ -2207,7 +2207,6 @@ Sets up the analysis work area for analysing a set of signals.
 	struct FE_field_component component;
 	struct FE_node *rig_node;			
 	struct GROUP(FE_node) *rig_node_group;
-	struct FE_node_selection *node_selection;
 #endif /* defined (UNEMAP_USE_NODES) */
 #if defined (UNEMAP_USE_3D)
 	struct FE_node_selection *node_selection;
