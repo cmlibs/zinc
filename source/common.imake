@@ -64,7 +64,7 @@ LINK = CC
 #if defined (OPTIMISED)
 OPTIMISATION_FLAGS = -O
 COMPILE_FLAGS = -ansi -pedantic -woff 1521
-COMPILE_DEFINES = 
+COMPILE_DEFINES = -DOPTIMISED
 STRICT_FLAGS = 
 STRICT_FLAGS_PATTERN = NONE /* Must specify a pattern that doesn't match */
 #else /* defined (OPTIMISED) */
@@ -98,11 +98,12 @@ LINK = gcc -static -L/usr/X11R6/lib
 #endif /* defined (DYNAMIC_GL_LINUX) */
 #if defined (OPTIMISED)
 OPTIMISATION_FLAGS = -O
+COMPILE_DEFINES = -DOPTIMISED
 #else /* defined (OPTIMISED) */
 OPTIMISATION_FLAGS = -g
+COMPILE_DEFINES = 
 #endif /* defined (OPTIMISED) */
 COMPILE_FLAGS = 
-COMPILE_DEFINES = 
 STRICT_FLAGS = 
 STRICT_FLAGS_PATTERN = NONE /* Must specify a pattern that doesn't match */
 TARGET_TYPE_FLAGS =
@@ -124,25 +125,19 @@ DSO_LINK = $(LINK) $(ALL_FLAGS) -shared
 #if defined (CMISS_ROOT_DEFINED)
 	@if [ -f $*.c ]; then \
 	   case $*.c in  \
-	      $(STRICT_FLAGS_PATTERN) ) \
-	         set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $*.c;; \
 	      * ) \
-	         set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $*.c;; \
+	         set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $*.c;; \
 	   esac ; \
 	else \
 	   case $*.c in  \
-	      $(STRICT_FLAGS_PATTERN) ) \
-	         set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.c;; \
 	      * ) \
-      		set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.c;; \
+      		set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.c;; \
 	   esac ; \
 	fi
 #else /* defined (CMISS_ROOT_DEFINED) */
 	@case $*.c in  \
-	   $(STRICT_FLAGS_PATTERN) ) \
-	      set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $*.c;; \
 	   * ) \
-	      set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $*.c;; \
+	      set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $*.c;; \
 	esac ;
 #endif /* defined (CMISS_ROOT_DEFINED) */
 
@@ -153,25 +148,19 @@ DSO_LINK = $(LINK) $(ALL_FLAGS) -shared
 #if defined (CMISS_ROOT_DEFINED)
 	@if [ -f $*.cpp ]; then \
 	   case $*.cpp in  \
-	      $(STRICT_FLAGS_PATTERN) ) \
-   		   set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $*.cpp;; \
 	      * ) \
-	   	   set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $*.cpp;; \
+	   	   set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $*.cpp;; \
 	   esac ; \
 	else \
 	   case $*.cpp in  \
-	      $(STRICT_FLAGS_PATTERN) ) \
-	        set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.cpp;; \
 	      * ) \
-	        set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.cpp;; \
+	        set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.cpp;; \
 	   esac ; \
 	fi
 #else /* defined (CMISS_ROOT_DEFINED) */
 	case $*.cpp in  \
-		$(STRICT_FLAGS_PATTERN) ) \
-	  set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $*.cpp;; \
 	  * ) \
-	  set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $*.cpp;; \
+	  set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $*.cpp;; \
 	esac ;
 #endif /* defined (CMISS_ROOT_DEFINED) */
 
