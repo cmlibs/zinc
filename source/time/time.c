@@ -65,7 +65,7 @@ DESCRIPTION :
 			time->current_time = 0.0;
 			time->time_keeper = (struct Time_keeper *)NULL;
 			time->callback_list = (struct Time_object_callback_data *)NULL;
-			time->update_frequency = 11.0;
+			time->update_frequency = 10.0;
 			time->type = TIME_OBJECT_UPDATE_FREQUENCY;
 			time->next_time_function = (Time_object_next_time_function)NULL;
 			time->next_time_user_data = NULL;
