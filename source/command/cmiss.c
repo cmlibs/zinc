@@ -1631,7 +1631,7 @@ with tick marks and labels for showing the scale of a spectrum.
 static int gfx_create_cylinders(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 29 March 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Executes a GFX CREATE CYLINDERS command.
@@ -1735,6 +1735,14 @@ Executes a GFX CREATE CYLINDERS command.
 				command_data->user_interface,set_Element_discretization);
 			return_code=Option_table_multi_parse(option_table,state);
 			/* no errors, not asking for help */
+			if (return_code)
+			{
+				if (!coordinate_field)
+				{
+					display_message(WARNING_MESSAGE, "Must specify a coordinate field");
+					return_code = 0;
+				}
+			}
 			if (return_code)
 			{
 				face_number -= 2;
@@ -1950,7 +1958,7 @@ Executes a GFX CREATE ELEMENT_CREATOR command.
 static int gfx_create_element_points(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 8 May 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Executes a GFX CREATE ELEMENT_POINTS command.
@@ -2154,6 +2162,11 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 			{
 				display_message(ERROR_MESSAGE,
 					"No density field specified for cell_density|cell_poisson");
+				return_code = 0;
+			}
+			if (!coordinate_field)
+			{
+				display_message(WARNING_MESSAGE, "Must specify a coordinate field");
 				return_code = 0;
 			}
 			if (return_code)
@@ -2735,7 +2748,7 @@ for intersect - look at how fibre angle varies through the heart wall.
 static int gfx_create_flow_particles(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 29 March 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Executes a GFX CREATE FLOW_PARTICLES command.
@@ -2840,6 +2853,14 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 			i++;
 			return_code=process_multiple_options(state,option_table);
 			/* no errors,not asking for help */
+			if (return_code)
+			{
+				if (!coordinate_field)
+				{
+					display_message(WARNING_MESSAGE, "Must specify a coordinate field");
+					return_code = 0;
+				}
+			}
 			if (return_code)
 			{
 				if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
@@ -2990,7 +3011,7 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 static int gfx_create_more_flow_particles(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 29 March 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Executes a GFX CREATE MORE_FLOW_PARTICLES command.
@@ -3095,6 +3116,14 @@ Executes a GFX CREATE MORE_FLOW_PARTICLES command.
 			i++;
 			return_code=process_multiple_options(state,option_table);
 			/* no errors,not asking for help */
+			if (return_code)
+			{
+				if (!coordinate_field)
+				{
+					display_message(WARNING_MESSAGE, "Must specify a coordinate field");
+					return_code = 0;
+				}
+			}
 			if (return_code)
 			{
 				if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
@@ -3759,7 +3788,7 @@ float parameters.
 static int gfx_create_iso_surfaces(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 January 2002
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Executes a GFX CREATE ISO_SURFACES command.
@@ -3950,6 +3979,11 @@ Executes a GFX CREATE ISO_SURFACES command.
 				{
 					display_message(WARNING_MESSAGE,"Missing iso_scalar field");
 					return_code=0;
+				}
+				if (!coordinate_field)
+				{
+					display_message(WARNING_MESSAGE, "Missing coordinate field");
+					return_code = 0;
 				}
 				STRING_TO_ENUMERATOR(Use_element_type)(use_element_type_string,
 					&use_element_type);
@@ -4416,7 +4450,7 @@ Executes a GFX CREATE LMODEL command.
 static int gfx_create_lines(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 29 March 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Executes a GFX CREATE LINES command.
@@ -4503,6 +4537,14 @@ Executes a GFX CREATE LINES command.
 				command_data->user_interface,set_Element_discretization);
 			return_code=Option_table_multi_parse(option_table,state);
 			/* no errors, not asking for help */
+			if (return_code)
+			{
+				if (!coordinate_field)
+				{
+					display_message(WARNING_MESSAGE, "Missing coordinate field");
+					return_code = 0;
+				}
+			}
 			if (return_code)
 			{
 				face_number -= 2;
@@ -5168,7 +5210,7 @@ Executes a GFX CREATE ELEMENT_POINT_VIEWER command.
 static int gfx_create_node_points(struct Parse_state *state,
 	void *use_data,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Executes a GFX CREATE NODE_POINTS or GFX CREATE DATA_POINTS command.
@@ -5321,7 +5363,16 @@ If <use_data> is set, creating data points, otherwise creating node points.
 		set_variable_scale_field_data.conditional_function_user_data=(void *)NULL;
 		Option_table_add_entry(option_table,"variable_scale",&variable_scale_field,
 			&set_variable_scale_field_data,set_Computed_field_conditional);
-		if (return_code=Option_table_multi_parse(option_table,state))
+		return_code = Option_table_multi_parse(option_table,state);
+		if (return_code)
+		{
+			if (!coordinate_field)
+			{
+				display_message(WARNING_MESSAGE, "Must specify a coordinate field");
+				return_code = 0;
+			}
+		}
+		if (return_code)
 		{
 			if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
 				graphics_object_name,command_data->graphics_object_list))
@@ -6447,7 +6498,7 @@ Executes a GFX CREATE SPECTRUM command.
 static int gfx_create_streamlines(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 29 March 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Executes a GFX CREATE STREAMLINES command.
@@ -6607,6 +6658,11 @@ Executes a GFX CREATE STREAMLINES command.
 				{
 					display_message(ERROR_MESSAGE,"Must specify a vector");
 					return_code=0;
+				}
+				if (!coordinate_field)
+				{
+					display_message(WARNING_MESSAGE, "Must specify a coordinate field");
+					return_code = 0;
 				}
 				STRING_TO_ENUMERATOR(Streamline_type)(streamline_type_string,
 					&streamline_type);
@@ -7250,7 +7306,7 @@ Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
 static int gfx_create_surfaces(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 29 March 2001
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Executes a GFX CREATE SURFACES command.
@@ -7368,6 +7424,14 @@ Executes a GFX CREATE SURFACES command.
 				command_data->user_interface,set_Element_discretization);
 			return_code=Option_table_multi_parse(option_table,state);
 			/* no errors, not asking for help */
+			if (return_code)
+			{
+				if (!coordinate_field)
+				{
+					display_message(WARNING_MESSAGE, "Missing coordinate field");
+					return_code = 0;
+				}
+			}
 			if (return_code)
 			{
 				if (nurb)
@@ -9005,7 +9069,7 @@ Executes a GFX CREATE VOLUME_EDITOR command.
 static int gfx_create_volumes(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 January 2002
+LAST MODIFIED : 22 January 2002
 
 DESCRIPTION :
 Executes a GFX CREATE VOLUMES command.
@@ -9161,17 +9225,25 @@ Executes a GFX CREATE VOLUMES command.
 				&volume_texture,command_data->volume_texture_manager,
 				set_VT_volume_texture);
 			return_code=Option_table_multi_parse(option_table,state);
-			if(surface_data_group&&(!surface_data_density_field))
+			if (return_code)
 			{
-				display_message(ERROR_MESSAGE,"gfx_create_volumes.  "
-					"Must supply a surface_data_density_field with a surface_data_group");
-				return_code=0;
-			}
-			if((!surface_data_group)&&surface_data_density_field)
-			{
-				display_message(ERROR_MESSAGE,"gfx_create_volumes.  "
-					"Must supply a surface_data_group with a surface_data_density_field");
-				return_code=0;
+				if (!coordinate_field)
+				{
+					display_message(WARNING_MESSAGE, "Must specify a coordinate field");
+					return_code = 0;
+				}
+				if(surface_data_group&&(!surface_data_density_field))
+				{
+					display_message(ERROR_MESSAGE,"gfx_create_volumes.  Must supply a "
+						"surface_data_density_field with a surface_data_group");
+					return_code = 0;
+				}
+				if((!surface_data_group)&&surface_data_density_field)
+				{
+					display_message(ERROR_MESSAGE,"gfx_create_volumes.  Must supply a "
+						"surface_data_group with a surface_data_density_field");
+					return_code = 0;
+				}
 			}
 
 			/* no errors, not asking for help */
