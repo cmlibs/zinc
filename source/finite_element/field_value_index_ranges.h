@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : field_value_index_ranges.h
 
-LAST MODIFIED : 15 June 2000
+LAST MODIFIED : 19 June 2000
 
 DESCRIPTION :
 Stores ranges of indices of field values in a multi-range for a Computed_field.
@@ -104,6 +104,24 @@ LAST MODIFIED : 15 June 2000
 DESCRIPTION :
 Ensures the <field_value_index_ranges> is not in
 <field_value_index_ranges_list>.
+==============================================================================*/
+
+struct Computed_field *Field_value_index_ranges_get_field(
+	struct Field_value_index_ranges *field_value_index_ranges);
+/*******************************************************************************
+LAST MODIFIED : 19 June 2000
+
+DESCRIPTION :
+Returns the field from the <field_value_index_ranges.
+==============================================================================*/
+
+struct Multi_range *Field_value_index_ranges_get_ranges(
+	struct Field_value_index_ranges *field_value_index_ranges);
+/*******************************************************************************
+LAST MODIFIED : 19 June 2000
+
+DESCRIPTION :
+Returns the ranges from the <field_value_index_ranges.
 ==============================================================================*/
 
 #endif /* !defined (FIELD_VALUE_INDEX_RANGES_H) */

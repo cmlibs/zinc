@@ -401,3 +401,56 @@ Ensures the <field_value_index_ranges> is not in
 	return (return_code);
 } /* Field_value_index_ranges_remove_from_list */
 
+struct Computed_field *Field_value_index_ranges_get_field(
+	struct Field_value_index_ranges *field_value_index_ranges)
+/*******************************************************************************
+LAST MODIFIED : 19 June 2000
+
+DESCRIPTION :
+Returns the field from the <field_value_index_ranges.
+==============================================================================*/
+{
+	struct Computed_field *field;
+
+	ENTER(Field_value_index_ranges_get_field);
+	if (field_value_index_ranges)
+	{
+		field=field_value_index_ranges->field;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Field_value_index_ranges_get_field.  Invalid argument(s)");
+		field=(struct Computed_field *)NULL;
+	}
+	LEAVE;
+
+	return (field);
+} /* Field_value_index_ranges_get_field */
+
+struct Multi_range *Field_value_index_ranges_get_ranges(
+	struct Field_value_index_ranges *field_value_index_ranges)
+/*******************************************************************************
+LAST MODIFIED : 19 June 2000
+
+DESCRIPTION :
+Returns the ranges from the <field_value_index_ranges.
+==============================================================================*/
+{
+	struct Multi_range *ranges;
+
+	ENTER(Field_value_index_ranges_get_ranges);
+	if (field_value_index_ranges)
+	{
+		ranges=field_value_index_ranges->ranges;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Field_value_index_ranges_get_field.  Invalid argument(s)");
+		ranges=(struct Multi_range *)NULL;
+	}
+	LEAVE;
+
+	return (ranges);
+} /* Field_value_index_ranges_get_field */
