@@ -445,8 +445,17 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
       ifneq ($(wildcard $(CMISS_ROOT)/mesa/$(LIB_ARCH_DIR)/include),)
          USER_INTERFACE_INC += -I$(CMISS_ROOT)/mesa/$(LIB_ARCH_DIR)/include
       endif
-      USER_INTERFACE_INC += -I/usr/X11R6/include
-      X_LIB = /usr/X11R6/lib
+      #Don't put the system X_LIB into the compiler if we are cross compiling
+      GCC_LIBC = $(shell gcc -print-libgcc-file-name)
+      GLIBC_CROSS_COMPILE = $(CMISS_ROOT)/cross-compile/i386-glibc21-linux
+      ifeq ($(GCC_LIBC:$(GLIBC_CROSS_COMPILE)%=),)
+         #We are cross compiling
+         USER_INTERFACE_INC += -I$(GLIBC_CROSS_COMPILE)/include
+         X_LIB = $(GLIBC_CROSS_COMPILE)/lib
+      else
+         USER_INTERFACE_INC += -I/usr/X11R6/include
+         X_LIB = /usr/X11R6/lib
+      endif
       USER_INTERFACE_LIB += -L$(X_LIB)
 
       ifneq ($(STATIC_LINK),true)
