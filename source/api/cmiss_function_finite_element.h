@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_function_finite_element.h
 
-LAST MODIFIED : 17 May 2004
+LAST MODIFIED : 4 November 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_function_element, Cmiss_function_element_xi
@@ -122,12 +122,13 @@ Gets the <*value_address> for the specified xi entry (<index>) of the
 for success.
 ==============================================================================*/
 
-Cmiss_function_id Cmiss_function_finite_element_create(Cmiss_FE_field_id field);
+Cmiss_function_id Cmiss_function_finite_element_create(Cmiss_region_id region,
+	char *field);
 /*******************************************************************************
-LAST MODIFIED : 26 April 2004
+LAST MODIFIED : 4 November 2004
 
 DESCRIPTION :
-Creates a Cmiss_function which represents the <field>.
+Creates a Cmiss_function which represents the <field> in <region>.
 ==============================================================================*/
 
 Cmiss_function_variable_id Cmiss_function_finite_element_component(
@@ -216,9 +217,9 @@ Returns a non-zero for success.
 ==============================================================================*/
 
 int Cmiss_function_finite_element_region(
-	Cmiss_function_id function_finite_element,Cmiss_FE_region_id *region_address);
+	Cmiss_function_id function_finite_element,Cmiss_region_id *region_address);
 /*******************************************************************************
-LAST MODIFIED : 26 April 2004
+LAST MODIFIED : 3 November 2004
 
 DESCRIPTION :
 Gets the <*region_address> of the <function_finite_element>.  Returns a non-zero
