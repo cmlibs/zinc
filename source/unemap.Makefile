@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : unemap.Makefile
 #
-# LAST MODIFIED : 12 June 2003
+# LAST MODIFIED : 10 July 2003
 #
 # DESCRIPTION :
 #
@@ -330,13 +330,11 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
       Xmu_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXmu.a | /bin/grep '00000[0-f][0-f][1-f] _XEditResCheckMessages')
       ifneq ($(Xm_XeditRes),)
          ifneq ($(Xmu_XeditRes),)
-            ifneq ($(word 5, $(Xm_XeditRes)), $(word 5, $(Xmu_XeditRes)))
-               ifneq ($(STATIC_LINK),true)
-                  USER_INTERFACE_LIB += -u _XEditResCheckMessages $(X_LIB)/libXmu.a
-               else # STATIC_LINK != true
+            ifneq ($(STATIC_LINK),true)
+               USER_INTERFACE_LIB += -u _XEditResCheckMessages $(X_LIB)/libXmu.a
+             else # STATIC_LINK != true
                   USER_INTERFACE_LIB += -u _XEditResCheckMessages -lXmu 
-               endif # STATIC_LINK != true
-            endif
+             endif # STATIC_LINK != true
          endif
       endif
       ifneq ($(STATIC_LINK),true)
