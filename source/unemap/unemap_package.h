@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_package.h
 
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 26 May 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -99,7 +99,8 @@ eg light model, and managers. Split into along these lines??JW
 	struct Light_model *light_model;	
 	struct Scene *scene;	
 	struct User_interface *user_interface;
-	struct Graphical_material *graphical_material;
+	struct Graphical_material *map_graphical_material;
+	struct Graphical_material *electrode_graphical_material;
 	struct Time_keeper *time_keeper;	
 	struct Computed_field_package *computed_field_package;
 	struct MANAGER(Graphics_window) *graphics_window_manager;
@@ -140,9 +141,10 @@ struct Unemap_package *CREATE(Unemap_package)(
 	struct MANAGER(Spectrum) *spectrum_manager,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct MANAGER(FE_node) *data_manager,
-	struct LIST(GT_object) *glyph_list);
+	struct LIST(GT_object) *glyph_list,
+	struct Colour *colour);
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 26 May 2000
 
 DESCRIPTION:
 Create a Unemap package, and fill in the managers.
@@ -280,6 +282,29 @@ LAST MODIFIED : 9 May 2000
 
 DESCRIPTION :
 Sets the electrodes_option  for map_info <map_number> in <package>.
+Set (and get) with map_number 0,1,2... (an array), but package->number_of_maps
+is 1,2,3...
+==============================================================================*/
+
+int get_unemap_package_map_colour_electrodes_with_signal(
+	struct Unemap_package *package,int map_number);
+/*******************************************************************************
+LAST MODIFIED : 26 May 2000
+
+DESCRIPTION :
+gets the map_colour_electrodes_with_signal for map_info <map_number> in <package>.
+get (and set) with map_number 0,1,2... (an array), but package->number_of_maps
+is 1,2,3... i.e 
+==============================================================================*/
+
+int set_unemap_package_map_colour_electrodes_with_signal(
+	struct Unemap_package *package,int colour_electrodes_with_signal,
+	int map_number);
+/*******************************************************************************
+LAST MODIFIED : 26 May 2000
+
+DESCRIPTION :
+Sets the colour_electrodes_with_signal  for map_info <map_number> in <package>.
 Set (and get) with map_number 0,1,2... (an array), but package->number_of_maps
 is 1,2,3...
 ==============================================================================*/
@@ -900,22 +925,40 @@ DESCRIPTION :
 Sets the User_interface of the unemap package.
 ==============================================================================*/
 
-struct Graphical_material *get_unemap_package_graphical_material(
+struct Graphical_material *get_unemap_package_map_graphical_material(
 	struct Unemap_package *package);
 /*******************************************************************************
 LAST MODIFIED :  September 3 1999
 
 DESCRIPTION :
-gets the Graphical_material of the unemap package.
+gets the map_graphical_material of the unemap package.
 ==============================================================================*/
 
-int set_unemap_package_graphical_material(struct Unemap_package *package,
-	struct Graphical_material *graphical_material);
+int set_unemap_package_map_graphical_material(struct Unemap_package *package,
+	struct Graphical_material *map_graphical_material);
 /*******************************************************************************
 LAST MODIFIED : September 3 1999
 
 DESCRIPTION :
-Sets the Graphical_material of the unemap package.
+Sets the map_graphical_material of the unemap package.
+==============================================================================*/
+
+struct Graphical_material *get_unemap_package_electrode_graphical_material(
+	struct Unemap_package *package);
+/*******************************************************************************
+LAST MODIFIED :  26 May 2000
+
+DESCRIPTION :
+gets the electrode_graphical_material of the unemap package.
+==============================================================================*/
+
+int set_unemap_package_electrode_graphical_material(struct Unemap_package *package,
+	struct Graphical_material *electrode_graphical_material);
+/*******************************************************************************
+LAST MODIFIED : 26 May 2000
+
+DESCRIPTION :
+Sets the electrode_graphical_material of the unemap package.
 ==============================================================================*/
 
 struct Computed_field_package *get_unemap_package_computed_field_package(

@@ -2258,7 +2258,7 @@ Sets up the analysis work area for analysing a set of signals.
 			(rig->devices)&&(*(rig->devices))&&
 			(buffer=get_Device_signal_buffer(*(rig->devices))))
 		{
-			/* read the event detection settings */
+			/* read the event detection settincgs */
 			buffer_start=buffer->start;
 			buffer_end=buffer->end;
 			if ((1==BINARY_FILE_READ((char *)&datum,sizeof(int),1,input_file))&&

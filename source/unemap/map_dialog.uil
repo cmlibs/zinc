@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : map_dialog.uil
 !
-!LAST MODIFIED : 18 May 2000
+!LAST MODIFIED : 25 May 2000
 !
 !DESCRIPTION :
 !The widgets/gadgets for the map dialog in the mapping work area.
@@ -50,6 +50,8 @@ procedure
 	identify_map_dialog_elect_circl;
 	identify_map_dialog_elect_plus;
 	identify_map_dialog_elect_squar;
+	identify_map_dialog_elect_none;
+	identify_map_dialog_elect_colou;
 	identify_map_dialog_elect_size;
 	identify_map_dialog_fibre_menu;
 	identify_map_dialog_fibre_hide;
@@ -966,7 +968,7 @@ object
 		{
 		arguments
 			{
-			XmNnumColumns = 3;
+			XmNnumColumns = 4;
 			XmNorientation = XmHORIZONTAL;
 			XmNspacing = widget_spacing;
 			XmNborderWidth = 0;
@@ -982,7 +984,8 @@ object
 			{
 			XmOptionMenu map_dialog_electrodes_option;
 			XmOptionMenu map_dialog_electrodes_marker;
-			XmRowColumn map_dialog_electrodes_size;
+			XmToggleButton map_dialog_electrodes_colour_bu;
+			XmRowColumn map_dialog_electrodes_size;		
 			};
 		};
 	map_dialog_electrodes_option: XmOptionMenu
@@ -1142,6 +1145,22 @@ object
 								};
 							};
 						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("None");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_elect_none(map_dialog_structure);
+								};
+							};
+						};
 					};
 				};
 			};
@@ -1150,6 +1169,26 @@ object
 			MrmNcreateCallback = procedures
 				{
 				identify_map_dialog_elect_marke(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_electrodes_colour_bu : XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Colour");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNfillOnSelect = true;
+			XmNset = true;	
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_elect_colou(map_dialog_structure);
 				};
 			};
 		};

@@ -1120,6 +1120,56 @@ Finds the id of the square button in electrodes marker menu in the map dialog.
 	LEAVE;
 } /* identify_map_dialog_elect_squar */
 
+static void identify_map_dialog_elect_none(Widget *widget_id,
+	XtPointer map_dialog_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 25 May 2000
+
+DESCRIPTION :
+Finds the id of the none button in electrodes marker menu in the map dialog.
+==============================================================================*/
+{
+	struct Map_dialog *map_dialog;
+
+	ENTER(identify_map_dialog_elect_none);
+	USE_PARAMETER(call_data);
+	if (map_dialog=(struct Map_dialog *)map_dialog_structure)
+	{
+		map_dialog->electrodes.marker_type.none= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_map_dialog_elect_none.  Missing map_dialog_structure");
+	}
+	LEAVE;
+} /* identify_map_dialog_elect_none */
+
+static void identify_map_dialog_elect_colou(Widget *widget_id,
+	XtPointer map_dialog_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 25 May 2000
+
+DESCRIPTION :
+Finds the id of the electrodes colour toggle in the map dialog.
+==============================================================================*/
+{
+	struct Map_dialog *map_dialog;
+
+	ENTER(identify_map_dialog_elect_colou);
+	USE_PARAMETER(call_data);
+	if (map_dialog=(struct Map_dialog *)map_dialog_structure)
+	{
+		map_dialog->electrodes.marker_colour_toggle= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_map_dialog_elect_colou.  Missing map_dialog_structure");
+	}
+	LEAVE;
+} /*identify_map_dialog_elect_colou  */
+
 static void identify_map_dialog_elect_size(Widget *widget_id,
 	XtPointer map_dialog_structure,XtPointer call_data)
 /*******************************************************************************
@@ -1577,7 +1627,7 @@ Global functions
 struct Map_dialog *create_Map_dialog(struct Map_dialog **map_dialog_address,
 	struct Map **map,Widget activation,struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 25 May 2000
 
 DESCRIPTION :
 Allocates the memory for a map dialog.  Retrieves the necessary widgets and
@@ -1658,8 +1708,12 @@ initializes the appropriate fields.
 			(XtPointer)identify_map_dialog_elect_plus},
 		{"identify_map_dialog_elect_squar",
 			(XtPointer)identify_map_dialog_elect_squar},
+		{"identify_map_dialog_elect_none",
+			(XtPointer)identify_map_dialog_elect_none},
 		{"identify_map_dialog_elect_marke",
 			(XtPointer)identify_map_dialog_elect_marke},
+		{"identify_map_dialog_elect_colou",
+			(XtPointer)identify_map_dialog_elect_colou},	
 		{"identify_map_dialog_elect_size",
 			(XtPointer)identify_map_dialog_elect_size},
 		{"identify_map_dialog_landmarks_b",
@@ -1752,7 +1806,9 @@ initializes the appropriate fields.
 				map_dialog->electrodes.marker_type_menu=(Widget)NULL;
 				map_dialog->electrodes.marker_type.circle=(Widget)NULL;
 				map_dialog->electrodes.marker_type.plus=(Widget)NULL;
-				map_dialog->electrodes.marker_type.square=(Widget)NULL;
+				map_dialog->electrodes.marker_type.square=(Widget)NULL;	
+				map_dialog->electrodes.marker_type.none=(Widget)NULL;
+				map_dialog->electrodes.marker_colour_toggle=(Widget)NULL;	
 				map_dialog->electrodes.marker_size_text=(Widget)NULL;
 				map_dialog->fibres_option_menu=(Widget)NULL;
 				map_dialog->fibres_option.hide=(Widget)NULL;
@@ -2158,6 +2214,10 @@ Opens the <map_dialog>.
 				case SQUARE_ELECTRODE_MARKER:
 				{
 					option_widget=map_dialog->electrodes.marker_type.square;
+				} break;	
+				case HIDE_ELECTRODE_MARKER:
+				{
+					option_widget=map_dialog->electrodes.marker_type.none;
 				} break;
 			}
 			XtVaSetValues(map_dialog->electrodes.marker_type_menu,

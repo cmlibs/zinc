@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.h
 
-LAST MODIFIED : 14 July 1998
+LAST MODIFIED : 25 May 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -97,7 +97,7 @@ enum Electrodes_option
 /*******************************************************************************
 LAST MODIFIED : 18 June 1998
 
-DESCRIPTION :
+DESCRIPTION : text accompanying electrodes
 ==============================================================================*/
 {
 	SHOW_ELECTRODE_NAMES,
@@ -108,12 +108,13 @@ DESCRIPTION :
 
 enum Electrodes_marker_type
 /*******************************************************************************
-LAST MODIFIED : 24 July 1998
+LAST MODIFIED : 25 May 2000
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	CIRCLE_ELECTRODE_MARKER,
+	HIDE_ELECTRODE_MARKER,
 	PLUS_ELECTRODE_MARKER,
 	SQUARE_ELECTRODE_MARKER
 }; /* enum Electrodes_marker_type */
@@ -236,6 +237,8 @@ DESCRIPTION :
 	int *potential_time;
 	int *datum;
 	/* for integral maps */
+	/* a flag 1 = use signal  value to get colour */
+	int colour_electrodes_with_signal; 
 	int *end_search_interval,*start_search_interval;
 	enum Colour_option colour_option;
 	enum Contours_option contours_option;

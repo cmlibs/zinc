@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_package.c
 
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 26 May 2000
 
 DESCRIPTION :
 Contains function definitions for unemap package.
@@ -29,6 +29,8 @@ struct Map_info
 	enum Electrodes_option electrodes_option;
 	enum Region_type region_type;	
 	FE_value electrode_size;
+	/* a flag  */
+	int colour_electrodes_with_signal;
 	int access_count,number_of_contours,number_of_map_columns,number_of_map_rows;	
 	int rig_node_group_number;/* the corresponding rig_node_group in unmap_package */
 	struct GT_element_settings **contour_settings;
@@ -100,6 +102,7 @@ Create and  and set it's components
 				map_info->electrode_glyph=(struct GT_object *)NULL;
 				map_info->electrode_size=0;
 				map_info->electrodes_option=HIDE_ELECTRODES;
+				map_info->colour_electrodes_with_signal=1;
 				map_info->access_count=0.0;
 			}
 			else
@@ -394,9 +397,10 @@ struct Unemap_package *CREATE(Unemap_package)(
 	struct MANAGER(Spectrum) *spectrum_manager,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct MANAGER(FE_node) *data_manager,
-	struct LIST(GT_object) *glyph_list)
+	struct LIST(GT_object) *glyph_list,
+	struct Colour *colour)
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 26 May 2000
 
 DESCRIPTION:
 Create a Unemap package, and fill in the managers.
@@ -413,7 +417,7 @@ The fields are filed in with set_unemap_package_fields()
 		computed_field_manager&&graphics_window_manager&&texture_manager&&
 		interactive_tool_manager&&
 		scene_manager&&light_model_manager&&light_manager&&spectrum_manager&&
-		graphical_material_manager&&data_manager)
+		graphical_material_manager&&data_manager&&glyph_list&&colour)
 	{
 		if (ALLOCATE(package,struct Unemap_package,1))
 		{
@@ -451,7 +455,7 @@ The fields are filed in with set_unemap_package_fields()
 			package->rig_node_groups=(struct GROUP(FE_node) **)NULL;								
 			/* for the cmgui graphics window */
 			package->viewed_scene=0; 
-			package->no_interpolation_colour=create_Colour(0.65,0.65,0.65);
+			package->no_interpolation_colour=colour;
 			package->window=(struct Graphics_window *)NULL;
 			package->background_colour=create_Colour(0,0,0);
 			package->light=(struct Light *)NULL;			
@@ -460,7 +464,8 @@ The fields are filed in with set_unemap_package_fields()
 			package->user_interface=(struct User_interface *)NULL;		
 			package->computed_field_package=(struct Computed_field_package *)NULL;
 			package->time_keeper = (struct Time_keeper *)NULL;	
-			package->graphical_material=(struct Graphical_material *)NULL;
+			package->map_graphical_material=(struct Graphical_material *)NULL;
+			package->electrode_graphical_material=(struct Graphical_material *)NULL;
 			package->graphics_window_manager=graphics_window_manager;
 			package->light_manager=light_manager;
 			package->texture_manager=texture_manager;
@@ -545,7 +550,8 @@ to NULL.
 		DEACCESS(Light)(&package->light);
 		DEACCESS(Light_model)(&package->light_model);		
 		DEACCESS(Scene)(&package->scene);		
-		DEACCESS(Graphical_material)(&package->graphical_material);	
+		DEACCESS(Graphical_material)(&package->map_graphical_material);	
+		DEACCESS(Graphical_material)(&package->electrode_graphical_material);	
 		DEACCESS(Time_keeper)(&package->time_keeper);	
 		DEALLOCATE(*package_address);		
 		return_code=1;
@@ -978,6 +984,76 @@ is 1,2,3...
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_map_electrodes_option */
+
+int get_unemap_package_map_colour_electrodes_with_signal(
+	struct Unemap_package *package,int map_number)
+/*******************************************************************************
+LAST MODIFIED : 26 May 2000
+
+DESCRIPTION :
+gets the map_colour_electrodes_with_signal for map_info <map_number> in <package>.
+get (and set) with map_number 0,1,2... (an array), but package->number_of_maps
+is 1,2,3... i.e 
+==============================================================================*/
+{
+	int colour_electrodes_with_signal;
+
+	ENTER(get_unemap_package_map_colour_electrodes_with_signal);
+	if((package)&&(map_number>-1)&&(map_number<=package->number_of_maps))	
+	{
+		if(package->number_of_maps==map_number)
+		{			
+			/* No map_info,map_colour_electrodes_with_signal */	
+			colour_electrodes_with_signal=0;		
+		}
+		else
+		{
+			colour_electrodes_with_signal=
+				package->maps_info[map_number]->colour_electrodes_with_signal;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_unemap_package_map_colour_electrodes_with_signal."
+			" invalid arguments");
+		colour_electrodes_with_signal=HIDE_ELECTRODES;
+	}
+	LEAVE;
+	return (colour_electrodes_with_signal);	
+} /* get_unemap_package_map_colour_electrodes_with_signal */
+
+int set_unemap_package_map_colour_electrodes_with_signal(
+	struct Unemap_package *package,int colour_electrodes_with_signal,
+	int map_number)
+/*******************************************************************************
+LAST MODIFIED : 26 May 2000
+
+DESCRIPTION :
+Sets the colour_electrodes_with_signal  for map_info <map_number> in <package>.
+Set (and get) with map_number 0,1,2... (an array), but package->number_of_maps
+is 1,2,3...
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_unemap_package_map_colour_electrodes_with_signal);
+	if(package&&(map_number>-1)&&
+		(map_number<package->number_of_maps))
+	{		
+		return_code =1;
+		package->maps_info[map_number]->colour_electrodes_with_signal=
+			colour_electrodes_with_signal;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_unemap_package_map_colour_electrodes_with_signal ."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_unemap_package_map_colour_electrodes_with_signal */
 
 struct FE_field *get_unemap_package_device_name_field(
 	struct Unemap_package *package)
@@ -3565,57 +3641,110 @@ Sets the User_interface of the unemap package.
 	return (return_code);
 } /* set_unemap_package_user_interface */
 
-struct Graphical_material *get_unemap_package_graphical_material(
+struct Graphical_material *get_unemap_package_map_graphical_material(
 	struct Unemap_package *package)
 /*******************************************************************************
 LAST MODIFIED :  September 3 1999
 
 DESCRIPTION :
-gets the Graphical_material of the unemap package.
+gets the map_graphical_material of the unemap package.
 ==============================================================================*/
 {
-	struct Graphical_material *graphical_material;
-	ENTER(get_unemap_package_graphical_material);
+	struct Graphical_material *map_graphical_material;
+	ENTER(get_unemap_package_map_graphical_material);
 	if(package)
 	{
-		graphical_material=package->graphical_material;
+		map_graphical_material=package->map_graphical_material;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"get_unemap_package_graphical_material."
+		display_message(ERROR_MESSAGE,"get_unemap_package_map_graphical_material."
 				" invalid arguments");
-		graphical_material = (struct Graphical_material *)NULL;
+		map_graphical_material = (struct Graphical_material *)NULL;
 	}
 	LEAVE;
-	return (graphical_material);
-} /* get_unemap_package_graphical_material */
+	return (map_graphical_material);
+} /* get_unemap_package_map_graphical_material */
 
-int set_unemap_package_graphical_material(struct Unemap_package *package,
-	struct Graphical_material *graphical_material)
+int set_unemap_package_map_graphical_material(struct Unemap_package *package,
+	struct Graphical_material *map_graphical_material)
 /*******************************************************************************
 LAST MODIFIED : September 3 1999
 
 DESCRIPTION :
-Sets the Graphical_material of the unemap package.
+Sets the map_graphical_material of the unemap package.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(set_unemap_package_graphical_material);
+	ENTER(set_unemap_package_map_graphical_material);
 	if(package)
 	{
 		return_code =1;		
-		REACCESS(Graphical_material)(&(package->graphical_material),graphical_material);
+		REACCESS(Graphical_material)(&(package->map_graphical_material),map_graphical_material);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"set_unemap_package_graphical_material."
+		display_message(ERROR_MESSAGE,"set_unemap_package_map_graphical_material."
 				" invalid arguments");
 		return_code =0;
 	}
 	LEAVE;
 	return (return_code);
-} /* set_unemap_package_graphical_material */
+} /* set_unemap_package_map_graphical_material */
+
+struct Graphical_material *get_unemap_package_electrode_graphical_material(
+	struct Unemap_package *package)
+/*******************************************************************************
+LAST MODIFIED :  26 May 2000
+
+DESCRIPTION :
+gets the electrode_graphical_material of the unemap package.
+==============================================================================*/
+{
+	struct Graphical_material *electrode_graphical_material;
+	ENTER(get_unemap_package_electrode_graphical_material);
+	if(package)
+	{
+		electrode_graphical_material=package->electrode_graphical_material;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_unemap_package_electrode_graphical_material."
+				" invalid arguments");
+		electrode_graphical_material = (struct Graphical_material *)NULL;
+	}
+	LEAVE;
+	return (electrode_graphical_material);
+} /* get_unemap_package_electrode_graphical_material */
+
+int set_unemap_package_electrode_graphical_material(struct Unemap_package *package,
+	struct Graphical_material *electrode_graphical_material)
+/*******************************************************************************
+LAST MODIFIED : 26 May 2000
+
+DESCRIPTION :
+Sets the electrode_graphical_material of the unemap package.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_unemap_package_electrode_graphical_material);
+	if(package)
+	{
+		return_code =1;		
+		REACCESS(Graphical_material)(&(package->electrode_graphical_material),
+			electrode_graphical_material);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_unemap_package_electrode_graphical_material."
+				" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_unemap_package_electrode_graphical_material */
 
 struct Computed_field_package *get_unemap_package_computed_field_package(
 	struct Unemap_package *package)
@@ -3770,7 +3899,7 @@ Creates the unemap_package scene, if isn't already present.
 			{
 				Scene_enable_graphics(map_scene,package->glyph_list,
 					package->graphical_material_manager,
-					package->graphical_material,package->light_manager,
+					package->map_graphical_material,package->light_manager,
 					package->spectrum_manager,spectrum,
 					package->texture_manager);
 

@@ -260,7 +260,7 @@ necessary.
 				map->colour_option=HIDE_COLOUR;
 			}
 		}
-#endif /* defined (OLD_CODE) */
+#endif /* defined (OLD_CODE) */			
 		XtVaGetValues(map_dialog->spectrum.type_option_menu,
 			XmNmenuHistory,&option_widget,
 			NULL);
@@ -680,7 +680,22 @@ necessary.
 			map->electrodes_option=electrodes_option;
 			map_settings_changed=1;
 		}
-		value_string=(char *)NULL;
+		if (XmToggleButtonGadgetGetState(map_dialog->electrodes.marker_colour_toggle))
+		{
+			if (!(map->colour_electrodes_with_signal))
+			{
+				map_settings_changed=1;
+				map->colour_electrodes_with_signal=1;
+			}
+		}
+		else
+		{
+			if (map->colour_electrodes_with_signal)
+			{
+				map_settings_changed=1;
+				map->colour_electrodes_with_signal=0;
+			}
+		}		value_string=(char *)NULL;
 		XtVaGetValues((map_dialog->electrodes.marker_size_text),
 			XmNvalue,&value_string,
 			NULL);
@@ -718,7 +733,18 @@ necessary.
 			{
 				if (option_widget==map_dialog->electrodes.marker_type.square)
 				{
-					electrodes_marker_type=SQUARE_ELECTRODE_MARKER;
+					electrodes_marker_type=SQUARE_ELECTRODE_MARKER;					
+				}
+				else
+				{
+					if (option_widget==map_dialog->electrodes.marker_type.none)
+					{
+						electrodes_marker_type=HIDE_ELECTRODE_MARKER;
+					}
+					else
+					{
+						electrodes_marker_type=HIDE_ELECTRODE_MARKER;
+					}
 				}
 			}
 		}

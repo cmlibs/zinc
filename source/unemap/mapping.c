@@ -23,7 +23,7 @@ DESCRIPTION :
 #include "graphics/graphics_window.h"
 #include "graphics/graphical_element.h"
 #include "graphics/element_group_settings.h"
-#endif
+#endif /* defined (UNEMAP_USE_NODES) */
 #include "graphics/spectrum.h"
 #include "unemap/drawing_2d.h"
 #include "unemap/interpolate.h"
@@ -784,6 +784,7 @@ NULL if not successful.
 			{
 				map->electrodes_marker_size=1;
 			}
+			map->colour_electrodes_with_signal=1;
 			/*??? calculate from rig ? */
 			map->number_of_electrodes=0;
 			map->electrodes=(struct Device **)NULL;
@@ -2521,8 +2522,8 @@ i.e sock is a hemisphere, torso is a cylinder.
 								dfdx=function->dfdx[count];
 								dfdy=function->dfdy[count];
 								d2fdxdy=function->d2fdxdy[count];
-								if(!(node=create_and_set_mapping_FE_node(template_node,node_manager,region_type,
-									node_number,field_order_info,1,1,1,&x,&y,&z,f,dfdx,dfdy,
+								if(!(node=create_and_set_mapping_FE_node(template_node,node_manager,
+									region_type,node_number,field_order_info,1,1,1,&x,&y,&z,f,dfdx,dfdy,
 									d2fdxdy)))
 								{
 									display_message(ERROR_MESSAGE,"interpolation_function_to_node_group."
@@ -4224,6 +4225,15 @@ Also sets the glyph in the unemap_package <package>
 				glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("diamond",
 					get_unemap_package_glyph_list(package));
 			}break;
+			case HIDE_ELECTRODE_MARKER:
+			{
+				glyph=(struct GT_object *)NULL;
+			}break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,"map_get_map_electrodes_glyph.\n "
+					"invalide glyph type ");glyph=(struct GT_object *)NULL;
+			}break;
 		}	
 		if(glyph)
 		{		
@@ -4386,7 +4396,7 @@ Construct the settings and build the graphics objects for the glyphs.
 	struct Computed_field *computed_coordinate_field,*computed_field,*label_field,
 		*orientation_scale_field;
 	struct FE_field *map_electrode_position_field,*field;
-	struct Graphical_material *default_selected_material,*material;
+	struct Graphical_material *default_selected_material,*electrode_material;
 	struct GROUP(FE_element) *rig_element_group;
 	struct GROUP(FE_node) *rig_node_group;	
 	struct GT_element_group *gt_element_group;	
@@ -4402,7 +4412,7 @@ Construct the settings and build the graphics objects for the glyphs.
 	computed_coordinate_field=(struct Computed_field *)NULL;
 	gt_element_group=(struct GT_element_group *)NULL;	
 	computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
-	material=(struct Graphical_material *)NULL;	
+	electrode_material=(struct Graphical_material *)NULL;	
 	default_selected_material=(struct Graphical_material *)NULL;	
 	scene=(struct Scene *)NULL;	
 	rig_node_group=(struct GROUP(FE_node) *)NULL;
@@ -4414,7 +4424,8 @@ Construct the settings and build the graphics objects for the glyphs.
 	graphical_material_manager=(struct MANAGER(Graphical_material) *)NULL;
 	field=(struct FE_field *)NULL;
 	computed_field=(struct Computed_field *)NULL;
-	if (package&&glyph&&(material=get_unemap_package_graphical_material(package))&&
+	if (package&&glyph&&(electrode_material=
+		get_unemap_package_electrode_graphical_material(package))&&
 		(scene=get_unemap_package_scene(package))&&
 		(computed_field_manager=
 			get_unemap_package_Computed_field_manager(package))&&
@@ -4446,8 +4457,8 @@ Construct the settings and build the graphics objects for the glyphs.
 						get_unemap_package_Graphical_material_manager(package);
 					default_selected_material=FIND_BY_IDENTIFIER_IN_MANAGER
 						(Graphical_material,name)("default_selected",graphical_material_manager);
-					GT_element_settings_set_selected_material(settings,default_selected_material);
-					GT_element_settings_set_material(settings,material);
+					GT_element_settings_set_selected_material(settings,default_selected_material);									
+						GT_element_settings_set_material(settings,electrode_material);					
 					GT_element_settings_set_select_mode(settings,GRAPHICS_SELECT_ON);					
 					glyph_centre[0]=0.0;
 					glyph_centre[1]=0.0;
@@ -4463,11 +4474,15 @@ Construct the settings and build the graphics objects for the glyphs.
 					computed_coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 						Computed_field_is_read_only_with_fe_field,(void *)
 						(map_electrode_position_field),computed_field_manager);
-					GT_element_settings_set_coordinate_field(settings,computed_coordinate_field);
+					GT_element_settings_set_coordinate_field(settings,computed_coordinate_field);				
 					GT_element_settings_set_glyph_parameters(settings,glyph,
-						glyph_centre,glyph_size,orientation_scale_field,glyph_scale_factors);
-					map_set_electrode_colour_from_time(package,map->drawing_information->spectrum,
-						settings,time);
+						glyph_centre,glyph_size,orientation_scale_field,glyph_scale_factors);				 
+					if(map->colour_electrodes_with_signal)
+					/* else electrode takes colour of electrode_material*/
+					{
+						map_set_electrode_colour_from_time(package,map->drawing_information->spectrum,
+							settings,time);
+					}				
 					switch(map->electrodes_option)
 					{
 						case SHOW_ELECTRODE_VALUES:
@@ -4515,6 +4530,8 @@ Construct the settings and build the graphics objects for the glyphs.
 							map_number);
 						set_unemap_package_map_electrodes_option(package,map->electrodes_option,
 							map_number);
+						set_unemap_package_map_colour_electrodes_with_signal(package,
+							map->colour_electrodes_with_signal,map_number);
 						GT_element_group_build_graphics_objects(gt_element_group,
 							(struct FE_element *)NULL,(struct FE_node *)NULL);
 						return_code=1;
@@ -4601,8 +4618,15 @@ rig_node_group referenced by <map_number>. Glyph type taken from
 			electrode_glyph=map_get_map_electrodes_glyph(package,map_number,
 				map->electrodes_marker_type);	
 		}
-		map_show_map_electrodes(package,map_number,electrode_glyph,map,time);
-		map_update_electrode_colour_from_time(package,time);
+		/* glyph can be NULL for no markers */		
+		if(electrode_glyph)		
+		{
+			map_show_map_electrodes(package,map_number,electrode_glyph,map,time);
+			if(map->colour_electrodes_with_signal)
+			{
+				map_update_electrode_colour_from_time(package,time);
+			}
+		}
 	}
 	else
 	{	
@@ -4646,7 +4670,8 @@ removes the maps elecrodes, if they've changed.
 			/*??JW maybe we should just store a flag to indicate that the electrode has*/
 			/* changed, rather than storing all the electrodes_marker_size,electrode */
 			/* option changed  etc at the package/map_info. If so, remove unemap/mapping.h*/
-			/* from unemap_package.h*/				
+			/* from unemap_package.h cf map_settings_changed in update_map_from_dialog */
+			/* in mapping_window.c */
 			GET_NAME(GT_object)(electrode_glyph,&electrode_glyph_name);	
 			/*Glyph type has changed */		
 			if((((!strcmp(electrode_glyph_name,"cross"))&&
@@ -4660,7 +4685,11 @@ removes the maps elecrodes, if they've changed.
 					get_unemap_package_map_electrode_size(unemap_package,region_number))||
 				/* electrode option changed*/
 				(map->electrodes_option!=
-					get_unemap_package_map_electrodes_option(unemap_package,region_number)))
+					get_unemap_package_map_electrodes_option(unemap_package,region_number))||
+				/* colour_electrodes_with_signal flag has changed */
+				(map->colour_electrodes_with_signal!=
+					get_unemap_package_map_colour_electrodes_with_signal
+					 (unemap_package,region_number)))
 			{	
 				for (region_number=0;region_number<number_of_regions;region_number++)
 				{
@@ -4816,7 +4845,7 @@ This function draws the <map> in as a 3D CMGUI scene.
 							{
 								/* No Spectrum or computed field used.*/
 								map_show_surfaces(scene,element_group,
-									get_unemap_package_graphical_material(unemap_package),
+									get_unemap_package_map_graphical_material(unemap_package),
 									get_unemap_package_Graphical_material_manager(unemap_package),
 									(struct Spectrum *)NULL,(struct Computed_field *)NULL,
 									get_unemap_package_no_interpolation_colour(unemap_package));
@@ -4830,7 +4859,7 @@ This function draws the <map> in as a 3D CMGUI scene.
 									Computed_field_is_read_only_with_fe_field,(void *)(fit_field),
 									get_unemap_package_Computed_field_manager(unemap_package));
 								map_show_surfaces(scene,element_group,
-									get_unemap_package_graphical_material(unemap_package),
+									get_unemap_package_map_graphical_material(unemap_package),
 									get_unemap_package_Graphical_material_manager(unemap_package),
 									spectrum,data_field,(struct Colour*)NULL);
 							}
@@ -8027,9 +8056,7 @@ printf("dxdmu=%g, dxdtheta=%g, dydmu=%g, dydtheta=%g\n",dxdmu,dxdtheta,dydmu,
 								display_message(ERROR_MESSAGE,"draw_map.  Invalid frames");
 							}
 						}
-						/* draw electrodes last */
-						if (HIDE_ELECTRODES!=map->electrodes_option)
-						{
+
 							/* for each electrode draw a 'plus' at its position and its name
 								above */
 #if !defined (NO_ALIGNMENT)
@@ -8037,10 +8064,6 @@ printf("dxdmu=%g, dxdtheta=%g, dydmu=%g, dydtheta=%g\n",dxdmu,dxdtheta,dydmu,
 							SET_VERTICAL_ALIGNMENT(BOTTOM_ALIGNMENT);
 #endif
 							electrode=map->electrodes;
-#if defined (OLD_CODE)
-							x_item=x;
-							y_item=y;
-#endif /* defined (OLD_CODE) */
 							screen_x=map->electrode_x;
 							screen_y=map->electrode_y;
 							electrode_drawn=map->electrode_drawn;
@@ -8064,26 +8087,21 @@ printf("dxdmu=%g, dxdtheta=%g, dydmu=%g, dydtheta=%g\n",dxdmu,dxdtheta,dydmu,
 							}
 							for (;number_of_electrodes>0;number_of_electrodes--)
 							{
-#if defined (OLD_CODE)
-/*???DB.  Done after calculating region size */
-								/* calculate screen position */
-								if (number_of_regions>1)
-								{
-									region_number=(*electrode)->description->region->number;
-								}
-								else
-								{
-									region_number=0;
-								}
-								*screen_x=start_x[region_number]+
-									(int)(((*x_item)-min_x[region_number])*
-									stretch_x[region_number]);
-								*screen_y=start_y[region_number]-
-									(int)(((*y_item)-min_y[region_number])*
-									stretch_y[region_number]);
-#endif /* defined (OLD_CODE) */
 								switch (map->electrodes_option)
-								{
+								{								
+									case HIDE_ELECTRODES:									
+									{
+										if ((*electrode)->highlight)
+										{
+											graphics_context=(drawing_information->graphics_context).
+												highlighted_colour;
+										}
+										else
+										{
+											graphics_context=(drawing_information->graphics_context).
+												unhighlighted_colour;
+										};
+									}break;										
 									case SHOW_ELECTRODE_NAMES:
 									case SHOW_CHANNEL_NUMBERS:
 									{
@@ -8107,348 +8125,136 @@ printf("dxdmu=%g, dxdtheta=%g, dydmu=%g, dydtheta=%g\n",dxdmu,dxdtheta,dydmu,
 											graphics_context=(drawing_information->graphics_context).
 												unhighlighted_colour;
 										}
-									} break;
+									} break;								
 									case SHOW_ELECTRODE_VALUES:
-									{
-										/* electrode_drawn and electrode_value already calculated */
+									{											
 										f_value= *electrode_value;
-										switch (map_type)
+										/* if not animation */
+										if (map->activation_front<0)
 										{
-											case MULTIPLE_ACTIVATION:
+											if (NO_MAP_FIELD==map_type)
 											{
-												if ((f_value<min_f)||(f_value>max_f))
-												{
-													*electrode_drawn=0;
-												}
-											} break;
-										}
-#if defined (OLD_CODE)
-										/* calculate value */
-										switch (map_type)
-										{
-											case ACTIVATION:
-											{
-												if (SHOW_ELECTRODE_VALUES==map->electrodes_option)
-												{
-													event=(*electrode)->signal->first_event;
-													while (event&&(event->number<event_number))
-													{
-														event=event->next;
-													}
-													if (event&&(event->number==event_number)&&
-														((ACCEPTED==event->status)||
-														(undecided_accepted&&(UNDECIDED==event->status))))
-													{
-														f_value=(float)((event->time)-datum)*1000/
-															((*electrode)->signal->buffer->frequency);
-														*electrode_drawn=1;
-													}
-													else
-													{
-														*electrode_drawn=0;
-													}
-												}
-												else
-												{
-													*electrode_drawn=0;
-													event=(*electrode)->signal->first_event;
-													while (event)
-													{
-														if ((ACCEPTED==event->status)||
-															(undecided_accepted&&(UNDECIDED==event->status)))
-														{
-															if (*electrode_drawn)
-															{
-																a=frame_time-(float)(event->time)*1000/
-																	((*electrode)->signal->buffer->frequency);
-																if (fabs((double)a)<fabs((double)f_value))
-																{
-																	f_value=a;
-																}
-															}
-															else
-															{
-																*electrode_drawn=1;
-																f_value=frame_time-(float)(event->time)*1000/
-																	((*electrode)->signal->buffer->frequency);
-															}
-														}
-														event=event->next;
-													}
-												}
-											} break;
-											case INTEGRAL:
-											{
-												if ((signal=(*electrode)->signal)&&
-													(0<=start_search_interval)&&
-													(start_search_interval<=end_search_interval)&&
-													(end_search_interval<signal->buffer->
-													number_of_samples)&&
-													((signal->status==ACCEPTED)||(undecided_accepted&&
-													(signal->status==UNDECIDED))))
-												{
-													*electrode_drawn=1;
-													integral= -(double)((*electrode)->channel->offset)*
-														(double)(end_search_interval-
-														start_search_interval+1);
-													number_of_signals=signal->buffer->number_of_signals;
-													switch (signal->buffer->value_type)
-													{
-														case SHORT_INT_VALUE:
-														{
-															short_int_value=
-																(signal->buffer->signals.short_int_values)+
-																(start_search_interval*number_of_signals+
-																(signal->index));
-															for (i=end_search_interval-start_search_interval;
-																i>=0;i--)
-															{
-																integral += (double)(*short_int_value);
-																short_int_value += number_of_signals;
-															}
-														} break;
-														case FLOAT_VALUE:
-														{
-															float_value=
-																(signal->buffer->signals.float_values)+
-																(start_search_interval*number_of_signals+
-																(signal->index));
-															for (i=end_search_interval-start_search_interval;
-																i>=0;i--)
-															{
-																integral += (double)(*float_value);
-																float_value += number_of_signals;
-															}
-														} break;
-													}
-													integral *= (double)((*electrode)->channel->gain)/
-														(double)(signal->buffer->frequency);
-													f_value=(float)integral;
-												}
-												else
-												{
-													*electrode_drawn=0;
-												}
-											} break;
-											case POTENTIAL:
-											{
-												if (NO_INTERPOLATION==map->interpolation_type)
-												{
-													if ((signal=(*electrode)->signal)&&
-														((ACCEPTED==signal->status)||(undecided_accepted&&
-														(UNDECIDED==signal->status)))&&
-														(buffer=signal->buffer)&&(times=buffer->times))
-													{
-														switch (buffer->value_type)
-														{
-															case SHORT_INT_VALUE:
-															{
-																f_value=((float)((buffer->signals.
-																	short_int_values)[(*(map->potential_time))*
-																	(buffer->number_of_signals)+(signal->index)])-
-																	((*electrode)->channel->offset))*
-																	((*electrode)->channel->gain);
-															} break;
-															case FLOAT_VALUE:
-															{
-																f_value=((buffer->signals.float_values)[
-																	(*(map->potential_time))*
-																	(buffer->number_of_signals)+(signal->index)]-
-																	((*electrode)->channel->offset))*
-																	((*electrode)->channel->gain);
-															} break;
-														}
-														*electrode_drawn=1;
-													}
-													else
-													{
-														*electrode_drawn=0;
-													}
-												}
-												else
-												{
-													if ((signal=(*electrode)->signal)&&
-														((ACCEPTED==signal->status)||(undecided_accepted&&
-														(UNDECIDED==signal->status)))&&
-														(buffer=signal->buffer)&&(times=buffer->times)&&
-														((float)(times[0])<=(frame_time_freq=frame_time*
-														(buffer->frequency)/1000))&&(frame_time_freq<=
-														(float)(times[(buffer->number_of_samples)-1])))
-													{
-														*electrode_drawn=1;
-														before=0;
-														after=(buffer->number_of_samples)-1;
-														while (before+1<after)
-														{
-															middle=(before+after)/2;
-															if (frame_time_freq<times[middle])
-															{
-																after=middle;
-															}
-															else
-															{
-																before=middle;
-															}
-														}
-														if (before==after)
-														{
-															proportion=0.5;
-														}
-														else
-														{
-															proportion=
-																((float)(times[after])-frame_time_freq)/
-																(float)(times[after]-times[before]);
-														}
-														switch (signal->buffer->value_type)
-														{
-															case SHORT_INT_VALUE:
-															{
-																f_value=(proportion*
-																	(float)((signal->buffer->signals.
-																	short_int_values)[before*
-																	(signal->buffer->number_of_signals)+
-																	(signal->index)])+(1-proportion)*
-																	(float)((signal->buffer->signals.
-																	short_int_values)[after*
-																	(signal->buffer->number_of_signals)+
-																	(signal->index)])-
-																	((*electrode)->channel->offset))*
-																	((*electrode)->channel->gain);
-															} break;
-															case FLOAT_VALUE:
-															{
-																f_value=(proportion*
-																	(signal->buffer->signals.float_values)[before*
-																	(signal->buffer->number_of_signals)+
-																	(signal->index)]+(1-proportion)*
-																	(signal->buffer->signals.float_values)[after*
-																	(signal->buffer->number_of_signals)+
-																	(signal->index)]-
-																	((*electrode)->channel->offset))*
-																	((*electrode)->channel->gain);
-															} break;
-														}
-													}
-													else
-													{
-														*electrode_drawn=0;
-													}
-												}
-											} break;
-											default:
-											{
-												*electrode_drawn=0;
-											}
-										}
-#endif /* defined (OLD_CODE) */
-										if (*electrode_drawn)
-										{
-											/* if not animation */
-											if (map->activation_front<0)
-											{
-#if defined (OLD_CODE)
-												if (HIDE_COLOUR==map->colour_option)
-												{
-													sprintf(value_string,"%.4g",f_value);
-													name=value_string;
-												}
-												else
-												{
-													name=(char *)NULL;
-												}
-#endif /* defined (OLD_CODE) */
-												if (NO_MAP_FIELD==map_type)
-												{
-													name=(char *)NULL;
-												}
-												else
-												{
-													sprintf(value_string,"%.4g",f_value);
-													name=value_string;
-												}
-												if ((*electrode)->highlight)
-												{
-													graphics_context=(drawing_information->
-														graphics_context).highlighted_colour;
-												}
-												else
-												{
-													if ((HIDE_COLOUR==map->colour_option)&&
-														(SHOW_CONTOURS==map->contours_option))
-													{
-														graphics_context=(drawing_information->
-															graphics_context).unhighlighted_colour;
-													}
-													else
-													{
-														graphics_context=(drawing_information->
-															graphics_context).spectrum;
-														if (f_value<=min_f)
-														{
-															XSetForeground(display,graphics_context,
-																spectrum_pixels[0]);
-														}
-														else
-														{
-															if (f_value>=max_f)
-															{
-																XSetForeground(display,graphics_context,
-																	spectrum_pixels[
-																	number_of_spectrum_colours-1]);
-															}
-															else
-															{
-																XSetForeground(display,graphics_context,
-																	spectrum_pixels[(int)((f_value-min_f)*
-																	(float)(number_of_spectrum_colours-1)/
-																	range_f)]);
-															}
-														}
-													}
-												}
+												name=(char *)NULL;
 											}
 											else
 											{
-												name=(char *)NULL;
-												graphics_context=(drawing_information->
-													graphics_context).spectrum;
-												if (f_value<=min_f)
-												{
-													XSetForeground(display,graphics_context,
-														spectrum_pixels[0]);
-												}
-												else
-												{
-													if (f_value>=max_f)
-													{
-														XSetForeground(display,graphics_context,
-															spectrum_pixels[number_of_spectrum_colours-1]);
-													}
-													else
-													{
-														XSetForeground(display,graphics_context,
-															spectrum_pixels[(int)((f_value-min_f)*
-															(float)(number_of_spectrum_colours-1)/
-															range_f)]);
-													}
-												}
+												sprintf(value_string,"%.4g",f_value);
+												name=value_string;
 											}
 										}
-									} break;
+										if ((*electrode)->highlight)
+										{
+											graphics_context=(drawing_information->graphics_context).
+												highlighted_colour;
+										}
+										else
+										{
+											graphics_context=(drawing_information->graphics_context).
+												unhighlighted_colour;
+										};
+									}break;								
 									default:
 									{
 										*electrode_drawn=0;
 										name=(char *)NULL;
 									} break;
-								}
+								} /* switch (map->electrodes_option) */
+								/* colour with data values*/
+								if(map->colour_electrodes_with_signal)
+								{
+									/* electrode_drawn and electrode_value already calculated */
+									f_value= *electrode_value;
+									switch (map_type)
+									{
+										case MULTIPLE_ACTIVATION:
+										{
+											if ((f_value<min_f)||(f_value>max_f))
+											{
+												*electrode_drawn=0;
+											}
+										} break;
+									}
+									if (*electrode_drawn)
+									{
+										/* if not animation */
+										if (map->activation_front<0)
+										{
+											if ((*electrode)->highlight)
+											{
+												graphics_context=(drawing_information->
+													graphics_context).highlighted_colour;
+											}
+											else
+											{
+												if ((HIDE_COLOUR==map->colour_option)&&
+													(SHOW_CONTOURS==map->contours_option))
+												{
+													graphics_context=(drawing_information->
+														graphics_context).unhighlighted_colour;
+												}
+												else
+												{
+													graphics_context=(drawing_information->
+														graphics_context).spectrum;
+													if (f_value<=min_f)
+													{
+														XSetForeground(display,graphics_context,
+															spectrum_pixels[0]);
+													}
+													else
+													{
+														if (f_value>=max_f)
+														{
+															XSetForeground(display,graphics_context,
+																spectrum_pixels[
+																	number_of_spectrum_colours-1]);
+														}
+														else
+														{
+															XSetForeground(display,graphics_context,
+																spectrum_pixels[(int)((f_value-min_f)*
+																	(float)(number_of_spectrum_colours-1)/
+																	range_f)]);
+														}
+													}
+												}
+											}
+										}
+										else
+										{
+											name=(char *)NULL;
+											graphics_context=(drawing_information->
+												graphics_context).spectrum;
+											if (f_value<=min_f)
+											{
+												XSetForeground(display,graphics_context,
+													spectrum_pixels[0]);
+											}
+											else
+											{
+												if (f_value>=max_f)
+												{
+													XSetForeground(display,graphics_context,
+														spectrum_pixels[number_of_spectrum_colours-1]);
+												}
+												else
+												{
+													XSetForeground(display,graphics_context,
+														spectrum_pixels[(int)((f_value-min_f)*
+															(float)(number_of_spectrum_colours-1)/
+															range_f)]);
+												}
+											}
+										}
+									}
+								} /* if(map->colour_electrodes_with_signal) */
 								if (*electrode_drawn)
 								{
 									marker_size=map->electrodes_marker_size;
 									if (marker_size<1)
 									{
 										marker_size=1;
-									}
+									}									
 									switch (map->electrodes_marker_type)
 									{
 										case CIRCLE_ELECTRODE_MARKER:
@@ -8474,7 +8280,12 @@ printf("dxdmu=%g, dxdtheta=%g, dydmu=%g, dydtheta=%g\n",dxdmu,dxdtheta,dydmu,
 											XPSFillRectangle(display,drawing->pixel_map,
 												graphics_context,*screen_x-marker_size,
 												*screen_y-marker_size,2*marker_size+1,2*marker_size+1);
-										} break;
+										} break;		
+										case HIDE_ELECTRODE_MARKER:
+										{
+											/* do nothing */
+											;
+										} break;											
 									}
 									if (name)
 									{
@@ -8535,16 +8346,11 @@ printf("dxdmu=%g, dxdtheta=%g, dydmu=%g, dydtheta=%g\n",dxdmu,dxdtheta,dydmu,
 									}
 								}
 								electrode++;
-#if defined (OLD_CODE)
-								x_item++;
-								y_item++;
-#endif /* defined (OLD_CODE) */
 								screen_x++;
 								screen_y++;
 								electrode_drawn++;
 								electrode_value++;
 							}
-						}				
 					}
 					else
 					{

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : map_dialog.h
 
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 25 May 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -22,7 +22,7 @@ Global types
 */
 struct Map_dialog
 /*******************************************************************************
-LAST MODIFIED : 23 July 1998
+LAST MODIFIED : 25 May 2000
 
 DESCRIPTION :
 The dialog box for configuring a map.
@@ -111,7 +111,9 @@ The dialog box for configuring a map.
 			Widget circle;
 			Widget plus;
 			Widget square;
+			Widget none;
 		} marker_type;
+		Widget marker_colour_toggle;
 		Widget marker_size_text;
 	} electrodes;
 #endif /* defined (MOTIF) */
