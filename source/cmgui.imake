@@ -37,7 +37,10 @@ SHELL=bash.exe
 #if defined (aix)
 #define aix aix
 #endif
-BIN_PATH=$(CMGUI_DEV_ROOT)/bin
+#if defined (linux)
+/* Need something that defines to linux */
+#define linux() lin ## ux
+#endif
 SOURCE_PATH=$(CMGUI_DEV_ROOT)/source
 UTILITIES_PATH=$(CMGUI_DEV_ROOT)/utilities
 #if defined (CMISS_ROOT_DEFINED)
@@ -109,23 +112,24 @@ PRODUCT_PATH=.
 #if !defined (O64)
 #define UidPath uid
 #if defined (CONSOLE)
-#define Target cmgui_console
+#define Target cmgui-console
 #define SpacesToTabsTarget spaces_to_tabs
 #define TabsToSpacesTarget tabs_to_spaces
 #define Uid2uidhTarget uid2uidh
 #define Makefile cmgui_sgiconsole.make
 #define DependMake cmgui_sgiconsole.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/n32_console
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32_console
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/n32
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/mips-irix
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/mips-n32-irix/cmgui-console
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/mips-n32-irix/cmgui-console
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/mips-n32-irix/cmgui-console
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/mips-n32-irix/cmgui-console
 #else /* defined (CONSOLE) */
 #if !defined (OPTIMISED)
 /* The normal debug and memory check versions keep the same extension
 	as they only differ in one file */
 #if !defined (MEMORY_CHECK)
-#define Target cmgui
+#define Target cmgui-debug
 #define CmguiFiltLibrary libCmguiFilt.so
 #define SpacesToTabsTarget spaces_to_tabs
 #define TabsToSpacesTarget tabs_to_spaces
@@ -133,35 +137,38 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #define Makefile cmgui_sgi.make
 #define DependMake cmgui_sgi.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/n32
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/n32
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/mips-irix
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/mips-n32-irix/cmgui-debug
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/mips-n32-irix/cmgui-debug
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/mips-n32-irix/cmgui-debug
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/mips-n32-irix/cmgui-debug
 #else /* !defined (MEMORY_CHECK) */
-#define Target cmgui_memorycheck
+#define Target cmgui-debug-memorycheck
 #define SpacesToTabsTarget spaces_to_tabs
 #define TabsToSpacesTarget tabs_to_spaces
 #define Uid2uidhTarget uid2uidh
 #define Makefile cmgui_sgi_memorycheck.make
 #define DependMake cmgui_sgi_memorycheck.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/n32
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/n32
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/mips-irix
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/mips-n32-irix/cmgui-debug
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/mips-n32-irix/cmgui-debug
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/mips-n32-irix/cmgui-debug
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/mips-n32-irix/cmgui-debug
 #endif /* !defined (MEMORY_CHECK) */
 #else /* !defined (OPTIMISED) */
-#define Target cmgui_optimised
+#define Target cmgui
 #define SpacesToTabsTarget spaces_to_tabs
 #define TabsToSpacesTarget tabs_to_spaces
 #define Uid2uidhTarget uid2uidh
 #define Makefile cmgui_sgioptimised.make
 #define DependMake cmgui_sgioptimised.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/n32_optimised
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32_optimised
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/n32
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/mips-irix
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/mips-n32-irix/cmgui
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/mips-n32-irix/cmgui
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/mips-n32-irix/cmgui
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/mips-n32-irix/cmgui
 #endif /* !defined (OPTIMISED) */
 #endif /* defined (CONSOLE) */
 #else /* !defined (O64) */
@@ -175,42 +182,45 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #define Makefile cmgui_sgi64.make
 #define DependMake cmgui_sgi64.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/64
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/64
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/64
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/64
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/mips-irix
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/mips-64-irix/cmgui
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/mips-64-irix/cmgui
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/mips-64-irix/cmgui
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/mips-64-irix/cmgui
 #endif /* !defined (O64) */
 
 #elif defined (LINUX) /* switch OperatingSystem */
 #if defined (CONSOLE)
-#define Target cmgui_linux_console
+#define Target cmgui-console
 #define SpacesToTabsTarget spaces_to_tabs_linux
 #define TabsToSpacesTarget tabs_to_spaces_linux
 #define Uid2uidhTarget uid2uidh_linux
 #define Makefile cmgui_linux_console.make
 #define DependMake cmgui_linux_console.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/linux_console
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/linux_console
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/linux_console
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux_console
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/i686-linux
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/i686-linux/cmgui-console
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/i686-linux/cmgui-console
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/i686-linux/cmgui-console
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/i686-linux/cmgui-console
 #else /* defined (CONSOLE) */
 #if defined (GTK_USER_INTERFACE)
-#define Target cmgui_linux_gtk
+#define Target cmgui-gtk
 #define SpacesToTabsTarget spaces_to_tabs_linux
 #define TabsToSpacesTarget tabs_to_spaces_linux
 #define Uid2uidhTarget uid2uidh_linux
 #define Makefile cmgui_linux_gtk.make
 #define DependMake cmgui_linux_gtk.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/linux_gtk
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/linux_gtk
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/linux_gtk
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux_gtk
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/i686-linux
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/i686-linux/cmgui-gtk
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/i686-linux/cmgui-gtk
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/i686-linux/cmgui-gtk
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/i686-linux/cmgui-gtk
 #else /* defined (GTK_USER_INTERFACE) */
 #if defined (OPTIMISED)
 #if defined (DYNAMIC_GL_LINUX)
-#define Target cmgui_linux_optimised_dynamic
+#define Target cmgui-dynamicgl
 #define SpacesToTabsTarget spaces_to_tabs_linux
 #define TabsToSpacesTarget tabs_to_spaces_linux
 #define Uid2uidhTarget uid2uidh_linux
@@ -218,7 +228,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux_gtk
 #define DependMake cmgui_linux_optimised_dynamic.depend
 #define ObjSuffix o
 #else /* defined (DYNAMIC_GL_LINUX) */
-#define Target cmgui_linux_optimised
+#define Target cmgui
 #define SpacesToTabsTarget spaces_to_tabs_linux
 #define TabsToSpacesTarget tabs_to_spaces_linux
 #define Uid2uidhTarget uid2uidh_linux
@@ -227,13 +237,14 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux_gtk
 #define ObjSuffix o
 #endif /* defined (DYNAMIC_GL_LINUX) */
 /* Can't use linux on its own as this is defined! */
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/linux_optimised
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/linux_optimised
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/linux_optimised
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux_optimised
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/i686-linux
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/i686-linux/cmgui
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/i686-linux/cmgui
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/i686-linux/cmgui
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/i686-linux/cmgui
 #else /* defined (OPTIMISED) */
 #if defined (MEMORY_CHECK)
-#define Target cmgui_linux_memorycheck
+#define Target cmgui-debug-memorycheck
 #define SpacesToTabsTarget spaces_to_tabs_linux
 #define TabsToSpacesTarget tabs_to_spaces_linux
 #define Uid2uidhTarget uid2uidh_linux
@@ -242,7 +253,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux_optimised
 #define ObjSuffix o
 #else /* defined (MEMORY_CHECK) */
 #if defined (DYNAMIC_GL_LINUX)
-#define Target cmgui_linux_dynamic
+#define Target cmgui-dynamicgl-debug
 #define SpacesToTabsTarget spaces_to_tabs_linux
 #define TabsToSpacesTarget tabs_to_spaces_linux
 #define Uid2uidhTarget uid2uidh_linux
@@ -250,7 +261,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux_optimised
 #define DependMake cmgui_linux_dynamic.depend
 #define ObjSuffix o
 #else /* defined (DYNAMIC_GL_LINUX) */
-#define Target cmgui_linux
+#define Target cmgui-debug
 #define SpacesToTabsTarget spaces_to_tabs_linux
 #define TabsToSpacesTarget tabs_to_spaces_linux
 #define Uid2uidhTarget uid2uidh_linux
@@ -260,56 +271,60 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux_optimised
 #endif /* defined (DYNAMIC_GL_LINUX) */
 #endif /* defined (MEMORY_CHECK) */
 /* Can't use linux on its own as this is defined! */
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/linux_g
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/linux_g
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/linux_g
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux_g
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/i686-linux
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/i686-linux/cmgui-debug
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/i686-linux/cmgui-debug
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/i686-linux/cmgui-debug
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/i686-linux/cmgui-debug
 #endif /* defined (OPTIMISED) */
 #endif /* defined (GTK_USER_INTERFACE) */
 #endif /* defined (CONSOLE) */
 #elif defined (AIX) /* switch OperatingSystem */
 #if defined (O64)
 #if defined (OPTIMISED)
-#define Target cmgui_aix64_optimised
+#define Target cmgui64
 #define SpacesToTabsTarget spaces_to_tabs_aix
 #define TabsToSpacesTarget tabs_to_spaces_aix
 #define Uid2uidhTarget uid2uidh_aix
 #define Makefile cmgui_aix64_optimised.make
 #define DependMake cmgui_aix64_optimised.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/aix64_optimised
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/aix64_optimised
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/aix64_optimised
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/aix64_optimised
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/rs6000-aix
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/rs6000-64-aix/cmgui
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/rs6000-64-aix/cmgui
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/rs6000-64-aix/cmgui
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/rs6000-64-aix/cmgui
 #else /* defined (OPTIMISED) */
-#define Target cmgui_aix64
+#define Target cmgui64-debug
 #define SpacesToTabsTarget spaces_to_tabs_aix
 #define TabsToSpacesTarget tabs_to_spaces_aix
 #define Uid2uidhTarget uid2uidh_aix
 #define Makefile cmgui_aix64.make
 #define DependMake cmgui_aix64.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/aix64
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/aix64
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/aix64
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/aix64
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/rs6000-aix
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/rs6000-64-aix/cmgui-debug
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/rs6000-64-aix/cmgui-debug
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/rs6000-64-aix/cmgui-debug
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/rs6000-64-aix/cmgui-debug
 #endif /* defined (OPTIMISED) */
 #else /* defined (O64) */
 #if defined (OPTIMISED)
-#define Target cmgui_aix_optimised
+#define Target cmgui
 #define SpacesToTabsTarget spaces_to_tabs_aix
 #define TabsToSpacesTarget tabs_to_spaces_aix
 #define Uid2uidhTarget uid2uidh_aix
 #define Makefile cmgui_aix_optimised.make
 #define DependMake cmgui_aix_optimised.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/aix_optimised
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/aix_optimised
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/aix_optimised
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/aix_optimised
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/rs6000-aix
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/rs6000-32-aix/cmgui
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/rs6000-32-aix/cmgui
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/rs6000-32-aix/cmgui
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/rs6000-32-aix/cmgui
 #else /* defined (OPTIMISED) */
 #if defined (MEMORY_CHECK)
-#define Target cmgui_aix_memorycheck
+#define Target cmgui-debug-memorycheck
 #define SpacesToTabsTarget spaces_to_tabs_aix
 #define TabsToSpacesTarget tabs_to_spaces_aix
 #define Uid2uidhTarget uid2uidh_aix
@@ -317,7 +332,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/aix_optimised
 #define DependMake cmgui_aix_memorycheck.depend
 #define ObjSuffix o
 #else /* defined (MEMORY_CHECK) */
-#define Target cmgui_aix
+#define Target cmgui-debug
 #define SpacesToTabsTarget spaces_to_tabs_aix
 #define TabsToSpacesTarget tabs_to_spaces_aix
 #define Uid2uidhTarget uid2uidh_aix
@@ -326,54 +341,58 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/aix_optimised
 #define ObjSuffix o
 #endif /* defined (MEMORY_CHECK) */
 /* Can't use aix on its own as this is defined! */
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/aix_g
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/aix_g
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/aix_g
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/aix_g
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/rs6000-aix
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/rs6000-32-aix/cmgui-debug
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/rs6000-32-aix/cmgui-debug
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/rs6000-32-aix/cmgui-debug
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/rs6000-32-aix/cmgui-debug
 #endif /* defined (OPTIMISED) */
 #endif /* defined (O64) */
 #elif defined (WIN32) /* switch OperatingSystem */
 #if defined (CONSOLE)
-#define Target cmgui_win32_console.exe
+#define Target cmgui-console.exe
 #define SpacesToTabsTarget spaces_to_tabs_win32.exe
 #define TabsToSpacesTarget tabs_to_spaces_win32.exe
 #define Uid2uidhTarget uid2uidh_win32.exe
 #define Makefile cmgui_win32_console.make
 #define DependMake cmgui_win32_console.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/win32_console
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/win32_console
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/win32_console
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/win32_console
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/i386-win32
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/i386-win32/cmgui-console
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/i386-win32/cmgui-console
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/i386-win32/cmgui-console
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/i386-win32/cmgui-console
 #else /* defined (CONSOLE) */
-#if defined (GTK_USER_INTERFACE)
-#define Target cmgui_win32_gtk.exe
+#if defined (GTK_ONLY_INTERFACE)
+#define Target cmgui-gtk.exe
 #define SpacesToTabsTarget spaces_to_tabs_win32.exe
 #define TabsToSpacesTarget tabs_to_spaces_win32.exe
 #define Uid2uidhTarget uid2uidh_win32.exe
 #define Makefile cmgui_win32_gtk.make
 #define DependMake cmgui_win32_gtk.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/win32_gtk
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/win32_gtk
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/win32_gtk
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/win32_gtk
-#else /* defined (GTK_USER_INTERFACE) */
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/i386-win32
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/i386-win32/cmgui-gtk
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/i386-win32/cmgui-gtk
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/i386-win32/cmgui-gtk
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/i386-win32/cmgui-gtk
+#else /* defined (GTK_ONLY_INTERFACE) */
 #if defined (OPTIMISED)
-#define Target cmgui_win32_optimised.exe
+#define Target cmgui.exe
 #define SpacesToTabsTarget spaces_to_tabs_win32.exe
 #define TabsToSpacesTarget tabs_to_spaces_win32.exe
 #define Uid2uidhTarget uid2uidh_win32.exe
 #define Makefile cmgui_win32_optimised.make
 #define DependMake cmgui_win32_optimised.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/win32_optimised
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/win32_optimised
-UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/win32_optimised
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/win32_optimised
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/i386-win32
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/i386-win32/cmgui
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/i386-win32/cmgui
+UIDH_PATH=$(CMGUI_DEV_ROOT)/res/i386-win32/cmgui
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/res/i386-win32/cmgui
 #else /* defined (OPTIMISED) */
 #if defined (MEMORY_CHECK)
-#define Target cmgui_win32_memorycheck.exe
+#define Target cmgui-debug-memorycheck.exe
 #define SpacesToTabsTarget spaces_to_tabs_win32.exe
 #define TabsToSpacesTarget tabs_to_spaces_win32.exe
 #define Uid2uidhTarget uid2uidh_win32.exe
@@ -381,7 +400,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/win32_optimised
 #define DependMake cmgui_win32_memorycheck.depend
 #define ObjSuffix o
 #else /* defined (MEMORY_CHECK) */
-#define Target cmgui_win32.exe
+#define Target cmgui-debug.exe
 #define SpacesToTabsTarget spaces_to_tabs_win32.exe
 #define TabsToSpacesTarget tabs_to_spaces_win32.exe
 #define Uid2uidhTarget uid2uidh_win32.exe
@@ -390,10 +409,11 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/win32_optimised
 #define ObjSuffix o
 #endif /* defined (MEMORY_CHECK) */
 /* Can't use win32 on its own as this is defined! */
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/win32_g
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/win32_g
-UIDH_PATH=$(CMGUI_DEV_ROOT)/res/cmgui/win32_g
-PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/res/cmgui/win32_g
+BIN_PATH=$(CMGUI_DEV_ROOT)/bin/i386-win32
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/i386-win32/cmgui-debug
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/i386-win32/cmgui-debug
+UIDH_PATH=$(CMGUI_DEV_ROOT)/res/i386-win32/cmgui-debug
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/res/i386-win32/cmgui-debug
 #endif /* defined (OPTIMISED) */
 #endif /* defined (GTK_USER_INTERFACE) */
 #endif /* defined (CONSOLE) */
