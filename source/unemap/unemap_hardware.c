@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.c
 
-LAST MODIFIED : 13 November 2000
+LAST MODIFIED : 2 January 2001
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -15,6 +15,11 @@ WINDOWS - win32 acquisition only version
 		Now the same object will work for all hardware versions
 CALIBRATE_SIGNAL_SQUARE - alternative is a sine wave
 SWITCHING_TIME - for calculating gains during calibration
+SYNCHRONOUS_STIMULATION - allows stimulators to be started at the same time
+	USE_WFM_LOAD - start using WFM_LOAD and WFM_Group_Control rather than WFM_OP
+???DB.  If works then don't need a lot of the start_stimulation_* globals
+	DA_INTERRUPTS_OFF - old way of handling short waveform buffers, now pad
+		buffers
 
 ???To do
 1 Try moving pulse generation set up from unemap_start_sampling to
@@ -30,6 +35,8 @@ SWITCHING_TIME - for calculating gains during calibration
 ==============================================================================*/
 
 #define SYNCHRONOUS_STIMULATION 1
+/*#define DA_INTERRUPTS_OFF 1*/
+#define USE_WFM_LOAD 1
 
 /*#define CALIBRATE_SIGNAL_SQUARE 1*/
 #define SWITCHING_TIME 1
@@ -60,6 +67,10 @@ SWITCHING_TIME - for calculating gains during calibration
 Module constants
 ----------------
 */
+#if !defined (DA_INTERRUPTS_OFF)
+#define MINIMUM_NUMBER_OF_DA_POINTS 500
+#endif /* !defined (DA_INTERRUPTS_OFF) */
+
 #if defined (NI_DAQ)
 #define PCI6031E_DEVICE_CODE 220
 #define PCI6033E_DEVICE_CODE 222
@@ -3295,7 +3306,7 @@ static int load_NI_DA(i16 da_channel,int number_of_channels,
 	int *channel_numbers,int number_of_voltages,float voltages_per_second,
 	float *voltages,unsigned int number_of_cycles)
 /*******************************************************************************
-LAST MODIFIED : 12 November 2000
+LAST MODIFIED : 5 December 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -3317,9 +3328,13 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 ==============================================================================*/
 {
 	f64 da_frequency,*da_voltage_buffer;
-	int *channel_number,first_DA_card,i,j,*load_card,return_code;
+	int *channel_number,first_DA_card,i,j,k,*load_card,return_code;
 	i16 *da_buffer,status,stopped;
-	u32 iterations,number_of_da_points,points;
+	u32 iterations,number_of_cycles_local,number_of_da_points,points;
+#if defined (USE_WFM_LOAD)
+	i16 timebase;
+	u32 update_interval;
+#endif /* defined (USE_WFM_LOAD) */
 
 	ENTER(load_NI_DA);
 #if defined (DEBUG)
@@ -3330,9 +3345,9 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 
 	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
 	{
-		fprintf(unemap_debug,"load_NI_DA %d %p %d %g %p %u\n",number_of_channels,
-			channel_numbers,number_of_voltages,voltages_per_second,voltages,
-			number_of_cycles);
+		fprintf(unemap_debug,"enter load_NI_DA %d %p %d %g %p %u\n",
+			number_of_channels,channel_numbers,number_of_voltages,voltages_per_second,
+			voltages,number_of_cycles);
 		fclose(unemap_debug);
 	}
 	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
@@ -3346,6 +3361,7 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 			}
 			fprintf(unemap_debug,"\n");
 		}
+		fprintf(unemap_debug,"  voltages:\n");
 		maximum_voltages=10;
 		if (number_of_voltages<maximum_voltages)
 		{
@@ -3353,7 +3369,7 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 		}
 		for (i=0;i<maximum_voltages;i++)
 		{
-			fprintf(unemap_debug,"  %d %g\n",i,voltages[i]);
+			fprintf(unemap_debug,"    %d %g\n",i,voltages[i]);
 		}
 		fclose(unemap_debug);
 	}
@@ -3386,6 +3402,8 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 	{
 		if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 		{
+			number_of_cycles_local=(u32)number_of_cycles;
+#if defined (DA_INTERRUPTS_OFF)
 			if (1<number_of_voltages)
 			{
 				number_of_da_points=(u32)number_of_voltages;
@@ -3396,6 +3414,64 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 				number_of_da_points=(u32)2;
 				da_frequency=(f64)1;
 			}
+#else /* defined (DA_INTERRUPTS_OFF) */
+			if (MINIMUM_NUMBER_OF_DA_POINTS<=number_of_voltages)
+			{
+				number_of_da_points=(u32)number_of_voltages;
+				da_frequency=(f64)voltages_per_second;
+			}
+			else
+			{
+				if (0<number_of_cycles_local)
+				{
+					if (1<number_of_voltages)
+					{
+						number_of_da_points=
+							(u32)(number_of_voltages*number_of_cycles);
+						da_frequency=(f64)voltages_per_second;
+					}
+					else
+					{
+						number_of_da_points=(u32)2;
+						da_frequency=(f64)1;
+					}
+					number_of_cycles_local=(u32)1;
+				}
+				else
+				{
+					if (1<number_of_voltages)
+					{
+						number_of_da_points=(u32)((MINIMUM_NUMBER_OF_DA_POINTS/
+							number_of_voltages+1)*number_of_voltages);
+						da_frequency=(f64)voltages_per_second;
+					}
+					else
+					{
+						number_of_da_points=(u32)2;
+						da_frequency=(f64)1;
+						number_of_cycles_local=(u32)1;
+						/*???debug */
+						number_of_da_points=(u32)MINIMUM_NUMBER_OF_DA_POINTS;
+						number_of_cycles_local=(u32)0;
+					}
+				}
+			}
+#endif /* defined (DA_INTERRUPTS_OFF) */
+#if defined (DEBUG)
+/*???debug */
+{
+	FILE *unemap_debug;
+
+	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+	{
+		fprintf(unemap_debug,"  number_of_da_points=%lu\n",number_of_da_points);
+		fprintf(unemap_debug,"  da_frequency=%g\n",da_frequency);
+		fprintf(unemap_debug,"  number_of_cycles_local=%lu\n",
+			number_of_cycles_local);
+		fclose(unemap_debug);
+	}
+}
+#endif /* defined (DEBUG) */
 			ALLOCATE(load_card,int,module_number_of_NI_CARDS);
 			ALLOCATE(da_voltage_buffer,f64,number_of_da_points);
 			if (load_card&&da_voltage_buffer)
@@ -3422,19 +3498,28 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 				{
 					case 0:
 					{
-						da_voltage_buffer[0]=(f64)0;
-						da_voltage_buffer[1]=(f64)0;
+						for (i=0;i<(int)number_of_da_points;i++)
+						{
+							da_voltage_buffer[i]=(f64)0;
+						}
 					} break;
 					case 1:
 					{
-						da_voltage_buffer[0]=(f64)(*voltages);
-						da_voltage_buffer[1]=(f64)(*voltages);
+						for (i=0;i<(int)number_of_da_points;i++)
+						{
+							da_voltage_buffer[i]=(f64)(*voltages);
+						}
 					} break;
 					default:
 					{
-						for (i=0;i<number_of_voltages;i++)
+						k=0;
+						for (i=number_of_da_points/number_of_voltages;i>0;i--)
 						{
-							da_voltage_buffer[i]=(f64)voltages[i];
+							for (j=0;j<number_of_voltages;j++)
+							{
+								da_voltage_buffer[k]=(f64)voltages[j];
+								k++;
+							}
 						}
 					} break;
 				}
@@ -3457,14 +3542,14 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 
 	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
 	{
-		fprintf(unemap_debug,"load_NI_DA.  WFM_Check.  %d %d %d %lu %lu %d\n",
+		fprintf(unemap_debug,"  WFM_Check.  %d %d %d %lu %lu %d\n",
 			(module_NI_CARDS[i]).device_number,da_channel,stopped,iterations,points,
 			status);
 		fclose(unemap_debug);
 	}
 }
 #endif /* defined (DEBUG) */
-						if ((0!=status)||stopped)
+						if ((0==status)&&!stopped)
 						{
 							/* make sure that waveform generation is stopped */
 								/*???DB.  Not sure if it is possible to have different signals
@@ -3478,7 +3563,7 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 
 	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
 	{
-		fprintf(unemap_debug,"load_NI_DA.  1.  WFM_Group_Control(%d,CLEAR)=%d\n",
+		fprintf(unemap_debug,"  WFM_Group_Control(%d,CLEAR)=%d\n",
 			(module_NI_CARDS[i]).device_number,status);
 		fclose(unemap_debug);
 	}
@@ -3491,158 +3576,261 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 								(i16)0);
 #endif /* defined (OLD_CODE) */
 #endif /* !defined (SYNCHRONOUS_STIMULATION) */
-							/* configure the DA to bipolar +/-10 */
-							status=AO_Configure((module_NI_CARDS[i]).device_number,da_channel,
-								/*bipolar*/(i16)0,/*internal voltage reference*/(i16)0,
-								/*reference voltage*/(f64)10,
-								/*update DAC when written to*/(i16)0);
+						}
+						/* configure the DA to bipolar +/-10 */
+						status=AO_Configure((module_NI_CARDS[i]).device_number,da_channel,
+							/*bipolar*/(i16)0,/*internal voltage reference*/(i16)0,
+							/*reference voltage*/(f64)10,
+							/*update DAC when written to*/(i16)0);
+						if (0==status)
+						{
+#if defined (DA_INTERRUPTS_OFF)
+/*???DB.  Causes problems when wraps ? */
+							/* turn off the end of buffer interrupts */
+							status=AO_Change_Parameter((module_NI_CARDS[i]).device_number,
+								da_channel,ND_LINK_COMPLETE_INTERRUPTS,ND_OFF);
 							if (0==status)
 							{
-								/* turn off the end of buffer interrupts */
-								status=AO_Change_Parameter((module_NI_CARDS[i]).device_number,
-									da_channel,ND_LINK_COMPLETE_INTERRUPTS,ND_OFF);
-								if (0==status)
+#endif /* defined (DA_INTERRUPTS_OFF) */
+								if (REALLOCATE(da_buffer,(module_NI_CARDS[i]).da_buffer,i16,
+									number_of_da_points))
 								{
-									if (REALLOCATE(da_buffer,(module_NI_CARDS[i]).da_buffer,i16,
-										number_of_da_points))
+									(module_NI_CARDS[i]).da_buffer=da_buffer;
+								}
+								if (da_buffer)
+								{
+									(module_NI_CARDS[i]).da_buffer_size=number_of_da_points;
+									status=WFM_Scale((module_NI_CARDS[i]).device_number,
+										da_channel,number_of_da_points,/*gain*/(f64)1,
+										da_voltage_buffer,da_buffer);
+									if (0==status)
 									{
-										(module_NI_CARDS[i]).da_buffer=da_buffer;
-									}
-									if (da_buffer)
-									{
-										(module_NI_CARDS[i]).da_buffer_size=number_of_da_points;
-										status=WFM_Scale((module_NI_CARDS[i]).device_number,
-											da_channel,number_of_da_points,/*gain*/(f64)1,
-											da_voltage_buffer,da_buffer);
+										if (first_DA_card)
+										{
+											first_DA_card=0;
+											/* set the desired voltages to the actual voltages
+												used */
+											if (PXI6071E_AD_DA==(module_NI_CARDS[i]).type)
+											{
+												for (j=0;j<number_of_voltages;j++)
+												{
+													voltages[j]=
+														(float)da_buffer[j]*(float)20/(float)4096;
+												}
+											}
+											else
+											{
+												for (j=0;j<number_of_voltages;j++)
+												{
+													voltages[j]=
+														(float)da_buffer[j]*(float)20/(float)65536;
+												}
+											}
+										}
+#if defined (SYNCHRONOUS_STIMULATION)
+#if defined (USE_WFM_LOAD)
+										status=WFM_Load((module_NI_CARDS[i]).device_number,
+											/*number of DA channels*/1,&da_channel,da_buffer,
+											number_of_da_points,
+											/*iterations*/number_of_cycles_local,/*mode*/(i16)0);
 										if (0==status)
 										{
-											if (first_DA_card)
+											status=WFM_Rate(da_frequency,/*units*/(i16)0,&timebase,
+												&update_interval);
+											if (0==status)
 											{
-												first_DA_card=0;
-												/* set the desired voltages to the actual voltages
-													used */
-												if (PXI6071E_AD_DA==(module_NI_CARDS[i]).type)
-												{
-													for (j=0;j<number_of_voltages;j++)
-													{
-														voltages[j]=
-															(float)da_buffer[j]*(float)20/(float)4096;
-													}
-												}
-												else
-												{
-													for (j=0;j<number_of_voltages;j++)
-													{
-														voltages[j]=
-															(float)da_buffer[j]*(float)20/(float)65536;
-													}
-												}
-											}
-#if defined (SYNCHRONOUS_STIMULATION)
-											if (start_stimulation_card)
-											{
-												/* use the waveform trigger on the RTSI bus */
-												status=Select_Signal(
+												status=WFM_ClockRate(
 													(module_NI_CARDS[i]).device_number,
-													ND_OUT_START_TRIGGER,ND_RTSI_1,ND_LOW_TO_HIGH);
+													/*group*/(i16)1,/*update clock*/(i16)0,timebase,
+													update_interval,/*mode*/(i16)0);
+#if defined (DEBUG)
+/*???debug */
+{
+	FILE *unemap_debug;
+
+	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+	{
+		fprintf(unemap_debug,"  WFM_ClockRate(%d,1,0,%d,%lu,0)=%d\n",
+			(module_NI_CARDS[i]).device_number,timebase,update_interval,status);
+		fclose(unemap_debug);
+	}
+}
+#endif /* defined (DEBUG) */
 												if (0==status)
 												{
-													Timeout_Config((module_NI_CARDS[i]).device_number,
-														(i32)0);
-													status=WFM_Op((module_NI_CARDS[i]).device_number,
-														/*number of DA channels*/1,&da_channel,da_buffer,
-														number_of_da_points,
-														/*iterations*/(u32)number_of_cycles,
-														/*frequency*/da_frequency);
-													if (0!=status)
-													{
-														display_message(ERROR_MESSAGE,
-															"load_NI_DA.  WFM_Op failed");
-													}
-												}
-												else
+#endif /* defined (USE_WFM_LOAD) */
+										if (start_stimulation_card)
+										{
+											/* use the waveform trigger on the RTSI bus */
+											status=Select_Signal(
+												(module_NI_CARDS[i]).device_number,
+												ND_OUT_START_TRIGGER,ND_RTSI_1,ND_LOW_TO_HIGH);
+#if defined (DEBUG)
+/*???debug */
+{
+	FILE *unemap_debug;
+
+	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+	{
+		fprintf(unemap_debug,
+			"  Select_Signal(%d,ND_OUT_START_TRIGGER,ND_RTSI_1,ND_LOW_TO_HIGH)=%d\n",
+			(module_NI_CARDS[i]).device_number,status);
+		fclose(unemap_debug);
+	}
+}
+#endif /* defined (DEBUG) */
+											if (0==status)
+											{
+#if defined (USE_WFM_LOAD)
+												status=WFM_Group_Control(
+													module_NI_CARDS[i].device_number,/*group*/1,
+													/*Start*/1);
+#if defined (DEBUG)
+/*???debug */
+{
+	FILE *unemap_debug;
+
+	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+	{
+		fprintf(unemap_debug,"  WFM_Group_Control(%d,START)=%d\n",
+			(module_NI_CARDS[i]).device_number,status);
+		fclose(unemap_debug);
+	}
+}
+#endif /* defined (DEBUG) */
+#else /* defined (USE_WFM_LOAD) */
+												status=WFM_Op((module_NI_CARDS[i]).device_number,
+													/*number of DA channels*/1,&da_channel,da_buffer,
+													number_of_da_points,
+													/*iterations*/(u32)number_of_cycles_local,
+													/*frequency*/da_frequency);
+#endif /* defined (USE_WFM_LOAD) */
+												if (0!=status)
 												{
 													display_message(ERROR_MESSAGE,
+														"load_NI_DA.  WFM_Op failed");
+												}
+											}
+											else
+											{
+												display_message(ERROR_MESSAGE,
 "load_NI_DA.  Select_Signal(%d,ND_OUT_START_TRIGGER,ND_RTSI_1,ND_LOW_TO_HIGH) failed",
-														i);
-												}
+													i);
+											}
+										}
+										else
+										{
+											/* set the waveform trigger on the RTSI bus */
+											status=Select_Signal(
+												(module_NI_CARDS[i]).device_number,
+												ND_RTSI_1,ND_OUT_START_TRIGGER,ND_LOW_TO_HIGH);
+#if defined (DEBUG)
+/*???debug */
+{
+	FILE *unemap_debug;
+
+	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+	{
+		fprintf(unemap_debug,
+			"  Select_Signal(%d,ND_RTSI_1,ND_OUT_START_TRIGGER,ND_LOW_TO_HIGH)=%d\n",
+			(module_NI_CARDS[i]).device_number,status);
+		fclose(unemap_debug);
+	}
+}
+#endif /* defined (DEBUG) */
+											if (0==status)
+											{
+												start_stimulation_card=module_NI_CARDS+i;
+												start_stimulation_da_channel=da_channel;
+												start_stimulation_da_frequency=da_frequency;
+												start_stimulation_iterations=
+													(u32)number_of_cycles_local;
 											}
 											else
 											{
-												/* set the waveform trigger on the RTSI bus */
-												status=Select_Signal(
-													(module_NI_CARDS[i]).device_number,
-													ND_RTSI_1,ND_OUT_START_TRIGGER,ND_LOW_TO_HIGH);
-												if (0==status)
-												{
-													start_stimulation_card=module_NI_CARDS+i;
-													start_stimulation_da_channel=da_channel;
-													start_stimulation_da_frequency=da_frequency;
-													start_stimulation_iterations=(u32)number_of_cycles;
+												display_message(ERROR_MESSAGE,
+"load_NI_DA.  Select_Signal(%d,ND_RTSI_1,ND_OUT_START_TRIGGER,ND_LOW_TO_HIGH) failed",
+													i);
+											}
+										}
+#if defined (USE_WFM_LOAD)
 												}
 												else
 												{
 													display_message(ERROR_MESSAGE,
-"load_NI_DA.  Select_Signal(%d,ND_RTSI_1,ND_OUT_START_TRIGGER,ND_LOW_TO_HIGH) failed",
-														i);
+														"load_NI_DA.  WFM_ClockRate failed (%d).  %d",i,
+														status);
 												}
-											}
-#else /* defined (SYNCHRONOUS_STIMULATION) */
-											if (0==number_of_voltages)
-											{
-												/* set the output voltage to 0 */
-												AO_Write((module_NI_CARDS[i]).device_number,da_channel,
-													(i16)0);
 											}
 											else
 											{
-												if (1==number_of_voltages)
-												{
-													AO_Write((module_NI_CARDS[i]).device_number,
-														da_channel,da_buffer[0]);
-												}
-												else
-												{
-													Timeout_Config((module_NI_CARDS[i]).device_number,
-														(i32)0);
-													status=WFM_Op((module_NI_CARDS[i]).device_number,
-														/*number of DA channels*/1,&da_channel,da_buffer,
-														number_of_da_points,
-														/*iterations*/(u32)number_of_cycles,
-														/*frequency*/da_frequency);
-													if (0!=status)
-													{
-														display_message(ERROR_MESSAGE,
-															"load_NI_DA.  WFM_Op failed");
-													}
-												}
+												display_message(ERROR_MESSAGE,
+													"load_NI_DA.  WFM_Rate failed (%d).  %d",i,status);
 											}
-#endif /* defined (SYNCHRONOUS_STIMULATION) */
 										}
 										else
 										{
 											display_message(ERROR_MESSAGE,
-												"load_NI_DA.  WFM_Scale failed (%d).  %d",i,status);
+												"load_NI_DA.  WFM_Load failed (%d).  %d",i,status);
 										}
+#endif /* defined (USE_WFM_LOAD) */
+#else /* defined (SYNCHRONOUS_STIMULATION) */
+										if (0==number_of_voltages)
+										{
+											/* set the output voltage to 0 */
+											AO_Write((module_NI_CARDS[i]).device_number,da_channel,
+												(i16)0);
+										}
+										else
+										{
+											if (1==number_of_voltages)
+											{
+												AO_Write((module_NI_CARDS[i]).device_number,
+													da_channel,da_buffer[0]);
+											}
+											else
+											{
+												Timeout_Config((module_NI_CARDS[i]).device_number,
+													(i32)0);
+												status=WFM_Op((module_NI_CARDS[i]).device_number,
+													/*number of DA channels*/1,&da_channel,da_buffer,
+													number_of_da_points,
+													/*iterations*/(u32)number_of_cycles_local,
+													/*frequency*/da_frequency);
+												if (0!=status)
+												{
+													display_message(ERROR_MESSAGE,
+														"load_NI_DA.  WFM_Op failed");
+												}
+											}
+										}
+#endif /* defined (SYNCHRONOUS_STIMULATION) */
 									}
 									else
 									{
 										display_message(ERROR_MESSAGE,
-											"load_NI_DA.  Could not reallocate da_buffer (%d,%lu)",i,
-											number_of_da_points);
+											"load_NI_DA.  WFM_Scale failed (%d).  %d",i,status);
 									}
 								}
 								else
 								{
 									display_message(ERROR_MESSAGE,
-										"load_NI_DA.  AO_Change_Parameter failed");
+										"load_NI_DA.  Could not reallocate da_buffer (%d,%lu)",i,
+										number_of_da_points);
 								}
+#if defined (DA_INTERRUPTS_OFF)
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"load_NI_DA.  AO_Configure failed");
+									"load_NI_DA.  AO_Change_Parameter failed");
 							}
+#endif /* defined (DA_INTERRUPTS_OFF) */
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"load_NI_DA.  AO_Configure failed");
 						}
 					}
 					i++;
@@ -3672,6 +3860,18 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 			number_of_channels,channel_numbers,number_of_voltages,voltages_per_second,
 			voltages);
 	}
+#if defined (DEBUG)
+/*???debug */
+{
+	FILE *unemap_debug;
+
+	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+	{
+		fprintf(unemap_debug,"leave load_NI_DA %d\n",return_code);
+		fclose(unemap_debug);
+	}
+}
+#endif /* defined (DEBUG) */
 	LEAVE;
 
 	return (return_code);
@@ -3681,7 +3881,7 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 #if defined (NI_DAQ)
 static int start_NI_DA(void)
 /*******************************************************************************
-LAST MODIFIED : 12 November 2000
+LAST MODIFIED : 5 December 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -3705,9 +3905,8 @@ load_NI_DA) and have not yet started.
 
 	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
 	{
-		fprintf(unemap_debug,"enter start_NI_DA %d %d %p %p\n",
-			module_configured,module_number_of_NI_CARDS,module_NI_CARDS,
-			start_stimulation_card);
+		fprintf(unemap_debug,"enter start_NI_DA %d %d %p\n",
+			module_configured,module_number_of_NI_CARDS,module_NI_CARDS);
 		fclose(unemap_debug);
 	}
 }
@@ -3717,6 +3916,23 @@ load_NI_DA) and have not yet started.
 #if defined (SYNCHRONOUS_STIMULATION)
 		if (start_stimulation_card)
 		{
+#if defined (USE_WFM_LOAD)
+			status=WFM_Group_Control(start_stimulation_card->device_number,/*group*/1,
+				/*Start*/1);
+#if defined (DEBUG)
+/*???debug */
+{
+	FILE *unemap_debug;
+
+	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+	{
+		fprintf(unemap_debug,"  WFM_Group_Control(%d,START)=%d\n",
+			start_stimulation_card->device_number,status);
+		fclose(unemap_debug);
+	}
+}
+#endif /* defined (DEBUG) */
+#else /* defined (USE_WFM_LOAD) */
 			Timeout_Config(start_stimulation_card->device_number,(i32)0);
 			status=WFM_Op(start_stimulation_card->device_number,
 				/*number of DA channels*/1,&start_stimulation_da_channel,
@@ -3724,11 +3940,42 @@ load_NI_DA) and have not yet started.
 				start_stimulation_card->da_buffer_size,
 				/*iterations*/start_stimulation_iterations,
 				/*frequency*/start_stimulation_da_frequency);
+#endif /* defined (USE_WFM_LOAD) */
+			status=Select_Signal(start_stimulation_card->device_number,ND_RTSI_1,
+				ND_NONE,ND_DONT_CARE);
+#if defined (DEBUG)
+/*???debug */
+{
+	FILE *unemap_debug;
+
+	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+	{
+		fprintf(unemap_debug,
+			"  Select_Signal(%d,ND_RTSI_1,ND_NONE,ND_DONT_CARE)=%d\n",
+			start_stimulation_card->device_number,status);
+		fclose(unemap_debug);
+	}
+}
+#endif /* defined (DEBUG) */
 			start_stimulation_card=(struct NI_card *)NULL;
 			for (i=0;i<module_number_of_NI_CARDS;i++)
 			{
 				status=Select_Signal((module_NI_CARDS[i]).device_number,
 					ND_OUT_START_TRIGGER,ND_AUTOMATIC,ND_LOW_TO_HIGH);
+#if defined (DEBUG)
+/*???debug */
+{
+	FILE *unemap_debug;
+
+	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+	{
+		fprintf(unemap_debug,
+			"  Select_Signal(%d,ND_OUT_START_TRIGGER,ND_AUTOMATIC,ND_LOW_TO_HIGH)=%d\n",
+			(module_NI_CARDS[i]).device_number,status);
+		fclose(unemap_debug);
+	}
+}
+#endif /* defined (DEBUG) */
 				if (0!=status)
 				{
 					display_message(ERROR_MESSAGE,
@@ -3746,6 +3993,18 @@ load_NI_DA) and have not yet started.
 			"start_NI_DA.  Invalid configuration.  %d %p %d",module_configured,
 			module_NI_CARDS,module_number_of_NI_CARDS);
 	}
+#if defined (DEBUG)
+/*???debug */
+{
+	FILE *unemap_debug;
+
+	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+	{
+		fprintf(unemap_debug,"leave start_NI_DA %d\n",return_code);
+		fclose(unemap_debug);
+	}
+}
+#endif /* defined (DEBUG) */
 	LEAVE;
 
 	return (return_code);
@@ -3986,7 +4245,7 @@ Stops the <da_channel> for the specified NI card(s).
 
 	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
 	{
-		fprintf(unemap_debug,"stop_NI_DA %d %d\n",da_channel,channel_number);
+		fprintf(unemap_debug,"enter stop_NI_DA %d %d\n",da_channel,channel_number);
 		fclose(unemap_debug);
 	}
 }
@@ -4031,7 +4290,7 @@ Stops the <da_channel> for the specified NI card(s).
 
 	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
 	{
-		fprintf(unemap_debug,"stop_NI_DA.  1.  WFM_Group_Control(%d,CLEAR)=%d\n",
+		fprintf(unemap_debug,"  WFM_Group_Control(%d,CLEAR)=%d\n",
 			(module_NI_CARDS[i]).device_number,status);
 		fclose(unemap_debug);
 	}
@@ -4076,6 +4335,18 @@ Stops the <da_channel> for the specified NI card(s).
 			"stop_NI_DA.  Invalid argument %d",channel_number);
 	}
 #endif /* defined (NI_DAQ) */
+#if defined (DEBUG)
+/*???debug */
+{
+	FILE *unemap_debug;
+
+	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+	{
+		fprintf(unemap_debug,"leave stop_NI_DA %d\n",return_code);
+		fclose(unemap_debug);
+	}
+}
+#endif /* defined (DEBUG) */
 	LEAVE;
 
 	return (return_code);
