@@ -4399,7 +4399,7 @@ graphics window on screen.
 
 int Graphics_window_view_all(struct Graphics_window *window)
 /*******************************************************************************
-LAST MODIFIED : 19 June 2000
+LAST MODIFIED : 16 October 2001
 
 DESCRIPTION :
 Finds the x, y and z ranges from the scene and sets the view parameters so
@@ -4411,34 +4411,39 @@ with commands for setting these.
 	double centre_x,centre_y,centre_z,clip_factor,radius,
 		size_x,size_y,size_z,width_factor;
 	int pane_no,return_code;
+	double left, right, bottom, top, near, far;
 
 	ENTER(Graphics_window_view_all);
 	if (window)
 	{
-		if (Scene_get_graphics_range(window->scene,
-			&centre_x,&centre_y,&centre_z,&size_x,&size_y,&size_z)&&			
-			(radius=0.5*sqrt(size_x*size_x + size_y*size_y + size_z*size_z)))
+		return_code = 1;
+
+		Scene_get_graphics_range(window->scene,
+			&centre_x, &centre_y, &centre_z, &size_x, &size_y, &size_z);
+		radius = 0.5*sqrt(size_x*size_x + size_y*size_y + size_z*size_z);
+		if (0 == radius)
 		{
-			return_code=1;
-			/* enlarge radius to keep image within edge of window */
-			/*???RC width_factor should be read in from defaults file */
-			width_factor=1.05;
-			radius *= width_factor;
-			/*???RC clip_factor should be read in from defaults file: */
-			clip_factor = 10.0;
-			for (pane_no=0;(pane_no<GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES)&&
-				return_code;pane_no++)
-			{
-				return_code=Scene_viewer_set_view_simple(
-					window->scene_viewer[pane_no],centre_x,centre_y,centre_z,
-						radius,window->std_view_angle,clip_factor*radius);
-			}
+			/* get current "radius" from first scene viewer */
+			Scene_viewer_get_viewing_volume(window->scene_viewer[0],
+				&left, &right, &bottom, &top, &near, &far);
+			radius = 0.5*(right - left);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Graphics_window_view_all.  No valid range obtained from scene");
-			return_code=0;
+			/*???RC width_factor should be read in from defaults file */
+			width_factor = 1.05;
+			/* enlarge radius to keep image within edge of window */
+			radius *= width_factor;
+		}
+
+		/*???RC clip_factor should be read in from defaults file: */
+		clip_factor = 10.0;
+		for (pane_no = 0; (pane_no < GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES) &&
+			return_code; pane_no++)
+		{
+			return_code = Scene_viewer_set_view_simple(
+				window->scene_viewer[pane_no], centre_x, centre_y, centre_z,
+				radius, window->std_view_angle, clip_factor*radius);
 		}
 	}
 	else

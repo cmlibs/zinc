@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.h
 
-LAST MODIFIED : 31 May 2001
+LAST MODIFIED : 16 October 2001
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -315,11 +315,10 @@ Returns the GT_object referenced by <scene_object>.
 int Scene_object_set_gt_object(struct Scene_object *scene_object,
 	struct GT_object *gt_object);
 /*******************************************************************************
-LAST MODIFIED : 21 July 1998
+LAST MODIFIED : 16 October 2001
 
 DESCRIPTION :
-Changes the GT_object referenced by <scene_object>. Use to point copied scene
-objects to graphics object specific to a scene, eg. scene->axis_object.
+Changes the GT_object referenced by <scene_object>.
 ==============================================================================*/
 
 int Scene_object_has_gt_object(struct Scene_object *scene_object,
@@ -1250,83 +1249,15 @@ Creates a Time_object with name <time_object_name> and sets that as the time
 object for the scene_object named <scene_object_name>.
 ==============================================================================*/
 
-int Scene_get_axis_lengths(struct Scene *scene,Triple axis_lengths);
-/*******************************************************************************
-LAST MODIFIED : 9 May 1999
-
-DESCRIPTION :
-Returns the length of the axes - iff graphics are enabled.
-==============================================================================*/
-
-int Scene_set_axis_lengths(struct Scene *scene,Triple axis_lengths);
-/*******************************************************************************
-LAST MODIFIED : 9 May 1999
-
-DESCRIPTION :
-Sets the length of the axes - iff graphics are enabled.
-Each axis length can now be set separately.
-==============================================================================*/
-
-struct Graphical_material *Scene_get_axis_material(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 20 July 1998
-
-DESCRIPTION :
-Returns the material used to draw the axes - iff graphics are enabled.
-==============================================================================*/
-
-int Scene_set_axis_material(struct Scene *scene,
-	struct Graphical_material *material);
-/*******************************************************************************
-LAST MODIFIED : 20 July 1998
-
-DESCRIPTION :
-Sets the material used to draw the axes - iff graphics are enabled.
-==============================================================================*/
-
-int Scene_get_axis_origin(struct Scene *scene,Triple axis_origin);
-/*******************************************************************************
-LAST MODIFIED : 31 July 1998
-
-DESCRIPTION :
-Returns the origin of the axes - iff graphics are enabled.
-==============================================================================*/
-
-int Scene_set_axis_origin(struct Scene *scene,Triple axis_origin);
-/*******************************************************************************
-LAST MODIFIED : 31 July 1998
-
-DESCRIPTION :
-Sets the length of the axes - iff graphics are enabled.
-==============================================================================*/
-
-enum GT_visibility_type Scene_get_axis_visibility(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 21 July 1998
-
-DESCRIPTION :
-Returns the visibility of the axes - iff graphics are enabled.
-==============================================================================*/
-
-int Scene_set_axis_visibility(struct Scene *scene,
-	enum GT_visibility_type visibility);
-/*******************************************************************************
-LAST MODIFIED : 21 July 1998
-
-DESCRIPTION :
-Sets the visibility of the axes - iff graphics are enabled.
-==============================================================================*/
-
 int Scene_get_graphics_range(struct Scene *scene,
-	double *centre_x,double *centre_y,double *centre_z,
-	double *size_x,double *size_y,double *size_z);
+	double *centre_x, double *centre_y, double *centre_z,
+	double *size_x, double *size_y, double *size_z);
 /*******************************************************************************
-LAST MODIFIED : 19 June 2000
+LAST MODIFIED : 16 October 2001
 
 DESCRIPTION :
-Finds the range of all visible graphics objects in scene. If there is nothing
-visible, finds the axis origin. If the scene range is a point, adds the axis
-lengths.
+Finds the range of all visible graphics objects in scene.
+Returns 0 without error if scene is empty.
 ==============================================================================*/
 
 int Scene_get_element_group_position(struct Scene *scene,

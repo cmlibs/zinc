@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 8 June 2001
+LAST MODIFIED : 16 October 2001
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -153,9 +153,6 @@ Stores the collections of objects that make up a 3-D graphical model.
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
 	struct FE_node_selection *data_selection,*node_selection;
-
-	/* graphics object representing axes */
-	struct GT_object *axis_object;
 
 	/* attribute managers and defaults: */
 	struct LIST(GT_object) *glyph_list;
@@ -1404,86 +1401,6 @@ Copies the scene_object and adds it to the list.
 
 	return (return_code);
 } /* Scene_object_copy_to_list */
-
-static struct GT_object *make_axis_graphics_object(
-	struct Graphical_material *default_material,
-	struct LIST(GT_object) *glyph_list)
-/*******************************************************************************
-LAST MODIFIED : 16 November 2000
-
-DESCRIPTION :
-Creates a graphics object of type g_GLYPH_SET which contains a single reference
-to the "axes" glyph used for displaying axes with the scene.
-==============================================================================*/
-{
-	struct GT_glyph_set *glyph_set;
-	struct GT_object *glyph,*graphics_object;
-	Triple *axis1_list, *axis2_list, *axis3_list, *point_list, *scale_list;
-
-	ENTER(make_axis_graphics_object);
-	if (default_material&&glyph_list)
-	{
-		glyph_set=(struct GT_glyph_set *)NULL;
-		if ((glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("axes",glyph_list))&&
-			ALLOCATE(point_list,Triple,1)&&ALLOCATE(axis1_list,Triple,1)&&
-			ALLOCATE(axis2_list,Triple,1)&&ALLOCATE(axis3_list,Triple,1) &&
-			ALLOCATE(scale_list,Triple,1))
-		{
-			(*point_list)[0]=0.0;
-			(*point_list)[1]=0.0;
-			(*point_list)[2]=0.0;
-			(*axis1_list)[0]=1.0;
-			(*axis1_list)[1]=0.0;
-			(*axis1_list)[2]=0.0;
-			(*axis2_list)[0]=0.0;
-			(*axis2_list)[1]=1.0;
-			(*axis2_list)[2]=0.0;
-			(*axis3_list)[0]=0.0;
-			(*axis3_list)[1]=0.0;
-			(*axis3_list)[2]=1.0;
-			(*scale_list)[0]=1.0;
-			(*scale_list)[1]=1.0;
-			(*scale_list)[2]=1.0;
-			if (!(glyph_set=CREATE(GT_glyph_set)(1,point_list,axis1_list,axis2_list,
-				axis3_list, scale_list, glyph,(char **)NULL,g_NO_DATA,(GTDATA *)NULL,
-				/*object_name*/0,/*names*/(int *)NULL)))
-			{
-				DEALLOCATE(point_list);
-				DEALLOCATE(axis1_list);
-				DEALLOCATE(axis2_list);
-				DEALLOCATE(axis3_list);
-				DEALLOCATE(scale_list);
-			}
-		}
-		if (glyph_set)
-		{
-			if (graphics_object=CREATE(GT_object)("axes",g_GLYPH_SET,
-				default_material))
-			{
-				if (!GT_OBJECT_ADD(GT_glyph_set)(graphics_object,/*time*/0.0,glyph_set))
-				{
-					DESTROY(GT_object)(&graphics_object);
-					DESTROY(GT_glyph_set)(&glyph_set);
-				}
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"make_axis_graphics_object.  Could not create glyph_set");
-			graphics_object=(struct GT_object *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"make_axis_graphics_object.  Invalid argument(s)");
-		graphics_object=(struct GT_object *)NULL;
-	}
-	LEAVE;
-
-	return (graphics_object);
-} /* make_axis_graphics_object */
 
 static int Scene_add_Scene_object(struct Scene *scene,
 	struct Scene_object *scene_object,int position)
@@ -3258,11 +3175,10 @@ Returns the GT_object referenced by <scene_object>.
 int Scene_object_set_gt_object(struct Scene_object *scene_object,
 	struct GT_object *gt_object)
 /*******************************************************************************
-LAST MODIFIED : 21 July 1998
+LAST MODIFIED : 16 October 2001
 
 DESCRIPTION :
-Changes the GT_object referenced by <scene_object>. Use to point copied scene
-objects to graphics object specific to a scene, eg. scene->axis_object.
+Changes the GT_object referenced by <scene_object>.
 ==============================================================================*/
 {
 	int return_code;
@@ -3271,12 +3187,7 @@ objects to graphics object specific to a scene, eg. scene->axis_object.
 	if (scene_object&&gt_object&&
 		(SCENE_OBJECT_GRAPHICS_OBJECT==scene_object->type))
 	{
-		ACCESS(GT_object)(gt_object);
-		if (scene_object->gt_object)
-		{
-			DEACCESS(GT_object)(&(scene_object->gt_object));
-		}
-		scene_object->gt_object=gt_object;
+		REACCESS(GT_object)(&(scene_object->gt_object), gt_object);
 		Scene_object_changed_internal(scene_object);
 		return_code=1;
 	}
@@ -4262,8 +4173,6 @@ from the default versions of these functions.
 			scene->element_selection=(struct FE_element_selection *)NULL;
 			scene->node_selection=(struct FE_node_selection *)NULL;
 			scene->data_selection=(struct FE_node_selection *)NULL;
-			/* axes created once graphics enabled */
-			scene->axis_object=(struct GT_object *)NULL;
 			/* attributes: */
 			scene->glyph_list=(struct LIST(GT_object) *)NULL;
 			scene->graphical_material_manager=
@@ -4504,11 +4413,6 @@ NOTE: The light_manager is not currently used by the scene.
 			scene->texture_manager_callback_id=
 				MANAGER_REGISTER(Texture)(Scene_Texture_change,
 				(void *)scene,scene->texture_manager);
-			/* get axis glyph and material */
-			scene->axis_object=make_axis_graphics_object(default_material,glyph_list);
-			ACCESS(GT_object)(scene->axis_object);
-			Scene_add_graphics_object(scene,scene->axis_object,0,
-				scene->axis_object->name,/*fast_changing*/0);
 		}
 		return_code=1;
 	}
@@ -4563,10 +4467,6 @@ Removes links to all objects required to display graphics.
 		{
 			DEACCESS(Spectrum)(&(scene->default_spectrum));
 		}
-		if (scene->axis_object)
-		{
-			DEACCESS(GT_object)(&(scene->axis_object));
-		}
 		scene->graphical_material_manager=
 			(struct MANAGER(Graphical_material) *)NULL;
 		scene->graphical_material_manager_callback_id=(void *)NULL;
@@ -4576,7 +4476,6 @@ Removes links to all objects required to display graphics.
 		scene->spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 		scene->spectrum_manager_callback_id=(void *)NULL;
 		scene->default_spectrum=(struct Spectrum *)NULL;
-		scene->axis_object=(struct GT_object *)NULL;
 		return_code=1;
 	}
 	else
@@ -4924,7 +4823,6 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 	struct LIST(Light) *temp_list_of_lights;
 	struct LIST(Scene_object) *temp_scene_object_list;
 	struct Scene_object *scene_object;
-	Triple axis_lengths;
 
 	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(Scene,name));
 	if (source && destination)
@@ -4936,10 +4834,6 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 				source->graphical_material_manager,source->default_material,
 				source->light_manager,source->spectrum_manager,source->default_spectrum,
 				source->texture_manager);
-			/* make sure the destination axes have same size and material as source */
-			Scene_get_axis_lengths(source,axis_lengths);
-			Scene_set_axis_lengths(destination,axis_lengths);
-			Scene_set_axis_material(destination,Scene_get_axis_material(source));
 		}
 		if (source->default_time_keeper)
 		{
@@ -4967,21 +4861,6 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 			destination->list_of_lights=temp_list_of_lights;
 			DESTROY(LIST(Scene_object))(&(destination->scene_object_list));
 			destination->scene_object_list=temp_scene_object_list;
-			/* must make sure the axes scene_object in scene_object_list points to
-				 the axis_object for the destination scene - not the source one */
-			if (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-				Scene_object_has_gt_object,(void *)source->axis_object,
-				destination->scene_object_list))
-			{
-				if (destination->axis_object)
-				{
-					Scene_object_set_gt_object(scene_object,destination->axis_object);
-				}
-				else
-				{
-					Scene_remove_graphics_object(destination,source->axis_object);
-				}
-			}
 			/* NOTE: MUST NOT COPY SCENE_MANAGER! */
 			destination->display_list_current=0;
 			return_code=1;
@@ -7775,392 +7654,58 @@ object for the scene_object named <scene_object_name>.
 	return (return_code);
 } /* Scene_update_time_behaviour */
 
-int Scene_get_axis_lengths(struct Scene *scene,Triple axis_lengths)
-/*******************************************************************************
-LAST MODIFIED : 9 May 1999
-
-DESCRIPTION :
-Returns the length of the axes - iff graphics are enabled.
-==============================================================================*/
-{
-	int return_code;
-	struct GT_glyph_set *glyph_set;
-
-	ENTER(Scene_get_axis_lengths);
-	if (scene&&scene->axis_object&&axis_lengths)
-	{
-		if ((glyph_set=GT_OBJECT_GET(GT_glyph_set)(scene->axis_object,/*time*/0.0))
-			&&glyph_set->axis1_list)
-		{
-			axis_lengths[0]=(*(glyph_set->axis1_list))[0];
-			axis_lengths[1]=(*(glyph_set->axis2_list))[1];
-			axis_lengths[2]=(*(glyph_set->axis3_list))[2];
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_get_axis_lengths.  Invalid glyph set");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_get_axis_lengths.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_get_axis_lengths */
-
-int Scene_set_axis_lengths(struct Scene *scene,Triple axis_lengths)
-/*******************************************************************************
-LAST MODIFIED : 7 June 2001
-
-DESCRIPTION :
-Sets the length of the axes - iff graphics are enabled.
-Each axis length can now be set separately.
-==============================================================================*/
-{
-	int return_code;
-	struct GT_glyph_set *glyph_set;
-
-	ENTER(Scene_set_axis_lengths);
-	if (scene && scene->axis_object && axis_lengths && (0.0 < axis_lengths[0]) &&
-		(0.0 < axis_lengths[1]) && (0.0 < axis_lengths[2]))
-	{
-		if ((glyph_set = GT_OBJECT_GET(GT_glyph_set)(scene->axis_object,
-			/*time*/0.0)) &&
-			glyph_set->axis1_list && glyph_set->axis2_list && glyph_set->axis3_list)
-		{
-			if ((axis_lengths[0] != (*(glyph_set->axis1_list))[0])||
-				(axis_lengths[1] != (*(glyph_set->axis1_list))[1])||
-				(axis_lengths[2] != (*(glyph_set->axis1_list))[2]))
-			{
-				(*(glyph_set->axis1_list))[0] = axis_lengths[0];
-				(*(glyph_set->axis2_list))[1] = axis_lengths[1];
-				(*(glyph_set->axis3_list))[2] = axis_lengths[2];
-				GT_object_changed(scene->axis_object);
-				return_code = 1;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_set_axis_lengths.  Invalid axis object");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_set_axis_lengths.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_set_axis_lengths */
-
-struct Graphical_material *Scene_get_axis_material(struct Scene *scene)
-/*******************************************************************************
-LAST MODIFIED : 21 July 1998
-
-DESCRIPTION :
-Returns the material used to draw the axes - iff graphics are enabled.
-==============================================================================*/
-{
-	struct Graphical_material *material;
-
-	ENTER(Scene_get_axis_material);
-	if (scene&&scene->axis_object)
-	{
-		material=scene->axis_object->default_material;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_get_axis_material.  Invalid argument(s)");
-		material=(struct Graphical_material *)NULL;
-	}
-	LEAVE;
-
-	return (material);
-} /* Scene_get_axis_material */
-
-int Scene_set_axis_material(struct Scene *scene,
-	struct Graphical_material *material)
-/*******************************************************************************
-LAST MODIFIED : 21 July 1998
-
-DESCRIPTION :
-Sets the material used to draw the axes - iff graphics are enabled.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_set_axis_material);
-	if (scene&&scene->axis_object&&material)
-	{
-		return_code=set_GT_object_default_material(scene->axis_object,material);
-		GT_object_changed(scene->axis_object);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_set_axis_material.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_set_axis_material */
-
-int Scene_get_axis_origin(struct Scene *scene,Triple axis_origin)
-/*******************************************************************************
-LAST MODIFIED : 3 August 1998
-
-DESCRIPTION :
-Returns the origin of the axes - iff graphics are enabled.
-==============================================================================*/
-{
-	int return_code;
-	struct GT_glyph_set *glyph_set;
-
-	ENTER(Scene_get_axis_origin);
-	if (scene&&axis_origin&&scene->axis_object)
-	{
-		if ((glyph_set=GT_OBJECT_GET(GT_glyph_set)(scene->axis_object,/*time*/0.0))
-			&&glyph_set->point_list)
-		{
-			axis_origin[0]=(*(glyph_set->point_list))[0];
-			axis_origin[1]=(*(glyph_set->point_list))[1];
-			axis_origin[2]=(*(glyph_set->point_list))[2];
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_get_axis_origin.  Invalid glyph set");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_get_axis_origin.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_get_axis_origin */
-
-int Scene_set_axis_origin(struct Scene *scene,Triple axis_origin)
-/*******************************************************************************
-LAST MODIFIED : 3 August 1998
-
-DESCRIPTION :
-Sets the length of the axes - iff graphics are enabled.
-==============================================================================*/
-{
-	int return_code;
-	struct GT_glyph_set *glyph_set;
-
-	ENTER(Scene_set_axis_origin);
-	if (scene&&axis_origin&&scene->axis_object)
-	{
-		if ((glyph_set=GT_OBJECT_GET(GT_glyph_set)(scene->axis_object,/*time*/0.0))
-			&&glyph_set->point_list)
-		{
-			(*(glyph_set->point_list))[0]=axis_origin[0];
-			(*(glyph_set->point_list))[1]=axis_origin[1];
-			(*(glyph_set->point_list))[2]=axis_origin[2];
-
-			GT_object_changed(scene->axis_object);
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_set_axis_origin.  Invalid axis object");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_set_axis_origin.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_set_axis_origin */
-
-enum GT_visibility_type Scene_get_axis_visibility(struct Scene *scene)
-/*******************************************************************************
-LAST MODIFIED : 21 July 1998
-
-DESCRIPTION :
-Returns the visibility of the axes - iff graphics are enabled.
-==============================================================================*/
-{
-	enum GT_visibility_type visibility;
-	struct Scene_object *scene_object;
-
-	ENTER(Scene_get_axis_visibility);
-	if (scene&&scene->axis_object)
-	{
-		if (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-			Scene_object_has_gt_object,(void *)scene->axis_object,
-			scene->scene_object_list))
-		{
-			visibility=Scene_object_get_visibility(scene_object);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_get_axis_visibility.  Invalid axis object");
-			visibility=g_INVISIBLE;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_get_axis_visibility.  Invalid argument(s)");
-		visibility=g_INVISIBLE;
-	}
-	LEAVE;
-
-	return (visibility);
-} /* Scene_get_axis_visibility */
-
-int Scene_set_axis_visibility(struct Scene *scene,
-	enum GT_visibility_type visibility)
-/*******************************************************************************
-LAST MODIFIED : 21 July 1998
-
-DESCRIPTION :
-Sets the visibility of the axes - iff graphics are enabled.
-==============================================================================*/
-{
-	int return_code;
-	struct Scene_object *scene_object;
-
-	ENTER(Scene_set_axis_visibility);
-	if (scene&&scene->axis_object)
-	{
-		if (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-			Scene_object_has_gt_object,(void *)scene->axis_object,
-			scene->scene_object_list))
-		{
-			if (visibility != Scene_object_get_visibility(scene_object))
-			{
-				if (return_code=Scene_object_set_visibility(scene_object,visibility))
-				{
-					scene->display_list_current=0;
-				}
-			}
-			else
-			{
-				return_code=1;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_set_axis_visibility.  Invalid axis object");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_set_axis_visibility.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_set_axis_visibility */
-
 int Scene_get_graphics_range(struct Scene *scene,
-	double *centre_x,double *centre_y,double *centre_z,
-	double *size_x,double *size_y,double *size_z)
+	double *centre_x, double *centre_y, double *centre_z,
+	double *size_x, double *size_y, double *size_z)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 16 October 2001
 
 DESCRIPTION :
-Finds the range of all visible graphics objects in scene. If there is nothing
-visible, finds the axis origin. If the scene range is a point, adds the axis
-lengths.
+Finds the range of all visible graphics objects in scene.
+Returns 0 without error if scene is empty.
 ==============================================================================*/
 {
-	double max_x,max_y,max_z,min_x,min_y,min_z;
+	double max_x, max_y, max_z, min_x, min_y, min_z;
 	int return_code;
 	struct Graphics_object_range_struct graphics_object_range;
-	Triple axis_lengths,axis_origin;
 
 	ENTER(Scene_get_graphics_range);
-	if (scene&&centre_x&&centre_y&&centre_z&&size_x&&size_y&&size_z)
+	if (scene && centre_x && centre_y && centre_z && size_x && size_y && size_z)
 	{
 		/* must first build graphics objects */
 		build_Scene(scene);
 		/* get range of visible graphics_objects in scene */
-		graphics_object_range.first=1;
-		return_code=for_each_Scene_object_in_Scene(scene,
-			Scene_object_get_range,(void *)&graphics_object_range);
+		graphics_object_range.first = 1;
+		return_code = for_each_Scene_object_in_Scene(scene,
+			Scene_object_get_range, (void *)&graphics_object_range);
 		if (graphics_object_range.first)
 		{
-			/* nothing in the scene: get axis origin as centre */
-			if (Scene_get_axis_origin(scene,axis_origin))
-			{
-				*centre_x = axis_origin[0];
-				*centre_y = axis_origin[1];
-				*centre_z = axis_origin[2];
-				*size_x = *size_y = *size_z =0.0;
-			}
-			else
-			{
-				return_code=0;
-			}
+			/* nothing in the scene; return zeros */
+			*centre_x = *centre_y = *centre_z = 0.0;
+			*size_x = *size_y = *size_z =0.0;
 		}
 		else
 		{
-			/* get centre and radius of smallest sphere enclosing visible scene */
-			max_x=(double)graphics_object_range.maximum[0];
-			max_y=(double)graphics_object_range.maximum[1];
-			max_z=(double)graphics_object_range.maximum[2];
-			min_x=(double)graphics_object_range.minimum[0];
-			min_y=(double)graphics_object_range.minimum[1];
-			min_z=(double)graphics_object_range.minimum[2];
-			*centre_x = 0.5*(max_x+min_x);
-			*centre_y = 0.5*(max_y+min_y);
-			*centre_z = 0.5*(max_z+min_z);
-			*size_x = max_x-min_x;
-			*size_y = max_y-min_y;
-			*size_z = max_z-min_z;
-		}
-		if (return_code)
-		{
-			if ((0.0==(*size_x)) && (0.0==(*size_y)) && (0.0==(*size_z)))
-			{
-				/* get size from axis lengths */
-				Scene_get_axis_lengths(scene,axis_lengths);
-				*size_x = (double)axis_lengths[0];
-				*size_y = (double)axis_lengths[0];
-				*size_z = (double)axis_lengths[0];
-			}
+			/* get centre and size of smallest cube enclosing visible scene */
+			max_x = (double)graphics_object_range.maximum[0];
+			max_y = (double)graphics_object_range.maximum[1];
+			max_z = (double)graphics_object_range.maximum[2];
+			min_x = (double)graphics_object_range.minimum[0];
+			min_y = (double)graphics_object_range.minimum[1];
+			min_z = (double)graphics_object_range.minimum[2];
+			*centre_x = 0.5*(max_x + min_x);
+			*centre_y = 0.5*(max_y + min_y);
+			*centre_z = 0.5*(max_z + min_z);
+			*size_x = max_x - min_x;
+			*size_y = max_y - min_y;
+			*size_z = max_z - min_z;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_get_graphics_range.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 

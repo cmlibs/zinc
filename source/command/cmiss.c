@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 11 October 2001
+LAST MODIFIED : 16 October 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -1118,7 +1118,7 @@ DESCRIPTION :
 static int gfx_create_annotation(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 17 January 2000
+LAST MODIFIED : 16 October 2001
 
 DESCRIPTION :
 Executes a GFX CREATE ANNOTATION command. Creates a graphics object containing
@@ -1128,7 +1128,6 @@ a single point in 3-D space with a text string drawn beside it.
 	char *annotation_text,*graphics_object_name,**text;
 	float time;
 	int number_of_components,return_code;
-	static char default_annotation_text[]="\"annotation text\"";
 	struct Cmiss_command_data *command_data;
 	struct Graphical_material *material;
 	struct GT_object *graphics_object;
@@ -1150,14 +1149,7 @@ a single point in 3-D space with a text string drawn beside it.
 			position[0]=0.0;
 			position[1]=0.0;
 			position[2]=0.0;
-			if (ALLOCATE(annotation_text,char,strlen(default_annotation_text)+1))
-			{
-				strcpy(annotation_text,default_annotation_text);
-			}
-			else
-			{
-				annotation_text=(char *)NULL;
-			}
+			annotation_text = duplicate_string("\"annotation text\"");
 			time=0.0;
 
 			option_table=CREATE(Option_table)();
@@ -1297,6 +1289,176 @@ a single point in 3-D space with a text string drawn beside it.
 
 	return (return_code);
 } /* gfx_create_annotation */
+
+static int gfx_create_axes(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 16 October 2001
+
+DESCRIPTION :
+Executes a GFX CREATE AXES command. Creates a graphics object containing
+a single point in 3-D space with an axes glyph.
+==============================================================================*/
+{
+	char *graphics_object_name;
+	float time;
+	int number_of_components, return_code;
+	struct Cmiss_command_data *command_data;
+	struct Graphical_material *material;
+	struct GT_object *glyph, *graphics_object;
+	struct GT_glyph_set *glyph_set;
+	struct Option_table *option_table;
+	Triple axis_lengths, *axis1_list, *axis2_list, *axis3_list, axis_origin,
+		*point_list, *scale_list;
+
+	ENTER(gfx_create_axes);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
+	{
+		graphics_object_name = duplicate_string("axes");
+		material =
+			ACCESS(Graphical_material)(command_data->default_graphical_material);
+		axis_origin[0] = 0.0;
+		axis_origin[1] = 0.0;
+		axis_origin[2] = 0.0;
+		axis_lengths[0] = 1.0;
+		axis_lengths[1] = 1.0;
+		axis_lengths[2] = 1.0;
+		time = 0.0;
+		if (glyph = FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("axes",
+			command_data->glyph_list))
+		{
+			ACCESS(GT_object)(glyph);
+		}
+
+		option_table=CREATE(Option_table)();
+		/* as */
+		Option_table_add_entry(option_table, "as", &graphics_object_name,
+			(void *)1, set_name);
+		/* material */
+		Option_table_add_entry(option_table, "material", &material,
+			command_data->graphical_material_manager, set_Graphical_material);
+		/* lengths */
+		Option_table_add_entry(option_table, "lengths", axis_lengths,
+			"*", set_special_float3);
+		/* origin */
+		number_of_components = 3;
+		Option_table_add_entry(option_table, "origin", axis_origin,
+			&number_of_components, set_float_vector);
+		/* time */
+		Option_table_add_entry(option_table, "time", &time, NULL, set_float);
+		return_code = Option_table_multi_parse(option_table, state);
+		if (return_code)
+		{
+			if (graphics_object = FIND_BY_IDENTIFIER_IN_LIST(GT_object, name)(
+				graphics_object_name, command_data->graphics_object_list))
+			{
+				if (g_GLYPH_SET == graphics_object->object_type)
+				{
+					if (GT_object_has_time(graphics_object, time))
+					{
+						display_message(WARNING_MESSAGE,
+							"Overwriting time %g in graphics object '%s'", time,
+							graphics_object_name);
+						return_code = GT_object_delete_time(graphics_object, time);
+					}
+					if (material != get_GT_object_default_material(graphics_object))
+					{
+						set_GT_object_default_material(graphics_object, material);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Object of different type named '%s' already exists",
+						graphics_object_name);
+					return_code = 0;
+				}
+			}
+			else
+			{
+				if (!((graphics_object = CREATE(GT_object)(graphics_object_name,
+					g_GLYPH_SET, material)) &&
+					ADD_OBJECT_TO_LIST(GT_object)(graphics_object,
+						command_data->graphics_object_list)))
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_create_points.  Could not create graphics object");
+					DESTROY(GT_object)(&graphics_object);
+					return_code = 0;
+				}
+			}
+			if (return_code)
+			{
+				/* create the pointset used to display the axes */
+				glyph_set = (struct GT_glyph_set *)NULL;
+
+				ALLOCATE(point_list, Triple, 1);
+				ALLOCATE(axis1_list, Triple, 1);
+				ALLOCATE(axis2_list, Triple, 1);
+				ALLOCATE(axis3_list, Triple, 1);
+				ALLOCATE(scale_list, Triple, 1);
+
+				if (point_list && axis1_list && axis2_list && axis3_list &&
+					scale_list && (glyph_set = CREATE(GT_glyph_set)(/*number_of_points*/1,
+						point_list, axis1_list, axis2_list, axis3_list, scale_list, glyph,
+						/*labels*/(char **)NULL, /*n_data_components*/0,
+						/*data*/(GTDATA *)NULL, /*object_name*/0, /*names*/(int *)NULL)))
+				{
+					(*point_list)[0] = axis_origin[0];
+					(*point_list)[1] = axis_origin[1];
+					(*point_list)[2] = axis_origin[2];
+					(*axis1_list)[0] = axis_lengths[0];
+					(*axis1_list)[1] = 0.0;
+					(*axis1_list)[2] = 0.0;
+					(*axis2_list)[0] = 0.0;
+					(*axis2_list)[1] = axis_lengths[1];
+					(*axis2_list)[2] = 0.0;
+					(*axis3_list)[0] = 0.0;
+					(*axis3_list)[1] = 0.0;
+					(*axis3_list)[2] = axis_lengths[2];
+					(*scale_list)[0] = 1.0;
+					(*scale_list)[1] = 1.0;
+					(*scale_list)[2] = 1.0;
+					if (!GT_OBJECT_ADD(GT_glyph_set)(graphics_object, time, glyph_set))
+					{
+						display_message(ERROR_MESSAGE,
+							"gfx_create_axes.  Could not add axes graphics object");
+						return_code = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_create_axes.  Could not create axes");
+					DEALLOCATE(point_list);
+					DEALLOCATE(axis1_list);
+					DEALLOCATE(axis2_list);
+					DEALLOCATE(axis3_list);
+					DEALLOCATE(scale_list);
+					return_code = 0;
+				}
+				if ((!return_code) &&
+					(0 == GT_object_get_number_of_times(graphics_object)))
+				{
+					REMOVE_OBJECT_FROM_LIST(GT_object)(graphics_object,
+						command_data->graphics_object_list);
+				}
+			}
+		}
+		DESTROY(Option_table)(&option_table);
+		DEACCESS(Graphical_material)(&material);
+		DEALLOCATE(graphics_object_name);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "gfx_create_axes.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_create_axes */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_colour_bar(struct Parse_state *state,
@@ -10337,6 +10499,8 @@ Executes a GFX CREATE command.
 				option_table=CREATE(Option_table)();
 				Option_table_add_entry(option_table,"annotation",NULL,
 					command_data_void,gfx_create_annotation);
+				Option_table_add_entry(option_table,"axes",NULL,
+					command_data_void,gfx_create_axes);
 				Option_table_add_entry(option_table,"cmiss_connection",NULL,
 					command_data_void,gfx_create_cmiss);
 				Option_table_add_entry(option_table,"colour_bar",NULL,
@@ -19160,198 +19324,6 @@ Executes a GFX UNSELECT command.
 } /* execute_command_gfx_unselect */
 
 #if !defined (WINDOWS_DEV_FLAG)
-static int gfx_set_axis_length(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 7 June 2001
-
-DESCRIPTION :
-Sets the axis length from the command line.
-==============================================================================*/
-{
-	int return_code;
-	struct Cmiss_command_data *command_data;
-	struct Scene *scene;
-	static struct Modifier_entry option_table[]=
-	{
-		{"scene",NULL,NULL,set_Scene},
-		{NULL,NULL,NULL,set_special_float3}
-	};
-	Triple axis_lengths;
-
-	ENTER(gfx_set_axis_length);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (command_data = (struct Cmiss_command_data *)command_data_void)
-		{
-			scene = command_data->default_scene;
-			ACCESS(Scene)(scene);
-			Scene_get_axis_lengths(scene, axis_lengths);
-			(option_table[0]).to_be_modified = &scene;
-			(option_table[0]).user_data = command_data->scene_manager;
-			(option_table[1]).to_be_modified = axis_lengths;
-			(option_table[1]).user_data = "*";
-			if (return_code = process_multiple_options(state, option_table))
-			{
-				return_code = Scene_set_axis_lengths(scene, axis_lengths);
-			}
-			DEACCESS(Scene)(&scene);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_set_axis_length.  Missing command_data");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_set_axis_length.  Missing state");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_set_axis_length */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
-#if !defined (WINDOWS_DEV_FLAG)
-static int gfx_set_axis_material(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 18 November 1998
-
-DESCRIPTION :
-Sets the axis material from the command line.
-==============================================================================*/
-{
-	int return_code;
-	struct Cmiss_command_data *command_data;
-	struct Graphical_material *axis_material;
-	struct Scene *scene;
-	static struct Modifier_entry option_table[]=
-	{
-		{"scene",NULL,NULL,set_Scene},
-		{NULL,NULL,NULL,set_Graphical_material}
-	};
-
-	ENTER(gfx_set_axis_material);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
-		{
-			scene=command_data->default_scene;
-			ACCESS(Scene)(scene);
-			axis_material=Scene_get_axis_material(scene);
-			ACCESS(Graphical_material)(axis_material);
-			(option_table[0]).to_be_modified = &scene;
-			(option_table[0]).user_data = command_data->scene_manager;
-			(option_table[1]).to_be_modified = &axis_material;
-			(option_table[1]).user_data = command_data->graphical_material_manager;
-			if (return_code=process_multiple_options(state,option_table))
-			{
-				Scene_set_axis_material(scene, axis_material);
-			}
-			DEACCESS(Graphical_material)(&axis_material);
-			DEACCESS(Scene)(&scene);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_set_axis_material.  Missing command_data");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_set_axis_material.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_set_axis_material */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
-#if !defined (WINDOWS_DEV_FLAG)
-static int gfx_set_axis_origin(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 19 October 1998
-
-DESCRIPTION :
-Sets the axis origin of a scene from the command line.
-==============================================================================*/
-{
-	int return_code;
-	struct Cmiss_command_data *command_data;
-	struct Scene *scene;
-	static struct Modifier_entry option_table[]=
-	{
-		{"coordinate",NULL,NULL,set_Cmgui_coordinate},
-		{"position",NULL,NULL,set_Dof3_position},
-		{"scene",NULL,NULL,set_Scene},
-		{NULL,NULL,NULL,set_Dof3_position},
-	};
-	struct Cmgui_coordinate *coordinate;
-	struct Dof3_data global_position,position;
-	Triple axis_origin;
-
-	ENTER(gfx_set_axis_origin);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
-		{
-			/* initialise defaults */
-			coordinate=ACCESS(Cmgui_coordinate)(global_coordinate_ptr);
-			scene=command_data->default_scene;
-			ACCESS(Scene)(scene);
-			Scene_get_axis_origin(scene,axis_origin);
-			position.data[0]=axis_origin[0];
-			position.data[1]=axis_origin[1];
-			position.data[2]=axis_origin[2];
-			(option_table[0]).to_be_modified= &coordinate;
-			(option_table[1]).to_be_modified= &position;
-			(option_table[2]).to_be_modified= &scene;
-			(option_table[2]).user_data=command_data->scene_manager;
-			(option_table[3]).to_be_modified= &position;
-			return_code=process_multiple_options(state,option_table);
-			/* no errors, not asking for help */
-			if (return_code)
-			{
-				/* we have a rc position, but relative to a coordinate system we
-					 must convert to global */
-				get_global_position(&position,coordinate,&global_position);
-				axis_origin[0]=global_position.data[0];
-				axis_origin[1]=global_position.data[1];
-				axis_origin[2]=global_position.data[2];
-				Scene_set_axis_origin(scene,axis_origin);
-			}
-			DEACCESS(Cmgui_coordinate)(&coordinate);
-			DEACCESS(Scene)(&scene);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_set_axis_origin.  Missing command_data");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_set_axis_origin.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_set_axis_origin */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_set_background(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -21072,7 +21044,7 @@ Toggles the visibility of graphics objects on scenes from the command line.
 static int execute_command_gfx_set(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 16 June 1999
+LAST MODIFIED : 16 October 2001
 
 DESCRIPTION :
 Executes a GFX SET command.
@@ -21083,9 +21055,6 @@ Executes a GFX SET command.
 	static struct Modifier_entry option_table[]=
 	{
 		{"application_parameters",NULL,NULL,set_application_parameters},
-		{"axis_length",NULL,NULL,gfx_set_axis_length},
-		{"axis_material",NULL,NULL,gfx_set_axis_material},
-		{"axis_origin",NULL,NULL,gfx_set_axis_origin},
 		{"background",NULL,NULL,gfx_set_background},
 		{"far_clipping_plane",NULL,NULL,gfx_set_far_clipping_plane},
 		{"interest_point",NULL,NULL,gfx_set_interest_point},
@@ -21118,15 +21087,6 @@ Executes a GFX SET command.
 			{
 				i=0;
 				/* application_parameters */
-				i++;
-				/* axis_length */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* axis_material */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* axis_origin */
-				(option_table[i]).user_data=command_data_void;
 				i++;
 				/* background */
 				(option_table[i]).user_data=command_data_void;

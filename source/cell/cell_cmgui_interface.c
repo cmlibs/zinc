@@ -100,9 +100,7 @@ Initialise the scene viewer for Cell 3D.
       0.371067,8.52279,-63.3145,-0.884569,0.135409,0.298719,1,0,0);
     Scene_viewer_set_view_simple(cmgui_interface->scene_viewer,
       0,0,0,15,43.412,100);
-    /* turn off the axis */
-    Scene_set_axis_visibility(cmgui_interface->scene,g_INVISIBLE);
-  }
+   }
   else
   {
     display_message(ERROR_MESSAGE,"initialise_cell_scene.  "

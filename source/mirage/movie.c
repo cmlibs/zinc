@@ -1782,7 +1782,6 @@ resulting 3-D display.
 	struct Graphical_material *temp_material;
 	struct GT_element_group *gt_element_group;
 	struct Mirage_view *view;
-	Triple axis_lengths;
 
 	ENTER(enable_Mirage_movie_graphics);
 	if (movie&&element_manager&&element_group_manager&&fe_field_manager&&
@@ -1964,12 +1963,6 @@ resulting 3-D display.
 			element_group_manager,fe_field_manager,node_manager,node_group_manager,
 			data_manager,data_group_manager,element_point_ranges_selection,
 			element_selection,node_selection,data_selection,user_interface);
-
-		/* enlarge axes in default scene to fit size of face */
-		axis_lengths[0]=25.0;
-		axis_lengths[1]=25.0;
-		axis_lengths[2]=25.0;
-		Scene_set_axis_lengths(movie->scene,axis_lengths);
 
 		/* read base node and element groups for movie */
 		if (return_code)
@@ -2217,7 +2210,6 @@ resulting 3-D display.
 							Scene_add_graphical_element_group(view->scene,
 								movie->placed_elements_3d, /*position*/0, (char *)NULL)&&
 							/* turn off axes in each views scene */
-							Scene_set_axis_visibility(view->scene,g_INVISIBLE)&&
 							(gt_element_group=Scene_get_graphical_element_group(
 								view->scene,view->placed_elements))&&
 							GT_element_group_set_element_discretization(gt_element_group,

@@ -5981,7 +5981,7 @@ It is expected to be byte sized values for each of Red Green and Blue only.
 
 int Scene_viewer_view_all(struct Scene_viewer *scene_viewer)
 /*******************************************************************************
-LAST MODIFIED : 19 October 1998
+LAST MODIFIED : 16 October 2001
 
 DESCRIPTION :
 Finds the x, y and z ranges from the scene and sets the view parameters so
@@ -5990,33 +5990,31 @@ near and far clipping planes; if specific values are required, should follow
 with commands for setting these.
 ==============================================================================*/
 {
-	double centre_x,centre_y,centre_z,clip_factor,radius,
-		size_x,size_y,size_z,width_factor;
+	double centre_x, centre_y, centre_z, clip_factor, radius,
+		size_x, size_y, size_z, width_factor;
 	int return_code;
 
 	ENTER(Scene_viewer_view_all);
 	if (scene_viewer)
 	{	
-		if (Scene_get_graphics_range(Scene_viewer_get_scene(scene_viewer),
-			&centre_x,&centre_y,&centre_z,&size_x,&size_y,&size_z)&&			
-			(radius=0.5*sqrt(size_x*size_x + size_y*size_y + size_z*size_z)))
+		Scene_get_graphics_range(Scene_viewer_get_scene(scene_viewer),
+			&centre_x,&centre_y,&centre_z,&size_x,&size_y,&size_z);
+		radius = 0.5*sqrt(size_x*size_x + size_y*size_y + size_z*size_z);
+		if (0 == radius)
+		{
+			radius = 0.5*(scene_viewer->right - scene_viewer->left);
+		}
+		else
 		{		
 			/* enlarge radius to keep image within edge of window */
 			/*???RC width_factor should be read in from defaults file */
-			width_factor=1.05;
+			width_factor = 1.05;
 			radius *= width_factor;
-			/*???RC clip_factor should be read in from defaults file: */
-			clip_factor = 10.0;		
-			return_code=Scene_viewer_set_view_simple(scene_viewer
-				,centre_x,centre_y,centre_z,
-				radius,40,clip_factor*radius);		
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_viewer_view_all.  No valid range obtained from scene");
-			return_code=0;
-		}
+		/*???RC clip_factor should be read in from defaults file: */
+		clip_factor = 10.0;		
+		return_code = Scene_viewer_set_view_simple(scene_viewer, centre_x, centre_y,
+			centre_z, radius, 40, clip_factor*radius);		
 	}
 	else
 	{
