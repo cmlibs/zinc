@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture.c
 
-LAST MODIFIED : 22 March 2002
+LAST MODIFIED : 16 April 2002
 
 DESCRIPTION :
 The functions for manipulating graphical textures.
@@ -2368,7 +2368,12 @@ Up to the calling function to DESTROY the returned Cmgui_image.
 				if (cmgui_image)
 				{
 					/* following "swallows" next_cmgui_image */
-					return_code = Cmgui_image_append(cmgui_image, &next_cmgui_image);
+					if (!Cmgui_image_append(cmgui_image, &next_cmgui_image))
+					{
+						display_message(ERROR_MESSAGE,
+							"Texture_get_image.  Could not append image");
+						return_code = 0;
+					}
 				}
 				else
 				{
@@ -2378,13 +2383,14 @@ Up to the calling function to DESTROY the returned Cmgui_image.
 			}
 			else
 			{
+				display_message(ERROR_MESSAGE,
+					"Texture_get_image.  Could not constitute image");
 				return_code = 0;
 			}
 			source += texture->height_texels*width_bytes;
 		}
 		if (!return_code)
 		{
-			display_message(ERROR_MESSAGE, "Texture_get_image.  Failed");
 			if (cmgui_image)
 			{
 				DESTROY(Cmgui_image)(&cmgui_image);
@@ -3006,7 +3012,7 @@ Returns the byte values in the texture at x,y,z.
 int Texture_get_pixel_values(struct Texture *texture,
 	double x, double y, double z, double *values)
 /*******************************************************************************
-LAST MODIFIED : 22 March 2002
+LAST MODIFIED : 16 April 2002
 
 DESCRIPTION :
 Returns the byte values in the texture using the texture coordinates relative
@@ -3111,7 +3117,7 @@ is constant from the half texel location to the edge.
 				{
 					max_v = (double)size[i] - 0.5;
 					v = pos[i];
-					if ((0.5 < v) && (v < max_v))
+					if ((0.5 <= v) && (v < max_v))
 					{
 						v_i = (int)(v - 0.5);
 						local_xi[i] = v - 0.5 - (double)v_i;
@@ -3140,12 +3146,11 @@ is constant from the half texel location to the edge.
 							{
 								if (v < 0.5)
 								{
-									local_xi[i] = 0.5 + v;
+									local_xi[i] = v + 0.5;
 								}
 								else
 								{
-									v_i = (int)(v - 0.5);
-									local_xi[i] = v - 0.5 - (double)v_i;
+									local_xi[i] = v - max_v;
 								}
 							} break;
 						}
@@ -3220,12 +3225,12 @@ is constant from the half texel location to the edge.
 						{
 							if (0 == i)
 							{
-								weight_i = weight_j*(1.0 - local_xi[1]);
+								weight_i = weight_j*(1.0 - local_xi[0]);
 								offset_i = offset_j + low_offset[0];
 							}
 							else
 							{
-								weight_i = weight_j*local_xi[1];
+								weight_i = weight_j*local_xi[0];
 								offset_i = offset_j + high_offset[0];
 							}
 							pixel_ptr = texture->image + offset_i;
@@ -3260,7 +3265,7 @@ is constant from the half texel location to the edge.
 				z_i = (int)z;
 				if (TEXTURE_CLAMP_WRAP == texture->wrap_mode)
 				{
-					/* fix problem of value being exactly on boundary */
+					/* fix problem of value being exactly on upper boundary */
 					if (x_i == texture->width_texels)
 					{
 						x_i--;
