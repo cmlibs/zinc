@@ -1866,7 +1866,7 @@ the <node>.
 
 class Function_variable_nodal_values : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 8 April 2004
+// LAST MODIFIED : 11 April 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -2012,9 +2012,6 @@ class Function_variable_nodal_values : public Function_variable
 		}
 		string_handle get_string_representation()
 		{
-		enum FE_nodal_value_type value_type;
-		int version;
-		struct FE_node *node;
 			string_handle return_string(0);
 
 			if (return_string=new std::string)
@@ -4748,14 +4745,13 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
 	std::list<Function_variable_handle>& atomic_independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 8 April 2004
+// LAST MODIFIED : 11 April 2004
 //
 // DESCRIPTION :
 // ???DB.  Throw an exception for failure?
 //==============================================================================
 {
 	bool result;
-	FE_value *xi_coordinates;
 	Function_variable_element_xi_handle atomic_variable_element_xi;
 	Function_variable_finite_element_handle atomic_variable_finite_element;
 	int element_dimension;
@@ -4788,8 +4784,7 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 		(atomic_variable_finite_element->component_number<=number_of_components())&&
 		!node_private&&element_private&&
 		(0<(element_dimension=get_FE_element_dimension(element_private)))&&
-		((Function_size_type)element_dimension==xi_private.size())&&
-		ALLOCATE(xi_coordinates,FE_value,element_dimension))
+		((Function_size_type)element_dimension==xi_private.size()))
 	{
 		bool zero_derivative;
 		Function_size_type derivative_order=atomic_independent_variables.size();
