@@ -1,0 +1,684 @@
+!*******************************************************************************
+!FILE : eimaging_time_dialog.uil
+!
+!LAST MODIFIED : 21 June 2001
+!
+!DESCRIPTION :
+!The widgets/gadgets for the electrical imaging time dialog.
+!===============================================================================
+module eimaging_time_dialog_module
+	names = case_sensitive
+procedure
+	update_eimaging_evnts_frm_dlg;
+	id_eimaging_time_dlg_apply_but;
+	id_eimaging_time_dlg_cancel_but;
+	id_eimaging_time_dlg_ok_but;
+	close_eimaging_time_dialog;
+	identify_eimaging_period_menu;
+	identify_eimaging_period_label;
+	identify_eimaging_period_scroll;
+	identify_eimaging_period_value;
+  alter_eimaging_event_info;
+	id_eimaging_time_marker_menu;
+	id_eimaging_time_marker_choice;
+	id_eimaging_time_marker_pulldn;
+	id_eimaging_clear_butt;
+	id_eimaging_current_butt;
+	id_eimaging_p_start_butt;
+	id_eimaging_p_pt_butt;
+	id_eimaging_p_end_butt;
+	id_eimaging_qrs_start_butt;
+	id_eimaging_qrs_pt_butt;
+	id_eimaging_qrs_end_butt;
+	id_eimaging_t_start_butt;
+	id_eimaging_t_pt_butt;
+	id_eimaging_t_end_butt;
+identifier
+	widget_spacing;
+	eimaging_time_dialog_structure;
+	trace_window_structure;
+	! Fonts
+	button_font;
+	heading_font;
+	list_font;
+	menu_font;
+	normal_font;
+	normal_non_proportional_font;
+	small_font;
+object
+	eimaging_time_dialog: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNallowOverlap = false;
+			XmNdialogStyle = XmDIALOG_FULL_APPLICATION_MODAL;
+			};
+		controls
+			{
+			XmForm eimaging_period_menu;
+			XmSeparator separator_1;			
+			XmForm eimage_time_marker_menu;	
+			XmSeparator separator_2;		
+			XmForm eimage_tm_dlg_ok_app_cncl;	
+			};
+		};
+	eimaging_period_menu: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmLabelGadget eimaging_period_label;
+			XmScrollBar eimaging_period_scroll;
+			XmTextField eimaging_period_value;
+			XmLabelGadget eimaging_period_ms_label;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_eimaging_period_menu(eimaging_time_dialog_structure);
+				};
+			};
+		};
+	separator_1: XmSeparator
+		{
+		arguments
+			{
+			XmNseparatorType = XmNO_LINE;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmForm	eimaging_period_menu;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		};
+	eimage_time_marker_menu: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmSeparator separator_1;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{		
+			XmLabelGadget eimaging_time_marker_label;
+			XmOptionMenu eimaging_time_marker_choice;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_eimaging_time_marker_menu(eimaging_time_dialog_structure);
+				};
+			};
+		};
+	separator_2: XmSeparator
+		{
+		arguments
+			{
+			XmNseparatorType = XmNO_LINE;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmForm	eimage_time_marker_menu;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		};	
+	eimage_tm_dlg_ok_app_cncl: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNallowOverlap = false;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmSeparator separator_2;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = widget_spacing;
+			};
+		controls
+			{
+			XmPushButtonGadget eimaging_time_dlg_ok_button;
+			XmSeparator eimaging_time_dlg_ok_separator;
+			XmPushButtonGadget eimaging_time_dlg_apply_button;
+			XmSeparator eimaging_time_dlg_cancel_sep;
+			XmPushButtonGadget eimaging_time_dlg_cancel_button;
+			};
+		};
+	eimaging_time_dlg_ok_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("OK");
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_eimaging_time_dlg_ok_but(eimaging_time_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{			
+				update_eimaging_evnts_frm_dlg(trace_window_structure);
+				};
+			};
+		};
+	eimaging_time_dlg_ok_separator: XmSeparator
+		{
+		arguments
+			{
+			XmNseparatorType = XmNO_LINE;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmPushButtonGadget eimaging_time_dlg_ok_button;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	eimaging_time_dlg_apply_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Apply");
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmSeparator eimaging_time_dlg_ok_separator;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = widget_spacing;
+			XmNrightWidget = XmSeparator eimaging_time_dlg_cancel_sep;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_eimaging_time_dlg_apply_but(eimaging_time_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				update_eimaging_evnts_frm_dlg(trace_window_structure);
+				};
+			};
+		};
+	eimaging_time_dlg_cancel_sep: XmSeparator
+		{
+		arguments
+			{
+			XmNseparatorType = XmNO_LINE;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = widget_spacing;
+			XmNrightWidget = XmPushButtonGadget eimaging_time_dlg_cancel_button;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	eimaging_time_dlg_cancel_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Cancel");
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_eimaging_time_dlg_cancel_but(eimaging_time_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				close_eimaging_time_dialog(eimaging_time_dialog_structure);
+				};
+			};
+		};
+
+	eimaging_period_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Marker separation: ");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_eimaging_period_label(eimaging_time_dialog_structure);
+				};
+			};
+		};	
+	eimaging_period_scroll: XmScrollBar
+		{
+		arguments
+			{
+			XmNwidth = 100;
+			XmNminimum = 0;
+			XmNsliderSize = 10;
+			XmNmaximum = 110;
+			XmNorientation = XmHORIZONTAL;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabelGadget eimaging_period_label;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_eimaging_period_scroll(eimaging_time_dialog_structure);
+				};
+			XmNvalueChangedCallback = procedures
+				{
+				alter_eimaging_event_info(eimaging_time_dialog_structure);
+				};
+			};
+		};
+	eimaging_period_value: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 4;
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmScrollBar eimaging_period_scroll;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_eimaging_period_value(eimaging_time_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				alter_eimaging_event_info(eimaging_time_dialog_structure);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				alter_eimaging_event_info(eimaging_time_dialog_structure);
+				};
+			};
+		};
+	eimaging_period_ms_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("ms");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_END;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmTextField eimaging_period_value;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};		
+	eimaging_time_marker_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Marker relative to: ");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	eimaging_time_marker_choice: XmOptionMenu
+		{
+		arguments
+			{
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;	
+			XmNleftWidget = XmLabelGadget eimaging_time_marker_label;
+			XmNleftOffset = widget_spacing;		
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmPulldownMenu
+				{
+				arguments
+					{
+					XmNborderWidth = 0;
+					};
+				controls
+					{
+					XmPushButtonGadget eimaging_current_butt;
+					XmPushButtonGadget eimaging_clear_butt;									
+					XmPushButtonGadget eimaging_p_start_butt;
+					XmPushButtonGadget eimaging_p_pt_butt;
+					XmPushButtonGadget eimaging_p_end_butt;	
+					XmPushButtonGadget eimaging_qrs_start_butt;
+					XmPushButtonGadget eimaging_qrs_pt_butt;
+					XmPushButtonGadget eimaging_qrs_end_butt;
+					XmPushButtonGadget eimaging_t_start_butt;
+					XmPushButtonGadget eimaging_t_pt_butt;
+					XmPushButtonGadget eimaging_t_end_butt;					
+					};
+				callbacks
+					{
+					MrmNcreateCallback = procedures
+					{
+					id_eimaging_time_marker_pulldn(eimaging_time_dialog_structure);
+					};
+			};
+				};
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_eimaging_time_marker_choice(eimaging_time_dialog_structure);
+				};
+			};
+		};
+	eimaging_current_butt: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Current Marker");
+			XmNfontList = button_font;		
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_eimaging_current_butt(eimaging_time_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				alter_eimaging_event_info(eimaging_time_dialog_structure);
+				};
+			};
+		};
+	eimaging_clear_butt: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Remove all markers");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_eimaging_clear_butt(eimaging_time_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				alter_eimaging_event_info(eimaging_time_dialog_structure);
+				};
+			};
+		};
+	eimaging_p_start_butt: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("P wave start");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_eimaging_p_start_butt(eimaging_time_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				alter_eimaging_event_info(eimaging_time_dialog_structure);
+				};
+			};
+		};
+	eimaging_p_pt_butt: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("P wave peak/trough");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_eimaging_p_pt_butt(eimaging_time_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				alter_eimaging_event_info(eimaging_time_dialog_structure);
+				};
+			};
+		};
+	eimaging_p_end_butt: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("P wave end");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_eimaging_p_end_butt(eimaging_time_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				alter_eimaging_event_info(eimaging_time_dialog_structure);
+				};
+			};
+		};
+	eimaging_qrs_start_butt: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("QRS wave start");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_eimaging_qrs_start_butt(eimaging_time_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				alter_eimaging_event_info(eimaging_time_dialog_structure);
+				};
+			};
+		};
+	eimaging_qrs_pt_butt: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("QRS wave peak/trough");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_eimaging_qrs_pt_butt(eimaging_time_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				alter_eimaging_event_info(eimaging_time_dialog_structure);
+				};
+			};
+		};
+	eimaging_qrs_end_butt: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("QRS wave end");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_eimaging_qrs_end_butt(eimaging_time_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				alter_eimaging_event_info(eimaging_time_dialog_structure);
+				};
+			};
+		};
+	eimaging_t_start_butt: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("T wave start");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_eimaging_t_start_butt(eimaging_time_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				alter_eimaging_event_info(eimaging_time_dialog_structure);
+				};
+			};
+		};
+	eimaging_t_pt_butt: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("T wave peak/trough");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_eimaging_t_pt_butt(eimaging_time_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				alter_eimaging_event_info(eimaging_time_dialog_structure);
+				};
+			};
+		};
+	eimaging_t_end_butt: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("T wave end");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_eimaging_t_end_butt(eimaging_time_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				alter_eimaging_event_info(eimaging_time_dialog_structure);
+				};
+			};
+		};
+end module;
