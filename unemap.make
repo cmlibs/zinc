@@ -4,6 +4,7 @@ PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source
 TEST_PATH=$(CMISS_ROOT)/cmgui/test_examples
 BIN_PATH=bin
 SOURCE_PATH=source
+MAILFILE_PATH=mailfiles
 #By overriding the TARGET on the command line you can specify
 #a sub object to be compiled i.e. make cmgui_linux TARGET=command/cmiss.o
 TARGET= 
@@ -147,17 +148,17 @@ depend : $(SOURCE_PATH)/unemap_sgi.make $(SOURCE_PATH)/unemap_sginodes.make $(SO
 cronjob :
 	if [ "$(USER)" = "cmiss" ]; then \
 		cd $(PRODUCT_PATH); \
-		echo -n > unemap_programmer.mail ; \
+		echo -n > $(MAILFILE_PATH)/unemap_programmer.mail ; \
 		if ! $(MAKE) -f unemap.make depend; then \
-			cat dependfail.mail >> unemap_programmer.mail ; \
+			cat $(MAILFILE_PATH)/dependfail.mail >> $(MAILFILE_PATH)/unemap_programmer.mail ; \
 		fi ; \
 		if ! $(MAKE) -f unemap.make update; then \
-			cat updatefail.mail >> unemap_programmer.mail ; \
+			cat $(MAILFILE_PATH)/updatefail.mail >> $(MAILFILE_PATH)/unemap_programmer.mail ; \
 		fi ; \
-		if [ -s unemap_programmer.mail ]; then \
-			cat unemap_header.mail unemap_programmer.mail | sed "s/DATE/`date`/" | mail cmguiprogrammers@esu1.auckland.ac.nz ; \
-#		else \
-#			cat unemap_success.mail | sed "s/DATE/`date`/" | mail s.blackett@auckland.ac.nz ; \
+		if [ -s $(MAILFILE_PATH)/unemap_programmer.mail ]; then \
+			cat $(MAILFILE_PATH)/unemap_header.mail $(MAILFILE_PATH)/unemap_programmer.mail | sed "s/DATE/`date`/" | mail cmguiprogrammers@esu1.auckland.ac.nz ; \
+		else \
+			cat $(MAILFILE_PATH)/unemap_success.mail | sed "s/DATE/`date`/" | mail s.blackett@auckland.ac.nz ; \
 		fi; \
 	else \
 		echo "Must be cmiss"; \
