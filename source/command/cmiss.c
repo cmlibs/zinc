@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 18 April 2002
+LAST MODIFIED : 23 April 2002
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -7588,18 +7588,23 @@ Executes a GFX CREATE SURFACES command.
 
 static int set_Texture_image_from_field(struct Texture *texture,
 	struct Computed_field *field,
-	struct Computed_field *texture_coordinate_field, struct Spectrum *spectrum,
-	struct GROUP(FE_element) *element_group, enum Texture_storage_type storage,
+	struct Computed_field *texture_coordinate_field,
+	int propagate_field,
+	struct Spectrum *spectrum,
+	struct GROUP(FE_element) *element_group,
+	int element_dimension,
+	enum Texture_storage_type storage,
 	int image_width, int image_height, int image_depth,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 16 April 2002
+LAST MODIFIED : 22 April 2002
 
 DESCRIPTION :
 Creates the image in the format given by sampling the <field> according to the
 reverse mapping of the <texture_coordinate_field>.  The values returned by
 field are converted to "colours" by applying the <spectrum>.
 Currently limited to 1 byte per component.
+<element_dimension> may be 0 for all dimension, or a set value.
 ==============================================================================*/
 {
 	char *field_name;
@@ -7616,8 +7621,10 @@ Currently limited to 1 byte per component.
 		spectrum_render_error_count, total_number_of_pixels;
 	struct Colour result;
 	struct Computed_field_find_element_xi_special_cache *cache;
+	struct Element_group_dimension_data group_dimension_data;
 	struct FE_element *element;
 	struct Graphical_material *material;
+	struct GROUP(FE_element) *search_element_group;
 
 	ENTER(set_Texture_image_from_field);
 	if (texture && field && texture_coordinate_field && spectrum &&
@@ -7630,6 +7637,19 @@ Currently limited to 1 byte per component.
 			/*dummy*/NULL) &&
 		(0 < image_width) && (0 < image_height) && (0 < image_depth))
 	{
+		if ((0 < element_dimension) &&
+			(element_dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS) &&
+			(search_element_group = CREATE(GROUP(FE_element))("temp")))
+		{
+			group_dimension_data.element_group = search_element_group;
+			group_dimension_data.element_dimension = element_dimension;
+			FOR_EACH_OBJECT_IN_GROUP(FE_element)(add_FE_element_of_dimension_to_group,
+				&group_dimension_data, element_group);
+		}
+		else
+		{
+			search_element_group = element_group;
+		}
 		return_code = 1;
 		number_of_bytes_per_component = 1;
 		/* allocate the texture image */
@@ -7664,10 +7684,20 @@ Currently limited to 1 byte per component.
 				hint_maximums[2] = texture_depth;
 				for (i = 0; (i < image_depth) && return_code; i++)
 				{
+					/*???debug*/
+					if (1 < image_depth)
+					{
+						printf("Evaluating image plane %d of %d\n", i+1, image_depth);
+					}
 					ptr = (unsigned char *)image_plane;
 					values[2] = texture_depth * ((float)i + 0.5) / (float)image_depth;
 					for (j = 0; (j < image_height) && return_code; j++)
 					{
+						/*???debug*/
+						if (1 < image_depth)
+						{
+							printf("  row %d of %d\n", j+1, image_height);
+						}
 						values[1] = texture_height * ((float)j + 0.5) / (float)image_height;
 						for (k = 0; (k < image_width) && return_code; k++)
 						{
@@ -7677,12 +7707,12 @@ Currently limited to 1 byte per component.
 								 to stop the slow Computed_field_find_element_xi being called */
 							if (Computed_field_find_element_xi_special(
 								texture_coordinate_field, &cache, values,
-								tex_number_of_components, &element, xi, element_group,
+								tex_number_of_components, &element, xi, search_element_group,
 								user_interface, hint_minimums, hint_maximums,
 								hint_resolution) ||
 								Computed_field_find_element_xi(texture_coordinate_field,
 									values, tex_number_of_components, &element, xi,
-									element_group))
+									search_element_group, propagate_field))
 							{
 								if (element)
 								{
@@ -7722,7 +7752,8 @@ Currently limited to 1 byte per component.
 									red = 0.5;
 									green = 0.5;
 									blue = 0.5;
-									alpha = 1.0;
+									/* not in any element; set alpha to zero so invisible */
+									alpha = 0.0;
 								}
 							}
 							else
@@ -7730,7 +7761,8 @@ Currently limited to 1 byte per component.
 								red = 0.5;
 								green = 0.5;
 								blue = 0.5;
-								alpha = 1.0;
+								/* error finding element:xi; set alpha to zero so invisible */
+								alpha = 0.0;
 								find_element_xi_error_count++;
 							}
 							switch (storage)
@@ -7838,6 +7870,10 @@ Currently limited to 1 byte per component.
 			return_code = 0;
 		}
 		DEALLOCATE(field_name);
+		if (search_element_group != element_group)
+		{
+			DESTROY(GROUP(FE_element))(&search_element_group);
+		}
 	}
 	else
 	{
@@ -7854,17 +7890,103 @@ struct Texture_evaluate_image_data
 {
 	enum Texture_storage_type storage;
 	int depth_texels;
+	int element_dimension; /* where 0 is any dimension */
 	int height_texels;
+	int propagate_field;
 	int width_texels;
 	struct Computed_field *field, *texture_coordinates_field;
 	struct GROUP(FE_element) *element_group;
 	struct Spectrum *spectrum;	
 };
 
+int set_element_dimension_or_all(struct Parse_state *state,
+	void *value_address_void, void *dummy_user_data)
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+Allows either "all" - a return value of zero - or an element dimension up to
+MAXIMUM_ELEMENT_XI_DIMENSIONS to be set.
+==============================================================================*/
+{
+	char *current_token;
+	int return_code, value, *value_address;
+
+	ENTER(set_element_dimension_or_all);
+	USE_PARAMETER(dummy_user_data);
+	if (state)
+	{
+		if (current_token = state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING, current_token) &&
+				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
+			{
+				if (value_address = (int *)value_address_void)
+				{
+					if (fuzzy_string_compare_same_length(current_token, "ALL"))
+					{
+						*value_address = 0;
+					}
+					else if ((1 == sscanf(current_token, " %d ", &value)) &&
+						(0 < value) && (value <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
+					{
+						*value_address = value;
+						return_code = shift_Parse_state(state, 1);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Invalid element dimension: %s\n", current_token);
+						display_parse_state_location(state);
+						return_code = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_element_dimension_or_all.  Missing value_address");
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE, " #|ALL");
+				if (value_address = (int *)value_address_void)
+				{
+					if (0 == *value_address)
+					{
+						display_message(INFORMATION_MESSAGE, "[ALL]");
+					}
+					else
+					{
+						display_message(INFORMATION_MESSAGE, "[%d]", *value_address);
+					}
+				}
+				return_code = 1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Missing element dimension or ALL");
+			display_parse_state_location(state);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_element_dimension_or_all.  Missing state");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_element_dimension_or_all */
+
 static int gfx_modify_Texture_evaluate_image(struct Parse_state *state,
 	void *data_void, void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 6 March 2002
+LAST MODIFIED : 22 April 2002
 
 DESCRIPTION :
 Modifies the properties of a texture.
@@ -7889,6 +8011,9 @@ Modifies the properties of a texture.
 				/* depth_texels */
 				Option_table_add_entry(option_table, "depth_texels",
 					&data->depth_texels, NULL, set_int_positive);
+				/* element_dimension */
+				Option_table_add_entry(option_table, "element_dimension",
+					&data->element_dimension, NULL, set_element_dimension_or_all);
 				/* element_group */
 				Option_table_add_entry(option_table, "element_group",
 					&data->element_group, command_data->element_group_manager,
@@ -7908,6 +8033,9 @@ Modifies the properties of a texture.
 				/* height_texels */
 				Option_table_add_entry(option_table, "height_texels",
 					&data->height_texels, NULL, set_int_positive);
+				/* propagate_field/no_propagate_field */
+				Option_table_add_switch(option_table, "propagate_field",
+					"no_propagate_field", &data->propagate_field);
 				/* spectrum */
 				Option_table_add_entry(option_table, "spectrum", &data->spectrum, 
 					command_data->spectrum_manager, set_Spectrum);
@@ -8251,8 +8379,10 @@ Modifies the properties of a texture.
 					evaluate_data.field = (struct Computed_field *)NULL;
 					evaluate_data.spectrum = (struct Spectrum *)NULL;
 					evaluate_data.element_group = (struct GROUP(FE_element) *)NULL;
+					evaluate_data.element_dimension = 0; /* any dimension */
 					evaluate_data.depth_texels = 1;
 					evaluate_data.height_texels = 64;
+					evaluate_data.propagate_field = 1;
 					evaluate_data.width_texels = 64;
 					evaluate_data.storage = TEXTURE_RGB;
 					evaluate_data.texture_coordinates_field =
@@ -8492,8 +8622,10 @@ Modifies the properties of a texture.
 						{
 							set_Texture_image_from_field(texture, 
 								evaluate_data.field,
-								evaluate_data.texture_coordinates_field, 
+								evaluate_data.texture_coordinates_field,
+								evaluate_data.propagate_field, 
 								evaluate_data.spectrum, evaluate_data.element_group,
+								evaluate_data.element_dimension,
 								evaluate_data.storage, evaluate_data.width_texels, 
 								evaluate_data.height_texels, evaluate_data.depth_texels,
 								command_data->user_interface);
@@ -17722,7 +17854,7 @@ Which tool that is being modified is passed in <node_tool_void>.
 static int execute_command_gfx_print(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 14 March 2002
+LAST MODIFIED : 23 April 2002
 
 DESCRIPTION :
 Executes a GFX PRINT command.
@@ -17731,6 +17863,7 @@ Executes a GFX PRINT command.
 	char *file_name, force_onscreen_flag, *image_file_format_string,
 		**valid_strings;
 	enum Image_file_format image_file_format;
+	enum Texture_storage_type storage;
 	int height, number_of_valid_strings, return_code, width;
 	struct Cmgui_image *cmgui_image;
 	struct Cmgui_image_information *cmgui_image_information;
@@ -17746,6 +17879,7 @@ Executes a GFX PRINT command.
 		file_name = (char *)NULL;
 		height = 0;
 		force_onscreen_flag = 0;
+		storage = TEXTURE_RGBA;
 		width = 0;
 		/* default file format is to obtain it from the filename extension */
 		image_file_format = UNKNOWN_IMAGE_FILE_FORMAT;
@@ -17774,6 +17908,9 @@ Executes a GFX PRINT command.
 		/* force_onscreen */
 		Option_table_add_entry(option_table, "force_onscreen",
 			&force_onscreen_flag, NULL, set_char_flag);
+		/* format */
+		Option_table_add_entry(option_table, "format", &storage,
+			NULL, set_Texture_storage);
 		/* height */
 		Option_table_add_entry(option_table, "height",
 			&height, NULL, set_int_non_negative);
@@ -17822,7 +17959,7 @@ Executes a GFX PRINT command.
 			Cmgui_image_information_add_file_name(cmgui_image_information,
 				file_name);
 			if (cmgui_image = Graphics_window_get_image(window,
-				force_onscreen_flag, width, height))
+				force_onscreen_flag, width, height, storage))
 			{
 				if (!Cmgui_image_write(cmgui_image, cmgui_image_information))
 				{
