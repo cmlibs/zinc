@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.h
 
-LAST MODIFIED : 10 October 2001
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -23,6 +23,8 @@ LAST MODIFIED : 26 March 1998
 DESCRIPTION :
 The page window object.
 ==============================================================================*/
+
+typedef void Unemap_page_window_close_callback_procedure(struct Page_window *, void *);
 
 /*
 Global functions
@@ -67,9 +69,11 @@ struct Page_window *create_Page_window(struct Page_window **address,
 #if defined (MOTIF)
 	Widget activation,Widget parent,
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	HWND parent,
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
+	Unemap_page_window_close_callback_procedure *close_callback,
+	void *close_callback_data,
 	struct Rig **rig_address,
 #if defined (MOTIF)
 	Pixel identifying_colour,
@@ -89,7 +93,9 @@ the created page window.  If unsuccessful, NULL is returned.
 ==============================================================================*/
 
 int open_Page_window(struct Page_window **address,
-	struct Mapping_window **mapping_window_address,struct Rig **rig_address,
+	Unemap_page_window_close_callback_procedure *close_callback,
+	void *close_callback_data,struct Mapping_window **mapping_window_address,
+	struct Rig **rig_address,
 #if defined (MOTIF)
 	Pixel identifying_colour,
 	int screen_width,int screen_height,

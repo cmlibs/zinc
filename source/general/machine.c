@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : machine.c
 
-LAST MODIFIED : 26 November 2001
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -85,9 +85,9 @@ Creates a machine information structure.
 #if defined (VMS)
 			return_struct->type=MACHINE_VMS;
 #endif /* VMS */
-#if defined (WIN32)
+#if defined (WIN32_SYSTEM)
 			return_struct->type=MACHINE_WINDOWS;
-#endif /* VMS */
+#endif /* WIN32_SYSTEM */
 			return_struct->num_processors=1;
 			return_struct->processor_types=(char **)NULL;
 		}

@@ -72,7 +72,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	struct DIALOG_DATA_STRUCT(Sync_2d_3d) data;
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	HWND dialog,parent;
 	HWND image_base_name;
 #endif

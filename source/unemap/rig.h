@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.h
 
-LAST MODIFIED : 19 June 2002
+LAST MODIFIED : 24 July 2002
 
 DESCRIPTION :
 Contains data and function descriptions for measurement rigs.
@@ -22,6 +22,9 @@ different parameter choices can be compared in dfn.
 #endif /* defined (UNEMAP_USE_NODES) */
 #include "finite_element/finite_element.h"
 #include "general/geometry.h"
+
+/*???testing */
+/*#define DEVICE_EXPRESSIONS*/
 
 /*
 Global types
@@ -206,7 +209,7 @@ DESCRIPTION :
 
 struct Auxiliary_properties
 /*******************************************************************************
-LAST MODIFIED : 19 June 2002
+LAST MODIFIED : 24 July 2002
 
 DESCRIPTION :
 If <number_of_electrodes> is non-positive then the auxiliary is an external
@@ -232,7 +235,7 @@ combination of electrodes.
 			struct Device **electrodes;
 #if defined (DEVICE_EXPRESSIONS)
 		} sum;
-	}
+	} combination;
 #endif /* defined (DEVICE_EXPRESSIONS) */
 }; /* struct Auxiliary_properties */
 
@@ -651,26 +654,27 @@ DESCRIPTION :
 Destroys a device expression.
 ==============================================================================*/
 
-int calculate_channel_number_list(struct Device_expression *expression,
+int calculate_device_channel_number_list(struct Device *device,
 	int *number_of_channels_address,int **channel_numbers_address);
 /*******************************************************************************
-LAST MODIFIED : 18 June 2002
+LAST MODIFIED : 24 July 2002
 
 DESCRIPTION :
-From the device <expression>, calculate the <channel_numbers> whose values are
-needed in order to evaluate the expression.  The order of the <channel_numbers>
-and the values need to be passed in the same order to
-<evaluate_Device_expression>.
+From the <device>, calculate the <channel_numbers> whose values are needed in
+order to evaluate the <device>.  The order of the <channel_numbers> and the 
+values need to be passed in the same order to <evaluate_device>.
 ==============================================================================*/
 
-int evaluate_Device_expression(struct Device_expression *expression,
-	float *channel_values,float *result);
+int evaluate_device(struct Device *device,float **channel_values_address,
+	float *result);
 /*******************************************************************************
-LAST MODIFIED : 18 June 2002
+LAST MODIFIED : 24 July 2002
 
 DESCRIPTION :
-Evaluates the <expression> using the <channel_values>.  The values should be for
-and in the order of the channels returned by <calculate_channel_number_list>.
+Evaluates the <device> using the <*channel_values_address>.  The values
+should be for and in the order of the channels returned by
+<calculate_device_channel_number_list>.  Increments <*channel_values_address> as
+it steps through.
 ==============================================================================*/
 
 struct Signal *get_Device_signal(struct Device *device);

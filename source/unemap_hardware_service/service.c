@@ -65,14 +65,14 @@ FILE *fopen_UNEMAP_HARDWARE(char *file_name,char *type);
 
 VOID AddToMessageLog(LPTSTR lpszMsg)
 {
-/*	FILE *unemap_debug;
+	FILE *unemap_debug;
 
 	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
 	{
 		fprintf(unemap_debug,"%s\n",lpszMsg);
 		fclose(unemap_debug);
 	}
-	else*/
+	else
 	{
 	    TCHAR   szMsg[256];
 		HANDLE  hEventSource;

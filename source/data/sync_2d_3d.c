@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : sync_2d_3d.c
 
-LAST MODIFIED : 31 August 2001
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -19,10 +19,10 @@ DESCRIPTION :
 #include <Mrm/MrmPublic.h>
 #include "select/select_finite_element.h"
 #endif
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
 #include <windowsx.h>
-#endif
+#endif /* defined (WIN32_USER_INTERFACE) */
 #include "user_interface/gui_declaration.h"
 
 /*
@@ -252,7 +252,7 @@ Identifies components of the dialog.
 } /* DIALOG_WINDOW_INITIALISE(Sync_2d_3d) */
 #endif /* MOTIF */
 
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 int DIALOG_WINDOW_INITIALISE(Sync_2d_3d)(DIALOG_LOCAL_PARAM(Sync_2d_3d))
 /*******************************************************************************
 LAST MODIFIED : 15 January 1997
@@ -292,7 +292,7 @@ Identifies components of the dialog.
 
 	return (return_code);
 } /* DIALOG_WINDOW_INITIALISE(Sync_2d_3d) */
-#endif /* WINDOWS */
+#endif /* WIN32_USER_INTERFACE */
 
 int DIALOG_WINDOW_DESTROY(Sync_2d_3d)(DIALOG_LOCAL_PARAM(Sync_2d_3d))
 /*******************************************************************************

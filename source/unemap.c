@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap.c
 
-LAST MODIFIED : 22 July 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Main program for unemap.  Based on cmgui.
@@ -50,11 +50,11 @@ Main program for unemap.  Based on cmgui.
 #include "unemap/rig.h"
 #include "unemap/rig_node.h"
 #include "unemap/unemap_hardware.h"
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 #if defined (MIRADA)
 #include "unemap/vunemapd.h"
 #endif /* defined (MIRADA) */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 #endif /* defined (NOT_ACQUISITION_ONLY) */
 #include "unemap/unemap_command.h"
 #include "user_interface/confirmation.h"
@@ -145,17 +145,17 @@ Opens a file in the UNEMAP_HARDWARE directory.
 				strlen(file_name)+2))
 			{
 				strcpy(hardware_file_name,hardware_directory);
-#if defined (WIN32)
+#if defined (WIN32_SYSTEM)
 				if ('\\'!=hardware_file_name[strlen(hardware_file_name)-1])
 				{
 					strcat(hardware_file_name,"\\");
 				}
-#else /* defined (WIN32) */
+#else /* defined (WIN32_SYSTEM) */
 				if ('/'!=hardware_file_name[strlen(hardware_file_name)-1])
 				{
 					strcat(hardware_file_name,"/");
 				}
-#endif /* defined (WIN32) */
+#endif /* defined (WIN32_SYSTEM) */
 			}
 		}
 		else
@@ -304,10 +304,15 @@ Display a unemap warning message.
 	return (return_code);
 } /* display_warning_message */
 
-void Unemap_system_window_end_application_loop(
-	struct System_window *system_window, void *user_interface_void)
+void unemap_end_application_loop(
+#if defined (NOT_ACQUISITION_ONLY)
+	struct System_window *window,
+#else /* defined (NOT_ACQUISITION_ONLY) */
+	struct Page_window *window,
+#endif /* defined (NOT_ACQUISITION_ONLY) */
+	void *user_interface_void)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Ends the application main loop. Callback function for when the close button is
@@ -317,19 +322,19 @@ as the main application.
 {
 	struct User_interface *user_interface;
 
-	ENTER(Unemap_system_window_end_application_loop);
-	USE_PARAMETER(system_window);
-	if (user_interface = (struct User_interface *)user_interface_void)
+	ENTER(unemap_end_application_loop);
+	USE_PARAMETER(window);
+	if (user_interface=(struct User_interface *)user_interface_void)
 	{
 		User_interface_end_application_loop(user_interface);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Unemap_system_window_end_application_loop.  Invalid argument(s)");
+			"unemap_end_application_loop.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* Unemap_system_window_end_application_loop */
+} /* unemap_end_application_loop */
 
 /*
 Main program
@@ -354,11 +359,11 @@ DESCRIPTION :
 Main program for unemap
 ==============================================================================*/
 {
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 #if defined (MIRADA)
 	HANDLE device_driver;
 #endif /* defined (MIRADA) */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 	int return_code;
 	struct Execute_command *execute_command;
 #if defined (NOT_ACQUISITION_ONLY)
@@ -425,13 +430,13 @@ Main program for unemap
 	struct File_open_data *acquisition_rig_open_data;
 	struct Signal_buffer *signal_buffer;
 	unsigned long number_of_channels,number_of_samples;
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 #if defined (MIRADA)
 	short int *mirada_buffer;
 	unsigned char *bus,*device_function;
 	unsigned long number_of_cards;
 #endif /* defined (MIRADA) */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 #endif /* defined (OLD_CODE) */
 #endif /* defined (NOT_ACQUISITION_ONLY) */
 	struct Event_dispatcher *event_dispatcher=
@@ -459,9 +464,9 @@ Main program for unemap
 #if defined (MOTIF)
 	ENTER(main);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	ENTER(WinMain);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	/* display the version */
 #if defined (MOTIF)
 	display_message(INFORMATION_MESSAGE, VERSION "\n");
@@ -503,7 +508,7 @@ Main program for unemap
 		number_of_channels=64;
 		number_of_samples=5000;
 		sampling_frequency=(float)5000.;
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 #if defined (MIRADA)
 		/* open the device driver */
 		device_driver=CreateFile("\\\\.\\VUNEMAPD.VXD",0,0,NULL,OPEN_EXISTING,
@@ -567,7 +572,7 @@ Main program for unemap
 			display_message(ERROR_MESSAGE,"WinMain.  Could not get NI information");
 		}
 #endif /* defined (NI_DAQ) */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 #endif /* defined (OLD_CODE) */
 		/* set up the acquisition rig */
 		acquisition_rig=(struct Rig *)NULL;
@@ -580,9 +585,9 @@ Main program for unemap
 #if defined (MOTIF)
 				(Widget)NULL,(XtPointer)acquisition_rig_open_data,(XtPointer)NULL
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				acquisition_rig_open_data
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 				);
 			destroy_File_open_data(&acquisition_rig_open_data);
 		}
@@ -852,7 +857,7 @@ Main program for unemap
 #if defined (NOT_ACQUISITION_ONLY)
 		if (system=CREATE(System_window)(
 			User_interface_get_application_shell(user_interface),
-			Unemap_system_window_end_application_loop,(void *)user_interface,
+			unemap_end_application_loop,(void *)user_interface,
 #if defined (UNEMAP_USE_3D)
 			element_point_ranges_selection,element_selection,
 			fe_field_manager,node_selection,data_selection,
@@ -868,32 +873,21 @@ Main program for unemap
 			time_keeper, user_interface))
 #else /* defined (NOT_ACQUISITION_ONLY) */
 		if (open_Page_window(&page_window,
+			unemap_end_application_loop,(void *)user_interface,
 			(struct Mapping_window **)NULL,&acquisition_rig,
 #if defined (MOTIF)
 			user_settings.identifying_colour,
 			User_interface_get_screen_width(user_interface),
 			User_interface_get_screen_height(user_interface),
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 #if defined (MIRADA)
 			device_driver,
 #endif /* defined (MIRADA) */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 			5,".sig",user_interface))
 #endif /* defined (NOT_ACQUISITION_ONLY) */
 		{
-#if defined (OLD_CODE)
-#if defined (NOT_ACQUISITION_ONLY)
-#else /* defined (NOT_ACQUISITION_ONLY) */
-#if defined (MOTIF)
-			/*???RC  exit_unemap_acquisition only called destroy_Page_window. This
-				doesn't seem to end the application main loop, so I removed it
-				and destroy the Page_window with the other clean-ups below */
-			XtAddCallback(get_page_window_close_button(page_window),
-				XmNactivateCallback,exit_unemap_acquisition,(XtPointer)page_window);
-#endif /* defined (MOTIF) */
-#endif /* defined (NOT_ACQUISITION_ONLY) */
-#endif /* defined (OLD_CODE) */
 			/* create the Unemap_command_data */
 			unemap_command_data=CREATE(Unemap_command_data)(
 				event_dispatcher,
@@ -942,14 +936,14 @@ Main program for unemap
 			/* error handling */
 			switch (signal_code)
 			{
-#if !defined (WINDOWS)
+#if !defined (WIN32_SYSTEM)
 				/*???DB.  SIGBUS is not POSIX */
 				case SIGBUS:
 				{
 					printf("Bus error occured\n");
 					display_message(ERROR_MESSAGE,"Bus error occured");
 				} break;
-#endif /* !defined (WINDOWS) */
+#endif /* !defined (WIN32_SYSTEM) */
 				case SIGFPE:
 				{
 					printf("Floating point exception occured\n");
@@ -1027,21 +1021,21 @@ Main program for unemap
 #else /* defined (NOT_ACQUISITION_ONLY) */
 #endif /* defined (NOT_ACQUISITION_ONLY) */
 		DESTROY(Execute_command)(&execute_command);
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 #if defined (MIRADA)
 		if (INVALID_HANDLE_VALUE!=device_driver)
 		{
 			CloseHandle(device_driver);
 		}
 #endif /* defined (MIRADA) */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 		/* close the user interface */
 		DESTROY(User_interface)(&user_interface);
 		DESTROY(Event_dispatcher)(&event_dispatcher);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "Could not open user interface");
+		display_message(ERROR_MESSAGE,"Could not open user interface");
 		return_code = 0;
 	}
 	LEAVE;

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : gui_button.h
 
-LAST MODIFIED : 1 March 1997
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Button routines.
@@ -11,9 +11,9 @@ public and private
 #if !defined (GUI_BUTTON_H)
 #define GUI_BUTTON_H
 
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 /*
 Global functions
@@ -37,7 +37,7 @@ Sets the state of the button
 ==============================================================================*/
 #if defined (MOTIF)
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 #define DECLARE_GUI_BUTTON_SET_CHECKED(dialog_name,button_name) \
 int GUI_BUTTON_SET_CHECKED(dialog_name,button_name)( \
 	DIALOG_LOCAL_PARAM(dialog_name),int checked) \
@@ -77,7 +77,7 @@ int GUI_BUTTON_SET_CHECKED(dialog_name,button_name)( \
 \
 	return (return_code); \
 } /* GUI_BUTTON_SET_CHECKED(dialog_name,button_name) */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 #if defined (FULL_NAMES)
 #define GUI_BUTTON_GET_CHECKED_( dialog_name , button_name ) \
@@ -97,7 +97,7 @@ Sets the state of the button
 ==============================================================================*/
 #if defined (MOTIF)
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 #define DECLARE_GUI_BUTTON_GET_CHECKED(dialog_name,button_name) \
 int GUI_BUTTON_GET_CHECKED(dialog_name,button_name)( \
 	DIALOG_LOCAL_PARAM(dialog_name)) \
@@ -129,5 +129,5 @@ int GUI_BUTTON_GET_CHECKED(dialog_name,button_name)( \
 \
 	return (return_code); \
 } /* GUI_BUTTON_GET_CHECKED(dialog_name,button_name) */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* !defined (GUI_BUTTON_H) */

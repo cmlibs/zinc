@@ -241,6 +241,7 @@ Creates the windows associated with the acquisition work area.
 							(&(acquisition->window),
 #if defined (MOTIF)
 							activation,acquisition->window_shell,
+							(Unemap_page_window_close_callback_procedure *)NULL,(void *)NULL,
 #endif /* defined (MOTIF) */
 							&(acquisition->rig),
 #if defined (MOTIF)

@@ -27,13 +27,13 @@ DESCRIPTION :
 #include "user_interface/filedir.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 #include "unemap/vunemapd.h"
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 #define USE_DIALOG
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 /*
 Module types
@@ -286,10 +286,10 @@ Draws the line segment that represents the current acquisition interval.
 		widget_spacing=User_interface_get_widget_spacing(acquisition->user_interface);
 		font=User_interface_get_normal_font(acquisition->user_interface);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		widget_spacing=5;
 			/*???DB.  Pass widget_spacing ? */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		/* clear the drawing */
 #if defined (MOTIF)
 		XFillRectangle(display,drawable,
@@ -1226,7 +1226,7 @@ frees the memory associated with the <acquisition_window>.
 } /* destroy_Acquisition_window */
 #endif /* defined (MOTIF) */
 
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 static LRESULT CALLBACK Acquisition_window_class_proc(HWND window,
 	UINT message_identifier,WPARAM first_message,LPARAM second_message)
 /*******************************************************************************
@@ -1366,9 +1366,9 @@ stop_interrupting(acquisition_window->device_driver,&interrupt_count,&start);
 
 	return (return_code);
 } /* Acquisition_window_class_proc */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 #if defined (USE_DIALOG)
 static void Acquisition_window_WM_COMMAND_handler(HWND window,
 	int item_control_accelerator_id,HWND control_window,UINT notify_code)
@@ -1389,9 +1389,9 @@ DESCRIPTION :
 	LEAVE;
 } /* Acquisition_window_WM_COMMAND_handler */
 #endif /* defined (USE_DIALOG) */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 #if defined (USE_DIALOG)
 static BOOL CALLBACK Acquisition_window_dialog_proc(HWND window,
 	UINT message_identifier,WPARAM first_message,LPARAM second_message)
@@ -1418,7 +1418,7 @@ DESCRIPTION :
 	return (return_code);
 } /* Acquisition_window_dialog_proc */
 #endif /* defined (USE_DIALOG) */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 /*
 Global functions
@@ -1539,11 +1539,11 @@ unsuccessful, NULL is returned.
 	unsigned long mask;
 	XGCValues values;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	BOOL win32_return_code;
 	static char *class_name="Acquisition_window";
 	WNDCLASSEX class_information;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	struct Acquisition_window *acquisition;
 
 	ENTER(create_Acquisition_window);
@@ -1560,10 +1560,10 @@ unsuccessful, NULL is returned.
 			{
 				/* assign fields */
 				acquisition->address=address;
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 				acquisition->device_driver=CreateFile("\\\\.\\VUNEMAPD.VXD",0,0,NULL,
 					OPEN_EXISTING,FILE_FLAG_DELETE_ON_CLOSE,0);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 #if defined (MOTIF)
 				acquisition->activation=activation;
 #endif /* defined (MOTIF) */
@@ -1728,7 +1728,7 @@ unsuccessful, NULL is returned.
 					DEALLOCATE(acquisition);
 				}
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				/* check if the class is registered */
 				if (TRUE!=(win32_return_code=GetClassInfoEx(User_interface_get_instance(user_interface),
 					class_name,&class_information)))
@@ -1820,7 +1820,7 @@ unsuccessful, NULL is returned.
 						"create_Acquisition_window.  Unable to register class information");
 					DEALLOCATE(acquisition);
 				}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 			}
 			else
 			{

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : error_handler.h
 
-LAST MODIFIED : 18 May 1998
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Error handling routines.
@@ -19,12 +19,12 @@ Global variables
 */
 extern int signal_code;
 extern jmp_buf jump_buffer;
-#if !defined (WINDOWS)
+#if !defined (WIN32_SYSTEM)
 /*???DB.  POSIX */
 /*extern sigjmp_buf jump_buffer;*/
 /*???DB. SIGBUS is not POSIX */
 extern void (*old_SIGBUS_handler)(int);
-#endif /* !defined (WINDOWS) */
+#endif /* !defined (WIN32_SYSTEM) */
 extern void (*old_SIGFPE_handler)(int);
 extern void (*old_SIGILL_handler)(int);
 #if defined (UNIX)
@@ -42,7 +42,7 @@ void new_error_handler(int sig);
 Global macros
 -------------
 */
-#if !defined (WINDOWS)
+#if !defined (WIN32_SYSTEM)
 #define START_ERROR_HANDLING \
 	/* determine old handlers */ \
 	old_SIGBUS_handler=signal(SIGBUS,new_error_handler); \
@@ -82,9 +82,9 @@ Global macros
 	signal(SIGFPE,new_error_handler); \
 	signal(SIGILL,new_error_handler); \
 	signal(SIGSEGV,new_error_handler)
-#endif /* !defined (WINDOWS) */
+#endif /* !defined (WIN32_SYSTEM) */
 
-#if !defined (WINDOWS)
+#if !defined (WIN32_SYSTEM)
 #define END_ERROR_HANDLING \
 	/* restore old handlers */ \
 	if (SIG_ERR!=old_SIGBUS_handler) \
@@ -126,4 +126,4 @@ Global macros
 	{ \
 		signal(SIGSEGV,old_SIGSEGV_handler); \
 	}
-#endif /* !defined (WINDOWS) */
+#endif /* !defined (WIN32_SYSTEM) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : edf.h
 
-LAST MODIFIED : 11 December 2001
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Functions for reading EDF (European Data Format) data files, as output by the
@@ -17,9 +17,9 @@ Biosemi rig.
 #if defined (NOT_ANSI)
 #include <ieeefp.h>
 #endif /* defined (NOT_ANSI) */
-#if defined (WIN32)
+#if defined (WIN32_SYSTEM)
 #include <float.h>
-#endif /* defined (WIN32) */
+#endif /* defined (WIN32_SYSTEM) */
 #include "general/debug.h"
 #include "general/geometry.h"
 #include "general/myio.h"

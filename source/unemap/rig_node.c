@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig_node.c
 
-LAST MODIFIED : 23 October 2001
+LAST MODIFIED : 25 July 2002
 
 DESCRIPTION :
 Essentially the same functionality as rig.c, but using nodes and fields to store
@@ -5306,14 +5306,15 @@ int extract_signal_information(struct FE_node *device_node,
 	int *highlight_address,float *signal_minimum_address,
 	float *signal_maximum_address)
 /*******************************************************************************
-LAST MODIFIED : 2 August 2000
+LAST MODIFIED : 25 July 2002
 
 DESCRIPTION :
 Extracts the specified signal information.  The specification arguments are:
-- <device_node>, <signal_drawing_package>, <device> identify where the information is
-	stored. Either supply a <device>, with <device_node>, <signal_drawing_package> NULL
-	to extract info from <device>, or supply a <device_node> and a <signal_drawing_package>
-	with <device> = NULL, to extract info from <device_node>.
+- <device_node>, <signal_drawing_package>, <device> identify where the
+	information is stored. Either supply a <device>, with <device_node>,
+	<signal_drawing_package> NULL to extract info from <device>, or supply a
+	<device_node> and a <signal_drawing_package> with <device> = NULL, to extract
+	info from <device_node>.
 - <signal_number> specifies which signal (zero indicates all)	
 - if device is set (device_node is NULL) <first_data>, <last_data> specify the 
   part of the signal required. If <first_data> is greater than <last_data> then 
@@ -5396,13 +5397,23 @@ The extraction arguments are:
 			else
 			{
 				if ((device->description)&&(AUXILIARY==device->description->type)&&
-					(0<(number_of_electrodes=(device->description->properties).
-					auxiliary.number_of_electrodes)))
+					(0<(number_of_electrodes=(device->description->properties).auxiliary.
+#if defined (DEVICE_EXPRESSIONS)
+					combination.sum.
+#endif /* defined (DEVICE_EXPRESSIONS) */
+					number_of_electrodes)))
 				{
 					/* auxiliary device that is a linear combination of electrodes */
 					linear_combination=1;
-					electrodes=(device->description->properties).auxiliary.electrodes;
+					electrodes=(device->description->properties).auxiliary.
+#if defined (DEVICE_EXPRESSIONS)
+						combination.sum.
+#endif /* defined (DEVICE_EXPRESSIONS) */
+						electrodes;
 					electrode_coefficients=(device->description->properties).auxiliary.
+#if defined (DEVICE_EXPRESSIONS)
+						combination.sum.
+#endif /* defined (DEVICE_EXPRESSIONS) */
 						electrode_coefficients;
 					/* check that electodes have same number of signals and that all
 						signals are from the same buffer */

@@ -1,18 +1,19 @@
 /*******************************************************************************
 FILE : unemap_hardware.c
 
-LAST MODIFIED : 31 July 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
 signal conditioning cards.
 
 CODE SWITCHS :
-WINDOWS - win32 acquisition only version
-	MIRADA - first Oxford interim system, based on Mirada card (???DB.  Not yet
-		included)
-	NI_DAQ - uses National Instruments PCI or PXI data acquisition cards
-		Now the same object will work for all hardware versions
+WIN32_SYSTEM - uses Windows GDI (graphics device interface?)
+WIN32_USER_INTERFACE - uses Windows GDI (graphics device interface?)
+MIRADA - first Oxford interim system, based on Mirada card (???DB.  Not yet
+	included)
+NI_DAQ - uses National Instruments PCI or PXI data acquisition cards
+	Now the same object will work for all hardware versions
 CALIBRATE_SIGNAL_SQUARE - alternative is a sine wave
 SWITCHING_TIME - for calculating gains during calibration
 SYNCHRONOUS_STIMULATION - allows stimulators to be started at the same time
@@ -79,7 +80,7 @@ unemap.*.numberOfSamples: 100000
 			signals to disk) and the sampling.  Changed to interrupts for sampling.
 			This means that can't sample as fast (reduce rate to 1000).  Doesn't fix
 			the problem
-1.2.5 WINDOWS_IO
+1.2.5 WIN32_IO
       Thought that may be something wrong with the generic file I/O (fopen,
 			etc), so swapped to the Microsoft ones.  Doesn't fix the problem
 1.2.6 Upgrade to Service Pack 6a for NT.  Doesn't fix the problem
@@ -332,13 +333,11 @@ NO_BATT_GOOD_WATCH - no thread watching BattGood
 #if defined (UNEMAP_THREAD_SAFE) && defined (UNIX)
 #include <pthread.h>
 #endif /* defined (UNEMAP_THREAD_SAFE) && defined (UNIX) */
-#if defined (WINDOWS)
 #if defined (NI_DAQ)
 #include "nidaq.h"
 /* for RTSI */
 #include "nidaqcns.h"
 #endif /* defined (NI_DAQ) */
-#endif /* defined (WINDOWS) */
 #include "general/debug.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -485,17 +484,17 @@ unsigned long max_sample_number,min_sample_number;
 Unemap_hardware_callback
 	*module_scrolling_callback=(Unemap_hardware_callback *)NULL;
 void *module_scrolling_callback_data=(void *)NULL;
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 UINT module_scrolling_message=(UINT)0;
 HWND module_scrolling_window=(HWND)NULL;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 int module_number_of_scrolling_channels=0,
 	*module_scrolling_channel_numbers=(int *)NULL,module_scrolling_refresh_period;
 int module_sampling_on=0,module_scrolling_on=1;
 #if defined (UNEMAP_THREAD_SAFE)
-#if defined (WIN32)
+#if defined (WIN32_SYSTEM)
 HANDLE scrolling_callback_mutex=(HANDLE)NULL;
-#endif /* defined (WIN32) */
+#endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
 pthread_mutex_t *scrolling_callback_mutex=(pthread_mutex_t *)NULL,
 	scrolling_callback_mutex_storage;
@@ -514,6 +513,7 @@ float *module_calibration_gains=(float *)NULL,
 
 typedef int (Buffer_full_callback)(void *);
 Buffer_full_callback *module_buffer_full_callback=(Buffer_full_callback *)NULL;
+unsigned long module_buffer_full_size=0;
 void *module_buffer_full_callback_data=NULL;
 
 #if defined (NI_DAQ)
@@ -543,9 +543,9 @@ Module functions
 ----------------
 */
 static int lock_mutex(
-#if defined (WIN32)
+#if defined (WIN32_SYSTEM)
 	HANDLE mutex
-#endif /* defined (WIN32) */
+#endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
 	pthread_mutex_t *mutex
 #endif /* defined (UNIX) */
@@ -564,7 +564,7 @@ Locks the <mutex>.
 #if defined (UNEMAP_THREAD_SAFE)
 	if (mutex)
 	{
-#if defined (WIN32)
+#if defined (WIN32_SYSTEM)
 		if (WAIT_FAILED==WaitForSingleObject(mutex,INFINITE))
 		{
 			display_message(ERROR_MESSAGE,
@@ -572,7 +572,7 @@ Locks the <mutex>.
 				GetLastError());
 			return_code=0;
 		}
-#endif /* defined (WIN32) */
+#endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
 		pthread_mutex_lock(mutex);
 #endif /* defined (UNIX) */
@@ -584,9 +584,9 @@ Locks the <mutex>.
 } /* lock_mutex */
 
 static int try_lock_mutex(
-#if defined (WIN32)
+#if defined (WIN32_SYSTEM)
 	HANDLE mutex
-#endif /* defined (WIN32) */
+#endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
 	pthread_mutex_t *mutex
 #endif /* defined (UNIX) */
@@ -605,7 +605,7 @@ Trys to lock the <mutex>.
 #if defined (UNEMAP_THREAD_SAFE)
 	if (mutex)
 	{
-#if defined (WIN32)
+#if defined (WIN32_SYSTEM)
 		if (WAIT_OBJECT_0==WaitForSingleObject(mutex,(DWORD)0))
 		{
 			return_code=1;
@@ -614,7 +614,7 @@ Trys to lock the <mutex>.
 		{
 			return_code=0;
 		}
-#endif /* defined (WIN32) */
+#endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
 		/*???DB.  To be done */
 		pthread_mutex_trylock(mutex);
@@ -627,9 +627,9 @@ Trys to lock the <mutex>.
 } /* try_lock_mutex */
 
 static int unlock_mutex(
-#if defined (WIN32)
+#if defined (WIN32_SYSTEM)
 	HANDLE mutex
-#endif /* defined (WIN32) */
+#endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
 	pthread_mutex_t *mutex
 #endif /* defined (UNIX) */
@@ -648,9 +648,9 @@ Unlocks the <mutex>.
 #if defined (UNEMAP_THREAD_SAFE)
 	if (mutex)
 	{
-#if defined (WIN32)
+#if defined (WIN32_SYSTEM)
 		ReleaseMutex(mutex);
-#endif /* defined (WIN32) */
+#endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
 		pthread_mutex_unlock(mutex);
 #endif /* defined (UNIX) */
@@ -683,17 +683,17 @@ Opens a file in the UNEMAP_HARDWARE directory.
 				strlen(file_name)+2))
 			{
 				strcpy(hardware_file_name,hardware_directory);
-#if defined (WIN32)
+#if defined (WIN32_SYSTEM)
 				if ('\\'!=hardware_file_name[strlen(hardware_file_name)-1])
 				{
 					strcat(hardware_file_name,"\\");
 				}
-#else /* defined (WIN32) */
+#else /* defined (WIN32_SYSTEM) */
 				if ('/'!=hardware_file_name[strlen(hardware_file_name)-1])
 				{
 					strcat(hardware_file_name,"/");
 				}
-#endif /* defined (WIN32) */
+#endif /* defined (WIN32_SYSTEM) */
 			}
 		}
 		else
@@ -3358,12 +3358,11 @@ DESCRIPTION :
 #endif /* defined (NI_DAQ) */
 #endif /* defined (OLD_CODE) */
 
-#if defined (WINDOWS)
 #if defined (NI_DAQ)
 static void scrolling_callback_NI(HWND handle,UINT message,WPARAM wParam,
 	LPARAM lParam)
 /*******************************************************************************
-LAST MODIFIED : 13 May 2002
+LAST MODIFIED : 5 August 2002
 
 DESCRIPTION :
 Always called so that <module_starting_sample_number> and
@@ -3372,8 +3371,8 @@ Always called so that <module_starting_sample_number> and
 {
 #if !defined (NO_SCROLLING_BODY)
 #if !defined (SCROLLING_UPDATE_BUFFER_POSITION_AND_SIZE_ONLY)
-	int averaging_length,channel_number,*channel_numbers,*channel_numbers_2,i,j,k,
-		number_of_bytes;
+	int arm_module_buffer_full_callback,averaging_length,channel_number,
+		*channel_numbers,*channel_numbers_2,i,j,k,number_of_bytes;
 	i16 *hardware_buffer;
 	long sum;
 	SHORT *value,*value_array,*value_array_2;
@@ -3382,6 +3381,7 @@ Always called so that <module_starting_sample_number> and
 	unsigned char *byte_array;
 	unsigned long end1,end2,end3,offset,number_of_samples,sample_number;
 #else /* !defined (SCROLLING_UPDATE_BUFFER_POSITION_AND_SIZE_ONLY) */
+	int arm_module_buffer_full_callback;
 	unsigned long end1,end2,end3,number_of_samples,sample_number;
 #endif /* !defined (SCROLLING_UPDATE_BUFFER_POSITION_AND_SIZE_ONLY) */
 
@@ -3408,6 +3408,14 @@ Always called so that <module_starting_sample_number> and
 		/* NIDAQ returns the number of the next sample */
 		if (module_sample_buffer_size<number_of_samples)
 		{
+			if (module_sample_buffer_size<module_buffer_full_size)
+			{
+				arm_module_buffer_full_callback=1;
+			}
+			else
+			{
+				arm_module_buffer_full_callback=0;
+			}
 			if (sample_number<module_starting_sample_number+module_sample_buffer_size)
 			{
 				module_sample_buffer_size += (sample_number+number_of_samples)-
@@ -3422,10 +3430,17 @@ Always called so that <module_starting_sample_number> and
 			{
 				module_sample_buffer_size=number_of_samples;
 				module_starting_sample_number=sample_number%number_of_samples;
-				if (module_buffer_full_callback)
-				{
-					(*module_buffer_full_callback)(module_buffer_full_callback_data);
-				}
+			}
+			if (module_buffer_full_callback&&arm_module_buffer_full_callback&&
+				((module_sample_buffer_size>=module_buffer_full_size)||
+				(module_sample_buffer_size>=number_of_samples)))
+			{
+#if defined (DEBUG)
+				/*???debug */
+				display_message(INFORMATION_MESSAGE,
+					"call module_buffer_full_callback %lu\n",module_sample_buffer_size);
+#endif /* defined (DEBUG) */
+				(*module_buffer_full_callback)(module_buffer_full_callback_data);
 			}
 		}
 		else
@@ -3436,8 +3451,13 @@ Always called so that <module_starting_sample_number> and
 		sample_number += number_of_samples-1;
 		sample_number %= number_of_samples;
 		if (module_scrolling_on&&(0<module_number_of_scrolling_channels)&&
-			(module_scrolling_window||module_scrolling_callback))
+			(module_scrolling_callback
+#if defined (WIN32_USER_INTERFACE)
+			||module_scrolling_window
+#endif /* defined (WIN32_USER_INTERFACE) */
+			))
 		{
+#if defined (WIN32_USER_INTERFACE)
 			if (module_scrolling_window)
 			{
 				number_of_bytes=(module_number_of_scrolling_channels+2)*sizeof(int)+
@@ -3469,6 +3489,7 @@ Always called so that <module_starting_sample_number> and
 			}
 			else
 			{
+#endif /* defined (WIN32_USER_INTERFACE) */
 				ALLOCATE(channel_numbers,int,module_number_of_scrolling_channels);
 				ALLOCATE(value_array,SHORT,module_number_of_scrolling_channels*
 					NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL);
@@ -3483,7 +3504,9 @@ Always called so that <module_starting_sample_number> and
 						first_error=0;
 					}
 				}
+#if defined (WIN32_USER_INTERFACE)
 			}
+#endif /* defined (WIN32_USER_INTERFACE) */
 			/* calculate the values */
 			if (value=value_array)
 			{
@@ -3552,6 +3575,7 @@ Always called so that <module_starting_sample_number> and
 }
 #endif /* defined (DEBUG) */
 #if !defined (NO_MODULE_SCROLLING_CALLBACK)
+#if defined (WIN32_USER_INTERFACE)
 				if (module_scrolling_window)
 				{
 					if (module_scrolling_callback)
@@ -3587,10 +3611,13 @@ Always called so that <module_starting_sample_number> and
 				}
 				else
 				{
+#endif /* defined (WIN32_USER_INTERFACE) */
 					(*module_scrolling_callback)(module_number_of_scrolling_channels,
 						channel_numbers,(int)NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL,
 						value_array,module_scrolling_callback_data);
+#if defined (WIN32_USER_INTERFACE)
 				}
+#endif /* defined (WIN32_USER_INTERFACE) */
 #else /* !defined (NO_MODULE_SCROLLING_CALLBACK) */
 				DEALLOCATE(value_array);
 				DEALLOCATE(channel_numbers);
@@ -3611,9 +3638,7 @@ Always called so that <module_starting_sample_number> and
 #endif /* !defined (NO_SCROLLING_BODY) */
 } /* scrolling_callback_NI */
 #endif /* defined (NI_DAQ) */
-#endif /* defined (WINDOWS) */
 
-#if defined (WINDOWS)
 #if defined (NI_DAQ)
 static void stimulation_end_callback_NI(HWND handle,UINT message,WPARAM wParam,
 	LPARAM lParam)
@@ -3659,7 +3684,6 @@ Always called so that <module_starting_sample_number> and
 	LEAVE;
 } /* stimulation_end_callback_NI */
 #endif /* defined (NI_DAQ) */
-#endif /* defined (WINDOWS) */
 
 #if defined (NI_DAQ)
 static int set_NI_gain(struct NI_card *ni_card,int gain)
@@ -4138,6 +4162,7 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 									for AO0 and AO1 or if we need it */
 							status=WFM_Group_Control((module_NI_CARDS[i]).device_number,
 								/*group*/1,/*Clear*/0);
+#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -4149,7 +4174,6 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 		fclose(unemap_debug);
 	}
 }
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 #if defined (OLD_CODE)
 #if !defined (SYNCHRONOUS_STIMULATION)
@@ -4306,6 +4330,7 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 												status=WFM_Group_Control(
 													module_NI_CARDS[i].device_number,/*group*/1,
 													/*Start*/1);
+#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -4317,7 +4342,6 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 		fclose(unemap_debug);
 	}
 }
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 #else /* defined (USE_WFM_LOAD) */
 												status=WFM_Op((module_NI_CARDS[i]).device_number,
@@ -4540,6 +4564,7 @@ load_NI_DA) and have not yet started.
 #if defined (USE_WFM_LOAD)
 			status=WFM_Group_Control(start_stimulation_card->device_number,/*group*/1,
 				/*Start*/1);
+#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -4551,7 +4576,6 @@ load_NI_DA) and have not yet started.
 		fclose(unemap_debug);
 	}
 }
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 #else /* defined (USE_WFM_LOAD) */
 			Timeout_Config(start_stimulation_card->device_number,(i32)0);
@@ -4909,6 +4933,7 @@ Stops the <da_channel> for the specified NI card(s).
 						/* stop waveform generation */
 						status=WFM_Group_Control((module_NI_CARDS[i]).device_number,
 							/*group*/1,/*Clear*/0);
+#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -4920,7 +4945,6 @@ Stops the <da_channel> for the specified NI card(s).
 		fclose(unemap_debug);
 	}
 }
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 #if defined (DEBUG)
 /*???debug */
@@ -4984,7 +5008,7 @@ Stops the <da_channel> for the specified NI card(s).
 #if defined (NI_DAQ)
 static int calibration_callback(void *dummy)
 /*******************************************************************************
-LAST MODIFIED : 22 November 2001
+LAST MODIFIED : 6 August 2002
 
 DESCRIPTION :
 Output a square wave which alternates between +/- a known voltage.  Wait for the
@@ -5006,18 +5030,19 @@ stage 4 is calculating the offset
 {
 	float *calibrate_amplitude,*calibration_gains,*calibration_offsets,
 		*filter_frequency,*gain,*offset,*previous_offset,temp;
-	int *calibration_channels,card_number,channel_number,i,j,k,
+	int *calibration_channels,card_number,channel_number,i,j,
 		number_of_settled_channels,return_code;
 	i16 da_channel,status;
 	long int maximum_sample_value,minimum_sample_value;
 	short int *hardware_buffer;
 	static float *filter_frequencies,*gains=(float *)NULL,*offsets=(float *)NULL,
-		*previous_offsets=(float *)NULL,saturated;
+		*previous_offsets=(float *)NULL,*saturated=(float *)NULL;
 	static float *calibrate_amplitudes,*calibrate_voltages;
 	static int calibrate_stage=0,*channel_failed,number_of_channels,
 		number_of_waveform_points,settling_step,stage_flag,stage_mask;
-	static unsigned number_of_samples;
+	static unsigned long number_of_samples;
 	struct NI_card *ni_card;
+	unsigned long k,k1,k2;
 #if defined (CALIBRATE_SIGNAL_SQUARE)
 #if defined (SWITCHING_TIME)
 	float *sorted_signal_entry;
@@ -5054,8 +5079,15 @@ stage 4 is calculating the offset
 				module_number_of_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD;
 			number_of_samples=(module_NI_CARDS->hardware_buffer_size)/
 				NUMBER_OF_CHANNELS_ON_NI_CARD;
-			unemap_get_sample_range(&minimum_sample_value,&maximum_sample_value);
-			saturated=(float)(-minimum_sample_value);
+			/* limit to 5 seconds sampling */
+			if (0<module_sampling_frequency)
+			{
+				k=(unsigned long)((float)5*module_sampling_frequency);
+				if ((0<k)&&(k<number_of_samples))
+				{
+					number_of_samples=k;
+				}
+			}
 			ALLOCATE(calibrate_amplitudes,float,module_number_of_NI_CARDS);
 #if defined (CALIBRATE_SIGNAL_SQUARE)
 			number_of_waveform_points=2;
@@ -5068,6 +5100,7 @@ stage 4 is calculating the offset
 			ALLOCATE(previous_offsets,float,number_of_channels);
 			ALLOCATE(gains,float,number_of_channels);
 			ALLOCATE(channel_failed,int,number_of_channels);
+			ALLOCATE(saturated,float,number_of_channels);
 #if defined (CALIBRATE_SIGNAL_SQUARE) && defined (SWITCHING_TIME)
 			ALLOCATE(sorted_signal,float,number_of_samples);
 #endif /* defined (CALIBRATE_SIGNAL_SQUARE) && defined (SWITCHING_TIME) */
@@ -5086,6 +5119,13 @@ stage 4 is calculating the offset
 					{
 						offsets[i]=(float)0;
 						channel_failed[i]=0xf;
+						unemap_get_sample_range(i+1,&minimum_sample_value,
+							&maximum_sample_value);
+						saturated[i]=(float)(-minimum_sample_value);
+						if ((float)maximum_sample_value<saturated[i])
+						{
+							saturated[i]=(float)maximum_sample_value;
+						}
 					}
 					card_number=0;
 					ni_card=module_NI_CARDS;
@@ -5180,6 +5220,12 @@ stage 4 is calculating the offset
 					{
 						module_buffer_full_callback=calibration_callback;
 						module_buffer_full_callback_data=(void *)NULL;
+						module_buffer_full_size=number_of_samples;
+#if defined (DEBUG)
+						/*???debug */
+						display_message(INFORMATION_MESSAGE,"module_buffer_full_size=%lu\n",
+							module_buffer_full_size);
+#endif /* defined (DEBUG) */
 						settling_step=0;
 						calibrate_stage=1;
 						if ((return_code=start_NI_DA())&&
@@ -5220,6 +5266,7 @@ stage 4 is calculating the offset
 							/* stop waveform generation */
 							status=WFM_Group_Control(ni_card->device_number,/*group*/1,
 								/*Clear*/0);
+#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -5232,16 +5279,15 @@ stage 4 is calculating the offset
 		fclose(unemap_debug);
 	}
 }
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 							/* clear start */
 							status=Select_Signal(ni_card->device_number,ND_OUT_START_TRIGGER,
 								ND_AUTOMATIC,ND_LOW_TO_HIGH);
 							if (0!=status)
 							{
-								display_message(ERROR_MESSAGE,
-"calibration_callback.  Select_Signal(%d,ND_OUT_START_TRIGGER,ND_AUTOMATIC,ND_LOW_TO_HIGH)=%d",
-									ni_card->device_number,status);
+								display_message(ERROR_MESSAGE,"calibration_callback.  "
+									"Select_Signal(%d,ND_OUT_START_TRIGGER,ND_AUTOMATIC,"
+									"ND_LOW_TO_HIGH)=%d",ni_card->device_number,status);
 							}
 							/* set the output voltage to 0 */
 							AO_Write(ni_card->device_number,CALIBRATE_CHANNEL,(i16)0);
@@ -5292,6 +5338,7 @@ stage 4 is calculating the offset
 				DEALLOCATE(previous_offsets);
 				DEALLOCATE(gains);
 				DEALLOCATE(channel_failed);
+				DEALLOCATE(saturated);
 #if defined (CALIBRATE_SIGNAL_SQUARE) && defined (SWITCHING_TIME)
 				DEALLOCATE(sorted_signal);
 #endif /* defined (CALIBRATE_SIGNAL_SQUARE) && defined (SWITCHING_TIME) */
@@ -5313,6 +5360,10 @@ stage 4 is calculating the offset
 	{
 		/* calibrate stage 1, 2, 3 or 4 */
 		unemap_stop_sampling();
+#if defined (DEBUG)
+		/*???debug */
+		display_message(INFORMATION_MESSAGE,"After unemap_stop_sampling\n");
+#endif /* defined (DEBUG) */
 		/* average */
 		offset=offsets;
 		previous_offset=previous_offsets;
@@ -5325,13 +5376,37 @@ stage 4 is calculating the offset
 		}
 		channel_number=0;
 		ni_card=module_NI_CARDS;
+#if defined (DEBUG)
+		/*???debug */
+		display_message(INFORMATION_MESSAGE,"After zeroing offsets %lu %lu %lu\n",
+			module_sample_buffer_size,module_starting_sample_number,
+			number_of_samples);
+#endif /* defined (DEBUG) */
+		k=(module_NI_CARDS->hardware_buffer_size)/NUMBER_OF_CHANNELS_ON_NI_CARD;
+		if (module_sample_buffer_size+number_of_samples>k)
+		{
+			k1=k-module_sample_buffer_size;
+			k2=module_sample_buffer_size+number_of_samples-k;
+		}
+		else
+		{
+			k1=number_of_samples;
+			k2=0;
+		}
 		for (i=0;i<module_number_of_NI_CARDS;i++)
 		{
 			for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
 			{
-				hardware_buffer=(ni_card->hardware_buffer)+j;
+				hardware_buffer=(ni_card->hardware_buffer)+
+					(module_starting_sample_number*NUMBER_OF_CHANNELS_ON_NI_CARD+j);
 				temp=(float)0;
-				for (k=number_of_samples;k>0;k--)
+				for (k=k1;k>0;k--)
+				{
+					temp += (float)(*hardware_buffer);
+					hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
+				}
+				hardware_buffer=(ni_card->hardware_buffer)+j;
+				for (k=k2;k>0;k--)
 				{
 					temp += (float)(*hardware_buffer);
 					hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
@@ -5346,6 +5421,10 @@ stage 4 is calculating the offset
 			*offset /= (float)number_of_samples;
 			offset++;
 		}
+#if defined (DEBUG)
+		/*???debug */
+		display_message(INFORMATION_MESSAGE,"After calculating offsets\n");
+#endif /* defined (DEBUG) */
 		if (0<settling_step)
 		{
 			number_of_settled_channels=0;
@@ -5353,8 +5432,8 @@ stage 4 is calculating the offset
 			{
 				if (channel_failed[i]&stage_flag)
 				{
-					if (((float)fabs((double)(previous_offsets[i]))<saturated)&&
-						((float)fabs((double)(offsets[i]))<saturated)&&
+					if (((float)fabs((double)(previous_offsets[i]))<saturated[i])&&
+						((float)fabs((double)(offsets[i]))<saturated[i])&&
 						((float)fabs((double)(offsets[i]-previous_offsets[i]))<
 						tol_settling))
 					{
@@ -5397,76 +5476,133 @@ stage 4 is calculating the offset
 				((number_of_settled_channels>0)&&(settling_step>=settling_step_max)))
 			{
 				/* settled */
+				if ((1==calibrate_stage)||(2==calibrate_stage)||(3==calibrate_stage))
+				{
+					gain=gains;
+					offset=offsets;
+					ni_card=module_NI_CARDS;
+					calibrate_amplitude=calibrate_amplitudes;
+					for (i=module_number_of_NI_CARDS;i>0;i--)
+					{
+						for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
+						{
+							hardware_buffer=(ni_card->hardware_buffer)+
+								(module_starting_sample_number*NUMBER_OF_CHANNELS_ON_NI_CARD+
+								j);
+#if defined (CALIBRATE_SIGNAL_SQUARE)
+#if defined (SWITCHING_TIME)
+							sorted_signal_entry=sorted_signal;
+							for (k=k1;k>0;k--)
+							{
+								temp=(float)(*hardware_buffer)-(*offset);
+								if (temp<(float)0)
+								{
+									temp= -temp;
+								}
+								*sorted_signal_entry=temp;
+								sorted_signal_entry++;
+								hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
+							}
+#else /* defined (SWITCHING_TIME) */
+							temp=(float)0;
+							for (k=k1;k>0;k--)
+							{
+								temp += (float)fabs(((float)(*hardware_buffer)-(*offset)));
+								hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
+							}
+#endif /* defined (SWITCHING_TIME) */
+#else /* defined (CALIBRATE_SIGNAL_SQUARE) */
+							temp=(float)0;
+							for (k=k1;k>0;k--)
+							{
+								temp_2=(float)(*hardware_buffer)-(*offset);
+								temp += temp_2*temp_2;
+								hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
+							}
+#endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
+							hardware_buffer=(ni_card->hardware_buffer)+j;
+#if defined (CALIBRATE_SIGNAL_SQUARE)
+#if defined (SWITCHING_TIME)
+							for (k=k2;k>0;k--)
+							{
+								temp=(float)(*hardware_buffer)-(*offset);
+								if (temp<(float)0)
+								{
+									temp= -temp;
+								}
+								*sorted_signal_entry=temp;
+								sorted_signal_entry++;
+								hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
+							}
+#else /* defined (SWITCHING_TIME) */
+							for (k=k2;k>0;k--)
+							{
+								temp += (float)fabs(((float)(*hardware_buffer)-(*offset)));
+								hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
+							}
+#endif /* defined (SWITCHING_TIME) */
+#else /* defined (CALIBRATE_SIGNAL_SQUARE) */
+							for (k=k2;k>0;k--)
+							{
+								temp_2=(float)(*hardware_buffer)-(*offset);
+								temp += temp_2*temp_2;
+								hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
+							}
+#endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
+#if defined (CALIBRATE_SIGNAL_SQUARE)
+#if defined (SWITCHING_TIME)
+							qsort(sorted_signal,number_of_samples,sizeof(float),
+								compare_float);
+							temp=(float)0;
+							for (k=(int)(switching_time*200*(float)number_of_samples);
+								k<(int)number_of_samples;k++)
+							{
+								temp += sorted_signal[k];
+							}
+							temp /= (1-200*switching_time)*(float)number_of_samples;
+#else /* defined (SWITCHING_TIME) */
+							temp /= number_of_samples;
+#endif /* defined (SWITCHING_TIME) */
+#else /* defined (CALIBRATE_SIGNAL_SQUARE) */
+							temp /= number_of_samples;
+							temp *= 2;
+							temp=(float)sqrt((double)temp);
+#endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
+							switch (calibrate_stage)
+							{
+								case 1:
+								{
+									*gain=(float)(*calibrate_amplitude)/temp;
+								} break;
+								case 2:
+								{
+									/* *gain is already the fixed gain */
+									*gain=((float)(*calibrate_amplitude)/temp)/(*gain);
+								} break;
+								case 3:
+								{
+									/* *gain is already the programmable gain */
+									*gain *= ((float)(*calibrate_amplitude)/temp);
+								} break;
+							}
+							offset++;
+							gain++;
+						}
+						calibrate_amplitude++;
+						ni_card++;
+					}
+				}
 				switch (calibrate_stage)
 				{
 					case 1:
 					{
 						/* signal conditioning fixed gain */
-						gain=gains;
-						offset=offsets;
-						ni_card=module_NI_CARDS;
-						calibrate_amplitude=calibrate_amplitudes;
-						for (i=module_number_of_NI_CARDS;i>0;i--)
-						{
-							for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
-							{
-								hardware_buffer=(ni_card->hardware_buffer)+j;
-#if defined (CALIBRATE_SIGNAL_SQUARE)
-#if defined (SWITCHING_TIME)
-								sorted_signal_entry=sorted_signal;
-								for (k=number_of_samples;k>0;k--)
-								{
-									temp=(float)(*hardware_buffer)-(*offset);
-									if (temp<(float)0)
-									{
-										temp= -temp;
-									}
-									*sorted_signal_entry=temp;
-									sorted_signal_entry++;
-									hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
-								}
-								qsort(sorted_signal,number_of_samples,sizeof(float),
-									compare_float);
-								temp=(float)0;
-								for (k=(int)(switching_time*200*(float)number_of_samples);
-									k<(int)number_of_samples;k++)
-								{
-									temp += sorted_signal[k];
-								}
-								temp /= (1-200*switching_time)*(float)number_of_samples;
-#else /* defined (SWITCHING_TIME) */
-								temp=(float)0;
-								for (k=number_of_samples;k>0;k--)
-								{
-									temp += (float)fabs(((float)(*hardware_buffer)-(*offset)));
-									hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
-								}
-								temp /= number_of_samples;
-#endif /* defined (SWITCHING_TIME) */
-#else /* defined (CALIBRATE_SIGNAL_SQUARE) */
-								temp=(float)0;
-								for (k=number_of_samples;k>0;k--)
-								{
-									temp_2=(float)(*hardware_buffer)-(*offset);
-									temp += temp_2*temp_2;
-									hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
-								}
-								temp /= number_of_samples;
-								temp *= 2;
-								temp=(float)sqrt((double)temp);
-#endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
-								*gain=(float)(*calibrate_amplitude)/temp;
-								offset++;
-								gain++;
-							}
-							calibrate_amplitude++;
-							ni_card++;
-						}
 						/* set up for next stage */
 						card_number=0;
 						ni_card=module_NI_CARDS;
 						calibrate_amplitude=calibrate_amplitudes;
 						return_code=1;
+						channel_number=1;
 						while (return_code&&(card_number<module_number_of_NI_CARDS))
 						{
 							/* determine the calibration voltage */
@@ -5537,6 +5673,7 @@ stage 4 is calculating the offset
 									"calibration_callback.  load_NI_DA failed 2");
 								return_code=0;
 							}
+							channel_number += NUMBER_OF_CHANNELS_ON_NI_CARD;
 						}
 						if (return_code&&(return_code=start_NI_DA()))
 						{
@@ -5562,72 +5699,12 @@ stage 4 is calculating the offset
 					case 2:
 					{
 						/* signal conditioning variable gain */
-						gain=gains;
-						offset=offsets;
-						ni_card=module_NI_CARDS;
-						calibrate_amplitude=calibrate_amplitudes;
-						for (i=module_number_of_NI_CARDS;i>0;i--)
-						{
-							for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
-							{
-								hardware_buffer=(ni_card->hardware_buffer)+j;
-#if defined (CALIBRATE_SIGNAL_SQUARE)
-#if defined (SWITCHING_TIME)
-								sorted_signal_entry=sorted_signal;
-								for (k=number_of_samples;k>0;k--)
-								{
-									temp=(float)(*hardware_buffer)-(*offset);
-									if (temp<(float)0)
-									{
-										temp= -temp;
-									}
-									*sorted_signal_entry=temp;
-									sorted_signal_entry++;
-									hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
-								}
-								qsort(sorted_signal,number_of_samples,sizeof(float),
-									compare_float);
-								temp=(float)0;
-								for (k=(int)(switching_time*200*(float)number_of_samples);
-									k<(int)number_of_samples;k++)
-								{
-									temp += sorted_signal[k];
-								}
-								temp /= (1-200*switching_time)*(float)number_of_samples;
-#else /* defined (SWITCHING_TIME) */
-								temp=(float)0;
-								for (k=number_of_samples;k>0;k--)
-								{
-									temp += (float)fabs(((float)(*hardware_buffer)-(*offset)));
-									hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
-								}
-								temp /= number_of_samples;
-#endif /* defined (SWITCHING_TIME) */
-#else /* defined (CALIBRATE_SIGNAL_SQUARE) */
-								temp=(float)0;
-								for (k=number_of_samples;k>0;k--)
-								{
-									temp_2=(float)(*hardware_buffer)-(*offset);
-									temp += temp_2*temp_2;
-									hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
-								}
-								temp /= number_of_samples;
-								temp *= 2;
-								temp=(float)sqrt((double)temp);
-#endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
-								/* *gain is already the fixed gain */
-								*gain=((float)(*calibrate_amplitude)/temp)/(*gain);
-								offset++;
-								gain++;
-							}
-							calibrate_amplitude++;
-							ni_card++;
-						}
 						/* set up for next stage */
 						card_number=0;
 						ni_card=module_NI_CARDS;
 						calibrate_amplitude=calibrate_amplitudes;
 						return_code=1;
+						channel_number=1;
 						while (return_code&&(card_number<module_number_of_NI_CARDS))
 						{
 							/* set the gain */
@@ -5701,6 +5778,7 @@ stage 4 is calculating the offset
 								display_message(ERROR_MESSAGE,
 									"calibration_callback.  set_NI_gain failed 2");
 							}
+							channel_number += NUMBER_OF_CHANNELS_ON_NI_CARD;
 						}
 						if (return_code&&(return_code=start_NI_DA()))
 						{
@@ -5726,67 +5804,6 @@ stage 4 is calculating the offset
 					case 3:
 					{
 						/* NI gain */
-						gain=gains;
-						offset=offsets;
-						ni_card=module_NI_CARDS;
-						calibrate_amplitude=calibrate_amplitudes;
-						for (i=module_number_of_NI_CARDS;i>0;i--)
-						{
-							for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
-							{
-								hardware_buffer=(ni_card->hardware_buffer)+j;
-#if defined (CALIBRATE_SIGNAL_SQUARE)
-#if defined (SWITCHING_TIME)
-								sorted_signal_entry=sorted_signal;
-								for (k=number_of_samples;k>0;k--)
-								{
-									temp=(float)(*hardware_buffer)-(*offset);
-									if (temp<(float)0)
-									{
-										temp= -temp;
-									}
-									*sorted_signal_entry=temp;
-									sorted_signal_entry++;
-									hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
-								}
-								qsort(sorted_signal,number_of_samples,sizeof(float),
-									compare_float);
-								temp=(float)0;
-								for (k=(int)(switching_time*200*(float)number_of_samples);
-									k<(int)number_of_samples;k++)
-								{
-									temp += sorted_signal[k];
-								}
-								temp /= (1-200*switching_time)*(float)number_of_samples;
-#else /* defined (SWITCHING_TIME) */
-								temp=(float)0;
-								for (k=number_of_samples;k>0;k--)
-								{
-									temp += (float)fabs(((float)(*hardware_buffer)-(*offset)));
-									hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
-								}
-								temp /= number_of_samples;
-#endif /* defined (SWITCHING_TIME) */
-#else /* defined (CALIBRATE_SIGNAL_SQUARE) */
-								temp=(float)0;
-								for (k=number_of_samples;k>0;k--)
-								{
-									temp_2=(float)(*hardware_buffer)-(*offset);
-									temp += temp_2*temp_2;
-									hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
-								}
-								temp /= number_of_samples;
-								temp *= 2;
-								temp=(float)sqrt((double)temp);
-#endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
-								/* *gain is already the programmable gain */
-								*gain *= ((float)(*calibrate_amplitude)/temp);
-								offset++;
-								gain++;
-							}
-							calibrate_amplitude++;
-							ni_card++;
-						}
 						/* set up for next stage */
 						return_code=stop_NI_DA(CALIBRATE_CHANNEL,0);
 						ni_card=module_NI_CARDS;
@@ -5833,6 +5850,7 @@ stage 4 is calculating the offset
 						calibrate_stage=0;
 						module_buffer_full_callback=(Buffer_full_callback *)NULL;
 						module_buffer_full_callback_data=(void *)NULL;
+						module_buffer_full_size=0;
 						stop_NI_DA(CALIBRATE_CHANNEL,0);
 						ni_card=module_NI_CARDS;
 						filter_frequency=filter_frequencies;
@@ -5893,8 +5911,8 @@ stage 4 is calculating the offset
 							}
 							else
 							{
-								display_message(ERROR_MESSAGE,
-"calibration_callback.  Could not reallocate calibration information.  %p %p %d",
+								display_message(ERROR_MESSAGE,"calibration_callback.  Could not"
+									" reallocate calibration information.  %p %p %d",
 									calibration_channels,calibration_offsets,calibration_gains);
 								if (calibration_channels)
 								{
@@ -5915,6 +5933,7 @@ stage 4 is calculating the offset
 						DEALLOCATE(previous_offsets);
 						DEALLOCATE(gains);
 						DEALLOCATE(channel_failed);
+						DEALLOCATE(saturated);
 #if defined (CALIBRATE_SIGNAL_SQUARE) && defined (SWITCHING_TIME)
 						DEALLOCATE(sorted_signal);
 #endif /* defined (CALIBRATE_SIGNAL_SQUARE) && defined (SWITCHING_TIME) */
@@ -5960,6 +5979,11 @@ stage 4 is calculating the offset
 			settling_step=1;
 			return_code=unemap_start_sampling();
 		}
+#if defined (DEBUG)
+		/*???debug */
+		display_message(INFORMATION_MESSAGE,"After checking settling %d\n",
+			return_code);
+#endif /* defined (DEBUG) */
 		if (!return_code)
 		{
 			calibrate_stage=0;
@@ -6001,6 +6025,7 @@ stage 4 is calculating the offset
 			DEALLOCATE(previous_offsets);
 			DEALLOCATE(gains);
 			DEALLOCATE(channel_failed);
+			DEALLOCATE(saturated);
 #if defined (CALIBRATE_SIGNAL_SQUARE) && defined (SWITCHING_TIME)
 			DEALLOCATE(sorted_signal);
 #endif /* defined (CALIBRATE_SIGNAL_SQUARE) && defined (SWITCHING_TIME) */
@@ -7215,7 +7240,7 @@ stage 4 is calculating the offset
 #endif /* defined (NI_DAQ) */
 #endif /* defined (OLD_CODE) */
 
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 #if !defined (NO_BATT_GOOD_WATCH)
 DWORD WINAPI batt_good_thread_function(LPVOID stop_flag_address_void)
 /*******************************************************************************
@@ -7256,7 +7281,7 @@ DESCRIPTION :
 	return (return_code);
 } /* batt_good_thread_function */
 #endif /* !defined (NO_BATT_GOOD_WATCH) */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 
 static int file_write_samples_acquired(short int *samples,int number_of_samples,
 	void *file)
@@ -7269,15 +7294,15 @@ Used in conjunction with <unemap_transfer_samples_acquired> by
 ==============================================================================*/
 {
 	int return_code;
-#if defined (WINDOWS_IO)
+#if defined (WIN32_IO)
 	DWORD number_of_bytes_written;
-#endif /* defined (WINDOWS_IO) */
+#endif /* defined (WIN32_IO) */
 
 	ENTER(file_write_samples_acquired);
 	return_code=0;
 	if (samples&&(0<number_of_samples)&&file)
 	{
-#if defined (WINDOWS_IO)
+#if defined (WIN32_IO)
 		if (WriteFile((HANDLE)file,(LPCVOID)samples,(DWORD)(number_of_samples*
 			sizeof(short int)),&number_of_bytes_written,(LPOVERLAPPED)NULL))
 		{
@@ -7287,10 +7312,10 @@ Used in conjunction with <unemap_transfer_samples_acquired> by
 		{
 			return_code=0;
 		}
-#else /* defined (WINDOWS_IO) */
+#else /* defined (WIN32_IO) */
 		return_code=fwrite((char *)samples,sizeof(short int),
 			(size_t)number_of_samples,(FILE *)file);
-#endif /* defined (WINDOWS_IO) */
+#endif /* defined (WIN32_IO) */
 	}
 	LEAVE;
 
@@ -7339,16 +7364,16 @@ static int unemap_start_sampling_count=0;
 
 int unemap_configure(float sampling_frequency_slave,
 	int number_of_samples_in_buffer,
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	HWND scrolling_window,UINT scrolling_message,
-#endif /* defined (WINDOWS) */
-#if defined (MOTIF)
+#endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (UNIX)
 	struct Event_dispatcher *event_dispatcher,
-#endif /* defined (MOTIF) */
+#endif /* defined (UNIX) */
 	Unemap_hardware_callback *scrolling_callback,void *scrolling_callback_data,
 	float scrolling_refresh_frequency,int synchronization_card)
 /*******************************************************************************
-LAST MODIFIED : 21 May 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Configures the hardware for sampling at the specified
@@ -7369,8 +7394,8 @@ Every <sampling_frequency_slave>/<scrolling_refresh_frequency> samples (one
 	- fifth argument is the user supplied callback data
 	- it is the responsibilty of the callback to free the channel numbers and
 		values arrays
-- for WINDOWS, if <scrolling_window> is not NULL, a <scrolling_message> for
-	<scrolling_window> is added to the message queue with
+- for WIN32_USER_INTERFACE, if <scrolling_window> is not NULL, a
+	<scrolling_message> for <scrolling_window> is added to the message queue with
 	- WPARAM is an array of unsigned char amalgamating the five arguments above
 		- first sizeof(int) bytes is the number of scrolling channels
 		- next (number of scrolling channels)*sizeof(int) bytes are the scrolling
@@ -7407,24 +7432,33 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 	u16 sampling_interval;
 	u32 available_physical_memory,desired_physical_memory,hardware_buffer_size,
 		physical_memory_tolerance;
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 	/* for getting the total physical memory */
 	MEMORYSTATUS memory_status;
 #if defined (USE_VIRTUAL_LOCK)
 	SIZE_T working_set_size;
 #endif /* defined (USE_VIRTUAL_LOCK) */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX) && defined (UNEMAP_THREAD_SAFE)
 	int error_code;
 #endif /* defined (UNIX) && defined (UNEMAP_THREAD_SAFE) */
 #endif /* defined (NI_DAQ) */
 
 	ENTER(unemap_configure);
+#if defined (UNIX)
+	USE_PARAMETER(event_dispatcher);
+#endif /* defined (UNIX) */
 #if defined (DEBUG)
 	/*???debug */
 	display_message(INFORMATION_MESSAGE,
-		"enter unemap_configure %g %d %p %u %p %p %g %d\n",sampling_frequency_slave,
-		number_of_samples_in_buffer,scrolling_window,scrolling_message,
+		"enter unemap_configure %g %d "
+#if defined (WIN32_USER_INTERFACE)
+		"%p %u "
+#endif /* defined (WIN32_USER_INTERFACE) */
+		"%p %p %g %d\n",sampling_frequency_slave,number_of_samples_in_buffer,
+#if defined (WIN32_USER_INTERFACE)
+		scrolling_window,scrolling_message,
+#endif /* defined (WIN32_USER_INTERFACE) */
 		scrolling_callback,scrolling_callback_data,scrolling_refresh_frequency,
 		synchronization_card);
 #endif /* defined (DEBUG) */
@@ -7525,12 +7559,12 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 				if ((module_sampling_low_count>0)&&(module_sampling_high_count>0))
 				{
 #if defined (UNEMAP_THREAD_SAFE)
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 					if (scrolling_callback_mutex=CreateMutex(
 						/*no security attributes*/NULL,/*do not initially own*/FALSE,
 						/*no name*/(LPCTSTR)NULL))
 					{
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
 					if (0==(error_code=pthread_mutex_init(
 						&(scrolling_callback_mutex_storage),
@@ -7541,9 +7575,9 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 #endif /* defined (UNIX) */
 #endif /* defined (UNEMAP_THREAD_SAFE) */
 					if ((0<scrolling_refresh_frequency)&&(scrolling_callback
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 						||scrolling_window
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 						))
 					{
 						module_scrolling_refresh_period=(int)(module_sampling_frequency/
@@ -7553,10 +7587,10 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 							(module_scrolling_refresh_period-1)/4;
 						module_scrolling_refresh_period=
 							(module_scrolling_refresh_period+1)*4;
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 						module_scrolling_window=scrolling_window;
 						module_scrolling_message=scrolling_message;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 						module_scrolling_callback=scrolling_callback;
 						module_scrolling_callback_data=scrolling_callback_data;
 					}
@@ -7565,10 +7599,10 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 						/* have a callback to keep <module_starting_sample_number> and
 							<module_sample_buffer_size> up to date */
 						module_scrolling_refresh_period=number_of_samples_in_buffer/2;
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 						module_scrolling_window=(HWND)NULL;
 						module_scrolling_message=(UINT)0;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 						module_scrolling_callback=(Unemap_hardware_callback *)NULL;
 						module_scrolling_callback_data=(void *)NULL;
 					}
@@ -7602,7 +7636,7 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 							"unemap_configure.  Config_DAQ_Event_Message 1 failed.  %d %d",
 							status,module_scrolling_refresh_period);
 					}
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 					/* have number_of_samples_in_buffer divisible by
 						module_scrolling_refresh_period */
 					hardware_buffer_size=(number_of_samples_in_buffer-1)/
@@ -7774,7 +7808,7 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 					{
 						channel_vector[i]=i;
 					}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 					/* configure cards */
 					physical_memory_tolerance=1024*1024;
 					available_physical_memory=0;
@@ -8242,9 +8276,9 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 				{
 					display_message(ERROR_MESSAGE,"unemap_configure.  "
 						"Could not create scrolling_callback_mutex.  Error code %d",
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 						GetLastError()
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
 						error_code
 #endif /* defined (UNIX) */
@@ -8283,8 +8317,14 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 #if defined (DEBUG)
 	/*???debug */
 	display_message(INFORMATION_MESSAGE,
-		"leave unemap_configure %d %g %p %u %p %p %d %d\n",return_code,
-		module_sampling_frequency,module_scrolling_window,module_scrolling_message,
+		"leave unemap_configure %d %g "
+#if defined (WIN32_USER_INTERFACE)
+		"%p %u "
+#endif /* defined (WIN32_USER_INTERFACE) */
+		"%p %p %d %d\n",return_code,module_sampling_frequency,
+#if defined (WIN32_USER_INTERFACE)
+		module_scrolling_window,module_scrolling_message,
+#endif /* defined (WIN32_USER_INTERFACE) */
 		module_scrolling_callback,module_scrolling_callback_data,
 		module_scrolling_refresh_period,module_NI_CARDS[0].hardware_buffer_size);
 #endif /* defined (DEBUG) */
@@ -8382,6 +8422,7 @@ hardware.
 					/* stop waveform generation */
 					status=WFM_Group_Control((module_NI_CARDS[i]).device_number,
 						/*group*/1,/*Clear*/0);
+#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -8394,7 +8435,6 @@ hardware.
 		fclose(unemap_debug);
 	}
 }
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 					/* set the output voltage to 0 */
 					AO_Write((module_NI_CARDS[i]).device_number,CALIBRATE_CHANNEL,
@@ -8407,10 +8447,10 @@ hardware.
 			module_sample_buffer_size=0;
 			module_starting_sample_number=0;
 			module_scrolling_refresh_period=0;
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			module_scrolling_window=(HWND)NULL;
 			module_scrolling_message=(UINT)0;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 			module_scrolling_callback=(Unemap_hardware_callback *)NULL;
 			module_scrolling_callback_data=(void *)NULL;
 			module_number_of_scrolling_channels=0;
@@ -8418,9 +8458,9 @@ hardware.
 			/* free mutex's */
 			if (scrolling_callback_mutex)
 			{
-#if defined (WIN32)
+#if defined (WIN32_SYSTEM)
 				CloseHandle(scrolling_callback_mutex);
-#endif /* defined (WIN32) */
+#endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
 				pthread_mutex_destroy(scrolling_callback_mutex);
 #endif /* defined (UNIX) */
@@ -8495,14 +8535,14 @@ Shuts down NT running on the signal conditioning unit computer.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 	HANDLE token;
 	TOKEN_PRIVILEGES token_privileges;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 
 	ENTER(unemap_shutdown);
 	return_code=0;
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 	/* get a token for this process */
 	if (OpenProcessToken(GetCurrentProcess(),TOKEN_ADJUST_PRIVILEGES|TOKEN_QUERY,
 		&token))
@@ -8526,7 +8566,7 @@ Shuts down NT running on the signal conditioning unit computer.
 			}
 		}
 	}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 	LEAVE;
 
 	return (return_code);
@@ -8690,6 +8730,10 @@ calibrated channels and the <calibration_end_callback_data>.
 	int return_code;
 
 	ENTER(unemap_calibrate);
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,"enter unemap_calibrate\n");
+#endif /* defined (DEBUG) */
 	return_code=0;
 #if defined (NI_DAQ)
 	if (module_configured)
@@ -8707,6 +8751,10 @@ calibrated channels and the <calibration_end_callback_data>.
 		}
 	}
 #endif /* defined (NI_DAQ) */
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,"leave unemap_calibrate\n");
+#endif /* defined (DEBUG) */
 	LEAVE;
 
 	return (return_code);
@@ -8976,14 +9024,18 @@ Starts the sampling.
 		{
 			float save_module_sampling_frequency;
 			int save_module_scrolling_refresh_period,save_hardware_buffer_size;
-			HWND save_module_scrolling_window;
 			Unemap_hardware_callback *save_module_scrolling_callback;
-			UINT save_module_scrolling_message;
 			void *save_module_scrolling_callback_data;
+#if defined (WIN32_USER_INTERFACE)
+			HWND save_module_scrolling_window;
+			UINT save_module_scrolling_message;
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 			save_module_sampling_frequency=module_sampling_frequency;
+#if defined (WIN32_USER_INTERFACE)
 			save_module_scrolling_window=module_scrolling_window;
 			save_module_scrolling_message=module_scrolling_message;
+#endif /* defined (WIN32_USER_INTERFACE) */
 			save_module_scrolling_callback=module_scrolling_callback;
 			save_module_scrolling_callback_data=module_scrolling_callback_data;
 			save_module_scrolling_refresh_period=module_scrolling_refresh_period;
@@ -9043,6 +9095,7 @@ Starts the sampling.
 					/* stop waveform generation */
 					status=WFM_Group_Control((module_NI_CARDS[i]).device_number,
 						/*group*/1,/*Clear*/0);
+#if defined (DEBUG)
 /*???debug */
 {
 	FILE *unemap_debug;
@@ -9055,7 +9108,6 @@ Starts the sampling.
 		fclose(unemap_debug);
 	}
 }
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 					/* set the output voltage to 0 */
 					AO_Write((module_NI_CARDS[i]).device_number,CALIBRATE_CHANNEL,
@@ -9071,10 +9123,10 @@ Starts the sampling.
 			module_sample_buffer_size=0;
 			module_starting_sample_number=0;
 			module_scrolling_refresh_period=0;
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			module_scrolling_window=(HWND)NULL;
 			module_scrolling_message=(UINT)0;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 			module_scrolling_callback=(Unemap_hardware_callback *)NULL;
 			module_scrolling_callback_data=(void *)NULL;
 			module_number_of_scrolling_channels=0;
@@ -9089,7 +9141,9 @@ Starts the sampling.
 }
 /*			unemap_configure(save_module_sampling_frequency,
 				save_hardware_buffer_size/NUMBER_OF_CHANNELS_ON_NI_CARD,
+#if defined (WIN32_USER_INTERFACE)
 				save_module_scrolling_window,save_module_scrolling_message,
+#endif /* defined (WIN32_USER_INTERFACE) */
 				save_module_scrolling_callback,save_module_scrolling_callback_data,
 				save_module_sampling_frequency/
 				(float)save_module_scrolling_refresh_period,1);*/
@@ -9097,8 +9151,10 @@ Starts the sampling.
 	float sampling_frequency_slave=save_module_sampling_frequency;
 	int number_of_samples_in_buffer=
 		save_hardware_buffer_size/NUMBER_OF_CHANNELS_ON_NI_CARD;
+#if defined (WIN32_USER_INTERFACE)
 	HWND scrolling_window=save_module_scrolling_window;
 	UINT scrolling_message=save_module_scrolling_message;
+#endif /* defined (WIN32_USER_INTERFACE) */
 	Unemap_hardware_callback *scrolling_callback=save_module_scrolling_callback;
 	void *scrolling_callback_data=save_module_scrolling_callback_data;
 	float scrolling_refresh_frequency=save_module_sampling_frequency/
@@ -9115,18 +9171,24 @@ Starts the sampling.
 	u16 sampling_interval;
 	u32 hardware_buffer_size;
 #endif /* defined (NI_DAQ) */
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 	/* for getting the total physical memory */
 	MEMORYSTATUS memory_status;
 #if defined (USE_VIRTUAL_LOCK)
 	SIZE_T working_set_size;
 #endif /* defined (USE_VIRTUAL_LOCK) */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 
 	/*???debug */
 	display_message(INFORMATION_MESSAGE,
-		"enter unemap_configure %g %d %p %u %p %p %g %d\n",sampling_frequency_slave,
-		number_of_samples_in_buffer,scrolling_window,scrolling_message,
+		"enter unemap_configure %g %d "
+#if defined (WIN32_USER_INTERFACE)
+		"%p %u "
+#endif /* defined (WIN32_USER_INTERFACE) */
+		"%p %p %g %d\n",sampling_frequency_slave,number_of_samples_in_buffer,
+#if defined (WIN32_USER_INTERFACE)
+		scrolling_window,scrolling_message,
+#endif /* defined (WIN32_USER_INTERFACE) */
 		scrolling_callback,scrolling_callback_data,scrolling_refresh_frequency,
 		synchronization_card);
 #if defined (DEBUG)
@@ -9214,9 +9276,9 @@ Starts the sampling.
 				if ((module_sampling_low_count>0)&&(module_sampling_high_count>0))
 				{
 					if ((0<scrolling_refresh_frequency)&&(scrolling_callback
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 						||scrolling_window
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 						))
 					{
 						module_scrolling_refresh_period=(int)(module_sampling_frequency/
@@ -9226,10 +9288,10 @@ Starts the sampling.
 							(module_scrolling_refresh_period-1)/4;
 						module_scrolling_refresh_period=
 							(module_scrolling_refresh_period+1)*4;
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 						module_scrolling_window=scrolling_window;
 						module_scrolling_message=scrolling_message;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 						module_scrolling_callback=scrolling_callback;
 						module_scrolling_callback_data=scrolling_callback_data;
 					}
@@ -9238,10 +9300,10 @@ Starts the sampling.
 						/* have a callback to keep <module_starting_sample_number> and
 							<module_sample_buffer_size> up to date */
 						module_scrolling_refresh_period=number_of_samples_in_buffer/2;
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 						module_scrolling_window=(HWND)NULL;
 						module_scrolling_message=(UINT)0;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 						module_scrolling_callback=(Unemap_hardware_callback *)NULL;
 						module_scrolling_callback_data=(void *)NULL;
 					}
@@ -9279,7 +9341,7 @@ Starts the sampling.
 							"unemap_configure.  Config_DAQ_Event_Message 1 failed.  %d %d",
 							status,module_scrolling_refresh_period);
 					}
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 #if defined (RECONFIGURE_FOR_START_SAMPLING_1)
 					/* have number_of_samples_in_buffer divisible by
 						module_scrolling_refresh_period */
@@ -9450,7 +9512,7 @@ Starts the sampling.
 					{
 						channel_vector[i]=i;
 					}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 					/* configure cards */
 					i=0;
 					status=0;
@@ -9839,9 +9901,14 @@ Starts the sampling.
 		return_code=0;
 	}
 	/*???debug */
-	display_message(INFORMATION_MESSAGE,
-		"leave unemap_configure %d %g %p %u %p %p %d %d\n",return_code,
-		module_sampling_frequency,module_scrolling_window,module_scrolling_message,
+	display_message(INFORMATION_MESSAGE,"leave unemap_configure %d %g "
+#if defined (WIN32_USER_INTERFACE)
+		"%p %u "
+#endif /* defined (WIN32_USER_INTERFACE) */
+		"%p %p %d %d\n",return_code,module_sampling_frequency,
+#if defined (WIN32_USER_INTERFACE)
+		module_scrolling_window,module_scrolling_message,
+#endif /* defined (WIN32_USER_INTERFACE) */
 		module_scrolling_callback,module_scrolling_callback_data,
 		module_scrolling_refresh_period,module_NI_CARDS[0].hardware_buffer_size);
 #if defined (DEBUG)
@@ -10959,29 +11026,40 @@ The total number of hardware channels is assigned to <*number_of_channels>.
 	return (return_code);
 } /* unemap_get_number_of_channels */
 
-int unemap_get_sample_range(long int *minimum_sample_value,
+int unemap_get_sample_range(int channel_number,long int *minimum_sample_value,
 	long int *maximum_sample_value)
 /*******************************************************************************
-LAST MODIFIED : 3 May 1999
+LAST MODIFIED : 6 August 2002
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
+
+If <channel_number> is between 1 and the total number of channels inclusive,
+then the function applies to the group ((<channel_number>-1) div 64)*64+1 to
+((<channel_number>-1) div 64)*64+64.  Otherwise, the function fails.
 
 The minimum possible sample value is assigned to <*minimum_sample_value> and the
 maximum possible sample value is assigned to <*maximum_sample_value>.
 ==============================================================================*/
 {
 	int return_code;
+#if defined (NI_DAQ)
+	struct NI_card *ni_card;
+#endif /* defined (NI_DAQ) */
 
 	ENTER(unemap_get_sample_range);
 	return_code=0;
 #if defined (NI_DAQ)
-	/* check arguments */
-	if (minimum_sample_value&&maximum_sample_value)
+	if (search_for_NI_cards()&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 	{
-		if (search_for_NI_cards()&&module_NI_CARDS)
+		/* check arguments */
+		if ((1<=channel_number)&&(channel_number<=module_number_of_NI_CARDS*
+			NUMBER_OF_CHANNELS_ON_NI_CARD)&&minimum_sample_value&&
+			maximum_sample_value)
 		{
-			if (PXI6071E_AD_DA==module_NI_CARDS->type)
+			ni_card=module_NI_CARDS+
+				((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD);
+			if (PXI6071E_AD_DA==ni_card->type)
 			{
 				*maximum_sample_value=(long int)2048;
 				*minimum_sample_value=(long int)-2047;
@@ -10995,14 +11073,16 @@ maximum possible sample value is assigned to <*maximum_sample_value>.
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"unemap_get_sample_range.  No hardware");
+			display_message(ERROR_MESSAGE,
+				"unemap_get_sample_range.  Invalid argument(s).  %d %p %p",
+				channel_number,minimum_sample_value,maximum_sample_value);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"unemap_get_sample_range.  Invalid argument(s).  %p %p",
-			minimum_sample_value,maximum_sample_value);
+			"unemap_get_sample_range.  Invalid configuration.  %d %p %d",
+			module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
 	}
 #endif /* defined (NI_DAQ) */
 	LEAVE;
@@ -11524,9 +11604,9 @@ then it is set to the number of samples written.
 	int number_of_channels;
 	unsigned long local_number_of_samples;
 #endif /* defined (NI_DAQ) */
-#if defined (WINDOWS_IO)
+#if defined (WIN32_IO)
 	DWORD number_of_bytes_written;
-#endif /* defined (WINDOWS_IO) */
+#endif /* defined (WIN32_IO) */
 
 	ENTER(unemap_write_samples_acquired);
 	return_code=0;
@@ -11565,7 +11645,7 @@ then it is set to the number of samples written.
 			{
 				number_of_channels=1;
 			}
-#if defined (WINDOWS_IO)
+#if defined (WIN32_IO)
 			WriteFile((HANDLE)file,(LPCVOID)&channel_number,
 				(DWORD)sizeof(channel_number),&number_of_bytes_written,
 				(LPOVERLAPPED)NULL);
@@ -11575,12 +11655,12 @@ then it is set to the number of samples written.
 			WriteFile((HANDLE)file,(LPCVOID)&local_number_of_samples,
 				(DWORD)sizeof(local_number_of_samples),&number_of_bytes_written,
 				(LPOVERLAPPED)NULL);
-#else /* defined (WINDOWS_IO) */
+#else /* defined (WIN32_IO) */
 			fwrite((char *)&channel_number,sizeof(channel_number),1,file);
 			fwrite((char *)&number_of_channels,sizeof(number_of_channels),1,file);
 			fwrite((char *)&local_number_of_samples,sizeof(local_number_of_samples),1,
 				file);
-#endif /* defined (WINDOWS_IO) */
+#endif /* defined (WIN32_IO) */
 			return_code=unemap_transfer_samples_acquired(channel_number,
 				number_of_samples,file_write_samples_acquired,(void *)file,
 				number_of_samples_written);
@@ -13600,11 +13680,11 @@ on.
 #if defined (NI_DAQ)
 	float frequency;
 	int channel_number,i;
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 	DWORD batt_good_thread_id;
 	HANDLE batt_good_thread;
 	static int stop_flag=1;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 #if defined (NEW_CODE)
 	i16 status;
 	u32 pattern_and_lines;
@@ -13695,7 +13775,7 @@ on.
 				BattA_setting_UnEmap2vx=1;
 				if (UnEmap_2V2==module_NI_CARDS->unemap_hardware_version)
 				{
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 					/* start watching of BattGood */
 					if (stop_flag)
 					{
@@ -13707,18 +13787,18 @@ on.
 							&batt_good_thread_id);
 #endif /* !defined (NO_BATT_GOOD_WATCH) */
 					}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 				}
 			}
 			else
 			{
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 				/* stop watching of BattGood */
 				if (!stop_flag)
 				{
 					stop_flag=1;
 				}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 				for (i=0;i<module_number_of_NI_CARDS;i++)
 				{
 					/* set power light off */

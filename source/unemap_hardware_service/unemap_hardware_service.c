@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_service.c
 
-LAST MODIFIED : 31 July 2002
+LAST MODIFIED : 6 August 2002
 
 DESCRIPTION :
 The unemap service which runs under NT and talks to unemap via sockets.
@@ -11,6 +11,8 @@ SERVICE_VERSION :
 	servers
 1 Added the ability to specify the number_of_samples for
 	unemap_get_samples_acquired and related functions
+2 Change unemap_get_sample_range to include the channel_number for systems with
+	mixed 12 and 16 bit cards
 
 NOTES :
 1 Started out as :
@@ -38,7 +40,7 @@ PROBLEMS :
 	(Also see unemap_hardware.c)
 2.1 Problem description - see unemap_hardware.c
 2.2 Tried many things, mostly using #defines,
-2.2.1 WINDOWS_IO
+2.2.1 WIN32_IO
 			Thought that may be something wrong with the generic file I/O (fopen,
 			etc), so swapped to the Microsoft ones.  Doesn't fix the problem
 2.2.2 USE_MEMORY_FOR_BACKGROUND
@@ -89,7 +91,7 @@ Module constants
 */
 #if defined (USE_UNEMAP_HARDWARE)
 /* Used so that the client can deal with old versions */
-#define SERVICE_VERSION 1
+#define SERVICE_VERSION 2
 #if defined (USE_SOCKETS)
 #define BUFFER_SIZE 128
 #define DEFAULT_PORT 5001
@@ -114,6 +116,7 @@ HANDLE hServerStopEvent=NULL;
 #if defined (USE_UNEMAP_HARDWARE)
 #if defined (USE_SOCKETS)
 HANDLE acquired_socket_mutex=NULL;
+HANDLE command_socket_read_event=NULL;
 SOCKET acquired_socket=INVALID_SOCKET,calibration_socket=INVALID_SOCKET,
 	command_socket=INVALID_SOCKET,scrolling_socket=INVALID_SOCKET;
 #endif /* defined (USE_SOCKETS) */
@@ -181,17 +184,17 @@ Opens a file in the UNEMAP_HARDWARE directory.
 				strlen(file_name)+2))
 			{
 				strcpy(hardware_file_name,hardware_directory);
-#if defined (WIN32)
+#if defined (WIN32_SYSTEM)
 				if ('\\'!=hardware_file_name[strlen(hardware_file_name)-1])
 				{
 					strcat(hardware_file_name,"\\");
 				}
-#else /* defined (WIN32) */
+#else /* defined (WIN32_SYSTEM) */
 				if ('/'!=hardware_file_name[strlen(hardware_file_name)-1])
 				{
 					strcat(hardware_file_name,"/");
 				}
-#endif /* defined (WIN32) */
+#endif /* defined (WIN32_SYSTEM) */
 			}
 		}
 		else
@@ -238,19 +241,19 @@ Renames a file in the UNEMAP_HARDWARE directory.
 			{
 				strcpy(hardware_new_name,hardware_directory);
 				strcpy(hardware_old_name,hardware_directory);
-#if defined (WIN32)
+#if defined (WIN32_SYSTEM)
 				if ('\\'!=hardware_new_name[strlen(hardware_new_name)-1])
 				{
 					strcat(hardware_new_name,"\\");
 					strcat(hardware_old_name,"\\");
 				}
-#else /* defined (WIN32) */
+#else /* defined (WIN32_SYSTEM) */
 				if ('/'!=hardware_new_name[strlen(hardware_new_name)-1])
 				{
 					strcat(hardware_new_name,"/");
 					strcat(hardware_old_name,"/");
 				}
-#endif /* defined (WIN32) */
+#endif /* defined (WIN32_SYSTEM) */
 			}
 		}
 		else
@@ -395,10 +398,10 @@ Closes the sockets connecting the service with the client.
 } /* close_connection */
 
 #if defined (USE_SOCKETS)
-static int socket_recv(SOCKET socket,unsigned char *buffer,int buffer_length,
-	int flags)
+static int socket_recv(SOCKET socket,HANDLE socket_read_event,
+	unsigned char *buffer,int buffer_length,int flags)
 /*******************************************************************************
-LAST MODIFIED : 27 May 1999
+LAST MODIFIED : 2 August 2002
 
 DESCRIPTION :
 Wrapper function for recv.
@@ -412,6 +415,10 @@ Wrapper function for recv.
 	{
 		do
 		{
+			if (socket_read_event)
+			{
+				ResetEvent(socket_read_event);
+			}
 			return_code=recv(socket,buffer+buffer_received,
 				buffer_length-buffer_received,flags);
 		} while ((SOCKET_ERROR==return_code)&&
@@ -703,6 +710,11 @@ Called by unemap hardware.  Sends the information down the calibration socket.
 	long message_size,out_buffer_size;
 	unsigned char *out_buffer;
 
+#if defined (DEBUG)
+	/*???debug */
+	sprintf(error_string,"enter unemap_hardware_service.calibration_callback");
+	AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
 	if (INVALID_SOCKET!=calibration_socket)
 	{
 		/* send message down calibration socket */
@@ -767,6 +779,11 @@ Called by unemap hardware.  Sends the information down the calibration socket.
 			}
 		}
 	}
+#if defined (DEBUG)
+	/*???debug */
+	sprintf(error_string,"leave unemap_hardware_service.calibration_callback");
+	AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
 } /* calibration_callback */
 
 #if defined (USE_SOCKETS)
@@ -1074,11 +1091,11 @@ Reads samples out of the file and sends them down the acquired socket.
 		AddToMessageLog(TEXT(error_string));
 #endif /* defined (DEBUG) */
 		/* acquired_file is temporary so it is automatically deleted on closing */
-#if defined (WINDOWS_IO)
+#if defined (WIN32_IO)
 		CloseHandle((HANDLE)acquired_file_void);
-#else /* defined (WINDOWS_IO) */
+#else /* defined (WIN32_IO) */
 		fclose(acquired_file);
-#endif /* defined (WINDOWS_IO) */
+#endif /* defined (WIN32_IO) */
 		if (acquired_socket_mutex)
 		{
 			ReleaseMutex(acquired_socket_mutex);
@@ -1188,7 +1205,7 @@ static int process_message(const unsigned char operation_code,
 	const long message_size,const unsigned char big_endian,
 	unsigned char **out_buffer_address,long *out_buffer_size_address)
 /*******************************************************************************
-LAST MODIFIED : 25 January 2002
+LAST MODIFIED : 6 August 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1247,7 +1264,8 @@ DESCRIPTION :
 #endif /* defined (DEBUG) */
 				if (size==message_size)
 				{
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 #if defined (DEBUG)
 /*???debug */
 {
@@ -1323,7 +1341,8 @@ DESCRIPTION :
 #endif /* defined (DEBUG) */
 				if (size==message_size)
 				{
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 #if defined (DEBUG)
 /*???debug */
 {
@@ -1409,7 +1428,8 @@ DESCRIPTION :
 				size=sizeof(channel_number);
 				if (size==message_size)
 				{
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -1454,7 +1474,8 @@ DESCRIPTION :
 				size=sizeof(channel_number);
 				if (size==message_size)
 				{
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -1541,7 +1562,8 @@ DESCRIPTION :
 				size=sizeof(channel_number);
 				if (size==message_size)
 				{
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -1583,7 +1605,8 @@ DESCRIPTION :
 				size=sizeof(channel_number);
 				if (size==message_size)
 				{
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -1658,7 +1681,8 @@ DESCRIPTION :
 				size=sizeof(channel_number);
 				if (size==message_size)
 				{
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -1859,28 +1883,38 @@ DESCRIPTION :
 			case UNEMAP_GET_SAMPLE_RANGE_CODE:
 			{
 				long int maximum_sample_value,minimum_sample_value;
+				int channel_number;
 
 				return_code=0;
-				if (0==message_size)
+				size=sizeof(channel_number);
+				if (size==message_size)
 				{
-					return_code=unemap_get_sample_range(&minimum_sample_value,
-						&maximum_sample_value);
-					if (return_code)
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
+					if (SOCKET_ERROR!=retval)
 					{
-						size=sizeof(minimum_sample_value)+sizeof(maximum_sample_value);
-						if (ALLOCATE(out_buffer,unsigned char,size))
+						unread_size -= retval;
+						copy_byte_swapped((unsigned char *)&channel_number,
+							sizeof(channel_number),buffer,big_endian);
+						return_code=unemap_get_sample_range(channel_number,
+							&minimum_sample_value,&maximum_sample_value);
+						if (return_code)
 						{
-							copy_byte_swapped(out_buffer,sizeof(minimum_sample_value),
-								(char *)&minimum_sample_value,big_endian);
-							copy_byte_swapped(out_buffer+sizeof(minimum_sample_value),
-								sizeof(maximum_sample_value),(char *)&maximum_sample_value,
-								big_endian);
-							*out_buffer_address=out_buffer;
-							*out_buffer_size_address=size;
-						}
-						else
-						{
-							return_code=0;
+							size=sizeof(minimum_sample_value)+sizeof(maximum_sample_value);
+							if (ALLOCATE(out_buffer,unsigned char,size))
+							{
+								copy_byte_swapped(out_buffer,sizeof(minimum_sample_value),
+									(char *)&minimum_sample_value,big_endian);
+								copy_byte_swapped(out_buffer+sizeof(minimum_sample_value),
+									sizeof(maximum_sample_value),(char *)&maximum_sample_value,
+									big_endian);
+								*out_buffer_address=out_buffer;
+								*out_buffer_size_address=size;
+							}
+							else
+							{
+								return_code=0;
+							}
 						}
 					}
 				}
@@ -1908,7 +1942,8 @@ DESCRIPTION :
 				size=sizeof(channel_number);
 				if (size==message_size)
 				{
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -2039,7 +2074,8 @@ DESCRIPTION :
 					{
 						specify_number_of_samples=1;
 					}
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -2180,7 +2216,8 @@ DESCRIPTION :
 					{
 						specify_number_of_samples=1;
 					}
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -2317,7 +2354,8 @@ DESCRIPTION :
 					{
 						specify_number_of_samples=1;
 					}
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -2442,11 +2480,11 @@ DESCRIPTION :
 #if !defined (NO_ACQUIRED_THREAD)
 				DWORD acquired_thread_id;
 				HANDLE acquired_thread;
-#if defined (WINDOWS_IO)
+#if defined (WIN32_IO)
 				HANDLE acquired_file;
-#else /* defined (WINDOWS_IO) */
+#else /* defined (WIN32_IO) */
 				FILE *acquired_file;
-#endif /* defined (WINDOWS_IO) */
+#endif /* defined (WIN32_IO) */
 #endif /* !defined (NO_ACQUIRED_THREAD) */
 				int channel_number,number_of_samples,specify_number_of_samples;
 
@@ -2472,7 +2510,8 @@ DESCRIPTION :
 					{
 						specify_number_of_samples=1;
 					}
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -2488,16 +2527,16 @@ DESCRIPTION :
 						{
 							number_of_samples=0;
 						}
-#if defined (WINDOWS_IO)
+#if defined (WIN32_IO)
 						if (acquired_file=CreateFile("c:\\unemap\\bin\\save.sig",
 							(DWORD)(GENERIC_READ|GENERIC_WRITE),(DWORD)0,
 							(LPSECURITY_ATTRIBUTES)NULL,(DWORD)CREATE_ALWAYS,
 							(DWORD)FILE_ATTRIBUTE_NORMAL,(HANDLE)NULL))
-#else /* defined (WINDOWS_IO) */
+#else /* defined (WIN32_IO) */
 						/*???debug */
 /*						if (acquired_file=fopen_UNEMAP_HARDWARE("save.sig","wb"))*/
 						if (acquired_file=tmpfile())
-#endif /* defined (WINDOWS_IO) */
+#endif /* defined (WIN32_IO) */
 						{
 							if (unemap_write_samples_acquired(channel_number,
 								number_of_samples,acquired_file,(int *)NULL))
@@ -2637,7 +2676,8 @@ DESCRIPTION :
 				size=sizeof(channel_number);
 				if (size==message_size)
 				{
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -2683,7 +2723,8 @@ DESCRIPTION :
 				size=2*sizeof(int)+sizeof(float)+sizeof(unsigned int);
 				if (size<=message_size)
 				{
-					retval=socket_recv(command_socket,buffer,size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -2712,7 +2753,7 @@ DESCRIPTION :
 								{
 									size *= sizeof(int);
 									channel_number=channel_numbers+1;
-									retval=socket_recv(command_socket,
+									retval=socket_recv(command_socket,command_socket_read_event,
 										(unsigned char *)channel_number,size,0);
 									if (SOCKET_ERROR!=retval)
 									{
@@ -2752,7 +2793,8 @@ DESCRIPTION :
 								size=number_of_currents*sizeof(float);
 								if (ALLOCATE(out_buffer,unsigned char,size+sizeof(float)))
 								{
-									retval=socket_recv(command_socket,out_buffer,size,0);
+									retval=socket_recv(command_socket,command_socket_read_event,
+										out_buffer,size,0);
 									if (SOCKET_ERROR!=retval)
 									{
 										unread_size -= retval;
@@ -2848,7 +2890,8 @@ DESCRIPTION :
 				size=2*sizeof(int)+sizeof(float)+sizeof(unsigned int);
 				if (size<=message_size)
 				{
-					retval=socket_recv(command_socket,buffer,size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -2877,7 +2920,7 @@ DESCRIPTION :
 								{
 									size *= sizeof(int);
 									channel_number=channel_numbers+1;
-									retval=socket_recv(command_socket,
+									retval=socket_recv(command_socket,command_socket_read_event,
 										(unsigned char *)channel_number,size,0);
 									if (SOCKET_ERROR!=retval)
 									{
@@ -2917,7 +2960,8 @@ DESCRIPTION :
 								size=number_of_voltages*sizeof(float);
 								if (ALLOCATE(out_buffer,unsigned char,size+sizeof(float)))
 								{
-									retval=socket_recv(command_socket,out_buffer,size,0);
+									retval=socket_recv(command_socket,command_socket_read_event,
+										out_buffer,size,0);
 									if (SOCKET_ERROR!=retval)
 									{
 										unread_size -= retval;
@@ -3016,7 +3060,8 @@ DESCRIPTION :
 				size=sizeof(channel_number)+sizeof(frequency);
 				if (size==message_size)
 				{
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -3044,7 +3089,8 @@ DESCRIPTION :
 				size=sizeof(channel_number)+sizeof(stimulating);
 				if (size==message_size)
 				{
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -3074,7 +3120,8 @@ DESCRIPTION :
 					sizeof(post_filter_gain);
 				if (size==message_size)
 				{
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -3104,7 +3151,8 @@ DESCRIPTION :
 				size=sizeof(channel_number)+sizeof(isolate);
 				if (size==message_size)
 				{
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -3137,7 +3185,8 @@ DESCRIPTION :
 				size=sizeof(on);
 				if (size==message_size)
 				{
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -3162,7 +3211,8 @@ DESCRIPTION :
 				size=sizeof(channel_number);
 				if (size==message_size)
 				{
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -3175,8 +3225,8 @@ DESCRIPTION :
 				else
 				{
 					sprintf(error_string,
-"unemap_set_powerup_antialiasing_filter_frequency.  Incorrect message size %d %d",
-						message_size,size);
+						"unemap_set_powerup_antialiasing_filter_frequency.  "
+						"Incorrect message size %d %d",message_size,size);
 					AddToMessageLog(TEXT(error_string));
 				}
 			} break;
@@ -3188,7 +3238,8 @@ DESCRIPTION :
 				size=sizeof(channel_number);
 				if (size==message_size)
 				{
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -3228,7 +3279,8 @@ DESCRIPTION :
 				size=2*sizeof(int)+sizeof(float);
 				if (size<=message_size)
 				{
-					retval=socket_recv(command_socket,buffer,size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -3251,7 +3303,8 @@ DESCRIPTION :
 								size=number_of_voltages*sizeof(float);
 								if (ALLOCATE(out_buffer,unsigned char,size+sizeof(float)))
 								{
-									retval=socket_recv(command_socket,out_buffer,size,0);
+									retval=socket_recv(command_socket,command_socket_read_event,
+										out_buffer,size,0);
 									if (SOCKET_ERROR!=retval)
 									{
 										unread_size -= retval;
@@ -3340,7 +3393,8 @@ DESCRIPTION :
 				size=2*sizeof(int)+sizeof(float);
 				if (size<=message_size)
 				{
-					retval=socket_recv(command_socket,buffer,size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -3363,7 +3417,7 @@ DESCRIPTION :
 								if (ALLOCATE(voltages,float,size+1))
 								{
 									size *= sizeof(float);
-									retval=socket_recv(command_socket,
+									retval=socket_recv(command_socket,command_socket_read_event,
 										(unsigned char *)(voltages+1),size,0);
 									if (SOCKET_ERROR!=retval)
 									{
@@ -3433,7 +3487,8 @@ DESCRIPTION :
 				size=2*sizeof(int)+sizeof(float);
 				if (size<=message_size)
 				{
-					retval=socket_recv(command_socket,buffer,size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -3456,7 +3511,8 @@ DESCRIPTION :
 								size=number_of_currents*sizeof(float);
 								if (ALLOCATE(out_buffer,unsigned char,size+sizeof(float)))
 								{
-									retval=socket_recv(command_socket,out_buffer,size,0);
+									retval=socket_recv(command_socket,command_socket_read_event,
+										out_buffer,size,0);
 									if (SOCKET_ERROR!=retval)
 									{
 										unread_size -= retval;
@@ -3546,7 +3602,8 @@ DESCRIPTION :
 				size=2*sizeof(int)+sizeof(float);
 				if (size<=message_size)
 				{
-					retval=socket_recv(command_socket,buffer,size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -3569,7 +3626,7 @@ DESCRIPTION :
 								if (ALLOCATE(currents,float,size+1))
 								{
 									size *= sizeof(float);
-									retval=socket_recv(command_socket,
+									retval=socket_recv(command_socket,command_socket_read_event,
 										(unsigned char *)(currents+1),size,0);
 									if (SOCKET_ERROR!=retval)
 									{
@@ -3683,7 +3740,8 @@ DESCRIPTION :
 				size=2*sizeof(int)+sizeof(float);
 				if (size<=message_size)
 				{
-					retval=socket_recv(command_socket,buffer,size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -3706,7 +3764,8 @@ DESCRIPTION :
 								size=number_of_voltages*sizeof(float);
 								if (ALLOCATE(out_buffer,unsigned char,size+sizeof(float)))
 								{
-									retval=socket_recv(command_socket,out_buffer,size,0);
+									retval=socket_recv(command_socket,command_socket_read_event,
+										out_buffer,size,0);
 									if (SOCKET_ERROR!=retval)
 									{
 										unread_size -= retval;
@@ -3794,7 +3853,8 @@ DESCRIPTION :
 				size=sizeof(channel_number);
 				if (size==message_size)
 				{
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -3847,7 +3907,8 @@ DESCRIPTION :
 				size=sizeof(channel_number);
 				if (size==message_size)
 				{
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -3872,7 +3933,8 @@ DESCRIPTION :
 				size=2*sizeof(int);
 				if (size==message_size)
 				{
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -3902,7 +3964,8 @@ DESCRIPTION :
 				size=message_size;
 				while (return_code&&(0<size))
 				{
-					retval=socket_recv(command_socket,buffer,message_size,0);
+					retval=socket_recv(command_socket,command_socket_read_event,buffer,
+						message_size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
@@ -3981,7 +4044,7 @@ DESCRIPTION :
 		{
 			size=unread_size;
 		}
-		retval=socket_recv(command_socket,buffer,size,0);
+		retval=socket_recv(command_socket,command_socket_read_event,buffer,size,0);
 		if (SOCKET_ERROR!=retval)
 		{
 			unread_size -= size;
@@ -4004,7 +4067,7 @@ Global functions
 */
 VOID ServiceStart(DWORD dwArgc,LPTSTR *lpszArgv)
 /*******************************************************************************
-LAST MODIFIED : 27 July 2000
+LAST MODIFIED : 2 August 2002
 
 DESCRIPTION :
 Actual code of the service that does the work.
@@ -4084,9 +4147,10 @@ Actual code of the service that does the work.
 				/*exit code*/NO_ERROR,/*wait hint*/3000))
 			{
 				/* create the event object used in overlapped i/o */
-				hEvents[1]=CreateEvent(/*no security attributes*/NULL,
+				command_socket_read_event=CreateEvent(/*no security attributes*/NULL,
 					/*manual reset event*/TRUE,/*not-signalled*/FALSE,
 					/*no name*/NULL);
+				hEvents[1]=command_socket_read_event;
 				if (hEvents[1])
 				{
 					/* report the status to the service control manager */
@@ -4117,6 +4181,8 @@ Actual code of the service that does the work.
 							{
 								/* can't have different event objects for different network
 									events */
+								/* this event also applies to command_socket which is created
+									with accept from command_socket_listen */
 								if (0==WSAEventSelect(command_socket_listen,hEvents[1],
 									FD_ACCEPT|FD_READ|FD_CLOSE))
 								{
@@ -4337,7 +4403,8 @@ Actual code of the service that does the work.
 																			(fd_set *)NULL,&timeout))
 																		{
 #endif /* defined (OLD_CODE) */
-																			retval=socket_recv(command_socket,buffer,
+																			retval=socket_recv(command_socket,
+																				command_socket_read_event,buffer,
 																				MESSAGE_HEADER_SIZE,0);
 																			if (SOCKET_ERROR!=retval)
 																			{

@@ -1511,7 +1511,10 @@ DESCRIPTION :
 	int return_code;
 
 	ENTER(Event_dispatcher_main_loop);
-
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,"enter Event_dispatcher_main_loop\n");
+#endif /* defined (DEBUG) */
 	if (event_dispatcher)
 	{
 		return_code=1;
@@ -1526,6 +1529,10 @@ DESCRIPTION :
 			"Event_dispatcher_main_loop.  Invalid arguments.");
 		return_code=0;
 	}
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,"leave Event_dispatcher_main_loop\n");
+#endif /* defined (DEBUG) */
 	LEAVE;
 
 	return (return_code);
@@ -1559,8 +1566,8 @@ DESCRIPTION :
 } /* Event_dispatcher_end_main_loop */
 
 #if defined (USE_XTAPP_CONTEXT)
-int Event_dispatcher_set_application_context(struct Event_dispatcher *event_dispatcher,
-	XtAppContext application_context)
+int Event_dispatcher_set_application_context(
+	struct Event_dispatcher *event_dispatcher,XtAppContext application_context)
 /*******************************************************************************
 LAST MODIFIED : 4 June 2002
 

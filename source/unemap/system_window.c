@@ -42,7 +42,6 @@ UNIMA_ACQUISITION refers to the acquisition window used with the UNIMA/EMAP
 Module types
 ------------
 */
-
 struct System_window
 /*******************************************************************************
 LAST MODIFIED : 17 July 2002
@@ -1112,7 +1111,6 @@ Calls the prescribed system_window's close_callback.
 Global functions
 ----------------
 */
-
 struct System_window *CREATE(System_window)(Widget shell,
 	Unemap_system_window_close_callback_procedure *close_callback,
 	void *close_callback_data,

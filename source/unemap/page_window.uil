@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : page_window.uil
 !
-! LAST MODIFIED : 21 January 2002
+! LAST MODIFIED : 8 August 2002
 !
 ! DESCRIPTION :
 ! The widgets/gadgets for a page window in the acquisition work area.
@@ -47,6 +47,7 @@ procedure
 	identify_page_auto_range_button;
 	identify_page_calibrate_button;
 	identify_page_close_button;
+	close_Page_window_callback;
 	identify_page_electrode_form;
 	identify_page_electrode_value;
 	identify_page_experiment_checkb;
@@ -548,6 +549,10 @@ object
 			MrmNcreateCallback = procedures
 				{
 				identify_page_close_button(page_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				close_Page_window_callback(page_window_structure);
 				};
 			};
 		};

@@ -1,13 +1,13 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 10 June 2002
+LAST MODIFIED : 11 August 2002
 
 DESCRIPTION :
 
 CODE SWITCHS :
 MOTIF - X/Motif analysis only version (does nothing)
-WINDOWS - win32 acquisition only version
+WIN32_USER_INTERFACE, WIN32_SYSTEM - win32 acquisition only version
 	MIRADA - first Oxford interim system, based on Mirada card
 	!MIRADA - uses National Instruments PCI or PXI data acquisition cards
 		???DB.  Incorporate MIRADA in unemap_hardware ?
@@ -106,30 +106,30 @@ TO DO:
 #include <Mrm/MrmPublic.h>
 #include <Mrm/MrmDecls.h>
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
 #include <commctrl.h>
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #include "general/debug.h"
 #include "unemap/pacing_window.h"
 #include "unemap/page_window.h"
 #if defined (MOTIF)
 #include "unemap/page_window.uidh"
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 #include "unemap/page_window.rc"
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #include "unemap/rig.h"
 #include "unemap/unemap_hardware.h"
 #include "user_interface/confirmation.h"
 #include "user_interface/filedir.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 #if defined (MIRADA)
 #include "unemap/vunemapd.h"
 #endif /* defined (MIRADA) */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 
 /*
 Module constants
@@ -237,7 +237,7 @@ The page window object.
 	} graphics_context;
 #endif /* defined (OLD_CODE) */
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	HINSTANCE instance;
 	HWND window;
 	HWND auto_range_button;
@@ -372,7 +372,7 @@ The page window object.
 	HANDLE device_driver;
 	short int *mirada_buffer;
 #endif /* defined (MIRADA) */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	char *calibration_directory;
 	int unemap_hardware_version;
 	float initial_gain,sampling_frequency,*scrolling_coefficients;
@@ -409,6 +409,8 @@ The page window object.
 #else /* defined (MIRADA) */
 	int number_of_channels;
 #endif /* defined (MIRADA) */
+	Unemap_page_window_close_callback_procedure *close_callback;
+	void *close_callback_data;
 }; /* struct Page_window */
 
 typedef struct
@@ -438,9 +440,6 @@ Module variables
 static int page_window_hierarchy_open=0;
 static MrmHierarchy page_window_hierarchy;
 #endif /* defined (MOTIF) */
-
-/* dependent on whether the card is 12-bit or 16-bit */
-long int maximum_signal_value=1,minimum_signal_value=0;
 
 /*
 Module functions
@@ -1415,12 +1414,12 @@ static XPoint scroll_line[2],x_axis[2];
 static XPoint signal_line[5];
 #endif /* !defined (NO_SCROLLING_HARDWARE_CALLBACK_BODY) */
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 /*???DB.  Created in WM_CREATE of Page_window_scrolling_area_class_proc */
 /*???DB.  Created in WM_PAINT of Page_window_scrolling_area_class_proc */
 static POINT scroll_line[2],signal_line[5],x_axis[2];
 static RECT fill_rectangle;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 static int draw_scrolling_background(struct Page_window *page_window)
 /*******************************************************************************
@@ -1443,11 +1442,11 @@ current device
 	XFontStruct *font;
 	XWindowAttributes attributes;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	HDC device_context;
 	HWND scrolling_area;
 	SIZE bounds;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 	ENTER(draw_scrolling_background);
 	return_code=0;
@@ -1462,7 +1461,7 @@ current device
 		width=attributes.width;
 		height=attributes.height;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		scrolling_area=page_window->scrolling_area;
 #if defined (GET_DC_ONCE)
 		device_context=page_window->scrolling_area_device_context;
@@ -1472,17 +1471,17 @@ current device
 		GetClientRect(scrolling_area,&fill_rectangle);
 		width=(fill_rectangle.right)+1;
 		height=(fill_rectangle.bottom)+1;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		/* clear the window */
 #if defined (MOTIF)
 		XFillRectangle(display,drawable,
 			(page_window->graphics_context).background_drawing_colour,0,0,width,
 			height);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		FillRect(device_context,&fill_rectangle,page_window->fill_brush);
 			/*???DB.  Seems to return a nonzero on success (not TRUE) */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		/* draw the x tick marks */
 		scroll_line[1].y=height;
 		height -= SCROLLING_BORDER_HEIGHT;
@@ -1497,9 +1496,9 @@ current device
 				(page_window->graphics_context).foreground_drawing_colour,scroll_line,2,
 				CoordModeOrigin);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			Polyline(device_context,scroll_line,2);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		}
 		/* draw the x axis */
 		x_axis[0].x=0;
@@ -1516,20 +1515,20 @@ current device
 			(page_window->graphics_context).foreground_drawing_colour,x_axis,2,
 			CoordModeOrigin);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		Polyline(device_context,x_axis,2);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* defined (OLD_CODE) */
 		/* set up the scrolling cursor */
 #if defined (MOTIF)
 		fill_left=1;
 		fill_width=5;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		fill_rectangle.left=1;
 		fill_rectangle.right=5;
 		fill_rectangle.bottom -= 4;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		x_axis[1].x=4;
 		scroll_line[0].x=5;
 		scroll_line[0].y=0;
@@ -1556,12 +1555,12 @@ current device
 				XDrawString(display,drawable,
 					(page_window->graphics_context).foreground_drawing_colour,
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				GetTextExtentPoint32(device_context,string,length,&bounds);
 				x_offset=0;
 				y_offset= -(int)(bounds.cy)/2;
 				TextOut(device_context,
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 					width+x_offset,(number_of_scrolling_devices-i)*height-height/2+
 					y_offset,string,length);
 				/* minimum */
@@ -1576,12 +1575,12 @@ current device
 				XDrawString(display,drawable,
 					(page_window->graphics_context).foreground_drawing_colour,
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				GetTextExtentPoint32(device_context,working_string,length,&bounds);
 				x_offset=0;
 				y_offset= -(int)(bounds.cy);
 				TextOut(device_context,
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 					width+x_offset,(number_of_scrolling_devices-i)*height+y_offset,
 					working_string,length);
 				/* maximum */
@@ -1596,12 +1595,12 @@ current device
 				XDrawString(display,drawable,
 					(page_window->graphics_context).foreground_drawing_colour,
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				GetTextExtentPoint32(device_context,working_string,length,&bounds);
 				x_offset=0;
 				y_offset=0;
 				TextOut(device_context,
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 					width+x_offset,(number_of_scrolling_devices-i-1)*height+y_offset,
 					working_string,length);
 			}
@@ -1641,11 +1640,11 @@ DESCRIPTION :
 	Drawable drawable;
 	XWindowAttributes attributes;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	HDC device_context;
 	HWND window;
 	RECT drawing_rectangle;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* !defined (NO_SCROLLING_HARDWARE_CALLBACK_BODY) */
 
 	ENTER(scrolling_hardware_callback);
@@ -1664,7 +1663,7 @@ DESCRIPTION :
 		width=attributes.width;
 		height=attributes.height;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		window=page_window->scrolling_area;
 #if defined (GET_DC_ONCE)
 		device_context=page_window->scrolling_area_device_context;
@@ -1675,7 +1674,7 @@ DESCRIPTION :
 			/*???DB.  Seems to return a nonzero on success (not TRUE) */
 		height=drawing_rectangle.bottom;
 		width=drawing_rectangle.right;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		height -= SCROLLING_BORDER_HEIGHT;
 		width -= SCROLLING_BORDER_WIDTH;
 #endif /* !defined (NO_SCROLLING_WINDOW_UPDATE) */
@@ -1696,14 +1695,14 @@ DESCRIPTION :
 #endif /* defined (OLD_CODE) */
 		fill_left += 4;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		FillRect(device_context,&fill_rectangle,page_window->fill_brush);
 #if defined (OLD_CODE)
 		Polyline(device_context,x_axis,2);
 #endif /* defined (OLD_CODE) */
 		fill_rectangle.left += 4;
 		fill_rectangle.right += 4;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* !defined (NO_SCROLLING_WINDOW_UPDATE) */
 #if !defined (NO_SCROLLING_SIGNAL) && !defined (NO_SCROLLING_WINDOW_UPDATE)
 		j_start=0;
@@ -1782,9 +1781,9 @@ DESCRIPTION :
 					(page_window->graphics_context).foreground_drawing_colour,signal_line,
 					5,CoordModeOrigin);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				Polyline(device_context,signal_line,5);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 			}
 			else
 			{
@@ -1793,9 +1792,9 @@ DESCRIPTION :
 					(page_window->graphics_context).foreground_drawing_colour,signal_line,
 					4,CoordModeOrigin);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				Polyline(device_context,signal_line,4);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 			}
 #endif /* !defined (NO_SCROLLING_WINDOW_UPDATE) */
 			scrolling_device++;
@@ -1808,10 +1807,10 @@ DESCRIPTION :
 #if defined (MOTIF)
 			fill_left=1;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			fill_rectangle.left=1;
 			fill_rectangle.right=5;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 			x_axis[0].x=0;
 			x_axis[1].x=4;
 			scroll_line[0].x=5;
@@ -1825,9 +1824,9 @@ DESCRIPTION :
 				(page_window->graphics_context).foreground_drawing_colour,scroll_line,2,
 				CoordModeOrigin);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			Polyline(device_context,scroll_line,2);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* !defined (NO_SCROLLING_WINDOW_UPDATE) */
 			scroll_line[0].x += 4;
 			scroll_line[1].x += 4;
@@ -1868,11 +1867,11 @@ DESCRIPTION :
 	Drawable drawable;
 	XWindowAttributes attributes;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	HDC device_context;
 	HWND window;
 	RECT drawing_rectangle;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 	ENTER(scrolling_hardware_callback);
 	if ((page_window=(struct Page_window *)page_window_void)&&
@@ -1888,7 +1887,7 @@ DESCRIPTION :
 		width=attributes.width;
 		height=attributes.height;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		window=page_window->scrolling_area;
 #if defined (GET_DC_ONCE)
 		device_context=page_window->scrolling_area_device_context;
@@ -1899,7 +1898,7 @@ DESCRIPTION :
 			/*???DB.  Seems to return a nonzero on success (not TRUE) */
 		height=drawing_rectangle.bottom;
 		width=drawing_rectangle.right;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		height -= 5;
 		signal_line[4].x=x_axis[0].x;
 		signal_line[3].x=(x_axis[0].x)+1;
@@ -1972,13 +1971,13 @@ DESCRIPTION :
 			CoordModeOrigin);
 		fill_left += 4;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		FillRect(device_context,&fill_rectangle,page_window->fill_brush);
 		Polyline(device_context,x_axis,2);
 		Polyline(device_context,scroll_line,2);
 		fill_rectangle.left += 4;
 		fill_rectangle.right += 4;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		scroll_line[0].x += 4;
 		scroll_line[1].x += 4;
 		if (x_axis[0].x>0)
@@ -1988,9 +1987,9 @@ DESCRIPTION :
 				(page_window->graphics_context).foreground_drawing_colour,signal_line,5,
 				CoordModeOrigin);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			Polyline(device_context,signal_line,5);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		}
 		else
 		{
@@ -1999,9 +1998,9 @@ DESCRIPTION :
 				(page_window->graphics_context).foreground_drawing_colour,signal_line,4,
 				CoordModeOrigin);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			Polyline(device_context,signal_line,4);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		}
 		x_axis[0].x += 4;
 		x_axis[1].x += 4;
@@ -2014,10 +2013,10 @@ DESCRIPTION :
 #if defined (MOTIF)
 			fill_left=1;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			fill_rectangle.left=1;
 			fill_rectangle.right=5;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		}
 	}
 	if (channel_numbers)
@@ -2035,7 +2034,7 @@ DESCRIPTION :
 static int add_scrolling_device(struct Page_window *page_window,
 	struct Device *device)
 /*******************************************************************************
-LAST MODIFIED : 5 November 2000
+LAST MODIFIED : 24 July 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2054,8 +2053,16 @@ DESCRIPTION :
 		number_of_scrolling_channels=1;
 		if ((device->channel)||
 			((device->description)&&(AUXILIARY==device->description->type)&&
+#if defined (DEVICE_EXPRESSIONS)
+			/*???DB.  To be done */
+			(AUXILIARY_DEVICE_SUM==(device->description->properties).auxiliary.type)&&
 			(0<(number_of_scrolling_channels=(device->description->properties).
-			auxiliary.number_of_electrodes))))
+			auxiliary.combination.sum.number_of_electrodes))
+#else /* defined (DEVICE_EXPRESSIONS) */
+			(0<(number_of_scrolling_channels=(device->description->properties).
+			auxiliary.number_of_electrodes))
+#endif /* defined (DEVICE_EXPRESSIONS) */
+			))
 		{
 			if (REALLOCATE(scrolling_devices,page_window->scrolling_devices,
 				struct Device *,(page_window->number_of_scrolling_devices)+1))
@@ -2109,9 +2116,19 @@ DESCRIPTION :
 					for (i=0;i<number_of_scrolling_channels;i++)
 					{
 						scrolling_channels[j]=
+#if defined (DEVICE_EXPRESSIONS)
+							(((auxiliary_properties->combination).sum.electrodes)[i])->
+							channel;
+#else /* defined (DEVICE_EXPRESSIONS) */
 							((auxiliary_properties->electrodes)[i])->channel;
+#endif /* defined (DEVICE_EXPRESSIONS) */
 						scrolling_coefficients[j]=
+#if defined (DEVICE_EXPRESSIONS)
+							((auxiliary_properties->combination).sum.
+							electrode_coefficients)[i];
+#else /* defined (DEVICE_EXPRESSIONS) */
 							(auxiliary_properties->electrode_coefficients)[i];
+#endif /* defined (DEVICE_EXPRESSIONS) */
 						unemap_set_scrolling_channel((scrolling_channels[j])->number);
 						j++;
 					}
@@ -2131,7 +2148,7 @@ DESCRIPTION :
 static int remove_scrolling_device(struct Page_window *page_window,
 	struct Device *device)
 /*******************************************************************************
-LAST MODIFIED : 6 November 2000
+LAST MODIFIED : 24 July 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2157,6 +2174,9 @@ DESCRIPTION :
 			else
 			{
 				j += (scrolling_device->description->properties).auxiliary.
+#if defined (DEVICE_EXPRESSIONS)
+					combination.sum.
+#endif /* defined (DEVICE_EXPRESSIONS) */
 					number_of_electrodes;
 			}
 		}
@@ -2178,7 +2198,11 @@ DESCRIPTION :
 			}
 			else
 			{
-				k=(device->description->properties).auxiliary.number_of_electrodes;
+				k=(device->description->properties).auxiliary.
+#if defined (DEVICE_EXPRESSIONS)
+					combination.sum.
+#endif /* defined (DEVICE_EXPRESSIONS) */
+					number_of_electrodes;
 			}
 			page_window->number_of_scrolling_channels -= k;
 			for (i=j;i<page_window->number_of_scrolling_channels;i++)
@@ -2203,16 +2227,16 @@ DESCRIPTION :
 } /* remove_scrolling_device */
 
 #if defined (BACKGROUND_SAVING)
-#if defined (MOTIF)
+#if defined (UNIX)
 static void *save_write_signal_file_process(
 	void *save_write_signal_file_background_data_void)
-#endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#endif /* defined (UNIX) */
+#if defined (WIN32_SYSTEM)
 DWORD WINAPI save_write_signal_file_process(
 	LPVOID save_write_signal_file_background_data_void)
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 /*******************************************************************************
-LAST MODIFIED : 13 January 2002
+LAST MODIFIED : 11 August 2002
 
 DESCRIPTION :
 Called by unemap_get_samples_acquired_background to actually write the data.
@@ -2355,6 +2379,14 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 		DEALLOCATE(save_write_signal_file_background_data->temp_file_name);
 		DEALLOCATE(save_write_signal_file_background_data->file_name);
 		DEALLOCATE(save_write_signal_file_background_data);
+#if defined (MOTIF)
+		XtVaSetValues(page_window->shell,XmNtitle,"Acquisition",NULL);
+		/* force X to action the title change */
+		XFlush(User_interface_get_display(page_window->user_interface));
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+		SetWindowText(page_window->window,"Acquisition");
+#endif /* defined (WIN32_USER_INTERFACE) */
 	}
 	else
 	{
@@ -2369,12 +2401,12 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 #endif /* defined (DEBUG) */
 	LEAVE;
 
-#if defined (MOTIF)
+#if defined (UNIX)
 	return ((void *)NULL);
-#endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#endif /* defined (UNIX) */
+#if defined (WIN32_SYSTEM)
 	return ((DWORD)return_code);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 } /* save_write_signal_file_process */
 
 static void save_write_signal_file_background(const int all_channels,
@@ -2387,12 +2419,12 @@ DESCRIPTION :
 Called by unemap_get_samples_acquired_background to actually write the data.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+#if defined (UNIX)
 	pthread_t thread_id;
-#endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#endif /* defined (UNIX) */
+#if defined (WIN32_SYSTEM)
 	DWORD thread_id;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 	struct Save_write_signal_file_background_data
 		*save_write_signal_file_background_data;
 
@@ -2410,25 +2442,25 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 		save_write_signal_file_background_data->all_channels=all_channels;
 		save_write_signal_file_background_data->number_of_samples=number_of_samples;
 		save_write_signal_file_background_data->samples=(short *)samples;
-#if defined (MOTIF)
+#if defined (UNIX)
 		if (pthread_create(&thread_id,(pthread_attr_t *)NULL,
 			save_write_signal_file_process,
 			save_write_signal_file_background_data_void))
-#endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#endif /* defined (UNIX) */
+#if defined (WIN32_SYSTEM)
 		if (!CreateThread(/*no security attributes*/NULL,
 			/*use default stack size*/0,save_write_signal_file_process,
 			(LPVOID)save_write_signal_file_background_data_void,
 			/*use default creation flags*/0,&thread_id))
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 		{
 			display_message(ERROR_MESSAGE,
-#if defined (MOTIF)
+#if defined (UNIX)
 				"save_write_signal_file_background.  pthread_create failed");
-#endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#endif /* defined (UNIX) */
+#if defined (WIN32_SYSTEM)
 				"save_write_signal_file_background.  CreateThread failed");
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 			DEALLOCATE(save_write_signal_file_background_data);
 			/*???RC This is very dodgy - deallocating a const short */
 			DEALLOCATE(samples);
@@ -2459,7 +2491,7 @@ This function writes the rig configuration and interval of signal data to the
 named file.
 ==============================================================================*/
 {
-	char *temp_file_name;
+	char *temp_file_name,*title;
 	FILE *output_file,*temp_output_file;
 	float post_filter_gain,pre_filter_gain;
 	int i,return_code;
@@ -2470,6 +2502,10 @@ named file.
 		*save_write_signal_file_background_data;
 
 	ENTER(save_write_signal_file);
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,"enter save_write_signal_file\n");
+#endif /* defined (DEBUG) */
 	return_code=0;
 	/* check that the rig exists */
 	if ((page_window=(struct Page_window *)page_window_void)&&
@@ -2505,6 +2541,27 @@ named file.
 							save_write_signal_file_background,
 							(void *)save_write_signal_file_background_data))
 						{
+							if (ALLOCATE(title,char,strlen(file_name)+8))
+							{
+								strcpy(title,"Saving ");
+								strcat(title,file_name);
+#if defined (MOTIF)
+								XtVaSetValues(page_window->shell,XmNtitle,title,NULL);
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+								SetWindowText(page_window->window,title);
+#endif /* defined (WIN32_USER_INTERFACE) */
+								DEALLOCATE(title);
+							}
+							else
+							{
+#if defined (MOTIF)
+								XtVaSetValues(page_window->shell,XmNtitle,"Saving",NULL);
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+								SetWindowText(page_window->window,"Saving");
+#endif /* defined (WIN32_USER_INTERFACE) */
+							}
 							i=rig->number_of_devices;
 							device=rig->devices;
 							while (i>0)
@@ -2548,8 +2605,8 @@ named file.
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-"save_write_signal_file.  Could not allocate save_write_signal_file_background_data");
+					display_message(ERROR_MESSAGE,"save_write_signal_file.  "
+						"Could not allocate save_write_signal_file_background_data");
 					return_code=0;
 				}
 			}
@@ -2574,6 +2631,10 @@ named file.
 		display_message(ERROR_MESSAGE,"save_write_signal_file.  Missing rig");
 		return_code=0;
 	}
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,"leave save_write_signal_file\n");
+#endif /* defined (DEBUG) */
 	LEAVE;
 
 	return (return_code);
@@ -2651,8 +2712,35 @@ named file.
 			}
 #endif /* defined (OLD_CODE) */
 #endif /* !defined (MIRADA) */
+			if (ALLOCATE(title,char,strlen(file_name)+8))
+			{
+				strcpy(title,"Saving ");
+				strcat(title,file_name);
+#if defined (MOTIF)
+				XtVaSetValues(page_window->shell,XmNtitle,title,NULL);
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+				SetWindowText(page_window->window,title);
+#endif /* defined (WIN32_USER_INTERFACE) */
+				DEALLOCATE(title);
+			}
+			else
+			{
+#if defined (MOTIF)
+				XtVaSetValues(page_window->shell,XmNtitle,"Saving",NULL);
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+				SetWindowText(page_window->window,"Saving");
+#endif /* defined (WIN32_USER_INTERFACE) */
+			}
 			return_code=write_signal_file(output_file,rig);
 			fclose(output_file);
+#if defined (MOTIF)
+			XtVaSetValues(page_window->shell,XmNtitle,"Acquisition",NULL);
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+			SetWindowText(page_window->window,"Acquisition");
+#endif /* defined (WIN32_USER_INTERFACE) */
 			if (return_code)
 			{
 				page_window->data_saved=1;
@@ -2858,9 +2946,9 @@ DESCRIPTION :
 #if defined (MOTIF)
 				User_interface_get_application_context(page_window->user_interface),
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				(HWND)NULL,(UINT)0,
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 				scrolling_hardware_callback,(void *)page_window,(float)25))
 			{
 				if (page_window->display_device)
@@ -2875,10 +2963,10 @@ DESCRIPTION :
 				XmToggleButtonSetState(page_window->experiment_checkbox,False,False);
 				XtSetSensitive(page_window->experiment_checkbox,True);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				CheckDlgButton(page_window->window,EXPERIMENT_CHECKBOX,BST_UNCHECKED);
 				EnableWindow(page_window->experiment_checkbox,TRUE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* defined (OLD_CODE) */
 				unemap_get_antialiasing_filter_frequency(1,&filter_frequency);
 				sprintf(working_string,"%.0f",filter_frequency);
@@ -2886,9 +2974,9 @@ DESCRIPTION :
 				XtVaSetValues((page_window->low_pass).value,XmNvalue,working_string,
 					NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				Edit_SetText((page_window->low_pass_filter).edit,working_string);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 			}
 		}
 		else
@@ -2907,7 +2995,60 @@ DESCRIPTION :
 } /* initialize_hardware */
 #endif /* defined (OLD_CODE) */
 
-#if defined (WINDOWS)
+static void destroy_Page_window_callback(
+#if defined (MOTIF)
+	Widget *widget_id,XtPointer page_window_void,XtPointer call_data
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+	struct Page_window *page_window_void
+#endif /* defined (WIN32_USER_INTERFACE) */
+	)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Page_window *page_window;
+
+	ENTER(destroy_Page_window_callback);
+	USE_PARAMETER(widget_id);
+	USE_PARAMETER(call_data);
+	if (page_window=(struct Page_window *)page_window_void)
+	{
+		destroy_Page_window(&page_window);
+	}
+	LEAVE;
+} /* destroy_Page_window_callback */
+
+static void close_Page_window_callback(
+#if defined (MOTIF)
+	Widget *widget_id,XtPointer page_window_void,XtPointer call_data
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+	struct Page_window *page_window_void
+#endif /* defined (WIN32_USER_INTERFACE) */
+	)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2002
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Page_window *page_window;
+
+	ENTER(close_Page_window_callback);
+	USE_PARAMETER(widget_id);
+	USE_PARAMETER(call_data);
+	if ((page_window=(struct Page_window *)page_window_void)&&
+		(page_window->close_callback))
+	{
+		(page_window->close_callback)(page_window,page_window->close_callback_data);
+	}
+	LEAVE;
+} /* close_Page_window_callback */
+
+#if defined (WIN32_USER_INTERFACE)
 static LRESULT CALLBACK Page_window_scrolling_area_class_proc(HWND window,
 	UINT message_identifier,WPARAM first_message,LPARAM second_message)
 /*******************************************************************************
@@ -2967,7 +3108,7 @@ DESCRIPTION :
 #if defined (GET_DC_ONCE)
 			ReleaseDC(window,page_window->scrolling_area_device_context);
 #endif /* defined (GET_DC_ONCE) */
-			destroy_Page_window(&page_window);
+			destroy_Page_window_callback(page_window);
 			PostQuitMessage(0);
 			return_code=0;
 		} break;
@@ -3117,7 +3258,7 @@ DESCRIPTION :
 
 	return (return_code);
 } /* Page_window_scrolling_area_class_proc */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 static int show_display_gain(struct Page_window *page_window)
 /*******************************************************************************
@@ -3145,10 +3286,10 @@ Writes the gain for the current channel into the gain field.
 			XtVaSetValues((page_window->gain).value,XmNvalue,number_string,NULL);
 			XtSetSensitive((page_window->gain).value,True);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			Edit_SetText((page_window->gain).edit,number_string);
 			EnableWindow((page_window->gain).edit,TRUE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		}
 		else
 		{
@@ -3156,10 +3297,10 @@ Writes the gain for the current channel into the gain field.
 			XtVaSetValues((page_window->gain).value,XmNvalue," ",NULL);
 			XtSetSensitive((page_window->gain).value,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			Edit_SetText((page_window->gain).edit," ");
 			EnableWindow((page_window->gain).edit,FALSE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		}
 	}
 	else
@@ -3206,9 +3347,9 @@ Writes the maximum for the current channel into the maximum field.
 #if defined (MOTIF)
 			XtVaSetValues((page_window->maximum).value,XmNvalue,number_string,NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			Edit_SetText((page_window->maximum).edit,number_string);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		}
 	}
 	else
@@ -3256,9 +3397,9 @@ Writes the minimum for the current channel into the minimum field.
 #if defined (MOTIF)
 			XtVaSetValues((page_window->minimum).value,XmNvalue,number_string,NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			Edit_SetText((page_window->minimum).edit,number_string);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		}
 	}
 	else
@@ -3333,9 +3474,9 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 	float gain,post_filter_gain,pre_filter_gain,temp;
 	int channel_number,return_code;
 	char *working_string;
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	int working_string_length;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 	ENTER(update_display_gain);
 	return_code=0;
@@ -3350,7 +3491,7 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 			working_string=(char *)NULL;
 			XtVaGetValues((page_window->gain).value,XmNvalue,&working_string,NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			working_string_length=Edit_GetTextLength((page_window->gain).edit)+1;
 				/*???DB.  GetWindowTextLength seems to give 1 less than the number of
 					characters */
@@ -3358,7 +3499,7 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 			{
 				Edit_GetText((page_window->gain).edit,working_string,
 					working_string_length);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 				if (1==sscanf(working_string,"%f",&temp))
 				{
 					page_window_set_gain(page_window,channel_number,temp);
@@ -3370,10 +3511,10 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 						show_display_minimum(page_window);
 					}
 				}
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				DEALLOCATE(working_string);
 			}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (MOTIF)
 			XtFree(working_string);
 #endif /* defined (MOTIF) */
@@ -3433,9 +3574,9 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 #if defined (OLD_CODE)
 	long int display_maximum;
 #endif /* defined (OLD_CODE) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	int working_string_length;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 	ENTER(update_display_maximum);
 	return_code=0;
@@ -3454,7 +3595,7 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 			working_string=(char *)NULL;
 			XtVaGetValues((page_window->maximum).value,XmNvalue,&working_string,NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			working_string_length=Edit_GetTextLength((page_window->maximum).edit)+1;
 				/*???DB.  GetWindowTextLength seems to give 1 less than the number of
 					characters */
@@ -3462,7 +3603,7 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 			{
 				Edit_GetText((page_window->maximum).edit,working_string,
 					working_string_length);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 				if (1==sscanf(working_string,"%f",&display_maximum))
 #if defined (OLD_CODE)
 				if (1==sscanf(working_string,"%f",&temp))
@@ -3493,10 +3634,10 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 						}
 					}
 				}
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				DEALLOCATE(working_string);
 			}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (MOTIF)
 			XtFree(working_string);
 #endif /* defined (MOTIF) */
@@ -3556,9 +3697,9 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 #if defined (OLD_CODE)
 	long int display_minimum;
 #endif /* defined (OLD_CODE) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	int working_string_length;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 	ENTER(update_display_minimum);
 	return_code=0;
@@ -3577,7 +3718,7 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 			working_string=(char *)NULL;
 			XtVaGetValues((page_window->minimum).value,XmNvalue,&working_string,NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			working_string_length=Edit_GetTextLength((page_window->minimum).edit)+1;
 				/*???DB.  GetWindowTextLength seems to give 1 less than the number of
 					characters */
@@ -3585,7 +3726,7 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 			{
 				Edit_GetText((page_window->minimum).edit,working_string,
 					working_string_length);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (OLD_CODE)
 				if (1==sscanf(working_string,"%f",&temp))
 #endif /* defined (OLD_CODE) */
@@ -3616,10 +3757,10 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 						}
 					}
 				}
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				DEALLOCATE(working_string);
 			}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (MOTIF)
 			XtFree(working_string);
 #endif /* defined (MOTIF) */
@@ -3674,9 +3815,9 @@ Updates the settings for the stimulating buttons.
 #if defined (MOTIF)
 	Boolean status;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	UINT checkbox_state;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 	ENTER(update_stimulating_settings);
 	if (page_window&&(0<page_window->number_of_stimulators)&&
@@ -3687,26 +3828,26 @@ Updates the settings for the stimulating buttons.
 #if defined (MOTIF)
 			XtVaGetValues(page_window->isolate_checkbox,XmNset,&status,NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			checkbox_state=IsDlgButtonChecked(page_window->window,ISOLATE_CHECKBOX);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		}
 		else
 		{
 #if defined (MOTIF)
 			status=False;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			checkbox_state=BST_UNCHECKED;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		}
 		if (
 #if defined (MOTIF)
 			(False==status)
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			(BST_UNCHECKED==checkbox_state)
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 			)
 		{
 			number_of_on_stimulators=0;
@@ -3728,36 +3869,36 @@ Updates the settings for the stimulating buttons.
 #if defined (MOTIF)
 				XtSetSensitive(page_window->stop_all_stimulators_button,True);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				EnableWindow(page_window->stop_all_stimulators_button,TRUE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 			}
 			else
 			{
 #if defined (MOTIF)
 				XtSetSensitive(page_window->stop_all_stimulators_button,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				EnableWindow(page_window->stop_all_stimulators_button,FALSE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 			}
 			if (0<number_of_off_stimulating_channels)
 			{
 #if defined (MOTIF)
 				XtSetSensitive(page_window->start_all_stimulators_button,True);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				EnableWindow(page_window->start_all_stimulators_button,TRUE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 			}
 			else
 			{
 #if defined (MOTIF)
 				XtSetSensitive(page_window->start_all_stimulators_button,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				EnableWindow(page_window->start_all_stimulators_button,FALSE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 			}
 			if ((page_window->display_device)&&(page_window->display_device->channel))
 			{
@@ -3777,18 +3918,18 @@ Updates the settings for the stimulating buttons.
 #if defined (MOTIF)
 						XtSetSensitive(page_window->stimulator_checkbox,True);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 						EnableWindow(page_window->stimulator_checkbox,TRUE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 					}
 					else
 					{
 #if defined (MOTIF)
 						XtSetSensitive(page_window->stimulator_checkbox,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 						EnableWindow(page_window->stimulator_checkbox,FALSE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 					}
 					if (((page_window->stimulators)[stimulator_number]).on)
 					{
@@ -3796,10 +3937,10 @@ Updates the settings for the stimulating buttons.
 						XmToggleButtonSetState(page_window->stimulator_checkbox,True,False);
 						XtSetSensitive(page_window->stimulate_checkbox,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 						CheckDlgButton(page_window->window,STIMULATOR_CHECKBOX,BST_CHECKED);
 						EnableWindow(page_window->stimulate_checkbox,FALSE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 					}
 					else
 					{
@@ -3808,11 +3949,11 @@ Updates the settings for the stimulating buttons.
 							False);
 						XtSetSensitive(page_window->stimulate_checkbox,True);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 						CheckDlgButton(page_window->window,STIMULATOR_CHECKBOX,
 							BST_UNCHECKED);
 						EnableWindow(page_window->stimulate_checkbox,TRUE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 					}
 					if (0<(i=((page_window->stimulators)[stimulator_number]).
 						number_of_channels))
@@ -3830,10 +3971,10 @@ Updates the settings for the stimulating buttons.
 							XmToggleButtonSetState(page_window->stimulate_checkbox,True,
 								False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 							CheckDlgButton(page_window->window,STIMULATE_CHECKBOX,
 								BST_CHECKED);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 						}
 						else
 						{
@@ -3841,10 +3982,10 @@ Updates the settings for the stimulating buttons.
 							XmToggleButtonSetState(page_window->stimulate_checkbox,False,
 								False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 							CheckDlgButton(page_window->window,STIMULATE_CHECKBOX,
 								BST_UNCHECKED);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 						}
 					}
 					else
@@ -3852,10 +3993,10 @@ Updates the settings for the stimulating buttons.
 #if defined (MOTIF)
 						XmToggleButtonSetState(page_window->stimulate_checkbox,False,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 						CheckDlgButton(page_window->window,STIMULATE_CHECKBOX,
 							BST_UNCHECKED);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 					}
 				}
 				else
@@ -3866,12 +4007,12 @@ Updates the settings for the stimulating buttons.
 					XmToggleButtonSetState(page_window->stimulator_checkbox,False,False);
 					XtSetSensitive(page_window->stimulator_checkbox,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 					CheckDlgButton(page_window->window,STIMULATE_CHECKBOX,BST_UNCHECKED);
 					EnableWindow(page_window->stimulate_checkbox,FALSE);
 					CheckDlgButton(page_window->window,STIMULATOR_CHECKBOX,BST_UNCHECKED);
 					EnableWindow(page_window->stimulator_checkbox,FALSE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 				}
 			}
 			else
@@ -3882,12 +4023,12 @@ Updates the settings for the stimulating buttons.
 				XmToggleButtonSetState(page_window->stimulator_checkbox,False,False);
 				XtSetSensitive(page_window->stimulator_checkbox,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				CheckDlgButton(page_window->window,STIMULATE_CHECKBOX,BST_UNCHECKED);
 				EnableWindow(page_window->stimulate_checkbox,FALSE);
 				CheckDlgButton(page_window->window,STIMULATOR_CHECKBOX,BST_UNCHECKED);
 				EnableWindow(page_window->stimulator_checkbox,FALSE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 			}
 		}
 		else
@@ -3900,14 +4041,14 @@ Updates the settings for the stimulating buttons.
 			XmToggleButtonSetState(page_window->stimulator_checkbox,False,False);
 			XtSetSensitive(page_window->stimulator_checkbox,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			EnableWindow(page_window->stop_all_stimulators_button,FALSE);
 			EnableWindow(page_window->start_all_stimulators_button,FALSE);
 			CheckDlgButton(page_window->window,STIMULATE_CHECKBOX,BST_UNCHECKED);
 			EnableWindow(page_window->stimulate_checkbox,FALSE);
 			CheckDlgButton(page_window->window,STIMULATOR_CHECKBOX,BST_UNCHECKED);
 			EnableWindow(page_window->stimulator_checkbox,FALSE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		}
 	}
 	LEAVE;
@@ -3926,9 +4067,9 @@ DESCRIPTION :
 #if defined (MOTIF)
 	Boolean status;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	UINT checkbox_state;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 	ENTER(change_display_device_number);
 	if (page_window&&(page_window->rig_address)&&
@@ -3945,11 +4086,11 @@ DESCRIPTION :
 		XtVaGetValues(page_window->scrolling_checkbox,XmNset,&status,NULL);
 		if (False==status)
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		checkbox_state=IsDlgButtonChecked(page_window->window,
 			SCROLLING_CHECKBOX);
 		if (BST_UNCHECKED==checkbox_state)
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		{
 			remove_scrolling_device(page_window,page_window->display_device);
 		}
@@ -3970,10 +4111,10 @@ DESCRIPTION :
 			XmToggleButtonSetState(page_window->scrolling_checkbox,True,
 				False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			CheckDlgButton(page_window->window,SCROLLING_CHECKBOX,
 				BST_CHECKED);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		}
 		else
 		{
@@ -3981,10 +4122,10 @@ DESCRIPTION :
 			XmToggleButtonSetState(page_window->scrolling_checkbox,False,
 				False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			CheckDlgButton(page_window->window,SCROLLING_CHECKBOX,
 				BST_UNCHECKED);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		}
 		add_scrolling_device(page_window,device);
 		update_stimulating_settings(page_window);
@@ -4006,14 +4147,14 @@ DESCRIPTION :
 		XtVaSetValues((page_window->electrode).value,XmNvalue,
 			device->description->name,NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		Edit_SetText((page_window->electrode).edit,device->description->name);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		draw_scrolling_background(page_window);
 #if defined (OLD_CODE)
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		InvalidateRect(page_window->scrolling_area,(CONST RECT *)NULL,FALSE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* defined (OLD_CODE) */
 	}
 #if defined (DEBUG)
@@ -4039,9 +4180,9 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 	char *working_string;
 	int device_number,i,number_of_devices,return_code;
 	struct Device **device_address,*display_device;
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	int working_string_length;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 	ENTER(update_display_device);
 	if (page_window)
@@ -4054,7 +4195,7 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 			XtVaGetValues((page_window->electrode).value,XmNvalue,&working_string,
 				NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			working_string_length=Edit_GetTextLength((page_window->electrode).edit)+1;
 				/*???DB.  GetWindowTextLength seems to give 1 less than the number of
 					characters */
@@ -4062,7 +4203,7 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 			{
 				Edit_GetText((page_window->electrode).edit,working_string,
 					working_string_length);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 				/* set the display device */
 				display_device=(struct Device *)NULL;
 				device_address=(*(page_window->rig_address))->devices;
@@ -4074,12 +4215,12 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 						((*device_address)->signal)&&
 						((*device_address)->channel)&&
 						(0<(*device_address)->channel->number)&&
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 #if defined (MIRADA)
 						((*device_address)->channel->number<=
 						(int)page_window->number_of_channels)&&
 #endif /* defined (MIRADA) */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 #endif /* defined (OLD_CODE) */
 						((*device_address)->description)&&
 						(0==strcmp(working_string,(*device_address)->description->name)))
@@ -4102,15 +4243,15 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 					XtVaSetValues((page_window->electrode).value,XmNvalue,
 						page_window->display_device->description->name,NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 					Edit_SetText((page_window->electrode).edit,
 						page_window->display_device->description->name);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 				}
 #if defined (OLD_CODE)
 				if (channel_number!=page_window->channel_number)
 				{
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 #if defined (MIRADA)
 					if (PCI_SUCCESSFUL==get_mirada_information(page_window->device_driver,
 						&number_of_cards,&bus,&device_function,&number_of_channels,
@@ -4119,7 +4260,7 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 					{
 						if ((0<channel_number)&&(channel_number<=(int)number_of_channels))
 						{
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 							page_window->channel_number=channel_number;
 							channel_number--;
 							page_window->channel_index=16*(channel_number/16)+
@@ -4128,18 +4269,18 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 							page_window->signal_display_maximum=0;
 							page_window->signal_display_minimum=1;
 #endif /* defined (OLD_CODE) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 							InvalidateRect(page_window->scrolling_area,(CONST RECT *)NULL,
 								FALSE);
 						}
 					}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 				}
 #endif /* defined (OLD_CODE) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				DEALLOCATE(working_string);
 			}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (MOTIF)
 			XtFree(working_string);
 #endif /* defined (MOTIF) */
@@ -4149,9 +4290,9 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 #if defined (MOTIF)
 			XtVaSetValues((page_window->electrode).value,XmNvalue," ",NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			Edit_SetText((page_window->electrode).edit," ");
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		}
 	}
 	else
@@ -4203,9 +4344,9 @@ returns 0
 	char *working_string;
 	int device_number,i,number_of_devices,return_code;
 	struct Device **device_address,*stimulate_device;
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	int working_string_length;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 	ENTER(update_stimulate_device);
 	if (page_window)
@@ -4218,7 +4359,7 @@ returns 0
 			XtVaGetValues((page_window->stimulator).stimulate.value,XmNvalue,
 				&working_string,NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			working_string_length=
 				Edit_GetTextLength((page_window->stimulate_channel).edit)+1;
 				/*???DB.  GetWindowTextLength seems to give 1 less than the number of
@@ -4227,7 +4368,7 @@ returns 0
 			{
 				Edit_GetText((page_window->stimulate_channel).edit,working_string,
 					working_string_length);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 				/* set the stimulating device (can't be an auxiliary device that is a
 					linear combination */
 				stimulate_device=(struct Device *)NULL;
@@ -4238,12 +4379,12 @@ returns 0
 					if ((*device_address)&&((*device_address)->signal)&&
 						((*device_address)->channel)&&
 						(0<(*device_address)->channel->number)&&
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 #if defined (MIRADA)
 						((*device_address)->channel->number<=
 						(int)page_window->number_of_channels)&&
 #endif /* defined (MIRADA) */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 						((*device_address)->description)&&
 						(unemap_channel_valid_for_stimulator(page_window->stimulator_number,
 						(*device_address)->channel->number))&&
@@ -4267,10 +4408,10 @@ returns 0
 						XtVaSetValues((page_window->stimulator).stimulate.value,XmNvalue,
 							stimulate_device->description->name,NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 						Edit_SetText((page_window->stimulate_channel).edit,
 							stimulate_device->description->name);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 					}
 				}
 				else
@@ -4280,16 +4421,16 @@ returns 0
 						((page_window->stimulate_devices)[
 						(page_window->stimulator_number)-1])->description->name,NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 					Edit_SetText((page_window->stimulate_channel).edit,
 						((page_window->stimulate_devices)[
 						(page_window->stimulator_number)-1])->description->name);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 				}
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				DEALLOCATE(working_string);
 			}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (MOTIF)
 			XtFree(working_string);
 #endif /* defined (MOTIF) */
@@ -4300,9 +4441,9 @@ returns 0
 			XtVaSetValues((page_window->stimulator).stimulate.value,XmNvalue," ",
 				NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			Edit_SetText((page_window->stimulate_channel).edit," ");
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		}
 	}
 	else
@@ -4355,9 +4496,9 @@ filter.  Returns 1 if it is able to update, otherwise it returns 0
 	char number_string[21],*working_string;
 	float temp;
 	int return_code;
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	int working_string_length;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 	ENTER(update_filter);
 	return_code=0;
@@ -4367,7 +4508,7 @@ filter.  Returns 1 if it is able to update, otherwise it returns 0
 		working_string=(char *)NULL;
 		XtVaGetValues((page_window->low_pass).value,XmNvalue,&working_string,NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		working_string_length=
 			Edit_GetTextLength((page_window->low_pass_filter).edit)+1;
 			/*???DB.  GetWindowTextLength seems to give 1 less than the number of
@@ -4376,7 +4517,7 @@ filter.  Returns 1 if it is able to update, otherwise it returns 0
 		{
 			Edit_GetText((page_window->low_pass_filter).edit,working_string,
 				working_string_length);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 			if (1==sscanf(working_string,"%f",&temp))
 			{
 				unemap_set_antialiasing_filter_frequency(0,temp);
@@ -4386,15 +4527,15 @@ filter.  Returns 1 if it is able to update, otherwise it returns 0
 				XtVaSetValues((page_window->low_pass).value,XmNvalue,number_string,
 					NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				Edit_SetText((page_window->low_pass_filter).edit,number_string);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 				return_code=1;
 			}
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			DEALLOCATE(working_string);
 		}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (MOTIF)
 		XtFree(working_string);
 #endif /* defined (MOTIF) */
@@ -4444,9 +4585,9 @@ filter.  Returns 1 if it is able to update, otherwise it returns 0
 {
 	char number_string[21],*working_string;
 	int return_code,temp;
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	int working_string_length;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 	ENTER(update_save_number_of_samples);
 	return_code=0;
@@ -4456,7 +4597,7 @@ filter.  Returns 1 if it is able to update, otherwise it returns 0
 		working_string=(char *)NULL;
 		XtVaGetValues((page_window->save).value,XmNvalue,&working_string,NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		working_string_length=
 			Edit_GetTextLength((page_window->save).edit)+1;
 			/*???DB.  GetWindowTextLength seems to give 1 less than the number of
@@ -4465,7 +4606,7 @@ filter.  Returns 1 if it is able to update, otherwise it returns 0
 		{
 			Edit_GetText((page_window->save).edit,working_string,
 				working_string_length);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 			if (1==sscanf(working_string,"%d",&temp))
 			{
 				if (temp<=0)
@@ -4485,15 +4626,15 @@ filter.  Returns 1 if it is able to update, otherwise it returns 0
 				XtVaSetValues((page_window->save).value,XmNvalue,number_string,
 					NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				Edit_SetText((page_window->save).edit,number_string);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 				return_code=1;
 			}
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			DEALLOCATE(working_string);
 		}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (MOTIF)
 		XtFree(working_string);
 #endif /* defined (MOTIF) */
@@ -4655,17 +4796,17 @@ Called to start stimulating on the <page_window>.
 					(int)log10(page_window->stimulator_number)+1))
 				{
 					strcpy(waveform_file_name,hardware_directory);
-#if defined (WIN32)
+#if defined (WIN32_SYSTEM)
 					if ('\\'!=waveform_file_name[strlen(waveform_file_name)-1])
 					{
 						strcat(waveform_file_name,"\\");
 					}
-#else /* defined (WIN32) */
+#else /* defined (WIN32_SYSTEM) */
 					if ('/'!=waveform_file_name[strlen(waveform_file_name)-1])
 					{
 						strcat(waveform_file_name,"/");
 					}
-#endif /* defined (WIN32) */
+#endif /* defined (WIN32_SYSTEM) */
 				}
 			}
 			else
@@ -4746,11 +4887,11 @@ Called to start stimulating on the <page_window>.
 		XtSetSensitive((page_window->stimulator).stimulate.value,False);
 		XtSetSensitive((page_window->stimulator).stimulate.arrows,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		CheckDlgButton(page_window->window,STIMULATE_CHECKBOX,BST_CHECKED);
 		EnableWindow((page_window->stimulate_channel).edit,FALSE);
 		EnableWindow((page_window->stimulate_channel).arrows,FALSE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	}
 	else
 	{
@@ -4758,9 +4899,9 @@ Called to start stimulating on the <page_window>.
 		XmToggleButtonSetState((page_window->stimulator).stimulate.checkbox,
 			False,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		CheckDlgButton(page_window->window,STIMULATE_CHECKBOX,BST_UNCHECKED);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	}
 	LEAVE;
 
@@ -4802,11 +4943,11 @@ Called to stop stimulating on the <page_window>.
 			XtSetSensitive((page_window->stimulator).stimulate.value,True);
 			XtSetSensitive((page_window->stimulator).stimulate.arrows,True);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			CheckDlgButton(page_window->window,STIMULATE_CHECKBOX,BST_UNCHECKED);
 			EnableWindow((page_window->stimulate_channel).edit,TRUE);
 			EnableWindow((page_window->stimulate_channel).arrows,TRUE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* defined (OLD_CODE) */
 		}
 #endif /* defined (OLD_CODE) */
@@ -4910,17 +5051,17 @@ Called to start a stimulator.
 					(int)log10(page_window->number_of_stimulators)+1))
 				{
 					strcpy(waveform_file_name,hardware_directory);
-#if defined (WIN32)
+#if defined (WIN32_SYSTEM)
 					if ('\\'!=waveform_file_name[strlen(waveform_file_name)-1])
 					{
 						strcat(waveform_file_name,"\\");
 					}
-#else /* defined (WIN32) */
+#else /* defined (WIN32_SYSTEM) */
 					if ('/'!=waveform_file_name[strlen(waveform_file_name)-1])
 					{
 						strcat(waveform_file_name,"/");
 					}
-#endif /* defined (WIN32) */
+#endif /* defined (WIN32_SYSTEM) */
 				}
 			}
 			else
@@ -5138,9 +5279,9 @@ Called to start sampling on the <page_window>.
 #if defined (MOTIF)
 	Boolean status;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	UINT checkbox_state;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 	ENTER(start_sampling);
 	return_code=0;
@@ -5154,10 +5295,10 @@ Called to start sampling on the <page_window>.
 			XtVaGetValues(page_window->isolate_checkbox,XmNset,&status,NULL);
 			if (True==status)
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			checkbox_state=IsDlgButtonChecked(page_window->window,ISOLATE_CHECKBOX);
 			if (BST_CHECKED==checkbox_state)
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 			{
 				if (page_window->test_checkbox)
 				{
@@ -5165,10 +5306,10 @@ Called to start sampling on the <page_window>.
 					XtVaGetValues(page_window->test_checkbox,XmNset,&status,NULL);
 					if (False==status)
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 					checkbox_state=IsDlgButtonChecked(page_window->window,TEST_CHECKBOX);
 					if (BST_UNCHECKED==checkbox_state)
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 					{
 						return_code=confirmation_question_yes_no("Continue ?",
 							"In isolate mode without test signal.  Continue ?",
@@ -5204,11 +5345,11 @@ Called to start sampling on the <page_window>.
 			XtSetSensitive((page_window->save).button,False);
 			XtSetSensitive(page_window->auto_range_button,True);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			CheckDlgButton(page_window->window,SAMPLE_CHECKBOX,BST_CHECKED);
 			EnableWindow((page_window->save).button,FALSE);
 			EnableWindow(page_window->auto_range_button,TRUE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 			unemap_start_sampling();
 		}
 		else
@@ -5216,9 +5357,9 @@ Called to start sampling on the <page_window>.
 #if defined (MOTIF)
 			XmToggleButtonSetState(page_window->sample_checkbox,False,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			CheckDlgButton(page_window->window,SAMPLE_CHECKBOX,BST_UNCHECKED);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		}
 	}
 	LEAVE;
@@ -5247,10 +5388,10 @@ Called to stop sampling on the <page_window>.
 		XmToggleButtonSetState(page_window->sample_checkbox,False,False);
 		XtSetSensitive(page_window->auto_range_button,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		CheckDlgButton(page_window->window,SAMPLE_CHECKBOX,BST_UNCHECKED);
 		EnableWindow(page_window->auto_range_button,FALSE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		if (unemap_get_number_of_samples_acquired(&number_of_samples)&&
 			(0<number_of_samples))
 		{
@@ -5258,9 +5399,9 @@ Called to stop sampling on the <page_window>.
 #if defined (MOTIF)
 			XtSetSensitive((page_window->save).button,True);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			EnableWindow((page_window->save).button,TRUE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		}
 		else
 		{
@@ -5268,9 +5409,9 @@ Called to stop sampling on the <page_window>.
 #if defined (MOTIF)
 			XtSetSensitive((page_window->save).button,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			EnableWindow((page_window->save).button,FALSE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		}
 	}
 	LEAVE;
@@ -5333,10 +5474,10 @@ DESCRIPTION :
 #if defined (MOTIF)
 				XtSetSensitive((page_window->stimulator).form,True);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				EnableWindow((page_window->stimulator).arrows,TRUE);
 				EnableWindow((page_window->stimulator).text,TRUE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* defined (OLD_CODE) */
 				return_code=1;
 #if defined (OLD_CODE)
@@ -5351,9 +5492,9 @@ DESCRIPTION :
 						working_xmstring,NULL);
 					XmStringFree(working_xmstring);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 					SetWindowText((page_window->stimulator).text,working_string);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* defined (OLD_CODE) */
 					if ((page_window->stimulate_devices)[stimulator_number-1])
 					{
@@ -5363,10 +5504,10 @@ DESCRIPTION :
 							(page_window->stimulate_devices)[stimulator_number-1]->
 							description->name,NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 						Edit_SetText((page_window->stimulate_channel).edit,(page_window->
 							stimulate_devices)[stimulator_number-1]->description->name);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* defined (OLD_CODE) */
 					}
 					else
@@ -5376,9 +5517,9 @@ DESCRIPTION :
 						XtVaSetValues((page_window->stimulator).stimulate.value,XmNvalue,"",
 							NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 						Edit_SetText((page_window->stimulate_channel).edit,"");
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* defined (OLD_CODE) */
 					}
 					if ((page_window->stimulator_on)[stimulator_number-1])
@@ -5388,9 +5529,9 @@ DESCRIPTION :
 						XmToggleButtonSetState((page_window->stimulator).stimulate.checkbox,
 							True,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 						CheckDlgButton(page_window->window,STIMULATE_CHECKBOX,BST_CHECKED);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* defined (OLD_CODE) */
 					}
 					else
@@ -5400,10 +5541,10 @@ DESCRIPTION :
 						XmToggleButtonSetState((page_window->stimulator).stimulate.checkbox,
 							False,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 						CheckDlgButton(page_window->window,STIMULATE_CHECKBOX,
 							BST_UNCHECKED);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* defined (OLD_CODE) */
 					}
 				}
@@ -5414,9 +5555,9 @@ DESCRIPTION :
 					XtSetSensitive((page_window->stimulator).stimulate.form,True);
 					XtSetSensitive((page_window->stimulator).stimulate.checkbox,True);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 					EnableWindow(page_window->stimulate_checkbox,TRUE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* defined (OLD_CODE) */
 					if ((page_window->stimulator_on)[stimulator_number-1])
 					{
@@ -5425,10 +5566,10 @@ DESCRIPTION :
 						XtSetSensitive((page_window->stimulator).stimulate.value,False);
 						XtSetSensitive((page_window->stimulator).stimulate.arrows,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 						EnableWindow((page_window->stimulate_channel).edit,FALSE);
 						EnableWindow((page_window->stimulate_channel).arrows,FALSE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* defined (OLD_CODE) */
 					}
 					else
@@ -5438,10 +5579,10 @@ DESCRIPTION :
 						XtSetSensitive((page_window->stimulator).stimulate.value,True);
 						XtSetSensitive((page_window->stimulator).stimulate.arrows,True);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 						EnableWindow((page_window->stimulate_channel).edit,TRUE);
 						EnableWindow((page_window->stimulate_channel).arrows,TRUE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* defined (OLD_CODE) */
 					}
 				}
@@ -5451,11 +5592,11 @@ DESCRIPTION :
 #if defined (MOTIF)
 					XtSetSensitive((page_window->stimulator).stimulate.form,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 					EnableWindow(page_window->stimulate_checkbox,FALSE);
 					EnableWindow((page_window->stimulate_channel).edit,FALSE);
 					EnableWindow((page_window->stimulate_channel).arrows,FALSE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* defined (OLD_CODE) */
 				}
 #endif /* defined (OLD_CODE) */
@@ -5467,13 +5608,13 @@ DESCRIPTION :
 #if defined (MOTIF)
 			XtSetSensitive((page_window->stimulator).form,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			EnableWindow((page_window->stimulator).arrows,FALSE);
 			EnableWindow((page_window->stimulator).text,FALSE);
 			EnableWindow(page_window->stimulate_checkbox,FALSE);
 			EnableWindow((page_window->stimulate_channel).edit,FALSE);
 			EnableWindow((page_window->stimulate_channel).arrows,FALSE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* defined (OLD_CODE) */
 		}
 	}
@@ -5512,17 +5653,17 @@ Called to start testing on the <page_window>.
 			if (ALLOCATE(testing_file_name,char,strlen(hardware_directory)+13))
 			{
 				strcpy(testing_file_name,hardware_directory);
-#if defined (WIN32)
+#if defined (WIN32_SYSTEM)
 				if ('\\'!=testing_file_name[strlen(testing_file_name)-1])
 				{
 					strcat(testing_file_name,"\\");
 				}
-#else /* defined (WIN32) */
+#else /* defined (WIN32_SYSTEM) */
 				if ('/'!=testing_file_name[strlen(testing_file_name)-1])
 				{
 					strcat(testing_file_name,"/");
 				}
-#endif /* defined (WIN32) */
+#endif /* defined (WIN32_SYSTEM) */
 			}
 		}
 		else
@@ -5567,9 +5708,9 @@ Called to start testing on the <page_window>.
 #if defined (MOTIF)
 		XmToggleButtonSetState(page_window->test_checkbox,True,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		CheckDlgButton(page_window->window,TEST_CHECKBOX,BST_CHECKED);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	}
 	LEAVE;
 
@@ -5594,9 +5735,9 @@ Called to stop testing on the <page_window>.
 #if defined (MOTIF)
 		XmToggleButtonSetState(page_window->test_checkbox,False,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		CheckDlgButton(page_window->window,TEST_CHECKBOX,BST_UNCHECKED);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	}
 	LEAVE;
 
@@ -5667,7 +5808,7 @@ Called to start isolating on the <page_window>.
 			XtSetSensitive(page_window->calibrate_button,True);
 		}
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		if (page_window->isolate_checkbox)
 		{
 			CheckDlgButton(page_window->window,ISOLATE_CHECKBOX,BST_CHECKED);
@@ -5687,15 +5828,15 @@ Called to start isolating on the <page_window>.
 		{
 			EnableWindow(page_window->calibrate_button,TRUE);
 		}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		if (page_window->pacing_button)
 		{
 #if defined (MOTIF)
 			XtSetSensitive(page_window->pacing_button,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			EnableWindow(page_window->pacing_button,FALSE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		}
 		update_stimulating_settings(page_window);
 	}
@@ -5741,7 +5882,7 @@ Called to stop isolating on the <page_window>.
 			XtSetSensitive(page_window->calibrate_button,False);
 		}
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		if (page_window->isolate_checkbox)
 		{
 			CheckDlgButton(page_window->window,ISOLATE_CHECKBOX,BST_UNCHECKED);
@@ -5761,15 +5902,15 @@ Called to stop isolating on the <page_window>.
 		{
 			EnableWindow(page_window->calibrate_button,FALSE);
 		}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		if (page_window->pacing_button)
 		{
 #if defined (MOTIF)
 			XtSetSensitive(page_window->pacing_button,True);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			EnableWindow(page_window->pacing_button,TRUE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		}
 		update_stimulating_settings(page_window);
 	}
@@ -5807,7 +5948,7 @@ Motif wrapper for start_isolating and stop_isolating.
 
 static int page_read_calibration_file(char *file_name,struct Rig *rig)
 /*******************************************************************************
-LAST MODIFIED : 29 July 2000
+LAST MODIFIED : 7 August 2002
 
 DESCRIPTION :
 Assumes that the calibration file is normalized.
@@ -5815,6 +5956,7 @@ Assumes that the calibration file is normalized.
 {
 	float maximum_voltage,minimum_voltage,post_filter_gain,pre_filter_gain;
 	int channel_number,i,return_code;
+	long int maximum_signal_value,minimum_signal_value;
 	struct Device **device_address;
 
 	ENTER(page_read_calibration_file);
@@ -5835,7 +5977,8 @@ Assumes that the calibration file is normalized.
 				}
 				if (unemap_get_voltage_range(channel_number,&minimum_voltage,
 					&maximum_voltage)&&unemap_get_gain(channel_number,
-					&pre_filter_gain,&post_filter_gain))
+					&pre_filter_gain,&post_filter_gain)&&unemap_get_sample_range(
+					channel_number,&minimum_signal_value,&maximum_signal_value))
 				{
 					/* also change from V to mV */
 					(*device_address)->channel->gain *= (float)1000*pre_filter_gain*
@@ -5855,7 +5998,7 @@ Assumes that the calibration file is normalized.
 
 static int start_experiment(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 28 March 2002
+LAST MODIFIED : 7 August 2002
 
 DESCRIPTION :
 Called to start experiment on the <page_window>.
@@ -5867,15 +6010,17 @@ Called to start experiment on the <page_window>.
 ==============================================================================*/
 {
 	char *acquisition_rig_filename,*calibration_file_name;
-	float channel_gain,channel_offset,post_filter_gain,pre_filter_gain;
+	float channel_gain,channel_offset,*electrode_coefficients,post_filter_gain,
+		pre_filter_gain;
 #if defined (OLD_CODE)
 	int stimulator_number;
 #endif /* defined (OLD_CODE) */
 	int channel_number,device_number,*electrodes_in_row,i,index,j,
-		number_of_devices,number_of_rows,return_code;
+		number_of_devices,number_of_electrodes,number_of_rows,return_code;
+	long int maximum_signal_value,minimum_signal_value;
 	struct Auxiliary_properties *auxiliary_properties;
 	struct Channel *channel;
-	struct Device **device_address,*display_device;
+	struct Device **device_address,*display_device,**electrodes;
 	struct Signal_buffer *signal_buffer;
 #if !defined (MIRADA)
 	char working_string[21];
@@ -5926,9 +6071,9 @@ Called to start experiment on the <page_window>.
 #if defined (MOTIF)
 					User_interface_get_event_dispatcher(page_window->user_interface),
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 					(HWND)NULL,(UINT)0,
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 					scrolling_hardware_callback,(void *)page_window,(float)25,
 					page_window->synchronization_card))
 				{
@@ -5955,18 +6100,18 @@ Called to start experiment on the <page_window>.
 					XtVaSetValues((page_window->low_pass).value,XmNvalue,working_string,
 						NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 					Edit_SetText((page_window->low_pass_filter).edit,working_string);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 					sprintf(working_string,"%d",
 						(int)(page_window->number_of_samples_to_save));
 #if defined (MOTIF)
 					XtVaSetValues((page_window->save).value,XmNvalue,working_string,
 						NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 					Edit_SetText((page_window->save).edit,working_string);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 				}
 				else
 				{
@@ -6095,7 +6240,9 @@ Called to start experiment on the <page_window>.
 							channel_gain=display_device->channel->gain;
 							channel_offset=display_device->channel->offset;
 							if (unemap_get_gain(display_device->channel->number,
-								&pre_filter_gain,&post_filter_gain))
+								&pre_filter_gain,&post_filter_gain)&&unemap_get_sample_range(
+								display_device->channel->number,&minimum_signal_value,
+								&maximum_signal_value))
 							{
 								channel_gain /= pre_filter_gain*post_filter_gain;
 								page_window->display_maximum=
@@ -6211,19 +6358,19 @@ Called to start experiment on the <page_window>.
 								{
 									strcpy(calibration_file_name,
 										page_window->calibration_directory);
-#if defined (WIN32)
+#if defined (WIN32_SYSTEM)
 									if ('\\'!=
 										calibration_file_name[strlen(calibration_file_name)-1])
 									{
 										strcat(calibration_file_name,"\\");
 									}
-#else /* defined (WIN32) */
+#else /* defined (WIN32_SYSTEM) */
 									if ('/'!=
 										calibration_file_name[strlen(calibration_file_name)-1])
 									{
 										strcat(calibration_file_name,"/");
 									}
-#endif /* defined (WIN32) */
+#endif /* defined (WIN32_SYSTEM) */
 									strcat(calibration_file_name,"calibrate.dat");
 								}
 							}
@@ -6255,7 +6402,9 @@ Called to start experiment on the <page_window>.
 									if ((*device_address)&&(channel=(*device_address)->channel))
 									{
 										if (unemap_get_gain(channel->number,&pre_filter_gain,
-											&post_filter_gain))
+											&post_filter_gain)&&unemap_get_sample_range(
+											channel->number,&minimum_signal_value,
+											&maximum_signal_value))
 										{
 											channel_offset=channel->offset;
 											channel_gain=(channel->gain_correction)/
@@ -6282,29 +6431,45 @@ Called to start experiment on the <page_window>.
 										(*device_address)->signal_display_maximum=(float)0;
 										auxiliary_properties= &(((*device_address)->description->
 											properties).auxiliary);
-										for (j=0;j<auxiliary_properties->number_of_electrodes;j++)
+										number_of_electrodes=
+#if defined (DEVICE_EXPRESSIONS)
+											(auxiliary_properties->combination).sum.
+											number_of_electrodes;
+#else /* defined (DEVICE_EXPRESSIONS) */
+											auxiliary_properties->number_of_electrodes;
+#endif /* defined (DEVICE_EXPRESSIONS) */
+										electrodes=
+#if defined (DEVICE_EXPRESSIONS)
+											(auxiliary_properties->combination).sum.electrodes;
+#else /* defined (DEVICE_EXPRESSIONS) */
+											auxiliary_properties->electrodes;
+#endif /* defined (DEVICE_EXPRESSIONS) */
+										electrode_coefficients=
+#if defined (DEVICE_EXPRESSIONS)
+											(auxiliary_properties->combination).sum.
+											electrode_coefficients;
+#else /* defined (DEVICE_EXPRESSIONS) */
+											auxiliary_properties->electrode_coefficients;
+#endif /* defined (DEVICE_EXPRESSIONS) */
+										for (j=0;j<number_of_electrodes;j++)
 										{
-											if (0<(auxiliary_properties->electrode_coefficients)[j])
+											if (0<electrode_coefficients[j])
 											{
 												(*device_address)->signal_display_minimum +=
-													(auxiliary_properties->electrode_coefficients)[j]*
-													((auxiliary_properties->electrodes)[j])->
-													signal_display_minimum;
+													electrode_coefficients[j]*
+													(electrodes[j])->signal_display_minimum;
 												(*device_address)->signal_display_maximum +=
-													(auxiliary_properties->electrode_coefficients)[j]*
-													((auxiliary_properties->electrodes)[j])->
-													signal_display_maximum;
+													electrode_coefficients[j]*
+													(electrodes[j])->signal_display_maximum;
 											}
 											else
 											{
 												(*device_address)->signal_display_minimum +=
-													(auxiliary_properties->electrode_coefficients)[j]*
-													((auxiliary_properties->electrodes)[j])->
-													signal_display_maximum;
+													electrode_coefficients[j]*
+													(electrodes[j])->signal_display_maximum;
 												(*device_address)->signal_display_maximum +=
-													(auxiliary_properties->electrode_coefficients)[j]*
-													((auxiliary_properties->electrodes)[j])->
-													signal_display_minimum;
+													electrode_coefficients[j]*
+													(electrodes[j])->signal_display_minimum;
 											}
 										}
 									}
@@ -6322,10 +6487,10 @@ Called to start experiment on the <page_window>.
 								XtVaSetValues((page_window->electrode).value,XmNvalue,
 									page_window->display_device->description->name,NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 								Edit_SetText((page_window->electrode).edit,
 									page_window->display_device->description->name);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 							}
 #if defined (OLD_CODE)
 							if ((0<page_window->number_of_stimulators)&&
@@ -6338,11 +6503,11 @@ Called to start experiment on the <page_window>.
 									XmNvalue,((page_window->stimulate_devices)[(page_window->
 									stimulator_number)-1])->description->name,NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 								Edit_SetText((page_window->stimulate_channel).edit,
 									((page_window->stimulate_devices)[(page_window->
 									stimulator_number)-1])->description->name);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* defined (OLD_CODE) */
 							}
 #endif /* defined (OLD_CODE) */
@@ -6379,7 +6544,7 @@ Called to start experiment on the <page_window>.
 								XtSetSensitive(page_window->test_checkbox,True);
 							}
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 							EnableWindow(page_window->auto_range_button,FALSE);
 							if (page_window->calibrate_button)
 							{
@@ -6414,7 +6579,7 @@ Called to start experiment on the <page_window>.
 							{
 								EnableWindow(page_window->test_checkbox,TRUE);
 							}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 							/* force update */
 #if defined (OLD_CODE)
 							stimulator_number=page_window->stimulator_number;
@@ -6547,7 +6712,7 @@ Called to stop experiment on the <page_window>.
 		XtSetSensitive(page_window->scale_button,False);
 #endif /* defined (OLD_CODE) */
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		EnableWindow(page_window->auto_range_button,FALSE);
 		if (page_window->calibrate_button)
 		{
@@ -6593,7 +6758,7 @@ Called to stop experiment on the <page_window>.
 		EnableWindow(page_window->reset_scale_button,FALSE);
 		EnableWindow(page_window->scale_button,FALSE);
 #endif /* defined (OLD_CODE) */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		update_stimulating_settings(page_window);
 	}
 	LEAVE;
@@ -6789,7 +6954,7 @@ static void calibration_end_callback(const int number_of_channels,
 	const int *channel_numbers,const float *channel_offsets,
 	const float *channel_gains,void *page_window_void)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2000
+LAST MODIFIED : 9 August 2002
 
 DESCRIPTION :
 Called when calibration ends.
@@ -6799,17 +6964,18 @@ Called when calibration ends.
 	FILE *output_file;
 	float maximum_voltage,minimum_voltage;
 	int i;
+	long int maximum_signal_value,minimum_signal_value;
 	struct Page_window *page_window;
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	POINT point;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 	ENTER(calibration_end_callback)
 	page_window=(struct Page_window *)page_window_void;
 	if (0<number_of_channels)
 	{
 		/* write the calibration file */
-		if ((page_window->calibration_directory)&&
+		if (page_window&&(page_window->calibration_directory)&&
 			(0<strlen(page_window->calibration_directory)))
 		{
 			if (ALLOCATE(calibration_file_name,char,
@@ -6836,6 +7002,8 @@ Called when calibration ends.
 					/* normalize gains */
 						/*???DB.  Move normalization into hardware ? */
 					unemap_get_voltage_range(i+1,&minimum_voltage,&maximum_voltage);
+					unemap_get_sample_range(i+1,&minimum_signal_value,
+						&maximum_signal_value);
 					fprintf(output_file,"%d %g %g\n",channel_numbers[i],
 						channel_offsets[i],channel_gains[i]*(float)(maximum_signal_value-
 						minimum_signal_value)/(maximum_voltage-minimum_voltage));
@@ -6899,6 +7067,7 @@ Called when calibration ends.
 		XtSetSensitive((page_window->minimum).form,True);
 		XtSetSensitive(page_window->sample_checkbox,True);
 		XtSetSensitive((page_window->save).button,False);
+		XtSetSensitive((page_window->save).value,True);
 		XtSetSensitive(page_window->scrolling_checkbox,True);
 		if (page_window->test_checkbox)
 		{
@@ -6907,7 +7076,7 @@ Called when calibration ends.
 		/* turn off the wait cursor */
 			/*???DB.  To be done.  wait cursor */
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		EnableWindow(page_window->auto_range_button,FALSE);
 		if (page_window->calibrate_button)
 		{
@@ -6935,6 +7104,7 @@ Called when calibration ends.
 		EnableWindow((page_window->minimum).text,TRUE);
 		EnableWindow(page_window->sample_checkbox,TRUE);
 		EnableWindow((page_window->save).button,FALSE);
+		EnableWindow((page_window->save).edit,TRUE);
 		EnableWindow(page_window->scrolling_checkbox,TRUE);
 		if (page_window->test_checkbox)
 		{
@@ -6957,11 +7127,17 @@ Called when calibration ends.
 			SetCursorPos((int)(point.x+1),(int)(point.y));
 		}
 		SetCursorPos((int)(point.x),(int)(point.y));
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (OLD_CODE)
 		update_stimulator(page_window,page_window->stimulator_number);
 #endif /* defined (OLD_CODE) */
 		update_stimulating_settings(page_window);
+#if defined (MOTIF)
+		XtVaSetValues(page_window->shell,XmNtitle,"Acquisition",NULL);
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+		SetWindowText(page_window->window,"Acquisition");
+#endif /* defined (WIN32_USER_INTERFACE) */
 	}
 	LEAVE;
 } /* calibration_end_callback */
@@ -6970,12 +7146,12 @@ static void start_calibrating(
 #if defined (MOTIF)
 	Widget widget,XtPointer page_window_structure,XtPointer call_data
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	LONG page_window_structure
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 9 August 2002
 
 DESCRIPTION :
 Called to start calibrating on the <page_window>.
@@ -7018,6 +7194,7 @@ Called to start calibrating on the <page_window>.
 		XtSetSensitive((page_window->minimum).form,False);
 		XtSetSensitive(page_window->sample_checkbox,False);
 		XtSetSensitive((page_window->save).button,False);
+		XtSetSensitive((page_window->save).value,False);
 		XtSetSensitive(page_window->scrolling_checkbox,False);
 		if (page_window->test_checkbox)
 		{
@@ -7034,7 +7211,7 @@ Called to start calibrating on the <page_window>.
 		/* turn on the wait cursor */
 			/*???DB.  To be done.  wait cursor */
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		EnableWindow(page_window->auto_range_button,FALSE);
 		if (page_window->calibrate_button)
 		{
@@ -7062,6 +7239,7 @@ Called to start calibrating on the <page_window>.
 		EnableWindow((page_window->minimum).text,FALSE);
 		EnableWindow(page_window->sample_checkbox,FALSE);
 		EnableWindow((page_window->save).button,FALSE);
+		EnableWindow((page_window->save).edit,FALSE);
 		EnableWindow(page_window->scrolling_checkbox,FALSE);
 		if (page_window->test_checkbox)
 		{
@@ -7085,7 +7263,13 @@ Called to start calibrating on the <page_window>.
 		SetClassLong(page_window->scrolling_area,GCL_HCURSOR,
 			(LONG)LoadCursor(NULL,IDC_WAIT));
 /*		SetCursor(LoadCursor(NULL,IDC_WAIT));*/
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (MOTIF)
+		XtVaSetValues(page_window->shell,XmNtitle,"Calibrating",NULL);
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+		SetWindowText(page_window->window,"Calibrating");
+#endif /* defined (WIN32_USER_INTERFACE) */
 		unemap_calibrate(calibration_end_callback,page_window);
 	}
 	LEAVE;
@@ -7095,9 +7279,9 @@ static void page_save_data(
 #if defined (MOTIF)
 	Widget widget,XtPointer page_window_structure,XtPointer call_data
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	LONG page_window_structure
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
 LAST MODIFIED : 13 January 2002
@@ -7192,18 +7376,18 @@ Called when the save button is pressed.
 							(Widget)NULL,(XtPointer)(page_window->save_file_open_data),
 							(XtPointer)NULL
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 							page_window->save_file_open_data
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 							);
 					}
 				}
 #if defined (MOTIF)
 				/*???DB.  To be done.  May never get Mirada running under unix */
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				InvalidateRect(page_window->scrolling_area,(CONST RECT *)NULL,FALSE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 				start_interrupting(page_window->device_driver,
 					page_window->scrolling_area,WM_USER,(LPARAM)page_window);
 			}
@@ -7216,9 +7400,9 @@ Called when the save button is pressed.
 				(Widget)NULL,(XtPointer)(page_window->save_file_open_data),
 				(XtPointer)NULL
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				page_window->save_file_open_data
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 				);
 #else /* defined (BACKGROUND_SAVING) */
 			/* stop continuous sampling */
@@ -7286,9 +7470,9 @@ Called when the save button is pressed.
 						(Widget)NULL,(XtPointer)(page_window->save_file_open_data),
 						(XtPointer)NULL
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 						page_window->save_file_open_data
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 						);
 				}
 				DEALLOCATE(samples);
@@ -7312,24 +7496,25 @@ static void page_auto_range(
 #if defined (MOTIF)
 	Widget widget,XtPointer page_window_structure,XtPointer call_data
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	LONG page_window_structure
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 13 January 2002
+LAST MODIFIED : 24 July 2002
 
 DESCRIPTION :
 Called when the auto range button is pressed.
 ==============================================================================*/
 {
-	float *card_maximum,*card_minimum,channel_gain,channel_offset,pre_filter_gain,
-		post_filter_gain,signal_maximum,signal_minimum,temp;
-	int card_number,channel_number,i,j,number_of_channels;
+	float *card_maximum,*card_minimum,channel_gain,channel_offset,
+		*electrode_coefficients,pre_filter_gain,post_filter_gain,signal_maximum,
+		signal_minimum,temp;
+	int card_number,channel_number,i,j,number_of_channels,number_of_electrodes;
 	short int maximum,minimum,*samples,*source;
 	struct Auxiliary_properties *auxiliary_properties;
 	struct Channel *channel;
-	struct Device **device;
+	struct Device **device,**electrodes;
 	struct Page_window *page_window;
 	struct Rig *rig;
 	unsigned long number_of_samples;
@@ -7442,25 +7627,39 @@ Called when the auto range button is pressed.
 						signal_maximum=(float)0;
 						auxiliary_properties= &(((*device)->description->properties).
 							auxiliary);
-						for (j=0;j<auxiliary_properties->number_of_electrodes;j++)
+						number_of_electrodes=
+#if defined (DEVICE_EXPRESSIONS)
+							(auxiliary_properties->combination).sum.number_of_electrodes;
+#else /* defined (DEVICE_EXPRESSIONS) */
+							auxiliary_properties->number_of_electrodes;
+#endif /* defined (DEVICE_EXPRESSIONS) */
+						electrodes=
+#if defined (DEVICE_EXPRESSIONS)
+							(auxiliary_properties->combination).sum.electrodes;
+#else /* defined (DEVICE_EXPRESSIONS) */
+							auxiliary_properties->electrodes;
+#endif /* defined (DEVICE_EXPRESSIONS) */
+						electrode_coefficients=
+#if defined (DEVICE_EXPRESSIONS)
+							(auxiliary_properties->combination).sum.electrode_coefficients;
+#else /* defined (DEVICE_EXPRESSIONS) */
+							auxiliary_properties->electrode_coefficients;
+#endif /* defined (DEVICE_EXPRESSIONS) */
+						for (j=0;j<number_of_electrodes;j++)
 						{
-							if (0<(auxiliary_properties->electrode_coefficients)[j])
+							if (0<electrode_coefficients[j])
 							{
-								signal_minimum +=
-									(auxiliary_properties->electrode_coefficients)[j]*
-									((auxiliary_properties->electrodes)[j])->signal_display_minimum;
-								signal_maximum +=
-									(auxiliary_properties->electrode_coefficients)[j]*
-									((auxiliary_properties->electrodes)[j])->signal_display_maximum;
+								signal_minimum += electrode_coefficients[j]*
+									(electrodes[j])->signal_display_minimum;
+								signal_maximum += electrode_coefficients[j]*
+									(electrodes[j])->signal_display_maximum;
 							}
 							else
 							{
-								signal_minimum +=
-									(auxiliary_properties->electrode_coefficients)[j]*
-									((auxiliary_properties->electrodes)[j])->signal_display_maximum;
-								signal_maximum +=
-									(auxiliary_properties->electrode_coefficients)[j]*
-									((auxiliary_properties->electrodes)[j])->signal_display_minimum;
+								signal_minimum += electrode_coefficients[j]*
+									(electrodes[j])->signal_display_maximum;
+								signal_maximum += electrode_coefficients[j]*
+									(electrodes[j])->signal_display_minimum;
 							}
 						}
 						(*device)->signal_display_minimum=signal_minimum;
@@ -7519,22 +7718,24 @@ static void page_full_range(
 #if defined (MOTIF)
 	Widget widget,XtPointer page_window_structure,XtPointer call_data
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	LONG page_window_structure
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 12 November 2000
+LAST MODIFIED : 7 August 2002
 
 DESCRIPTION :
 Called when the full range button is pressed.
 ==============================================================================*/
 {
-	float channel_gain,channel_offset,pre_filter_gain,post_filter_gain;
-	int i,j,number_of_devices;
+	float channel_gain,channel_offset,*electrode_coefficients,pre_filter_gain,
+		post_filter_gain;
+	int i,j,number_of_devices,number_of_electrodes;
+	long int maximum_signal_value,minimum_signal_value;
 	struct Auxiliary_properties *auxiliary_properties;
 	struct Channel *channel;
-	struct Device **device_address;
+	struct Device **device_address,**electrodes;
 	struct Page_window *page_window;
 
 	ENTER(page_full_range);
@@ -7557,7 +7758,8 @@ Called when the full range button is pressed.
 				if ((*device_address)&&(channel=(*device_address)->channel))
 				{
 					if (unemap_get_gain(channel->number,&pre_filter_gain,
-						&post_filter_gain))
+						&post_filter_gain)&&unemap_get_sample_range(channel->number,
+						&minimum_signal_value,&maximum_signal_value))
 					{
 						channel_offset=channel->offset;
 						channel_gain=(channel->gain_correction)/
@@ -7584,29 +7786,43 @@ Called when the full range button is pressed.
 					(*device_address)->signal_display_maximum=(float)0;
 					auxiliary_properties= &(((*device_address)->description->
 						properties).auxiliary);
-					for (j=0;j<auxiliary_properties->number_of_electrodes;j++)
+					number_of_electrodes=
+#if defined (DEVICE_EXPRESSIONS)
+						(auxiliary_properties->combination).sum.number_of_electrodes;
+#else /* defined (DEVICE_EXPRESSIONS) */
+						auxiliary_properties->number_of_electrodes;
+#endif /* defined (DEVICE_EXPRESSIONS) */
+					electrodes=
+#if defined (DEVICE_EXPRESSIONS)
+						(auxiliary_properties->combination).sum.electrodes;
+#else /* defined (DEVICE_EXPRESSIONS) */
+						auxiliary_properties->electrodes;
+#endif /* defined (DEVICE_EXPRESSIONS) */
+					electrode_coefficients=
+#if defined (DEVICE_EXPRESSIONS)
+						(auxiliary_properties->combination).sum.electrode_coefficients;
+#else /* defined (DEVICE_EXPRESSIONS) */
+						auxiliary_properties->electrode_coefficients;
+#endif /* defined (DEVICE_EXPRESSIONS) */
+					for (j=0;j<number_of_electrodes;j++)
 					{
-						if (0<(auxiliary_properties->electrode_coefficients)[j])
+						if (0<electrode_coefficients[j])
 						{
 							(*device_address)->signal_display_minimum +=
-								(auxiliary_properties->electrode_coefficients)[j]*
-								((auxiliary_properties->electrodes)[j])->
-								signal_display_minimum;
+								electrode_coefficients[j]*
+								(electrodes[j])->signal_display_minimum;
 							(*device_address)->signal_display_maximum +=
-								(auxiliary_properties->electrode_coefficients)[j]*
-								((auxiliary_properties->electrodes)[j])->
-								signal_display_maximum;
+								electrode_coefficients[j]*
+								(electrodes[j])->signal_display_maximum;
 						}
 						else
 						{
 							(*device_address)->signal_display_minimum +=
-								(auxiliary_properties->electrode_coefficients)[j]*
-								((auxiliary_properties->electrodes)[j])->
-								signal_display_maximum;
+								electrode_coefficients[j]*
+								(electrodes[j])->signal_display_maximum;
 							(*device_address)->signal_display_maximum +=
-								(auxiliary_properties->electrode_coefficients)[j]*
-								((auxiliary_properties->electrodes)[j])->
-								signal_display_minimum;
+								electrode_coefficients[j]*
+								(electrodes[j])->signal_display_minimum;
 						}
 					}
 				}
@@ -7627,9 +7843,9 @@ static void page_reset_scale(
 #if defined (MOTIF)
 	Widget widget,XtPointer page_window_structure,XtPointer call_data
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	LONG page_window_structure
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
 LAST MODIFIED : 29 July 1999
@@ -7663,9 +7879,9 @@ static void page_scale(
 #if defined (MOTIF)
 	Widget widget,XtPointer page_window_structure,XtPointer call_data
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	LONG page_window_structure
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
 LAST MODIFIED : 7 April 2000
@@ -7723,9 +7939,9 @@ static void page_start_all_stimulators(
 #if defined (MOTIF)
 	Widget widget,XtPointer page_window_structure,XtPointer call_data
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	LONG page_window_structure
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
 LAST MODIFIED : 7 January 2001
@@ -7755,17 +7971,17 @@ Called when the start all stimulators button is pressed.
 					(int)log10(page_window->number_of_stimulators)+1))
 				{
 					strcpy(waveform_file_name,hardware_directory);
-#if defined (WIN32)
+#if defined (WIN32_SYSTEM)
 					if ('\\'!=waveform_file_name[strlen(waveform_file_name)-1])
 					{
 						strcat(waveform_file_name,"\\");
 					}
-#else /* defined (WIN32) */
+#else /* defined (WIN32_SYSTEM) */
 					if ('/'!=waveform_file_name[strlen(waveform_file_name)-1])
 					{
 						strcat(waveform_file_name,"/");
 					}
-#endif /* defined (WIN32) */
+#endif /* defined (WIN32_SYSTEM) */
 				}
 			}
 			else
@@ -7881,11 +8097,11 @@ Called when the start all stimulators button is pressed.
 		XtSetSensitive((page_window->stimulator).stimulate.value,False);
 		XtSetSensitive((page_window->stimulator).stimulate.arrows,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		CheckDlgButton(page_window->window,STIMULATE_CHECKBOX,BST_CHECKED);
 		EnableWindow((page_window->stimulate_channel).edit,FALSE);
 		EnableWindow((page_window->stimulate_channel).arrows,FALSE);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	}
 	else
 	{
@@ -7893,9 +8109,9 @@ Called when the start all stimulators button is pressed.
 		XmToggleButtonSetState((page_window->stimulator).stimulate.checkbox,
 			False,False);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		CheckDlgButton(page_window->window,STIMULATE_CHECKBOX,BST_UNCHECKED);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	}
 #endif /* defined (OLD_CODE) */
 	LEAVE;
@@ -7905,9 +8121,9 @@ static void page_stop_all_stimulators(
 #if defined (MOTIF)
 	Widget widget,XtPointer page_window_structure,XtPointer call_data
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	LONG page_window_structure
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
 LAST MODIFIED : 7 January 2001
@@ -7995,9 +8211,9 @@ static void open_Pacing_window_callback(
 #if defined (MOTIF)
 	Widget widget,XtPointer page_window_structure,XtPointer call_data
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	LONG page_window_structure
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
 LAST MODIFIED : 23 January 2002
@@ -8024,11 +8240,11 @@ Called when the pacing button is pressed.
 	LEAVE;
 } /* open_Pacing_window_callback */
 
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 static void Page_window_WM_COMMAND_handler(HWND window,
 	int item_control_accelerator_id,HWND control_window,UINT notify_code)
 /*******************************************************************************
-LAST MODIFIED : 10 October 2001
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -8048,6 +8264,8 @@ DESCRIPTION :
 		} break;
 		case CLOSE_BUTTON:
 		{
+			close_Page_window_callback(
+				(struct Page_window *)GetWindowLong(window,DLGWINDOWEXTRA));
 			DestroyWindow(window);
 		} break;
 		case ELECTRODE_EDIT:
@@ -8301,9 +8519,9 @@ DESCRIPTION :
 	}
 	LEAVE;
 } /* Page_window_WM_COMMAND_handler */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 WNDPROC old_electrode_edit_wndproc;
 
 static LRESULT CALLBACK electrode_edit_pick_up_enter(HWND window,
@@ -8338,10 +8556,10 @@ DESCRIPTION :
 
 	return (return_code);
 } /* electrode_edit_pick_up_enter */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 #if defined (OLD_CODE)
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 WNDPROC old_stimulate_channel_edit_wndproc;
 
 static LRESULT CALLBACK stimulate_channel_edit_pick_up_enter(HWND window,
@@ -8376,10 +8594,10 @@ DESCRIPTION :
 
 	return (return_code);
 } /* stimulate_channel_edit_pick_up_enter */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* defined (OLD_CODE) */
 
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 WNDPROC old_low_pass_filter_edit_wndproc;
 
 static LRESULT CALLBACK low_pass_filter_edit_pick_up_enter(HWND window,
@@ -8414,9 +8632,9 @@ DESCRIPTION :
 
 	return (return_code);
 } /* low_pass_filter_edit_pick_up_enter */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 WNDPROC old_gain_edit_wndproc;
 
 static LRESULT CALLBACK gain_edit_pick_up_enter(HWND window,
@@ -8451,9 +8669,9 @@ DESCRIPTION :
 
 	return (return_code);
 } /* gain_edit_pick_up_enter */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 WNDPROC old_maximum_edit_wndproc;
 
 static LRESULT CALLBACK maximum_edit_pick_up_enter(HWND window,
@@ -8488,9 +8706,9 @@ DESCRIPTION :
 
 	return (return_code);
 } /* maximum_edit_pick_up_enter */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 WNDPROC old_minimum_edit_wndproc;
 
 static LRESULT CALLBACK minimum_edit_pick_up_enter(HWND window,
@@ -8525,15 +8743,15 @@ DESCRIPTION :
 
 	return (return_code);
 } /* minimum_edit_pick_up_enter */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 static void increment_electrode(
 #if defined (MOTIF)
 	Widget widget,XtPointer page_window_structure,XtPointer call_data
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	LONG page_window_structure
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
 LAST MODIFIED : 29 July 1999
@@ -8567,9 +8785,9 @@ static void decrement_electrode(
 #if defined (MOTIF)
 	Widget widget,XtPointer page_window_structure,XtPointer call_data
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	LONG page_window_structure
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
 LAST MODIFIED : 29 July 1999
@@ -8630,10 +8848,10 @@ DESCRIPTION :
 		XtVaSetValues((page_window->stimulator).stimulate.value,XmNvalue,
 			device->description->name,NULL);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		Edit_SetText((page_window->stimulate_channel).edit,
 			device->description->name);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* defined (OLD_CODE) */
 		return_code=1;
 	}
@@ -8648,9 +8866,9 @@ static void increment_stimulate(
 #if defined (MOTIF)
 	Widget widget,XtPointer page_window_structure,XtPointer call_data
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	LONG page_window_structure
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
 LAST MODIFIED : 29 July 1999
@@ -8690,9 +8908,9 @@ static void decrement_stimulate(
 #if defined (MOTIF)
 	Widget widget,XtPointer page_window_structure,XtPointer call_data
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	LONG page_window_structure
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
 LAST MODIFIED : 29 July 1999
@@ -8732,9 +8950,9 @@ static void increment_stimulator(
 #if defined (MOTIF)
 	Widget widget,XtPointer page_window_structure,XtPointer call_data
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	LONG page_window_structure
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
 LAST MODIFIED : 29 July 1999
@@ -8767,9 +8985,9 @@ static void decrement_stimulator(
 #if defined (MOTIF)
 	Widget widget,XtPointer page_window_structure,XtPointer call_data
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	LONG page_window_structure
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
 LAST MODIFIED : 29 July 1999
@@ -8797,7 +9015,7 @@ Called when the stimulator down arrow is pressed.
 } /* decrement_stimulator */
 #endif /* defined (OLD_CODE) */
 
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 static LRESULT CALLBACK Page_window_class_proc(HWND window,
 	UINT message_identifier,WPARAM first_message,LPARAM second_message)
 /*******************************************************************************
@@ -9698,7 +9916,8 @@ DESCRIPTION :
 					menu_bar_height += 25;
 				}
 				/* all_devices_menu */
-				widget_spacing=User_interface_get_widget_spacing(page_window->user_interface);
+				widget_spacing=
+					User_interface_get_widget_spacing(page_window->user_interface);
 				number_of_widgets=0;
 				auto_range_button_width=page_window->auto_range_button_width;
 				number_of_widgets++;
@@ -9969,9 +10188,9 @@ DESCRIPTION :
 
 	return (return_code);
 } /* Page_window_class_proc */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 static BOOL CALLBACK Page_window_dialog_proc(HWND window,
 	UINT message_identifier,WPARAM first_message,LPARAM second_message)
 /*******************************************************************************
@@ -9989,29 +10208,7 @@ DESCRIPTION :
 
 	return (return_code);
 } /* Page_window_dialog_proc */
-#endif /* defined (WINDOWS) */
-
-#if defined (MOTIF)
-static void destroy_Page_window_callback(Widget *widget_id,
-	XtPointer page_window_void,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 29 July 1999
-
-DESCRIPTION :
-==============================================================================*/
-{
-	struct Page_window *page_window;
-
-	ENTER(destroy_Page_window_callback);
-	USE_PARAMETER(widget_id);
-	USE_PARAMETER(call_data);
-	if (page_window=(struct Page_window *)page_window_void)
-	{
-		destroy_Page_window(&page_window);
-	}
-	LEAVE;
-} /* destroy_Page_window_callback */
-#endif /* defined (MOTIF) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 /*
 Global functions
@@ -10033,8 +10230,8 @@ page window and frees the memory associated with the page window.
 
 	ENTER(destroy_Page_window);
 #if defined (DEBUG)
-/*???debug */
-printf("enter destroy_Page_window\n");
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,"enter destroy_Page_window\n");
 #endif /* defined (DEBUG) */
 	return_code=0;
 	if (page_window_address&&(page_window= *page_window_address))
@@ -10096,6 +10293,10 @@ if (INVALID_HANDLE_VALUE!=page_window->device_driver)
 		display_message(ERROR_MESSAGE,
 			"destroy_Page_window.  Missing page_window");
 	}
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,"leave destroy_Page_window\n");
+#endif /* defined (DEBUG) */
 	LEAVE;
 
 	return (return_code);
@@ -10179,17 +10380,18 @@ struct Page_window *create_Page_window(struct Page_window **address,
 #if defined (MOTIF)
 	Widget activation,Widget parent,
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	HWND parent,
-#endif /* defined (WINDOWS) */
-	struct Rig **rig_address,
+#endif /* defined (WIN32_USER_INTERFACE) */
+	Unemap_page_window_close_callback_procedure *close_callback,
+	void *close_callback_data,struct Rig **rig_address,
 #if defined (MOTIF)
 	Pixel identifying_colour,
 #endif /* defined (MOTIF) */
 	struct Mapping_window **mapping_window_address,int pointer_sensitivity,
 	char *signal_file_extension_write,struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 This function allocates the memory for a page window and sets the fields to the
@@ -10198,15 +10400,22 @@ a page window widget with the specified <parent> and assigns the widget ids to
 the appropriate fields of the structure.  If successful it returns a pointer to
 the created page window and, if <address> is not NULL, makes <*address> point to
 the created page window.  If unsuccessful, NULL is returned.
+
+The <close_callback> and associated <close_callback_data> are called when the
+user closes the system window. These must be supplied, and are responsible for
+the handling the differences in cleaning up unemap when it is run in cmgui and
+as a standalone application.
 ==============================================================================*/
 {
 	char *hardware_directory;
-	float channel_gain,channel_offset,post_filter_gain,pre_filter_gain;
-	int channel_number,device_number,i,j,number_of_devices;
+	float channel_gain,channel_offset,*electrode_coefficients,post_filter_gain,
+		pre_filter_gain;
+	int channel_number,device_number,i,j,number_of_devices,number_of_electrodes;
+	long int maximum_signal_value,minimum_signal_value;
 	Page_window_settings settings;
 	struct Auxiliary_properties *auxiliary_properties;
 	struct Channel *channel;
-	struct Device **device_address,*display_device;
+	struct Device **device_address,*display_device,**electrodes;
 	struct Page_window *page_window;
 #if defined (MOTIF)
 	Display *display;
@@ -10285,6 +10494,7 @@ the created page window.  If unsuccessful, NULL is returned.
 		{"update_filter_callback",(XtPointer)update_filter_callback},
 		{"update_save_number_of_samples_c",
 			(XtPointer)update_save_number_of_samples_c},
+		{"close_Page_window_callback",(XtPointer)close_Page_window_callback},
 		{"destroy_Page_window_callback",(XtPointer)destroy_Page_window_callback}
 	};
 	static MrmRegisterArg identifier_list[]=
@@ -10387,7 +10597,7 @@ the created page window.  If unsuccessful, NULL is returned.
 	unsigned long mask;
 	XGCValues values;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	BOOL win32_return_code;
 	char *settings_file_name;
 	FILE *settings_file;
@@ -10398,7 +10608,7 @@ the created page window.  If unsuccessful, NULL is returned.
 	unsigned long number_of_cards;
 #endif /* defined (MIRADA) */
 	WNDCLASSEX class_information;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 	ENTER(create_Page_window);
 	/* check arguments */
@@ -10518,17 +10728,17 @@ the created page window.  If unsuccessful, NULL is returned.
 						strlen(hardware_directory)+2))
 					{
 						strcpy(page_window->calibration_directory,hardware_directory);
-#if defined (WIN32)
+#if defined (WIN32_SYSTEM)
 						if ('\\'!=hardware_directory[strlen(hardware_directory)-1])
 						{
 							strcat(page_window->calibration_directory,"\\");
 						}
-#else /* defined (WIN32) */
+#else /* defined (WIN32_SYSTEM) */
 						if ('/'!=hardware_directory[strlen(hardware_directory)-1])
 						{
 							strcat(page_window->calibration_directory,"/");
 						}
-#endif /* defined (WIN32) */
+#endif /* defined (WIN32_SYSTEM) */
 					}
 					else
 					{
@@ -10543,6 +10753,8 @@ the created page window.  If unsuccessful, NULL is returned.
 						"Using current directory for calibrate.dat");
 				}
 				page_window->hardware_initialized=0;
+				page_window->close_callback=close_callback;
+				page_window->close_callback_data=close_callback_data;
 #if defined (MOTIF)
 				page_window->activation=activation;
 				page_window->shell=parent;
@@ -10576,7 +10788,7 @@ the created page window.  If unsuccessful, NULL is returned.
 				page_window->stop_all_stimulators_button=(Widget)NULL;
 				page_window->test_checkbox=(Widget)NULL;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				page_window->instance=User_interface_get_instance(user_interface);
 				page_window->window=(HWND)NULL;
 				page_window->auto_range_button=(HWND)NULL;
@@ -10607,7 +10819,7 @@ the created page window.  If unsuccessful, NULL is returned.
 				page_window->stimulator_checkbox=(HWND)NULL;
 				page_window->stop_all_stimulators_button=(HWND)NULL;
 				page_window->test_checkbox=(HWND)NULL;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 				/* retrieve the settings */
 #if defined (MIRADA)
 				/* open the device driver */
@@ -10650,7 +10862,7 @@ the created page window.  If unsuccessful, NULL is returned.
 				}
 #endif /* defined (OLD_CODE) */
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				settings.number_of_samples=5000;
 				settings.sampling_frequency=(float)5000.;
 				settings.initial_gain=(float)1.;
@@ -10660,17 +10872,17 @@ the created page window.  If unsuccessful, NULL is returned.
 					if (ALLOCATE(settings_file_name,char,strlen(hardware_directory)+13))
 					{
 						strcpy(settings_file_name,hardware_directory);
-#if defined (WIN32)
+#if defined (WIN32_SYSTEM)
 						if ('\\'!=settings_file_name[strlen(settings_file_name)-1])
 						{
 							strcat(settings_file_name,"\\");
 						}
-#else /* defined (WIN32) */
+#else /* defined (WIN32_SYSTEM) */
 						if ('/'!=settings_file_name[strlen(settings_file_name)-1])
 						{
 							strcat(settings_file_name,"/");
 						}
-#endif /* defined (WIN32) */
+#endif /* defined (WIN32_SYSTEM) */
 					}
 				}
 				else
@@ -10701,12 +10913,11 @@ the created page window.  If unsuccessful, NULL is returned.
 					}
 					DEALLOCATE(settings_file_name);
 				}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 				if (!unemap_get_number_of_channels(&(page_window->number_of_channels)))
 				{
 					page_window->number_of_channels=0;
 				}
-				unemap_get_sample_range(&minimum_signal_value,&maximum_signal_value);
 #endif /* defined (MIRADA) */
 				page_window->number_of_samples=settings.number_of_samples;
 				page_window->sampling_frequency=settings.sampling_frequency;
@@ -10730,7 +10941,8 @@ the created page window.  If unsuccessful, NULL is returned.
 							if ((*device_address)&&(channel=(*device_address)->channel))
 							{
 								if (unemap_get_gain(channel->number,&pre_filter_gain,
-									&post_filter_gain))
+									&post_filter_gain)&&unemap_get_sample_range(channel->number,
+									&minimum_signal_value,&maximum_signal_value))
 								{
 									channel_offset=channel->offset;
 									channel_gain=(channel->gain_correction)/
@@ -10765,29 +10977,44 @@ the created page window.  If unsuccessful, NULL is returned.
 								(*device_address)->signal_display_maximum=(float)0;
 								auxiliary_properties= &(((*device_address)->description->
 									properties).auxiliary);
-								for (j=0;j<auxiliary_properties->number_of_electrodes;j++)
+								number_of_electrodes=
+#if defined (DEVICE_EXPRESSIONS)
+									(auxiliary_properties->combination).sum.number_of_electrodes;
+#else /* defined (DEVICE_EXPRESSIONS) */
+									auxiliary_properties->number_of_electrodes;
+#endif /* defined (DEVICE_EXPRESSIONS) */
+								electrodes=
+#if defined (DEVICE_EXPRESSIONS)
+									(auxiliary_properties->combination).sum.electrodes;
+#else /* defined (DEVICE_EXPRESSIONS) */
+									auxiliary_properties->electrodes;
+#endif /* defined (DEVICE_EXPRESSIONS) */
+								electrode_coefficients=
+#if defined (DEVICE_EXPRESSIONS)
+									(auxiliary_properties->combination).sum.
+									electrode_coefficients;
+#else /* defined (DEVICE_EXPRESSIONS) */
+									auxiliary_properties->electrode_coefficients;
+#endif /* defined (DEVICE_EXPRESSIONS) */
+								for (j=0;j<number_of_electrodes;j++)
 								{
-									if (0<(auxiliary_properties->electrode_coefficients)[j])
+									if (0<electrode_coefficients[j])
 									{
 										(*device_address)->signal_display_minimum +=
-											(auxiliary_properties->electrode_coefficients)[j]*
-											((auxiliary_properties->electrodes)[j])->
-											signal_display_minimum;
+											electrode_coefficients[j]*
+											(electrodes[j])->signal_display_minimum;
 										(*device_address)->signal_display_maximum +=
-											(auxiliary_properties->electrode_coefficients)[j]*
-											((auxiliary_properties->electrodes)[j])->
-											signal_display_maximum;
+											electrode_coefficients[j]*
+											(electrodes[j])->signal_display_maximum;
 									}
 									else
 									{
 										(*device_address)->signal_display_minimum +=
-											(auxiliary_properties->electrode_coefficients)[j]*
-											((auxiliary_properties->electrodes)[j])->
-											signal_display_maximum;
+											electrode_coefficients[j]*
+											(electrodes[j])->signal_display_maximum;
 										(*device_address)->signal_display_maximum +=
-											(auxiliary_properties->electrode_coefficients)[j]*
-											((auxiliary_properties->electrodes)[j])->
-											signal_display_minimum;
+											electrode_coefficients[j]*
+											(electrodes[j])->signal_display_minimum;
 									}
 								}
 							}
@@ -10805,6 +11032,8 @@ the created page window.  If unsuccessful, NULL is returned.
 						channel_offset=display_device->channel->offset;
 						unemap_get_gain(display_device->channel->number,
 							&pre_filter_gain,&post_filter_gain);
+						unemap_get_sample_range(display_device->channel->number,
+							&minimum_signal_value,&maximum_signal_value);
 						channel_gain /= pre_filter_gain*post_filter_gain;
 						page_window->display_maximum=
 							channel_gain*((float)maximum_signal_value-channel_offset);
@@ -10869,6 +11098,7 @@ the created page window.  If unsuccessful, NULL is returned.
 							XtSetSensitive(page_window->experiment_checkbox,False);
 							XtSetSensitive(page_window->sample_checkbox,False);
 							XtSetSensitive((page_window->save).button,False);
+							XtSetSensitive((page_window->save).value,False);
 							XtSetSensitive((page_window->low_pass).form,False);
 							XtSetSensitive(page_window->close_button,True);
 							switch (page_window->unemap_hardware_version)
@@ -10984,7 +11214,9 @@ the created page window.  If unsuccessful, NULL is returned.
 							/* create the graphics contexts */
 							display=User_interface_get_display(user_interface);
 							/* the drawable has to have the correct depth and screen */
-							XtVaGetValues(User_interface_get_application_shell(user_interface),XmNdepth,&depth,
+							XtVaGetValues(
+								User_interface_get_application_shell(user_interface),
+								XmNdepth,&depth,
 								NULL);
 							depth_screen_drawable=XCreatePixmap(display,XRootWindow(display,
 								XDefaultScreen(display)),1,1,depth);
@@ -11047,10 +11279,11 @@ the created page window.  If unsuccessful, NULL is returned.
 					DEALLOCATE(page_window);
 				}
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 				/* check if the class is registered */
-				if (TRUE!=(win32_return_code=GetClassInfoEx(User_interface_get_instance(user_interface),
-					class_name,&class_information)))
+				if (TRUE!=(win32_return_code=GetClassInfoEx(
+					User_interface_get_instance(user_interface),class_name,
+					&class_information)))
 				{
 					class_information.cbClsExtra=0;
 					class_information.cbWndExtra=
@@ -11058,9 +11291,11 @@ the created page window.  If unsuccessful, NULL is returned.
 					class_information.hbrBackground=(HBRUSH)(COLOR_WINDOW+1);
 					class_information.hCursor=LoadCursor(NULL,IDC_ARROW);
 					class_information.hIcon=(HICON)NULL;
-/*					class_information.hIcon=LoadIcon(User_interface_get_instance(user_interface),class_name);*/
+/*					class_information.hIcon=LoadIcon(
+						User_interface_get_instance(user_interface),class_name);*/
 						/*???DB.  Do I need an icon ? */
-					class_information.hInstance=User_interface_get_instance(user_interface);
+					class_information.hInstance=
+						User_interface_get_instance(user_interface);
 					class_information.lpfnWndProc=Page_window_class_proc;
 					class_information.lpszClassName=class_name;
 					class_information.style=CS_OWNDC|CS_HREDRAW|CS_VREDRAW;
@@ -11069,8 +11304,8 @@ the created page window.  If unsuccessful, NULL is returned.
 					/*???DB.  Extra in WNDCLASSEX over WNDCLASS */
 					class_information.cbSize=sizeof(WNDCLASSEX);
 					class_information.hIconSm=(HICON)NULL;
-/*					class_information.hIconSm=LoadIcon(User_interface_get_instance(user_interface),
-						"Page_window" "_small");*/
+/*					class_information.hIconSm=LoadIcon(
+						User_interface_get_instance(user_interface),"Page_window" "_small");*/
 						/*???DB.  Do I need an icon ? */
 					if (RegisterClassEx(&class_information))
 					{
@@ -11102,7 +11337,7 @@ the created page window.  If unsuccessful, NULL is returned.
 						"create_Page_window.  Unable to register class information");
 					DEALLOCATE(page_window);
 				}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 			}
 			else
 			{
@@ -11132,20 +11367,22 @@ the created page window.  If unsuccessful, NULL is returned.
 } /* create_Page_window */
 
 int open_Page_window(struct Page_window **address,
-	struct Mapping_window **mapping_window_address,struct Rig **rig_address,
+	Unemap_page_window_close_callback_procedure *close_callback,
+	void *close_callback_data,struct Mapping_window **mapping_window_address,
+	struct Rig **rig_address,
 #if defined (MOTIF)
 	Pixel identifying_colour,
 	int screen_width,int screen_height,
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 #if defined (MIRADA)
 	HANDLE device_driver,
 #endif /* defined (MIRADA) */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 	int pointer_sensitivity,char *signal_file_extension_write,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 14 June 1999
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 If <*address> is NULL, a page window with the specified <parent> and 
@@ -11166,23 +11403,23 @@ If <*address> is NULL, a page window with the specified <parent> and
 		{
 #if defined (MOTIF)
 			if (page_window_shell=create_page_window_shell((Widget *)NULL,
-				User_interface_get_application_shell(user_interface),screen_width,screen_height,
-				user_interface))
+				User_interface_get_application_shell(user_interface),screen_width,
+				screen_height,user_interface))
 			{
 #endif /* defined (MOTIF) */
 				if (page_window=create_Page_window(address,
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 #if defined (MIRADA)
 					device_driver,
 #endif /* defined (MIRADA) */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 #if defined (MOTIF)
 					(Widget)NULL,page_window_shell,
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 					(HWND)NULL,
-#endif /* defined (WINDOWS) */
-					rig_address,
+#endif /* defined (WIN32_USER_INTERFACE) */
+					close_callback,close_callback_data,rig_address,
 #if defined (MOTIF)
 					identifying_colour,
 #endif /* defined (MOTIF) */
@@ -11232,10 +11469,10 @@ printf("pop up page_window->shell\n");
 			/* pop up the page window shell */
 			XtPopup(page_window->shell,XtGrabNone);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			ShowWindow(page_window->window,SW_SHOWDEFAULT);
 				/*???DB.  SW_SHOWDEFAULT needs thinking about */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		}
 	}
 	else

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : acquisition_window.h
 
-LAST MODIFIED : 16 June 1999
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -74,10 +74,10 @@ The acquisition window object.
 		GC acquisition_interval_colour_tex;
 	} graphics_context;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 	HANDLE device_driver;
 	HWND window;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 }; /* struct Acquisition_window */
 
 /*

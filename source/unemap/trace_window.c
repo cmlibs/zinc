@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.c
 
-LAST MODIFIED : 10 May 2002
+LAST MODIFIED : 25 July 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -5131,7 +5131,7 @@ DESCRIPTION : draws the markers on the trace window.
 
 static int calculate_Cardiac_interval_device(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 29 May 2001
+LAST MODIFIED : 25 July 2002
 
 DESCRIPTION :
 Calculate the <trace's> cardiac_interval_device.
@@ -5207,7 +5207,11 @@ calculated, it contains the entire signal.
 			buffer_start=0;
 			if (AUXILIARY==source_device->description->type)
 			{
-				electrodes=(source_device->description->properties).auxiliary.electrodes;
+				electrodes=(source_device->description->properties).auxiliary.
+#if defined (DEVICE_EXPRESSIONS)
+					combination.sum.
+#endif /* defined (DEVICE_EXPRESSIONS) */
+					electrodes;
 				if (electrodes)
 				{
 					device=(*electrodes);
@@ -5300,7 +5304,11 @@ calculated, it contains the entire signal.
 					{
 						if (AUXILIARY==source_device->description->type)
 						{
-							electrodes=(source_device->description->properties).auxiliary.electrodes;
+							electrodes=(source_device->description->properties).auxiliary.
+#if defined (DEVICE_EXPRESSIONS)
+								combination.sum.
+#endif /* defined (DEVICE_EXPRESSIONS) */
+								electrodes;
 							if (electrodes)
 							{
 								device=(*electrodes);
@@ -9871,7 +9879,7 @@ and location.
 
 static int process_eimaging(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 15 March 2001
+LAST MODIFIED : 25 July 2002
 
 DESCRIPTION :
 Calculates the processed device for electrical imaging.
@@ -9951,7 +9959,11 @@ before this function is exited.
 				start=0;
 				if (AUXILIARY==device->description->type)
 				{
-					electrodes=(device->description->properties).auxiliary.electrodes;
+					electrodes=(device->description->properties).auxiliary.
+#if defined (DEVICE_EXPRESSIONS)
+						combination.sum.
+#endif /* defined (DEVICE_EXPRESSIONS) */
+						electrodes;
 					if (electrodes)
 					{
 						a_device=(*electrodes);
@@ -10112,7 +10124,11 @@ before this function is exited.
 						}
 						if (AUXILIARY==device->description->type)
 						{
-							electrodes=(device->description->properties).auxiliary.electrodes;
+							electrodes=(device->description->properties).auxiliary.
+#if defined (DEVICE_EXPRESSIONS)
+								combination.sum.
+#endif /* defined (DEVICE_EXPRESSIONS) */
+								electrodes;
 							if (electrodes)
 							{
 								a_device=(*electrodes);

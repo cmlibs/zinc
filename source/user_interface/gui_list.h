@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : gui_list.h
 
-LAST MODIFIED : 15 January 1997
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Window routines.
@@ -12,9 +12,9 @@ Window routines.
 #if defined (MOTIF)
 #error not implemented
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #include "user_interface/gui_prototype.h"
 
 #if defined (MOTIF)
@@ -56,7 +56,7 @@ Adds an item to a list. \
 	return (return_item); \
 } /* dialog_name ## _ ## list_name ## _view_end */
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 /*******************************************************************************
 LAST MODIFIED : 15 January 1997
 
@@ -116,9 +116,9 @@ int dialog_name ## _ ## list_name ## _view_end( \
 \
 	return (return_code); \
 } /* dialog_name ## _ ## list_name ## _view_end */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 /*******************************************************************************
 LAST MODIFIED : 15 January 1997
 
@@ -161,7 +161,7 @@ int dialog_name ## _ ## list_name ## _view_beginning( \
 \
 	return (return_code); \
 } /* dialog_name ## _ ## list_name ## _view_beginning */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 #if defined (MOTIF)
 int dialog_name ## _ ## list_name ## _add_item(DIALOG_PARAM(Command_window), \
@@ -218,7 +218,7 @@ Adds an item to a list. \
 	return (return_code); \
 } /* dialog_name ## _ ## list_name ## _add_item */
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 /*******************************************************************************
 LAST MODIFIED : 15 January 1997
 
@@ -257,7 +257,7 @@ int dialog_name ## _ ## list_name ## _add_item( \
 \
 	return (return_code); \
 } /* dialog_name ## _ ## list_name ## _add_item */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 #if defined (MOTIF)
 char *dialog_name ## _ ## list_name ## _get_item(DIALOG_PARAM(Command_window), \
@@ -296,7 +296,7 @@ Returns the text of the specfied item. \
 	return (return_string); \
 } /* dialog_name ## _ ## list_name ## _get_item */
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 /*******************************************************************************
 LAST MODIFIED : 15 January 1997
 
@@ -348,9 +348,9 @@ char *dialog_name ## _ ## list_name ## _get_item( \
 \
 	return (return_string); \
 } /* dialog_name ## _ ## list_name ## _get_item */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 /*******************************************************************************
 LAST MODIFIED : 15 January 1997
 
@@ -389,9 +389,9 @@ int dialog_name ## _ ## list_name ## _get_num_items( \
 \
 	return (return_items); \
 } /* dialog_name ## _ ## list_name ## _get_num_items */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 #define DECLARE_GUI_LIST_GET_SELECTED_ITEMS(dialog_name,list_name) \
 int *dialog_name ## _ ## list_name ## _get_selected_items( \
 	DIALOG_LOCAL_PARAM(dialog_name),int *num_items_address) \
@@ -435,7 +435,7 @@ int *dialog_name ## _ ## list_name ## _get_selected_items( \
 \
 	return (selected_items); \
 } /* dialog_name ## _ ## list_name ## _get_selected_items */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 #if defined (MOTIF)
 int dialog_name ## _ ## list_name ## _get_selected(DIALOG_PARAM( \
@@ -476,7 +476,7 @@ Adds an item to a list. \
 	return (return_item); \
 } /* dialog_name ## _ ## list_name ## _get_selected */
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 /*******************************************************************************
 LAST MODIFIED : 15 January 1997
 
@@ -513,6 +513,6 @@ int dialog_name ## _ ## list_name ## _get_selected( \
 \
 	return (return_item); \
 } /* dialog_name ## _ ## list_name ## _get_selected */ 
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 #endif /* !defined (GUI_LIST_H) */

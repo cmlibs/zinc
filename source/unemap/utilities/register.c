@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : register.c
 
-LAST MODIFIED : 10 June 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 For setting and checking registers on second version of the signal conditioning
@@ -10,12 +10,12 @@ card.
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#if defined (MOTIF)
+#if defined (UNIX)
 #include <unistd.h>
-#endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#endif /* defined (UNIX) */
+#if defined (WIN32_SYSTEM)
 #include <conio.h>
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 #include <stdio.h>
 #include <math.h>
 #include <ctype.h>
@@ -142,9 +142,9 @@ const float *calibrating_channel_gains=(float *)NULL,
 const int *calibrating_channel_numbers=(int *)NULL;
 int calibrating=0,calibrating_number_of_channels;
 
-#if defined (MOTIF)
+#if defined (UNIX)
 struct Event_dispatcher *event_dispatcher;
-#endif /* defined (MOTIF) */
+#endif /* defined (UNIX) */
 
 /*
 Module functions
@@ -157,11 +157,11 @@ static void pause_for_error(void)
 	ENTER(pause_for_error);
 	if (('y'==pause_for_error_option)||('Y'==pause_for_error_option))
 	{
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 		printf("Press any key to continue\n");
 		while (!kbhit());
 		getch();
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 	}
 	LEAVE;
 } /* pause_for_error */
@@ -432,12 +432,12 @@ static int compare_float(const void *float_1_void,const void *float_2_void)
 	return (return_code);
 } /* compare_float */
 
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 static void sleep(unsigned seconds)
 {
 	Sleep((DWORD)seconds*(DWORD)1000);
 }
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 
 static void calibration_finished(const int number_of_channels,
 	const int *channel_numbers,const float *channel_offsets,
@@ -505,8 +505,6 @@ static int allow_to_settle(int test_channel,int *test_cards,int *channel_check,
 		}
 	}
 	k=0;
-	unemap_get_sample_range(&minimum_sample_value,&maximum_sample_value);
-	saturated=(float)(-minimum_sample_value);
 	do
 	{
 		unemap_start_sampling();
@@ -548,6 +546,9 @@ static int allow_to_settle(int test_channel,int *test_cards,int *channel_check,
 			{
 				if (test_cards[l])
 				{
+					unemap_get_sample_range(channel_number+1,&minimum_sample_value,
+						&maximum_sample_value);
+					saturated=(float)(-minimum_sample_value);
 					for (i=0;i<max_channels;i++)
 					{
 						if (channel_check[channel_number]&phase_flag)
@@ -684,14 +685,14 @@ static void print_menu(int channel_number,unsigned long number_of_channels)
 	printf("?\n");
 } /* print_menu */
 
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 static void process_keyboard(
 	struct Process_keyboard_data *process_keyboard_data
-#endif /* defined (WINDOWS) */
-#if defined (MOTIF)
+#endif /* defined (WIN32_SYSTEM) */
+#if defined (UNIX)
 static int process_keyboard(
 	int source, void *process_keyboard_data_void
-#endif /* defined (MOTIF) */
+#endif /* defined (UNIX) */
 	)
 {
 	char *file_name,*hardware_directory,option,phase_option;
@@ -729,20 +730,20 @@ static int process_keyboard(
 	float sampling_frequency;
 	int channel_number;
 	short int *samples;
-#if defined (MOTIF)
+#if defined (UNIX)
 	struct Process_keyboard_data *process_keyboard_data;
-#endif /* defined (MOTIF) */
+#endif /* defined (UNIX) */
 	unsigned sampling_delay;
 	unsigned long number_of_channels,number_of_samples;
 #if defined (CALIBRATE_SQUARE_WAVE)
 	float *sorted_signal;
 #endif /* defined (CALIBRATE_SQUARE_WAVE) */
 
-#if defined (MOTIF)
+#if defined (UNIX)
 	USE_PARAMETER(source);
 	process_keyboard_data=
 		(struct Process_keyboard_data *)process_keyboard_data_void;
-#endif /* defined (MOTIF) */
+#endif /* defined (UNIX) */
 	sampling_frequency=process_keyboard_data->sampling_frequency;
 	channel_number=process_keyboard_data->channel_number;
 	samples=process_keyboard_data->samples;
@@ -1909,7 +1910,7 @@ static int process_keyboard(
 									}
 									/* set low pass filter as high as possible */
 									unemap_set_antialiasing_filter_frequency(0,(float)10000);
-									unemap_get_sample_range(&minimum_sample_value,
+									unemap_get_sample_range(1,&minimum_sample_value,
 										&maximum_sample_value);
 									unemap_get_voltage_range(1,&minimum_voltage,&maximum_voltage);
 									gain=(maximum_voltage-minimum_voltage)/
@@ -2471,8 +2472,9 @@ static int process_keyboard(
 										}
 										/* set low pass filter as high as possible */
 										unemap_set_antialiasing_filter_frequency(0,(float)10000);
-										unemap_get_sample_range(&minimum_sample_value,
-											&maximum_sample_value);
+										unemap_get_sample_range(
+											(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,
+											&minimum_sample_value,&maximum_sample_value);
 										unemap_get_voltage_range(
 											(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,
 											&minimum_voltage,&maximum_voltage);
@@ -3121,13 +3123,13 @@ static int process_keyboard(
 										NUMBER_OF_CHANNELS_ON_NI_CARD+1,0,(float)0,(float *)NULL))
 #endif /* defined (OLD_CODE) */
 									{
-										unemap_get_sample_range(&minimum_sample_value,
-											&maximum_sample_value);
 										k=0;
 										while ((k<number_of_test_cards-1)&&!tested_cards[k])
 										{
 											k++;
 										}
+										unemap_get_sample_range(k*NUMBER_OF_CHANNELS_ON_NI_CARD+1,
+											&minimum_sample_value,&maximum_sample_value);
 										unemap_get_voltage_range(k*NUMBER_OF_CHANNELS_ON_NI_CARD+1,
 											&minimum_voltage,&maximum_voltage);
 										gain=(maximum_voltage-minimum_voltage)/
@@ -3532,13 +3534,13 @@ static int process_keyboard(
 									}
 									/* set low pass filter to 10 kHz */
 									unemap_set_antialiasing_filter_frequency(0,(float)10000);
-									unemap_get_sample_range(&minimum_sample_value,
-										&maximum_sample_value);
 									k=0;
 									while ((k<number_of_test_cards-1)&&!tested_cards[k])
 									{
 										k++;
 									}
+									unemap_get_sample_range(k*NUMBER_OF_CHANNELS_ON_NI_CARD+1,
+										&minimum_sample_value,&maximum_sample_value);
 									unemap_get_voltage_range(k*NUMBER_OF_CHANNELS_ON_NI_CARD+1,
 										&minimum_voltage,&maximum_voltage);
 									gain=(maximum_voltage-minimum_voltage)/
@@ -4231,10 +4233,12 @@ static int process_keyboard(
 									}
 									/* set low pass filter to 10 kHz */
 									unemap_set_antialiasing_filter_frequency(0,(float)10000);
-									unemap_get_sample_range(&minimum_sample_value,
-										&maximum_sample_value);
 									j=0;
 									temp_c_number=1;
+									maximum_voltage=1;
+									minimum_voltage=0;
+									maximum_sample_value=1;
+									minimum_sample_value=0;
 									for (k=0;k<number_of_test_cards;k++)
 									{
 										if (tested_cards[k])
@@ -4250,6 +4254,8 @@ static int process_keyboard(
 											{
 												unemap_get_voltage_range(temp_c_number,
 													&minimum_voltage,&maximum_voltage);
+												unemap_get_sample_range(temp_c_number,
+													&minimum_sample_value,&maximum_sample_value);
 												j=1;
 											}
 										}
@@ -4877,7 +4883,7 @@ static int process_keyboard(
 									}
 									/* set low pass filter to 10 kHz */
 									unemap_set_antialiasing_filter_frequency(0,(float)10000);
-									unemap_get_sample_range(&minimum_sample_value,
+									unemap_get_sample_range(1,&minimum_sample_value,
 										&maximum_sample_value);
 									unemap_get_voltage_range(1,&minimum_voltage,&maximum_voltage);
 									gain=(maximum_voltage-minimum_voltage)/
@@ -5219,7 +5225,7 @@ static int process_keyboard(
 								calibrating=1;
 								unemap_calibrate(calibration_finished,(void *)report);
 								/* waiting for calibration to finish */
-#if defined (MOTIF)
+#if defined (UNIX)
 								if (event_dispatcher)
 								{
 									while (calibrating)
@@ -5229,15 +5235,15 @@ static int process_keyboard(
 										Event_dispatcher_do_one_event(event_dispatcher);
 									}
 								}
-#endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#endif /* defined (UNIX) */
+#if defined (WIN32_SYSTEM)
 								while (calibrating)
 								{
 									sleep((unsigned)1);
 									printf(".");
 									fflush(stdout);
 								}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 								temp_c_number=0;
 								first=0;
 								for (k=0;k<number_of_test_cards;k++)
@@ -5259,8 +5265,6 @@ static int process_keyboard(
 									calibrating_channel_numbers&&calibrating_channel_offsets&&
 									calibrating_channel_gains)
 								{
-									unemap_get_sample_range(&minimum_sample_value,
-										&maximum_sample_value);
 									fprintf(report,"channel  offset  gain\n");
 									for (j=0;j<calibrating_number_of_channels;j++)
 									{
@@ -5273,6 +5277,8 @@ static int process_keyboard(
 											fprintf(report,"%d %g %g",temp_c_number,
 												calibrating_channel_offsets[j],
 												calibrating_channel_gains[j]);
+											unemap_get_sample_range(temp_c_number,
+												&minimum_sample_value,&maximum_sample_value);
 											unemap_get_voltage_range(temp_c_number,&minimum_voltage,
 												&maximum_voltage);
 											gain=(maximum_voltage-minimum_voltage)/
@@ -5835,7 +5841,7 @@ static int process_keyboard(
 							unemap_set_channel_stimulating(0,0);
 							/* set low pass filter as high as possible */
 							unemap_set_antialiasing_filter_frequency(0,(float)10000);
-							unemap_get_sample_range(&minimum_sample_value,
+							unemap_get_sample_range(1,&minimum_sample_value,
 								&maximum_sample_value);
 							unemap_get_voltage_range(1,&minimum_voltage,&maximum_voltage);
 							gain=(maximum_voltage-minimum_voltage)/
@@ -6190,12 +6196,12 @@ static int process_keyboard(
 							&maximum_number_of_samples_save);
 						unemap_deconfigure();
 						unemap_configure(sampling_frequency,number_of_samples,
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 							(HWND)NULL,0,
-#endif /* defined (WINDOWS) */
-#if defined (MOTIF)
+#endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (UNIX)
 							event_dispatcher,
-#endif /* defined (MOTIF) */
+#endif /* defined (UNIX) */
 							(Unemap_hardware_callback *)NULL,(void *)NULL,(float)0,1);
 						unemap_set_power(1);
 						unemap_stop_stimulating(0);
@@ -6502,12 +6508,12 @@ static int process_keyboard(
 						unemap_deconfigure();
 						unemap_configure(sampling_frequency_save,
 							(int)maximum_number_of_samples_save,
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 							(HWND)NULL,0,
-#endif /* defined (WINDOWS) */
-#if defined (MOTIF)
+#endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (UNIX)
 							event_dispatcher,
-#endif /* defined (MOTIF) */
+#endif /* defined (UNIX) */
 							(Unemap_hardware_callback *)NULL,(void *)NULL,(float)0,1);
 					}
 				} break;
@@ -6532,9 +6538,9 @@ static int process_keyboard(
 	process_keyboard_data->sampling_delay=sampling_delay;
 	process_keyboard_data->number_of_channels=number_of_channels;
 	process_keyboard_data->number_of_samples=number_of_samples;
-#if defined (MOTIF)
+#if defined (UNIX)
 	return (1);
-#endif /* defined (MOTIF) */
+#endif /* defined (UNIX) */
 } /* process_keyboard */
 
 /*
@@ -6545,7 +6551,9 @@ int main(void)
 {
 	float sampling_frequency;
 	int channel_number,number_of_channels,return_code;
+#if defined (OLD_CODE)
 	long maximum_sample_value,minimum_sample_value;
+#endif /* defined (OLD_CODE) */
 	short int *samples;
 	unsigned long number_of_samples,sampling_delay;
 	struct Process_keyboard_data process_keyboard_data;
@@ -6555,6 +6563,7 @@ int main(void)
 	pause_for_error_option='y';
 	number_of_samples=(unsigned long)5000;
 	sampling_frequency=(float)5000;
+#if defined (OLD_CODE)
 	/* to distinguish between 12 and 16 bit cards */
 	if (unemap_get_sample_range(&minimum_sample_value,&maximum_sample_value)&&
 		(4096<maximum_sample_value))
@@ -6562,6 +6571,7 @@ int main(void)
 		number_of_samples=(unsigned long)1000;
 		sampling_frequency=(float)1000;
 	}
+#endif /* defined (OLD_CODE) */
 #if defined (OLD_CODE)
 /*???DB.  Accuracy seems to be dependent on this */
 	/*???DB.  Temporary */
@@ -6588,21 +6598,21 @@ int main(void)
 		}
 	}
 #endif /* defined (OLD_CODE) */
-#if defined (MOTIF)
+#if defined (UNIX)
 	if (event_dispatcher=CREATE(Event_dispatcher)())
 	{
-#endif /* defined (MOTIF) */
+#endif /* defined (UNIX) */
 		/* in case unemap hardware already running */
 		unemap_set_isolate_record_mode(0,1);
 		unemap_set_power(0);
 		unemap_deconfigure();
 		if (unemap_configure(sampling_frequency,(int)number_of_samples,
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			(HWND)NULL,0,
-#endif /* defined (WINDOWS) */
-#if defined (MOTIF)
+#endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (UNIX)
 			event_dispatcher,
-#endif /* defined (MOTIF) */
+#endif /* defined (UNIX) */
 			(Unemap_hardware_callback *)NULL,(void *)NULL,(float)0,1)&&
 			unemap_get_sampling_frequency(&sampling_frequency)&&
 			unemap_get_maximum_number_of_samples(&number_of_samples)&&
@@ -6619,25 +6629,25 @@ int main(void)
 				process_keyboard_data.sampling_delay=sampling_delay;
 				process_keyboard_data.number_of_channels=number_of_channels;
 				process_keyboard_data.number_of_samples=number_of_samples;
-#if defined (MOTIF)
+#if defined (UNIX)
 				if (Event_dispatcher_add_file_descriptor_handler(
 					event_dispatcher, fileno(stdin),
 					process_keyboard, &process_keyboard_data))
 				{
-#endif /* defined (MOTIF) */
+#endif /* defined (UNIX) */
 					print_menu(channel_number,number_of_channels);
-#if defined (MOTIF)
+#if defined (UNIX)
 					Event_dispatcher_main_loop(event_dispatcher);
-#endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#endif /* defined (UNIX) */
+#if defined (WIN32_SYSTEM)
 					while (1)
 					{
 						process_keyboard(&process_keyboard_data);
 					}
-#endif /* defined (WINDOWS) */
-#if defined (MOTIF)
+#endif /* defined (WIN32_SYSTEM) */
+#if defined (UNIX)
 				}
-#endif /* defined (MOTIF) */
+#endif /* defined (UNIX) */
 				DEALLOCATE(samples);
 			}
 			else
@@ -6654,8 +6664,8 @@ int main(void)
 			display_message(ERROR_MESSAGE,"No NI cards");
 			pause_for_error();
 		}
-#if defined (MOTIF)
+#if defined (UNIX)
 	}
-#endif /* defined (MOTIF) */
+#endif /* defined (UNIX) */
 	return (return_code);
 } /* main */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : test_unemap_hardware.c
 
-LAST MODIFIED : 22 January 2002
+LAST MODIFIED : 7 August 2002
 
 DESCRIPTION :
 For testing the unemap hardware software (client, server, standalone).
@@ -22,9 +22,9 @@ Module variables
 */
 int number_of_scrolling_callbacks=0;
 
-#if defined (MOTIF)
+#if defined (UNIX)
 struct Event_dispatcher *event_dispatcher;
-#endif /* defined (MOTIF) */
+#endif /* defined (UNIX) */
 
 float *calibrating_channel_gains=(float *)NULL,
 	*calibrating_channel_offsets=(float *)NULL;
@@ -74,12 +74,12 @@ static void scrolling_callback(int number_of_channels,int *channel_numbers,
 	}
 } /* scrolling_callback */
 
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 static void sleep(unsigned seconds)
 {
 	Sleep((DWORD)seconds*(DWORD)1000);
 }
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 
 static void calibration_finished(const int number_of_channels,
 	const int *channel_numbers,const float *channel_offsets,
@@ -151,14 +151,14 @@ static void print_menu(void)
 	printf("?\n");
 } /* print_menu */
 
-#if defined (WINDOWS)
+#if defined (WIN32_SYSTEM)
 static void process_keyboard(
 	void
-#endif /* defined (WINDOWS) */
-#if defined (MOTIF)
+#endif /* defined (WIN32_SYSTEM) */
+#if defined (UNIX)
 static int process_keyboard(
 	int source, void *dummy_client_data
-#endif /* defined (MOTIF) */
+#endif /* defined (UNIX) */
 	)
 {
 	char option;
@@ -185,7 +185,7 @@ static int process_keyboard(
 						printf("calibrating ");
 						fflush(stdout);
 						/* waiting for calibration to finish */
-#if defined (MOTIF)
+#if defined (UNIX)
 						if (event_dispatcher)
 						{
 							while (calibrating)
@@ -195,15 +195,15 @@ static int process_keyboard(
 								Event_dispatcher_do_one_event(event_dispatcher);
 							}
 						}
-#endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#endif /* defined (UNIX) */
+#if defined (WIN32_SYSTEM)
 						while (calibrating)
 						{
 							sleep((unsigned)1);
 							printf(".");
 							fflush(stdout);
 						}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 						if ((0<calibrating_number_of_channels)&&
 							calibrating_channel_numbers&&calibrating_channel_offsets&&
 							calibrating_channel_gains)
@@ -258,12 +258,12 @@ static int process_keyboard(
 					printf("synchronization_card ? ");
 					scanf(" %d",&synchronization_card);
 					return_code=unemap_configure(sampling_frequency,number_of_samples,
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 						(HWND)NULL,0,
-#endif /* defined (WINDOWS) */
-#if defined (MOTIF)
+#endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (UNIX)
 						event_dispatcher,
-#endif /* defined (MOTIF) */
+#endif /* defined (UNIX) */
 						scrolling_callback,(void *)NULL,(float)5,synchronization_card);
 					printf("return_code=%d\n",return_code);
 				} break;
@@ -377,10 +377,13 @@ static int process_keyboard(
 				} break;
 				case 'h':
 				{
+					int channel_number;
 					long maximum_sample_value,minimum_sample_value;
 
-					return_code=unemap_get_sample_range(&minimum_sample_value,
-						&maximum_sample_value);
+					printf("channel_number ? ");
+					scanf(" %d",&channel_number);
+					return_code=unemap_get_sample_range(channel_number,
+						&minimum_sample_value,&maximum_sample_value);
 					printf("return_code=%d\n",return_code);
 					printf("minimum_sample_value=%ld\n",minimum_sample_value);
 					printf("maximum_sample_value=%ld\n",maximum_sample_value);
@@ -446,7 +449,7 @@ static int process_keyboard(
 						printf("retrieving ");
 						fflush(stdout);
 						/* waiting for retrieval to finish */
-#if defined (MOTIF)
+#if defined (UNIX)
 						if (event_dispatcher)
 						{
 							while (!unemap_get_samples_acquired_background_finished)
@@ -456,15 +459,15 @@ static int process_keyboard(
 								Event_dispatcher_do_one_event(event_dispatcher);
 							}
 						}
-#endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#endif /* defined (UNIX) */
+#if defined (WIN32_SYSTEM)
 						while (!unemap_get_samples_acquired_background_finished)
 						{
 							sleep((unsigned)1);
 							printf(".");
 							fflush(stdout);
 						}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 						printf("\n");
 					}
 				} break;
@@ -820,9 +823,9 @@ static int process_keyboard(
 			exit(0);
 		}
 	}
-#if defined (MOTIF)
+#if defined (UNIX)
 	return (1);
-#endif /* defined (MOTIF) */
+#endif /* defined (UNIX) */
 } /* process_keyboard */
 
 /*
@@ -834,24 +837,24 @@ int main(void)
 	int return_code;
 
 	return_code=1;
-#if defined (MOTIF)
+#if defined (UNIX)
 	if (event_dispatcher=CREATE(Event_dispatcher)())
 	{
-		if (Event_dispatcher_add_file_descriptor_handler(event_dispatcher,fileno(stdin),
-			process_keyboard,NULL))
+		if (Event_dispatcher_add_file_descriptor_handler(event_dispatcher,
+			fileno(stdin),process_keyboard,NULL))
 		{
 			print_menu();
 			Event_dispatcher_main_loop(event_dispatcher);
 		}
 	}
-#endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#endif /* defined (UNIX) */
+#if defined (WIN32_SYSTEM)
 	print_menu();
 	while (1)
 	{
 		process_keyboard();
 	}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_SYSTEM) */
 
 	return (return_code);
 } /* main */

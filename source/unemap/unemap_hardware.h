@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.h
 
-LAST MODIFIED : 13 January 2002
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -19,12 +19,12 @@ otherwise the group is all channels.
 #if !defined (UNEMAP_HARDWARE_H)
 #define UNEMAP_HARDWARE_H
 
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
-#endif /* defined (WINDOWS) */
-#if defined (MOTIF)
+#endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (UNIX)
 #include "user_interface/event_dispatcher.h"
-#endif /* defined (MOTIF) */
+#endif /* defined (UNIX) */
 
 /*
 Global types
@@ -68,12 +68,12 @@ Global functions
 ----------------
 */
 int unemap_configure(float sampling_frequency,int number_of_samples_in_buffer,
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	HWND scrolling_window,UINT scrolling_message,
-#endif /* defined (WINDOWS) */
-#if defined (MOTIF)
+#endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (UNIX)
 	struct Event_dispatcher *event_dispatcher,
-#endif /* defined (MOTIF) */
+#endif /* defined (UNIX) */
 	Unemap_hardware_callback *scrolling_callback,void *scrolling_callback_data,
 	float scrolling_refresh_frequency,int synchronization_card);
 /*******************************************************************************
@@ -98,8 +98,8 @@ Every <sampling_frequency>/<scrolling_refresh_frequency> samples (one sample
 	- fifth argument is the user supplied callback data
 	- it is the responsibilty of the callback to free the channel numbers and
 		values arrays
-- for WINDOWS, if <scrolling_window> is not NULL, a <scrolling_message> for
-	<scrolling_window> is added to the message queue with
+- for WIN32_USER_INTERFACE, if <scrolling_window> is not NULL, a
+	<scrolling_message> for <scrolling_window> is added to the message queue with
 	- WPARAM is an array of unsigned char amalgamating the five arguments above
 		- first sizeof(int) bytes is the number of scrolling channels
 		- next (number of scrolling channels)*sizeof(int) bytes are the scrolling
@@ -341,13 +341,17 @@ The function does not need the hardware to be configured.
 The total number of hardware channels is assigned to <*number_of_channels>.
 ==============================================================================*/
 
-int unemap_get_sample_range(long int *minimum_sample_value,
+int unemap_get_sample_range(int channel_number,long int *minimum_sample_value,
 	long int *maximum_sample_value);
 /*******************************************************************************
-LAST MODIFIED : 18 February 1999
+LAST MODIFIED : 6 August 2002
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
+
+If <channel_number> is between 1 and the total number of channels inclusive,
+then the function applies to the group ((<channel_number>-1) div 64)*64+1 to
+((<channel_number>-1) div 64)*64+64.  Otherwise, the function fails.
 
 The minimum possible sample value is assigned to <*minimum_sample_value> and the
 maximum possible sample value is assigned to <*maximum_sample_value>.

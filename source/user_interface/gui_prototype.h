@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : gui_prototype.h
 
-LAST MODIFIED : 1 March 1997
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Window routines.
@@ -21,16 +21,16 @@ those steps.
 #include <Xm/Xm.h>
 #include <X11/Xlib.h>
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 #if defined (MOTIF)
 typedef Widget Dialog_handle;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 typedef HWND Dialog_handle;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 /*
 Macros
@@ -165,14 +165,14 @@ Global types
 #define WINDOW_INITIALISE_VARIABLES( dialog_name ) \
 	(WINDOW_GET_INFORMATION(dialog_name)(window,&temp_window,&temp_data))
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 #define DIALOG_INITIALISE_VARIABLES( dialog_name ) \
 	(DIALOG_GET_INFORMATION(dialog_name)(temp_dialog,&temp_data))
 #define DIALOG_WRAPPER_INITIALISE_VARIABLES( dialog_name ) \
 	(DIALOG_WRAPPER_GET_INFORMATION(dialog_name)(hwndDialog,&temp_dialog))
 #define WINDOW_INITIALISE_VARIABLES( dialog_name ) \
 	(WINDOW_GET_INFORMATION(dialog_name)(hwndWindow,&temp_window,&temp_data))
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 /* Name of the routine to retrieve structures */
 #if defined (FULL_NAMES)
@@ -284,7 +284,7 @@ Global types
 #define WINDOW_WINDOW_DESTROY( dialog_name ) \
 	WINDOW_WINDOW_DESTROY_(dialog_name)
 
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 /* Routine to handle a specific windows message */
 #if defined (FULL_NAMES)
 #define DIALOG_HANDLER_( dialog_name , message_name ) \
@@ -338,7 +338,7 @@ BOOL DIALOG_HANDLER(dialog_name,WM_INITDIALOG)(HWND hwndDialog, \
 	HWND hwndFocus, LPARAM lParam)
 #define PROTOTYPE_DIALOG_HANDLER_FUNCTION_WM_DESTROY(dialog_name) \
 void DIALOG_HANDLER(dialog_name,WM_DESTROY)(HWND hwndDialog)
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 /*******************************************************************************
 LAST MODIFIED : 15 January 1997
@@ -351,14 +351,14 @@ Creates the dialog.
 struct DIALOG_STRUCT(dialog_name) *DIALOG_CREATE(dialog_name)(Widget parent, \
 	DIALOG_INITIALISATION_STRUCT(dialog_name) *initial_data)
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 #define PROTOTYPE_DIALOG_CREATE_FUNCTION(dialog_name) \
 struct DIALOG_STRUCT(dialog_name) *DIALOG_CREATE(dialog_name)(HWND hwndParent, \
 	DIALOG_INITIALISATION_STRUCT(dialog_name) *initial_data)
 #define PROTOTYPE_WINDOW_CREATE_FUNCTION(dialog_name) \
 HWND WINDOW_CREATE(dialog_name)(HWND hwndParent,int identifier, \
 	WINDOW_INITIALISATION_STRUCT(dialog_name) *initial_data)
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 /*******************************************************************************
 LAST MODIFIED : 15 January 1997
@@ -379,7 +379,7 @@ int WINDOW_GET_INFORMATION(dialog_name)(Widget window, \
 	WINDOW_STRUCT(dialog_name) **temp_window_address, \
 	WINDOW_DATA_STRUCT(dialog_name) **temp_data_address)
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 #define PROTOTYPE_DIALOG_WRAPPER_GET_INFORMATION_FUNCTION(dialog_name) \
 int DIALOG_WRAPPER_GET_INFORMATION(dialog_name)(HWND hwndDialog, \
 	struct DIALOG_STRUCT(dialog_name) **temp_dialog_address)
@@ -391,10 +391,10 @@ int DIALOG_GET_INFORMATION(dialog_name)( \
 int WINDOW_GET_INFORMATION(dialog_name)(HWND hwndWindow, \
 	WINDOW_STRUCT(dialog_name) **temp_window_address, \
 	WINDOW_DATA_STRUCT(dialog_name) **temp_data_address)
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 /* Local functions */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 #define PROTOTYPE_LOCAL_GUI_DIALOG_FUNCTIONS(dialog_name) \
 PROTOTYPE_DIALOG_GET_INFORMATION_FUNCTION(dialog_name); \
 PROTOTYPE_DIALOG_WRAPPER_GET_INFORMATION_FUNCTION(dialog_name); \
@@ -402,7 +402,7 @@ PROTOTYPE_DIALOG_HANDLER_FUNCTION_WM_INITDIALOG(dialog_name); \
 PROTOTYPE_DIALOG_HANDLER_FUNCTION_WM_DESTROY(dialog_name)
 #define PROTOTYPE_LOCAL_GUI_WINDOW_FUNCTIONS(dialog_name) \
 PROTOTYPE_WINDOW_GET_INFORMATION_FUNCTION(dialog_name)
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 /* Global functions */
 #define PROTOTYPE_GLOBAL_GUI_DIALOG_FUNCTIONS(dialog_name) \

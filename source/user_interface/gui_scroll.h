@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : gui_scroll.h
 
-LAST MODIFIED : 15 January 1997
+LAST MODIFIED : 8 August 2002
 
 DESCRIPTION :
 Scroll bar routines.
@@ -9,9 +9,9 @@ Scroll bar routines.
 ==============================================================================*/
 #if !defined (GUI_SCROLL_H)
 #define GUI_SCROLL_H
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 /* These should be global, not local */
 #define WINDOW_SCROLL_SET_RANGE(dialog_name,scroll_name,min_value,max_value) \
@@ -24,7 +24,7 @@ Scroll bar routines.
 
 #if defined (MOTIF)
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 /*******************************************************************************
 LAST MODIFIED : 15 January 1997
 
@@ -53,11 +53,11 @@ int dialog_name ## _set_range(HWND scroll_name, \
 \
 	return return_code; \
 } /* dialog_name ## _set_range */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 #if defined (MOTIF)
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 /*******************************************************************************
 LAST MODIFIED : 15 January 1997
 
@@ -86,10 +86,10 @@ int dialog_name ## _set_pos(HWND scroll_name, \
 \
 	return return_code; \
 } /* dialog_name ## _set_pos */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (MOTIF)
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 /*******************************************************************************
 LAST MODIFIED : 15 January 1997
 
@@ -116,6 +116,6 @@ int dialog_name ## _get_pos(HWND scroll_name) \
 \
 	return return_pos; \
 } /* dialog_name ## _get_pos */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 #endif /* !defined (GUI_SCROLL_H) */
