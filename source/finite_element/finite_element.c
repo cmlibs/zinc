@@ -2478,7 +2478,8 @@ node_value_data.values_storage.
 					new_node_field->field, node_value_data->old_node_field_list))
 				{
 					/* Check to see if they are exactly the same */
-					if (exclusion_node_field != new_node_field)
+					if (!exclusion_node_field || 
+						(!FE_node_fields_match(exclusion_node_field, new_node_field)))
 					{
 						/* get the values_storage for this node field*/	
 						FE_node_field_copy_value_storage(old_node_field,
