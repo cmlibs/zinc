@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : register.c
 
-LAST MODIFIED : 4 April 2000
+LAST MODIFIED : 26 May 2000
 
 DESCRIPTION :
 For setting and checking registers on second version of the signal conditioning
@@ -1329,7 +1329,7 @@ static void process_keyboard(
 #if defined (NEW_CODE)
 							tol_db=(float)0.05; /* proportion */
 #endif /* defined (NEW_CODE) */
-							tol_gain=(float)0.005; /* proportion */
+							tol_gain=(float)0.01; /* proportion */
 							tol_calibrate_gain=(float)0.05; /* proportion */
 							if (hardware_directory=getenv("UNEMAP_HARDWARE"))
 							{
