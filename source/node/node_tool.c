@@ -2146,10 +2146,10 @@ refer to data, not nodes, needed since different GT_element_settings types are
 used to represent them. <element_manager> should be NULL if <use_data> is true.
 ==============================================================================*/
 {
+	char *initial_path;
 	char *tool_display_name,*tool_name;
 #if defined (MOTIF)
 	Atom WM_DELETE_WINDOW;
-	char *initial_path;
 	int init_widgets;
 	MrmType node_tool_dialog_class;
 	static MrmRegisterArg callback_list[]=
