@@ -15800,7 +15800,7 @@ Responds to update callbacks from the time object.
 										update_mapping_drawing_area(mapping,0);
 										update_mapping_colour_or_auxili(mapping);
 									}
-#endif // defined (OLD_CODE)
+#endif /* defined (OLD_CODE) */
 									if (!Time_keeper_is_playing(Time_object_get_time_keeper(
 										analysis->potential_time_object)))
 									{
