@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 24 May 2001
+LAST MODIFIED : 14 June 2001
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -6249,9 +6249,6 @@ enum Moving_status
 	MOVING_NONE,
 	MOVING_POTENTIAL_TIME_MARKER,
 	MOVING_RIGHT,
-	MOVING_CARDIAC_END_TIME,
-	MOVING_CARDIAC_PT_TIME,
-	MOVING_CARDIAC_START_TIME,
 	SCALING_Y_AXIS_NEGATIVE,
 	SCALING_Y_AXIS_POSITIVE
 };
@@ -7155,7 +7152,7 @@ should be done as a callback from the trace_window.
 				{
 					case ELECTRICAL_IMAGING:
 					{
-						move_cardiac_interval(callback,highlight_device,analysis->trace,
+						move_Cardiac_interval(callback,highlight_device,analysis->trace,
 							analysis->signal_drawing_information,
 							analysis->user_interface,analysis->pointer_sensitivity);
 					}break;
@@ -8225,6 +8222,12 @@ should be done as a callback from the trace_window.
 			{
 				switch (analysis->trace->analysis_mode)
 				{
+					case ELECTRICAL_IMAGING:
+					{						
+						move_add_remove_Electrical_imaging_event(callback,
+							analysis->trace,analysis->signal_drawing_information,
+							analysis->user_interface,analysis->pointer_sensitivity);
+					}break;
 					case EVENT_DETECTION: case BEAT_AVERAGING:
 					{
 #if defined (UNEMAP_USE_NODES)

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.h
 
-LAST MODIFIED : 30 May 2001
+LAST MODIFIED : 14 June 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -550,7 +550,7 @@ the Cardiac interval on the electrical imaging pane. P, T QRS, etc
 ==============================================================================*/
 {
 	GC graphics_context; /*colour*/
-	int peak_or_trough_time,start_time,end_time;		
+	int peak_or_trough_time,start_time,end_time;/* these are array indices 	*/
 	struct Cardiac_interval *next,*previous;
 }; /* struct Cardiac_interval */
 
@@ -564,7 +564,7 @@ Used to generate maps.
 ==============================================================================*/
 {
 	GC graphics_context; /*colour*/
-	int time;		
+	int time,time_written; /* time an array index, time_written a flag  */
 	struct Electrical_imaging_event *next,*previous;
 }; /* Electrical_imaging_event */
 
@@ -813,7 +813,7 @@ Sets both the cross correlation devices to the highlight device.  Should be
 called when the analysis rig is changed.
 ==============================================================================*/
 
-int move_cardiac_interval(XmDrawingAreaCallbackStruct *callback,
+int move_Cardiac_interval(XmDrawingAreaCallbackStruct *callback,
 	struct Device *highlight_device,struct Trace_window *trace,
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface,int pointer_sensitivity);
@@ -821,6 +821,16 @@ int move_cardiac_interval(XmDrawingAreaCallbackStruct *callback,
 LAST MODIFIED :  28 March 2001
 
 DESCRIPTION : Moves the cardiac interval in time.
+==============================================================================*/
+
+int move_add_remove_Electrical_imaging_event(XmDrawingAreaCallbackStruct *callback,
+	struct Trace_window *trace,
+	struct Signal_drawing_information *signal_drawing_information,
+	struct User_interface *user_interface,int pointer_sensitivity);
+/*******************************************************************************
+LAST MODIFIED : 13 June 2001
+
+DESCRIPTION : moves, adds or removes an Electrical_imaging_event.
 ==============================================================================*/
 
 #endif /* !defined (TRACE_WINDOW_H) */
