@@ -930,7 +930,7 @@ USER_INTERFACE_INC = `/home/blackett/bin/pkg-config gtkgl-2.0 gtk+-2.0 --cflags`
 USER_INTERFACE_LIB = -L/home/blackett/lib -lgtkgl-2.0 -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 /home/blackett/lib/Mesa-4.0.4/libGLU.a /usr/lib/libGL.so
 #else /* defined (USE_GTK2) */
 USER_INTERFACE_INC =  -I/usr/include/gtk-1.2 -I/usr/include/glib-1.2 -I/usr/lib/glib/include/
-USER_INTERFACE_LIB =  -lgtkgl -lgtk -lgdk -rdynamic -lgmodule -lglib -ldl -lXi -lXext -lX11 -L/usr/X11R6/lib -lGLU -lGL
+USER_INTERFACE_LIB =  -lgtkgl -lgtk -lgdk -lgmodule -lglib -ldl -lXi -lXext -lX11 -L/usr/X11R6/lib -lGLU -lGL
 #endif /* defined (USE_GTK2) */
 #elif 1 /* switch (USER_INTERFACE) */
 USER_INTERFACE_INC = 
