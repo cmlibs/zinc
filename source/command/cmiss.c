@@ -127,7 +127,7 @@ Functions for executing cmiss commands.
 #include "command/f90_interpreter.h"
 #else /* defined (F90_INTERPRETER) */
 #if defined (PERL_INTERPRETER)
-#include "command/perl_interpreter.h"
+#include "perl_interpreter.h"
 #endif /* defined (PERL_INTERPRETER) */
 #endif /* defined (F90_INTERPRETER) */
 
