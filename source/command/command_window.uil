@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : command_window.uil
 !
-! LAST MODIFIED : 25 May 2000
+! LAST MODIFIED : 21 November 2001
 !
 ! DESCRIPTION :
 ! The widgets/gadgets for the command window.
@@ -15,26 +15,30 @@ procedure
 	identify_command_box;
 	identify_output_pane;
 	identify_message_pane;
-	id_element_creator_create_butto;
-	id_three_d_window_create_button;
-	id_image_processing_create_butt;
-	id_volume_editor_create_button;
-	id_g_element_editor_create_butt;
-	id_material_editor_create_butto;
-	id_spectrum_editor_create_butto;
+! Model menu
+	id_cell_create_button;
+	id_curve_editor_create_button;
 	id_data_viewer_create_button;
 	id_interactive_data_editor_cbut;
+	id_element_creator_create_butto;
+	id_element_point_viewer_button;
+	id_grid_field_calculator_button;
+	id_im_control_create_button;
 	id_node_viewer_create_button;
 	id_interactive_node_editor_cbut;
-	id_3d_digitizer_create_button;
-	id_im_control_create_button;
-	id_unemap_create_button;
-	id_time_editor_create_butto;
 	id_tracking_editor_create_butto;
-	id_cell_create_button;
+	id_unemap_create_button;
+	id_3d_digitizer_create_button;
+! Graphics menu
+	id_three_d_window_create_button;
+	id_material_editor_create_butto;
+	id_scene_editor_create_button;
+	id_spectrum_editor_create_butto;
+	id_time_editor_create_butto;
+	id_volume_editor_create_button;
+!
 	callback_command;
 	open_file_and_read;
-	change_scrolling;
 	command_window_close;
 
 identifier
@@ -226,9 +230,8 @@ object
 		controls
 			{
 			XmCascadeButton file_button;
-			XmCascadeButton viewers_button;
-!			XmCascadeButton options_button;
-!			XmCascadeButton scroll_button;
+			XmCascadeButton model_button;
+			XmCascadeButton graphics_button;
 			};
 		};
 	file_button: XmCascadeButton
@@ -487,44 +490,72 @@ object
 				};
 			};
 		};
-	viewers_button: XmCascadeButton
+!*******************************************************************************
+	model_button: XmCascadeButton
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("Viewers");
-			XmNmnemonic = keysym("V");
+			XmNlabelString = compound_string("Model");
+			XmNmnemonic = keysym("M");
 			XmNsensitive = true;
 			};
 		controls
 			{
-			XmPulldownMenu viewers_pulldown_menu;
+			XmPulldownMenu model_pulldown_menu;
 			};
 		};
-	viewers_pulldown_menu: XmPulldownMenu
+	model_pulldown_menu: XmPulldownMenu
 		{
 		controls
 			{
 			XmPushButton cell_create_button;
 			XmPushButton curve_editor_create_btn;
 			XmPushButton data_viewer_create_button;
+			XmPushButton interactive_data_editor_cbutton;
 			XmPushButton element_creator_create_button;
 			XmPushButton element_point_viewer_button;
-			XmPushButton interactive_data_editor_cbutton;
-			XmPushButton g_element_editor_create_button;
-			XmPushButton material_editor_create_button;
 			XmPushButton grid_field_calculator_btn;
 			XmPushButton im_control_create_button;
-			XmPushButton image_processing_create_button;
 			XmPushButton node_viewer_create_button;
 			XmPushButton interactive_node_editor_cbutton;
-			XmPushButton spectrum_editor_create_button;
-			XmPushButton time_editor_create_button;
 			XmPushButton tracking_editor_create_button;
 			XmPushButton unemap_create_button;
-			XmPushButton volume_editor_create_button;
-			XmCascadeButton projections_button;
 			XmPushButton digitizer_3d_create_button;
-			XmPushButton three_d_window_create_button;
+			};
+		};
+!*******************************************************************************
+	cell_create_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Cell");
+			XmNuserData = execute_command_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_cell_create_button(command_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				callback_command("cell open");
+				};
+			};
+		};
+	curve_editor_create_btn: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Curve editor");
+			XmNuserData = execute_command_structure;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				callback_command("gfx create curve_editor");
+				};
 			};
 		};
 	data_viewer_create_button: XmPushButton
@@ -542,41 +573,7 @@ object
 				};
 			XmNactivateCallback = procedures
 				{
-				callback_command("GFX create data_viewer");
-				};
-			};
-		};
-	element_creator_create_button: XmPushButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Element creator");
-			XmNuserData = execute_command_structure;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				id_element_creator_create_butto(command_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				callback_command("GFX create element_creator");
-				};
-			};
-		};
-	element_point_viewer_button: XmPushButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Element point viewer");
-			XmNuserData = execute_command_structure;
-			};
-		callbacks
-			{
-			XmNactivateCallback = procedures
-				{
-				callback_command("GFX create element_point_viewer");
+				callback_command("gfx create data_viewer");
 				};
 			};
 		};
@@ -595,79 +592,45 @@ object
 				};
 			XmNactivateCallback = procedures
 				{
-				callback_command("GFX create interactive_data_editor");
+				callback_command("gfx create interactive_data_editor");
 				};
 			};
 		};
-	cell_create_button: XmPushButton
+	element_creator_create_button: XmPushButton
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("Cell");
+			XmNlabelString = compound_string("Element creator");
 			XmNuserData = execute_command_structure;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedures
 				{
-				id_cell_create_button(command_window_structure);
+				id_element_creator_create_butto(command_window_structure);
 				};
 			XmNactivateCallback = procedures
 				{
-				callback_command("CELL Open");
+				callback_command("gfx create element_creator");
 				};
 			};
 		};
-	curve_editor_create_btn: XmPushButton
+	element_point_viewer_button: XmPushButton
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("Curve editor");
-			XmNuserData = execute_command_structure;
-			};
-		callbacks
-			{
-			XmNactivateCallback = procedures
-				{
-				callback_command("GFX create curve_editor");
-				};
-			};
-		};
-	g_element_editor_create_button: XmPushButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Graphical element editor");
+			XmNlabelString = compound_string("Element point viewer");
 			XmNuserData = execute_command_structure;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedures
 				{
-				id_g_element_editor_create_butt(command_window_structure);
+				id_element_point_viewer_button(command_window_structure);
 				};
 			XmNactivateCallback = procedures
 				{
-				callback_command("GFX create g_element_editor");
-				};
-			};
-		};
-	material_editor_create_button: XmPushButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Graphical material editor");
-			XmNuserData = execute_command_structure;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				id_material_editor_create_butto(command_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				callback_command("GFX create graphical_material_editor");
+				callback_command("gfx create element_point_viewer");
 				};
 			};
 		};
@@ -680,28 +643,13 @@ object
 			};
 		callbacks
 			{
-			XmNactivateCallback = procedures
-				{
-				callback_command("GFX create grid_field_calculator");
-				};
-			};
-		};
-	image_processing_create_button: XmPushButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Image processing");
-			XmNuserData = execute_command_structure;
-			};
-		callbacks
-			{
 			MrmNcreateCallback = procedures
 				{
-				id_image_processing_create_butt(command_window_structure);
+				id_grid_field_calculator_button(command_window_structure);
 				};
 			XmNactivateCallback = procedures
 				{
-				callback_command("IMP Open");
+				callback_command("gfx create grid_field_calculator");
 				};
 			};
 		};
@@ -720,7 +668,7 @@ object
 				};
 			XmNactivateCallback = procedures
 				{
-				callback_command("GFX create im_control");
+				callback_command("gfx create im_control");
 				};
 			};
 		};
@@ -739,7 +687,7 @@ object
 				};
 			XmNactivateCallback = procedures
 				{
-				callback_command("GFX create node_viewer");
+				callback_command("gfx create node_viewer");
 				};
 			};
 		};
@@ -758,45 +706,7 @@ object
 				};
 			XmNactivateCallback = procedures
 				{
-				callback_command("GFX create interactive_node_editor");
-				};
-			};
-		};
-	spectrum_editor_create_button: XmPushButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Spectrum editor");
-			XmNuserData = execute_command_structure;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				id_spectrum_editor_create_butto(command_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				callback_command("GFX edit spectrum");
-				};
-			};
-		};
-	time_editor_create_button: XmPushButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Time editor");
-			XmNuserData = execute_command_structure;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				id_time_editor_create_butto(command_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				callback_command("GFX create time_editor");
+				callback_command("gfx create interactive_node_editor");
 				};
 			};
 		};
@@ -815,7 +725,7 @@ object
 				};
 			XmNactivateCallback = procedures
 				{
-				callback_command("GFX create tracking_editor");
+				callback_command("gfx create tracking_editor");
 				};
 			};
 		};
@@ -838,6 +748,149 @@ object
 				};
 			};
 		};
+	digitizer_3d_create_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("3-D Digitizer");
+			XmNuserData = execute_command_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_3d_digitizer_create_button(command_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				callback_command("gfx create 3d_digitizer");
+				};
+			};
+		};
+!*******************************************************************************
+	graphics_button: XmCascadeButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Graphics");
+			XmNmnemonic = keysym("G");
+			XmNsensitive = true;
+			};
+		controls
+			{
+			XmPulldownMenu graphics_pulldown_menu;
+			};
+		};
+	graphics_pulldown_menu: XmPulldownMenu
+		{
+		controls
+			{
+			XmPushButton three_d_window_create_button;
+			XmPushButton material_editor_create_button;
+			XmPushButton scene_editor_create_button;
+			XmPushButton spectrum_editor_create_button;
+			XmPushButton time_editor_create_button;
+			XmPushButton volume_editor_create_button;
+			XmSeparator{ };
+			XmCascadeButton projections_button;
+			};
+		};
+!*******************************************************************************
+	three_d_window_create_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("3-D Window");
+			XmNuserData = execute_command_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_three_d_window_create_button(command_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				callback_command("gfx create window");
+				};
+			};
+		};
+	material_editor_create_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Material editor");
+			XmNuserData = execute_command_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_material_editor_create_butto(command_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				callback_command("gfx create graphical_material_editor");
+				};
+			};
+		};
+	scene_editor_create_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Scene editor");
+			XmNuserData = execute_command_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_scene_editor_create_button(command_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				callback_command("gfx edit scene");
+				};
+			};
+		};
+	spectrum_editor_create_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Spectrum editor");
+			XmNuserData = execute_command_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_spectrum_editor_create_butto(command_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				callback_command("gfx edit spectrum");
+				};
+			};
+		};
+	time_editor_create_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Time editor");
+			XmNuserData = execute_command_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_time_editor_create_butto(command_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				callback_command("gfx create time_editor");
+				};
+			};
+		};
 	volume_editor_create_button: XmPushButton
 		{
 		arguments
@@ -853,7 +906,7 @@ object
 				};
 			XmNactivateCallback = procedures
 				{
-				callback_command("GFX create vt_editor");
+				callback_command("gfx create vt_editor");
 				};
 			};
 		};
@@ -882,7 +935,7 @@ object
 							{
 							XmNactivateCallback = procedures
 								{
-								callback_command("FEM define window on xy");
+								callback_command("fem define window on xy");
 								};
 							};
 						};
@@ -897,7 +950,7 @@ object
 							{
 							XmNactivateCallback = procedures
 								{
-								callback_command("FEM define window on xz");
+								callback_command("fem define window on xz");
 								};
 							};
 						};
@@ -912,77 +965,11 @@ object
 							{
 							XmNactivateCallback = procedures
 								{
-								callback_command("FEM define window on yz");
+								callback_command("fem define window on yz");
 								};
 							};
 						};
 					};
-				};
-			};
-		};
-	digitizer_3d_create_button: XmPushButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("3-D Digitizer");
-			XmNuserData = execute_command_structure;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				id_3d_digitizer_create_button(command_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				callback_command("GFX create 3d_digitizer");
-				};
-			};
-		};
-	three_d_window_create_button: XmPushButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("3-D Window");
-			XmNuserData = execute_command_structure;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				id_three_d_window_create_button(command_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				callback_command("GFX Create Window");
-				};
-			};
-		};
-	options_button: XmCascadeButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Options");
-			XmNmnemonic = keysym("O");
-			XmNsensitive = true;
-			};
-		controls
-			{
-			};
-		};
-	scroll_button: XmCascadeButton
-		{
-		arguments
-			{
-			XmNlabelString = compound_string("Stop Scrolling");
-			XmNmnemonic = keysym("S");
-			XmNsensitive = true;
-			};
-		callbacks
-			{
-			XmNactivateCallback = procedures
-				{
-				change_scrolling(command_window_structure);
 				};
 			};
 		};

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : command_window.c
 
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Management routines for the main command window.
@@ -58,25 +58,28 @@ The menu bar at the top of the command window
 	struct
 	{
 		Widget cell_create_button;
+		Widget curve_editor_create_button;
 		Widget data_viewer_create_button;
-		Widget digitizer_3d_create_button;
-		Widget element_creator_create_button;
-		Widget g_element_editor_create_button;
-		Widget image_processing_create_button;
-		Widget im_control_create_button;
 		Widget interactive_data_editor_create_button;
-		Widget interactive_node_editor_create_button;
-		Widget material_editor_create_button;
+		Widget element_creator_create_button;
+		Widget element_point_viewer_button;
+		Widget grid_field_calculator_button;
+		Widget im_control_create_button;
 		Widget node_viewer_create_button;
-		Widget spectrum_editor_create_button;
-		Widget three_d_window_create_button;
-		Widget time_editor_create_button;
+		Widget interactive_node_editor_create_button;
 		Widget tracking_editor_create_button;
 		Widget unemap_create_button;
+		Widget digitizer_3d_create_button;
+	} model_menu;
+	struct
+	{
+		Widget three_d_window_create_button;
+		Widget material_editor_create_button;
+		Widget scene_editor_create_button;
+		Widget spectrum_editor_create_button;
+		Widget time_editor_create_button;
 		Widget volume_editor_create_button;
-	} windows_menu;
-/*  struct Options_menu options_menu; */
-/*  struct Help_menu help_menu; */
+	} graphics_menu;
 	Widget help_button;
 }; /* struct Menu_bar */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
@@ -221,86 +224,15 @@ DESCRIPTION:
 	LEAVE;
 } /* identify_message_pane */
 
-static void id_three_d_window_create_button(Widget widget,
-	XtPointer client_data,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 15 November 1994
-
-DESCRIPTION :
-Stores the id of the command areas.
-==============================================================================*/
-{
-	struct Command_window *command_window;
-
-	ENTER(id_three_d_window_create_button);
- 	USE_PARAMETER(call_data);
-	if (command_window=(struct Command_window *)client_data)
-	{
-		command_window->main_menu.windows_menu.three_d_window_create_button=widget;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"id_three_d_window_create_button.  Command window structure missing");
-	}
-	LEAVE;
-} /* id_three_d_window_create_button */
-
-static void id_image_processing_create_butt(Widget widget,
-	XtPointer client_data,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 15 November 1994
-
-DESCRIPTION:
-Stores the id of the command areas.
-==============================================================================*/
-{
-	struct Command_window *command_window;
-
-	ENTER(id_image_processing_create_butt);
- 	USE_PARAMETER(call_data);
-	if (command_window=(struct Command_window *)client_data)
-	{
-		command_window->main_menu.windows_menu.image_processing_create_button=
-			widget;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"id_image_processing_create_butt.  Command window structure missing");
-	}
-	LEAVE;
-} /* id_image_processing_create_butt */
-
-static void id_unemap_create_button(Widget widget,
-	XtPointer client_data,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 9 December 1996
-
-DESCRIPTION:
-Stores the id of the unemap create button
-==============================================================================*/
-{
-	struct Command_window *command_window;
-
-	ENTER(id_unemap_create_button);
- 	USE_PARAMETER(call_data);
-	if (command_window=(struct Command_window *)client_data)
-	{
-		command_window->main_menu.windows_menu.unemap_create_button=widget;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"id_unemap_create_button.  Command window structure missing");
-	}
-	LEAVE;
-} /* id_unemap_create_button */
+/*
+Model menu widget identify functions
+------------------------------------
+*/
 
 static void id_cell_create_button(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 23 April 1998
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION:
 Stores the id of the cell create button
@@ -312,7 +244,7 @@ Stores the id of the cell create button
  	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
-		command_window->main_menu.windows_menu.cell_create_button=widget;
+		command_window->main_menu.model_menu.cell_create_button=widget;
 	}
 	else
 	{
@@ -322,178 +254,54 @@ Stores the id of the cell create button
 	LEAVE;
 } /* id_cell_create_button */
 
-static void id_time_editor_create_butto(Widget widget,
+static void id_curve_editor_create_button(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 18 February 1999
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION:
-Stores the id of the unemap create button
+Stores the id of the curve_editor create button
 ==============================================================================*/
 {
 	struct Command_window *command_window;
 
-	ENTER(id_time_editor_create_butto);
+	ENTER(id_curve_editor_create_button);
  	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
-		command_window->main_menu.windows_menu.time_editor_create_button=widget;
+		command_window->main_menu.model_menu.curve_editor_create_button=widget;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"id_time_editor_create_butto.  Command window structure missing");
+			"id_curve_editor_create_button.  Command window structure missing");
 	}
 	LEAVE;
-} /* id_time_editor_create_butto */
+} /* id_curve_editor_create_button */
 
-static void id_tracking_editor_create_butto(Widget widget,
+static void id_data_viewer_create_button(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 14 February 1998
-
-DESCRIPTION:
-Stores the id of the unemap create button
-==============================================================================*/
-{
-	struct Command_window *command_window;
-
-	ENTER(id_tracking_editor_create_butto);
- 	USE_PARAMETER(call_data);
-	if (command_window=(struct Command_window *)client_data)
-	{
-		command_window->main_menu.windows_menu.tracking_editor_create_button=widget;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"id_tracking_editor_create_butto.  Command window structure missing");
-	}
-	LEAVE;
-} /* id_tracking_editor_create_butto */
-
-static void id_volume_editor_create_button(Widget widget,
-	XtPointer client_data,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 15 November 1994
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION:
 ==============================================================================*/
 {
 	struct Command_window *command_window;
 
-	ENTER(id_volume_editor_create_button);
+	ENTER(id_data_viewer_create_button);
  	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
-		command_window->main_menu.windows_menu.volume_editor_create_button=widget;
+		command_window->main_menu.model_menu.data_viewer_create_button=widget;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"id_volume_editor_create_button.  Command window structure missing");
+			"id_data_viewer_create_button.  Command window structure missing");
 	}
 	LEAVE;
-} /* id_volume_editor_create_button */
-
-static void id_element_creator_create_butto(Widget widget,
-	XtPointer client_data,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 9 May 2000
-
-DESCRIPTION:
-==============================================================================*/
-{
-	struct Command_window *command_window;
-
-	ENTER(id_element_creator_create_butto);
- 	USE_PARAMETER(call_data);
-	if (command_window=(struct Command_window *)client_data)
-	{
-		command_window->main_menu.windows_menu.element_creator_create_button
-			=widget;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"id_element_creator_create_butto.  Command window structure missing");
-	}
-	LEAVE;
-} /* id_element_creator_create_butto */
-
-static void id_g_element_editor_create_butt(Widget widget,
-	XtPointer client_data,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 8 August 1997
-
-DESCRIPTION:
-==============================================================================*/
-{
-	struct Command_window *command_window;
-
-	ENTER(id_g_element_editor_create_butt);
- 	USE_PARAMETER(call_data);
-	if (command_window=(struct Command_window *)client_data)
-	{
-		command_window->main_menu.windows_menu.g_element_editor_create_button
-			=widget;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"id_g_element_editor_create_butt.  Command window structure missing");
-	}
-	LEAVE;
-} /* id_g_element_editor_create_butt */
-
-static void id_material_editor_create_butto(Widget widget,
-	XtPointer client_data,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 24 November 1994
-
-DESCRIPTION:
-==============================================================================*/
-{
-	struct Command_window *command_window;
-
-	ENTER(id_material_editor_create_butto);
- 	USE_PARAMETER(call_data);
-	if (command_window=(struct Command_window *)client_data)
-	{
-		command_window->main_menu.windows_menu.material_editor_create_button=widget;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"id_material_editor_create_butto.  Command window structure missing");
-	}
-	LEAVE;
-} /* id_material_editor_create_butto */
-
-static void id_interactive_node_editor_cbut(Widget widget,
-	XtPointer client_data,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 21 July 1996
-
-DESCRIPTION:
-==============================================================================*/
-{
-	struct Command_window *command_window;
-
-	ENTER(id_interactive_node_editor_cbut);
- 	USE_PARAMETER(call_data);
-	if (command_window=(struct Command_window *)client_data)
-	{
-		command_window->main_menu.windows_menu.
-			interactive_node_editor_create_button=widget;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"id_interactive_node_editor_cbut.  Command window structure missing");
-	}
-	LEAVE;
-} /* id_interactive_node_editor_cbut */
+} /* id_data_viewer_create_button */
 
 static void id_interactive_data_editor_cbut(Widget widget,
 	XtPointer client_data,XtPointer call_data)
@@ -509,7 +317,7 @@ DESCRIPTION:
  	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
-		command_window->main_menu.windows_menu.
+		command_window->main_menu.model_menu.
 			interactive_data_editor_create_button=widget;
 	}
 	else
@@ -520,106 +328,85 @@ DESCRIPTION:
 	LEAVE;
 } /* id_interactive_data_editor_cbut */
 
-static void id_node_viewer_create_button(Widget widget,
+static void id_element_creator_create_butto(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 21 July 1996
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION:
 ==============================================================================*/
 {
 	struct Command_window *command_window;
 
-	ENTER(id_node_viewer_create_button);
+	ENTER(id_element_creator_create_butto);
  	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
-		command_window->main_menu.windows_menu.node_viewer_create_button=widget;
+		command_window->main_menu.model_menu.element_creator_create_button
+			=widget;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"id_node_viewer_create_button.  Command window structure missing");
+			"id_element_creator_create_butto.  Command window structure missing");
 	}
 	LEAVE;
-} /* id_node_viewer_create_button */
+} /* id_element_creator_create_butto */
 
-static void id_data_viewer_create_button(Widget widget,
+static void id_element_point_viewer_create_button(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 18 February 1997
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION:
+Stores the id of the element_point_viewer create button
 ==============================================================================*/
 {
 	struct Command_window *command_window;
 
-	ENTER(id_data_viewer_create_button);
+	ENTER(id_element_point_viewer_create_button);
  	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
-		command_window->main_menu.windows_menu.data_viewer_create_button=widget;
+		command_window->main_menu.model_menu.element_point_viewer_button=widget;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"id_data_viewer_create_button.  Command window structure missing");
+			"id_element_point_viewer_create_button.  Command window structure missing");
 	}
 	LEAVE;
-} /* id_data_viewer_create_button */
+} /* id_element_point_viewer_create_button */
 
-static void id_spectrum_editor_create_butto(Widget widget,
+static void id_grid_field_calculator_button(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1994
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION:
+Stores the id of the grid_field_calculator create button
 ==============================================================================*/
 {
 	struct Command_window *command_window;
 
-	ENTER(id_spectrum_editor_create_butto);
+	ENTER(id_grid_field_calculator_button);
  	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
-		command_window->main_menu.windows_menu.spectrum_editor_create_button=widget;
+		command_window->main_menu.model_menu.grid_field_calculator_button=widget;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"id_spectrum_editor_create_butto.  Command window structure missing");
+			"id_grid_field_calculator_button.  Command window structure missing");
 	}
 	LEAVE;
-} /* id_spectrum_editor_create_butto */
-
-static void id_3d_digitizer_create_button(Widget widget,
-	XtPointer client_data,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 9 April 1995
-
-DESCRIPTION:
-==============================================================================*/
-{
-	struct Command_window *command_window;
-
-	ENTER(id_3d_digitizer_create_button);
- 	USE_PARAMETER(call_data);
-	if (command_window=(struct Command_window *)client_data)
-	{
-		command_window->main_menu.windows_menu.digitizer_3d_create_button=widget;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"id_3d_digitizer_create_button.  Command window structure missing");
-	}
-	LEAVE;
-} /* id_3d_digitizer_create_button */
+} /* id_grid_field_calculator_button */
 
 static void id_im_control_create_button(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 10 April 1995
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION:
 ==============================================================================*/
@@ -630,7 +417,7 @@ DESCRIPTION:
  	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
-		command_window->main_menu.windows_menu.im_control_create_button=widget;
+		command_window->main_menu.model_menu.im_control_create_button=widget;
 	}
 	else
 	{
@@ -639,6 +426,286 @@ DESCRIPTION:
 	}
 	LEAVE;
 } /* id_im_control_create_button */
+
+static void id_node_viewer_create_button(Widget widget,
+	XtPointer client_data,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 November 2001
+
+DESCRIPTION:
+==============================================================================*/
+{
+	struct Command_window *command_window;
+
+	ENTER(id_node_viewer_create_button);
+ 	USE_PARAMETER(call_data);
+	if (command_window=(struct Command_window *)client_data)
+	{
+		command_window->main_menu.model_menu.node_viewer_create_button=widget;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_node_viewer_create_button.  Command window structure missing");
+	}
+	LEAVE;
+} /* id_node_viewer_create_button */
+
+static void id_interactive_node_editor_cbut(Widget widget,
+	XtPointer client_data,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 November 2001
+
+DESCRIPTION:
+==============================================================================*/
+{
+	struct Command_window *command_window;
+
+	ENTER(id_interactive_node_editor_cbut);
+ 	USE_PARAMETER(call_data);
+	if (command_window=(struct Command_window *)client_data)
+	{
+		command_window->main_menu.model_menu.
+			interactive_node_editor_create_button=widget;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_interactive_node_editor_cbut.  Command window structure missing");
+	}
+	LEAVE;
+} /* id_interactive_node_editor_cbut */
+
+static void id_tracking_editor_create_butto(Widget widget,
+	XtPointer client_data,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 November 2001
+
+DESCRIPTION:
+==============================================================================*/
+{
+	struct Command_window *command_window;
+
+	ENTER(id_tracking_editor_create_butto);
+ 	USE_PARAMETER(call_data);
+	if (command_window=(struct Command_window *)client_data)
+	{
+		command_window->main_menu.model_menu.tracking_editor_create_button=widget;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_tracking_editor_create_butto.  Command window structure missing");
+	}
+	LEAVE;
+} /* id_tracking_editor_create_butto */
+
+static void id_unemap_create_button(Widget widget,
+	XtPointer client_data,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 November 2001
+
+DESCRIPTION:
+Stores the id of the unemap create button
+==============================================================================*/
+{
+	struct Command_window *command_window;
+
+	ENTER(id_unemap_create_button);
+ 	USE_PARAMETER(call_data);
+	if (command_window=(struct Command_window *)client_data)
+	{
+		command_window->main_menu.model_menu.unemap_create_button=widget;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_unemap_create_button.  Command window structure missing");
+	}
+	LEAVE;
+} /* id_unemap_create_button */
+
+static void id_3d_digitizer_create_button(Widget widget,
+	XtPointer client_data,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 November 2001
+
+DESCRIPTION:
+==============================================================================*/
+{
+	struct Command_window *command_window;
+
+	ENTER(id_3d_digitizer_create_button);
+ 	USE_PARAMETER(call_data);
+	if (command_window=(struct Command_window *)client_data)
+	{
+		command_window->main_menu.model_menu.digitizer_3d_create_button=widget;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_3d_digitizer_create_button.  Command window structure missing");
+	}
+	LEAVE;
+} /* id_3d_digitizer_create_button */
+
+/*
+Graphics menu widget identify functions
+---------------------------------------
+*/
+
+static void id_three_d_window_create_button(Widget widget,
+	XtPointer client_data,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 November 2001
+
+DESCRIPTION :
+==============================================================================*/
+{
+	struct Command_window *command_window;
+
+	ENTER(id_three_d_window_create_button);
+ 	USE_PARAMETER(call_data);
+	if (command_window=(struct Command_window *)client_data)
+	{
+		command_window->main_menu.graphics_menu.three_d_window_create_button=widget;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_three_d_window_create_button.  Command window structure missing");
+	}
+	LEAVE;
+} /* id_three_d_window_create_button */
+
+static void id_material_editor_create_butto(Widget widget,
+	XtPointer client_data,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 November 2001
+
+DESCRIPTION:
+==============================================================================*/
+{
+	struct Command_window *command_window;
+
+	ENTER(id_material_editor_create_butto);
+ 	USE_PARAMETER(call_data);
+	if (command_window=(struct Command_window *)client_data)
+	{
+		command_window->main_menu.graphics_menu.material_editor_create_button=widget;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_material_editor_create_butto.  Command window structure missing");
+	}
+	LEAVE;
+} /* id_material_editor_create_butto */
+
+static void id_scene_editor_create_butt(Widget widget,
+	XtPointer client_data,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 November 2001
+
+DESCRIPTION:
+==============================================================================*/
+{
+	struct Command_window *command_window;
+
+	ENTER(id_scene_editor_create_butt);
+ 	USE_PARAMETER(call_data);
+	if (command_window=(struct Command_window *)client_data)
+	{
+		command_window->main_menu.graphics_menu.scene_editor_create_button
+			=widget;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_scene_editor_create_butt.  Command window structure missing");
+	}
+	LEAVE;
+} /* id_scene_editor_create_butt */
+
+static void id_spectrum_editor_create_butto(Widget widget,
+	XtPointer client_data,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 November 2001
+
+DESCRIPTION:
+==============================================================================*/
+{
+	struct Command_window *command_window;
+
+	ENTER(id_spectrum_editor_create_butto);
+ 	USE_PARAMETER(call_data);
+	if (command_window=(struct Command_window *)client_data)
+	{
+		command_window->main_menu.graphics_menu.spectrum_editor_create_button=widget;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_spectrum_editor_create_butto.  Command window structure missing");
+	}
+	LEAVE;
+} /* id_spectrum_editor_create_butto */
+
+static void id_time_editor_create_butto(Widget widget,
+	XtPointer client_data,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 November 2001
+
+DESCRIPTION:
+Stores the id of the unemap create button
+==============================================================================*/
+{
+	struct Command_window *command_window;
+
+	ENTER(id_time_editor_create_butto);
+ 	USE_PARAMETER(call_data);
+	if (command_window=(struct Command_window *)client_data)
+	{
+		command_window->main_menu.graphics_menu.time_editor_create_button=widget;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_time_editor_create_butto.  Command window structure missing");
+	}
+	LEAVE;
+} /* id_time_editor_create_butto */
+
+static void id_volume_editor_create_button(Widget widget,
+	XtPointer client_data,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 November 2001
+
+DESCRIPTION:
+==============================================================================*/
+{
+	struct Command_window *command_window;
+
+	ENTER(id_volume_editor_create_button);
+ 	USE_PARAMETER(call_data);
+	if (command_window=(struct Command_window *)client_data)
+	{
+		command_window->main_menu.graphics_menu.volume_editor_create_button=widget;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_volume_editor_create_button.  Command window structure missing");
+	}
+	LEAVE;
+} /* id_volume_editor_create_button */
+
+
+
+
+
+
+
 
 static void command_changed(Widget widget,XtPointer command_window_structure,
 	XtPointer call_data)
@@ -744,7 +811,10 @@ Called when the Close function is selected from the window manager menu.
 		close_socket();
 #endif /* defined (OLD_CODE) */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
+#if defined (OLD_CODE)
+		/* this is done in cmgui.c now */
 		close_user_interface(command_window->user_interface);
+#endif /* defined (OLD_CODE) */
 	}
 	else
 	{
@@ -1244,34 +1314,40 @@ Create the structures and retrieve the command window from the uil file.
 		{"identify_command_box",(XtPointer)identify_command_box},
 		{"identify_output_pane",(XtPointer)identify_output_pane},
 		{"identify_message_pane",(XtPointer)identify_message_pane},
-		{"id_three_d_window_create_button",
-			(XtPointer)id_three_d_window_create_button},
-		{"id_image_processing_create_butt",
-			(XtPointer)id_image_processing_create_butt},
-		{"id_unemap_create_button",(XtPointer)id_unemap_create_button},
+		/* model menu */
 		{"id_cell_create_button",(XtPointer)id_cell_create_button},
-		{"id_element_creator_create_butto",
-			(XtPointer)id_element_creator_create_butto},
-		{"id_time_editor_create_butto",
-			(XtPointer)id_time_editor_create_butto},
-		{"id_tracking_editor_create_butto",
-			(XtPointer)id_tracking_editor_create_butto},
-		{"id_volume_editor_create_button",
-			(XtPointer)id_volume_editor_create_button},
-		{"id_g_element_editor_create_butt",
-			(XtPointer)id_g_element_editor_create_butt},
-		{"id_material_editor_create_butto",
-			(XtPointer)id_material_editor_create_butto},
-		{"id_spectrum_editor_create_butto",
-			(XtPointer)id_spectrum_editor_create_butto},
-		{"id_interactive_node_editor_cbut",
-			(XtPointer)id_interactive_node_editor_cbut},
-		{"id_node_viewer_create_button",(XtPointer)id_node_viewer_create_button},
+		{"id_curve_editor_create_button",(XtPointer)id_curve_editor_create_button},
 		{"id_data_viewer_create_button",(XtPointer)id_data_viewer_create_button},
 		{"id_interactive_data_editor_cbut",
 			(XtPointer)id_interactive_data_editor_cbut},
-		{"id_3d_digitizer_create_button",(XtPointer)id_3d_digitizer_create_button},
+		{"id_element_creator_create_butto",
+			(XtPointer)id_element_creator_create_butto},
+		{"id_element_point_viewer_button",
+			(XtPointer)id_element_point_viewer_create_button},
+		{"id_grid_field_calculator_button",
+			(XtPointer)id_grid_field_calculator_button},
 		{"id_im_control_create_button",(XtPointer)id_im_control_create_button},
+		{"id_node_viewer_create_button",(XtPointer)id_node_viewer_create_button},
+		{"id_interactive_node_editor_cbut",
+			(XtPointer)id_interactive_node_editor_cbut},
+		{"id_tracking_editor_create_butto",
+			(XtPointer)id_tracking_editor_create_butto},
+		{"id_unemap_create_button",(XtPointer)id_unemap_create_button},
+		{"id_3d_digitizer_create_button",(XtPointer)id_3d_digitizer_create_button},
+		/* graphics menu */
+		{"id_three_d_window_create_button",
+			(XtPointer)id_three_d_window_create_button},
+		{"id_material_editor_create_butto",
+			(XtPointer)id_material_editor_create_butto},
+		{"id_scene_editor_create_button",
+			(XtPointer)id_scene_editor_create_butt},
+		{"id_spectrum_editor_create_butto",
+			(XtPointer)id_spectrum_editor_create_butto},
+		{"id_time_editor_create_butto",
+			(XtPointer)id_time_editor_create_butto},
+		{"id_volume_editor_create_button",
+			(XtPointer)id_volume_editor_create_button},
+
 		{"callback_command",(XtPointer)callback_command},
 		{"open_file_and_read",(XtPointer)open_file_and_read},
 		{"change_scrolling",(XtPointer)change_scrolling},
@@ -1303,46 +1379,59 @@ Create the structures and retrieve the command window from the uil file.
 				command_window->out_file=(FILE *)NULL;
 				command_window->out_file_mode=OUTFILE_INVALID;
 #if defined (MOTIF)
+
+				/* file menu */
 				command_window->main_menu.file_menu.open_menu.open_comfile_button=
 					(Widget)NULL;
 				command_window->main_menu.file_menu.open_menu.open_menu_button=
 					(Widget)NULL;
 				command_window->main_menu.file_menu.exit_button=(Widget)NULL;
-				command_window->main_menu.windows_menu.cell_create_button=
+
+				/* model menu */
+				command_window->main_menu.model_menu.cell_create_button=
 					(Widget)NULL;
-				command_window->main_menu.windows_menu.data_viewer_create_button=
+				command_window->main_menu.model_menu.curve_editor_create_button=
 					(Widget)NULL;
-				command_window->main_menu.windows_menu.digitizer_3d_create_button=
+				command_window->main_menu.model_menu.data_viewer_create_button=
 					(Widget)NULL;
-				command_window->main_menu.windows_menu.element_creator_create_button=
-					(Widget)NULL;
-				command_window->main_menu.windows_menu.g_element_editor_create_button=
-					(Widget)NULL;
-				command_window->main_menu.windows_menu.image_processing_create_button=
-					(Widget)NULL;
-				command_window->main_menu.windows_menu.im_control_create_button=
-					(Widget)NULL;
-				command_window->main_menu.windows_menu.
+				command_window->main_menu.model_menu.
 					interactive_data_editor_create_button=(Widget)NULL;
-				command_window->main_menu.windows_menu.
+				command_window->main_menu.model_menu.element_creator_create_button=
+					(Widget)NULL;
+				command_window->main_menu.model_menu.element_point_viewer_button=
+					(Widget)NULL;
+				command_window->main_menu.model_menu.grid_field_calculator_button=
+					(Widget)NULL;
+				command_window->main_menu.model_menu.im_control_create_button=
+					(Widget)NULL;
+				command_window->main_menu.model_menu.node_viewer_create_button=
+					(Widget)NULL;
+				command_window->main_menu.model_menu.
 					interactive_node_editor_create_button=(Widget)NULL;
-				command_window->main_menu.windows_menu.material_editor_create_button=
+				command_window->main_menu.model_menu.tracking_editor_create_button=
 					(Widget)NULL;
-				command_window->main_menu.windows_menu.node_viewer_create_button=
+				command_window->main_menu.model_menu.unemap_create_button=
 					(Widget)NULL;
-				command_window->main_menu.windows_menu.spectrum_editor_create_button=
+				command_window->main_menu.model_menu.digitizer_3d_create_button=
 					(Widget)NULL;
-				command_window->main_menu.windows_menu.three_d_window_create_button=
+
+				/* graphics menu */
+				command_window->main_menu.graphics_menu.three_d_window_create_button=
 					(Widget)NULL;
-				command_window->main_menu.windows_menu.time_editor_create_button=
+				command_window->main_menu.graphics_menu.material_editor_create_button=
 					(Widget)NULL;
-				command_window->main_menu.windows_menu.tracking_editor_create_button=
+				command_window->main_menu.graphics_menu.scene_editor_create_button=
 					(Widget)NULL;
-				command_window->main_menu.windows_menu.unemap_create_button=
+				command_window->main_menu.graphics_menu.spectrum_editor_create_button=
 					(Widget)NULL;
-				command_window->main_menu.windows_menu.volume_editor_create_button=
+				command_window->main_menu.graphics_menu.time_editor_create_button=
 					(Widget)NULL;
+				command_window->main_menu.graphics_menu.volume_editor_create_button=
+					(Widget)NULL;
+
+				/* help menu */
 				command_window->main_menu.help_button=(Widget)NULL;
+
 				command_window->command_box=(Widget)NULL;
 				command_window->command_history=(Widget)NULL;
 				command_window->command_entry=(Widget)NULL;
