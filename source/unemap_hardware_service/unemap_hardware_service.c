@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_service.c
 
-LAST MODIFIED : 13 November 2000
+LAST MODIFIED : 1 January 2002
 
 DESCRIPTION :
 The unemap service which runs under NT and talks to unemap via sockets.
@@ -28,10 +28,23 @@ PROBLEMS :
 1 If "simplec -n esp20" is the first connection then fails (sends data but then
 	has a recv() failed) and subsequent connections (esp20 or 130.216.5.170) fail.
 	If "simplec -n 130.216.5.170" is the first connection then OK.
+2 Problem with NT crashing (blue screen) when using a large acquisition buffer
+	(Also see unemap_hardware.c)
+2.1 Problem description - see unemap_hardware.c
+2.2 Tried many things, mostly using #defines,
+2.2.1 WINDOWS_IO
+			Thought that may be something wrong with the generic file I/O (fopen,
+			etc), so swapped to the Microsoft ones.  Doesn't fix the problem
+2.2.2 USE_MEMORY_FOR_BACKGROUND
+			Instead of writing to disk, copy into a separate memory buffer.  If the
+			sampling buffer is big enough, then virtual memory will make this
+			equivalent to writing to disk.  Doesn't fix the problem
+2.2.3 NO_ACQUIRED_THREAD
+			Thought that may be problems with locking memory between threads.  Doesn't
+			fix the problem
 
-???DB.  unemap_hardware_service -remove gives message about not being able to
-	initialize the nidaq DLL because the DLL is already in use by the service.
-	Could have a separate remove program that didn't link to nidaq.
+TO DO :
+1 Clear unemap.deb
 ==============================================================================*/
 
 /*???DB.  Assume that running on Intel machine */
@@ -53,8 +66,10 @@ PROBLEMS :
 #endif /* defined (USE_WORMHOLES) */
 
 #include "service.h"
+#include "general/debug.h"
 #include "unemap/unemap_hardware.h"
 #include "unemap_hardware_service/unemap_hardware_service.h"
+#include "user_interface/message.h"
 
 int unemap_get_card_state(int channel_number,int *battA_state,
 	int *battGood_state,float *filter_frequency,int *filter_taps,
@@ -121,6 +136,216 @@ unsigned char acquired_big_endian,calibration_big_endian,scrolling_big_endian;
 Module functions
 ----------------
 */
+FILE *fopen_UNEMAP_HARDWARE(char *file_name,char *type)
+/*******************************************************************************
+LAST MODIFIED : 11 January 1999
+
+DESCRIPTION :
+Opens a file in the UNEMAP_HARDWARE directory.
+==============================================================================*/
+{
+	char *hardware_directory,*hardware_file_name;
+	FILE *hardware_file;
+
+	hardware_file=(FILE *)NULL;
+	if (file_name&&type)
+	{
+		hardware_file_name=(char *)NULL;
+		if (hardware_directory=getenv("UNEMAP_HARDWARE"))
+		{
+			if (hardware_file_name=(char *)malloc(strlen(hardware_directory)+
+				strlen(file_name)+2))
+			{
+				strcpy(hardware_file_name,hardware_directory);
+#if defined (WIN32)
+				if ('\\'!=hardware_file_name[strlen(hardware_file_name)-1])
+				{
+					strcat(hardware_file_name,"\\");
+				}
+#else /* defined (WIN32) */
+				if ('/'!=hardware_file_name[strlen(hardware_file_name)-1])
+				{
+					strcat(hardware_file_name,"/");
+				}
+#endif /* defined (WIN32) */
+			}
+		}
+		else
+		{
+			if (hardware_file_name=(char *)malloc(strlen(file_name)+1))
+			{
+				hardware_file_name[0]='\0';
+			}
+		}
+		if (hardware_file_name)
+		{
+			strcat(hardware_file_name,file_name);
+			hardware_file=fopen(hardware_file_name,type);
+			free(hardware_file_name);
+		}
+	}
+
+	return (hardware_file);
+} /* fopen_UNEMAP_HARDWARE */
+
+int rename_UNEMAP_HARDWARE(char *old_name,char *new_name)
+/*******************************************************************************
+LAST MODIFIED : 21 November 2001
+
+DESCRIPTION :
+Renames a file in the UNEMAP_HARDWARE directory.
+==============================================================================*/
+{
+	char *hardware_directory,*hardware_new_name,*hardware_old_name;
+	int return_code;
+
+	return_code= -1;
+	if (old_name&&new_name)
+	{
+		hardware_new_name=(char *)NULL;
+		hardware_old_name=(char *)NULL;
+		if (hardware_directory=getenv("UNEMAP_HARDWARE"))
+		{
+			hardware_new_name=(char *)malloc(strlen(hardware_directory)+
+				strlen(new_name)+2);
+			hardware_old_name=(char *)malloc(strlen(hardware_directory)+
+				strlen(old_name)+2);
+			if (hardware_new_name&&hardware_old_name)
+			{
+				strcpy(hardware_new_name,hardware_directory);
+				strcpy(hardware_old_name,hardware_directory);
+#if defined (WIN32)
+				if ('\\'!=hardware_new_name[strlen(hardware_new_name)-1])
+				{
+					strcat(hardware_new_name,"\\");
+					strcat(hardware_old_name,"\\");
+				}
+#else /* defined (WIN32) */
+				if ('/'!=hardware_new_name[strlen(hardware_new_name)-1])
+				{
+					strcat(hardware_new_name,"/");
+					strcat(hardware_old_name,"/");
+				}
+#endif /* defined (WIN32) */
+			}
+		}
+		else
+		{
+			hardware_new_name=(char *)malloc(strlen(new_name)+1);
+			hardware_old_name=(char *)malloc(strlen(old_name)+1);
+			if (hardware_new_name&&hardware_old_name)
+			{
+				hardware_new_name[0]='\0';
+				hardware_old_name[0]='\0';
+			}
+		}
+		if (hardware_new_name&&hardware_old_name)
+		{
+			strcat(hardware_new_name,new_name);
+			strcat(hardware_old_name,old_name);
+			return_code=rename(hardware_old_name,hardware_new_name);
+#if defined (OLD_CODE)
+/*???debug */
+{
+	FILE *rename_file;
+
+	if (rename_file=fopen_UNEMAP_HARDWARE("rename.deb","a"))
+	{
+		fprintf(rename_file,"rename(%s,%s)\n",hardware_old_name,
+			hardware_new_name);
+		fclose(rename_file);
+	}
+}
+#endif /* defined (OLD_CODE) */
+		}
+		if (hardware_new_name)
+		{
+			free(hardware_new_name);
+		}
+		if (hardware_old_name)
+		{
+			free(hardware_old_name);
+		}
+	}
+
+	return (return_code);
+} /* rename_UNEMAP_HARDWARE */
+
+static int display_error_message(char *message,void *dummy)
+/*******************************************************************************
+LAST MODIFIED : 10 August 1999
+
+DESCRIPTION :
+==============================================================================*/
+{
+	FILE *unemap_debug;
+	int return_code;
+
+	return_code=1;
+	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+	{
+		fprintf(unemap_debug,"ERROR: %s\n",message);
+		fclose(unemap_debug);
+	}
+	else
+	{
+		printf("ERROR: %s\n",message);
+		return_code=1;
+	}
+
+	return (return_code);
+} /* display_error_message */
+
+static int display_information_message(char *message,void *user_interface_void)
+/*******************************************************************************
+LAST MODIFIED : 10 August 1999
+
+DESCRIPTION :
+==============================================================================*/
+{
+	FILE *unemap_debug;
+	int return_code;
+
+	return_code=1;
+	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+	{
+		fprintf(unemap_debug,"INFORMATION: %s",message);
+		fclose(unemap_debug);
+	}
+	else
+	{
+		printf("INFORMATION: %s",message);
+		return_code=1;
+	}
+
+	return (return_code);
+} /* display_information_message */
+
+static int display_warning_message(char *message,void *user_interface_void)
+/*******************************************************************************
+LAST MODIFIED : 10 August 1999
+
+DESCRIPTION :
+==============================================================================*/
+{
+	FILE *unemap_debug;
+	int return_code;
+
+	return_code=1;
+	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+	{
+		fprintf(unemap_debug,"WARNING: %s\n",message);
+		fclose(unemap_debug);
+	}
+	else
+	{
+		printf("WARNING: %s\n",message);
+		return_code=1;
+	}
+
+	return (return_code);
+} /* display_warning_message */
+
 static int close_connection(void)
 /*******************************************************************************
 LAST MODIFIED : 2 July 2000
@@ -375,7 +600,7 @@ frees the channel_numbers and values arrays.
 			message_size=(number_of_channels+2)*sizeof(int)+
 				number_of_values*sizeof(short);
 			out_buffer_size=2+sizeof(long)+message_size;
-			if (out_buffer=(unsigned char *)malloc(out_buffer_size))
+			if (ALLOCATE(out_buffer,unsigned char,out_buffer_size))
 			{
 				out_buffer[0]=(unsigned char)0x01;
 					/*???DB.  Not sure if codes are needed */
@@ -424,18 +649,18 @@ frees the channel_numbers and values arrays.
 	}
 }
 #endif /* defined (DEBUG) */
-				free(out_buffer);
+				DEALLOCATE(out_buffer);
 			}
 		}
 	}
 	/* free the arrays */
 	if (channel_numbers)
 	{
-		free(channel_numbers);
+		DEALLOCATE(channel_numbers);
 	}
 	if (values)
 	{
-		free(values);
+		DEALLOCATE(values);
 	}
 } /* scrolling_callback */
 
@@ -462,7 +687,7 @@ Called by unemap hardware.  Sends the information down the calibration socket.
 			message_size=sizeof(number_of_channels)+number_of_channels*
 				(sizeof(int)+2*sizeof(float));
 			out_buffer_size=2+sizeof(long)+message_size;
-			if (out_buffer=(unsigned char *)malloc(out_buffer_size))
+			if (ALLOCATE(out_buffer,unsigned char,out_buffer_size))
 			{
 				out_buffer[0]=(unsigned char)0x01;
 				out_buffer[1]=calibration_big_endian;
@@ -491,7 +716,7 @@ Called by unemap hardware.  Sends the information down the calibration socket.
 					out_buffer_size += sizeof(float);
 				}
 				retval=socket_send(calibration_socket,out_buffer,out_buffer_size,0);
-				free(out_buffer);
+				DEALLOCATE(out_buffer);
 			}
 		}
 		else
@@ -499,7 +724,7 @@ Called by unemap hardware.  Sends the information down the calibration socket.
 			/* failed */
 			message_size=0;
 			out_buffer_size=2+sizeof(long)+message_size;
-			if (out_buffer=(unsigned char *)malloc(out_buffer_size))
+			if (ALLOCATE(out_buffer,unsigned char,out_buffer_size))
 			{
 				out_buffer[0]=(unsigned char)0x0;
 				out_buffer[1]=calibration_big_endian;
@@ -513,13 +738,14 @@ Called by unemap hardware.  Sends the information down the calibration socket.
 					out_buffer_size);
 				AddToMessageLog(TEXT(error_string));
 #endif /* defined (DEBUG) */
-				free(out_buffer);
+				DEALLOCATE(out_buffer);
 			}
 		}
 	}
 } /* calibration_callback */
 
 #if defined (USE_SOCKETS)
+#if defined (OLD_CODE)
 DWORD WINAPI acquired_thread_function(LPVOID acquired_file_void)
 /*******************************************************************************
 LAST MODIFIED : 27 July 2000
@@ -557,11 +783,10 @@ Reads samples out of the file and sends them down the acquired socket.
 		if (INVALID_SOCKET!=calibration_socket)
 		{
 			/* send message down acquired socket */
-				/*???DB.  Where I'm up to */
 			message_size=sizeof(number_of_channels)+sizeof(number_of_samples)+
 				number_of_channels*number_of_samples*sizeof(short);
 			out_buffer_size=2+sizeof(long)+message_size;
-			if (out_buffer=(unsigned char *)malloc(out_buffer_size+sizeof(short)))
+			if (ALLOCATE(out_buffer,unsigned char,out_buffer_size+sizeof(short)))
 			{
 				out_buffer[0]=(unsigned char)0x01;
 				out_buffer[1]=acquired_big_endian;
@@ -585,7 +810,7 @@ Reads samples out of the file and sends them down the acquired socket.
 				}
 				out_buffer_size += number_of_channels*number_of_samples*sizeof(short);
 				retval=socket_send(acquired_socket,out_buffer,out_buffer_size,0);
-				free(out_buffer);
+				DEALLOCATE(out_buffer);
 			}
 			else
 			{
@@ -607,14 +832,324 @@ Reads samples out of the file and sends them down the acquired socket.
 
 	return (return_code);
 } /* acquired_thread_function */
+#endif /* defined (OLD_CODE) */
+
+#if defined (USE_MEMORY_FOR_BACKGROUND)
+struct Acquired_samples_information
+{
+	int number_of_channels;
+	unsigned char big_endian,*out_buffer;
+	unsigned long number_of_samples;
+}; /* struct Acquired_samples_information */
+
+DWORD WINAPI acquired_thread_function(LPVOID acquired_samples_information_void)
+/*******************************************************************************
+LAST MODIFIED : 13 December 2001
+
+DESCRIPTION :
+Sends samples down the acquired socket.
+==============================================================================*/
+{
+	DWORD return_code;
+	int i,number_of_channels,retval;
+	long message_size,out_buffer_size;
+	struct Acquired_samples_information *acquired_samples_information;
+	unsigned char big_endian,message_header[2+sizeof(long)],*out_buffer,
+		*out_buffer_entry,temp;
+	unsigned long number_of_samples;
+
+	ENTER(acquired_thread_function);
+	return_code=0;
+	if ((acquired_samples_information=
+		(struct Acquired_samples_information *)acquired_samples_information_void)&&
+		(out_buffer=acquired_samples_information->out_buffer))
+	{
+		big_endian=acquired_samples_information->big_endian;
+		number_of_channels=acquired_samples_information->number_of_channels;
+		number_of_samples=acquired_samples_information->number_of_samples;
+		if (acquired_socket_mutex)
+		{
+			if (WAIT_FAILED==WaitForSingleObject(acquired_socket_mutex,INFINITE))
+			{
+				sprintf(error_string,"acquired_thread_function.  "
+					"WaitForSingleObject failed.  Error code %d",WSAGetLastError());
+				AddToMessageLog(TEXT(error_string));
+			}
+		}
+#if defined (DEBUG)
+		/*???debug */
+		sprintf(error_string,"enter acquired_thread_function");
+		AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
+		if (INVALID_SOCKET!=acquired_socket)
+		{
+			/* send message down acquired socket */
+			message_size=sizeof(number_of_channels)+sizeof(number_of_samples)+
+				number_of_channels*number_of_samples*sizeof(short);
+			message_header[0]=(unsigned char)0x1;
+			message_header[1]=big_endian;
+			copy_byte_swapped(message_header+2,sizeof(long),(char *)&message_size,
+				big_endian);
+			retval=socket_send(acquired_socket,message_header,2+sizeof(long),0);
+			out_buffer_size=0;
+			copy_byte_swapped(out_buffer+out_buffer_size,sizeof(number_of_channels),
+				(char *)&number_of_channels,big_endian);
+			out_buffer_size += sizeof(number_of_channels);
+			copy_byte_swapped(out_buffer+out_buffer_size,sizeof(number_of_samples),
+				(char *)&number_of_samples,big_endian);
+			out_buffer_size += sizeof(number_of_samples);
+			retval=socket_send(acquired_socket,out_buffer,out_buffer_size,0);
+			out_buffer_size=number_of_samples*number_of_channels*sizeof(short);
+			/* in-line for speed */
+#if defined (__BYTE_ORDER) && (1234==__BYTE_ORDER)
+			if (!big_endian)
+#else /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+			if (big_endian)
+#endif /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+			{
+				out_buffer_entry=out_buffer;
+				for (i=number_of_samples*number_of_channels;i>0;i--)
+				{
+					temp=out_buffer_entry[0];
+					out_buffer_entry[0]=out_buffer_entry[1];
+					out_buffer_entry[1]=temp;
+					out_buffer_entry += 2;
+				}
+			}
+			retval=socket_send(acquired_socket,out_buffer,out_buffer_size,0);
+		}
+#if defined (DEBUG)
+		/*???debug */
+		set_check_memory_output(0);
+#endif /* defined (DEBUG) */
+#if defined (DEBUG)
+		/*???debug */
+		sprintf(error_string,"leave acquired_thread_function");
+		AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
+		if (acquired_socket_mutex)
+		{
+			ReleaseMutex(acquired_socket_mutex);
+		}
+		DEALLOCATE(out_buffer);
+		DEALLOCATE(acquired_samples_information);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* acquired_thread_function */
+#else /* defined (USE_MEMORY_FOR_BACKGROUND) */
+DWORD WINAPI acquired_thread_function(LPVOID acquired_file_void)
+/*******************************************************************************
+LAST MODIFIED : 15 November 2001
+
+DESCRIPTION :
+Reads samples out of the file and sends them down the acquired socket.
+==============================================================================*/
+{
+	DWORD return_code;
+	FILE *acquired_file;
+	int channel_number,i,j,number_of_channels,retval;
+	long message_size,out_buffer_size;
+	short *sample;
+	unsigned char message_header[2+sizeof(long)],*out_buffer;
+	unsigned long number_of_samples;
+
+	ENTER(acquired_thread_function);
+	return_code=0;
+	if (acquired_file=(FILE *)acquired_file_void)
+	{
+		if (acquired_socket_mutex)
+		{
+			if (WAIT_FAILED==WaitForSingleObject(acquired_socket_mutex,INFINITE))
+			{
+				sprintf(error_string,
+				"acquired_thread_function.  WaitForSingleObject failed.  Error code %d",
+					WSAGetLastError());
+				AddToMessageLog(TEXT(error_string));
+			}
+		}
+#if defined (DEBUG)
+		/*???debug */
+		set_check_memory_output(1);
+#endif /* defined (DEBUG) */
+		rewind(acquired_file);
+		fread((char *)&channel_number,sizeof(channel_number),1,acquired_file);
+		fread((char *)&number_of_channels,sizeof(number_of_channels),1,
+			acquired_file);
+		fread((char *)&number_of_samples,sizeof(number_of_samples),1,acquired_file);
+		if (INVALID_SOCKET!=acquired_socket)
+		{
+			/* send message down acquired socket */
+			message_size=sizeof(number_of_channels)+sizeof(number_of_samples)+
+				number_of_channels*number_of_samples*sizeof(short);
+			out_buffer_size=sizeof(number_of_channels)+sizeof(number_of_samples);
+			if ((number_of_channels+1)*sizeof(short)>(unsigned)out_buffer_size)
+			{
+				out_buffer_size=(number_of_channels+1)*sizeof(short);
+			}
+			if (ALLOCATE(out_buffer,unsigned char,out_buffer_size))
+			{
+				message_header[0]=(unsigned char)0x1;
+				message_header[1]=acquired_big_endian;
+				copy_byte_swapped(message_header+2,sizeof(long),(char *)&message_size,
+					acquired_big_endian);
+				retval=socket_send(acquired_socket,message_header,2+sizeof(long),0);
+				out_buffer_size=0;
+				copy_byte_swapped(out_buffer+out_buffer_size,sizeof(number_of_channels),
+					(char *)&number_of_channels,acquired_big_endian);
+				out_buffer_size += sizeof(number_of_channels);
+				copy_byte_swapped(out_buffer+out_buffer_size,sizeof(number_of_samples),
+					(char *)&number_of_samples,acquired_big_endian);
+				out_buffer_size += sizeof(number_of_samples);
+				retval=socket_send(acquired_socket,out_buffer,out_buffer_size,0);
+				out_buffer_size=number_of_channels*sizeof(short);
+				for (i=number_of_samples;i>0;i--)
+				{
+					fread(out_buffer+sizeof(short),sizeof(short),number_of_channels,
+						acquired_file);
+					sample=(short *)out_buffer;
+					for (j=number_of_channels;j>0;j--)
+					{
+						copy_byte_swapped((char *)sample,sizeof(short),(char *)(sample+1),
+							acquired_big_endian);
+						sample++;
+					}
+					retval=socket_send(acquired_socket,out_buffer,out_buffer_size,0);
+				}
+				DEALLOCATE(out_buffer);
+			}
+			else
+			{
+				message_header[0]=(unsigned char)0x0;
+				message_header[1]=acquired_big_endian;
+				message_size=0;
+				copy_byte_swapped(message_header+2,sizeof(long),(char *)&message_size,
+					acquired_big_endian);
+				retval=socket_send(acquired_socket,message_header,2+sizeof(long),0);
+			}
+		}
+#if defined (DEBUG)
+		/*???debug */
+		set_check_memory_output(0);
+#endif /* defined (DEBUG) */
+#if defined (DEBUG)
+		/*???debug */
+		sprintf(error_string,"leave acquired_thread_function");
+		AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
+		/* acquired_file is temporary so it is automatically deleted on closing */
+#if defined (WINDOWS_IO)
+		CloseHandle((HANDLE)acquired_file_void);
+#else /* defined (WINDOWS_IO) */
+		fclose(acquired_file);
+#endif /* defined (WINDOWS_IO) */
+		if (acquired_socket_mutex)
+		{
+			ReleaseMutex(acquired_socket_mutex);
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+} /* acquired_thread_function */
+#endif /* defined (USE_MEMORY_FOR_BACKGROUND) */
 #endif /* defined (USE_SOCKETS) */
+
+#if defined (USE_SOCKETS)
+struct Socket_send_samples_acquired_data
+{
+	int buffer_size;
+	SOCKET send_socket;
+	unsigned char big_endian,*buffer;
+}; /* struct Socket_send_samples_acquired_data */
+
+static int socket_send_samples_acquired(short int *samples,
+	int number_of_samples,void *socket_send_samples_acquired_data_void)
+/*******************************************************************************
+LAST MODIFIED : 15 November 2001
+
+DESCRIPTION :
+Used in conjunction with <unemap_transfer_samples_acquired> when sending samples
+back.
+==============================================================================*/
+{
+	int i,number_left,number_to_send,return_code,retval;
+	struct Socket_send_samples_acquired_data *socket_send_samples_acquired_data;
+	unsigned char *buffer_entry,*sample;
+
+	return_code=0;
+	if (samples&&(0<number_of_samples)&&(socket_send_samples_acquired_data=
+		(struct Socket_send_samples_acquired_data *)
+		socket_send_samples_acquired_data_void))
+	{
+		/* in-line for speed */
+#if defined (__BYTE_ORDER) && (1234==__BYTE_ORDER)
+		if (!(socket_send_samples_acquired_data->big_endian))
+#else /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+		if (socket_send_samples_acquired_data->big_endian)
+#endif /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+		{
+			sample=(unsigned char *)samples;
+			number_left=number_of_samples;
+			return_code=0;
+			do
+			{
+				number_to_send=number_left;
+				if (2*number_to_send>socket_send_samples_acquired_data->buffer_size)
+				{
+					number_to_send=(socket_send_samples_acquired_data->buffer_size)/2;
+				}
+				number_left -= number_to_send;
+				buffer_entry=socket_send_samples_acquired_data->buffer;
+				for (i=number_to_send;i>0;i--)
+				{
+					buffer_entry[0]=sample[1];
+					buffer_entry[1]=sample[0];
+					buffer_entry += 2;
+					sample += 2;
+				}
+				retval=socket_send(socket_send_samples_acquired_data->send_socket,
+					(unsigned char *)samples,2*number_to_send,0);
+				if (SOCKET_ERROR!=retval)
+				{
+					return_code += retval/2;
+				}
+				else
+				{
+					return_code=0;
+				}
+			} while ((2*number_to_send==retval)&&(number_left>0));
+		}
+		else
+		{
+			return_code=socket_send(socket_send_samples_acquired_data->send_socket,
+				(unsigned char *)samples,2*number_of_samples,0);
+			if (SOCKET_ERROR!=return_code)
+			{
+				return_code /= 2;
+			}
+			else
+			{
+				return_code=0;
+			}
+		}
+	}
+
+	return (return_code);
+} /* socket_send_samples_acquired */
+#endif /* defined (USE_SOCKETS) */
+
+#if defined (NO_ACQUIRED_THREAD)
+FILE *acquired_file;
+#endif /* defined (NO_ACQUIRED_THREAD) */
 
 #if defined (USE_SOCKETS)
 static int process_message(const unsigned char operation_code,
 	const long message_size,const unsigned char big_endian,
 	unsigned char **out_buffer_address,long *out_buffer_size_address)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2000
+LAST MODIFIED : 15 November 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -846,7 +1381,7 @@ DESCRIPTION :
 						if (return_code)
 						{
 							size=sizeof(frequency);
-							if (out_buffer=(unsigned char *)malloc(size))
+							if (ALLOCATE(out_buffer,unsigned char,size))
 							{
 								copy_byte_swapped(out_buffer,sizeof(frequency),
 									(char *)&frequency,big_endian);
@@ -897,7 +1432,7 @@ DESCRIPTION :
 								sizeof(GA0_state)+sizeof(GA1_state)+sizeof(NI_gain)+
 								sizeof(input_mode)+sizeof(polarity)+sizeof(tol_settling)+
 								sizeof(sampling_interval)+sizeof(settling_step_max);
-							if (out_buffer=(unsigned char *)malloc(size))
+							if (ALLOCATE(out_buffer,unsigned char,size))
 							{
 								size=0;
 								copy_byte_swapped(out_buffer+size,sizeof(battA_state),
@@ -978,7 +1513,7 @@ DESCRIPTION :
 						if (return_code)
 						{
 							size=sizeof(stimulating);
-							if (out_buffer=(unsigned char *)malloc(size))
+							if (ALLOCATE(out_buffer,unsigned char,size))
 							{
 								copy_byte_swapped(out_buffer,sizeof(stimulating),
 									(char *)&stimulating,big_endian);
@@ -1020,7 +1555,7 @@ DESCRIPTION :
 						if (return_code)
 						{
 							size=sizeof(pre_filter_gain)+sizeof(post_filter_gain);
-							if (out_buffer=(unsigned char *)malloc(size))
+							if (ALLOCATE(out_buffer,unsigned char,size))
 							{
 								copy_byte_swapped(out_buffer,sizeof(pre_filter_gain),
 									(char *)&pre_filter_gain,big_endian);
@@ -1055,7 +1590,7 @@ DESCRIPTION :
 					if (return_code)
 					{
 						size=sizeof(hardware_version);
-						if (out_buffer=(unsigned char *)malloc(size))
+						if (ALLOCATE(out_buffer,unsigned char,size))
 						{
 							copy_byte_swapped(out_buffer,sizeof(hardware_version),
 								(char *)&hardware_version,big_endian);
@@ -1094,7 +1629,7 @@ DESCRIPTION :
 						if (return_code)
 						{
 							size=sizeof(isolate);
-							if (out_buffer=(unsigned char *)malloc(size))
+							if (ALLOCATE(out_buffer,unsigned char,size))
 							{
 								copy_byte_swapped(out_buffer,sizeof(isolate),
 									(char *)&isolate,big_endian);
@@ -1127,7 +1662,7 @@ DESCRIPTION :
 					if (return_code)
 					{
 						size=sizeof(number_of_samples);
-						if (out_buffer=(unsigned char *)malloc(size))
+						if (ALLOCATE(out_buffer,unsigned char,size))
 						{
 							copy_byte_swapped(out_buffer,sizeof(number_of_samples),
 								(char *)&number_of_samples,big_endian);
@@ -1161,12 +1696,12 @@ DESCRIPTION :
 					sprintf(error_string,
 						"UNEMAP_GET_NUMBER_OF_CHANNELS_CODE.  %d %d",number_of_channels,
 						return_code);
-#endif /* defined (DEBUG) */
 					AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
 					if (return_code)
 					{
 						size=sizeof(number_of_channels);
-						if (out_buffer=(unsigned char *)malloc(size))
+						if (ALLOCATE(out_buffer,unsigned char,size))
 						{
 							copy_byte_swapped(out_buffer,sizeof(number_of_channels),
 								(char *)&number_of_channels,big_endian);
@@ -1198,7 +1733,7 @@ DESCRIPTION :
 					if (return_code)
 					{
 						size=sizeof(number_of_samples);
-						if (out_buffer=(unsigned char *)malloc(size))
+						if (ALLOCATE(out_buffer,unsigned char,size))
 						{
 							copy_byte_swapped(out_buffer,sizeof(number_of_samples),
 								(char *)&number_of_samples,big_endian);
@@ -1230,7 +1765,7 @@ DESCRIPTION :
 					if (return_code)
 					{
 						size=sizeof(number_of_stimulators);
-						if (out_buffer=(unsigned char *)malloc(size))
+						if (ALLOCATE(out_buffer,unsigned char,size))
 						{
 							copy_byte_swapped(out_buffer,sizeof(number_of_stimulators),
 								(char *)&number_of_stimulators,big_endian);
@@ -1262,7 +1797,7 @@ DESCRIPTION :
 					if (return_code)
 					{
 						size=sizeof(on);
-						if (out_buffer=(unsigned char *)malloc(size))
+						if (ALLOCATE(out_buffer,unsigned char,size))
 						{
 							copy_byte_swapped(out_buffer,sizeof(on),(char *)&on,big_endian);
 							*out_buffer_address=out_buffer;
@@ -1293,7 +1828,7 @@ DESCRIPTION :
 					if (return_code)
 					{
 						size=sizeof(minimum_sample_value)+sizeof(maximum_sample_value);
-						if (out_buffer=(unsigned char *)malloc(size))
+						if (ALLOCATE(out_buffer,unsigned char,size))
 						{
 							copy_byte_swapped(out_buffer,sizeof(minimum_sample_value),
 								(char *)&minimum_sample_value,big_endian);
@@ -1317,6 +1852,7 @@ DESCRIPTION :
 					AddToMessageLog(TEXT(error_string));
 				}
 			} break;
+#if defined (OLD_CODE)
 			case UNEMAP_GET_SAMPLES_ACQUIRED_CODE:
 			{
 				int channel_number;
@@ -1361,7 +1897,7 @@ DESCRIPTION :
 							sprintf(error_string,"size=%ld %d",size,return_code);
 							AddToMessageLog(TEXT(error_string));
 #endif /* defined (DEBUG) */
-							if (return_code&&(out_buffer=(unsigned char *)malloc(size)))
+							if (return_code&&(ALLOCATE(out_buffer,unsigned char,size)))
 							{
 								return_code=unemap_get_samples_acquired(channel_number,
 									(short int *)out_buffer);
@@ -1430,12 +1966,133 @@ DESCRIPTION :
 				AddToMessageLog(TEXT(error_string));
 #endif /* defined (DEBUG) */
 			} break;
+#endif /* defined (OLD_CODE) */
+			case UNEMAP_GET_SAMPLES_ACQUIRED_CODE:
+			{
+				int channel_number,number_of_channels,number_of_samples_transferred;
+				struct Socket_send_samples_acquired_data
+					socket_send_samples_acquired_data;
+				unsigned char message_header[2+sizeof(long)+sizeof(int)+
+					sizeof(unsigned long)];
+				unsigned long acknowledgement,number_of_samples;
+
+#if defined (DEBUG)
+				/*???debug */
+				set_check_memory_output(1);
+#endif /* defined (DEBUG) */
+#if defined (DEBUG)
+				/*???debug */
+				sprintf(error_string,"enter UNEMAP_GET_SAMPLES_ACQUIRED_CODE");
+				AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
+				return_code=0;
+				size=sizeof(channel_number);
+				if (size==message_size)
+				{
+					retval=socket_recv(command_socket,buffer,message_size,0);
+					if (SOCKET_ERROR!=retval)
+					{
+						unread_size -= retval;
+						copy_byte_swapped((unsigned char *)&channel_number,
+							sizeof(channel_number),buffer,big_endian);
+						if (return_code=unemap_get_number_of_samples_acquired(
+							&number_of_samples))
+						{
+							if (0==channel_number)
+							{
+								if (!(return_code=unemap_get_number_of_channels(
+									&number_of_channels)))
+								{
+									sprintf(error_string,
+					"unemap_get_samples_acquired.  unemap_get_number_of_channels failed");
+									AddToMessageLog(TEXT(error_string));
+								}
+							}
+							else
+							{
+								number_of_channels=1;
+							}
+							/* send acknowledgement so that client can start retrieving */
+							message_header[0]=(unsigned char)0x1;
+							message_header[1]=(unsigned char)0x0;
+							acknowledgement=0;
+							copy_byte_swapped(message_header+2,sizeof(acknowledgement),
+								(char *)&acknowledgement,big_endian);
+							retval=socket_send(command_socket,message_header,
+								2+sizeof(acknowledgement),0);
+							/* send down the acquired socket */
+							socket_send_samples_acquired_data.buffer_size=
+								number_of_channels*sizeof(short int);
+							if (ALLOCATE(socket_send_samples_acquired_data.buffer,
+								unsigned char,socket_send_samples_acquired_data.buffer_size))
+							{
+								socket_send_samples_acquired_data.send_socket=acquired_socket;
+								socket_send_samples_acquired_data.big_endian=big_endian;
+								message_header[0]=(unsigned char)0x1;
+								message_header[1]=big_endian;
+								size=sizeof(number_of_channels)+sizeof(number_of_samples)+
+									number_of_samples*number_of_channels*sizeof(short int);
+								copy_byte_swapped(message_header+2,sizeof(long),(char *)&size,
+									big_endian);
+								copy_byte_swapped(message_header+2+sizeof(long),
+									sizeof(number_of_channels),(char *)&number_of_channels,
+									big_endian);
+								copy_byte_swapped(message_header+2+sizeof(long)+
+									sizeof(number_of_channels),sizeof(number_of_samples),
+									(char *)&number_of_samples,big_endian);
+								retval=socket_send(acquired_socket,message_header,
+									2+sizeof(long)+sizeof(number_of_channels)+
+									sizeof(number_of_samples),0);
+								return_code=unemap_transfer_samples_acquired(channel_number,
+									socket_send_samples_acquired,
+									&socket_send_samples_acquired_data,
+									&number_of_samples_transferred);
+								DEALLOCATE(socket_send_samples_acquired_data.buffer);
+							}
+							else
+							{
+								return_code=0;
+								sprintf(error_string,
+							"unemap_get_samples_acquired.  Could not allocate out_buffer %ld",
+										size);
+								AddToMessageLog(TEXT(error_string));
+							}
+						}
+						else
+						{
+							sprintf(error_string,
+	"unemap_get_samples_acquired.  unemap_get_number_of_samples_acquired failed");
+							AddToMessageLog(TEXT(error_string));
+						}
+					}
+				}
+				else
+				{
+					sprintf(error_string,
+						"unemap_get_samples_acquired.  Incorrect message size %d %d",
+						message_size,size);
+					AddToMessageLog(TEXT(error_string));
+				}
+#if defined (DEBUG)
+				/*???debug */
+				sprintf(error_string,"leave UNEMAP_GET_SAMPLES_ACQUIRED_CODE");
+				AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
+#if defined (DEBUG)
+				/*???debug */
+				set_check_memory_output(0);
+#endif /* defined (DEBUG) */
+			} break;
+#if defined (USE_MEMORY_FOR_BACKGROUND)
 			case UNEMAP_GET_SAMPLES_ACQUIRED_BACKGROUND_CODE:
 			{
+#if !defined (NO_ACQUIRED_THREAD)
 				DWORD acquired_thread_id;
 				HANDLE acquired_thread;
-				FILE *acquired_file;
-				int channel_number;
+#endif /* !defined (NO_ACQUIRED_THREAD) */
+				int channel_number,number_of_channels;
+				struct Acquired_samples_information *acquired_samples_information;
+				unsigned long number_of_samples;
 
 #if defined (DEBUG)
 				/*???debug */
@@ -1453,11 +2110,160 @@ DESCRIPTION :
 						unread_size -= retval;
 						copy_byte_swapped((unsigned char *)&channel_number,
 							sizeof(channel_number),buffer,big_endian);
-						if (acquired_file=tmpfile())
+						if (return_code=unemap_get_number_of_samples_acquired(
+							&number_of_samples))
+						{
+							if (0==channel_number)
+							{
+								if (!(return_code=unemap_get_number_of_channels(
+									&number_of_channels)))
+								{
+									sprintf(error_string,
+					"unemap_get_samples_acquired.  unemap_get_number_of_channels failed");
+									AddToMessageLog(TEXT(error_string));
+								}
+							}
+							else
+							{
+								number_of_channels=1;
+							}
+							size=number_of_samples*number_of_channels*sizeof(short int);
+#if defined (DEBUG)
+							/*???debug */
+							sprintf(error_string,"size=%ld %d",size,return_code);
+							AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
+							if (return_code)
+							{
+								ALLOCATE(acquired_samples_information,
+									struct Acquired_samples_information,1);
+								ALLOCATE(out_buffer,unsigned char,size);
+								if (acquired_samples_information&&out_buffer)
+								{
+									acquired_samples_information->out_buffer=out_buffer;
+									acquired_samples_information->number_of_samples=
+										number_of_samples;
+									acquired_samples_information->number_of_channels=
+										number_of_channels;
+									acquired_samples_information->big_endian=big_endian;
+									return_code=unemap_get_samples_acquired(channel_number,
+										(short int *)out_buffer);
+									if (return_code)
+									{
+										acquired_big_endian=big_endian;
+#if defined (NO_ACQUIRED_THREAD)
+										return_code=1;
+#else /* defined (NO_ACQUIRED_THREAD) */
+										/* spawn the background process for sending the samples
+											back */
+										if (acquired_thread=CreateThread(
+											/*no security attributes*/NULL,
+											/*use default stack size*/0,
+											acquired_thread_function,
+											(LPVOID)acquired_samples_information,
+											/*use default creation flags*/0,&acquired_thread_id))
+										{
+											return_code=1;
+										}
+										else
+										{
+											return_code=0;
+											DEALLOCATE(acquired_samples_information);
+											DEALLOCATE(out_buffer);
+											sprintf(error_string,
+												"unemap_get_samples_acquired_background.  "
+												"Could not create thread");
+											AddToMessageLog(TEXT(error_string));
+										}
+#endif /* defined (NO_ACQUIRED_THREAD) */
+									}
+								}
+								else
+								{
+									return_code=0;
+									DEALLOCATE(acquired_samples_information);
+									DEALLOCATE(out_buffer);
+									sprintf(error_string,
+										"unemap_get_samples_acquired_background.  "
+										"Could not allocate out_buffer %ld",size);
+									AddToMessageLog(TEXT(error_string));
+								}
+							}
+						}
+						else
+						{
+							sprintf(error_string,"unemap_get_samples_acquired_background.  "
+								"unemap_get_number_of_samples_acquired failed");
+							AddToMessageLog(TEXT(error_string));
+						}
+					}
+				}
+				else
+				{
+					sprintf(error_string,"unemap_get_samples_acquired_background.  "
+						"Incorrect message size %d %d",message_size,size);
+					AddToMessageLog(TEXT(error_string));
+				}
+#if defined (DEBUG)
+				/*???debug */
+				sprintf(error_string,
+					"leave UNEMAP_GET_SAMPLES_ACQUIRED_BACKGROUND_CODE");
+				AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
+			} break;
+#else /* defined (USE_MEMORY_FOR_BACKGROUND) */
+			case UNEMAP_GET_SAMPLES_ACQUIRED_BACKGROUND_CODE:
+			{
+#if !defined (NO_ACQUIRED_THREAD)
+				DWORD acquired_thread_id;
+				HANDLE acquired_thread;
+#if defined (WINDOWS_IO)
+				HANDLE acquired_file;
+#else /* defined (WINDOWS_IO) */
+				FILE *acquired_file;
+#endif /* defined (WINDOWS_IO) */
+#endif /* !defined (NO_ACQUIRED_THREAD) */
+				int channel_number;
+
+#if defined (DEBUG)
+				/*???debug */
+				set_check_memory_output(1);
+#endif /* defined (DEBUG) */
+#if defined (DEBUG)
+				/*???debug */
+				sprintf(error_string,
+					"enter UNEMAP_GET_SAMPLES_ACQUIRED_BACKGROUND_CODE");
+				AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
+				return_code=0;
+				size=sizeof(channel_number);
+				if (size==message_size)
+				{
+					retval=socket_recv(command_socket,buffer,message_size,0);
+					if (SOCKET_ERROR!=retval)
+					{
+						unread_size -= retval;
+						copy_byte_swapped((unsigned char *)&channel_number,
+							sizeof(channel_number),buffer,big_endian);
+#if defined (WINDOWS_IO)
+						if (acquired_file=CreateFile("c:\\unemap\\bin\\save.sig",
+							(DWORD)(GENERIC_READ|GENERIC_WRITE),(DWORD)0,
+							(LPSECURITY_ATTRIBUTES)NULL,(DWORD)CREATE_ALWAYS,
+							(DWORD)FILE_ATTRIBUTE_NORMAL,(HANDLE)NULL))
+#else /* defined (WINDOWS_IO) */
+						/*???debug */
+						if (acquired_file=fopen_UNEMAP_HARDWARE("save.sig","wb"))
+/*						if (acquired_file=tmpfile())*/
+#endif /* defined (WINDOWS_IO) */
 						{
 							if (unemap_write_samples_acquired(channel_number,acquired_file))
 							{
+								/*???debug */
+/*								fclose(acquired_file);*/
 								acquired_big_endian=big_endian;
+#if defined (NO_ACQUIRED_THREAD)
+								return_code=1;
+#else /* defined (NO_ACQUIRED_THREAD) */
 								/* spawn the background process for sending the samples back */
 								if (acquired_thread=CreateThread(
 									/*no security attributes*/NULL,/*use default stack size*/0,
@@ -1472,6 +2278,7 @@ DESCRIPTION :
 						"unemap_get_samples_acquired_background.  Could not create thread");
 									AddToMessageLog(TEXT(error_string));
 								}
+#endif /* defined (NO_ACQUIRED_THREAD) */
 							}
 							else
 							{
@@ -1497,11 +2304,16 @@ DESCRIPTION :
 				}
 #if defined (DEBUG)
 				/*???debug */
-				sprintf(error_string,i
+				sprintf(error_string,
 					"leave UNEMAP_GET_SAMPLES_ACQUIRED_BACKGROUND_CODE");
 				AddToMessageLog(TEXT(error_string));
 #endif /* defined (DEBUG) */
+#if defined (DEBUG)
+				/*???debug */
+				set_check_memory_output(0);
+#endif /* defined (DEBUG) */
 			} break;
+#endif /* defined (USE_MEMORY_FOR_BACKGROUND) */
 			case UNEMAP_GET_SAMPLING_CODE:
 			{
 				return_code=0;
@@ -1527,7 +2339,7 @@ DESCRIPTION :
 					if (return_code)
 					{
 						size=sizeof(frequency);
-						if (out_buffer=(unsigned char *)malloc(size))
+						if (ALLOCATE(out_buffer,unsigned char,size))
 						{
 							copy_byte_swapped(out_buffer,sizeof(frequency),
 								(char *)&frequency,big_endian);
@@ -1568,7 +2380,7 @@ DESCRIPTION :
 						if (return_code)
 						{
 							size=sizeof(minimum_voltage)+sizeof(maximum_voltage);
-							if (out_buffer=(unsigned char *)malloc(size))
+							if (ALLOCATE(out_buffer,unsigned char,size))
 							{
 								copy_byte_swapped(out_buffer,sizeof(minimum_voltage),
 									(char *)&minimum_voltage,big_endian);
@@ -1627,9 +2439,10 @@ DESCRIPTION :
 							return_code=1;
 							if (0<number_of_channels)
 							{
-								size=number_of_channels*sizeof(int);
-								if (channel_numbers=(int *)malloc(size+sizeof(int)))
+								size=number_of_channels;
+								if (ALLOCATE(channel_numbers,int,size+1))
 								{
+									size *= sizeof(int);
 									channel_number=channel_numbers+1;
 									retval=socket_recv(command_socket,
 										(unsigned char *)channel_number,size,0);
@@ -1647,7 +2460,7 @@ DESCRIPTION :
 									}
 									else
 									{
-										free(channel_numbers);
+										DEALLOCATE(channel_numbers);
 										channel_numbers=(int *)NULL;
 										return_code=0;
 									}
@@ -1669,7 +2482,7 @@ DESCRIPTION :
 							if (return_code&&(0<number_of_currents))
 							{
 								size=number_of_currents*sizeof(float);
-								if (out_buffer=(unsigned char *)malloc(size+sizeof(float)))
+								if (ALLOCATE(out_buffer,unsigned char,size+sizeof(float)))
 								{
 									retval=socket_recv(command_socket,out_buffer,size,0);
 									if (SOCKET_ERROR!=retval)
@@ -1686,7 +2499,7 @@ DESCRIPTION :
 									}
 									else
 									{
-										free(out_buffer);
+										DEALLOCATE(out_buffer);
 										out_buffer=(unsigned char *)NULL;
 										return_code=0;
 									}
@@ -1708,7 +2521,8 @@ DESCRIPTION :
 							{
 								if (return_code=unemap_load_current_stimulating(
 									number_of_channels,channel_numbers,number_of_currents,
-									currents_per_second,currents,number_of_cycles))
+									currents_per_second,currents,number_of_cycles,
+									(Unemap_stimulation_end_callback *)NULL,(void *)NULL))
 								{
 									if (out_buffer)
 									{
@@ -1727,14 +2541,14 @@ DESCRIPTION :
 								{
 									if (out_buffer)
 									{
-										free(out_buffer);
+										DEALLOCATE(out_buffer);
 										out_buffer=(unsigned char *)NULL;
 									}
 								}
 							}
 							if (channel_numbers)
 							{
-								free(channel_numbers);
+								DEALLOCATE(channel_numbers);
 								channel_numbers=(int *)NULL;
 							}
 						}
@@ -1790,9 +2604,10 @@ DESCRIPTION :
 							return_code=1;
 							if (0<number_of_channels)
 							{
-								size=number_of_channels*sizeof(int);
-								if (channel_numbers=(int *)malloc(size+sizeof(int)))
+								size=number_of_channels;
+								if (ALLOCATE(channel_numbers,int,size+1))
 								{
+									size *= sizeof(int);
 									channel_number=channel_numbers+1;
 									retval=socket_recv(command_socket,
 										(unsigned char *)channel_number,size,0);
@@ -1810,7 +2625,7 @@ DESCRIPTION :
 									}
 									else
 									{
-										free(channel_numbers);
+										DEALLOCATE(channel_numbers);
 										channel_numbers=(int *)NULL;
 										return_code=0;
 									}
@@ -1832,7 +2647,7 @@ DESCRIPTION :
 							if (return_code&&(0<number_of_voltages))
 							{
 								size=number_of_voltages*sizeof(float);
-								if (out_buffer=(unsigned char *)malloc(size+sizeof(float)))
+								if (ALLOCATE(out_buffer,unsigned char,size+sizeof(float)))
 								{
 									retval=socket_recv(command_socket,out_buffer,size,0);
 									if (SOCKET_ERROR!=retval)
@@ -1849,7 +2664,7 @@ DESCRIPTION :
 									}
 									else
 									{
-										free(out_buffer);
+										DEALLOCATE(out_buffer);
 										out_buffer=(unsigned char *)NULL;
 										return_code=0;
 									}
@@ -1871,7 +2686,8 @@ DESCRIPTION :
 							{
 								if (return_code=unemap_load_voltage_stimulating(
 									number_of_channels,channel_numbers,number_of_voltages,
-									voltages_per_second,voltages,number_of_cycles))
+									voltages_per_second,voltages,number_of_cycles,
+									(Unemap_stimulation_end_callback *)NULL,(void *)NULL))
 								{
 #if defined (DEBUG)
 									/*???debug */
@@ -1895,14 +2711,14 @@ DESCRIPTION :
 								{
 									if (out_buffer)
 									{
-										free(out_buffer);
+										DEALLOCATE(out_buffer);
 										out_buffer=(unsigned char *)NULL;
 									}
 								}
 							}
 							if (channel_numbers)
 							{
-								free(channel_numbers);
+								DEALLOCATE(channel_numbers);
 								channel_numbers=(int *)NULL;
 							}
 						}
@@ -2165,7 +2981,7 @@ DESCRIPTION :
 							if (0<number_of_voltages)
 							{
 								size=number_of_voltages*sizeof(float);
-								if (out_buffer=(unsigned char *)malloc(size+sizeof(float)))
+								if (ALLOCATE(out_buffer,unsigned char,size+sizeof(float)))
 								{
 									retval=socket_recv(command_socket,out_buffer,size,0);
 									if (SOCKET_ERROR!=retval)
@@ -2183,7 +2999,7 @@ DESCRIPTION :
 									}
 									else
 									{
-										free(out_buffer);
+										DEALLOCATE(out_buffer);
 										out_buffer=(unsigned char *)NULL;
 									}
 								}
@@ -2223,7 +3039,7 @@ DESCRIPTION :
 								{
 									if (out_buffer)
 									{
-										free(out_buffer);
+										DEALLOCATE(out_buffer);
 										out_buffer=(unsigned char *)NULL;
 									}
 								}
@@ -2275,9 +3091,10 @@ DESCRIPTION :
 						{
 							if (0<number_of_voltages)
 							{
-								size=number_of_voltages*sizeof(float);
-								if (voltages=(float *)malloc(size+sizeof(float)))
+								size=number_of_voltages;
+								if (ALLOCATE(voltages,float,size+1))
 								{
+									size *= sizeof(float);
 									retval=socket_recv(command_socket,
 										(unsigned char *)(voltages+1),size,0);
 									if (SOCKET_ERROR!=retval)
@@ -2294,7 +3111,7 @@ DESCRIPTION :
 									}
 									else
 									{
-										free(voltages);
+										DEALLOCATE(voltages);
 									}
 								}
 								else
@@ -2316,7 +3133,7 @@ DESCRIPTION :
 									number_of_voltages,voltages_per_second,voltages);
 								if (voltages)
 								{
-									free(voltages);
+									DEALLOCATE(voltages);
 								}
 							}
 						}
@@ -2369,7 +3186,7 @@ DESCRIPTION :
 							if (0<number_of_currents)
 							{
 								size=number_of_currents*sizeof(float);
-								if (out_buffer=(unsigned char *)malloc(size+sizeof(float)))
+								if (ALLOCATE(out_buffer,unsigned char,size+sizeof(float)))
 								{
 									retval=socket_recv(command_socket,out_buffer,size,0);
 									if (SOCKET_ERROR!=retval)
@@ -2387,7 +3204,7 @@ DESCRIPTION :
 									}
 									else
 									{
-										free(out_buffer);
+										DEALLOCATE(out_buffer);
 										out_buffer=(unsigned char *)NULL;
 									}
 								}
@@ -2427,7 +3244,7 @@ DESCRIPTION :
 								{
 									if (out_buffer)
 									{
-										free(out_buffer);
+										DEALLOCATE(out_buffer);
 										out_buffer=(unsigned char *)NULL;
 									}
 								}
@@ -2480,9 +3297,10 @@ DESCRIPTION :
 						{
 							if (0<number_of_currents)
 							{
-								size=number_of_currents*sizeof(float);
-								if (currents=(float *)malloc(size+sizeof(float)))
+								size=number_of_currents;
+								if (ALLOCATE(currents,float,size+1))
 								{
+									size *= sizeof(float);
 									retval=socket_recv(command_socket,
 										(unsigned char *)(currents+1),size,0);
 									if (SOCKET_ERROR!=retval)
@@ -2499,7 +3317,7 @@ DESCRIPTION :
 									}
 									else
 									{
-										free(currents);
+										DEALLOCATE(currents);
 									}
 								}
 								else
@@ -2521,7 +3339,7 @@ DESCRIPTION :
 									number_of_currents,currents_per_second,currents);
 								if (currents)
 								{
-									free(currents);
+									DEALLOCATE(currents);
 								}
 							}
 						}
@@ -2618,7 +3436,7 @@ DESCRIPTION :
 							if (0<number_of_voltages)
 							{
 								size=number_of_voltages*sizeof(float);
-								if (out_buffer=(unsigned char *)malloc(size+sizeof(float)))
+								if (ALLOCATE(out_buffer,unsigned char,size+sizeof(float)))
 								{
 									retval=socket_recv(command_socket,out_buffer,size,0);
 									if (SOCKET_ERROR!=retval)
@@ -2636,7 +3454,7 @@ DESCRIPTION :
 									}
 									else
 									{
-										free(out_buffer);
+										DEALLOCATE(out_buffer);
 										out_buffer=(unsigned char *)NULL;
 									}
 								}
@@ -2676,7 +3494,7 @@ DESCRIPTION :
 								{
 									if (out_buffer)
 									{
-										free(out_buffer);
+										DEALLOCATE(out_buffer);
 										out_buffer=(unsigned char *)NULL;
 									}
 								}
@@ -2829,7 +3647,7 @@ DESCRIPTION :
 #if defined (DEBUG)
 				/* bounce the message back */
 				return_code=1;
-				if (out_buffer=(unsigned char *)malloc(message_size))
+				if (ALLOCATE(out_buffer,unsigned char,message_size))
 				{
 					out_buffer_size=0;
 					while (return_code&&(0<message_size))
@@ -2848,7 +3666,7 @@ DESCRIPTION :
 						else
 						{
 							return_code=0;
-							free(out_buffer);
+							DEALLOCATE(out_buffer);
 							out_buffer_size=0;
 						}
 					}
@@ -2950,11 +3768,23 @@ Actual code of the service that does the work.
 	sprintf(error_string,"Entering ServiceStart");
 	AddToMessageLog(TEXT(error_string));
 #endif /* defined (DEBUG) */
+	/* set up messages */
+	set_display_message_function(ERROR_MESSAGE,display_error_message,
+		(void *)NULL);
+	set_display_message_function(INFORMATION_MESSAGE,display_information_message,
+		(void *)NULL);
+	set_display_message_function(WARNING_MESSAGE,display_warning_message,
+		(void *)NULL);
 	/* when the NIDAQ DLL is loaded (when the service starts), the NI cards and
 		hence the unemap cards are in an unknown state.  This call to
 		unemap_get_number_of_channels forces a call to search_for_NI_cards which
 		in turn configures the NI cards */
 	unemap_get_number_of_channels(&number_of_channels);
+#if defined (DEBUG)
+	/*???debug */
+	sprintf(error_string,"after unemap_get_number_of_channels");
+	AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
 	/* service initialization */
 	hEvents[0]=NULL;
 	hEvents[1]=NULL;
@@ -3282,9 +4112,16 @@ Actual code of the service that does the work.
 																						SOCKET_ERROR,retval);
 																					AddToMessageLog(TEXT(error_string));
 #endif /* defined (DEBUG) */
-																					free(out_buffer);
+																					DEALLOCATE(out_buffer);
 																					out_buffer=(unsigned char *)NULL;
 																				}
+#if defined (NO_ACQUIRED_THREAD)
+																				if (return_code&&(UNEMAP_GET_SAMPLES_ACQUIRED_BACKGROUND_CODE==operation_code))
+																				{
+																					acquired_thread_function(
+																						(LPVOID)acquired_file);
+																				}
+#endif /* defined (NO_ACQUIRED_THREAD) */
 																			}
 																			else
 																			{
@@ -3470,8 +4307,18 @@ Stops the service.
 	responding.
 ==============================================================================*/
 {
+#if defined (DEBUG)
+	/*???debug */
+	sprintf(error_string,"Entering ServiceStop");
+	AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
 	if (hServerStopEvent)
 	{
 		SetEvent(hServerStopEvent);
 	}
+#if defined (DEBUG)
+	/*???debug */
+	sprintf(error_string,"Leaving ServiceStop");
+	AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
 } /* ServiceStop */
