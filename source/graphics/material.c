@@ -23,6 +23,7 @@ return to direct rendering, as described with these routines.
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "command/parser.h"
 #include "general/compare.h"
 #include "general/debug.h"
@@ -75,15 +76,21 @@ but shared between different materials with the same state.
 {
 	enum Material_program_type type;
 
+#if defined (OPENGL_API)
 #if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
 	GLuint vertex_program;
 	GLuint fragment_program;
 #endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
+#if defined GL_NV_vertex_program && defined GL_NV_register_combiners2
+	GLuint nv_vertex_program;
+#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
+
+	/* Display list which enables the correct state for this program */
+	GLuint display_list;
+#endif /* defined (OPENGL_API) */
 
 	/* Flag indicating whether the program is compiled or not */
 	int compiled;
-	/* Display list which enables the correct state for this program */
-	GLuint display_list;
 
 	int access_count;
 }; /* struct Material_program */
@@ -176,11 +183,16 @@ DESCRIPTION :
 	if (ALLOCATE(material_program ,struct Material_program, 1))
 	{
 		material_program->type = type;
+#if defined (OPENGL_API)
 #if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
 		material_program->vertex_program = 0;
 		material_program->fragment_program = 0;
 #endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
+#if defined GL_NV_vertex_program && defined GL_NV_register_combiners2
+		material_program->nv_vertex_program = 0;
+#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 		material_program->display_list = 0;
+#endif /* defined (OPENGL_API) */
 		material_program->compiled = 0;
 		material_program->access_count = 0;
 	}
@@ -220,6 +232,12 @@ Frees the memory for the material_program.
 			if (material_program->fragment_program)
 			{
 				glDeleteProgramsARB(1, &material_program->fragment_program);
+			}
+#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
+#if defined GL_NV_vertex_program && defined GL_NV_register_combiners2
+			if (material_program->nv_vertex_program)
+			{
+				glDeleteProgramsNV(1, &material_program->nv_vertex_program);
 			}
 #endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 			if (material_program->display_list)
@@ -267,6 +285,7 @@ DESCRIPTION :
 	ENTER(Material_program_compile);
 	if (material_program)
 	{
+#if defined (OPENGL_API)
 		return_code = 1;
 		if (!material_program->compiled)
 		{
@@ -409,11 +428,11 @@ DESCRIPTION :
 						glNewList(material_program->display_list, GL_COMPILE);
 
 						glEnable(GL_VERTEX_PROGRAM_ARB);
-						glBindProgramNV(GL_VERTEX_PROGRAM_ARB,
+						glBindProgramARB(GL_VERTEX_PROGRAM_ARB,
 							material_program->vertex_program);
 					
 						glEnable(GL_FRAGMENT_PROGRAM_ARB);
-						glBindProgramNV(GL_FRAGMENT_PROGRAM_ARB,
+						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB,
 							material_program->fragment_program);
 
 						glEnable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
@@ -422,14 +441,289 @@ DESCRIPTION :
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE, "Material_program_compile.  "
-							"Support for PER_PIXEL_LIGHTING requires GL_ARB_vertex_program and GL_ARB_fragment_program extensions.");
-					}
-#else /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
-					display_message(ERROR_MESSAGE, "Material_program_compile.  "
-						"Support for PER_PIXEL_LIGHTING was not compiled into this executable.");
 #endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
+#if defined NEW_CODE && defined GL_NV_vertex_program && defined GL_NV_register_combiners2
+						static int cube_map_normal(int i, int cubesize, float *map)
+							{
+								int x, y;
+								float s, t, sc, tc, *v, sum;
 
+								v = map;
+								for (x = 0 ; x < cubesize ; x++)
+								{
+									for (y = 0 ; y < cubesize ; y++)
+									{
+										s = ((float)(x) + 0.5) / (float)(cubesize);
+										t = ((float)(y) + 0.5) / (float)(cubesize);
+										sc = s * 2.0 - 1.0;
+										tc = t * 2.0 - 1.0;
+
+										switch (i) 
+										{
+											case 0:
+												v[0] = 1.0;
+												v[1] = -tc;
+												v[2] = -sc;
+												v[3] = 1.0;
+												break;
+											case 1:
+												v[0] = -1.0;
+												v[1] = -tc;
+												v[2] = sc;
+												v[3] = 1.0;
+												break;
+											case 2:
+												v[0] = sc;
+												v[1] = 1.0;
+												v[2] = tc;
+												v[3] = 1.0;
+												break;
+											case 3:
+												v[0] = sc;
+												v[1] = -1.0;
+												v[2] = -tc;
+												v[3] = 1.0;
+												break;
+											case 4:
+												v[0] = sc;
+												v[1] = -tc;
+												v[2] = 1.0;
+												v[3] = 1.0;
+												break;
+											case 5:
+												v[0] = -sc;
+												v[1] = -tc;
+												v[2] = -1.0;
+												v[3] = 1.0;
+												break;
+										}
+										/* Normalize the first 3 components */
+										sum = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
+										sum = 1.0 / sqrt(sum);
+										v[0] *= sum;
+										v[1] *= sum;
+										v[2] *= sum;
+										v += 4;
+									}
+								}
+								return 1;
+							}
+
+						/* This version is not working correctly yet. */
+						if (query_gl_extension("GL_NV_vertex_program") &&
+						 query_gl_extension("GL_NV_register_combiners2"))
+						{
+							char vertex_program_string[] =
+								"!!VP1.0\n" 
+								"MOV o[TEX0].xyz, v[8].xyzx;\n"
+								"MOV o[COL0].xyz, v[3].xyzx;\n"
+								"DP4 o[TEX3].x, c[8], v[2].xyzx;\n"
+								"DP4 o[TEX3].y, c[9], v[2].xyzx;\n"
+								"DP4 o[TEX3].z, c[10], v[2].xyzx;\n"
+								"DP4 R2.x, c[4], v[0];\n"
+								"DP4 R2.y, c[5], v[0];\n"
+								"DP4 R2.z, c[6], v[0];\n"
+								"DP4 R2.w, c[7], v[0];\n"
+								"ADD R1.yzw, c[12].xyzx, -R2.xxyz;\n"
+								"MOV o[TEX1].xyz, R1.yzwy;\n"
+								"DP3 R0.x, R1.yzwy, R1.yzwy;\n"
+								"RSQ R1.x, R0.x;\n"
+								"ADD R0.yzw, c[13].xyzz, -R2.xxyz;\n"
+								"DP3 R0.x, R0.yzwy, R0.yzwy;\n"
+								"RSQ R0.x, R0.x;\n"
+								"MUL R0.xyz, R0.x, R0.yzwy;\n"
+								"MAD R0.yzw, R1.x, R1.yyzw, R0.xxyz;\n"
+								"DP3 R0.x, R0.yzwy, R0.yzwy;\n"
+								"RSQ R0.x, R0.x;\n"
+								"MUL o[TEX2].xyz, R0.x, R0.yzwy;\n"
+								"DP4 o[HPOS].x, c[0], v[0];\n"
+								"DP4 o[HPOS].y, c[1], v[0];\n"
+								"DP4 o[HPOS].z, c[2], v[0];\n"
+								"DP4 o[HPOS].w, c[3], v[0];\n"
+								"END";
+
+							if (!material_program->nv_vertex_program)
+							{
+								glGenProgramsNV(1, &material_program->nv_vertex_program);
+								glLoadProgramNV(GL_VERTEX_PROGRAM_NV, material_program->nv_vertex_program,
+									strlen(vertex_program_string), vertex_program_string);
+							}
+							
+							if (!material_program->display_list)
+							{
+								material_program->display_list = glGenLists(/*number_of_lists*/1);
+							}
+							
+							glNewList(material_program->display_list, GL_COMPILE);
+							
+							glEnable(GL_VERTEX_PROGRAM_NV);
+							glBindProgramNV(GL_VERTEX_PROGRAM_NV,
+								material_program->nv_vertex_program);
+							glTrackMatrixNV(GL_VERTEX_PROGRAM_NV, 0, GL_MODELVIEW_PROJECTION_NV, GL_IDENTITY_NV);
+							glTrackMatrixNV(GL_VERTEX_PROGRAM_NV, 4, GL_MODELVIEW, GL_IDENTITY_NV);
+							glTrackMatrixNV(GL_VERTEX_PROGRAM_NV, 8, GL_MODELVIEW, GL_INVERSE_TRANSPOSE_NV);
+							glProgramLocalParameter4dARB(GL_VERTEX_PROGRAM_NV, 12, 0.0, 0.0, 100.0, 0.0);
+							glProgramLocalParameter4dARB(GL_VERTEX_PROGRAM_NV, 13, 0.0, 100.0, 100.0, 0.0);
+
+							{
+								glEnable(GL_REGISTER_COMBINERS_NV);
+								glEnable(GL_PER_STAGE_CONSTANTS_NV);
+								glEnable(GL_TEXTURE_SHADER_NV);
+								glActiveTextureARB(GL_TEXTURE0);
+								glTexEnvi(GL_TEXTURE_SHADER_NV, GL_SHADER_OPERATION_NV, GL_TEXTURE_CUBE_MAP);
+								glActiveTextureARB(GL_TEXTURE1);
+								glTexEnvi(GL_TEXTURE_SHADER_NV, GL_SHADER_OPERATION_NV, GL_TEXTURE_CUBE_MAP);
+								glActiveTextureARB(GL_TEXTURE2);
+								glTexEnvi(GL_TEXTURE_SHADER_NV, GL_SHADER_OPERATION_NV, GL_TEXTURE_CUBE_MAP);
+								glActiveTextureARB(GL_TEXTURE3);
+								glTexEnvi(GL_TEXTURE_SHADER_NV, GL_SHADER_OPERATION_NV, GL_TEXTURE_CUBE_MAP);
+								glActiveTextureARB(GL_TEXTURE0);
+
+#if defined (OLD_CODE)
+								glCombinerParameteriNV(GL_NUM_GENERAL_COMBINERS_NV, 1);
+								glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_A_NV, GL_TEXTURE3, GL_SIGNED_IDENTITY_NV, GL_RGB);
+								glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_INVERT_NV, GL_RGB);
+								glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
+								glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
+								glCombinerOutputNV(GL_COMBINER0_NV, GL_RGB, GL_PRIMARY_COLOR_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_SCALE_BY_TWO_NV, GL_BIAS_BY_NEGATIVE_ONE_HALF_NV, GL_FALSE, GL_FALSE, GL_FALSE);
+								glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerOutputNV(GL_COMBINER0_NV, GL_ALPHA, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+								glCombinerParameteriNV(GL_COLOR_SUM_CLAMP_NV, 0);
+								glFinalCombinerInputNV(GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
+								glFinalCombinerInputNV(GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
+								glFinalCombinerInputNV(GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
+								glFinalCombinerInputNV(GL_VARIABLE_D_NV, GL_PRIMARY_COLOR_NV, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
+								glFinalCombinerInputNV(GL_VARIABLE_E_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
+								glFinalCombinerInputNV(GL_VARIABLE_F_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
+								glFinalCombinerInputNV(GL_VARIABLE_G_NV, GL_FALSE, GL_UNSIGNED_INVERT_NV, GL_ALPHA);
+#endif /* defined (OLD_CODE) */
+
+
+								glCombinerParameteriNV(GL_NUM_GENERAL_COMBINERS_NV, 5);
+								glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_A_NV, GL_TEXTURE2, GL_EXPAND_NORMAL_NV, GL_RGB);
+								glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_B_NV, GL_TEXTURE3, GL_EXPAND_NORMAL_NV, GL_RGB);
+								glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_C_NV, GL_TEXTURE1, GL_EXPAND_NORMAL_NV, GL_RGB);
+								glCombinerInputNV(GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_D_NV, GL_TEXTURE3, GL_EXPAND_NORMAL_NV, GL_RGB);
+								glCombinerOutputNV(GL_COMBINER0_NV, GL_RGB, GL_PRIMARY_COLOR_NV, GL_SECONDARY_COLOR_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_TRUE, GL_TRUE, GL_FALSE);
+								glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER0_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerOutputNV(GL_COMBINER0_NV, GL_ALPHA, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+								glCombinerInputNV(GL_COMBINER1_NV, GL_ALPHA, GL_VARIABLE_A_NV, GL_PRIMARY_COLOR_NV, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
+								glCombinerInputNV(GL_COMBINER1_NV, GL_ALPHA, GL_VARIABLE_B_NV, GL_PRIMARY_COLOR_NV, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
+								glCombinerInputNV(GL_COMBINER1_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER1_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerOutputNV(GL_COMBINER1_NV, GL_ALPHA, GL_PRIMARY_COLOR_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+								glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerOutputNV(GL_COMBINER1_NV, GL_RGB, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+								glCombinerInputNV(GL_COMBINER2_NV, GL_ALPHA, GL_VARIABLE_A_NV, GL_PRIMARY_COLOR_NV, GL_SIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER2_NV, GL_ALPHA, GL_VARIABLE_B_NV, GL_PRIMARY_COLOR_NV, GL_SIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER2_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER2_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerOutputNV(GL_COMBINER2_NV, GL_ALPHA, GL_PRIMARY_COLOR_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+								glCombinerInputNV(GL_COMBINER2_NV, GL_RGB, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER2_NV, GL_RGB, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER2_NV, GL_RGB, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER2_NV, GL_RGB, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerOutputNV(GL_COMBINER2_NV, GL_RGB, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+								glCombinerInputNV(GL_COMBINER3_NV, GL_ALPHA, GL_VARIABLE_A_NV, GL_PRIMARY_COLOR_NV, GL_SIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER3_NV, GL_ALPHA, GL_VARIABLE_B_NV, GL_PRIMARY_COLOR_NV, GL_SIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER3_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER3_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerOutputNV(GL_COMBINER3_NV, GL_ALPHA, GL_PRIMARY_COLOR_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+								glCombinerInputNV(GL_COMBINER3_NV, GL_RGB, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER3_NV, GL_RGB, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER3_NV, GL_RGB, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER3_NV, GL_RGB, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerOutputNV(GL_COMBINER3_NV, GL_RGB, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+								glCombinerInputNV(GL_COMBINER4_NV, GL_RGB, GL_VARIABLE_A_NV, GL_SECONDARY_COLOR_NV, GL_SIGNED_IDENTITY_NV, GL_RGB);
+								glCombinerInputNV(GL_COMBINER4_NV, GL_RGB, GL_VARIABLE_B_NV, GL_CONSTANT_COLOR0_NV, GL_SIGNED_IDENTITY_NV, GL_RGB);
+								glCombinerInputNV(GL_COMBINER4_NV, GL_RGB, GL_VARIABLE_C_NV, GL_PRIMARY_COLOR_NV, GL_SIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER4_NV, GL_RGB, GL_VARIABLE_D_NV, GL_CONSTANT_COLOR1_NV, GL_SIGNED_IDENTITY_NV, GL_RGB);
+								glCombinerOutputNV(GL_COMBINER4_NV, GL_RGB, GL_DISCARD_NV, GL_DISCARD_NV, GL_PRIMARY_COLOR_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+								glCombinerInputNV(GL_COMBINER4_NV, GL_ALPHA, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER4_NV, GL_ALPHA, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER4_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerInputNV(GL_COMBINER4_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+								glCombinerOutputNV(GL_COMBINER4_NV, GL_ALPHA, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+								glCombinerParameteriNV(GL_COLOR_SUM_CLAMP_NV, 0);
+								glFinalCombinerInputNV(GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
+								glFinalCombinerInputNV(GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
+								glFinalCombinerInputNV(GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
+								glFinalCombinerInputNV(GL_VARIABLE_D_NV, GL_PRIMARY_COLOR_NV, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
+								glFinalCombinerInputNV(GL_VARIABLE_E_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
+								glFinalCombinerInputNV(GL_VARIABLE_F_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
+								glFinalCombinerInputNV(GL_VARIABLE_G_NV, GL_FALSE, GL_UNSIGNED_INVERT_NV, GL_ALPHA);
+
+								{
+									GLfloat const1[] = {0.0, 0.0, 0.0, 0.0};
+									GLfloat const2[] = {0.0, 0.0, 0.0, 0.0};
+									GLfloat const3[] = {0.6, 0.6, 0.6, 0.6};
+									GLfloat const4[] = {0.9, 0.9, 0.9, 0.9};
+									glCombinerStageParameterfvNV(GL_COMBINER4_NV, GL_CONSTANT_COLOR0_NV, const1);
+									glCombinerStageParameterfvNV(GL_COMBINER4_NV, GL_CONSTANT_COLOR1_NV, const2);
+									glCombinerStageParameterfvNV(GL_COMBINER4_NV, GL_CONSTANT_COLOR0_NV, const3);
+									glCombinerStageParameterfvNV(GL_COMBINER4_NV, GL_CONSTANT_COLOR1_NV, const4);
+								}
+								{
+#define normal_cube_map_size (128)
+									float cube_map[4 * normal_cube_map_size * normal_cube_map_size];
+
+									glEnable(GL_TEXTURE_CUBE_MAP);
+									glBindTexture(GL_TEXTURE_CUBE_MAP, 17);
+									cube_map_normal(0, normal_cube_map_size, cube_map);
+									glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, 32856, normal_cube_map_size, normal_cube_map_size, 0, GL_RGBA, GL_FLOAT, cube_map);
+									cube_map_normal(1, normal_cube_map_size, cube_map);
+									glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, 32856, normal_cube_map_size, normal_cube_map_size, 0, GL_RGBA, GL_FLOAT, cube_map);
+									cube_map_normal(2, normal_cube_map_size, cube_map);
+									glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, 32856, normal_cube_map_size, normal_cube_map_size, 0, GL_RGBA, GL_FLOAT, cube_map);
+									cube_map_normal(3, normal_cube_map_size, cube_map);
+									glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, 32856, normal_cube_map_size, normal_cube_map_size, 0, GL_RGBA, GL_FLOAT, cube_map);
+									cube_map_normal(4, normal_cube_map_size, cube_map);
+									glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, 32856, normal_cube_map_size, normal_cube_map_size, 0, GL_RGBA, GL_FLOAT, cube_map);
+									cube_map_normal(5, normal_cube_map_size, cube_map);
+									glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, 32856, normal_cube_map_size, normal_cube_map_size, 0, GL_RGBA, GL_FLOAT, cube_map);
+									glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, 9729);
+									glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, 9729);
+									glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, 33071);
+									glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, 33071);
+									glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, 33071);
+
+									glEnable(GL_TEXTURE_CUBE_MAP);
+									glActiveTextureARB(GL_TEXTURE1);
+									glBindTexture(GL_TEXTURE_CUBE_MAP, 17);
+									glActiveTextureARB(GL_TEXTURE0);
+									glBindTexture(GL_TEXTURE_CUBE_MAP, 17);
+									glActiveTextureARB(GL_TEXTURE2);
+									glBindTexture(GL_TEXTURE_CUBE_MAP, 17);
+									glActiveTextureARB(GL_TEXTURE3);
+									glBindTexture(GL_TEXTURE_CUBE_MAP, 17);
+								}
+							} 
+							
+							glEndList();
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE, "Material_program_compile.  "
+								"Support for PER_PIXEL_LIGHTING requires either "
+								"(GL_ARB_vertex_program and GL_ARB_fragment_program) or "
+								"(GL_NV_vertex_program and GL_NV_register_combiners2) extensions.");
+						}
+#else /* defined GL_NV_vertex_program && defined GL_NV_register_combiners2 */
+						display_message(ERROR_MESSAGE, "Material_program_compile.  "
+							"Support for PER_PIXEL_LIGHTING was not compiled into this executable.");
+#endif /* defined GL_NV_vertex_program && defined GL_NV_register_combiners2 */
+#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
+					}
+#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 				} break;
 				default:
 				{
@@ -439,6 +733,11 @@ DESCRIPTION :
 			}
 			material_program->compiled = 1;
 		}
+#else /* defined (OPENGL_API) */
+		display_message(ERROR_MESSAGE,
+			"Material_program_compile.  Not defined for this graphics API.");
+		return_code=0;
+#endif /* defined (OPENGL_API) */
 	}
 	else
 	{
@@ -451,6 +750,7 @@ DESCRIPTION :
 	return (return_code);
 } /* Material_program_compile */
 
+#if defined (OPENGL_API)
 static int Material_program_execute(struct Material_program *material_program)
 /*******************************************************************************
 LAST MODIFIED : 20 November 2003
@@ -488,6 +788,7 @@ DESCRIPTION :
 
 	return (return_code);
 } /* Material_program_execute */
+#endif /* defined (OPENGL_API) */
 
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Graphical_material,name,char *,strcmp)
 
@@ -681,6 +982,11 @@ Create a shared information container for Materials.
 			default_selected.shininess);
 		Material_package_manage_material(material_package,
 			material_package->default_selected_material);
+
+		/* Reset the access count to zero so as these materials are owned by the package
+			and so should not stop it destroying.  Correspondingly the materials must not
+			DEACCESS the package when the package is being destroyed. */
+		material_package->access_count = 0;
 	}
 	else
 	{
@@ -691,6 +997,37 @@ Create a shared information container for Materials.
 
 	return (material_package);
 } /* CREATE(Material_package) */
+
+static int Graphical_material_remove_package_if_matching(struct Graphical_material *material,
+	void *material_package_void)
+/*******************************************************************************
+LAST MODIFIED : 25 November 2003
+
+DESCRIPTION :
+Iterator function to guarantee that no materials will reference the Material
+package after it has been destroyed.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Graphical_material_remove_package_if_matching);
+	if (material && material_package_void)
+	{
+		if (material->package == (struct Material_package *)material_package_void)
+		{
+			material->package = (struct Material_package *)NULL;
+		}
+	}
+	else
+	{
+ 		display_message(ERROR_MESSAGE,
+			"Graphical_material_remove_package_if_matching.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Graphical_material_remove_package_if_matching */
 
 int DESTROY(Material_package)(struct Material_package **material_package_address)
 /*******************************************************************************
@@ -709,7 +1046,21 @@ Frees the memory for the material_package.
 	{
 		if (0==material_package->access_count)
 		{
+			if (material_package->default_material)
+			{
+				DEACCESS(Graphical_material)(&material_package->default_material);
+			}
+			if (material_package->default_selected_material)
+			{
+				DEACCESS(Graphical_material)(&material_package->default_selected_material);
+			}
+
 			DESTROY(LIST(Material_program))(&material_package->material_program_list);
+			/* Make sure each material no longer points at this package */
+			FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
+				Graphical_material_remove_package_if_matching, (void *)material_package,
+				material_package->material_manager);				
+			DESTROY(MANAGER(Graphical_material))(&material_package->material_manager);
 			DEALLOCATE(*material_package_address);
 			return_code=1;
 		}
@@ -754,7 +1105,9 @@ DESCRIPTION :
 		if (return_code = ADD_OBJECT_TO_MANAGER(Graphical_material)(
 			material, material_package->material_manager))
 		{
-			REACCESS(Material_package)(&material->package, material_package);
+			/* Cannot ACCESS the package as the package is
+				accessing each material through the MANAGER */
+			material->package = material_package;
 		}
 	}
 	else
@@ -939,10 +1292,6 @@ Frees the memory for the material and sets <*material_address> to NULL.
 			{
 				DEACCESS(Texture)(&(material->texture));
 			}
-			if (material->package)
-			{
-				DEACCESS(Material_package)(&(material->package));
-			}
 			if (material->program)
 			{
 				DEACCESS(Material_program)(&(material->program));
@@ -1057,7 +1406,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Graphical_material,name)
 		destination->alpha=source->alpha;
 		if (source->package)
 		{
-			destination->package = ACCESS(Material_package)(source->package);
+			destination->package = source->package;
 		}
 		else
 		{
