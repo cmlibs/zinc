@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_viewer.c
 
-LAST MODIFIED : 14 June 2000
+LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
 Dialog for selecting an element point, viewing and editing its fields and
@@ -20,6 +20,7 @@ selected element point, or set it if entered in this dialog.
 #include "element/element_point_viewer_widget.h"
 #include "element/element_point_viewer.h"
 #include "element/element_point_viewer.uidh"
+#include "finite_element/field_value_index_ranges.h"
 #include "general/debug.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
@@ -37,7 +38,7 @@ static MrmHierarchy element_point_viewer_hierarchy;
 
 struct Element_point_viewer
 /*******************************************************************************
-LAST MODIFIED : 9 June 2000
+LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
 Contains all the information carried by the element_point_viewer widget.
@@ -59,6 +60,8 @@ Contains all the information carried by the element_point_viewer widget.
 	/* accessed local copy of the element being edited */
 	struct FE_element *element_copy;
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	/* field components whose values have been modified stored in following */
+	struct LIST(Field_value_index_ranges) *modified_field_components;
 	/* widgets */
 	Pixel editable_background_color,non_editable_background_color;
 	Widget element_form,element_widget,
@@ -231,6 +234,9 @@ and passes it to the element_point_viewer_widget.
 		}
 		/* pass identifier with copy_element to viewer widget */
 		temp_element_point_identifier.element=element_point_viewer->element_copy;
+		/* clear modified_components */
+		REMOVE_ALL_OBJECTS_FROM_LIST(Field_value_index_ranges)(
+			element_point_viewer->modified_field_components);
 		element_point_viewer_widget_set_element_point(
 			element_point_viewer->viewer_widget,
 			&temp_element_point_identifier,temp_element_point_number);
@@ -1279,7 +1285,7 @@ static void Element_point_viewer_element_change(
 	struct MANAGER_MESSAGE(FE_element) *message,
 	void *element_point_viewer_void)
 /*******************************************************************************
-LAST MODIFIED : 24 May 2000
+LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
 Callback from the element manager for changes to elements. If the element
@@ -1301,7 +1307,7 @@ object cause updates.
 			case MANAGER_CHANGE_OBJECT(FE_element):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_element):
 			{
-				if (!(message->object_changed)|| (message->object_changed ==
+				if (!(message->object_changed) || (message->object_changed ==
 					element_point_viewer->element_point_identifier.element))
 				{
 					Element_point_viewer_set_viewer_element_point(element_point_viewer);
@@ -1574,7 +1580,7 @@ struct Element_point_viewer *CREATE(Element_point_viewer)(
 	struct MANAGER(FE_field) *fe_field_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 14 June 2000
+LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
 Creates a dialog for choosing element points and displaying and editing their
@@ -1649,7 +1655,9 @@ fields.
 			&element_point_viewer_hierarchy,&element_point_viewer_hierarchy_open))
 		{
 			/* allocate memory */
-			if (ALLOCATE(element_point_viewer,struct Element_point_viewer,1))
+			if (ALLOCATE(element_point_viewer,struct Element_point_viewer,1)&&
+				(element_point_viewer->modified_field_components=
+					CREATE(LIST(Field_value_index_ranges))()))
 			{
 				element_point_viewer->computed_field_package=computed_field_package;
 				element_point_viewer->element_point_viewer_address=
@@ -1734,8 +1742,8 @@ fields.
 							element_point_viewer->
 							element_point_identifier.top_level_element)))
 					{
-						/* clear the faces of element_copy as messes up exterior calculations
-							 for graphics created from them */
+						/* clear the faces of element_copy as messes up exterior
+							 calculations for graphics created from them */
 						number_of_faces=
 							element_point_viewer->element_copy->shape->number_of_faces;
 						for (i=0;i<number_of_faces;i++)
@@ -1875,6 +1883,7 @@ fields.
 									&(element_point_viewer->viewer_widget),
 									element_point_viewer->viewer_form,
 									computed_field_package,
+									element_point_viewer->modified_field_components,
 									&temp_element_point_identifier,
 									element_point_viewer->element_point_number))
 								{
@@ -1947,8 +1956,12 @@ fields.
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"CREATE(Element_point_viewer).  "
-					"Could not allocate element_point_viewer");
+				display_message(ERROR_MESSAGE,
+					"CREATE(Element_point_viewer).  Not enough memory");
+				if (element_point_viewer)
+				{
+					DEALLOCATE(element_point_viewer);
+				}
 			}
 		}
 		else
@@ -1974,7 +1987,7 @@ fields.
 int DESTROY(Element_point_viewer)(
 	struct Element_point_viewer **element_point_viewer_address)
 /*******************************************************************************
-LAST MODIFIED : 31 May 2000
+LAST MODIFIED : 15 June 2000
 
 DESCRIPTION:
 Destroys the Element_point_viewer. See also Element_point_viewer_close_CB.
@@ -1987,6 +2000,8 @@ Destroys the Element_point_viewer. See also Element_point_viewer_close_CB.
 	if (element_point_viewer_address&&
 		(element_point_viewer= *element_point_viewer_address))
 	{
+		DESTROY(LIST(Field_value_index_ranges))(
+			&(element_point_viewer->modified_field_components));
 		if (element_point_viewer->element_manager_callback_id)
 		{
 			MANAGER_DEREGISTER(FE_element)(

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_field_viewer_widget.h
 
-LAST MODIFIED : 31 May 2000
+LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
 Widget for displaying and editing component values of computed fields defined
@@ -13,6 +13,7 @@ Note the element_point passed to this widget should be a non-managed local copy.
 
 #include "general/callback.h"
 #include "finite_element/computed_field.h"
+#include "finite_element/field_value_index_ranges.h"
 #include "finite_element/finite_element.h"
 #include "graphics/element_point_ranges.h"
 
@@ -23,10 +24,11 @@ Global Functions
 
 Widget create_element_point_field_viewer_widget(
 	Widget *element_point_field_viewer_widget_address,Widget parent,
+	struct LIST(Field_value_index_ranges) *modified_field_components,
 	struct Element_point_ranges_identifier *initial_element_point_identifier,
 	int initial_element_point_number,struct Computed_field *initial_field);
 /*******************************************************************************
-LAST MODIFIED : 31 May 2000
+LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
 Widget for displaying and editing computed field components at element points.
