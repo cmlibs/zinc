@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_service.c
 
-LAST MODIFIED : 13 January 2002
+LAST MODIFIED : 25 January 2002
 
 DESCRIPTION :
 The unemap service which runs under NT and talks to unemap via sockets.
@@ -1180,7 +1180,7 @@ static int process_message(const unsigned char operation_code,
 	const long message_size,const unsigned char big_endian,
 	unsigned char **out_buffer_address,long *out_buffer_size_address)
 /*******************************************************************************
-LAST MODIFIED : 15 November 2000
+LAST MODIFIED : 25 January 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1999,6 +1999,7 @@ DESCRIPTION :
 #endif /* defined (DEBUG) */
 			} break;
 #endif /* defined (OLD_CODE) */
+#if defined (OLD_CODE)
 			case UNEMAP_GET_SAMPLES_ACQUIRED_CODE:
 			{
 				int channel_number,number_of_channels,number_of_samples_written,
@@ -2094,6 +2095,148 @@ DESCRIPTION :
 									sizeof(number_of_channels),sizeof(number_of_samples),
 									(char *)&number_of_samples,big_endian);
 								retval=socket_send(acquired_socket,message_header,
+									2+sizeof(long)+sizeof(number_of_channels)+
+									sizeof(number_of_samples),0);
+								return_code=unemap_transfer_samples_acquired(channel_number,
+									(int)number_of_samples,socket_send_samples_acquired,
+									&socket_send_samples_acquired_data,
+									&number_of_samples_written);
+								DEALLOCATE(socket_send_samples_acquired_data.buffer);
+							}
+							else
+							{
+								return_code=0;
+								sprintf(error_string,"unemap_get_samples_acquired.  "
+									"Could not allocate samples buffer %ld",
+									socket_send_samples_acquired_data.buffer_size);
+								AddToMessageLog(TEXT(error_string));
+							}
+						}
+						else
+						{
+							sprintf(error_string,
+	"unemap_get_samples_acquired.  unemap_get_number_of_samples_acquired failed");
+							AddToMessageLog(TEXT(error_string));
+						}
+					}
+				}
+				else
+				{
+					sprintf(error_string,
+						"unemap_get_samples_acquired.  Incorrect message size %d",
+						message_size);
+					AddToMessageLog(TEXT(error_string));
+				}
+#if defined (DEBUG)
+				/*???debug */
+				sprintf(error_string,"leave UNEMAP_GET_SAMPLES_ACQUIRED_CODE");
+				AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
+#if defined (DEBUG)
+				/*???debug */
+				set_check_memory_output(0);
+#endif /* defined (DEBUG) */
+			} break;
+#endif /* defined (OLD_CODE) */
+			case UNEMAP_GET_SAMPLES_ACQUIRED_CODE:
+			{
+				int channel_number,number_of_channels,number_of_samples_written,
+					requested_number_of_samples,specify_number_of_samples;
+				struct Socket_send_samples_acquired_data
+					socket_send_samples_acquired_data;
+				unsigned char message_header[2+sizeof(long)+sizeof(int)+
+					sizeof(unsigned long)];
+				unsigned long acknowledgement,number_of_samples;
+
+				/*???DB.  Go back to using command socket for data transfer because
+					client has a separate thread watching the acquired socket and don't
+					want it activated for this */
+#if defined (DEBUG)
+				/*???debug */
+				set_check_memory_output(1);
+#endif /* defined (DEBUG) */
+#if defined (DEBUG)
+				/*???debug */
+				sprintf(error_string,"enter UNEMAP_GET_SAMPLES_ACQUIRED_CODE");
+				AddToMessageLog(TEXT(error_string));
+#endif /* defined (DEBUG) */
+				return_code=0;
+				if ((sizeof(channel_number)==message_size)||(sizeof(channel_number)+
+					sizeof(requested_number_of_samples)==message_size))
+				{
+					if (sizeof(channel_number)==message_size)
+					{
+						specify_number_of_samples=0;
+					}
+					else
+					{
+						specify_number_of_samples=1;
+					}
+					retval=socket_recv(command_socket,buffer,message_size,0);
+					if (SOCKET_ERROR!=retval)
+					{
+						unread_size -= retval;
+						copy_byte_swapped((unsigned char *)&channel_number,
+							sizeof(channel_number),buffer,big_endian);
+						if (return_code=unemap_get_number_of_samples_acquired(
+							&number_of_samples))
+						{
+							if (specify_number_of_samples)
+							{
+								copy_byte_swapped((unsigned char *)&requested_number_of_samples,
+									sizeof(requested_number_of_samples),
+									buffer+sizeof(channel_number),big_endian);
+								if ((0<requested_number_of_samples)&&
+									((unsigned long)requested_number_of_samples<
+									number_of_samples))
+								{
+									number_of_samples=(unsigned long)requested_number_of_samples;
+								}
+							}
+							if (0==channel_number)
+							{
+								if (!(return_code=unemap_get_number_of_channels(
+									&number_of_channels)))
+								{
+									sprintf(error_string,
+					"unemap_get_samples_acquired.  unemap_get_number_of_channels failed");
+									AddToMessageLog(TEXT(error_string));
+								}
+							}
+							else
+							{
+								number_of_channels=1;
+							}
+							/* send acknowledgement so that client can start retrieving */
+							message_header[0]=(unsigned char)0x1;
+							message_header[1]=(unsigned char)0x0;
+							acknowledgement=0;
+							copy_byte_swapped(message_header+2,sizeof(acknowledgement),
+								(char *)&acknowledgement,big_endian);
+							retval=socket_send(command_socket,message_header,
+								2+sizeof(acknowledgement),0);
+							/* send down the command socket */
+							socket_send_samples_acquired_data.buffer_size=
+								number_of_channels*sizeof(short int);
+							if (ALLOCATE(socket_send_samples_acquired_data.buffer,
+								unsigned char,socket_send_samples_acquired_data.buffer_size))
+							{
+								socket_send_samples_acquired_data.send_socket=command_socket;
+								socket_send_samples_acquired_data.big_endian=big_endian;
+								message_header[0]=(unsigned char)0x1;
+								message_header[1]=big_endian;
+								size=sizeof(number_of_channels)+sizeof(number_of_samples)+
+									number_of_samples*number_of_channels*sizeof(short int);
+								copy_byte_swapped(message_header+2,sizeof(long),(char *)&size,
+									big_endian);
+								copy_byte_swapped(message_header+2+sizeof(long),
+									sizeof(number_of_channels),(char *)&number_of_channels,
+									big_endian);
+								copy_byte_swapped(message_header+2+sizeof(long)+
+									sizeof(number_of_channels),sizeof(number_of_samples),
+									(char *)&number_of_samples,big_endian);
+								retval=socket_send(
+									socket_send_samples_acquired_data.send_socket,message_header,
 									2+sizeof(long)+sizeof(number_of_channels)+
 									sizeof(number_of_samples),0);
 								return_code=unemap_transfer_samples_acquired(channel_number,

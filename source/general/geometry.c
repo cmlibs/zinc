@@ -1071,7 +1071,7 @@ Calculate the <jacobian> if not NULL.
 						/* just do a copy */
 						memcpy(destination_values,source_values,
 							3*sizeof(destination_values));
-						if (return_code&&jacobian)
+						if (jacobian)
 						{
 							identity_matrix_float(3, jacobian);
 						}

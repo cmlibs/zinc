@@ -950,7 +950,7 @@ Calculates the inverse of 3X3 FE_value matrix <a>, returning it in <a_inv>.
 
 			for (i = 0; i < 9; i++)
 			{
-				a_inv[i] = d_a_inv[i] / determinant;
+				a_inv[i] = (float)( d_a_inv[i] / determinant);
 			}
 			return_code = 1;
 		}

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.c
 
-LAST MODIFIED : 13 January 2002
+LAST MODIFIED : 28 January 2002
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -119,6 +119,27 @@ unemap.*.numberOfSamples: 100000
 			ACPI (Advanced Power Configuration Interface).  Modified service.c to
 			respond to the power management messages.  To do this need to use
 			RegisterServiceCtrlHandlerEx which is not in NT (in 2000)
+1.2.16 Windows versions of unemap
+			On a different machine (running Windows) the problem remains.
+			On the same machine without the hardware service.  Seems to be paging,
+				when tried to stop with task manager, NT crashed with the same error
+				code.  When increased OS memory to 22MB, the same thing happened.
+				- still crashs if just write a dummy file eg replace (#if) the then
+					clause of "if (output_file=fopen(file_name,"wb"))" in
+					save_write_signal_file with
+						fwrite("ok5",1,3,output_file);
+						return_code=1;
+						fclose(output_file);
+				- it is to do with the event messages (Config_DAQ_Event_Message)
+					- if remove body of scrolling_callback_NI will still crash
+					- if don't have testing will still crash
+					- can reduce buffer size and sampling rate and will still crash
+				- it is to do with memory swapping - having a save window for the
+					signal file causes memory swapping, alternatively, opening a file
+					outside of unemap causes memory swapping
+				- SCAN_Start must start a separate thread/process - calls to
+					Config_DAQ_Event_Message before it change the events for the
+					acquistion and calls after don't
 
 ???To do
 1 Try moving pulse generation set up from unemap_start_sampling to
@@ -7755,6 +7776,7 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 						/*???DB.  Start USE_INTERRUPTS_FOR_AI */
 						/*???DB.  Needed, otherwise WFM_Op (waveform generation) fails */
 						/*???DB.  Don't understand why.  See set_NI_gain */
+						/*???DB.  Doesn't affect acquisition because after SCAN_Start */
 #if !defined (NO_SCROLLING_CALLBACK)
 						status=Config_DAQ_Event_Message(module_NI_CARDS[0].device_number,
 							/* clear all messages */(i16)0,/* channel string */(char *)NULL,

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : pacing_window.c
 
-LAST MODIFIED : 16 November 2001
+LAST MODIFIED : 23 January 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -385,7 +385,7 @@ restitution curve protocol.
 				else
 				{
 					decrement=(pacing_window->s2_resolution)*
-						floor(decrement/(pacing_window->s2_resolution)+0.5);
+						(float)floor(decrement/(pacing_window->s2_resolution)+0.5);
 				}
 				/* skip separators */
 				number_of_characters=0;
@@ -413,7 +413,7 @@ restitution curve protocol.
 						else
 						{
 							threshold=(pacing_window->s2_resolution)*
-								floor(threshold/(pacing_window->s2_resolution)+0.5);
+								(float)floor(threshold/(pacing_window->s2_resolution)+0.5);
 						}
 						/* add to array */
 						i=0;
@@ -3033,7 +3033,7 @@ struct Pacing_window *open_Pacing_window(
 #endif /* defined (MOTIF) */
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 11 November 2001
+LAST MODIFIED : 23 January 2002
 
 DESCRIPTION :
 If the pacing window does not exist, it is created.  The pacing window is
@@ -3053,7 +3053,10 @@ opened.
 		if (!(pacing_window= *pacing_window_address))
 		{
 			pacing_window=create_Pacing_window(pacing_window_address,rig_address,
-				activation,user_interface);
+#if defined (MOTIF)
+				activation,
+#endif /* defined (MOTIF) */
+				user_interface);
 		}
 		if (pacing_window)
 		{
@@ -3134,7 +3137,7 @@ opened.
 			else
 			{
 				pacing_window->s2_delay=(pacing_window->s2_resolution)*
-					floor((pacing_window->s2_delay)/(pacing_window->s2_resolution)+0.5);
+					(float)floor((pacing_window->s2_delay)/(pacing_window->s2_resolution)+0.5);
 			}
 #if defined (MOTIF)
 			sprintf(value_string,"%g",pacing_window->s2_delay);
@@ -3155,7 +3158,7 @@ opened.
 			else
 			{
 				pacing_window->s2_delay_change=(pacing_window->s2_resolution)*
-					floor((pacing_window->s2_delay_change)/
+					(float)floor((pacing_window->s2_delay_change)/
 					(pacing_window->s2_resolution)+0.5);
 			}
 #if defined (MOTIF)
@@ -3192,7 +3195,7 @@ opened.
 			else
 			{
 				pacing_window->s2_s1_pause=(pacing_window->s2_resolution)*
-					floor((pacing_window->s2_s1_pause)/(pacing_window->s2_resolution)+
+					(float)floor((pacing_window->s2_s1_pause)/(pacing_window->s2_resolution)+
 					0.5);
 			}
 #if defined (MOTIF)
@@ -3236,7 +3239,7 @@ opened.
 
 int destroy_Pacing_window(struct Pacing_window **pacing_window_address)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2001
+LAST MODIFIED : 23 January 2002
 
 DESCRIPTION :
 If the <address> field of the pacing window is not NULL, <*address> is set to
@@ -3256,15 +3259,15 @@ pacing window and frees the memory associated with the pacing window.
 		if (pacing_window= *pacing_window_address)
 		{
 			return_code=1;
-			if (pacing_window->shell)
-			{
-				XtPopdown(pacing_window->shell);
-			}
 			if (pacing_window->address)
 			{
 				*(pacing_window->address)=(struct Pacing_window *)NULL;
 			}
 #if defined (MOTIF)
+			if (pacing_window->shell)
+			{
+				XtPopdown(pacing_window->shell);
+			}
 			/* unghost the activation button */
 			XtSetSensitive(pacing_window->activation,True);
 #endif /* defined (MOTIF) */

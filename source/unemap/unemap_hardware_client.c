@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_client.c
 
-LAST MODIFIED : 13 January 2002
+LAST MODIFIED : 27 January 2002
 
 DESCRIPTION :
 Code for talking to the unemap hardware service (running under NT).  This is an
@@ -125,7 +125,7 @@ functions.
 
 struct Unemap_crate
 /*******************************************************************************
-LAST MODIFIED : 13 January 2002
+LAST MODIFIED : 27 January 2002
 
 DESCRIPTION :
 Information needed for each SCU crate/NI computer pair.
@@ -136,14 +136,17 @@ Information needed for each SCU crate/NI computer pair.
 #if defined (USE_SOCKETS)
 #if defined (WIN32)
 	SOCKET acquired_socket;
-	HANDLE acquired_socket_thread_stop_event;
+	HANDLE acquired_socket_thread_stop_event,
+		acquired_socket_thread_stopped_event;
 	HANDLE acquired_socket_mutex;
 	SOCKET calibration_socket;
-	HANDLE calibration_socket_thread_stop_event;
+	HANDLE calibration_socket_thread_stop_event,
+		calibration_socket_thread_stopped_event;
 	SOCKET command_socket;
 	HANDLE command_socket_mutex;
 	SOCKET scrolling_socket;
-	HANDLE scrolling_socket_thread_stop_event;
+	HANDLE scrolling_socket_thread_stop_event,
+		scrolling_socket_thread_stopped_event;
 #endif /* defined (WIN32) */
 #if defined (UNIX)
 	int acquired_socket;
@@ -308,13 +311,17 @@ static void sleep(unsigned seconds)
 
 static int close_crate_connection(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 29 July 2000
+LAST MODIFIED : 27 January 2002
 
 DESCRIPTION :
 Closes the connection with the unemap hardware service for the <crate>.
 ==============================================================================*/
 {
 	int return_code;
+#if defined (WIN32)
+	HANDLE hEvents[3];
+	int number_of_events;
+#endif /* defined (WIN32) */
 
 	ENTER(close_crate_connection);
 	return_code=0;
@@ -334,8 +341,12 @@ Closes the connection with the unemap hardware service for the <crate>.
 			unlock_mutex(crate->command_socket_mutex);
 		}
 #if defined (WIN32)
+		number_of_events=0;
 		if (crate->scrolling_socket_thread_stop_event)
 		{
+			hEvents[number_of_events]=crate->scrolling_socket_thread_stopped_event;
+			number_of_events++;
+			ResetEvent(crate->scrolling_socket_thread_stopped_event);
 			SetEvent(crate->scrolling_socket_thread_stop_event);
 		}
 		else
@@ -348,6 +359,9 @@ Closes the connection with the unemap hardware service for the <crate>.
 		}
 		if (crate->calibration_socket_thread_stop_event)
 		{
+			hEvents[number_of_events]=crate->calibration_socket_thread_stopped_event;
+			number_of_events++;
+			ResetEvent(crate->calibration_socket_thread_stopped_event);
 			SetEvent(crate->calibration_socket_thread_stop_event);
 		}
 		else
@@ -360,6 +374,9 @@ Closes the connection with the unemap hardware service for the <crate>.
 		}
 		if (crate->acquired_socket_thread_stop_event)
 		{
+			hEvents[number_of_events]=crate->acquired_socket_thread_stopped_event;
+			number_of_events++;
+			ResetEvent(crate->acquired_socket_thread_stopped_event);
 			SetEvent(crate->acquired_socket_thread_stop_event);
 		}
 		else
@@ -369,6 +386,23 @@ Closes the connection with the unemap hardware service for the <crate>.
 				closesocket(crate->acquired_socket);
 				crate->acquired_socket=INVALID_SOCKET;
 			}
+		}
+		/* wait for threads to end before deallocating crate memory */
+		if (number_of_events>0)
+		{
+			WaitForMultipleObjects(number_of_events,hEvents,TRUE,INFINITE);
+		}
+		if (crate->scrolling_socket_thread_stopped_event)
+		{
+			CloseHandle(crate->scrolling_socket_thread_stopped_event);
+		}
+		if (crate->calibration_socket_thread_stopped_event)
+		{
+			CloseHandle(crate->calibration_socket_thread_stopped_event);
+		}
+		if (crate->acquired_socket_thread_stopped_event)
+		{
+			CloseHandle(crate->acquired_socket_thread_stopped_event);
 		}
 #endif /* defined (WIN32) */
 #if defined (MOTIF)
@@ -439,7 +473,7 @@ Closes the connection with the unemap hardware service for the <crate>.
 
 static int close_connection(void)
 /*******************************************************************************
-LAST MODIFIED : 2 July 2000
+LAST MODIFIED : 27 January 2002
 
 DESCRIPTION :
 Closes the connection with the unemap hardware service.
@@ -447,14 +481,17 @@ Closes the connection with the unemap hardware service.
 {
 	int return_code;
 	struct Unemap_crate *crate;
+#if defined (OLD_CODE)
 #if defined (WIN32)
 	int i;
 #endif /* defined (WIN32) */
+#endif /* defined (OLD_CODE) */
 
 	ENTER(close_connection);
 	return_code=1;
 	if (crate=module_unemap_crates)
 	{
+#if defined (OLD_CODE)
 #if defined (WIN32)
 		i=module_number_of_unemap_crates;
 		while ((i>0)&&(NULL==crate->scrolling_socket_thread_stop_event)&&
@@ -466,6 +503,7 @@ Closes the connection with the unemap hardware service.
 		}
 		crate=module_unemap_crates;
 #endif /* defined (WIN32) */
+#endif /* defined (OLD_CODE) */
 		while (module_number_of_unemap_crates>0)
 		{
 			close_crate_connection(crate);
@@ -473,10 +511,14 @@ Closes the connection with the unemap hardware service.
 			crate++;
 		}
 #if defined (WIN32)
+#if defined (OLD_CODE)
 		if (0==i)
 		{
+#endif /* defined (OLD_CODE) */
 			WSACleanup();
+#if defined (OLD_CODE)
 		}
+#endif /* defined (OLD_CODE) */
 #endif /* defined (WIN32) */
 		DEALLOCATE(module_unemap_crates);
 		module_number_of_unemap_crates=0;
@@ -669,7 +711,7 @@ static void acquired_socket_callback(
 	)
 #endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 /*******************************************************************************
-LAST MODIFIED : 13 January 2002
+LAST MODIFIED : 25 January 2002
 
 DESCRIPTION :
 Called when there is input on the acquired socket.
@@ -782,7 +824,8 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 		}
 		if (0==i)
 		{
-			if ((0<number_of_channels)&&(0<number_of_samples))
+			if (module_acquired_callback&&(0<number_of_channels)&&
+				(0<number_of_samples))
 			{
 				ALLOCATE(samples,short,number_of_channels*number_of_samples);
 				if (samples)
@@ -897,7 +940,7 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 #if defined (WINDOWS) && defined (USE_SOCKETS)
 DWORD WINAPI acquired_thread_function(LPVOID crate_void)
 /*******************************************************************************
-LAST MODIFIED : 3 July 2000
+LAST MODIFIED : 27 January 2002
 
 DESCRIPTION :
 Thread to watch the acquired socket.
@@ -906,7 +949,10 @@ Thread to watch the acquired socket.
 {
 	DWORD dwWait,return_code;
 	HANDLE hEvents[2]={NULL,NULL};
-	int i,running;
+	int running;
+#if defined (OLD_CODE)
+	int i;
+#endif /* defined (OLD_CODE) */
 	struct Unemap_crate *crate;
 
 	ENTER(acquired_thread_function);
@@ -966,6 +1012,7 @@ Thread to watch the acquired socket.
 		{
 			CloseHandle(hEvents[1]);
 		}
+#if defined (OLD_CODE)
 		i=module_number_of_unemap_crates;
 		crate=module_unemap_crates;
 		while ((i>0)&&(INVALID_SOCKET==crate->scrolling_socket)&&
@@ -979,6 +1026,9 @@ Thread to watch the acquired socket.
 		{
 			WSACleanup();
 		}
+#endif /* defined (OLD_CODE) */
+		/* indicate that thread has finished */
+		SetEvent(crate->acquired_socket_thread_stopped_event);
 	}
 	LEAVE;
 
@@ -1140,7 +1190,7 @@ Called when there is input on the calibration socket.
 #if defined (WINDOWS) && defined (USE_SOCKETS)
 DWORD WINAPI calibration_thread_function(LPVOID crate_void)
 /*******************************************************************************
-LAST MODIFIED : 2 March 2000
+LAST MODIFIED : 27 January 2002
 
 DESCRIPTION :
 Thread to watch the calibration socket.
@@ -1149,7 +1199,10 @@ Thread to watch the calibration socket.
 {
 	DWORD dwWait,return_code;
 	HANDLE hEvents[2]={NULL,NULL};
-	int i,running;
+	int running;
+#if defined (OLD_CODE)
+	int i;
+#endif /* defined (OLD_CODE) */
 	struct Unemap_crate *crate;
 
 	ENTER(calibration_thread_function);
@@ -1209,6 +1262,7 @@ Thread to watch the calibration socket.
 		{
 			CloseHandle(hEvents[1]);
 		}
+#if defined (OLD_CODE)
 		i=module_number_of_unemap_crates;
 		crate=module_unemap_crates;
 		while ((i>0)&&(INVALID_SOCKET==crate->scrolling_socket)&&
@@ -1222,6 +1276,9 @@ Thread to watch the calibration socket.
 		{
 			WSACleanup();
 		}
+#endif /* defined (OLD_CODE) */
+		/* indicate that thread has finished */
+		SetEvent(crate->calibration_socket_thread_stopped_event);
 	}
 	LEAVE;
 
@@ -1506,7 +1563,7 @@ Called when there is input on the scrolling socket.
 #if defined (WINDOWS) && defined (USE_SOCKETS)
 DWORD WINAPI scrolling_thread_function(LPVOID crate_void)
 /*******************************************************************************
-LAST MODIFIED : 12 March 2000
+LAST MODIFIED : 27 January 2002
 
 DESCRIPTION :
 Thread to watch the scrolling socket.
@@ -1515,7 +1572,10 @@ Thread to watch the scrolling socket.
 {
 	DWORD dwWait,return_code;
 	HANDLE hEvents[2]={NULL,NULL};
-	int i,running;
+	int running;
+#if defined (OLD_CODE)
+	int i;
+#endif /* defined (OLD_CODE) */
 	struct Unemap_crate *crate;
 
 	ENTER(scrolling_thread_function);
@@ -1575,6 +1635,7 @@ Thread to watch the scrolling socket.
 		{
 			CloseHandle(hEvents[1]);
 		}
+#if defined (OLD_CODE)
 		i=module_number_of_unemap_crates;
 		crate=module_unemap_crates;
 		while ((i>0)&&(INVALID_SOCKET==crate->scrolling_socket)&&
@@ -1588,6 +1649,9 @@ Thread to watch the scrolling socket.
 		{
 			WSACleanup();
 		}
+#endif /* defined (OLD_CODE) */
+		/* indicate that thread has finished */
+		SetEvent(crate->scrolling_socket_thread_stopped_event);
 	}
 	LEAVE;
 
@@ -1606,7 +1670,7 @@ static int crate_configure_start(struct Unemap_crate *crate,int slave,
 	Unemap_hardware_callback *scrolling_callback,void *scrolling_callback_data,
 	float scrolling_refresh_frequency,int synchronization_card)
 /*******************************************************************************
-LAST MODIFIED : 27 July 2000
+LAST MODIFIED : 27 January 2002
 
 DESCRIPTION :
 Configures the <crate> for sampling at the specified <sampling_frequency> and
@@ -4403,6 +4467,7 @@ Otherwise the function fails.
 } /* crate_get_samples_acquired */
 #endif /* defined (OLD_CODE) */
 
+#if defined (OLD_CODE)
 static int crate_get_samples_acquired(struct Unemap_crate *crate,
 	int channel_number,int number_of_samples,short int *samples,
 	int *number_of_samples_got)
@@ -4598,6 +4663,326 @@ Otherwise the function fails.
 				{
 					display_message(ERROR_MESSAGE,
 						"crate_get_samples_acquired.  socket_recv() failed");
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"crate_get_samples_acquired.  socket_send() failed");
+			}
+			unlock_mutex(crate->command_socket_mutex);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"crate_get_samples_acquired.  Invalid command_socket");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"crate_get_samples_acquired.  Missing crate (%p) or samples (%p)",crate,
+			samples);
+	}
+#if defined (DEBUG)
+	/*???debug */
+	printf("leave crate_get_samples_acquired %d\n",return_code);
+#endif /* defined (DEBUG) */
+	LEAVE;
+
+	return (return_code);
+} /* crate_get_samples_acquired */
+#endif /* defined (OLD_CODE) */
+
+static int crate_get_samples_acquired(struct Unemap_crate *crate,
+	int channel_number,int number_of_samples,short int *samples,
+	int *number_of_samples_got)
+/*******************************************************************************
+LAST MODIFIED : 25 January 2002
+
+DESCRIPTION :
+The function fails if the hardware is not configured.
+
+For the <crate>.  If <channel_number> is valid (between 1 and the total number
+of channels inclusive), then the <samples> for that channel are returned.  If
+<channel_number> is 0 then the <samples> for all channels are returned.
+Otherwise the function fails.
+==============================================================================*/
+{
+	int number_of_channels,return_code,retval;
+	long block_size,buffer_size,message_size;
+	short int *crate_samples;
+	unsigned char buffer[2+sizeof(long)+sizeof(int)+sizeof(unsigned long)];
+	unsigned long local_number_of_samples;
+
+	ENTER(crate_get_samples_acquired);
+#if defined (DEBUG)
+	/*???debug */
+	printf("enter crate_get_samples_acquired %p %d %p\n",crate,channel_number,
+		samples);
+#endif /* defined (DEBUG) */
+	return_code=0;
+	/* check arguments */
+	if (crate&&samples)
+	{
+		if (INVALID_SOCKET!=crate->command_socket)
+		{
+			lock_mutex(crate->command_socket_mutex);
+			buffer[0]=UNEMAP_GET_SAMPLES_ACQUIRED_CODE;
+			buffer[1]=BIG_ENDIAN_CODE;
+			buffer_size=2+sizeof(message_size);
+			memcpy(buffer+buffer_size,&channel_number,sizeof(channel_number));
+			buffer_size += sizeof(channel_number);
+			if (crate->service_version>0)
+			{
+				memcpy(buffer+buffer_size,&number_of_samples,sizeof(number_of_samples));
+				buffer_size += sizeof(number_of_samples);
+			}
+			message_size=buffer_size-(2+(long)sizeof(message_size));
+			memcpy(buffer+2,&message_size,sizeof(message_size));
+			retval=socket_send(crate->command_socket,buffer,buffer_size,0);
+			if (SOCKET_ERROR!=retval)
+			{
+#if defined (DEBUG)
+				/*???debug */
+				printf("Sent data %x %x %ld\n",buffer[0],buffer[1],message_size);
+#endif /* defined (DEBUG) */
+				/* get the header/acknowledgement back */
+				retval=socket_recv(crate->command_socket,buffer,2+sizeof(long),0);
+				if (SOCKET_ERROR!=retval)
+				{
+					memcpy(&buffer_size,buffer+2,sizeof(buffer_size));
+#if defined (DEBUG)
+					/*???debug */
+					printf("Received %d bytes, data %x %x %ld\n",retval,buffer[0],
+						buffer[1],buffer_size);
+#endif /* defined (DEBUG) */
+					/*???DB.  Go back to reading back data through command socket because
+						have a separate thread watching the acquired socket and don't want
+						it activated for this */
+					if (crate->service_version>0)
+					{
+						if ((2+sizeof(long)==retval)&&(0==buffer_size)&&(buffer[0]))
+						{
+							/* read back from command socket */
+							/* get the header back */
+							retval=socket_recv(crate->command_socket,buffer,2+sizeof(long)+
+								sizeof(number_of_channels)+sizeof(local_number_of_samples),0);
+							if (SOCKET_ERROR!=retval)
+							{
+								memcpy(&buffer_size,buffer+2,sizeof(buffer_size));
+#if defined (DEBUG)
+								/*???debug */
+								printf("Received command %d bytes, data %x %x %ld\n",retval,
+									buffer[0],buffer[1],buffer_size);
+#endif /* defined (DEBUG) */
+								memcpy(&number_of_channels,buffer+2+sizeof(buffer_size),
+									sizeof(number_of_channels));
+								memcpy(&local_number_of_samples,buffer+2+sizeof(buffer_size)+
+									sizeof(number_of_channels),sizeof(local_number_of_samples));
+#if defined (DEBUG)
+								/*???debug */
+								printf("number_of_channels=%d, local_number_of_samples=%ld.  "
+									"%ld\n",number_of_channels,local_number_of_samples,
+									sizeof(number_of_channels)+sizeof(local_number_of_samples)+
+									local_number_of_samples*number_of_channels*
+									sizeof(short int));
+#endif /* defined (DEBUG) */
+								if ((2+sizeof(long)+sizeof(number_of_channels)+
+									sizeof(local_number_of_samples)==retval)&&
+									(sizeof(number_of_channels)+sizeof(local_number_of_samples)+
+									local_number_of_samples*number_of_channels*
+									sizeof(short int)==(unsigned)buffer_size)&&(buffer[0]))
+								{
+									buffer_size -= sizeof(number_of_channels)+
+										sizeof(local_number_of_samples);
+									if ((0==channel_number)&&(0<module_number_of_channels))
+									{
+										/* have to stagger to allow room for other crates */
+										crate_samples=samples;
+										block_size=
+											(crate->number_of_channels)*(long)sizeof(short int);
+										while ((buffer_size>0)&&(SOCKET_ERROR!=socket_recv(
+											crate->command_socket,(unsigned char *)crate_samples,
+											block_size,0)))
+										{
+											crate_samples += module_number_of_channels;
+											buffer_size -= block_size;
+										}
+										if (0==buffer_size)
+										{
+											return_code=1;
+										}
+									}
+									else
+									{
+										if (SOCKET_ERROR!=socket_recv(crate->command_socket,
+											(unsigned char *)samples,buffer_size,0))
+										{
+											return_code=1;
+										}
+									}
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"crate_get_samples_acquired.  socket_recv() 1 failed");
+							}
+							/* get the header back */
+							retval=socket_recv(crate->command_socket,buffer,2+sizeof(long),
+								0);
+							if (SOCKET_ERROR!=retval)
+							{
+								memcpy(&buffer_size,buffer+2,sizeof(buffer_size));
+								if (!((2+sizeof(long)==retval)&&(0==buffer_size)&&
+									(buffer[0])))
+								{
+									return_code=0;
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"crate_get_samples_acquired.  socket_recv() 2 failed");
+							}
+						}
+					}
+					else
+					{
+						if ((2+sizeof(long)==retval)&&(0<=buffer_size)&&(buffer[0]))
+						{
+							if (0==buffer_size)
+							{
+								/* read back from acquired socket */
+								lock_mutex(crate->acquired_socket_mutex);
+								/* get the header back */
+								retval=socket_recv(crate->acquired_socket,buffer,2+sizeof(long)+
+									sizeof(number_of_channels)+sizeof(local_number_of_samples),0);
+								if (SOCKET_ERROR!=retval)
+								{
+									memcpy(&buffer_size,buffer+2,sizeof(buffer_size));
+#if defined (DEBUG)
+									/*???debug */
+									printf("Received acquired %d bytes, data %x %x %ld\n",retval,
+										buffer[0],buffer[1],buffer_size);
+#endif /* defined (DEBUG) */
+									memcpy(&number_of_channels,buffer+2+sizeof(buffer_size),
+										sizeof(number_of_channels));
+									memcpy(&local_number_of_samples,buffer+2+sizeof(buffer_size)+
+										sizeof(number_of_channels),sizeof(local_number_of_samples));
+#if defined (DEBUG)
+									/*???debug */
+									printf("number_of_channels=%d, local_number_of_samples=%ld.  "
+										"%ld\n",number_of_channels,local_number_of_samples,
+										sizeof(number_of_channels)+sizeof(local_number_of_samples)+
+										local_number_of_samples*number_of_channels*
+										sizeof(short int));
+#endif /* defined (DEBUG) */
+									if ((2+sizeof(long)+sizeof(number_of_channels)+
+										sizeof(local_number_of_samples)==retval)&&
+										(sizeof(number_of_channels)+sizeof(local_number_of_samples)+
+										local_number_of_samples*number_of_channels*
+										sizeof(short int)==(unsigned)buffer_size)&&(buffer[0]))
+									{
+										buffer_size -= sizeof(number_of_channels)+
+											sizeof(local_number_of_samples);
+										if ((0==channel_number)&&(0<module_number_of_channels))
+										{
+											/* have to stagger to allow room for other crates */
+											crate_samples=samples;
+											block_size=
+												(crate->number_of_channels)*(long)sizeof(short int);
+											while ((buffer_size>0)&&(SOCKET_ERROR!=socket_recv(
+												crate->acquired_socket,(unsigned char *)crate_samples,
+												block_size,0)))
+											{
+												crate_samples += module_number_of_channels;
+												buffer_size -= block_size;
+											}
+											if (0==buffer_size)
+											{
+												return_code=1;
+											}
+										}
+										else
+										{
+											if (SOCKET_ERROR!=socket_recv(crate->acquired_socket,
+												(unsigned char *)samples,buffer_size,0))
+											{
+												return_code=1;
+											}
+										}
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"crate_get_samples_acquired.  socket_recv() 3 failed");
+								}
+								unlock_mutex(crate->acquired_socket_mutex);
+								/* get the header back */
+								retval=socket_recv(crate->command_socket,buffer,2+sizeof(long),
+									0);
+								if (SOCKET_ERROR!=retval)
+								{
+									memcpy(&buffer_size,buffer+2,sizeof(buffer_size));
+									if (!((2+sizeof(long)==retval)&&(0==buffer_size)&&
+										(buffer[0])))
+									{
+										return_code=0;
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"crate_get_samples_acquired.  socket_recv() 4 failed");
+								}
+							}
+							else
+							{
+								/* read back from command socket (kept for compatability with
+									older versions of the hardware service) */
+								if ((0==channel_number)&&(0<module_number_of_channels))
+								{
+									/* have to stagger to allow room for other crates */
+									crate_samples=samples;
+									block_size=(crate->number_of_channels)*
+										(long)sizeof(short int);
+									while ((buffer_size>0)&&(SOCKET_ERROR!=socket_recv(
+										crate->command_socket,(unsigned char *)crate_samples,
+										block_size,0)))
+									{
+										crate_samples += module_number_of_channels;
+										buffer_size -= block_size;
+									}
+									if (0==buffer_size)
+									{
+										local_number_of_samples=buffer_size/block_size;
+										return_code=1;
+									}
+								}
+								else
+								{
+									if (SOCKET_ERROR!=socket_recv(crate->command_socket,
+										(unsigned char *)samples,buffer_size,0))
+									{
+										local_number_of_samples=buffer_size/(long)sizeof(short int);
+										return_code=1;
+									}
+								}
+							}
+						}
+					}
+					if (return_code&&number_of_samples_got)
+					{
+						*number_of_samples_got=(int)local_number_of_samples;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"crate_get_samples_acquired.  socket_recv() 5 failed");
 				}
 			}
 			else
@@ -7568,7 +7953,7 @@ Returns the unemap <service_version> for the <crate>.
 
 static int crate_initialize_connection(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 25 July 2000
+LAST MODIFIED : 27 January 2002
 
 DESCRIPTION :
 Sets up the connection with the unemap hardware service for the <crate>.
@@ -7611,7 +7996,59 @@ Sets up the connection with the unemap hardware service for the <crate>.
 					/*no security attributes*/NULL,/*do not initially own*/FALSE,
 					/*no name*/(LPCTSTR)NULL))
 				{
-					return_code=1;
+					/* create stopped events */
+					if (crate->scrolling_socket_thread_stopped_event=CreateEvent(
+						/*no security attributes*/NULL,/*manual reset event*/TRUE,
+						/*not-signalled*/FALSE,/*no name*/NULL))
+					{
+						if (crate->acquired_socket_thread_stopped_event=CreateEvent(
+							/*no security attributes*/NULL,/*manual reset event*/TRUE,
+							/*not-signalled*/FALSE,/*no name*/NULL))
+						{
+							if (crate->calibration_socket_thread_stopped_event=CreateEvent(
+								/*no security attributes*/NULL,/*manual reset event*/TRUE,
+								/*not-signalled*/FALSE,/*no name*/NULL))
+							{
+								return_code=1;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+	"initialize_connection.  CreateEvent failed for calibration_socket_thread_stopped_event.  Error code %d",
+									WSAGetLastError());
+								CloseHandle(crate->acquired_socket_thread_stopped_event);
+								crate->acquired_socket_thread_stopped_event=NULL;
+								CloseHandle(crate->scrolling_socket_thread_stopped_event);
+								crate->scrolling_socket_thread_stopped_event=NULL;
+								CloseHandle(crate->acquired_socket_mutex);
+								crate->acquired_socket_mutex=NULL;
+								CloseHandle(crate->command_socket_mutex);
+								crate->command_socket_mutex=NULL;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+	"initialize_connection.  CreateEvent failed for acquired_socket_thread_stopped_event.  Error code %d",
+								WSAGetLastError());
+							CloseHandle(crate->scrolling_socket_thread_stopped_event);
+							crate->scrolling_socket_thread_stopped_event=NULL;
+							CloseHandle(crate->acquired_socket_mutex);
+							crate->acquired_socket_mutex=NULL;
+							CloseHandle(crate->command_socket_mutex);
+							crate->command_socket_mutex=NULL;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+"initialize_connection.  CreateEvent failed for scrolling_socket_thread_stopped_event.  Error code %d",
+							WSAGetLastError());
+						CloseHandle(crate->acquired_socket_mutex);
+						crate->acquired_socket_mutex=NULL;
+						CloseHandle(crate->command_socket_mutex);
+						crate->command_socket_mutex=NULL;
+					}
 				}
 				else
 				{
@@ -8037,7 +8474,7 @@ Sets up the connection with the unemap hardware service for the <crate>.
 
 static int initialize_connection(void)
 /*******************************************************************************
-LAST MODIFIED : 25 July 2000
+LAST MODIFIED : 27 January 2002
 
 DESCRIPTION :
 Sets up the connections with the unemap crates.
@@ -8169,13 +8606,16 @@ Sets up the connections with the unemap crates.
 #if defined (WIN32)
 						crate->acquired_socket=(SOCKET)INVALID_SOCKET;
 						crate->acquired_socket_thread_stop_event=NULL;
+						crate->acquired_socket_thread_stopped_event=NULL;
 						crate->acquired_socket_mutex=(HANDLE)NULL;
 						crate->calibration_socket=(SOCKET)INVALID_SOCKET;
 						crate->calibration_socket_thread_stop_event=NULL;
+						crate->calibration_socket_thread_stopped_event=NULL;
 						crate->command_socket=(SOCKET)INVALID_SOCKET;
 						crate->command_socket_mutex=(HANDLE)NULL;
 						crate->scrolling_socket=(SOCKET)INVALID_SOCKET;
 						crate->scrolling_socket_thread_stop_event=NULL;
+						crate->scrolling_socket_thread_stopped_event=NULL;
 #endif /* defined (WIN32) */
 #if defined (UNIX)
 						crate->acquired_socket=(int)INVALID_SOCKET;

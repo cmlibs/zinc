@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap.c
 
-LAST MODIFIED : 3 October 2001
+LAST MODIFIED : 28 January 2002
 
 DESCRIPTION :
 Main program for unemap.  Based on cmgui.
@@ -120,15 +120,74 @@ DESCRIPTION :
 Module functions
 ----------------
 */
+#if !defined (NOT_ACQUISITION_ONLY)
+static FILE *fopen_UNEMAP_HARDWARE(char *file_name,char *type)
+/*******************************************************************************
+LAST MODIFIED : 11 January 1999
+
+DESCRIPTION :
+Opens a file in the UNEMAP_HARDWARE directory.
+==============================================================================*/
+{
+	char *hardware_directory,*hardware_file_name;
+	FILE *hardware_file;
+
+	ENTER(fopen_UNEMAP_HARDWARE);
+	hardware_file=(FILE *)NULL;
+	if (file_name&&type)
+	{
+		hardware_file_name=(char *)NULL;
+		if (hardware_directory=getenv("UNEMAP_HARDWARE"))
+		{
+			if (ALLOCATE(hardware_file_name,char,strlen(hardware_directory)+
+				strlen(file_name)+2))
+			{
+				strcpy(hardware_file_name,hardware_directory);
+#if defined (WIN32)
+				if ('\\'!=hardware_file_name[strlen(hardware_file_name)-1])
+				{
+					strcat(hardware_file_name,"\\");
+				}
+#else /* defined (WIN32) */
+				if ('/'!=hardware_file_name[strlen(hardware_file_name)-1])
+				{
+					strcat(hardware_file_name,"/");
+				}
+#endif /* defined (WIN32) */
+			}
+		}
+		else
+		{
+			if (ALLOCATE(hardware_file_name,char,strlen(file_name)+1))
+			{
+				hardware_file_name[0]='\0';
+			}
+		}
+		if (hardware_file_name)
+		{
+			strcat(hardware_file_name,file_name);
+			hardware_file=fopen(hardware_file_name,type);
+			DEALLOCATE(hardware_file_name);
+		}
+	}
+	LEAVE;
+
+	return (hardware_file);
+} /* fopen_UNEMAP_HARDWARE */
+#endif /* !defined (NOT_ACQUISITION_ONLY) */
+
 static int display_error_message(char *message,void *user_interface_void)
 /*******************************************************************************
-LAST MODIFIED : 11 June 1999
+LAST MODIFIED : 28 January 2002
 
 DESCRIPTION :
 Display a unemap error message.
 ==============================================================================*/
 {
 	int return_code;
+#if !defined (NOT_ACQUISITION_ONLY)
+	FILE *unemap_debug;
+#endif /* !defined (NOT_ACQUISITION_ONLY) */
 
 	ENTER(display_error_message);
 	return_code=1;
@@ -142,8 +201,17 @@ Display a unemap error message.
 	}
 	else
 	{
-		printf("ERROR: %s\n",message);
-		return_code=1;
+#if !defined (NOT_ACQUISITION_ONLY)
+		if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+		{
+			fprintf(unemap_debug,"ERROR: %s\n",message);
+			fclose(unemap_debug);
+		}
+		else
+#endif /* !defined (NOT_ACQUISITION_ONLY) */
+		{
+			printf("ERROR: %s\n",message);
+		}
 	}
 	LEAVE;
 
@@ -152,13 +220,16 @@ Display a unemap error message.
 
 static int display_information_message(char *message,void *user_interface_void)
 /*******************************************************************************
-LAST MODIFIED : 11 June 1999
+LAST MODIFIED : 28 January 2002
 
 DESCRIPTION :
 Display a unemap information message.
 ==============================================================================*/
 {
 	int return_code;
+#if !defined (NOT_ACQUISITION_ONLY)
+	FILE *unemap_debug;
+#endif /* !defined (NOT_ACQUISITION_ONLY) */
 
 	ENTER(display_information_message);
 	return_code=1;
@@ -172,8 +243,17 @@ Display a unemap information message.
 	}
 	else
 	{
-		printf("INFORMATION: %s\n",message);
-		return_code=1;
+#if !defined (NOT_ACQUISITION_ONLY)
+		if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+		{
+			fprintf(unemap_debug,"INFORMATION: %s",message);
+			fclose(unemap_debug);
+		}
+		else
+#endif /* !defined (NOT_ACQUISITION_ONLY) */
+		{
+			printf("INFORMATION: %s",message);
+		}
 	}
 	LEAVE;
 
@@ -182,13 +262,16 @@ Display a unemap information message.
 
 static int display_warning_message(char *message,void *user_interface_void)
 /*******************************************************************************
-LAST MODIFIED : 11 June 1999
+LAST MODIFIED : 28 January 2002
 
 DESCRIPTION :
 Display a unemap warning message.
 ==============================================================================*/
 {
 	int return_code;
+#if !defined (NOT_ACQUISITION_ONLY)
+	FILE *unemap_debug;
+#endif /* !defined (NOT_ACQUISITION_ONLY) */
 
 	ENTER(display_warning_message);
 	return_code=1;
@@ -202,8 +285,17 @@ Display a unemap warning message.
 	}
 	else
 	{
-		printf("WARNING: %s\n",message);
-		return_code=1;
+#if !defined (NOT_ACQUISITION_ONLY)
+		if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
+		{
+			fprintf(unemap_debug,"WARNING: %s\n",message);
+			fclose(unemap_debug);
+		}
+		else
+#endif /* !defined (NOT_ACQUISITION_ONLY) */
+		{
+			printf("WARNING: %s\n",message);
+		}
 	}
 	LEAVE;
 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : user_interface.c
 
-LAST MODIFIED : 20 November 2001
+LAST MODIFIED : 23 January 2002
 
 DESCRIPTION :
 Functions for opening and closing the user interface.
@@ -1080,7 +1080,7 @@ XmNvisual,default_visual,
 
 int close_user_interface(struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 20 November 2001
+LAST MODIFIED : 23 January 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1090,11 +1090,6 @@ DESCRIPTION :
 	ENTER(close_user_interface);
 	if (user_interface)
 	{
-		if (user_interface->normal_fontlist)
-		{
-			XmFontListFree(user_interface->normal_fontlist);
-			user_interface->normal_fontlist = (XmFontList)NULL;
-		}
 #if defined (LINK_CMISS)
 		if (CMISS)
 		{
@@ -1102,6 +1097,11 @@ DESCRIPTION :
 		}
 #endif /* defined (LINK_CMISS) */
 #if defined (MOTIF)
+		if (user_interface->normal_fontlist)
+		{
+			XmFontListFree(user_interface->normal_fontlist);
+			user_interface->normal_fontlist = (XmFontList)NULL;
+		}
 		if ((user_interface->no_cascade_pixmap)&&(XmUNSPECIFIED_PIXMAP!=
 			user_interface->no_cascade_pixmap))
 		{
@@ -1189,18 +1189,14 @@ int
 #endif /* defined (WINDOWS) */
 	application_main_loop(struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 25 July 1998
+LAST MODIFIED : 23 January 2002
 
 DESCRIPTION :
 ???DB.  Does the main window need to be passed to this ?
 ???DB.  Should we have our own "WINAPI" (size specifier) ?
 ==============================================================================*/
 {
-	int
-#if defined (WINDOWS)
-		WINAPI
-#endif /* defined (WINDOWS) */
-		return_code;
+	int return_code;
 #if defined (WINDOWS)
 	MSG message;
 #endif /* defined (WINDOWS) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 27 January 2002
 
 DESCRIPTION :
 
@@ -3176,6 +3176,7 @@ A simplified/specialized version of unemap_set_gain.
 		switch (page_window->unemap_hardware_version)
 		{
 			case UnEmap_1V2:
+			default:
 			{
 				pre_filter_gain=(float)1;
 			} break;
@@ -4586,15 +4587,9 @@ Called to start stimulating on the <page_window>.
 					}
 					else
 					{
-						if (UnEmap_1V2==page_window->unemap_hardware_version)
-						{
-							display_message(WARNING_MESSAGE,
-						"Constant current stimulation is not available for this hardware");
-							unemap_set_channel_stimulating((page_window->stimulate_devices)[
-								(page_window->stimulator_number)-1]->channel->number,0);
-							return_code=0;
-						}
-						else
+						if ((UnEmap_2V1==page_window->unemap_hardware_version)||
+							(UnEmap_2V2==page_window->unemap_hardware_version)||
+							(UnEmap_2V1|Unemap_2V2==page_window->unemap_hardware_version))
 						{
 							return_code=unemap_load_current_stimulating(1,
 								&(((page_window->stimulate_devices)[
@@ -4607,6 +4602,14 @@ Called to start stimulating on the <page_window>.
 								(page_window->stimulator_number)-1])->channel->number,
 								number_of_values,values_per_second,values);
 #endif /* defined (OLD_CODE) */
+						}
+						else
+						{
+							display_message(WARNING_MESSAGE,
+						"Constant current stimulation is not available for this hardware");
+							unemap_set_channel_stimulating((page_window->stimulate_devices)[
+								(page_window->stimulator_number)-1]->channel->number,0);
+							return_code=0;
 						}
 					}
 					if (return_code)
@@ -4847,12 +4850,9 @@ Called to start a stimulator.
 					}
 					else
 					{
-						if (UnEmap_1V2==page_window->unemap_hardware_version)
-						{
-							display_message(WARNING_MESSAGE,
-				"Constant current stimulation is not available for this hardware");
-						}
-						else
+						if ((UnEmap_2V1==page_window->unemap_hardware_version)||
+							(UnEmap_2V2==page_window->unemap_hardware_version)||
+							((UnEmap_2V1|UnEmap_2V2)==page_window->unemap_hardware_version))
 						{
 							return_code=unemap_load_current_stimulating(
 								((page_window->stimulators)[stimulator_number]).
@@ -4860,6 +4860,11 @@ Called to start a stimulator.
 								((page_window->stimulators)[stimulator_number]).channel_numbers,
 								number_of_values,values_per_second,values,number_of_cycles,
 								(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+						}
+						else
+						{
+							display_message(WARNING_MESSAGE,
+				"Constant current stimulation is not available for this hardware");
 						}
 					}
 					DEALLOCATE(values);
@@ -4930,14 +4935,9 @@ Called to stop a stimulator.
 				}
 				else
 				{
-					if (UnEmap_1V2==page_window->unemap_hardware_version)
-					{
-						display_message(WARNING_MESSAGE,
-			"Constant current stimulation is not available for this hardware");
-						unemap_stop_stimulating(channel_number);
-						return_code=0;
-					}
-					else
+					if ((UnEmap_2V1==page_window->unemap_hardware_version)||
+						(UnEmap_2V2==page_window->unemap_hardware_version)||
+						((UnEmap_2V1|UnEmap_2V2)==page_window->unemap_hardware_version))
 					{
 						return_code=unemap_load_current_stimulating(
 							((page_window->stimulators)[stimulator_number]).
@@ -4949,6 +4949,13 @@ Called to stop a stimulator.
 							end_values_per_second,
 							((page_window->stimulators)[stimulator_number]).end_values,1,
 							(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+					}
+					else
+					{
+						display_message(WARNING_MESSAGE,
+			"Constant current stimulation is not available for this hardware");
+						unemap_stop_stimulating(channel_number);
+						return_code=0;
 					}
 				}
 				if (return_code)
@@ -5733,7 +5740,7 @@ Assumes that the calibration file is normalized.
 
 static int start_experiment(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2001
+LAST MODIFIED : 27 January 2001
 
 DESCRIPTION :
 Called to start experiment on the <page_window>.
@@ -6250,6 +6257,7 @@ Called to start experiment on the <page_window>.
 							XtSetSensitive((page_window->minimum).form,True);
 							XtSetSensitive(page_window->sample_checkbox,True);
 							XtSetSensitive((page_window->save).button,False);
+							XtSetSensitive((page_window->save).value,True);
 							XtSetSensitive(page_window->scrolling_checkbox,True);
 							if (page_window->test_checkbox)
 							{
@@ -6285,6 +6293,7 @@ Called to start experiment on the <page_window>.
 							EnableWindow((page_window->minimum).text,TRUE);
 							EnableWindow(page_window->sample_checkbox,TRUE);
 							EnableWindow((page_window->save).button,FALSE);
+							EnableWindow((page_window->save).edit,TRUE);
 							EnableWindow(page_window->scrolling_checkbox,TRUE);
 							if (page_window->test_checkbox)
 							{
@@ -6347,7 +6356,7 @@ Called to start experiment on the <page_window>.
 
 static int stop_experiment(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 27 January 2002
 
 DESCRIPTION :
 Called to stop experiment on the <page_window>.
@@ -6408,6 +6417,7 @@ Called to stop experiment on the <page_window>.
 		XtSetSensitive((page_window->minimum).form,False);
 		XtSetSensitive(page_window->sample_checkbox,False);
 		XtSetSensitive((page_window->save).button,False);
+		XtSetSensitive((page_window->save).value,False);
 		XtSetSensitive(page_window->scrolling_checkbox,False);
 		if (page_window->test_checkbox)
 		{
@@ -6450,6 +6460,7 @@ Called to stop experiment on the <page_window>.
 		EnableWindow((page_window->minimum).text,FALSE);
 		EnableWindow(page_window->sample_checkbox,FALSE);
 		EnableWindow((page_window->save).button,FALSE);
+		EnableWindow((page_window->save).edit,FALSE);
 		EnableWindow(page_window->scrolling_checkbox,FALSE);
 		if (page_window->test_checkbox)
 		{
@@ -7695,13 +7706,9 @@ Called when the start all stimulators button is pressed.
 							}
 							else
 							{
-								if (UnEmap_1V2==page_window->unemap_hardware_version)
-								{
-									display_message(WARNING_MESSAGE,
-						"Constant current stimulation is not available for this hardware");
-									return_code=0;
-								}
-								else
+								if ((UnEmap_2V1==page_window->unemap_hardware_version)||
+									(UnEmap_2V2==page_window->unemap_hardware_version)||
+									((UnEmap_2V1|UnEmap_2V2)==page_window->unemap_hardware_version))
 								{
 									return_code=unemap_load_current_stimulating(
 										((page_window->stimulators)[stimulator_number]).
@@ -7710,6 +7717,12 @@ Called when the start all stimulators button is pressed.
 										channel_numbers,number_of_values,values_per_second,
 										values,number_of_cycles,
 										(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+								}
+								else
+								{
+									display_message(WARNING_MESSAGE,
+						"Constant current stimulation is not available for this hardware");
+									return_code=0;
 								}
 							}
 							DEALLOCATE(values);
@@ -7829,18 +7842,20 @@ Called when the stop all stimulators button is pressed.
 				}
 				else
 				{
-					if (UnEmap_1V2==page_window->unemap_hardware_version)
-					{
-						display_message(WARNING_MESSAGE,
-						"Constant current stimulation is not available for this hardware");
-					}
-					else
+					if ((UnEmap_2V1==page_window->unemap_hardware_version)||
+						(UnEmap_2V2==page_window->unemap_hardware_version)||
+						((UnEmap_2V1|UnEmap_2V2)==page_window->unemap_hardware_version))
 					{
 						unemap_load_current_stimulating(
 							((page_window->stimulators)[i]).number_of_channels,
 							((page_window->stimulators)[i]).channel_numbers,number_of_values,
 							values_per_second,values,1,
 							(Unemap_stimulation_end_callback *)NULL,(void *)NULL);
+					}
+					else
+					{
+						display_message(WARNING_MESSAGE,
+						"Constant current stimulation is not available for this hardware");
 					}
 				}
 				if (0<(number_of_values=((page_window->stimulators)[i]).
@@ -7870,7 +7885,7 @@ static void open_Pacing_window_callback(
 #endif /* defined (WINDOWS) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 23 November 2001
+LAST MODIFIED : 23 January 2002
 
 DESCRIPTION :
 Called when the pacing button is pressed.
@@ -7886,7 +7901,10 @@ Called when the pacing button is pressed.
 	if (page_window=(struct Page_window *)page_window_structure)
 	{
 		open_Pacing_window(&(page_window->pacing_window),page_window->rig_address,
-			page_window->pacing_button,page_window->user_interface);
+#if defined (MOTIF)
+			page_window->pacing_button,
+#endif /* defined (MOTIF) */
+			page_window->user_interface);
 	}
 	LEAVE;
 } /* open_Pacing_window_callback */
@@ -8692,6 +8710,7 @@ DESCRIPTION :
 				switch (page_window->unemap_hardware_version)
 				{
 					case UnEmap_1V2:
+					default:
 					{
 						DestroyWindow(page_window->calibrate_button);
 						page_window->calibrate_button=(HWND)NULL;
@@ -8787,6 +8806,7 @@ DESCRIPTION :
 				switch (page_window->unemap_hardware_version)
 				{
 					case UnEmap_1V2:
+					default:
 					{
 						DestroyWindow(page_window->isolate_checkbox);
 						page_window->isolate_checkbox=(HWND)NULL;
@@ -8883,6 +8903,7 @@ DESCRIPTION :
 				switch (page_window->unemap_hardware_version)
 				{
 					case UnEmap_1V2:
+					default:
 					{
 						DestroyWindow(page_window->pacing_button);
 						page_window->pacing_button=(HWND)NULL;
@@ -8947,6 +8968,7 @@ DESCRIPTION :
 				switch (page_window->unemap_hardware_version)
 				{
 					case UnEmap_1V2:
+					default:
 					{
 						DestroyWindow(page_window->start_all_stimulators_button);
 						page_window->start_all_stimulators_button=(HWND)NULL;
@@ -8989,6 +9011,7 @@ DESCRIPTION :
 				switch (page_window->unemap_hardware_version)
 				{
 					case UnEmap_1V2:
+					default:
 					{
 						DestroyWindow(page_window->stimulate_checkbox);
 						page_window->stimulate_checkbox=(HWND)NULL;
@@ -9030,6 +9053,7 @@ DESCRIPTION :
 				switch (page_window->unemap_hardware_version)
 				{
 					case UnEmap_1V2:
+					default:
 					{
 						DestroyWindow(page_window->stimulator_checkbox);
 						page_window->stimulator_checkbox=(HWND)NULL;
@@ -9072,6 +9096,7 @@ DESCRIPTION :
 				switch (page_window->unemap_hardware_version)
 				{
 					case UnEmap_1V2:
+					default:
 					{
 						DestroyWindow(page_window->stop_all_stimulators_button);
 						page_window->stop_all_stimulators_button=(HWND)NULL;
@@ -9114,6 +9139,7 @@ DESCRIPTION :
 				switch (page_window->unemap_hardware_version)
 				{
 					case UnEmap_1V2:
+					default:
 					{
 						DestroyWindow(page_window->test_checkbox);
 						page_window->test_checkbox=(HWND)NULL;
@@ -9483,7 +9509,7 @@ DESCRIPTION :
 					menu_bar_width += widget_spacing+sample_checkbox_width;
 					MoveWindow((page_window->save).button,menu_bar_width,
 						menu_bar_height+2,save_button_width,
-						(page_window->save_button).height,TRUE);
+						(page_window->save).button_height,TRUE);
 					menu_bar_width += save_button_width;
 					MoveWindow((page_window->save).edit,menu_bar_width,
 						menu_bar_height+2,save_edit_width,(page_window->save).edit_height,

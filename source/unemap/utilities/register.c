@@ -6036,7 +6036,7 @@ static void process_keyboard(
 										unemap_stop_stimulating(0);
 										pacing_voltages[0]=control_amplitude;
 										pacing_voltages[1]=0;
-										voltages_per_second=2000./basic_cycle_length;
+										voltages_per_second=(float)2000./basic_cycle_length;
 										unemap_load_voltage_stimulating(number_of_pacing_channels,
 											pacing_channels,2,voltages_per_second,pacing_voltages,0,
 											(Unemap_stimulation_end_callback *)NULL,
@@ -6107,7 +6107,7 @@ static void process_keyboard(
 										}
 									}
 									number_of_pacing_voltages_save=number_of_pacing_voltages;
-									voltages_per_second=1000./s2_resolution;
+									voltages_per_second=(float)1000./s2_resolution;
 									response='y';
 									change=0;
 									do
