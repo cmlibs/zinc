@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : import_finite_element.c
 
-LAST MODIFIED : 1 February 2002
+LAST MODIFIED : 26 July 2002
 
 DESCRIPTION :
 The function for importing finite element data, from a file or CMISS (via a
@@ -845,7 +845,7 @@ static int read_FE_node_field(FILE *input_file,
 	struct FE_node *node, struct FE_field **field, 
 	struct Node_time_index *node_time_index)
 /*******************************************************************************
-LAST MODIFIED : 31 October 2001
+LAST MODIFIED : 26 July 2002
 
 DESCRIPTION :
 Reads a node field from an <input_file>, adding it to the fields defined at
@@ -865,7 +865,7 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 	ENTER(read_FE_node_field);
 	*field=(struct FE_field *)NULL;
 	return_code=0;
-	if (input_file&&fe_field_manager&&node&&field&&fe_time)
+	if (input_file&&fe_field_manager&&node&&field)
 	{
 		if ((the_field=read_FE_field(input_file,fe_field_manager,fe_time))&&
 			(number_of_components=get_FE_field_number_of_components(the_field))&&
@@ -1190,8 +1190,8 @@ from a previous call to this function.
 				for (i = 0; (i < number_of_fields) && return_code; i++)
 				{
 					field = (struct FE_field *)NULL;
-					if (read_FE_node_field(input_file,fe_field_manager,fe_time,node,&field,
-							 node_time_index))
+					if (read_FE_node_field(input_file,fe_field_manager,fe_time,node,
+						&field,node_time_index))
 					{
 						if (!add_FE_field_order_info_field(*field_order_info, field))
 						{
@@ -2450,8 +2450,8 @@ printf("%d %d\n",*xi_basis_type,*(temp_basis_type-(xi_number-i)));*/
 
 static int read_FE_element_field(FILE *input_file,
 	struct FE_element_shape *shape,struct MANAGER(FE_field) *fe_field_manager,
-	struct FE_time *fe_time, struct MANAGER(FE_basis) *basis_manager,
-	struct FE_element *element, struct FE_field **field)
+	struct FE_time *fe_time,struct MANAGER(FE_basis) *basis_manager,
+	struct FE_element *element,struct FE_field **field)
 /*******************************************************************************
 LAST MODIFIED : 9 November 2001
 
@@ -3937,7 +3937,7 @@ into an array and the correct index put into the corresponding time array.
 } /* read_FE_node_group_with_order */
 
 int read_FE_node_group(FILE *input_file,
-	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
+	struct MANAGER(FE_field) *fe_field_manager,struct FE_time *fe_time,
 	struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
@@ -4279,7 +4279,8 @@ node groups are updated to contain nodes used by elements in associated group.
 						}
 						/* read new element field information and field_order_info */
 						if (template_element=read_FE_element_field_info(input_file,
-							element_shape,fe_field_manager,fe_time,basis_manager,&field_order_info))
+							element_shape,fe_field_manager,fe_time,basis_manager,
+							&field_order_info))
 						{
 							ACCESS(FE_element)(template_element);
 						}
@@ -4608,34 +4609,35 @@ statically include an exnode or exelem file (in <exnode_string>/<exelem_string>)
 			/* open a temp file to write to */
 			if(output_file=fopen("temp_exnode_or_exelem_file", "w"))
 			{
-				/*write out the new group name */
-				if(fwrite(line_str,1,strlen(line_str),output_file))
+				/* write out the new group name */
+				if (fwrite(line_str,1,strlen(line_str),output_file))
 				{
-					/*move the start of the string to to the start of the second line (after the \n) */
-					/*(The first line is the group name and we've  just replaced this)*/
+					/* move the start of the string to to the start of the second line
+						(after the \n) (The first line is the group name and we've just
+						replaced this)x*/
 					outstr=exnode_or_exelem_string;
-					while(*outstr!='\n')
+					while (*outstr!='\n')
 					{		
 						outstr++;				
 					}
-					/*move past the \n */
+					/* move past the \n */
 					outstr++;
-					/*write the string to the temp file*/
-					if(fwrite(outstr,1,strlen(outstr),output_file))
+					/* write the string to the temp file*/
+					if (fwrite(outstr,1,strlen(outstr),output_file))
 					{
 						fclose(output_file);
 						/* read the temp file in to a node or element group */
 						if (input_file=fopen("temp_exnode_or_exelem_file","r"))
 						{
-							if(exnode_string)
+							if (exnode_string)
 							{
-								return_code=read_FE_node_group(input_file,fe_field_manager,fe_time,
-									node_manager,element_manager,node_group_manager,data_group_manager,
-									element_group_manager);			
+								return_code=read_FE_node_group(input_file,fe_field_manager,
+									fe_time,node_manager,element_manager,node_group_manager,
+									data_group_manager,element_group_manager);			
 							}
 							else
-							/* exelem_string */
 							{
+								/* exelem_string */
 								return_code=read_FE_element_group(input_file,element_manager,
 									element_group_manager,fe_field_manager,fe_time,node_manager,
 									node_group_manager,data_group_manager,basis_manager);	
@@ -4647,8 +4649,9 @@ statically include an exnode or exelem file (in <exnode_string>/<exelem_string>)
 					{
 						return_code=0;
 						fclose(output_file);
-						display_message(ERROR_MESSAGE,"read_exnode_or_exelem_file_from_string."
-							" failed to write file");
+						display_message(ERROR_MESSAGE,
+							"read_exnode_or_exelem_file_from_string.  "
+							"Failed to write file");
 					}
 				}
 				else
@@ -4671,22 +4674,24 @@ statically include an exnode or exelem file (in <exnode_string>/<exelem_string>)
 		else
 		{
 			return_code=0;
-			display_message(ERROR_MESSAGE,"read_exnode_or_exelem_file_from_string. out of memory");
+			display_message(ERROR_MESSAGE,"read_exnode_or_exelem_file_from_string.  "
+				"Out of memory");
 		}
 		DEALLOCATE(line_str);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"read_exnode_or_exelem_file_from_string. Invalid arguments");
+		display_message(ERROR_MESSAGE,"read_exnode_or_exelem_file_from_string.  "
+			"Invalid arguments");
 	}
 	LEAVE;
-	return(return_code);
+
+	return (return_code);
 } /* read_exnode_or_exelem_file_from_string */
 
-int read_exnode_and_exelem_file_from_string_and_offset(
-	char *exnode_string,char *exelem_string,
-	char *name,int offset,
-	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
+int read_exnode_and_exelem_file_from_string_and_offset(char *exnode_string,
+	char *exelem_string,char *name,int offset,
+	struct MANAGER(FE_field) *fe_field_manager,struct FE_time *fe_time,
 	struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_node))*node_group_manager,
@@ -4694,7 +4699,7 @@ int read_exnode_and_exelem_file_from_string_and_offset(
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
 	struct MANAGER(FE_basis) *basis_manager)
 /*******************************************************************************
-LAST MODIFIED :3 November 2000
+LAST MODIFIED : 3 November 2000
 
 DESCRIPTION :
 Given a string <exnode_string> containing an entire exnode file,and a string 
@@ -4706,18 +4711,19 @@ numbers to <offset>
 	int return_code;
 
 	ENTER(read_exnode_and_exelem_file_from_string_and_offset);
-	if(exnode_string&&exelem_string&&fe_field_manager&&node_manager&&element_manager&&
-		node_group_manager&&data_group_manager&&element_group_manager&&basis_manager)
+	if (exnode_string&&exelem_string&&fe_field_manager&&node_manager&&
+		element_manager&&node_group_manager&&data_group_manager&&
+		element_group_manager&&basis_manager)
 	{				
 		/* read in the default torso mesh nodes and elements */
 		/* (cleaned up when the program shuts down) */		
-		if((return_code=read_exnode_or_exelem_file_from_string(exnode_string,
+		if ((return_code=read_exnode_or_exelem_file_from_string(exnode_string,
 			(char *)NULL,name,fe_field_manager,fe_time,node_manager,element_manager,
-			node_group_manager,data_group_manager,element_group_manager,basis_manager))&&
-			(return_code=read_exnode_or_exelem_file_from_string((char *)NULL,
-				exelem_string,name,fe_field_manager,fe_time,node_manager,
-				element_manager,node_group_manager,data_group_manager,element_group_manager
-				,basis_manager)))
+			node_group_manager,data_group_manager,element_group_manager,
+			basis_manager))&&(return_code=read_exnode_or_exelem_file_from_string(
+			(char *)NULL,exelem_string,name,fe_field_manager,fe_time,node_manager,
+			element_manager,node_group_manager,data_group_manager,
+			element_group_manager,basis_manager)))
 		{
 			/* offset the nodea and elements */
 			return_code=offset_FE_node_and_element_identifiers_in_group(name,offset,
@@ -4793,17 +4799,16 @@ fields .
 	return(group_name);
 }/* get_first_group_name_from_FE_node_file*/
 
-int read_FE_node_and_elem_groups_and_return_name_given_file_name(char *group_file_name,
-	struct MANAGER(FE_field) *fe_field_manager, struct FE_time *fe_time,
-	struct MANAGER(FE_node) *node_manager,
+int read_FE_node_and_elem_groups_and_return_name_given_file_name(
+	char *group_file_name,struct MANAGER(FE_field) *fe_field_manager,
+	struct FE_time *fe_time,struct MANAGER(FE_node) *node_manager,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_node))*node_group_manager,
 	struct MANAGER(GROUP(FE_node))*data_group_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
-	struct MANAGER(FE_basis) *basis_manager,
-	char **group_name)
+	struct MANAGER(FE_basis) *basis_manager,char **group_name)
 /*******************************************************************************
-LAST MODIFIED :2 November 2000
+LAST MODIFIED : 2 November 2000
 
 DESCRIPTION :
 Given a string <group_file_name>  reads in the corresponding node and 
@@ -4848,8 +4853,9 @@ It is up to the user to DEALLOCATE <group_name>.
 			{
 				if (input_file=fopen(exnode_name_str,"r"))
 				{
-					return_code=read_FE_node_group(input_file,fe_field_manager,fe_time,node_manager,
-						element_manager,node_group_manager,data_group_manager,element_group_manager);
+					return_code=read_FE_node_group(input_file,fe_field_manager,fe_time,
+						node_manager,element_manager,node_group_manager,data_group_manager,
+						element_group_manager);
 				}
 				else
 				{
