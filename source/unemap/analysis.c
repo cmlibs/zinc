@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 10 May 2002
+LAST MODIFIED : 9 September 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -34,7 +34,7 @@ int calculate_device_objective(struct Device *device,
 	enum Event_detection_objective objective,float *objective_values,
 	int number_of_objective_values,int objective_values_step,int average_width)
 /*******************************************************************************
-LAST MODIFIED : 6 March 2002
+LAST MODIFIED : 9 September 2002
 
 DESCRIPTION :
 Calculates the specified <objective>/<detection> function for the <device>.
@@ -42,15 +42,19 @@ Storing the values in the array (<objective_values> every
 <objective_values_step>) provided.
 ==============================================================================*/
 {
+	int number_of_signals,return_code,save_number_of_objective_values;
+#if defined (OLD_CODE)
 	float *float_value,*objective_value;
-	int i,number_of_samples,number_of_signals,return_code;
+	int i,number_of_samples,number_of_signals;
 	short *short_value;
 	struct Signal *signal;
 	struct Signal_buffer *buffer;
+#endif /* defined (OLD_CODE) */
 
 	ENTER(calculate_device_objective);
-	number_of_samples=0;
 	return_code=0;
+#if defined (OLD_CODE)
+	number_of_samples=0;
 	if (device&&(signal=device->signal)&&(buffer=signal->buffer)&&
 		(0<(number_of_samples=buffer->number_of_samples))&&
 		(((SHORT_INT_VALUE==buffer->value_type)&&
@@ -120,6 +124,27 @@ Storing the values in the array (<objective_values> every
 			display_message(ERROR_MESSAGE,
 				"calculate_device_objective.  Missing device");
 		}
+		return_code=0;
+	}
+#endif /* defined (OLD_CODE) */
+	save_number_of_objective_values=number_of_objective_values;
+	number_of_signals=objective_values_step;
+	if ((extract_Device_signal_information(device,1,1,0,(float **)NULL,
+		&objective_values,(enum Event_signal_status **)NULL,
+		&number_of_signals,&save_number_of_objective_values,(char **)NULL,
+		(int *)NULL,(float *)NULL,(float *)NULL))&&
+		(save_number_of_objective_values==number_of_objective_values)&&
+		(1==number_of_signals))
+	{
+		return_code=calculate_time_series_objective(detection,objective,
+			average_width,(float)1,(float)0,number_of_objective_values,
+			objective_values_step,objective_values);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"calculate_device_objective.  "
+			"Error extracting signal values.  %d %d %d",number_of_objective_values,
+			save_number_of_objective_values,number_of_signals);
 		return_code=0;
 	}
 	LEAVE;
@@ -323,20 +348,20 @@ named file.
 										number_of_events++;
 										event=event->next;
 									}
-									if (1==BINARY_FILE_WRITE((char *)&number_of_events,sizeof(int),
-										1,output_file))
+									if (1==BINARY_FILE_WRITE((char *)&number_of_events,
+										sizeof(int),1,output_file))
 									{
 										event=start_event;
 										while (return_code&&event&&(event->time<=buffer_end))
 										{
 											event_number=(event->number)-(start_event->number)+1;
 											event_time=(event->time)-buffer_start;
-											if ((1==BINARY_FILE_WRITE((char *)&(event_time),sizeof(int),
-												1,output_file))&&
-												(1==BINARY_FILE_WRITE((char *)&(event_number),sizeof(int),
-													1,output_file))&&
+											if ((1==BINARY_FILE_WRITE((char *)&(event_time),
+												sizeof(int),1,output_file))&&
+												(1==BINARY_FILE_WRITE((char *)&(event_number),
+												sizeof(int),1,output_file))&&
 												(1==BINARY_FILE_WRITE((char *)&(event->status),
-													sizeof(enum Event_signal_status),1,output_file)))
+												sizeof(enum Event_signal_status),1,output_file)))
 											{
 												event=event->next;
 											}
