@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 9 April 2001
+LAST MODIFIED : 10 April 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -23906,7 +23906,7 @@ Executes a CELL SET CALCULATE command.
           model_dso_name =
             Cell_interface_get_model_dso_name(cell_interface);
           Option_table_add_entry(option_table,"model_dso",
-            &model_dso_name,(void *)1,set_name);
+            &model_dso_name,NULL,set_file_name);
           intg_routine_name =
             Cell_interface_get_intg_routine_name(cell_interface);
           Option_table_add_entry(option_table,"integrator_routine",
@@ -23914,11 +23914,11 @@ Executes a CELL SET CALCULATE command.
           intg_dso_name =
             Cell_interface_get_intg_dso_name(cell_interface);
           Option_table_add_entry(option_table,"integrator_dso",
-            &intg_dso_name,(void *)1,set_name);
+            &intg_dso_name,NULL,set_file_name);
           data_file_name =
             Cell_interface_get_data_file_name(cell_interface);
           Option_table_add_entry(option_table,"data_file",
-            &data_file_name,(void *)1,set_name);
+            &data_file_name,NULL,set_file_name);
           if (return_code = Option_table_multi_parse(option_table,state))
           {
             /* check for essential parameters */
@@ -23987,7 +23987,7 @@ Executes a CELL SET CALCULATE command.
           &model_routine_name,(void *)1,set_name);
         model_dso_name = (char *)NULL;
         Option_table_add_entry(option_table,"model_dso",
-          &model_dso_name,(void *)1,set_name);
+          &model_dso_name,NULL,set_file_name);
         intg_routine_name = (char *)NULL;
         Option_table_add_entry(option_table,"integrator_routine",
           &intg_routine_name,(void *)1,set_name);
