@@ -1705,57 +1705,7 @@ Main program for the CMISS Graphical User Interface
 #if defined (DEBUG)
 	/* Now lets test it */
 	{
-		/* Create the list of "messages" */
-		GtkWidget *create_list( void )
-			{
-
-				GtkWidget *scrolled_window;
-				GtkWidget *tree_view;
-				GtkListStore *model;
-				GtkTreeIter iter;
-				GtkCellRenderer *cell;
-				GtkTreeViewColumn *column;
-
-				int i;
-				
-				/* Create a new scrolled window, with scrollbars only if needed */
-				scrolled_window = gtk_scrolled_window_new (NULL, NULL);
-				gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_window),
-					GTK_POLICY_AUTOMATIC,
-					GTK_POLICY_AUTOMATIC);
-				
-				model = gtk_list_store_new (1, G_TYPE_STRING);
-				tree_view = gtk_tree_view_new ();
-				gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW (scrolled_window),
-					tree_view);
-				gtk_tree_view_set_model (GTK_TREE_VIEW (tree_view), GTK_TREE_MODEL (model));
-				gtk_widget_show (tree_view);
-				
-				/* Add some messages to the window */
-				for (i = 0; i < 10; i++) {
-					gchar *msg = g_strdup_printf ("Message #%d", i);
-					gtk_list_store_append (GTK_LIST_STORE (model), &iter);
-					gtk_list_store_set (GTK_LIST_STORE (model),
-						&iter,
-						0, msg,
-						-1);
-					g_free (msg);
-				}
-				
-				cell = gtk_cell_renderer_text_new ();
-				
-				column = gtk_tree_view_column_new_with_attributes ("Messages",
-					cell,
-					"text", 0,
-					NULL);
-				
-				gtk_tree_view_append_column (GTK_TREE_VIEW (tree_view),
-					GTK_TREE_VIEW_COLUMN (column));
-				
-				return scrolled_window;
-			}
-		
-		GtkWidget *shell, *gtk_cmiss_scene_viewer, *vpaned, *list;
+  		GtkWidget *shell, *gtk_cmiss_scene_viewer, *vpaned, *list;
 		struct Cmiss_scene_viewer *cmiss_scene_viewer;
 
 		if (shell = gtk_window_new(GTK_WINDOW_TOPLEVEL))
@@ -1771,10 +1721,6 @@ Main program for the CMISS Graphical User Interface
 
 				/* Now create the contents of the two halves of the window */
 				
-				list = create_list ();
-				gtk_paned_add1 (GTK_PANED (vpaned), list);
-				gtk_widget_show (list);
-
 				gtk_paned_add2 (GTK_PANED (vpaned), gtk_cmiss_scene_viewer);
 				gtk_widget_show (gtk_cmiss_scene_viewer);
 				gtk_widget_show (shell);
