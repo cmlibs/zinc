@@ -17878,6 +17878,9 @@ be specified at once.
 			/* remove */
 			Option_table_add_entry(option_table, "remove", &remove_flag,
 				NULL, set_char_flag);
+			/* selected */
+			Option_table_add_entry(option_table, "selected", &selected_flag,
+				NULL, set_char_flag);
 			/* default option: element number ranges */
 			Option_table_add_entry(option_table, (char *)NULL, (void *)element_ranges,
 				NULL, set_Multi_range);
