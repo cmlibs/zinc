@@ -835,7 +835,7 @@ MOTIF_LIB =
 LIB = $(MOTIF_LIB) -lg2c -lm -ldl -lc /usr/lib/libpthread.a /usr/lib/libcrypt.a /usr/lib/libstdc++-2-libc6.1-1-2.9.0.a
 #else /* defined (DYNAMIC_GL_LINUX) */
 #if defined (MOTIF)
-MOTIF_LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXext
+MOTIF_LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXext -lXp -lSM -lICE
 #else /* defined (MOTIF) */
 MOTIF_LIB =
 #endif /* defined (MOTIF) */
