@@ -21,7 +21,7 @@ Macros
 Global types
 ------------
 */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define GROUP_( object_type )  group_ ## object_type
 #else
 #define GROUP_( object_type )  g ## object_type
@@ -32,7 +32,7 @@ Global types
 #define DECLARE_GROUP_TYPE( object_type ) \
 struct GROUP(object_type)
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define GROUP_CONDITIONAL_FUNCTION_( object_type ) \
 	group_conditional_function_ ## object_type
 #else
@@ -45,7 +45,7 @@ struct GROUP(object_type)
 typedef int (GROUP_CONDITIONAL_FUNCTION(object_type)) \
 	(struct object_type *object,void *user_data)
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define GROUP_ITERATOR_FUNCTION_( object_type ) \
 	group_iterator_function_ ## object_type
 #else
@@ -100,7 +100,7 @@ DESCRIPTION : \
 Replaces the contents of the <target_group> with those of the <source_group>. \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define REMOVE_OBJECT_FROM_GROUP( object_type ) \
 	group_remove_object_ ## object_type
 #else
@@ -117,7 +117,7 @@ DESCRIPTION : \
 Removes the <object> from the <group>. \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define REMOVE_OBJECTS_FROM_GROUP_THAT_( object_type )  \
 	group_remove_objects_that_ ## object_type
 #else
@@ -137,7 +137,7 @@ DESCRIPTION : \
 Removes all objects from the group that <conditional> returns true for \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define REMOVE_ALL_OBJECTS_FROM_GROUP( object_type ) \
 	group_remove_all_objects_ ## object_type
 #else
@@ -154,7 +154,7 @@ DESCRIPTION : \
 Removes all objects from the <group>. \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define ADD_OBJECT_TO_GROUP( object_type )  group_add_object_ ## object_type
 #else
 #define ADD_OBJECT_TO_GROUP( object_type )  pg ## object_type
@@ -170,7 +170,7 @@ DESCRIPTION : \
 Add the <object> to the <group>. \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define NUMBER_IN_GROUP( object_type )  group_number_ ## object_type
 #else
 #define NUMBER_IN_GROUP( object_type )  ng ## object_type
@@ -186,7 +186,7 @@ Returns the number of objects in the <group>. \
 ==============================================================================*/
 
 #if defined (OLD_CODE)
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define GET_GROUP_NAME( object_type )  group_get_name_ ## object_type
 #else
 #define GET_GROUP_NAME( object_type )  mg ## object_type
@@ -203,7 +203,7 @@ a copy. Obsolete; use GET_NAME(GROUP(OBJECT))(object_group) instead. \
 ==============================================================================*/
 #endif /* defined (OLD_CODE) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define FIRST_OBJECT_IN_GROUP_THAT( object_type ) \
 	group_first_that_ ## object_type
 #else
@@ -223,7 +223,7 @@ If <conditional> is not NULL, the "first" object in the <group> that \
 <group> is returned. \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define FOR_EACH_OBJECT_IN_GROUP( object_type ) group_for_each_ ## object_type
 #else
 #define FOR_EACH_OBJECT_IN_GROUP( object_type ) eg ## object_type
@@ -240,7 +240,7 @@ DESCRIPTION : \
 Calls <iterator> for each object in the <group>. \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define FIND_BY_IDENTIFIER_IN_GROUP( object_type , identifier ) \
 	group_find_by_identifier_ ## object_type ## identifier
 #else
@@ -260,7 +260,7 @@ Searchs the <group> for the object with the specified <identifier> and returns \
 the address of the object. \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define IS_OBJECT_IN_GROUP( object_type )  is_object_in_group_ ## object_type
 #else
 #define IS_OBJECT_IN_GROUP( object_type )  gg ## object_type

@@ -30,7 +30,7 @@ A callback. \
 	int access_count; \
 } /* CMISS_CALLBACK_ITEM(callback_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CMISS_CALLBACK_OBJECT_AND_CALL_DATA( callback_type ) \
 	callback_object_and_call_data_ ## callback_type
 #else
@@ -124,7 +124,7 @@ Destroys the callback at <*callback_address>. \
 	return (return_code); \
 } /* DESTROY(CMISS_CALLBACK_ITEM(callback_type)) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CMISS_CALLBACK_CALL( callback_type ) callback_call_ ## callback_type
 #else
 #define CMISS_CALLBACK_CALL( callback_type ) cbc_ ## callback_type
@@ -163,7 +163,7 @@ Sends <callback> with the object and call_data in <callback_data>. \
 	return (return_code); \
 } /* CMISS_CALLBACK_CALL(callback_type) */ \
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CMISS_CALLBACK_MATCHES( callback_type ) callback_matches_ ## callback_type
 #else
 #define CMISS_CALLBACK_MATCHES( callback_type ) cbm_ ## callback_type

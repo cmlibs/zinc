@@ -151,7 +151,7 @@ returned if <time> is lower than any times in the array or an error occurs.
 	return (time_number);
 } /* GT_object_get_less_than_or_equal_time_number */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define GT_OBJECT_REMOVE_PRIMITIVES_AT_TIME_NUMBER(primitive_type) \
 	GT_object_remove_primitives_at_time_number_ ## primitive_type
 #else
@@ -5159,7 +5159,7 @@ from the conditional_function causes the primitive to be removed.
 	return (return_code);
 } /* GT_object_remove_primitives_at_time */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define GT_OBJECT_TRANSFER_PRIMITIVES_AT_TIME_NUMBER_(primitive_type) \
 	GT_object_transfer_primitives_at_time_number_ ## primitive_type
 #else

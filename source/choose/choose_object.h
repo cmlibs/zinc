@@ -26,7 +26,7 @@ Global Functions
 ---------------
 */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CREATE_CHOOSE_OBJECT_WIDGET_( object_type ) \
 	create_choose_object_widget_ ## object_type
 #else
@@ -52,7 +52,7 @@ to be selectable. \
 <user_interface> supplies fonts. \
 ============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHOOSE_OBJECT_GET_CALLBACK_( object_type ) \
 	choose_object_get_callback_ ## object_type
 #else
@@ -71,7 +71,7 @@ DESCRIPTION : \
 Returns a pointer to the callback item of the choose_object widget. \
 ============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHOOSE_OBJECT_SET_CALLBACK_( object_type ) \
 	choose_object_set_callback_ ## object_type
 #else
@@ -90,7 +90,7 @@ DESCRIPTION : \
 Changes the callback item of the choose_object widget. \
 ============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHOOSE_OBJECT_GET_OBJECT_( object_type ) \
 	choose_object_get_object_ ## object_type
 #else
@@ -109,7 +109,7 @@ DESCRIPTION : \
 Returns the currently chosen object in the choose_object widget. \
 ============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHOOSE_OBJECT_SET_OBJECT_( object_type ) \
 	choose_object_set_object_ ## object_type
 #else
@@ -128,7 +128,7 @@ DESCRIPTION : \
 Changes the chosen object in the choose_object widget. \
 ============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION_( object_type ) \
 	choose_object_change_conditional_function_ ## object_type
 #else

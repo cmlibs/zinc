@@ -35,7 +35,7 @@ The different data structures supported for this widget.
 Global functions
 ----------------
 */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CREATE_SELECT_WIDGET_( object_type ) \
 	create_select_widget_ ## object_type
 #else
@@ -55,7 +55,7 @@ Creates a selection widget that will allow the user to choose an object based \
 upon its name. \
 ============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define SELECT_SET_UPDATE_CB_( object_type ) \
 	select_set_update_cb_ ## object_type
 #else
@@ -74,7 +74,7 @@ DESCRIPTION : \
 Changes the callback item of the select widget. \
 ============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define SELECT_SET_SELECT_ITEM_( object_type ) \
 	select_set_select_item_ ## object_type
 #else
@@ -93,7 +93,7 @@ DESCRIPTION : \
 Changes the selected object in the select widget. \
 ============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define SELECT_GET_UPDATE_CB_( object_type ) \
 	select_get_update_cb_ ## object_type
 #else
@@ -111,7 +111,7 @@ DESCRIPTION : \
 Returns a pointer to the callback item of the select widget. \
 ============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define SELECT_GET_SELECT_ITEM_( object_type ) \
 	select_get_select_item_ ## object_type
 #else

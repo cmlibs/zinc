@@ -26,7 +26,7 @@ Calls the client-specified callback routine if a different object is chosen.
 Module variables
 ----------------
 */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define TEXT_CHOOSE_FROM_FE_REGION_( object_type ) \
 	text_choose_from_fe_region_ ## object_type
 #else
@@ -59,7 +59,7 @@ Module functions
 ----------------
 */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define TEXT_CHOOSE_FROM_FE_REGION_UPDATE_( object_type ) \
 	text_choose_from_fe_region_update_ ## object_type
 #else
@@ -110,7 +110,7 @@ Avoids sending repeated updates if the object address has not changed. \
 	return (return_code); \
 } /* TEXT_CHOOSE_FROM_FE_REGION_UPDATE(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define TEXT_CHOOSE_FROM_FE_REGION_SELECT_OBJECT_( object_type ) \
 	text_choose_object_select_object_ ## object_type
 #else
@@ -204,7 +204,7 @@ update in case it has changed, and writes the new object string in the widget. \
 	return (return_code); \
 } /* TEXT_CHOOSE_FROM_FE_REGION_SELECT_OBJECT(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define TEXT_CHOOSE_FROM_FE_REGION_GLOBAL_OBJECT_CHANGE_( object_type ) \
 	text_choose_from_fe_region_global_object_change_ ## object_type
 #else
@@ -256,7 +256,7 @@ Updates the chosen object and text field in response to messages. \
 	LEAVE; \
 } /* TEXT_CHOOSE_FROM_FE_REGION_GLOBAL_OBJECT_CHANGE(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define TEXT_CHOOSE_FROM_FE_REGION_DESTROY_CB_( object_type ) \
 	text_choose_from_fe_region_destroy_cb_ ## object_type
 #else
@@ -295,7 +295,7 @@ Callback for the text_choose_from_fe_region dialog - tidies up all memory alloca
 	LEAVE; \
 } /* TEXT_CHOOSE_FROM_FE_REGION_DESTROY_CB(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define TEXT_CHOOSE_FROM_FE_REGION_CB_( object_type ) \
 	text_choose_from_fe_region_cb_ ## object_type
 #else

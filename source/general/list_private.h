@@ -28,7 +28,7 @@ Macros
 Local types
 -----------
 */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define LIST_ITEM( object_type )  list_item_ ## object_type
 #else
 #define LIST_ITEM( object_type )  li ## object_type
@@ -529,7 +529,7 @@ PROTOTYPE_FOR_EACH_OBJECT_IN_LIST_FUNCTION(object_type) \
 	return (return_code); \
 } /* FOR_EACH_OBJECT_IN_LIST(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define LIST_IDENTIFIER_CHANGE_DATA( object_type , identifier ) \
 	list_identifier_change_data_ ## object_type ## identifier
 #else
@@ -550,7 +550,7 @@ Should only be declared with manager functions. \
 	void *dummy; \
 } /* struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define LIST_BEGIN_IDENTIFIER_CHANGE( object_type, identifier ) \
 	list_begin_identifier_change_ ## object_type ## identifier
 #else
@@ -602,7 +602,7 @@ Should only be declared with manager functions. \
 	return (identifier_change_data); \
 } /* LIST_BEGIN_IDENTIFIER_CHANGE(object_type,identifier) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define LIST_END_IDENTIFIER_CHANGE( object_type, identifier ) \
 	list_end_identifier_change_ ## object_type ## identifier
 #else

@@ -36,7 +36,7 @@ Contains all information necessary for a callback.
 }; /* struct Callback_data */
 #endif /* defined (MOTIF) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CMISS_CALLBACK_FUNCTION( callback_type ) callback_function_ ## callback_type
 #else
 #define CMISS_CALLBACK_FUNCTION( callback_type ) cbf_ ## callback_type
@@ -46,7 +46,7 @@ Contains all information necessary for a callback.
 	call_data_type ) \
 typedef void CMISS_CALLBACK_FUNCTION(callback_type)(object_type,call_data_type,void *)
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CMISS_CALLBACK_ITEM( callback_type ) callback_item_ ## callback_type
 #else
 #define CMISS_CALLBACK_ITEM( callback_type ) cbi_ ## callback_type
@@ -60,7 +60,7 @@ Global functions
 ----------------
 */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CMISS_CALLBACK_LIST_CALL( callback_type ) callback_list_call_ ## callback_type
 #else
 #define CMISS_CALLBACK_LIST_CALL( callback_type ) cblc_ ## callback_type
@@ -78,7 +78,7 @@ DESCRIPTION :
 Calls every callback in <callback_list> with <object> and <call_data>.
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CMISS_CALLBACK_LIST_ADD_CALLBACK( callback_type ) \
 	callback_list_add_callback_ ## callback_type
 #else
@@ -96,7 +96,7 @@ DESCRIPTION :
 Adds a callback = <function> + <user_data> to <callback_list>.
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CMISS_CALLBACK_LIST_REMOVE_CALLBACK( callback_type ) \
 	callback_list_remove_callback_ ## callback_type
 #else

@@ -43,7 +43,7 @@ Global types
 */
 /* Contains all information necessary for the operation of the dialog -
 	independent of the windowing system. */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define DIALOG_DATA_STRUCT_( dialog_name ) \
 	Dialog_data_ ## dialog_name ## _struct
 #else
@@ -51,7 +51,7 @@ Global types
 #endif
 #define DIALOG_DATA_STRUCT( dialog_name )  DIALOG_DATA_STRUCT_(dialog_name)
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define WINDOW_DATA_STRUCT_( dialog_name )  dialog_name ## Data
 #else
 #define WINDOW_DATA_STRUCT_( dialog_name )  WD ## dialog_name
@@ -59,14 +59,14 @@ Global types
 #define WINDOW_DATA_STRUCT( dialog_name )  WINDOW_DATA_STRUCT_(dialog_name)
 
 /* Contains all information to keep track of items in the dialog */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define DIALOG_STRUCT_( dialog_name )  Dialog_ ## dialog_name ## _struct
 #else
 #define DIALOG_STRUCT_( dialog_name )  DP ## dialog_name
 #endif
 #define DIALOG_STRUCT( dialog_name )  DIALOG_STRUCT_(dialog_name)
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define WINDOW_STRUCT_( dialog_name )  Dialog_name ## Part
 #else
 #define WINDOW_STRUCT_( dialog_name )  WP ## dialog_name
@@ -74,7 +74,7 @@ Global types
 #define WINDOW_STRUCT( dialog_name )  WINDOW_STRUCT_(dialog_name)
 
 /* Contains initialisation information */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define DIALOG_INITIALISATION_STRUCT_( dialog_name ) \
 	Dialog_ ## dialog_name ## _init_struct
 #else
@@ -83,7 +83,7 @@ Global types
 #define DIALOG_INITIALISATION_STRUCT( dialog_name ) \
 	DIALOG_INITIALISATION_STRUCT_(dialog_name)
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define WINDOW_INITIALISATION_STRUCT_( dialog_name ) \
 	dialog_name ## _init_struct
 #else
@@ -110,14 +110,14 @@ Global types
 
 /* Creation function */
 	/*???DB.  Should be CREATE(DIALOG( )) , but haven't got DIALOG (yet) */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define DIALOG_CREATE_( dialog_name )  create_ ## dialog_name ## _dialog
 #else
 #define DIALOG_CREATE_( dialog_name )  cd ## dialog_name
 #endif
 #define DIALOG_CREATE(dialog_name)  DIALOG_CREATE_(dialog_name)
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define WINDOW_CREATE_( dialog_name )  create_ ## dialog_name ## _window
 #else
 #define WINDOW_CREATE_( dialog_name )  cw ## dialog_name
@@ -175,7 +175,7 @@ Global types
 #endif /* defined (WIN32_USER_INTERFACE) */
 
 /* Name of the routine to retrieve structures */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define DIALOG_GET_INFORMATION_( dialog_name )  dialog_name ## _get_information
 #else
 #define DIALOG_GET_INFORMATION_( dialog_name )  dg ## dialog_name
@@ -183,7 +183,7 @@ Global types
 #define DIALOG_GET_INFORMATION( dialog_name ) \
 	DIALOG_GET_INFORMATION_(dialog_name)
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define DIALOG_WRAPPER_GET_INFORMATION_( dialog_name ) \
 	dialog_name ## _wrapper_get_information
 #else
@@ -192,7 +192,7 @@ Global types
 #define DIALOG_WRAPPER_GET_INFORMATION( dialog_name ) \
 	DIALOG_WRAPPER_GET_INFORMATION_(dialog_name)
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define WINDOW_GET_INFORMATION_( dialog_name )  dialog_name ## _get_information
 #else
 #define WINDOW_GET_INFORMATION_( dialog_name )  wg ## dialog_name
@@ -208,7 +208,7 @@ Global types
 	WINDOW_DATA_STRUCT(dialog_name) *temp_data
 
 /* Routine to initialise local data */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define DIALOG_DATA_INITIALISE_( dialog_name ) \
 	initialise_ ## dialog_name ## _data
 #else
@@ -217,7 +217,7 @@ Global types
 #define DIALOG_DATA_INITIALISE( dialog_name ) \
 	DIALOG_DATA_INITIALISE_(dialog_name)
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define WINDOW_DATA_INITIALISE_( dialog_name ) \
 	initialise_ ## dialog_name ## _data
 #else
@@ -228,7 +228,7 @@ Global types
 
 /* Routine to destroy local data */
 	/*???DB.  Should be DESTROY( */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define DIALOG_DATA_DESTROY_( dialog_name ) \
 	destroy_ ## dialog_name ## _data
 #else
@@ -237,7 +237,7 @@ Global types
 #define DIALOG_DATA_DESTROY( dialog_name ) \
 	DIALOG_DATA_DESTROY_( dialog_name )
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define WINDOW_DATA_DESTROY_( dialog_name ) \
 	destroy_ ## dialog_name ## _data
 #else
@@ -247,7 +247,7 @@ Global types
 	WINDOW_DATA_DESTROY_(dialog_name)
 
 /* Routine to identify all sub components of the dialog */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define DIALOG_WINDOW_INITIALISE_( dialog_name ) \
 	dialog_name ## _initialise_window_information
 #else
@@ -256,7 +256,7 @@ Global types
 #define DIALOG_WINDOW_INITIALISE( dialog_name ) \
 	DIALOG_WINDOW_INITIALISE_(dialog_name)
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define WINDOW_WINDOW_INITIALISE_( dialog_name ) \
 	dialog_name ## _initialise_window_information
 #else
@@ -266,7 +266,7 @@ Global types
 	WINDOW_WINDOW_INITIALISE_(dialog_name)
 
 /* Routine to destroy all sub components of the dialog */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define DIALOG_WINDOW_DESTROY_( dialog_name ) \
 	destroy_ ## dialog_name ## _window_information
 #else
@@ -275,7 +275,7 @@ Global types
 #define DIALOG_WINDOW_DESTROY( dialog_name ) \
 	DIALOG_WINDOW_DESTROY_(dialog_name)
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define WINDOW_WINDOW_DESTROY_( dialog_name ) \
 	destroy_ ## dialog_name ## _window_information
 #else
@@ -286,7 +286,7 @@ Global types
 
 #if defined (WIN32_USER_INTERFACE)
 /* Routine to handle a specific windows message */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define DIALOG_HANDLER_( dialog_name , message_name ) \
 	dialog_name ## _handle_ ## message_name
 #else
@@ -296,7 +296,7 @@ Global types
 #define DIALOG_HANDLER( dialog_name , message_name ) \
 	DIALOG_HANDLER_(dialog_name,message_name)
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define WINDOW_HANDLER_( dialog_name , message_name ) \
 	dialog_name ## _handle_ ## message_name
 #else
@@ -307,7 +307,7 @@ Global types
 	WINDOW_HANDLER_(dialog_name,message_name)
 
 /* Class procedure */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define DIALOG_CLASS_PROCEDURE_( dialog_name ) \
 	dialog_name ## _class_procedure
 #else
@@ -316,7 +316,7 @@ Global types
 #define DIALOG_CLASS_PROCEDURE( dialog_name ) \
 	DIALOG_CLASS_PROCEDURE_(dialog_name)
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define WINDOW_CLASS_PROCEDURE_( dialog_name ) \
 	dialog_name ## _class_procedure
 #else
@@ -326,7 +326,7 @@ Global types
 	WINDOW_CLASS_PROCEDURE_(dialog_name)
 
 /* Dialog procedure */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define DIALOG_PROCEDURE_( dialog_name )  dialog_name ## _procedure
 #else
 #define DIALOG_PROCEDURE_( dialog_name )  p ## dialog_name

@@ -23,7 +23,7 @@ Global Types
 Global Functions
 ---------------
 */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CREATE_TEXT_CHOOSE_FROM_FE_REGION_WIDGET_( object_type ) \
 	create_text_choose_from_fe_region_widget_ ## object_type
 #else
@@ -53,7 +53,7 @@ the reverse. These functions are useful in the case of elements where only \
 the element number (or face or line) is to be specified, not all three. \
 ============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define TEXT_CHOOSE_FROM_FE_REGION_GET_CALLBACK_( object_type ) \
 	text_choose_from_fe_region_get_callback_ ## object_type
 #else
@@ -72,7 +72,7 @@ DESCRIPTION : \
 Returns a pointer to the callback item of the text_choose_from_fe_region_widget. \
 ============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define TEXT_CHOOSE_FROM_FE_REGION_SET_CALLBACK_( object_type ) \
 	text_choose_from_fe_region_set_callback_ ## object_type
 #else
@@ -91,7 +91,7 @@ DESCRIPTION : \
 Changes the callback item of the text_choose_from_fe_region_widget. \
 ============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define TEXT_CHOOSE_FROM_FE_REGION_GET_OBJECT_( object_type ) \
 	text_choose_from_fe_region_get_object_ ## object_type
 #else
@@ -110,7 +110,7 @@ DESCRIPTION : \
 Returns the currently chosen object in the text_choose_from_fe_region_widget. \
 ============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define TEXT_CHOOSE_FROM_FE_REGION_SET_OBJECT_( object_type ) \
 	text_choose_from_fe_region_set_object_ ## object_type
 #else
@@ -129,7 +129,7 @@ DESCRIPTION : \
 Changes the chosen object in the text_choose_from_fe_region_widget. \
 ============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define TEXT_CHOOSE_FROM_FE_REGION_CHANGE_CONDITIONAL_FUNCTION_( object_type ) \
 	text_choose_from_fe_region_change_conditional_function_ ## object_type
 #else

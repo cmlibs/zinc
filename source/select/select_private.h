@@ -32,7 +32,7 @@ New version using macros to handle different object types.
 Module types
 ------------
 */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define SELECT_STRUCT_( object_type )  select_struct_ ## object_type
 #else
 #define SELECT_STRUCT_( object_type )  sstru ## object_type
@@ -73,7 +73,7 @@ extern MrmHierarchy select_hierarchy;
 Module functions
 ----------------
 */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define SELECT_REGISTER_UIL_NAMES_( object_type ) \
 	select_register_UIL_names_ ## object_type
 #else
@@ -93,7 +93,7 @@ DESCRIPTION : \
 Also ensures the select_structure has the correct address. \
 ============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define SELECT_MANAGER_MODIFY_IDENTIFIER_AS_NAME_( object_type ) \
 	select_manager_modify_identifier_as_name_ ## object_type
 #else
@@ -140,7 +140,7 @@ MANAGER_MODIFY_IDENTIFIER function. \
 	return return_code; \
 } /* SELECT_MANAGER_MODIFY_IDENTIFIER_AS_NAME(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define SELECT_FIND_BY_IDENTIFIER_AS_NAME_IN_MANAGER_( object_type ) \
 	select_find_by_identifier_as_name_in_manager_ ## object_type
 #else
@@ -187,7 +187,7 @@ FIND_BY_IDENTIFIER_IN_MANAGER function. \
 	return return_object_ptr; \
 } /* SELECT_FIND_BY_IDENTIFIER_AS_NAME_IN_MANAGER_(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define SELECT_MANAGER_CREATE_( object_type ) \
 	select_manager_create_ ## object_type
 #else
@@ -285,7 +285,7 @@ Manager copy creator assuming it has a name identifier. \
 	return (new_object); \
 } /* SELECT_MANAGER_CREATE(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define SELECT_UPDATE_( object_type )  select_update_ ## object_type
 #else
 #define SELECT_UPDATE_( object_type )  selud ## object_type
@@ -324,7 +324,7 @@ selected object. \
 	LEAVE; \
 } /* SELECT_UPDATE(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CREATE_SUB_WIDGET_( object_type )  create_sub_widget_ ## object_type
 #else
 #define CREATE_SUB_WIDGET_( object_type )  cresw ## object_type
@@ -388,7 +388,7 @@ Is called for each object, and adds a subwidget to the rowcol. \
 	return (return_code); \
 } /* CREATE_SUB_WIDGET(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define SELECT_UPDATE_LIST_( object_type )  select_update_list_ ## object_type
 #else
 #define SELECT_UPDATE_LIST_( object_type )  sul ## object_type
@@ -446,7 +446,7 @@ in the scrolled list, and create the new widgets. \
 	LEAVE; \
 } /* SELECT_UPDATE_LIST(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define SELECT_DIALOG_NAME_( object_type ) \
 	select_ ## object_type
 #else
@@ -479,7 +479,7 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(SELECT_DIALOG_NAME(object_type), \
 DECLARE_DIALOG_IDENTIFY_FUNCTION(SELECT_DIALOG_NAME(object_type), \
 	SELECT_STRUCT(object_type),list_rowcol)
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define SELECT_DESTROY_CB_( object_type )  select_destroy_cb_ ## object_type
 #else
 #define SELECT_DESTROY_CB_( object_type )  sdcb ## object_type
@@ -511,7 +511,7 @@ Callback for the select dialog - tidies up all memory allocation. \
 	LEAVE; \
 } /* SELECT_DESTROY_CB(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define SELECT_SELECT_OBJECT_( object_type ) \
 	select_select_object_ ## object_type
 #else
@@ -654,7 +654,7 @@ If selected object changes in this routine the client is informed. \
 	LEAVE; \
 } /* SELECT_SELECT_OBJECT(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define SELECT_CREATE_CB_( object_type )  select_create_CB_ ## object_type
 #else
 #define SELECT_CREATE_CB_( object_type )  scbcb ## object_type
@@ -724,7 +724,7 @@ Creates a new object with a unique identifier and adds it to the manager. \
 	LEAVE; \
 } /* SELECT_CREATE_CB(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define SELECT_DELETE_CB_( object_type )  select_delete_CB_ ## object_type
 #else
 #define SELECT_DELETE_CB_( object_type )  sdbcb ## object_type
@@ -762,7 +762,7 @@ Deletes the currently selected object. \
 	LEAVE; \
 } /* SELECT_DELETE_CB(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define SELECT_RENAME_CB_( object_type )  select_rename_CB_ ## object_type
 #else
 #define SELECT_RENAME_CB_( object_type )  srbcb ## object_type
@@ -803,7 +803,7 @@ Rename button pressed. Turns on and sets the rename text field. \
 	LEAVE; \
 } /* SELECT_RENAME_CB(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define SELECT_NAME_CB_( object_type )  select_name_CB_ ## object_type
 #else
 #define SELECT_NAME_CB_( object_type )  sncb ## object_type
@@ -840,7 +840,7 @@ current object. \
 	LEAVE; \
 } /* SELECT_NAME_CB(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define SELECT_SELECT_TEXT_CB_( object_type ) \
 	select_select_text_CB_ ## object_type
 #else
@@ -880,7 +880,7 @@ Should see if selected object changes - if not, do not re-select it \
 	LEAVE; \
 } /* SELECT_SELECT_TEXT_CB(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define SELECT_FOCUS_CB_( object_type )  select_focus_CB_ ## object_type
 #else
 #define SELECT_FOCUS_CB_( object_type )  sfcb ## object_type
@@ -916,7 +916,7 @@ and then do an update. \
 	LEAVE; \
 } /* SELECT_FOCUS_CB(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define SELECT_GLOBAL_OBJECT_CHANGE_( object_type ) \
 	select_global_object_change_ ## object_type
 #else
@@ -1031,7 +1031,7 @@ so may need to select a new object. \
 	LEAVE; \
 } /* SELECT_GLOBAL_OBJECT_CHANGE(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define SELECT_CREATE_LIST_( object_type )  select_create_list_ ## object_type
 #else
 #define SELECT_CREATE_LIST_( object_type )  scl ## object_type
@@ -1083,7 +1083,7 @@ Inserts an item list into the select widget (for appearance SELECT_LIST). \
 	return (return_code); \
 } /* SELECT_CREATE_LIST(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define SELECT_CREATE_TEXT_( object_type )  select_create_text_ ## object_type
 #else
 #define SELECT_CREATE_TEXT_( object_type )  sct ## object_type

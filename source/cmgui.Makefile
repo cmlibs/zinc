@@ -403,9 +403,9 @@ STEREO_DISPLAY_DEFINES = -DSTEREO
 # POSTSCRIPT_DEFINES = -DFEEDBACK_POSTSCRIPT
 POSTSCRIPT_DEFINES =
 
-#  By default some names are "mangled" to get external names <= 32 characters
-#  NAME_DEFINES =
-NAME_DEFINES = -DFULL_NAMES
+#  SHORT_NAMES were created to support OS's where external names <= 32 characters
+#  NAME_DEFINES = -DSHORT_NAMES
+NAME_DEFINES =
 
 #  Temporary flags that are used during development
 # TEMPORARY_DEVELOPMENT_FLAGS = -DCMGUI_REGIONS

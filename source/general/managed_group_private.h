@@ -73,7 +73,7 @@ Module functions
 ----------------
 */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define MANAGED_GROUP_BEGIN_CHANGE( object_type ) \
 	managed_group_begin_change_ ## object_type
 #else
@@ -118,7 +118,7 @@ because GROUP(object_type) is not substituted as I would like. \
 	return (return_code); \
 } /* MANAGED_GROUP_BEGIN_CHANGE(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define MANAGED_GROUP_END_CHANGE( object_type ) \
 	managed_group_end_change_ ## object_type
 #else

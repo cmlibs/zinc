@@ -1197,7 +1197,7 @@ DESCRIPTION :
 Enlarges the minimum and maximum time range by that of the graphics_object.
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define GT_OBJECT_ADD_(primitive_type) GT_object_add_ ## primitive_type
 #else
 #define GT_OBJECT_ADD_(primitive_type) goa_ ## primitive_type
@@ -1226,7 +1226,7 @@ PROTOTYPE_GT_OBJECT_ADD_FUNCTION(GT_surface);
 PROTOTYPE_GT_OBJECT_ADD_FUNCTION(GT_userdef);
 PROTOTYPE_GT_OBJECT_ADD_FUNCTION(GT_voltex);
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define GT_OBJECT_GET_(primitive_type) GT_object_get_ ## primitive_type
 #else
 #define GT_OBJECT_GET_(primitive_type) gog_ ## primitive_type
@@ -1278,7 +1278,7 @@ with <source> to verify it has primitives at that time.
 Primitives are added after any in <destination> at <time>.
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_(primitive_type) \
 	GT_object_extract_first_primitives_at_time_ ## primitive_type
 #else

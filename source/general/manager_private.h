@@ -37,7 +37,7 @@ Macros
 Local types
 -----------
 */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define MANAGER_CALLBACK_ITEM( object_type ) \
 	manager_callback_item_ ## object_type
 #else
@@ -83,7 +83,7 @@ Local functions
 ---------------
 */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define MANAGER_UPDATE( object_type )  manager_update_ ## object_type
 #else
 #define MANAGER_UPDATE( object_type )  mu ## object_type
@@ -153,7 +153,7 @@ inter-object dependencies. \
 	LEAVE; \
 } /* MANAGER_UPDATE(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define MANAGER_FIND_CLIENT( object_type )  manager_find_client ## object_type
 #else
 #define MANAGER_FIND_CLIENT( object_type )  bm ## object_type
@@ -205,7 +205,7 @@ Finds a client based on its callback id. \
 	return (return_callback); \
 } /* MANAGER_FIND_CLIENT(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL( object_type ) \
 	managed_object_not_in_use_conditional_ ## object_type
 #else
@@ -233,7 +233,7 @@ List conditional version of MANAGED_OBJECT_NOT_IN_USE function. \
 	return (return_code); \
 } /* MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define OBJECT_WITH_MANAGER_REMOVE_MANAGER( object_type ) \
 	object_with_manager_remove_manager ## object_type
 #else

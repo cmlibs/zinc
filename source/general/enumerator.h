@@ -31,7 +31,7 @@ Global types
 ------------
 */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define ENUMERATOR_CONDITIONAL_FUNCTION( enumerator_type ) \
 	enumerator_conditional_function_ ## enumerator_type
 #else
@@ -48,7 +48,7 @@ Global functions
 ----------------
 */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define ENUMERATOR_STRING( enumerator_type ) \
 	enumerator_string_ ## enumerator_type
 #else
@@ -70,7 +70,7 @@ string given for each value will usually be custom. Note it must return a NULL
 string for unrecognized enumerator values WITHOUT an error message.
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define ENUMERATOR_GET_VALID_STRINGS( enumerator_type ) \
 	enumerator_get_valid_strings_ ## enumerator_type
 #else
@@ -93,7 +93,7 @@ Note it is up to the calling function to deallocate the returned array, but the
 strings it contains must NOT be deallocated.
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define STRING_TO_ENUMERATOR( enumerator_type ) \
 	string_to_enumerator_ ## enumerator_type
 #else

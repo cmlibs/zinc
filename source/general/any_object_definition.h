@@ -188,7 +188,7 @@ If <object> is in <any_object_list>, return its Any_object structure.
 	return (any_object); \
 } /* IS_OBJECT_IN_LIST(ANY_OBJECT(object_type)) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define ANY_OBJECT_ITERATOR_DATA( object_type ) \
 	any_object_iterator_data_ ## object_type
 #else
@@ -209,7 +209,7 @@ User_data for ANY_OBJECT_ITERATOR(object_type).
 	void *user_data; \
 }
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define ANY_OBJECT_ITERATOR( object_type ) \
 	any_object_iterator_ ## object_type
 #else
@@ -290,7 +290,7 @@ Performs the <iterator_function> with <user_data> for each object in \
 	return (return_code); \
 } /* FOR_EACH_OBJECT_IN_LIST(ANY_OBJECT(object_type)) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define ANY_OBJECT_CONDITIONAL_DATA( object_type ) \
 	any_object_conditional_data_ ## object_type
 #else
@@ -311,7 +311,7 @@ User_data for ANY_OBJECT_CONDITIONAL(object_type).
 	void *user_data; \
 }
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define ANY_OBJECT_CONDITIONAL( object_type ) \
 	any_object_conditional_ ## object_type
 #else

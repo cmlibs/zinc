@@ -25,7 +25,7 @@ Global variables
 Global functions
 ----------------
 */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define DIALOG_IDENTIFY_( dialog_name , this_widget ) \
 	dialog_name ## _identify_ ## this_widget
 #else

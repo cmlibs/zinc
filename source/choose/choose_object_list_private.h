@@ -23,7 +23,7 @@ Calls the client-specified callback routine if a different object is chosen.
 Module variables
 ----------------
 */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHOOSE_OBJECT_LIST_( object_type ) \
 	choose_object_list_type_ ## object_type
 #else
@@ -53,7 +53,7 @@ Module functions
 ----------------
 */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHOOSE_OBJECT_LIST_UPDATE_( object_type ) \
 	choose_object_list_update_ ## object_type
 #else
@@ -98,7 +98,7 @@ Tells CMGUI about the current values. Sends a pointer to the current object. \
 	return (return_code); \
 } /* CHOOSE_OBJECT_LIST_UPDATE(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHOOSE_OBJECT_LIST_DESTROY_CB_( object_type ) \
 	choose_object_list_destroy_cb_ ## object_type
 #else
@@ -137,7 +137,7 @@ Callback for the choose_object_list dialog - tidies up all memory allocation. \
 	LEAVE; \
 } /* CHOOSE_OBJECT_LIST_DESTROY_CB(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHOOSE_OBJECT_LIST_UPDATE_CB_( object_type ) \
 	choose_object_list_update_cb_ ## object_type
 #else
@@ -174,7 +174,7 @@ Callback for the choose_object_list dialog - tidies up all memory allocation. \
 	LEAVE; \
 } /* CHOOSE_OBJECT_LIST_UPDATE_CB(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHOOSE_OBJECT_LIST_ADD_TO_LIST_DATA_( object_type ) \
 	choose_object_list_add_to_list_data_ ## object_type
 #else
@@ -199,7 +199,7 @@ Data for adding objects to an allocated list. Handles conditional function. \
   void **items; \
 } /* struct CHOOSE_OBJECT_LIST_ADD_TO_LIST_DATA(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHOOSE_OBJECT_LIST_ADD_TO_LIST_( object_type ) \
 	choose_object_add_to_list_ ## object_type
 #else
@@ -254,7 +254,7 @@ Puts the <object> at the array position pointed to by <list_position>. \
 	return (return_code); \
 } /* CHOOSE_OBJECT_LIST_ADD_TO_LIST(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHOOSE_OBJECT_LIST_GET_ITEMS_( object_type ) \
 	choose_object_list_get_items_ ## object_type
 #else

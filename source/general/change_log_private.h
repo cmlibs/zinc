@@ -30,7 +30,7 @@ Local types
 -----------
 */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_ENTRY( object_type ) change_log_entry_ ## object_type
 #else
 #define CHANGE_LOG_ENTRY( object_type ) cle_ ## object_type
@@ -136,7 +136,7 @@ Note the CREATE for CHANGE_LOG_ENTRY is in the ADD function. \
 	return (return_code); \
 } /* DESTROY_CHANGE_LOG_ENTRY(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_ENTRY_OBJECT_CHANGE( object_type ) \
 	change_log_entry_object_change_ ## object_type
 #else
@@ -205,13 +205,13 @@ examine the identifier. \
 
 #if defined (OLD_CODE_TO_KEEP)
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_CONDITIONAL_DATA( object_type ) change_log_conditional_data_ ## object_type
 #else
 #define CHANGE_LOG_CONDITIONAL_DATA( object_type ) clcd_ ## object_type
 #endif
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_CONDITIONAL( object_type ) change_log_conditional_ ## object_type
 #else
 #define CHANGE_LOG_CONDITIONAL( object_type ) clcn_ ## object_type
@@ -264,13 +264,13 @@ Returns 1 if no conditional_function is supplied. \
 	return (return_code); \
 } /* CHANGE_LOG_CONDITIONAL(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_ITERATOR_DATA( object_type ) change_log_iterator_data_ ## object_type
 #else
 #define CHANGE_LOG_ITERATOR_DATA( object_type ) clid_ ## object_type
 #endif
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_ITERATOR( object_type ) change_log_iterator_ ## object_type
 #else
 #define CHANGE_LOG_ITERATOR( object_type ) clit_ ## object_type
@@ -809,7 +809,7 @@ max_changes/change_all capability or both do not. \
 
 #if defined (OLD_CODE_TO_KEEP)
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_FIRST_OBJECT_THAT_( object_type ) \
 	change_log_first_object_that_ ## object_type
 #else
@@ -875,7 +875,7 @@ which has an additional middle argument of the object's change status. \
 	return (object); \
 } /* CHANGE_LOG_FIRST_OBJECT_THAT(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_FOR_EACH_OBJECT_( object_type ) \
 	change_log_for_each_object_ ## object_type
 #else

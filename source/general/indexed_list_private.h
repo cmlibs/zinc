@@ -33,27 +33,27 @@ Macros
 Local types
 -----------
 */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define INDEX_NODE( object_type )  index_node_ ## object_type
 #else
 #define INDEX_NODE( object_type )  in ## object_type
 #endif
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define NUMBER_OF_DEFINED_LISTS( object_type ) \
 	number_of_defined_lists_ ## object_type
 #else
 #define NUMBER_OF_DEFINED_LISTS( object_type )  nodls ## object_type
 #endif
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define DEFINED_LISTS( object_type ) \
 	defined_lists_ ## object_type
 #else
 #define DEFINED_LISTS( object_type )  dls ## object_type
 #endif
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define ITERATION_COUNT( object_type ) \
 	iteration_count_ ## object_type
 #else
@@ -226,7 +226,7 @@ Destroys an object_type index node. \
 	return (return_code); \
 } /* DESTROY_INDEX_NODE(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define DUPLICATE_INDEX_NODE( object_type ) \
 	duplicate_index_node_ ## object_type
 #else
@@ -317,7 +317,7 @@ Duplicates an object_type index node, attaching it to the <parent>. \
 	return (duplicate_node); \
 } /* DUPLICATE_INDEX_NODE(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define FIND_LEAF_NODE_IN_INDEX( object_type ) \
 	find_leaf_node_in_index_ ## object_type
 #else
@@ -367,7 +367,7 @@ Finds the leaf node that will contain the object with the specified \
 	return (node); \
 } /* FIND_LEAF_NODE_IN_INDEX(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define REMOVE_OBJECT_FROM_INDEX( object_type ) \
 	index_remove_object_ ## object_type
 #else
@@ -482,7 +482,7 @@ Removes an <object> from the <index>. \
 	return (return_code); \
 } /* REMOVE_OBJECT_FROM_INDEX(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define REMOVE_OBJECTS_FROM_INDEX_THAT( object_type ) \
 	index_remove_objects_that_ ## object_type
 #else
@@ -634,7 +634,7 @@ Removes each object that <iterator> returns true for. \
 	return (count); \
 } /* REMOVE_OBJECTS_FROM_INDEX_THAT(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define ADD_INDEX_TO_NODE_PARENT( object_type ) \
 	add_index_to_node_parent_ ## object_type
 #else
@@ -829,7 +829,7 @@ Adds the <add_index> (and the <add_node>) to the parent of the <node>. \
 	return (return_code); \
 } /* ADD_INDEX_TO_NODE_PARENT(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define ADD_OBJECT_TO_INDEX( object_type ) \
 	index_add_object_ ## object_type
 #else
@@ -959,7 +959,7 @@ Adds an <object> to the <index>. \
 	return (return_code); \
 } /* ADD_OBJECT_TO_INDEX(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define IS_OBJECT_IN_INDEX( object_type ) \
 	index_in_index_ ## object_type
 #else
@@ -1021,7 +1021,7 @@ Returns true if the <object> is in the <index>. \
 	return (return_code); \
 } /* IS_OBJECT_IN_INDEX(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define FIRST_OBJECT_IN_INDEX_THAT( object_type ) \
 	index_first_that_ ## object_type
 #else
@@ -1098,7 +1098,7 @@ If <conditional> is not NULL, the "first" object in the <index> that \
 	return (object); \
 } /* FIRST_OBJECT_IN_INDEX_THAT(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define FOR_EACH_OBJECT_IN_INDEX( object_type ) \
 	index_for_each_ ## object_type
 #else
@@ -1661,7 +1661,7 @@ PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(object_type,identifier, \
 	return (object); \
 } /* FIND_BY_IDENTIFIER_IN_LIST(object_type,identifier) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define LIST_IDENTIFIER_CHANGE_DATA( object_type , identifier ) \
 	list_identifier_change_data_ ## object_type ## identifier
 #else
@@ -1695,7 +1695,7 @@ Should only be declared with manager functions. \
 	int number_of_lists_containing_object; \
 } /* struct LIST_IDENTIFIER_CHANGE_DATA(object_type,identifier) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define LIST_BEGIN_IDENTIFIER_CHANGE( object_type, identifier ) \
 	list_begin_identifier_change_ ## object_type ## identifier
 #else
@@ -1803,7 +1803,7 @@ Should only be declared with manager functions. \
 	return (identifier_change_data); \
 } /* LIST_BEGIN_IDENTIFIER_CHANGE(object_type,identifier) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define LIST_END_IDENTIFIER_CHANGE( object_type, identifier ) \
 	list_end_identifier_change_ ## object_type ## identifier
 #else

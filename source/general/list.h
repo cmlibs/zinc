@@ -22,7 +22,7 @@ Macros
 Global types
 ------------
 */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define LIST_( object_type )  list_ ## object_type
 #else
 #define LIST_( object_type )  l ## object_type
@@ -33,7 +33,7 @@ Global types
 #define DECLARE_LIST_TYPE( object_type ) \
 struct LIST(object_type)
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define LIST_CONDITIONAL_FUNCTION_( object_type ) \
 	list_conditional_function_ ## object_type
 #else
@@ -46,7 +46,7 @@ struct LIST(object_type)
 typedef int (LIST_CONDITIONAL_FUNCTION(object_type)) \
 	(struct object_type *object,void *user_data)
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define LIST_ITERATOR_FUNCTION_( object_type ) \
 	list_iterator_function_ ## object_type
 #else
@@ -99,7 +99,7 @@ DESCRIPTION : \
 Replaces the contents of the <target_list> with those of the <source_list>. \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define REMOVE_OBJECT_FROM_LIST_( object_type ) \
 	list_remove_object_ ## object_type
 #else
@@ -118,7 +118,7 @@ DESCRIPTION : \
 Removes the <object> from the <list>. \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define REMOVE_ALL_OBJECTS_FROM_LIST_( object_type )  \
 	list_remove_all_objects_ ## object_type
 #else
@@ -136,7 +136,7 @@ DESCRIPTION : \
 Removes all objects from the list \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define REMOVE_OBJECTS_FROM_LIST_THAT_( object_type )  \
 	list_remove_objects_that_ ## object_type
 #else
@@ -156,7 +156,7 @@ DESCRIPTION : \
 Removes all objects from the list that <conditional> returns true for \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define ADD_OBJECT_TO_LIST_( object_type )  list_add_object_ ## object_type
 #else
 #define ADD_OBJECT_TO_LIST_( object_type )  pl ## object_type
@@ -173,7 +173,7 @@ DESCRIPTION : \
 Add the <object> to the <list>. \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define NUMBER_IN_LIST_( object_type )  list_number_ ## object_type
 #else
 #define NUMBER_IN_LIST_( object_type )  nl ## object_type
@@ -189,7 +189,7 @@ DESCRIPTION : \
 Returns the number of items in the <list>. \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define IS_OBJECT_IN_LIST_( object_type )  list_in_list_ ## object_type
 #else
 #define IS_OBJECT_IN_LIST_( object_type )  il ## object_type
@@ -207,7 +207,7 @@ Returns true if the <object> is in the <list>. \
 ???DB.  Is this needed ? \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define FIND_BY_IDENTIFIER_IN_LIST_( object_type , identifier ) \
 	list_find_by_identifier_ ## object_type ## identifier
 #else
@@ -229,7 +229,7 @@ Searchs the <list> for the object with the specified <identifier> and returns \
 the address of the object. \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define FIRST_OBJECT_IN_LIST_THAT_( object_type ) \
 	list_first_that_ ## object_type
 #else
@@ -251,7 +251,7 @@ If <conditional> is not NULL, the "first" object in the <list> that \
 <list> is returned. \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define FOR_EACH_OBJECT_IN_LIST_( object_type )  list_for_each_ ## object_type
 #else
 #define FOR_EACH_OBJECT_IN_LIST_( object_type )  el ## object_type

@@ -24,7 +24,7 @@ Calls the client-specified callback routine if a different object is chosen.
 Module variables
 ----------------
 */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define FE_REGION_CHOOSE_OBJECT( object_type ) fe_region_choose_object_type_ ## object_type
 #else
 #define FE_REGION_CHOOSE_OBJECT( object_type ) cotype ## object_type
@@ -55,7 +55,7 @@ Module functions
 ----------------
 */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define FE_REGION_CHOOSE_OBJECT_UPDATE( object_type ) \
 	fe_region_choose_object_update_ ## object_type
 #else
@@ -98,7 +98,7 @@ Tells CMGUI about the current values. Sends a pointer to the current object. \
 	return (return_code); \
 } /* FE_REGION_CHOOSE_OBJECT_UPDATE(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define FE_REGION_CHOOSE_OBJECT_UPDATE_CB( object_type ) \
 	fe_region_choose_object_update_cb_ ## object_type
 #else
@@ -133,7 +133,7 @@ Callback for the fe_region_choose_object dialog - tidies up all memory allocatio
 	LEAVE; \
 } /* FE_REGION_CHOOSE_OBJECT_UPDATE_CB(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define FE_REGION_CHOOSE_OBJECT_ADD_TO_LIST_DATA( object_type ) \
 	fe_region_choose_object_add_to_list_data_ ## object_type
 #else
@@ -156,7 +156,7 @@ Data for adding objects to an allocated list. Handles conditional function. \
   void **items; \
 } /* struct FE_REGION_CHOOSE_OBJECT_ADD_TO_LIST_DATA(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define FE_REGION_CHOOSE_OBJECT_ADD_TO_LIST( object_type ) \
 	fe_region_choose_object_add_to_list_ ## object_type
 #else
@@ -209,7 +209,7 @@ Puts the <object> at the array position pointed to by <list_position>. \
 	return (return_code); \
 } /* FE_REGION_CHOOSE_OBJECT_ADD_TO_LIST(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define FE_REGION_CHOOSE_OBJECT_BUILD_ITEMS( object_type ) \
 	fe_region_choose_object_get_items_ ## object_type
 #else
@@ -294,7 +294,7 @@ Updates the arrays of all the choosable objects and their names. \
 	return (return_code); \
 } /* FE_REGION_CHOOSE_OBJECT_BUILD_ITEMS(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define FE_REGION_CHOOSE_OBJECT_FE_REGION_CHANGE( object_type ) \
 	fe_region_choose_object_fe_region_change_ ## object_type
 #else
@@ -363,7 +363,7 @@ annoying flickering on the screen. \
 	LEAVE; \
 } /* FE_REGION_CHOOSE_OBJECT_FE_REGION_CHANGE(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define FE_REGION_CHOOSE_OBJECT_DESTROY_CB( object_type ) \
 	fe_region_choose_object_destroy_cb_ ## object_type
 #else

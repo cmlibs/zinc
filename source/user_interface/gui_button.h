@@ -19,7 +19,7 @@ public and private
 Global functions
 ----------------
 */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define GUI_BUTTON_SET_CHECKED_( dialog_name , button_name ) \
 	dialog_name ## _ ## button_name ## _set_checked
 #else
@@ -79,7 +79,7 @@ int GUI_BUTTON_SET_CHECKED(dialog_name,button_name)( \
 } /* GUI_BUTTON_SET_CHECKED(dialog_name,button_name) */
 #endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define GUI_BUTTON_GET_CHECKED_( dialog_name , button_name ) \
 	dialog_name ## _ ## button_name ## _get_checked
 #else

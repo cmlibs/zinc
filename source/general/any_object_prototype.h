@@ -20,7 +20,7 @@ Global types
 ------------
 */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define ANY_OBJECT_CONDITIONAL_FUNCTION( object_type ) \
 	any_object_conditional_function_ ## object_type
 #else
@@ -31,7 +31,7 @@ Global types
 typedef int (ANY_OBJECT_CONDITIONAL_FUNCTION(object_type)) \
 	(struct object_type *object,void *user_data)
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define ANY_OBJECT_ITERATOR_FUNCTION( object_type ) \
 	any_object_iterator_function_ ## object_type
 #else

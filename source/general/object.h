@@ -30,7 +30,7 @@ TO DO :
 Macros
 ------
 */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CREATE_( object_type )  create_ ## object_type
 #else
 #define CREATE_( object_type )  c ## object_type
@@ -38,7 +38,7 @@ Macros
 #define CREATE( object_type )  CREATE_(object_type)
 	/*???DB.  CREATE is also defined in /usr/lib/X11/extensions/XI.h */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define DESTROY_( object_type )  destroy_ ## object_type
 #else
 #define DESTROY_( object_type )  d ## object_type
@@ -77,7 +77,7 @@ PROTOTYPE_DEFAULT_DESTROY_OBJECT_FUNCTION(object_type) \
 	return (return_code); \
 } /* DESTROY(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define COPY_( object_type )  copy_ ## object_type
 #else
 #define COPY_( object_type )  o ## object_type
@@ -117,7 +117,7 @@ contains pointers to fields that must be copied separately. \
 	return (return_code); \
 } /* COPY(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define GET_NAME_( object_type )  get_name_ ## object_type
 #else
 #define GET_NAME_( object_type )  gn ## object_type
@@ -177,7 +177,7 @@ This version assumes the object identifier is "char *name". \
 	return (return_code); \
 } /* GET_NAME(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define ACCESS_( object_type )  access_ ## object_type
 #else
 #define ACCESS_( object_type )  a ## object_type
@@ -211,7 +211,7 @@ PROTOTYPE_ACCESS_OBJECT_FUNCTION(object_type) \
 	return (object); \
 } /* ACCESS(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define DEACCESS_( object_type )  deaccess_ ## object_type
 #else
 #define DEACCESS_( object_type )  s ## object_type
@@ -260,7 +260,7 @@ PROTOTYPE_DEACCESS_OBJECT_FUNCTION(object_type) \
 	return (return_code); \
 } /* DEACCESS(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define REACCESS_( object_type )  reaccess_ ## object_type
 #else
 #define REACCESS_( object_type )  r ## object_type

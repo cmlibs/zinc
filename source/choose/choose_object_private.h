@@ -23,7 +23,7 @@ Calls the client-specified callback routine if a different object is chosen.
 Module variables
 ----------------
 */
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHOOSE_OBJECT( object_type ) choose_object_type_ ## object_type
 #else
 #define CHOOSE_OBJECT( object_type ) cotype ## object_type
@@ -55,7 +55,7 @@ Module functions
 ----------------
 */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER( object_type ) \
 	choose_object_is_in_chooser_ ## object_type
 #else
@@ -98,7 +98,7 @@ Tells CMGUI about the current values. Sends a pointer to the current object. \
 	return (return_code); \
 } /* CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHOOSE_OBJECT_UPDATE( object_type ) \
 	choose_object_update_ ## object_type
 #else
@@ -141,7 +141,7 @@ Tells CMGUI about the current values. Sends a pointer to the current object. \
 	return (return_code); \
 } /* CHOOSE_OBJECT_UPDATE(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHOOSE_OBJECT_DESTROY_CB( object_type ) \
 	choose_object_destroy_cb_ ## object_type
 #else
@@ -195,7 +195,7 @@ Callback for the choose_object dialog - tidies up all memory allocation. \
 	LEAVE; \
 } /* CHOOSE_OBJECT_DESTROY_CB(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHOOSE_OBJECT_UPDATE_CB( object_type ) \
 	choose_object_update_cb_ ## object_type
 #else
@@ -230,7 +230,7 @@ Callback for the choose_object dialog - tidies up all memory allocation. \
 	LEAVE; \
 } /* CHOOSE_OBJECT_UPDATE_CB(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHOOSE_OBJECT_ADD_TO_LIST_DATA( object_type ) \
 	choose_object_add_to_list_data_ ## object_type
 #else
@@ -253,7 +253,7 @@ Data for adding objects to an allocated list. Handles conditional function. \
   void **items; \
 } /* struct CHOOSE_OBJECT_ADD_TO_LIST_DATA(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHOOSE_OBJECT_ADD_TO_LIST( object_type ) \
 	choose_object_add_to_list_ ## object_type
 #else
@@ -306,7 +306,7 @@ Puts the <object> at the array position pointed to by <list_position>. \
 	return (return_code); \
 } /* CHOOSE_OBJECT_ADD_TO_LIST(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHOOSE_OBJECT_BUILD_ITEMS( object_type ) \
 	choose_object_get_items_ ## object_type
 #else
@@ -391,7 +391,7 @@ Updates the arrays of all the choosable objects and their names. \
 	return (return_code); \
 } /* CHOOSE_OBJECT_BUILD_ITEMS(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHOOSE_OBJECT_OBJECT_STATUS_CHANGED( object_type ) \
 	choose_object_object_status_changed_ ## object_type
 #else
@@ -443,7 +443,7 @@ chooser and should be. \
 	return (return_code); \
 } /* CHOOSE_OBJECT_OBJECT_STATUS_CHANGED(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE( object_type ) \
 	choose_object_global_object_change_ ## object_type
 #else

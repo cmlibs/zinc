@@ -25,7 +25,7 @@ Global types
 ------------
 */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG( object_type ) Change_log_ ## object_type
 #else
 #define CHANGE_LOG( object_type ) Cl_ ## object_type
@@ -34,28 +34,28 @@ Global types
 #define DECLARE_CHANGE_LOG_TYPE( object_type ) \
 	struct CHANGE_LOG(object_type)
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_OBJECT_UNCHANGED( object_type ) \
 	change_log_object_unchanged_ ## object_type
 #else
 #define CHANGE_LOG_OBJECT_UNCHANGED( object_type ) CLOU_ ## object_type
 #endif
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_OBJECT_ADDED( object_type ) \
 	change_log_object_added_ ## object_type
 #else
 #define CHANGE_LOG_OBJECT_ADDED( object_type ) CLOA_ ## object_type
 #endif
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_OBJECT_REMOVED( object_type ) \
 	change_log_object_removed_ ## object_type
 #else
 #define CHANGE_LOG_OBJECT_REMOVED( object_type ) CLOR_ ## object_type
 #endif
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED( object_type ) \
 	change_log_object_identifier_changed_ ## object_type
 #else
@@ -63,7 +63,7 @@ Global types
 	CLOIC_ ## object_type
 #endif
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED( object_type ) \
 	change_log_object_not_identifier_changed_ ## object_type
 #else
@@ -71,21 +71,21 @@ Global types
 	CLONIC ## object_type
 #endif
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_OBJECT_CHANGED( object_type ) \
 	change_log_object_changed_ ## object_type
 #else
 #define CHANGE_LOG_OBJECT_CHANGED( object_type ) CLOC_ ## object_type
 #endif
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_RELATED_OBJECT_CHANGED( object_type ) \
 	change_log_related_object_changed_ ## object_type
 #else
 #define CHANGE_LOG_RELATED_OBJECT_CHANGED( object_type ) CLROC_ ## object_type
 #endif
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_CHANGE( object_type ) \
 	change_log_change_ ## object_type
 #else
@@ -122,7 +122,7 @@ OBJECT_IDENTIFIER_CHANGED | OBJECT_NOT_IDENTIFIER_CHANGED, a logical OR. \
 	CHANGE_LOG_RELATED_OBJECT_CHANGED(object_type) = 16 \
 } /* enum CHANGE_LOG_CHANGE(object_type) */
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_CONDITIONAL_FUNCTION( object_type ) \
 	change_log_conditional_function_ ## object_type
 #else
@@ -136,7 +136,7 @@ typedef int (CHANGE_LOG_CONDITIONAL_FUNCTION(object_type))( \
 	struct object_type *object, enum CHANGE_LOG_CHANGE(object_type) change, \
 	void *user_data)
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_ITERATOR_FUNCTION( object_type ) \
 	change_log_iterator_function_ ## object_type
 #else
@@ -189,7 +189,7 @@ DESCRIPTION : \
 Destroys the <**change_log> and sets <*change_log> to NULL. \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_CLEAR_( object_type ) change_log_clear_ ## object_type
 #else
 #define CHANGE_LOG_CLEAR_( object_type ) clc_ ## object_type
@@ -205,7 +205,7 @@ DESCRIPTION : \
 Clears all entries/flags in the change_log. \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_ALL_CHANGE_( object_type ) \
 	change_log_all_change_ ## object_type
 #else
@@ -226,7 +226,7 @@ Tells <change_log> that all objects it monitors have undergone the <change>. \
 Not to be used when max_changes is negative. \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_OBJECT_CHANGE_( object_type ) \
 	change_log_object_change_ ## object_type
 #else
@@ -246,7 +246,7 @@ DESCRIPTION : \
 Tells the <change_log> that <object> has undergone the <change>. \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_GET_CHANGE_SUMMARY_( object_type ) \
 	change_log_get_change_summary_ ## object_type
 #else
@@ -267,7 +267,7 @@ Returns a bitwise OR of all the changes enumerators in the change_log. Check \
 against a particular change by bitwise ANDing with ADD, REMOVE etc. \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_GET_NUMBER_OF_CHANGES_( object_type ) \
 	change_log_get_number_of_changes_ ## object_type
 #else
@@ -288,7 +288,7 @@ Note that the returned number may not exactly match the number of objects \
 changed since some objects may have been changed more than once. \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_QUERY_( object_type ) \
 	change_log_query_ ## object_type
 #else
@@ -313,7 +313,7 @@ The OBJECT_REMOVED bit always occurs alone. \
 Unchanged objects are returned as OBJECT_UNCHANGED. \
 ==============================================================================*/
 
-#if defined (FULL_NAMES)
+#if ! defined (SHORT_NAMES)
 #define CHANGE_LOG_MERGE_( object_type ) change_log_merge_ ## object_type
 #else
 #define CHANGE_LOG_MERGE_( object_type ) clm_ ## object_type
