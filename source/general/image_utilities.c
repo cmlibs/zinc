@@ -1,27 +1,32 @@
 /*******************************************************************************
 FILE : image_utilities.c
 
-LAST MODIFIED : 9 April 2001
+LAST MODIFIED : 10 April 2001
 
 DESCRIPTION :
 Utilities for handling images.
 ==============================================================================*/
+#include <math.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <math.h>
 
 #if defined (BYTE_ORDER_CODE)
 #include <ctype.h> /*???DB.  Contains definition of __BYTE_ORDER for Linux */
 #endif /* defined (BYTE_ORDER_CODE) */
 
 #include "general/debug.h"
+#include "general/enumerator_private.h"
 #include "general/image_utilities.h"
 #include "general/indexed_list_private.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
+#if defined (NEW_CODE)
+/* image magick interfaces */
+#include <magick/api.h>
+#endif /* defined (NEW_CODE) */
 
 /* #define DEBUG 1 */
 #if defined (BYTE_ORDER_CODE)
@@ -658,6 +663,71 @@ Global functions
 ----------------
 */
 
+#if defined (NEW_CODE)
+int Open_image_environment(struct User_interface *user_interface)
+/*******************************************************************************
+LAST MODIFIED : 10 April 2001
+
+DESCRIPTION :
+Sets up ImageMagick library. Must be called before using any image I/O
+functions, ie. at the start of the program.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Open_image_environment);
+	if (user_interface)
+	{
+		MagickIncarnate(*(user_interface->argv));
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Open_image_environment.  Missing user_interface");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Open_image_environment */
+#endif /* defined (NEW_CODE) */
+
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Image_file_format)
+{
+	char *enumerator_string;
+
+	ENTER(ENUMERATOR_STRING(Image_file_format));
+	switch (enumerator_value)
+	{
+		case POSTSCRIPT_FILE_FORMAT:
+		{
+			enumerator_string = "postscript";
+		} break;
+		case RGB_FILE_FORMAT:
+		{
+			enumerator_string = "rgb";
+		} break;
+		case TIFF_FILE_FORMAT:
+		{
+			enumerator_string = "tiff";
+		} break;
+		case YUV_FILE_FORMAT:
+		{
+			enumerator_string = "yuv";
+		} break;
+		default:
+		{
+			enumerator_string = (char *)NULL;
+		} break;
+	}
+	LEAVE;
+
+	return (enumerator_string);
+} /* ENUMERATOR_STRING(Image_file_format) */
+
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Image_file_format)
+
 char *Image_file_format_extension(enum Image_file_format image_file_format)
 /*******************************************************************************
 LAST MODIFIED : 8 September 2000
@@ -676,29 +746,27 @@ but extra characters may follow. This is especially true for .tif/.tiff and
 	{
 		case POSTSCRIPT_FILE_FORMAT:
 		{
-			file_format_extension="ps";
+			file_format_extension = "ps";
 		} break;
 		case RAW_FILE_FORMAT:
 		{
-			file_format_extension="raw";
+			file_format_extension = "raw";
 		} break;
 		case RGB_FILE_FORMAT:
 		{
-			file_format_extension="rgb";
+			file_format_extension = "rgb";
 		} break;
 		case TIFF_FILE_FORMAT:
 		{
-			file_format_extension="tif";
+			file_format_extension = "tif";
 		} break;
 		case YUV_FILE_FORMAT:
 		{
-			file_format_extension="yuv";
+			file_format_extension = "yuv";
 		} break;
 		default:
 		{
-			display_message(ERROR_MESSAGE,
-				"Image_file_format_extension.  Unknown image file format");
-			file_format_extension="";
+			file_format_extension = (char *)NULL;
 		} break;
 	}
 	LEAVE;
@@ -706,173 +774,53 @@ but extra characters may follow. This is especially true for .tif/.tiff and
 	return (file_format_extension);
 } /* Image_file_format_extension */
 
-char *Image_file_format_string(enum Image_file_format image_file_format)
+int Image_file_format_can_be_read(enum Image_file_format image_file_format,
+	void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 12 October 2000
+LAST MODIFIED : 10 April 2001
 
 DESCRIPTION :
-Returns the token that should represent the file format
-expected file string stem for a given <image_file_format>. By
-stem it is meant that the given characters follow the final . in the file name,
-but extra characters may follow. This is especially true for .tif/.tiff and
-.yuv#### strings.
+Returns true if CMGUI can read the specified <image_file_format>.
 ==============================================================================*/
 {
-	char *file_format_string;
+	int return_code;
 
-	ENTER(Image_file_format_string);
-	switch (image_file_format)
-	{
-		case POSTSCRIPT_FILE_FORMAT:
-		{
-			file_format_string="postscript";
-		} break;
-		case RGB_FILE_FORMAT:
-		{
-			file_format_string="rgb";
-		} break;
-		case TIFF_FILE_FORMAT:
-		{
-			file_format_string="tiff";
-		} break;
-		case YUV_FILE_FORMAT:
-		{
-			file_format_string="yuv";
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE,
-				"Image_file_format_string.  Unknown image file format");
-			file_format_string="";
-		} break;
-	}
+	ENTER(Image_file_format_can_be_read);
+	USE_PARAMETER(dummy_void);
+	return_code =
+		(RAW_FILE_FORMAT == image_file_format) ||
+		(RGB_FILE_FORMAT == image_file_format) ||
+		(TIFF_FILE_FORMAT == image_file_format) ||
+		(YUV_FILE_FORMAT == image_file_format);
 	LEAVE;
 
-	return (file_format_string);
-} /* Image_file_format_string */
+	return (return_code);
+} /* Image_file_format_can_be_read( */
 
-char **Image_file_format_get_valid_strings_for_reading(
-	int *number_of_valid_strings)
+int Image_file_format_can_be_written(enum Image_file_format image_file_format,
+	void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 12 October 2000
+LAST MODIFIED : 10 April 2001
 
 DESCRIPTION :
-Returns an allocated array of pointers to all static strings for
-Image_file_formats that can be used for reading.
-Strings are obtained from function Image_file_format_string.
-Up to calling function to deallocate returned array - but not the strings in it!
+Returns true if CMGUI can write the specified <image_file_format>.
 ==============================================================================*/
 {
-	char **valid_strings;
+	int return_code;
 
-	ENTER(Image_file_format_get_valid_strings_for_reading);
-	if (number_of_valid_strings)
-	{
-		*number_of_valid_strings=4;
-		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
-		{
-			valid_strings[0]=Image_file_format_string(RAW_FILE_FORMAT);
-			valid_strings[1]=Image_file_format_string(RGB_FILE_FORMAT);
-			valid_strings[2]=Image_file_format_string(TIFF_FILE_FORMAT);
-			valid_strings[3]=Image_file_format_string(YUV_FILE_FORMAT);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Image_file_format_get_valid_strings_for_reading.  Not enough memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Image_file_format_get_valid_strings_for_reading.  Invalid argument(s)");
-		valid_strings=(char **)NULL;
-	}
+	ENTER(Image_file_format_can_be_written);
+	USE_PARAMETER(dummy_void);
+	return_code =
+		(POSTSCRIPT_FILE_FORMAT == image_file_format) ||
+		(RGB_FILE_FORMAT == image_file_format) ||
+		(TIFF_FILE_FORMAT == image_file_format);
 	LEAVE;
 
-	return (valid_strings);
-} /* Image_file_format_get_valid_strings_for_reading */
+	return (return_code);
+} /* Image_file_format_can_be_written */
 
-char **Image_file_format_get_valid_strings_for_writing(
-	int *number_of_valid_strings)
-/*******************************************************************************
-LAST MODIFIED : 8 September 2000
-
-DESCRIPTION :
-Returns an allocated array of pointers to all static strings for
-Image_file_formats that can be used for writing.
-Strings are obtained from function Image_file_format_string.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-{
-	char **valid_strings;
-
-	ENTER(Image_file_format_get_valid_strings_for_writing);
-	if (number_of_valid_strings)
-	{
-		*number_of_valid_strings=3;
-		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
-		{
-			valid_strings[0]=Image_file_format_string(POSTSCRIPT_FILE_FORMAT);
-			valid_strings[1]=Image_file_format_string(RGB_FILE_FORMAT);
-			valid_strings[2]=Image_file_format_string(TIFF_FILE_FORMAT);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Image_file_format_get_valid_strings_for_writing.  Not enough memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Image_file_format_get_valid_strings_for_writing.  Invalid argument(s)");
-		valid_strings=(char **)NULL;
-	}
-	LEAVE;
-
-	return (valid_strings);
-} /* Image_file_format_get_valid_strings_for_writing */
-
-enum Image_file_format Image_file_format_from_string(
-	char *image_file_format_string)
-/*******************************************************************************
-LAST MODIFIED : 8 September 2000
-
-DESCRIPTION :
-Returns the <Image_file_format> described by <image_file_format_string>.
-==============================================================================*/
-{
-	enum Image_file_format image_file_format;
-
-	ENTER(Image_file_format_from_string);
-	if (image_file_format_string)
-	{
-		image_file_format=IMAGE_FILE_FORMAT_BEFORE_FIRST;
-		image_file_format++;
-		while ((image_file_format<IMAGE_FILE_FORMAT_AFTER_LAST)&&
-			(!fuzzy_string_compare_same_length(image_file_format_string,
-				Image_file_format_string(image_file_format))))
-		{
-			image_file_format++;
-		}
-		if (IMAGE_FILE_FORMAT_AFTER_LAST==image_file_format)
-		{
-			image_file_format=UNKNOWN_IMAGE_FILE_FORMAT;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Image_file_format_from_string.  Invalid argument");
-		image_file_format=UNKNOWN_IMAGE_FILE_FORMAT;
-	}
-	LEAVE;
-
-	return (image_file_format);
-} /* Image_file_format_from_string */
-
-enum Image_file_format Image_file_format_from_file_name(char *file_name)
+int Image_file_format_from_file_name(char *file_name,
+	enum Image_file_format *image_file_format_address)
 /*******************************************************************************
 LAST MODIFIED : 8 September 2000
 
@@ -881,38 +829,48 @@ Returns the <Image_file_format> determined from the file_extension in
 <file_name>, or UNKNOWN_IMAGE_FILE_FORMAT if none found or no match made.
 ==============================================================================*/
 {
-	char *file_extension;
+	char *file_extension, *other_file_extension;
 	enum Image_file_format image_file_format;
+	int return_code;
 
 	ENTER(Image_file_format_from_file_name);
-	image_file_format=UNKNOWN_IMAGE_FILE_FORMAT;
-	if (file_name)
+	if (file_name && image_file_format_address)
 	{
-		if (file_extension=strrchr(file_name,'.'))
+		if (file_extension = strrchr(file_name, '.'))
 		{
 			file_extension++;
-			image_file_format=IMAGE_FILE_FORMAT_BEFORE_FIRST;
-			image_file_format++;
-			while ((image_file_format<IMAGE_FILE_FORMAT_AFTER_LAST)&&
-				(!fuzzy_string_compare(Image_file_format_extension(image_file_format),
-					file_extension)))
+			image_file_format = (enum Image_file_format)0;
+			while ((other_file_extension =
+				Image_file_format_extension(image_file_format)) &&
+				(!fuzzy_string_compare_same_length(file_extension,
+					other_file_extension)))
 			{
 				image_file_format++;
 			}
-			if (IMAGE_FILE_FORMAT_AFTER_LAST==image_file_format)
+			if (other_file_extension)
 			{
-				image_file_format=UNKNOWN_IMAGE_FILE_FORMAT;
+				*image_file_format_address = image_file_format;
+				return_code = 1;
 			}
+			else
+			{
+				return_code = 0;
+			}
+		}
+		else
+		{
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Image_file_format_from_file_name.  Invalid argument");
+			"Image_file_format_from_file_name.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
-	return (image_file_format);
+	return (return_code);
 } /* Image_file_format_from_file_name */
 
 char *Raw_image_storage_string(enum Raw_image_storage raw_image_storage)
@@ -4895,49 +4853,58 @@ be specified in the <width> and <height> arguments. For the RAW format, the
 	int return_code;
 
 	ENTER(read_image_file);
-	return_code=0;
-	if (file_name&&number_of_components&&height&&width&&image)
+	if (file_name && number_of_components && height && width && image)
 	{
-		image_file_format=Image_file_format_from_file_name(file_name);
-		switch (image_file_format)
+		if (Image_file_format_from_file_name(file_name, &image_file_format))
 		{
-			case POSTSCRIPT_FILE_FORMAT:
+			switch (image_file_format)
 			{
-				display_message(ERROR_MESSAGE,"Cannot read postscript image file '%s'",
-					file_name);
-				return_code=0;
-			} break;
-			case RAW_FILE_FORMAT:
-			{
-				return_code=read_raw_image_file(file_name,number_of_components,
-					number_of_bytes_per_component,height,width,raw_image_storage,image);
-			} break;
-			case RGB_FILE_FORMAT:
-			{
-				return_code=read_rgb_image_file(file_name,number_of_components,
-					number_of_bytes_per_component,height,width,image);
-			} break;
-			case TIFF_FILE_FORMAT:
-			{
-				return_code=read_tiff_image_file(file_name,number_of_components,
-					number_of_bytes_per_component,height,width,image);
-			} break;
-			case YUV_FILE_FORMAT:
-			{
-				return_code=read_yuv_image_file(file_name,number_of_components,
-					number_of_bytes_per_component,height,width,image);
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"Could not determine image format of file '%s'",file_name);
-				return_code=0;
-			} break;
+				case POSTSCRIPT_FILE_FORMAT:
+				{
+					display_message(ERROR_MESSAGE,
+						"Cannot read postscript image file '%s'", file_name);
+					return_code = 0;
+				} break;
+				case RAW_FILE_FORMAT:
+				{
+					return_code = read_raw_image_file(file_name,number_of_components,
+						number_of_bytes_per_component,height,width,raw_image_storage,image);
+				} break;
+				case RGB_FILE_FORMAT:
+				{
+					return_code = read_rgb_image_file(file_name,number_of_components,
+						number_of_bytes_per_component,height,width,image);
+				} break;
+				case TIFF_FILE_FORMAT:
+				{
+					return_code = read_tiff_image_file(file_name,number_of_components,
+						number_of_bytes_per_component,height,width,image);
+				} break;
+				case YUV_FILE_FORMAT:
+				{
+					return_code = read_yuv_image_file(file_name,number_of_components,
+						number_of_bytes_per_component,height,width,image);
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"read_image_file.  Unknown image file format");
+					return_code = 0;
+				} break;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"read_image_file.  Could not determine image format of file '%s'",
+				file_name);
+			return_code = 0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"read_image_file.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "read_image_file.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 

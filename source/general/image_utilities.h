@@ -1,14 +1,16 @@
 /*******************************************************************************
 FILE : image_utilities.h
 
-LAST MODIFIED : 12 October 2000
+LAST MODIFIED : 10 April 2001
 
 DESCRIPTION :
 Utilities for handling images.
 ==============================================================================*/
 #if !defined (IMAGE_UTILITIES_H)
 #define IMAGE_UTILITIES_H
+#include "general/enumerator.h"
 #include "user_interface/printer.h"
+#include "user_interface/user_interface.h"
 
 #define TIFF_HI_LO 0x4D4D
 #define TIFF_LO_HI 0x4949
@@ -62,6 +64,19 @@ Global functions
 ----------------
 */
 
+#if defined (NEW_CODE)
+int Open_image_environment(struct User_interface *user_interface);
+/*******************************************************************************
+LAST MODIFIED : 10 April 2001
+
+DESCRIPTION :
+Sets up ImageMagick library. Must be called before using any image I/O
+functions, ie. at the start of the program.
+==============================================================================*/
+#endif /* defined (NEW_CODE) */
+
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Image_file_format);
+
 char *Image_file_format_extension(enum Image_file_format image_file_format);
 /*******************************************************************************
 LAST MODIFIED : 8 September 2000
@@ -73,52 +88,8 @@ but extra characters may follow. This is especially true for .tif/.tiff and
 .yuv#### extensions.
 ==============================================================================*/
 
-char *Image_file_format_string(enum Image_file_format image_file_format);
-/*******************************************************************************
-LAST MODIFIED : 8 September 2000
-
-DESCRIPTION :
-Returns the token that should represent the file format
-expected file string stem for a given <image_file_format>. By
-stem it is meant that the given characters follow the final . in the file name,
-but extra characters may follow. This is especially true for .tif/.tiff and
-.yuv#### strings.
-==============================================================================*/
-
-char **Image_file_format_get_valid_strings_for_reading(
-	int *number_of_valid_strings);
-/*******************************************************************************
-LAST MODIFIED : 8 September 2000
-
-DESCRIPTION :
-Returns an allocated array of pointers to all static strings for
-Image_file_formats that can be used for reading.
-Strings are obtained from function Image_file_format_string.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-
-char **Image_file_format_get_valid_strings_for_writing(
-	int *number_of_valid_strings);
-/*******************************************************************************
-LAST MODIFIED : 8 September 2000
-
-DESCRIPTION :
-Returns an allocated array of pointers to all static strings for
-Image_file_formats that can be used for writing.
-Strings are obtained from function Image_file_format_string.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-
-enum Image_file_format Image_file_format_from_string(
-	char *image_file_format_string);
-/*******************************************************************************
-LAST MODIFIED : 8 September 2000
-
-DESCRIPTION :
-Returns the <Image_file_format> described by <image_file_format_string>.
-==============================================================================*/
-
-enum Image_file_format Image_file_format_from_file_name(char *file_name);
+int Image_file_format_from_file_name(char *file_name,
+	enum Image_file_format *image_file_format_address);
 /*******************************************************************************
 LAST MODIFIED : 8 September 2000
 
@@ -126,6 +97,8 @@ DESCRIPTION :
 Returns the <Image_file_format> determined from the file_extension in
 <file_name>, or UNKNOWN_IMAGE_FILE_FORMAT if none found or no match made.
 ==============================================================================*/
+
+/*PROTOTYPE_ENUMERATOR_FUNCTIONS(Raw_image_storage);*/
 
 char *Raw_image_storage_string(enum Raw_image_storage raw_image_storage);
 /*******************************************************************************
