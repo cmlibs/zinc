@@ -1724,7 +1724,9 @@ Main program for the CMISS Graphical User Interface
 										display_information_message,command_window);
 									set_display_message_function(WARNING_MESSAGE,
 										display_warning_message,command_window);
+#if defined (PERL_INTERPRETER)
 									redirect_interpreter_output(&return_code);
+#endif /* defined (PERL_INTERPRETER) */
 								}
 
 								XSetErrorHandler(x_error_handler);
