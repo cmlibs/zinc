@@ -10,6 +10,7 @@ Implements a matrix computed value.
 #include "computed_variable/computed_value_matrix.h"
 #include "computed_variable/computed_value_private.h"
 #include "general/debug.h"
+#include "general/mystring.h"
 #include "user_interface/message.h"
 
 /*
@@ -78,6 +79,7 @@ static START_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(matrix)
 	Matrix_value matrix_value;
 	struct Matrix *matrix;
 
+	return_code = 0;
 	if ((matrix=data->matrix)&&Matrix_get_dimensions(matrix,&number_of_rows,
 		&number_of_columns))
 	{
@@ -88,6 +90,7 @@ static START_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(matrix)
 			{
 				destination_real=destination_reals;
 				row_number=1;
+				return_code = 1;
 				while (return_code&&(row_number<=number_of_rows))
 				{
 					column_number=1;
@@ -122,8 +125,80 @@ static START_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(matrix)
 }
 END_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(matrix)
 
-#define Cmiss_value_matrix_get_string_type_specific \
-	Cmiss_value_default_get_string
+static START_CMISS_VALUE_GET_STRING_TYPE_SPECIFIC_FUNCTION(matrix)
+/*******************************************************************************
+LAST MODIFIED : 14 August 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char tmp_string[50];
+	int column_jump,column_number,error,max_columns = 100, max_rows = 100,
+		number_of_columns,number_of_rows,row_jump,row_number;
+	Matrix_value matrix_value;
+	struct Matrix *matrix;
+
+	return_code = 0;
+	if ((matrix=data->matrix)&&Matrix_get_dimensions(matrix,&number_of_rows,
+		&number_of_columns)&&string)
+	{
+		error = 0;
+		row_number=1;
+		row_jump = 0;
+		if (number_of_rows > max_rows)
+		{
+			row_jump = max_rows / 2;
+		}
+		column_jump = 0;
+		if (number_of_columns > max_columns)
+		{
+			column_jump = max_columns / 2;
+		}
+		return_code = 1;
+		append_string(string,"[",&error);
+		while (return_code&&(row_number<=number_of_rows))
+		{
+			column_number=1;
+			while ((column_number<=number_of_columns)&&(return_code=
+				Matrix_get_value(matrix,row_number,column_number,&matrix_value)))
+			{
+				if (column_number == 1)
+				{
+					sprintf(tmp_string,"%g", matrix_value);
+				}
+				else
+				{
+					sprintf(tmp_string,",%g", matrix_value);
+				}
+				append_string(string,tmp_string,&error);
+				if (column_number == column_jump)
+				{
+					append_string(string,",....",&error);
+					column_number = number_of_columns - column_jump + 1;
+				}
+				else
+				{
+					column_number++;
+				}
+			}
+			if (row_number < number_of_rows)
+			{
+				append_string(string,"\n",&error);
+			}
+			if (row_number == row_jump)
+			{
+				append_string(string,"....\n",&error);
+				row_number = number_of_rows - row_jump + 1;
+			}
+			else
+			{
+				row_number++;
+			}
+		}
+		append_string(string,"]",&error);
+	}
+}
+END_CMISS_VALUE_GET_STRING_TYPE_SPECIFIC_FUNCTION(matrix)
 
 static START_CMISS_VALUE_INCREMENT_TYPE_SPECIFIC_FUNCTION(matrix)
 /*******************************************************************************

@@ -523,6 +523,7 @@ function to DEALLOCATE the string when it is no longer required.
 	return_code=0;
 	if (value&&result)
 	{
+		*result = (char *)NULL;
 		if (value->get_string_type_specific_function)
 		{
 			return_code=(value->get_string_type_specific_function)(
@@ -564,6 +565,7 @@ Cmiss_value_get_reals method and concatenates these into a list of numbers.
 	if (value&&result)
 	{
 		*result = (char *)NULL;
+		error = 0;
 		if (Cmiss_value_get_reals(value, &number_of_values,
 			&values))
 		{
@@ -580,6 +582,7 @@ Cmiss_value_get_reals method and concatenates these into a list of numbers.
 			}
 			append_string(result,"]",&error);
 			DEALLOCATE(values);
+			return_code = 1;
 		}
 	}
 	else

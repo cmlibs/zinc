@@ -13,6 +13,7 @@ conjunction with Cmiss_variables.
 #if !defined (__CMISS_VALUE_H__)
 #define __CMISS_VALUE_H__
 
+#include "api/cmiss_value.h"
 #include "general/list.h"
 #include "general/object.h"
 #include "general/value.h"
@@ -37,7 +38,8 @@ Returns a non-zero if <value> is a #value_type and zero otherwise. \
 Global types
 ------------
 */
-typedef struct Cmiss_value *Cmiss_value_id;
+/* Now defined in the API as this is a public object pointer */
+/* typedef struct Cmiss_value *Cmiss_value_id; */
 /*******************************************************************************
 LAST MODIFIED : 9 April 2003
 

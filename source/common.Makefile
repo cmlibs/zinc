@@ -453,19 +453,19 @@ endif
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
 ifeq ($(SYSNAME:IRIX%=),)
-   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $(3) 2>&1 | sed "s%Cannot access %product_object/%;s%: No such file or directory%%;s%UX:ls: ERROR: %%" > object.list) ;
+   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $(3) 2>&1 | sed "s%Cannot access %product_object/%;s%: No such file or directory%%;s%UX:ls: ERROR: %%" > $(1).list) ;
 endif # SYSNAME == IRIX%=
 ifeq ($(SYSNAME),Linux)
-   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $(3) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list) ;
+   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $(3) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > $(1).list) ;
 endif # SYSNAME == Linux
 ifeq ($(SYSNAME:CYGWIN%=),)
-   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $(3) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
+   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $(3) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > $(1).list)
 endif # SYSNAME == CYGWIN%=
 ifeq ($(SYSNAME),AIX)
-   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $(3) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
+   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $(3) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > $(1).list)
 endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
-   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $(3) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
+   BUILD_OBJECT_LIST = cd $(OBJECT_PATH) ; (ls $(3) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > $(1).list)
 endif # SYSNAME == win32
 
 define BuildNormalTarget
@@ -480,7 +480,7 @@ define BuildNormalTarget
 	cd $(OBJECT_PATH) ; \
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
-	$(LINK) -o $(1).tmp $(ALL_FLAGS) `cat object.list` $(4) && \
+	$(LINK) -o $(1).tmp $(ALL_FLAGS) `cat $(1).list` $(4) && \
 	if [ -f $(2)/$(1) ]; then \
 		rm $(2)/$(1) ; \
 	fi && \
@@ -499,7 +499,7 @@ define BuildStaticLibraryTarget
 	cd $(OBJECT_PATH) ; \
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
-	ar $(AR_FLAGS) cr $(1).tmp `cat object.list` && \
+	ar $(AR_FLAGS) cr $(1).tmp `cat $(1).list` && \
 	if [ -f $(2)/$(1) ]; then \
 		rm $(2)/$(1) ; \
 	fi && \
@@ -518,7 +518,7 @@ define BuildSharedLibraryTarget
 	cd $(OBJECT_PATH) ; \
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
-	$(LINK) -shared -o $(1).tmp $(ALL_FLAGS) `cat object.list` $(4) -Wl,-soname,$(5) && \
+	$(LINK) -shared -o $(1).tmp $(ALL_FLAGS) `cat $(1).list` $(4) -Wl,-soname,$(5) && \
 	if [ -f $(2)/$(1) ]; then \
 		rm $(2)/$(1) ; \
 	fi && \

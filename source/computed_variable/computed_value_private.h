@@ -138,11 +138,15 @@ int Cmiss_value_ ## value_type ## _get_string_type_specific( \
 	Cmiss_value_id value, char **string) \
 { \
 	int return_code; \
+	struct Cmiss_value_ ## value_type ## _type_specific_data *data; \
 \
 	ENTER(Cmiss_value_ ## value_type ## _get_string_type_specific); \
 	return_code=0; \
+	data=(struct Cmiss_value_ ## value_type ## _type_specific_data *) \
+		Cmiss_value_get_type_specific_data(value); \
+	ASSERT_IF(data,return_code,0) \
 	ASSERT_IF(value&&(Cmiss_value_ ## value_type ## _type_string== \
-		Cmiss_value_get_type_id_string(value))&&result,return_code,0)
+		Cmiss_value_get_type_id_string(value))&&string,return_code,0)
 
 #define END_CMISS_VALUE_GET_STRING_TYPE_SPECIFIC_FUNCTION( value_type ) \
 	LEAVE; \

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss_core.c
 
-LAST MODIFIED : 12 September 2002
+LAST MODIFIED : 12 August 2003
 
 DESCRIPTION :
 The public interface to the some of the internal functions of cmiss.
@@ -14,6 +14,29 @@ The public interface to the some of the internal functions of cmiss.
 Global functions
 ----------------
 */
+
+void *Cmiss_allocate(int bytes)
+/*******************************************************************************
+LAST MODIFIED : 12 August 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	void *return_ptr;
+
+	ENTER(Cmiss_allocate);
+	if (bytes)
+	{
+		ALLOCATE(return_ptr, char, bytes);
+	}
+	else
+	{
+		return_ptr = NULL;
+	}
+	LEAVE;
+
+	return (return_ptr);
+} /* Cmiss_allocate */
 
 int Cmiss_deallocate(void *ptr)
 /*******************************************************************************

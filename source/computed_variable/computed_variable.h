@@ -71,6 +71,7 @@ NOTES :
 #if !defined (__CMISS_VARIABLE_H__)
 #define __CMISS_VARIABLE_H__
 
+#include "api/cmiss_variable.h"
 #include "general/geometry.h"
 #include "general/list.h"
 #include "general/manager.h"
@@ -98,7 +99,8 @@ Returns a non-zero if <variable> is a #variable_type and zero otherwise. \
 Global types
 ------------
 */
-typedef struct Cmiss_variable *Cmiss_variable_id;
+/* This is now defined in the api as it is a public pointer object */
+/* typedef struct Cmiss_variable *Cmiss_variable_id; */
 /*******************************************************************************
 LAST MODIFIED : 9 April 2003
 
@@ -119,7 +121,7 @@ DESCRIPTION :
 A variable/value pair for specifying the value of the variable.
 ==============================================================================*/
 
-DECLARE_LIST_TYPES(Cmiss_variable_value);
+/* Now in API DECLARE_LIST_TYPES(Cmiss_variable_value);*/
 
 struct Cmiss_variable_package;
 /*******************************************************************************

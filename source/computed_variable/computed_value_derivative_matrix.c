@@ -11,6 +11,7 @@ Implements the derivative matrix computed value.
 #include "computed_variable/computed_value_matrix.h"
 #include "computed_variable/computed_value_private.h"
 #include "general/debug.h"
+#include "general/mystring.h"
 #include "user_interface/message.h"
 
 /*
@@ -204,6 +205,7 @@ static START_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(derivative_matrix)
 		{
 			number_of_reals += number_of_rows*number_of_columns;
 			matrix++;
+			i--;
 		}
 		if (return_code)
 		{
@@ -232,6 +234,7 @@ static START_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(derivative_matrix)
 							row_number++;
 						}
 						matrix++;
+						i--;
 					}
 					if (return_code)
 					{
@@ -256,8 +259,61 @@ static START_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(derivative_matrix)
 }
 END_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(derivative_matrix)
 
-#define Cmiss_value_derivative_matrix_get_string_type_specific \
-	Cmiss_value_default_get_string
+static START_CMISS_VALUE_GET_STRING_TYPE_SPECIFIC_FUNCTION(derivative_matrix)
+/*******************************************************************************
+LAST MODIFIED : 14 August 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char *matrix_string, *name, tmp_string[50];
+	Cmiss_value_id *matrix;
+	int error, i, number_of_matrices;
+
+	if (matrix=data->matrices)
+	{
+		*string = (char *)NULL;
+		error = 0;
+		number_of_matrices=1;
+		for (i=0;i<data->order;i++)
+		{
+			number_of_matrices *= 2;
+		}
+		number_of_matrices -= 1;
+
+		append_string(string,"d",&error);
+		if (data->order > 1)
+		{
+			sprintf(tmp_string, "%d", data->order);
+			append_string(string,tmp_string,&error);
+		}
+		if (GET_NAME(Cmiss_variable)(data->dependent_variable, &name))
+		{
+			append_string(string,"(",&error);
+			append_string(string,name,&error);
+			append_string(string,")",&error);
+			DEALLOCATE(name);
+		}
+		append_string(string,"/",&error);
+		for (i = 0 ; i < data->order ; i++)
+		{
+			if (GET_NAME(Cmiss_variable)(data->independent_variables[i], &name))
+			{
+				append_string(string,"d(",&error);
+				append_string(string,name,&error);
+				append_string(string,")",&error);
+				DEALLOCATE(name);
+			}
+		}
+		append_string(string,"=",&error);
+		if (return_code = Cmiss_value_get_string(matrix[number_of_matrices-1], &matrix_string))
+		{
+			append_string(string,matrix_string,&error);
+			DEALLOCATE(matrix_string);
+		}
+	}
+}
+END_CMISS_VALUE_GET_STRING_TYPE_SPECIFIC_FUNCTION(matrix)
 
 static START_CMISS_VALUE_INCREMENT_TYPE_SPECIFIC_FUNCTION(derivative_matrix)
 /*******************************************************************************

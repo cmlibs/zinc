@@ -567,8 +567,21 @@ ALL_LIB = $(GRAPHICS_LIB) $(USER_INTERFACE_LIB) $(HAPTIC_LIB) \
 	$(LIB)
 
 API_SRCS = \
+	api/cmiss_command.c \
 	api/cmiss_core.c \
-	api/cmiss_scene_viewer.c
+	api/cmiss_region.c \
+	api/cmiss_scene_viewer.c \
+	api/cmiss_value_derivative_matrix.c \
+	api/cmiss_value_element_xi.c \
+	api/cmiss_value_fe_value.c \
+	api/cmiss_value_matrix.c \
+	api/cmiss_variable.c \
+	api/cmiss_variable_composite.c \
+	api/cmiss_variable_composition.c \
+	api/cmiss_variable_coordinates.c \
+	api/cmiss_variable_derivative.c \
+	api/cmiss_variable_finite_element.c \
+	api/cmiss_variable_identity.c
 API_INTERFACE_SRCS = \
 	api/cmiss_graphics_window.c
 CHOOSE_INTERFACE_SRCS = \

@@ -11,8 +11,7 @@ MODULE = Cmiss::Value::FE_value		PACKAGE = Cmiss::Value::FE_value		PREFIX = Cmis
 PROTOTYPES: DISABLE
 
 Cmiss::Value
-create(fe_value)
-	FE_value fe_value
+create(FE_value fe_value)
 	CODE:
 		/* the result, in Perl, is a reference to a stash (which is a pointer to the
 			Cmiss_value structure).  This means that don't need to worry about

@@ -10,6 +10,7 @@ interface to CMISS.
 #if !defined (FINITE_ELEMENT_H)
 #define FINITE_ELEMENT_H
 
+#include "api/cmiss_finite_element.h"
 #include "command/parser.h"
 #include "finite_element/finite_element_time.h"
 #include "general/change_log.h"
@@ -133,6 +134,9 @@ Used to specify a component of a field.  If the component <number> is < 0 or
 	int number;
 }; /* struct FE_field_component */
 
+#if defined (OLD_CODE)
+Shifted to API
+
 enum FE_nodal_value_type
 /*******************************************************************************
 LAST MODIFIED : 27 January 1998
@@ -156,6 +160,7 @@ starts at 0.
 	FE_NODAL_D3_DS1DS2DS3,
 	FE_NODAL_UNKNOWN
 }; /* enum FE_nodal_value_type */
+#endif /* defined (OLD_CODE) */
 
 struct FE_node_field_creator;
 
