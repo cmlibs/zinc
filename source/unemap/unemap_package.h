@@ -17,7 +17,7 @@ DESCRIPTION :
 #include "finite_element/finite_element.h"
 #include "interaction/interactive_tool.h"
 #include "selection/element_point_ranges_selection.h"
-#include "selection/element_selection.h"
+#include "selection/element_selection.h"  
 #include "selection/node_selection.h"
 /* for enum Electrodes_option.???JWMaybe we should move this elsewhere?*/
 /* or not use it at all - see map_remove_map_electrodes_if_changed */
@@ -244,6 +244,30 @@ DESCRIPTION :
 Sets the electrode_glyph  for map_info <map_number> in <package>.
 Set (and get) with map_number 0,1,2... (an array), but package->number_of_maps
 is 1,2,3...
+==============================================================================*/
+
+struct GT_object *get_unemap_package_map_torso_arms(
+	struct Unemap_package *package,int map_number);
+/*******************************************************************************
+LAST MODIFIED : 15 June 2000
+
+DESCRIPTION :
+gets the map_torso_arms for map_info <map_number> in <package>.
+get (and set) with map_number 0,1,2... (an array), but package->number_of_maps
+is 1,2,3... i.e 
+??JW perhaps should maintain a list of GT_objects, cf CMGUI
+==============================================================================*/
+
+int set_unemap_package_map_torso_arms(struct Unemap_package *package,
+	struct GT_object *torso_arms,int map_number);
+/*******************************************************************************
+LAST MODIFIED : 15 June 2000
+
+DESCRIPTION :
+Sets the torso_arms  for map_info <map_number> in <package>.
+Set (and get) with map_number 0,1,2... (an array), but package->number_of_maps
+is 1,2,3...
+??JW perhaps should maintain a list of GT_objects, cf CMGUI
 ==============================================================================*/
 
 FE_value get_unemap_package_map_electrode_size(struct Unemap_package *package,

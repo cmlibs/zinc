@@ -1901,43 +1901,10 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 	int success;	
 	struct FE_field *position_field,*fit_field;
 
-	enum FE_nodal_value_type *fit_point_components_nodal_value_types[3]=
-	{
-		{
-			FE_NODAL_VALUE
-		},
-		{
-			FE_NODAL_VALUE
-		},
-		{
-			FE_NODAL_VALUE
-		}
-	};
-	enum FE_nodal_value_type *patch_fit_point_components_nodal_value_types[2]=
-	{
-		{
-			FE_NODAL_VALUE
-		},
-		{
-			FE_NODAL_VALUE
-		}
-	};
-	enum FE_nodal_value_type fit_components_nodal_value_types[4]= /* value + 3 derivatives */
-	{	
-		{
-			FE_NODAL_VALUE
-		},
-		{
-			FE_NODAL_D_DS1
-		},	
-		{
-			FE_NODAL_D_DS2
-		},
-		{
-			FE_NODAL_D2_DS1DS2,	
-		}
-	};	
-	enum FE_nodal_value_type *ptr_fit_components[4]; 
+	enum FE_nodal_value_type linear_component[1]={FE_NODAL_VALUE};
+	enum FE_nodal_value_type bicubic_component[4]=
+	{FE_NODAL_VALUE,FE_NODAL_D_DS1,FE_NODAL_D_DS2,FE_NODAL_D2_DS1DS2};
+	enum FE_nodal_value_type *components_value_types[3];
 
 	int fit_point_components_number_of_derivatives[3]={0,0,0},
 		fit_point_components_number_of_versions[3]; /* defined below*/
@@ -1945,17 +1912,25 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 		patch_fit_point_components_number_of_versions[2]; /* defined below*/
 	int fit_components_number_of_derivatives[1]={3},
 	  fit_components_number_of_versions[1]={1};
+	int torso_fit_point_components_number_of_derivatives[3]={3,0,0},
+		torso_fit_point_components_number_of_versions[3]; /* defined below*/
 
 	ENTER(create_mapping_template_node);
 	if(package)
 	{			
-		*ptr_fit_components = fit_components_nodal_value_types;
+		/* *ptr_fit_components = fit_components_nodal_value_types; */
 		switch(region_type)
 		{
 			case PATCH:
 			{
 				patch_fit_point_components_number_of_versions[0] = coords_comp_0_num_versions;
 				patch_fit_point_components_number_of_versions[1] = coords_comp_1_num_versions;
+			}break;
+			case TORSO:
+			{
+				torso_fit_point_components_number_of_versions[0] = coords_comp_0_num_versions;
+				torso_fit_point_components_number_of_versions[1] = coords_comp_1_num_versions;
+				torso_fit_point_components_number_of_versions[2] = coords_comp_2_num_versions;
 			}break;
 			default:
 			{
@@ -1974,27 +1949,44 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 			{	
 				case PATCH:
 				{
+					components_value_types[0]=linear_component;
+					components_value_types[1]=linear_component;
+					components_value_types[2]=linear_component;
 					success=define_FE_field_at_node(node,position_field,
 						patch_fit_point_components_number_of_derivatives,
 						patch_fit_point_components_number_of_versions,
-						patch_fit_point_components_nodal_value_types);
+						components_value_types);
+				}break;	
+				case TORSO:
+				{
+					components_value_types[0]=bicubic_component;
+					components_value_types[1]=linear_component;
+					components_value_types[2]=linear_component;
+					success=define_FE_field_at_node(node,position_field,
+						torso_fit_point_components_number_of_derivatives,
+						torso_fit_point_components_number_of_versions,
+						components_value_types);
 				}break;
 				default:
 				{
+					components_value_types[0]=linear_component;
+					components_value_types[1]=linear_component;
+					components_value_types[2]=linear_component;
 					success=define_FE_field_at_node(node,position_field,
 						fit_point_components_number_of_derivatives,
 						fit_point_components_number_of_versions,
-						fit_point_components_nodal_value_types);
+						components_value_types);
 				}break;
 			}
 			if(success)
 			{		
 				/* 2nd field in field_order_info is fit_field */
 				fit_field=get_FE_field_order_info_field(field_order_info,1);
+					components_value_types[0]=bicubic_component;
 				success=define_FE_field_at_node(node,fit_field,
 					fit_components_number_of_derivatives,
 					fit_components_number_of_versions,
-					ptr_fit_components);						
+					components_value_types);
 			} /* if(success)*/		
 		}	
 		else
@@ -2034,7 +2026,9 @@ sets a node's values storage with the coordinate system component versions and v
 <coords_comp_X_num_versions>,<coords_comp_X>,  using <field_order_info>
 ==============================================================================*/	
 {
-	int i,return_code;
+	enum FE_nodal_value_type *component_value_types;
+	FE_value *value;
+	int i,j,number_of_derivatives,return_code;
 	struct FE_field_component component;
 
 	ENTER(set_mapping_FE_node_coord_values)
@@ -2049,12 +2043,23 @@ sets a node's values storage with the coordinate system component versions and v
 			{					
 				/* 1st field contains coords, possibly more than one version */
 				component.field=position_field;
-				component.number = 0;	
+				component.number = 0;
+				number_of_derivatives=get_FE_node_field_component_number_of_derivatives(node,
+					position_field,0);
+				component_value_types=get_FE_node_field_component_nodal_value_types(node,position_field,
+					0);
+				value=coords_comp_0;
 				for(i=0;i<coords_comp_0_num_versions;i++)
 				{
-					return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,i,
-						FE_NODAL_VALUE,coords_comp_0[i])); /*lambda,theta,x*/
+					/*derivatives+1 as value then derivatives */
+					for(j=0;j<number_of_derivatives+1;j++)
+					{
+						return_code=(return_code&&set_FE_nodal_FE_value_value(node,&component,i,
+							component_value_types[j],*value)); /*lambda,theta,x*/
+						value++;
+					}
 				}
+				DEALLOCATE(component_value_types);
 				component.number = 1;		
 				for(i=0;i<coords_comp_1_num_versions;i++)
 				{
@@ -2211,10 +2216,10 @@ struct GROUP(FE_node) *interpolation_function_to_node_group(
 	struct FE_node_order_info **the_node_order_info,
 	struct FE_field_order_info **the_field_order_info,
 	struct Interpolation_function *function,struct Unemap_package *package,
-	char *name,FE_value sock_lambda,FE_value sock_focus,FE_value torso_r,FE_value patch_z,
-	int region_number,int rig_node_group_number)
+	char *name,FE_value sock_lambda,FE_value sock_focus,FE_value torso_major_r,
+	FE_value torso_minor_r,FE_value patch_z,int region_number,int rig_node_group_number)
 /*******************************************************************************
-LAST MODIFIED : 23 July 1999
+LAST MODIFIED : 14 June 2000
 
 DESCRIPTION :
 Constructs a node group from the <function> and <package>
@@ -2245,7 +2250,8 @@ i.e sock is a hemisphere, torso is a cylinder.
 	struct FE_node *template_node,*node;
 	struct FE_field_order_info *field_order_info;
 	struct FE_node_order_info *node_order_info;
-	FE_value dfdx,dfdy,d2fdxdy,f,focus,lambda,mu,r,theta,x,y,z;
+	FE_value c,dfdx,dfdy,d2fdxdy,dr_dt,/*dt_ds,*/dt_dxi,f,focus,lambda,mu,r,
+		r_value_and_derivatives[4],s,t,theta,torso_x,torso_y,x,y,z;
 	int count,f_index,i,j,last_node_number,node_number,number_of_columns,number_of_nodes,
 		number_of_rows;	
 	struct GROUP(FE_node) *interpolation_node_group;	
@@ -2273,7 +2279,7 @@ i.e sock is a hemisphere, torso is a cylinder.
 		element_manager=get_unemap_package_element_manager(package);
 		data_group_manager=get_unemap_package_data_group_manager(package);
 		node_group_manager= get_unemap_package_node_group_manager(package);
-		;
+		
 		MANAGER_BEGIN_CACHE(FE_node)(node_manager);	
 		/* make the node group */
 		interpolation_node_group=make_node_and_element_and_data_groups(
@@ -2447,15 +2453,75 @@ i.e sock is a hemisphere, torso is a cylinder.
 								node_number = get_next_FE_node_number(node_manager,last_node_number);						
 								theta=function->x_mesh[j];
 								z=function->y_mesh[i];
-								r= torso_r;
+#if defined (ROUND_TORSO)
+								r_value_and_derivatives[0]= torso_major_r;
+#else																
+								t=function->x_mesh[j];
+								c=cos(t);
+								s=sin(t);								
+								torso_x=torso_major_r*c;
+								torso_y=torso_minor_r*s;
+#if defined (NEW_CODE2)
+								theta=atan2(torso_y,torso_x);
+#else /* defined (NEW_CODE2) */
+								theta=t;
+#endif /* defined (NEW_CODE2) */
+								r=sqrt((torso_x*torso_x)+(torso_y*torso_y));							
+								r_value_and_derivatives[0]= r;								
+								dr_dt= (s*c*(torso_major_r+torso_minor_r)*
+									(torso_minor_r-torso_major_r))/r;
+#if defined (NEW_CODE)
+								dt_ds=1/sqrt(torso_major_r*torso_major_r*s*s+
+									torso_minor_r*torso_minor_r*c*c);
+								r_value_and_derivatives[1]=dr_dt*dt_ds;
+#else /* defined (NEW_CODE) */
+								if (0==j)
+								{
+									dt_dxi=((function->x_mesh)[1]-
+										(function->x_mesh)[number_of_columns-1])/2;
+								}
+								else
+								{
+									if (j==number_of_columns-1)
+									{
+										dt_dxi=(8*atan(1)+(function->x_mesh)[0]-
+											(function->x_mesh)[number_of_columns-2])/2;
+									}
+									else
+									{
+										dt_dxi=((function->x_mesh)[j+1]-
+											(function->x_mesh)[j-1])/2;
+									}
+								}
+								r_value_and_derivatives[1]=dr_dt*dt_dxi;
+#endif /* defined (NEW_CODE) */
+								r_value_and_derivatives[2]= 0;
+								r_value_and_derivatives[3]= 0;
+#if defined (DEBUG)
+								if (0==i)
+								{									
+									printf("j= %d ",j);	
+									printf("torso_major_r= %g ",torso_major_r);
+									printf("torso_minor_r= %g ",torso_minor_r);
+									printf("theta= %g\n",theta);
+									printf("c= %g ",c);
+									printf("s= %g ",s);
+									printf("torso_x= %g\n",torso_x);
+									printf("torso_y= %g ",torso_y);
+									printf("r= %g\n",r);
+									printf("dr_dt=%g, dt_ds=%g, dr_ds=%g\n",
+										dr_dt,dt_ds,r_value_and_derivatives[1]);									
+								}	
+#endif /* defined (DEBUG)	*/
+#endif /* defined (ROUND_TORSO) */
 								f_index=j+(i*(number_of_columns+1));
 								f=function->f[f_index];	
 								dfdx=function->dfdx[f_index];
 								dfdy=function->dfdy[f_index];
 								d2fdxdy=function->d2fdxdy[f_index];
 								if(!(node=create_and_set_mapping_FE_node(template_node,node_manager,region_type,
-									node_number,field_order_info,1,1,1,&r,&theta,&z,f,dfdx,dfdy,
-									d2fdxdy)))
+									node_number,field_order_info,1,1,1,r_value_and_derivatives,&theta,&z,f,dfdx,
+									dfdy,d2fdxdy)))
 								{
 									display_message(ERROR_MESSAGE,"interpolation_function_to_node_group."
 										" Error creating node");
@@ -2600,8 +2666,7 @@ i.e sock is a hemisphere, torso is a cylinder.
 #endif /* #if defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
-static struct GROUP(FE_element) *
-make_fit_elements(char *group_name,
+static struct GROUP(FE_element) *make_fit_elements(char *group_name,
 	struct FE_node_order_info *node_order_info,
 	struct FE_field_order_info *field_order_info,
 	struct MANAGER(GROUP(FE_element))	*element_group_manager,
@@ -2610,13 +2675,13 @@ make_fit_elements(char *group_name,
 	int number_of_rows,int number_of_columns,struct Unemap_package *package,
 	int region_number)
 /*******************************************************************************
-LAST MODIFIED : 12 October 1999
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 ???RC description? where is it?
 ==============================================================================*/
 {
-	int addition,count,base_scale_factor_offset,dest_index,i,index,j,k,l,
+	int addition,count,base_scale_factor_offset,dest_index,i,index,j,k,l,m,
 		number_of_fields,number_of_grid_nodes,number_of_nodes,
 		number_of_scale_factor_sets,*numbers_in_scale_factor_sets,
 		return_code,source_index,number_of_components,number_of_derivatives,
@@ -2643,7 +2708,7 @@ DESCRIPTION :
 	int shape_type[3]=
 	{
 		LINE_SHAPE,0,0
-	}
+	};
 	
 	ENTER(make_fit_elements);
 	element_group=(struct GROUP(FE_element) *)NULL;
@@ -2740,30 +2805,30 @@ DESCRIPTION :
 			for(i=0;i<field_order_info->number_of_fields;i++)
 			{			
 				field=field_order_info->fields[i];
+				k=0;
 				number_of_components=get_FE_field_number_of_components(field);
-				number_of_derivatives=get_FE_node_field_component_number_of_derivatives(
-					element_nodes[0],field,0);
-				j=0;
-				while ((j<number_of_grid_nodes)&&return_code)
+				while ((k<number_of_components)&&return_code)
 				{
-					k=0;
-					while ((k<number_of_components)&&(number_of_derivatives==
-						get_FE_node_field_component_number_of_derivatives(element_nodes[j],
-							field,k)))
+					number_of_derivatives=
+						get_FE_node_field_component_number_of_derivatives(element_nodes[0],
+						field,k);
+					j=1;
+					while ((j<number_of_grid_nodes)&&return_code)
 					{
-						k++;
+						if (number_of_derivatives!=
+							get_FE_node_field_component_number_of_derivatives(
+							element_nodes[j],field,k))
+						{
+							display_message(ERROR_MESSAGE,"make_fit_elements. "
+								"number of derivatives, components mismatch");
+							return_code=0;
+						}
+						j++;
 					}
-					if (k<number_of_components)
-					{
-						display_message(ERROR_MESSAGE,"make_fit_elements. "
-							"number of derivatives, components mismatch");
-						return_code=0;
-					}
-					j++;
+					k++;
 				}
 			}
 		}
-
 		/* make the bases */
 		if (linear_lagrange_basis=
 			make_FE_basis(linear_lagrange_basis_type,basis_manager))
@@ -2783,7 +2848,6 @@ DESCRIPTION :
 		{
 			return_code=0;
 		}
-
 		/* make the element shape */			
 		if (shape=CREATE(FE_element_shape)(2,shape_type))
 		{
@@ -2793,7 +2857,6 @@ DESCRIPTION :
 		{
 			return_code=0;
 		}
-			
 		if (!(element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
 			(group_name,element_group_manager)))
 		{
@@ -2801,73 +2864,77 @@ DESCRIPTION :
 				"make_fit_elements.  Couldn't find element group");
 			return_code=0;
 		}
-
 		/* create the scale_factor sets */
 		number_of_fields=get_FE_field_order_info_number_of_fields(field_order_info);
 		number_of_scale_factor_sets=0;
 		numbers_in_scale_factor_sets=(int *)NULL;	
 		scale_factor_set_identifiers=(void **)NULL;
-		for (i=0;(i<number_of_fields)&&return_code;i++)
+		i=0;
+		while (return_code&&(i<number_of_fields))
 		{
 			field=get_FE_field_order_info_field(field_order_info,i);
 			number_of_components=get_FE_field_number_of_components(field);
-			number_of_derivatives=
-				get_FE_node_field_component_number_of_derivatives(
-					element_nodes[0],field,/*component_number*/0);
-			/* check that field is bilinear or bicubic, set up scale factors
-				 accordingly */
-			if ((number_of_derivatives==0)||(number_of_derivatives==3))
+			k=0;
+			while (return_code&&(k<number_of_components))
 			{
-				if (0==number_of_derivatives) /* bilinear */
+				number_of_derivatives=get_FE_node_field_component_number_of_derivatives(
+						element_nodes[0],field,/*component_number*/k);
+				/* check that field is bilinear or bicubic, set up scale factors
+					 accordingly */
+				if ((number_of_derivatives==0)||(number_of_derivatives==3))
 				{
-					addition =4;
-					basis=linear_lagrange_basis;
-				}
-				else /* bicubic */								
-				{
-					addition =16;
-					basis=cubic_hermite_basis;
-				}
-				/* work out if scale_factor_set_identifiers/basis already used */
-				j=0;
-				while ((j<number_of_scale_factor_sets)&&
-					(scale_factor_set_identifiers[j] != (void *)basis))
-				{
-					j++;
-				}
-				if (j==number_of_scale_factor_sets)
-				{
-					number_of_scale_factor_sets++;
-					/* allocate and set scale factors to 1.0*/
-					if (REALLOCATE(temp_scale_factor_set_identifiers,
-						scale_factor_set_identifiers,void *,
-						number_of_scale_factor_sets)&&
-						REALLOCATE(temp_numbers_in_scale_factor_sets,
-							numbers_in_scale_factor_sets,int,number_of_scale_factor_sets))
+					if (0==number_of_derivatives) /* bilinear */
 					{
-						scale_factor_set_identifiers=temp_scale_factor_set_identifiers;
-						numbers_in_scale_factor_sets=temp_numbers_in_scale_factor_sets;
-						scale_factor_set_identifiers[number_of_scale_factor_sets-1]=
-							(void *)basis;	
-						numbers_in_scale_factor_sets[number_of_scale_factor_sets-1]=
-							addition;
+						addition =4;
+						basis=linear_lagrange_basis;
 					}
-					else
+					else /* bicubic */								
 					{
-						display_message(ERROR_MESSAGE,
-							"make_fit_elements.  Not enough memory for scale_factors");
-						return_code=0;
+						addition =16;
+						basis=cubic_hermite_basis;
+					}
+					/* work out if scale_factor_set_identifiers/basis already used */
+					j=0;
+					while ((j<number_of_scale_factor_sets)&&
+						(scale_factor_set_identifiers[j] != (void *)basis))
+					{
+						j++;
+					}
+					if (j==number_of_scale_factor_sets)
+					{
+						number_of_scale_factor_sets++;
+						/* allocate and set scale factors to 1.0*/
+						if (REALLOCATE(temp_scale_factor_set_identifiers,
+							scale_factor_set_identifiers,void *,
+							number_of_scale_factor_sets)&&
+							REALLOCATE(temp_numbers_in_scale_factor_sets,
+								numbers_in_scale_factor_sets,int,number_of_scale_factor_sets))
+						{
+							scale_factor_set_identifiers=temp_scale_factor_set_identifiers;
+							numbers_in_scale_factor_sets=temp_numbers_in_scale_factor_sets;
+							scale_factor_set_identifiers[number_of_scale_factor_sets-1]=
+								(void *)basis;	
+							numbers_in_scale_factor_sets[number_of_scale_factor_sets-1]=
+								addition;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"make_fit_elements.  Not enough memory for scale_factors");
+							return_code=0;
+						}
 					}
 				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"make_fit_elements.  Bilinear or bicubic bases only");
+					return_code=0;
+				}
+				k++;
 			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"make_fit_elements.  Bilinear or bicubic bases only");
-				return_code=0;
-			}
+			i++;
 		}
-
 		template_element=(struct FE_element *)NULL;
 		if (return_code)
 		{
@@ -2885,32 +2952,11 @@ DESCRIPTION :
 						numbers_in_scale_factor_sets,number_of_nodes))
 				{
 					/* define the fields over the elements */
-					for (i=0;(i<number_of_fields)&&return_code;i++)
+					i=0;
+					while (return_code&&(i<number_of_fields))
 					{
 						field=get_FE_field_order_info_field(field_order_info,i);
 						number_of_components=get_FE_field_number_of_components(field);
-						number_of_derivatives=
-							get_FE_node_field_component_number_of_derivatives(
-								element_nodes[0],field,/*component_number*/0);
-						if (0==number_of_derivatives) /* bilinear */
-						{
-							addition =4;
-							basis=linear_lagrange_basis;
-						}
-						else	/* bicubic */								
-						{
-							addition =16;
-							basis=cubic_hermite_basis;
-						}
-						/* find the start of the scale factors for this basis */
-						base_scale_factor_offset=0;
-						k=0;
-						while ((k<number_of_scale_factor_sets)&&
-							((void *)basis != scale_factor_set_identifiers[k]))
-						{
-							base_scale_factor_offset += numbers_in_scale_factor_sets[k];
-							k++;
-						}
 						if (ALLOCATE(components,struct FE_element_field_component *,
 							number_of_components))
 						{
@@ -2918,8 +2964,33 @@ DESCRIPTION :
 							{
 								components[j]=(struct FE_element_field_component *)NULL;
 							}
-							for (j=0;(j<number_of_components)&&return_code;j++)
+							j=0;
+							while (return_code&&(j<number_of_components))
 							{
+								number_of_derivatives=
+									get_FE_node_field_component_number_of_derivatives(
+									element_nodes[0],field,/*component_number*/j);
+								if (0==number_of_derivatives)
+								{
+									/* bilinear */
+									addition=4;
+									basis=linear_lagrange_basis;
+								}
+								else
+								{
+									/* bicubic */								
+									addition=16;
+									basis=cubic_hermite_basis;
+								}
+								/* find the start of the scale factors for this basis */
+								base_scale_factor_offset=0;
+								k=0;
+								while ((k<number_of_scale_factor_sets)&&
+									((void *)basis != scale_factor_set_identifiers[k]))
+								{
+									base_scale_factor_offset += numbers_in_scale_factor_sets[k];
+									k++;
+								}
 								if (strcmp("theta",get_FE_field_component_name(field,j)))
 								{
 									modify=(FE_element_field_component_modify)NULL;
@@ -2929,12 +3000,12 @@ DESCRIPTION :
 									modify=theta_increasing_in_xi1;
 								}
 								if (components[j]=CREATE(FE_element_field_component)(
-									STANDARD_NODE_TO_ELEMENT_MAP,number_of_nodes,
-									basis,modify))
+									STANDARD_NODE_TO_ELEMENT_MAP,number_of_nodes,basis,modify))
 								{
 									/* create node map*/
 									standard_node_map=(components[j])->
 										map.standard_node_based.node_to_element_maps;
+									m=0;
 									for (k=0;k<number_of_nodes;k++)
 									{
 										if (*standard_node_map=CREATE(Standard_node_to_element_map)(
@@ -2945,10 +3016,11 @@ DESCRIPTION :
 											{
 												(*standard_node_map)->nodal_value_indices[l]=l;
 												(*standard_node_map)->scale_factor_indices[l]=
-													base_scale_factor_offset+l;
+													base_scale_factor_offset+m;
 												/* set scale_factors to 1 */
 												template_element->information->scale_factors[
 													(*standard_node_map)->scale_factor_indices[l]]=1.0;
+												m++;
 											}
 										}
 										else
@@ -2966,6 +3038,7 @@ DESCRIPTION :
 										"make_fit_elements.  Could not create component");
 									return_code=0;
 								}
+								j++;
 							}
 							if (return_code)
 							{
@@ -2984,6 +3057,13 @@ DESCRIPTION :
 							}
 							DEALLOCATE(components);
 						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"make_fit_elements.  Could not allocate components");
+							return_code=0;
+						}
+						i++;
 					}
 				}
 				else
@@ -3007,6 +3087,8 @@ DESCRIPTION :
 			/* work through all elements */
 			element_identifier.type=CM_ELEMENT;
 			element_identifier.number=1;
+			/* the coordinate field */
+			field=get_FE_field_order_info_field(field_order_info,0);
 			for (i=0;i<number_of_rows;i++)
 			{
 				for (j=0;j<number_of_columns;j++)
@@ -3026,6 +3108,105 @@ DESCRIPTION :
 							set_FE_element_node(element,3,
 								element_nodes[index+number_of_columns+2]))
 						{
+							/* set scale factors */
+#if defined (NEW_CODE)
+/*???DB. Testing */
+#define MAJOR_R 200
+#define MINOR_R 100
+{
+	FE_value cos_t,ds_dt,dt_dxi1,r,t1,t2,t3,t4,sin_t,theta,x,y;
+
+							switch (region_type)
+							{
+								case TORSO:
+								{
+									calculate_FE_field(field,0,element_nodes[index],
+										(struct FE_element *)NULL,(FE_value *)NULL,&r);
+									calculate_FE_field(field,1,element_nodes[index],
+										(struct FE_element *)NULL,(FE_value *)NULL,&theta);
+									x=r*cos(theta);
+									y=r*sin(theta);
+									t1=atan2(y/MAJOR_R,x/MINOR_R);
+									calculate_FE_field(field,0,element_nodes[index+1],
+										(struct FE_element *)NULL,(FE_value *)NULL,&r);
+									calculate_FE_field(field,1,element_nodes[index+1],
+										(struct FE_element *)NULL,(FE_value *)NULL,&theta);
+									x=r*cos(theta);
+									y=r*sin(theta);
+									t2=atan2(y/MAJOR_R,x/MINOR_R);
+									calculate_FE_field(field,0,
+										element_nodes[index+number_of_columns+1],
+										(struct FE_element *)NULL,(FE_value *)NULL,&r);
+									calculate_FE_field(field,1,
+										element_nodes[index+number_of_columns+1],
+										(struct FE_element *)NULL,(FE_value *)NULL,&theta);
+									x=r*cos(theta);
+									y=r*sin(theta);
+									t3=atan2(y/MAJOR_R,x/MINOR_R);
+									calculate_FE_field(field,0,
+										element_nodes[index+number_of_columns+2],
+										(struct FE_element *)NULL,(FE_value *)NULL,&r);
+									calculate_FE_field(field,1,
+										element_nodes[index+number_of_columns+2],
+										(struct FE_element *)NULL,(FE_value *)NULL,&theta);
+									x=r*cos(theta);
+									y=r*sin(theta);
+									t4=atan2(y/MAJOR_R,x/MINOR_R);
+									/*???debug */
+									printf("set scale factors for %d\n",
+										element_identifier.number);
+									printf("  t's.  %g %g %g %g\n",t1,t2,t3,t4);
+									printf("  scale factors. ");
+									cos_t=cos(t1);
+									sin_t=sin(t1);
+									ds_dt=sqrt(MAJOR_R*MAJOR_R*sin_t*sin_t+
+										MINOR_R*MINOR_R*cos_t*cos_t);
+									if (t2<t1)
+									{
+										dt_dxi1=8*atan(1)+t2-t1;
+									}
+									else
+									{
+										dt_dxi1=t2-t1;
+									}
+									set_FE_element_scale_factor(element,1,ds_dt*dt_dxi1);
+									/*???debug */
+									printf(" %g",ds_dt*dt_dxi1);
+									cos_t=cos(t2);
+									sin_t=sin(t2);
+									ds_dt=sqrt(MAJOR_R*MAJOR_R*sin_t*sin_t+
+										MINOR_R*MINOR_R*cos_t*cos_t);
+									set_FE_element_scale_factor(element,5,ds_dt*dt_dxi1);
+									/*???debug */
+									printf(" %g",ds_dt*dt_dxi1);
+									cos_t=cos(t3);
+									sin_t=sin(t3);
+									ds_dt=sqrt(MAJOR_R*MAJOR_R*sin_t*sin_t+
+										MINOR_R*MINOR_R*cos_t*cos_t);
+									if (t4<t3)
+									{
+										dt_dxi1=8*atan(1)+t4-t3;
+									}
+									else
+									{
+										dt_dxi1=t4-t3;
+									}
+									set_FE_element_scale_factor(element,9,ds_dt*dt_dxi1);
+									/*???debug */
+									printf(" %g",ds_dt*dt_dxi1);
+									cos_t=cos(t4);
+									sin_t=sin(t4);
+									ds_dt=sqrt(MAJOR_R*MAJOR_R*sin_t*sin_t+
+										MINOR_R*MINOR_R*cos_t*cos_t);
+									set_FE_element_scale_factor(element,13,ds_dt*dt_dxi1);
+									/*???debug */
+									printf(" %g",ds_dt*dt_dxi1);
+									printf("\n");
+								} break;
+							}
+}
+/*???DB.  Testing.  End */
+#endif /* defined (NEW_CODE) */
 							/* add element to manager*/
 							if (ADD_OBJECT_TO_MANAGER(FE_element)(element,element_manager))
 							{
@@ -3375,10 +3556,10 @@ nodes in <node_order_info>, and fills them in with values from <function>.
 #if defined (UNEMAP_USE_NODES)
 static int make_fit_node_and_element_groups(
 	struct Interpolation_function *function,struct Unemap_package *package,
-	char *name,FE_value sock_lambda,FE_value sock_focus,FE_value torso_r,
-	FE_value patch_z,int region_number,int rig_node_group_number)
+	char *name,FE_value sock_lambda,FE_value sock_focus,FE_value torso_major_r,
+	FE_value torso_minor_r,FE_value patch_z,int region_number,int rig_node_group_number)
 /*******************************************************************************
-LAST MODIFIED : April 27 2000
+LAST MODIFIED : 14 June 2000
 
 DESCRIPTION :
 Given the <function> and <package>, determines if  identical node and element 
@@ -3456,8 +3637,8 @@ interpolation_function_to_node_group and make_fit_elements
 				/* rebuild  map & node and element groups */	
 				interpolation_function_to_node_group(
 					&node_order_info,&field_order_info,
-					function,package,fit_name,sock_lambda,sock_focus,torso_r,patch_z,
-					region_number,rig_node_group_number);
+					function,package,fit_name,sock_lambda,sock_focus,torso_major_r,
+					torso_minor_r,patch_z,region_number,rig_node_group_number);
 				make_fit_elements(fit_name,node_order_info,
 					field_order_info,
 					get_unemap_package_element_group_manager(package),
@@ -3807,8 +3988,10 @@ applies  <no_interpolation_colour> to the <material>.
 Also applies <number_of_contours> contours to surface.
 ==============================================================================*/
 {
-	int return_code;	
+	int return_code;
+#if defined (OLD_CODE)	
 	struct Colour white={1,1,1};
+#endif/* defined (OLD_CODE)	*/
 	struct GT_element_group *gt_element_group;
 	struct Computed_field *existing_data_field;
 	struct Graphical_material *default_selected_material,
@@ -3914,8 +4097,11 @@ Also applies <number_of_contours> contours to surface.
 							MANAGER_COPY_WITH_IDENTIFIER(Graphical_material,name)
 							(material_copy,material))
 						{																	
+							
+#if defined (OLD_CODE)
 							Graphical_material_set_ambient(material_copy,&white);
 							Graphical_material_set_diffuse(material_copy,&white);
+#endif /* defined (OLD_CODE) */
 							if(MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name)(
 								material,material_copy,graphical_material_manager))
 							{
@@ -4035,7 +4221,8 @@ Also applies <number_of_contours> contours to surface.
 #if defined (UNEMAP_USE_NODES)
 #define FIT_SOCK_LAMBDA 4.5 /* chosen by trial and error!*/
 #define FIT_SOCK_FOCUS 1.0
-#define FIT_TORSO_R 100.0
+#define FIT_TORSO_MAJOR_R 200.0
+#define FIT_TORSO_MINOR_R 100.0
 #define FIT_PATCH_Z 0.0
 static int make_and_add_map_electrode_position_field(int region_number,
 	enum Region_type region_type,struct Unemap_package *unemap_package)
@@ -4154,7 +4341,7 @@ makes maps electrode position field, and adds to the nodes in the rig node group
 							/* Set the lambda/r/z to match  the fitted surface's. Should really*/
 							/* do vice versa, ie  set surface to electrodes */
 							rig_node_group_set_map_electrode_position_lambda_r(region_number,
-								unemap_package,FIT_SOCK_LAMBDA,FIT_TORSO_R);
+								unemap_package,FIT_SOCK_LAMBDA,FIT_TORSO_MAJOR_R,FIT_TORSO_MINOR_R);
 						}
 					}/* if (ADD_OBJECT_TO_MANAGER(FE_field) */
 					else
@@ -4462,7 +4649,7 @@ Construct the settings and build the graphics objects for the glyphs.
 						get_unemap_package_Graphical_material_manager(package);
 					default_selected_material=FIND_BY_IDENTIFIER_IN_MANAGER
 						(Graphical_material,name)("default_selected",graphical_material_manager);
-					GT_element_settings_set_selected_material(settings,default_selected_material);									
+					GT_element_settings_set_selected_material(settings,default_selected_material);
 						GT_element_settings_set_material(settings,electrode_material);					
 					GT_element_settings_set_select_mode(settings,GRAPHICS_SELECT_ON);					
 					glyph_centre[0]=0.0;
@@ -4766,7 +4953,135 @@ Removes the map electrodes if they've changed, then redraws them.
 }/* map_draw_map_electrodes */
 #endif /* UNEMAP_USE_NODES */
 
+#if defined (UNEMAP_USE_NODES)
 
+#endif /* UNEMAP_USE_NODES */
+int draw_torso_arms(struct Unemap_package *package,int map_number)
+/*******************************************************************************
+LAST MODIFIED : 15 June 2000
+
+DESCRIPTION :
+Creates a pair of arms, and adds to the scene. Or removes if not required.
+==============================================================================*/
+{	
+	int return_code,rig_node_group_number;
+	char **labels;
+	char *left ="Left";
+	char *right ="Right";
+	FE_value arm_length,arm_width,min_x,max_x,min_y,max_y,min_z,max_z;
+	struct Graphical_material *graphical_material=(struct Graphical_material *)NULL;
+	struct GT_glyph_set *glyph_set=(struct GT_glyph_set *)NULL;
+	struct GT_object *glyph=(struct GT_object *)NULL;
+	struct GT_object*graphics_object=(struct GT_object *)NULL;
+	struct LIST(GT_object) *glyph_list=(struct LIST(GT_object) *)NULL;
+	Triple *axis1_list=(Triple *)NULL;
+	Triple *axis2_list=(Triple *)NULL;
+	Triple *axis3_list=(Triple *)NULL;
+	Triple *point_list=(Triple *)NULL;
+
+	ENTER(draw_torso_arms);
+	if(package)
+	{				
+		return_code=1;
+		/*??JW should probably maintain a list of graphics_objects, and*/
+		/*search in this list, as CMGUI does*/
+		if((!(graphics_object=get_unemap_package_map_torso_arms(package,map_number)))&&
+			 (rig_node_group_number=get_unemap_package_map_rig_node_group_number
+				 (package,map_number))&&get_rig_node_group_map_electrode_position_min_max(
+				get_unemap_package_rig_node_group(package,rig_node_group_number),
+				get_unemap_package_map_electrode_position_field(package,map_number),
+				&min_x,&max_x,&min_y,&max_y,&min_z,&max_z))
+		{						
+			if ((graphical_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
+				("default",get_unemap_package_Graphical_material_manager(package)))&&
+				(glyph_list=get_unemap_package_glyph_list(package))&&
+				(glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("cylinder",glyph_list))&&
+				ALLOCATE(point_list,Triple,2)&&ALLOCATE(axis1_list,Triple,2)&&
+				ALLOCATE(axis2_list,Triple,2)&&ALLOCATE(axis3_list,Triple,2)&&
+				ALLOCATE(labels,char *,2))
+			{
+#if defined (OLD_CODE)				
+				arm_width=FIT_TORSO_MAJOR_R/5;
+				arm_length=FIT_TORSO_MAJOR_R*3/2;
+#endif				
+				arm_length=max_x*3/2;
+				arm_width=arm_length/10;
+				labels[0]=left;
+				labels[1]=right; 
+				(*point_list)[0]=arm_length;
+				(*point_list)[1]=0.0;
+				(*point_list)[2]=max_z;
+				(*axis1_list)[0]=-arm_length;
+				(*axis1_list)[1]=0.0;
+				(*axis1_list)[2]=0.0;
+				(*axis2_list)[0]=0.0;
+				(*axis2_list)[1]=arm_width;
+				(*axis2_list)[2]=0.0;
+				(*axis3_list)[0]=0.0;
+				(*axis3_list)[1]=0.0;
+				(*axis3_list)[2]=-arm_width;	
+
+				(*(point_list+1))[0]=-arm_length;
+				(*(point_list+1))[1]=0.0;
+				(*(point_list+1))[2]=max_z;
+				(*(axis1_list+1))[0]=arm_length;
+				(*(axis1_list+1))[1]=0.0;
+				(*(axis1_list+1))[2]=0.0;
+				(*(axis2_list+1))[0]=0.0;
+				(*(axis2_list+1))[1]=arm_width;
+				(*(axis2_list+1))[2]=0.0;
+				(*(axis3_list+1))[0]=0.0;
+				(*(axis3_list+1))[1]=0.0;
+				(*(axis3_list+1))[2]=arm_width;
+				if (!(glyph_set=CREATE(GT_glyph_set)(2,point_list,axis1_list,axis2_list,
+					axis3_list,glyph,labels,g_NO_DATA,(GTDATA *)NULL,
+					/*object_name*/0,/*names*/(int *)NULL)))
+				{
+					DEALLOCATE(point_list);
+					DEALLOCATE(axis1_list);
+					DEALLOCATE(axis2_list);
+					DEALLOCATE(axis3_list);
+					DEALLOCATE(labels);
+				}
+			}
+			if (glyph_set)
+			{
+				if (graphics_object=CREATE(GT_object)("arms",g_GLYPH_SET,
+					graphical_material))
+				{
+					if (GT_OBJECT_ADD(GT_glyph_set)(graphics_object,/*time*/0.0,glyph_set))
+					{										
+						Scene_add_graphics_object(get_unemap_package_scene(package),
+							graphics_object,0,graphics_object->name);
+						set_unemap_package_map_torso_arms(package,graphics_object,map_number);	
+					}
+					else
+					{	
+						display_message(ERROR_MESSAGE,
+							"draw_torso_arms.  Could not add graphics object");
+						DESTROY(GT_object)(&graphics_object);
+						DESTROY(GT_glyph_set)(&glyph_set);
+						return_code=0;
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"draw_torso_arms.  Could not create glyph_set");
+				graphics_object=(struct GT_object *)NULL;
+				return_code=0;
+			}
+		}	
+	}			
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"draw_torso_arms.  Invalid argument(s)");	
+	}
+	LEAVE;
+	return(return_code);
+}/* draw_torso_arms */
 #if defined (UNEMAP_USE_NODES)
 int draw_map_3d(struct Map *map)
 /*******************************************************************************
@@ -4855,8 +5170,8 @@ This function draws the <map> in as a 3D CMGUI scene.
 								/* make the node and element groups from it.*/
 								/* 1st node_group is 'all_devices_node_group */							
 								make_fit_node_and_element_groups(function,unemap_package,rig->name,
-									FIT_SOCK_LAMBDA,FIT_SOCK_FOCUS,FIT_TORSO_R,FIT_PATCH_Z,region_number,
-									rig_node_group_number);	
+									FIT_SOCK_LAMBDA,FIT_SOCK_FOCUS,FIT_TORSO_MAJOR_R,FIT_TORSO_MINOR_R,
+									FIT_PATCH_Z,region_number,rig_node_group_number);	
 								destroy_Interpolation_function(&function);
 								/* Show the map element surface */						
 								element_group=get_unemap_package_map_element_group
@@ -4891,8 +5206,13 @@ This function draws the <map> in as a 3D CMGUI scene.
 									make_and_add_map_electrode_position_field(region_number,
 										current_region->type,unemap_package);
 								}
-							}/* if (function=calculate_interpolation_functio */
-						}/* if(unemap_package_rig_node_group_has_electrodes */
+							}/* if (function=calculate_interpolation_functio */	
+							/*draw the arms  */				
+							if(current_region->type==TORSO)
+							{
+								draw_torso_arms(unemap_package,region_number);
+							}
+						}/* if(unemap_package_rig_node_group_has_electrodes */					
 						region_item=region_item->next;
 					} /* for (region_number=0; */
 					/* Alter the spectrum */
@@ -4991,7 +5311,7 @@ This function draws the <map> in as a 3D CMGUI scene.
 							/* perturb the lines(for the contours) */
 							Scene_viewer_set_perturb_lines(get_unemap_package_scene_viewer
 								(unemap_package),1);
-							set_unemap_package_viewed_scene(unemap_package,1);
+							set_unemap_package_viewed_scene(unemap_package,1);					
 						}
 					}
 				}/* if (map_type!=NO_MAP_FIELD) */				

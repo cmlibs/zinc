@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig_node.h
 
-LAST MODIFIED : 3 April 2000
+LAST MODIFIED : l4 June 2000
 
 DESCRIPTION :
 Essentially the same functionality as rig.h, but using nodes and fields to store
@@ -368,6 +368,17 @@ Reads and returns node group from a signal file. Signal file includes the
 configuration info.
 ==============================================================================*/
 
+int get_rig_node_group_map_electrode_position_min_max(struct GROUP(FE_node) *node_group,
+	struct FE_field *map_electrode_position_field,FE_value *min_x,FE_value *max_x,
+  FE_value *min_y,FE_value *max_y,FE_value *min_z,FE_value *max_z);
+/*******************************************************************************
+LAST MODIFIED : 15 June 2000
+
+DESCRIPTION :
+Finds the min and max coordinates of the  <map_electrode_position_field>
+in the <node_group>
+==============================================================================*/
+
 int get_rig_node_group_signal_min_max_at_time(struct GROUP(FE_node) *node_group,
 	struct FE_field *signal_field,struct FE_field *signal_status_field,FE_value time,
 	FE_value *min,FE_value *max);
@@ -380,9 +391,10 @@ Returns the <min> and <max>  signal values at the rig nodes in the rig_node_grou
 ==============================================================================*/
 
 int rig_node_group_set_map_electrode_position_lambda_r(int map_number,
-	struct Unemap_package *package,FE_value sock_lambda,FE_value torso_r);
+	struct Unemap_package *package,FE_value sock_lambda,FE_value torso_major_r,
+	FE_value torso_minor_r);
 /*******************************************************************************
-LAST MODIFIED : 14 October 1999
+LAST MODIFIED : 14 June 2000
 
 DESCRIPTION :
 Sets the node group's nodal map_electrode_postions from the nodal electrode_positions, 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig_node.c
 
-LAST MODIFIED : 27 April 2000
+LAST MODIFIED : 14 June 2000
 
 DESCRIPTION :
 Essentially the same functionality as rig.c, but using nodes and fields to store
@@ -83,6 +83,19 @@ about the minimum and maximum signal values at a rig node group at time
 	struct FE_field *signal_status_field;
 };
 
+struct Position_min_max_info
+/*******************************************************************************
+LAST MODIFIED : 15 June 2000
+
+DESCRIPTION :
+used by get_rig_node_map_electrode_position_min_max
+==============================================================================*/
+{
+	FE_value max_x,min_x,max_y,min_y,max_z,min_z;
+	int count;
+	struct FE_field *map_electrode_position_field;
+};
+
 struct Set_map_electrode_position_info
 /*******************************************************************************
 LAST MODIFIED : 3 April 2000
@@ -93,7 +106,8 @@ to store info when iterating
 ==============================================================================*/
 {	
 	enum Region_type region_type;
-	FE_value value;
+	FE_value value1;
+	FE_value value2;
 	struct FE_field *map_electrode_position_field;
 	struct MANAGER(FE_field) *field_manager;
 	struct MANAGER(FE_node) *node_manager;
@@ -4651,6 +4665,164 @@ cf file_read_FE_node_group() in import_finite_element.c
 	return (node_group);
 } /* file_read_config_FE_node_group */
 
+static int get_rig_node_map_electrode_position_min_max(struct FE_node *node,
+	void *position_min_max_info_void)
+/*******************************************************************************
+LAST MODIFIED : 15 June 2000
+
+DESCRIPTION :
+Finds the min and max coordinates of the  <map_electrode_position_field>
+in the <node>.
+Note: map_electrode_position_field  is cylindrical polar, convert to rc.
+==============================================================================*/
+{	
+	struct FE_field_component component;
+	FE_value c0,c1,c2,x_value,y_value,z_value;
+	int return_code;			
+	struct Position_min_max_info *position_min_max_info;
+	
+	return_code=1;
+	ENTER(get_rig_node_map_electrode_position_min_max);
+	if((node)&&(position_min_max_info_void))
+	{
+		position_min_max_info=(struct Position_min_max_info *)position_min_max_info_void;	
+		if(position_min_max_info&&position_min_max_info->map_electrode_position_field)
+		{													 
+			component.field=position_min_max_info->map_electrode_position_field;
+			component.number=0;
+			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&c0);
+			component.number=1;
+			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&c1);
+			component.number=2;
+			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&c2);
+			/*map_electrode_position_field is cylindrical polar */
+			/*perhaps should perform check*/
+			cylindrical_polar_to_cartesian(c0,c1,c2,&x_value,&y_value,&z_value,
+				(FE_value *)NULL);						
+			if(x_value>position_min_max_info->max_x)
+			{
+				position_min_max_info->max_x=x_value;
+			}
+			if(x_value<position_min_max_info->min_x)
+			{
+				position_min_max_info->min_x=x_value;
+			}									
+			if(y_value>position_min_max_info->max_y)
+			{
+				position_min_max_info->max_y=y_value;
+			}
+			if(y_value<position_min_max_info->min_y)
+			{
+				position_min_max_info->min_y=y_value;
+			}			
+			if(z_value>position_min_max_info->max_z)
+			{
+				position_min_max_info->max_z=z_value;
+			}
+			if(z_value<position_min_max_info->min_z)
+			{
+				position_min_max_info->min_z=z_value;
+			}			
+			position_min_max_info->count++;
+		}	/* if(min_max_info */
+		else
+		{
+			display_message(ERROR_MESSAGE,"get_rig_node_map_electrode_position_min_max."
+				" min_max_info NULL ");
+			return_code=0;
+		}	
+	}/* if((node)&&(position_min_max_info_void)) */
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_rig_node_map_electrode_position_min_max."
+			" Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* get_rig_node_map_electrode_position_min_max*/
+
+int get_rig_node_group_map_electrode_position_min_max(struct GROUP(FE_node) *node_group,
+	struct FE_field *map_electrode_position_field,FE_value *min_x,FE_value *max_x,
+  FE_value *min_y,FE_value *max_y,FE_value *min_z,FE_value *max_z)
+/*******************************************************************************
+LAST MODIFIED : 15 June 2000
+
+DESCRIPTION :
+Finds the min and max coordinates of the  <map_electrode_position_field>
+in the <node_group>. Note: Not necessarily rectangular catresian coords!
+==============================================================================*/
+{	
+
+	FE_value value;
+	int return_code;
+	struct Position_min_max_info position_min_max_info;
+	struct FE_node *node;
+	struct FE_field_component component;
+
+	ENTER(get_rig_node_group_map_electrode_position_min_max);
+	if (node_group&&min_x&&max_x&&min_y&&max_y&&min_z&&max_z
+		&&map_electrode_position_field)
+	{	
+		position_min_max_info.count=0;
+		position_min_max_info.map_electrode_position_field=
+			map_electrode_position_field;	
+		component.number=0;
+		component.field=map_electrode_position_field;
+		if(node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+			(GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL, node_group))
+		{
+			value=0;
+			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&value);
+			position_min_max_info.min_x=value;
+			position_min_max_info.max_x=position_min_max_info.min_x;
+			component.number=1;	
+			value=0;			
+			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&value);
+			position_min_max_info.min_y=value;
+			position_min_max_info.max_y=position_min_max_info.min_y;
+			component.number=2;
+			value=0;
+			get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&value);
+			position_min_max_info.min_z=value;
+			position_min_max_info.max_z=position_min_max_info.min_z;
+			return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)
+				(get_rig_node_map_electrode_position_min_max,
+					(void *)&position_min_max_info,node_group);	
+			*min_x= position_min_max_info.min_x;
+			*max_x= position_min_max_info.max_x;
+			*min_y= position_min_max_info.min_y;
+			*max_y= position_min_max_info.max_y;	
+			*min_z= position_min_max_info.min_z;
+			*max_z= position_min_max_info.max_z;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"get_rig_node_group_map_electrode_position_min_max."
+			" can't get node");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_rig_node_group_map_electrode_position_min_max."
+			" Invalid argument");
+		return_code=0;
+	}
+	if(return_code==0)
+	{
+		*min_x= 0;
+		*max_x= 0;
+		*min_y= 0;
+		*max_y= 0;
+		*min_z= 0;
+		*max_z= 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_rig_node_group_map_electrode_position_min_max */
+
 static int get_rig_node_signal_min_max_at_time(struct FE_node *node,
 	void *min_max_info_void)
 /*******************************************************************************
@@ -4828,7 +5000,7 @@ Returns the <min> and <max>  signal values at the rig nodes in the rig_node_grou
 static int rig_node_set_map_electrode_position_lambda_r(struct FE_node *node,
 	void *set_map_electrode_position_info_void)
 /*******************************************************************************
-LAST MODIFIED : 14 October 1999
+LAST MODIFIED : 14 June 2000
 
 DESCRIPTION :
 Sets the node's nodal map_electrode_postions from the nodal electrode_positions, 
@@ -4838,7 +5010,8 @@ This function is called iteratively by
 rig_node_group_set_map_electrode_position_lambda_r
 ==============================================================================*/
 {
-	FE_value lambda,mu,theta,r,x,y,z_cp,z_rc;
+	FE_value c,torso_x,lambda,mu,s,t,theta,torso_major_r,torso_minor_r,
+		r,torso_y,x,y,z_cp,z_rc;	
 	int return_code;	
 	struct FE_field_component component;	
 	struct FE_field *electrode_position_field,*map_electrode_position_field;
@@ -4892,7 +5065,7 @@ rig_node_group_set_map_electrode_position_lambda_r
 							get_FE_nodal_FE_value_value(node_unmanaged,&component,0,
 								FE_NODAL_VALUE,&theta);
 							/* change lambda*/
-							lambda=set_map_electrode_position_info->value;
+							lambda=set_map_electrode_position_info->value1;
 							/* set the dest data*/
 							component.field=map_electrode_position_field;
 							component.number=0;/* lambda */
@@ -4923,7 +5096,23 @@ rig_node_group_set_map_electrode_position_lambda_r
 							/* convert coords to cylindrical polar */
 							cartesian_to_cylindrical_polar(x,y,z_rc,&r,&theta,&z_cp,(float *)NULL);
 							/* change the r */
-							r=set_map_electrode_position_info->value;/* r */						 
+#if defined (ROUND_TORSO)
+							r=set_map_electrode_position_info->value1;/* r_major */
+#else		
+							torso_major_r=set_map_electrode_position_info->value1;	
+							torso_minor_r=set_map_electrode_position_info->value2;
+							t=theta; /*parametric T*/
+							c=cos(t);
+							s=sin(t);								
+							torso_x=torso_major_r*c;
+							torso_y=torso_minor_r*s;	
+#if defined (NEW_CODE2)
+							theta=atan2(torso_y,torso_x); /*new theta*/
+#else /* defined (NEW_CODE2) */
+							theta=t;
+#endif /* defined (NEW_CODE2) */
+							r=sqrt((torso_x*torso_x)+(torso_y*torso_y));
+#endif /* defined (ROUND_TORSO) */
 							/* set the dest data,stored as cylindrical polar  */
 							component.field=map_electrode_position_field;
 							component.number=0;/* r */	
@@ -4996,9 +5185,10 @@ rig_node_group_set_map_electrode_position_lambda_r
 }/* rig_node_set_map_electrode_position_lambda_r */
 
 int rig_node_group_set_map_electrode_position_lambda_r(int map_number,
-	struct Unemap_package *package,FE_value sock_lambda,FE_value torso_r)
+	struct Unemap_package *package,FE_value sock_lambda,FE_value torso_major_r,
+	FE_value torso_minor_r)
 /*******************************************************************************
-LAST MODIFIED : 14 October 1999
+LAST MODIFIED : 14 June 2000
 
 DESCRIPTION :
 Sets the node group's nodal map_electrode_postions from the nodal electrode_positions, 
@@ -5006,7 +5196,7 @@ and changes the node group's map_electrode_postions lambda or r values to <value
 ==============================================================================*/
 {	
 	enum Region_type region_type;
-	FE_value value;
+	FE_value value1,value2;
 	int node_group_number,return_code;	
 	struct FE_field *map_electrode_position_field;
 	struct GROUP(FE_node) *node_group;
@@ -5027,15 +5217,18 @@ and changes the node group's map_electrode_postions lambda or r values to <value
 		{
 			case SOCK:
 			{
-				value=sock_lambda;
+				value1=sock_lambda;
+				value2=0;/* not used*/
 			}break;																												
 			case TORSO:	
 			{
-				value=torso_r;
+				value1=torso_major_r;
+				value2=torso_minor_r;
 			}break;
 			case PATCH:
 			{									
-				value=0;/* not used*/
+				value1=0;/* not used*/
+				value2=0;/* not used*/
 			}break;	
 			case MIXED:	
 			{
@@ -5063,7 +5256,8 @@ and changes the node group's map_electrode_postions lambda or r values to <value
 				map_electrode_position_field;	
 			set_map_electrode_position_info.field_manager=field_manager;
 			set_map_electrode_position_info.node_manager=node_manager;
-			set_map_electrode_position_info.value=value;
+			set_map_electrode_position_info.value1=value1;
+			set_map_electrode_position_info.value2=value2;
 			set_map_electrode_position_info.region_type=region_type;
 			MANAGER_BEGIN_CACHE(FE_node)(node_manager);				
 			return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(

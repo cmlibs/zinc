@@ -38,7 +38,8 @@ struct Map_info
 	struct FE_node_order_info *node_order_info;	
 	struct GROUP(FE_element) *element_group;
 	struct GROUP(FE_node) *node_group;		
-	struct GT_object *electrode_glyph;
+	struct GT_object *electrode_glyph;	
+	struct GT_object *torso_arms;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct MANAGER(FE_element) *element_manager;
 	struct MANAGER(FE_field) *fe_field_manager;
@@ -100,6 +101,7 @@ Create and  and set it's components
 				map_info->element_manager=element_manager;
 				map_info->computed_field_manager=computed_field_manager;
 				map_info->electrode_glyph=(struct GT_object *)NULL;
+				map_info->torso_arms=(struct GT_object *)NULL;
 				map_info->electrode_size=0;
 				map_info->electrodes_option=HIDE_ELECTRODES;
 				map_info->colour_electrodes_with_signal=1;
@@ -197,6 +199,8 @@ to NULL.
 		return_code=1;
 		/* electrode_glyph*/
 		DEACCESS(GT_object)(&(map_info->electrode_glyph));
+		/* torso_arms*/
+		DEACCESS(GT_object)(&(map_info->torso_arms));
 		/* node_order_info */
 		DEACCESS(FE_node_order_info)(&(map_info->node_order_info));
 		/*element_group */
@@ -837,6 +841,7 @@ DESCRIPTION :
 gets the map_electrode_glyph for map_info <map_number> in <package>.
 get (and set) with map_number 0,1,2... (an array), but package->number_of_maps
 is 1,2,3... i.e 
+??JW perhaps should maintain a list of GT_objects, cf CMGUI
 ==============================================================================*/
 {
 	struct GT_object *electrode_glyph;
@@ -873,6 +878,7 @@ DESCRIPTION :
 Sets the electrode_glyph  for map_info <map_number> in <package>.
 Set (and get) with map_number 0,1,2... (an array), but package->number_of_maps
 is 1,2,3...
+??JW perhaps should maintain a list of GT_objects, cf CMGUI
 ==============================================================================*/
 {
 	int return_code;
@@ -896,6 +902,75 @@ is 1,2,3...
 	return (return_code);
 } /* set_unemap_package_map_electrode_glyph */
 
+struct GT_object *get_unemap_package_map_torso_arms(
+	struct Unemap_package *package,int map_number)
+/*******************************************************************************
+LAST MODIFIED : 15 June 2000
+
+DESCRIPTION :
+gets the map_torso_arms for map_info <map_number> in <package>.
+get (and set) with map_number 0,1,2... (an array), but package->number_of_maps
+is 1,2,3... i.e 
+??JW perhaps should maintain a list of GT_objects, cf CMGUI
+==============================================================================*/
+{
+	struct GT_object *torso_arms;
+
+	ENTER(get_unemap_package_map_torso_arms);
+	if((package)&&(map_number>-1)&&(map_number<=package->number_of_maps))	
+	{
+		if(package->number_of_maps==map_number)
+		{			
+			/* No map_info,map_torso_arms =NULL */	
+			torso_arms=(struct GT_object *)NULL;		
+		}
+		else
+		{
+			torso_arms=package->maps_info[map_number]->torso_arms;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_unemap_package_map_torso_arms."
+			" invalid arguments");
+		torso_arms=(struct GT_object *)NULL;
+	}
+	LEAVE;
+	return (torso_arms);	
+} /* get_unemap_package_map_torso_arms */
+
+int set_unemap_package_map_torso_arms(struct Unemap_package *package,
+	struct GT_object *torso_arms,int map_number)
+/*******************************************************************************
+LAST MODIFIED : 15 June 2000
+
+DESCRIPTION :
+Sets the torso_arms  for map_info <map_number> in <package>.
+Set (and get) with map_number 0,1,2... (an array), but package->number_of_maps
+is 1,2,3...
+??JW perhaps should maintain a list of GT_objects, cf CMGUI
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_unemap_package_map_torso_arms);
+	if(package&&(map_number>-1)&&
+		(map_number<package->number_of_maps))
+	{		
+		return_code =1;
+		REACCESS(GT_object)
+			(&(package->maps_info[map_number]->torso_arms),
+				torso_arms);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_unemap_package_map_torso_arms ."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_unemap_package_map_torso_arms */
 
 FE_value get_unemap_package_map_electrode_size(struct Unemap_package *package,
 	int map_number)
@@ -4110,6 +4185,7 @@ LAST MODIFIED : September 10 1999
 DESCRIPTION :
 Attempt to destroy all the package's Map_infos.
 Set the package number_of_maps to 0.
+cf free_unemap_package_map_info
 ==============================================================================*/		 
 {
 	int count,return_code;
@@ -4119,7 +4195,15 @@ Set the package number_of_maps to 0.
 	{
 		return_code=1;
 		for(count=0;count<package->number_of_maps;count++)
-		{
+		{	/*remove the torso arms from the scene */
+			/*??JW probably a bad place to do this. perhaps should maintain */
+			/*a list of GT_objects cf CMGUI. Arms show be temporary anyway*/
+			if((package->maps_info)&&(package->maps_info[count])
+				&&(package->maps_info[count]->torso_arms)&&(package->scene))
+			{
+				Scene_remove_graphics_object(package->scene,
+					package->maps_info[count]->torso_arms);
+			}	
 			if((package->maps_info)&&(package->maps_info[count]))
 			{
 				DEACCESS(Map_info)(&(package->maps_info[count]));
@@ -4146,6 +4230,7 @@ LAST MODIFIED : September 16 1999
 DESCRIPTION :
 Attempt to destroy  the package's map_number Map_infos.
 DOESN'T alter  the package number_of_maps. 
+cf free_unemap_package_maps
 ==============================================================================*/		 
 {
 	int return_code;
@@ -4153,7 +4238,16 @@ DOESN'T alter  the package number_of_maps.
 	ENTER(free_unemap_package_map_info);
 	if(package)
 	{
-		return_code=1;		
+		return_code=1;	
+		/*remove the torso arms from the scene */
+		/*??JW probably a bad place to do this. perhaps should maintain */
+		/*a list of GT_objects cf CMGUI. Arms show be temporary anyway*/
+		if((package->maps_info)&&(package->maps_info[map_number])
+			&&(package->maps_info[map_number]->torso_arms)&&(package->scene))
+		{
+			Scene_remove_graphics_object(package->scene,
+				package->maps_info[map_number]->torso_arms);
+		}
 		if((package->maps_info)&&(package->maps_info[map_number]))
 		{
 			DEACCESS(Map_info)(&(package->maps_info[map_number]));		
