@@ -6326,187 +6326,10 @@ DESCRIPTION :
 	LEAVE;
 } /* mc_face_cube_map_function */
 
-void general_cube_map_function_hack(int *index,float *texturemap_coord,
-	float *vertex_coords,double cop[3],double ximin[3],double ximax[3])
+void general_cube_map_function(int *index, float *texturemap_coord,
+	float *vertex_coords, double cop[3], double ximin[3], double ximax[3])
 /*******************************************************************************
-LAST MODIFIED : 1 November 1999
-
-DESCRIPTION :
-Calculates u,v texture map values for a vertex. Third texture coordinate set to
-zero (in anticipation of SGI 3d texture mapping potential combination).
-
-Calculates intersection from a centre of projection through a vertex onto the
-surface of a cube - returns u,v coords on surface, and index (1-6) of
-intersected surface.
-Same as general_cube_map_function, but texture coordinates are allowed to be
-subtly outside [0,1].
-==============================================================================*/
-{
-#define MAX_UNIT_TEX_COORD   1.000001
-#define MIN_UNIT_TEX_COORD  -0.000001
-  double t,u,v,sf[3];
-	int i;
-
-	ENTER(general_cube_map_function_hack);
-	/* if VT spread over several elements, then stretch texture out over these by
-		dividing by xi range */
-	for (i=0;i<3;i++)
-	{
-		if (ximax[i]-ximin[i] > 1.0)
-		{
-			sf[i]=ximax[i] - ximin[i];
-		}
-		else
-		{
-			sf[i]=1.0;
-		}
-	}
-	/* check intersect face 5 (z=0) */
-	t= -(cop[2]/sf[2])/((vertex_coords[2] - cop[2])/sf[2]);
-	u=(cop[0] + t*(vertex_coords[0]-cop[0]))/sf[0];
-	v=(cop[1] + t*(vertex_coords[1]-cop[1]))/sf[1];
-	if ( (t >=0) && (t < 1) && (MIN_UNIT_TEX_COORD <=u) && (u <=MAX_UNIT_TEX_COORD) &&
-    (MIN_UNIT_TEX_COORD <=v) && (v <=MAX_UNIT_TEX_COORD) )
-	{
-		/* valid coordinate */
-		*index=4;
-		texturemap_coord[0]=(float)1.0 - u;
-		texturemap_coord[1]=(float)v;
-		/* for present mapped textures are 2d */
-		texturemap_coord[2]=0;
-	}
-	else
-	{
-		/* check intersect face 6 (z=1) */
-		t= (1.0 -cop[2]/sf[2])/((vertex_coords[2] - cop[2])/sf[2]);
-		u=(cop[0] + t*(vertex_coords[0]-cop[0]))/sf[0];
-		v=(cop[1] + t*(vertex_coords[1]-cop[1]))/sf[1];
-		if ( (t >=0) && (MIN_UNIT_TEX_COORD <=u) && (u <=MAX_UNIT_TEX_COORD) &&
-      (MIN_UNIT_TEX_COORD <=v) && (v <=MAX_UNIT_TEX_COORD) )
-		{
-			/* valid coordinate */
-			*index=5;
-			texturemap_coord[0]=(float)u;
-			texturemap_coord[1]=(float)v;
-			/* for present mapped textures are 2d */
-			texturemap_coord[2]=0;
-		}
-		else
-		{
-			/* check intersect face 1 (x=0) */
-			t= -(cop[0]/sf[0])/((vertex_coords[0] - cop[0])/sf[0]);
-			u=(cop[2] + t*(vertex_coords[2]-cop[2]))/sf[2];
-			v=(cop[1] + t*(vertex_coords[1]-cop[1]))/sf[1];
-			if ( (t >=0) && (MIN_UNIT_TEX_COORD <=u) && (u <=MAX_UNIT_TEX_COORD) &&
-        (MIN_UNIT_TEX_COORD <=v) && (v <=MAX_UNIT_TEX_COORD) )
-			{
-				/* valid coordinate */
-				*index=0;
-				texturemap_coord[0]=(float)u;
-				texturemap_coord[1]=(float)v;
-				/* for present mapped textures are 2d */
-				texturemap_coord[2]=0;
-			}
-			else
-			{
-				/* check intersect face 2 (x=1) */
-				t= (1.0 -cop[0]/sf[0])/((vertex_coords[0] - cop[0])/sf[0]);
-				u=(cop[2] + t*(vertex_coords[2]-cop[2]))/sf[2];
-				v=(cop[1] + t*(vertex_coords[1]-cop[1]))/sf[1];
-				if ( (t >=0) && (MIN_UNIT_TEX_COORD <=u) && (u <=MAX_UNIT_TEX_COORD) &&
-          (MIN_UNIT_TEX_COORD <=v) && (v <=MAX_UNIT_TEX_COORD) )
-				{
-					/* valid coordinate */
-					*index=1;
-					texturemap_coord[0]=(float)1.0 - u;
-					texturemap_coord[1]=(float)v;
-					/* for present mapped textures are 2d */
-					texturemap_coord[2]=0;
-				}
-				else
-				{
-					/* check intersect face 3 (y=0) */
-					t= -(cop[1]/sf[1])/((vertex_coords[1] - cop[1])/sf[1]);
-					u=(cop[0] + t*(vertex_coords[0]-cop[0]))/sf[0];
-					v=(cop[2] + t*(vertex_coords[2]-cop[2]))/sf[2];
-					if ( (t >=0) && (MIN_UNIT_TEX_COORD <=u) && (u <=MAX_UNIT_TEX_COORD) &&
-            (MIN_UNIT_TEX_COORD <=v) && (v <=MAX_UNIT_TEX_COORD) )
-					{
-						/* valid coordinate */
-						*index=2;
-						texturemap_coord[0]=(float) u;
-						texturemap_coord[1]=(float)v;
-						/* for present mapped textures are 2d */
-						texturemap_coord[2]=0;
-					}
-					else
-					{
-						/* check intersect face 4 (y=1) */
-						t= (1.0 -cop[1]/sf[1])/((vertex_coords[1] - cop[1])/sf[1]);
-						u=(cop[0] + t*(vertex_coords[0]-cop[0]))/sf[0];
-						v=(cop[2] + t*(vertex_coords[2]-cop[2]))/sf[2];
-						if ( (t >=0) && (MIN_UNIT_TEX_COORD <=u) && (u <=MAX_UNIT_TEX_COORD) &&
-              (MIN_UNIT_TEX_COORD <=v) && (v <=MAX_UNIT_TEX_COORD) )
-						{
-							/* valid coordinate */
-							*index=3;
-							texturemap_coord[0]=(float)u;
-							texturemap_coord[1]=(float)1.0 - v;
-							/* for present mapped textures are 2d */
-							texturemap_coord[2]=0;
-						}
-						else
-						{
-							/* check intersect face 5 (z=0) */
-							t= -(cop[2]/sf[2])/((vertex_coords[2] - cop[2])/sf[2]);
-							u=(cop[0] + t*(vertex_coords[0]-cop[0]))/sf[0];
-							v=(cop[1] + t*(vertex_coords[1]-cop[1]))/sf[1];
-							if ( (t >=0) && (MIN_UNIT_TEX_COORD <=u) && (u <=MAX_UNIT_TEX_COORD) &&
-                (MIN_UNIT_TEX_COORD <=v) && (v <=MAX_UNIT_TEX_COORD) )
-							{
-								/* valid coordinate */
-								*index=4;
-								texturemap_coord[0]=(float)1.0 - u;
-								texturemap_coord[1]=(float)v;
-								/* for present mapped textures are 2d */
-								texturemap_coord[2]=0;
-							}
-							else
-							{
-								/* check intersect face 6 (z=1) */
-								t= (1.0 -cop[2]/sf[2])/((vertex_coords[2] - cop[2])/sf[2]);
-								u=(cop[0] + t*(vertex_coords[0]-cop[0]))/sf[0];
-								v=(cop[1] + t*(vertex_coords[1]-cop[1]))/sf[1];
-								if ( (t >=0) && (MIN_UNIT_TEX_COORD <=u) && (u <=MAX_UNIT_TEX_COORD) &&
-                  (MIN_UNIT_TEX_COORD <=v) && (v <=MAX_UNIT_TEX_COORD) )
-								{
-
-									/* valid coordinate */
-									*index=5;
-									texturemap_coord[0]=(float)u;
-									texturemap_coord[1]=(float)v;
-									/* for present mapped textures are 2d */
-									texturemap_coord[2]=0;
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"general_cube_map_function_hack.  No valid intersection");
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	LEAVE;
-} /* general_cube_map_function_hack */
-
-void general_cube_map_function(int *index,float *texturemap_coord,
-	float *vertex_coords,double cop[3],double ximin[3],double ximax[3])
-/*******************************************************************************
-LAST MODIFIED : 7 January 1998
+LAST MODIFIED : 12 December 2001
 
 DESCRIPTION :
 Calculates u,v texture map values for a vertex. Third texture coordinate set to
@@ -6517,149 +6340,130 @@ surface of a cube - returns u,v coords on surface, and index (1-6) of
 intersected surface.
 ==============================================================================*/
 {
-	double t,u,v,sf[3];
+	double offset[3], sf[3], t, u, v;
 	int i;
 
 	ENTER(general_cube_map_function);
 	/* if VT spread over several elements, then stretch texture out over these by
-		dividing by xi range */
-	for (i=0;i<3;i++)
+		 dividing by xi range */
+	for (i = 0; i < 3; i++)
 	{
-		if (ximax[i]-ximin[i] > 1.0)
+		if (ximax[i] - ximin[i] > 1.0)
 		{
-			sf[i]=ximax[i] - ximin[i];
+			sf[i] = ximax[i] - ximin[i];
 		}
 		else
 		{
-			sf[i]=1.0;
+			sf[i] = 1.0;
 		}
+		offset[i] = (double)(vertex_coords[i]) - cop[i];
 	}
-	/* check intersect face 5 (z=0) */
-	t= -(cop[2]/sf[2])/((vertex_coords[2] - cop[2])/sf[2]);
-	u=(cop[0] + t*(vertex_coords[0]-cop[0]))/sf[0];
-	v=(cop[1] + t*(vertex_coords[1]-cop[1]))/sf[1];
-	if ( (t >=0) && (t < 1) && (0 <=u) && (u <=1.0) && (0 <=v) && (v <=1.0) )
+
+	/* check intersect face 1 (x=0) */
+	if ((0.0 != offset[0]) &&
+		((t = -(cop[0] / offset[0])) >= 0.0) &&
+		((u = (cop[2] + t*offset[2]) / sf[2]) >= 0.0) && (u <= 1.0) &&
+		((v = (cop[1] + t*offset[1]) / sf[1]) >= 0.0) && (v <= 1.0))
 	{
 		/* valid coordinate */
-		*index=4;
-		texturemap_coord[0]=(float)1.0 - u;
-		texturemap_coord[1]=(float)v;
+		*index = 0;
+		texturemap_coord[0] = (float)u;
+		texturemap_coord[1] = (float)v;
 		/* for present mapped textures are 2d */
-		texturemap_coord[2]=0;
+		texturemap_coord[2] = 0;
 	}
 	else
 	{
-		/* check intersect face 6 (z=1) */
-		t= (1.0 -cop[2]/sf[2])/((vertex_coords[2] - cop[2])/sf[2]);
-		u=(cop[0] + t*(vertex_coords[0]-cop[0]))/sf[0];
-		v=(cop[1] + t*(vertex_coords[1]-cop[1]))/sf[1];
-		if ( (t >=0) && (0 <=u) && (u <=1.0) && (0 <=v) && (v <=1.0) )
+		/* check intersect face 2 (x=1) */
+		if ((0.0 != offset[0]) &&
+			((t = (sf[0] - cop[0]) / offset[0]) >= 0.0) &&
+			((u = (cop[2] + t*offset[2]) / sf[2]) >= 0.0) && (u <= 1.0) &&
+			((v = (cop[1] + t*offset[1]) / sf[1]) >= 0.0) && (v <= 1.0))
 		{
 			/* valid coordinate */
-			*index=5;
-			texturemap_coord[0]=(float)u;
-			texturemap_coord[1]=(float)v;
+			*index = 1;
+			texturemap_coord[0] = (float)(1.0 - u);
+			texturemap_coord[1] = (float)v;
 			/* for present mapped textures are 2d */
-			texturemap_coord[2]=0;
+			texturemap_coord[2] = 0;
 		}
 		else
 		{
-			/* check intersect face 1 (x=0) */
-			t= -(cop[0]/sf[0])/((vertex_coords[0] - cop[0])/sf[0]);
-			u=(cop[2] + t*(vertex_coords[2]-cop[2]))/sf[2];
-			v=(cop[1] + t*(vertex_coords[1]-cop[1]))/sf[1];
-			if ( (t >=0) && (0 <=u) && (u <=1.0) && (0 <=v) && (v <=1.0) )
+			/* check intersect face 3 (y=0) */
+			if ((0.0 != offset[1]) &&
+				((t = -(cop[1] / offset[1])) >= 0.0) &&
+				((u = (cop[0] + t*offset[0]) / sf[0]) >= 0.0) && (u <= 1.0) &&
+				((v = (cop[2] + t*offset[2]) / sf[2]) >= 0.0) && (v <= 1.0))
 			{
 				/* valid coordinate */
-				*index=0;
-				texturemap_coord[0]=(float)u;
-				texturemap_coord[1]=(float)v;
+				*index=2;
+				texturemap_coord[0] = (float)u;
+				texturemap_coord[1] = (float)v;
 				/* for present mapped textures are 2d */
-				texturemap_coord[2]=0;
+				texturemap_coord[2] = 0;
 			}
 			else
 			{
-				/* check intersect face 2 (x=1) */
-				t= (1.0 -cop[0]/sf[0])/((vertex_coords[0] - cop[0])/sf[0]);
-				u=(cop[2] + t*(vertex_coords[2]-cop[2]))/sf[2];
-				v=(cop[1] + t*(vertex_coords[1]-cop[1]))/sf[1];
-				if ( (t >=0) && (0 <=u) && (u <=1.0) && (0 <=v) && (v <=1.0) )
+				/* check intersect face 4 (y=1) */
+				if ((0.0 != offset[1]) &&
+					((t = (sf[1] - cop[1]) / offset[1]) >= 0.0) &&
+					((u = (cop[0] + t*offset[0]) / sf[0]) >= 0.0) && (u <= 1.0) &&
+					((v = (cop[2] + t*offset[2]) / sf[2]) >= 0.0) && (v <= 1.0))
 				{
 					/* valid coordinate */
-					*index=1;
-					texturemap_coord[0]=(float)1.0 - u;
-					texturemap_coord[1]=(float)v;
+					*index = 3;
+					texturemap_coord[0] = (float)u;
+					texturemap_coord[1] = (float)(1.0 - v);
 					/* for present mapped textures are 2d */
-					texturemap_coord[2]=0;
+					texturemap_coord[2] = 0;
 				}
 				else
 				{
-					/* check intersect face 3 (y=0) */
-					t= -(cop[1]/sf[1])/((vertex_coords[1] - cop[1])/sf[1]);
-					u=(cop[0] + t*(vertex_coords[0]-cop[0]))/sf[0];
-					v=(cop[2] + t*(vertex_coords[2]-cop[2]))/sf[2];
-					if ( (t >=0) && (0 <=u) && (u <=1.0) && (0 <=v) && (v <=1.0) )
+					/* check intersect face 5 (z=0) */
+					if ((0.0 != offset[2]) &&
+						((t = -(cop[2] / offset[2])) >= 0.0) &&
+						((u = (cop[0] + t*offset[0]) / sf[0]) >= 0.0) && (u <= 1.0) &&
+						((v = (cop[1] + t*offset[1]) / sf[1]) >= 0.0) && (v <= 1.0))
 					{
 						/* valid coordinate */
-						*index=2;
-						texturemap_coord[0]=(float) u;
-						texturemap_coord[1]=(float)v;
+						*index = 4;
+						texturemap_coord[0] = (float)(1.0 - u);
+						texturemap_coord[1] = (float)v;
 						/* for present mapped textures are 2d */
-						texturemap_coord[2]=0;
+						texturemap_coord[2] = 0;
 					}
 					else
 					{
-						/* check intersect face 4 (y=1) */
-						t= (1.0 -cop[1]/sf[1])/((vertex_coords[1] - cop[1])/sf[1]);
-						u=(cop[0] + t*(vertex_coords[0]-cop[0]))/sf[0];
-						v=(cop[2] + t*(vertex_coords[2]-cop[2]))/sf[2];
-						if ( (t >=0) && (0 <=u) && (u <=1.0) && (0 <=v) && (v <=1.0) )
+						/* check intersect face 6 (z=1) */
+						if ((0.0 != offset[2]) &&
+							((t = (sf[2] - cop[2]) / offset[2]) >= 0.0) &&
+							((u = (cop[0] + t*offset[0]) / sf[0]) >= 0.0) && (u <= 1.0) &&
+							((v = (cop[1] + t*offset[1]) / sf[1]) >= 0.0) && (v <= 1.0))
 						{
 							/* valid coordinate */
-							*index=3;
-							texturemap_coord[0]=(float)u;
-							texturemap_coord[1]=(float)1.0 - v;
+							*index = 5;
+							texturemap_coord[0] = (float)u;
+							texturemap_coord[1] = (float)v;
 							/* for present mapped textures are 2d */
-							texturemap_coord[2]=0;
+							texturemap_coord[2] = 0;
 						}
 						else
 						{
-							/* check intersect face 5 (z=0) */
-							t= -(cop[2]/sf[2])/((vertex_coords[2] - cop[2])/sf[2]);
-							u=(cop[0] + t*(vertex_coords[0]-cop[0]))/sf[0];
-							v=(cop[1] + t*(vertex_coords[1]-cop[1]))/sf[1];
-							if ( (t >=0) && (0 <=u) && (u <=1.0) && (0 <=v) && (v <=1.0) )
+							if ((0.0 == offset[0]) &&
+								(0.0 == offset[1]) &&
+								(0.0 == offset[2]))
 							{
-								/* valid coordinate */
-								*index=4;
-								texturemap_coord[0]=(float)1.0 - u;
-								texturemap_coord[1]=(float)v;
+								/* at the centre of projection; default to face 0 */
+								*index = 0;
+								texturemap_coord[0] = 0.0;
+								texturemap_coord[1] = 0.0;
 								/* for present mapped textures are 2d */
-								texturemap_coord[2]=0;
+								texturemap_coord[2] = 0;
 							}
 							else
 							{
-								/* check intersect face 6 (z=1) */
-								t= (1.0 -cop[2]/sf[2])/((vertex_coords[2] - cop[2])/sf[2]);
-								u=(cop[0] + t*(vertex_coords[0]-cop[0]))/sf[0];
-								v=(cop[1] + t*(vertex_coords[1]-cop[1]))/sf[1];
-								if ( (t >=0) && (0 <=u) && (u <=1.0) && (0 <=v) && (v <=1.0) )
-								{
-
-									/* valid coordinate */
-									*index=5;
-									texturemap_coord[0]=(float)u;
-									texturemap_coord[1]=(float)v;
-									/* for present mapped textures are 2d */
-									texturemap_coord[2]=0;
-								}
-								else
-								{
-                  /*???RC Now try the hack version - for numerical rounding
-                    problems */
-                  general_cube_map_function_hack(index,texturemap_coord,
-                    vertex_coords,cop,ximin,ximax);
-								}
+								display_message(ERROR_MESSAGE,
+									"general_cube_map_function.  No valid intersection");
 							}
 						}
 					}
