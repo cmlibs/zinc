@@ -3549,7 +3549,7 @@ int Computed_field_find_element_xi(struct Computed_field *field,
 	FE_value *xi, struct GROUP(FE_element) *search_element_group,
 	int propagate_field)
 /*******************************************************************************
-LAST MODIFIED : 22 April 2002
+LAST MODIFIED : 21 August 2002
 
 DESCRIPTION :
 This function implements the reverse of some certain computed_fields
@@ -3562,14 +3562,17 @@ The <search_element_group> is the set of elements from which the chosen element
 will belong.
 If <propagate_field> is set and the field has a find_element_xi_function, it
 is called to undo its field calculation and resume the search on its source
-field. This can be result in less computation, but can fail if the source field
+field. This can result in less computation, but can fail if the source field
 is multivalued, a common case being when it is in a polar coordinate system
 since valid values may be a multiple of  2*PI out.
 If <propagate_field> is not set or there is no <find_element_xi_function> this
 function searches all elements in <search_element_group> trying to find a point
 at which the field evaluates to the <values>.
+Note a copy of the <values> array is immediately made so it will be possible to
+pass in pointers to field cache values.
 ==============================================================================*/
 {
+	FE_value *temp_values;
 	struct Computed_field_iterative_find_element_xi_data find_element_xi_data;
 	int i, number_of_xi, return_code;
 
@@ -3584,15 +3587,22 @@ at which the field evaluates to the <values>.
 		}
 		else
 		{
-			find_element_xi_data.field = field;
-			find_element_xi_data.values = values;
-			find_element_xi_data.number_of_values = number_of_values;
-			find_element_xi_data.found_number_of_xi = 0;
-			find_element_xi_data.found_derivatives = (FE_value *)NULL;
-			find_element_xi_data.tolerance = 1e-06;
-			if (ALLOCATE(find_element_xi_data.found_values, FE_value,
-				number_of_values))
+			/* allocate space to store both a copy of the passed in <values>,
+				 and space for working evaluations of the target <field> */
+			if (ALLOCATE(temp_values, FE_value, 2*number_of_values))
 			{
+				find_element_xi_data.values = temp_values;
+				find_element_xi_data.found_values = temp_values + number_of_values;
+				/* copy the source values */
+				for (i = 0; i < number_of_values; i++)
+				{
+					find_element_xi_data.values[i] = values[i];
+				}
+				find_element_xi_data.field = field;
+				find_element_xi_data.number_of_values = number_of_values;
+				find_element_xi_data.found_number_of_xi = 0;
+				find_element_xi_data.found_derivatives = (FE_value *)NULL;
+				find_element_xi_data.tolerance = 1e-06;
 				if (*element = FIRST_OBJECT_IN_GROUP_THAT(FE_element)
 					(Computed_field_iterative_element_conditional,
 						&find_element_xi_data, search_element_group))
@@ -3605,11 +3615,11 @@ at which the field evaluates to the <values>.
 				}
 				/* The search is valid even if the element wasn't found */
 				return_code = 1;
-				DEALLOCATE(find_element_xi_data.found_values);
 				if (find_element_xi_data.found_derivatives)
 				{
 					DEALLOCATE(find_element_xi_data.found_derivatives);
 				}
+				DEALLOCATE(temp_values);
 			}
 			else
 			{

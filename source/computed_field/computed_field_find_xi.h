@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_find_xi.h
 
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 21 August 2002
 
 DESCRIPTION :
 Implements a special version of find_xi that uses OpenGL to accelerate the
@@ -13,6 +13,16 @@ lookup of the element.
 #include "user_interface/user_interface.h"
 
 struct Computed_field_iterative_find_element_xi_data
+/*******************************************************************************
+LAST MODIFIED: 21 August 2002
+
+DESCRIPTION:
+Data for passing to Computed_field_iterative_element_conditional
+Important note:
+The <values> passed in this structure must not be a pointer to values
+inside a field cache otherwise they may be overwritten if that field
+matches the <field> in this structure or one of its source fields.
+==============================================================================*/
 {
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct Computed_field *field;
@@ -35,10 +45,14 @@ struct Computed_field_find_element_xi_special_cache is private.
 int Computed_field_iterative_element_conditional(
 	struct FE_element *element, void *data_void);
 /*******************************************************************************
-LAST MODIFIED: 16 June 2000
+LAST MODIFIED: 21 August 2002
 
 DESCRIPTION:
 Returns true if a valid element xi is found.
+Important note:
+The <values> passed in the <data> structure must not be a pointer to values
+inside a field cache otherwise they may be overwritten if the field is the same
+as the <data> field or any of its source fields.
 ==============================================================================*/
 
 int Computed_field_find_element_xi_special(struct Computed_field *field, 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_find_xi.c
 
-LAST MODIFIED : 16 April 2002
+LAST MODIFIED : 21 August 2002
 
 DESCRIPTION :
 Implements a special version of find_xi that uses OpenGL to accelerate the
@@ -209,10 +209,14 @@ Returns true if a valid element xi is found.
 int Computed_field_iterative_element_conditional(
 	struct FE_element *element, void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 16 April 2002
+LAST MODIFIED : 21 August 2002
 
 DESCRIPTION :
 Returns true if a valid element xi is found.
+Important note:
+The <values> passed in the <data> structure must not be a pointer to values
+inside a field cache otherwise they may be overwritten if the field is the same
+as the <data> field or any of its source fields.
 ==============================================================================*/
 {
 	double a[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS],
