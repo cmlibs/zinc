@@ -305,10 +305,6 @@ Compare the type specific data
 		other_computed_field->type_specific_data))
 	{
 		if ((data->sigma == other_data->sigma) &&
-		        (data->angle_from_u_axis[0] == other_data->angle_from_u_axis[0]) &&
-			(data->angle_from_u_axis[1] == other_data->angle_from_u_axis[1]) &&
-			(data->centre_frequency[0] == other_data->centre_frequency[0]) &&
-			(data->centre_frequency[1] == other_data->centre_frequency[1]) &&
 			data->image && other_data->image &&
 			(data->image->dimension == other_data->image->dimension) &&
 			(data->image->depth == other_data->image->depth))
@@ -745,6 +741,7 @@ DESCRIPTION : Implement image local frequency detection.
 					         result_index[k] /= max[k];
 					}
 				}
+				result_index += image->depth;
 			}
 			if (return_code)
 			{
