@@ -8,6 +8,7 @@ Implements computed variables which transform between coordinate systems.
 ==============================================================================*/
 #include <math.h>
 #include "computed_variable/computed_value_derivative_matrix.h"
+#include "computed_variable/computed_value_fe_value.h"
 #include "computed_variable/computed_value_matrix.h"
 #include "computed_variable/computed_variable_coordinates.h"
 #include "computed_variable/computed_variable_private.h"

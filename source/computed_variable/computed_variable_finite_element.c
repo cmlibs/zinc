@@ -32,6 +32,7 @@ NOTES :
 	derivative and should be ignored/got rid of.
 ==============================================================================*/
 #include "computed_variable/computed_value_derivative_matrix.h"
+#include "computed_variable/computed_value_fe_value.h"
 #include "computed_variable/computed_value_finite_element.h"
 #include "computed_variable/computed_value_matrix.h"
 #include "computed_variable/computed_variable_finite_element.h"

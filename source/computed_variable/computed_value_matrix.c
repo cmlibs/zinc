@@ -122,6 +122,8 @@ static START_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(matrix)
 }
 END_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(matrix)
 
+#define Cmiss_value_matrix_get_string_type_specific Cmiss_value_default_get_string
+
 static START_CMISS_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
 	matrix)
 {

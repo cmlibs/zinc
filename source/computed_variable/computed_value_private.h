@@ -124,6 +124,37 @@ int Cmiss_value_ ## value_type ## _get_reals_type_specific( \
 	return (return_code); \
 } /* Cmiss_value_ ## value_type ## _get_reals_type_specific */
 
+typedef int (*Cmiss_value_get_string_type_specific_function)(
+	Cmiss_value_id value, char **string);
+/*******************************************************************************
+LAST MODIFIED : 25 July 2003
+
+DESCRIPTION :
+Creates a string representation of the Cmiss_value useful for output.
+==============================================================================*/
+
+#define START_CMISS_VALUE_GET_STRING_TYPE_SPECIFIC_FUNCTION( \
+	value_type ) \
+int Cmiss_value_ ## value_type ## _get_string_type_specific( \
+	Cmiss_value_id value, char **string) \
+{ \
+	int return_code; \
+\
+	ENTER(Cmiss_value_ ## value_type ## \
+		_get_string_type_specific); \
+	return_code=0; \
+	ASSERT_IF(value&&(Cmiss_value_ ## value_type ## _type_string== \
+		Cmiss_value_get_type_id_string(value))&& \
+		result,return_code,0)
+
+#define END_CMISS_VALUE_GET_STRING_TYPE_SPECIFIC_FUNCTION( \
+	value_type ) \
+	LEAVE; \
+\
+	return (return_code); \
+} /* Cmiss_value_ ## value_type ## \
+	_get_string_type_specific */
+
 typedef int (*Cmiss_value_multiply_and_accumulate_type_specific_function)(
 	Cmiss_value_id total,Cmiss_value_id value_1,
 	Cmiss_value_id value_2);
@@ -233,6 +264,7 @@ Cmiss_value_establish_methods(value, \
 	Cmiss_value_ ## value_type ## _clear_type_specific, \
 	Cmiss_value_ ## value_type ## _duplicate_data_type_specific, \
 	Cmiss_value_ ## value_type ## _get_reals_type_specific, \
+	Cmiss_value_ ## value_type ## _get_string_type_specific, \
 	Cmiss_value_ ## value_type ## _multiply_and_accumulate_type_specific, \
 	Cmiss_value_ ## value_type ## _same_sub_type_type_specific)
 
@@ -245,6 +277,7 @@ int Cmiss_value_establish_methods(Cmiss_value_id value,
 	Cmiss_value_duplicate_data_type_specific_function
 	duplicate_data_type_specific_function,
 	Cmiss_value_get_reals_type_specific_function get_reals_type_specific_function,
+	Cmiss_value_get_string_type_specific_function get_string_type_specific_function,
 	Cmiss_value_multiply_and_accumulate_type_specific_function
 	multiply_and_accumulate_type_specific_function,
 	Cmiss_value_same_sub_type_type_specific_function

@@ -7,6 +7,7 @@ DESCRIPTION :
 Implements the derivative computed variable.
 ==============================================================================*/
 #include "computed_variable/computed_value_derivative_matrix.h"
+#include "computed_variable/computed_value_fe_value.h"
 #include "computed_variable/computed_variable_derivative.h"
 #include "computed_variable/computed_variable_private.h"
 #include "general/debug.h"

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_value.h
 
-LAST MODIFIED : 16 July 2003
+LAST MODIFIED : 25 July 2003
 
 DESCRIPTION :
 A module intended to replace general/value .  Testing and developing in
@@ -123,95 +123,24 @@ DESCRIPTION :
 Calculates <total>+<value_1>*<value_2> and puts in <total>.
 ==============================================================================*/
 
-int Cmiss_value_FE_value_set_type(Cmiss_value_id value,
-	FE_value fe_value);
+int Cmiss_value_get_string(Cmiss_value_id value,
+	char **result);
 /*******************************************************************************
-LAST MODIFIED : 22 January 2003
+LAST MODIFIED : 25 July 2003
 
 DESCRIPTION :
-Makes <value> of type FE_value and sets its <fe_value>.
+Creates a string representation of the Cmiss_value useful for output.
+If successful <result> contains an ALLOCATED string, it is up to the calling
+function to DEALLOCATE the string when it is no longer required.
 ==============================================================================*/
 
-PROTOTYPE_CMISS_VALUE_IS_TYPE_FUNCTION(FE_value);
-
-int Cmiss_value_FE_value_get_type(Cmiss_value_id value,
-	FE_value *fe_value_address);
+int Cmiss_value_default_get_string(Cmiss_value_id value,
+	char **result);
 /*******************************************************************************
-LAST MODIFIED : 23 January 2003
+LAST MODIFIED : 25 July 2003
 
 DESCRIPTION :
-If <value> is of type FE_value, gets its <*fe_value_address>.
-==============================================================================*/
-
-int Cmiss_value_FE_value_vector_set_type(Cmiss_value_id value,
-	int number_of_fe_values,FE_value *fe_value_vector);
-/*******************************************************************************
-LAST MODIFIED : 12 February 2003
-
-DESCRIPTION :
-Makes <value> of type FE_value_vector and sets its <number_of_fe_values> and
-<fe_value_vector>.  After success, the <value> is responsible for DEALLOCATEing
-<fe_value_vector>.
-==============================================================================*/
-
-PROTOTYPE_CMISS_VALUE_IS_TYPE_FUNCTION(FE_value_vector);
-
-int Cmiss_value_FE_value_vector_get_type(Cmiss_value_id value,
-	int *number_of_fe_values_address,FE_value **fe_value_vector_address);
-/*******************************************************************************
-LAST MODIFIED : 12 February 2003
-
-DESCRIPTION :
-If <value> is of type FE_value_vector, gets its <*number_of_fe_values_address>
-and <*fe_value_vector_address>.
-
-The calling program must not DEALLOCATE the returned <*fe_value_vector_address>.
-==============================================================================*/
-
-int Cmiss_value_FE_value_matrix_set_type(Cmiss_value_id value,
-	int number_of_rows,int number_of_columns,FE_value *fe_value_matrix);
-/*******************************************************************************
-LAST MODIFIED : 12 February 2003
-
-DESCRIPTION :
-Makes <value> of type FE_value_matrix and sets its <number_of_rows>,
-<number_of_columns> and <fe_value_matrix> (column number varying fastest).
-After success, the <value> is responsible for DEALLOCATEing <fe_value_matrix>.
-==============================================================================*/
-
-PROTOTYPE_CMISS_VALUE_IS_TYPE_FUNCTION(FE_value_matrix);
-
-int Cmiss_value_FE_value_matrix_get_type(Cmiss_value_id value,
-	int *number_of_rows_address,int *number_of_columns_address,
-	FE_value **fe_value_matrix_address);
-/*******************************************************************************
-LAST MODIFIED : 12 February 2003
-
-DESCRIPTION :
-If <value> is of type FE_value_matrix, gets its <*number_of_rows_address>,
-<*number_of_columns_address> and <*fe_value_matrix_address>.
-
-The calling program must not DEALLOCATE the returned <*fe_value_matrix_address>.
-==============================================================================*/
-
-int Cmiss_value_string_set_type(Cmiss_value_id value,char *string);
-/*******************************************************************************
-LAST MODIFIED : 22 January 2003
-
-DESCRIPTION :
-Makes <value> of type string and sets its <string>.  After success, the <value>
-is responsible for DEALLOCATEing <string>.
-==============================================================================*/
-
-PROTOTYPE_CMISS_VALUE_IS_TYPE_FUNCTION(string);
-
-int Cmiss_value_string_get_type(Cmiss_value_id value,char **string_address);
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
-
-DESCRIPTION :
-If <value> is of type string, gets its <*string_address>.
-
-The calling program must not DEALLOCATE the returned <*string_address>.
+A default implementation of Cmiss_value_get string which calls the
+Cmiss_value_get_reals method and concatenates these into a list of numbers.
 ==============================================================================*/
 #endif /* !defined (__CMISS_VALUE_H__) */

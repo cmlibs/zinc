@@ -7,6 +7,7 @@ DESCRIPTION :
 Implements the derivative matrix computed value.
 ==============================================================================*/
 #include "computed_variable/computed_value_derivative_matrix.h"
+#include "computed_variable/computed_value_fe_value.h"
 #include "computed_variable/computed_value_matrix.h"
 #include "computed_variable/computed_value_private.h"
 #include "general/debug.h"
@@ -254,6 +255,8 @@ static START_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(derivative_matrix)
 	}
 }
 END_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(derivative_matrix)
+
+#define Cmiss_value_derivative_matrix_get_string_type_specific Cmiss_value_default_get_string
 
 static START_CMISS_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
 	derivative_matrix)

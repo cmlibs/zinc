@@ -19,6 +19,7 @@ the results of the variables it is made up of.
 	another method (How could this work?) ?
 ==============================================================================*/
 #include "computed_variable/computed_value_derivative_matrix.h"
+#include "computed_variable/computed_value_fe_value.h"
 #include "computed_variable/computed_value_matrix.h"
 #include "computed_variable/computed_variable_composite.h"
 #include "computed_variable/computed_variable_private.h"
