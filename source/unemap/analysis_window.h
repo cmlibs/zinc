@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.h
 
-LAST MODIFIED : 19 November 2000
+LAST MODIFIED :  23 February 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -110,6 +110,7 @@ The area of the analysis window where the interval is drawn.
 	Widget range_auto_all_button;
 	Widget range_auto_curr_button;
 	Widget range_from_curr_button;
+	Widget range_from_curr_signal_button;
 	Widget range_accep_undec_button;
 	Widget signal_range;
 	Widget minimum_value;

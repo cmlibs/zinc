@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : analysis_window.uil
 !
-! LAST MODIFIED : 13 October 1999
+! LAST MODIFIED : 23 February 2001
 !
 ! DESCRIPTION :
 ! The widgets/gadgets for the analysis window in the analysis work area.
@@ -17,10 +17,12 @@ procedure
 	analysis_set_baseline;
 	identify_analysis_range_button;
 	id_anal_range_auto_all_butt;
-	id_anal_range_from_curr_butt;
+	id_anal_rng_frm_cur_win_butt;
 	id_anal_range_auto_curr_butt;
+	id_anal_rng_frm_cur_sig_butt;
 	id_anal_range_accep_undec_butt;
-	analysis_set_range;
+	analysis_set_range_frm_win;
+	analysis_set_range_frm_sig;
 	anal_set_range_all_accep_undec;
 	analysis_unrange_all;
 	analysis_unrange_highlighted;
@@ -360,7 +362,8 @@ object
 			{
 			XmPushButton analysis_rng_auto_cur_butt;
 			XmPushButton analysis_range_auto_all_button;
-			XmPushButton analysis_rng_frm_curr_button;			
+			XmPushButton analysis_rng_frm_curr_button;
+			XmPushButton analysis_rng_frm_cur_sig_butt;
 			XmPushButton analysis_rng_acc_undc_butt;
 			};
 		};
@@ -396,11 +399,31 @@ object
 			{
 			MrmNcreateCallback = procedures
 				{
-				id_anal_range_from_curr_butt(analysis_window_structure);
+				id_anal_rng_frm_cur_win_butt(analysis_window_structure);
 				};
 			XmNactivateCallback = procedures
 				{				
-				analysis_set_range(analysis_work_area_structure);
+				analysis_set_range_frm_win(analysis_work_area_structure);
+				};
+			};
+		};
+	analysis_rng_frm_cur_sig_butt: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Range from current signal");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_anal_rng_frm_cur_sig_butt(analysis_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{				
+				analysis_set_range_frm_sig(analysis_work_area_structure);
 				};
 			};
 		};

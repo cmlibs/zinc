@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 19 November 2000
+LAST MODIFIED : 23 February 2001
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -2468,25 +2468,25 @@ Sets up the analysis work area for analysing a set of signals.
 									nothing */
 								if ((1==BINARY_FILE_READ((char *)&event_status,
 									sizeof(enum Event_signal_status),1,input_file))&&
-									(1==BINARY_FILE_READ((char *)&((*device)->signal_minimum),
+									(1==BINARY_FILE_READ((char *)&((*device)->signal_display_minimum),
 									sizeof(float),1,input_file))&&(1==BINARY_FILE_READ(
-									(char *)&((*device)->signal_maximum),sizeof(float),1,
+									(char *)&((*device)->signal_display_maximum),sizeof(float),1,
 									input_file)))
 								{
 									if ((ACCEPTED==event_status)||(REJECTED==event_status)||
 										(UNDECIDED==event_status))
 									{
 										(*device)->signal->status=event_status;
-										if ((*device)->signal_minimum<=(*device)->signal_maximum)
+										if ((*device)->signal_display_minimum<=(*device)->signal_display_maximum)
 										{
 											/*???DB.  Originally the unscaled maximum and minimum were
 												stored.  This has to be maintained for backward
 												compatability */
-											(*device)->signal_minimum=(((*device)->channel)->gain)*
-												(((*device)->signal_minimum)-
+											(*device)->signal_display_minimum=(((*device)->channel)->gain)*
+												(((*device)->signal_display_minimum)-
 												(((*device)->channel)->offset));
-											(*device)->signal_maximum=(((*device)->channel)->gain)*
-												(((*device)->signal_maximum)-
+											(*device)->signal_display_maximum=(((*device)->channel)->gain)*
+												(((*device)->signal_display_maximum)-
 												(((*device)->channel)->offset));
 										}
 										/* read the events */
@@ -4879,8 +4879,8 @@ DESCRIPTION :
 					}
 					draw_event_marker(event,analysis->event_number,analysis->datum,
 						times,frequency,SIGNAL_AREA_DETAIL,start_analysis_interval,
-						end_analysis_interval,(*highlight)->signal_minimum,
-						(*highlight)->signal_maximum,xpos,ypos,signals->axes_width,
+						end_analysis_interval,(*highlight)->signal_display_minimum,
+						(*highlight)->signal_display_maximum,xpos,ypos,signals->axes_width,
 						signals->axes_height,XtWindow(signals->drawing_area),
 						signals->drawing->pixel_map,analysis->signal_drawing_information,
 						analysis->user_interface);
@@ -4897,8 +4897,8 @@ DESCRIPTION :
 				{
 					draw_event_marker(event,analysis->event_number,analysis->datum,
 						times,frequency,SIGNAL_AREA_DETAIL,start_analysis_interval,
-						end_analysis_interval,(*highlight)->signal_minimum,
-						(*highlight)->signal_maximum,xpos,ypos,signals->axes_width,
+						end_analysis_interval,(*highlight)->signal_display_minimum,
+						(*highlight)->signal_display_maximum,xpos,ypos,signals->axes_width,
 						signals->axes_height,XtWindow(signals->drawing_area),
 						signals->drawing->pixel_map,analysis->signal_drawing_information,
 						analysis->user_interface);
@@ -5254,8 +5254,8 @@ trace_window callbacks.
 					}
 					draw_event_marker(event,analysis->event_number,analysis->datum,
 						times,frequency,SIGNAL_AREA_DETAIL,start_analysis_interval,
-						end_analysis_interval,(*highlight)->signal_minimum,
-						(*highlight)->signal_maximum,xpos,ypos,signals->axes_width,
+						end_analysis_interval,(*highlight)->signal_display_minimum,
+						(*highlight)->signal_display_maximum,xpos,ypos,signals->axes_width,
 						signals->axes_height,XtWindow(signals->drawing_area),
 						signals->drawing->pixel_map,analysis->signal_drawing_information,
 						analysis->user_interface);
@@ -5270,16 +5270,16 @@ trace_window callbacks.
 					trace_area_3= &(analysis->trace->area_3);
 					draw_event_marker(event,analysis->event_number,analysis->datum,
 						times,frequency,ENLARGE_AREA_DETAIL,start_analysis_interval,
-						end_analysis_interval,(*highlight)->signal_minimum,
-						(*highlight)->signal_maximum,trace_area_1->axes_left,
+						end_analysis_interval,(*highlight)->signal_display_minimum,
+						(*highlight)->signal_display_maximum,trace_area_1->axes_left,
 						trace_area_1->axes_top,trace_area_1->axes_width,
 						trace_area_1->axes_height,XtWindow(trace_area_1->drawing_area),
 						trace_area_1->drawing->pixel_map,
 						analysis->signal_drawing_information,analysis->user_interface);
 					draw_event_marker(event,analysis->event_number,analysis->datum,
 						times,frequency,EDIT_AREA_DETAIL,trace_area_3->edit.first_data,
-						trace_area_3->edit.last_data,(*highlight)->signal_minimum,
-						(*highlight)->signal_maximum,trace_area_3->axes_left,
+						trace_area_3->edit.last_data,(*highlight)->signal_display_minimum,
+						(*highlight)->signal_display_maximum,trace_area_3->axes_left,
 						trace_area_3->axes_top,trace_area_3->axes_width,
 						trace_area_3->axes_height,XtWindow(trace_area_3->drawing_area),
 						trace_area_3->drawing->pixel_map,
@@ -5297,8 +5297,8 @@ trace_window callbacks.
 				{
 					draw_event_marker(event,analysis->event_number,analysis->datum,
 						times,frequency,SIGNAL_AREA_DETAIL,start_analysis_interval,
-						end_analysis_interval,(*highlight)->signal_minimum,
-						(*highlight)->signal_maximum,xpos,ypos,signals->axes_width,
+						end_analysis_interval,(*highlight)->signal_display_minimum,
+						(*highlight)->signal_display_maximum,xpos,ypos,signals->axes_width,
 						signals->axes_height,XtWindow(signals->drawing_area),
 						signals->drawing->pixel_map,analysis->signal_drawing_information,
 						analysis->user_interface);
@@ -5307,16 +5307,16 @@ trace_window callbacks.
 				{
 					draw_event_marker(event,analysis->event_number,analysis->datum,
 						times,frequency,ENLARGE_AREA_DETAIL,start_analysis_interval,
-						end_analysis_interval,(*highlight)->signal_minimum,
-						(*highlight)->signal_maximum,trace_area_1->axes_left,
+						end_analysis_interval,(*highlight)->signal_display_minimum,
+						(*highlight)->signal_display_maximum,trace_area_1->axes_left,
 						trace_area_1->axes_top,trace_area_1->axes_width,
 						trace_area_1->axes_height,XtWindow(trace_area_1->drawing_area),
 						trace_area_1->drawing->pixel_map,
 						analysis->signal_drawing_information,analysis->user_interface);
 					draw_event_marker(event,analysis->event_number,analysis->datum,
 						times,frequency,EDIT_AREA_DETAIL,trace_area_3->edit.first_data,
-						trace_area_3->edit.last_data,(*highlight)->signal_minimum,
-						(*highlight)->signal_maximum,trace_area_3->axes_left,
+						trace_area_3->edit.last_data,(*highlight)->signal_display_minimum,
+						(*highlight)->signal_display_maximum,trace_area_3->axes_left,
 						trace_area_3->axes_top,trace_area_3->axes_width,
 						trace_area_3->axes_height,XtWindow(trace_area_3->drawing_area),
 						trace_area_3->drawing->pixel_map,
@@ -8173,8 +8173,8 @@ should be done as a callback from the trace_window.
 											/* clear the marker */
 											draw_event_marker(event,event_number,datum,times,
 												frequency,EDIT_AREA_DETAIL,first_data,last_data,
-												trace_area_3_device->signal_minimum,
-												trace_area_3_device->signal_maximum,axes_left,axes_top,
+												trace_area_3_device->signal_display_minimum,
+												trace_area_3_device->signal_display_maximum,axes_left,axes_top,
 												axes_width,trace_area_3->axes_height,
 												XtWindow(trace_area_3->drawing_area),
 												trace_area_3->drawing->pixel_map,
@@ -8184,8 +8184,8 @@ should be done as a callback from the trace_window.
 											end_analysis_interval=buffer->end;
 											draw_event_marker(event,event_number,datum,times,
 												frequency,ENLARGE_AREA_DETAIL,start_analysis_interval,
-												end_analysis_interval,highlight_device->signal_minimum,
-												highlight_device->signal_maximum,
+												end_analysis_interval,highlight_device->signal_display_minimum,
+												highlight_device->signal_display_maximum,
 												trace_area_1->axes_left,trace_area_1->axes_top,
 												trace_area_1->axes_width,trace_area_1->axes_height,
 												XtWindow(trace_area_1->drawing_area),
@@ -8238,8 +8238,8 @@ should be done as a callback from the trace_window.
 												draw_event_marker(event,event_number,datum,times,
 													frequency,SIGNAL_AREA_DETAIL,start_analysis_interval,
 													end_analysis_interval,
-													highlight_device->signal_minimum,
-													highlight_device->signal_maximum,xpos,ypos,
+													highlight_device->signal_display_minimum,
+													highlight_device->signal_display_maximum,xpos,ypos,
 													signals_axes_width,signals_axes_height,signals_window,
 													signals_pixel_map,signal_drawing_information,
 													user_interface);
@@ -8263,8 +8263,8 @@ should be done as a callback from the trace_window.
 													{
 														draw_event_marker(event_temp,event_number,datum,
 															times,frequency,EDIT_AREA_DETAIL,first_data,
-															last_data,trace_area_3_device->signal_minimum,
-															trace_area_3_device->signal_maximum,axes_left,
+															last_data,trace_area_3_device->signal_display_minimum,
+															trace_area_3_device->signal_display_maximum,axes_left,
 															axes_top,axes_width,trace_area_3->axes_height,
 															XtWindow(trace_area_3->drawing_area),
 															trace_area_3->drawing->pixel_map,
@@ -8272,8 +8272,8 @@ should be done as a callback from the trace_window.
 														(event_temp->number)--;
 														draw_event_marker(event_temp,event_number,datum,
 															times,frequency,EDIT_AREA_DETAIL,first_data,
-															last_data,trace_area_3_device->signal_minimum,
-															trace_area_3_device->signal_maximum,axes_left,
+															last_data,trace_area_3_device->signal_display_minimum,
+															trace_area_3_device->signal_display_maximum,axes_left,
 															axes_top,axes_width,trace_area_3->axes_height,
 															XtWindow(trace_area_3->drawing_area),
 															trace_area_3->drawing->pixel_map,
@@ -8299,8 +8299,8 @@ should be done as a callback from the trace_window.
 												{
 													draw_event_marker(current_event,event_number,datum,
 														times,frequency,EDIT_AREA_DETAIL,first_data,
-														last_data,trace_area_3_device->signal_minimum,
-														trace_area_3_device->signal_maximum,axes_left,
+														last_data,trace_area_3_device->signal_display_minimum,
+														trace_area_3_device->signal_display_maximum,axes_left,
 														axes_top,axes_width,trace_area_3->axes_height,
 														XtWindow(trace_area_3->drawing_area),
 														trace_area_3->drawing->pixel_map,
@@ -8312,8 +8312,8 @@ should be done as a callback from the trace_window.
 												{
 													draw_event_marker(current_event,event_number,datum,
 														times,frequency,EDIT_AREA_DETAIL,first_data,
-														last_data,trace_area_3_device->signal_minimum,
-														trace_area_3_device->signal_maximum,axes_left,
+														last_data,trace_area_3_device->signal_display_minimum,
+														trace_area_3_device->signal_display_maximum,axes_left,
 														axes_top,axes_width,trace_area_3->axes_height,
 														XtWindow(trace_area_3->drawing_area),
 														trace_area_3->drawing->pixel_map,
@@ -8414,8 +8414,8 @@ should be done as a callback from the trace_window.
 											{
 												draw_event_marker(current_event,event_number,datum,
 													times,frequency,EDIT_AREA_DETAIL,first_data,last_data,
-													trace_area_3_device->signal_minimum,
-													trace_area_3_device->signal_maximum,axes_left,
+													trace_area_3_device->signal_display_minimum,
+													trace_area_3_device->signal_display_maximum,axes_left,
 													axes_top,axes_width,trace_area_3->axes_height,
 													XtWindow(trace_area_3->drawing_area),
 													trace_area_3->drawing->pixel_map,
@@ -8433,8 +8433,8 @@ should be done as a callback from the trace_window.
 											{
 												draw_event_marker(current_event,event_number,datum,
 													times,frequency,EDIT_AREA_DETAIL,first_data,last_data,
-													trace_area_3_device->signal_minimum,
-													trace_area_3_device->signal_maximum,axes_left,
+													trace_area_3_device->signal_display_minimum,
+													trace_area_3_device->signal_display_maximum,axes_left,
 													axes_top,axes_width,trace_area_3->axes_height,
 													XtWindow(trace_area_3->drawing_area),
 													trace_area_3->drawing->pixel_map,
@@ -8443,8 +8443,8 @@ should be done as a callback from the trace_window.
 											/* draw the marker */
 											draw_event_marker(event,event_number,datum,times,
 												frequency,EDIT_AREA_DETAIL,first_data,last_data,
-												trace_area_3_device->signal_minimum,
-												trace_area_3_device->signal_maximum,axes_left,axes_top,
+												trace_area_3_device->signal_display_minimum,
+												trace_area_3_device->signal_display_maximum,axes_left,axes_top,
 												axes_width,trace_area_3->axes_height,
 												XtWindow(trace_area_3->drawing_area),
 												trace_area_3->drawing->pixel_map,
@@ -8454,8 +8454,8 @@ should be done as a callback from the trace_window.
 											end_analysis_interval=buffer->end;
 											draw_event_marker(event,event_number,datum,times,
 												frequency,ENLARGE_AREA_DETAIL,start_analysis_interval,
-												end_analysis_interval,highlight_device->signal_minimum,
-												highlight_device->signal_maximum,
+												end_analysis_interval,highlight_device->signal_display_minimum,
+												highlight_device->signal_display_maximum,
 												trace_area_1->axes_left,trace_area_1->axes_top,
 												trace_area_1->axes_width,trace_area_1->axes_height,
 												XtWindow(trace_area_1->drawing_area),
@@ -8508,8 +8508,8 @@ should be done as a callback from the trace_window.
 												draw_event_marker(event,event_number,datum,times,
 													frequency,SIGNAL_AREA_DETAIL,start_analysis_interval,
 													end_analysis_interval,
-													highlight_device->signal_minimum,
-													highlight_device->signal_maximum,xpos,ypos,
+													highlight_device->signal_display_minimum,
+													highlight_device->signal_display_maximum,xpos,ypos,
 													signals_axes_width,signals_axes_height,signals_window,
 													signals_pixel_map,signal_drawing_information,
 													user_interface);
@@ -8596,8 +8596,8 @@ should be done as a callback from the trace_window.
 													{
 														/* determine if the positive or the negative y axis
 															has been selected */
-														signal_min=trace_area_3_device->signal_minimum;
-														signal_max=trace_area_3_device->signal_maximum;
+														signal_min=trace_area_3_device->signal_display_minimum;
+														signal_max=trace_area_3_device->signal_display_maximum;
 														if (signal_max==signal_min)
 														{
 															signal_max += 1;
@@ -9065,8 +9065,8 @@ should be done as a callback from the trace_window.
 																			datum,times,frequency,ENLARGE_AREA_DETAIL,
 																			start_analysis_interval,
 																			end_analysis_interval,
-																			highlight_device->signal_minimum,
-																			highlight_device->signal_maximum,
+																			highlight_device->signal_display_minimum,
+																			highlight_device->signal_display_maximum,
 																			trace_area_1->axes_left,
 																			trace_area_1->axes_top,
 																			trace_area_1->axes_width,
@@ -9147,8 +9147,8 @@ should be done as a callback from the trace_window.
 																					SIGNAL_AREA_DETAIL,
 																					start_analysis_interval,
 																					end_analysis_interval,
-																					highlight_device->signal_minimum,
-																					highlight_device->signal_maximum,xpos,
+																					highlight_device->signal_display_minimum,
+																					highlight_device->signal_display_maximum,xpos,
 																					ypos,signals_axes_width,
 																					signals_axes_height,signals_window,
 																					signals_pixel_map,
@@ -9202,11 +9202,11 @@ should be done as a callback from the trace_window.
 																			analysis->highlight_rig_node,
 																			&component,0,FE_NODAL_VALUE,new_max);
 #endif /*	defined (UNEMAP_USE_NODES) */
-																		highlight_device->signal_maximum=new_max;
+																		highlight_device->signal_display_maximum=new_max;
 																		if (highlight_device!=trace_area_3_device)
 																		{
-																			trace_area_3_device->signal_maximum=
-																				highlight_device->signal_maximum;
+																			trace_area_3_device->signal_display_maximum=
+																				highlight_device->signal_display_maximum;
 																		}
 																	} break;
 																	case SCALING_Y_AXIS_NEGATIVE:
@@ -9229,11 +9229,11 @@ should be done as a callback from the trace_window.
 																			analysis->highlight_rig_node,&component,0,
 																			FE_NODAL_VALUE,new_min);
 #endif /*	defined (UNEMAP_USE_NODES) */
-																		highlight_device->signal_minimum=new_min;
+																		highlight_device->signal_display_minimum=new_min;
 																		if (highlight_device!=trace_area_3_device)
 																		{
-																			trace_area_3_device->signal_minimum=
-																				highlight_device->signal_minimum;
+																			trace_area_3_device->signal_display_minimum=
+																				highlight_device->signal_display_minimum;
 																		}
 																	} break;
 																}
@@ -9315,8 +9315,8 @@ should be done as a callback from the trace_window.
 																			times,frequency,ENLARGE_AREA_DETAIL,
 																			start_analysis_interval,
 																			end_analysis_interval,
-																			highlight_device->signal_minimum,
-																			highlight_device->signal_maximum,
+																			highlight_device->signal_display_minimum,
+																			highlight_device->signal_display_maximum,
 																			trace_area_1->axes_left,
 																			trace_area_1->axes_top,
 																			trace_area_1->axes_width,
@@ -9345,8 +9345,8 @@ should be done as a callback from the trace_window.
 																				SIGNAL_AREA_DETAIL,
 																				start_analysis_interval,
 																				end_analysis_interval,
-																				highlight_device->signal_minimum,
-																				highlight_device->signal_maximum,xpos,
+																				highlight_device->signal_display_minimum,
+																				highlight_device->signal_display_maximum,xpos,
 																				ypos,signals_axes_width,
 																				signals_axes_height,signals_window,
 																				signals_pixel_map,
@@ -10265,8 +10265,8 @@ value at the potential time.
 			device=rig->devices;
 			for (i=rig->number_of_devices;i>0;i--)
 			{
-				(*device)->signal_maximum=0;
-				(*device)->signal_minimum=1;
+				(*device)->signal_display_maximum=0;
+				(*device)->signal_display_minimum=1;
 				device++;
 			}
 		}
@@ -10380,7 +10380,7 @@ LAST MODIFIED : 7 August 2000
 
 DESCRIPTION :
 Unrange all the highlighted device signal, i.e range to it's own min/max.
-c.f. analysis_set_range.
+c.f. analysis_set_range_frm_win.
 ==============================================================================*/
 {
 
@@ -10455,7 +10455,7 @@ LAST MODIFIED : 4 August 2000
 
 DESCRIPTION :
 Unrange all the highlighted device signal, i.e range to it's own min/max.
-c.f. analysis_set_range.
+c.f. analysis_set_range_frm_win.
 ==============================================================================*/
 {
 	float channel_gain,channel_offset,maximum,minimum;
@@ -10486,9 +10486,9 @@ c.f. analysis_set_range.
 					Signal_get_min_max(highlight->signal,&minimum,&maximum,
 						1/*time_range*/);
 					channel_offset=highlight->channel->offset;
-					highlight->signal_minimum=
+					highlight->signal_display_minimum=
 						channel_gain*((float)(minimum)-channel_offset);
-					highlight->signal_maximum=
+					highlight->signal_display_maximum=
 						channel_gain*((float)(maximum)-channel_offset);
 				}
 			}
@@ -10654,9 +10654,9 @@ own min/max
 						Signal_get_min_max((*device)->signal,&minimum,&maximum,
 							1/*time_range*/);
 						channel_offset=(*device)->channel->offset;
-						(*device)->signal_minimum=
+						(*device)->signal_display_minimum=
 							channel_gain*((float)(minimum)-channel_offset);
-						(*device)->signal_maximum=
+						(*device)->signal_display_maximum=
 							channel_gain*((float)(maximum)-channel_offset);
 					}
 				}
@@ -10876,8 +10876,8 @@ then sets all signals to this range.
 					if (0<(channel_gain=(*device)->channel->gain))
 					{
 						channel_offset=(*device)->channel->offset;
-						(*device)->signal_minimum=all_signals_min;
-						(*device)->signal_maximum=all_signals_max;
+						(*device)->signal_display_minimum=all_signals_min;
+						(*device)->signal_display_maximum=all_signals_max;
 					}
 				}
 				device++;
@@ -10898,7 +10898,7 @@ then sets all signals to this range.
 #endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
-static void analysis_set_range(Widget widget,XtPointer analysis_work_area,
+static void analysis_set_range_frm_win(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 7 August 2000
@@ -10919,7 +10919,7 @@ same as the range for the current signal.
 	struct Rig *rig;
 	struct Signal_drawing_package *signal_drawing_package;
 
-	ENTER(analysis_set_range);
+	ENTER(analysis_set_range_frm_win);
 	USE_PARAMETER(call_data);
 	USE_PARAMETER(widget);
 	rig_node=(struct FE_node *)NULL;
@@ -10973,7 +10973,7 @@ same as the range for the current signal.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"analysis_set_range. CREATE(Min_max_iterator failed)");
+					"analysis_set_range_frm_win. CREATE(Min_max_iterator failed)");
 			}
 		}	/* if (rig=analysis->rig)*/
 		/* update the display */
@@ -10984,19 +10984,21 @@ same as the range for the current signal.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"analysis_set_range.  Missing analysis_work_area");
+			"analysis_set_range_frm_win.  Missing analysis_work_area");
 	}
 	LEAVE;
-}/* analysis_set_range */
+}/* analysis_set_range_frm_win */
 #else
-static void analysis_set_range(Widget widget,XtPointer analysis_work_area,
+static void analysis_set_range_frm_win(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 4 August 2000
+LAST MODIFIED : 23 February 2001
 
 DESCRIPTION :
 For every electrode signal in the current region, the range is changed to be the
-same as the range for the current signal.
+same as the range for the current signal. Note that this is not necessarily the
+min,max of the signal, but the display range currently stored. 
+See also analysis_set_range_frm_sig
 ==============================================================================*/
 {
 	float maximum,minimum;
@@ -11009,7 +11011,7 @@ same as the range for the current signal.
 	struct Region *current_region;
 	struct Rig *rig;
 
-	ENTER(analysis_set_range);
+	ENTER(analysis_set_range_frm_win);
 	USE_PARAMETER(call_data);
 	USE_PARAMETER(widget);
 	if (analysis=(struct Analysis_work_area *)analysis_work_area)
@@ -11019,18 +11021,9 @@ same as the range for the current signal.
 			((*device)->signal)&&(analysis->highlight)&&
 			(highlight= *(analysis->highlight)))
 		{
-
-#if defined(NEW_CODE) /*tested, works don't want to do */
-			channel_gain=highlight->channel->gain;
-			channel_offset=highlight->channel->offset;
-			Signal_get_min_max(highlight->signal,&minimum,&maximum,1/*time_range*/);
-			minimum=channel_gain*((float)(minimum)-channel_offset);
-			maximum=channel_gain*((float)(maximum)-channel_offset);
-#else
 			/* look up the stored range for the highlighed signal */
-			minimum=highlight->signal_minimum;
-			maximum=highlight->signal_maximum;
-#endif
+			minimum=highlight->signal_display_minimum;
+			maximum=highlight->signal_display_maximum;
 			/* run through all the signals */
 			current_region=get_Rig_current_region(rig);
 			for (i=rig->number_of_devices;i>0;i--)
@@ -11039,8 +11032,8 @@ same as the range for the current signal.
 				if ((ELECTRODE==(*device)->description->type)&&(!current_region||
 					(current_region==(*device)->description->region)))
 				{
-					(*device)->signal_minimum=minimum;
-					(*device)->signal_maximum=maximum;
+					(*device)->signal_display_minimum=minimum;
+					(*device)->signal_display_maximum=maximum;
 				}
 				device++;
 			}
@@ -11053,11 +11046,71 @@ same as the range for the current signal.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"analysis_set_range.  Missing analysis_work_area");
+			"analysis_set_range_frm_win.  Missing analysis_work_area");
 	}
 	LEAVE;
-} /* analysis_set_range */
+} /* analysis_set_range_frm_win */
 #endif /* defined (UNEMAP_USE_NODES)*/
+
+static void analysis_set_range_frm_sig(Widget widget,XtPointer analysis_work_area,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 4 August 2000
+
+DESCRIPTION :
+For every electrode signal in the current region, the range is changed to be the
+same as the min,max for the current signal. See also analysis_set_range_frm_win.
+==============================================================================*/
+{
+	float channel_gain,channel_offset,maximum,minimum;
+	int i;
+	struct Analysis_work_area *analysis;
+	struct Device **device,*highlight;
+	struct Region *current_region;
+	struct Rig *rig;
+
+	ENTER(analysis_set_range_frm_sig);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget);
+	if (analysis=(struct Analysis_work_area *)analysis_work_area)
+	{
+		/* check that rig and signals exist */
+		if ((rig=analysis->rig)&&(device=rig->devices)&&(*device)&&
+			((*device)->signal)&&(analysis->highlight)&&
+			(highlight= *(analysis->highlight)))
+		{
+			/*find the current signal min and max*/
+			channel_gain=highlight->channel->gain;
+			channel_offset=highlight->channel->offset;
+			Signal_get_min_max(highlight->signal,&minimum,&maximum,1/*time_range*/);
+			minimum=channel_gain*((float)(minimum)-channel_offset);
+			maximum=channel_gain*((float)(maximum)-channel_offset);
+			/* run through all the signals */
+			current_region=get_Rig_current_region(rig);
+			for (i=rig->number_of_devices;i>0;i--)
+			{
+				/* for the electrodes in the current region */
+				if ((ELECTRODE==(*device)->description->type)&&(!current_region||
+					(current_region==(*device)->description->region)))
+				{
+					(*device)->signal_display_minimum=minimum;
+					(*device)->signal_display_maximum=maximum;
+				}
+				device++;
+			}
+			/* update the display */
+			update_signals_drawing_area(analysis->window);
+			update_interval_drawing_area(analysis->window);
+			trace_change_signal(analysis->trace);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"analysis_set_range_frm_sig.  Missing analysis_work_area");
+	}
+	LEAVE;
+} /* analysis_set_range_frm_sig */
 
 static int analysis_overlay_signal_file(char *file_name,
 	void *analysis_work_area)
@@ -11152,8 +11205,8 @@ Reads in a signals file and adds the signals to the devices in the current rig.
 						device=rig->devices;
 						for (i=rig->number_of_devices;i>0;i--)
 						{
-							(*device)->signal_maximum=0;
-							(*device)->signal_minimum=1;
+							(*device)->signal_display_maximum=0;
+							(*device)->signal_display_minimum=1;
 							device++;
 						}
 					}
@@ -12115,8 +12168,8 @@ Applies the current analysis mode settings to all signals.
 					device=rig->devices;
 					for (i=rig->number_of_devices;i>0;i--)
 					{
-						(*device)->signal_maximum=0;
-						(*device)->signal_minimum=1;
+						(*device)->signal_display_maximum=0;
+						(*device)->signal_display_minimum=1;
 						device++;
 					}
 				}
@@ -12568,8 +12621,8 @@ Applies the current analysis mode settings to all signals.
 					device=rig->devices;
 					for (i=rig->number_of_devices;i>0;i--)
 					{
-						(*device)->signal_maximum=0;
-						(*device)->signal_minimum=1;
+						(*device)->signal_display_maximum=0;
+						(*device)->signal_display_minimum=1;
 						device++;
 					}
 				}
@@ -12770,8 +12823,8 @@ Applies the current analysis mode settings to all signals.
 					device=rig->devices;
 					for (i=rig->number_of_devices;i>0;i--)
 					{
-						(*device)->signal_maximum=0;
-						(*device)->signal_minimum=1;
+						(*device)->signal_display_maximum=0;
+						(*device)->signal_display_minimum=1;
 						device++;
 					}
 				}
@@ -14585,7 +14638,7 @@ c.f update_signal_range_widget_from_highlight_signal
 			/*??JW should be copying out of and into node with MANAGER_MODIFY */
 			set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,minimum);
 #else
-			device->signal_minimum=minimum;
+			device->signal_display_minimum=minimum;
 #endif /*	defined (UNEMAP_USE_NODES) */
 			/* update the display */
 			update_signals_drawing_area(analysis->window);
@@ -14660,7 +14713,7 @@ c.f update_signal_range_widget_from_highlight_signal
 			/*??JW should be copying out of and into node with MANAGER_MODIFY */
 			set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,maximum);
 #else
-			device->signal_maximum=maximum;
+			device->signal_display_maximum=maximum;
 #endif /*	defined (UNEMAP_USE_NODES) */
 			/* update the display */
 			update_signals_drawing_area(analysis->window);
@@ -16077,7 +16130,8 @@ Creates the windows associated with the analysis work area.
 		{"analysis_write_interval",(XtPointer)analysis_write_interval},
 		{"analysis_reset_to_raw_signals",(XtPointer)analysis_reset_to_raw_signals},
 		{"analysis_set_baseline",(XtPointer)analysis_set_baseline},
-		{"analysis_set_range",(XtPointer)analysis_set_range},
+		{"analysis_set_range_frm_win",(XtPointer)analysis_set_range_frm_win},
+		{"analysis_set_range_frm_sig",(XtPointer)analysis_set_range_frm_sig},
 		{"analysis_previous_signal",(XtPointer)analysis_previous_signal},
 		{"analysis_next_signal",(XtPointer)analysis_next_signal},
 		{"analysis_accept_signal",(XtPointer)analysis_accept_signal},

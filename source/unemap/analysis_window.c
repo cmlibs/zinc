@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.c
 
-LAST MODIFIED : 29 June 2000
+LAST MODIFIED : 23 February 2001
 
 DESCRIPTION :
 ===========================================================================*/
@@ -257,7 +257,7 @@ Finds the id of the analysis range button.
 	LEAVE;
 } /* id_anal_range_auto_curr_butt */
 
-static void id_anal_range_from_curr_butt(Widget *widget_id,
+static void id_anal_rng_frm_cur_win_butt(Widget *widget_id,
 	XtPointer analysis_window,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 23 August 2000
@@ -268,7 +268,7 @@ Finds the id of the analysis range button.
 {
 	struct Analysis_window *analysis;
 
-	ENTER(id_anal_range_from_curr_butt);
+	ENTER(id_anal_rng_frm_cur_win_butt);
 	USE_PARAMETER(call_data);
 	if (analysis=(struct Analysis_window *)analysis_window)
 	{
@@ -277,10 +277,36 @@ Finds the id of the analysis range button.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"id_anal_range_from_curr_butt. Missing analysis_window");
+			"id_anal_rng_frm_cur_win_butt. Missing analysis_window");
 	}
 	LEAVE;
-} /* id_anal_range_from_curr_butt */
+} /* id_anal_rng_frm_cur_win_butt */
+
+static void id_anal_rng_frm_cur_sig_butt(Widget *widget_id,
+	XtPointer analysis_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 23 August 2000
+
+DESCRIPTION :
+Finds the id of the analysis range button.
+==============================================================================*/
+{
+	struct Analysis_window *analysis;
+
+	ENTER(id_anal_rng_frm_cur_sig_butt);
+	USE_PARAMETER(call_data);
+	if (analysis=(struct Analysis_window *)analysis_window)
+	{
+		analysis->interval.range_from_curr_signal_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_anal_rng_frm_cur_sig_butt. Missing analysis_window");
+	}
+	LEAVE;
+} /* id_anal_rng_frm_cur_sig_butt */
+
 
 static void id_anal_range_accep_undec_butt(Widget *widget_id,
 	XtPointer analysis_window,XtPointer call_data)
@@ -4077,8 +4103,10 @@ returned.
 			(XtPointer)id_anal_range_auto_all_butt},
 		{"id_anal_range_auto_curr_butt",
 			(XtPointer)id_anal_range_auto_curr_butt},
-		{"id_anal_range_from_curr_butt",
-			(XtPointer)id_anal_range_from_curr_butt},
+		{"id_anal_rng_frm_cur_win_butt",
+			(XtPointer)id_anal_rng_frm_cur_win_butt},
+		{"id_anal_rng_frm_cur_sig_butt",
+			(XtPointer)id_anal_rng_frm_cur_sig_butt},
 		{"id_anal_range_accep_undec_butt",
 			(XtPointer)id_anal_range_accep_undec_butt},
 		{"identify_analysis_previous_butt",
@@ -4324,6 +4352,7 @@ returned.
 				analysis->interval.range_auto_all_button=(Widget)NULL;
 				analysis->interval.range_auto_curr_button=(Widget)NULL;
 				analysis->interval.range_from_curr_button=(Widget)NULL;
+				analysis->interval.range_from_curr_signal_button=(Widget)NULL;
 				analysis->interval.range_accep_undec_button=(Widget)NULL;
 				analysis->interval.signal_range=(Widget)NULL;
 				analysis->interval.minimum_value=(Widget)NULL;
@@ -5374,8 +5403,8 @@ c.f analysis_set_highlight_max, analysis_set_highlight_min
 			}		
 #else
 			return_code=1;
-			minimum=device->signal_minimum;
-			maximum=device->signal_maximum;
+			minimum=device->signal_display_minimum;
+			maximum=device->signal_display_maximum;
 #endif /*	defined (UNEMAP_USE_NODES) */
 			sprintf(min_string,"%.3g",minimum);
 			sprintf(max_string,"%.3g",maximum);		
