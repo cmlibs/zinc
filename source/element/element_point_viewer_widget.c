@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_viewer_widget.c
 
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 Widget for editing field values stored at an element point with multiple text
@@ -37,7 +37,7 @@ Module types
 
 struct Element_point_viewer_widget_struct
 /*******************************************************************************
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 Contains all the information carried by the element_point_viewer widget.
@@ -45,7 +45,12 @@ Contains all the information carried by the element_point_viewer widget.
 {
 	struct Computed_field_package *computed_field_package;
 	void *computed_field_manager_callback_id;
-	struct FE_element *current_element,*template_element;
+	/* information about the element point being edited; note element in
+		 identifier is not accessed, and should not be managed */
+	struct Element_point_ranges_identifier element_point_identifier;
+	int element_point_number;
+	/* local copy of the element from the identifier */
+	struct FE_element *template_element;
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct Callback_data update_callback;
 	Widget choose_field_form,choose_field_widget,field_viewer_form,
@@ -133,7 +138,7 @@ dynamic memory allocations and pointers.
 static void element_point_viewer_widget_update_choose_field(Widget widget,
 	void *element_point_viewer_void,void *field_void)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 Callback for change of field.
@@ -150,7 +155,8 @@ Callback for change of field.
 		field=(struct Computed_field *)field_void;
 		element_point_field_viewer_widget_set_element_point_field(
 			element_point_viewer->field_viewer_widget,
-			element_point_viewer->current_element,element_point_viewer->xi,field);
+			&(element_point_viewer->element_point_identifier),
+			element_point_viewer->element_point_number,field);
 	}
 	else
 	{
@@ -188,13 +194,14 @@ Note that delete/add messages are handled by the field chooser.
 			{
 				field=CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
 					element_point_viewer->choose_field_widget);
-				if ((!(message->object_changed))||(message->object_changed == field))
+				if ((!(message->object_changed))||
+					Computed_field_depends_on_Computed_field(field,
+						message->object_changed))
 				{
 					element_point_field_viewer_widget_set_element_point_field(
 						element_point_viewer->field_viewer_widget,
-						element_point_viewer->current_element,
-						element_point_viewer->xi,
-						field);
+						&(element_point_viewer->element_point_identifier),
+						element_point_viewer->element_point_number,field);
 				}
 			} break;
 			case MANAGER_CHANGE_ADD(Computed_field):
@@ -251,16 +258,18 @@ Global functions
 Widget create_element_point_viewer_widget(
 	Widget *element_point_viewer_widget_address,
 	Widget parent,struct Computed_field_package *computed_field_package,
-	struct FE_element *initial_element,FE_value *initial_xi)
+	struct Element_point_ranges_identifier *initial_element_point_identifier,
+	int initial_element_point_number)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 Creates a widget for displaying and editing the contents of the element point
-at <initial_element><initial_xi>. Can also pass a NULL element here and use the
-Element_Point_viewer_widget_set_element_point function instead.
-<initial_element> should be a local copy of a global element; up to the
-parent dialog to make changes global.
+at <initial_element_point_identifier> <initial_element_point_number>.
+<initial_element_point_identifier> must be passed, but no initial element point
+is referred to if its element is NULL. The element in the identifier, if any,
+should be a local copy of a global element; up to the parent dialog to make
+changes global.
 ==============================================================================*/
 {
 	int init_widgets;
@@ -270,6 +279,7 @@ parent dialog to make changes global.
 	struct Computed_field *initial_field;
 	struct Callback_data callback;
 	struct Element_point_viewer_widget_struct *element_point_viewer=NULL;
+	struct FE_element *initial_element;
 	static MrmRegisterArg callback_list[]=
 	{
 		{"elem_pt_vw_id_choose_field_form",(XtPointer)
@@ -286,7 +296,11 @@ parent dialog to make changes global.
 
 	ENTER(create_element_point_viewer_widget);
 	return_widget=(Widget)NULL;
-	if (element_point_viewer_widget_address&&parent&&computed_field_package)
+	if (element_point_viewer_widget_address&&parent&&computed_field_package&&
+		initial_element_point_identifier&&
+		(((struct FE_element *)NULL==initial_element_point_identifier->element)||
+			Element_point_ranges_identifier_element_point_number_is_valid(
+				initial_element_point_identifier,initial_element_point_number)))
 	{
 		if (MrmOpenHierarchy_base64_string(element_point_viewer_widget_uidh,
 			&element_point_viewer_hierarchy,&element_point_viewer_hierarchy_open))
@@ -296,7 +310,7 @@ parent dialog to make changes global.
 				struct Element_point_viewer_widget_struct,1))
 			{
 				/* initialise the structure */
-				if (initial_element)
+				if (initial_element=initial_element_point_identifier->element)
 				{
 					choose_field_conditional_function=
 						Computed_field_is_defined_in_element_conditional;
@@ -312,7 +326,10 @@ parent dialog to make changes global.
 						computed_field_package));
 				element_point_viewer->computed_field_package=computed_field_package;
 				element_point_viewer->computed_field_manager_callback_id=(void *)NULL;
-				element_point_viewer->current_element=initial_element;
+				COPY(Element_point_ranges_identifier)(
+					&(element_point_viewer->element_point_identifier),
+					initial_element_point_identifier);
+				element_point_viewer->element_point_number=initial_element_point_number;
 				if (initial_element)
 				{
 					element_point_viewer->template_element=ACCESS(FE_element)(
@@ -366,7 +383,9 @@ parent dialog to make changes global.
 							if (!(create_element_point_field_viewer_widget(
 								&(element_point_viewer->field_viewer_widget),
 								element_point_viewer->field_viewer_form,
-								initial_element,initial_xi,initial_field)))
+								&(element_point_viewer->element_point_identifier),
+								initial_element_point_number,
+								initial_field)))
 							{
 								init_widgets=0;
 							}
@@ -492,20 +511,22 @@ viewer have changed.
 } /* element_point_viewer_widget_set_callback */
 
 int element_point_viewer_widget_get_element_point(
-	Widget element_point_viewer_widget,struct FE_element **element_address,
-	FE_value *xi)
+	Widget element_point_viewer_widget,
+	struct Element_point_ranges_identifier *element_point_identifier,
+	int *element_point_number_address)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 Returns the element_point being edited in the <element_point_viewer_widget>.
 ==============================================================================*/
 {
-	int dimension,i,return_code;
+	int return_code;
 	struct Element_point_viewer_widget_struct *element_point_viewer;
 
 	ENTER(element_point_viewer_widget_get_element_point);
-	if (element_point_viewer_widget&&element_address&&xi)
+	if (element_point_viewer_widget&&element_point_identifier&&
+		element_point_number_address)
 	{
 		element_point_viewer=(struct Element_point_viewer_widget_struct *)NULL;
 		/* get the element_point_viewer structure from the widget */
@@ -513,16 +534,9 @@ Returns the element_point being edited in the <element_point_viewer_widget>.
 			XmNuserData,&element_point_viewer,NULL);
 		if (element_point_viewer)
 		{
-			*element_address=element_point_viewer->current_element;
-			if (element_point_viewer->current_element)
-			{
-				dimension=
-					get_FE_element_dimension(element_point_viewer->current_element);
-				for (i=0;i<dimension;i++)
-				{
-					xi[i]=element_point_viewer->xi[i];
-				}
-			}
+			COPY(Element_point_ranges_identifier)(element_point_identifier,
+				&(element_point_viewer->element_point_identifier));
+			*element_point_number_address=element_point_viewer->element_point_number;
 			return_code=1;
 		}
 		else
@@ -544,25 +558,30 @@ Returns the element_point being edited in the <element_point_viewer_widget>.
 } /* element_point_viewer_widget_get_element_point */
 
 int element_point_viewer_widget_set_element_point(
-	Widget element_point_viewer_widget,struct FE_element *element,FE_value *xi)
+	Widget element_point_viewer_widget,
+	struct Element_point_ranges_identifier *element_point_identifier,
+	int element_point_number)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 Sets the element point being edited in the <element_point_viewer_widget>. Note
 that the viewer works on the element itself, not a local copy. Hence, only pass
-unmanaged elements to this widget.
+unmanaged elements in the identifier to this widget.
 ==============================================================================*/
 {
-	int change_conditional_function,dimension,i,return_code;
+	int change_conditional_function,return_code;
 	MANAGER_CONDITIONAL_FUNCTION(Computed_field)
 		*choose_field_conditional_function;
 	struct Computed_field *field;
-	struct FE_element *template_element;
+	struct FE_element *element,*template_element;
 	struct Element_point_viewer_widget_struct *element_point_viewer;
 
 	ENTER(element_point_viewer_widget_set_element_point);
-	if (element_point_viewer_widget&&xi)
+	if (element_point_viewer_widget&&element_point_identifier&&
+		(((struct FE_element *)NULL==element_point_identifier->element)||
+			Element_point_ranges_identifier_element_point_number_is_valid(
+				element_point_identifier,element_point_number)))
 	{
 		element_point_viewer=(struct Element_point_viewer_widget_struct *)NULL;
 		/* get the element_point_viewer structure from the widget */
@@ -571,13 +590,8 @@ unmanaged elements to this widget.
 		if (element_point_viewer)
 		{
 			change_conditional_function=0;
-			if (element)
+			if (element=element_point_identifier->element)
 			{
-				dimension=get_FE_element_dimension(element);
-				for (i=0;i<dimension;i++)
-				{
-					element_point_viewer->xi[i]=xi[i];
-				}
 				field=CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
 					element_point_viewer->choose_field_widget);
 				if (!(element_point_viewer->template_element)||
@@ -601,15 +615,15 @@ unmanaged elements to this widget.
 			else
 			{
 				field=(struct Computed_field *)NULL;
-				if (element_point_viewer->current_element)
-				{
-					choose_field_conditional_function=
-						(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
-					change_conditional_function=1;
-					template_element=(struct FE_element *)NULL;
-				}
+				choose_field_conditional_function=
+					(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
+				change_conditional_function=1;
+				template_element=(struct FE_element *)NULL;
 			}
-			element_point_viewer->current_element=element;
+			COPY(Element_point_ranges_identifier)(
+				&(element_point_viewer->element_point_identifier),
+				element_point_identifier);
+			element_point_viewer->element_point_number=element_point_number;
 			if (change_conditional_function)
 			{
 				REACCESS(FE_element)(&(element_point_viewer->template_element),
@@ -620,7 +634,9 @@ unmanaged elements to this widget.
 					(void *)element_point_viewer->template_element,field);
 			}
 			element_point_field_viewer_widget_set_element_point_field(
-				element_point_viewer->field_viewer_widget,element,xi,field);
+				element_point_viewer->field_viewer_widget,
+				&(element_point_viewer->element_point_identifier),
+				element_point_number,field);
 			if (element)
 			{
 				XtManageChild(element_point_viewer->widget);
