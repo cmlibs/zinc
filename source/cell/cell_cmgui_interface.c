@@ -506,7 +506,7 @@ Creates a Cell_cmgui_interface object, setting the data fields.
       form = Cell_window_get_scene_form(cmgui_interface->cell_window);
 		if (graphics_buffer = create_Graphics_buffer_X3d(
 			form, X3dCOLOUR_RGB_MODE, 
-			X3dDOUBLE_BUFFERING, 
+			X3dDOUBLE_BUFFERING, X3dMONO_BUFFERING,
 			User_interface_get_specified_visual_id(
 			cmgui_interface->user_interface)))
 		{

@@ -3052,7 +3052,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 							}
 							graphics_buffer = create_Graphics_buffer_X3d(
 								emoter_slider->animated_pixmap, X3dCOLOUR_RGB_MODE, 
-								X3dSINGLE_BUFFERING, 
+								X3dSINGLE_BUFFERING, X3dMONO_BUFFERING,
 								User_interface_get_specified_visual_id(
 								shared_data->user_interface));
 							emoter_slider->scene_viewer = CREATE(Scene_viewer)(
