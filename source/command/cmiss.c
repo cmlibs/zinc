@@ -28647,6 +28647,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			-display for example for both */
 		create_interpreter(argc, argv, comfile_name, &status);
 
+		interpreter_set_display_message_function(display_message, &status);
+
 		/* SAB Set a useful default for the interpreter variable, need to 
 			specify full name as this function does not run embedded by
 			a package directive */
