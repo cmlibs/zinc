@@ -170,7 +170,7 @@ It must therefore be transposed to be used by OpenGL.
 ==============================================================================*/
 {
 	double temp_matrix[16];
-	int i,return_code;
+	int return_code;
 
 	ENTER(Interaction_volume_calculate_projection_matrix);
 	if (interaction_volume)
