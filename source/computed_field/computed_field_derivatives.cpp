@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_derivatives.c
 
-LAST MODIFIED : 17 December 2001
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 Implements computed_fields for calculating various derivative quantities such
@@ -1249,7 +1249,7 @@ If the field is of type COMPUTED_FIELD_CURL, the
 static int define_Computed_field_type_curl(struct Parse_state *state,
 	void *field_void,void *computed_field_derivatives_package_void)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_CURL (if it is not 
@@ -1272,26 +1272,13 @@ already) and allows its contents to be modified.
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
-		coordinate_field=(struct Computed_field *)NULL;
-		vector_field=(struct Computed_field *)NULL;
+		coordinate_field = (struct Computed_field *)NULL;
+		vector_field = (struct Computed_field *)NULL;
 		if (computed_field_curl_type_string ==
 			Computed_field_get_type_string(field))
 		{
 			return_code=Computed_field_get_type_curl(field,
 				&vector_field,&coordinate_field);
-		}
-		else
-		{
-			if (!(coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-				"default_coordinate",computed_field_derivatives_package->computed_field_manager)))
-			{
-				coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_3_components,(void *)NULL,
-					computed_field_derivatives_package->computed_field_manager);
-			}
-			vector_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_3_components,(void *)NULL,
-				computed_field_derivatives_package->computed_field_manager);
 		}
 		if (return_code)
 		{
@@ -1949,7 +1936,7 @@ If the field is of type COMPUTED_FIELD_DIVERGENCE, the
 static int define_Computed_field_type_divergence(struct Parse_state *state,
 	void *field_void,void *computed_field_derivatives_package_void)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_DIVERGENCE (if it is not 
@@ -1979,19 +1966,6 @@ already) and allows its contents to be modified.
 		{
 			return_code=Computed_field_get_type_divergence(field,
 				&vector_field,&coordinate_field);
-		}
-		else
-		{
-			if (!(coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-				"default_coordinate",computed_field_derivatives_package->computed_field_manager)))
-			{
-				coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_up_to_3_numerical_components,(void *)NULL,
-					computed_field_derivatives_package->computed_field_manager);
-			}
-			vector_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_up_to_3_numerical_components,(void *)NULL,
-				computed_field_derivatives_package->computed_field_manager);
 		}
 		if (return_code)
 		{

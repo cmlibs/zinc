@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_window_projection.c
 
-LAST MODIFIED : 17 December 2001
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 Implements a computed_field which maintains a graphics transformation 
@@ -1250,7 +1250,7 @@ Use function Computed_field_get_type to determine the field type.
 static int define_Computed_field_type_window_projection(struct Parse_state *state,
 	void *field_void,void *computed_field_window_projection_package_void)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_WINDOW_PROJECTION (if it is not 
@@ -1284,6 +1284,8 @@ already) and allows its contents to be modified.
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
+		pane_number = 1;
+		projection_type = TEXTURE_PROJECTION;
 		source_field = (struct Computed_field *)NULL;
 		graphics_window = (struct Graphics_window *)NULL;
 		if (computed_field_window_projection_type_string ==
@@ -1292,39 +1294,6 @@ already) and allows its contents to be modified.
 			return_code=Computed_field_get_type_window_projection(field,
 				&source_field, &graphics_window, &pane_number, &projection_type);
 			pane_number++;
-		}
-		else
-		{
-			pane_number = 1;
-			projection_type = TEXTURE_PROJECTION;
-			if (!(((source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_3_components,(void *)NULL,
-				computed_field_window_projection_package->computed_field_manager))) &&
-				(graphics_window = FIRST_OBJECT_IN_MANAGER_THAT(Graphics_window)(
-				(MANAGER_CONDITIONAL_FUNCTION(Graphics_window) *)NULL,
-				(void *)NULL,
-				computed_field_window_projection_package->graphics_window_manager))))
-			{
-				if (strcmp(PARSER_HELP_STRING,state->current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
-				{
-					/* This is only a failure if we aren't asking for help */
-					if (!source_field)
-					{
-						display_message(ERROR_MESSAGE,
-							"At least one 3 component field must exist for a window_projection field.");
-					}
-					else
-					{
-						if (!graphics_window)
-						{
-							display_message(ERROR_MESSAGE,
-								"At least one graphics window must exist for a window_projection field.");
-						}
-					}
-					return_code = 0;
-				}
-			}
 		}
 		if (return_code)
 		{

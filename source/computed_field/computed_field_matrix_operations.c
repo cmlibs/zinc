@@ -2738,16 +2738,16 @@ already) and allows its contents to be modified.
 				return_code=Computed_field_get_type_matrix_multiply(field,
 					&number_of_rows,&(source_fields[0]),&(source_fields[1]));
 			}
-			/* ACCESS the source fields for set_Computed_field_array */
-			for (i=0;i<2;i++)
-			{
-				if (source_fields[i])
-				{
-					ACCESS(Computed_field)(source_fields[i]);
-				}
-			}
 			if (return_code)
 			{
+				/* ACCESS the source fields for set_Computed_field_array */
+				for (i=0;i<2;i++)
+				{
+					if (source_fields[i])
+					{
+						ACCESS(Computed_field)(source_fields[i]);
+					}
+				}
 				/* try to handle help first */
 				if (current_token=state->current_token)
 				{
@@ -2814,12 +2814,12 @@ already) and allows its contents to be modified.
 					display_message(ERROR_MESSAGE, "Missing command options");
 					return_code = 0;
 				}
-			}
-			for (i=0;i<2;i++)
-			{
-				if (source_fields[i])
+				for (i=0;i<2;i++)
 				{
-					DEACCESS(Computed_field)(&(source_fields[i]));
+					if (source_fields[i])
+					{
+						DEACCESS(Computed_field)(&(source_fields[i]));
+					}
 				}
 			}
 			DEALLOCATE(source_fields);
@@ -3536,7 +3536,7 @@ Use function Computed_field_get_type to determine the field type.
 static int define_Computed_field_type_projection(struct Parse_state *state,
 	void *field_void,void *computed_field_matrix_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 5 May 2000
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_PROJECTION (if it is not already)
@@ -3544,36 +3544,14 @@ and allows its contents to be modified.
 ==============================================================================*/
 {
 	char *current_token;
-	double *projection_matrix,*temp_projection_matrix;
-	int i,number_of_components,number_of_projection_values,return_code,
+	double *projection_matrix, *temp_projection_matrix;
+	int i, number_of_components, number_of_projection_values, return_code,
 		temp_number_of_projection_values;
-	static struct Modifier_entry 
-		field_option_table[]=
-		{
-			{"field",NULL,NULL,set_Computed_field_conditional},
-			{NULL,NULL,NULL,NULL}
-		},
-		number_of_components_option_table[]=
-		{
-			{"number_of_components",NULL,NULL,set_int_positive},
-			{NULL,NULL,NULL,NULL}
-		},
-		projection_matrix_option_table[]=
-		{
-			{"projection_matrix",NULL,NULL,set_double_vector},
-			{NULL,NULL,NULL,NULL}
-		},
-		help_option_table[]=
-		{
-			{"field",NULL,NULL,set_Computed_field_conditional},
-			{"number_of_components",NULL,NULL,set_int_positive},
-			{"projection_matrix",NULL,NULL,set_FE_value_array},
-			{NULL,NULL,NULL,NULL}
-		};
-	struct Computed_field *field,*source_field;
+	struct Computed_field *field, *source_field;
 	struct Computed_field_matrix_operations_package 
 		*computed_field_matrix_operations_package;
-	struct Set_Computed_field_conditional_data set_field_data;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_source_field_data;
 
 	ENTER(define_Computed_field_type_projection);
 	if (state&&(field=(struct Computed_field *)field_void)&&
@@ -3581,125 +3559,150 @@ and allows its contents to be modified.
 			(struct Computed_field_matrix_operations_package *)
 			computed_field_matrix_operations_package_void))
 	{
-		return_code=1;
-		set_field_data.conditional_function=
+		return_code = 1;
+		set_source_field_data.conditional_function =
 			(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
-		set_field_data.conditional_function_user_data=(void *)NULL;
-		set_field_data.computed_field_manager=
+		set_source_field_data.conditional_function_user_data = (void *)NULL;
+		set_source_field_data.computed_field_manager =
 			computed_field_matrix_operations_package->computed_field_manager;
-		/* get valid parameters for projection field */
-		source_field=(struct Computed_field *)NULL;
-		projection_matrix=(double *)NULL;
+		source_field = (struct Computed_field *)NULL;
+		projection_matrix = (double *)NULL;
 		if (computed_field_projection_type_string == field->type_string)
 		{
-			return_code=Computed_field_get_type_projection(field,
-				&source_field,&number_of_components,&projection_matrix);
-			number_of_projection_values = (source_field->number_of_components + 1)
-				* (number_of_components + 1);
+			if (return_code = Computed_field_get_type_projection(field,
+				&source_field, &number_of_components, &projection_matrix))
+			{
+				number_of_projection_values = (source_field->number_of_components + 1)
+					* (number_of_components + 1);
+			}
 		}
 		else
 		{
-			/* ALLOCATE and fill array of projection_matrix - with zeroes */
+			/* ALLOCATE and fill array of projection_matrix - with identity */
 			number_of_components = 0;
 			number_of_projection_values = 1;
-			if (ALLOCATE(projection_matrix,double,1))
+			if (ALLOCATE(projection_matrix, double, 1))
 			{
-				projection_matrix[0]=0.0;
+				projection_matrix[0] = 0.0;
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"define_Computed_field_type_projection.  Not enough memory");
-				return_code=0;
+				return_code = 0;
 			}
 		}
 		if (return_code)
 		{
-			/* try to handle help first */
-			if (current_token=state->current_token)
+			if (source_field)
 			{
-				if (!(strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
-				{
-					(help_option_table[0]).to_be_modified= &source_field;
-					(help_option_table[0]).user_data= &set_field_data;
-					(help_option_table[1]).to_be_modified= &number_of_projection_values;
-					(help_option_table[2]).to_be_modified= projection_matrix;
-					(help_option_table[2]).user_data= &number_of_projection_values;
-					return_code=process_multiple_options(state,help_option_table);
-				}
+				ACCESS(Computed_field)(source_field);
 			}
+
+			/* try to handle help first */
+			if ((current_token = state->current_token) &&
+				(!(strcmp(PARSER_HELP_STRING,current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
+			{
+				option_table = CREATE(Option_table)();					
+				Option_table_add_entry(option_table, "field", &source_field,
+					&set_source_field_data, set_Computed_field_conditional);
+				Option_table_add_entry(option_table, "number_of_components",
+					&number_of_components, NULL, set_int_positive);
+				Option_table_add_entry(option_table, "projection_matrix",
+					projection_matrix, &number_of_projection_values,
+					set_double_vector);
+				return_code = Option_table_multi_parse(option_table, state);
+				DESTROY(Option_table)(&option_table);
+			}
+
 			/* keep the number_of_projection_values to maintain any current ones */
 			temp_number_of_projection_values = number_of_projection_values;
 			/* parse the field... */
-			if (return_code&&(current_token=state->current_token))
+			if (return_code && (current_token = state->current_token))
 			{
 				/* ... only if the "field" token is next */
-				if (fuzzy_string_compare(current_token,"field"))
+				if (fuzzy_string_compare(current_token, "field"))
 				{
-					(field_option_table[0]).to_be_modified= &source_field;
-					(field_option_table[0]).user_data= &set_field_data;
-					return_code=process_option(state,field_option_table);
-				}
-				if (! source_field)
-				{
-					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_projection.  Invalid field");
-					return_code=0;
+					option_table = CREATE(Option_table)();
+					/* field */
+					Option_table_add_entry(option_table, "field", &source_field,
+						&set_source_field_data, set_Computed_field_conditional);
+					if (return_code = Option_table_parse(option_table, state))
+					{
+						if (!source_field)
+						{
+							display_message(ERROR_MESSAGE,
+								"define_Computed_field_type_projection.  No field");
+							return_code=0;
+						}
+					}
+					DESTROY(Option_table)(&option_table);
 				}
 			}
+
 			/* parse the number_of_components... */
-			if (return_code&&(current_token=state->current_token))
+			if (return_code && (current_token = state->current_token))
 			{
 				/* ... only if the "number_of_components" token is next */
-				if (fuzzy_string_compare(current_token,"number_of_components"))
+				if (fuzzy_string_compare(current_token, "number_of_components"))
 				{
-					(number_of_components_option_table[0]).to_be_modified=
-						&number_of_components;
-					return_code=process_option(state,number_of_components_option_table);
+					option_table = CREATE(Option_table)();					
+					Option_table_add_entry(option_table, "number_of_components",
+						&number_of_components, NULL, set_int_positive);
+					return_code = Option_table_parse(option_table, state);
+					DESTROY(Option_table)(&option_table);
 				}
 			}
+
+			/* ensure projection matrix is correct size; set new values to zero */
 			if (return_code)
 			{
 				number_of_projection_values = (source_field->number_of_components + 1)
 					* (number_of_components + 1);
 				if (temp_number_of_projection_values != number_of_projection_values)
 				{
-					if (REALLOCATE(temp_projection_matrix,projection_matrix,double,
+					if (REALLOCATE(temp_projection_matrix, projection_matrix, double,
 						number_of_projection_values))
 					{
-						projection_matrix=temp_projection_matrix;
+						projection_matrix = temp_projection_matrix;
 						/* clear any new projection_matrix to zero */
-						for (i=temp_number_of_projection_values;i<number_of_projection_values;i++)
+						for (i = temp_number_of_projection_values;
+							i < number_of_projection_values; i++)
 						{
-							projection_matrix[i]=0.0;
+							projection_matrix[i] = 0.0;
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"define_Computed_field_type_projection.  Not enough memory");
-						return_code=0;
+							"define_Computed_field_type_projection.  "
+							"Could not reallocate projection matrix");
+						return_code = 0;
 					}
 				}
 			}
+
 			/* parse the projection_matrix */
-			if (return_code&&state->current_token)
+			if (return_code && state->current_token)
 			{
-				(projection_matrix_option_table[0]).to_be_modified= projection_matrix;
-				(projection_matrix_option_table[0]).user_data= &number_of_projection_values;
-				return_code=process_multiple_options(state,projection_matrix_option_table);
+				option_table = CREATE(Option_table)();					
+				Option_table_add_entry(option_table, "projection_matrix",
+					projection_matrix, &number_of_projection_values,
+					set_double_vector);
+				return_code = Option_table_multi_parse(option_table, state);
+				DESTROY(Option_table)(&option_table);
 			}
 			if (return_code)
 			{
-				return_code=
-					Computed_field_set_type_projection(field,source_field,number_of_components,projection_matrix);
+				return_code = Computed_field_set_type_projection(field, source_field,
+					number_of_components, projection_matrix);
 			}
 			if (!return_code)
 			{
-				if ((!state->current_token)||
-					(strcmp(PARSER_HELP_STRING,state->current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+				if ((!state->current_token) ||
+					(strcmp(PARSER_HELP_STRING, state->current_token) &&
+					strcmp(PARSER_RECURSIVE_HELP_STRING, state->current_token)))
 				{
 					/* error */
 					display_message(ERROR_MESSAGE,
@@ -3708,34 +3711,22 @@ and allows its contents to be modified.
 			}
 			/* clean up the projection_matrix array */
 			DEALLOCATE(projection_matrix);
+			if (source_field)
+			{
+				DEACCESS(Computed_field)(&source_field);
+			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"define_Computed_field_type_projection.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* define_Computed_field_type_projection */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 struct Computed_field_transpose_type_specific_data
 /*******************************************************************************
@@ -4306,7 +4297,7 @@ If the field is of type COMPUTED_FIELD_TRANSPOSE, the
 static int define_Computed_field_type_transpose(struct Parse_state *state,
 	void *field_void,void *computed_field_matrix_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 26 October 2000
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_TRANSPOSE (if it is not 
@@ -4337,13 +4328,13 @@ already) and allows its contents to be modified.
 			return_code=Computed_field_get_type_transpose(field,
 				&source_number_of_rows,&source_field);
 		}
-		/* ACCESS the source fields for set_Computed_field_conditional */
-		if (source_field)
-		{
-			ACCESS(Computed_field)(source_field);
-		}
 		if (return_code)
 		{
+			/* ACCESS the source fields for set_Computed_field_conditional */
+			if (source_field)
+			{
+				ACCESS(Computed_field)(source_field);
+			}
 			/* try to handle help first */
 			if (current_token = state->current_token)
 			{
@@ -4398,10 +4389,10 @@ already) and allows its contents to be modified.
 				display_message(ERROR_MESSAGE, "Missing command options");
 				return_code = 0;
 			}
-		}
-		if (source_field)
-		{
-			DEACCESS(Computed_field)(&source_field);
+			if (source_field)
+			{
+				DEACCESS(Computed_field)(&source_field);
+			}
 		}
 	}
 	else

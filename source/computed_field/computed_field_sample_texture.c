@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_sample_texture.c
 
-LAST MODIFIED : 17 December 2001
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 Implements a computed_field which maintains a graphics transformation 
@@ -646,7 +646,7 @@ returned.
 static int define_Computed_field_type_sample_texture(struct Parse_state *state,
 	void *field_void,void *computed_field_sample_texture_package_void)
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_SAMPLE_TEXTURE (if it is not 
@@ -670,32 +670,15 @@ already) and allows its contents to be modified.
 	{
 		return_code=1;
 		/* get valid parameters for projection field */
+		minimum = 0.0;
+		maximum = 1.0;
 		texture_coordinate_field = (struct Computed_field *)NULL;
 		texture = (struct Texture *)NULL;
 		if (computed_field_sample_texture_type_string ==
 			Computed_field_get_type_string(field))
 		{
-			return_code=Computed_field_get_type_sample_texture(field,
+			return_code = Computed_field_get_type_sample_texture(field,
 				&texture_coordinate_field, &texture, &minimum, &maximum);
-		}
-		else
-		{
-			minimum = 0.0;
-			maximum = 1.0;
-			if (!((texture_coordinate_field=
-				FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_at_least_2_components,(void *)NULL,
-				computed_field_sample_texture_package->computed_field_manager))))
-			{
-				if (strcmp(PARSER_HELP_STRING,state->current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
-				{
-					/* This is only a failure if we aren't asking for help */
-					display_message(ERROR_MESSAGE,
-						"At least one field of 3 components must exist for a sample_texture field.");
-					return_code = 0;
-				}
-			}
 		}
 		if (return_code)
 		{

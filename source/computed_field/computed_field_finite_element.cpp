@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_finite_element.c
 
-LAST MODIFIED : 17 December 2001
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -5313,9 +5313,9 @@ If the field is of type COMPUTED_FIELD_EMBEDDED, the FE_field being
 } /* Computed_field_get_type_embedded */
 
 static int define_Computed_field_type_embedded(struct Parse_state *state,
-	void *field_void,void *computed_field_finite_element_package_void)
+	void *field_void, void *computed_field_finite_element_package_void)
 /*******************************************************************************
-LAST MODIFIED : 23 April 1999
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_EMBEDDED (if it is not already)
@@ -5323,33 +5323,26 @@ and allows its contents to be modified.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *source_field,*field;
+	struct Computed_field *source_field, *field;
 	struct Computed_field_finite_element_package *computed_field_finite_element_package;
 	struct FE_field *fe_field;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_field_data;
 
 	ENTER(define_Computed_field_type_embedded);
-	if (state&&(field=(struct Computed_field *)field_void)&&
-		(computed_field_finite_element_package=
+	if (state && (field = (struct Computed_field *)field_void) &&
+		(computed_field_finite_element_package =
 			(struct Computed_field_finite_element_package *)
 			computed_field_finite_element_package_void))
 	{
-		return_code=1;
-		fe_field=(struct FE_field *)NULL;
-		source_field=(struct Computed_field *)NULL;
-		if (Computed_field_get_type_string(field)==computed_field_embedded_type_string)
+		return_code = 1;
+		fe_field = (struct FE_field *)NULL;
+		source_field = (struct Computed_field *)NULL;
+		if (computed_field_embedded_type_string ==
+			Computed_field_get_type_string(field))
 		{
-			return_code=Computed_field_get_type_embedded(field,&fe_field,&source_field);
-		}
-		else
-		{
-			fe_field=FIRST_OBJECT_IN_MANAGER_THAT(FE_field)(
-				FE_field_has_value_type,(void *)ELEMENT_XI_VALUE,
-				computed_field_finite_element_package->fe_field_manager);
-			source_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_numerical_components,(void *)NULL,
-				computed_field_finite_element_package->computed_field_manager);
+			return_code =
+				Computed_field_get_type_embedded(field, &fe_field, &source_field);
 		}
 		if (return_code)
 		{
@@ -5361,32 +5354,33 @@ and allows its contents to be modified.
 			{
 				ACCESS(Computed_field)(source_field);
 			}
-			option_table=CREATE(Option_table)();
-			/* fe_field */
-			Option_table_add_entry(option_table,"element_xi", &fe_field,
-				computed_field_finite_element_package->fe_field_manager,
-				set_FE_field);
-			set_field_data.conditional_function=
+			option_table = CREATE(Option_table)();
+			/* element_xi FE_field */
+			Option_table_add_entry(option_table, "element_xi", &fe_field,
+				computed_field_finite_element_package->fe_field_manager, set_FE_field);
+			set_field_data.conditional_function =
 				Computed_field_has_numerical_components;
-			set_field_data.conditional_function_user_data=(void *)NULL;
-			set_field_data.computed_field_manager=
+			set_field_data.conditional_function_user_data = (void *)NULL;
+			set_field_data.computed_field_manager =
 				computed_field_finite_element_package->computed_field_manager;
-			Option_table_add_entry(option_table,"field",&source_field,
-				&set_field_data,set_Computed_field_conditional);
-			return_code=Option_table_multi_parse(option_table,state);
+			Option_table_add_entry(option_table, "field", &source_field,
+				&set_field_data, set_Computed_field_conditional);
+			return_code = Option_table_multi_parse(option_table, state);
 			DESTROY(Option_table)(&option_table);
 			if (return_code)
 			{
-				if (fe_field&&source_field)
+				if (fe_field && source_field)
 				{
-					return_code=Computed_field_set_type_embedded(field,fe_field,source_field);
+					return_code = Computed_field_set_type_embedded(field, fe_field,
+						source_field);
 					Computed_field_set_coordinate_system_from_sources(field);
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_embedded.  FE_field or source field not selected");
-					return_code=0;
+						"define_Computed_field_type_embedded.  "
+						"FE_field or source field not selected");
+					return_code = 0;
 				}
 			}
 			if (fe_field)
@@ -5403,7 +5397,7 @@ and allows its contents to be modified.
 	{
 		display_message(ERROR_MESSAGE,
 			"define_Computed_field_type_embedded.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_vector_operations.c
 
-LAST MODIFIED : 17 December 2001
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 Implements a number of basic vector operations on computed fields.
@@ -524,7 +524,7 @@ If the field is of type COMPUTED_FIELD_NORMALISE, the
 static int define_Computed_field_type_normalise(struct Parse_state *state,
 	void *field_void,void *computed_field_vector_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_NORMALISE (if it is not 
@@ -550,24 +550,7 @@ already) and allows its contents to be modified.
 		if (computed_field_normalise_type_string ==
 			Computed_field_get_type_string(field))
 		{
-			return_code=Computed_field_get_type_normalise(field, &source_field);
-		}
-		else
-		{
-			if (!((source_field=
-				FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_numerical_components,(void *)NULL,
-				computed_field_vector_operations_package->computed_field_manager))))
-			{
-				if (strcmp(PARSER_HELP_STRING,state->current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
-				{
-					/* This is only a failure if we aren't asking for help */
-					display_message(ERROR_MESSAGE,
-						"At least one field with numerical components must exist for a normalise field.");
-					return_code = 0;
-				}
-			}
+			return_code = Computed_field_get_type_normalise(field, &source_field);
 		}
 		if (return_code)
 		{
@@ -576,7 +559,6 @@ already) and allows its contents to be modified.
 			{
 				ACCESS(Computed_field)(source_field);
 			}
-
 			option_table = CREATE(Option_table)();
 			/* field */
 			set_source_field_data.computed_field_manager=
@@ -1161,7 +1143,7 @@ DESCRIPTION :
 int Computed_field_set_type_cross_product(struct Computed_field *field,
 	int dimension,	struct Computed_field **source_fields)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_CROSS_PRODUCT with the supplied
@@ -1174,10 +1156,9 @@ although its cache may be lost.
 	struct Computed_field **temp_source_fields;
 
 	ENTER(Computed_field_set_type_cross_product);
-	if (field&&Computed_field_has_up_to_4_numerical_components(field, NULL)&&
-		source_fields)
+	if (field && (2 <= dimension) && (4 >= dimension) && source_fields)
 	{
-		return_code=1;
+		return_code = 1;
 		for (i = 0 ; return_code && (i < dimension - 1) ; i++)
 		{
 			if (!source_fields[i] || 
@@ -1314,7 +1295,7 @@ If the field is of type COMPUTED_FIELD_CROSS_PRODUCT, the
 static int define_Computed_field_type_cross_product(struct Parse_state *state,
 	void *field_void,void *computed_field_vector_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_CROSS_PRODUCT (if it is not 
@@ -1324,7 +1305,7 @@ already) and allows its contents to be modified.
 	char *current_token;
 	int dimension, i, number_of_source_fields, return_code,
 		temp_number_of_source_fields;
-	struct Computed_field *field,**source_fields,*temp_field, **temp_source_fields;
+	struct Computed_field *field, **source_fields, **temp_source_fields;
 	struct Computed_field_vector_operations_package 
 		*computed_field_vector_operations_package;
 	struct Option_table *option_table;
@@ -1337,109 +1318,103 @@ already) and allows its contents to be modified.
 		(struct Computed_field_vector_operations_package *)
 		computed_field_vector_operations_package_void))
 	{
-		return_code=1;
+		return_code = 1;
 		/* get valid parameters for projection field */
 		source_fields = (struct Computed_field **)NULL;
 		if (computed_field_cross_product_type_string ==
 			Computed_field_get_type_string(field))
 		{
-			return_code=Computed_field_get_type_cross_product(field, &dimension,
+			return_code = Computed_field_get_type_cross_product(field, &dimension,
 				&source_fields);
 			number_of_source_fields = dimension - 1;
 		}
 		else
 		{
 			dimension = 3;
-			temp_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_3_components,(void *)NULL,
-				computed_field_vector_operations_package->computed_field_manager);
 			number_of_source_fields = dimension - 1;
-			if (ALLOCATE(source_fields,struct Computed_field *,number_of_source_fields))
+			if (ALLOCATE(source_fields, struct Computed_field *,
+				number_of_source_fields))
 			{
-				for (i=0;i<number_of_source_fields;i++)
+				for (i = 0; i < number_of_source_fields; i++)
 				{
-					source_fields[i]=temp_field;
+					source_fields[i] = (struct Computed_field *)NULL;
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"define_Computed_field_type_cross_product.  Not enough memory");
-				return_code=0;
+					"define_Computed_field_type_cross_product.  "
+					"Could not allocate source fields array");
+				return_code = 0;
 			}
 		}
 		if (return_code)
 		{
 			/* try to handle help first */
-			if (current_token=state->current_token)
+			if (current_token = state->current_token)
 			{
 				if (!(strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token)))
 				{
 					option_table = CREATE(Option_table)();
-					Option_table_add_entry(option_table,"dimension",&dimension,
-						NULL,set_int_positive);
-					set_field_data.conditional_function=
-						Computed_field_has_n_components;
-					set_field_data.conditional_function_user_data=
-						(void *)&dimension;
-					set_field_data.computed_field_manager=
+					Option_table_add_entry(option_table, "dimension", &dimension,
+						NULL, set_int_positive);
+					set_field_data.conditional_function = Computed_field_has_n_components;
+					set_field_data.conditional_function_user_data = (void *)&dimension;
+					set_field_data.computed_field_manager =
 						computed_field_vector_operations_package->computed_field_manager;
-					set_field_array_data.number_of_fields=number_of_source_fields;
-					set_field_array_data.conditional_data= &set_field_data;
-					Option_table_add_entry(option_table,"fields",source_fields,
-						&set_field_array_data,set_Computed_field_array);
-					return_code=Option_table_multi_parse(option_table,state);
+					set_field_array_data.number_of_fields = number_of_source_fields;
+					set_field_array_data.conditional_data = &set_field_data;
+					Option_table_add_entry(option_table, "fields", source_fields,
+						&set_field_array_data, set_Computed_field_array);
+					return_code = Option_table_multi_parse(option_table, state);
 					DESTROY(Option_table)(&option_table);
 				}
 				else
 				{
 					/* ... only if the "dimension" token is next */
-					if (fuzzy_string_compare(current_token,"dimension"))
+					if (fuzzy_string_compare(current_token, "dimension"))
 					{
 						option_table = CREATE(Option_table)();
 						/* dimension */
-						Option_table_add_entry(option_table,"dimension",&dimension,
-							NULL,set_int_positive);
-						return_code = Option_table_parse(option_table,state);
+						Option_table_add_entry(option_table, "dimension", &dimension,
+							NULL, set_int_positive);
+						return_code = Option_table_parse(option_table, state);
 						DESTROY(Option_table)(&option_table);
 						if (number_of_source_fields != dimension - 1)
 						{
 							temp_number_of_source_fields = dimension - 1;
-							if (ALLOCATE(temp_source_fields,struct Computed_field *,
-								temp_number_of_source_fields))
+							if (REALLOCATE(temp_source_fields, source_fields,
+								struct Computed_field *, temp_number_of_source_fields))
 							{
-								for (i=0;i<temp_number_of_source_fields;i++)
+								source_fields = temp_source_fields;
+								/* make all the new source fields NULL */
+								for (i = number_of_source_fields;
+									i < temp_number_of_source_fields; i++)
 								{
-									if (i<number_of_source_fields)
-									{
-										temp_field=source_fields[i];
-									}
-									/* new array members access last original scalar field */
-									temp_source_fields[i]=temp_field;
+									source_fields[i] = (struct Computed_field *)NULL;
 								}
-								DEALLOCATE(source_fields);
-								source_fields=temp_source_fields;
-								number_of_source_fields=temp_number_of_source_fields;
+								number_of_source_fields = temp_number_of_source_fields;
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"define_Computed_field_type_cross_product.  Not enough memory");
-								return_code=0;
+									"define_Computed_field_type_cross_product.  "
+									"Could not reallocate source fields array");
+								return_code = 0;
 							}
 						}
-						if (dimension > 4)
+						if ((dimension < 2) || (dimension > 4))
 						{
 							display_message(ERROR_MESSAGE,
-								"Maximum supported dimension is 4.");
-							return_code=0;							
+								"Only dimensions from 2 to 4 are supported");
+							return_code = 0;							
 						}
 					}
 					if (return_code)
 					{
 						/* ACCESS the source fields for set_Computed_field_array */
-						for (i=0;i<number_of_source_fields;i++)
+						for (i = 0; i < number_of_source_fields; i++)
 						{
 							if (source_fields[i])
 							{
@@ -1447,22 +1422,21 @@ already) and allows its contents to be modified.
 							}
 						}
 						option_table = CREATE(Option_table)();
-						set_field_data.conditional_function=
+						set_field_data.conditional_function =
 							Computed_field_has_n_components;
-						set_field_data.conditional_function_user_data=
-							(void *)&dimension;
-						set_field_data.computed_field_manager=
+						set_field_data.conditional_function_user_data = (void *)&dimension;
+						set_field_data.computed_field_manager =
 							computed_field_vector_operations_package->computed_field_manager;
-						set_field_array_data.number_of_fields=number_of_source_fields;
-						set_field_array_data.conditional_data= &set_field_data;
-						Option_table_add_entry(option_table,"fields",source_fields,
-							&set_field_array_data,set_Computed_field_array);
-						if (return_code=Option_table_multi_parse(option_table,state))
+						set_field_array_data.number_of_fields = number_of_source_fields;
+						set_field_array_data.conditional_data = &set_field_data;
+						Option_table_add_entry(option_table, "fields", source_fields,
+							&set_field_array_data, set_Computed_field_array);
+						if (return_code = Option_table_multi_parse(option_table, state))
 						{
 							return_code = Computed_field_set_type_cross_product(field,
 								dimension, source_fields);
 						}
-						for (i=0;i<number_of_source_fields;i++)
+						for (i = 0; i < number_of_source_fields; i++)
 						{
 							if (source_fields[i])
 							{
@@ -2028,7 +2002,7 @@ If the field is of type COMPUTED_FIELD_DOT_PRODUCT, the
 static int define_Computed_field_type_dot_product(struct Parse_state *state,
 	void *field_void,void *computed_field_vector_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_DOT_PRODUCT (if it is not 
@@ -2054,26 +2028,13 @@ already) and allows its contents to be modified.
 		source_fields = (struct Computed_field **)NULL;
 		if (ALLOCATE(source_fields, struct Computed_field *, 2))
 		{
+			source_fields[0] = (struct Computed_field *)NULL;
+			source_fields[1] = (struct Computed_field *)NULL;
 			if (computed_field_dot_product_type_string ==
 				Computed_field_get_type_string(field))
 			{
 				return_code=Computed_field_get_type_dot_product(field, 
 					source_fields, source_fields + 1);
-			}
-			else
-			{
-				if (source_fields[0]=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_numerical_components,(void *)NULL,
-					computed_field_vector_operations_package->computed_field_manager))
-				{
-					source_fields[1] = source_fields[0];
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"define_Computed_field_type_dot_product.  No fields defined");
-					return_code=0;
-				}
 			}
 			if (return_code)
 			{
@@ -2086,7 +2047,6 @@ already) and allows its contents to be modified.
 				{
 					ACCESS(Computed_field)(source_fields[1]);
 				}
-
 				option_table = CREATE(Option_table)();
 				/* fields */
 				set_source_field_data.computed_field_manager=
@@ -2795,7 +2755,7 @@ If the field is of type COMPUTED_FIELD_MAGNITUDE, the
 static int define_Computed_field_type_magnitude(struct Parse_state *state,
 	void *field_void,void *computed_field_vector_operations_package_void)
 /*******************************************************************************
-LAST MODIFIED : 2 October 2000
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_MAGNITUDE (if it is not 
@@ -2821,24 +2781,7 @@ already) and allows its contents to be modified.
 		if (computed_field_magnitude_type_string ==
 			Computed_field_get_type_string(field))
 		{
-			return_code=Computed_field_get_type_magnitude(field, &source_field);
-		}
-		else
-		{
-			if (!((source_field=
-				FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_numerical_components,(void *)NULL,
-				computed_field_vector_operations_package->computed_field_manager))))
-			{
-				if (strcmp(PARSER_HELP_STRING,state->current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
-				{
-					/* This is only a failure if we aren't asking for help */
-					display_message(ERROR_MESSAGE,"At least one field with numerical "
-						"components must exist for a magnitude field.");
-					return_code = 0;
-				}
-			}
+			return_code = Computed_field_get_type_magnitude(field, &source_field);
 		}
 		if (return_code)
 		{
@@ -2847,7 +2790,6 @@ already) and allows its contents to be modified.
 			{
 				ACCESS(Computed_field)(source_field);
 			}
-
 			option_table = CREATE(Option_table)();
 			/* field */
 			set_source_field_data.computed_field_manager=

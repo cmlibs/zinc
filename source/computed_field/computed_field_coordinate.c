@@ -823,7 +823,7 @@ If the field is of type COMPUTED_FIELD_COORDINATE_TRANSFORMATION, the
 static int define_Computed_field_type_coordinate_transformation(struct Parse_state *state,
 	void *field_void,void *computed_field_coordinate_package_void)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_COORDINATE_TRANSFORMATION (if it is not 
@@ -843,30 +843,14 @@ already) and allows its contents to be modified.
 		(struct Computed_field_coordinate_package *)
 		computed_field_coordinate_package_void))
 	{
-		return_code=1;
+		return_code = 1;
 		/* get valid parameters for projection field */
 		source_field = (struct Computed_field *)NULL;
 		if (computed_field_coordinate_transformation_type_string ==
 			Computed_field_get_type_string(field))
 		{
-			return_code=Computed_field_get_type_coordinate_transformation(field, &source_field);
-		}
-		else
-		{
-			if (!((source_field=
-				FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-				Computed_field_has_up_to_3_numerical_components,(void *)NULL,
-				computed_field_coordinate_package->computed_field_manager))))
-			{
-				if (strcmp(PARSER_HELP_STRING,state->current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
-				{
-					/* This is only a failure if we aren't asking for help */
-					display_message(ERROR_MESSAGE,"At least one field with numerical "
-						"components must exist for a coordinate_transformation field.");
-					return_code = 0;
-				}
-			}
+			return_code =
+				Computed_field_get_type_coordinate_transformation(field, &source_field);
 		}
 		if (return_code)
 		{
@@ -875,7 +859,6 @@ already) and allows its contents to be modified.
 			{
 				ACCESS(Computed_field)(source_field);
 			}
-
 			option_table = CREATE(Option_table)();
 			/* field */
 			set_source_field_data.computed_field_manager=
@@ -1652,7 +1635,7 @@ If the field is of type COMPUTED_FIELD_VECTOR_COORDINATE_TRANSFORMATION, the
 static int define_Computed_field_type_vector_coordinate_transformation(struct Parse_state *state,
 	void *field_void,void *computed_field_coordinate_package_void)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 18 December 2001
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_VECTOR_COORDINATE_TRANSFORMATION (if it is not 
@@ -1682,26 +1665,6 @@ already) and allows its contents to be modified.
 		{
 			return_code=Computed_field_get_type_vector_coordinate_transformation(field, &vector_field, &coordinate_field);
 		}
-		else
-		{
-			if (!(((coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,
-				name)("default_coordinate",
-					computed_field_coordinate_package->computed_field_manager))||
-				(coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_up_to_3_numerical_components,(void *)NULL,
-					computed_field_coordinate_package->computed_field_manager)))&&
-				((vector_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,
-					name)("vectors",computed_field_coordinate_package->computed_field_manager))||
-				(vector_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_has_up_to_3_numerical_components,(void *)NULL,
-					computed_field_coordinate_package->computed_field_manager)))))
-			{
-				display_message(ERROR_MESSAGE,
-					"define_Computed_field_type_rc_vector.  "
-					"No valid coordinate and/or vector field available");
-				return_code=0;
-			}
-		}
 		if (return_code)
 		{
 			/* must access objects for set functions */
@@ -1713,7 +1676,6 @@ already) and allows its contents to be modified.
 			{
 				ACCESS(Computed_field)(vector_field);
 			}
-
 			option_table = CREATE(Option_table)();
 			/* coordinate */
 			set_coordinate_field_data.computed_field_manager=
