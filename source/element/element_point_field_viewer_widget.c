@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_field_viewer_widget.c
 
-LAST MODIFIED : 31 May 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 Widget for displaying and editing component values of computed fields defined
@@ -121,7 +121,7 @@ all dynamic memory allocations and pointers.
 static void element_point_field_viewer_widget_update_values(
 	struct Element_point_field_viewer_widget_struct *element_point_field_viewer)
 /*******************************************************************************
-LAST MODIFIED : 31 May 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 Updates all widgets in the rowcol to make sure they say the correct value.
@@ -137,6 +137,8 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 	ENTER(element_point_field_viewer_widget_update_values);
 	if (element_point_field_viewer&&element_point_field_viewer->component_rowcol&&
 		(element=element_point_field_viewer->element_point_identifier.element)&&
+		(top_level_element=
+			element_point_field_viewer->element_point_identifier.top_level_element)&&
 		(xi=element_point_field_viewer->xi)&&
 		(field=element_point_field_viewer->current_field))
 	{
@@ -150,8 +152,6 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 			for (comp_no=0;comp_no<number_of_components;comp_no++)
 			{
 				widget=child_list[comp_no*2+1];
-				/*???RC handling of top_level_element? */
-				top_level_element=(struct FE_element *)NULL;
 				if (value_string=Computed_field_evaluate_component_as_string_in_element(
 					field,comp_no,element,xi,top_level_element))
 				{
@@ -184,14 +184,14 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 static void element_point_field_viewer_widget_value_CB(Widget widget,
 	void *element_point_field_viewer_void,void *call_data)
 /*******************************************************************************
-LAST MODIFIED : 2 June 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 Called when the user has changed the data in the text widget.  Processes the
 data, and then changes the correct value in the array structure.
 ==============================================================================*/
 {
-	char *value_string;
+	char *field_value_string,*value_string;
 	FE_value value,*values,*xi;
 	int component_number,dimension,element_point_number,i,int_value,*int_values,
 		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],number_of_grid_values,
@@ -209,15 +209,19 @@ data, and then changes the correct value in the array structure.
 		(struct Element_point_field_viewer_widget_struct *)
 		element_point_field_viewer_void)&&
 		(element=element_point_field_viewer->element_point_identifier.element)&&
+		(top_level_element=
+			element_point_field_viewer->element_point_identifier.top_level_element)&&
 		(xi=element_point_field_viewer->xi)&&
 		(field=element_point_field_viewer->current_field)&&
 		(0<=component_number)&&
 		(component_number<Computed_field_get_number_of_components(field))&&
 		(any_callback=(XmAnyCallbackStruct *)call_data))
 	{
-		if (XmCR_ACTIVATE == any_callback->reason)
+		/* get old_value_string to prevent needless updating and preserve text
+			 selections for cut-and-paste */
+		if (value_string=XmTextFieldGetString(widget))
 		{
-			if (value_string=XmTextFieldGetString(widget))
+			if (XmCR_ACTIVATE == any_callback->reason)
 			{
 				if ((XI_DISCRETIZATION_CELL_CORNERS==element_point_field_viewer->
 					element_point_identifier.xi_discretization_mode)&&
@@ -295,25 +299,28 @@ data, and then changes the correct value in the array structure.
 					display_message(ERROR_MESSAGE,"element_point_field_viewer_value_CB.  "
 						"Cannot set values for non-grid-based field");
 				}
-				XtFree(value_string);
 			}
+			/* redisplay the actual value for the field component */
+			if (field_value_string=
+				Computed_field_evaluate_component_as_string_in_element(
+					field,component_number,element,xi,top_level_element))
+			{
+				/* only set string from field if different from that shown */
+				if (strcmp(field_value_string,value_string))
+				{
+					XmTextFieldSetString(widget,value_string);
+				}
+				DEALLOCATE(value_string);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"element_point_field_viewer_value_CB.  "
+					"Could not get component as string");
+			}
+			Computed_field_clear_cache(field);
+			XtFree(value_string);
 		}
-		/* redisplay the actual value for the field component */
-		/*???RC handling of top_level_element? */
-		top_level_element=(struct FE_element *)NULL;
-		if (value_string=Computed_field_evaluate_component_as_string_in_element(
-			field,component_number,element,xi,top_level_element))
-		{
-			XmTextFieldSetString(widget,value_string);
-			DEALLOCATE(value_string);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"element_point_field_viewer_value_CB.  "
-				"Could not get component as string");
-		}
-		Computed_field_clear_cache(field);
 	}
 	else
 	{
@@ -323,10 +330,61 @@ data, and then changes the correct value in the array structure.
 	LEAVE;
 } /* element_point_field_viewer_value_CB */
 
+static int element_point_field_is_editable(
+	struct Element_point_ranges_identifier *element_point_identifier,
+	struct Computed_field *field,int *number_in_xi)
+/*******************************************************************************
+LAST MODIFIED : 6 June 2000
+
+DESCRIPTION :
+Returns true if <field> is editable at <element_point_identifier>, and if so
+returns the <number_in_xi>. Returns 0 with no error if no field or no element
+is supplied.
+==============================================================================*/
+{
+	int dimension,i,return_code;
+
+	ENTER(element_point_field_is_editable);
+	if (element_point_identifier&&number_in_xi)
+	{
+		if (element_point_identifier->element&&field&&
+			(XI_DISCRETIZATION_CELL_CORNERS==
+				element_point_identifier->xi_discretization_mode)&&
+			Computed_field_get_native_discretization_in_element(field,
+				element_point_identifier->element,number_in_xi))
+		{
+			return_code=1;
+			/* check matching discretization */
+			dimension=get_FE_element_dimension(element_point_identifier->element);
+			for (i=0;(i<dimension)&&return_code;i++)
+			{
+				if (element_point_identifier->number_in_xi[i] != number_in_xi[i])
+				{
+					return_code=0;
+				}
+			}
+		}
+		else
+		{
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"element_point_field_is_editable.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* element_point_field_is_editable */
+
+
 static int element_point_field_viewer_widget_setup_components(
 	struct Element_point_field_viewer_widget_struct *element_point_field_viewer)
 /*******************************************************************************
-LAST MODIFIED : 31 May 2000
+LAST MODIFIED : 6 June 2000
 
 DESCRIPTION :
 Creates the array of cells containing field component names and values.
@@ -335,7 +393,7 @@ Creates the array of cells containing field component names and values.
 	Arg args[4];
 	char *component_name;
 	Colormap cmap;
-	int comp_no,dimension,editable,i,number_of_components,
+	int comp_no,editable,number_of_components,
 		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],return_code;
 	Pixel background_color;
 	struct Computed_field *field;
@@ -359,27 +417,9 @@ Creates the array of cells containing field component names and values.
 			(field=element_point_field_viewer->current_field)&&
 			Computed_field_is_defined_in_element(field,element))
 		{
-			if ((XI_DISCRETIZATION_CELL_CORNERS==element_point_field_viewer->
-				element_point_identifier.xi_discretization_mode)&&
-				Computed_field_get_native_discretization_in_element(field,element,
-					number_in_xi))
-			{
-				editable=1;
-				/* check matching discretization */
-				dimension=get_FE_element_dimension(element);
-				for (i=0;(i<dimension)&&editable;i++)
-				{
-					if (element_point_field_viewer->
-						element_point_identifier.number_in_xi[i] != number_in_xi[i])
-					{
-						editable=0;
-					}
-				}
-			}
-			else
-			{
-				editable=0;
-			}
+			editable=element_point_field_is_editable(
+				&(element_point_field_viewer->element_point_identifier),
+				field,number_in_xi);
 			number_of_components=Computed_field_get_number_of_components(field);
 			element_point_field_viewer->number_of_components=number_of_components;
 			/* now create another */
@@ -476,6 +516,7 @@ Creates the array of cells containing field component names and values.
 		display_message(ERROR_MESSAGE,
 			"element_point_field_viewer_widget_setup_components.  "
 			"Invalid argument(s)");
+		return_code=0;
 	}
 	LEAVE;
 
@@ -686,7 +727,7 @@ int element_point_field_viewer_widget_set_element_point_field(
 	struct Element_point_ranges_identifier *element_point_identifier,
 	int element_point_number,struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 31 May 2000
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
 Sets the element_point/field being edited in the
@@ -695,7 +736,8 @@ Note that the viewer works on the element itself, not a local copy. Hence, only
 pass unmanaged elements in the element_point_identifier to this widget.
 ==============================================================================*/
 {
-	int return_code,setup_components;
+	int new_editable,number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],old_editable,
+		return_code,setup_components;
 	struct Element_point_field_viewer_widget_struct *element_point_field_viewer;
 
 	ENTER(element_point_field_viewer_widget_set_element_point_field);
@@ -714,11 +756,17 @@ pass unmanaged elements in the element_point_identifier to this widget.
 		if (element_point_field_viewer)
 		{
 			/* rebuild viewer widgets if nature of element_point or field changed */
+			old_editable=element_point_field_is_editable(
+				&(element_point_field_viewer->element_point_identifier),
+				element_point_field_viewer->current_field,number_in_xi);
+			new_editable=element_point_field_is_editable(
+				element_point_identifier,field,number_in_xi);
 			if ((!element_point_identifier->element)||
 				(!(element_point_field_viewer->element_point_identifier.element))||
 				(field != element_point_field_viewer->current_field)||
-				(field&&(element_point_field_viewer->number_of_components !=
-					Computed_field_get_number_of_components(field))))
+				(field&&((element_point_field_viewer->number_of_components !=
+					Computed_field_get_number_of_components(field))||
+					(new_editable != old_editable))))
 			{
 				setup_components=1;
 			}
@@ -737,6 +785,7 @@ pass unmanaged elements in the element_point_identifier to this widget.
 					element_point_identifier->xi_discretization_mode,
 					get_FE_element_dimension(element_point_identifier->element),
 					element_point_identifier->number_in_xi,
+					element_point_identifier->exact_xi,
 					element_point_number,element_point_field_viewer->xi);
 			}
 			else
