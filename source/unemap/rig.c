@@ -5047,8 +5047,6 @@ the <input_file>.
 											{
 												/* don't read anything for auxiliary devices that are a
 													linear combination */
-												/*???debug */
-												printf("device: %s",(*device)->description->name);
 												if ((*device)->channel)
 												{
 													if ((1==BINARY_FILE_READ((char *)&temp_int,
@@ -5068,8 +5066,6 @@ the <input_file>.
 														{
 															index=temp_int;
 														}
-														/*???debug */
-														printf(", %d",index);
 														if (0==(*device)->channel->gain)
 														{
 															(*device)->channel->gain=(float)1;
@@ -5116,8 +5112,6 @@ the <input_file>.
 																	{
 																		index=temp_int;
 																	}
-																	/*???debug */
-																	printf(", %d",index);
 																	if (ELECTRODE==(*device)->description->type)
 																	{
 																		if (signal->next=
@@ -5169,8 +5163,6 @@ the <input_file>.
 														return_code=0;
 													}
 												}
-												/*???debug */
-												printf("\n");
 												device++;
 												number_of_devices--;
 											}
