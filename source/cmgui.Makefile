@@ -52,6 +52,26 @@ ifeq ($(SYSNAME),win32)
    endif # $(USER_INTERFACE) != CONSOLE_USER_INTERFACE && $(USER_INTERFACE) != GTK_USER_INTERFACE
 endif # SYSNAME == win32
 
+ifneq ($(ABI),64)
+   TARGET_ABI_SUFFIX =
+else # $(ABI) != 64
+   TARGET_ABI_SUFFIX = 64
+endif # $(ABI) != 64
+
+TARGET_USER_INTERFACE_SUFFIX =
+ifeq ($(USER_INTERFACE), CONSOLE_USER_INTERFACE)
+   TARGET_USER_INTERFACE_SUFFIX += -console
+endif # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE
+ifeq ($(USER_INTERFACE), GTK_USER_INTERFACE)
+   TARGET_USER_INTERFACE_SUFFIX += -gtk
+endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
+
+ifneq ($(DYNAMIC_GL_LINUX),true)
+   TARGET_DYNAMIC_GL_SUFFIX =
+else # $(DYNAMIC_GL_LINUX) != true
+   TARGET_DYNAMIC_GL_SUFFIX = -dynamicgl
+endif # $(DYNAMIC_GL_LINUX) != true 
+
 ifneq ($(DEBUG),true)
    TARGET_DEBUG_SUFFIX =
 else # $(DEBUG) != true
@@ -64,23 +84,15 @@ else # $(MEMORYCHECK) != true
    TARGET_MEMORYCHECK_SUFFIX = -memorycheck
 endif # $(MEMORYCHECK) != true 
 
-ifneq ($(DYNAMIC_GL_LINUX),true)
-   TARGET_DYNAMIC_GL_SUFFIX =
-else # $(DYNAMIC_GL_LINUX) != true
-   TARGET_DYNAMIC_GL_SUFFIX = -dynamic
-endif # $(DYNAMIC_GL_LINUX) != true 
-
-TARGET_USER_INTERFACE_SUFFIX =
-ifeq ($(USER_INTERFACE), CONSOLE_USER_INTERFACE)
-   TARGET_USER_INTERFACE_SUFFIX += -console
-endif # $(USER_INTERFACE) == CONSOLE_USER_INTERFACE
-ifeq ($(USER_INTERFACE), GTK_USER_INTERFACE)
-   TARGET_USER_INTERFACE_SUFFIX += -gtk
-endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
+ifneq ($(SYSNAME),win32)
+   TARGET_FILETYPE_SUFFIX =
+else # $(SYSNAME) != win32)
+   TARGET_FILETYPE_SUFFIX = .exe
+endif # $(SYSNAME) != win32)
 
 BIN_PATH=$(CMGUI_DEV_ROOT)/bin/$(BIN_ARCH_DIR)
 
-BIN_TARGET = cmgui$(TARGET_DEBUG_SUFFIX)$(TARGET_MEMORYCHECK_SUFFIX)$(TARGET_DYNAMIC_GL_SUFFIX)
+BIN_TARGET = cmgui$(TARGET_ABI_SUFFIX)$(TARGET_USER_INTERFACE_SUFFIX)$(TARGET_DYNAMIC_GL_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_MEMORYCHECK_SUFFIX)$(TARGET_FILETYPE_SUFFIX)
 OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/$(LIB_ARCH_DIR)/cmgui$(TARGET_DEBUG_SUFFIX)
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/$(LIB_ARCH_DIR)/cmgui$(TARGET_DEBUG_SUFFIX)
 ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
@@ -1085,10 +1097,12 @@ endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
 	cd $(OBJECT_PATH) ; (ls $(OBJS) cmgui.o 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
 endif # SYSNAME == win32
+   # Link in the OBJECT_PATH and copy to the BIN_PATH as often the OBJECT_PATH is kept locally.
 	cd $(OBJECT_PATH) ; \
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
-	$(LINK) -o $(BIN_PATH)/$(BIN_TARGET) $(ALL_FLAGS) `cat object.list` $(ALL_LIB) $(EXPORTS_LINK_FLAGS) $(COMPILED_RESOURCE_FILES)
+	$(LINK) -o $(BIN_TARGET) $(ALL_FLAGS) `cat object.list` $(ALL_LIB) $(EXPORTS_LINK_FLAGS) $(COMPILED_RESOURCE_FILES) ; \
+	cp $(BIN_TARGET) $(BIN_PATH)/$(BIN_TARGET)
 
 # Force is a dummy rule used to ensure some objects are made every time as the
 # target 'force' doesnt exist */
