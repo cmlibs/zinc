@@ -437,32 +437,6 @@ Scene_notify_object_changed function to inform the program about the change.
 	return (return_code);
 } /* Scene_object_changed_internal */
 
-static struct Scene *Scene_object_get_scene(struct Scene_object *scene_object)
-/*******************************************************************************
-LAST MODIFIED : 11 July 2000
-
-DESCRIPTION :
-Returns the Scene that the <scene_object> is in.
-==============================================================================*/
-{
-	struct Scene *scene;
-
-	ENTER(Scene_object_get_scene);
-	if (scene_object)
-	{
-		scene=scene_object->scene;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_get_scene.  Missing scene_object");
-		scene=(struct Scene *)NULL;
-	}
-	LEAVE;
-
-	return (scene);
-} /* Scene_object_get_scene */
-
 static int Scene_object_set_scene(struct Scene_object *scene_object,
 	struct Scene *scene)
 /*******************************************************************************
@@ -2071,8 +2045,9 @@ DESCRIPTION :
 
 struct Scene_picked_object_get_nearest_element_data
 {
+	int select_elements_enabled,select_faces_enabled,select_lines_enabled;
 	/* "nearest" value from Scene_picked_object for picked_element */
-	unsigned int nearest;
+	double nearest;
 	struct FE_element *nearest_element;
 	/* group that the element must be in, or any group if NULL */
 	struct GROUP(FE_element) *element_group;
@@ -2086,7 +2061,7 @@ static int Scene_picked_object_get_nearest_element(
 	struct Scene_picked_object *scene_picked_object,
 	void *nearest_element_data_void)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 If the <scene_picked_object> refers to an element, the "nearest" value is
@@ -2096,7 +2071,7 @@ element is nearer, it becomes the nearest element and its "nearest" value is
 stored in the nearest_element_data.
 ==============================================================================*/
 {
-	int return_code;
+	int dimension,return_code;
 	struct CM_element_information cm;
 	struct FE_element *element;
 	struct GROUP(FE_element) *element_group;
@@ -2135,9 +2110,16 @@ stored in the nearest_element_data.
 					(element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(
 						&cm,element_group)))
 				{
-					if ((!nearest_element_data->element_group)||
-						((struct FE_element *)NULL != IS_OBJECT_IN_GROUP(FE_element)(
-							element,nearest_element_data->element_group)))
+					dimension = get_FE_element_dimension(element);
+					if (((nearest_element_data->select_elements_enabled &&
+						((CM_ELEMENT == element->cm.type) || (3 == dimension))) ||
+						(nearest_element_data->select_faces_enabled &&
+							((CM_FACE == element->cm.type) || (2 == dimension))) ||
+						(nearest_element_data->select_lines_enabled &&
+							((CM_LINE == element->cm.type) || (1 == dimension))))&&
+						((!nearest_element_data->element_group)||
+							((struct FE_element *)NULL != IS_OBJECT_IN_GROUP(FE_element)(
+								element,nearest_element_data->element_group))))
 					{
 						nearest_element_data->nearest_element=element;
 						nearest_element_data->scene_picked_object=scene_picked_object;
@@ -2168,27 +2150,36 @@ stored in the nearest_element_data.
 	return (return_code);
 } /* Scene_picked_object_get_nearest_element */
 
+struct Scene_picked_object_get_picked_elements_data
+{
+	int select_elements_enabled,select_faces_enabled,select_lines_enabled;
+	struct LIST(FE_element) *picked_element_list;
+};
+
 static int Scene_picked_object_get_picked_elements(
 	struct Scene_picked_object *scene_picked_object,
-	void *picked_elements_list_void)
+	void *picked_elements_data_void)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 If the <scene_picked_object> refers to an element, it is converted into
 an FE_element and added to the <picked_elements_list>.
 ==============================================================================*/
 {
-	int return_code;
+	int dimension,return_code;
 	struct CM_element_information cm;
 	struct FE_element *element;
 	struct GROUP(FE_element) *element_group;
 	struct GT_element_group *gt_element_group;
 	struct GT_element_settings *settings;
+	struct Scene_picked_object_get_picked_elements_data *picked_elements_data;
 	struct Scene_object *scene_object;
 
 	ENTER(Scene_picked_object_get_picked_elements);
-	if (scene_picked_object&&picked_elements_list_void)
+	if (scene_picked_object&&(picked_elements_data=
+		(struct Scene_picked_object_get_picked_elements_data *)
+		picked_elements_data_void))
 	{
 		return_code=1;
 		/* is the last scene_object a Graphical_element wrapper, and does the
@@ -2210,8 +2201,17 @@ an FE_element and added to the <picked_elements_list>.
 				(element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(
 					&cm,element_group)))
 			{
-				return_code=
-					ensure_FE_element_is_in_list(element,picked_elements_list_void);
+				dimension = get_FE_element_dimension(element);
+				if ((picked_elements_data->select_elements_enabled &&
+					((CM_ELEMENT == element->cm.type) || (3 == dimension))) ||
+					(picked_elements_data->select_faces_enabled &&
+						((CM_FACE == element->cm.type) || (2 == dimension))) ||
+					(picked_elements_data->select_lines_enabled &&
+						((CM_LINE == element->cm.type) || (1 == dimension))))
+				{
+					return_code=ensure_FE_element_is_in_list(element,
+						(void *)picked_elements_data->picked_element_list);
+				}
 			}
 			else
 			{
@@ -2236,7 +2236,7 @@ an FE_element and added to the <picked_elements_list>.
 struct Scene_picked_object_get_nearest_element_point_data
 {
 	/* "nearest" value from Scene_picked_object for picked_element_point */
-	unsigned int nearest;
+	double nearest;
 	struct Element_point_ranges *nearest_element_point;
 	/* group that the element_point must be in, or any group if NULL */
 	struct GROUP(FE_element) *element_group;
@@ -2555,7 +2555,7 @@ an Element_point_ranges and added to the <picked_element_points_list>.
 struct Scene_picked_object_get_nearest_node_data
 {
 	/* "nearest" value from Scene_picked_object for picked_node */
-	unsigned int nearest;
+	double nearest;
 	struct FE_node *nearest_node;
 	/* flag set when searching for nearest data point rather than node */
 	int use_data;
@@ -5342,16 +5342,16 @@ the list of integer subobject names identifying the <scene_picked_object>.
 	return (subobject);
 } /* Scene_picked_object_get_subobject */
 
-unsigned int Scene_picked_object_get_farthest(
+double Scene_picked_object_get_farthest(
 	struct Scene_picked_object *scene_picked_object)
 /*******************************************************************************
-LAST MODIFIED : 15 July 1999
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Returns the <farthest> position at which the <scene_picked_object> was picked.
 ==============================================================================*/
 {
-	unsigned int farthest;
+	double farthest;
 
 	ENTER(Scene_picked_object_get_farthest);
 	if (scene_picked_object)
@@ -5362,7 +5362,7 @@ Returns the <farthest> position at which the <scene_picked_object> was picked.
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_picked_object_get_farthest.  Invalid argument(s)");
-		farthest=0;
+		farthest=0.0;
 	}
 	LEAVE;
 
@@ -5370,9 +5370,9 @@ Returns the <farthest> position at which the <scene_picked_object> was picked.
 } /* Scene_picked_object_get_farthest */
 
 int Scene_picked_object_set_farthest(
-	struct Scene_picked_object *scene_picked_object,unsigned int farthest)
+	struct Scene_picked_object *scene_picked_object,double farthest)
 /*******************************************************************************
-LAST MODIFIED : 15 July 1999
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Sets the <farthest> position at which the <scene_picked_object> was picked.
@@ -5397,16 +5397,16 @@ Sets the <farthest> position at which the <scene_picked_object> was picked.
 	return (return_code);
 } /* Scene_picked_object_set_farthest */
 
-unsigned int Scene_picked_object_get_nearest(
+double Scene_picked_object_get_nearest(
 	struct Scene_picked_object *scene_picked_object)
 /*******************************************************************************
-LAST MODIFIED : 15 July 1999
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Returns the <nearest> position at which the <scene_picked_object> was picked.
 ==============================================================================*/
 {
-	unsigned int nearest;
+	double nearest;
 
 	ENTER(Scene_picked_object_get_nearest);
 	if (scene_picked_object)
@@ -5417,7 +5417,7 @@ Returns the <nearest> position at which the <scene_picked_object> was picked.
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_picked_object_get_nearest.  Invalid argument(s)");
-		nearest=0;
+		nearest=0.0;
 	}
 	LEAVE;
 
@@ -5425,9 +5425,9 @@ Returns the <nearest> position at which the <scene_picked_object> was picked.
 } /* Scene_picked_object_get_nearest */
 
 int Scene_picked_object_set_nearest(
-	struct Scene_picked_object *scene_picked_object,unsigned int nearest)
+	struct Scene_picked_object *scene_picked_object,double nearest)
 /*******************************************************************************
-LAST MODIFIED : 15 July 1999
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Sets the <nearest> position at which the <scene_picked_object> was picked.
@@ -5638,25 +5638,32 @@ DECLARE_LIST_FUNCTIONS(Scene_picked_object)
 struct FE_element *Scene_picked_object_list_get_nearest_element(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
 	struct GROUP(FE_element) *element_group,
+	int select_elements_enabled,int select_faces_enabled,int select_lines_enabled,
 	struct Scene_picked_object **scene_picked_object_address,
 	struct GT_element_group **gt_element_group_address,
 	struct GT_element_settings **gt_element_settings_address)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Returns the nearest picked element in <scene_picked_object_list> that is in
 <element_group> (or any group if NULL). If any of the remaining address
 arguments are not NULL, they are filled with the appropriate information
 pertaining to the nearest element.
+<select_elements_enabled> allows top-level/3-D elements to be selected.
+<select_faces_enabled> allows face and 2-D elements to be selected.
+<select_lines_enabled> allows line and 1-D elements to be selected.
 ==============================================================================*/
 {
 	struct Scene_picked_object_get_nearest_element_data nearest_element_data;
 
 	ENTER(Scene_picked_object_list_get_nearest_element);
-	nearest_element_data.nearest=0;
+	nearest_element_data.nearest=0.0;
 	nearest_element_data.nearest_element=(struct FE_element *)NULL;
 	nearest_element_data.element_group=element_group;
+	nearest_element_data.select_elements_enabled=select_elements_enabled;
+	nearest_element_data.select_faces_enabled=select_faces_enabled;
+	nearest_element_data.select_lines_enabled=select_lines_enabled;
 	nearest_element_data.scene_picked_object=(struct Scene_picked_object *)NULL;
 	nearest_element_data.gt_element_group=(struct GT_element_group *)NULL;
 	nearest_element_data.gt_element_settings=(struct GT_element_settings *)NULL;
@@ -5689,23 +5696,33 @@ pertaining to the nearest element.
 } /* Scene_picked_object_list_get_nearest_element */
 
 struct LIST(FE_element) *Scene_picked_object_list_get_picked_elements(
-	struct LIST(Scene_picked_object) *scene_picked_object_list)
+	struct LIST(Scene_picked_object) *scene_picked_object_list,
+	int select_elements_enabled,int select_faces_enabled,
+	int select_lines_enabled)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Returns the list of all elements identified in the <scene_picked_object_list>. 
+<select_elements_enabled> allows top-level/3-D elements to be selected.
+<select_faces_enabled> allows face and 2-D elements to be selected.
+<select_lines_enabled> allows line and 1-D elements to be selected.
 ==============================================================================*/
 {
 	struct LIST(FE_element) *picked_element_list;
+	struct Scene_picked_object_get_picked_elements_data picked_elements_data;
 
 	ENTER(Scene_picked_object_list_get_picked_elements);
 	if (scene_picked_object_list)
 	{	
 		if (picked_element_list=CREATE(LIST(FE_element))())
 		{
+			picked_elements_data.select_elements_enabled=select_elements_enabled;
+			picked_elements_data.select_faces_enabled=select_faces_enabled;
+			picked_elements_data.select_lines_enabled=select_lines_enabled;
+			picked_elements_data.picked_element_list=picked_element_list;
 			FOR_EACH_OBJECT_IN_LIST(Scene_picked_object)(
-				Scene_picked_object_get_picked_elements,(void *)picked_element_list,
+				Scene_picked_object_get_picked_elements,(void *)&picked_elements_data,
 				scene_picked_object_list);
 		}
 		else
@@ -5733,7 +5750,7 @@ struct Element_point_ranges *Scene_picked_object_list_get_nearest_element_point(
 	struct GT_element_group **gt_element_group_address,
 	struct GT_element_settings **gt_element_settings_address)
 /*******************************************************************************
-LAST MODIFIED : 1 March 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Returns the nearest picked element point in <scene_picked_object_list> that is
@@ -5748,7 +5765,7 @@ calling function.
 		nearest_element_point_data;
 
 	ENTER(Scene_picked_object_list_get_nearest_element_point);
-	nearest_element_point_data.nearest=0;
+	nearest_element_point_data.nearest=0.0;
 	nearest_element_point_data.nearest_element_point=
 		(struct Element_point_ranges *)NULL;
 	nearest_element_point_data.element_group=element_group;
@@ -5832,7 +5849,7 @@ struct FE_node *Scene_picked_object_list_get_nearest_node(
 	struct GT_element_group **gt_element_group_address,
 	struct GT_element_settings **gt_element_settings_address)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Returns the nearest picked node in <scene_picked_object_list> that is in
@@ -5846,7 +5863,7 @@ a node, needed since different settings type used for each.
 	struct Scene_picked_object_get_nearest_node_data nearest_node_data;
 
 	ENTER(Scene_picked_object_list_get_nearest_node);
-	nearest_node_data.nearest=0;
+	nearest_node_data.nearest=0.0;
 	nearest_node_data.nearest_node=(struct FE_node *)NULL;
 	nearest_node_data.use_data=use_data;
 	nearest_node_data.node_group=node_group;
@@ -6030,10 +6047,10 @@ Scene_picked_objects to pass to clients of the scene, eg. node editor.
 							number_of_names=(int)(*select_buffer_ptr);
 							select_buffer_ptr++;
 							Scene_picked_object_set_nearest(scene_picked_object,
-								(unsigned int)(*select_buffer_ptr));
+								(double)(*select_buffer_ptr));
 							select_buffer_ptr++;
 							Scene_picked_object_set_farthest(scene_picked_object,
-								(unsigned int)(*select_buffer_ptr));
+								(double)(*select_buffer_ptr));
 							select_buffer_ptr++;
 
 							/* first part of names identifies list of scene_objects in path
@@ -6141,7 +6158,7 @@ Scene_picked_objects to pass to clients of the scene, eg. node editor.
 struct LIST(Scene_picked_object) *Scene_pick_objects(struct Scene *scene,
 	struct Interaction_volume *interaction_volume)
 /*******************************************************************************
-LAST MODIFIED : 1 May 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Returns a list of all the graphical entities in the <interaction_volume> of
@@ -6149,7 +6166,10 @@ Returns a list of all the graphical entities in the <interaction_volume> of
 understood for the type of <interaction_volume> passed.
 ==============================================================================*/
 {
-	double depth,modelview_matrix[16],normalised_z,projection_matrix[16];
+#if defined (OLD_CODE)
+	double depth,normalised_z;
+#endif /* defined (OLD_CODE) */
+	double modelview_matrix[16],projection_matrix[16];
 	GLdouble opengl_modelview_matrix[16],opengl_projection_matrix[16];
 	GLuint *select_buffer,*select_buffer_ptr;
 	int hit_no,i,j,num_hits,number_of_names,return_code,scene_object_no;
@@ -6209,6 +6229,16 @@ understood for the type of <interaction_volume> passed.
 									number_of_names=(int)(*select_buffer_ptr);
 									select_buffer_ptr++;
 									/* get range of depth of picked object */
+									/*???RC OpenGL Programming Guide p361 says depth values are
+										made into integers from 0 to 2^32-1. Just convert to
+										doubles for now */
+									Scene_picked_object_set_nearest(scene_picked_object,
+										(double)(*select_buffer_ptr));
+									select_buffer_ptr++;
+									Scene_picked_object_set_farthest(scene_picked_object,
+										(double)(*select_buffer_ptr));
+									select_buffer_ptr++;
+#if defined (OLD_CODE)
 									depth=(double)(*select_buffer_ptr);
 									normalised_z=2.0*depth - 1.0;
 									Scene_picked_object_set_nearest(scene_picked_object,
@@ -6221,6 +6251,7 @@ understood for the type of <interaction_volume> passed.
 										Interaction_volume_get_closeness_from_normalised_z(
 											interaction_volume,normalised_z));
 									select_buffer_ptr++;
+#endif /* defined (OLD_CODE) */
 									/* first part of names identifies list of scene_objects in
 										 path to picked graphic. Must be at least one; only more
 										 that one if contains child_scene */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.h
 
-LAST MODIFIED : 12 July 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -800,37 +800,37 @@ Returns the subobject at position <subobject_no> - where 0 is the first - in
 the list of integer subobject names identifying the <scene_picked_object>.
 ==============================================================================*/
 
-unsigned int Scene_picked_object_get_farthest(
+double Scene_picked_object_get_farthest(
 	struct Scene_picked_object *scene_picked_object);
 /*******************************************************************************
-LAST MODIFIED : 15 July 1999
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Returns the <farthest> position at which the <scene_picked_object> was picked.
 ==============================================================================*/
 
 int Scene_picked_object_set_farthest(
-	struct Scene_picked_object *scene_picked_object,unsigned int farthest);
+	struct Scene_picked_object *scene_picked_object,double farthest);
 /*******************************************************************************
-LAST MODIFIED : 15 July 1999
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Sets the <farthest> position at which the <scene_picked_object> was picked.
 ==============================================================================*/
 
-unsigned int Scene_picked_object_get_nearest(
+double Scene_picked_object_get_nearest(
 	struct Scene_picked_object *scene_picked_object);
 /*******************************************************************************
-LAST MODIFIED : 15 July 1999
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Returns the <nearest> position at which the <scene_picked_object> was picked.
 ==============================================================================*/
 
 int Scene_picked_object_set_nearest(
-	struct Scene_picked_object *scene_picked_object,unsigned int nearest);
+	struct Scene_picked_object *scene_picked_object,double nearest);
 /*******************************************************************************
-LAST MODIFIED : 15 July 1999
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Sets the <nearest> position at which the <scene_picked_object> was picked.
@@ -879,28 +879,36 @@ be set to the identity.
 struct FE_element *Scene_picked_object_list_get_nearest_element(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
 	struct GROUP(FE_element) *element_group,
+	int select_elements_enabled,int select_faces_enabled,int select_lines_enabled,
 	struct Scene_picked_object **scene_picked_object_address,
 	struct GT_element_group **gt_element_group_address,
 	struct GT_element_settings **gt_element_settings_address);
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Returns the nearest picked element in <scene_picked_object_list> that is in
 <element_group> (or any group if NULL). If any of the remaining address
 arguments are not NULL, they are filled with the appropriate information
 pertaining to the nearest element.
+<select_elements_enabled> allows top-level/3-D elements to be selected.
+<select_faces_enabled> allows face and 2-D elements to be selected.
+<select_lines_enabled> allows line and 1-D elements to be selected.
 ==============================================================================*/
 
 struct LIST(FE_element) *Scene_picked_object_list_get_picked_elements(
-	struct LIST(Scene_picked_object) *scene_picked_object_list);
+	struct LIST(Scene_picked_object) *scene_picked_object_list,
+	int select_elements_enabled,int select_faces_enabled,
+	int select_lines_enabled);
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Returns the list of all elements identified in the <scene_picked_object_list>. 
+<select_elements_enabled> allows top-level/3-D elements to be selected.
+<select_faces_enabled> allows face and 2-D elements to be selected.
+<select_lines_enabled> allows line and 1-D elements to be selected.
 ==============================================================================*/
-
 struct Element_point_ranges *Scene_picked_object_list_get_nearest_element_point(
 	struct LIST(Scene_picked_object) *scene_picked_object_list,
 	struct GROUP(FE_element) *element_group,
