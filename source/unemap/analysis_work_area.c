@@ -133,6 +133,7 @@ DESCRIPTION :
 #endif /* defined (UNEMAP_USE_NODES) */
 #include "unemap/trace_window.h"
 #include "unemap/unemap_package.h"
+#include "user_interface/confirmation.h"
 #include "user_interface/filedir.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -1856,12 +1857,14 @@ named file.
 static void analysis_write_interval(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 29 May 1996
+LAST MODIFIED : 27 January 2000
 
 DESCRIPTION :
 Called when the "Save interval" button is clicked.
 ==============================================================================*/
 {
+	FILE *temp_file;
+	int write_file;
 	struct Analysis_work_area *analysis;
 
 	ENTER(analysis_write_interval);
@@ -1870,8 +1873,25 @@ Called when the "Save interval" button is clicked.
 	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
 		(analysis->rig)&&(analysis->rig->signal_file_name))
 	{
-		analysis_write_signal_file(analysis->rig->signal_file_name,
-			(void *)analysis);
+		if (temp_file=fopen(analysis->rig->signal_file_name,"r"))
+		{
+			fclose(temp_file);
+			write_file=confirmation_warning_ok_cancel("Warning",
+				"File already exists.  Overwrite ?",
+#if defined (MOTIF)
+				widget,
+#endif /* defined (MOTIF) */
+				analysis->user_interface);
+		}
+		else
+		{
+			write_file=1;
+		}
+		if (write_file)
+		{
+			analysis_write_signal_file(analysis->rig->signal_file_name,
+				(void *)analysis);
+		}
 	}
 	else
 	{
