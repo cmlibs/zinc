@@ -57,7 +57,9 @@ UIL = uil64
 CC = cc -c
 CPP = CC -c
 FORTRAN = f77 -c
-LINK = cc
+/* LINK = cc */
+/* Must use C++ linker for XML */
+LINK = CC
 #if defined (OPTIMISED)
 OPTIMISATION_FLAGS = -O
 COMPILE_FLAGS = -ansi -pedantic -woff 1521
@@ -86,10 +88,13 @@ CC = egcs -c
 CPP = egcs -c
 FORTRAN = g77 -c
 #if defined (DYNAMIC_GL_LINUX)
-LINK = gcc -L/usr/X11R6/lib -v
-#LINK = egcs -shared -L/usr/X11R6/lib -v
+LINK = egcs -rdynamic -L/usr/X11R6/lib
+/* LINK = egcs -shared -L/usr/X11R6/lib -v */
+/* LINK = gcc -L/usr/X11R6/lib -v */
 #else /* defined (DYNAMIC_GL_LINUX) */
-LINK = egcs -static -L/usr/X11R6/lib -v
+LINK = egcs --no-demangle -rdynamic -L/usr/X11R6/lib
+/* LINK = egcs -rdynamic -L/usr/X11R6/lib */
+/* LINK = egcs -static -L/usr/X11R6/lib -v */
 #endif /* defined (DYNAMIC_GL_LINUX) */
 #if defined (OPTIMISED)
 OPTIMISATION_FLAGS = -O
@@ -103,6 +108,9 @@ STRICT_FLAGS_PATTERN = NONE /* Must specify a pattern that doesn't match */
 TARGET_TYPE_FLAGS =
 TARGET_TYPE_DEFINES =
 #endif /* switch OperatingSystem */
+
+/* DSO Link command */
+DSO_LINK = $(LINK) $(ALL_FLAGS) -shared
 
 .MAKEOPTS : -r
 

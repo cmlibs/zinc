@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 18 October 2000
+XCOMM LAST MODIFIED : 21 March 2001
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -142,8 +142,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/64
 #elif defined (LINUX) /* switch OperatingSystem */
 #define MIRAGE
 #define UNEMAP
-/* SAB Couldn't compile cell/cell_calculate.f
-   #define CELL */
+#define CELL
 #if defined (OPTIMISED)
 #if defined (DYNAMIC_GL_LINUX)
 #define Target cmgui_linux_optimised_dynamic
@@ -439,23 +438,30 @@ XVG_SRCS = \
 CELL_SWITCH =
 CELL_SRCS =
 #else /* !defined (CELL) */
-CELL_SWITCH = -DCELL -DCELL_CONTROL_CURVE
+CELL_SWITCH = -DCELL -DCELL_DISTRIBUTED
 CELL_SRCS = \
-	cell/calculate.c \
-	cell/cell_3d.c \
+	cell/cell_calculate.c \
+	cell/cell_calculate_dialog.c \
+	cell/cell_cmgui_interface.c \
+	cell/cell_cmiss_interface.c \
 	cell/cell_component.c \
-	cell/cell_parameter.c \
-	cell/cell_control_curve.c \
+	cell/cell_export_dialog.c \
+	cell/cell_graphic.c \
+	cell/cell_input.c \
+	cell/cell_interface.c \
+	cell/cell_output.c \
+	cell/cell_plot.c \
+	cell/cell_unemap_interface.c \
 	cell/cell_variable.c \
-	cell/cell_window.c \
-	cell/cmgui_connection.c \
-	cell/input.c \
-	cell/messages.c \
-	cell/model_dialog.c \
-	cell/parameter_dialog.c \
-	cell/output.c \
-	cell/parser.c \
-	cell/variables_dialog.c
+	cell/cell_variable_editing_dialog.c \
+	cell/cell_variable_unemap_interface.c \
+  cell/cell_window.c \
+  cell/distributed_editing_dialog.c \
+  cell/distributed_editing_interface.c \
+  cell/cell_model_routines/andre.f \
+  cell/integrator_routines/euler.f \
+  cell/integrator_routines/improved_euler.f \
+  cell/integrator_routines/runge_kutta.f
 #endif /* !defined (CELL) */
 
 UIDH_INC = -I$(UIDH_PATH) -I$(PRODUCT_UIDH_PATH)
@@ -509,25 +515,42 @@ WORMHOLE_LIB = -L${WORMHOLE_PATH}/lib -lwormhole_linux
 WORMHOLE_INC = -I${WORMHOLE_PATH}/source
 #endif /* switch OperatingSystem */
 
-#if defined (CMISS_ROOT_DEFINED)
-XML_PATH=$(CMISS_ROOT)/xml.save.20mar01
-#else /* defined (CMISS_ROOT_DEFINED) */
-XML_PATH=$(CMGUI_DEV_ROOT)/xml.save.20mar01
-#endif /* defined (CMISS_ROOT_DEFINED) */
+
+XCOMM XML Stuff goes here!!
+
 #if defined (CELL)
+#if defined (CMISS_ROOT_DEFINED)
+XML_PATH=$(CMISS_ROOT)/xml
+#else /* defined (CMISS_ROOT_DEFINED) */
+XML_PATH=$(CMGUI_DEV_ROOT)/xml
+#endif /* defined (CMISS_ROOT_DEFINED) */
 #if defined (IRIX) /* switch OperatingSystem */
+XML_DEFINES = -DIRIX -D_REENTRANT
 #if defined (O64)
-XML_LIB = -L$(XML_PATH)/expat_lib/lib -lExpat_64
-XML_INC = -I$(XML_PATH)/expat_lib/include
+XML_LIB = $(XML_PATH)/library/libXML-mips3-64-optimised-1.0.0.a
+XML_INC = -I$(XML_PATH)/include
+/* XML_LIB = -L$(XML_PATH)/expat_lib/lib -lExpat_64 */
+/* XML_INC = -I$(XML_PATH)/expat_lib/include */
 #else /* defined (O64) */
-XML_LIB = -B static -L$(XML_PATH)/expat_lib/lib -lExpat_n32 -B dynamic
-XML_INC = -I$(XML_PATH)/expat_lib/include
+XML_LIB = $(XML_PATH)/library/libXML-mips3-n32-optimised-1.0.0.a
+XML_INC = -I$(XML_PATH)/include
+/* XML_LIB = -B static -L$(XML_PATH)/expat_lib/lib -lExpat_n32 -B dynamic */
+/* XML_INC = -I$(XML_PATH)/expat_lib/include */
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
-XML_LIB = -static -L$(XML_PATH)/expat_lib/lib -lExpat_linux -shared
-XML_INC = -I$(XML_PATH)/expat_lib/include
+XML_DEFINES = -DLINUX -D_REENTRANT
+XML_LIB = $(XML_PATH)/library/libXML_linux_optimised_1.0.0.a -lstdc++-2-libc6.1-1-2.9.0
+XML_INC = -I$(XML_PATH)/include 
+/* XML_LIB = -static -L$(XML_PATH)/expat_lib/lib -lExpat_linux -shared */
+/* XML_INC = -I$(XML_PATH)/expat_lib/include */
 #endif /* switch OperatingSystem */
+#else /* defined (CELL) */
+XML_PATH =
+XML_DEFINES = 
+XML_LIB =
+XML_INC = 
 #endif /* defined (CELL) */
+
 
 #if defined (OLD_CODE)
 SOCKET_DEFINES = -Dsgi -Dmips
@@ -627,7 +650,8 @@ LIB = -lMrm -lXm -lXt -lX11 -lXmu -lPW -lm
 LIB = -lMrm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm
 #endif /* defined (OLD_CODE) */
 #if defined (IRIX) /* switch OperatingSystem */
-LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm -lpthread 
+LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm -lC -lCio -lpthread 
+/* LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm -lpthread */
 #elif defined(LINUX) /* switch OperatingSystem */
 #if defined (DYNAMIC_GL_LINUX)
 X_LIB = /usr/X11R6/lib
@@ -662,10 +686,10 @@ ALL_INCLUDES = $(START_ALL_INCLUDES) \
 ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 	$(ALL_DEFINES) $(ALL_INCLUDES)
 
-ALL_LIB = $(GRAPHICS_LIB) $(HAPTIC_LIB) $(WORMHOLE_LIB) $(INTERPRETER_LIB) \
-		$(LIB) $(VIDEO_LIB) $(EXTERNAL_INPUT_LIB) $(NAG_LIB) $(HELP_LIB) \
-	  $(MOVIE_FILE_LIB) $(XML_LIB)
-   
+ALL_LIB = $(GRAPHICS_LIB) $(HAPTIC_LIB) $(WORMHOLE_LIB) \
+		$(INTERPRETER_LIB) \
+		$(VIDEO_LIB) $(EXTERNAL_INPUT_LIB) $(NAG_LIB) $(HELP_LIB) \
+	  $(MOVIE_FILE_LIB) $(XML_LIB) $(LIB)
 
 APPLICATION_SRCS = \
 	application/application.c 
@@ -1034,7 +1058,9 @@ transfer :
 	view/WildC view/WildH view/WildUil \
 	| gzip > cmgui_tar1.gz
 	tar -cvf - \
-	cell/WildC cell/WildCmn cell/WildF cell/WildH cell/WildUil cell/bitmaps/WildXbm \
+	cell/WildC cell/WildH cell/WildUil \
+	cell/cell_model_routines/WildF cell/cell_model_routines/WildInc \
+	cell/integrator_routines/WildF \
 	hypertext_help/WildC hypertext_help/WildH hypertext_help/Makefile \
 	hypertext_help/WildMms \
 	unemap/WildC unemap/WildH unemap/WildUil unemap/WildRc \
