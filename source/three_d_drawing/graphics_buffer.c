@@ -755,9 +755,9 @@ Global functions
 #if defined (MOTIF)
 struct Graphics_buffer *create_Graphics_buffer_X3d(Widget parent,
 	X3dBufferColourMode colour_mode, X3dBufferingMode buffer_mode,
-	int specified_visual_id)
+	X3dStereoBufferingMode stereo_buffer_mode, int specified_visual_id)
 /*******************************************************************************
-LAST MODIFIED : 1 July 2002
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
 If <specified_visual_id> is not zero then this visual is required.
@@ -772,7 +772,8 @@ If <specified_visual_id> is not zero then this visual is required.
 		if (buffer->drawing_widget=XtVaCreateWidget("cm_graphics_buffer_area",
 			threeDDrawingWidgetClass,parent,
 			X3dNbufferColourMode,colour_mode,
-			X3dNbufferingMode,buffer_mode,
+ 			X3dNbufferingMode,buffer_mode,
+ 			X3dNstereoBufferingMode,stereo_buffer_mode,
 			X3dNvisualId, specified_visual_id,
 			XmNleftAttachment,XmATTACH_FORM,
 			XmNrightAttachment,XmATTACH_FORM,

@@ -31,6 +31,18 @@ DESCRIPTION :
 ???DB.  Analogous for PEXlib ?
 ==============================================================================*/
 {
+	X3dMONO_BUFFERING,
+	X3dSTEREO_BUFFERING
+} X3dStereoBufferingMode;
+
+typedef enum
+/*******************************************************************************
+LAST MODIFIED : 21 April 1994
+
+DESCRIPTION :
+???DB.  Analogous for PEXlib ?
+==============================================================================*/
+{
 	X3dCOLOUR_INDEX_MODE,
 	X3dCOLOUR_RGB_MODE
 } X3dBufferColourMode;
@@ -57,6 +69,9 @@ renderingContext   RenderingContext   PEXRenderer         NULL
 #define X3dNbufferingMode "bufferingMode"
 #define X3dCBufferingMode "BufferingMode"
 #define X3dRBufferingMode "X3dBufferingMode"
+#define X3dNstereoBufferingMode "stereoBufferingMode"
+#define X3dCStereoBufferingMode "StereoBufferingMode"
+#define X3dRStereoBufferingMode "X3dStereoBufferingMode"
 #define X3dNvisualId "visualId"
 #define X3dCVisualId "VisualId"
 #define X3dNexposeCallback "exposeCallback"

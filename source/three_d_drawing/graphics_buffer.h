@@ -76,9 +76,9 @@ PROTOTYPE_OBJECT_FUNCTIONS(Graphics_buffer);
 #if defined (MOTIF)
 struct Graphics_buffer *create_Graphics_buffer_X3d(Widget parent,
 	X3dBufferColourMode colour_mode, X3dBufferingMode buffer_mode,
-	int specified_visual_id);
+	X3dStereoBufferingMode stereo_buffer_mode, int specified_visual_id);
 /*******************************************************************************
-LAST MODIFIED : 1 July 2002
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
 If <specified_visual_id> is not zero then this visual is required.

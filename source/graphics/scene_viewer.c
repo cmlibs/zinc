@@ -206,6 +206,8 @@ DESCRIPTION :
 	int transform_flag;
 	/* Clip planes */
 	double clip_planes[MAX_CLIP_PLANES * 4];
+	/* The distance between the two stereo views in world space */
+	double stereo_eye_spacing;
 	struct User_interface *user_interface;
 }; /* struct Scene_viewer */
 
@@ -677,14 +679,16 @@ Scene_viewer_render_scene_with_picking, Scene_viewer_render_scene_in_viewport to
 access this function.
 ==============================================================================*/
 {
-	double max_x,max_y,pixel_offset_x,pixel_offset_y;
+	double eye_distance,max_x,max_y,pixel_offset_x,pixel_offset_y,
+		stereo_angle,stereo_cos,stereo_sin,view[3];
 	GLboolean double_buffer,valid_raster;
 	static GLint viewport[4]={0,0,1,1};
 	GLint stencil_bits;
 	GLdouble modelview_matrix[16],obj_x,obj_y,obj_z,projection_matrix[16],
-		temp_matrix[16];
+		temp_matrix[16], stereo_matrix[16];
 	int accumulation_count,antialias,do_render,i,j,layer,layers,
-		return_code,scene_redraws,viewport_height,viewport_width;
+		return_code,scene_redraws,stereo,stereo_buffers,stereo_count,
+	viewport_height,viewport_width;
 	float j2[2][2]=
 		{
 			{0.25,0.75},
@@ -861,7 +865,8 @@ access this function.
 					glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
 					/* depth tests are against a normalised z coordinate (i.e. [0..1])
 						 so the following sets this up and turns on the test */
-					if (double_buffer)
+					if (double_buffer &&
+						(SCENE_VIEWER_STEREO_DOUBLE_BUFFER != scene_viewer->buffer_mode))
 					{
 						glDrawBuffer(GL_BACK);
 					}
@@ -893,10 +898,33 @@ access this function.
 					if (!picking_on)
 					{
 						antialias = scene_viewer->antialias;
+						if ((SCENE_VIEWER_STEREO_DOUBLE_BUFFER == scene_viewer->buffer_mode)
+							|| (SCENE_VIEWER_STEREO_SINGLE_BUFFER == scene_viewer->buffer_mode))
+						{
+							stereo = 1;
+							stereo_buffers = 2;
+							/* Calculate the angle */
+							view[0] = scene_viewer->eyex - scene_viewer->lookatx;
+							view[1] = scene_viewer->eyey - scene_viewer->lookaty;
+							view[2] = scene_viewer->eyez - scene_viewer->lookatz;
+							eye_distance = norm3(view);
+
+							stereo_angle = 2.0*atan2(0.5*scene_viewer->stereo_eye_spacing,
+								eye_distance);
+							stereo_sin = sin(stereo_angle);
+							stereo_cos = cos(stereo_angle);
+						}
+						else
+						{
+							stereo = 0;
+							stereo_buffers = 1;
+						}
 					}
 					else
 					{
+						stereo = 0;
 						antialias = 0;
+						stereo_buffers = 1;
 					}
 					if (antialias>1)
 					{
@@ -916,150 +944,393 @@ access this function.
 					}
 					if ((!double_buffer) ||	(!scene_viewer->fast_changing) || picking_on)
 					{
-						for (accumulation_count=0;accumulation_count<scene_redraws;
-								 accumulation_count++)
+						for (stereo_count = 0 ; stereo_count < stereo_buffers ; stereo_count++)
 						{
-							/* clear the screen: colour buffer and depth buffer */
-							glClearColor((scene_viewer->background_colour).red,
-								(scene_viewer->background_colour).green,
-								(scene_viewer->background_colour).blue,0.);
-							glClearDepth(1.0);
-							if (0<stencil_bits)
+							if (stereo)
 							{
-								glClearStencil(0);
-								glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT |
-									GL_STENCIL_BUFFER_BIT);
+								if (double_buffer)
+								{
+									switch (stereo_count)
+									{
+										case 0:
+										{
+											glDrawBuffer(GL_BACK_LEFT);
+										} break;
+										case 1:
+										{
+											glDrawBuffer(GL_BACK_RIGHT);
+										} break;
+									}
+								}
+								else
+								{
+									switch (stereo_count)
+									{
+										case 0:
+										{
+											glDrawBuffer(GL_FRONT_LEFT);
+										} break;
+										case 1:
+										{
+											glDrawBuffer(GL_FRONT_RIGHT);
+										} break;
+									}
+								}
+								switch (stereo_count)
+								{
+									case 0:
+									{
+										/* the projection matrix converts the viewing volume into the
+											Normalised Device Coordinates ranging from -1 to +1 in each
+											coordinate direction. Need to scale this range to fit the
+											viewport by premultiplying with a matrix. First start with
+											identity: Note that numbers go down columns first in OpenGL
+											matrices */
+										stereo_matrix[0] = stereo_cos;
+										stereo_matrix[1] = 0.0;
+										stereo_matrix[2] = stereo_sin;
+										stereo_matrix[3] = 0.0;
+
+										stereo_matrix[4] = 0.0;
+										stereo_matrix[5] = 1.0;
+										stereo_matrix[6] = 0.0;
+										stereo_matrix[7] = 0.0;
+
+										stereo_matrix[8] = -stereo_sin;
+										stereo_matrix[9] = 0.0;
+										stereo_matrix[10] = stereo_cos;
+										stereo_matrix[11] = 0.0;
+
+										stereo_matrix[12] = 0.0;
+										stereo_matrix[13] = 0.0;
+										stereo_matrix[14] = 0.0;
+										stereo_matrix[15] = 1.0;
+									} break;
+									case 1:
+									{
+										/* the projection matrix converts the viewing volume into the
+											Normalised Device Coordinates ranging from -1 to +1 in each
+											coordinate direction. Need to scale this range to fit the
+											viewport by premultiplying with a matrix. First start with
+											identity: Note that numbers go down columns first in OpenGL
+											matrices */
+										stereo_matrix[0] = stereo_cos;
+										stereo_matrix[1] = 0.0;
+										stereo_matrix[2] = -stereo_sin;
+										stereo_matrix[3] = 0.0;
+
+										stereo_matrix[4] = 0.0;
+										stereo_matrix[5] = 1.0;
+										stereo_matrix[6] = 0.0;
+										stereo_matrix[7] = 0.0;
+
+										stereo_matrix[8] = stereo_sin;
+										stereo_matrix[9] = 0.0;
+										stereo_matrix[10] = stereo_cos;
+										stereo_matrix[11] = 0.0;
+
+										stereo_matrix[12] = 0.0;
+										stereo_matrix[13] = 0.0;
+										stereo_matrix[14] = 0.0;
+										stereo_matrix[15] = 1.0;
+									} break;
+								}
 							}
-							else
+							for (accumulation_count=0;accumulation_count<scene_redraws;
+								  accumulation_count++)
 							{
-								glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-							}
-
-							/********* RENDER BACKGROUND TEXTURE *********/
-							if ((!picking_on)&&scene_viewer->background_texture)
-							{
-								glMatrixMode(GL_PROJECTION);
-								glLoadIdentity();
-								glDisable(GL_LIGHTING);
-								glColor3f((scene_viewer->background_colour).red,
-								  (scene_viewer->background_colour).green,
-								  (scene_viewer->background_colour).blue);
-								Scene_viewer_render_background_texture(scene_viewer,
-									viewport_width,viewport_height);
-								glEnable(GL_LIGHTING);
-							}
-
-							/********* CALCULATE ANTIALIAS OFFSET MATRIX *********/
-							switch(antialias)
-							{
-								case 0:
-								case 1:
+								/* clear the screen: colour buffer and depth buffer */
+								glClearColor((scene_viewer->background_colour).red,
+									(scene_viewer->background_colour).green,
+									(scene_viewer->background_colour).blue,0.);
+								glClearDepth(1.0);
+								if (0<stencil_bits)
 								{
-									/* Do nothing */
-								} break;
-								case 2:
+									glClearStencil(0);
+									glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT |
+										GL_STENCIL_BUFFER_BIT);
+								}
+								else
 								{
-									pixel_offset_x=j2[accumulation_count][0]-0.5;
-									pixel_offset_y=j2[accumulation_count][1]-0.5;
-								} break;
-								case 4:
-								{
-									pixel_offset_x=j4[accumulation_count][0]-0.5;
-									pixel_offset_y=j4[accumulation_count][1]-0.5;
-								} break;
-								case 8:
-								{
-									pixel_offset_x=j8[accumulation_count][0]-0.5;
-									pixel_offset_y=j8[accumulation_count][1]-0.5;
-								} break;
-								default:
-								{
-									display_message(ERROR_MESSAGE,
-										"Scene_viewer_render_scene_private.  "
-										"Invalid antialias number");
-									return_code=0;
-								} break;
-							}
-							/* the projection matrix converts the viewing volume into the
-								 Normalised Device Coordinates ranging from -1 to +1 in each
-								 coordinate direction. Need to scale this range to fit the
-								 viewport by premultiplying with a matrix. First start with
-								 identity: Note that numbers go down columns first in OpenGL
-								 matrices */
-							temp_matrix[0] = 1.0;
-							temp_matrix[1] = 0.0;
-							temp_matrix[2] = 0.0;
-							temp_matrix[3] = 0.0;
+									glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+								}
 
-							temp_matrix[4] = 0.0;
-							temp_matrix[5] = 1.0;
-							temp_matrix[6] = 0.0;
-							temp_matrix[7] = 0.0;
+								/********* RENDER BACKGROUND TEXTURE *********/
+								if ((!picking_on)&&scene_viewer->background_texture)
+								{
+									glMatrixMode(GL_PROJECTION);
+									glLoadIdentity();
+									glDisable(GL_LIGHTING);
+									glColor3f((scene_viewer->background_colour).red,
+										(scene_viewer->background_colour).green,
+										(scene_viewer->background_colour).blue);
+									Scene_viewer_render_background_texture(scene_viewer,
+										viewport_width,viewport_height);
+									glEnable(GL_LIGHTING);
+								}
 
-							temp_matrix[8] = 0.0;
-							temp_matrix[9] = 0.0;
-							temp_matrix[10] = 1.0;
-							temp_matrix[11] = 0.0;
-							/* offsetting image by [sub]pixel distances for anti-aliasing.
-								 offset_x is distance image is shifted to the right, offset_y is
-								 distance image is shifted up. The actual offsets used are
-								 fractions of half the viewport width or height,since normalized
-								 device coordinates (NDCs) range from -1 to +1 */
-							temp_matrix[12] = 2.0*pixel_offset_x/viewport_width;
-							temp_matrix[13] = 2.0*pixel_offset_y/viewport_height;
-							temp_matrix[14] = 0.0;
-							temp_matrix[15] = 1.0;
+								/********* CALCULATE ANTIALIAS OFFSET MATRIX *********/
+								switch(antialias)
+								{
+									case 0:
+									case 1:
+									{
+										/* Do nothing */
+									} break;
+									case 2:
+									{
+										pixel_offset_x=j2[accumulation_count][0]-0.5;
+										pixel_offset_y=j2[accumulation_count][1]-0.5;
+									} break;
+									case 4:
+									{
+										pixel_offset_x=j4[accumulation_count][0]-0.5;
+										pixel_offset_y=j4[accumulation_count][1]-0.5;
+									} break;
+									case 8:
+									{
+										pixel_offset_x=j8[accumulation_count][0]-0.5;
+										pixel_offset_y=j8[accumulation_count][1]-0.5;
+									} break;
+									default:
+									{
+										display_message(ERROR_MESSAGE,
+											"Scene_viewer_render_scene_private.  "
+											"Invalid antialias number");
+										return_code=0;
+									} break;
+								}
+								/* the projection matrix converts the viewing volume into the
+									Normalised Device Coordinates ranging from -1 to +1 in each
+									coordinate direction. Need to scale this range to fit the
+									viewport by premultiplying with a matrix. First start with
+									identity: Note that numbers go down columns first in OpenGL
+									matrices */
+								temp_matrix[0] = 1.0;
+								temp_matrix[1] = 0.0;
+								temp_matrix[2] = 0.0;
+								temp_matrix[3] = 0.0;
 
-							/********* RENDER OVERLAY SCENE *********/
-							if (!picking_on&&scene_viewer->overlay_scene)
-							{
-								/* set up parallel projection/modelview combination that gives
-									 coordinates ranging from -1 to +1 from left to right and
-									 bottom to top in the largest square that fits inside the
-									 viewer. Also has -1 to +1 range from far to near_plane */
-								glMatrixMode(GL_PROJECTION);
-								glLoadIdentity();
+								temp_matrix[4] = 0.0;
+								temp_matrix[5] = 1.0;
+								temp_matrix[6] = 0.0;
+								temp_matrix[7] = 0.0;
+
+								temp_matrix[8] = 0.0;
+								temp_matrix[9] = 0.0;
+								temp_matrix[10] = 1.0;
+								temp_matrix[11] = 0.0;
+								/* offsetting image by [sub]pixel distances for anti-aliasing.
+									offset_x is distance image is shifted to the right, offset_y is
+									distance image is shifted up. The actual offsets used are
+									fractions of half the viewport width or height,since normalized
+									device coordinates (NDCs) range from -1 to +1 */
+								temp_matrix[12] = 2.0*pixel_offset_x/viewport_width;
+								temp_matrix[13] = 2.0*pixel_offset_y/viewport_height;
+								temp_matrix[14] = 0.0;
+								temp_matrix[15] = 1.0;
+
+								/********* RENDER OVERLAY SCENE *********/
+								if (!picking_on&&scene_viewer->overlay_scene)
+								{
+									/* set up parallel projection/modelview combination that gives
+										coordinates ranging from -1 to +1 from left to right and
+										bottom to top in the largest square that fits inside the
+										viewer. Also has -1 to +1 range from far to near_plane */
+									glMatrixMode(GL_PROJECTION);
+									glLoadIdentity();
+									if (antialias)
+									{
+										glMultMatrixd(temp_matrix);
+									}
+									if (viewport_width > viewport_height)
+									{
+										max_x = (double)viewport_width/(double)viewport_height;
+										max_y = 1.0;
+									}
+									else
+									{
+										max_x = 1.0;
+										max_y = (double)viewport_height/(double)viewport_width;
+									}
+									if (0<stencil_bits)
+									{
+										/* use full z-buffer for overlay ranging from -1 to 1 in z */
+										glOrtho(-max_x,max_x,-max_y,max_y,1.0,3.0);
+										glStencilFunc(GL_ALWAYS,1,1);
+										glStencilOp(GL_REPLACE,GL_REPLACE,GL_REPLACE);
+									}
+									else
+									{
+										/* overlay ranges from -99 to 1 in z, hence it is at front of
+											z-buffer */
+										glOrtho(-max_x,max_x,-max_y,max_y,1.0,101.0);
+									}
+									glMatrixMode(GL_MODELVIEW);
+									glLoadIdentity();
+									gluLookAt(/*eye*/0.0,0.0,2.0, /*lookat*/0.0,0.0,0.0,
+										/*up*/0.0,1.0,0.0);
+									/* set up lights in overlay_scene */
+									/* only lights in overlay_scene apply to it */
+									reset_Lights();
+									for_each_Light_in_Scene(scene_viewer->overlay_scene,
+										execute_Light,(void *)NULL);
+									/* render overlay_scene */
+									if (picking_on)
+									{
+										/* Always execute simply for picking */
+										execute_Scene(scene_viewer->overlay_scene);
+									}
+									else
+									{
+										switch (scene_viewer->transparency_mode)
+										{
+											default:
+											{
+												glAlphaFunc(GL_GREATER,0.0);
+												execute_Scene(scene_viewer->overlay_scene);
+											} break;
+											case SCENE_VIEWER_SLOW_TRANSPARENCY:
+											{
+												glEnable(GL_ALPHA_TEST);
+												/* render only fragments with alpha = 1.0, write depth */
+												glDepthMask(GL_TRUE);
+												glAlphaFunc(GL_EQUAL,1.0);
+												execute_Scene(scene_viewer->overlay_scene);
+												/* render fragments with alpha != 1.0; do not write into
+													depth buffer */
+												glDepthMask(GL_FALSE);
+												glAlphaFunc(GL_NOTEQUAL,1.0);
+												execute_Scene(scene_viewer->overlay_scene);
+												glDepthMask(GL_TRUE);
+												glDisable(GL_ALPHA_TEST);
+											} break;
+										}
+									}
+								}
+
+								/********* RENDER MAIN SCENE *********/
+								if (!picking_on)
+								{
+									/* load identity matrix for rendering normal scene */
+									glMatrixMode(GL_PROJECTION);
+									glLoadIdentity();
+								}
 								if (antialias)
 								{
 									glMultMatrixd(temp_matrix);
 								}
-								if (viewport_width > viewport_height)
+								if (stereo)
 								{
-									max_x = (double)viewport_width/(double)viewport_height;
-									max_y = 1.0;
+									glMultMatrixd(stereo_matrix);
 								}
-								else
+								glMultMatrixd(projection_matrix);
+							
+								/* ModelView matrix */
+								glMatrixMode(GL_MODELVIEW);
+								glLoadIdentity();
+								reset_Lights();
+								/* turn on lights that are part of the Scene_viewer,
+									ie. headlamps */
+								FOR_EACH_OBJECT_IN_LIST(Light)(execute_Light,(void *)NULL,
+									scene_viewer->list_of_lights);
+							
+								glMultMatrixd(modelview_matrix);
+								/* turn on lights that are part of the Scene and fixed relative
+									to it. Note the scene will have compiled them already. */
+								for_each_Light_in_Scene(scene_viewer->scene,execute_Light,
+									(void *)NULL);
+
+								/* Clip planes */
+								for (i = 0 ; i < MAX_CLIP_PLANES ; i++)
 								{
-									max_x = 1.0;
-									max_y = (double)viewport_height/(double)viewport_width;
+									if (scene_viewer->clip_planes[i * 4]||
+										scene_viewer->clip_planes[i * 4 + 1]||
+										scene_viewer->clip_planes[i * 4 + 2])
+									{
+										switch(i)
+										{
+											case 0:
+											{
+												glEnable(GL_CLIP_PLANE0);
+												glClipPlane(GL_CLIP_PLANE0,
+													&(scene_viewer->clip_planes[i * 4]));
+											} break;
+											case 1:
+											{
+												glEnable(GL_CLIP_PLANE1);
+												glClipPlane(GL_CLIP_PLANE1,
+													&(scene_viewer->clip_planes[i * 4]));
+											} break;
+											case 2:
+											{
+												glEnable(GL_CLIP_PLANE2);
+												glClipPlane(GL_CLIP_PLANE2,
+													&(scene_viewer->clip_planes[i * 4]));
+											} break;
+											case 3:
+											{
+												glEnable(GL_CLIP_PLANE3);
+												glClipPlane(GL_CLIP_PLANE3,
+													&(scene_viewer->clip_planes[i * 4]));
+											} break;
+											case 4:
+											{
+												glEnable(GL_CLIP_PLANE4);
+												glClipPlane(GL_CLIP_PLANE4,
+													&(scene_viewer->clip_planes[i * 4]));
+											} break;
+											case 5:
+											{
+												glEnable(GL_CLIP_PLANE5);
+												glClipPlane(GL_CLIP_PLANE5,
+													&(scene_viewer->clip_planes[i * 4]));
+											} break;
+										}
+									}
+									else
+									{
+										switch(i)
+										{
+											case 0:
+											{
+												glDisable(GL_CLIP_PLANE0);
+											} break;
+											case 1:
+											{
+												glDisable(GL_CLIP_PLANE1);
+											} break;
+											case 2:
+											{
+												glDisable(GL_CLIP_PLANE2);
+											} break;
+											case 3:
+											{
+												glDisable(GL_CLIP_PLANE3);
+											} break;
+											case 4:
+											{
+												glDisable(GL_CLIP_PLANE4);
+											} break;
+											case 5:
+											{
+												glDisable(GL_CLIP_PLANE5);
+											} break;
+										}
+									}
 								}
+
 								if (0<stencil_bits)
 								{
 									/* use full z-buffer for overlay ranging from -1 to 1 in z */
-									glOrtho(-max_x,max_x,-max_y,max_y,1.0,3.0);
-									glStencilFunc(GL_ALWAYS,1,1);
-									glStencilOp(GL_REPLACE,GL_REPLACE,GL_REPLACE);
+									glStencilFunc(GL_NOTEQUAL,1,1);
+									glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP);
 								}
-								else
-								{
-									/* overlay ranges from -99 to 1 in z, hence it is at front of
-										 z-buffer */
-									glOrtho(-max_x,max_x,-max_y,max_y,1.0,101.0);
-								}
-								glMatrixMode(GL_MODELVIEW);
-								glLoadIdentity();
-								gluLookAt(/*eye*/0.0,0.0,2.0, /*lookat*/0.0,0.0,0.0,
-									/*up*/0.0,1.0,0.0);
-								/* set up lights in overlay_scene */
-								/* only lights in overlay_scene apply to it */
-								reset_Lights();
-								for_each_Light_in_Scene(scene_viewer->overlay_scene,
-									execute_Light,(void *)NULL);
-								/* render overlay_scene */
+								/* draw the model display list */
 								if (picking_on)
 								{
 									/* Always execute simply for picking */
-									execute_Scene(scene_viewer->overlay_scene);
+									execute_Scene(scene_viewer->scene);
 								}
 								else
 								{
@@ -1068,209 +1339,63 @@ access this function.
 										default:
 										{
 											glAlphaFunc(GL_GREATER,0.0);
-											execute_Scene(scene_viewer->overlay_scene);
+											execute_Scene_non_fast_changing(scene_viewer->scene);
 										} break;
 										case SCENE_VIEWER_SLOW_TRANSPARENCY:
 										{
 											glEnable(GL_ALPHA_TEST);
-											/* render only fragments with alpha = 1.0, write depth */
+											/* render only fragments with alpha=1.0 & write depth */
 											glDepthMask(GL_TRUE);
 											glAlphaFunc(GL_EQUAL,1.0);
-											execute_Scene(scene_viewer->overlay_scene);
-											/* render fragments with alpha != 1.0; do not write into
-												 depth buffer */
+											execute_Scene_non_fast_changing(scene_viewer->scene);
+											/* render only fragments with alpha != 1.0; do not write
+												into depth buffer */
 											glDepthMask(GL_FALSE);
 											glAlphaFunc(GL_NOTEQUAL,1.0);
-											execute_Scene(scene_viewer->overlay_scene);
+											execute_Scene_non_fast_changing(scene_viewer->scene);
 											glDepthMask(GL_TRUE);
 											glDisable(GL_ALPHA_TEST);
 										} break;
-									}
-								}
-							}
-
-							/********* RENDER MAIN SCENE *********/
-							if (!picking_on)
-							{
-								/* load identity matrix for rendering normal scene */
-								glMatrixMode(GL_PROJECTION);
-								glLoadIdentity();
-							}
-							if (antialias)
-							{
-								glMultMatrixd(temp_matrix);
-							}
-							glMultMatrixd(projection_matrix);
-							
-							/* ModelView matrix */
-							glMatrixMode(GL_MODELVIEW);
-							glLoadIdentity();
-							reset_Lights();
-							/* turn on lights that are part of the Scene_viewer,
-								 ie. headlamps */
-							FOR_EACH_OBJECT_IN_LIST(Light)(execute_Light,(void *)NULL,
-								scene_viewer->list_of_lights);
-							
-							glMultMatrixd(modelview_matrix);
-							/* turn on lights that are part of the Scene and fixed relative
-								 to it. Note the scene will have compiled them already. */
-							for_each_Light_in_Scene(scene_viewer->scene,execute_Light,
-								(void *)NULL);
-
-							/* Clip planes */
-							for (i = 0 ; i < MAX_CLIP_PLANES ; i++)
-							{
-								if (scene_viewer->clip_planes[i * 4]||
-									 scene_viewer->clip_planes[i * 4 + 1]||
-									 scene_viewer->clip_planes[i * 4 + 2])
-								{
-									switch(i)
-									{
-										case 0:
+										case SCENE_VIEWER_LAYERED_TRANSPARENCY:
 										{
-											glEnable(GL_CLIP_PLANE0);
-											glClipPlane(GL_CLIP_PLANE0,
-												&(scene_viewer->clip_planes[i * 4]));
-										} break;
-										case 1:
-										{
-											glEnable(GL_CLIP_PLANE1);
-											glClipPlane(GL_CLIP_PLANE1,
-												&(scene_viewer->clip_planes[i * 4]));
-										} break;
-										case 2:
-										{
-											glEnable(GL_CLIP_PLANE2);
-											glClipPlane(GL_CLIP_PLANE2,
-												&(scene_viewer->clip_planes[i * 4]));
-										} break;
-										case 3:
-										{
-											glEnable(GL_CLIP_PLANE3);
-											glClipPlane(GL_CLIP_PLANE3,
-												&(scene_viewer->clip_planes[i * 4]));
-										} break;
-										case 4:
-										{
-											glEnable(GL_CLIP_PLANE4);
-											glClipPlane(GL_CLIP_PLANE4,
-												&(scene_viewer->clip_planes[i * 4]));
-										} break;
-										case 5:
-										{
-											glEnable(GL_CLIP_PLANE5);
-											glClipPlane(GL_CLIP_PLANE5,
-												&(scene_viewer->clip_planes[i * 4]));
-										} break;
-									}
-								}
-								else
-								{
-									switch(i)
-									{
-										case 0:
-										{
-											glDisable(GL_CLIP_PLANE0);
-										} break;
-										case 1:
-										{
-											glDisable(GL_CLIP_PLANE1);
-										} break;
-										case 2:
-										{
-											glDisable(GL_CLIP_PLANE2);
-										} break;
-										case 3:
-										{
-											glDisable(GL_CLIP_PLANE3);
-										} break;
-										case 4:
-										{
-											glDisable(GL_CLIP_PLANE4);
-										} break;
-										case 5:
-										{
-											glDisable(GL_CLIP_PLANE5);
-										} break;
-									}
-								}
-							}
-
-							if (0<stencil_bits)
-							{
-								/* use full z-buffer for overlay ranging from -1 to 1 in z */
-								glStencilFunc(GL_NOTEQUAL,1,1);
-								glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP);
-							}
-							/* draw the model display list */
-							if (picking_on)
-							{
-								/* Always execute simply for picking */
-								execute_Scene(scene_viewer->scene);
-							}
-							else
-							{
-								switch (scene_viewer->transparency_mode)
-								{
-									default:
-									{
-										glAlphaFunc(GL_GREATER,0.0);
-										execute_Scene_non_fast_changing(scene_viewer->scene);
-									} break;
-									case SCENE_VIEWER_SLOW_TRANSPARENCY:
-									{
-										glEnable(GL_ALPHA_TEST);
-										/* render only fragments with alpha=1.0 & write depth */
-										glDepthMask(GL_TRUE);
-										glAlphaFunc(GL_EQUAL,1.0);
-										execute_Scene_non_fast_changing(scene_viewer->scene);
-										/* render only fragments with alpha != 1.0; do not write
-											 into depth buffer */
-										glDepthMask(GL_FALSE);
-										glAlphaFunc(GL_NOTEQUAL,1.0);
-										execute_Scene_non_fast_changing(scene_viewer->scene);
-										glDepthMask(GL_TRUE);
-										glDisable(GL_ALPHA_TEST);
-									} break;
-									case SCENE_VIEWER_LAYERED_TRANSPARENCY:
-									{
-										/* Draw each layer separately to help transparency */
-										glMatrixMode(GL_PROJECTION);
-										glGetDoublev(GL_PROJECTION_MATRIX,temp_matrix);
-										layers = scene_viewer->transparency_layers;
-										for (layer = 0 ; layer < layers ; layer++)
-										{		
+											/* Draw each layer separately to help transparency */
 											glMatrixMode(GL_PROJECTION);
-											glLoadIdentity();
-											glTranslated(0.0, 0.0, (double)layer * 2.0
-												- (double)(layers - 1));
-											glScaled(1.0, 1.0, (double)layers);
-											glMultMatrixd(temp_matrix);
-											glDepthRange(
-												(double)(layers - layer - 1) / (double)layers,
-												(double)(layers - layer) / (double)layers);
-											execute_Scene_non_fast_changing(scene_viewer->scene);
-										}
-									} break;
+											glGetDoublev(GL_PROJECTION_MATRIX,temp_matrix);
+											layers = scene_viewer->transparency_layers;
+											for (layer = 0 ; layer < layers ; layer++)
+											{		
+												glMatrixMode(GL_PROJECTION);
+												glLoadIdentity();
+												glTranslated(0.0, 0.0, (double)layer * 2.0
+													- (double)(layers - 1));
+												glScaled(1.0, 1.0, (double)layers);
+												glMultMatrixd(temp_matrix);
+												glDepthRange(
+													(double)(layers - layer - 1) / (double)layers,
+													(double)(layers - layer) / (double)layers);
+												execute_Scene_non_fast_changing(scene_viewer->scene);
+											}
+										} break;
+									}
 								}
-							}
+								if (antialias)
+								{
+									if (0==accumulation_count)
+									{
+										glAccum(GL_LOAD,1.0f/(GLfloat)antialias);
+									}
+									else
+									{
+										glAccum(GL_ACCUM,1.0f/(GLfloat)antialias);
+									}
+								}
+							} /* for (antialias_count) */
 							if (antialias)
 							{
-								if (0==accumulation_count)
-								{
-									glAccum(GL_LOAD,1.0f/(GLfloat)antialias);
-								}
-								else
-								{
-									glAccum(GL_ACCUM,1.0f/(GLfloat)antialias);
-								}
+								glAccum(GL_RETURN,1.001f);
+								glFlush();
 							}
-						}
-						if (antialias)
-						{
-							glAccum(GL_RETURN,1.001f);
-							glFlush();
-						}
+						} /* for (stereo_count) */
 					}
 					if (!picking_on&&(scene_viewer->fast_changing ||
 						Scene_has_fast_changing_objects(scene_viewer->scene)))
@@ -2937,6 +3062,7 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->transform_flag=0;
 				scene_viewer->first_fast_change=1;
 				scene_viewer->fast_changing=0;
+				scene_viewer->stereo_eye_spacing=0.25;
 				scene_viewer->swap_buffers=0;
 				if (default_light)
 				{
@@ -4120,6 +4246,60 @@ is orthogonal to the view direction - so prejection is not skew.
 
 	return (return_code);
 } /* Scene_viewer_set_lookat_parameters_non_skew */
+
+double Scene_viewer_get_stereo_eye_spacing(struct Scene_viewer *scene_viewer)
+/*******************************************************************************
+LAST MODIFIED : 13 August 2002
+
+DESCRIPTION :
+Returns the Scene_viewer stereo_eye_spacing.
+==============================================================================*/
+{
+	double return_spacing;
+
+	ENTER(Scene_viewer_get_stereo_eye_spacing);
+	if (scene_viewer)
+	{
+		return_spacing=scene_viewer->stereo_eye_spacing;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_get_stereo_eye_spacing.  Invalid argument(s)");
+		return_spacing=0;
+	}
+	LEAVE;
+
+	return (return_spacing);
+} /* Scene_viewer_get_stereo_eye_spacing */
+
+int Scene_viewer_set_stereo_eye_spacing(struct Scene_viewer *scene_viewer,
+	int stereo_eye_spacing)
+/*******************************************************************************
+LAST MODIFIED : 13 August 2002
+
+DESCRIPTION :
+Sets the Scene_viewer stereo_eye_spacing.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_set_stereo_eye_spacing);
+	if (scene_viewer && stereo_eye_spacing)
+	{
+		scene_viewer->stereo_eye_spacing = stereo_eye_spacing;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_set_stereo_eye_spacing.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_set_stereo_eye_spacing */
 
 int Scene_viewer_get_modelview_matrix(struct Scene_viewer *scene_viewer,
 	double modelview_matrix[16])
@@ -6261,6 +6441,14 @@ NOTE: Calling function must not deallocate returned string.
 		case SCENE_VIEWER_DOUBLE_BUFFER:
 		{
 			return_string="double_buffer";
+		} break;
+		case SCENE_VIEWER_STEREO_SINGLE_BUFFER:
+		{
+			return_string="stereo_single_buffer";
+		} break;
+		case SCENE_VIEWER_STEREO_DOUBLE_BUFFER:
+		{
+			return_string="stereo_double_buffer";
 		} break;
 		default:
 		{

@@ -137,6 +137,15 @@ Resources for the 3-D drawing widget.
 		"X3dSINGLE_BUFFERING"
 	},
 	{
+		X3dNstereoBufferingMode,
+		X3dCStereoBufferingMode,
+		X3dRStereoBufferingMode,
+		sizeof(X3dStereoBufferingMode),
+		XtOffsetOf(ThreeDDrawingRec,three_d_drawing.normal_buffer.stereo_buffering_mode),
+		XtRString,
+		"X3dMONO_BUFFERING"
+	},
+	{
 		X3dNvisualId,
 		X3dCVisualId,
 		XtRInt,
@@ -633,6 +642,62 @@ Converts a string to a buffering mode.
 	return (success);
 } /* X3dCvtStringToBufferColourMode */
 
+XrmQuark X3dMONO_BUFFERING_quark,X3dSTEREO_BUFFERING_quark;
+
+static Boolean X3dCvtStringToStereoBufferingMode(Display *display,XrmValue *args,
+	Cardinal *num_args,XrmValue *from,XrmValue *to,XtPointer *converter_data)
+/*******************************************************************************
+LAST MODIFIED : 12 August 2002
+
+DESCRIPTION :
+Converts a string to a buffering mode.
+???DB.  Use XtWarningMessage ?
+==============================================================================*/
+{
+	Boolean success;
+	XrmQuark string_quark;
+	static X3dStereoBufferingMode stereo_buffering_mode;
+
+	USE_PARAMETER(args);
+	USE_PARAMETER(converter_data);
+	if (display&&num_args&&(0== *num_args)&&from&&to)
+	{
+		if (string_quark=XrmStringToQuark((char *)(from->addr)))
+		{
+			if (X3dMONO_BUFFERING_quark==string_quark)
+			{
+				stereo_buffering_mode=X3dMONO_BUFFERING;
+				SET_TO(stereo_buffering_mode,X3dStereoBufferingMode);
+			}
+			else
+			{
+				if (X3dSTEREO_BUFFERING_quark==string_quark)
+				{
+					stereo_buffering_mode=X3dSTEREO_BUFFERING;
+					SET_TO(stereo_buffering_mode,X3dStereoBufferingMode);
+				}
+				else
+				{
+					success=False;
+				}
+			}
+		}
+		else
+		{
+			printf(
+				"X3dCvtStringToStereoBufferingMode.  Could not convert string to quark\n");
+			success=False;
+		}
+	}
+	else
+	{
+		printf("X3dCvtStringToStereoBufferingMode.  Invalid arguments\n");
+		success=False;
+	}
+
+	return (success);
+} /* X3dCvtStringToStereoBufferMode */
+
 XrmQuark X3dCOLOUR_INDEX_MODE_quark,X3dCOLOUR_RGB_MODE_quark;
 
 static Boolean X3dCvtStringToBufferColourMode(Display *display,XrmValuePtr args,
@@ -702,6 +767,10 @@ The class initialize method.
 	X3dDOUBLE_BUFFERING_quark=XrmStringToQuark("X3dDOUBLE_BUFFERING");
 	XtSetTypeConverter(XtRString,X3dRBufferingMode,X3dCvtStringToBufferingMode,
 		(XtConvertArgList)NULL,0,XtCacheNone,NULL);
+	X3dMONO_BUFFERING_quark=XrmStringToQuark("X3dMONO_BUFFERING");
+	X3dSTEREO_BUFFERING_quark=XrmStringToQuark("X3dSTEREO_BUFFERING");
+	XtSetTypeConverter(XtRString,X3dRStereoBufferingMode,X3dCvtStringToStereoBufferingMode,
+		(XtConvertArgList)NULL,0,XtCacheNone,NULL);
 	X3dCOLOUR_INDEX_MODE_quark=XrmStringToQuark("X3dCOLOUR_INDEX_MODE");
 	X3dCOLOUR_RGB_MODE_quark=XrmStringToQuark("X3dCOLOUR_RGB_MODE");
 	XtSetTypeConverter(XtRString,X3dRBufferColourMode,
@@ -768,6 +837,8 @@ because the initialize method is downward chained.
 			(request->three_d_drawing).normal_buffer.colour_mode;
 		(new->three_d_drawing).normal_buffer.buffering_mode=
 			(request->three_d_drawing).normal_buffer.buffering_mode;
+		(new->three_d_drawing).normal_buffer.stereo_buffering_mode=
+			(request->three_d_drawing).normal_buffer.stereo_buffering_mode;
 		/* get visual information */
 #if defined (OPENGL_API)
 		/* check the existence of the GLX server extension */
@@ -815,9 +886,16 @@ because the initialize method is downward chained.
 								(!value&&(X3dSINGLE_BUFFERING==
 									(request->three_d_drawing).normal_buffer.buffering_mode)))
 							{
-								valid_visual_info_list[number_of_valid_visual_infos]=
-									visual_info;
-								number_of_valid_visual_infos++;
+								glXGetConfig(display,visual_info,GLX_STEREO,&value);
+								if ((value&&(X3dSTEREO_BUFFERING==
+									(request->three_d_drawing).normal_buffer.stereo_buffering_mode))||
+									(!value&&(X3dMONO_BUFFERING==
+									(request->three_d_drawing).normal_buffer.stereo_buffering_mode)))
+								{
+									valid_visual_info_list[number_of_valid_visual_infos]=
+										visual_info;
+									number_of_valid_visual_infos++;
+								}
 							}
 						}
 						visual_info++;

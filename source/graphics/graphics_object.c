@@ -252,7 +252,7 @@ DECLARE_GT_OBJECT_DELETE_TIME_NUMBER_FUNCTION(GT_polyline, \
 DECLARE_GT_OBJECT_DELETE_TIME_NUMBER_FUNCTION(GT_surface, \
 	g_SURFACE,gt_surface,DESTROY(GT_surface))
 DECLARE_GT_OBJECT_DELETE_TIME_NUMBER_FUNCTION(GT_userdef, \
-	g_POINT,gt_userdef,DESTROY(GT_userdef))
+	g_USERDEF,gt_userdef,DESTROY(GT_userdef))
 DECLARE_GT_OBJECT_DELETE_TIME_NUMBER_FUNCTION(GT_voltex, \
 	g_VOLTEX,gt_voltex,DESTROY(GT_voltex))
 
@@ -2028,6 +2028,7 @@ Frees the memory for <**nurbs> and its fields and sets <*nurbs> to NULL.
 			{
 				DEALLOCATE((*nurbs)->pwlarray);
 			}
+			DEALLOCATE(*nurbs);
 		}
 		return_code=1;
 	}

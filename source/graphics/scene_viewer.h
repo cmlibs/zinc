@@ -69,7 +69,9 @@ Be sure to implement any new modes in Scene_viewer_buffer_mode_string.
 {
 	SCENE_VIEWER_PIXEL_BUFFER,
 	SCENE_VIEWER_SINGLE_BUFFER,
-	SCENE_VIEWER_DOUBLE_BUFFER
+	SCENE_VIEWER_DOUBLE_BUFFER,
+	SCENE_VIEWER_STEREO_SINGLE_BUFFER,
+	SCENE_VIEWER_STEREO_DOUBLE_BUFFER
 };
 
 enum Scene_viewer_viewport_mode
@@ -456,6 +458,23 @@ LAST MODIFIED : 18 November 1997
 
 DESCRIPTION :
 Sets the view direction and orientation of the Scene_viewer.
+==============================================================================*/
+
+double Scene_viewer_get_stereo_eye_spacing(struct Scene_viewer *scene_viewer);
+/*******************************************************************************
+LAST MODIFIED : 13 August 2002
+
+DESCRIPTION :
+Returns the Scene_viewer stereo_eye_spacing.
+==============================================================================*/
+
+int Scene_viewer_set_stereo_eye_spacing(struct Scene_viewer *scene_viewer,
+	int stereo_eye_spacing);
+/*******************************************************************************
+LAST MODIFIED : 13 August 2002
+
+DESCRIPTION :
+Sets the Scene_viewer stereo_eye_spacing.
 ==============================================================================*/
 
 int Scene_viewer_get_modelview_matrix(struct Scene_viewer *scene_viewer,

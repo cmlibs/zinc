@@ -1187,7 +1187,7 @@ Creates a spectrum_editor widget.
 										Light_model_set_ambient(viewer_light_model, &ambient_colour);
 										if (graphics_buffer = create_Graphics_buffer_X3d(
 											spectrum_editor->viewer_form, X3dCOLOUR_RGB_MODE, 
-											X3dDOUBLE_BUFFERING, 
+											X3dDOUBLE_BUFFERING, X3dMONO_BUFFERING,
 											User_interface_get_specified_visual_id(
 											user_interface)))
 										{

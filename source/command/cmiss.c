@@ -9981,7 +9981,8 @@ DESCRIPTION :
 Executes a GFX CREATE WINDOW command.
 ==============================================================================*/
 {
-	char double_buffer_flag,*name,single_buffer_flag;
+	char double_buffer_flag,*name,mono_buffer_flag,single_buffer_flag,
+		stereo_buffer_flag;
 	enum Scene_viewer_buffer_mode buffer_mode;
 	int return_code;
 	struct Cmiss_command_data *command_data;
@@ -9995,9 +9996,16 @@ Executes a GFX CREATE WINDOW command.
 		},
 		option_table[]=
 		{
+			{NULL,NULL,NULL,NULL},
 			{"name",NULL,(void *)1,set_name},
 			{NULL,NULL,NULL,NULL},
 			{NULL,NULL,NULL,set_name}
+		},
+		stereo_buffer_option_table[]=
+		{
+			{"mono_buffer",NULL,NULL,set_char_flag},
+			{"stereo_buffer",NULL,NULL,set_char_flag},
+			{NULL,NULL,NULL,NULL}
 		};
 
 	ENTER(gfx_create_window);
@@ -10016,26 +10024,54 @@ Executes a GFX CREATE WINDOW command.
 				/* change defaults */
 				single_buffer_flag=0;
 				double_buffer_flag=0;
-				(option_table[0]).to_be_modified= &name;
+				mono_buffer_flag=0;
+				stereo_buffer_flag=0;
+				(stereo_buffer_option_table[0]).to_be_modified= &mono_buffer_flag;
+				(stereo_buffer_option_table[1]).to_be_modified= &stereo_buffer_flag;
+				(option_table[0]).user_data=stereo_buffer_option_table;
+				(option_table[1]).to_be_modified= &name;
 				(buffer_option_table[0]).to_be_modified= &single_buffer_flag;
 				(buffer_option_table[1]).to_be_modified= &double_buffer_flag;
-				(option_table[1]).user_data=buffer_option_table;
-				(option_table[2]).to_be_modified= &name;
+				(option_table[2]).user_data=buffer_option_table;
+				(option_table[3]).to_be_modified= &name;
 				if (return_code=process_multiple_options(state,option_table))
+				{
+					if (single_buffer_flag && double_buffer_flag)
+					{
+						display_message(ERROR_MESSAGE,
+							"Only one of single_buffer/double_buffer");
+						return_code=0;
+					}
+					if (mono_buffer_flag && stereo_buffer_flag)
+					{
+						display_message(ERROR_MESSAGE,
+							"Only one of mono_buffer/stereo_buffer");
+						return_code=0;
+					}
+				}
+				if (return_code)
 				{
 					if (single_buffer_flag)
 					{
-						buffer_mode=SCENE_VIEWER_SINGLE_BUFFER;
-						if (double_buffer_flag)
+						if (stereo_buffer_flag)
 						{
-							display_message(ERROR_MESSAGE,
-								"Only one of single_buffer/double_buffer");
-							return_code=0;
+							buffer_mode=SCENE_VIEWER_STEREO_SINGLE_BUFFER;
+						}
+						else
+						{
+							buffer_mode=SCENE_VIEWER_SINGLE_BUFFER;
 						}
 					}
 					else
 					{
-						buffer_mode=SCENE_VIEWER_DOUBLE_BUFFER;
+						if (stereo_buffer_flag)
+						{
+							buffer_mode=SCENE_VIEWER_STEREO_DOUBLE_BUFFER;
+						}
+						else
+						{
+							buffer_mode=SCENE_VIEWER_DOUBLE_BUFFER;
+						}
 					}
 				}
 			}

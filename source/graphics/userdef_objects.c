@@ -266,7 +266,6 @@ Render a hair.
 #if defined (OPENGL_API)
 		glPushMatrix();
 		/*glNormal3fv(dummynorm);*/
-			/*???Edouard.  Is a normal statement allowed outside a begin/end pair? */
 #endif
 		for (j=0;j< hair->haircnt;j++)
 		{
@@ -286,7 +285,6 @@ Render a hair.
 					glVertex3f(hair->hair[j][1][0],hair->hair[j][1][1],
 						hair->hair[j][1][2]);
 					glCallList(9);
-						/*???Edouard.  Make sure this number is correct */
 #endif
 					for (t=0;t<=1;t+=tstep)
 					{
@@ -317,14 +315,6 @@ Render a hair.
 					move(hair->hair[j][1][0],hair->hair[j][1][1],hair->hair[j][1][2]);
 #endif
 #if defined (OPENGL_API)
-					/*???Edouard.  This translation of the IrisGL 'move' statement
-						shouldn't be here since the loop below contains a 'move' statement
-						as well. It is illegal in OpenGL to call glBegin() while already in
-						a glBegin(), so we would have to call glEnd() stright after this
-						statement, but this would result in no ouput from the renderer (as
-						not enough information would have been passed to OpenGL to draw
-						anything).  Therefore the OpenGL translation below is commented out,
-						and hopefully the same behaviour will result as did in IrisGL */
 /*          glBegin(GL_LINE_STRIP);
 					glVertex3f(hair->hair[j][1][0],hair->hair[j][1][1],
 						hair->hair[j][1][2]);*/
@@ -336,7 +326,6 @@ Render a hair.
 #endif
 #if defined (OPENGL_API)
 						glCallList(8);
-							/*???Edouard.  Make sure this number is correct */
 #endif
 						hairxprev = hairx;
 						hairyprev = hairy;
@@ -354,11 +343,6 @@ Render a hair.
 						bend= myrand()-.5;
 						if (hairx > -5)
 						{
-							/*???Edouard.  I've moved the following rendering code inside the
-								if() statement in order to allow OpenGL to have a balanced
-								glBegin() and glEnd() without danger of running into another
-								glBegin() for the polygon statements in the subsequent if()
-								statement */
 #if defined (GL_API)
 							move(hairx,hairy,hairz);
 #endif
@@ -392,7 +376,6 @@ Render a hair.
 #endif
 #if defined (OPENGL_API)
 						glCallList(8);
-							/*???Edouard.  Make sure this number is correct */
 #endif
 						if (t>0)
 						{
@@ -416,7 +399,6 @@ Render a hair.
 							pclos();
 #endif
 #if defined (OPENGL_API)
-							/*???Edouard.  I moved glNormal() inside the begin/end pair */
 							glBegin(GL_POLYGON);
 							glNormal3fv(vec3);
 							glVertex3f(hairxprev, hairyprev, hairzprev);
@@ -435,15 +417,6 @@ Render a hair.
 					move(hair->hair[j][1][0],hair->hair[j][1][1],hair->hair[j][1][2]);
 #endif
 #if defined (OPENGL_API)
-					/*???Edouard.  As in the previous section of code above, we are faced
-						with the problem of how to translate the IrisGL 'move' statement.  A
-						call to glVertex() outside a begin/end pair is said to result in
-						"undefined behaviour" (OpenGL specification, version 1.0, page 20),
-						so we would have to put a glBegin() before it, and follow it with a
-						glEnd() in order to not hit another glBegin() for the move inside
-						the for() loop below. At the monent I'll provide a translation, but
-						leave it commeted out, as I can't see what it's supposed to be
-						doing */
 /*          glBegin(GL_LINE_STRIP);
 					glVertex3f(hair->hair[j][1][0],hair->hair[j][1][1],
 						hair->hair[j][1][2]);
@@ -456,7 +429,6 @@ Render a hair.
 #endif
 #if defined (OPENGL_API)
 						glCallList(9);
-							/*???Edouard.  Check this number is the correct list index */
 #endif
 						hairxprev = hairx;
 						hairyprev = hairy;
@@ -474,9 +446,6 @@ Render a hair.
 						bend= myrand()-.5;
 						if (t>.1)
 						{
-							/*???Edouard.  I moved 'move()' inside the if statement to make
-								sure its OpenGL translation (starting with a glBegin() ) doesn't
-								run into any other glBegin()s */
 #if defined (GL_API)
 							move(hairx,hairy,hairz);
 #endif
@@ -508,7 +477,6 @@ Render a hair.
 #endif
 #if defined (OPENGL_API)
 						glCallList(8);
-							/*???Edouard.  Check this number is the correct list index */
 #endif
 						if (t>0)
 						{
@@ -552,15 +520,6 @@ Render a hair.
 #endif
 #if defined (OPENGL_API)
 					glCallList(9);
-						/*???Edouard.  Make sure this number is the correct list index */
-					/*???Edouard.  I know calling glVertex() outside of a begin/end pair
-						is a Bad Thing. But I cannot seem to find a definitive ruling on
-						whether calling glNormal() outside of a begin/end has any problems.
-						The example code seems to all put glNormal() inside the begin/end
-						pairs, but the specification seem to imply the the normal is held in
-						state, and so could be specified at any time. If the below call
-						turns out to be a problem, then the it will have to be moved inside
-						the begin/end pairing */
 					glNormal3fv(eyebrownorm);
 #endif
 					for (t=0;t<=1;t+=tstep)
@@ -617,9 +576,7 @@ Render a hair.
 #endif
 #if defined (OPENGL_API)
 					glCallList(9);
-						/*???Edouard.  Check this is the correct list index */
 					glNormal3fv(eyebrownorm);
-						/*???Edouard.  See the comment above about glNormal() placement */
 #endif
 					for (t=0;t<=1;t+=tstep)
 					{
@@ -729,6 +686,32 @@ Render a hair.
 #else
 		return_code=0;
 #endif
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"render_hair.  Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* render_hair */
+
+static int destroy_hair(void **hair_struct)
+/*******************************************************************************
+LAST MODIFIED : 13 August 2002
+
+DESCRIPTION :
+Clean up a hair.
+==============================================================================*/
+{
+	int return_code;
+	struct Userdef_hair *hair;
+
+	ENTER(destroy_hair);
+	if (hair=(struct Userdef_hair *)*hair_struct)
+	{
+		DEALLOCATE(*hair_struct);
 	}
 	else
 	{
@@ -1253,8 +1236,7 @@ newly created object is put at <*userdef_address>.
 						}
 					}
 					userdef_data=hair;
-					/*???RC Should really specify a destroy function */
-					userdef_destroy_function=NULL;
+					userdef_destroy_function=destroy_hair;
 					userdef_render_function=render_hair;
 					return_code=1;
 				}

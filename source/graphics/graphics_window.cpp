@@ -2506,6 +2506,8 @@ manager it is to live in, since users will want to close windows with the
 window manager widgets.
 Each window has a unique <name> that can be used to identify it, and which
 will be printed on the windows title bar.
+A stereo buffering mode will automatically be chosen when the visual supports
+it.
 ==============================================================================*/
 {
 #if defined (MOTIF)
@@ -2576,6 +2578,7 @@ will be printed on the windows title bar.
 #if defined (MOTIF)
 	Widget viewing_area[4];
 	X3dBufferingMode x3d_buffering_mode;
+	X3dStereoBufferingMode x3d_stereo_buffering_mode;
 #endif /* defined (MOTIF) */
 #if defined (GTK_USER_INTERFACE)
 	GtkWidget *shell_window;
@@ -2583,7 +2586,9 @@ will be printed on the windows title bar.
 
 	ENTER(create_graphics_window);
 	if (name&&((SCENE_VIEWER_SINGLE_BUFFER==buffer_mode)||
-		(SCENE_VIEWER_DOUBLE_BUFFER==buffer_mode))&&background_colour&&
+		(SCENE_VIEWER_DOUBLE_BUFFER==buffer_mode)||
+		(SCENE_VIEWER_STEREO_SINGLE_BUFFER==buffer_mode)||
+		(SCENE_VIEWER_STEREO_DOUBLE_BUFFER==buffer_mode))&&background_colour&&
 		light_manager&&light_model_manager&&default_light_model&&
 		scene_manager&&scene&&texture_manager&&interactive_tool_manager&&
 		user_interface)
@@ -2810,12 +2815,33 @@ will be printed on the windows title bar.
 										switch (buffer_mode)
 										{
 											case SCENE_VIEWER_SINGLE_BUFFER:
+											case SCENE_VIEWER_STEREO_SINGLE_BUFFER:
 											{
 												x3d_buffering_mode=X3dSINGLE_BUFFERING;
 											} break;
 											case SCENE_VIEWER_DOUBLE_BUFFER:
+											case SCENE_VIEWER_STEREO_DOUBLE_BUFFER:
 											{
 												x3d_buffering_mode=X3dDOUBLE_BUFFERING;
+											} break;
+											default:
+											{
+												display_message(ERROR_MESSAGE,
+													"CREATE(Scene_viewer).  Invalid buffering mode");
+												return_code=0;
+											}
+										}
+										switch (buffer_mode)
+										{
+											case SCENE_VIEWER_SINGLE_BUFFER:
+											case SCENE_VIEWER_DOUBLE_BUFFER:
+											{
+												x3d_stereo_buffering_mode=X3dMONO_BUFFERING;
+											} break;
+											case SCENE_VIEWER_STEREO_SINGLE_BUFFER:
+											case SCENE_VIEWER_STEREO_DOUBLE_BUFFER:
+											{
+												x3d_stereo_buffering_mode=X3dSTEREO_BUFFERING;
 											} break;
 											default:
 											{
@@ -2830,7 +2856,7 @@ will be printed on the windows title bar.
 										{
 											if (graphics_buffer = create_Graphics_buffer_X3d(
 												viewing_area[pane_no], X3dCOLOUR_RGB_MODE, 
-												x3d_buffering_mode, 
+												x3d_buffering_mode, x3d_stereo_buffering_mode,
 												User_interface_get_specified_visual_id(
 												graphics_window->user_interface)))
 											{
@@ -3414,12 +3440,18 @@ DESCRIPTION :
 Sets the <eye_spacing> for the <graphics_window> used for 3-D viewing.
 ==============================================================================*/
 {
-	int return_code;
+	int pane_no,return_code;
 
 	ENTER(Graphics_window_set_eye_spacing);
 	if (graphics_window)
 	{
 		graphics_window->eye_spacing=eye_spacing;
+		/* Set this on all the scene viewers too */
+		for (pane_no=0;pane_no<graphics_window->number_of_scene_viewers;pane_no++)
+		{
+			Scene_viewer_set_stereo_eye_spacing(graphics_window->scene_viewer_array[pane_no],
+				eye_spacing);
+		}		
 		return_code=1;
 	}
 	else

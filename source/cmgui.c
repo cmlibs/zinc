@@ -1947,7 +1947,7 @@ Main program for the CMISS Graphical User Interface
 
 	/* Write out any memory blocks still ALLOCATED when MEMORY_CHECKING is
 		 on.  When MEMORY_CHECKING is off this function does nothing */
-	list_memory(/*count_number*/1, /*show_pointers*/0, /*increment_counter*/0,
+	list_memory(/*count_number*/0, /*show_pointers*/0, /*increment_counter*/0,
 		/*show_structures*/1);
 
 #if defined (OLD_CODE)

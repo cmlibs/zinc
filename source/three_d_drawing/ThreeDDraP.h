@@ -86,6 +86,7 @@ GL has a number of output buffers - normal, overlay, underlay and popup.
 	/* specify if the buffer is present for the widget */
 	Boolean present;
 	X3dBufferingMode buffering_mode;
+	X3dStereoBufferingMode stereo_buffering_mode;
 	X3dBufferColourMode colour_mode;
 	Colormap colour_map;
 	XVisualInfo *visual_information;
