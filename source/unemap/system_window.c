@@ -1360,13 +1360,15 @@ as a standalone application.
 	struct Standard_torso_defaults standard_torso_defaults;
 	static XtResource standard_torso_resources[]=
 	{
-		XmNstandardTorso,
-		XmCStandardTorso,
-		XmRString,
-		sizeof(char *),
-		XtOffsetOf(struct Standard_torso_defaults,standard_torso_file),
-		XmRString,
-		""
+		{
+			XmNstandardTorso,
+			XmCStandardTorso,
+			XmRString,
+			sizeof(char *),
+			XtOffsetOf(struct Standard_torso_defaults,standard_torso_file),
+			XmRString,
+			""
+		}
 	};
 #endif /* defined (UNEMAP_USE_3D) */
 	struct System_window *system;
