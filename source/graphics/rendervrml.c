@@ -2689,7 +2689,7 @@ Global functions
 */
 int export_to_vrml(char *file_name,void *scene_void)
 /******************************************************************************
-LAST MODIFIED : 31 May 2001
+LAST MODIFIED : 19 October 2001
 
 DESCRIPTION :
 Renders the visible objects to a VRML file.
@@ -2698,12 +2698,10 @@ Renders the visible objects to a VRML file.
 #if defined (OLD_CODE)
 	double angle,magnitude,vector_x,vector_y,vector_z;
 #endif /* defined (OLD_CODE) */
-	double centre_x,centre_y,centre_z,max_x,max_y,max_z,min_x,min_y,min_z,
-		radius;
+	double centre_x, centre_y, centre_z, radius, size_x, size_y, size_z;
 	FILE *vrml_file;
 	int return_code;
 	struct Export_to_vrml_data export_to_vrml_data;
-	struct Graphics_object_range_struct graphics_object_range;
 	struct Scene *scene;
 
 	ENTER(export_to_vrml);
@@ -2725,83 +2723,66 @@ Renders the visible objects to a VRML file.
 			/* draw objects */
 			fprintf(vrml_file,"Group {\n");
 			fprintf(vrml_file,"  children [\n");
-			graphics_object_range.first=1;
-			for_each_Scene_object_in_Scene(scene,
-				Scene_object_get_range,(void *)&graphics_object_range);
-			if (!graphics_object_range.first)
+
+			if (Scene_get_graphics_range(scene, &centre_x, &centre_y, &centre_z,
+				&size_x, &size_y, &size_z) &&
+				(radius = sqrt(size_x*size_x + size_y*size_y + size_z*size_z)))
 			{
-				/* get centre and radius of smallest sphere enclosing visible scene */
-				max_x=(double)graphics_object_range.maximum[0];
-				max_y=(double)graphics_object_range.maximum[1];
-				max_z=(double)graphics_object_range.maximum[2];
-				min_x=(double)graphics_object_range.minimum[0];
-				min_y=(double)graphics_object_range.minimum[1];
-				min_z=(double)graphics_object_range.minimum[2];
-				centre_x=0.5*(max_x+min_x);
-				centre_y=0.5*(max_y+min_y);
-				centre_z=0.5*(max_z+min_z);
-				/*???RC enlargement factor should be read in from defaults file */
-				/* can only proceed if positive radius */
-				if (0.0<(radius=/* factor* */1.0*sqrt((max_x-min_x)*(max_x-min_x)+
-					(max_y-min_y)*(max_y-min_y)+(max_z-min_z)*(max_z-min_z))))
-				{
-					
-					fprintf(vrml_file,"    Viewpoint {\n");
-					fprintf(vrml_file,"      description \"default\"\n");
-					fprintf(vrml_file,"      position %f %f %f\n", 
-						centre_x, centre_y, centre_z + radius);
+				fprintf(vrml_file,"    Viewpoint {\n");
+				fprintf(vrml_file,"      description \"default\"\n");
+				fprintf(vrml_file,"      position %f %f %f\n", 
+					centre_x, centre_y, centre_z + radius);
 #if defined (OLD_CODE)
-					/* SAB As the vrml routines no longer are associated with a 
-						scene_viewer no particular orientation is specified */
-					/* SAB The orientation is specified by giving a 3D vector and
-						a rotation angle about this vector.  The initial direction
-						is -z. */
-					vector_x= - scene->eyey+scene->yview;
-					vector_y=scene->eyex-scene->xview;
-					vector_z=scene->eyez-scene->zview;
-					magnitude=sqrt(vector_x*vector_x+vector_y*vector_y);
-					if (magnitude)
+				/* SAB As the vrml routines no longer are associated with a 
+					 scene_viewer no particular orientation is specified */
+				/* SAB The orientation is specified by giving a 3D vector and
+					 a rotation angle about this vector.  The initial direction
+					 is -z. */
+				vector_x= - scene->eyey+scene->yview;
+				vector_y=scene->eyex-scene->xview;
+				vector_z=scene->eyez-scene->zview;
+				magnitude=sqrt(vector_x*vector_x+vector_y*vector_y);
+				if (magnitude)
+				{
+					vector_x /= magnitude;
+					vector_y /= magnitude;
+					if (vector_z)
 					{
-						vector_x /= magnitude;
-						vector_y /= magnitude;
-						if (vector_z)
+						if (vector_z>0.0)
 						{
-							if (vector_z>0.0)
-							{
-								angle=atan(magnitude/vector_z);
-							}
-							else
-							{
-								angle=PI/2.0+atan(magnitude/vector_z);
-							}
+							angle=atan(magnitude/vector_z);
 						}
 						else
 						{
-							vector_x /= magnitude;
-							vector_y /= magnitude;
-							angle=PI/2.0;
+							angle=PI/2.0+atan(magnitude/vector_z);
 						}
 					}
 					else
 					{
-						if ((scene->eyez-scene->zview)>0.0)
-						{
-							vector_x=0;
-							vector_y=0;
-							angle=0;
-						}
-						else
-						{
-							vector_x=1;
-							vector_y=0;
-							angle=PI;
-						}
+						vector_x /= magnitude;
+						vector_y /= magnitude;
+						angle=PI/2.0;
 					}
-					fprintf(vrml_file,"      orientation %f %f %f %f\n",vector_x,vector_y,
-						0,angle); 
-#endif /* defined (OLD_CODE) */
-					fprintf(vrml_file,"    } #Viewpoint\n");
 				}
+				else
+				{
+					if ((scene->eyez-scene->zview)>0.0)
+					{
+						vector_x=0;
+						vector_y=0;
+						angle=0;
+					}
+					else
+					{
+						vector_x=1;
+						vector_y=0;
+						angle=PI;
+					}
+				}
+				fprintf(vrml_file,"      orientation %f %f %f %f\n",vector_x,vector_y,
+					0,angle); 
+#endif /* defined (OLD_CODE) */
+				fprintf(vrml_file,"    } #Viewpoint\n");
 			}
 			fprintf(vrml_file,"    NavigationInfo {\n");
 			fprintf(vrml_file,"      type [\"EXAMINE\",\"ANY\"]\n");
