@@ -642,8 +642,8 @@ sequential element_xi lookup should now be performed.
 		((2 == Computed_field_get_number_of_components(field)) ||
 		((3 == Computed_field_get_number_of_components(field)) &&
 		(hint_resolution[2] == 0.0))) && user_interface && search_element_group
-		&& (5 < NUMBER_IN_GROUP(FE_element)(search_element_group)) &&
-		(Computed_field_is_find_element_xi_capable(field,NULL)))
+		&& (5 < NUMBER_IN_GROUP(FE_element)(search_element_group)) /*&&
+			(Computed_field_is_find_element_xi_capable(field,NULL))*/)
 	{
 		find_element_xi_data.field = field;
 		find_element_xi_data.values = values;
