@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_streamlines.c
 
-LAST MODIFIED : 26 July 2000
+LAST MODIFIED : 27 November 2000
 
 DESCRIPTION :
 Functions for calculating streamlines in finite elements.
@@ -19,6 +19,7 @@ Functions for calculating streamlines in finite elements.
 #include "general/manager_private.h"
 #include "general/matrix_vector.h"
 #include "general/object.h"
+#include "general/random.h"
 #include "graphics/graphics_object.h"
 #include "graphics/graphics_window.h"
 #include "user_interface/message.h"
@@ -928,7 +929,7 @@ static int update_interactive_streampoint(FE_value *point_coordinates,
 	struct FE_element **element,struct Computed_field *coordinate_field,
 	FE_value *xi, FE_value *translate)
 /*******************************************************************************
-LAST MODIFIED : 17 March 1999
+LAST MODIFIED : 27 November 2000
 
 DESCRIPTION :
 Updates the <GT_pointset> streampoint using the xi coordinates.  If the given
@@ -957,9 +958,9 @@ accurate if small), also ensuring that the element is updated.
 				if (!(calculate_delta_xi(translate,dxdxi,deltaxi)))
 				{
 					/* dxdxi tensor is singular, peturb xi by random small amount */
-					deltaxi[0]=0.002*rand()-0.001;
-					deltaxi[1]=0.002*rand()-0.001;
-					deltaxi[2]=0.002*rand()-0.001;
+					deltaxi[0] = 0.002*CMGUI_RANDOM(FE_value) - 0.001;
+					deltaxi[1] = 0.002*CMGUI_RANDOM(FE_value) - 0.001;
+					deltaxi[2] = 0.002*CMGUI_RANDOM(FE_value) - 0.001;
 				}
 				return_code=0;
 				while (!return_code)

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.c
 
-LAST MODIFIED : 24 November 2000
+LAST MODIFIED : 27 November 2000
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
@@ -19,6 +19,7 @@ The functions for creating graphical objects from finite elements.
 #include "general/geometry.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
+#include "general/random.h"
 #include "graphics/graphics_object.h"
 #include "graphics/iso_field_calculation.h"
 #include "graphics/spectrum.h"
@@ -4508,7 +4509,7 @@ from the surface of a volume texture.
 						area = sqrt ( area * (area - coordinate_1) *
 							(area - coordinate_2) * (area - coordinate_3));
 						expected_number = area * density_data[0];
-						random_number = (float)rand() /  32767.0;
+						random_number = CMGUI_RANDOM(float);
 										
 #if defined (DEBUG)
 						printf("create_surface_data_points_from_GT_voltex.\n\tarea %f expected %f random %f\n",
@@ -4523,8 +4524,8 @@ from the surface of a volume texture.
 						j = 0;
 						while(return_code && (cumulated_probability < random_number))
 						{
-							xi1 = (float)rand() / 32767.0;
-							xi2 = (float)rand() / 32767.0;
+							xi1 = CMGUI_RANDOM(float);
+							xi2 = CMGUI_RANDOM(float);
 							if(xi1 + xi2 > 1.0)
 							{
 								xi1 = 1.0 - xi1;
@@ -7365,7 +7366,7 @@ fields defined over it.
 					== XI_DISCRETIZATION_CELL_RANDOM)
 				{
 					/* Lets seed with the element number so it is consistent */
-					srand(element->cm.number);
+					CMGUI_SEED_RANDOM(element->cm.number);
 				}
 				if (xi_points=Xi_discretization_mode_get_xi_points(
 					element_to_glyph_set_data->xi_discretization_mode,
