@@ -838,6 +838,7 @@ specified on the command line, a file selection box is presented to the user.
 					}
 				}
 			}
+			DEALLOCATE(open_comfile_data->file_name);
 		}
 		else
 		{
