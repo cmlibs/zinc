@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 16 October 2001
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -60,7 +60,6 @@ Functions for executing cmiss commands.
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/environment_map.h"
 #include "graphics/graphical_element.h"
-#include "graphics/graphical_element_editor_dialog.h"
 #include "graphics/graphics_object.h"
 #include "graphics/graphics_window.h"
 #include "graphics/import_graphics_object.h"
@@ -79,6 +78,7 @@ Functions for executing cmiss commands.
 #include "graphics/rendervrml.h"
 #include "graphics/renderwavefront.h"
 #include "graphics/scene.h"
+#include "graphics/scene_editor.h"
 #include "graphics/spectrum.h"
 #include "graphics/spectrum_editor.h"
 #include "graphics/spectrum_editor_dialog.h"
@@ -113,9 +113,6 @@ Functions for executing cmiss commands.
 #include "projection/projection_window.h"
 #include "slider/emoter_dialog.h"
 #include "slider/node_group_slider_dialog.h"
-#if defined (OLD_CODE)
-#include "socket/socket.h"
-#endif /* defined (OLD_CODE) */
 #include "three_d_drawing/movie_extensions.h"
 #include "three_d_drawing/ThreeDDraw.h"
 #include "time/time_editor_dialog.h"
@@ -3340,119 +3337,6 @@ Executes a GFX MODIFY FLOW_PARTICLES command.
 } /* gfx_modify_flow_particles */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
-static int gfx_create_g_element_editor(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 31 October 2000
-
-DESCRIPTION :
-Executes a GFX CREATE G_ELEMENT_EDITOR command.
-Invokes the graphical element group editor.
-==============================================================================*/
-{
-	int return_code;
-	struct GROUP(FE_element) *element_group;
-	struct Cmiss_command_data *command_data;
-	struct Option_table *option_table;
-	struct Scene *scene;
-
-	ENTER(gfx_create_g_element_editor);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
-		{
-			/* initialize defaults */
-			element_group = (struct GROUP(FE_element) *)NULL;
-			scene = (struct Scene *)NULL;
-			if (command_data->graphical_element_editor_dialog)
-			{
-				Graphical_element_editor_dialog_get_element_group_and_scene(
-					command_data->graphical_element_editor_dialog,&element_group,&scene);
-			}
-			if (!element_group)
-			{
-				element_group = FIRST_OBJECT_IN_MANAGER_THAT(GROUP(FE_element))(
-					(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_element)) *)NULL, (void *)NULL,
-					command_data->element_group_manager);
-			}
-			if (!scene)
-			{
-				scene = command_data->default_scene;
-			}
-			if (element_group)
-			{
-				ACCESS(GROUP(FE_element))(element_group);
-			}
-			if (scene)
-			{
-				ACCESS(Scene)(scene);
-			}
-
-			option_table = CREATE(Option_table)();
-			Option_table_add_entry(option_table,"from",&element_group,
-				command_data->element_group_manager,set_FE_element_group);
-			Option_table_add_entry(option_table,"scene",&scene,
-				command_data->scene_manager,set_Scene);
-			if (return_code=Option_table_multi_parse(option_table,state))
-			{
-				if (command_data->graphical_element_editor_dialog)
-				{
-					Graphical_element_editor_dialog_set_element_group_and_scene(
-						command_data->graphical_element_editor_dialog,element_group,scene);
-					Graphical_element_editor_dialog_bring_to_front(
-						command_data->graphical_element_editor_dialog);
-				}
-				else
-				{
-					if ((!command_data->user_interface) ||
-						(!CREATE(Graphical_element_editor_dialog)(
-						&(command_data->graphical_element_editor_dialog),
-						command_data->user_interface->application_shell,
-						command_data->computed_field_package,
-						command_data->element_manager,
-						command_data->element_group_manager,element_group,
-						command_data->fe_field_manager,
-						command_data->graphical_material_manager,
-						command_data->default_graphical_material,command_data->glyph_list,
-						command_data->scene_manager,scene,command_data->spectrum_manager,
-						command_data->default_spectrum,command_data->volume_texture_manager,
-						command_data->user_interface)))
-					{
-						display_message(ERROR_MESSAGE,"gfx_create_g_element_editor.  "
-							"Could not create graphical element editor");
-						return_code=0;
-					}
-				}
-			} /* parse error, help */
-			DESTROY(Option_table)(&option_table);
-			if (element_group)
-			{
-				DEACCESS(GROUP(FE_element))(&element_group);
-			}
-			if (scene)
-			{
-				DEACCESS(Scene)(&scene);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"gfx_create_g_element_editor.  "
-				"Missing command_data.");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_create_g_element_editor.  "
-			"Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_create_g_element_editor */
-
 static int gfx_create_graphical_material_editor(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -3581,7 +3465,7 @@ Invokes the grid field calculator dialog.
 static int gfx_create_input_module_control(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 14 June 1999
+LAST MODIFIED : 21 November 2001
 
 DESCRIPTION :
 Executes a GFX CREATE IM_CONTROL command.
@@ -3619,7 +3503,7 @@ Executes a GFX CREATE IM_CONTROL command.
 					command_data->user_interface->application_shell,
 					command_data->default_graphical_material,
 					command_data->graphical_material_manager,command_data->default_scene,
-					command_data->scene_manager);
+					command_data->scene_manager, command_data->user_interface);
 					/*???DB.  commmand_data should not be used outside of command.c */
 #else /* defined (EXT_INPUT) */
 				display_message(ERROR_MESSAGE,"External input module was not linked");
@@ -5943,7 +5827,6 @@ Executes a GFX CREATE NGROUP command.
 } /* gfx_create_node_group */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_scene(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -6064,7 +5947,6 @@ Executes a GFX CREATE SCENE command.
 
 	return (return_code);
 } /* gfx_create_scene */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 static int gfx_create_snake(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -10540,8 +10422,6 @@ Executes a GFX CREATE command.
 					command_data_void,gfx_create_environment_map);
 				Option_table_add_entry(option_table,"flow_particles",NULL,
 					command_data_void,gfx_create_flow_particles);
-				Option_table_add_entry(option_table,"g_element_editor",NULL,
-					command_data_void,gfx_create_g_element_editor);
 				Option_table_add_entry(option_table,"graphical_material_editor",NULL,
 					command_data_void,gfx_create_graphical_material_editor);
 				Option_table_add_entry(option_table,"grid_field_calculator",NULL,
@@ -12418,7 +12298,6 @@ transformation in the transformation data.
 	return (return_code);
 }
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_edit_graphics_object(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -12611,9 +12490,109 @@ Executes a GFX EDIT GRAPHICS_OBJECT command.
 
 	return (return_code);
 } /* gfx_edit_graphics_object */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+static int gfx_edit_scene(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2000
+
+DESCRIPTION :
+Executes a GFX EDIT_SCENE command.  Brings up the Scene_editor.
+==============================================================================*/
+{
+	char close_flag;
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct Option_table *option_table;
+	struct Scene *scene;
+
+	ENTER(gfx_edit_scene);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
+	{
+		if (command_data->scene_editor)
+		{
+			scene = Scene_editor_get_scene(command_data->scene_editor);
+		}
+		else
+		{
+			scene = command_data->default_scene;
+		}
+		ACCESS(Scene)(scene);
+		close_flag = 0;
+
+		option_table = CREATE(Option_table)();
+		/* scene (to edit) */
+		Option_table_add_entry(option_table, "scene",&scene,
+			command_data->scene_manager,set_Scene);
+		/* close (editor) */
+		Option_table_add_entry(option_table, "close", &close_flag,
+			NULL, set_char_flag);
+		if (return_code = Option_table_multi_parse(option_table, state))
+		{
+			if (command_data->scene_editor)
+			{
+				if (close_flag)
+				{
+					DESTROY(Scene_editor)(&(command_data->scene_editor));
+				}
+				else
+				{
+					if (scene != Scene_editor_get_scene(command_data->scene_editor))
+					{
+						return_code = Scene_editor_set_scene(command_data->scene_editor,
+							scene);
+					}
+					Scene_editor_bring_to_front(command_data->scene_editor);
+				}
+			}
+			else if (close_flag)
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx edit scene:  There is no scene editor to close");
+				return_code = 0;
+			}
+			else
+			{
+				if ((!command_data->user_interface) ||
+					(!CREATE(Scene_editor)(
+						&(command_data->scene_editor),
+						command_data->user_interface->application_shell,
+						command_data->scene_manager,
+						scene,
+						command_data->computed_field_package,
+						command_data->element_manager,
+						command_data->fe_field_manager,
+						command_data->graphical_material_manager,
+						command_data->default_graphical_material,
+						command_data->glyph_list,
+						command_data->spectrum_manager,
+						command_data->default_spectrum,
+						command_data->volume_texture_manager,
+						command_data->user_interface)))
+				{
+					display_message(ERROR_MESSAGE, "gfx_edit_scene.  "
+						"Could not create scene editor");
+					return_code = 0;
+				}
+			}
+		} /* parse error, help */
+		DESTROY(Option_table)(&option_table);
+		if (scene)
+		{
+			DEACCESS(Scene)(&scene);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"gfx_edit_scene.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_edit_scene */
+
 static int gfx_edit_spectrum(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -12672,13 +12651,11 @@ Invokes the graphical spectrum group editor.
 
 	return (return_code);
 } /* gfx_edit_spectrum */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_gfx_edit(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
+	void *dummy_to_be_modified, void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 2 August 1998
+LAST MODIFIED : 31 October 2001
 
 DESCRIPTION :
 Executes a GFX EDIT command.
@@ -12686,49 +12663,40 @@ Executes a GFX EDIT command.
 {
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	static struct Modifier_entry option_table[]=
-	{
-		{"graphics_object",NULL,NULL,gfx_edit_graphics_object},
-		{"spectrum",NULL,NULL,gfx_edit_spectrum},
-		{NULL,NULL,NULL,NULL}
-	};
+	struct Option_table *option_table;
 
 	ENTER(execute_command_gfx_edit);
 	USE_PARAMETER(dummy_to_be_modified);
-	/* check argument */
-	if (state)
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (state->current_token)
 		{
-			if (state->current_token)
-			{
-				(option_table[0]).user_data=command_data_void;
-				(option_table[1]).user_data=command_data_void;
-				return_code=process_option(state,option_table);
-			}
-			else
-			{
-				set_command_prompt("gfx edit",command_data->command_window);
-				return_code=1;
-			}
+			option_table = CREATE(Option_table)();
+			Option_table_add_entry(option_table, "graphics_object", NULL,
+				command_data_void, gfx_edit_graphics_object);
+			Option_table_add_entry(option_table, "scene", NULL,
+				command_data_void, gfx_edit_scene);
+			Option_table_add_entry(option_table, "spectrum", NULL,
+				command_data_void, gfx_edit_spectrum);
+			return_code = Option_table_parse(option_table, state);
+			DESTROY(Option_table)(&option_table);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"execute_command_gfx_edit.  Missing command_data");
-			return_code=0;
+			set_command_prompt("gfx edit", command_data->command_window);
+			return_code = 1;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"execute_command_gfx_edit.  Missing state");
-		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"execute_command_gfx_edit.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* execute_command_gfx_edit */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 static int execute_command_gfx_element_creator(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -22766,205 +22734,120 @@ Executes a GFX WRITE command.
 	return (return_code);
 } /* execute_command_gfx_write */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_gfx(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 31 October 2000
 
 DESCRIPTION :
 Executes a GFX command.
 ==============================================================================*/
 {
-	int i,return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"change_identifier",NULL,NULL,gfx_change_identifier},
-		{"create",NULL,NULL,execute_command_gfx_create},
-#if !defined (WINDOWS_DEV_FLAG)
-		{"data_tool",NULL,NULL,execute_command_gfx_node_tool},
-		{"define",NULL,NULL,execute_command_gfx_define},
-		{"destroy",NULL,NULL,execute_command_gfx_destroy},
-		{"draw",NULL,NULL,execute_command_gfx_draw},
-		{"edit",NULL,NULL,execute_command_gfx_edit},
-		{"element_creator",NULL,NULL,execute_command_gfx_element_creator},
-		{"element_tool",NULL,NULL,execute_command_gfx_element_tool},
-		{"erase",NULL,NULL,execute_command_gfx_erase},
-		{"evaluate",NULL,NULL,gfx_evaluate},
-		{"export",NULL,NULL,execute_command_gfx_export},
-		{"filter",NULL,NULL,execute_command_gfx_filter},
-		{"grab_frame",NULL,NULL,execute_command_gfx_grab_frame},
-		{"list",NULL,NULL,execute_command_gfx_list},
-		{"modify",NULL,NULL,execute_command_gfx_modify},
-#if defined (SGI_MOVIE_FILE)
-		{"movie",NULL,NULL,gfx_movie},
-#endif /* defined (SGI_MOVIE_FILE) */
-		{"node_tool",NULL,NULL,execute_command_gfx_node_tool},
-		{"print",NULL,NULL,execute_command_gfx_print},
-		{"project",NULL,NULL,open_projection_window},
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-		{"read",NULL,NULL,execute_command_gfx_read},
-#if !defined (WINDOWS_DEV_FLAG)
-		{"select",NULL,NULL,execute_command_gfx_select},
-		{"set",NULL,NULL,execute_command_gfx_set},
-		{"smooth",NULL,NULL,execute_command_gfx_smooth},
-		{"timekeeper",NULL,NULL,gfx_timekeeper},
-		{"transform_tool",NULL,NULL,gfx_transform_tool},
-		{"unselect",NULL,NULL,execute_command_gfx_unselect},
-		{"update",NULL,NULL,execute_command_gfx_update},
-		{"warp",NULL,NULL,execute_command_gfx_warp},
-		{"write",NULL,NULL,execute_command_gfx_write},
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-		{NULL,NULL,NULL,NULL}
-	};
+	int return_code;
 	struct Open_projection_window_data open_projection_window_data;
+	struct Option_table *option_table;
 	struct Cmiss_command_data *command_data;
 
 	ENTER(execute_command_gfx);
 	USE_PARAMETER(dummy_to_be_modified);
-	/* check argument */
-	if (state)
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (state->current_token)
 		{
-			if (state->current_token)
-			{
-				i=0;
-				/* change_identifier */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* create */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-#if !defined (WINDOWS_DEV_FLAG)
-				/* data_tool */
-				(option_table[i]).to_be_modified=(void *)1;
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* define */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* destroy */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* draw */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* edit */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* element_creator */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* element_tool */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* erase */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* evaluate */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* export */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* filter */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* grab_frame */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* list */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* modify */
-				(option_table[i]).user_data=command_data_void;
-				i++;
+			option_table=CREATE(Option_table)();
+			Option_table_add_entry(option_table, "change_identifier", NULL,
+				command_data_void, gfx_change_identifier);
+			Option_table_add_entry(option_table, "create", NULL,
+				command_data_void, execute_command_gfx_create);
+			Option_table_add_entry(option_table, "data_tool", /*data_tool*/(void *)1,
+				command_data_void, execute_command_gfx_node_tool);
+			Option_table_add_entry(option_table, "define", NULL,
+				command_data_void, execute_command_gfx_define);
+			Option_table_add_entry(option_table, "destroy", NULL,
+				command_data_void, execute_command_gfx_destroy);
+			Option_table_add_entry(option_table, "draw", NULL,
+				command_data_void, execute_command_gfx_draw);
+			Option_table_add_entry(option_table, "edit", NULL,
+				command_data_void, execute_command_gfx_edit);
+			Option_table_add_entry(option_table, "element_creator", NULL,
+				command_data_void, execute_command_gfx_element_creator);
+			Option_table_add_entry(option_table, "element_tool", NULL,
+				command_data_void, execute_command_gfx_element_tool);
+			Option_table_add_entry(option_table, "erase", NULL,
+				command_data_void, execute_command_gfx_erase);
+			Option_table_add_entry(option_table, "evaluate", NULL,
+				command_data_void, gfx_evaluate);
+			Option_table_add_entry(option_table, "export", NULL,
+				command_data_void, execute_command_gfx_export);
+			Option_table_add_entry(option_table, "filter", NULL,
+				command_data_void, execute_command_gfx_filter);
+			Option_table_add_entry(option_table, "grab_frame", NULL,
+				command_data_void, execute_command_gfx_grab_frame);
+			Option_table_add_entry(option_table, "list", NULL,
+				command_data_void, execute_command_gfx_list);
+			Option_table_add_entry(option_table, "modify", NULL,
+				command_data_void, execute_command_gfx_modify);
 #if defined (SGI_MOVIE_FILE)
-				/* movie */
-				(option_table[i]).user_data=command_data_void;
-				i++;
+			Option_table_add_entry(option_table, "movie", NULL,
+				command_data_void, gfx_movie);
 #endif /* defined (SGI_MOVIE_FILE) */
-				/* node_tool */
-				(option_table[i]).to_be_modified=(void *)0;
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* print */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* project */
-				(option_table[i]).to_be_modified= &(command_data->projection_window);
-				open_projection_window_data.user_interface=command_data->user_interface;
-				open_projection_window_data.fe_field_manager=
-					command_data->fe_field_manager;
-				open_projection_window_data.element_manager=
-					command_data->element_manager;
-				open_projection_window_data.element_group_manager=
-					command_data->element_group_manager;
-				open_projection_window_data.spectrum_manager=
-					command_data->spectrum_manager;
-				open_projection_window_data.default_spectrum=
-					command_data->default_spectrum;
-				(option_table[i]).user_data= &open_projection_window_data;
-				i++;
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-				/* read */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-#if !defined (WINDOWS_DEV_FLAG)
-				/* select */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* set */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* smooth */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* timekeeper */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* transform_tool */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* unselect */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* update */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* warp */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* write */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-				return_code=process_option(state,option_table);
-			}
-			else
-			{
-				set_command_prompt("gfx",command_data->command_window);
-				return_code=1;
-			}
+			Option_table_add_entry(option_table, "node_tool", /*data_tool*/(void *)0,
+				command_data_void, execute_command_gfx_node_tool);
+			Option_table_add_entry(option_table, "print", NULL,
+				command_data_void, execute_command_gfx_print);
+			/* project */
+			open_projection_window_data.user_interface = command_data->user_interface;
+			open_projection_window_data.fe_field_manager =
+				command_data->fe_field_manager;
+			open_projection_window_data.element_manager =
+				command_data->element_manager;
+			open_projection_window_data.element_group_manager =
+				command_data->element_group_manager;
+			open_projection_window_data.spectrum_manager =
+				command_data->spectrum_manager;
+			open_projection_window_data.default_spectrum =
+				command_data->default_spectrum;
+			Option_table_add_entry(option_table, "project",
+				&(command_data->projection_window),
+				&(open_projection_window_data), open_projection_window);
+			Option_table_add_entry(option_table, "read", NULL,
+				command_data_void, execute_command_gfx_read);
+			Option_table_add_entry(option_table, "select", NULL,
+				command_data_void, execute_command_gfx_select);
+			Option_table_add_entry(option_table, "set", NULL,
+				command_data_void, execute_command_gfx_set);
+			Option_table_add_entry(option_table, "smooth", NULL,
+				command_data_void, execute_command_gfx_smooth);
+			Option_table_add_entry(option_table, "timekeeper", NULL,
+				command_data_void, gfx_timekeeper);
+			Option_table_add_entry(option_table, "transform_tool", NULL,
+				command_data_void, gfx_transform_tool);
+			Option_table_add_entry(option_table, "unselect", NULL,
+				command_data_void, execute_command_gfx_unselect);
+			Option_table_add_entry(option_table, "update", NULL,
+				command_data_void, execute_command_gfx_update);
+			Option_table_add_entry(option_table, "warp", NULL,
+				command_data_void, execute_command_gfx_warp);
+			Option_table_add_entry(option_table, "write", NULL,
+				command_data_void, execute_command_gfx_write);
+			return_code = Option_table_parse(option_table, state);
+			DESTROY(Option_table)(&option_table);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"execute_command_gfx.  Missing command_data");
-			return_code=0;
+			set_command_prompt("gfx",command_data->command_window);
+			return_code = 1;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"execute_command_gfx.  Missing state");
-		return_code=0;
+		display_message(ERROR_MESSAGE, "execute_command_gfx.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* execute_command_gfx */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_cm(struct Parse_state *state,
