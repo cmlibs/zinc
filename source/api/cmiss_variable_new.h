@@ -16,6 +16,7 @@ The public interface to the Cmiss_variable_new object.
 
 #ifdef __cplusplus
 #include <list>
+using namespace std;
 #endif /* __cplusplus */
 
 /*

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable.h
 //
-// LAST MODIFIED : 8 September 2003
+// LAST MODIFIED : 9 September 2003
 //
 // DESCRIPTION :
 // Variable's are expressions that are constructed for:
@@ -48,6 +48,7 @@
 
 #include <list>
 #include <string>
+using namespace std;
 
 class Variable_input
 //******************************************************************************

@@ -1,13 +1,14 @@
 /*******************************************************************************
 FILE : api/cmiss_variable_new_basic.cpp
 
-LAST MODIFIED : 8 September 2003
+LAST MODIFIED : 9 September 2003
 
 DESCRIPTION :
 The public interface to the Cmiss_variable_new basic objects.
 ==============================================================================*/
 
 #include <string>
+using namespace std;
 #include "api/cmiss_variable_new_basic.h"
 #include "computed_variable/variable_basic.h"
 

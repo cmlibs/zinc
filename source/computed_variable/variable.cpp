@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable.cpp
 //
-// LAST MODIFIED : 8 September 2003
+// LAST MODIFIED : 9 September 2003
 //
 // DESCRIPTION :
 //
@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include <string>
+using namespace std;
 
 #include "computed_variable/variable.h"
 

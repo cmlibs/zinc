@@ -13,6 +13,7 @@ The public interface to the Cmiss_variable_new object.
 ==============================================================================*/
 
 #include <string>
+using namespace std;
 #include <string.h>
 #include "api/cmiss_variable_new.h"
 #include "computed_variable/variable.h"

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : variable_basic.cpp
 //
-// LAST MODIFIED : 8 September 2003
+// LAST MODIFIED : 9 September 2003
 //
 // DESCRIPTION :
 // Basic types - scalar, vector, matrix
@@ -11,6 +11,7 @@
 
 #include <string>
 #include <stdio.h>
+using namespace std;
 
 #include "computed_variable/variable_basic.h"
 
