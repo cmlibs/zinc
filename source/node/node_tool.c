@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.c
 
-LAST MODIFIED : 14 May 2001
+LAST MODIFIED : 16 October 2001
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
@@ -158,26 +158,22 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(node_tool,Node_tool,streaming_create_button)
 static int Node_tool_define_field_at_node(struct Node_tool *node_tool,
 	struct FE_node *node)
 /*******************************************************************************
-LAST MODIFIED : 12 September 2000
+LAST MODIFIED : 16 October 2001
 
 DESCRIPTION :
 Defines the appropriate FE_field upon which the <coordinate_field> depends in
 <node>. The field is defined with no versions or derivatives.
 ==============================================================================*/
 {
-	enum FE_nodal_value_type *components_nodal_value_types[3]=
-	{
-		{FE_NODAL_VALUE},
-		{FE_NODAL_VALUE},
-		{FE_NODAL_VALUE}
-	};
+	enum FE_nodal_value_type *(components_nodal_value_types[3]) =
+		{ FE_NODAL_VALUE, FE_NODAL_VALUE, FE_NODAL_VALUE };
 	int components_number_of_derivatives[3]={0,0,0},
 		components_number_of_versions[3]={1,1,1},return_code;
 	struct FE_field *fe_field;
 	struct LIST(FE_field) *fe_field_list;
 
 	ENTER(Node_tool_define_field_at_node);
-	if (node_tool&&node)
+	if (node_tool && node)
 	{
 		if (node_tool->coordinate_field && (fe_field_list=
 			Computed_field_get_defining_FE_field_list(node_tool->coordinate_field,
