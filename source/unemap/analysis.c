@@ -1889,7 +1889,7 @@ int calculate_device_objective(struct Device *device,
 	enum Event_detection_objective objective,float *objective_values,
 	int number_of_objective_values,int objective_values_step,int average_width)
 /*******************************************************************************
-LAST MODIFIED : 26 February 2000
+LAST MODIFIED : 19 March 2000
 
 DESCRIPTION :
 Calculates the specified <objective>/<detection> function for the <device>.
@@ -1898,8 +1898,8 @@ Storing the values in the array (<objective_values> every
 ==============================================================================*/
 {
 	float average_after,*average_after_value,average_before,first_value,
-		*float_value,last_value,objective_maximum,objective_minimum,
-		*objective_value,*save_value,*save_values,scale,signal_maximum,
+		*float_value,gain,last_value,objective_maximum,objective_minimum,
+		*objective_value,offset,*save_value,*save_values,scale,signal_maximum,
 		signal_minimum,temp_value;
 	int i,number_of_samples,number_of_signals,return_code;
 	short *short_value;
@@ -1915,7 +1915,7 @@ Storing the values in the array (<objective_values> every
 		(buffer->signals.short_int_values))||((FLOAT_VALUE==buffer->value_type)&&
 		(buffer->signals.float_values)))&&objective_values&&
 		(number_of_samples<=number_of_objective_values)&&(0<objective_values_step)&&
-		(0<average_width))
+		(0<average_width)&&(device->channel))
 	{
 		if (ALLOCATE(save_values,float,average_width))
 		{
@@ -1926,22 +1926,9 @@ Storing the values in the array (<objective_values> every
 				case SHORT_INT_VALUE:
 				{
 					short_value=(buffer->signals.short_int_values)+(signal->index);
-					signal_maximum=(float)(*short_value);
-					signal_minimum=signal_maximum;
 					for (i=number_of_samples;i>0;i--)
 					{
 						*objective_value=(float)(*short_value);
-						if (*objective_value>signal_maximum)
-						{
-							signal_maximum= *objective_value;
-						}
-						else
-						{
-							if (*objective_value<signal_minimum)
-							{
-								signal_minimum= *objective_value;
-							}
-						}
 						short_value += number_of_signals;
 						objective_value += objective_values_step;
 					}
@@ -1949,26 +1936,35 @@ Storing the values in the array (<objective_values> every
 				case FLOAT_VALUE:
 				{
 					float_value=(buffer->signals.float_values)+(signal->index);
-					signal_maximum= *float_value;
-					signal_minimum=signal_maximum;
 					for (i=number_of_samples;i>0;i--)
 					{
 						*objective_value=(float)(*float_value);
-						if (*objective_value>signal_maximum)
-						{
-							signal_maximum= *objective_value;
-						}
-						else
-						{
-							if (*objective_value<signal_minimum)
-							{
-								signal_minimum= *objective_value;
-							}
-						}
 						float_value += number_of_signals;
 						objective_value += objective_values_step;
 					}
 				} break;
+			}
+			objective_value=objective_values;
+			gain=device->channel->gain;
+			offset=device->channel->offset;
+			temp_value=gain*((*objective_value)-offset);
+			signal_maximum=temp_value;
+			signal_minimum=signal_maximum;
+			for (i=number_of_samples-1;i>0;i--)
+			{
+				objective_value += objective_values_step;
+				temp_value=gain*((*objective_value)-offset);
+				if (temp_value>signal_maximum)
+				{
+					signal_maximum=temp_value;
+				}
+				else
+				{
+					if (temp_value<signal_minimum)
+					{
+						signal_minimum=temp_value;
+					}
+				}
 			}
 			/* calculate objective function */
 			objective_value=objective_values;
@@ -2251,11 +2247,11 @@ Storing the values in the array (<objective_values> every
 				if (device->signal->buffer)
 				{
 					display_message(ERROR_MESSAGE,
-"calculate_device_objective.  Invalid argument(s).  %d (%d %d) %p %p %p %d %d %d",
+"calculate_device_objective.  Invalid argument(s).  %d (%d %d) %p %p %p %d %d %d %p",
 						buffer->value_type,SHORT_INT_VALUE,FLOAT_VALUE,
 						buffer->signals.short_int_values,buffer->signals.float_values,
 						objective_values,number_of_objective_values,objective_values_step,
-						number_of_samples);
+						number_of_samples,device->channel);
 				}
 				else
 				{

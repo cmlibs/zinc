@@ -11311,7 +11311,7 @@ DESCRIPTION :
 static void trace_analysis_mode_apply(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 17 March 2000
+LAST MODIFIED : 19 March 2000
 
 DESCRIPTION :
 Applies the current analysis mode settings to all signals.
@@ -11340,6 +11340,7 @@ Applies the current analysis mode settings to all signals.
 	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
 		(rig=analysis->rig)&&(trace=analysis->trace))
 	{
+		busy_cursor_on((Widget)NULL,analysis->user_interface);
 		average_width=analysis->average_width;
 		switch (trace->analysis_mode)
 		{
@@ -11998,6 +11999,7 @@ Applies the current analysis mode settings to all signals.
 					"trace_analysis_mode_apply.  Invalid analysis mode");
 			} break;
 		}
+		busy_cursor_off((Widget)NULL,analysis->user_interface);
 	}
 	else
 	{

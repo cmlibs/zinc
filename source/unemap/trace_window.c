@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.c
 
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 19 March 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -6192,7 +6192,7 @@ Global functions
 */
 int trace_process_device(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 19 March 2000
 
 DESCRIPTION :
 Calculates the processed device.
@@ -6261,8 +6261,8 @@ Calculates the processed device.
 							processed_value=((processed_buffer->signals).float_values)+
 								(processed_device->signal->index);
 							buffer_offset=processed_buffer->number_of_signals;
-							processed_device->channel->offset=device->channel->offset;
-							processed_device->channel->gain=device->channel->gain;
+							processed_device->channel->offset=0;
+							processed_device->channel->gain=1;
 							processed_device->signal_maximum=maximum;
 							processed_device->signal_minimum=minimum;
 							for (i=number_of_samples;i>0;i--)
