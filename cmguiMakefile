@@ -1,0 +1,116 @@
+#Paths
+PRODUCT_PATH=$(CMISS_ROOT)/cmgui
+PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source
+TEST_PATH=$(CMISS_ROOT)/cmgui/test_examples
+MAILFILE_PATH=mailfiles
+
+#Build defaults
+USER_INTERFACE=MOTIF_USER_INTERFACE
+DYNAMIC_GL_LINUX=false
+OPT=false
+
+PROPOGATE_VARIABLES = USER_INTERFACE=$(USER_INTERFACE) OPT=$(OPT) DYNAMIC_GL_LINUX=$(DYNAMIC_GL_LINUX)
+
+ifdef CMISS_ROOT
+   CMISS_ROOT_DEFINED = true
+else # CMISS_ROOT
+   CMISS_ROOT = $(CMGUI_DEV_ROOT)
+endif # CMISS_ROOT
+
+
+MAKEFILE := cmgui.Makefile
+MAKEFILE_FOUND = $(wildcard source/$(MAKEFILE))
+ifdef CMISS_ROOT_DEFINED
+   ifeq ($(MAKEFILE_FOUND),)
+      MAKEFILE := $(CMISS_ROOT)/cmgui/source/$(MAKEFILE)
+   endif # $(MAKEFILE_FOUND) ==
+endif # CMISS_ROOT_DEFINED
+
+#Developers default
+cmgui-debug :
+
+cmgui cmgui-debug cmgui-dynamic cmgui-debug-dynamic: USER_INTERFACE=MOTIF_USER_INTERFACE
+cmgui-dynamic cmgui-debug-dynamic: DYNAMIC_GL_LINUX=true
+cmgui cmgui-dynamic : OPT=true
+cmgui-debug cmgui-debug-dynamic: OPT=false
+
+utilities: TARGET=utilities
+
+cmgui cmgui-debug cmgui-dynamic cmgui-debug-dynamic utilities :
+	cd source ; \
+	$(MAKE) -f $(MAKEFILE) $(TARGET) $(PROPOGATE_VARIABLES) ;
+
+update_sources :
+	if ( [ "$(PWD)" -ef "$(PRODUCT_PATH)" ] && [ "$(USER)" = "cmiss" ] ); then \
+		cvs update && \
+		cd $(PRODUCT_SOURCE_PATH) && \
+		chgrp -R cmgui_programmers * && \
+		cd $(PRODUCT_PATH) && \
+		ssh 130.216.191.92 'export CVS_RSH=ssh; export CVS_SERVER=/product/cmiss/bin/cvs ; cd $(CMISS_ROOT)/cmgui ; $(CMISS_ROOT)/bin/cvs update ' ; \
+	else \
+		echo "Must be cmiss and in $(PRODUCT_PATH)"; \
+	fi
+
+ESU_BUILD_LIST = cmgui cmgui-debug cmgui64 cmgui64-debug cmgui-console cmgui-debug-memorycheck
+ESP_BUILD_LIST = cmgui cmgui-debug cmgui-debug-memorycheck cmgui-dynamicgl cmgui-dynamicgl-debug cmgui-console
+HPC1_BUILD_LIST = cmgui cmgui-debug cmgui64 cmgui64-debug
+
+update : update_sources
+	if ( [ "$(PWD)" -ef "$(PRODUCT_PATH)" ] && [ "$(USER)" = "cmiss" ] ); then \
+		cd $(PRODUCT_SOURCE_PATH) && \
+		chgrp -R cmgui_programmers * && \
+		cd $(PRODUCT_PATH) && \
+		$(MAKE) -f cmguiMakefile $(ESU_BUILD_LIST) ; \
+		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f cmguiMakefile $(ESP_BUILD_LIST)' && \
+		ssh 130.216.191.92 'export CMISS_ROOT=/product/cmiss ; export CMGUI_DEV_ROOT=$(PWD) ; cd $(CMISS_ROOT)/cmgui ; gmake -f cmguiMakefile $(HPC1_BUILD_LIST) ;  ' && \
+		ssh 130.216.209.167 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f cmguiMakefile cmgui-gtk ; /home/blackett/bin/cross-make -f cmguiMakefile cmgui-gtk' && \
+		cd $(PRODUCT_SOURCE_PATH) && \
+		chgrp -R cmgui_programmers *; \
+	else \
+		echo "Must be cmiss and in $(PRODUCT_PATH)"; \
+	fi
+
+depend: update_sources
+	if [ "$(USER)" = "cmiss" ]; then \
+		CMGUI_DEV_ROOT=$(PWD) ; \
+		export CMGUI_DEV_ROOT ; \
+		$(MAKE) -f cmguiMakefile $(ESU_BUILD_LIST) TARGET=depend ; \
+		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; setenv CMGUI_DEV_ROOT $(PWD) ; $(MAKE) -f cmguiMakefile $(ESP_BUILD_LIST) TARGET=depend ; ' && \
+		ssh 130.216.191.92 'export CMISS_ROOT=/product/cmiss ; export CMGUI_DEV_ROOT=$(PWD) ; cd $(CMISS_ROOT)/cmgui ; gmake -f cmguiMakefile $(HPC1_BUILD_LIST) TARGET=depend ;  ' ; \
+		ssh 130.216.209.167 'setenv CMISS_ROOT /product/cmiss ; setenv CMGUI_DEV_ROOT $(PWD) ; cd $(PRODUCT_PATH) ; $(MAKE) -f cmguiMakefile cmgui_linux_gtk TARGET=depend && /home/blackett/bin/cross-make -f cmguiMakefile cmgui_win32_gtk TARGET=depend' ; \
+	else \
+		echo "Must be cmiss"; \
+	fi
+
+run_tests:
+	if [ "$(USER)" = "cmiss" ]; then \
+		cd $(TEST_PATH); \
+		$(MAKE) -u; \
+		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(TEST_PATH) ; make -W cmgui_linux.exe cmgui_linux_test' ; \
+		cat all.mail ; \
+	else \
+		echo "Must be cmiss"; \
+	fi
+
+cronjob:
+	if [ "$(USER)" = "cmiss" ]; then \
+		cd $(PRODUCT_PATH); \
+		cvs update ; \
+		echo -n > $(MAILFILE_PATH)/programmer.mail ; \
+		if ! $(MAKE) -f cmguiMakefile depend; then \
+			cat $(MAILFILE_PATH)/dependfail.mail >> $(MAILFILE_PATH)/programmer.mail ; \
+		fi ; \
+		if ! $(MAKE) -f cmguiMakefile update; then \
+			cat $(MAILFILE_PATH)/updatefail.mail >> $(MAILFILE_PATH)/programmer.mail ; \
+		fi ; \
+		if ! $(MAKE) -f cmguiMakefile run_tests; then \
+			cat $(MAILFILE_PATH)/testfail.mail >> $(MAILFILE_PATH)/programmer.mail ; \
+		fi ; \
+		if [ -s $(TEST_PATH)/all.mail ]; then \
+			cat $(TEST_PATH)/all.mail >> $(MAILFILE_PATH)/programmer.mail ; \
+		fi ; \
+	else \
+		echo "Must be cmiss"; \
+	fi
+#This mail is added into the example mail.
+
