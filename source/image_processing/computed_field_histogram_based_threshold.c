@@ -467,7 +467,6 @@ Perform a automatic thresholding operation on the image cache.
 				       break;
 			       }
 			}
-			printf("threshold: %d", T);
 			for (i = 0; i < counter; i++)
 			{
 			        YVal = (int)(floor(((FE_value)number_of_bins - 1.0)* gray_img[i] + 0.5));
