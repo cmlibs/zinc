@@ -24,7 +24,7 @@ our %EXPORT_TAGS = ( 'all' => [ qw(
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
 our @EXPORT = qw(
-	
+	new
 );
 
 our $VERSION = '0.01';
@@ -52,34 +52,58 @@ sub AUTOLOAD {
     goto &$AUTOLOAD;
 }
 
-sub new
-{
-	my ($class, @arguments) = @_;
-	my $objref;
-
-	if (! @arguments)
-	{
-	  @arguments = ("");
-	}
-
-	$objref=create(\@arguments);
-	if ($objref)
-	{
-		bless $objref,$class;
-	}
-	else
-	{
-		croak "Could not create $class";
-	}
-}
-
 use Cmiss;
+require Cmiss::Perl_cmiss;
 Cmiss::require_library('cmgui');
+
+package Cmiss::cmgui_command_data;
 
 require XSLoader;
 XSLoader::load('Cmiss::cmgui_command_data', $VERSION);
 
+#Only destroy the actual command data if it was made here.
+my $actually_destroy_command_data = 0;
+
+if (!defined $Cmiss::cmgui_command_data)
+{
+  no warnings; #Suppress warnings from variables defined in initialisation.
+
+  $actually_destroy_command_data = 1;
+
+  my $tmp_command_data = create(["cmgui", "-console"]);
+  bless $tmp_command_data, "SomethingThatWillNOTMatch";
+
+  if (!defined $Cmiss::cmgui_command_data)
+  {
+	 die "Cmgui failed to initialise correctly";
+  }
+  sub cmiss
+	 {
+		Cmiss::cmgui_command_data::execute_command($Cmiss::cmgui_command_data, @_);
+	 }
+  *cmiss::cmiss = \&Cmiss::cmgui_command_data::cmiss;
+}
+
 # Preloaded methods go here.
+
+sub new
+{
+	my ($class) = @_;
+	my $objref;
+
+	$objref = $Cmiss::cmgui_command_data;
+	bless $objref, $class;
+
+	return $objref;
+}
+
+sub DESTROY
+{
+  if ($actually_destroy_command_data)
+  {
+	 destroy(@_);
+  }
+}
 
 # Autoload methods go after =cut, and are processed by the autosplit program.
 

@@ -164,7 +164,7 @@ sub cmiss_array
 		}
 	 {
 		package cmiss;
-		$return_code = Cmiss::cmiss($command);
+		$return_code = Cmiss::cmgui_command_data::cmiss($command);
 	 }
 	 if ($cmiss_debug)
 		{

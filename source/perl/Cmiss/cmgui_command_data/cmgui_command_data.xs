@@ -37,7 +37,7 @@ create(argv)
 		RETVAL
 
 int
-DESTROY(Cmiss::cmgui_command_data value)
+destroy(Cmiss::cmgui_command_data value)
 	CODE:
 		{
 			struct Cmiss_command_data *temp_value;
@@ -49,9 +49,7 @@ DESTROY(Cmiss::cmgui_command_data value)
 		RETVAL
 
 int
-cmiss(cmgui_command_data, name)
-	Cmiss::cmgui_command_data cmgui_command_data
-	char *		name
+execute_command(Cmiss::cmgui_command_data cmgui_command_data, char *name)
 	CODE:
 	{
 	   int quit = 0;
