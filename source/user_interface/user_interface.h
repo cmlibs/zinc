@@ -225,8 +225,13 @@ int close_user_interface(struct User_interface *user_interface);
 LAST MODIFIED : 30 May 1996
 
 DESCRIPTION :
-???DB.  What should this do ?  Should it be called from inside the main
-	application loop to terminate the main application loop ?
+==============================================================================*/
+
+int User_interface_end_application_loop(struct User_interface *user_interface);
+/*******************************************************************************
+LAST MODIFIED : 7 July 2000
+
+DESCRIPTION :
 ==============================================================================*/
 
 int application_main_step(struct User_interface *user_interface);
