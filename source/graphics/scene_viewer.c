@@ -843,6 +843,7 @@ access this function.
 									{
 										default:
 										{
+											glAlphaFunc(GL_GREATER,0.0);
 											execute_Scene(scene_viewer->overlay_scene);
 										} break;
 										case SCENE_VIEWER_SLOW_TRANSPARENCY:
@@ -998,6 +999,7 @@ access this function.
 								{
 									default:
 									{
+										glAlphaFunc(GL_GREATER,0.0);
 										execute_Scene(scene_viewer->scene);
 									} break;
 									case SCENE_VIEWER_SLOW_TRANSPARENCY:
