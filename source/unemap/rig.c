@@ -3030,7 +3030,7 @@ pointer to the rig if successful and NULL if unsuccessful.
 ==============================================================================*/
 {
 	char *dummy,finished,found,*name,separator,string[10];
-	int channel_number,count,device_number,i,j,new_auxiliary_type,
+	int channel_number,count,device_number,i,j,
 		number_of_devices,number_of_pages,number_of_regions,region_number,
 		region_number_of_devices,string_length;
 	enum Device_type device_type;
@@ -3043,6 +3043,9 @@ pointer to the rig if successful and NULL if unsuccessful.
 	struct Page_list_item **last_page_item;
 	struct Region_list_item **region_item_address;
 	struct Rig *rig;
+#if defined (DEVICE_EXPRESSIONS)
+	int new_auxiliary_type;
+#endif /* defined (DEVICE_EXPRESSIONS) */
 
 	ENTER(read_configuration);
 	/* check that the file is open */
@@ -3904,17 +3907,17 @@ pointer to the rig if successful and NULL if unsuccessful.
 									{
 										BINARY_FILE_READ((char *)&device_type,
 											sizeof(enum Device_type),1,input_file);
+#if defined (DEVICE_EXPRESSIONS)
 										if (-1==(int)device_type)
 										{
 											new_auxiliary_type=1;
-#if defined (DEVICE_EXPRESSIONS)
 											device_type=AUXILIARY;
-#endif /* defined (DEVICE_EXPRESSIONS) */
 										}
 										else
 										{
 											new_auxiliary_type=0;
 										}
+#endif /* defined (DEVICE_EXPRESSIONS) */
 										/* if valid device type */
 										if ((ELECTRODE==device_type)||(AUXILIARY==device_type))
 										{
