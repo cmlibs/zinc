@@ -350,10 +350,15 @@ sequential element_xi lookup should now be performed.
 	ENTER(Computed_field_find_element_xi_special);
 	USE_PARAMETER(number_of_values);
 	return_code = 0;
+	/* If the number of elements in the group is small then there probably isn't
+		any benefit to using this method */
+	/* This method is adversely affected when displaying on a remote machine as every
+		pixel grab requires transfer across the network */
 	if (hint_minimums && hint_maximums && hint_resolution && 
 		((2 == Computed_field_get_number_of_components(field)) ||
 		((3 == Computed_field_get_number_of_components(field)) &&
-		(hint_resolution[2] == 0.0))) && user_interface)
+		(hint_resolution[2] == 0.0))) && user_interface && search_element_group
+		&& (5 < NUMBER_IN_GROUP(FE_element)(search_element_group)))
 	{
 		find_element_xi_data.field = field;
 		find_element_xi_data.values = values;
