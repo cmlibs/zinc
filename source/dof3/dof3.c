@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : dof3.c
 
-LAST MODIFIED : 14 May 1998
+LAST MODIFIED : 20 May 2002
 
 DESCRIPTION :
 This module allows for the creation of three types of widgets -
@@ -424,7 +424,7 @@ values for this new orientation.
 
 static void dof3_identify_button(Widget w,int button_num,unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 14 March 2002
+LAST MODIFIED : 20 May 2002
 
 DESCRIPTION :
 Finds the id of the buttons on the dof3 widget.
@@ -442,9 +442,9 @@ Finds the id of the buttons on the dof3 widget.
 	if (button_num==dof3_slider_ID)
 	{
 		temp_dof3->slider=w;
-		XtVaSetValues(w,XmNminimum,-100,NULL);
-		XtVaSetValues(w,XmNmaximum,125,NULL);
-		XtVaSetValues(w,XmNsliderSize,25,NULL);
+		XtVaSetValues(w, XmNminimum, -100, NULL);
+		XtVaSetValues(w, XmNmaximum, 125, NULL);
+		XtVaSetValues(w, XmNsliderSize, 25, NULL);
 	}
 	else
 	{
@@ -559,17 +559,6 @@ slider.
 		axis_num=temp_dof3->current_axis;
 		temp_data=(XmScrollBarCallbackStruct *)reason;
 		/* update the data value */
-		/*???debug*/
-		{
-			int max, min;
-
-			XtVaGetValues(w,XmNmaximum,&max,NULL);
-			XtVaGetValues(w,XmNminimum,&min,NULL);
-			printf("min = %d  max = %d\n",min,max);
-			printf("temp_data->value = %d\n", temp_data->value);
-			printf("temp_dof3->slider_ofs = %d\n", temp_dof3->slider_ofs);
-			printf("\n");
-		}
 		sprintf(temp_str,"%i.0E%i",(temp_data->value-temp_dof3->slider_ofs),temp_dof3->resolution[axis_num]);
 		sscanf(temp_str,"%"DOF3_PRECISION_STRING,&temp_increment.data[axis_num]);
 		temp_dof3->slider_ofs=temp_data->value;
