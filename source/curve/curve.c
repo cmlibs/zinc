@@ -1945,6 +1945,33 @@ boundary node will be adjusted to enforce continuity. Otherwise, the specified
 	return (return_code);
 } /* Control_curve_enforce_continuity */
 
+int Control_curve_has_1_component(struct Control_curve *curve,void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 30 November 1999
+
+DESCRIPTION :
+Returns true if the curve has 1 component - used with choosers.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Control_curve_has_1_component);
+	USE_PARAMETER(dummy_void);
+	if (curve)
+	{
+		return_code=(1==curve->number_of_components);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Control_curve_has_1_component.  Missing curve");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Control_curve_has_1_component */
+
 int Control_curve_is_in_use(struct Control_curve *curve)
 /*******************************************************************************
 LAST MODIFIED : 4 November 1999

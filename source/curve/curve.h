@@ -195,6 +195,14 @@ boundary node will be adjusted to enforce continuity. Otherwise, the specified
 <element_no,node_no> will be unchanged and its parter adjusted.
 ==============================================================================*/
 
+int Control_curve_has_1_component(struct Control_curve *curve,void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 30 November 1999
+
+DESCRIPTION :
+Returns true if the curve has 1 component - used with choosers.
+==============================================================================*/
+
 int Control_curve_is_in_use(struct Control_curve *curve);
 /*******************************************************************************
 LAST MODIFIED : 4 November 1999
