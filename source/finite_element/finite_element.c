@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 21 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -9969,6 +9969,33 @@ Iterator function for adding the number of <node> to <multi_range>.
 
 	return (return_code);
 } /* add_FE_node_number_to_Multi_range */
+
+int FE_node_is_in_group(struct FE_node *node,void *node_group_void)
+/*******************************************************************************
+LAST MODIFIED : 20 March 2000
+
+DESCRIPTION :
+Returns true if <node> is in <node_group>.
+==============================================================================*/
+{
+	int return_code;
+	struct GROUP(FE_node) *node_group;
+
+	ENTER(FE_node_is_in_group);
+	if (node&&(node_group=(struct GROUP(FE_node) *)node_group_void))
+	{
+		return_code=(struct FE_node *)NULL != 
+			IS_OBJECT_IN_GROUP(FE_node)(node,node_group);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"FE_node_is_in_group.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_is_in_group */
 
 int ensure_FE_node_is_in_group(struct FE_node *node,void *node_group_void)
 /*******************************************************************************
@@ -22513,6 +22540,148 @@ it from its first parent if it has no node scale field information.
 
 	return (field);
 } /* get_FE_element_default_coordinate_field */
+
+int add_FE_element_line_number_to_Multi_range(struct FE_element *element,
+	void *multi_range_void)
+/*******************************************************************************
+LAST MODIFIED : 22 March 2000
+
+DESCRIPTION :
+Iterator function for adding the number of <element> to <multi_range> if it is
+a CM_LINE.
+==============================================================================*/
+{
+	int element_number,return_code;
+	struct Multi_range *multi_range;
+
+	ENTER(add_FE_element_line_number_to_Multi_range);
+	if (element&&(multi_range=(struct Multi_range *)multi_range_void))
+	{
+		if (CM_LINE==element->cm.type)
+		{
+			element_number=element->cm.number;
+			return_code=Multi_range_add_range(multi_range,element_number,
+				element_number);
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"add_FE_element_line_number_to_Multi_range.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* add_FE_element_line_number_to_Multi_range */
+
+int add_FE_element_face_number_to_Multi_range(struct FE_element *element,
+	void *multi_range_void)
+/*******************************************************************************
+LAST MODIFIED : 22 March 2000
+
+DESCRIPTION :
+Iterator function for adding the number of <element> to <multi_range> if it is
+a CM_FACE.
+==============================================================================*/
+{
+	int element_number,return_code;
+	struct Multi_range *multi_range;
+
+	ENTER(add_FE_element_face_number_to_Multi_range);
+	if (element&&(multi_range=(struct Multi_range *)multi_range_void))
+	{
+		if (CM_FACE==element->cm.type)
+		{
+			element_number=element->cm.number;
+			return_code=Multi_range_add_range(multi_range,element_number,
+				element_number);
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"add_FE_element_face_number_to_Multi_range.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* add_FE_element_face_number_to_Multi_range */
+
+int add_FE_element_element_number_to_Multi_range(struct FE_element *element,
+	void *multi_range_void)
+/*******************************************************************************
+LAST MODIFIED : 22 March 2000
+
+DESCRIPTION :
+Iterator function for adding the number of <element> to <multi_range> if it is
+a CM_ELEMENT.
+==============================================================================*/
+{
+	int element_number,return_code;
+	struct Multi_range *multi_range;
+
+	ENTER(add_FE_element_element_number_to_Multi_range);
+	if (element&&(multi_range=(struct Multi_range *)multi_range_void))
+	{
+		if (CM_ELEMENT==element->cm.type)
+		{
+			element_number=element->cm.number;
+			return_code=Multi_range_add_range(multi_range,element_number,
+				element_number);
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"add_FE_element_element_number_to_Multi_range.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* add_FE_element_element_number_to_Multi_range */
+
+int FE_element_is_in_group(struct FE_element *element,void *element_group_void)
+/*******************************************************************************
+LAST MODIFIED : 22 March 2000
+
+DESCRIPTION :
+Returns true if <element> is in <element_group>.
+==============================================================================*/
+{
+	int return_code;
+	struct GROUP(FE_element) *element_group;
+
+	ENTER(FE_element_is_in_group);
+	if (element&&(element_group=(struct GROUP(FE_element) *)element_group_void))
+	{
+		return_code=(struct FE_element *)NULL != 
+			IS_OBJECT_IN_GROUP(FE_element)(element,element_group);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_is_in_group.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_is_in_group */
 
 int add_FE_element_and_faces_to_group(struct FE_element *element,
 	struct GROUP(FE_element) *element_group)

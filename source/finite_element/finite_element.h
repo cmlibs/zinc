@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -1196,6 +1196,14 @@ LAST MODIFIED : 20 February 2000
 
 DESCRIPTION :
 Iterator function for adding the number of <node> to <multi_range>.
+==============================================================================*/
+
+int FE_node_is_in_group(struct FE_node *node,void *node_group_void);
+/*******************************************************************************
+LAST MODIFIED : 20 March 2000
+
+DESCRIPTION :
+Returns true if <node> is in <node_group>.
 ==============================================================================*/
 
 int ensure_FE_node_is_in_group(struct FE_node *node,void *node_group_void);
@@ -2470,6 +2478,44 @@ LAST MODIFIED : 13 May 1999
 DESCRIPTION :
 Returns the first coordinate field defined over <element>, recursively getting
 it from its first parent if it has no node scale field information.
+==============================================================================*/
+
+int add_FE_element_line_number_to_Multi_range(struct FE_element *element,
+	void *multi_range_void);
+/*******************************************************************************
+LAST MODIFIED : 22 March 2000
+
+DESCRIPTION :
+Iterator function for adding the number of <element> to <multi_range> if it is
+a CM_LINE.
+==============================================================================*/
+
+int add_FE_element_face_number_to_Multi_range(struct FE_element *element,
+	void *multi_range_void);
+/*******************************************************************************
+LAST MODIFIED : 22 March 2000
+
+DESCRIPTION :
+Iterator function for adding the number of <element> to <multi_range> if it is
+a CM_FACE.
+==============================================================================*/
+
+int add_FE_element_element_number_to_Multi_range(struct FE_element *element,
+	void *multi_range_void);
+/*******************************************************************************
+LAST MODIFIED : 22 March 2000
+
+DESCRIPTION :
+Iterator function for adding the number of <element> to <multi_range> if it is
+a CM_ELEMENT.
+==============================================================================*/
+
+int FE_element_is_in_group(struct FE_element *element,void *element_group_void);
+/*******************************************************************************
+LAST MODIFIED : 22 March 2000
+
+DESCRIPTION :
+Returns true if <element> is in <element_group>.
 ==============================================================================*/
 
 int add_FE_element_and_faces_to_group(struct FE_element *element,
