@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : import_finite_element.c
 
-LAST MODIFIED : 6 March 2000
+LAST MODIFIED : 10 May 2000
 
 DESCRIPTION :
 The function for importing finite element data, from a file or CMISS (via a
@@ -353,7 +353,7 @@ string.
 static struct FE_field *read_FE_field(FILE *input_file,
 	struct MANAGER(FE_field) *fe_field_manager)
 /*******************************************************************************
-LAST MODIFIED : 29 November 1999
+LAST MODIFIED : 10 May 2000
 
 DESCRIPTION :
 Reads a field from its descriptor in <input_file>. Note that the same format is
@@ -364,6 +364,7 @@ not have any component names; these must be set by the calling function.
 ==============================================================================*/
 {
 	char *field_name,*next_block;
+	enum CM_field_type cm_field_type;
 	enum FE_field_type fe_field_type;
 	enum Value_type value_type;
 	float focus;
@@ -417,23 +418,10 @@ not have any component names; these must be set by the calling function.
 		/* read the CM_field_information */
 		if (return_code&&next_block)
 		{
-			if (fuzzy_string_compare_same_length(next_block,"anatomical"))
+			cm_field_type=CM_field_type_from_string(next_block);
+			if (CM_FIELD_TYPE_INVALID != cm_field_type)
 			{
-				set_CM_field_information(&cm_field_information,CM_ANATOMICAL_FIELD,
-					(int *)NULL);
-			}
-			else if (fuzzy_string_compare_same_length(next_block,"coordinate"))
-			{
-				set_CM_field_information(&cm_field_information,CM_COORDINATE_FIELD,
-					(int *)NULL);
-			}
-			else if (fuzzy_string_compare_same_length(next_block,"field"))
-			{
-				set_CM_field_information(&cm_field_information,CM_FIELD,(int *)NULL);
-			}
-			else if (fuzzy_string_compare_same_length(next_block,"non CM"))
-			{
-				set_CM_field_information(&cm_field_information,CM_UNKNOWN_FIELD,
+				set_CM_field_information(&cm_field_information,cm_field_type,
 					(int *)NULL);
 			}
 			else

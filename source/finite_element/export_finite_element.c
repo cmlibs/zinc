@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : export_finite_element.c
 
-LAST MODIFIED : 21 February 2000
+LAST MODIFIED : 10 May 2000
 
 DESCRIPTION :
 The function for exporting finite element data, to a file or to CMISS (via a
@@ -124,7 +124,7 @@ E<lement>/F<ace>/L<ine> ELEMENT_NUMBER DIMENSION xi1 xi2... xiDIMENSION
 static int write_FE_field_header(FILE *output_file,int field_number,
 	struct FE_field *field)
 /*******************************************************************************
-LAST MODIFIED : 24 September 1999
+LAST MODIFIED : 10 May 2000
 
 DESCRIPTION :
 Writes the part of the field header that is common to exnode and exelem files.
@@ -136,7 +136,6 @@ Examples:
 ==============================================================================*/
 {
 	char *name;
-	enum CM_field_type cm_field_type;
 	enum FE_field_type fe_field_type;
 	enum Value_type value_type;
 	int number_of_components,return_code;
@@ -156,36 +155,8 @@ Examples:
 		{
 			fprintf(output_file,"unknown");
 		}
-		cm_field_type=get_FE_field_CM_field_type(field);
-		switch (cm_field_type)
-		{
-			case CM_ANATOMICAL_FIELD:
-			{
-				fprintf(output_file,", anatomical");
-			} break;
-			case CM_COORDINATE_FIELD:
-			{
-				fprintf(output_file,", coordinate");
-			} break;
-			case CM_DEPENDENT_FIELD:
-			{
-				fprintf(output_file,", field");
-			} break;
-			case CM_FIELD:
-			{
-				fprintf(output_file,", field");
-			} break;
-			case CM_UNKNOWN_FIELD:
-			{
-				fprintf(output_file,", non CM");
-			} break;
-			default:
-			{
-				fprintf(output_file,", non CM");
-				display_message(ERROR_MESSAGE,
-					"write_FE_field_header.  Invalid CM_field_type");
-			} break;
-		}
+		fprintf(output_file,", %s",
+			CM_field_type_string(get_FE_field_CM_field_type(field)));
 		/* optional constant/indexed, Index_field=~, #Values=# */
 		fe_field_type=get_FE_field_FE_field_type(field);
 		switch (fe_field_type)
