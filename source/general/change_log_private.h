@@ -185,6 +185,24 @@ only merges changes for objects that are in the object_list. \
 	return (return_code); \
 } /* CHANGE_LOG_ENTRY_OBJECT_CHANGE(object_type) */
 
+#define DECLARE_CHANGE_LOG_POINTERS_MATCH_FUNCTION( object_type ) \
+static int object_type ## _pointers_match(struct object_type *object, \
+   void *object_void ) \
+/***************************************************************************** \
+LAST MODIFIED : 11 August 2003 \
+\
+DESCRIPTION : \
+SAB.  An iterator function for finding if there is an <object> with pointer \
+<object_void>.  Used when the <object_void> could reference an object that has 
+already been destroyed and therefore the pointer cannot be dereferenced to \
+examine the identifier. \
+============================================================================*/ \
+{ \
+	int return_code; \
+   return_code =  object == object_void; \
+    return (return_code); \
+} /* object_type ## _pointer_match */
+
 #if defined (OLD_CODE_TO_KEEP)
 
 #if defined (FULL_NAMES)
@@ -697,7 +715,13 @@ Unchanged objects are returned as OBJECT_UNCHANGED. \
 			if (change_log->change_summary & \
 				CHANGE_LOG_OBJECT_REMOVED(object_type)) \
 			{ \
-				if (IS_OBJECT_IN_LIST(object_type)(object, change_log->object_list)) \
+            /* SAB Cannot use IS_OBJECT_IN_LIST as the indexed list versions \
+               deaccess the object pointer to look at the identifier.  The \
+					object may have been removed (and already deallocated) and \
+					therefore is potentially invalid, so we need to a slow check by \
+					working through every object */ \
+				if (FIRST_OBJECT_IN_LIST_THAT(object_type)(object_type ##_pointers_match, \
+					(void *)object, change_log->object_list)) \
 				{ \
 					/* clear REMOVED bit with bitwise XOR */ \
 					*change_address = (enum CHANGE_LOG_CHANGE(object_type))( \
@@ -928,7 +952,8 @@ DECLARE_INDEXED_LIST_FUNCTIONS(CHANGE_LOG_ENTRY(object_type)) \
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION( \
 	CHANGE_LOG_ENTRY(object_type), the_object, struct object_type *, \
 	compare_pointer) \
-DECLARE_CHANGE_LOG_ENTRY_OBJECT_CHANGE_FUNCTION(object_type)
+DECLARE_CHANGE_LOG_ENTRY_OBJECT_CHANGE_FUNCTION(object_type) \
+DECLARE_CHANGE_LOG_POINTERS_MATCH_FUNCTION(object_type)
 
 #define DECLARE_CHANGE_LOG_FUNCTIONS( object_type ) \
 DECLARE_CREATE_CHANGE_LOG_FUNCTION(object_type) \
