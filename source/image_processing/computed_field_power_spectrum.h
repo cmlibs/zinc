@@ -13,15 +13,13 @@ Compute power spectrum on computed fields.
 #define my_Min(x,y) ((x) <= (y) ? (x) : (y))
 #define my_Max(x,y) ((x) <= (y) ? (y) : (x))
 
-int FFT_1D(FE_value *Xr, FE_value *Xi, FE_value *Yr, FE_value *Yi,
-         int dir, int data_size);
+int FFT_1d(FE_value *Xr, FE_value *Xi, int dir, int data_size);
 /****************************************************************************
       LAST MODIFIED: 2 August 2004
 
       DESCRIPTION: Implement 1D fast Fourier transform
 ============================================================================*/
-int FFT_2D(FE_value *in_re, FE_value *in_im, FE_value *out_re, FE_value *out_im,
-         int dir, int xsize, int ysize);
+int FFT_md(FE_value *in_re, FE_value *in_im, int dir, int dim, int *sizes);
 /****************************************************************************
       LAST MODIFIED: 2 August 2004
 

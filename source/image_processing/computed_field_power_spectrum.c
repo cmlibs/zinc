@@ -18,6 +18,7 @@
 #include "image_processing/computed_field_power_spectrum.h"
 
 
+
 struct Computed_field_power_spectrum_package
 /*******************************************************************************
 LAST MODIFIED : 2 August 2004
@@ -109,7 +110,7 @@ we know to invalidate the image cache.
 			case MANAGER_CHANGE_REMOVE(Computed_field):
 			case MANAGER_CHANGE_IDENTIFIER(Computed_field):
 			{
-				/* do nothing */
+				/* do im */
 			} break;
 		}
 	}
@@ -342,7 +343,7 @@ No special criteria.
 ==============================================================================*/
 
 
-int FFT_1D(FE_value *Xr, FE_value *Xi, FE_value *Yr, FE_value *Yi,
+int FFT_1d(FE_value *Xr, FE_value *Xi,
          int dir, int data_size)
 /****************************************************************************
       LAST MODIFIED: 2 August 2004
@@ -423,28 +424,28 @@ int FFT_1D(FE_value *Xr, FE_value *Xi, FE_value *Yr, FE_value *Yi,
 		{
 		        for (i=0;i<size;i++)
 			{
-			        Yr[i] = data[2*i]/(FE_value)size;
+			        Xr[i] = data[2*i]/(FE_value)size;
 			}
 		}
 		else
 		{
 		        for (i=0;i<size;i++)
 			{
-			        Yr[i] = data[2*i];
+			        Xr[i] = data[2*i];
 			}
 		}
 		if (dir == 1)
 		{
 		        for (i=0;i<size;i++)
 			{
-			        Yi[i] = data[2*i+1]/(FE_value)size;
+			        Xi[i] = data[2*i+1]/(FE_value)size;
 			}
 		}
 		else
 		{
 		        for (i=0;i<size;i++)
 			{
-			         Yi[i] = data[2*i+1];
+			        Xi[i] = data[2*i+1];
 			}
 		}
 		DEALLOCATE(data);
@@ -459,82 +460,63 @@ int FFT_1D(FE_value *Xr, FE_value *Xi, FE_value *Yr, FE_value *Yi,
 
 	LEAVE;
 	return(return_code);
-}/* FFT_1D */
+}/* FFT_1d */
 
-int FFT_2D(FE_value *in_re, FE_value *in_im, FE_value *out_re, FE_value *out_im,
-         int dir, int xsize, int ysize)
+int FFT_md(FE_value *in_re, FE_value *in_im,
+         int dir, int dim, int *sizes)
 /****************************************************************************
       LAST MODIFIED: 2 August 2004
 
       DESCRIPTION: Implement 2D fast Fourier transform
 ============================================================================*/
 {
-        int      i,j,n,p;
+        int i, j, m;
+	int image_step, step;
 	int return_code;
-	FE_value  *f1_re, *f1_im, *f2_re, *f2_im;
-	FE_value  *f3_re, *f3_im, *f4_re, *f4_im;
-	FE_value  *tmp_re, *tmp_im;
-	ENTER(FFT_2D);
-	p = xsize;
-	n = ysize;
-	if (ALLOCATE(f1_re, FE_value, p) &&
-	     ALLOCATE(f1_im, FE_value, p) &&
-	     ALLOCATE(f2_re, FE_value, p) &&
-	     ALLOCATE(f2_im, FE_value, p) &&
-	     ALLOCATE(tmp_re, FE_value, xsize*ysize) &&
-	     ALLOCATE(tmp_im, FE_value, xsize*ysize))
+	FE_value *f_re, *f_im;
+	FE_value *tmp_re, *tmp_im;
+
+	ENTER(FFT_mD);
+	int tmp_size;
+	tmp_size = 1;
+	for (m = 0; m < dim; m++)
+	{
+	        tmp_size *= sizes[m];
+	}
+	if (ALLOCATE(tmp_re, FE_value, tmp_size) &&
+	         ALLOCATE(tmp_im, FE_value, tmp_size))
 	{
 	        return_code = 1;
+		image_step = 1;
+		for (m = 0; m < dim; m++)
+		{
+		        ALLOCATE(f_re, FE_value, sizes[m]);
+			ALLOCATE(f_im, FE_value, sizes[m]);
+			for (i = 0; i < tmp_size / sizes[m]; i++)
+			{
+			        step = (i % image_step) + (i / image_step) * sizes[m] * image_step;
+				for (j = 0; j < sizes[m]; j++)
+				{
+			        	f_re[j] = in_re[step + j * image_step];
+					f_im[j] = in_im[step + j * image_step];
+				}
+				FFT_1d(f_re, f_im, dir, sizes[m]);
+				for (j = 0; j < sizes[m]; j++)
+				{
+			        	tmp_re[step + j * image_step] = f_re[j];
+					tmp_im[step + j * image_step] = f_im[j];
+				}
+			}
+			for (i = 0; i < tmp_size; i++)
+			{
+			        in_re[i] = tmp_re[i];
+				in_im[i] = tmp_im[i];
+			}
+			DEALLOCATE(f_re);
+			DEALLOCATE(f_im);
+			image_step *= sizes[m];
 
-		for (i=0;i<n;i++)
-		{
-		        for (j=0;j<p;j++)
-			{
-			        f1_re[j] = in_re[p*i+j];
-				f1_im[j] = in_im[p*i+j];
-			}
-			FFT_1D(f1_re,f1_im,f2_re,f2_im,dir, p);
-			for (j=0;j<p;j++)
-			{
-			        tmp_re[p*i+j] = f2_re[j];
-				tmp_im[p*i+j] = f2_im[j];
-			}
 		}
-		if (ALLOCATE(f3_re, FE_value, n) &&
-	                 ALLOCATE(f3_im, FE_value, n) &&
-			 ALLOCATE(f4_re, FE_value, n) &&
-			 ALLOCATE(f4_im, FE_value, n))
-		{
-		        for (j=0;j<p;j++)
-			{
-			        for (i=0;i<n;i++)
-				{
-				        f3_re[i] = tmp_re[p*i+j];
-					f3_im[i] = tmp_im[p*i+j];
-				}
-				FFT_1D(f3_re,f3_im,f4_re,f4_im,dir, n);
-				for (i=0;i<n;i++)
-				{
-				        out_re[p*i+j] = f4_re[i];
-					out_im[p*i+j] = f4_im[i];
-				}
-			}
-			DEALLOCATE(f3_re);
-			DEALLOCATE(f3_im);
-			DEALLOCATE(f4_re);
-			DEALLOCATE(f4_im);
-		}
-		else
-		{
-		        display_message(ERROR_MESSAGE,
-				"In function fft2d.  "
-				"Unable to allocate memory.");
-			return_code = 0;
-		}
-		DEALLOCATE(f1_re);
-		DEALLOCATE(f1_im);
-		DEALLOCATE(f2_re);
-		DEALLOCATE(f2_im);
 		DEALLOCATE(tmp_re);
 		DEALLOCATE(tmp_im);
 	}
@@ -545,9 +527,10 @@ int FFT_2D(FE_value *in_re, FE_value *in_im, FE_value *out_re, FE_value *out_im,
 				"Unable to allocate memory.");
 		return_code = 0;
 	}
+
 	LEAVE;
 	return(return_code);
-}/* FFT_2D */
+}/* FFT_md */
 
 
 static int Image_cache_power_spectrum(struct Image_cache *image)
@@ -559,13 +542,12 @@ DESCRIPTION : Implement FFT on image cache.
 ==============================================================================*/
 {
 	char *storage;
-	FE_value *data_index, *result_index, *data_index1, *re, *im, *nothing, *max, *min;
-	int i, j, return_code, storage_size, k;
-	FE_value *result_index1;
+	FE_value *data_index, *result_index, *re, *im, *max;
+	int i, return_code, storage_size, k;
 	int xsize, ysize;
 
 	ENTER(Image_cache_power_spectrum);
-	if (image && (image->dimension == 2) && (image->depth > 0))
+	if (image && (image->dimension > 0) && (image->depth > 0))
 	{
 		return_code = 1;
 
@@ -577,13 +559,9 @@ DESCRIPTION : Implement FFT on image cache.
 		xsize = image->sizes[0];
 		ysize = image->sizes[1];
 		if (ALLOCATE(storage, char, storage_size * sizeof(FE_value))&&
-		         ALLOCATE(data_index1, FE_value, storage_size/image->depth) &&
-			 ALLOCATE(result_index1, FE_value, storage_size) &&
 			 ALLOCATE(re, FE_value, storage_size/image->depth) &&
 			 ALLOCATE(im, FE_value, storage_size/image->depth) &&
-			 ALLOCATE(nothing, FE_value, storage_size/image->depth) &&
-			 ALLOCATE(max, FE_value, image->depth) &&
-			 ALLOCATE(min, FE_value, image->depth))
+			 ALLOCATE(max, FE_value, image->depth))
 		{
 		        return_code = 1;
 			result_index = (FE_value *)storage;
@@ -597,14 +575,14 @@ DESCRIPTION : Implement FFT on image cache.
 			for (k = 0; k < image->depth; k++)
 			{
 			        max[k] = 0.0;
-				min[k] = 1000000.0;
 			        for (i = 0; i < storage_size/image->depth; i++)
 			        {
-			                 data_index1[i] = *(data_index + k) * 255.0 - 128.0;
+			                 re[i] = *(data_index + k) * 255.0 - 128.0;
+					 im[i] = 0.0;
 					 data_index += image->depth;
 
 			        }
-				FFT_2D(data_index1, nothing, re, im, 1, image->sizes[0], image->sizes[1]);
+				FFT_md(re, im, 1, image->dimension, image->sizes);
 				for (i = (storage_size/image->depth)-1; i >= 0; i--)
 			        {
 				         data_index -= image->depth;
@@ -625,51 +603,22 @@ DESCRIPTION : Implement FFT on image cache.
 					         im[i] = my_Max((FE_value)image->sizes[0],(FE_value)image->sizes[1]);
 					 }
 
-			                 result_index1[i * image->depth + k] = log(re[i] * re[i] + im[i] * im[i] + 1.0);
-					 max[k] = my_Max(result_index1[i * image->depth + k], max[k]);
-					 min[k] = my_Min(result_index1[i * image->depth + k], min[k]);
+			                 result_index[i * image->depth + k] = log(re[i] * re[i] + im[i] * im[i] + 1.0);
+					 max[k] = my_Max(result_index[i * image->depth + k], max[k]);
 			        }
 			}
-			/*
 			for (i = 0; i < storage_size / image->depth; i++)
 			{
 			        for (k = 0; k < image->depth; k++)
 				{
 				        if (max[k] == 0.0)
 					{
-					        result_index1[i * image->depth + k] = 0.0;
+					        result_index[i * image->depth + k] = 0.0;
 					}
 					else
 					{
-					        result_index1[i * image->depth + k] -= min[k];
-						result_index1[i * image->depth + k] /= (max[k] - min[k]);
+					        result_index[i * image->depth + k] /= max[k];
 
-					}
-				}
-			}
-			*/
-			for (i = 0; i < ysize; i++)
-			{
-			        for (j = 0; j < xsize; j++)
-				{
-				        for (k = 0; k < image->depth; k++)
-					{
-				        	if ((i < image->sizes[1] / 2) && (j < image->sizes[0]/2))
-						{
-					        	result_index[(i * xsize + j) * image->depth + k] = result_index1[((image->sizes[1]-i-1) * image->sizes[0] + (image->sizes[0] - j - 1)) * image->depth + k];
-						}
-						else if ((i < image->sizes[1]/2) && (j >= image->sizes[0]/2))
-						{
-						        result_index[(i * xsize + j) * image->depth + k] = result_index1[((image->sizes[1]- i - 1) * image->sizes[0] + (j - image->sizes[0]/2)) * image->depth + k];
-						}
-						else if ((i >= image->sizes[1] / 2) && (j < image->sizes[0]/2))
-						{
-						        result_index[(i * xsize + j) * image->depth + k] = result_index1[((i - image->sizes[1] /2) * image->sizes[0] + (image->sizes[0] - j - 1)) * image->depth + k];
-						}
-						else if ((i >= image->sizes[1]/2) && (j >= image->sizes[0]/2))
-						{
-						        result_index[(i * xsize + j) * image->depth + k] = result_index1[((i - image->sizes[1]/2) * image->sizes[0] + (j - image->sizes[0]/2)) * image->depth + k];
-						}
 					}
 				}
 			}
@@ -683,13 +632,9 @@ DESCRIPTION : Implement FFT on image cache.
 			{
 				DEALLOCATE(storage);
 			}
-			DEALLOCATE(data_index1);
-			DEALLOCATE(result_index1);
 			DEALLOCATE(re);
 			DEALLOCATE(im);
-			DEALLOCATE(nothing);
 			DEALLOCATE(max);
-			DEALLOCATE(min);
 		}
 		else
 		{
