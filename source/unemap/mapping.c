@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 31 May 2001
+LAST MODIFIED : 23 July 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -9674,7 +9674,7 @@ Perform projection and update ranges for 2d map
 static int draw_2d_calculate_electrode_value(struct Map *map,
 	char *electrode_drawn,struct Device	**electrode,float *f_value)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2001
+LAST MODIFIED : 23 July 2001
 
 DESCRIPTION :
 Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
@@ -9699,232 +9699,236 @@ Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
 	times=(int *)NULL;
 	short_int_value=(short int *)NULL;
 	float_value=(float *)NULL;
-	if(electrode_drawn)
+	if (electrode_drawn)
 	{
 		return_code=1;
-		number_of_frames=map->number_of_frames;
-		datum=*(map->datum);
-		map_type= *(map->type);
-		event_number= *(map->event_number);
-		undecided_accepted=map->undecided_accepted;
-		end_search_interval=*(map->end_search_interval);
-		start_search_interval=*(map->start_search_interval);
-		switch (map_type)
+		if ((map->type)&&(NO_MAP_FIELD!=(map_type= *(map->type)))&&(map->datum)&&
+			(map->event_number)&&(map->end_search_interval)&&
+			(map->start_search_interval))
 		{
-			case NO_MAP_FIELD:
-				/* always draw all the electrodes if have no map */
+			number_of_frames=map->number_of_frames;
+			datum= *(map->datum);
+			event_number= *(map->event_number);
+			undecided_accepted=map->undecided_accepted;
+			end_search_interval= *(map->end_search_interval);
+			start_search_interval= *(map->start_search_interval);
+			switch (map_type)
 			{
-				*electrode_drawn=1;								
-			}break;
-			case SINGLE_ACTIVATION:
-			{
-				if ((signal=(*electrode)->signal)&&
-					((ACCEPTED==signal->status)||(undecided_accepted&&
-						(UNDECIDED==signal->status)))&&
-					(buffer=signal->buffer)&&(times=buffer->times))
-				{
-					event=signal->first_event;
-					while (event&&(event->number<event_number))
-					{
-						event=event->next;
-					}
-					if (event&&(event->number==event_number)&&
-						((ACCEPTED==event->status)||
-							(undecided_accepted&&(UNDECIDED==event->status))))
-					{
-						*f_value=(float)(times[event->time]-times[datum])*1000/
-							(signal->buffer->frequency);
-						*electrode_drawn=1;
-					}
-				}
-			} break;
-			case MULTIPLE_ACTIVATION:
-			{
-				if ((signal=(*electrode)->signal)&&
-					((ACCEPTED==signal->status)||(undecided_accepted&&
-						(UNDECIDED==signal->status)))&&
-					(buffer=signal->buffer)&&(times=buffer->times))
-				{
-					found=0;
-					event=signal->first_event;
-					while (event)
-					{
-						if ((ACCEPTED==event->status)||
-							(undecided_accepted&&(UNDECIDED==event->status)))
-						{
-							a=(float)(times[datum]-times[event->time])*1000/
-								(signal->buffer->frequency);
-							if (found)
-							{
-								if (((*f_value<0)&&(*f_value<a))||
-									((*f_value>=0)&&(0<=a)&&(a<*f_value)))
-								{
-									*f_value=a;
-								}
-							}
-							else
-							{
-								found=1;
-								*electrode_drawn=1;
-								*f_value=a;
-							}
-						}
-						event=event->next;
-					}
-				}
-			} break;
-			case INTEGRAL:
-			{
-				if ((signal=(*electrode)->signal)&&
-					(0<=start_search_interval)&&
-					(start_search_interval<=end_search_interval)&&
-					(end_search_interval<signal->buffer->
-						number_of_samples)&&
-					((signal->status==ACCEPTED)||(undecided_accepted&&
-						(signal->status==UNDECIDED))))
-				{
-					integral= -(double)((*electrode)->channel->offset)*
-						(double)(end_search_interval-
-							start_search_interval+1);
-					number_of_signals=signal->buffer->number_of_signals;
-					switch (signal->buffer->value_type)
-					{
-						case SHORT_INT_VALUE:
-						{
-							short_int_value=
-								(signal->buffer->signals.short_int_values)+
-								(start_search_interval*number_of_signals+
-									(signal->index));
-							for (i=end_search_interval-start_search_interval;
-									 i>=0;i--)
-							{
-								integral += (double)(*short_int_value);
-								short_int_value += number_of_signals;
-							}
-						} break;
-						case FLOAT_VALUE:
-						{
-							float_value=
-								(signal->buffer->signals.float_values)+
-								(start_search_interval*number_of_signals+
-									(signal->index));
-							for (i=end_search_interval-start_search_interval;
-									 i>=0;i--)
-							{
-								integral += (double)(*float_value);
-								float_value += number_of_signals;
-							}
-						} break;
-					}
-					integral *= (double)((*electrode)->channel->gain)/
-						(double)(signal->buffer->frequency);
-					*electrode_drawn=1;
-					*f_value=(float)integral;
-				}
-			} break;
-			case POTENTIAL:
-			{
-				if (NO_INTERPOLATION==map->interpolation_type)
+				case SINGLE_ACTIVATION:
 				{
 					if ((signal=(*electrode)->signal)&&
 						((ACCEPTED==signal->status)||(undecided_accepted&&
 							(UNDECIDED==signal->status)))&&
 						(buffer=signal->buffer)&&(times=buffer->times))
 					{
-						switch (buffer->value_type)
+						event=signal->first_event;
+						while (event&&(event->number<event_number))
 						{
-							case SHORT_INT_VALUE:
-							{
-								*f_value=((float)((buffer->signals.
-									short_int_values)[(*(map->potential_time))*
-										(buffer->number_of_signals)+(signal->index)])-
-									((*electrode)->channel->offset))*
-									((*electrode)->channel->gain);
-							} break;
-							case FLOAT_VALUE:
-							{
-								*f_value=((buffer->signals.float_values)[
-									(*(map->potential_time))*
-									(buffer->number_of_signals)+(signal->index)]-
-									((*electrode)->channel->offset))*
-									((*electrode)->channel->gain);
-							} break;
+							event=event->next;
 						}
-						*electrode_drawn=1;
+						if (event&&(event->number==event_number)&&
+							((ACCEPTED==event->status)||
+								(undecided_accepted&&(UNDECIDED==event->status))))
+						{
+							*f_value=(float)(times[event->time]-times[datum])*1000/
+								(signal->buffer->frequency);
+							*electrode_drawn=1;
+						}
 					}
-				}
-				else
+				} break;
+				case MULTIPLE_ACTIVATION:
 				{
-					if (1<number_of_frames)
-					{
-						frame_number=map->frame_number;
-						frame_time=((float)(number_of_frames-frame_number-1)*
-							(map->frame_start_time)+(float)frame_number*
-							(map->frame_end_time))/(float)(number_of_frames-1);
-					}
-					else
-					{
-						frame_time=map->frame_start_time;
-					}
 					if ((signal=(*electrode)->signal)&&
 						((ACCEPTED==signal->status)||(undecided_accepted&&
 							(UNDECIDED==signal->status)))&&
-						(buffer=signal->buffer)&&(times=buffer->times)&&
-						((float)(times[0])<=(frame_time_freq=frame_time*
-							(buffer->frequency)/1000))&&(frame_time_freq<=
-								(float)(times[(buffer->number_of_samples)-1])))
+						(buffer=signal->buffer)&&(times=buffer->times))
 					{
-						before=0;
-						after=(buffer->number_of_samples)-1;
-						while (before+1<after)
+						found=0;
+						event=signal->first_event;
+						while (event)
 						{
-							middle=(before+after)/2;
-							if (frame_time_freq<times[middle])
+							if ((ACCEPTED==event->status)||
+								(undecided_accepted&&(UNDECIDED==event->status)))
 							{
-								after=middle;
+								a=(float)(times[datum]-times[event->time])*1000/
+									(signal->buffer->frequency);
+								if (found)
+								{
+									if (((*f_value<0)&&(*f_value<a))||
+										((*f_value>=0)&&(0<=a)&&(a<*f_value)))
+									{
+										*f_value=a;
+									}
+								}
+								else
+								{
+									found=1;
+									*electrode_drawn=1;
+									*f_value=a;
+								}
 							}
-							else
-							{
-								before=middle;
-							}
+							event=event->next;
 						}
-						if (before==after)
-						{
-							proportion=0.5;
-						}
-						else
-						{
-							proportion=((float)(times[after])-frame_time_freq)/
-								(float)(times[after]-times[before]);
-						}
-						switch (buffer->value_type)
+					}
+				} break;
+				case INTEGRAL:
+				{
+					if ((signal=(*electrode)->signal)&&
+						(0<=start_search_interval)&&
+						(start_search_interval<=end_search_interval)&&
+						(end_search_interval<signal->buffer->
+							number_of_samples)&&
+						((signal->status==ACCEPTED)||(undecided_accepted&&
+							(signal->status==UNDECIDED))))
+					{
+						integral= -(double)((*electrode)->channel->offset)*
+							(double)(end_search_interval-
+								start_search_interval+1);
+						number_of_signals=signal->buffer->number_of_signals;
+						switch (signal->buffer->value_type)
 						{
 							case SHORT_INT_VALUE:
 							{
-								*f_value=(proportion*(float)((buffer->signals.
-									short_int_values)[before*
-										(buffer->number_of_signals)+(signal->index)])+
-									(1-proportion)*(float)((buffer->signals.
-										short_int_values)[after*
-											(buffer->number_of_signals)+(signal->index)])-
-									((*electrode)->channel->offset))*
-									((*electrode)->channel->gain);
+								short_int_value=
+									(signal->buffer->signals.short_int_values)+
+									(start_search_interval*number_of_signals+
+										(signal->index));
+								for (i=end_search_interval-start_search_interval;
+										 i>=0;i--)
+								{
+									integral += (double)(*short_int_value);
+									short_int_value += number_of_signals;
+								}
 							} break;
 							case FLOAT_VALUE:
 							{
-								*f_value=(proportion*(buffer->signals.float_values)[
-									before*(buffer->number_of_signals)+
-									(signal->index)]+(1-proportion)*
-									(buffer->signals.float_values)[after*
-										(buffer->number_of_signals)+(signal->index)]-
-									((*electrode)->channel->offset))*
-									((*electrode)->channel->gain);
+								float_value=
+									(signal->buffer->signals.float_values)+
+									(start_search_interval*number_of_signals+
+										(signal->index));
+								for (i=end_search_interval-start_search_interval;
+										 i>=0;i--)
+								{
+									integral += (double)(*float_value);
+									float_value += number_of_signals;
+								}
 							} break;
 						}
+						integral *= (double)((*electrode)->channel->gain)/
+							(double)(signal->buffer->frequency);
 						*electrode_drawn=1;
+						*f_value=(float)integral;
 					}
-				}
-			} break;
+				} break;
+				case POTENTIAL:
+				{
+					if (NO_INTERPOLATION==map->interpolation_type)
+					{
+						if ((signal=(*electrode)->signal)&&
+							((ACCEPTED==signal->status)||(undecided_accepted&&
+								(UNDECIDED==signal->status)))&&
+							(buffer=signal->buffer)&&(times=buffer->times))
+						{
+							switch (buffer->value_type)
+							{
+								case SHORT_INT_VALUE:
+								{
+									*f_value=((float)((buffer->signals.
+										short_int_values)[(*(map->potential_time))*
+											(buffer->number_of_signals)+(signal->index)])-
+										((*electrode)->channel->offset))*
+										((*electrode)->channel->gain);
+								} break;
+								case FLOAT_VALUE:
+								{
+									*f_value=((buffer->signals.float_values)[
+										(*(map->potential_time))*
+										(buffer->number_of_signals)+(signal->index)]-
+										((*electrode)->channel->offset))*
+										((*electrode)->channel->gain);
+								} break;
+							}
+							*electrode_drawn=1;
+						}
+					}
+					else
+					{
+						if (1<number_of_frames)
+						{
+							frame_number=map->frame_number;
+							frame_time=((float)(number_of_frames-frame_number-1)*
+								(map->frame_start_time)+(float)frame_number*
+								(map->frame_end_time))/(float)(number_of_frames-1);
+						}
+						else
+						{
+							frame_time=map->frame_start_time;
+						}
+						if ((signal=(*electrode)->signal)&&
+							((ACCEPTED==signal->status)||(undecided_accepted&&
+								(UNDECIDED==signal->status)))&&
+							(buffer=signal->buffer)&&(times=buffer->times)&&
+							((float)(times[0])<=(frame_time_freq=frame_time*
+								(buffer->frequency)/1000))&&(frame_time_freq<=
+									(float)(times[(buffer->number_of_samples)-1])))
+						{
+							before=0;
+							after=(buffer->number_of_samples)-1;
+							while (before+1<after)
+							{
+								middle=(before+after)/2;
+								if (frame_time_freq<times[middle])
+								{
+									after=middle;
+								}
+								else
+								{
+									before=middle;
+								}
+							}
+							if (before==after)
+							{
+								proportion=0.5;
+							}
+							else
+							{
+								proportion=((float)(times[after])-frame_time_freq)/
+									(float)(times[after]-times[before]);
+							}
+							switch (buffer->value_type)
+							{
+								case SHORT_INT_VALUE:
+								{
+									*f_value=(proportion*(float)((buffer->signals.
+										short_int_values)[before*
+											(buffer->number_of_signals)+(signal->index)])+
+										(1-proportion)*(float)((buffer->signals.
+											short_int_values)[after*
+												(buffer->number_of_signals)+(signal->index)])-
+										((*electrode)->channel->offset))*
+										((*electrode)->channel->gain);
+								} break;
+								case FLOAT_VALUE:
+								{
+									*f_value=(proportion*(buffer->signals.float_values)[
+										before*(buffer->number_of_signals)+
+										(signal->index)]+(1-proportion)*
+										(buffer->signals.float_values)[after*
+											(buffer->number_of_signals)+(signal->index)]-
+										((*electrode)->channel->offset))*
+										((*electrode)->channel->gain);
+								} break;
+							}
+							*electrode_drawn=1;
+						}
+					}
+				} break;
+			}
+		}
+		else
+		{
+			/* always draw all the electrodes if have no map */
+			*electrode_drawn=1;
 		}
 	}
 	else
