@@ -755,6 +755,17 @@ Adds the given <token> to the <option_table>.  The <vector> is filled in with th
 <number_of_components>.
 ==============================================================================*/
 
+int Option_table_add_variable_length_double_vector_entry(
+	struct Option_table *option_table, char *token, int *number_of_components, 
+	double **vector);
+/*******************************************************************************
+LAST MODIFIED : 18 February 2005
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  The <vector> is filled in with the
+<number_of_components>.
+==============================================================================*/
+
 int Option_table_add_double_vector_with_help_entry(
 	struct Option_table *option_table, char *token, double *vector, 
 	struct Set_vector_with_help_data *data);

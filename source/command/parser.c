@@ -4474,6 +4474,131 @@ Now prints current contents of the vector with help.
 	return (return_code);
 } /* set_double_vector */
 
+static int set_variable_length_double_vector(struct Parse_state *state,
+	void *values_address_void, void *number_of_components_address_void)
+/*******************************************************************************
+LAST MODIFIED : 18 February 2005
+
+DESCRIPTION :
+Modifier function for reading doubles from <state>.  This function keeps 
+consuming tokens until one cannot be parsed as a double and sets this
+<number_of_components> into <number_of_components_address>.
+User data consists of a pointer to an integer containing number_of_components,
+while <values_address_void> should point to a large enough space to store the
+number_of_components floats.
+==============================================================================*/
+{
+	char *current_token;
+	double value,**values_address;
+	int allocated_length,comp_no,length_read,return_code,valid_token;
+#define VARIABLE_LENGTH_VECTOR_ALLOCATION (10)
+
+	ENTER(set_variable_length_double_vector);
+	if (state)
+	{
+		if ((values_address=(double **)values_address_void)&&
+			number_of_components_address_void)
+		{
+			if (current_token=state->current_token)
+			{
+				return_code=1;
+				if (strcmp(PARSER_HELP_STRING,current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+				{
+					comp_no = 0;
+					valid_token = 1;
+					if (REALLOCATE(*values_address, *values_address, double, 
+							VARIABLE_LENGTH_VECTOR_ALLOCATION))
+					{
+						allocated_length = VARIABLE_LENGTH_VECTOR_ALLOCATION;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "set_variable_length_double_vector.  "
+							"Unable to allocate memory.");
+						return_code=0;
+					}
+					while (valid_token && return_code)
+					{
+						if (comp_no >= allocated_length)
+						{
+							REALLOCATE(*values_address, *values_address, double, 
+								VARIABLE_LENGTH_VECTOR_ALLOCATION + allocated_length);
+							allocated_length += VARIABLE_LENGTH_VECTOR_ALLOCATION;
+						}
+						if (current_token=state->current_token)
+						{
+							if (1==sscanf(current_token," %lf%n ",&value,&length_read))
+							{
+								if (length_read == (int)strlen(current_token))
+								{
+									(*values_address)[comp_no]=value;
+									comp_no++;
+									return_code=shift_Parse_state(state,1);
+								}
+								else
+								{
+									valid_token = 0;
+								}
+							}
+							else
+							{
+								valid_token = 0;
+							}
+						}
+						else
+						{
+							valid_token = 0;
+						}
+					}
+					if (comp_no > 0)
+					{
+						*((int *)number_of_components_address_void) = comp_no;
+						if (allocated_length != comp_no)
+						{
+							REALLOCATE(*values_address, *values_address, double, 
+								comp_no);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"No valid double vector component(s) found.");
+						display_parse_state_location(state);
+						return_code=0;
+					}
+				}
+				else
+				{
+					/* write help text */
+					display_message(INFORMATION_MESSAGE," #..#");
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "Missing double vector");
+				display_parse_state_location(state);
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"set_variable_length_double_vector.  "
+				"Invalid argument(s)");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_variable_length_double_vector.  "
+			"Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_variable_length_double_vector */
+
 int set_double_vector_with_help(struct Parse_state *state,
 	void *vector_void,void *set_vector_with_help_data_void)
 /*******************************************************************************
@@ -5235,6 +5360,36 @@ Adds the given <token> to the <option_table>.  The <vector> is filled in with th
 
 	return (return_code);
 } /* Option_table_add_double_vector_entry */
+
+int Option_table_add_variable_length_double_vector_entry(
+	struct Option_table *option_table, char *token, int *number_of_components, 
+	double **vector)
+/*******************************************************************************
+LAST MODIFIED : 18 February 2005
+
+DESCRIPTION :
+Adds the given <token> to the <option_table>.  The <vector> is filled in with the
+<number_of_components>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Option_table_add_variable_length_double_vector_entry);
+	if (option_table && token && vector && number_of_components)
+	{
+		return_code = Option_table_add_entry(option_table, token, vector,
+			(void *)number_of_components, set_variable_length_double_vector);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Option_table_add_variable_length_double_vector_entry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Option_table_add_variable_length_double_vector_entry */
 
 int Option_table_add_double_vector_with_help_entry(
 	struct Option_table *option_table, char *token, double *vector,
