@@ -39,7 +39,7 @@ unemap-nodes unemap-3d : USE_UNEMAP_3D=USE_UNEMAP_3D=true
 
 utilities: TARGET=utilities
 
-unemap unemap-debug unemap-debug-memorycheck unemap-nodes unemap-3d unemap-3d-debug unemap64 utilities :
+unemap unemap-debug unemap-debug-memorycheck unemap-nodes unemap-3d unemap-3d-debug unemap64 unemap64-debug utilities :
 	cd source ; \
 	$(MAKE) -f $(SUBMAKEFILE) $(TARGET) $(USER_INTERFACE) $(ABI) $(DEBUG) $(MEMORYCHECK) $(USE_UNEMAP_NODES) $(USE_UNEMAP_3D) ;
 
