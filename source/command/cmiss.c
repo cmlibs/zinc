@@ -11599,7 +11599,7 @@ DESCRIPTION :
 
 				if (data_region_path && (!element_region_path) && (!node_region_path))
 				{
-					if (Cmiss_region_get_region_from_path(command_data->root_region,
+					if (Cmiss_region_get_region_from_path(command_data->data_root_region,
 						data_region_path, &region))
 					{
 						Computed_field_update_nodal_values_from_source(
