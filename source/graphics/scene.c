@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 12 July 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -3741,7 +3741,7 @@ longer in <node_group_manager>.
 int Scene_object_get_range(struct Scene_object *scene_object,
 	void *graphics_object_range_void)
 /*******************************************************************************
-LAST MODIFIED : 6 April 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Scene_object list iterator function. If <scene_object> is visible, expands
@@ -3799,11 +3799,17 @@ graphics objects in scene_object.
 			} break;
 			case SCENE_OBJECT_SCENE:
 			{
-				for_each_Scene_object_in_Scene(scene_object->child_scene,
+				return_code=for_each_Scene_object_in_Scene(scene_object->child_scene,
 					Scene_object_get_range,use_range_void);
 			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Scene_object_get_range.  Unknown scene object type");
+				return_code=0;
+			} break;
 		}
-		if (transformation&&(!temp_graphics_object_range.first))
+		if (return_code&&transformation&&(!temp_graphics_object_range.first))
 		{
 			coordinates[3]=1.0;
 			/* transform and compare ranges of each of 8 corners of the cube */
