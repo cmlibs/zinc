@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : delauney.c
 
-LAST MODIFIED : 20 January 2002
+LAST MODIFIED : 4 February 2002
 
 DESCRIPTION :
 Specialized implementations of Delauney triangulation for a cylinder and a
@@ -264,18 +264,18 @@ Global functions
 int cylinder_delauney(int number_of_vertices,float *vertices,
 	int *number_of_triangles_address,int **triangles_address)
 /*******************************************************************************
-LAST MODIFIED : 16 October 2000
+LAST MODIFIED : 3 February 2002
 
 DESCRIPTION :
 Calculates the Delauney triangulation of the <vertices> on a cylinder whose axis
 is z.
 <number_of_vertices> is the number of vertices to be triangulated
-<vertices> is an array of length 3*<number_of_vertices>, allocated by the
-	function, containing the x,y,z coordinates of the vertices
+<vertices> is an array of length 3*<number_of_vertices> containing the x,y,z
+	coordinates of the vertices
 <*number_of_triangles_address> is the number of triangles calculated by the
 	function
-<*triangles_address> is an array of length 3*<*number_of_triangles_address>
-	containing the vertex numbers for each triangle
+<*triangles_address> is an array of length 3*<*number_of_triangles_address>,
+	allocated by the function, containing the vertex numbers for each triangle
 ==============================================================================*/
 {
 	float *adjacent_angles,*adjacent_angle,*adjacent_uv,*adjacent_uvs,angle,
@@ -777,18 +777,18 @@ is z.
 int sphere_delauney(int number_of_vertices,float *vertices,
 	int *number_of_triangles_address,int **triangles_address)
 /*******************************************************************************
-LAST MODIFIED : 20 January 2002
+LAST MODIFIED : 4 February 2002
 
 DESCRIPTION :
 Calculates the Delauney triangulation of the <vertices> on a sphere whose centre
 is the origin.
 <number_of_vertices> is the number of vertices to be triangulated
-<vertices> is an array of length 3*<number_of_vertices>, allocated by the
-	function, containing the x,y,z coordinates of the vertices
+<vertices> is an array of length 3*<number_of_vertices> containing the x,y,z
+	coordinates of the vertices
 <*number_of_triangles_address> is the number of triangles calculated by the
 	function
-<*triangles_address> is an array of length 3*<*number_of_triangles_address>
-	containing the vertex numbers for each triangle
+<*triangles_address> is an array of length 3*<*number_of_triangles_address>,
+	allocated by the function, containing the vertex numbers for each triangle
 ==============================================================================*/
 {
 	float *adjacent_angles,*adjacent_angle,*adjacent_uv,*adjacent_uvs,angle,
@@ -872,11 +872,35 @@ is the origin.
 					z1=sin(uv[1]);
 					/* calculate a coordinate vectors for the plane perpendicular to
 						(x1,y1,z1) */
-					if (x1>y1)
+					if (x1<0)
 					{
-						if (x1>z1)
+						x2= -x1;
+					}
+					else
+					{
+						x2=x1;
+					}
+					if (y1<0)
+					{
+						y2= -y1;
+					}
+					else
+					{
+						y2=y1;
+					}
+					if (z1<0)
+					{
+						z2= -z1;
+					}
+					else
+					{
+						z2=z1;
+					}
+					if (x2>y2)
+					{
+						if (x2>z2)
 						{
-							if (y1>z1)
+							if (y2>z2)
 							{
 								xref1=y1;
 								yref1= -x1;
@@ -898,9 +922,9 @@ is the origin.
 					}
 					else
 					{
-						if (y1>z1)
+						if (y2>z2)
 						{
-							if (x1>z1)
+							if (x2>z2)
 							{
 								xref1= -y1;
 								yref1=x1;
