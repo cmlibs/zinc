@@ -1,11 +1,12 @@
 //******************************************************************************
 // FILE : function_variable_union.hpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 5 October 2004
 //
 // DESCRIPTION :
 // A union of variables.  The list of atomic specifiers [begin_atomic(),
-// end_atomic()) will have no repeats.
+// end_atomic()) will not repeat atomic variables if they appear in previous
+// variables (will repeat if appear in current variable).
 //==============================================================================
 #if !defined (__FUNCTION_VARIABLE_UNION_HPP__)
 #define __FUNCTION_VARIABLE_UNION_HPP__
