@@ -1991,7 +1991,21 @@ if there are no more initialise events pending.
 		graphics_buffer->glcontext = gtk_widget_get_gl_context(graphics_buffer->glarea);
 		if (!graphics_buffer->package->share_glcontext)
 		{
+/*
 			graphics_buffer->package->share_glcontext = graphics_buffer->glcontext;
+*/
+                       /* This context is owned by the widget, so we can't keep a
+                        * reference to it past the life of the widget, and we
+                        * certainly can't destroy it. So instead, make a copy of
+                        * it. The choice of glarea as the GLDrawable is arbitrary.
+                        */
+                       graphics_buffer->package->share_glcontext =
+                               gtk_widget_create_gl_context(
+                                       graphics_buffer->glarea,
+                                       graphics_buffer->glcontext,
+                                       TRUE,
+                                       GDK_GL_RGBA_TYPE
+                               );
 		}
 		graphics_buffer->gldrawable = gtk_widget_get_gl_drawable(graphics_buffer->glarea);
 #endif /* defined (GTK_USER_INTERFACE) */
