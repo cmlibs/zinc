@@ -5649,6 +5649,7 @@ The graphics object is stored with with the settings it was created from.
 	struct FE_region *fe_region;
 	struct GT_element_settings_to_graphics_object_data *settings_to_object_data;
 	struct GT_glyph_set *glyph_set;
+	struct LIST(FE_node) *selected_node_list;
 	struct Multi_range *subranges;
 	struct GT_element_settings_select_graphics_data select_data;
 
@@ -5859,6 +5860,14 @@ The graphics object is stored with with the settings it was created from.
 								scale_factors[0] = (FE_value)(settings->glyph_scale_factors[0]);
 								scale_factors[1] = (FE_value)(settings->glyph_scale_factors[1]);
 								scale_factors[2] = (FE_value)(settings->glyph_scale_factors[2]);
+								if (settings->settings_type == GT_ELEMENT_SETTINGS_DATA_POINTS)
+								{
+									selected_node_list = settings_to_object_data->selected_data_list;
+								}
+								else
+								{
+									selected_node_list = settings_to_object_data->selected_node_list;
+								}
 								glyph_set = create_GT_glyph_set_from_FE_region_nodes(
 									fe_region, settings_to_object_data->rc_coordinate_field,
 									settings->glyph, base_size, centre, scale_factors,
@@ -5866,7 +5875,7 @@ The graphics object is stored with with the settings it was created from.
 									settings_to_object_data->wrapper_orientation_scale_field,
 									settings->variable_scale_field, settings->data_field,
 									settings->label_field, settings->select_mode,
-									settings_to_object_data->selected_node_list);
+									selected_node_list);
 								/* NOT an error if no glyph_set produced == empty group */
 								if (glyph_set)
 								{
