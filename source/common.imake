@@ -232,8 +232,8 @@ oscheck :
 #else /* defined (IRIX) */
 #if defined (LINUX)
 oscheck :
-	/* Do something that only works under LINUX */
 	@echo -n > /dev/null
+	/* Do something that only works under LINUX */
 #else /* defined (LINUX) */
 oscheck :
 	echo "No known operating system defined for imake"

@@ -328,7 +328,7 @@ INTERPRETER_SRCS =
 #if defined (IRIX) /* switch OperatingSystem */
 INTERPRETER_LIB = $(INTERPRETER_PATH)/generated/mips3-n32-debug/libperlinterpreter.a
 #elif defined(LINUX) /* switch OperatingSystem */
-INTERPRETER_LIB = $(INTERPRETER_PATH)/generated/linux-debug/libperlinterpreter.a
+INTERPRETER_LIB = $(INTERPRETER_PATH)/generated/linuxdebug/libperlinterpreter.a
 #endif /* switch OperatingSystem */
 #endif /* !defined (PERL_INTERPRETER) */
 #else /* !defined (F90_INTERPRETER) */
@@ -648,9 +648,9 @@ LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm -lpthread
 #elif defined(LINUX) /* switch OperatingSystem */
 #if defined (DYNAMIC_GL_LINUX)
 X_LIB = /usr/X11R6/lib
-LIB = $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXpm.a -lXext $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a -lm -ldl -lc 
+LIB = $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXpm.a -lXext $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a -lm -ldl -lc /usr/lib/libpthread.a /usr/lib/libcrypt.a
 #else /* defined (DYNAMIC_GL_LINUX) */
-LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXpm -lXext -lg2c -lm -ldl -lXp -lSM -lICE -lpthread
+LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXpm -lXext -lg2c -lm -ldl -lXp -lSM -lICE -lpthread -lcrypt
 #endif /* defined (DYNAMIC_GL_LINUX) */
 #endif /* switch OperatingSystem */
 
