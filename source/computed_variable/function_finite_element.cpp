@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_finite_element.cpp
 //
-// LAST MODIFIED : 17 February 2005
+// LAST MODIFIED : 1 March 2005
 //
 // DESCRIPTION :
 // Finite element types - element, element/xi and finite element field.
@@ -40,12 +40,6 @@ extern "C"
 //???DB.  Get rid of debug.h (C->C++)
 #include "general/debug.h"
 }
-#if defined (NEW_CODE)
-#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
-#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
-#include "computed_variable/function_derivative.hpp"
-#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
-#endif // defined (NEW_CODE)
 #include "computed_variable/function_finite_element.hpp"
 #include "computed_variable/function_matrix.hpp"
 #include "computed_variable/function_variable_composite.hpp"
@@ -53,6 +47,16 @@ extern "C"
 #include "computed_variable/function_variable_matrix.hpp"
 #include "computed_variable/function_variable_value_element.hpp"
 #include "computed_variable/function_variable_value_scalar.hpp"
+
+// Needs to be here to give a chance for
+//   USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE and
+//   USE_Function_derivatnew_finite_element to be defined
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#if defined (USE_Function_derivatnew_finite_element)
+#include "computed_variable/function_derivative.hpp"
+#endif // defined (USE_Function_derivatnew_finite_element)
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 
 // module typedefs
 // ===============
@@ -74,373 +78,10 @@ class Function_variable_matrix_components;
 typedef boost::intrusive_ptr<Function_variable_matrix_components>
 	Function_variable_matrix_components_handle;
 
-#if defined (NEW_CODE)
-#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
-#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
-bool evaluate_derivative_matrix(Matrix& matrix,
-	std::list<Function_variable_handle>& independent_variables)
-//******************************************************************************
-// LAST MODIFIED : 11 January 2005
-//
-// DESCRIPTION :
-// ???DB.  Throw an exception for failure?
-//==============================================================================
-{
-	bool result,zero_derivative;
-	Variable_size_type derivative_order=independent_variables.size(),
-		number_of_columns,number_of_components;
-	Variable_input_nodal_values_handle nodal_values_input(0);
-	ublas::vector<Variable_input_element_xi_handle>
-		element_xi_inputs(derivative_order);
-
-	result=true;
-	// matrix is zero'd on entry
-	// check independent variables for a zero matrix
-	number_of_components=this->size();
-	zero_derivative=false;
-	number_of_columns=0;
-	std::for_each(independent_variables.begin(),independent_variables.end(),
-		Variable_finite_element_check_derivative_functor(
-		Variable_finite_element_handle(this),zero_derivative,
-		nodal_values_input,element_xi_inputs.begin(),number_of_columns));
-	Assert((number_of_components==matrix.size1())&&
-		(number_of_columns==matrix.size2()),
-		std::logic_error("Variable_finite_element::evaluate_derivative_local.  "
-		"Incorrect matrix size"));
-	if (!zero_derivative)
-	{
-		FE_value **component_values=(FE_value **)NULL,
-			*monomial_derivative_values=(FE_value *)NULL,
-			***nodal_value_component_values=(FE_value ***)NULL;
-		int **component_monomial_info=(int **)NULL,
-			*numbers_of_component_values=(int *)NULL,number_of_element_field_nodes=0,
-			number_of_nodal_values=0,return_code=0;
-		struct FE_element_field_values *element_field_values;
-		struct FE_node **element_field_nodes=(struct FE_node **)NULL;
-		Variable_size_type number_of_xi=xi.size();
-
-		// set up temporary storage
-		element_field_values=CREATE(FE_element_field_values)();
-		if (element_field_values)
-		{
-			if (nodal_values_input)
-			{
-				if (nodal_value_calculate_component_values(
-					Variable_finite_element_handle(this),field,component_number,
-					(FE_value)time,element,nodal_values_input->node,
-					nodal_values_input->value_type,nodal_values_input->version,
-					&number_of_element_field_nodes,&element_field_nodes,
-					element_field_values,&number_of_nodal_values,
-					&numbers_of_component_values,&nodal_value_component_values)&&
-					extract_component_monomial_info(element_field_values,
-					number_of_components,component_number,number_of_xi,
-					&numbers_of_component_values,&component_monomial_info,
-					&monomial_derivative_values))
-				{
-					return_code=1;
-				}
-			}
-			else
-			{
-				if (clear_FE_element_field_values(element_field_values)&&
-					calculate_FE_element_field_values(element,field,(FE_value)time,
-					(char)0,element_field_values,(struct FE_element *)NULL)&&
-					extract_component_values(element_field_values,number_of_components,
-					component_number,&numbers_of_component_values,&component_values)&&
-					extract_component_monomial_info(element_field_values,
-					number_of_components,component_number,number_of_xi,
-					&numbers_of_component_values,&component_monomial_info,
-					&monomial_derivative_values))
-				{
-					return_code=1;
-				}
-			}
-			if (return_code)
-			{
-				FE_value *xi_array;
-				int *xi_derivative_orders;
-
-				xi_array=new FE_value[number_of_xi];
-				xi_derivative_orders=new int[number_of_xi];
-				if (xi_array&&xi_derivative_orders)
-				{
-					bool carry;
-					FE_value **derivative_component_values=(FE_value **)NULL,
-						*value_address_1,*value_address_2;
-					Variable_size_type column_number,i;
-					ublas::vector<Variable_size_type>
-						derivative_independent_values(derivative_order+1);
-					int j;
-					Scalar component_value;
-
-					for (i=0;i<=derivative_order;i++)
-					{
-						derivative_independent_values[i]=0;
-					}
-					for (i=0;i<number_of_xi;i++)
-					{
-						xi_array[i]=(FE_value)(xi[i]);
-					}
-					/* chose the component values to use for calculating the
-						values */
-					if (nodal_values_input)
-					{
-						derivative_component_values=nodal_value_component_values[0];
-					}
-					else
-					{
-						derivative_component_values=component_values;
-					}
-					/* loop over the values within the derivative block */
-					column_number=0;
-					while (return_code&&
-						(0==derivative_independent_values[derivative_order]))
-					{
-						if (derivative_component_values)
-						{
-							for (i=0;i<number_of_xi;i++)
-							{
-								xi_derivative_orders[i]=0;
-							}
-							for (i=0;i<derivative_order;i++)
-							{
-								if (element_xi_inputs[i])
-								{
-									// element/xi derivative
-									if (0<element_xi_inputs[i]->indices.size())
-									{
-										xi_derivative_orders[(element_xi_inputs[i]->indices)[
-											derivative_independent_values[i]]-1]++;
-									}
-									else
-									{
-										xi_derivative_orders[
-											derivative_independent_values[i]]++;
-									}
-								}
-							}
-							/* loop over components */
-							i=0;
-							while (return_code&&(i<number_of_components))
-							{
-								if (return_code=calculate_monomial_derivative_values(
-									number_of_xi,component_monomial_info[i]+1,
-									xi_derivative_orders,xi_array,monomial_derivative_values))
-								{
-									/* calculate the derivative */
-									component_value=(Scalar)0;
-									value_address_1=monomial_derivative_values;
-									value_address_2=derivative_component_values[i];
-									for (j=numbers_of_component_values[i];j>0;j--)
-									{
-										component_value +=
-											(double)(*value_address_1)*
-											(double)(*value_address_2);
-										value_address_1++;
-										value_address_2++;
-									}
-									matrix(i,column_number)=component_value;
-								}
-								i++;
-							}
-						}
-						/* step to next value within derivative block */
-						column_number++;
-						i=0;
-						carry=true;
-						do
-						{
-							derivative_independent_values[i]++;
-							if (element_xi_inputs[i])
-							{
-								Variable_size_type
-									number_of_values=(element_xi_inputs[i]->indices).size();
-
-								if (0<number_of_values)
-								{
-									if (derivative_independent_values[i]>=number_of_values)
-									{
-										derivative_independent_values[i]=0;
-									}
-									else
-									{
-										carry=false;
-									}
-								}
-								else
-								{
-									if (derivative_independent_values[i]>=number_of_xi)
-									{
-										derivative_independent_values[i]=0;
-									}
-									else
-									{
-										carry=false;
-									}
-								}
-							}
-							else
-							{
-								if (derivative_independent_values[i]>=
-									(Variable_size_type)number_of_nodal_values)
-								{
-									derivative_independent_values[i]=0;
-								}
-								else
-								{
-									carry=false;
-								}
-								// update the component values to use for calculating the values
-								derivative_component_values=
-									nodal_value_component_values[
-									derivative_independent_values[i]];
-							}
-							i++;
-						} while ((i<derivative_order)&&carry);
-						if (carry)
-						{
-							derivative_independent_values[derivative_order]++;
-						}
-					}
-				}
-				delete [] xi_array;
-				delete [] xi_derivative_orders;
-			}
-		}
-		// remove temporary storage
-		if (element_field_values)
-		{
-			DESTROY(FE_element_field_values)(&element_field_values);
-		}
-	}
-
-	return (result);
-}
-
-// class Function_derivatnew_finite_element
-// ----------------------------------------
-
-class Function_derivatnew_finite_element : public Function_derivatnew
-//******************************************************************************
-// LAST MODIFIED : 11 January 2005
-//
-// DESCRIPTION :
-//==============================================================================
-{
-	public:
-		// for construction exception
-		class Construction_exception {};
-		// constructor
-		Function_derivatnew_finite_element(
-			const Function_variable_handle& dependent_variable,
-			const std::list<Function_variable_handle>& independent_variables):
-			Function_derivatnew(dependent_variable,independent_variables){};
-		// destructor
-		~Function_derivatnew_finite_element(){};
-	// inherited
-	private:
-		virtual Function_handle evaluate(Function_variable_handle atomic_variable)
-		{
-			Function_handle result(0);
-
-			if (!evaluated())
-			{
-				Function_finite_element_handle function_finite_element;
-
-				if (boost::dynamic_pointer_cast<Function_variable_matrix_components,
-					Function_variable>(dependent_variable)&&(function_finite_element=
-					boost::dynamic_pointer_cast<Function_finite_element,Function>(
-					dependent_variable->function())))
-				{
-					bool valid;
-					Function_size_type number_of_dependent_values=dependent_variable->
-						number_differentiable();
-					std::list<Function_variable_handle>::const_iterator
-						independent_variable_iterator;
-					std::list< std::list<Function_variable_handle> >
-						matrix_independent_variables;
-					std::list<Matrix> matrices;
-
-					valid=true;
-					independent_variable_iterator=independent_variables.begin();
-					while (valid&&
-						(independent_variable_iterator!=independent_variables.end()))
-					{
-						Function_variable_handle independent_variable=
-							*independent_variable_iterator;
-						Function_size_type number_of_independent_values=
-							independent_variable->number_differentiable();
-						std::list<Matrix>::iterator matrix_iterator,last;
-						std::list< std::list<Function_variable_handle> >::iterator
-							matrix_independent_variables_iterator;
-
-						// calculate the derivative of dependent variable with respect to
-						//   independent variable and add to matrix list
-						{
-							Matrix new_matrix(number_of_dependent_values,
-								number_of_independent_values);
-							std::list<Function_variable_handle>
-								new_matrix_independent_variables;
-
-							new_matrix_independent_variables.push_back(independent_variable);
-							if (valid=evaluate_derivative_matrix(new_matrix,
-								new_matrix_independent_variables.push_back))
-							{
-								matrices.push_back(new_matrix);
-								matrix_independent_variables.push_back(
-									new_matrix_independent_variables);
-							}
-						}
-						last=matrices.end();
-						last--;
-						matrix_independent_variables_iterator=
-							matrix_independent_variables.begin();
-						matrix_iterator=matrices.begin();
-						while (valid&&(matrix_iterator!=last))
-						{
-							Matrix& matrix= *matrix_iterator;
-							Matrix new_matrix((matrix.size1)(),
-								number_of_independent_values*(matrix.size2)());
-							std::list<Function_variable_handle>
-								new_matrix_independent_variables;
-
-							new_matrix_independent_variables=
-								*matrix_independent_variables_iterator;
-							new_matrix_independent_variables.push_back(independent_variable);
-							if (valid=evaluate_derivative_matrix(new_matrix,
-								new_matrix_independent_variables.push_back))
-							{
-								matrices.push_back(new_matrix);
-								matrix_independent_variables.push_back(
-									new_matrix_independent_variables);
-							}
-							matrix_independent_variables_iterator++;
-							matrix_iterator++;
-						}
-						independent_variable_iterator++;
-					}
-					if (valid)
-					{
-						derivative_matrix=Derivative_matrix(matrices);
-						set_evaluated();
-					}
-				}
-			}
-			if (evaluated())
-			{
-				result=get_value(atomic_variable);
-			}
-
-			return (result);
-		};
-};
-#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
-#endif // defined (NEW_CODE)
-
 class Function_variable_matrix_components :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 23 January 2005
+// LAST MODIFIED : 1 March 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -451,11 +92,19 @@ class Function_variable_matrix_components :
 		Function_variable_matrix_components(
 			const Function_finite_element_handle& function_finite_element,
 			Function_size_type component_number=0):Function_variable_matrix<Scalar>(
-			function_finite_element,component_number,1){};
+			function_finite_element,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			false,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			component_number,1){};
 		Function_variable_matrix_components(
 			const Function_finite_element_handle& function_finite_element,
 			const std::string component_name):
-			Function_variable_matrix<Scalar>(function_finite_element,0,1)
+			Function_variable_matrix<Scalar>(function_finite_element,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			false,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			0,1)
 		{
 			if (function_finite_element)
 			{
@@ -495,17 +144,14 @@ class Function_variable_matrix_components :
 			return (Function_variable_handle(
 				new Function_variable_matrix_components(*this)));
 		};
-#if defined (NEW_CODE)
+#if defined (USE_Function_derivatnew_finite_element)
 #if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 #else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		// declared after Function_derivatnew_finite_element
 		Function_handle derivative(
-			const std::list<Function_variable_handle>& independent_variables)
-		{
-			return (Function_handle(new Function_derivatnew_finite_element(
-				Function_variable_handle(this),independent_variables)));
-		}
+			const std::list<Function_variable_handle>& independent_variables);
 #endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
-#endif // defined (NEW_CODE)
+#endif // defined (USE_Function_derivatnew_finite_element)
 		string_handle get_string_representation()
 			//???DB.  Overloading Function_variable_matrix.  Make better?
 		{
@@ -1102,13 +748,19 @@ typedef boost::intrusive_ptr<Function_variable_element_xi_finite_element>
 class Function_variable_element_xi_finite_element :
 	public Function_variable_element_xi
 //******************************************************************************
-// LAST MODIFIED : 22 November 2004
+// LAST MODIFIED : 18 February 2005
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	friend class Function_finite_element;
 	friend class Function_finite_element_check_derivative_functor;
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#if defined (USE_Function_derivatnew_finite_element)
+	friend class Function_variable_matrix_components_check_derivative_functor;
+#endif // defined (USE_Function_derivatnew_finite_element)
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 	public:
 		// constructors
 		Function_variable_element_xi_finite_element(
@@ -1477,7 +1129,7 @@ the <node>.
 class Function_variable_matrix_nodal_values :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 22 November 2004
+// LAST MODIFIED : 1 March 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1489,8 +1141,11 @@ class Function_variable_matrix_nodal_values :
 		// constructors don't set row and column because too expensive
 		Function_variable_matrix_nodal_values(
 			const Function_finite_element_handle& function_finite_element):
-			Function_variable_matrix<Scalar>(function_finite_element),
-			value_type(FE_NODAL_UNKNOWN),node((struct FE_node *)NULL),
+			Function_variable_matrix<Scalar>(function_finite_element
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			,true
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			),value_type(FE_NODAL_UNKNOWN),node((struct FE_node *)NULL),
 			component_number(0),version(0),
 			time_sequence((struct FE_time_sequence *)NULL){};
 		Function_variable_matrix_nodal_values(
@@ -1498,8 +1153,11 @@ class Function_variable_matrix_nodal_values :
 			const std::string component_name,struct FE_node *node,
 			enum FE_nodal_value_type value_type,Function_size_type version,
 			struct FE_time_sequence *time_sequence):
-			Function_variable_matrix<Scalar>(function_finite_element),
-			value_type(value_type),node(node),component_number(0),version(version),
+			Function_variable_matrix<Scalar>(function_finite_element
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			,true
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			),value_type(value_type),node(node),component_number(0),version(version),
 			time_sequence(time_sequence)
 		{
 			if (function_finite_element)
@@ -1543,8 +1201,11 @@ class Function_variable_matrix_nodal_values :
 			Function_size_type component_number,struct FE_node *node,
 			enum FE_nodal_value_type value_type,Function_size_type version,
 			struct FE_time_sequence *time_sequence):
-			Function_variable_matrix<Scalar>(function_finite_element),
-			value_type(value_type),node(node),component_number(component_number),
+			Function_variable_matrix<Scalar>(function_finite_element
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			,true
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			),value_type(value_type),node(node),component_number(component_number),
 			version(version), time_sequence(time_sequence)
 		{
 			if (node)
@@ -2995,6 +2656,207 @@ class Function_variable_value_time :
 			Function_variable_matrix<Scalar>(variable_value_time){}
 };
 
+#if defined (USE_Function_derivatnew_finite_element)
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+// class Function_derivatnew_finite_element
+// ----------------------------------------
+
+class Function_derivatnew_finite_element : public Function_derivatnew
+//******************************************************************************
+// LAST MODIFIED : 18 February 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	public:
+		// for construction exception
+		class Construction_exception {};
+		// constructor
+		Function_derivatnew_finite_element(
+			const Function_variable_handle& dependent_variable,
+			const std::list<Function_variable_handle>& independent_variables):
+			Function_derivatnew(dependent_variable,independent_variables){};
+		// destructor
+		~Function_derivatnew_finite_element(){};
+	// inherited
+	private:
+		virtual
+#if defined (EVALUATE_RETURNS_VALUE)
+			Function_handle
+#else // defined (EVALUATE_RETURNS_VALUE)
+			bool
+#endif // defined (EVALUATE_RETURNS_VALUE)
+			evaluate(Function_variable_handle atomic_variable)
+		{
+#if defined (EVALUATE_RETURNS_VALUE)
+			Function_handle result(0);
+#else // defined (EVALUATE_RETURNS_VALUE)
+			bool result(true);
+#endif // defined (EVALUATE_RETURNS_VALUE)
+
+			if (equivalent(Function_handle(this),atomic_variable->function())&&
+				!evaluated())
+			{
+				Function_finite_element_handle function_finite_element;
+				Function_variable_matrix_components_handle
+					dependent_variable_finite_element;
+
+				if ((dependent_variable_finite_element=boost::dynamic_pointer_cast<
+					Function_variable_matrix_components,Function_variable>(
+					dependent_variable))&&(function_finite_element=
+					boost::dynamic_pointer_cast<Function_finite_element,Function>(
+					dependent_variable->function())))
+				{
+					bool know_independent_variables;
+					std::list<Function_variable_handle>::const_iterator
+						independent_variable_iterator,independent_variable_iterator_end;
+
+					// check that know independent variables
+					know_independent_variables=true;
+					independent_variable_iterator=independent_variables.begin();
+					independent_variable_iterator_end=independent_variables.end();
+					while (know_independent_variables&&
+						(independent_variable_iterator!=independent_variable_iterator_end))
+					{
+						const Function_variable_handle independent_variable=
+							*independent_variable_iterator;
+
+						know_independent_variables=boost::dynamic_pointer_cast<
+							Function_variable_element_xi_finite_element,Function_variable>(
+							independent_variable)||boost::dynamic_pointer_cast<
+							Function_variable_matrix_nodal_values,Function_variable>(
+							independent_variable);
+						independent_variable_iterator++;
+					}
+					if (know_independent_variables)
+					{
+						bool valid;
+						Function_size_type
+							component_number=dependent_variable_finite_element->row();
+						Function_size_type number_of_dependent_values;
+						std::list< std::list<Function_variable_handle> >
+							matrix_independent_variables;
+						std::list<Matrix> matrices;
+
+						if (0==component_number)
+						{
+							number_of_dependent_values=
+								function_finite_element->number_of_components();
+						}
+						else
+						{
+							number_of_dependent_values=1;
+						}
+						valid=true;
+						independent_variable_iterator=independent_variables.begin();
+						while (valid&&(independent_variable_iterator!=
+							independent_variable_iterator_end))
+						{
+							Function_variable_handle independent_variable=
+								*independent_variable_iterator;
+							Function_size_type number_of_independent_values=
+								independent_variable->number_differentiable();
+							std::list<Matrix>::iterator matrix_iterator,last;
+							std::list< std::list<Function_variable_handle> >::iterator
+								matrix_independent_variables_iterator;
+
+							// calculate the derivative of dependent variable with respect to
+							//   independent variable and add to matrix list
+							{
+								Matrix new_matrix(number_of_dependent_values,
+									number_of_independent_values);
+								std::list<Function_variable_handle>
+									new_matrix_independent_variables;
+
+								new_matrix_independent_variables.push_back(
+									independent_variable);
+								if (valid=function_finite_element->evaluate_derivative_matrix(
+									component_number,new_matrix_independent_variables,new_matrix))
+								{
+									matrices.push_back(new_matrix);
+									matrix_independent_variables.push_back(
+										new_matrix_independent_variables);
+								}
+							}
+							last=matrices.end();
+							last--;
+							matrix_independent_variables_iterator=
+								matrix_independent_variables.begin();
+							matrix_iterator=matrices.begin();
+							while (valid&&(matrix_iterator!=last))
+							{
+								Matrix& matrix= *matrix_iterator;
+								Matrix new_matrix((matrix.size1)(),
+									number_of_independent_values*(matrix.size2)());
+								std::list<Function_variable_handle>
+									new_matrix_independent_variables;
+
+								new_matrix_independent_variables=
+									*matrix_independent_variables_iterator;
+								new_matrix_independent_variables.push_back(
+									independent_variable);
+								if (valid=function_finite_element->evaluate_derivative_matrix(
+									component_number,new_matrix_independent_variables,new_matrix))
+								{
+									matrices.push_back(new_matrix);
+									matrix_independent_variables.push_back(
+										new_matrix_independent_variables);
+								}
+								matrix_independent_variables_iterator++;
+								matrix_iterator++;
+							}
+							independent_variable_iterator++;
+						}
+						if (valid)
+						{
+							derivative_matrix=Derivative_matrix(matrices);
+							set_evaluated();
+						}
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
+						result=valid;
+#endif // defined (EVALUATE_RETURNS_VALUE)
+					}
+					else
+					{
+						result=Function_derivatnew::evaluate(atomic_variable);
+					}
+				}
+			}
+#if defined (EVALUATE_RETURNS_VALUE)
+			if (evaluated())
+			{
+				result=get_value(atomic_variable);
+			}
+#else // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (EVALUATE_RETURNS_VALUE)
+
+			return (result);
+		};
+};
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#endif // defined (USE_Function_derivatnew_finite_element)
+
+#if defined (USE_Function_derivatnew_finite_element)
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+Function_handle Function_variable_matrix_components::derivative(
+	const std::list<Function_variable_handle>& independent_variables)
+//******************************************************************************
+// LAST MODIFIED : 16 February 2005
+//
+// DESCRIPTION :
+// Constructor.
+//==============================================================================
+{
+	return (Function_handle(new Function_derivatnew_finite_element(
+		Function_variable_handle(this),independent_variables)));
+}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#endif // defined (USE_Function_derivatnew_finite_element)
+
+
 // global classes
 // ==============
 
@@ -3271,7 +3133,7 @@ Function_element& Function_element::operator=(
 Function_element_xi::Function_element_xi(struct FE_element *element,
 	const Vector& xi):Function(),element_private(element),xi_private(xi)
 //******************************************************************************
-// LAST MODIFIED : 31 March 2004
+// LAST MODIFIED : 8 March 2005
 //
 // DESCRIPTION :
 // Constructor.
@@ -3286,7 +3148,7 @@ Function_element_xi::Function_element_xi(struct FE_element *element,
 		}
 		else
 		{
-			throw std::invalid_argument("Function_element_xi::Function_element_xi");
+			throw Function_element_xi::Invalid_element_xi();
 		}
 	}
 }
@@ -3630,7 +3492,7 @@ Function_element_xi::Function_element_xi(
 	element_private(function_element_xi.element_private),
 	xi_private(function_element_xi.xi_private)
 //******************************************************************************
-// LAST MODIFIED : 1 April 2004
+// LAST MODIFIED : 8 March 2005
 //
 // DESCRIPTION :
 // Copy constructor.
@@ -3645,7 +3507,7 @@ Function_element_xi::Function_element_xi(
 		}
 		else
 		{
-			throw std::invalid_argument("Function_element_xi::Function_element_xi");
+			throw Function_element_xi::Invalid_element_xi();
 		}
 	}
 }
@@ -3653,7 +3515,7 @@ Function_element_xi::Function_element_xi(
 Function_element_xi& Function_element_xi::operator=(
 	const Function_element_xi& function_element_xi)
 //******************************************************************************
-// LAST MODIFIED : 8 April 2004
+// LAST MODIFIED : 8 March 2005
 //
 // DESCRIPTION :
 // Assignment operator.
@@ -3677,7 +3539,7 @@ Function_element_xi& Function_element_xi::operator=(
 		}
 		else
 		{
-			throw std::invalid_argument("Function_element_xi::operator=");
+			throw Function_element_xi::Invalid_element_xi();
 		}
 	}
 	else
@@ -4573,765 +4435,6 @@ class Function_finite_element_check_derivative_functor
 			element_xi_variable_iterator;
 };
 
-#if defined (OLD_CODE)
-static int extract_component_values(
-	struct FE_element_field_values *element_field_values,
-	Function_size_type number_of_components,Function_size_type component_number,
-	int **numbers_of_component_values_address,
-	FE_value ***component_values_address)
-/*******************************************************************************
-LAST MODIFIED : 19 May 2004
-
-DESCRIPTION :
-Extracts the values for the component(s) (<number_of_components> and
-<component_number>) from <element_field_values> and puts in
-<*component_values_address> (after allocating storage).
-
-If <*numbers_of_component_values_address> is NULL then storage is allocated for
-it and the number of values extracted for each component entered.  Otherwise,
-checks that the number of values extracted for each component agrees with the
-entries.
-==============================================================================*/
-{
-	FE_value **component_values;
-	Function_size_type i;
-	int extract_numbers_of_component_values,local_component_number,
-		number_of_component_values,*numbers_of_component_values,return_code;
-
-	ENTER(extract_component_values);
-	return_code=0;
-	Assert(element_field_values&&
-		(0<number_of_components)&&((0==component_number)||
-		((0<component_number)&&(component_number<=number_of_components)))&&
-		numbers_of_component_values_address&&component_values_address,
-		std::logic_error("extract_component_values.  Invalid argument(s)"));
-	local_component_number=(int)component_number-1;
-	extract_numbers_of_component_values=
-		!(*numbers_of_component_values_address);
-	/* allocate storage for components */
-	if (extract_numbers_of_component_values)
-	{
-		if (0==component_number)
-		{
-			ALLOCATE(numbers_of_component_values,int,number_of_components);
-		}
-		else
-		{
-			ALLOCATE(numbers_of_component_values,int,1);
-		}
-	}
-	else
-	{
-		numbers_of_component_values= *numbers_of_component_values_address;
-	}
-	if (0==component_number)
-	{
-		ALLOCATE(component_values,FE_value *,number_of_components);
-	}
-	else
-	{
-		ALLOCATE(component_values,FE_value *,1);
-	}
-	if (component_values&&numbers_of_component_values)
-	{
-		if (0==component_number)
-		{
-			i=0;
-			return_code=1;
-			while (return_code&&(i<number_of_components))
-			{
-				if (return_code=FE_element_field_values_get_component_values(
-					element_field_values,(int)i,&number_of_component_values,
-					component_values+i))
-				{
-					if (extract_numbers_of_component_values)
-					{
-						numbers_of_component_values[i]=number_of_component_values;
-					}
-					else
-					{
-						if (numbers_of_component_values[i]!=number_of_component_values)
-						{
-							DEALLOCATE(component_values[i]);
-							return_code=0;
-						}
-					}
-					i++;
-				}
-			}
-			if (!return_code)
-			{
-				while (i>0)
-				{
-					i--;
-					DEALLOCATE(component_values[i]);
-				}
-			}
-		}
-		else
-		{
-			if (return_code=FE_element_field_values_get_component_values(
-				element_field_values,local_component_number,&number_of_component_values,
-				component_values))
-			{
-				if (extract_numbers_of_component_values)
-				{
-					*numbers_of_component_values=number_of_component_values;
-				}
-				else
-				{
-					if (*numbers_of_component_values!=number_of_component_values)
-					{
-						DEALLOCATE(*component_values);
-						return_code=0;
-					}
-				}
-			}
-		}
-		if (return_code)
-		{
-			*component_values_address=component_values;
-			*numbers_of_component_values_address=numbers_of_component_values;
-		}
-	}
-	if (!return_code)
-	{
-		DEALLOCATE(component_values);
-		if (extract_numbers_of_component_values)
-		{
-			DEALLOCATE(numbers_of_component_values);
-		}
-	}
-	LEAVE;
-
-	return (return_code);
-} /* extract_component_values */
-
-static int nodal_value_calculate_component_values(
-	Function_finite_element_handle function_finite_element,
-	struct FE_field *fe_field,Function_size_type component_number,
-	FE_value fe_time,struct FE_element *element,struct FE_node *node,
-	enum FE_nodal_value_type nodal_value_type,Function_size_type version,
-	int *number_of_element_field_nodes_address,
-	struct FE_node ***element_field_nodes_address,
-	struct FE_element_field_values *element_field_values,
-	int *number_of_nodal_values_address,int **numbers_of_component_values_address,
-	FE_value ****component_values_address)
-/*******************************************************************************
-LAST MODIFIED : 6 August 2004
-
-DESCRIPTION :
-Calculate the component values for the derivatives of the specified components
-(<component_number>) of <fe_field> in the <element> with respect to the
-specified nodal values (<node>, <nodal_value_type> and <version>.
-
-<*number_of_nodal_values_address> is calculated and an array with an entry for
-each of the specified nodal values (<*number_of_nodal_values_address> long> is
-allocated, NULLed and assigned to <*component_values_address>.  For each nodal
-value, if the derivative is not identically zero then a 2 dimensional array
-(first index is component number and second index is component value number) is
-allocated, filled-in and assigned to the corresponding entry in
-<*component_values_address>.
-
-The interpolation function for the <fe_field> component(s) is assumed to be a
-linear combination of basis functions polynomial in the element coordinates.
-The coefficients for the linear combination are the nodal values.  So, the
-derivative with respect to a nodal value is the corresponding basis function.
-The component values are for the monomials.  To calculate these, all the nodal
-values for the <element> are set to zero, the nodal value of interest is set to
-one and <calculate_FE_element_field_values> is used.
-
-<*number_of_element_field_nodes_address> and <*element_field_nodes_address> are
-for the <fe_field> and <element> and can be passed in or computed in here.
-<element_field_values> is working storage that is passed in.
-
-???DB.  Can get all from <function_finite_element>.  Do multiple times?
-==============================================================================*/
-{
-	FE_value ***component_values,***nodal_value_component_values;
-	Function_size_type j,k,number_of_components,number_of_versions;
-	int *element_field_nodal_value_offsets,*element_field_number_of_nodal_values,
-		*element_field_number_of_specified_nodal_values,i,l,local_component_number,
-		number_of_element_field_nodes,number_of_nodal_values,
-		number_of_saved_element_field_nodes,number_of_values,return_code;
-	struct Count_nodal_values_data count_nodal_values_data;
-	struct FE_region *fe_region;
-	struct FE_node **element_field_nodes;
-
-	ENTER(nodal_value_calculate_component_values);
-	return_code=0;
-	/* check arguments */
-	fe_region=FE_field_get_FE_region(fe_field);
-	number_of_components=
-		(Function_size_type)get_FE_field_number_of_components(fe_field);
-	Assert(function_finite_element&&fe_field&&fe_region&&
-		(0<number_of_components)&&((0==component_number)||
-		((0<component_number)&&(component_number<=number_of_components)))&&
-		element&&element_field_values&&number_of_nodal_values_address&&
-		component_values_address,std::logic_error(
-		"nodal_value_calculate_component_values.  Invalid argument(s)"));
-	local_component_number=(int)component_number-1;
-	if (number_of_element_field_nodes_address&&element_field_nodes_address)
-	{
-		number_of_element_field_nodes= *number_of_element_field_nodes_address;
-		element_field_nodes= *element_field_nodes_address;
-	}
-	else
-	{
-		number_of_element_field_nodes=0;
-		element_field_nodes=(struct FE_node **)NULL;
-	}
-	if ((number_of_element_field_nodes>0)&&element_field_nodes)
-	{
-		return_code=0;
-	}
-	else
-	{
-		return_code=calculate_FE_element_field_nodes(element,fe_field,
-			&number_of_element_field_nodes,&element_field_nodes,
-			(struct FE_element *)NULL);
-	}
-	if (return_code)
-	{
-		//???DB.  To be done/Needs finishing
-		/* set up working storage */
-		Function_handle *element_field_saved_nodal_values;
-
-		ALLOCATE(element_field_nodal_value_offsets,int,
-			number_of_element_field_nodes);
-		ALLOCATE(element_field_number_of_specified_nodal_values,int,
-			number_of_element_field_nodes);
-		ALLOCATE(element_field_number_of_nodal_values,int,
-			number_of_element_field_nodes);
-		element_field_saved_nodal_values=
-			new Function_handle[number_of_element_field_nodes];
-		if (element_field_nodal_value_offsets&&
-			element_field_number_of_specified_nodal_values&&
-			element_field_number_of_nodal_values&&element_field_saved_nodal_values)
-		{
-			/* NULL working storage and calculate total number of nodal values for
-				each <element_field_node> */
-			for (i=0;i<number_of_element_field_nodes;i++)
-			{
-				element_field_saved_nodal_values[i]=Function_handle(0);
-				element_field_nodal_value_offsets[i]= -1;
-				element_field_number_of_specified_nodal_values[i]=0;
-				element_field_number_of_nodal_values[i]=0;
-				if (0==component_number)
-				{
-					for (j=0;j<number_of_components;j++)
-					{
-						number_of_versions=(Function_size_type)
-							get_FE_node_field_component_number_of_versions(
-							element_field_nodes[i],fe_field,(int)j);
-						if (version<=number_of_versions)
-						{
-							number_of_values=
-								(1+get_FE_node_field_component_number_of_derivatives(
-								element_field_nodes[i],fe_field,(int)j));
-							if (0==version)
-							{
-								element_field_number_of_nodal_values[i] +=
-									number_of_values*number_of_versions;
-							}
-							else
-							{
-								element_field_number_of_nodal_values[i] += number_of_values;
-							}
-						}
-					}
-				}
-				else
-				{
-					number_of_versions=(Function_size_type)
-						get_FE_node_field_component_number_of_versions(
-						element_field_nodes[i],fe_field,local_component_number);
-					if (version<=number_of_versions)
-					{
-						number_of_values=
-							(1+get_FE_node_field_component_number_of_derivatives(
-							element_field_nodes[i],fe_field,local_component_number));
-						if (0==version)
-						{
-							element_field_number_of_nodal_values[i] +=
-								number_of_values*number_of_versions;
-						}
-						else
-						{
-							element_field_number_of_nodal_values[i] += number_of_values;
-						}
-					}
-				}
-			}
-			/* calculate total number of specified nodal values (<number_of_values>)
-				and the number of specified nodal values for the
-				<element_field_nodes> */
-			count_nodal_values_data.number_of_values=0;
-			count_nodal_values_data.value_type=nodal_value_type;
-			count_nodal_values_data.version=version;
-			count_nodal_values_data.fe_field=fe_field;
-			count_nodal_values_data.component_number=component_number;
-			count_nodal_values_data.number_of_components=number_of_components;
-			count_nodal_values_data.number_of_node_offsets=
-				number_of_element_field_nodes;
-			count_nodal_values_data.offset_nodes=element_field_nodes;
-			count_nodal_values_data.node_offsets=element_field_nodal_value_offsets;
-			count_nodal_values_data.number_of_node_values=
-				element_field_number_of_specified_nodal_values;
-			if (node)
-			{
-				return_code=count_nodal_values(node,(void *)&count_nodal_values_data);
-			}
-			else
-			{
-				return_code=FE_region_for_each_FE_node(fe_region,
-					count_nodal_values,(void *)&count_nodal_values_data);
-			}
-			number_of_nodal_values=count_nodal_values_data.number_of_values;
-			if (return_code&&(0<number_of_nodal_values))
-			{
-				/* allocate storage for the component_values */
-				if (return_code&&ALLOCATE(component_values,FE_value **,
-					number_of_nodal_values))
-				{
-					/* NULL the component values array */
-					nodal_value_component_values=component_values;
-					for (i=number_of_nodal_values;i>0;i--)
-					{
-						*nodal_value_component_values=(FE_value **)NULL;
-						nodal_value_component_values++;
-					}
-					/* save and zero all the nodal values for the <fe_field> on the
-						element */
-					number_of_saved_element_field_nodes=0;
-					while (return_code&&(number_of_saved_element_field_nodes<
-						number_of_element_field_nodes))
-					{
-						Function_variable_matrix_nodal_values_handle variable(new
-							Function_variable_matrix_nodal_values(function_finite_element,
-							(Function_size_type)0,
-							element_field_nodes[number_of_saved_element_field_nodes],
-							FE_NODAL_UNKNOWN,0));
-
-						if (element_field_saved_nodal_values[
-							number_of_saved_element_field_nodes]=variable->get_value())
-						{
-							Function_size_type i,number_of_values=
-								((element_field_saved_nodal_values[
-								number_of_saved_element_field_nodes])->output())->
-								number_differentiable();
-							Matrix zero_vector(number_of_values,1);
-
-							number_of_saved_element_field_nodes++;
-							for (i=0;i<number_of_values;i++)
-							{
-								zero_vector(i,0)=(Scalar)0;
-							}
-							if (!((variable->set_value)(Function_matrix_scalar_handle(
-								new Function_matrix<Scalar>(zero_vector)))))
-							{
-								return_code=0;
-							}
-						}
-						else
-						{
-							return_code=0;
-						}
-					}
-					/* calculate component values for nodal value derivatives */
-					i=0;
-					while (return_code&&(i<number_of_element_field_nodes))
-					{
-						if ((element_field_nodal_value_offsets[i]>=0)&&
-							(element_field_number_of_specified_nodal_values[i]>0))
-						{
-							Function_size_type number_of_values=(Function_size_type)
-								(element_field_number_of_specified_nodal_values[i]);
-							Matrix unit_vector_values(number_of_values,1);
-							Function_matrix_scalar_handle unit_vector(
-								new Function_matrix<Scalar>(unit_vector_values));
-							Function_variable_matrix_nodal_values_handle variable(new
-								Function_variable_matrix_nodal_values(
-								function_finite_element,component_number,
-								element_field_nodes[i],nodal_value_type,version));
-
-							for (j=0;j<number_of_values;j++)
-							{
-								(*unit_vector)(j,0)=(Scalar)0;
-							}
-							nodal_value_component_values=component_values+
-								element_field_nodal_value_offsets[i];
-							Assert((int)number_of_values==
-								element_field_number_of_specified_nodal_values[i],
-								std::logic_error("nodal_value_calculate_component_values.  "
-								"Incorrect number of nodal values"));
-							j=0;
-							while (return_code&&(j<number_of_values))
-							{
-								/* set nodal values */
-								(*unit_vector)(j,0)=(Scalar)1;
-								if ((variable->set_value)(unit_vector)&&
-									clear_FE_element_field_values(element_field_values)&&
-									FE_element_field_values_set_no_modify(
-									element_field_values)&&
-									calculate_FE_element_field_values(element,fe_field,
-									fe_time,(char)0,element_field_values,
-									(struct FE_element *)NULL))
-								{
-									return_code=extract_component_values(
-										element_field_values,number_of_components,
-										component_number,numbers_of_component_values_address,
-										nodal_value_component_values);
-								}
-								else
-								{
-									return_code=0;
-								}
-								/* set nodal values */
-								(*unit_vector)(j,0)=(Scalar)0;
-								nodal_value_component_values++;
-								j++;
-							}
-							if (return_code)
-							{
-								// zero the last 1 from the above loop
-								return_code=(variable->set_value)(unit_vector);
-							}
-							if (!return_code)
-							{
-								while (j>0)
-								{
-									j--;
-									nodal_value_component_values--;
-									if (*nodal_value_component_values)
-									{
-										if (0==component_number)
-										{
-											for (k=0;k<number_of_components;k++)
-											{
-												DEALLOCATE((*nodal_value_component_values)[k]);
-											}
-										}
-										else
-										{
-											DEALLOCATE((*nodal_value_component_values)[0]);
-										}
-										DEALLOCATE(*nodal_value_component_values);
-									}
-								}
-							}
-						}
-						i++;
-					}
-					if (return_code)
-					{
-						*number_of_nodal_values_address=number_of_nodal_values;
-						*component_values_address=component_values;
-					}
-					else
-					{
-						while (i>0)
-						{
-							i--;
-							if ((element_field_nodal_value_offsets[i]>=0)&&
-								(element_field_number_of_specified_nodal_values[i]>0))
-							{
-								nodal_value_component_values=component_values+
-									element_field_nodal_value_offsets[i];
-								for (l=0;
-									l<element_field_number_of_specified_nodal_values[i];l++)
-								{
-									if (*nodal_value_component_values)
-									{
-										if (0==component_number)
-										{
-											for (k=0;k<number_of_components;k++)
-											{
-												DEALLOCATE((*nodal_value_component_values)[k]);
-											}
-										}
-										else
-										{
-											DEALLOCATE((*nodal_value_component_values)[0]);
-										}
-									}
-									DEALLOCATE(*nodal_value_component_values);
-									nodal_value_component_values++;
-								}
-							}
-						}
-						DEALLOCATE(component_values);
-					}
-					/* reset all the nodal values for the <fe_field> on the element */
-					i=0;
-					while (return_code&&(i<number_of_saved_element_field_nodes))
-					{
-						Function_variable_matrix_nodal_values_handle variable(new
-							Function_variable_matrix_nodal_values(function_finite_element,
-							(Function_size_type)0,element_field_nodes[i],FE_NODAL_UNKNOWN,0));
-
-						return_code=(variable->set_value)(
-							element_field_saved_nodal_values[i]);
-						i++;
-					}
-				}
-				else
-				{
-					return_code=0;
-				}
-			}
-			else
-			{
-				return_code=0;
-			}
-			/* destroy working computed values for saving current values and
-				setting temporary values */
-			for (i=0;i<number_of_element_field_nodes;i++)
-			{
-				element_field_saved_nodal_values[i]=Function_matrix_scalar_handle(0);
-			}
-		}
-		else
-		{
-			return_code=0;
-		}
-		/* get rid of working storage */
-		delete [] element_field_saved_nodal_values;
-		DEALLOCATE(element_field_number_of_nodal_values);
-		DEALLOCATE(element_field_number_of_specified_nodal_values);
-		DEALLOCATE(element_field_nodal_value_offsets);
-	}
-	if (return_code&&number_of_element_field_nodes_address&&
-		element_field_nodes_address)
-	{
-		*number_of_element_field_nodes_address=number_of_element_field_nodes;
-		*element_field_nodes_address=element_field_nodes;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* nodal_value_calculate_component_values */
-
-static int extract_component_monomial_info(
-	struct FE_element_field_values *element_field_values,
-	Function_size_type number_of_components,Function_size_type component_number,
-	int number_of_xi,int **numbers_of_component_values_address,
-	int ***component_monomial_info_address,FE_value **monomial_values_address)
-/*******************************************************************************
-LAST MODIFIED : 19 May 2004
-
-DESCRIPTION :
-Extracts the component monomial info (<number_of_components> and
-<component_number>) from <element_field_values> and puts in
-<*component_monomial_info_address> (after allocating storage).
-
-If <*numbers_of_component_values_address> is NULL then storage is allocated for
-it and the number of values for each component calculated and entered.
-Otherwise, checks that the number of values extracted for each component agrees
-with the entries.
-
-If <monomial_values_address> is not NULL and <*monomial_values_address> is NULL,
-then storage for the maximum number of component values is allocated and
-assigned to <*monomial_values_address>.
-==============================================================================*/
-{
-	FE_value *monomial_values;
-	Function_size_type i;
-	int **component_monomial_info,extract_numbers_of_component_values,j,
-		local_component_number,maximum_number_of_component_values,
-		number_of_component_values,*numbers_of_component_values,return_code;
-
-	ENTER(extract_component_monomial_info);
-	return_code=0;
-	Assert(element_field_values&&
-		(0<number_of_components)&&((0==component_number)||
-		((0<component_number)&&(component_number<=number_of_components)))&&
-		(0<number_of_xi)&&numbers_of_component_values_address&&
-		component_monomial_info_address,
-		std::logic_error("extract_component_monomial_info.  Invalid argument(s)"));
-	local_component_number=(int)component_number-1;
-	/* allocate storage for components */
-	extract_numbers_of_component_values=
-		!(*numbers_of_component_values_address);
-	/* allocate storage for components */
-	if (extract_numbers_of_component_values)
-	{
-		if (0==component_number)
-		{
-			ALLOCATE(numbers_of_component_values,int,number_of_components);
-		}
-		else
-		{
-			ALLOCATE(numbers_of_component_values,int,1);
-		}
-	}
-	else
-	{
-		numbers_of_component_values= *numbers_of_component_values_address;
-	}
-	if (0==component_number)
-	{
-		ALLOCATE(component_monomial_info,int *,number_of_components);
-	}
-	else
-	{
-		ALLOCATE(component_monomial_info,int *,1);
-	}
-	if (numbers_of_component_values&&component_monomial_info)
-	{
-		if (0==component_number)
-		{
-			i=0;
-			return_code=1;
-			maximum_number_of_component_values=0;
-			while (return_code&&(i<number_of_components))
-			{
-				if (ALLOCATE(component_monomial_info[i],int,number_of_xi+1))
-				{
-					return_code=FE_element_field_values_get_monomial_component_info(
-						element_field_values,(int)i,component_monomial_info[i]);
-					if (return_code)
-					{
-						number_of_component_values=1;
-						for (j=1;j<=component_monomial_info[i][0];j++)
-						{
-							number_of_component_values *= 1+component_monomial_info[i][j];
-						}
-						if (number_of_component_values>maximum_number_of_component_values)
-						{
-							maximum_number_of_component_values=number_of_component_values;
-						}
-						if (extract_numbers_of_component_values)
-						{
-							numbers_of_component_values[i]=number_of_component_values;
-						}
-						else
-						{
-							if (numbers_of_component_values[i]!=number_of_component_values)
-							{
-								return_code=0;
-							}
-						}
-					}
-					i++;
-				}
-				else
-				{
-					return_code=0;
-				}
-			}
-			if (return_code)
-			{
-				if (monomial_values_address&&!(*monomial_values_address))
-				{
-					if ((0<maximum_number_of_component_values)&&ALLOCATE(monomial_values,
-						FE_value,maximum_number_of_component_values))
-					{
-						*monomial_values_address=monomial_values;
-					}
-					else
-					{
-						return_code=0;
-					}
-				}
-				if (return_code)
-				{
-					*numbers_of_component_values_address=numbers_of_component_values;
-					*component_monomial_info_address=component_monomial_info;
-				}
-			}
-			if (!return_code)
-			{
-				while (i>0)
-				{
-					i--;
-					DEALLOCATE(component_monomial_info[i]);
-				}
-			}
-		}
-		else
-		{
-			i=0;
-			return_code=1;
-			maximum_number_of_component_values=0;
-			if (ALLOCATE(component_monomial_info[i],int,number_of_xi+1))
-			{
-				return_code=FE_element_field_values_get_monomial_component_info(
-					element_field_values,local_component_number,
-					component_monomial_info[i]);
-				if (return_code)
-				{
-					number_of_component_values=1;
-					for (j=1;j<=component_monomial_info[i][0];j++)
-					{
-						number_of_component_values *= 1+component_monomial_info[i][j];
-					}
-					if (number_of_component_values>maximum_number_of_component_values)
-					{
-						maximum_number_of_component_values=number_of_component_values;
-					}
-					if (extract_numbers_of_component_values)
-					{
-						numbers_of_component_values[i]=number_of_component_values;
-					}
-					else
-					{
-						if (numbers_of_component_values[i]!=number_of_component_values)
-						{
-							return_code=0;
-						}
-					}
-				}
-				i++;
-			}
-			else
-			{
-				return_code=0;
-			}
-			if (return_code)
-			{
-				if (monomial_values_address&&!(*monomial_values_address))
-				{
-					if ((0<maximum_number_of_component_values)&&ALLOCATE(monomial_values,
-						FE_value,maximum_number_of_component_values))
-					{
-						*monomial_values_address=monomial_values;
-					}
-					else
-					{
-						return_code=0;
-					}
-				}
-				if (return_code)
-				{
-					*numbers_of_component_values_address=numbers_of_component_values;
-					*component_monomial_info_address=component_monomial_info;
-				}
-			}
-			if (!return_code)
-			{
-				while (i>0)
-				{
-					i--;
-					DEALLOCATE(component_monomial_info[i]);
-				}
-			}
-		}
-	}
-	if (!return_code)
-	{
-		DEALLOCATE(component_monomial_info);
-		if (extract_numbers_of_component_values)
-		{
-			DEALLOCATE(numbers_of_component_values);
-		}
-	}
-	LEAVE;
-
-	return (return_code);
-} /* extract_component_monomial_info */
-#endif // defined (OLD_CODE)
-
 static int calculate_monomial_derivative_values(int number_of_xi_coordinates,
 	int *xi_orders,int *xi_derivative_orders,FE_value *xi_coordinates,
 	FE_value *monomial_derivative_values)
@@ -5493,6 +4596,7 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 		!node_private&&element_private&&(0<(local_number_of_xi=number_of_xi()))&&
 		((Function_size_type)local_number_of_xi==xi_private.size()))
 	{
+//#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE) || !defined (USE_Function_derivatnew_finite_element)
 		bool zero_derivative;
 		Function_size_type derivative_order=atomic_independent_variables.size();
 		Function_variable_matrix_nodal_values_handle nodal_values_variable(0);
@@ -6069,15 +5173,13 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 			}
 #endif // defined (OLD_CODE)
 		}
-#if defined (NEW_CODE)
-#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
-		//???DB.  Should enclose code above
-#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+//#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE) || !defined (USE_Function_derivatnew_finite_element)
+#if defined (OLD_CODE)
 		Function_derivatnew_handle derivative_function;
+		Function_matrix_scalar_handle derivative_value;
 		Function_variable_handle derivative_variable;
 
-		if (
-			(derivative_function=boost::dynamic_pointer_cast<Function_derivatnew,
+		if ((derivative_function=boost::dynamic_pointer_cast<Function_derivatnew,
 			Function>(atomic_variable_finite_element->derivative(
 			atomic_independent_variables)))&&(derivative_variable=
 			derivative_function->output())&&(derivative_variable->evaluate())&&
@@ -6091,8 +5193,8 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 			derivative=(*derivative_value)(1,1);
 			result=true;
 		}
-#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
-#endif // defined (NEW_CODE)
+#endif // defined (OLD_CODE)
+//#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE) || !defined (USE_Function_derivatnew_finite_element)
 	}
 	else if ((atomic_variable_nodal_values=boost::dynamic_pointer_cast<
 		Function_variable_matrix_nodal_values,Function_variable>(atomic_variable))&&
@@ -6118,11 +5220,1128 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 	return (result);
 }
 
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#if defined (USE_Function_derivatnew_finite_element)
+class Function_variable_matrix_components_check_derivative_functor
+//******************************************************************************
+// LAST MODIFIED : 16 February 2005
+//
+// DESCRIPTION :
+//
+// NOTES :
+// 1. Composite inputs are already handled by evaluate_derivative.
+//   ???DB.  Is this true for variables?
+//
+// ???DB.  Only valid for monomial standard basis and nodal value based.  This
+//   is enforced by <FE_element_field_values_get_monomial_component_info> and
+//   <FE_element_field_values_get_component_values>.
+//==============================================================================
+{
+	public:
+		Function_variable_matrix_components_check_derivative_functor(
+			Function_finite_element_handle function_finite_element,
+			bool& zero_derivative,
+			Function_variable_matrix_nodal_values_handle& nodal_values_variable,
+			ublas::vector<Function_variable_element_xi_finite_element_handle>::
+				iterator element_xi_variable_iterator,
+			Function_size_type& number_of_columns):first(true),
+			zero_derivative(zero_derivative),
+			function_finite_element(function_finite_element),
+			nodal_values_variable(nodal_values_variable),
+			element_xi_variable_iterator(element_xi_variable_iterator),
+			number_of_columns(number_of_columns){};
+		~Function_variable_matrix_components_check_derivative_functor(){};
+		int operator() (Function_variable_handle& variable)
+		{
+			if (first)
+			{
+				number_of_columns=variable->number_differentiable();
+			}
+			else
+			{
+				number_of_columns *= variable->number_differentiable();
+			}
+			*element_xi_variable_iterator=
+				Function_variable_element_xi_finite_element_handle(0);
+			if (!zero_derivative)
+			{
+				Function_variable_element_xi_finite_element_handle
+					variable_element_xi_handle;
+				Function_variable_matrix_nodal_values_handle
+					variable_nodal_values_handle;
+
+				if ((variable_element_xi_handle=boost::dynamic_pointer_cast<
+					Function_variable_element_xi_finite_element,Function_variable>(
+					variable))&&equivalent(variable_element_xi_handle->function(),
+					function_finite_element)&&(variable_element_xi_handle->xi_private))
+				{
+					// not checking order of derivative against order of polynomial
+					*element_xi_variable_iterator=variable_element_xi_handle;
+				}
+				else if ((variable_nodal_values_handle=boost::dynamic_pointer_cast<
+					Function_variable_matrix_nodal_values,Function_variable>(variable))&&
+					equivalent(variable_nodal_values_handle->function(),
+					function_finite_element))
+				{
+					if (nodal_values_variable)
+					{
+						// because the nodal values are the coefficients for a linear
+						//   combination
+						zero_derivative=true;
+					}
+					else
+					{
+						nodal_values_variable=variable_nodal_values_handle;
+					}
+				}
+				else
+				{
+					zero_derivative=true;
+				}
+				first=false;
+			}
+			element_xi_variable_iterator++;
+
+			return (1);
+		};
+	private:
+		bool first;
+		bool& zero_derivative;
+		Function_finite_element_handle function_finite_element;
+		Function_variable_matrix_nodal_values_handle& nodal_values_variable;
+		ublas::vector<Function_variable_element_xi_finite_element_handle>::iterator
+			element_xi_variable_iterator;
+		Function_size_type& number_of_columns;
+};
+
+static int extract_component_values(
+	struct FE_element_field_values *element_field_values,
+	Function_size_type number_of_components,Function_size_type component_number,
+	int **numbers_of_component_values_address,
+	FE_value ***component_values_address)
+/*******************************************************************************
+LAST MODIFIED : 19 May 2004
+
+DESCRIPTION :
+Extracts the values for the component(s) (<number_of_components> and
+<component_number>) from <element_field_values> and puts in
+<*component_values_address> (after allocating storage).
+
+If <*numbers_of_component_values_address> is NULL then storage is allocated for
+it and the number of values extracted for each component entered.  Otherwise,
+checks that the number of values extracted for each component agrees with the
+entries.
+==============================================================================*/
+{
+	FE_value **component_values;
+	Function_size_type i;
+	int extract_numbers_of_component_values,local_component_number,
+		number_of_component_values,*numbers_of_component_values,return_code;
+
+	ENTER(extract_component_values);
+	return_code=0;
+	Assert(element_field_values&&
+		(0<number_of_components)&&((0==component_number)||
+		((0<component_number)&&(component_number<=number_of_components)))&&
+		numbers_of_component_values_address&&component_values_address,
+		std::logic_error("extract_component_values.  Invalid argument(s)"));
+	local_component_number=(int)component_number-1;
+	extract_numbers_of_component_values=
+		!(*numbers_of_component_values_address);
+	/* allocate storage for components */
+	if (extract_numbers_of_component_values)
+	{
+		if (0==component_number)
+		{
+			ALLOCATE(numbers_of_component_values,int,number_of_components);
+		}
+		else
+		{
+			ALLOCATE(numbers_of_component_values,int,1);
+		}
+	}
+	else
+	{
+		numbers_of_component_values= *numbers_of_component_values_address;
+	}
+	if (0==component_number)
+	{
+		ALLOCATE(component_values,FE_value *,number_of_components);
+	}
+	else
+	{
+		ALLOCATE(component_values,FE_value *,1);
+	}
+	if (component_values&&numbers_of_component_values)
+	{
+		if (0==component_number)
+		{
+			i=0;
+			return_code=1;
+			while (return_code&&(i<number_of_components))
+			{
+				if (return_code=FE_element_field_values_get_component_values(
+					element_field_values,(int)i,&number_of_component_values,
+					component_values+i))
+				{
+					if (extract_numbers_of_component_values)
+					{
+						numbers_of_component_values[i]=number_of_component_values;
+					}
+					else
+					{
+						if (numbers_of_component_values[i]!=number_of_component_values)
+						{
+							DEALLOCATE(component_values[i]);
+							return_code=0;
+						}
+					}
+					i++;
+				}
+			}
+			if (!return_code)
+			{
+				while (i>0)
+				{
+					i--;
+					DEALLOCATE(component_values[i]);
+				}
+			}
+		}
+		else
+		{
+			if (return_code=FE_element_field_values_get_component_values(
+				element_field_values,local_component_number,&number_of_component_values,
+				component_values))
+			{
+				if (extract_numbers_of_component_values)
+				{
+					*numbers_of_component_values=number_of_component_values;
+				}
+				else
+				{
+					if (*numbers_of_component_values!=number_of_component_values)
+					{
+						DEALLOCATE(*component_values);
+						return_code=0;
+					}
+				}
+			}
+		}
+		if (return_code)
+		{
+			*component_values_address=component_values;
+			*numbers_of_component_values_address=numbers_of_component_values;
+		}
+	}
+	if (!return_code)
+	{
+		DEALLOCATE(component_values);
+		if (extract_numbers_of_component_values)
+		{
+			DEALLOCATE(numbers_of_component_values);
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+} /* extract_component_values */
+
+static int nodal_value_calculate_component_values(
+	Function_finite_element_handle function_finite_element,
+	struct FE_field *fe_field,Function_size_type component_number,
+	FE_value fe_time,struct FE_element *element,
+	Function_size_type nodal_value_component_number,struct FE_node *node,
+	enum FE_nodal_value_type nodal_value_type,Function_size_type version,
+	int *number_of_element_field_nodes_address,
+	struct FE_node ***element_field_nodes_address,
+	struct FE_element_field_values *element_field_values,
+	int *number_of_nodal_values_address,int **numbers_of_component_values_address,
+	FE_value ****component_values_address)
+/*******************************************************************************
+LAST MODIFIED : 17 February 2005
+
+DESCRIPTION :
+Calculate the component values for the derivatives of the specified components
+(<component_number>) of <fe_field> in the <element> with respect to the
+specified nodal values (<nodal_value_component_number>, <node>,
+<nodal_value_type> and <version>).
+
+<*number_of_nodal_values_address> is calculated and an array with an entry for
+each of the specified nodal values (<*number_of_nodal_values_address> long> is
+allocated, NULLed and assigned to <*component_values_address>.  For each nodal
+value, if the derivative is not identically zero then a 2 dimensional array
+(first index is component number and second index is component value number) is
+allocated, filled-in and assigned to the corresponding entry in
+<*component_values_address>.
+
+The interpolation function for the <fe_field> component(s) is assumed to be a
+linear combination of basis functions polynomial in the element coordinates.
+The coefficients for the linear combination are the nodal values.  So, the
+derivative with respect to a nodal value is the corresponding basis function.
+The component values are for the monomials.  To calculate these, all the nodal
+values for the <element> are set to zero, the nodal value of interest is set to
+one and <calculate_FE_element_field_values> is used.
+
+<*number_of_element_field_nodes_address> and <*element_field_nodes_address> are
+for the <fe_field> and <element> and can be passed in or computed in here.
+<element_field_values> is working storage that is passed in.
+
+???DB.  Can get all from <function_finite_element>.  Do multiple times?
+==============================================================================*/
+{
+	FE_value ***component_values,***nodal_value_component_values;
+	Function_size_type j,k,number_of_components,number_of_versions;
+	int *element_field_nodal_value_offsets,*element_field_number_of_nodal_values,
+		*element_field_number_of_specified_nodal_values,i,l,local_component_number,
+		number_of_element_field_nodes,number_of_nodal_values,
+		number_of_saved_element_field_nodes,number_of_values,return_code;
+	struct Count_nodal_values_data count_nodal_values_data;
+	struct FE_region *fe_region;
+	struct FE_node **element_field_nodes;
+
+	ENTER(nodal_value_calculate_component_values);
+	return_code=0;
+	/* check arguments */
+	fe_region=FE_field_get_FE_region(fe_field);
+	number_of_components=
+		(Function_size_type)get_FE_field_number_of_components(fe_field);
+	Assert(function_finite_element&&fe_field&&fe_region&&
+		(0<number_of_components)&&((0==component_number)||
+		((0<component_number)&&(component_number<=number_of_components)))&&
+		element&&element_field_values&&number_of_nodal_values_address&&
+		component_values_address,std::logic_error(
+		"nodal_value_calculate_component_values.  Invalid argument(s)"));
+	local_component_number=(int)component_number-1;
+	if (number_of_element_field_nodes_address&&element_field_nodes_address)
+	{
+		number_of_element_field_nodes= *number_of_element_field_nodes_address;
+		element_field_nodes= *element_field_nodes_address;
+	}
+	else
+	{
+		number_of_element_field_nodes=0;
+		element_field_nodes=(struct FE_node **)NULL;
+	}
+	if ((number_of_element_field_nodes>0)&&element_field_nodes)
+	{
+		return_code=0;
+	}
+	else
+	{
+		return_code=calculate_FE_element_field_nodes(element,fe_field,
+			&number_of_element_field_nodes,&element_field_nodes,
+			(struct FE_element *)NULL);
+	}
+	if (return_code)
+	{
+		//???DB.  To be done/Needs finishing
+		/* set up working storage */
+		Function_handle *element_field_saved_nodal_values;
+
+		ALLOCATE(element_field_nodal_value_offsets,int,
+			number_of_element_field_nodes);
+		ALLOCATE(element_field_number_of_specified_nodal_values,int,
+			number_of_element_field_nodes);
+		ALLOCATE(element_field_number_of_nodal_values,int,
+			number_of_element_field_nodes);
+		element_field_saved_nodal_values=
+			new Function_handle[number_of_element_field_nodes];
+		if (element_field_nodal_value_offsets&&
+			element_field_number_of_specified_nodal_values&&
+			element_field_number_of_nodal_values&&element_field_saved_nodal_values)
+		{
+			/* NULL working storage and calculate total number of nodal values for
+				each <element_field_node> */
+			for (i=0;i<number_of_element_field_nodes;i++)
+			{
+				element_field_saved_nodal_values[i]=Function_handle(0);
+				element_field_nodal_value_offsets[i]= -1;
+				element_field_number_of_specified_nodal_values[i]=0;
+				element_field_number_of_nodal_values[i]=0;
+				if (0==component_number)
+				{
+					for (j=0;j<number_of_components;j++)
+					{
+						number_of_versions=(Function_size_type)
+							get_FE_node_field_component_number_of_versions(
+							element_field_nodes[i],fe_field,(int)j);
+						if (version<=number_of_versions)
+						{
+							number_of_values=
+								(1+get_FE_node_field_component_number_of_derivatives(
+								element_field_nodes[i],fe_field,(int)j));
+							if (0==version)
+							{
+								element_field_number_of_nodal_values[i] +=
+									number_of_values*number_of_versions;
+							}
+							else
+							{
+								element_field_number_of_nodal_values[i] += number_of_values;
+							}
+						}
+					}
+				}
+				else
+				{
+					number_of_versions=(Function_size_type)
+						get_FE_node_field_component_number_of_versions(
+						element_field_nodes[i],fe_field,local_component_number);
+					if (version<=number_of_versions)
+					{
+						number_of_values=
+							(1+get_FE_node_field_component_number_of_derivatives(
+							element_field_nodes[i],fe_field,local_component_number));
+						if (0==version)
+						{
+							element_field_number_of_nodal_values[i] +=
+								number_of_values*number_of_versions;
+						}
+						else
+						{
+							element_field_number_of_nodal_values[i] += number_of_values;
+						}
+					}
+				}
+			}
+			/* calculate total number of specified nodal values (<number_of_values>)
+				and the number of specified nodal values for the
+				<element_field_nodes> */
+			count_nodal_values_data.number_of_values=0;
+			count_nodal_values_data.value_type=nodal_value_type;
+			count_nodal_values_data.version=version;
+			count_nodal_values_data.fe_field=fe_field;
+			count_nodal_values_data.component_number=nodal_value_component_number;
+			count_nodal_values_data.number_of_components=number_of_components;
+			count_nodal_values_data.number_of_node_offsets=
+				number_of_element_field_nodes;
+			count_nodal_values_data.offset_nodes=element_field_nodes;
+			count_nodal_values_data.node_offsets=element_field_nodal_value_offsets;
+			count_nodal_values_data.number_of_node_values=
+				element_field_number_of_specified_nodal_values;
+			if (node)
+			{
+				return_code=count_nodal_values(node,(void *)&count_nodal_values_data);
+			}
+			else
+			{
+				return_code=FE_region_for_each_FE_node(fe_region,
+					count_nodal_values,(void *)&count_nodal_values_data);
+			}
+			number_of_nodal_values=count_nodal_values_data.number_of_values;
+			if (return_code&&(0<number_of_nodal_values))
+			{
+				/* allocate storage for the component_values */
+				if (return_code&&ALLOCATE(component_values,FE_value **,
+					number_of_nodal_values))
+				{
+					/* NULL the component values array */
+					nodal_value_component_values=component_values;
+					for (i=number_of_nodal_values;i>0;i--)
+					{
+						*nodal_value_component_values=(FE_value **)NULL;
+						nodal_value_component_values++;
+					}
+					/* save and zero all the nodal values for the <fe_field> on the
+						element */
+					number_of_saved_element_field_nodes=0;
+					while (return_code&&(number_of_saved_element_field_nodes<
+						number_of_element_field_nodes))
+					{
+						Function_variable_matrix_nodal_values_handle variable(new
+							Function_variable_matrix_nodal_values(function_finite_element,
+							(Function_size_type)0,
+							element_field_nodes[number_of_saved_element_field_nodes],
+							FE_NODAL_UNKNOWN,0,(struct FE_time_sequence *)NULL));
+
+						if (element_field_saved_nodal_values[
+							number_of_saved_element_field_nodes]=variable->get_value())
+						{
+							Function_size_type i,number_of_values=
+								((element_field_saved_nodal_values[
+								number_of_saved_element_field_nodes])->output())->
+								number_differentiable();
+							Matrix zero_vector(number_of_values,1);
+
+							number_of_saved_element_field_nodes++;
+							for (i=0;i<number_of_values;i++)
+							{
+								zero_vector(i,0)=(Scalar)0;
+							}
+							if (!((variable->set_value)(Function_matrix_scalar_handle(
+								new Function_matrix<Scalar>(zero_vector)))))
+							{
+								return_code=0;
+							}
+						}
+						else
+						{
+							return_code=0;
+						}
+					}
+					/* calculate component values for nodal value derivatives */
+					i=0;
+					while (return_code&&(i<number_of_element_field_nodes))
+					{
+						if ((element_field_nodal_value_offsets[i]>=0)&&
+							(element_field_number_of_specified_nodal_values[i]>0))
+						{
+							Function_size_type number_of_values=(Function_size_type)
+								(element_field_number_of_specified_nodal_values[i]);
+							Matrix unit_vector_values(number_of_values,1);
+							Function_matrix_scalar_handle unit_vector(
+								new Function_matrix<Scalar>(unit_vector_values));
+							Function_variable_matrix_nodal_values_handle variable(new
+								Function_variable_matrix_nodal_values(
+								function_finite_element,nodal_value_component_number,
+								element_field_nodes[i],nodal_value_type,version,
+								(struct FE_time_sequence *)NULL));
+
+							for (j=number_of_values;j>0;--j)
+							{
+								(*unit_vector)(j,1)=(Scalar)0;
+							}
+							nodal_value_component_values=component_values+
+								element_field_nodal_value_offsets[i];
+							Assert((int)number_of_values==
+								element_field_number_of_specified_nodal_values[i],
+								std::logic_error("nodal_value_calculate_component_values.  "
+								"Incorrect number of nodal values"));
+							j=0;
+							while (return_code&&(j<number_of_values))
+							{
+								j++;
+								/* set nodal values */
+								(*unit_vector)(j,1)=(Scalar)1;
+								if ((variable->set_value)(unit_vector)&&
+									clear_FE_element_field_values(element_field_values)&&
+									FE_element_field_values_set_no_modify(
+									element_field_values)&&
+									calculate_FE_element_field_values(element,fe_field,
+									fe_time,(char)0,element_field_values,
+									(struct FE_element *)NULL))
+								{
+									return_code=extract_component_values(
+										element_field_values,number_of_components,
+										component_number,numbers_of_component_values_address,
+										nodal_value_component_values);
+								}
+								else
+								{
+									return_code=0;
+								}
+								/* set nodal values */
+								(*unit_vector)(j,1)=(Scalar)0;
+								nodal_value_component_values++;
+							}
+							if (return_code)
+							{
+								// zero the last 1 from the above loop
+								return_code=(variable->set_value)(unit_vector);
+							}
+							if (!return_code)
+							{
+								while (j>0)
+								{
+									j--;
+									nodal_value_component_values--;
+									if (*nodal_value_component_values)
+									{
+										if (0==component_number)
+										{
+											for (k=0;k<number_of_components;k++)
+											{
+												DEALLOCATE((*nodal_value_component_values)[k]);
+											}
+										}
+										else
+										{
+											DEALLOCATE((*nodal_value_component_values)[0]);
+										}
+										DEALLOCATE(*nodal_value_component_values);
+									}
+								}
+							}
+						}
+						i++;
+					}
+					if (return_code)
+					{
+						*number_of_nodal_values_address=number_of_nodal_values;
+						*component_values_address=component_values;
+					}
+					else
+					{
+						while (i>0)
+						{
+							i--;
+							if ((element_field_nodal_value_offsets[i]>=0)&&
+								(element_field_number_of_specified_nodal_values[i]>0))
+							{
+								nodal_value_component_values=component_values+
+									element_field_nodal_value_offsets[i];
+								for (l=0;
+									l<element_field_number_of_specified_nodal_values[i];l++)
+								{
+									if (*nodal_value_component_values)
+									{
+										if (0==component_number)
+										{
+											for (k=0;k<number_of_components;k++)
+											{
+												DEALLOCATE((*nodal_value_component_values)[k]);
+											}
+										}
+										else
+										{
+											DEALLOCATE((*nodal_value_component_values)[0]);
+										}
+									}
+									DEALLOCATE(*nodal_value_component_values);
+									nodal_value_component_values++;
+								}
+							}
+						}
+						DEALLOCATE(component_values);
+					}
+					/* reset all the nodal values for the <fe_field> on the element */
+					i=0;
+					while (return_code&&(i<number_of_saved_element_field_nodes))
+					{
+						Function_variable_matrix_nodal_values_handle variable(new
+							Function_variable_matrix_nodal_values(function_finite_element,
+							(Function_size_type)0,element_field_nodes[i],FE_NODAL_UNKNOWN,0,
+							(struct FE_time_sequence *)NULL));
+
+						return_code=(variable->set_value)(
+							element_field_saved_nodal_values[i]);
+						i++;
+					}
+				}
+				else
+				{
+					return_code=0;
+				}
+			}
+			else
+			{
+				return_code=0;
+			}
+			/* destroy working computed values for saving current values and
+				setting temporary values */
+			for (i=0;i<number_of_element_field_nodes;i++)
+			{
+				element_field_saved_nodal_values[i]=Function_matrix_scalar_handle(0);
+			}
+		}
+		else
+		{
+			return_code=0;
+		}
+		/* get rid of working storage */
+		delete [] element_field_saved_nodal_values;
+		DEALLOCATE(element_field_number_of_nodal_values);
+		DEALLOCATE(element_field_number_of_specified_nodal_values);
+		DEALLOCATE(element_field_nodal_value_offsets);
+	}
+	if (return_code&&number_of_element_field_nodes_address&&
+		element_field_nodes_address)
+	{
+		*number_of_element_field_nodes_address=number_of_element_field_nodes;
+		*element_field_nodes_address=element_field_nodes;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* nodal_value_calculate_component_values */
+
+static int extract_component_monomial_info(
+	struct FE_element_field_values *element_field_values,
+	Function_size_type number_of_components,Function_size_type component_number,
+	int number_of_xi,int **numbers_of_component_values_address,
+	int ***component_monomial_info_address,FE_value **monomial_values_address)
+/*******************************************************************************
+LAST MODIFIED : 19 May 2004
+
+DESCRIPTION :
+Extracts the component monomial info (<number_of_components> and
+<component_number>) from <element_field_values> and puts in
+<*component_monomial_info_address> (after allocating storage).
+
+If <*numbers_of_component_values_address> is NULL then storage is allocated for
+it and the number of values for each component calculated and entered.
+Otherwise, checks that the number of values extracted for each component agrees
+with the entries.
+
+If <monomial_values_address> is not NULL and <*monomial_values_address> is NULL,
+then storage for the maximum number of component values is allocated and
+assigned to <*monomial_values_address>.
+==============================================================================*/
+{
+	FE_value *monomial_values;
+	Function_size_type i;
+	int **component_monomial_info,extract_numbers_of_component_values,j,
+		local_component_number,maximum_number_of_component_values,
+		number_of_component_values,*numbers_of_component_values,return_code;
+
+	ENTER(extract_component_monomial_info);
+	return_code=0;
+	Assert(element_field_values&&
+		(0<number_of_components)&&((0==component_number)||
+		((0<component_number)&&(component_number<=number_of_components)))&&
+		(0<number_of_xi)&&numbers_of_component_values_address&&
+		component_monomial_info_address,
+		std::logic_error("extract_component_monomial_info.  Invalid argument(s)"));
+	local_component_number=(int)component_number-1;
+	/* allocate storage for components */
+	extract_numbers_of_component_values=
+		!(*numbers_of_component_values_address);
+	/* allocate storage for components */
+	if (extract_numbers_of_component_values)
+	{
+		if (0==component_number)
+		{
+			ALLOCATE(numbers_of_component_values,int,number_of_components);
+		}
+		else
+		{
+			ALLOCATE(numbers_of_component_values,int,1);
+		}
+	}
+	else
+	{
+		numbers_of_component_values= *numbers_of_component_values_address;
+	}
+	if (0==component_number)
+	{
+		ALLOCATE(component_monomial_info,int *,number_of_components);
+	}
+	else
+	{
+		ALLOCATE(component_monomial_info,int *,1);
+	}
+	if (numbers_of_component_values&&component_monomial_info)
+	{
+		if (0==component_number)
+		{
+			i=0;
+			return_code=1;
+			maximum_number_of_component_values=0;
+			while (return_code&&(i<number_of_components))
+			{
+				if (ALLOCATE(component_monomial_info[i],int,number_of_xi+1))
+				{
+					return_code=FE_element_field_values_get_monomial_component_info(
+						element_field_values,(int)i,component_monomial_info[i]);
+					if (return_code)
+					{
+						number_of_component_values=1;
+						for (j=1;j<=component_monomial_info[i][0];j++)
+						{
+							number_of_component_values *= 1+component_monomial_info[i][j];
+						}
+						if (number_of_component_values>maximum_number_of_component_values)
+						{
+							maximum_number_of_component_values=number_of_component_values;
+						}
+						if (extract_numbers_of_component_values)
+						{
+							numbers_of_component_values[i]=number_of_component_values;
+						}
+						else
+						{
+							if (numbers_of_component_values[i]!=number_of_component_values)
+							{
+								return_code=0;
+							}
+						}
+					}
+					i++;
+				}
+				else
+				{
+					return_code=0;
+				}
+			}
+			if (return_code)
+			{
+				if (monomial_values_address&&!(*monomial_values_address))
+				{
+					if ((0<maximum_number_of_component_values)&&ALLOCATE(monomial_values,
+						FE_value,maximum_number_of_component_values))
+					{
+						*monomial_values_address=monomial_values;
+					}
+					else
+					{
+						return_code=0;
+					}
+				}
+				if (return_code)
+				{
+					*numbers_of_component_values_address=numbers_of_component_values;
+					*component_monomial_info_address=component_monomial_info;
+				}
+			}
+			if (!return_code)
+			{
+				while (i>0)
+				{
+					i--;
+					DEALLOCATE(component_monomial_info[i]);
+				}
+			}
+		}
+		else
+		{
+			i=0;
+			return_code=1;
+			maximum_number_of_component_values=0;
+			if (ALLOCATE(component_monomial_info[i],int,number_of_xi+1))
+			{
+				return_code=FE_element_field_values_get_monomial_component_info(
+					element_field_values,local_component_number,
+					component_monomial_info[i]);
+				if (return_code)
+				{
+					number_of_component_values=1;
+					for (j=1;j<=component_monomial_info[i][0];j++)
+					{
+						number_of_component_values *= 1+component_monomial_info[i][j];
+					}
+					if (number_of_component_values>maximum_number_of_component_values)
+					{
+						maximum_number_of_component_values=number_of_component_values;
+					}
+					if (extract_numbers_of_component_values)
+					{
+						numbers_of_component_values[i]=number_of_component_values;
+					}
+					else
+					{
+						if (numbers_of_component_values[i]!=number_of_component_values)
+						{
+							return_code=0;
+						}
+					}
+				}
+				i++;
+			}
+			else
+			{
+				return_code=0;
+			}
+			if (return_code)
+			{
+				if (monomial_values_address&&!(*monomial_values_address))
+				{
+					if ((0<maximum_number_of_component_values)&&ALLOCATE(monomial_values,
+						FE_value,maximum_number_of_component_values))
+					{
+						*monomial_values_address=monomial_values;
+					}
+					else
+					{
+						return_code=0;
+					}
+				}
+				if (return_code)
+				{
+					*numbers_of_component_values_address=numbers_of_component_values;
+					*component_monomial_info_address=component_monomial_info;
+				}
+			}
+			if (!return_code)
+			{
+				while (i>0)
+				{
+					i--;
+					DEALLOCATE(component_monomial_info[i]);
+				}
+			}
+		}
+	}
+	if (!return_code)
+	{
+		DEALLOCATE(component_monomial_info);
+		if (extract_numbers_of_component_values)
+		{
+			DEALLOCATE(numbers_of_component_values);
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+} /* extract_component_monomial_info */
+
+bool Function_finite_element::evaluate_derivative_matrix(
+	Function_size_type component_number,
+	std::list<Function_variable_handle>& independent_variables,Matrix& matrix)
+//******************************************************************************
+// LAST MODIFIED : 17 February 2005
+//
+// DESCRIPTION :
+// ???DB.  Started from Variable_finite_element::evaluate_derivative_local in
+//   variable_finite_element.cpp
+// ???DB.  Does not handle composite independent variables
+//==============================================================================
+{
+	bool result=false;
+
+	if (this)
+	{
+		bool zero_derivative;
+		Function_size_type derivative_order=independent_variables.size(),
+			number_of_columns,number_of_components_local,number_of_rows;
+		Function_variable_matrix_nodal_values_handle nodal_values_variable(0);
+		ublas::vector<Function_variable_element_xi_finite_element_handle>
+			element_xi_variables(derivative_order);
+
+		result=true;
+		// matrix is zero'd on entry
+		// check independent variables for a zero matrix
+		number_of_components_local=number_of_components();
+		if (0==component_number)
+		{
+			number_of_rows=number_of_components_local;
+		}
+		else
+		{
+			number_of_rows=1;
+		}
+		zero_derivative=false;
+		number_of_columns=0;
+		std::for_each(independent_variables.begin(),independent_variables.end(),
+			Function_variable_matrix_components_check_derivative_functor(
+			Function_finite_element_handle(this),zero_derivative,
+			nodal_values_variable,element_xi_variables.begin(),number_of_columns));
+		Assert((number_of_rows==matrix.size1())&&
+			(number_of_columns==matrix.size2()),
+			std::logic_error("Function_finite_element::evaluate_derivative_matrix.  "
+			"Incorrect matrix size"));
+		if (!zero_derivative)
+		{
+			FE_value **component_values=(FE_value **)NULL,
+				*monomial_derivative_values=(FE_value *)NULL,
+				***nodal_value_component_values=(FE_value ***)NULL;
+			int **component_monomial_info=(int **)NULL,
+				*numbers_of_component_values=(int *)NULL,
+				number_of_element_field_nodes=0,number_of_nodal_values=0,return_code=0;
+			struct FE_element_field_values *element_field_values;
+			struct FE_node **element_field_nodes=(struct FE_node **)NULL;
+			Function_size_type number_of_xi_local=number_of_xi();
+
+			// set up temporary storage
+			element_field_values=CREATE(FE_element_field_values)();
+			if (element_field_values)
+			{
+				if (nodal_values_variable)
+				{
+					if (nodal_value_calculate_component_values(
+						Function_finite_element_handle(this),field_private,component_number,
+						(FE_value)time_private,element_private,
+						nodal_values_variable->component_number,nodal_values_variable->node,
+						nodal_values_variable->value_type,nodal_values_variable->version,
+						&number_of_element_field_nodes,&element_field_nodes,
+						element_field_values,&number_of_nodal_values,
+						&numbers_of_component_values,&nodal_value_component_values)&&
+						extract_component_monomial_info(element_field_values,
+						number_of_components_local,component_number,number_of_xi_local,
+						&numbers_of_component_values,&component_monomial_info,
+						&monomial_derivative_values))
+					{
+						return_code=1;
+					}
+				}
+				else
+				{
+					if (clear_FE_element_field_values(element_field_values)&&
+						calculate_FE_element_field_values(element_private,field_private,
+						(FE_value)time_private,(char)0,element_field_values,
+						(struct FE_element *)NULL)&&extract_component_values(
+						element_field_values,number_of_components_local,component_number,
+						&numbers_of_component_values,&component_values)&&
+						extract_component_monomial_info(element_field_values,
+						number_of_components_local,component_number,number_of_xi_local,
+						&numbers_of_component_values,&component_monomial_info,
+						&monomial_derivative_values))
+					{
+						return_code=1;
+					}
+				}
+				if (return_code)
+				{
+					FE_value *xi_array;
+					int *xi_derivative_orders;
+
+					xi_array=new FE_value[number_of_xi_local];
+					xi_derivative_orders=new int[number_of_xi_local];
+					if (xi_array&&xi_derivative_orders)
+					{
+						bool carry;
+						FE_value **derivative_component_values=(FE_value **)NULL,
+							*value_address_1,*value_address_2;
+						Function_size_type column_number,i;
+						ublas::vector<Function_size_type>
+							derivative_independent_values(derivative_order+1);
+						int j;
+						Scalar component_value;
+
+						for (i=0;i<=derivative_order;i++)
+						{
+							derivative_independent_values[i]=0;
+						}
+						for (i=0;i<number_of_xi_local;i++)
+						{
+							xi_array[i]=(FE_value)(xi_private[i]);
+						}
+						/* chose the component values to use for calculating the
+							values */
+						if (nodal_values_variable)
+						{
+							derivative_component_values=nodal_value_component_values[0];
+						}
+						else
+						{
+							derivative_component_values=component_values;
+						}
+						/* loop over the values within the derivative block */
+						column_number=0;
+						while (return_code&&
+							(0==derivative_independent_values[derivative_order]))
+						{
+							if (derivative_component_values)
+							{
+								for (i=0;i<number_of_xi_local;i++)
+								{
+									xi_derivative_orders[i]=0;
+								}
+								for (i=0;i<derivative_order;i++)
+								{
+									if (element_xi_variables[i])
+									{
+										// element/xi derivative
+										if (0<element_xi_variables[i]->indices.size())
+										{
+											xi_derivative_orders[(element_xi_variables[i]->indices)[
+												derivative_independent_values[i]]-1]++;
+										}
+										else
+										{
+											xi_derivative_orders[
+												derivative_independent_values[i]]++;
+										}
+									}
+								}
+								/* loop over rows */
+								i=0;
+								while (return_code&&(i<number_of_rows))
+								{
+									if (return_code=calculate_monomial_derivative_values(
+										number_of_xi_local,component_monomial_info[i]+1,
+										xi_derivative_orders,xi_array,monomial_derivative_values))
+									{
+										/* calculate the derivative */
+										component_value=(Scalar)0;
+										value_address_1=monomial_derivative_values;
+										value_address_2=derivative_component_values[i];
+										for (j=numbers_of_component_values[i];j>0;j--)
+										{
+											component_value +=
+												(double)(*value_address_1)*
+												(double)(*value_address_2);
+											value_address_1++;
+											value_address_2++;
+										}
+										matrix(i,column_number)=component_value;
+									}
+									i++;
+								}
+							}
+							/* step to next value within derivative block */
+							column_number++;
+							i=0;
+							carry=true;
+							do
+							{
+								derivative_independent_values[i]++;
+								if (element_xi_variables[i])
+								{
+									Function_size_type
+										number_of_values=(element_xi_variables[i]->indices).size();
+
+									if (0<number_of_values)
+									{
+										if (derivative_independent_values[i]>=number_of_values)
+										{
+											derivative_independent_values[i]=0;
+										}
+										else
+										{
+											carry=false;
+										}
+									}
+									else
+									{
+										if (derivative_independent_values[i]>=number_of_xi_local)
+										{
+											derivative_independent_values[i]=0;
+										}
+										else
+										{
+											carry=false;
+										}
+									}
+								}
+								else
+								{
+									if (derivative_independent_values[i]>=
+										(Function_size_type)number_of_nodal_values)
+									{
+										derivative_independent_values[i]=0;
+									}
+									else
+									{
+										carry=false;
+									}
+									// update the component values to use for calculating the
+									//   values
+									derivative_component_values=
+										nodal_value_component_values[
+										derivative_independent_values[i]];
+								}
+								i++;
+							} while ((i<derivative_order)&&carry);
+							if (carry)
+							{
+								derivative_independent_values[derivative_order]++;
+							}
+						}
+					}
+					delete [] xi_array;
+					delete [] xi_derivative_orders;
+				}
+			}
+			// remove temporary storage
+			if (element_field_values)
+			{
+				DESTROY(FE_element_field_values)(&element_field_values);
+			}
+		}
+	}
+
+	return (result);
+}
+#endif // defined (USE_Function_derivatnew_finite_element)
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
 bool Function_finite_element::set_value(
 	Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 1 December 2004
+// LAST MODIFIED : 28 February 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -6133,92 +6352,107 @@ bool Function_finite_element::set_value(
 	Function_variable_matrix_nodal_values_handle atomic_variable_nodal_values;
 
 	result=false;
-	if ((atomic_variable_element_xi=boost::dynamic_pointer_cast<
-		Function_variable_element_xi_finite_element,Function_variable>(
-		atomic_variable))&&
-		equivalent(Function_handle(this),atomic_variable_element_xi->function()))
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+	if (atomic_value)
 	{
-		Function_variable_value_element_handle value_element;
-		Function_variable_value_scalar_handle value_scalar;
-
-		if ((atomic_variable_element_xi->element_private)&&(atomic_value->value())&&
-			(std::string("Element")==(atomic_value->value())->type())&&
-			(value_element=boost::dynamic_pointer_cast<
-			Function_variable_value_element,Function_variable_value>(atomic_value->
-			value())))
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+		if ((atomic_variable_element_xi=boost::dynamic_pointer_cast<
+			Function_variable_element_xi_finite_element,Function_variable>(
+			atomic_variable))&&
+			equivalent(Function_handle(this),atomic_variable_element_xi->function()))
 		{
-			result=value_element->set(element_private,atomic_value);
-			if (element_private)
+			Function_variable_value_element_handle value_element;
+			Function_variable_value_scalar_handle value_scalar;
+
+			if ((atomic_variable_element_xi->element_private)&&
+				(atomic_value->value())&&
+				(std::string("Element")==(atomic_value->value())->type())&&
+				(value_element=boost::dynamic_pointer_cast<
+				Function_variable_value_element,Function_variable_value>(atomic_value->
+				value())))
 			{
-				ACCESS(FE_element)(element_private);
-				xi_private.resize(get_FE_element_dimension(element_private));
+				result=value_element->set(element_private,atomic_value);
+				if (element_private)
+				{
+					ACCESS(FE_element)(element_private);
+					xi_private.resize(get_FE_element_dimension(element_private));
+				}
+				else
+				{
+					xi_private.resize(0);
+				}
 			}
-			else
+			else if ((atomic_variable_element_xi->xi_private)&&
+				(std::string("Scalar")==(atomic_value->value())->type())&&
+				(value_scalar=boost::dynamic_pointer_cast<
+				Function_variable_value_scalar,Function_variable_value>(
+				atomic_value->value())))
 			{
-				xi_private.resize(0);
-			}
-		}
-		else if ((atomic_variable_element_xi->xi_private)&&
-			(std::string("Scalar")==(atomic_value->value())->type())&&
-			(value_scalar=boost::dynamic_pointer_cast<Function_variable_value_scalar,
-			Function_variable_value>(atomic_value->value())))
-		{
-			result=value_scalar->set(
-				xi_private[(atomic_variable_element_xi->indices)[0]-1],atomic_value);
-		}
-	}
-	else if ((atomic_variable_finite_element=boost::dynamic_pointer_cast<
-		Function_variable_matrix_components,Function_variable>(atomic_variable))&&
-		equivalent(Function_handle(this),
-			atomic_variable_finite_element->function()))
-	{
-		Function_variable_value_scalar_handle value_scalar;
-
-		if ((std::string("Scalar")==(atomic_value->value())->type())&&
-			(value_scalar=boost::dynamic_pointer_cast<Function_variable_value_scalar,
-			Function_variable_value>(atomic_value->value())))
-		{
-			result=value_scalar->set(components_private[
-				(atomic_variable_finite_element->row_private)-1],atomic_value);
-		}
-	}
-	else if ((atomic_variable_nodal_values=boost::dynamic_pointer_cast<
-		Function_variable_matrix_nodal_values,Function_variable>(atomic_variable))&&
-		equivalent(Function_handle(this),atomic_variable_nodal_values->function()))
-	{
-		Function_variable_value_scalar_handle value_scalar;
-		FE_value fe_time;
-		Scalar time=0.0;
-
-		if (atomic_variable_nodal_values->time_sequence&&
-			(1==FE_time_sequence_get_number_of_times(
-			atomic_variable_nodal_values->time_sequence)))
-		{
-			if (FE_time_sequence_get_time_for_index(
-				atomic_variable_nodal_values->time_sequence,/*time_index*/0,&fe_time))
-			{
-				time=fe_time;
+				result=value_scalar->set(
+					xi_private[(atomic_variable_element_xi->indices)[0]-1],atomic_value);
 			}
 		}
-		if ((std::string("Scalar")==(atomic_value->value())->type())&&
-			(value_scalar=boost::dynamic_pointer_cast<Function_variable_value_scalar,
-			Function_variable_value>(atomic_value->value())))
+		else if ((atomic_variable_finite_element=boost::dynamic_pointer_cast<
+			Function_variable_matrix_components,Function_variable>(atomic_variable))&&
+			equivalent(Function_handle(this),
+				atomic_variable_finite_element->function()))
 		{
-			Scalar temp_scalar;
+			Function_variable_value_scalar_handle value_scalar;
 
-			if (value_scalar->set(temp_scalar,atomic_value))
+			if ((std::string("Scalar")==(atomic_value->value())->type())&&
+				(value_scalar=boost::dynamic_pointer_cast<Function_variable_value_scalar,
+				Function_variable_value>(atomic_value->value())))
 			{
-				result=set_nodal_value(atomic_variable_nodal_values->component_number,
-					atomic_variable_nodal_values->node,
-					atomic_variable_nodal_values->value_type,
-					atomic_variable_nodal_values->version,time,temp_scalar);
+				result=value_scalar->set(components_private[
+					(atomic_variable_finite_element->row_private)-1],atomic_value);
 			}
 		}
+		else if ((atomic_variable_nodal_values=boost::dynamic_pointer_cast<
+			Function_variable_matrix_nodal_values,Function_variable>(
+			atomic_variable))&&equivalent(Function_handle(this),
+			atomic_variable_nodal_values->function()))
+		{
+			Function_variable_value_scalar_handle value_scalar;
+			FE_value fe_time;
+			Scalar time=0.0;
+
+			if (atomic_variable_nodal_values->time_sequence&&
+				(1==FE_time_sequence_get_number_of_times(
+				atomic_variable_nodal_values->time_sequence)))
+			{
+				if (FE_time_sequence_get_time_for_index(
+					atomic_variable_nodal_values->time_sequence,/*time_index*/0,&fe_time))
+				{
+					time=fe_time;
+				}
+			}
+			if ((std::string("Scalar")==(atomic_value->value())->type())&&
+				(value_scalar=boost::dynamic_pointer_cast<
+				Function_variable_value_scalar,Function_variable_value>(atomic_value->
+				value())))
+			{
+				Scalar temp_scalar;
+
+				if (value_scalar->set(temp_scalar,atomic_value))
+				{
+					result=set_nodal_value(atomic_variable_nodal_values->component_number,
+						atomic_variable_nodal_values->node,
+						atomic_variable_nodal_values->value_type,
+						atomic_variable_nodal_values->version,time,temp_scalar);
+				}
+			}
+		}
+		if (result)
+		{
+			set_not_evaluated();
+		}
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
 	}
-	if (result)
+	else
 	{
-		set_not_evaluated();
+		result=true;
 	}
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
 
 	return (result);
 }
