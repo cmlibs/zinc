@@ -1253,3 +1253,4 @@ rig->current_region->type are compatible.
 ==============================================================================*/
 
 #endif /* !defined (MAPPING_H) */
+
