@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.h
 
-LAST MODIFIED : 4 December 2000
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 The function prototypes for creating graphical objects from finite elements.
@@ -11,6 +11,7 @@ The function prototypes for creating graphical objects from finite elements.
 
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
+#include "general/enumerator.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_object.h"
 #include "graphics/volume_texture.h"
@@ -22,7 +23,7 @@ Global types
 
 enum Use_element_type
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 For glyph sets - determines whether they are generated from:
@@ -31,7 +32,6 @@ USE_FACES    = CM_FACE or dimension 2
 USE_LINES    = CM_LINE or dimension 1
 ==============================================================================*/
 {
-  USE_ELEMENT_TYPE_INVALID,
   USE_ELEMENTS,
   USE_FACES,
   USE_LINES
@@ -278,33 +278,7 @@ zero vectors are either read or calculated from the <orientation_scale_values>,
 these are simply returned, since no valid direction can be produced.
 ==============================================================================*/
 
-char *Use_element_type_string(enum Use_element_type use_element_type);
-/*******************************************************************************
-LAST MODIFIED : 30 December 1999
-
-DESCRIPTION :
-Returns a pointer to a static string describing the use_element_type.
-The returned string must not be DEALLOCATEd!
-==============================================================================*/
-
-char **Use_element_type_get_valid_strings(int *number_of_valid_strings);
-/*******************************************************************************
-LAST MODIFIED : 20 December 1999
-
-DESCRIPTION :
-Returns and allocated array of pointers to all static strings for valid
-Use_element_types - obtained from function Use_element_type_string.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-
-enum Use_element_type Use_element_type_from_string(
-	char *use_element_type_string);
-/*******************************************************************************
-LAST MODIFIED : 20 December 1999
-
-DESCRIPTION :
-Returns the <Use_element_type> described by <use_element_type_string>.
-==============================================================================*/
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Use_element_type);
 
 enum CM_element_type Use_element_type_CM_element_type(
 	enum Use_element_type use_element_type);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -11,6 +11,7 @@ appearance of graphical finite element groups.
 #include <stdio.h>
 #include <math.h>
 #include "general/debug.h"
+#include "general/enumerator_private.h"
 #include "general/indexed_list_private.h"
 #include "general/compare.h"
 #include "general/multi_range.h"
@@ -395,183 +396,69 @@ Global functions
 ----------------
 */
 
-char *GT_element_settings_type_string(
-	enum GT_element_settings_type gt_element_settings_type)
-/*******************************************************************************
-LAST MODIFIED : 22 March 1999
-
-DESCRIPTION :
-Returns a pointer to a static string describing the settings_type, eg.
-GT_ELEMENT_SETTINGS_LINES == "lines". This string should match the command used
-to create that type of settings. The returned string must not be DEALLOCATEd!
-==============================================================================*/
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(GT_element_settings_type)
 {
-	char *return_string;
+	char *enumerator_string;
 
-	ENTER(GT_element_settings_type_string);
-	switch (gt_element_settings_type)
+	ENTER(ENUMERATOR_STRING(GT_element_settings_type));
+	switch (enumerator_value)
 	{
 		case GT_ELEMENT_SETTINGS_NODE_POINTS:
 		{
-			return_string="node_points";
+			enumerator_string = "node_points";
 		} break;
 		case GT_ELEMENT_SETTINGS_DATA_POINTS:
 		{
-			return_string="data_points";
+			enumerator_string = "data_points";
 		} break;
 		case GT_ELEMENT_SETTINGS_LINES:
 		{
-			return_string="lines";
+			enumerator_string = "lines";
 		} break;
 		case GT_ELEMENT_SETTINGS_CYLINDERS:
 		{
-			return_string="cylinders";
+			enumerator_string = "cylinders";
 		} break;
 		case GT_ELEMENT_SETTINGS_SURFACES:
 		{
-			return_string="surfaces";
+			enumerator_string = "surfaces";
 		} break;
 		case GT_ELEMENT_SETTINGS_ISO_SURFACES:
 		{
-			return_string="iso_surfaces";
+			enumerator_string = "iso_surfaces";
 		} break;
 		case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
 		{
-			return_string="element_points";
+			enumerator_string = "element_points";
 		} break;
 		case GT_ELEMENT_SETTINGS_VOLUMES:
 		{
-			return_string="volumes";
+			enumerator_string = "volumes";
 		} break;
 		case GT_ELEMENT_SETTINGS_STREAMLINES:
 		{
-			return_string="streamlines";
+			enumerator_string = "streamlines";
 		} break;
 		default:
 		{
-			display_message(ERROR_MESSAGE,
-				"GT_element_settings_type_string.  Unknown element settings type");
-			return_string=(char *)NULL;
+			enumerator_string = (char *)NULL;
 		} break;
 	}
 	LEAVE;
 
-	return (return_string);
-} /* GT_element_settings_type_string */
+	return (enumerator_string);
+} /* ENUMERATOR_STRING(GT_element_settings_type) */
 
-char **GT_element_settings_type_get_valid_strings(int *number_of_valid_strings,
-	int dimension)
-/*******************************************************************************
-LAST MODIFIED : 23 March 1999
-
-DESCRIPTION :
-Returns and allocated array of pointers to all static strings for valid
-GT_element_settings_types - obtained from function
-GT_element_settings_type_string. Includes only those settings_types that use
-nodes/elements of the given <dimension>, with -1 denoting all dimensions.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-{
-	char **valid_strings;
-	enum GT_element_settings_type gt_element_settings_type;
-	int i;
-
-	ENTER(GT_element_settings_type_get_valid_strings);
-	if (number_of_valid_strings&&(-1<=dimension)&&(3>=dimension))
-	{
-		*number_of_valid_strings=0;
-		gt_element_settings_type=GT_ELEMENT_SETTINGS_TYPE_BEFORE_FIRST;
-		gt_element_settings_type++;
-		while (gt_element_settings_type<GT_ELEMENT_SETTINGS_TYPE_AFTER_LAST)
-		{
-			if ((-1==dimension)||GT_element_settings_type_uses_dimension(
-				gt_element_settings_type,dimension))
-			{
-				(*number_of_valid_strings)++;
-			}
-			gt_element_settings_type++;
-		}
-		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
-		{
-			gt_element_settings_type=GT_ELEMENT_SETTINGS_TYPE_BEFORE_FIRST;
-			gt_element_settings_type++;
-			i=0;
-			while (gt_element_settings_type<GT_ELEMENT_SETTINGS_TYPE_AFTER_LAST)
-			{
-				if ((-1==dimension)||GT_element_settings_type_uses_dimension(
-					gt_element_settings_type,dimension))
-				{
-					valid_strings[i]=
-						GT_element_settings_type_string(gt_element_settings_type);
-					i++;
-				}
-				gt_element_settings_type++;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"GT_element_settings_type_get_valid_strings.  Not enough memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_element_settings_type_get_valid_strings.  Invalid argument(s)");
-		valid_strings=(char **)NULL;
-	}
-	LEAVE;
-
-	return (valid_strings);
-} /* GT_element_settings_type_get_valid_strings */
-
-enum GT_element_settings_type GT_element_settings_type_from_string(
-	char *gt_element_settings_type_string)
-/*******************************************************************************
-LAST MODIFIED : 22 March 1999
-
-DESCRIPTION :
-Returns the <GT_element_settings_type> described by
-<gt_element_settings_type_string>.
-==============================================================================*/
-{
-	enum GT_element_settings_type gt_element_settings_type;
-
-	ENTER(GT_element_settings_type_from_string);
-	if (gt_element_settings_type_string)
-	{
-		gt_element_settings_type=GT_ELEMENT_SETTINGS_TYPE_BEFORE_FIRST;
-		gt_element_settings_type++;
-		while ((gt_element_settings_type<GT_ELEMENT_SETTINGS_TYPE_AFTER_LAST)&&
-			(!fuzzy_string_compare_same_length(gt_element_settings_type_string,
-				GT_element_settings_type_string(gt_element_settings_type))))
-		{
-			gt_element_settings_type++;
-		}
-		if (GT_ELEMENT_SETTINGS_TYPE_AFTER_LAST==gt_element_settings_type)
-		{
-			gt_element_settings_type=GT_ELEMENT_SETTINGS_TYPE_INVALID;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_element_settings_type_from_string.  Invalid argument");
-		gt_element_settings_type=GT_ELEMENT_SETTINGS_TYPE_INVALID;
-	}
-	LEAVE;
-
-	return (gt_element_settings_type);
-} /* GT_element_settings_type_from_string */
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(GT_element_settings_type)
 
 int GT_element_settings_type_uses_dimension(
-	enum GT_element_settings_type settings_type,int dimension)
+	enum GT_element_settings_type settings_type, int dimension)
 /*******************************************************************************
-LAST MODIFIED : 28 January 2000
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 Returns true if the particular <settings_type> can deal with nodes/elements of
-the given <dimension>.
+the given <dimension>. Note a <dimension> of -1 is taken to mean any dimension.
 ==============================================================================*/
 {
 	int return_code;
@@ -582,32 +469,33 @@ the given <dimension>.
 		case GT_ELEMENT_SETTINGS_NODE_POINTS:
 		case GT_ELEMENT_SETTINGS_DATA_POINTS:
 		{
-			return_code=(0==dimension);
+			return_code = ((-1 == dimension) || (0 == dimension));
 		} break;
 		case GT_ELEMENT_SETTINGS_LINES:
 		case GT_ELEMENT_SETTINGS_CYLINDERS:
 		{
-			return_code=(1==dimension);
+			return_code = ((-1 == dimension) || (1 == dimension));
 		} break;
 		case GT_ELEMENT_SETTINGS_SURFACES:
 		{
-			return_code=(2==dimension);
+			return_code = ((-1 == dimension) || (2 == dimension));
 		} break;
 		case GT_ELEMENT_SETTINGS_VOLUMES:
 		case GT_ELEMENT_SETTINGS_STREAMLINES:
 		{
-			return_code=(3==dimension);
+			return_code = ((-1 == dimension) || (3 == dimension));
 		} break;
 		case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
 		case GT_ELEMENT_SETTINGS_ISO_SURFACES:
 		{
-			return_code=((1==dimension)||(2==dimension)||(3==dimension));
+			return_code = ((-1 == dimension) ||
+				(1 == dimension) || (2 == dimension) || (3 == dimension));
 		} break;
 		default:
 		{
 			display_message(ERROR_MESSAGE,
 				"GT_element_settings_type_uses_dimension.  Unknown settings type");
-			return_code=0;
+			return_code = 0;
 		} break;
 	}
 	LEAVE;
@@ -615,144 +503,74 @@ the given <dimension>.
 	return (return_code);
 } /* GT_element_settings_type_uses_dimension */
 
-char *Glyph_scaling_mode_string(enum Glyph_scaling_mode glyph_scaling_mode)
+int GT_element_settings_type_uses_dimension_conditional(
+	enum GT_element_settings_type settings_type, void *dimension_address_void)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2000
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
-Returns a pointer to a static string describing the glyph_scaling_mode, eg.
-GLYPH_SCALING_CONSTANT == "constant". This string should match the command used
-to create that type of settings. The returned string must not be DEALLOCATEd!
+Calls GT_element_settings_type_uses_dimension for the <settings_type> and
+integer dimension pointed to by <dimension_address_void>.
 ==============================================================================*/
 {
-	char *return_string;
+	int *dimension_address, return_code;
 
-	ENTER(Glyph_scaling_mode_string);
-	switch (glyph_scaling_mode)
+	ENTER(GT_element_settings_type_uses_dimension_conditional);
+	if (dimension_address = (int *)dimension_address_void)
+	{
+		return_code = GT_element_settings_type_uses_dimension(settings_type,
+			*dimension_address);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_type_uses_dimension_conditional.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_type_uses_dimension_conditional */
+
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Glyph_scaling_mode)
+{
+	char *enumerator_string;
+
+	ENTER(ENUMERATOR_STRING(Glyph_scaling_mode));
+	switch (enumerator_value)
 	{
 		case GLYPH_SCALING_CONSTANT:
 		{
-			return_string="constant";
+			enumerator_string = "constant";
 		} break;
 		case GLYPH_SCALING_SCALAR:
 		{
-			return_string="scalar";
+			enumerator_string = "scalar";
 		} break;
 		case GLYPH_SCALING_VECTOR:
 		{
-			return_string="vector";
+			enumerator_string = "vector";
 		} break;
 		case GLYPH_SCALING_AXES:
 		{
-			return_string="axes";
+			enumerator_string = "axes";
 		} break;
 		case GLYPH_SCALING_GENERAL:
 		{
-			return_string="general";
+			enumerator_string = "general";
 		} break;
 		default:
 		{
-			display_message(ERROR_MESSAGE,
-				"Glyph_scaling_mode_string.  Unknown glyph_scaling_mode");
-			return_string=(char *)NULL;
+			enumerator_string = (char *)NULL;
 		} break;
 	}
 	LEAVE;
 
-	return (return_string);
-} /* Glyph_scaling_mode_string */
+	return (enumerator_string);
+} /* ENUMERATOR_STRING(Glyph_scaling_mode) */
 
-char **Glyph_scaling_mode_get_valid_strings(int *number_of_valid_strings)
-/*******************************************************************************
-LAST MODIFIED : 8 November 2000
-
-DESCRIPTION :
-Returns and allocated array of pointers to all static strings for valid
-Glyph_scaling_modes - obtained from function Glyph_scaling_mode_string.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-{
-	char **valid_strings;
-	enum Glyph_scaling_mode glyph_scaling_mode;
-	int i;
-
-	ENTER(Glyph_scaling_mode_get_valid_strings);
-	if (number_of_valid_strings)
-	{
-		*number_of_valid_strings=0;
-		glyph_scaling_mode=GLYPH_SCALING_MODE_BEFORE_FIRST;
-		glyph_scaling_mode++;
-		while (glyph_scaling_mode<GLYPH_SCALING_MODE_AFTER_LAST)
-		{
-			(*number_of_valid_strings)++;
-			glyph_scaling_mode++;
-		}
-		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
-		{
-			glyph_scaling_mode=GLYPH_SCALING_MODE_BEFORE_FIRST;
-			glyph_scaling_mode++;
-			i=0;
-			while (glyph_scaling_mode<GLYPH_SCALING_MODE_AFTER_LAST)
-			{
-				valid_strings[i]=Glyph_scaling_mode_string(glyph_scaling_mode);
-				i++;
-				glyph_scaling_mode++;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Glyph_scaling_mode_get_valid_strings.  Not enough memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Glyph_scaling_mode_get_valid_strings.  Invalid argument");
-		valid_strings=(char **)NULL;
-	}
-	LEAVE;
-
-	return (valid_strings);
-} /* Glyph_scaling_mode_get_valid_strings */
-
-enum Glyph_scaling_mode Glyph_scaling_mode_from_string(
-	char *glyph_scaling_mode_string)
-/*******************************************************************************
-LAST MODIFIED : 8 November 2000
-
-DESCRIPTION :
-Returns the <Glyph_scaling_mode> described by <glyph_scaling_mode_string>.
-==============================================================================*/
-{
-	enum Glyph_scaling_mode glyph_scaling_mode;
-
-	ENTER(Glyph_scaling_mode_from_string);
-	if (glyph_scaling_mode_string)
-	{
-		glyph_scaling_mode=GLYPH_SCALING_MODE_BEFORE_FIRST;
-		glyph_scaling_mode++;
-		while ((glyph_scaling_mode<GLYPH_SCALING_MODE_AFTER_LAST)&&
-			(!fuzzy_string_compare_same_length(glyph_scaling_mode_string,
-				Glyph_scaling_mode_string(glyph_scaling_mode))))
-		{
-			glyph_scaling_mode++;
-		}
-		if (GLYPH_SCALING_MODE_AFTER_LAST==glyph_scaling_mode)
-		{
-			glyph_scaling_mode=GLYPH_SCALING_MODE_INVALID;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Glyph_scaling_mode_from_string.  Invalid argument");
-		glyph_scaling_mode=GLYPH_SCALING_MODE_INVALID;
-	}
-	LEAVE;
-
-	return (glyph_scaling_mode);
-} /* Glyph_scaling_mode_from_string */
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Glyph_scaling_mode)
 
 DECLARE_OBJECT_FUNCTIONS(GT_element_settings)
 DECLARE_INDEXED_LIST_FUNCTIONS(GT_element_settings)
@@ -2601,7 +2419,7 @@ For settings_type GT_ELEMENT_SETTINGS_STREAMLINES only.
 enum Use_element_type GT_element_settings_get_use_element_type(
 	struct GT_element_settings *settings)
 /*******************************************************************************
-LAST MODIFIED : 28 January 2000
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 Returns the type of elements used by the settings.
@@ -2621,7 +2439,7 @@ GT_ELEMENT_SETTINGS_ISO_SURFACES only.
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_element_settings_get_use_element_type.  Invalid argument(s)");
-		use_element_type=USE_ELEMENT_TYPE_INVALID;
+		use_element_type = USE_ELEMENTS;
 	}
 	LEAVE;
 
@@ -3329,7 +3147,7 @@ Notifies the <settings> that the glyph used has changed.
 int GT_element_settings_uses_dimension(struct GT_element_settings *settings,
 	void *dimension_void)
 /*******************************************************************************
-LAST MODIFIED : 14 September 1998
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 Iterator function returning true if the settings uses nodes/elements of the
@@ -3337,13 +3155,13 @@ given <dimension>. The special value of -1 denotes all dimensions and always
 returns true.
 ==============================================================================*/
 {
-	int *dimension,return_code;
+	int *dimension, return_code;
 
 	ENTER(GT_element_settings_uses_dimension);
 	if (settings&&(dimension=(int *)dimension_void))
 	{
-		return_code=((-1 == *dimension)||GT_element_settings_type_uses_dimension(
-			settings->settings_type,*dimension));
+		return_code = GT_element_settings_type_uses_dimension(
+			settings->settings_type, *dimension);
 	}
 	else
 	{
@@ -3392,7 +3210,7 @@ the elements they are calculated from.
 enum GT_element_settings_type GT_element_settings_get_settings_type(
 	struct GT_element_settings *settings)
 /*******************************************************************************
-LAST MODIFIED : 5 June 1998
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 Returns the settings type of the <settings>, eg. GT_ELEMENT_SETTINGS_LINES.
@@ -3409,7 +3227,7 @@ Returns the settings type of the <settings>, eg. GT_ELEMENT_SETTINGS_LINES.
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_element_settings_get_settings_type.  Invalid argument(s)");
-		settings_type=GT_ELEMENT_SETTINGS_TYPE_INVALID;
+		settings_type = GT_ELEMENT_SETTINGS_LINES;
 	}
 	LEAVE;
 
@@ -3880,7 +3698,7 @@ spectrum which can be changed in the graphics object to match the new settings .
 int GT_element_settings_extract_graphics_object_from_list(
 	struct GT_element_settings *settings,void *list_of_settings_void)
 /*******************************************************************************
-LAST MODIFIED : 22 February 2000
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 If <settings> does not already have a graphics object, this function attempts
@@ -3929,6 +3747,9 @@ any trivial differences are fixed up in the graphics_obejct.
 								(void *)settings->spectrum);
 						}
 					}
+					/* make sure selected_graphics_changed is brought across */
+					settings->selected_graphics_changed =
+						matching_settings->selected_graphics_changed;
 				}
 			}
 		}
@@ -3948,7 +3769,7 @@ any trivial differences are fixed up in the graphics_obejct.
 char *GT_element_settings_string(struct GT_element_settings *settings,
 	enum GT_element_settings_string_details settings_detail)
 /*******************************************************************************
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 Returns a string describing the settings, suitable for entry into the command
@@ -3992,7 +3813,8 @@ if no coordinate field. Currently only write if we have a field.
 		/* for all graphic types */
 		/* write settings type = "points", "lines" etc. */
 		append_string(&settings_string,
-			GT_element_settings_type_string(settings->settings_type),&error);
+			ENUMERATOR_STRING(GT_element_settings_type)(settings->settings_type),
+			&error);
 		if (settings->name)
 		{
 			sprintf(temp_string," as %s", settings->name);
@@ -4122,7 +3944,8 @@ if no coordinate field. Currently only write if we have a field.
 				append_string(&settings_string,settings->glyph->name,&error);
 				append_string(&settings_string," ",&error);
 				append_string(&settings_string,
-					Glyph_scaling_mode_string(settings->glyph_scaling_mode),&error);
+					ENUMERATOR_STRING(Glyph_scaling_mode)(settings->glyph_scaling_mode),
+					&error);
 				sprintf(temp_string," size \"%g*%g*%g\"",settings->glyph_size[0],
 					settings->glyph_size[1],settings->glyph_size[2]);
 				append_string(&settings_string,temp_string,&error);
@@ -4193,8 +4016,8 @@ if no coordinate field. Currently only write if we have a field.
 		if ((GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)||
 			(GT_ELEMENT_SETTINGS_ISO_SURFACES==settings->settings_type))
 		{
-			sprintf(temp_string," %s",
-				Use_element_type_string(settings->use_element_type));
+			sprintf(temp_string, " %s",
+				ENUMERATOR_STRING(Use_element_type)(settings->use_element_type));
 			append_string(&settings_string,temp_string,&error);
 		}
 		/* for element_points only */
@@ -6191,7 +6014,7 @@ If there is a visible graphics_object in <settings>, expands the
 int gfx_modify_g_element_node_points(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT NODE_POINTS command.
@@ -6299,9 +6122,11 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						set_Graphical_material);
 					/* glyph scaling mode */
 					glyph_scaling_mode_string =
-						Glyph_scaling_mode_string(glyph_scaling_mode);
-					valid_strings =
-						Glyph_scaling_mode_get_valid_strings(&number_of_valid_strings);
+						ENUMERATOR_STRING(Glyph_scaling_mode)(glyph_scaling_mode);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Glyph_scaling_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Glyph_scaling_mode) *)NULL,
+						(void *)NULL);
 					Option_table_add_enumerator(option_table, number_of_valid_strings,
 						valid_strings, &glyph_scaling_mode_string);
 					DEALLOCATE(valid_strings);
@@ -6371,8 +6196,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						}
 						if (glyph)
 						{
-							glyph_scaling_mode =
-								Glyph_scaling_mode_from_string(glyph_scaling_mode_string);
+							STRING_TO_ENUMERATOR(Glyph_scaling_mode)(
+								glyph_scaling_mode_string, &glyph_scaling_mode);
 							GT_element_settings_set_glyph_parameters(settings,
 								glyph, glyph_scaling_mode, glyph_centre, glyph_size,
 								orientation_scale_field,glyph_scale_factors,
@@ -6552,9 +6377,11 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						set_Graphical_material);
 					/* glyph scaling mode */
 					glyph_scaling_mode_string =
-						Glyph_scaling_mode_string(glyph_scaling_mode);
-					valid_strings =
-						Glyph_scaling_mode_get_valid_strings(&number_of_valid_strings);
+						ENUMERATOR_STRING(Glyph_scaling_mode)(glyph_scaling_mode);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Glyph_scaling_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Glyph_scaling_mode) *)NULL,
+						(void *)NULL);
 					Option_table_add_enumerator(option_table, number_of_valid_strings,
 						valid_strings, &glyph_scaling_mode_string);
 					DEALLOCATE(valid_strings);
@@ -6624,8 +6451,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						}
 						if (glyph)
 						{
-							glyph_scaling_mode =
-								Glyph_scaling_mode_from_string(glyph_scaling_mode_string);
+							STRING_TO_ENUMERATOR(Glyph_scaling_mode)(
+								glyph_scaling_mode_string, &glyph_scaling_mode);
 							GT_element_settings_set_glyph_parameters(settings,
 								glyph, glyph_scaling_mode, glyph_centre, glyph_size,
 								orientation_scale_field,glyph_scale_factors,
@@ -7244,7 +7071,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_iso_surfaces(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT ISO_SURFACES command.
@@ -7256,6 +7083,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 		*use_element_type_string, **valid_strings;
 	enum Graphics_select_mode select_mode;
 	enum Render_type render_type;
+	enum Use_element_type use_element_type;
 	int number_of_valid_strings,return_code;
 	struct Computed_field *scalar_field;
 	struct Modify_g_element_data *modify_g_element_data;
@@ -7383,10 +7211,13 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
 						set_Spectrum);
 					/* use_elements/use_faces/use_lines */
-					use_element_type_string=
-						Use_element_type_string(settings->use_element_type);
-					valid_strings=
-						Use_element_type_get_valid_strings(&number_of_valid_strings);
+					use_element_type = settings->use_element_type;
+					use_element_type_string =
+						ENUMERATOR_STRING(Use_element_type)(use_element_type);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Use_element_type)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Use_element_type) *)NULL,
+						(void *)NULL);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&use_element_type_string);
 					DEALLOCATE(valid_strings);
@@ -7398,8 +7229,10 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 								"gfx_modify_g_element_iso_surfaces.  Missing iso_scalar field");
 							return_code=0;
 						}
+						STRING_TO_ENUMERATOR(Use_element_type)(use_element_type_string,
+							&use_element_type);
 						GT_element_settings_set_use_element_type(settings,
-							Use_element_type_from_string(use_element_type_string));
+							use_element_type);
 						if (settings->data_field&&!settings->spectrum)
 						{
 							settings->spectrum=ACCESS(Spectrum)(
@@ -7465,7 +7298,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_element_points(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT ELEMENT_POINTS command.
@@ -7477,6 +7310,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 		*use_element_type_string,	**valid_strings, *xi_discretization_mode_string;
 	enum Glyph_scaling_mode glyph_scaling_mode;
 	enum Graphics_select_mode select_mode;
+	enum Use_element_type use_element_type;
 	enum Xi_discretization_mode xi_discretization_mode;
 	int number_of_components,number_of_valid_strings,return_code;
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
@@ -7600,9 +7434,11 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						g_element_command_data->fe_field_manager,set_FE_field);
 					/* glyph scaling mode */
 					glyph_scaling_mode_string =
-						Glyph_scaling_mode_string(glyph_scaling_mode);
-					valid_strings =
-						Glyph_scaling_mode_get_valid_strings(&number_of_valid_strings);
+						ENUMERATOR_STRING(Glyph_scaling_mode)(glyph_scaling_mode);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Glyph_scaling_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Glyph_scaling_mode) *)NULL,
+						(void *)NULL);
 					Option_table_add_enumerator(option_table, number_of_valid_strings,
 						valid_strings, &glyph_scaling_mode_string);
 					DEALLOCATE(valid_strings);
@@ -7650,10 +7486,13 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
 						set_Spectrum);
 					/* use_elements/use_faces/use_lines */
-					use_element_type_string=
-						Use_element_type_string(settings->use_element_type);
-					valid_strings=
-						Use_element_type_get_valid_strings(&number_of_valid_strings);
+					use_element_type = settings->use_element_type;
+					use_element_type_string =
+						ENUMERATOR_STRING(Use_element_type)(use_element_type);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Use_element_type)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Use_element_type) *)NULL,
+						(void *)NULL);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&use_element_type_string);
 					DEALLOCATE(valid_strings);
@@ -7693,12 +7532,14 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 							xi_discretization_mode_string, &xi_discretization_mode);
 						GT_element_settings_set_xi_discretization_mode(settings,
 							xi_discretization_mode);
+						STRING_TO_ENUMERATOR(Use_element_type)(use_element_type_string,
+							&use_element_type);
 						GT_element_settings_set_use_element_type(settings,
-							Use_element_type_from_string(use_element_type_string));
+							use_element_type);
 						if (glyph)
 						{
-							glyph_scaling_mode =
-								Glyph_scaling_mode_from_string(glyph_scaling_mode_string);
+							STRING_TO_ENUMERATOR(Glyph_scaling_mode)(
+								glyph_scaling_mode_string, &glyph_scaling_mode);
 							GT_element_settings_set_glyph_parameters(settings,
 								glyph, glyph_scaling_mode, glyph_centre, glyph_size,
 								orientation_scale_field,glyph_scale_factors,

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.c
 
-LAST MODIFIED : 4 December 2000
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
@@ -18,6 +18,7 @@ The functions for creating graphical objects from finite elements.
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "finite_element/finite_element_to_iso_lines.h"
 #include "general/debug.h"
+#include "general/enumerator_private.h"
 #include "general/geometry.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
@@ -761,127 +762,36 @@ these are simply returned, since no valid direction can be produced.
 	return (return_code);
 } /* make_glyph_orientation_scale_axes */
 
-char *Use_element_type_string(enum Use_element_type use_element_type)
-/*******************************************************************************
-LAST MODIFIED : 20 December 1999
-
-DESCRIPTION :
-Returns a pointer to a static string describing the use_element_type.
-The returned string must not be DEALLOCATEd!
-==============================================================================*/
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Use_element_type)
 {
-	char *return_string;
+	char *enumerator_string;
 
-	ENTER(Use_element_type_string);
-	switch (use_element_type)
+	ENTER(ENUMERATOR_STRING(Use_element_type));
+	switch (enumerator_value)
 	{
 		case USE_ELEMENTS:
 		{
-			return_string="use_elements";
+			enumerator_string = "use_elements";
 		} break;
 		case USE_FACES:
 		{
-			return_string="use_faces";
+			enumerator_string = "use_faces";
 		} break;
 		case USE_LINES:
 		{
-			return_string="use_lines";
+			enumerator_string = "use_lines";
 		} break;
 		default:
 		{
-			display_message(ERROR_MESSAGE,
-				"Use_element_type_string.  Unknown use_element_type");
-			return_string=(char *)NULL;
+			enumerator_string = (char *)NULL;
 		} break;
 	}
 	LEAVE;
 
-	return (return_string);
-} /* Use_element_type_string */
+	return (enumerator_string);
+} /* ENUMERATOR_STRING(Use_element_type) */
 
-char **Use_element_type_get_valid_strings(int *number_of_valid_strings)
-/*******************************************************************************
-LAST MODIFIED : 20 December 1999
-
-DESCRIPTION :
-Returns and allocated array of pointers to all static strings for valid
-Use_element_types - obtained from function Use_element_type_string.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-{
-	char **valid_strings;
-
-	ENTER(Use_element_type_get_valid_strings);
-	if (number_of_valid_strings)
-	{
-		*number_of_valid_strings=3;
-		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
-		{
-			valid_strings[0]=Use_element_type_string(USE_LINES);
-			valid_strings[1]=Use_element_type_string(USE_FACES);
-			valid_strings[2]=Use_element_type_string(USE_ELEMENTS);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Use_element_type_get_valid_strings.  Not enough memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Use_element_type_get_valid_strings.  Invalid argument");
-		valid_strings=(char **)NULL;
-	}
-	LEAVE;
-
-	return (valid_strings);
-} /* Use_element_type_get_valid_strings */
-
-enum Use_element_type Use_element_type_from_string(
-	char *use_element_type_string)
-/*******************************************************************************
-LAST MODIFIED : 20 December 1999
-
-DESCRIPTION :
-Returns the <Use_element_type> described by <use_element_type_string>.
-==============================================================================*/
-{
-	enum Use_element_type use_element_type;
-
-	ENTER(Use_element_type_from_string);
-	if (use_element_type_string)
-	{
-		if (fuzzy_string_compare_same_length(use_element_type_string,
-			Use_element_type_string(USE_LINES)))
-		{
-			use_element_type=USE_LINES;
-		}
-		else if (fuzzy_string_compare_same_length(use_element_type_string,
-			Use_element_type_string(USE_FACES)))
-		{
-			use_element_type=USE_FACES;
-		}
-		else if (fuzzy_string_compare_same_length(use_element_type_string,
-			Use_element_type_string(USE_ELEMENTS)))
-		{
-			use_element_type=USE_ELEMENTS;
-		}
-		else
-		{
-			use_element_type=USE_ELEMENT_TYPE_INVALID;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Use_element_type_from_string.  Invalid argument");
-		use_element_type=USE_ELEMENT_TYPE_INVALID;
-	}
-	LEAVE;
-
-	return (use_element_type);
-} /* Use_element_type_from_string */
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Use_element_type)
 
 enum CM_element_type Use_element_type_CM_element_type(
 	enum Use_element_type use_element_type)

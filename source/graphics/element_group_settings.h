@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.h
 
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -16,6 +16,7 @@ appearance of graphical finite element groups.
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/element_point_ranges.h"
 #include "graphics/graphics_object.h"
+#include "general/enumerator.h"
 #include "general/list.h"
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
@@ -32,16 +33,14 @@ struct GT_element_settings;
 
 enum GT_element_settings_type
 /*******************************************************************************
-LAST MODIFIED : 19 August 1999
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
-Must keep function GT_element_settings_type_string up-to-date with entries here.
-Have members BEFORE_FIRST and AFTER_LAST to enable iterating through the list
-for automatic creation of choose_enumerator widgets.
+Note: the first value will be 0 by the ANSI standard, with each subsequent entry
+incremented by 1. This pattern is expected by the ENUMERATOR macros.
+Must ensure the ENUMERATOR_STRING function returns a string for each value here.
 ==============================================================================*/
 {
-	GT_ELEMENT_SETTINGS_TYPE_INVALID,
-	GT_ELEMENT_SETTINGS_TYPE_BEFORE_FIRST,
 	GT_ELEMENT_SETTINGS_NODE_POINTS,
 	GT_ELEMENT_SETTINGS_DATA_POINTS,
 	GT_ELEMENT_SETTINGS_LINES,
@@ -50,32 +49,28 @@ for automatic creation of choose_enumerator widgets.
 	GT_ELEMENT_SETTINGS_ISO_SURFACES,
 	GT_ELEMENT_SETTINGS_ELEMENT_POINTS,
 	GT_ELEMENT_SETTINGS_VOLUMES,
-	GT_ELEMENT_SETTINGS_STREAMLINES,
-	GT_ELEMENT_SETTINGS_TYPE_AFTER_LAST
+	GT_ELEMENT_SETTINGS_STREAMLINES
 }; /* enum GT_element_settings_type */
 
 enum Glyph_scaling_mode
 /*******************************************************************************
-LAST MODIFIED : 8 November 2000
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 Enumerator controlling how glyph orientation and scaling parameters are set.
 Modes other than GENERAL restrict the options available and their
 interpretation. For example, in GENERAL mode the base size can be a*b*c, but in
 VECTOR mode it is restricted to be 0*a*a.
-Must keep function Glyph_scaling_mode_string up-to-date with entries here.
-Have members BEFORE_FIRST and AFTER_LAST to enable iterating through the list
-for automatic creation of choose_enumerator widgets.
+Note: the first value will be 0 by the ANSI standard, with each subsequent entry
+incremented by 1. This pattern is expected by the ENUMERATOR macros.
+Must ensure the ENUMERATOR_STRING function returns a string for each value here.
 ==============================================================================*/
 {
-	GLYPH_SCALING_MODE_INVALID,
-	GLYPH_SCALING_MODE_BEFORE_FIRST,
 	GLYPH_SCALING_CONSTANT,
 	GLYPH_SCALING_SCALAR,
 	GLYPH_SCALING_VECTOR,
 	GLYPH_SCALING_AXES,
-	GLYPH_SCALING_GENERAL,
-	GLYPH_SCALING_MODE_AFTER_LAST
+	GLYPH_SCALING_GENERAL
 }; /* enum Glyph_scaling_mode */
 
 enum GT_element_settings_string_details
@@ -215,78 +210,29 @@ Global functions
 ----------------
 */
 
-char *GT_element_settings_type_string(
-	enum GT_element_settings_type gt_element_settings_type);
-/*******************************************************************************
-LAST MODIFIED : 22 March 1999
-
-DESCRIPTION :
-Returns a pointer to a static string describing the settings_type, eg.
-GT_ELEMENT_SETTINGS_LINE == "lines". This string should match the command used
-to create that type of settings. The returned string must not be DEALLOCATEd!
-==============================================================================*/
-
-char **GT_element_settings_type_get_valid_strings(int *number_of_valid_strings,
-	int dimension);
-/*******************************************************************************
-LAST MODIFIED : 23 March 1999
-
-DESCRIPTION :
-Returns and allocated array of pointers to all static strings for valid
-GT_element_settings_types - obtained from function
-GT_element_settings_type_string. Includes only those settings_types that use
-nodes/elements of the given <dimension>, with -1 denoting all dimensions.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-
-enum GT_element_settings_type GT_element_settings_type_from_string(
-	char *gt_element_settings_type_string);
-/*******************************************************************************
-LAST MODIFIED : 22 March 1999
-
-DESCRIPTION :
-Returns the <GT_element_settings_type> described by
-<gt_element_settings_type_string>.
-==============================================================================*/
+PROTOTYPE_ENUMERATOR_FUNCTIONS(GT_element_settings_type);
 
 int GT_element_settings_type_uses_dimension(
-	enum GT_element_settings_type settings_type,int dimension);
+	enum GT_element_settings_type settings_type, int dimension);
 /*******************************************************************************
-LAST MODIFIED : 14 September 1998
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 Returns true if the particular <settings_type> can deal with nodes/elements of
-the given <dimension>.
+the given <dimension>. Note a <dimension> of -1 is taken to mean any dimension.
 ==============================================================================*/
 
-char *Glyph_scaling_mode_string(enum Glyph_scaling_mode glyph_scaling_mode);
+int GT_element_settings_type_uses_dimension_conditional(
+	enum GT_element_settings_type settings_type, void *dimension_address_void);
 /*******************************************************************************
-LAST MODIFIED : 8 November 2000
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
-Returns a pointer to a static string describing the glyph_scaling_mode, eg.
-GLYPH_SCALING_CONSTANT == "constant". This string should match the command used
-to create that type of settings. The returned string must not be DEALLOCATEd!
+Calls GT_element_settings_type_uses_dimension for the <settings_type> and
+integer dimension pointed to by <dimension_address_void>.
 ==============================================================================*/
 
-char **Glyph_scaling_mode_get_valid_strings(int *number_of_valid_strings);
-/*******************************************************************************
-LAST MODIFIED : 8 November 2000
-
-DESCRIPTION :
-Returns and allocated array of pointers to all static strings for valid
-Glyph_scaling_modes - obtained from function Glyph_scaling_mode_string.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-
-enum Glyph_scaling_mode Glyph_scaling_mode_from_string(
-	char *glyph_scaling_mode_string);
-/*******************************************************************************
-LAST MODIFIED : 8 November 2000
-
-DESCRIPTION :
-Returns the <Glyph_scaling_mode> described by <glyph_scaling_mode_string>.
-==============================================================================*/
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Glyph_scaling_mode);
 
 PROTOTYPE_OBJECT_FUNCTIONS(GT_element_settings);
 DECLARE_LIST_TYPES(GT_element_settings);

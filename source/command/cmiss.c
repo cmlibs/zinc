@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -1789,7 +1789,7 @@ Executes a GFX CREATE ELEMENT_CREATOR command.
 static int gfx_create_element_points(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 Executes a GFX CREATE ELEMENT_POINTS command.
@@ -1797,6 +1797,7 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 {
 	char exterior_flag, *graphics_object_name, *use_element_type_string,
 		**valid_strings, *xi_discretization_mode_string;
+	enum Use_element_type use_element_type;
 	enum Xi_discretization_mode xi_discretization_mode;
 	float time;
 	int face_number,number_of_components,number_of_valid_strings,return_code;
@@ -1958,9 +1959,13 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 		/* time */
 		Option_table_add_entry(option_table,"time",&time,NULL,set_float);
 		/* use_elements/use_faces/use_lines */
-		use_element_type_string=Use_element_type_string(USE_ELEMENTS);
-		valid_strings=
-			Use_element_type_get_valid_strings(&number_of_valid_strings);
+		use_element_type = USE_ELEMENTS;
+		use_element_type_string =
+			ENUMERATOR_STRING(Use_element_type)(use_element_type);
+		valid_strings = ENUMERATOR_GET_VALID_STRINGS(Use_element_type)(
+			&number_of_valid_strings,
+			(ENUMERATOR_CONDITIONAL_FUNCTION(Use_element_type) *)NULL,
+			(void *)NULL);
 		Option_table_add_enumerator(option_table,number_of_valid_strings,
 			valid_strings,&use_element_type_string);
 		DEALLOCATE(valid_strings);
@@ -2041,8 +2046,9 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 					element_to_glyph_set_data.orientation_scale_field=
 						(struct Computed_field *)NULL;
 				}
-				element_to_glyph_set_data.use_element_type=
-					Use_element_type_from_string(use_element_type_string);
+				STRING_TO_ENUMERATOR(Use_element_type)(use_element_type_string,
+					&use_element_type);
+				element_to_glyph_set_data.use_element_type = use_element_type;
 				element_to_glyph_set_data.element_group=element_group;
 				element_to_glyph_set_data.exterior=exterior_flag;
 				element_to_glyph_set_data.face_number=face_number;
@@ -3738,7 +3744,7 @@ float parameters.
 static int gfx_create_iso_surfaces(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 Executes a GFX CREATE ISO_SURFACES command.
@@ -3748,6 +3754,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 		*use_element_type_string, **valid_strings;
 	enum GT_object_type graphics_object_type;
 	enum Render_type render_type;
+	enum Use_element_type use_element_type;
 	float time;
 	int face_number,number_of_valid_strings,return_code;
 	static char default_name[]="iso_surfaces";
@@ -3907,11 +3914,15 @@ Executes a GFX CREATE ISO_SURFACES command.
 			/* time */
 			Option_table_add_entry(option_table,"time",&time,NULL,set_float);
 			/* use_elements/use_faces/use_lines */
-			use_element_type_string=Use_element_type_string(USE_ELEMENTS);
-			valid_strings=
-				Use_element_type_get_valid_strings(&number_of_valid_strings);
+			use_element_type = USE_ELEMENTS;
+			use_element_type_string =
+				ENUMERATOR_STRING(Use_element_type)(use_element_type);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Use_element_type)(
+				&number_of_valid_strings,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Use_element_type) *)NULL,
+				(void *)NULL);
 			Option_table_add_enumerator(option_table,number_of_valid_strings,
-				valid_strings,&use_element_type_string);
+				valid_strings, &use_element_type_string);
 			DEALLOCATE(valid_strings);
 			/* with */
 			Option_table_add_entry(option_table,"with",&discretization,
@@ -3936,8 +3947,9 @@ Executes a GFX CREATE ISO_SURFACES command.
 					display_message(WARNING_MESSAGE,"Missing iso_scalar field");
 					return_code=0;
 				}
-				element_to_iso_scalar_data.use_element_type=
-					Use_element_type_from_string(use_element_type_string);
+				STRING_TO_ENUMERATOR(Use_element_type)(use_element_type_string,
+					&use_element_type);
+				element_to_iso_scalar_data.use_element_type = use_element_type;
 				switch (element_to_iso_scalar_data.use_element_type)
 				{
 					case USE_ELEMENTS:

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element_editor.c
 
-LAST MODIFIED : 24 November 2000
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 Provides the widgets to manipulate graphical element group settings.
@@ -294,7 +294,7 @@ of the type gelem_editor->settings_type.
 static int gelem_editor_select_settings_item(
 	struct Graphical_element_editor_struct *gelem_editor)
 /*******************************************************************************
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 Checks if current_settings is in the settings_rowcol; if not (or it was NULL)
@@ -305,66 +305,74 @@ If current_settings is NULL, no editing fields are displayed.
 ==============================================================================*/
 {
 	enum GT_element_settings_type settings_type;
-	int i,num_children,num_toggles,return_code;
+	int have_settings, i, num_children, num_toggles, return_code;
 	struct GT_element_settings *temp_settings;
-	WidgetList child_list,toggle_list;
+	WidgetList child_list, toggle_list;
 
 	ENTER(gelem_editor_select_settings_item);
 	if (gelem_editor)
 	{
-		settings_type=gelem_editor->current_settings_type;
+		if (gelem_editor->current_settings &&
+			(!GT_element_settings_uses_dimension(gelem_editor->current_settings,
+				(void *)&(gelem_editor->current_dimension))))
+		{
+			gelem_editor->current_settings = (struct GT_element_settings *)NULL;
+		}
+		settings_type = gelem_editor->current_settings_type;
 		/* get list of settings items */
 		XtVaGetValues(gelem_editor->settings_rowcol,XmNnumChildren,&num_children,
 			XmNchildren,&child_list,NULL);
-		if (0<num_children)
+		if (0 < num_children)
 		{
-			for (i=0;i<num_children;i++)
+			for (i = 0; i < num_children; i++)
 			{
-				XtVaGetValues(child_list[i],XmNuserData,&temp_settings,
-					XmNnumChildren,&num_toggles,XmNchildren,&toggle_list,NULL);
-				if ((2==num_toggles)&&GT_element_settings_uses_dimension(
-					temp_settings,(void *)&gelem_editor->current_dimension))
+				XtVaGetValues(child_list[i], XmNuserData, &temp_settings,
+					XmNnumChildren, &num_toggles, XmNchildren, &toggle_list, NULL);
+				if ((2 == num_toggles) && GT_element_settings_uses_dimension(
+					temp_settings, (void *)&gelem_editor->current_dimension))
 				{
-					if ((!gelem_editor->current_settings)&&
-						((GT_ELEMENT_SETTINGS_TYPE_INVALID==settings_type)||
-						GT_element_settings_type_matches(temp_settings,
-							(void *)settings_type)))
+					if ((!gelem_editor->current_settings) &&
+						((!GT_element_settings_type_uses_dimension(
+							gelem_editor->current_settings_type,
+							gelem_editor->current_dimension)) ||
+							(GT_element_settings_get_settings_type(temp_settings) ==
+								gelem_editor->current_settings_type)))
 					{
-						gelem_editor->current_settings=temp_settings;
+						gelem_editor->current_settings = temp_settings;
 					}
-					if (temp_settings==gelem_editor->current_settings)
+					if (temp_settings == gelem_editor->current_settings)
 					{
-						XtVaSetValues(toggle_list[1],XmNset,True,NULL);
-						settings_type=GT_element_settings_get_settings_type(temp_settings);
+						XtVaSetValues(toggle_list[1], XmNset, True, NULL);
+						settings_type =
+							GT_element_settings_get_settings_type(temp_settings);
 					}
 					else
 					{
-						XtVaSetValues(toggle_list[1],XmNset,False,NULL);
+						XtVaSetValues(toggle_list[1], XmNset, False, NULL);
 					}
 				}
 			}
 		}
 		else
 		{
-			gelem_editor->current_settings=(struct GT_element_settings *)NULL;
+			gelem_editor->current_settings = (struct GT_element_settings *)NULL;
 		}
-		i=((struct GT_element_settings *)NULL != gelem_editor->current_settings);
+		have_settings =
+			((struct GT_element_settings *)NULL != gelem_editor->current_settings);
 		/* Grey delete and move buttons if no current_settings */
-		XtSetSensitive(gelem_editor->delete_button,i);
-		XtSetSensitive(gelem_editor->up_button,i);
-		XtSetSensitive(gelem_editor->down_button,i);
+		XtSetSensitive(gelem_editor->delete_button, have_settings);
+		XtSetSensitive(gelem_editor->up_button, have_settings);
+		XtSetSensitive(gelem_editor->down_button, have_settings);
 		/* make sure settings_type is valid */
-		if (GT_ELEMENT_SETTINGS_TYPE_INVALID==settings_type)
+		if (!GT_element_settings_type_uses_dimension(settings_type,
+			gelem_editor->current_dimension))
 		{
-			settings_type=GT_ELEMENT_SETTINGS_TYPE_BEFORE_FIRST;
-			settings_type++;
-			if (-1 != gelem_editor->current_dimension)
+			settings_type = (enum GT_element_settings_type)0;
+			while ((!GT_element_settings_type_uses_dimension(settings_type,
+				gelem_editor->current_dimension)) &&
+				ENUMERATOR_STRING(GT_element_settings_type)(settings_type))
 			{
-				while (!GT_element_settings_type_uses_dimension(settings_type,
-					gelem_editor->current_dimension))
-				{
-					settings_type++;
-				}
+				settings_type++;
 			}
 		}
 		/* if settings_type changed select it on the settings_type option menu */
@@ -372,7 +380,7 @@ If current_settings is NULL, no editing fields are displayed.
 		{
 			gelem_editor->current_settings_type=settings_type;
 			choose_enumerator_set_string(gelem_editor->settings_type_widget,
-				GT_element_settings_type_string(settings_type));
+				ENUMERATOR_STRING(GT_element_settings_type)(settings_type));
 		}
 		/* send selected object to settings editor */
 		return_code=settings_editor_set_settings(gelem_editor->settings_widget,
@@ -886,81 +894,79 @@ Callback for change of default native_discretization field.
 static void graphical_element_editor_dimension_CB(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 Called when switching between ALL/0-D/1-D/2-D/3-D.
 ==============================================================================*/
 {
 	char **valid_strings;
-	int dimension,number_of_valid_strings;
+	int dimension, number_of_valid_strings;
 	struct Graphical_element_editor_struct *gelem_editor;
 	Widget button_widget;
 
 	ENTER(graphical_element_editor_dimension_CB);
-	if (widget&&
-		(gelem_editor=(struct Graphical_element_editor_struct *)client_data)&&
-		(button_widget=((XmRowColumnCallbackStruct *)call_data)->widget))
+	if (widget &&
+		(gelem_editor = (struct Graphical_element_editor_struct *)client_data) &&
+		(button_widget = ((XmRowColumnCallbackStruct *)call_data)->widget))
 	{
 		if (XmToggleButtonGetState(button_widget))
 		{
-			dimension=gelem_editor->current_dimension;
-			if (button_widget==gelem_editor->dimension_all_button)
+			dimension = gelem_editor->current_dimension;
+			if (button_widget == gelem_editor->dimension_all_button)
 			{
-				dimension=-1;
+				dimension = -1;
 			}
-			else if (button_widget==gelem_editor->dimension_0_button)
+			else if (button_widget == gelem_editor->dimension_0_button)
 			{
-				dimension=0;
+				dimension = 0;
 			}
-			else if (button_widget==gelem_editor->dimension_1_button)
+			else if (button_widget == gelem_editor->dimension_1_button)
 			{
-				dimension=1;
+				dimension = 1;
 			}
-			else if (button_widget==gelem_editor->dimension_2_button)
+			else if (button_widget == gelem_editor->dimension_2_button)
 			{
-				dimension=2;
+				dimension = 2;
 			}
-			else if (button_widget==gelem_editor->dimension_3_button)
+			else if (button_widget == gelem_editor->dimension_3_button)
 			{
-				dimension=3;
+				dimension = 3;
 			}
 			/* check if not already looking at new settings type */
 			if (dimension != gelem_editor->current_dimension)
 			{
-				gelem_editor->current_dimension=dimension;
+				gelem_editor->current_dimension = dimension;
 				/* work out current_settings_type for changed dimension */
-				if ((0<=dimension)&&!GT_element_settings_type_uses_dimension(
-					gelem_editor->current_settings_type,dimension))
+				if (!GT_element_settings_type_uses_dimension(
+					gelem_editor->current_settings_type, dimension))
 				{
-					if (gelem_editor->current_settings=
+					if (gelem_editor->current_settings =
 						first_settings_in_GT_element_group_that(
 							gelem_editor->edit_gt_element_group,
-							GT_element_settings_uses_dimension,(void *)&dimension))
+							GT_element_settings_uses_dimension, (void *)&dimension))
 					{
-						gelem_editor->current_settings_type=
+						gelem_editor->current_settings_type =
 							GT_element_settings_get_settings_type(
 								gelem_editor->current_settings);
 					}
-					else
-					{
-						gelem_editor->current_settings_type=
-							GT_ELEMENT_SETTINGS_TYPE_INVALID;
-					}
 				}
 				/* remake the settings_type choose_enumerator */
-				if (valid_strings=GT_element_settings_type_get_valid_strings(
-					&number_of_valid_strings,dimension))
+				if (valid_strings =
+					ENUMERATOR_GET_VALID_STRINGS(GT_element_settings_type)(
+						&number_of_valid_strings,
+						GT_element_settings_type_uses_dimension_conditional,
+						(void *)&dimension))
 				{
-					if (GT_ELEMENT_SETTINGS_TYPE_INVALID==
-						gelem_editor->current_settings_type)
+					if (!GT_element_settings_type_uses_dimension(
+						gelem_editor->current_settings_type, dimension))
 					{
-						gelem_editor->current_settings_type=
-							GT_element_settings_type_from_string(valid_strings[0]);
+						STRING_TO_ENUMERATOR(GT_element_settings_type)(valid_strings[0],
+							&(gelem_editor->current_settings_type));
 					}
 					choose_enumerator_set_valid_strings(
 						gelem_editor->settings_type_widget,number_of_valid_strings,
-						valid_strings,GT_element_settings_type_string(
+						valid_strings,ENUMERATOR_STRING(GT_element_settings_type)(
 							gelem_editor->current_settings_type));
 					DEALLOCATE(valid_strings);
 				}
@@ -980,7 +986,7 @@ Called when switching between ALL/0-D/1-D/2-D/3-D.
 static void graphical_element_editor_update_settings_type(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 Called when switching between Points/Lines/Surfaces/Iso-surfaces etc.
@@ -994,10 +1000,10 @@ Called when switching between Points/Lines/Surfaces/Iso-surfaces etc.
 	USE_PARAMETER(call_data);
 	if (gelem_editor=(struct Graphical_element_editor_struct *)client_data)
 	{
-		settings_type=GT_element_settings_type_from_string(
-			choose_enumerator_get_string(gelem_editor->settings_type_widget));
-		/* check if not already looking at new settings type */
-		if (settings_type != gelem_editor->current_settings_type)
+		if (STRING_TO_ENUMERATOR(GT_element_settings_type)(
+			choose_enumerator_get_string(gelem_editor->settings_type_widget),
+			&settings_type) &&
+			(settings_type != gelem_editor->current_settings_type))
 		{
 			gelem_editor->current_settings_type=settings_type;
 			gelem_editor->current_settings=(struct GT_element_settings *)NULL;
@@ -1111,7 +1117,7 @@ Called when a settings select toggle button is selected.
 static void graphical_element_editor_modify_CB(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 24 November 2000
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 Called when a modify button - add, delete, up, down - is activated.
@@ -1120,13 +1126,13 @@ Called when a modify button - add, delete, up, down - is activated.
 	enum Glyph_scaling_mode glyph_scaling_mode;
 	enum Streamline_type streamline_type;
 	float streamline_length,streamline_width;
-	int list_changed,position,return_code,reverse_track;
+	int list_changed, position, return_code, reverse_track;
 	struct Computed_field *default_coordinate_field,*element_xi_coordinate_field,
 		*iso_scalar_field,*orientation_scale_field,*stream_vector_field,
 		*variable_scale_field;
 	struct Graphical_element_editor_struct *gelem_editor;
 	struct GROUP(FE_node) *data_group;
-	struct GT_object *glyph,*old_glyph;
+	struct GT_object *glyph, *old_glyph;
 	struct GT_element_settings *settings;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct VT_volume_texture *volume_texture;
@@ -1307,11 +1313,11 @@ Called when a modify button - add, delete, up, down - is activated.
 				}
 			}
 		}
-		else if (modify_button==gelem_editor->delete_button)
+		else if (modify_button == gelem_editor->delete_button)
 		{
-			list_changed=GT_element_group_remove_settings(
+			list_changed = GT_element_group_remove_settings(
 				gelem_editor->edit_gt_element_group,gelem_editor->current_settings);
-			gelem_editor->current_settings=(struct GT_element_settings *)NULL;
+			gelem_editor->current_settings = (struct GT_element_settings *)NULL;
 		}
 		else if (modify_button==gelem_editor->up_button)
 		{
@@ -1619,9 +1625,9 @@ Creates a graphical_element_editor widget.
 				gelem_editor->user_interface=user_interface;
 				gelem_editor->widget_parent=parent;
 				gelem_editor->widget_address=gelem_editor_widget;
-				gelem_editor->current_dimension=-1;
-				gelem_editor->current_settings_type=GT_ELEMENT_SETTINGS_TYPE_INVALID;
-				gelem_editor->current_settings=(struct GT_element_settings *)NULL;
+				gelem_editor->current_dimension = -1;
+				gelem_editor->current_settings_type = GT_ELEMENT_SETTINGS_LINES;
+				gelem_editor->current_settings = (struct GT_element_settings *)NULL;
 				gelem_editor->settings_type_widget=(Widget)NULL;
 				/* initialize widgets */
 				gelem_editor->widget=(Widget)NULL;
@@ -1688,15 +1694,19 @@ Creates a graphical_element_editor widget.
 								init_widgets=0;
 							}
 							/* create chooser for settings_type enumeration */
-							valid_strings=GT_element_settings_type_get_valid_strings(
-								&number_of_valid_strings,gelem_editor->current_dimension);
+							valid_strings =
+								ENUMERATOR_GET_VALID_STRINGS(GT_element_settings_type)(
+									&number_of_valid_strings,
+									GT_element_settings_type_uses_dimension_conditional,
+									(void *)&(gelem_editor->current_dimension));
 							if (!(gelem_editor->settings_type_widget=
 								create_choose_enumerator_widget(
 									gelem_editor->settings_type_form,
 									number_of_valid_strings,valid_strings,
-									GT_element_settings_type_string(GT_ELEMENT_SETTINGS_LINES))))
+									ENUMERATOR_STRING(GT_element_settings_type)(
+										GT_ELEMENT_SETTINGS_LINES))))
 							{
-								init_widgets=0;
+								init_widgets = 0;
 							}
 							DEALLOCATE(valid_strings);
 							/* create settings editor with NULL settings */

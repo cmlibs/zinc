@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : settings_editor.c
 
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 Provides the widgets to manipulate element group settings.
@@ -629,21 +629,23 @@ Called when the coordinate field toggle button value changes.
 static void settings_editor_update_use_element_type(Widget widget,
 	void *settings_editor_void,void *use_element_type_string_void)
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 Callback for change of use_element_type.
 ==============================================================================*/
 {
+	enum Use_element_type use_element_type;
 	struct Settings_editor *settings_editor;
 
 	ENTER(settings_editor_update_use_element_type);
 	USE_PARAMETER(widget);
 	if (settings_editor=(struct Settings_editor *)settings_editor_void)
 	{
-		if (GT_element_settings_set_use_element_type(
-			settings_editor->current_settings,Use_element_type_from_string(
-				(char *)use_element_type_string_void)))
+		if (STRING_TO_ENUMERATOR(Use_element_type)(
+			(char *)use_element_type_string_void, &use_element_type) &&
+			GT_element_settings_set_use_element_type(
+				settings_editor->current_settings, use_element_type))
 		{
 			/* make sure the correct widgets are shown for the new dimension */
 			settings_editor_display_dimension_specific(settings_editor);
@@ -1172,7 +1174,7 @@ settings. Does nothing if current settings type does not use glyphs.
 				CHOOSE_OBJECT_LIST_SET_OBJECT(GT_object)(
 					settings_editor->glyph_widget,glyph);
 				choose_enumerator_set_string(settings_editor->glyph_scaling_mode_widget,
-					Glyph_scaling_mode_string(glyph_scaling_mode));
+					ENUMERATOR_STRING(Glyph_scaling_mode)(glyph_scaling_mode));
 				sprintf(temp_string,"%g*%g*%g",
 					glyph_size[0],glyph_size[1],glyph_size[2]);
 				XtVaSetValues(settings_editor->glyph_size_text,XmNvalue,
@@ -1230,7 +1232,7 @@ settings. Does nothing if current settings type does not use glyphs.
 static void settings_editor_update_glyph(Widget widget,
 	void *settings_editor_void,void *glyph_void)
 /*******************************************************************************
-LAST MODIFIED : 10 November 2000
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 Callback for change of glyph.
@@ -1252,8 +1254,8 @@ Callback for change of glyph.
 			glyph_centre, glyph_size, &orientation_scale_field, glyph_scale_factors,
 			&variable_scale_field)&&
 			GT_element_settings_set_glyph_parameters(
-				settings_editor->current_settings, glyph, glyph_scaling_mode, glyph_centre,
-				glyph_size,	orientation_scale_field, glyph_scale_factors,
+				settings_editor->current_settings, glyph, glyph_scaling_mode,
+				glyph_centre, glyph_size,	orientation_scale_field, glyph_scale_factors,
 				variable_scale_field))
 		{
 			/* inform the client of the change */
@@ -1271,7 +1273,7 @@ Callback for change of glyph.
 static void settings_editor_update_glyph_scaling_mode(Widget widget,
 	void *settings_editor_void,void *glyph_scaling_mode_string_void)
 /*******************************************************************************
-LAST MODIFIED : 15 November 2000
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 Callback for change of glyph.
@@ -1292,8 +1294,8 @@ Callback for change of glyph.
 			glyph_centre, glyph_size, &orientation_scale_field, glyph_scale_factors,
 			&variable_scale_field))
 		{
-			if (GLYPH_SCALING_MODE_INVALID != (glyph_scaling_mode =
-				Glyph_scaling_mode_from_string((char *)glyph_scaling_mode_string_void)))
+			if (STRING_TO_ENUMERATOR(Glyph_scaling_mode)(
+				(char *)glyph_scaling_mode_string_void, &glyph_scaling_mode))
 			{
 				GT_element_settings_set_glyph_parameters(
 					settings_editor->current_settings, glyph, glyph_scaling_mode,
@@ -2647,7 +2649,7 @@ Widget create_settings_editor_widget(Widget *settings_editor_widget,
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 20 March 2001
 
 DESCRIPTION :
 Creates a settings_editor widget.
@@ -2989,13 +2991,15 @@ Creates a settings_editor widget.
 						{
 							init_widgets=1;
 							/* create the subwidgets with default values */
-							valid_strings=
-								Use_element_type_get_valid_strings(&number_of_valid_strings);
+							valid_strings = ENUMERATOR_GET_VALID_STRINGS(Use_element_type)(
+								&number_of_valid_strings,
+								(ENUMERATOR_CONDITIONAL_FUNCTION(Use_element_type) *)NULL,
+								(void *)NULL);
 							if (!(settings_editor->use_element_type_widget=
 								create_choose_enumerator_widget(
 								settings_editor->use_element_type_form,
 								number_of_valid_strings,valid_strings,
-								Use_element_type_string(USE_ELEMENTS))))
+								ENUMERATOR_STRING(Use_element_type)(USE_ELEMENTS))))
 							{
 								init_widgets=0;
 							}
@@ -3032,13 +3036,16 @@ Creates a settings_editor widget.
 							{
 								init_widgets=0;
 							}
-							valid_strings =
-								Glyph_scaling_mode_get_valid_strings(&number_of_valid_strings);
+							valid_strings = ENUMERATOR_GET_VALID_STRINGS(Glyph_scaling_mode)(
+								&number_of_valid_strings,
+								(ENUMERATOR_CONDITIONAL_FUNCTION(Glyph_scaling_mode) *)NULL,
+								(void *)NULL);
 							if (!(settings_editor->glyph_scaling_mode_widget=
 								create_choose_enumerator_widget(
 									settings_editor->glyph_scaling_mode_form,
 									number_of_valid_strings,valid_strings,
-									Glyph_scaling_mode_string(GLYPH_SCALING_GENERAL))))
+									ENUMERATOR_STRING(Glyph_scaling_mode)(
+										GLYPH_SCALING_GENERAL))))
 							{
 								init_widgets=0;
 							}
@@ -3644,7 +3651,7 @@ Changes the currently chosen settings.
 							{
 								choose_enumerator_set_string(
 									settings_editor->use_element_type_widget,
-									Use_element_type_string(
+									ENUMERATOR_STRING(Use_element_type)(
 										GT_element_settings_get_use_element_type(new_settings)));
 								XtManageChild(settings_editor->use_element_type_entry);
 								/* turn on callbacks */
