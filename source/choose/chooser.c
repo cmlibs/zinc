@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : chooser.c
 
-LAST MODIFIED : 9 February 2000
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION :
 Widget for choosing a void pointer identified with a string out of a
@@ -629,7 +629,7 @@ Returns the currently chosen item in the chooser_widget.
 
 int Chooser_set_item(struct Chooser *chooser,void *new_item)
 /*******************************************************************************
-LAST MODIFIED : 9 Fabruary 2000
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION :
 Changes the chosen item in the chooser_widget.
@@ -643,32 +643,36 @@ Changes the chosen item in the chooser_widget.
 	ENTER(Chooser_set_item);
 	if (chooser)
 	{
-		/* set last_updated_item to avoid update once set */
-		chooser->last_updated_item=new_item;
-		chooser->current_item=new_item;
-		/* get pushbutton widget for current_item */
-		item_widget=
-			Chooser_get_widget_from_item(chooser->main_menu,chooser->current_item,0);
-		if (!item_widget)
+		return_code=1;
+		/* avoid needless widget manipulations if not changing */
+		if (new_item != chooser->current_item)
 		{
+			/* set last_updated_item to avoid update once set */
+			chooser->last_updated_item=new_item;
+			chooser->current_item=new_item;
+			/* get pushbutton widget for current_item */
 			item_widget=Chooser_get_widget_from_item(chooser->main_menu,
-				chooser->current_item,1);
+				chooser->current_item,0);
+			if (!item_widget)
+			{
+				item_widget=Chooser_get_widget_from_item(chooser->main_menu,
+					chooser->current_item,1);
+				if (item_widget)
+				{
+					XtVaGetValues(item_widget,XmNuserData,&item,NULL);
+					chooser->current_item=(void *)item;
+				}
+			}
 			if (item_widget)
 			{
-				XtVaGetValues(item_widget,XmNuserData,&item,NULL);
-				chooser->current_item=(void *)item;
+				/* display name of current_item on main_cascade */
+				XtVaGetValues(item_widget,XmNlabelString,(XtPointer)&new_string,NULL);
+				XtVaSetValues(chooser->main_cascade,
+					XmNlabelString,(XtPointer)new_string,NULL);
 			}
+			/* allow update in case new_item was not valid */
+			Chooser_update(chooser);
 		}
-		if (item_widget)
-		{
-			/* display name of current_item on main_cascade */
-			XtVaGetValues(item_widget,XmNlabelString,(XtPointer)&new_string,NULL);
-			XtVaSetValues(chooser->main_cascade,
-				XmNlabelString,(XtPointer)new_string,NULL);
-		}
-		/* allow update in case new_item was not valid */
-		Chooser_update(chooser);
-		return_code=1;
 	}
 	else
 	{

@@ -1189,14 +1189,9 @@ Sets the coordinate field interpolated by elements created with
 				REACCESS(FE_node)(&(element_creator->template_node),
 					(struct FE_node *)NULL);
 				/* make sure the current field is shown on the widget */
-				if (CHOOSE_OBJECT_GET_OBJECT(FE_field)(
-					element_creator->coordinate_field_widget) !=
-					element_creator->coordinate_field)
-				{
-					CHOOSE_OBJECT_SET_OBJECT(FE_field)(
-						element_creator->coordinate_field_widget,
-						element_creator->coordinate_field);
-				}
+				CHOOSE_OBJECT_SET_OBJECT(FE_field)(
+					element_creator->coordinate_field_widget,
+					element_creator->coordinate_field);
 			}
 		}
 	}
@@ -1450,14 +1445,10 @@ same name, which enables the nodes and elements to be exported as a group.
 			{
 				element_creator->node_group=(struct GROUP(FE_node) *)NULL;
 			}
-			if (CHOOSE_OBJECT_GET_OBJECT(GROUP(FE_element))(
-				element_creator->element_group_widget) !=
-				element_creator->element_group)
-			{
-				CHOOSE_OBJECT_SET_OBJECT(GROUP(FE_element))(
-					element_creator->element_group_widget,
-					element_creator->element_group);
-			}
+			/* make sure the current group is shown */
+			CHOOSE_OBJECT_SET_OBJECT(GROUP(FE_element))(
+				element_creator->element_group_widget,
+				element_creator->element_group);
 		}
 	}
 	else
