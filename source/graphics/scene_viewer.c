@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_viewer.c
 
-LAST MODIFIED : 28 September 1999
+LAST MODIFIED : 5 April 2000
 
 DESCRIPTION :
 Three_D_drawing derivative for viewing a Scene from an arbitrary position.
@@ -169,10 +169,264 @@ Module variables
 Module functions
 ----------------
 */
+static int Scene_viewer_render_background_texture(
+	struct Scene_viewer *scene_viewer,int viewport_width,int viewport_height)
+/*******************************************************************************
+LAST MODIFIED : 5 April 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	double corner_x[4],corner_y[4],corr_x1,corr_x2,corr_y1,corr_y2,
+		distortion_centre_x,distortion_centre_y,distortion_factor_k1,
+		dist_x,dist_y1,dist_y2,min_x,max_x,min_y,max_y,tex_ratio_x,tex_ratio_y,
+		viewport_texture_height,viewport_texture_width;
+	float centre_x,centre_y,factor_k1,texture_width,texture_height;
+	GLdouble viewport_left,viewport_right,viewport_bottom,viewport_top;
+	int height_texels,i,j,k,min_i,max_i,min_j,max_j,return_code,
+		texels_per_polygon_x,texels_per_polygon_y,width_texels;
+
+	ENTER(Scene_viewer_render_background_texture);
+	if (scene_viewer&&scene_viewer->background_texture)
+	{
+		/* get information about the texture */
+		Texture_get_original_size(scene_viewer->background_texture,
+			&width_texels,&height_texels);
+		Texture_get_physical_size(scene_viewer->background_texture,
+			&texture_width,&texture_height);
+		tex_ratio_x=texture_width/width_texels;
+		tex_ratio_y=texture_height/height_texels;
+		/* note the texture stores radial distortion parameters in terms
+			 of its physical space from 0,0 to texture_width,texture_height.
+			 We want them in terms of user viewport coordinates */
+		Texture_get_distortion_info(scene_viewer->background_texture,
+			&centre_x,&centre_y,&factor_k1);
+		distortion_centre_x=(double)centre_x;
+		distortion_centre_y=(double)centre_y;
+		if (scene_viewer->bk_texture_undistort_on)
+		{
+			distortion_factor_k1=(double)factor_k1;
+		}
+		else
+		{
+			distortion_factor_k1=0.0;
+		}
+		/* set up orthographic projection to match physical/model
+			 coordinates of background texture */
+		viewport_texture_width=scene_viewer->bk_texture_width;
+		if (0.0==viewport_texture_width)
+		{
+			/* to avoid division by zero */
+			viewport_texture_width=1.0;
+		}
+		viewport_texture_height=scene_viewer->bk_texture_height;
+		if (0.0==viewport_texture_height)
+		{
+			/* to avoid division by zero */
+			viewport_texture_height=1.0;
+		}
+		viewport_left = texture_width/viewport_texture_width*
+			(scene_viewer->viewport_left - scene_viewer->bk_texture_left);
+		viewport_right = viewport_left +
+			((double)viewport_width/scene_viewer->viewport_pixels_per_unit_x)*
+			texture_width/viewport_texture_width;
+		viewport_top = texture_height +
+			texture_height/viewport_texture_height *
+			(scene_viewer->viewport_top - scene_viewer->bk_texture_top);
+		viewport_bottom=viewport_top -
+			((double)viewport_height/scene_viewer->viewport_pixels_per_unit_y)*
+			texture_height/viewport_texture_height;
+#if defined (DEBUG)
+		/*???debug */
+		printf("viewport left=%f right=%f  top=%f bottom=%f\n",
+			viewport_left,viewport_right,viewport_top,viewport_bottom);
+#endif /* defined (DEBUG) */
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(viewport_left,viewport_right,viewport_bottom,viewport_top,
+			-1.0,1.0);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		compile_Texture(scene_viewer->background_texture,NULL);
+		execute_Texture(scene_viewer->background_texture);
+
+#if defined (OLD_CODE)
+		/* simple, un-corrected texture */
+		glBegin(GL_QUADS);
+		glTexCoord2d(0.0,(double)texture_height);
+		glVertex3d(0.0,height_texels,-0.999);
+		glTexCoord2d((double)texture_width,(double)texture_height);
+		glVertex3d(width_texels,height_texels,-0.999);
+		glTexCoord2d((double)texture_width,0.0);
+		glVertex3d(width_texels,0,-0.999);
+		glTexCoord2d(0.0,0.0);
+		glVertex3d(0,0,-0.999);
+		glEnd();
+#endif /* defined (OLD_CODE) */
+
+		/* get texels per polygon */
+		texels_per_polygon_x=1;
+		while ((2*texels_per_polygon_x*
+			scene_viewer->viewport_pixels_per_unit_x*
+			viewport_texture_width/width_texels <=
+			scene_viewer->bk_texture_max_pixels_per_polygon)&&
+			(texels_per_polygon_x < width_texels))
+		{
+			texels_per_polygon_x *= 2;
+		}
+		texels_per_polygon_y=1;
+		while ((2*texels_per_polygon_y*
+			scene_viewer->viewport_pixels_per_unit_y*
+			viewport_texture_height/height_texels <=
+			scene_viewer->bk_texture_max_pixels_per_polygon)&&
+			(texels_per_polygon_y < height_texels))
+		{
+			texels_per_polygon_y *= 2;
+		}
+#if defined (DEBUG)
+		/*???debug */
+		printf("texels per polygon: x=%i y=%i\n",texels_per_polygon_x,
+			texels_per_polygon_y);
+#endif /* defined (DEBUG) */
+		/* get range of physical texture coordinates across viewport */
+		corner_x[0]=viewport_left;
+		corner_x[1]=viewport_right;
+		corner_x[2]=viewport_right;
+		corner_x[3]=viewport_left;
+		corner_y[0]=viewport_top;
+		corner_y[1]=viewport_top;
+		corner_y[2]=viewport_bottom;
+		corner_y[3]=viewport_bottom;
+		min_x=max_x=viewport_left;
+		min_y=max_y=viewport_top;
+		for (k=0;k<4;k++)
+		{
+			if (corner_x[k]<min_x)
+			{
+				min_x=corner_x[k];
+			}
+			if (corner_x[k]>max_x)
+			{
+				max_x=corner_x[k];
+			}
+			if (corner_y[k]<min_y)
+			{
+				min_y=corner_y[k];
+			}
+			if (corner_y[k]>max_y)
+			{
+				max_y=corner_y[k];
+			}
+			if (0!=distortion_factor_k1)
+			{
+				get_radial_distortion_distorted_coordinates(corner_x[k],
+					corner_y[k],distortion_centre_x,distortion_centre_y,
+					distortion_factor_k1,/*tolerance*/0.001,&(corner_x[k]),
+					&(corner_y[k]));
+				if (corner_x[k]<min_x)
+				{
+					min_x=corner_x[k];
+				}
+				if (corner_x[k]>max_x)
+				{
+					max_x=corner_x[k];
+				}
+				if (corner_y[k]<min_y)
+				{
+					min_y=corner_y[k];
+				}
+				if (corner_y[k]>max_y)
+				{
+					max_y=corner_y[k];
+				}
+			}
+		}
+		/* ensure inside actual range of image */
+		if (min_x<0)
+		{
+			min_x=0;
+		}
+		if (max_x>texture_width)
+		{
+			max_x=texture_width;
+		}
+		if (min_y<0)
+		{
+			min_y=0;
+		}
+		if (max_y>texture_height)
+		{
+			max_y=texture_height;
+		}
+		/* get max_x, max_y in terms of texels */
+		min_x /= tex_ratio_x;
+		max_x /= tex_ratio_x;
+		min_y /= tex_ratio_y;
+		max_y /= tex_ratio_y;
+#if defined (DEBUG)
+		/*???debug */
+		printf("min_x=%f max_x=%f  min_y=%f max_y=%f\n",min_x,max_x,min_y,
+			max_y);
+#endif /* defined (DEBUG) */
+		min_i = min_x/texels_per_polygon_x;
+		max_i = ceil(0.999999*max_x/texels_per_polygon_x);
+		min_j = min_y/texels_per_polygon_y;
+		max_j = ceil(0.999999*max_y/texels_per_polygon_y);
+#if defined (DEBUG)
+		/*???debug */
+		printf("min_i=%i max_i=%i  min_j=%i max_j=%i\n",min_i,max_i,min_j,
+			max_j);
+#endif /* defined (DEBUG) */
+		tex_ratio_x *= texels_per_polygon_x;
+		tex_ratio_y *= texels_per_polygon_y;
+		/* draw the array of polygons */
+		for (j=min_j;j<max_j;j++)
+		{
+			dist_y1=j*tex_ratio_y;
+			dist_y2=(j+1)*tex_ratio_y;
+			if (dist_y2>texture_height)
+			{
+				dist_y2=texture_height;
+			}
+			glBegin(GL_QUAD_STRIP);
+			for (i=min_i;i<=max_i;i++)
+			{
+				dist_x=i*tex_ratio_x;
+				if (dist_x>texture_width)
+				{
+					dist_x=texture_width;
+				}
+				get_radial_distortion_corrected_coordinates(dist_x,dist_y1,
+					distortion_centre_x,distortion_centre_y,distortion_factor_k1,
+					&corr_x1,&corr_y1);
+				get_radial_distortion_corrected_coordinates(dist_x,dist_y2,
+					distortion_centre_x,distortion_centre_y,distortion_factor_k1,
+					&corr_x2,&corr_y2);
+				glTexCoord2d(dist_x,dist_y1);
+				glVertex3d(corr_x1,corr_y1,-0.999);
+				glTexCoord2d(dist_x,dist_y2);
+				glVertex3d(corr_x2,corr_y2,-0.999);
+			}
+			glEnd();
+		}
+		execute_Texture((struct Texture *)NULL);
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_render_background_texture.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_render_background_texture */
+
 static int Scene_viewer_render_scene_private(struct Scene_viewer *scene_viewer,
 	int picking_on, int left, int bottom, int right, int top)
 /*******************************************************************************
-LAST MODIFIED : 28 September 1999
+LAST MODIFIED : 5 April 2000
 
 DESCRIPTION :
 Called to redraw the Scene_viewer scene after changes in the display lists or
@@ -187,15 +441,13 @@ access this function.
 ==============================================================================*/
 {
 	Dimension xwidth, xheight;
-	double dx,dy,dz,factor,min_x,max_x,min_y,max_y,pixel_offset_x,pixel_offset_y,
-		scene_redraws;
+	double dx,dy,dz,factor,max_x,max_y,pixel_offset_x,pixel_offset_y;
 	GLboolean valid_raster;
 	static GLint viewport[4]={0,0,1,1};
 	GLint stencil_bits;
 	GLdouble model_matrix[16],obj_x,obj_y,obj_z,projection_matrix[16],
-		temp_matrix[16],temp_proj_matrix[16],viewport_left,viewport_right,
-		viewport_bottom,viewport_top;
-	int layer, layers, return_code,height,i,j,k,width;
+		temp_matrix[16],temp_proj_matrix[16];
+	int layer, layers, return_code,height,i,j,scene_redraws,width;
 	void *new_data;
 	int accumulation_count,antialias;
 	float j2[2][2]=
@@ -338,6 +590,7 @@ access this function.
 					glScissor((GLint)left, (GLint)bottom, (GLint)width, (GLint)height);
 					glEnable(GL_SCISSOR_TEST);
 					/* glPushAttrib(GL_VIEWPORT_BIT); */
+#if defined (OLD_CODE)
 					/* clear the screen: colour buffer and depth buffer */
 					glClearColor((scene_viewer->background_colour).red,
 						(scene_viewer->background_colour).green,
@@ -353,256 +606,22 @@ access this function.
 					{
 						glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 					}
-					reset_Lights();
-					/* no lighting for background texture */
-					glDisable(GL_LIGHTING);
-					glColor3f(1,1,1);
-					/* do not render background texture in picking mode */
-					if ((!picking_on)&&scene_viewer->background_texture)
-					{
-						double corner_x[4],corner_y[4],corr_x1,corr_x2,corr_y1,corr_y2,
-							distortion_centre_x,distortion_centre_y,distortion_factor_k1,
-							dist_x,dist_y1,dist_y2,tex_ratio_x,tex_ratio_y,
-							viewport_texture_height,viewport_texture_width;
-						float centre_x,centre_y,factor_k1,texture_width,texture_height;
-						int height_texels,min_i,max_i,min_j,max_j,texels_per_polygon_x,
-							texels_per_polygon_y,width_texels;
-
-						/* get information about the texture */
-						Texture_get_original_size(scene_viewer->background_texture,
-							&width_texels,&height_texels);
-						Texture_get_physical_size(scene_viewer->background_texture,
-							&texture_width,&texture_height);
-						tex_ratio_x=texture_width/width_texels;
-						tex_ratio_y=texture_height/height_texels;
-						/* note the texture stores radial distortion parameters in terms
-							 of its physical space from 0,0 to texture_width,texture_height.
-							 We want them in terms of user viewport coordinates */
-						Texture_get_distortion_info(scene_viewer->background_texture,
-							&centre_x,&centre_y,&factor_k1);
-						distortion_centre_x=(double)centre_x;
-						distortion_centre_y=(double)centre_y;
-						if (scene_viewer->bk_texture_undistort_on)
-						{
-							distortion_factor_k1=(double)factor_k1;
-						}
-						else
-						{
-							distortion_factor_k1=0.0;
-						}
-						/* set up orthographic projection to match physical/model
-							 coordinates of background texture */
-						viewport_texture_width=scene_viewer->bk_texture_width;
-						if (0.0==viewport_texture_width)
-						{
-							/* to avoid division by zero */
-							viewport_texture_width=1.0;
-						}
-						viewport_texture_height=scene_viewer->bk_texture_height;
-						if (0.0==viewport_texture_height)
-						{
-							/* to avoid division by zero */
-							viewport_texture_height=1.0;
-						}
-						viewport_left = texture_width/viewport_texture_width*
-							(scene_viewer->viewport_left - scene_viewer->bk_texture_left);
-						viewport_right = viewport_left +
-							((double)width/scene_viewer->viewport_pixels_per_unit_x)*
-							texture_width/viewport_texture_width;
-						viewport_top = texture_height +
-							texture_height/viewport_texture_height *
-							(scene_viewer->viewport_top - scene_viewer->bk_texture_top);
-						viewport_bottom=viewport_top -
-							((double)height/scene_viewer->viewport_pixels_per_unit_y)*
-							texture_height/viewport_texture_height;
-#if defined (DEBUG)
-						/*???debug */
-						printf("viewport left=%f right=%f  top=%f bottom=%f\n",
-							viewport_left,viewport_right,viewport_top,viewport_bottom);
-#endif /* defined (DEBUG) */
-						glMatrixMode(GL_PROJECTION);
-						glLoadIdentity();
-						glOrtho(viewport_left,viewport_right,viewport_bottom,viewport_top,
-							-1.0,1.0);
-						glMatrixMode(GL_MODELVIEW);
-						glLoadIdentity();
-						compile_Texture(scene_viewer->background_texture,NULL);
-						execute_Texture(scene_viewer->background_texture);
-
-#if defined (OLD_CODE)
-						/* simple, un-corrected texture */
-						glBegin(GL_QUADS);
-						glTexCoord2d(0.0,(double)texture_height);
-						glVertex3d(0.0,height_texels,-0.999);
-						glTexCoord2d((double)texture_width,(double)texture_height);
-						glVertex3d(width_texels,height_texels,-0.999);
-						glTexCoord2d((double)texture_width,0.0);
-						glVertex3d(width_texels,0,-0.999);
-						glTexCoord2d(0.0,0.0);
-						glVertex3d(0,0,-0.999);
-						glEnd();
 #endif /* defined (OLD_CODE) */
+					reset_Lights();
 
-						/* get texels per polygon */
-						texels_per_polygon_x=1;
-						while ((2*texels_per_polygon_x*
-							scene_viewer->viewport_pixels_per_unit_x*
-							viewport_texture_width/width_texels <=
-							scene_viewer->bk_texture_max_pixels_per_polygon)&&
-							(texels_per_polygon_x < width_texels))
-						{
-							texels_per_polygon_x *= 2;
-						}
-						texels_per_polygon_y=1;
-						while ((2*texels_per_polygon_y*
-							scene_viewer->viewport_pixels_per_unit_y*
-							viewport_texture_height/height_texels <=
-							scene_viewer->bk_texture_max_pixels_per_polygon)&&
-							(texels_per_polygon_y < height_texels))
-						{
-							texels_per_polygon_y *= 2;
-						}
-#if defined (DEBUG)
-						/*???debug */
-						printf("texels per polygon: x=%i y=%i\n",texels_per_polygon_x,
-							texels_per_polygon_y);
-#endif /* defined (DEBUG) */
-						/* get range of physical texture coordinates across viewport */
-						corner_x[0]=viewport_left;
-						corner_x[1]=viewport_right;
-						corner_x[2]=viewport_right;
-						corner_x[3]=viewport_left;
-						corner_y[0]=viewport_top;
-						corner_y[1]=viewport_top;
-						corner_y[2]=viewport_bottom;
-						corner_y[3]=viewport_bottom;
-						min_x=max_x=viewport_left;
-						min_y=max_y=viewport_top;
-						for (k=0;k<4;k++)
-						{
-							if (corner_x[k]<min_x)
-							{
-								min_x=corner_x[k];
-							}
-							if (corner_x[k]>max_x)
-							{
-								max_x=corner_x[k];
-							}
-							if (corner_y[k]<min_y)
-							{
-								min_y=corner_y[k];
-							}
-							if (corner_y[k]>max_y)
-							{
-								max_y=corner_y[k];
-							}
-							if (0!=distortion_factor_k1)
-							{
-								get_radial_distortion_distorted_coordinates(corner_x[k],
-									corner_y[k],distortion_centre_x,distortion_centre_y,
-									distortion_factor_k1,/*tolerance*/0.001,&(corner_x[k]),
-									&(corner_y[k]));
-								if (corner_x[k]<min_x)
-								{
-									min_x=corner_x[k];
-								}
-								if (corner_x[k]>max_x)
-								{
-									max_x=corner_x[k];
-								}
-								if (corner_y[k]<min_y)
-								{
-									min_y=corner_y[k];
-								}
-								if (corner_y[k]>max_y)
-								{
-									max_y=corner_y[k];
-								}
-							}
-						}
-						/* ensure inside actual range of image */
-						if (min_x<0)
-						{
-							min_x=0;
-						}
-						if (max_x>texture_width)
-						{
-							max_x=texture_width;
-						}
-						if (min_y<0)
-						{
-							min_y=0;
-						}
-						if (max_y>texture_height)
-						{
-							max_y=texture_height;
-						}
-						/* get max_x, max_y in terms of texels */
-						min_x /= tex_ratio_x;
-						max_x /= tex_ratio_x;
-						min_y /= tex_ratio_y;
-						max_y /= tex_ratio_y;
-#if defined (DEBUG)
-						/*???debug */
-						printf("min_x=%f max_x=%f  min_y=%f max_y=%f\n",min_x,max_x,min_y,
-							max_y);
-#endif /* defined (DEBUG) */
-						min_i = min_x/texels_per_polygon_x;
-						max_i = ceil(0.999999*max_x/texels_per_polygon_x);
-						min_j = min_y/texels_per_polygon_y;
-						max_j = ceil(0.999999*max_y/texels_per_polygon_y);
-#if defined (DEBUG)
-						/*???debug */
-						printf("min_i=%i max_i=%i  min_j=%i max_j=%i\n",min_i,max_i,min_j,
-							max_j);
-#endif /* defined (DEBUG) */
-						tex_ratio_x *= texels_per_polygon_x;
-						tex_ratio_y *= texels_per_polygon_y;
-						/* draw the array of polygons */
-						for (j=min_j;j<max_j;j++)
-						{
-							dist_y1=j*tex_ratio_y;
-							dist_y2=(j+1)*tex_ratio_y;
-							if (dist_y2>texture_height)
-							{
-								dist_y2=texture_height;
-							}
-							glBegin(GL_QUAD_STRIP);
-							for (i=min_i;i<=max_i;i++)
-							{
-								dist_x=i*tex_ratio_x;
-								if (dist_x>texture_width)
-								{
-									dist_x=texture_width;
-								}
-								get_radial_distortion_corrected_coordinates(dist_x,dist_y1,
-									distortion_centre_x,distortion_centre_y,distortion_factor_k1,
-									&corr_x1,&corr_y1);
-								get_radial_distortion_corrected_coordinates(dist_x,dist_y2,
-									distortion_centre_x,distortion_centre_y,distortion_factor_k1,
-									&corr_x2,&corr_y2);
-								glTexCoord2d(dist_x,dist_y1);
-								glVertex3d(corr_x1,corr_y1,-0.999);
-								glTexCoord2d(dist_x,dist_y2);
-								glVertex3d(corr_x2,corr_y2,-0.999);
-							}
-							glEnd();
-						}
-						execute_Texture((struct Texture *)NULL);
-					}
 					/* light model */
 					compile_Light_model(scene_viewer->light_model);
 					execute_Light_model(scene_viewer->light_model);
-					/* set projection matrix/viewing volume */
-					glMatrixMode(GL_PROJECTION);
 					/* in picking mode the starting projection matrix is already
 						supplied */
 					if (!picking_on)
 					{
+						/* set projection matrix/viewing volume */
+						glMatrixMode(GL_PROJECTION);
+						glLoadIdentity();
 						if (SCENE_VIEWER_CUSTOM != scene_viewer->projection_mode)
 						{
 							/* store calculated projection matrix for later reference */
-							glLoadIdentity();
 							if (SCENE_VIEWER_PARALLEL==scene_viewer->projection_mode)
 							{
 								glOrtho(scene_viewer->left,scene_viewer->right,
@@ -633,7 +652,6 @@ access this function.
 								}
 							}
 						}
-						glLoadIdentity();
 					}
 					pixel_offset_x=0;
 					pixel_offset_y=0;
@@ -666,16 +684,34 @@ access this function.
 					for (accumulation_count=0;accumulation_count<scene_redraws;
 						accumulation_count++)
 					{
-						if (accumulation_count>0)
+						/* clear the screen: colour buffer and depth buffer */
+						glClearColor((scene_viewer->background_colour).red,
+							(scene_viewer->background_colour).green,
+							(scene_viewer->background_colour).blue,0.);
+						glClearDepth(1.0);
+						if (0<stencil_bits)
 						{
-							glClearColor((scene_viewer->background_colour).red,
-								(scene_viewer->background_colour).green,
-								(scene_viewer->background_colour).blue,0.);
-							glClearDepth(1.0);
+							glClearStencil(0);
+							glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT |
+								GL_STENCIL_BUFFER_BIT);
+						}
+						else
+						{
 							glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+						}
+
+						/********* RENDER BACKGROUND TEXTURE *********/
+						if ((!picking_on)&&scene_viewer->background_texture)
+						{
 							glMatrixMode(GL_PROJECTION);
 							glLoadIdentity();
+							glDisable(GL_LIGHTING);
+							glColor3f(1,1,1);
+							Scene_viewer_render_background_texture(scene_viewer,width,height);
+							glEnable(GL_LIGHTING);
 						}
+
+						/********* CALCULATE ANTIALIAS OFFSET MATRIX *********/
 						switch(antialias)
 						{
 							case 0:
@@ -729,7 +765,7 @@ access this function.
 						temp_matrix[12]=2.0*pixel_offset_x/width;
 						temp_matrix[13]=2.0*pixel_offset_y/height;
 
-						/* render overlay scene - but not in picking mode */
+						/********* RENDER OVERLAY SCENE *********/
 						if (!picking_on&&scene_viewer->overlay_scene&&(0<width)&&(0<height))
 						{
 							/* set up parallel projection/modelview combination that gives
@@ -805,11 +841,15 @@ access this function.
 									} break;
 								}
 							}
-							/* reload identity matrix for rendering normal scene */
+						}
+
+						/********* RENDER MAIN SCENE *********/
+						if (!picking_on)
+						{
+							/* load identity matrix for rendering normal scene */
 							glMatrixMode(GL_PROJECTION);
 							glLoadIdentity();
 						}
-
 						if (antialias)
 						{
 							glMultMatrixd(temp_matrix);
@@ -915,18 +955,10 @@ access this function.
 								}
 							}
 						}
-#if defined (OLD_CODE)
-						if (0==accumulation_count)
-						{
-#endif /* defined (OLD_CODE) */
-							/* turn on lights that are part of the Scene (and fixed relative
-								 to it) */
-							/* (the scene will have compiled them already) */
-							for_each_Light_in_Scene(scene_viewer->scene,execute_Light,
-								(void *)NULL);
-#if defined (OLD_CODE)
-						}
-#endif /* defined (OLD_CODE) */
+						/* turn on lights that are part of the Scene and fixed relative
+							 to it. Note the scene will have compiled them already. */
+						for_each_Light_in_Scene(scene_viewer->scene,execute_Light,
+							(void *)NULL);
 						if (0<stencil_bits)
 						{
 							/* use full z-buffer for overlay ranging from -1 to 1 in z */
@@ -950,12 +982,12 @@ access this function.
 								case SCENE_VIEWER_SLOW_TRANSPARENCY:
 								{
 									glEnable(GL_ALPHA_TEST);
-									/* render only fragments for which alpha is 1.0, write depth */
+									/* render only fragments for which alpha=1.0 & write depth */
 									glDepthMask(GL_TRUE);
 									glAlphaFunc(GL_EQUAL,1.0);
 									execute_Scene(scene_viewer->scene);
 									/* render fragments with alpha not equal to 1.0; do not write
-										depth buffer */
+										 depth buffer */
 									glDepthMask(GL_FALSE);
 									glAlphaFunc(GL_NOTEQUAL,1.0);
 									execute_Scene(scene_viewer->scene);
