@@ -1073,10 +1073,11 @@ DESCRIPTION :
 	return (return_code);
 } /* Time_keeper_set_play_timeout */
 
+
 int Time_keeper_play(struct Time_keeper *time_keeper,
 	enum Time_keeper_play_direction play_direction)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1089,12 +1090,17 @@ DESCRIPTION :
 	{
 		if(!Time_keeper_is_playing(time_keeper))
 		{
-			time_keeper->play_direction = play_direction;
+			time_keeper->play_direction = play_direction;	
+			/*notify clients before playing. If play fails, notify of stop*/
+			Time_keeper_notify_clients(time_keeper, TIME_KEEPER_STARTED);
 			if(Time_keeper_play_private(time_keeper))
 			{
 				time_keeper->playing = 1;
-
-				Time_keeper_notify_clients(time_keeper, TIME_KEEPER_STARTED);
+			}
+			else
+			{
+				time_keeper->playing = 0;
+				Time_keeper_notify_clients(time_keeper, TIME_KEEPER_STOPPED);
 			}
 		}
 		else
