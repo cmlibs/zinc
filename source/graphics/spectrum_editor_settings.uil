@@ -70,7 +70,7 @@ identifier
 	spec_ed_set_red;
 	spec_ed_set_green;
 	spec_ed_set_blue;
-	spec_ed_set_blue_to_white;
+	spec_ed_set_white_to_blue;
 	spec_ed_set_white_to_red;
 	spec_ed_set_alpha;
 	spec_ed_set_bands;
@@ -322,7 +322,7 @@ object
 		controls
 			{
 				XmToggleButtonGadget spec_ed_set_extend_below;
-!				put the spec_ed_set_fix_min_here
+				XmToggleButtonGadget spec_ed_set_fix_min;
 			};
 		};
 
@@ -335,6 +335,29 @@ object
 			XmNleftOffset = 0;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 0;
+!			XmNbottomAttachment = XmATTACH_FORM;
+!			XmNbottomOffset = 0;
+			XmNuserData = spec_ed_set_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				spec_ed_set_id_extend_below_btn(spec_ed_set_structure);
+			XmNvalueChangedCallback = procedure
+				spec_ed_set_range_CB(spec_ed_set_structure);
+			};
+		};
+
+	spec_ed_set_fix_min: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Fix minimum");
+			XmNleftAttachment = XmATTACH_FORM;
+      XmNleftOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = spec_ed_set_extend_below;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 0;
 			XmNuserData = spec_ed_set_structure;
@@ -342,7 +365,7 @@ object
 		callbacks
 			{
 			MrmNcreateCallback = procedure
-				spec_ed_set_id_extend_below_btn(spec_ed_set_structure);
+				spec_ed_set_id_fix_min_btn(spec_ed_set_structure);
 			XmNvalueChangedCallback = procedure
 				spec_ed_set_range_CB(spec_ed_set_structure);
 			};
@@ -360,9 +383,9 @@ object
       	XmNleftOffset = 0;
 				XmNleftWidget = spec_ed_set_range_bot;
       	XmNtopAttachment = XmATTACH_FORM;
-      	XmNtopOffset = 0;
+      	XmNtopOffset = 15;
       	XmNbottomAttachment = XmATTACH_FORM;
-      	XmNbottomOffset = 0;
+      	XmNbottomOffset = 15;
       	XmNuserData = spec_ed_set_structure;
       	};
     	callbacks
@@ -403,9 +426,9 @@ object
       	XmNleftOffset = 0;
       	XmNleftWidget = spec_ed_set_range_label;
       	XmNtopAttachment = XmATTACH_FORM;
-      	XmNtopOffset = 0;
+      	XmNtopOffset = 15;
       	XmNbottomAttachment = XmATTACH_FORM;
-      	XmNbottomOffset = 0;
+      	XmNbottomOffset = 15;
       	XmNuserData = spec_ed_set_structure;
       	};
     	callbacks
@@ -432,7 +455,7 @@ object
 		controls
 			{
 				XmToggleButtonGadget spec_ed_set_extend_above;
-!				put the spec_ed_set_fix_max_here
+				XmToggleButtonGadget spec_ed_set_fix_max;
 			};
 		};
 
@@ -445,6 +468,29 @@ object
       XmNleftOffset = 0;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 0;
+!			XmNbottomAttachment = XmATTACH_FORM;
+!			XmNbottomOffset = 0;
+			XmNuserData = spec_ed_set_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				spec_ed_set_id_extend_above_btn(spec_ed_set_structure);
+			XmNvalueChangedCallback = procedure
+				spec_ed_set_range_CB(spec_ed_set_structure);
+			};
+		};
+
+	spec_ed_set_fix_max: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Fix maximum");
+			XmNleftAttachment = XmATTACH_FORM;
+      XmNleftOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = spec_ed_set_extend_above;
 			XmNbottomAttachment = XmATTACH_FORM;
 			XmNbottomOffset = 0;
 			XmNuserData = spec_ed_set_structure;
@@ -452,7 +498,7 @@ object
 		callbacks
 			{
 			MrmNcreateCallback = procedure
-				spec_ed_set_id_extend_above_btn(spec_ed_set_structure);
+				spec_ed_set_id_fix_max_btn(spec_ed_set_structure);
 			XmNvalueChangedCallback = procedure
 				spec_ed_set_range_CB(spec_ed_set_structure);
 			};
@@ -701,9 +747,9 @@ object
 				{
 				arguments
 					{
-					XmNlabelString = compound_string("Blue_to_white");
+					XmNlabelString = compound_string("White_to_blue");
 					XmNfontList = button_font;
-					XmNuserData = spec_ed_set_blue_to_white;
+					XmNuserData = spec_ed_set_white_to_blue;
 					};
 				};
 			XmPushButtonGadget

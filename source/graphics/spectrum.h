@@ -80,7 +80,7 @@ PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Spectrum,name,char *);
 int Spectrum_set_simple_type(struct Spectrum *spectrum,
 	enum Spectrum_simple_type type);
 /*******************************************************************************
-LAST MODIFIED : 6 August 1998
+LAST MODIFIED : 15 January 2001
 
 DESCRIPTION :
 A convienience routine that allows a spectrum to be automatically set into
@@ -229,6 +229,14 @@ LAST MODIFIED : 22 July 1998
 DESCRIPTION :
 Calculates the range of the spectrum from the settings it contains and updates
 the minimum and maximum contained inside it.
+==============================================================================*/
+
+int Spectrum_clear_all_fixed_flags(struct Spectrum *spectrum);
+/*******************************************************************************
+LAST MODIFIED : 16 January 2001
+
+DESCRIPTION :
+clears the fix_maximum, fix_minimum flag for all the settings in <spectrum>
 ==============================================================================*/
 
 int Spectrum_set_minimum_and_maximum(struct Spectrum *spectrum,

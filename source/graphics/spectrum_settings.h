@@ -41,7 +41,7 @@ Map the value into a colour.
 	SPECTRUM_ALPHA,
 	SPECTRUM_BANDED,
 	SPECTRUM_STEP,
-	SPECTRUM_BLUE_TO_WHITE,
+	SPECTRUM_WHITE_TO_BLUE,
 	SPECTRUM_WHITE_TO_RED
 }; /* enum Spectrum_settings_colour_mapping */
 
@@ -161,6 +161,15 @@ LAST MODIFIED : 10 March 1998
 DESCRIPTION :
 Frees the memory for the fields of <**settings_ptr>, frees the memory for
 <**settings_ptr> and sets <*settings_ptr> to NULL.
+==============================================================================*/
+
+int Spectrum_settings_clear_fixed(struct Spectrum_settings *settings,
+	void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 16 January 2001
+
+DESCRIPTION :
+Sets settings->fix_minimum,settings->fix_maximum to 0.
 ==============================================================================*/
 
 int Spectrum_settings_copy_and_put_in_list(
@@ -433,9 +442,10 @@ DESCRIPTION :
 int Spectrum_settings_set_range_minimum(struct Spectrum_settings *settings,
 	float value);
 /*******************************************************************************
-LAST MODIFIED : 14 July 1998
+LAST MODIFIED : 15 January 2001
 
 DESCRIPTION :
+If <settings> ->fix_minimum is NOT set, set <settings> ->minimum to <value>
 ==============================================================================*/
 
 float Spectrum_settings_get_range_maximum(struct Spectrum_settings *settings);
@@ -448,9 +458,10 @@ DESCRIPTION :
 int Spectrum_settings_set_range_maximum(struct Spectrum_settings *settings,
 	float value);
 /*******************************************************************************
-LAST MODIFIED : 14 July 1998
+LAST MODIFIED : 15 January 20001
 
-DESCRIPTION :
+DESCRIPTION : 
+If <settings> ->fix_maximum is NOT set, set <settings> ->maximum to <value>
 ==============================================================================*/
 
 int Spectrum_settings_get_extend_above_flag(struct Spectrum_settings *settings);
@@ -629,7 +640,7 @@ Writes out the <settings> as a text string in the command window with the
 int gfx_modify_spectrum_settings_linear(struct Parse_state *state,
 	void *modify_spectrum_data_void,void *spectrum_command_data_void);
 /*******************************************************************************
-LAST MODIFIED : 4 August 1998
+LAST MODIFIED : 17 January 2001
 
 DESCRIPTION :
 Executes a GFX MODIFY SPECTRUM LINEAR command.
@@ -640,8 +651,11 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_spectrum_settings_log(struct Parse_state *state,
 	void *modify_spectrum_data_void,void *spectrum_command_data_void);
 /*******************************************************************************
-LAST MODIFIED : 4 August 1998
+LAST MODIFIED : 17 January 2001
 
 DESCRIPTION :
+Executes a GFX MODIFY SPECTRUM LOG command.
+If return_code is 1, returns the completed Modify_spectrum_data with the
+parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 #endif /* !defined (SPECTRUM_SETTINGS_H) */

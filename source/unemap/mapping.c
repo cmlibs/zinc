@@ -6472,7 +6472,7 @@ deallocates the memory for <**map> and sets <*map> to NULL.
 
 int update_colour_map_unemap(struct Map *map,struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED : 3 August 1998
+LAST MODIFIED : 16 January 2001
 
 DESCRIPTION :
 Updates the colour map being used for map.
@@ -6495,6 +6495,7 @@ Updates the colour map being used for map.
 	XImage *map_image;
 	struct Spectrum *spectrum=(struct Spectrum *)NULL;
 	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
+	struct Spectrum *spectrum_copy=(struct Spectrum *)NULL;	
 	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 
 	ENTER(update_colour_map_unemap);
@@ -6545,52 +6546,25 @@ Updates the colour map being used for map.
 			!((SINGLE_ACTIVATION== *(map->type))&&(0<=map->activation_front)&&
 			(map->activation_front<number_of_spectrum_colours)))
 		{
-#if defined (UNEMAP_USE_3D)	
-			spectrum=map->drawing_information->spectrum;
-			if(spectrum_manager=
-				get_map_drawing_information_spectrum_manager(drawing_information))
+			/* copy the spectrum (leave unmanaged) and generate the mapping window */
+			/* colour bar from this. Do this as need to remove  */
+			/* fix_minimum, fix_maximum from the spectrum as these prevent the mapping */ 
+			/* window colour bar from working correctly  */
+			spectrum=map->drawing_information->spectrum;		
+			if (spectrum_copy=CREATE(Spectrum)("spectrum_copy"))
 			{
-				if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
-				{
-					if (spectrum_to_be_modified_copy=CREATE(Spectrum)
-						("spectrum_modify_temp"))
-					{
-						MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
-							(spectrum_to_be_modified_copy,spectrum);			
-						Spectrum_set_minimum_and_maximum(spectrum_to_be_modified_copy,0.0,
-							6.0);		
-						MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
-							spectrum_to_be_modified_copy,spectrum_manager);
-						DESTROY(Spectrum)(&spectrum_to_be_modified_copy);					
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							" update_colour_map_unemap. Could not create spectrum copy.");				
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						" update_colour_map_unemap. Spectrum is not in manager!");		
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					" update_colour_map_unemap. Spectrum_manager not present");
-			}
-#else
-			Spectrum_set_minimum_and_maximum(map->drawing_information->spectrum,0.0,
-				6.0);
-#endif /* defined (UNEMAP_USE_3D) */
-
+				MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
+					(spectrum_copy,spectrum);	
+				/* must now remove the fix_minimum, fix_maximum from spectrum */					
+				Spectrum_clear_all_fixed_flags(spectrum_copy);					
+				Spectrum_set_minimum_and_maximum(spectrum_copy,0.0,6.0);											
+			} 
 			for (i=0;i<=start_cell;i++)
 			{
 				spectrum_rgb[i].pixel=spectrum_pixels[i];
 				spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
 				theta = 0.0;
-				spectrum_value_to_rgb(map->drawing_information->spectrum,
+				spectrum_value_to_rgb(spectrum_copy,
 					/* number_of_data_components */1, &theta,&red,&green,&blue);
 				red_short=(unsigned short)(65535*red); 
 				green_short=(unsigned short)(65535*green); 
@@ -6610,7 +6584,7 @@ Updates the colour map being used for map.
 				theta=(float)(i-start_cell)/(float)(cell_range)*6;
 				spectrum_rgb[i].pixel=spectrum_pixels[i];
 				spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-				spectrum_value_to_rgb(map->drawing_information->spectrum,
+				spectrum_value_to_rgb(spectrum_copy,
 					/* number_of_data_components */1, &theta,&red,&green,&blue);
 				red_short=(unsigned short)(65535*red); 
 				green_short=(unsigned short)(65535*green); 
@@ -6630,7 +6604,7 @@ Updates the colour map being used for map.
 				theta = 6.0;
 				spectrum_rgb[i].pixel=spectrum_pixels[i];
 				spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-				spectrum_value_to_rgb(map->drawing_information->spectrum,
+				spectrum_value_to_rgb(spectrum_copy,
 					/* number_of_data_components */1, &theta,&red,&green,&blue);
 				red_short=(unsigned short)(65535*red); 
 				green_short=(unsigned short)(65535*green); 
@@ -6645,343 +6619,7 @@ Updates the colour map being used for map.
 					update_pixel[i]=1;
 				}
 			}
-#if defined (OLD_CODE)
-			switch (map->spectrum_type)
-			{
-				case RED_TO_BLUE_SPECTRUM:
-				{
-					/* create a spectrum from red (early) to blue (late) */
-					for (i=0;i<=start_cell;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						spectrum_rgb[i].red=65535;
-						spectrum_rgb[i].blue=0;
-						spectrum_rgb[i].green=0;
-					}
-					for (i=start_cell+1;i<end_cell;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						theta=(float)(i-start_cell)/(float)(cell_range)*6;
-						if (theta<2)
-						{
-							spectrum_rgb[i].red=65535;
-							spectrum_rgb[i].blue=0;
-							if (theta<1)
-							{
-								spectrum_rgb[i].green=
-									(unsigned int)((theta*0.75)*65535);
-							}
-							else
-							{
-								spectrum_rgb[i].green=
-									(unsigned int)((0.75+(theta-1)*0.25)*65535);
-							}
-						}
-						else
-						{
-							if (theta<4)
-							{
-								spectrum_rgb[i].red=(unsigned int)((4-theta)*32767);
-								spectrum_rgb[i].green=65535;
-								spectrum_rgb[i].blue=
-									(unsigned int)((theta-2)*32767);
-							}
-							else
-							{
-								spectrum_rgb[i].red=0;
-								spectrum_rgb[i].blue=65535;
-								if (theta<5)
-								{
-									spectrum_rgb[i].green=
-										(unsigned int)((1-(theta-4)*0.25)*65535);
-								}
-								else
-								{
-									spectrum_rgb[i].green=
-										(unsigned int)((0.75-(theta-5)*0.75)*65535);
-								}
-							}
-						}
-					}
-					for (i=end_cell;i<number_of_spectrum_colours;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						spectrum_rgb[i].red=0;
-						spectrum_rgb[i].blue=65535;
-						spectrum_rgb[i].green=0;
-					}
-				} break;
-				case BLUE_TO_RED_SPECTRUM:
-				{
-					/* create a spectrum from blue (low) to red (high) */
-					for (i=0;i<=start_cell;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						spectrum_rgb[i].red=0;
-						spectrum_rgb[i].blue=65535;
-						spectrum_rgb[i].green=0;
-					}
-					for (i=start_cell+1;i<end_cell;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						theta=(float)(end_cell-i)/(float)(cell_range)*6;
-						if (theta<2)
-						{
-							spectrum_rgb[i].red=65535;
-							spectrum_rgb[i].blue=0;
-							if (theta<1)
-							{
-								spectrum_rgb[i].green=
-									(unsigned int)((theta*0.75)*65535);
-							}
-							else
-							{
-								spectrum_rgb[i].green=
-									(unsigned int)((0.75+(theta-1)*0.25)*65535);
-							}
-						}
-						else
-						{
-							if (theta<4)
-							{
-								spectrum_rgb[i].red=(unsigned int)((4-theta)*32767);
-								spectrum_rgb[i].green=65535;
-								spectrum_rgb[i].blue=
-									(unsigned int)((theta-2)*32767);
-							}
-							else
-							{
-								spectrum_rgb[i].red=0;
-								spectrum_rgb[i].blue=65535;
-								if (theta<5)
-								{
-									spectrum_rgb[i].green=
-										(unsigned int)((1-(theta-4)*0.25)*65535);
-								}
-								else
-								{
-									spectrum_rgb[i].green=
-										(unsigned int)((0.75-(theta-5)*0.75)*65535);
-								}
-							}
-						}
-					}
-					for (i=end_cell;i<number_of_spectrum_colours;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						spectrum_rgb[i].red=65535;
-						spectrum_rgb[i].blue=0;
-						spectrum_rgb[i].green=0;
-					}
-				} break;
-				case LOG_BLUE_TO_RED_SPECTRUM:
-				{
-					float negative_scaling,positive_scaling;
-
-					negative_scaling=1;
-					positive_scaling=1;
-					/* create a log spectrum from blue (low) to red (high) */
-					for (i=0;i<=start_cell;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						spectrum_rgb[i].red=0;
-						spectrum_rgb[i].blue=65535;
-						spectrum_rgb[i].green=0;
-					}
-					for (i=start_cell+1;i<end_cell;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						theta=contour_minimum+(float)(i-start_cell)*
-							(contour_maximum-contour_minimum)/(float)(cell_range);
-						if ((contour_minimum<0)&&(0<contour_maximum))
-						{
-							if (theta<0)
-							{
-								theta=(1-log((contour_minimum+negative_scaling*theta)/
-									contour_minimum)/log(1+negative_scaling))/2;
-							}
-							else
-							{
-								theta=(1+log((contour_maximum+negative_scaling*theta)/
-									contour_maximum)/log(1+positive_scaling))/2;
-							}
-						}
-						else
-						{
-							if (theta<0)
-							{
-								theta=log(1+negative_scaling*(theta-contour_minimum)/
-									(contour_maximum-contour_minimum))/log(1+negative_scaling);
-							}
-							else
-							{
-								theta=log(1+positive_scaling*(theta-contour_minimum)/
-									(contour_maximum-contour_minimum))/log(1+positive_scaling);
-							}
-						}
-						theta=(1-theta)*6;
-						if (theta<2)
-						{
-							spectrum_rgb[i].red=65535;
-							spectrum_rgb[i].blue=0;
-							if (theta<1)
-							{
-								spectrum_rgb[i].green=
-									(unsigned int)((theta*0.75)*65535);
-							}
-							else
-							{
-								spectrum_rgb[i].green=
-									(unsigned int)((0.75+(theta-1)*0.25)*65535);
-							}
-						}
-						else
-						{
-							if (theta<4)
-							{
-								spectrum_rgb[i].red=(unsigned int)((4-theta)*32767);
-								spectrum_rgb[i].green=65535;
-								spectrum_rgb[i].blue=
-									(unsigned int)((theta-2)*32767);
-							}
-							else
-							{
-								spectrum_rgb[i].red=0;
-								spectrum_rgb[i].blue=65535;
-								if (theta<5)
-								{
-									spectrum_rgb[i].green=
-										(unsigned int)((1-(theta-4)*0.25)*65535);
-								}
-								else
-								{
-									spectrum_rgb[i].green=
-										(unsigned int)((0.75-(theta-5)*0.75)*65535);
-								}
-							}
-						}
-					}
-					for (i=end_cell;i<number_of_spectrum_colours;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						spectrum_rgb[i].red=65535;
-						spectrum_rgb[i].blue=0;
-						spectrum_rgb[i].green=0;
-					}
-				} break;
-				case LOG_RED_TO_BLUE_SPECTRUM:
-				{
-					float negative_scaling,positive_scaling;
-
-					negative_scaling=1;
-					positive_scaling=1;
-					/* create a log spectrum from red (low) to blue (high) */
-					for (i=0;i<=start_cell;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						spectrum_rgb[i].red=65535;
-						spectrum_rgb[i].blue=0;
-						spectrum_rgb[i].green=0;
-					}
-					for (i=start_cell+1;i<end_cell;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						theta=contour_minimum+(float)(i-start_cell)*
-							(contour_maximum-contour_minimum)/(float)(cell_range);
-						if ((contour_minimum<0)&&(0<contour_maximum))
-						{
-							if (theta<0)
-							{
-								theta=(1-log((contour_minimum+negative_scaling*theta)/
-									contour_minimum)/log(1+negative_scaling))/2;
-							}
-							else
-							{
-								theta=(1+log((contour_maximum+negative_scaling*theta)/
-									contour_maximum)/log(1+positive_scaling))/2;
-							}
-						}
-						else
-						{
-							if (theta<0)
-							{
-								theta=log(1+negative_scaling*(theta-contour_minimum)/
-									(contour_maximum-contour_minimum))/log(1+negative_scaling);
-							}
-							else
-							{
-								theta=log(1+positive_scaling*(theta-contour_minimum)/
-									(contour_maximum-contour_minimum))/log(1+positive_scaling);
-							}
-						}
-						theta=theta*6;
-						if (theta<2)
-						{
-							spectrum_rgb[i].red=65535;
-							spectrum_rgb[i].blue=0;
-							if (theta<1)
-							{
-								spectrum_rgb[i].green=
-									(unsigned int)((theta*0.75)*65535);
-							}
-							else
-							{
-								spectrum_rgb[i].green=
-									(unsigned int)((0.75+(theta-1)*0.25)*65535);
-							}
-						}
-						else
-						{
-							if (theta<4)
-							{
-								spectrum_rgb[i].red=(unsigned int)((4-theta)*32767);
-								spectrum_rgb[i].green=65535;
-								spectrum_rgb[i].blue=
-									(unsigned int)((theta-2)*32767);
-							}
-							else
-							{
-								spectrum_rgb[i].red=0;
-								spectrum_rgb[i].blue=65535;
-								if (theta<5)
-								{
-									spectrum_rgb[i].green=
-										(unsigned int)((1-(theta-4)*0.25)*65535);
-								}
-								else
-								{
-									spectrum_rgb[i].green=
-										(unsigned int)((0.75-(theta-5)*0.75)*65535);
-								}
-							}
-						}
-					}
-					for (i=end_cell;i<number_of_spectrum_colours;i++)
-					{
-						spectrum_rgb[i].pixel=spectrum_pixels[i];
-						spectrum_rgb[i].flags=DoRed|DoGreen|DoBlue;
-						spectrum_rgb[i].red=0;
-						spectrum_rgb[i].blue=65535;
-						spectrum_rgb[i].green=0;
-					}
-				} break;
-			}
-#endif /* defined (OLD_CODE) */
 			/* hide the map boundary */
-#if defined (OLD_CODE)
-			if (map_image&&(drawing_information->read_only_colour_map))
-#endif /* defined (OLD_CODE) */
 			if (drawing_information->read_only_colour_map)
 			{
 				if (drawing_information->boundary_colour!=
@@ -7024,9 +6662,6 @@ Updates the colour map being used for map.
 				}
 			}
 			/* show the map boundary */
-#if defined (OLD_CODE)
-			if (map_image&&(drawing_information->read_only_colour_map))
-#endif /* defined (OLD_CODE) */
 			if (drawing_information->read_only_colour_map)
 			{
 				if (drawing_information->boundary_colour!=
@@ -7180,6 +6815,8 @@ Updates the colour map being used for map.
 		{
 			XStoreColors(display,colour_map,spectrum_rgb,number_of_spectrum_colours);
 		}
+		/* no longer need the spectrum copy */
+		DESTROY(Spectrum)(&spectrum_copy);
 #if defined (UNEMAP_USE_3D)	
 		spectrum=map->drawing_information->spectrum;
 		if(spectrum_manager=
@@ -7221,7 +6858,7 @@ Updates the colour map being used for map.
 		/*Ensure spectrum is set correctly */
 		Spectrum_set_minimum_and_maximum(map->drawing_information->spectrum,
 			map->minimum_value,map->maximum_value);
-#endif /* defined (UNEMAP_USE_3D) */	
+#endif /* defined (UNEMAP_USE_3D) */
 	}
 	else
 	{

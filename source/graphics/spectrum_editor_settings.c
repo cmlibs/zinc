@@ -52,6 +52,7 @@ Contains all the information carried by the graphical element editor widget.
 	Widget step_value_widget, step_value_entry_form;
 	Widget range_min_widget, range_max_widget;
 	Widget extend_above_toggle, extend_below_toggle;
+	Widget fix_maximum_toggle,fix_minimum_toggle;
 	Widget value_entry_form, value_min_widget, value_max_widget;
 	Widget colour_menu_widget, colour_option_widget;
 	Widget render_menu_widget, render_option_widget;
@@ -98,6 +99,10 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(spectrum_editor_settings, \
 	Spectrum_editor_settings, extend_above_toggle)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(spectrum_editor_settings, \
 	Spectrum_editor_settings, extend_below_toggle)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(spectrum_editor_settings, \
+	Spectrum_editor_settings, fix_maximum_toggle)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(spectrum_editor_settings, \
+	Spectrum_editor_settings, fix_minimum_toggle)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(spectrum_editor_settings, \
 	Spectrum_editor_settings, value_min_widget)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(spectrum_editor_settings, \
@@ -541,7 +546,7 @@ Callback for the range text widgets.
 {
 	char *text;
 	float new_parameter;
-	int extend;
+	int extend,fix;
 	struct Spectrum_editor_settings *spectrum_editor_settings;
 	struct Spectrum_settings *settings;
 
@@ -603,6 +608,18 @@ Callback for the range text widgets.
 		{
 			extend = XmToggleButtonGadgetGetState(widget);
 			Spectrum_settings_set_extend_below_flag(settings, extend);
+			spectrum_editor_settings_update(spectrum_editor_settings);
+		}	
+		else if (widget == spectrum_editor_settings->fix_maximum_toggle)
+		{
+			fix = XmToggleButtonGadgetGetState(widget);
+			Spectrum_settings_set_fix_maximum_flag(settings, fix);
+			spectrum_editor_settings_update(spectrum_editor_settings);
+		}
+		else if (widget == spectrum_editor_settings->fix_minimum_toggle)
+		{
+			fix = XmToggleButtonGadgetGetState(widget);
+			Spectrum_settings_set_fix_minimum_flag(settings, fix);
 			spectrum_editor_settings_update(spectrum_editor_settings);
 		}
 		else
@@ -899,6 +916,10 @@ Creates a spectrum_editor_settings widget.
 			DIALOG_IDENTIFY(spectrum_editor_settings, extend_above_toggle)},
 		{"spec_ed_set_id_extend_below_btn",(XtPointer)
 			DIALOG_IDENTIFY(spectrum_editor_settings, extend_below_toggle)},
+		{"spec_ed_set_id_fix_max_btn",(XtPointer)
+			DIALOG_IDENTIFY(spectrum_editor_settings, fix_maximum_toggle)},
+		{"spec_ed_set_id_fix_min_btn",(XtPointer)
+			DIALOG_IDENTIFY(spectrum_editor_settings, fix_minimum_toggle)},
 		{"spec_ed_set_range_CB",(XtPointer)
 			spectrum_editor_settings_range_CB},
 		{"spec_ed_set_id_value_min_text",(XtPointer)
@@ -923,8 +944,8 @@ Creates a spectrum_editor_settings widget.
 			SPECTRUM_GREEN},
 		{"spec_ed_set_blue",(XtPointer)
 			SPECTRUM_BLUE},
-		{"spec_ed_set_blue_to_white",(XtPointer)
-			SPECTRUM_BLUE_TO_WHITE},
+		{"spec_ed_set_white_to_blue",(XtPointer)
+			SPECTRUM_WHITE_TO_BLUE},
 		{"spec_ed_set_white_to_red",(XtPointer)
 			SPECTRUM_WHITE_TO_RED},
 		{"spec_ed_set_alpha",(XtPointer)
@@ -985,6 +1006,8 @@ Creates a spectrum_editor_settings widget.
 				spectrum_editor_settings->range_max_widget = (Widget)NULL;
 				spectrum_editor_settings->extend_above_toggle = (Widget)NULL;
 				spectrum_editor_settings->extend_below_toggle = (Widget)NULL;
+				spectrum_editor_settings->fix_maximum_toggle = (Widget)NULL;
+				spectrum_editor_settings->fix_minimum_toggle = (Widget)NULL;
 				spectrum_editor_settings->value_min_widget = (Widget)NULL;
 				spectrum_editor_settings->value_max_widget = (Widget)NULL;
 				spectrum_editor_settings->value_entry_form = (Widget)NULL;
@@ -1125,7 +1148,8 @@ Changes the currently chosen settings.
 	enum Spectrum_settings_render_type button_type, render_type;
 	enum Spectrum_settings_colour_mapping button_colour_mapping, colour_mapping;
 	float exaggeration, step_value, band_ratio;
-	int component,extend, i, num_children, number_of_bands, black_band_proportion, return_code;
+	int component,extend,fix,i, num_children, number_of_bands, black_band_proportion,
+		return_code;
 	struct Spectrum_settings *settings;
 	struct Spectrum_editor_settings *spectrum_editor_settings;
 	Widget *child_list;
@@ -1403,6 +1427,40 @@ Changes the currently chosen settings.
 					extend = Spectrum_settings_get_extend_below_flag(settings);
 					XmToggleButtonGadgetSetState(spectrum_editor_settings->extend_below_toggle,
 						extend, False);
+				}
+				if (spectrum_editor_settings->fix_maximum_toggle)
+				{
+					fix = Spectrum_settings_get_fix_maximum_flag(settings);
+					XmToggleButtonGadgetSetState(spectrum_editor_settings->fix_maximum_toggle,
+						fix, False);
+					/* can't change the range when it's fixed*/
+					if(fix)
+					{
+						XtSetSensitive(spectrum_editor_settings->range_max_widget,
+							False );
+					}
+					else
+					{
+						XtSetSensitive(spectrum_editor_settings->range_max_widget,
+							True );
+					}
+				}
+				if (spectrum_editor_settings->fix_minimum_toggle)
+				{
+					fix = Spectrum_settings_get_fix_minimum_flag(settings);
+					XmToggleButtonGadgetSetState(spectrum_editor_settings->fix_minimum_toggle,
+						fix, False);
+					/* can't change the range when it's fixed*/
+					if(fix)
+					{
+						XtSetSensitive(spectrum_editor_settings->range_min_widget,
+							False );
+					}
+					else
+					{
+						XtSetSensitive(spectrum_editor_settings->range_min_widget,
+							True );
+					}
 				}
 				if (spectrum_editor_settings->value_min_widget)
 				{

@@ -218,7 +218,7 @@ Global functions
 int Spectrum_set_simple_type(struct Spectrum *spectrum,
 	enum Spectrum_simple_type type)
 /*******************************************************************************
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 15 January 2001
 
 DESCRIPTION :
 A convienience routine that allows a spectrum to be automatically set into
@@ -335,22 +335,27 @@ some predetermined simple types.
 					spectrum_settings_list);
 
 				Spectrum_settings_set_type(settings, SPECTRUM_LOG);
-				Spectrum_settings_set_exaggeration(settings, -10.0);				
-				Spectrum_settings_set_range_minimum(settings, 0.0);
-				Spectrum_settings_set_range_maximum(settings, 0.5);	
+				Spectrum_settings_set_exaggeration(settings, -10.0); 			
+				Spectrum_settings_set_range_minimum(settings, -1.0);
+				Spectrum_settings_set_range_maximum(settings, 0.0);
+				Spectrum_settings_set_reverse_flag(settings,1);
+				/* fix the maximum (white ) at zero */
+				Spectrum_settings_set_fix_maximum_flag(settings,1);
 				Spectrum_settings_set_extend_below_flag(settings, 1);			
-				Spectrum_settings_set_colour_mapping(settings, SPECTRUM_BLUE_TO_WHITE);						
+				Spectrum_settings_set_colour_mapping(settings, SPECTRUM_WHITE_TO_BLUE);
 				Spectrum_settings_set_colour_value_minimum(settings, 0);
 				Spectrum_settings_set_colour_value_maximum(settings, 1);
-
+				
 				Spectrum_settings_set_type(second_settings, SPECTRUM_LOG);
-				Spectrum_settings_set_exaggeration(second_settings, 10.0);
-				Spectrum_settings_set_range_minimum(second_settings, 0.5);
+				Spectrum_settings_set_exaggeration(second_settings, 10.0);				
+				Spectrum_settings_set_range_minimum(second_settings, 0.0);
 				Spectrum_settings_set_range_maximum(second_settings, 1.0);
+				/* fix the minimum (white ) at zero */
+				Spectrum_settings_set_fix_minimum_flag(second_settings,1);
 				Spectrum_settings_set_extend_above_flag(second_settings, 1);			
 				Spectrum_settings_set_colour_mapping(second_settings, SPECTRUM_WHITE_TO_RED);
 				Spectrum_settings_set_colour_value_minimum(second_settings, 0);
-				Spectrum_settings_set_colour_value_maximum(second_settings, 1);
+				Spectrum_settings_set_colour_value_maximum(second_settings, 1);				
 			} break;		
 			default:
 			{
@@ -454,7 +459,7 @@ it returns UNKNOWN_SPECTRUM
 								type = LOG_RED_TO_BLUE_SPECTRUM;
 							}
 						}
-						else if ((colour_mapping == SPECTRUM_BLUE_TO_WHITE)
+						else if ((colour_mapping == SPECTRUM_WHITE_TO_BLUE)
 							&& (second_colour_mapping == SPECTRUM_WHITE_TO_RED))
 						{
 							type = BLUE_WHITE_RED_SPECTRUM;
@@ -577,7 +582,7 @@ See also Spectrum_get_simple_type.
 										spectrum_simple_type = LOG_RED_TO_BLUE_SPECTRUM;
 									}
 								}	
-								else if ((colour_mapping == SPECTRUM_BLUE_TO_WHITE)
+								else if ((colour_mapping == SPECTRUM_WHITE_TO_BLUE)
 									&& (second_colour_mapping == SPECTRUM_WHITE_TO_RED))
 								{
 									spectrum_simple_type = BLUE_WHITE_RED_SPECTRUM;
@@ -1623,6 +1628,42 @@ functions are in one place and the iterator can have local scope.
 	return (return_code);
 } /* Spectrum_rerange_iterator */
 
+int Spectrum_clear_all_fixed_flags(struct Spectrum *spectrum)
+/*******************************************************************************
+LAST MODIFIED : 16 January 2001
+
+DESCRIPTION :
+clears the fix_maximum, fix_minimum flag for all the settings in <spectrum>
+==============================================================================*/
+{
+	int return_code;
+	struct LIST(Spectrum_settings) *list_of_settings;
+
+	ENTER(Spectrum_clear_all_fixed_flags);
+	list_of_settings=(struct LIST(Spectrum_settings) *)NULL;
+	if(spectrum)
+	{
+		list_of_settings=spectrum->list_of_settings;
+		if (list_of_settings)
+		{
+			if (!(return_code=FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
+				Spectrum_settings_clear_fixed,(void *)NULL,list_of_settings)))
+			{
+				display_message(ERROR_MESSAGE,
+					"Spectrum_clear_all_fixed_flags. Error setting changes");
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Spectrum_clear_all_fixed_flags.  Invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+} /* Spectrum_clear_all_fixed_flags */
+
 int Spectrum_set_minimum_and_maximum(struct Spectrum *spectrum,
 	float minimum, float maximum)
 /*******************************************************************************
@@ -1636,7 +1677,7 @@ it contains.  The ratios of the different settings are preserved.
 	int return_code;
 	struct Spectrum_rerange_data data;
 
-	ENTER(spectrum_set_minimum_and_maximumcalculate_range);
+	ENTER(spectrum_set_minimum_and_maximum);
 	if (spectrum || minimum > maximum)
 	{
 		if ( minimum != spectrum->minimum 
