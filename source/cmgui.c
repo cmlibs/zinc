@@ -26,7 +26,9 @@ DESCRIPTION :
 #if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
 #endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 #include "api/cmiss_graphics_window_private.h"
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 #include "api/cmiss_scene_viewer.h"
 #include "api/cmiss_scene_viewer_private.h"
 #include "comfile/comfile_window.h"
@@ -773,9 +775,9 @@ Main program for the CMISS Graphical User Interface
 	command_data.graphical_material_manager=(struct MANAGER(Graphical_material) *)NULL;
 	command_data.default_spectrum=(struct Spectrum *)NULL;
 	command_data.spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
-#if defined (MOTIF) || (GTK_USER_INTERFACE)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 	command_data.graphics_window_manager=(struct MANAGER(Graphics_window) *)NULL;
-#endif /* defined (MOTIF) || (GTK_USER_INTERFACE) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 	command_data.control_curve_manager=(struct MANAGER(Control_curve) *)NULL;
 	command_data.basis_manager=(struct MANAGER(FE_basis) *)NULL;
 	command_data.element_manager=(struct MANAGER(FE_element) *)NULL;
@@ -1232,14 +1234,14 @@ Main program for the CMISS Graphical User Interface
 			command_data.computed_field_package);
 		Computed_field_register_types_vector_operations(
 			command_data.computed_field_package);
-#if defined (MOTIF)
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 		if (command_data.graphics_window_manager)
 		{
 			Computed_field_register_type_window_projection(
 				command_data.computed_field_package, 
 				command_data.graphics_window_manager);
 		}
-#endif /* defined (MOTIF) */
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 		if (command_data.texture_manager)
 		{
 			Computed_field_register_type_sample_texture(
@@ -1494,7 +1496,9 @@ Main program for the CMISS Graphical User Interface
 			command_data.scene_manager, command_data.default_scene,
 			command_data.texture_manager, command_data.user_interface);
 		
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 		Cmiss_graphics_window_set_data(command_data.graphics_window_manager);
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 	}
 
 	/* properly set up the Execute_command objects */
@@ -1823,7 +1827,9 @@ Main program for the CMISS Graphical User Interface
 	{
 		Cmiss_scene_viewer_free_data();
 		
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 		Cmiss_graphics_window_free_data();
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 	}
 
 #if defined (SGI_MOVIE_FILE)
