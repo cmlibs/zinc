@@ -14115,7 +14115,7 @@ Write bicubic elements to an IGES file.
 			/* version */
 			WRITE_STRING_PARAMETER("unknown");
 			/* number of binary bits for integer representation */
-			WRITE_INTEGER_PARAMETER(8*sizeof(int));
+			WRITE_INTEGER_PARAMETER((int)(8*sizeof(int)));
 			/* maximum power of ten representable in a single precision floating point
 				number on the sending system */
 			WRITE_INTEGER_PARAMETER(FLT_MAX_10_EXP);
