@@ -612,6 +612,35 @@ DESCRIPTION :
 
 	return_code = 0;
 	display = graphics_buffer_package->display;
+#if defined (DEBUG)
+	{
+		int value;
+		printf("Graphics_buffer_create_from_fb_config\n");
+ 		glXGetFBConfigAttrib(display, fb_config, GLX_FBCONFIG_ID, &value);
+		printf("   fbconfig id : %d\n", value);
+ 		glXGetFBConfigAttrib(display, fb_config, GLX_DOUBLEBUFFER, &value);
+		printf("   doublebuffer : %d\n", value);
+ 		glXGetFBConfigAttrib(display, fb_config, GLX_RED_SIZE, &value);
+		printf("   red : %d\n", value);
+ 		glXGetFBConfigAttrib(display, fb_config, GLX_GREEN_SIZE, &value);
+		printf("   green : %d\n", value);
+ 		glXGetFBConfigAttrib(display, fb_config, GLX_BLUE_SIZE, &value);
+		printf("   blue : %d\n", value);
+ 		glXGetFBConfigAttrib(display, fb_config, GLX_ALPHA_SIZE, &value);
+		printf("   alpha : %d\n", value);
+ 		glXGetFBConfigAttrib(display, fb_config, GLX_DEPTH_SIZE, &value);
+		printf("   depth : %d\n", value);
+ 		glXGetFBConfigAttrib(display, fb_config, GLX_ACCUM_RED_SIZE, &value);
+		printf("   accumulation red : %d\n", value);
+ 		glXGetFBConfigAttrib(display, fb_config, GLX_ACCUM_GREEN_SIZE, &value);
+		printf("   accumulation green : %d\n", value);
+ 		glXGetFBConfigAttrib(display, fb_config, GLX_ACCUM_BLUE_SIZE, &value);
+		printf("   accumulation blue : %d\n", value);
+ 		glXGetFBConfigAttrib(display, fb_config, GLX_ACCUM_ALPHA_SIZE, &value);
+		printf("   accumulation alpha : %d\n", value);
+	}
+#endif /* defined (DEBUG) */
+
 	switch (class)
 	{
 		case GRAPHICS_BUFFER_ONSCREEN_CLASS:
@@ -727,6 +756,11 @@ DESCRIPTION :
 	printf("   buffer->config : %p\n", buffer->config);
 	printf("   buffer->visual_info : %p\n", buffer->visual_info);
 	printf("   buffer->context : %p\n\n", buffer->context);
+	{
+		int value;
+ 		glXQueryContext(display, buffer->context, GLX_FBCONFIG_ID, &value);
+		printf("   fbconfig id : %d\n", value);
+	}
 #endif /* defined (DEBUG) */
 
 	LEAVE;
@@ -1294,7 +1328,7 @@ that it is all in one place.
 						{
 							*attribute_ptr = GLX_DRAWABLE_TYPE;
 							attribute_ptr++;
-							*attribute_ptr = GLX_WINDOW_BIT;
+							*attribute_ptr = GLX_WINDOW_BIT | GLX_PBUFFER_BIT;
 							attribute_ptr++;			
 						} break;
 						case GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS:
@@ -1305,14 +1339,14 @@ that it is all in one place.
 							{
 								*attribute_ptr = GLX_DRAWABLE_TYPE;
 								attribute_ptr++;
-								*attribute_ptr = GLX_PBUFFER_BIT;
+								*attribute_ptr = GLX_WINDOW_BIT | GLX_PBUFFER_BIT;
 								attribute_ptr++;			
 							}
 							else
 							{
 								*attribute_ptr = GLX_DRAWABLE_TYPE;
 								attribute_ptr++;
-								*attribute_ptr = GLX_PBUFFER_BIT | GLX_PIXMAP_BIT;
+								*attribute_ptr = GLX_PIXMAP_BIT;
 								attribute_ptr++;			
 							}
 						} break;
@@ -1543,7 +1577,7 @@ that it is all in one place.
 						{
 							*attribute_ptr = GLX_DRAWABLE_TYPE;
 							attribute_ptr++;
-							*attribute_ptr = GLX_WINDOW_BIT;
+							*attribute_ptr = GLX_WINDOW_BIT | GLX_PBUFFER_BIT;
 							attribute_ptr++;			
 						} break;
 						case GRAPHICS_BUFFER_OFFSCREEN_SHARED_CLASS:
@@ -1554,14 +1588,14 @@ that it is all in one place.
 							{
 								*attribute_ptr = GLX_DRAWABLE_TYPE;
 								attribute_ptr++;
-								*attribute_ptr = GLX_PBUFFER_BIT;
+								*attribute_ptr = GLX_WINDOW_BIT | GLX_PBUFFER_BIT;
 								attribute_ptr++;			
 							}
 							else
 							{
 								*attribute_ptr = GLX_DRAWABLE_TYPE;
 								attribute_ptr++;
-								*attribute_ptr = GLX_PBUFFER_BIT | GLX_PIXMAP_BIT;
+								*attribute_ptr = GLX_PIXMAP_BIT;
 								attribute_ptr++;			
 							}
 						} break;
