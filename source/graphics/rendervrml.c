@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rendervrml.c
 
-LAST MODIFIED : 9 July 2001
+LAST MODIFIED : 21 August 2001
 
 DESCRIPTION :
 Renders gtObjects to VRML file
@@ -563,7 +563,7 @@ int draw_glyph_set_vrml(FILE *vrml_file, int number_of_points,
 	struct Graphical_material *material, struct Spectrum *spectrum, float time,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 /*******************************************************************************
-LAST MODIFIED : 1 December 2000
+LAST MODIFIED : 21 August 2001
 
 DESCRIPTION :
 Defines an object for the <glyph> and then draws that at <number_of_points>
@@ -1004,19 +1004,26 @@ points  given by the positions in <point_list> and oriented and scaled by
 							fprintf(vrml_file,"Transform {\n");
 							fprintf(vrml_file,"  translation %f %f %f\n", x,y,z);
 							/* if possible, try to avoid having two Transform nodes */
-							if ((0.0 != a_angle)&&(0.0 != b_angle))
+							/*???DB.  Lose accuracy fairly badly here.  Need to have
+								tolerance so that not different numbers of lines for ndiff */
+#define ZERO_ROTATION_TOLERANCE 0.001
+/*							if ((0.0 != a_angle)&&(0.0 != b_angle))*/
+							if ((ZERO_ROTATION_TOLERANCE < fabs(a_angle))&&
+								(ZERO_ROTATION_TOLERANCE < fabs(b_angle)))
 							{
 								/* b-rotation must wrap a-rotation to occur after it */
 								fprintf(vrml_file,"  rotation %f %f %f %f\n",b1,b2,b3,b_angle);
 								fprintf(vrml_file,"  children [\n");
 								fprintf(vrml_file,"    Transform {\n");
 							}
-							if (0.0 != a_angle)
+/*							if (0.0 != a_angle)*/
+							if (ZERO_ROTATION_TOLERANCE < fabs(a_angle))
 							{
 								fprintf(vrml_file,"    rotation %f %f %f %f\n",a1,a2,a3,
 									a_angle);
 							}
-							else if (0.0 != b_angle)
+/*							else if (0.0 != b_angle)*/
+							else if (ZERO_ROTATION_TOLERANCE < fabs(b_angle))
 							{
 								fprintf(vrml_file,"    rotation %f %f %f %f\n",b1,b2,b3,
 									b_angle);
