@@ -442,6 +442,9 @@ Finds the id of the buttons on the dof3 widget.
 	if (button_num==dof3_slider_ID)
 	{
 		temp_dof3->slider=w;
+		XtVaSetValues(w,XmNminimum,-100,NULL);
+		XtVaSetValues(w,XmNmaximum,125,NULL);
+		XtVaSetValues(w,XmNsliderSize,25,NULL);
 	}
 	else
 	{
