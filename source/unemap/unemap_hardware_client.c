@@ -1,11 +1,35 @@
 /*******************************************************************************
 FILE : unemap_hardware_client.c
 
-LAST MODIFIED : 1 September 2002
+LAST MODIFIED : 4 October 2002
 
 DESCRIPTION :
 Code for talking to the unemap hardware service (running under NT).  This is an
 alternative to unemap_hardware.c that talks directly to the hardware.
+
+NOTES :
+19 September 2002.  DB
+	Looked at timing out if the hardware service is already in use.  I thought
+	that the wait would be in connect, but it is in socket_recv.  Tried adding
+	a timeout using a select before the recv.  Had a few problems to do with
+	- first parameter of select does need to be biggest file descriptor plus 1
+	- select does return if already data waiting
+	- mutex deadlocking when timed out and closing connection (changed to using
+		recursive mutexs for unix, under Windows are all recursive - see
+		CREATE_MUTEX)
+	- hardware service can be away for a long time during configuration (>20
+		seconds) and probably longer when getting samples back, so gave up on this
+		plan
+24 September 2002.  DB
+	Changed the hardware service so that if it already has a command_socket and
+		it gets another connection on command_socket_listen it accepts and then
+		closes immediately.  Client will get a connection reset error (104 for
+		Linux and 10054 for Windows)
+	Added destroy_mutex
+	Only did create_mutex and destroy_mutex for connection_mutex
+	Switched to recursive mutexes and fixed hanging problem (when service already
+		connected) for linux
+???DB.  Finish propagating create_mutex and destroy_mutex
 
 QUESTIONS :
 1 How much information should the client store ?  Start with none.
@@ -21,6 +45,9 @@ TO DO :
 1.1 Sort out BACKGROUND_SAVING/UNIX/WIN32
 2 Synchronize stimulating between cards and then crates
 ==============================================================================*/
+
+/*???testing */
+#define CREATE_MUTEX
 
 #define USE_SOCKETS
 /*#define USE_WORMHOLES*/
@@ -120,7 +147,7 @@ functions.
 
 struct Unemap_crate
 /*******************************************************************************
-LAST MODIFIED : 1 September 2002
+LAST MODIFIED : 30 September 2002
 
 DESCRIPTION :
 Information needed for each SCU crate/NI computer pair.
@@ -142,19 +169,27 @@ Information needed for each SCU crate/NI computer pair.
 	SOCKET scrolling_socket;
 	HANDLE scrolling_socket_thread_stop_event,
 		scrolling_socket_thread_stopped_event;
-	HANDLE close_connection_mutex;
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
 	int acquired_socket;
-	pthread_mutex_t *acquired_socket_mutex,acquired_socket_mutex_storage;
+	pthread_mutex_t *acquired_socket_mutex;
+#if !defined (CREATE_MUTEX)
+	pthread_mutex_t acquired_socket_mutex_storage;
+#endif /* !defined (CREATE_MUTEX) */
 	int calibration_socket;
 	int command_socket;
-	pthread_mutex_t *command_socket_mutex,command_socket_mutex_storage;
+	pthread_mutex_t *command_socket_mutex;
+#if !defined (CREATE_MUTEX)
+	pthread_mutex_t command_socket_mutex_storage;
+#endif /* !defined (CREATE_MUTEX) */
 	int scrolling_socket;
 #endif /* defined (UNIX) */
 #if defined (UNIX)
 	struct Event_dispatcher *event_dispatcher;
-	pthread_mutex_t *event_dispatcher_mutex,event_dispatcher_mutex_storage;
+	pthread_mutex_t *event_dispatcher_mutex;
+#if !defined (CREATE_MUTEX)
+	pthread_mutex_t event_dispatcher_mutex_storage;
+#endif /* !defined (CREATE_MUTEX) */
 	struct Event_dispatcher_file_descriptor_handler *acquired_socket_xid;
 	struct Event_dispatcher_file_descriptor_handler *calibration_socket_xid;
 	struct Event_dispatcher_file_descriptor_handler *scrolling_socket_xid;
@@ -211,8 +246,10 @@ struct Unemap_crate *module_unemap_crates=(struct Unemap_crate *)NULL;
 HANDLE connection_mutex=(HANDLE)NULL;
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
-pthread_mutex_t *connection_mutex=(pthread_mutex_t *)NULL,
-	connection_mutex_storage;
+pthread_mutex_t *connection_mutex=(pthread_mutex_t *)NULL;
+#if !defined (CREATE_MUTEX)
+pthread_mutex_t connection_mutex_storage;
+#endif /* !defined (CREATE_MUTEX) */
 #endif /* defined (UNIX) */
 
 
@@ -231,6 +268,118 @@ void *module_acquired_callback_data=(void *)NULL;
 Module functions
 ----------------
 */
+#if defined (CREATE_MUTEX)
+#if defined (UNIX) && defined (GENERIC_PC)
+/*???DB.  Don't get prototype from pthread.h but in library for linux */
+#define PTHREAD_MUTEX_RECURSIVE PTHREAD_MUTEX_RECURSIVE_NP
+#define PTHREAD_MUTEX_DEFAULT PTHREAD_MUTEX_FAST_NP
+
+int pthread_mutexattr_settype(pthread_mutexattr_t *attr, int type);
+#endif /* defined (UNIX) && defined (GENERIC_PC) */
+
+static
+#if defined (WIN32_SYSTEM)
+	HANDLE
+#endif /* defined (WIN32_SYSTEM) */
+#if defined (UNIX)
+	pthread_mutex_t *
+#endif /* defined (UNIX) */
+	create_mutex(void)
+/*******************************************************************************
+LAST MODIFIED : 23 September 2002
+
+DESCRIPTION :
+Creates a mutex.
+==============================================================================*/
+{
+#if defined (WIN32_SYSTEM)
+	HANDLE mutex;
+#endif /* defined (WIN32_SYSTEM) */
+#if defined (UNIX)
+	int error_code;
+	pthread_mutexattr_t attribute;
+	pthread_mutex_t *mutex;
+#endif /* defined (UNIX) */
+
+	ENTER(create_mutex);
+#if defined (WIN32_SYSTEM)
+	mutex=CreateMutex(/*no security attributes*/NULL,
+		/*do not initially own*/FALSE,/*no name*/(LPCTSTR)NULL);
+#endif /* defined (WIN32_SYSTEM) */
+#if defined (UNIX)
+	if (ALLOCATE(mutex,pthread_mutex_t,1))
+	{
+		pthread_mutexattr_init(&attribute);
+/*		if (0==pthread_mutexattr_settype(&attribute,PTHREAD_MUTEX_DEFAULT))*/
+		/* for recursive */
+		if (0==pthread_mutexattr_settype(&attribute,PTHREAD_MUTEX_RECURSIVE))
+		{
+			if (0!=(error_code=pthread_mutex_init(mutex,&attribute)))
+			{
+				DEALLOCATE(mutex);
+				mutex=(pthread_mutex_t *)NULL;
+				display_message(ERROR_MESSAGE,"create_mutex.  "
+					"pthread_mutex_init failed.  Error code %d",error_code);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"create_mutex.  Could not set recursive");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"create_mutex.  Could not allocate");
+	}
+#endif /* defined (UNIX) */
+	LEAVE;
+
+	return (mutex);
+} /* create_mutex */
+
+static int destroy_mutex(
+#if defined (WIN32_SYSTEM)
+	HANDLE *
+#endif /* defined (WIN32_SYSTEM) */
+#if defined (UNIX)
+	pthread_mutex_t **
+#endif /* defined (UNIX) */
+	mutex_address)
+/*******************************************************************************
+LAST MODIFIED : 24 September 2002
+
+DESCRIPTION :
+Destroys a mutex.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(destroy_mutex);
+	return_code=0;
+	/* check argument */
+	if (mutex_address&&(*mutex_address))
+	{
+#if defined (WIN32_SYSTEM)
+		CloseHandle(*mutex_address);
+		*mutex_address=NULL;
+#endif /* defined (WIN32_SYSTEM) */
+#if defined (UNIX)
+		pthread_mutex_destroy(*mutex_address);
+		DEALLOCATE(*mutex_address);
+		*mutex_address=(pthread_mutex_t *)NULL;
+#endif /* defined (UNIX) */
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"destroy_mutex.  Invalid mutex_address");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* destroy_mutex */
+#endif /* defined (CREATE_MUTEX) */
+
 static int lock_mutex(
 #if defined (WIN32_SYSTEM)
 	HANDLE mutex
@@ -318,7 +467,7 @@ static int crate_deconfigure(struct Unemap_crate *crate);
 
 static int close_crate_connection(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 1 September 2002
+LAST MODIFIED : 30 September 2002
 
 DESCRIPTION :
 Closes the connection with the unemap hardware service for the <crate>.
@@ -529,6 +678,9 @@ Closes the connection with the unemap hardware service for the <crate>.
 		/* free mutex's */
 		if (crate->command_socket_mutex)
 		{
+#if defined (CREATE_MUTEX)
+			destroy_mutex(&(crate->command_socket_mutex));
+#else /* defined (CREATE_MUTEX) */
 #if defined (WIN32_SYSTEM)
 			CloseHandle(crate->command_socket_mutex);
 			crate->command_socket_mutex=(HANDLE)NULL;
@@ -537,9 +689,13 @@ Closes the connection with the unemap hardware service for the <crate>.
 			pthread_mutex_destroy(crate->command_socket_mutex);
 			crate->command_socket_mutex=(pthread_mutex_t *)NULL;
 #endif /* defined (UNIX) */
+#endif /* defined (CREATE_MUTEX) */
 		}
 		if (crate->acquired_socket_mutex)
 		{
+#if defined (CREATE_MUTEX)
+			destroy_mutex(&(crate->acquired_socket_mutex));
+#else /* defined (CREATE_MUTEX) */
 #if defined (WIN32_SYSTEM)
 			CloseHandle(crate->acquired_socket_mutex);
 			crate->acquired_socket_mutex=(HANDLE)NULL;
@@ -548,6 +704,7 @@ Closes the connection with the unemap hardware service for the <crate>.
 			pthread_mutex_destroy(crate->acquired_socket_mutex);
 			crate->acquired_socket_mutex=(pthread_mutex_t *)NULL;
 #endif /* defined (UNIX) */
+#endif /* defined (CREATE_MUTEX) */
 		}
 #if defined (CACHE_CLIENT_INFORMATION)
 		DEALLOCATE(crate->unemap_cards);
@@ -619,6 +776,12 @@ Closes the connection with the unemap hardware service.
 	if (connection_mutex)
 	{
 		unlock_mutex(connection_mutex);
+#if defined (CREATE_MUTEX)
+		destroy_mutex(&connection_mutex);
+#else /* defined (CREATE_MUTEX) */
+		pthread_mutex_destroy(connection_mutex);
+		connection_mutex=(pthread_mutex_t *)NULL;
+#endif /* defined (CREATE_MUTEX) */
 	}
 #if defined (DEBUG)
 	/*???debug */
@@ -1920,7 +2083,7 @@ static int crate_configure_start(struct Unemap_crate *crate,int slave,
 	Unemap_hardware_callback *scrolling_callback,void *scrolling_callback_data,
 	float scrolling_refresh_frequency,int synchronization_card)
 /*******************************************************************************
-LAST MODIFIED : 1 September 2002
+LAST MODIFIED : 4 October 2002
 
 DESCRIPTION :
 Configures the <crate> for sampling at the specified <sampling_frequency> and
@@ -1950,7 +2113,9 @@ See <unemap_configure> for more details.
 		/*???DB.  Global variable ? */
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
+#if !defined (CREATE_MUTEX)
 	int error_code;
+#endif /* !defined (CREATE_MUTEX) */
 #endif /* defined (UNIX) */
 
 	ENTER(crate_configure_start);
@@ -1977,13 +2142,18 @@ See <unemap_configure> for more details.
 		{
 			(crate->scrolling).complete=SCROLLING_NO_CHANNELS_FOR_CRATE;
 #if defined (UNIX)
+#if defined (CREATE_MUTEX)
+			if (crate->event_dispatcher_mutex=create_mutex())
+			{
+#else /* defined (CREATE_MUTEX) */
 			if (0==(error_code=pthread_mutex_init(
 				&(crate->event_dispatcher_mutex_storage),
 				(pthread_mutexattr_t *)NULL)))
 			{
-				crate->event_dispatcher=event_dispatcher;
 				crate->event_dispatcher_mutex=
 					&(crate->event_dispatcher_mutex_storage);
+#endif /* defined (CREATE_MUTEX) */
+				crate->event_dispatcher=event_dispatcher;
 				lock_mutex(crate->event_dispatcher_mutex);
 #endif /* defined (UNIX) */
 #if defined (WIN32_SYSTEM)
@@ -2094,6 +2264,9 @@ See <unemap_configure> for more details.
 									"Sent data %x %x %ld\n",buffer[0],buffer[1],message_size);
 #endif /* defined (DEBUG) */
 								return_code=1;
+#if defined (UNIX)
+								unlock_mutex(crate->event_dispatcher_mutex);
+#endif /* defined (UNIX) */
 							}
 							else
 							{
@@ -2123,8 +2296,13 @@ See <unemap_configure> for more details.
 									(struct Event_dispatcher_file_descriptor_handler *)NULL;
 #endif /* defined (UNIX) */
 #if defined (UNIX)
+								unlock_mutex(crate->event_dispatcher_mutex);
+#if defined (CREATE_MUTEX)
+								destroy_mutex(&(crate->event_dispatcher_mutex));
+#else /* defined (CREATE_MUTEX) */
 								pthread_mutex_destroy(crate->event_dispatcher_mutex);
 								crate->event_dispatcher_mutex=(pthread_mutex_t *)NULL;
+#endif /* defined (CREATE_MUTEX) */
 								crate->event_dispatcher=(struct Event_dispatcher *)NULL;
 #endif /* defined (UNIX) */
 							}
@@ -2156,8 +2334,13 @@ See <unemap_configure> for more details.
 								(struct Event_dispatcher_file_descriptor_handler *)NULL;
 #endif /* defined (UNIX) */
 #if defined (UNIX)
+							unlock_mutex(crate->event_dispatcher_mutex);
+#if defined (CREATE_MUTEX)
+							destroy_mutex(&(crate->event_dispatcher_mutex));
+#else /* defined (CREATE_MUTEX) */
 							pthread_mutex_destroy(crate->event_dispatcher_mutex);
 							crate->event_dispatcher_mutex=(pthread_mutex_t *)NULL;
+#endif /* defined (CREATE_MUTEX) */
 							crate->event_dispatcher=(struct Event_dispatcher *)NULL;
 #endif /* defined (UNIX) */
 						}
@@ -2183,8 +2366,13 @@ See <unemap_configure> for more details.
 							(struct Event_dispatcher_file_descriptor_handler *)NULL;
 #endif /* defined (UNIX) */
 #if defined (UNIX)
+						unlock_mutex(crate->event_dispatcher_mutex);
+#if defined (CREATE_MUTEX)
+						destroy_mutex(&(crate->event_dispatcher_mutex));
+#else /* defined (CREATE_MUTEX) */
 						pthread_mutex_destroy(crate->event_dispatcher_mutex);
 						crate->event_dispatcher_mutex=(pthread_mutex_t *)NULL;
+#endif /* defined (CREATE_MUTEX) */
 						crate->event_dispatcher=(struct Event_dispatcher *)NULL;
 #endif /* defined (UNIX) */
 					}
@@ -2200,13 +2388,24 @@ See <unemap_configure> for more details.
 						"socket.  %p",crate->scrolling_socket_xid);
 #endif /* defined (UNIX) */
 #if defined (UNIX)
+					unlock_mutex(crate->event_dispatcher_mutex);
+#if defined (CREATE_MUTEX)
+					destroy_mutex(&(crate->event_dispatcher_mutex));
+#else /* defined (CREATE_MUTEX) */
 					pthread_mutex_destroy(crate->event_dispatcher_mutex);
 					crate->event_dispatcher_mutex=(pthread_mutex_t *)NULL;
+#endif /* defined (CREATE_MUTEX) */
 					crate->event_dispatcher=(struct Event_dispatcher *)NULL;
 #endif /* defined (UNIX) */
 				}
-#if defined (UNIX)
-				unlock_mutex(crate->event_dispatcher_mutex);
+#if defined (CREATE_MUTEX)
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"crate_configure_start.  "
+					"create_mutex failed for event_dispatcher_mutex");
+			}
+#else /* defined (CREATE_MUTEX) */
 			}
 			else
 			{
@@ -2214,7 +2413,7 @@ See <unemap_configure> for more details.
 					"pthread_mutex_init failed for event_dispatcher_mutex.  "
 					"Error code %d",error_code);
 			}
-#endif /* defined (UNIX) */
+#endif /* defined (CREATE_MUTEX) */
 		}
 		else
 		{
@@ -2569,7 +2768,11 @@ associated with the hardware.
 				crate->acquired_socket_xid=
 					(struct Event_dispatcher_file_descriptor_handler *)NULL;
 			}
+#if defined (CREATE_MUTEX)
+			destroy_mutex(&(crate->event_dispatcher_mutex));
+#else /* defined (CREATE_MUTEX) */
 			pthread_mutex_destroy(crate->event_dispatcher_mutex);
+#endif /* defined (CREATE_MUTEX) */
 		}
 		crate->event_dispatcher_mutex=(pthread_mutex_t *)NULL;
 		crate->event_dispatcher=(struct Event_dispatcher *)NULL;
@@ -8382,7 +8585,7 @@ Returns the unemap <service_version> for the <crate>.
 
 static int crate_initialize_connection(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 13 June 2002
+LAST MODIFIED : 30 September 2002
 
 DESCRIPTION :
 Sets up the connection with the unemap hardware service for the <crate>.
@@ -8396,7 +8599,9 @@ Sets up the connection with the unemap hardware service for the <crate>.
 	unsigned long internet_address;
 #endif /* defined (OLD_CODE) */
 #if defined (UNIX)
+#if !defined (CREATE_MUTEX)
 	int error_code;
+#endif /* !defined (CREATE_MUTEX) */
 #endif /* defined (UNIX) */
 #endif /* defined (USE_SOCKETS) */
 
@@ -8420,6 +8625,78 @@ Sets up the connection with the unemap hardware service for the <crate>.
 		{
 			/* create mutex's */
 				/*???DB.  When do others, free if failure */
+#if defined (CREATE_MUTEX)
+			if (crate->command_socket_mutex=create_mutex())
+			{
+				if (crate->acquired_socket_mutex=create_mutex())
+				{
+#if defined (WIN32_SYSTEM)
+					/* create stopped events */
+					if (crate->scrolling_socket_thread_stopped_event=CreateEvent(
+						/*no security attributes*/NULL,/*manual reset event*/TRUE,
+						/*not-signalled*/FALSE,/*no name*/NULL))
+					{
+						if (crate->acquired_socket_thread_stopped_event=CreateEvent(
+							/*no security attributes*/NULL,/*manual reset event*/TRUE,
+							/*not-signalled*/FALSE,/*no name*/NULL))
+						{
+							if (crate->calibration_socket_thread_stopped_event=CreateEvent(
+								/*no security attributes*/NULL,/*manual reset event*/TRUE,
+								/*not-signalled*/FALSE,/*no name*/NULL))
+							{
+								return_code=1;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,"crate_initialize_connection.  "
+									"CreateEvent failed for "
+									"calibration_socket_thread_stopped_event.  Error code %d",
+									GetLastError());
+								CloseHandle(crate->acquired_socket_thread_stopped_event);
+								crate->acquired_socket_thread_stopped_event=NULL;
+								CloseHandle(crate->scrolling_socket_thread_stopped_event);
+								crate->scrolling_socket_thread_stopped_event=NULL;
+								destroy_mutex(&(crate->acquired_socket_mutex));
+								destroy_mutex(&(crate->command_socket_mutex));
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"crate_initialize_connection.  "
+								"CreateEvent failed for acquired_socket_thread_stopped_event.  "
+								"Error code %d",GetLastError());
+							CloseHandle(crate->scrolling_socket_thread_stopped_event);
+							crate->scrolling_socket_thread_stopped_event=NULL;
+							destroy_mutex(&(crate->acquired_socket_mutex));
+							destroy_mutex(&(crate->command_socket_mutex));
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"crate_initialize_connection.  "
+							"CreateEvent failed for scrolling_socket_thread_stopped_event.  "
+							"Error code %d",GetLastError());
+						destroy_mutex(&(crate->acquired_socket_mutex));
+						destroy_mutex(&(crate->command_socket_mutex));
+					}
+#endif /* defined (WIN32_SYSTEM) */
+#if defined (UNIX)
+					return_code=1;
+#endif /* defined (UNIX) */
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"crate_initialize_connection.  "
+						"create_mutex failed for acquired_socket_mutex");
+					destroy_mutex(&(crate->command_socket_mutex));
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"crate_initialize_connection.  "
+					"create_mutex failed for command_socket_mutex");
+			}
+#else /* defined (CREATE_MUTEX) */
 #if defined (WIN32_SYSTEM)
 			if (crate->command_socket_mutex=CreateMutex(
 				/*no security attributes*/NULL,/*do not initially own*/FALSE,
@@ -8536,6 +8813,7 @@ Sets up the connection with the unemap hardware service for the <crate>.
 				crate->command_socket_mutex=(pthread_mutex_t *)NULL;
 			}
 #endif /* defined (UNIX) */
+#endif /* defined (CREATE_MUTEX) */
 			if (return_code)
 			{
 				return_code=0;
@@ -8878,21 +9156,29 @@ Sets up the connection with the unemap hardware service for the <crate>.
 				/* free mutex's */
 				if (crate->command_socket_mutex)
 				{
+#if defined (CREATE_MUTEX)
+					destroy_mutex(&(crate->command_socket_mutex));
+#else /* defined (CREATE_MUTEX) */
 #if defined (WIN32_SYSTEM)
 					CloseHandle(crate->command_socket_mutex);
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
 					pthread_mutex_destroy(crate->command_socket_mutex);
 #endif /* defined (UNIX) */
+#endif /* defined (CREATE_MUTEX) */
 				}
 				if (crate->acquired_socket_mutex)
 				{
+#if defined (CREATE_MUTEX)
+					destroy_mutex(&(crate->acquired_socket_mutex));
+#else /* defined (CREATE_MUTEX) */
 #if defined (WIN32_SYSTEM)
 					CloseHandle(crate->acquired_socket_mutex);
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
 					pthread_mutex_destroy(crate->acquired_socket_mutex);
 #endif /* defined (UNIX) */
+#endif /* defined (CREATE_MUTEX) */
 				}
 			}
 		}
@@ -8920,7 +9206,7 @@ Sets up the connection with the unemap hardware service for the <crate>.
 
 static int initialize_connection(void)
 /*******************************************************************************
-LAST MODIFIED : 1 September 2002
+LAST MODIFIED : 24 September 2002
 
 DESCRIPTION :
 Sets up the connections with the unemap crates.
@@ -8936,9 +9222,11 @@ Sets up the connections with the unemap crates.
 	WORD wVersionRequested;
 	WSADATA wsaData;
 #endif /* defined (WIN32_SYSTEM) */
+#if !defined (CREATE_MUTEX)
 #if defined (UNIX)
 	int error_code;
 #endif /* defined (UNIX) */
+#endif /* !defined (CREATE_MUTEX) */
 #endif /* defined (USE_SOCKETS) */
 
 	ENTER(initialize_connection);
@@ -8952,7 +9240,13 @@ Sets up the connections with the unemap crates.
 #if defined (USE_SOCKETS)
 	if (!connection_mutex)
 	{
-		/*???DB.  How is connection_mutex destroyed? */
+#if defined (CREATE_MUTEX)
+		if (!(connection_mutex=create_mutex()))
+		{
+			display_message(ERROR_MESSAGE,"initialize_connection.  "
+				"create_mutex failed for connection_mutex");
+		}
+#else /* defined (CREATE_MUTEX) */
 #if defined (WIN32_SYSTEM)
 		if (!(connection_mutex=CreateMutex(/*no security attributes*/NULL,
 			/*do not initially own*/FALSE,/*no name*/(LPCTSTR)NULL)))
@@ -8977,6 +9271,7 @@ Sets up the connections with the unemap crates.
 				error_code);
 		}
 #endif /* defined (UNIX) */
+#endif /* defined (CREATE_MUTEX) */
 	}
 	if (connection_mutex)
 	{
@@ -9158,10 +9453,10 @@ Sets up the connections with the unemap crates.
 					}
 					if (!return_code)
 					{
+#if defined (DEBUG)
 						/*???debug */
 						display_message(INFORMATION_MESSAGE,
 							"initialize_connection:close_crate_connection\n");
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 						close_connection();
 					}
