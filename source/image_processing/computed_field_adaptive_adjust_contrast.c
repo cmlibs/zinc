@@ -358,7 +358,7 @@ Perform a automatic thresholding operation on the image cache.
 	int filter_size, i, j, k,m;
 	int return_code, kernel_size, storage_size;
 	int *offsets;
-	int radius;
+	int radius, length;
 	FE_value rate;
 	int image_step, kernel_step;
 
@@ -382,6 +382,7 @@ Perform a automatic thresholding operation on the image cache.
 		{
 			storage_size *= image->sizes[i];
 		}
+		length = storage_size/image->depth;
 		if (ALLOCATE(kernel, FE_value, kernel_size) &&
 		         ALLOCATE(Gmean, FE_value, image->depth) &&
 			 ALLOCATE(Gstd, FE_value, image->depth) &&
@@ -412,7 +413,7 @@ Perform a automatic thresholding operation on the image cache.
 			}
 			for (k = 0; k < image->depth; k++)
 			{
-			        Gmean[k] /= (FE_value)(storage_size / image->depth);
+			        Gmean[k] /= (FE_value)(length);
 			}
                         for (i = (storage_size / image->depth) - 1; i >= 0; i--)
 			{
@@ -424,7 +425,7 @@ Perform a automatic thresholding operation on the image cache.
 			}
 			for (k = 0; k < image->depth; k++)
 			{
-			        Gstd[k] /= (FE_value)(storage_size / image->depth);
+			        Gstd[k] /= (FE_value)(length);
 			}
 			for (j = 0; j < kernel_size; j++)
 			{
@@ -473,14 +474,13 @@ Perform a automatic thresholding operation on the image cache.
 					if (Lstd == 0.0)
 					{
 					        rate = 20.0;
-					        result_index[k] = 1.0/(1.0 + exp(rate * (Lmean - *(data_index + k))));
-						/* result_index[k] = 0.0; */
+					        
 					}
 					else
 					{
 					        rate = Gstd[k] / Lstd;
-						result_index[k] = 1.0/(1.0 + exp(rate * (Lmean - *(data_index + k))));
 					}
+					result_index[k] = 1.0/(1.0 + exp(rate * (Lmean - *(data_index + k))));
 				}
 				data_index += image->depth;
 				result_index += image->depth;
