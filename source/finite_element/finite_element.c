@@ -23553,6 +23553,70 @@ it from its first parent if it has no node scale field information.
 	return (field);
 } /* get_FE_element_default_coordinate_field */
 
+int FE_element_CM_element_type_is_in_Multi_range(struct FE_element *element,
+	void *type_range_data_void)
+/*******************************************************************************
+LAST MODIFIED : 28 November 2000
+
+DESCRIPTION :
+Conditional function returning true if <element> is of the given
+<CM_element_type> and whose number is in the <multi_range>.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_element_CM_element_type_Multi_range_data *type_range_data;
+
+	ENTER(FE_element_CM_element_type_is_in_Multi_range);
+	if (element && (type_range_data =
+		(struct FE_element_CM_element_type_Multi_range_data *)type_range_data_void))
+	{
+		return_code = (type_range_data->cm_element_type == element->cm.type) &&
+			Multi_range_is_value_in_range(type_range_data->multi_range,
+				element->cm.number);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_CM_element_type_is_in_Multi_range.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	
+	return (return_code);
+} /* FE_element_CM_element_type_is_in_Multi_range */
+
+int FE_element_CM_element_type_is_not_in_Multi_range(struct FE_element *element,
+	void *type_range_data_void)
+/*******************************************************************************
+LAST MODIFIED : 28 November 2000
+
+DESCRIPTION :
+Conditional function returning true if <element> is of the given
+<CM_element_type> and whose number is not in the <multi_range>.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_element_CM_element_type_Multi_range_data *type_range_data;
+
+	ENTER(FE_element_CM_element_type_is_not_in_Multi_range);
+	if (element && (type_range_data =
+		(struct FE_element_CM_element_type_Multi_range_data *)type_range_data_void))
+	{
+		return_code = (type_range_data->cm_element_type == element->cm.type) &&
+			(!Multi_range_is_value_in_range(type_range_data->multi_range,
+				element->cm.number));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_CM_element_type_is_not_in_Multi_range.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	
+	return (return_code);
+} /* FE_element_CM_element_type_is_not_in_Multi_range */
+
 int FE_element_is_top_level_in_Multi_range(struct FE_element *element,
 	void *multi_range_void)
 /*******************************************************************************
@@ -32659,6 +32723,35 @@ Returns true if <element> is a 3-D element (ie. not a 2-D face or 1-D line).
 
 	return (return_code);
 } /* FE_element_is_dimension_3 */
+
+int FE_element_has_CM_element_type(struct FE_element *element,
+	void *cm_element_type_void)
+/*******************************************************************************
+LAST MODIFIED : 28 November 2000
+
+DESCRIPTION :
+Returns true if <element> has the given CM_element_type: CM_ELEMENT, CM_FACE or
+CM_LINE. Note the enum CM_element_type is directly cast to (void *).
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_element_has_CM_element_type);
+	if (element)
+	{
+		return_code =
+			((enum CM_element_type)cm_element_type_void == element->cm.type);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_has_CM_element_type.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_has_CM_element_type */
 
 int FE_element_is_top_level(struct FE_element *element,void *dummy_void)
 /*******************************************************************************

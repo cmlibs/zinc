@@ -2710,6 +2710,39 @@ Returns the first coordinate field defined over <element>, recursively getting
 it from its first parent if it has no node scale field information.
 ==============================================================================*/
 
+struct FE_element_CM_element_type_Multi_range_data
+/*******************************************************************************
+LAST MODIFIED : 28 November 2000
+
+DESCRIPTION :
+Data for passing to FE_element_CM_element_type_is_in_Multi_range and
+FE_element_CM_element_type_is_not_in_Multi_range.
+==============================================================================*/
+{
+	enum CM_element_type cm_element_type;
+	struct Multi_range *multi_range;
+}; /* FE_element_CM_element_type_Multi_range_data */
+
+int FE_element_CM_element_type_is_in_Multi_range(struct FE_element *element,
+	void *type_range_data_void);
+/*******************************************************************************
+LAST MODIFIED : 28 November 2000
+
+DESCRIPTION :
+Conditional function returning true if <element> is of the given
+<CM_element_type> and whose number is in the <multi_range>.
+==============================================================================*/
+
+int FE_element_CM_element_type_is_not_in_Multi_range(struct FE_element *element,
+	void *type_range_data_void);
+/*******************************************************************************
+LAST MODIFIED : 28 November 2000
+
+DESCRIPTION :
+Conditional function returning true if <element> is of the given
+<CM_element_type> and whose number is not in the <multi_range>.
+==============================================================================*/
+
 int FE_element_is_top_level_in_Multi_range(struct FE_element *element,
 	void *multi_range_void);
 /*******************************************************************************
@@ -3795,6 +3828,16 @@ LAST MODIFIED : 1 December 1999
 
 DESCRIPTION :
 Returns true if <element> is a 3-D element (ie. not a 2-D face or 1-D line).
+==============================================================================*/
+
+int FE_element_has_CM_element_type(struct FE_element *element,
+	void *cm_element_type_void);
+/*******************************************************************************
+LAST MODIFIED : 28 November 2000
+
+DESCRIPTION :
+Returns true if <element> has the given CM_element_type: CM_ELEMENT, CM_FACE or
+CM_LINE. Note the enum CM_element_type is directly cast to (void *).
 ==============================================================================*/
 
 int FE_element_is_top_level(struct FE_element *element,void *dummy_void);
