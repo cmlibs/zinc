@@ -1118,6 +1118,19 @@ ifeq ($(MEMORYCHECK),true)
 		else \
 			$(CC) -o $(OBJECT_PATH)/general/debug_memory_check.o $(ALL_FLAGS) -DMEMORY_CHECKING $(PRODUCT_PATH)/general/debug.c; \
 		fi
+
+general/debug_memory_check.d : general/debug.c general/debug.h
+	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
+		mkdir -p $(OBJECT_PATH)/$(*D); \
+	fi
+	@set -x ; $(MAKEDEPEND) $(ALL_FLAGS) $(STRICT_FLAGS) $<  | \
+	sed -e 's%^.*\.o%$*.o $(OBJECT_PATH)/$*.d%;s%$(SOURCE_PATH)/%%g;s%$(PRODUCT_SOURCE_PATH)/%%g' > $(OBJECT_PATH)/$*.d ;
+ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
+   # Fix up the uidh references
+	sed -e 's%$(UIDH_PATH)/%%g;s%$(PRODUCT_UIDH_PATH)/%%g' $(OBJECT_PATH)/$*.d > $(OBJECT_PATH)/$*.d2
+	mv $(OBJECT_PATH)/$*.d2 $(OBJECT_PATH)/$*.d
+endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
+
 endif # $(MEMORYCHECK) == true
 
 ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
