@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 8 May 2000
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -10327,7 +10327,7 @@ The calling function must not deallocate the returned string.
 		{
 			display_message(ERROR_MESSAGE,
 				"get_FE_nodal_value_type_string.  Invalid nodal_value_type");
-			nodal_value_type_string=(char *)NULL;
+			nodal_value_type_string="ERROR - unknown";
 		} break;
 	}
 	LEAVE;
@@ -12536,7 +12536,7 @@ Returns the number of fields stored at the <node>.
 enum FE_nodal_value_type *get_FE_node_field_component_nodal_value_types(
 	struct FE_node *node,struct FE_field *field,int component_number)
 /*******************************************************************************
-LAST MODIFIED : 21 September 1999
+LAST MODIFIED : 20 April 2000
 
 DESCRIPTION :
 Returns an array of the (1+number_of_derivatives) value types for the
@@ -12564,7 +12564,16 @@ It is up to the calling function to DEALLOCATE the returned array.
 			{
 				for (i=0;i<=number_of_derivatives;i++)
 				{
-					nodal_value_types[i]=component->nodal_value_types[i];
+					/* non-GENERAL_FE_FIELD do not have nodal_value_types since
+						 derivatives do not make sense */
+					if (component->nodal_value_types)
+					{
+						nodal_value_types[i]=component->nodal_value_types[i];
+					}
+					else
+					{
+						nodal_value_types[i]=FE_NODAL_VALUE;
+					}
 				}
 			}
 			else
@@ -27534,6 +27543,149 @@ Modifies the already calculated <values>.
 	return (return_code);
 } /* theta_non_increasing_in_xi1 */
 
+char *CM_field_type_string(enum CM_field_type cm_field_type)
+/*******************************************************************************
+LAST MODIFIED : 10 May 2000
+
+DESCRIPTION :
+Returns a pointer to a static string describing the <value_type>, eg.
+CM_ANATOMICAL_FIELD == "anatomical". This string should match the command used
+to create the edit object. The returned string must not be DEALLOCATEd!
+==============================================================================*/
+{
+	char *return_string;
+
+	ENTER(CM_field_type_string);
+	switch (cm_field_type)
+	{
+		case CM_ANATOMICAL_FIELD:
+		{
+			return_string="anatomical";
+		} break;
+		case CM_COORDINATE_FIELD:
+		{
+			return_string="coordinate";
+		} break;
+		case CM_FIELD:
+		{
+			return_string="field";
+		} break;
+		case CM_DEPENDENT_FIELD:
+		{
+			return_string="dependent";
+		} break;
+		case CM_UNKNOWN_FIELD:
+		{
+			return_string="unknown";
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"CM_field_type_string.  Unknown cm_field_type");
+			return_string=(char *)NULL;
+		} break;
+	}
+	LEAVE;
+
+	return (return_string);
+} /* CM_field_type_string */
+
+enum CM_field_type CM_field_type_from_string(char *cm_field_type_string)
+/*******************************************************************************
+LAST MODIFIED : 10 May 2000
+
+DESCRIPTION :
+Returns the cm_field_type from the string, eg "coordinate" =
+CM_COORDINATE_FIELD.
+Returns CM_UNKNOWN_FIELD without error if cm_field_type_string not recognized.
+==============================================================================*/
+{
+	char *compare_type_string;
+	enum CM_field_type cm_field_type;
+
+	ENTER(CM_field_type_from_string);
+	if (cm_field_type_string)
+	{
+		cm_field_type=CM_FIELD_TYPE_BEFORE_FIRST;
+		cm_field_type++;
+		while ((cm_field_type<CM_FIELD_TYPE_AFTER_LAST)&&
+			(compare_type_string=CM_field_type_string(cm_field_type))&&
+			(!(fuzzy_string_compare_same_length(compare_type_string,
+				cm_field_type_string))))
+		{
+			cm_field_type++;
+		}
+		if (!fuzzy_string_compare_same_length(compare_type_string,
+			cm_field_type_string))
+		{
+			cm_field_type=CM_FIELD_TYPE_INVALID;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"CM_field_type_from_string.  Invalid argument(s)");
+		cm_field_type=CM_FIELD_TYPE_INVALID;
+	}
+	LEAVE;
+
+	return (cm_field_type);
+} /* CM_field_type_from_string */
+
+char **CM_field_type_get_valid_strings(int *number_of_valid_strings)
+/*******************************************************************************
+LAST MODIFIED : 10 May 2000
+
+DESCRIPTION :
+Returns and allocated array of pointers to all static strings for valid
+CM_field_types - obtained from function CM_field_type_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+{
+	char **valid_strings;
+	enum CM_field_type cm_field_type;
+	int i;
+
+	ENTER(CM_field_type_get_valid_strings);
+	if (number_of_valid_strings)
+	{
+		*number_of_valid_strings=0;
+		cm_field_type=CM_FIELD_TYPE_BEFORE_FIRST;
+		cm_field_type++;
+		while (cm_field_type<CM_FIELD_TYPE_AFTER_LAST)
+		{
+			(*number_of_valid_strings)++;
+			cm_field_type++;
+		}
+		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
+		{
+			cm_field_type=CM_FIELD_TYPE_BEFORE_FIRST;
+			cm_field_type++;
+			i=0;
+			while (cm_field_type<CM_FIELD_TYPE_AFTER_LAST)
+			{
+				valid_strings[i]=CM_field_type_string(cm_field_type);
+				i++;
+				cm_field_type++;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"CM_field_type_get_valid_strings.  Not enough memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"CM_field_type_get_valid_strings.  Invalid argument");
+		valid_strings=(char **)NULL;
+	}
+	LEAVE;
+
+	return (valid_strings);
+} /* CM_field_type_get_valid_strings */
+
 struct FE_field *CREATE(FE_field)(void) 
 /*******************************************************************************
 LAST MODIFIED : 1 September 1999
@@ -28184,7 +28336,7 @@ int FE_field_matches_description(struct FE_field *field,char *name,
 	int number_of_components,char **component_names,
 	int number_of_times,enum Value_type time_value_type)
 /*******************************************************************************
-LAST MODIFIED : 1 September 1999
+LAST MODIFIED : 10 May 2000
 
 DESCRIPTION :
 Returns true if <field> has exactly the same <name>, <field_info>... etc. as
@@ -28200,7 +28352,7 @@ those given in the parameters.
 	if (field&&name&&cm_field_information&&coordinate_system&&
 		(0<=number_of_times))
 	{
-		if ((0==strcmp(field->name,name))&&
+		if (field->name&&(0==strcmp(field->name,name))&&
 			(fe_field_type==field->fe_field_type)&&
 			((INDEXED_FE_FIELD != fe_field_type)||
 				((indexer_field==field->indexer_field)&&
@@ -28675,11 +28827,12 @@ this function works just like set_FE_field.
 
 char *get_FE_field_component_name(struct FE_field *field,int component_no)
 /*******************************************************************************
-LAST MODIFIED : 28 January 1999
+LAST MODIFIED : 10 May 2000
 
 DESCRIPTION :
 Returns the name of component <component_no> of <field>. If no name is stored
 for the component, a string comprising the value component_no+1 is returned.
+Up to calling function to DEALLOCATE the returned string.
 ==============================================================================*/
 {
 	char *component_name;
@@ -28704,45 +28857,63 @@ for the component, a string comprising the value component_no+1 is returned.
 int set_FE_field_component_name(struct FE_field *field,int component_no,
 	char *component_name)
 /*******************************************************************************
-LAST MODIFIED : 28 January 1999
+LAST MODIFIED : 10 May 2000
 
 DESCRIPTION :
-Sets the name of component <component_no> of <field>.
+Sets the name of component <component_no> of <field>. Only sets name if it is
+different from that already returned for field to preserve default names if can.
 ==============================================================================*/
 {
 	char *temp_component_name;
-	int i,return_code;
+	int different_name,i,return_code;
 
 	ENTER(set_FE_field_component_name);
 	if (field&&(0<=component_no)&&(component_no<field->number_of_components)&&
 		component_name)
 	{
-		if (ALLOCATE(temp_component_name,char,strlen(component_name)+1))
+		if (temp_component_name=get_FE_field_component_name(field,component_no))
 		{
-			strcpy(temp_component_name,component_name);
-			/* component_names array may be non-existent if default names used */
-			if (field->component_names)
+			different_name=strcmp(temp_component_name,component_name);
+			DEALLOCATE(temp_component_name);
+		}
+		else
+		{
+			different_name=1;
+		}
+		if (different_name)
+		{
+			if (ALLOCATE(temp_component_name,char,strlen(component_name)+1))
 			{
-				if (field->component_names[component_no])
+				strcpy(temp_component_name,component_name);
+				/* component_names array may be non-existent if default names used */
+				if (field->component_names)
 				{
-					DEALLOCATE(field->component_names[component_no]);
-				}
-			}
-			else
-			{
-				if (ALLOCATE(field->component_names,char *,field->number_of_components))
-				{
-					/* clear the pointers to names */
-					for (i=0;i<field->number_of_components;i++)
+					if (field->component_names[component_no])
 					{
-						field->component_names[i]=(char *)NULL;
+						DEALLOCATE(field->component_names[component_no]);
 					}
 				}
-			}
-			if (field->component_names)
-			{
-				field->component_names[component_no]=temp_component_name;
-				return_code=1;
+				else
+				{
+					if (ALLOCATE(field->component_names,char *,
+						field->number_of_components))
+					{
+						/* clear the pointers to names */
+						for (i=0;i<field->number_of_components;i++)
+						{
+							field->component_names[i]=(char *)NULL;
+						}
+					}
+				}
+				if (field->component_names)
+				{
+					field->component_names[component_no]=temp_component_name;
+					return_code=1;
+				}
+				else
+				{
+					return_code=0;
+				}
 			}
 			else
 			{
@@ -28751,7 +28922,7 @@ Sets the name of component <component_no> of <field>.
 		}
 		else
 		{
-			return_code=0;
+			return_code=1;
 		}
 		if (!return_code)
 		{
