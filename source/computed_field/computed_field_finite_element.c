@@ -4171,7 +4171,7 @@ Sets the <values> of the computed <field> at <node>.
 	double double_value;
 	enum Value_type value_type;
 	float float_value;
-	int i,int_value,j,return_code;
+	int i,int_value,return_code;
 	struct Computed_field_node_value_type_specific_data *data;
 	struct FE_field_component fe_field_component;
 
@@ -4196,25 +4196,25 @@ Sets the <values> of the computed <field> at <node>.
 					case DOUBLE_VALUE:
 					{
 						double_value=(double)values[i];
-						return_code=set_FE_nodal_double_value(node,
-							&fe_field_component,j,data->nodal_value_type,double_value);
+						return_code=set_FE_nodal_double_value(node,&fe_field_component,
+							data->version_number,data->nodal_value_type,double_value);
 					} break;
 					case FE_VALUE_VALUE:
 					{
-						return_code=set_FE_nodal_FE_value_value(node,
-							&fe_field_component,j,data->nodal_value_type,values[i]);
+						return_code=set_FE_nodal_FE_value_value(node,&fe_field_component,
+							data->version_number,data->nodal_value_type,values[i]);
 					} break;
 					case FLT_VALUE:
 					{
 						float_value=(float)values[i];
-						return_code=set_FE_nodal_float_value(node,
-							&fe_field_component,j,data->nodal_value_type,float_value);
+						return_code=set_FE_nodal_float_value(node,&fe_field_component,
+							data->version_number,data->nodal_value_type,float_value);
 					} break;
 					case INT_VALUE:
 					{
 						int_value=(int)floor(values[i]+0.5);
-						return_code=set_FE_nodal_float_value(node,
-							&fe_field_component,j,data->nodal_value_type,int_value);
+						return_code=set_FE_nodal_float_value(node,&fe_field_component,
+							data->version_number,data->nodal_value_type,int_value);
 					} break;
 					default:
 					{
