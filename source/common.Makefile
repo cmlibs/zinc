@@ -127,7 +127,7 @@ ifeq ($(SYSNAME:IRIX%=),)
       DIGITAL_MEDIA_NON_STRICT_FLAGS = 
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
    else # DEBUG != true
-      OPTIMISATION_FLAGS = -g -mips3
+      OPTIMISATION_FLAGS = -g
       COMPILE_FLAGS = -ansi -fullwarn -pedantic -woff 1521
       COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON 
       # STRICT_FLAGS = -diag_error 1042,1174,1185,1196,1409,1551,1552,3201
@@ -135,6 +135,11 @@ ifeq ($(SYSNAME:IRIX%=),)
       DIGITAL_MEDIA_NON_STRICT_FLAGS = -diag_warning 1429
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = three_d_drawing/dm_interface.c | three_d_drawing/movie_extensions.c
    endif # DEBUG != true
+   ifeq ($(MIPS),3)
+      OPTIMISATION_FLAGS += -mips3
+   else
+      OPTIMISATION_FLAGS += -mips4
+   endif
 
    ifeq ($(ABI),64)
       TARGET_TYPE_FLAGS = -G0 -64
