@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 2 June 2000
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -4194,7 +4194,7 @@ Makes a copy of the settings and puts it in the list_of_settings.
 static int element_to_graphics_object(struct FE_element *element,
 	void *settings_to_object_data_void)
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 2 June 2000
 
 DESCRIPTION :
 Converts a finite element into a graphics object with the supplied settings.
@@ -4238,8 +4238,9 @@ Converts a finite element into a graphics object with the supplied settings.
 			/* process in edit_mode only if graphics for element affected by changed
 				 node or element */
 			if (!(edit_mode=((element==settings_to_object_data->changed_element)||
-				FE_element_or_parent_contains_node(element,
-					(void *)settings_to_object_data->changed_node))))
+				(settings_to_object_data->changed_node&&
+					FE_element_or_parent_contains_node(element,
+						(void *)settings_to_object_data->changed_node)))))
 			{
 				process=0;
 			}
