@@ -5394,6 +5394,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 											XmNleftOffset,widget_spacing-left_margin,
 											NULL);
 									}
+#if defined (OLD_CODE)
 									XtUnmanageChild(trace->area_1.enlarge.threshold_scroll);
 									XtUnmanageChild(trace->area_1.enlarge.threshold_label);
 									XtUnmanageChild(trace->area_1.enlarge.
@@ -5402,6 +5403,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 										minimum_separation_label);
 									XtUnmanageChild(trace->area_1.enlarge.all_current_choice);
 									XtUnmanageChild(trace->area_1.enlarge.level_value);
+#endif /* defined (OLD_CODE) */
 								} break;
 								case EDA_LEVEL:
 								{
