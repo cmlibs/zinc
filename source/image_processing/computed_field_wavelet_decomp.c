@@ -362,7 +362,7 @@ int Daubechies4_1D_forward(FE_value *a, FE_value *wt_index, int n)
    DESCRIPTION: Implemnet 1D wavelet decomposition for each raw vector or column vector.
 ====================================================================================*/
 {
-        int nh1, i, j;
+        int i, j;
         int return_code;
 
         ENTER(Daubechies4_1D_forward);
@@ -371,20 +371,19 @@ int Daubechies4_1D_forward(FE_value *a, FE_value *wt_index, int n)
         if (n >= 4)
         {
 	         return_code = 1;
-               /* init parameters */
-	        nh1 = (n >> 1) + 1;
+
 		/* forward wavelet transform */
 
 
-                         for (i=0, j=0; j <= n-4; j+=2,i++)
-		         {
-                                  wt_index[i]   = C0*a[j] + C1*a[j+1] + C2*a[j+2] + C3*a[j+3];
+                for (i=0, j=0; j <= n-4; j+=2,i++)
+	        {
+                       wt_index[i]   = C0*a[j] + C1*a[j+1] + C2*a[j+2] + C3*a[j+3];
 
-                                  wt_index[i + n/2] = C3*a[j] - C2*a[j+1] + C1*a[j+2] - C0*a[j+3];
+                       wt_index[i + n/2] = C3*a[j] - C2*a[j+1] + C1*a[j+2] - C0*a[j+3];
 				  /* if (wt_index[i+n/2] < 0) wt_index[i + n/2] = -wt_index[i + n/2]; */
-                         }
-                         wt_index[i]   = C0*a[n-2] + C1*a[n-1] + C2*a[0] + C3*a[1];
-                         wt_index[i + n/2] = C3*a[n-2] - C2*a[n-1] + C1*a[0] - C0*a[1];
+                }
+                       wt_index[i]   = C0*a[n-2] + C1*a[n-1] + C2*a[0] + C3*a[1];
+                       wt_index[i + n/2] = C3*a[n-2] - C2*a[n-1] + C1*a[0] - C0*a[1];
 			 /* if (wt_index[i+n/2] < 0) wt_index[i + n/2] = -wt_index[i + n/2]; */
 
                 /* load results into output array */
@@ -413,7 +412,7 @@ int Image_cache_wavelet_decomp(struct Image_cache *image, int number_of_levels)
 {
         FE_value *buf, *wt_index, *data_index, *result_index, *result_index1;
 	char *storage;
-        int forward_inverse_sign;
+
         int i, j, k, pass, width, height, nmax, storage_size;
 	int return_code;
         FE_value M;
@@ -422,7 +421,6 @@ int Image_cache_wavelet_decomp(struct Image_cache *image, int number_of_levels)
         if (image)
 	{
 	         return_code = 1;
-		 forward_inverse_sign = 1;
 		 /* allocate storage */
 		 width = image->sizes[0];
 		 height = image->sizes[1];
