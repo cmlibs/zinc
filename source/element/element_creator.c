@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_creator.c
 
-LAST MODIFIED : 2 March 2001
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 Dialog for choosing the type of element constructed in response to node
@@ -485,7 +485,7 @@ Call this function whether element is successfully created or not.
 
 static int Element_creator_add_element(struct Element_creator *element_creator)
 /*******************************************************************************
-LAST MODIFIED : 2 March 2001
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 Adds the just created element to the manager and group, adding faces to these
@@ -544,11 +544,11 @@ Element_creator_release_input.
 				}
 				return_code=0;
 			}
+			MANAGER_END_CACHE(FE_element)(element_creator->element_manager);
 			if (element_creator->element_group)
 			{
 				MANAGED_GROUP_END_CACHE(FE_element)(element_creator->element_group);
 			}
-			MANAGER_END_CACHE(FE_element)(element_creator->element_manager);
 			/* Destroy add_element_data without fail - it can be huge! */
 			DESTROY(Add_FE_element_and_faces_to_manager_data)(&add_element_data);
 		}
