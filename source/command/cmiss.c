@@ -14,6 +14,7 @@ Functions for executing cmiss commands.
 #include <math.h>
 /* for IGES */
 #include <time.h>
+#include <float.h>
 #if defined (MOTIF)
 #include <Xm/List.h>
 #endif /* defined (MOTIF) */
@@ -14027,7 +14028,7 @@ Write bicubic elements to an IGES file.
 		if (REALLOCATE(temp_string,out_string,char,out_length+length+1)) \
 		{ \
 			out_string=temp_string; \
-			sprintf(out_string+out_length,"%dH",strlen(parameter)); \
+			sprintf(out_string+out_length,"%dH",(int)strlen(parameter)); \
 			strcat(out_string,parameter); \
 			strcat(out_string,","); \
 			out_length=strlen(out_string); \
