@@ -104,6 +104,8 @@ unemap unemap-debug unemap-debug-memorycheck unemap-static unemap-static-debug u
 	cd source ; \
 	$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
 
+.NOTPARALLEL:
+
 ifeq ($(SYSNAME:IRIX%=),)
 all : unemap unemap-debug unemap-debug-memorycheck unemap-static unemap-static-debug unemap64 unemap-nodes unemap-3d unemap-3d-debug utilities utilities64
 endif # SYSNAME == IRIX%=

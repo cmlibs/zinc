@@ -97,6 +97,8 @@ cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui6
 	cd source ; \
 	$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
 
+.NOTPARALLEL:
+
 ifeq ($(SYSNAME:IRIX%=),)
 all : cmgui cmgui-debug cmgui64 cmgui-console cmgui-debug-memorycheck
 endif # SYSNAME == IRIX%=
