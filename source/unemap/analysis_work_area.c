@@ -17278,8 +17278,11 @@ Creates the windows associated with the analysis work area.
 		analysis->potential_time_object=
 			ACCESS(Time_object)(CREATE(Time_object)("UNEMAP Potential Time"));
 #if defined (UNEMAP_USE_3D)
-		set_unemap_package_potential_time_object(analysis->unemap_package,
-			analysis->potential_time_object);
+		if (analysis->unemap_package)
+		{
+			set_unemap_package_potential_time_object(analysis->unemap_package,
+				analysis->potential_time_object);
+		}
 #endif /* defined (UNEMAP_USE_3D) */
 		Time_object_set_next_time_function(analysis->potential_time_object,
 			analysis_potential_time_next_time_callback,(void *)analysis);
