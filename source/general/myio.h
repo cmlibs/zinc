@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : myio.h
 
-LAST MODIFIED : 23 May 2002
+LAST MODIFIED : 12 June 2003
 
 DESCRIPTION :
 Some additions/modifications to stdio.
@@ -12,7 +12,11 @@ Some additions/modifications to stdio.
 #include <stdio.h>
 
 #if defined (UNIX) && defined (GENERIC_PC)
+#if defined (CYGWIN)
+#include <sys/param.h>
+#else /* defined (CYGWIN) */
 #include <endian.h>
+#endif /* defined (CYGWIN) */
 #endif /* defined (UNIX) && defined (GENERIC_PC) */
 #if defined (SGI)
 #include <sys/endian.h>

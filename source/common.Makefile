@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : common.Makefile
 #
-# LAST MODIFIED : 18 July 2002
+# LAST MODIFIED : 12 June 2003
 #
 # DESCRIPTION :
 #
@@ -97,6 +97,13 @@ ifeq ($(SYSNAME),AIX)
   endif
   INSTRUCTION = rs6000
   OPERATING_SYSTEM = aix
+endif
+ifeq ($(SYSNAME:CYGWIN%=),)# CYGWIN
+  ifndef STATIC
+    STATIC = true
+  endif
+  INSTRUCTION = i686
+  OPERATING_SYSTEM = cygwin
 endif
 
 BIN_ARCH_DIR = $(INSTRUCTION)-$(OPERATING_SYSTEM)
@@ -242,6 +249,40 @@ ifeq ($(SYSNAME),win32)
    TARGET_TYPE_FLAGS =
    TARGET_TYPE_DEFINES =
 endif # SYSNAME == win32
+ifeq ($(SYSNAME:CYGWIN%=),)# CYGWIN
+   UIL = uil
+   CC = gcc -c
+   CPP = g++ -c
+   FORTRAN = g77 -c -fno-second-underscore
+   MAKEDEPEND = gcc -MM -MG
+   CPREPROCESS = gcc -E -P
+   ifneq ($(STATIC_LINK),true)
+      LINK = gcc
+      # LINK = egcs -shared -L/usr/X11R6/lib -v */
+      # LINK = gcc -L/usr/X11R6/lib -v */
+   else # STATIC_LINK) != true
+      LINK = gcc -static
+      # LINK = g++ --no-demangle -rdynamic -L/usr/X11R6/lib*/
+   endif # STATIC_LINK) != true
+   ifneq ($(DEBUG),true)
+      OPTIMISATION_FLAGS = -O
+      COMPILE_DEFINES = -DOPTIMISED
+      COMPILE_FLAGS = 
+      STRICT_FLAGS = -Werror
+      DIGITAL_MEDIA_NON_STRICT_FLAGS = 
+      DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match
+   else  # DEBUG != true
+      OPTIMISATION_FLAGS = -g
+      COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON
+      COMPILE_FLAGS = 
+      # A bug with gcc on esp56 stops -Wformat from working */
+      STRICT_FLAGS = -W -Wall -Wno-parentheses -Wno-switch -Wno-format -Werror
+      DIGITAL_MEDIA_NON_STRICT_FLAGS = 
+      DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
+      TARGET_TYPE_FLAGS =
+      TARGET_TYPE_DEFINES =
+   endif # DEBUG != true
+endif # SYSNAME == CYGWIN%=
 
 #Always look in cmgui utilities so that gx finds it.
 PRODUCT_UTILITIES_PATH=$(CMISS_ROOT)/cmgui/utilities/$(BIN_ARCH_DIR)

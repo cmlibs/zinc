@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : unemap.Makefile
 #
-# LAST MODIFIED : 20 May 2003
+# LAST MODIFIED : 12 June 2003
 #
 # DESCRIPTION :
 #
@@ -112,11 +112,21 @@ else # $(MEMORYCHECK) != true
    TARGET_MEMORYCHECK_SUFFIX = -memorycheck
 endif # $(MEMORYCHECK) != true 
 
-ifneq ($(SYSNAME),win32)
+ifeq ($(SYSNAME:IRIX%=),)
    TARGET_FILETYPE_SUFFIX =
-else # $(SYSNAME) != win32)
+endif # SYSNAME == IRIX%=
+ifeq ($(SYSNAME),Linux)
+   TARGET_FILETYPE_SUFFIX =
+endif # SYSNAME == Linux
+ifeq ($(SYSNAME),AIX)
+   TARGET_FILETYPE_SUFFIX =
+endif # SYSNAME == AIX
+ifeq ($(SYSNAME),win32)
    TARGET_FILETYPE_SUFFIX = .exe
-endif # $(SYSNAME) != win32)
+endif # SYSNAME == win32
+ifeq ($(SYSNAME:CYGWIN%=),)
+   TARGET_FILETYPE_SUFFIX = .exe
+endif # SYSNAME == CYGWIN%=
 
 BIN_PATH=$(CMGUI_DEV_ROOT)/bin/$(BIN_ARCH_DIR)
 
@@ -167,6 +177,10 @@ ifeq ($(SYSNAME),win32)
    PLATFORM_DEFINES = -DGENERIC_PC
    OPERATING_SYSTEM_DEFINES = -DWIN32_SYSTEM
 endif # SYSNAME == win32
+ifeq ($(SYSNAME:CYGWIN%=),)
+   PLATFORM_DEFINES = -DGENERIC_PC
+   OPERATING_SYSTEM_DEFINES = -DUNIX -DCYGWIN
+endif # SYSNAME == CYGWIN%=
 
 ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
    USER_INTERFACE_DEFINES = -DMOTIF
@@ -202,6 +216,9 @@ ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
    ifeq ($(SYSNAME),AIX)
       GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
    endif # SYSNAME == AIX
+   ifeq ($(SYSNAME:CYGWIN%=),)
+      GRAPHICS_LIBRARY_DEFINES += -DDM_BUFFERS
+   endif # SYSNAME == CYGWIN%=
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
 ifdef USE_UNEMAP_3D
@@ -256,6 +273,9 @@ ifdef USE_UNEMAP_3D
    ifeq ($(SYSNAME),Linux)
       EXTERNAL_INPUT_DEFINES = -DSELECT_DESCRIPTORS
    endif # SYSNAME == Linux
+   ifeq ($(SYSNAME:CYGWIN%=),)
+      EXTERNAL_INPUT_DEFINES = -DSELECT_DESCRIPTORS
+   endif # SYSNAME == CYGWIN%=
 endif # USE_UNEMAP_3D
 
 STEREO_DISPLAY_DEFINES = -DSTEREO
@@ -325,10 +345,17 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
          USER_INTERFACE_LIB += -lMrm -lXm -lXp -lXt -lX11 -lXmu -lXext -lSM -lICE
       endif # STATIC_LINK != true
    else # SYSNAME == Linux
-      USER_INTERFACE_LIB += -lMrm -lXm -lXt -lX11 -lXmu -lXext
-      ifeq ($(SYSNAME:IRIX%=),)
-         USER_INTERFACE_LIB += -lSgm
-      endif # SYSNAME == IRIX%=
+      ifeq ($(SYSNAME:CYGWIN%=),)
+         USER_INTERFACE_INC += -I/usr/X11R6/include
+         X_LIB = /usr/X11R6/lib
+         USER_INTERFACE_LIB += -L$(X_LIB)
+         USER_INTERFACE_LIB += -lMrm -lXm -lXp -lXt -lX11 -lXmu -lXext -lSM -lICE
+      else # SYSNAME == CYGWIN%=
+         USER_INTERFACE_LIB += -lMrm -lXm -lXt -lX11 -lXmu -lXext
+         ifeq ($(SYSNAME:IRIX%=),)
+            USER_INTERFACE_LIB += -lSgm
+         endif # SYSNAME == IRIX%=
+      endif # SYSNAME == CYGWIN%=
    endif # SYSNAME == Linux
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
@@ -336,6 +363,10 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
       X_LIB = /usr/X11R6/lib
       USER_INTERFACE_LIB += -L$(X_LIB)
    endif
+   ifeq ($(SYSNAME:CYGWIN%=),)
+      X_LIB = /usr/X11R6/lib
+      USER_INTERFACE_LIB += -L$(X_LIB)
+   endif # SYSNAME == CYGWIN%=
    ifneq ($(SYSNAME),win32)
       #USE_GTK2 = true
       ifeq ($(USE_GTK2),true)
@@ -381,6 +412,15 @@ endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
    LIB = -lgdi32  -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -lnetapi32 -luuid -lwsock32 -lmpr -lwinmm -lversion -lodbc32
 endif # SYSNAME == win32
+ifeq ($(SYSNAME:CYGWIN%=),)
+   ifneq ($(STATIC_LINK),true)
+      #For the dynamic link we really need to statically link the c++ as this
+      #seems to be particularly variable between distributions.
+      LIB = -lg2c -lm -ldl -lc -lpthread /usr/lib/libcrypt.a `ls -1 /usr/lib/libstdc++*.a | tail -1`
+   else # $(STATIC_LINK) != true
+      LIB = -lg2c -lm -lpthread -lcrypt -lstdc++
+   endif # $(STATIC_LINK) != true
+endif # SYSNAME == CYGWIN%=
 
 ifdef USE_UNEMAP_3D
 ALL_DEFINES = $(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
@@ -754,6 +794,9 @@ endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
 	cd $(OBJECT_PATH) ; (ls $(OBJS) $(MAIN_OBJ) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
 endif # SYSNAME == win32
+ifeq ($(SYSNAME:CYGWIN%=),)
+	cd $(OBJECT_PATH) ; (ls $(OBJS) $(MAIN_OBJ) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
+endif # SYSNAME == CYGWIN%=
    # Link in the OBJECT_PATH and copy to the BIN_PATH as often the OBJECT_PATH is kept locally.
 	cd $(OBJECT_PATH) ; \
 	rm -f product_object ; \

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_client.c
 
-LAST MODIFIED : 4 June 2003
+LAST MODIFIED : 12 June 2003
 
 DESCRIPTION :
 Code for talking to the unemap hardware service (running under NT).  This is an
@@ -578,9 +578,11 @@ problems), and sets return code to 1 to remove from list.
 
 #if defined (CREATE_MUTEX)
 #if defined (UNIX) && defined (GENERIC_PC)
+#if !defined (CYGWIN)
 /*???DB.  Don't get prototype from pthread.h but in library for linux */
 #define PTHREAD_MUTEX_RECURSIVE PTHREAD_MUTEX_RECURSIVE_NP
 #define PTHREAD_MUTEX_DEFAULT PTHREAD_MUTEX_FAST_NP
+#endif /* !defined (CYGWIN) */
 
 int pthread_mutexattr_settype(pthread_mutexattr_t *attr, int type);
 #endif /* defined (UNIX) && defined (GENERIC_PC) */
