@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_component_operations.c
 
-LAST MODIFIED : 6 November 2001
+LAST MODIFIED : 13 December 2001
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -39,7 +39,7 @@ DESCRIPTION :
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_is_type_multiply_components.  Missing field");
-		return_code=0;
+		return_code = 0;
 	}
 
 	return (return_code);
@@ -65,7 +65,7 @@ Clear the type specific data used by this type.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_multiply_components_clear_type_specific.  "
-			"Invalid arguments.");
+			"Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
@@ -93,7 +93,7 @@ Copy the type specific data used by this type.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_multiply_components_copy_type_specific.  "
-			"Invalid arguments.");
+			"Invalid field");
 		destination = NULL;
 	}
 	LEAVE;
@@ -203,7 +203,7 @@ Evaluate the fields cache at the node.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_multiply_components_evaluate_cache_at_node.  "
-			"Invalid arguments.");
+			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -267,7 +267,7 @@ Evaluate the fields cache at the node.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_multiply_components_evaluate_cache_in_element.  "
-			"Invalid arguments.");
+			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -350,7 +350,7 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_multiply_components.  Invalid arguments.");
+			"list_Computed_field_multiply_components.  Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
@@ -380,7 +380,7 @@ DESCRIPTION :
 	{
 		display_message(ERROR_MESSAGE,
 			"list_Computed_field_multiply_components_commands.  "
-			"Invalid arguments.");
+			"Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
@@ -470,14 +470,14 @@ although its cache may be lost.
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_set_type_multiply_components.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -509,7 +509,7 @@ If the field is of type COMPUTED_FIELD_MULTIPLY_COMPONENTS, the
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_get_type_multiply_components.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -563,7 +563,7 @@ already) and allows its contents to be modified.
 				{
 					display_message(ERROR_MESSAGE,
 						"define_Computed_field_type_multiply_components.  No fields defined");
-					return_code=0;
+					return_code = 0;
 				}
 			}
 			if (return_code)
@@ -622,14 +622,14 @@ already) and allows its contents to be modified.
 		{
 			display_message(ERROR_MESSAGE,
 				"define_Computed_field_type_multiply_components.  Not enough memory");
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"define_Computed_field_type_multiply_components.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -657,7 +657,7 @@ DESCRIPTION :
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_is_type_divide_components.  Missing field");
-		return_code=0;
+		return_code = 0;
 	}
 
 	return (return_code);
@@ -683,7 +683,7 @@ Clear the type specific data used by this type.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_divide_components_clear_type_specific.  "
-			"Invalid arguments.");
+			"Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
@@ -711,7 +711,7 @@ Copy the type specific data used by this type.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_divide_components_copy_type_specific.  "
-			"Invalid arguments.");
+			"Invalid field");
 		destination = NULL;
 	}
 	LEAVE;
@@ -821,7 +821,7 @@ Evaluate the fields cache at the node.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_divide_components_evaluate_cache_at_node.  "
-			"Invalid arguments.");
+			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -888,7 +888,7 @@ Evaluate the fields cache at the node.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_divide_components_evaluate_cache_in_element.  "
-			"Invalid arguments.");
+			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -971,7 +971,7 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_divide_components.  Invalid arguments.");
+			"list_Computed_field_divide_components.  Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
@@ -1001,7 +1001,7 @@ DESCRIPTION :
 	{
 		display_message(ERROR_MESSAGE,
 			"list_Computed_field_divide_components_commands.  "
-			"Invalid arguments.");
+			"Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
@@ -1091,14 +1091,14 @@ although its cache may be lost.
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_set_type_divide_components.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -1130,7 +1130,7 @@ If the field is of type COMPUTED_FIELD_DIVIDE_COMPONENTS, the
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_get_type_divide_components.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -1184,7 +1184,7 @@ already) and allows its contents to be modified.
 				{
 					display_message(ERROR_MESSAGE,
 						"define_Computed_field_type_divide_components.  No fields defined");
-					return_code=0;
+					return_code = 0;
 				}
 			}
 			if (return_code)
@@ -1243,14 +1243,14 @@ already) and allows its contents to be modified.
 		{
 			display_message(ERROR_MESSAGE,
 				"define_Computed_field_type_divide_components.  Not enough memory");
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"define_Computed_field_type_divide_components.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -1278,7 +1278,7 @@ DESCRIPTION :
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_is_type_add.  Missing field");
-		return_code=0;
+		return_code = 0;
 	}
 
 	return (return_code);
@@ -1304,7 +1304,7 @@ Clear the type specific data used by this type.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_add_clear_type_specific.  "
-			"Invalid arguments.");
+			"Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
@@ -1332,7 +1332,7 @@ Copy the type specific data used by this type.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_add_copy_type_specific.  "
-			"Invalid arguments.");
+			"Invalid field");
 		destination = NULL;
 	}
 	LEAVE;
@@ -1443,7 +1443,7 @@ Evaluate the fields cache at the node.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_add_evaluate_cache_at_node.  "
-			"Invalid arguments.");
+			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -1508,7 +1508,7 @@ Evaluate the fields cache at the node.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_add_evaluate_cache_in_element.  "
-			"Invalid arguments.");
+			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -1594,7 +1594,7 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_add.  Invalid arguments.");
+			"list_Computed_field_add.  Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
@@ -1625,7 +1625,7 @@ DESCRIPTION :
 	{
 		display_message(ERROR_MESSAGE,
 			"list_Computed_field_add_commands.  "
-			"Invalid arguments.");
+			"Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
@@ -1722,14 +1722,14 @@ although its cache may be lost.
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_set_type_add.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -1763,7 +1763,7 @@ If the field is of type COMPUTED_FIELD_ADD, the
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_get_type_add.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -1824,7 +1824,7 @@ already) and allows its contents to be modified.
 				{
 					display_message(ERROR_MESSAGE,
 						"define_Computed_field_type_add.  No fields defined");
-					return_code=0;
+					return_code = 0;
 				}
 			}
 			if (return_code)
@@ -1888,14 +1888,14 @@ already) and allows its contents to be modified.
 		{
 			display_message(ERROR_MESSAGE,
 				"define_Computed_field_type_add.  Not enough memory");
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"define_Computed_field_type_add.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -1922,7 +1922,7 @@ DESCRIPTION :
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_is_type_scale.  Missing field");
-		return_code=0;
+		return_code = 0;
 	}
 
 	return (return_code);
@@ -1948,7 +1948,7 @@ Clear the type specific data used by this type.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_scale_clear_type_specific.  "
-			"Invalid arguments.");
+			"Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
@@ -1976,7 +1976,7 @@ Copy the type specific data used by this type.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_scale_copy_type_specific.  "
-			"Invalid arguments.");
+			"Invalid field");
 		destination = NULL;
 	}
 	LEAVE;
@@ -2085,7 +2085,7 @@ Evaluate the fields cache at the node.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_scale_evaluate_cache_at_node.  "
-			"Invalid arguments.");
+			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -2147,7 +2147,7 @@ Evaluate the fields cache at the node.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_scale_evaluate_cache_in_element.  "
-			"Invalid arguments.");
+			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -2203,7 +2203,7 @@ DESCRIPTION :
 						"Computed_field_set_values_at_node.  "
 						"Cannot invert scale field %s with zero scale factor",
 						field->name);
-					return_code=0;
+					return_code = 0;
 				}
 			}
 			if (return_code)
@@ -2215,14 +2215,14 @@ DESCRIPTION :
 		}
 		else
 		{
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_scale_set_values_at_node.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -2257,7 +2257,7 @@ DESCRIPTION :
 				display_message(ERROR_MESSAGE,
 					"Computed_field_scale_set_values_in_element.  "
 					"number_in_xi must be positive");
-				return_code=0;
+				return_code = 0;
 			}
 		}
 		if (return_code)
@@ -2283,7 +2283,7 @@ DESCRIPTION :
 							"Computed_field_scale_set_values_in_element.  "
 							"Cannot invert scale field %s with zero scale factor",
 							field->name);
-						return_code=0;
+						return_code = 0;
 					}
 				}
 				if (return_code)
@@ -2295,7 +2295,7 @@ DESCRIPTION :
 			}
 			else
 			{
-				return_code=0;
+				return_code = 0;
 			}
 		}
 	}
@@ -2303,7 +2303,7 @@ DESCRIPTION :
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_scale_set_values_in_element.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -2354,7 +2354,7 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_scale.  Invalid arguments.");
+			"list_Computed_field_scale.  Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
@@ -2387,7 +2387,7 @@ DESCRIPTION :
 	{
 		display_message(ERROR_MESSAGE,
 			"list_Computed_field_scale_commands.  "
-			"Invalid arguments.");
+			"Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
@@ -2401,9 +2401,9 @@ int Computed_field_set_type_scale(struct Computed_field *field,
 LAST MODIFIED : 14 July 2000
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_SCALE with the supplied
-fields, <source_field_one> and <source_field_two>.  Sets the number of 
-components equal to the source_fields.
+Converts <field> to type COMPUTED_FIELD_SCALE which scales the values of the
+<source_field> by <scale_factors>.
+Sets the number of components equal to that of <source_field>.
 If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
@@ -2482,14 +2482,14 @@ although its cache may be lost.
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_set_type_scale.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -2526,14 +2526,14 @@ If the field is of type COMPUTED_FIELD_SCALE, the
 		{
 			display_message(ERROR_MESSAGE,
 				"Computed_field_get_type_scale.  Not enough memory");
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_get_type_scale.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -2680,7 +2680,7 @@ already) and allows its contents to be modified.
 	{
 		display_message(ERROR_MESSAGE,
 			"define_Computed_field_type_scale.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -2707,7 +2707,7 @@ DESCRIPTION :
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_is_type_clamp_maximum.  Missing field");
-		return_code=0;
+		return_code = 0;
 	}
 
 	return (return_code);
@@ -2733,7 +2733,7 @@ Clear the type specific data used by this type.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_clamp_maximum_clear_type_specific.  "
-			"Invalid arguments.");
+			"Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
@@ -2761,7 +2761,7 @@ Copy the type specific data used by this type.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_clamp_maximum_copy_type_specific.  "
-			"Invalid arguments.");
+			"Invalid field");
 		destination = NULL;
 	}
 	LEAVE;
@@ -2876,7 +2876,7 @@ Evaluate the fields cache at the node.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_clamp_maximum_evaluate_cache_at_node.  "
-			"Invalid arguments.");
+			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -2952,7 +2952,7 @@ Evaluate the fields cache at the node.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_clamp_maximum_evaluate_cache_in_element.  "
-			"Invalid arguments.");
+			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -3013,14 +3013,14 @@ DESCRIPTION :
 		}
 		else
 		{
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_clamp_maximum_set_values_at_node.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -3055,7 +3055,7 @@ DESCRIPTION :
 				display_message(ERROR_MESSAGE,
 					"Computed_field_clamp_maximum_set_values_in_element.  "
 					"number_in_xi must be positive");
-				return_code=0;
+				return_code = 0;
 			}
 		}
 		if (return_code)
@@ -3087,7 +3087,7 @@ DESCRIPTION :
 			}
 			else
 			{
-				return_code=0;
+				return_code = 0;
 			}
 		}
 	}
@@ -3095,7 +3095,7 @@ DESCRIPTION :
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_clamp_maximum_set_values_in_element.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -3146,7 +3146,7 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_clamp_maximum.  Invalid arguments.");
+			"list_Computed_field_clamp_maximum.  Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
@@ -3179,7 +3179,7 @@ DESCRIPTION :
 	{
 		display_message(ERROR_MESSAGE,
 			"list_Computed_field_clamp_maximum_commands.  "
-			"Invalid arguments.");
+			"Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
@@ -3277,14 +3277,14 @@ although its cache may be lost.
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_set_type_clamp_maximum.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -3321,14 +3321,14 @@ If the field is of type COMPUTED_FIELD_CLAMP_MAXIMUM, the
 		{
 			display_message(ERROR_MESSAGE,
 				"Computed_field_get_type_clamp_maximum.  Not enough memory");
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_get_type_clamp_maximum.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -3396,7 +3396,7 @@ already) and allows its contents to be modified.
 			}
 			else
 			{
-				return_code=0;
+				return_code = 0;
 			}
 		}
 		if (return_code)
@@ -3450,14 +3450,14 @@ already) and allows its contents to be modified.
 							}
 							else
 							{
-								return_code=0;
+								return_code = 0;
 							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
 								"define_Computed_field_type_clamp_maximum.  Invalid field");
-							return_code=0;
+							return_code = 0;
 						}
 					}
 					DESTROY(Option_table)(&option_table);
@@ -3502,7 +3502,7 @@ already) and allows its contents to be modified.
 	{
 		display_message(ERROR_MESSAGE,
 			"define_Computed_field_type_clamp_maximum.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -3529,7 +3529,7 @@ DESCRIPTION :
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_is_type_clamp_minimum.  Missing field");
-		return_code=0;
+		return_code = 0;
 	}
 
 	return (return_code);
@@ -3555,7 +3555,7 @@ Clear the type specific data used by this type.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_clamp_minimum_clear_type_specific.  "
-			"Invalid arguments.");
+			"Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
@@ -3583,7 +3583,7 @@ Copy the type specific data used by this type.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_clamp_minimum_copy_type_specific.  "
-			"Invalid arguments.");
+			"Invalid field");
 		destination = NULL;
 	}
 	LEAVE;
@@ -3698,7 +3698,7 @@ Evaluate the fields cache at the node.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_clamp_minimum_evaluate_cache_at_node.  "
-			"Invalid arguments.");
+			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -3774,7 +3774,7 @@ Evaluate the fields cache at the node.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_clamp_minimum_evaluate_cache_in_element.  "
-			"Invalid arguments.");
+			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -3835,14 +3835,14 @@ DESCRIPTION :
 		}
 		else
 		{
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_clamp_minimum_set_values_at_node.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -3877,7 +3877,7 @@ DESCRIPTION :
 				display_message(ERROR_MESSAGE,
 					"Computed_field_clamp_minimum_set_values_in_element.  "
 					"number_in_xi must be positive");
-				return_code=0;
+				return_code = 0;
 			}
 		}
 		if (return_code)
@@ -3909,7 +3909,7 @@ DESCRIPTION :
 			}
 			else
 			{
-				return_code=0;
+				return_code = 0;
 			}
 		}
 	}
@@ -3917,7 +3917,7 @@ DESCRIPTION :
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_clamp_minimum_set_values_in_element.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -3968,7 +3968,7 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_clamp_minimum.  Invalid arguments.");
+			"list_Computed_field_clamp_minimum.  Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
@@ -4001,7 +4001,7 @@ DESCRIPTION :
 	{
 		display_message(ERROR_MESSAGE,
 			"list_Computed_field_clamp_minimum_commands.  "
-			"Invalid arguments.");
+			"Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
@@ -4099,14 +4099,14 @@ although its cache may be lost.
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_set_type_clamp_minimum.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -4143,14 +4143,14 @@ If the field is of type COMPUTED_FIELD_CLAMP_MINIMUM, the
 		{
 			display_message(ERROR_MESSAGE,
 				"Computed_field_get_type_clamp_minimum.  Not enough memory");
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_get_type_clamp_minimum.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -4218,7 +4218,7 @@ already) and allows its contents to be modified.
 			}
 			else
 			{
-				return_code=0;
+				return_code = 0;
 			}
 		}
 		if (return_code)
@@ -4272,14 +4272,14 @@ already) and allows its contents to be modified.
 							}
 							else
 							{
-								return_code=0;
+								return_code = 0;
 							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
 								"define_Computed_field_type_clamp_minimum.  Invalid field");
-							return_code=0;
+							return_code = 0;
 						}
 					}
 					DESTROY(Option_table)(&option_table);
@@ -4324,7 +4324,7 @@ already) and allows its contents to be modified.
 	{
 		display_message(ERROR_MESSAGE,
 			"define_Computed_field_type_clamp_minimum.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -4351,7 +4351,7 @@ DESCRIPTION :
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_is_type_offset.  Missing field");
-		return_code=0;
+		return_code = 0;
 	}
 
 	return (return_code);
@@ -4377,7 +4377,7 @@ Clear the type specific data used by this type.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_offset_clear_type_specific.  "
-			"Invalid arguments.");
+			"Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
@@ -4405,7 +4405,7 @@ Copy the type specific data used by this type.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_offset_copy_type_specific.  "
-			"Invalid arguments.");
+			"Invalid field");
 		destination = NULL;
 	}
 	LEAVE;
@@ -4514,7 +4514,7 @@ Evaluate the fields cache at the node.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_offset_evaluate_cache_at_node.  "
-			"Invalid arguments.");
+			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -4576,7 +4576,7 @@ Evaluate the fields cache at the node.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_offset_evaluate_cache_in_element.  "
-			"Invalid arguments.");
+			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -4630,14 +4630,14 @@ DESCRIPTION :
 		}
 		else
 		{
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_offset_set_values_at_node.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -4672,7 +4672,7 @@ DESCRIPTION :
 				display_message(ERROR_MESSAGE,
 					"Computed_field_offset_set_values_in_element.  "
 					"number_in_xi must be positive");
-				return_code=0;
+				return_code = 0;
 			}
 		}
 		if (return_code)
@@ -4696,7 +4696,7 @@ DESCRIPTION :
 			}
 			else
 			{
-				return_code=0;
+				return_code = 0;
 			}
 		}
 	}
@@ -4704,7 +4704,7 @@ DESCRIPTION :
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_offset_set_values_in_element.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -4755,7 +4755,7 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"list_Computed_field_offset.  Invalid arguments.");
+			"list_Computed_field_offset.  Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
@@ -4788,7 +4788,7 @@ DESCRIPTION :
 	{
 		display_message(ERROR_MESSAGE,
 			"list_Computed_field_offset_commands.  "
-			"Invalid arguments.");
+			"Invalid field");
 		return_code = 0;
 	}
 	LEAVE;
@@ -4802,11 +4802,10 @@ int Computed_field_set_type_offset(struct Computed_field *field,
 LAST MODIFIED : 14 July 2000
 
 DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_OFFSET with the supplied
-<source_field> and <offsets>.  Each component is clamped by its respective limit
-in <offsets>.
+Converts <field> to type COMPUTED_FIELD_OFFSET which returns the values of the
+<source_field> plus the <offsets>.
 The <offsets> array must therefore contain as many FE_values as there are
-components in <source_field>.
+components in <source_field>; this is the number of components in the field.
 If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
@@ -4886,14 +4885,14 @@ although its cache may be lost.
 		else
 		{
 			DEALLOCATE(source_fields);
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_set_type_offset.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -4934,14 +4933,14 @@ It is up to the calling function to DEALLOCATE the returned <*offsets>.
 		{
 			display_message(ERROR_MESSAGE,
 				"Computed_field_get_type_offset.  Not enough memory");
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_get_type_offset.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -5090,17 +5089,697 @@ already) and allows its contents to be modified.
 	{
 		display_message(ERROR_MESSAGE,
 			"define_Computed_field_type_offset.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* define_Computed_field_type_offset */
 
+static char computed_field_sum_components_type_string[] = "sum_components";
+
+int Computed_field_is_type_sum_components(struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 13 December 2001
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_is_type_sum_components);
+	if (field)
+	{
+		return_code =
+			(field->type_string == computed_field_sum_components_type_string);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_type_sum_components.  Missing field");
+		return_code = 0;
+	}
+
+	return (return_code);
+} /* Computed_field_is_type_sum_components */
+
+static int Computed_field_sum_components_clear_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 13 December 2001
+
+DESCRIPTION :
+Clear the type specific data used by this type.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_sum_components_clear_type_specific);
+	if (field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_sum_components_clear_type_specific.  "
+			"Invalid field");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_sum_components_clear_type_specific */
+
+static void *Computed_field_sum_components_copy_type_specific(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 13 December 2001
+
+DESCRIPTION :
+Copy the type specific data used by this type.
+==============================================================================*/
+{
+	void *destination
+
+	ENTER(Computed_field_sum_components_copy_type_specific);
+	if (field)
+	{
+		destination = (void *)1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_sum_components_copy_type_specific.  "
+			"Invalid field");
+		destination = NULL;
+	}
+	LEAVE;
+
+	return (destination);
+} /* Computed_field_sum_components_copy_type_specific */
+
+#define Computed_field_sum_components_clear_cache_type_specific \
+   (Computed_field_clear_cache_type_specific_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 13 December 2001
+
+DESCRIPTION :
+This function is not needed for this type.
+==============================================================================*/
+
+static int Computed_field_sum_components_type_specific_contents_match(
+	struct Computed_field *field, struct Computed_field *other_computed_field)
+/*******************************************************************************
+LAST MODIFIED : 13 December 2001
+
+DESCRIPTION :
+Compare the type specific data
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_field_component_operations_type_specific_contents_match);
+	if (field && other_computed_field)
+	{
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_component_operations_type_specific_contents_match */
+
+#define Computed_field_sum_components_is_defined_in_element \
+	Computed_field_default_is_defined_in_element
+/*******************************************************************************
+LAST MODIFIED : 13 December 2001
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_sum_components_is_defined_at_node \
+	Computed_field_default_is_defined_at_node
+/*******************************************************************************
+LAST MODIFIED : 13 December 2001
+
+DESCRIPTION :
+Check the source fields using the default.
+==============================================================================*/
+
+#define Computed_field_sum_components_has_numerical_components \
+	Computed_field_default_has_numerical_components
+/*******************************************************************************
+LAST MODIFIED : 13 December 2001
+
+DESCRIPTION :
+Window projection does have numerical components.
+==============================================================================*/
+
+#define Computed_field_sum_components_can_be_destroyed \
+	(Computed_field_can_be_destroyed_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 13 December 2001
+
+DESCRIPTION :
+No special criteria on the destroy
+==============================================================================*/
+
+static int Computed_field_sum_components_evaluate_cache_at_node(
+	struct Computed_field *field, struct FE_node *node, FE_value time)
+/*******************************************************************************
+LAST MODIFIED : 13 December 2001
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	FE_value sum, *temp;
+	int i, return_code;
+
+	ENTER(Computed_field_sum_components_evaluate_cache_at_node);
+	if (field && node && (1 == field->number_of_components) &&
+		(field->number_of_source_fields == 1) && 
+		(field->number_of_source_values ==
+			field->source_fields[0]->number_of_components))
+	{
+		/* 1. Precalculate any source fields that this field depends on */
+		if (return_code = 
+			Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
+		{
+			/* 2. Calculate the field */
+			/* weighted sum of components of source field */
+			temp = field->source_fields[0]->values;
+			sum = 0.0;
+			for (i = 0; i < field->number_of_source_values; i++)
+			{
+				sum += (*temp)*field->source_values[i];
+				temp++;
+			}
+			field->values[0] = sum;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_sum_components_evaluate_cache_at_node.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_sum_components_evaluate_cache_at_node */
+
+static int Computed_field_sum_components_evaluate_cache_in_element(
+	struct Computed_field *field, struct FE_element *element, FE_value *xi,
+	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
+/*******************************************************************************
+LAST MODIFIED : 13 December 2001
+
+DESCRIPTION :
+Evaluate the fields cache at the node.
+==============================================================================*/
+{
+	FE_value sum, *temp;
+	int element_dimension, i, j, return_code;
+
+	ENTER(Computed_field_sum_components_evaluate_cache_in_element);
+	if (field && element && xi && (1 == field->number_of_components) &&
+		(field->number_of_source_fields == 1) && 
+		(field->number_of_source_values ==
+			field->source_fields[0]->number_of_components))
+	{
+		/* 1. Precalculate any source fields that this field depends on */
+		if (return_code = 
+			Computed_field_evaluate_source_fields_cache_in_element(field, element,
+				xi, time, top_level_element, calculate_derivatives))
+		{
+			element_dimension = get_FE_element_dimension(element);
+			/* 2. Calculate the field */
+			/* weighted sum of components of source field */
+			temp = field->source_fields[0]->values;
+			sum = 0.0;
+			for (i = 0; i < field->number_of_source_values; i++)
+			{
+				sum += (*temp)*field->source_values[i];
+				temp++;
+			}
+			field->values[0] = sum;
+			if (calculate_derivatives)
+			{
+				for (j = 0; j < element_dimension; j++)
+				{
+					temp = field->source_fields[0]->derivatives + j;
+					sum = 0.0;
+					for (i = 0; i < field->number_of_source_values; i++)
+					{
+						sum += (*temp)*field->source_values[i];
+						temp += element_dimension;
+					}
+					field->derivatives[j] = sum;
+				}
+				field->derivatives_valid = 1;
+			}
+			else
+			{
+				field->derivatives_valid = 0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_sum_components_evaluate_cache_in_element.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_sum_components_evaluate_cache_in_element */
+
+#define Computed_field_sum_components_evaluate_as_string_at_node \
+	Computed_field_default_evaluate_as_string_at_node
+/*******************************************************************************
+LAST MODIFIED : 13 December 2001
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_sum_components_evaluate_as_string_in_element \
+	Computed_field_default_evaluate_as_string_in_element
+/*******************************************************************************
+LAST MODIFIED : 13 December 2001
+
+DESCRIPTION :
+Print the values calculated in the cache.
+==============================================================================*/
+
+#define Computed_field_sum_components_set_values_at_node \
+   (Computed_field_set_values_at_node_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 13 July 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_sum_components_set_values_in_element \
+   (Computed_field_set_values_in_element_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 13 July 2000
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+#define Computed_field_sum_components_get_native_discretization_in_element \
+	Computed_field_default_get_native_discretization_in_element
+/*******************************************************************************
+LAST MODIFIED : 13 December 2001
+
+DESCRIPTION :
+Inherit result from first source field.
+==============================================================================*/
+
+#define Computed_field_sum_components_find_element_xi \
+   (Computed_field_find_element_xi_function)NULL
+/*******************************************************************************
+LAST MODIFIED : 13 December 2001
+
+DESCRIPTION :
+Not implemented yet.
+==============================================================================*/
+
+static int list_Computed_field_sum_components(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 13 December 2001
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(List_Computed_field_sum_components);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE,"    field : %s\n",
+			field->source_fields[0]->name);
+		display_message(INFORMATION_MESSAGE,"    weights :");
+		for (i = 0; i < field->number_of_source_values; i++)
+		{
+			display_message(INFORMATION_MESSAGE, " %g", field->source_values[i]);
+		}
+		display_message(INFORMATION_MESSAGE,"\n");
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_sum_components.  Invalid field");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_sum_components */
+
+static int list_Computed_field_sum_components_commands(
+	struct Computed_field *field)
+/*******************************************************************************
+LAST MODIFIED : 13 December 2001
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(list_Computed_field_sum_components_commands);
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE," field %s weights",
+			field->source_fields[0]->name);
+		for (i = 0; i < field->number_of_source_values; i++)
+		{
+			display_message(INFORMATION_MESSAGE, " %g", field->source_values[i]);
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_sum_components_commands.  "
+			"Invalid field");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* list_Computed_field_sum_components_commands */
+
+int Computed_field_set_type_sum_components(struct Computed_field *field,
+	struct Computed_field *source_field, FE_value *weights)
+/*******************************************************************************
+LAST MODIFIED : 13 December 2001
+
+DESCRIPTION :
+Converts <field> to type COMPUTED_FIELD_SUM_COMPONENTS with the supplied which
+returns a scalar weighted sum of the components of <source_field>.
+The <weights> array must therefore contain as many FE_values as there are
+components in <source_field>.
+If function fails, field is guaranteed to be unchanged from its original state,
+although its cache may be lost.
+==============================================================================*/
+{
+	int i, number_of_source_fields, number_of_source_values, return_code;
+	FE_value *source_values;
+	struct Computed_field **source_fields;
+
+	ENTER(Computed_field_set_type_sum_components);
+	if (field && source_field && (source_field->number_of_components > 0))
+	{
+		return_code = 1;
+		/* 1. make dynamic allocations for any new type-specific data */
+		number_of_source_values = source_field->number_of_components;
+		number_of_source_fields = 1;
+		if (ALLOCATE(source_values, FE_value, number_of_source_values) &&
+			ALLOCATE(source_fields, struct Computed_field *, number_of_source_fields))
+		{
+			/* 2. free current type-specific data */
+			Computed_field_clear_type(field);
+			/* 3. establish the new type */
+			field->type = COMPUTED_FIELD_NEW_TYPES;
+			field->type_string = computed_field_sum_components_type_string;
+			field->number_of_components = 1;
+			source_fields[0] = ACCESS(Computed_field)(source_field);
+			field->source_fields = source_fields;
+			field->number_of_source_fields = number_of_source_fields;			
+			for (i = 0; i < number_of_source_values; i++)
+			{
+				source_values[i] = weights[i];
+			}
+			field->source_values = source_values;
+			field->number_of_source_values = number_of_source_values;
+			field->type_specific_data = (void *)1;
+
+			/* Set all the methods */
+			field->computed_field_clear_type_specific_function =
+				Computed_field_sum_components_clear_type_specific;
+			field->computed_field_copy_type_specific_function =
+				Computed_field_sum_components_copy_type_specific;
+			field->computed_field_clear_cache_type_specific_function =
+				Computed_field_sum_components_clear_cache_type_specific;
+			field->computed_field_type_specific_contents_match_function =
+				Computed_field_sum_components_type_specific_contents_match;
+			field->computed_field_is_defined_in_element_function =
+				Computed_field_sum_components_is_defined_in_element;
+			field->computed_field_is_defined_at_node_function =
+				Computed_field_sum_components_is_defined_at_node;
+			field->computed_field_has_numerical_components_function =
+				Computed_field_sum_components_has_numerical_components;
+			field->computed_field_can_be_destroyed_function =
+				Computed_field_sum_components_can_be_destroyed;
+			field->computed_field_evaluate_cache_at_node_function =
+				Computed_field_sum_components_evaluate_cache_at_node;
+			field->computed_field_evaluate_cache_in_element_function =
+				Computed_field_sum_components_evaluate_cache_in_element;
+			field->computed_field_evaluate_as_string_at_node_function =
+				Computed_field_sum_components_evaluate_as_string_at_node;
+			field->computed_field_evaluate_as_string_in_element_function =
+				Computed_field_sum_components_evaluate_as_string_in_element;
+			field->computed_field_set_values_at_node_function =
+				Computed_field_sum_components_set_values_at_node;
+			field->computed_field_set_values_in_element_function =
+				Computed_field_sum_components_set_values_in_element;
+			field->computed_field_get_native_discretization_in_element_function =
+				Computed_field_sum_components_get_native_discretization_in_element;
+			field->computed_field_find_element_xi_function =
+				Computed_field_sum_components_find_element_xi;
+			field->list_Computed_field_function = 
+				list_Computed_field_sum_components;
+			field->list_Computed_field_commands_function = 
+				list_Computed_field_sum_components_commands;
+			field->computed_field_has_multiple_times_function = 
+				Computed_field_default_has_multiple_times;
+		}
+		else
+		{
+			DEALLOCATE(source_fields);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_set_type_sum_components.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_set_type_sum_components */
+
+int Computed_field_get_type_sum_components(struct Computed_field *field,
+	struct Computed_field **source_field, FE_value **weights)
+/*******************************************************************************
+LAST MODIFIED : 13 December 2001
+
+DESCRIPTION :
+If the field is of type COMPUTED_FIELD_SUM_COMPONENTS, the 
+<source_field> and <weights> used by it are returned.
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(Computed_field_get_type_sum_components);
+	if (field && (COMPUTED_FIELD_NEW_TYPES == field->type) &&
+		(field->type_string == computed_field_sum_components_type_string))
+	{
+		if (ALLOCATE(*weights, FE_value,
+			field->source_fields[0]->number_of_components))
+		{
+			*source_field = field->source_fields[0];
+			for (i = 0; i < field->source_fields[0]->number_of_components; i++)
+			{
+				(*weights)[i] = field->source_values[i];
+			}
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_get_type_sum_components.  Not enough memory");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_type_sum_components.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_get_type_sum_components */
+
+static int define_Computed_field_type_sum_components(struct Parse_state *state,
+	void *field_void,void *computed_field_component_operations_package_void)
+/*******************************************************************************
+LAST MODIFIED : 13 December 2001
+
+DESCRIPTION :
+Converts <field> into type COMPUTED_FIELD_SUM_COMPONENTS (if it is not 
+already) and allows its contents to be modified.
+==============================================================================*/
+{
+	char *current_token;
+	FE_value *weights, *temp_weights;
+	int i, number_of_weights, previous_number_of_weights, return_code;
+	struct Computed_field *field,*source_field;
+	struct Computed_field_component_operations_package 
+		*computed_field_component_operations_package;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_source_field_data;
+
+	ENTER(define_Computed_field_type_sum_components);
+	if (state && (field = (struct Computed_field *)field_void) &&
+		(computed_field_component_operations_package =
+			(struct Computed_field_component_operations_package *)
+			computed_field_component_operations_package_void))
+	{
+		return_code = 1;
+		/* get valid parameters for projection field */
+		set_source_field_data.computed_field_manager =
+			computed_field_component_operations_package->computed_field_manager;
+		set_source_field_data.conditional_function =
+			Computed_field_has_numerical_components;
+		set_source_field_data.conditional_function_user_data = (void *)NULL;
+		source_field = (struct Computed_field *)NULL;
+		weights = (FE_value *)NULL;
+		previous_number_of_weights = 0;
+		if (computed_field_sum_components_type_string ==
+			Computed_field_get_type_string(field))
+		{
+			return_code =
+				Computed_field_get_type_sum_components(field, &source_field, &weights);
+		}
+		if (return_code)
+		{
+			if (source_field)
+			{
+				previous_number_of_weights = source_field->number_of_components;
+				ACCESS(Computed_field)(source_field);
+			}
+			if ((current_token = state->current_token) &&
+				(!(strcmp(PARSER_HELP_STRING, current_token) &&
+					strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))))
+			{
+				option_table = CREATE(Option_table)();					
+				Option_table_add_entry(option_table, "field", &source_field,
+					&set_source_field_data, set_Computed_field_conditional);
+				Option_table_add_entry(option_table, "weights", weights,
+					&previous_number_of_weights, set_FE_value_array);
+				return_code = Option_table_multi_parse(option_table, state);
+				DESTROY(Option_table)(&option_table);
+			}
+			/* parse the field ... */
+			if (return_code && (current_token = state->current_token))
+			{
+				/* ... only if the "field" token is next */
+				if (fuzzy_string_compare(current_token, "field"))
+				{
+					option_table = CREATE(Option_table)();
+					/* field */
+					Option_table_add_entry(option_table, "field", &source_field,
+						&set_source_field_data, set_Computed_field_conditional);
+					if (return_code = Option_table_parse(option_table, state))
+					{
+						if (source_field)
+						{
+							number_of_weights = source_field->number_of_components;
+							if (REALLOCATE(temp_weights, weights, FE_value,
+								number_of_weights))
+							{
+								weights = temp_weights;
+								/* make any new weights equal to 1.0 */
+								for (i = previous_number_of_weights; i < number_of_weights; i++)
+								{
+									weights[i] = 1.0;
+								}
+							}
+							else
+							{
+								return_code = 0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"define_Computed_field_type_sum_components.  Invalid field");
+							return_code = 0;
+						}
+					}
+					DESTROY(Option_table)(&option_table);
+				}
+			}
+			/* parse the weights */
+			if (return_code && state->current_token)
+			{
+				option_table = CREATE(Option_table)();
+				number_of_weights = source_field->number_of_components;
+				Option_table_add_entry(option_table, "weights", weights,
+					&number_of_weights, set_FE_value_array);
+				return_code = Option_table_multi_parse(option_table, state);
+				DESTROY(Option_table)(&option_table);
+			}
+			/* no errors,not asking for help */
+			if (return_code)
+			{
+				return_code = Computed_field_set_type_sum_components(field,
+					source_field, weights);
+			}
+			if (!return_code)
+			{
+				if ((!state->current_token) ||
+					(strcmp(PARSER_HELP_STRING, state->current_token) &&
+						strcmp(PARSER_RECURSIVE_HELP_STRING, state->current_token)))
+				{
+					/* error */
+					display_message(ERROR_MESSAGE,
+						"define_Computed_field_type_sum_components.  Failed");
+				}
+			}
+			if (source_field)
+			{
+				DEACCESS(Computed_field)(&source_field);
+			}
+			DESTROY(Option_table)(&option_table);
+		}
+		DEALLOCATE(weights);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"define_Computed_field_type_sum_components.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* define_Computed_field_type_sum_components */
+
 int Computed_field_register_types_component_operations(
 	struct Computed_field_package *computed_field_package)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 13 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -5124,11 +5803,11 @@ DESCRIPTION :
 			define_Computed_field_type_divide_components,
 			&computed_field_component_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_add_type_string, 
+			computed_field_add_type_string,
 			define_Computed_field_type_add,
 			&computed_field_component_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
-			computed_field_scale_type_string, 
+			computed_field_scale_type_string,
 			define_Computed_field_type_scale,
 			&computed_field_component_operations_package);
 		return_code = Computed_field_package_add_type(computed_field_package,
@@ -5143,12 +5822,16 @@ DESCRIPTION :
 			computed_field_offset_type_string, 
 			define_Computed_field_type_offset,
 			&computed_field_component_operations_package);
+		return_code = Computed_field_package_add_type(computed_field_package,
+			computed_field_sum_components_type_string, 
+			define_Computed_field_type_sum_components,
+			&computed_field_component_operations_package);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_register_types_component_operations.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
