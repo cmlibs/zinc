@@ -158,32 +158,15 @@ newly_unselected_element_point_ranges_list if it is currently there.
 Calls Element_point_ranges_selection_update.
 ==============================================================================*/
 
-int Element_point_ranges_select_in_Element_point_ranges_selection(
+int Element_point_ranges_select(
 	struct Element_point_ranges *element_point_ranges,
 	void *element_point_ranges_selection_void);
 /*******************************************************************************
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 26 May 2000
 
 DESCRIPTION :
 Element_point_ranges iterator version of
 Element_point_ranges_selection_select_element_point_ranges
-==============================================================================*/
-
-int FE_element_select_grid_field_ranges(struct FE_element *element,
-	void *select_data_void);
-/*******************************************************************************
-LAST MODIFIED : 18 May 2000
-
-DESCRIPTION :
-Iterator function that gets an Element_point_ranges structure representing all
-the grid_points in <element> with discretization of the single component
-integer <field>, for which the field value is in the given <ranges>.
-Note that there may legitimately be none if <field> is not grid-based in
-<element> or the ranges do not intersect with the values in the field.
-The structure is then added to the <element_point_ranges_selection>.
-select_data_void should point to a
-struct FE_element_select_grid_field_ranges_data.
-Note only looks at top-level elements.
 ==============================================================================*/
 
 int Element_point_ranges_selection_unselect_element_point_ranges(
@@ -200,21 +183,15 @@ newly_selected_element_point_ranges_list if it is currently there. Calls
 Element_point_ranges_selection_update.
 ==============================================================================*/
 
-int FE_element_unselect_grid_field_ranges(struct FE_element *element,
-	void *select_data_void);
+int Element_point_ranges_unselect(
+	struct Element_point_ranges *element_point_ranges,
+	void *element_point_ranges_selection_void);
 /*******************************************************************************
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 26 May 2000
 
 DESCRIPTION :
-Iterator function that gets an Element_point_ranges structure representing all
-the grid_points in <element> with discretization of the single component
-integer <field>, for which the field value is in the given <ranges>.
-Note that there may legitimately be none if <field> is not grid-based in
-<element> or the ranges do not intersect with the values in the field.
-The structure is then removed from the <element_point_ranges_selection>.
-select_data_void should point to a
-struct FE_element_unselect_grid_field_ranges_data.
-Note only looks at top-level elements.
+Element_point_ranges iterator version of
+Element_point_ranges_selection_unselect_element_point_ranges
 ==============================================================================*/
 
 struct LIST(Element_point_ranges)

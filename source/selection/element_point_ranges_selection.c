@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_ranges_selection.c
 
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 25 May 2000
 
 DESCRIPTION :
 Global store of selected element_point_ranges for group actions and
@@ -123,10 +123,10 @@ Global functions
 ----------------
 */
 
-struct Element_point_ranges_selection
-	*CREATE(Element_point_ranges_selection)(void)
+struct Element_point_ranges_selection *CREATE(Element_point_ranges_selection)(
+	void)
 /*******************************************************************************
-LAST MODIFIED : 27 March 2000
+LAST MODIFIED : 30 May 2000
 
 DESCRIPTION :
 Creates the global store of selected element_point_ranges for group actions and
@@ -418,7 +418,7 @@ int Element_point_ranges_selection_select_element_point_ranges(
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct Element_point_ranges *element_point_ranges)
 /*******************************************************************************
-LAST MODIFIED : 27 March 2000
+LAST MODIFIED : 25 May 2000
 
 DESCRIPTION :
 Ensures <element_point_ranges> is in <element_point_ranges_selection>. Even if
@@ -431,7 +431,8 @@ Calls Element_point_ranges_selection_update.
 	int return_code;
 
 	ENTER(Element_point_ranges_selection_select_element_point_ranges);
-	if (element_point_ranges_selection&&element_point_ranges)
+	if (element_point_ranges_selection&&element_point_ranges&&
+		Element_point_ranges_has_ranges(element_point_ranges))
 	{
 		return_code=Element_point_ranges_add_to_list(element_point_ranges,
 			(void *)element_point_ranges_selection->element_point_ranges_list);
@@ -454,11 +455,11 @@ Calls Element_point_ranges_selection_update.
 	return (return_code);
 } /* Element_point_ranges_selection_select_element_point_ranges */
 
-int Element_point_ranges_select_in_Element_point_ranges_selection(
+int Element_point_ranges_select(
 	struct Element_point_ranges *element_point_ranges,
 	void *element_point_ranges_selection_void)
 /*******************************************************************************
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 26 May 2000
 
 DESCRIPTION :
 Element_point_ranges iterator version of
@@ -467,64 +468,14 @@ Element_point_ranges_selection_select_element_point_ranges
 {
 	int return_code;
 
-	ENTER(Element_point_ranges_select_in_Element_point_ranges_selection);
+	ENTER(Element_point_ranges_select);
 	return_code=Element_point_ranges_selection_select_element_point_ranges(
 		(struct Element_point_ranges_selection *)
 		element_point_ranges_selection_void,element_point_ranges);
 	LEAVE;
 
 	return (return_code);
-} /* Element_point_ranges_select_in_Element_point_ranges_selection */
-
-int FE_element_select_grid_field_ranges(struct FE_element *element,
-	void *select_data_void)
-/*******************************************************************************
-LAST MODIFIED : 18 May 2000
-
-DESCRIPTION :
-Iterator function that gets an Element_point_ranges structure representing all
-the grid_points in <element> with discretization of the single component
-integer <grid_field>, for which the field value is in the given <ranges>.
-Note that there may legitimately be none if <grid_field> is not grid-based in
-<element> or the ranges do not intersect with the values in the field.
-The structure is then added to the <element_point_ranges_selection>.
-select_data_void should point to a
-struct FE_element_select_grid_field_ranges_data.
-Note only looks at top-level elements.
-==============================================================================*/
-{
-	int return_code;
-	struct Element_point_ranges *element_point_ranges;
-	struct FE_element_select_grid_field_ranges_data *select_data;
-
-	ENTER(FE_element_select_grid_field_ranges);
-	if (element&&(select_data=
-		(struct FE_element_select_grid_field_ranges_data *)select_data_void))
-	{
-		/* use only top-level elements */
-		if ((CM_ELEMENT==element->cm.type)&&
-			(element_point_ranges=Element_point_ranges_from_grid_field_ranges(
-				element,select_data->grid_field,select_data->ranges)))
-		{
-			return_code=Element_point_ranges_selection_select_element_point_ranges(
-				select_data->element_point_ranges_selection,element_point_ranges);
-			DESTROY(Element_point_ranges)(&element_point_ranges);
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_select_grid_field_ranges.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_select_grid_field_ranges */
+} /* Element_point_ranges_select */
 
 int Element_point_ranges_selection_unselect_element_point_ranges(
 	struct Element_point_ranges_selection *element_point_ranges_selection,
@@ -606,55 +557,27 @@ Element_point_ranges_selection_update.
 	return (return_code);
 } /* Element_point_ranges_selection_unselect_element_point_ranges */
 
-int FE_element_unselect_grid_field_ranges(struct FE_element *element,
-	void *unselect_data_void)
+int Element_point_ranges_unselect(
+	struct Element_point_ranges *element_point_ranges,
+	void *element_point_ranges_selection_void)
 /*******************************************************************************
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 26 May 2000
 
 DESCRIPTION :
-Iterator function that gets an Element_point_ranges structure representing all
-the grid_points in <element> with discretization of the single component
-integer <grid_field>, for which the field value is in the given <ranges>.
-Note that there may legitimately be none if <grid_field> is not grid-based in
-<element> or the ranges do not intersect with the values in the field.
-The structure is then removed from the <element_point_ranges_selection>.
-select_data_void should point to a
-struct FE_element_unselect_grid_field_ranges_data.
-Note only looks at top-level elements.
+Element_point_ranges iterator version of
+Element_point_ranges_selection_unselect_element_point_ranges
 ==============================================================================*/
 {
 	int return_code;
-	struct Element_point_ranges *element_point_ranges;
-	struct FE_element_select_grid_field_ranges_data *unselect_data;
 
-	ENTER(FE_element_unselect_grid_field_ranges);
-	if (element&&(unselect_data=
-		(struct FE_element_select_grid_field_ranges_data *)unselect_data_void))
-	{
-		/* use only top-level elements */
-		if ((CM_ELEMENT==element->cm.type)&&
-			(element_point_ranges=Element_point_ranges_from_grid_field_ranges(
-				element,unselect_data->grid_field,unselect_data->ranges)))
-		{
-			return_code=Element_point_ranges_selection_unselect_element_point_ranges(
-				unselect_data->element_point_ranges_selection,element_point_ranges);
-			DESTROY(Element_point_ranges)(&element_point_ranges);
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_unselect_grid_field_ranges.  Invalid argument(s)");
-		return_code=0;
-	}
+	ENTER(Element_point_ranges_unselect);
+	return_code=Element_point_ranges_selection_unselect_element_point_ranges(
+		(struct Element_point_ranges_selection *)
+		element_point_ranges_selection_void,element_point_ranges);
 	LEAVE;
 
 	return (return_code);
-} /* FE_element_unselect_grid_field_ranges */
+} /* Element_point_ranges_unselect */
 
 struct LIST(Element_point_ranges)
 	*Element_point_ranges_selection_get_element_point_ranges_list(
