@@ -1943,7 +1943,8 @@ optional <command_suffix> may describe the scene (eg. "scene default").
 					display_message(INFORMATION_MESSAGE," default_coordinate %s",name);
 					DEALLOCATE(name);
 				}
-				display_message(INFORMATION_MESSAGE," element_discretization %d*%d*%d",
+				display_message(INFORMATION_MESSAGE,
+					" element_discretization \"%d*%d*%d\"",
 					gt_element_group->element_discretization.number_in_xi1,
 					gt_element_group->element_discretization.number_in_xi2,
 					gt_element_group->element_discretization.number_in_xi3);
