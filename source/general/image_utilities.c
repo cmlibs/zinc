@@ -739,7 +739,14 @@ functions, ie. at the start of the program.
 	if (program_name)
 	{
 #if defined (IMAGEMAGICK)
+#if ! defined (SGI)
+		/* Not calling this on IRIX for the time being as this routine messes with the LOCALE
+			and installs some signal handlers.  These signal handlers caused problems
+			on IRIX when checking for floating point exceptions.
+			Not doing this could mean that imagemagick does not close itself down correctly,
+			especially if it has made temporary files. */
 		InitializeMagick(program_name);
+#endif /* ! defined (SGI) */
 #endif /* defined (IMAGEMAGICK) */
 		return_code = 1;
 	}
