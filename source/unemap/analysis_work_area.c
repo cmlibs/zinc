@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 23 July 2004
+LAST MODIFIED : 22 September 2004
 
 DESCRIPTION :
 ???DB.  Everything or nothing should be using the datum_time_object.  Currently
@@ -15479,7 +15479,7 @@ Calculates the next desired update callback from the time object.
 static int analysis_potential_time_update_callback(
 	struct Time_object *time_object,double current_time,void *analysis_void)
 /*******************************************************************************
-LAST MODIFIED : 30 October 2001
+LAST MODIFIED : 22 September 2004
 
 DESCRIPTION :
 Responds to update callbacks from the time object.
@@ -15786,6 +15786,7 @@ Responds to update callbacks from the time object.
 								}
 								else
 								{
+#if defined (OLD_CODE)
 									if (Time_keeper_is_playing(Time_object_get_time_keeper(
 										analysis->potential_time_object)))
 									{
@@ -15794,6 +15795,14 @@ Responds to update callbacks from the time object.
 											"Time outside range of single activation");
 									}
 									else
+									{
+										map->activation_front= -1;
+										update_mapping_drawing_area(mapping,0);
+										update_mapping_colour_or_auxili(mapping);
+									}
+#endif // defined (OLD_CODE)
+									if (!Time_keeper_is_playing(Time_object_get_time_keeper(
+										analysis->potential_time_object)))
 									{
 										map->activation_front= -1;
 										update_mapping_drawing_area(mapping,0);
