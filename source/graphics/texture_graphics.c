@@ -1148,7 +1148,7 @@ printf("DEBUG:Before allocate npolys = %d n_verts = %d\n",n_iso_polys,
 					triangle_list,vertex_list,iso_poly_material,iso_env_map,iso_poly_cop,
 					texturemap_coord,texturemap_index,1
 					/* n_xi_rep[0]*n_xi_rep[1]*n_xi_rep[2]*/,
-					0 /*n_data_components*/, (GTDATA *)NULL)))
+					0 /*n_data_components*/, (GTDATA *)NULL, g_VOLTEX_SHADED_TEXMAP )))
 				{
 					display_message(ERROR_MESSAGE,
 						"create_GTVOLTEX_from_FE_element.   Could not create voltex");

@@ -3611,9 +3611,9 @@ struct GT_surface *create_GT_surface_from_FE_element(
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *data_field,int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,char reverse_normals,
-	struct FE_element *top_level_element)
+	struct FE_element *top_level_element, enum Render_type render_type)
 /*******************************************************************************
-LAST MODIFIED : 2 July 1999
+LAST MODIFIED : 2 May 2000
 
 DESCRIPTION :
 Creates a <GT_surface> from the <coordinate_field> for the 2-D finite <element>
@@ -3696,9 +3696,13 @@ Notes:
 			ALLOCATE(points,Triple,number_of_points)&&
 			ALLOCATE(normalpoints,Triple,number_of_points)&&
 			ALLOCATE(texturepoints,Triple,number_of_points)&&
-			(surface=CREATE(GT_surface)(/*g_SHADED*/g_SHADED_TEXMAP,polygon_type,
+			(((render_type == RENDER_TYPE_WIREFRAME) &&
+				(surface=CREATE(GT_surface)(g_WIREFRAME_SHADED_TEXMAP,polygon_type,
 				number_of_points_in_xi1,number_of_points_in_xi2, points,
 				normalpoints, texturepoints, n_data_components,data)))
+				||(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,polygon_type,
+				number_of_points_in_xi1,number_of_points_in_xi2, points,
+				normalpoints, texturepoints, n_data_components,data))))
 		{
 			/* for selective editing of GT_object primitives, record element no. */
 			surface->object_name=element->cm.number;
@@ -4117,7 +4121,7 @@ The <xi> are set to their local values within the returned <element>.
 
 struct GT_voltex *create_GT_voltex_from_FE_element(struct FE_element *element,
 	struct Computed_field *coordinate_field,struct Computed_field *data_field,
-	struct VT_volume_texture *vtexture,
+	struct VT_volume_texture *vtexture, enum Render_type render_type,
 	struct Computed_field *displacement_field, int displacement_map_xi_direction,
 	struct Computed_field *blur_field)
 /*******************************************************************************
@@ -4356,26 +4360,73 @@ faces.
 									n_data_components = 0;
 									data = (GTDATA *)NULL;
 								}
-								if (!(voltex=CREATE(GT_voltex)(n_iso_polys,n_vertices,
-									triangle_list2,vertex_list,iso_poly_material,iso_env_map,
-									iso_poly_cop,texturemap_coord,texturemap_index,
-									n_xi_rep[0]*n_xi_rep[1]*n_xi_rep[2],n_data_components,
-									data)))
+								switch (render_type)
 								{
-									display_message(ERROR_MESSAGE,
-								"create_GT_voltex_from_FE_element.   Could not create voltex");
-									DEALLOCATE(triangle_list);
-									DEALLOCATE(triangle_list2);
-									DEALLOCATE(iso_poly_material);
-									DEALLOCATE(iso_poly_cop);
-									DEALLOCATE(texturemap_coord);
-									DEALLOCATE(texturemap_index);
-									DEALLOCATE(vertex_list);
-									DEALLOCATE(iso_env_map);
-									if (data)
+									case RENDER_TYPE_SHADED:
 									{
-										DEALLOCATE(data);
-									}
+										if (!(voltex=CREATE(GT_voltex)(n_iso_polys,n_vertices,
+											triangle_list2,vertex_list,iso_poly_material,iso_env_map,
+											iso_poly_cop,texturemap_coord,texturemap_index,
+											n_xi_rep[0]*n_xi_rep[1]*n_xi_rep[2],n_data_components,
+											data, g_VOLTEX_SHADED_TEXMAP)))
+										{
+											display_message(ERROR_MESSAGE,
+												"create_GT_voltex_from_FE_element.   Could not create voltex");
+											DEALLOCATE(triangle_list);
+											DEALLOCATE(triangle_list2);
+											DEALLOCATE(iso_poly_material);
+											DEALLOCATE(iso_poly_cop);
+											DEALLOCATE(texturemap_coord);
+											DEALLOCATE(texturemap_index);
+											DEALLOCATE(vertex_list);
+											DEALLOCATE(iso_env_map);
+											if (data)
+											{
+												DEALLOCATE(data);
+											}
+										}
+									} break;
+									case RENDER_TYPE_WIREFRAME:
+									{
+										if (!(voltex=CREATE(GT_voltex)(n_iso_polys,n_vertices,
+											triangle_list2,vertex_list,iso_poly_material,iso_env_map,
+											iso_poly_cop,texturemap_coord,texturemap_index,
+											n_xi_rep[0]*n_xi_rep[1]*n_xi_rep[2],n_data_components,
+											data, g_VOLTEX_WIREFRAME_SHADED_TEXMAP)))
+										{
+											display_message(ERROR_MESSAGE,
+												"create_GT_voltex_from_FE_element.   Could not create voltex");
+											DEALLOCATE(triangle_list);
+											DEALLOCATE(triangle_list2);
+											DEALLOCATE(iso_poly_material);
+											DEALLOCATE(iso_poly_cop);
+											DEALLOCATE(texturemap_coord);
+											DEALLOCATE(texturemap_index);
+											DEALLOCATE(vertex_list);
+											DEALLOCATE(iso_env_map);
+											if (data)
+											{
+												DEALLOCATE(data);
+											}
+										}
+									} break;
+									default:
+									{
+										display_message(ERROR_MESSAGE,
+											"create_GT_voltex_from_FE_element.  Unknown render type.");
+										DEALLOCATE(triangle_list);
+										DEALLOCATE(triangle_list2);
+										DEALLOCATE(iso_poly_material);
+										DEALLOCATE(iso_poly_cop);
+										DEALLOCATE(texturemap_coord);
+										DEALLOCATE(texturemap_index);
+										DEALLOCATE(vertex_list);
+										DEALLOCATE(iso_env_map);
+										if (data)
+										{
+											DEALLOCATE(data);
+										}										
+									} break;
 								}
 							}
 							else
@@ -7435,11 +7486,11 @@ Interpolates xi points (triples in vector field) over the finite <element>
 struct GT_voltex *generate_clipped_GT_voltex_from_FE_element(
 	struct Clipping *clipping,struct FE_element *element,
 	struct Computed_field *coordinate_field,struct Computed_field *data_field,
-	struct VT_volume_texture *texture,
+	struct VT_volume_texture *texture, enum Render_type render_type,
 	struct Computed_field *displacement_map_field, int displacement_map_xi_direction,
 	struct Computed_field *blur_field)
 /*******************************************************************************
-LAST MODIFIED : 2 July 1999
+LAST MODIFIED : 3 May 2000
 
 DESCRIPTION :
 Generates clipped voltex from <volume texture> and <clip_function> over
@@ -7695,7 +7746,7 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 							}
 #endif /* defined (OLD_CODE) */
 							voltex=create_GT_voltex_from_FE_element(element,
-								coordinate_field,data_field,texture,
+								coordinate_field,data_field,texture,render_type,
 								displacement_map_field, displacement_map_xi_direction,
 								blur_field);
 						}
@@ -7721,7 +7772,7 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 						texture->name);
 #endif /* defined (DEBUG) */
 					voltex=create_GT_voltex_from_FE_element(element,coordinate_field,
-						data_field, texture,
+						data_field, texture, render_type,
 						displacement_map_field, displacement_map_xi_direction,
 						blur_field);
 #if defined (DEBUG)
@@ -7745,7 +7796,7 @@ Generates clipped voltex from <volume texture> and <clip_function> over
 				texture->name);
 #endif /* defined (DEBUG) */
 			voltex=create_GT_voltex_from_FE_element(element,
-				coordinate_field, data_field, texture, 
+				coordinate_field, data_field, texture, render_type,
 				displacement_map_field, displacement_map_xi_direction,
 				blur_field);
 		}
@@ -8085,7 +8136,8 @@ Converts a finite element into a surface.
 						element_to_surface_data->number_of_segments_in_xi1,
 						element_to_surface_data->number_of_segments_in_xi2,
 						element_to_surface_data->reverse_normals,
-						/*top_level_element*/(struct FE_element *)NULL))
+						/*top_level_element*/(struct FE_element *)NULL,
+					   element_to_surface_data->render_type))
 					{
 						if (!(return_code=GT_OBJECT_ADD(GT_surface)(
 							element_to_surface_data->graphics_object,
@@ -8537,6 +8589,7 @@ Converts a 3-D element into a volume.
 				element_to_volume_data->coordinate_field,
 				element_to_volume_data->data_field,
 				element_to_volume_data->volume_texture,
+				element_to_volume_data->render_type,
 				element_to_volume_data->displacement_map_field,
 				element_to_volume_data->displacement_map_xi_direction,
 				element_to_volume_data->blur_field))
@@ -8656,6 +8709,7 @@ Computes iso-surfaces/lines/points graphics from <element>.
 								number_in_xi,
 								element_to_iso_scalar_data->material,
 								element_to_iso_scalar_data->graphics_object,
+								element_to_iso_scalar_data->render_type,
 								element_to_iso_scalar_data->surface_data_group,
 								element_to_iso_scalar_data->data_manager,
 								element_to_iso_scalar_data->fe_field_manager);
@@ -8718,6 +8772,7 @@ int create_iso_surfaces_from_FE_element(struct FE_element *element,
 	struct Computed_field *data_field,struct Computed_field *scalar_field,
 	struct Computed_field *surface_data_density_field,int *number_in_xi,
 	struct Graphical_material *material,struct GT_object *graphics_object,
+	enum Render_type render_type,
 	struct GROUP(FE_node) *surface_data_group,
 	struct MANAGER(FE_node) *data_manager,
 	struct MANAGER(FE_field) *fe_field_manager)
@@ -8966,7 +9021,7 @@ Converts a 3-D element into an iso_surface (via a volume_texture).
 						volume_texture->disable_volume_functions=0;
 						if (iso_surface_voltex=generate_clipped_GT_voltex_from_FE_element(
 							clipping,element,coordinate_field,data_field,
-							volume_texture,NULL,0,NULL))
+							volume_texture,render_type,NULL,0,NULL))
 						{
 							if (return_code=GT_OBJECT_ADD(GT_voltex)(
 								graphics_object,

@@ -1023,7 +1023,7 @@ DESCRIPTION :
 							if(voltex = CREATE(GT_voltex)(n_triangles, n_vertices,
 								triangle_list, vertex_list, iso_poly_material,
 								iso_env_map, iso_poly_cop, texturemap_coord, texturemap_index,
-								/*n_rep*/1, /*n_data_components*/0, (GTDATA *)NULL))
+								/*n_rep*/1, /*n_data_components*/0, (GTDATA *)NULL, g_VOLTEX_SHADED_TEXMAP))
 							{
 								acc_triangle_index=0;
 								for (i=0;i<n_iso_polys;i++)

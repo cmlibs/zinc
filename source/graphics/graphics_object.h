@@ -130,7 +130,22 @@ without knowing which order the types are in.
 	g_SH_DISCONTINUOUS_TEXMAP, /* old 7 */
 	g_SH_DISCONTINUOUS_STRIP,
 	g_SH_DISCONTINUOUS_STRIP_TEXMAP,
+	g_WIREFRAME_SHADED_TEXMAP,
 	g_SURFACE_TYPE_AFTER_LAST
+};
+
+enum GT_voltex_type
+/*******************************************************************************
+LAST MODIFIED : 3 May 2000
+
+DESCRIPTION :
+==============================================================================*/
+{
+	g_VOLTEX_TYPE_INVALID,
+	g_VOLTEX_TYPE_BEFORE_FIRST,
+	g_VOLTEX_SHADED_TEXMAP,
+	g_VOLTEX_WIREFRAME_SHADED_TEXMAP,
+	g_VOLTEX_TYPE_AFTER_LAST
 };
 
 enum GT_polyline_type
@@ -436,6 +451,8 @@ DESCRIPTION :
 	/* store integer object_name eg. element number from which this object came */
 	int object_name;
 	struct GT_voltex *ptrnext;
+	/* voltex type */
+	enum GT_voltex_type voltex_type;
 }; /* struct GT_voltex */
 
 /* The callback makes a circular reference in this file */
@@ -907,9 +924,9 @@ struct GT_voltex *CREATE(GT_voltex)(int n_iso_polys,int n_vertices,
 	struct Graphical_material **iso_poly_material,
 	struct Environment_map **iso_env_map, double *iso_poly_cop,
 	float *texturemap_coord,int *texturemap_index,int n_rep,int n_data_components,
-	GTDATA *data);
+	GTDATA *data, enum GT_voltex_type voltex_type);
 /*******************************************************************************
-LAST MODIFIED : 4 June 1999
+LAST MODIFIED : 3 May 2000
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphics volume texture.

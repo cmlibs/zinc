@@ -31,7 +31,7 @@ un-selected graphics are drawn.
 ==============================================================================*/
 {
 	float proportion,*times;
-	int itime,name_selected,return_code,strip;
+	int itime,name_selected,return_code,strip,wireframe_flag;
 	struct GT_glyph_set *interpolate_glyph_set,*glyph_set,*glyph_set_2;
 	struct GT_nurbs *nurbs;
 	struct GT_point *point;
@@ -248,36 +248,38 @@ un-selected graphics are drawn.
 				} break;
 				case g_VOLTEX:
 				{
+					voltex=(object->gu.gt_voltex)[itime];
 #if defined (OPENGL_API)
 					/* save transformation attributes state */
-					glPushAttrib(GL_TRANSFORM_BIT);
-					glEnable(GL_NORMALIZE);
+					if (voltex)
+					{
+						if (voltex->voltex_type == g_VOLTEX_WIREFRAME_SHADED_TEXMAP)
+						{
+							glPushAttrib(GL_TRANSFORM_BIT | GL_POLYGON_BIT);
+							glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);							
+						}
+						else
+						{
+							glPushAttrib(GL_TRANSFORM_BIT);
+						}
+						glEnable(GL_NORMALIZE);
 #endif /* defined (OPENGL_API) */
-					voltex=(object->gu.gt_voltex)[itime];
-					/*???RC voltex can be NULL = placeholder for empty time */
-#if defined (OLD_CODE)
-					if (!voltex)
-					{
-						/*???debug*/printf("! makegtobject.  Missing voltex");
-						display_message(ERROR_MESSAGE,"makegtobject.  Missing voltex");
-						return_code=0;
-					}
-#endif /* defined (OLD_CODE) */
-					while (voltex)
-					{
-						draw_voltexGL(voltex->n_iso_polys,voltex->triangle_list,
-							voltex->vertex_list,voltex->n_vertices,voltex->n_rep,
-							voltex->iso_poly_material,voltex->iso_env_map,
-							voltex->texturemap_coord,voltex->texturemap_index,
-							voltex->n_data_components,voltex->data,
-							object->default_material,object->spectrum);
-						voltex=voltex->ptrnext;
-					}
-					return_code=1;
+						while (voltex)
+						{
+							draw_voltexGL(voltex->n_iso_polys,voltex->triangle_list,
+								voltex->vertex_list,voltex->n_vertices,voltex->n_rep,
+								voltex->iso_poly_material,voltex->iso_env_map,
+								voltex->texturemap_coord,voltex->texturemap_index,
+								voltex->n_data_components,voltex->data,
+								object->default_material,object->spectrum);
+							voltex=voltex->ptrnext;
+						}
+						return_code=1;
 #if defined (OPENGL_API)
-					/* restore previous coloring state */
-					glPopAttrib();
+						/* restore previous coloring state */
+						glPopAttrib();
 #endif /* defined (OPENGL_API) */
+					}
 				} break;
 				case g_POLYLINE:
 				{
@@ -442,7 +444,18 @@ un-selected graphics are drawn.
 						{
 							case g_SHADED:
 							case g_SHADED_TEXMAP:
+							case g_WIREFRAME_SHADED_TEXMAP:
 							{
+								if (surface->surface_type == g_WIREFRAME_SHADED_TEXMAP)
+								{
+									glPushAttrib(GL_POLYGON_BIT);
+									glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+									wireframe_flag = 1;
+								}
+								else
+								{
+									wireframe_flag = 0;
+								}
 								if (proportion>0)
 								{
 									while (surface&&surface_2)
@@ -492,6 +505,10 @@ un-selected graphics are drawn.
 										}
 										surface=surface->ptrnext;
 									}
+								}
+								if (wireframe_flag)
+								{
+									glPopAttrib();
 								}
 								return_code=1;
 							} break;

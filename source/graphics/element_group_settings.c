@@ -105,6 +105,8 @@ finite element group rendition.
 	struct Graphical_material *material,*selected_material;
 	struct Computed_field *data_field;
 	struct Spectrum *spectrum;
+	/* for surfaces */
+	enum Render_type render_type;
 
 	/* rendering information */
 	/* use pointer to graphics_object when rebuilding graphics_objects */
@@ -485,6 +487,8 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			settings->selected_material=(struct Graphical_material *)NULL;
 			settings->data_field=(struct Computed_field *)NULL;
 			settings->spectrum=(struct Spectrum *)NULL;
+			/* for surfaces and volumes */
+			settings->render_type = RENDER_TYPE_SHADED;
 			/* for streamlines only */
 			settings->streamline_data_type=STREAM_NO_DATA;
 
@@ -747,6 +751,7 @@ Note: destination->access_count is not changed by COPY.
 		/* for all graphic types */
 		destination->visibility=source->visibility;
 		REACCESS(Graphical_material)(&(destination->material),source->material);
+		GT_element_settings_set_render_type(destination,source->render_type);
 		if (GT_ELEMENT_SETTINGS_STREAMLINES==source->settings_type)
 		{
 			GT_element_settings_set_data_spectrum_parameters_streamlines(destination,
@@ -1140,6 +1145,63 @@ options for streamlines - eg. STREAM_TRAVEL_SCALAR.
 
 	return (return_code);
 } /* GT_element_settings_set_data_spectrum_parameters_streamlines */
+
+enum Render_type GT_element_settings_get_render_type(
+	struct GT_element_settings *settings)
+/*******************************************************************************
+LAST MODIFIED : 2 May 2000
+
+DESCRIPTION :
+Get the type for how the graphics will be rendered in GL.
+==============================================================================*/
+{
+	enum Render_type render_type;
+
+	ENTER(GT_element_settings_get_render_type);
+	if (settings)
+	{
+		render_type=settings->render_type;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_get_render_type.  "
+			"Invalid argument(s)");
+		render_type = RENDER_TYPE_INVALID;
+	}
+	LEAVE;
+
+	return (render_type);
+} /* GT_element_settings_get_render_type */
+
+int GT_element_settings_set_render_type(
+	struct GT_element_settings *settings, enum Render_type render_type)
+/*******************************************************************************
+LAST MODIFIED : 2 May 2000
+
+DESCRIPTION :
+Set the type for how the graphics will be rendered in GL.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_element_settings_set_render_type);
+	if (settings&&render_type)
+	{
+		return_code=1;
+		settings->render_type=render_type;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_set_render_type.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_set_render_type */
 
 int GT_element_settings_get_dimension(struct GT_element_settings *settings)
 /*******************************************************************************
@@ -3231,6 +3293,7 @@ visibility and spectrum.
 		return_code=
 			GT_element_settings_same_geometry(settings,second_settings_void)&&
 			(settings->data_field==second_settings->data_field)&&
+			(settings->render_type==second_settings->render_type)&&
 			(settings->texture_coordinate_field==second_settings->texture_coordinate_field)&&
 			((GT_ELEMENT_SETTINGS_STREAMLINES != settings->settings_type)||
 				(settings->streamline_data_type==
@@ -3989,6 +4052,15 @@ if no coordinate field. Currently only write if we have a field.
 				append_string(&settings_string,name,&error);
 				DEALLOCATE(name);
 			}
+			/* for surfaces and volumes */
+			if ((GT_ELEMENT_SETTINGS_SURFACES==settings->settings_type) 
+				|| (GT_ELEMENT_SETTINGS_VOLUMES==settings->settings_type)
+				|| (GT_ELEMENT_SETTINGS_ISO_SURFACES==settings->settings_type))
+			{
+				append_string(&settings_string," ",&error);
+				append_string(&settings_string,
+					Render_type_string(settings->render_type),&error);
+			}
 		}
 		if (error)
 		{
@@ -4282,7 +4354,7 @@ Converts a finite element into a graphics object with the supplied settings.
 								settings_to_object_data->rc_coordinate_field,
 								settings->texture_coordinate_field,settings->data_field,
 								number_in_xi[0],number_in_xi[1],
-								/*reverse_normals*/0,top_level_element))
+								/*reverse_normals*/0,top_level_element,settings->render_type))
 							{
 								if (!GT_OBJECT_ADD(GT_surface)(
 									settings->graphics_object,time,surface))
@@ -4318,6 +4390,7 @@ Converts a finite element into a graphics object with the supplied settings.
 											settings->data_field,settings->iso_scalar_field,
 											(struct Computed_field *)NULL,number_in_xi,
 											settings->material,settings->graphics_object,
+											settings->render_type,
 											(struct GROUP(FE_node) *)NULL,
 											(struct MANAGER(FE_node) *)NULL,
 											(struct MANAGER(FE_field) *)NULL);
@@ -4426,7 +4499,7 @@ Converts a finite element into a graphics object with the supplied settings.
 								(struct Clipping *)NULL,element,
 								settings_to_object_data->rc_coordinate_field,
 								settings->data_field,
-								settings->volume_texture,
+								settings->volume_texture,settings->render_type,
 								settings->displacement_map_field,
 								settings->displacement_map_xi_direction,
 								settings->blur_field))
@@ -6288,7 +6361,7 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char invisible_flag,*select_mode_string,**valid_strings;
+	char invisible_flag,*render_type_string,*select_mode_string,**valid_strings;
 	int number_of_valid_strings,return_code;
 	struct Modify_g_element_data *modify_g_element_data;
 	struct GT_element_settings *settings;
@@ -6360,6 +6433,14 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* position */
 					Option_table_add_entry(option_table,"position",
 						&(modify_g_element_data->position),NULL,set_int_non_negative);
+					/* render_type */
+					render_type_string=
+						Render_type_string(settings->render_type);
+					valid_strings=Render_type_get_valid_strings(
+						&number_of_valid_strings);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&render_type_string);
+					DEALLOCATE(valid_strings);
 					/* scene */
 					Option_table_add_entry(option_table,"scene",
 						&(modify_g_element_data->scene),
@@ -6412,6 +6493,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						}
 						GT_element_settings_set_select_mode(settings,
 							Graphics_select_mode_from_string(select_mode_string));
+						GT_element_settings_set_render_type(settings,
+							Render_type_from_string(render_type_string));
 					}
 					DESTROY(Option_table)(&option_table);
 					if (!return_code)
@@ -6463,8 +6546,8 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char invisible_flag,*select_mode_string,*use_element_type_string,
-		**valid_strings;
+	char invisible_flag,*render_type_string,*select_mode_string,
+		*use_element_type_string, **valid_strings;
 	int number_of_valid_strings,return_code;
 	struct Computed_field *scalar_field;
 	struct Modify_g_element_data *modify_g_element_data;
@@ -6559,6 +6642,14 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* position */
 					Option_table_add_entry(option_table,"position",
 						&(modify_g_element_data->position),NULL,set_int_non_negative);
+					/* render_type */
+					render_type_string=
+						Render_type_string(settings->render_type);
+					valid_strings=Render_type_get_valid_strings(
+						&number_of_valid_strings);
+					Option_table_add_enumerator(option_table,number_of_valid_strings,
+						valid_strings,&render_type_string);
+					DEALLOCATE(valid_strings);
 					/* scene */
 					Option_table_add_entry(option_table,"scene",
 						&(modify_g_element_data->scene),
@@ -6617,6 +6708,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						}
 						GT_element_settings_set_select_mode(settings,
 							Graphics_select_mode_from_string(select_mode_string));
+						GT_element_settings_set_render_type(settings,
+							Render_type_from_string(render_type_string));
 					}
 					DESTROY(Option_table)(&option_table);
 					if (!return_code)

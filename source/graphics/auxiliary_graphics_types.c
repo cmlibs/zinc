@@ -1490,3 +1490,130 @@ or NULL if not recognized.
 	return (streamline_data_type);
 } /* Streamline_data_type_from_string */
 
+char *Render_type_string(enum Render_type render_type)
+/*******************************************************************************
+LAST MODIFIED : 2 May 2000
+
+DESCRIPTION :
+Returns a pointer to a static string describing the render_type, eg.
+RENDER_TYPE_SHADED == "shaded". This string should match the command used
+to create that type of render. The returned string must not be DEALLOCATEd!
+==============================================================================*/
+{
+	char *return_string;
+
+	ENTER(Render_type_string);
+	switch (render_type)
+	{
+		case RENDER_TYPE_SHADED:
+		{
+			return_string="render_shaded";
+		} break;
+		case RENDER_TYPE_WIREFRAME:
+		{
+			return_string="render_wireframe";
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"Render_type_string.  Unknown render_type");
+			return_string=(char *)NULL;
+		} break;
+	}
+	LEAVE;
+
+	return (return_string);
+} /* Render_type_string */
+
+char **Render_type_get_valid_strings(int *number_of_valid_strings)
+/*******************************************************************************
+LAST MODIFIED : 2 May 2000
+
+DESCRIPTION :
+Returns and allocated array of pointers to all static strings for valid
+Render_types - obtained from function Render_type_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+{
+	char **valid_strings;
+	enum Render_type render_type;
+	int i;
+
+	ENTER(Render_type_get_valid_strings);
+	if (number_of_valid_strings)
+	{
+		*number_of_valid_strings=0;
+		render_type=RENDER_TYPE_BEFORE_FIRST;
+		render_type++;
+		while (render_type<RENDER_TYPE_AFTER_LAST)
+		{
+			(*number_of_valid_strings)++;
+			render_type++;
+		}
+		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
+		{
+			render_type=RENDER_TYPE_BEFORE_FIRST;
+			render_type++;
+			i=0;
+			while (render_type<RENDER_TYPE_AFTER_LAST)
+			{
+				valid_strings[i]=Render_type_string(render_type);
+				i++;
+				render_type++;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Render_type_get_valid_strings.  Not enough memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Render_type_get_valid_strings.  Invalid argument");
+		valid_strings=(char **)NULL;
+	}
+	LEAVE;
+
+	return (valid_strings);
+} /* Render_type_get_valid_strings */
+
+enum Render_type Render_type_from_string(char *render_type_string)
+/*******************************************************************************
+LAST MODIFIED : 2 May 2000
+
+DESCRIPTION :
+Returns the <Render_type> described by <render_type_string>.
+==============================================================================*/
+{
+	enum Render_type render_type;
+
+	ENTER(Render_type_from_string);
+	if (render_type_string)
+	{
+		render_type=RENDER_TYPE_BEFORE_FIRST;
+		render_type++;
+		while ((render_type<RENDER_TYPE_AFTER_LAST)&&
+			(!fuzzy_string_compare_same_length(render_type_string,
+				Render_type_string(render_type))))
+		{
+			render_type++;
+		}
+		if (RENDER_TYPE_AFTER_LAST==render_type)
+		{
+			render_type=RENDER_TYPE_INVALID;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Render_type_from_string.  Invalid argument");
+		render_type=RENDER_TYPE_INVALID;
+	}
+	LEAVE;
+
+	return (render_type);
+} /* Render_type_from_string */
+
+

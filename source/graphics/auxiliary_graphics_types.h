@@ -124,6 +124,23 @@ Make sure Xi_discretization_mode_string handles any enumerated values you add.
 	XI_DISCRETIZATION_MODE_AFTER_LAST
 }; /* enum Xi_discretization_mode */
 
+enum Render_type
+/*******************************************************************************
+LAST MODIFIED : 2 May 2000
+
+DESCRIPTION :
+Must keep function Render_type_string up-to-date with entries here.
+Have members BEFORE_FIRST and AFTER_LAST to enable iterating through the list
+for automatic creation of choose_enumerator widgets.
+==============================================================================*/
+{
+	RENDER_TYPE_INVALID,
+	RENDER_TYPE_BEFORE_FIRST,
+	RENDER_TYPE_SHADED,
+	RENDER_TYPE_WIREFRAME,
+	RENDER_TYPE_AFTER_LAST
+};
+
 /*
 Global functions
 ----------------
@@ -347,4 +364,33 @@ DESCRIPTION :
 Returns the <Streamline_data_type> described by <streamline_data_type_string>,
 or NULL if not recognized.
 ==============================================================================*/
+
+char *Render_type_string(enum Render_type render_type);
+/*******************************************************************************
+LAST MODIFIED : 2 May 2000
+
+DESCRIPTION :
+Returns a pointer to a static string describing the render_type, eg.
+STREAM_LINE == "line". This string should match the command used
+to create that type of render. The returned string must not be DEALLOCATEd!
+==============================================================================*/
+
+char **Render_type_get_valid_strings(int *number_of_valid_strings);
+/*******************************************************************************
+LAST MODIFIED : 2 May 2000
+
+DESCRIPTION :
+Returns and allocated array of pointers to all static strings for valid
+Render_types - obtained from function Render_type_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+
+enum Render_type Render_type_from_string(char *render_type_string);
+/*******************************************************************************
+LAST MODIFIED : 2 May 2000
+
+DESCRIPTION :
+Returns the <Render_type> described by <render_type_string>.
+==============================================================================*/
+
 #endif /* AUXILIARY_GRAPHICS_TYPES_H */

@@ -78,6 +78,9 @@ procedure
   seted_id_texture_coord_btn;
   seted_id_texture_coord_form;
 
+  seted_id_render_type_entry;
+  seted_id_render_type_form;
+
 	seted_id_strline_datatype_entry;
 	seted_id_strline_datatype_form;
 
@@ -271,6 +274,7 @@ object
       {
 !      XmLabelGadget seted_appearance_label;
       XmRowColumn seted_material_entry;
+      XmRowColumn seted_render_type_entry;
 			XmRowColumn seted_texture_coord_entry;
       XmRowColumn seted_strline_datatype_entry;
       XmRowColumn seted_data_spectrum_entry;
@@ -1713,6 +1717,46 @@ object
       {
 			XmLabelGadget seted_selected_mat_label;
 			XmForm seted_selected_mat_form;
+      };
+    };
+!*******************************************************************************
+  seted_render_type_entry: XmRowColumn
+    {
+		arguments
+			{
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+!			XmNnumColumns = 1;
+			XmNpacking = XmPACK_TIGHT;
+			};
+    controls
+      {
+			XmLabelGadget seted_render_type_label;
+			XmForm seted_render_type_form;
+      };
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+        seted_id_render_type_entry(seted_structure);
+      };
+    };
+  seted_render_type_label: XmLabelGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Render type:");
+      XmNfontList = button_font;
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      };
+    };
+  seted_render_type_form: XmForm
+    {
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+        seted_id_render_type_form(seted_structure);
       };
     };
 !*******************************************************************************

@@ -2633,7 +2633,7 @@ struct GT_voltex *CREATE(GT_voltex)(int n_iso_polys,int n_vertices,
 	struct Graphical_material **iso_poly_material,
 	struct Environment_map **iso_env_map, double *iso_poly_cop,
 	float *texturemap_coord,int *texturemap_index,int n_rep,
-	int n_data_components, GTDATA *data)
+	int n_data_components, GTDATA *data,enum GT_voltex_type voltex_type)
 /*******************************************************************************
 LAST MODIFIED : 4 June 1999
 
@@ -2671,6 +2671,7 @@ Allocates memory and assigns fields for a graphics volume texture.
 			voltex->ptrnext=(struct GT_voltex *)NULL;
 			voltex->n_data_components=n_data_components;
 			voltex->data=data;
+			voltex->voltex_type=voltex_type;
 		}
 		else
 		{

@@ -83,6 +83,7 @@ Data for converts a 2-D element into a surface.
 	char exterior,reverse_normals;
 	/* Can be either g_SURFACE or g_NURBS */
 	enum GT_object_type object_type;
+	enum Render_type render_type;
 	float time;
 	int face_number,number_of_segments_in_xi1,number_of_segments_in_xi2;
 	struct Computed_field *coordinate_field,*data_field,*texture_coordinate_field;
@@ -164,6 +165,7 @@ Data for converting a 3-D element into a volume.
 	struct GT_object *graphics_object;
 	struct MANAGER(FE_node) *data_manager;
 	struct MANAGER(FE_field) *fe_field_manager;
+	enum Render_type render_type;
 	float time;
 	struct VT_volume_texture *volume_texture;
 }; /* struct Element_to_volume_data */
@@ -174,8 +176,6 @@ LAST MODIFIED : 28 January 2000
 
 DESCRIPTION :
 Data for converting a 3-D element into an iso_surface (via a volume_texture).
-???RC Only converted iso_field_scalar to Computed_fields yet, since haven't
-converted voltex code.
 ==============================================================================*/
 {
 	char exterior;
@@ -190,6 +190,7 @@ converted voltex code.
 	struct FE_field *native_discretization_field;
 	struct Graphical_material *material;
 	struct GT_object *graphics_object;
+	enum Render_type render_type;
 	struct GROUP(FE_element) *element_group;
 	struct GROUP(FE_node) *surface_data_group;
 	struct MANAGER(FE_node) *data_manager;
@@ -441,9 +442,9 @@ struct GT_surface *create_GT_surface_from_FE_element(
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *data_field,int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,char reverse_normals,
-	struct FE_element *top_level_element);
+	struct FE_element *top_level_element, enum Render_type render_type);
 /*******************************************************************************
-LAST MODIFIED : 2 July 1999
+LAST MODIFIED : 2 May 2000
 
 DESCRIPTION :
 Creates a <GT_surface> from the <coordinate_field> for the 2-D finite <element>
@@ -470,7 +471,7 @@ Notes:
 
 struct GT_voltex *create_GT_voltex_from_FE_element(struct FE_element *element,
 	struct Computed_field *coordinate_field,struct Computed_field *data_field,
-	struct VT_volume_texture *vtexture,
+	struct VT_volume_texture *vtexture, enum Render_type render_type,
 	struct Computed_field *displacement_field, int displacement_map_xi_direction,
 	struct Computed_field *blur_field);
 /*******************************************************************************
@@ -593,7 +594,7 @@ Interpolates xi points (triples in vector field) over the finite <element>
 struct GT_voltex *generate_clipped_GT_voltex_from_FE_element(
 	struct Clipping *clipping,struct FE_element *element,
 	struct Computed_field *coordinate_field,struct Computed_field *field_scalar,
-	struct VT_volume_texture *texture,
+	struct VT_volume_texture *texture, enum Render_type render_type,
 	struct Computed_field *displacement_map_field, int displacement_map_xi_direction,
 	struct Computed_field *blur_field);
 /*******************************************************************************
@@ -727,11 +728,12 @@ int create_iso_surfaces_from_FE_element(struct FE_element *element,
 	struct Computed_field *data_field,struct Computed_field *scalar_field,
 	struct Computed_field *surface_data_density_field,int *number_in_xi,
 	struct Graphical_material *material,struct GT_object *graphics_object,
+	enum Render_type render_type,
 	struct GROUP(FE_node) *surface_data_group,
 	struct MANAGER(FE_node) *data_manager,
 	struct MANAGER(FE_field) *fe_field_manager);
 /*******************************************************************************
-LAST MODIFIED : 28 January 2000
+LAST MODIFIED : 4 May 2000
 
 DESCRIPTION :
 Converts a 3-D element into an iso_surface (via a volume_texture).

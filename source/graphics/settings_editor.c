@@ -94,7 +94,8 @@ Contains all the information carried by the graphical element editor widget.
 	Widget material_form,material_widget,texture_coord_field_entry,
 		texture_coord_field_form,texture_coord_field_widget,
 		texture_coord_field_button,data_field_button,data_field_form,
-		data_field_widget,spectrum_entry,spectrum_form,spectrum_widget,
+		data_field_widget,render_type_entry,render_type_form,render_type_widget,
+		spectrum_entry,spectrum_form,spectrum_widget,
 		streamline_data_type_entry,streamline_data_type_form,
 		streamline_data_type_widget,selected_material_form,selected_material_widget;
 }; /* struct Settings_editor */
@@ -348,6 +349,10 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,texture_coord_field_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,texture_coord_field_button)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
+	Settings_editor,render_type_entry)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
+	Settings_editor,render_type_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,streamline_data_type_entry)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
@@ -1827,6 +1832,37 @@ Called when entry is made into the radius_scale_factor_text field.
 	LEAVE;
 } /* settings_editor_streamline_width_text_CB */
 
+static void settings_editor_update_render_type(Widget widget,
+	void *settings_editor_void,void *render_type_string_void)
+/*******************************************************************************
+LAST MODIFIED : 3 May 2000
+
+DESCRIPTION :
+Callback for change of render_type.
+==============================================================================*/
+{
+	struct Settings_editor *settings_editor;
+
+	ENTER(settings_editor_update_render_type);
+	USE_PARAMETER(widget);
+	if (settings_editor=(struct Settings_editor *)settings_editor_void)
+	{
+		if (GT_element_settings_set_render_type(
+			settings_editor->current_settings,
+			Render_type_from_string((char *)render_type_string_void)))
+		{
+			/* inform the client of the change */
+			settings_editor_update(settings_editor);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"settings_editor_update_render_type.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* settings_editor_update_render_type */
+
 static void settings_editor_update_stream_vector_field(Widget widget,
 	void *settings_editor_void,void *stream_vector_field_void)
 /*******************************************************************************
@@ -2469,6 +2505,10 @@ Creates a settings_editor widget.
 			DIALOG_IDENTIFY(settings_editor,texture_coord_field_form)},
 		{"seted_id_texture_coord_btn",(XtPointer)
 			DIALOG_IDENTIFY(settings_editor,texture_coord_field_button)},
+		{"seted_id_render_type_entry",(XtPointer)
+			DIALOG_IDENTIFY(settings_editor,render_type_entry)},
+		{"seted_id_render_type_form",(XtPointer)
+			DIALOG_IDENTIFY(settings_editor,render_type_form)},
 		{"seted_id_strline_datatype_entry",(XtPointer)
 			DIALOG_IDENTIFY(settings_editor,streamline_data_type_entry)},
 		{"seted_id_strline_datatype_form",(XtPointer)
@@ -2639,6 +2679,8 @@ Creates a settings_editor widget.
 				settings_editor->data_field_button=(Widget)NULL;
 				settings_editor->data_field_form=(Widget)NULL;
 				settings_editor->data_field_widget=(Widget)NULL;
+				settings_editor->render_type_entry=(Widget)NULL;
+				settings_editor->render_type_form=(Widget)NULL;
 				settings_editor->selected_material_form=(Widget)NULL;
 				settings_editor->selected_material_widget=(Widget)NULL;
 				settings_editor->spectrum_entry=(Widget)NULL;
@@ -2841,6 +2883,17 @@ Creates a settings_editor widget.
 							{
 								init_widgets=0;
 							}
+							valid_strings=Render_type_get_valid_strings(
+								&number_of_valid_strings);
+							if (!(settings_editor->render_type_widget=
+								create_choose_enumerator_widget(
+								settings_editor->render_type_form,
+								number_of_valid_strings,valid_strings,
+								Render_type_string(RENDER_TYPE_SHADED))))
+							{
+								init_widgets=0;
+							}
+							DEALLOCATE(valid_strings);
 							if (init_widgets)
 							{
 								if (settings)
@@ -3584,6 +3637,32 @@ Changes the currently chosen settings.
 								CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
 									settings_editor->texture_coord_field_widget,&callback);
 								XtUnmanageChild(settings_editor->texture_coord_field_entry);
+							}
+
+							/* render_type */
+							if ((GT_ELEMENT_SETTINGS_SURFACES==settings_type)
+							  || (GT_ELEMENT_SETTINGS_VOLUMES==settings_type)
+							  || (GT_ELEMENT_SETTINGS_ISO_SURFACES==settings_type))
+							{
+								choose_enumerator_set_string(
+									settings_editor->render_type_widget,
+									Render_type_string(
+										GT_element_settings_get_render_type(new_settings)));
+								XtManageChild(settings_editor->render_type_entry);
+								/* turn on callbacks */
+								callback.data=(void *)settings_editor;
+								callback.procedure=settings_editor_update_render_type;
+								choose_enumerator_set_callback(
+									settings_editor->render_type_widget,&callback);
+							}
+							else
+							{
+								XtUnmanageChild(settings_editor->render_type_entry);
+								/* turn off callbacks */
+								callback.data=(void *)NULL;
+								callback.procedure=(Callback_procedure *)NULL;
+								choose_enumerator_set_callback(
+									settings_editor->render_type_widget,&callback);
 							}
 							
 							/* selected material */

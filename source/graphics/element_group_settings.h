@@ -303,6 +303,24 @@ GT_ELEMENT_SETTINGS_STREAMLINES only - handles the extended range of scalar data
 options for streamlines - eg. STREAM_TRAVEL_SCALAR.
 ==============================================================================*/
 
+enum Render_type GT_element_settings_get_render_type(
+	struct GT_element_settings *settings);
+/*******************************************************************************
+LAST MODIFIED : 2 May 2000
+
+DESCRIPTION :
+Get the type for how the graphics will be rendered in GL.
+==============================================================================*/
+
+int GT_element_settings_set_render_type(
+	struct GT_element_settings *settings, enum Render_type render_type);
+/*******************************************************************************
+LAST MODIFIED : 2 May 2000
+
+DESCRIPTION :
+Set the type for how the graphics will be rendered in GL.
+==============================================================================*/
+
 int GT_element_settings_get_dimension(struct GT_element_settings *settings);
 /*******************************************************************************
 LAST MODIFIED : 15 September 1998
