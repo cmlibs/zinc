@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : matrix_vector.c
 
-LAST MODIFIED : 7 November 2000
+LAST MODIFIED : 27 November 2000
 
 DESCRIPTION:
 Code for performing vector calculations - normalize, dot product etc. -, and
@@ -860,33 +860,56 @@ Adapted from "Numerical Recipes in C".
 
 int invert_FE_value_matrix3(FE_value *a,FE_value *a_inv)
 /*******************************************************************************
-LAST MODIFIED : 15 March 1999
+LAST MODIFIED : 27 November 2000
 
 DESCRIPTION :
 Calculates the inverse of 3X3 FE_value matrix <a>, returning it in <a_inv>.
 ==============================================================================*/
 {
-	FE_value determinant;
-	int return_code;
+	double d_a[9], d_a_inv[9], determinant, max_value;
+	int i, return_code;
 
 	ENTER(invert_FE_value_matrix3);
-	if (a&&a_inv&&(1.e-08 < fabs(determinant=
-		a[0]*a[4]*a[8]+a[1]*a[5]*a[6]+
-		a[2]*a[3]*a[7]-a[0]*a[5]*a[7]-
-		a[1]*a[3]*a[8]-a[2]*a[4]*a[6])))
+	if (a && a_inv)
 	{
-		a_inv[0]=  (a[4]*a[8] - a[5]*a[7])/determinant;
-		a_inv[1]= -(a[1]*a[8] - a[2]*a[7])/determinant;
-		a_inv[2]=  (a[1]*a[5] - a[2]*a[4])/determinant;
+		max_value = 0.0;
+		for (i = 0; i < 9; i++)
+		{
+			d_a[i] = a[i];
+			if (fabs(d_a[i]) > max_value)
+			{
+				max_value = fabs(d_a[i]);
+			}
+		}
+		if ((0.0 < max_value) && (1.0E-6*max_value < fabs(determinant = (
+			d_a[0]*(d_a[4]*d_a[8] - d_a[5]*d_a[7]) +
+			d_a[1]*(d_a[5]*d_a[6] - d_a[3]*d_a[8]) +
+			d_a[2]*(d_a[3]*d_a[7] - d_a[4]*d_a[6])))))
+		{
+			d_a_inv[0] = d_a[4]*d_a[8] - d_a[5]*d_a[7];
+			d_a_inv[3] = d_a[5]*d_a[6] - d_a[3]*d_a[8];
+			d_a_inv[6] = d_a[3]*d_a[7] - d_a[4]*d_a[6];
 
-		a_inv[3]= -(a[3]*a[8] - a[5]*a[6])/determinant;
-		a_inv[4]=  (a[0]*a[8] - a[2]*a[6])/determinant;
-		a_inv[5]= -(a[0]*a[5] - a[2]*a[3])/determinant;
+			d_a_inv[1] = d_a[7]*d_a[2] - d_a[8]*d_a[1];
+			d_a_inv[4] = d_a[8]*d_a[0] - d_a[6]*d_a[2];
+			d_a_inv[7] = d_a[6]*d_a[1] - d_a[7]*d_a[0];
 
-		a_inv[6]=  (a[3]*a[7] - a[4]*a[6])/determinant;
- 		a_inv[7]= -(a[0]*a[7] - a[1]*a[6])/determinant;
-		a_inv[8]=  (a[0]*a[4] - a[1]*a[3])/determinant;
-		return_code = 1;
+			d_a_inv[2] = d_a[1]*d_a[5] - d_a[2]*d_a[4];
+			d_a_inv[5] = d_a[2]*d_a[3] - d_a[0]*d_a[5];
+			d_a_inv[8] = d_a[0]*d_a[4] - d_a[1]*d_a[3];
+
+			for (i = 0; i < 9; i++)
+			{
+				a_inv[i] = d_a_inv[i] / determinant;
+			}
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"invert_FE_value_matrix3.  Matrix is singular to machine precision");
+			return_code = 0;
+		}
 	}
 	else
 	{
