@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : movie.c
 
-LAST MODIFIED : 1 September 2000
+LAST MODIFIED : 5 September 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -9,6 +9,7 @@ DESCRIPTION :
 #include <stdio.h>
 #include <stdlib.h>
 #include "computed_field/computed_field.h"
+#include "element/element_tool.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/import_finite_element.h"
 #include "finite_element/export_finite_element.h"
@@ -23,6 +24,7 @@ DESCRIPTION :
 #include "mirage/movie.h"
 #include "mirage/mirage_node_editor.h"
 #include "mirage/tracking_editor_data.h"
+#include "node/node_tool.h"
 #include "user_interface/message.h"
 
 #define MIRAGE_POINT_SIZE 2.0
@@ -88,13 +90,17 @@ Allocates space for and initializes the Mirage_view structure.
 
 int DESTROY(Mirage_view)(struct Mirage_view **mirage_view_address)
 /*******************************************************************************
-LAST MODIFIED : 29 April 1998
+LAST MODIFIED : 5 September 2000
 
 DESCRIPTION :
 Cleans up space used by Mirage_view structure.
 ==============================================================================*/
 {
 	int return_code;
+	struct GROUP(FE_element) *element_group;
+	struct GROUP(FE_node) *node_group;
+	struct Scene *scene;
+	struct Texture *texture;
 
 	ENTER(DESTROY(Mirage_view));
 	if (mirage_view_address&&*mirage_view_address)
@@ -123,61 +129,61 @@ Cleans up space used by Mirage_view structure.
 		/* remove elements first for the sake of graphical_finite_elements */
 		if ((*mirage_view_address)->pending_elements)
 		{
+			element_group = (*mirage_view_address)->pending_elements;
 			DEACCESS(GROUP(FE_element))(
 				&((*mirage_view_address)->pending_elements));
-			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_element))(
-				(*mirage_view_address)->pending_elements,
+			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_element))(element_group,
 				(*mirage_view_address)->element_group_manager);
 		}
 		if ((*mirage_view_address)->placed_elements)
 		{
+			element_group = (*mirage_view_address)->placed_elements;
 			DEACCESS(GROUP(FE_element))(
 				&((*mirage_view_address)->placed_elements));
-			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_element))(
-				(*mirage_view_address)->placed_elements,
+			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_element))(element_group,
 				(*mirage_view_address)->element_group_manager);
 		}
 		if ((*mirage_view_address)->problem_elements)
 		{
+			element_group = (*mirage_view_address)->problem_elements;
 			DEACCESS(GROUP(FE_element))(
 				&((*mirage_view_address)->problem_elements));
-			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_element))(
-				(*mirage_view_address)->problem_elements,
+			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_element))(element_group,
 				(*mirage_view_address)->element_group_manager);
 		}
 		if ((*mirage_view_address)->pending_nodes)
 		{
+			node_group = (*mirage_view_address)->pending_nodes;
 			DEACCESS(GROUP(FE_node))(&((*mirage_view_address)->pending_nodes));
-			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(
-				(*mirage_view_address)->pending_nodes,
+			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(node_group,
 				(*mirage_view_address)->node_group_manager);
 		}
 		if ((*mirage_view_address)->placed_nodes)
 		{
+			node_group = (*mirage_view_address)->placed_nodes;
 			DEACCESS(GROUP(FE_node))(&((*mirage_view_address)->placed_nodes));
-			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(
-				(*mirage_view_address)->placed_nodes,
+			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(node_group,
 				(*mirage_view_address)->node_group_manager);
 		}
 		if ((*mirage_view_address)->problem_nodes)
 		{
+			node_group = (*mirage_view_address)->problem_nodes;
 			DEACCESS(GROUP(FE_node))(&((*mirage_view_address)->problem_nodes));
-			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(
-				(*mirage_view_address)->problem_nodes,
+			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(node_group,
 				(*mirage_view_address)->node_group_manager);
 		}
 		if ((*mirage_view_address)->scene)
 		{
+			scene=(*mirage_view_address)->scene;
 			DEACCESS(Scene)(&((*mirage_view_address)->scene));
-			REMOVE_OBJECT_FROM_MANAGER(Scene)(
-				(*mirage_view_address)->scene,
+			REMOVE_OBJECT_FROM_MANAGER(Scene)(scene,
 				(*mirage_view_address)->scene_manager);
 		}
 		if ((*mirage_view_address)->texture)
 		{
+			texture=(*mirage_view_address)->texture;
 			DEACCESS(Texture)(&((*mirage_view_address)->texture));
-			REMOVE_OBJECT_FROM_MANAGER(Texture)(
-				(*mirage_view_address)->texture,
+			REMOVE_OBJECT_FROM_MANAGER(Texture)(texture,
 				(*mirage_view_address)->texture_manager);
 		}
 		DEALLOCATE(*mirage_view_address);
@@ -196,7 +202,7 @@ Cleans up space used by Mirage_view structure.
 
 struct Mirage_movie *CREATE(Mirage_movie)(void)
 /*******************************************************************************
-LAST MODIFIED : 22 April 1999
+LAST MODIFIED : 5 September 2000
 
 DESCRIPTION :
 Allocates space for and initializes the Mirage_movie structure.
@@ -215,7 +221,8 @@ Allocates space for and initializes the Mirage_movie structure.
 		mirage_movie->all_node_file_name=(char *)NULL;
 		mirage_movie->all_element_file_name=(char *)NULL;
 		mirage_movie->all_node_group_name=(char *)NULL;
-		mirage_movie->current_frame_no=0;
+		mirage_movie->image_frame_no=0;
+		mirage_movie->exnode_frame_no=0;
 		mirage_movie->number_of_frames=0;
 		mirage_movie->start_frame_no=0;
 		mirage_movie->total_nodes=0;
@@ -231,6 +238,7 @@ Allocates space for and initializes the Mirage_movie structure.
 		mirage_movie->all_element_group=(struct GROUP(FE_element) *)NULL;
 		mirage_movie->all_node_group=(struct GROUP(FE_node) *)NULL;
 		mirage_movie->scene=(struct Scene *)NULL;
+
 		mirage_movie->computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
 		mirage_movie->element_manager=(struct MANAGER(FE_element) *)NULL;
 		mirage_movie->element_group_manager=
@@ -241,7 +249,11 @@ Allocates space for and initializes the Mirage_movie structure.
 		mirage_movie->data_manager=(struct MANAGER(FE_node) *)NULL;
 		mirage_movie->data_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
 		mirage_movie->scene_manager=(struct MANAGER(Scene) *)NULL;
-		mirage_movie->scene=(struct Scene *)NULL;
+		mirage_movie->element_point_ranges_selection=
+			(struct Element_point_ranges_selection *)NULL;
+		mirage_movie->element_selection=(struct FE_element_selection *)NULL;
+		mirage_movie->node_selection=(struct FE_node_selection *)NULL;
+
 		mirage_movie->node_editor=(struct Mirage_node_editor *)NULL;
 		mirage_movie->placed_points_material=(struct Graphical_material *)NULL;
 		mirage_movie->pending_points_material=(struct Graphical_material *)NULL;
@@ -274,13 +286,17 @@ Allocates space for and initializes the Mirage_movie structure.
 
 int DESTROY(Mirage_movie)(struct Mirage_movie **mirage_movie_address)
 /*******************************************************************************
-LAST MODIFIED : 29 April 1998
+LAST MODIFIED : 5 September 2000
 
 DESCRIPTION :
 Cleans up space used by Mirage_movie structure.
 ==============================================================================*/
 {
 	int return_code,view_no;
+	struct GROUP(FE_element) *element_group;
+	struct GROUP(FE_node) *data_group,*node_group;
+	struct LIST(FE_element) *element_list;
+	struct LIST(FE_node) *node_list;
 	struct Mirage_view **views,*destroy_view;
 	struct Mirage_movie *movie;
 
@@ -302,18 +318,6 @@ Cleans up space used by Mirage_movie structure.
 		{
 			DEALLOCATE(movie->working_directory_name);
 		}
-		if (movie->all_node_file_name)
-		{
-			DEALLOCATE(movie->all_node_file_name);
-		}
-		if (movie->all_element_file_name)
-		{
-			DEALLOCATE(movie->all_element_file_name);
-		}
-		if (movie->all_node_group_name)
-		{
-			DEALLOCATE(movie->all_node_group_name);
-		}
 		if (movie->node_file_name_template)
 		{
 			DEALLOCATE(movie->node_file_name_template);
@@ -333,41 +337,45 @@ Cleans up space used by Mirage_movie structure.
 		/* must remove elements first for the sake of graphical finite elements */
 		if (movie->pending_elements_3d)
 		{
-			DEACCESS(GROUP(FE_element))(
-				&(movie->pending_elements_3d));
+			element_group = movie->pending_elements_3d;
+			DEACCESS(GROUP(FE_element))(&(movie->pending_elements_3d));
 			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_element))(
-				movie->pending_elements_3d,movie->element_group_manager);
+				element_group,movie->element_group_manager);
 		}
 		if (movie->placed_elements_3d)
 		{
-			DEACCESS(GROUP(FE_element))(
-				&(movie->placed_elements_3d));
+			element_group = movie->placed_elements_3d;
+			DEACCESS(GROUP(FE_element))(&(movie->placed_elements_3d));
 			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_element))(
-				movie->placed_elements_3d,movie->element_group_manager);
+				element_group,movie->element_group_manager);
 		}
 		if (movie->problem_elements_3d)
 		{
+			element_group = movie->problem_elements_3d;
 			DEACCESS(GROUP(FE_element))(&(movie->problem_elements_3d));
 			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_element))(
-				movie->problem_elements_3d,movie->element_group_manager);
+				element_group,movie->element_group_manager);
 		}
 		if (movie->pending_nodes_3d)
 		{
+			node_group = movie->pending_nodes_3d;
 			DEACCESS(GROUP(FE_node))(&(movie->pending_nodes_3d));
 			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(
-				movie->pending_nodes_3d,movie->node_group_manager);
+				node_group,movie->node_group_manager);
 		}
 		if (movie->placed_nodes_3d)
 		{
+			node_group = movie->placed_nodes_3d;
 			DEACCESS(GROUP(FE_node))(&(movie->placed_nodes_3d));
 			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(
-				movie->placed_nodes_3d,movie->node_group_manager);
+				node_group,movie->node_group_manager);
 		}
 		if (movie->problem_nodes_3d)
 		{
+			node_group = movie->problem_nodes_3d;
 			DEACCESS(GROUP(FE_node))(&(movie->problem_nodes_3d));
 			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(
-				movie->problem_nodes_3d,movie->node_group_manager);
+				node_group,movie->node_group_manager);
 		}
 		/* deaccess materials */
 		if (movie->placed_points_material)
@@ -401,22 +409,63 @@ Cleans up space used by Mirage_movie structure.
 		/* remove all elements */
 		if (movie->all_element_group)
 		{
+			/* make a list of all the elements in the all_element_group */
+			element_list=CREATE(LIST(FE_element))();
+			FOR_EACH_OBJECT_IN_GROUP(FE_element)(
+				ensure_top_level_FE_element_is_in_list,(void *)element_list,
+				movie->all_element_group);
+			/* destroy the all_element_group */
+			element_group=movie->all_element_group;
 			DEACCESS(GROUP(FE_element))(&(movie->all_element_group));
 			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_element))(
-				movie->all_element_group,movie->element_group_manager);
-			REMOVE_ALL_OBJECTS_FROM_MANAGER(FE_element)(movie->element_manager);
+				element_group,movie->element_group_manager);
+			/* destroy the elements in the element_list */
+			destroy_listed_elements(element_list,movie->element_manager,
+				movie->element_group_manager,movie->element_selection,
+				movie->element_point_ranges_selection);
+			DESTROY(LIST(FE_element))(&element_list);
+		}
+		/* remove data group of same name as all node/element group */
+		if (data_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(
+			movie->all_node_group_name,movie->data_group_manager))
+		{
+			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(
+				data_group,movie->data_group_manager);
 		}
 		/* remove all nodes */
 		if (movie->all_node_group)
 		{
+			/* make a list of all the nodes in the all_node_group */
+			node_list=CREATE(LIST(FE_node))();
+			FOR_EACH_OBJECT_IN_GROUP(FE_node)(
+				ensure_FE_node_is_in_list,(void *)node_list,movie->all_node_group);
+			/* destroy the all_node_group */
+			node_group=movie->all_node_group;
 			DEACCESS(GROUP(FE_node))(&(movie->all_node_group));
 			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(
-				movie->all_node_group,movie->node_group_manager);
-			REMOVE_ALL_OBJECTS_FROM_MANAGER(FE_node)(movie->node_manager);
+				node_group,movie->node_group_manager);
+			/* destroy the nodes in the node_list */
+			destroy_listed_nodes(node_list,movie->node_manager,
+				movie->node_group_manager,movie->element_manager,movie->node_selection);
+			DESTROY(LIST(FE_node))(&node_list);
 		}
 		if (movie->scene)
 		{
 			DEACCESS(Scene)(&(movie->scene));
+		}
+
+		/* clean up all node/element names last since used to find data group */
+		if (movie->all_node_file_name)
+		{
+			DEALLOCATE(movie->all_node_file_name);
+		}
+		if (movie->all_element_file_name)
+		{
+			DEALLOCATE(movie->all_element_file_name);
+		}
+		if (movie->all_node_group_name)
+		{
+			DEALLOCATE(movie->all_node_group_name);
 		}
 
 		DEALLOCATE(*mirage_movie_address);
@@ -616,8 +665,11 @@ Creates and fills a Mirage movie structure from file <file_name>.
 					/*???debug*/printf("frames %d %d\n",
 						mirage_movie->number_of_frames,
 						mirage_movie->start_frame_no);
-					/* valid current_frame_no set in read_Mirage_movie_frame */
-					mirage_movie->current_frame_no=mirage_movie->start_frame_no-1;
+					/* valid image_frame_no set in read_Mirage_movie_frame */
+					mirage_movie->image_frame_no=mirage_movie->start_frame_no-1;
+					/* since exnode files can temporarily be read in for different
+						 frame numbers, remember which exnode frame is actually stored */
+					mirage_movie->exnode_frame_no=mirage_movie->start_frame_no-1;
 					return_code=(0<mirage_movie->number_of_frames);
 				}
 				/* read node file name template */
@@ -1702,7 +1754,7 @@ int enable_Mirage_movie_graphics(struct Mirage_movie *movie,
 	struct MANAGER(Texture) *texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 5 September 2000
 
 DESCRIPTION :
 From an already-created movie - eg. read in from read_Mirage_movie - creates
@@ -1751,6 +1803,10 @@ resulting 3-D display.
 		movie->data_manager=data_manager;
 		movie->data_group_manager=data_group_manager;
 		movie->scene_manager=scene_manager;
+		movie->element_point_ranges_selection=element_point_ranges_selection;
+		movie->element_selection=element_selection;
+		movie->node_selection=node_selection;
+
 		movie->scene=ACCESS(Scene)(default_scene);
 		/* create materials for points, lines and surfaces */
 		if (return_code)
@@ -1927,7 +1983,6 @@ resulting 3-D display.
 				read_node_data->data_group_manager=data_group_manager;
 				return_code=file_read_FE_node_group(
 					movie->all_node_file_name,(void *)read_node_data);
-				DEALLOCATE(read_node_data);
 			}
 			else
 			{
@@ -2655,14 +2710,17 @@ Turns off surfaces for the placed elements in the 3-D view, updates scene.
 	return (return_code);
 } /* Mirage_movie_graphics_hide_3d_surfaces */
 
-int read_Mirage_movie_frame(struct Mirage_movie *movie,
-	int frame_no)
+int Mirage_movie_read_frame_images(struct Mirage_movie *movie,int frame_no)
 /*******************************************************************************
-LAST MODIFIED : 23 July 1999
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
-Reads the images and nodes for frame <frame_no> in <movie>.
-This will become the new current_frame_no of the movie.
+Reads the images for frame <frame_no> in <movie>.
+Upon success, this will become the new image_frame_no of the movie. If it fails
+with the images in a half-read state, it attempts to re-read them for the last
+valid image_frame_no.
+It is up to you to ensure that the exnode_frame_no and image_frame_no match --
+it is often useful for them to temporarily differ.
 ==============================================================================*/
 {
 	char *image_file_name,*last_image_file_name_template;
@@ -2675,223 +2733,231 @@ This will become the new current_frame_no of the movie.
 	struct Texture *temp_texture;
 	unsigned long *image,*cropped_image;
 
-	ENTER(read_Mirage_movie_frame);
-	if (movie)
+	ENTER(Mirage_movie_read_frame_images);
+	if (movie && (frame_no >= movie->start_frame_no) &&
+		(frame_no < movie->start_frame_no + movie->number_of_frames))
 	{
-		if (return_code=Mirage_movie_read_frame_nodes(movie,frame_no))
+		return_code=1;
+		/* read images for each view */
+		image=(unsigned long *)NULL;
+		last_image_file_name_template=(char *)NULL;
+		if (temp_texture=CREATE(Texture)("temp"))
 		{
-			movie->current_frame_no=frame_no;
-			/* read images for each view */
-			image=(unsigned long *)NULL;
-			last_image_file_name_template=(char *)NULL;
-			if (temp_texture=CREATE(Texture)("temp"))
+			for (view_no=0;return_code&&(view_no<movie->number_of_views);view_no++)
 			{
-				for (view_no=0;return_code&&(view_no<movie->number_of_views);
-						view_no++)
+				if ((view=movie->views[view_no])&&(image_file_name=
+					make_Mirage_file_name(view->image_file_name_template,frame_no)))
 				{
-					if ((view=movie->views[view_no])&&(image_file_name=
-						make_Mirage_file_name(view->image_file_name_template,frame_no)))
+					/* get the image for this view */
+					if (image)
 					{
-						/* get the image for this view */
-						if (image)
+						/* try to reuse images if possible */
+						if (strcmp(view->image_file_name_template,
+							last_image_file_name_template))
 						{
-							/* try to reuse images if possible */
-							if (strcmp(view->image_file_name_template,
-								last_image_file_name_template))
-							{
-								DEALLOCATE(image);
-							}
+							DEALLOCATE(image);
 						}
-						last_image_file_name_template=view->image_file_name_template;
-						if (0==(movie->current_frame_no % 2))
-						{
-							/* even frame numbers */
-							crop_left_margin=view->crop0_left;
-							crop_bottom_margin=view->crop0_bottom;
-							crop_width=view->crop0_width;
-							crop_height=view->crop0_height;
-						}
-						else
-						{
-							/* odd frame numbers */
-							crop_left_margin=view->crop1_left;
-							crop_bottom_margin=view->crop1_bottom;
-							crop_width=view->crop1_width;
-							crop_height=view->crop1_height;
-						}
-						if (NULL==image)
-						{
-							/*???debug*/
-							printf("  Reading texture image file: '%s'\n",image_file_name);
-							return_code=(
-								read_image_file(image_file_name,&number_of_components,
-									&number_of_bytes_per_component,&image_height,&image_width,&image)&&
-								(0<number_of_components));
-						}
-						if (image&&return_code)
-						{
-							original_width_texels=image_width;
-							original_height_texels=image_height;
-							cropped_image=(unsigned long *)NULL;
-							/*???DB.  Guessing at texture storage for 4.  Should
-								read_image_file return.  Is something like this already
-								defined for images ? */
-							switch (number_of_components)
-							{
-								case 1:
-								{
-									texture_storage=TEXTURE_LUMINANCE;
-								} break;
-								case 2:
-								{
-									texture_storage=TEXTURE_LUMINANCE_ALPHA;
-								} break;
-								case 3:
-								{
-									texture_storage=TEXTURE_RGB;
-								} break;
-								case 4:
-								{
-									texture_storage=TEXTURE_RGBA;
-								} break;
-								default:
-								{
-									texture_storage=TEXTURE_UNDEFINED_STORAGE;
-								} break;
-							}
-							if ((cropped_image=copy_image(image,number_of_components,
-								image_width,image_height))&&
-								crop_image(&cropped_image,number_of_components,
-									number_of_bytes_per_component,
-									&original_width_texels,&original_height_texels,
-									crop_left_margin,crop_bottom_margin,crop_width,crop_height)&&
-								Texture_set_image(temp_texture,cropped_image,
-									texture_storage,number_of_bytes_per_component,original_width_texels,
-									original_height_texels,image_file_name,
-									crop_left_margin,crop_bottom_margin,crop_width,crop_height))
-							{
-								/* the texture stores the distortion centre and factor k1.
-									 Since the centre jiggles between even and odd frames with
-									 interlacing, must set it again each time. */
-								if (0==(movie->current_frame_no % 2))
-								{
-									/* even frame numbers */
-									Texture_set_physical_size(temp_texture,
-										(float)view->image0_width,
-										(float)view->image0_height);
-									Texture_set_distortion_info(temp_texture,
-										(float)view->dist_centre_x-view->image0_left,
-										(float)view->dist_centre_y-view->image0_bottom,
-										(float)view->dist_factor_k1);
-								}
-								else
-								{
-									/* odd frame numbers */
-									Texture_set_physical_size(temp_texture,
-										(float)view->image1_width,
-										(float)view->image1_height);
-									Texture_set_distortion_info(temp_texture,
-										(float)view->dist_centre_x-view->image1_left,
-										(float)view->dist_centre_y-view->image1_bottom,
-										(float)view->dist_factor_k1);
-								}
-								return_code=
-									MANAGER_MODIFY_NOT_IDENTIFIER(Texture,name)(view->texture,
-										temp_texture,view->texture_manager);
-							}
-							else
-							{
-								return_code=0;
-							}
-							if (cropped_image)
-							{
-								DEALLOCATE(cropped_image);
-							}
-						}
-						DEALLOCATE(image_file_name);
+					}
+					last_image_file_name_template=view->image_file_name_template;
+					if (0==(movie->image_frame_no % 2))
+					{
+						/* even frame numbers */
+						crop_left_margin=view->crop0_left;
+						crop_bottom_margin=view->crop0_bottom;
+						crop_width=view->crop0_width;
+						crop_height=view->crop0_height;
 					}
 					else
 					{
-						return_code=0;
+						/* odd frame numbers */
+						crop_left_margin=view->crop1_left;
+						crop_bottom_margin=view->crop1_bottom;
+						crop_width=view->crop1_width;
+						crop_height=view->crop1_height;
 					}
+					if (NULL == image)
+					{
+						/*???debug*/
+						printf("  Reading texture image file: '%s'\n",image_file_name);
+						return_code=
+							read_image_file(image_file_name,&number_of_components,
+								&number_of_bytes_per_component,&image_height,&image_width,
+								&image) && (0<number_of_components);
+					}
+					if (image && return_code)
+					{
+						original_width_texels=image_width;
+						original_height_texels=image_height;
+						cropped_image=(unsigned long *)NULL;
+						/*???DB.  Guessing at texture storage for 4.  Should
+							read_image_file return.  Is something like this already
+							defined for images ? */
+						switch (number_of_components)
+						{
+							case 1:
+							{
+								texture_storage=TEXTURE_LUMINANCE;
+							} break;
+							case 2:
+							{
+								texture_storage=TEXTURE_LUMINANCE_ALPHA;
+							} break;
+							case 3:
+							{
+								texture_storage=TEXTURE_RGB;
+							} break;
+							case 4:
+							{
+								texture_storage=TEXTURE_RGBA;
+							} break;
+							default:
+							{
+								texture_storage=TEXTURE_UNDEFINED_STORAGE;
+							} break;
+						}
+						if ((cropped_image=copy_image(image,number_of_components,
+							image_width,image_height))&&
+							crop_image(&cropped_image,number_of_components,
+								number_of_bytes_per_component,
+								&original_width_texels,&original_height_texels,
+								crop_left_margin,crop_bottom_margin,crop_width,crop_height)&&
+							Texture_set_image(temp_texture,cropped_image,
+								texture_storage,number_of_bytes_per_component,
+								original_width_texels,original_height_texels,image_file_name,
+								crop_left_margin,crop_bottom_margin,crop_width,crop_height))
+						{
+							/* the texture stores the distortion centre and factor k1.
+								 Since the centre jiggles between even and odd frames with
+								 interlacing, must set it again each time. */
+							if (0==(movie->image_frame_no % 2))
+							{
+								/* even frame numbers */
+								Texture_set_physical_size(temp_texture,
+									(float)view->image0_width,
+									(float)view->image0_height);
+								Texture_set_distortion_info(temp_texture,
+									(float)view->dist_centre_x-view->image0_left,
+									(float)view->dist_centre_y-view->image0_bottom,
+									(float)view->dist_factor_k1);
+							}
+							else
+							{
+								/* odd frame numbers */
+								Texture_set_physical_size(temp_texture,
+									(float)view->image1_width,
+									(float)view->image1_height);
+								Texture_set_distortion_info(temp_texture,
+									(float)view->dist_centre_x-view->image1_left,
+									(float)view->dist_centre_y-view->image1_bottom,
+									(float)view->dist_factor_k1);
+							}
+							return_code=MANAGER_MODIFY_NOT_IDENTIFIER(Texture,name)(
+								view->texture,temp_texture,view->texture_manager);
+						}
+						else
+						{
+							return_code=0;
+						}
+						if (cropped_image)
+						{
+							DEALLOCATE(cropped_image);
+						}
+					}
+					DEALLOCATE(image_file_name);
 				}
-				DESTROY(Texture)(&temp_texture);
+				else
+				{
+					return_code=0;
+				}
+			}
+			DESTROY(Texture)(&temp_texture);
+		}
+		else
+		{
+			return_code=0;
+		}
+		if (image)
+		{
+			DEALLOCATE(image);
+		}
+		if (return_code)
+		{
+			movie->image_frame_no = frame_no;
+		}
+		else
+		{
+			if ((frame_no != movie->image_frame_no) &&
+				(movie->image_frame_no >= movie->start_frame_no))
+			{
+				/* try to recover the last valid frame images = still a failure */
+				Mirage_movie_read_frame_images(movie,movie->image_frame_no);
 			}
 			else
 			{
-				return_code=0;
+				display_message(ERROR_MESSAGE,
+					"Mirage_movie_read_frame_nodes.  Could not read images for frame %d",
+					frame_no);
+				/* image_frame_no is now invalid */
+				movie->image_frame_no = movie->start_frame_no-1;
 			}
-			if (image)
-			{
-				DEALLOCATE(image);
-			}
-		}
-		if (!return_code)
-		{
-			display_message(ERROR_MESSAGE,
-				"read_Mirage_movie_frame.  Error reading frame");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"read_Mirage_movie_frame.  Invalid argument(s)");
+			"Mirage_movie_read_frame_images.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* read_Mirage_movie_frame */
+} /* Mirage_movie_read_frame_images */
 
-int Mirage_movie_frame_nodes_exist_or_error(struct Mirage_movie *movie,
-	int frame_no)
+int Mirage_movie_frame_has_placed_nodes(struct Mirage_movie *movie,int frame_no)
 /*******************************************************************************
-LAST MODIFIED : 22 April 1998
+LAST MODIFIED : 1 September 2000
 
 DESCRIPTION :
-Returns true if there exists a node file for <frame_no> or there is an error.
-If this routine returns 0, you know there are no nodes for frame <frame_no>,
-useful for creating initial meshes.
+Returns true if there is a single entry in the placed lists for <frame_no>,
+either for the any single view or the movie.
 ==============================================================================*/
 {
-	char *node_file_name;
-	FILE *input_file;
-	int return_code;
+	int return_code,view_no;
+	struct Mirage_view *view;
 
-	ENTER(Mirage_movie_frame_nodes_exist_or_error);
-	return_code=1;
+	ENTER(Mirage_movie_frame_has_placed_nodes);
+	return_code=0;
 	if (movie&&(frame_no >= movie->start_frame_no)&&
 		(frame_no < movie->start_frame_no+movie->number_of_frames))
 	{
-		if (node_file_name=
-			make_Mirage_file_name(movie->node_file_name_template,frame_no))
-		{
-			if (input_file=fopen(node_file_name,"r"))
-			{
-				fclose(input_file);
-				return_code=1;
-			}
-			else
-			{
-				return_code=0;
-			}
-			DEALLOCATE(node_file_name);
-		}
-		else
+		if (FIRST_OBJECT_IN_LIST_THAT(Node_status)(
+			Node_status_is_value_in_range_iterator,(void *)&frame_no,
+			movie->placed_list))
 		{
 			return_code=1;
+		}
+		for (view_no=0;(!return_code)&&(view_no<movie->number_of_views);view_no++)
+		{
+			if (view=movie->views[view_no])
+			{
+				if (FIRST_OBJECT_IN_LIST_THAT(Node_status)(
+					Node_status_is_value_in_range_iterator,(void *)&frame_no,
+					view->placed_list))
+				{
+					return_code=1;
+				}
+			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Mirage_movie_frame_nodes_exist_or_error.  Invalid argument(s)");
-		return_code=1;
+			"Mirage_movie_frame_has_placed_nodes.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Mirage_movie_frame_nodes_exist_or_error */
+} /* Mirage_movie_frame_has_placed_nodes */
 
 int Mirage_movie_unplace_frame(struct Mirage_movie *movie,int frame_no)
 /*******************************************************************************
@@ -2942,14 +3008,15 @@ in the <movie> and placed lists in the views.
 
 int Mirage_movie_read_frame_nodes(struct Mirage_movie *movie,int frame_no)
 /*******************************************************************************
-LAST MODIFIED : 1 September 2000
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
-Reads the nodes for frame <frame_no> in <movie>. If <frame_no> is valid but
-there is no node file for it the function returns successfully since the
-current node positions in memory may be used.
-The frame_no does not have to be the current_frame_number of the movie although
-it is dangerous (but possibly useful) if it is not.
+Reads the nodes for frame <frame_no> in <movie>.
+Upon success, this will become the new exnode_frame_no of the movie. If it fails
+with the nodes in a half-read state, it attempts to re-read them for the last
+valid exnode_frame_no.
+It is up to you to ensure that the exnode_frame_no and image_frame_no match --
+it is often useful for them to temporarily differ.
 ==============================================================================*/
 {
 	char *node_file_name;
@@ -2977,8 +3044,28 @@ it is dangerous (but possibly useful) if it is not.
 					read_node_data->element_manager=movie->element_manager;
 					read_node_data->node_group_manager=movie->node_group_manager;
 					read_node_data->data_group_manager=movie->data_group_manager;
-					return_code=file_read_FE_node_group(
-						node_file_name,(void *)read_node_data);
+					if (file_read_FE_node_group(node_file_name,(void *)read_node_data))
+					{
+						movie->exnode_frame_no=frame_no;
+						return_code=1;
+					}
+					else
+					{
+						if ((frame_no != movie->exnode_frame_no) &&
+							(movie->exnode_frame_no >= movie->start_frame_no))
+						{
+							/* try to recover the last valid frame nodes = still a failure */
+							Mirage_movie_read_frame_nodes(movie,movie->exnode_frame_no);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"Mirage_movie_read_frame_nodes.  "
+								"Could not read nodes for frame %d",frame_no);
+							/* exnode_frame_no is now invalid */
+							movie->exnode_frame_no = movie->start_frame_no-1;
+						}
+						return_code=0;
+					}
 					DEALLOCATE(read_node_data);
 				}
 				else
@@ -2990,11 +3077,7 @@ it is dangerous (but possibly useful) if it is not.
 			}
 			else
 			{
-				display_message(WARNING_MESSAGE,
-					"Node file '%s' not found; clearing frame %d\n",
-					node_file_name,frame_no);
-				/* use existing node positions in memory, but unplace them */
-				return_code=Mirage_movie_unplace_frame(movie,frame_no);
+				return_code=0;
 			}
 			DEALLOCATE(node_file_name);
 		}
@@ -3014,15 +3097,45 @@ it is dangerous (but possibly useful) if it is not.
 	return (return_code);
 } /* Mirage_movie_read_frame_nodes */
 
-int Mirage_movie_write_frame_nodes(struct Mirage_movie *movie,
-	int frame_no)
+int Mirage_movie_set_exnode_frame_no(struct Mirage_movie *movie,int frame_no)
 /*******************************************************************************
-LAST MODIFIED : 26 March 1998
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
-Writes the nodes in memory to the file for frame <frame_no> of <movie>.
-The frame_no does not have to be the current_frame_number of the movie although
-it is dangerous (but possibly useful) if it is not.
+Call this function to declare that the nodes in memory represent frame
+<frame_no> of the movie.
+Note: Should only call if confirmed that no exnode file exists for the frame
+and no points are placed for that frame.
+???RC Could check for this, but currently only called in places where it is
+already confirmed.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Mirage_movie_set_exnode_frame_no);
+	if (movie&&(frame_no >= movie->start_frame_no)&&
+		(frame_no < movie->start_frame_no+movie->number_of_frames))
+	{
+		movie->exnode_frame_no = frame_no;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Mirage_movie_set_exnode_frame_no.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Mirage_movie_set_exnode_frame_no */
+
+int Mirage_movie_write_frame_nodes(struct Mirage_movie *movie)
+/*******************************************************************************
+LAST MODIFIED : 4 September 2000
+
+DESCRIPTION :
+Writes the nodes in memory to the file for the exnode_frame_no of <movie>.
 ==============================================================================*/
 {
 	char *node_file_name;
@@ -3030,16 +3143,15 @@ it is dangerous (but possibly useful) if it is not.
 	struct Fwrite_FE_node_group_data data;
 
 	ENTER(Mirage_movie_write_frame_nodes);
-	if (movie&&(frame_no >= movie->start_frame_no)&&
-		(frame_no < movie->start_frame_no+movie->number_of_frames))
+	if (movie&&(movie->exnode_frame_no >= movie->start_frame_no)&&
+		(movie->exnode_frame_no < movie->start_frame_no+movie->number_of_frames))
 	{
-		if (node_file_name=
-			make_Mirage_file_name(movie->node_file_name_template,frame_no))
+		if (node_file_name = make_Mirage_file_name(movie->node_file_name_template,
+			movie->exnode_frame_no))
 		{
 			data.field = (struct FE_field *)NULL;
 			data.node_group = movie->all_node_group;
-			return_code=
-				file_write_FE_node_group(node_file_name,&data);
+			return_code = file_write_FE_node_group(node_file_name,&data);
 			DEALLOCATE(node_file_name);
 		}
 		else
@@ -3082,7 +3194,7 @@ written - but with its usual name.
 		{
 			return_code=0;
 		}
-		if (!Mirage_movie_write_frame_nodes(movie,movie->current_frame_no))
+		if (!Mirage_movie_write_frame_nodes(movie))
 		{
 			return_code=0;
 		}
@@ -3294,11 +3406,11 @@ specified view and frame.
 
 int Mirage_movie_refresh_node_groups(struct Mirage_movie *movie)
 /*******************************************************************************
-LAST MODIFIED : 26 March 1998
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
 Refreshes the placed, pending and problem node groups so that they match the
-entries in the Node_status_lists for the current_frame_no of the movie.
+entries in the Node_status_lists for the exnode_frame_no of the movie.
 Should be called after reading and changing frames.
 ==============================================================================*/
 {
@@ -3311,7 +3423,7 @@ Should be called after reading and changing frames.
 	ENTER(Mirage_movie_refresh_node_groups);
 	if (movie)
 	{
-		add_node_data.frame_no=movie->current_frame_no;
+		add_node_data.frame_no=movie->exnode_frame_no;
 		add_element_data.max_dimension=2;
 
 		/* update pending problem and placed groups in 3-D */

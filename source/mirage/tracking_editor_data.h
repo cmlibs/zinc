@@ -151,6 +151,16 @@ DESCRIPTION :
 Returns true if <value> is in any range in <node_status>.
 ==============================================================================*/
 
+int Node_status_is_value_in_range_iterator(struct Node_status *node_status,
+	void *value_address_void);
+/*******************************************************************************
+LAST MODIFIED : 1 September 2000
+
+DESCRIPTION :
+Iterator version of Node_status_is_value_in_range. <value_address> points at the
+integer value.
+==============================================================================*/
+
 int Node_status_not_clear(struct Node_status *node_status,void *dummy_void);
 /*******************************************************************************
 LAST MODIFIED : 7 April 1998

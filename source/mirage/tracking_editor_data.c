@@ -614,8 +614,36 @@ Returns true if <value> is in any range in <node_status>.
 	ENTER(Node_status_is_value_in_range);
 	if (node_status)
 	{
+		return_code=Multi_range_is_value_in_range(node_status->ranges,value);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Node_status_is_value_in_range.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Node_status_is_value_in_range */
+
+int Node_status_is_value_in_range_iterator(struct Node_status *node_status,
+	void *value_address_void)
+/*******************************************************************************
+LAST MODIFIED : 1 September 2000
+
+DESCRIPTION :
+Iterator version of Node_status_is_value_in_range. <value_address> points at the
+integer value.
+==============================================================================*/
+{
+	int return_code,*value_address;
+
+	ENTER(Node_status_is_value_in_range);
+	if (node_status&&(value_address=(int *)value_address_void))
+	{
 		return_code=
-			Multi_range_is_value_in_range(node_status->ranges,value);
+			Multi_range_is_value_in_range(node_status->ranges,*value_address);
 	}
 	else
 	{

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mirage_node_editor.c
 
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
 Special graphical node editor for mirage digitiser windows.
@@ -257,7 +257,7 @@ size in physical space.
 static int Mirage_movie_3d_to_texture_coordinates(struct Mirage_movie *movie,
 	int view_no,double position[3],double *texel_x,double *texel_y)
 /*******************************************************************************
-LAST MODIFIED : 14 June 1999
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
 Converts 3-D <position> to texture [radially distorted] coordinates.
@@ -279,7 +279,7 @@ Converts 3-D <position> to texture [radially distorted] coordinates.
 			return_code=get_radial_distortion_distorted_coordinates(corr_x,corr_y,
 				view->dist_centre_x,view->dist_centre_y,view->dist_factor_k1,
 				0.001/*tolerance*/,&dist_x,&dist_y);
-			if (0==(movie->current_frame_no % 2))
+			if (0==(movie->image_frame_no % 2))
 			{
 				/* even frame numbers */
 				image_left  =view->image0_left;
@@ -330,7 +330,7 @@ near plane.
 	{
 		if (Texture_get_original_size(view->texture,&width_texels,&height_texels))
 		{
-			if (0==(movie->current_frame_no % 2))
+			if (0==(movie->image_frame_no % 2))
 			{
 				/* even frame numbers */
 				image_left  =view->image0_left;
@@ -590,7 +590,7 @@ in 3-D, it adds the nodes and the appropriate elements to the placed_3d group.
 				other_position[0]=(double)posx;
 				other_position[1]=(double)posy;
 				other_position[2]=(double)posz;
-				if (0==(movie->current_frame_no % 2))
+				if (0==(movie->image_frame_no % 2))
 				{
 					scale_x=view->image0_width/view->crop0_width;
 					scale_y=view->image0_height/view->crop0_height;

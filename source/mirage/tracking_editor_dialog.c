@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : tracking_editor_dialog.c
 
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 5 September 2000
 
 DESCRIPTION :
 Source code for the tracking editor dialog box.
@@ -39,6 +39,7 @@ Source code for the tracking editor dialog box.
 #include <Xm/ToggleB.h>
 #include "finite_element/finite_element.h"
 #include "general/debug.h"
+#include "general/mystring.h"
 #include "general/object.h"
 #include "general/photogrammetry.h"
 #include "graphics/graphics_window.h"
@@ -162,6 +163,8 @@ DESCRIPTION :
 	struct MANAGER(Texture) *texture_manager;
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct User_interface *user_interface;
+	/* for redrawing the bar chart in idle time */
+	XtWorkProcId idle_update_proc;
 
 	/* bar chart display parameters: */
 	Widget drawing_widget;
@@ -217,6 +220,138 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(tracking_editor, \
 DECLARE_DIALOG_IDENTIFY_FUNCTION(tracking_editor, \
 	Tracking_editor_dialog,abort_button)
 
+static int tracking_editor_read_frame(struct Tracking_editor_dialog *track_ed,
+	struct Mirage_movie *movie,int frame_no)
+/*******************************************************************************
+LAST MODIFIED : 5 September 2000
+
+DESCRIPTION :
+Reads in the nodes and images for the given <frame_no> of the <movie>. The movie
+need not be the current one for the <track_ed>, since this function can be called
+for a second movie being read in over the first. The <track_ed> is required to
+set up the confirmation dialogs in cases of error or warnings.
+If there is no node file but points are marked as placed, the user
+is asked to confirm yes if the points should be unplaced, or no if the exnode
+file is missing as an error. If either the images or exnode file are missing,
+reverts to the last frame number, or returns error if failed utterly.
+==============================================================================*/
+{
+	char *message,*node_file_name,temp_string[20];
+	int error,return_code;
+
+	ENTER(tracking_editor_read_frame);
+	if (track_ed&&movie&&(frame_no >= movie->start_frame_no)&&
+		(frame_no < movie->start_frame_no+movie->number_of_frames))
+	{
+		if ((frame_no == movie->image_frame_no) ||
+			Mirage_movie_read_frame_images(movie,frame_no))
+		{
+			if ((frame_no == movie->exnode_frame_no) ||
+				Mirage_movie_read_frame_nodes(movie,frame_no))
+			{
+				return_code=1;
+			}
+			else if (Mirage_movie_frame_has_placed_nodes(movie,frame_no))
+			{
+				/* no node file for frame, but points marked as placed */
+				/* 1. Inform the user about the situation */
+				message=(char *)NULL;
+				error=0;
+				append_string(&message,"Could not read ",&error);
+				node_file_name=
+					make_Mirage_file_name(movie->node_file_name_template,frame_no);
+				append_string(&message,node_file_name,&error);
+				DEALLOCATE(node_file_name);
+				append_string(&message,", yet nodes are placed at this frame. "
+					"Movie data may be lost or misplaced.",&error);
+				confirmation_error_ok("Error reading node file",message,
+					track_ed->dialog,track_ed->user_interface);
+				DEALLOCATE(message);
+
+				/* 2. Give option of clearing frame or returning to last valid frame */
+				message=(char *)NULL;
+				error=0;
+				append_string(&message,"Do you wish to proceed to edit frame ",&error);
+				sprintf(temp_string,"%d",frame_no);
+				append_string(&message,temp_string,&error);
+				append_string(&message," with all nodes unplaced? "
+					"(Press <NO> if unsure to return to last valid frame)",&error);
+				if (confirmation_question_yes_no("Bad frame nodes",message,
+					track_ed->dialog,track_ed->user_interface))
+				{
+					/* user declares that the placed nodes in frame_no can be ignored
+						 and the frame treated as new */
+					Mirage_movie_unplace_frame(movie,frame_no);
+					Mirage_movie_set_exnode_frame_no(movie,frame_no);
+					return_code=1;
+				}
+				else
+				{
+					/* user does not accept that the exnode file is missing, probably
+						 meaning there is an error in the movie file. Try to restore last
+						 good frame, if any */
+					if (movie->exnode_frame_no >= movie->start_frame_no)
+					{
+						tracking_editor_read_frame(track_ed,movie,movie->exnode_frame_no);
+					}
+					return_code=0;
+				}
+				DEALLOCATE(message);
+			}
+			else
+			{
+				/* new frame: no placed nodes, so reset exnode_frame_no */
+				return_code=Mirage_movie_set_exnode_frame_no(movie,frame_no);
+			}
+		}
+		else if (movie->image_frame_no >= movie->start_frame_no)
+		{
+			/* images could not be read in for frame_no, so try to restore those for
+				 movie->image_frame_no along with appropriate nodes */
+			if (tracking_editor_read_frame(track_ed,movie,movie->image_frame_no))
+			{
+				message=(char *)NULL;
+				error=0;
+				append_string(&message,"Could not read frame ",&error);
+				sprintf(temp_string,"%d",frame_no);
+				append_string(&message,temp_string,&error);
+				append_string(&message," of ",&error);
+				append_string(&message,movie->name,&error);
+				append_string(&message,". Reverted to frame ",&error);
+				sprintf(temp_string,"%d",movie->image_frame_no);
+				append_string(&message,temp_string,&error);
+				confirmation_error_ok("Problem reading movie frame",message,
+					track_ed->dialog,track_ed->user_interface);
+				DEALLOCATE(message);
+			}
+			/* still a failure as could not read the requested frame */
+			return_code=0;
+		}
+		if ((movie->exnode_frame_no < movie->start_frame_no) ||
+			(movie->image_frame_no != movie->exnode_frame_no))
+		{
+			/* warn the user that the movie is bad */
+			message=(char *)NULL;
+			error=0;
+			append_string(&message,"Could not read any frames of ",&error);
+			append_string(&message,movie->name,&error);
+			confirmation_error_ok("Bad movie",message,
+				track_ed->dialog,track_ed->user_interface);
+			DEALLOCATE(message);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"tracking_editor_read_frame.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* tracking_editor_read_frame */
+
 static int tracking_editor_exit_process_mode(
 	struct Tracking_editor_dialog *track_ed);
 /*******************************************************************************
@@ -271,7 +406,7 @@ to kill the process again.
 					Mirage_movie_refresh_node_groups(track_ed->mirage_movie);
 					/* must read frame in case it was one changed */
 					Mirage_movie_read_frame_nodes(track_ed->mirage_movie,
-						track_ed->mirage_movie->current_frame_no);
+						track_ed->mirage_movie->exnode_frame_no);
 				}
 				tracking_editor_exit_process_mode(track_ed);
 			}
@@ -359,8 +494,9 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	struct sockaddr_in socketDescriptor;
+#if defined (OLD_CODE)
 	int optionValue;
-
+#endif /* defined (OLD_CODE) */
 
 	/* Create the (internet, stream) socket */
 	if ((*theSocket = socket(AF_INET, SOCK_STREAM, 0)) == -1 ) {
@@ -768,7 +904,7 @@ DESCRIPTION :
 static int tracking_editor_draw_bar_chart(
 	struct Tracking_editor_dialog *track_ed)
 /*******************************************************************************
-LAST MODIFIED : 6 April 1998
+LAST MODIFIED : 5 September 2000
 
 DESCRIPTION :
 Draws the bar chart if there is a movie.
@@ -797,7 +933,8 @@ Draws the bar chart if there is a movie.
 		glClearColor(0,0,0,0);
 		glClearDepth(1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		if (movie=track_ed->mirage_movie)
+		if ((movie=track_ed->mirage_movie)&&
+			(movie->exnode_frame_no >= movie->start_frame_no))
 		{
 			gl_width=(GLint)(width-bc_scale_width);
 			gl_height=(GLint)(height-bc_scale_height);
@@ -962,15 +1099,15 @@ Draws the bar chart if there is a movie.
 				}
 				/* draw coloured indication of current frame */
 				glColor3f(0,5.5,1.0);
-				glVertex3f(movie->current_frame_no+0.25,bc_tick_length,0.5);
-				glVertex3f(movie->current_frame_no+0.50,0.0,0.5);
-				glVertex3f(movie->current_frame_no+0.50,0.0,0.5);
-				glVertex3f(movie->current_frame_no+0.75,bc_tick_length,0.5);
-				glVertex3f(movie->current_frame_no+0.25,bc_tick_length,0.5);
-				glVertex3f(movie->current_frame_no+0.75,bc_tick_length,0.5);
+				glVertex3f(movie->exnode_frame_no+0.25,bc_tick_length,0.5);
+				glVertex3f(movie->exnode_frame_no+0.50,0.0,0.5);
+				glVertex3f(movie->exnode_frame_no+0.50,0.0,0.5);
+				glVertex3f(movie->exnode_frame_no+0.75,bc_tick_length,0.5);
+				glVertex3f(movie->exnode_frame_no+0.25,bc_tick_length,0.5);
+				glVertex3f(movie->exnode_frame_no+0.75,bc_tick_length,0.5);
 				glEnd();
-				glRasterPos3f(movie->current_frame_no+0.25,bc_tick_length+2,0.5);
-				sprintf(tmp_string,"%i",movie->current_frame_no);
+				glRasterPos3f(movie->exnode_frame_no+0.25,bc_tick_length+2,0.5);
+				sprintf(tmp_string,"%i",movie->exnode_frame_no);
 				wrapperPrintText(tmp_string);
 				glColor3f(1,1,1);
 				for (frame_no=full_left;frame_no<=full_right;frame_no++)
@@ -1051,14 +1188,14 @@ Redraws the bar chart with MakeCurrent and SwapBuffer instructions.
 static int tracking_editor_node_pending_change(
 	struct Tracking_editor_dialog *track_ed,int node_no)
 /*******************************************************************************
-LAST MODIFIED : 3 April 1998
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
 Call after changing the pending status to make the pending node groups up to
-date at the current_frame_no of the movie.
+date at the exnode_frame_no of the movie.
 ==============================================================================*/
 {
-	int return_code,placed,pending,view_no;
+	int return_code,pending,view_no;
 	struct FE_node *node;
 	struct Node_status *node_status;
 	struct Mirage_movie *movie;
@@ -1068,24 +1205,30 @@ date at the current_frame_no of the movie.
 	if (track_ed&&(movie=track_ed->mirage_movie))
 	{
 		return_code=1;
+#if defined (OLD_CODE_TO_KEEP)
 		if (node_status=FIND_BY_IDENTIFIER_IN_LIST(Node_status,node_no)(
 			node_no,movie->placed_list))
 		{
 			placed=
-				Node_status_is_value_in_range(node_status,movie->current_frame_no);
+				Node_status_is_value_in_range(node_status,movie->exnode_frame_no);
 		}
 		else
 		{
+			display_message(ERROR_MESSAGE,"tracking_editor_node_pending_change.  "
+				"Missing placed node status for node %d",node_no);
 			return_code=0;
 		}
+#endif /* defined (OLD_CODE_TO_KEEP) */
 		if (node_status=FIND_BY_IDENTIFIER_IN_LIST(Node_status,node_no)(
 			node_no,movie->pending_list))
 		{
 			pending=
-				Node_status_is_value_in_range(node_status,movie->current_frame_no);
+				Node_status_is_value_in_range(node_status,movie->exnode_frame_no);
 		}
 		else
 		{
+			display_message(ERROR_MESSAGE,"tracking_editor_node_pending_change.  "
+				"Missing pending node status for node %d",node_no);
 			return_code=0;
 		}
 		if (return_code)
@@ -1229,11 +1372,11 @@ current frame_no of the movie. Takes care of cacheing groups for efficiency.
 static int tracking_editor_node_problem_change(
 	struct Tracking_editor_dialog *track_ed,int node_no)
 /*******************************************************************************
-LAST MODIFIED : 3 April 1998
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
 Call after changing the problem status to make the problem node groups up to
-date at the current_frame_no of the movie.
+date at the exnode_frame_no of the movie.
 ==============================================================================*/
 {
 	int return_code,placed,problem,view_no;
@@ -1250,20 +1393,30 @@ date at the current_frame_no of the movie.
 			node_no,movie->placed_list))
 		{
 			placed=
-				Node_status_is_value_in_range(node_status,movie->current_frame_no);
+				Node_status_is_value_in_range(node_status,movie->exnode_frame_no);
 		}
 		else
 		{
+			display_message(ERROR_MESSAGE,"tracking_editor_node_problem_change.  "
+				"Missing placed node status for node %d",node_no);
 			return_code=0;
 		}
 		if (node_status=FIND_BY_IDENTIFIER_IN_LIST(Node_status,node_no)(
 			node_no,movie->problem_list))
 		{
 			problem=
-				Node_status_is_value_in_range(node_status,movie->current_frame_no);
+				Node_status_is_value_in_range(node_status,movie->exnode_frame_no);
+			if (problem && (!placed))
+			{
+				display_message(ERROR_MESSAGE,"tracking_editor_node_problem_change.  "
+					"Node %d is not placed yet marked as problem!",node_no);
+				return_code=0;
+			}
 		}
 		else
 		{
+			display_message(ERROR_MESSAGE,"tracking_editor_node_problem_change.  "
+				"Missing problem node status for node %d",node_no);
 			return_code=0;
 		}
 		if (return_code)
@@ -1416,7 +1569,7 @@ static int tracking_editor_select_node_frame(
 	int use_left_range,int use_right_range,
 	enum Tracking_editor_select_mode select_mode)
 /*******************************************************************************
-LAST MODIFIED : 28 April 1998
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
 This routine is to be called after a node/frame combination is selected (by
@@ -1427,7 +1580,7 @@ to the left and right to the end of a bad/unplaced region.  Setting unmark
 to one causes the pending ranges to be unmarked.
 ==============================================================================*/
 {
-	int return_code,placed,pending,problem,left_limit,right_limit,limit_found,
+	int return_code,placed,problem,left_limit,right_limit,limit_found,
 		start,stop,valid_start,valid_stop;
 	struct Node_status *placed_status,*pending_status,*problem_status;
 	struct Mirage_movie *movie;
@@ -1446,12 +1599,8 @@ to one causes the pending ranges to be unmarked.
 		{
 			return_code=0;
 		}
-		if (pending_status=FIND_BY_IDENTIFIER_IN_LIST(Node_status,node_no)(
-			node_no,movie->pending_list))
-		{
-			pending=Node_status_is_value_in_range(pending_status,frame_no);
-		}
-		else
+		if (!(pending_status=FIND_BY_IDENTIFIER_IN_LIST(Node_status,node_no)(
+			node_no,movie->pending_list)))
 		{
 			return_code=0;
 		}
@@ -1888,7 +2037,7 @@ for all views that use the node - needed when there are more than 2.
 		movie->all_node_group)))
 	{
 		return_code=1;
-		this_frame=movie->current_frame_no;
+		this_frame=movie->exnode_frame_no;
 
 		/* find out how many views the node is currently placed in */
 		views_placed=0;
@@ -2052,7 +2201,7 @@ In both the above 2 cases the affected pending range is cleared.
 		movie->all_node_group)))
 	{
 		return_code=1;
-		this_frame=movie->current_frame_no;
+		this_frame=movie->exnode_frame_no;
 
 		if (node_status=FIND_BY_IDENTIFIER_IN_LIST(
 			Node_status,node_no)(node_no,movie->placed_list))
@@ -2259,13 +2408,13 @@ to reflect members of the changed node group/s.
 										Node_status,node_no)(node_no,movie->placed_list))
 									{
 										if (!(node_placed_in_view=Node_status_is_value_in_range(
-											node_status,movie->current_frame_no)))
+											node_status,movie->exnode_frame_no)))
 										{
 											if (node_status=FIND_BY_IDENTIFIER_IN_LIST(
 												Node_status,node_no)(node_no,view->placed_list))
 											{
 												node_placed_in_view=Node_status_is_value_in_range(
-													node_status,movie->current_frame_no);
+													node_status,movie->exnode_frame_no);
 											}
 										}
 									}
@@ -2328,14 +2477,14 @@ static void Tracking_editor_dialog_node_change(
 	struct MANAGER_MESSAGE(FE_node) *message,
 	void *tracking_editor_dialog_void)
 /*******************************************************************************
-LAST MODIFIED : 4 November 1998
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
 Node manager change callback. Puts changed nodes in the pending list.
 ==============================================================================*/
 {
 	int use_left_range,use_right_range,return_code,placed,problem,pending,
-		node_no,frame_no,set_pending_range;
+		node_no,frame_no;
 	struct Node_status *placed_status,*pending_status,*problem_status;
 	struct FE_node *node;
 	struct Mirage_movie *movie;
@@ -2358,7 +2507,7 @@ Node manager change callback. Puts changed nodes in the pending list.
 					/* have different use of left and right ranges depending on mode */
 					return_code=1;
 					node_no=get_FE_node_cm_node_identifier(node);
-					frame_no=movie->current_frame_no;
+					frame_no=movie->exnode_frame_no;
 					/* get placed, pending and problem status of node_no at frame_no */
 					if (placed_status=FIND_BY_IDENTIFIER_IN_LIST(Node_status,node_no)(
 						node_no,movie->placed_list))
@@ -2392,7 +2541,6 @@ Node manager change callback. Puts changed nodes in the pending list.
 					{
 						use_left_range=0;
 						use_right_range=0;
-						set_pending_range=1;
 						switch (track_ed->control_mode)
 						{
 						case TRACK_MODE:
@@ -2489,7 +2637,7 @@ Node manager change callback. Puts changed nodes in the pending list.
 static void tracking_editor_process_input_cb(XtPointer track_ed_void,
 	int *source, XtInputId *input_id)
 /*******************************************************************************
-LAST MODIFIED : 29 April 1998
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
 Callback set up by XtAppAddInput. When XVG is running this callback is active
@@ -2512,6 +2660,7 @@ If there are it processes them, updating the bar chart accordingly.
 	struct Tracking_editor_dialog *track_ed;
 
 	ENTER(tracking_editor_process_input_cb);
+	USE_PARAMETER(source);
 	USE_PARAMETER(input_id);
 	if ((track_ed=(struct Tracking_editor_dialog *)track_ed_void)&&
 		(movie=track_ed->mirage_movie))
@@ -2570,7 +2719,7 @@ If there are it processes them, updating the bar chart accordingly.
 				}
 				Mirage_movie_refresh_node_groups(movie);
 				/* must read frame in case it was one changed */
-				Mirage_movie_read_frame_nodes(movie,movie->current_frame_no);
+				Mirage_movie_read_frame_nodes(movie,movie->exnode_frame_no);
 				printf("\a\a\a");
 				fflush(stdout);
 				if (args)
@@ -2604,7 +2753,7 @@ If there are it processes them, updating the bar chart accordingly.
 				tracking_editor_update_bar_chart(track_ed);
 				Mirage_movie_refresh_node_groups(movie);
 				/* must read frame in case it was one changed */
-				Mirage_movie_read_frame_nodes(movie,movie->current_frame_no);
+				Mirage_movie_read_frame_nodes(movie,movie->exnode_frame_no);
 				/* tell the user the job is completed */
 				printf("\a\a\a");
 				fflush(stdout);
@@ -2668,9 +2817,9 @@ If there are it processes them, updating the bar chart accordingly.
 						/* auto save the node status lists that have changed */
 						/*???RC remove if this affects performance? */
 						Mirage_movie_write_node_status_lists(movie,"");
-						if (frame_no==movie->current_frame_no)
+						if (frame_no==movie->exnode_frame_no)
 						{
-							Mirage_movie_read_frame_nodes(movie,movie->current_frame_no);
+							Mirage_movie_read_frame_nodes(movie,movie->exnode_frame_no);
 						}
 					}
 				}
@@ -2864,7 +3013,7 @@ Turns on the Abort button.
 static int tracking_editor_file_read_movie(char *movie_file_name,
 	void *track_ed_void)
 /*******************************************************************************
-LAST MODIFIED : 29 January 1999
+LAST MODIFIED : 5 September 2000
 
 DESCRIPTION :
 Reads a movie file into the tracking editor.
@@ -2933,8 +3082,8 @@ Reads a movie file into the tracking editor.
 					DEALLOCATE(title);
 				}
 				/* read the first frame */
-				if (return_code=
-					read_Mirage_movie_frame(tmp_movie,tmp_movie->start_frame_no))
+				if (return_code=tracking_editor_read_frame(track_ed,tmp_movie,
+					tmp_movie->start_frame_no))
 				{
 					/* update views in all digitiser windows so textures correctly
 						 displayed */
@@ -2974,7 +3123,7 @@ Reads a movie file into the tracking editor.
 					/* rebuild the placed, pending and problem node & element groups */
 					Mirage_movie_refresh_node_groups(tmp_movie);
 					/* show the current frame and range */
-					sprintf(tmp_string,"%i",tmp_movie->current_frame_no);
+					sprintf(tmp_string,"%i",tmp_movie->exnode_frame_no);
 					XtVaSetValues(track_ed->frame_text,XmNvalue,tmp_string,NULL);
 					sprintf(tmp_string,"from range %i..%i",tmp_movie->start_frame_no,
 						tmp_movie->start_frame_no+tmp_movie->number_of_frames-1);
@@ -3133,7 +3282,7 @@ DESCRIPTION :
 Writes to file the list of 2-D positions of all the placed points in each view
 at the current frame_no. The filename will be given the name of the movie with
 the extension .#####.2d appended on to it, where ##### will be replaced with
-the current_frame_no of the movie, eg. .01320.2d for frame 1320.
+the exnode_frame_no of the movie, eg. .01320.2d for frame 1320.
 The format of the file will be:
 !Any line starting in ! should be ignored.
 Movie_file_name
@@ -3174,13 +3323,13 @@ and to choose the 3-D set needed for calibration.
 		{
 			sprintf(file_name_template,"%s.#####.2d",movie->name);
 			if (file_name=
-				make_Mirage_file_name(file_name_template,movie->current_frame_no))
+				make_Mirage_file_name(file_name_template,movie->exnode_frame_no))
 			{
 				printf("Writing 2-D points to file '%s'\n",file_name);
 				if (out_file=fopen(file_name,"w"))
 				{
 					fprintf(out_file,"!2-D points for frame %i of movie:\n",
-						movie->current_frame_no);
+						movie->exnode_frame_no);
 					fprintf(out_file,"%s\n",movie->name);
 					fprintf(out_file,"!Number of views:\n");
 					fprintf(out_file,"%i\n",movie->number_of_views);
@@ -3233,7 +3382,7 @@ and to choose the 3-D set needed for calibration.
 static void tracking_editor_frame_text_cb(Widget w,XtPointer track_ed_void,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 21 June 1999
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
 Callback specifying change of frame.
@@ -3255,10 +3404,9 @@ Callback specifying change of frame.
 		{
 			frame_no=atoi(frame_text);
 			/* do not write nodes while processing */
-			if (track_ed->processing||
-				Mirage_movie_write_frame_nodes(movie,movie->current_frame_no))
+			if (track_ed->processing || Mirage_movie_write_frame_nodes(movie))
 			{
-				if (read_Mirage_movie_frame(movie,frame_no))
+				if (tracking_editor_read_frame(track_ed,movie,frame_no))
 				{
 					/* update views in all digitiser windows so textures correctly
 						 displayed */
@@ -3271,7 +3419,7 @@ Callback specifying change of frame.
 			}
 		}
 		/* reshow the current frame */
-		sprintf(tmp_string,"%i",movie->current_frame_no);
+		sprintf(tmp_string,"%i",movie->exnode_frame_no);
 		XtVaSetValues(track_ed->frame_text,XmNvalue,tmp_string,NULL);
 	}
 	else
@@ -3356,7 +3504,7 @@ Callback for clearing all pending ranges.
 			/* SAB Save the current pending lists in case we need to revert */
 			Mirage_movie_read_node_status_lists(movie,
 				"_last_frame_change");
-			Mirage_movie_read_frame_nodes(movie,movie->current_frame_no);
+			Mirage_movie_read_frame_nodes(movie,movie->exnode_frame_no);
 			Mirage_movie_refresh_node_groups(movie);
 		}
 	}
@@ -4168,7 +4316,7 @@ Redirects the node range when the track mode changes.
 		&& (movie = track_ed->mirage_movie))
 	{
 		node_no = Node_status_get_node_no(pending_status);
-		pending=Node_status_is_value_in_range(pending_status,movie->current_frame_no);
+		pending=Node_status_is_value_in_range(pending_status,movie->exnode_frame_no);
 		Node_status_clear(pending_status, NULL);
 		if(pending)
 		{
@@ -4190,7 +4338,7 @@ Redirects the node range when the track mode changes.
 					use_right_range=1;
 				} break;
 			}
-			tracking_editor_select_node_frame(track_ed,node_no,movie->current_frame_no,
+			tracking_editor_select_node_frame(track_ed,node_no,movie->exnode_frame_no,
 				use_left_range,use_right_range,TRACK_ED_SELECT_DEFAULT);	
 			return_code=1;
 		}
@@ -4458,6 +4606,13 @@ Tidys up when the user destroys the map dialog box.
 			*(track_ed->address) = (struct Tracking_editor_dialog *)NULL;
 		}
 
+		/* if there's an update pending, then remove the workproc from the queue */
+		/*???DB.  Is a workproc really necessary ? */
+		if (track_ed->idle_update_proc)
+		{
+			XtRemoveWorkProc(track_ed->idle_update_proc);
+		}
+
 		DEALLOCATE(track_ed);
 	}
 	else
@@ -4496,13 +4651,43 @@ This is the configuration callback for the GL widget.
 	LEAVE;
 } /* tracking_editor_bar_chart_initialize_callback */
 
+static Boolean tracking_editor_bar_chart_idle_update(
+	XtPointer track_ed_void)
+/*******************************************************************************
+LAST MODIFIED : 5 September 2000
+
+DESCRIPTION :
+A WorkProc that updates the track_ed, and then returns TRUE so that it is
+removed from WorkProc queue.
+==============================================================================*/
+{
+	struct Tracking_editor_dialog *track_ed;
+
+	ENTER(tracking_editor_bar_chart_idle_update);
+	if (track_ed=(struct Tracking_editor_dialog *)track_ed_void)
+	{
+		/* set workproc no longer pending */
+		track_ed->idle_update_proc=(XtWorkProcId)NULL;
+		tracking_editor_update_bar_chart(track_ed);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"tracking_editor_bar_chart_idle_update.  Missing track_ed");
+	}
+	LEAVE;
+
+	return (TRUE); /* so workproc finished */
+} /* tracking_editor_bar_chart_idle_update */
+
 static void tracking_editor_bar_chart_expose_callback(Widget drawing_widget,
 	XtPointer track_ed_void,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 1 September 2000
+LAST MODIFIED : 5 September 2000
 
 DESCRIPTION :
-Redraws the bar chart if there are no more expose events pending.
+Sets the bar chart to be redrawn in idle time if there are no more expose events
+pending.
 ==============================================================================*/
 {
 	struct Tracking_editor_dialog *track_ed;
@@ -4519,7 +4704,12 @@ Redraws the bar chart if there are no more expose events pending.
 		/* if no more expose events in series */
 		if (0==expose_event->count)
 		{
-			tracking_editor_update_bar_chart(track_ed);
+			if (!track_ed->idle_update_proc)
+			{
+				track_ed->idle_update_proc=XtAppAddWorkProc(
+					track_ed->user_interface->application_context,
+					tracking_editor_bar_chart_idle_update,track_ed);
+			}
 		}
 	}
 	else
@@ -4545,7 +4735,7 @@ enum Tracking_editor_drag_mode
 static void tracking_editor_bar_chart_input_callback(Widget drawing_widget,
 	XtPointer track_ed_void,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 28 April 1998
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -4555,10 +4745,9 @@ DESCRIPTION :
 	double dx,dy,zoom_ratio,fact;
 	static enum Tracking_editor_drag_mode drag_mode=TRACK_ED_DRAG_NOTHING;
 	static int old_pointer_x,old_pointer_y;
-	int pointer_x,pointer_y,i,frame_no,index,mark_left,mark_right,mark_all_nodes,
-		old_current_frame_no;
+	int pointer_x,pointer_y,i,frame_no,index,mark_left,mark_right,mark_all_nodes;
 	static int mark_frame_no,mark_node_no,mark_x,mark_min_x,mark_max_x,
-		mark_min_y,mark_max_y,last_frame_no_read;
+		mark_min_y,mark_max_y;
 	struct Node_status *node_status;
 	struct Mirage_movie *movie;
 	struct Select_node_frame_data select_data;
@@ -4621,21 +4810,10 @@ DESCRIPTION :
 										/*printf("Read frame %i...\n",frame_no);*/
 										/* !!!WARNING: Take care writing frame change code
 											otherwise good frames may be written over! */
-										if (Mirage_movie_write_frame_nodes(
-											movie,movie->current_frame_no))
+										if (Mirage_movie_write_frame_nodes(movie))
 										{
-											if (Mirage_movie_read_frame_nodes(movie,frame_no))
-											{
-												drag_mode=TRACK_ED_DRAG_FRAME;
-												last_frame_no_read=frame_no;
-											}
-											else
-											{
-												/* go back to the last one that was OK */
-												Mirage_movie_read_frame_nodes(movie,
-													movie->current_frame_no);
-												last_frame_no_read=movie->current_frame_no;
-											}
+											Mirage_movie_read_frame_nodes(movie,frame_no);
+											drag_mode=TRACK_ED_DRAG_FRAME;
 										}
 									}
 									else
@@ -4745,18 +4923,10 @@ DESCRIPTION :
 								frame_no = movie->start_frame_no+
 									movie->number_of_frames-1;
 							}
-							if (frame_no != last_frame_no_read)
+							if (frame_no != movie->exnode_frame_no)
 							{
-								if (Mirage_movie_read_frame_nodes(movie,frame_no))
-								{
-									last_frame_no_read=frame_no;
-								}
-								else
-								{
-									/* go back to the last one that was OK */
-									Mirage_movie_read_frame_nodes(movie,last_frame_no_read);
-								}
-								sprintf(tmp_string,"%i",last_frame_no_read);
+								Mirage_movie_read_frame_nodes(movie,frame_no);
+								sprintf(tmp_string,"%i",movie->exnode_frame_no);
 								XtVaSetValues(track_ed->frame_text,XmNvalue,tmp_string,NULL);
 							}
 						} break;
@@ -4985,15 +5155,23 @@ DESCRIPTION :
 						} break;
 					case TRACK_ED_DRAG_FRAME:
 						{
-							if (last_frame_no_read != movie->current_frame_no)
+							/* change frame */
+							frame_no=(int)(track_ed->bc_left+(pointer_x-bc_scale_width)/
+								track_ed->bc_pixels_per_unit_x);
+							if (frame_no < movie->start_frame_no)
+							{
+								frame_no=movie->start_frame_no;
+							}
+							if (frame_no >=
+								movie->start_frame_no+movie->number_of_frames)
+							{
+								frame_no=movie->start_frame_no+movie->number_of_frames-1;
+							}
+							if ((movie->exnode_frame_no != movie->image_frame_no) ||
+								(frame_no != movie->image_frame_no))
 							{
 								busy_cursor_on((Widget)NULL, track_ed->user_interface );
-								old_current_frame_no=movie->current_frame_no;
-								if (!read_Mirage_movie_frame(movie,last_frame_no_read))
-								{
-									read_Mirage_movie_frame(movie,old_current_frame_no);
-									last_frame_no_read=movie->current_frame_no;
-								}
+								tracking_editor_read_frame(track_ed,movie,frame_no);
 								/* update views in all digitiser windows so textures correctly
 									 displayed */
 								FOR_EACH_OBJECT_IN_MANAGER(Digitiser_window)(
@@ -5006,7 +5184,7 @@ DESCRIPTION :
 
 								/* reshow the current frame number */
 								Mirage_movie_refresh_node_groups(movie);
-								sprintf(tmp_string,"%i",movie->current_frame_no);
+								sprintf(tmp_string,"%i",movie->exnode_frame_no);
 								XtVaSetValues(track_ed->frame_text,XmNvalue,tmp_string,NULL);
 								tracking_editor_update_bar_chart(track_ed);
 								busy_cursor_off((Widget)NULL, track_ed->user_interface );
@@ -5265,6 +5443,8 @@ DESCRIPTION :
 					track_ed->texture_manager=texture_manager;
 					track_ed->interactive_tool_manager=interactive_tool_manager;
 					track_ed->user_interface = user_interface;
+					track_ed->idle_update_proc=(XtWorkProcId)NULL;
+
 					track_ed->process_ID=0;
 					track_ed->processing=0;
 

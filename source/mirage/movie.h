@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : movie.h
 
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
 The data types and function prototypes used for digitizing Mirage movies.
@@ -107,7 +107,7 @@ These are intended to be binary flags so they can be |ed together.
 
 struct Mirage_movie
 /*******************************************************************************
-LAST MODIFIED : 23 July 1999
+LAST MODIFIED : 5 September 2000
 
 DESCRIPTION :
 Stores information for moving through and digitizing the movie.
@@ -118,7 +118,7 @@ Stores information for moving through and digitizing the movie.
 	/* information about the base node and element groups and files */
 	char *all_node_file_name,*all_element_file_name,*all_node_group_name;
 	/* frames */
-	int current_frame_no,number_of_frames,start_frame_no;
+	int exnode_frame_no,image_frame_no,number_of_frames,start_frame_no;
 	/* total number of nodes to track (not used at present) */
 	int total_nodes;
 	/* the following string contains the path, name and extension of the node */
@@ -141,6 +141,10 @@ Stores information for moving through and digitizing the movie.
 	struct MANAGER(FE_node) *data_manager;
 	struct MANAGER(GROUP(FE_node)) *data_group_manager;
 	struct MANAGER(Scene) *scene_manager;
+	/* need node and element selections for destroying nodes and elements */
+	struct Element_point_ranges_selection *element_point_ranges_selection;
+	struct FE_element_selection *element_selection;
+	struct FE_node_selection *node_selection;
 	struct GROUP(FE_element) *all_element_group,*pending_elements_3d,
 		*placed_elements_3d,*problem_elements_3d;
 	struct GROUP(FE_node) *all_node_group,*pending_nodes_3d,*placed_nodes_3d,
@@ -394,47 +398,70 @@ DESCRIPTION :
 Turns off surfaces for the placed elements in the 3-D view, updates scene.
 ==============================================================================*/
 
-int read_Mirage_movie_frame(struct Mirage_movie *movie,
-	int frame_no);
+int Mirage_movie_read_frame_images(struct Mirage_movie *movie,int frame_no);
 /*******************************************************************************
-LAST MODIFIED : 26 March 1998
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
-Reads the images and nodes for frame <frame_no> in <movie>.
-This will become the new current_frame_no of the movie.
+Reads the images for frame <frame_no> in <movie>.
+Upon success, this will become the new image_frame_no of the movie.
+If it fails with the images in a half-read state, it attempts to re-read them
+for the last valid image_frame_no.
+It is up to you to ensure that the exnode_frame_no and image_frame_no match --
+it is often useful for them to temporarily differ.
 ==============================================================================*/
 
-int Mirage_movie_frame_nodes_exist_or_error(struct Mirage_movie *movie,
+int Mirage_movie_frame_has_placed_nodes(struct Mirage_movie *movie,
 	int frame_no);
 /*******************************************************************************
-LAST MODIFIED : 21 April 1998
+LAST MODIFIED : 1 September 2000
 
 DESCRIPTION :
-Returns true if there exists a node file for <frame_no> or there is an error.
-If this routine returns 0, you know there are no nodes for frame <frame_no>,
-useful for creating initial meshes.
+Returns true if there is a single entry in the placed lists for <frame_no>,
+either for the any single view or the movie.
 ==============================================================================*/
 
-int Mirage_movie_read_frame_nodes(struct Mirage_movie *movie,
-	int frame_no);
+int Mirage_movie_unplace_frame(struct Mirage_movie *movie,int frame_no);
 /*******************************************************************************
-LAST MODIFIED : 26 March 1998
+LAST MODIFIED : 1 September 2000
 
 DESCRIPTION :
-Reads the nodes for frame <frame_no> in <mirage_movie>.
-The frame_no does not have to be the current_frame_number of the movie although
-it is potentially damaging if it is not.
+Ensures frame <frame_no> is not in the node_status placed and problem lists
+in the <movie> and placed lists in the views.
 ==============================================================================*/
 
-int Mirage_movie_write_frame_nodes(struct Mirage_movie *movie,
-	int frame_no);
+int Mirage_movie_read_frame_nodes(struct Mirage_movie *movie,int frame_no);
 /*******************************************************************************
-LAST MODIFIED : 26 March 1998
+LAST MODIFIED : 4 September 2000
 
 DESCRIPTION :
-Writes the nodes in memory to the file for frame <frame_no> of <movie>.
-The frame_no does not have to be the current_frame_number of the movie although
-it is dangerous (but possibly useful) if it is not.
+Reads the nodes for frame <frame_no> in <movie>.
+Upon success, this will become the new exnode_frame_no of the movie.
+If it fails with the nodes in a half-read state, it attempts to re-read them
+for the last valid exnode_frame_no.
+It is up to you to ensure that the exnode_frame_no and image_frame_no match --
+it is often useful for them to temporarily differ.
+==============================================================================*/
+
+int Mirage_movie_set_exnode_frame_no(struct Mirage_movie *movie,int frame_no);
+/*******************************************************************************
+LAST MODIFIED : 4 September 2000
+
+DESCRIPTION :
+Call this function to declare that the nodes in memory represent frame
+<frame_no> of the movie.
+Note: Should only call if confirmed that no exnode file exists for the frame
+and no points are placed for that frame.
+???RC Could check for this, but currently only called in places where it is
+already confirmed.
+==============================================================================*/
+
+int Mirage_movie_write_frame_nodes(struct Mirage_movie *movie);
+/*******************************************************************************
+LAST MODIFIED : 4 September 2000
+
+DESCRIPTION :
+Writes the nodes in memory to the file for the exnode_frame_no of <movie>.
 ==============================================================================*/
 
 int Mirage_movie_full_save(struct Mirage_movie *movie,char *extra_extension);

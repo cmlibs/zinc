@@ -161,7 +161,7 @@ DESCRIPTION :
 			Scene_viewer_set_projection_matrix(
 				digitiser_window->scene_viewer,projection_matrix);
 			Scene_viewer_set_scene(digitiser_window->scene_viewer,view->scene);
-			if (0==(digitiser_window->movie->current_frame_no % 2))
+			if (0==(digitiser_window->movie->image_frame_no % 2))
 			{
 				/* even frame numbers */
 				Scene_viewer_set_background_texture_info(
