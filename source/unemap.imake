@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 6 March 2002
+XCOMM LAST MODIFIED : 19 April 2002
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap
@@ -73,6 +73,47 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/64
 /* 1.2 IRIX-N32 */
 #if defined (OPTIMISED)
 /* 1.2.1 IRIX-N32-OPTIMISED */
+#if defined (USE_UNEMAP_3D)
+/* 1.2.2.2 IRIX-N32-!OPTIMISED-USE_UNEMAP_3D */
+/* this version uses nodes just for 3D window , */
+/* USE_UNEMAP_NODES uses nodes for as much as possible   */
+#define Target unemap_3d_optimised
+#define AffineTarget unemap/affine_3d_optimised
+#define Bmsi2sigTarget unemap/bmsi2sig_3d_optimised
+#define Biosense2sigTarget unemap/biosense2sig_3d_optimised
+#define Biosense2vrmlTarget unemap/biosense2vrml_3d_optimised
+#define CalculateEventsTarget unemap/calculate_events_3d_optimised
+#define ChangeCalibrationTarget unemap/change_calibration_3d_optimised
+#define ChangeChannelsTarget unemap/change_channels_3d_optimised
+#define ChangeConfigurationTarget unemap/change_configuration_3d_optimised
+#define ChangeEventsTarget unemap/change_events_3d_optimised
+#define ChangeFrequencyTarget unemap/change_frequency_3d_optimised
+#define CombineSignalsTarget unemap/combine_signals_3d_optimised
+#define DifferenceSignalsTarget unemap/difference_signals_3d_optimised
+#define ExtractSignalTarget unemap/extract_signal_3d_optimised
+#define FixEcgTarget unemap/fix_ecg_3d_optimised
+#define Img2sigTarget unemap/img2sig_3d_optimised
+#define MakePlaqueTarget unemap/make_plaque_3d_optimised
+#define OpticalSignalsTarget unemap/optical_signals_3d_optimised
+#define Plt2cnfgTarget unemap/plt2cnfg_3d_optimised
+#define Posdat2sigTarget unemap/posdat2sig_3d_optimised
+#define RatioSignalsTarget unemap/ratio_signals_3d_optimised
+#define RegisterTarget unemap/register_3d_optimised
+#define Sig2textTarget unemap/sig2text_3d_optimised
+#define TestDelauneyTarget unemap/test_delauney_3d_optimised
+#define TestUnemapHardwareTarget unemap/test_unemap_hardware_3d_optimised
+#define Text2sigTarget unemap/text2sig_3d_optimised
+#define Tuff2sigTarget unemap/tuff2sig_3d_optimised
+#define UniqueChannelsTarget unemap/unique_channels_3d_optimised
+#define Uid2uidhTarget uid2uidh
+#define Makefile unemap_sgi3d_optimised.make
+#define DependMake unemap_sgi3d_optimised.depend
+#define ObjSuffix o
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/3d_optimised
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/3d_optimised
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/n32
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
+#else /* defined (USE_UNEMAP_3D) */
 #define Target unemap_optimised
 #define Makefile unemap_sgioptimised.make
 #define AffineTarget unemap/affine_optimised
@@ -109,6 +150,7 @@ OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/n32_optnon
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/n32_optnon
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/n32
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
+#endif /* defined (USE_UNEMAP_3D) */
 #else /* defined (OPTIMISED) */
 /* 1.2.2 IRIX-N32-!OPTIMISED */
 #if defined (USE_UNEMAP_NODES)
@@ -326,6 +368,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_nodes_g
 /* 2.2 LINUX-USE_UNEMAP_3D */
 /* this version uses nodes just for 3D window  */
 /* USE_UNEMAP_NODES uses nodes  for as much as possible   */
+#if !defined (OPTIMISED)
 #define Target unemap_linux_3d
 #define AffineTarget unemap/affine_linux_3d
 #define Bmsi2sigTarget unemap/bmsi2sig_linux_3d
@@ -363,8 +406,48 @@ OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/linux_3d_g
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/linux_3d_g
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/linux_3d_g
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_3d_g
+#else /* !defined (OPTIMISED) */
+#define Target unemap_linux_3d_optimised
+#define AffineTarget unemap/affine_linux_3d_optimised
+#define Bmsi2sigTarget unemap/bmsi2sig_linux_3d_optimised
+#define Biosense2sigTarget unemap/biosense2sig_linux_3d_optimised
+#define Biosense2vrmlTarget unemap/biosense2vrml_linux_3d_optimised
+#define CalculateEventsTarget unemap/calculate_events_linux_3d_optimised
+#define ChangeCalibrationTarget unemap/change_calibration_linux_3d_optimised
+#define ChangeChannelsTarget unemap/change_channels_linux_3d_optimised
+#define ChangeConfigurationTarget unemap/change_configuration_linux_3d_optimised
+#define ChangeEventsTarget unemap/change_events_linux_3d_optimised
+#define ChangeFrequencyTarget unemap/change_frequency_linux_3d_optimised
+#define CombineSignalsTarget unemap/combine_signals_linux_3d_optimised
+#define DifferenceSignalsTarget unemap/difference_signals_linux_3d_optimised
+#define ExtractSignalTarget unemap/extract_signal_linux_3d_optimised
+#define FixEcgTarget unemap/fix_ecg_linux_3d_optimised
+#define Img2sigTarget unemap/img2sig_linux_3d_optimised
+#define MakePlaqueTarget unemap/make_plaque_linux_3d_optimised
+#define OpticalSignalsTarget unemap/optical_signals_linux_3d_optimised
+#define Plt2cnfgTarget unemap/plt2cnfg_linux_3d_optimised
+#define Posdat2sigTarget unemap/posdat2sig_linux_3d_optimised
+#define RatioSignalsTarget unemap/ratio_signals_linux_3d_optimised
+#define RegisterTarget unemap/register_linux_3d_optimised
+#define Sig2textTarget unemap/sig2text_linux_3d_optimised
+#define TestDelauneyTarget unemap/test_delauney_linux_3d_optimised
+#define TestUnemapHardwareTarget unemap/test_unemap_hardware_linux_3d_optimised
+#define Text2sigTarget unemap/text2sig_linux_3d_optimised
+#define Tuff2sigTarget unemap/tuff2sig_linux_3d_optimised
+#define UniqueChannelsTarget unemap/unique_channels_linux_3d_optimised
+#define Uid2uidhTarget uid2uidh_linux_optimised
+#define Makefile unemap_linux_3d_optimised.make
+#define DependMake unemap_linux_3d_optimised.depend
+#define ObjSuffix o
+/* Can't use linux on its own as this is defined! */
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/linux_3d_optimised
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/linux_3d_optimised
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/linux_3d_optimised
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_3d_optimised
+#endif /* !defined (OPTIMISED) */
 #else /* defined (USE_UNEMAP_3D) */
 /* 2.3 LINUX-!USE_UNEMAP_NODES */
+#if !defined (OPTIMISED)
 #define Target unemap_linux
 #define AffineTarget unemap/affine_linux
 #define Bmsi2sigTarget unemap/bmsi2sig_linux
@@ -402,6 +485,45 @@ OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/linux_g
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/linux_g
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/linux_g
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_g
+#else /* !defined (OPTIMISED) */
+#define Target unemap_linux_optimised
+#define AffineTarget unemap/affine_linux_optimised
+#define Bmsi2sigTarget unemap/bmsi2sig_linux_optimised
+#define Biosense2sigTarget unemap/biosense2sig_linux_optimised
+#define Biosense2vrmlTarget unemap/biosense2vrml_linux_optimised
+#define CalculateEventsTarget unemap/calculate_events_linux_optimised
+#define ChangeCalibrationTarget unemap/change_calibration_linux_optimised
+#define ChangeChannelsTarget unemap/change_channels_linux_optimised
+#define ChangeConfigurationTarget unemap/change_configuration_linux_optimised
+#define ChangeEventsTarget unemap/change_events_linux_optimised
+#define ChangeFrequencyTarget unemap/change_frequency_linux_optimised
+#define CombineSignalsTarget unemap/combine_signals_linux_optimised
+#define DifferenceSignalsTarget unemap/difference_signals_linux_optimised
+#define ExtractSignalTarget unemap/extract_signal_linux_optimised
+#define FixEcgTarget unemap/fix_ecg_linux_optimised
+#define Img2sigTarget unemap/img2sig_linux_optimised
+#define MakePlaqueTarget unemap/make_plaque_linux_optimised
+#define OpticalSignalsTarget unemap/optical_signals_linux_optimised
+#define Plt2cnfgTarget unemap/plt2cnfg_linux_optimised
+#define Posdat2sigTarget unemap/posdat2sig_linux_optimised
+#define RatioSignalsTarget unemap/ratio_signals_linux_optimised
+#define RegisterTarget unemap/register_linux_optimised
+#define Sig2textTarget unemap/sig2text_linux_optimised
+#define TestDelauneyTarget unemap/test_delauney_linux_optimised
+#define TestUnemapHardwareTarget unemap/test_unemap_hardware_linux_optimised
+#define Text2sigTarget unemap/text2sig_linux_optimised
+#define Tuff2sigTarget unemap/tuff2sig_linux_optimised
+#define UniqueChannelsTarget unemap/unique_channels_linux_optimised
+#define Uid2uidhTarget uid2uidh_linux_optimised
+#define Makefile unemap_linux_optimised.make
+#define DependMake unemap_linux_optimised.depend
+#define ObjSuffix o
+/* Can't use linux on its own as this is defined! */
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/linux_optimised
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/unemap/linux_optimised
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/linux_optimised
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_optimised
+#endif /* !defined (OPTIMISED) */
 #endif /* defined (USE_UNEMAP_3D) */
 #endif /* defined (USE_UNEMAP_NODES) */
 #endif /* switch OperatingSystem */
