@@ -1219,6 +1219,7 @@ int Mil_ellipsoid_tensor(FE_value *MIL, FE_value *rott1, FE_value *rott2,
         			a[i * degree + 4] = y * z;
         			a[i * degree + 5] = x * z;
 
+
         			b[i] = 1.0 / (*(MIL + i) * *(MIL + i));
 
 	        	}
