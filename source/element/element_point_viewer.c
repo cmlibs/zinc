@@ -1568,16 +1568,18 @@ Furthermore, if the <element_point_viewer>
 							return_code=FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
 								Element_point_ranges_grid_to_multi_range,
 								(void *)&grid_to_multi_range_data,element_point_ranges_list);
+#if defined (OLD_CODE)
+							/* warning will be given later anyway */
 							if (!grid_to_multi_range_data.all_points_native)
 							{
 								display_message(WARNING_MESSAGE,
 									"Values can not be set at element points not on grid");
 							}
+#endif /* defined (OLD_CODE) */
 							if (return_code)
 							{
-								REMOVE_ALL_OBJECTS_FROM_LIST(Element_point_ranges)(
-									element_point_ranges_list);
-								/* select all grid points with grid_fe_field in multi-range */
+								/* add all points with match_grid_field value in multi-range
+									 to those already in element_point_ranges_list */
 								grid_to_list_data.element_point_ranges_list=
 									element_point_ranges_list;
 								grid_to_list_data.grid_fe_field=
@@ -1646,7 +1648,7 @@ Furthermore, if the <element_point_viewer>
 							if (!set_grid_values_data.all_points_native)
 							{
 								display_message(WARNING_MESSAGE,
-									"Values could not be set at element points not on grid");
+									"Values only set at element points on grid");
 							}
 							MANAGER_END_CACHE(FE_element)(
 								element_point_viewer->element_manager);
