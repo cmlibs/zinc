@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_window_projection.c
 
-LAST MODIFIED : 6 October 2000
+LAST MODIFIED : 10 October 2000
 
 DESCRIPTION :
 Implements a computed_field which maintains a graphics transformation 
@@ -128,7 +128,7 @@ DESCRIPTION :
 static int Computed_field_window_projection_calculate_matrix(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 10 October 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -152,129 +152,39 @@ DESCRIPTION :
 		(struct Computed_field_window_projection_type_specific_data *)
 		field->type_specific_data) && (scene_viewer = data->scene_viewer))
 	{
-		return_code = 1;
-		if (Scene_viewer_get_modelview_matrix(scene_viewer,modelview_matrix)&&
-			Scene_viewer_get_window_projection_matrix(scene_viewer,
-				window_projection_matrix))
+		if (data->projection_matrix ||
+			ALLOCATE(data->projection_matrix, double, 16))
 		{
-			/* Multiply these matrices */
-			for (i=0;i<4;i++)
+			return_code = 1;
+			if (Scene_viewer_get_modelview_matrix(scene_viewer,modelview_matrix)&&
+				Scene_viewer_get_window_projection_matrix(scene_viewer,
+					window_projection_matrix))
 			{
-				for (j=0;j<4;j++)
-				{
-					total_projection_matrix[i * 4 + j] = 0.0;
-					for (k=0;k<4;k++)
-					{
-						total_projection_matrix[i * 4 + j] += 
-							window_projection_matrix[i * 4 + k]	*
-							modelview_matrix[k * 4 + j];
-					}
-				}
-			}
-			if (data->projection_type == NDC_PROJECTION)
-			{
-				/* ndc_projection */
-				for (i=0;i<16;i++)
-				{
-					data->projection_matrix[i] = total_projection_matrix[i];
-				}
-			}
-			else if (data->projection_type == INVERSE_NDC_PROJECTION)
-			{
-				LU_decompose(/* dimension */4, total_projection_matrix,
-					lu_index, &lu_d);
-				for (i = 0 ; i < 4 ; i++)
-				{
-					for (j = 0 ; j < 4 ; j++)
-					{
-						data->projection_matrix[i * 4 + j] = 0.0;
-					}
-					data->projection_matrix[i * 4 + i] = 1.0;
-					LU_backsubstitute(/* dimension */4, total_projection_matrix,
-						lu_index, data->projection_matrix + i * 4);
-				}
-				/* transpose */
-				for (i = 0 ; i < 4 ; i++)
-				{
-					for (j = i + 1 ; j < 4 ; j++)
-					{
-						lu_d = data->projection_matrix[i * 4 + j];
-						data->projection_matrix[i * 4 + j] =
-							data->projection_matrix[j * 4 + i];
-						data->projection_matrix[j * 4 + i] = lu_d;
-					}
-				}
-			}
-			else
-			{
-				/* Get the viewport transformation too */
-				Scene_viewer_get_viewport_info(scene_viewer,
-					&viewport_left, &viewport_top, 
-					&viewport_pixels_per_unit_x, &viewport_pixels_per_unit_y);
-				Scene_viewer_get_viewport_size(scene_viewer,
-					&viewport_width, &viewport_height);
-				/* Multiply total_projection by viewport matrices */
+				/* Multiply these matrices */
 				for (i=0;i<4;i++)
 				{
 					for (j=0;j<4;j++)
 					{
-						viewport_matrix[i * 4 + j] = 0.0;
+						total_projection_matrix[i * 4 + j] = 0.0;
 						for (k=0;k<4;k++)
 						{
-							if ((i == 0) && (k == 0))
-							{
-								viewport_matrix[i * 4 + j] += 
-									0.5 * viewport_width / viewport_pixels_per_unit_x  *
-									total_projection_matrix[k * 4 + j];
-							}
-							else if((i == 1) && (k == 1))
-							{
-								viewport_matrix[i * 4 + j] += 
-									0.5 * viewport_height / viewport_pixels_per_unit_y *
-									total_projection_matrix[k * 4 + j];
-							}
-							else if((i == 0) && (k == 3))
-							{
-								viewport_matrix[i * 4 + j] += 
-									(viewport_left + 0.5 * viewport_width 
-										/ viewport_pixels_per_unit_x) *
-									total_projection_matrix[k * 4 + j];
-							}
-							else if((i == 1) && (k == 3))
-							{
-								viewport_matrix[i * 4 + j] += 
-									(viewport_top - 0.5 * viewport_height
-										/ viewport_pixels_per_unit_y) *
-									total_projection_matrix[k * 4 + j];
-							}
-							else if((i == 2) && (k == 2))
-							{
-								viewport_matrix[i * 4 + j] += 
-									total_projection_matrix[k * 4 + j];
-							}
-							else if((i == 3) && (k == 3))
-							{
-								viewport_matrix[i * 4 + j] += 
-									total_projection_matrix[k * 4 + j];
-							}
-							else
-							{
-								viewport_matrix[i * 4 + j] += 0.0;
-							}
+							total_projection_matrix[i * 4 + j] += 
+								window_projection_matrix[i * 4 + k]	*
+								modelview_matrix[k * 4 + j];
 						}
 					}
 				}
-				if (data->projection_type == VIEWPORT_PROJECTION)
+				if (data->projection_type == NDC_PROJECTION)
 				{
-					/* viewport_projection */
+					/* ndc_projection */
 					for (i=0;i<16;i++)
 					{
-						data->projection_matrix[i] = viewport_matrix[i];
+						data->projection_matrix[i] = total_projection_matrix[i];
 					}
 				}
-				else if (data->projection_type == INVERSE_VIEWPORT_PROJECTION)
+				else if (data->projection_type == INVERSE_NDC_PROJECTION)
 				{
-					LU_decompose(/* dimension */4, viewport_matrix,
+					LU_decompose(/* dimension */4, total_projection_matrix,
 						lu_index, &lu_d);
 					for (i = 0 ; i < 4 ; i++)
 					{
@@ -283,7 +193,7 @@ DESCRIPTION :
 							data->projection_matrix[i * 4 + j] = 0.0;
 						}
 						data->projection_matrix[i * 4 + i] = 1.0;
-						LU_backsubstitute(/* dimension */4, viewport_matrix,
+						LU_backsubstitute(/* dimension */4, total_projection_matrix,
 							lu_index, data->projection_matrix + i * 4);
 					}
 					/* transpose */
@@ -300,22 +210,231 @@ DESCRIPTION :
 				}
 				else
 				{
-					/* texture_projection */
-					Scene_viewer_get_background_texture_info(scene_viewer,
-						&bk_texture_left, &bk_texture_top, &bk_texture_width, &bk_texture_height,
-						&bk_texture_undistort_on, &bk_texture_max_pixels_per_polygon);
-					if (texture = Scene_viewer_get_background_texture(scene_viewer))
+					/* Get the viewport transformation too */
+					Scene_viewer_get_viewport_info(scene_viewer,
+						&viewport_left, &viewport_top, 
+						&viewport_pixels_per_unit_x, &viewport_pixels_per_unit_y);
+					Scene_viewer_get_viewport_size(scene_viewer,
+						&viewport_width, &viewport_height);
+					/* Multiply total_projection by viewport matrices */
+					for (i=0;i<4;i++)
 					{
-						Texture_get_distortion_info(texture, &distortion_centre_x, 
-							&distortion_centre_y, &distortion_factor_k1);
-						Texture_get_physical_size(texture, &texture_width, 
-							&texture_height);
+						for (j=0;j<4;j++)
+						{
+							viewport_matrix[i * 4 + j] = 0.0;
+							for (k=0;k<4;k++)
+							{
+								if ((i == 0) && (k == 0))
+								{
+									viewport_matrix[i * 4 + j] += 
+										0.5 * viewport_width / viewport_pixels_per_unit_x  *
+										total_projection_matrix[k * 4 + j];
+								}
+								else if((i == 1) && (k == 1))
+								{
+									viewport_matrix[i * 4 + j] += 
+										0.5 * viewport_height / viewport_pixels_per_unit_y *
+										total_projection_matrix[k * 4 + j];
+								}
+								else if((i == 0) && (k == 3))
+								{
+									viewport_matrix[i * 4 + j] += 
+										(viewport_left + 0.5 * viewport_width 
+											/ viewport_pixels_per_unit_x) *
+										total_projection_matrix[k * 4 + j];
+								}
+								else if((i == 1) && (k == 3))
+								{
+									viewport_matrix[i * 4 + j] += 
+										(viewport_top - 0.5 * viewport_height
+											/ viewport_pixels_per_unit_y) *
+										total_projection_matrix[k * 4 + j];
+								}
+								else if((i == 2) && (k == 2))
+								{
+									viewport_matrix[i * 4 + j] += 
+										total_projection_matrix[k * 4 + j];
+								}
+								else if((i == 3) && (k == 3))
+								{
+									viewport_matrix[i * 4 + j] += 
+										total_projection_matrix[k * 4 + j];
+								}
+								else
+								{
+									viewport_matrix[i * 4 + j] += 0.0;
+								}
+							}
+						}
+					}
+					if (data->projection_type == VIEWPORT_PROJECTION)
+					{
+						/* viewport_projection */
+						for (i=0;i<16;i++)
+						{
+							data->projection_matrix[i] = viewport_matrix[i];
+						}
+					}
+					else if (data->projection_type == INVERSE_VIEWPORT_PROJECTION)
+					{
+						LU_decompose(/* dimension */4, viewport_matrix,
+							lu_index, &lu_d);
+						for (i = 0 ; i < 4 ; i++)
+						{
+							for (j = 0 ; j < 4 ; j++)
+							{
+								data->projection_matrix[i * 4 + j] = 0.0;
+							}
+							data->projection_matrix[i * 4 + i] = 1.0;
+							LU_backsubstitute(/* dimension */4, viewport_matrix,
+								lu_index, data->projection_matrix + i * 4);
+						}
+						/* transpose */
+						for (i = 0 ; i < 4 ; i++)
+						{
+							for (j = i + 1 ; j < 4 ; j++)
+							{
+								lu_d = data->projection_matrix[i * 4 + j];
+								data->projection_matrix[i * 4 + j] =
+									data->projection_matrix[j * 4 + i];
+								data->projection_matrix[j * 4 + i] = lu_d;
+							}
+						}
+					}
+					else
+					{
+						/* texture_projection */
+						Scene_viewer_get_background_texture_info(scene_viewer,
+							&bk_texture_left, &bk_texture_top, &bk_texture_width, &bk_texture_height,
+							&bk_texture_undistort_on, &bk_texture_max_pixels_per_polygon);
+						if (texture = Scene_viewer_get_background_texture(scene_viewer))
+						{
+							Texture_get_distortion_info(texture, &distortion_centre_x, 
+								&distortion_centre_y, &distortion_factor_k1);
+							Texture_get_physical_size(texture, &texture_width, 
+								&texture_height);
 					
-						if (bk_texture_undistort_on && distortion_factor_k1)
+							if (bk_texture_undistort_on && distortion_factor_k1)
+							{
+								display_message(ERROR_MESSAGE,
+									"gfx_apply_projection.  Distortion corrected textures are not supported yet");
+								return_code=0;
+								/* identity_projection */
+								for (i=0;i<16;i++)
+								{
+									if (i % 5)
+									{
+										data->projection_matrix[i] = 0;
+									}
+									else
+									{
+										data->projection_matrix[i] = 1;
+									}
+								}
+							}
+							else
+							{
+								/* Multiply viewport_matrix by background texture */
+								for (i=0;i<4;i++)
+								{
+									for (j=0;j<4;j++)
+									{
+										texture_projection_matrix[i * 4 + j] = 0.0;
+										for (k=0;k<4;k++)
+										{
+											if ((i == 0) && (k == 0))
+											{
+												texture_projection_matrix[i * 4 + j] += 
+													(texture_width / bk_texture_width) *
+													viewport_matrix[k * 4 + j];
+											}
+											else if((i == 1) && (k == 1))
+											{
+												texture_projection_matrix[i * 4 + j] += 
+													(texture_height / bk_texture_height) *
+													viewport_matrix[k * 4 + j];
+											}
+											else if((i == 0) && (k == 3))
+											{
+												texture_projection_matrix[i * 4 + j] += 
+													(-bk_texture_left *
+														(texture_width / bk_texture_width)) *
+													viewport_matrix[k * 4 + j];
+											}
+											else if((i == 1) && (k == 3))
+											{
+												texture_projection_matrix[i * 4 + j] += 
+													(- bk_texture_top * 
+														(texture_height / bk_texture_height)
+														+ texture_height) *
+													viewport_matrix[k * 4 + j];
+											}
+											else if((i == 2) && (k == 2))
+											{
+												texture_projection_matrix[i * 4 + j] += 
+													viewport_matrix[k * 4 + j];
+											}
+											else if((i == 3) && (k == 3))
+											{
+												texture_projection_matrix[i * 4 + j] += 
+													viewport_matrix[k * 4 + j];
+											}
+											else
+											{
+												texture_projection_matrix[i * 4 + j] += 0.0;
+											}
+										}
+									}
+								}
+								if (data->projection_type == TEXTURE_PROJECTION)
+								{
+									for (i=0;i<16;i++)
+									{
+										data->projection_matrix[i] = texture_projection_matrix[i];
+									}
+								}
+								else if (data->projection_type == INVERSE_TEXTURE_PROJECTION)
+								{
+									LU_decompose(/* dimension */4, texture_projection_matrix,
+										lu_index, &lu_d);
+									for (i = 0 ; i < 4 ; i++)
+									{
+										for (j = 0 ; j < 4 ; j++)
+										{
+											data->projection_matrix[i * 4 + j] = 0.0;
+										}
+										data->projection_matrix[i * 4 + i] = 1.0;
+										LU_backsubstitute(/* dimension */4, 
+											texture_projection_matrix,
+											lu_index, data->projection_matrix + i * 4);
+									}
+									/* transpose */
+									for (i = 0 ; i < 4 ; i++)
+									{
+										for (j = i + 1 ; j < 4 ; j++)
+										{
+											lu_d = data->projection_matrix[i * 4 + j];
+											data->projection_matrix[i * 4 + j] =
+												data->projection_matrix[j * 4 + i];
+											data->projection_matrix[j * 4 + i] = lu_d;
+										}
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"Computed_field_window_projection_calculate_matrix.  "
+										"Unknown projection type.");
+									return_code = 0;
+								}
+							}
+						}
+						else
 						{
 							display_message(ERROR_MESSAGE,
-								"gfx_apply_projection.  Distortion corrected textures are not supported yet");
-							return_code=0;
+								"Computed_field_window_projection_calculate_matrix.  "
+								"No background texture defined.");
+							return_code = 0;
 							/* identity_projection */
 							for (i=0;i<16;i++)
 							{
@@ -329,123 +448,24 @@ DESCRIPTION :
 								}
 							}
 						}
-						else
-						{
-							/* Multiply viewport_matrix by background texture */
-							for (i=0;i<4;i++)
-							{
-								for (j=0;j<4;j++)
-								{
-									texture_projection_matrix[i * 4 + j] = 0.0;
-									for (k=0;k<4;k++)
-									{
-										if ((i == 0) && (k == 0))
-										{
-											texture_projection_matrix[i * 4 + j] += 
-												(texture_width / bk_texture_width) *
-												viewport_matrix[k * 4 + j];
-										}
-										else if((i == 1) && (k == 1))
-										{
-											texture_projection_matrix[i * 4 + j] += 
-												(texture_height / bk_texture_height) *
-												viewport_matrix[k * 4 + j];
-										}
-										else if((i == 0) && (k == 3))
-										{
-											texture_projection_matrix[i * 4 + j] += 
-												(-bk_texture_left *
-													(texture_width / bk_texture_width)) *
-												viewport_matrix[k * 4 + j];
-										}
-										else if((i == 1) && (k == 3))
-										{
-											texture_projection_matrix[i * 4 + j] += 
-												(- bk_texture_top * 
-													(texture_height / bk_texture_height)
-													+ texture_height) *
-												viewport_matrix[k * 4 + j];
-										}
-										else if((i == 2) && (k == 2))
-										{
-											texture_projection_matrix[i * 4 + j] += 
-												viewport_matrix[k * 4 + j];
-										}
-										else if((i == 3) && (k == 3))
-										{
-											texture_projection_matrix[i * 4 + j] += 
-												viewport_matrix[k * 4 + j];
-										}
-										else
-										{
-											texture_projection_matrix[i * 4 + j] += 0.0;
-										}
-									}
-								}
-							}
-							if (data->projection_type)
-							{
-								for (i=0;i<16;i++)
-								{
-									data->projection_matrix[i] = texture_projection_matrix[i];
-								}
-							}
-							else if (data->projection_type == INVERSE_VIEWPORT_PROJECTION)
-							{
-								LU_decompose(/* dimension */4, texture_projection_matrix,
-									lu_index, &lu_d);
-								for (i = 0 ; i < 4 ; i++)
-								{
-									for (j = 0 ; j < 4 ; j++)
-									{
-										data->projection_matrix[i * 4 + j] = 0.0;
-									}
-									data->projection_matrix[i * 4 + i] = 1.0;
-									LU_backsubstitute(/* dimension */4, 
-										texture_projection_matrix,
-										lu_index, data->projection_matrix + i * 4);
-								}
-								/* transpose */
-								for (i = 0 ; i < 4 ; i++)
-								{
-									for (j = i + 1 ; j < 4 ; j++)
-									{
-										lu_d = data->projection_matrix[i * 4 + j];
-										data->projection_matrix[i * 4 + j] =
-											data->projection_matrix[j * 4 + i];
-										data->projection_matrix[j * 4 + i] = lu_d;
-									}
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"Computed_field_window_projection_calculate_matrix.  "
-									"Unknown projection type.");
-								return_code = 0;
-							}
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Computed_field_window_projection_calculate_matrix.  "
-							"No background texture defined.");
-						return_code = 0;
-						/* identity_projection */
-						for (i=0;i<16;i++)
-						{
-							if (i % 5)
-							{
-								data->projection_matrix[i] = 0;
-							}
-							else
-							{
-								data->projection_matrix[i] = 1;
-							}
-						}
 					}
 				}
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_window_projection_calculate_matrix.  "
+				"Not enough memory for matrix");
+			return_code = 0;
+		}
+		if (!return_code)
+		{
+			/* Only keep projection_matrix if valid */
+			if (data->projection_matrix)
+			{
+				DEALLOCATE(data->projection_matrix);
+				data->projection_matrix = (double *)NULL;
 			}
 		}
 	}
@@ -682,7 +702,7 @@ static int Computed_field_evaluate_projection_matrix(
 	struct Computed_field *field,
 	int element_dimension, int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 10 October 2000
 
 DESCRIPTION :
 Function called by Computed_field_evaluate_in_element to compute a field
@@ -702,31 +722,17 @@ for the same element, with the given <element_dimension> = number of Xi coords.
 		(data = (struct Computed_field_window_projection_type_specific_data *)
 		field->type_specific_data))
 	{
-		return_code = 1;
-		if (!data->projection_matrix)
+		if (data->projection_matrix ||
+			Computed_field_window_projection_calculate_matrix(field))
 		{
-			if (ALLOCATE(data->projection_matrix, double, 16))
+			return_code = 1;
+			if (!data->scene_viewer_callback_flag)
 			{
-				return_code = 
-					Computed_field_window_projection_calculate_matrix(field);
+				data->scene_viewer_callback_flag = 
+					Scene_viewer_transform_add_callback(data->scene_viewer, 
+						Computed_field_window_projection_scene_viewer_callback,
+						(void *)field);
 			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_evaluate_projection_matrix.  "
-					"Unable to allocate memory");
-				return_code = 0;
-			}
-		}
-		if (!data->scene_viewer_callback_flag)
-		{
-			data->scene_viewer_callback_flag = 
-				Scene_viewer_transform_add_callback(data->scene_viewer, 
-				Computed_field_window_projection_scene_viewer_callback,
-				(void *)field);
-		}
-		if (return_code)
-		{
 			projection_matrix = data->projection_matrix;
 			if (calculate_derivatives)
 			{
@@ -753,7 +759,7 @@ for the same element, with the given <element_dimension> = number of Xi coords.
 			}
 
 			/* The last calculated value is the perspective value which divides through
-				all the other components */
+				 all the other components */
 			perspective = 0.0;
 			for (j = 0 ; j < coordinate_components ; j++)
 			{
@@ -788,11 +794,11 @@ for the same element, with the given <element_dimension> = number of Xi coords.
 							* field->source_fields[0]->derivatives[j *element_dimension + k];
 					}
 
-					/* Calculate the perspective reciprocal derivative using chaing rule */
+					/* Calculate the perspective reciprocal derivative using chain rule */
 					dh1dxi = (-1.0) / (perspective * perspective) * dhdxi;
 
 					/* Calculate the derivatives of the perspective scaled transformed coordinates,
-						which is ultimately what we want */
+						 which is ultimately what we want */
 					for (i = 0 ; i < field->number_of_components ; i++)
 					{
 						field->derivatives[i * element_dimension + k] = 
@@ -807,6 +813,10 @@ for the same element, with the given <element_dimension> = number of Xi coords.
 			{
 				field->values[i] /= perspective;
 			}
+		}
+		else
+		{
+			return_code=0;
 		}
 	}
 	else
@@ -910,14 +920,70 @@ DESCRIPTION :
 Print the values calculated in the cache.
 ==============================================================================*/
 
-#define Computed_field_window_projection_set_values_at_node \
-   (Computed_field_set_values_at_node_function)NULL
+static int Computed_field_window_projection_set_values_at_node(
+	struct Computed_field *field,struct FE_node *node,FE_value *values)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 10 October 2000
 
 DESCRIPTION :
-Not implemented yet.
+Sets the <values> of the computed <field> at <node>.
 ==============================================================================*/
+{
+	double d,lu_matrix[16],result[4];
+	int indx[4],return_code;
+	FE_value source_values[3];
+	struct Computed_field_window_projection_type_specific_data *data;
+	
+	ENTER(Computed_field_window_projection_set_values_at_node);
+	if (field && node && values && (COMPUTED_FIELD_NEW_TYPES==field->type) &&
+		(computed_field_window_projection_type_string == field->type_string) &&
+		(data = (struct Computed_field_window_projection_type_specific_data *)
+			field->type_specific_data))
+	{
+		if (data->projection_matrix ||
+			Computed_field_window_projection_calculate_matrix(field))
+		{
+			copy_matrix(4,4,data->projection_matrix,lu_matrix);
+			result[0] = (double)values[0];
+			result[1] = (double)values[1];
+			result[2] = (double)values[2];
+			result[3] = 1.0;
+			if (LU_decompose(4,lu_matrix,indx,&d) &&
+				LU_backsubstitute(4,lu_matrix,indx,result) &&
+				(0.0 != result[3]))
+			{
+				source_values[0] = (result[0] / result[3]);
+				source_values[1] = (result[1] / result[3]);
+				source_values[2] = (result[2] / result[3]);
+				return_code=Computed_field_set_values_at_node(
+					field->source_fields[0],node,source_values);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_window_projection_set_values_at_node.  "
+					"Could not invert field %s",field->name);
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_window_projection_set_values_at_node.  "
+				"Missing projection matrix for field %s",field->name);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_window_projection_set_values_at_node.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_window_projection_set_values_at_node */
 
 #define Computed_field_window_projection_set_values_in_element \
    (Computed_field_set_values_in_element_function)NULL
