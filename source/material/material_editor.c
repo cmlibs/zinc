@@ -121,9 +121,9 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 	LEAVE;
 } /* material_editor_update */
 
-static void material_editor_draw_sphere(Widget w,XtPointer tag,XtPointer reason)
+static int material_editor_draw_sphere(struct Material_editor *material_editor)
 /*******************************************************************************
-LAST MODIFIED : 5 April 2000
+LAST MODIFIED : 7 September 2000
 
 DESCRIPTION :
 Uses gl to draw a sphere with a lighting source.
@@ -135,9 +135,7 @@ Uses gl to draw a sphere with a lighting source.
 #define sphere_panel_size 1000
 #define sphere_panel_dist 5
 #define sphere_view_spacing 1.2
-	int i,j;
-	struct Material_editor *material_editor=
-		(struct Material_editor *)tag;
+	int i,j,return_code;
 #if defined (OPENGL_API)
 	float texture_height,texture_width;
 	GLdouble angle,aspect,coordinates[3],cos_angle,horiz_factor,horiz_offset,
@@ -152,188 +150,227 @@ Uses gl to draw a sphere with a lighting source.
 #endif /* defined (OPENGL_API) */
 
 	ENTER(material_editor_draw_sphere);
-	USE_PARAMETER(w);
-	USE_PARAMETER(reason);
-	/* make sure the Graphical material display list is up-to-date, which
-		 in turn, requires any textures it uses to be compiled */
-	compile_Graphical_material(material_editor->edit_material,NULL);
+	if (material_editor)
+	{
+		return_code=1;
+		/* make sure the Graphical material display list is up-to-date, which
+			 in turn, requires any textures it uses to be compiled */
+		compile_Graphical_material(material_editor->edit_material,NULL);
 #if defined (OPENGL_API)
-	glGetDoublev(GL_VIEWPORT,viewport_size);
-	glClearColor(0.0,0.0,0.0,0.0);
-	glClearDepth(1.0);
-	glEnable(GL_BLEND);
-	glLightModelf(GL_LIGHT_MODEL_TWO_SIDE,light_model_twoside);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	/* set up the view trans */
-	if (viewport_size[3] > viewport_size[2])
-	{
-		if (0 != viewport_size[2])
+		glGetDoublev(GL_VIEWPORT,viewport_size);
+		glClearColor(0.0,0.0,0.0,0.0);
+		glClearDepth(1.0);
+		glEnable(GL_BLEND);
+		glLightModelf(GL_LIGHT_MODEL_TWO_SIDE,light_model_twoside);
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		/* set up the view trans */
+		if (viewport_size[3] > viewport_size[2])
 		{
-			aspect=viewport_size[3]/viewport_size[2];
+			if (0 != viewport_size[2])
+			{
+				aspect=viewport_size[3]/viewport_size[2];
+			}
+			else
+			{
+				aspect=1.0;
+			}
+			glOrtho(-sphere_view_spacing,sphere_view_spacing,
+				-aspect*sphere_view_spacing,aspect*sphere_view_spacing,0.1,20.0);
 		}
 		else
 		{
-			aspect=1.0;
+			if (0 != viewport_size[3])
+			{
+				aspect=viewport_size[2]/viewport_size[3];
+			}
+			else
+			{
+				aspect=1.0;
+			}
+			glOrtho(-aspect*sphere_view_spacing,aspect*sphere_view_spacing,
+				-sphere_view_spacing,sphere_view_spacing,0.1,20.0);
 		}
-		glOrtho(-sphere_view_spacing,sphere_view_spacing,
-			-aspect*sphere_view_spacing,aspect*sphere_view_spacing,0.1,20.0);
-	}
-	else
-	{
-		if (0 != viewport_size[3])
+		/* set up the material and lights etc */
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		glLightfv(GL_LIGHT0,GL_POSITION,light_position);
+		glEnable(GL_LIGHT0);
+		gluLookAt(0.0,0.0,sphere_view_dist,0.0,0.0,0.0,0.0,1.0,0.0);
+		glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+		glDepthFunc(GL_LESS);
+		glEnable(GL_DEPTH_TEST);
+		if (2==material_editor->background)
 		{
-			aspect=viewport_size[2]/viewport_size[3];
+			glClearColor(1.0,1.0,1.0,1.0);
 		}
 		else
 		{
-			aspect=1.0;
+			glClearColor(0.0,0.0,0.0,1.0);
 		}
-		glOrtho(-aspect*sphere_view_spacing,aspect*sphere_view_spacing,
-			-sphere_view_spacing,sphere_view_spacing,0.1,20.0);
-	}
-	/* set up the material and lights etc */
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glLightfv(GL_LIGHT0,GL_POSITION,light_position);
-	glEnable(GL_LIGHT0);
-	gluLookAt(0.0,0.0,sphere_view_dist,0.0,0.0,0.0,0.0,1.0,0.0);
-	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-	glDepthFunc(GL_LESS);
-	glEnable(GL_DEPTH_TEST);
-	if (2==material_editor->background)
-	{
-		glClearColor(1.0,1.0,1.0,1.0);
-	}
-	else
-	{
-		glClearColor(0.0,0.0,0.0,1.0);
-	}
-	/* clear the window */
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	if (material_editor->background==0)
-	{
-		/* no textures on the RGB background */
-		execute_Texture((struct Texture *)NULL);
-		glDisable(GL_LIGHTING);
-		glBegin(GL_TRIANGLES);
-		/* red */
-		glColor3d(1.0,0.0,0.0);
-		glVertex3d(0.0,0.0,-sphere_panel_dist);
-		glVertex3d(sphere_panel_size*0.866,-sphere_panel_size*0.5,
-			-sphere_panel_dist);
-		glVertex3d(0.0,sphere_panel_size,-sphere_panel_dist);
-		/* green */
-		glColor3d(0.0,1.0,0.0);
-		glVertex3d(0.0,0.0,-sphere_panel_dist);
-		glVertex3d(0.0,sphere_panel_size,-sphere_panel_dist);
-		glVertex3d(-sphere_panel_size*0.866,-sphere_panel_size*0.5,
-			-sphere_panel_dist);
-		/* blue */
-		glColor3d(0.0,0.0,1.0);
-		glVertex3d(0.0,0.0,-sphere_panel_dist);
-		glVertex3d(-sphere_panel_size*0.866,-sphere_panel_size*0.5,
-			-sphere_panel_dist);
-		glVertex3d(sphere_panel_size*0.866,-sphere_panel_size*0.5,
-			-sphere_panel_dist);
-		glEnd();
-	}
-	execute_Graphical_material(material_editor->edit_material);
-	/* draw the sphere */
-	glEnable(GL_LIGHTING);
-	if (texture=Graphical_material_get_texture(material_editor->edit_material))
-	{
-		Texture_get_physical_size(texture,&texture_width,&texture_height);
-		horiz_factor=2.0*texture_width/sphere_horiz;
-		horiz_offset=-0.5*texture_width;
-		vert_factor=2.0*texture_height/sphere_vert;
-		vert_offset=-0.5*texture_height;
-	}
-	/* loop from bottom to top */
-	for(j=0;j<sphere_vert;j++)
-	{
-		angle = (double)j * (PI/(double)sphere_vert);
-		lower_coordinate=-cos(angle);
-		lower_radius=sin(angle);
-		angle = ((double)j+1.0) * (PI/(double)sphere_vert);
-		upper_coordinate=-cos(angle);
-		upper_radius=sin(angle);
-		glBegin(GL_QUAD_STRIP);
-		for(i=0;i<=sphere_horiz;i++)
+		/* clear the window */
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		if (material_editor->background==0)
 		{
-			angle = (double)i * (PI/(double)sphere_horiz);
-			cos_angle=cos(angle);
-			sin_angle=sin(angle);
-			coordinates[0] = -cos_angle*upper_radius;
-			coordinates[1] = upper_coordinate;
-			coordinates[2] = sin_angle*upper_radius;
-			if (texture)
-			{
-				texture_coordinates[0]=horiz_offset+(double)i*horiz_factor;
-				texture_coordinates[1]=vert_offset+((double)j+1.0)*vert_factor;
-				glTexCoord2dv(texture_coordinates);
-			}
-			glNormal3dv(coordinates);
-			glVertex3dv(coordinates);
-			coordinates[0] = -cos_angle*lower_radius;
-			coordinates[1] = lower_coordinate;
-			coordinates[2] = sin_angle*lower_radius;
-			if (texture)
-			{
-				texture_coordinates[1]=vert_offset+(double)j*vert_factor;
-				glTexCoord2dv(texture_coordinates);
-			}
-			glNormal3dv(coordinates);
-			glVertex3dv(coordinates);
+			/* no textures on the RGB background */
+			execute_Texture((struct Texture *)NULL);
+			glDisable(GL_LIGHTING);
+			glBegin(GL_TRIANGLES);
+			/* red */
+			glColor3d(1.0,0.0,0.0);
+			glVertex3d(0.0,0.0,-sphere_panel_dist);
+			glVertex3d(sphere_panel_size*0.866,-sphere_panel_size*0.5,
+				-sphere_panel_dist);
+			glVertex3d(0.0,sphere_panel_size,-sphere_panel_dist);
+			/* green */
+			glColor3d(0.0,1.0,0.0);
+			glVertex3d(0.0,0.0,-sphere_panel_dist);
+			glVertex3d(0.0,sphere_panel_size,-sphere_panel_dist);
+			glVertex3d(-sphere_panel_size*0.866,-sphere_panel_size*0.5,
+				-sphere_panel_dist);
+			/* blue */
+			glColor3d(0.0,0.0,1.0);
+			glVertex3d(0.0,0.0,-sphere_panel_dist);
+			glVertex3d(-sphere_panel_size*0.866,-sphere_panel_size*0.5,
+				-sphere_panel_dist);
+			glVertex3d(sphere_panel_size*0.866,-sphere_panel_size*0.5,
+				-sphere_panel_dist);
+			glEnd();
 		}
-		glEnd();
-	}
+		execute_Graphical_material(material_editor->edit_material);
+		/* draw the sphere */
+		glEnable(GL_LIGHTING);
+		if (texture=Graphical_material_get_texture(material_editor->edit_material))
+		{
+			Texture_get_physical_size(texture,&texture_width,&texture_height);
+			horiz_factor=2.0*texture_width/sphere_horiz;
+			horiz_offset=-0.5*texture_width;
+			vert_factor=2.0*texture_height/sphere_vert;
+			vert_offset=-0.5*texture_height;
+		}
+		/* loop from bottom to top */
+		for(j=0;j<sphere_vert;j++)
+		{
+			angle = (double)j * (PI/(double)sphere_vert);
+			lower_coordinate=-cos(angle);
+			lower_radius=sin(angle);
+			angle = ((double)j+1.0) * (PI/(double)sphere_vert);
+			upper_coordinate=-cos(angle);
+			upper_radius=sin(angle);
+			glBegin(GL_QUAD_STRIP);
+			for(i=0;i<=sphere_horiz;i++)
+			{
+				angle = (double)i * (PI/(double)sphere_horiz);
+				cos_angle=cos(angle);
+				sin_angle=sin(angle);
+				coordinates[0] = -cos_angle*upper_radius;
+				coordinates[1] = upper_coordinate;
+				coordinates[2] = sin_angle*upper_radius;
+				if (texture)
+				{
+					texture_coordinates[0]=horiz_offset+(double)i*horiz_factor;
+					texture_coordinates[1]=vert_offset+((double)j+1.0)*vert_factor;
+					glTexCoord2dv(texture_coordinates);
+				}
+				glNormal3dv(coordinates);
+				glVertex3dv(coordinates);
+				coordinates[0] = -cos_angle*lower_radius;
+				coordinates[1] = lower_coordinate;
+				coordinates[2] = sin_angle*lower_radius;
+				if (texture)
+				{
+					texture_coordinates[1]=vert_offset+(double)j*vert_factor;
+					glTexCoord2dv(texture_coordinates);
+				}
+				glNormal3dv(coordinates);
+				glVertex3dv(coordinates);
+			}
+			glEnd();
+		}
 #endif /* defined (OPENGL_API) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"material_editor_draw_sphere.  Invalid argument(s)");
+		return_code=0;
+	}
 	LEAVE;
+
+	return (return_code);
 } /* material_editor_draw_sphere */
 
-static void material_editor_update_picture(
+static int material_editor_update_picture(
 	struct Material_editor *material_editor)
 /*******************************************************************************
-LAST MODIFIED : 28 November 1997
+LAST MODIFIED : 7 September 2000
 
 DESCRIPTION :
 Updates the picture with the changed material.
 ==============================================================================*/
 {
+	int return_code;
+
 	ENTER(material_editor_update_picture);
-	/* checking arguments */
 	if (material_editor)
 	{
 		X3dThreeDDrawingMakeCurrent(material_editor->a3d_widget);
-		material_editor_draw_sphere(material_editor->a3d_widget,
-			(XtPointer)material_editor,(XtPointer)NULL);
+		return_code=material_editor_draw_sphere(material_editor);
 		X3dThreeDDrawingSwapBuffers();
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"material_editor_update_picture.  Invalid argument(s)");
+		return_code=0;
 	}
 	LEAVE;
+
+	return (return_code);
 } /* material_editor_update_picture */
 
-static void material_editor_change_background(Widget w,XtPointer tag,
-	XtPointer reason)
+static void material_editor_expose_picture_callback(Widget widget,
+	XtPointer material_editor_void,XtPointer reason)
 /*******************************************************************************
-LAST MODIFIED : 26 September 1995
+LAST MODIFIED : 7 September 2000
+
+DESCRIPTION :
+Forces a redraw of the picture representing the material.
+==============================================================================*/
+{
+	struct Material_editor *material_editor;
+
+	ENTER(material_editor_expose_picture_callback);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(reason);
+	if (material_editor=(struct Material_editor *)material_editor_void)
+	{
+		material_editor_update_picture(material_editor);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"material_editor_expose_picture_callback.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* material_editor_expose_picture_callback */
+
+static void material_editor_change_background(Widget widget,
+	XtPointer material_editor_void,XtPointer reason)
+/*******************************************************************************
+LAST MODIFIED : 7 September 2000
 
 DESCRIPTION :
 Increments the background pattern.
 ==============================================================================*/
 {
-	struct Material_editor
-		*material_editor=(struct Material_editor *)tag;
+	struct Material_editor *material_editor;
 	X3dThreeDDrawCallbackStruct *callback;
 
 	ENTER(material_editor_change_background);
-	USE_PARAMETER(w);
-	if (callback=(X3dThreeDDrawCallbackStruct *)reason)
+	USE_PARAMETER(widget);
+	if ((material_editor=(struct Material_editor *)material_editor_void)&&
+		(callback=(X3dThreeDDrawCallbackStruct *)reason))
 	{
 		if (X3dCR_INPUT==callback->reason)
 		{
@@ -347,6 +384,11 @@ Increments the background pattern.
 				material_editor_update_picture(material_editor);
 			}
 		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"material_editor_change_background.  Invalid argument(s)");
 	}
 	LEAVE;
 } /* material_editor_change_background */
@@ -1030,7 +1072,7 @@ Creates a material_editor widget.
 								/*???RC should do following in ~set_material */
 								/* add a callback to the 3d widget */
 								XtAddCallback(material_editor->a3d_widget,
-									X3dNexposeCallback,material_editor_draw_sphere,
+									X3dNexposeCallback,material_editor_expose_picture_callback,
 									material_editor);
 								XtAddCallback(material_editor->a3d_widget,
 									X3dNinputCallback,material_editor_change_background,
