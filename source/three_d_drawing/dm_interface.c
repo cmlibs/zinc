@@ -149,6 +149,7 @@ supported on displays other than SGI will do.
 	int config_index, nelements;
 	static int fbvisattrsRGB_with_depth[] =
 	{
+		GLX_RENDER_TYPE, GLX_RGBA_BIT,
 		GLX_RED_SIZE, 5,
 		GLX_GREEN_SIZE, 5,
 		GLX_BLUE_SIZE, 5,
@@ -158,6 +159,7 @@ supported on displays other than SGI will do.
 	};
 	static int fbvisattrsRGB_no_depth[] =
 	{
+		GLX_RENDER_TYPE, GLX_RGBA_BIT,
 		GLX_RED_SIZE, 5,
 		GLX_GREEN_SIZE, 5,
 		GLX_BLUE_SIZE, 5,
@@ -453,7 +455,7 @@ supported on displays other than SGI will do.
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Cannot get Frame Buffer Configuration");
+						display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Cannot get list of Frame Buffer Configurations");
 						DEALLOCATE(buffer);
 						buffer = (struct Dm_buffer *)NULL;
 					}
@@ -733,6 +735,58 @@ made current) to be the GLX destination.
 
 	return (return_code);
 } /* Dm_buffer_glx_make_read_current */
+
+int Dm_buffer_swap_buffers(struct Dm_buffer *buffer)
+/*******************************************************************************
+LAST MODIFIED : 11 December 2002
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Dm_buffer_swap_buffers);
+#if defined (MOTIF)
+	if (buffer && buffer->context)
+	{
+#if defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) || (GLX_pbuffer)
+		if (buffer->pbuffer)
+		{
+			glXSwapBuffers(User_interface_get_display(buffer->user_interface),
+				buffer->pbuffer);
+		}
+		else
+		{
+#endif /* defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) || (GLX_pbuffer) */
+			if (buffer->glx_pixmap)
+			{
+				glXSwapBuffers(User_interface_get_display(buffer->user_interface),
+					buffer->glx_pixmap);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Dm_buffer_swap_buffers.  No drawable in buffer.");
+				return_code=0;
+			}
+#if defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) || (GLX_pbuffer)
+		}
+#endif /* defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) || (GLX_pbuffer) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Dm_buffer_swap_buffers.  Invalid buffer");
+		return_code=0;
+	}
+#else /* defined (MOTIF) */
+	display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). "
+	  "Dmbuffers not implemented for this Graphics and OS.");
+	return_code = 0;
+#endif /* defined (MOTIF) */
+	LEAVE;
+
+	return (return_code);
+} /* Dm_buffer_swap_buffers */
 
 enum Dm_buffer_type Dm_buffer_get_type(struct Dm_buffer *buffer)
 /*******************************************************************************

@@ -48,6 +48,12 @@ Sets this buffer to be the GLX source and the current ThreeDWindow (the one last
 made current) to be the GLX destination.
 ==============================================================================*/
 
+int Dm_buffer_swap_buffers(struct Dm_buffer *buffer);
+/*******************************************************************************
+LAST MODIFIED : 11 December 2002
+DESCRIPTION :
+==============================================================================*/
+
 enum Dm_buffer_type Dm_buffer_get_type(struct Dm_buffer *buffer);
 /*******************************************************************************
 LAST MODIFIED : 14 September 1998

@@ -4440,7 +4440,7 @@ If <force_onscreen> is non zero then the pixels will always be grabbed from the
 graphics window on screen.
 ==============================================================================*/
 {
-	int number_of_components, return_code;
+	int frame_width, frame_height, number_of_components, return_code;
 #if defined (DM_BUFFERS)
 	struct Dm_buffer *dmbuffer;
 #endif /* defined (DM_BUFFERS) */
@@ -4451,14 +4451,22 @@ graphics window on screen.
 #endif /* !defined (DM_BUFFERS) */
 	if (window && width && height)
 	{
-		if ((!*width) || (!*height))
+		if ((*width) && (*height))
+		{
+			frame_width = *width;
+			frame_height = *height;
+		}
+		else
 		{
 			/* Only use the window size if either dimension is zero */
-			Graphics_window_get_viewing_area_size(window, width, height);
+			Graphics_window_get_viewing_area_size(window, &frame_width, 
+				&frame_height);
+			*width = frame_width;
+			*height = frame_height;
 		}
 #if defined (DM_BUFFERS)
 		/* Update the window or offscreen area if possible */
-		if ((!force_onscreen) && (dmbuffer = CREATE(Dm_buffer)(*width, *height, 
+		if ((!force_onscreen) && (dmbuffer = CREATE(Dm_buffer)(frame_width, frame_height, 
 			/*depth_buffer_flag*/1, /*shared_display_buffer_flag*/1,
 			window->user_interface)))
 		{
@@ -4471,8 +4479,9 @@ graphics window on screen.
 					/* Only one pane */
 					Scene_viewer_render_scene_in_viewport_with_overrides(
 						Graphics_window_get_Scene_viewer(window,/*pane_no*/0),
-						/*left*/0, /*bottom*/0, /*right*/*width, /*top*/*height,
-						preferred_antialias, preferred_transparency_layers);
+						/*left*/0, /*bottom*/0, /*right*/frame_width, /*top*/frame_height,
+						preferred_antialias, preferred_transparency_layers,
+						/*drawing_offscreen*/1);
 					return_code=1;
 				} break;
 				case GRAPHICS_WINDOW_LAYOUT_ORTHOGRAPHIC:
@@ -4485,24 +4494,28 @@ graphics window on screen.
 					/* Four panes */
 					Scene_viewer_render_scene_in_viewport_with_overrides(
 						Graphics_window_get_Scene_viewer(window,/*pane_no*/0),
-						/*left*/0, /*bottom*/(*height / 2 + 1),
-						/*right*/(*width / 2 - 1), /*top*/*height,
-						preferred_antialias, preferred_transparency_layers);
+						/*left*/0, /*bottom*/(frame_height / 2 + 1),
+						/*right*/(frame_width / 2 - 1), /*top*/frame_height,
+						preferred_antialias, preferred_transparency_layers,
+						/*drawing_offscreen*/1);
 					Scene_viewer_render_scene_in_viewport_with_overrides(
 						Graphics_window_get_Scene_viewer(window,/*pane_no*/1),
-						/*left*/(*width / 2 + 1), /*bottom*/(*height / 2 + 1),
-						/*right*/*width, /*top*/*height,
-						preferred_antialias, preferred_transparency_layers);
+						/*left*/(frame_width / 2 + 1), /*bottom*/(frame_height / 2 + 1),
+						/*right*/frame_width, /*top*/frame_height,
+						preferred_antialias, preferred_transparency_layers,
+						/*drawing_offscreen*/1);
 					Scene_viewer_render_scene_in_viewport_with_overrides(
 						Graphics_window_get_Scene_viewer(window,/*pane_no*/2),
-						/*left*/0, /*bottom*/0, /*right*/(*width / 2 - 1), 
-						/*top*/(*height / 2 - 1),
-						preferred_antialias, preferred_transparency_layers);
+						/*left*/0, /*bottom*/0, /*right*/(frame_width / 2 - 1), 
+						/*top*/(frame_height / 2 - 1),
+						preferred_antialias, preferred_transparency_layers,
+						/*drawing_offscreen*/1);
 					Scene_viewer_render_scene_in_viewport_with_overrides(
 						Graphics_window_get_Scene_viewer(window,/*pane_no*/3),
-						/*left*/(*width / 2 + 1), /*bottom*/0, /*right*/*width, 
-						/*top*/(*height / 2 - 1),
-						preferred_antialias, preferred_transparency_layers);
+						/*left*/(frame_width / 2 + 1), /*bottom*/0, /*right*/frame_width, 
+						/*top*/(frame_height / 2 - 1),
+						preferred_antialias, preferred_transparency_layers,
+						/*drawing_offscreen*/1);
 					return_code=1;
 				} break;
 				case GRAPHICS_WINDOW_LAYOUT_FRONT_BACK:
@@ -4516,13 +4529,15 @@ graphics window on screen.
 					/* Two panes, side by side */
 					Scene_viewer_render_scene_in_viewport_with_overrides(
 						Graphics_window_get_Scene_viewer(window,/*pane_no*/0),
-						/*left*/0, /*bottom*/0, /*right*/(*width / 2 - 1), /*top*/*height,
-						preferred_antialias, preferred_transparency_layers);
+						/*left*/0, /*bottom*/0, /*right*/(frame_width / 2 - 1), /*top*/frame_height,
+						preferred_antialias, preferred_transparency_layers,
+						/*drawing_offscreen*/1);
 					Scene_viewer_render_scene_in_viewport_with_overrides(
 						Graphics_window_get_Scene_viewer(window,/*pane_no*/1),
-						/*left*/(*width / 2 + 1), /*bottom*/0,
-						/*right*/*width, /*top*/*height,
-						preferred_antialias, preferred_transparency_layers);
+						/*left*/(frame_width / 2 + 1), /*bottom*/0,
+						/*right*/frame_width, /*top*/frame_height,
+						preferred_antialias, preferred_transparency_layers,
+						/*drawing_offscreen*/1);
 					return_code=1;
 				} break;
 				default:
@@ -4534,13 +4549,15 @@ graphics window on screen.
 			}
 			if (return_code)
 			{
+				/* Swap buffers if it is double buffered */
+				Dm_buffer_swap_buffers(dmbuffer);
 				number_of_components =
 					Texture_storage_type_get_number_of_components(storage);
 				if (ALLOCATE(*frame_data, unsigned char,
-					number_of_components * (*width) * (*height)))
+					number_of_components * (frame_width) * (frame_height)))
 				{
-					if (!(return_code=Graphics_library_read_pixels(*frame_data, *width,
-						*height, storage)))
+					if (!(return_code=Graphics_library_read_pixels(*frame_data, frame_width,
+						frame_height, storage)))
 					{
 						DEALLOCATE(*frame_data);
 					}
@@ -4563,14 +4580,23 @@ graphics window on screen.
 				XtWindow(window->window_shell));
 #endif /* defined (MOTIF) */
 			/* Always use the window size if grabbing from screen */
-			Graphics_window_get_viewing_area_size(window, width, height);
+			Graphics_window_get_viewing_area_size(window, &frame_width, 
+				&frame_height);
+			if ((frame_width != *width) || (frame_height != *height))
+			{
+				display_message(WARNING_MESSAGE,
+					"Graphics_window_get_frame_pixels.  "
+					"When grabbing from the screen the width and height are forced to match the window size %d,%d", frame_width, frame_height);
+				*width = frame_width;
+				*height = frame_height;
+			}
 			Scene_viewer_redraw_now_with_overrides(
 				Graphics_window_get_Scene_viewer(window,/*pane_no*/0),
 				preferred_antialias, preferred_transparency_layers);
 			number_of_components =
 				Texture_storage_type_get_number_of_components(storage);
 			if (ALLOCATE(*frame_data, unsigned char,
-				number_of_components * (*width) * (*height)))
+				number_of_components * (frame_width) * (frame_height)))
 			{
 				switch (window->layout_mode)
 				{
@@ -4578,8 +4604,8 @@ graphics window on screen.
 					case GRAPHICS_WINDOW_LAYOUT_2D:
 					{
 						/* Only one pane */
-						if (!(return_code=Graphics_library_read_pixels(*frame_data, *width,
-							*height, storage)))
+						if (!(return_code=Graphics_library_read_pixels(*frame_data, frame_width,
+							frame_height, storage)))
 						{
 							DEALLOCATE(*frame_data);
 						}

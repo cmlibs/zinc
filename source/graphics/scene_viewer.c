@@ -1615,24 +1615,37 @@ all the dimensions are zero).
 
 int Scene_viewer_render_scene_in_viewport_with_overrides(
 	struct Scene_viewer *scene_viewer, int left, int bottom, int right, int top,
-	int antialias, int transparency_layers)
+	int antialias, int transparency_layers, int drawing_offscreen)
 /*******************************************************************************
-LAST MODIFIED : 17 September 2002
+LAST MODIFIED : 11 December 2002
 
 DESCRIPTION :
 Called to redraw the Scene_viewer scene after changes in the display lists or
 viewing transformations.  Uses the specified viewport to draw into (unless
 all the dimensions are zero).  If non_zero then the supplied <antialias> and
 <transparency_layers> are used for just this render.
+The <drawing_offscreen> flag is used by offscreen buffers to force the scene
+viewer to do a full Scene execute despite the current fast_changing state.
+The previous fast_changing state is kept so that the onscreen graphics are
+kept in a sensible state.
 ==============================================================================*/
 {
-	int return_code;
+	int keep_fast_changing_state, return_code;
 
 	ENTER(Scene_viewer_render_scene_in_viewport);
 	if (scene_viewer)
 	{
+		if (drawing_offscreen)
+		{
+			keep_fast_changing_state = scene_viewer->fast_changing;
+			scene_viewer->fast_changing = 0;
+		}
 		return_code=Scene_viewer_render_scene_private(scene_viewer, /*picking_on*/0,
 			left, bottom, right, top, antialias, transparency_layers);
+		if (drawing_offscreen)
+		{
+			scene_viewer->fast_changing = keep_fast_changing_state;
+		}
 	}
 	else
 	{
@@ -5673,6 +5686,8 @@ so should not be modified or deallocated.
 		*opengl_vendor=(char *)glGetString(GL_VENDOR);
 		*opengl_extensions=(char *)glGetString(GL_EXTENSIONS);
 
+		printf("%s\n", *opengl_extensions);
+
 		Graphics_buffer_get_visual_id(scene_viewer->graphics_buffer, visual_id);
 		Graphics_buffer_get_colour_buffer_depth(scene_viewer->graphics_buffer,
 			colour_buffer_depth);
@@ -5957,7 +5972,7 @@ and <transparency_layers> are used for just this render.
 		scene_viewer->fast_changing=0;
 		return_code=Scene_viewer_render_scene_in_viewport_with_overrides(
 			scene_viewer, /*left*/0, /*bottom*/0, /*right*/0, /*top*/0,
-			antialias, transparency_layers);
+			antialias, transparency_layers, /*drawing_offscreen*/0);
 		if (scene_viewer->swap_buffers)
 		{
 			Graphics_buffer_swap_buffers(scene_viewer->graphics_buffer);
@@ -6049,7 +6064,8 @@ scene viewer on screen.
 			Dm_buffer_glx_make_current(dmbuffer);
 			Scene_viewer_render_scene_in_viewport_with_overrides(scene_viewer,
 				/*left*/0, /*bottom*/0, /*right*/*width, /*top*/*height,
-				preferred_antialias, preferred_transparency_layers);
+				preferred_antialias, preferred_transparency_layers,
+				/*drawing_offscreen*/1);
 			number_of_components =
 				Texture_storage_type_get_number_of_components(storage);
 			if (ALLOCATE(*frame_data, unsigned char,
@@ -6077,7 +6093,8 @@ scene viewer on screen.
 			*height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
 			Scene_viewer_render_scene_in_viewport_with_overrides(scene_viewer,
 				/*left*/0, /*bottom*/0, /*right*/*width, /*top*/*height,
-				preferred_antialias, preferred_transparency_layers);
+				preferred_antialias, preferred_transparency_layers,
+				/*drawing_offscreen*/0);
 			number_of_components =
 				Texture_storage_type_get_number_of_components(storage);
 			if (ALLOCATE(*frame_data, unsigned char,

@@ -998,15 +998,19 @@ all the dimensions are zero).
 
 int Scene_viewer_render_scene_in_viewport_with_overrides(
 	struct Scene_viewer *scene_viewer, int left, int bottom, int right, int top,
-	int antialias, int transparency_layers);
+	int antialias, int transparency_layers, int drawing_offscreen);
 /*******************************************************************************
-LAST MODIFIED : 17 September 2002
+LAST MODIFIED : 11 December 2002
 
 DESCRIPTION :
 Called to redraw the Scene_viewer scene after changes in the display lists or
 viewing transformations.  Uses the specified viewport to draw into (unless
 all the dimensions are zero).  If non_zero then the supplied <antialias> and
 <transparency_layers> are used for just this render.
+The <drawing_offscreen> flag is used by offscreen buffers to force the scene
+viewer to do a full Scene execute despite the current fast_changing state.
+The previous fast_changing state is kept so that the onscreen graphics are
+kept in a sensible state.
 ==============================================================================*/
 
 int Scene_viewer_redraw(struct Scene_viewer *scene_viewer);
