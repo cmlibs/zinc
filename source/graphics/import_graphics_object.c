@@ -997,6 +997,14 @@ DESCRIPTION :
 									{
 										vectorsum[k]=0;
 									}
+									if (vertex_list[i].n_ptrs > MAXPTRS)
+									{
+										vertex_list[i].n_ptrs = MAXPTRS;
+										display_message(ERROR_MESSAGE,
+											"file_read_voltex_graphics_object_from_obj.  "
+											"More than %d vertices connected to vertex %d, unable to read correctly.",
+											MAXPTRS, i);
+									}
 									for (j=0;j<vertex_list[i].n_ptrs;j++)
 									{
 										triangle=vertex_list[i].ptrs[j];
