@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap.c
 
-LAST MODIFIED : 14 October 1999
+LAST MODIFIED : 7 December 1999
 
 DESCRIPTION :
 Main program for unemap.  Based on cmgui.
@@ -14,6 +14,7 @@ Main program for unemap.  Based on cmgui.
 #if defined (MOTIF)
 #include <Xm/MessageB.h>
 #endif /* defined (MOTIF) */
+#include "curve/control_curve.h"
 #include "general/debug.h"
 #include "general/error_handler.h"
 #if defined (NOT_ACQUISITION_ONLY)
@@ -243,7 +244,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* defined (WINDOWS) */
 /*******************************************************************************
-LAST MODIFIED : 25 July 1999
+LAST MODIFIED : 7 December 1999
 
 DESCRIPTION :
 Main program for unemap
@@ -261,6 +262,7 @@ Main program for unemap
 #if defined (NOT_ACQUISITION_ONLY)
 	struct Unemap_package *unemap_package;
 #if defined (UNEMAP_USE_NODES)
+	struct MANAGER(Control_curve) *control_curve_manager;
 	struct MANAGER(FE_field) *fe_field_manager;
 	struct MANAGER(GROUP(FE_element)) *element_group_manager;
 	struct MANAGER(FE_node) *node_manager;	
@@ -580,8 +582,9 @@ Main program for unemap
 		scene_manager=CREATE_MANAGER(Scene)();
 		light_model_manager=CREATE_MANAGER(Light_model)();
 		light_manager=CREATE_MANAGER(Light)();
+		control_curve_manager=CREATE_MANAGER(Control_curve)();
 		computed_field_package=CREATE(Computed_field_package)(
-			fe_field_manager,element_manager,texture_manager);
+			fe_field_manager,element_manager,texture_manager,control_curve_manager);
 		computed_field_manager=Computed_field_package_get_computed_field_manager(
 				computed_field_package);
 		spectrum_manager=CREATE_MANAGER(Spectrum)();
