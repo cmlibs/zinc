@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 31 August 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -4982,16 +4982,17 @@ Sets the <time> of the time field.
 static int map_show_map_electrodes(struct Unemap_package *package,
 	struct GT_object *glyph,struct Map *map,FE_value time,struct Region *region)
 /*******************************************************************************
-LAST MODIFIED : 1 September 2000 
+LAST MODIFIED : 11 November 2000 
 
 DESCRIPTION :
 Construct the settings and build the graphics objects for the glyphs.
 ==============================================================================*/
 {
 	char *group_name;
+	enum Glyph_scaling_mode glyph_scaling_mode;
 	int return_code;
 	struct Computed_field *computed_coordinate_field,*computed_field,*label_field,
-		*orientation_scale_field;
+		*orientation_scale_field, *variable_scale_field;
 	struct FE_field *map_electrode_position_field,*field;
 	struct Graphical_material *electrode_selected_material,*electrode_material;
 	struct GROUP(FE_element) *rig_element_group;
@@ -5062,7 +5063,8 @@ Construct the settings and build the graphics objects for the glyphs.
 					GT_element_settings_set_material(selected_settings,electrode_material);
 					/* use selected settings when selected, unselected when unselected(!) */	
 					GT_element_settings_set_select_mode(unselected_settings,GRAPHICS_DRAW_UNSELECTED);
-					GT_element_settings_set_select_mode(selected_settings,GRAPHICS_DRAW_SELECTED);				
+					GT_element_settings_set_select_mode(selected_settings,GRAPHICS_DRAW_SELECTED);
+					glyph_scaling_mode = GLYPH_SCALING_GENERAL;
 					glyph_centre[0]=0.0;
 					glyph_centre[1]=0.0;
 					glyph_centre[2]=0.0;
@@ -5073,6 +5075,7 @@ Construct the settings and build the graphics objects for the glyphs.
 					glyph_scale_factors[0]=1.0;
 					glyph_scale_factors[1]=1.0;
 					glyph_scale_factors[2]=1.0;
+					variable_scale_field=(struct Computed_field *)NULL;
 					computed_field_manager=get_unemap_package_Computed_field_manager(package);
 					computed_coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 						Computed_field_is_read_only_with_fe_field,(void *)
@@ -5081,10 +5084,12 @@ Construct the settings and build the graphics objects for the glyphs.
 						computed_coordinate_field);
 					GT_element_settings_set_coordinate_field(selected_settings,
 						computed_coordinate_field);
-					GT_element_settings_set_glyph_parameters(unselected_settings,glyph,
-						glyph_centre,glyph_size,orientation_scale_field,glyph_scale_factors);
-					GT_element_settings_set_glyph_parameters(selected_settings,glyph,
-						glyph_centre,glyph_size,orientation_scale_field,glyph_scale_factors);			 
+					GT_element_settings_set_glyph_parameters(unselected_settings, glyph,
+						glyph_scaling_mode, glyph_centre, glyph_size, orientation_scale_field,
+						glyph_scale_factors, variable_scale_field);
+					GT_element_settings_set_glyph_parameters(selected_settings, glyph,
+						glyph_scaling_mode, glyph_centre, glyph_size, orientation_scale_field,
+						glyph_scale_factors, variable_scale_field);			 
 					if(map->colour_electrodes_with_signal)
 					/* else electrode takes colour of electrode_material*/
 					{
@@ -5401,7 +5406,7 @@ region(s)
 static int draw_torso_arm_labels(struct Map_drawing_information *drawing_information,
 	struct Region *region)/*FOR AJP*/
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Creates a pair of arm labels, and adds to the scene.
@@ -5422,6 +5427,7 @@ Creates a pair of arm labels, and adds to the scene.
 	Triple *axis2_list=(Triple *)NULL;
 	Triple *axis3_list=(Triple *)NULL;
 	Triple *point_list=(Triple *)NULL;
+	Triple *scale_list=(Triple *)NULL;
 
 	ENTER(draw_torso_arm_labels);
 	if(region&&drawing_information)
@@ -5444,6 +5450,7 @@ Creates a pair of arm labels, and adds to the scene.
 				(glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",glyph_list))&&
 				ALLOCATE(point_list,Triple,2)&&ALLOCATE(axis1_list,Triple,2)&&
 				ALLOCATE(axis2_list,Triple,2)&&ALLOCATE(axis3_list,Triple,2)&&
+				ALLOCATE(scale_list,Triple,2)&&
 				ALLOCATE(labels,char *,2)&&ALLOCATE(left,char,5)&&ALLOCATE(right,char,6))
 			{
 				strcpy(left,"Left");
@@ -5465,6 +5472,9 @@ Creates a pair of arm labels, and adds to the scene.
 				(*axis3_list)[0]=0.0;
 				(*axis3_list)[1]=0.0;
 				(*axis3_list)[2]=1;
+				(*scale_list)[0]=1.0;
+				(*scale_list)[1]=1.0;
+				(*scale_list)[2]=1.0;
 
 				(*(point_list+1))[0]=-x_offset;
 				(*(point_list+1))[1]=y_offset;
@@ -5478,14 +5488,18 @@ Creates a pair of arm labels, and adds to the scene.
 				(*(axis3_list+1))[0]=0.0;
 				(*(axis3_list+1))[1]=0.0;
 				(*(axis3_list+1))[2]=1;
+				(*(scale_list+1))[0]=1.0;
+				(*(scale_list+1))[1]=1.0;
+				(*(scale_list+1))[2]=1.0;
 				if (!(glyph_set=CREATE(GT_glyph_set)(2,point_list,axis1_list,axis2_list,
-					axis3_list,glyph,labels,g_NO_DATA,(GTDATA *)NULL,
+					axis3_list,scale_list,glyph,labels,g_NO_DATA,(GTDATA *)NULL,
 					/*object_name*/0,/*names*/(int *)NULL)))
 				{
 					DEALLOCATE(point_list);
 					DEALLOCATE(axis1_list);
 					DEALLOCATE(axis2_list);
 					DEALLOCATE(axis3_list);
+					DEALLOCATE(scale_list);
 					DEALLOCATE(labels);
 					DEALLOCATE(left);
 					DEALLOCATE(right);
