@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.h
 
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 4 April 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -47,7 +47,7 @@ Global types
 */
 enum Scene_graphical_element_mode
 /*******************************************************************************
-LAST MODIFIED : 4 February 2000
+LAST MODIFIED : 4 April 2000
 
 DESCRIPTION :
 Controls whether graphical element groups are placed in the scene and if so,
@@ -62,6 +62,7 @@ for automatic creation of choose_enumerator widgets.
 	GRAPHICAL_ELEMENT_INVISIBLE,
 	GRAPHICAL_ELEMENT_EMPTY,
 	GRAPHICAL_ELEMENT_LINES,
+	GRAPHICAL_ELEMENT_MANUAL,
 	GRAPHICAL_ELEMENT_MODE_AFTER_LAST
 }; /* enum Scene_graphical_element_mode */
 
@@ -984,6 +985,20 @@ LAST MODIFIED : 20 November 1998
 
 DESCRIPTION :
 Removes <child_scene> from the list of scenes in <scene>.
+==============================================================================*/
+
+int Scene_add_graphical_finite_element(struct Scene *scene,
+	struct GROUP(FE_element) *element_group,char *scene_object_name);
+/*******************************************************************************
+LAST MODIFIED : 4 April 2000
+
+DESCRIPTION :
+Adds a graphical <element_group> to the <scene> with some default settings
+depending on the scene's graphical_element_mode.
+The optional <scene_object_name> allows the name of the scene_object containing
+the group to be overridden from the group name; note that this does not allow
+the same element group to be added twice.
+???RC Could allow multiple renditions for same group in future.
 ==============================================================================*/
 
 int Scene_update_time_behaviour(struct Scene *scene, struct GT_object *graphics_object);

@@ -10345,7 +10345,7 @@ DESCRIPTION :
 static int execute_command_gfx_draw(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 16 June 1999
+LAST MODIFIED : 4 April 2000
 
 DESCRIPTION :
 Executes a GFX DRAW command.
@@ -10353,20 +10353,12 @@ Executes a GFX DRAW command.
 {
 	char *scene_object_name,*time_object_name;
 	struct GT_object *graphics_object;
-	int i,return_code,position;
+	int return_code,position;
 	struct Cmiss_command_data *command_data;
+	struct GROUP(FE_element) *element_group;
 	struct Scene *child_scene,*scene;
 	struct Scene_add_graphics_object_iterator_data data;
-	static struct Modifier_entry option_table[]=
-	{
-		{"as",NULL,(void *)1,set_name},
-		{"child_scene",NULL,NULL,set_Scene},
-		{"graphics_object",NULL,(void *)1,set_Graphics_object},
-		{"position",NULL,(void *)1,set_int},
-		{"scene",NULL,NULL,set_Scene},
-		{"time_object",NULL,(void *)1,set_name},
-		{NULL,NULL,NULL,set_Graphics_object}
-	};
+	struct Option_table *option_table;
 
 	ENTER(execute_command_gfx_draw);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -10376,48 +10368,50 @@ Executes a GFX DRAW command.
 		{
 			/* initialize defaults */
 			graphics_object=(struct GT_object *)NULL;
+			element_group=(struct GROUP(FE_element) *)NULL;
 			scene_object_name=(char *)NULL;
 			time_object_name=(char *)NULL;
 			position=0;
 			scene=ACCESS(Scene)(command_data->default_scene);
 			child_scene=(struct Scene *)NULL;
-			i=0;
+
+			option_table=CREATE(Option_table)();
 			/* as */
-			(option_table[i]).to_be_modified= &scene_object_name;
-			i++;
+			Option_table_add_entry(option_table,"as",&scene_object_name,
+				(void *)1,set_name);
 			/* child_scene */
-			(option_table[i]).to_be_modified= &child_scene;
-			(option_table[i]).user_data=command_data->scene_manager;
-			i++;
+			Option_table_add_entry(option_table,"child_scene",&child_scene,
+				command_data->scene_manager,set_Scene);
 			/* graphics_object */
-			(option_table[i]).to_be_modified= &graphics_object;
-			(option_table[i]).user_data=command_data->graphics_object_list;
-			i++;
+			Option_table_add_entry(option_table,"graphics_object",&graphics_object,
+				command_data->graphics_object_list,set_Graphics_object);
+			/* group */
+			Option_table_add_entry(option_table,"group",&element_group,
+				command_data->element_group_manager,set_FE_element_group);
 			/* position */
-			(option_table[i]).to_be_modified= &position;
-			i++;
+			Option_table_add_entry(option_table,"position",&position,
+				(void *)1,set_int);
 			/* scene */
-			(option_table[i]).to_be_modified= &scene;
-			(option_table[i]).user_data=command_data->scene_manager;
-			i++;
+			Option_table_add_entry(option_table,"scene",&scene,
+				command_data->scene_manager,set_Scene);
 			/* time_object */
-			(option_table[i]).to_be_modified= &time_object_name;
-			i++;
-			/* default (graphics_object) */
-			(option_table[i]).to_be_modified= &graphics_object;
-			(option_table[i]).user_data=command_data->graphics_object_list;
-			i++;
-			return_code=process_multiple_options(state,option_table);
-			if (child_scene&&graphics_object)
+			Option_table_add_entry(option_table,"time_object",&time_object_name,
+				(void *)1,set_name);
+			/* default when token omitted (graphics_object) */
+			Option_table_add_entry(option_table,(char *)NULL,&graphics_object,
+				command_data->graphics_object_list,set_Graphics_object);
+			return_code=Option_table_multi_parse(option_table,state);
+			if ((child_scene&&graphics_object) || (graphics_object&&element_group) ||
+				(element_group&&child_scene))
 			{
 				display_message(ERROR_MESSAGE,"execute_command_gfx_draw.  "
-					"Specify only one of child_scene|graphics_object");
+					"Specify only one of child_scene|graphics_object|group");
 				return_code=0;
 			}
 			if (child_scene&&time_object_name)
 			{
-				display_message(ERROR_MESSAGE,
-			"execute_command_gfx_draw.  Time objects are not associated with scenes");
+				display_message(ERROR_MESSAGE,"execute_command_gfx_draw.  "
+					"Time objects may not be associated with a child_scene");
 				return_code=0;
 			}
 			/* no errors, not asking for help */
@@ -10453,25 +10447,32 @@ Executes a GFX DRAW command.
 						}
 					}
 				}
+				else if (child_scene)
+				{
+					if (!scene_object_name)
+					{
+						GET_NAME(Scene)(child_scene,&scene_object_name);
+					}
+					return_code=Scene_add_child_scene(scene,child_scene,0,
+						scene_object_name,command_data->scene_manager);
+				}
+				else if (element_group)
+				{
+					return_code=Scene_add_graphical_finite_element(scene,element_group,
+						scene_object_name);
+				}
 				else
 				{
-					if (child_scene)
-					{
-						if (!scene_object_name)
-						{
-							GET_NAME(Scene)(child_scene,&scene_object_name);
-						}
-						return_code=Scene_add_child_scene(scene,child_scene,0,
-							scene_object_name,command_data->scene_manager);
-					}
-					else
-					{
-						return_code=FOR_EACH_OBJECT_IN_LIST(GT_object)(
-							Scene_add_graphics_object_iterator,(void *)&data,
-							command_data->graphics_object_list);
-					}
+					return_code=FOR_EACH_OBJECT_IN_LIST(GT_object)(
+						Scene_add_graphics_object_iterator,(void *)&data,
+						command_data->graphics_object_list);
 				}
 			} /* parse error,help */
+			DESTROY(Option_table)(&option_table);
+			if (element_group)
+			{
+				DEACCESS(GROUP(FE_element))(&element_group);
+			}
 			if (scene)
 			{
 				DEACCESS(Scene)(&scene);

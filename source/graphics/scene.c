@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 4 April 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -1280,244 +1280,10 @@ scene_object.
 	return (return_code);
 } /* Scene_remove_scene_object */
 
-static int Scene_add_graphical_finite_element(struct Scene *scene,
-	struct GROUP(FE_element) *element_group)
-/*******************************************************************************
-LAST MODIFIED : 28 March 2000
-
-DESCRIPTION :
-Adds a graphical <element_group> to the <scene> with some default settings.
-==============================================================================*/
-{
-	char *element_group_name;
-	enum GT_visibility_type visibility;
-	int default_value,maximum_value,return_code;
-	struct Computed_field *orientation_scale_field;
-	struct Element_discretization element_discretization;
-	struct GROUP(FE_node) *data_group,*node_group;
-	struct GT_object *glyph;
-	struct GT_element_group *gt_element_group;
-	struct GT_element_settings *settings;
-	struct Scene_object *scene_object;
-	Triple glyph_centre,glyph_size,glyph_scale_factors;
-
-	ENTER(Scene_add_graphical_finite_element);
-	if (scene&&element_group)
-	{
-		if (!Scene_has_graphical_element_group(scene,element_group))
-		{
-			if (GET_NAME(GROUP(FE_element))(element_group,&element_group_name))
-			{
-				/* Make the GT_element_group: */
-				/* First retrieve node group of the same name as the element group.
-					Retrieve/create data group as necessary */
-				node_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(
-					element_group_name,scene->node_group_manager);
-				if (!(data_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(
-					element_group_name,scene->data_group_manager)))
-				{
-					if (data_group=CREATE(GROUP(FE_node))(element_group_name))
-					{
-						if (!ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(data_group,
-							scene->data_group_manager))
-						{
-							DESTROY(GROUP(FE_node))(&data_group);
-						}
-					}
-				}
-				if (node_group&&data_group)
-				{
-					if (gt_element_group=CREATE(GT_element_group)(element_group,
-						node_group,data_group,scene->element_point_ranges_selection,
-						scene->element_selection,scene->node_selection))
-					{
-						if (!(scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-							Scene_object_has_name, (void *)element_group_name,
-							scene->scene_object_list)))
-						{
-							if ((scene_object=create_Scene_object_with_Graphical_element_group(
-								element_group_name, gt_element_group, scene)) && 
-								Scene_add_scene_object(scene, scene_object, /*position*/0))
-							{
-								/* give the new group a default coordinate field */
-								/*???RC later get this from region */
-								GT_element_group_set_default_coordinate_field(
-									gt_element_group,FIND_BY_IDENTIFIER_IN_MANAGER(
-										Computed_field,name)("default_coordinate",
-											Computed_field_package_get_computed_field_manager(
-												scene->computed_field_package)));
-								/* set default circle and element discretization in group */
-								read_circle_discretization_defaults(&default_value,
-									&maximum_value,scene->user_interface);
-								GT_element_group_set_circle_discretization(gt_element_group,
-									default_value,scene->user_interface);
-								read_element_discretization_defaults(&default_value,
-									&maximum_value,scene->user_interface);
-								element_discretization.number_in_xi1=default_value;
-								element_discretization.number_in_xi2=default_value;
-								element_discretization.number_in_xi3=default_value;
-								GT_element_group_set_element_discretization(gt_element_group,
-									&element_discretization,scene->user_interface);
-								switch (scene->graphical_element_mode)
-								{
-									case GRAPHICAL_ELEMENT_INVISIBLE:
-									{
-										visibility=g_INVISIBLE;
-									} break;
-									case GRAPHICAL_ELEMENT_EMPTY:
-									{
-										visibility=g_VISIBLE;
-									} break;
-									case GRAPHICAL_ELEMENT_LINES:
-									{
-										/* add default settings - wireframe (line) rendition */
-										if (settings=CREATE(GT_element_settings)(
-											GT_ELEMENT_SETTINGS_LINES))
-										{
-											GT_element_settings_set_material(settings,
-												scene->default_material);
-											GT_element_settings_set_selected_material(settings,
-												FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-													"default_selected",
-													scene->graphical_material_manager));
-											if (GT_element_group_add_settings(gt_element_group,
-												settings,0))
-											{
-												/* if the group has data, add data_points to the
-													 rendition */
-												if (FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
-													(GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL,
-													(void *)NULL,data_group))
-												{
-													if (settings=CREATE(GT_element_settings)(
-														GT_ELEMENT_SETTINGS_DATA_POINTS))
-													{
-														GT_element_settings_set_material(settings,
-															scene->default_material);
-														GT_element_settings_set_selected_material(settings,
-															FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,
-																name)("default_selected",
-																	scene->graphical_material_manager));
-														/* set the glyph to "point" */
-														GT_element_settings_get_glyph_parameters(settings,
-															&glyph,glyph_centre,glyph_size,
-															&orientation_scale_field,glyph_scale_factors);
-														glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-															"point",scene->glyph_list);
-														GT_element_settings_set_glyph_parameters(settings,
-															glyph,glyph_centre,glyph_size,
-															orientation_scale_field,glyph_scale_factors);
-														if (!GT_element_group_add_settings(gt_element_group,
-															settings,0))
-														{
-															DESTROY(GT_element_settings)(&settings);
-														}
-													}
-												}
-												/* build graphics for default rendition */
-												GT_element_group_build_graphics_objects(
-													gt_element_group,(struct FE_element *)NULL,
-													(struct FE_node *)NULL);
-											}
-											else
-											{
-												display_message(ERROR_MESSAGE,
-													"Scene_add_graphical_finite_element.  "
-													"Could not add default settings");
-												DESTROY(GT_element_settings)(&settings);
-											}
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"Scene_add_graphical_finite_element.  "
-												"Could not create default settings");
-										}
-										visibility=g_VISIBLE;
-										scene->display_list_current=0;
-									} break;
-									default:
-									{
-										display_message(ERROR_MESSAGE,
-											"Scene_add_graphical_finite_element.  "
-											"Invalid graphical element mode %s",
-											Scene_graphical_element_mode_string(
-												scene->graphical_element_mode));
-										visibility=g_INVISIBLE;
-									} break;
-								}
-								/* set the visibility of the new GFE */
-								if (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-									Scene_object_has_element_group,(void *)element_group,
-									scene->scene_object_list))
-								{
-									return_code=
-										Scene_object_set_visibility(scene_object,visibility);
-								}
-								else
-								{
-									return_code=0;
-								}
-							}
-							else
-							{
-								return_code=0;
-							}
-						}
-						else
-						{
-							display_message(WARNING_MESSAGE,
-								"Scene_add_graphical_finite_element.  "
-								"Object with that name already in scene");
-							return_code=1;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"Scene_add_graphical_finite_element.  "
-							"Could not make gt_element_group");
-						return_code=0;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Scene_add_graphical_finite_element.  "
-						"Could not get node_group and/or data_group of same name");
-					return_code=0;
-				}
-				DEALLOCATE(element_group_name);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"Scene_add_graphical_finite_element.  "
-					"Could not get element group name");
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Scene_add_graphical_finite_element.  "
-				"Element group already in scene");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_add_graphical_finite_element.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_add_graphical_finite_element */
-
 int element_group_to_scene(struct GROUP(FE_element) *element_group,
 	void *scene_void)
 /*******************************************************************************
-LAST MODIFIED : 8 December 1997
+LAST MODIFIED : 4 April 2000
 
 DESCRIPTION :
 Iterator function for adding graphical element_groups to <scene>.
@@ -1532,7 +1298,7 @@ First checks <element_group> not already in scene.
 	{
 		if (!Scene_has_graphical_element_group(scene,element_group))
 		{
-			Scene_add_graphical_finite_element(scene,element_group);
+			Scene_add_graphical_finite_element(scene,element_group,(char *)NULL);
 		}
 		return_code=1;
 	}
@@ -1661,7 +1427,7 @@ if any of the affected groups are visible.
 static void Scene_element_group_change(
 	struct MANAGER_MESSAGE(GROUP(FE_element)) *message,void *scene_void)
 /*******************************************************************************
-LAST MODIFIED : 22 April 1999
+LAST MODIFIED : 4 April 2000
 
 DESCRIPTION :
 Element group manager change callback. Adds/removes graphical element groups
@@ -1681,27 +1447,28 @@ from <scene> in response to manager messages.
 		{
 			case MANAGER_CHANGE_ALL(GROUP(FE_element)):
 			{
-				/* draw any new element_groups on window */
-				FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_element))(
-					element_group_to_scene,(void *)scene,
-					scene->element_group_manager);
+				if (GRAPHICAL_ELEMENT_MANUAL != scene->graphical_element_mode)
+				{
+					/* draw any new element_groups on window */
+					FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_element))(
+						element_group_to_scene,(void *)scene,
+						scene->element_group_manager);
+				}
 				/* remove GT_element_groups for unmanaged element groups */
-				/*???RC.  Following not tested!!!! */
 				while (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
 					Scene_object_has_unmanaged_element_group,
 					(void *)scene->element_group_manager,scene->scene_object_list))
 				{
 					Scene_remove_scene_object(scene,scene_object);
 				}
-#if defined (DEBUG)
-				/*???debug */
-				printf("  Updating %s scene after all element groups modified\n",
-					scene->name);
-#endif /* defined (DEBUG) */
 			} break;
 			case MANAGER_CHANGE_ADD(GROUP(FE_element)):
 			{
-				Scene_add_graphical_finite_element(scene,message->object_changed);
+				if (GRAPHICAL_ELEMENT_MANUAL != scene->graphical_element_mode)
+				{
+					Scene_add_graphical_finite_element(scene,message->object_changed,
+						(char *)NULL);
+				}
 			} break;
 			case MANAGER_CHANGE_OBJECT(GROUP(FE_element)):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(GROUP(FE_element)):
@@ -1709,7 +1476,8 @@ from <scene> in response to manager messages.
 				if ((scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
 					Scene_object_has_element_group,(void *)message->object_changed,
 					scene->scene_object_list))&&
-					(gt_element_group=Scene_object_get_graphical_element_group(scene_object)))
+					(gt_element_group=
+						Scene_object_get_graphical_element_group(scene_object)))
 				{
 					/* everything to do with elements changed */
 					for_each_settings_in_GT_element_group(gt_element_group,
@@ -1734,8 +1502,11 @@ from <scene> in response to manager messages.
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,"Scene_element_group_change.  "
-						"Modify.  Missing element group on scene");
+					if (GRAPHICAL_ELEMENT_MANUAL != scene->graphical_element_mode)
+					{
+						display_message(ERROR_MESSAGE,"Scene_element_group_change.  "
+							"Modify.  Missing element group on scene");
+					}
 				}
 			} break;
 			case MANAGER_CHANGE_DELETE(GROUP(FE_element)):
@@ -1751,8 +1522,11 @@ from <scene> in response to manager messages.
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,"Scene_element_group_change.  "
-						"Delete.  Missing element group on scene");
+					if (GRAPHICAL_ELEMENT_MANUAL != scene->graphical_element_mode)
+					{
+						display_message(ERROR_MESSAGE,"Scene_element_group_change.  "
+							"Delete.  Missing element group on scene");
+					}
 				}
 			} break;
 			case MANAGER_CHANGE_IDENTIFIER(GROUP(FE_element)):
@@ -3160,6 +2934,10 @@ The returned string must not be DEALLOCATEd!
 		case GRAPHICAL_ELEMENT_LINES:
 		{
 			return_string="g_element_lines";
+		} break;
+		case GRAPHICAL_ELEMENT_MANUAL:
+		{
+			return_string="manual_g_element";
 		} break;
 		default:
 		{
@@ -4846,7 +4624,7 @@ int Scene_set_graphical_element_mode(struct Scene *scene,
 	struct FE_node_selection *node_selection,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 4 April 2000
 
 DESCRIPTION :
 Sets the mode controlling how graphical element groups are displayed in the
@@ -4965,10 +4743,13 @@ material and spectrum.
 						scene->element_selection=element_selection;
 						scene->node_selection=node_selection;
 						scene->user_interface=user_interface;
-						/* add all current element_groups to new scene */
-						FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_element))(
-							element_group_to_scene,(void *)scene,
-							scene->element_group_manager);
+						if (GRAPHICAL_ELEMENT_MANUAL != graphical_element_mode)
+						{
+							/* add all current element_groups to new scene */
+							FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_element))(
+								element_group_to_scene,(void *)scene,
+								scene->element_group_manager);
+						}
 						/* register for any element, element_group, node, node_group and
 							 computed_field changes so GFEs automatically created and
 							 updated */
@@ -6596,7 +6377,7 @@ DESCRIPTION :
 Adds <child_scene> to the list of objects on <scene> at <position>.
 A position of 1 indicates the top of the list, while less than 1 or greater
 than the number of graphics objects in the list puts it at the end.
-The <name> is used for the scene_object and must be unique for the scene.
+The optional <scene_object_name> is used for the scene_object and must be unique for the scene.
 ==============================================================================*/
 {
 	int return_code;
@@ -6606,8 +6387,7 @@ The <name> is used for the scene_object and must be unique for the scene.
 	if (scene&&child_scene&&name)
 	{
 		if (!(scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-			Scene_object_has_name, (void *)name,
-			scene->scene_object_list)))
+			Scene_object_has_name, (void *)name, scene->scene_object_list)))
 		{
 			if (scene_object=create_Scene_object_with_Scene(
 				name, child_scene, scene, scene_manager))
@@ -6674,6 +6454,259 @@ Removes <child_scene> from the list of scenes in <scene>.
 
 	return (return_code);
 } /* Scene_remove_child_scene */
+
+int Scene_add_graphical_finite_element(struct Scene *scene,
+	struct GROUP(FE_element) *element_group,char *scene_object_name)
+/*******************************************************************************
+LAST MODIFIED : 4 April 2000
+
+DESCRIPTION :
+Adds a graphical <element_group> to the <scene> with some default settings
+depending on the scene's graphical_element_mode.
+The optional <scene_object_name> allows the name of the scene_object containing
+the group to be overridden from the group name; note that this does not allow
+the same element group to be added twice.
+???RC Could allow multiple renditions for same group in future.
+==============================================================================*/
+{
+	char *element_group_name;
+	enum GT_visibility_type visibility;
+	int default_value,maximum_value,return_code;
+	struct Computed_field *orientation_scale_field;
+	struct Element_discretization element_discretization;
+	struct GROUP(FE_node) *data_group,*node_group;
+	struct GT_object *glyph;
+	struct GT_element_group *gt_element_group;
+	struct GT_element_settings *settings;
+	struct Scene_object *scene_object;
+	Triple glyph_centre,glyph_size,glyph_scale_factors;
+
+	ENTER(Scene_add_graphical_finite_element);
+	if (scene&&element_group)
+	{
+		if (scene->element_manager)
+		{
+			if (!Scene_has_graphical_element_group(scene,element_group))
+			{
+				if (GET_NAME(GROUP(FE_element))(element_group,&element_group_name))
+				{
+					if (!scene_object_name)
+					{
+						scene_object_name=element_group_name;
+					}
+					/* Make the GT_element_group: */
+					/* First retrieve node group of the same name as the element group.
+						 Retrieve/create data group as necessary */
+					node_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(
+						element_group_name,scene->node_group_manager);
+					if (!(data_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(
+						element_group_name,scene->data_group_manager)))
+					{
+						if (data_group=CREATE(GROUP(FE_node))(element_group_name))
+						{
+							if (!ADD_OBJECT_TO_MANAGER(GROUP(FE_node))(data_group,
+								scene->data_group_manager))
+							{
+								DESTROY(GROUP(FE_node))(&data_group);
+							}
+						}
+					}
+					if (node_group&&data_group)
+					{
+						if (gt_element_group=CREATE(GT_element_group)(element_group,
+							node_group,data_group,scene->element_point_ranges_selection,
+							scene->element_selection,scene->node_selection))
+						{
+							if (!(scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
+								Scene_object_has_name, (void *)scene_object_name,
+								scene->scene_object_list)))
+							{
+								if ((scene_object=create_Scene_object_with_Graphical_element_group(
+									scene_object_name, gt_element_group, scene)) && 
+									Scene_add_scene_object(scene, scene_object, /*position*/0))
+								{
+									/* give the new group a default coordinate field */
+									/*???RC later get this from region */
+									GT_element_group_set_default_coordinate_field(
+										gt_element_group,FIND_BY_IDENTIFIER_IN_MANAGER(
+											Computed_field,name)("default_coordinate",
+												Computed_field_package_get_computed_field_manager(
+													scene->computed_field_package)));
+									/* set default circle and element discretization in group */
+									read_circle_discretization_defaults(&default_value,
+										&maximum_value,scene->user_interface);
+									GT_element_group_set_circle_discretization(gt_element_group,
+										default_value,scene->user_interface);
+									read_element_discretization_defaults(&default_value,
+										&maximum_value,scene->user_interface);
+									element_discretization.number_in_xi1=default_value;
+									element_discretization.number_in_xi2=default_value;
+									element_discretization.number_in_xi3=default_value;
+									GT_element_group_set_element_discretization(gt_element_group,
+										&element_discretization,scene->user_interface);
+									switch (scene->graphical_element_mode)
+									{
+										case GRAPHICAL_ELEMENT_INVISIBLE:
+										{
+											visibility=g_INVISIBLE;
+										} break;
+										case GRAPHICAL_ELEMENT_EMPTY:
+										case GRAPHICAL_ELEMENT_MANUAL:
+										{
+											visibility=g_VISIBLE;
+										} break;
+										case GRAPHICAL_ELEMENT_LINES:
+										{
+											/* add default settings - wireframe (line) rendition */
+											if (settings=CREATE(GT_element_settings)(
+												GT_ELEMENT_SETTINGS_LINES))
+											{
+												GT_element_settings_set_material(settings,
+													scene->default_material);
+												GT_element_settings_set_selected_material(settings,
+													FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+														"default_selected",
+														scene->graphical_material_manager));
+												if (GT_element_group_add_settings(gt_element_group,
+													settings,0))
+												{
+													/* if the group has data, add data_points to the
+														 rendition */
+													if (FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+														(GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL,
+														(void *)NULL,data_group))
+													{
+														if (settings=CREATE(GT_element_settings)(
+															GT_ELEMENT_SETTINGS_DATA_POINTS))
+														{
+															GT_element_settings_set_material(settings,
+																scene->default_material);
+															GT_element_settings_set_selected_material(settings,
+																FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,
+																	name)("default_selected",
+																		scene->graphical_material_manager));
+															/* set the glyph to "point" */
+															GT_element_settings_get_glyph_parameters(settings,
+																&glyph,glyph_centre,glyph_size,
+																&orientation_scale_field,glyph_scale_factors);
+															glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
+																"point",scene->glyph_list);
+															GT_element_settings_set_glyph_parameters(settings,
+																glyph,glyph_centre,glyph_size,
+																orientation_scale_field,glyph_scale_factors);
+															if (!GT_element_group_add_settings(gt_element_group,
+																settings,0))
+															{
+																DESTROY(GT_element_settings)(&settings);
+															}
+														}
+													}
+													/* build graphics for default rendition */
+													GT_element_group_build_graphics_objects(
+														gt_element_group,(struct FE_element *)NULL,
+														(struct FE_node *)NULL);
+												}
+												else
+												{
+													display_message(ERROR_MESSAGE,
+														"Scene_add_graphical_finite_element.  "
+														"Could not add default settings");
+													DESTROY(GT_element_settings)(&settings);
+												}
+											}
+											else
+											{
+												display_message(ERROR_MESSAGE,
+													"Scene_add_graphical_finite_element.  "
+													"Could not create default settings");
+											}
+											visibility=g_VISIBLE;
+											scene->display_list_current=0;
+										} break;
+										default:
+										{
+											display_message(ERROR_MESSAGE,
+												"Scene_add_graphical_finite_element.  "
+												"Invalid graphical element mode %s",
+												Scene_graphical_element_mode_string(
+													scene->graphical_element_mode));
+											visibility=g_INVISIBLE;
+										} break;
+									}
+									/* set the visibility of the new GFE */
+									if (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
+										Scene_object_has_element_group,(void *)element_group,
+										scene->scene_object_list))
+									{
+										return_code=
+											Scene_object_set_visibility(scene_object,visibility);
+									}
+									else
+									{
+										return_code=0;
+									}
+								}
+								else
+								{
+									return_code=0;
+								}
+							}
+							else
+							{
+								display_message(WARNING_MESSAGE,
+									"Scene_add_graphical_finite_element.  "
+									"Object with that name already in scene");
+								return_code=1;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Scene_add_graphical_finite_element.  "
+								"Could not make gt_element_group");
+							return_code=0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Scene_add_graphical_finite_element.  "
+							"Could not get node_group and/or data_group of same name");
+						return_code=0;
+					}
+					DEALLOCATE(element_group_name);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"Scene_add_graphical_finite_element.  "
+						"Could not get element group name");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"Scene_add_graphical_finite_element.  "
+					"Element group already in scene");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Scene_add_graphical_finite_element.  "
+				"Graphical elements not enabled");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_add_graphical_finite_element.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_add_graphical_finite_element */
 
 int Scene_update_time_behaviour(struct Scene *scene,
 	struct GT_object *graphics_object)
