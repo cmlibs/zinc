@@ -602,7 +602,6 @@ Evaluate the fields cache at the node.
 	LEAVE;
 
 	return (return_code);
-	return (return_code);
 } /* Computed_field_image_correlation_evaluate_cache_at_node */
 
 static int Computed_field_image_correlation_evaluate_cache_in_element(
@@ -737,6 +736,8 @@ DESCRIPTION :
 			"    texture coordinate field : %s\n",field->source_fields[1]->name);
 		display_message(INFORMATION_MESSAGE,
 			"    template field : %s\n", field->source_fields[2]->name);
+		display_message(INFORMATION_MESSAGE,
+			"    dimension : %d\n", data->dimension);
 		return_code = 1;
 	}
 	else
