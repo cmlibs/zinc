@@ -1082,7 +1082,7 @@ DESCRIPTION :
 				Event_dispatcher_simple_descriptor_dispatch_callback,
 				data);
 #else /* defined (USE_GENERIC_EVENT_DISPATCHER) */
-			if (callback = CREATE(Event_dispatcher_descriptor_callback)(user_data))
+			if (callback = CREATE(Event_dispatcher_descriptor_callback)(data))
 			{
 				if (!(ADD_OBJECT_TO_LIST(Event_dispatcher_descriptor_callback)(
 							callback, event_dispatcher->descriptor_list)))
