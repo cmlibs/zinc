@@ -430,43 +430,6 @@ necessary.
 				}
 			}
 		}
-#if defined (OLD_CODE)
-		if (XmToggleButtonGadgetGetState(map_dialog->contours.show_toggle))
-		{
-			if (map->contours_option!=SHOW_CONTOURS)
-			{
-				map_settings_changed=1;
-				map->contours_option=SHOW_CONTOURS;
-			}
-		}
-		else
-		{
-			if (map->contours_option!=HIDE_CONTOURS)
-			{
-				map_settings_changed=1;
-				map->contours_option=HIDE_CONTOURS;
-			}
-		}
-		XtVaGetValues(map_dialog->contours.thickness_option_menu,
-			XmNmenuHistory,&option_widget,
-			NULL);
-		if (option_widget==map_dialog->contours.thickness_option.constant)
-		{
-			contour_thickness=CONSTANT_THICKNESS;
-		}
-		else
-		{
-			if (option_widget==map_dialog->contours.thickness_option.variable)
-			{
-				contour_thickness=VARIABLE_THICKNESS;
-			}
-		}
-		if (map->contour_thickness!=contour_thickness)
-		{
-			map->contour_thickness=contour_thickness;
-			map_settings_changed=1;
-		}
-#endif /* defined (OLD_CODE) */
 		XtVaGetValues(map_dialog->contours.type_option_menu,
 			XmNmenuHistory,&option_widget,
 			NULL);
@@ -502,70 +465,6 @@ necessary.
 				map_settings_changed=1;
 			}
 		}
-#if defined (OLD_CODE)
-		value_string=(char *)NULL;
-		XtVaGetValues((map_dialog->contours.maximum_value),
-			XmNvalue,&value_string,
-			NULL);
-		if (1==sscanf(value_string,"%f",&contour_maximum))
-		{
-			if (contour_maximum<map->minimum_value)
-			{
-				contour_maximum=map->minimum_value;
-			}
-			else
-			{
-				if (contour_maximum>map->maximum_value)
-				{
-					contour_maximum=map->maximum_value;
-				}
-			}
-		}
-		else
-		{
-			contour_maximum=map_dialog->maximum_contour;
-		}
-		XtFree(value_string);
-		value_string=(char *)NULL;
-		XtVaGetValues((map_dialog->contours.minimum_value),
-			XmNvalue,&value_string,
-			NULL);
-		if (1==sscanf(value_string,"%f",&contour_minimum))
-		{
-			if (contour_minimum<map->minimum_value)
-			{
-				contour_minimum=map->minimum_value;
-			}
-			else
-			{
-				if (contour_minimum>map->maximum_value)
-				{
-					contour_minimum=map->maximum_value;
-				}
-			}
-		}
-		else
-		{
-			contour_minimum=map_dialog->minimum_contour;
-		}
-		XtFree(value_string);
-		if (contour_minimum>contour_maximum)
-		{
-			value=contour_minimum;
-			contour_minimum=contour_maximum;
-			contour_maximum=value;
-		}
-		if (contour_minimum!=map_dialog->minimum_contour)
-		{
-			map->contour_minimum=contour_minimum;
-			map_settings_changed=1;
-		}
-		if (contour_maximum!=map_dialog->maximum_contour)
-		{
-			map->contour_maximum=contour_maximum;
-			map_settings_changed=1;
-		}
-#endif /* defined (OLD_CODE) */
 		value_string=(char *)NULL;
 		XtVaGetValues((map_dialog->range.maximum_value),
 			XmNvalue,&value_string,
@@ -5076,12 +4975,7 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 } /* update_mapping_window_menu */
 
 int highlight_electrode_or_auxiliar(struct Device *device,int electrode_number,
-	int auxiliary_number,
-#if defined (OLD_CODE)
-	int start_data,int end_data,
-#endif /* defined (OLD_CODE) */
-	struct Map *map,
-	struct Mapping_window *mapping)
+	int auxiliary_number,struct Map *map,struct Mapping_window *mapping)
 /*******************************************************************************
 LAST MODIFIED : 23 July 1998
 
@@ -5102,15 +4996,6 @@ window.
 	struct Map_drawing_information *drawing_information;
 	XCharStruct bounds;
 	XFontStruct *font;
-#if defined (OLD_CODE)
-	char undecided_accepted;
-	double integral;
-	float a,*float_value,frame_time;
-	int end_search_interval,event_number,i,number_of_signals,potential_time,
-		start_search_interval;
-	short int *short_int_value;
-	struct Event *event;
-#endif /* defined (OLD_CODE) */
 
 	ENTER(highlight_electrode_or_auxiliar);
 	return_code=0;
@@ -5127,23 +5012,6 @@ window.
 			((map->electrode_drawn)[electrode_number])&&mapping&&
 			(mapping->map_drawing_area_2d)&&(mapping->map_drawing))
 		{
-#if defined (OLD_CODE)
-			event_number= *(map->event_number);
-			potential_time= *(map->potential_time);
-			start_search_interval= *(map->start_search_interval);
-			end_search_interval= *(map->end_search_interval);
-			undecided_accepted=map->undecided_accepted;
-			if (1<map->number_of_frames)
-			{
-				frame_time=((float)((map->number_of_frames)-(map->frame_number)-1)*
-					(map->frame_start_time)+(float)(map->frame_number)*
-					(map->frame_end_time))/(float)((map->number_of_frames)-1);
-			}
-			else
-			{
-				frame_time=map->frame_start_time;
-			}
-#endif /* defined (OLD_CODE) */
 			switch (map->electrodes_option)
 			{
 				case SHOW_ELECTRODE_NAMES:
@@ -5174,148 +5042,6 @@ window.
 				{
 					f_value=(map->electrode_value)[electrode_number];
 					electrode_drawn=(map->electrode_drawn)[electrode_number];
-#if defined (OLD_CODE)
-					/* calculate value */
-					switch (map_type)
-					{
-						case ACTIVATION:
-						{
-							if ((signal=device->signal)&&(event=signal->first_event))
-							{
-								if (SHOW_ELECTRODE_VALUES==map->electrodes_option)
-								{
-									while (event&&(event->number<event_number))
-									{
-										event=event->next;
-									}
-									if (event&&(event->number==event_number)&&
-										((ACCEPTED==event->status)||
-										(undecided_accepted&&(UNDECIDED==event->status))))
-									{
-										electrode_drawn=1;
-										f_value=(float)((event->time)- *(map->datum))*1000/
-											(signal->buffer->frequency);
-									}
-									else
-									{
-										electrode_drawn=0;
-									}
-								}
-								else
-								{
-									electrode_drawn=0;
-									while (event)
-									{
-										if ((ACCEPTED==event->status)||
-											(undecided_accepted&&(UNDECIDED==event->status)))
-										{
-											if (electrode_drawn)
-											{
-												a=frame_time-(float)(event->time)*1000/
-													(signal->buffer->frequency);
-												if (fabs((double)a)<fabs((double)f_value))
-												{
-													f_value=a;
-												}
-											}
-											else
-											{
-												electrode_drawn=1;
-												f_value=frame_time-(float)(event->time)*1000/
-													(signal->buffer->frequency);
-											}
-										}
-										event=event->next;
-									}
-								}
-							}
-							else
-							{
-								electrode_drawn=0;
-							}
-						} break;
-						case INTEGRAL:
-						{
-							if ((signal=device->signal)&&(start_data<=start_search_interval)&&
-								(start_search_interval<=end_search_interval)&&
-								(end_search_interval<=end_data)&&
-								((signal->status==ACCEPTED)||(undecided_accepted&&
-								(signal->status==UNDECIDED))))
-							{
-								electrode_drawn=1;
-								integral= -(double)(device->channel->offset)*
-									(double)(end_search_interval-start_search_interval+1);
-								number_of_signals=signal->buffer->number_of_signals;
-								switch (signal->buffer->value_type)
-								{
-									case SHORT_INT_VALUE:
-									{
-										short_int_value=(signal->buffer->signals.short_int_values)+
-											(start_search_interval*number_of_signals+(signal->index));
-										for (i=end_search_interval-start_search_interval;i>=0;i--)
-										{
-											integral += (double)(*short_int_value);
-											short_int_value += number_of_signals;
-										}
-									} break;
-									case FLOAT_VALUE:
-									{
-										float_value=(signal->buffer->signals.float_values)+
-											(start_search_interval*number_of_signals+(signal->index));
-										for (i=end_search_interval-start_search_interval;i>=0;i--)
-										{
-											integral += (double)(*float_value);
-											float_value += number_of_signals;
-										}
-									} break;
-								}
-								integral *= (double)(device->channel->gain)/
-									(double)(signal->buffer->frequency);
-								f_value=(float)integral;
-							}
-							else
-							{
-								electrode_drawn=0;
-							}
-						} break;
-						case POTENTIAL:
-						{
-							if ((signal=device->signal)&&
-								(start_data<=potential_time)&&
-								(potential_time<=end_data)&&
-								((ACCEPTED==signal->status)||(undecided_accepted&&
-								(UNDECIDED==signal->status))))
-							{
-								electrode_drawn=1;
-								switch (signal->buffer->value_type)
-								{
-									case SHORT_INT_VALUE:
-									{
-										f_value=((float)((signal->buffer->signals.short_int_values)
-											[potential_time*(signal->buffer->number_of_signals)+
-											(signal->index)])-(device->channel->offset))*
-											(device->channel->gain);
-									} break;
-									case FLOAT_VALUE:
-									{
-										f_value=(((signal->buffer->signals.float_values)
-											[potential_time*(signal->buffer->number_of_signals)+
-											(signal->index)])-(device->channel->offset))*
-											(device->channel->gain);
-									} break;
-								}
-							}
-							else
-							{
-								electrode_drawn=0;
-							}
-						} break;
-						default:
-						{
-							electrode_drawn=0;
-						} break;
-					}
-#endif /* defined (OLD_CODE) */
 					if (electrode_drawn)
 					{
 						if (HIDE_COLOUR==map->colour_option)

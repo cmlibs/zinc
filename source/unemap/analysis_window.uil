@@ -16,8 +16,20 @@ procedure
 	identify_analysis_baseline_butt;
 	analysis_set_baseline;
 	identify_analysis_range_button;
+	id_anal_range_auto_all_butt;
+	id_anal_range_from_curr_butt;
+	id_anal_range_auto_curr_butt;
+	id_anal_range_accep_undec_butt;
 	analysis_set_range;
+	anal_set_range_all_accep_undec;
+	analysis_unrange_all;
+	analysis_unrange_highlighted;
 	identify_analysis_previous_butt;
+	identify_anal_signal_range;
+	identify_anal_sig_range_minim;
+	identify_anal_sig_range_maxim;
+	analysis_set_highlight_min;
+	analysis_set_highlight_max;
 !OLD_CODE
 !	identify_analysis_previous_acce;
 	analysis_previous_signal;
@@ -190,145 +202,70 @@ object
 			{
 			XmPushButton analysis_reset_button;
 			XmPushButton analysis_baseline_button;
-			XmPushButton analysis_range_button;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNorientation = XmVERTICAL;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmPushButton analysis_baseline_button;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_NONE;
+					XmNrightOffset = 0;
+					XmNtopAttachment = XmATTACH_FORM;
+					XmNbottomAttachment = XmATTACH_FORM;
+					};
+				};	
+			XmMenuBar analysis_range_menu_bar;
+			XmRowColumn anal_sig_range;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNorientation = XmVERTICAL;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmRowColumn anal_sig_range;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_NONE;
+					XmNrightOffset = 0;
+					XmNtopAttachment = XmATTACH_FORM;
+					XmNbottomAttachment = XmATTACH_FORM;
+					};
+				};
 			XmPushButton analysis_previous_button;
 			XmPushButton analysis_next_button;
 			XmPushButton analysis_accept_button;
-			XmPushButton analysis_reject_button;
+			XmPushButton analysis_reject_button;						
 			XmPushButton analysis_close_button;
-!OLD_CODE begin
-!?????DB.  A bit of a hack to get accelerators for previous and next.  Required
-!?????  because Motif is so restrictive.
-!      XmMenuBar
-!        {
-!        arguments
-!          {
-!          XmNborderWidth = 0;
-!          XmNorientation = XmHORIZONTAL;
-!          XmNspacing = 0;
-!          XmNentryAlignment = XmALIGNMENT_CENTER;
-!          XmNpacking = XmPACK_TIGHT;
-!          XmNmarginHeight = 0;
-!          XmNmarginWidth = 0;
-!          XmNwidth = 0;
-!          XmNshadowThickness = 0;
-!          XmNleftAttachment = XmATTACH_FORM;
-!          XmNleftOffset = 0;
-!          XmNrightAttachment = XmATTACH_NONE;
-!          XmNtopAttachment = XmATTACH_FORM;
-!          XmNtopOffset = 0;
-!          XmNbottomAttachment = XmATTACH_FORM;
-!          XmNbottomOffset = 0;
-!          };
-!        controls
-!          {
-!          XmCascadeButtonGadget
-!            {
-!            arguments
-!              {
-!              XmNlabelString =
-!              compound_string("");
-!              XmNshadowThickness = 0;
-!              XmNhighlightThickness = 0;
-!              XmNwidth = 0;
-!              };
-!            controls
-!              {
-!              XmPulldownMenu
-!                {
-!                arguments
-!                  {
-!                  XmNborderWidth = 0;
-!                  };
-!                controls
-!                  {
-!                  XmPushButtonGadget
-!                    {
-!                    arguments
-!                      {
-!                      XmNaccelerator = "<Key>n: Activate()";
-!                      XmNsensitive = false;
-!                      };
-!                    callbacks
-!                      {
-!                      MrmNcreateCallback = procedures
-!                        {
-!                        identify_analysis_next_accelera(
-!													analysis_window_structure);
-!                        };
-!                      XmNactivateCallback = procedures
-!                        {
-!                        analysis_next_signal(analysis_work_area_structure);
-!                        };
-!                      };
-!                    };
-!                  XmPushButtonGadget
-!                    {
-!                    arguments
-!                      {
-!                      XmNaccelerator = "<Key>p: Activate()";
-!                      XmNsensitive = false;
-!                      };
-!                    callbacks
-!                      {
-!                      MrmNcreateCallback = procedures
-!                        {
-!                        identify_analysis_previous_acce(
-!													analysis_window_structure);
-!                        };
-!                      XmNactivateCallback = procedures
-!                        {
-!                        analysis_previous_signal(analysis_work_area_structure);
-!                        };
-!                      };
-!                    };
-!                  XmPushButtonGadget
-!                    {
-!                    arguments
-!                      {
-!                      XmNaccelerator = "<Key>a: Activate()";
-!                      XmNsensitive = false;
-!                      };
-!                    callbacks
-!                      {
-!                      MrmNcreateCallback = procedures
-!                        {
-!                        identify_analysis_accept_accele(
-!													analysis_window_structure);
-!                        };
-!                      XmNactivateCallback = procedures
-!                        {
-!                        analysis_accept_signal(analysis_work_area_structure);
-!                        };
-!                      };
-!                    };
-!                  XmPushButtonGadget
-!                    {
-!                    arguments
-!                      {
-!                      XmNaccelerator = "<Key>r: Activate()";
-!                      XmNsensitive = false;
-!                      };
-!                    callbacks
-!                      {
-!                      MrmNcreateCallback = procedures
-!                        {
-!                        identify_analysis_reject_accele(
-!													analysis_window_structure);
-!                        };
-!                      XmNactivateCallback = procedures
-!                        {
-!                        analysis_reject_signal(analysis_work_area_structure);
-!                        };
-!                      };
-!                    };
-!                  };
-!                };
-!              };
-!            };
-!          };
-!        };
-!OLD_CODE end
+			};
+		};
+	analysis_range_menu_bar: XmMenuBar 
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNspacing = widget_spacing;
+			XmNentryAlignment = XmALIGNMENT_CENTER;
+			XmNpacking = XmPACK_TIGHT;
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNshadowThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmPushButton analysis_baseline_button;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNtraversalOn = false;
+			!SAB I have disabled the menu from being a tab group
+			!	  because I have not installed the accelerators in menus
+			};
+		controls
+			{
+			XmCascadeButtonGadget	analysis_range_button;
 			};
 		};
 	analysis_reset_button: XmPushButton
@@ -392,34 +329,118 @@ object
 				};
 			};
 		};
-	analysis_range_button: XmPushButton
+	analysis_range_button: XmCascadeButtonGadget
 		{
 		arguments
 			{
-			XmNlabelString =
+			XmNlabelString = 
 			compound_string("Range");
 			XmNfontList = button_font;
 			XmNsensitive = false;
-			XmNshadowThickness = 0;
-			XmNhighlightThickness = 0;
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftWidget = XmPushButton analysis_baseline_button;
-			XmNleftOffset = widget_spacing;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmPulldownMenu analysis_range_menu;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedures
 				{
-				identify_analysis_range_button(analysis_window_structure);
+				identify_analysis_range_button(analysis_window_structure);			
+				};
+			};
+		};
+	analysis_range_menu: XmPulldownMenu 
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			};
+		controls
+			{
+			XmPushButton analysis_rng_auto_cur_butt;
+			XmPushButton analysis_range_auto_all_button;
+			XmPushButton analysis_rng_frm_curr_button;			
+			XmPushButton analysis_rng_acc_undc_butt;
+			};
+		};
+	analysis_range_auto_all_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Auto range all signals");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_anal_range_auto_all_butt(analysis_window_structure);
 				};
 			XmNactivateCallback = procedures
+				{				
+				analysis_unrange_all(analysis_work_area_structure);
+				};
+			};
+		};
+	analysis_rng_frm_curr_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Range from current window");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
 				{
+				id_anal_range_from_curr_butt(analysis_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{				
 				analysis_set_range(analysis_work_area_structure);
+				};
+			};
+		};
+	analysis_rng_auto_cur_butt: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Auto range current signal");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_anal_range_auto_curr_butt(analysis_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{				
+				analysis_unrange_highlighted(analysis_work_area_structure);
+				};
+			};
+		};
+	analysis_rng_acc_undc_butt: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Global accepted,undecided signals");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_anal_range_accep_undec_butt(analysis_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{				
+				anal_set_range_all_accep_undec(analysis_work_area_structure);
 				};
 			};
 		};
@@ -435,7 +456,7 @@ object
 			XmNshadowThickness = 0;
 			XmNhighlightThickness = 0;
 			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftWidget = XmPushButton analysis_range_button;
+			XmNleftWidget = XmRowColumn anal_sig_range;
 			XmNleftOffset = widget_spacing;
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_FORM;
@@ -551,6 +572,128 @@ object
 				};
 			};
 		};
+	anal_sig_range: XmRowColumn
+		{
+		arguments
+			{
+			XmNsensitive = false;
+			XmNnumColumns = 3;
+			XmNorientation = XmHORIZONTAL;
+			XmNspacing = widget_spacing;
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;	
+			XmNleftWidget = XmMenuBar analysis_range_menu_bar;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{		
+			XmRowColumn anal_sig_range_minimum_form;
+			XmRowColumn anal_sig_range_maximum_form;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_anal_signal_range(analysis_window_structure);
+				};
+			};
+		};
+	anal_sig_range_minimum_form: XmRowColumn
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNnumColumns = 2;
+			XmNorientation = XmHORIZONTAL;
+			XmNspacing = widget_spacing;
+			};
+		controls
+			{
+			XmLabel
+				{
+				arguments
+					{
+					XmNlabelString =
+					compound_string("min");
+					XmNfontList = button_font;
+					};
+				};
+			XmTextField anal_sig_range_minimum_text;
+			};
+		};
+	anal_sig_range_minimum_text: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_anal_sig_range_minim(analysis_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+					analysis_set_highlight_min(analysis_work_area_structure);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+					analysis_set_highlight_min(analysis_work_area_structure);
+				};
+			};
+		};
+	anal_sig_range_maximum_form: XmRowColumn
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNnumColumns = 2;
+			XmNorientation = XmHORIZONTAL;
+			XmNspacing = widget_spacing;
+			};
+		controls
+			{
+			XmLabel
+				{
+				arguments
+					{
+					XmNlabelString =
+					compound_string("max");
+					XmNfontList = button_font;
+					};
+				};
+			XmTextField anal_sig_range_maximum_text;
+			};
+		};
+	anal_sig_range_maximum_text: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_anal_sig_range_maxim(analysis_window_structure);
+				};	
+			XmNactivateCallback = procedures
+				{
+					analysis_set_highlight_max(analysis_work_area_structure);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+					analysis_set_highlight_max(analysis_work_area_structure);
+				};
+			};
+		};
 	analysis_close_button: XmPushButton
 		{
 		arguments
@@ -644,7 +787,7 @@ object
 			XmMenuBar analysis_menu_bar;
 			XmOptionMenu analysis_order_choice;
 			XmOptionMenu analysis_layout_choice;
-			XmOptionMenu analysis_region_choice;
+			XmOptionMenu analysis_region_choice;		
 			};
 		callbacks
 			{
@@ -681,7 +824,7 @@ object
 			{
 			XmCascadeButtonGadget analysis_map_button;
 			XmCascadeButtonGadget analysis_file_button;
-			XmCascadeButtonGadget analysis_print_button;
+			XmCascadeButtonGadget analysis_print_button;		
 			};
 		};
 	analysis_order_choice: XmOptionMenu 

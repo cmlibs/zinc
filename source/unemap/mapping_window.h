@@ -244,9 +244,6 @@ Updates the mapping region menu to be consistent with the current rig.
 
 int highlight_electrode_or_auxiliar(struct Device *device,int electrode_number,
 	int auxiliary_number,
-#if defined (OLD_CODE)
-	int start_data,int end_data,
-#endif
 	struct Map *map,
 	struct Mapping_window *mapping);
 /*******************************************************************************

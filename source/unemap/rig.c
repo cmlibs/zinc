@@ -334,6 +334,31 @@ the memory for <**device> and changes <*device> to NULL.
 	return (return_code);
 } /* destroy_Device */
 
+struct Signal *get_Device_signal(struct Device *device)
+/*******************************************************************************
+LAST MODIFIED : 24 August 200
+
+DESCRIPTION :
+Returns the signal used by the <device>.
+==============================================================================*/
+{
+	struct Signal *signal;
+
+	ENTER(get_Device_signal);
+	signal=(struct Signal *)NULL;
+	if(device)
+	{
+		signal=device->signal;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_Device_signal. Invalid argument");
+	}
+	LEAVE;
+	return(signal);
+}/* get_Device_signal */
+
 struct Signal_buffer *get_Device_signal_buffer(struct Device *device)
 /*******************************************************************************
 LAST MODIFIED : 4 August 1999

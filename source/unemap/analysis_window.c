@@ -107,6 +107,81 @@ Finds the id of the analysis baseline button.
 	LEAVE;
 } /* identify_analysis_baseline_butt */
 
+static void identify_anal_signal_range(Widget *widget_id,
+	XtPointer analysis_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 24 August 2000
+
+DESCRIPTION :
+Saves the id of the signal_range in the analysis window
+==============================================================================*/
+{
+	struct Analysis_window *analysis;
+
+	ENTER(identify_anal_signal_range);
+	USE_PARAMETER(call_data);
+	if (analysis=(struct Analysis_window *)analysis_window)
+	{	
+		analysis->interval.signal_range= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_anal_signal_range. missing analysis_window ");
+	}
+	LEAVE;
+} /* identify_anal_signal_range */
+
+static void identify_anal_sig_range_minim(Widget *widget_id,
+	XtPointer analysis_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 24 August 2000
+
+DESCRIPTION :
+Saves the id of the minimum value text field in the analysis window
+==============================================================================*/
+{
+	struct Analysis_window *analysis;
+
+	ENTER(identify_anal_sig_range_minim);
+	USE_PARAMETER(call_data);
+	if (analysis=(struct Analysis_window *)analysis_window)
+	{	
+		analysis->interval.minimum_value= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_anal_sig_range_minim. missing analysis_window ");
+	}
+	LEAVE;
+} /* identify_anal_sig_range_minim */
+
+static void identify_anal_sig_range_maxim(Widget *widget_id,
+	XtPointer analysis_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 24 August 2000
+
+DESCRIPTION :
+Saves the id of the maximum value text field in the analysis window
+==============================================================================*/
+{
+	struct Analysis_window *analysis;
+
+	ENTER(identify_map_dialog_range_maxim);
+	USE_PARAMETER(call_data);
+	if (analysis=(struct Analysis_window *)analysis_window)
+	{
+		analysis->interval.maximum_value= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_anal_sig_range_maxim. missing analysis_window"); 
+	}
+	LEAVE;
+} /* identify_anal_sig_range_maxim */
+
 static void identify_analysis_range_button(Widget *widget_id,
 	XtPointer analysis_window,XtPointer call_data)
 /*******************************************************************************
@@ -127,10 +202,110 @@ Finds the id of the analysis range button.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"identify_analysis_range_button.  Missing analysis_window");
+			"identify_analysis_range_button. Missing analysis_window");
 	}
 	LEAVE;
 } /* identify_analysis_range_button */
+
+static void id_anal_range_auto_all_butt(Widget *widget_id,
+	XtPointer analysis_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 23 August 2000
+
+DESCRIPTION :
+Finds the id of the analysis range button.
+==============================================================================*/
+{
+	struct Analysis_window *analysis;
+
+	ENTER(id_anal_range_auto_all_butt);
+	USE_PARAMETER(call_data);
+	if (analysis=(struct Analysis_window *)analysis_window)
+	{
+		analysis->interval.range_auto_all_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_anal_range_auto_all_butt. Missing analysis_window");
+	}
+	LEAVE;
+} /* id_anal_range_auto_all_butt */
+
+static void id_anal_range_auto_curr_butt(Widget *widget_id,
+	XtPointer analysis_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 23 August 2000
+
+DESCRIPTION :
+Finds the id of the analysis range button.
+==============================================================================*/
+{
+	struct Analysis_window *analysis;
+
+	ENTER(id_anal_range_auto_curr_butt);
+	USE_PARAMETER(call_data);
+	if (analysis=(struct Analysis_window *)analysis_window)
+	{
+		analysis->interval.range_auto_curr_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_anal_range_auto_curr_butt. Missing analysis_window");
+	}
+	LEAVE;
+} /* id_anal_range_auto_curr_butt */
+
+static void id_anal_range_from_curr_butt(Widget *widget_id,
+	XtPointer analysis_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 23 August 2000
+
+DESCRIPTION :
+Finds the id of the analysis range button.
+==============================================================================*/
+{
+	struct Analysis_window *analysis;
+
+	ENTER(id_anal_range_from_curr_butt);
+	USE_PARAMETER(call_data);
+	if (analysis=(struct Analysis_window *)analysis_window)
+	{
+		analysis->interval.range_from_curr_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_anal_range_from_curr_butt. Missing analysis_window");
+	}
+	LEAVE;
+} /* id_anal_range_from_curr_butt */
+
+static void id_anal_range_accep_undec_butt(Widget *widget_id,
+	XtPointer analysis_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 23 August 2000
+
+DESCRIPTION :
+Finds the id of the analysis range button.
+==============================================================================*/
+{
+	struct Analysis_window *analysis;
+
+	ENTER(id_anal_range_accep_undec_butt);
+	USE_PARAMETER(call_data);
+	if (analysis=(struct Analysis_window *)analysis_window)
+	{
+		analysis->interval.range_accep_undec_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_anal_range_accep_undec_butt. Missing analysis_window");
+	}
+	LEAVE;
+} /* id_anal_range_accep_undec_butt */
 
 static void identify_analysis_previous_butt(Widget *widget_id,
 	XtPointer analysis_window,XtPointer call_data)
@@ -2245,6 +2420,32 @@ Finds the id of the analysis drawing area.
 	LEAVE;
 } /* identify_signals_drawing_area */
 
+struct Interval_area *get_Analysis_window_interval_area(
+	struct Analysis_window *analysis_window)
+/*******************************************************************************
+LAST MODIFIED : 24 August 200
+
+DESCRIPTION :
+Returns the interval_area used by the <analysis_window>.
+==============================================================================*/
+{
+	struct Interval_area *interval_area;
+
+	ENTER(get_Analysis_window_interval_area);
+	interval_area=(struct Interval_area *)NULL;
+	if(analysis_window)
+	{
+		interval_area=&(analysis_window->interval);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_Analysis_window_interval_area. Invalid argument");
+	}
+	LEAVE;
+	return(interval_area);
+}/* get_Analysis_window_interval_area */
+
 #if defined (UNEMAP_USE_NODES)
 struct FE_node_order_info *get_Analysis_window_rig_node_order_info(
 	struct Analysis_window *analysis_window)
@@ -2300,9 +2501,9 @@ make it the current node of <node_order_info>
 			&highlight);
 		while(current_node&&!highlight)
 		{
+			current_node=get_FE_node_order_info_next_node(node_order_info);	
 			get_FE_nodal_int_value(current_node,&component,0,FE_NODAL_VALUE,
-				&highlight);
-			current_node=get_FE_node_order_info_next_node(node_order_info);							
+				&highlight);		
 		}
 		/*if nothing highlighted, just make the first the current */
 		if(!highlight)
@@ -2546,6 +2747,82 @@ Sorts rig_node_order_info according to <analysis_window> ->signal_order
 	return (return_code);
 } /* Analysis_window_set_and_sort_rig_node_order_info */
 #endif /* defined (UNEMAP_USE_NODES) */
+
+int update_signal_range_widget_from_highlight_signal(
+	struct Interval_area *interval_area,
+#if defined (UNEMAP_USE_NODES)
+	struct FE_node *device_rig_node,
+	struct Signal_drawing_package *signal_drawing_package
+#else
+	struct Device *device
+#endif /* defined (UNEMAP_USE_NODES)*/
+	)
+/*******************************************************************************
+LAST MODIFIED : 24 August 2000
+
+DESCRIPTION :
+Updates the range maximum, minimum widget numbers, from the highlighted signal
+c.f analysis_set_highlight_max, analysis_set_highlight_min
+==============================================================================*/
+{
+		char max_string[20];
+		char min_string[20];
+		float maximum,minimum;
+		int return_code;
+
+		ENTER(update_signal_range_widget_from_highlight_signal);		
+		return_code=0;
+		if(interval_area&&
+#if defined (UNEMAP_USE_NODES)
+			device_rig_node&&signal_drawing_package
+#else
+			device
+#endif /* defined (UNEMAP_USE_NODES)*/
+	    )
+		{
+#if defined (UNEMAP_USE_NODES)				
+			struct FE_field_component component;
+			struct FE_field *signal_minimum_field,*signal_maximum_field;
+		
+			signal_minimum_field=(struct FE_field *)NULL;
+			signal_maximum_field=(struct FE_field *)NULL;				
+			return_code=
+				((signal_minimum_field=get_Signal_drawing_package_signal_minimum_field(
+				signal_drawing_package))&&(
+				(signal_maximum_field=get_Signal_drawing_package_signal_maximum_field(
+				signal_drawing_package))));			
+			if(return_code)
+			{
+				component.number=0;
+				component.field=signal_minimum_field;
+				return_code=get_FE_nodal_FE_value_value(device_rig_node,&component,
+					0,FE_NODAL_VALUE,
+					&minimum);
+			}
+			if(return_code)
+			{
+				component.field=signal_maximum_field;
+				get_FE_nodal_FE_value_value(device_rig_node,&component,0,FE_NODAL_VALUE,
+					&maximum);
+			}		
+#else
+			return_code=1;
+			minimum=device->signal_minimum;
+			maximum=device->signal_maximum;
+#endif /*	defined (UNEMAP_USE_NODES) */
+			sprintf(min_string,"%d",(int)(minimum));
+			sprintf(max_string,"%d",(int)(maximum));		
+			XtVaSetValues(interval_area->minimum_value,XmNvalue,min_string,NULL);
+			XtVaSetValues(interval_area->maximum_value,XmNvalue,max_string,NULL);
+		}
+		else
+		{	
+			display_message(ERROR_MESSAGE,"update_signal_range_widget_from_highlight_signal"
+											" invalid arguments");
+		}
+		LEAVE;
+		return(return_code);
+}/* update_signal_range_widget_from_highlight_signal */
 
 #if defined(USE_RIG_FOR_DRAW_ALL_SIGNALS)
 #undef UNEMAP_USE_NODES
@@ -2956,6 +3233,15 @@ similar to rig->devices. This FE_node_order_info is also used elsewhere.
 							"draw_all_signals.  Invalid signal layout");
 					} break;
 				} /* switch */
+				/* get highlighted signal min,max put in range widget*/	
+				update_signal_range_widget_from_highlight_signal(
+					&(analysis_window->interval),
+#if defined (UNEMAP_USE_NODES)
+					*(analysis_window->highlight_rig_node),signal_drawing_package
+#else
+					 **(analysis_window->highlight)
+#endif /* defined (UNEMAP_USE_NODES)*/
+					);		
 			}	/* if (number_of_signals>0)*/
 		} /* if ((!rig_node_group&&!signal_drawing_package)|| */
 		else
@@ -4043,8 +4329,22 @@ returned.
 			(XtPointer)identify_analysis_baseline_butt},
 		{"identify_analysis_range_button",
 			(XtPointer)identify_analysis_range_button},
+		{"id_anal_range_auto_all_butt",
+			(XtPointer)id_anal_range_auto_all_butt},
+		{"id_anal_range_auto_curr_butt",
+			(XtPointer)id_anal_range_auto_curr_butt},
+		{"id_anal_range_from_curr_butt",
+			(XtPointer)id_anal_range_from_curr_butt},
+		{"id_anal_range_accep_undec_butt",
+			(XtPointer)id_anal_range_accep_undec_butt},
 		{"identify_analysis_previous_butt",
 			(XtPointer)identify_analysis_previous_butt},
+		{"identify_anal_signal_range",
+		 (XtPointer)identify_anal_signal_range},
+		{"identify_anal_sig_range_minim",
+		 (XtPointer)identify_anal_sig_range_minim},
+		{"identify_anal_sig_range_maxim",
+		 (XtPointer)identify_anal_sig_range_maxim},
 #if defined (OLD_CODE)
 		{"identify_analysis_previous_acce",
 			(XtPointer)identify_analysis_previous_acce},
@@ -4277,6 +4577,13 @@ returned.
 				analysis->interval.reset_button=(Widget)NULL;
 				analysis->interval.baseline_button=(Widget)NULL;
 				analysis->interval.range_button=(Widget)NULL;
+				analysis->interval.range_auto_all_button=(Widget)NULL;
+				analysis->interval.range_auto_curr_button=(Widget)NULL;
+				analysis->interval.range_from_curr_button=(Widget)NULL;
+				analysis->interval.range_accep_undec_button=(Widget)NULL;
+				analysis->interval.signal_range=(Widget)NULL;
+				analysis->interval.minimum_value=(Widget)NULL;
+				analysis->interval.maximum_value=(Widget)NULL;
 				analysis->interval.previous_button=(Widget)NULL;
 #if defined (OLD_CODE)
 				analysis->interval.accelerator.previous_button=(Widget)NULL;
@@ -4951,9 +5258,9 @@ int highlight_signal(struct Device *device,
 	int device_number,int start_data,
 	int end_data,int datum,int potential_time,struct Signals_area *signals,
 	struct Signal_drawing_information *signal_drawing_information,
-	struct User_interface *user_interface)
+	struct User_interface *user_interface,struct Interval_area *interval_area)
 /*******************************************************************************
-LAST MODIFIED : 17 August 2000
+LAST MODIFIED : 24 August 2000
 
 DESCRIPTION :
 Highlights/dehighlights the <device> in the <signals> area.
@@ -4962,7 +5269,7 @@ Highlights/dehighlights the <device> in the <signals> area.
 	int axes_height,axes_left,axes_top,axes_width,return_code,xpos,ypos;
 
 	ENTER(highlight_signal);
-	if (signals&&signal_drawing_information&&user_interface
+	if (signals&&signal_drawing_information&&user_interface&&interval_area
 #if defined (UNEMAP_USE_NODES)
 		 &&((device&&!device_rig_node&&!signal_drawing_package)||
 		 (!device&&device_rig_node&&signal_drawing_package))
@@ -5026,6 +5333,14 @@ Highlights/dehighlights the <device> in the <signals> area.
 			XtWindow(signals->drawing_area),
 			(signal_drawing_information->graphics_context).copy,xpos,ypos,
 			signals->drawing->width,signals->drawing->height,xpos,ypos);
+		/* get signal min,max put in range widget*/	
+		update_signal_range_widget_from_highlight_signal(interval_area,
+#if defined (UNEMAP_USE_NODES)
+			device_rig_node,signal_drawing_package
+#else
+			device
+#endif /* defined (UNEMAP_USE_NODES)*/
+	    );		
 		return_code=1;
 	}
 	else

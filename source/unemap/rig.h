@@ -505,6 +505,14 @@ This function frees the memory associated with the fields of <**device>, frees
 the memory for <**device> and changes <*device> to NULL.
 ==============================================================================*/
 
+struct Signal *get_Device_signal(struct Device *device);
+/*******************************************************************************
+LAST MODIFIED : 24 August 200
+
+DESCRIPTION :
+Returns the signal used by the <device>.
+==============================================================================*/
+
 struct Signal_buffer *get_Device_signal_buffer(struct Device *device);
 /*******************************************************************************
 LAST MODIFIED : 4 August 1999

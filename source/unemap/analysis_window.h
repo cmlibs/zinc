@@ -110,7 +110,7 @@ The area of the analysis window where the signals are drawn.
 
 struct Interval_area
 /*******************************************************************************
-LAST MODIFIED : 6 August 1997
+LAST MODIFIED : 23 August 2000
 
 DESCRIPTION :
 The area of the analysis window where the interval is drawn.
@@ -119,6 +119,13 @@ The area of the analysis window where the interval is drawn.
 	Widget reset_button;
 	Widget baseline_button;
 	Widget range_button;
+	Widget range_auto_all_button;
+	Widget range_auto_curr_button;
+	Widget range_from_curr_button;
+	Widget range_accep_undec_button;
+	Widget signal_range;
+	Widget minimum_value;
+	Widget maximum_value;
 	Widget previous_button;
 	Widget next_button;
 	Widget accept_button;
@@ -227,6 +234,24 @@ extern MrmHierarchy analysis_window_hierarchy;
 Global functions
 ----------------
 */
+
+int update_signal_range_widget_from_highlight_signal(
+	struct Interval_area *interval_area,
+#if defined (UNEMAP_USE_NODES)
+	struct FE_node *device_rig_node,
+	struct Signal_drawing_package *signal_drawing_package
+#else
+	struct Device *device
+#endif /* defined (UNEMAP_USE_NODES)*/
+	);
+/*******************************************************************************
+LAST MODIFIED : 24 August 2000
+
+DESCRIPTION :
+Updates the range maximum, minimum widget numbers, from the highlighted signal
+c.f analysis_set_highlight_max, analysis_set_highlight_min
+==============================================================================*/
+
 int analysis_window_update_interval_area_time(struct Analysis_window *analysis,
 	int potential_time, int previous_potential_time, 
 	enum Analysis_window_update_flags *update_flags);
@@ -349,12 +374,21 @@ int highlight_signal(struct Device *device,
 	int device_number,int start_data,
 	int end_data,int datum,int potential_time,struct Signals_area *signals,
 	struct Signal_drawing_information *signal_drawing_information,
-	struct User_interface *user_interface);
+	struct User_interface *user_interface,struct Interval_area *interval_area);
 /*******************************************************************************
-LAST MODIFIED : 17 August 2000
+LAST MODIFIED : 24 August 2000
 
 DESCRIPTION :
 Highlights/dehighlights the <device> in the <signals> area.
+==============================================================================*/
+
+struct Interval_area *get_Analysis_window_interval_area(
+	struct Analysis_window *analysis_window);
+/*******************************************************************************
+LAST MODIFIED : 24 August 200
+
+DESCRIPTION :
+Returns the interval_area used by the <analysis_window>.
 ==============================================================================*/
 
 #if defined (UNEMAP_USE_NODES)

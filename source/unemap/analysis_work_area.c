@@ -970,7 +970,7 @@ DESCRIPTION :
 					{
 						signal_index= -1;
 					}
-					interval= &(analysis->window->interval);
+					interval= get_Analysis_window_interval_area(analysis->window);				
 					draw_potential_time_marker(potential_time,buffer,
 						highlight_device->channel,signal_index,INTERVAL_AREA_DETAIL,0,
 						buffer->number_of_samples-1,interval->axes_left,interval->axes_top,
@@ -2767,7 +2767,9 @@ Sets up the analysis work area for analysing a set of signals.
 			/* unghost the set baseline button */
 			XtSetSensitive(analysis->window->interval.baseline_button,True);
 			/* unghost the set range button */
-			XtSetSensitive(analysis->window->interval.range_button,True);
+			XtSetSensitive(analysis->window->interval.range_button,True);	
+			/* unghost the signal_range */
+			XtSetSensitive(analysis->window->interval.signal_range,True);
 			/* unghost the display integral map button */
 			XtSetSensitive(analysis->window->map_menu.integral_button,True);
 			/* unghost the display potential map button */
@@ -2829,6 +2831,8 @@ Sets up the analysis work area for analysing a set of signals.
 			XtSetSensitive(analysis->window->interval.baseline_button,False);
 			/* ghost the set range button */
 			XtSetSensitive(analysis->window->interval.range_button,False);
+			/* ghost the signal_range */
+			XtSetSensitive(analysis->window->interval.signal_range,False);
 			/* ghost the display potential map button */
 			XtSetSensitive(analysis->window->map_menu.potential_button,False);
 			/* ghost the display single activation map button */
@@ -2912,7 +2916,7 @@ Sets up the analysis work area for analysing a set of signals.
 				component.number=0;
 				component.field=highlight_field;
 				set_FE_nodal_int_value(rig_node,&component,/*version*/0,FE_NODAL_VALUE,
-					1/*highlight*/);
+					1/*highlight*/);			
 			}		
 		}
 		else
@@ -3777,7 +3781,9 @@ signals.
 						/* unghost the set baseline button */
 						XtSetSensitive(analysis->window->interval.baseline_button,True);
 						/* unghost the set range button */
-						XtSetSensitive(analysis->window->interval.range_button,True);
+						XtSetSensitive(analysis->window->interval.range_button,True);	
+						/* unghost the signal_range */
+						XtSetSensitive(analysis->window->interval.signal_range,True);
 						/* unghost the display integral map button */
 						XtSetSensitive(analysis->window->map_menu.integral_button,True);
 						/* unghost the display potential map button */
@@ -3855,6 +3861,8 @@ signals.
 					XtSetSensitive(analysis->window->interval.baseline_button,False);
 					/* ghost the set range button */
 					XtSetSensitive(analysis->window->interval.range_button,False);
+					/* ghost the signal_range */
+					XtSetSensitive(analysis->window->interval.signal_range,False);
 					/* ghost the display integral map button */
 					XtSetSensitive(analysis->window->map_menu.integral_button,False);
 					/* ghost the display potential map button */
@@ -9724,6 +9732,16 @@ should be done as a callback from the trace_window.
 						}
 					} break;
 				}
+				/* get signal min,max put in range widget*/	
+				update_signal_range_widget_from_highlight_signal(
+					&(analysis->window->interval),
+#if defined (UNEMAP_USE_NODES)
+					analysis->highlight_rig_node,analysis->signal_drawing_package
+#else
+					 *(analysis->highlight)
+#endif /* defined (UNEMAP_USE_NODES)*/
+					);
+
 			}
 			else
 			{
@@ -10518,7 +10536,7 @@ value at the potential time.
 	}
 	LEAVE;
 } /* analysis_set_baseline */
-#if defined (NEW_CODE) /* tested, works, will be used in future!*/
+
 #if defined (UNEMAP_USE_NODES)
 static void analysis_unrange_highlighted(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
@@ -10528,7 +10546,6 @@ LAST MODIFIED : 7 August 2000
 DESCRIPTION :
 Unrange all the highlighted device signal, i.e range to it's own min/max.
 c.f. analysis_set_range.
-Not yet used. Should be called in place of analysis_set_range
 ==============================================================================*/
 {	
 
@@ -10539,9 +10556,6 @@ Not yet used. Should be called in place of analysis_set_range
 		*display_start_time_field,*display_end_time_field,*signal_field,
 		*signal_minimum_field,*signal_maximum_field;	
 	struct FE_field_component component;
-	struct GROUP(FE_node) *rig_node_group;
-	struct Region *current_region;
-	struct Rig *rig;		
 	struct Signal_drawing_package *signal_drawing_package;
 
 	ENTER(analysis_unrange_highlighted);
@@ -10555,60 +10569,43 @@ Not yet used. Should be called in place of analysis_set_range
 	signal_maximum_field=(struct FE_field *)NULL;	
 	display_start_time_field=(struct FE_field *)NULL;
 	display_end_time_field=(struct FE_field *)NULL;
-	rig_node_group=(struct GROUP(FE_node) *)NULL;
-	current_region=(struct Region *)NULL;
-	rig=(struct Rig *)NULL;
 	signal_drawing_package=(struct Signal_drawing_package *)NULL;
 	if (analysis=(struct Analysis_work_area *)analysis_work_area)
-	{
-		/* check that rig and signals exist */
-		if (rig=analysis->rig)
-		{
-			signal_drawing_package=analysis->signal_drawing_package;
-			signal_field=get_Signal_drawing_package_signal_field(signal_drawing_package);
-			display_start_time_field=get_Signal_drawing_package_display_start_time_field(
-				signal_drawing_package);
-			display_end_time_field=get_Signal_drawing_package_display_end_time_field(
-				signal_drawing_package);
-			channel_gain_field=get_Signal_drawing_package_channel_gain_field(
-				signal_drawing_package);
-			channel_offset_field=get_Signal_drawing_package_channel_offset_field(
-				signal_drawing_package);				
-			signal_minimum_field=get_Signal_drawing_package_signal_minimum_field(
-				signal_drawing_package);
-			signal_maximum_field=get_Signal_drawing_package_signal_maximum_field(
-				signal_drawing_package);
-			if (current_region=get_Rig_current_region(rig))
-			{	
-				rig_node_group=get_Region_rig_node_group(current_region);						
-			}
-			else
-			{
-				rig_node_group=get_Rig_all_devices_rig_node_group(rig);
-			}
-			/*??JW really need a highlighted node just get the first one for a test.*/
-			rig_node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)
-				((GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL,rig_node_group);
-			/*get the channel gain and offset */
-			component.number=0;
-			component.field=channel_gain_field;
-			get_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,
-				&channel_gain);
-			component.field=channel_offset_field;
-			get_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,
-				&channel_offset);
-			/*get the signal min,max for this node */			
-			get_rig_node_signal_min_max(rig_node,signal_field,display_start_time_field,
-				display_end_time_field,(struct FE_field *)NULL,&minimum,&maximum,
-				(enum Event_signal_status *)NULL,1/*time_range*/);
-			minimum=channel_gain*(minimum-channel_offset);
-			maximum=channel_gain*(maximum-channel_offset);
-			/* set the new signal_minimum,signal_maximum*/
-			component.field = signal_minimum_field;												
-			set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,minimum);
-			component.field = signal_maximum_field;
-			set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,maximum);
-		}	/* if (rig=analysis->rig)*/
+	{		
+		signal_drawing_package=analysis->signal_drawing_package;
+		signal_field=get_Signal_drawing_package_signal_field(signal_drawing_package);
+		display_start_time_field=get_Signal_drawing_package_display_start_time_field(
+			signal_drawing_package);
+		display_end_time_field=get_Signal_drawing_package_display_end_time_field(
+			signal_drawing_package);
+		channel_gain_field=get_Signal_drawing_package_channel_gain_field(
+			signal_drawing_package);
+		channel_offset_field=get_Signal_drawing_package_channel_offset_field(
+			signal_drawing_package);				
+		signal_minimum_field=get_Signal_drawing_package_signal_minimum_field(
+			signal_drawing_package);
+		signal_maximum_field=get_Signal_drawing_package_signal_maximum_field(
+			signal_drawing_package);			
+		rig_node=analysis->highlight_rig_node;
+		/*get the channel gain and offset */
+		component.number=0;
+		component.field=channel_gain_field;
+		get_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,
+			&channel_gain);
+		component.field=channel_offset_field;
+		get_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,
+			&channel_offset);
+		/*get the signal min,max for this node */			
+		get_rig_node_signal_min_max(rig_node,signal_field,display_start_time_field,
+			display_end_time_field,(struct FE_field *)NULL,&minimum,&maximum,
+			(enum Event_signal_status *)NULL,1/*time_range*/);
+		minimum=channel_gain*(minimum-channel_offset);
+		maximum=channel_gain*(maximum-channel_offset);
+		/* set the new signal_minimum,signal_maximum*/
+		component.field = signal_minimum_field;												
+		set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,minimum);
+		component.field = signal_maximum_field;
+		set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,maximum);
 		/* update the display */
 		update_signals_drawing_area(analysis->window);
 		update_interval_drawing_area(analysis->window);
@@ -10630,7 +10627,6 @@ LAST MODIFIED : 4 August 2000
 DESCRIPTION :
 Unrange all the highlighted device signal, i.e range to it's own min/max.
 c.f. analysis_set_range.
-Not yet used. Should be called in place of analysis_set_range
 ==============================================================================*/
 {
 	float channel_gain,channel_offset,maximum,minimum;
@@ -10650,7 +10646,8 @@ Not yet used. Should be called in place of analysis_set_range
 		{						
 			current_region=get_Rig_current_region(rig);			
 			/* for the electrodes in the current region */
-			if ((ELECTRODE==highlight->description->type)&&(!current_region||
+			if (((ELECTRODE==highlight->description->type)||
+				(AUXILIARY==highlight->description->type))&&(!current_region||
 				(current_region==highlight->description->region)))
 			{
 				/* set the signal minimum and maximum */
@@ -10679,9 +10676,7 @@ Not yet used. Should be called in place of analysis_set_range
 	LEAVE;
 } /* analysis_unrange_highlighted */
 #endif /* defined (UNEMAP_USE_NODES) */
-#endif /* defined (NEW_CODE)  tested, works, will be used in future!*/
 
-#if defined (NEW_CODE) /* tested, works, will be used in future!*/
 #if defined (UNEMAP_USE_NODES)
 static void analysis_unrange_all(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
@@ -10689,8 +10684,8 @@ static void analysis_unrange_all(Widget widget,XtPointer analysis_work_area,
 LAST MODIFIED : 7 August 2000
 
 DESCRIPTION :
-For every electrode signal in the current region, the range is changed to be the
-same as the range for the current signal.
+For every electrode signal in the current region, the range is changed to it's
+own min/max
 ==============================================================================*/
 {	
 	struct Analysis_work_area *analysis;	
@@ -10757,7 +10752,8 @@ same as the range for the current signal.
 				set_Min_max_iterator_signal_maximum_field(min_max_iterator,signal_maximum_field);
 				set_Min_max_iterator_display_start_time_field(min_max_iterator,
 					display_start_time_field);
-				set_Min_max_iterator_display_end_time_field(min_max_iterator,display_end_time_field);
+				set_Min_max_iterator_display_end_time_field(min_max_iterator,
+					display_end_time_field);
 				/* run through all the nodes setting signals min, max */						
 				FOR_EACH_OBJECT_IN_GROUP(FE_node)(iterative_unrange_rig_node_signal,
 					(void *)min_max_iterator,rig_node_group);
@@ -10788,9 +10784,8 @@ static void analysis_unrange_all(Widget widget,XtPointer analysis_work_area,
 LAST MODIFIED : 4 August 2000
 
 DESCRIPTION :
-Unrange all the signals, i.e range each individual signal to it's own min/max.
-c.f. analysis_set_range.
-Not yet used. Should be called in place of analysis_set_range
+For every electrode signal in the current region, the range is changed to it's
+own min/max
 ==============================================================================*/
 {
 	float channel_gain,channel_offset,maximum,minimum;
@@ -10814,7 +10809,8 @@ Not yet used. Should be called in place of analysis_set_range
 			for (i=rig->number_of_devices;i>0;i--)
 			{
 				/* for the electrodes in the current region */
-				if ((ELECTRODE==(*device)->description->type)&&(!current_region||
+				if (((ELECTRODE==(*device)->description->type)||
+					(AUXILIARY==(*device)->description->type))&&(!current_region||
 					(current_region==(*device)->description->region)))
 				{
 					/* set the signal minimum and maximum */
@@ -10844,11 +10840,9 @@ Not yet used. Should be called in place of analysis_set_range
 	LEAVE;
 } /* analysis_unrange_all */
 #endif /* defined (UNEMAP_USE_NODES) */
-#endif /* defined (NEW_CODE)  tested, works, will be used in future!*/
 
-#if defined (NEW_CODE) /* tested, works, will be used in future!*/
 #if defined (UNEMAP_USE_NODES)
-static void analysis_set_range_all_accepted_undecided(Widget widget,
+static void anal_set_range_all_accep_undec(Widget widget,
 	XtPointer analysis_work_area,	XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 7 August 2000
@@ -10856,7 +10850,6 @@ LAST MODIFIED : 7 August 2000
 DESCRIPTION :
 Finds the range (min/max) of all ACCEPTED/UNDECIDED signals,
 then sets all signals to this range.
-Not yet used. Should be called in place of analysis_set_range
 ==============================================================================*/
 {		
 	struct Analysis_work_area *analysis;		
@@ -10870,7 +10863,7 @@ Not yet used. Should be called in place of analysis_set_range
 	struct Rig *rig;		
 	struct Signal_drawing_package *signal_drawing_package;
 
-	ENTER(analysis_set_range_all_accepted_undecided);
+	ENTER(anal_set_range_all_accep_undec);
 	USE_PARAMETER(call_data);
 	USE_PARAMETER(widget);
 	signal_status_field=(struct FE_field *)NULL;
@@ -10949,7 +10942,7 @@ Not yet used. Should be called in place of analysis_set_range
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"analysis_set_range_all_accepted_undecided. CREATE(Min_max_iterator failed)");
+					"anal_set_range_all_accep_undec. CREATE(Min_max_iterator failed)");
 			}
 		}	/* if (rig=analysis->rig)*/
 		/* update the display */
@@ -10960,12 +10953,12 @@ Not yet used. Should be called in place of analysis_set_range
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"analysis_set_range_all_accepted_undecided.  Missing analysis_work_area");
+			"anal_set_range_all_accep_undec.  Missing analysis_work_area");
 	}
 	LEAVE;
-}/* analysis_set_range_all_accepted_undecided */
+}/* anal_set_range_all_accep_undec */
 #else
-static void analysis_set_range_all_accepted_undecided(Widget widget,
+static void anal_set_range_all_accep_undec(Widget widget,
 	XtPointer analysis_work_area,	XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 4 August 2000
@@ -10973,7 +10966,6 @@ LAST MODIFIED : 4 August 2000
 DESCRIPTION :
 Finds the range (min/max) of all ACCEPTED/UNDECIDED signals,
 then sets all signals to this range.
-Not yet used. Should be called in place of analysis_set_range
 ==============================================================================*/
 {	
 	float channel_gain,channel_offset,maximum,minimum,all_signals_min,all_signals_max;
@@ -10983,7 +10975,7 @@ Not yet used. Should be called in place of analysis_set_range
 	struct Region *current_region;
 	struct Rig *rig;
 
-	ENTER(analysis_set_range_all_accepted_undecided);
+	ENTER(anal_set_range_all_accep_undec);
 	USE_PARAMETER(call_data);
 	USE_PARAMETER(widget);
 	started=0;
@@ -11055,12 +11047,11 @@ Not yet used. Should be called in place of analysis_set_range
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"analysis_set_range_all_accepted_undecided.  Missing analysis_work_area");
+			"anal_set_range_all_accep_undec.  Missing analysis_work_area");
 	}
 	LEAVE;
-} /* analysis_set_range_all_accepted_undecided */
+} /* anal_set_range_all_accep_undec */
 #endif /* defined (UNEMAP_USE_NODES) */
-#endif /* defined (NEW_CODE)  tested, works, will be used in future!*/
 
 #if defined (UNEMAP_USE_NODES)
 static void analysis_set_range(Widget widget,XtPointer analysis_work_area,
@@ -11077,7 +11068,6 @@ same as the range for the current signal.
 	struct Analysis_work_area *analysis;	
 	struct FE_node *rig_node;
 	struct FE_field *channel_gain_field,*channel_offset_field,
-		*display_start_time_field,*display_end_time_field,*signal_field,
 		*signal_minimum_field,*signal_maximum_field;	
 	struct FE_field_component component;
 	struct GROUP(FE_node) *rig_node_group;
@@ -11092,11 +11082,8 @@ same as the range for the current signal.
 	rig_node=(struct FE_node *)NULL;
 	channel_gain_field=(struct FE_field *)NULL;
 	channel_offset_field=(struct FE_field *)NULL;
-	signal_field=(struct FE_field *)NULL;
 	signal_minimum_field=(struct FE_field *)NULL;
 	signal_maximum_field=(struct FE_field *)NULL;	
-	display_start_time_field=(struct FE_field *)NULL;
-	display_end_time_field=(struct FE_field *)NULL;
 	rig_node_group=(struct GROUP(FE_node) *)NULL;
 	current_region=(struct Region *)NULL;
 	rig=(struct Rig *)NULL;
@@ -11109,12 +11096,7 @@ same as the range for the current signal.
 		{	
 			if(min_max_iterator=CREATE(Min_max_iterator)())
 			{
-				signal_drawing_package=analysis->signal_drawing_package;
-				signal_field=get_Signal_drawing_package_signal_field(signal_drawing_package);
-				display_start_time_field=get_Signal_drawing_package_display_start_time_field(
-					signal_drawing_package);
-				display_end_time_field=get_Signal_drawing_package_display_end_time_field(
-					signal_drawing_package);
+				signal_drawing_package=analysis->signal_drawing_package;			
 				channel_gain_field=get_Signal_drawing_package_channel_gain_field(
 					signal_drawing_package);
 				channel_offset_field=get_Signal_drawing_package_channel_offset_field(
@@ -11130,10 +11112,8 @@ same as the range for the current signal.
 				else
 				{
 					rig_node_group=get_Rig_all_devices_rig_node_group(rig);
-				}
-				/*??JW really need a highlighted node just get the first one for a test.*/
-				rig_node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)
-					((GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL,rig_node_group);
+				}			
+				rig_node=analysis->highlight_rig_node;
 				/*get the channel gain and offset */
 				component.number=0;
 				component.field=channel_gain_field;
@@ -11142,10 +11122,12 @@ same as the range for the current signal.
 				component.field=channel_offset_field;
 				get_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,
 					&channel_offset);
-				/*get the signal min,max for this node */			
-				get_rig_node_signal_min_max(rig_node,signal_field,display_start_time_field,
-					display_end_time_field,(struct FE_field *)NULL,&minimum,&maximum,
-					(enum Event_signal_status *)NULL,1/*time_range*/);
+				component.field=signal_minimum_field;
+				get_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,
+					&minimum);
+				component.field=signal_maximum_field;
+				get_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,
+					&maximum);
 				minimum=channel_gain*(minimum-channel_offset);
 				maximum=channel_gain*(maximum-channel_offset);
 				set_Min_max_iterator_max(min_max_iterator,maximum);
@@ -11207,8 +11189,7 @@ same as the range for the current signal.
 		{
 			channel_gain=highlight->channel->gain;
 			channel_offset=highlight->channel->offset;			
-#if defined(NEW_CODE) /*tested, works, but need to interface other routines */	
-			/*Actually calculate, not merely look up the range for the highlighed signal */
+#if defined(NEW_CODE) /*tested, works don't want to do */
 			Signal_get_min_max(highlight->signal,&minimum,&maximum,1/*time_range*/);
 			minimum=channel_gain*((float)(minimum)-channel_offset);
 			maximum=channel_gain*((float)(maximum)-channel_offset);					
@@ -13810,6 +13791,7 @@ DESCRIPTION :
 Global functions
 ----------------
 */
+
 int highlight_analysis_device(unsigned int multiple_selection,
 	struct Device **device,	int *device_number,int *electrode_number,
 	int *auxiliary_number,struct Analysis_work_area *analysis)
@@ -14119,7 +14101,8 @@ else
 #endif /* defined (UNEMAP_USE_NODES)*/
 							new_device_number,start_analysis_interval,end_analysis_interval,
 							analysis->datum,analysis->potential_time,signals,
-							analysis->signal_drawing_information,analysis->user_interface);
+							analysis->signal_drawing_information,analysis->user_interface,
+							&(analysis->window->interval));
 						highlight_electrode_or_auxiliar(*new_highlight,new_electrode_number,
 							new_auxiliary_number,map,mapping);
 					}
@@ -14136,7 +14119,8 @@ else
 #endif /* defined (UNEMAP_USE_NODES)*/
 						new_device_number,start_analysis_interval,end_analysis_interval,
 						analysis->datum,analysis->potential_time,signals,
-						analysis->signal_drawing_information,analysis->user_interface);
+						analysis->signal_drawing_information,analysis->user_interface,
+							&(analysis->window->interval));
 					if (interval)
 					{
 						update_interval_drawing_area(analysis->window);
@@ -14170,8 +14154,8 @@ else
 #endif /* defined (UNEMAP_USE_NODES)*/
 									old_device_number,start_analysis_interval,end_analysis_interval,
 									analysis->datum,analysis->potential_time,signals,
-									analysis->signal_drawing_information,
-									analysis->user_interface);
+									analysis->signal_drawing_information,analysis->user_interface,
+									&(analysis->window->interval));
 								highlight_electrode_or_auxiliar(*old_highlight,
 									old_electrode_number,-1,map,mapping);
 							}
@@ -14190,8 +14174,8 @@ else
 #endif /* defined (UNEMAP_USE_NODES)*/
 										old_device_number,start_analysis_interval,end_analysis_interval,
 										analysis->datum,analysis->potential_time,signals,
-										analysis->signal_drawing_information,
-										analysis->user_interface);
+										analysis->signal_drawing_information,analysis->user_interface,
+										&(analysis->window->interval));
 									highlight_electrode_or_auxiliar(*old_highlight,-1,
 										old_auxiliary_number,map,mapping);
 								}
@@ -14220,7 +14204,8 @@ else
 #endif /* defined (UNEMAP_USE_NODES)*/
 						new_device_number,start_analysis_interval,end_analysis_interval,
 						analysis->datum,analysis->potential_time,signals,
-						analysis->signal_drawing_information,analysis->user_interface);
+						analysis->signal_drawing_information,analysis->user_interface,
+							&(analysis->window->interval));
 					if (interval)
 					{
 						update_interval_drawing_area(analysis->window);
@@ -14244,7 +14229,7 @@ else
 	return (return_code);
 } /* highlight_analysis_device */ 
 
-#if defined (UNEMAP_USE_NODES) 
+#if defined (UNEMAP_USE_NODES)
 /* still keep highlight_analysis_device, as will use both for a while */
 int highlight_analysis_device_node(unsigned int multiple_selection,
 	struct FE_node *device_node,	int *device_number,int *electrode_number,
@@ -14649,7 +14634,8 @@ cf highlight_analysis_device
 							highlight_signal((struct Device *)NULL,new_highlight_rig_node,
 								analysis->signal_drawing_package,new_device_number,0,0,
 								analysis->datum,analysis->potential_time,signals,
-								analysis->signal_drawing_information,analysis->user_interface);
+								analysis->signal_drawing_information,analysis->user_interface,
+								&(analysis->window->interval));
 							/*??JW need to alter highlight_electrode_or_auxiliar  for nodes*/
 							/*
 							highlight_electrode_or_auxiliar(*new_highlight,new_electrode_number,
@@ -14667,7 +14653,8 @@ cf highlight_analysis_device
 						highlight_signal((struct Device *)NULL,new_highlight_rig_node,
 							analysis->signal_drawing_package,new_device_number,
 							0,0,analysis->datum,analysis->potential_time,signals,
-							analysis->signal_drawing_information,analysis->user_interface);
+							analysis->signal_drawing_information,analysis->user_interface,
+							&(analysis->window->interval));
 						if (interval)
 						{
 							update_interval_drawing_area(analysis->window);
@@ -14705,8 +14692,8 @@ cf highlight_analysis_device
 								highlight_signal((struct Device *)NULL,old_highlight_rig_node,
 									analysis->signal_drawing_package,old_device_number,
 									0,0,analysis->datum,analysis->potential_time,signals,
-									analysis->signal_drawing_information,
-									analysis->user_interface);
+									analysis->signal_drawing_information,analysis->user_interface,
+									&(analysis->window->interval));
 								/*??JW need to alter highlight_electrode_or_auxiliar  for nodes*/
 								/*
 								highlight_electrode_or_auxiliar(*old_highlight,
@@ -14724,8 +14711,8 @@ cf highlight_analysis_device
 								highlight_signal((struct Device *)NULL,old_highlight_rig_node,
 									analysis->signal_drawing_package,old_device_number,
 									0,0,analysis->datum,analysis->potential_time,signals,
-									analysis->signal_drawing_information,
-									analysis->user_interface);
+									analysis->signal_drawing_information,analysis->user_interface,
+									&(analysis->window->interval));
 								/*??JW need to alter highlight_electrode_or_auxiliar  for nodes*/
 								/*
 								highlight_electrode_or_auxiliar(*old_highlight,-1,
@@ -14775,7 +14762,8 @@ cf highlight_analysis_device
 						highlight_signal((struct Device *)NULL,new_highlight_rig_node,
 							analysis->signal_drawing_package,new_device_number,
 							0,0,analysis->datum,analysis->potential_time,signals,
-							analysis->signal_drawing_information,analysis->user_interface);
+							analysis->signal_drawing_information,analysis->user_interface,
+							&(analysis->window->interval));
 						if (interval)
 						{
 							update_interval_drawing_area(analysis->window);
@@ -14808,7 +14796,7 @@ cf highlight_analysis_device
 
 	return (return_code);
 } /* highlight_analysis_device_node */
-#endif /*defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_NODES) */
 
 void set_mapping_analysis_region(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
@@ -15501,6 +15489,154 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 	LEAVE;
 } /* analysis_select_map_drawing_are */
 
+static void analysis_set_highlight_min(Widget widget,XtPointer analysis_work_area,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 25 August 2000
+
+DESCRIPTION :
+Sets the analysis_work_area's highlighted signal's mimimum, from the
+contents of the analysis_window->interval.maximum_value XmTextField widget
+c.f update_signal_range_widget_from_highlight_signal
+==============================================================================*/
+{		
+	struct Analysis_work_area *analysis;	
+	char *value_string;
+	float minimum;
+#if defined (UNEMAP_USE_NODES)	
+	struct FE_field *signal_minimum_field;
+	struct FE_field_component component;
+	struct FE_node *rig_node;
+	struct Signal_drawing_package *signal_drawing_package;
+#else		
+	struct Device *device;		
+#endif /*	defined (UNEMAP_USE_NODES) */
+	ENTER(analysis_set_highlight_min);
+#if defined (UNEMAP_USE_NODES)	
+	rig_node=(struct FE_node *)NULL;
+	signal_minimum_field=(struct FE_field *)NULL;
+	signal_drawing_package=(struct Signal_drawing_package *)NULL;
+#else		
+	device=(struct Device *)NULL;
+#endif /*	defined (UNEMAP_USE_NODES) */
+	value_string=(char *)NULL;
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget);	
+
+	if (analysis=(struct Analysis_work_area *)analysis_work_area)
+	{	
+#if defined (UNEMAP_USE_NODES)
+		rig_node=analysis->highlight_rig_node;
+		signal_drawing_package=analysis->signal_drawing_package;
+#else		
+		device=*(analysis->highlight);
+#endif /*	defined (UNEMAP_USE_NODES) */	
+		/* extract the value from the widget*/
+		XtVaGetValues((analysis->window->interval.minimum_value),
+			XmNvalue,&value_string,NULL);
+		if (1==sscanf(value_string,"%f",&minimum))
+		{
+			/* now have the value to set */		
+#if defined (UNEMAP_USE_NODES)
+			signal_drawing_package=analysis->signal_drawing_package;
+			signal_minimum_field=get_Signal_drawing_package_signal_minimum_field(
+				signal_drawing_package);
+			/* set the new signal_minimum */
+			component.number=0;
+			component.field = signal_minimum_field;												
+			set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,minimum);		
+#else		
+			device->signal_minimum=minimum;				
+#endif /*	defined (UNEMAP_USE_NODES) */
+			/* update the display */
+			update_signals_drawing_area(analysis->window);
+			update_interval_drawing_area(analysis->window);
+			trace_change_signal(analysis->trace);	
+		}		
+		XtFree(value_string);		
+	}	
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"analysis_set_highlight_min.  Missing analysis_work_area");
+	}
+	LEAVE;
+}/* analysis_set_highlight_min */
+
+static void analysis_set_highlight_max(Widget widget,XtPointer analysis_work_area,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 25 August 2000
+
+DESCRIPTION :
+Sets the analysis_work_area's highlighted signal's maximum, from the
+contents of the analysis_window->interval.maximum_value XmTextField widget
+c.f update_signal_range_widget_from_highlight_signal
+==============================================================================*/
+{		
+	struct Analysis_work_area *analysis;	
+	char *value_string;
+	float maximum;
+#if defined (UNEMAP_USE_NODES)	
+	struct FE_field *signal_maximum_field;
+	struct FE_field_component component;
+	struct FE_node *rig_node;
+	struct Signal_drawing_package *signal_drawing_package;
+#else		
+	struct Device *device;		
+#endif /*	defined (UNEMAP_USE_NODES) */
+	ENTER(analysis_set_highlight_max);
+#if defined (UNEMAP_USE_NODES)	
+	rig_node=(struct FE_node *)NULL;
+	signal_maximum_field=(struct FE_field *)NULL;
+	signal_drawing_package=(struct Signal_drawing_package *)NULL;
+#else		
+	device=(struct Device *)NULL;
+#endif /*	defined (UNEMAP_USE_NODES) */
+	value_string=(char *)NULL;
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(widget);	
+
+	if (analysis=(struct Analysis_work_area *)analysis_work_area)
+	{	
+#if defined (UNEMAP_USE_NODES)
+		rig_node=analysis->highlight_rig_node;
+		signal_drawing_package=analysis->signal_drawing_package;
+#else		
+		device=*(analysis->highlight);
+#endif /*	defined (UNEMAP_USE_NODES) */	
+		/* extract the value from the widget*/
+		XtVaGetValues((analysis->window->interval.maximum_value),
+			XmNvalue,&value_string,NULL);
+		if (1==sscanf(value_string,"%f",&maximum))
+		{
+			/* now have the value to set */		
+#if defined (UNEMAP_USE_NODES)
+			signal_drawing_package=analysis->signal_drawing_package;
+			signal_maximum_field=get_Signal_drawing_package_signal_maximum_field(
+				signal_drawing_package);
+			/* set the new signal_maximum*/
+			component.number=0;
+			component.field = signal_maximum_field;												
+			set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,maximum);		
+#else		
+			device->signal_maximum=maximum;				
+#endif /*	defined (UNEMAP_USE_NODES) */
+			/* update the display */
+			update_signals_drawing_area(analysis->window);
+			update_interval_drawing_area(analysis->window);
+			trace_change_signal(analysis->trace);	
+		}	
+		XtFree(value_string);
+	}	
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"analysis_set_highlight_max.  Missing analysis_work_area");
+	}
+	LEAVE;
+}/* analysis_set_highlight_max */
+
 int create_analysis_work_area(struct Analysis_work_area *analysis,
 	Widget activation,Widget parent,int pointer_sensitivity,
 	char *signal_file_extension_read,char *signal_file_extension_write,
@@ -15529,6 +15665,9 @@ Creates the windows associated with the analysis work area.
 		{"analysis_next_signal",(XtPointer)analysis_next_signal},
 		{"analysis_accept_signal",(XtPointer)analysis_accept_signal},
 		{"analysis_reject_signal",(XtPointer)analysis_reject_signal},
+		{"analysis_unrange_all",(XtPointer)analysis_unrange_all},
+		{"analysis_unrange_highlighted",(XtPointer)analysis_unrange_highlighted},
+		{"anal_set_range_all_accep_undec",(XtPointer)anal_set_range_all_accep_undec},
 		{"trace_analysis_mode_apply",(XtPointer)trace_analysis_mode_apply},
 		{"display_map_with_check",(XtPointer)display_map_with_check},
 		{"set_analysis_order_event",(XtPointer)set_analysis_order_event},
@@ -15551,7 +15690,9 @@ Creates the windows associated with the analysis work area.
 		{"analysis_accept_event",(XtPointer)analysis_accept_event},
 		{"analysis_reject_event",(XtPointer)analysis_reject_event},
 		{"select_trace_3_drawing_area",(XtPointer)select_trace_3_drawing_area},
-		{"close_analysis_work_area",(XtPointer)close_analysis_work_area}};
+		{"close_analysis_work_area",(XtPointer)close_analysis_work_area},
+		{"analysis_set_highlight_min",(XtPointer)analysis_set_highlight_min},
+		{"analysis_set_highlight_max",(XtPointer)analysis_set_highlight_max}};
 	static MrmRegisterArg identifier_list[]=
 	{
 		{"analysis_work_area_structure",(XtPointer)NULL},
