@@ -101,6 +101,23 @@ sub get_cmiss_root_region
   }
 }
 
+sub read_file
+{
+	my ($self, %args) = @_;
+	my %defaults=();
+	my %args_with_defaults=(%defaults,%args);
+	my $name=$args_with_defaults{name};
+
+	if ($name)
+	{
+		region_read_file($self, $name);
+	}
+	else
+	{
+		croak "Missing name";
+	}
+}
+
 sub get_element
 {
 	my ($self, %args) = @_;

@@ -7,17 +7,8 @@
 #include "region/cmiss_region.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
+#include "finite_element/import_finite_element.h"
 #include "typemap.h"
-
-/*???DB.  want to use
-	region/cmiss_region
-		Cmiss_region_get_region_from_path
-	finite_element/finite_element_region
-		Cmiss_region_get_FE_region
-		FE_region_get_FE_field_from_name
-		FE_region_get_FE_node_from_identifier
-		FE_region_get_FE_element_from_identifier
-	*/
 
 MODULE = Cmiss::Region		PACKAGE = Cmiss::Region		PREFIX = Cmiss_region_
 
@@ -25,6 +16,9 @@ PROTOTYPES: DISABLE
 
 Cmiss::Region
 create()
+	PREINIT:
+		struct FE_region *fe_region;
+		struct MANAGER(FE_basis) *basis_manager;
 	CODE:
 		/* the result, in Perl, is a reference to a stash (which is a pointer to the
 			Cmiss_region structure).  This means that don't need to worry about
@@ -34,6 +28,24 @@ create()
 		if (RETVAL=CREATE(Cmiss_region)())
 		{
 			ACCESS(Cmiss_region)(RETVAL);
+			if (basis_manager=CREATE_MANAGER(FE_basis)())
+			{
+				if (fe_region=CREATE(FE_region)((struct FE_region *)NULL,basis_manager))
+				{
+					if (!Cmiss_region_attach_FE_region(RETVAL,fe_region))
+					{
+						DEACCESS(Cmiss_region)(&RETVAL);
+					}
+				}
+				else
+				{
+					DEACCESS(Cmiss_region)(&RETVAL);
+				}
+			}
+			else
+			{
+				DEACCESS(Cmiss_region)(&RETVAL);
+			}
 		}
 	OUTPUT:
 		RETVAL
@@ -56,6 +68,30 @@ command_data_get_root_region(Cmiss::cmgui_command_data cmgui_command_data)
 		if (RETVAL=Cmiss_command_data_get_root_region(cmgui_command_data))
 		{
 			ACCESS(Cmiss_region)(RETVAL);
+		}
+	OUTPUT:
+		RETVAL
+
+int
+region_read_file(Cmiss::Region region,char *file_name);
+	PREINIT:
+		struct Cmiss_region *temp_region;
+		struct MANAGER(FE_basis) *basis_manager;
+	CODE:
+		RETVAL=0;
+		if (region&&file_name&&(basis_manager=FE_region_get_basis_manager(
+			Cmiss_region_get_FE_region(region))))
+		{
+			if (temp_region=read_exregion_file_of_name(file_name,basis_manager,
+				(struct FE_import_time_index *)NULL))
+			{
+				ACCESS(Cmiss_region)(temp_region);
+				if (Cmiss_regions_FE_regions_can_be_merged(region,temp_region))
+				{
+					RETVAL=Cmiss_regions_merge_FE_regions(region,temp_region);
+				}
+				DEACCESS(Cmiss_region)(&temp_region);
+			}
 		}
 	OUTPUT:
 		RETVAL
