@@ -1144,6 +1144,9 @@ DESCRIPTION :
 				"write_image_file.  Could not allocate memory for image data");
 			return_code = 0;
 		}
+#else /* defined (IMAGEMAGICK) */
+		USE_PARAMETER(number_of_bytes_per_component);
+		USE_PARAMETER(row_padding);
 #endif /* defined (IMAGEMAGICK) */
 	}
 	else

@@ -2143,8 +2143,11 @@ LAST MODIFIED : 15 October 1998
 DESCRIPTION :
 ==============================================================================*/
 {
+#if defined (OPENGL_API)
 	unsigned char pixels[3*1024];
-	int high_flag,low_flag,texel,texels_in_band,texels_per_band,i,return_code;
+	int high_flag,low_flag,texel,texels_in_band,texels_per_band,i;
+#endif /* defined (OPENGL_API) */
+	int return_code;
 	struct Spectrum_render_data *render_data;
 
 	ENTER(Spectrum_settings_enable);
@@ -2171,6 +2174,7 @@ DESCRIPTION :
 				} break;
 				case SPECTRUM_BANDED:
 				{
+#if defined (OPENGL_API)
 					if ((settings->black_band_proportion)&&(settings->number_of_bands))
 					{
 						if ((settings->black_band_proportion)%(settings->number_of_bands))
@@ -2247,7 +2251,6 @@ DESCRIPTION :
 							printf("GL ERROR 0: %s\n",gluErrorString(error));
 						}
 #endif /* defined (DEBUG) */
-#if defined (OPENGL_API)
 #if defined (GL_EXT_texture_object)
 						if (!settings->texture_id)
 						{
@@ -2277,7 +2280,6 @@ DESCRIPTION :
 						glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 						glEnable(GL_TEXTURE_1D);
 #endif /* defined (GL_EXT_texture_object) */				
-#endif /* defined (OPENGL_API) */
 #if defined (DEBUG)
 						while (error=glGetError())
 						{
@@ -2300,9 +2302,11 @@ DESCRIPTION :
 							return_code=0;
 						}
 					}
+#endif /* defined (OPENGL_API) */
 				} break;
 				case SPECTRUM_STEP:
 				{
+#if defined (OPENGL_API)
 					pixels[0]=255;
 					pixels[1]=0;
 					pixels[2]=0;
@@ -2316,7 +2320,6 @@ DESCRIPTION :
 						printf("GL ERROR 0: %s\n",gluErrorString(error));
 					}
 #endif /* defined (DEBUG) */
-#if defined (OPENGL_API)
 #if defined (GL_EXT_texture_object)
 					if (!settings->texture_id)
 					{
@@ -2344,13 +2347,13 @@ DESCRIPTION :
 					glTexParameterf(GL_TEXTURE_1D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 					glEnable(GL_TEXTURE_1D);
 #endif /* defined (GL_EXT_texture_object) */				
-#endif /* defined (OPENGL_API) */
 #if defined (DEBUG)
 					while (error=glGetError())
 					{
 						printf("GL ERROR 1: %s\n",gluErrorString(error));
 					}
 #endif /* defined (DEBUG) */
+#endif /* defined (OPENGL_API) */
 				} break;
 				default:
 				{

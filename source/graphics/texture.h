@@ -600,10 +600,10 @@ Modifier function to set the texture from a command.
 int Texture_write_to_file(struct Texture *texture, char *file_name);
 #else /* defined (IMAGEMAGICK) */
 int Texture_write_to_file(struct Texture *texture, char *file_name,
-	enum Image_file_format file_format, enum Image_orientation orientation);
+	enum Image_file_format file_format);
 #endif /* defined (IMAGEMAGICK) */
 /*******************************************************************************
-LAST MODIFIED : 10 may 2001
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Writes the image stored in the texture to a file.

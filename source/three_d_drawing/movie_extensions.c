@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : movie_extensions.c
 
-LAST MODIFIED : 26 November 2001
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -88,10 +88,11 @@ struct X3d_movie
 	struct X3d_movie_destroy_callback_data *destroy_callback_list;
 };
 
+#if defined (SGI_MOVIE_FILE)
 static int X3d_movie_update_callback(struct Time_object *time,
 	double current_time, void *movie_void)
 /*******************************************************************************
-LAST MODIFIED : 1 October 1998
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -102,7 +103,6 @@ DESCRIPTION :
 
 	ENTER(X3d_movie_update_callback);
 	USE_PARAMETER(time);
-#if defined (SGI_MOVIE_FILE)
 	if ((movie = (struct X3d_movie *)movie_void) && movie->movie_id)
 	{
 		frame_time = (int)(current_time * (double)movie->timebase);
@@ -132,15 +132,11 @@ DESCRIPTION :
 			"X3d_movie_update_callback.  Invalid arguments");
 		return_code=0;
 	}
-#else /* defined (SGI_MOVIE_FILE) */
-	display_message(ERROR_MESSAGE,
-		"Movie library not available on this machine");
-	return_code=0;
-#endif /* defined (SGI_MOVIE_FILE) */
 	LEAVE;
 
 	return (return_code);
 } /* X3d_movie_update_callback */
+#endif /* defined (SGI_MOVIE_FILE) */
 
 struct X3d_movie *CREATE(X3d_movie)(char *filename, 
 	enum X3d_movie_create_option create_option)
@@ -151,8 +147,8 @@ DESCRIPTION :
 Attempts to create a movie object.
 ==============================================================================*/
 {
-	int return_code;
 #if defined (SGI_MOVIE_FILE)
+	int return_code;
 	DMparams *params;
 	/*void *handleA, *handleB, *handleC;*/
 #endif /* defined (SGI_MOVIE_FILE) */
@@ -235,7 +231,7 @@ Attempts to create a movie object.
 								} break;
 							}
 						}
-						if(return_code)
+						if (return_code)
 						{
 							if ( DM_SUCCESS==mvCreateFile(filename,params,NULL,
 								&(movie->movie_id)))
@@ -308,6 +304,7 @@ Attempts to create a movie object.
 		movie = (struct X3d_movie *)NULL;
 		}
 #else /* defined (SGI_MOVIE_FILE) */
+		USE_PARAMETER(create_option);
 		display_message(ERROR_MESSAGE,
 			"Movie library not in this version");
 		movie = (struct X3d_movie *)NULL;
@@ -327,7 +324,7 @@ Attempts to create a movie object.
 int X3d_movie_bind_to_dmbuffer(struct X3d_movie *movie, 
 	struct Dm_buffer *buffer)
 /*******************************************************************************
-LAST MODIFIED : 7 September 1998
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Sets the dmbuffer that is associated with this movie instance.
@@ -349,6 +346,8 @@ Sets the dmbuffer that is associated with this movie instance.
 		return_code=0;
 	}
 #else /* defined (SGI_MOVIE_FILE) */
+	USE_PARAMETER(movie);
+	USE_PARAMETER(buffer);
 	display_message(ERROR_MESSAGE,
 		"Movie library not available on this machine");
 	return_code=0;
@@ -360,7 +359,7 @@ Sets the dmbuffer that is associated with this movie instance.
 
 int X3d_movie_unbind_from_dmbuffer(struct X3d_movie *movie)
 /*******************************************************************************
-LAST MODIFIED : 17 September 1998
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Disassociates the dmbuffer that is associated with this movie instance.
@@ -383,6 +382,7 @@ Disassociates the dmbuffer that is associated with this movie instance.
 		return_code=0;
 	}
 #else /* defined (SGI_MOVIE_FILE) */
+	USE_PARAMETER(movie);
 	display_message(ERROR_MESSAGE,
 		"Movie library not available on this machine");
 	return_code=0;
@@ -395,7 +395,7 @@ Disassociates the dmbuffer that is associated with this movie instance.
 int X3d_movie_bind_to_image_buffer(struct X3d_movie *movie, void *image_data, 
 	int image_width, int image_height, int image_padding)
 /*******************************************************************************
-LAST MODIFIED : 17 September 1998
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Sets an image buffer that is associated with this movie instance.
@@ -420,6 +420,11 @@ Sets an image buffer that is associated with this movie instance.
 		return_code=0;
 	}
 #else /* defined (SGI_MOVIE_FILE) */
+	USE_PARAMETER(movie);
+	USE_PARAMETER(image_data);
+	USE_PARAMETER(image_width);
+	USE_PARAMETER(image_height);
+	USE_PARAMETER(image_padding);
 	display_message(ERROR_MESSAGE,
 		"Movie library not available on this machine");
 	return_code=0;
@@ -431,7 +436,7 @@ Sets an image buffer that is associated with this movie instance.
 
 int X3d_movie_unbind_from_image_buffer(struct X3d_movie *movie)
 /*******************************************************************************
-LAST MODIFIED : 17 September 1998
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Disassociates the image buffer that is associated with this movie instance.
@@ -454,6 +459,7 @@ Disassociates the image buffer that is associated with this movie instance.
 		return_code=0;
 	}
 #else /* defined (SGI_MOVIE_FILE) */
+	USE_PARAMETER(movie);
 	display_message(ERROR_MESSAGE,
 		"Movie library not available on this machine");
 	return_code=0;
@@ -639,7 +645,7 @@ Responds to XXttimer_Events generated by the movie xttimer_event queue.
 int X3d_movie_add_callback(struct X3d_movie *movie, XtAppContext app_context,
 	X3d_movie_callback callback, void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 15 September 1998
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Adds a callback routine which is triggered every time a new valid frame
@@ -648,7 +654,9 @@ movie.
 ==============================================================================*/
 {
 	int return_code;
+#if defined (SGI_MOVIE_FILE)
 	struct X3d_movie_callback_data *callback_data, *previous;
+#endif /* defined (SGI_MOVIE_FILE) */
 
 	ENTER(X3d_movie_add_callback);
 #if defined (SGI_MOVIE_FILE)
@@ -688,6 +696,10 @@ movie.
 		return_code=0;
 	}
 #else /* defined (SGI_MOVIE_FILE) */
+	USE_PARAMETER(movie);
+	USE_PARAMETER(app_context);
+	USE_PARAMETER(callback);
+	USE_PARAMETER(user_data);
 	display_message(ERROR_MESSAGE,
 		"Movie library not available on this machine");
 	return_code=0;
@@ -700,14 +712,16 @@ movie.
 int X3d_movie_remove_callback(struct X3d_movie *movie,
 	X3d_movie_callback callback, void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 15 September 1998
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Removes a callback which was added previously
 ==============================================================================*/
 {
 	int return_code;
+#if defined (SGI_MOVIE_FILE)
 	struct X3d_movie_callback_data *callback_data, *previous;
+#endif /* defined (SGI_MOVIE_FILE) */
 
 	ENTER(X3d_movie_remove_callback);
 #if defined (SGI_MOVIE_FILE)
@@ -750,6 +764,9 @@ Removes a callback which was added previously
 		return_code=0;
 	}
 #else /* defined (SGI_MOVIE_FILE) */
+	USE_PARAMETER(movie);
+	USE_PARAMETER(callback);
+	USE_PARAMETER(user_data);
 	display_message(ERROR_MESSAGE,
 		"Movie library not available on this machine");
 	return_code=0;
@@ -762,14 +779,16 @@ Removes a callback which was added previously
 int X3d_movie_add_destroy_callback(struct X3d_movie *movie,
 	X3d_movie_destroy_callback callback, void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 18 September 1998
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Adds a callback routine which is notified when a movie is being destroyed.
 ==============================================================================*/
 {
 	int return_code;
+#if defined (SGI_MOVIE_FILE)
 	struct X3d_movie_destroy_callback_data *callback_data, *previous;
+#endif /* defined (SGI_MOVIE_FILE) */
 
 	ENTER(X3d_movie_add_destroy_callback);
 #if defined (SGI_MOVIE_FILE)
@@ -808,6 +827,9 @@ Adds a callback routine which is notified when a movie is being destroyed.
 		return_code=0;
 	}
 #else /* defined (SGI_MOVIE_FILE) */
+	USE_PARAMETER(movie);
+	USE_PARAMETER(callback);
+	USE_PARAMETER(user_data);
 	display_message(ERROR_MESSAGE,
 		"Movie library not available on this machine");
 	return_code=0;
@@ -820,14 +842,16 @@ Adds a callback routine which is notified when a movie is being destroyed.
 int X3d_movie_remove_destroy_callback(struct X3d_movie *movie,
 	X3d_movie_destroy_callback callback, void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 18 September 1998
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Removes a destroy callback which was added previously
 ==============================================================================*/
 {
 	int return_code;
+#if defined (SGI_MOVIE_FILE)
 	struct X3d_movie_destroy_callback_data *callback_data, *previous;
+#endif /* defined (SGI_MOVIE_FILE) */
 
 	ENTER(X3d_movie_remove_destroy_callback);
 #if defined (SGI_MOVIE_FILE)
@@ -870,6 +894,9 @@ Removes a destroy callback which was added previously
 		return_code=0;
 	}
 #else /* defined (SGI_MOVIE_FILE) */
+	USE_PARAMETER(movie);
+	USE_PARAMETER(callback);
+	USE_PARAMETER(user_data);
 	display_message(ERROR_MESSAGE,
 		"Movie library not available on this machine");
 	return_code=0;
@@ -882,7 +909,7 @@ Removes a destroy callback which was added previously
 int X3d_movie_render_to_image_buffer(struct X3d_movie *movie, 
 	void *buffer, int width, int height, int padding, int time, int timescale)
 /*******************************************************************************
-LAST MODIFIED : 8 September 1998
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -942,6 +969,13 @@ DESCRIPTION :
 		return_code=0;
 	}
 #else /* defined (SGI_MOVIE_FILE) */
+	USE_PARAMETER(movie);
+	USE_PARAMETER(buffer);
+	USE_PARAMETER(width);
+	USE_PARAMETER(height);
+	USE_PARAMETER(padding);
+	USE_PARAMETER(time);
+	USE_PARAMETER(timescale);
 	display_message(ERROR_MESSAGE,
 		"Movie library not available on this machine");
 	return_code=0;
@@ -953,7 +987,7 @@ DESCRIPTION :
 
 int X3d_movie_render_to_glx(struct X3d_movie *movie, int time, int timescale)
 /*******************************************************************************
-LAST MODIFIED : 10 September 1998
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -988,6 +1022,9 @@ DESCRIPTION :
 		return_code=0;
 	}
 #else /* defined (SGI_MOVIE_FILE) */
+	USE_PARAMETER(movie);
+	USE_PARAMETER(time);
+	USE_PARAMETER(timescale);
 	display_message(ERROR_MESSAGE,
 		"Movie library not available on this machine");
 	return_code=0;
@@ -1000,7 +1037,7 @@ DESCRIPTION :
 int X3d_movie_add_frame(struct X3d_movie *movie, int width, int height,
 	char *frame_data)
 /*******************************************************************************
-LAST MODIFIED : 22 July 1999
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Adds the supplied <frame_data> to the video_track in the movie.  If no video_track 
@@ -1101,6 +1138,10 @@ exists a new one is created.  The frame data must be XBGR bytes.
 		return_code=0;
 	}
 #else /* defined (SGI_MOVIE_FILE) */
+	USE_PARAMETER(movie);
+	USE_PARAMETER(width);
+	USE_PARAMETER(height);
+	USE_PARAMETER(frame_data);
 	display_message(ERROR_MESSAGE,
 		"Movie library not available on this machine");
 	return_code=0;
@@ -1112,14 +1153,16 @@ exists a new one is created.  The frame data must be XBGR bytes.
 
 int X3d_movie_play(struct X3d_movie *movie)
 /*******************************************************************************
-LAST MODIFIED : 22 July 1999
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Binds the OpenGL window and starts it playing.
 ==============================================================================*/
 {
 	int return_code;
+#if defined (SGI_MOVIE_FILE)
 	struct Time_keeper *time_keeper;
+#endif /* defined (SGI_MOVIE_FILE) */
 
 	ENTER(X3d_movie_play);
 #if defined (SGI_MOVIE_FILE)
@@ -1153,6 +1196,7 @@ Binds the OpenGL window and starts it playing.
 		return_code=0;
 	}
 #else /* defined (SGI_MOVIE_FILE) */
+	USE_PARAMETER(movie);
 	display_message(ERROR_MESSAGE,
 		"Movie library not available on this machine");
 	return_code=0;
@@ -1164,14 +1208,16 @@ Binds the OpenGL window and starts it playing.
 
 int X3d_movie_playing(struct X3d_movie *movie)
 /*******************************************************************************
-LAST MODIFIED : 8 September 1998
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Tells you whether a movie is currently playing or not.
 ==============================================================================*/
 {
 	int return_code;
+#if defined (SGI_MOVIE_FILE)
 	struct Time_keeper *time_keeper;
+#endif /* defined (SGI_MOVIE_FILE) */
 
 	ENTER(X3d_movie_playing);
 #if defined (SGI_MOVIE_FILE)
@@ -1196,6 +1242,7 @@ Tells you whether a movie is currently playing or not.
 		return_code=0;
 	}
 #else /* defined (SGI_MOVIE_FILE) */
+	USE_PARAMETER(movie);
 	display_message(ERROR_MESSAGE,
 		"Movie library not available on this machine");
 	return_code=0;
@@ -1207,14 +1254,16 @@ Tells you whether a movie is currently playing or not.
 
 int X3d_movie_stop(struct X3d_movie *movie)
 /*******************************************************************************
-LAST MODIFIED : 10 June 1998
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Stops playing and unbinds the OpenGL window
 ==============================================================================*/
 {
 	int return_code;
+#if defined (SGI_MOVIE_FILE)
 	struct Time_keeper *time_keeper;
+#endif /* defined (SGI_MOVIE_FILE) */
 
 	ENTER(X3d_movie_stop);
 #if defined (SGI_MOVIE_FILE)
@@ -1240,6 +1289,7 @@ Stops playing and unbinds the OpenGL window
 		return_code=0;
 	}
 #else /* defined (SGI_MOVIE_FILE) */
+	USE_PARAMETER(movie);
 	display_message(ERROR_MESSAGE,
 		"Movie library not available on this machine");
 	return_code=0;
@@ -1252,7 +1302,7 @@ Stops playing and unbinds the OpenGL window
 double X3d_movie_get_actual_framerate(
 	struct X3d_movie *movie)
 /*******************************************************************************
-LAST MODIFIED : 10 June 1998
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Gets the frame rate for the last second of a movie playing
@@ -1275,6 +1325,7 @@ Gets the frame rate for the last second of a movie playing
 		frame_rate=0;
 	}
 #else /* defined (SGI_MOVIE_FILE) */
+	USE_PARAMETER(movie);
 	display_message(ERROR_MESSAGE,
 		"Movie library not available on this machine");
 	frame_rate=0;
@@ -1287,7 +1338,7 @@ Gets the frame rate for the last second of a movie playing
 int X3d_movie_get_bounding_rectangle(
 	struct X3d_movie *movie, int *left, int *bottom, int *width, int *height)
 /*******************************************************************************
-LAST MODIFIED : 9 September 1998
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Gets a rectangle which will enclose the rendered movie.
@@ -1335,6 +1386,11 @@ Gets a rectangle which will enclose the rendered movie.
 		return_code=0;
 	}
 #else /* defined (SGI_MOVIE_FILE) */
+	USE_PARAMETER(movie);
+	USE_PARAMETER(left);
+	USE_PARAMETER(bottom);
+	USE_PARAMETER(width);
+	USE_PARAMETER(height);
 	display_message(ERROR_MESSAGE,
 		"Movie library not available on this machine");
 	return_code=0;
@@ -1344,10 +1400,9 @@ Gets a rectangle which will enclose the rendered movie.
 	return (return_code);
 } /* X3d_movie_get_bounding_rectangle */
 
-int X3d_movie_set_play_loop(struct X3d_movie *movie,
-	int loop)
+int X3d_movie_set_play_loop(struct X3d_movie *movie, int loop)
 /*******************************************************************************
-LAST MODIFIED : 10 June 1998
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Sets a movie so that it loops of not
@@ -1357,8 +1412,8 @@ Sets a movie so that it loops of not
 #if defined (SGI_MOVIE_FILE)
 	MVtime duration;
 	MVtimescale timescale;
-#endif /* defined (SGI_MOVIE_FILE) */
 	struct Time_keeper *time_keeper;
+#endif /* defined (SGI_MOVIE_FILE) */
 
 	ENTER(X3d_movie_set_play_loop);
 #if defined (SGI_MOVIE_FILE)
@@ -1404,6 +1459,8 @@ Sets a movie so that it loops of not
 		return_code=0;
 	}
 #else /* defined (SGI_MOVIE_FILE) */
+	USE_PARAMETER(movie);
+	USE_PARAMETER(loop);
 	display_message(ERROR_MESSAGE,
 		"Movie library not available on this machine");
 	return_code=0;
@@ -1416,7 +1473,7 @@ Sets a movie so that it loops of not
 int X3d_movie_set_play_every_frame(struct X3d_movie *movie,
 	int play_every_frame)
 /*******************************************************************************
-LAST MODIFIED : 10 June 1998
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Sets a movie so that it plays every frame or maintains the frame rate by
@@ -1424,7 +1481,9 @@ dropping frames
 ==============================================================================*/
 {
 	int return_code;
+#if defined (SGI_MOVIE_FILE)
 	struct Time_keeper *time_keeper;
+#endif /* defined (SGI_MOVIE_FILE) */
 
 	ENTER(X3d_movie_stop);
 #if defined (SGI_MOVIE_FILE)
@@ -1457,6 +1516,8 @@ dropping frames
 		return_code=0;
 	}
 #else /* defined (SGI_MOVIE_FILE) */
+	USE_PARAMETER(movie);
+	USE_PARAMETER(play_every_frame);
 	display_message(ERROR_MESSAGE,
 		"Movie library not available on this machine");
 	return_code=0;
@@ -1469,14 +1530,16 @@ dropping frames
 int X3d_movie_set_play_speed(struct X3d_movie *movie,
 	double play_speed)
 /*******************************************************************************
-LAST MODIFIED : 10 June 1998
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Sets a movie so that it plays at a speed <play_speed> frames per second.
 ==============================================================================*/
 {
 	int return_code;
+#if defined (SGI_MOVIE_FILE)
 	struct Time_keeper *time_keeper;
+#endif /* defined (SGI_MOVIE_FILE) */
 
 	ENTER(X3d_movie_set_play_speed);
 #if defined (SGI_MOVIE_FILE)
@@ -1502,6 +1565,8 @@ Sets a movie so that it plays at a speed <play_speed> frames per second.
 		return_code=0;
 	}
 #else /* defined (SGI_MOVIE_FILE) */
+	USE_PARAMETER(movie);
+	USE_PARAMETER(play_speed);
 	display_message(ERROR_MESSAGE,
 		"Movie library not available on this machine");
 	return_code=0;
@@ -1513,46 +1578,49 @@ Sets a movie so that it plays at a speed <play_speed> frames per second.
 
 struct Time_object *X3d_movie_get_time_object(struct X3d_movie *movie)
 /*******************************************************************************
-LAST MODIFIED : 1 October 1998
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	struct Time_object *return_code;
+	struct Time_object *time_object;
 
 	ENTER(X3d_movie_get_time_object);
 #if defined (SGI_MOVIE_FILE)
 	if (movie)
 	{
-		return_code = movie->time_object;
+		time_object = movie->time_object;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"X3d_movie_get_time_object.  Missing movie or movie");
-		return_code=(struct Time_object *)NULL;
+		time_object=(struct Time_object *)NULL;
 	}
 #else /* defined (SGI_MOVIE_FILE) */
+	USE_PARAMETER(movie);
 	display_message(ERROR_MESSAGE,
 		"Movie library not available on this machine");
-	return_code=(struct Time_object *)NULL;
+	time_object=(struct Time_object *)NULL;
 #endif /* defined (SGI_MOVIE_FILE) */
 	LEAVE;
 
-	return (return_code);
+	return (time_object);
 } /* X3d_movie_get_time_object */
 
 int DESTROY(X3d_movie)(struct X3d_movie **movie)
 /*******************************************************************************
-LAST MODIFIED : 10 June 1998
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Closes a movie instance
-x==============================================================================*/
+==============================================================================*/
 {
 	int return_code;
+#if defined (SGI_MOVIE_FILE)
 	struct X3d_movie_callback_data *callback_data, *next;
 	struct X3d_movie_destroy_callback_data *destroy_callback_data, *destroy_next;
+#endif /* defined (SGI_MOVIE_FILE) */
 
 	ENTER(DESTROY(X3d_movie));
 #if defined (SGI_MOVIE_FILE)
@@ -1609,6 +1677,7 @@ x==============================================================================*
 		return_code=0;
 	}
 #else /* defined (SGI_MOVIE_FILE) */
+	USE_PARAMETER(movie);
 	display_message(ERROR_MESSAGE,
 		"DESTROY(X3d_movie). Movie library not available on this machine");
 	return_code=0;

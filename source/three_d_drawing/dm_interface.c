@@ -84,7 +84,9 @@ supported on displays other than SGI will do.
 ==============================================================================*/
 {
 	struct Dm_buffer *buffer;
+#if defined (GLX_SGIX_dm_pbuffer)
 	int count = 1;
+#endif /* defined (GLX_SGIX_dm_pbuffer) */
 #if defined (GLX_SGIX_dm_pbuffer)
 	DMparams *imageFormat, *poolSpec;
 	DMboolean cacheable = DM_FALSE;
