@@ -1,0 +1,189 @@
+/*******************************************************************************
+FILE : test_photoface.c
+
+LAST MODIFIED : 31 January 2001
+
+DESCRIPTION :
+Tests the photoface interface.
+==============================================================================*/
+
+#include <stdio.h>
+#include "photoface_cmiss.h"
+
+struct Obj
+{ 
+  int number_of_vertices;
+  float *vertex_3d_locations;
+  int number_of_texture_vertices;
+  float *texture_vertex_3d_locations;
+  int number_of_triangles;
+  int *triangle_vertices;
+  int *triangle_texture_vertices;
+};
+
+#define IMAGE_WIDTH (421)
+#define IMAGE_HEIGHT (301)
+#define TEXTURE_WIDTH (1024)
+#define TEXTURE_HEIGHT (1024)
+
+#if defined (MANUAL_CMISS)
+static int display_message_function(char *message, void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 13 February 2001
+
+DESCRIPTION :
+Runs a job through the photoface interface.
+==============================================================================*/
+{
+  printf("%s\n", message);
+}
+
+static int display_message_and_wait_function(char *message, void *user_data)
+/*******************************************************************************
+LAST MODIFIED : 13 February 2001
+
+DESCRIPTION :
+Runs a job through the photoface interface.
+==============================================================================*/
+{
+  printf("%s", message);
+	printf("Press return to continue\n");
+  scanf("%*c");
+}
+#endif /* defined (MANUAL_CMISS) */
+
+int main(int argc, char **argv)
+/*******************************************************************************
+LAST MODIFIED : 24 January 2001
+
+DESCRIPTION :
+Runs a job through the photoface interface.
+==============================================================================*/
+{
+	char *marker_names[] = {"eye_left_exocanthion",
+									"eye_left_endocanthion",
+									"eye_right_exocanthion",
+									"Eye_Right_Inner_Iris_Top",
+									"outside_hair_vertex",
+									"nose_tip",
+									"nose_midpoint",
+									"lips_upper_top_1",
+									"jaw_gnathon"},
+		image_array[3 * IMAGE_WIDTH * IMAGE_HEIGHT], *image_ptr,
+		texture_array[3 * TEXTURE_WIDTH * TEXTURE_HEIGHT];
+	float marker_2d_positions[] = {25, 20,
+											 45, 21,
+											 75, 22,
+											 67, 21,
+											 55, 5,
+											 55, 45,
+											 55, 50,
+											 45, 60,
+											 57, 95},
+		marker_confidences[] = {1.0,
+										1.0,
+										1.0,
+										1.0,
+										1.0,
+										1.0,
+										1.0,
+										1.0,
+										1.0},
+		marker_fitted_3d_positions[3 * 9],
+		error, eye_point[3], interest_point[3], up_vector[3], 
+		*vertex_3d_locations, view_angle;
+	int i, j, number_of_markers = 9, number_of_modes, number_of_vertices;
+	struct Obj obj;
+
+#if defined (MANUAL_CMISS)
+	pf_set_display_message_function(PF_ERROR_MESSAGE,display_message_function,NULL);
+	pf_set_display_message_function(PF_INFORMATION_MESSAGE,display_message_and_wait_function,NULL);
+	pf_set_display_message_function(PF_WARNING_MESSAGE,display_message_function,NULL);
+#endif /* defined (MANUAL_CMISS) */
+
+	/* pf_specify_paths("/hosts/netapp/lifefx/data/photoface/", "/hosts/netapp/lifefx/data/photoface/"); */
+	/* pf_specify_paths("/hosts/netapp/home/shane/photoface/", "/hosts/netapp/home/shane/photoface/"); */
+	pf_specify_paths("/blackett/mirage/photoface/", "/blackett/mirage/photoface/");
+
+	pf_setup("rachel", "");
+	
+	printf("Completed pf_setup\n");
+
+	pf_specify_markers(number_of_markers, marker_names,
+		marker_2d_positions, marker_confidences);
+	printf("Completed pf_specify_markers.\n");
+
+	pf_view_align(&error);
+	printf("Completed pf_view_align.\n");
+
+	if (0 == pf_get_view(eye_point, interest_point, up_vector, &view_angle))
+	{
+		printf("Got view parameters.\n");
+		printf("   Eye point %f %f %f.\n", eye_point[0], eye_point[1], eye_point[2]);
+		printf("   Interest point %f %f %f.\n", interest_point[0], interest_point[1],
+			interest_point[2]);
+		printf("   Up vector %f %f %f.\n", up_vector[0], up_vector[1], up_vector[2]);
+		printf("   View angle %f.\n", view_angle);
+	}
+
+	pf_fit(&error);
+	printf("Completed pf_fit.\n");
+
+	if (0 == pf_get_head_model(&(obj.number_of_vertices), &(obj.vertex_3d_locations),
+		&(obj.number_of_texture_vertices), &(obj.texture_vertex_3d_locations),
+		&(obj.number_of_triangles), &(obj.triangle_vertices),
+	  &(obj.triangle_texture_vertices)))
+	{
+		printf("Completed pf_get_head_model. vertices %d, %d, triangles %d\n",
+			obj.number_of_vertices, obj.number_of_texture_vertices, obj.number_of_triangles);
+	}
+
+	/* Put something into the image array */
+	image_ptr = image_array;
+	for (i = 0 ; i < IMAGE_HEIGHT ; i++)
+	{
+		for (j = 0 ; j < IMAGE_WIDTH ; j++)
+		{
+			*image_ptr = 255 * j / IMAGE_WIDTH;
+			image_ptr++;
+			*image_ptr = 255 * i /  IMAGE_HEIGHT;
+			image_ptr++;
+			*image_ptr = 128;
+			image_ptr++;
+		}
+	}
+	
+	if (0 == pf_get_marker_fitted_positions(number_of_markers, 
+		marker_names, marker_fitted_3d_positions))
+	{
+		printf("Fitted positions:\n");
+		for (i = 0 ; i < number_of_markers ; i++)
+		{
+			printf("   %s:  %f %f %f\n", marker_names[i],
+				marker_fitted_3d_positions[3 * i], marker_fitted_3d_positions[3 * i + 1], 
+				marker_fitted_3d_positions[3 * i + 2]);
+		}
+	}
+
+	if (0 == pf_get_basis(&number_of_modes, &number_of_vertices,
+		&vertex_3d_locations))
+	{
+		printf("Basis:  Modes %d, vertices %d\n", number_of_modes,
+			number_of_vertices);
+		printf("Basis[10][10]:  %f\n", vertex_3d_locations[10 * 
+			3 * number_of_vertices + 10]);
+	}
+
+	pf_specify_image(IMAGE_WIDTH, IMAGE_HEIGHT, PF_RGB_IMAGE, image_array);
+
+	if (0 == pf_get_texture(TEXTURE_WIDTH, TEXTURE_HEIGHT, texture_array))
+	{
+		printf ("Texture[30][30]: %d %d %d\n", texture_array[3 * 30 * 100 + 3 * 30],
+			texture_array[3 * 30 * 100 + 3 * 30 + 1], texture_array[3 * 30 * 100 + 3 * 30 + 2]);
+		printf ("Texture[70][70]: %d %d %d\n", texture_array[3 * 70 * 100 + 3 * 70],
+			texture_array[3 * 70 * 100 + 3 * 70 + 1], texture_array[3 * 70 * 100 + 3 * 70 + 2]);
+	}
+
+	/* Free up the path memory */
+	pf_specify_paths(NULL, NULL);
+}
