@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : cmgui.Makefile
 #
-# LAST MODIFIED : 23 December 2004
+# LAST MODIFIED : 8 March 2005
 #
 # DESCRIPTION :
 #
@@ -648,6 +648,7 @@ API_SRCS = \
 	api/cmiss_function_linear_span.cpp \
 	api/cmiss_function_matrix.cpp \
 	api/cmiss_function_matrix_determinant.cpp \
+	api/cmiss_function_matrix_divide_by_scalar.cpp \
 	api/cmiss_function_matrix_dot_product.cpp \
 	api/cmiss_function_matrix_product.cpp \
 	api/cmiss_function_matrix_resize.cpp \
@@ -773,6 +774,7 @@ COMPUTED_VARIABLE_SRCS = \
 	computed_variable/function_linear_span.cpp \
 	computed_variable/function_matrix.cpp \
 	computed_variable/function_matrix_determinant.cpp \
+	computed_variable/function_matrix_divide_by_scalar.cpp \
 	computed_variable/function_matrix_dot_product.cpp \
 	computed_variable/function_matrix_product.cpp \
 	computed_variable/function_matrix_resize.cpp \
@@ -1460,6 +1462,7 @@ LIB_COMPUTED_VARIABLE_SRCS = \
 	api/cmiss_function_linear_span.cpp \
 	api/cmiss_function_matrix.cpp \
 	api/cmiss_function_matrix_determinant.cpp \
+	api/cmiss_function_matrix_divide_by_scalar.cpp \
 	api/cmiss_function_matrix_dot_product.cpp \
 	api/cmiss_function_matrix_product.cpp \
 	api/cmiss_function_matrix_resize.cpp \
