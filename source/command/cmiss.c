@@ -18458,6 +18458,14 @@ printf("enter execute_command_gfx_smooth\n");
 				MANAGER_END_CACHE(FE_element)(command_data->element_manager);
 				MANAGER_END_CACHE(FE_node)(command_data->node_manager);
 			}
+			if (element_group)
+			{
+				DEACCESS(GROUP(FE_element))(&element_group);
+			}
+			if (smooth_field_over_element_data.field)
+			{
+				DEACCESS(FE_field)(&smooth_field_over_element_data.field);
+			}
 		}
 		else
 		{
