@@ -297,17 +297,17 @@ to the toolbar.
 			struct Interactive_toolbar_widget_struct,1))
 		{
 			XtSetArg(args[0],XmNleftAttachment,XmATTACH_FORM);
-			XtSetArg(args[1],XmNrightAttachment,XmATTACH_NONE);
+			XtSetArg(args[1],XmNrightAttachment,XmATTACH_FORM);
 			XtSetArg(args[2],XmNtopAttachment,XmATTACH_FORM);
 			XtSetArg(args[3],XmNbottomAttachment,XmATTACH_FORM);
 			XtSetArg(args[4],XmNorientation,XmVERTICAL);
-			XtSetArg(args[5],XmNpacking,XmPACK_COLUMN);
-			XtSetArg(args[6],XmNnumColumns,1);
-			XtSetArg(args[7],XmNradioBehavior,True);
-			XtSetArg(args[8],XmNuserData,interactive_toolbar);
-			XtSetArg(args[9],XmNmarginHeight,0);
-			XtSetArg(args[10],XmNmarginWidth,0);
-			XtSetArg(args[11],XmNspacing,0);
+			XtSetArg(args[5],XmNpacking,XmPACK_TIGHT);
+			XtSetArg(args[6],XmNradioBehavior,True);
+			XtSetArg(args[7],XmNuserData,interactive_toolbar);
+			XtSetArg(args[8],XmNmarginHeight,0);
+			XtSetArg(args[9],XmNmarginWidth,0);
+			XtSetArg(args[10],XmNspacing,0);
+			XtSetArg(args[11],XmNadjustLast,False);
 			if (interactive_toolbar->widget=
 				XmCreateRowColumn(parent,"interactive_toolbar",args,12))
 			{

@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : graphics_window.uil
 !
-!LAST MODIFIED : 6 July 2000
+!LAST MODIFIED : 18 July 2000
 !
 !DESCRIPTION :
 !The widgets/gadgets for the 3-D graphics window
@@ -33,11 +33,6 @@ procedure
 	gwin_ortho_up_menu_CB;
 	gwin_ortho_front_btn_CB;
 
-!value
-!**********Value Definitions
-!	graphics_window_viewing_height: 402;
-!	graphics_window_viewing_width: 402;
-
 identifier
 	gwin_structure;
 	button_font;
@@ -58,7 +53,7 @@ object
 			};
 		controls
 			{
-			XmRowColumn gwin_control_panel;
+			XmForm gwin_control_panel;
 !      XmPanedWindow gwin_work_area;
 			XmForm gwin_viewing_form;
 			};
@@ -68,13 +63,12 @@ object
 			};
 		};
 !*******************************************************************************
-	gwin_control_panel: XmRowColumn
+	gwin_control_panel: XmForm
 		{
 		arguments
 			{
 			XmNmarginHeight = 0;
 			XmNmarginWidth = 0;
-			XmNspacing = 0;
 			XmNborderWidth = 0;
 			XmNleftAttachment = XmATTACH_FORM;
 			XmNrightAttachment = XmATTACH_NONE;
@@ -86,12 +80,12 @@ object
 			XmPushButtonGadget gwin_view_all_btn;
 			XmForm gwin_time_edit_form;
 			XmToggleButtonGadget gwin_perspective_btn;
-			XmSeparatorGadget {};
+			XmSeparatorGadget gwin_separator1;
 			XmForm gwin_layout_mode_entry;
 			XmRowColumn gwin_orthographic_form;
-			XmSeparatorGadget {};
+			XmSeparatorGadget gwin_separator2;
 			XmForm gwin_interactive_tool_form;
-			XmSeparatorGadget {};
+!			XmSeparatorGadget gwin_separator3;
 			};
 		};
 !*******************************************************************************
@@ -229,6 +223,10 @@ object
 		{
 		arguments
 			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
 			XmNlabelString = compound_string("View All");
 			XmNfontList = button_font;
 			XmNalignment = XmALIGNMENT_CENTER;
@@ -241,10 +239,16 @@ object
 				gwin_view_all_btn_CB(gwin_structure);
 			};
 		};
+!*******************************************************************************
 	gwin_time_edit_form: XmForm
 		{
 		arguments
 			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = gwin_view_all_btn;
 !      XmNsensitive = false;
 			XmNuserData = gwin_structure;
 			};
@@ -254,10 +258,16 @@ object
 				gwin_id_time_edit_form(gwin_structure);
 			};
 		};
+!*******************************************************************************
 	gwin_perspective_btn: XmToggleButtonGadget
 		{
 		arguments
 			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = gwin_time_edit_form;
 			XmNlabelString = compound_string("Perspective");
 			XmNalignment = XmALIGNMENT_BEGINNING;
 			XmNfontList = button_font;
@@ -273,8 +283,28 @@ object
 			};
 		};
 !*******************************************************************************
+	gwin_separator1: XmSeparatorGadget
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = gwin_perspective_btn;
+			};
+		};
+!*******************************************************************************
 	gwin_layout_mode_entry: XmForm
 		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = gwin_separator1;
+			};
 		controls
 			{
 			XmForm gwin_layout_mode_form;
@@ -299,6 +329,11 @@ object
 		{
 		arguments
 			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = gwin_layout_mode_entry;
 !			XmNentryAlignment = XmALIGNMENT_END;
 			XmNmarginHeight = 0;
 			XmNmarginWidth = 0;
@@ -475,13 +510,45 @@ object
 			};
 		};
 !*******************************************************************************
+	gwin_separator2: XmSeparatorGadget
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = gwin_orthographic_form;
+			};
+		};
+!*******************************************************************************
   gwin_interactive_tool_form: XmForm
     {
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = gwin_separator2;
+			};
     callbacks
       {
       MrmNcreateCallback = procedure
         gwin_id_interactive_tool_form(gwin_structure);
       };
     };
+!*******************************************************************************
+	gwin_separator3: XmSeparatorGadget
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = gwin_interactive_tool_form;
+			};
+		};
 !*******************************************************************************
 end module;
