@@ -6,7 +6,7 @@ use Cmiss::Variable::Derivative;
 use Cmiss::Variable::Spheroidal_coordinates_focus;
 use Cmiss::Variable::Prolate_spheroidal_to_rectangular_cartesian;
 Cmiss::Value::Matrix->set_string_convert_max_columns(100);
-$prolate_spheroidal_coordinates_var=new Cmiss::Variable::Coordinates(name=>'prolate_spheroidal_coordinates');
+$prolate_spheroidal_coordinates_var=new Cmiss::Variable::Coordinates(name=>'prolate_spheroidal_coordinates',dimension=>3);
 $spheroidal_coordinates_focus=new Cmiss::Variable::Spheroidal_coordinates_focus(name=>'spheroidal_coordinates_focus');
 $prolate_spheroidal_to_rectangular_cartesian=new Cmiss::Variable::Prolate_spheroidal_to_rectangular_cartesian(name=>'prolate_spheroidal_to_rectangular_cartesian');
 $focus=new Cmiss::Value::FE_value(value=>35.25);
