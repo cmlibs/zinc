@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_client.c
 
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 1 September 2002
 
 DESCRIPTION :
 Code for talking to the unemap hardware service (running under NT).  This is an
@@ -120,7 +120,7 @@ functions.
 
 struct Unemap_crate
 /*******************************************************************************
-LAST MODIFIED : 27 January 2002
+LAST MODIFIED : 1 September 2002
 
 DESCRIPTION :
 Information needed for each SCU crate/NI computer pair.
@@ -154,6 +154,7 @@ Information needed for each SCU crate/NI computer pair.
 #endif /* defined (UNIX) */
 #if defined (UNIX)
 	struct Event_dispatcher *event_dispatcher;
+	pthread_mutex_t *event_dispatcher_mutex,event_dispatcher_mutex_storage;
 	struct Event_dispatcher_file_descriptor_handler *acquired_socket_xid;
 	struct Event_dispatcher_file_descriptor_handler *calibration_socket_xid;
 	struct Event_dispatcher_file_descriptor_handler *scrolling_socket_xid;
@@ -313,20 +314,25 @@ static void sleep(unsigned seconds)
 }
 #endif /* defined (WIN32_SYSTEM) */
 
+static int crate_deconfigure(struct Unemap_crate *crate);
+
 static int close_crate_connection(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 27 January 2002
+LAST MODIFIED : 1 September 2002
 
 DESCRIPTION :
 Closes the connection with the unemap hardware service for the <crate>.
 ==============================================================================*/
 {
 	int return_code;
+#if defined (OLD_CODE)
+/* moved to crate_deconfigure */
 #if defined (WIN32_SYSTEM)
 	DWORD status;
 	HANDLE hEvents[3];
 	int number_of_events;
 #endif /* defined (WIN32_SYSTEM) */
+#endif /* defined (OLD_CODE) */
 
 	ENTER(close_crate_connection);
 #if defined (DEBUG)
@@ -352,6 +358,8 @@ Closes the connection with the unemap hardware service for the <crate>.
 			crate->command_socket=INVALID_SOCKET;
 			unlock_mutex(crate->command_socket_mutex);
 		}
+#if defined (OLD_CODE)
+/* moved to crate_deconfigure */
 #if defined (WIN32_SYSTEM)
 		number_of_events=0;
 #if defined (DEBUG)
@@ -445,8 +453,10 @@ Closes the connection with the unemap hardware service for the <crate>.
 #if defined (UNIX)
 		if (crate->scrolling_socket_xid)
 		{
+			lock_mutex(crate->event_dispatcher_mutex);
 			Event_dispatcher_remove_file_descriptor_handler(crate->event_dispatcher,
 				crate->scrolling_socket_xid);
+			unlock_mutex(crate->event_dispatcher_mutex);
 			crate->scrolling_socket_xid=
 				(struct Event_dispatcher_file_descriptor_handler *)NULL;
 		}
@@ -457,8 +467,10 @@ Closes the connection with the unemap hardware service for the <crate>.
 		}
 		if (crate->calibration_socket_xid)
 		{
+			lock_mutex(crate->event_dispatcher_mutex);
 			Event_dispatcher_remove_file_descriptor_handler(crate->event_dispatcher,
 				crate->calibration_socket_xid);
+			unlock_mutex(crate->event_dispatcher_mutex);
 			crate->calibration_socket_xid=
 				(struct Event_dispatcher_file_descriptor_handler *)NULL;
 		}
@@ -469,8 +481,10 @@ Closes the connection with the unemap hardware service for the <crate>.
 		}
 		if (crate->acquired_socket_xid)
 		{
+			lock_mutex(crate->event_dispatcher_mutex);
 			Event_dispatcher_remove_file_descriptor_handler(crate->event_dispatcher,
 				crate->acquired_socket_xid);
+			unlock_mutex(crate->event_dispatcher_mutex);
 			crate->acquired_socket_xid=
 				(struct Event_dispatcher_file_descriptor_handler *)NULL;
 		}
@@ -480,23 +494,59 @@ Closes the connection with the unemap hardware service for the <crate>.
 			crate->acquired_socket=INVALID_SOCKET;
 		}
 #endif /* defined (UNIX) */
+#endif /* defined (OLD_CODE) */
+		crate_deconfigure(crate);
+		if (INVALID_SOCKET!=crate->scrolling_socket)
+		{
+#if defined (WIN32_SYSTEM)
+			closesocket(crate->scrolling_socket);
+#endif /* defined (WIN32_SYSTEM) */
+#if defined (UNIX)
+			close(crate->scrolling_socket);
+#endif /* defined (UNIX) */
+			crate->scrolling_socket=INVALID_SOCKET;
+		}
+		if (INVALID_SOCKET!=crate->calibration_socket)
+		{
+#if defined (WIN32_SYSTEM)
+			closesocket(crate->calibration_socket);
+#endif /* defined (WIN32_SYSTEM) */
+#if defined (UNIX)
+			close(crate->calibration_socket);
+#endif /* defined (UNIX) */
+			crate->calibration_socket=INVALID_SOCKET;
+		}
+		if (INVALID_SOCKET!=crate->acquired_socket)
+		{
+#if defined (WIN32_SYSTEM)
+			closesocket(crate->acquired_socket);
+#endif /* defined (WIN32_SYSTEM) */
+#if defined (UNIX)
+			close(crate->acquired_socket);
+#endif /* defined (UNIX) */
+			crate->acquired_socket=INVALID_SOCKET;
+		}
 		/* free mutex's */
 		if (crate->command_socket_mutex)
 		{
 #if defined (WIN32_SYSTEM)
 			CloseHandle(crate->command_socket_mutex);
+			crate->command_socket_mutex=(HANDLE)NULL;
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
 			pthread_mutex_destroy(crate->command_socket_mutex);
+			crate->command_socket_mutex=(pthread_mutex_t *)NULL;
 #endif /* defined (UNIX) */
 		}
 		if (crate->acquired_socket_mutex)
 		{
 #if defined (WIN32_SYSTEM)
 			CloseHandle(crate->acquired_socket_mutex);
+			crate->acquired_socket_mutex=(HANDLE)NULL;
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
 			pthread_mutex_destroy(crate->acquired_socket_mutex);
+			crate->acquired_socket_mutex=(pthread_mutex_t *)NULL;
 #endif /* defined (UNIX) */
 		}
 #if defined (CACHE_CLIENT_INFORMATION)
@@ -772,7 +822,7 @@ static int acquired_socket_callback(
 	)
 #endif /* defined (BACKGROUND_SAVING) && defined (UNIX) */
 /*******************************************************************************
-LAST MODIFIED : 5 August 2002
+LAST MODIFIED : 1 September 2002
 
 DESCRIPTION :
 Called when there is input on the acquired socket.
@@ -780,12 +830,12 @@ Called when there is input on the acquired socket.
 The <module_acquired_callback> is responsible for deallocating the samples.
 ==============================================================================*/
 {
-	int i,j,number_of_channels;
+	int acquired_number_of_channels,i,number_of_channels;
 	long message_size;
 	short *sample,*samples;
 	struct Unemap_crate *crate;
 	unsigned char message_header[2+sizeof(long)];
-	unsigned long number_of_samples;
+	unsigned long j,number_of_samples;
 #if !(defined (BACKGROUND_SAVING) && defined (UNIX))
 	int return_code;
 #endif /* !(defined (BACKGROUND_SAVING) && defined (UNIX)) */
@@ -814,6 +864,9 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 	if (crate=(struct Unemap_crate *)crate_void)
 	{
 		lock_mutex(crate->acquired_socket_mutex);
+		DEALLOCATE((crate->acquired).samples);
+		(crate->acquired).number_of_channels=0;
+		(crate->acquired).number_of_samples=0;
 		/* get the header back */
 		if (SOCKET_ERROR!=socket_recv(crate->acquired_socket,
 #if defined (WIN32_SYSTEM)
@@ -833,6 +886,7 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 #endif /* defined (WIN32_SYSTEM) */
 						(unsigned char *)&number_of_channels,sizeof(number_of_channels),0))
 					{
+						(crate->acquired).number_of_channels=number_of_channels;
 						message_size -= sizeof(number_of_channels);
 #if defined (DEBUG)
 						/*???debug */
@@ -857,34 +911,37 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 								if (number_of_channels*(long)(number_of_samples*sizeof(short))==
 									message_size)
 								{
-									ALLOCATE(samples,short,number_of_channels*number_of_samples);
-									if (samples)
+									if (0<message_size)
 									{
-										if (SOCKET_ERROR!=socket_recv(crate->acquired_socket,
-#if defined (WIN32_SYSTEM)
-											read_event,
-#endif /* defined (WIN32_SYSTEM) */
-											(unsigned char *)samples,
-											number_of_channels*(int)number_of_samples*sizeof(short),
-											0))
+										ALLOCATE(samples,short,
+											number_of_channels*number_of_samples);
+										if (samples)
 										{
+											if (SOCKET_ERROR!=socket_recv(crate->acquired_socket,
+#if defined (WIN32_SYSTEM)
+												read_event,
+#endif /* defined (WIN32_SYSTEM) */
+												(unsigned char *)samples,
+												number_of_channels*(int)number_of_samples*sizeof(short),
+												0))
+											{
 #if defined (DEBUG)
 #if defined (WIN32_SYSTEM)
-											/*???debug */
-											display_message(INFORMATION_MESSAGE,
-												"received.  %lu %ld %ld %ld\n",
-												number_of_channels*(int)number_of_samples*sizeof(short),
-												WaitForSingleObject(read_event,(DWORD)0),WAIT_OBJECT_0,
-												WAIT_TIMEOUT);
+												/*???debug */
+												display_message(INFORMATION_MESSAGE,
+													"received.  %lu %ld %ld %ld\n",number_of_channels*
+													(int)number_of_samples*sizeof(short),
+													WaitForSingleObject(read_event,(DWORD)0),
+													WAIT_OBJECT_0,WAIT_TIMEOUT);
 #endif /* defined (WIN32_SYSTEM) */
 #endif /* defined (DEBUG) */
-											(crate->acquired).number_of_channels=number_of_channels;
-											(crate->acquired).number_of_samples=number_of_samples;
-											(crate->acquired).samples=samples;
-										}
-										else
-										{
-											DEALLOCATE(samples);
+												(crate->acquired).number_of_samples=number_of_samples;
+												(crate->acquired).samples=samples;
+											}
+											else
+											{
+												DEALLOCATE(samples);
+											}
 										}
 									}
 								}
@@ -893,80 +950,113 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 					}
 				}
 			}
-			else
-			{
-				DEALLOCATE((crate->acquired).samples);
-				(crate->acquired).number_of_channels=0;
-				(crate->acquired).number_of_samples=0;
-			}
 		}
 		/*???DB.  Should this be thread protected? */
 		(crate->acquired).complete=1;
 		i=module_number_of_unemap_crates;
 		crate=module_unemap_crates;
+		acquired_number_of_channels=0;
 		number_of_channels=0;
 		number_of_samples=0;
 		while ((i>0)&&((crate->acquired).complete))
 		{
+			number_of_channels += crate->number_of_channels;
+#if defined (DEBUG)
+			/*???debug */
+			display_message(INFORMATION_MESSAGE,
+				"%d) number_of_channels=%d (%d), number_of_samples=%lu\n",i,
+				crate->number_of_channels,(crate->acquired).number_of_channels,
+				(crate->acquired).number_of_samples);
+#endif /* defined (DEBUG) */
 			if (0<(crate->acquired).number_of_channels)
 			{
-				number_of_channels += (crate->acquired).number_of_channels;
-				number_of_samples=(crate->acquired).number_of_samples;
+				acquired_number_of_channels += (crate->acquired).number_of_channels;
+				if (number_of_samples<(crate->acquired).number_of_samples)
+				{
+					number_of_samples=(crate->acquired).number_of_samples;
+				}
 			}
 			crate++;
 			i--;
 		}
 		if (0==i)
 		{
-			if (module_acquired_callback&&(0<number_of_channels)&&
-				(0<number_of_samples))
+			if (module_acquired_callback)
 			{
-				ALLOCATE(samples,short,number_of_channels*number_of_samples);
-				if (samples)
+				if ((0<number_of_samples)&&(((0!=module_acquired_channel_number)&&
+					(1==acquired_number_of_channels))||
+					((0==module_acquired_channel_number)&&
+					(number_of_channels==acquired_number_of_channels))))
 				{
-					if (0==module_acquired_channel_number)
+					ALLOCATE(samples,short,acquired_number_of_channels*number_of_samples);
+#if defined (DEBUG)
+					/*???debug */
+					display_message(INFORMATION_MESSAGE,"acquired_number_of_channels=%d, "
+						"number_of_samples=%lu, samples=%p, %d\n",
+						acquired_number_of_channels,number_of_samples,samples,
+						acquired_number_of_channels*number_of_samples);
+#endif /* defined (DEBUG) */
+					if (samples)
 					{
-						sample=samples;
-						for (j=0;j<(long)number_of_samples;j++)
+						if (0==module_acquired_channel_number)
 						{
-							crate=module_unemap_crates;
-							for (i=module_number_of_unemap_crates;i>0;i--)
+							sample=samples;
+							for (j=0;j<number_of_samples;j++)
 							{
-								memcpy((char *)sample,((crate->acquired).samples)+
-									(j*((crate->acquired).number_of_channels)),
-									((crate->acquired).number_of_channels)*sizeof(short));
-								sample += (crate->acquired).number_of_channels;
+								crate=module_unemap_crates;
+								for (i=module_number_of_unemap_crates;i>0;i--)
+								{
+									if ((j<(crate->acquired).number_of_samples)&&
+										(0<(crate->acquired).number_of_channels))
+									{
+										memcpy((char *)sample,((crate->acquired).samples)+
+											(j*((crate->acquired).number_of_channels)),
+											((crate->acquired).number_of_channels)*sizeof(short));
+									}
+									sample += (crate->acquired).number_of_channels;
+									crate++;
+								}
+							}
+						}
+						else
+						{
+							i=module_number_of_unemap_crates;
+							crate=module_unemap_crates;
+							while ((i>0)&&(0==(crate->acquired).number_of_channels))
+							{
 								crate++;
+								i--;
+							}
+							if (0<i)
+							{
+								memcpy((char *)samples,(crate->acquired).samples,
+									number_of_samples*sizeof(short));
 							}
 						}
 					}
 					else
 					{
-						i=module_number_of_unemap_crates;
-						crate=module_unemap_crates;
-						while ((i>0)&&(0==(crate->acquired).number_of_channels))
-						{
-							crate++;
-							i--;
-						}
-						if (0<i)
-						{
-							memcpy((char *)samples,(crate->acquired).samples,
-								number_of_samples*sizeof(short));
-						}
+						number_of_samples=0;
 					}
-					(*module_acquired_callback)(module_acquired_channel_number,
-						(int)number_of_samples,samples,module_acquired_callback_data);
 				}
+				else
+				{
+					samples=(short *)NULL;
+					number_of_samples=0;
+				}
+				(*module_acquired_callback)(module_acquired_channel_number,
+					(int)number_of_samples,samples,module_acquired_callback_data);
+				module_acquired_callback=(Unemap_acquired_data_callback *)NULL;
+				module_acquired_callback_data=(void *)NULL;
 			}
-			module_acquired_callback=(Unemap_acquired_data_callback *)NULL;
-			module_acquired_callback_data=(void *)NULL;
 		}
-#if defined (BACKGROUND_SAVING) && defined (UNIX)
 		crate=(struct Unemap_crate *)crate_void;
+#if defined (BACKGROUND_SAVING) && defined (UNIX)
+		lock_mutex(crate->event_dispatcher_mutex);
 		crate->acquired_socket_xid=Event_dispatcher_add_file_descriptor_handler(
 			crate->event_dispatcher,crate->acquired_socket,
 			acquired_socket_callback,(void *)crate);
+		unlock_mutex(crate->event_dispatcher_mutex);
 #endif /* defined (BACKGROUND_SAVING) && defined (UNIX) */
 		unlock_mutex(crate->acquired_socket_mutex);
 	}
@@ -974,9 +1064,10 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 	/*???debug */
 #if defined (BACKGROUND_SAVING) && defined (UNIX)
 	display_message(INFORMATION_MESSAGE,
-		"leave acquired_socket_callback_process\n");
+		"leave acquired_socket_callback_process.  %p\n",crate);
 #else /* defined (BACKGROUND_SAVING) && defined (UNIX) */
-	display_message(INFORMATION_MESSAGE,"leave acquired_socket_callback\n");
+	display_message(INFORMATION_MESSAGE,"leave acquired_socket_callback.  %p\n",
+		crate);
 #endif /* defined (BACKGROUND_SAVING) && defined (UNIX) */
 #endif /* defined (DEBUG) */
 	LEAVE;
@@ -987,7 +1078,7 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 
 static int acquired_socket_callback(int file_descriptor, void *crate_void)
 /*******************************************************************************
-LAST MODIFIED : 5 August 2002
+LAST MODIFIED : 1 September 2002
 
 DESCRIPTION :
 Called when there is input on the acquired socket.
@@ -1015,8 +1106,10 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 			crate->acquired_socket_xid);
 #endif /* defined (DEBUG) */
 		/* so that don't get multiple acquired_socket_callback calls */
+		lock_mutex(crate->event_dispatcher_mutex);
 		Event_dispatcher_remove_file_descriptor_handler(crate->event_dispatcher,
 			crate->acquired_socket_xid);
+		unlock_mutex(crate->event_dispatcher_mutex);
 		crate->acquired_socket_xid=
 			(struct Event_dispatcher_file_descriptor_handler *)NULL;
 		if (pthread_create(&thread_id,(pthread_attr_t *)NULL,
@@ -1029,7 +1122,8 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 	}
 #if defined (DEBUG)
 	/*???debug */
-	display_message(INFORMATION_MESSAGE,"leave acquired_socket_callback\n");
+	display_message(INFORMATION_MESSAGE,"leave acquired_socket_callback.  %p\n",
+		crate_void);
 #endif /* defined (DEBUG) */
 	LEAVE;
 #endif /* defined (BACKGROUND_SAVING) && defined (UNIX) */
@@ -1041,7 +1135,7 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 #if defined (WIN32_SYSTEM) && defined (USE_SOCKETS)
 DWORD WINAPI acquired_thread_function(LPVOID crate_void)
 /*******************************************************************************
-LAST MODIFIED : 2 August 2002
+LAST MODIFIED : 30 August 2002
 
 DESCRIPTION :
 Thread to watch the acquired socket.
@@ -1105,11 +1199,13 @@ Thread to watch the acquired socket.
 			}
 		}
 		/* cleanup */
+#if defined (OLD_CODE)
 		if (INVALID_SOCKET!=crate->acquired_socket)
 		{
 			closesocket(crate->acquired_socket);
 			crate->acquired_socket=INVALID_SOCKET;
 		}
+#endif /* defined (OLD_CODE) */
 		if (crate->acquired_socket_thread_stop_event)
 		{
 			CloseHandle(crate->acquired_socket_thread_stop_event);
@@ -1325,7 +1421,7 @@ Called when there is input on the calibration socket.
 #if defined (WIN32_SYSTEM) && defined (USE_SOCKETS)
 DWORD WINAPI calibration_thread_function(LPVOID crate_void)
 /*******************************************************************************
-LAST MODIFIED : 2 August 2002
+LAST MODIFIED : 30 August 2002
 
 DESCRIPTION :
 Thread to watch the calibration socket.
@@ -1385,11 +1481,13 @@ Thread to watch the calibration socket.
 			}
 		}
 		/* cleanup */
+#if defined (OLD_CODE)
 		if (INVALID_SOCKET!=crate->calibration_socket)
 		{
 			closesocket(crate->calibration_socket);
 			crate->calibration_socket=INVALID_SOCKET;
 		}
+#endif /* defined (OLD_CODE) */
 		if (crate->calibration_socket_thread_stop_event)
 		{
 			CloseHandle(crate->calibration_socket_thread_stop_event);
@@ -1698,7 +1796,7 @@ Called when there is input on the scrolling socket.
 #if defined (WIN32_SYSTEM) && defined (USE_SOCKETS)
 DWORD WINAPI scrolling_thread_function(LPVOID crate_void)
 /*******************************************************************************
-LAST MODIFIED : 2 August 2002
+LAST MODIFIED : 30 August 2002
 
 DESCRIPTION :
 Thread to watch the scrolling socket.
@@ -1766,11 +1864,13 @@ Thread to watch the scrolling socket.
 			}
 		}
 		/* cleanup */
+#if defined (OLD_CODE)
 		if (INVALID_SOCKET!=crate->scrolling_socket)
 		{
 			closesocket(crate->scrolling_socket);
 			crate->scrolling_socket=INVALID_SOCKET;
 		}
+#endif /* defined (OLD_CODE) */
 		if (crate->scrolling_socket_thread_stop_event)
 		{
 			CloseHandle(crate->scrolling_socket_thread_stop_event);
@@ -1820,7 +1920,7 @@ static int crate_configure_start(struct Unemap_crate *crate,int slave,
 	Unemap_hardware_callback *scrolling_callback,void *scrolling_callback_data,
 	float scrolling_refresh_frequency,int synchronization_card)
 /*******************************************************************************
-LAST MODIFIED : 27 January 2002
+LAST MODIFIED : 1 September 2002
 
 DESCRIPTION :
 Configures the <crate> for sampling at the specified <sampling_frequency> and
@@ -1849,6 +1949,9 @@ See <unemap_configure> for more details.
 	HANDLE scrolling_thread;
 		/*???DB.  Global variable ? */
 #endif /* defined (WIN32_SYSTEM) */
+#if defined (UNIX)
+	int error_code;
+#endif /* defined (UNIX) */
 
 	ENTER(crate_configure_start);
 #if defined (DEBUG)
@@ -1857,179 +1960,290 @@ See <unemap_configure> for more details.
 #endif /* defined (DEBUG) */
 	return_code=0;
 	/* check arguments */
-	if (crate&&(0<sampling_frequency)&&(0<number_of_samples_in_buffer))
+	if (crate&&(0<sampling_frequency)&&(0<number_of_samples_in_buffer)
+#if defined (UNIX)
+		&&event_dispatcher
+#endif /* defined (UNIX) */
+		)
 	{
 		if ((INVALID_SOCKET!=crate->scrolling_socket)&&
 			(INVALID_SOCKET!=crate->calibration_socket)&&
 			(INVALID_SOCKET!=crate->acquired_socket)&&
-			(INVALID_SOCKET!=crate->command_socket))
+			(INVALID_SOCKET!=crate->command_socket)
+#if defined (UNIX)
+			&&!(crate->event_dispatcher)
+#endif /* defined (UNIX) */
+			)
 		{
 			(crate->scrolling).complete=SCROLLING_NO_CHANNELS_FOR_CRATE;
 #if defined (UNIX)
-			crate->event_dispatcher=event_dispatcher;
-#endif /* defined (UNIX) */
-#if defined (WIN32_SYSTEM)
-			if (scrolling_thread=CreateThread(
-				/*no security attributes*/NULL,/*use default stack size*/0,
-				scrolling_thread_function,(LPVOID)crate,/*use default creation flags*/0,
-				&scrolling_thread_id))
-#endif /* defined (WIN32_SYSTEM) */
-#if defined (UNIX)
-			if (!event_dispatcher||(crate->scrolling_socket_xid=
-				Event_dispatcher_add_file_descriptor_handler(
-				event_dispatcher,crate->scrolling_socket,
-				scrolling_socket_callback,(void *)crate)))
-#endif /* defined (UNIX) */
+			if (0==(error_code=pthread_mutex_init(
+				&(crate->event_dispatcher_mutex_storage),
+				(pthread_mutexattr_t *)NULL)))
 			{
+				crate->event_dispatcher=event_dispatcher;
+				crate->event_dispatcher_mutex=
+					&(crate->event_dispatcher_mutex_storage);
+				lock_mutex(crate->event_dispatcher_mutex);
+#endif /* defined (UNIX) */
 #if defined (WIN32_SYSTEM)
-				if (calibration_thread=CreateThread(
+				if (scrolling_thread=CreateThread(
 					/*no security attributes*/NULL,/*use default stack size*/0,
-					calibration_thread_function,(LPVOID)crate,
-					/*use default creation flags*/0,&calibration_thread_id))
+					scrolling_thread_function,(LPVOID)crate,
+					/*use default creation flags*/0,&scrolling_thread_id))
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
-				if (!event_dispatcher||(crate->calibration_socket_xid=
+				if (!(crate->scrolling_socket_xid)&&(crate->scrolling_socket_xid=
 					Event_dispatcher_add_file_descriptor_handler(
-					event_dispatcher,crate->calibration_socket,
-					calibration_socket_callback,(void *)crate)))
+					event_dispatcher,crate->scrolling_socket,
+					scrolling_socket_callback,(void *)crate)))
 #endif /* defined (UNIX) */
 				{
 #if defined (WIN32_SYSTEM)
-					if (acquired_thread=CreateThread(
+					if (calibration_thread=CreateThread(
 						/*no security attributes*/NULL,/*use default stack size*/0,
-						acquired_thread_function,(LPVOID)crate,
-						/*use default creation flags*/0,&acquired_thread_id))
+						calibration_thread_function,(LPVOID)crate,
+						/*use default creation flags*/0,&calibration_thread_id))
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
-					if (!event_dispatcher||(crate->acquired_socket_xid=
+					if (!(crate->calibration_socket_xid)&&(crate->calibration_socket_xid=
 						Event_dispatcher_add_file_descriptor_handler(
-						event_dispatcher,crate->acquired_socket,
-						acquired_socket_callback,(void *)crate)))
+						event_dispatcher,crate->calibration_socket,
+						calibration_socket_callback,(void *)crate)))
 #endif /* defined (UNIX) */
 					{
-						lock_mutex(crate->command_socket_mutex);
-						buffer[0]=UNEMAP_CONFIGURE_CODE;
-						buffer[1]=BIG_ENDIAN_CODE;
-						buffer_size=2+sizeof(message_size);
-						if (slave)
+#if defined (WIN32_SYSTEM)
+						if (acquired_thread=CreateThread(
+							/*no security attributes*/NULL,/*use default stack size*/0,
+							acquired_thread_function,(LPVOID)crate,
+							/*use default creation flags*/0,&acquired_thread_id))
+#endif /* defined (WIN32_SYSTEM) */
+#if defined (UNIX)
+						if (!(crate->acquired_socket_xid)&&(crate->acquired_socket_xid=
+							Event_dispatcher_add_file_descriptor_handler(
+							event_dispatcher,crate->acquired_socket,
+							acquired_socket_callback,(void *)crate)))
+#endif /* defined (UNIX) */
 						{
-							sampling_frequency_slave= -sampling_frequency;
-						}
-						else
-						{
-							sampling_frequency_slave=sampling_frequency;
-						}
-						memcpy(buffer+buffer_size,&sampling_frequency_slave,
-							sizeof(sampling_frequency_slave));
-						buffer_size += sizeof(sampling_frequency_slave);
-						memcpy(buffer+buffer_size,&number_of_samples_in_buffer,
-							sizeof(number_of_samples_in_buffer));
-						buffer_size += sizeof(number_of_samples_in_buffer);
-						if ((0<scrolling_refresh_frequency)&&(scrolling_callback
+							lock_mutex(crate->command_socket_mutex);
+							buffer[0]=UNEMAP_CONFIGURE_CODE;
+							buffer[1]=BIG_ENDIAN_CODE;
+							buffer_size=2+sizeof(message_size);
+							if (slave)
+							{
+								sampling_frequency_slave= -sampling_frequency;
+							}
+							else
+							{
+								sampling_frequency_slave=sampling_frequency;
+							}
+							memcpy(buffer+buffer_size,&sampling_frequency_slave,
+								sizeof(sampling_frequency_slave));
+							buffer_size += sizeof(sampling_frequency_slave);
+							memcpy(buffer+buffer_size,&number_of_samples_in_buffer,
+								sizeof(number_of_samples_in_buffer));
+							buffer_size += sizeof(number_of_samples_in_buffer);
+							if ((0<scrolling_refresh_frequency)&&(scrolling_callback
 #if defined (WIN32_USER_INTERFACE)
-							||scrolling_window
+								||scrolling_window
 #endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (UNIX)
-							&&event_dispatcher
+								&&event_dispatcher
 #endif /* defined (UNIX) */
-							))
-						{
-							temp_scrolling_refresh_frequency=scrolling_refresh_frequency;
-							module_scrolling_callback=scrolling_callback;
-							module_scrolling_callback_data=scrolling_callback_data;
+								))
+							{
+								temp_scrolling_refresh_frequency=scrolling_refresh_frequency;
+								module_scrolling_callback=scrolling_callback;
+								module_scrolling_callback_data=scrolling_callback_data;
 #if defined (WIN32_USER_INTERFACE)
-							module_scrolling_message=scrolling_message;
-							module_scrolling_window=scrolling_window;
+								module_scrolling_message=scrolling_message;
+								module_scrolling_window=scrolling_window;
 #endif /* defined (WIN32_USER_INTERFACE) */
-						}
-						else
-						{
-							temp_scrolling_refresh_frequency=(float)0;
-							module_scrolling_callback=(Unemap_hardware_callback *)NULL;
-							module_scrolling_callback_data=(void *)NULL;
+							}
+							else
+							{
+								temp_scrolling_refresh_frequency=(float)0;
+								module_scrolling_callback=(Unemap_hardware_callback *)NULL;
+								module_scrolling_callback_data=(void *)NULL;
 #if defined (WIN32_USER_INTERFACE)
-							module_scrolling_message=(UINT)0;
-							module_scrolling_window=(HWND)NULL;
+								module_scrolling_message=(UINT)0;
+								module_scrolling_window=(HWND)NULL;
 #endif /* defined (WIN32_USER_INTERFACE) */
-						}
-						memcpy(buffer+buffer_size,&temp_scrolling_refresh_frequency,
-							sizeof(temp_scrolling_refresh_frequency));
-						buffer_size += sizeof(temp_scrolling_refresh_frequency);
-						memcpy(buffer+buffer_size,&synchronization_card,
-							sizeof(synchronization_card));
-						buffer_size += sizeof(synchronization_card);
-						message_size=buffer_size-(2+(long)sizeof(message_size));
-						memcpy(buffer+2,&message_size,sizeof(message_size));
-#if defined (DEBUG)
-						/*???debug */
-						display_message(INFORMATION_MESSAGE,
-							"crate_configure_start.  %g %d %g %g\n",sampling_frequency,
-							number_of_samples_in_buffer,temp_scrolling_refresh_frequency,
-							scrolling_refresh_frequency);
-#endif /* defined (DEBUG) */
-						retval=socket_send(crate->command_socket,buffer,buffer_size,0);
-						if (SOCKET_ERROR!=retval)
-						{
+							}
+							memcpy(buffer+buffer_size,&temp_scrolling_refresh_frequency,
+								sizeof(temp_scrolling_refresh_frequency));
+							buffer_size += sizeof(temp_scrolling_refresh_frequency);
+							memcpy(buffer+buffer_size,&synchronization_card,
+								sizeof(synchronization_card));
+							buffer_size += sizeof(synchronization_card);
+							message_size=buffer_size-(2+(long)sizeof(message_size));
+							memcpy(buffer+2,&message_size,sizeof(message_size));
 #if defined (DEBUG)
 							/*???debug */
 							display_message(INFORMATION_MESSAGE,
-								"Sent data %x %x %ld\n",buffer[0],buffer[1],message_size);
+								"crate_configure_start.  %g %d %g %g\n",sampling_frequency,
+								number_of_samples_in_buffer,temp_scrolling_refresh_frequency,
+								scrolling_refresh_frequency);
 #endif /* defined (DEBUG) */
-							return_code=1;
+							retval=socket_send(crate->command_socket,buffer,buffer_size,0);
+							if (SOCKET_ERROR!=retval)
+							{
+#if defined (DEBUG)
+								/*???debug */
+								display_message(INFORMATION_MESSAGE,
+									"Sent data %x %x %ld\n",buffer[0],buffer[1],message_size);
+#endif /* defined (DEBUG) */
+								return_code=1;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"crate_configure_start.  socket_send() failed");
+								unlock_mutex(crate->command_socket_mutex);
+#if defined (WIN32_SYSTEM)
+								ResetEvent(crate->acquired_socket_thread_stopped_event);
+								SetEvent(crate->acquired_socket_thread_stop_event);
+								ResetEvent(crate->calibration_socket_thread_stopped_event);
+								SetEvent(crate->calibration_socket_thread_stop_event);
+								ResetEvent(crate->scrolling_socket_thread_stopped_event);
+								SetEvent(crate->scrolling_socket_thread_stop_event);
+#endif /* defined (WIN32_SYSTEM) */
+#if defined (UNIX)
+								Event_dispatcher_remove_file_descriptor_handler(
+									crate->event_dispatcher,crate->acquired_socket_xid);
+								crate->acquired_socket_xid=
+									(struct Event_dispatcher_file_descriptor_handler *)NULL;
+								Event_dispatcher_remove_file_descriptor_handler(
+									crate->event_dispatcher,crate->calibration_socket_xid);
+								crate->calibration_socket_xid=
+									(struct Event_dispatcher_file_descriptor_handler *)NULL;
+								Event_dispatcher_remove_file_descriptor_handler(
+									crate->event_dispatcher,crate->scrolling_socket_xid);
+								crate->scrolling_socket_xid=
+									(struct Event_dispatcher_file_descriptor_handler *)NULL;
+#endif /* defined (UNIX) */
+#if defined (UNIX)
+								pthread_mutex_destroy(crate->event_dispatcher_mutex);
+								crate->event_dispatcher_mutex=(pthread_mutex_t *)NULL;
+								crate->event_dispatcher=(struct Event_dispatcher *)NULL;
+#endif /* defined (UNIX) */
+							}
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,
-								"crate_configure_start.  socket_send() failed");
-							unlock_mutex(crate->command_socket_mutex);
+							display_message(ERROR_MESSAGE,"crate_configure_start.  "
+#if defined (WIN32_SYSTEM)
+								"CreateThread failed for acquired socket");
+#endif /* defined (WIN32_SYSTEM) */
+#if defined (UNIX)
+								"Event_dispatcher_add_file_descriptor_handler failed for "
+								"acquired socket.  %p",crate->acquired_socket_xid);
+#endif /* defined (UNIX) */
+#if defined (WIN32_SYSTEM)
+							ResetEvent(crate->calibration_socket_thread_stopped_event);
+							SetEvent(crate->calibration_socket_thread_stop_event);
+							ResetEvent(crate->scrolling_socket_thread_stopped_event);
+							SetEvent(crate->scrolling_socket_thread_stop_event);
+#endif /* defined (WIN32_SYSTEM) */
+#if defined (UNIX)
+							Event_dispatcher_remove_file_descriptor_handler(
+								crate->event_dispatcher,crate->calibration_socket_xid);
+							crate->calibration_socket_xid=
+								(struct Event_dispatcher_file_descriptor_handler *)NULL;
+							Event_dispatcher_remove_file_descriptor_handler(
+								crate->event_dispatcher,crate->scrolling_socket_xid);
+							crate->scrolling_socket_xid=
+								(struct Event_dispatcher_file_descriptor_handler *)NULL;
+#endif /* defined (UNIX) */
+#if defined (UNIX)
+							pthread_mutex_destroy(crate->event_dispatcher_mutex);
+							crate->event_dispatcher_mutex=(pthread_mutex_t *)NULL;
+							crate->event_dispatcher=(struct Event_dispatcher *)NULL;
+#endif /* defined (UNIX) */
 						}
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,
+						display_message(ERROR_MESSAGE,"crate_configure_start.  "
 #if defined (WIN32_SYSTEM)
-						"crate_configure_start.  CreateThread failed for acquired socket");
+							"CreateThread failed for calibration socket");
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
-						"crate_configure_start.  XtAppAddInput failed for acquired socket");
+							"Event_dispatcher_add_file_descriptor_handler failed for "
+							"calibration socket.  %p",crate->calibration_socket_xid);
+#endif /* defined (UNIX) */
+#if defined (WIN32_SYSTEM)
+						ResetEvent(crate->scrolling_socket_thread_stopped_event);
+						SetEvent(crate->scrolling_socket_thread_stop_event);
+#endif /* defined (WIN32_SYSTEM) */
+#if defined (UNIX)
+						Event_dispatcher_remove_file_descriptor_handler(
+							crate->event_dispatcher,crate->scrolling_socket_xid);
+						crate->scrolling_socket_xid=
+							(struct Event_dispatcher_file_descriptor_handler *)NULL;
+#endif /* defined (UNIX) */
+#if defined (UNIX)
+						pthread_mutex_destroy(crate->event_dispatcher_mutex);
+						crate->event_dispatcher_mutex=(pthread_mutex_t *)NULL;
+						crate->event_dispatcher=(struct Event_dispatcher *)NULL;
 #endif /* defined (UNIX) */
 					}
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
+					display_message(ERROR_MESSAGE,"crate_configure_start.  "
 #if defined (WIN32_SYSTEM)
-					"crate_configure_start.  CreateThread failed for calibration socket");
+						"CreateThread failed for scrolling socket");
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
-				"crate_configure_start.  XtAppAddInput failed for calibration socket");
+						"Event_dispatcher_add_file_descriptor_handler failed for scrolling "
+						"socket.  %p",crate->scrolling_socket_xid);
+#endif /* defined (UNIX) */
+#if defined (UNIX)
+					pthread_mutex_destroy(crate->event_dispatcher_mutex);
+					crate->event_dispatcher_mutex=(pthread_mutex_t *)NULL;
+					crate->event_dispatcher=(struct Event_dispatcher *)NULL;
 #endif /* defined (UNIX) */
 				}
+#if defined (UNIX)
+				unlock_mutex(crate->event_dispatcher_mutex);
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-#if defined (WIN32_SYSTEM)
-					"crate_configure_start.  CreateThread failed for scrolling socket");
-#endif /* defined (WIN32_SYSTEM) */
-#if defined (UNIX)
-					"crate_configure_start.  XtAppAddInput failed for scrolling socket");
-#endif /* defined (UNIX) */
+				display_message(ERROR_MESSAGE,"crate_configure_start.  "
+					"pthread_mutex_init failed for event_dispatcher_mutex.  "
+					"Error code %d",error_code);
 			}
+#endif /* defined (UNIX) */
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-"crate_configure_start.  Invalid command_socket (%p) or calibration_socket (%p) or scrolling_socket (%p) or acquired_socket (%p)",
-				crate->command_socket,crate->calibration_socket,
-				crate->scrolling_socket,crate->acquired_socket);
+			display_message(ERROR_MESSAGE,"crate_configure_start.  "
+				"Invalid command_socket (%p) or calibration_socket (%p) or "
+				"scrolling_socket (%p) or acquired_socket (%p)"
+#if defined (UNIX)
+				" or event_dispatcher (%p)"
+#endif /* defined (UNIX) */
+				,crate->command_socket,crate->calibration_socket,
+				crate->scrolling_socket,crate->acquired_socket
+#if defined (UNIX)
+				,crate->event_dispatcher
+#endif /* defined (UNIX) */
+				);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"crate_configure_start.  Invalid argument(s).  %p %g %d",crate,
-			sampling_frequency,number_of_samples_in_buffer);
+			"crate_configure_start.  Invalid argument(s).  %p %g %d"
+#if defined (UNIX)
+			" %p"
+#endif /* defined (UNIX) */
+			,crate,sampling_frequency,number_of_samples_in_buffer
+#if defined (UNIX)
+			,event_dispatcher
+#endif /* defined (UNIX) */
+			);
 		return_code=0;
 	}
 #if defined (DEBUG)
@@ -2179,7 +2393,7 @@ Returns a non-zero if <the crate> is configured and zero otherwise.
 
 static int crate_deconfigure(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 5 August 2002
+LAST MODIFIED : 1 September 2002
 
 DESCRIPTION :
 Stops acquisition and signal generation for the <crate>.  Frees buffers
@@ -2189,6 +2403,11 @@ associated with the hardware.
 	int return_code,retval;
 	long buffer_size,message_size;
 	unsigned char buffer[2+sizeof(long)];
+#if defined (WIN32_SYSTEM)
+	DWORD status;
+	HANDLE hEvents[3];
+	int number_of_events;
+#endif /* defined (WIN32_SYSTEM) */
 
 	ENTER(crate_deconfigure);
 #if defined (DEBUG)
@@ -2251,11 +2470,110 @@ associated with the hardware.
 			}
 			unlock_mutex(crate->command_socket_mutex);
 		}
-		else
+#if defined (WIN32_SYSTEM)
+		number_of_events=0;
+#if defined (DEBUG)
+		/*???debug */
+		display_message(INFORMATION_MESSAGE,"scrolling thread stop event %p\n",
+			crate->scrolling_socket_thread_stop_event);
+#endif /* defined (DEBUG) */
+		if (crate->scrolling_socket_thread_stop_event)
 		{
-			display_message(ERROR_MESSAGE,
-				"crate_deconfigure.  Invalid command_socket");
+			hEvents[number_of_events]=crate->scrolling_socket_thread_stopped_event;
+			number_of_events++;
+			ResetEvent(crate->scrolling_socket_thread_stopped_event);
+			SetEvent(crate->scrolling_socket_thread_stop_event);
 		}
+#if defined (DEBUG)
+		/*???debug */
+		display_message(INFORMATION_MESSAGE,"calibration thread stop event %p\n",
+			crate->calibration_socket_thread_stop_event);
+#endif /* defined (DEBUG) */
+		if (crate->calibration_socket_thread_stop_event)
+		{
+			hEvents[number_of_events]=crate->calibration_socket_thread_stopped_event;
+			number_of_events++;
+			ResetEvent(crate->calibration_socket_thread_stopped_event);
+			SetEvent(crate->calibration_socket_thread_stop_event);
+		}
+#if defined (DEBUG)
+		/*???debug */
+		display_message(INFORMATION_MESSAGE,"acquired thread stop event %p\n",
+			crate->acquired_socket_thread_stop_event);
+#endif /* defined (DEBUG) */
+		if (crate->acquired_socket_thread_stop_event)
+		{
+			hEvents[number_of_events]=crate->acquired_socket_thread_stopped_event;
+			number_of_events++;
+			ResetEvent(crate->acquired_socket_thread_stopped_event);
+			SetEvent(crate->acquired_socket_thread_stop_event);
+		}
+		/* wait for threads to end before deallocating crate memory */
+#if defined (DEBUG)
+		/*???debug */
+		display_message(INFORMATION_MESSAGE,
+			"before WaitForMultipleObjects.  %d\n",number_of_events);
+#endif /* defined (DEBUG) */
+		if (number_of_events>0)
+		{
+			status=WaitForMultipleObjects(number_of_events,hEvents,TRUE,INFINITE);
+		}
+#if defined (DEBUG)
+		/*???debug */
+		display_message(INFORMATION_MESSAGE,
+			"after WaitForMultipleObjects.  %p %p\n",status,WAIT_FAILED);
+#endif /* defined (DEBUG) */
+		if (crate->scrolling_socket_thread_stopped_event)
+		{
+			CloseHandle(crate->scrolling_socket_thread_stopped_event);
+			crate->scrolling_socket_thread_stopped_event=NULL;
+		}
+		if (crate->calibration_socket_thread_stopped_event)
+		{
+			CloseHandle(crate->calibration_socket_thread_stopped_event);
+			crate->calibration_socket_thread_stopped_event=NULL;
+		}
+		if (crate->acquired_socket_thread_stopped_event)
+		{
+			CloseHandle(crate->acquired_socket_thread_stopped_event);
+			crate->acquired_socket_thread_stopped_event=NULL;
+		}
+#endif /* defined (WIN32_SYSTEM) */
+#if defined (UNIX)
+		if ((crate->event_dispatcher)&&(crate->event_dispatcher_mutex))
+		{
+			if (crate->scrolling_socket_xid)
+			{
+				lock_mutex(crate->event_dispatcher_mutex);
+				Event_dispatcher_remove_file_descriptor_handler(crate->event_dispatcher,
+					crate->scrolling_socket_xid);
+				unlock_mutex(crate->event_dispatcher_mutex);
+				crate->scrolling_socket_xid=
+					(struct Event_dispatcher_file_descriptor_handler *)NULL;
+			}
+			if (crate->calibration_socket_xid)
+			{
+				lock_mutex(crate->event_dispatcher_mutex);
+				Event_dispatcher_remove_file_descriptor_handler(crate->event_dispatcher,
+					crate->calibration_socket_xid);
+				unlock_mutex(crate->event_dispatcher_mutex);
+				crate->calibration_socket_xid=
+					(struct Event_dispatcher_file_descriptor_handler *)NULL;
+			}
+			if (crate->acquired_socket_xid)
+			{
+				lock_mutex(crate->event_dispatcher_mutex);
+				Event_dispatcher_remove_file_descriptor_handler(crate->event_dispatcher,
+					crate->acquired_socket_xid);
+				unlock_mutex(crate->event_dispatcher_mutex);
+				crate->acquired_socket_xid=
+					(struct Event_dispatcher_file_descriptor_handler *)NULL;
+			}
+			pthread_mutex_destroy(crate->event_dispatcher_mutex);
+		}
+		crate->event_dispatcher_mutex=(pthread_mutex_t *)NULL;
+		crate->event_dispatcher=(struct Event_dispatcher *)NULL;
+#endif /* defined (UNIX) */
 #if defined (CACHE_CLIENT_INFORMATION)
 		crate->number_of_unemap_cards=0;
 		crate->number_of_stimulators=0;
@@ -4644,7 +4962,7 @@ static int crate_get_samples_acquired(struct Unemap_crate *crate,
 	int channel_number,int number_of_samples,short int *samples,
 	int *number_of_samples_got)
 /*******************************************************************************
-LAST MODIFIED : 5 August 2002
+LAST MODIFIED : 29 August 2002
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -5006,7 +5324,7 @@ Otherwise the function fails.
 static int crate_get_samples_acquired_background_start(
 	struct Unemap_crate *crate,int channel_number,int number_of_samples)
 /*******************************************************************************
-LAST MODIFIED : 5 August 2002
+LAST MODIFIED : 29 August 2002
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -5079,7 +5397,7 @@ Otherwise the function fails.
 
 static int crate_get_samples_acquired_background_end(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 5 August 2002
+LAST MODIFIED : 29 August 2002
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -8602,7 +8920,7 @@ Sets up the connection with the unemap hardware service for the <crate>.
 
 static int initialize_connection(void)
 /*******************************************************************************
-LAST MODIFIED : 27 February 2002
+LAST MODIFIED : 1 September 2002
 
 DESCRIPTION :
 Sets up the connections with the unemap crates.
@@ -8790,9 +9108,13 @@ Sets up the connections with the unemap crates.
 						crate->scrolling_socket=(int)INVALID_SOCKET;
 #endif /* defined (UNIX) */
 #if defined (UNIX)
-						crate->acquired_socket_xid=0;
-						crate->calibration_socket_xid=0;
-						crate->scrolling_socket_xid=0;
+						crate->event_dispatcher=(struct Event_dispatcher *)NULL;
+						crate->acquired_socket_xid=
+							(struct Event_dispatcher_file_descriptor_handler *)NULL;
+						crate->calibration_socket_xid=
+							(struct Event_dispatcher_file_descriptor_handler *)NULL;
+						crate->scrolling_socket_xid=
+							(struct Event_dispatcher_file_descriptor_handler *)NULL;
 #endif /* defined (UNIX) */
 						/*???DB.  The port doesn't have to be unique, only the port and
 							machine being connected to */
@@ -10958,7 +11280,7 @@ int unemap_transfer_samples_acquired(int channel_number,int number_of_samples,
 	Unemap_transfer_samples_function *transfer_samples_function,
 	void *transfer_samples_function_data,int *number_of_samples_transferred)
 /*******************************************************************************
-LAST MODIFIED : 13 January 2002
+LAST MODIFIED : 29 August 2002
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -11029,35 +11351,47 @@ transferred.
 		}
 		if (return_code)
 		{
-			if (ALLOCATE(samples,short,number_of_channels*local_number_of_samples))
+			if ((0<number_of_channels)&&(0<local_number_of_samples))
 			{
-				if (unemap_get_samples_acquired(channel_number,number_of_samples,
-					samples,&number_of_samples_got))
+				if (ALLOCATE(samples,short,number_of_channels*local_number_of_samples))
 				{
-					number_transferred=(*transfer_samples_function)(samples,
-						number_of_channels*number_of_samples_got,
-						transfer_samples_function_data);
-					if (number_of_channels*number_of_samples_got!=number_transferred)
+					if (!unemap_get_samples_acquired(channel_number,number_of_samples,
+						samples,&number_of_samples_got))
 					{
 						display_message(ERROR_MESSAGE,
-							"unemap_transfer_samples_acquired.  Error transferring samples");
+							"unemap_transfer_samples_acquired.  Could not get samples");
+						DEALLOCATE(samples);
 						return_code=0;
 					}
-					number_transferred /= number_of_channels;
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"unemap_transfer_samples_acquired.  Could not get samples");
+						"unemap_transfer_samples_acquired.  Could not allocate samples");
 					return_code=0;
 				}
-				DEALLOCATE(samples);
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"unemap_transfer_samples_acquired.  Could not allocate samples");
-				return_code=0;
+				samples=(short *)NULL;
+				number_of_samples_got=0;
+			}
+			if (return_code)
+			{
+				number_transferred=(*transfer_samples_function)(samples,
+					number_of_channels*number_of_samples_got,
+					transfer_samples_function_data);
+				if (number_of_channels*number_of_samples_got!=number_transferred)
+				{
+					display_message(ERROR_MESSAGE,
+						"unemap_transfer_samples_acquired.  Error transferring samples");
+					return_code=0;
+				}
+				if (0<number_of_channels)
+				{
+					number_transferred /= number_of_channels;
+				}
+				DEALLOCATE(samples);
 			}
 		}
 	}
@@ -11079,7 +11413,7 @@ transferred.
 int unemap_write_samples_acquired(int channel_number,int number_of_samples,
 	FILE *file,int *number_of_samples_written)
 /*******************************************************************************
-LAST MODIFIED : 13 January 2002
+LAST MODIFIED : 29 August 2002
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -11147,30 +11481,42 @@ for completeness.
 		}
 		if (return_code)
 		{
-			if (ALLOCATE(samples,short,number_of_channels*local_number_of_samples))
+			if ((0<number_of_channels)&&(0<local_number_of_samples))
 			{
-				if (unemap_get_samples_acquired(channel_number,number_of_samples,
-					samples,number_of_samples_written))
+				if (ALLOCATE(samples,short,number_of_channels*local_number_of_samples))
 				{
-					fwrite((char *)&channel_number,sizeof(channel_number),1,file);
-					fwrite((char *)&number_of_channels,sizeof(number_of_channels),1,file);
-					fwrite((char *)&local_number_of_samples,
-						sizeof(local_number_of_samples),1,file);
-					fwrite((char *)samples,sizeof(short int),
-						number_of_channels*local_number_of_samples,file);
-					return_code=1;
+					if (!unemap_get_samples_acquired(channel_number,number_of_samples,
+						samples,number_of_samples_written))
+					{
+						display_message(ERROR_MESSAGE,
+							"unemap_write_samples_acquired.  Could not get samples");
+						DEALLOCATE(samples);
+						return_code=0;
+					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"unemap_write_samples_acquired.  Could not get samples");
+						"unemap_write_samples_acquired.  Could not allocate samples");
+					return_code=0;
 				}
-				DEALLOCATE(samples);
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"unemap_write_samples_acquired.  Could not allocate samples");
+				*number_of_samples_written=0;
+			}
+			if (return_code)
+			{
+				fwrite((char *)&channel_number,sizeof(channel_number),1,file);
+				fwrite((char *)&number_of_channels,sizeof(number_of_channels),1,file);
+				fwrite((char *)&local_number_of_samples,
+					sizeof(local_number_of_samples),1,file);
+				if (samples)
+				{
+					fwrite((char *)samples,sizeof(short int),
+						number_of_channels*local_number_of_samples,file);
+					DEALLOCATE(samples);
+				}
 			}
 		}
 	}
@@ -11188,7 +11534,7 @@ for completeness.
 int unemap_get_samples_acquired(int channel_number,int number_of_samples,
 	short int *samples,int *number_of_samples_got)
 /*******************************************************************************
-LAST MODIFIED : 13 January 2002
+LAST MODIFIED : 29 August 2002
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -11204,7 +11550,8 @@ available, then the number of samples available are got.  Otherwise,
 set to the number of samples got.
 ==============================================================================*/
 {
-	int i,crate_channel_number,return_code;
+	int i,crate_channel_number,crate_number_of_samples_got,
+		local_number_of_samples_got,return_code;
 	struct Unemap_crate *crate;
 
 	ENTER(unemap_get_samples_acquired);
@@ -11214,6 +11561,7 @@ set to the number of samples got.
 		"enter unemap_get_samples_acquired\n");
 #endif /* defined (DEBUG) */
 	return_code=0;
+	local_number_of_samples_got=0;
 	/* check arguments */
 	if (samples)
 	{
@@ -11228,8 +11576,12 @@ set to the number of samples got.
 			{
 				while ((i>0)&&(return_code=crate_get_samples_acquired(
 					crate,channel_number,number_of_samples,samples+crate_channel_number,
-					number_of_samples_got)))
+					&crate_number_of_samples_got)))
 				{
+					if (crate_number_of_samples_got>local_number_of_samples_got)
+					{
+						local_number_of_samples_got=crate_number_of_samples_got;
+					}
 					crate_channel_number += crate->number_of_channels;
 					crate++;
 					i--;
@@ -11246,7 +11598,7 @@ set to the number of samples got.
 				if ((i>0)&&crate)
 				{
 					return_code=crate_get_samples_acquired(crate,crate_channel_number,
-						number_of_samples,samples,number_of_samples_got);
+						number_of_samples,samples,&local_number_of_samples_got);
 				}
 			}
 		}
@@ -11255,6 +11607,10 @@ set to the number of samples got.
 	{
 		display_message(ERROR_MESSAGE,
 			"unemap_get_samples_acquired.  Missing samples");
+	}
+	if (number_of_samples_got)
+	{
+		*number_of_samples_got=local_number_of_samples_got;
 	}
 #if defined (DEBUG)
 	/*???debug */
@@ -11270,7 +11626,7 @@ int unemap_get_samples_acquired_background(int channel_number,
 	int number_of_samples,Unemap_acquired_data_callback *callback,
 	void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 13 January 2002
+LAST MODIFIED : 29 August 2002
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
