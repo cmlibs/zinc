@@ -882,7 +882,7 @@ void Function_variable_iterator_representation_atomic_derivative::increment()
 		{
 			bool finished;
 			std::list<Function_variable_handle>::iterator variable_iterator_1,
-				variable_iterator_1_begin,variable_iterator_2;
+				variable_iterator_1_begin;
 			std::list<Function_variable_iterator>::iterator
 				independent_iterators_begin_iterator,
 				independent_iterators_end_iterator,
@@ -954,7 +954,7 @@ void Function_variable_iterator_representation_atomic_derivative::decrement()
 		{
 			bool finished;
 			std::list<Function_variable_handle>::iterator variable_iterator_1,
-				variable_iterator_1_begin,variable_iterator_2;
+				variable_iterator_1_begin;
 			std::list<Function_variable_iterator>::iterator
 				independent_iterators_begin_iterator,
 				independent_iterators_end_iterator,
