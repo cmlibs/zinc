@@ -30024,6 +30024,45 @@ Note: this function is recursive.
 	return (return_code);
 } /* add_FE_element_and_faces_to_list */
 
+int add_FE_element_of_dimension_to_group(struct FE_element *element,
+	void *group_dimension_data_void)
+/*******************************************************************************
+LAST MODIFIED : 22 April 2002
+
+DESCRIPTION :
+Adds <element> to the group if it is of the right dimension. Second argument is
+a pointer to a struct Element_group_dimension_data.
+==============================================================================*/
+{
+	int return_code;
+	struct Element_group_dimension_data *group_dimension_data;
+
+	ENTER(add_FE_element_of_dimension_to_group);
+	if (element && element->shape &&
+		(group_dimension_data =
+			(struct Element_group_dimension_data *)group_dimension_data_void))
+	{
+		if (element->shape->dimension == group_dimension_data->element_dimension)
+		{
+			return_code = ADD_OBJECT_TO_GROUP(FE_element)(element,
+				group_dimension_data->element_group);
+		}
+		else
+		{
+			return_code = 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"add_FE_element_of_dimension_to_group.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* add_FE_element_of_dimension_to_group */
+
 struct Add_FE_element_and_faces_to_manager_data
   *CREATE(Add_FE_element_and_faces_to_manager_data)(
 	struct MANAGER(FE_element) *element_manager)

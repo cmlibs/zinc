@@ -3006,6 +3006,28 @@ Ensures <element>, its faces (and theirs etc.) are in <element_list>.
 Note: this function is recursive.
 ==============================================================================*/
 
+struct Element_group_dimension_data
+/*******************************************************************************
+LAST MODIFIED : 22 April 2002
+
+DESCRIPTION :
+Data for function add_FE_element_of_dimension_to_group.
+==============================================================================*/
+{
+	struct GROUP(FE_element) *element_group;
+	int element_dimension;
+};
+
+int add_FE_element_of_dimension_to_group(struct FE_element *element,
+	void *group_dimension_data_void);
+/*******************************************************************************
+LAST MODIFIED : 22 April 2002
+
+DESCRIPTION :
+Adds <element> to the group if it is of the right dimension. Second argument is
+a pointer to a struct Element_group_dimension_data.
+==============================================================================*/
+
 struct Add_FE_element_and_faces_to_manager_data
   *CREATE(Add_FE_element_and_faces_to_manager_data)(
 	struct MANAGER(FE_element) *element_manager);
