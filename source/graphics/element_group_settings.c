@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 18 October 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -76,8 +76,10 @@ finite element group rendition.
 	double iso_value;
 	/* for node_points, data_points and element_points only */
 	struct GT_object *glyph;
-	Triple glyph_centre,glyph_scale_factors,glyph_size;
+	enum Glyph_scaling_mode glyph_scaling_mode;
+	Triple glyph_centre, glyph_scale_factors, glyph_size;
 	struct Computed_field *orientation_scale_field;
+	struct Computed_field *variable_scale_field;
 	struct Computed_field *label_field;
 	/* for element_points and iso_surfaces */
 	enum Use_element_type use_element_type;
@@ -393,6 +395,365 @@ Global functions
 ----------------
 */
 
+char *GT_element_settings_type_string(
+	enum GT_element_settings_type gt_element_settings_type)
+/*******************************************************************************
+LAST MODIFIED : 22 March 1999
+
+DESCRIPTION :
+Returns a pointer to a static string describing the settings_type, eg.
+GT_ELEMENT_SETTINGS_LINES == "lines". This string should match the command used
+to create that type of settings. The returned string must not be DEALLOCATEd!
+==============================================================================*/
+{
+	char *return_string;
+
+	ENTER(GT_element_settings_type_string);
+	switch (gt_element_settings_type)
+	{
+		case GT_ELEMENT_SETTINGS_NODE_POINTS:
+		{
+			return_string="node_points";
+		} break;
+		case GT_ELEMENT_SETTINGS_DATA_POINTS:
+		{
+			return_string="data_points";
+		} break;
+		case GT_ELEMENT_SETTINGS_LINES:
+		{
+			return_string="lines";
+		} break;
+		case GT_ELEMENT_SETTINGS_CYLINDERS:
+		{
+			return_string="cylinders";
+		} break;
+		case GT_ELEMENT_SETTINGS_SURFACES:
+		{
+			return_string="surfaces";
+		} break;
+		case GT_ELEMENT_SETTINGS_ISO_SURFACES:
+		{
+			return_string="iso_surfaces";
+		} break;
+		case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
+		{
+			return_string="element_points";
+		} break;
+		case GT_ELEMENT_SETTINGS_VOLUMES:
+		{
+			return_string="volumes";
+		} break;
+		case GT_ELEMENT_SETTINGS_STREAMLINES:
+		{
+			return_string="streamlines";
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"GT_element_settings_type_string.  Unknown element settings type");
+			return_string=(char *)NULL;
+		} break;
+	}
+	LEAVE;
+
+	return (return_string);
+} /* GT_element_settings_type_string */
+
+char **GT_element_settings_type_get_valid_strings(int *number_of_valid_strings,
+	int dimension)
+/*******************************************************************************
+LAST MODIFIED : 23 March 1999
+
+DESCRIPTION :
+Returns and allocated array of pointers to all static strings for valid
+GT_element_settings_types - obtained from function
+GT_element_settings_type_string. Includes only those settings_types that use
+nodes/elements of the given <dimension>, with -1 denoting all dimensions.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+{
+	char **valid_strings;
+	enum GT_element_settings_type gt_element_settings_type;
+	int i;
+
+	ENTER(GT_element_settings_type_get_valid_strings);
+	if (number_of_valid_strings&&(-1<=dimension)&&(3>=dimension))
+	{
+		*number_of_valid_strings=0;
+		gt_element_settings_type=GT_ELEMENT_SETTINGS_TYPE_BEFORE_FIRST;
+		gt_element_settings_type++;
+		while (gt_element_settings_type<GT_ELEMENT_SETTINGS_TYPE_AFTER_LAST)
+		{
+			if ((-1==dimension)||GT_element_settings_type_uses_dimension(
+				gt_element_settings_type,dimension))
+			{
+				(*number_of_valid_strings)++;
+			}
+			gt_element_settings_type++;
+		}
+		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
+		{
+			gt_element_settings_type=GT_ELEMENT_SETTINGS_TYPE_BEFORE_FIRST;
+			gt_element_settings_type++;
+			i=0;
+			while (gt_element_settings_type<GT_ELEMENT_SETTINGS_TYPE_AFTER_LAST)
+			{
+				if ((-1==dimension)||GT_element_settings_type_uses_dimension(
+					gt_element_settings_type,dimension))
+				{
+					valid_strings[i]=
+						GT_element_settings_type_string(gt_element_settings_type);
+					i++;
+				}
+				gt_element_settings_type++;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"GT_element_settings_type_get_valid_strings.  Not enough memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_type_get_valid_strings.  Invalid argument(s)");
+		valid_strings=(char **)NULL;
+	}
+	LEAVE;
+
+	return (valid_strings);
+} /* GT_element_settings_type_get_valid_strings */
+
+enum GT_element_settings_type GT_element_settings_type_from_string(
+	char *gt_element_settings_type_string)
+/*******************************************************************************
+LAST MODIFIED : 22 March 1999
+
+DESCRIPTION :
+Returns the <GT_element_settings_type> described by
+<gt_element_settings_type_string>.
+==============================================================================*/
+{
+	enum GT_element_settings_type gt_element_settings_type;
+
+	ENTER(GT_element_settings_type_from_string);
+	if (gt_element_settings_type_string)
+	{
+		gt_element_settings_type=GT_ELEMENT_SETTINGS_TYPE_BEFORE_FIRST;
+		gt_element_settings_type++;
+		while ((gt_element_settings_type<GT_ELEMENT_SETTINGS_TYPE_AFTER_LAST)&&
+			(!fuzzy_string_compare_same_length(gt_element_settings_type_string,
+				GT_element_settings_type_string(gt_element_settings_type))))
+		{
+			gt_element_settings_type++;
+		}
+		if (GT_ELEMENT_SETTINGS_TYPE_AFTER_LAST==gt_element_settings_type)
+		{
+			gt_element_settings_type=GT_ELEMENT_SETTINGS_TYPE_INVALID;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_type_from_string.  Invalid argument");
+		gt_element_settings_type=GT_ELEMENT_SETTINGS_TYPE_INVALID;
+	}
+	LEAVE;
+
+	return (gt_element_settings_type);
+} /* GT_element_settings_type_from_string */
+
+int GT_element_settings_type_uses_dimension(
+	enum GT_element_settings_type settings_type,int dimension)
+/*******************************************************************************
+LAST MODIFIED : 28 January 2000
+
+DESCRIPTION :
+Returns true if the particular <settings_type> can deal with nodes/elements of
+the given <dimension>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_element_settings_type_uses_dimension);
+	switch (settings_type)
+	{
+		case GT_ELEMENT_SETTINGS_NODE_POINTS:
+		case GT_ELEMENT_SETTINGS_DATA_POINTS:
+		{
+			return_code=(0==dimension);
+		} break;
+		case GT_ELEMENT_SETTINGS_LINES:
+		case GT_ELEMENT_SETTINGS_CYLINDERS:
+		{
+			return_code=(1==dimension);
+		} break;
+		case GT_ELEMENT_SETTINGS_SURFACES:
+		{
+			return_code=(2==dimension);
+		} break;
+		case GT_ELEMENT_SETTINGS_VOLUMES:
+		case GT_ELEMENT_SETTINGS_STREAMLINES:
+		{
+			return_code=(3==dimension);
+		} break;
+		case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
+		case GT_ELEMENT_SETTINGS_ISO_SURFACES:
+		{
+			return_code=((1==dimension)||(2==dimension)||(3==dimension));
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"GT_element_settings_type_uses_dimension.  Unknown settings type");
+			return_code=0;
+		} break;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_type_uses_dimension */
+
+char *Glyph_scaling_mode_string(enum Glyph_scaling_mode glyph_scaling_mode)
+/*******************************************************************************
+LAST MODIFIED : 8 November 2000
+
+DESCRIPTION :
+Returns a pointer to a static string describing the glyph_scaling_mode, eg.
+GLYPH_SCALING_CONSTANT == "constant". This string should match the command used
+to create that type of settings. The returned string must not be DEALLOCATEd!
+==============================================================================*/
+{
+	char *return_string;
+
+	ENTER(Glyph_scaling_mode_string);
+	switch (glyph_scaling_mode)
+	{
+		case GLYPH_SCALING_CONSTANT:
+		{
+			return_string="constant";
+		} break;
+		case GLYPH_SCALING_SCALAR:
+		{
+			return_string="scalar";
+		} break;
+		case GLYPH_SCALING_VECTOR:
+		{
+			return_string="vector";
+		} break;
+		case GLYPH_SCALING_AXES:
+		{
+			return_string="axes";
+		} break;
+		case GLYPH_SCALING_GENERAL:
+		{
+			return_string="general";
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"Glyph_scaling_mode_string.  Unknown glyph_scaling_mode");
+			return_string=(char *)NULL;
+		} break;
+	}
+	LEAVE;
+
+	return (return_string);
+} /* Glyph_scaling_mode_string */
+
+char **Glyph_scaling_mode_get_valid_strings(int *number_of_valid_strings)
+/*******************************************************************************
+LAST MODIFIED : 8 November 2000
+
+DESCRIPTION :
+Returns and allocated array of pointers to all static strings for valid
+Glyph_scaling_modes - obtained from function Glyph_scaling_mode_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+{
+	char **valid_strings;
+	enum Glyph_scaling_mode glyph_scaling_mode;
+	int i;
+
+	ENTER(Glyph_scaling_mode_get_valid_strings);
+	if (number_of_valid_strings)
+	{
+		*number_of_valid_strings=0;
+		glyph_scaling_mode=GLYPH_SCALING_MODE_BEFORE_FIRST;
+		glyph_scaling_mode++;
+		while (glyph_scaling_mode<GLYPH_SCALING_MODE_AFTER_LAST)
+		{
+			(*number_of_valid_strings)++;
+			glyph_scaling_mode++;
+		}
+		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
+		{
+			glyph_scaling_mode=GLYPH_SCALING_MODE_BEFORE_FIRST;
+			glyph_scaling_mode++;
+			i=0;
+			while (glyph_scaling_mode<GLYPH_SCALING_MODE_AFTER_LAST)
+			{
+				valid_strings[i]=Glyph_scaling_mode_string(glyph_scaling_mode);
+				i++;
+				glyph_scaling_mode++;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Glyph_scaling_mode_get_valid_strings.  Not enough memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Glyph_scaling_mode_get_valid_strings.  Invalid argument");
+		valid_strings=(char **)NULL;
+	}
+	LEAVE;
+
+	return (valid_strings);
+} /* Glyph_scaling_mode_get_valid_strings */
+
+enum Glyph_scaling_mode Glyph_scaling_mode_from_string(
+	char *glyph_scaling_mode_string)
+/*******************************************************************************
+LAST MODIFIED : 8 November 2000
+
+DESCRIPTION :
+Returns the <Glyph_scaling_mode> described by <glyph_scaling_mode_string>.
+==============================================================================*/
+{
+	enum Glyph_scaling_mode glyph_scaling_mode;
+
+	ENTER(Glyph_scaling_mode_from_string);
+	if (glyph_scaling_mode_string)
+	{
+		glyph_scaling_mode=GLYPH_SCALING_MODE_BEFORE_FIRST;
+		glyph_scaling_mode++;
+		while ((glyph_scaling_mode<GLYPH_SCALING_MODE_AFTER_LAST)&&
+			(!fuzzy_string_compare_same_length(glyph_scaling_mode_string,
+				Glyph_scaling_mode_string(glyph_scaling_mode))))
+		{
+			glyph_scaling_mode++;
+		}
+		if (GLYPH_SCALING_MODE_AFTER_LAST==glyph_scaling_mode)
+		{
+			glyph_scaling_mode=GLYPH_SCALING_MODE_INVALID;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Glyph_scaling_mode_from_string.  Invalid argument");
+		glyph_scaling_mode=GLYPH_SCALING_MODE_INVALID;
+	}
+	LEAVE;
+
+	return (glyph_scaling_mode);
+} /* Glyph_scaling_mode_from_string */
+
 DECLARE_OBJECT_FUNCTIONS(GT_element_settings)
 DECLARE_INDEXED_LIST_FUNCTIONS(GT_element_settings)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(GT_element_settings, \
@@ -443,6 +804,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			settings->iso_value=0.0;
 			/* for node_points, data_points and element_points only */
 			settings->glyph=(struct GT_object *)NULL;
+			settings->glyph_scaling_mode = GLYPH_SCALING_GENERAL;
 			settings->glyph_centre[0]=0.0;
 			settings->glyph_centre[1]=0.0;
 			settings->glyph_centre[2]=0.0;
@@ -453,6 +815,7 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			settings->glyph_size[1]=1.0;
 			settings->glyph_size[2]=1.0;
 			settings->orientation_scale_field=(struct Computed_field *)NULL;
+			settings->variable_scale_field=(struct Computed_field *)NULL;
 			settings->label_field=(struct Computed_field *)NULL;
 			settings->select_mode=GRAPHICS_SELECT_ON;
 			/* for element_points and iso_surfaces */
@@ -570,6 +933,10 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 			{
 				DEACCESS(Computed_field)(&(settings->orientation_scale_field));
 			}
+			if (settings->variable_scale_field)
+			{
+				DEACCESS(Computed_field)(&(settings->variable_scale_field));
+			}
 			if (settings->label_field)
 			{
 				DEACCESS(Computed_field)(&(settings->label_field));
@@ -639,7 +1006,7 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 
 PROTOTYPE_COPY_OBJECT_FUNCTION(GT_element_settings)
 /*******************************************************************************
-LAST MODIFIED : 24 February 2000
+LAST MODIFIED : 10 November 2000
 
 DESCRIPTION :
 syntax: COPY(GT_element_settings)(destination,source)
@@ -710,8 +1077,10 @@ Note: destination->access_count is not changed by COPY.
 			(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==source->settings_type))
 		{
 			GT_element_settings_set_glyph_parameters(destination,
-				source->glyph,source->glyph_centre,source->glyph_size,
-				source->orientation_scale_field,source->glyph_scale_factors);
+				source->glyph, source->glyph_scaling_mode,
+				source->glyph_centre, source->glyph_size,
+				source->orientation_scale_field, source->glyph_scale_factors,
+				source->variable_scale_field);
 		}
 		else
 		{
@@ -724,6 +1093,10 @@ Note: destination->access_count is not changed by COPY.
 			if (destination->orientation_scale_field)
 			{
 				DEACCESS(Computed_field)(&destination->orientation_scale_field);
+			}
+			if (destination->variable_scale_field)
+			{
+				DEACCESS(Computed_field)(&destination->variable_scale_field);
 			}
 		}
 		REACCESS(Computed_field)(&(destination->label_field),source->label_field);
@@ -1539,11 +1912,13 @@ selection status.
 } /* GT_element_settings_set_select_mode */
 
 int GT_element_settings_get_glyph_parameters(
-	struct GT_element_settings *settings,struct GT_object **glyph,
-	Triple glyph_centre,Triple glyph_size,
-	struct Computed_field **orientation_scale_field,Triple glyph_scale_factors)
+	struct GT_element_settings *settings,
+	struct GT_object **glyph, enum Glyph_scaling_mode *glyph_scaling_mode,
+	Triple glyph_centre, Triple glyph_size,
+	struct Computed_field **orientation_scale_field, Triple glyph_scale_factors,
+	struct Computed_field **variable_scale_field)
 /*******************************************************************************
-LAST MODIFIED : 15 February 1999
+LAST MODIFIED : 10 November 2000
 
 DESCRIPTION :
 Returns the current glyph and parameters for orienting and scaling it.
@@ -1552,23 +1927,25 @@ Returns the current glyph and parameters for orienting and scaling it.
 	int return_code;
 
 	ENTER(GT_element_settings_get_glyph_parameters);
-	if (settings&&glyph&&glyph_centre&&glyph_scale_factors&&glyph_size&&
-		((GT_ELEMENT_SETTINGS_NODE_POINTS==settings->settings_type)||
-		(GT_ELEMENT_SETTINGS_DATA_POINTS==settings->settings_type)||
-		(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type))&&
-		orientation_scale_field)
+	if (settings && glyph && glyph_scaling_mode && glyph_centre && glyph_size &&
+		((GT_ELEMENT_SETTINGS_NODE_POINTS==settings->settings_type) ||
+			(GT_ELEMENT_SETTINGS_DATA_POINTS==settings->settings_type) ||
+			(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)) &&
+		orientation_scale_field && glyph_scale_factors && variable_scale_field)
 	{
 		*glyph = settings->glyph;
-		glyph_centre[0]=settings->glyph_centre[0];
-		glyph_centre[1]=settings->glyph_centre[1];
-		glyph_centre[2]=settings->glyph_centre[2];
-		glyph_size[0]=settings->glyph_size[0];
-		glyph_size[1]=settings->glyph_size[1];
-		glyph_size[2]=settings->glyph_size[2];
-		*orientation_scale_field=settings->orientation_scale_field;
-		glyph_scale_factors[0]=settings->glyph_scale_factors[0];
-		glyph_scale_factors[1]=settings->glyph_scale_factors[1];
-		glyph_scale_factors[2]=settings->glyph_scale_factors[2];
+		*glyph_scaling_mode = settings->glyph_scaling_mode;
+		glyph_centre[0] = settings->glyph_centre[0];
+		glyph_centre[1] = settings->glyph_centre[1];
+		glyph_centre[2] = settings->glyph_centre[2];
+		glyph_size[0] = settings->glyph_size[0];
+		glyph_size[1] = settings->glyph_size[1];
+		glyph_size[2] = settings->glyph_size[2];
+		*orientation_scale_field = settings->orientation_scale_field;
+		glyph_scale_factors[0] = settings->glyph_scale_factors[0];
+		glyph_scale_factors[1] = settings->glyph_scale_factors[1];
+		glyph_scale_factors[2] = settings->glyph_scale_factors[2];
+		*variable_scale_field = settings->variable_scale_field;
 		return_code=1;
 	}
 	else
@@ -1583,11 +1960,13 @@ Returns the current glyph and parameters for orienting and scaling it.
 } /* GT_element_settings_get_glyph_parameters */
 
 int GT_element_settings_set_glyph_parameters(
-	struct GT_element_settings *settings,struct GT_object *glyph,
-	Triple glyph_centre,Triple glyph_size,
-	struct Computed_field *orientation_scale_field,Triple glyph_scale_factors)
+	struct GT_element_settings *settings,
+	struct GT_object *glyph, enum Glyph_scaling_mode glyph_scaling_mode,
+	Triple glyph_centre, Triple glyph_size,
+	struct Computed_field *orientation_scale_field, Triple glyph_scale_factors,
+	struct Computed_field *variable_scale_field)
 /*******************************************************************************
-LAST MODIFIED : 19 March 1999
+LAST MODIFIED : 10 November 2000
 
 DESCRIPTION :
 Sets the glyph and parameters for orienting and scaling it.
@@ -1599,32 +1978,37 @@ finite_element/finite_element_to_graphics object for explanation of how the
 	int return_code;
 
 	ENTER(GT_element_settings_set_glyph_parameters);
-	if (settings&&glyph&&glyph_centre&&glyph_scale_factors&&glyph_size&&
+	if (settings && glyph && glyph_centre && glyph_size &&
 		((GT_ELEMENT_SETTINGS_NODE_POINTS==settings->settings_type)||
-		(GT_ELEMENT_SETTINGS_DATA_POINTS==settings->settings_type)||
-		(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type))&&
-		((!orientation_scale_field)||Computed_field_is_orientation_scale_capable(
-			orientation_scale_field,(void *)NULL)))
+			(GT_ELEMENT_SETTINGS_DATA_POINTS==settings->settings_type)||
+			(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type))&&
+		((!orientation_scale_field) || Computed_field_is_orientation_scale_capable(
+			orientation_scale_field,(void *)NULL)) && glyph_scale_factors &&
+		((!variable_scale_field) || Computed_field_has_up_to_3_numerical_components(
+			variable_scale_field,(void *)NULL)))
 	{
 		if (settings->glyph)
 		{
-			GT_object_remove_callback(settings->glyph, GT_element_settings_glyph_change,
-				(void *)settings);
+			GT_object_remove_callback(settings->glyph,
+				GT_element_settings_glyph_change, (void *)settings);
 		}
 		REACCESS(GT_object)(&(settings->glyph),glyph);
 		GT_object_add_callback(settings->glyph, GT_element_settings_glyph_change,
 				(void *)settings);
-		settings->glyph_centre[0]=glyph_centre[0];
-		settings->glyph_centre[1]=glyph_centre[1];
-		settings->glyph_centre[2]=glyph_centre[2];
-		settings->glyph_size[0]=glyph_size[0];
-		settings->glyph_size[1]=glyph_size[1];
-		settings->glyph_size[2]=glyph_size[2];
+		settings->glyph_scaling_mode = glyph_scaling_mode;
+		settings->glyph_centre[0] = glyph_centre[0];
+		settings->glyph_centre[1] = glyph_centre[1];
+		settings->glyph_centre[2] = glyph_centre[2];
+		settings->glyph_size[0] = glyph_size[0];
+		settings->glyph_size[1] = glyph_size[1];
+		settings->glyph_size[2] = glyph_size[2];
 		REACCESS(Computed_field)(&(settings->orientation_scale_field),
 			orientation_scale_field);
 		settings->glyph_scale_factors[0]=glyph_scale_factors[0];
 		settings->glyph_scale_factors[1]=glyph_scale_factors[1];
 		settings->glyph_scale_factors[2]=glyph_scale_factors[2];
+		REACCESS(Computed_field)(&(settings->variable_scale_field),
+			variable_scale_field);
 		return_code=1;
 	}
 	else
@@ -2522,7 +2906,7 @@ number is converted to a string and that is compared to the supplied <name>.
 int GT_element_settings_has_embedded_field(
 	struct GT_element_settings *settings,void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 28 June 1999
+LAST MODIFIED : 10 November 2000
 
 DESCRIPTION :
 Returns 1 if the <settings> use any embedded_fields.
@@ -2535,27 +2919,20 @@ Returns 1 if the <settings> use any embedded_fields.
 	if (settings)
 	{
 		return_code = 0;
-		if(settings->coordinate_field&&
-			Computed_field_depends_on_embedded_field(settings->coordinate_field))
+		if ((settings->coordinate_field &&
+			Computed_field_depends_on_embedded_field(settings->coordinate_field)) ||
+			(settings->orientation_scale_field &&
+				Computed_field_depends_on_embedded_field(
+					settings->orientation_scale_field)) ||
+			(settings->variable_scale_field &&
+				Computed_field_depends_on_embedded_field(
+					settings->variable_scale_field)) ||
+			(settings->data_field &&
+				Computed_field_depends_on_embedded_field(settings->data_field)) ||
+			(settings->label_field &&
+				Computed_field_depends_on_embedded_field(settings->label_field)))
 		{
 			return_code = 1;
-		}
-		else
-		{
-			if(settings->orientation_scale_field&&
-				Computed_field_depends_on_embedded_field(settings->orientation_scale_field))
-			{
-				return_code = 1;
-			}
-			else
-			{
-				if(settings->data_field&&
-					Computed_field_depends_on_embedded_field(settings->data_field))
-				{
-					return_code = 1;
-				}
-				/* Could test any number of other fields */
-			}
 		}
 	}
 	else
@@ -2933,10 +3310,9 @@ Notifies the <settings> that the glyph used has changed.
 ==============================================================================*/
 {
 	int return_code;
-	struct GT_element_settings *settings;
 	
 	ENTER(GT_element_settings_glyph_change);
-	if (glyph && (settings = (struct GT_element_settings *)settings_void))
+	if (glyph && settings_void)
 	{
 		return_code = 1;
 	}
@@ -3277,7 +3653,7 @@ Returns the position of <settings> in <list_of_settings>.
 int GT_element_settings_same_geometry(struct GT_element_settings *settings,
 	void *second_settings_void)
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 10 November 2000
 
 DESCRIPTION :
 GT_element_settings list conditional function returning 1 iff the two
@@ -3338,6 +3714,7 @@ settings describe EXACTLY the same geometry.
 		{
 			return_code=
 				(settings->glyph==second_settings->glyph)&&
+				(settings->glyph_scaling_mode==second_settings->glyph_scaling_mode)&&
 				(settings->glyph_size[0]==second_settings->glyph_size[0])&&
 				(settings->glyph_size[1]==second_settings->glyph_size[1])&&
 				(settings->glyph_size[2]==second_settings->glyph_size[2])&&
@@ -3352,6 +3729,8 @@ settings describe EXACTLY the same geometry.
 				(settings->glyph_centre[2]==second_settings->glyph_centre[2])&&
 				(settings->orientation_scale_field==
 					second_settings->orientation_scale_field)&&
+				(settings->variable_scale_field==
+					second_settings->variable_scale_field)&&
 				(settings->label_field==second_settings->label_field);
 		}
 		/* for element_points and iso_surfaces */
@@ -3567,230 +3946,10 @@ any trivial differences are fixed up in the graphics_obejct.
 	return (return_code);
 } /* GT_element_settings_extract_graphics_object_from_list */
 
-int GT_element_settings_type_uses_dimension(
-	enum GT_element_settings_type settings_type,int dimension)
-/*******************************************************************************
-LAST MODIFIED : 28 January 2000
-
-DESCRIPTION :
-Returns true if the particular <settings_type> can deal with nodes/elements of
-the given <dimension>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(GT_element_settings_type_uses_dimension);
-	switch (settings_type)
-	{
-		case GT_ELEMENT_SETTINGS_NODE_POINTS:
-		case GT_ELEMENT_SETTINGS_DATA_POINTS:
-		{
-			return_code=(0==dimension);
-		} break;
-		case GT_ELEMENT_SETTINGS_LINES:
-		case GT_ELEMENT_SETTINGS_CYLINDERS:
-		{
-			return_code=(1==dimension);
-		} break;
-		case GT_ELEMENT_SETTINGS_SURFACES:
-		{
-			return_code=(2==dimension);
-		} break;
-		case GT_ELEMENT_SETTINGS_VOLUMES:
-		case GT_ELEMENT_SETTINGS_STREAMLINES:
-		{
-			return_code=(3==dimension);
-		} break;
-		case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
-		case GT_ELEMENT_SETTINGS_ISO_SURFACES:
-		{
-			return_code=((1==dimension)||(2==dimension)||(3==dimension));
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE,
-				"GT_element_settings_type_uses_dimension.  Unknown settings type");
-			return_code=0;
-		} break;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_element_settings_type_uses_dimension */
-
-char *GT_element_settings_type_string(
-	enum GT_element_settings_type gt_element_settings_type)
-/*******************************************************************************
-LAST MODIFIED : 22 March 1999
-
-DESCRIPTION :
-Returns a pointer to a static string describing the settings_type, eg.
-GT_ELEMENT_SETTINGS_LINES == "lines". This string should match the command used
-to create that type of settings. The returned string must not be DEALLOCATEd!
-==============================================================================*/
-{
-	char *return_string;
-
-	ENTER(GT_element_settings_type_string);
-	switch (gt_element_settings_type)
-	{
-		case GT_ELEMENT_SETTINGS_NODE_POINTS:
-		{
-			return_string="node_points";
-		} break;
-		case GT_ELEMENT_SETTINGS_DATA_POINTS:
-		{
-			return_string="data_points";
-		} break;
-		case GT_ELEMENT_SETTINGS_LINES:
-		{
-			return_string="lines";
-		} break;
-		case GT_ELEMENT_SETTINGS_CYLINDERS:
-		{
-			return_string="cylinders";
-		} break;
-		case GT_ELEMENT_SETTINGS_SURFACES:
-		{
-			return_string="surfaces";
-		} break;
-		case GT_ELEMENT_SETTINGS_ISO_SURFACES:
-		{
-			return_string="iso_surfaces";
-		} break;
-		case GT_ELEMENT_SETTINGS_ELEMENT_POINTS:
-		{
-			return_string="element_points";
-		} break;
-		case GT_ELEMENT_SETTINGS_VOLUMES:
-		{
-			return_string="volumes";
-		} break;
-		case GT_ELEMENT_SETTINGS_STREAMLINES:
-		{
-			return_string="streamlines";
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE,
-				"GT_element_settings_type_string.  Unknown element settings type");
-			return_string=(char *)NULL;
-		} break;
-	}
-	LEAVE;
-
-	return (return_string);
-} /* GT_element_settings_type_string */
-
-char **GT_element_settings_type_get_valid_strings(int *number_of_valid_strings,
-	int dimension)
-/*******************************************************************************
-LAST MODIFIED : 23 March 1999
-
-DESCRIPTION :
-Returns and allocated array of pointers to all static strings for valid
-GT_element_settings_types - obtained from function
-GT_element_settings_type_string. Includes only those settings_types that use
-nodes/elements of the given <dimension>, with -1 denoting all dimensions.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-{
-	char **valid_strings;
-	enum GT_element_settings_type gt_element_settings_type;
-	int i;
-
-	ENTER(GT_element_settings_type_get_valid_strings);
-	if (number_of_valid_strings&&(-1<=dimension)&&(3>=dimension))
-	{
-		*number_of_valid_strings=0;
-		gt_element_settings_type=GT_ELEMENT_SETTINGS_TYPE_BEFORE_FIRST;
-		gt_element_settings_type++;
-		while (gt_element_settings_type<GT_ELEMENT_SETTINGS_TYPE_AFTER_LAST)
-		{
-			if ((-1==dimension)||GT_element_settings_type_uses_dimension(
-				gt_element_settings_type,dimension))
-			{
-				(*number_of_valid_strings)++;
-			}
-			gt_element_settings_type++;
-		}
-		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
-		{
-			gt_element_settings_type=GT_ELEMENT_SETTINGS_TYPE_BEFORE_FIRST;
-			gt_element_settings_type++;
-			i=0;
-			while (gt_element_settings_type<GT_ELEMENT_SETTINGS_TYPE_AFTER_LAST)
-			{
-				if ((-1==dimension)||GT_element_settings_type_uses_dimension(
-					gt_element_settings_type,dimension))
-				{
-					valid_strings[i]=
-						GT_element_settings_type_string(gt_element_settings_type);
-					i++;
-				}
-				gt_element_settings_type++;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"GT_element_settings_type_get_valid_strings.  Not enough memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_element_settings_type_get_valid_strings.  Invalid argument");
-		valid_strings=(char **)NULL;
-	}
-	LEAVE;
-
-	return (valid_strings);
-} /* GT_element_settings_type_get_valid_strings */
-
-enum GT_element_settings_type GT_element_settings_type_from_string(
-	char *gt_element_settings_type_string)
-/*******************************************************************************
-LAST MODIFIED : 22 March 1999
-
-DESCRIPTION :
-Returns the <GT_element_settings_type> described by
-<gt_element_settings_type_string>.
-==============================================================================*/
-{
-	enum GT_element_settings_type gt_element_settings_type;
-
-	ENTER(GT_element_settings_type_from_string);
-	if (gt_element_settings_type_string)
-	{
-		gt_element_settings_type=GT_ELEMENT_SETTINGS_TYPE_BEFORE_FIRST;
-		gt_element_settings_type++;
-		while ((gt_element_settings_type<GT_ELEMENT_SETTINGS_TYPE_AFTER_LAST)&&
-			(!fuzzy_string_compare_same_length(gt_element_settings_type_string,
-				GT_element_settings_type_string(gt_element_settings_type))))
-		{
-			gt_element_settings_type++;
-		}
-		if (GT_ELEMENT_SETTINGS_TYPE_AFTER_LAST==gt_element_settings_type)
-		{
-			gt_element_settings_type=GT_ELEMENT_SETTINGS_TYPE_INVALID;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_element_settings_type_from_string.  Invalid argument");
-		gt_element_settings_type=GT_ELEMENT_SETTINGS_TYPE_INVALID;
-	}
-	LEAVE;
-
-	return (gt_element_settings_type);
-} /* GT_element_settings_type_from_string */
-
 char *GT_element_settings_string(struct GT_element_settings *settings,
 	enum GT_element_settings_string_details settings_detail)
 /*******************************************************************************
-LAST MODIFIED : 1 September 2000
+LAST MODIFIED : 10 November 2000
 
 DESCRIPTION :
 Returns a string describing the settings, suitable for entry into the command
@@ -3962,6 +4121,9 @@ if no coordinate field. Currently only write if we have a field.
 			{
 				append_string(&settings_string," glyph ",&error);
 				append_string(&settings_string,settings->glyph->name,&error);
+				append_string(&settings_string," ",&error);
+				append_string(&settings_string,
+					Glyph_scaling_mode_string(settings->glyph_scaling_mode),&error);
 				sprintf(temp_string," size \"%g*%g*%g\"",settings->glyph_size[0],
 					settings->glyph_size[1],settings->glyph_size[2]);
 				append_string(&settings_string,temp_string,&error);
@@ -3988,17 +4150,36 @@ if no coordinate field. Currently only write if we have a field.
 						append_string(&settings_string," orientation ",&error);
 						append_string(&settings_string,name,&error);
 						DEALLOCATE(name);
-						sprintf(temp_string," scale_factors \"%g*%g*%g\"",
-							settings->glyph_scale_factors[0],
-							settings->glyph_scale_factors[1],
-							settings->glyph_scale_factors[2]);
-						append_string(&settings_string,temp_string,&error);
 					}
 					else
 					{
 						DEALLOCATE(settings_string);
 						error=1;
 					}
+				}
+				if (settings->variable_scale_field)
+				{
+					if (GET_NAME(Computed_field)(settings->variable_scale_field,&name))
+					{
+						/* put quotes around name if it contains special characters */
+						make_valid_token(&name);
+						append_string(&settings_string," variable_scale ",&error);
+						append_string(&settings_string,name,&error);
+						DEALLOCATE(name);
+					}
+					else
+					{
+						DEALLOCATE(settings_string);
+						error=1;
+					}
+				}
+				if (settings->orientation_scale_field || settings->variable_scale_field)
+				{
+					sprintf(temp_string," scale_factors \"%g*%g*%g\"",
+						settings->glyph_scale_factors[0],
+						settings->glyph_scale_factors[1],
+						settings->glyph_scale_factors[2]);
+					append_string(&settings_string,temp_string,&error);
 				}
 			}
 			else
@@ -4358,13 +4539,13 @@ Makes a copy of the settings and puts it in the list_of_settings.
 static int FE_element_to_graphics_object(struct FE_element *element,
 	void *settings_to_object_data_void)
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 10 November 2000
 
 DESCRIPTION :
 Converts a finite element into a graphics object with the supplied settings.
 ==============================================================================*/
 {
-	FE_value initial_xi[3];
+	FE_value base_size[3], centre[3], initial_xi[3], scale_factors[3];
 	float time;
 	int base_grid_offset,dimension,draw_element,draw_selected,edit_mode,
 		element_selected,grid_offset_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],i,
@@ -4724,16 +4905,25 @@ Converts a finite element into a graphics object with the supplied settings.
 							}
 							element_selected=IS_OBJECT_IN_LIST(FE_element)(use_element,
 								settings_to_object_data->selected_element_list);
+							base_size[0] = (FE_value)(settings->glyph_size[0]);
+							base_size[1] = (FE_value)(settings->glyph_size[1]);
+							base_size[2] = (FE_value)(settings->glyph_size[2]);
+							centre[0] = (FE_value)(settings->glyph_centre[0]);
+							centre[1] = (FE_value)(settings->glyph_centre[1]);
+							centre[2] = (FE_value)(settings->glyph_centre[2]);
+							scale_factors[0] = (FE_value)(settings->glyph_scale_factors[0]);
+							scale_factors[1] = (FE_value)(settings->glyph_scale_factors[1]);
+							scale_factors[2] = (FE_value)(settings->glyph_scale_factors[2]);
 							/* NOT an error if no glyph_set produced == empty selection */
 							if (glyph_set=create_GT_glyph_set_from_FE_element(
 								use_element,top_level_element,
 								settings_to_object_data->rc_coordinate_field,
 								number_of_xi_points,xi_points,
-								settings->glyph,settings->glyph_centre,settings->glyph_size,
+								settings->glyph, base_size, centre, scale_factors,
 								settings_to_object_data->wrapper_orientation_scale_field,
-								settings->glyph_scale_factors,settings->data_field,
-								settings->label_field,settings->select_mode,
-								element_selected,ranges,point_numbers))
+								settings->variable_scale_field, settings->data_field,
+								settings->label_field, settings->select_mode,
+								element_selected, ranges, point_numbers))
 							{
 								if (!GT_OBJECT_ADD(GT_glyph_set)(
 									settings->graphics_object,time,glyph_set))
@@ -4869,19 +5059,20 @@ Converts a finite element into a graphics object with the supplied settings.
 int GT_element_settings_to_graphics_object(
 	struct GT_element_settings *settings,void *settings_to_object_data_void)
 /*******************************************************************************
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 10 November 2000
 
 DESCRIPTION :
 Creates a GT_object and fills it with the objects described by settings.
 The graphics object is stored with with the settings it was created from.
 ==============================================================================*/
 {
-	char *group_string,*graphics_object_name,*settings_string,*settings_name;
+	char *group_string, *graphics_object_name, *settings_string, *settings_name;
+	FE_value base_size[3], centre[3], scale_factors[3];
 	float time;
 	enum GT_object_type graphics_object_type;
-	int multi_element_voltex,return_code;
+	int multi_element_voltex, return_code;
 	struct Computed_field *coordinate_field;
-	struct FE_element *changed_element,*first_element;
+	struct FE_element *changed_element, *first_element;
 	struct FE_field *fe_coordinate_field;
 	struct FE_node *changed_node;
 	struct GROUP(FE_element) *element_group;
@@ -5077,28 +5268,37 @@ The graphics object is stored with with the settings it was created from.
 								{
 									GT_object_delete_time(settings->graphics_object,time);
 								}
+								base_size[0] = (FE_value)(settings->glyph_size[0]);
+								base_size[1] = (FE_value)(settings->glyph_size[1]);
+								base_size[2] = (FE_value)(settings->glyph_size[2]);
+								centre[0] = (FE_value)(settings->glyph_centre[0]);
+								centre[1] = (FE_value)(settings->glyph_centre[1]);
+								centre[2] = (FE_value)(settings->glyph_centre[2]);
+								scale_factors[0] = (FE_value)(settings->glyph_scale_factors[0]);
+								scale_factors[1] = (FE_value)(settings->glyph_scale_factors[1]);
+								scale_factors[2] = (FE_value)(settings->glyph_scale_factors[2]);
 								if (GT_ELEMENT_SETTINGS_NODE_POINTS==settings->settings_type)
 								{
-									glyph_set=create_GT_glyph_set_from_FE_node_group(
+									glyph_set = create_GT_glyph_set_from_FE_node_group(
 										settings_to_object_data->node_group,
 										(struct MANAGER(FE_node) *)NULL,
 										settings_to_object_data->rc_coordinate_field,
-										settings->glyph,settings->glyph_centre,settings->glyph_size,
+										settings->glyph, base_size, centre, scale_factors,
 										settings_to_object_data->wrapper_orientation_scale_field,
-										settings->glyph_scale_factors,settings->data_field,
-										settings->label_field,settings->select_mode,
+										settings->variable_scale_field, settings->data_field,
+										settings->label_field, settings->select_mode,
 										settings_to_object_data->selected_node_list);
 								}
 								else
 								{
-									glyph_set=create_GT_glyph_set_from_FE_node_group(
+									glyph_set = create_GT_glyph_set_from_FE_node_group(
 										settings_to_object_data->data_group,
 										(struct MANAGER(FE_node) *)NULL,
 										settings_to_object_data->rc_coordinate_field,
-										settings->glyph,settings->glyph_centre,settings->glyph_size,
+										settings->glyph, base_size, centre, scale_factors,
 										settings_to_object_data->wrapper_orientation_scale_field,
-										settings->glyph_scale_factors,settings->data_field,
-										settings->label_field,settings->select_mode,
+										settings->variable_scale_field, settings->data_field,
+										settings->label_field, settings->select_mode,
 										settings_to_object_data->selected_data_list);
 								}
 								/* NOT an error if no glyph_set produced == empty group */
@@ -5751,15 +5951,18 @@ struct GT_element_settings_computed_field_change_data ;
 					rebuild_graphics_object=1;
 				}
 				/* for node_points, data_points and element_points only */
-				if (((GT_ELEMENT_SETTINGS_NODE_POINTS==settings->settings_type)||
-					(GT_ELEMENT_SETTINGS_DATA_POINTS==settings->settings_type)||
-					(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type))&&
-					(settings->orientation_scale_field&&
+				if (((GT_ELEMENT_SETTINGS_NODE_POINTS == settings->settings_type) ||
+					(GT_ELEMENT_SETTINGS_DATA_POINTS == settings->settings_type) ||
+					(GT_ELEMENT_SETTINGS_ELEMENT_POINTS == settings->settings_type)) &&
+					(settings->orientation_scale_field &&
 						Computed_field_depends_on_Computed_field(
-							settings->orientation_scale_field,changed_field))||
-					(settings->label_field&&
+							settings->orientation_scale_field, changed_field)) ||
+					(settings->variable_scale_field &&
 						Computed_field_depends_on_Computed_field(
-							settings->label_field,changed_field)))
+							settings->variable_scale_field, changed_field)) ||
+					(settings->label_field &&
+						Computed_field_depends_on_Computed_field(
+							settings->label_field, changed_field)))
 				{
 					rebuild_graphics_object=1;
 				}
@@ -5986,7 +6189,7 @@ If there is a visible graphics_object in <settings>, expands the
 int gfx_modify_g_element_node_points(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 10 November 2000
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT NODE_POINTS command.
@@ -5994,14 +6197,20 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char invisible_flag,*select_mode_string,**valid_strings;
+	char *glyph_scaling_mode_string, invisible_flag, *select_mode_string,
+		**valid_strings;
+	enum Glyph_scaling_mode glyph_scaling_mode;
 	int number_of_components,number_of_valid_strings,return_code;
-	struct Modify_g_element_data *modify_g_element_data;
+	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_element_settings *settings;
+	struct GT_object *glyph;
 	struct G_element_command_data *g_element_command_data;
+	struct Modify_g_element_data *modify_g_element_data;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_data_field_data,set_label_field_data,set_orientation_scale_field_data;
+		set_data_field_data, set_label_field_data, set_orientation_scale_field_data,
+		set_variable_scale_field_data;
+	Triple glyph_centre, glyph_scale_factors, glyph_size;
 
 	ENTER(gfx_modify_g_element_node_points);
 	if (state)
@@ -6013,7 +6222,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				(struct Modify_g_element_data *)modify_g_element_data_void)
 			{
 				/* create the gt_element_settings: */
-				if (settings=modify_g_element_data->settings=
+				if (settings=modify_g_element_data->settings =
 					CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_NODE_POINTS))
 				{
 					/* access since deaccessed in gfx_modify_g_element */
@@ -6025,21 +6234,28 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
 							"default_selected",
 							g_element_command_data->graphical_material_manager));
+					GT_element_settings_get_glyph_parameters(settings,
+						&glyph, &glyph_scaling_mode, glyph_centre, glyph_size,
+						&orientation_scale_field, glyph_scale_factors,
+						&variable_scale_field);
 					/* default to point glyph for fastest possible display */
-					GT_element_settings_set_glyph_parameters(settings,
-						FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
-							g_element_command_data->glyph_list),
-						settings->glyph_centre,settings->glyph_size,
-						settings->orientation_scale_field,settings->glyph_scale_factors);
+					if (glyph = FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
+						g_element_command_data->glyph_list))
+					{
+						ACCESS(GT_object)(glyph);
+					}
+					orientation_scale_field = (struct Computed_field *)NULL;
+					variable_scale_field = (struct Computed_field *)NULL;
+					number_of_components = 3;
 					invisible_flag=0;
+
 					option_table=CREATE(Option_table)();
 					/* as */
 					Option_table_add_entry(option_table,"as",&(settings->name),
 						(void *)1,set_name);
 					/* centre */
-					number_of_components=3;
-					Option_table_add_entry(option_table,"centre",
-						settings->glyph_centre,&(number_of_components),set_float_vector);
+					Option_table_add_entry(option_table,"centre",glyph_centre,
+						&(number_of_components),set_float_vector);
 					/* coordinate */
 					set_coordinate_field_data.computed_field_manager=
 						g_element_command_data->computed_field_manager;
@@ -6061,7 +6277,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"delete",
 						&(modify_g_element_data->delete_flag),NULL,set_char_flag);
 					/* glyph */
-					Option_table_add_entry(option_table,"glyph",&(settings->glyph),
+					Option_table_add_entry(option_table,"glyph",&glyph,
 						g_element_command_data->glyph_list,set_Graphics_object);
 					/* invisible */
 					Option_table_add_entry(option_table,"invisible",&(invisible_flag),
@@ -6078,6 +6294,14 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"material",&(settings->material),
 						g_element_command_data->graphical_material_manager,
 						set_Graphical_material);
+					/* glyph scaling mode */
+					glyph_scaling_mode_string =
+						Glyph_scaling_mode_string(glyph_scaling_mode);
+					valid_strings =
+						Glyph_scaling_mode_get_valid_strings(&number_of_valid_strings);
+					Option_table_add_enumerator(option_table, number_of_valid_strings,
+						valid_strings, &glyph_scaling_mode_string);
+					DEALLOCATE(valid_strings);
 					/* orientation */
 					set_orientation_scale_field_data.computed_field_manager=
 						g_element_command_data->computed_field_manager;
@@ -6086,15 +6310,14 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_orientation_scale_field_data.conditional_function_user_data=
 						(void *)NULL;
 					Option_table_add_entry(option_table,"orientation",
-						&(settings->orientation_scale_field),
-						&set_orientation_scale_field_data,
+						&orientation_scale_field,&set_orientation_scale_field_data,
 						set_Computed_field_conditional);
 					/* position */
 					Option_table_add_entry(option_table,"position",
 						&(modify_g_element_data->position),NULL,set_int_non_negative);
 					/* scale_factors */
 					Option_table_add_entry(option_table,"scale_factors",
-						settings->glyph_scale_factors,"*",set_special_float3);
+						glyph_scale_factors,"*",set_special_float3);
 					/* scene */
 					Option_table_add_entry(option_table,"scene",
 						&(modify_g_element_data->scene),
@@ -6114,11 +6337,21 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						set_Graphical_material);
 					/* size */
 					Option_table_add_entry(option_table,"size",
-						settings->glyph_size,"*",set_special_float3);
+						glyph_size,"*",set_special_float3);
 					/* spectrum */
 					Option_table_add_entry(option_table,"spectrum",
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
 						set_Spectrum);
+					/* variable_scale */
+					set_variable_scale_field_data.computed_field_manager =
+						g_element_command_data->computed_field_manager;
+					set_variable_scale_field_data.conditional_function =
+						Computed_field_has_up_to_3_numerical_components;
+					set_variable_scale_field_data.conditional_function_user_data =
+						(void *)NULL;
+					Option_table_add_entry(option_table,"variable_scale",
+						&variable_scale_field, &set_variable_scale_field_data,
+						set_Computed_field_conditional);
 					if (return_code=Option_table_multi_parse(option_table,state))
 					{
 						if (settings->data_field&&!settings->spectrum)
@@ -6130,10 +6363,16 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						{
 							settings->visibility=0;
 						}
-						if (settings->glyph)
+						if (glyph)
 						{
-							GT_object_add_callback(settings->glyph, GT_element_settings_glyph_change,
-								(void *)settings);
+							glyph_scaling_mode =
+								Glyph_scaling_mode_from_string(glyph_scaling_mode_string);
+							GT_element_settings_set_glyph_parameters(settings,
+								glyph, glyph_scaling_mode, glyph_centre, glyph_size,
+								orientation_scale_field,glyph_scale_factors,
+								variable_scale_field);
+							GT_object_add_callback(settings->glyph,
+								GT_element_settings_glyph_change, (void *)settings);
 						}
 						else
 						{
@@ -6149,6 +6388,14 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					{
 						/* parse error, help */
 						DEACCESS(GT_element_settings)(&(modify_g_element_data->settings));
+					}
+					if (orientation_scale_field)
+					{
+						DEACCESS(Computed_field)(&orientation_scale_field);
+					}
+					if (variable_scale_field)
+					{
+						DEACCESS(Computed_field)(&variable_scale_field);
 					}
 				}
 				else
@@ -6186,7 +6433,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_data_points(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2000
+LAST MODIFIED : 10 November 2000
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT DATA_POINTS command.
@@ -6194,14 +6441,20 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char invisible_flag,*select_mode_string,**valid_strings;
+	char *glyph_scaling_mode_string, invisible_flag, *select_mode_string,
+		**valid_strings;
+	enum Glyph_scaling_mode glyph_scaling_mode;
 	int number_of_components,number_of_valid_strings,return_code;
-	struct Modify_g_element_data *modify_g_element_data;
+	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_element_settings *settings;
+	struct GT_object *glyph;
 	struct G_element_command_data *g_element_command_data;
+	struct Modify_g_element_data *modify_g_element_data;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_data_field_data,set_label_field_data,set_orientation_scale_field_data;
+		set_data_field_data, set_label_field_data, set_orientation_scale_field_data,
+		set_variable_scale_field_data;
+	Triple glyph_centre, glyph_scale_factors, glyph_size;
 
 	ENTER(gfx_modify_g_element_data_points);
 	if (state)
@@ -6225,21 +6478,28 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
 							"default_selected",
 							g_element_command_data->graphical_material_manager));
+					GT_element_settings_get_glyph_parameters(settings,
+						&glyph, &glyph_scaling_mode, glyph_centre, glyph_size,
+						&orientation_scale_field, glyph_scale_factors,
+						&variable_scale_field);
 					/* default to point glyph for fastest possible display */
-					GT_element_settings_set_glyph_parameters(settings,
-						FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
-							g_element_command_data->glyph_list),
-						settings->glyph_centre,settings->glyph_size,
-						settings->orientation_scale_field,settings->glyph_scale_factors);
+					if (glyph = FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
+						g_element_command_data->glyph_list))
+					{
+						ACCESS(GT_object)(glyph);
+					}
+					orientation_scale_field = (struct Computed_field *)NULL;
+					variable_scale_field = (struct Computed_field *)NULL;
+					number_of_components = 3;
 					invisible_flag=0;
+
 					option_table=CREATE(Option_table)();
 					/* as */
 					Option_table_add_entry(option_table,"as",&(settings->name),
 						(void *)1,set_name);
 					/* centre */
-					number_of_components=3;
-					Option_table_add_entry(option_table,"centre",
-						settings->glyph_centre,&(number_of_components),set_float_vector);
+					Option_table_add_entry(option_table,"centre",glyph_centre,
+						&(number_of_components),set_float_vector);
 					/* coordinate */
 					set_coordinate_field_data.computed_field_manager=
 						g_element_command_data->computed_field_manager;
@@ -6261,7 +6521,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"delete",
 						&(modify_g_element_data->delete_flag),NULL,set_char_flag);
 					/* glyph */
-					Option_table_add_entry(option_table,"glyph",&(settings->glyph),
+					Option_table_add_entry(option_table,"glyph",&glyph,
 						g_element_command_data->glyph_list,set_Graphics_object);
 					/* invisible */
 					Option_table_add_entry(option_table,"invisible",&(invisible_flag),
@@ -6278,6 +6538,14 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"material",&(settings->material),
 						g_element_command_data->graphical_material_manager,
 						set_Graphical_material);
+					/* glyph scaling mode */
+					glyph_scaling_mode_string =
+						Glyph_scaling_mode_string(glyph_scaling_mode);
+					valid_strings =
+						Glyph_scaling_mode_get_valid_strings(&number_of_valid_strings);
+					Option_table_add_enumerator(option_table, number_of_valid_strings,
+						valid_strings, &glyph_scaling_mode_string);
+					DEALLOCATE(valid_strings);
 					/* orientation */
 					set_orientation_scale_field_data.computed_field_manager=
 						g_element_command_data->computed_field_manager;
@@ -6286,15 +6554,14 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_orientation_scale_field_data.conditional_function_user_data=
 						(void *)NULL;
 					Option_table_add_entry(option_table,"orientation",
-						&(settings->orientation_scale_field),
-						&set_orientation_scale_field_data,
+						&orientation_scale_field,&set_orientation_scale_field_data,
 						set_Computed_field_conditional);
 					/* position */
 					Option_table_add_entry(option_table,"position",
 						&(modify_g_element_data->position),NULL,set_int_non_negative);
 					/* scale_factors */
 					Option_table_add_entry(option_table,"scale_factors",
-						settings->glyph_scale_factors,"*",set_special_float3);
+						glyph_scale_factors,"*",set_special_float3);
 					/* scene */
 					Option_table_add_entry(option_table,"scene",
 						&(modify_g_element_data->scene),
@@ -6313,11 +6580,21 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						set_Graphical_material);
 					/* size */
 					Option_table_add_entry(option_table,"size",
-						settings->glyph_size,"*",set_special_float3);
+						glyph_size,"*",set_special_float3);
 					/* spectrum */
 					Option_table_add_entry(option_table,"spectrum",
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
 						set_Spectrum);
+					/* variable_scale */
+					set_variable_scale_field_data.computed_field_manager =
+						g_element_command_data->computed_field_manager;
+					set_variable_scale_field_data.conditional_function =
+						Computed_field_has_up_to_3_numerical_components;
+					set_variable_scale_field_data.conditional_function_user_data =
+						(void *)NULL;
+					Option_table_add_entry(option_table,"variable_scale",
+						&variable_scale_field, &set_variable_scale_field_data,
+						set_Computed_field_conditional);
 					if (return_code=Option_table_multi_parse(option_table,state))
 					{
 						if (settings->data_field&&!settings->spectrum)
@@ -6329,10 +6606,16 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						{
 							settings->visibility=0;
 						}
-						if (settings->glyph)
+						if (glyph)
 						{
-							GT_object_add_callback(settings->glyph, GT_element_settings_glyph_change,
-								(void *)settings);
+							glyph_scaling_mode =
+								Glyph_scaling_mode_from_string(glyph_scaling_mode_string);
+							GT_element_settings_set_glyph_parameters(settings,
+								glyph, glyph_scaling_mode, glyph_centre, glyph_size,
+								orientation_scale_field,glyph_scale_factors,
+								variable_scale_field);
+							GT_object_add_callback(settings->glyph,
+								GT_element_settings_glyph_change, (void *)settings);
 						}
 						else
 						{
@@ -6348,6 +6631,14 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					{
 						/* parse error, help */
 						DEACCESS(GT_element_settings)(&(modify_g_element_data->settings));
+					}
+					if (orientation_scale_field)
+					{
+						DEACCESS(Computed_field)(&orientation_scale_field);
+					}
+					if (variable_scale_field)
+					{
+						DEACCESS(Computed_field)(&variable_scale_field);
 					}
 				}
 				else
@@ -7129,7 +7420,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_element_points(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2000
+LAST MODIFIED : 10 November 2000
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT ELEMENT_POINTS command.
@@ -7137,15 +7428,20 @@ If return_code is 1, returns the completed Modify_g_element_data with the
 parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
-	char invisible_flag,*select_mode_string,*use_element_type_string,
-		**valid_strings,*xi_discretization_mode_string;
+	char *glyph_scaling_mode_string, invisible_flag, *select_mode_string,
+		*use_element_type_string,	**valid_strings, *xi_discretization_mode_string;
+	enum Glyph_scaling_mode glyph_scaling_mode;
 	int number_of_components,number_of_valid_strings,return_code;
-	struct Modify_g_element_data *modify_g_element_data;
+	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_element_settings *settings;
+	struct GT_object *glyph;
 	struct G_element_command_data *g_element_command_data;
+	struct Modify_g_element_data *modify_g_element_data;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
-		set_data_field_data,set_label_field_data,set_orientation_scale_field_data;
+		set_data_field_data, set_label_field_data, set_orientation_scale_field_data,
+		set_variable_scale_field_data;
+	Triple glyph_centre, glyph_scale_factors, glyph_size;
 
 	ENTER(gfx_modify_g_element_element_points);
 	if (state)
@@ -7169,13 +7465,21 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
 							"default_selected",
 							g_element_command_data->graphical_material_manager));
+					GT_element_settings_get_glyph_parameters(settings,
+						&glyph, &glyph_scaling_mode, glyph_centre, glyph_size,
+						&orientation_scale_field, glyph_scale_factors,
+						&variable_scale_field);
 					/* default to point glyph for fastest possible display */
-					GT_element_settings_set_glyph_parameters(settings,
-						FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
-							"point",g_element_command_data->glyph_list),
-						settings->glyph_centre,settings->glyph_size,
-						settings->orientation_scale_field,settings->glyph_scale_factors);
+					if (glyph = FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
+						g_element_command_data->glyph_list))
+					{
+						ACCESS(GT_object)(glyph);
+					}
+					orientation_scale_field = (struct Computed_field *)NULL;
+					variable_scale_field = (struct Computed_field *)NULL;
+					number_of_components = 3;
 					invisible_flag=0;
+
 					option_table=CREATE(Option_table)();
 					/* as */
 					Option_table_add_entry(option_table,"as",&(settings->name),
@@ -7189,9 +7493,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						valid_strings,&xi_discretization_mode_string);
 					DEALLOCATE(valid_strings);
 					/* centre */
-					number_of_components=3;
-					Option_table_add_entry(option_table,"centre",
-						settings->glyph_centre,&number_of_components,set_float_vector);
+					Option_table_add_entry(option_table,"centre",glyph_centre,
+						&(number_of_components),set_float_vector);
 					/* coordinate */
 					set_coordinate_field_data.computed_field_manager=
 						g_element_command_data->computed_field_manager;
@@ -7223,7 +7526,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"face",&(settings->face),
 						NULL,set_exterior);
 					/* glyph */
-					Option_table_add_entry(option_table,"glyph",&(settings->glyph),
+					Option_table_add_entry(option_table,"glyph",&glyph,
 						g_element_command_data->glyph_list,set_Graphics_object);
 					/* invisible */
 					Option_table_add_entry(option_table,"invisible",&(invisible_flag),
@@ -7244,6 +7547,14 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"native_discretization",
 						&(settings->native_discretization_field),
 						g_element_command_data->fe_field_manager,set_FE_field);
+					/* glyph scaling mode */
+					glyph_scaling_mode_string =
+						Glyph_scaling_mode_string(glyph_scaling_mode);
+					valid_strings =
+						Glyph_scaling_mode_get_valid_strings(&number_of_valid_strings);
+					Option_table_add_enumerator(option_table, number_of_valid_strings,
+						valid_strings, &glyph_scaling_mode_string);
+					DEALLOCATE(valid_strings);
 					/* orientation */
 					set_orientation_scale_field_data.computed_field_manager=
 						g_element_command_data->computed_field_manager;
@@ -7252,15 +7563,14 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					set_orientation_scale_field_data.conditional_function_user_data=
 						(void *)NULL;
 					Option_table_add_entry(option_table,"orientation",
-						&(settings->orientation_scale_field),
-						&set_orientation_scale_field_data,
+						&orientation_scale_field,&set_orientation_scale_field_data,
 						set_Computed_field_conditional);
 					/* position */
 					Option_table_add_entry(option_table,"position",
 						&(modify_g_element_data->position),NULL,set_int_non_negative);
 					/* scale_factors */
 					Option_table_add_entry(option_table,"scale_factors",
-						settings->glyph_scale_factors,"*",set_special_float3);
+						glyph_scale_factors,"*",set_special_float3);
 					/* scene */
 					Option_table_add_entry(option_table,"scene",
 						&(modify_g_element_data->scene),
@@ -7280,7 +7590,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						set_Graphical_material);
 					/* size */
 					Option_table_add_entry(option_table,"size",
-						settings->glyph_size,"*",set_special_float3);
+						glyph_size,"*",set_special_float3);
 					/* spectrum */
 					Option_table_add_entry(option_table,"spectrum",
 						&(settings->spectrum),g_element_command_data->spectrum_manager,
@@ -7296,6 +7606,16 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* xi */
 					Option_table_add_entry(option_table,"xi",
 						settings->seed_xi,&number_of_components,set_float_vector);
+					/* variable_scale */
+					set_variable_scale_field_data.computed_field_manager =
+						g_element_command_data->computed_field_manager;
+					set_variable_scale_field_data.conditional_function =
+						Computed_field_has_up_to_3_numerical_components;
+					set_variable_scale_field_data.conditional_function_user_data =
+						(void *)NULL;
+					Option_table_add_entry(option_table,"variable_scale",
+						&variable_scale_field, &set_variable_scale_field_data,
+						set_Computed_field_conditional);
 					if (return_code=Option_table_multi_parse(option_table,state))
 					{
 						if (settings->data_field&&!settings->spectrum)
@@ -7320,10 +7640,16 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 								xi_discretization_mode_string));
 						GT_element_settings_set_use_element_type(settings,
 							Use_element_type_from_string(use_element_type_string));
-						if (settings->glyph)
+						if (glyph)
 						{
-							GT_object_add_callback(settings->glyph, GT_element_settings_glyph_change,
-								(void *)settings);
+							glyph_scaling_mode =
+								Glyph_scaling_mode_from_string(glyph_scaling_mode_string);
+							GT_element_settings_set_glyph_parameters(settings,
+								glyph, glyph_scaling_mode, glyph_centre, glyph_size,
+								orientation_scale_field,glyph_scale_factors,
+								variable_scale_field);
+							GT_object_add_callback(settings->glyph,
+								GT_element_settings_glyph_change, (void *)settings);
 						}
 						else
 						{
@@ -7339,6 +7665,14 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					{
 						/* parse error, help */
 						DEACCESS(GT_element_settings)(&(modify_g_element_data->settings));
+					}
+					if (orientation_scale_field)
+					{
+						DEACCESS(Computed_field)(&orientation_scale_field);
+					}
+					if (variable_scale_field)
+					{
+						DEACCESS(Computed_field)(&variable_scale_field);
 					}
 				}
 				else

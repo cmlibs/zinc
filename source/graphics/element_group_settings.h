@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.h
 
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -53,6 +53,30 @@ for automatic creation of choose_enumerator widgets.
 	GT_ELEMENT_SETTINGS_STREAMLINES,
 	GT_ELEMENT_SETTINGS_TYPE_AFTER_LAST
 }; /* enum GT_element_settings_type */
+
+enum Glyph_scaling_mode
+/*******************************************************************************
+LAST MODIFIED : 8 November 2000
+
+DESCRIPTION :
+Enumerator controlling how glyph orientation and scaling parameters are set.
+Modes other than GENERAL restrict the options available and their
+interpretation. For example, in GENERAL mode the base size can be a*b*c, but in
+VECTOR mode it is restricted to be 0*a*a.
+Must keep function Glyph_scaling_mode_string up-to-date with entries here.
+Have members BEFORE_FIRST and AFTER_LAST to enable iterating through the list
+for automatic creation of choose_enumerator widgets.
+==============================================================================*/
+{
+	GLYPH_SCALING_MODE_INVALID,
+	GLYPH_SCALING_MODE_BEFORE_FIRST,
+	GLYPH_SCALING_CONSTANT,
+	GLYPH_SCALING_SCALAR,
+	GLYPH_SCALING_VECTOR,
+	GLYPH_SCALING_AXES,
+	GLYPH_SCALING_GENERAL,
+	GLYPH_SCALING_MODE_AFTER_LAST
+}; /* enum Glyph_scaling_mode */
 
 enum GT_element_settings_string_details
 /*******************************************************************************
@@ -190,6 +214,79 @@ Structure for passing to GT_element_settings_get_nearest_node iterator.
 Global functions
 ----------------
 */
+
+char *GT_element_settings_type_string(
+	enum GT_element_settings_type gt_element_settings_type);
+/*******************************************************************************
+LAST MODIFIED : 22 March 1999
+
+DESCRIPTION :
+Returns a pointer to a static string describing the settings_type, eg.
+GT_ELEMENT_SETTINGS_LINE == "lines". This string should match the command used
+to create that type of settings. The returned string must not be DEALLOCATEd!
+==============================================================================*/
+
+char **GT_element_settings_type_get_valid_strings(int *number_of_valid_strings,
+	int dimension);
+/*******************************************************************************
+LAST MODIFIED : 23 March 1999
+
+DESCRIPTION :
+Returns and allocated array of pointers to all static strings for valid
+GT_element_settings_types - obtained from function
+GT_element_settings_type_string. Includes only those settings_types that use
+nodes/elements of the given <dimension>, with -1 denoting all dimensions.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+
+enum GT_element_settings_type GT_element_settings_type_from_string(
+	char *gt_element_settings_type_string);
+/*******************************************************************************
+LAST MODIFIED : 22 March 1999
+
+DESCRIPTION :
+Returns the <GT_element_settings_type> described by
+<gt_element_settings_type_string>.
+==============================================================================*/
+
+int GT_element_settings_type_uses_dimension(
+	enum GT_element_settings_type settings_type,int dimension);
+/*******************************************************************************
+LAST MODIFIED : 14 September 1998
+
+DESCRIPTION :
+Returns true if the particular <settings_type> can deal with nodes/elements of
+the given <dimension>.
+==============================================================================*/
+
+char *Glyph_scaling_mode_string(enum Glyph_scaling_mode glyph_scaling_mode);
+/*******************************************************************************
+LAST MODIFIED : 8 November 2000
+
+DESCRIPTION :
+Returns a pointer to a static string describing the glyph_scaling_mode, eg.
+GLYPH_SCALING_CONSTANT == "constant". This string should match the command used
+to create that type of settings. The returned string must not be DEALLOCATEd!
+==============================================================================*/
+
+char **Glyph_scaling_mode_get_valid_strings(int *number_of_valid_strings);
+/*******************************************************************************
+LAST MODIFIED : 8 November 2000
+
+DESCRIPTION :
+Returns and allocated array of pointers to all static strings for valid
+Glyph_scaling_modes - obtained from function Glyph_scaling_mode_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+
+enum Glyph_scaling_mode Glyph_scaling_mode_from_string(
+	char *glyph_scaling_mode_string);
+/*******************************************************************************
+LAST MODIFIED : 8 November 2000
+
+DESCRIPTION :
+Returns the <Glyph_scaling_mode> described by <glyph_scaling_mode_string>.
+==============================================================================*/
 
 PROTOTYPE_OBJECT_FUNCTIONS(GT_element_settings);
 DECLARE_LIST_TYPES(GT_element_settings);
@@ -417,22 +514,26 @@ selection status.
 ==============================================================================*/
 
 int GT_element_settings_get_glyph_parameters(
-	struct GT_element_settings *settings,struct GT_object **glyph,
-	Triple glyph_centre,Triple glyph_size,
-	struct Computed_field **orientation_scale_field,Triple glyph_scale_factors);
+	struct GT_element_settings *settings,
+	struct GT_object **glyph, enum Glyph_scaling_mode *glyph_scaling_mode,
+	Triple glyph_centre, Triple glyph_size,
+	struct Computed_field **orientation_scale_field, Triple glyph_scale_factors,
+	struct Computed_field **variable_scale_field);
 /*******************************************************************************
-LAST MODIFIED : 15 February 1999
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Returns the current glyph and parameters for orienting and scaling it.
 ==============================================================================*/
 
 int GT_element_settings_set_glyph_parameters(
-	struct GT_element_settings *settings,struct GT_object *glyph,
-	Triple glyph_centre,Triple glyph_size,
-	struct Computed_field *orientation_scale_field,Triple glyph_scale_factors);
+	struct GT_element_settings *settings,
+	struct GT_object *glyph, enum Glyph_scaling_mode glyph_scaling_mode,
+	Triple glyph_centre, Triple glyph_size,
+	struct Computed_field *orientation_scale_field, Triple glyph_scale_factors,
+	struct Computed_field *variable_scale_field);
 /*******************************************************************************
-LAST MODIFIED : 15 February 1999
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Sets the glyph and parameters for orienting and scaling it.
@@ -976,68 +1077,6 @@ to find settings in <list_of_settings> which differ only trivially in material,
 spectrum etc. AND have a graphics object. If such a settings is found, the
 graphics_object is moved from the matching settings and put in <settings>, while
 any trivial differences are fixed up in the graphics_obejct.
-==============================================================================*/
-
-int GT_element_settings_type_uses_dimension(
-	enum GT_element_settings_type settings_type,int dimension);
-/*******************************************************************************
-LAST MODIFIED : 14 September 1998
-
-DESCRIPTION :
-Returns true if the particular <settings_type> can deal with nodes/elements of
-the given <dimension>.
-==============================================================================*/
-
-int GT_element_settings_type_default_dimension(
-	enum GT_element_settings_type settings_type);
-/*******************************************************************************
-LAST MODIFIED : 15 September 1998
-
-DESCRIPTION :
-Returns the default dimension for the particular <settings_type>.
-==============================================================================*/
-
-int GT_element_settings_type_uses_multiple_dimensions(
-	enum GT_element_settings_type settings_type);
-/*******************************************************************************
-LAST MODIFIED : 15 September 1998
-
-DESCRIPTION :
-Returns true if multiple dimensions are allowable for this <settings_type>.
-==============================================================================*/
-
-char *GT_element_settings_type_string(
-	enum GT_element_settings_type gt_element_settings_type);
-/*******************************************************************************
-LAST MODIFIED : 22 March 1999
-
-DESCRIPTION :
-Returns a pointer to a static string describing the settings_type, eg.
-GT_ELEMENT_SETTINGS_LINE == "lines". This string should match the command used
-to create that type of settings. The returned string must not be DEALLOCATEd!
-==============================================================================*/
-
-char **GT_element_settings_type_get_valid_strings(int *number_of_valid_strings,
-	int dimension);
-/*******************************************************************************
-LAST MODIFIED : 23 March 1999
-
-DESCRIPTION :
-Returns and allocated array of pointers to all static strings for valid
-GT_element_settings_types - obtained from function
-GT_element_settings_type_string. Includes only those settings_types that use
-nodes/elements of the given <dimension>, with -1 denoting all dimensions.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-
-enum GT_element_settings_type GT_element_settings_type_from_string(
-	char *gt_element_settings_type_string);
-/*******************************************************************************
-LAST MODIFIED : 22 March 1999
-
-DESCRIPTION :
-Returns the <GT_element_settings_type> described by
-<gt_element_settings_type_string>.
 ==============================================================================*/
 
 char *GT_element_settings_string(struct GT_element_settings *settings,
