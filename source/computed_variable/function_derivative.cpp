@@ -6,7 +6,7 @@
 // DESCRIPTION :
 //==============================================================================
 
-#include <new>
+#include <sstream>
 
 #include "computed_variable/function_derivative.hpp"
 #include "computed_variable/function_variable.hpp"
