@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : select_private.h
 
-LAST MODIFIED : 20 April 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Creates a scrolled list of objects based upon their name.  Allows the user
@@ -825,7 +825,7 @@ Rename button pressed. Turns on and sets the rename text field. \
 static void SELECT_NAME_CB(object_type)(Widget w,int *tag, \
 	XmAnyCallbackStruct *reason) \
 /***************************************************************************** \
-LAST MODIFIED : 9 November 1999 \
+LAST MODIFIED : 20 July 2000 \
 \
 DESCRIPTION : \
 Takes the name from the text field widget, and makes it the name of the \
@@ -844,6 +844,8 @@ current object. \
 		SELECT_MANAGER_MODIFY_IDENTIFIER_AS_NAME(object_type)( \
 			temp_select->current_object,new_object_name, \
 			temp_select->object_manager); \
+		/* remove rename text widget (whether or not it is there): */ \
+		XtUnmanageChild(temp_select->edit_name); \
 	} \
 	XtFree(new_object_name); \
 	LEAVE; \
