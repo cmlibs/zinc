@@ -21823,6 +21823,9 @@ Execute a <command_string>. If there is a command
 				}
 				else
 				{
+					/* assign */
+					(option_table[i]).user_data=command_data_void;
+					i++;
 					/* cell */
 					(option_table[i]).user_data=command_data_void;
 					i++;
