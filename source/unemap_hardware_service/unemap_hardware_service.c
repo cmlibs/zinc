@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_service.c
 
-LAST MODIFIED : 6 June 2003
+LAST MODIFIED : 13 August 2003
 
 DESCRIPTION :
 The unemap service which runs under NT and talks to unemap via sockets.
@@ -1087,7 +1087,7 @@ static int process_message(const unsigned char operation_code,
 	const long message_size,const unsigned char big_endian,
 	unsigned char **out_buffer_address,long *out_buffer_size_address)
 /*******************************************************************************
-LAST MODIFIED : 6 August 2002
+LAST MODIFIED : 13 August 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1168,22 +1168,53 @@ DESCRIPTION :
 			{
 				float sampling_frequency,scrolling_callback_frequency,
 					scrolling_frequency;
-				int buffer_position,number_of_samples_in_buffer,synchronization_card;
+				int buffer_position,*channel_numbers,number_of_channels,
+					number_of_samples_in_buffer,software_version,synchronization_card;
 
 				return_code=0;
+				/* multiple sizes for backward compatability */
 				size=sizeof(sampling_frequency)+sizeof(number_of_samples_in_buffer)+
-					sizeof(scrolling_frequency)+sizeof(scrolling_callback_frequency)+
-					sizeof(synchronization_card);
-				/* two sizes for backward compatability */
-				if ((size==message_size)||
-					(size-(long)sizeof(scrolling_frequency)==message_size))
+					sizeof(scrolling_callback_frequency)+sizeof(synchronization_card);
+				if (size==message_size)
+				{
+					/* software version <= 2 */
+					software_version=2;
+					return_code=1;
+				}
+				else
+				{
+					size += (long)sizeof(scrolling_frequency);
+					if (size==message_size)
+					{
+						/* software version == 3 */
+						software_version=3;
+						return_code=1;
+					}
+					else
+					{
+						size += (long)sizeof(number_of_channels);
+						if (size<=message_size)
+						{
+							/* software version >= 4 */
+							software_version=4;
+							return_code=1;
+						}
+					}
+				}
+				if (return_code)
 				{
 					retval=socket_recv(command_socket,command_socket_read_event,buffer,
-						message_size,0);
+						size,0);
 					if (SOCKET_ERROR!=retval)
 					{
 						unread_size -= retval;
 						buffer_position=0;
+						if (4<=software_version)
+						{
+							copy_byte_swapped((unsigned char *)&number_of_channels,
+								sizeof(number_of_channels),buffer+buffer_position,big_endian);
+							buffer_position += sizeof(number_of_channels);
+						}
 						copy_byte_swapped((unsigned char *)&sampling_frequency,
 							sizeof(sampling_frequency),buffer+buffer_position,big_endian);
 						buffer_position += sizeof(sampling_frequency);
@@ -1191,7 +1222,7 @@ DESCRIPTION :
 							sizeof(number_of_samples_in_buffer),buffer+buffer_position,
 							big_endian);
 						buffer_position += sizeof(number_of_samples_in_buffer);
-						if (size==message_size)
+						if (3<=software_version)
 						{
 							copy_byte_swapped((unsigned char *)&scrolling_frequency,
 								sizeof(scrolling_frequency),buffer+buffer_position,
@@ -1202,17 +1233,73 @@ DESCRIPTION :
 							sizeof(scrolling_callback_frequency),buffer+buffer_position,
 							big_endian);
 						buffer_position += sizeof(scrolling_callback_frequency);
-						if (size!=message_size)
+						if (software_version<3)
 						{
 							scrolling_frequency=(float)4*scrolling_callback_frequency;
 						}
 						copy_byte_swapped((unsigned char *)&synchronization_card,
 							sizeof(synchronization_card),buffer+buffer_position,big_endian);
-						scrolling_big_endian=big_endian;
-						stimulation_big_endian=big_endian;
-						return_code=unemap_configure(sampling_frequency,
-							number_of_samples_in_buffer,(HWND)NULL,(UINT)0,scrolling_callback,
-							(void *)NULL,scrolling_frequency,scrolling_callback_frequency,synchronization_card);
+						buffer_position += sizeof(synchronization_card);
+						channel_numbers=(int *)NULL;
+						if (4<=software_version)
+						{
+							return_code=0;
+							if (0<number_of_channels)
+							{
+								if (size+number_of_channels*(long)sizeof(int)==message_size)
+								{
+									if (ALLOCATE(channel_numbers,int,number_of_channels))
+									{
+										retval=socket_recv(command_socket,command_socket_read_event,
+											(unsigned char *)channel_numbers,
+											number_of_channels*sizeof(int),0);
+										if (SOCKET_ERROR!=retval)
+										{
+											unread_size -= retval;
+											if (number_of_channels*(long)sizeof(int)==retval)
+											{
+												return_code=1;
+											}
+										}
+									}
+								}
+							}
+							else
+							{
+								if (size==message_size)
+								{
+									return_code=1;
+								}
+							}
+						}
+						else
+						{
+							number_of_channels=0;
+						}
+						if (return_code)
+						{
+							if (return_code=unemap_configure(number_of_channels,
+								channel_numbers,sampling_frequency,number_of_samples_in_buffer,
+								(HWND)NULL,(UINT)0,scrolling_callback,(void *)NULL,
+								scrolling_frequency,scrolling_callback_frequency,
+								synchronization_card))
+							{
+								scrolling_big_endian=big_endian;
+								stimulation_big_endian=big_endian;
+							}
+						}
+						else
+						{
+							sprintf(error_string,
+								"unemap_configure.  Incorrect message size %d %d %d",
+								message_size,size,number_of_channels);
+							display_message(ERROR_MESSAGE,error_string);
+						}
+						DEALLOCATE(channel_numbers);
+					}
+					else
+					{
+						return_code=0;
 					}
 				}
 				else
@@ -1606,9 +1693,40 @@ DESCRIPTION :
 				}
 				else
 				{
-					sprintf(error_string,
-						"unemap_get_number_of_channels.  Incorrect message size %d 0",
-						message_size);
+					sprintf(error_string,"unemap_get_number_of_channels.  "
+						"Incorrect message size %d 0",message_size);
+					display_message(ERROR_MESSAGE,error_string);
+				}
+			} break;
+			case UNEMAP_GET_NUMBER_OF_CONFIGURED_CHANNELS_CODE:
+			{
+				int number_of_channels;
+
+				return_code=0;
+				if (0==message_size)
+				{
+					return_code=unemap_get_number_of_configured_channels(
+						&number_of_channels);
+					if (return_code)
+					{
+						size=sizeof(number_of_channels);
+						if (ALLOCATE(out_buffer,unsigned char,size))
+						{
+							copy_byte_swapped(out_buffer,sizeof(number_of_channels),
+								(char *)&number_of_channels,big_endian);
+							*out_buffer_address=out_buffer;
+							*out_buffer_size_address=size;
+						}
+						else
+						{
+							return_code=0;
+						}
+					}
+				}
+				else
+				{
+					sprintf(error_string,"unemap_get_number_of_configured_channels.  "
+						"Incorrect message size %d 0",message_size);
 					display_message(ERROR_MESSAGE,error_string);
 				}
 			} break;
@@ -1754,8 +1872,9 @@ DESCRIPTION :
 			} break;
 			case UNEMAP_GET_SAMPLES_ACQUIRED_CODE:
 			{
-				int channel_number,number_of_channels,number_of_samples_written,
-					requested_number_of_samples,specify_number_of_samples;
+				int channel_number,number_of_configured_channels,
+					number_of_samples_written,requested_number_of_samples,
+					specify_number_of_samples;
 				struct Socket_send_samples_acquired_data
 					socket_send_samples_acquired_data;
 				unsigned char message_header[2+sizeof(long)+sizeof(int)+
@@ -1801,17 +1920,17 @@ DESCRIPTION :
 							}
 							if (0==channel_number)
 							{
-								if (!(return_code=unemap_get_number_of_channels(
-									&number_of_channels)))
+								if (!(return_code=unemap_get_number_of_configured_channels(
+									&number_of_configured_channels)))
 								{
-									sprintf(error_string,
-					"unemap_get_samples_acquired.  unemap_get_number_of_channels failed");
+									sprintf(error_string,"unemap_get_samples_acquired.  "
+										"unemap_get_number_of_configured_channels failed");
 									display_message(ERROR_MESSAGE,error_string);
 								}
 							}
 							else
 							{
-								number_of_channels=1;
+								number_of_configured_channels=1;
 							}
 							/* send acknowledgement so that client can start retrieving */
 							message_header[0]=(unsigned char)0x1;
@@ -1823,7 +1942,7 @@ DESCRIPTION :
 								2+sizeof(acknowledgement),0);
 							/* send down the command socket */
 							socket_send_samples_acquired_data.buffer_size=
-								number_of_channels*sizeof(short int);
+								number_of_configured_channels*sizeof(short int);
 							if (ALLOCATE(socket_send_samples_acquired_data.buffer,
 								unsigned char,socket_send_samples_acquired_data.buffer_size))
 							{
@@ -1831,19 +1950,21 @@ DESCRIPTION :
 								socket_send_samples_acquired_data.big_endian=big_endian;
 								message_header[0]=(unsigned char)0x1;
 								message_header[1]=big_endian;
-								size=sizeof(number_of_channels)+sizeof(number_of_samples)+
-									number_of_samples*number_of_channels*sizeof(short int);
+								size=sizeof(number_of_configured_channels)+
+									sizeof(number_of_samples)+number_of_samples*
+									number_of_configured_channels*sizeof(short int);
 								copy_byte_swapped(message_header+2,sizeof(long),(char *)&size,
 									big_endian);
 								copy_byte_swapped(message_header+2+sizeof(long),
-									sizeof(number_of_channels),(char *)&number_of_channels,
-									big_endian);
+									sizeof(number_of_configured_channels),
+									(char *)&number_of_configured_channels,big_endian);
 								copy_byte_swapped(message_header+2+sizeof(long)+
-									sizeof(number_of_channels),sizeof(number_of_samples),
-									(char *)&number_of_samples,big_endian);
+									sizeof(number_of_configured_channels),
+									sizeof(number_of_samples),(char *)&number_of_samples,
+									big_endian);
 								retval=socket_send(
 									socket_send_samples_acquired_data.send_socket,message_header,
-									2+sizeof(long)+sizeof(number_of_channels)+
+									2+sizeof(long)+sizeof(number_of_configured_channels)+
 									sizeof(number_of_samples),0);
 								return_code=unemap_transfer_samples_acquired(channel_number,
 									(int)number_of_samples,socket_send_samples_acquired,
@@ -1883,8 +2004,8 @@ DESCRIPTION :
 				DWORD acquired_thread_id;
 				HANDLE acquired_thread;
 #endif /* !defined (NO_ACQUIRED_THREAD) */
-				int channel_number,number_of_channels,requested_number_of_samples,
-					specify_number_of_samples;
+				int channel_number,number_of_configured_channels,
+					requested_number_of_samples,specify_number_of_samples;
 				struct Acquired_samples_information *acquired_samples_information;
 				unsigned long number_of_samples;
 
@@ -1924,19 +2045,20 @@ DESCRIPTION :
 							}
 							if (0==channel_number)
 							{
-								if (!(return_code=unemap_get_number_of_channels(
-									&number_of_channels)))
+								if (!(return_code=unemap_get_number_of_configured_channels(
+									&number_of_configured_channels)))
 								{
-									sprintf(error_string,
-					"unemap_get_samples_acquired.  unemap_get_number_of_channels failed");
+									sprintf(error_string,"unemap_get_samples_acquired.  "
+										"unemap_get_number_of_configured_channels failed");
 									display_message(ERROR_MESSAGE,error_string);
 								}
 							}
 							else
 							{
-								number_of_channels=1;
+								number_of_configured_channels=1;
 							}
-							size=number_of_samples*number_of_channels*sizeof(short int);
+							size=number_of_samples*number_of_configured_channels*
+								sizeof(short int);
 							if (return_code)
 							{
 								ALLOCATE(acquired_samples_information,
@@ -1947,8 +2069,8 @@ DESCRIPTION :
 									acquired_samples_information->out_buffer=out_buffer;
 									acquired_samples_information->number_of_samples=
 										number_of_samples;
-									acquired_samples_information->number_of_channels=
-										number_of_channels;
+									acquired_samples_information->number_of_configured_channels=
+										number_of_configured_channels;
 									acquired_samples_information->big_endian=big_endian;
 									return_code=unemap_get_samples_acquired(channel_number,
 										number_of_samples,(short int *)out_buffer,(int *)NULL);

@@ -1,13 +1,13 @@
 /*******************************************************************************
 FILE : unemap_hardware_service.h
 
-LAST MODIFIED : 4 June 2003
+LAST MODIFIED : 13 August 2003
 
 DESCRIPTION :
 Instruction codes for the unemap service which runs under NT and talks to unemap
 via sockets.
 
-Biggest code is 0x31
+Biggest code is 0x32
 ==============================================================================*/
 #if !defined (UNEMAP_HARDWARE_SERVICE)
 #define UNEMAP_HARDWARE_SERVICE
@@ -31,6 +31,7 @@ Global constants
 #define UNEMAP_GET_ISOLATE_RECORD_MODE_CODE ((unsigned char)0x0b)
 #define UNEMAP_GET_MAXIMUM_NUMBER_OF_SAMPLES_CODE ((unsigned char)0x0c)
 #define UNEMAP_GET_NUMBER_OF_CHANNELS_CODE ((unsigned char)0x0d)
+#define UNEMAP_GET_NUMBER_OF_CONFIGURED_CHANNELS_CODE ((unsigned char)0x32)
 #define UNEMAP_GET_NUMBER_OF_SAMPLES_ACQUIRED_CODE ((unsigned char)0x0e)
 #define UNEMAP_GET_NUMBER_OF_STIMULATORS_CODE ((unsigned char)0x0f)
 #define UNEMAP_GET_POWER_CODE ((unsigned char)0x10)

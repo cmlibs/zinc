@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 5 June 2003
+LAST MODIFIED : 20 August 2003
 
 DESCRIPTION :
 
@@ -75,6 +75,14 @@ TO DO:
 5.2 Fitted exponential with offset.  Gives good fit and gives good signals
 		when removed
 5.3 Ratioing improves signals further
+
+???DB.  Specify the channels being configured.  Look for
+1 unemap_get_samples.  DONE
+2 unemap_get_number_of_channels.  DONE
+3 number_of_channels.  DONE
+4 unemap_deconfigure.  DONE
+5 hardware_initialized (->hardware_configured).  DONE
+6 unemap_configure.  DONE
 ==============================================================================*/
 
 /*#define NO_SCROLLING_HARDWARE_CALLBACK_BODY*/
@@ -157,7 +165,7 @@ DESCRIPTION :
 
 struct Page_window
 /*******************************************************************************
-LAST MODIFIED : 4 June 2003
+LAST MODIFIED : 14 August 2003
 
 DESCRIPTION :
 The page window object.
@@ -387,7 +395,7 @@ The page window object.
 #if defined (OLD_CODE)
 	float display_maximum,display_minimum,signal_maximum,signal_minimum;
 #endif /* defined (OLD_CODE) */
-	int data_saved,display_device_number,hardware_initialized,
+	int data_saved,display_device_number,hardware_configured,
 		*last_scrolling_value_device,number_of_scrolling_channels,
 		*number_of_scrolling_channels_device,number_of_scrolling_devices,
 		number_of_scrolling_values_per_channel,number_of_stimulators,
@@ -424,7 +432,7 @@ The page window object.
 #if defined (MIRADA)
 	unsigned long number_of_channels;
 #else /* defined (MIRADA) */
-	int number_of_channels;
+	int *configured_channels,number_of_configured_channels;
 #endif /* defined (MIRADA) */
 	Unemap_page_window_close_callback_procedure *close_callback;
 	void *close_callback_data;
@@ -2120,17 +2128,15 @@ DWORD WINAPI save_write_signal_file_process(
 	LPVOID save_write_signal_file_background_data_void)
 #endif /* defined (WIN32_SYSTEM) */
 /*******************************************************************************
-LAST MODIFIED : 1 September 2002
+LAST MODIFIED : 14 August 2003
 
 DESCRIPTION :
 Called by unemap_get_samples_acquired_background to actually write the data.
 ==============================================================================*/
 {
 	FILE *output_file;
-#if defined (OLD_CODE)
-	float *gains,post_filter_gain,pre_filter_gain;
-#endif /* defined (OLD_CODE) */
-	int channel_number,i,j,number_of_channels,number_of_samples,number_of_signals,
+	int channel_number,*configured_channels,i,j,
+		number_of_configured_channels,number_of_samples,number_of_signals,
 		return_code;
 	short *destination,*samples,*source;
 	struct Device **device;
@@ -2158,7 +2164,10 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 			(samples=save_write_signal_file_background_data->samples)&&
 			(page_window=save_write_signal_file_background_data->page_window)&&
 			(page_window->rig_address)&&(rig= *(page_window->rig_address))&&
-			unemap_get_number_of_channels(&number_of_channels)&&
+			unemap_get_number_of_configured_channels(&number_of_configured_channels)&&
+			(number_of_configured_channels=
+			page_window->number_of_configured_channels)&&
+			(configured_channels=page_window->configured_channels)&&
 			(save_write_signal_file_background_data->file_name)&&
 			(save_write_signal_file_background_data->temp_file_name)&&
 			(output_file=fopen(save_write_signal_file_background_data->file_name,
@@ -2173,17 +2182,23 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 				{
 					signal_buffer->start=0;
 					signal_buffer->end=(int)(number_of_samples-1);
-					channel_number=((*device)->channel->number)-1;
+					channel_number=(*device)->channel->number;
 					number_of_signals=signal_buffer->number_of_signals;
 					destination=((signal_buffer->signals).short_int_values)+
 						((*device)->signal->index);
-					if ((0<=channel_number)&&(channel_number<number_of_channels))
+					j=0;
+					while ((j<number_of_configured_channels)&&(channel_number!=
+						configured_channels[j]))
 					{
-						source=(short *)samples+channel_number;
+						j++;
+					}
+					if (j<number_of_configured_channels)
+					{
+						source=(short *)samples+j;
 						for (j=(int)number_of_samples;j>0;j--)
 						{
 							*destination= *source;
-							source += number_of_channels;
+							source += number_of_configured_channels;
 							destination += number_of_signals;
 						}
 					}
@@ -2199,57 +2214,7 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 				i--;
 				device++;
 			}
-#if defined (DEBUG)
-			/*???debug */
-			printf("after reordering\n");
-#endif /* defined (DEBUG) */
-#if !defined (MIRADA)
-#if defined (OLD_CODE)
-			gains=(float *)NULL;
-			i=rig->number_of_devices;
-			if (ALLOCATE(gains,float,i))
-			{
-				device=rig->devices;
-				while (i>0)
-				{
-					if ((*device)&&((*device)->signal)&&((*device)->signal->buffer)&&
-						((*device)->channel))
-					{
-						gains[i-1]=(*device)->channel->gain;
-						if (unemap_get_gain((*device)->channel->number,&pre_filter_gain,
-							&post_filter_gain))
-						{
-							/*???DB.  Changes size of scrolling signal when saving in
-								background */
-							(*device)->channel->gain /= pre_filter_gain*post_filter_gain;
-						}
-					}
-					i--;
-					device++;
-				}
-			}
-#endif /* defined (OLD_CODE) */
-#endif /* !defined (MIRADA) */
 			return_code=write_signal_file(output_file,rig);
-#if !defined (MIRADA)
-#if defined (OLD_CODE)
-			if (gains)
-			{
-				i=rig->number_of_devices;
-				device=rig->devices;
-				while (i>0)
-				{
-					if ((*device)&&((*device)->signal)&&((*device)->signal->buffer))
-					{
-						(*device)->channel->gain=gains[i-1];
-					}
-					i--;
-					device++;
-				}
-				DEALLOCATE(gains);
-			}
-#endif /* defined (OLD_CODE) */
-#endif /* !defined (MIRADA) */
 			fclose(output_file);
 			if (return_code)
 			{
@@ -2264,8 +2229,9 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"save_write_signal_file_process.  Invalid arguments %d %d %p %p",
+			/*???DB.  Using display_message gives "Xlib: unexpected async reply".
+				Problem is due to multiple threads */
+			printf("save_write_signal_file_process.  Invalid arguments %d %d %p\n",
 				save_write_signal_file_background_data->all_channels,number_of_samples,
 				samples);
 			return_code=0;
@@ -2539,13 +2505,14 @@ named file.
 #else /* defined (BACKGROUND_SAVING) */
 static int save_write_signal_file(char *file_name,void *page_window_void)
 /*******************************************************************************
-LAST MODIFIED : 29 July 2000
+LAST MODIFIED : 15 August 2000
 
 DESCRIPTION :
 This function writes the rig configuration and interval of signal data to the
 named file.
 ==============================================================================*/
 {
+	char *title;
 	FILE *output_file;
 	int return_code;
 	struct Page_window *page_window;
@@ -2808,89 +2775,6 @@ The callback for resizing a page drawing area.
 	LEAVE;
 } /* resize_page_scrolling_area */
 #endif /* defined (MOTIF) */
-
-#if defined (OLD_CODE)
-static int initialize_hardware(struct Page_window *page_window)
-/*******************************************************************************
-LAST MODIFIED : 21 July 1999
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-#if !defined (MIRADA)
-	char working_string[21];
-	float filter_frequency;
-#endif /* !defined (MIRADA) */
-
-	ENTER(initialize_hardware);
-	return_code=0;
-	if (page_window)
-	{
-		return_code=1;
-#if defined (MIRADA)
-		/* start the interrupting */
-		if (INVALID_HANDLE_VALUE!=page_window->device_driver)
-		{
-			start_interrupting(page_window->device_driver,page_window->scrolling_area,
-				WM_USER,(LPARAM)page_window);
-		}
-#else /* defined (MIRADA) */
-		if ((page_window->rig_address)&&(*(page_window->rig_address)))
-		{
-			if (unemap_configure(page_window->sampling_frequency,
-				page_window->number_of_samples,
-#if defined (MOTIF)
-				User_interface_get_application_context(page_window->user_interface),
-#endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
-				(HWND)NULL,(UINT)0,
-#endif /* defined (WIN32_USER_INTERFACE) */
-				scrolling_hardware_callback,(void *)page_window,(float)25))
-			{
-				if (page_window->display_device)
-				{
-					add_scrolling_device(page_window,page_window->display_device);
-				}
-				unemap_start_scrolling();
-#if defined (OLD_CODE)
-/*???DB.  Moved to where initialize_hardware used to be */
-				/* set the experiment checkbox */
-#if defined (MOTIF)
-				XmToggleButtonSetState(page_window->experiment_checkbox,False,False);
-				XtSetSensitive(page_window->experiment_checkbox,True);
-#endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
-				CheckDlgButton(page_window->window,EXPERIMENT_CHECKBOX,BST_UNCHECKED);
-				EnableWindow(page_window->experiment_checkbox,TRUE);
-#endif /* defined (WIN32_USER_INTERFACE) */
-#endif /* defined (OLD_CODE) */
-				unemap_get_antialiasing_filter_frequency(1,&filter_frequency);
-				sprintf(working_string,"%.0f",filter_frequency);
-#if defined (MOTIF)
-				XtVaSetValues((page_window->low_pass).value,XmNvalue,working_string,
-					NULL);
-#endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
-				Edit_SetText((page_window->low_pass_filter).edit,working_string);
-#endif /* defined (WIN32_USER_INTERFACE) */
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"initialize_hardware.  Missing rig");
-		}
-#endif /* defined (MIRADA) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"initialize_hardware.  page_window missing");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* initialize_hardware */
-#endif /* defined (OLD_CODE) */
 
 static void destroy_Page_window_callback(
 #if defined (MOTIF)
@@ -3961,10 +3845,6 @@ DESCRIPTION :
 		(*(page_window->rig_address))&&(0<=device_number)&&(device_number<
 		((*(page_window->rig_address))->number_of_devices))&&
 		(device=((*(page_window->rig_address))->devices)[device_number])&&
-#if defined (OLD_CODE)
-		(device->signal)&&(device->channel)&&(0<device->channel->number)&&
-		(device->channel->number<=(int)(page_window->number_of_channels))&&
-#endif /* defined (OLD_CODE) */
 		(device->description)&&(device->description->name))
 	{
 #if defined (MOTIF)
@@ -4096,17 +3976,6 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 				for (i=0;i<number_of_devices;i++)
 				{
 					if ((*device_address)&&
-#if defined (OLD_CODE)
-						((*device_address)->signal)&&
-						((*device_address)->channel)&&
-						(0<(*device_address)->channel->number)&&
-#if defined (WIN32_SYSTEM)
-#if defined (MIRADA)
-						((*device_address)->channel->number<=
-						(int)page_window->number_of_channels)&&
-#endif /* defined (MIRADA) */
-#endif /* defined (WIN32_SYSTEM) */
-#endif /* defined (OLD_CODE) */
 						((*device_address)->description)&&
 						(0==strcmp(working_string,(*device_address)->description->name)))
 					{
@@ -4133,35 +4002,6 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 						page_window->display_device->description->name);
 #endif /* defined (WIN32_USER_INTERFACE) */
 				}
-#if defined (OLD_CODE)
-				if (channel_number!=page_window->channel_number)
-				{
-#if defined (WIN32_SYSTEM)
-#if defined (MIRADA)
-					if (PCI_SUCCESSFUL==get_mirada_information(page_window->device_driver,
-						&number_of_cards,&bus,&device_function,&number_of_channels,
-						&number_of_samples,&mirada_buffer))
-#endif /* defined (MIRADA) */
-					{
-						if ((0<channel_number)&&(channel_number<=(int)number_of_channels))
-						{
-#endif /* defined (WIN32_SYSTEM) */
-							page_window->channel_number=channel_number;
-							channel_number--;
-							page_window->channel_index=16*(channel_number/16)+
-								8*(channel_number%2)+(channel_number%16)/2;
-#if defined (OLD_CODE)
-							page_window->signal_display_maximum=0;
-							page_window->signal_display_minimum=1;
-#endif /* defined (OLD_CODE) */
-#if defined (WIN32_USER_INTERFACE)
-							InvalidateRect(page_window->scrolling_area,(CONST RECT *)NULL,
-								FALSE);
-						}
-					}
-#endif /* defined (WIN32_USER_INTERFACE) */
-				}
-#endif /* defined (OLD_CODE) */
 #if defined (WIN32_USER_INTERFACE)
 				DEALLOCATE(working_string);
 			}
@@ -5511,7 +5351,7 @@ DESCRIPTION :
 
 static int start_testing(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 27 September 1999
+LAST MODIFIED : 20 August 2003
 
 DESCRIPTION :
 Called to start testing on the <page_window>.
@@ -5521,9 +5361,11 @@ Called to start testing on the <page_window>.
 	float calibrate_voltage[500],maximum_voltage,minimum_voltage,
 		testing_frequency;
 	int i,return_code;
+#if defined (DEBUG)
 	/*???debug */
 	char *hardware_directory,*testing_file_name;
 	FILE *testing_file;
+#endif /* defined (DEBUG) */
 
 	ENTER(start_testing);
 	return_code=0;
@@ -5532,6 +5374,7 @@ Called to start testing on the <page_window>.
 		return_code=1;
 		stop_all_stimulating(page_window);
 		testing_frequency=(float)10;
+#if defined (DEBUG)
 		/*???debug */
 		if (hardware_directory=getenv("UNEMAP_HARDWARE"))
 		{
@@ -5579,23 +5422,29 @@ Called to start testing on the <page_window>.
 			}
 			DEALLOCATE(testing_file_name);
 		}
-		/* set up the test signal */
-		unemap_get_voltage_range(1,&minimum_voltage,&maximum_voltage);
-		maximum_voltage *= (float)0.5;
-		two_pi=(double)8*atan((double)1);
-		for (i=0;i<500;i++)
+#endif /* defined (DEBUG) */
+		if ((0<page_window->number_of_configured_channels)&&
+			(page_window->configured_channels))
 		{
-			calibrate_voltage[i]=maximum_voltage*
-				(float)sin(two_pi*(double)i/(double)500);
-		}
-		unemap_start_calibrating(0,500,testing_frequency*(float)500,
-			calibrate_voltage);
+			/* set up the test signal */
+			unemap_get_voltage_range((page_window->configured_channels)[0],
+				&minimum_voltage,&maximum_voltage);
+			maximum_voltage *= (float)0.5;
+			two_pi=(double)8*atan((double)1);
+			for (i=0;i<500;i++)
+			{
+				calibrate_voltage[i]=maximum_voltage*
+					(float)sin(two_pi*(double)i/(double)500);
+			}
+			unemap_start_calibrating(0,500,testing_frequency*(float)500,
+				calibrate_voltage);
 #if defined (MOTIF)
-		XmToggleButtonSetState(page_window->test_checkbox,True,False);
+			XmToggleButtonSetState(page_window->test_checkbox,True,False);
 #endif /* defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
-		CheckDlgButton(page_window->window,TEST_CHECKBOX,BST_CHECKED);
+			CheckDlgButton(page_window->window,TEST_CHECKBOX,BST_CHECKED);
 #endif /* defined (WIN32_USER_INTERFACE) */
+		}
 	}
 	LEAVE;
 
@@ -5883,7 +5732,7 @@ Assumes that the calibration file is normalized.
 
 static int start_experiment(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 4 June 2003
+LAST MODIFIED : 17 August 2003
 
 DESCRIPTION :
 Called to start experiment on the <page_window>.
@@ -5896,7 +5745,8 @@ Called to start experiment on the <page_window>.
 {
 	char *acquisition_rig_filename,*calibration_file_name;
 	float channel_gain,channel_offset,post_filter_gain,pre_filter_gain;
-	int channel_number,device_number,*electrodes_in_row,i,index,j,
+	int channel_number,*configured_channels,device_number,*electrodes_in_row,i,
+		index,j,new_rig_flag,number_of_channels,number_of_configured_channels,
 		number_of_devices,number_of_rows,return_code;
 	short maximum_device_name_length;
 	long int maximum_signal_value,minimum_signal_value;
@@ -5933,7 +5783,8 @@ Called to start experiment on the <page_window>.
 			(UnEmap_2V2==page_window->unemap_hardware_version)||
 			((UnEmap_2V1|UnEmap_2V2)==page_window->unemap_hardware_version))
 		{
-			if (page_window->hardware_initialized)
+			new_rig_flag=0;
+			if (page_window->hardware_configured)
 			{
 				return_code=1;
 			}
@@ -5949,113 +5800,10 @@ Called to start experiment on the <page_window>.
 					return_code=1;
 				}
 #else /* defined (MIRADA) */
-#if defined (DEBUG)
-				/*???debug */
-				printf("before unemap_deconfigure\n");
-#endif /* defined (DEBUG) */
-				/* make sure that unemap closed down */
-				unemap_deconfigure();
-#if defined (DEBUG)
-				/*???debug */
-				printf("after unemap_deconfigure\n");
-#endif /* defined (DEBUG) */
-				if (unemap_configure(page_window->sampling_frequency,
-					(int)(page_window->number_of_samples),
-#if defined (MOTIF)
-					User_interface_get_event_dispatcher(page_window->user_interface),
-#endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
-					(HWND)NULL,(UINT)0,
-#endif /* defined (WIN32_USER_INTERFACE) */
-					scrolling_hardware_callback,(void *)page_window,
-					page_window->scrolling_frequency,
-					page_window->scrolling_callback_frequency,
-					page_window->synchronization_card))
-				{
-#if defined (DEBUG)
-					/*???debug */
-					printf("after unemap_configure\n");
-#endif /* defined (DEBUG) */
-					return_code=1;
-					unemap_get_sampling_frequency(
-						&(page_window->sampling_frequency));
-					unemap_get_scrolling_frequency(
-						&(page_window->scrolling_frequency));
-					unemap_get_scrolling_callback_frequency(
-						&(page_window->scrolling_callback_frequency));
-					unemap_get_maximum_number_of_samples(
-						&(page_window->number_of_samples));
-					if ((page_window->number_of_samples_to_save<=0)||
-						(page_window->number_of_samples_to_save>
-						page_window->number_of_samples))
-					{
-						page_window->number_of_samples_to_save=
-							page_window->number_of_samples;
-					}
-					page_window->number_of_scrolling_values_per_channel=
-						(int)((page_window->scrolling_frequency)/
-						(page_window->scrolling_callback_frequency)+0.5);
-					if ((0<page_window->number_of_scrolling_values_per_channel)&&
-#if defined (MOTIF)
-						REALLOCATE(signal_line,page_window->signal_line,XPoint,
-						(page_window->number_of_scrolling_values_per_channel)+1)
-#endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
-						REALLOCATE(signal_line,page_window->signal_line,POINT,
-						(page_window->number_of_scrolling_values_per_channel)+1)
-#endif /* defined (WIN32_USER_INTERFACE) */
-						)
-					{
-						page_window->signal_line=signal_line;
-					}
-					else
-					{
-						if (page_window->signal_line)
-						{
-							DEALLOCATE(page_window->signal_line);
-						}
-					}
-					unemap_start_scrolling();
-					unemap_get_antialiasing_filter_frequency(1,&filter_frequency);
-					sprintf(working_string,"%.0f",filter_frequency);
-#if defined (MOTIF)
-					XtVaSetValues((page_window->low_pass).value,XmNvalue,working_string,
-						NULL);
-#endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
-					Edit_SetText((page_window->low_pass_filter).edit,working_string);
-#endif /* defined (WIN32_USER_INTERFACE) */
-					sprintf(working_string,"%d",
-						(int)(page_window->number_of_samples_to_save));
-#if defined (MOTIF)
-					XtVaSetValues((page_window->save).value,XmNvalue,working_string,
-						NULL);
-#endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
-					Edit_SetText((page_window->save).edit,working_string);
-#endif /* defined (WIN32_USER_INTERFACE) */
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"Could not configure hardware");
-					return_code=0;
-				}
-#endif /* defined (MIRADA) */
-			}
-			if (return_code)
-			{
-#if defined (NEW_CODE)
-				/*???DB.  Motif isn't picking up the current directory ? */
-				confirmation_change_current_working_directory(
-					page_window->user_interface);
-#endif /* defined (NEW_CODE) */
 				/* make sure that there is a rig */
 				if (!(*(page_window->rig_address)))
 				{
-#if defined (OLD_CODE)
-					display_message(WARNING_MESSAGE,
-					"No rig defined.  Specify configuration file or cancel for default");
-#endif /* defined (OLD_CODE) */
+					new_rig_flag=1;
 					if (acquisition_rig_filename=confirmation_get_read_filename(".cnfg",
 						page_window->user_interface))
 					{
@@ -6069,38 +5817,194 @@ Called to start experiment on the <page_window>.
 					}
 					if (!(*(page_window->rig_address)))
 					{
-						display_message(INFORMATION_MESSAGE,"Creating default rig\n");
-						number_of_rows=((int)(page_window->number_of_channels)-1)/8+1;
-						if (ALLOCATE(electrodes_in_row,int,number_of_rows))
+						if (unemap_get_number_of_channels(&number_of_channels))
 						{
-							index=number_of_rows-1;
-							electrodes_in_row[index]=
-								(int)(page_window->number_of_channels)-8*index;
-							while (index>0)
+							display_message(INFORMATION_MESSAGE,"Creating default rig\n");
+							number_of_rows=(number_of_channels-1)/8+1;
+							if (ALLOCATE(electrodes_in_row,int,number_of_rows))
 							{
-								index--;
-								electrodes_in_row[index]=8;
-							}
-							if (!(*(page_window->rig_address)=create_standard_Rig("default",
-								PATCH,MONITORING_OFF,EXPERIMENT_OFF,number_of_rows,
-								electrodes_in_row,1,0,(float)1
+								index=number_of_rows-1;
+								electrodes_in_row[index]=number_of_channels-8*index;
+								while (index>0)
+								{
+									index--;
+									electrodes_in_row[index]=8;
+								}
+								if (!(*(page_window->rig_address)=create_standard_Rig("default",
+									PATCH,MONITORING_OFF,EXPERIMENT_OFF,number_of_rows,
+									electrodes_in_row,1,0,(float)1
 #if defined (UNEMAP_USE_3D)
-								/*??JWperhaps we should pass this down from above*/
-								,(struct Unemap_package *)NULL
+									/*??JWperhaps we should pass this down from above*/
+									,(struct Unemap_package *)NULL
 #endif /* defined (UNEMAP_USE_3D) */
-								)))
+									)))
+								{
+									display_message(ERROR_MESSAGE,
+										"start_experiment.  Error creating default rig");
+								}
+								DEALLOCATE(electrodes_in_row);
+							}
+							else
 							{
 								display_message(ERROR_MESSAGE,
-									"start_experiment.  Error creating default rig");
+									"start_experiment.  Could not allocate electrodes_in_row");
 							}
-							DEALLOCATE(electrodes_in_row);
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"start_experiment.  Could not allocate electrodes_in_row");
+								"start_experiment.  Could not get maximum number of channels");
 						}
 					}
+				}
+				if (*(page_window->rig_address))
+				{
+#if defined (DEBUG)
+					/*???debug */
+					printf("before unemap_deconfigure\n");
+#endif /* defined (DEBUG) */
+					/* make sure that unemap closed down */
+					unemap_deconfigure();
+#if defined (DEBUG)
+					/*???debug */
+					printf("after unemap_deconfigure\n");
+#endif /* defined (DEBUG) */
+					page_window->number_of_configured_channels=0;
+					DEALLOCATE(page_window->configured_channels);
+					/* determine the configured_channels */
+					if (unemap_get_number_of_channels(&number_of_channels)&&
+						(0<number_of_channels)&&ALLOCATE(configured_channels,int,
+						number_of_channels))
+					{
+						for (i=0;i<number_of_channels;i++)
+						{
+							configured_channels[i]=0;
+						}
+						i=(*(page_window->rig_address))->number_of_devices;
+						device_address=(*(page_window->rig_address))->devices;
+						while (i>0)
+						{
+							if ((*device_address)&&((*device_address)->channel)&&
+								(0<(channel_number=(*device_address)->channel->number))&&
+								(channel_number<=number_of_channels))
+							{
+								configured_channels[channel_number-1]=1;
+							}
+							device_address++;
+							i--;
+						}
+						number_of_configured_channels=0;
+						for (i=0;i<number_of_channels;i++)
+						{
+							if (configured_channels[i])
+							{
+								configured_channels[number_of_configured_channels]=i+1;
+								number_of_configured_channels++;
+							}
+						}
+						page_window->number_of_configured_channels=
+							number_of_configured_channels;
+						page_window->configured_channels=configured_channels;
+					}
+					if ((0<page_window->number_of_configured_channels)&&
+						(page_window->configured_channels)&&(return_code=unemap_configure(
+						page_window->number_of_configured_channels,
+						page_window->configured_channels,page_window->sampling_frequency,
+						(int)(page_window->number_of_samples),
+#if defined (MOTIF)
+						User_interface_get_event_dispatcher(page_window->user_interface),
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+						(HWND)NULL,(UINT)0,
+#endif /* defined (WIN32_USER_INTERFACE) */
+						scrolling_hardware_callback,(void *)page_window,
+						page_window->scrolling_frequency,
+						page_window->scrolling_callback_frequency,
+						page_window->synchronization_card)))
+					{
+#if defined (DEBUG)
+						/*???debug */
+						printf("after unemap_configure\n");
+#endif /* defined (DEBUG) */
+						return_code=1;
+						unemap_get_sampling_frequency(
+							&(page_window->sampling_frequency));
+						unemap_get_scrolling_frequency(
+							&(page_window->scrolling_frequency));
+						unemap_get_scrolling_callback_frequency(
+							&(page_window->scrolling_callback_frequency));
+						unemap_get_maximum_number_of_samples(
+							&(page_window->number_of_samples));
+						if ((page_window->number_of_samples_to_save<=0)||
+							(page_window->number_of_samples_to_save>
+							page_window->number_of_samples))
+						{
+							page_window->number_of_samples_to_save=
+								page_window->number_of_samples;
+						}
+						page_window->number_of_scrolling_values_per_channel=
+							(int)((page_window->scrolling_frequency)/
+							(page_window->scrolling_callback_frequency)+0.5);
+						if ((0<page_window->number_of_scrolling_values_per_channel)&&
+#if defined (MOTIF)
+							REALLOCATE(signal_line,page_window->signal_line,XPoint,
+							(page_window->number_of_scrolling_values_per_channel)+1)
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+							REALLOCATE(signal_line,page_window->signal_line,POINT,
+							(page_window->number_of_scrolling_values_per_channel)+1)
+#endif /* defined (WIN32_USER_INTERFACE) */
+							)
+						{
+							page_window->signal_line=signal_line;
+						}
+						else
+						{
+							if (page_window->signal_line)
+							{
+								DEALLOCATE(page_window->signal_line);
+							}
+						}
+						unemap_start_scrolling();
+						unemap_get_antialiasing_filter_frequency(1,&filter_frequency);
+						sprintf(working_string,"%.0f",filter_frequency);
+#if defined (MOTIF)
+						XtVaSetValues((page_window->low_pass).value,XmNvalue,working_string,
+							NULL);
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+						Edit_SetText((page_window->low_pass_filter).edit,working_string);
+#endif /* defined (WIN32_USER_INTERFACE) */
+						sprintf(working_string,"%d",
+							(int)(page_window->number_of_samples_to_save));
+#if defined (MOTIF)
+						XtVaSetValues((page_window->save).value,XmNvalue,working_string,
+							NULL);
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+						Edit_SetText((page_window->save).edit,working_string);
+#endif /* defined (WIN32_USER_INTERFACE) */
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Could not configure hardware.  %d %p %d",page_window->
+							number_of_configured_channels,page_window->configured_channels,
+							return_code);
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"Could not get rig");
+					return_code=0;
+				}
+#endif /* defined (MIRADA) */
+			}
+			if (return_code)
+			{
+				if (new_rig_flag)
+				{
 					if (*(page_window->rig_address))
 					{
 #if defined (DEBUG)
@@ -6126,11 +6030,13 @@ Called to start experiment on the <page_window>.
 							((page_window->stimulators)[j]).number_of_channels=0;
 						}
 						maximum_device_name_length=(short)4;
+						device_number=0;
 						if ((0<(number_of_devices=(*(page_window->rig_address))->
 							number_of_devices))&&(device_address=
-							(*(page_window->rig_address))->devices))
+							(*(page_window->rig_address))->devices)&&
+							unemap_get_number_of_channels(&number_of_channels))
 						{
-							channel_number=(int)((page_window->number_of_channels)+1);
+							channel_number=number_of_channels+1;
 							for (i=0;i<number_of_devices;i++)
 							{
 								if (((*device_address)->description)&&
@@ -6161,74 +6067,6 @@ Called to start experiment on the <page_window>.
 						if (page_window->display_device=display_device)
 						{
 							page_window->display_device_number=device_number;
-#if defined (OLD_CODE)
-							if (!unemap_get_voltage_range(display_device->channel->number,
-								&(page_window->display_minimum),
-								&(page_window->display_maximum)))
-							{
-								page_window->display_minimum=(float)-1;
-								page_window->display_maximum=(float)1;
-							}
-							page_window->display_minimum *= 1000;
-							page_window->display_maximum *= 1000;
-#endif /* defined (OLD_CODE) */
-#if defined (OLD_CODE)
-							channel_gain=display_device->channel->gain;
-							channel_offset=display_device->channel->offset;
-							if (unemap_get_gain(display_device->channel->number,
-								&pre_filter_gain,&post_filter_gain)&&unemap_get_sample_range(
-								display_device->channel->number,&minimum_signal_value,
-								&maximum_signal_value))
-							{
-								channel_gain /= pre_filter_gain*post_filter_gain;
-								page_window->display_maximum=
-									channel_gain*((float)maximum_signal_value-channel_offset);
-								page_window->display_minimum=
-									channel_gain*((float)minimum_signal_value-channel_offset);
-							}
-#endif /* defined (OLD_CODE) */
-#if defined (DEBUG)
-							/*???debug */
-							printf("before setting stimulate devices %d\n",
-								page_window->number_of_stimulators);
-#endif /* defined (DEBUG) */
-							/* set the stimulate devices */
-							device_address=(*(page_window->rig_address))->devices;
-							for (i=0;i<number_of_devices;i++)
-							{
-								if ((*device_address)&&((*device_address)->channel)&&
-									(0<(channel_number=(*device_address)->channel->number))&&
-									(channel_number<=(int)(page_window->number_of_channels))&&
-									((*device_address)->description)&&
-									((*device_address)->description->name))
-								{
-									for (j=0;j<page_window->number_of_stimulators;j++)
-									{
-										if (unemap_channel_valid_for_stimulator(j+1,channel_number))
-										{
-#if defined (OLD_CODE)
-											if ((-1==(page_window->stimulate_device_numbers)[j])||
-												(channel_number<
-												(page_window->stimulate_device_numbers)[j]))
-											{
-#if defined (DEBUG)
-												/*???debug */
-												printf("%d %d %d\n",channel_number,i,j);
-#endif /* defined (DEBUG) */
-												(page_window->stimulate_device_numbers)[j]=i;
-												(page_window->stimulate_devices)[j]= *device_address;
-												(page_window->stimulator_on)[j]=0;
-											}
-#endif /* defined (OLD_CODE) */
-										}
-									}
-								}
-								device_address++;
-							}
-#if defined (DEBUG)
-							/*???debug */
-							printf("after setting stimulate devices\n");
-#endif /* defined (DEBUG) */
 						}
 						else
 						{
@@ -6244,7 +6082,7 @@ Called to start experiment on the <page_window>.
 						stop_experiment) */
 					/* set up the signal buffer */
 					if (signal_buffer=create_Signal_buffer(SHORT_INT_VALUE,
-						(int)(page_window->number_of_channels),
+						(int)(page_window->number_of_configured_channels),
 						(int)(page_window->number_of_samples),
 						page_window->sampling_frequency))
 					{
@@ -6256,19 +6094,20 @@ Called to start experiment on the <page_window>.
 						device_address=(*(page_window->rig_address))->devices;
 						i=(*(page_window->rig_address))->number_of_devices;
 						return_code=1;
+#if !defined (MIRADA)
+						index=0;
+#endif /* !defined (MIRADA) */
 						while (return_code&&(i>0))
 						{
 							if ((*device_address)->channel)
 							{
+#if defined (MIRADA)
 								channel_number=((*device_address)->channel->number)-1;
 								if ((0<=channel_number)&&
 									(channel_number<(int)(page_window->number_of_channels)))
 								{
-#if defined (MIRADA)
 									index=16*(channel_number/16)+8*(channel_number%2)+
 										(channel_number%16)/2;
-#else /* defined (MIRADA) */
-									index=channel_number;
 #endif /* defined (MIRADA) */
 									if (!((*device_address)->signal=create_Signal(index,
 										signal_buffer,UNDECIDED,0)))
@@ -6277,14 +6116,19 @@ Called to start experiment on the <page_window>.
 											"start_experiment.  Could not create signal");
 										return_code=0;
 									}
+#if !defined (MIRADA)
+									index++;
+#endif /* !defined (MIRADA) */
+#if defined (MIRADA)
 								}
+#endif /* defined (MIRADA) */
 							}
 							device_address++;
 							i--;
 						}
-						if (!(page_window->hardware_initialized))
+						if (!(page_window->hardware_configured))
 						{
-							page_window->hardware_initialized=1;
+							page_window->hardware_configured=1;
 							/* read in the calibration file */
 							if ((page_window->calibration_directory)&&
 								(0<strlen(page_window->calibration_directory)))
@@ -6885,7 +6729,7 @@ static void calibration_end_callback(const int number_of_channels,
 	const int *channel_numbers,const float *channel_offsets,
 	const float *channel_gains,void *page_window_void)
 /*******************************************************************************
-LAST MODIFIED : 9 August 2002
+LAST MODIFIED : 20 August 2003
 
 DESCRIPTION :
 Called when calibration ends.
@@ -6932,12 +6776,14 @@ Called when calibration ends.
 				{
 					/* normalize gains */
 						/*???DB.  Move normalization into hardware ? */
-					unemap_get_voltage_range(i+1,&minimum_voltage,&maximum_voltage);
-					unemap_get_sample_range(i+1,&minimum_signal_value,
-						&maximum_signal_value);
-					fprintf(output_file,"%d %g %g\n",channel_numbers[i],
-						channel_offsets[i],channel_gains[i]*(float)(maximum_signal_value-
-						minimum_signal_value)/(maximum_voltage-minimum_voltage));
+					if (unemap_get_voltage_range(channel_numbers[i],&minimum_voltage,
+						&maximum_voltage)&&unemap_get_sample_range(channel_numbers[i],
+						&minimum_signal_value,&maximum_signal_value))
+					{
+						fprintf(output_file,"%d %g %g\n",channel_numbers[i],
+							channel_offsets[i],channel_gains[i]*(float)(maximum_signal_value-
+							minimum_signal_value)/(maximum_voltage-minimum_voltage));
+					}
 				}
 				fclose(output_file);
 				if (page_window&&(page_window->rig_address)&&
@@ -7215,7 +7061,7 @@ static void page_save_data(
 #endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 13 January 2002
+LAST MODIFIED : 14 August 2003
 
 DESCRIPTION :
 Called when the save button is pressed.
@@ -7236,7 +7082,8 @@ Called when the save button is pressed.
 	unsigned long interrupt_count,mirada_start,number_of_cards,number_of_channels;
 #else /* defined (MIRADA) */
 #if !defined (BACKGROUND_SAVING)
-	int channel_number,i,j,number_of_channels,number_of_signals;
+	int channel_number,*configured_channels,i,j,number_of_configured_channels,
+		number_of_signals;
 	short int *samples;
 #endif /* !defined (BACKGROUND_SAVING) */
 #endif /* defined (MIRADA) */
@@ -7340,7 +7187,7 @@ Called when the save button is pressed.
 			unemap_stop_sampling();
 			samples=(short int *)NULL;
 			i=rig->number_of_devices;
-			if (unemap_get_number_of_samples_acquired(&number_of_samples)
+			if (unemap_get_number_of_samples_acquired(&number_of_samples))
 			{
 				if (number_of_samples>page_window->number_of_samples_to_save)
 				{
@@ -7350,8 +7197,10 @@ Called when the save button is pressed.
 				/*???debug */
 				printf("before unemap_get_samples_acquired\n");
 #endif /* defined (DEBUG) */
-				if (unemap_get_number_of_channels(&number_of_channels)&&
-					ALLOCATE(samples,short int,number_of_samples*number_of_channels)&&
+				if ((0<(number_of_configured_channels=page_window->
+					number_of_configured_channels))&&(configured_channels=page_window->
+					configured_channels)&&ALLOCATE(samples,short int,
+					number_of_samples*number_of_configured_channels)&&
 					unemap_get_samples_acquired(0,number_of_samples,samples,(int *)NULL))
 				{
 #if defined (DEBUG)
@@ -7365,17 +7214,23 @@ Called when the save button is pressed.
 						{
 							signal_buffer->start=0;
 							signal_buffer->end=(int)(number_of_samples-1);
-							channel_number=((*device)->channel->number)-1;
+							channel_number=(*device)->channel->number;
 							number_of_signals=signal_buffer->number_of_signals;
 							destination=((signal_buffer->signals).short_int_values)+
 								((*device)->signal->index);
-							if ((0<=channel_number)&&(channel_number<number_of_channels))
+							j=0;
+							while ((j<number_of_configured_channels)&&
+								(channel_number!=configured_channels[j]))
 							{
-								source=samples+channel_number;
+								j++;
+							}
+							if (j<number_of_configured_channels)
+							{
+								source=samples+j;
 								for (j=(int)number_of_samples;j>0;j--)
 								{
 									*destination= *source;
-									source += number_of_channels;
+									source += number_of_configured_channels;
 									destination += number_of_signals;
 								}
 							}
@@ -7432,7 +7287,7 @@ static void page_auto_range(
 #endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 17 September 2002
+LAST MODIFIED : 14 August 2003
 
 DESCRIPTION :
 Called when the auto range button is pressed.
@@ -7440,7 +7295,8 @@ Called when the auto range button is pressed.
 {
 	float *card_maximum,*card_minimum,channel_gain,channel_offset,pre_filter_gain,
 		post_filter_gain,sampling_frequency,signal_maximum,signal_minimum,temp;
-	int card_number,channel_number,i,j,number_of_channels;
+	int card_number,*card_channel_number,channel_number,*configured_channels,i,j,
+		number_of_channels,number_of_configured_channels;
 	short int maximum,minimum,*samples,*source;
 	struct Channel *channel;
 	struct Device **device;
@@ -7474,7 +7330,10 @@ Called when the auto range button is pressed.
 			unemap_stop_sampling();
 			if (unemap_get_number_of_samples_acquired(&number_of_samples)&&
 				unemap_get_number_of_channels(&number_of_channels)&&
-				unemap_get_sampling_frequency(&sampling_frequency))
+				(0<(number_of_configured_channels=page_window->
+				number_of_configured_channels))&&(configured_channels=
+				page_window->configured_channels)&&unemap_get_sampling_frequency(
+				&sampling_frequency))
 			{
 				if ((0<sampling_frequency)&&(0<(unsigned long)sampling_frequency)&&
 					((unsigned long)sampling_frequency<number_of_samples))
@@ -7489,9 +7348,12 @@ Called when the auto range button is pressed.
 				card_minimum=(float *)NULL;
 				/*???DB.  Making assumption about hardware (gain same for each block of
 					64) */
-				if (ALLOCATE(samples,short int,number_of_samples*number_of_channels)&&
-					ALLOCATE(card_maximum,float,number_of_channels/64)&&
-					ALLOCATE(card_minimum,float,number_of_channels/64)&&
+				ALLOCATE(samples,short int,number_of_samples*
+					number_of_configured_channels);
+				ALLOCATE(card_maximum,float,number_of_channels/64);
+				ALLOCATE(card_minimum,float,number_of_channels/64);
+				ALLOCATE(card_channel_number,int,number_of_channels/64);
+				if (samples&&card_maximum&&card_minimum&&card_channel_number&&
 					unemap_get_samples_acquired(0,(int)number_of_samples,samples,
 					(int *)NULL))
 				{
@@ -7500,6 +7362,7 @@ Called when the auto range button is pressed.
 					{
 						card_minimum[card_number]=(float)1;
 						card_maximum[card_number]=(float)0;
+						card_channel_number[card_number]=0;
 					}
 					i=rig->number_of_devices;
 					while (i>0)
@@ -7516,11 +7379,17 @@ Called when the auto range button is pressed.
 						{
 							(*device)->signal_display_minimum=(float)-1;
 							(*device)->signal_display_maximum=(float)1;
-							channel_number=(channel->number)-1;
+							channel_number=channel->number;
 							card_number=channel_number/64;
-							if ((0<=channel_number)&&(channel_number<number_of_channels))
+							j=0;
+							while ((j<number_of_configured_channels)&&(channel_number!=
+								configured_channels[j]))
 							{
-								source=samples+channel_number;
+								j++;
+							}
+							if (j<number_of_configured_channels)
+							{
+								source=samples+j;
 								minimum= *source;
 								maximum=minimum;
 								for (j=(int)number_of_samples-1;j>0;j--)
@@ -7538,7 +7407,7 @@ Called when the auto range button is pressed.
 										}
 									}
 								}
-								if (unemap_get_gain(channel_number+1,&pre_filter_gain,
+								if (unemap_get_gain(channel_number,&pre_filter_gain,
 									&post_filter_gain))
 								{
 									channel_offset=channel->offset;
@@ -7572,6 +7441,7 @@ Called when the auto range button is pressed.
 											}
 										}
 									}
+									card_channel_number[card_number]=channel_number;
 								}
 							}
 						}
@@ -7712,8 +7582,8 @@ Called when the auto range button is pressed.
 					{
 						/*???DB.  Making assumption about hardware (gain same for each block
 							of 64) */
-						i=card_number*64+1;
-						if ((card_minimum[card_number]<card_maximum[card_number])&&
+						i=card_channel_number[card_number];
+						if ((0<i)&&(card_minimum[card_number]<card_maximum[card_number])&&
 							unemap_get_voltage_range(i,&signal_minimum,&signal_maximum)&&
 							unemap_get_gain(i,&pre_filter_gain,&post_filter_gain))
 						{
@@ -7741,6 +7611,7 @@ Called when the auto range button is pressed.
 				DEALLOCATE(samples);
 				DEALLOCATE(card_maximum);
 				DEALLOCATE(card_minimum);
+				DEALLOCATE(card_channel_number);
 			}
 			/* start continuous sampling */
 			unemap_start_sampling();
@@ -8085,7 +7956,8 @@ Called when the start all stimulators button is pressed.
 							{
 								if ((UnEmap_2V1==page_window->unemap_hardware_version)||
 									(UnEmap_2V2==page_window->unemap_hardware_version)||
-									((UnEmap_2V1|UnEmap_2V2)==page_window->unemap_hardware_version))
+									((UnEmap_2V1|UnEmap_2V2)==page_window->
+									unemap_hardware_version))
 								{
 									return_code=unemap_load_current_stimulating(
 										((page_window->stimulators)[stimulator_number]).
@@ -8863,204 +8735,6 @@ Called when the electrode down arrow is pressed.
 	LEAVE;
 } /* decrement_electrode */
 
-#if defined (OLD_CODE)
-static int change_stimulate_device_number(struct Page_window *page_window,
-	int device_number)
-/*******************************************************************************
-LAST MODIFIED : 8 July 1999
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	struct Device *device;
-
-	ENTER(change_stimulate_device_number);
-	return_code=0;
-	if (page_window&&(0<page_window->number_of_stimulators)&&(0<=device_number)&&
-		(device_number<((*(page_window->rig_address))->number_of_devices))&&
-		(device=((*(page_window->rig_address))->devices)[device_number])&&
-		(device->signal)&&(device->channel)&&(0<device->channel->number)&&
-		(device->channel->number<=(int)(page_window->number_of_channels))&&
-		unemap_channel_valid_for_stimulator(page_window->stimulator_number,
-		device->channel->number)&&(device->description)&&
-		(device->description->name))
-	{
-		(page_window->stimulate_devices)[(page_window->stimulator_number)-1]=device;
-		(page_window->stimulate_device_numbers)[(page_window->stimulator_number)-1]=
-			device_number;
-#if defined (OLD_CODE)
-#if defined (MOTIF)
-		XtVaSetValues((page_window->stimulator).stimulate.value,XmNvalue,
-			device->description->name,NULL);
-#endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
-		Edit_SetText((page_window->stimulate_channel).edit,
-			device->description->name);
-#endif /* defined (WIN32_USER_INTERFACE) */
-#endif /* defined (OLD_CODE) */
-		return_code=1;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* change_stimulate_device_number */
-#endif /* defined (OLD_CODE) */
-
-#if defined (OLD_CODE)
-static void increment_stimulate(
-#if defined (MOTIF)
-	Widget widget,XtPointer page_window_structure,XtPointer call_data
-#endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
-	LONG page_window_structure
-#endif /* defined (WIN32_USER_INTERFACE) */
-	)
-/*******************************************************************************
-LAST MODIFIED : 29 July 1999
-
-DESCRIPTION :
-Called when the stimulate up arrow is pressed.
-==============================================================================*/
-{
-	int device_number;
-	struct Page_window *page_window;
-
-	ENTER(increment_stimulate);
-#if defined (MOTIF)
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-#endif /* defined (MOTIF) */
-	if (page_window=(struct Page_window *)page_window_structure)
-	{
-		device_number=(page_window->stimulate_device_numbers)[
-			(page_window->stimulator_number)-1];
-		do
-		{
-			device_number++;
-		} while ((device_number<(*(page_window->rig_address))->number_of_devices)&&
-			!change_stimulate_device_number(page_window,device_number));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"increment_stimulate.  page_window missing");
-	}
-	LEAVE;
-} /* increment_stimulate */
-#endif /* defined (OLD_CODE) */
-
-#if defined (OLD_CODE)
-static void decrement_stimulate(
-#if defined (MOTIF)
-	Widget widget,XtPointer page_window_structure,XtPointer call_data
-#endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
-	LONG page_window_structure
-#endif /* defined (WIN32_USER_INTERFACE) */
-	)
-/*******************************************************************************
-LAST MODIFIED : 29 July 1999
-
-DESCRIPTION :
-Called when the stimulate down arrow is pressed.
-==============================================================================*/
-{
-	int device_number;
-	struct Page_window *page_window;
-
-	ENTER(decrement_stimulate);
-#if defined (MOTIF)
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-#endif /* defined (MOTIF) */
-	if (page_window=(struct Page_window *)page_window_structure)
-	{
-		device_number=(page_window->stimulate_device_numbers)[
-			(page_window->stimulator_number)-1];
-		do
-		{
-			device_number--;
-		} while ((device_number>=0)&&
-			!change_stimulate_device_number(page_window,device_number));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"decrement_stimulate.  page_window missing");
-	}
-	LEAVE;
-} /* decrement_stimulate */
-#endif /* defined (OLD_CODE) */
-
-#if defined (OLD_CODE)
-static void increment_stimulator(
-#if defined (MOTIF)
-	Widget widget,XtPointer page_window_structure,XtPointer call_data
-#endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
-	LONG page_window_structure
-#endif /* defined (WIN32_USER_INTERFACE) */
-	)
-/*******************************************************************************
-LAST MODIFIED : 29 July 1999
-
-DESCRIPTION :
-Called when the stimulator up arrow is pressed.
-==============================================================================*/
-{
-	struct Page_window *page_window;
-
-	ENTER(increment_stimulator);
-#if defined (MOTIF)
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-#endif /* defined (MOTIF) */
-	if (page_window=(struct Page_window *)page_window_structure)
-	{
-		update_stimulator(page_window,(page_window->stimulator_number)+1);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"increment_stimulator.  page_window missing");
-	}
-	LEAVE;
-} /* increment_stimulator */
-#endif /* defined (OLD_CODE) */
-
-#if defined (OLD_CODE)
-static void decrement_stimulator(
-#if defined (MOTIF)
-	Widget widget,XtPointer page_window_structure,XtPointer call_data
-#endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
-	LONG page_window_structure
-#endif /* defined (WIN32_USER_INTERFACE) */
-	)
-/*******************************************************************************
-LAST MODIFIED : 29 July 1999
-
-DESCRIPTION :
-Called when the stimulator down arrow is pressed.
-==============================================================================*/
-{
-	struct Page_window *page_window;
-
-	ENTER(decrement_stimulator);
-#if defined (MOTIF)
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-#endif /* defined (MOTIF) */
-	if (page_window=(struct Page_window *)page_window_structure)
-	{
-		update_stimulator(page_window,(page_window->stimulator_number)-1);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"decrement_stimulator.  page_window missing");
-	}
-	LEAVE;
-} /* decrement_stimulator */
-#endif /* defined (OLD_CODE) */
-
 #if defined (WIN32_USER_INTERFACE)
 static LRESULT CALLBACK Page_window_class_proc(HWND window,
 	UINT message_identifier,WPARAM first_message,LPARAM second_message)
@@ -9107,7 +8781,8 @@ DESCRIPTION :
 				restitution_time_pacing=0;
 				SetWindowLong(window,DLGWINDOWEXTRA,(LONG)page_window);
 				/* retrieve the control windows and do any setup required */
-				widget_spacing=User_interface_get_widget_spacing(page_window->user_interface);
+				widget_spacing=User_interface_get_widget_spacing(
+					page_window->user_interface);
 				/* auto_range_button */
 				page_window->auto_range_button=GetDlgItem(window,AUTO_RANGE_BUTTON);
 				GetWindowRect(page_window->auto_range_button,&rectangle);
@@ -9174,7 +8849,8 @@ DESCRIPTION :
 					WS_CHILD|WS_BORDER|WS_VISIBLE|UDS_ALIGNLEFT,0,0,
 					(page_window->electrode).arrows_width,
 					(page_window->electrode).arrows_height,window,ELECTRODE_ARROWS,
-					page_window->instance,(HWND)NULL,page_window->number_of_channels,1,1);
+					page_window->instance,(HWND)NULL,
+					page_window->number_of_configured_channels,1,1);
 				EnableWindow((page_window->electrode).arrows,FALSE);
 				(page_window->electrode).text=GetDlgItem(window,ELECTRODE_TEXT);
 				EnableWindow((page_window->electrode).text,FALSE);
@@ -10262,7 +9938,7 @@ Global functions
 */
 int destroy_Page_window(struct Page_window **page_window_address)
 /*******************************************************************************
-LAST MODIFIED : 4 June 2003
+LAST MODIFIED : 14 August 2003
 
 DESCRIPTION :
 If the <address> field of the page window is not NULL, <*address> is set to
@@ -10298,6 +9974,8 @@ if (INVALID_HANDLE_VALUE!=page_window->device_driver)
 		unemap_set_isolate_record_mode(0,1);
 		unemap_set_power(0);
 		unemap_deconfigure();
+		page_window->number_of_configured_channels=0;
+		DEALLOCATE(page_window->configured_channels);
 #endif /* defined (MIRADA) */
 		if (page_window->pacing_window)
 		{
@@ -10442,7 +10120,7 @@ struct Page_window *create_Page_window(struct Page_window **address,
 	struct Mapping_window **mapping_window_address,int pointer_sensitivity,
 	char *signal_file_extension_write,struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 5 June 2003
+LAST MODIFIED : 14 August 2003
 
 DESCRIPTION :
 This function allocates the memory for a page window and sets the fields to the
@@ -10460,7 +10138,7 @@ as a standalone application.
 {
 	char *hardware_directory;
 	float channel_gain,channel_offset,post_filter_gain,pre_filter_gain;
-	int channel_number,device_number,i,j,number_of_devices;
+	int channel_number,device_number,i,number_of_devices;
 	long int maximum_signal_value,minimum_signal_value;
 	Page_window_settings settings;
 	struct Channel *channel;
@@ -10834,7 +10512,7 @@ as a standalone application.
 						"Environment variable UNEMAP_HARDWARE is not defined.  "
 						"Using current directory for calibrate.dat");
 				}
-				page_window->hardware_initialized=0;
+				page_window->hardware_configured=0;
 				page_window->close_callback=close_callback;
 				page_window->close_callback_data=close_callback_data;
 #if defined (MOTIF)
@@ -10937,8 +10615,8 @@ as a standalone application.
 				}
 #else /* defined (MIRADA) */
 #if defined (MOTIF)
-				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
-					&settings,resources,XtNumber(resources),NULL);
+				XtVaGetApplicationResources(User_interface_get_application_shell(
+					user_interface),&settings,resources,XtNumber(resources),NULL);
 #if defined (OLD_CODE)
 /*???DB.  Always use environment variable */
 				/* environment variable has priority */
@@ -11011,10 +10689,12 @@ as a standalone application.
 					DEALLOCATE(settings_file_name);
 				}
 #endif /* defined (WIN32_USER_INTERFACE) */
-				if (!unemap_get_number_of_channels(&(page_window->number_of_channels)))
+				if (!unemap_get_number_of_configured_channels(
+					&(page_window->number_of_configured_channels)))
 				{
-					page_window->number_of_channels=0;
+					page_window->number_of_configured_channels=0;
 				}
+				page_window->configured_channels=(int *)NULL;
 #endif /* defined (MIRADA) */
 				page_window->number_of_samples=settings.number_of_samples;
 				page_window->sampling_frequency=settings.sampling_frequency;
@@ -11033,9 +10713,10 @@ as a standalone application.
 						that are linear combinations */
 					display_device=(struct Device *)NULL;
 					if ((0<(number_of_devices=(*rig_address)->number_of_devices))&&
-						(device_address=(*rig_address)->devices))
+						(device_address=(*rig_address)->devices)&&
+						unemap_get_number_of_channels(&channel_number))
 					{
-						channel_number=(int)((page_window->number_of_channels)+1);
+						channel_number++;
 						for (i=0;i<number_of_devices;i++)
 						{
 							if ((*device_address)&&(channel=(*device_address)->channel))
@@ -11118,51 +10799,6 @@ as a standalone application.
 					if (page_window->display_device=display_device)
 					{
 						page_window->display_device_number=device_number;
-#if defined (OLD_CODE)
-						channel_gain=display_device->channel->gain_correction;
-#if defined (OLD_CODE)
-						channel_gain=display_device->channel->gain;
-#endif /* defined (OLD_CODE) */
-						channel_offset=display_device->channel->offset;
-						unemap_get_gain(display_device->channel->number,
-							&pre_filter_gain,&post_filter_gain);
-						unemap_get_sample_range(display_device->channel->number,
-							&minimum_signal_value,&maximum_signal_value);
-						channel_gain /= pre_filter_gain*post_filter_gain;
-						page_window->display_maximum=
-							channel_gain*((float)maximum_signal_value-channel_offset);
-						page_window->display_minimum=
-							channel_gain*((float)minimum_signal_value-channel_offset);
-#endif /* defined (OLD_CODE) */
-						/* set the stimulate devices */
-						device_address=(*rig_address)->devices;
-						for (i=0;i<number_of_devices;i++)
-						{
-							if ((*device_address)&&((*device_address)->channel)&&
-								(0<(channel_number=(*device_address)->channel->number))&&
-								(channel_number<=(int)(page_window->number_of_channels))&&
-								((*device_address)->description)&&
-								((*device_address)->description->name))
-							{
-								for (j=0;j<page_window->number_of_stimulators;j++)
-								{
-									if (unemap_channel_valid_for_stimulator(j+1,channel_number))
-									{
-#if defined (OLD_CODE)
-										if ((-1==(page_window->stimulate_device_numbers)[j])||
-											(channel_number<
-											(page_window->stimulate_device_numbers)[j]))
-										{
-											(page_window->stimulate_device_numbers)[j]=i;
-											(page_window->stimulate_devices)[j]= *device_address;
-											(page_window->stimulator_on)[j]=0;
-										}
-#endif /* defined (OLD_CODE) */
-									}
-								}
-							}
-							device_address++;
-						}
 					}
 					else
 					{

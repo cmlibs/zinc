@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.h
 
-LAST MODIFIED : 4 June 2003
+LAST MODIFIED : 13 August 2003
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -9,12 +9,6 @@ signal conditioning cards.
 
 NOTES :
 1 The channels are numbered from 1 to the total number of channels
-???DB.  Get rid of NI types
-???DB.  Save
-Operates on the group of channels specified by <channel_number>.  If
-<channel_number> is between 1 and the total number of channels then the group is
-((<channel_number>-1) div 64)*64+1 to ((<channel_number>-1) div 64)*64+64,
-otherwise the group is all channels.
 ==============================================================================*/
 #if !defined (UNEMAP_HARDWARE_H)
 #define UNEMAP_HARDWARE_H
@@ -67,7 +61,8 @@ typedef int (Unemap_stimulation_end_callback)(void *);
 Global functions
 ----------------
 */
-int unemap_configure(float sampling_frequency,int number_of_samples_in_buffer,
+int unemap_configure(int number_of_channels,int *channel_numbers,
+	float sampling_frequency,int number_of_samples_in_buffer,
 #if defined (WIN32_USER_INTERFACE)
 	HWND scrolling_window,UINT scrolling_message,
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -78,16 +73,23 @@ int unemap_configure(float sampling_frequency,int number_of_samples_in_buffer,
 	float scrolling_frequency,float scrolling_callback_frequency,
 	int synchronization_card);
 /*******************************************************************************
-LAST MODIFIED : 4 June 2003
+LAST MODIFIED : 11 August 2003
 
 DESCRIPTION :
-Configures the hardware for sampling at the specified <sampling_frequency> and
-with the specified <number_of_samples_in_buffer>. <sampling_frequency>,
-<number_of_samples_in_buffer>, <scrolling_frequency> and
+Configures the hardware for sampling the specified channels
+(<number_of_channels> and <channel_numbers>) at the specified
+<sampling_frequency> and with the specified <number_of_samples_in_buffer>.
+<sampling_frequency>, <number_of_samples_in_buffer>, <scrolling_frequency> and
 <scrolling_callback_frequency> are requests and the actual values used should
 be determined using unemap_get_sampling_frequency,
 unemap_get_maximum_number_of_samples, unemap_get_scrolling_frequency and
 unemap_get_scrolling_callback_frequency.
+
+If <number_of_channels> is
+- -1 then the hardware is configured with no channels
+- 0 then all channels are configured
+- otherwise, the <number_of_channels> listed in <channel_numbers> are
+	configured.
 
 Every <sampling_frequency>/<scrolling_callback_frequency> samples (one sample
 	is a measurement on every channel)
@@ -347,12 +349,22 @@ then the function applies to the group ((<channel_number>-1) div 64)*64+1 to
 
 int unemap_get_number_of_channels(int *number_of_channels);
 /*******************************************************************************
-LAST MODIFIED : 6 March 2000
+LAST MODIFIED : 8 August 2003
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
 
 The total number of hardware channels is assigned to <*number_of_channels>.
+==============================================================================*/
+
+int unemap_get_number_of_configured_channels(int *number_of_channels);
+/*******************************************************************************
+LAST MODIFIED : 13 August 2003
+
+DESCRIPTION :
+The function does not need the hardware to be configured.
+
+The number of configured channels is assigned to <*number_of_channels>.
 ==============================================================================*/
 
 int unemap_get_sample_range(int channel_number,long int *minimum_sample_value,

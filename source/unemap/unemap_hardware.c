@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.c
 
-LAST MODIFIED : 6 June 2003
+LAST MODIFIED : 20 August 2003
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -16,6 +16,8 @@ SOFTWARE_VERSION:
 		<scrolling_refresh_frequency> to <scrolling_callback_frequency>.  Added
 		unemap_get_scrolling_frequency and unemap_get_scrolling_callback_frequency.
 		This is to allow more control of scrolling
+4 10 August 2003.  Allowed being able to sample a subset of the channels.  This
+		allows faster sampling.  Specify the channels in unemap_configure.
 
 CODE SWITCHS :
 WIN32_SYSTEM - uses Windows GDI (graphics device interface?)
@@ -296,6 +298,12 @@ unemap.*.numberOfSamples: 100000
 	before the other 2 were ready to receive it.  I tested this today, and it
 	works like a champ, no external routing.  Again, I am so sorry that I over
 	looked the obvious here." (from Jason Reid, 27 Nov 2000)
+1.3 11 August 2003.  Got IRQL_NOT_LESS_OR_EQUAL when
+		- using SOFTWARE_VERSION 3
+		- had basic cycle length pacing going (from pacing window)
+		- changed to isolate
+		- did Calibrate
+		Not reproducible
 
 NO_BATT_GOOD_WATCH - no thread watching BattGood
 
@@ -319,6 +327,57 @@ NO_BATT_GOOD_WATCH - no thread watching BattGood
 3.1 Add unemap_get_maximum_sampling_frequency (or have
 		unemap_get_sampling_frequency return maximum when not configured)?  NO
 3.2 Just deconfigure and configure again if different?  DONE
+
+???DB.  Adding being able to sample faster on fewer channels
+0 Add version information to -remove and install
+0.1 Check changes to do with service version in service.h.  DONE
+0.2 Add SOFTWARE_VERSION and date to service displayed name.  DONE
+1 Change SOFTWARE_VERSION.  DONE
+2 Add channels to be configured to unemap_configure
+	???DB.  Different numbers of channels on different cards?  OK - on SCAN
+		trigger runs through its scan sequence
+	???DB.  No channels being sampled on card or crate?
+2.1 hardware_buffer_size.  DONE
+2.2 NUMBER_OF_CHANNELS_ON_NI_CARD.  Do again after add valid channel check. DONE
+2.3 argument list.  DONE
+3 Add configured channels/scan list to NI_card
+3.1 struct NI_card.  DONE
+3.2 get rid of channel_vector.  DONE
+3.3 search_for_NI_cards.  DONE
+3.4 unemap_configure.  DONE
+3.5 module_start_sampling_card.  So, can have cards with no scanned channels
+	not scanned at all.  What about outputting scan trigger from these cards?
+	What about a crate with no scanned channels?  Alternatively, always sample at
+	least one channel per card - add number_of_configured channels?  Decided to
+	always scan at least one channel per card.  DONE
+3.6 channel_reorder.  DONE
+4 Add valid channel check to
+4.1 unemap_set_scrolling_channel.  DONE
+4.2 unemap_set_isolate_record_mode.  DONE
+4.3 unemap_get_isolate_record_mode.  DONE
+4.4 unemap_set_antialiasing_filter_frequency.  DONE
+4.5 unemap_set_powerup_antialiasing_filter_frequency.  DONE
+4.6 unemap_get_antialiasing_filter_frequency.  DONE
+4.7 unemap_get_sample_range.  DONE
+4.8 unemap_get_voltage_range.  DONE
+4.9 unemap_transfer_samples_acquired.  DONE
+4.10 unemap_write_samples_acquired.  DONE
+4.11 unemap_get_samples_acquired.  DONE
+4.12 unemap_get_samples_acquired_background.  DONE
+4.13 unemap_set_gain.  DONE
+4.14 unemap_get_gain.  DONE
+4.15 unemap_load_voltage_stimulating.  DONE
+4.16 unemap_load_current_stimulating.  DONE
+4.17 unemap_stop_stimulating.  DONE
+4.18 unemap_set_channel_stimulating.  DONE
+4.19 unemap_get_channel_stimulating.  DONE
+4.20 unemap_start_calibrating.  DONE
+4.21 unemap_stop_calibrating.  DONE
+4.22 unemap_channel_valid_for_stimulator.  DONE
+4.23 channel_number.  DONE
+5 unemap_get_number_of_channels.  Gets maximum number.  DONE
+6 write/transfer/get channels in configured order.  DONE
+???DB.  Check that scan channels are 0 to 63
 ==============================================================================*/
 
 #define USE_MALLOC
@@ -357,7 +416,7 @@ NO_BATT_GOOD_WATCH - no thread watching BattGood
 Module constants
 ----------------
 */
-#define SOFTWARE_VERSION 3
+#define SOFTWARE_VERSION 4
 
 #if !defined (DA_INTERRUPTS_OFF)
 #define MINIMUM_NUMBER_OF_DA_POINTS 500
@@ -425,7 +484,7 @@ DESCRIPTION :
 
 struct NI_card
 /*******************************************************************************
-LAST MODIFIED : 2 July 2000
+LAST MODIFIED : 7 August 2003
 
 DESCRIPTION :
 Information associated with each NI card/signal conditioning card pair.
@@ -434,6 +493,10 @@ Information associated with each NI card/signal conditioning card pair.
 	enum NI_card_type type;
 	/* to make the pinout for UnEmap_1V2 the same as for later versions */
 	int channel_reorder[NUMBER_OF_CHANNELS_ON_NI_CARD];
+	/* to allow sampling on a subset of the channels */
+	i16 number_of_configured_channels,
+		configured_channels[NUMBER_OF_CHANNELS_ON_NI_CARD],
+		hardware_buffer_offsets[NUMBER_OF_CHANNELS_ON_NI_CARD];
 	i16 device_number;
 	HGLOBAL memory_object;
 	i16 *hardware_buffer;
@@ -533,7 +596,8 @@ void *module_buffer_full_callback_data=NULL;
 /* hardware information */
 	/*???DB.  NI_CARDS->ni_cards, once made sure no other ni_cards */
 float module_sampling_frequency=(float)0;
-int module_configured=0,module_number_of_NI_CARDS=0,
+int module_configured=0,*module_configured_channels=(int *)NULL,
+	module_number_of_configured_channels=0,module_number_of_NI_CARDS=0,
 	module_number_of_stimulators=0,*module_stimulator_NI_CARD_indices=(int *)NULL;
 struct NI_card *module_NI_CARDS=(struct NI_card *)NULL;
 unsigned long module_sample_buffer_size=0,module_starting_sample_number;
@@ -914,7 +978,7 @@ word[i]='\0';
 
 static int search_for_NI_cards(void)
 /*******************************************************************************
-LAST MODIFIED : 29 April 2002
+LAST MODIFIED : 4 August 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1582,6 +1646,7 @@ DESCRIPTION :
 									module_NI_CARDS=ni_card;
 									ni_card += module_number_of_NI_CARDS;
 									ni_card->device_number=card_number;
+									ni_card->number_of_configured_channels=0;
 									ni_card->unemap_hardware_version=unemap_hardware_version;
 									switch (card_code)
 									{
@@ -2206,7 +2271,7 @@ DESCRIPTION :
 static void scrolling_callback_NI(HWND handle,UINT message,WPARAM wParam,
 	LPARAM lParam)
 /*******************************************************************************
-LAST MODIFIED : 5 August 2002
+LAST MODIFIED : 7 August 2002
 
 DESCRIPTION :
 Always called so that <module_starting_sample_number> and
@@ -2223,7 +2288,8 @@ Always called so that <module_starting_sample_number> and
 	static int first_error=1;
 	struct NI_card *ni_card;
 	unsigned char *byte_array;
-	unsigned long end1,end2,end3,offset,number_of_samples,sample_number;
+	unsigned long end1,end2,end3,offset,number_of_configured_channels,
+		number_of_samples,sample_number;
 #else /* !defined (SCROLLING_UPDATE_BUFFER_POSITION_AND_SIZE_ONLY) */
 	int arm_module_buffer_full_callback;
 	unsigned long end1,end2,end3,number_of_samples,sample_number;
@@ -2238,8 +2304,15 @@ Always called so that <module_starting_sample_number> and
 		again, in which case <module_starting_sample_number> and
 		<module_sample_buffer_size> will have already been updated */
 	sample_number=(unsigned long)lParam;
-	number_of_samples=(module_NI_CARDS->hardware_buffer_size)/
-		NUMBER_OF_CHANNELS_ON_NI_CARD;
+	if (0<module_NI_CARDS->number_of_configured_channels)
+	{
+		number_of_samples=(module_NI_CARDS->hardware_buffer_size)/
+			(module_NI_CARDS->number_of_configured_channels);
+	}
+	else
+	{
+		number_of_samples=module_NI_CARDS->hardware_buffer_size;
+	}
 	end1=(module_starting_sample_number+module_sample_buffer_size)%
 		number_of_samples;
 	end2=end1+module_scrolling_callback_period;
@@ -2362,27 +2435,31 @@ Always called so that <module_starting_sample_number> and
 					ni_card=module_NI_CARDS+
 						((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD);
 					hardware_buffer=ni_card->hardware_buffer;
-					offset=NUMBER_OF_CHANNELS_ON_NI_CARD*sample_number+
-						(ni_card->channel_reorder)[(channel_number-1)%
-						NUMBER_OF_CHANNELS_ON_NI_CARD];
-					averaging_length=module_scrolling_callback_period/
-						module_number_of_scrolling_values_per_channel;
-					for (j=module_number_of_scrolling_values_per_channel-1;j>=0;j--)
+					number_of_configured_channels=ni_card->number_of_configured_channels;
+					if ((0<number_of_configured_channels)&&
+						(0<=(offset=(ni_card->hardware_buffer_offsets)[
+						(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD])))
 					{
-						sum=0;
-						for (i=averaging_length;i>0;i--)
+						offset += number_of_configured_channels*sample_number;
+						averaging_length=module_scrolling_callback_period/
+							module_number_of_scrolling_values_per_channel;
+						for (j=module_number_of_scrolling_values_per_channel-1;j>=0;j--)
 						{
-							sum += (long)(hardware_buffer[offset]);
-							if (offset<NUMBER_OF_CHANNELS_ON_NI_CARD)
+							sum=0;
+							for (i=averaging_length;i>0;i--)
 							{
-								offset += NUMBER_OF_CHANNELS_ON_NI_CARD*(number_of_samples-1);
+								sum += (long)(hardware_buffer[offset]);
+								if (offset<number_of_configured_channels)
+								{
+									offset += number_of_configured_channels*(number_of_samples-1);
+								}
+								else
+								{
+									offset -= number_of_configured_channels;
+								}
 							}
-							else
-							{
-								offset -= NUMBER_OF_CHANNELS_ON_NI_CARD;
-							}
+							value[j]=(SHORT)(sum/averaging_length);
 						}
-						value[j]=(SHORT)(sum/averaging_length);
 					}
 					value += module_number_of_scrolling_values_per_channel;
 				}
@@ -2534,7 +2611,7 @@ Always called so that <module_starting_sample_number> and
 #if defined (NI_DAQ)
 static int set_NI_gain(struct NI_card *ni_card,int gain)
 /*******************************************************************************
-LAST MODIFIED : 23 March 2000
+LAST MODIFIED : 7 August 2003
 
 DESCRIPTION :
 Convenience function for setting the <ni_card> <gain>.  Doesn't change the gain
@@ -2542,8 +2619,8 @@ field of <ni_card>.
 ==============================================================================*/
 {
 	int return_code,sampling_on;
-	i16 channel_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],
-		gain_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],i,j,status;
+	i16 gain_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],i,j,number_of_scanned_channels,
+		scan_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],status;
 	struct NI_card *ni_card_temp;
 
 	ENTER(set_NI_gain);
@@ -2562,26 +2639,8 @@ field of <ni_card>.
 		ni_card_temp=module_NI_CARDS;
 		status=0;
 		j=module_number_of_NI_CARDS;
-		for (i=0;i<NUMBER_OF_CHANNELS_ON_NI_CARD;i++)
-		{
-			channel_vector[i]=i;
-		}
 		while ((0==status)&&(j>0))
 		{
-			if (ni_card==ni_card_temp)
-			{
-				for (i=0;i<NUMBER_OF_CHANNELS_ON_NI_CARD;i++)
-				{
-					gain_vector[i]=(i16)gain;
-				}
-			}
-			else
-			{
-				for (i=0;i<NUMBER_OF_CHANNELS_ON_NI_CARD;i++)
-				{
-					gain_vector[i]=(i16)(ni_card_temp->gain);
-				}
-			}
 			status=DAQ_Clear(ni_card_temp->device_number);
 #if defined (DEBUG)
 			/*???debug */
@@ -2616,14 +2675,45 @@ field of <ni_card>.
 				status=DAQ_DB_Config(ni_card_temp->device_number,/* enable */(i16)1);
 				if (0==status)
 				{
+					if (0<ni_card_temp->number_of_configured_channels)
+					{
+						number_of_scanned_channels=
+							ni_card_temp->number_of_configured_channels;
+						for (i=0;i<number_of_scanned_channels;i++)
+						{
+							scan_vector[i]=(ni_card_temp->channel_reorder)[
+								((ni_card_temp->configured_channels)[i]-1)%
+								NUMBER_OF_CHANNELS_ON_NI_CARD];
+						}
+					}
+					else
+					{
+						number_of_scanned_channels=1;
+						scan_vector[0]=0;
+					}
+					if (ni_card==ni_card_temp)
+					{
+						for (i=0;i<number_of_scanned_channels;i++)
+						{
+							gain_vector[i]=(i16)gain;
+						}
+					}
+					else
+					{
+						for (i=0;i<number_of_scanned_channels;i++)
+						{
+							gain_vector[i]=(i16)(ni_card_temp->gain);
+						}
+					}
 					status=SCAN_Setup(ni_card_temp->device_number,
-						NUMBER_OF_CHANNELS_ON_NI_CARD,channel_vector,gain_vector);
+						number_of_scanned_channels,scan_vector,gain_vector);
 					if (0==status)
 					{
 						status=SCAN_Start(ni_card_temp->device_number,
 							(i16 *)(ni_card_temp->hardware_buffer),
-							(u32)(ni_card_temp->hardware_buffer_size),ni_card_temp->time_base,
-							ni_card_temp->sampling_interval,(i16)0,(u16)0);
+							(u32)(ni_card_temp->hardware_buffer_size),
+							ni_card_temp->time_base,ni_card_temp->sampling_interval,(i16)0,
+							(u16)0);
 						if (0==status)
 						{
 							if (module_NI_CARDS==ni_card_temp)
@@ -2734,7 +2824,7 @@ static int load_NI_DA(i16 da_channel,int number_of_channels,
 	Unemap_stimulation_end_callback *stimulation_end_callback,
 	void *stimulation_end_callback_data)
 /*******************************************************************************
-LAST MODIFIED : 29 May 2003
+LAST MODIFIED : 8 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -2821,8 +2911,10 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 		channel_number=channel_numbers;
 		while (return_code&&(i>0))
 		{
-			if ((*channel_number>=0)&&(*channel_number<=module_number_of_NI_CARDS*
-				NUMBER_OF_CHANNELS_ON_NI_CARD))
+			if ((0<(j= *channel_number))&&
+				(((k=(j-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<module_number_of_NI_CARDS)&&
+				(0<=(module_NI_CARDS[k].hardware_buffer_offsets)[(j-1)%
+				NUMBER_OF_CHANNELS_ON_NI_CARD])))
 			{
 				i--;
 				channel_number++;
@@ -2917,7 +3009,14 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 				{
 					for (i=0;i<module_number_of_NI_CARDS;i++)
 					{
-						load_card[i]=1;
+						if (0<module_NI_CARDS[i].number_of_configured_channels)
+						{
+							load_card[i]=1;
+						}
+						else
+						{
+							load_card[i]=0;
+						}
 					}
 				}
 				else
@@ -3505,213 +3604,10 @@ load_NI_DA) and have not yet started.
 } /* start_NI_DA */
 #endif /* defined (NI_DAQ) */
 
-#if defined (OLD_CODE)
 #if defined (NI_DAQ)
-static int start_NI_DA(i16 da_channel,int channel_number,int number_of_voltages,
-	float voltages_per_second,float *voltages)
+static int stop_NI_DA(i16 da_channel,int channel_number)
 /*******************************************************************************
-LAST MODIFIED : 7 May 1999
-
-DESCRIPTION :
-The function fails if the hardware is not configured.
-
-If <channel_number> is between 1 and the total number of channels inclusive,
-then the function applies to the NI card with channels ((<channel_number>-1)
-div 64)*64+1 to ((<channel_number>-1) div 64)*64+64.  If <channel_number> is 0
-then the function applies to all NI cards.  Otherwise, the function fails.
-
-Starts the <da_channel> for the specified NI card(s).  If <number_of_voltages>
-is 0 then the signal is the zero signal.  If <number_of_voltages> is 1 then the
-signal is constant at <*voltages>.  If <number_of_voltages> is >1 then the
-signal is that in <voltages> at the specified number of <voltages_per_second>.
-
-The <voltages> are those desired (in volts).  The function sets <voltages> to
-the actual values used.
-==============================================================================*/
-{
-	int return_code;
-	f64 da_frequency,*da_voltage_buffer;
-	int card_number,first_DA_card,i,j;
-	i16 status,stopped,*temp_da_buffer;
-	u32 iterations,number_of_da_points,points;
-
-	ENTER(start_NI_DA);
-	return_code=0;
-	/* check arguments */
-	if ((0<=channel_number)&&(channel_number<=module_number_of_NI_CARDS*
-		NUMBER_OF_CHANNELS_ON_NI_CARD)&&((0==number_of_voltages)||
-		((1==number_of_voltages)&&voltages)||((1<number_of_voltages)&&voltages&&
-		(0<voltages_per_second))))
-	{
-		if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
-		{
-			return_code=1;
-			if (0==channel_number)
-			{
-				card_number= -1;
-			}
-			else
-			{
-				card_number=(channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD;
-			}
-			number_of_da_points=(u32)number_of_voltages;
-			da_frequency=(f64)voltages_per_second;
-			if (0<number_of_voltages)
-			{
-				if (ALLOCATE(da_voltage_buffer,f64,number_of_voltages)&&
-					REALLOCATE(temp_da_buffer,da_buffer,i16,number_of_voltages))
-				{
-					da_buffer=temp_da_buffer;
-					for (i=0;i<number_of_voltages;i++)
-					{
-						da_voltage_buffer[i]=(f64)voltages[i];
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"start_NI_DA.  Could not allocate buffers %p %p",da_voltage_buffer,
-						temp_da_buffer);
-					DEALLOCATE(da_voltage_buffer);
-					return_code=0;
-				}
-			}
-			else
-			{
-				da_voltage_buffer=(f64 *)NULL;
-			}
-			if (return_code)
-			{
-				i=0;
-				first_DA_card=1;
-				while (i<module_number_of_NI_CARDS)
-				{
-					if (((-1==card_number)||(i==card_number))&&
-						((PCI6031E_AD_DA==(module_NI_CARDS[i]).type)||
-						(PXI6031E_AD_DA==(module_NI_CARDS[i]).type)||
-						(PXI6071E_AD_DA==(module_NI_CARDS[i]).type)))
-					{
-						/* check if waveform generation is already underway */
-							/*???DB.  Just to try out stopping.  Might use for stimulation */
-						status=WFM_Check((module_NI_CARDS[i]).device_number,da_channel,
-							&stopped,&iterations,&points);
-						if ((0!=status)||stopped)
-						{
-							/* stop waveform generation */
-								/*???DB.  Not sure if it is possible to have different signals
-									for AO0 and AO1 or if we need it */
-							WFM_Group_Control((module_NI_CARDS[i]).device_number,/*group*/1,
-								/*Clear*/0);
-							if ((UnEmap_2V1==module_NI_CARDS->unemap_hardware_version)||
-								(UnEmap_2V2==module_NI_CARDS->unemap_hardware_version))
-							{
-								/* make sure that constant voltage */
-								set_shift_register(module_NI_CARDS+i,
-									Stim_Source_SHIFT_REGISTER_UnEmap2vx,0,1);
-							}
-							/* set the output voltage to 0 */
-							AO_Write((module_NI_CARDS[i]).device_number,CALIBRATE_CHANNEL,
-								(i16)0);
-							/* configure the DA to bipolar +/-10 */
-							status=AO_Configure((module_NI_CARDS[i]).device_number,da_channel,
-								/*bipolar*/(i16)0,/*internal voltage reference*/(i16)0,
-								/*reference voltage*/(f64)10,
-								/*update DAC when written to*/(i16)0);
-							if (0==status)
-							{
-								if (0==number_of_voltages)
-								{
-									/* set the output voltage to 0 */
-									AO_Write((module_NI_CARDS[i]).device_number,da_channel,
-										(i16)0);
-								}
-								else
-								{
-									if (first_DA_card)
-									{
-										status=WFM_Scale((module_NI_CARDS[i]).device_number,
-											da_channel,number_of_da_points,/*gain*/(f64)1,
-											da_voltage_buffer,da_buffer);
-										/* set the desired voltages to the actual voltages used */
-										if (PXI6071E_AD_DA==(module_NI_CARDS[i]).type)
-										{
-											for (j=0;j<number_of_voltages;j++)
-											{
-												voltages[j]=(float)da_buffer[j]*(float)20/(float)4096;
-											}
-										}
-										else
-										{
-											for (j=0;j<number_of_voltages;j++)
-											{
-												voltages[j]=(float)da_buffer[j]*(float)20/(float)65536;
-											}
-										}
-									}
-									if (0==status)
-									{
-										if (1==number_of_voltages)
-										{
-											AO_Write((module_NI_CARDS[i]).device_number,da_channel,
-												da_buffer[0]);
-										}
-										else
-										{
-											status=WFM_Op((module_NI_CARDS[i]).device_number,
-												/*number of DA channels*/1,&da_channel,da_buffer,
-												number_of_da_points,/*continous*/(u32)0,
-												/*frequency*/da_frequency);
-											if (0!=status)
-											{
-												display_message(ERROR_MESSAGE,
-													"start_NI_DA.  WFM_Op failed");
-											}
-										}
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"start_NI_DA.  WFM_Scale failed");
-									}
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"start_NI_DA.  AO_Configure failed");
-							}
-							first_DA_card=0;
-						}
-					}
-					i++;
-				}
-				DEALLOCATE(da_voltage_buffer);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"start_NI_DA.  Invalid configuration.  %d %p %d",module_configured,
-				module_NI_CARDS,module_number_of_NI_CARDS);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"start_NI_DA.  Invalid arguments %d %d %d %g %p",da_channel,
-			channel_number,number_of_voltages,voltages_per_second,voltages);
-	}
-	LEAVE;
-
-	return (return_code);
-} /* start_NI_DA */
-#endif /* defined (NI_DAQ) */
-#endif /* defined (OLD_CODE) */
-
-#if defined (NI_DAQ)
-int stop_NI_DA(i16 da_channel,int channel_number)
-/*******************************************************************************
-LAST MODIFIED : 1 July 2000
+LAST MODIFIED : 8 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -3749,21 +3645,17 @@ Stops the <da_channel> for the specified NI card(s).
 #endif /* defined (DEBUG) */
 	return_code=0;
 #if defined (NI_DAQ)
-	/* check arguments */
-	if ((0<=channel_number)&&(channel_number<=module_number_of_NI_CARDS*
-		NUMBER_OF_CHANNELS_ON_NI_CARD))
+	if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 	{
-		if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
+		/* check arguments */
+		card_number= -1;
+		if ((0<=channel_number)&&((0==channel_number)||
+			(((card_number=(channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+			module_number_of_NI_CARDS)&&(0<=(module_NI_CARDS[card_number].
+			hardware_buffer_offsets)[(channel_number-1)%
+			NUMBER_OF_CHANNELS_ON_NI_CARD]))))
 		{
 			return_code=1;
-			if (0==channel_number)
-			{
-				card_number= -1;
-			}
-			else
-			{
-				card_number=(channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD;
-			}
 			i=0;
 			while (i<module_number_of_NI_CARDS)
 			{
@@ -3826,14 +3718,14 @@ Stops the <da_channel> for the specified NI card(s).
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"stop_NI_DA.  Invalid configuration.  %d %p %d",
-				module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
+				"stop_NI_DA.  Invalid argument %d",channel_number);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"stop_NI_DA.  Invalid argument %d",channel_number);
+			"stop_NI_DA.  Invalid configuration.  %d %p %d",
+			module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
 	}
 #endif /* defined (NI_DAQ) */
 #if defined (DEBUG)
@@ -3857,7 +3749,7 @@ Stops the <da_channel> for the specified NI card(s).
 #if defined (NI_DAQ)
 static int calibration_callback(void *dummy)
 /*******************************************************************************
-LAST MODIFIED : 6 August 2002
+LAST MODIFIED : 20 August 2003
 
 DESCRIPTION :
 Output a square wave which alternates between +/- a known voltage.  Wait for the
@@ -3865,6 +3757,9 @@ DC removal to settle.  Acquire.  Average for each channel.  Assume that the
 measurements below the average are for minus the known voltage and that the
 measurements above the average are for plus the known voltage.  Calculate
 offsets and gains.  Over-write calibrate.dat
+
+Only calibrate configured channels (because thats what hardware buffers are set
+up for).
 
 The D/A on the NI cards doesn't have enough resolution (+/-10V and 12 or 16-bit)
 to cope with the full gain (100*11*8=8800), so the NI gain and the signal
@@ -3879,16 +3774,16 @@ stage 4 is calculating the offset
 {
 	float *calibrate_amplitude,*calibration_gains,*calibration_offsets,
 		*filter_frequency,*gain,*offset,*previous_offset,temp;
-	int *calibration_channels,card_number,channel_number,i,j,
-		number_of_settled_channels,return_code;
+	int *calibration_channels,card_number,channel_number,i,j,l,
+		number_of_configured_channels,number_of_settled_channels,return_code;
 	i16 da_channel,status;
 	long int maximum_sample_value,minimum_sample_value;
 	short int *hardware_buffer;
 	static float *filter_frequencies,*gains=(float *)NULL,*offsets=(float *)NULL,
 		*previous_offsets=(float *)NULL,*saturated=(float *)NULL;
 	static float *calibrate_amplitudes,*calibrate_voltages;
-	static int calibrate_stage=0,*channel_failed,number_of_channels,
-		number_of_waveform_points,settling_step,stage_flag,stage_mask;
+	static int calibrate_stage=0,*channel_failed,number_of_waveform_points,
+		settling_step,stage_flag,stage_mask;
 	static unsigned long number_of_samples;
 	struct NI_card *ni_card;
 	unsigned long k,k1,k2;
@@ -3920,14 +3815,20 @@ stage 4 is calculating the offset
 	if (0==calibrate_stage)
 	{
 		/* set up */
-		if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
+		if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS)&&
+			(0<module_number_of_configured_channels))
 		{
 			stage_flag=0x1;
 			stage_mask=0x1;
-			number_of_channels=
-				module_number_of_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD;
-			number_of_samples=(module_NI_CARDS->hardware_buffer_size)/
-				NUMBER_OF_CHANNELS_ON_NI_CARD;
+			if (0<module_NI_CARDS->number_of_configured_channels)
+			{
+				number_of_samples=(module_NI_CARDS->hardware_buffer_size)/
+					(module_NI_CARDS->number_of_configured_channels);
+			}
+			else
+			{
+				number_of_samples=module_NI_CARDS->hardware_buffer_size;
+			}
 			/* limit to 5 seconds sampling */
 			if (0<module_sampling_frequency)
 			{
@@ -3945,11 +3846,11 @@ stage 4 is calculating the offset
 #endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
 			ALLOCATE(calibrate_voltages,float,number_of_waveform_points);
 			ALLOCATE(filter_frequencies,float,module_number_of_NI_CARDS);
-			ALLOCATE(offsets,float,number_of_channels);
-			ALLOCATE(previous_offsets,float,number_of_channels);
-			ALLOCATE(gains,float,number_of_channels);
-			ALLOCATE(channel_failed,int,number_of_channels);
-			ALLOCATE(saturated,float,number_of_channels);
+			ALLOCATE(offsets,float,module_number_of_configured_channels);
+			ALLOCATE(previous_offsets,float,module_number_of_configured_channels);
+			ALLOCATE(gains,float,module_number_of_configured_channels);
+			ALLOCATE(channel_failed,int,module_number_of_configured_channels);
+			ALLOCATE(saturated,float,module_number_of_configured_channels);
 #if defined (CALIBRATE_SIGNAL_SQUARE) && defined (SWITCHING_TIME)
 			ALLOCATE(sorted_signal,float,number_of_samples);
 #endif /* defined (CALIBRATE_SIGNAL_SQUARE) && defined (SWITCHING_TIME) */
@@ -3964,12 +3865,12 @@ stage 4 is calculating the offset
 				if ((return_code=unemap_stop_sampling())&&
 					(return_code=unemap_set_isolate_record_mode(0,1)))
 				{
-					for (i=0;i<number_of_channels;i++)
+					for (i=0;i<module_number_of_configured_channels;i++)
 					{
 						offsets[i]=(float)0;
 						channel_failed[i]=0xf;
-						unemap_get_sample_range(i+1,&minimum_sample_value,
-							&maximum_sample_value);
+						unemap_get_sample_range(module_configured_channels[i],
+							&minimum_sample_value,&maximum_sample_value);
 						saturated[i]=(float)(-minimum_sample_value);
 						if ((float)maximum_sample_value<saturated[i])
 						{
@@ -3983,86 +3884,96 @@ stage 4 is calculating the offset
 					da_channel=CALIBRATE_CHANNEL;
 					while (return_code&&(card_number<module_number_of_NI_CARDS))
 					{
-						channel_number=1+card_number*NUMBER_OF_CHANNELS_ON_NI_CARD;
-						/* change NI gain to 1 */
-						return_code=set_NI_gain(ni_card,(int)1);
-						if (return_code)
+						if (0<ni_card->number_of_configured_channels)
 						{
-							if ((UnEmap_1V2==ni_card->unemap_hardware_version)||
-								(UnEmap_2V2==ni_card->unemap_hardware_version))
+							channel_number=(ni_card->configured_channels)[0];
+							/* change NI gain to 1 */
+							return_code=set_NI_gain(ni_card,(int)1);
+							if (return_code)
 							{
-								/* set the programmable gain */
-								DIG_Out_Line(ni_card->device_number,(i16)0,
-									gain_0_output_line_UnEmap2vx,(i16)0);
-								DIG_Out_Line(ni_card->device_number,(i16)0,
-									gain_1_output_line_UnEmap2vx,(i16)0);
-							}
-							/* set low pass filter as high as possible */
-							unemap_get_antialiasing_filter_frequency(channel_number,
-								filter_frequency);
-							unemap_set_antialiasing_filter_frequency(channel_number,
-								(float)10000);
-							/* determine the calibration voltage */
-							/* start with full-range voltage */
-							if (PXI6071E_AD_DA==ni_card->type)
-							{
-								*calibrate_amplitude=(float)5;
-							}
-							else
-							{
-								*calibrate_amplitude=(float)10;
-							}
-							/* use half-range */
-							*calibrate_amplitude /= 2;
-							switch (ni_card->unemap_hardware_version)
-							{
-								case UnEmap_1V2:
+								if ((UnEmap_1V2==ni_card->unemap_hardware_version)||
+									(UnEmap_2V2==ni_card->unemap_hardware_version))
 								{
-									/* fixed gain of 10 */
-									*calibrate_amplitude /= 10;
-								} break;
-								case UnEmap_2V1:
-								case UnEmap_2V2:
+									/* set the programmable gain */
+									DIG_Out_Line(ni_card->device_number,(i16)0,
+										gain_0_output_line_UnEmap2vx,(i16)0);
+									DIG_Out_Line(ni_card->device_number,(i16)0,
+										gain_1_output_line_UnEmap2vx,(i16)0);
+								}
+								/* set low pass filter as high as possible */
+								unemap_get_antialiasing_filter_frequency(channel_number,
+									filter_frequency);
+								unemap_set_antialiasing_filter_frequency(channel_number,
+									(float)10000);
+								/* determine the calibration voltage */
+								/* start with full-range voltage */
+								if (PXI6071E_AD_DA==ni_card->type)
 								{
-									/* fixed gain of 11 */
-									*calibrate_amplitude /= 11;
-								} break;
-							}
+									*calibrate_amplitude=(float)5;
+								}
+								else
+								{
+									*calibrate_amplitude=(float)10;
+								}
+								/* use half-range */
+								*calibrate_amplitude /= 2;
+								switch (ni_card->unemap_hardware_version)
+								{
+									case UnEmap_1V2:
+									{
+										/* fixed gain of 10 */
+										*calibrate_amplitude /= 10;
+									} break;
+									case UnEmap_2V1:
+									case UnEmap_2V2:
+									{
+										/* fixed gain of 11 */
+										*calibrate_amplitude /= 11;
+									} break;
+								}
 #if defined (CALIBRATE_SIGNAL_SQUARE)
-							calibrate_voltages[0]= *calibrate_amplitude;
-							calibrate_voltages[1]= -(*calibrate_amplitude);
+								calibrate_voltages[0]= *calibrate_amplitude;
+								calibrate_voltages[1]= -(*calibrate_amplitude);
 #else /* defined (CALIBRATE_SIGNAL_SQUARE) */
-							/* calculate cosine wave */
-							two_pi=(double)8*atan((double)1);
-							for (i=0;i<number_of_waveform_points;i++)
-							{
-								calibrate_voltages[i]=
-									(*calibrate_amplitude)*(float)cos(two_pi*
-									(double)i/(double)number_of_waveform_points);
-							}
+								/* calculate cosine wave */
+								two_pi=(double)8*atan((double)1);
+								for (i=0;i<number_of_waveform_points;i++)
+								{
+									calibrate_voltages[i]=
+										(*calibrate_amplitude)*(float)cos(two_pi*
+										(double)i/(double)number_of_waveform_points);
+								}
 #endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
-							if (return_code=load_NI_DA(CALIBRATE_CHANNEL,1,&channel_number,
-								number_of_waveform_points,(float)number_of_waveform_points*
-								CALIBRATE_FREQUENCY,calibrate_voltages,0,
-								(Unemap_stimulation_end_callback *)NULL,(void *)NULL))
-							{
-								*calibrate_amplitude=calibrate_voltages[0];
-								ni_card++;
-								card_number++;
-								calibrate_amplitude++;
-								filter_frequency++;
+								if (return_code=load_NI_DA(CALIBRATE_CHANNEL,1,&channel_number,
+									number_of_waveform_points,(float)number_of_waveform_points*
+									CALIBRATE_FREQUENCY,calibrate_voltages,0,
+									(Unemap_stimulation_end_callback *)NULL,(void *)NULL))
+								{
+									*calibrate_amplitude=calibrate_voltages[0];
+									ni_card++;
+									card_number++;
+									calibrate_amplitude++;
+									filter_frequency++;
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"calibration_callback.  load_NI_DA failed 1");
+									set_NI_gain(ni_card,(int)(ni_card->gain));
+								}
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"calibration_callback.  load_NI_DA failed 1");
-								set_NI_gain(ni_card,(int)(ni_card->gain));
+									"calibration_callback.  set_NI_gain failed 1");
 							}
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,
-								"calibration_callback.  set_NI_gain failed 1");
+							ni_card++;
+							card_number++;
+							calibrate_amplitude++;
+							filter_frequency++;
 						}
 					}
 					if (return_code)
@@ -4109,12 +4020,14 @@ stage 4 is calculating the offset
 							ni_card--;
 							calibrate_amplitude--;
 							filter_frequency--;
-							channel_number=1+card_number*NUMBER_OF_CHANNELS_ON_NI_CARD;
-							unemap_set_antialiasing_filter_frequency(channel_number,
-								*filter_frequency);
-							/* stop waveform generation */
-							status=WFM_Group_Control(ni_card->device_number,/*group*/1,
-								/*Clear*/0);
+							if (0<ni_card->number_of_configured_channels)
+							{
+								channel_number=(ni_card->configured_channels)[0];
+								unemap_set_antialiasing_filter_frequency(channel_number,
+									*filter_frequency);
+								/* stop waveform generation */
+								status=WFM_Group_Control(ni_card->device_number,/*group*/1,
+									/*Clear*/0);
 #if defined (DEBUG)
 /*???debug */
 {
@@ -4129,31 +4042,32 @@ stage 4 is calculating the offset
 	}
 }
 #endif /* defined (DEBUG) */
-							/* clear start */
-							status=Select_Signal(ni_card->device_number,ND_OUT_START_TRIGGER,
-								ND_AUTOMATIC,ND_LOW_TO_HIGH);
-							if (0!=status)
-							{
-								display_message(ERROR_MESSAGE,"calibration_callback.  "
-									"Select_Signal(%d,ND_OUT_START_TRIGGER,ND_AUTOMATIC,"
-									"ND_LOW_TO_HIGH)=%d",ni_card->device_number,status);
-							}
-							/* set the output voltage to 0 */
-							AO_Write(ni_card->device_number,CALIBRATE_CHANNEL,(i16)0);
-							set_NI_gain(ni_card,(int)(ni_card->gain));
-							if ((UnEmap_2V1==ni_card->unemap_hardware_version)||
-								(UnEmap_2V2==ni_card->unemap_hardware_version))
-							{
-								/* programmable gain */
-								if ((ni_card->unemap_2vx).gain_output_line_0)
+								/* clear start */
+								status=Select_Signal(ni_card->device_number,
+									ND_OUT_START_TRIGGER,ND_AUTOMATIC,ND_LOW_TO_HIGH);
+								if (0!=status)
 								{
-									DIG_Out_Line(ni_card->device_number,(i16)0,
-										gain_0_output_line_UnEmap2vx,(i16)1);
+									display_message(ERROR_MESSAGE,"calibration_callback.  "
+										"Select_Signal(%d,ND_OUT_START_TRIGGER,ND_AUTOMATIC,"
+										"ND_LOW_TO_HIGH)=%d",ni_card->device_number,status);
 								}
-								if ((ni_card->unemap_2vx).gain_output_line_1)
+								/* set the output voltage to 0 */
+								AO_Write(ni_card->device_number,CALIBRATE_CHANNEL,(i16)0);
+								set_NI_gain(ni_card,(int)(ni_card->gain));
+								if ((UnEmap_2V1==ni_card->unemap_hardware_version)||
+									(UnEmap_2V2==ni_card->unemap_hardware_version))
 								{
-									DIG_Out_Line(ni_card->device_number,(i16)0,
-										gain_1_output_line_UnEmap2vx,(i16)1);
+									/* programmable gain */
+									if ((ni_card->unemap_2vx).gain_output_line_0)
+									{
+										DIG_Out_Line(ni_card->device_number,(i16)0,
+											gain_0_output_line_UnEmap2vx,(i16)1);
+									}
+									if ((ni_card->unemap_2vx).gain_output_line_1)
+									{
+										DIG_Out_Line(ni_card->device_number,(i16)0,
+											gain_1_output_line_UnEmap2vx,(i16)1);
+									}
 								}
 							}
 						}
@@ -4216,22 +4130,28 @@ stage 4 is calculating the offset
 		/* average */
 		offset=offsets;
 		previous_offset=previous_offsets;
-		for (i=0;i<number_of_channels;i++)
+		for (i=0;i<module_number_of_configured_channels;i++)
 		{
 			*previous_offset= *offset;
 			*offset=(float)0;
 			previous_offset++;
 			offset++;
 		}
-		channel_number=0;
-		ni_card=module_NI_CARDS;
 #if defined (DEBUG)
 		/*???debug */
 		display_message(INFORMATION_MESSAGE,"After zeroing offsets %lu %lu %lu\n",
 			module_sample_buffer_size,module_starting_sample_number,
 			number_of_samples);
 #endif /* defined (DEBUG) */
-		k=(module_NI_CARDS->hardware_buffer_size)/NUMBER_OF_CHANNELS_ON_NI_CARD;
+		if (0<module_NI_CARDS->number_of_configured_channels)
+		{
+			k=(module_NI_CARDS->hardware_buffer_size)/
+				(module_NI_CARDS->number_of_configured_channels);
+		}
+		else
+		{
+			k=module_NI_CARDS->hardware_buffer_size;
+		}
 		if (module_sample_buffer_size+number_of_samples>k)
 		{
 			k1=k-module_sample_buffer_size;
@@ -4242,33 +4162,35 @@ stage 4 is calculating the offset
 			k1=number_of_samples;
 			k2=0;
 		}
-		for (i=0;i<module_number_of_NI_CARDS;i++)
+		for (i=0;i<module_number_of_configured_channels;i++)
 		{
-			for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
+			ni_card=module_NI_CARDS+(module_configured_channels[i]-1)/
+				NUMBER_OF_CHANNELS_ON_NI_CARD;
+			number_of_configured_channels=ni_card->number_of_configured_channels;
+			j=0;
+			while ((j<number_of_configured_channels)&&(module_configured_channels[i]!=
+				(ni_card->configured_channels)[j]))
+			{
+				j++;
+			}
+			if (j<number_of_configured_channels)
 			{
 				hardware_buffer=(ni_card->hardware_buffer)+
-					(module_starting_sample_number*NUMBER_OF_CHANNELS_ON_NI_CARD+j);
+					(module_starting_sample_number*number_of_configured_channels+j);
 				temp=(float)0;
 				for (k=k1;k>0;k--)
 				{
 					temp += (float)(*hardware_buffer);
-					hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
+					hardware_buffer += number_of_configured_channels;
 				}
 				hardware_buffer=(ni_card->hardware_buffer)+j;
 				for (k=k2;k>0;k--)
 				{
 					temp += (float)(*hardware_buffer);
-					hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
+					hardware_buffer += number_of_configured_channels;
 				}
-				offsets[i*NUMBER_OF_CHANNELS_ON_NI_CARD+(ni_card->channel_reorder)[j]]=
-					temp;
+				offsets[i]=temp/(float)number_of_samples;
 			}
-		}
-		offset=offsets;
-		for (i=0;i<number_of_channels;i++)
-		{
-			*offset /= (float)number_of_samples;
-			offset++;
 		}
 #if defined (DEBUG)
 		/*???debug */
@@ -4277,7 +4199,7 @@ stage 4 is calculating the offset
 		if (0<settling_step)
 		{
 			number_of_settled_channels=0;
-			for (i=0;i<number_of_channels;i++)
+			for (i=0;i<module_number_of_configured_channels;i++)
 			{
 				if (channel_failed[i]&stage_flag)
 				{
@@ -4306,7 +4228,7 @@ stage 4 is calculating the offset
 	{
 		maximum=(float)-1;
 		jj= -1;
-		for (ii=0;ii<number_of_channels;ii++)
+		for (ii=0;ii<module_number_of_configured_channels;ii++)
 		{
 			temp=(float)fabs((double)(offsets[ii]-previous_offsets[ii]));
 			if (temp>maximum)
@@ -4321,7 +4243,7 @@ stage 4 is calculating the offset
 	}
 }
 #endif /* defined (DEBUG) */
-			if ((number_of_settled_channels>=number_of_channels)||
+			if ((number_of_settled_channels>=module_number_of_configured_channels)||
 				((number_of_settled_channels>0)&&(settling_step>=settling_step_max)))
 			{
 				/* settled */
@@ -4329,15 +4251,25 @@ stage 4 is calculating the offset
 				{
 					gain=gains;
 					offset=offsets;
-					ni_card=module_NI_CARDS;
-					calibrate_amplitude=calibrate_amplitudes;
-					for (i=module_number_of_NI_CARDS;i>0;i--)
+					for (i=0;i<module_number_of_configured_channels;i++)
 					{
-						for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
+						j=(module_configured_channels[i]-1)/
+							NUMBER_OF_CHANNELS_ON_NI_CARD;
+						ni_card=module_NI_CARDS+j;
+						calibrate_amplitude=calibrate_amplitudes+j;
+						number_of_configured_channels=
+							ni_card->number_of_configured_channels;
+						j=0;
+						while ((j<number_of_configured_channels)&&
+							(module_configured_channels[i]!=
+							(ni_card->configured_channels)[j]))
+						{
+							j++;
+						}
+						if (j<number_of_configured_channels)
 						{
 							hardware_buffer=(ni_card->hardware_buffer)+
-								(module_starting_sample_number*NUMBER_OF_CHANNELS_ON_NI_CARD+
-								j);
+								(module_starting_sample_number*number_of_configured_channels+j);
 #if defined (CALIBRATE_SIGNAL_SQUARE)
 #if defined (SWITCHING_TIME)
 							sorted_signal_entry=sorted_signal;
@@ -4350,14 +4282,14 @@ stage 4 is calculating the offset
 								}
 								*sorted_signal_entry=temp;
 								sorted_signal_entry++;
-								hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
+								hardware_buffer += number_of_configured_channels;
 							}
 #else /* defined (SWITCHING_TIME) */
 							temp=(float)0;
 							for (k=k1;k>0;k--)
 							{
 								temp += (float)fabs(((float)(*hardware_buffer)-(*offset)));
-								hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
+								hardware_buffer += number_of_configured_channels;
 							}
 #endif /* defined (SWITCHING_TIME) */
 #else /* defined (CALIBRATE_SIGNAL_SQUARE) */
@@ -4366,7 +4298,7 @@ stage 4 is calculating the offset
 							{
 								temp_2=(float)(*hardware_buffer)-(*offset);
 								temp += temp_2*temp_2;
-								hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
+								hardware_buffer += number_of_configured_channels;
 							}
 #endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
 							hardware_buffer=(ni_card->hardware_buffer)+j;
@@ -4381,13 +4313,13 @@ stage 4 is calculating the offset
 								}
 								*sorted_signal_entry=temp;
 								sorted_signal_entry++;
-								hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
+								hardware_buffer += number_of_configured_channels;
 							}
 #else /* defined (SWITCHING_TIME) */
 							for (k=k2;k>0;k--)
 							{
 								temp += (float)fabs(((float)(*hardware_buffer)-(*offset)));
-								hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
+								hardware_buffer += number_of_configured_channels;
 							}
 #endif /* defined (SWITCHING_TIME) */
 #else /* defined (CALIBRATE_SIGNAL_SQUARE) */
@@ -4395,7 +4327,120 @@ stage 4 is calculating the offset
 							{
 								temp_2=(float)(*hardware_buffer)-(*offset);
 								temp += temp_2*temp_2;
-								hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
+								hardware_buffer += number_of_configured_channels;
+							}
+#endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
+#if defined (CALIBRATE_SIGNAL_SQUARE)
+#if defined (SWITCHING_TIME)
+							qsort(sorted_signal,number_of_samples,sizeof(float),
+								compare_float);
+							temp=(float)0;
+							for (k=(int)(switching_time*200*(float)number_of_samples);
+								k<(int)number_of_samples;k++)
+							{
+								temp += sorted_signal[k];
+							}
+							temp /= (1-200*switching_time)*(float)number_of_samples;
+#else /* defined (SWITCHING_TIME) */
+							temp /= number_of_samples;
+#endif /* defined (SWITCHING_TIME) */
+#else /* defined (CALIBRATE_SIGNAL_SQUARE) */
+							temp /= number_of_samples;
+							temp *= 2;
+							temp=(float)sqrt((double)temp);
+#endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
+							switch (calibrate_stage)
+							{
+								case 1:
+								{
+									*gain=(float)(*calibrate_amplitude)/temp;
+								} break;
+								case 2:
+								{
+									/* *gain is already the fixed gain */
+									*gain=((float)(*calibrate_amplitude)/temp)/(*gain);
+								} break;
+								case 3:
+								{
+									/* *gain is already the programmable gain */
+									*gain *= ((float)(*calibrate_amplitude)/temp);
+								} break;
+							}
+						}
+						gain++;
+						offset++;
+					}
+#if defined (OLD_CODE)
+					gain=gains;
+					offset=offsets;
+					ni_card=module_NI_CARDS;
+					calibrate_amplitude=calibrate_amplitudes;
+					for (i=module_number_of_NI_CARDS;i>0;i--)
+					{
+						number_of_configured_channels=
+							ni_card->number_of_configured_channels;
+						for (j=0;j<number_of_configured_channels;j++)
+						{
+							hardware_buffer=(ni_card->hardware_buffer)+
+								(module_starting_sample_number*number_of_configured_channels+j);
+#if defined (CALIBRATE_SIGNAL_SQUARE)
+#if defined (SWITCHING_TIME)
+							sorted_signal_entry=sorted_signal;
+							for (k=k1;k>0;k--)
+							{
+								temp=(float)(*hardware_buffer)-(*offset);
+								if (temp<(float)0)
+								{
+									temp= -temp;
+								}
+								*sorted_signal_entry=temp;
+								sorted_signal_entry++;
+								hardware_buffer += number_of_configured_channels;
+							}
+#else /* defined (SWITCHING_TIME) */
+							temp=(float)0;
+							for (k=k1;k>0;k--)
+							{
+								temp += (float)fabs(((float)(*hardware_buffer)-(*offset)));
+								hardware_buffer += number_of_configured_channels;
+							}
+#endif /* defined (SWITCHING_TIME) */
+#else /* defined (CALIBRATE_SIGNAL_SQUARE) */
+							temp=(float)0;
+							for (k=k1;k>0;k--)
+							{
+								temp_2=(float)(*hardware_buffer)-(*offset);
+								temp += temp_2*temp_2;
+								hardware_buffer += number_of_configured_channels;
+							}
+#endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
+							hardware_buffer=(ni_card->hardware_buffer)+j;
+#if defined (CALIBRATE_SIGNAL_SQUARE)
+#if defined (SWITCHING_TIME)
+							for (k=k2;k>0;k--)
+							{
+								temp=(float)(*hardware_buffer)-(*offset);
+								if (temp<(float)0)
+								{
+									temp= -temp;
+								}
+								*sorted_signal_entry=temp;
+								sorted_signal_entry++;
+								hardware_buffer += number_of_configured_channels;
+							}
+#else /* defined (SWITCHING_TIME) */
+							for (k=k2;k>0;k--)
+							{
+								temp += (float)fabs(((float)(*hardware_buffer)-(*offset)));
+								hardware_buffer += number_of_configured_channels;
+							}
+#endif /* defined (SWITCHING_TIME) */
+#else /* defined (CALIBRATE_SIGNAL_SQUARE) */
+							for (k=k2;k>0;k--)
+							{
+								temp_2=(float)(*hardware_buffer)-(*offset);
+								temp += temp_2*temp_2;
+								hardware_buffer += number_of_configured_channels;
 							}
 #endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
 #if defined (CALIBRATE_SIGNAL_SQUARE)
@@ -4440,6 +4485,7 @@ stage 4 is calculating the offset
 						calibrate_amplitude++;
 						ni_card++;
 					}
+#endif /* defined (OLD_CODE) */
 				}
 				switch (calibrate_stage)
 				{
@@ -4451,78 +4497,86 @@ stage 4 is calculating the offset
 						ni_card=module_NI_CARDS;
 						calibrate_amplitude=calibrate_amplitudes;
 						return_code=1;
-						channel_number=1;
 						while (return_code&&(card_number<module_number_of_NI_CARDS))
 						{
-							/* determine the calibration voltage */
-							/* start with full-range voltage */
-							if (PXI6071E_AD_DA==ni_card->type)
+							if (0<ni_card->number_of_configured_channels)
 							{
-								*calibrate_amplitude=(float)5;
+								channel_number=(ni_card->configured_channels)[0];
+								/* determine the calibration voltage */
+								/* start with full-range voltage */
+								if (PXI6071E_AD_DA==ni_card->type)
+								{
+									*calibrate_amplitude=(float)5;
+								}
+								else
+								{
+									*calibrate_amplitude=(float)10;
+								}
+								/* use half-range */
+								*calibrate_amplitude /= 2;
+								switch (ni_card->unemap_hardware_version)
+								{
+									case UnEmap_1V2:
+									{
+										/* fixed gain of 10 */
+										*calibrate_amplitude /= 10;
+									} break;
+									case UnEmap_2V1:
+									case UnEmap_2V2:
+									{
+										/* fixed gain of 11 */
+										*calibrate_amplitude /= 11;
+										/* programmable gain */
+										if ((ni_card->unemap_2vx).gain_output_line_0)
+										{
+											DIG_Out_Line(ni_card->device_number,(i16)0,
+												gain_0_output_line_UnEmap2vx,(i16)1);
+											*calibrate_amplitude /= 2;
+										}
+										if ((ni_card->unemap_2vx).gain_output_line_1)
+										{
+											DIG_Out_Line(ni_card->device_number,(i16)0,
+												gain_1_output_line_UnEmap2vx,(i16)1);
+											*calibrate_amplitude /= 4;
+										}
+									} break;
+								}
+#if defined (CALIBRATE_SIGNAL_SQUARE)
+								calibrate_voltages[0]= *calibrate_amplitude;
+								calibrate_voltages[1]= -(*calibrate_amplitude);
+#else /* defined (CALIBRATE_SIGNAL_SQUARE) */
+								/* calculate cosine wave */
+								two_pi=(double)8*atan((double)1);
+								for (i=0;i<number_of_waveform_points;i++)
+								{
+									calibrate_voltages[i]=
+										(*calibrate_amplitude)*(float)cos(two_pi*
+										(double)i/(double)number_of_waveform_points);
+								}
+#endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
+								if (return_code=load_NI_DA(CALIBRATE_CHANNEL,1,&channel_number,
+									number_of_waveform_points,(float)number_of_waveform_points*
+									CALIBRATE_FREQUENCY,calibrate_voltages,0,
+									(Unemap_stimulation_end_callback *)NULL,(void *)NULL))
+								{
+									*calibrate_amplitude=calibrate_voltages[0];
+									card_number++;
+									ni_card++;
+									calibrate_amplitude++;
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"calibration_callback.  load_NI_DA failed 2");
+									return_code=0;
+								}
 							}
 							else
 							{
-								*calibrate_amplitude=(float)10;
-							}
-							/* use half-range */
-							*calibrate_amplitude /= 2;
-							switch (ni_card->unemap_hardware_version)
-							{
-								case UnEmap_1V2:
-								{
-									/* fixed gain of 10 */
-									*calibrate_amplitude /= 10;
-								} break;
-								case UnEmap_2V1:
-								case UnEmap_2V2:
-								{
-									/* fixed gain of 11 */
-									*calibrate_amplitude /= 11;
-									/* programmable gain */
-									if ((ni_card->unemap_2vx).gain_output_line_0)
-									{
-										DIG_Out_Line(ni_card->device_number,(i16)0,
-											gain_0_output_line_UnEmap2vx,(i16)1);
-										*calibrate_amplitude /= 2;
-									}
-									if ((ni_card->unemap_2vx).gain_output_line_1)
-									{
-										DIG_Out_Line(ni_card->device_number,(i16)0,
-											gain_1_output_line_UnEmap2vx,(i16)1);
-										*calibrate_amplitude /= 4;
-									}
-								} break;
-							}
-#if defined (CALIBRATE_SIGNAL_SQUARE)
-							calibrate_voltages[0]= *calibrate_amplitude;
-							calibrate_voltages[1]= -(*calibrate_amplitude);
-#else /* defined (CALIBRATE_SIGNAL_SQUARE) */
-							/* calculate cosine wave */
-							two_pi=(double)8*atan((double)1);
-							for (i=0;i<number_of_waveform_points;i++)
-							{
-								calibrate_voltages[i]=
-									(*calibrate_amplitude)*(float)cos(two_pi*
-									(double)i/(double)number_of_waveform_points);
-							}
-#endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
-							if (return_code=load_NI_DA(CALIBRATE_CHANNEL,1,&channel_number,
-								number_of_waveform_points,(float)number_of_waveform_points*
-								CALIBRATE_FREQUENCY,calibrate_voltages,0,
-								(Unemap_stimulation_end_callback *)NULL,(void *)NULL))
-							{
-								*calibrate_amplitude=calibrate_voltages[0];
 								card_number++;
 								ni_card++;
 								calibrate_amplitude++;
 							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"calibration_callback.  load_NI_DA failed 2");
-								return_code=0;
-							}
-							channel_number += NUMBER_OF_CHANNELS_ON_NI_CARD;
 						}
 						if (return_code&&(return_code=start_NI_DA()))
 						{
@@ -4553,81 +4607,90 @@ stage 4 is calculating the offset
 						ni_card=module_NI_CARDS;
 						calibrate_amplitude=calibrate_amplitudes;
 						return_code=1;
-						channel_number=1;
 						while (return_code&&(card_number<module_number_of_NI_CARDS))
 						{
-							/* set the gain */
-							DIG_Out_Line(ni_card->device_number,(i16)0,
-								gain_0_output_line_UnEmap2vx,(i16)0);
-							DIG_Out_Line(ni_card->device_number,(i16)0,
-								gain_1_output_line_UnEmap2vx,(i16)0);
-							return_code=set_NI_gain(ni_card,(int)(ni_card->gain));
-							if (return_code)
+							if (0<ni_card->number_of_configured_channels)
 							{
-								/* determine the calibration voltage */
-								/* start with full-range voltage */
-								if (PXI6071E_AD_DA==ni_card->type)
+								channel_number=(ni_card->configured_channels)[0];
+								/* set the gain */
+								DIG_Out_Line(ni_card->device_number,(i16)0,
+									gain_0_output_line_UnEmap2vx,(i16)0);
+								DIG_Out_Line(ni_card->device_number,(i16)0,
+									gain_1_output_line_UnEmap2vx,(i16)0);
+								return_code=set_NI_gain(ni_card,(int)(ni_card->gain));
+								if (return_code)
 								{
-									*calibrate_amplitude=(float)5;
-								}
-								else
-								{
-									*calibrate_amplitude=(float)10;
-								}
-								/* use half-range */
-								*calibrate_amplitude /= 2;
-								switch (ni_card->unemap_hardware_version)
-								{
-									case UnEmap_1V2:
+									/* determine the calibration voltage */
+									/* start with full-range voltage */
+									if (PXI6071E_AD_DA==ni_card->type)
 									{
-										/* fixed gain of 10 */
-										*calibrate_amplitude /= 10;
-									} break;
-									case UnEmap_2V1:
-									case UnEmap_2V2:
+										*calibrate_amplitude=(float)5;
+									}
+									else
 									{
-										/* fixed gain of 11 */
-										*calibrate_amplitude /= 11;
-									} break;
-								}
-								/* NI gain of 11 */
-								*calibrate_amplitude /= ni_card->gain;
+										*calibrate_amplitude=(float)10;
+									}
+									/* use half-range */
+									*calibrate_amplitude /= 2;
+									switch (ni_card->unemap_hardware_version)
+									{
+										case UnEmap_1V2:
+										{
+											/* fixed gain of 10 */
+											*calibrate_amplitude /= 10;
+										} break;
+										case UnEmap_2V1:
+										case UnEmap_2V2:
+										{
+											/* fixed gain of 11 */
+											*calibrate_amplitude /= 11;
+										} break;
+									}
+									/* NI gain of 11 */
+									*calibrate_amplitude /= ni_card->gain;
 #if defined (CALIBRATE_SIGNAL_SQUARE)
-								calibrate_voltages[0]= *calibrate_amplitude;
-								calibrate_voltages[1]= -(*calibrate_amplitude);
+									calibrate_voltages[0]= *calibrate_amplitude;
+									calibrate_voltages[1]= -(*calibrate_amplitude);
 #else /* defined (CALIBRATE_SIGNAL_SQUARE) */
-								/* calculate cosine wave */
-								two_pi=(double)8*atan((double)1);
-								for (i=0;i<number_of_waveform_points;i++)
-								{
-									calibrate_voltages[i]=
-										(*calibrate_amplitude)*(float)cos(two_pi*
-										(double)i/(double)number_of_waveform_points);
-								}
+									/* calculate cosine wave */
+									two_pi=(double)8*atan((double)1);
+									for (i=0;i<number_of_waveform_points;i++)
+									{
+										calibrate_voltages[i]=
+											(*calibrate_amplitude)*(float)cos(two_pi*
+											(double)i/(double)number_of_waveform_points);
+									}
 #endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
-								if (return_code=load_NI_DA(CALIBRATE_CHANNEL,1,&channel_number,
-									number_of_waveform_points,(float)number_of_waveform_points*
-									CALIBRATE_FREQUENCY,calibrate_voltages,0,
-									(Unemap_stimulation_end_callback *)NULL,(void *)NULL))
-								{
-									*calibrate_amplitude=calibrate_voltages[0];
-									card_number++;
-									ni_card++;
-									calibrate_amplitude++;
+									if (return_code=load_NI_DA(CALIBRATE_CHANNEL,1,
+										&channel_number,number_of_waveform_points,
+										(float)number_of_waveform_points*CALIBRATE_FREQUENCY,
+										calibrate_voltages,0,
+										(Unemap_stimulation_end_callback *)NULL,(void *)NULL))
+									{
+										*calibrate_amplitude=calibrate_voltages[0];
+										card_number++;
+										ni_card++;
+										calibrate_amplitude++;
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"calibration_callback.  load_NI_DA failed 3");
+										return_code=0;
+									}
 								}
 								else
 								{
 									display_message(ERROR_MESSAGE,
-										"calibration_callback.  load_NI_DA failed 3");
-									return_code=0;
+										"calibration_callback.  set_NI_gain failed 2");
 								}
 							}
 							else
 							{
-								display_message(ERROR_MESSAGE,
-									"calibration_callback.  set_NI_gain failed 2");
+								card_number++;
+								ni_card++;
+								calibrate_amplitude++;
 							}
-							channel_number += NUMBER_OF_CHANNELS_ON_NI_CARD;
 						}
 						if (return_code&&(return_code=start_NI_DA()))
 						{
@@ -4703,14 +4766,16 @@ stage 4 is calculating the offset
 						stop_NI_DA(CALIBRATE_CHANNEL,0);
 						ni_card=module_NI_CARDS;
 						filter_frequency=filter_frequencies;
-						channel_number=1;
 						for (i=module_number_of_NI_CARDS;i>0;i--)
 						{
-							unemap_set_antialiasing_filter_frequency(channel_number,
-								*filter_frequency);
+							if (0<ni_card->number_of_configured_channels)
+							{
+								channel_number=(ni_card->configured_channels)[0];
+								unemap_set_antialiasing_filter_frequency(channel_number,
+									*filter_frequency);
+							}
 							ni_card++;
 							filter_frequency++;
-							channel_number += NUMBER_OF_CHANNELS_ON_NI_CARD;
 						}
 						return_code=1;
 						if (module_calibration_end_callback)
@@ -4725,7 +4790,7 @@ stage 4 is calculating the offset
 								module_calibration_offsets=calibration_offsets;
 								module_calibration_gains=calibration_gains;
 								ni_card=module_NI_CARDS;
-								channel_number=0;
+								l=0;
 								k=0;
 								for (i=module_number_of_NI_CARDS;i>0;i--)
 								{
@@ -4733,21 +4798,23 @@ stage 4 is calculating the offset
 										(PXI6031E_AD_DA==ni_card->type)||
 										(PXI6071E_AD_DA==ni_card->type))
 									{
-										for (j=NUMBER_OF_CHANNELS_ON_NI_CARD;j>0;j--)
+										number_of_configured_channels=
+											ni_card->number_of_configured_channels;
+										if (0<number_of_configured_channels)
 										{
-											if (!(channel_failed[channel_number]&stage_mask))
+											for (j=0;j<number_of_configured_channels;j++)
 											{
-												module_calibration_offsets[k]=offsets[channel_number];
-												module_calibration_gains[k]=gains[channel_number];
-												module_calibration_channels[k]=channel_number+1;
-												k++;
+												if (!(channel_failed[l]&stage_mask))
+												{
+													module_calibration_offsets[k]=offsets[l];
+													module_calibration_gains[k]=gains[l];
+													module_calibration_channels[k]=
+														(ni_card->configured_channels)[j];
+													k++;
+												}
+												l++;
 											}
-											channel_number++;
 										}
-									}
-									else
-									{
-										channel_number += NUMBER_OF_CHANNELS_ON_NI_CARD;
 									}
 									ni_card++;
 								}
@@ -4844,23 +4911,26 @@ stage 4 is calculating the offset
 			filter_frequency=filter_frequencies;
 			while (card_number<module_number_of_NI_CARDS)
 			{
-				channel_number=1+card_number*NUMBER_OF_CHANNELS_ON_NI_CARD;
-				unemap_set_antialiasing_filter_frequency(channel_number,
-					*filter_frequency);
-				set_NI_gain(ni_card,(int)(ni_card->gain));
-				if ((UnEmap_2V1==ni_card->unemap_hardware_version)||
-					(UnEmap_2V2==ni_card->unemap_hardware_version))
+				if (0<ni_card->number_of_configured_channels)
 				{
-					/* programmable gain */
-					if ((ni_card->unemap_2vx).gain_output_line_0)
+					channel_number=(ni_card->configured_channels)[0];
+					unemap_set_antialiasing_filter_frequency(channel_number,
+						*filter_frequency);
+					set_NI_gain(ni_card,(int)(ni_card->gain));
+					if ((UnEmap_2V1==ni_card->unemap_hardware_version)||
+						(UnEmap_2V2==ni_card->unemap_hardware_version))
 					{
-						DIG_Out_Line(ni_card->device_number,(i16)0,
-							gain_0_output_line_UnEmap2vx,(i16)1);
-					}
-					if ((ni_card->unemap_2vx).gain_output_line_1)
-					{
-						DIG_Out_Line(ni_card->device_number,(i16)0,
-							gain_1_output_line_UnEmap2vx,(i16)1);
+						/* programmable gain */
+						if ((ni_card->unemap_2vx).gain_output_line_0)
+						{
+							DIG_Out_Line(ni_card->device_number,(i16)0,
+								gain_0_output_line_UnEmap2vx,(i16)1);
+						}
+						if ((ni_card->unemap_2vx).gain_output_line_1)
+						{
+							DIG_Out_Line(ni_card->device_number,(i16)0,
+								gain_1_output_line_UnEmap2vx,(i16)1);
+						}
 					}
 				}
 				card_number++;
@@ -4903,1191 +4973,6 @@ stage 4 is calculating the offset
 	return (return_code);
 } /* calibration_callback */
 #endif /* defined (NI_DAQ) */
-
-#if defined (OLD_CODE)
-#if defined (NI_DAQ)
-static int calibration_callback(void *dummy)
-/*******************************************************************************
-LAST MODIFIED : 17 August 1999
-
-DESCRIPTION :
-Output a square wave which alternates between +/- a known voltage.  Wait for the
-DC removal to settle.  Acquire.  Average for each channel.  Assume that the
-measurements below the average are for minus the known voltage and that the
-measurements above the average are for plus the known voltage.  Calculate
-offsets and gains.  Over-write calibrate.dat
-
-The D/A on the NI cards doesn't have enough resolution (+/-10V and 12 or 16-bit)
-to cope with the full gain (100*11*8=8800), so the NI gain and the signal
-conditioning gain are done separately and then combined.
-
-stage 0 is setup
-stage 1 is calculating the signal conditioning fixed gain
-stage 2 is calculating the signal conditioning variable gain
-stage 3 is calculating the NI gain
-stage 4 is calculating the offset
-==============================================================================*/
-{
-	float *calibration_gains,*calibration_offsets,*filter_frequency,*gain,
-		*offset,*previous_offset,temp;
-	f64 *calibrate_amplitude;
-	int *calibration_channels,card_number,channel_number,i,j,k,
-		number_of_settled_channels,return_code;
-	i16 da_channel,status;
-	long int maximum_sample_value,minimum_sample_value;
-	short int *hardware_buffer;
-	static float *filter_frequencies,*gains=(float *)NULL,*offsets=(float *)NULL,
-		*previous_offsets=(float *)NULL,saturated;
-	static f64 *calibrate_amplitudes,*calibrate_voltages;
-	static int calibrate_stage=0,*channel_failed,number_of_channels,
-		number_of_waveform_points,settling_step,stage_flag,stage_mask;
-	static i16 *calibrate_voltage_DAs;
-	static unsigned number_of_samples;
-	struct NI_card *ni_card;
-#if defined (CALIBRATE_SIGNAL_SQUARE)
-#if defined (SWITCHING_TIME)
-	float *sorted_signal_entry;
-	static float *sorted_signal=(float *)NULL;
-#endif /* defined (SWITCHING_TIME) */
-#else /* defined (CALIBRATE_SIGNAL_SQUARE) */
-	float temp_2;
-	double two_pi;
-#endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
-
-	ENTER(calibration_callback);
-#if defined (DEBUG)
-/*???debug */
-{
-	FILE *unemap_debug;
-
-	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
-	{
-		fprintf(unemap_debug,"enter calibration_callback %d\n",calibrate_stage);
-		fclose(unemap_debug);
-	}
-}
-#endif /* defined (DEBUG) */
-	return_code=0;
-	status=0;
-	if (0==calibrate_stage)
-	{
-		/* set up */
-		if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
-		{
-			stage_flag=0x1;
-			stage_mask=0x1;
-			number_of_channels=
-				module_number_of_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD;
-			number_of_samples=(module_NI_CARDS->hardware_buffer_size)/
-				NUMBER_OF_CHANNELS_ON_NI_CARD;
-			unemap_get_sample_range(&minimum_sample_value,&maximum_sample_value);
-			saturated=(float)(-minimum_sample_value);
-			ALLOCATE(calibrate_amplitudes,f64,module_number_of_NI_CARDS);
-#if defined (CALIBRATE_SIGNAL_SQUARE)
-			number_of_waveform_points=2;
-#else /* defined (CALIBRATE_SIGNAL_SQUARE) */
-			number_of_waveform_points=500;
-#endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
-			ALLOCATE(calibrate_voltages,f64,number_of_waveform_points);
-			ALLOCATE(calibrate_voltage_DAs,i16,number_of_waveform_points);
-			ALLOCATE(filter_frequencies,float,module_number_of_NI_CARDS);
-			ALLOCATE(offsets,float,number_of_channels);
-			ALLOCATE(previous_offsets,float,number_of_channels);
-			ALLOCATE(gains,float,number_of_channels);
-			ALLOCATE(channel_failed,int,number_of_channels);
-#if defined (CALIBRATE_SIGNAL_SQUARE) && defined (SWITCHING_TIME)
-			ALLOCATE(sorted_signal,float,number_of_samples);
-#endif /* defined (CALIBRATE_SIGNAL_SQUARE) && defined (SWITCHING_TIME) */
-			if (calibrate_voltages&&calibrate_voltage_DAs&&filter_frequencies&&
-				offsets&&previous_offsets&&gains&&channel_failed&&calibrate_amplitudes
-#if defined (CALIBRATE_SIGNAL_SQUARE) && defined (SWITCHING_TIME)
-				&&sorted_signal
-#endif /* defined (CALIBRATE_SIGNAL_SQUARE) && defined (SWITCHING_TIME) */
-				)
-			{
-				for (i=0;i<number_of_channels;i++)
-				{
-					offsets[i]=(float)0;
-					channel_failed[i]=0xf;
-				}
-				return_code=unemap_stop_sampling();
-				card_number=0;
-				ni_card=module_NI_CARDS;
-				calibrate_amplitude=calibrate_amplitudes;
-				filter_frequency=filter_frequencies;
-				while (return_code&&(card_number<module_number_of_NI_CARDS))
-				{
-					/* if the card can be calibrated (has D/A) */
-					if ((PCI6031E_AD_DA==ni_card->type)||
-						(PXI6031E_AD_DA==ni_card->type)||(PXI6071E_AD_DA==ni_card->type))
-					{
-						channel_number=1+card_number*NUMBER_OF_CHANNELS_ON_NI_CARD;
-						/* put in isolate mode */
-						if (unemap_set_isolate_record_mode(channel_number,1))
-						{
-							/* stop waveform generation */
-							WFM_Group_Control(ni_card->device_number,/*group*/1,/*Clear*/0);
-							/* change NI gain to 1 */
-							return_code=set_NI_gain(ni_card,(int)1);
-							if (return_code)
-							{
-								/* configure the DA to bipolar +/-10 */
-								status=AO_Configure(ni_card->device_number,CALIBRATE_CHANNEL,
-									/*bipolar*/(i16)0,/*internal voltage reference*/(i16)0,
-									/*reference voltage*/(f64)10,
-									/*update DAC when written to*/(i16)0);
-								if (0==status)
-								{
-									/* determine the calibration voltage */
-									/* start with full-range voltage */
-									if (PXI6071E_AD_DA==ni_card->type)
-									{
-										*calibrate_amplitude=(f64)5;
-									}
-									else
-									{
-										*calibrate_amplitude=(f64)10;
-									}
-									/* use half-range */
-									*calibrate_amplitude /= (f64)2;
-									switch (ni_card->unemap_hardware_version)
-									{
-										case UnEmap_1V2:
-										{
-											/* fixed gain of 10 */
-											*calibrate_amplitude /= (f64)10;
-										} break;
-										case UnEmap_2V1:
-										case UnEmap_2V2:
-										{
-											/* fixed gain of 11 */
-											*calibrate_amplitude /= (f64)11;
-										} break;
-									}
-#if defined (CALIBRATE_SIGNAL_SQUARE)
-									calibrate_voltages[0]= *calibrate_amplitude;
-									calibrate_voltages[1]= -(*calibrate_amplitude);
-#else /* defined (CALIBRATE_SIGNAL_SQUARE) */
-									/* calculate cosine wave */
-									two_pi=(double)8*atan((double)1);
-									for (i=0;i<number_of_waveform_points;i++)
-									{
-										calibrate_voltages[i]=
-											(*calibrate_amplitude)*(f64)cos(two_pi*
-											(double)i/(double)number_of_waveform_points);
-									}
-#endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
-									/* convert to a DA setting */
-									status=WFM_Scale(ni_card->device_number,CALIBRATE_CHANNEL,
-										number_of_waveform_points,/*gain*/(f64)1,calibrate_voltages,
-										calibrate_voltage_DAs);
-									if (0==status)
-									{
-										/* allow for DA resolution */
-										if (PXI6071E_AD_DA==ni_card->type)
-										{
-											*calibrate_amplitude=
-												(f64)calibrate_voltage_DAs[0]*(f64)20/(f64)4096;
-										}
-										else
-										{
-											*calibrate_amplitude=
-												(f64)calibrate_voltage_DAs[0]*(f64)20/(f64)65536;
-										}
-										/* start the square waveform generation */
-										da_channel=CALIBRATE_CHANNEL;
-										status=WFM_Op(ni_card->device_number,
-											/*number of DA channels*/1,&da_channel,
-											calibrate_voltage_DAs,number_of_waveform_points,
-											/*continous*/(u32)0,
-											/*points/s*/(f64)((float)number_of_waveform_points*
-											CALIBRATE_FREQUENCY));
-										if (0==status)
-										{
-											if ((UnEmap_1V2==ni_card->unemap_hardware_version)||
-												(UnEmap_2V2==ni_card->unemap_hardware_version))
-											{
-												/* set the programmable gain */
-												DIG_Out_Line(ni_card->device_number,(i16)0,
-													gain_0_output_line_UnEmap2vx,(i16)0);
-												DIG_Out_Line(ni_card->device_number,(i16)0,
-													gain_1_output_line_UnEmap2vx,(i16)0);
-											}
-											/* set low pass filter as high as possible */
-											unemap_get_antialiasing_filter_frequency(channel_number,
-												filter_frequency);
-											unemap_set_antialiasing_filter_frequency(channel_number,
-												(float)10000);
-											card_number++;
-											ni_card++;
-											calibrate_amplitude++;
-											filter_frequency++;
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"calibration_callback.  WFM_Op failed");
-											return_code=0;
-										}
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"calibration_callback.  WFM_Scale failed");
-										return_code=0;
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"calibration_callback.  AO_Configure failed");
-									return_code=0;
-								}
-								if (0==return_code)
-								{
-									set_NI_gain(ni_card,(int)(ni_card->gain));
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"calibration_callback.  set_NI_gain failed 1");
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-							"calibration_callback.  unemap_set_isolate_record_mode failed");
-							return_code=0;
-						}
-					}
-				}
-				if (return_code)
-				{
-					module_buffer_full_callback=calibration_callback;
-					module_buffer_full_callback_data=(void *)NULL;
-					settling_step=0;
-					calibrate_stage=1;
-					if (return_code=unemap_start_sampling())
-					{
-						display_message(INFORMATION_MESSAGE,"Calibration.  Phase 1 of 4\n");
-#if defined (DEBUG)
-/*???debug */
-{
-	FILE *unemap_debug;
-
-	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
-	{
-		fprintf(unemap_debug,"start Phase 1\n");
-		fclose(unemap_debug);
-	}
-}
-#endif /* defined (DEBUG) */
-					}
-					else
-					{
-						module_buffer_full_callback=(Buffer_full_callback *)NULL;
-						module_buffer_full_callback_data=(void *)NULL;
-					}
-				}
-				if (!return_code)
-				{
-					while (card_number>0)
-					{
-						card_number--;
-						ni_card--;
-						calibrate_amplitude--;
-						filter_frequency--;
-						channel_number=1+card_number*NUMBER_OF_CHANNELS_ON_NI_CARD;
-						unemap_set_antialiasing_filter_frequency(channel_number,
-							*filter_frequency);
-						/* stop waveform generation */
-						WFM_Group_Control(ni_card->device_number,/*group*/1,/*Clear*/0);
-						/* set the output voltage to 0 */
-						AO_Write(ni_card->device_number,CALIBRATE_CHANNEL,(i16)0);
-						set_NI_gain(ni_card,(int)(ni_card->gain));
-						if ((UnEmap_2V1==ni_card->unemap_hardware_version)||
-							(UnEmap_2V2==ni_card->unemap_hardware_version))
-						{
-							/* programmable gain */
-							if ((ni_card->unemap_2vx).gain_output_line_0)
-							{
-								DIG_Out_Line(ni_card->device_number,(i16)0,
-									gain_0_output_line_UnEmap2vx,(i16)1);
-							}
-							if ((ni_card->unemap_2vx).gain_output_line_1)
-							{
-								DIG_Out_Line(ni_card->device_number,(i16)0,
-									gain_1_output_line_UnEmap2vx,(i16)1);
-							}
-						}
-					}
-				}
-			}
-			else
-			{
-#if defined (CALIBRATE_SIGNAL_SQUARE) && defined (SWITCHING_TIME)
-				display_message(ERROR_MESSAGE,
-		"calibration_callback.  Could not allocate storage.  %p %p %p %p %p %p %p",
-					calibrate_voltages,calibrate_voltage_DAs,filter_frequencies,offsets,
-					previous_offsets,gains,sorted_signal);
-#else /* defined (CALIBRATE_SIGNAL_SQUARE) && defined (SWITCHING_TIME) */
-				display_message(ERROR_MESSAGE,
-				"calibration_callback.  Could not allocate storage.  %p %p %p %p %p %p",
-					calibrate_voltages,calibrate_voltage_DAs,filter_frequencies,offsets,
-					previous_offsets,gains);
-#endif /* defined (CALIBRATE_SIGNAL_SQUARE) && defined (SWITCHING_TIME) */
-			}
-			if (0==return_code)
-			{
-				DEALLOCATE(calibrate_amplitudes);
-				DEALLOCATE(calibrate_voltages);
-				DEALLOCATE(calibrate_voltage_DAs);
-				DEALLOCATE(filter_frequencies);
-				DEALLOCATE(offsets);
-				DEALLOCATE(previous_offsets);
-				DEALLOCATE(gains);
-				DEALLOCATE(channel_failed);
-#if defined (CALIBRATE_SIGNAL_SQUARE) && defined (SWITCHING_TIME)
-				DEALLOCATE(sorted_signal);
-#endif /* defined (CALIBRATE_SIGNAL_SQUARE) && defined (SWITCHING_TIME) */
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"calibration_callback.  Invalid configuration.  %d %p %d",
-				module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
-		}
-		if ((0==return_code)&&module_calibration_end_callback)
-		{
-			(*module_calibration_end_callback)(0,(int *)NULL,(float *)NULL,
-				(float *)NULL,module_calibration_end_callback_data);
-		}
-	}
-	else
-	{
-		/* calibrate stage 1, 2, 3 or 4 */
-		unemap_stop_sampling();
-		/* average */
-		offset=offsets;
-		previous_offset=previous_offsets;
-		for (i=0;i<number_of_channels;i++)
-		{
-			*previous_offset= *offset;
-			*offset=(float)0;
-			previous_offset++;
-			offset++;
-		}
-		channel_number=0;
-		ni_card=module_NI_CARDS;
-		for (i=0;i<module_number_of_NI_CARDS;i++)
-		{
-			for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
-			{
-				hardware_buffer=(ni_card->hardware_buffer)+j;
-				temp=(float)0;
-				for (k=number_of_samples;k>0;k--)
-				{
-					temp += (float)(*hardware_buffer);
-					hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
-				}
-				offsets[i*NUMBER_OF_CHANNELS_ON_NI_CARD+(ni_card->channel_reorder)[j]]=
-					temp;
-			}
-		}
-#if defined (OLD_CODE)
-		channel_number=0;
-		ni_card=module_NI_CARDS;
-		for (i=module_number_of_NI_CARDS;i>0;i--)
-		{
-			hardware_buffer=ni_card->hardware_buffer;
-			for (j=number_of_samples;j>0;j--)
-			{
-				offset=offsets+channel_number;
-				for (k=NUMBER_OF_CHANNELS_ON_NI_CARD;k>0;k--)
-				{
-					*offset += (float)(*hardware_buffer);
-					offset++;
-					hardware_buffer++;
-				}
-			}
-			channel_number += NUMBER_OF_CHANNELS_ON_NI_CARD;
-			ni_card++;
-		}
-#endif /* defined (OLD_CODE) */
-		offset=offsets;
-		for (i=0;i<number_of_channels;i++)
-		{
-			*offset /= (float)number_of_samples;
-			offset++;
-		}
-		if (0<settling_step)
-		{
-			number_of_settled_channels=0;
-			for (i=0;i<number_of_channels;i++)
-			{
-				if (channel_failed[i]&stage_flag)
-				{
-					if (((float)fabs((double)(previous_offsets[i]))<saturated)&&
-						((float)fabs((double)(offsets[i]))<saturated)&&
-						((float)fabs((double)(offsets[i]-previous_offsets[i]))<
-						tol_settling))
-					{
-						channel_failed[i] &= !stage_flag;
-						number_of_settled_channels++;
-					}
-				}
-				if (!(channel_failed[i]&stage_mask))
-				{
-					number_of_settled_channels++;
-				}
-			}
-#if defined (DEBUG)
-/*???debug */
-{
-	FILE *unemap_debug;
-	float maximum,temp;
-	int ii,jj;
-
-	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
-	{
-		maximum=(float)-1;
-		jj= -1;
-		for (ii=0;ii<number_of_channels;ii++)
-		{
-			temp=(float)fabs((double)(offsets[ii]-previous_offsets[ii]));
-			if (temp>maximum)
-			{
-				maximum=temp;
-				jj=ii;
-			}
-		}
-		fprintf(unemap_debug,"settling %d %d %g %g %d %g\n",settling_step,i,
-			saturated,tol_settling,jj,maximum);
-		fclose(unemap_debug);
-	}
-}
-#endif /* defined (DEBUG) */
-			if ((number_of_settled_channels>=number_of_channels)||
-				((number_of_settled_channels>0)&&(settling_step>=settling_step_max)))
-			{
-				/* settled */
-				switch (calibrate_stage)
-				{
-					case 1:
-					{
-						/* signal conditioning fixed gain */
-						gain=gains;
-						offset=offsets;
-						ni_card=module_NI_CARDS;
-						calibrate_amplitude=calibrate_amplitudes;
-						for (i=module_number_of_NI_CARDS;i>0;i--)
-						{
-							for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
-							{
-								hardware_buffer=(ni_card->hardware_buffer)+j;
-#if defined (CALIBRATE_SIGNAL_SQUARE)
-#if defined (SWITCHING_TIME)
-								sorted_signal_entry=sorted_signal;
-								for (k=number_of_samples;k>0;k--)
-								{
-									temp=(float)(*hardware_buffer)-(*offset);
-									if (temp<(float)0)
-									{
-										temp= -temp;
-									}
-									*sorted_signal_entry=temp;
-									sorted_signal_entry++;
-									hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
-								}
-								qsort(sorted_signal,number_of_samples,sizeof(float),
-									compare_float);
-								temp=(float)0;
-								for (k=(int)(switching_time*200*(float)number_of_samples);
-									k<(int)number_of_samples;k++)
-								{
-									temp += sorted_signal[k];
-								}
-								temp /= (1-200*switching_time)*(float)number_of_samples;
-#else /* defined (SWITCHING_TIME) */
-								temp=(float)0;
-								for (k=number_of_samples;k>0;k--)
-								{
-									temp += (float)fabs(((float)(*hardware_buffer)-(*offset)));
-									hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
-								}
-								temp /= number_of_samples;
-#endif /* defined (SWITCHING_TIME) */
-#else /* defined (CALIBRATE_SIGNAL_SQUARE) */
-								temp=(float)0;
-								for (k=number_of_samples;k>0;k--)
-								{
-									temp_2=(float)(*hardware_buffer)-(*offset);
-									temp += temp_2*temp_2;
-									hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
-								}
-								temp /= number_of_samples;
-								temp *= 2;
-								temp=(float)sqrt((double)temp);
-#endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
-								*gain=(float)(*calibrate_amplitude)/temp;
-								offset++;
-								gain++;
-							}
-							calibrate_amplitude++;
-							ni_card++;
-						}
-						/* set up for next stage */
-						card_number=0;
-						ni_card=module_NI_CARDS;
-						calibrate_amplitude=calibrate_amplitudes;
-						return_code=1;
-						while (return_code&&(card_number<module_number_of_NI_CARDS))
-						{
-							/* stop waveform generation */
-							WFM_Group_Control(ni_card->device_number,/*group*/1,/*Clear*/0);
-							/* determine the calibration voltage */
-							/* start with full-range voltage */
-							if (PXI6071E_AD_DA==ni_card->type)
-							{
-								*calibrate_amplitude=(f64)5;
-							}
-							else
-							{
-								*calibrate_amplitude=(f64)10;
-							}
-							/* use half-range */
-							*calibrate_amplitude /= (f64)2;
-							switch (ni_card->unemap_hardware_version)
-							{
-								case UnEmap_1V2:
-								{
-									/* fixed gain of 10 */
-									*calibrate_amplitude /= (f64)10;
-								} break;
-								case UnEmap_2V1:
-								case UnEmap_2V2:
-								{
-									/* fixed gain of 11 */
-									*calibrate_amplitude /= (f64)11;
-									/* programmable gain */
-									if ((ni_card->unemap_2vx).gain_output_line_0)
-									{
-										DIG_Out_Line(ni_card->device_number,(i16)0,
-											gain_0_output_line_UnEmap2vx,(i16)1);
-										*calibrate_amplitude /= (f64)2;
-									}
-									if ((ni_card->unemap_2vx).gain_output_line_1)
-									{
-										DIG_Out_Line(ni_card->device_number,(i16)0,
-											gain_1_output_line_UnEmap2vx,(i16)1);
-										*calibrate_amplitude /= (f64)4;
-									}
-								} break;
-							}
-#if defined (CALIBRATE_SIGNAL_SQUARE)
-							calibrate_voltages[0]= *calibrate_amplitude;
-							calibrate_voltages[1]= -(*calibrate_amplitude);
-#else /* defined (CALIBRATE_SIGNAL_SQUARE) */
-							/* calculate cosine wave */
-							two_pi=(double)8*atan((double)1);
-							for (i=0;i<number_of_waveform_points;i++)
-							{
-								calibrate_voltages[i]=
-									(*calibrate_amplitude)*(f64)cos(two_pi*
-									(double)i/(double)number_of_waveform_points);
-							}
-#endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
-							/* convert to a DA setting */
-							status=WFM_Scale(ni_card->device_number,CALIBRATE_CHANNEL,
-								number_of_waveform_points,/*gain*/(f64)1,calibrate_voltages,
-								calibrate_voltage_DAs);
-							if (0==status)
-							{
-								/* allow for DA resolution */
-								if (PXI6071E_AD_DA==ni_card->type)
-								{
-									*calibrate_amplitude=
-										(f64)calibrate_voltage_DAs[0]*(f64)20/(f64)4096;
-								}
-								else
-								{
-									*calibrate_amplitude=
-										(f64)calibrate_voltage_DAs[0]*(f64)20/(f64)65536;
-								}
-								/* start the square waveform generation */
-								da_channel=CALIBRATE_CHANNEL;
-								status=WFM_Op(ni_card->device_number,
-									/*number of DA channels*/1,&da_channel,
-									calibrate_voltage_DAs,number_of_waveform_points,
-									/*continous*/(u32)0,
-									/*points/s*/(f64)((float)number_of_waveform_points*
-									CALIBRATE_FREQUENCY));
-								if (0==status)
-								{
-									card_number++;
-									ni_card++;
-									calibrate_amplitude++;
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"calibration_callback.  WFM_Op failed");
-									return_code=0;
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"calibration_callback.  WFM_Scale failed");
-								return_code=0;
-							}
-						}
-						if (return_code)
-						{
-							settling_step=0;
-							calibrate_stage=2;
-							return_code=unemap_start_sampling();
-							display_message(INFORMATION_MESSAGE,
-								"Calibration.  Phase 2 of 4\n");
-#if defined (DEBUG)
-/*???debug */
-{
-	FILE *unemap_debug;
-
-	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
-	{
-		fprintf(unemap_debug,"start Phase 2\n");
-		fclose(unemap_debug);
-	}
-}
-#endif /* defined (DEBUG) */
-						}
-					} break;
-					case 2:
-					{
-						/* signal conditioning variable gain */
-						gain=gains;
-						offset=offsets;
-						ni_card=module_NI_CARDS;
-						calibrate_amplitude=calibrate_amplitudes;
-						for (i=module_number_of_NI_CARDS;i>0;i--)
-						{
-							for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
-							{
-								hardware_buffer=(ni_card->hardware_buffer)+j;
-#if defined (CALIBRATE_SIGNAL_SQUARE)
-#if defined (SWITCHING_TIME)
-								sorted_signal_entry=sorted_signal;
-								for (k=number_of_samples;k>0;k--)
-								{
-									temp=(float)(*hardware_buffer)-(*offset);
-									if (temp<(float)0)
-									{
-										temp= -temp;
-									}
-									*sorted_signal_entry=temp;
-									sorted_signal_entry++;
-									hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
-								}
-								qsort(sorted_signal,number_of_samples,sizeof(float),
-									compare_float);
-								temp=(float)0;
-								for (k=(int)(switching_time*200*(float)number_of_samples);
-									k<(int)number_of_samples;k++)
-								{
-									temp += sorted_signal[k];
-								}
-								temp /= (1-200*switching_time)*(float)number_of_samples;
-#else /* defined (SWITCHING_TIME) */
-								temp=(float)0;
-								for (k=number_of_samples;k>0;k--)
-								{
-									temp += (float)fabs(((float)(*hardware_buffer)-(*offset)));
-									hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
-								}
-								temp /= number_of_samples;
-#endif /* defined (SWITCHING_TIME) */
-#else /* defined (CALIBRATE_SIGNAL_SQUARE) */
-								temp=(float)0;
-								for (k=number_of_samples;k>0;k--)
-								{
-									temp_2=(float)(*hardware_buffer)-(*offset);
-									temp += temp_2*temp_2;
-									hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
-								}
-								temp /= number_of_samples;
-								temp *= 2;
-								temp=(float)sqrt((double)temp);
-#endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
-								/* *gain is already the fixed gain */
-								*gain=((float)(*calibrate_amplitude)/temp)/(*gain);
-								offset++;
-								gain++;
-							}
-							calibrate_amplitude++;
-							ni_card++;
-						}
-						/* set up for next stage */
-						card_number=0;
-						ni_card=module_NI_CARDS;
-						calibrate_amplitude=calibrate_amplitudes;
-						return_code=1;
-						while (return_code&&(card_number<module_number_of_NI_CARDS))
-						{
-							/* stop waveform generation */
-							WFM_Group_Control(ni_card->device_number,/*group*/1,/*Clear*/0);
-							/* set the gain */
-							DIG_Out_Line(ni_card->device_number,(i16)0,
-								gain_0_output_line_UnEmap2vx,(i16)0);
-							DIG_Out_Line(ni_card->device_number,(i16)0,
-								gain_1_output_line_UnEmap2vx,(i16)0);
-							return_code=set_NI_gain(ni_card,(int)(ni_card->gain));
-							if (return_code)
-							{
-								/* determine the calibration voltage */
-								/* start with full-range voltage */
-								if (PXI6071E_AD_DA==ni_card->type)
-								{
-									*calibrate_amplitude=(f64)5;
-								}
-								else
-								{
-									*calibrate_amplitude=(f64)10;
-								}
-								/* use half-range */
-								*calibrate_amplitude /= (f64)2;
-								switch (ni_card->unemap_hardware_version)
-								{
-									case UnEmap_1V2:
-									{
-										/* fixed gain of 10 */
-										*calibrate_amplitude /= (f64)10;
-									} break;
-									case UnEmap_2V1:
-									case UnEmap_2V2:
-									{
-										/* fixed gain of 11 */
-										*calibrate_amplitude /= (f64)11;
-									} break;
-								}
-								/* NI gain of 11 */
-								*calibrate_amplitude /= (f64)(ni_card->gain);
-#if defined (CALIBRATE_SIGNAL_SQUARE)
-								calibrate_voltages[0]= *calibrate_amplitude;
-								calibrate_voltages[1]= -(*calibrate_amplitude);
-#else /* defined (CALIBRATE_SIGNAL_SQUARE) */
-								/* calculate cosine wave */
-								two_pi=(double)8*atan((double)1);
-								for (i=0;i<number_of_waveform_points;i++)
-								{
-									calibrate_voltages[i]=
-										(*calibrate_amplitude)*(f64)cos(two_pi*
-										(double)i/(double)number_of_waveform_points);
-								}
-#endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
-								/* convert to a DA setting */
-								status=WFM_Scale(ni_card->device_number,CALIBRATE_CHANNEL,
-									number_of_waveform_points,/*gain*/(f64)1,calibrate_voltages,
-									calibrate_voltage_DAs);
-								if (0==status)
-								{
-									/* allow for DA resolution */
-									if (PXI6071E_AD_DA==ni_card->type)
-									{
-										*calibrate_amplitude=
-											(f64)calibrate_voltage_DAs[0]*(f64)20/(f64)4096;
-									}
-									else
-									{
-										*calibrate_amplitude=
-											(f64)calibrate_voltage_DAs[0]*(f64)20/(f64)65536;
-									}
-									/* start the square waveform generation */
-									da_channel=CALIBRATE_CHANNEL;
-									status=WFM_Op(ni_card->device_number,
-										/*number of DA channels*/1,&da_channel,
-										calibrate_voltage_DAs,number_of_waveform_points,
-										/*continous*/(u32)0,
-										/*points/s*/(f64)((float)number_of_waveform_points*
-										CALIBRATE_FREQUENCY));
-									if (0==status)
-									{
-										card_number++;
-										ni_card++;
-										calibrate_amplitude++;
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"calibration_callback.  WFM_Op failed");
-										return_code=0;
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"calibration_callback.  WFM_Scale failed");
-									return_code=0;
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"calibration_callback.  set_NI_gain failed 2");
-							}
-						}
-						if (return_code)
-						{
-							settling_step=0;
-							calibrate_stage=3;
-							return_code=unemap_start_sampling();
-							display_message(INFORMATION_MESSAGE,
-								"Calibration.  Phase 3 of 4\n");
-#if defined (DEBUG)
-/*???debug */
-{
-	FILE *unemap_debug;
-
-	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
-	{
-		fprintf(unemap_debug,"start Phase 3\n");
-		fclose(unemap_debug);
-	}
-}
-#endif /* defined (DEBUG) */
-						}
-					} break;
-					case 3:
-					{
-						/* NI gain */
-						gain=gains;
-						offset=offsets;
-						ni_card=module_NI_CARDS;
-						calibrate_amplitude=calibrate_amplitudes;
-						for (i=module_number_of_NI_CARDS;i>0;i--)
-						{
-							for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
-							{
-								hardware_buffer=(ni_card->hardware_buffer)+j;
-#if defined (CALIBRATE_SIGNAL_SQUARE)
-#if defined (SWITCHING_TIME)
-								sorted_signal_entry=sorted_signal;
-								for (k=number_of_samples;k>0;k--)
-								{
-									temp=(float)(*hardware_buffer)-(*offset);
-									if (temp<(float)0)
-									{
-										temp= -temp;
-									}
-									*sorted_signal_entry=temp;
-									sorted_signal_entry++;
-									hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
-								}
-								qsort(sorted_signal,number_of_samples,sizeof(float),
-									compare_float);
-								temp=(float)0;
-								for (k=(int)(switching_time*200*(float)number_of_samples);
-									k<(int)number_of_samples;k++)
-								{
-									temp += sorted_signal[k];
-								}
-								temp /= (1-200*switching_time)*(float)number_of_samples;
-#else /* defined (SWITCHING_TIME) */
-								temp=(float)0;
-								for (k=number_of_samples;k>0;k--)
-								{
-									temp += (float)fabs(((float)(*hardware_buffer)-(*offset)));
-									hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
-								}
-								temp /= number_of_samples;
-#endif /* defined (SWITCHING_TIME) */
-#else /* defined (CALIBRATE_SIGNAL_SQUARE) */
-								temp=(float)0;
-								for (k=number_of_samples;k>0;k--)
-								{
-									temp_2=(float)(*hardware_buffer)-(*offset);
-									temp += temp_2*temp_2;
-									hardware_buffer += NUMBER_OF_CHANNELS_ON_NI_CARD;
-								}
-								temp /= number_of_samples;
-								temp *= 2;
-								temp=(float)sqrt((double)temp);
-#endif /* defined (CALIBRATE_SIGNAL_SQUARE) */
-								/* *gain is already the programmable gain */
-								*gain *= ((float)(*calibrate_amplitude)/temp);
-								offset++;
-								gain++;
-							}
-							calibrate_amplitude++;
-							ni_card++;
-						}
-						/* set up for next stage */
-						card_number=0;
-						ni_card=module_NI_CARDS;
-						return_code=1;
-						while (return_code&&(card_number<module_number_of_NI_CARDS))
-						{
-							/* stop waveform generation */
-							WFM_Group_Control(ni_card->device_number,/*group*/1,/*Clear*/0);
-							/* set the gain */
-							if ((ni_card->unemap_2vx).gain_output_line_0)
-							{
-								DIG_Out_Line(ni_card->device_number,(i16)0,
-									gain_0_output_line_UnEmap2vx,(i16)1);
-							}
-							if ((ni_card->unemap_2vx).gain_output_line_1)
-							{
-								DIG_Out_Line(ni_card->device_number,(i16)0,
-									gain_1_output_line_UnEmap2vx,(i16)1);
-							}
-							/* set the output voltage to 0 */
-							status=AO_Write(ni_card->device_number,CALIBRATE_CHANNEL,(i16)0);
-							if (0==status)
-							{
-								card_number++;
-								ni_card++;
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"calibration_callback.  AO_Write failed");
-								return_code=0;
-							}
-						}
-						if (return_code)
-						{
-							settling_step=0;
-							calibrate_stage=4;
-							return_code=unemap_start_sampling();
-							display_message(INFORMATION_MESSAGE,
-								"Calibration.  Phase 4 of 4\n");
-#if defined (DEBUG)
-/*???debug */
-{
-	FILE *unemap_debug;
-
-	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
-	{
-		fprintf(unemap_debug,"start Phase 4\n");
-		fclose(unemap_debug);
-	}
-}
-#endif /* defined (DEBUG) */
-						}
-					} break;
-					case 4:
-					{
-						/* offsets */
-						calibrate_stage=0;
-						module_buffer_full_callback=(Buffer_full_callback *)NULL;
-						module_buffer_full_callback_data=(void *)NULL;
-						ni_card=module_NI_CARDS;
-						filter_frequency=filter_frequencies;
-						channel_number=1;
-						for (i=module_number_of_NI_CARDS;i>0;i--)
-						{
-							unemap_set_antialiasing_filter_frequency(channel_number,
-								*filter_frequency);
-							/* stop waveform generation */
-							WFM_Group_Control(ni_card->device_number,/*group*/1,/*Clear*/0);
-							/* set the output voltage to 0 */
-							AO_Write(ni_card->device_number,CALIBRATE_CHANNEL,(i16)0);
-							ni_card++;
-							filter_frequency++;
-							channel_number += NUMBER_OF_CHANNELS_ON_NI_CARD;
-						}
-						return_code=1;
-						if (module_calibration_end_callback)
-						{
-							if (REALLOCATE(calibration_channels,module_calibration_channels,
-								int,number_of_settled_channels)&&REALLOCATE(calibration_offsets,
-								module_calibration_offsets,float,number_of_settled_channels)&&
-								REALLOCATE(calibration_gains,module_calibration_gains,float,
-								number_of_settled_channels))
-							{
-								module_calibration_channels=calibration_channels;
-								module_calibration_offsets=calibration_offsets;
-								module_calibration_gains=calibration_gains;
-								ni_card=module_NI_CARDS;
-								channel_number=0;
-								k=0;
-								for (i=module_number_of_NI_CARDS;i>0;i--)
-								{
-									if ((PCI6031E_AD_DA==ni_card->type)||
-										(PXI6031E_AD_DA==ni_card->type)||
-										(PXI6071E_AD_DA==ni_card->type))
-									{
-										for (j=NUMBER_OF_CHANNELS_ON_NI_CARD;j>0;j--)
-										{
-											if (!(channel_failed[channel_number]&stage_mask))
-											{
-												module_calibration_offsets[k]=offsets[channel_number];
-												module_calibration_gains[k]=gains[channel_number];
-												module_calibration_channels[k]=channel_number+1;
-												k++;
-											}
-											channel_number++;
-										}
-									}
-									else
-									{
-										channel_number += NUMBER_OF_CHANNELS_ON_NI_CARD;
-									}
-									ni_card++;
-								}
-								module_calibration_number_of_channels=k;
-								(*module_calibration_end_callback)(
-									module_calibration_number_of_channels,
-									module_calibration_channels,module_calibration_offsets,
-									module_calibration_gains,
-									module_calibration_end_callback_data);
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-"calibration_callback.  Could not reallocate calibration information.  %p %p %d",
-									calibration_channels,calibration_offsets,calibration_gains);
-								if (calibration_channels)
-								{
-									module_calibration_channels=calibration_channels;
-									if (calibration_offsets)
-									{
-										module_calibration_offsets=calibration_offsets;
-									}
-								}
-								(*module_calibration_end_callback)(0,(int *)NULL,(float *)NULL,
-									(float *)NULL,module_calibration_end_callback_data);
-							}
-						}
-						DEALLOCATE(calibrate_amplitudes);
-						DEALLOCATE(calibrate_voltages);
-						DEALLOCATE(calibrate_voltage_DAs);
-						DEALLOCATE(filter_frequencies);
-						DEALLOCATE(offsets);
-						DEALLOCATE(previous_offsets);
-						DEALLOCATE(gains);
-						DEALLOCATE(channel_failed);
-#if defined (CALIBRATE_SIGNAL_SQUARE) && defined (SWITCHING_TIME)
-						DEALLOCATE(sorted_signal);
-#endif /* defined (CALIBRATE_SIGNAL_SQUARE) && defined (SWITCHING_TIME) */
-					} break;
-				}
-				stage_flag <<= 1;
-				stage_mask <<= 1;
-				stage_mask |= 0x1;
-			}
-			else
-			{
-				/* not settled */
-				if (settling_step<settling_step_max)
-				{
-					/* try again */
-					settling_step++;
-					return_code=unemap_start_sampling();
-				}
-				else
-				{
-					/* give up */
-					display_message(ERROR_MESSAGE,
-						"calibration_callback.  Failed to settle for stage %d\n",
-						calibrate_stage);
-#if defined (DEBUG)
-/*???debug */
-{
-	FILE *unemap_debug;
-
-	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
-	{
-		fprintf(unemap_debug,"Failed to settle for stage %d\n",calibrate_stage);
-		fclose(unemap_debug);
-	}
-}
-#endif /* defined (DEBUG) */
-					return_code=0;
-				}
-			}
-		}
-		else
-		{
-			settling_step=1;
-			return_code=unemap_start_sampling();
-		}
-		if (!return_code)
-		{
-			calibrate_stage=0;
-			module_buffer_full_callback=(Buffer_full_callback *)NULL;
-			module_buffer_full_callback_data=(void *)NULL;
-			card_number=0;
-			ni_card=module_NI_CARDS;
-			filter_frequency=filter_frequencies;
-			while (card_number<module_number_of_NI_CARDS)
-			{
-				/* stop waveform generation */
-				WFM_Group_Control(ni_card->device_number,/*group*/1,/*Clear*/0);
-				/* set the output voltage to 0 */
-				AO_Write(ni_card->device_number,CALIBRATE_CHANNEL,(i16)0);
-				channel_number=1+card_number*NUMBER_OF_CHANNELS_ON_NI_CARD;
-				unemap_set_antialiasing_filter_frequency(channel_number,
-					*filter_frequency);
-				set_NI_gain(ni_card,(int)(ni_card->gain));
-				if ((UnEmap_2V1==ni_card->unemap_hardware_version)||
-					(UnEmap_2V2==ni_card->unemap_hardware_version))
-				{
-					/* programmable gain */
-					if ((ni_card->unemap_2vx).gain_output_line_0)
-					{
-						DIG_Out_Line(ni_card->device_number,(i16)0,
-							gain_0_output_line_UnEmap2vx,(i16)1);
-					}
-					if ((ni_card->unemap_2vx).gain_output_line_1)
-					{
-						DIG_Out_Line(ni_card->device_number,(i16)0,
-							gain_1_output_line_UnEmap2vx,(i16)1);
-					}
-				}
-				card_number++;
-				ni_card++;
-				filter_frequency++;
-			}
-			DEALLOCATE(calibrate_amplitudes);
-			DEALLOCATE(calibrate_voltages);
-			DEALLOCATE(calibrate_voltage_DAs);
-			DEALLOCATE(filter_frequencies);
-			DEALLOCATE(offsets);
-			DEALLOCATE(previous_offsets);
-			DEALLOCATE(gains);
-			DEALLOCATE(channel_failed);
-#if defined (CALIBRATE_SIGNAL_SQUARE) && defined (SWITCHING_TIME)
-			DEALLOCATE(sorted_signal);
-#endif /* defined (CALIBRATE_SIGNAL_SQUARE) && defined (SWITCHING_TIME) */
-			if (module_calibration_end_callback)
-			{
-				(*module_calibration_end_callback)(0,(int *)NULL,(float *)NULL,
-					(float *)NULL,module_calibration_end_callback_data);
-			}
-		}
-	}
-#if defined (DEBUG)
-/*???debug */
-{
-	FILE *unemap_debug;
-
-	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
-	{
-		fprintf(unemap_debug,"leave calibration_callback %d %d\n",calibrate_stage,
-			return_code);
-		fclose(unemap_debug);
-	}
-}
-#endif /* defined (DEBUG) */
-	LEAVE;
-
-	return (return_code);
-} /* calibration_callback */
-#endif /* defined (NI_DAQ) */
-#endif /* defined (OLD_CODE) */
 
 #if defined (WIN32_SYSTEM)
 #if !defined (NO_BATT_GOOD_WATCH)
@@ -6210,10 +5095,12 @@ Used in conjunction with <unemap_transfer_samples_acquired> by
 Global functions
 ----------------
 */
-/*???debug */
+#if defined (STOP_WAVEFORM_IN_START_SAMPLING)
 static int unemap_start_sampling_count=0;
+#endif /* defined (STOP_WAVEFORM_IN_START_SAMPLING) */
 
-int unemap_configure(float sampling_frequency_slave,int number_of_samples_in_buffer,
+int unemap_configure(int number_of_channels,int *channel_numbers,
+	float sampling_frequency_slave,int number_of_samples_in_buffer,
 #if defined (WIN32_USER_INTERFACE)
 	HWND scrolling_window,UINT scrolling_message,
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -6224,16 +5111,23 @@ int unemap_configure(float sampling_frequency_slave,int number_of_samples_in_buf
 	float scrolling_frequency,float scrolling_callback_frequency,
 	int synchronization_card)
 /*******************************************************************************
-LAST MODIFIED : 4 June 2003
+LAST MODIFIED : 18 August 2003
 
 DESCRIPTION :
-Configures the hardware for sampling at the specified <sampling_frequency> and
-with the specified <number_of_samples_in_buffer>. <sampling_frequency>,
-<number_of_samples_in_buffer>, <scrolling_frequency> and
+Configures the hardware for sampling the specified channels
+(<number_of_channels> and <channel_numbers>) at the specified
+<sampling_frequency> and with the specified <number_of_samples_in_buffer>.
+<sampling_frequency>, <number_of_samples_in_buffer>, <scrolling_frequency> and
 <scrolling_callback_frequency> are requests and the actual values used should
 be determined using unemap_get_sampling_frequency,
 unemap_get_maximum_number_of_samples, unemap_get_scrolling_frequency and
 unemap_get_scrolling_callback_frequency.
+
+If <number_of_channels> is
+- -1 then the hardware is configured with no channels
+- 0 then all channels are configured
+- otherwise, the <number_of_channels> listed in <channel_numbers> are
+	configured.
 
 Every <sampling_frequency>/<scrolling_callback_frequency> samples (one sample
 	is a measurement on every channel)
@@ -6279,10 +5173,11 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 	float sampling_frequency;
 	int return_code;
 #if defined (NI_DAQ)
-	int all_12_bit_ADs,i,j,local_synchronization_card;
-	i16 channel_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],
-		gain_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],status,
-		time_base;
+	int all_12_bit_ADs,i,j,k,local_synchronization_card;
+	i16 gain_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],
+		maximum_number_of_scanned_channels_for_card,number_of_scanned_channels,
+		scan_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],status,time_base,
+		total_number_of_scanned_channels;
 	u16 sampling_interval;
 	u32 available_physical_memory,desired_physical_memory,hardware_buffer_size,
 		physical_memory_tolerance;
@@ -6309,17 +5204,16 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 #if defined (WIN32_USER_INTERFACE)
 		"%p %u "
 #endif /* defined (WIN32_USER_INTERFACE) */
-		"%p %p %g %g %d\n",sampling_frequency_slave,number_of_samples_in_buffer,
+		"%p %p %g %g %d %d\n",sampling_frequency_slave,number_of_samples_in_buffer,
 #if defined (WIN32_USER_INTERFACE)
 		scrolling_window,scrolling_message,
 #endif /* defined (WIN32_USER_INTERFACE) */
 		scrolling_callback,scrolling_callback_data,scrolling_frequency,
-		scrolling_callback_frequency,synchronization_card);
+		scrolling_callback_frequency,synchronization_card,number_of_channels);
 #endif /* defined (DEBUG) */
-	/*???debug */
+#if defined (STOP_WAVEFORM_IN_START_SAMPLING)
 	unemap_start_sampling_count=0;
-#if defined (DEBUG)
-#endif /* defined (DEBUG) */
+#endif /* defined (STOP_WAVEFORM_IN_START_SAMPLING) */
 	return_code=0;
 	if (sampling_frequency_slave<0)
 	{
@@ -6332,7 +5226,9 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 		module_slave=0;
 	}
 	/* check arguments */
-	if ((0<sampling_frequency)&&(0<number_of_samples_in_buffer)&&
+	if (((-1==number_of_channels)||(0==number_of_channels)||
+		((0<number_of_channels)&&channel_numbers))&&
+		(0<sampling_frequency)&&(0<number_of_samples_in_buffer)&&
 		(!scrolling_callback||((0<scrolling_callback_frequency)&&
 		(scrolling_frequency>=scrolling_callback_frequency))))
 	{
@@ -6341,173 +5237,320 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 		{
 			if (search_for_NI_cards()&&module_NI_CARDS)
 			{
-				if (synchronization_card<1)
+				return_code=1;
+				/* set up channels to be scanned/configured */
+				if (-1==number_of_channels)
 				{
-					local_synchronization_card=0;
+					module_number_of_configured_channels=0;
+					module_configured_channels=(int *)NULL;
+					for (i=0;i<module_number_of_NI_CARDS;i++)
+					{
+						module_NI_CARDS[i].number_of_configured_channels=
+							NUMBER_OF_CHANNELS_ON_NI_CARD;
+						for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
+						{
+							(module_NI_CARDS[i].hardware_buffer_offsets)[j]= -1;
+						}
+					}
+				}
+				else if (0==number_of_channels)
+				{
+					if (ALLOCATE(module_configured_channels,int,module_number_of_NI_CARDS*
+						NUMBER_OF_CHANNELS_ON_NI_CARD))
+					{
+						module_number_of_configured_channels=module_number_of_NI_CARDS*
+							NUMBER_OF_CHANNELS_ON_NI_CARD;
+						k=1;
+						for (i=0;i<module_number_of_NI_CARDS;i++)
+						{
+							module_NI_CARDS[i].number_of_configured_channels=
+								NUMBER_OF_CHANNELS_ON_NI_CARD;
+							for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
+							{
+								module_configured_channels[k-1]=k;
+								(module_NI_CARDS[i].configured_channels)[j]=k;
+								(module_NI_CARDS[i].hardware_buffer_offsets)[j]=j;
+								k++;
+							}
+						}
+						display_message(INFORMATION_MESSAGE,"unemap_configure.  "
+							"Set up configured channels for number_of_channels=0.  "
+							"%d %d\n",module_number_of_configured_channels,k);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"unemap_configure.  "
+							"Could not allocated module_configured_channels %d",
+							module_number_of_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD);
+						return_code=0;
+					}
 				}
 				else
 				{
-					if (module_number_of_NI_CARDS<synchronization_card)
+					if (ALLOCATE(module_configured_channels,int,number_of_channels))
 					{
-						local_synchronization_card=module_number_of_NI_CARDS-1;
-					}
-					else
-					{
-						local_synchronization_card=synchronization_card-1;
-					}
-				}
-#if defined (DEBUG)
-				/*???debug */
-				display_message(INFORMATION_MESSAGE,
-					"synchronization_card=%d, local_synchronization_card=%d\n",
-					synchronization_card,local_synchronization_card);
-#endif /* defined (DEBUG) */
-				/* drive the A/D conversions as fast as possible */
-				/* use the 20 MHz (50 ns) clock */
-				time_base= -3;
-				sampling_interval=module_NI_CARDS->sampling_interval;
-				if (sampling_interval<=0)
-				{
-					all_12_bit_ADs=1;
-					i=0;
-					while (all_12_bit_ADs&&(i<module_number_of_NI_CARDS))
-					{
-						if (PXI6071E_AD_DA!=module_NI_CARDS[i].type)
+						module_number_of_configured_channels=number_of_channels;
+						for (i=0;i<module_number_of_NI_CARDS;i++)
 						{
-							all_12_bit_ADs=0;
+							module_NI_CARDS[i].number_of_configured_channels=0;
+							for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
+							{
+								(module_NI_CARDS[i].hardware_buffer_offsets)[j]= -1;
+							}
 						}
-						i++;
-					}
-					if (all_12_bit_ADs)
-					{
-						/* 1.25 MS/s */
-						/* do a A/D conversion every 800 nano-seconds = 16 * 50 ns */
-						sampling_interval=16;
-						/* if scanning can't go at 1.25 MS/s, limit to 0.5 MS/s */
-						sampling_interval=40;
-					}
-					else
-					{
-						/* 100 kS/s */
-						/* do a A/D conversion every 10 micro-seconds = 200 * 50 ns */
-						sampling_interval=200;
-						/*???DB.  What is safe when scanning ? */
-					}
-				}
-				module_sampling_frequency=(float)1;
-				for (i=(int)ceil(log10((double)NUMBER_OF_CHANNELS_ON_NI_CARD));i>0;i--)
-				{
-					module_sampling_frequency *= (float)10;
-				}
-				module_sampling_frequency=(float)1e9/((float)sampling_interval*
-					(float)50*module_sampling_frequency);
-				if ((0<sampling_frequency)&&
-					(sampling_frequency<module_sampling_frequency))
-				{
-					module_sampling_frequency=sampling_frequency;
-				}
-				module_sampling_high_count=2;
-				module_sampling_low_count=
-					(u32)((double)20000000/(double)module_sampling_frequency);
-				module_sampling_frequency=
-					(float)20000000./(float)module_sampling_low_count;
-				module_sampling_low_count -= module_sampling_high_count;
-				if ((module_sampling_low_count>0)&&(module_sampling_high_count>0))
-				{
-#if defined (UNEMAP_THREAD_SAFE)
-#if defined (WIN32_SYSTEM)
-					if (scrolling_callback_mutex=CreateMutex(
-						/*no security attributes*/NULL,/*do not initially own*/FALSE,
-						/*no name*/(LPCTSTR)NULL))
-					{
-#endif /* defined (WIN32_SYSTEM) */
-#if defined (UNIX)
-					if (0==(error_code=pthread_mutex_init(
-						&(scrolling_callback_mutex_storage),
-						(pthread_mutexattr_t *)NULL)))
-					{
-						scrolling_callback_mutex=
-							&(scrolling_callback_mutex_storage);
-#endif /* defined (UNIX) */
-#endif /* defined (UNEMAP_THREAD_SAFE) */
-					if ((0<scrolling_callback_frequency)&&(scrolling_callback
-#if defined (WIN32_USER_INTERFACE)
-						||scrolling_window
-#endif /* defined (WIN32_USER_INTERFACE) */
-						))
-					{
-						module_scrolling_callback_period=(int)(module_sampling_frequency/
-							scrolling_callback_frequency+0.5);
-						module_number_of_scrolling_values_per_channel=
-							(int)(scrolling_frequency/scrolling_callback_frequency+0.5);
-						/* have scrolling period divisible by 
-							module_number_of_scrolling_values_per_channel */
-						module_scrolling_callback_period=
-							(module_scrolling_callback_period-1)/
-							module_number_of_scrolling_values_per_channel;
-						module_scrolling_callback_period=
-							(module_scrolling_callback_period+1)*
-							module_number_of_scrolling_values_per_channel;
-#if defined (WIN32_USER_INTERFACE)
-						module_scrolling_window=scrolling_window;
-						module_scrolling_message=scrolling_message;
-#endif /* defined (WIN32_USER_INTERFACE) */
-						module_scrolling_callback=scrolling_callback;
-						module_scrolling_callback_data=scrolling_callback_data;
+						i=0;
+						while ((i<number_of_channels)&&(0<channel_numbers[i])&&
+							((j=(channel_numbers[i]-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+							module_number_of_NI_CARDS))
+						{
+							k=0;
+							while ((k<module_NI_CARDS[j].number_of_configured_channels)&&
+								(channel_numbers[i]!=
+								(module_NI_CARDS[j].configured_channels)[k]))
+							{
+								k++;
+							}
+							if (k==module_NI_CARDS[j].number_of_configured_channels)
+							{
+								(module_NI_CARDS[j].configured_channels)[module_NI_CARDS[j].
+									number_of_configured_channels]=channel_numbers[i];
+								(module_NI_CARDS[j].hardware_buffer_offsets)[
+									(channel_numbers[i]-1)%NUMBER_OF_CHANNELS_ON_NI_CARD]=
+									module_NI_CARDS[j].number_of_configured_channels;
+								(module_NI_CARDS[j].number_of_configured_channels)++;
+							}
+							module_configured_channels[i]=channel_numbers[i];
+							i++;
+						}
+						if (i!=number_of_channels)
+						{
+							display_message(ERROR_MESSAGE,"unemap_configure.  "
+								"Invalid channel number %d",channel_numbers[i]);
+							return_code=0;
+						}
 					}
 					else
 					{
-						/* have a callback to keep <module_starting_sample_number> and
-							<module_sample_buffer_size> up to date */
-						module_scrolling_callback_period=number_of_samples_in_buffer/2;
-						module_number_of_scrolling_values_per_channel=1;
-#if defined (WIN32_USER_INTERFACE)
-						module_scrolling_window=(HWND)NULL;
-						module_scrolling_message=(UINT)0;
-#endif /* defined (WIN32_USER_INTERFACE) */
-						module_scrolling_callback=(Unemap_hardware_callback *)NULL;
-						module_scrolling_callback_data=(void *)NULL;
+						display_message(ERROR_MESSAGE,"unemap_configure.  "
+							"Could not allocated module_configured_channels %d",
+							number_of_channels);
+						return_code=0;
 					}
-					module_scrolling_channel_numbers=(int *)NULL;
-					module_number_of_scrolling_channels=0;
-#if !defined (NO_SCROLLING_CALLBACK)
-					status=Config_DAQ_Event_Message(module_NI_CARDS[0].device_number,
-						/* add message */(i16)1,/* channel string */"AI0",
-						/* send message every N scans */(i16)1,
-						(i32)module_scrolling_callback_period,(i32)0,(u32)0,(u32)0,(u32)0,
-						(HWND)NULL,(i16)0,(u32)scrolling_callback_NI);
-#if defined (DEBUG)
-					/*???debug */
-					display_message(INFORMATION_MESSAGE,"unemap_configure.  "
-						"Config_DAQ_Event_Message(%d,1,AI0,1,%d,0,0,0,0,NULL,0,%p)=%d\n",
-						module_NI_CARDS[0].device_number,module_scrolling_callback_period,
-						scrolling_callback_NI,status);
-#endif /* defined (DEBUG) */
-#else /* !defined (NO_SCROLLING_CALLBACK) */
-					status=0;
-#endif /* !defined (NO_SCROLLING_CALLBACK) */
+				}
+				maximum_number_of_scanned_channels_for_card=1;
+				for (i=0;i<module_number_of_NI_CARDS;i++)
+				{
+					if (maximum_number_of_scanned_channels_for_card<
+						module_NI_CARDS[i].number_of_configured_channels)
+					{
+						maximum_number_of_scanned_channels_for_card=
+							module_NI_CARDS[i].number_of_configured_channels;
+					}
+				}
+				if (return_code)
+				{
+					total_number_of_scanned_channels=0;
+					for (i=0;i<module_number_of_NI_CARDS;i++)
+					{
+						if (0<module_NI_CARDS[i].number_of_configured_channels)
+						{
+							total_number_of_scanned_channels +=
+								module_NI_CARDS[i].number_of_configured_channels;
+						}
+						else
+						{
+							total_number_of_scanned_channels++;
+						}
+					}
+					if (synchronization_card<1)
+					{
+						local_synchronization_card=0;
+					}
+					else
+					{
+						if (module_number_of_NI_CARDS<synchronization_card)
+						{
+							local_synchronization_card=module_number_of_NI_CARDS-1;
+						}
+						else
+						{
+							local_synchronization_card=synchronization_card-1;
+						}
+					}
 #if defined (DEBUG)
 					/*???debug */
 					display_message(INFORMATION_MESSAGE,
-						"module_sampling_frequency=%g, sampling_interval=%u\n",
-						module_sampling_frequency,sampling_interval);
+						"synchronization_card=%d, local_synchronization_card=%d\n",
+						synchronization_card,local_synchronization_card);
 #endif /* defined (DEBUG) */
-					if (0!=status)
+					/* drive the A/D conversions as fast as possible */
+					/* use the 20 MHz (50 ns) clock */
+					time_base= -3;
+#if defined (OLD_CODE)
+/*???DB.  Was to allow specifying in settings file, but not used now because of
+	mixing 12/16-bit and because of sampling on a subset */
+					sampling_interval=module_NI_CARDS->sampling_interval;
+					if (sampling_interval<=0)
 					{
-						display_message(ERROR_MESSAGE,
-							"unemap_configure.  Config_DAQ_Event_Message 1 failed.  %d %d",
-							status,module_scrolling_callback_period);
+#endif /* defined (OLD_CODE) */
+						all_12_bit_ADs=1;
+						i=0;
+						while (all_12_bit_ADs&&(i<module_number_of_NI_CARDS))
+						{
+							if (PXI6071E_AD_DA!=module_NI_CARDS[i].type)
+							{
+								all_12_bit_ADs=0;
+							}
+							i++;
+						}
+						if (all_12_bit_ADs)
+						{
+							if (1==maximum_number_of_scanned_channels_for_card)
+							{
+								/* 1.25 MS/s */
+								/* do a A/D conversion every 800 nano-seconds = 16 * 50 ns */
+								sampling_interval=16;
+							}
+							else
+							{
+								/* if scanning can't go at 1.25 MS/s, limit to 0.5 MS/s */
+								sampling_interval=40;
+							}
+						}
+						else
+						{
+							/* 100 kS/s */
+							/* do a A/D conversion every 10 micro-seconds = 200 * 50 ns */
+							sampling_interval=200;
+							/*???DB.  What is safe when scanning ? */
+							/*???DB.  Because sampling slower, probably OK at 100kS/s */
+						}
+#if defined (OLD_CODE)
 					}
+#endif /* defined (OLD_CODE) */
+#if defined (OLD_CODE)
+					module_sampling_frequency=(float)1;
+					for (i=(int)ceil(log10(
+						(double)maximum_number_of_scanned_channels_for_card));i>0;i--)
+					{
+						module_sampling_frequency *= (float)10;
+					}
+					module_sampling_frequency=(float)1e9/((float)sampling_interval*
+						(float)50*module_sampling_frequency);
+#endif /* defined (OLD_CODE) */
+					module_sampling_frequency=(float)1e9/((float)sampling_interval*
+						(float)(50*maximum_number_of_scanned_channels_for_card));
+					if ((0<sampling_frequency)&&
+						(sampling_frequency<module_sampling_frequency))
+					{
+						module_sampling_frequency=sampling_frequency;
+					}
+					/*???debug */
+					display_message(INFORMATION_MESSAGE,
+						"module_sampling_frequency=%g, sampling_interval=%u, "
+						"maximum_number_of_scanned_channels_for_card=%d\n",
+						module_sampling_frequency,sampling_interval,
+						maximum_number_of_scanned_channels_for_card);
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
+					module_sampling_high_count=2;
+					module_sampling_low_count=
+						(u32)((double)20000000/(double)module_sampling_frequency);
+					module_sampling_frequency=
+						(float)20000000./(float)module_sampling_low_count;
+					module_sampling_low_count -= module_sampling_high_count;
+					if ((module_sampling_low_count>0)&&(module_sampling_high_count>0))
+					{
+#if defined (UNEMAP_THREAD_SAFE)
 #if defined (WIN32_SYSTEM)
-					/* have number_of_samples_in_buffer divisible by
-						module_scrolling_callback_period */
-					hardware_buffer_size=(number_of_samples_in_buffer-1)/
-						module_scrolling_callback_period;
-					hardware_buffer_size=(hardware_buffer_size+1)*
-						module_scrolling_callback_period;
-					hardware_buffer_size *= (u32)NUMBER_OF_CHANNELS_ON_NI_CARD;
-					memory_status.dwLength=sizeof(MEMORYSTATUS);
-					GlobalMemoryStatus(&memory_status);
+						if (scrolling_callback_mutex=CreateMutex(
+							/*no security attributes*/NULL,/*do not initially own*/FALSE,
+							/*no name*/(LPCTSTR)NULL))
+#endif /* defined (WIN32_SYSTEM) */
+#if defined (UNIX)
+						if (0==(error_code=pthread_mutex_init(
+							&(scrolling_callback_mutex_storage),
+							(pthread_mutexattr_t *)NULL)))
+#endif /* defined (UNIX) */
+						{
+#if defined (UNIX)
+							scrolling_callback_mutex=
+								&(scrolling_callback_mutex_storage);
+#endif /* defined (UNIX) */
+#endif /* defined (UNEMAP_THREAD_SAFE) */
+						if ((0<scrolling_callback_frequency)&&(scrolling_callback
+#if defined (WIN32_USER_INTERFACE)
+							||scrolling_window
+#endif /* defined (WIN32_USER_INTERFACE) */
+							))
+						{
+							module_scrolling_callback_period=(int)(module_sampling_frequency/
+								scrolling_callback_frequency+0.5);
+							module_number_of_scrolling_values_per_channel=
+								(int)(scrolling_frequency/scrolling_callback_frequency+0.5);
+							/* have scrolling period divisible by 
+								module_number_of_scrolling_values_per_channel */
+							module_scrolling_callback_period=
+								(module_scrolling_callback_period-1)/
+								module_number_of_scrolling_values_per_channel;
+							module_scrolling_callback_period=
+								(module_scrolling_callback_period+1)*
+								module_number_of_scrolling_values_per_channel;
+#if defined (WIN32_USER_INTERFACE)
+							module_scrolling_window=scrolling_window;
+							module_scrolling_message=scrolling_message;
+#endif /* defined (WIN32_USER_INTERFACE) */
+							module_scrolling_callback=scrolling_callback;
+							module_scrolling_callback_data=scrolling_callback_data;
+						}
+						else
+						{
+							/* have a callback to keep <module_starting_sample_number> and
+								<module_sample_buffer_size> up to date */
+							module_scrolling_callback_period=number_of_samples_in_buffer/2;
+							module_number_of_scrolling_values_per_channel=1;
+#if defined (WIN32_USER_INTERFACE)
+							module_scrolling_window=(HWND)NULL;
+							module_scrolling_message=(UINT)0;
+#endif /* defined (WIN32_USER_INTERFACE) */
+							module_scrolling_callback=(Unemap_hardware_callback *)NULL;
+							module_scrolling_callback_data=(void *)NULL;
+						}
+						module_scrolling_channel_numbers=(int *)NULL;
+						module_number_of_scrolling_channels=0;
+#if !defined (NO_SCROLLING_CALLBACK)
+						status=Config_DAQ_Event_Message(module_NI_CARDS[0].device_number,
+							/* add message */(i16)1,/* channel string */"AI0",
+							/* send message every N scans */(i16)1,
+							(i32)module_scrolling_callback_period,(i32)0,(u32)0,(u32)0,(u32)0,
+							(HWND)NULL,(i16)0,(u32)scrolling_callback_NI);
+#if defined (DEBUG)
+						/*???debug */
+						display_message(INFORMATION_MESSAGE,"unemap_configure.  "
+							"Config_DAQ_Event_Message(%d,1,AI0,1,%d,0,0,0,0,NULL,0,%p)=%d\n",
+							module_NI_CARDS[0].device_number,module_scrolling_callback_period,
+							scrolling_callback_NI,status);
+#endif /* defined (DEBUG) */
+#else /* !defined (NO_SCROLLING_CALLBACK) */
+						status=0;
+#endif /* !defined (NO_SCROLLING_CALLBACK) */
+#if defined (DEBUG)
+						/*???debug */
+						display_message(INFORMATION_MESSAGE,
+							"module_sampling_frequency=%g, sampling_interval=%u\n",
+							module_sampling_frequency,sampling_interval);
+#endif /* defined (DEBUG) */
+						if (0!=status)
+						{
+							display_message(ERROR_MESSAGE,
+								"unemap_configure.  Config_DAQ_Event_Message 1 failed.  %d %d",
+								status,module_scrolling_callback_period);
+						}
+#if defined (WIN32_SYSTEM)
+						hardware_buffer_size=(u32)number_of_samples_in_buffer*
+							(u32)total_number_of_scanned_channels;
+						memory_status.dwLength=sizeof(MEMORYSTATUS);
+						GlobalMemoryStatus(&memory_status);
 #if defined (DEBUG)
 /*???debug */
 {
@@ -6524,99 +5567,81 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 #endif /* defined (DEBUG) */
 #if defined (OLD_CODE)
 /*???DB.  16 November 2001.  Works (?).  See Martyn's email */
-					/* limit the total locked memory to a third of physical memory */
-					if ((DWORD)(3*module_number_of_NI_CARDS*hardware_buffer_size)*
-						sizeof(i16)>memory_status.dwTotalPhys)
-					{
-						hardware_buffer_size=(u32)(memory_status.dwTotalPhys/
-							(3*module_number_of_NI_CARDS*sizeof(i16)));
-						hardware_buffer_size=(hardware_buffer_size-1)/
-							(module_scrolling_callback_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
-						hardware_buffer_size=(hardware_buffer_size+1)*
-							(module_scrolling_callback_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
-					}
+						/* limit the total locked memory to a third of physical memory */
+						if ((DWORD)(3*hardware_buffer_size)*sizeof(i16)>
+							memory_status.dwTotalPhys)
+						{
+							hardware_buffer_size=(u32)(memory_status.dwTotalPhys/
+								(3*sizeof(i16)));
+						}
 #endif /* defined (OLD_CODE) */
 #if defined (OLD_CODE)
 /*???DB.  16 November 2001.  Doesn't work.  See Martyn's email */
-					/* limit the total locked memory to a "half" of available physical
-						memory */
-					if ((DWORD)((u32)(2.2*(float)module_number_of_NI_CARDS*
-						(float)hardware_buffer_size))*
-						sizeof(i16)>memory_status.dwAvailPhys)
-					{
-						hardware_buffer_size=(u32)((float)memory_status.dwAvailPhys/
-							(2.2*(float)module_number_of_NI_CARDS*(float)sizeof(i16)));
-						hardware_buffer_size=(hardware_buffer_size-1)/
-							(module_scrolling_callback_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
-						hardware_buffer_size=(hardware_buffer_size+1)*
-							(module_scrolling_callback_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
-					}
+						/* limit the total locked memory to a "half" of available physical
+							memory */
+						if ((DWORD)((u32)(2.2*(float)hardware_buffer_size))*sizeof(i16)>
+							memory_status.dwAvailPhys)
+						{
+							hardware_buffer_size=(u32)((float)memory_status.dwAvailPhys/
+								(2.2*(float)sizeof(i16)));
+						}
 #endif /* defined (OLD_CODE) */
 #if defined (OLD_CODE)
 /*???DB.  17 November 2001.  Works with os_memory set to 25.  See Martyn's
 	email */
-					/* limit the total locked memory */
-					{
-						char *os_memory_string;
-						u32 os_memory;
+						/* limit the total locked memory */
+						{
+							char *os_memory_string;
+							u32 os_memory;
 
-						if ((os_memory_string=getenv("UNEMAP_OS_MEMORY_MB"))&&
-							(1==sscanf(os_memory_string,"%d",&os_memory)))
-						{
-							os_memory *= 1024*1024;
-						}
-						else
-						{
-							os_memory=(memory_status.dwTotalPhys)/3;
-						}
-						if ((DWORD)(2*module_number_of_NI_CARDS*hardware_buffer_size)*
-							sizeof(i16)>memory_status.dwTotalPhys-os_memory)
-						{
-							hardware_buffer_size=(u32)((memory_status.dwTotalPhys-os_memory)/
-								(2*module_number_of_NI_CARDS*sizeof(i16)));
-							hardware_buffer_size=(hardware_buffer_size-1)/
-								(module_scrolling_callback_period*
-								NUMBER_OF_CHANNELS_ON_NI_CARD);
-							hardware_buffer_size=(hardware_buffer_size+1)*
-								(module_scrolling_callback_period*
-								NUMBER_OF_CHANNELS_ON_NI_CARD);
-						}
-					}
-#endif /* defined (OLD_CODE) */
-					/* limit the total locked memory */
-					{
-						char *os_memory_string;
-						u32 os_memory;
-
-						if ((os_memory_string=getenv("UNEMAP_OS_MEMORY_MB"))&&
-							(1==sscanf(os_memory_string,"%d",&os_memory)))
-						{
-							if (os_memory<=0)
-							{
-								/*???DB.  memory_status.dwAvailPhys is not correct, so use
-									bi-section (later) to get most possible */
-/*								os_memory=memory_status.dwTotalPhys-memory_status.dwAvailPhys;*/
-								os_memory=0;
-							}
-							else
+							if ((os_memory_string=getenv("UNEMAP_OS_MEMORY_MB"))&&
+								(1==sscanf(os_memory_string,"%d",&os_memory)))
 							{
 								os_memory *= 1024*1024;
 							}
+							else
+							{
+								os_memory=(memory_status.dwTotalPhys)/3;
+							}
+							if ((DWORD)(2*hardware_buffer_size)*sizeof(i16)>
+								memory_status.dwTotalPhys-os_memory)
+							{
+								hardware_buffer_size=
+									(u32)((memory_status.dwTotalPhys-os_memory)/(2*sizeof(i16)));
+							}
 						}
-						else
+#endif /* defined (OLD_CODE) */
+						/* limit the total locked memory */
 						{
-							os_memory=(memory_status.dwTotalPhys)/3;
-						}
-						if ((DWORD)(module_number_of_NI_CARDS*hardware_buffer_size)*
-							sizeof(i16)>memory_status.dwTotalPhys-os_memory)
-						{
-							hardware_buffer_size=(u32)((memory_status.dwTotalPhys-os_memory)/
-								(module_number_of_NI_CARDS*sizeof(i16)));
-							hardware_buffer_size /= (module_scrolling_callback_period*
-								NUMBER_OF_CHANNELS_ON_NI_CARD);
-							hardware_buffer_size *= (module_scrolling_callback_period*
-								NUMBER_OF_CHANNELS_ON_NI_CARD);
-						}
+							char *os_memory_string;
+							u32 os_memory;
+
+							if ((os_memory_string=getenv("UNEMAP_OS_MEMORY_MB"))&&
+								(1==sscanf(os_memory_string,"%d",&os_memory)))
+							{
+								if (os_memory<=0)
+								{
+									/*???DB.  memory_status.dwAvailPhys is not correct, so use
+										bi-section (later) to get most possible */
+/*									os_memory=
+										memory_status.dwTotalPhys-memory_status.dwAvailPhys;*/
+									os_memory=0;
+								}
+								else
+								{
+									os_memory *= 1024*1024;
+								}
+							}
+							else
+							{
+								os_memory=(memory_status.dwTotalPhys)/3;
+							}
+							if ((DWORD)(hardware_buffer_size)*
+								sizeof(i16)>memory_status.dwTotalPhys-os_memory)
+							{
+								hardware_buffer_size=
+									(u32)((memory_status.dwTotalPhys-os_memory)/sizeof(i16));
+							}
 #if defined (DEBUG)
 /*???debug */
 {
@@ -6632,8 +5657,7 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 			memory_status.dwTotalPhys,memory_status.dwAvailPhys);
 		fprintf(unemap_debug,
 			"os_memory=%d, hardware_buffer_size=%d, total buffer memory=%d\n",
-			os_memory,hardware_buffer_size,
-			hardware_buffer_size*module_number_of_NI_CARDS*sizeof(i16));
+			os_memory,hardware_buffer_size,hardware_buffer_size*sizeof(i16));
 #if defined (USE_VIRTUAL_LOCK)
 		GetProcessWorkingSetSize(GetCurrentProcess(),&minimum,&maximum);
 		fprintf(unemap_debug,
@@ -6645,9 +5669,9 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 }
 #endif /* defined (DEBUG) */
 #if defined (USE_VIRTUAL_LOCK)
-					working_set_size=(11*memory_status.dwAvailPhys)/10;
-					SetProcessWorkingSetSize(GetCurrentProcess(),working_set_size,
-						working_set_size);
+						working_set_size=(11*memory_status.dwAvailPhys)/10;
+						SetProcessWorkingSetSize(GetCurrentProcess(),working_set_size,
+							working_set_size);
 #endif /* defined (USE_VIRTUAL_LOCK) */
 #if defined (DEBUG)
 /*???debug */
@@ -6667,253 +5691,311 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 }
 #endif /* defined (USE_VIRTUAL_LOCK) */
 #endif /* defined (DEBUG) */
-					}
-					for (i=0;i<NUMBER_OF_CHANNELS_ON_NI_CARD;i++)
-					{
-						channel_vector[i]=i;
-					}
+						}
 #endif /* defined (WIN32_SYSTEM) */
-					/* configure cards */
-					physical_memory_tolerance=1024*1024;
-					available_physical_memory=0;
-					desired_physical_memory=hardware_buffer_size*
-						module_number_of_NI_CARDS*sizeof(i16);
-					do
-					{
-						/*???debug */
-						display_message(INFORMATION_MESSAGE,
-							"available_physical_memory=%lu, desired_physical_memory=%lu\n",
-							available_physical_memory,desired_physical_memory);
+						hardware_buffer_size /= total_number_of_scanned_channels;
+						/* have number_of_samples_in_buffer divisible by
+							module_scrolling_callback_period */
+						hardware_buffer_size /= module_scrolling_callback_period;
+						hardware_buffer_size *= module_scrolling_callback_period;
+						/* configure cards */
+						physical_memory_tolerance=1024*1024;
+						available_physical_memory=0;
+						desired_physical_memory=hardware_buffer_size*
+							total_number_of_scanned_channels*sizeof(i16);
+						do
+						{
+							/*???debug */
+							display_message(INFORMATION_MESSAGE,
+								"available_physical_memory=%lu, desired_physical_memory=%lu\n",
+								available_physical_memory,desired_physical_memory);
 #if defined (DEBUG)
 #endif /* defined (DEBUG) */
-						i=0;
-						status=0;
-						while ((0==status)&&(i<module_number_of_NI_CARDS))
-						{
-							(module_NI_CARDS[i]).time_base=time_base;
-							(module_NI_CARDS[i]).sampling_interval=sampling_interval;
-							(module_NI_CARDS[i]).hardware_buffer_size=hardware_buffer_size;
-							/* allocate buffer */
-#if defined (USE_VIRTUAL_LOCK)
-							if ((module_NI_CARDS[i]).hardware_buffer=VirtualAlloc(
-								(LPVOID)NULL,(SIZE_T)(((module_NI_CARDS[i]).
-								hardware_buffer_size)*sizeof(i16)),(DWORD)MEM_COMMIT,
-								(DWORD)PAGE_READWRITE))
-#else /* defined (USE_VIRTUAL_LOCK) */
-#if defined (USE_GMEM_FIXED)
-							if ((module_NI_CARDS[i]).memory_object=GlobalAlloc(GMEM_FIXED,
-								(DWORD)(((module_NI_CARDS[i]).hardware_buffer_size)*
-								sizeof(i16))))
-#else /* defined (USE_GMEM_FIXED) */
-#if defined (USE_MALLOC)
-							if ((module_NI_CARDS[i]).memory_object=
-								malloc(((module_NI_CARDS[i]).hardware_buffer_size)*
-								sizeof(i16)))
-#else /* defined (USE_MALLOC) */
-							if ((module_NI_CARDS[i]).memory_object=GlobalAlloc(GMEM_MOVEABLE,
-								(DWORD)(((module_NI_CARDS[i]).hardware_buffer_size)*
-								sizeof(i16))))
-#endif /* defined (USE_MALLOC) */
-#endif /* defined (USE_GMEM_FIXED) */
-#endif /* defined (USE_VIRTUAL_LOCK) */
+							i=0;
+							status=0;
+							while ((0==status)&&(i<module_number_of_NI_CARDS))
 							{
+								(module_NI_CARDS[i]).time_base=time_base;
+								(module_NI_CARDS[i]).sampling_interval=sampling_interval;
+								if (0<(module_NI_CARDS[i]).number_of_configured_channels)
+								{
+									(module_NI_CARDS[i]).hardware_buffer_size=
+										hardware_buffer_size*
+										((module_NI_CARDS[i]).number_of_configured_channels);
+								}
+								else
+								{
+									(module_NI_CARDS[i]).hardware_buffer_size=
+										hardware_buffer_size;
+								}
+								/* allocate buffer */
 #if defined (USE_VIRTUAL_LOCK)
-								if (TRUE==VirtualLock((module_NI_CARDS[i]).hardware_buffer,
-									(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
-									sizeof(i16))))
+								if ((module_NI_CARDS[i]).hardware_buffer=VirtualAlloc(
+									(LPVOID)NULL,(SIZE_T)(((module_NI_CARDS[i]).
+									hardware_buffer_size)*sizeof(i16)),(DWORD)MEM_COMMIT,
+									(DWORD)PAGE_READWRITE))
 #else /* defined (USE_VIRTUAL_LOCK) */
 #if defined (USE_GMEM_FIXED)
-								if ((module_NI_CARDS[i]).hardware_buffer=
-									(i16 *)((module_NI_CARDS[i]).memory_object))
+								if ((module_NI_CARDS[i]).memory_object=GlobalAlloc(GMEM_FIXED,
+									(DWORD)(((module_NI_CARDS[i]).hardware_buffer_size)*
+									sizeof(i16))))
 #else /* defined (USE_GMEM_FIXED) */
 #if defined (USE_MALLOC)
-								if ((module_NI_CARDS[i]).hardware_buffer=
-									(i16 *)((module_NI_CARDS[i]).memory_object))
+								if ((module_NI_CARDS[i]).memory_object=
+									malloc(((module_NI_CARDS[i]).hardware_buffer_size)*
+									sizeof(i16)))
 #else /* defined (USE_MALLOC) */
-								if ((module_NI_CARDS[i]).hardware_buffer=
-									(i16 *)GlobalLock((module_NI_CARDS[i]).memory_object))
+								if ((module_NI_CARDS[i]).memory_object=
+									GlobalAlloc(GMEM_MOVEABLE,
+									(DWORD)(((module_NI_CARDS[i]).hardware_buffer_size)*
+									sizeof(i16))))
 #endif /* defined (USE_MALLOC) */
 #endif /* defined (USE_GMEM_FIXED) */
 #endif /* defined (USE_VIRTUAL_LOCK) */
 								{
-									/* working from "Building Blocks" section, p.3-25 (pdf 65) in
-										the "NI-DAQ User Manual" */
-									/* configuration block.  Start with default settings except
-										for changing to double buffering mode (DAQ_DB_Config).
-										Could also use AI_Configure, AI_Max_Config, DAQ_Config,
-										DAQ_StopTrigger_Config */
-									status=DAQ_DB_Config((module_NI_CARDS[i]).device_number,
-										/* enable */(i16)1);
-									if (0==status)
+#if defined (USE_VIRTUAL_LOCK)
+									if (TRUE==VirtualLock((module_NI_CARDS[i]).hardware_buffer,
+										(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+										sizeof(i16))))
+#else /* defined (USE_VIRTUAL_LOCK) */
+#if defined (USE_GMEM_FIXED)
+									if ((module_NI_CARDS[i]).hardware_buffer=
+										(i16 *)((module_NI_CARDS[i]).memory_object))
+#else /* defined (USE_GMEM_FIXED) */
+#if defined (USE_MALLOC)
+									if ((module_NI_CARDS[i]).hardware_buffer=
+										(i16 *)((module_NI_CARDS[i]).memory_object))
+#else /* defined (USE_MALLOC) */
+									if ((module_NI_CARDS[i]).hardware_buffer=
+										(i16 *)GlobalLock((module_NI_CARDS[i]).memory_object))
+#endif /* defined (USE_MALLOC) */
+#endif /* defined (USE_GMEM_FIXED) */
+#endif /* defined (USE_VIRTUAL_LOCK) */
 									{
-										/* set the scan sequence and gain */
-										for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
-										{
-											gain_vector[j]=(module_NI_CARDS[i]).gain;
-										}
-										status=SCAN_Setup((module_NI_CARDS[i]).device_number,
-											NUMBER_OF_CHANNELS_ON_NI_CARD,channel_vector,gain_vector);
+										/* working from "Building Blocks" section, p.3-25 (pdf 65)
+											in the "NI-DAQ User Manual" */
+										/* configuration block.  Start with default settings except
+											for changing to double buffering mode (DAQ_DB_Config).
+											Could also use AI_Configure, AI_Max_Config, DAQ_Config,
+											DAQ_StopTrigger_Config */
+										status=DAQ_DB_Config((module_NI_CARDS[i]).device_number,
+											/* enable */(i16)1);
 										if (0==status)
 										{
-											if (0==i)
+											/* set the scan sequence and gain */
+											if (0<(module_NI_CARDS[i]).number_of_configured_channels)
 											{
-												/* set the clock source on the RTSI bus */
-												status=Select_Signal((module_NI_CARDS[i]).device_number,
-													ND_RTSI_CLOCK,ND_BOARD_CLOCK,ND_DONT_CARE);
-												if (0!=status)
+												number_of_scanned_channels=
+													(module_NI_CARDS[i]).number_of_configured_channels;
+												for (j=0;j<number_of_scanned_channels;j++)
 												{
-													display_message(ERROR_MESSAGE,"unemap_configure.  "
-														"Select_Signal(%d,ND_RTSI_CLOCK,ND_BOARD_CLOCK,"
-														"ND_DONT_CARE)=%d.  %d",
-														(module_NI_CARDS[i]).device_number,status,i);
+													gain_vector[j]=(module_NI_CARDS[i]).gain;
+													scan_vector[j]=((module_NI_CARDS[i]).channel_reorder)[
+														(((module_NI_CARDS[i]).configured_channels)[j]-1)%
+														NUMBER_OF_CHANNELS_ON_NI_CARD];
 												}
 											}
 											else
 											{
-												/* use the clock source on the RTSI bus */
-												status=Select_Signal((module_NI_CARDS[i]).device_number,
-													ND_BOARD_CLOCK,ND_RTSI_CLOCK,ND_DONT_CARE);
-												if (0!=status)
-												{
-													display_message(ERROR_MESSAGE,"unemap_configure.  "
-														"Select_Signal(%d,ND_BOARD_CLOCK,ND_RTSI_CLOCK,"
-														"ND_DONT_CARE)=%d.  %d",
-														(module_NI_CARDS[i]).device_number,status,i);
-												}
+												number_of_scanned_channels=1;
+												gain_vector[0]=(module_NI_CARDS[i]).gain;
+												scan_vector[0]=0;
 											}
+											status=SCAN_Setup((module_NI_CARDS[i]).device_number,
+												number_of_scanned_channels,scan_vector,gain_vector);
 											if (0==status)
 											{
-												if (module_slave&&(local_synchronization_card==i))
+												if (0==i)
 												{
-													/* set to input the A/D conversion signal */
+													/* set the clock source on the RTSI bus */
 													status=Select_Signal(
-														(module_NI_CARDS[i]).device_number,
-														ND_IN_SCAN_START,ND_PFI_7,ND_LOW_TO_HIGH);
-												}
-												else
-												{
-													/* set to output the A/D conversion signal (for use
-														on other crates */
-													status=Select_Signal(
-														(module_NI_CARDS[i]).device_number,ND_PFI_7,
-														ND_IN_SCAN_IN_PROG,ND_LOW_TO_HIGH);
-												}
-												if (0==status)
-												{
-													/* configure RTSI */
-													/* set to input the A/D conversion signal */
-													if (module_slave&&(local_synchronization_card==i))
-													{
-														status=Select_Signal(
-															(module_NI_CARDS[i]).device_number,
-															ND_RTSI_0,ND_IN_SCAN_START,ND_LOW_TO_HIGH);
-													}
-													else
-													{
-														status=Select_Signal(
-															(module_NI_CARDS[i]).device_number,
-															ND_IN_SCAN_START,ND_RTSI_0,ND_LOW_TO_HIGH);
-													}
-													if (0==status)
-													{
-														/* acquisition won't actually start (controlled by
-															conversion signal) */
-														status=SCAN_Start(
-															(module_NI_CARDS[i]).device_number,
-															(i16 *)((module_NI_CARDS[i]).hardware_buffer),
-															(u32)((module_NI_CARDS[i]).hardware_buffer_size),
-															(module_NI_CARDS[i]).time_base,
-															(module_NI_CARDS[i]).sampling_interval,(i16)0,
-															(u16)0);
-														if (0!=status)
-														{
-															display_message(ERROR_MESSAGE,
-																"unemap_configure.  "
-																"SCAN_Start failed.  %d.  %d.  %lu",status,i,
-																hardware_buffer_size);
-														}
-													}
-													else
+														(module_NI_CARDS[i]).device_number,ND_RTSI_CLOCK,
+														ND_BOARD_CLOCK,ND_DONT_CARE);
+													if (0!=status)
 													{
 														display_message(ERROR_MESSAGE,"unemap_configure.  "
-															"Select_Signal(%d,ND_IN_SCAN_START,"
-															"ND_PFI_7/ND_RTSI_0,ND_LOW_TO_HIGH)=%d.  %d",
+															"Select_Signal(%d,ND_RTSI_CLOCK,ND_BOARD_CLOCK,"
+															"ND_DONT_CARE)=%d.  %d",
 															(module_NI_CARDS[i]).device_number,status,i);
 													}
 												}
 												else
 												{
-													display_message(ERROR_MESSAGE,"unemap_configure.  "
-														"Select_Signal(%d,ND_PFI_7,ND_IN_SCAN_START,"
-														"ND_LOW_TO_HIGH)=%d",
-														(module_NI_CARDS[i]).device_number,status);
-												}
-#if defined (OLD_CODE)
-												/* set to output the A/D conversion signal (for use
-													on other crates */
-												if (!module_slave)
-												{
+													/* use the clock source on the RTSI bus */
 													status=Select_Signal(
-														(module_NI_CARDS[i]).device_number,ND_PFI_7,
-														ND_IN_SCAN_IN_PROG,ND_LOW_TO_HIGH);
+														(module_NI_CARDS[i]).device_number,ND_BOARD_CLOCK,
+														ND_RTSI_CLOCK,ND_DONT_CARE);
+													if (0!=status)
+													{
+														display_message(ERROR_MESSAGE,"unemap_configure.  "
+															"Select_Signal(%d,ND_BOARD_CLOCK,ND_RTSI_CLOCK,"
+															"ND_DONT_CARE)=%d.  %d",
+															(module_NI_CARDS[i]).device_number,status,i);
+													}
 												}
 												if (0==status)
 												{
-													/* configure RTSI */
-													/* set to input the A/D conversion signal */
-													if (module_slave&&(0==i))
+													if (module_slave&&(local_synchronization_card==i))
 													{
+														/* set to input the A/D conversion signal */
 														status=Select_Signal(
 															(module_NI_CARDS[i]).device_number,
 															ND_IN_SCAN_START,ND_PFI_7,ND_LOW_TO_HIGH);
 													}
 													else
 													{
+														/* set to output the A/D conversion signal (for use
+															on other crates */
 														status=Select_Signal(
-															(module_NI_CARDS[i]).device_number,
-															ND_IN_SCAN_START,ND_RTSI_0,ND_LOW_TO_HIGH);
+															(module_NI_CARDS[i]).device_number,ND_PFI_7,
+															ND_IN_SCAN_IN_PROG,ND_LOW_TO_HIGH);
 													}
 													if (0==status)
 													{
-														/* acquisition won't actually start (controlled by
-															conversion signal) */
-														status=SCAN_Start(
-															(module_NI_CARDS[i]).device_number,
-															(i16 *)((module_NI_CARDS[i]).hardware_buffer),
-															(u32)((module_NI_CARDS[i]).hardware_buffer_size),
-															(module_NI_CARDS[i]).time_base,
-															(module_NI_CARDS[i]).sampling_interval,(i16)0,
-															(u16)0);
-														if (0!=status)
+														/* configure RTSI */
+														/* set to input the A/D conversion signal */
+														if (module_slave&&(local_synchronization_card==i))
+														{
+															status=Select_Signal(
+																(module_NI_CARDS[i]).device_number,
+																ND_RTSI_0,ND_IN_SCAN_START,ND_LOW_TO_HIGH);
+														}
+														else
+														{
+															status=Select_Signal(
+																(module_NI_CARDS[i]).device_number,
+																ND_IN_SCAN_START,ND_RTSI_0,ND_LOW_TO_HIGH);
+														}
+														if (0==status)
+														{
+															/* acquisition won't actually start (controlled by
+																conversion signal) */
+															status=SCAN_Start(
+																(module_NI_CARDS[i]).device_number,
+																(i16 *)((module_NI_CARDS[i]).hardware_buffer),
+																(u32)((module_NI_CARDS[i]).
+																hardware_buffer_size),
+																(module_NI_CARDS[i]).time_base,
+																(module_NI_CARDS[i]).sampling_interval,(i16)0,
+																(u16)0);
+															if (0!=status)
+															{
+																display_message(ERROR_MESSAGE,
+																	"unemap_configure.  "
+																	"SCAN_Start failed.  %d.  %d.  %lu",status,i,
+																	(u32)((module_NI_CARDS[i]).
+																	hardware_buffer_size));
+															}
+														}
+														else
 														{
 															display_message(ERROR_MESSAGE,
-																"unemap_configure.  SCAN_Start failed.  %d",
-																status);
+																"unemap_configure.  "
+																"Select_Signal(%d,ND_IN_SCAN_START,"
+																"ND_PFI_7/ND_RTSI_0,ND_LOW_TO_HIGH)=%d.  %d",
+																(module_NI_CARDS[i]).device_number,status,i);
 														}
 													}
 													else
 													{
 														display_message(ERROR_MESSAGE,"unemap_configure.  "
-															"Select_Signal(%d,ND_IN_SCAN_START,"
-															"ND_PFI_7/ND_RTSI_0,ND_LOW_TO_HIGH)=%d",
+															"Select_Signal(%d,ND_PFI_7,ND_IN_SCAN_START,"
+															"ND_LOW_TO_HIGH)=%d",
 															(module_NI_CARDS[i]).device_number,status);
 													}
+#if defined (OLD_CODE)
+													/* set to output the A/D conversion signal (for use
+														on other crates */
+													if (!module_slave)
+													{
+														status=Select_Signal(
+															(module_NI_CARDS[i]).device_number,ND_PFI_7,
+															ND_IN_SCAN_IN_PROG,ND_LOW_TO_HIGH);
+													}
+													if (0==status)
+													{
+														/* configure RTSI */
+														/* set to input the A/D conversion signal */
+														if (module_slave&&(0==i))
+														{
+															status=Select_Signal(
+																(module_NI_CARDS[i]).device_number,
+																ND_IN_SCAN_START,ND_PFI_7,ND_LOW_TO_HIGH);
+														}
+														else
+														{
+															status=Select_Signal(
+																(module_NI_CARDS[i]).device_number,
+																ND_IN_SCAN_START,ND_RTSI_0,ND_LOW_TO_HIGH);
+														}
+														if (0==status)
+														{
+															/* acquisition won't actually start (controlled by
+																conversion signal) */
+															status=SCAN_Start(
+																(module_NI_CARDS[i]).device_number,
+																(i16 *)((module_NI_CARDS[i]).hardware_buffer),
+																(u32)((module_NI_CARDS[i]).
+																hardware_buffer_size),
+																(module_NI_CARDS[i]).time_base,
+																(module_NI_CARDS[i]).sampling_interval,(i16)0,
+																(u16)0);
+															if (0!=status)
+															{
+																display_message(ERROR_MESSAGE,
+																	"unemap_configure.  SCAN_Start failed.  %d",
+																	status);
+															}
+														}
+														else
+														{
+															display_message(ERROR_MESSAGE,
+																"unemap_configure.  "
+																"Select_Signal(%d,ND_IN_SCAN_START,"
+																"ND_PFI_7/ND_RTSI_0,ND_LOW_TO_HIGH)=%d",
+																(module_NI_CARDS[i]).device_number,status);
+														}
+													}
+													else
+													{
+														display_message(ERROR_MESSAGE,"unemap_configure.  "
+															"Select_Signal(%d,ND_PFI_7,ND_IN_SCAN_START,"
+															"ND_LOW_TO_HIGH)=%d",
+															(module_NI_CARDS[i]).device_number,status);
+													}
+#endif /* defined (OLD_CODE) */
+												}
+												if (0==status)
+												{
+													i++;
 												}
 												else
 												{
-													display_message(ERROR_MESSAGE,"unemap_configure.  "
-														"Select_Signal(%d,ND_PFI_7,ND_IN_SCAN_START,"
-														"ND_LOW_TO_HIGH)=%d",
-														(module_NI_CARDS[i]).device_number,status);
+#if defined (USE_VIRTUAL_LOCK)
+													VirtualUnlock((module_NI_CARDS[i]).hardware_buffer,
+														(SIZE_T)(((module_NI_CARDS[i]).
+														hardware_buffer_size)*sizeof(i16)));
+													VirtualFree((module_NI_CARDS[i]).hardware_buffer,
+														(SIZE_T)(((module_NI_CARDS[i]).
+														hardware_buffer_size)*sizeof(i16)),
+														(DWORD)MEM_RELEASE);
+#else /* defined (USE_VIRTUAL_LOCK) */
+#if defined (USE_MALLOC)
+													free((module_NI_CARDS[i]).memory_object);
+#else /* defined (USE_MALLOC) */
+													GlobalUnlock((module_NI_CARDS[i]).memory_object);
+													GlobalFree((module_NI_CARDS[i]).memory_object);
+#endif /* defined (USE_MALLOC) */
+#endif /* defined (USE_VIRTUAL_LOCK) */
+													DAQ_DB_Config((module_NI_CARDS[i]).device_number,
+														/* disable */(i16)0);
 												}
-#endif /* defined (OLD_CODE) */
-											}
-											if (0==status)
-											{
-												i++;
 											}
 											else
 											{
+												display_message(ERROR_MESSAGE,"unemap_configure.  "
+													"SCAN_Setup failed.  %d.  gain=%d.  %d",status,
+													gain_vector[0],i);
 #if defined (USE_VIRTUAL_LOCK)
 												VirtualUnlock((module_NI_CARDS[i]).hardware_buffer,
 													(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
@@ -6936,8 +6018,7 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 										else
 										{
 											display_message(ERROR_MESSAGE,"unemap_configure.  "
-												"SCAN_Setup failed.  %d.  gain=%d.  %d",status,
-												gain_vector[0],i);
+												"DAQ_DB_Config failed.  %d.  %d",status,i);
 #if defined (USE_VIRTUAL_LOCK)
 											VirtualUnlock((module_NI_CARDS[i]).hardware_buffer,
 												(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
@@ -6953,94 +6034,136 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 											GlobalFree((module_NI_CARDS[i]).memory_object);
 #endif /* defined (USE_MALLOC) */
 #endif /* defined (USE_VIRTUAL_LOCK) */
-											DAQ_DB_Config((module_NI_CARDS[i]).device_number,
-												/* disable */(i16)0);
 										}
 									}
 									else
 									{
-										display_message(ERROR_MESSAGE,"unemap_configure.  "
-											"DAQ_DB_Config failed.  %d.  %d",status,i);
+										display_message(ERROR_MESSAGE,
 #if defined (USE_VIRTUAL_LOCK)
-										VirtualUnlock((module_NI_CARDS[i]).hardware_buffer,
-											(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
-											sizeof(i16)));
+											"unemap_configure.  VirtualLock failed.  %d",i);
 										VirtualFree((module_NI_CARDS[i]).hardware_buffer,
 											(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
 											sizeof(i16)),(DWORD)MEM_RELEASE);
 #else /* defined (USE_VIRTUAL_LOCK) */
+											"unemap_configure.  GlobalLock failed.  %d",i);
 #if defined (USE_MALLOC)
 										free((module_NI_CARDS[i]).memory_object);
 #else /* defined (USE_MALLOC) */
-										GlobalUnlock((module_NI_CARDS[i]).memory_object);
 										GlobalFree((module_NI_CARDS[i]).memory_object);
 #endif /* defined (USE_MALLOC) */
 #endif /* defined (USE_VIRTUAL_LOCK) */
+										status=1;
 									}
 								}
 								else
 								{
 									display_message(ERROR_MESSAGE,
 #if defined (USE_VIRTUAL_LOCK)
-										"unemap_configure.  VirtualLock failed.  %d",i);
-									VirtualFree((module_NI_CARDS[i]).hardware_buffer,
-										(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
-										sizeof(i16)),(DWORD)MEM_RELEASE);
+										"unemap_configure.  VirtualAlloc failed.  %d",i);
 #else /* defined (USE_VIRTUAL_LOCK) */
-										"unemap_configure.  GlobalLock failed.  %d",i);
 #if defined (USE_MALLOC)
-									free((module_NI_CARDS[i]).memory_object);
+										"unemap_configure.  malloc failed.  %d",i);
 #else /* defined (USE_MALLOC) */
-									GlobalFree((module_NI_CARDS[i]).memory_object);
+										"unemap_configure.  GlobalAlloc failed.  %d",i);
 #endif /* defined (USE_MALLOC) */
 #endif /* defined (USE_VIRTUAL_LOCK) */
 									status=1;
 								}
 							}
+							if (0==status)
+							{
+								available_physical_memory=hardware_buffer_size*
+									total_number_of_scanned_channels*sizeof(i16);
+							}
 							else
 							{
-								display_message(ERROR_MESSAGE,
+								desired_physical_memory=hardware_buffer_size*
+									total_number_of_scanned_channels*sizeof(i16);
+							}
+							if ((0!=status)||
+								(desired_physical_memory-available_physical_memory>
+								physical_memory_tolerance))
+							{
+								if (desired_physical_memory-available_physical_memory>
+									physical_memory_tolerance)
+								{
+									hardware_buffer_size=(available_physical_memory+
+										desired_physical_memory)/(2*sizeof(i16));
+								}
+								else
+								{
+									hardware_buffer_size=available_physical_memory/
+										(sizeof(i16));
+								}
+								hardware_buffer_size /= total_number_of_scanned_channels;
+								/* have number_of_samples_in_buffer divisible by
+									module_scrolling_callback_period */
+								hardware_buffer_size /= module_scrolling_callback_period;
+								hardware_buffer_size *= module_scrolling_callback_period;
+								while (i>0)
+								{
+									i--;
+									DAQ_Clear((module_NI_CARDS[i]).device_number);
+#if defined (DEBUG)
+									/*???debug */
+									display_message(INFORMATION_MESSAGE,"unemap_configure.  "
+										"DAQ_Clear(%d)=%d\n",(module_NI_CARDS[i]).device_number,
+										status);
+#endif /* defined (DEBUG) */
 #if defined (USE_VIRTUAL_LOCK)
-									"unemap_configure.  VirtualAlloc failed.  %d",i);
+									VirtualUnlock((module_NI_CARDS[i]).hardware_buffer,
+										(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+										sizeof(i16)));
+									VirtualFree((module_NI_CARDS[i]).hardware_buffer,
+										(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
+										sizeof(i16)),(DWORD)MEM_RELEASE);
 #else /* defined (USE_VIRTUAL_LOCK) */
 #if defined (USE_MALLOC)
-									"unemap_configure.  malloc failed.  %d",i);
+									free((module_NI_CARDS[i]).memory_object);
 #else /* defined (USE_MALLOC) */
-									"unemap_configure.  GlobalAlloc failed.  %d",i);
+									GlobalUnlock((module_NI_CARDS[i]).memory_object);
+									GlobalFree((module_NI_CARDS[i]).memory_object);
 #endif /* defined (USE_MALLOC) */
 #endif /* defined (USE_VIRTUAL_LOCK) */
-								status=1;
+									DAQ_DB_Config((module_NI_CARDS[i]).device_number,
+									/* disable */(i16)0);
+								}
 							}
-						}
+						} while ((0<hardware_buffer_size)&&
+							((desired_physical_memory-available_physical_memory>
+							physical_memory_tolerance)||(0!=status)));
+						module_sample_buffer_size=0;
+						module_starting_sample_number=0;
 						if (0==status)
 						{
-							available_physical_memory=hardware_buffer_size*
-								module_number_of_NI_CARDS*sizeof(i16);
+							return_code=1;
+							/*???DB.  Start USE_INTERRUPTS_FOR_AI */
+							/*???DB.  Needed, otherwise WFM_Op (waveform generation) fails */
+							/*???DB.  Don't understand why.  See set_NI_gain */
+							/*???DB.  Doesn't affect acquisition because after SCAN_Start */
+#if !defined (NO_SCROLLING_CALLBACK)
+							status=Config_DAQ_Event_Message(module_NI_CARDS[0].device_number,
+								/* clear all messages */(i16)0,/* channel string */(char *)NULL,
+								/* send message every N scans */(i16)0,
+								(i32)0,(i32)0,(u32)0,(u32)0,(u32)0,
+								(HWND)NULL,(i16)0,(u32)0);
+#if defined (DEBUG)
+							/*???debug */
+							display_message(INFORMATION_MESSAGE,"unemap_configure 2.  "
+								"Config_DAQ_Event_Message(%d,0,NULL,0,0,0,0,0,0,NULL,0,0)=%d\n",
+								module_NI_CARDS[0].device_number,status);
+#endif /* defined (DEBUG) */
+#endif /* !defined (NO_SCROLLING_CALLBACK) */
+#if !defined (USE_INTERRUPTS_FOR_AI)
+#endif /* !defined (USE_INTERRUPTS_FOR_AI) */
+							module_configured=1;
+							unemap_set_isolate_record_mode(0,1);
+							unemap_set_antialiasing_filter_frequency(0,
+								initial_antialiasing_filter_frequency);
 						}
+#if defined (OLD_CODE)
 						else
 						{
-							desired_physical_memory=hardware_buffer_size*
-								module_number_of_NI_CARDS*sizeof(i16);
-						}
-						if ((0!=status)||(desired_physical_memory-available_physical_memory>
-							physical_memory_tolerance))
-						{
-							if (desired_physical_memory-available_physical_memory>
-								physical_memory_tolerance)
-							{
-								hardware_buffer_size=(available_physical_memory+
-									desired_physical_memory)/
-									(2*module_number_of_NI_CARDS*sizeof(i16));
-							}
-							else
-							{
-								hardware_buffer_size=available_physical_memory/
-									(module_number_of_NI_CARDS*sizeof(i16));
-							}
-							hardware_buffer_size /= (module_scrolling_callback_period*
-								NUMBER_OF_CHANNELS_ON_NI_CARD);
-							hardware_buffer_size *= (module_scrolling_callback_period*
-								NUMBER_OF_CHANNELS_ON_NI_CARD);
 							while (i>0)
 							{
 								i--;
@@ -7069,98 +6192,49 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 								DAQ_DB_Config((module_NI_CARDS[i]).device_number,
 								/* disable */(i16)0);
 							}
+							return_code=0;
 						}
-					} while ((0<hardware_buffer_size)&&
-						((desired_physical_memory-available_physical_memory>
-						physical_memory_tolerance)||(0!=status)));
-					module_sample_buffer_size=0;
-					module_starting_sample_number=0;
-					if (0==status)
-					{
-						return_code=1;
-						/*???DB.  Start USE_INTERRUPTS_FOR_AI */
-						/*???DB.  Needed, otherwise WFM_Op (waveform generation) fails */
-						/*???DB.  Don't understand why.  See set_NI_gain */
-						/*???DB.  Doesn't affect acquisition because after SCAN_Start */
-#if !defined (NO_SCROLLING_CALLBACK)
-						status=Config_DAQ_Event_Message(module_NI_CARDS[0].device_number,
-							/* clear all messages */(i16)0,/* channel string */(char *)NULL,
-							/* send message every N scans */(i16)0,
-							(i32)0,(i32)0,(u32)0,(u32)0,(u32)0,
-							(HWND)NULL,(i16)0,(u32)0);
-#if defined (DEBUG)
-						/*???debug */
-						display_message(INFORMATION_MESSAGE,"unemap_configure 2.  "
-							"Config_DAQ_Event_Message(%d,0,NULL,0,0,0,0,0,0,NULL,0,0)=%d\n",
-							module_NI_CARDS[0].device_number,status);
-#endif /* defined (DEBUG) */
-#endif /* !defined (NO_SCROLLING_CALLBACK) */
-#if !defined (USE_INTERRUPTS_FOR_AI)
-#endif /* !defined (USE_INTERRUPTS_FOR_AI) */
-						module_configured=1;
-						unemap_set_isolate_record_mode(0,1);
-						unemap_set_antialiasing_filter_frequency(0,
-							initial_antialiasing_filter_frequency);
-					}
-#if defined (OLD_CODE)
-					else
-					{
-						while (i>0)
-						{
-							i--;
-							DAQ_Clear((module_NI_CARDS[i]).device_number);
-#if defined (DEBUG)
-							/*???debug */
-							display_message(INFORMATION_MESSAGE,"unemap_configure.  "
-								"DAQ_Clear(%d)=%d\n",(module_NI_CARDS[i]).device_number,status);
-#endif /* defined (DEBUG) */
-#if defined (USE_VIRTUAL_LOCK)
-							VirtualUnlock((module_NI_CARDS[i]).hardware_buffer,
-								(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
-								sizeof(i16)));
-							VirtualFree((module_NI_CARDS[i]).hardware_buffer,
-								(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
-								sizeof(i16)),(DWORD)MEM_RELEASE);
-#else /* defined (USE_VIRTUAL_LOCK) */
-#if defined (USE_MALLOC)
-							free((module_NI_CARDS[i]).memory_object);
-#else /* defined (USE_MALLOC) */
-							GlobalUnlock((module_NI_CARDS[i]).memory_object);
-							GlobalFree((module_NI_CARDS[i]).memory_object);
-#endif /* defined (USE_MALLOC) */
-#endif /* defined (USE_VIRTUAL_LOCK) */
-							DAQ_DB_Config((module_NI_CARDS[i]).device_number,
-							/* disable */(i16)0);
-						}
-					}
 #endif /* defined (OLD_CODE) */
 #if defined (UNEMAP_THREAD_SAFE)
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"unemap_configure.  "
-						"Could not create scrolling_callback_mutex.  Error code %d",
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"unemap_configure.  "
+							"Could not create scrolling_callback_mutex.  Error code %d",
 #if defined (WIN32_SYSTEM)
-						GetLastError()
+							GetLastError()
 #endif /* defined (WIN32_SYSTEM) */
 #if defined (UNIX)
-						error_code
+							error_code
 #endif /* defined (UNIX) */
-						);
-				}
+							);
+						return_code=0;
+					}
 #endif /* defined (UNEMAP_THREAD_SAFE) */
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"unemap_configure.  Invalid sampling frequency.  %d %d",
+							module_sampling_low_count,module_sampling_high_count);
+						return_code=0;
+					}
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"unemap_configure.  Invalid sampling frequency.  %d %d",
-						module_sampling_low_count,module_sampling_high_count);
+					return_code=0;
+				}
+				if (!module_configured)
+				{
+					DEALLOCATE(module_configured_channels);
+					module_number_of_configured_channels=0;
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"unemap_configure.  Missing module_NI_CARDS");
+				return_code=0;
 			}
 		}
 		else
@@ -7173,10 +6247,10 @@ determines whether the hardware is configured as slave (<0) or master (>0)
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"unemap_configure.  Invalid argument(s).  %g %d %g %g",sampling_frequency,
-			number_of_samples_in_buffer,scrolling_frequency,
-			scrolling_callback_frequency);
+		display_message(ERROR_MESSAGE,"unemap_configure.  "
+			"Invalid argument(s).  %d %p %g %d %g %g",number_of_channels,
+			channel_numbers,sampling_frequency,number_of_samples_in_buffer,
+			scrolling_frequency,scrolling_callback_frequency);
 		return_code=0;
 	}
 #if defined (DEBUG)
@@ -7223,7 +6297,7 @@ Returns a non-zero if unemap is configured and zero otherwise.
 
 int unemap_deconfigure(void)
 /*******************************************************************************
-LAST MODIFIED : 21 May 2002
+LAST MODIFIED : 10 August 2003
 
 DESCRIPTION :
 Stops acquisition and signal generation.  Frees buffers associated with the
@@ -7337,6 +6411,8 @@ hardware.
 			DEALLOCATE(module_calibration_offsets);
 			DEALLOCATE(module_calibration_gains);
 		}
+		DEALLOCATE(module_configured_channels);
+		module_number_of_configured_channels=0;
 		module_configured=0;
 	}
 #endif /* defined (NI_DAQ) */
@@ -7469,7 +6545,7 @@ Shuts down NT running on the signal conditioning unit computer.
 
 int unemap_set_scrolling_channel(int channel_number)
 /*******************************************************************************
-LAST MODIFIED : 12 March 2000
+LAST MODIFIED : 8 August 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -7488,8 +6564,10 @@ information is sent via the scrolling_callback (see unemap_configure).
 #if defined (NI_DAQ)
 	if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 	{
-		if ((1<=channel_number)&&(channel_number<=module_number_of_NI_CARDS*
-			NUMBER_OF_CHANNELS_ON_NI_CARD))
+		if ((0<channel_number)&&(((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+			module_number_of_NI_CARDS)&&(0<=(module_NI_CARDS[(channel_number-1)/
+			NUMBER_OF_CHANNELS_ON_NI_CARD].hardware_buffer_offsets)[
+			(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD]))
 		{
 			if (REALLOCATE(temp,module_scrolling_channel_numbers,int,
 				module_number_of_scrolling_channels+1))
@@ -7502,15 +6580,14 @@ information is sent via the scrolling_callback (see unemap_configure).
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-"unemap_set_scrolling_channel.  Could not reallocate module_scrolling_channel_numbers");
+				display_message(ERROR_MESSAGE,"unemap_set_scrolling_channel.  "
+					"Could not reallocate module_scrolling_channel_numbers");
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-"unemap_set_scrolling_channel.  Invalid channel_number %d (should be 1<=channel_number<=%d)",
-				channel_number,module_number_of_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD);
+			display_message(ERROR_MESSAGE,"unemap_set_scrolling_channel.  "
+				"Invalid channel_number %d",channel_number);
 		}
 	}
 #endif /* defined (NI_DAQ) */
@@ -7658,7 +6735,7 @@ calibrated channels and the <calibration_end_callback_data>.
 #if defined (CLEAR_DAQ_FOR_START_SAMPLING)
 int unemap_start_sampling(void)
 /*******************************************************************************
-LAST MODIFIED : 30 November 2001
+LAST MODIFIED : 7 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -7673,8 +6750,8 @@ problem, but not on first sample) when using large sampling buffers.
 #if defined (NI_DAQ)
 	float frequency;
 	int channel_number,i,j;
-	i16 channel_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],
-		gain_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],status;
+	i16 gain_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],number_of_scanned_channels,
+		scan_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],status;
 	struct NI_card *ni_card;
 #endif /* defined (NI_DAQ) */
 
@@ -7692,13 +6769,15 @@ problem, but not on first sample) when using large sampling buffers.
 		{
 			/* force a reset of the filter frequency (because power may have been
 				turned on and off manually */
-			channel_number=1;
 			for (i=0;i<module_number_of_NI_CARDS;i++)
 			{
-				unemap_get_antialiasing_filter_frequency(channel_number,&frequency);
-				module_NI_CARDS[i].anti_aliasing_filter_taps= -1;
-				unemap_set_antialiasing_filter_frequency(channel_number,frequency);
-				channel_number += NUMBER_OF_CHANNELS_ON_NI_CARD;
+				if (0<module_NI_CARDS[i].number_of_configured_channels)
+				{
+					channel_number=(module_NI_CARDS[i].configured_channels)[0];
+					unemap_get_antialiasing_filter_frequency(channel_number,&frequency);
+					module_NI_CARDS[i].anti_aliasing_filter_taps= -1;
+					unemap_set_antialiasing_filter_frequency(channel_number,frequency);
+				}
 			}
 		}
 		/* reconfigure the DAQ */
@@ -7706,10 +6785,6 @@ problem, but not on first sample) when using large sampling buffers.
 		status=GPCTR_Control(module_NI_CARDS->device_number,SCAN_COUNTER,ND_RESET);
 		ni_card=module_NI_CARDS;
 		j=module_number_of_NI_CARDS;
-		for (i=0;i<NUMBER_OF_CHANNELS_ON_NI_CARD;i++)
-		{
-			channel_vector[i]=i;
-		}
 		while (j>0)
 		{
 			status=DAQ_Clear(ni_card->device_number);
@@ -7739,12 +6814,26 @@ problem, but not on first sample) when using large sampling buffers.
 				status=DAQ_DB_Config(ni_card->device_number,/* enable */(i16)1);
 				if (0==status)
 				{
-					for (i=0;i<NUMBER_OF_CHANNELS_ON_NI_CARD;i++)
+					if (0<ni_card->number_of_configured_channels)
 					{
-						gain_vector[i]=(i16)(ni_card->gain);
+						number_of_scanned_channels=
+							ni_card->number_of_configured_channels;
+						for (i=0;i<number_of_scanned_channels;i++)
+						{
+							gain_vector[i]=(i16)(ni_card->gain);
+							scan_vector[i]=(ni_card->channel_reorder)[
+								((ni_card->configured_channels)[i]-1)%
+								NUMBER_OF_CHANNELS_ON_NI_CARD];
+						}
 					}
-					status=SCAN_Setup(ni_card->device_number,
-						NUMBER_OF_CHANNELS_ON_NI_CARD,channel_vector,gain_vector);
+					else
+					{
+						number_of_scanned_channels=1;
+						scan_vector[0]=0;
+						gain_vector[0]=(i16)(ni_card->gain);
+					}
+					status=SCAN_Setup(ni_card->device_number,number_of_scanned_channels,
+						scan_vector,gain_vector);
 					if (0==status)
 					{
 						status=SCAN_Start(ni_card->device_number,
@@ -7887,7 +6976,7 @@ problem, but not on first sample) when using large sampling buffers.
 #else /* defined (CLEAR_DAQ_FOR_START_SAMPLING) */
 int unemap_start_sampling(void)
 /*******************************************************************************
-LAST MODIFIED : 31 July 2002
+LAST MODIFIED : 7 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -7937,109 +7026,18 @@ Starts the sampling.
 			save_module_scrolling_callback_period=module_scrolling_callback_period;
 			save_module_number_of_scrolling_values_per_channel=
 				module_number_of_scrolling_values_per_channel;
-			save_hardware_buffer_size=module_NI_CARDS[0].hardware_buffer_size;
-/*			unemap_deconfigure();*/
-{
-#if defined (NI_DAQ)
-	int i;
-	i16 status;
-
-	if (module_configured)
-	{
-		if ((0<module_number_of_NI_CARDS)&&module_NI_CARDS)
-		{
-			/* stop continuous sampling */
-			status=GPCTR_Control(module_NI_CARDS->device_number,SCAN_COUNTER,
-				ND_RESET);
-			/* make sure that in calibrate mode */
-			unemap_set_isolate_record_mode(0,1);
-			for (i=0;i<module_number_of_NI_CARDS;i++)
+			if (0<module_NI_CARDS[0].number_of_configured_channels)
 			{
-#if defined (RECONFIGURE_FOR_START_SAMPLING_2)
-				status=DAQ_Clear((module_NI_CARDS[i]).device_number);
-				/*???debug */
-				display_message(INFORMATION_MESSAGE,"unemap_start_sampling.  "
-					"DAQ_Clear(%d)=%d\n",(module_NI_CARDS[i]).device_number,status);
-#if defined (DEBUG)
-#endif /* defined (DEBUG) */
-#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_2) */
-#if defined (RECONFIGURE_FOR_START_SAMPLING_1)
-#if defined (USE_VIRTUAL_LOCK)
-				VirtualUnlock((module_NI_CARDS[i]).hardware_buffer,
-					(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
-					sizeof(i16)));
-				VirtualFree((module_NI_CARDS[i]).hardware_buffer,
-					(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
-					sizeof(i16)),(DWORD)MEM_RELEASE);
-#else /* defined (USE_VIRTUAL_LOCK) */
-#if defined (USE_MALLOC)
-				free((module_NI_CARDS[i]).memory_object);
-#else /* defined (USE_MALLOC) */
-				GlobalUnlock((module_NI_CARDS[i]).memory_object);
-				GlobalFree((module_NI_CARDS[i]).memory_object);
-#endif /* defined (USE_MALLOC) */
-#endif /* defined (USE_VIRTUAL_LOCK) */
-#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_1) */
-#if defined (RECONFIGURE_FOR_START_SAMPLING_2)
-				/* turn off double buffering */
-				status=DAQ_DB_Config((module_NI_CARDS[i]).device_number,
-					/* disable */(i16)0);
-#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_2) */
-#if defined (RECONFIGURE_FOR_START_SAMPLING_3)
-				if ((PCI6031E_AD_DA==(module_NI_CARDS[i]).type)||
-					(PXI6031E_AD_DA==(module_NI_CARDS[i]).type)||
-					(PXI6071E_AD_DA==(module_NI_CARDS[i]).type))
-				{
-					/* stop waveform generation */
-					status=WFM_Group_Control((module_NI_CARDS[i]).device_number,
-						/*group*/1,/*Clear*/0);
-#if defined (DEBUG)
-/*???debug */
-{
-	FILE *unemap_debug;
-
-	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
-	{
-		fprintf(unemap_debug,
-			"unemap_start_sampling.  1.  WFM_Group_Control(%d,CLEAR)=%d\n",
-			(module_NI_CARDS[i]).device_number,status);
-		fclose(unemap_debug);
-	}
-}
-#endif /* defined (DEBUG) */
-					/* set the output voltage to 0 */
-					AO_Write((module_NI_CARDS[i]).device_number,CALIBRATE_CHANNEL,
-						(i16)0);
-					AO_Write((module_NI_CARDS[i]).device_number,STIMULATE_CHANNEL,
-						(i16)0);
-				}
-#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_3) */
-#if defined (RECONFIGURE_FOR_START_SAMPLING_1)
-				DEALLOCATE((module_NI_CARDS[i]).da_buffer);
-#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_1) */
+				save_hardware_buffer_size=(module_NI_CARDS[0].hardware_buffer_size)/
+					(module_NI_CARDS[0].number_of_configured_channels);
 			}
-			module_sample_buffer_size=0;
-			module_starting_sample_number=0;
-			module_scrolling_callback_period=1;
-			module_number_of_scrolling_values_per_channel=1;
-#if defined (WIN32_USER_INTERFACE)
-			module_scrolling_window=(HWND)NULL;
-			module_scrolling_message=(UINT)0;
-#endif /* defined (WIN32_USER_INTERFACE) */
-			module_scrolling_callback=(Unemap_hardware_callback *)NULL;
-			module_scrolling_callback_data=(void *)NULL;
-			module_number_of_scrolling_channels=0;
-			DEALLOCATE(module_scrolling_channel_numbers);
-			DEALLOCATE(module_calibration_channels);
-			DEALLOCATE(module_calibration_offsets);
-			DEALLOCATE(module_calibration_gains);
-		}
-		module_configured=0;
-	}
-#endif /* defined (NI_DAQ) */
-}
-/*			unemap_configure(save_module_sampling_frequency,
-				save_hardware_buffer_size/NUMBER_OF_CHANNELS_ON_NI_CARD,
+			else
+			{
+				save_hardware_buffer_size=module_NI_CARDS[0].hardware_buffer_size;
+			}
+			unemap_deconfigure();
+			unemap_configure(save_module_sampling_frequency,
+				save_hardware_buffer_size,
 #if defined (WIN32_USER_INTERFACE)
 				save_module_scrolling_window,save_module_scrolling_message,
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -8048,786 +7046,12 @@ Starts the sampling.
 				(float)save_module_scrolling_callback_period,
 				(float)save_module_number_of_scrolling_values_per_channel*
 				save_module_sampling_frequency/
-				(float)save_module_scrolling_callback_period,1);*/
-{
-	float sampling_frequency_slave=save_module_sampling_frequency;
-	int number_of_samples_in_buffer=
-		save_hardware_buffer_size/NUMBER_OF_CHANNELS_ON_NI_CARD;
-#if defined (WIN32_USER_INTERFACE)
-	HWND scrolling_window=save_module_scrolling_window;
-	UINT scrolling_message=save_module_scrolling_message;
-#endif /* defined (WIN32_USER_INTERFACE) */
-	Unemap_hardware_callback *scrolling_callback=save_module_scrolling_callback;
-	void *scrolling_callback_data=save_module_scrolling_callback_data;
-	float scrolling_callback_frequency=save_module_sampling_frequency/
-		(float)save_module_scrolling_callback_period;
-	float scrolling_frequency=
-		(float)save_module_number_of_scrolling_values_per_channel*
-		save_module_sampling_frequency/(float)save_module_scrolling_callback_period;
-	int synchronization_card=1;
-
-	float sampling_frequency;
-	int return_code;
-#if defined (NI_DAQ)
-	int i,j,local_synchronization_card;
-	i16 channel_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],
-		gain_vector[NUMBER_OF_CHANNELS_ON_NI_CARD],status,
-		time_base;
-	u16 sampling_interval;
-	u32 hardware_buffer_size;
-#endif /* defined (NI_DAQ) */
-#if defined (WIN32_SYSTEM)
-	/* for getting the total physical memory */
-	MEMORYSTATUS memory_status;
-#if defined (USE_VIRTUAL_LOCK)
-	SIZE_T working_set_size;
-#endif /* defined (USE_VIRTUAL_LOCK) */
-#endif /* defined (WIN32_SYSTEM) */
-
-	/*???debug */
-	display_message(INFORMATION_MESSAGE,
-		"enter unemap_configure %g %d "
-#if defined (WIN32_USER_INTERFACE)
-		"%p %u "
-#endif /* defined (WIN32_USER_INTERFACE) */
-		"%p %p %g %d\n",sampling_frequency_slave,number_of_samples_in_buffer,
-#if defined (WIN32_USER_INTERFACE)
-		scrolling_window,scrolling_message,
-#endif /* defined (WIN32_USER_INTERFACE) */
-		scrolling_callback,scrolling_callback_data,scrolling_callback_frequency,
-		synchronization_card);
-#if defined (DEBUG)
-#endif /* defined (DEBUG) */
-	return_code=0;
-	if (sampling_frequency_slave<0)
-	{
-		sampling_frequency= -sampling_frequency_slave;
-		module_slave=1;
-	}
-	else
-	{
-		sampling_frequency=sampling_frequency_slave;
-		module_slave=0;
-	}
-	/* check arguments */
-	if ((0<sampling_frequency)&&(0<number_of_samples_in_buffer))
-	{
-#if defined (NI_DAQ)
-		if (0==module_configured)
-		{
-			if (search_for_NI_cards()&&module_NI_CARDS)
-			{
-				if (synchronization_card<1)
-				{
-					local_synchronization_card=0;
-				}
-				else
-				{
-					if (module_number_of_NI_CARDS<synchronization_card)
-					{
-						local_synchronization_card=module_number_of_NI_CARDS-1;
-					}
-					else
-					{
-						local_synchronization_card=synchronization_card-1;
-					}
-				}
-#if defined (DEBUG)
-				/*???debug */
-				display_message(INFORMATION_MESSAGE,
-					"synchronization_card=%d, local_synchronization_card=%d\n",
-					synchronization_card,local_synchronization_card);
-#endif /* defined (DEBUG) */
-				/* drive the A/D conversions as fast as possible */
-				/* use the 20 MHz (50 ns) clock */
-				time_base= -3;
-				sampling_interval=module_NI_CARDS->sampling_interval;
-				if (sampling_interval<=0)
-				{
-					if (PXI6071E_AD_DA==module_NI_CARDS->type)
-					{
-						/* 1.25 MS/s */
-						/* do a A/D conversion every 800 nano-seconds = 16 * 50 ns */
-						sampling_interval=16;
-						/* if scanning can't go at 1.25 MS/s, limit to 0.5 MS/s */
-						sampling_interval=40;
-					}
-					else
-					{
-						/* 100 kS/s */
-						/* do a A/D conversion every 10 micro-seconds = 200 * 50 ns */
-						sampling_interval=200;
-						/*???DB.  What is safe when scanning ? */
-					}
-				}
-				module_sampling_frequency=(float)1;
-				for (i=(int)ceil(log10((double)NUMBER_OF_CHANNELS_ON_NI_CARD));i>0;i--)
-				{
-					module_sampling_frequency *= (float)10;
-				}
-				module_sampling_frequency=(float)1e9/((float)sampling_interval*
-					(float)50*module_sampling_frequency);
-				if ((0<sampling_frequency)&&
-					(sampling_frequency<module_sampling_frequency))
-				{
-					module_sampling_frequency=sampling_frequency;
-				}
-				module_sampling_high_count=2;
-				module_sampling_low_count=
-					(u32)((double)20000000/(double)module_sampling_frequency);
-				module_sampling_frequency=
-					(float)20000000./(float)module_sampling_low_count;
-				module_sampling_low_count -= module_sampling_high_count;
-				if ((module_sampling_low_count>0)&&(module_sampling_high_count>0))
-				{
-					if ((0<scrolling_callback_frequency)&&(scrolling_callback
-#if defined (WIN32_USER_INTERFACE)
-						||scrolling_window
-#endif /* defined (WIN32_USER_INTERFACE) */
-						))
-					{
-						module_scrolling_callback_period=(int)(module_sampling_frequency/
-							scrolling_callback_frequency);
-						/* have scrolling period divisible by 4 */
-						module_scrolling_callback_period=
-							(module_scrolling_callback_period-1)/4;
-						module_scrolling_callback_period=
-							(module_scrolling_callback_period+1)*4;
-#if defined (WIN32_USER_INTERFACE)
-						module_scrolling_window=scrolling_window;
-						module_scrolling_message=scrolling_message;
-#endif /* defined (WIN32_USER_INTERFACE) */
-						module_scrolling_callback=scrolling_callback;
-						module_scrolling_callback_data=scrolling_callback_data;
-					}
-					else
-					{
-						/* have a callback to keep <module_starting_sample_number> and
-							<module_sample_buffer_size> up to date */
-						module_scrolling_callback_period=number_of_samples_in_buffer/2;
-						module_number_of_scrolling_values_per_channel=1;
-#if defined (WIN32_USER_INTERFACE)
-						module_scrolling_window=(HWND)NULL;
-						module_scrolling_message=(UINT)0;
-#endif /* defined (WIN32_USER_INTERFACE) */
-						module_scrolling_callback=(Unemap_hardware_callback *)NULL;
-						module_scrolling_callback_data=(void *)NULL;
-					}
-					module_scrolling_channel_numbers=(int *)NULL;
-					module_number_of_scrolling_channels=0;
-#if !defined (NO_SCROLLING_CALLBACK)
-#if defined (RECONFIGURE_FOR_START_SAMPLING_2)
-					status=Config_DAQ_Event_Message(module_NI_CARDS[0].device_number,
-						/* add message */(i16)1,/* channel string */"AI0",
-						/* send message every N scans */(i16)1,
-						(i32)module_scrolling_callback_period,(i32)0,(u32)0,(u32)0,(u32)0,
-						(HWND)NULL,(i16)0,(u32)scrolling_callback_NI);
-					/*???debug */
-					display_message(INFORMATION_MESSAGE,"unemap_start_sampling.  "
-						"Config_DAQ_Event_Message(%d,1,AI0,1,%d,0,0,0,0,NULL,0,%p)=%d\n",
-						module_NI_CARDS[0].device_number,module_scrolling_callback_period,
-						scrolling_callback_NI,status);
-#if defined (DEBUG)
-#endif /* defined (DEBUG) */
-#else /* defined (RECONFIGURE_FOR_START_SAMPLING_2) */
-					status=0;
-#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_2) */
-#else /* !defined (NO_SCROLLING_CALLBACK) */
-					status=0;
-#endif /* !defined (NO_SCROLLING_CALLBACK) */
-#if defined (DEBUG)
-					/*???debug */
-					display_message(INFORMATION_MESSAGE,
-						"module_sampling_frequency=%g, sampling_interval=%u\n",
-						module_sampling_frequency,sampling_interval);
-#endif /* defined (DEBUG) */
-					if (0!=status)
-					{
-						display_message(ERROR_MESSAGE,
-							"unemap_configure.  Config_DAQ_Event_Message 1 failed.  %d %d",
-							status,module_scrolling_callback_period);
-					}
-#if defined (WIN32_SYSTEM)
-#if defined (RECONFIGURE_FOR_START_SAMPLING_1)
-					/* have number_of_samples_in_buffer divisible by
-						module_scrolling_callback_period */
-					hardware_buffer_size=(number_of_samples_in_buffer-1)/
-						module_scrolling_callback_period;
-					hardware_buffer_size=(hardware_buffer_size+1)*
-						module_scrolling_callback_period;
-					hardware_buffer_size *= (u32)NUMBER_OF_CHANNELS_ON_NI_CARD;
-					memory_status.dwLength=sizeof(MEMORYSTATUS);
-					GlobalMemoryStatus(&memory_status);
-#if defined (DEBUG)
-/*???debug */
-{
-	FILE *unemap_debug;
-
-	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
-	{
-		fprintf(unemap_debug,
-			"total physical memory=%d, available physical memory=%d\n",
-			memory_status.dwTotalPhys,memory_status.dwAvailPhys);
-		fclose(unemap_debug);
-	}
-}
-#endif /* defined (DEBUG) */
-#if defined (OLD_CODE)
-/*???DB.  16 November 2001.  Works (?).  See Martyn's email */
-					/* limit the total locked memory to a third of physical memory */
-					if ((DWORD)(3*module_number_of_NI_CARDS*hardware_buffer_size)*
-						sizeof(i16)>memory_status.dwTotalPhys)
-					{
-						hardware_buffer_size=(u32)(memory_status.dwTotalPhys/
-							(3*module_number_of_NI_CARDS*sizeof(i16)));
-						hardware_buffer_size=(hardware_buffer_size-1)/
-							(module_scrolling_callback_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
-						hardware_buffer_size=(hardware_buffer_size+1)*
-							(module_scrolling_callback_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
-					}
-#endif /* defined (OLD_CODE) */
-#if defined (OLD_CODE)
-/*???DB.  16 November 2001.  Doesn't work.  See Martyn's email */
-					/* limit the total locked memory to a "half" of available physical
-						memory */
-					if ((DWORD)((u32)(2.2*(float)module_number_of_NI_CARDS*
-						(float)hardware_buffer_size))*
-						sizeof(i16)>memory_status.dwAvailPhys)
-					{
-						hardware_buffer_size=(u32)((float)memory_status.dwAvailPhys/
-							(2.2*(float)module_number_of_NI_CARDS*(float)sizeof(i16)));
-						hardware_buffer_size=(hardware_buffer_size-1)/
-							(module_scrolling_callback_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
-						hardware_buffer_size=(hardware_buffer_size+1)*
-							(module_scrolling_callback_period*NUMBER_OF_CHANNELS_ON_NI_CARD);
-					}
-#endif /* defined (OLD_CODE) */
-#if defined (OLD_CODE)
-/*???DB.  17 November 2001.  Works with os_memory set to 25.  See Martyn's
-	email */
-					/* limit the total locked memory */
-					{
-						char *os_memory_string;
-						u32 os_memory;
-
-						if ((os_memory_string=getenv("UNEMAP_OS_MEMORY_MB"))&&
-							(1==sscanf(os_memory_string,"%d",&os_memory)))
-						{
-							os_memory *= 1024*1024;
-						}
-						else
-						{
-							os_memory=(memory_status.dwTotalPhys)/3;
-						}
-						if ((DWORD)(2*module_number_of_NI_CARDS*hardware_buffer_size)*
-							sizeof(i16)>memory_status.dwTotalPhys-os_memory)
-						{
-							hardware_buffer_size=(u32)((memory_status.dwTotalPhys-os_memory)/
-								(2*module_number_of_NI_CARDS*sizeof(i16)));
-							hardware_buffer_size=(hardware_buffer_size-1)/
-								(module_scrolling_callback_period*
-								NUMBER_OF_CHANNELS_ON_NI_CARD);
-							hardware_buffer_size=(hardware_buffer_size+1)*
-								(module_scrolling_callback_period*
-								NUMBER_OF_CHANNELS_ON_NI_CARD);
-						}
-					}
-#endif /* defined (OLD_CODE) */
-					/* limit the total locked memory */
-					{
-						char *os_memory_string;
-						u32 os_memory;
-
-						if ((os_memory_string=getenv("UNEMAP_OS_MEMORY_MB"))&&
-							(1==sscanf(os_memory_string,"%d",&os_memory)))
-						{
-							if (os_memory<=0)
-							{
-								os_memory=memory_status.dwTotalPhys-memory_status.dwAvailPhys;
-							}
-							else
-							{
-								os_memory *= 1024*1024;
-							}
-						}
-						else
-						{
-							os_memory=(memory_status.dwTotalPhys)/3;
-						}
-						if ((DWORD)(module_number_of_NI_CARDS*hardware_buffer_size)*
-							sizeof(i16)>memory_status.dwTotalPhys-os_memory)
-						{
-							hardware_buffer_size=(u32)((memory_status.dwTotalPhys-os_memory)/
-								(module_number_of_NI_CARDS*sizeof(i16)));
-							hardware_buffer_size /= (module_scrolling_callback_period*
-								NUMBER_OF_CHANNELS_ON_NI_CARD);
-							hardware_buffer_size *= (module_scrolling_callback_period*
-								NUMBER_OF_CHANNELS_ON_NI_CARD);
-						}
-/*???debug */
-{
-	FILE *unemap_debug;
-#if defined (USE_VIRTUAL_LOCK)
-	SIZE_T maximum,minimum;
-#endif /* defined (USE_VIRTUAL_LOCK) */
-
-	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
-	{
-		fprintf(unemap_debug,
-			"total physical memory=%d, available physical memory=%d\n",
-			memory_status.dwTotalPhys,memory_status.dwAvailPhys);
-		fprintf(unemap_debug,
-			"os_memory=%d, hardware_buffer_size=%d, total buffer memory=%d\n",
-			os_memory,hardware_buffer_size,
-			hardware_buffer_size*module_number_of_NI_CARDS*sizeof(i16));
-#if defined (USE_VIRTUAL_LOCK)
-		GetProcessWorkingSetSize(GetCurrentProcess(),&minimum,&maximum);
-		fprintf(unemap_debug,
-			"minimum working set=%d, maximum working set=%d\n",
-			minimum,maximum);
-#endif /* defined (USE_VIRTUAL_LOCK) */
-		fclose(unemap_debug);
-	}
-}
-#if defined (DEBUG)
-#endif /* defined (DEBUG) */
-#if defined (USE_VIRTUAL_LOCK)
-					working_set_size=(11*memory_status.dwAvailPhys)/10;
-					SetProcessWorkingSetSize(GetCurrentProcess(),working_set_size,
-						working_set_size);
-#endif /* defined (USE_VIRTUAL_LOCK) */
-#if defined (DEBUG)
-/*???debug */
-#if defined (USE_VIRTUAL_LOCK)
-{
-	FILE *unemap_debug;
-	SIZE_T maximum,minimum;
-
-	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
-	{
-		GetProcessWorkingSetSize(GetCurrentProcess(),&minimum,&maximum);
-		fprintf(unemap_debug,
-			"minimum working set=%d, maximum working set=%d\n",
-			minimum,maximum);
-		fclose(unemap_debug);
-	}
-}
-#endif /* defined (USE_VIRTUAL_LOCK) */
-#endif /* defined (DEBUG) */
-					}
-#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_1) */
-					for (i=0;i<NUMBER_OF_CHANNELS_ON_NI_CARD;i++)
-					{
-						channel_vector[i]=i;
-					}
-#endif /* defined (WIN32_SYSTEM) */
-					/* configure cards */
-					i=0;
-					status=0;
-					while ((0==status)&&(i<module_number_of_NI_CARDS))
-					{
-						(module_NI_CARDS[i]).time_base=time_base;
-						(module_NI_CARDS[i]).sampling_interval=sampling_interval;
-#if defined (RECONFIGURE_FOR_START_SAMPLING_1)
-						(module_NI_CARDS[i]).hardware_buffer_size=hardware_buffer_size;
-						/* allocate buffer */
-#if defined (USE_VIRTUAL_LOCK)
-						if ((module_NI_CARDS[i]).hardware_buffer=VirtualAlloc(
-							(LPVOID)NULL,(SIZE_T)(((module_NI_CARDS[i]).
-							hardware_buffer_size)*sizeof(i16)),(DWORD)MEM_COMMIT,
-							(DWORD)PAGE_READWRITE))
-#else /* defined (USE_VIRTUAL_LOCK) */
-						if ((module_NI_CARDS[i]).memory_object=GlobalAlloc(GMEM_MOVEABLE,
-							(DWORD)(((module_NI_CARDS[i]).hardware_buffer_size)*
-							sizeof(i16))))
-#endif /* defined (USE_VIRTUAL_LOCK) */
-						{
-#if defined (USE_VIRTUAL_LOCK)
-							if (TRUE==VirtualLock((module_NI_CARDS[i]).hardware_buffer,
-								(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
-								sizeof(i16))))
-#else /* defined (USE_VIRTUAL_LOCK) */
-							if ((module_NI_CARDS[i]).hardware_buffer=
-								(i16 *)GlobalLock((module_NI_CARDS[i]).memory_object))
-#endif /* defined (USE_VIRTUAL_LOCK) */
-							{
-#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_1) */
-								/* working from "Building Blocks" section, p.3-25 (pdf 65) in
-									the "NI-DAQ User Manual" */
-								/* configuration block.  Start with default settings except
-									for changing to double buffering mode (DAQ_DB_Config).
-									Could also use AI_Configure, AI_Max_Config, DAQ_Config,
-									DAQ_StopTrigger_Config */
-#if defined (RECONFIGURE_FOR_START_SAMPLING_2)
-								status=DAQ_DB_Config((module_NI_CARDS[i]).device_number,
-									/* enable */(i16)1);
-								if (0==status)
-								{
-									/* set the scan sequence and gain */
-									for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
-									{
-										gain_vector[j]=(module_NI_CARDS[i]).gain;
-									}
-									status=SCAN_Setup((module_NI_CARDS[i]).device_number,
-										NUMBER_OF_CHANNELS_ON_NI_CARD,channel_vector,gain_vector);
-									if (0==status)
-									{
-#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_2) */
-										if (0==i)
-										{
-											/* set the clock source on the RTSI bus */
-											status=Select_Signal((module_NI_CARDS[i]).device_number,
-												ND_RTSI_CLOCK,ND_BOARD_CLOCK,ND_DONT_CARE);
-											if (0!=status)
-											{
-												display_message(ERROR_MESSAGE,"unemap_configure.  "
-													"Select_Signal(%d,ND_RTSI_CLOCK,ND_BOARD_CLOCK,"
-													"ND_DONT_CARE)=%d.  %d",
-													(module_NI_CARDS[i]).device_number,status,i);
-											}
-										}
-										else
-										{
-											/* use the clock source on the RTSI bus */
-											status=Select_Signal((module_NI_CARDS[i]).device_number,
-												ND_BOARD_CLOCK,ND_RTSI_CLOCK,ND_DONT_CARE);
-											if (0!=status)
-											{
-												display_message(ERROR_MESSAGE,"unemap_configure.  "
-													"Select_Signal(%d,ND_BOARD_CLOCK,ND_RTSI_CLOCK,"
-													"ND_DONT_CARE)=%d.  %d",
-													(module_NI_CARDS[i]).device_number,status,i);
-											}
-										}
-										if (0==status)
-										{
-											if (module_slave&&(local_synchronization_card==i))
-											{
-												/* set to input the A/D conversion signal */
-												status=Select_Signal(
-													(module_NI_CARDS[i]).device_number,
-													ND_IN_SCAN_START,ND_PFI_7,ND_LOW_TO_HIGH);
-											}
-											else
-											{
-												/* set to output the A/D conversion signal (for use
-													on other crates */
-												status=Select_Signal(
-													(module_NI_CARDS[i]).device_number,ND_PFI_7,
-													ND_IN_SCAN_IN_PROG,ND_LOW_TO_HIGH);
-											}
-											if (0==status)
-											{
-												/* configure RTSI */
-												/* set to input the A/D conversion signal */
-												if (module_slave&&(local_synchronization_card==i))
-												{
-													status=Select_Signal(
-														(module_NI_CARDS[i]).device_number,
-														ND_RTSI_0,ND_IN_SCAN_START,ND_LOW_TO_HIGH);
-												}
-												else
-												{
-													status=Select_Signal(
-														(module_NI_CARDS[i]).device_number,
-														ND_IN_SCAN_START,ND_RTSI_0,ND_LOW_TO_HIGH);
-												}
-												if (0==status)
-												{
-#if defined (RECONFIGURE_FOR_START_SAMPLING_2)
-													/* acquisition won't actually start (controlled by
-														conversion signal) */
-													status=SCAN_Start(
-														(module_NI_CARDS[i]).device_number,
-														(i16 *)((module_NI_CARDS[i]).hardware_buffer),
-														(u32)((module_NI_CARDS[i]).hardware_buffer_size),
-														(module_NI_CARDS[i]).time_base,
-														(module_NI_CARDS[i]).sampling_interval,(i16)0,
-														(u16)0);
-													if (0!=status)
-													{
-														display_message(ERROR_MESSAGE,
-															"unemap_configure.  SCAN_Start failed.  %d.  %d",
-															status,i);
-													}
-#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_2) */
-												}
-												else
-												{
-													display_message(ERROR_MESSAGE,"unemap_configure.  "
-														"Select_Signal(%d,ND_IN_SCAN_START,"
-														"ND_PFI_7/ND_RTSI_0,ND_LOW_TO_HIGH)=%d.  %d",
-														(module_NI_CARDS[i]).device_number,status,i);
-												}
-											}
-											else
-											{
-												display_message(ERROR_MESSAGE,
-"unemap_configure.  Select_Signal(%d,ND_PFI_7,ND_IN_SCAN_START,ND_LOW_TO_HIGH)=%d",
-													(module_NI_CARDS[i]).device_number,status);
-											}
-#if defined (OLD_CODE)
-											/* set to output the A/D conversion signal (for use
-												on other crates */
-											if (!module_slave)
-											{
-												status=Select_Signal(
-													(module_NI_CARDS[i]).device_number,ND_PFI_7,
-													ND_IN_SCAN_IN_PROG,ND_LOW_TO_HIGH);
-											}
-											if (0==status)
-											{
-												/* configure RTSI */
-												/* set to input the A/D conversion signal */
-												if (module_slave&&(0==i))
-												{
-													status=Select_Signal(
-														(module_NI_CARDS[i]).device_number,
-														ND_IN_SCAN_START,ND_PFI_7,ND_LOW_TO_HIGH);
-												}
-												else
-												{
-													status=Select_Signal(
-														(module_NI_CARDS[i]).device_number,
-														ND_IN_SCAN_START,ND_RTSI_0,ND_LOW_TO_HIGH);
-												}
-												if (0==status)
-												{
-													/* acquisition won't actually start (controlled by
-														conversion signal) */
-													status=SCAN_Start(
-														(module_NI_CARDS[i]).device_number,
-														(i16 *)((module_NI_CARDS[i]).hardware_buffer),
-														(u32)((module_NI_CARDS[i]).hardware_buffer_size),
-														(module_NI_CARDS[i]).time_base,
-														(module_NI_CARDS[i]).sampling_interval,(i16)0,
-														(u16)0);
-													if (0!=status)
-													{
-														display_message(ERROR_MESSAGE,
-															"unemap_configure.  SCAN_Start failed.  %d",
-															status);
-													}
-												}
-												else
-												{
-													display_message(ERROR_MESSAGE,
-"unemap_configure.  Select_Signal(%d,ND_IN_SCAN_START,ND_PFI_7/ND_RTSI_0,ND_LOW_TO_HIGH)=%d",
-														(module_NI_CARDS[i]).device_number,status);
-												}
-											}
-											else
-											{
-												display_message(ERROR_MESSAGE,
-"unemap_configure.  Select_Signal(%d,ND_PFI_7,ND_IN_SCAN_START,ND_LOW_TO_HIGH)=%d",
-													(module_NI_CARDS[i]).device_number,status);
-											}
-#endif /* defined (OLD_CODE) */
-										}
-										if (0==status)
-										{
-											i++;
-										}
-										else
-										{
-#if defined (USE_VIRTUAL_LOCK)
-											VirtualUnlock((module_NI_CARDS[i]).hardware_buffer,
-												(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
-												sizeof(i16)));
-											VirtualFree((module_NI_CARDS[i]).hardware_buffer,
-												(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
-												sizeof(i16)),(DWORD)MEM_RELEASE);
-#else /* defined (USE_VIRTUAL_LOCK) */
-											GlobalUnlock((module_NI_CARDS[i]).memory_object);
-											GlobalFree((module_NI_CARDS[i]).memory_object);
-#endif /* defined (USE_VIRTUAL_LOCK) */
-											DAQ_DB_Config((module_NI_CARDS[i]).device_number,
-												/* disable */(i16)0);
-										}
-#if defined (RECONFIGURE_FOR_START_SAMPLING_2)
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,"unemap_configure.  "
-											"SCAN_Setup failed.  %d.  gain=%d.  %d",status,
-											gain_vector[0],i);
-										/*???debug */
-										display_message(ERROR_MESSAGE,"device_number=%d",
-											(module_NI_CARDS[i]).device_number);
-										for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
-										{
-											display_message(ERROR_MESSAGE,"%d.  %d %d",j,
-												channel_vector[j],gain_vector[j]);
-										}
-#if defined (DEBUG)
-#endif /* defined (DEBUG) */
-#if defined (USE_VIRTUAL_LOCK)
-										VirtualUnlock((module_NI_CARDS[i]).hardware_buffer,
-											(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
-											sizeof(i16)));
-										VirtualFree((module_NI_CARDS[i]).hardware_buffer,
-											(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
-											sizeof(i16)),(DWORD)MEM_RELEASE);
-#else /* defined (USE_VIRTUAL_LOCK) */
-										GlobalUnlock((module_NI_CARDS[i]).memory_object);
-										GlobalFree((module_NI_CARDS[i]).memory_object);
-#endif /* defined (USE_VIRTUAL_LOCK) */
-										DAQ_DB_Config((module_NI_CARDS[i]).device_number,
-											/* disable */(i16)0);
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"unemap_configure.  DAQ_DB_Config failed.  %d.  %d",status,
-										i);
-#if defined (USE_VIRTUAL_LOCK)
-									VirtualUnlock((module_NI_CARDS[i]).hardware_buffer,
-										(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
-										sizeof(i16)));
-									VirtualFree((module_NI_CARDS[i]).hardware_buffer,
-										(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
-										sizeof(i16)),(DWORD)MEM_RELEASE);
-#else /* defined (USE_VIRTUAL_LOCK) */
-									GlobalUnlock((module_NI_CARDS[i]).memory_object);
-									GlobalFree((module_NI_CARDS[i]).memory_object);
-#endif /* defined (USE_VIRTUAL_LOCK) */
-								}
-#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_2) */
-#if defined (RECONFIGURE_FOR_START_SAMPLING_1)
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-#if defined (USE_VIRTUAL_LOCK)
-									"unemap_configure.  VirtualLock failed.  %d",i);
-								VirtualFree((module_NI_CARDS[i]).hardware_buffer,
-									(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
-									sizeof(i16)),(DWORD)MEM_RELEASE);
-#else /* defined (USE_VIRTUAL_LOCK) */
-									"unemap_configure.  GlobalLock failed.  %d",i);
-								GlobalFree((module_NI_CARDS[i]).memory_object);
-#endif /* defined (USE_VIRTUAL_LOCK) */
-								status=1;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-#if defined (USE_VIRTUAL_LOCK)
-								"unemap_configure.  VirtualAlloc failed.  %d",i);
-#else /* defined (USE_VIRTUAL_LOCK) */
-								"unemap_configure.  GlobalAlloc failed.  %d",i);
-#endif /* defined (USE_VIRTUAL_LOCK) */
-							status=1;
-						}
-#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_1) */
-					}
-					module_sample_buffer_size=0;
-					module_starting_sample_number=0;
-					if (0==status)
-					{
-						return_code=1;
-						/*???DB.  Start USE_INTERRUPTS_FOR_AI */
-						/*???DB.  Needed, otherwise WFM_Op (waveform generation) fails */
-						/*???DB.  Don't understand why.  See set_NI_gain */
-#if !defined (NO_SCROLLING_CALLBACK)
-#if defined (RECONFIGURE_FOR_START_SAMPLING_2)
-						status=Config_DAQ_Event_Message(module_NI_CARDS[0].device_number,
-							/* clear all messages */(i16)0,/* channel string */(char *)NULL,
-							/* send message every N scans */(i16)0,
-							(i32)0,(i32)0,(u32)0,(u32)0,(u32)0,
-							(HWND)NULL,(i16)0,(u32)0);
-						/*???debug */
-						display_message(INFORMATION_MESSAGE,"unemap_start_sampling 2.  "
-							"Config_DAQ_Event_Message(%d,0,NULL,0,0,0,0,0,0,NULL,0,0)=%d\n",
-							module_NI_CARDS[0].device_number,status);
-#if defined (DEBUG)
-#endif /* defined (DEBUG) */
-#endif /* defined (RECONFIGURE_FOR_START_SAMPLING_2) */
-#endif /* !defined (NO_SCROLLING_CALLBACK) */
-#if !defined (USE_INTERRUPTS_FOR_AI)
-#endif /* !defined (USE_INTERRUPTS_FOR_AI) */
-						module_configured=1;
-						unemap_set_isolate_record_mode(0,1);
-						unemap_set_antialiasing_filter_frequency(0,
-							initial_antialiasing_filter_frequency);
-					}
-					else
-					{
-						while (i>0)
-						{
-							i--;
-							DAQ_Clear((module_NI_CARDS[i]).device_number);
-							/*???debug */
-							display_message(INFORMATION_MESSAGE,"unemap_start_sampling 2.  "
-								"DAQ_Clear(%d)=%d\n",(module_NI_CARDS[i]).device_number,status);
-#if defined (DEBUG)
-#endif /* defined (DEBUG) */
-#if defined (USE_VIRTUAL_LOCK)
-							VirtualUnlock((module_NI_CARDS[i]).hardware_buffer,
-								(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
-								sizeof(i16)));
-							VirtualFree((module_NI_CARDS[i]).hardware_buffer,
-								(SIZE_T)(((module_NI_CARDS[i]).hardware_buffer_size)*
-								sizeof(i16)),(DWORD)MEM_RELEASE);
-#else /* defined (USE_VIRTUAL_LOCK) */
-							GlobalUnlock((module_NI_CARDS[i]).memory_object);
-							GlobalFree((module_NI_CARDS[i]).memory_object);
-#endif /* defined (USE_VIRTUAL_LOCK) */
-							DAQ_DB_Config((module_NI_CARDS[i]).device_number,
-							/* disable */(i16)0);
-						}
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"unemap_configure.  Invalid sampling frequency.  %d %d",
-						module_sampling_low_count,module_sampling_high_count);
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"unemap_configure.  Missing module_NI_CARDS");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"unemap_configure.  Hardware is already configured");
-			return_code=0;
-		}
-#endif /* defined (NI_DAQ) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"unemap_configure.  Invalid argument(s).  %g %d",sampling_frequency,
-			number_of_samples_in_buffer);
-		return_code=0;
-	}
-	/*???debug */
-	display_message(INFORMATION_MESSAGE,"leave unemap_configure %d %g "
-#if defined (WIN32_USER_INTERFACE)
-		"%p %u "
-#endif /* defined (WIN32_USER_INTERFACE) */
-		"%p %p %d %d\n",return_code,module_sampling_frequency,
-#if defined (WIN32_USER_INTERFACE)
-		module_scrolling_window,module_scrolling_message,
-#endif /* defined (WIN32_USER_INTERFACE) */
-		module_scrolling_callback,module_scrolling_callback_data,
-		module_scrolling_callback_period,module_NI_CARDS[0].hardware_buffer_size);
-#if defined (DEBUG)
-#endif /* defined (DEBUG) */
-} /* unemap_configure */
+				(float)save_module_scrolling_callback_period,1);
 			unemap_start_scrolling();
 			unemap_set_scrolling_channel(1);
 		}
 #endif /* defined (RECONFIGURE_FOR_START_SAMPLING) */
 #if defined (STOP_WAVEFORM_IN_START_SAMPLING)
-		/*???debug */
 		unemap_start_sampling_count++;
 		if (unemap_start_sampling_count>1)
 		{
@@ -8843,13 +7067,15 @@ Starts the sampling.
 		{
 			/* force a reset of the filter frequency (because power may have been
 				turned on and off manually */
-			channel_number=1;
 			for (i=0;i<module_number_of_NI_CARDS;i++)
 			{
-				unemap_get_antialiasing_filter_frequency(channel_number,&frequency);
-				module_NI_CARDS[i].anti_aliasing_filter_taps= -1;
-				unemap_set_antialiasing_filter_frequency(channel_number,frequency);
-				channel_number += NUMBER_OF_CHANNELS_ON_NI_CARD;
+				if (0<module_NI_CARDS[i].number_of_configured_channels)
+				{
+					channel_number=(module_NI_CARDS[i].configured_channels)[0];
+					unemap_get_antialiasing_filter_frequency(channel_number,&frequency);
+					module_NI_CARDS[i].anti_aliasing_filter_taps= -1;
+					unemap_set_antialiasing_filter_frequency(channel_number,frequency);
+				}
 			}
 		}
 #if defined (DEBUG)
@@ -8924,24 +7150,22 @@ for (i=0;i<module_number_of_NI_CARDS;i++)
 #endif /* defined (DEBUG) */
 								if (0==status)
 								{
-									module_starting_sample_number=((unsigned long)retrieved/
-										(unsigned long)NUMBER_OF_CHANNELS_ON_NI_CARD)%
-										(module_NI_CARDS->hardware_buffer_size/
-										(unsigned long)NUMBER_OF_CHANNELS_ON_NI_CARD);
+									if (0<module_NI_CARDS->number_of_configured_channels)
+									{
+										module_starting_sample_number=((unsigned long)retrieved/
+											(unsigned long)(module_NI_CARDS->
+											number_of_configured_channels))%
+											(module_NI_CARDS->hardware_buffer_size/
+											(unsigned long)(module_NI_CARDS->
+											number_of_configured_channels));
+									}
+									else
+									{
+										module_starting_sample_number=((unsigned long)retrieved)%
+											(module_NI_CARDS->hardware_buffer_size);
+									}
 									module_sample_buffer_size=0;
 									module_sampling_on=1;
-#if defined (DEBUG)
-/*???debug */
-unemap_start_sampling_count++;
-display_message(INFORMATION_MESSAGE,"unemap_start_sampling_count=%d\n",
-	unemap_start_sampling_count);
-if (unemap_start_sampling_count<=2)
-{
-#endif /* defined (DEBUG) */
-#if defined (DEBUG)
-/*???debug */
-}
-#endif /* defined (DEBUG) */
 									/* start the data acquisition */
 									status=GPCTR_Control(module_NI_CARDS->device_number,
 										SCAN_COUNTER,ND_PROGRAM);
@@ -9004,10 +7228,18 @@ if (unemap_start_sampling_count<=2)
 			status=DAQ_Check(module_NI_CARDS->device_number,&stopped,&retrieved);
 			if (0==status)
 			{
-				module_starting_sample_number=((unsigned long)retrieved/
-					(unsigned long)NUMBER_OF_CHANNELS_ON_NI_CARD)%
-					(module_NI_CARDS->hardware_buffer_size/
-					(unsigned long)NUMBER_OF_CHANNELS_ON_NI_CARD);
+				if (0<module_NI_CARDS->number_of_configured_channels)
+				{
+					module_starting_sample_number=((unsigned long)retrieved/
+						(unsigned long)(module_NI_CARDS->number_of_configured_channels))%
+						((module_NI_CARDS->hardware_buffer_size)/
+						(unsigned long)(module_NI_CARDS->number_of_configured_channels));
+				}
+				else
+				{
+					module_starting_sample_number=((unsigned long)retrieved)%
+						(module_NI_CARDS->hardware_buffer_size);
+				}
 				module_sample_buffer_size=0;
 				return_code=1;
 				module_sampling_on=1;
@@ -9039,7 +7271,7 @@ if (unemap_start_sampling_count<=2)
 
 int unemap_stop_sampling(void)
 /*******************************************************************************
-LAST MODIFIED : 2 December 2001
+LAST MODIFIED : 7 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -9081,9 +7313,16 @@ many samples were acquired.
 				display_message(INFORMATION_MESSAGE,"%lu %lu %lu\n",sample_number,
 					module_NI_CARDS->hardware_buffer_size,module_starting_sample_number);
 #endif /* defined (DEBUG) */
-				sample_number /= NUMBER_OF_CHANNELS_ON_NI_CARD;
-				number_of_samples=(module_NI_CARDS->hardware_buffer_size)/
-					NUMBER_OF_CHANNELS_ON_NI_CARD;
+				if (0<module_NI_CARDS->number_of_configured_channels)
+				{
+					sample_number /= module_NI_CARDS->number_of_configured_channels;
+					number_of_samples=(module_NI_CARDS->hardware_buffer_size)/
+						(module_NI_CARDS->number_of_configured_channels);
+				}
+				else
+				{
+					number_of_samples=module_NI_CARDS->hardware_buffer_size;
+				}
 				if (module_sample_buffer_size<number_of_samples)
 				{
 					if (sample_number<
@@ -9170,7 +7409,7 @@ Returns a non-zero if unemap is sampling and zero otherwise.
 
 int unemap_set_isolate_record_mode(int channel_number,int isolate)
 /*******************************************************************************
-LAST MODIFIED : 23 September 2001
+LAST MODIFIED : 11 August 2003
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -9200,17 +7439,13 @@ to a calibration signal.
 #if defined (NI_DAQ)
 	if (search_for_NI_cards()&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 	{
-		if ((0<=channel_number)&&(channel_number<=module_number_of_NI_CARDS*
-			NUMBER_OF_CHANNELS_ON_NI_CARD))
+		card_number= -1;
+		if ((0<=channel_number)&&((0==channel_number)||(((card_number=
+			(channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+			module_number_of_NI_CARDS)&&(0<=(module_NI_CARDS[card_number].
+			hardware_buffer_offsets)[(channel_number-1)%
+			NUMBER_OF_CHANNELS_ON_NI_CARD]))))
 		{
-			if (0==channel_number)
-			{
-				card_number= -1;
-			}
-			else
-			{
-				card_number=(channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD;
-			}
 			return_code=1;
 			if (isolate)
 			{
@@ -9295,7 +7530,8 @@ to a calibration signal.
 				ni_card=module_NI_CARDS;
 				for (j=0;j<module_number_of_NI_CARDS;j++)
 				{
-					if ((-1==card_number)||(j==card_number))
+					if (((-1==card_number)||(j==card_number))&&
+						(0<ni_card->number_of_configured_channels))
 					{
 						if (((UnEmap_2V1==ni_card->unemap_hardware_version)||
 							(UnEmap_2V2==ni_card->unemap_hardware_version))&&
@@ -9363,7 +7599,7 @@ to a calibration signal.
 
 int unemap_get_isolate_record_mode(int channel_number,int *isolate)
 /*******************************************************************************
-LAST MODIFIED : 12 March 2000
+LAST MODIFIED : 8 August 2003
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -9386,16 +7622,17 @@ If the group is in isolate mode, then <*isolate> is set to 1.  Otherwise
 #if defined (NI_DAQ)
 	if (search_for_NI_cards()&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 	{
-		if ((1<=channel_number)&&(channel_number<=module_number_of_NI_CARDS*
-			NUMBER_OF_CHANNELS_ON_NI_CARD)&&isolate)
+		if ((0<channel_number)&&(((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+			module_number_of_NI_CARDS)&&(0<=(module_NI_CARDS[(channel_number-1)/
+			NUMBER_OF_CHANNELS_ON_NI_CARD].hardware_buffer_offsets)[
+			(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD])&&isolate)
 		{
 			ni_card=module_NI_CARDS+(channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD;
 			if ((UnEmap_2V1==ni_card->unemap_hardware_version)||
 				(UnEmap_2V2==ni_card->unemap_hardware_version))
 			{
 				return_code=1;
-				if (module_NI_CARDS[(channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD].
-					unemap_2vx.isolate_mode)
+				if (ni_card->unemap_2vx.isolate_mode)
 				{
 					*isolate=1;
 				}
@@ -9427,7 +7664,7 @@ If the group is in isolate mode, then <*isolate> is set to 1.  Otherwise
 int unemap_set_antialiasing_filter_frequency(int channel_number,
 	float frequency)
 /*******************************************************************************
-LAST MODIFIED : 18 October 1999
+LAST MODIFIED : 15 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -9461,18 +7698,20 @@ unemap_get_antialiasing_filter.
 	/* check configuration */
 	if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 	{
-		if ((0<=channel_number)&&(channel_number<=module_number_of_NI_CARDS*
-			NUMBER_OF_CHANNELS_ON_NI_CARD))
+		card_number= -1;
+#if defined (OLD_CODE)
+/*???DB.  Channel doesn't have to be configured */
+		if ((0<=channel_number)&&((0==channel_number)||(((card_number=
+			(channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+			module_number_of_NI_CARDS)&&(0<=(module_NI_CARDS[card_number].
+			hardware_buffer_offsets)[(channel_number-1)%
+			NUMBER_OF_CHANNELS_ON_NI_CARD]))))
+#endif /* defined (OLD_CODE) */
+		if ((0<=channel_number)&&((0==channel_number)||((card_number=
+			(channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+			module_number_of_NI_CARDS)))
 		{
 			return_code=1;
-			if (0==channel_number)
-			{
-				card_number= -1;
-			}
-			else
-			{
-				card_number=(channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD;
-			}
 			for (i=0;i<module_number_of_NI_CARDS;i++)
 			{
 				if ((-1==card_number)||(i==card_number))
@@ -9678,15 +7917,15 @@ unemap_get_antialiasing_filter.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-			"unemap_set_antialiasing_filter_frequency.  Invalid channel_number.  %d",
-				channel_number);
+				"unemap_set_antialiasing_filter_frequency.  "
+				"Invalid channel_number.  %d",channel_number);
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-	"unemap_set_antialiasing_filter_frequency.  Invalid configuration.  %d %p %d",
-			module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
+		display_message(ERROR_MESSAGE,"unemap_set_antialiasing_filter_frequency.  "
+			"Invalid configuration.  %d %p %d",module_configured,module_NI_CARDS,
+			module_number_of_NI_CARDS);
 	}
 #endif /* defined (NI_DAQ) */
 	LEAVE;
@@ -9696,7 +7935,7 @@ unemap_get_antialiasing_filter.
 
 int unemap_set_powerup_antialiasing_filter_frequency(int channel_number)
 /*******************************************************************************
-LAST MODIFIED : 26 May 1999
+LAST MODIFIED : 15 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -9723,18 +7962,20 @@ group.
 	/* check configuration */
 	if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 	{
-		if ((0<=channel_number)&&(channel_number<=module_number_of_NI_CARDS*
-			NUMBER_OF_CHANNELS_ON_NI_CARD))
+		card_number= -1;
+#if defined (OLD_CODE)
+/*???DB.  Channel doesn't have to be configured */
+		if ((0<=channel_number)&&((0==channel_number)||(((card_number=
+			(channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+			module_number_of_NI_CARDS)&&(0<=(module_NI_CARDS[card_number].
+			hardware_buffer_offsets)[(channel_number-1)%
+			NUMBER_OF_CHANNELS_ON_NI_CARD]))))
+#endif /* defined (OLD_CODE) */
+		if ((0<=channel_number)&&((0==channel_number)||((card_number=
+			(channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+			module_number_of_NI_CARDS)))
 		{
 			return_code=1;
-			if (0==channel_number)
-			{
-				card_number= -1;
-			}
-			else
-			{
-				card_number=(channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD;
-			}
 			for (i=0;i<module_number_of_NI_CARDS;i++)
 			{
 				if ((-1==card_number)||(i==card_number))
@@ -9804,15 +8045,16 @@ group.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-"unemap_set_powerup_antialiasing_filter_frequency.  Invalid channel_number.  %d",
-				channel_number);
+				"unemap_set_powerup_antialiasing_filter_frequency.  "
+				"Invalid channel_number.  %d",channel_number);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-"unemap_set_powerup_antialiasing_filter_frequency.  Invalid configuration.  %p %d",
-			module_NI_CARDS,module_number_of_NI_CARDS);
+			"unemap_set_powerup_antialiasing_filter_frequency.  "
+			"Invalid configuration.  %p %d",module_NI_CARDS,
+			module_number_of_NI_CARDS);
 	}
 #endif /* defined (NI_DAQ) */
 	LEAVE;
@@ -9823,7 +8065,7 @@ group.
 int unemap_get_antialiasing_filter_frequency(int channel_number,
 	float *frequency)
 /*******************************************************************************
-LAST MODIFIED : 13 September 1999
+LAST MODIFIED : 15 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -9846,8 +8088,15 @@ then the function applies to the group ((<channel_number>-1) div 64)*64+1 to
 #if defined (NI_DAQ)
 	if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 	{
-		if ((1<=channel_number)&&(channel_number<=module_number_of_NI_CARDS*
-			NUMBER_OF_CHANNELS_ON_NI_CARD)&&frequency)
+#if defined (OLD_CODE)
+/*???DB.  Channel doesn't have to be configured */
+		if ((0<channel_number)&&(((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+			module_number_of_NI_CARDS)&&(0<=(module_NI_CARDS[(channel_number-1)/
+			NUMBER_OF_CHANNELS_ON_NI_CARD].hardware_buffer_offsets)[
+			(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD])&&frequency)
+#endif /* defined (OLD_CODE) */
+		if ((0<channel_number)&&(((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+			module_number_of_NI_CARDS)&&frequency)
 		{
 			ni_card=module_NI_CARDS+
 				((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD);
@@ -9873,15 +8122,16 @@ then the function applies to the group ((<channel_number>-1) div 64)*64+1 to
 		else
 		{
 			display_message(ERROR_MESSAGE,
-			"unemap_get_antialiasing_filter_frequency.  Invalid argument(s).  %d %p",
-				channel_number,frequency);
+				"unemap_get_antialiasing_filter_frequency.  "
+				"Invalid argument(s).  %d %p",channel_number,frequency);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-	"unemap_get_antialiasing_filter_frequency.  Invalid configuration.  %d %p %d",
-			module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
+			"unemap_get_antialiasing_filter_frequency.  "
+			"Invalid configuration.  %d %p %d",module_configured,module_NI_CARDS,
+			module_number_of_NI_CARDS);
 	}
 #endif /* defined (NI_DAQ) */
 	LEAVE;
@@ -9891,7 +8141,7 @@ then the function applies to the group ((<channel_number>-1) div 64)*64+1 to
 
 int unemap_get_number_of_channels(int *number_of_channels)
 /*******************************************************************************
-LAST MODIFIED : 6 March 2000
+LAST MODIFIED : 8 August 2003
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -9920,7 +8170,8 @@ The total number of hardware channels is assigned to <*number_of_channels>.
 #if defined (DEBUG)
 		/*???debug */
 		display_message(INFORMATION_MESSAGE,
-			"unemap_get_number_of_channels %d %d\n",return_code,*number_of_channels);
+			"unemap_get_number_of_channels %d %d\n",return_code,
+			*number_of_channels);
 #endif /* defined (DEBUG) */
 	}
 	else
@@ -9934,10 +8185,48 @@ The total number of hardware channels is assigned to <*number_of_channels>.
 	return (return_code);
 } /* unemap_get_number_of_channels */
 
+int unemap_get_number_of_configured_channels(int *number_of_channels)
+/*******************************************************************************
+LAST MODIFIED : 13 August 2003
+
+DESCRIPTION :
+The function does not need the hardware to be configured.
+
+The number of configured channels is assigned to <*number_of_channels>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(unemap_get_number_of_configured_channels);
+	return_code=0;
+#if defined (NI_DAQ)
+	/* check arguments */
+	if (number_of_channels)
+	{
+		return_code=1;
+		*number_of_channels=module_number_of_configured_channels;
+#if defined (DEBUG)
+		/*???debug */
+		display_message(INFORMATION_MESSAGE,
+			"unemap_get_number_of_configured_channels %d %d\n",return_code,
+			*number_of_channels);
+#endif /* defined (DEBUG) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"unemap_get_number_of_configured_channels.  Missing number_of_channels");
+	}
+#endif /* defined (NI_DAQ) */
+	LEAVE;
+
+	return (return_code);
+} /* unemap_get_number_of_configured_channels */
+
 int unemap_get_sample_range(int channel_number,long int *minimum_sample_value,
 	long int *maximum_sample_value)
 /*******************************************************************************
-LAST MODIFIED : 6 August 2002
+LAST MODIFIED : 8 August 2003
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -9961,8 +8250,10 @@ maximum possible sample value is assigned to <*maximum_sample_value>.
 	if (search_for_NI_cards()&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 	{
 		/* check arguments */
-		if ((1<=channel_number)&&(channel_number<=module_number_of_NI_CARDS*
-			NUMBER_OF_CHANNELS_ON_NI_CARD)&&minimum_sample_value&&
+		if ((0<channel_number)&&(((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+			module_number_of_NI_CARDS)&&(0<=(module_NI_CARDS[(channel_number-1)/
+			NUMBER_OF_CHANNELS_ON_NI_CARD].hardware_buffer_offsets)[
+			(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD])&&minimum_sample_value&&
 			maximum_sample_value)
 		{
 			ni_card=module_NI_CARDS+
@@ -10001,7 +8292,7 @@ maximum possible sample value is assigned to <*maximum_sample_value>.
 int unemap_get_voltage_range(int channel_number,float *minimum_voltage,
 	float *maximum_voltage)
 /*******************************************************************************
-LAST MODIFIED : 6 August 1999
+LAST MODIFIED : 8 August 2003
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -10026,8 +8317,11 @@ The voltage range, allowing for gain, is returned via <*minimum_voltage> and
 	if (search_for_NI_cards()&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 	{
 		/* check arguments */
-		if ((1<=channel_number)&&(channel_number<=module_number_of_NI_CARDS*
-			NUMBER_OF_CHANNELS_ON_NI_CARD)&&minimum_voltage&&maximum_voltage)
+		if ((0<channel_number)&&(((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+			module_number_of_NI_CARDS)&&(0<=(module_NI_CARDS[(channel_number-1)/
+			NUMBER_OF_CHANNELS_ON_NI_CARD].hardware_buffer_offsets)[
+			(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD])&&minimum_voltage&&
+			maximum_voltage)
 		{
 			if (unemap_get_gain(channel_number,&pre_filter_gain,&post_filter_gain))
 			{
@@ -10118,7 +8412,7 @@ int unemap_transfer_samples_acquired(int channel_number,int number_of_samples,
 	Unemap_transfer_samples_function *transfer_samples_function,
 	void *transfer_samples_function_data,int *number_of_samples_transferred)
 /*******************************************************************************
-LAST MODIFIED : 11 April 2002
+LAST MODIFIED : 14 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -10141,7 +8435,8 @@ transferred.
 {
 	int number_of_channels,number_transferred,return_code;
 #if defined (NI_DAQ)
-	int end,end2,i,j,k,start,transfer_samples_function_result;
+	int end,end2,i,j,k,k_phase,number_of_configured_channels,offset,samples_count,
+		start,transfer_samples_function_result;
 	short int sample,samples[NUMBER_OF_CHANNELS_ON_NI_CARD],*source;
 	struct NI_card *ni_card;
 	unsigned long maximum_number_of_samples,local_number_of_samples;
@@ -10158,11 +8453,15 @@ transferred.
 	number_transferred=0;
 	number_of_channels=1;
 #if defined (NI_DAQ)
-	/* check arguments */
-	if (transfer_samples_function&&(0<=channel_number)&&
-		(channel_number<=module_number_of_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD))
+	if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 	{
-		if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
+		/* check arguments */
+		if ((0<=channel_number)&&((0==channel_number)||
+			((((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+			module_number_of_NI_CARDS)&&(0<=(module_NI_CARDS[(channel_number-1)/
+			NUMBER_OF_CHANNELS_ON_NI_CARD].hardware_buffer_offsets)[
+			(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD])))&&
+			transfer_samples_function)
 		{
 			return_code=1;
 			if (number_of_samples<=0)
@@ -10179,94 +8478,68 @@ transferred.
 			}
 			if (0==channel_number)
 			{
-				number_of_channels=
-					module_number_of_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD;
+				number_of_channels=0;
+				for (i=0;i<module_number_of_NI_CARDS;i++)
+				{
+					number_of_channels +=
+						module_NI_CARDS[i].number_of_configured_channels;
+				}
 			}
 			else
 			{
 				number_of_channels=1;
 			}
-			maximum_number_of_samples=(module_NI_CARDS->hardware_buffer_size)/
-				NUMBER_OF_CHANNELS_ON_NI_CARD;
+			if (0<module_NI_CARDS->number_of_configured_channels)
+			{
+				maximum_number_of_samples=(module_NI_CARDS->hardware_buffer_size)/
+					(module_NI_CARDS->number_of_configured_channels);
+			}
+			else
+			{
+				maximum_number_of_samples=module_NI_CARDS->hardware_buffer_size;
+			}
+			samples_count=0;
+			start=module_starting_sample_number;
+			if (module_starting_sample_number+local_number_of_samples>
+				maximum_number_of_samples)
+			{
+				end=maximum_number_of_samples;
+				end2=module_starting_sample_number+local_number_of_samples-
+					maximum_number_of_samples;
+			}
+			else
+			{
+				end=module_starting_sample_number+local_number_of_samples;
+				end2=0;
+			}
 			if (0==channel_number)
 			{
-				start=module_starting_sample_number;
-				if (module_starting_sample_number+local_number_of_samples>
-					maximum_number_of_samples)
-				{
-					end=maximum_number_of_samples;
-					end2=module_starting_sample_number+local_number_of_samples-
-						maximum_number_of_samples;
-				}
-				else
-				{
-					end=module_starting_sample_number+local_number_of_samples;
-					end2=0;
-				}
 				k=start;
-				while (return_code&&(k<end))
+				k_phase=0;
+				while (return_code&&(((0==k_phase)&&(k>=start)&&(k<end))||
+					((1==k_phase)&&(k>=0)&&(k<end2))))
 				{
-					ni_card=module_NI_CARDS;
-					i=module_number_of_NI_CARDS;
-					while (return_code&&(i>0))
+					i=0;
+					while (return_code&&(i<module_number_of_configured_channels))
 					{
-						source=(ni_card->hardware_buffer)+(k*NUMBER_OF_CHANNELS_ON_NI_CARD);
-						if ((UnEmap_2V1==ni_card->unemap_hardware_version)||
-							(UnEmap_2V2==ni_card->unemap_hardware_version))
+						j=(module_configured_channels[i]-1)/NUMBER_OF_CHANNELS_ON_NI_CARD;
+						if (j<module_number_of_NI_CARDS)
 						{
-							/* UnEmap_2V1 and UnEmap_2V2 invert */
-							for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
+							ni_card=module_NI_CARDS+j;
+							number_of_configured_channels=
+								ni_card->number_of_configured_channels;
+							if ((0<number_of_configured_channels)&&(0<=(offset=
+								(ni_card->hardware_buffer_offsets)[
+								(module_configured_channels[i]-1)%
+								NUMBER_OF_CHANNELS_ON_NI_CARD])))
 							{
-								sample=source[(ni_card->channel_reorder)[j]];
-								if (sample<SHRT_MAX)
+								source=(ni_card->hardware_buffer)+
+									(k*number_of_configured_channels);
+								sample=source[offset];
+								if ((UnEmap_2V1==ni_card->unemap_hardware_version)||
+									(UnEmap_2V2==ni_card->unemap_hardware_version))
 								{
-									sample= -sample;
-								}
-								else
-								{
-									sample=SHRT_MIN;
-								}
-								samples[j]=sample;
-							}
-						}
-						else
-						{
-							for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
-							{
-								samples[j]=source[(ni_card->channel_reorder)[j]];
-							}
-						}
-						transfer_samples_function_result=(*transfer_samples_function)(
-							samples,NUMBER_OF_CHANNELS_ON_NI_CARD,
-							transfer_samples_function_data);
-						number_transferred += transfer_samples_function_result;
-						if (NUMBER_OF_CHANNELS_ON_NI_CARD!=transfer_samples_function_result)
-						{
-							return_code=0;
-						}
-						ni_card++;
-						i--;
-					}
-					k++;
-				}
-				if (return_code&&(end2>0))
-				{
-					k=0;
-					while (return_code&&(k<end2))
-					{
-						ni_card=module_NI_CARDS;
-						i=module_number_of_NI_CARDS;
-						while (return_code&&(i>0))
-						{
-							source=(ni_card->hardware_buffer)+
-								(k*NUMBER_OF_CHANNELS_ON_NI_CARD);
-							if ((UnEmap_2V1==ni_card->unemap_hardware_version)||
-								(UnEmap_2V2==ni_card->unemap_hardware_version))
-							{
-								/* UnEmap_2V1 and UnEmap_2V2 invert */
-								for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
-								{
-									sample=source[(ni_card->channel_reorder)[j]];
+									/* UnEmap_2V1 and UnEmap_2V2 invert */
 									if (sample<SHRT_MAX)
 									{
 										sample= -sample;
@@ -10275,95 +8548,74 @@ transferred.
 									{
 										sample=SHRT_MIN;
 									}
-									samples[j]=sample;
+								}
+								samples[samples_count]=sample;
+								samples_count++;
+								if (samples_count>=NUMBER_OF_CHANNELS_ON_NI_CARD)
+								{
+									transfer_samples_function_result=(*transfer_samples_function)(
+										samples,NUMBER_OF_CHANNELS_ON_NI_CARD,
+										transfer_samples_function_data);
+									number_transferred += transfer_samples_function_result;
+									if (NUMBER_OF_CHANNELS_ON_NI_CARD!=
+										transfer_samples_function_result)
+									{
+										return_code=0;
+									}
+									samples_count=0;
 								}
 							}
 							else
 							{
-								for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
-								{
-									samples[j]=source[(ni_card->channel_reorder)[j]];
-								}
-							}
-							transfer_samples_function_result=(*transfer_samples_function)(
-								samples,NUMBER_OF_CHANNELS_ON_NI_CARD,
-								transfer_samples_function_data);
-							number_transferred += transfer_samples_function_result;
-							if (NUMBER_OF_CHANNELS_ON_NI_CARD!=
-								transfer_samples_function_result)
-							{
 								return_code=0;
+								display_message(ERROR_MESSAGE,
+									"unemap_transfer_samples_acquired.  Invalid configured "
+									"channel offset %d %d %d %d",channel_number,
+									module_configured_channels[i],number_of_configured_channels,
+									(ni_card->hardware_buffer_offsets)[
+									(module_configured_channels[i]-1)%
+									NUMBER_OF_CHANNELS_ON_NI_CARD]);
 							}
-							ni_card++;
-							i--;
 						}
-						k++;
+						else
+						{
+							return_code=0;
+							display_message(ERROR_MESSAGE,
+								"unemap_transfer_samples_acquired.  Invalid configured channel "
+								"%d %d %d %d %d",i,channel_number,module_configured_channels[i],
+								j,module_number_of_NI_CARDS);
+						}
+						i++;
+					}
+					k++;
+					if (k==end)
+					{
+						k_phase=1;
+						k=0;
 					}
 				}
 			}
 			else
 			{
-				start=module_starting_sample_number;
-				if (module_starting_sample_number+local_number_of_samples>
-					maximum_number_of_samples)
-				{
-					end=maximum_number_of_samples;
-					end2=module_starting_sample_number+local_number_of_samples-
-						maximum_number_of_samples;
-				}
-				else
-				{
-					end=module_starting_sample_number+local_number_of_samples;
-					end2=0;
-				}
 				ni_card=module_NI_CARDS+
 					((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD);
-				source=(ni_card->hardware_buffer)+(start*NUMBER_OF_CHANNELS_ON_NI_CARD+
-					(ni_card->channel_reorder)[(channel_number-1)%
-					NUMBER_OF_CHANNELS_ON_NI_CARD]);
-				i=0;
-				if ((UnEmap_2V1==ni_card->unemap_hardware_version)||
-					(UnEmap_2V2==ni_card->unemap_hardware_version))
+				number_of_configured_channels=ni_card->number_of_configured_channels;
+				if ((0<number_of_configured_channels)&&(0<=(offset=
+					(ni_card->hardware_buffer_offsets)[(channel_number-1)%
+					NUMBER_OF_CHANNELS_ON_NI_CARD])))
 				{
-					/* UnEmap_2V1 and UnEmap_2V2 invert */
+					source=(ni_card->hardware_buffer)+
+						(start*number_of_configured_channels+offset);
 					k=start;
-					while (return_code&&(k<end))
+					k_phase=0;
+					while (return_code&&(((0==k_phase)&&(k>=start)&&(k<end))||
+						((1==k_phase)&&(k>=0)&&(k<end2))))
 					{
 						sample= *source;
-						if (sample<SHRT_MAX)
+						if ((UnEmap_2V1==ni_card->unemap_hardware_version)||
+							(UnEmap_2V2==ni_card->unemap_hardware_version))
 						{
-							sample= -sample;
-						}
-						else
-						{
-							sample=SHRT_MIN;
-						}
-						samples[i]=sample;
-						i++;
-						if (i>=NUMBER_OF_CHANNELS_ON_NI_CARD)
-						{
-							transfer_samples_function_result=(*transfer_samples_function)(
-								samples,NUMBER_OF_CHANNELS_ON_NI_CARD,
-								transfer_samples_function_data);
-							number_transferred += transfer_samples_function_result;
-							if (NUMBER_OF_CHANNELS_ON_NI_CARD!=
-								transfer_samples_function_result)
-							{
-								return_code=0;
-							}
-							i=0;
-						}
-						source += NUMBER_OF_CHANNELS_ON_NI_CARD;
-						k++;
-					}
-					if (return_code&&(end2>0))
-					{
-						source=(ni_card->hardware_buffer)+((ni_card->channel_reorder)[
-							(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD]);
-						k=0;
-						while (return_code&&(k<end2))
-						{
-							sample= *source;
+							/* UnEmap_2V1 and UnEmap_2V2 invert */
 							if (sample<SHRT_MAX)
 							{
 								sample= -sample;
@@ -10372,34 +8624,10 @@ transferred.
 							{
 								sample=SHRT_MIN;
 							}
-							samples[i]=sample;
-							i++;
-							if (i>=NUMBER_OF_CHANNELS_ON_NI_CARD)
-							{
-								transfer_samples_function_result=(*transfer_samples_function)(
-									samples,NUMBER_OF_CHANNELS_ON_NI_CARD,
-									transfer_samples_function_data);
-								number_transferred += transfer_samples_function_result;
-								if (NUMBER_OF_CHANNELS_ON_NI_CARD!=
-									transfer_samples_function_result)
-								{
-									return_code=0;
-								}
-								i=0;
-							}
-							source += NUMBER_OF_CHANNELS_ON_NI_CARD;
-							k++;
 						}
-					}
-				}
-				else
-				{
-					k=start;
-					while (return_code&&(k<end))
-					{
-						samples[i]= *source;
-						i++;
-						if (i>=NUMBER_OF_CHANNELS_ON_NI_CARD)
+						samples[samples_count]=sample;
+						samples_count++;
+						if (samples_count>=NUMBER_OF_CHANNELS_ON_NI_CARD)
 						{
 							transfer_samples_function_result=(*transfer_samples_function)(
 								samples,NUMBER_OF_CHANNELS_ON_NI_CARD,
@@ -10410,49 +8638,42 @@ transferred.
 							{
 								return_code=0;
 							}
-							i=0;
+							samples_count=0;
 						}
-						source += NUMBER_OF_CHANNELS_ON_NI_CARD;
 						k++;
-					}
-					if (return_code&&(end2>0))
-					{
-						source=(ni_card->hardware_buffer)+((ni_card->channel_reorder)[
-							(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD]);
-						k=0;
-						while (return_code&&(k<end2))
+						if (k==end)
 						{
-							samples[i]= *source;
-							i++;
-							if (i>=NUMBER_OF_CHANNELS_ON_NI_CARD)
-							{
-								transfer_samples_function_result=(*transfer_samples_function)(
-									samples,NUMBER_OF_CHANNELS_ON_NI_CARD,
-									transfer_samples_function_data);
-								number_transferred += transfer_samples_function_result;
-								if (NUMBER_OF_CHANNELS_ON_NI_CARD!=
-									transfer_samples_function_result)
-								{
-									return_code=0;
-								}
-								i=0;
-							}
-							source += NUMBER_OF_CHANNELS_ON_NI_CARD;
-							k++;
+							k_phase=1;
+							k=0;
+							source=(ni_card->hardware_buffer)+offset;
+						}
+						else
+						{
+							source += number_of_configured_channels;
 						}
 					}
 				}
-				if (return_code&&(i>0))
+				else
 				{
-					transfer_samples_function_result=(*transfer_samples_function)(
-						samples,i,transfer_samples_function_data);
-					number_transferred += transfer_samples_function_result;
-					if (i!=transfer_samples_function_result)
-					{
-						return_code=0;
-					}
-					i=0;
+					return_code=0;
+					display_message(ERROR_MESSAGE,
+						"unemap_transfer_samples_acquired.  Invalid configured "
+						"channel offset %d %d %d %d",channel_number,
+						number_of_configured_channels,
+						(ni_card->hardware_buffer_offsets)[(channel_number-1)%
+						NUMBER_OF_CHANNELS_ON_NI_CARD]);
 				}
+			}
+			if (return_code&&(samples_count>0))
+			{
+				transfer_samples_function_result=(*transfer_samples_function)(
+					samples,samples_count,transfer_samples_function_data);
+				number_transferred += transfer_samples_function_result;
+				if (samples_count!=transfer_samples_function_result)
+				{
+					return_code=0;
+				}
+				samples_count=0;
 			}
 			if (0==return_code)
 			{
@@ -10463,15 +8684,15 @@ transferred.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"unemap_transfer_samples_acquired.  Invalid configuration.  %d %p %d",
-				module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
+				"unemap_transfer_samples_acquired.  Invalid argument(s).  %p %d",
+				transfer_samples_function,channel_number);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"unemap_transfer_samples_acquired.  Invalid argument(s).  %p %d",
-			transfer_samples_function,channel_number);
+			"unemap_transfer_samples_acquired.  Invalid configuration.  %d %p %d",
+			module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
 	}
 #endif /* defined (NI_DAQ) */
 	if (number_of_samples_transferred)
@@ -10491,7 +8712,7 @@ transferred.
 int unemap_write_samples_acquired(int channel_number,int number_of_samples,
 	FILE *file,int *number_of_samples_written)
 /*******************************************************************************
-LAST MODIFIED : 13 January 2002
+LAST MODIFIED : 11 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -10509,7 +8730,7 @@ then it is set to the number of samples written.
 {
 	int return_code;
 #if defined (NI_DAQ)
-	int number_of_channels;
+	int i,number_of_channels;
 	unsigned long local_number_of_samples;
 #endif /* defined (NI_DAQ) */
 #if defined (WIN32_IO)
@@ -10525,13 +8746,15 @@ then it is set to the number of samples written.
 		module_starting_sample_number,module_sample_buffer_size);
 #endif /* defined (DEBUG) */
 #if defined (NI_DAQ)
-	/* check arguments */
-	if (file&&(0<=channel_number)&&
-		(channel_number<=module_number_of_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD))
+	if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 	{
-		if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
+		/* check arguments */
+		if ((0<=channel_number)&&((0==channel_number)||
+			((((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+			module_number_of_NI_CARDS)&&(0<=(module_NI_CARDS[(channel_number-1)/
+			NUMBER_OF_CHANNELS_ON_NI_CARD].hardware_buffer_offsets)[
+			(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD])))&&file)
 		{
-			return_code=1;
 			if (number_of_samples<=0)
 			{
 				local_number_of_samples=module_sample_buffer_size;
@@ -10546,8 +8769,16 @@ then it is set to the number of samples written.
 			}
 			if (0==channel_number)
 			{
-				number_of_channels=
-					module_number_of_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD;
+				number_of_channels=0;
+				for (i=0;i<module_number_of_NI_CARDS;i++)
+				{
+					number_of_channels +=
+						module_NI_CARDS[i].number_of_configured_channels;
+				}
+				if (0==number_of_channels)
+				{
+					local_number_of_samples=0;
+				}
 			}
 			else
 			{
@@ -10576,15 +8807,15 @@ then it is set to the number of samples written.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"unemap_write_samples_acquired.  Invalid configuration.  %d %p %d",
-				module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
+				"unemap_write_samples_acquired.  Invalid argument(s).  %p %d",file,
+				channel_number);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"unemap_write_samples_acquired.  Invalid argument(s).  %p %d",file,
-			channel_number);
+			"unemap_write_samples_acquired.  Invalid configuration.  %d %p %d",
+			module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
 	}
 #endif /* defined (NI_DAQ) */
 #if defined (DEBUG)
@@ -10597,423 +8828,10 @@ then it is set to the number of samples written.
 	return (return_code);
 } /* unemap_write_samples_acquired */
 
-#if defined (OLD_CODE)
-int unemap_get_samples_acquired(int channel_number,short int *samples)
-/*******************************************************************************
-LAST MODIFIED : 13 November 2000
-
-DESCRIPTION :
-The function fails if the hardware is not configured.
-
-If <channel_number> is valid (between 1 and the total number of channels
-inclusive), then the <samples> for that channel are returned.  If
-<channel_number> is 0 then the <samples> for all channels are returned.
-Otherwise the function fails.
-
-???DB.  When trying to read back 64 channels sampled at 1kHz for 20s, this
-function hung.  The hardware buffer would be 2.56MB for each card.  So for all
-7 cards the hardware buffers would total 17.92MB.  <samples> would also be
-17.92MB.  The NI crate had 32MB.  So I think that paging was slowing it down
-(drive light was on continuously).  Should have a function that checks on the
-available physical memory and limits the buffer based on this.
-==============================================================================*/
-{
-	int return_code;
-#if defined (NI_DAQ)
-	int end,end2,i,j,k,start,step;
-	short int *sample,*source;
-	struct NI_card *ni_card;
-	unsigned long maximum_number_of_samples;
-#endif /* defined (NI_DAQ) */
-
-	ENTER(unemap_get_samples_acquired);
-	return_code=0;
-#if defined (DEBUG)
-	/*???debug */
-	display_message(INFORMATION_MESSAGE,"enter unemap_get_samples_acquired\n");
-#endif /* defined (DEBUG) */
-#if defined (NI_DAQ)
-	/* check arguments */
-	if ((sample=samples)&&(0<=channel_number)&&
-		(channel_number<=module_number_of_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD))
-	{
-		if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
-		{
-			return_code=1;
-			maximum_number_of_samples=(module_NI_CARDS->hardware_buffer_size)/
-				NUMBER_OF_CHANNELS_ON_NI_CARD;
-			if (0==channel_number)
-			{
-				start=module_starting_sample_number;
-				if (module_starting_sample_number+module_sample_buffer_size>
-					maximum_number_of_samples)
-				{
-					end=maximum_number_of_samples;
-					end2=module_starting_sample_number+module_sample_buffer_size-
-						maximum_number_of_samples;
-				}
-				else
-				{
-					end=module_starting_sample_number+module_sample_buffer_size;
-					end2=0;
-				}
-				step=module_number_of_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD;
-				ni_card=module_NI_CARDS;
-				for (i=0;i<module_number_of_NI_CARDS;i++)
-				{
-					if ((UnEmap_2V1==ni_card->unemap_hardware_version)||
-						(UnEmap_2V2==ni_card->unemap_hardware_version))
-					{
-						/* UnEmap_2V1 and UnEmap_2V2 invert */
-						for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
-						{
-							source=(ni_card->hardware_buffer)+
-								(start*NUMBER_OF_CHANNELS_ON_NI_CARD+
-								(ni_card->channel_reorder)[j]);
-							sample=samples+(i*NUMBER_OF_CHANNELS_ON_NI_CARD+j);
-							for (k=start;k<end;k++)
-							{
-								if (*source<SHRT_MAX)
-								{
-									*sample= -(*source);
-								}
-								else
-								{
-									*sample=SHRT_MIN;
-								}
-								sample += step;
-								source += NUMBER_OF_CHANNELS_ON_NI_CARD;
-							}
-							if (end2>0)
-							{
-								source=(ni_card->hardware_buffer)+
-									((ni_card->channel_reorder)[j]);
-								for (k=0;k<end2;k++)
-								{
-									if (*source<SHRT_MAX)
-									{
-										*sample= -(*source);
-									}
-									else
-									{
-										*sample=SHRT_MIN;
-									}
-									sample += step;
-									source += NUMBER_OF_CHANNELS_ON_NI_CARD;
-								}
-							}
-						}
-					}
-					else
-					{
-						for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
-						{
-							source=(ni_card->hardware_buffer)+
-								(start*NUMBER_OF_CHANNELS_ON_NI_CARD+
-								(ni_card->channel_reorder)[j]);
-							sample=samples+(i*NUMBER_OF_CHANNELS_ON_NI_CARD+j);
-							for (k=start;k<end;k++)
-							{
-								*sample= *source;
-								sample += step;
-								source += NUMBER_OF_CHANNELS_ON_NI_CARD;
-							}
-							if (end2>0)
-							{
-								source=(ni_card->hardware_buffer)+
-									((ni_card->channel_reorder)[j]);
-								for (k=0;k<end2;k++)
-								{
-									*sample= *source;
-									sample += step;
-									source += NUMBER_OF_CHANNELS_ON_NI_CARD;
-								}
-							}
-						}
-					}
-					ni_card++;
-				}
-#if defined (OLD_CODE)
-				start=module_starting_sample_number;
-				if (module_starting_sample_number+module_sample_buffer_size>
-					maximum_number_of_samples)
-				{
-					end=maximum_number_of_samples;
-				}
-				else
-				{
-					end=module_starting_sample_number+module_sample_buffer_size;
-				}
-				for (i=start;i<end;i++)
-				{
-					for (j=0;j<module_number_of_NI_CARDS;j++)
-					{
-						source=module_NI_CARDS[j].hardware_buffer+
-							(i*NUMBER_OF_CHANNELS_ON_NI_CARD);
-						if ((UnEmap_2V1==module_NI_CARDS[j].unemap_hardware_version)||
-							(UnEmap_2V2==module_NI_CARDS[j].unemap_hardware_version))
-						{
-							/* UnEmap_2V1 and UnEmap_2V2 invert */
-							for (k=NUMBER_OF_CHANNELS_ON_NI_CARD;k>0;k--)
-							{
-								if (*source<SHRT_MAX)
-								{
-									*sample= -(*source);
-								}
-								else
-								{
-									*sample=SHRT_MIN;
-								}
-								sample++;
-								source++;
-							}
-						}
-						else
-						{
-							for (k=NUMBER_OF_CHANNELS_ON_NI_CARD;k>0;k--)
-							{
-								*sample= *source;
-								sample++;
-								source++;
-							}
-						}
-					}
-				}
-				if (module_starting_sample_number+module_sample_buffer_size>
-					maximum_number_of_samples)
-				{
-					start=0;
-					end=module_starting_sample_number+module_sample_buffer_size-
-						maximum_number_of_samples;
-					for (i=start;i<end;i++)
-					{
-						for (j=0;j<module_number_of_NI_CARDS;j++)
-						{
-							source=module_NI_CARDS[j].hardware_buffer+
-								(i*NUMBER_OF_CHANNELS_ON_NI_CARD);
-							if ((UnEmap_2V1==module_NI_CARDS[j].unemap_hardware_version)||
-								(UnEmap_2V2==module_NI_CARDS[j].unemap_hardware_version))
-							{
-								/* UnEmap_2V1 and UnEmap_2V2 invert */
-								for (k=NUMBER_OF_CHANNELS_ON_NI_CARD;k>0;k--)
-								{
-									if (*source<SHRT_MAX)
-									{
-										*sample= -(*source);
-									}
-									else
-									{
-										*sample=SHRT_MIN;
-									}
-									sample++;
-									source++;
-								}
-							}
-							else
-							{
-								for (k=NUMBER_OF_CHANNELS_ON_NI_CARD;k>0;k--)
-								{
-									*sample= *source;
-									sample++;
-									source++;
-								}
-							}
-						}
-					}
-				}
-#endif /* defined (OLD_CODE) */
-			}
-			else
-			{
-				start=module_starting_sample_number;
-				if (module_starting_sample_number+module_sample_buffer_size>
-					maximum_number_of_samples)
-				{
-					end=maximum_number_of_samples;
-					end2=module_starting_sample_number+module_sample_buffer_size-
-						maximum_number_of_samples;
-				}
-				else
-				{
-					end=module_starting_sample_number+module_sample_buffer_size;
-					end2=0;
-				}
-				ni_card=module_NI_CARDS+
-					((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD);
-				source=(ni_card->hardware_buffer)+(start*NUMBER_OF_CHANNELS_ON_NI_CARD+
-					(ni_card->channel_reorder)[(channel_number-1)%
-					NUMBER_OF_CHANNELS_ON_NI_CARD]);
-				if ((UnEmap_2V1==ni_card->unemap_hardware_version)||
-					(UnEmap_2V2==ni_card->unemap_hardware_version))
-				{
-					/* UnEmap_2V1 and UnEmap_2V2 invert */
-					for (k=start;k<end;k++)
-					{
-						if (*source<SHRT_MAX)
-						{
-							*sample= -(*source);
-						}
-						else
-						{
-							*sample=SHRT_MIN;
-						}
-						sample++;
-						source += NUMBER_OF_CHANNELS_ON_NI_CARD;
-					}
-					if (end2>0)
-					{
-						source=(ni_card->hardware_buffer)+((ni_card->channel_reorder)[
-							(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD]);
-						for (k=0;k<end2;k++)
-						{
-							if (*source<SHRT_MAX)
-							{
-								*sample= -(*source);
-							}
-							else
-							{
-								*sample=SHRT_MIN;
-							}
-							sample++;
-							source += NUMBER_OF_CHANNELS_ON_NI_CARD;
-						}
-					}
-				}
-				else
-				{
-					for (k=start;k<end;k++)
-					{
-						*sample= *source;
-						sample++;
-						source += NUMBER_OF_CHANNELS_ON_NI_CARD;
-					}
-					if (end2>0)
-					{
-						source=(ni_card->hardware_buffer)+((ni_card->channel_reorder)[
-							(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD]);
-						for (k=0;k<end2;k++)
-						{
-							*sample= *source;
-							sample++;
-							source += NUMBER_OF_CHANNELS_ON_NI_CARD;
-						}
-					}
-				}
-#if defined (OLD_CODE)
-				start=module_starting_sample_number;
-				if (module_starting_sample_number+module_sample_buffer_size>
-					maximum_number_of_samples)
-				{
-					end=maximum_number_of_samples;
-				}
-				else
-				{
-					end=module_starting_sample_number+module_sample_buffer_size;
-				}
-				source=((module_NI_CARDS[(channel_number-1)/
-					NUMBER_OF_CHANNELS_ON_NI_CARD]).hardware_buffer)+
-					(start*NUMBER_OF_CHANNELS_ON_NI_CARD+
-					(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD);
-				if ((UnEmap_2V1==module_NI_CARDS[(channel_number-1)/
-					NUMBER_OF_CHANNELS_ON_NI_CARD].unemap_hardware_version)||
-					(UnEmap_2V2==module_NI_CARDS[(channel_number-1)/
-					NUMBER_OF_CHANNELS_ON_NI_CARD].unemap_hardware_version))
-				{
-					/* UnEmap_2V1 and UnEmap_2V2 invert */
-					for (i=start;i<end;i++)
-					{
-						if (*source<SHRT_MAX)
-						{
-							*sample= -(*source);
-						}
-						else
-						{
-							*sample=SHRT_MIN;
-						}
-						source += NUMBER_OF_CHANNELS_ON_NI_CARD;
-						sample++;
-					}
-				}
-				else
-				{
-					for (i=start;i<end;i++)
-					{
-						*sample= *source;
-						source += NUMBER_OF_CHANNELS_ON_NI_CARD;
-						sample++;
-					}
-				}
-				if (module_starting_sample_number+module_sample_buffer_size>
-					maximum_number_of_samples)
-				{
-					start=0;
-					end=module_starting_sample_number+module_sample_buffer_size-
-						maximum_number_of_samples;
-					source=((module_NI_CARDS[(channel_number-1)/
-						NUMBER_OF_CHANNELS_ON_NI_CARD]).hardware_buffer)+
-						((channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD);
-					if ((UnEmap_2V1==module_NI_CARDS[(channel_number-1)/
-						NUMBER_OF_CHANNELS_ON_NI_CARD].unemap_hardware_version)||
-						(UnEmap_2V2==module_NI_CARDS[(channel_number-1)/
-						NUMBER_OF_CHANNELS_ON_NI_CARD].unemap_hardware_version))
-					{
-						/* UnEmap_2V1 and UnEmap_2V2 invert */
-						for (i=start;i<end;i++)
-						{
-							if (*source<SHRT_MAX)
-							{
-								*sample= -(*source);
-							}
-							else
-							{
-								*sample=SHRT_MIN;
-							}
-							source += NUMBER_OF_CHANNELS_ON_NI_CARD;
-							sample++;
-						}
-					}
-					else
-					{
-						for (i=start;i<end;i++)
-						{
-							*sample= *source;
-							source += NUMBER_OF_CHANNELS_ON_NI_CARD;
-							sample++;
-						}
-					}
-				}
-#endif /* defined (OLD_CODE) */
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"unemap_get_samples_acquired.  Invalid configuration.  %d %p %d",
-				module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"unemap_get_samples_acquired.  Invalid argument(s).  %p %d",samples,
-			channel_number);
-	}
-#endif /* defined (NI_DAQ) */
-#if defined (DEBUG)
-	/*???debug */
-	display_message(INFORMATION_MESSAGE,"leave unemap_get_samples_acquired %d\n",
-		return_code);
-#endif /* defined (DEBUG) */
-	LEAVE;
-
-	return (return_code);
-} /* unemap_get_samples_acquired */
-#endif /* defined (OLD_CODE) */
-
 int unemap_get_samples_acquired(int channel_number,int number_of_samples,
 	short int *samples,int *number_of_samples_got)
 /*******************************************************************************
-LAST MODIFIED : 13 January 2002
+LAST MODIFIED : 13 January 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -11068,7 +8886,7 @@ int unemap_get_samples_acquired_background(int channel_number,
 	int number_of_samples,Unemap_acquired_data_callback *callback,
 	void *user_data)
 /*******************************************************************************
-LAST MODIFIED : 13 January 2002
+LAST MODIFIED : 8 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -11092,63 +8910,80 @@ For this version (hardware local), it retrieves the samples and calls the
 {
 	int return_code;
 #if defined (NI_DAQ)
-	int local_number_of_samples,number_of_channels,number_of_samples_got;
+	int i,local_number_of_samples,number_of_channels,number_of_samples_got;
 	short *samples;
 #endif /* defined (NI_DAQ) */
 
 	ENTER(unemap_get_samples_acquired_background);
 	return_code=0;
 #if defined (NI_DAQ)
-	/* check arguments */
-	if (callback&&(0<=channel_number)&&
-		(channel_number<=module_number_of_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD))
+	if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 	{
-		if (number_of_samples<=0)
+		/* check arguments */
+		if ((0<=channel_number)&&((0==channel_number)||
+			((((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+			module_number_of_NI_CARDS)&&(0<=(module_NI_CARDS[(channel_number-1)/
+			NUMBER_OF_CHANNELS_ON_NI_CARD].hardware_buffer_offsets)[
+			(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD])))&&callback)
 		{
-			local_number_of_samples=(int)module_sample_buffer_size;
-		}
-		else
-		{
-			local_number_of_samples=number_of_samples;
-			if (local_number_of_samples>(int)module_sample_buffer_size)
+			if (number_of_samples<=0)
 			{
 				local_number_of_samples=(int)module_sample_buffer_size;
 			}
-		}
-		if (0==channel_number)
-		{
-			number_of_channels=
-				module_number_of_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD;
-		}
-		else
-		{
-			number_of_channels=1;
-		}
-		if (ALLOCATE(samples,short,number_of_channels*local_number_of_samples))
-		{
-			if (unemap_get_samples_acquired(channel_number,number_of_samples,samples,
-				&number_of_samples_got))
+			else
 			{
-				(*callback)(channel_number,number_of_samples_got,samples,user_data);
-				return_code=1;
+				local_number_of_samples=number_of_samples;
+				if (local_number_of_samples>(int)module_sample_buffer_size)
+				{
+					local_number_of_samples=(int)module_sample_buffer_size;
+				}
+			}
+			if (0==channel_number)
+			{
+				number_of_channels=0;
+				for (i=0;i<module_number_of_NI_CARDS;i++)
+				{
+					number_of_channels +=
+						module_NI_CARDS[i].number_of_configured_channels;
+				}
+			}
+			else
+			{
+				number_of_channels=1;
+			}
+			if ((0<number_of_channels)&&(0<local_number_of_samples)&&
+				ALLOCATE(samples,short,number_of_channels*local_number_of_samples))
+			{
+				if (unemap_get_samples_acquired(channel_number,number_of_samples,
+					samples,&number_of_samples_got))
+				{
+					(*callback)(channel_number,number_of_samples_got,samples,user_data);
+					return_code=1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"unemap_get_samples_acquired_background.  Could not get samples");
+				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"unemap_get_samples_acquired_background.  Could not get samples");
+					"unemap_get_samples_acquired_background.  "
+					"Could not allocate samples");
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"unemap_get_samples_acquired_background.  Could not allocate samples");
+			display_message(ERROR_MESSAGE,"unemap_get_samples_acquired_background.  "
+				"Invalid argument(s).  %p %d",callback,channel_number);
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"unemap_get_samples_acquired_background.  Invalid argument(s).  %p %d",
-			callback,channel_number);
+		display_message(ERROR_MESSAGE,"unemap_get_samples_acquired_background.  "
+			"Invalid configuration.  %d %p %d",module_configured,module_NI_CARDS,
+			module_number_of_NI_CARDS);
 	}
 #endif /* defined (NI_DAQ) */
 	LEAVE;
@@ -11158,7 +8993,7 @@ For this version (hardware local), it retrieves the samples and calls the
 
 int unemap_get_maximum_number_of_samples(unsigned long *number_of_samples)
 /*******************************************************************************
-LAST MODIFIED : 3 May 1999
+LAST MODIFIED : 7 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -11177,8 +9012,15 @@ The size of the rolling buffer, in number of samples per channel, is assigned to
 #if defined (NI_DAQ)
 		if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 		{
-			*number_of_samples=(module_NI_CARDS->hardware_buffer_size)/
-				NUMBER_OF_CHANNELS_ON_NI_CARD;
+			if (0<module_NI_CARDS->number_of_configured_channels)
+			{
+				*number_of_samples=(module_NI_CARDS->hardware_buffer_size)/
+					(module_NI_CARDS->number_of_configured_channels);
+			}
+			else
+			{
+				*number_of_samples=module_NI_CARDS->hardware_buffer_size;
+			}
 			return_code=1;
 		}
 		else
@@ -11327,7 +9169,7 @@ The scrolling frequency is assigned to <*frequency>.
 int unemap_set_gain(int channel_number,float pre_filter_gain,
 	float post_filter_gain)
 /*******************************************************************************
-LAST MODIFIED : 13 September 2002
+LAST MODIFIED : 8 August 2003
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -11370,18 +9212,14 @@ it is +/-10V and the output range for the SCU is +/-5V.
 		/* check configuration */
 		if (search_for_NI_cards()&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 		{
-			if ((0<=channel_number)&&(channel_number<=module_number_of_NI_CARDS*
-				NUMBER_OF_CHANNELS_ON_NI_CARD))
+			card_number= -1;
+			if ((0<=channel_number)&&((0==channel_number)||(((card_number=
+				(channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+				module_number_of_NI_CARDS)&&(0<=(module_NI_CARDS[card_number].
+				hardware_buffer_offsets)[(channel_number-1)%
+				NUMBER_OF_CHANNELS_ON_NI_CARD]))))
 			{
 				return_code=1;
-				if (0==channel_number)
-				{
-					card_number= -1;
-				}
-				else
-				{
-					card_number=(channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD;
-				}
 				ni_card=module_NI_CARDS;
 				for (i=0;i<module_number_of_NI_CARDS;i++)
 				{
@@ -11635,7 +9473,7 @@ it is +/-10V and the output range for the SCU is +/-5V.
 int unemap_get_gain(int channel_number,float *pre_filter_gain,
 	float *post_filter_gain)
 /*******************************************************************************
-LAST MODIFIED : 5 August 1999
+LAST MODIFIED : 8 August 2003
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -11659,8 +9497,11 @@ The <*pre_filter_gain> and <*post_filter_gain> for the group are assigned.
 	if (search_for_NI_cards()&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 	{
 		/* check arguments */
-		if ((1<=channel_number)&&(channel_number<=module_number_of_NI_CARDS*
-			NUMBER_OF_CHANNELS_ON_NI_CARD)&&pre_filter_gain&&post_filter_gain)
+		if ((0<channel_number)&&(((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+			module_number_of_NI_CARDS)&&(0<=(module_NI_CARDS[(channel_number-1)/
+			NUMBER_OF_CHANNELS_ON_NI_CARD].hardware_buffer_offsets)[
+			(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD])&&pre_filter_gain&&
+			post_filter_gain)
 		{
 			ni_card=module_NI_CARDS+
 				((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD);
@@ -11701,8 +9542,9 @@ The <*pre_filter_gain> and <*post_filter_gain> for the group are assigned.
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"unemap_get_gain.  Missing gain");
+			display_message(ERROR_MESSAGE,"unemap_get_gain.  "
+				"Invalid argument(s).  %d %p %p",channel_number,pre_filter_gain,
+				post_filter_gain);
 		}
 	}
 	else
@@ -11723,7 +9565,7 @@ int unemap_load_voltage_stimulating(int number_of_channels,int *channel_numbers,
 	Unemap_stimulation_end_callback *stimulation_end_callback,
 	void *stimulation_end_callback_data)
 /*******************************************************************************
-LAST MODIFIED : 22 November 2001
+LAST MODIFIED : 8 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -11787,8 +9629,12 @@ Use <unemap_start_stimulating> to start the stimulating.
 		channel_number=channel_numbers;
 		while (return_code&&(i>0))
 		{
-			if ((*channel_number>=0)&&(*channel_number<=module_number_of_NI_CARDS*
-				NUMBER_OF_CHANNELS_ON_NI_CARD))
+			if ((0< *channel_number)&&
+				((((*channel_number)-1)/NUMBER_OF_CHANNELS_ON_NI_CARD<
+				module_number_of_NI_CARDS)&&(0<=(module_NI_CARDS[
+				((*channel_number)-1)/NUMBER_OF_CHANNELS_ON_NI_CARD].
+				hardware_buffer_offsets)[((*channel_number)-1)%
+				NUMBER_OF_CHANNELS_ON_NI_CARD])))
 			{
 				i--;
 				channel_number++;
@@ -11811,7 +9657,14 @@ Use <unemap_start_stimulating> to start the stimulating.
 				{
 					for (i=0;i<module_number_of_NI_CARDS;i++)
 					{
-						load_card[i]=1;
+						if (0<module_NI_CARDS[i].number_of_configured_channels)
+						{
+							load_card[i]=1;
+						}
+						else
+						{
+							load_card[i]=0;
+						}
 					}
 				}
 				else
@@ -11913,7 +9766,7 @@ int unemap_load_current_stimulating(int number_of_channels,int *channel_numbers,
 	Unemap_stimulation_end_callback *stimulation_end_callback,
 	void *stimulation_end_callback_data)
 /*******************************************************************************
-LAST MODIFIED : 22 November 2001
+LAST MODIFIED : 11 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -11963,8 +9816,12 @@ Use <unemap_start_stimulating> to start the stimulating.
 		channel_number=channel_numbers;
 		while (return_code&&(i>0))
 		{
-			if ((*channel_number>=0)&&(*channel_number<=module_number_of_NI_CARDS*
-				NUMBER_OF_CHANNELS_ON_NI_CARD))
+			if ((0< *channel_number)&&
+				((((*channel_number)-1)/NUMBER_OF_CHANNELS_ON_NI_CARD<
+				module_number_of_NI_CARDS)&&(0<=(module_NI_CARDS[
+				((*channel_number)-1)/NUMBER_OF_CHANNELS_ON_NI_CARD].
+				hardware_buffer_offsets)[((*channel_number)-1)%
+				NUMBER_OF_CHANNELS_ON_NI_CARD])))
 			{
 				i--;
 				channel_number++;
@@ -12004,7 +9861,14 @@ Use <unemap_start_stimulating> to start the stimulating.
 				{
 					for (i=0;i<module_number_of_NI_CARDS;i++)
 					{
-						load_card[i]=1;
+						if (0<module_NI_CARDS[i].number_of_configured_channels)
+						{
+							load_card[i]=1;
+						}
+						else
+						{
+							load_card[i]=0;
+						}
 					}
 				}
 				else
@@ -12120,258 +9984,6 @@ yet started.
 	return (return_code);
 } /* unemap_start_stimulating */
 
-#if defined (OLD_CODE)
-int unemap_start_voltage_stimulating(int channel_number,int number_of_voltages,
-	float voltages_per_second,float *voltages)
-/*******************************************************************************
-LAST MODIFIED : 7 May 1999
-
-DESCRIPTION :
-The function fails if the hardware is not configured.
-
-If <channel_number> is between 1 and the total number of channels inclusive,
-then the function applies to the group ((<channel_number>-1) div 64)*64+1 to
-((<channel_number>-1) div 64)*64+64.  If <channel_number> is 0 then the
-function applies to the group of all channels.  Otherwise, the function fails.
-
-Starts stimulating down the channels that are in the group and have been
-specified as stimulating with <unemap_set_channel_stimulating>.  If
-<number_of_voltages> is 0 then the stimulating signal is the zero signal.  If
-<number_of_voltages> is 1 then the stimulating signal is constant at the
-<*voltages>.  If <number_of_voltages> is >1 then the stimulating signal is that
-in <voltages> at the specified number of <voltages_per_second>.
-
-The <voltages> are those desired (in volts).  The function sets <voltages> to
-the actual values used.
-==============================================================================*/
-{
-	int return_code;
-#if defined (NI_DAQ)
-	int card_number,i;
-#endif /* defined (NI_DAQ) */
-
-	ENTER(unemap_start_voltage_stimulating);
-	return_code=0;
-#if defined (NI_DAQ)
-	/* check arguments */
-	if ((0<=channel_number)&&(channel_number<=module_number_of_NI_CARDS*
-		NUMBER_OF_CHANNELS_ON_NI_CARD)&&((0==number_of_voltages)||
-		((1==number_of_voltages)&&voltages)||((1<number_of_voltages)&&voltages&&
-		(0<voltages_per_second))))
-	{
-		if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
-		{
-			return_code=1;
-			if (0==channel_number)
-			{
-				card_number= -1;
-			}
-			else
-			{
-				card_number=(channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD;
-			}
-			/* make sure that constant voltage */
-			i=0;
-			while (i<module_number_of_NI_CARDS)
-			{
-				if (((-1==card_number)||(i==card_number))&&
-					((PCI6031E_AD_DA==(module_NI_CARDS[i]).type)||
-					(PXI6031E_AD_DA==(module_NI_CARDS[i]).type)||
-					(PXI6071E_AD_DA==(module_NI_CARDS[i]).type)))
-				{
-					if ((UnEmap_2V1==module_NI_CARDS[i].unemap_hardware_version)||
-						(UnEmap_2V2==module_NI_CARDS[i].unemap_hardware_version))
-					{
-						set_shift_register(module_NI_CARDS+i,
-							Stim_Source_SHIFT_REGISTER_UnEmap2vx,0,1);
-					}
-				}
-				i++;
-			}
-			return_code=start_NI_DA(STIMULATE_CHANNEL,channel_number,
-				number_of_voltages,voltages_per_second,voltages);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"unemap_start_voltage_stimulating.  Invalid configuration.  %d %p %d",
-				module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"unemap_start_voltage_stimulating.  Invalid arguments %d %d %g %p",
-			channel_number,number_of_voltages,voltages_per_second,voltages);
-	}
-#endif /* defined (NI_DAQ) */
-#if defined (DEBUG)
-/*???debug */
-{
-	FILE *unemap_debug;
-	int i,maximum_voltages;
-
-	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
-	{
-		fprintf(unemap_debug,"unemap_start_voltage_stimulating %d %d %g %p %d\n",
-			channel_number,number_of_voltages,voltages_per_second,voltages,
-			return_code);
-		maximum_voltages=10;
-		if (number_of_voltages<maximum_voltages)
-		{
-			maximum_voltages=number_of_voltages;
-		}
-		for (i=0;i<maximum_voltages;i++)
-		{
-			fprintf(unemap_debug,"  %d %g\n",i,voltages[i]);
-		}
-		fclose(unemap_debug);
-	}
-}
-#endif /* defined (DEBUG) */
-	LEAVE;
-
-	return (return_code);
-} /* unemap_start_voltage_stimulating */
-
-int unemap_start_current_stimulating(int channel_number,int number_of_currents,
-	float currents_per_second,float *currents)
-/*******************************************************************************
-LAST MODIFIED : 7 May 1999
-
-DESCRIPTION :
-The function fails if the hardware is not configured.
-
-If <channel_number> is between 1 and the total number of channels inclusive,
-then the function applies to the group ((<channel_number>-1) div 64)*64+1 to
-((<channel_number>-1) div 64)*64+64.  If <channel_number> is 0 then the
-function applies to the group of all channels.  Otherwise, the function fails.
-
-Starts stimulating down the channels that are in the group and have been
-specified as stimulating with <unemap_set_channel_stimulating>.  If
-<number_of_currents> is 0 then the stimulating signal is the zero signal.  If
-<number_of_currents> is 1 then the stimulating signal is constant at the
-<*currents>.  If <number_of_currents> is >1 then the stimulating signal is that
-in <currents> at the specified number of <currents_per_second>.
-
-The <currents> are those desired as a proportion of the maximum (dependent on
-the impedance being driven).  The function sets <currents> to the actual values
-used.
-==============================================================================*/
-{
-	int return_code;
-#if defined (NI_DAQ)
-	float current;
-	int card_number,i;
-#endif /* defined (NI_DAQ) */
-
-	ENTER(unemap_start_current_stimulating);
-	return_code=0;
-#if defined (NI_DAQ)
-	/* check arguments */
-	if ((0<=channel_number)&&(channel_number<=module_number_of_NI_CARDS*
-		NUMBER_OF_CHANNELS_ON_NI_CARD)&&((0==number_of_currents)||
-		((1==number_of_currents)&&currents)||((1<number_of_currents)&&currents&&
-		(0<currents_per_second))))
-	{
-		if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
-		{
-			return_code=1;
-			if (0==channel_number)
-			{
-				card_number= -1;
-			}
-			else
-			{
-				card_number=(channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD;
-			}
-			/* change the currents into voltages */
-			for (i=0;i<number_of_currents;i++)
-			{
-				current=currents[i];
-				if ((float)1<current)
-				{
-					current=(float)1;
-				}
-				else
-				{
-					if ((float)-1>current)
-					{
-						current=(float)-1;
-					}
-				}
-				currents[i]=current*MAXIMUM_CURRENT_STIMULATOR_VOLTAGE_UnEmap2vx;
-			}
-			/* make sure that constant current */
-			i=0;
-			while (i<module_number_of_NI_CARDS)
-			{
-				if (((-1==card_number)||(i==card_number))&&
-					((PCI6031E_AD_DA==(module_NI_CARDS[i]).type)||
-					(PXI6031E_AD_DA==(module_NI_CARDS[i]).type)||
-					(PXI6071E_AD_DA==(module_NI_CARDS[i]).type)))
-				{
-					if ((UnEmap_2V1==module_NI_CARDS[i].unemap_hardware_version)||
-						(UnEmap_2V2==module_NI_CARDS[i].unemap_hardware_version))
-					{
-						set_shift_register(module_NI_CARDS+i,
-							Stim_Source_SHIFT_REGISTER_UnEmap2vx,1,1);
-					}
-				}
-				i++;
-			}
-			return_code=start_NI_DA(STIMULATE_CHANNEL,channel_number,
-				number_of_currents,currents_per_second,currents);
-			/* set the desired currents to the actual currents used */
-			for (i=0;i<number_of_currents;i++)
-			{
-				currents[i] /= MAXIMUM_CURRENT_STIMULATOR_VOLTAGE_UnEmap2vx;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"unemap_start_current_stimulating.  Invalid configuration.  %d %p %d",
-				module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"unemap_start_current_stimulating.  Invalid arguments %d %d %g %p",
-			channel_number,number_of_currents,currents_per_second,currents);
-	}
-#endif /* defined (NI_DAQ) */
-#if defined (DEBUG)
-/*???debug */
-{
-	FILE *unemap_debug;
-	int i,maximum_currents;
-
-	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
-	{
-		fprintf(unemap_debug,"unemap_start_current_stimulating %d %d %g %p %d\n",
-			channel_number,number_of_currents,currents_per_second,currents,
-			return_code);
-		maximum_currents=10;
-		if (number_of_currents<maximum_currents)
-		{
-			maximum_currents=number_of_currents;
-		}
-		for (i=0;i<maximum_currents;i++)
-		{
-			fprintf(unemap_debug,"  %d %g\n",i,currents[i]);
-		}
-		fclose(unemap_debug);
-	}
-}
-#endif /* defined (DEBUG) */
-	LEAVE;
-
-	return (return_code);
-} /* unemap_start_current_stimulating */
-#endif /* defined (OLD_CODE) */
-
 int unemap_stop_stimulating(int channel_number)
 /*******************************************************************************
 LAST MODIFIED : 1 June 1999
@@ -12415,7 +10027,7 @@ Stops stimulating for the channels in the group.
 
 int unemap_set_channel_stimulating(int channel_number,int stimulating)
 /*******************************************************************************
-LAST MODIFIED : 10 September 1999
+LAST MODIFIED : 8 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -12436,11 +10048,14 @@ is 0, then all channels are set to <stimulating>.  Otherwise the function fails.
 	ENTER(unemap_set_channel_stimulating);
 	return_code=0;
 #if defined (NI_DAQ)
-	if ((0<=channel_number)&&(channel_number<=module_number_of_NI_CARDS*
-		NUMBER_OF_CHANNELS_ON_NI_CARD))
+	if (module_configured&&(ni_card=module_NI_CARDS)&&
+		(0<module_number_of_NI_CARDS))
 	{
-		if (module_configured&&(ni_card=module_NI_CARDS)&&
-			(0<module_number_of_NI_CARDS))
+		if ((0<=channel_number)&&((0==channel_number)||
+			((((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+			module_number_of_NI_CARDS)&&(0<=(module_NI_CARDS[(channel_number-1)/
+			NUMBER_OF_CHANNELS_ON_NI_CARD].hardware_buffer_offsets)[
+			(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD]))))
 		{
 			return_code=1;
 			if (0==channel_number)
@@ -12452,29 +10067,50 @@ is 0, then all channels are set to <stimulating>.  Otherwise the function fails.
 					{
 						if ((ni_card->unemap_2vx).isolate_mode)
 						{
-							if ((stimulating&&relay_power_on_UnEmap2vx)||
-								(!stimulating&&!relay_power_on_UnEmap2vx))
+							for (j=0;j<NUMBER_OF_CHANNELS_ON_NI_CARD;j++)
 							{
-								stimulate_mode=(unsigned char)0xff;
-							}
-							else
-							{
-								stimulate_mode=(unsigned char)0x0;
-							}
-							for (j=0;j<8;j++)
-							{
-								((ni_card->unemap_2vx).stimulate_channels)[j]=stimulate_mode;
+								k=(ni_card->channel_reorder)[j];
+								stimulate_mode=(unsigned char)0x1;
+								stimulate_mode <<= k%8;
+								if (((ni_card->hardware_buffer_offsets)[j]>=0)&&
+									((stimulating&&relay_power_on_UnEmap2vx)||
+									(!stimulating&&!relay_power_on_UnEmap2vx)))
+								{
+									((ni_card->unemap_2vx).stimulate_channels)[k/8] |=
+										stimulate_mode;
+								}
+								else
+								{
+									((ni_card->unemap_2vx).stimulate_channels)[k/8] &=
+										~stimulate_mode;
+								}
 							}
 						}
 						else
 						{
-							k=Stim_Base_SHIFT_REGISTER_UnEmap2vx;
 							for (j=NUMBER_OF_CHANNELS_ON_NI_CARD-1;j>0;j--)
 							{
-								set_shift_register(ni_card,k,!stimulating,0);
-								k++;
+								k=Stim_Base_SHIFT_REGISTER_UnEmap2vx+
+									(ni_card->channel_reorder)[j];
+								if ((ni_card->hardware_buffer_offsets)[j]>=0)
+								{
+									set_shift_register(ni_card,k,!stimulating,0);
+								}
+								else
+								{
+									set_shift_register(ni_card,k,1,0);
+								}
 							}
-							set_shift_register(ni_card,k,!stimulating,1);
+							k=Stim_Base_SHIFT_REGISTER_UnEmap2vx+
+								(ni_card->channel_reorder)[0];
+							if ((ni_card->hardware_buffer_offsets)[0]>=0)
+							{
+								set_shift_register(ni_card,k,!stimulating,1);
+							}
+							else
+							{
+								set_shift_register(ni_card,k,1,1);
+							}
 						}
 					}
 					ni_card++;
@@ -12514,14 +10150,14 @@ is 0, then all channels are set to <stimulating>.  Otherwise the function fails.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"unemap_set_channel_stimulating.  Invalid configuration.  %d %p %d",
-				module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
+				"unemap_set_channel_stimulating.  Invalid channel_number");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"unemap_set_channel_stimulating.  Invalid channel_number");
+			"unemap_set_channel_stimulating.  Invalid configuration.  %d %p %d",
+			module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
 	}
 #endif /* defined (NI_DAQ) */
 #if defined (DEBUG)
@@ -12544,7 +10180,7 @@ is 0, then all channels are set to <stimulating>.  Otherwise the function fails.
 
 int unemap_get_channel_stimulating(int channel_number,int *stimulating)
 /*******************************************************************************
-LAST MODIFIED : 10 September 1999
+LAST MODIFIED : 8 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -12564,11 +10200,13 @@ and 0 otherwise.  Otherwise the function fails.
 	ENTER(unemap_get_channel_stimulating);
 	return_code=0;
 #if defined (NI_DAQ)
-	if ((0<channel_number)&&(channel_number<=module_number_of_NI_CARDS*
-		NUMBER_OF_CHANNELS_ON_NI_CARD)&&stimulating)
+	if (module_configured&&(ni_card=module_NI_CARDS)&&
+		(0<module_number_of_NI_CARDS))
 	{
-		if (module_configured&&(ni_card=module_NI_CARDS)&&
-			(0<module_number_of_NI_CARDS))
+		if ((0<channel_number)&&(((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+			module_number_of_NI_CARDS)&&(0<=(module_NI_CARDS[(channel_number-1)/
+			NUMBER_OF_CHANNELS_ON_NI_CARD].hardware_buffer_offsets)[
+			(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD])&&stimulating)
 		{
 			return_code=1;
 			ni_card += (channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD;
@@ -12589,15 +10227,15 @@ and 0 otherwise.  Otherwise the function fails.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"unemap_get_channel_stimulating.  Invalid configuration.  %d %p %d",
-				module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
+				"unemap_get_channel_stimulating.  Invalid argument(s).  %d %p",
+				channel_number,stimulating);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"unemap_get_channel_stimulating.  Invalid argument(s).  %d %p",
-			channel_number,stimulating);
+			"unemap_get_channel_stimulating.  Invalid configuration.  %d %p %d",
+			module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
 	}
 #endif /* defined (NI_DAQ) */
 	LEAVE;
@@ -12608,7 +10246,7 @@ and 0 otherwise.  Otherwise the function fails.
 int unemap_start_calibrating(int channel_number,int number_of_voltages,
 	float voltages_per_second,float *voltages)
 /*******************************************************************************
-LAST MODIFIED : 22 November 2001
+LAST MODIFIED : 11 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -12652,14 +10290,10 @@ the actual values used.
 		{
 			if (start_NI_DA())
 			{
-				return_code=0;
+				return_code=1;
 			}
 		}
 	}
-#if defined (OLD_CODE)
-	return_code=start_NI_DA(CALIBRATE_CHANNEL,channel_number,
-		number_of_voltages,voltages_per_second,voltages);
-#endif /* defined (OLD_CODE) */
 #endif /* defined (NI_DAQ) */
 #if defined (DEBUG)
 /*???debug */
@@ -12733,7 +10367,7 @@ Stops generating the calibration signal for the channels in the group.
 
 int unemap_set_power(int on)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 15 August 2003
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -12815,7 +10449,6 @@ on.
 						(u32)batt_good_callback);
 				}
 #endif /* defined (NEW_CODE) */
-				channel_number=1;
 				for (i=0;i<module_number_of_NI_CARDS;i++)
 				{
 					/* set power light on (and set other shift registers) */
@@ -12831,12 +10464,14 @@ on.
 					}
 					if (module_configured)
 					{
+						channel_number=i*NUMBER_OF_CHANNELS_ON_NI_CARD+1;
 						/* force a reset of the filter frequency */
-						unemap_get_antialiasing_filter_frequency(channel_number,&frequency);
+						unemap_get_antialiasing_filter_frequency(channel_number,
+							&frequency);
 						module_NI_CARDS[i].anti_aliasing_filter_taps= -1;
-						unemap_set_antialiasing_filter_frequency(channel_number,frequency);
+						unemap_set_antialiasing_filter_frequency(channel_number,
+							frequency);
 					}
-					channel_number += NUMBER_OF_CHANNELS_ON_NI_CARD;
 				}
 				BattA_setting_UnEmap2vx=1;
 				if (UnEmap_2V2==module_NI_CARDS->unemap_hardware_version)
@@ -13151,7 +10786,7 @@ The total number of hardware stimulators is assigned to
 int unemap_channel_valid_for_stimulator(int stimulator_number,
 	int channel_number)
 /*******************************************************************************
-LAST MODIFIED : 16 September 1999
+LAST MODIFIED : 8 August 2003
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -13165,8 +10800,11 @@ Returns non-zero if <stimulator_number> can stimulate down <channel_number>.
 	return_code=0;
 #if defined (NI_DAQ)
 	if (search_for_NI_cards()&&module_NI_CARDS&&(0<stimulator_number)&&
-		(stimulator_number<=module_number_of_stimulators)&&(1<=channel_number)&&
-		(channel_number<=module_number_of_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD)&&
+		(stimulator_number<=module_number_of_stimulators)&&(0<channel_number)&&
+		(((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+		module_number_of_NI_CARDS)&&(0<=(module_NI_CARDS[(channel_number-1)/
+		NUMBER_OF_CHANNELS_ON_NI_CARD].hardware_buffer_offsets)[
+		(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD])&&
 		(module_stimulator_NI_CARD_indices[stimulator_number-1]==
 		(channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD))
 	{
@@ -13188,7 +10826,7 @@ int unemap_get_card_state(int channel_number,int *battA_state,
 	int *NI_gain,int *input_mode,int *polarity,float *tol_settling_address,
 	int *sampling_interval,int *settling_step_max_address)
 /*******************************************************************************
-LAST MODIFIED : 30 June 1999
+LAST MODIFIED : 8 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -13209,14 +10847,16 @@ Intended for diagnostic use only.
 	ENTER(unemap_get_card_state);
 	return_code=0;
 #if defined (NI_DAQ)
-	/* check arguments */
-	if ((0<channel_number)&&(channel_number<=module_number_of_NI_CARDS*
-		NUMBER_OF_CHANNELS_ON_NI_CARD)&&battA_state&&battGood_state&&
-		filter_frequency&&filter_taps&&shift_registers&&GA0_state&&GA1_state&&
-		NI_gain&&input_mode&&polarity&&tol_settling_address&&sampling_interval&&
-		settling_step_max_address)
+	if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 	{
-		if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
+		/* check arguments */
+		if ((0<channel_number)&&(((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+			module_number_of_NI_CARDS)&&(0<=(module_NI_CARDS[(channel_number-1)/
+			NUMBER_OF_CHANNELS_ON_NI_CARD].hardware_buffer_offsets)[
+			(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD])&&battA_state&&
+			battGood_state&&filter_frequency&&filter_taps&&shift_registers&&
+			GA0_state&&GA1_state&&NI_gain&&input_mode&&polarity&&
+			tol_settling_address&&sampling_interval&&settling_step_max_address)
 		{
 			ni_card=module_NI_CARDS+
 				((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD);
@@ -13263,18 +10903,18 @@ Intended for diagnostic use only.
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"unemap_get_card_state.  Invalid configuration.  %d %p %d",
-				module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
+			display_message(ERROR_MESSAGE,"unemap_get_card_state.  "
+				"Invalid argument(s).  %d %p %p %p %p %p %p %p %p %p %p %p %p %p",
+				channel_number,battA_state,battGood_state,filter_frequency,filter_taps,
+				shift_registers,GA0_state,GA1_state,NI_gain,input_mode,polarity,
+				tol_settling,sampling_interval,settling_step_max);
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"unemap_get_card_state.  "
-			"Invalid argument(s).  %d %p %p %p %p %p %p %p %p %p %p %p %p %p",
-			channel_number,battA_state,battGood_state,filter_frequency,filter_taps,
-			shift_registers,GA0_state,GA1_state,NI_gain,input_mode,polarity,
-			tol_settling,sampling_interval,settling_step_max);
+		display_message(ERROR_MESSAGE,
+			"unemap_get_card_state.  Invalid configuration.  %d %p %d",
+			module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
 	}
 #endif /* defined (NI_DAQ) */
 	LEAVE;
@@ -13284,7 +10924,7 @@ Intended for diagnostic use only.
 
 int unemap_write_card_state(int channel_number,FILE *out_file)
 /*******************************************************************************
-LAST MODIFIED : 20 May 1999
+LAST MODIFIED : 8 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -13306,10 +10946,12 @@ Intended for diagnostic use only.
 	return_code=0;
 #if defined (NI_DAQ)
 	/* check arguments */
-	if ((0<channel_number)&&(channel_number<=module_number_of_NI_CARDS*
-		NUMBER_OF_CHANNELS_ON_NI_CARD)&&out_file)
+	if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 	{
-		if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
+		if ((0<channel_number)&&(((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+			module_number_of_NI_CARDS)&&(0<=(module_NI_CARDS[(channel_number-1)/
+			NUMBER_OF_CHANNELS_ON_NI_CARD].hardware_buffer_offsets)[
+			(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD])&&out_file)
 		{
 			ni_card=module_NI_CARDS+
 				((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD);
@@ -13400,15 +11042,15 @@ Intended for diagnostic use only.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"unemap_get_card_state.  Invalid configuration.  %d %p %d",
-				module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
+				"unemap_write_card_state.  Invalid argument(s).  %d %p",
+				channel_number,out_file);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"unemap_write_card_state.  Invalid argument(s).  %d %p",
-			channel_number,out_file);
+			"unemap_get_card_state.  Invalid configuration.  %d %p %d",
+			module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
 	}
 #endif /* defined (NI_DAQ) */
 	LEAVE;
@@ -13418,7 +11060,7 @@ Intended for diagnostic use only.
 
 int unemap_toggle_shift_register(int channel_number,int register_number)
 /*******************************************************************************
-LAST MODIFIED : 3 May 1999
+LAST MODIFIED : 8 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -13440,10 +11082,13 @@ Intended for diagnostic use only.
 	return_code=0;
 #if defined (NI_DAQ)
 	/* check arguments */
-	if ((0<channel_number)&&(channel_number<=module_number_of_NI_CARDS*
-		NUMBER_OF_CHANNELS_ON_NI_CARD)&&(0<register_number)&&(register_number<=80))
+	if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
 	{
-		if (module_configured&&module_NI_CARDS&&(0<module_number_of_NI_CARDS))
+		if ((0<channel_number)&&(((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD)<
+			module_number_of_NI_CARDS)&&(0<=(module_NI_CARDS[(channel_number-1)/
+			NUMBER_OF_CHANNELS_ON_NI_CARD].hardware_buffer_offsets)[
+			(channel_number-1)%NUMBER_OF_CHANNELS_ON_NI_CARD])&&(0<register_number)&&
+			(register_number<=80))
 		{
 			ni_card=module_NI_CARDS+
 				((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD);
@@ -13467,15 +11112,15 @@ Intended for diagnostic use only.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"unemap_toggle_shift_register.  Invalid configuration.  %d %p %d",
-				module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
+				"unemap_toggle_shift_register.  Invalid argument(s).  %d %d",
+				channel_number,register_number);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"unemap_toggle_shift_register.  Invalid argument(s).  %d %d",
-			channel_number,register_number);
+			"unemap_toggle_shift_register.  Invalid configuration.  %d %p %d",
+			module_configured,module_NI_CARDS,module_number_of_NI_CARDS);
 	}
 #endif /* defined (NI_DAQ) */
 	LEAVE;

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_client.c
 
-LAST MODIFIED : 12 June 2003
+LAST MODIFIED : 18 August 2003
 
 DESCRIPTION :
 Code for talking to the unemap hardware service (running under NT).  This is an
@@ -52,6 +52,12 @@ TO DO :
 1 Speed up save/transfer of data.  Needs to be made thread safe for this
 1.1 Sort out BACKGROUND_SAVING/UNIX/WIN32
 2 Synchronize stimulating between cards and then crates
+3 Subset of channels.  Look for
+3.1 samples.  DONE
+3.2 number_of_channels.  DONE
+3.3 unemap_get_number_of_channels.  DONE
+3.4 module_number_of_channels.  DONE
+3.5 module_number_of_configured_channels.  DONE
 ==============================================================================*/
 
 /*???testing */
@@ -160,13 +166,14 @@ FULL_DECLARE_INDEXED_LIST_TYPE(Stimulation_end_callback_info);
 #if defined (CACHE_CLIENT_INFORMATION)
 struct Unemap_card
 /*******************************************************************************
-LAST MODIFIED : 6 August 2002
+LAST MODIFIED : 17 August 2003
 
 DESCRIPTION :
 Used for caching information on this side of the connection to speed up some
 functions.
 ==============================================================================*/
 {
+	int channel_number;
 	float post_filter_gain,pre_filter_gain;
 	/* for a gain of 1 */
 	float maximum_voltage,minimum_voltage;
@@ -176,7 +183,7 @@ functions.
 
 struct Unemap_crate
 /*******************************************************************************
-LAST MODIFIED : 2 June 2003
+LAST MODIFIED : 11 August 2003
 
 DESCRIPTION :
 Information needed for each SCU crate/NI computer pair.
@@ -248,7 +255,8 @@ Information needed for each SCU crate/NI computer pair.
 		short *samples;
 		unsigned long number_of_samples;
 	} acquired;
-	int number_of_channels;
+	int *configured_channel_offsets,*configured_channels,number_of_channels,
+		number_of_configured_channels;
 #if defined (CACHE_CLIENT_INFORMATION)
 	int number_of_stimulators,*stimulator_card_indices,number_of_unemap_cards;
 	struct Unemap_card *unemap_cards;
@@ -275,7 +283,8 @@ Unemap_calibration_end_callback
 void *module_calibration_end_callback_data=(void *)NULL;
 
 int allow_open_connection=1;
-int module_number_of_channels=0,module_number_of_unemap_crates=0;
+int module_number_of_channels=0,module_number_of_configured_channels=0,
+	module_number_of_unemap_crates=0;
 struct Unemap_crate *module_unemap_crates=(struct Unemap_crate *)NULL;
 struct LIST(Stimulation_end_callback_info)
 	*module_stimulation_end_callback_info_list=
@@ -777,7 +786,7 @@ static int crate_deconfigure(struct Unemap_crate *crate);
 
 static int close_crate_connection(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 29 May 2003
+LAST MODIFIED : 11 August 2003
 
 DESCRIPTION :
 Closes the connection with the unemap hardware service for the <crate>.
@@ -898,6 +907,9 @@ Closes the connection with the unemap hardware service for the <crate>.
 #endif /* defined (UNIX) */
 #endif /* defined (CREATE_MUTEX) */
 		}
+		DEALLOCATE(crate->configured_channel_offsets);
+		DEALLOCATE(crate->configured_channels);
+		crate->number_of_configured_channels=0;
 #if defined (CACHE_CLIENT_INFORMATION)
 		DEALLOCATE(crate->unemap_cards);
 		DEALLOCATE(crate->stimulator_card_indices);
@@ -1209,7 +1221,7 @@ static int acquired_socket_callback(
 	)
 #endif /* defined (BACKGROUND_SAVING) && defined (UNIX) */
 /*******************************************************************************
-LAST MODIFIED : 1 September 2002
+LAST MODIFIED : 19 August 2003
 
 DESCRIPTION :
 Called when there is input on the acquired socket.
@@ -1217,7 +1229,8 @@ Called when there is input on the acquired socket.
 The <module_acquired_callback> is responsible for deallocating the samples.
 ==============================================================================*/
 {
-	int acquired_number_of_channels,i,number_of_channels;
+	int acquired_number_of_channels,i,k,number_of_channels,
+		number_of_configured_channels,offset;
 	long message_size;
 	short *sample,*samples;
 	struct Unemap_crate *crate;
@@ -1304,23 +1317,43 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 											number_of_channels*number_of_samples);
 										if (samples)
 										{
-											if (SOCKET_ERROR!=socket_recv(crate->acquired_socket,
+#if defined (DEBUG)
+											/*???debug */
+											int retval;
+#endif /* defined (DEBUG) */
+
+											if (SOCKET_ERROR!=
+#if defined (DEBUG)
+												/*???debug */
+												(retval=
+#endif /* defined (DEBUG) */
+												socket_recv(crate->acquired_socket,
 #if defined (WIN32_SYSTEM)
 												read_event,
 #endif /* defined (WIN32_SYSTEM) */
 												(unsigned char *)samples,
 												number_of_channels*(int)number_of_samples*sizeof(short),
-												0))
+												0)
+#if defined (DEBUG)
+												/*???debug */
+												)
+#endif /* defined (DEBUG) */
+												)
 											{
 #if defined (DEBUG)
-#if defined (WIN32_SYSTEM)
 												/*???debug */
+#if defined (WIN32_SYSTEM)
 												display_message(INFORMATION_MESSAGE,
-													"received.  %lu %ld %ld %ld\n",number_of_channels*
-													(int)number_of_samples*sizeof(short),
-													WaitForSingleObject(read_event,(DWORD)0),
-													WAIT_OBJECT_0,WAIT_TIMEOUT);
+													"received.  %ld %lu %ld %ld %ld\n",retval,
+													number_of_channels*(int)number_of_samples*
+													sizeof(short),WaitForSingleObject(read_event,
+													(DWORD)0),WAIT_OBJECT_0,WAIT_TIMEOUT);
 #endif /* defined (WIN32_SYSTEM) */
+#if defined (UNIX)
+												display_message(INFORMATION_MESSAGE,
+													"received.  %d %d\n",retval,number_of_channels*
+													(int)number_of_samples*sizeof(short));
+#endif /* defined (UNIX) */
 #endif /* defined (DEBUG) */
 												(crate->acquired).number_of_samples=number_of_samples;
 												(crate->acquired).samples=samples;
@@ -1344,15 +1377,25 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 		crate=module_unemap_crates;
 		acquired_number_of_channels=0;
 		number_of_channels=0;
+		number_of_configured_channels=0;
 		number_of_samples=0;
 		while ((i>0)&&((crate->acquired).complete))
 		{
-			number_of_channels += crate->number_of_channels;
+			number_of_configured_channels += crate->number_of_configured_channels;
+			if (4<=crate->software_version)
+			{
+				number_of_channels += crate->number_of_configured_channels;
+			}
+			else
+			{
+				number_of_channels += crate->number_of_channels;
+			}
 #if defined (DEBUG)
 			/*???debug */
 			display_message(INFORMATION_MESSAGE,
 				"%d) number_of_channels=%d (%d), number_of_samples=%lu\n",i,
-				crate->number_of_channels,(crate->acquired).number_of_channels,
+				crate->number_of_configured_channels,
+				(crate->acquired).number_of_channels,
 				(crate->acquired).number_of_samples);
 #endif /* defined (DEBUG) */
 			if (0<(crate->acquired).number_of_channels)
@@ -1375,7 +1418,8 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 					((0==module_acquired_channel_number)&&
 					(number_of_channels==acquired_number_of_channels))))
 				{
-					ALLOCATE(samples,short,acquired_number_of_channels*number_of_samples);
+					ALLOCATE(samples,short,
+						number_of_configured_channels*number_of_samples);
 #if defined (DEBUG)
 					/*???debug */
 					display_message(INFORMATION_MESSAGE,"acquired_number_of_channels=%d, "
@@ -1393,16 +1437,35 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 								crate=module_unemap_crates;
 								for (i=module_number_of_unemap_crates;i>0;i--)
 								{
-									if ((j<(crate->acquired).number_of_samples)&&
-										(0<(crate->acquired).number_of_channels))
+									if (j<(crate->acquired).number_of_samples)
 									{
-										memcpy((char *)sample,((crate->acquired).samples)+
-											(j*((crate->acquired).number_of_channels)),
-											((crate->acquired).number_of_channels)*sizeof(short));
+										offset=j*((crate->acquired).number_of_channels);
+										if (4<=crate->software_version)
+										{
+											for (k=0;k<crate->number_of_configured_channels;k++)
+											{
+												sample[(crate->configured_channel_offsets)[k]]=
+													((crate->acquired).samples)[offset];
+												offset++;
+											}
+										}
+										else
+										{
+											for (k=0;k<crate->number_of_configured_channels;k++)
+											{
+												if ((crate->configured_channels)[k]<=
+													(crate->acquired).number_of_channels)
+												{
+													sample[(crate->configured_channel_offsets)[k]]=
+														((crate->acquired).samples)[offset+
+														(crate->configured_channels)[k]-1];
+												}
+											}
+										}
 									}
-									sample += (crate->acquired).number_of_channels;
 									crate++;
 								}
+								sample += number_of_configured_channels;
 							}
 						}
 						else
@@ -1463,7 +1526,7 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 	return (NULL);
 } /* acquired_socket_callback_process */
 
-static int acquired_socket_callback(int file_descriptor, void *crate_void)
+static int acquired_socket_callback(int file_descriptor,void *crate_void)
 /*******************************************************************************
 LAST MODIFIED : 1 September 2002
 
@@ -1633,7 +1696,7 @@ Called when there is input on the calibration socket.
 ==============================================================================*/
 {
 	float *channel_gains,*channel_offsets;
-	int *channel_numbers,i,number_of_channels, return_code;
+	int *channel_numbers,i,number_of_channels,return_code;
 	long message_size;
 	struct Unemap_crate *crate;
 	unsigned char message_header[2+sizeof(long)];
@@ -2582,7 +2645,7 @@ static int crate_configure_start(struct Unemap_crate *crate,int slave,
 	float scrolling_frequency,float scrolling_callback_frequency,
 	int synchronization_card)
 /*******************************************************************************
-LAST MODIFIED : 6 June 2003
+LAST MODIFIED : 11 August 2003
 
 DESCRIPTION :
 Configures the <crate> for sampling at the specified <sampling_frequency> and
@@ -2599,9 +2662,9 @@ See <unemap_configure> for more details.
 {
 	float sampling_frequency_slave,temp_scrolling_callback_frequency,
 		temp_scrolling_frequency;
-	int return_code,retval;
+	int number_of_channels,return_code,retval;
 	long buffer_size,message_size;
-	unsigned char buffer[2+3*sizeof(float)+2*sizeof(int)+sizeof(long)];
+	unsigned char buffer[2+3*sizeof(float)+3*sizeof(int)+sizeof(long)];
 #if defined (WIN32_SYSTEM)
 	DWORD acquired_thread_id;
 	HANDLE acquired_thread;
@@ -2723,6 +2786,21 @@ See <unemap_configure> for more details.
 								buffer[0]=UNEMAP_CONFIGURE_CODE;
 								buffer[1]=BIG_ENDIAN_CODE;
 								buffer_size=2+sizeof(message_size);
+								if (4<=crate->software_version)
+								{
+									if (0==crate->number_of_configured_channels)
+									{
+										/* no channels configured */
+										number_of_channels= -1;
+									}
+									else
+									{
+										number_of_channels=crate->number_of_configured_channels;
+									}
+									memcpy(buffer+buffer_size,&number_of_channels,
+										sizeof(number_of_channels));
+									buffer_size += sizeof(number_of_channels);
+								}
 								if (slave)
 								{
 									sampling_frequency_slave= -sampling_frequency;
@@ -2782,13 +2860,23 @@ See <unemap_configure> for more details.
 									sizeof(synchronization_card));
 								buffer_size += sizeof(synchronization_card);
 								message_size=buffer_size-(2+(long)sizeof(message_size));
+								if (4<=crate->software_version)
+								{
+									if (0<number_of_channels)
+									{
+										message_size += number_of_channels*sizeof(int);
+									}
+								}
 								memcpy(buffer+2,&message_size,sizeof(message_size));
 #if defined (DEBUG)
 								/*???debug */
 								display_message(INFORMATION_MESSAGE,
-									"crate_configure_start.  %g %d %g %g\n",sampling_frequency,
-									number_of_samples_in_buffer,temp_scrolling_callback_frequency,
-									scrolling_callback_frequency);
+									"crate_configure_start.  %g %d %g %g %d %d\n",
+									sampling_frequency,number_of_samples_in_buffer,
+									temp_scrolling_callback_frequency,
+									scrolling_callback_frequency,
+									crate->number_of_configured_channels,
+									crate->software_version);
 #endif /* defined (DEBUG) */
 								retval=socket_send(crate->command_socket,buffer,buffer_size,0);
 								if (SOCKET_ERROR!=retval)
@@ -2798,7 +2886,82 @@ See <unemap_configure> for more details.
 									display_message(INFORMATION_MESSAGE,
 										"Sent data %x %x %ld\n",buffer[0],buffer[1],message_size);
 #endif /* defined (DEBUG) */
-									return_code=1;
+									if (4<=crate->software_version)
+									{
+										if (0<number_of_channels)
+										{
+											retval=socket_send(crate->command_socket,
+												(unsigned char *)(crate->configured_channels),
+												number_of_channels*sizeof(int),0);
+											if (SOCKET_ERROR!=retval)
+											{
+												return_code=1;
+											}
+											else
+											{
+												display_message(ERROR_MESSAGE,
+													"crate_configure_start.  socket_send() failed");
+												unlock_mutex(crate->command_socket_mutex);
+#if defined (WIN32_SYSTEM)
+												ResetEvent(crate->acquired_socket_thread_stopped_event);
+												SetEvent(crate->acquired_socket_thread_stop_event);
+												ResetEvent(
+													crate->calibration_socket_thread_stopped_event);
+												SetEvent(crate->calibration_socket_thread_stop_event);
+												ResetEvent(
+													crate->scrolling_socket_thread_stopped_event);
+												SetEvent(crate->scrolling_socket_thread_stop_event);
+												if (INVALID_SOCKET!=crate->stimulation_socket)
+												{
+													ResetEvent(
+														crate->stimulation_socket_thread_stopped_event);
+													SetEvent(crate->stimulation_socket_thread_stop_event);
+												}
+#endif /* defined (WIN32_SYSTEM) */
+#if defined (UNIX)
+												Event_dispatcher_remove_descriptor_callback(
+													crate->event_dispatcher,crate->acquired_socket_xid);
+												crate->acquired_socket_xid=
+													(struct Event_dispatcher_descriptor_callback *)NULL;
+												Event_dispatcher_remove_descriptor_callback(
+													crate->event_dispatcher,
+													crate->calibration_socket_xid);
+												crate->calibration_socket_xid=
+													(struct Event_dispatcher_descriptor_callback *)NULL;
+												Event_dispatcher_remove_descriptor_callback(
+													crate->event_dispatcher,crate->scrolling_socket_xid);
+												crate->scrolling_socket_xid=
+													(struct Event_dispatcher_descriptor_callback *)NULL;
+												if (INVALID_SOCKET!=crate->stimulation_socket)
+												{
+													Event_dispatcher_remove_descriptor_callback(
+														crate->event_dispatcher,
+														crate->stimulation_socket_xid);
+													crate->stimulation_socket_xid=
+														(struct Event_dispatcher_descriptor_callback *)NULL;
+												}
+#endif /* defined (UNIX) */
+#if defined (UNIX)
+												unlock_mutex(crate->event_dispatcher_mutex);
+#if defined (CREATE_MUTEX)
+												destroy_mutex(&(crate->event_dispatcher_mutex));
+#else /* defined (CREATE_MUTEX) */
+												pthread_mutex_destroy(crate->event_dispatcher_mutex);
+												crate->event_dispatcher_mutex=(pthread_mutex_t *)NULL;
+#endif /* defined (CREATE_MUTEX) */
+												crate->event_dispatcher=(struct Event_dispatcher *)NULL;
+#endif /* defined (UNIX) */
+											}
+										}
+										else
+										{
+											return_code=1;
+										}
+									}
+									else
+									{
+										return_code=1;
+									}
 #if defined (UNIX)
 									unlock_mutex(crate->event_dispatcher_mutex);
 #endif /* defined (UNIX) */
@@ -3185,7 +3348,7 @@ Returns a non-zero if <the crate> is configured and zero otherwise.
 
 static int crate_deconfigure(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 31 June 2003
+LAST MODIFIED : 13 August 2003
 
 DESCRIPTION :
 Stops acquisition and signal generation for the <crate>.  Frees buffers
@@ -3396,6 +3559,9 @@ associated with the hardware.
 		crate->event_dispatcher_mutex=(pthread_mutex_t *)NULL;
 		crate->event_dispatcher=(struct Event_dispatcher *)NULL;
 #endif /* defined (UNIX) */
+		DEALLOCATE(crate->configured_channels);
+		DEALLOCATE(crate->configured_channel_offsets);
+		crate->number_of_configured_channels=0;
 #if defined (CACHE_CLIENT_INFORMATION)
 		crate->number_of_unemap_cards=0;
 		crate->number_of_stimulators=0;
@@ -5421,139 +5587,11 @@ For the <crate>.  The number of samples acquired per channel since
 	return (return_code);
 } /* crate_get_number_of_samples_acquired */
 
-#if defined (OLD_CODE)
-static int crate_get_samples_acquired(struct Unemap_crate *crate,
-	int channel_number,short int *samples)
-/*******************************************************************************
-LAST MODIFIED : 27 July 2000
-
-DESCRIPTION :
-The function fails if the hardware is not configured.
-
-For the <crate>.  If <channel_number> is valid (between 1 and the total number
-of channels inclusive), then the <samples> for that channel are returned.  If
-<channel_number> is 0 then the <samples> for all channels are returned.
-Otherwise the function fails.
-==============================================================================*/
-{
-	int return_code,retval;
-	long block_size,buffer_size,message_size;
-	short int *crate_samples;
-	unsigned char buffer[2+sizeof(long)+sizeof(int)];
-
-	ENTER(crate_get_samples_acquired);
-#if defined (DEBUG)
-	/*???debug */
-	display_message(INFORMATION_MESSAGE,
-		"enter crate_get_samples_acquired %p %d %p\n",crate,channel_number,samples);
-#endif /* defined (DEBUG) */
-	return_code=0;
-	/* check arguments */
-	if (crate&&samples)
-	{
-		if (INVALID_SOCKET!=crate->command_socket)
-		{
-			lock_mutex(crate->command_socket_mutex);
-			buffer[0]=UNEMAP_GET_SAMPLES_ACQUIRED_CODE;
-			buffer[1]=BIG_ENDIAN_CODE;
-			buffer_size=2+sizeof(message_size);
-			memcpy(buffer+buffer_size,&channel_number,sizeof(channel_number));
-			buffer_size += sizeof(channel_number);
-			message_size=buffer_size-(2+(long)sizeof(message_size));
-			memcpy(buffer+2,&message_size,sizeof(message_size));
-			retval=socket_send(crate->command_socket,buffer,buffer_size,0);
-			if (SOCKET_ERROR!=retval)
-			{
-#if defined (DEBUG)
-				/*???debug */
-				display_message(INFORMATION_MESSAGE,
-					"Sent data %x %x %ld\n",buffer[0],buffer[1],message_size);
-#endif /* defined (DEBUG) */
-				/* get the header back */
-				retval=socket_recv(crate->command_socket,buffer,2+sizeof(long),0);
-				if (SOCKET_ERROR!=retval)
-				{
-					memcpy(&buffer_size,buffer+2,sizeof(buffer_size));
-#if defined (DEBUG)
-					/*???debug */
-					display_message(INFORMATION_MESSAGE,
-						"Received %d bytes, data %x %x %ld",retval,buffer[0],buffer[1],
-						buffer_size);
-#endif /* defined (DEBUG) */
-					if ((2+sizeof(long)==retval)&&(0<buffer_size)&&(buffer[0]))
-					{
-						if ((0==channel_number)&&(0<module_number_of_channels))
-						{
-							/* have to stagger to allow room for other crates */
-							crate_samples=samples;
-							block_size=(crate->number_of_channels)*(long)sizeof(short int);
-							while ((buffer_size>0)&&(SOCKET_ERROR!=socket_recv(
-								crate->command_socket,(unsigned char *)crate_samples,block_size,
-								0)))
-							{
-								crate_samples += module_number_of_channels;
-								buffer_size -= block_size;
-							}
-							if (0==buffer_size)
-							{
-								return_code=1;
-							}
-						}
-						else
-						{
-							if (SOCKET_ERROR!=socket_recv(crate->command_socket,
-								(unsigned char *)samples,buffer_size,0))
-							{
-								return_code=1;
-							}
-						}
-					}
-#if defined (DEBUG)
-					display_message(INFORMATION_MESSAGE,"\n");
-#endif /* defined (DEBUG) */
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"crate_get_samples_acquired.  socket_recv() failed");
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"crate_get_samples_acquired.  socket_send() failed");
-			}
-			unlock_mutex(crate->command_socket_mutex);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"crate_get_samples_acquired.  Invalid command_socket");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"crate_get_samples_acquired.  Missing crate (%p) or samples (%p)",crate,
-			samples);
-	}
-#if defined (DEBUG)
-	/*???debug */
-	display_message(INFORMATION_MESSAGE,
-		"leave crate_get_samples_acquired %d\n",return_code);
-#endif /* defined (DEBUG) */
-	LEAVE;
-
-	return (return_code);
-} /* crate_get_samples_acquired */
-#endif /* defined (OLD_CODE) */
-
-#if defined (OLD_CODE)
 static int crate_get_samples_acquired(struct Unemap_crate *crate,
 	int channel_number,int number_of_samples,short int *samples,
 	int *number_of_samples_got)
 /*******************************************************************************
-LAST MODIFIED : 2 June 2003
+LAST MODIFIED : 13 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -5562,242 +5600,13 @@ For the <crate>.  If <channel_number> is valid (between 1 and the total number
 of channels inclusive), then the <samples> for that channel are returned.  If
 <channel_number> is 0 then the <samples> for all channels are returned.
 Otherwise the function fails.
+
+<samples> is for all crates.
 ==============================================================================*/
 {
-	int number_of_channels,return_code,retval;
+	int k,number_of_channels,return_code,retval;
 	long block_size,buffer_size,message_size;
-	short int *crate_samples;
-	unsigned char buffer[2+sizeof(long)+sizeof(int)+sizeof(unsigned long)];
-	unsigned long local_number_of_samples;
-
-	ENTER(crate_get_samples_acquired);
-#if defined (DEBUG)
-	/*???debug */
-	display_message(INFORMATION_MESSAGE,
-		"enter crate_get_samples_acquired %p %d %p\n",crate,channel_number,
-		samples);
-#endif /* defined (DEBUG) */
-	return_code=0;
-	/* check arguments */
-	if (crate&&samples)
-	{
-		if (INVALID_SOCKET!=crate->command_socket)
-		{
-			lock_mutex(crate->command_socket_mutex);
-			buffer[0]=UNEMAP_GET_SAMPLES_ACQUIRED_CODE;
-			buffer[1]=BIG_ENDIAN_CODE;
-			buffer_size=2+sizeof(message_size);
-			memcpy(buffer+buffer_size,&channel_number,sizeof(channel_number));
-			buffer_size += sizeof(channel_number);
-			if (crate->software_version>0)
-			{
-				memcpy(buffer+buffer_size,&number_of_samples,sizeof(number_of_samples));
-				buffer_size += sizeof(number_of_samples);
-			}
-			message_size=buffer_size-(2+(long)sizeof(message_size));
-			memcpy(buffer+2,&message_size,sizeof(message_size));
-			retval=socket_send(crate->command_socket,buffer,buffer_size,0);
-			if (SOCKET_ERROR!=retval)
-			{
-#if defined (DEBUG)
-				/*???debug */
-				display_message(INFORMATION_MESSAGE,
-					"Sent data %x %x %ld\n",buffer[0],buffer[1],message_size);
-#endif /* defined (DEBUG) */
-				/* get the header/acknowledgement back */
-				retval=socket_recv(crate->command_socket,buffer,2+sizeof(long),0);
-				if (SOCKET_ERROR!=retval)
-				{
-					memcpy(&buffer_size,buffer+2,sizeof(buffer_size));
-#if defined (DEBUG)
-					/*???debug */
-					display_message(INFORMATION_MESSAGE,
-						"Received %d bytes, data %x %x %ld\n",retval,buffer[0],
-						buffer[1],buffer_size);
-#endif /* defined (DEBUG) */
-					if ((2+sizeof(long)==retval)&&(0<=buffer_size)&&(buffer[0]))
-					{
-						if (0==buffer_size)
-						{
-							/* read back from acquired socket */
-							lock_mutex(crate->acquired_socket_mutex);
-							/* get the header back */
-							retval=socket_recv(crate->acquired_socket,buffer,2+sizeof(long)+
-								sizeof(number_of_channels)+sizeof(local_number_of_samples),0);
-							if (SOCKET_ERROR!=retval)
-							{
-								memcpy(&buffer_size,buffer+2,sizeof(buffer_size));
-#if defined (DEBUG)
-								/*???debug */
-								display_message(INFORMATION_MESSAGE,
-									"Received acquired %d bytes, data %x %x %ld\n",retval,
-									buffer[0],buffer[1],buffer_size);
-#endif /* defined (DEBUG) */
-								memcpy(&number_of_channels,buffer+2+sizeof(buffer_size),
-									sizeof(number_of_channels));
-								memcpy(&local_number_of_samples,buffer+2+sizeof(buffer_size)+
-									sizeof(number_of_channels),sizeof(local_number_of_samples));
-#if defined (DEBUG)
-								/*???debug */
-								display_message(INFORMATION_MESSAGE,
-									"number_of_channels=%d, local_number_of_samples=%ld.  %ld\n",
-									number_of_channels,local_number_of_samples,
-									sizeof(number_of_channels)+sizeof(local_number_of_samples)+
-									local_number_of_samples*number_of_channels*sizeof(short int));
-#endif /* defined (DEBUG) */
-								if ((2+sizeof(long)+sizeof(number_of_channels)+
-									sizeof(local_number_of_samples)==retval)&&
-									(sizeof(number_of_channels)+sizeof(local_number_of_samples)+
-									local_number_of_samples*number_of_channels*sizeof(short int)==
-									(unsigned)buffer_size)&&(buffer[0]))
-								{
-									buffer_size -=
-										sizeof(number_of_channels)+sizeof(local_number_of_samples);
-									if ((0==channel_number)&&(0<module_number_of_channels))
-									{
-										/* have to stagger to allow room for other crates */
-										crate_samples=samples;
-										block_size=
-											(crate->number_of_channels)*(long)sizeof(short int);
-										while ((buffer_size>0)&&(SOCKET_ERROR!=socket_recv(
-											crate->acquired_socket,(unsigned char *)crate_samples,
-											block_size,0)))
-										{
-											crate_samples += module_number_of_channels;
-											buffer_size -= block_size;
-										}
-										if (0==buffer_size)
-										{
-											return_code=1;
-										}
-									}
-									else
-									{
-										if (SOCKET_ERROR!=socket_recv(crate->acquired_socket,
-											(unsigned char *)samples,buffer_size,0))
-										{
-											return_code=1;
-										}
-									}
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"crate_get_samples_acquired.  socket_recv() 2 failed");
-							}
-							unlock_mutex(crate->acquired_socket_mutex);
-							/* get the header back */
-							retval=socket_recv(crate->command_socket,buffer,2+sizeof(long),0);
-							if (SOCKET_ERROR!=retval)
-							{
-								memcpy(&buffer_size,buffer+2,sizeof(buffer_size));
-								if (!((2+sizeof(long)==retval)&&(0==buffer_size)&&(buffer[0])))
-								{
-									return_code=0;
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"crate_get_samples_acquired.  socket_recv() 3 failed");
-							}
-						}
-						else
-						{
-							/* read back from command socket (kept for compatability with
-								older versions of the hardware service) */
-							if ((0==channel_number)&&(0<module_number_of_channels))
-							{
-								/* have to stagger to allow room for other crates */
-								crate_samples=samples;
-								block_size=(crate->number_of_channels)*(long)sizeof(short int);
-								while ((buffer_size>0)&&(SOCKET_ERROR!=socket_recv(
-									crate->command_socket,(unsigned char *)crate_samples,
-									block_size,0)))
-								{
-									crate_samples += module_number_of_channels;
-									buffer_size -= block_size;
-								}
-								if (0==buffer_size)
-								{
-									local_number_of_samples=buffer_size/block_size;
-									return_code=1;
-								}
-							}
-							else
-							{
-								if (SOCKET_ERROR!=socket_recv(crate->command_socket,
-									(unsigned char *)samples,buffer_size,0))
-								{
-									local_number_of_samples=buffer_size/(long)sizeof(short int);
-									return_code=1;
-								}
-							}
-						}
-					}
-#if defined (DEBUG)
-					display_message(INFORMATION_MESSAGE,"\n");
-#endif /* defined (DEBUG) */
-					if (return_code&&number_of_samples_got)
-					{
-						*number_of_samples_got=(int)local_number_of_samples;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"crate_get_samples_acquired.  socket_recv() failed");
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"crate_get_samples_acquired.  socket_send() failed");
-			}
-			unlock_mutex(crate->command_socket_mutex);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"crate_get_samples_acquired.  Invalid command_socket");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"crate_get_samples_acquired.  Missing crate (%p) or samples (%p)",crate,
-			samples);
-	}
-#if defined (DEBUG)
-	/*???debug */
-	display_message(INFORMATION_MESSAGE,"leave crate_get_samples_acquired %d\n",
-		return_code);
-#endif /* defined (DEBUG) */
-	LEAVE;
-
-	return (return_code);
-} /* crate_get_samples_acquired */
-#endif /* defined (OLD_CODE) */
-
-static int crate_get_samples_acquired(struct Unemap_crate *crate,
-	int channel_number,int number_of_samples,short int *samples,
-	int *number_of_samples_got)
-/*******************************************************************************
-LAST MODIFIED : 2 June 2003
-
-DESCRIPTION :
-The function fails if the hardware is not configured.
-
-For the <crate>.  If <channel_number> is valid (between 1 and the total number
-of channels inclusive), then the <samples> for that channel are returned.  If
-<channel_number> is 0 then the <samples> for all channels are returned.
-Otherwise the function fails.
-==============================================================================*/
-{
-	int number_of_channels,return_code,retval;
-	long block_size,buffer_size,message_size;
-	short int *crate_samples;
+	short int *crate_samples,*module_samples;
 	unsigned char buffer[2+sizeof(long)+sizeof(int)+sizeof(unsigned long)];
 	unsigned long local_number_of_samples;
 
@@ -5895,21 +5704,62 @@ Otherwise the function fails.
 								{
 									buffer_size -= sizeof(number_of_channels)+
 										sizeof(local_number_of_samples);
-									if ((0==channel_number)&&(0<module_number_of_channels))
+									if (0==channel_number)
 									{
-										/* have to stagger to allow room for other crates */
-										crate_samples=samples;
-										block_size=
-											(crate->number_of_channels)*(long)sizeof(short int);
-										while ((buffer_size>0)&&(SOCKET_ERROR!=socket_recv(
-											crate->command_socket,
-#if defined (WIN32_SYSTEM)
-											(HANDLE)NULL,
-#endif /* defined (WIN32_SYSTEM) */
-											(unsigned char *)crate_samples,block_size,0)))
+										if (0<buffer_size)
 										{
-											crate_samples += module_number_of_channels;
-											buffer_size -= block_size;
+											if (4<=crate->software_version)
+											{
+												block_size=crate->number_of_configured_channels;
+											}
+											else
+											{
+												block_size=crate->number_of_channels;
+											}
+											if ((0<block_size)&&ALLOCATE(crate_samples,short int,
+												block_size))
+											{
+												block_size *= (long)sizeof(short int);
+												module_samples=samples;
+												while ((buffer_size>0)&&(SOCKET_ERROR!=socket_recv(
+													crate->command_socket,
+#if defined (WIN32_SYSTEM)
+													(HANDLE)NULL,
+#endif /* defined (WIN32_SYSTEM) */
+													(unsigned char *)crate_samples,block_size,0)))
+												{
+													/* have to stagger to allow room for other crates */
+													if (4<=crate->software_version)
+													{
+														for (k=0;k<crate->number_of_configured_channels;k++)
+														{
+															module_samples[
+																(crate->configured_channel_offsets)[k]]=
+																crate_samples[k];
+														}
+													}
+													else
+													{
+														for (k=0;k<crate->number_of_configured_channels;k++)
+														{
+															module_samples[
+																(crate->configured_channel_offsets)[k]]=
+																crate_samples[
+																(crate->configured_channels)[k]-1];
+														}
+													}
+													module_samples +=
+														module_number_of_configured_channels;
+													buffer_size -= block_size;
+												}
+												DEALLOCATE(crate_samples);
+											}
+											else
+											{
+												display_message(ERROR_MESSAGE,
+													"crate_get_samples_acquired.  "
+													"Could not allocate crate_samples 1");
+											}
 										}
 										if (0==buffer_size)
 										{
@@ -6001,21 +5851,43 @@ Otherwise the function fails.
 									{
 										buffer_size -= sizeof(number_of_channels)+
 											sizeof(local_number_of_samples);
-										if ((0==channel_number)&&(0<module_number_of_channels))
+										if (0==channel_number)
 										{
-											/* have to stagger to allow room for other crates */
-											crate_samples=samples;
-											block_size=
-												(crate->number_of_channels)*(long)sizeof(short int);
-											while ((buffer_size>0)&&(SOCKET_ERROR!=socket_recv(
-												crate->acquired_socket,
-#if defined (WIN32_SYSTEM)
-												(HANDLE)NULL,
-#endif /* defined (WIN32_SYSTEM) */
-												(unsigned char *)crate_samples,block_size,0)))
+											if (0<buffer_size)
 											{
-												crate_samples += module_number_of_channels;
-												buffer_size -= block_size;
+												block_size=crate->number_of_channels;
+												if ((0<block_size)&&ALLOCATE(crate_samples,short int,
+													block_size))
+												{
+													block_size *= (long)sizeof(short int);
+													module_samples=samples;
+													while ((buffer_size>0)&&(SOCKET_ERROR!=socket_recv(
+														crate->acquired_socket,
+#if defined (WIN32_SYSTEM)
+														(HANDLE)NULL,
+#endif /* defined (WIN32_SYSTEM) */
+														(unsigned char *)crate_samples,block_size,0)))
+													{
+														/* have to stagger to allow room for other crates */
+														for (k=0;k<crate->number_of_configured_channels;k++)
+														{
+															module_samples[
+																(crate->configured_channel_offsets)[k]]=
+																crate_samples[
+																(crate->configured_channels)[k]-1];
+														}
+														module_samples +=
+															module_number_of_configured_channels;
+														buffer_size -= block_size;
+													}
+													DEALLOCATE(crate_samples);
+												}
+												else
+												{
+													display_message(ERROR_MESSAGE,
+														"crate_get_samples_acquired.  "
+														"Could not allocate crate_samples 2");
+												}
 											}
 											if (0==buffer_size)
 											{
@@ -6066,21 +5938,43 @@ Otherwise the function fails.
 							{
 								/* read back from command socket (kept for compatability with
 									older versions of the hardware service) */
-								if ((0==channel_number)&&(0<module_number_of_channels))
+								if (0==channel_number)
 								{
-									/* have to stagger to allow room for other crates */
-									crate_samples=samples;
-									block_size=(crate->number_of_channels)*
-										(long)sizeof(short int);
-									while ((buffer_size>0)&&(SOCKET_ERROR!=socket_recv(
-										crate->command_socket,
-#if defined (WIN32_SYSTEM)
-										(HANDLE)NULL,
-#endif /* defined (WIN32_SYSTEM) */
-										(unsigned char *)crate_samples,block_size,0)))
+									if (0<buffer_size)
 									{
-										crate_samples += module_number_of_channels;
-										buffer_size -= block_size;
+										block_size=crate->number_of_channels;
+										if ((0<block_size)&&ALLOCATE(crate_samples,short int,
+											block_size))
+										{
+											block_size *= (long)sizeof(short int);
+											module_samples=samples;
+											while ((buffer_size>0)&&(SOCKET_ERROR!=socket_recv(
+												crate->command_socket,
+#if defined (WIN32_SYSTEM)
+												(HANDLE)NULL,
+#endif /* defined (WIN32_SYSTEM) */
+												(unsigned char *)crate_samples,block_size,0)))
+											{
+												/* have to stagger to allow room for other crates */
+												for (k=0;k<crate->number_of_configured_channels;k++)
+												{
+													module_samples[
+														(crate->configured_channel_offsets)[k]]=
+														crate_samples[
+														(crate->configured_channels)[k]-1];
+												}
+												module_samples +=
+													module_number_of_configured_channels;
+												buffer_size -= block_size;
+											}
+											DEALLOCATE(crate_samples);
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+												"crate_get_samples_acquired.  "
+												"Could not allocate crate_samples 3");
+										}
 									}
 									if (0==buffer_size)
 									{
@@ -6285,96 +6179,6 @@ Otherwise the function fails.
 
 	return (return_code);
 } /* crate_get_samples_acquired_background_end */
-
-#if defined (OLD_CODE)
-static int crate_get_samples_acquired_background(struct Unemap_crate *crate,
-	int channel_number)
-/*******************************************************************************
-LAST MODIFIED : 10 July 2000
-
-DESCRIPTION :
-The function fails if the hardware is not configured.
-
-For the <crate>.  If <channel_number> is valid (between 1 and the total number
-of channels inclusive), then the <samples> for that channel are returned.  If
-<channel_number> is 0 then the <samples> for all channels are returned.
-Otherwise the function fails.
-==============================================================================*/
-{
-	int return_code,retval;
-	long buffer_size,message_size;
-	unsigned char buffer[2+sizeof(long)+sizeof(int)];
-
-	ENTER(crate_get_samples_acquired_background);
-#if defined (DEBUG)
-	/*???debug */
-	display_message(INFORMATION_MESSAGE,
-		"enter crate_get_samples_acquired_background %p %d\n",crate,
-		channel_number);
-#endif /* defined (DEBUG) */
-	return_code=0;
-	/* check arguments */
-	if (crate&&(INVALID_SOCKET!=crate->command_socket))
-	{
-		buffer[0]=UNEMAP_GET_SAMPLES_ACQUIRED_BACKGROUND_CODE;
-		buffer[1]=BIG_ENDIAN_CODE;
-		buffer_size=2+sizeof(message_size);
-		memcpy(buffer+buffer_size,&channel_number,sizeof(channel_number));
-		buffer_size += sizeof(channel_number);
-		message_size=buffer_size-(2+(long)sizeof(message_size));
-		memcpy(buffer+2,&message_size,sizeof(message_size));
-		retval=socket_send(crate->command_socket,buffer,buffer_size,0);
-		if (SOCKET_ERROR!=retval)
-		{
-#if defined (DEBUG)
-			/*???debug */
-			display_message(INFORMATION_MESSAGE,
-				"Sent data %x %x %ld\n",buffer[0],buffer[1],message_size);
-#endif /* defined (DEBUG) */
-			/* get the header back */
-			retval=socket_recv(crate->command_socket,buffer,2+sizeof(long),0);
-			if (SOCKET_ERROR!=retval)
-			{
-				memcpy(&buffer_size,buffer+2,sizeof(buffer_size));
-#if defined (DEBUG)
-				/*???debug */
-				display_message(INFORMATION_MESSAGE,
-					"Received %d bytes, data %x %x %ld\n",retval,buffer[0],buffer[1],
-					buffer_size);
-#endif /* defined (DEBUG) */
-				if ((2+sizeof(long)==retval)&&(0==buffer_size)&&(buffer[0]))
-				{
-					return_code=1;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"crate_get_samples_acquired_background.  socket_recv() failed");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"crate_get_samples_acquired_background.  socket_send() failed");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-"crate_get_samples_acquired_background.  Missing crate (%p) or invalid command_socket",
-			crate);
-	}
-#if defined (DEBUG)
-	/*???debug */
-	display_message(INFORMATION_MESSAGE,
-		"leave crate_get_samples_acquired_background %d\n",return_code);
-#endif /* defined (DEBUG) */
-	LEAVE;
-
-	return (return_code);
-} /* crate_get_samples_acquired_background */
-#endif /* defined (OLD_CODE) */
 
 static int crate_get_maximum_number_of_samples(struct Unemap_crate *crate,
 	unsigned long *number_of_samples)
@@ -7055,7 +6859,7 @@ The <*pre_filter_gain> and <*post_filter_gain> for the group are assigned.
 static int crate_set_gain(struct Unemap_crate *crate,int channel_number,
 	float pre_filter_gain,float post_filter_gain)
 /*******************************************************************************
-LAST MODIFIED : 5 August 2002
+LAST MODIFIED : 17 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -7150,16 +6954,15 @@ For UNEMAP_2V1 and UNEMAP_2V2, the post filter gain can be 11, 22, 55, 110, 220,
 				if (0==channel_number)
 				{
 					unemap_card=crate->unemap_cards;
-					for (i=crate->number_of_unemap_cards*NUMBER_OF_CHANNELS_ON_NI_CARD;
-						i>0;i -= NUMBER_OF_CHANNELS_ON_NI_CARD)
+					for (i=0;i<crate->number_of_unemap_cards;i++)
 					{
-						crate_get_gain_start(crate,i);
-						crate_get_gain_end(crate,&(unemap_card->pre_filter_gain),
-							&(unemap_card->post_filter_gain));
-#if defined (OLD_CODE)
-						crate_get_gain(crate,i,&(unemap_card->pre_filter_gain),
-							&(unemap_card->post_filter_gain));
-#endif /* defined (OLD_CODE) */
+						if (0<(crate->unemap_cards)[i].channel_number)
+						{
+							crate_get_gain_start(crate,
+								(crate->unemap_cards)[i].channel_number);
+							crate_get_gain_end(crate,&(unemap_card->pre_filter_gain),
+								&(unemap_card->post_filter_gain));
+						}
 					}
 				}
 				else
@@ -7169,11 +6972,6 @@ For UNEMAP_2V1 and UNEMAP_2V2, the post filter gain can be 11, 22, 55, 110, 220,
 					crate_get_gain_start(crate,channel_number);
 					crate_get_gain_end(crate,&(unemap_card->pre_filter_gain),
 						&(unemap_card->post_filter_gain));
-#if defined (OLD_CODE)
-					crate_get_gain(crate,channel_number,
-						&(unemap_card->pre_filter_gain),
-						&(unemap_card->post_filter_gain));
-#endif /* defined (OLD_CODE) */
 				}
 				module_force_connection=0;
 			}
@@ -9307,7 +9105,7 @@ Intended for diagnostic use only.
 
 static int crate_initialize_connection(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 2 June 2003
+LAST MODIFIED : 13 August 2003
 
 DESCRIPTION :
 Sets up the connection with the unemap hardware service for the <crate>.
@@ -9750,6 +9548,7 @@ Sets up the connection with the unemap hardware service for the <crate>.
 														if (crate_get_number_of_channels(crate,
 															&(crate->number_of_channels)))
 														{
+															crate->number_of_configured_channels=0;
 															crate_get_software_version(crate,
 																&(crate->software_version));
 															return_code=1;
@@ -9757,7 +9556,8 @@ Sets up the connection with the unemap hardware service for the <crate>.
 														else
 														{
 															display_message(ERROR_MESSAGE,
-					"crate_initialize_connection.  Could not get the number of channels");
+																"crate_initialize_connection.  "
+																"Could not get the number of channels");
 #if defined (WIN32_SYSTEM)
 															closesocket(crate->acquired_socket);
 															closesocket(crate->calibration_socket);
@@ -10080,7 +9880,7 @@ Sets up the connection with the unemap hardware service for the <crate>.
 
 static int initialize_connection(void)
 /*******************************************************************************
-LAST MODIFIED : 2 June 2003
+LAST MODIFIED : 11 August 2003
 
 DESCRIPTION :
 Sets up the connections with the unemap crates.
@@ -10356,6 +10156,9 @@ Sets up the connections with the unemap crates.
 						(crate->scrolling).channel_numbers=(int *)NULL;
 						(crate->scrolling).values=(short *)NULL;
 						crate->number_of_channels=0;
+						crate->number_of_configured_channels=0;
+						crate->configured_channels=(int *)NULL;
+						crate->configured_channel_offsets=(int *)NULL;
 #if defined (CACHE_CLIENT_INFORMATION)
 						crate->number_of_stimulators=0;
 						crate->stimulator_card_indices=(int *)NULL;
@@ -10421,14 +10224,14 @@ Sets up the connections with the unemap crates.
 #if defined (CACHE_CLIENT_INFORMATION)
 static int get_cache_information(void)
 /*******************************************************************************
-LAST MODIFIED : 6 August 2002
+LAST MODIFIED : 18 August 2003
 
 DESCRIPTION :
 Retrieves the unemap information that is cached with the client.
 ==============================================================================*/
 {
-	int channel_number,i,j,maximum_number_of_unemap_cards,return_code,
-		*stimulator_number,*stimulator_numbers;
+	int i,j,maximum_number_of_unemap_cards,return_code,*stimulator_number,
+		*stimulator_numbers;
 	struct Unemap_crate *crate;
 
 	ENTER(get_cache_information);
@@ -10513,16 +10316,32 @@ Retrieves the unemap information that is cached with the client.
 					}
 					if (return_code)
 					{
-						channel_number=1;
+						crate=module_unemap_crates;
+						for (i=module_number_of_unemap_crates;i>0;i--)
+						{
+							for (j=0;j<crate->number_of_unemap_cards;j++)
+							{
+								((crate->unemap_cards)[j]).channel_number=0;
+							}
+							for (j=0;j<crate->number_of_configured_channels;j++)
+							{
+								(crate->unemap_cards)[((crate->configured_channels)[j]-1)/
+									NUMBER_OF_CHANNELS_ON_NI_CARD].channel_number=
+									(crate->configured_channels)[j];
+							}
+							crate++;
+						}
 						for (j=0;j<maximum_number_of_unemap_cards;j++)
 						{
 							crate=module_unemap_crates;
 							stimulator_number=stimulator_numbers;
 							for (i=module_number_of_unemap_crates;i>0;i--)
 							{
-								if ((*stimulator_number)&&(j<(crate->number_of_unemap_cards)))
+								if ((*stimulator_number)&&(j<(crate->number_of_unemap_cards))&&
+									(0<(crate->unemap_cards)[j].channel_number))
 								{
-									crate_get_voltage_range_start(crate,channel_number);
+									crate_get_voltage_range_start(crate,
+										(crate->unemap_cards)[j].channel_number);
 								}
 								stimulator_number++;
 								crate++;
@@ -10531,7 +10350,8 @@ Retrieves the unemap information that is cached with the client.
 							stimulator_number=stimulator_numbers;
 							for (i=module_number_of_unemap_crates;i>0;i--)
 							{
-								if ((*stimulator_number)&&(j<(crate->number_of_unemap_cards)))
+								if ((*stimulator_number)&&(j<(crate->number_of_unemap_cards))&&
+									(0<(crate->unemap_cards)[j].channel_number))
 								{
 									crate_get_voltage_range_end(crate,
 										&((crate->unemap_cards[j]).minimum_voltage),
@@ -10544,9 +10364,11 @@ Retrieves the unemap information that is cached with the client.
 							stimulator_number=stimulator_numbers;
 							for (i=module_number_of_unemap_crates;i>0;i--)
 							{
-								if ((*stimulator_number)&&(j<(crate->number_of_unemap_cards)))
+								if ((*stimulator_number)&&(j<(crate->number_of_unemap_cards))&&
+									(0<(crate->unemap_cards)[j].channel_number))
 								{
-									crate_get_gain_start(crate,channel_number);
+									crate_get_gain_start(crate,
+										(crate->unemap_cards)[j].channel_number);
 								}
 								stimulator_number++;
 								crate++;
@@ -10555,7 +10377,8 @@ Retrieves the unemap information that is cached with the client.
 							stimulator_number=stimulator_numbers;
 							for (i=module_number_of_unemap_crates;i>0;i--)
 							{
-								if ((*stimulator_number)&&(j<(crate->number_of_unemap_cards)))
+								if ((*stimulator_number)&&(j<(crate->number_of_unemap_cards))&&
+									(0<(crate->unemap_cards)[j].channel_number))
 								{
 									crate_get_gain_end(crate,
 										&((crate->unemap_cards[j]).pre_filter_gain),
@@ -10574,10 +10397,11 @@ Retrieves the unemap information that is cached with the client.
 							stimulator_number=stimulator_numbers;
 							for (i=module_number_of_unemap_crates;i>0;i--)
 							{
-								if ((*stimulator_number)&&(j<(crate->number_of_unemap_cards)))
+								if ((*stimulator_number)&&(j<(crate->number_of_unemap_cards))&&
+									(0<(crate->unemap_cards)[j].channel_number))
 								{
 									crate_channel_valid_for_stimulator_start(crate,
-										*stimulator_number,channel_number);
+										*stimulator_number,(crate->unemap_cards)[j].channel_number);
 								}
 								stimulator_number++;
 								crate++;
@@ -10586,7 +10410,8 @@ Retrieves the unemap information that is cached with the client.
 							stimulator_number=stimulator_numbers;
 							for (i=module_number_of_unemap_crates;i>0;i--)
 							{
-								if ((*stimulator_number)&&(j<(crate->number_of_unemap_cards)))
+								if ((*stimulator_number)&&(j<(crate->number_of_unemap_cards))&&
+									(0<(crate->unemap_cards)[j].channel_number))
 								{
 									if (crate_channel_valid_for_stimulator_end(crate))
 									{
@@ -10601,16 +10426,17 @@ Retrieves the unemap information that is cached with the client.
 							stimulator_number=stimulator_numbers;
 							for (i=module_number_of_unemap_crates;i>0;i--)
 							{
-								if ((*stimulator_number)&&(j<(crate->number_of_unemap_cards)))
+								if ((*stimulator_number)&&(j<(crate->number_of_unemap_cards))&&
+									(0<(crate->unemap_cards)[j].channel_number))
 								{
-									crate_get_sample_range(crate,channel_number,
+									crate_get_sample_range(crate,
+										(crate->unemap_cards)[j].channel_number,
 										&((crate->unemap_cards[j]).minimum_sample_value),
 										&((crate->unemap_cards[j]).maximum_sample_value));
 								}
 								stimulator_number++;
 								crate++;
 							}
-							channel_number += NUMBER_OF_CHANNELS_ON_NI_CARD;
 						}
 					}
 					else
@@ -10687,118 +10513,14 @@ Retrieves the unemap information that is cached with the client.
 
 	return (return_code);
 } /* get_cache_information */
-
-#if defined (OLD_CODE)
-static int get_cache_information(void)
-/*******************************************************************************
-LAST MODIFIED : 26 March 2000
-
-DESCRIPTION :
-Retrieves the unemap information that is cached with the client.
-==============================================================================*/
-{
-	int channel_number,i,j,return_code,stimulator_number;
-	struct Unemap_crate *crate;
-
-	ENTER(get_cache_information);
-#if defined (DEBUG)
-	/*???debug */
-	display_message(INFORMATION_MESSAGE,
-		"enter get_cache_information\n");
-#endif /* defined (DEBUG) */
-	return_code=0;
-	if ((crate=module_unemap_crates)&&(0<(i=module_number_of_unemap_crates))&&
-		(!module_get_cache_information_failed))
-	{
-		return_code=1;
-		module_number_of_stimulators=0;
-		while (return_code&&(i>0))
-		{
-			if (!(crate->unemap_cards))
-			{
-				module_force_connection=1;
-				crate->unemap_cards=(struct Unemap_card *)NULL;
-				crate->stimulator_card_indices=(int *)NULL;
-				if ((0<(crate->number_of_unemap_cards=
-					(int)((crate->number_of_channels)/
-					NUMBER_OF_CHANNELS_ON_NI_CARD)))&&ALLOCATE(crate->unemap_cards,
-					struct Unemap_card,crate->number_of_unemap_cards)&&
-					crate_get_number_of_stimulators(crate,
-					&(crate->number_of_stimulators))&&
-					((0==crate->number_of_stimulators)||ALLOCATE(
-					crate->stimulator_card_indices,int,crate->number_of_stimulators)))
-				{
-					module_number_of_stimulators += crate->number_of_stimulators;
-					channel_number=1;
-					stimulator_number=1;
-					for (j=0;j<crate->number_of_unemap_cards;j++)
-					{
-						crate_get_voltage_range(crate,channel_number,
-							&((crate->unemap_cards[j]).minimum_voltage),
-							&((crate->unemap_cards[j]).maximum_voltage));
-						crate_get_gain(crate,channel_number,
-							&((crate->unemap_cards[j]).pre_filter_gain),
-							&((crate->unemap_cards[j]).post_filter_gain));
-						((crate->unemap_cards)[j]).minimum_voltage *=
-							((crate->unemap_cards[j]).pre_filter_gain)*
-							((crate->unemap_cards[j]).post_filter_gain);
-						((crate->unemap_cards)[j]).maximum_voltage *=
-							((crate->unemap_cards[j]).pre_filter_gain)*
-							((crate->unemap_cards[j]).post_filter_gain);
-						if (crate_channel_valid_for_stimulator(crate,stimulator_number,
-							channel_number))
-						{
-							(crate->stimulator_card_indices)[stimulator_number-1]=j;
-							stimulator_number++;
-						}
-						channel_number += NUMBER_OF_CHANNELS_ON_NI_CARD;
-					}
-				}
-				else
-				{
-					return_code=0;
-				}
-				module_force_connection=0;
-			}
-			else
-			{
-				module_number_of_stimulators += crate->number_of_stimulators;
-			}
-			crate++;
-			i--;
-		}
-		if (!return_code)
-		{
-			while (i<=module_number_of_unemap_crates)
-			{
-				crate->number_of_unemap_cards=0;
-				crate->number_of_stimulators=0;
-				DEALLOCATE(crate->unemap_cards);
-				DEALLOCATE(crate->stimulator_card_indices);
-				crate--;
-				i++;
-			}
-			module_get_cache_information_failed=1;
-		}
-	}
-#if defined (DEBUG)
-	/*???debug */
-	display_message(INFORMATION_MESSAGE,
-		"leave get_cache_information %d %d\n",return_code,
-		module_number_of_stimulators);
-#endif /* defined (DEBUG) */
-	LEAVE;
-
-	return (return_code);
-} /* get_cache_information */
-#endif /* defined (OLD_CODE) */
 #endif /* defined (CACHE_CLIENT_INFORMATION) */
 
 /*
 Global functions
 ----------------
 */
-int unemap_configure(float sampling_frequency,int number_of_samples_in_buffer,
+int unemap_configure(int number_of_channels,int *channel_numbers,
+	float sampling_frequency,int number_of_samples_in_buffer,
 #if defined (WIN32_USER_INTERFACE)
 	HWND scrolling_window,UINT scrolling_message,
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -10809,16 +10531,23 @@ int unemap_configure(float sampling_frequency,int number_of_samples_in_buffer,
 	float scrolling_frequency,float scrolling_callback_frequency,
 	int synchronization_card)
 /*******************************************************************************
-LAST MODIFIED : 4 June 2003
+LAST MODIFIED : 13 August 2003
 
 DESCRIPTION :
-Configures the hardware for sampling at the specified <sampling_frequency> and
-with the specified <number_of_samples_in_buffer>. <sampling_frequency>,
-<number_of_samples_in_buffer>, <scrolling_frequency> and
+Configures the hardware for sampling the specified channels
+(<number_of_channels> and <channel_numbers>) at the specified
+<sampling_frequency> and with the specified <number_of_samples_in_buffer>.
+<sampling_frequency>, <number_of_samples_in_buffer>, <scrolling_frequency> and
 <scrolling_callback_frequency> are requests and the actual values used should
 be determined using unemap_get_sampling_frequency,
 unemap_get_maximum_number_of_samples, unemap_get_scrolling_frequency and
 unemap_get_scrolling_callback_frequency.
+
+If <number_of_channels> is
+- -1 then the hardware is configured with no channels
+- 0 then all channels are configured
+- otherwise, the <number_of_channels> listed in <channel_numbers> are
+	configured.
 
 Every <sampling_frequency>/<scrolling_callback_frequency> samples (one sample
 	is a measurement on every channel)
@@ -10859,8 +10588,9 @@ signal.
 	float crate_sampling_frequency,crate_scrolling_callback_frequency,
 		crate_scrolling_frequency,master_sampling_frequency,
 		master_scrolling_callback_frequency,master_scrolling_frequency;
-	int different_configurations,i,master_number_of_samples_in_buffer,return_code,
-		retry;
+	int channel_number,*configured_channels,*configured_channel_offsets,
+		different_configurations,i,j,k,master_number_of_samples_in_buffer,
+		return_code,retry;
 	struct Unemap_crate *crate;
 	unsigned long crate_number_of_samples_in_buffer;
 
@@ -10872,41 +10602,155 @@ signal.
 #endif /* defined (DEBUG) */
 	return_code=0;
 	/* check arguments */
-	if ((0<sampling_frequency)&&(0<number_of_samples_in_buffer)&&
+	if (((0==number_of_channels)||((0<number_of_channels)&&channel_numbers))&&
+		(0<sampling_frequency)&&(0<number_of_samples_in_buffer)&&
 		(!scrolling_callback||((0<scrolling_callback_frequency)&&
 		(scrolling_frequency>=scrolling_callback_frequency))))
 	{
 		if (initialize_connection()&&module_unemap_crates&&
 			(0<module_number_of_unemap_crates))
 		{
-			/* configure crates and if they end up with different sampling
-				frequencies or buffer sizes retry with the minima */
-			master_sampling_frequency=sampling_frequency;
-			master_scrolling_frequency=scrolling_frequency;
-			master_scrolling_callback_frequency=scrolling_callback_frequency;
-			master_number_of_samples_in_buffer=number_of_samples_in_buffer;
-			retry=0;
-			do
+			/* distribute the channels among the crates */
+			if (-1==number_of_channels)
 			{
 				crate=module_unemap_crates;
-				i=module_number_of_unemap_crates;
-				if (crate_configure_start(crate,0,master_sampling_frequency,
-					master_number_of_samples_in_buffer,
-#if defined (WIN32_USER_INTERFACE)
-					scrolling_window,scrolling_message,
-#endif /* defined (WIN32_USER_INTERFACE) */
-#if defined (UNIX)
-					event_dispatcher,
-#endif /* defined (UNIX) */
-					scrolling_callback,scrolling_callback_data,master_scrolling_frequency,
-					master_scrolling_callback_frequency,synchronization_card))
+				for (i=module_number_of_unemap_crates;i>0;i--)
 				{
-					do
+					crate->number_of_configured_channels=0;
+					crate++;
+				}
+				return_code=1;
+			}
+			else if (0==number_of_channels)
+			{
+				return_code=1;
+				crate=module_unemap_crates;
+				i=module_number_of_unemap_crates;
+				k=0;
+				while (return_code&&(i>0))
+				{
+					crate->number_of_configured_channels=crate->number_of_channels;
+					ALLOCATE(crate->configured_channels,int,crate->number_of_channels);
+					ALLOCATE(crate->configured_channel_offsets,int,
+						crate->number_of_channels);
+					if ((crate->configured_channels)&&(crate->configured_channel_offsets))
 					{
+						for (j=0;j<crate->number_of_channels;j++)
+						{
+							(crate->configured_channels)[j]=j+1;
+							(crate->configured_channel_offsets)[j]=k;
+							k++;
+						}
 						crate++;
 						i--;
-					} while ((i>0)&&crate_configure_start(crate,1,
-						master_sampling_frequency,master_number_of_samples_in_buffer,
+					}
+					else
+					{
+						return_code=0;
+						DEALLOCATE(crate->configured_channels);
+						DEALLOCATE(crate->configured_channel_offsets);
+					}
+				}
+				if (!return_code)
+				{
+					channel_number=0;
+					while (i<module_number_of_unemap_crates)
+					{
+						crate--;
+						i++;
+						DEALLOCATE(crate->configured_channels);
+						DEALLOCATE(crate->configured_channel_offsets);
+					}
+				}
+			}
+			else
+			{
+				return_code=1;
+				crate=module_unemap_crates;
+				for (i=module_number_of_unemap_crates;i>0;i--)
+				{
+					crate->number_of_configured_channels=0;
+					crate++;
+				}
+				i=0;
+				while (return_code&&(i<number_of_channels))
+				{
+					channel_number=channel_numbers[i];
+					if (channel_number>0)
+					{
+						crate=module_unemap_crates;
+						j=module_number_of_unemap_crates;
+						while ((j>0)&&(channel_number>crate->number_of_channels))
+						{
+							channel_number -= crate->number_of_channels;
+							crate++;
+							j--;
+						}
+						if (j>0)
+						{
+							if (REALLOCATE(configured_channels,crate->configured_channels,int,
+								(crate->number_of_configured_channels)+1))
+							{
+								crate->configured_channels=configured_channels;
+							}
+							if (REALLOCATE(configured_channel_offsets,
+								crate->configured_channel_offsets,int,
+								(crate->number_of_configured_channels)+1))
+							{
+								crate->configured_channel_offsets=configured_channel_offsets;
+							}
+							if (configured_channels&&configured_channel_offsets)
+							{
+								(crate->configured_channel_offsets)[
+									crate->number_of_configured_channels]=i;
+								(crate->configured_channels)[
+									crate->number_of_configured_channels]=channel_number;
+								(crate->number_of_configured_channels)++;
+							}
+							else
+							{
+								return_code=0;
+							}
+						}
+						else
+						{
+							return_code=0;
+						}
+					}
+					else
+					{
+						return_code=0;
+					}
+					i++;
+				}
+				if (!return_code)
+				{
+					crate=module_unemap_crates;
+					for (i=module_number_of_unemap_crates;i>0;i--)
+					{
+						crate->number_of_configured_channels=0;
+						DEALLOCATE(crate->configured_channels);
+						DEALLOCATE(crate->configured_channel_offsets);
+						crate++;
+					}
+				}
+			}
+			if (return_code)
+			{
+				return_code=0;
+				/* configure crates and if they end up with different sampling
+					frequencies or buffer sizes retry with the minima */
+				master_sampling_frequency=sampling_frequency;
+				master_scrolling_frequency=scrolling_frequency;
+				master_scrolling_callback_frequency=scrolling_callback_frequency;
+				master_number_of_samples_in_buffer=number_of_samples_in_buffer;
+				retry=0;
+				do
+				{
+					crate=module_unemap_crates;
+					i=module_number_of_unemap_crates;
+					if (crate_configure_start(crate,0,master_sampling_frequency,
+						master_number_of_samples_in_buffer,
 #if defined (WIN32_USER_INTERFACE)
 						scrolling_window,scrolling_message,
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -10915,103 +10759,127 @@ signal.
 #endif /* defined (UNIX) */
 						scrolling_callback,scrolling_callback_data,
 						master_scrolling_frequency,master_scrolling_callback_frequency,
-						synchronization_card));
-				}
-#if defined (DEBUG)
-				/*???debug */
-				display_message(INFORMATION_MESSAGE,
-					"  start completed %d\n",i);
-#endif /* defined (DEBUG) */
-				if (i>0)
-				{
-					return_code=0;
-					while (i<=module_number_of_unemap_crates)
+						synchronization_card))
 					{
-						crate_configure_end(crate);
-						crate_deconfigure(crate);
-						crate--;
-						i++;
-					}
-				}
-				else
-				{
-					different_configurations=0;
-					i=module_number_of_unemap_crates;
-					crate=module_unemap_crates;
-					i--;
-					if (return_code=crate_configure_end(crate))
-					{
-						if (i>0)
+						do
 						{
-							if (crate_get_sampling_frequency(crate,
-								&master_sampling_frequency)&&
-								crate_get_maximum_number_of_samples(crate,
-								&crate_number_of_samples_in_buffer)&&
-								crate_get_scrolling_frequency(crate,
-								&master_scrolling_frequency)&&
-								crate_get_scrolling_callback_frequency(crate,
-								&master_scrolling_callback_frequency))
+							crate++;
+							i--;
+						} while ((i>0)&&crate_configure_start(crate,1,
+							master_sampling_frequency,master_number_of_samples_in_buffer,
+#if defined (WIN32_USER_INTERFACE)
+							scrolling_window,scrolling_message,
+#endif /* defined (WIN32_USER_INTERFACE) */
+#if defined (UNIX)
+							event_dispatcher,
+#endif /* defined (UNIX) */
+							scrolling_callback,scrolling_callback_data,
+							master_scrolling_frequency,master_scrolling_callback_frequency,
+							synchronization_card));
+					}
+#if defined (DEBUG)
+					/*???debug */
+					display_message(INFORMATION_MESSAGE,
+						"  start completed %d\n",i);
+#endif /* defined (DEBUG) */
+					if (i>0)
+					{
+						return_code=0;
+						while (i<=module_number_of_unemap_crates)
+						{
+							crate_configure_end(crate);
+							crate_deconfigure(crate);
+							crate--;
+							i++;
+						}
+					}
+					else
+					{
+						different_configurations=0;
+						i=module_number_of_unemap_crates;
+						crate=module_unemap_crates;
+						i--;
+						if (return_code=crate_configure_end(crate))
+						{
+							if (i>0)
 							{
-								master_number_of_samples_in_buffer=
-									(int)crate_number_of_samples_in_buffer;
-								do
+								if (crate_get_sampling_frequency(crate,
+									&master_sampling_frequency)&&
+									crate_get_maximum_number_of_samples(crate,
+									&crate_number_of_samples_in_buffer)&&
+									crate_get_scrolling_frequency(crate,
+									&master_scrolling_frequency)&&
+									crate_get_scrolling_callback_frequency(crate,
+									&master_scrolling_callback_frequency))
 								{
-									crate++;
-									i--;
-									if (crate_configure_end(crate)&&
-										crate_get_sampling_frequency(crate,
-										&crate_sampling_frequency)&&
-										crate_get_maximum_number_of_samples(crate,
-										&crate_number_of_samples_in_buffer)&&
-										crate_get_scrolling_frequency(crate,
-										&crate_scrolling_frequency)&&
-										crate_get_scrolling_callback_frequency(crate,
-										&crate_scrolling_callback_frequency))
+									master_number_of_samples_in_buffer=
+										(int)crate_number_of_samples_in_buffer;
+									do
 									{
-										if ((master_sampling_frequency!=crate_sampling_frequency)||
-											(master_number_of_samples_in_buffer!=
-											(int)crate_number_of_samples_in_buffer)||
-											(master_scrolling_frequency!=crate_scrolling_frequency)||
-											(master_scrolling_callback_frequency!=
-											crate_scrolling_callback_frequency))
+										crate++;
+										i--;
+										if (crate_configure_end(crate)&&
+											crate_get_sampling_frequency(crate,
+											&crate_sampling_frequency)&&
+											crate_get_maximum_number_of_samples(crate,
+											&crate_number_of_samples_in_buffer)&&
+											crate_get_scrolling_frequency(crate,
+											&crate_scrolling_frequency)&&
+											crate_get_scrolling_callback_frequency(crate,
+											&crate_scrolling_callback_frequency))
 										{
-											different_configurations=1;
-											if (retry)
+											if ((master_sampling_frequency!=
+												crate_sampling_frequency)||
+												(master_number_of_samples_in_buffer!=
+												(int)crate_number_of_samples_in_buffer)||
+												(master_scrolling_frequency!=
+												crate_scrolling_frequency)||
+												(master_scrolling_callback_frequency!=
+												crate_scrolling_callback_frequency))
 											{
-												return_code=0;
-											}
-											else
-											{
-												if (crate_sampling_frequency<master_sampling_frequency)
+												different_configurations=1;
+												if (retry)
 												{
-													master_sampling_frequency=crate_sampling_frequency;
+													return_code=0;
 												}
-												if ((int)crate_number_of_samples_in_buffer<
-													master_number_of_samples_in_buffer)
+												else
 												{
-													master_number_of_samples_in_buffer=
-														(int)crate_number_of_samples_in_buffer;
+													if (crate_sampling_frequency<
+														master_sampling_frequency)
+													{
+														master_sampling_frequency=crate_sampling_frequency;
+													}
+													if ((int)crate_number_of_samples_in_buffer<
+														master_number_of_samples_in_buffer)
+													{
+														master_number_of_samples_in_buffer=
+															(int)crate_number_of_samples_in_buffer;
+													}
 												}
 											}
 										}
+										else
+										{
+											return_code=0;
+										}
+									} while ((i>0)&&return_code);
+									if (!retry&&different_configurations)
+									{
+										retry=1;
 									}
 									else
 									{
-										return_code=0;
+										retry=0;
 									}
-								} while ((i>0)&&return_code);
-								if (!retry&&different_configurations)
-								{
-									retry=1;
 								}
 								else
 								{
+									return_code=0;
 									retry=0;
 								}
 							}
 							else
 							{
-								return_code=0;
 								retry=0;
 							}
 						}
@@ -11019,39 +10887,48 @@ signal.
 						{
 							retry=0;
 						}
-					}
-					else
-					{
-						retry=0;
-					}
 #if defined (DEBUG)
-					/*???debug */
-					display_message(INFORMATION_MESSAGE,
-						"  end completed %d %d %d\n",i,return_code,retry);
+						/*???debug */
+						display_message(INFORMATION_MESSAGE,
+							"  end completed %d %d %d\n",i,return_code,retry);
 #endif /* defined (DEBUG) */
-					while (i>0)
-					{
-						crate++;
-						i--;
-						crate_configure_end(crate);
-					}
-					if (!return_code||retry)
-					{
-						crate=module_unemap_crates;
-						for (i=module_number_of_unemap_crates;i>0;i--)
+						while (i>0)
 						{
-							crate_deconfigure(crate);
 							crate++;
+							i--;
+							crate_configure_end(crate);
+						}
+						if (!return_code||retry)
+						{
+							crate=module_unemap_crates;
+							for (i=module_number_of_unemap_crates;i>0;i--)
+							{
+								crate_deconfigure(crate);
+								crate++;
+							}
 						}
 					}
-				}
-			} while (return_code&&retry);
-			if (return_code)
-			{
-				return_code=1;
+				} while (return_code&&retry);
+				if (return_code)
+				{
+					return_code=1;
+					module_number_of_configured_channels=0;
+					crate=module_unemap_crates;
+					for (i=module_number_of_unemap_crates;i>0;i--)
+					{
+						module_number_of_configured_channels +=
+							crate->number_of_configured_channels;
+						crate++;
+					}
 #if defined (CACHE_CLIENT_INFORMATION)
-				get_cache_information();
+					get_cache_information();
 #endif /* defined (CACHE_CLIENT_INFORMATION) */
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"unemap_configure.  Invalid channel number %d",channel_number);
 			}
 		}
 #if defined (OLD_CODE)
@@ -11126,7 +11003,7 @@ Returns a non-zero if unemap is configured and zero otherwise.
 
 int unemap_deconfigure(void)
 /*******************************************************************************
-LAST MODIFIED : 12 March 2000
+LAST MODIFIED : 13 August 2003
 
 DESCRIPTION :
 Stops acquisition and signal generation.  Frees buffers associated with the
@@ -11170,6 +11047,7 @@ hardware.
 			"unemap_deconfigure.  Could not initialize_connection");
 	}
 #endif /* defined (OLD_CODE) */
+	module_number_of_configured_channels=0;
 #if defined (CACHE_CLIENT_INFORMATION)
 	module_number_of_stimulators=0;
 	module_get_cache_information_failed=0;
@@ -12234,10 +12112,40 @@ The total number of hardware channels is assigned to <*number_of_channels>.
 	return (return_code);
 } /* unemap_get_number_of_channels */
 
+int unemap_get_number_of_configured_channels(int *number_of_channels)
+/*******************************************************************************
+LAST MODIFIED : 9 March 2000
+
+DESCRIPTION :
+The function does not need the hardware to be configured.
+
+The number of configured channels is assigned to <*number_of_channels>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(unemap_get_number_of_configured_channels);
+	return_code=0;
+	/* check arguments */
+	if (number_of_channels)
+	{
+		*number_of_channels=module_number_of_configured_channels;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"unemap_get_number_of_configured_channels.  Missing number_of_channels");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* unemap_get_number_of_configured_channels */
+
 int unemap_get_sample_range(int channel_number,long int *minimum_sample_value,
 	long int *maximum_sample_value)
 /*******************************************************************************
-LAST MODIFIED : 6 August 2002
+LAST MODIFIED : 18 August 2003
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -12282,9 +12190,12 @@ maximum possible sample value is assigned to <*maximum_sample_value>.
 					{
 						unemap_card=(crate->unemap_cards)+
 							((crate_channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD);
-						*minimum_sample_value=unemap_card->minimum_sample_value;
-						*maximum_sample_value=unemap_card->maximum_sample_value;
-						return_code=1;
+						if (0<(unemap_card->channel_number))
+						{
+							*minimum_sample_value=unemap_card->minimum_sample_value;
+							*maximum_sample_value=unemap_card->maximum_sample_value;
+							return_code=1;
+						}
 					}
 				}
 				else
@@ -12316,7 +12227,7 @@ maximum possible sample value is assigned to <*maximum_sample_value>.
 int unemap_get_voltage_range(int channel_number,float *minimum_voltage,
 	float *maximum_voltage)
 /*******************************************************************************
-LAST MODIFIED : 6 August 2002
+LAST MODIFIED : 18 August 2003
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -12361,11 +12272,16 @@ The voltage range, allowing for gain, is returned via <*minimum_voltage> and
 					{
 						unemap_card=(crate->unemap_cards)+
 							((crate_channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD);
-						*minimum_voltage=(unemap_card->minimum_voltage)/
-							((unemap_card->pre_filter_gain)*(unemap_card->post_filter_gain));
-						*maximum_voltage=(unemap_card->maximum_voltage)/
-							((unemap_card->pre_filter_gain)*(unemap_card->post_filter_gain));
-						return_code=1;
+						if (0<(unemap_card->channel_number))
+						{
+							*minimum_voltage=(unemap_card->minimum_voltage)/
+								((unemap_card->pre_filter_gain)*
+								(unemap_card->post_filter_gain));
+							*maximum_voltage=(unemap_card->maximum_voltage)/
+								((unemap_card->pre_filter_gain)*
+								(unemap_card->post_filter_gain));
+							return_code=1;
+						}
 					}
 				}
 				else
@@ -12397,91 +12313,6 @@ The voltage range, allowing for gain, is returned via <*minimum_voltage> and
 
 	return (return_code);
 } /* unemap_get_voltage_range */
-
-#if defined (OLD_CODE)
-int unemap_get_voltage_range(int channel_number,float *minimum_voltage,
-	float *maximum_voltage)
-/*******************************************************************************
-LAST MODIFIED : 6 March 2000
-
-DESCRIPTION :
-The function does not need the hardware to be configured.
-
-If <channel_number> is between 1 and the total number of channels inclusive,
-then the function applies to the group ((<channel_number>-1) div 64)*64+1 to
-((<channel_number>-1) div 64)*64+64.  Otherwise, the function fails.
-
-The voltage range, allowing for gain, is returned via <*minimum_voltage> and
-<*maximum_voltage>.
-==============================================================================*/
-{
-	int crate_channel_number,i,return_code;
-#if defined (CACHE_CLIENT_INFORMATION)
-	struct Unemap_card *unemap_card;
-#endif /* defined (CACHE_CLIENT_INFORMATION) */
-	struct Unemap_crate *crate;
-
-	ENTER(unemap_get_voltage_range);
-	return_code=0;
-	/* check arguments */
-	if (minimum_voltage&&maximum_voltage)
-	{
-		if (initialize_connection())
-		{
-			crate=module_unemap_crates;
-			i=module_number_of_unemap_crates;
-			crate_channel_number=channel_number;
-			while ((i>0)&&crate&&(crate_channel_number>crate->number_of_channels))
-			{
-				crate_channel_number -= crate->number_of_channels;
-				crate++;
-				i--;
-			}
-			if ((i>0)&&crate)
-			{
-#if defined (CACHE_CLIENT_INFORMATION)
-				if (!module_force_connection&&get_cache_information())
-				{
-					if ((1<=crate_channel_number)&&
-						(crate_channel_number<=crate->number_of_channels))
-					{
-						unemap_card=(crate->unemap_cards)+
-							((crate_channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD);
-						*minimum_voltage=(unemap_card->minimum_voltage)/
-							((unemap_card->pre_filter_gain)*(unemap_card->post_filter_gain));
-						*maximum_voltage=(unemap_card->maximum_voltage)/
-							((unemap_card->pre_filter_gain)*(unemap_card->post_filter_gain));
-						return_code=1;
-					}
-				}
-				else
-				{
-#endif /* defined (CACHE_CLIENT_INFORMATION) */
-					return_code=crate_get_voltage_range(crate,crate_channel_number,
-						minimum_voltage,maximum_voltage);
-#if defined (CACHE_CLIENT_INFORMATION)
-				}
-#endif /* defined (CACHE_CLIENT_INFORMATION) */
-			}
-		}
-#if defined (OLD_CODE)
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"unemap_get_voltage_range.  Could not initialize_connection");
-		}
-#endif /* defined (OLD_CODE) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"unemap_get_voltage_range.  Missing minimum_voltage or maximum_voltage");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* unemap_get_voltage_range */
-#endif /* defined (OLD_CODE) */
 
 int unemap_get_number_of_samples_acquired(unsigned long *number_of_samples)
 /*******************************************************************************
@@ -12564,7 +12395,7 @@ int unemap_transfer_samples_acquired(int channel_number,int number_of_samples,
 	Unemap_transfer_samples_function *transfer_samples_function,
 	void *transfer_samples_function_data,int *number_of_samples_transferred)
 /*******************************************************************************
-LAST MODIFIED : 29 August 2002
+LAST MODIFIED : 13 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -12612,7 +12443,7 @@ transferred.
 			}
 			if (0==channel_number)
 			{
-				if (unemap_get_number_of_channels(&number_of_channels))
+				if (unemap_get_number_of_configured_channels(&number_of_channels))
 				{
 					return_code=1;
 				}
@@ -12697,7 +12528,7 @@ transferred.
 int unemap_write_samples_acquired(int channel_number,int number_of_samples,
 	FILE *file,int *number_of_samples_written)
 /*******************************************************************************
-LAST MODIFIED : 29 August 2002
+LAST MODIFIED : 13 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -12742,7 +12573,7 @@ for completeness.
 			}
 			if (0==channel_number)
 			{
-				if (unemap_get_number_of_channels(&number_of_channels))
+				if (unemap_get_number_of_configured_channels(&number_of_channels))
 				{
 					return_code=1;
 				}
@@ -12818,7 +12649,7 @@ for completeness.
 int unemap_get_samples_acquired(int channel_number,int number_of_samples,
 	short int *samples,int *number_of_samples_got)
 /*******************************************************************************
-LAST MODIFIED : 29 August 2002
+LAST MODIFIED : 13 August 2003
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -12859,14 +12690,13 @@ set to the number of samples got.
 			if (0==channel_number)
 			{
 				while ((i>0)&&(return_code=crate_get_samples_acquired(
-					crate,channel_number,number_of_samples,samples+crate_channel_number,
+					crate,channel_number,number_of_samples,samples,
 					&crate_number_of_samples_got)))
 				{
 					if (crate_number_of_samples_got>local_number_of_samples_got)
 					{
 						local_number_of_samples_got=crate_number_of_samples_got;
 					}
-					crate_channel_number += crate->number_of_channels;
 					crate++;
 					i--;
 				}
@@ -13022,8 +12852,8 @@ background in a client/server arrangement.
 					else
 					{
 						display_message(ERROR_MESSAGE,
-					"unemap_get_samples_acquired_background.  Invalid channel_number %d",
-							channel_number);
+							"unemap_get_samples_acquired_background.  "
+							"Invalid channel_number %d",channel_number);
 					}
 				}
 			}
@@ -13048,116 +12878,6 @@ background in a client/server arrangement.
 
 	return (return_code);
 } /* unemap_get_samples_acquired_background */
-
-#if defined (OLD_CODE)
-int unemap_get_samples_acquired_background(int channel_number,
-	Unemap_acquired_data_callback *callback,void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 2 July 2000
-
-DESCRIPTION :
-The function fails if the hardware is not configured.
-
-The function gets the samples specified by the <channel_number> and calls the
-<callback> with the <channel_number>, the number of samples, the samples and the
-<user_data>.
-
-When the function returns, it is safe to call any of the other functions
-(including unemap_start_sampling), but the <callback> may not have finished or
-even been called yet.  This function allows data to be transferred in the
-background in a client/server arrangement.
-
-???DB.  Saving a unemap signal file in background
-1 Pop up dialog and get file name
-2 Call unemap_get_samples_acquired_background
-2.1 Sends message to server to unemap_get_samples_acquired_background
-2.2 Server writes the data to disk
-2.3 Server starts sub-process than opens socket and starts listening
-2.4 Server sends back port number to client
-2.5 Client starts sub-process that connects to server and transfers data
-==============================================================================*/
-{
-	int crate_channel_number,i,return_code;
-	struct Unemap_crate *crate;
-
-	ENTER(unemap_get_samples_acquired_background);
-	return_code=0;
-	/* check arguments */
-	if (callback)
-	{
-		/* unemap may have been started by another process, so can't just check that
-			the command_socket is valid */
-		if (initialize_connection()&&(crate=module_unemap_crates)&&
-			(0<module_number_of_unemap_crates))
-		{
-			if (!module_acquired_callback)
-			{
-				module_acquired_callback=callback;
-				module_acquired_callback_data=user_data;
-				module_acquired_channel_number=channel_number;
-				if (0==channel_number)
-				{
-					for (i=module_number_of_unemap_crates;i>0;i--)
-					{
-						(crate->acquired).complete=0;
-						crate++;
-					}
-					i=module_number_of_unemap_crates;
-					crate=module_unemap_crates;
-					while ((i>0)&&(return_code=crate_get_samples_acquired_background(
-						crate,0)))
-					{
-						crate++;
-						i--;
-					}
-				}
-				else
-				{
-					for (i=module_number_of_unemap_crates;i>0;i--)
-					{
-						(crate->acquired).complete=1;
-						crate++;
-					}
-					i=module_number_of_unemap_crates;
-					crate=module_unemap_crates;
-					crate_channel_number=channel_number;
-					while ((i>0)&&(crate_channel_number>crate->number_of_channels))
-					{
-						crate_channel_number -= crate->number_of_channels;
-						crate++;
-						i--;
-					}
-					if ((i>0)&&crate)
-					{
-						(crate->acquired).complete=0;
-						return_code=crate_get_samples_acquired_background(crate,
-							crate_channel_number);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-					"unemap_get_samples_acquired_background.  Invalid channel_number %d",
-							channel_number);
-					}
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"unemap_get_samples_acquired_background.  Transfer in progress");
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"unemap_get_samples_acquired_background.  Missing callback");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* unemap_get_samples_acquired_background */
-#endif /* defined (OLD_CODE) */
 
 int unemap_get_maximum_number_of_samples(unsigned long *number_of_samples)
 /*******************************************************************************
@@ -13416,7 +13136,7 @@ For UNEMAP_2V1 and UNEMAP_2V2, the post filter gain can be 11, 22, 55, 110, 220,
 int unemap_get_gain(int channel_number,float *pre_filter_gain,
 	float *post_filter_gain)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 18 August 2003
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -13466,9 +13186,12 @@ The <*pre_filter_gain> and <*post_filter_gain> for the group are assigned.
 					{
 						unemap_card=(crate->unemap_cards)+
 							((crate_channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD);
-						*pre_filter_gain=unemap_card->pre_filter_gain;
-						*post_filter_gain=unemap_card->post_filter_gain;
-						return_code=1;
+						if (0<(unemap_card->channel_number))
+						{
+							*pre_filter_gain=unemap_card->pre_filter_gain;
+							*post_filter_gain=unemap_card->post_filter_gain;
+							return_code=1;
+						}
 					}
 				}
 				else
@@ -13501,94 +13224,6 @@ The <*pre_filter_gain> and <*post_filter_gain> for the group are assigned.
 
 	return (return_code);
 } /* unemap_get_gain */
-
-#if defined (OLD_CODE)
-int unemap_get_gain(int channel_number,float *pre_filter_gain,
-	float *post_filter_gain)
-/*******************************************************************************
-LAST MODIFIED : 9 March 2000
-
-DESCRIPTION :
-The function does not need the hardware to be configured.
-
-If <channel_number> is between 1 and the total number of channels inclusive,
-then the function applies to the group ((<channel_number>-1) div 64)*64+1 to
-((<channel_number>-1) div 64)*64+64.  Otherwise, the function fails.
-
-The <*pre_filter_gain> and <*post_filter_gain> for the group are assigned.
-==============================================================================*/
-{
-	int crate_channel_number,i,return_code;
-#if defined (CACHE_CLIENT_INFORMATION)
-	struct Unemap_card *unemap_card;
-#endif /* defined (CACHE_CLIENT_INFORMATION) */
-	struct Unemap_crate *crate;
-
-	ENTER(unemap_get_gain);
-	return_code=0;
-	/* check arguments */
-	if (pre_filter_gain&&post_filter_gain)
-	{
-		if (initialize_connection())
-		{
-			crate=module_unemap_crates;
-			i=module_number_of_unemap_crates;
-			crate_channel_number=channel_number;
-			while ((i>0)&&crate&&(crate_channel_number>crate->number_of_channels))
-			{
-				crate_channel_number -= crate->number_of_channels;
-				crate++;
-				i--;
-			}
-			if ((i>0)&&crate)
-			{
-#if defined (CACHE_CLIENT_INFORMATION)
-#if defined (DEBUG)
-				/*???debug */
-				display_message(INFORMATION_MESSAGE,
-					"module_force_connection=%d\n",module_force_connection);
-#endif /* defined (DEBUG) */
-				/*???DB.  Eventually, it will fail if module_unemap_cards is not set ?*/
-				if (!module_force_connection&&get_cache_information())
-				{
-					if ((1<=crate_channel_number)&&
-						(crate_channel_number<=crate->number_of_channels))
-					{
-						unemap_card=(crate->unemap_cards)+
-							((crate_channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD);
-						*pre_filter_gain=unemap_card->pre_filter_gain;
-						*post_filter_gain=unemap_card->post_filter_gain;
-						return_code=1;
-					}
-				}
-				else
-				{
-#endif /* defined (CACHE_CLIENT_INFORMATION) */
-					return_code=crate_get_gain(crate,crate_channel_number,pre_filter_gain,
-						post_filter_gain);
-#if defined (CACHE_CLIENT_INFORMATION)
-				}
-#endif /* defined (CACHE_CLIENT_INFORMATION) */
-			}
-		}
-#if defined (OLD_CODE)
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"unemap_get_gain.  Could not initialize_connection");
-		}
-#endif /* defined (OLD_CODE) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"unemap_get_gain.  Missing pre_filter_gain or post_filter_gain");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* unemap_get_gain */
-#endif /* defined (OLD_CODE) */
 
 int unemap_load_voltage_stimulating(int number_of_channels,int *channel_numbers,
 	int number_of_voltages,float voltages_per_second,float *voltages,
@@ -13822,10 +13457,11 @@ Use <unemap_start_stimulating> to start the stimulating.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-"unemap_load_voltage_stimulating.  Invalid number_of_channels (%d) or channel_numbers (%p) or number_of_voltages (%d) or voltages (%p) or voltages_per_second (%g) or return_code (%d)",
-			number_of_channels,channel_numbers,number_of_voltages,voltages,
-			voltages_per_second,return_code);
+		display_message(ERROR_MESSAGE,"unemap_load_voltage_stimulating.  "
+			"Invalid number_of_channels (%d) or channel_numbers (%p) or "
+			"number_of_voltages (%d) or voltages (%p) or voltages_per_second (%g) or "
+			"return_code (%d)",number_of_channels,channel_numbers,number_of_voltages,
+			voltages,voltages_per_second,return_code);
 	}
 #if defined (DEBUG)
 	/*???debug */
@@ -15046,79 +14682,10 @@ The total number of hardware stimulators is assigned to
 	return (return_code);
 } /* unemap_get_number_of_stimulators */
 
-#if defined (OLD_CODE)
-int unemap_get_number_of_stimulators(int *number_of_stimulators)
-/*******************************************************************************
-LAST MODIFIED : 26 March 2000
-
-DESCRIPTION :
-The function does not need the hardware to be configured.
-
-The total number of hardware stimulators is assigned to
-<*number_of_stimulators>.
-==============================================================================*/
-{
-	int crate_number_of_stimulators,i,return_code,total_number_of_stimulators;
-	struct Unemap_crate *crate;
-
-	ENTER(unemap_get_number_of_stimulators);
-	return_code=0;
-	/* check arguments */
-	if (number_of_stimulators)
-	{
-#if defined (CACHE_CLIENT_INFORMATION)
-		/*???DB.  Eventually, it will fail of module_unemap_cards is not set ? */
-		if (!module_force_connection&&get_cache_information())
-		{
-			*number_of_stimulators=module_number_of_stimulators;
-			return_code=1;
-		}
-		else
-		{
-#endif /* defined (CACHE_CLIENT_INFORMATION) */
-			if (initialize_connection())
-			{
-				crate=module_unemap_crates;
-				i=module_number_of_unemap_crates;
-				total_number_of_stimulators=0;
-				while ((i>0)&&(return_code=crate_get_number_of_stimulators(crate,
-					&crate_number_of_stimulators)))
-				{
-					total_number_of_stimulators += crate_number_of_stimulators;
-					crate++;
-					i--;
-				}
-				if (return_code)
-				{
-					*number_of_stimulators=total_number_of_stimulators;
-				}
-			}
-#if defined (OLD_CODE)
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"unemap_get_number_of_stimulators.  Could not initialize_connection");
-			}
-#endif /* defined (OLD_CODE) */
-#if defined (CACHE_CLIENT_INFORMATION)
-		}
-#endif /* defined (CACHE_CLIENT_INFORMATION) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"unemap_get_number_of_stimulators.  Missing number_of_stimulators");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* unemap_get_number_of_stimulators */
-#endif /* defined (OLD_CODE) */
-
 int unemap_channel_valid_for_stimulator(int stimulator_number,
 	int channel_number)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 17 August 2003
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -15128,6 +14695,9 @@ Returns non-zero if <stimulator_number> can stimulate down <channel_number>.
 {
 	int crate_channel_number,crate_stimulator_number,i,return_code;
 	struct Unemap_crate *crate;
+#if !defined (CACHE_CLIENT_INFORMATION)
+	int crate_number_of_stimulators;
+#endif /* !defined (CACHE_CLIENT_INFORMATION) */
 
 	ENTER(unemap_channel_valid_for_stimulator);
 	return_code=0;
@@ -15139,15 +14709,27 @@ Returns non-zero if <stimulator_number> can stimulate down <channel_number>.
 		crate=module_unemap_crates;
 		crate_channel_number=channel_number;
 		crate_stimulator_number=stimulator_number;
-		while ((i>0)&&crate&&(crate_channel_number>crate->number_of_channels))
+		return_code=1;
+		while (return_code&&(i>0)&&crate&&
+			(crate_channel_number>crate->number_of_channels))
 		{
 			crate_channel_number -= crate->number_of_channels;
+#if defined (CACHE_CLIENT_INFORMATION)
 			crate_stimulator_number -= crate->number_of_stimulators;
+#else /* defined (CACHE_CLIENT_INFORMATION) */
+			if ((return_code=crate_get_number_of_stimulators_start(crate))&&
+				(return_code=crate_get_number_of_stimulators_end(crate,
+				&crate_number_of_stimulators)))
+			{
+				crate_stimulator_number -= crate_number_of_stimulators;
+			}
+#endif /* defined (CACHE_CLIENT_INFORMATION) */
 			i--;
 			crate++;
 		}
-		if ((i>0)&&crate)
+		if (return_code&&(i>0)&&crate)
 		{
+			return_code=0;
 #if defined (CACHE_CLIENT_INFORMATION)
 			/*???DB.  Eventually, it will fail of module_unemap_cards is not set ? */
 			if (!module_force_connection&&get_cache_information())
@@ -15174,75 +14756,9 @@ Returns non-zero if <stimulator_number> can stimulate down <channel_number>.
 			}
 #endif /* defined (CACHE_CLIENT_INFORMATION) */
 		}
-	}
-#if defined (OLD_CODE)
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"unemap_channel_valid_for_stimulator.  Could not initialize_connection");
-	}
-#endif /* defined (OLD_CODE) */
-	LEAVE;
-
-	return (return_code);
-} /* unemap_channel_valid_for_stimulator */
-
-#if defined (OLD_CODE)
-int unemap_channel_valid_for_stimulator(int stimulator_number,
-	int channel_number)
-/*******************************************************************************
-LAST MODIFIED : 9 March 2000
-
-DESCRIPTION :
-The function does not need the hardware to be configured.
-
-Returns non-zero if <stimulator_number> can stimulate down <channel_number>.
-==============================================================================*/
-{
-	int crate_channel_number,crate_stimulator_number,i,return_code;
-	struct Unemap_crate *crate;
-
-	ENTER(unemap_channel_valid_for_stimulator);
-	return_code=0;
-	/* unemap may have been started by another process, so can't just check
-		that the command_socket is valid */
-	if (initialize_connection())
-	{
-		i=module_number_of_unemap_crates;
-		crate=module_unemap_crates;
-		crate_channel_number=channel_number;
-		crate_stimulator_number=stimulator_number;
-		while ((i>0)&&crate&&(crate_channel_number>crate->number_of_channels))
+		else
 		{
-			crate_channel_number -= crate->number_of_channels;
-			crate_stimulator_number -= crate->number_of_stimulators;
-			i--;
-			crate++;
-		}
-		if ((i>0)&&crate)
-		{
-#if defined (CACHE_CLIENT_INFORMATION)
-			/*???DB.  Eventually, it will fail of module_unemap_cards is not set ? */
-			if (!module_force_connection&&get_cache_information())
-			{
-				if ((0<crate_stimulator_number)&&
-					(crate_stimulator_number<=crate->number_of_stimulators)&&
-					(1<=crate_channel_number)&&
-					(crate_channel_number<=crate->number_of_channels)&&
-					((crate->stimulator_card_indices)[crate_stimulator_number-1]==
-					(crate_channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD))
-				{
-					return_code=1;
-				}
-			}
-			else
-			{
-#endif /* defined (CACHE_CLIENT_INFORMATION) */
-				return_code=crate_channel_valid_for_stimulator(crate,
-					crate_stimulator_number,crate_channel_number);
-#if defined (CACHE_CLIENT_INFORMATION)
-			}
-#endif /* defined (CACHE_CLIENT_INFORMATION) */
+			return_code=0;
 		}
 	}
 #if defined (OLD_CODE)
@@ -15256,7 +14772,6 @@ Returns non-zero if <stimulator_number> can stimulate down <channel_number>.
 
 	return (return_code);
 } /* unemap_channel_valid_for_stimulator */
-#endif /* defined (OLD_CODE) */
 
 /*
 Diagnostic functions
