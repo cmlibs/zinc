@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 28 November 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -12563,150 +12563,203 @@ Executes a GFX LIST FIELD.
 } /* gfx_list_Computed_field */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_list_FE_element(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
+	void *cm_element_type_void,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 19 February 1997
+LAST MODIFIED : 28 November 200
 
 DESCRIPTION :
 Executes a GFX LIST ELEMENT.
 ==============================================================================*/
 {
-	char *current_token;
+	char all_flag, ranges_flag, selected_flag, verbose_flag;
+	enum CM_element_type cm_element_type;
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct FE_element *element;
-	struct CM_element_information cm;
-	int element_num,face_num,line_num;
+	struct FE_element_CM_element_type_Multi_range_data element_type_range_data;
+	struct FE_element_list_conditional_data element_list_conditional_data;
+	struct LIST(FE_element) *element_list;
+	LIST_CONDITIONAL_FUNCTION(FE_element)
+		*element_to_multi_range_conditional_function = NULL;
+	struct Multi_range *element_ranges;
+	struct Option_table *option_table;
 
 	ENTER(gfx_list_FE_element);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
+	cm_element_type = (enum CM_element_type)cm_element_type_void;
+	if (state && ((CM_ELEMENT == cm_element_type) ||
+		(CM_FACE == cm_element_type) || (CM_LINE == cm_element_type)) &&
+		(command_data = (struct Cmiss_command_data *)command_data_void))
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
-		{
-			if (current_token=state->current_token)
-			{
-				if (strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-				{
-					if (1==sscanf(current_token,"%d",&(element_num)))
-					{
-						shift_Parse_state(state,1);
-						if (current_token=state->current_token)
-						{
-							if (1==sscanf(current_token,"%d",&(face_num)))
-							{
-								shift_Parse_state(state,1);
-								if (current_token=state->current_token)
-								{
-									if (1==sscanf(current_token,"%d",&(line_num)))
-									{
-#if defined (OLD_CODE)
-										if (element=FIND_BY_IDENTIFIER_IN_LIST(FE_element,
-											identifier)(&cm,all_FE_element))
-#endif /* defined (OLD_CODE) */
-										if(element_num)
-										{
-											cm.number = element_num;
-											cm.type = CM_ELEMENT;
-										}
-										else if(face_num)
-										{
-											cm.number = face_num;
-											cm.type = CM_FACE;
-										}
-										else
-										{
-											cm.number = line_num;
-											cm.type = CM_LINE;
-										}
+		/* initialise defaults */
+		all_flag = 0;
+		selected_flag = 0;
+		verbose_flag = 0;
+		element_ranges = CREATE(Multi_range)();
 
-										if (element=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,
-											identifier)(&cm,command_data->element_manager))
-										{
-											list_FE_element(element,(void *)NULL);
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,"Unknown %s: %d ",
-												CM_element_type_string(cm.type),cm.number);
-											return_code=0;
-										}
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,"Invalid line number: %s",
-											current_token);
-										display_parse_state_location(state);
-										return_code=0;
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,"Missing line number");
-									display_parse_state_location(state);
-									return_code=0;
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,"Invalid face number: %s",
-									current_token);
-								display_parse_state_location(state);
-								return_code=0;
-							}
+		option_table=CREATE(Option_table)();
+		/* all */
+		Option_table_add_entry(option_table, "all", &all_flag, NULL, set_char_flag);
+		/* selected */
+		Option_table_add_entry(option_table, "selected", &selected_flag,
+			NULL, set_char_flag);
+		/* verbose */
+		Option_table_add_entry(option_table, "verbose", &verbose_flag,
+			NULL, set_char_flag);
+		/* default option: element number ranges */
+		Option_table_add_entry(option_table, (char *)NULL, (void *)element_ranges,
+			NULL, set_Multi_range);
+		if (return_code = Option_table_multi_parse(option_table,state))
+		{
+			if (element_list = CREATE(LIST(FE_element))())
+			{
+				element_type_range_data.cm_element_type = cm_element_type;
+				element_type_range_data.multi_range = element_ranges;
+				ranges_flag = (0 < Multi_range_get_number_of_ranges(element_ranges));
+				if (selected_flag)
+				{
+					/* add the selected elements of given type to element_list, and if
+						 element_ranges given, intersect with them */
+					element_list_conditional_data.element_list = element_list;
+					element_list_conditional_data.function =
+						FE_element_has_CM_element_type;
+					element_list_conditional_data.user_data = cm_element_type_void;
+					if (return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
+						ensure_FE_element_is_in_list_conditional,
+						(void *)&element_list_conditional_data,
+						FE_element_selection_get_element_list(
+							command_data->element_selection)))
+					{
+						if (ranges_flag)
+						{
+							return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
+								FE_element_CM_element_type_is_not_in_Multi_range,
+								(void *)&element_type_range_data, element_list);
+						}
+					}
+				}
+				else if (ranges_flag)
+				{
+					/* add elements of given type in element_ranges to element_list */
+					element_list_conditional_data.element_list = element_list;
+					element_list_conditional_data.function =
+						FE_element_CM_element_type_is_in_Multi_range;
+					element_list_conditional_data.user_data =
+						(void *)&element_type_range_data;
+					return_code = FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+						ensure_FE_element_is_in_list_conditional,
+						(void *)&element_list_conditional_data,
+						command_data->element_manager);
+				}
+				else if (all_flag)
+				{
+					element_list_conditional_data.element_list = element_list;
+					element_list_conditional_data.function =
+						FE_element_has_CM_element_type;
+					element_list_conditional_data.user_data = cm_element_type_void;
+					/* add all elements of given type to element_list */
+					return_code = FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+						ensure_FE_element_is_in_list_conditional,
+						(void *)&element_list_conditional_data,
+						command_data->element_manager);
+				}
+				if (return_code)
+				{
+					if (0 < NUMBER_IN_LIST(FE_element)(element_list))
+					{
+						if (verbose_flag)
+						{
+							return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(list_FE_element,
+								(void *)NULL, element_list);
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,"Missing face number");
-							display_parse_state_location(state);
-							return_code=0;
+							/* write comma separated list of ranges - use existing
+								 element_ranges structure */
+							switch (cm_element_type)
+							{
+								case CM_ELEMENT:
+								{
+									display_message(INFORMATION_MESSAGE,"Elements:\n");
+									element_to_multi_range_conditional_function =
+										add_FE_element_element_number_to_Multi_range;
+								} break;
+								case CM_FACE:
+								{
+									display_message(INFORMATION_MESSAGE,"Faces:\n");
+									element_to_multi_range_conditional_function =
+										add_FE_element_face_number_to_Multi_range;
+								} break;
+								case CM_LINE:
+								{
+									display_message(INFORMATION_MESSAGE,"Lines:\n");
+									element_to_multi_range_conditional_function =
+										add_FE_element_line_number_to_Multi_range;
+								} break;
+							}
+							Multi_range_clear(element_ranges);
+							if (FOR_EACH_OBJECT_IN_LIST(FE_element)(
+								element_to_multi_range_conditional_function,
+								(void *)element_ranges, element_list))
+							{
+								return_code = Multi_range_display_ranges(element_ranges);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"gfx_list_FE_element.  Could not get element ranges");
+								return_code = 0;
+							}
 						}
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"Invalid element number: %s",
-							current_token);
-						display_parse_state_location(state);
-						return_code=0;
+						switch (cm_element_type)
+						{
+							case CM_ELEMENT:
+							{
+								display_message(WARNING_MESSAGE,
+									"gfx list elements:  No elements specified");
+							} break;
+							case CM_FACE:
+							{
+								display_message(WARNING_MESSAGE,
+									"gfx list faces:  No faces specified");
+							} break;
+							case CM_LINE:
+							{
+								display_message(WARNING_MESSAGE,
+									"gfx list lines:  No lines specified");
+							} break;
+						}
 					}
 				}
 				else
 				{
-					display_message(INFORMATION_MESSAGE,
-						" ELEMENT#{integer} FACE#{integer} LINE#{integer}");
-					return_code=1;
+					display_message(ERROR_MESSAGE,
+						"gfx_list_FE_element.  Could not fill element_list");
 				}
+				DESTROY(LIST(FE_element))(&element_list);
 			}
 			else
 			{
-#if defined (OLD_CODE)
-				return_code=FOR_EACH_OBJECT_IN_LIST(FE_element)(list_FE_element,
-					(void *)NULL,all_FE_element);
-#endif /* defined (OLD_CODE) */
-				return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_element)(list_FE_element,
-					(void *)NULL,command_data->element_manager);
+				display_message(ERROR_MESSAGE,
+					"gfx_list_FE_element.  Could not make element_list");
+				return_code=0;
 			}
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_list_FE_element.  Missing command_data");
-			return_code=0;
-		}
+		DESTROY(Option_table)(&option_table);
+		DESTROY(Multi_range)(&element_ranges);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"gfx_list_FE_element.  Missing state");
+		display_message(ERROR_MESSAGE,
+			"gfx_list_FE_element.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* gfx_list_FE_element */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 static int gfx_list_FE_node(struct Parse_state *state,
 	void *use_data,void *command_data_void)
@@ -13359,12 +13412,14 @@ use node_manager and node_selection.
 } /* gfx_list_grid_points */
 
 static int gfx_list_group_FE_node(struct Parse_state *state,
-	void *dummy_to_be_modified,void *node_group_manager_void)
+	void *use_data,void *node_group_manager_void)
 /*******************************************************************************
-LAST MODIFIED : 3 October 2000
+LAST MODIFIED : 28 November 2000
 
 DESCRIPTION :
-Executes a GFX LIST NGROUP.
+Executes a GFX LIST DGROUP|NGROUP.
+If <use_data> is set help is presented for data, otherwise node. Since the
+manager is passed in the arguments, it does not affect normal functionality.
 ==============================================================================*/
 {
 	char *current_token;
@@ -13373,239 +13428,102 @@ Executes a GFX LIST NGROUP.
 	struct MANAGER(GROUP(FE_node)) *node_group_manager;
 
 	ENTER(gfx_list_group_FE_node);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
+	if (state && (node_group_manager=
+		(struct MANAGER(GROUP(FE_node)) *)node_group_manager_void))
 	{
-		if (node_group_manager=
-			(struct MANAGER(GROUP(FE_node)) *)node_group_manager_void)
+		if (current_token=state->current_token)
 		{
-			if (current_token=state->current_token)
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 			{
-				if (strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+				if (node_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(
+					current_token,node_group_manager))
 				{
-					if (node_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(
-						current_token,node_group_manager))
+					/* check there are no further tokens */
+					shift_Parse_state(state,1);
+					if (state->current_token)
 					{
-						/* check there are no further tokens */
-						shift_Parse_state(state,1);
-						if (state->current_token)
-						{
-							display_message(ERROR_MESSAGE,"Unexpected token: %s",
-								state->current_token);
-							display_parse_state_location(state);
-							return_code=0;
-						}
-						else
-						{
-							return_code=list_group_FE_node(node_group,(void *)1);
-						}
+						display_message(ERROR_MESSAGE,"Unexpected token: %s",
+							state->current_token);
+						display_parse_state_location(state);
+						return_code=0;
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"Unknown node group: %s",
-							current_token);
-						display_parse_state_location(state);
-						return_code=0;
+						return_code=list_group_FE_node(node_group,(void *)1);
 					}
 				}
 				else
 				{
-					display_message(INFORMATION_MESSAGE," <NODE_GROUP_NAME{all}>");
-					return_code=1;
+					if (use_data)
+					{
+						display_message(ERROR_MESSAGE, "Unknown data group: %s",
+							current_token);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "Unknown node group: %s",
+							current_token);
+					}
+					display_parse_state_location(state);
+					return_code=0;
 				}
 			}
 			else
 			{
-				if (0<NUMBER_IN_MANAGER(GROUP(FE_node))(node_group_manager))
+				if (use_data)
 				{
-					display_message(INFORMATION_MESSAGE,"node groups:\n");
-					return_code=FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_node))(
-						list_group_FE_node,(void *)NULL,node_group_manager);
+					display_message(INFORMATION_MESSAGE, " <DATA_GROUP_NAME{all}>");
+				}
+				else
+				{
+					display_message(INFORMATION_MESSAGE," <NODE_GROUP_NAME{all}>");
+				}
+				return_code = 1;
+			}
+		}
+		else
+		{
+			if (0 < NUMBER_IN_MANAGER(GROUP(FE_node))(node_group_manager))
+			{
+				if (use_data)
+				{
+					display_message(INFORMATION_MESSAGE, "Data groups:\n");
+				}
+				else
+				{
+					display_message(INFORMATION_MESSAGE, "Node groups:\n");
+				}
+				return_code = FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_node))(
+					list_group_FE_node, (void *)NULL, node_group_manager);
+			}
+			else
+			{
+				if (use_data)
+				{
+					display_message(INFORMATION_MESSAGE,
+						"There are no data groups defined\n");
 				}
 				else
 				{
 					display_message(INFORMATION_MESSAGE,
 						"There are no node groups defined\n");
-					return_code=1;
 				}
+				return_code = 1;
 			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_list_group_FE_node.  Missing node_group_manager_void");
-			return_code=0;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"gfx_list_group_FE_node.  Missing state");
-		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"gfx_list_group_FE_node.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* gfx_list_group_FE_node */
 
-static int gfx_list_group_data(struct Parse_state *state,
-	void *dummy_to_be_modified,void *data_group_manager_void)
-/*******************************************************************************
-LAST MODIFIED : 26 May 1998
-
-DESCRIPTION :
-Executes a GFX LIST DGROUP.
-==============================================================================*/
-{
-	char *current_token;
-	int return_code;
-	struct GROUP(FE_node) *data_group;
-	struct MANAGER(GROUP(FE_node)) *data_group_manager;
-
-	ENTER(gfx_list_group_data);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (data_group_manager=
-			(struct MANAGER(GROUP(FE_node)) *)data_group_manager_void)
-		{
-			if (current_token=state->current_token)
-			{
-				if (strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-				{
-					if (data_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(
-						current_token,data_group_manager))
-					{
-						return_code=list_group_FE_node(data_group,(void *)1);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"Unknown data group: %s",
-							current_token);
-						display_parse_state_location(state);
-						return_code=0;
-					}
-				}
-				else
-				{
-					display_message(INFORMATION_MESSAGE," <DATA_GROUP_NAME{all}>");
-					return_code=1;
-				}
-			}
-			else
-			{
-				if (0<NUMBER_IN_MANAGER(GROUP(FE_node))(data_group_manager))
-				{
-					display_message(INFORMATION_MESSAGE,"data groups:\n");
-					return_code=FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_node))(
-						list_group_FE_node,(void *)NULL,data_group_manager);
-				}
-				else
-				{
-					display_message(INFORMATION_MESSAGE,
-						"There are no data groups defined\n");
-					return_code=1;
-				}
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_list_group_data.  Missing data_group_manager_void");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_list_group_data.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_list_group_data */
-
-#if !defined (WINDOWS_DEV_FLAG)
-static int gfx_list_interest_point(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 16 October 1998
-
-DESCRIPTION :
-Executes a GFX LIST INTEREST_POINT.
-==============================================================================*/
-{
-	double eyex,eyey,eyez,lookatx,lookaty,lookatz,upx,upy,upz;
-	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"window",NULL,NULL,set_Graphics_window},
-		{NULL,NULL,NULL,NULL}
-	};
-	struct Cmiss_command_data *command_data;
-	struct Graphics_window *window;
-
-	ENTER(gfx_list_interest_point);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
-		{
-			if (window=FIRST_OBJECT_IN_MANAGER_THAT(Graphics_window)(
-				(MANAGER_CONDITIONAL_FUNCTION(Graphics_window) *)NULL,
-				(void *)NULL,command_data->graphics_window_manager))
-			{
-				ACCESS(Graphics_window)(window);
-			}
-			(option_table[0]).to_be_modified=(void *)&window;
-			(option_table[0]).user_data=command_data->graphics_window_manager;
-			return_code=process_multiple_options(state,option_table);
-			/* no errors, not asking for help */
-			if (return_code)
-			{
-				if (window)
-				{
-					if (Scene_viewer_get_lookat_parameters(
-						Graphics_window_get_Scene_viewer(window,0),&eyex,&eyey,&eyez,
-						&lookatx,&lookaty,&lookatz,&upx,&upy,&upz))
-					{
-						display_message(INFORMATION_MESSAGE,"interest point: %g %g %g\n",
-							lookatx,lookaty,lookatz);
-/*???DB.  Temp ? */
-printf("set interest_point position %g %g %g\n",lookatx,lookaty,lookatz);
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"Must have a graphics window");
-					return_code=0;
-				}
-			} /* parse error, help */
-			if (window)
-			{
-				DEACCESS(Graphics_window)(&window);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_list_interest_point.  Invalid argument(s)");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_list_interest_point.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_list_interest_point */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_list_light(struct Parse_state *state,
 	void *dummy_to_be_modified,void *light_manager_void)
 /*******************************************************************************
@@ -13671,9 +13589,7 @@ Executes a GFX LIST LIGHT.
 
 	return (return_code);
 } /* gfx_list_light */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_list_light_model(struct Parse_state *state,
 	void *dummy_to_be_modified,void *light_model_manager_void)
 /*******************************************************************************
@@ -13742,7 +13658,6 @@ Executes a GFX LIST LMODEL.
 
 	return (return_code);
 } /* gfx_list_light_model */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 static int gfx_list_scene(struct Parse_state *state,
 	void *dummy_to_be_modified,void *scene_manager_void)
@@ -13813,77 +13728,74 @@ Executes a GFX LIST SCENE.
 static int gfx_list_spectrum(struct Parse_state *state,
 	void *dummy_to_be_modified,void *spectrum_manager_void)
 /*******************************************************************************
-LAST MODIFIED : 15 October 1996
+LAST MODIFIED : 28 November 2000
 
 DESCRIPTION :
 Executes a GFX LIST SPECTRUM.
 ==============================================================================*/
 {
 	static char	*command_prefix="gfx modify spectrum";
-	int commands_flag,return_code;
+	char *commands_flag;
+	int return_code;
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct Spectrum *spectrum;
-	static struct Modifier_entry option_table[]=
-	{
-		{"commands",NULL,NULL,set_char_flag},
-		{NULL,NULL,NULL,set_Spectrum}
-	};
+	struct Option_table *option_table;
 
 	ENTER(gfx_list_spectrum);
 	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
+	if (state && (spectrum_manager =
+		(struct MANAGER(Spectrum) *)spectrum_manager_void))
 	{
-		if (spectrum_manager=
-			(struct MANAGER(Spectrum) *)spectrum_manager_void)
-		{
-			commands_flag=0;
-			spectrum = (struct Spectrum *)NULL;
-			(option_table[0]).to_be_modified= &commands_flag;
-			(option_table[1]).to_be_modified= &spectrum;
-			(option_table[1]).user_data= spectrum_manager_void;
+		commands_flag = 0;
+		spectrum = (struct Spectrum *)NULL;
 
-			if (return_code=process_multiple_options(state,option_table))
+		option_table=CREATE(Option_table)();
+		/* commands */
+		Option_table_add_entry(option_table, "commands", &commands_flag,
+			NULL, set_char_flag);
+		/* default option: spectrum name */
+		Option_table_add_entry(option_table, (char *)NULL, &spectrum,
+			spectrum_manager_void, set_Spectrum);
+		if (return_code = Option_table_multi_parse(option_table,state))
+		{
+			if (commands_flag)
 			{
-				if ( commands_flag )
+				if (spectrum)
 				{
-					if ( spectrum )
-					{
-						display_message(INFORMATION_MESSAGE,
-							"Commands for reproducing spectrum:\n");
-						return_code=Spectrum_list_commands(spectrum,
-							command_prefix,(char *)NULL);
-					}
-					else
-					{
-						display_message(INFORMATION_MESSAGE," SPECTRUM_NAME\n");
-						return_code = 1;
-					}
+					display_message(INFORMATION_MESSAGE,
+						"Commands for reproducing spectrum:\n");
+					return_code = Spectrum_list_commands(spectrum,
+						command_prefix, (char *)NULL);
 				}
 				else
 				{
-					if ( spectrum )
-					{
-						return_code=Spectrum_list_contents(spectrum,(void *)NULL);
-					}
-					else
-					{
-						return_code = FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(Spectrum_list_contents,
-							(void *)NULL, spectrum_manager);
-					}
+					display_message(INFORMATION_MESSAGE," SPECTRUM_NAME\n");
+					return_code = 1;
+				}
+			}
+			else
+			{
+				if (spectrum)
+				{
+					return_code = Spectrum_list_contents(spectrum, (void *)NULL);
+				}
+				else
+				{
+					return_code = FOR_EACH_OBJECT_IN_MANAGER(Spectrum)(
+						Spectrum_list_contents, (void *)NULL, spectrum_manager);
 				}
 			}
 		}
-		else
+		DESTROY(Option_table)(&option_table);
+		if (spectrum)
 		{
-			display_message(ERROR_MESSAGE,
-				"gfx_list_spectrum.  Missing spectrum_manager_void");
-			return_code=0;
+			DEACCESS(Spectrum)(&spectrum);
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"gfx_list_spectrum.  Missing state");
-		return_code=0;
+		display_message(ERROR_MESSAGE,"gfx_list_spectrum.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -13977,7 +13889,6 @@ Executes a GFX LIST TEXTURE.
 	return (return_code);
 } /* gfx_list_texture */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_list_transformation(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -14097,88 +14008,7 @@ Executes a GFX LIST TRANSFORMATION.
 
 	return (return_code);
 } /* gfx_list_transformation */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
-static int gfx_list_view_point(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 16 October 1998
-
-DESCRIPTION :
-Executes a GFX LIST VIEW_POINT.
-==============================================================================*/
-{
-	double eyex,eyey,eyez,lookatx,lookaty,lookatz,upx,upy,upz;
-	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"window",NULL,NULL,set_Graphics_window},
-		{NULL,NULL,NULL,NULL}
-	};
-	struct Cmiss_command_data *command_data;
-	struct Graphics_window *window;
-
-	ENTER(gfx_list_view_point);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
-		{
-			if (window=FIRST_OBJECT_IN_MANAGER_THAT(Graphics_window)(
-				(MANAGER_CONDITIONAL_FUNCTION(Graphics_window) *)NULL,
-				(void *)NULL,command_data->graphics_window_manager))
-			{
-				ACCESS(Graphics_window)(window);
-			}
-			(option_table[0]).to_be_modified=(void *)&window;
-			(option_table[0]).user_data=command_data->graphics_window_manager;
-			return_code=process_multiple_options(state,option_table);
-			/* no errors, not asking for help */
-			if (return_code)
-			{
-				if (window)
-				{
-					if (Scene_viewer_get_lookat_parameters(
-						Graphics_window_get_Scene_viewer(window,0),&eyex,&eyey,&eyez,
-						&lookatx,&lookaty,&lookatz,&upx,&upy,&upz))
-					{
-						display_message(INFORMATION_MESSAGE,"view point: %g %g %g\n",eyex,
-							eyey,eyez);
-/*???DB.  Temp ? */
-printf("set view_point position %g %g %g\n",eyex,eyey,eyez);
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"Must have a graphics window");
-					return_code=0;
-				}
-			} /* parse error, help */
-			if (window)
-			{
-				DEACCESS(Graphics_window)(&window);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_list_view_point.  Invalid argument(s)");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_list_view_point.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_list_view_point */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
-#if !defined (WINDOWS_DEV_FLAG)
 static int iterator_list_VT_volume_texture(struct VT_volume_texture *texture,
 	void *dummy_user_data)
 /*******************************************************************************
@@ -14267,7 +14097,6 @@ Executes a GFX LIST VTEXTURE.
 
 	return (return_code);
 } /* gfx_list_volume_texture */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 static int gfx_list_movie_graphics(struct Parse_state *state,
 	void *dummy_to_be_modified,void *movie_graphics_manager_void)
@@ -14337,80 +14166,6 @@ Executes a GFX LIST MOVIE.
 	return (return_code);
 } /* gfx_list_movie_graphics */
 
-#if defined (OLD_CODE)
-#if !defined (WINDOWS_DEV_FLAG)
-static int gfx_list_graphics_window(struct Parse_state *state,
-	void *dummy_to_be_modified,void *graphics_window_manager_void)
-/*******************************************************************************
-LAST MODIFIED : 21 September 1998
-
-DESCRIPTION :
-Executes a GFX LIST WINDOW.
-==============================================================================*/
-{
-	char *current_token;
-	int return_code;
-	struct Graphics_window *graphics_window;
-	struct MANAGER(Graphics_window) *graphics_window_manager;
-
-	ENTER(gfx_list_graphics_window);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (graphics_window_manager=
-			(struct MANAGER(Graphics_window) *)graphics_window_manager_void)
-		{
-			if (current_token=state->current_token)
-			{
-				if (strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-				{
-					if (graphics_window=
-						FIND_BY_IDENTIFIER_IN_MANAGER(Graphics_window,name)(current_token,
-						graphics_window_manager))
-					{
-						return_code=list_Graphics_window(graphics_window,(void *)NULL);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"Unknown graphics_window: %s",
-							current_token);
-						display_parse_state_location(state);
-						return_code=0;
-					}
-				}
-				else
-				{
-					display_message(INFORMATION_MESSAGE," GRAPHICS_WINDOW_NAME");
-					return_code=1;
-				}
-			}
-			else
-			{
-				return_code=FOR_EACH_OBJECT_IN_MANAGER(Graphics_window)(
-					list_Graphics_window,(void *)NULL,graphics_window_manager);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_list_graphics_window.  Missing graphics_window_manager_void");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_list_graphics_window.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_list_graphics_window */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-#endif /* defined (OLD_CODE) */
-
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_list_graphics_window(struct Parse_state *state,
 	void *dummy_to_be_modified,void *graphics_window_manager_void)
 /*******************************************************************************
@@ -14498,171 +14253,125 @@ Executes a GFX LIST WINDOW.
 
 	return (return_code);
 } /* gfx_list_graphics_window */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_gfx_list(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 20 September 2000
+LAST MODIFIED : 28 November 2000
 
 DESCRIPTION :
 Executes a GFX LIST command.
 ==============================================================================*/
 {
-	int i,return_code;
+	int return_code;
 	struct Cmiss_command_data *command_data;
-	static struct Modifier_entry option_table[]=
-	{
-		{"curve",NULL,NULL,gfx_list_Control_curve},
-		{"data",NULL,NULL,gfx_list_FE_node},
-		{"dgroup",NULL,NULL,gfx_list_group_data},
-		{"egroup",NULL,NULL,gfx_list_group_FE_element},
-		{"element",NULL,NULL,gfx_list_FE_element},
-		{"environment_map",NULL,NULL,gfx_list_environment_map},
-		{"field",NULL,NULL,gfx_list_Computed_field},
-		{"g_element",NULL,NULL,gfx_list_g_element},
-		{"glyph",NULL,NULL,gfx_list_graphics_object},
-		{"graphics_object",NULL,NULL,gfx_list_graphics_object},
-		{"grid_points",NULL,NULL,gfx_list_grid_points},
-		{"interest_point",NULL,NULL,gfx_list_interest_point},
-		{"light",NULL,NULL,gfx_list_light},
-		{"lmodel",NULL,NULL,gfx_list_light_model},
-		{"material",NULL,NULL,gfx_list_graphical_material},
-#if defined (SGI_MOVIE_FILE)
-		{"movie",NULL,NULL,gfx_list_movie_graphics},
-#endif /* defined (SGI_MOVIE_FILE) */
-		{"ngroup",NULL,NULL,gfx_list_group_FE_node},
-		{"nodes",NULL,NULL,gfx_list_FE_node},
-		{"slider",NULL,NULL,list_node_group_slider},
-		{"scene",NULL,NULL,gfx_list_scene},
-		{"spectrum",NULL,NULL,gfx_list_spectrum},
-		{"texture",NULL,NULL,gfx_list_texture},
-		{"transformation",NULL,NULL,gfx_list_transformation},
-		{"view_point",NULL,NULL,gfx_list_view_point},
-		{"vtexture",NULL,NULL,gfx_list_volume_texture},
-		{"window",NULL,NULL,gfx_list_graphics_window},
-		{NULL,NULL,NULL,NULL}
-	};
+	struct Option_table *option_table;
 
 	ENTER(execute_command_gfx_list);
 	USE_PARAMETER(dummy_to_be_modified);
-	/* check argument */
-	if (state)
+	if (state && (command_data=(struct Cmiss_command_data *)command_data_void))
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (state->current_token)
 		{
-			if (state->current_token)
-			{
-				i=0;
-				/* curve */
-				(option_table[i]).user_data=
-					(void *)(command_data->control_curve_manager);
-				i++;
-				/* data */
-				(option_table[i]).to_be_modified=(void *)1;
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* dgroup */
-				(option_table[i]).user_data=command_data->data_group_manager;
-				i++;
-				/* egroup */
-				(option_table[i]).user_data=command_data->element_group_manager;
-				i++;
-				/* element */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* environment_map */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* field */
-				(option_table[i]).user_data=command_data->computed_field_package;
-				i++;
-				/* g_element */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* glyph */
-				(option_table[i]).user_data=command_data->glyph_list;
-				i++;
-				/* graphics_object */
-				(option_table[i]).user_data=command_data->graphics_object_list;
-				i++;
-				/* grid_points */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* interest_point */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* light */
-				(option_table[i]).user_data=command_data->light_manager;
-				i++;
-				/* lmodel */
-				(option_table[i]).user_data=command_data->light_model_manager;
-				i++;
-				/* material */
-				(option_table[i]).user_data=command_data->graphical_material_manager;
-				i++;
+			option_table = CREATE(Option_table)();
+			/* curve */
+			Option_table_add_entry(option_table, "curve", NULL,
+				command_data->control_curve_manager, gfx_list_Control_curve);
+			/* data */
+			Option_table_add_entry(option_table, "data", /*use_data*/(void *)1,
+				command_data_void, gfx_list_FE_node);
+			/* dgroup */
+			Option_table_add_entry(option_table, "dgroup", /*use_data*/(void *)1,
+				command_data->data_group_manager, gfx_list_group_FE_node);
+			/* egroup */
+			Option_table_add_entry(option_table, "egroup", NULL,
+				command_data->element_group_manager, gfx_list_group_FE_element);
+			/* element */
+			Option_table_add_entry(option_table, "elements", (void *)CM_ELEMENT,
+				command_data_void, gfx_list_FE_element);
+			/* environment_map */
+			Option_table_add_entry(option_table, "environment_map", NULL,
+				command_data_void, gfx_list_environment_map);
+			/* faces */
+			Option_table_add_entry(option_table, "faces", (void *)CM_FACE,
+				command_data_void, gfx_list_FE_element);
+			/* field */
+			Option_table_add_entry(option_table, "field", NULL,
+				command_data->computed_field_package, gfx_list_Computed_field);
+			/* g_element */
+			Option_table_add_entry(option_table, "g_element", NULL,
+				command_data_void, gfx_list_g_element);
+			/* glyph */
+			Option_table_add_entry(option_table, "glyph", NULL,
+				command_data->glyph_list, gfx_list_graphics_object);
+			/* graphics_object */
+			Option_table_add_entry(option_table, "graphics_object", NULL,
+				command_data->graphics_object_list, gfx_list_graphics_object);
+			/* grid_points */
+			Option_table_add_entry(option_table, "grid_points", NULL,
+				command_data_void, gfx_list_grid_points);
+			/* light */
+			Option_table_add_entry(option_table, "light", NULL,
+				command_data->light_manager, gfx_list_light);
+			/* lines */
+			Option_table_add_entry(option_table, "lines", (void *)CM_LINE,
+				command_data_void, gfx_list_FE_element);
+			/* lmodel */
+			Option_table_add_entry(option_table, "lmodel", NULL,
+				command_data->light_model_manager, gfx_list_light_model);
+			/* material */
+			Option_table_add_entry(option_table, "material", NULL,
+				command_data->graphical_material_manager, gfx_list_graphical_material);
 #if defined (SGI_MOVIE_FILE)
-				/* movie */
-				(option_table[i]).user_data=command_data->movie_graphics_manager;
-				i++;
+			/* movie */
+			Option_table_add_entry(option_table, "movie", NULL,
+				command_data->movie_graphics_manager, gfx_list_movie_graphics);
 #endif /* defined (SGI_MOVIE_FILE) */
-				/* ngroup */
-				(option_table[i]).user_data=command_data->node_group_manager;
-				i++;
-				/* nodes */
-				(option_table[i]).to_be_modified=(void *)0;
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* slider */
-				(option_table[i]).user_data=command_data->node_group_slider_dialog;
-				i++;
-				/* scene */
-				(option_table[i]).user_data=command_data->scene_manager;
-				i++;
-				/* spectrum */
-				(option_table[i]).user_data=command_data->spectrum_manager;
-				i++;
-				/* texture */
-				(option_table[i]).user_data=command_data->texture_manager;
-				i++;
-				/* transformation */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* view_point */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* volume texture */
-				(option_table[i]).user_data=command_data->volume_texture_manager;
-				i++;
-				/* graphics_window */
-				(option_table[i]).user_data=command_data->graphics_window_manager;
-				i++;
-				return_code=process_option(state,option_table);
-			}
-			else
-			{
-				set_command_prompt("gfx list",command_data->command_window);
-				return_code=1;
-			}
+			/* ngroup */
+			Option_table_add_entry(option_table, "ngroup", /*use_data*/(void *)0,
+				command_data->node_group_manager, gfx_list_group_FE_node);
+			/* nodes */
+			Option_table_add_entry(option_table, "nodes", /*use_data*/(void *)0,
+				command_data_void, gfx_list_FE_node);
+			/* slider */
+			Option_table_add_entry(option_table, "slider", NULL,
+				command_data->node_group_slider_dialog, list_node_group_slider);
+			/* scene */
+			Option_table_add_entry(option_table, "scene", NULL,
+				command_data->scene_manager, gfx_list_scene);
+			/* spectrum */
+			Option_table_add_entry(option_table, "spectrum", NULL,
+				command_data->spectrum_manager, gfx_list_spectrum);
+			/* texture */
+			Option_table_add_entry(option_table, "texture", NULL,
+				command_data->texture_manager, gfx_list_texture);
+			/* transformation */
+			Option_table_add_entry(option_table, "transformation", NULL,
+				command_data_void, gfx_list_transformation);
+			/* volume texture */
+			Option_table_add_entry(option_table, "vtexture", NULL,
+				command_data->volume_texture_manager, gfx_list_volume_texture);
+			/* graphics window */
+			Option_table_add_entry(option_table, "window", NULL,
+				command_data->graphics_window_manager, gfx_list_graphics_window);
+			return_code = Option_table_parse(option_table, state);
+			DESTROY(Option_table)(&option_table);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"execute_command_gfx_list.  Missing command_data");
-			return_code=0;
+			set_command_prompt("gfx list", command_data->command_window);
+			return_code = 1;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"execute_command_gfx_list.  Missing state");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* execute_command_gfx_list */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int gfx_modify_element_group(struct Parse_state *state,
