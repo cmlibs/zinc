@@ -7540,6 +7540,8 @@ field are converted to "colours" by applying the <spectrum>
 			Computed_field_clear_cache(field);
 			Computed_field_clear_cache(texture_coordinate_field);
 			DEALLOCATE(data_values);
+			DEALLOCATE(texture_image);
+			DESTROY(Graphical_material)(&material);
 			if (cache)
 			{
 				DESTROY(Computed_field_find_element_xi_special_cache)(&cache);
@@ -7637,6 +7639,7 @@ Modifies the properties of a texture.
 					&set_texture_coordinates_field_data, set_Computed_field_conditional);
 
 				return_code=Option_table_multi_parse(option_table, state);
+				DESTROY(Option_table)(&option_table);
 			}
 			else
 			{
@@ -16529,6 +16532,18 @@ movie is being created.
 			if (graphics_window)
 			{
 				DEACCESS(Graphics_window)(&graphics_window);
+			}
+			if (create_file_name)
+			{
+				DEALLOCATE(create_file_name);
+			}
+			if (open_file_name)
+			{
+				DEALLOCATE(open_file_name);
+			}
+			if (movie_name)
+			{
+				DEALLOCATE(movie_name);
 			}
 #else /* defined (SGI_MOVIE_FILE) */
 			display_message(ERROR_MESSAGE,
