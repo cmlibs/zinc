@@ -80,7 +80,7 @@ Also verified from book:
 				x = (double)number;
 				z = k + x*log_mean - STIRLING_APPROXIMATION_LOG_N_FACTORIAL(x);
 			}
-			while (log(CMGUI_RANDOM_NON_INCLUSIVE(double)*u*(1.0 - u)) >= z);
+			while (log(CMGUI_RANDOM_NON_INCLUSIVE(double)*u*(1.0 - u)) > z);
 			/* note Ripley algorithm requires > z in the above; clifford uses >= z;
 				 I have converted "until (condition)" into "while (!condition)" */
 		}
