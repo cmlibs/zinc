@@ -1355,38 +1355,6 @@ NB.  0<=current_data_interval<number_of_data_intervals
 				/* use full resolution for printer */
 				if (PRINTER_DETAIL==detail)
 				{
-#if defined (OLD_CODE)
-					x_scale=SCALE_FACTOR(x_max-x_min,time_max-time_min);
-					time_scale=1;
-					y_scale=SCALE_FACTOR(y_max-y_min,signal_maximum-signal_minimum);
-					value_scale=1;
-					/* set the printer transformation */
-					if (get_postscript_display_transfor(&postscript_page_left,
-						&postscript_page_bottom,&postscript_page_width,
-						&postscript_page_height,&world_left,&world_top,&world_width,
-						&world_height))
-					{
-						set_postscript_display_transfor(postscript_page_left,
-							postscript_page_bottom,postscript_page_width,
-							postscript_page_height,
-							(float)time_min+(float)(x_pos-x_min)*x_scale,
-							(float)(y_pos-y_min)*y_scale-signal_maximum,x_scale*(float)width,
-							y_scale*(float)height);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"draw_signal.  Could not get_postscript_page_size");
-					}
-					x_min=time_min;
-					x_max=time_max;
-					y_min= -signal_maximum;
-					y_max= -signal_minimum;
-					time_ref=0;
-					x_ref=0;
-					signal_ref=0;
-					y_ref=0;
-#endif /* defined (OLD_CODE) */
 					x_scale=1;
 					y_scale=1;
 					x_scale *= (float)MAXSHORT/(float)(x_max-x_min);
@@ -1907,30 +1875,10 @@ DESCRIPTION : draws the event_marker
 							graphics_context).undecided_colour_text;
 					} break;
 				}
-#if defined (OLD_CODE)
-				if (PRINTER_DETAIL==detail)
-				{
-					x_scale=SCALE_FACTOR(axes_width-1,last_data-first_data);
-					if (signal_min<=signal_max)
-					{
-						y_scale=SCALE_FACTOR(axes_height-1,2);
-					}
-					else
-					{
-						y_scale=SCALE_FACTOR(axes_height-1,signal_max-signal_min);
-					}
-					x_marker=axes_left+(event->time-first_data);
-				}
-				else
-				{
-#endif /* defined (OLD_CODE) */
-					x_scale=1;
-					y_scale=1;
-					x_marker=SCALE_X(event->time,first_data,axes_left,
-						SCALE_FACTOR(last_data-first_data,axes_width-1));
-#if defined (OLD_CODE)
-				}
-#endif /* defined (OLD_CODE) */
+				x_scale=1;
+				y_scale=1;
+				x_marker=SCALE_X(event->time,first_data,axes_left,
+					SCALE_FACTOR(last_data-first_data,axes_width-1));
 #if defined (DEBUG)
 				/*???debug */
 				if (NULL==event->previous)

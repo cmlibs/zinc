@@ -362,9 +362,6 @@ DESCRIPTION : The Map.
 	struct Map_drawing_information *drawing_information;
 	int activation_front;
 	float contour_maximum,contour_minimum,maximum_value,minimum_value;
-#if defined (OLD_CODE)
-	struct User_interface *user_interface;
-#endif /* defined (OLD_CODE) */
 	struct Unemap_package *unemap_package;
 	float end_time,start_time;
 	int number_of_sub_maps,number_of_frames,sub_map_number;

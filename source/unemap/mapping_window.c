@@ -2171,10 +2171,6 @@ new rig.
 				&all_devices_node_order_info);
 			/* not needed */
 			DEACCESS(FE_node_order_info)(&all_devices_node_order_info);		
-#if defined (OLD_CODE)
-			/* used to read the configuration file into nodes. Now convert. See above */
-			file_read_config_FE_node_group(file_name,unemap_package,*(mapping->map->rig_pointer));
-#endif /* defined (OLD_CODE) */
 #endif /* defined (UNEMAP_USE_3D) */
 			/* unghost the save configuration and set default configuration buttons */
 			XtSetSensitive(mapping->file_menu.save_configuration_button,True);
