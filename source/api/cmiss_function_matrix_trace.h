@@ -6,8 +6,8 @@ LAST MODIFIED : 10 September 2004
 DESCRIPTION :
 The public interface to the Cmiss_function matrix trace object.
 ==============================================================================*/
-#ifndef __API_CMISS_FUNCTION_MATRIX_SUM_H__
-#define __API_CMISS_FUNCTION_MATRIX_SUM_H__
+#ifndef __API_CMISS_FUNCTION_MATRIX_TRACE_H__
+#define __API_CMISS_FUNCTION_MATRIX_TRACE_H__
 
 #include "api/cmiss_function.h"
 #include "api/cmiss_function_variable.h"
@@ -28,4 +28,4 @@ Creates a Cmiss_function matrix which is the trace of <matrix>.
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
-#endif /* __API_CMISS_FUNCTION_MATRIX_SUM_H__ */
+#endif /* __API_CMISS_FUNCTION_MATRIX_TRACE_H__ */
