@@ -2027,8 +2027,9 @@ Main program for the CMISS Graphical User Interface
 					  (Display_message_function *)NULL, NULL);
 					/* close the user interface */
 					DESTROY(User_interface)(&(command_data.user_interface));
-					DEACCESS(Time_keeper)(&command_data.default_time_keeper);
 				}
+
+				DEACCESS(Time_keeper)(&command_data.default_time_keeper);
 
 				DESTROY(Computed_field_package)(&command_data.computed_field_package);
 
