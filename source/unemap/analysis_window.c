@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.c
 
-LAST MODIFIED : 15 August 2001
+LAST MODIFIED : 23 August 2001
 
 DESCRIPTION :
 ===========================================================================*/
@@ -1816,7 +1816,7 @@ Finds the id of the analysis print all button.
 
 static int print_signals(char all,char *file_name,void *analysis_window)
 /*******************************************************************************
-LAST MODIFIED : 15 August 2001
+LAST MODIFIED : 23 August 2001
 
 DESCRIPTION :
 Writes the PostScript for drawing either <all> the signals from the
@@ -1827,7 +1827,7 @@ Writes the PostScript for drawing either <all> the signals from the
 	float postscript_page_height,postscript_page_width,scale_point_to_pixel_x,
 		scale_point_to_pixel_y,signal_gap,signal_height_point,signal_width_point,
 		y_position_point;
-	int axes_height,axes_left,axes_top,axes_width,first_data,i,j,last_data,
+	int axes_height,axes_left,axes_top,axes_width,datum,first_data,i,j,last_data,
 		number_of_devices,return_code,screen,signal_height_pixel,signals_per_page,
 		signal_width_pixel;
 	Pixel background_drawing_colour;
@@ -1845,13 +1845,14 @@ Writes the PostScript for drawing either <all> the signals from the
 	if ((analysis=(struct Analysis_window *)analysis_window)&&
 		(signal_drawing_information=analysis->signal_drawing_information)&&
 		(rig= *(analysis->rig))&&(device=rig->devices)&&(*device)&&
-		(buffer=get_Device_signal_buffer(*device))&&
+		(buffer=get_Device_signal_buffer(*device))&&(analysis->datum)&&
 		((number_of_devices=rig->number_of_devices)>0)&&
 		((signals_per_page=analysis->signals_per_printer_page)>0))
 	{
 		display=analysis->user_interface->display;
 		first_data=buffer->start;
 		last_data=buffer->end;
+		datum= *(analysis->datum);
 		current_region=get_Rig_current_region(rig);	 
 		if (open_printer(&printer,analysis->user_interface))
 		{
@@ -2041,6 +2042,19 @@ Writes the PostScript for drawing either <all> the signals from the
 							(signal_drawing_information->graphics_context).
 							signal_undecided_colour,printer.foreground_colour_pixel);
 					}
+					if (background_drawing_colour==
+						signal_drawing_information->datum_colour)
+					{
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).
+							datum_colour,printer.background_colour_pixel);
+					}
+					else
+					{
+						XSetForeground(display,
+							(signal_drawing_information->graphics_context).
+							datum_colour,printer.foreground_colour_pixel);
+					}
 					/* print all the signals with the specified number of signals per
 						page */
 					i=number_of_devices;
@@ -2071,7 +2085,7 @@ Writes the PostScript for drawing either <all> the signals from the
 								&axes_top,&axes_width,&axes_height,
 								analysis->signal_drawing_information,analysis->user_interface);
 							/* print the markers */
-							draw_device_markers(*device,first_data,last_data,0,0,0,0,
+							draw_device_markers(*device,first_data,last_data,first_data,0,0,0,
 								PRINTER_DETAIL,0,axes_left,axes_top,axes_width,axes_height,
 								(Window)NULL,(Pixmap)NULL,analysis->signal_drawing_information,
 								analysis->user_interface);
@@ -2123,6 +2137,9 @@ Writes the PostScript for drawing either <all> the signals from the
 					XSetForeground(display,(signal_drawing_information->
 						graphics_context).signal_undecided_colour,
 						signal_drawing_information->signal_undecided_colour);
+					XSetForeground(display,(signal_drawing_information->
+						graphics_context).datum_colour,
+						signal_drawing_information->datum_colour);
 				}
 				else
 				{
@@ -2724,6 +2741,7 @@ similar to rig->devices. This FE_node_order_info is also used elsewhere.
 	struct FE_node *node;
 	struct FE_node_order_info *node_order_info;	
 #endif /* defined (UNEMAP_USE_NODES) */
+
 	ENTER(draw_all_signals);
 #if defined (UNEMAP_USE_NODES)
 	node_order_info=(struct FE_node_order_info *)NULL;

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 10 July 2001
+LAST MODIFIED : 23 August 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1836,7 +1836,7 @@ int draw_event_marker(struct Event *event,int current_event_number,
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 1 January 1997
+LAST MODIFIED : 23 August 2001
 
 DESCRIPTION : draws the event_marker
 ==============================================================================*/
@@ -1899,6 +1899,7 @@ DESCRIPTION : draws the event_marker
 							graphics_context).undecided_colour_text;
 					} break;
 				}
+#if defined (OLD_CODE)
 				if (PRINTER_DETAIL==detail)
 				{
 					x_scale=SCALE_FACTOR(axes_width-1,last_data-first_data);
@@ -1914,11 +1915,14 @@ DESCRIPTION : draws the event_marker
 				}
 				else
 				{
+#endif /* defined (OLD_CODE) */
 					x_scale=1;
 					y_scale=1;
 					x_marker=SCALE_X(event->time,first_data,axes_left,
 						SCALE_FACTOR(last_data-first_data,axes_width-1));
+#if defined (OLD_CODE)
 				}
+#endif /* defined (OLD_CODE) */
 #if defined (DEBUG)
 				/*???debug */
 				if (NULL==event->previous)
