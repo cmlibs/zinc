@@ -355,7 +355,12 @@ DESCRIPTION :
 							fprintf(vrml_file,"                [\n");
 							fprintf(vrml_file,"                  \"%d\"\n",i+1);
 							fprintf(vrml_file,"                ]\n");
-							fprintf(vrml_file,"              } #Sphere\n");
+							fprintf(vrml_file,"                fontstyle\n");
+							fprintf(vrml_file,"                Fontstyle\n");
+							fprintf(vrml_file,"                {\n");
+							fprintf(vrml_file,"                  size %f\n",2*sphere_radius);
+							fprintf(vrml_file,"                } #Fontstyle\n");
+							fprintf(vrml_file,"              } #Text\n");
 							fprintf(vrml_file,"            } #Shape\n");
 							fprintf(vrml_file,"          ]\n");
 							fprintf(vrml_file,"        } #Billboard\n");
