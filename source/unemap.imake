@@ -573,12 +573,13 @@ IMAGEMAGICK_PATH = $(CMISS_ROOT)/image_utils
 #else /* defined (CMISS_ROOT_DEFINED) */
 IMAGEMAGICK_PATH = $(CMGUI_DEV_ROOT)/image_utils
 #endif /* defined (CMISS_ROOT_DEFINED) */
-IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/include/
 #if defined (IRIX) /* switch OperatingSystem */
 IMAGEMAGICK_SWITCH = -DIMAGEMAGICK
 #if defined (O64)
+IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/include64/
 IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib64/libMagick.a $(IMAGEMAGICK_PATH)/lib64/libtiff.a $(IMAGEMAGICK_PATH)/lib64/libjpeg.a $(IMAGEMAGICK_PATH)/lib64/libz.a
 #else /* defined (O64) */
+IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/include32/
 #if defined (OPTIMISED)
 IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib32/libMagick.a $(IMAGEMAGICK_PATH)/lib32/libtiff.a $(IMAGEMAGICK_PATH)/lib32/libjpeg.a $(IMAGEMAGICK_PATH)/lib32/libz.a
 #else /* defined (OPTIMISED) */
@@ -586,6 +587,7 @@ IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/lib32/libMagick.a $(IMAGEMAGICK_PATH)/lib3
 #endif /* defined (OPTIMISED) */
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
+IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/includelinux/
 IMAGEMAGICK_SWITCH = -DIMAGEMAGICK -D_FILE_OFFSET_BITS=64
 IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/liblinux/libMagick.a $(IMAGEMAGICK_PATH)/liblinux/libtiff.a $(IMAGEMAGICK_PATH)/liblinux/libjpeg.a $(IMAGEMAGICK_PATH)/liblinux/libz.a
 #endif /* switch OperatingSystem */
@@ -605,7 +607,7 @@ GRAPHICS_LIB = -delay_load -lmoviefile -delay_load -ldmedia -lGL -lGLU
 #elif defined(LINUX) /* switch OperatingSystem */
 XCOMM for OpenGL without SGI movie
 GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
-GRAPHICS_LIB = -L/usr/local/lib -lGL -lGLU
+GRAPHICS_LIB = -L/home/blackett/lib -lGL -lGLU
 #endif /* switch OperatingSystem */
 #endif /* (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D)*/
 
@@ -666,8 +668,8 @@ LIB = -lMrm -lXm -lXt -lX11 -lXpm -lm
 LIB = -lMrm -lXm -lXt -lX11 -lPW -lftn -lm -lXext -lpthread
 #elif defined(LINUX) /* switch OperatingSystem */
 XCOMM ???DB.  What is g2c for?  Stops linking on my laptop
-XCOMM LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXpm -lXext -lg2c -lm -ldl -lXp -lSM -lICE -lpthread
-LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXpm -lXext -lm -ldl -lXp -lSM -lICE -lpthread
+XCOMM LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXext -lg2c -lm -ldl -lXp -lSM -lICE -lpthread
+LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXext -lm -ldl -lXp -lSM -lICE -lpthread
 #endif /* switch OperatingSystem */
 
 #if defined (OLD_CODE)
@@ -774,6 +776,7 @@ GENERAL_SRCS = \
 	general/heapsort.c \
 	general/image_utilities.c \
 	general/indexed_multi_range.c \
+	general/machine.c \
 	general/matrix_vector.c \
 	general/multi_range.c \
 	general/myio.c \
@@ -876,6 +879,7 @@ GENERAL_SRCS = \
 	general/geometry.c \
 	general/heapsort.c \
 	general/image_utilities.c \
+	general/machine.c \
 	general/matrix_vector.c \
 	general/myio.c \
 	general/mystring.c \
@@ -928,7 +932,9 @@ UNEMAP_SRCS = \
 	unemap/unemap_hardware_client.c
 #endif /* defined (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D) */
 USER_INTERFACE_SRCS = \
+	user_interface/call_work_procedures.c \
 	user_interface/confirmation.c \
+	user_interface/event_dispatcher.c \
 	user_interface/filedir.c \
 	user_interface/message.c \
 	user_interface/printer.c \
