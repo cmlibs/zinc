@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : cmgui.Makefile
 #
-# LAST MODIFIED : 3 December 2003
+# LAST MODIFIED : 23 December 2003
 #
 # DESCRIPTION :
 #
@@ -613,6 +613,7 @@ API_SRCS = \
 	api/cmiss_variable_new_finite_element.cpp \
 	api/cmiss_variable_new_input.cpp \
 	api/cmiss_variable_new_input_composite.cpp \
+	api/cmiss_variable_new_inverse.cpp \
 	api/cmiss_variable_new_matrix.cpp \
 	api/cmiss_variable_new_scalar.cpp \
 	api/cmiss_variable_new_vector.cpp
@@ -694,8 +695,10 @@ COMPUTED_VARIABLE_SRCS = \
 	computed_variable/variable_derivative.cpp \
 	computed_variable/variable_derivative_matrix.cpp \
 	computed_variable/variable_finite_element.cpp \
+	computed_variable/variable_identity.cpp \
 	computed_variable/variable_input.cpp \
 	computed_variable/variable_input_composite.cpp \
+	computed_variable/variable_inverse.cpp \
 	computed_variable/variable_matrix.cpp \
 	computed_variable/variable_scalar.cpp \
 	computed_variable/variable_vector.cpp
@@ -1083,7 +1086,8 @@ $(OBJECT_PATH)/version.o.h : $(OBJS) cmgui.Makefile
 	fi	
 	echo '/* This is a generated file.  Do not edit.  Edit cmgui.c or cmgui.imake instead */' > $(OBJECT_PATH)/version.o.h;	  
 	date > date.h
-	sed 's/"//;s/./#define VERSION "CMISS(cmgui) version 001.001.018  &/;s/.$$/&\\nCopyright 1996-2002, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.o.h
+	sed 's/"//;s/./#define VERSION "CMISS(cmgui) version 001.001.018  &/;s/.$$/&\\nCopyright 1996-2004, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.o.h
+#	sed 's/"//;s/./#define VERSION "CMISS(cmgui) version 001.001.018  &/;s/.$$/&\\nCopyright 1996-2002, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.o.h
 #	sed 's/"//;s/./"CMISS(cmgui) version 001.001.018  &/;s/.$$/&\\nCopyright 1996-1998, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.o.h
 # 	sed 's/./#define VERSION "CMISS(cmgui) version 001.001.018  &/;s/.$$/&\\nCopyright 1996-1998, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.o.h
 
@@ -1292,6 +1296,7 @@ LIB_COMPUTED_VARIABLE_SRCS = \
 	api/cmiss_variable_new_derivative_matrix.cpp \
 	api/cmiss_variable_new_input.cpp \
 	api/cmiss_variable_new_input_composite.cpp \
+	api/cmiss_variable_new_inverse.cpp \
 	api/cmiss_variable_new_matrix.cpp \
 	api/cmiss_variable_new_scalar.cpp \
 	api/cmiss_variable_new_vector.cpp \
