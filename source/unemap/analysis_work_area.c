@@ -789,8 +789,20 @@ analysis work area.
 	struct Region *current_region;
 	struct Region_list_item *region_item;
 	Widget *region,selected_region;
+#if defined (UNEMAP_USE_3D)
+	struct FE_node_selection *node_selection;
+	struct FE_field *device_name_field;
+	struct FE_node *rig_node;
+	struct GROUP(FE_node) *rig_node_group;
+#endif /* defined (UNEMAP_USE_3D) */
 
 	ENTER(set_analysis_analysis_region);
+#if defined (UNEMAP_USE_3D)
+	node_selection=(struct FE_node_selection *)NULL;
+	device_name_field=(struct FE_field *)NULL;
+	rig_node=(struct FE_node *)NULL;
+	rig_node_group=(struct GROUP(FE_node) *)NULL;	
+#endif /* defined (UNEMAP_USE_3D) */
 	USE_PARAMETER(widget);
 	if (analysis=(struct Analysis_work_area *)analysis_work_area)
 	{
@@ -903,6 +915,25 @@ analysis work area.
 					update_signals_drawing_area(analysis_window);
 					/* update the mapping_window_menu */
 					update_mapping_window_menu(mapping);
+#if defined (UNEMAP_USE_3D)
+					/* must do this after analysis window has been updated */
+					if ((number_of_devices>0)&&(analysis->highlight)&&(*(analysis->highlight)))
+					{	
+						/* don't do a FE_node_selection_clear, as this will change analysis->highlight*/
+						/* in rig_node_group_node_selection_change ??JW perhaps could cache it*/
+						/* or change */
+						/*get the rig_node corresponding to the device */
+						node_selection=
+							get_unemap_package_FE_node_selection(analysis->unemap_package);
+						device_name_field=
+							get_unemap_package_device_name_field(analysis->unemap_package);
+						rig_node_group=get_Rig_all_devices_rig_node_group(analysis->rig);					
+						rig_node=find_rig_node_given_device(*(analysis->highlight),rig_node_group,
+							device_name_field);
+						/*trigger the selction callback*/
+						FE_node_selection_select_node(node_selection,rig_node);
+					}
+#endif /* defined (UNEMAP_USE_3D) */
 				}
 				else
 				{
@@ -2816,7 +2847,7 @@ Sets up the analysis work area for analysing a set of signals.
 		update_interval_drawing_area(analysis->window);
 		/* free the old analysis window title */
 		XmStringFree(old_dialog_title);
-#if defined (UNEMAP_USE_3D) /*!!jw*/
+#if defined (UNEMAP_USE_3D) 
 		/* highlight the  node (and everything else) */
 		if ((analysis->highlight)&&(*(analysis->highlight)))
 		{	
@@ -11745,8 +11776,35 @@ DESCRIPTION :
 				DESTROY(FE_node)(&node);
 				/* add node to unrejected group, as it's now  visible*/
 				current_region=get_Rig_current_region(rig);
-				unrejected_node_group=get_Region_unrejected_node_group(current_region);
-				ADD_OBJECT_TO_GROUP(FE_node)(rig_node,unrejected_node_group);
+				if(!current_region)
+				/* add node to all regions unrejected_node_groups */
+				{
+					struct Region_list_item *region_item=(struct Region_list_item *)NULL;
+					struct Region *region=(struct Region *)NULL;
+
+					region_item=get_Rig_region_list(rig);
+					while(region_item)
+					{
+						region=get_Region_list_item_region(region_item);						
+						if (unrejected_node_group=get_Region_unrejected_node_group(region))
+						{
+							if(!(IS_OBJECT_IN_GROUP(FE_node)(rig_node,unrejected_node_group)))
+							{
+								ADD_OBJECT_TO_GROUP(FE_node)(rig_node,unrejected_node_group);
+							}
+						}						
+						region_item=get_Region_list_item_next(region_item);
+					}/* while(region_item)*/
+				}
+				else
+				/* just one region */
+				{
+					unrejected_node_group=get_Region_unrejected_node_group(current_region);
+					if(!(IS_OBJECT_IN_GROUP(FE_node)(rig_node,unrejected_node_group)))
+					{
+						ADD_OBJECT_TO_GROUP(FE_node)(rig_node,unrejected_node_group);
+					}
+				}
 				/* we've accpeted or rejected a signal so set the flag */
 				if(mapping&&(mapping->map))
 				{				
@@ -11907,8 +11965,35 @@ DESCRIPTION :
 					get_unemap_package_FE_node_selection(analysis->unemap_package),rig_node);	
 				/* remove node from  unrejected group */				
 				current_region=get_Rig_current_region(rig);
-				unrejected_node_group=get_Region_unrejected_node_group(current_region);
-				REMOVE_OBJECT_FROM_GROUP(FE_node)(rig_node,unrejected_node_group);			
+				if(!current_region)
+				/* remove node from all regions unrejected_node_groups */
+				{
+					struct Region_list_item *region_item=(struct Region_list_item *)NULL;
+					struct Region *region=(struct Region *)NULL;
+
+					region_item=get_Rig_region_list(rig);
+					while(region_item)
+					{
+						region=get_Region_list_item_region(region_item);						
+						if (unrejected_node_group=get_Region_unrejected_node_group(region))
+						{
+							if(IS_OBJECT_IN_GROUP(FE_node)(rig_node,unrejected_node_group))
+							{
+								REMOVE_OBJECT_FROM_GROUP(FE_node)(rig_node,unrejected_node_group);
+							}
+						}
+						region_item=get_Region_list_item_next(region_item);
+					}/* while(region_item)*/
+				}
+				else
+				/* just one region */
+				{
+					unrejected_node_group=get_Region_unrejected_node_group(current_region);
+					if(IS_OBJECT_IN_GROUP(FE_node)(rig_node,unrejected_node_group))
+					{
+						REMOVE_OBJECT_FROM_GROUP(FE_node)(rig_node,unrejected_node_group);
+					}
+				}
 				/* we've accpeted or rejected an signal so set the flag  */
 				if(mapping&&(mapping->map))
 				{				
@@ -14494,14 +14579,16 @@ the rig_node group. If are highlights them.
 	LEAVE;
 #else /* if defined(UNEMAP_USE_NODES) */
 	int auxiliary_number,device_number,electrode_number,end_analysis_interval,
-		num_selected,num_unselected,start_analysis_interval;
-	struct rig_node_selection_change_data data;
+		node_in_current_group,	num_selected,num_unselected,start_analysis_interval;
 	struct Analysis_work_area *analysis;
+	struct Device **device;
 	struct FE_node *node;
 	struct FE_field *device_name_field;
-	struct Device **device;
+	struct GROUP(FE_node) *rig_node_group;	
+	struct Region *current_region;	
+	struct rig_node_selection_change_data data;
 	struct Signal_buffer *buffer;
-	struct Signals_area *signals;
+	struct Signals_area *signals;		
 
 	ENTER(rig_node_group_node_selection_change);
 	device=(struct Device **)NULL;
@@ -14509,6 +14596,8 @@ the rig_node group. If are highlights them.
 	device_name_field=(struct FE_field *)NULL;	
 	buffer=(struct Signal_buffer *)NULL;
 	signals=(struct Signals_area *)NULL;
+	current_region=(struct Region *)NULL;
+	rig_node_group=(struct GROUP(FE_node) *)NULL;
 	if (node_selection&&changes&&(analysis=(struct Analysis_work_area *)
 		analysis_work_area_void))
 	{ 
@@ -14536,29 +14625,43 @@ the rig_node group. If are highlights them.
 		device_name_field=
 			get_unemap_package_device_name_field(analysis->unemap_package);
 		device=find_device_given_rig_node(node,device_name_field,analysis->rig);
+
 		/*make it THE highlighted device */
-		analysis->highlight=device;
-	
+		/* ??JW perhaps should set to NULL for node from newly_unselected_node_list*/
+		analysis->highlight=device;		
 		/* this is an xor; if there's just one electrode/signal (un)selected */
 		/* draw (via highlight_signal) just this signal, else  */ 
 		if(((num_selected==1)&&(num_unselected==0))||((num_unselected==1)&&(num_selected==0)))
 		{			
 			signals= &(analysis->window->signals);
 			if((signals->number_of_rows)&&(signals->number_of_columns))
-			{			
-				buffer=get_Device_signal_buffer(*(analysis->rig->devices));
-				start_analysis_interval=buffer->start;
-				end_analysis_interval=buffer->end;				
-				analysis_get_numbers_from_device(analysis,device,&device_number,
-					&electrode_number,&auxiliary_number);					
-				highlight_signal(*device,
+			{				
+				current_region=get_Rig_current_region(analysis->rig);
+				node_in_current_group=0;
+				if(current_region&&(rig_node_group=get_Region_rig_node_group(current_region)))
+				{
+					if(IS_OBJECT_IN_GROUP(FE_node)(node,rig_node_group))
+					{
+						node_in_current_group=1;
+					}				
+				}
+				/* highlight signal if in current region*/				
+				if((!current_region)||(node_in_current_group))
+				{
+					buffer=get_Device_signal_buffer(*(analysis->rig->devices));
+					start_analysis_interval=buffer->start;
+					end_analysis_interval=buffer->end;				
+					analysis_get_numbers_from_device(analysis,device,&device_number,
+						&electrode_number,&auxiliary_number);					
+					highlight_signal(*device,
 #if defined (UNEMAP_USE_NODES)
-					(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
+						(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
 #endif /* defined (UNEMAP_USE_NODES)*/
-					device_number,start_analysis_interval,end_analysis_interval,
-					analysis->datum,analysis->potential_time,signals,
-					analysis->signal_drawing_information,analysis->user_interface,
-					&(analysis->window->interval));
+						device_number,start_analysis_interval,end_analysis_interval,
+						analysis->datum,analysis->potential_time,signals,
+						analysis->signal_drawing_information,analysis->user_interface,
+						&(analysis->window->interval));
+				}
 			}
 		}
 		else

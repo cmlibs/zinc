@@ -2482,7 +2482,7 @@ Closes the trace window.
 } /* close_trace_window */
 
 static void identify_trace_paned_win(Widget *widget_id,
-	XtPointer trace_window,XtPointer call_data) /*!!jw*/
+	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 15 February 2001
 
@@ -7428,7 +7428,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 										XmNtopWidget,trace->area_3.beat_averaging.menu,
 										NULL);
 								} break;
-								case ELECTRICAL_IMAGING: /*!!jw*/
+								case ELECTRICAL_IMAGING: 
 								{									
 									XtUnmanageChild(trace->area_1.enlarge.menu);
 									XtUnmanageChild(trace->area_1.drawing_area);
