@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_package.h
 
-LAST MODIFIED : 29 April 2002
+LAST MODIFIED : 16 July 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -59,7 +59,7 @@ element,nodes, fields when they are no longer required.
 #endif /* defined (UNEMAP_USE_NODES) */	
 	/*store as a string rather than node group AND element group AND data group, etc*/
 	/* also used as a flag to determine if the default_torso has been loaded */
-	char *default_torso_name;
+	char *torso_group_name;
 	/* map_fit_field also in map_3d_package. Need to store here between creation*/
 	/* of map_fit_field and creation of map_3d_package. ??JW Remove from map_3d_package? */
 	struct FE_field *map_fit_field; 
@@ -689,21 +689,22 @@ Sets the field of the unemap package.
 #endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
-char *get_unemap_package_default_torso_name(	struct Unemap_package *package);
+char *get_unemap_package_torso_group_name(	struct Unemap_package *package);
 /*******************************************************************************
-LAST MODIFIED : 3 November 2000
+LAST MODIFIED : 16 July 2002
 
 DESCRIPTION :
-gets the <default_torso_name> of the unemap_package
+Returns the <torso_group_name> of the unemap_package.
 ==============================================================================*/
 
-int set_unemap_package_default_torso_name(struct Unemap_package *package,
-	char *default_torso_name);
+int unemap_package_read_torso_file(struct Unemap_package *package,
+	char *torso_file_name);
 /*******************************************************************************
-LAST MODIFIED : 3 November 2000
+LAST MODIFIED : 16 July 2002
 
 DESCRIPTION :
-sets the <default_torso_name> of the unemap_package
+Reads in the default torso node and element groups from <torso_file_name>.
+The group name is then stored in the unemap_package.
 ==============================================================================*/
 #endif /* #if defined(UNEMAP_USE_3D) */
 

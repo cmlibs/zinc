@@ -1,15 +1,18 @@
 /*******************************************************************************
 FILE : unemap_package.c
 
-LAST MODIFIED : 24 April 2002
+LAST MODIFIED : 18 July 2002
 
 DESCRIPTION :
 Contains function definitions for unemap package.
 ==============================================================================*/
+#include <limits.h>
+#include <math.h>
 #include <stddef.h>
 #include <string.h>
-#include <math.h>
 #include "finite_element/finite_element.h"
+#include "finite_element/import_finite_element.h"
+#include "general/mystring.h"
 #if defined (UNEMAP_USE_NODES)
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
@@ -124,7 +127,7 @@ The fields are filed in with set_unemap_package_fields()
 			package->display_start_time_field=(struct FE_field *)NULL;
 			package->highlight_field=(struct FE_field *)NULL;		
 #endif /* defined (UNEMAP_USE_NODES)*/	
-			package->default_torso_name=(char *)NULL;
+			package->torso_group_name=(char *)NULL;
 			package->channel_number_field=(struct FE_field *)NULL;
 			package->read_order_field=(struct FE_field *)NULL;
 			package->map_fit_field=(struct FE_field *)NULL;			
@@ -172,10 +175,10 @@ to NULL.
 {
 	int return_code;
 	struct Unemap_package *package;
-	struct GROUP(FE_node) *default_torso_node_group;
+	struct GROUP(FE_node) *torso_node_group;
 	ENTER(DESTROY(Unemap_package));
 
-	default_torso_node_group=(struct GROUP(FE_node) *)NULL;
+	torso_node_group=(struct GROUP(FE_node) *)NULL;
 	if ((package_address)&&(package= *package_address))
 	{		
 		DEACCESS(FE_time)(&(package->fe_time));
@@ -189,21 +192,21 @@ to NULL.
 #endif /* defined (UNEMAP_USE_NODES)*/			
 		/* Note: Unemap and Cmgui don't destroy the rig (but should!). (The rig contains */
 		/* map_3d_packages which contain mapped_torso_node{element}_groups */
-		/* which contain a subset of the nodes,elements in default_torso_node_group */					
-		if ((package->default_torso_name)&&(default_torso_node_group=
+		/* which contain a subset of the nodes,elements in torso_node_group */					
+		if ((package->torso_group_name)&&(torso_node_group=
 			FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)
-			(package->default_torso_name,package->node_group_manager)))
+			(package->torso_group_name,package->node_group_manager)))
 		{	
 			/*access as free_node_and_element_and_data_groups assumes node group */
 			/* has been accesssed */
-			ACCESS(GROUP(FE_node))(default_torso_node_group);
-			free_node_and_element_and_data_groups(&default_torso_node_group,
+			ACCESS(GROUP(FE_node))(torso_node_group);
+			free_node_and_element_and_data_groups(&torso_node_group,
 				package->element_manager,package->element_group_manager,
 				package->data_manager,package->data_group_manager,
 				package->node_manager,package->node_group_manager);		
 		}
 		
-		DEALLOCATE(package->default_torso_name);
+		DEALLOCATE(package->torso_group_name);
 		DEACCESS(FE_field)(&(package->read_order_field));
 		DEACCESS(FE_field)(&(package->map_fit_field));
 		DEACCESS(FE_field)(&(package->signal_field));	
@@ -2043,58 +2046,101 @@ free_unemap_package_rig_node_group_glyphs for this
 #endif /* #if defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
-char *get_unemap_package_default_torso_name(	struct Unemap_package *package)
+char *get_unemap_package_torso_group_name(	struct Unemap_package *package)
 /*******************************************************************************
-LAST MODIFIED : 3 November 2000
+LAST MODIFIED : 16 July 2002
 
 DESCRIPTION :
-gets the <default_torso_name> of the unemap_package
+Returns the <torso_group_name> of the unemap_package.
 ==============================================================================*/
 {
-	char *default_torso_name;
-	ENTER(get_unemap_package_default_torso_name);
+	char *torso_group_name;
+
+	ENTER(get_unemap_package_torso_group_name);
 	if(package)
 	{
-		default_torso_name=package->default_torso_name;
+		torso_group_name=package->torso_group_name;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"get_unemap_package_default_torso_name."
-				" invalid arguments");
-		default_torso_name = (char *)NULL;
+		display_message(ERROR_MESSAGE,
+			"get_unemap_package_torso_group_name.  Invalid arguments");
+		torso_group_name = (char *)NULL;
 	}
 	LEAVE;
-	return (default_torso_name);
-} /* get_unemap_package_default_torso_name */
 
-int set_unemap_package_default_torso_name(struct Unemap_package *package,
-	char *default_torso_name)
+	return (torso_group_name);
+} /* get_unemap_package_torso_group_name */
+
+int unemap_package_read_torso_file(struct Unemap_package *package,
+	char *torso_file_name)
 /*******************************************************************************
-LAST MODIFIED : 3 November 2000
+LAST MODIFIED : 18 July 2002
 
 DESCRIPTION :
-sets the <default_torso_name> of the unemap_package, freeing any exisiting one.
+Reads in the default torso node and element groups from <torso_file_name>.
+The group name is then stored in the unemap_package.
 ==============================================================================*/
 {
+	char *torso_group_name;
 	int return_code;
+	struct GROUP(FE_element) *torso_element_group;
 
-	ENTER(set_unemap_package_default_torso_name);
-	if(package)
+	ENTER(unemap_package_read_torso_file);
+	if (package && torso_file_name)
 	{
-		return_code =1;
-		if(package->default_torso_name)
+		if (package->torso_group_name)
 		{
-			DEALLOCATE(package->default_torso_name);
+			DEALLOCATE(package->torso_group_name);
+			package->torso_group_name = (char *)NULL;
 		}
-		package->default_torso_name=default_torso_name;
+		if (read_FE_node_and_elem_groups_and_return_name_given_file_name(
+			torso_file_name,
+			package->fe_field_manager,
+			package->fe_time,
+			package->node_manager,
+			package->element_manager,
+			package->node_group_manager,
+			package->data_group_manager,
+			package->element_group_manager,
+			package->fe_basis_manager,
+			&torso_group_name))
+		{
+			/* offset default torso node and element groups */
+			offset_FE_node_and_element_identifiers_in_group(
+				torso_group_name, (INT_MAX/2), package->node_manager,
+				package->element_manager, package->node_group_manager,
+				package->element_group_manager);
+			/* store the group name in the unemap_package */
+			package->torso_group_name = duplicate_string(torso_group_name);
+			/* define the fit field on  the default torso */
+			torso_element_group =
+				FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)(
+					torso_group_name, package->element_group_manager);
+			define_fit_field_at_quad_elements_and_nodes(torso_element_group,
+				package->map_fit_field, package->fe_basis_manager,
+				package->element_manager, package->node_manager);
+			/* add cylindrical field info for texture mapping to default torso */
+			add_cylindrical_info_to_cartesian_torso(torso_group_name, package);
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"unemap_package_read_torso_file.  Could not read torso file '%s'",
+				torso_file_name);
+			return_code = 0;
+		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"set_unemap_package_default_torso_name."
-				" invalid arguments");
-		return_code =0;
+		display_message(ERROR_MESSAGE,
+			"unemap_package_read_torso_file.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
+
 	return (return_code);
-} /* set_unemap_package_default_torso_name */
+} /* unemap_package_read_torso_file */
+
 #endif /* defined (UNEMAP_USE_3D)*/

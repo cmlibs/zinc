@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 3 May 2002
+LAST MODIFIED : 18 July 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2889,7 +2889,7 @@ nodes z values are defined by the electrodes.
 	mapped_torso_node_group=(struct GROUP(FE_node) *)NULL;
 	torso_correct_z_node_list=(struct LIST(FE_node) *)NULL;
 	if (region&&(default_torso_group_name=
-		get_unemap_package_default_torso_name(unemap_package))
+		get_unemap_package_torso_group_name(unemap_package))
 		&&(element_group_manager=get_unemap_package_element_group_manager(unemap_package))
 		&&(node_group_manager=get_unemap_package_node_group_manager(unemap_package))
 		&&(node_manager=get_unemap_package_node_manager(unemap_package))
@@ -3470,7 +3470,7 @@ do similar with the mapped torso node group
 					get_unemap_package_node_manager(package));
 
 				/* if the region is a torso, and loaded a default torso, set it's fit field values */
-				if ((region->type==TORSO)&&(get_unemap_package_default_torso_name(package)))
+				if ((region->type==TORSO)&&(get_unemap_package_torso_group_name(package)))
 				{
 					set_torso_fit_field_values(map_3d_package);
 				}
@@ -3494,7 +3494,7 @@ do similar with the mapped torso node group
 					function->number_of_columns,
 					function->x_mesh,function->y_mesh,region);
 				/* if have loaded  a default_torso and if the region is a torso*/
-				if ((get_unemap_package_default_torso_name(package))&&(region->type==TORSO))
+				if ((get_unemap_package_torso_group_name(package))&&(region->type==TORSO))
 				{
 					/*  set up the mapped torso node and element groups */
 					make_mapped_torso_node_and_element_groups(region,package);
@@ -6406,7 +6406,7 @@ Draws (or erases) the map contours
 			number_of_constant_contours=0;
 		}
 		/* draw/remove VARIABLE_THICKNESS contours*/
-		if (get_unemap_package_default_torso_name(package))
+		if (get_unemap_package_torso_group_name(package))
 		{
 			default_torso_loaded=1;
 		}
@@ -8704,7 +8704,7 @@ Removes 3d drawing for non-current region(s).
 		display_all_regions=0;
 		unemap_package=map->unemap_package;
 		/* do we have a default torso loaded ? */
-		if (get_unemap_package_default_torso_name(unemap_package))
+		if (get_unemap_package_torso_group_name(unemap_package))
 		{
 			default_torso_loaded=1;
 		}
