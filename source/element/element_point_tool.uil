@@ -122,7 +122,7 @@ object
     {
     arguments
       {
-      XmNlabelString = compound_string("CMD field:");
+      XmNlabelString = compound_string("Command field:");
       XmNalignment = XmALIGNMENT_BEGINNING;
       XmNfontList = button_font;
       };
