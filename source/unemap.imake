@@ -424,6 +424,7 @@ GENERAL_SRCS = \
 	general/heapsort.c \
 	general/image_utilities.c \
 	general/matrix_vector.c \
+	general/multi_range.c \
 	general/myio.c \
 	general/mystring.c \
 	general/child_process.c \
