@@ -3758,20 +3758,20 @@ static void process_keyboard(
 										/* set low pass filter to 100 Hz */
 										unemap_set_antialiasing_filter_frequency(0,(float)100);
 										/* calculate sine wave */
-										for (i=0;i<400;i++)
+										for (i=0;i<300;i++)
 										{
 											calibrate_voltage_1[i]=calibrate_amplitude_1*
-												(float)sin(two_pi*(double)i/(double)400);
+												(float)sin(two_pi*(double)i/(double)300);
 											calibrate_voltage_2[i]=calibrate_voltage_1[i];
 										}
 										if (unemap_start_voltage_stimulating(
-											(tester_card_1-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,400,
-											/*points/s gives 250 Hz waveform frequency*/
-											(float)100000.,calibrate_voltage_1)&&
+											(tester_card_1-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,300,
+											/*points/s gives 300 Hz waveform frequency*/
+											(float)90000.,calibrate_voltage_1)&&
 											unemap_start_voltage_stimulating(
-											(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,400,
-											/*points/s gives 250 Hz waveform frequency*/
-											(float)100000.,calibrate_voltage_2))
+											(tester_card_2-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1,300,
+											/*points/s gives 300 Hz waveform frequency*/
+											(float)90000.,calibrate_voltage_2))
 										{
 											/* wait for the high-pass (DC removal) to settle */
 											allow_to_settle(test_channel,tested_cards,
@@ -3953,7 +3953,7 @@ static void process_keyboard(
 																				(float)log10((double)(rms_save[
 																				temp_c_number+i]/rms));
 																			fprintf(report,
-																		"  250 Hz signal, 100 Hz filter, rms=%g\n",
+																		"  300 Hz signal, 100 Hz filter, rms=%g\n",
 																				rms_save[temp_c_number+i]);
 																			fprintf(report,
 																		"  400 Hz signal, 100 Hz filter, rms=%g\n",
@@ -3961,17 +3961,17 @@ static void process_keyboard(
 																			fprintf(report,"  dB reduction=%g",
 																				db_reduction);
 																			if (!(fabs(db_reduction-
-																				db_per_decade*log10(400/250)<tol_db)))
+																				db_per_decade*log10(400/300))<tol_db))
 #if defined (NEW_CODE)
 																			if (!(fabs(db_reduction-
-																				db_per_decade*log10(400/250)<tol_db*
-																				db_per_decade*log10(400/250))))
+																				db_per_decade*log10(400/300))<tol_db*
+																				db_per_decade*log10(400/300)))
 #endif /* defined (NEW_CODE) */
 																			{
 																				printf("channel %d\n",
 																					temp_c_number+i+1);
 																				printf(
-																		"  250 Hz signal, 100 Hz filter, rms=%g\n",
+																		"  300 Hz signal, 100 Hz filter, rms=%g\n",
 																					rms_save[temp_c_number+i]);
 																				printf(
 																		"  400 Hz signal, 100 Hz filter, rms=%g\n",
