@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : register.c
 
-LAST MODIFIED : 9 June 2002
+LAST MODIFIED : 21 August 2003
 
 DESCRIPTION :
 For setting and checking registers on second version of the signal conditioning
@@ -6195,7 +6195,8 @@ static int process_keyboard(
 						unemap_get_maximum_number_of_samples(
 							&maximum_number_of_samples_save);
 						unemap_deconfigure();
-						unemap_configure(sampling_frequency,number_of_samples,
+						/*???DB.  Could allow specification of channels */
+						unemap_configure(0,(int *)NULL,sampling_frequency,number_of_samples,
 #if defined (WIN32_USER_INTERFACE)
 							(HWND)NULL,0,
 #endif /* defined (WIN32_USER_INTERFACE) */
@@ -6507,7 +6508,8 @@ static int process_keyboard(
 						unemap_set_isolate_record_mode(0,1);
 						unemap_set_power(0);
 						unemap_deconfigure();
-						unemap_configure(sampling_frequency_save,
+						/*???DB.  Could allow specification of channels */
+						unemap_configure(0,(int *)NULL,sampling_frequency_save,
 							(int)maximum_number_of_samples_save,
 #if defined (WIN32_USER_INTERFACE)
 							(HWND)NULL,0,
@@ -6608,7 +6610,9 @@ int main(void)
 		unemap_set_isolate_record_mode(0,1);
 		unemap_set_power(0);
 		unemap_deconfigure();
-		if (unemap_configure(sampling_frequency,(int)number_of_samples,
+		/*???DB.  Could allow specification of channels */
+		if (unemap_configure(0,(int *)NULL,sampling_frequency,
+			(int)number_of_samples,
 #if defined (WIN32_USER_INTERFACE)
 			(HWND)NULL,0,
 #endif /* defined (WIN32_USER_INTERFACE) */

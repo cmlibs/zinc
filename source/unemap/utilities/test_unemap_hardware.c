@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : test_unemap_hardware.c
 
-LAST MODIFIED : 7 August 2002
+LAST MODIFIED : 21 August 2003
 
 DESCRIPTION :
 For testing the unemap hardware software (client, server, standalone).
@@ -262,7 +262,9 @@ static int process_keyboard(
 					scanf(" %d",&number_of_samples);
 					printf("synchronization_card ? ");
 					scanf(" %d",&synchronization_card);
-					return_code=unemap_configure(sampling_frequency,number_of_samples,
+					/*???DB.  Could specify channels */
+					return_code=unemap_configure(0,(int *)NULL,sampling_frequency,
+						number_of_samples,
 #if defined (WIN32_USER_INTERFACE)
 						(HWND)NULL,0,
 #endif /* defined (WIN32_USER_INTERFACE) */
