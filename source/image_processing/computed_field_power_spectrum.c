@@ -475,9 +475,10 @@ int FFT_md(FE_value *in_re, FE_value *in_im,
 	int return_code;
 	FE_value *f_re, *f_im;
 	FE_value *tmp_re, *tmp_im;
-
-	ENTER(FFT_mD);
 	int tmp_size;
+	
+	ENTER(FFT_mD);
+
 	tmp_size = 1;
 	for (m = 0; m < dim; m++)
 	{
