@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_package.h
 
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -15,6 +15,7 @@ DESCRIPTION :
 #include "graphics/colour.h"
 #include "graphics/spectrum.h"
 #include "finite_element/finite_element.h"
+#include "interaction/interactive_tool.h"
 #include "selection/element_point_ranges_selection.h"
 #include "selection/element_selection.h"
 #include "selection/node_selection.h"
@@ -32,7 +33,7 @@ struct Unemap_package
 /* Still need structure, for (NULL) function parameters, */ 
 /*even when UNEMAP_USE_NODE not defined*/
 /*******************************************************************************
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 Stores information needed to construct rig_node element,nodes, fields,
@@ -56,7 +57,7 @@ eg light model, and managers. Split into along these lines?
 
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
-	struct FE_node_selection *node_selection;
+	struct FE_node_selection *data_selection,*node_selection;
 
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct LIST(GT_object) *glyph_list;
@@ -109,6 +110,7 @@ eg light model, and managers. Split into along these lines?
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct MANAGER(FE_node) *data_manager;	
+	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	int access_count;
 }; /* struct Unemap_package */
 
@@ -127,9 +129,11 @@ struct Unemap_package *CREATE(Unemap_package)(
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
+	struct FE_node_selection *data_selection,
 	struct MANAGER(Computed_field) *computed_field_manager,
 	struct MANAGER(Graphics_window) *graphics_window_manager,
 	struct MANAGER(Texture) *texture_manager,
+	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct MANAGER(Scene) *scene_manager,
 	struct MANAGER(Light_model) *light_model_manager,
 	struct MANAGER(Light) *light_manager,
@@ -138,7 +142,7 @@ struct Unemap_package *CREATE(Unemap_package)(
 	struct MANAGER(FE_node) *data_manager,
 	struct LIST(GT_object) *glyph_list);
 /*******************************************************************************
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION:
 Create a Unemap package, and fill in the managers.

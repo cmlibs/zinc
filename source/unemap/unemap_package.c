@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_package.c
 
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 Contains function definitions for unemap package.
@@ -376,9 +376,11 @@ struct Unemap_package *CREATE(Unemap_package)(
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
 	struct FE_node_selection *node_selection,
+	struct FE_node_selection *data_selection,
 	struct MANAGER(Computed_field) *computed_field_manager,
 	struct MANAGER(Graphics_window) *graphics_window_manager,
 	struct MANAGER(Texture) *texture_manager,
+	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct MANAGER(Scene) *scene_manager,
 	struct MANAGER(Light_model) *light_model_manager,
 	struct MANAGER(Light) *light_manager,
@@ -387,7 +389,7 @@ struct Unemap_package *CREATE(Unemap_package)(
 	struct MANAGER(FE_node) *data_manager,
 	struct LIST(GT_object) *glyph_list)
 /*******************************************************************************
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION:
 Create a Unemap package, and fill in the managers.
@@ -400,7 +402,9 @@ The fields are filed in with set_unemap_package_fields()
 	if (fe_field_manager&&element_group_manager&&node_manager&&
 		data_group_manager&&node_group_manager&&fe_basis_manager&&element_manager&&
 		element_point_ranges_selection&&element_selection&&node_selection&&
+		data_selection&&
 		computed_field_manager&&graphics_window_manager&&texture_manager&&
+		interactive_tool_manager&&
 		scene_manager&&light_model_manager&&light_manager&&spectrum_manager&&
 		graphical_material_manager&&data_manager)
 	{
@@ -416,6 +420,7 @@ The fields are filed in with set_unemap_package_fields()
 			package->element_point_ranges_selection=element_point_ranges_selection;
 			package->element_selection=element_selection;
 			package->node_selection=node_selection;
+			package->data_selection=data_selection;
 			package->computed_field_manager=computed_field_manager;			
 			/* fields of the rig_nodes */
 			package->number_of_electrode_position_fields=0;
@@ -452,6 +457,7 @@ The fields are filed in with set_unemap_package_fields()
 			package->graphics_window_manager=graphics_window_manager;
 			package->light_manager=light_manager;
 			package->texture_manager=texture_manager;
+			package->interactive_tool_manager=interactive_tool_manager;
 			package->scene_manager=scene_manager;
 			package->light_model_manager=light_model_manager;		
 			package->spectrum_manager=spectrum_manager;
@@ -3471,7 +3477,7 @@ gets the glyph_list of the unemap package.
 int unemap_package_make_map_scene(struct Unemap_package *package,
 	struct Spectrum *spectrum)
 /*******************************************************************************
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 28 April 2000
 
 DESCRIPTION :
 Creates the unemap_package scene, if isn't already present.
@@ -3503,7 +3509,7 @@ Creates the unemap_package scene, if isn't already present.
 					package->data_manager,package->data_group_manager,
 					package->element_point_ranges_selection,
 					package->element_selection,package->node_selection,
-					package->user_interface);
+					package->data_selection,package->user_interface);
 
 				/*???RC.  May want to use functions to modify default_scene here */
 				/* eg. to add model lights, etc. */
