@@ -4213,7 +4213,12 @@ DESCRIPTION :
 Writes the properties of the <texture> to the command window.
 ==============================================================================*/
 {
-	int return_code, texture_size;
+	int return_code;
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+	GLenum texture_target;
+	GLuint texture_size;
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+	
 
 	ENTER(list_Texture);
 	USE_PARAMETER(dummy);
@@ -4322,9 +4327,40 @@ Writes the properties of the <texture> to the command window.
 #if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
 		if (TEXTURE_COMPRESSED_UNSPECIFIED == texture->compression_mode)
 		{
+			switch (texture->dimension)
+			{
+				case 1:
+				{
+					texture_target = GL_TEXTURE_1D;
+				} break;
+				case 2:
+				{
+					texture_target = GL_TEXTURE_2D;
+				} break;
+				case 3:
+				{
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+					if (Graphics_library_check_extension(GL_VERSION_1_2) ||
+						Graphics_library_check_extension(GL_EXT_texture3D))
+					{
+						texture_target = GL_TEXTURE_3D;
+					}
+					else
+					{
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+						display_message(ERROR_MESSAGE,
+							"compile_Texture.  "
+							"3D textures not supported on this display.");
+						return_code=0;
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
+					}
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
+				} break;
+			}
 			/* get the compressed texture size */
-			glGetIntegerv(GL_TEXTURE_COMPRESSED_IMAGE_SIZE_ARB, &texture_size);
-			display_message(INFORMATION_MESSAGE,"  compressed storage used in graphics : %d\n",
+			glBindTexture(texture_target, texture->texture_id);
+			glGetTexParameteriv(texture_target, GL_TEXTURE_COMPRESSED_IMAGE_SIZE_ARB, &texture_size);
+			display_message(INFORMATION_MESSAGE,"  compressed storage used in graphics : %u\n",
 				texture_size);
 		}
 #endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
