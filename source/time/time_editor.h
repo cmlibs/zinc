@@ -39,22 +39,22 @@ DESCRIPTION :
 Destroy the <*time_editor_address> and sets <*time_editor_address> to NULL.
 ==============================================================================*/
 
-int time_editor_get_callback(struct Time_editor *time_editor,
+int time_editor_get_close_callback(struct Time_editor *time_editor,
 	struct Callback_data *callback);
 /*******************************************************************************
-LAST MODIFIED : 17 May 2002
+LAST MODIFIED : 8 June 2004
 
 DESCRIPTION :
-Get the update <callback> information for the <time_editor>.
+Get the close <callback> information for the <time_editor>.
 ==============================================================================*/
 
-int time_editor_set_callback(struct Time_editor *time_editor,
+int time_editor_set_close_callback(struct Time_editor *time_editor,
 	struct Callback_data *callback);
 /*******************************************************************************
-LAST MODIFIED : 17 May 2002
+LAST MODIFIED : 8 June 2004
 
 DESCRIPTION :
-Set the update <callback> information for the <time_editor>.
+Set the close <callback> information for the <time_editor>.
 ==============================================================================*/
 
 int time_editor_get_time_keeper(struct Time_editor *time_editor,

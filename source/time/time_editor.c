@@ -61,7 +61,7 @@ deaccess it.
 ==============================================================================*/
 {
 	double step;
-	struct Callback_data update_callback;
+	struct Callback_data close_callback;
 	struct Time_keeper *time_keeper;
 	struct User_interface *user_interface;
 	Widget frame_text,play_button,play_every_button,play_reverse_button,
@@ -86,36 +86,6 @@ static MrmHierarchy time_editor_hierarchy;
 Module functions
 ----------------
 */
-#if defined (OLD_CODE)
-static void time_editor_update(struct Time_editor *time_editor)
-/*******************************************************************************
-LAST MODIFIED : 8 December 1998
-
-DESCRIPTION :
-Tells CMGUI about the current values. Returns a pointer to the time.
-==============================================================================*/
-{
-	ENTER(time_editor_update);
-	/* checking arguments */
-	if (time_editor)
-	{
-		if (time_editor->update_callback.procedure)
-		{
-			/* Inform the client that edit_time has been modified */
-			(time_editor->update_callback.procedure)
-				(time_editor->widget,
-				time_editor->update_callback.data,
-				time_editor->time_keeper);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"time_editor_update.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* time_editor_update */
-#endif /* defined (OLD_CODE) */
 
 static int time_editor_time_keeper_callback(struct Time_keeper *time_keeper,
 	enum Time_keeper_event event,void *time_editor_void)
@@ -396,6 +366,12 @@ DESCRIPTION :
 				} break;
 				case time_editor_close_ID:
 				{
+					if (time_editor->close_callback.procedure)
+					{
+						(time_editor->close_callback.procedure)
+							(time_editor->widget, time_editor->close_callback.data,
+							time_editor->time_keeper);
+					}
 					XtDestroyWidget(XtParent(XtParent(time_editor->widget_parent)));
 				} break;
 				case time_editor_settings_ID:
@@ -511,8 +487,8 @@ Creates a <*time_editor_address>.
 				time_editor->widget_parent=parent;
 				time_editor->widget=(Widget)NULL;
 				time_editor->time_keeper=(struct Time_keeper *)NULL;
-				time_editor->update_callback.procedure=(Callback_procedure *)NULL;
-				time_editor->update_callback.data=NULL;
+				time_editor->close_callback.procedure=(Callback_procedure *)NULL;
+				time_editor->close_callback.data=NULL;
 				time_editor->user_interface=user_interface;
 				/* register the callbacks */
 				if (MrmSUCCESS==MrmRegisterNamesInHierarchy(time_editor_hierarchy,
@@ -627,67 +603,65 @@ Destroy the <*time_editor_address> and sets <*time_editor_address> to NULL.
 	return (return_code);
 } /* DESTROY(Time_editor) */
 
-int time_editor_get_callback(struct Time_editor *time_editor,
+int time_editor_get_close_callback(struct Time_editor *time_editor,
 	struct Callback_data *callback)
 /*******************************************************************************
-LAST MODIFIED : 17 May 2002
+LAST MODIFIED : 8 June 2004
 
 DESCRIPTION :
-Get the update <callback> information for the <time_editor>.
+Get the close <callback> information for the <time_editor>.
 ==============================================================================*/
 {
 	int return_code;
 
 	ENTER(time_editor_get_callback);
 	return_code=0;
-	/* check arguments */
 	if (time_editor&&callback)
 	{
-		callback->procedure=time_editor->update_callback.procedure;
-		callback->data=time_editor->update_callback.data;
+		callback->procedure=time_editor->close_callback.procedure;
+		callback->data=time_editor->close_callback.data;
 		return_code=1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"time_editor_get_callback.  Invalid argument(s)");
+			"time_editor_get_close_callback.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* time_editor_get_callback */
+} /* time_editor_get_close_callback */
 
-int time_editor_set_callback(struct Time_editor *time_editor,
+int time_editor_set_close_callback(struct Time_editor *time_editor,
 	struct Callback_data *callback)
 /*******************************************************************************
-LAST MODIFIED : 17 May 2002
+LAST MODIFIED : 8 June 2004
 
 DESCRIPTION :
-Set the update <callback> information for the <time_editor>.
+Set the close <callback> information for the <time_editor>.
 ==============================================================================*/
 {
 	int return_code;
 
 	ENTER(time_editor_set_callback);
 	return_code=0;
-	/* check arguments */
 	if (time_editor&&callback)
 	{
-		time_editor->update_callback.procedure=callback->procedure;
-		time_editor->update_callback.data=callback->data;
+		time_editor->close_callback.procedure=callback->procedure;
+		time_editor->close_callback.data=callback->data;
 		return_code=1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"time_editor_set_callback.  Invalid argument(s)");
+			"time_editor_set_close_callback.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* time_editor_set_callback */
+} /* time_editor_set_close_callback */
 
 int time_editor_get_time_keeper(struct Time_editor *time_editor,
 	struct Time_keeper **time_keeper_address)
