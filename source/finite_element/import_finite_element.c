@@ -1480,14 +1480,16 @@ Reads in a node from an <input_file>.
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"read_FE_node.  Error modifying node in node_manager");
+									"read_FE_node.  Error modifying node %d in node_manager", 
+									node_number);
 								DESTROY(FE_node)(&node);
 							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"read_FE_node.  Error merging new information");
+								"read_FE_node.  Error merging new information for node %d",
+								node_number);
 							DESTROY(FE_node)(&node);
 						}
 					}
@@ -1496,7 +1498,8 @@ Reads in a node from an <input_file>.
 						if (!ADD_OBJECT_TO_MANAGER(FE_node)(node,node_manager))
 						{				
 							display_message(ERROR_MESSAGE,
-								"read_FE_node.  Error adding node to node_manager");
+								"read_FE_node.  Error adding node %d to node_manager",
+								node_number);
 							DESTROY(FE_node)(&node);
 						}
 					}
