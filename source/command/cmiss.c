@@ -144,6 +144,17 @@ Module variables
 struct CMISS_connection *CMISS = (struct CMISS_connection *)NULL;
 #endif /* LINK_CMISS */
 
+#if defined (UNEMAP_USE_3D)
+/* the string of the defaut torso exnode file*/
+static char default_torso_exnode_string[]=
+#include "unemap/default_torso/torso_model.exnodeh"
+;
+/* the string of the defaut torso exelem file*/
+static char default_torso_exelem_string[]=
+#include "unemap/default_torso/torso_model.exelemh"
+;
+#endif /* defined (UNEMAP_USE_3D)*/
+
 /*
 Module functions
 ----------------
@@ -261,108 +272,6 @@ Does not report any errors if the node is already in the list.
 
 	return (return_code);
 } /* add_FE_node_to_list_if_in_range */
-
-struct Change_identifier_data
-/*******************************************************************************
-LAST MODIFIED : 7 October 1999
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int count, element_offset, face_offset, line_offset, node_offset;
-	struct MANAGER(FE_element) *element_manager;
-	struct MANAGER(FE_node) *node_manager;
-};
-
-#if !defined (WINDOWS_DEV_FLAG)
-static int FE_element_change_identifier_sub(struct FE_element *element,
-	void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 7 October 1999
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	struct CM_element_information cm_id;
-	struct Change_identifier_data *data;
-
-	ENTER(FE_element_change_identifier_sub);
-	if (element && 
-		(data=(struct Change_identifier_data *)data_void)
-		&& data->element_manager)
-	{
-		return_code = 1;
-		cm_id.type = element->cm.type;
-		cm_id.number = element->cm.number;
-		switch( cm_id.type )
-		{
-			case CM_ELEMENT:
-			{
-				cm_id.number += data->element_offset;
-			} break;
-			case CM_FACE:
-			{
-				cm_id.number += data->element_offset;
-			} break;
-			case CM_LINE:
-			{
-				cm_id.number += data->element_offset;
-			} break;
-		}
-		if (MANAGER_MODIFY_IDENTIFIER(FE_element, identifier)(element,
-			&cm_id, data->element_manager))
-		{
-			data->count++;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_change_identifier_sub.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_change_identifier_sub */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
-#if !defined (WINDOWS_DEV_FLAG)
-static int FE_node_change_identifier_sub(struct FE_node *node, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 7 October 1999
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	struct Change_identifier_data *data;
-
-	ENTER(FE_node_change_identifier_sub);
-	if (node && 
-		(data=(struct Change_identifier_data *)data_void)
-		&& data->node_manager)
-	{
-		return_code = 1;
-		if (MANAGER_MODIFY_IDENTIFIER(FE_node, cm_node_identifier)(node,
-			get_FE_node_cm_node_identifier(node) + data->node_offset,
-			data->node_manager))
-		{
-			data->count++;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_change_identifier_sub.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_node_change_identifier_sub */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int gfx_change_identifier(struct Parse_state *state,void *dummy_to_be_modified,
@@ -21996,7 +21905,15 @@ Executes a UNEMAP OPEN command.
 						DEACCESS(Graphical_material)(&electrode_selected_material);
 					}
 				}		
-			}
+			}	
+			/* read in (and shift identifiers of) the default torso mesh nodes and elements */
+			/* (cleaned up when the program shuts down) */		
+			read_exnode_and_exelem_file_from_string_and_offset(
+				default_torso_exnode_string,default_torso_exelem_string,
+				"default_torso",command_data->fe_field_manager,command_data->node_manager,
+				command_data->element_manager,command_data->node_group_manager,
+				command_data->data_group_manager,command_data->element_group_manager
+				,command_data->basis_manager);
 			/* create the unemap_package */
 			if(!(command_data->unemap_package))
 			{

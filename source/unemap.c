@@ -43,6 +43,7 @@ Main program for unemap.  Based on cmgui.
 #else /* defined (NOT_ACQUISITION_ONLY) */
 #include "unemap/page_window.h"
 #include "unemap/rig.h"
+#include "unemap/rig_node.h"
 #include "unemap/unemap_hardware.h"
 #if defined (WINDOWS)
 #if defined (MIRADA)
@@ -235,6 +236,17 @@ Exits unemap
 } /* exit_unemap */
 #endif /* defined (MOTIF) */
 
+#if defined (UNEMAP_USE_3D)
+/* the string of the defaut torso exnode file*/
+static char default_torso_exnode_string[]=
+#include "unemap/default_torso/torso_model.exnodeh"
+;
+/* the string of the defaut torso exelem file*/
+static char default_torso_exelem_string[]=
+#include "unemap/default_torso/torso_model.exelemh"
+;
+#endif /* defined (UNEMAP_USE_3D)*/
+
 /*
 Main program
 ------------
@@ -316,7 +328,7 @@ Main program for unemap
 	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 	struct MANAGER(Texture) *texture_manager=(struct MANAGER(Texture) *)NULL;	
 	struct Node_tool *node_tool=(struct Node_tool *)NULL;
-	struct Transform_tool *transform_tool=(struct Transform_tool *)NULL;
+	struct Interactive_tool *transform_tool=(struct Interactive_tool *)NULL;
 #endif /* defined (UNEMAP_USE_3D) */
 	struct System_window *system;
 	struct Time_keeper *time_keeper;
@@ -849,15 +861,22 @@ Main program for unemap
 			node_manager,/*use_data*/0,node_group_manager,element_manager,
 			node_selection,computed_field_package,default_graphical_material,
 			&user_interface);		
-		transform_tool=CREATE(Transform_tool)(interactive_tool_manager);
-		unemap_package=CREATE(Unemap_package)(fe_field_manager,
-			element_group_manager,node_manager,data_manager,data_group_manager,
-			node_group_manager,fe_basis_manager,element_manager,computed_field_manager,
-			interactive_tool_manager,node_selection);	
+		transform_tool=create_Interactive_tool_transform(&user_interface);
+		ADD_OBJECT_TO_MANAGER(Interactive_tool)(transform_tool,interactive_tool_manager);
 		all_FE_element_field_info=CREATE_LIST(FE_element_field_info)();
 		/* FE_element_shape manager */
 		/*???DB.  To be done */
 		all_FE_element_shape=CREATE_LIST(FE_element_shape)();
+		/* read in (and shift identifiers of) the default torso mesh nodes and elements */
+		/* (cleaned up when the program shuts down) */		
+		read_exnode_and_exelem_file_from_string_and_offset(
+				default_torso_exnode_string,default_torso_exelem_string,"default_torso",
+				fe_field_manager,node_manager,element_manager,node_group_manager,
+				data_group_manager,element_group_manager,fe_basis_manager);
+		unemap_package=CREATE(Unemap_package)(fe_field_manager,
+			element_group_manager,node_manager,data_manager,data_group_manager,
+			node_group_manager,fe_basis_manager,element_manager,computed_field_manager,
+			interactive_tool_manager,node_selection);	
 #else /* defined (UNEMAP_USE_3D) */
 		unemap_package=(struct Unemap_package *)NULL;
 #endif /* defined (UNEMAP_USE_NODES) */
@@ -984,10 +1003,11 @@ Main program for unemap
 #if defined (NOT_ACQUISITION_ONLY)
 #if defined (UNEMAP_USE_3D )
 			DESTROY(Unemap_package)(&unemap_package);	
+			DESTROY(MANAGER(Scene))(&scene_manager);
+			DESTROY(Computed_field_package)(&computed_field_package);
 
 			/* destroy Interactive_tools and manager */
-			DESTROY(Node_tool)(&node_tool);
-			DESTROY(Transform_tool)(&transform_tool);
+			DESTROY(Node_tool)(&node_tool);		
 			DESTROY(MANAGER(Interactive_tool))(&interactive_tool_manager);
 
 			DESTROY(FE_node_selection)(&data_selection);
@@ -995,12 +1015,33 @@ Main program for unemap
 			DESTROY(FE_element_selection)(&element_selection);
 			DESTROY(Element_point_ranges_selection)(&element_point_ranges_selection);
 
+			DESTROY(LIST(GT_object))(&glyph_list);
+
 			DESTROY(MANAGER(FE_field))(&fe_field_manager);
 			DESTROY(MANAGER(GROUP(FE_node)))(&node_group_manager);
 			DESTROY(MANAGER(FE_node))(&node_manager);
 			DESTROY(MANAGER(GROUP(FE_node)))(&data_group_manager);
 			DESTROY(MANAGER(FE_node))(&data_manager);
 			DESTROY(MANAGER(GROUP(FE_element)))(&element_group_manager);
+			DESTROY(MANAGER(FE_element))(&element_manager);	
+			DESTROY(MANAGER(FE_basis))(&fe_basis_manager);
+
+			DESTROY_LIST(FE_element_field_info)(&all_FE_element_field_info);
+			DESTROY_LIST(FE_element_shape)(&all_FE_element_shape);
+
+			DESTROY(MANAGER(Control_curve))(&control_curve_manager);
+			DESTROY(MANAGER(Spectrum))(&spectrum_manager);
+
+			DEACCESS(Graphical_material)(&default_graphical_material);			
+			DEACCESS(Graphical_material)(&default_selected_material);
+			DEACCESS(Graphical_material)(&electrode_selected_material);			
+			DESTROY(MANAGER(Graphical_material))(&graphical_material_manager);
+			DESTROY(MANAGER(Texture))(&texture_manager);
+
+			DEACCESS(Light_model)(&default_light_model);
+			DESTROY(MANAGER(Light_model))(&light_model_manager);
+			DEACCESS(Light)(&default_light);
+			DESTROY(MANAGER(Light))(&light_manager);
 #endif /* defined (UNEMAP_USE_3D) */
 #endif /* defined (NOT_ACQUISITION_ONLY) */
 /*???debug */

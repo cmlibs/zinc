@@ -10,12 +10,14 @@ the rig and signal information. rather than special structures.
 #include <stddef.h>
 #include <string.h>
 #include <math.h>
+#include <limits.h>
 /*ieeefp.h doesn't exist for Linux. Needed for finite() for Irix. */
 /*finite() in math.h in Linux */
 #if defined (NOT_ANSI)
 #include <ieeefp.h>
 #endif /* defined (NOT_ANSI) */
 #include "finite_element/finite_element.h"
+#include "finite_element/import_finite_element.h"
 #include "general/debug.h"
 #include "general/geometry.h"
 #include "general/myio.h"
@@ -7500,3 +7502,261 @@ If they're not, you'll get the first match.
 }/* find_device_given_rig_node */
 #endif /* defined (UNEMAP_USE_3D) */
 
+#if defined (UNEMAP_USE_3D)
+int read_exnode_or_exelem_file_from_string(char *exnode_string,char *exelem_string,
+	char *name,struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(FE_element) *element_manager,
+	struct MANAGER(GROUP(FE_node))*node_group_manager,
+	struct MANAGER(GROUP(FE_node))*data_group_manager,
+	struct MANAGER(GROUP(FE_element)) *element_group_manager,
+	struct MANAGER(FE_basis) *basis_manager)
+/*******************************************************************************
+LAST MODIFIED :9 October 2000
+
+DESCRIPTION : given a string <exnode_string> containing an entire exnode file,
+XOR a string <exelem_string> containing an entire exelem file, reads in the node 
+or element group(s). Renames the first node or element group <name> 
+(i.e ignores the first node or element group name in <exnode_string>/<exelem_string>)
+Does all this by writing out <exnode_string>/<exelem_string> to a temporary file, 
+and reading it back in with read_FE_node_group/read_FE_element_group
+This is generally done so we can statically include an exnode or exelem file (in
+<exnode_string>/<exelem_string>)
+==============================================================================*/
+{
+	int string_len;
+	char group_name_str[]=" Group name: ";
+	char *exnode_or_exelem_string,*line_str,*outstr;		
+	FILE *input_file,*output_file;
+	int return_code;
+
+	ENTER(read_exnode_or_exelem_file_from_string);
+	input_file=(FILE *)NULL;
+	output_file=(FILE *)NULL;
+	outstr=(char *)NULL;
+	line_str=(char *)NULL;		
+	return_code=0;
+	/* exnode_string XOR exelem_string defined, other NULL*/
+	if(((exnode_string&&!exelem_string)||(!exnode_string&&exelem_string))&&
+		fe_field_manager&&node_manager&&element_manager&&node_group_manager&&
+		data_group_manager&&element_group_manager)
+	{	
+		if(exnode_string)
+		{
+			exnode_or_exelem_string=exnode_string;
+		}
+		else
+		/* exelem_string */
+		{
+			exnode_or_exelem_string=exelem_string;
+		}
+		/* set up the new node group name */	
+		string_len = strlen(group_name_str);
+		string_len++;
+		string_len+=strlen(name);
+		string_len++;
+		ALLOCATE(line_str,char,string_len);
+		strcpy(line_str,group_name_str);
+		strcat(line_str,name);
+		strcat(line_str,"\n");	
+		/* open a temp file to write to */
+		if(output_file=fopen("temp_exnode_or_exelem_file", "w"))
+		{
+			/*write out the new group name */
+			if(fwrite(line_str,1,strlen(line_str),output_file))
+			{
+				/*move the start of the string to to the start of the second line (after the \n) */
+				/*(The first line is the group name and we've  just replaced this)*/
+				outstr=exnode_or_exelem_string;
+				while(*outstr!='\n')
+				{		
+					outstr++;				
+				}
+				/*move past the \n */
+				outstr++;
+				/*write the string to the temp file*/
+				if(fwrite(outstr,1,strlen(outstr),output_file))
+				{
+					fclose(output_file);
+					/* read the temp file in to a node or element group */
+					if (input_file=fopen("temp_exnode_or_exelem_file","r"))
+					{
+						if(exnode_string)
+						{
+							return_code=read_FE_node_group(input_file,fe_field_manager,
+								node_manager,element_manager,node_group_manager,data_group_manager,
+								element_group_manager);			
+						}
+						else
+						/* exelem_string */
+						{
+							return_code=read_FE_element_group(input_file,element_manager,
+								element_group_manager,fe_field_manager,node_manager,
+								node_group_manager,data_group_manager,basis_manager);	
+						}
+						fclose(input_file);
+					}
+				}
+				else
+				{
+					return_code=0;
+					fclose(output_file);
+					display_message(ERROR_MESSAGE,"read_exnode_or_exelem_file_from_string. failed to write file");
+				}
+			}
+			else
+			{
+				return_code=0;
+				fclose(output_file);
+				display_message(ERROR_MESSAGE,"read_exnode_or_exelem_file_from_string. failed to write name to file");
+			}			
+			/*remove the temp file*/						
+			remove("temp_exnode_or_exelem_file");				
+		}
+		else
+		{
+			return_code=0;
+			display_message(ERROR_MESSAGE,"read_exnode_or_exelem_file_from_string. faled to open file");
+		}	
+		DEALLOCATE(line_str);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"read_exnode_or_exelem_file_from_string. Invalid arguments");
+	}
+	LEAVE;
+	return(return_code);
+} /* read_exnode_or_exelem_file_from_string */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+int read_exnode_and_exelem_file_from_string_and_offset(
+	char *exnode_string,char *exelem_string,
+	char *name,struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(FE_element) *element_manager,
+	struct MANAGER(GROUP(FE_node))*node_group_manager,
+	struct MANAGER(GROUP(FE_node))*data_group_manager,
+	struct MANAGER(GROUP(FE_element)) *element_group_manager,
+	struct MANAGER(FE_basis) *basis_manager)
+/*******************************************************************************
+LAST MODIFIED :9 October 2000
+
+DESCRIPTION :
+Given a string <exnode_string> containing an entire exnode file,and a string 
+<exelem_string> containing an entire exelem file, reads in the node and 
+element group(s), names them <name>, and shifts the node and element identifier 
+numbers to the end of the legal number range (INT_MAX).
+==============================================================================*/
+{	
+	int number_of_elements,number_of_nodes,offset,return_code;
+	struct Change_identifier_data data;
+	struct GROUP(FE_element) *element_group;
+	struct GROUP(FE_node) *node_group;
+
+	ENTER(read_exnode_and_exelem_file_from_string_and_offset);
+	node_group=(struct GROUP(FE_node) *)NULL;
+	element_group = (struct GROUP(FE_element) *) NULL;
+	data.node_manager = (struct MANAGER(FE_node) *)NULL;
+	data.element_manager = (struct MANAGER(FE_element) *)NULL;
+	if(exnode_string&&exelem_string&&fe_field_manager&&node_manager,element_manager,
+		node_group_manager,data_group_manager,element_group_manager,basis_manager)
+	{
+		/* for now, can only change identifiers of nodes/elements if there's only ONE*/	
+		/* node/element group */
+		if((0==NUMBER_IN_MANAGER(GROUP(FE_element))(element_group_manager))&&
+			(0==NUMBER_IN_MANAGER(GROUP(FE_node))(node_group_manager)))
+		{				
+			/* read in the default torso mesh nodes and elements */
+			/* (cleaned up when the program shuts down) */		
+			return_code=read_exnode_or_exelem_file_from_string(exnode_string,
+				(char *)NULL,name,fe_field_manager,node_manager,element_manager,
+				node_group_manager,data_group_manager,element_group_manager,basis_manager);
+			return_code=read_exnode_or_exelem_file_from_string((char *)NULL,
+				exelem_string,name,fe_field_manager,node_manager,
+				element_manager,node_group_manager,data_group_manager,element_group_manager
+				,basis_manager);
+			/* now shift the nodes and elements */
+			if(return_code&&(node_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)
+				(name,node_group_manager))&&				
+			(number_of_nodes=NUMBER_IN_GROUP(FE_node)(node_group))&&
+			(element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
+				(name,element_group_manager))&&
+			(number_of_elements=NUMBER_IN_GROUP(FE_element)(element_group)))
+			{				
+				/* offset the nodes and elements to INT_MAX-max(number_of_nodes,number_of_elements)*/
+				/*i.e right to the end of the legal numbers */
+				if(number_of_nodes>=number_of_elements)
+				{
+					offset=number_of_nodes;
+				}
+				else
+				{
+					offset=number_of_elements;
+				}
+				offset=INT_MAX-offset;			
+				data.element_offset = offset;
+				data.face_offset = 0;
+				data.line_offset = 0;
+				data.node_offset = offset;
+				/* shift nodes */
+				if (node_group)
+				{
+					data.count = 0;
+					data.node_manager = node_manager;
+					MANAGER_BEGIN_CACHE(FE_node)(node_manager);
+					FOR_EACH_OBJECT_IN_GROUP(FE_node)(FE_node_change_identifier_sub,
+						(void *)&data, node_group);
+					MANAGER_END_CACHE(FE_node)(node_manager);
+					if (data.count != NUMBER_IN_GROUP(FE_node)(node_group))
+					{
+						return_code=0;
+						display_message(ERROR_MESSAGE,"read_exnode_and_exelem_file_from_string_and_offset."
+							"  Only able to update node numbers for %d nodes out of %d\n",
+							data.count, NUMBER_IN_GROUP(FE_node)(node_group));
+					}
+				}	
+				/* shift elements */		
+				if (element_group)
+				{
+					data.count = 0;
+					data.element_manager = element_manager;
+					MANAGER_BEGIN_CACHE(FE_element)(element_manager);
+					FOR_EACH_OBJECT_IN_GROUP(FE_element)(
+						FE_element_change_identifier_sub,
+						(void *)&data, element_group);
+					MANAGER_END_CACHE(FE_element)(element_manager);
+					if (data.count != NUMBER_IN_GROUP(FE_element)(element_group))
+					{
+						return_code=0;
+						display_message(ERROR_MESSAGE,
+							"read_exnode_and_exelem_file_from_string_and_offset."
+							"  Only able to update element numbers for %d elements out of %d\n",
+							data.count, NUMBER_IN_GROUP(FE_element)(element_group));
+					}
+				}
+			}
+			else
+			{
+				return_code=0;
+				display_message(ERROR_MESSAGE,"read_exnode_and_exelem_file_from_string_and_offset."
+					" node or element groups empty");
+			}
+		}						
+		else
+		{
+			return_code=0;
+			display_message(ERROR_MESSAGE,"read_exnode_and_exelem_file_from_string_and_offset."
+				" Must be NO pre exisitng node and element groups when start unemap");
+		}
+	}
+	else
+	{
+		return_code=0;
+		display_message(ERROR_MESSAGE,"read_exnode_and_exelem_file_from_string_and_offset."
+			" Invalid arguments");
+	}
+	LEAVE;
+	return(return_code);
+}
+#endif /* defined (UNEMAP_USE_3D) */

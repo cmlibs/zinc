@@ -61,7 +61,7 @@ unemap_nodes : $(SOURCE_PATH)/unemap_sginodes.make
 		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_sginodes.make $(TARGET) ; \
 	fi
 
-$(SOURCE_PATH)/unemap_sginodes.make : $(SOURCE_PATH)/unemap.imake unemap.make
+$(SOURCE_PATH)/unemap_sginodes.make : $(SOURCE_PATH)/unemap.imake $(SOURCE_PATH)/common.imake unemap.make
 	$(COMMON_IMAKE_RULE) \
 	imake -DIRIX -DUSE_UNEMAP_NODES $${CMISS_ROOT_DEF} -s unemap_sginodes.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
@@ -74,7 +74,7 @@ unemap_3d : $(SOURCE_PATH)/unemap_sgi3d.make
 		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_sgi3d.make $(TARGET) ; \
 	fi
 
-$(SOURCE_PATH)/unemap_sgi3d.make : $(SOURCE_PATH)/unemap.imake unemap.make
+$(SOURCE_PATH)/unemap_sgi3d.make : $(SOURCE_PATH)/unemap.imake $(SOURCE_PATH)/common.imake unemap.make
 	$(COMMON_IMAKE_RULE) \
 	imake -DIRIX -DUSE_UNEMAP_3D $${CMISS_ROOT_DEF} -s unemap_sgi3d.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
@@ -87,7 +87,7 @@ unemap_optimised : $(SOURCE_PATH)/unemap_sgioptimised.make
 		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_sgioptimised.make $(TARGET) ; \
 	fi	
 
-$(SOURCE_PATH)/unemap_sgioptimised.make : $(SOURCE_PATH)/unemap.imake unemap.make
+$(SOURCE_PATH)/unemap_sgioptimised.make : $(SOURCE_PATH)/unemap.imake $(SOURCE_PATH)/common.imake unemap.make
 	$(COMMON_IMAKE_RULE) \
 	imake -DIRIX -DOPTIMISED $${CMISS_ROOT_DEF} -s unemap_sgioptimised.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
@@ -113,7 +113,7 @@ unemap_64 : force $(SOURCE_PATH)/unemap_sgi64.make
 		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_sgi64.make $(TARGET) ; \
 	fi	
 
-$(SOURCE_PATH)/unemap_sgi64.make : $(SOURCE_PATH)/unemap.imake unemap.make
+$(SOURCE_PATH)/unemap_sgi64.make : $(SOURCE_PATH)/unemap.imake $(SOURCE_PATH)/common.imake unemap.make
 	$(COMMON_IMAKE_RULE) \
 	imake -DIRIX -DO64 -DOPTIMISED $${CMISS_ROOT_DEF} -s unemap_sgi64.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
@@ -126,7 +126,7 @@ unemap_linux : force $(SOURCE_PATH)/unemap_linux.make
 		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_linux.make $(TARGET) ; \
 	fi
 
-$(SOURCE_PATH)/unemap_linux.make : $(SOURCE_PATH)/unemap.imake unemap.make
+$(SOURCE_PATH)/unemap_linux.make : $(SOURCE_PATH)/unemap.imake $(SOURCE_PATH)/common.imake unemap.make
 	$(COMMON_IMAKE_RULE) \
 	imake -DLINUX $${CMISS_ROOT_DEF} -s unemap_linux.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
@@ -139,7 +139,7 @@ unemap_linux_nodes : force $(SOURCE_PATH)/unemap_linux_nodes.make
 		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_linux_nodes.make $(TARGET) ; \
 	fi
 
-$(SOURCE_PATH)/unemap_linux_nodes.make : $(SOURCE_PATH)/unemap.imake unemap.make
+$(SOURCE_PATH)/unemap_linux_nodes.make : $(SOURCE_PATH)/unemap.imake $(SOURCE_PATH)/common.imake unemap.make
 	$(COMMON_IMAKE_RULE) \
 	imake -DLINUX  -DUSE_UNEMAP_NODES $${CMISS_ROOT_DEF} -s unemap_linux_nodes.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
@@ -152,7 +152,7 @@ unemap_linux_3d : force $(SOURCE_PATH)/unemap_linux_3d.make
 		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_linux_3d.make $(TARGET) ; \
 	fi
 
-$(SOURCE_PATH)/unemap_linux_3d.make : $(SOURCE_PATH)/unemap.imake unemap.make
+$(SOURCE_PATH)/unemap_linux_3d.make : $(SOURCE_PATH)/unemap.imake $(SOURCE_PATH)/common.imake unemap.make
 	$(COMMON_IMAKE_RULE) \
 	imake -DLINUX  -DUSE_UNEMAP_3D $${CMISS_ROOT_DEF} -s unemap_linux_3d.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 

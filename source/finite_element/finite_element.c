@@ -37137,3 +37137,93 @@ Deaccesses the <node_group> and attempts to remove it from the manager.
 	LEAVE;
 	return(return_code);
 } /* free_node_and_element_and_data_groups */
+
+#if !defined (WINDOWS_DEV_FLAG)
+int FE_element_change_identifier_sub(struct FE_element *element,
+	void *data_void)
+/*******************************************************************************
+LAST MODIFIED : 7 October 1999
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct CM_element_information cm_id;
+	struct Change_identifier_data *data;
+
+	ENTER(FE_element_change_identifier_sub);
+	if (element && 
+		(data=(struct Change_identifier_data *)data_void)
+		&& data->element_manager)
+	{
+		return_code = 1;
+		cm_id.type = element->cm.type;
+		cm_id.number = element->cm.number;
+		switch( cm_id.type )
+		{
+			case CM_ELEMENT:
+			{
+				cm_id.number += data->element_offset;
+			} break;
+			case CM_FACE:
+			{
+				cm_id.number += data->element_offset;
+			} break;
+			case CM_LINE:
+			{
+				cm_id.number += data->element_offset;
+			} break;
+		}
+		if (MANAGER_MODIFY_IDENTIFIER(FE_element, identifier)(element,
+			&cm_id, data->element_manager))
+		{
+			data->count++;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_change_identifier_sub.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_change_identifier_sub */
+#endif /* !defined (WINDOWS_DEV_FLAG) */
+
+#if !defined (WINDOWS_DEV_FLAG)
+int FE_node_change_identifier_sub(struct FE_node *node, void *data_void)
+/*******************************************************************************
+LAST MODIFIED : 7 October 1999
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+	struct Change_identifier_data *data;
+
+	ENTER(FE_node_change_identifier_sub);
+	if (node && 
+		(data=(struct Change_identifier_data *)data_void)
+		&& data->node_manager)
+	{
+		return_code = 1;
+		if (MANAGER_MODIFY_IDENTIFIER(FE_node, cm_node_identifier)(node,
+			get_FE_node_cm_node_identifier(node) + data->node_offset,
+			data->node_manager))
+		{
+			data->count++;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_change_identifier_sub.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_change_identifier_sub */
+#endif /* !defined (WINDOWS_DEV_FLAG) */

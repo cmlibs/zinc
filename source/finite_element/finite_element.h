@@ -906,6 +906,18 @@ Used by FE_node_has_FE_field_and_string_data
 	char *string;	
 };
 
+struct Change_identifier_data
+/*******************************************************************************
+LAST MODIFIED : 7 October 1999
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int count, element_offset, face_offset, line_offset, node_offset;
+	struct MANAGER(FE_element) *element_manager;
+	struct MANAGER(FE_node) *node_manager;
+};
+
 /*
 Global variables
 ----------------
@@ -4455,5 +4467,24 @@ Given a <node_group>, frees it's asscoiated element and data groups
 Deaccesses the <node_group> and attempts to remove it from the manager.
 (i.e assumes the <node_group> has been accessed somewhere)
 ==============================================================================*/
+
+#if !defined (WINDOWS_DEV_FLAG)
+int FE_element_change_identifier_sub(struct FE_element *element,
+	void *data_void);
+/*******************************************************************************
+LAST MODIFIED : 7 October 1999
+
+DESCRIPTION :
+==============================================================================*/
+#endif /* !defined (WINDOWS_DEV_FLAG) */
+
+#if !defined (WINDOWS_DEV_FLAG)
+int FE_node_change_identifier_sub(struct FE_node *node, void *data_void);
+/*******************************************************************************
+LAST MODIFIED : 7 October 1999
+
+DESCRIPTION :
+==============================================================================*/
+#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #endif /* !defined (FINITE_ELEMENT_H) */
