@@ -7100,6 +7100,7 @@ scene viewer on screen.
 
 	if (scene_viewer && width && height)
 	{
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 		if ((!*width) || (!*height))
 		{
 			/* Only use the scene viewer size if either dimension is zero */
@@ -7137,6 +7138,7 @@ scene viewer on screen.
 		}
 		else
 		{
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 			/* Always use the window size if grabbing from screen */
 			*width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
 			*height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
@@ -7161,7 +7163,9 @@ scene viewer on screen.
 					"Scene_viewer_get_frame_pixels.  Unable to allocate pixels");
 				return_code=0;
 			}
+#if defined (MOTIF) || defined (GTK_USER_INTERFACE)
 		}
+#endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 	}
 	else
 	{
