@@ -951,6 +951,15 @@ points  given by the positions in <point_list> and oriented and scaled by
 						}
 						else
 						{
+							/* find angles - a_angle and b_angle - and axes - a and b - so
+								that rotating by a_angle about a followed rotating by b_angle
+								about b takes the x-axis to ax, the y-axis to bx and the z-axis
+								to cx */
+							/* a is perpendicular to the projection of ax onto the y-z plane
+								(i) and a_angle is the angle between ax and the x axis.  a_angle
+								must be between 0 and pi because the angle is in the plane
+								defined by the x axis and i and ax must be in the non-negative
+								i half of this plane */
 							if (0.0 < (a_magnitude = sqrt(ax2*ax2 + ax3*ax3)))
 							{
 								a1 = 0.0;
@@ -972,45 +981,55 @@ points  given by the positions in <point_list> and oriented and scaled by
 									a_angle = 0.0;
 								}
 							}
-
-							b1 = ax1;
-							b2 = ax2;
-							b3 = ax3;
-							/* To get the b angle we get the direction of the now rotated
-								 j (y-axis) vector (fortunately a1 is zero) and dot product that
-								 with bx, the unit axis 2 vector */
+							/* rotating by a_angle about a takes the x-axis onto ax and the
+								y-axis onto j */
 							j1 = -sin(a_angle) * a3;
 							j2 = (1.0 - cos(a_angle)) * a2 * a2 + cos(a_angle);
 							j3 = (1.0 - cos(a_angle)) * a2 * a3;
+							/* bx is perpendicular to ax, because they are orthonormal, and
+								j is perpendiculat to ax because they are the images of the y-
+								and x- axes under rotation.  So bx and j are in the plane
+								perpendicular to ax */
+							/* now rotate about ax (b) to get j onto bx */
+							b1 = ax1;
+							b2 = ax2;
+							b3 = ax3;
+							/* because j and bx are unit length cos(b_angle)=j dot b */
 							b_angle = clamped_acos(j1*bx1 + j2*bx2 + j3*bx3);
+							/* acos gives an angle between 0 and pi.  If j cross bx is in the
+								same direction as b, then the angle is clockwise, if it is in
+								the opposite direction then it is anti-clockwise.   */
 							/*???DB.  Lose accuracy fairly badly here.  Need to have
 								tolerance so that there are not different numbers of lines for
 								ndiff */
 #define ZERO_ROTATION_TOLERANCE 0.001
-#if defined (OLD_CODE)
-/*???DB.  I think that this is wrong.  Swapping the sign will mean that j is not
-	rotated onto bx unless they are in opposite directions.  If they are in
-	opposite directions then the cross product is zero */
 /*							if (0.0 != b_angle)*/
 							if (ZERO_ROTATION_TOLERANCE < fabs(b_angle))
 							{
-								/* get c = j1 (x) bx and normalise it */
-									/*???DB.  What if j1 and bx are colinear
+								/* get c = j1 (x) bx */
 								c1 = j2*bx3 - j3*bx2;
 								c2 = j3*bx1 - j1*bx3;
 								c3 = j1*bx2 - j2*bx1;
+								/* the magnitude of c is the absolute value of sin(b_angle)
+									because j and bx are unit length.  For small theta,
+									sin(theta) is approximately theta */
 								c_magnitude = sqrt(c1*c1 + c2*c2 + c3*c3);
-								c1 /= c_magnitude;
-								c2 /= c_magnitude;
-								c3 /= c_magnitude;
-								dp = b1*c1 + b2*c2 + b3*c3;
-								if (dp < 0.0)
+								if (ZERO_ROTATION_TOLERANCE < fabs(c_magnitude))
 								{
-									/* handle the case of b_angle not in 0..PI */
-									b_angle = -b_angle;
+									dp = b1*c1 + b2*c2 + b3*c3;
+									if (dp < 0.0)
+									{
+										/* make clockwise */
+										b_angle = -b_angle;
+									}
+								}
+								else
+								{
+									/* b_angle is close to +/- PI (have already checked that
+										b_angle isn't near 0 */
+									b_angle=PI;
 								}
 							}
-#endif /* defined (OLD_CODE) */
 							fprintf(vrml_file,"Transform {\n");
 							fprintf(vrml_file,"  translation %f %f %f\n", x,y,z);
 							/* if possible, try to avoid having two Transform nodes */
