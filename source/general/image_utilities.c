@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : image_utilities.c
 
-LAST MODIFIED : 18 April 2002
+LAST MODIFIED : 20 December 2004
 
 DESCRIPTION :
 Utilities for handling images.
@@ -6367,22 +6367,22 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 					case 1:
 					{
 						magick_image->colorspace = GRAYColorspace;
-						magick_image->matte = 0;
+						magick_image->matte = MagickFalse;
 					} break;
 					case 2:
 					{
 						magick_image->colorspace = GRAYColorspace;
-						magick_image->matte = 1;
+						magick_image->matte = MagickTrue;
 					} break;
 					case 3:
 					{
 						magick_image->colorspace = RGBColorspace;
-						magick_image->matte = 0;
+						magick_image->matte = MagickFalse;
 					} break;
 					case 4:
 					{
 						magick_image->colorspace = RGBColorspace;
-						magick_image->matte = 1;
+						magick_image->matte = MagickTrue;
 					} break;
 					default:
 					{
@@ -7048,7 +7048,7 @@ and other parameters for formats that require them.
 							{
 								if (IO_stream_read_to_memory(image_file, &image_data, &image_data_length))
 								{
-									SetImageInfo(magick_image_info, 0, &magick_exception);
+									SetImageInfo(magick_image_info, MagickFalse, &magick_exception);
 									magick_image = BlobToImage(magick_image_info,
 										image_data, image_data_length, &magick_exception);
 									IO_stream_deallocate_read_to_memory(image_file);
@@ -7347,14 +7347,14 @@ that the images be adjoined in the single file.
 				if (number_of_file_names < cmgui_image->number_of_images)
 				{
 					/* ask ImageMagick to adjoin the images into one */
-					magick_image_info->adjoin = 1;
+					magick_image_info->adjoin = MagickTrue;
 					temp_previous = (Image *)NULL;
 					temp_next = (Image *)NULL;
 				}
 				else
 				{
 					/* stop ImageMagick from adjoining images */
-					magick_image_info->adjoin = 0;
+					magick_image_info->adjoin = MagickFalse;
 					temp_previous = magick_image->previous;
 					magick_image->previous = (Image *)NULL;
 					temp_next = magick_image->next;
