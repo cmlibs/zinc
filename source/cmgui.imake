@@ -241,7 +241,7 @@ GRAPHICS_LIB = -lgl
 #endif /* (OLD_CODE) */
 #if defined (IRIX) /* switch OperatingSystem */
 #if defined (O64)
-XCOMM for OpenGL without SGI movie (64bit doesnt have libraries as of Jan99)
+XCOMM for OpenGL without SGI movie (64bit doesnt have libraries as of Jun2000)
 GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
 GRAPHICS_LIB = -lGL -lGLU
 #else /* defined (O64) */
