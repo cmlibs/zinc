@@ -56,7 +56,7 @@ Tells client that the component has changed.
 		if (choose_enumerator->update_callback.procedure)
 		{
 			(choose_enumerator->update_callback.procedure)(
-				(Widget)NULL,choose_enumerator->update_callback.data,
+				choose_enumerator->widget,choose_enumerator->update_callback.data,
 				Chooser_get_item(choose_enumerator->chooser));
 		}
 		return_code=1;

@@ -66,7 +66,7 @@ Module functions
 static int CHOOSE_OBJECT_LIST_UPDATE(object_type)( \
 	struct CHOOSE_OBJECT_LIST(object_type) *choose_object_list) \
 /***************************************************************************** \
-LAST MODIFIED : 21 January 2000 \
+LAST MODIFIED : 24 January 2000 \
 \
 DESCRIPTION : \
 Tells CMGUI about the current values. Sends a pointer to the current object. \
@@ -81,7 +81,7 @@ Tells CMGUI about the current values. Sends a pointer to the current object. \
 		{ \
 			/* now call the procedure with the user data */ \
 			(choose_object_list->update_callback.procedure)( \
-				(Widget)NULL,choose_object_list->update_callback.data, \
+				choose_object_list->widget,choose_object_list->update_callback.data, \
 				(struct object_type *) \
 				Chooser_get_item(choose_object_list->chooser)); \
 		} \
