@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.c
 
-LAST MODIFIED : 26 November 2001
+LAST MODIFIED : 28 January 2002
 
 DESCRIPTION :
 ???DB.  Missing settings ?
@@ -5764,12 +5764,13 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 
 int update_map_from_manual_time_update(struct Mapping_window *mapping)
 /*******************************************************************************
-LAST MODIFIED : 23 November 2001
+LAST MODIFIED : 18 January 2002
 
 DESCRIPTION :
 Sets recalculate and map->interpolation_type from 
 map->draw_map_on_manual_time_update, and update the map.
 Reset map->interpolation_type to it's initial value.
+Note: 3D maps always fully recalculate on manual time updates.
 ==============================================================================*/
 {
 	enum Interpolation_type interpolation;
@@ -5782,7 +5783,8 @@ Reset map->interpolation_type to it's initial value.
 	{
 		return_code=1;
 		interpolation=map->interpolation_type;							
-		if(map->draw_map_on_manual_time_update)
+		if((map->draw_map_on_manual_time_update)||
+			(map->projection_type==THREED_PROJECTION))
 		{
 			recalculate=2;
 		}
