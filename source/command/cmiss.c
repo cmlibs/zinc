@@ -20480,7 +20480,6 @@ If <use_data> is set, writing data, otherwise writing nodes.
 	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct FE_field_order_info *field_order_info;
-	struct FE_region fe_region;
 	struct GROUP(FE_node) *node_group;
 	struct GROUP(FE_element) *element_group;
 	struct Option_table *option_table;
@@ -20494,8 +20493,6 @@ If <use_data> is set, writing data, otherwise writing nodes.
 		node_group = (struct GROUP(FE_node) *)NULL;
 		field_order_info = (struct FE_field_order_info *)NULL;
 		file_name = (char *)NULL;
-
-		cmiss_region.fe_region = &fe_region;
 
 		option_table = CREATE(Option_table)();
 		/* fields */
@@ -20530,10 +20527,6 @@ If <use_data> is set, writing data, otherwise writing nodes.
 			}
 			if (return_code)
 			{
-				fe_region.fe_field_manager = command_data->fe_field_manager;
-				fe_region.node_group = node_group;
-				fe_region.element_group = element_group;
-
 				/* open the file */
 				if (return_code = check_suffix(&file_name, file_ext))
 				{
