@@ -7178,7 +7178,7 @@ and other parameters for formats that require them.
 int Cmgui_image_write(struct Cmgui_image *cmgui_image,
 	struct Cmgui_image_information *cmgui_image_information)
 /*******************************************************************************
-LAST MODIFIED : 12 March 2002
+LAST MODIFIED : 23 March 2002
 
 DESCRIPTION :
 Writes <cmgui_image> to the filename or filenames listed in the
@@ -7255,6 +7255,13 @@ that the images be adjoined in the single file.
 					{
 						magick_image_info->interlace = PlaneInterlace;
 					} break;
+				}
+				if (3 <= cmgui_image->number_of_components)
+				{
+					/* image magick will reduce RGB to monochrome if all R, G and B
+						 values are the same. The resulting images cannot be re-read!
+						 If the image info type is set to TrueColorType, this is avoided */
+					magick_image_info->type = TrueColorType;
 				}
 #if defined (DEBUG)
 				magick_image_info->verbose = 1;
