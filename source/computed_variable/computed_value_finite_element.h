@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_value_finite_element.h
 
-LAST MODIFIED : 21 April 2003
+LAST MODIFIED : 11 July 2003
 
 DESCRIPTION :
 Implements computed values which interface to finite elements:
@@ -17,28 +17,31 @@ Implements computed values which interface to finite elements:
 Global functions
 ----------------
 */
-int Cmiss_value_element_xi_set_type(Cmiss_value_id value,
+int Cmiss_value_element_xi_set_type(Cmiss_value_id value,int dimension,
 	struct FE_element *element,FE_value *xi);
 /*******************************************************************************
-LAST MODIFIED : 19 February 2003
+LAST MODIFIED : 11 July 2003
 
 DESCRIPTION :
-Makes <value> of type element_xi and sets its <element> and <xi).  After
-success, the <value> is responsible for DEALLOCATEing <xi>.
+Makes <value> of type element_xi and sets its <dimension>, <element> and <xi).
+<dimension> must be positive or <element> must be non-NULL.  If <dimension> is
+positive and <element> is non-NULL then <dimension> should equal the dimension
+of the element.  After success, the <value> is responsible for DEALLOCATEing
+<xi>.
 
 ???DB.  Assuming that the <element> knows its FE_region (can get manager)
-???DB.  Is it necessary to add a dimension or insist on non-NULL element?
 ==============================================================================*/
 
 PROTOTYPE_CMISS_VALUE_IS_TYPE_FUNCTION(element_xi);
 
-int Cmiss_value_element_xi_get_type(Cmiss_value_id value,
+int Cmiss_value_element_xi_get_type(Cmiss_value_id value,int *dimension_address,
 	struct FE_element **element_address,FE_value **xi_address);
 /*******************************************************************************
-LAST MODIFIED : 19 February 2003
+LAST MODIFIED : 11 July 2003
 
 DESCRIPTION :
-If <value> is of type element_xi, gets its <*element_address> and <*xi_address).
+If <value> is of type element_xi, gets its <*dimension_address>,
+<*element_address> and <*xi_address).
 
 The calling program must not DEALLOCATE the returned <*xi_address>.
 ==============================================================================*/

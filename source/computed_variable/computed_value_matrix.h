@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_value_matrix.h
 
-LAST MODIFIED : 11 May 2003
+LAST MODIFIED : 16 July 2003
 
 DESCRIPTION :
 Implements a matrix computed value.
@@ -74,5 +74,14 @@ LAST MODIFIED : 11 May 2003
 
 DESCRIPTION :
 Returns a Cmiss value which is the specified sub-matrix of <matrix>.
+==============================================================================*/
+
+int Cmiss_value_matrix_set_submatrix(Cmiss_value_id matrix,int row_low,
+	int row_high,int column_low,int column_high,Cmiss_value_id submatrix);
+/*******************************************************************************
+LAST MODIFIED : 16 July 2003
+
+DESCRIPTION :
+Copies the <submatrix> into the specified sub-matrix of <matrix>.
 ==============================================================================*/
 #endif /* !defined (__CMISS_VALUE_MATRIX_H__) */

@@ -1,13 +1,16 @@
 /*******************************************************************************
 FILE : computed_value.c
 
-LAST MODIFIED : 27 April 2003
+LAST MODIFIED : 20 July 2003
 
 DESCRIPTION :
 A module intended to replace general/value .  Testing and developing in
 conjunction with Cmiss_variables.
 
 ???DB.  Should _get_s try and get a representation if not specified type?
+
+???DB.  Split GET_REALS into GET_REALS and GET_NUMBER_OF_REALS with GET_REALS
+	filling in an array rather than allocating and filling in?
 ==============================================================================*/
 #include "computed_variable/computed_value.h"
 #include "computed_variable/computed_value_private.h"
@@ -51,6 +54,23 @@ static START_CMISS_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(FE_value)
 	destination->fe_value=source->fe_value;
 }
 END_CMISS_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(FE_value)
+
+static START_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(FE_value)
+{
+	FE_value *destination_real;
+
+	if (!reals_address||ALLOCATE(destination_real,FE_value,1))
+	{
+		*number_of_reals_address=1;
+		if (reals_address)
+		{
+			*reals_address=destination_real;
+			*destination_real=data->fe_value;
+		}
+		return_code=1;
+	}
+}
+END_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(FE_value)
 
 static START_CMISS_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
 	FE_value)
@@ -137,6 +157,39 @@ static START_CMISS_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(
 	}
 }
 END_CMISS_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(FE_value_matrix)
+
+static START_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(FE_value_matrix)
+{
+	FE_value *destination_real,*source_real;
+	int number_of_reals;
+
+	number_of_reals=(data->number_of_rows)*(data->number_of_columns);
+	if (!reals_address||!(source_real=data->fe_value_matrix)||
+		ALLOCATE(destination_real,FE_value,number_of_reals))
+	{
+		*number_of_reals_address=number_of_reals;
+		if (reals_address)
+		{
+			if (source_real)
+			{
+				*reals_address=destination_real;
+				while (number_of_reals>0)
+				{
+					*destination_real= *source_real;
+					source_real++;
+					destination_real++;
+					number_of_reals--;
+				}
+			}
+			else
+			{
+				*reals_address=(FE_value *)NULL;
+			}
+		}
+		return_code=1;
+	}
+}
+END_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(FE_value_matrix)
 
 static START_CMISS_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
 	FE_value_matrix)
@@ -278,6 +331,39 @@ static START_CMISS_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(
 }
 END_CMISS_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(FE_value_vector)
 
+static START_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(FE_value_vector)
+{
+	FE_value *destination_real,*source_real;
+	int number_of_reals;
+
+	number_of_reals=data->number_of_fe_values;
+	if (!reals_address||!(source_real=data->fe_value_vector)||
+		ALLOCATE(destination_real,FE_value,number_of_reals))
+	{
+		*number_of_reals_address=number_of_reals;
+		if (reals_address)
+		{
+			if (source_real)
+			{
+				*reals_address=destination_real;
+				while (number_of_reals>0)
+				{
+					*destination_real= *source_real;
+					source_real++;
+					destination_real++;
+					number_of_reals--;
+				}
+			}
+			else
+			{
+				*reals_address=(FE_value *)NULL;
+			}
+		}
+		return_code=1;
+	}
+}
+END_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(FE_value_vector)
+
 static START_CMISS_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
 	FE_value_vector)
 {
@@ -344,7 +430,7 @@ Module types
 */
 struct Cmiss_value
 /*******************************************************************************
-LAST MODIFIED : 22 April 2003
+LAST MODIFIED : 15 July 2003
 
 DESCRIPTION :
 A value that knows what type it is.
@@ -371,6 +457,7 @@ A value that knows what type it is.
 	Cmiss_value_clear_type_specific_function clear_type_specific_function;
 	Cmiss_value_duplicate_data_type_specific_function
 		duplicate_data_type_specific_function;
+	Cmiss_value_get_reals_type_specific_function get_reals_type_specific_function;
 	Cmiss_value_multiply_and_accumulate_type_specific_function
 		multiply_and_accumulate_type_specific_function;
 	Cmiss_value_same_sub_type_type_specific_function
@@ -387,12 +474,13 @@ int Cmiss_value_establish_methods(Cmiss_value_id value,
 	Cmiss_value_clear_type_specific_function clear_type_specific_function,
 	Cmiss_value_duplicate_data_type_specific_function
 	duplicate_data_type_specific_function,
+	Cmiss_value_get_reals_type_specific_function get_reals_type_specific_function,
 	Cmiss_value_multiply_and_accumulate_type_specific_function
 	multiply_and_accumulate_type_specific_function,
 	Cmiss_value_same_sub_type_type_specific_function
 	same_sub_type_type_specific_function)
 /*******************************************************************************
-LAST MODIFIED : 9 April 2003
+LAST MODIFIED : 15 July 2003
 
 DESCRIPTION :
 Sets the methods for the <value>.
@@ -410,6 +498,7 @@ Sets the methods for the <value>.
 			duplicate_data_type_specific_function;
 		value->multiply_and_accumulate_type_specific_function=
 			multiply_and_accumulate_type_specific_function;
+		value->get_reals_type_specific_function=get_reals_type_specific_function;
 		value->same_sub_type_type_specific_function=
 			same_sub_type_type_specific_function;
 		return_code=1;
@@ -479,7 +568,7 @@ Sets the type specific information for the <value>.
 
 int Cmiss_value_clear_type(Cmiss_value_id value)
 /*******************************************************************************
-LAST MODIFIED : 19 February 2003
+LAST MODIFIED : 20 July 2003
 
 DESCRIPTION :
 Used internally by DESTROY and Cmiss_value_set_type_*() functions to
@@ -513,10 +602,15 @@ to ensure that the value is not left in an invalid state.
 			}
 			DEALLOCATE(value->type_specific_data);
 		}
+		else
+		{
+			return_code=1;
+		}
 		/* clear all methods */
 		Cmiss_value_establish_methods(value,
 			(Cmiss_value_clear_type_specific_function)NULL,
 			(Cmiss_value_duplicate_data_type_specific_function)NULL,
+			(Cmiss_value_get_reals_type_specific_function)NULL,
 			(Cmiss_value_multiply_and_accumulate_type_specific_function)NULL,
 			(Cmiss_value_same_sub_type_type_specific_function)NULL);
 	}
@@ -536,7 +630,7 @@ Global functions
 */
 Cmiss_value_id CREATE(Cmiss_value)(void)
 /*******************************************************************************
-LAST MODIFIED : 19 February 2003
+LAST MODIFIED : 13 July 2003
 
 DESCRIPTION :
 Creates an empty value with no type.  Each type of value has its own "set_type"
@@ -555,6 +649,7 @@ function.
 		Cmiss_value_establish_methods(value,
 			(Cmiss_value_clear_type_specific_function)NULL,
 			(Cmiss_value_duplicate_data_type_specific_function)NULL,
+			(Cmiss_value_get_reals_type_specific_function)NULL,
 			(Cmiss_value_multiply_and_accumulate_type_specific_function)NULL,
 			(Cmiss_value_same_sub_type_type_specific_function)NULL);
 		/* initialise access_count */
@@ -602,7 +697,7 @@ Frees memory/deaccess objects for Cmiss_value at <*value_address>.
 int Cmiss_value_copy(Cmiss_value_id destination,
 	Cmiss_value_id source)
 /*******************************************************************************
-LAST MODIFIED : 9 April 2003
+LAST MODIFIED : 13 July 2003
 
 DESCRIPTION :
 Copies the type and contents from <source> to <destination>.
@@ -631,6 +726,7 @@ Copies the type and contents from <source> to <destination>.
 			Cmiss_value_establish_methods(destination,
 				source->clear_type_specific_function,
 				source->duplicate_data_type_specific_function,
+				source->get_reals_type_specific_function,
 				source->multiply_and_accumulate_type_specific_function,
 				source->same_sub_type_type_specific_function);
 			return_code=1;
@@ -671,9 +767,8 @@ otherwise.
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Cmiss_value_same_sub_type.  "
-				"Type specific data but no function to clear it");
+			display_message(ERROR_MESSAGE,"Cmiss_value_same_sub_type.  "
+				"Missing method");
 			return_code=0;
 		}
 	}
@@ -714,6 +809,48 @@ DEALLOCATE the returned string.
 	return (return_string);
 } /* Cmiss_value_get_type_id_string */
 
+int Cmiss_value_get_reals(Cmiss_value_id value,int *number_of_reals_address,
+	FE_value **reals_address)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2003
+
+DESCRIPTION :
+Gets the <*number_of_reals_address> for the <value>.  This is needed when
+calculating derivatives.  If <real_address> is not NULL, then an array is
+allocated and the reals put in it.  A zero return code means that <value> is not
+represented by reals or the array could not be allocated or the arguments are
+invalid.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmiss_value_get_reals);
+	return_code=0;
+	if (value&&number_of_reals_address)
+	{
+		if (value->get_reals_type_specific_function)
+		{
+			return_code=(value->get_reals_type_specific_function)(value,
+				number_of_reals_address,reals_address);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Cmiss_value_get_reals.  "
+				"Missing method");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Cmiss_value_get_reals.  "
+			"Invalid argument(s).  %p %p",value,number_of_reals_address);
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_value_get_reals */
+
 int Cmiss_value_multiply_and_accumulate(Cmiss_value_id total,
 	Cmiss_value_id value_1,Cmiss_value_id value_2)
 /*******************************************************************************
@@ -738,7 +875,7 @@ Calculates <total>+<value_1>*<value_2> and puts in <total>.
 		else
 		{
 			display_message(ERROR_MESSAGE,"Cmiss_value_multiply_and_accumulate.  "
-				"Type specific data but no function to clear it");
+				"Missing method");
 			return_code=0;
 		}
 	}

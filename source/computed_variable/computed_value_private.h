@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_value_private.h
 
-LAST MODIFIED : 9 April 2003
+LAST MODIFIED : 20 July 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -89,11 +89,46 @@ Cmiss_value_type_specific_data * \
 	return (destination); \
 } /* Cmiss_value_ ## value_type ## _duplicate_data_type_specific */
 
+typedef int (*Cmiss_value_get_reals_type_specific_function)(
+	Cmiss_value_id value,int *number_of_reals_address,FE_value **reals_address);
+/*******************************************************************************
+LAST MODIFIED : 16 July 2003
+
+DESCRIPTION :
+Gets the <*number_of_reals_address> for the <value>.  This is needed when
+calculating derivatives.  If <real_address> is not NULL, then an array is
+allocated and the reals put in it.  A zero return code means that <value> is not
+represented by reals or the array could not be allocated or the arguments are
+invalid.
+==============================================================================*/
+
+#define START_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION( value_type ) \
+int Cmiss_value_ ## value_type ## _get_reals_type_specific( \
+	Cmiss_value_id value,int *number_of_reals_address,FE_value **reals_address) \
+{ \
+	int return_code; \
+	struct Cmiss_value_ ## value_type ## _type_specific_data *data; \
+\
+	ENTER(Cmiss_value_ ## value_type ## _get_reals_type_specific); \
+	return_code=0; \
+	data=(struct Cmiss_value_ ## value_type ## _type_specific_data *) \
+		Cmiss_value_get_type_specific_data(value); \
+	ASSERT_IF(data,return_code,0) \
+	ASSERT_IF(number_of_reals_address,return_code,0) \
+	ASSERT_IF(Cmiss_value_ ## value_type ## _type_string== \
+		Cmiss_value_get_type_id_string(value),return_code,0)
+
+#define END_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION( value_type ) \
+	LEAVE; \
+\
+	return (return_code); \
+} /* Cmiss_value_ ## value_type ## _get_reals_type_specific */
+
 typedef int (*Cmiss_value_multiply_and_accumulate_type_specific_function)(
 	Cmiss_value_id total,Cmiss_value_id value_1,
 	Cmiss_value_id value_2);
 /*******************************************************************************
-LAST MODIFIED : 9 April 2003
+LAST MODIFIED : 20 July 2003
 
 DESCRIPTION :
 Check that <value_1> and <value_2> are of the same type.
@@ -102,8 +137,7 @@ Check that <value_1> and <value_2> are of the same type.
 #define START_CMISS_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION( \
 	value_type ) \
 int Cmiss_value_ ## value_type ## _multiply_and_accumulate_type_specific( \
-	Cmiss_value_id value_1,Cmiss_value_id value_2, \
-	Cmiss_value_id total) \
+	Cmiss_value_id total,Cmiss_value_id value_1,Cmiss_value_id value_2) \
 { \
 	int return_code; \
 \
@@ -187,7 +221,7 @@ PROTOTYPE_CMISS_VALUE_IS_TYPE_FUNCTION(value_type) \
 
 #define CMISS_VALUE_ESTABLISH_METHODS( value, value_type ) \
 /***************************************************************************** \
-LAST MODIFIED : 19 February 2003 \
+LAST MODIFIED : 16 July 2003 \
 \
 DESCRIPTION : \
 Each Cmiss_value_set_type function should call this macro to establish the \
@@ -198,6 +232,7 @@ some default function. \
 Cmiss_value_establish_methods(value, \
 	Cmiss_value_ ## value_type ## _clear_type_specific, \
 	Cmiss_value_ ## value_type ## _duplicate_data_type_specific, \
+	Cmiss_value_ ## value_type ## _get_reals_type_specific, \
 	Cmiss_value_ ## value_type ## _multiply_and_accumulate_type_specific, \
 	Cmiss_value_ ## value_type ## _same_sub_type_type_specific)
 
@@ -209,12 +244,13 @@ int Cmiss_value_establish_methods(Cmiss_value_id value,
 	Cmiss_value_clear_type_specific_function clear_type_specific_function,
 	Cmiss_value_duplicate_data_type_specific_function
 	duplicate_data_type_specific_function,
+	Cmiss_value_get_reals_type_specific_function get_reals_type_specific_function,
 	Cmiss_value_multiply_and_accumulate_type_specific_function
 	multiply_and_accumulate_type_specific_function,
 	Cmiss_value_same_sub_type_type_specific_function
 	same_sub_type_type_specific_function);
 /*******************************************************************************
-LAST MODIFIED : 9 April 2003
+LAST MODIFIED : 16 July 2003
 
 DESCRIPTION :
 Sets the methods for the <value>.

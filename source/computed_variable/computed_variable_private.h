@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable_private.h
 
-LAST MODIFIED : 9 April 2003
+LAST MODIFIED : 9 July 2003
 
 DESCRIPTION :
 ???DB.  Move structure into .c .  Means that have to change macro into a
@@ -12,14 +12,6 @@ DESCRIPTION :
 #define __CMISS_VARIABLE_PRIVATE_H__
 
 #include "computed_variable/computed_variable.h"
-
-/*
-Friend types
-------------
-*/
-typedef int (*Cmiss_variable_source_variable_iterator)(
-	Cmiss_variable_id variable,Cmiss_variable_id source_variable,
-	Cmiss_variable_id independent_variable,void *data_void);
 
 /*
 Method types
@@ -109,7 +101,7 @@ typedef int (*Cmiss_variable_evaluate_derivative_type_specific_function)(
 	Cmiss_variable_id *independent_variables,
 	Cmiss_value_id value);
 /*******************************************************************************
-LAST MODIFIED : 9 April 2003
+LAST MODIFIED : 2 July 2003
 
 DESCRIPTION :
 Evaluates the <order> degree derivative of <variable> with respect to
@@ -144,10 +136,10 @@ int Cmiss_variable_ ## variable_type ## _evaluate_derivative_type_specific( \
 typedef int (*Cmiss_variable_evaluate_type_specific_function)(
 	struct Cmiss_variable_value *variable_value);
 /*******************************************************************************
-LAST MODIFIED : 9 April 2003
+LAST MODIFIED : 3 July 2003
 
 DESCRIPTION :
-Evaluate the <variable_value> using the independent variable <values>.
+Evaluate the <variable_value>.
 ==============================================================================*/
 
 #define START_CMISS_VARIABLE_EVALUATE_TYPE_SPECIFIC_FUNCTION( \
@@ -165,7 +157,7 @@ int Cmiss_variable_ ## variable_type ## _evaluate_type_specific( \
 	variable=Cmiss_variable_value_get_variable(variable_value); \
 	value=Cmiss_variable_value_get_value(variable_value); \
 	ASSERT_IF(variable&&(Cmiss_variable_ ## variable_type ## _type_string== \
-		Cmiss_variable_get_type_id_string(variable))&&value,return_code,0)
+		Cmiss_variable_get_type_id_string(variable))&&value,return_code,0) \
 
 #define END_CMISS_VARIABLE_EVALUATE_TYPE_SPECIFIC_FUNCTION( variable_type ) \
 	LEAVE; \
@@ -281,9 +273,9 @@ int Cmiss_variable_ ## variable_type ## _get_value_type_type_specific( \
 } /* Cmiss_variable_ ## variable_type ## _get_value_type_type_specific */
 
 typedef int (*Cmiss_variable_is_defined_type_specific_function)(
-	Cmiss_variable_id variable);
+	Cmiss_variable_id variable,struct LIST(Cmiss_variable_value) *values);
 /*******************************************************************************
-LAST MODIFIED : 9 April 2003
+LAST MODIFIED : 2 July 2003
 
 DESCRIPTION :
 If the <variable> can be evaluated assuming that all its source variables can be
@@ -309,12 +301,14 @@ defined checking for source variables.
 #define START_CMISS_VARIABLE_IS_DEFINED_TYPE_SPECIFIC_FUNCTION( \
 	variable_type ) \
 int Cmiss_variable_ ## variable_type ## _is_defined_type_specific( \
-	Cmiss_variable_id variable) \
+	Cmiss_variable_id variable,struct LIST(Cmiss_variable_value) *values) \
 { \
 	int return_code; \
 \
 	ENTER(Cmiss_variable_ ## variable_type ## _is_defined_type_specific); \
 	return_code=0; \
+	/*???DB.  temp */ \
+	USE_PARAMETER(values); \
 	/* check arguments */ \
 	ASSERT_IF(variable&&(Cmiss_variable_ ## variable_type ## _type_string== \
 		Cmiss_variable_get_type_id_string(variable)),return_code,0)
@@ -628,15 +622,5 @@ LAST MODIFIED : 11 February 2003
 
 DESCRIPTION :
 To give access to Cmiss_variable_not_in_use_type_specific_function method.
-==============================================================================*/
-
-int Cmiss_variable_for_each_source_variable(Cmiss_variable_id variable,
-	Cmiss_variable_source_variable_iterator iterator,void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 12 February 2003
-
-DESCRIPTION :
-Applies the <iterator> to each of the <variable>s source/independent variable
-pairs until finish or the <iterator> returns zero.
 ==============================================================================*/
 #endif /* !defined (__CMISS_VARIABLE_PRIVATE_H__) */

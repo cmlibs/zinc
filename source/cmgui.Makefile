@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : cmgui.Makefile
 #
-# LAST MODIFIED : 12 June 2003
+# LAST MODIFIED : 23 July 2003
 #
 # DESCRIPTION :
 #
@@ -639,10 +639,16 @@ COMPUTED_FIELD_INTERFACE_SRCS = \
 	computed_field/computed_field_window_projection.c
 COMPUTED_VARIABLE_SRCS = \
 	computed_variable/computed_value.c \
+	computed_variable/computed_value_derivative_matrix.c \
 	computed_variable/computed_value_finite_element.c \
 	computed_variable/computed_value_matrix.c \
 	computed_variable/computed_variable.c \
-	computed_variable/computed_variable_finite_element.c
+	computed_variable/computed_variable_composite.c \
+	computed_variable/computed_variable_composition.c \
+	computed_variable/computed_variable_coordinates.c \
+	computed_variable/computed_variable_derivative.c \
+	computed_variable/computed_variable_finite_element.c \
+	computed_variable/computed_variable_identity.c
 CURVE_SRCS = \
 	curve/control_curve.c
 CURVE_INTERFACE_SRCS = \
@@ -1179,7 +1185,8 @@ ifeq ($(SYSNAME:IRIX%=),)
    ALL_SO_LINK_FLAGS = -no_unresolved
 endif # SYSNAME == IRIX%=
 ifeq ($(SYSNAME),Linux)
-   ALL_SO_LINK_FLAGS = -Wl,--no-undefined 
+#   ALL_SO_LINK_FLAGS = -Wl,--no-undefined 
+   ALL_SO_LINK_FLAGS =
 endif # SYSNAME == Linux
 
 SO_LIB_GENERAL = cmgui_general
@@ -1216,7 +1223,8 @@ LIB_FINITE_ELEMENT_SRCS = \
 	$(REGION_SRCS)
 LIB_FINITE_ELEMENT_OBJS = $(patsubst %,%.o,$(basename $(LIB_FINITE_ELEMENT_SRCS)))
 $(SO_LIB_FINITE_ELEMENT_TARGET) : $(LIB_FINITE_ELEMENT_OBJS) $(SO_LIB_GENERAL_TARGET) cmgui.Makefile
-	$(call BuildSharedLibraryTarget,$(SO_LIB_FINITE_ELEMENT_TARGET),$(BIN_PATH),$(LIB_FINITE_ELEMENT_OBJS),$(ALL_SO_LINK_FLAGS) $(BIN_PATH)/$(SO_LIB_GENERAL_TARGET) $(XML2_LIB) $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a $(LIB),$(SO_LIB_FINITE_ELEMENT_SONAME))
+#	$(call BuildSharedLibraryTarget,$(SO_LIB_FINITE_ELEMENT_TARGET),$(BIN_PATH),$(LIB_FINITE_ELEMENT_OBJS),$(ALL_SO_LINK_FLAGS) $(BIN_PATH)/$(SO_LIB_GENERAL_TARGET) $(XML2_LIB) $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a $(LIB),$(SO_LIB_FINITE_ELEMENT_SONAME))
+	$(call BuildSharedLibraryTarget,$(SO_LIB_FINITE_ELEMENT_TARGET),$(BIN_PATH),$(LIB_FINITE_ELEMENT_OBJS),$(ALL_SO_LINK_FLAGS) $(BIN_PATH)/$(SO_LIB_GENERAL_TARGET) $(XML2_LIB) $(LIB),$(SO_LIB_FINITE_ELEMENT_SONAME))
 
 SO_LIB_COMPUTED_VARIABLE = cmgui_computed_variable
 SO_LIB_COMPUTED_VARIABLE_TARGET = lib$(SO_LIB_COMPUTED_VARIABLE)$(TARGET_SUFFIX)$(SO_LIB_SUFFIX)

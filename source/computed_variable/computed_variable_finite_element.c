@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable_finite_element.c
 
-LAST MODIFIED : 21 May 2003
+LAST MODIFIED : 20 July 2003
 
 DESCRIPTION :
 Implements computed variables which interface to finite element fields:
@@ -31,6 +31,7 @@ NOTES :
 	No.  The modify behaviour is a special/discontinuous behaviour in the
 	derivative and should be ignored/got rid of.
 ==============================================================================*/
+#include "computed_variable/computed_value_derivative_matrix.h"
 #include "computed_variable/computed_value_finite_element.h"
 #include "computed_variable/computed_value_matrix.h"
 #include "computed_variable/computed_variable_finite_element.h"
@@ -236,7 +237,7 @@ static START_CMISS_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(
 							{
 								independent_variable_address[i]=independent_variables[i];
 							}
-							if (!Cmiss_value_derivative_matrix_set_type(value,
+							if (return_code=Cmiss_value_derivative_matrix_set_type(value,
 								variable,order,independent_variable_address,value_type))
 							{
 								DEALLOCATE(independent_variable_address);
@@ -262,6 +263,10 @@ static START_CMISS_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(
 					DESTROY(Cmiss_value)(&value_type);
 				}
 			}
+			else
+			{
+				return_code=0;
+			}
 		}
 	}
 }
@@ -276,7 +281,6 @@ static START_CMISS_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(
 	int i,j,number_of_columns,number_of_matrices,number_of_rows,number_of_values,
 		offset;
 	struct Cmiss_variable_element_xi_type_specific_data *data;
-	struct FE_element *element;
 	struct Matrix *matrix_local;
 
 	data=(struct Cmiss_variable_element_xi_type_specific_data *)
@@ -285,20 +289,13 @@ static START_CMISS_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(
 		return_code,0)
 	{
 		/* get number of rows in derivative matrix */
-		if (Cmiss_value_element_xi_get_type(data->element_xi,&element,
-			(FE_value **)NULL))
-		{
-			if (0<(number_of_rows=get_FE_element_dimension(element)))
-			{
-				return_code=1;
-			}
-		}
-		if (return_code)
+		return_code=Cmiss_value_element_xi_get_type(data->element_xi,
+			&number_of_rows,(struct FE_element **)NULL,(FE_value **)NULL);
+		if (return_code&&(0<number_of_rows))
 		{
 			if (value_type=CREATE(Cmiss_value)())
 			{
-				/* check independent variables and count number of matrices in
-					derivative */
+				/* set up the matrices in the derivative */
 				i=order;
 				number_of_matrices=0;
 				matrices=(Cmiss_value_id *)NULL;
@@ -309,6 +306,7 @@ static START_CMISS_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(
 					if (return_code=Cmiss_variable_get_value_type(independent_variable,
 						value_type))
 					{
+#if defined (OLD_CODE)
 						if (CMISS_VALUE_IS_TYPE(FE_value)(value_type))
 						{
 							number_of_values=1;
@@ -320,16 +318,16 @@ static START_CMISS_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(
 						}
 						else if (CMISS_VALUE_IS_TYPE(element_xi)(value_type))
 						{
-							if (Cmiss_value_element_xi_get_type(value_type,
-								&element,(FE_value **)NULL))
-							{
-								number_of_values=get_FE_element_dimension(element);
-							}
+							return_code=Cmiss_value_element_xi_get_type(value_type,
+								&number_of_values,(struct FE_element **)NULL,(FE_value **)NULL);
 						}
 						else
 						{
 							return_code=0;
 						}
+#endif /* defined (OLD_CODE) */
+						return_code=Cmiss_value_get_reals(value_type,&number_of_values,
+							(FE_value **)NULL);
 						if (return_code&&(0<number_of_values))
 						{
 							if (REALLOCATE(matrix,matrices,Cmiss_value_id,
@@ -433,11 +431,17 @@ static START_CMISS_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(
 						{
 							independent_variable_address[i]=independent_variables[i];
 						}
-						if (!Cmiss_value_derivative_matrix_set_type(value,
+						if (return_code=Cmiss_value_derivative_matrix_set_type(value,
 							variable,order,independent_variable_address,matrices))
 						{
+							/* independent_variable_address and matrices are now managed by
+								value */
+							independent_variable_address=(Cmiss_variable_id *)NULL;
+							matrices=(Cmiss_value_id *)NULL;
+						}
+						if (independent_variable_address)
+						{
 							DEALLOCATE(independent_variable_address);
-							return_code=0;
 						}
 					}
 					else
@@ -448,7 +452,7 @@ static START_CMISS_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(
 						return_code=0;
 					}
 				}
-				if (!return_code&&matrices)
+				if (matrices)
 				{
 					matrix=matrices;
 					i=number_of_matrices;
@@ -461,6 +465,10 @@ static START_CMISS_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(
 					DEALLOCATE(matrices);
 				}
 				DESTROY(Cmiss_value)(&value_type);
+			}
+			else
+			{
+				return_code=0;
 			}
 		}
 	}
@@ -540,15 +548,28 @@ END_CMISS_VARIABLE_GET_SET_INDEPENDENT_VARIABLE_VALUE_TYPE_SPECIFIC_FUNCTION(
 static START_CMISS_VARIABLE_GET_VALUE_TYPE_TYPE_SPECIFIC_FUNCTION(
 	element_xi)
 {
-	/*???DB.  What about number of xi? */
-	return_code=Cmiss_value_element_xi_set_type(type,
-		(struct FE_element *)NULL,(FE_value *)NULL);
+	int dimension;
+	struct Cmiss_variable_element_xi_type_specific_data *data;
+
+	data=(struct Cmiss_variable_element_xi_type_specific_data *)
+		Cmiss_variable_get_type_specific_data(variable);
+	ASSERT_IF(data&&CMISS_VALUE_IS_TYPE(element_xi)(data->element_xi),
+		return_code,0)
+	{
+		if (Cmiss_value_element_xi_get_type(data->element_xi,&dimension,
+			(struct FE_element **)NULL,(FE_value **)NULL))
+		{
+			return_code=Cmiss_value_element_xi_set_type(type,dimension,
+				(struct FE_element *)NULL,(FE_value *)NULL);
+		}
+	}
 }
 END_CMISS_VARIABLE_GET_VALUE_TYPE_TYPE_SPECIFIC_FUNCTION(element_xi)
 
 static START_CMISS_VARIABLE_IS_DEFINED_TYPE_SPECIFIC_FUNCTION(element_xi)
 {
 	FE_value *xi;
+	int dimension;
 	struct Cmiss_variable_element_xi_type_specific_data *data;
 	struct FE_element *element;
 
@@ -557,8 +578,8 @@ static START_CMISS_VARIABLE_IS_DEFINED_TYPE_SPECIFIC_FUNCTION(element_xi)
 	ASSERT_IF(data&&CMISS_VALUE_IS_TYPE(element_xi)(data->element_xi),
 		return_code,0)
 	{
-		if (Cmiss_value_element_xi_get_type(data->element_xi,&element,&xi)&&
-			element&&xi)
+		if (Cmiss_value_element_xi_get_type(data->element_xi,&dimension,&element,
+			&xi)&&(dimension>0)&&element&&xi)
 		{
 			return_code=1;
 		}
@@ -591,6 +612,7 @@ END_CMISS_VARIABLE_OVERLAP_TYPE_SPECIFIC_FUNCTION(element_xi)
 static START_CMISS_VARIABLE_SAME_VARIABLE_TYPE_SPECIFIC_FUNCTION(
 	element_xi)
 {
+	int dimension_1,dimension_2;
 	struct Cmiss_variable_element_xi_type_specific_data *data_1,*data_2;
 	struct FE_element *element_1,*element_2;
 
@@ -602,14 +624,13 @@ static START_CMISS_VARIABLE_SAME_VARIABLE_TYPE_SPECIFIC_FUNCTION(
 		data_2&&CMISS_VALUE_IS_TYPE(element_xi)(data_2->element_xi),return_code,
 		0)
 	{
-		if (Cmiss_value_element_xi_get_type(data_1->element_xi,&element_1,
-			(FE_value **)NULL)&&Cmiss_value_element_xi_get_type(data_2->element_xi,
-			&element_2,(FE_value **)NULL))
+		if (Cmiss_value_element_xi_get_type(data_1->element_xi,&dimension_1,
+			&element_1,(FE_value **)NULL)&&Cmiss_value_element_xi_get_type(
+			data_2->element_xi,&dimension_2,&element_2,(FE_value **)NULL))
 		{
 			if (element_1&&element_2)
 			{
-				if (get_FE_element_dimension(element_1)==
-					get_FE_element_dimension(element_2))
+				if (dimension_1==dimension_2)
 				{
 					return_code=1;
 				}
@@ -618,7 +639,10 @@ static START_CMISS_VARIABLE_SAME_VARIABLE_TYPE_SPECIFIC_FUNCTION(
 			{
 				if (!element_1&&!element_2)
 				{
-					return_code=1;
+					if (dimension_1==dimension_2)
+					{
+						return_code=1;
+					}
 				}
 			}
 		}
@@ -656,7 +680,7 @@ static char Cmiss_variable_finite_element_type_string[]="Finite_element";
 
 struct Cmiss_variable_finite_element_type_specific_data
 /*******************************************************************************
-LAST MODIFIED : 16 February 2003
+LAST MODIFIED : 11 July 2003
 
 DESCRIPTION :
 ???DB.  Assuming that the <element>, <field> and <node> know their FE_region
@@ -664,7 +688,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	FE_value time,*xi;
-	int component_number;
+	int component_number,dimension;
 	struct FE_element *element;
 	struct FE_field *field;
 	struct FE_node *node;
@@ -687,8 +711,9 @@ static START_CMISS_VARIABLE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(
 
 	if (source->element)
 	{
-		if ((0<(dimension=get_FE_element_dimension(source->element)))&&
-			(source->xi)&&ALLOCATE(destination->xi,FE_value,dimension))
+		dimension=source->dimension;
+		if ((0<dimension)&&(source->xi)&&ALLOCATE(destination->xi,FE_value,
+			dimension))
 		{
 			for (i=0;i<dimension;i++)
 			{
@@ -707,6 +732,7 @@ static START_CMISS_VARIABLE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(
 	if (destination)
 	{
 		destination->time=source->time;
+		destination->dimension=source->dimension;
 		if (source->element)
 		{
 			destination->element=ACCESS(FE_element)(source->element);
@@ -1713,7 +1739,7 @@ enum Cmiss_variable_evaluate_derivative_finite_element_type
 static START_CMISS_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(
 	finite_element)
 /*******************************************************************************
-LAST MODIFIED : 30 April 2003
+LAST MODIFIED : 11 July 2003
 
 DESCRIPTION :
 ???DB.  Only valid for monomial standard basis and nodal value based.  This is
@@ -1752,7 +1778,7 @@ DESCRIPTION :
 	{
 		/* check that defined.  Not defined if node is specified */
 		if ((fe_field=data->field)&&(element=data->element)&&
-			(0<(number_of_xi=get_FE_element_dimension(element)))&&(xi=data->xi))
+			(0<(number_of_xi=data->dimension))&&(xi=data->xi))
 		{
 			/* set up temporary storage */
 			element_field_values=CREATE(FE_element_field_values)();
@@ -1792,6 +1818,7 @@ DESCRIPTION :
 					}
 					if (return_code)
 					{
+						return_code=0;
 						if (0<number_of_components)
 						{
 							if ((0<=component_number)&&
@@ -2185,11 +2212,17 @@ DESCRIPTION :
 							{
 								local_independent_variables[i]=independent_variables[i];
 							}
-							if (!Cmiss_value_derivative_matrix_set_type(value,
+							if (return_code=Cmiss_value_derivative_matrix_set_type(value,
 								variable,order,local_independent_variables,value_type))
 							{
+								/* local_independent_variables and matrices are now managed by
+									value */
+								local_independent_variables=(Cmiss_variable_id *)NULL;
+								matrices=(Cmiss_value_id *)NULL;
+							}
+							if (local_independent_variables)
+							{
 								DEALLOCATE(local_independent_variables);
-								return_code=0;
 							}
 						}
 						else
@@ -2293,7 +2326,7 @@ END_CMISS_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(finite_element)
 static START_CMISS_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(
 	finite_element)
 /*******************************************************************************
-LAST MODIFIED : 21 May 2003
+LAST MODIFIED : 27 June 2003
 
 DESCRIPTION :
 ???DB.  Only valid for monomial standard basis and nodal value based.  This is
@@ -2303,7 +2336,7 @@ DESCRIPTION :
 {
 	Cmiss_value_id *matrices,*matrix,value_type;
 	Cmiss_variable_id independent_fe_variable,independent_variable,
-		*local_independent_variables,variable_temp;
+		*local_independent_variables;
 	double component_value;
 	enum Cmiss_variable_evaluate_derivative_finite_element_type
 		*independent_variables_type;
@@ -2332,13 +2365,11 @@ DESCRIPTION :
 	{
 		/* check that defined.  Not defined if node is specified */
 		if ((fe_field=data->field)&&(element=data->element)&&
-			(0<(number_of_xi=get_FE_element_dimension(element)))&&(xi=data->xi))
+			(0<(number_of_xi=data->dimension))&&(xi=data->xi))
 		{
 			/* set up temporary storage */
 			element_field_values=CREATE(FE_element_field_values)();
 			value_type=CREATE(Cmiss_value)();
-			variable_temp=CREATE(Cmiss_variable)(
-				(struct Cmiss_variable_package *)NULL,"temp");
 			ALLOCATE(independent_variables_number_of_values,int,order);
 			ALLOCATE(independent_variables_type,
 				enum Cmiss_variable_evaluate_derivative_finite_element_type,order);
@@ -2348,7 +2379,7 @@ DESCRIPTION :
 			ALLOCATE(derivative_independent_values,int,order+1);
 			ALLOCATE(derivative_independent_variables_mapping,int,order+1);
 			ALLOCATE(xi_derivative_orders,int,number_of_xi);
-			if (value_type&&variable_temp&&element_field_values&&
+			if (value_type&&element_field_values&&
 				independent_variables_number_of_values&&independent_variables_type&&
 				independent_variables_copy&&independent_variables_component_values&&
 				derivative_independent_variables&&derivative_independent_values&&
@@ -2372,6 +2403,7 @@ DESCRIPTION :
 					}
 					if (return_code)
 					{
+						return_code=0;
 						if (0<number_of_components)
 						{
 							if ((0<=component_number)&&
@@ -2602,8 +2634,11 @@ DESCRIPTION :
 									if (matrix_local=CREATE(Matrix)("matrix",DENSE,
 										number_of_components,derivative_number_of_values))
 									{
-										return_code=Cmiss_value_matrix_set_type(*matrix,
-											matrix_local);
+										if (!(return_code=Cmiss_value_matrix_set_type(*matrix,
+											matrix_local)))
+										{
+											DESTROY(Matrix)(&matrix_local);
+										}
 									}
 									else
 									{
@@ -2643,7 +2678,6 @@ DESCRIPTION :
 											}
 											for (i=0;i<derivative_order;i++)
 											{
-												j=derivative_independent_variables_mapping[i];
 												if (ELEMENT_XI_TYPE==independent_variables_type[
 													derivative_independent_variables_mapping[i]])
 												{
@@ -2724,7 +2758,7 @@ DESCRIPTION :
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"Cmiss_variable_derivative_evaluate_derivative_type_specific.  "
+								"Cmiss_variable_finite_element_evaluate_derivative_type_specific.  "
 								"Could not reallocate <matrices>");
 							return_code=0;
 						}
@@ -2745,11 +2779,17 @@ DESCRIPTION :
 						{
 							local_independent_variables[i]=independent_variables[i];
 						}
-						if (!Cmiss_value_derivative_matrix_set_type(value,
+						if (return_code=Cmiss_value_derivative_matrix_set_type(value,
 							variable,order,local_independent_variables,matrices))
 						{
+							/* local_independent_variables and matrices are now managed by
+								value */
+							local_independent_variables=(Cmiss_variable_id *)NULL;
+							matrices=(Cmiss_value_id *)NULL;
+						}
+						if (local_independent_variables)
+						{
 							DEALLOCATE(local_independent_variables);
-							return_code=0;
 						}
 					}
 					else
@@ -2760,7 +2800,7 @@ DESCRIPTION :
 						return_code=0;
 					}
 				}
-				if (!return_code&&matrices)
+				if (matrices)
 				{
 					matrix=matrices;
 					i=number_of_matrices;
@@ -2838,10 +2878,6 @@ DESCRIPTION :
 			{
 				DESTROY(FE_element_field_values)(&element_field_values);
 			}
-			if (variable_temp)
-			{
-				DESTROY(Cmiss_variable)(&variable_temp);
-			}
 			if (value_type)
 			{
 				DESTROY(Cmiss_value)(&value_type);
@@ -2911,7 +2947,7 @@ static
 	finite_element)
 {
 	FE_value *xi;
-	int element_dimension,i;
+	int dimension,i;
 	Cmiss_variable_id fe_variable;
 	struct Cmiss_variable_finite_element_type_specific_data *data;
 	struct Cmiss_variable_value *variable_value;
@@ -2924,12 +2960,12 @@ static
 		{
 			if ((data->element)&&(data->xi))
 			{
-				element_dimension=get_FE_element_dimension(data->element);
-				if ((0<element_dimension)&&ALLOCATE(xi,FE_value,element_dimension))
+				dimension=data->dimension;
+				if ((0<dimension)&&ALLOCATE(xi,FE_value,dimension))
 				{
-					if (Cmiss_value_element_xi_set_type(value,data->element,xi))
+					if (Cmiss_value_element_xi_set_type(value,dimension,data->element,xi))
 					{
-						for (i=0;i<element_dimension;i++)
+						for (i=0;i<dimension;i++)
 						{
 							xi[i]=(data->xi)[i];
 						}
@@ -2979,18 +3015,20 @@ static
 	{
 		if (CMISS_VARIABLE_IS_TYPE(element_xi)(independent_variable))
 		{
-			if (Cmiss_value_element_xi_get_type(value,&element,&value_xi))
+			if (Cmiss_value_element_xi_get_type(value,&dimension,&element,&value_xi))
 			{
-				if (element&&value_xi)
+				if ((0<dimension)&&value_xi)
 				{
-					dimension=get_FE_element_dimension(element);
-					if ((0<dimension)&&ALLOCATE(xi,FE_value,dimension))
+					if (ALLOCATE(xi,FE_value,dimension))
 					{
 						for (i=0;i<dimension;i++)
 						{
 							xi[i]=value_xi[i];
 						}
-						ACCESS(FE_element)(element);
+						if (element)
+						{
+							ACCESS(FE_element)(element);
+						}
 						return_code=1;
 					}
 				}
@@ -3005,12 +3043,14 @@ static
 				}
 				if (return_code)
 				{
-					if (Cmiss_value_element_xi_set_type(value,data->element,data->xi))
+					if (Cmiss_value_element_xi_set_type(value,data->dimension,
+						data->element,data->xi))
 					{
 						if (data->element)
 						{
 							DEACCESS(FE_element)(&(data->element));
 						}
+						data->dimension=dimension;
 						data->element=element;
 						data->xi=xi;
 						return_code=1;
@@ -3201,9 +3241,8 @@ static
 		if (CMISS_VARIABLE_IS_TYPE(element_xi)(independent_variable))
 		{
 			if ((data->element)&&(data->xi)&&
-				Cmiss_value_element_xi_get_type(value,&element,&value_xi))
+				Cmiss_value_element_xi_get_type(value,&dimension,&element,&value_xi))
 			{
-				dimension=get_FE_element_dimension(element);
 				if ((0<dimension)&&ALLOCATE(xi,FE_value,dimension))
 				{
 					for (i=0;i<dimension;i++)
@@ -3291,7 +3330,6 @@ static START_CMISS_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(
 	int i,j,number_of_columns,number_of_matrices,number_of_rows,number_of_values,
 		offset;
 	struct Cmiss_variable_nodal_value_type_specific_data *data;
-	struct FE_element *element;
 	struct Matrix *matrix_local;
 
 	data=(struct Cmiss_variable_nodal_value_type_specific_data *)
@@ -3330,6 +3368,7 @@ static START_CMISS_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(
 						if (return_code=Cmiss_variable_get_value_type(
 							independent_variable,value_type))
 						{
+#if defined (OLD_CODE)
 							if (CMISS_VALUE_IS_TYPE(FE_value)(value_type))
 							{
 								number_of_values=1;
@@ -3341,16 +3380,17 @@ static START_CMISS_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(
 							}
 							else if (CMISS_VALUE_IS_TYPE(element_xi)(value_type))
 							{
-								if (Cmiss_value_element_xi_get_type(value_type,
-									&element,(FE_value **)NULL))
-								{
-									number_of_values=get_FE_element_dimension(element);
-								}
+								return_code=Cmiss_value_element_xi_get_type(value_type,
+									&number_of_values,(struct FE_element **)NULL,
+									(FE_value **)NULL);
 							}
 							else
 							{
 								return_code=0;
 							}
+#endif /* defined (OLD_CODE) */
+							return_code=Cmiss_value_get_reals(value_type,&number_of_values,
+								(FE_value **)NULL);
 							if (return_code&&(0<number_of_values))
 							{
 								if (REALLOCATE(matrix,matrices,Cmiss_value_id,
@@ -3446,7 +3486,6 @@ static START_CMISS_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(
 						i--;
 						independent_variable_address++;
 					}
-					/*???DB.  Where I'm up to */
 					if (return_code)
 					{
 						if (ALLOCATE(independent_variable_address,Cmiss_variable_id,order))
@@ -3455,11 +3494,17 @@ static START_CMISS_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(
 							{
 								independent_variable_address[i]=independent_variables[i];
 							}
-							if (!Cmiss_value_derivative_matrix_set_type(value,
+							if (return_code=Cmiss_value_derivative_matrix_set_type(value,
 								variable,order,independent_variable_address,matrices))
 							{
+								/* independent_variable_address and matrices are now managed by
+									value */
+								independent_variable_address=(Cmiss_variable_id *)NULL;
+								matrices=(Cmiss_value_id *)NULL;
+							}
+							if (independent_variable_address)
+							{
 								DEALLOCATE(independent_variable_address);
-								return_code=0;
 							}
 						}
 						else
@@ -3470,7 +3515,7 @@ static START_CMISS_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(
 							return_code=0;
 						}
 					}
-					if (!return_code&&matrices)
+					if (matrices)
 					{
 						matrix=matrices;
 						i=number_of_matrices;
@@ -4005,15 +4050,14 @@ If <variable> is of type element_value, gets its <*fe_variable_address>,
 The calling program must not DEALLOCATE the returned <*grid_point_address>.
 ==============================================================================*/
 
-int Cmiss_variable_element_xi_set_type(Cmiss_variable_id variable)
+int Cmiss_variable_element_xi_set_type(Cmiss_variable_id variable,
+	int dimension)
 /*******************************************************************************
-LAST MODIFIED : 22 April 2003
+LAST MODIFIED : 11 July 2003
 
 DESCRIPTION :
-???DB.  Is a <fe_variable> needed?
-Converts the <variable> into a element_xi Cmiss_variable for the
-specified <fe_variable> (a finite_element Cmiss_variable, all finite element
-computed variables if NULL).
+Converts the <variable> into a element_xi Cmiss_variable with the specified
+<dimension>.
 ==============================================================================*/
 {
 	int return_code;
@@ -4022,7 +4066,7 @@ computed variables if NULL).
 	ENTER(Cmiss_variable_element_xi_set_type);
 	return_code=0;
 	/* check arguments */
-	if (variable)
+	if (variable&&(0<=dimension))
 	{
 		/* 1.  Make dynamic allocations for any new type-specific data */
 		if (ALLOCATE(data,struct Cmiss_variable_element_xi_type_specific_data,1))
@@ -4030,7 +4074,7 @@ computed variables if NULL).
 			if (data->element_xi=CREATE(Cmiss_value)())
 			{
 				ACCESS(Cmiss_value)(data->element_xi);
-				if (Cmiss_value_element_xi_set_type(data->element_xi,
+				if (Cmiss_value_element_xi_set_type(data->element_xi,dimension,
 					(struct FE_element *)NULL,(FE_value *)NULL))
 				{
 					/* 2.  Clear current type-specific data */
@@ -4069,7 +4113,7 @@ computed variables if NULL).
 	else
 	{
 		display_message(ERROR_MESSAGE,"Cmiss_variable_element_xi_set_type.  "
-			"Invalid argument(s).  %p\n",variable);
+			"Invalid argument(s).  %p %d\n",variable,dimension);
 	}
 	LEAVE;
 
@@ -4077,6 +4121,41 @@ computed variables if NULL).
 } /* Cmiss_variable_element_xi_set_type */
 
 DECLARE_CMISS_VARIABLE_IS_TYPE_FUNCTION(element_xi)
+
+int Cmiss_variable_element_xi_get_type(Cmiss_variable_id variable,
+	int *dimension_address)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2003
+
+DESCRIPTION :
+If <variable> is of type element_xi, gets its <*dimension_address>.
+==============================================================================*/
+{
+	int return_code;
+	struct Cmiss_variable_element_xi_type_specific_data *data;
+
+	ENTER(Cmiss_variable_element_xi_get_type);
+	return_code=0;
+	/* check arguments */
+	if (variable&&CMISS_VARIABLE_IS_TYPE(element_xi)(variable)&&dimension_address)
+	{
+		data=(struct Cmiss_variable_element_xi_type_specific_data *)
+			Cmiss_variable_get_type_specific_data(variable);
+		ASSERT_IF(data,return_code,0)
+		{
+			return_code=Cmiss_value_element_xi_get_type(data->element_xi,
+				dimension_address,(struct FE_element **)NULL,(FE_value **)NULL);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Cmiss_variable_element_xi_get_type.  "
+			"Invalid argument(s).  %p %p",variable,dimension_address);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmiss_variable_element_xi_get_type */
 
 int Cmiss_variable_FE_time_set_type(Cmiss_variable_id variable,
 	Cmiss_variable_id fe_variable);
@@ -4105,7 +4184,7 @@ int Cmiss_variable_finite_element_set_type(
 	Cmiss_variable_id variable,struct FE_field *fe_field,
 	int component_number)
 /*******************************************************************************
-LAST MODIFIED : 9 April 2003
+LAST MODIFIED : 11 July 2003
 
 DESCRIPTION :
 Converts the <variable> into a finite_element Cmiss_variable for the
@@ -4136,6 +4215,7 @@ Cmiss_variable_finite_element_not_in_use.
 			if (return_code=Cmiss_variable_set_type_specific_information(variable,
 				Cmiss_variable_finite_element_type_string,(void *)data))
 			{
+				data->dimension=0;
 				data->time=(FE_value)0;
 				data->xi=(FE_value *)NULL;
 				data->element=(struct FE_element *)NULL;

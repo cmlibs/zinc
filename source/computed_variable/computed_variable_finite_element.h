@@ -77,14 +77,26 @@ If <variable> is of type element_value, gets its <*fe_variable_address>,
 The calling program must not DEALLOCATE the returned <*grid_point_address>.
 ==============================================================================*/
 
-int Cmiss_variable_element_xi_set_type(Cmiss_variable_id variable);
+int Cmiss_variable_element_xi_set_type(Cmiss_variable_id variable,
+	int dimension);
 /*******************************************************************************
-LAST MODIFIED : 19 February 2003
+LAST MODIFIED : 11 July 2003
 
 DESCRIPTION :
+Converts the <variable> into a element_xi Cmiss_variable with the specified
+<dimension>.
 ==============================================================================*/
 
 PROTOTYPE_CMISS_VARIABLE_IS_TYPE_FUNCTION(element_xi);
+
+int Cmiss_variable_element_xi_get_type(Cmiss_variable_id variable,
+	int *dimension_address);
+/*******************************************************************************
+LAST MODIFIED : 11 July 2003
+
+DESCRIPTION :
+If <variable> is of type element_xi, gets its <*dimension_address>.
+==============================================================================*/
 
 int Cmiss_variable_FE_time_set_type(Cmiss_variable_id variable,
 	Cmiss_variable_id fe_variable);

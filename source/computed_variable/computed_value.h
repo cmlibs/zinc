@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_value.h
 
-LAST MODIFIED : 9 April 2003
+LAST MODIFIED : 16 July 2003
 
 DESCRIPTION :
 A module intended to replace general/value .  Testing and developing in
@@ -99,6 +99,19 @@ LAST MODIFIED : 12 February 2003
 DESCRIPTION :
 Returns the string which identifies the type.  The calling function must not
 DEALLOCATE the returned string.
+==============================================================================*/
+
+int Cmiss_value_get_reals(Cmiss_value_id value,int *number_of_reals_address,
+	FE_value **reals_address);
+/*******************************************************************************
+LAST MODIFIED : 16 July 2003
+
+DESCRIPTION :
+Gets the <*number_of_reals_address> for the <value>.  This is needed when
+calculating derivatives.  If <real_address> is not NULL, then an array is
+allocated and the reals put in it.  A zero return code means that <value> is not
+represented by reals or the array could not be allocated or the arguments are
+invalid.
 ==============================================================================*/
 
 int Cmiss_value_multiply_and_accumulate(Cmiss_value_id total,

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_value_finite_element.c
 
-LAST MODIFIED : 25 April 2003
+LAST MODIFIED : 20 July 2003
 
 DESCRIPTION :
 Implements computed values which interface to finite elements:
@@ -22,14 +22,14 @@ static char Cmiss_value_element_xi_type_string[]="Element_xi";
 
 struct Cmiss_value_element_xi_type_specific_data
 /*******************************************************************************
-LAST MODIFIED : 19 February 2003
+LAST MODIFIED : 11 July 2003
 
 DESCRIPTION :
-???DB.  Is it necessary to add a dimension or insist on non-NULL element?
 ???DB.  Have an xi number?  Probably better on variable?
 ==============================================================================*/
 {
 	FE_value *xi;
+	int dimension;
 	struct FE_element *element;
 }; /* struct Cmiss_value_element_xi_type_specific_data */
 
@@ -53,10 +53,11 @@ static START_CMISS_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(element_xi)
 	{
 		if (source_xi=source->xi)
 		{
-			number_of_values=get_FE_element_dimension(source->element);
+			number_of_values=source->dimension;
 			if ((0<number_of_values)&&ALLOCATE(destination_xi,FE_value,
 				number_of_values))
 			{
+				destination->dimension=number_of_values;
 				destination->xi=destination_xi;
 				while (number_of_values>0)
 				{
@@ -85,12 +86,46 @@ static START_CMISS_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(element_xi)
 		}
 		else
 		{
+			destination->dimension=source->dimension;
 			destination->xi=(FE_value *)NULL;
 			destination->element=(struct FE_element *)NULL;
 		}
 	}
 }
 END_CMISS_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(element_xi)
+
+static START_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(element_xi)
+{
+	FE_value *destination_real,*source_real;
+	int number_of_reals;
+
+	number_of_reals=data->dimension;
+	if (!reals_address||!(source_real=data->xi)||
+		ALLOCATE(destination_real,FE_value,number_of_reals))
+	{
+		*number_of_reals_address=number_of_reals;
+		if (reals_address)
+		{
+			if (source_real)
+			{
+				*reals_address=destination_real;
+				while (number_of_reals>0)
+				{
+					*destination_real= *source_real;
+					source_real++;
+					destination_real++;
+					number_of_reals--;
+				}
+			}
+			else
+			{
+				*reals_address=(FE_value *)NULL;
+			}
+		}
+		return_code=1;
+	}
+}
+END_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(element_xi)
 
 static START_CMISS_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
 	element_xi)
@@ -108,12 +143,11 @@ static START_CMISS_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
 		Cmiss_value_get_type_specific_data(total);
 	ASSERT_IF(data_1&&data_2&&data_total,return_code,0)
 	{
-		if ((data_1->element)&&(xi_1=data_1->xi)&&(0<(number_of_xi=
-			get_FE_element_dimension(data_1->element)))&&(data_2->element)&&
-			(xi_2=data_2->xi)&&(number_of_xi==
-			get_FE_element_dimension(data_2->element))&&(data_total->element)&&
-			(xi_total=data_total->xi)&&(number_of_xi==
-			get_FE_element_dimension(data_total->element)))
+		if ((data_1->element)&&(xi_1=data_1->xi)&&
+			(0<(number_of_xi=data_1->dimension))&&(data_2->element)&&
+			(xi_2=data_2->xi)&&(number_of_xi==data_2->dimension)&&
+			(data_total->element)&&(xi_total=data_total->xi)&&
+			(number_of_xi==data_total->dimension))
 		{
 			while (number_of_xi>0)
 			{
@@ -121,7 +155,7 @@ static START_CMISS_VALUE_MULTIPLY_AND_ACCUMULATE_TYPE_SPECIFIC_FUNCTION(
 				xi_total++;
 				xi_1++;
 				xi_2++;
-				number_of_xi++;
+				number_of_xi--;
 			}
 			return_code=1;
 		}
@@ -149,8 +183,7 @@ static START_CMISS_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(element_xi)
 		{
 			if (data_2->element)
 			{
-				if (get_FE_element_dimension(data_1->element)==
-					get_FE_element_dimension(data_2->element))
+				if (data_1->dimension==data_2->dimension)
 				{
 					return_code=1;
 				}
@@ -160,7 +193,10 @@ static START_CMISS_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(element_xi)
 		{
 			if (!(data_2->element))
 			{
-				return_code=1;
+				if (data_1->dimension==data_2->dimension)
+				{
+					return_code=1;
+				}
 			}
 		}
 	}
@@ -171,17 +207,20 @@ END_CMISS_VALUE_SAME_SUB_TYPE_TYPE_SPECIFIC_FUNCTION(element_xi)
 Global functions
 ----------------
 */
-int Cmiss_value_element_xi_set_type(Cmiss_value_id value,
+int Cmiss_value_element_xi_set_type(Cmiss_value_id value,int dimension,
 	struct FE_element *element,FE_value *xi)
 /*******************************************************************************
-LAST MODIFIED : 9 April 2003
+LAST MODIFIED : 11 July 2003
 
 DESCRIPTION :
-Makes <value> of type element_xi and sets its <element> and <xi).  After
-success, the <value> is responsible for DEALLOCATEing <xi>.
+Makes <value> of type element_xi and sets its <dimension>, <element> and <xi).
+<dimension> must be positive or <element> must be non-NULL or {<dimension> must
+be zero, <element> must be NULL and <xi must be NULL>}.  If <dimension> is
+positive and <element> is non-NULL then <dimension> should equal the dimension
+of the element.  After success, the <value> is responsible for DEALLOCATEing
+<xi>.
 
 ???DB.  Assuming that the <element> knows its FE_region (can get manager)
-???DB.  Is it necessary to add a dimension or insist on non-NULL element?
 ==============================================================================*/
 {
 	int return_code;
@@ -190,7 +229,9 @@ success, the <value> is responsible for DEALLOCATEing <xi>.
 	ENTER(Cmiss_value_element_xi_set_type);
 	return_code=0;
 	/* check arguments */
-	if (value)
+	if (value&&(((dimension==0)&&!element&&!xi)||
+		((dimension>0)&&!element)||((dimension==0)&&element)||
+		((dimension>0)&&element&&(dimension==get_FE_element_dimension(element)))))
 	{
 		/* 1.  Make dynamic allocations for any new type-specific data */
 		if (ALLOCATE(data,struct Cmiss_value_element_xi_type_specific_data,1))
@@ -203,10 +244,12 @@ success, the <value> is responsible for DEALLOCATEing <xi>.
 			if (element)
 			{
 				data->element=ACCESS(FE_element)(element);
+				data->dimension=get_FE_element_dimension(element);
 			}
 			else
 			{
 				data->element=(struct FE_element *)NULL;
+				data->dimension=dimension;
 			}
 			data->xi=xi;
 			/* set all the methods */
@@ -221,7 +264,7 @@ success, the <value> is responsible for DEALLOCATEing <xi>.
 	else
 	{
 		display_message(ERROR_MESSAGE,"Cmiss_value_element_xi_set_type.  "
-			"Missing value");
+			"Invalid argument(s).  %p %d %p",value,dimension,element);
 	}
 	LEAVE;
 
@@ -230,13 +273,14 @@ success, the <value> is responsible for DEALLOCATEing <xi>.
 
 DECLARE_CMISS_VALUE_IS_TYPE_FUNCTION(element_xi)
 
-int Cmiss_value_element_xi_get_type(Cmiss_value_id value,
+int Cmiss_value_element_xi_get_type(Cmiss_value_id value,int *dimension_address,
 	struct FE_element **element_address,FE_value **xi_address)
 /*******************************************************************************
-LAST MODIFIED : 19 February 2003
+LAST MODIFIED : 11 July 2003
 
 DESCRIPTION :
-If <value> is of type element_xi, gets its <*element_address> and <*xi_address).
+If <value> is of type element_xi, gets its <*dimension_address>,
+<*element_address> and <*xi_address).
 
 The calling program must not DEALLOCATE the returned <*xi_address>.
 ==============================================================================*/
@@ -247,12 +291,16 @@ The calling program must not DEALLOCATE the returned <*xi_address>.
 	ENTER(Cmiss_value_element_xi_get_type);
 	return_code=0;
 	/* check arguments */
-	if (value&&(element_address||xi_address))
+	if (value&&(dimension_address||element_address||xi_address))
 	{
 		data=(struct Cmiss_value_element_xi_type_specific_data *)
 			Cmiss_value_get_type_specific_data(value);
 		ASSERT_IF(data,return_code,0)
 		{
+			if (dimension_address)
+			{
+				*dimension_address=data->dimension;
+			}
 			if (element_address)
 			{
 				*element_address=data->element;
