@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_coordinates.cpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -34,7 +34,7 @@ typedef boost::intrusive_ptr<Function_variable_matrix_rectangular_cartesian>
 class Function_variable_matrix_rectangular_cartesian :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 9 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -78,7 +78,7 @@ class Function_variable_matrix_rectangular_cartesian :
 					function_prolate_spheroidal_to_rectangular_cartesian->
 					number_of_components()))
 				{
-					row=local_component_number;
+					row_private=local_component_number;
 					value_private=Function_variable_value_handle(
 						new Function_variable_value_specific<Scalar>(
 						Function_variable_matrix_set_value_function<Scalar>));
@@ -103,7 +103,7 @@ class Function_variable_matrix_rectangular_cartesian :
 				std::ostringstream out;
 
 				out << "rectangular cartesian";
-				switch (row)
+				switch (row_private)
 				{
 					case 0:
 					{
@@ -123,7 +123,7 @@ class Function_variable_matrix_rectangular_cartesian :
 					} break;
 					default:
 					{
-						out << "[" << row << "]";
+						out << "[" << row_private << "]";
 					} break;
 				}
 				*return_string=out.str();
@@ -142,7 +142,7 @@ class Function_variable_matrix_rectangular_cartesian :
 				Function_prolate_spheroidal_to_rectangular_cartesian,Function>(
 				function())))
 			{
-				if (0==row)
+				if (0==row_private)
 				{
 					Matrix result_matrix(3,1);
 
@@ -156,11 +156,11 @@ class Function_variable_matrix_rectangular_cartesian :
 				}
 				else
 				{
-					if (row<=3)
+					if (row_private<=3)
 					{
 						Matrix result_matrix(1,1);
 
-						switch (row)
+						switch (row_private)
 						{
 							case 1:
 							{
@@ -233,13 +233,13 @@ class Function_variable_matrix_rectangular_cartesian :
 				function_prolate_spheroidal_to_rectangular_cartesian;
 
 			result=false;
-			if (this&&(1==column)&&
+			if (this&&(1==column_private)&&
 				(function_prolate_spheroidal_to_rectangular_cartesian=
 				boost::dynamic_pointer_cast<
 				Function_prolate_spheroidal_to_rectangular_cartesian,Function>(
 				function())))
 			{
-				switch (row)
+				switch (row_private)
 				{
 					case 1:
 					{
@@ -284,7 +284,7 @@ typedef boost::intrusive_ptr<Function_variable_matrix_prolate_spheroidal>
 class Function_variable_matrix_prolate_spheroidal :
 	public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 6 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 // component  number
@@ -330,7 +330,7 @@ class Function_variable_matrix_prolate_spheroidal :
 				}
 				if (0<local_component_number)
 				{
-					row=local_component_number;
+					row_private=local_component_number;
 					value_private=Function_variable_value_handle(
 						new Function_variable_value_specific<Scalar>(
 						Function_variable_matrix_set_value_function<Scalar>));
@@ -353,7 +353,7 @@ class Function_variable_matrix_prolate_spheroidal :
 			{
 				std::ostringstream out;
 
-				switch (row)
+				switch (row_private)
 				{
 					case 0:
 					{
@@ -412,13 +412,13 @@ class Function_variable_matrix_prolate_spheroidal :
 				function_prolate_spheroidal_to_rectangular_cartesian;
 
 			result=false;
-			if ((0<row)&&(1==column)&&
+			if ((0<row_private)&&(1==column_private)&&
 				(function_prolate_spheroidal_to_rectangular_cartesian=
 				boost::dynamic_pointer_cast<
 				Function_prolate_spheroidal_to_rectangular_cartesian,Function>(
 				function())))
 			{
-				switch (row)
+				switch (row_private)
 				{
 					case 1:
 					{
@@ -531,7 +531,7 @@ class Function_variable_matrix_focus : public Function_variable_matrix<Scalar>
 				function_prolate_spheroidal_to_rectangular_cartesian;
 
 			result=false;
-			if ((1==row)&&(1==column)&&
+			if ((1==row_private)&&(1==column_private)&&
 				(function_prolate_spheroidal_to_rectangular_cartesian=
 				boost::dynamic_pointer_cast<
 				Function_prolate_spheroidal_to_rectangular_cartesian,Function>(
@@ -828,7 +828,7 @@ Function_size_type Function_prolate_spheroidal_to_rectangular_cartesian::
 Function_handle Function_prolate_spheroidal_to_rectangular_cartesian::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -841,13 +841,14 @@ Function_handle Function_prolate_spheroidal_to_rectangular_cartesian::evaluate(
 		Function_variable_matrix_rectangular_cartesian,Function_variable>(
 		atomic_variable))&&equivalent(Function_handle(this),
 		atomic_variable_rectangular_cartesian->function())&&
-		(0<atomic_variable_rectangular_cartesian->row)&&
-		(atomic_variable_rectangular_cartesian->row<=number_of_components()))
+		(0<atomic_variable_rectangular_cartesian->row_private)&&
+		(atomic_variable_rectangular_cartesian->row_private<=
+		number_of_components()))
 	{
 		Matrix result_matrix(1,1);
 
 		result_matrix(0,0)=0;
-		switch (atomic_variable_rectangular_cartesian->row)
+		switch (atomic_variable_rectangular_cartesian->row_private)
 		{
 			case 1:
 			{
@@ -881,7 +882,7 @@ bool Function_prolate_spheroidal_to_rectangular_cartesian::evaluate_derivative(
 	Scalar& derivative,Function_variable_handle atomic_variable,
 	std::list<Function_variable_handle>& atomic_independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -900,7 +901,7 @@ bool Function_prolate_spheroidal_to_rectangular_cartesian::evaluate_derivative(
 			Function_variable_matrix_prolate_spheroidal,Function_variable>(
 			atomic_variable))&&equivalent(Function_handle(this),
 			atomic_variable_prolate_spheroidal->function())&&
-			(0<atomic_variable_prolate_spheroidal->row))
+			(0<atomic_variable_prolate_spheroidal->row_private))
 		{
 			Function_variable_matrix_prolate_spheroidal_handle
 				atomic_independent_variable;
@@ -944,7 +945,7 @@ bool Function_prolate_spheroidal_to_rectangular_cartesian::evaluate_derivative(
 			Function_variable_matrix_rectangular_cartesian,Function_variable>(
 			atomic_variable))&&equivalent(Function_handle(this),
 			atomic_variable_rectangular_cartesian->function())&&
-			(0<atomic_variable_rectangular_cartesian->row))
+			(0<atomic_variable_rectangular_cartesian->row_private))
 		{
 			bool zero_derivative;
 			Function_variable_matrix_focus_handle variable_focus;
@@ -970,7 +971,7 @@ bool Function_prolate_spheroidal_to_rectangular_cartesian::evaluate_derivative(
 					*independent_variable_iterator))&&equivalent(Function_handle(this),
 					variable_prolate_spheroidal->function()))
 				{
-					switch (variable_prolate_spheroidal->row)
+					switch (variable_prolate_spheroidal->row_private)
 					{
 						case 1:
 						{
@@ -1027,7 +1028,7 @@ bool Function_prolate_spheroidal_to_rectangular_cartesian::evaluate_derivative(
 					focus_derivative=1;
 				}
 				// assign derivatives
-				switch (atomic_variable_rectangular_cartesian->row)
+				switch (atomic_variable_rectangular_cartesian->row_private)
 				{
 					case 1:
 					{
@@ -1405,7 +1406,7 @@ bool Function_prolate_spheroidal_to_rectangular_cartesian::set_value(
 	Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1425,13 +1426,13 @@ bool Function_prolate_spheroidal_to_rectangular_cartesian::set_value(
 			Function_variable_matrix_prolate_spheroidal,Function_variable>(
 			atomic_variable))&&equivalent(Function_handle(this),
 			atomic_prolate_spheroidal_variable->function())&&
-			(0<atomic_prolate_spheroidal_variable->row)&&atomic_value&&
+			(0<atomic_prolate_spheroidal_variable->row_private)&&atomic_value&&
 			(atomic_value->value())&&
 			(std::string("Scalar")==(atomic_value->value())->type())&&
 			(value_scalar=boost::dynamic_pointer_cast<Function_variable_value_scalar,
 			Function_variable_value>(atomic_value->value())))
 		{
-			switch (atomic_prolate_spheroidal_variable->row)
+			switch (atomic_prolate_spheroidal_variable->row_private)
 			{
 				case 1:
 				{
@@ -1461,13 +1462,13 @@ bool Function_prolate_spheroidal_to_rectangular_cartesian::set_value(
 			Function_variable_matrix_rectangular_cartesian,Function_variable>(
 			atomic_variable))&&equivalent(Function_handle(this),
 			atomic_rectangular_cartesian_variable->function())&&
-			(0<atomic_rectangular_cartesian_variable->row)&&atomic_value&&
+			(0<atomic_rectangular_cartesian_variable->row_private)&&atomic_value&&
 			(atomic_value->value())&&
 			(std::string("Scalar")==(atomic_value->value())->type())&&
 			(value_scalar=boost::dynamic_pointer_cast<Function_variable_value_scalar,
 			Function_variable_value>(atomic_value->value())))
 		{
-			switch (atomic_rectangular_cartesian_variable->row)
+			switch (atomic_rectangular_cartesian_variable->row_private)
 			{
 				case 1:
 				{
