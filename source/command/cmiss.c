@@ -53,7 +53,7 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_adjust_contrast.h"
 #include "image_processing/computed_field_canny_filter.h"
 #include "image_processing/computed_field_color_based_segment.h"
-#include "image_processing/computed_field_cube_plugin_all.h
+#include "image_processing/computed_field_cube_plugin_all.h"
 #include "image_processing/computed_field_dilate_filter.h"
 #include "image_processing/computed_field_erode_filter.h"
 #include "image_processing/computed_field_first_order_statistics.h"
