@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture_line.c
 
-LAST MODIFIED : 30 August 1996
+LAST MODIFIED : 15 October 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -17,9 +17,9 @@ DESCRIPTION :
 #include "general/debug.h"
 #include "graphics/complex.h"
 #include "general/geometry.h"
+#include "general/matrix_vector.h"
 #include "graphics/graphics_library.h"
 #include "graphics/laguer.h"
-#include "graphics/mcubes.h"
 #include "graphics/texture_line.h"
 #include "graphics/volume_texture.h"
 #include "graphics/volume_texture_editor.h"
@@ -498,9 +498,9 @@ Calculates distance potential at a point p from a line segment p1-p2 of charge
 			b[i]=p[i]-p1[i];
 			v[i]=p2[i]-p1[i];
 		}
-		if (0!=(a1=dot_product(v,v)))
+		if (0!=(a1=dot_product3(v,v)))
 		{
-			a=dot_product(b,v)/a1;
+			a=dot_product3(b,v)/a1;
 		}
 		if ((a>=0.0)&&(a<=1.0))
 		{
@@ -509,7 +509,7 @@ Calculates distance potential at a point p from a line segment p1-p2 of charge
 			{
 				r[i]=b[i]-a*v[i];
 			}
-			if ((dist=vector_modulus(r)) != 0)
+			if ((dist=norm3(r)) != 0)
 			{
 				return_code=k/(dist*dist)*(q1+a*(q2-q1));
 			}
@@ -559,8 +559,8 @@ Calculates distance potential at a point p from a blob segment p1-p2 of charge
 			b[i]=p[i]-p1[i];
 			v[i]=p[i]-p2[i];
 		}
-		r1=vector_modulus(b);
-		r2=vector_modulus(v);
+		r1=norm3(b);
+		r2=norm3(v);
 		if (0==r1*r2)
 		{
 			return_code=INFINITY;
@@ -589,9 +589,9 @@ LAST MODIFIED : 4 March 1997
 DESCRIPTION :
 ==============================================================================*/
 {
-	double b[3],dist,r1,r2, w1;
+	double b[3], r1, w1;
 	double wr2, wr4, wr6, WR2, WR4, WR6;
-	double return_code,v[3];
+	double return_code;
 	int i;
 
 	ENTER(soft_object_distance);
@@ -608,7 +608,7 @@ DESCRIPTION :
 		{
 			b[i]=p[i]-p1[i];
 		}
-		r1=vector_modulus(b);
+		r1=norm3(b);
 		/* wyvill function on distance */
 		if (r1 > WR)
 		{
@@ -627,14 +627,14 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"blob_segment_distance.  Invalid argument(s)");
+			"soft_object_distance.  Invalid argument(s)");
 		return_code=0;
 	}
 
 	LEAVE;
 
 	return (return_code);
-} /* soft_distance */
+} /* soft_object_distance */
 
 void select_curve(struct Texture_window *tw,int next)
 /*******************************************************************************
@@ -760,8 +760,6 @@ translating to the origin and solving the minimum sum Q(t)*Q(t) =>
 	int real_roots[6];
 	int i,j,min,n_real_roots;
 	static double val;
-	/* the last solution and the next best guess */
-	static double x;
 
 	ENTER(curve_segment_distance);
 	/* default return value */
@@ -841,7 +839,7 @@ translating to the origin and solving the minimum sum Q(t)*Q(t) =>
 			{
 				r[j]=at*pt1[j]+bt*pt2[j]+ct*pt3[j]+dt*pt4[j];
 			}
-			dist=vector_modulus(r);
+			dist=norm3(r);
 			if (dist<min_dist||i==0)
 			{
 				min_dist=dist;

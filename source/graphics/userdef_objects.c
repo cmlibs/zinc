@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : userdef_objects.c
 
-LAST MODIFIED : 12 August 1998
+LAST MODIFIED : 15 October 2001
 
 DESCRIPTION :
 Data structures and functions for user defined graphical objects.
@@ -13,6 +13,7 @@ Used to be in graphics_object.h
 #include <stdio.h>
 #include <math.h>
 #include "general/debug.h"
+#include "general/matrix_vector.h"
 #include "graphics/graphics_library.h"
 #include "graphics/graphics_object.h"
 #include "graphics/userdef_objects.h"
@@ -86,41 +87,8 @@ float eyebrowh[][3] = {
 Module functions
 ----------------
 */
+
 #if defined (GL_API) || defined (OPENGL_API)
-static int normalized_cross_product(float vector_1[3],float vector_2[3],
-	float result[3])
-/*******************************************************************************
-LAST MODIFIED : 20 February 1993
-
-DESCRIPTION :
-Calculates the normalized cross product of <vector_1> and <vector_2> and puts
-it in <result>.
-==============================================================================*/
-{
-	int return_code;
-	float norm;
-
-	if (vector_1&&vector_2&&result)
-	{
-		result[0]=vector_1[1]*vector_2[2] - vector_2[1]*vector_1[2];
-		result[1]=vector_1[2]*vector_2[0] - vector_2[2]*vector_1[0];
-		result[2]=vector_1[0]*vector_2[1] - vector_1[1]*vector_2[0];
-		if ((norm=result[0]*result[0]+result[1]*result[1]+result[2]*result[2])>0)
-		{
-			norm=sqrt(norm);
-			result[0] /= norm;
-			result[1] /= norm;
-			result[2] /= norm;
-		}
-		return_code=1;
-	}
-	else
-	{
-		return_code=0;
-	}
-
-	return (return_code);
-} /* normalized_cross_product */
 
 static double myrand(void)
 /*******************************************************************************
@@ -171,7 +139,8 @@ DESCRIPTION :
 			vec1[k] = vert[1][k] - vert[0][k];
 			vec2[k] = vert[3][k] - vert[0][k];
 		}
-		normalized_cross_product(vec2,vec1,norm);
+		cross_product_float3(vec2, vec1, norm);
+		normalize_float3(norm);
 #if defined (GL_API)
 		bgnpolygon();
 		n3f(norm);
@@ -431,7 +400,8 @@ Render a hair.
 							vec2[0] = -(eyecentre[0]-hairxprev)*.2;
 							vec2[1] = -(eyecentre[1]-hairyprev)*.2;
 							vec2[2] = -(eyecentre[2]-hairzprev)*.2;
-							normalized_cross_product(vec1,vec2,vec3);
+							cross_product_float3(vec1, vec2, vec3);
+							normalize_float3(vec3);
 #if defined (GL_API)
 							normal(vec3);
 							/* pmv   = polygon move */
@@ -546,7 +516,8 @@ Render a hair.
 							vec2[0] = (eyecentre[0]-hairxprev)*.2;
 							vec2[1] = (eyecentre[1]-hairyprev)*.2;
 							vec2[2] = (eyecentre[2]-hairzprev)*.2;
-							normalized_cross_product(vec1,vec2,vec3);
+							cross_product_float3(vec1, vec2, vec3);
+							normalize_float3(vec3);
 #if defined (GL_API)
 							normal(vec3);
 							pmv(hairxprev,hairyprev,hairzprev);
