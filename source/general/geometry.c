@@ -220,9 +220,10 @@ z = r*sin(phi)
 	{
 		*theta=(float)0;
 	}
-	*z=z_in;
 	if (jacobian)
 	{
+#if defined (OLD_CODE)
+		/*???DB.  To be done */
 		if (*r>0)
 		{
 			jacobian[0]=x/(*r);
@@ -244,6 +245,7 @@ z = r*sin(phi)
 		jacobian[6]=(float)0;
 		jacobian[7]=(float)0;
 		jacobian[8]=(float)1;
+#endif /* defined (OLD_CODE) */
 	}
 	LEAVE;
 
