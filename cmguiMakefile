@@ -31,7 +31,7 @@ cmgui-debug :
 cmgui cmgui-debug cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug : USER_INTERFACE=USER_INTERFACE=MOTIF_USER_INTERFACE
 cmgui-dynamicgl cmgui-dynamicgl-debug : DYNAMIC_GL_LINUX=DYNAMIC_GL_LINUX=true
 cmgui cmgui-dynamicgl cmgui64 cmgui-console cmgui-gtk : DEBUG=DEBUG=false
-cmgui-debug cmgui-dynamicgl-debug cmgui64-debug : DEBUG=DEBUG=true
+cmgui-debug cmgui-debug-memorycheck cmgui-dynamicgl-debug cmgui64-debug : DEBUG=DEBUG=true
 cmgui64 cmgui64-debug : ABI=ABI=64
 cmgui-debug-memorycheck : MEMORYCHECK=MEMORYCHECK=true
 cmgui-console : USER_INTERFACE=USER_INTERFACE=CONSOLE_USER_INTERFACE
@@ -39,7 +39,7 @@ cmgui-gtk : USER_INTERFACE=USER_INTERFACE=GTK_USER_INTERFACE
 
 utilities: TARGET=utilities
 
-cmgui cmgui-debug cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug cmgui-console cmgui-gtk utilities :
+cmgui cmgui-debug cmgui-debug-memorycheck cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug cmgui-console cmgui-gtk utilities :
 	cd source ; \
 	$(MAKE) -f $(MAKEFILE) $(TARGET) $(USER_INTERFACE) $(ABI) $(DYNAMIC_GL_LINUX) $(DEBUG) $(MEMORYCHECK) ;
 
