@@ -5772,10 +5772,10 @@ in existence, then bring it to the front, otherwise create new one.
 		(option_table[2]).to_be_modified = &node_group;
 		(option_table[2]).user_data=
 			create_emoter_slider_data->node_group_manager;
-		(option_table[3]).to_be_modified = &basis_file_name;
-		(option_table[4]).to_be_modified = &transformation_graphics_object_name;
-		(option_table[5]).to_be_modified = &transformation_scene;
-		(option_table[5]).user_data=create_emoter_slider_data->scene_manager;
+		(option_table[3]).to_be_modified = &transformation_graphics_object_name;
+		(option_table[4]).to_be_modified = &transformation_scene;
+		(option_table[4]).user_data=create_emoter_slider_data->scene_manager;
+		(option_table[5]).to_be_modified = &basis_file_name;
 		return_code=process_multiple_options(state,option_table);
 		if (return_code)
 		{
