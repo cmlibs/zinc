@@ -386,6 +386,12 @@ Macros
 
 /*
 $Log$
+Revision 1.12  2005/03/04 02:06:05  blackett
+Remove $Author and $Date labels
+
+Revision 1.11.12.1  2005/02/20 23:32:05  amil082
+Win32 fixups.
+
 Revision 1.11  2002/02/26 03:56:24  blackett
 Merging with Bens version of this file
 
