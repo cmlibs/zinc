@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_variable_new.cpp
 
-LAST MODIFIED : 16 November 2003
+LAST MODIFIED : 25 November 2003
 
 DESCRIPTION :
 The public interface to the Cmiss_variable_new object.
@@ -12,7 +12,6 @@ The public interface to the Cmiss_variable_new object.
 - changing to C++
 ==============================================================================*/
 
-#include <cctype>
 #include <new>
 #include <string>
 #include <string.h>
