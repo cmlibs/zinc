@@ -79,6 +79,19 @@ Data for passing to Element_point_ranges_grid_to_multi_range.
 	int all_points_native;
 };
 
+struct FE_element_grid_to_multi_range_data
+/*******************************************************************************
+LAST MODIFIED : 21 September 2000
+
+DESCRIPTION :
+Data for passing to FE_element_grid_to_multi_range.
+==============================================================================*/
+{
+	/* following field must be single component integer field */
+	struct FE_field *grid_fe_field;
+	struct Multi_range *multi_range;
+};
+
 struct Element_point_ranges_set_grid_values_data
 /*******************************************************************************
 LAST MODIFIED : 19 June 2000
@@ -351,6 +364,17 @@ If <grid_fe_field> is grid-based as in <element_point_ranges>, adds the values
 for this field for points in the ranges to the <multi_range>.
 If field and element_point_ranges not identically grid-based, clear
 <all_points_native> flag.
+==============================================================================*/
+
+int FE_element_grid_to_multi_range(struct FE_element *element,
+	void *grid_to_multi_range_data_void);
+/*******************************************************************************
+LAST MODIFIED : 21 September 2000
+
+DESCRIPTION :
+Last parameter is a struct FE_element_grid_to_multi_range_data.
+If <grid_fe_field> is grid-based as in <element>, adds all values for this field
+in <element> to the <multi_range>.
 ==============================================================================*/
 
 int Element_point_ranges_set_grid_values(

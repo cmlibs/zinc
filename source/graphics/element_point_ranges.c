@@ -1338,9 +1338,9 @@ No Element_point_ranges object is returned without error if:
 
 	ENTER(Element_point_ranges_from_grid_field_ranges);
 	element_point_ranges=(struct Element_point_ranges *)NULL;
-	if (element&&(CM_ELEMENT == element->cm.type)&&grid_field&&ranges&&
-		(1==get_FE_field_number_of_components(grid_field)&&
-		(INT_VALUE==get_FE_field_value_type(grid_field))))
+	if (element&&(CM_ELEMENT == element->cm.type)&&grid_field&&
+		(1==get_FE_field_number_of_components(grid_field))&&
+		(INT_VALUE==get_FE_field_value_type(grid_field))&&ranges)
 	{
 		if (FE_element_field_is_grid_based(element,grid_field))
 		{
@@ -1389,7 +1389,8 @@ No Element_point_ranges object is returned without error if:
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Element_point_ranges_from_grid_field_ranges.  Invalid grid field");
+					"Element_point_ranges_from_grid_field_ranges.  "
+					"Error reading grid field");
 			}
 		}
 	}
@@ -1545,6 +1546,68 @@ If field and element_point_ranges not identically grid-based, clear
 
 	return (return_code);
 } /* Element_point_ranges_grid_to_multi_range */
+
+int FE_element_grid_to_multi_range(struct FE_element *element,
+	void *grid_to_multi_range_data_void)
+/*******************************************************************************
+LAST MODIFIED : 21 September 2000
+
+DESCRIPTION :
+Last parameter is a struct FE_element_grid_to_multi_range_data.
+If <grid_fe_field> is grid-based as in <element>, adds all values for this field
+in <element> to the <multi_range>.
+==============================================================================*/
+{
+	int i,number_of_grid_values,return_code,*values;
+	struct FE_element_grid_to_multi_range_data *grid_to_multi_range_data;
+	struct FE_field *grid_fe_field;
+	struct Multi_range *multi_range;
+
+	ENTER(FE_element_grid_to_multi_range);
+	if (element&&(grid_to_multi_range_data=
+		(struct FE_element_grid_to_multi_range_data *)
+		grid_to_multi_range_data_void)&&
+		(grid_fe_field=grid_to_multi_range_data->grid_fe_field)&&
+		(1==get_FE_field_number_of_components(grid_fe_field))&&
+		(INT_VALUE==get_FE_field_value_type(grid_fe_field))&&
+		(multi_range=grid_to_multi_range_data->multi_range))
+	{
+		return_code=1;
+		if ((CM_ELEMENT == element->cm.type)&&
+			FE_element_field_is_grid_based(element,grid_fe_field))
+		{
+			if (get_FE_element_field_component_grid_int_values(element,
+				grid_fe_field,/*component_number*/0,&values))
+			{
+				number_of_grid_values=
+					get_FE_element_field_number_of_grid_values(element,grid_fe_field);
+				for (i=0;(i<number_of_grid_values)&&return_code;i++)
+				{
+					return_code=Multi_range_add_range(multi_range,values[i],values[i]);
+				}
+				DEALLOCATE(values);
+			}
+			else
+			{
+				return_code=0;
+			}
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_element_grid_to_multi_range.  Failed");
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_grid_to_multi_range.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_grid_to_multi_range */
 
 static int Field_value_index_ranges_set_grid_values(
 	struct Field_value_index_ranges *field_value_index_ranges,
