@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 17 September 2002
+LAST MODIFIED : 26 January 2002
 
 DESCRIPTION :
 
@@ -6703,7 +6703,7 @@ Sets the current electrode to stimulate.
 
 static int set_current_electrode_record(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 7 January 2001
+LAST MODIFIED : 26 January 2003
 
 DESCRIPTION :
 Sets the current electrode to record.
@@ -6743,6 +6743,7 @@ Sets the current electrode to record.
 							stimulating_channel_numbers[j]=stimulating_channel_numbers[j+1];
 							j++;
 						}
+						return_code=1;
 					}
 				}
 			}
