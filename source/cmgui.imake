@@ -1230,20 +1230,20 @@ cmgui.ObjSuffix : cmgui.c $(OBJECT_PATH)/version.ObjSuffix.h
 		$(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(OBJECT_PATH)/$*.ObjSuffix.c; \
 	else \
 	   set -x; \
-	   cat $(OBJECT_PATH)/version.ObjSuffix.h $(PRODUCT_PATH)/$*.c > $(OBJECT_PATH)/$*.ObjSuffix.c ; \
+	   cat $(OBJECT_PATH)/version.ObjSuffix.h $(PRODUCT_SOURCE_PATH)/$*.c > $(OBJECT_PATH)/$*.ObjSuffix.c ; \
 		$(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(OBJECT_PATH)/$*.ObjSuffix.c; \
 	fi
 
 CmguiTarget : $(OBJS) cmgui.ObjSuffix
 	if [ ! -d $(BIN_PATH) ]; then \
 		mkdir -p $(BIN_PATH); \
-	fi	
+	fi
 #if defined (IRIX) /* switch OperatingSystem */
-	cd $(OBJECT_PATH) ; (ls $(OBJS) cmgui.ObjSuffix 2>&1 | sed "s%Cannot access %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
+	cd $(OBJECT_PATH) ; (ls $(OBJS) cmgui.ObjSuffix 2>&1 | sed "s%Cannot access %product_object/%;s%: No such file or directory%%" > object.list)
 #elif defined(LINUX) /* switch OperatingSystem */
-	cd $(OBJECT_PATH) ; (ls $(OBJS) cmgui.ObjSuffix 2>&1 | sed "s%ls: %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
+	cd $(OBJECT_PATH) ; (ls $(OBJS) cmgui.ObjSuffix 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
 #endif /* switch OperatingSystem */
-	cd $(OBJECT_PATH) ; $(LINK) -o $(BIN_PATH)/CmguiTarget $(ALL_FLAGS) `cat object.list` $(ALL_LIB)
+	cd $(OBJECT_PATH) ; rm -f product_object ; ln -s $(PRODUCT_OBJECT_PATH) product_object ; $(LINK) -o $(BIN_PATH)/CmguiTarget $(ALL_FLAGS) `cat object.list` $(ALL_LIB)
 
 CmguiFiltLibrary : $(LIB_FILT_OBJS) $(FILT_OBJ) CmguiMake libCmguiFiltExports
 	cd $(OBJECT_PATH)
