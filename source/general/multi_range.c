@@ -1100,13 +1100,12 @@ Ranges may overlap and be increasing or decreasing. Typical inputs are:
 						}
 					}
 				}
-#if defined (OLD_CODE)
-				if (strchr("0123456789",current_token[0])||
-					((('+'==current_token[0])||('-'==current_token[0]))&&
-						strchr("0123456789",current_token[1])))
+				if (0==Multi_range_get_number_of_ranges(multi_range))
 				{
+					display_message(ERROR_MESSAGE,"Invalid integer range");
+					display_parse_state_location(state);
+					return_code=0;
 				}
-#endif /* defined (OLD_CODE) */
 			}
 			else
 			{
