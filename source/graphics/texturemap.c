@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texturemap.c
 
-LAST MODIFIED : 6 October 1998
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 ???MS.  Uses SGI gl/image.h library for reading and writing to .rgb files
@@ -60,167 +60,191 @@ DESCRIPTION :
 
 struct Image_buffer *read_texturemap_image(char *infile)
 /*******************************************************************************
-LAST MODIFIED : 6 March 1997
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 Reads in background image to create textures from
 ==============================================================================*/
 {
-	int number_of_bytes_per_component,number_of_components,x,y;
-	int long height,width;
+	int bytes_per_pixel, height, number_of_bytes_per_component,
+		number_of_components, x, y, width;
 	struct Image_buffer *in_image;
-	unsigned char *pixel;
-	unsigned long *image;
+	unsigned char *image, *pixel;
+	struct Cmgui_image *cmgui_image;
+	struct Cmgui_image_information *cmgui_image_information;
 
 	ENTER(read_texturemap_image);
-#if defined (IMAGEMAGICK)
-	if (read_image_file(infile,&number_of_components,&number_of_bytes_per_component,
-		&height,&width,&image))
-#else /* defined (IMAGEMAGICK) */
-	if (read_rgb_image_file(infile,&number_of_components,&number_of_bytes_per_component,
-		&height,&width,&image))
-#endif /* defined (IMAGEMAGICK) */
+	in_image = (struct Image_buffer *)NULL;
+	cmgui_image_information = CREATE(Cmgui_image_information)();
+	Cmgui_image_information_add_file_name(cmgui_image_information, infile);
+	if (cmgui_image = Cmgui_image_read(cmgui_image_information))
 	{
-		if (number_of_bytes_per_component == 1)
+		number_of_bytes_per_component =
+			Cmgui_image_get_number_of_bytes_per_component(cmgui_image);
+		number_of_components = Cmgui_image_get_number_of_components(cmgui_image);
+		bytes_per_pixel = number_of_components*number_of_bytes_per_component;
+		width = Cmgui_image_get_width(cmgui_image);
+		height = Cmgui_image_get_height(cmgui_image);
+		if (ALLOCATE(image, unsigned char, width*bytes_per_pixel))
 		{
-			/*???debug.  Print a little info about the image */
-			printf("Image x and y size in pixels: %ld %ld\n",width,height);
-			printf("Image zsize in channels: %d\n",number_of_components);
-			if (ALLOCATE(in_image,struct Image_buffer,1))
+			if (Cmgui_image_dispatch(cmgui_image, /*image_number*/0,
+				/*left*/0, /*bottom*/0, width, height, /*padded_width_bytes*/0,
+				/*number_of_fill_bytes*/0, /*fill_bytes*/(unsigned char *)NULL,
+				image))
 			{
-				in_image->xsize=(short)width;
-				in_image->ysize=(short)height;
-				in_image->zsize=4;
-				in_image->rbuf=(short **)NULL;
-				in_image->gbuf=(short **)NULL;
-				in_image->bbuf=(short **)NULL;
-				in_image->abuf=(short **)NULL;
-				if (ALLOCATE(in_image->rbuf,short *,in_image->ysize)&&
-					ALLOCATE(in_image->gbuf,short *,in_image->ysize)&&
-					ALLOCATE(in_image->bbuf,short *,in_image->ysize)&&
-					ALLOCATE(in_image->abuf,short *,in_image->ysize))
+				if (number_of_bytes_per_component == 1)
 				{
-					(in_image->rbuf)[0]=(short *)NULL;
-					(in_image->gbuf)[0]=(short *)NULL;
-					(in_image->bbuf)[0]=(short *)NULL;
-					(in_image->abuf)[0]=(short *)NULL;
-					pixel=(unsigned char *)image;
-					y=0;
-					while ((y<in_image->ysize)&&
-						ALLOCATE(in_image->rbuf[y],short,in_image->xsize)&&
-						ALLOCATE(in_image->gbuf[y],short,in_image->xsize)&&
-						ALLOCATE(in_image->bbuf[y],short,in_image->xsize)&&
-						ALLOCATE(in_image->abuf[y],short,in_image->xsize))
+					/*???debug.  Print a little info about the image */
+					printf("Image x and y size in pixels: %d %d\n",width,height);
+					printf("Image zsize in channels: %d\n",number_of_components);
+					if (ALLOCATE(in_image,struct Image_buffer,1))
 					{
-						for (x=0;x<in_image->xsize;x++)
+						in_image->xsize=(short)width;
+						in_image->ysize=(short)height;
+						in_image->zsize=4;
+						in_image->rbuf=(short **)NULL;
+						in_image->gbuf=(short **)NULL;
+						in_image->bbuf=(short **)NULL;
+						in_image->abuf=(short **)NULL;
+						if (ALLOCATE(in_image->rbuf,short *,in_image->ysize)&&
+							ALLOCATE(in_image->gbuf,short *,in_image->ysize)&&
+							ALLOCATE(in_image->bbuf,short *,in_image->ysize)&&
+							ALLOCATE(in_image->abuf,short *,in_image->ysize))
 						{
-							switch (number_of_components)
+							(in_image->rbuf)[0]=(short *)NULL;
+							(in_image->gbuf)[0]=(short *)NULL;
+							(in_image->bbuf)[0]=(short *)NULL;
+							(in_image->abuf)[0]=(short *)NULL;
+							pixel = image;
+							y=0;
+							while ((y<in_image->ysize)&&
+								ALLOCATE(in_image->rbuf[y],short,in_image->xsize)&&
+								ALLOCATE(in_image->gbuf[y],short,in_image->xsize)&&
+								ALLOCATE(in_image->bbuf[y],short,in_image->xsize)&&
+								ALLOCATE(in_image->abuf[y],short,in_image->xsize))
 							{
-								case 1:
+								for (x=0;x<in_image->xsize;x++)
 								{
-									/* I */
-									(in_image->rbuf)[y][x]=(short)*pixel;
-									(in_image->gbuf)[y][x]=(short)*pixel;
-									(in_image->bbuf)[y][x]=(short)*pixel;
-									(in_image->abuf)[y][x]=(short)*pixel;
-									pixel++;
-								} break;
-								case 2:
+									switch (number_of_components)
+									{
+										case 1:
+										{
+											/* I */
+											(in_image->rbuf)[y][x]=(short)*pixel;
+											(in_image->gbuf)[y][x]=(short)*pixel;
+											(in_image->bbuf)[y][x]=(short)*pixel;
+											(in_image->abuf)[y][x]=(short)*pixel;
+											pixel++;
+										} break;
+										case 2:
+										{
+											/* IA */
+											(in_image->rbuf)[y][x]=(short)*pixel;
+											(in_image->gbuf)[y][x]=(short)*pixel;
+											(in_image->bbuf)[y][x]=(short)*pixel;
+											pixel++;
+											(in_image->abuf)[y][x]=(short)*pixel;
+											pixel++;
+										} break;
+										case 3:
+										{
+											/* RGB */
+											(in_image->rbuf)[y][x]=(short)*pixel;
+											pixel++;
+											(in_image->gbuf)[y][x]=(short)*pixel;
+											pixel++;
+											(in_image->bbuf)[y][x]=(short)*pixel;
+											pixel++;
+											(in_image->abuf)[y][x]=(short)255;
+										} break;
+										case 4:
+										{
+											/* RGBA */
+											(in_image->rbuf)[y][x]=(short)*pixel;
+											pixel++;
+											(in_image->gbuf)[y][x]=(short)*pixel;
+											pixel++;
+											(in_image->bbuf)[y][x]=(short)*pixel;
+											pixel++;
+											(in_image->abuf)[y][x]=(short)*pixel;
+											pixel++;
+										} break;
+									}
+								}
+								y++;
+								if (y<in_image->ysize)
 								{
-									/* IA */
-									(in_image->rbuf)[y][x]=(short)*pixel;
-									(in_image->gbuf)[y][x]=(short)*pixel;
-									(in_image->bbuf)[y][x]=(short)*pixel;
-									pixel++;
-									(in_image->abuf)[y][x]=(short)*pixel;
-									pixel++;
-								} break;
-								case 3:
+									(in_image->rbuf)[y]=(short *)NULL;
+									(in_image->gbuf)[y]=(short *)NULL;
+									(in_image->bbuf)[y]=(short *)NULL;
+									(in_image->abuf)[y]=(short *)NULL;
+								}
+							}
+							if (y<in_image->ysize)
+							{
+								display_message(ERROR_MESSAGE,
+									"read_texturemap_image.  Alloc failed for component rows");
+								while (y>=0)
 								{
-									/* RGB */
-									(in_image->rbuf)[y][x]=(short)*pixel;
-									pixel++;
-									(in_image->gbuf)[y][x]=(short)*pixel;
-									pixel++;
-									(in_image->bbuf)[y][x]=(short)*pixel;
-									pixel++;
-									(in_image->abuf)[y][x]=(short)255;
-								} break;
-								case 4:
-								{
-									/* RGBA */
-									(in_image->rbuf)[y][x]=(short)*pixel;
-									pixel++;
-									(in_image->gbuf)[y][x]=(short)*pixel;
-									pixel++;
-									(in_image->bbuf)[y][x]=(short)*pixel;
-									pixel++;
-									(in_image->abuf)[y][x]=(short)*pixel;
-									pixel++;
-								} break;
+									DEALLOCATE((in_image->rbuf)[y]);
+									DEALLOCATE((in_image->gbuf)[y]);
+									DEALLOCATE((in_image->bbuf)[y]);
+									DEALLOCATE((in_image->abuf)[y]);
+									y--;
+								}
+								DEALLOCATE(in_image->rbuf);
+								DEALLOCATE(in_image->gbuf);
+								DEALLOCATE(in_image->bbuf);
+								DEALLOCATE(in_image->abuf);
+								DEALLOCATE(in_image);
+								in_image=(struct Image_buffer *)NULL;
 							}
 						}
-						y++;
-						if (y<in_image->ysize)
+						else
 						{
-							(in_image->rbuf)[y]=(short *)NULL;
-							(in_image->gbuf)[y]=(short *)NULL;
-							(in_image->bbuf)[y]=(short *)NULL;
-							(in_image->abuf)[y]=(short *)NULL;
+							display_message(ERROR_MESSAGE,
+								"read_texturemap_image.  Alloc failed for component buffers");
+							DEALLOCATE(in_image->rbuf);
+							DEALLOCATE(in_image->gbuf);
+							DEALLOCATE(in_image->bbuf);
+							DEALLOCATE(in_image->abuf);
+							DEALLOCATE(in_image);
+							in_image=(struct Image_buffer *)NULL;
 						}
 					}
-					if (y<in_image->ysize)
+					else
 					{
 						display_message(ERROR_MESSAGE,
-							"read_texturemap_image.  Alloc failed for component rows");
-						while (y>=0)
-						{
-							DEALLOCATE((in_image->rbuf)[y]);
-							DEALLOCATE((in_image->gbuf)[y]);
-							DEALLOCATE((in_image->bbuf)[y]);
-							DEALLOCATE((in_image->abuf)[y]);
-							y--;
-						}
-						DEALLOCATE(in_image->rbuf);
-						DEALLOCATE(in_image->gbuf);
-						DEALLOCATE(in_image->bbuf);
-						DEALLOCATE(in_image->abuf);
-						DEALLOCATE(in_image);
-						in_image=(struct Image_buffer *)NULL;
+							"read_texturemap_image.  Alloc failed for image buffer");
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"read_texturemap_image.  Alloc failed for component buffers");
-					DEALLOCATE(in_image->rbuf);
-					DEALLOCATE(in_image->gbuf);
-					DEALLOCATE(in_image->bbuf);
-					DEALLOCATE(in_image->abuf);
-					DEALLOCATE(in_image);
-					in_image=(struct Image_buffer *)NULL;
+						"read_texturemap_image."
+						"  Not implemented for more than one byte per component");
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"read_texturemap_image.  Alloc failed for image buffer");
+					"read_texturemap_image.  Could not dispatch image");
 			}
 			DEALLOCATE(image);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"read_texturemap_image."
-				"  Not implemented for more than one byte per component");
+				"read_texturemap_image.  Could not allocate memory for pixels");
 		}
+		DESTROY(Cmgui_image)(&cmgui_image);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"read_texturemap_image.  Can't open input file %s\n",infile);
-		in_image=(struct Image_buffer *)NULL;
 	}
+	DESTROY(Cmgui_image_information)(&cmgui_image_information);
 	LEAVE;
 
 	return(in_image);
@@ -228,41 +252,58 @@ Reads in background image to create textures from
 
 static void write_texturemap_image(char *outfile,struct Image_buffer *in_image)
 /*******************************************************************************
-LAST MODIFIED : 6 March 1997
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 Writes generated texture image to file
 ==============================================================================*/
 {
-	int height,number_of_components,width,x,y;
-	unsigned char *component;
-	unsigned long *image;
+	unsigned char *component, *image;
+	int bytes_per_pixel, height, number_of_bytes_per_component,
+		number_of_components, width, x, y;
+	struct Cmgui_image *cmgui_image;
+	struct Cmgui_image_information *cmgui_image_information;
 
-	/* check arguments */
-	if (outfile&&in_image)
+	ENTER(write_texturemap_image);
+	if (outfile && in_image)
 	{
-		width=in_image->xsize;
-		height=in_image->ysize;
-		number_of_components=in_image->zsize;
-		if (ALLOCATE(image,unsigned long,width*height))
+		width = in_image->xsize;
+		height = in_image->ysize;
+		number_of_components = in_image->zsize;
+		number_of_bytes_per_component = 1;
+		bytes_per_pixel = number_of_components*number_of_bytes_per_component;
+		if (ALLOCATE(image, unsigned char, height*width*bytes_per_pixel))
 		{
-			component=(unsigned char *)image;
-			for (y=0;y<height;y++)
+			component = (unsigned char *)image;
+			for (y = 0; y < height; y++)
 			{
-				for (x=0;x<width;x++)
+				for (x = 0; x < width; x++)
 				{
-					*component=(unsigned char)((in_image->rbuf)[y][x]);
+					*component = (unsigned char)((in_image->rbuf)[y][x]);
 					component++;
-					*component=(unsigned char)((in_image->gbuf)[y][x]);
+					*component = (unsigned char)((in_image->gbuf)[y][x]);
 					component++;
-					*component=(unsigned char)((in_image->bbuf)[y][x]);
+					*component = (unsigned char)((in_image->bbuf)[y][x]);
 					component++;
-					*component=(unsigned char)((in_image->abuf)[y][x]);
+					*component = (unsigned char)((in_image->abuf)[y][x]);
 					component++;
 				}
 			}
-			write_image_file(outfile,number_of_components,/*bytes_per_component*/1,
-			  height,width,/*padding*/0,image);
+			if (cmgui_image = Cmgui_image_constitute(width, height,
+				number_of_components, number_of_bytes_per_component,
+				width*bytes_per_pixel, image))
+			{
+				cmgui_image_information = CREATE(Cmgui_image_information)();
+				Cmgui_image_information_add_file_name(cmgui_image_information, outfile);
+				Cmgui_image_write(cmgui_image, cmgui_image_information);
+				DESTROY(Cmgui_image_information)(&cmgui_image_information);
+				DESTROY(Cmgui_image)(&cmgui_image);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"write_texturemap_image.  Could not constitute image");
+			}
 			DEALLOCATE(image);
 		}
 		else
