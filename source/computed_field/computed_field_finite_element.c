@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_finite_element.c
 
-LAST MODIFIED : 11 September 2000
+LAST MODIFIED : 30 October 2000
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -2592,23 +2592,27 @@ static int Computed_field_cmiss_number_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
 	struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2000
+LAST MODIFIED : 30 October 2000
 
 DESCRIPTION :
-Evaluate the fields cache at the node.
+Evaluate the fields cache in the element.
 ==============================================================================*/
 {
-	int return_code;
+	int element_dimension, i, return_code;
 
 	ENTER(Computed_field_cmiss_number_evaluate_cache_in_element);
 	USE_PARAMETER(top_level_element);
-	USE_PARAMETER(calculate_derivatives);
 	if (field && element && xi)
 	{
 	  /* simply convert the element number into an FE_value */
-	  field->values[0]=(FE_value)element->cm.number;
-	  /* no derivatives for this type */
-	  field->derivatives_valid=0;
+	  field->values[0] = (FE_value)element->cm.number;
+		/* derivatives are always zero for this type, hence always calculated */
+		element_dimension = get_FE_element_dimension(element);
+		for (i = 0; i < element_dimension; i++)
+		{
+			field->derivatives[i] = 0.0;
+		}
+	  field->derivatives_valid = 1;
 	  return_code = 1;
 	}
 	else
