@@ -21,8 +21,8 @@ C###  See-Also: INTEGRATOR
 
       IMPLICIT NONE
 
-      INCLUDE '/product/cmiss/cm/source/cell_reserved.inc'
-      INCLUDE '/product/cmiss/cm/source/integrator_reserved.inc'
+      INCLUDE 'cell_reserved.inc'
+      INCLUDE 'integrator_reserved.inc'
 
       !Parameter list
       INTEGER AII(*),AIO(*),CONTROL(*),MODEL(*),NUM_ODES,NUM_VARS,
