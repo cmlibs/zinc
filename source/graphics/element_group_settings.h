@@ -250,6 +250,20 @@ Data to pass to GT_element_settings_Texture_change.
 	int changed;
 };
 
+struct GT_element_settings_update_time_behaviour_data
+/*******************************************************************************
+LAST MODIFIED : 6 December 2001
+
+DESCRIPTION :
+Data to pass to GT_element_settings_update_time_behaviour.
+==============================================================================*/
+{
+	/* flag set by GT_element group if the default coordinate field depends on time */
+	int default_coordinate_depends_on_time;
+	/* flag set by settings if any of the settings depend on time */
+	int time_dependent;
+};
+
 /*
 Global functions
 ----------------
@@ -846,14 +860,15 @@ Returns 1 if the <settings> use any embedded_fields.
 ==============================================================================*/
 
 int GT_element_settings_update_time_behaviour(
-	struct GT_element_settings *settings, void *time_dependent_void);
+	struct GT_element_settings *settings, void *update_time_behaviour_void);
 /*******************************************************************************
-LAST MODIFIED : 30 November 2001
+LAST MODIFIED : 6 December 2001
 
 DESCRIPTION :
 Updates the internal flag used whenever a time callback is received by the settings
-and if the <time_dependent> flag is valid sets it if the settings depends on time.
-If the <settings> is not <time_dependent> then the flag is not touched, as it
+and if the <settings> is time dependent then sets the flag in the 
+update_time_behaviour_data structure.
+If the <settings> is not time_dependent then the flag is not touched, as it
 is used by an iterator to see if any one of the settings in a graphical element
 group are time dependent.
 ==============================================================================*/

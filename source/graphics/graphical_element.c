@@ -2701,29 +2701,32 @@ returns true if the group contains any settings using embedded fields.
 int GT_element_group_has_multiple_times(
 	struct GT_element_group *gt_element_group)
 /*******************************************************************************
-LAST MODIFIED : 30 November 2001
+LAST MODIFIED : 6 December 2001
 
 DESCRIPTION :
 Returns true if <gt_element_group> contains settings which depend on time.
 ==============================================================================*/
 {
 	int return_code;
+	struct GT_element_settings_update_time_behaviour_data data;
 
 	ENTER(GT_element_group_has_multiple_times);
 	if (gt_element_group)
 	{
-		return_code = 0;
+		data.default_coordinate_depends_on_time = 0;
+		data.time_dependent = 0;
 		if (gt_element_group->default_coordinate_field)
 		{
 			if (Computed_field_has_multiple_times(
 				gt_element_group->default_coordinate_field))
 			{
-				return_code = 1;
+				data.default_coordinate_depends_on_time = 1;
 			}
 		}
 		FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
-			GT_element_settings_update_time_behaviour, &return_code,
+			GT_element_settings_update_time_behaviour, (void *)&data,
 			gt_element_group->list_of_settings);
+		return_code = data.time_dependent;
 	}
 	else
 	{
