@@ -2239,55 +2239,28 @@ to be consistant with it.
 	return(return_code);
 }/* set_up_time_keeper_after_read */
 
-static int analysis_read_signal_file(char *file_name,void *analysis_work_area)
+static int clean_Analysis_work_area_before_load(struct Analysis_work_area *analysis)
 /*******************************************************************************
-LAST MODIFIED : 28 November 2001
+LAST MODIFIED : 5 December 2001
 
 DESCRIPTION :
-Sets up the analysis work area for analysing a set of signals.
+cleans up <analysis> map and rig and node  things before loading a new 
+signal type file
 ==============================================================================*/
-{	
-	char calculate_events,*temp_string,value_string[10];
-	enum Datum_type datum_type;
-	enum Edit_order edit_order;
-	enum Event_detection_algorithm detection;
-	enum Event_signal_status event_status;
-	enum Signal_order signal_order;
-	FILE *input_file;
-	float level;
-	int average_width,buffer_end,buffer_start,datum,end_search_interval,
-		event_number,event_time,i,minimum_separation,number_of_events,
-		potential_time,return_code,start_search_interval,threshold,temp_int;
-	struct Analysis_work_area *analysis;
-	struct Device **device;
-	struct Event *event,**event_address;
-	struct Map *map=(struct Map *)NULL;
-	struct Rig *rig;
+{
+	struct Map *map;
 	struct Signal_buffer *buffer;
-	struct Trace_window *trace;
-	XmString new_dialog_title,old_dialog_title,value_xmstring;
-#if defined (UNEMAP_USE_NODES)
-	struct FE_field *field,*highlight_field;
-	struct FE_field_component component;	
-#endif /* defined (UNEMAP_USE_NODES) */
 #if defined (UNEMAP_USE_3D)
 	struct FE_node_selection *node_selection;
-	struct FE_field *device_name_field;
-	struct FE_node *rig_node;
-	struct GROUP(FE_node) *rig_node_group;
 #endif /* defined (UNEMAP_USE_3D) */
-	ENTER(analysis_read_signal_file);
-#if defined (UNEMAP_USE_3D)
-	node_selection=(struct FE_node_selection *)NULL;	
-	device_name_field=(struct FE_field *)NULL;
-	rig_node=(struct FE_node *)NULL;	
-	rig_node_group=(struct GROUP(FE_node) *)NULL;
-#endif /* defined (UNEMAP_USE_3D) */
-	return_code=0;
-	input_file=(FILE *)NULL;
-	/* check the arguments */
-	if (analysis=(struct Analysis_work_area *)analysis_work_area)
+	int return_code;
+
+	ENTER(clean_Analysis_work_area_before_load);
+	map=(struct Map *)NULL;
+	buffer=(struct Signal_buffer *)NULL;
+	if(analysis)
 	{
+		return_code=1;
 #if defined (UNEMAP_USE_3D)
 		/* need to unselect nodes, as selecting them accesses them */
 		if (node_selection=get_unemap_package_FE_node_selection
@@ -2318,8 +2291,6 @@ Sets up the analysis work area for analysing a set of signals.
 				(analysis->mapping_window->map->drawing_information)))
 			{
 				map_remove_torso_arm_labels(analysis->mapping_window->map->drawing_information);
-				/*DIRECT_INTERPOLATION will cause problems with no TORSOs*/
-				analysis->mapping_window->map->interpolation_type=BICUBIC_INTERPOLATION;
 			}
 #endif /* defined (UNEMAP_USE_3D)*/
 #if defined (UNEMAP_USE_NODES)
@@ -2340,34 +2311,92 @@ Sets up the analysis work area for analysing a set of signals.
 			free_unemap_package_time_computed_fields(analysis->unemap_package);	
 			free_unemap_package_rig_fields(analysis->unemap_package);			
 #endif /* defined (UNEMAP_USE_NODES)*/
+		} 
+		/* might not have events for ACIVATION maps, so reset to potential*/
+		/*perhaps we should look for events after signal file is loaded?*/
+		if((analysis->map_type==SINGLE_ACTIVATION)||(analysis->map_type==MULTIPLE_ACTIVATION))
+		{
+			analysis->map_type=POTENTIAL;
 		}
-		/* initialize the new analysis */
-		analysis->datum=0;
-		analysis->potential_time=0;
-		analysis->highlight=(struct Device **)NULL;
-		analysis->map_type=NO_MAP_FIELD;
 		if (analysis->mapping_window)
 		{
 			XtSetSensitive(analysis->mapping_window->animate_button,False);
 			if (map=analysis->mapping_window->map)
-			{
-				if(map->triangle_electrode_indices)
-				{
-					DEALLOCATE(map->triangle_electrode_indices);
-				}
-				map->number_of_2d_triangles=0;
+			{			
 				map->activation_front= -1;
-				map->colour_option=HIDE_COLOUR;
-				map->contours_option=HIDE_CONTOURS;
-				map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
+				Map_flush_cache(analysis->mapping_window->map);
 #if defined (UNEMAP_USE_3D)
 				if (map->drawing_information)
 				{
 					set_map_drawing_information_viewed_scene(map->drawing_information,0);
 				}
 #endif /* defined (UNEMAP_USE_NODES)*/
-			}
-		}
+			}/* if (map=analysis->mapping_window->map)*/
+		}/* if (analysis->mapping_window)*/
+	}
+	else
+	{
+		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"clean_Analysis_work_area_before_load .Invalid arguments");
+	}
+	LEAVE;
+	return(return_code);
+}/* clean_Analysis_work_area_before_load()*/
+
+static int analysis_read_signal_file(char *file_name,void *analysis_work_area)
+/*******************************************************************************
+LAST MODIFIED :6 December 2001
+
+DESCRIPTION :
+Sets up the analysis work area for analysing a set of signals.
+==============================================================================*/
+{	
+	char calculate_events,*temp_string,value_string[10];
+	enum Datum_type datum_type;
+	enum Edit_order edit_order;
+	enum Event_detection_algorithm detection;
+	enum Event_signal_status event_status;
+	enum Signal_order signal_order;
+	FILE *input_file;
+	float level;
+	int average_width,buffer_end,buffer_start,datum,end_search_interval,
+		event_number,event_time,i,minimum_separation,number_of_events,
+		potential_time,return_code,start_search_interval,threshold,temp_int;
+	struct Analysis_work_area *analysis;
+	struct Device **device;
+	struct Event *event,**event_address;
+	struct Rig *rig;
+	struct Signal_buffer *buffer;
+	struct Trace_window *trace;
+	XmString new_dialog_title,old_dialog_title,value_xmstring;
+#if defined (UNEMAP_USE_NODES)
+	struct FE_field *field,*highlight_field;
+	struct FE_field_component component;	
+#endif /* defined (UNEMAP_USE_NODES) */
+#if defined (UNEMAP_USE_3D)
+	struct FE_node_selection *node_selection;
+	struct FE_field *device_name_field;
+	struct FE_node *rig_node;
+	struct GROUP(FE_node) *rig_node_group;
+#endif /* defined (UNEMAP_USE_3D) */
+	ENTER(analysis_read_signal_file);
+#if defined (UNEMAP_USE_3D)
+	node_selection=(struct FE_node_selection *)NULL;	
+	device_name_field=(struct FE_field *)NULL;
+	rig_node=(struct FE_node *)NULL;	
+	rig_node_group=(struct GROUP(FE_node) *)NULL;
+#endif /* defined (UNEMAP_USE_3D) */
+	return_code=0;
+	input_file=(FILE *)NULL;
+	/* check the arguments */
+	if (analysis=(struct Analysis_work_area *)analysis_work_area)
+	{
+		clean_Analysis_work_area_before_load(analysis);	
+		/* initialize the new analysis */
+		analysis->datum=0;
+		analysis->potential_time=0;
+		analysis->highlight=(struct Device **)NULL;
 		/* get the analysis window title */
 		XtVaGetValues(analysis->window->window,
 			XmNdialogTitle,&old_dialog_title,
@@ -2378,7 +2407,7 @@ Sets up the analysis work area for analysing a set of signals.
 #if defined (UNEMAP_USE_3D)
 			 ,analysis->unemap_package
 #endif /* defined (UNEMAP_USE_NODES)*/
-			))&&(rig=analysis->rig)&&
+ 			))&&(rig=analysis->rig)&&
 			(rig->devices)&&(*(rig->devices))&&
 			(buffer=get_Device_signal_buffer(*(rig->devices))))
 		{
@@ -3102,7 +3131,7 @@ Sets up the analysis work area for analysing a set of signals.
 
 static int read_event_times_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 27 November 2001
+LAST MODIFIED : 6 December 2001
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a previously analysed set of
@@ -3123,7 +3152,6 @@ signals.
 	struct Analysis_work_area *analysis;
 	struct Event *event,**event_next,*next_event;
 	struct Device **device;
-	struct Map *map;
 	struct Rig *rig;
 	struct Signal_buffer *buffer;
 	XmString new_dialog_title,old_dialog_title,value_xmstring;
@@ -3145,14 +3173,14 @@ signals.
 #endif /* defined (UNEMAP_USE_3D) */
 	if (file_name&&(analysis=(struct Analysis_work_area *)analysis_work_area))
 	{
-#if defined (UNEMAP_USE_3D)
-		/* need to unselect nodes, as selecting them accesses them */
-		if (node_selection=get_unemap_package_FE_node_selection
-			(analysis->unemap_package))
-		{
-			FE_node_selection_clear(node_selection);
-		}
-#endif /* defined (UNEMAP_USE_3D)	 */
+		clean_Analysis_work_area_before_load(analysis);	
+		/* initialize the new analysis */
+		analysis->datum=0;
+		analysis->potential_time=0;
+		analysis->highlight=(struct Device **)NULL;
+		/* get the analysis window title */
+		XtVaGetValues(analysis->window->window,XmNdialogTitle,&old_dialog_title,
+			NULL);
 		if (input_file=fopen(file_name,"r"))
 		{
 			/* read the signal file name */
@@ -3160,72 +3188,6 @@ signals.
 			if (read_string(input_file,"[^ \n]",&signal_file_name))
 			{
 				fscanf(input_file,"\n");
-				/* clear the old analysis */
-				if (analysis->raw_rig)
-				{
-					if ((*(analysis->raw_rig->devices))&&
-						(buffer=get_Device_signal_buffer(*(analysis->raw_rig->devices))))
-					{
-						destroy_Signal_buffer(&buffer);
-					}
-					destroy_Rig(&(analysis->raw_rig));
-				}
-				if (analysis->rig)
-				{
-					if ((*(analysis->rig->devices))&&
-						(buffer=get_Device_signal_buffer(*(analysis->rig->devices))))
-					{
-						destroy_Signal_buffer(&buffer);
-					}
-#if defined (UNEMAP_USE_3D)
-					if ((analysis->mapping_window)&&(analysis->mapping_window->map&&
-						(analysis->mapping_window->map->drawing_information)))
-					{
-						map_remove_torso_arm_labels(analysis->mapping_window->map->drawing_information);
-						/*DIRECT_INTERPOLATION will cause problems with no TORSOs*/
-						analysis->mapping_window->map->interpolation_type=BICUBIC_INTERPOLATION;
-					}
-#endif /* defined (UNEMAP_USE_3D)*/
-#if defined (UNEMAP_USE_NODES)
-					/* remove nodes from window, so can remove from rig */
-					if (analysis->window)
-					{
-						analysis_Window_free_rig_node_order_info(analysis->window);
-					}
-#endif /* defined (UNEMAP_USE_NODES)*/
-					destroy_Rig(&(analysis->rig));
-
-#if defined (UNEMAP_USE_NODES)
-					if (analysis->signal_drawing_package)
-					{
-						DEACCESS(Signal_drawing_package)(&(analysis->signal_drawing_package));
-					}
-#endif /* defined (UNEMAP_USE_NODES)*/
-#if defined (UNEMAP_USE_3D)
-					free_unemap_package_time_computed_fields(analysis->unemap_package);
-					free_unemap_package_rig_fields(analysis->unemap_package);			
-#endif /* defined (UNEMAP_USE_NODES)*/
-				}
-				/* initialize the new analysis */
-				analysis->datum=0;
-				analysis->potential_time=0;
-				analysis->highlight=(struct Device **)NULL;
-				analysis->map_type=NO_MAP_FIELD;
-				if (analysis->mapping_window)
-				{
-					XtSetSensitive(analysis->mapping_window->animate_button,False);
-					if (map=analysis->mapping_window->map)
-					{
-						map->activation_front= -1;
-						map->colour_option=HIDE_COLOUR;
-						map->contours_option=HIDE_CONTOURS;
-						map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
-					}
-				}
-				/* get the analysis window title */
-				XtVaGetValues(analysis->window->window,
-					XmNdialogTitle,&old_dialog_title,
-					NULL);
 				if ((signal_input_file=fopen(signal_file_name,"rb"))&&
 					read_signal_file(signal_input_file,&(analysis->rig)
 #if defined (UNEMAP_USE_3D)
@@ -3266,7 +3228,7 @@ signals.
 					}
 				}
 				if(return_code)
-				{
+				{					
 					rig=analysis->rig;
 					rig->signal_file_name=signal_file_name;
 					/* unghost the write interval button */
@@ -3278,8 +3240,7 @@ signals.
 						(buffer=get_Device_signal_buffer(*device))&&(times=buffer->times))
 					{
 						frequency=buffer->frequency;
-						(*device)->highlight=1;
-						trace_change_rig(analysis->trace);
+						(*device)->highlight=1;				
 						/* initialize the potential time */
 						analysis->potential_time=buffer->start+
 							(buffer->end-buffer->start)/3;
@@ -3292,7 +3253,7 @@ signals.
 								(*device)->signal->status=REJECTED;
 							}
 							device++;
-						}
+						}						
 						/* read the table format */
 						if (read_string(input_file,"[^ \n]",&detection_name))
 						{
@@ -4141,7 +4102,18 @@ signals.
 					{
 						XtPopdown(analysis->trace->shell);
 					}
-				}
+				}	
+				trace_change_rig(analysis->trace);		
+				update_analysis_window_menu(analysis->window);
+				update_mapping_window_menu(analysis->mapping_window);		 
+				/* update the drawing areas */
+				update_mapping_drawing_area(analysis->mapping_window,2);
+				update_mapping_colour_or_auxili(analysis->mapping_window);
+				update_signals_drawing_area(analysis->window);
+				update_interval_drawing_area(analysis->window);
+				trace_change_signal(analysis->trace);
+				/* free the old analysis window title */
+				XmStringFree(old_dialog_title);
 #if defined (UNEMAP_USE_3D)			
 				/* read the signal file into nodes */
 				/*???DB.  Would be better to be another callback from the same button ? */
@@ -4172,18 +4144,7 @@ signals.
 					}
 				}
 #endif /* defined (UNEMAP_USE_3D) */
-					/*set the time keeper to the new current time. Important to keep any */
-					/*movie player in sync */
-				update_analysis_window_menu(analysis->window);
-				update_mapping_window_menu(analysis->mapping_window);		 
-				/* update the drawing areas */
-				update_mapping_drawing_area(analysis->mapping_window,2);
-				update_mapping_colour_or_auxili(analysis->mapping_window);
-				update_signals_drawing_area(analysis->window);
-				update_interval_drawing_area(analysis->window);
-				trace_change_signal(analysis->trace);
-				/* free the old analysis window title */
-				XmStringFree(old_dialog_title);
+
 				/*set the time keeper to the new current time. Important to keep any */
 				/*movie player in sync */				
 				set_up_time_keeper_after_read(analysis);
@@ -4595,7 +4556,6 @@ for analysing the signals.
 	char *file_name,*temp_string;
 	int buffer_end,buffer_start,success;
 	struct Analysis_work_area *analysis;
-	struct Map *map=(struct Map *)NULL;
 	struct Rig *rig;
 	struct Signal_buffer *buffer;
 	XmString new_dialog_title,old_dialog_title;
@@ -4630,73 +4590,11 @@ for analysing the signals.
 		}
 		if(success)
 		{
-#if defined (UNEMAP_USE_3D)
-			/* need to unselect nodes, as selecting them accesses them */
-			if (node_selection=get_unemap_package_FE_node_selection
-				(analysis->unemap_package))
-			{
-				FE_node_selection_clear(node_selection);
-			}
-#endif /* defined (UNEMAP_USE_3D)	 */
-			/* clear the old analysis */
-			if (analysis->raw_rig)
-			{
-				if ((*(analysis->raw_rig->devices))&&
-					(buffer=get_Device_signal_buffer(*(analysis->raw_rig->devices))))
-				{
-					destroy_Signal_buffer(&buffer);
-				}
-				destroy_Rig(&(analysis->raw_rig));
-			}
-			if (analysis->rig)
-			{
-				if ((*(analysis->rig->devices))&&
-					(buffer=get_Device_signal_buffer(*(analysis->rig->devices))))
-				{
-					destroy_Signal_buffer(&buffer);
-				}
-#if defined (UNEMAP_USE_3D)
-				if ((analysis->mapping_window)&&(analysis->mapping_window->map&&
-					(analysis->mapping_window->map->drawing_information)))
-				{
-					map_remove_torso_arm_labels(analysis->mapping_window->map->drawing_information);
-					/*DIRECT_INTERPOLATION will cause problems with no TORSOs*/
-					analysis->mapping_window->map->interpolation_type=BICUBIC_INTERPOLATION;
-				}
-#endif /* defined (UNEMAP_USE_3D)*/
-				destroy_Rig(&(analysis->rig));
-#if defined (UNEMAP_USE_3D)
-				free_unemap_package_time_computed_fields(analysis->unemap_package);	
-				free_unemap_package_rig_fields(analysis->unemap_package);			
-#endif /* defined (UNEMAP_USE_NODES)*/
-			}
+			clean_Analysis_work_area_before_load(analysis);	
 			/* initialize the new analysis */
 			analysis->datum=0;
 			analysis->potential_time=0;
 			analysis->highlight=(struct Device **)NULL;
-			analysis->map_type=NO_MAP_FIELD;
-			if (analysis->mapping_window)
-			{
-				XtSetSensitive(analysis->mapping_window->animate_button,False);
-				if (map=analysis->mapping_window->map)
-				{
-					if(map->triangle_electrode_indices)
-					{
-						DEALLOCATE(map->triangle_electrode_indices);
-					}
-					map->number_of_2d_triangles=0;
-					map->activation_front= -1;
-					map->colour_option=HIDE_COLOUR;
-					map->contours_option=HIDE_CONTOURS;
-					map->electrodes_label_type=SHOW_ELECTRODE_NAMES;
-#if defined (UNEMAP_USE_3D)
-					if (map->drawing_information)
-					{
-						set_map_drawing_information_viewed_scene(map->drawing_information,0);
-					}
-#endif /* defined (UNEMAP_USE_NODES)*/
-				}
-			}
 			/* get the analysis window title */
 			XtVaGetValues(analysis->window->window,
 				XmNdialogTitle,&old_dialog_title,
@@ -6797,6 +6695,7 @@ drawing area.
 						pointer_mode=GrabModeAsync;
 						keyboard_mode=GrabModeAsync;
 						confine_to=None;
+
 						if (GrabSuccess==XtGrabPointer(interval->drawing_area,owner_events,
 							ButtonMotionMask|ButtonPressMask|ButtonReleaseMask,
 							pointer_mode,keyboard_mode,confine_to,cursor,CurrentTime))
@@ -14748,7 +14647,7 @@ Responds to update callbacks from the time object.
 												{													
 #endif /* defined (UNEMAP_USE_3D) */
 													/* 2d map */
-													update_map_from_manual_time_update(mapping);													
+													update_map_from_manual_time_update(mapping);
 													map->start_time=map_potential_time;
 													map->end_time=map->start_time;
 #if defined (UNEMAP_USE_3D)
@@ -14758,7 +14657,9 @@ Responds to update callbacks from the time object.
 										}/* if (-1!=map->activation_front) */
 									}break;
 									case DIRECT_INTERPOLATION:									
-									{
+									{										
+										map->start_time=map_potential_time;
+										map->end_time=map->start_time;
 										if(map->activation_front==0)											
 										{
 											update_mapping_drawing_area(mapping,2/*recalculate*/);
@@ -14771,7 +14672,9 @@ Responds to update callbacks from the time object.
 									}break;
 									case NO_INTERPOLATION:
 									default:									
-									{
+									{										
+										map->start_time=map_potential_time;
+										map->end_time=map->start_time;
 										update_mapping_drawing_area(mapping,1);
 										update_mapping_colour_or_auxili(mapping);
 									}break;
@@ -14907,7 +14810,7 @@ Responds to update callbacks from the time object.
 static int analysis_time_keeper_callback(struct Time_keeper *time_keeper,
 	enum Time_keeper_event event, void *analysis_void)
 /*******************************************************************************
-LAST MODIFIED : 28 December 1999
+LAST MODIFIED : 6 December 2001
 
 DESCRIPTION : time keeper callback for analysis
 ==============================================================================*/
@@ -14930,11 +14833,19 @@ DESCRIPTION : time keeper callback for analysis
 				map->activation_front=0;
 			} break;
 			case TIME_KEEPER_STOPPED:
-			{
+			{	
+				/*update the time again*/
+				analysis_potential_time_update_callback(analysis->potential_time_object,
+					Time_object_get_current_time(analysis->potential_time_object),
+					analysis_void);
+				/*change to no animation*/
+				map->activation_front= -1;
+#if defined (OLD_CODE)
 				map->activation_front= -1;
 				analysis_potential_time_update_callback(analysis->potential_time_object,
 					Time_object_get_current_time(analysis->potential_time_object),
 					analysis_void);
+#endif
 			} break;
 		}
 		return_code=1;

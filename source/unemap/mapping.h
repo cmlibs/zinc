@@ -397,6 +397,14 @@ specified values.  It returns a pointer to the created map if successful and
 NULL if not successful.
 ==============================================================================*/
 
+int Map_flush_cache(struct Map *map);
+/*******************************************************************************
+LAST MODIFIED : 5 December 2001
+
+DESCRIPTION :
+Clear the cached information stored in the map
+==============================================================================*/
+
 int destroy_Map(struct Map **map);
 /*******************************************************************************
 LAST MODIFIED : 19 May 1992

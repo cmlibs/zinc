@@ -6659,9 +6659,42 @@ NULL if not successful.
 	return (map);
 } /* create_Map */
 
+int Map_flush_cache(struct Map *map)
+/*******************************************************************************
+LAST MODIFIED : 5 December 2001
+
+DESCRIPTION :
+Clear the cached information stored in the map
+==============================================================================*/
+{	
+	int return_code;
+
+	ENTER(Map_flush_cache);
+	return_code=1;
+	if (map) 
+	{
+		DEALLOCATE(map->triangle_electrode_indices);
+		map->number_of_2d_triangles=0;
+		DEALLOCATE(map->electrodes);
+		map->number_of_electrodes=0;
+		DEALLOCATE(map->electrode_drawn);
+		map->number_of_auxiliary=0;
+		DEALLOCATE(map->auxiliary);
+		DEALLOCATE(map->auxiliary_x);
+		DEALLOCATE(map->auxiliary_y);
+		DEALLOCATE(map->draw_region_number);
+		map->number_of_drawn_regions=0;
+		DEALLOCATE(map->electrode_drawn);
+		map_destroy_Sub_maps(map);	
+		map->number_of_sub_maps=0;
+	}
+	LEAVE;
+	return (return_code);
+} /* Map_flush_cache */
+
 int destroy_Map(struct Map **map)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 5 December 2001
 
 DESCRIPTION :
 This function deallocates the memory asociated with fields of <**map> (except
@@ -6674,15 +6707,7 @@ deallocates the memory for <**map> and sets <*map> to NULL.
 	return_code=1;
 	if (map&&(*map))
 	{
-		DEALLOCATE((*map)->triangle_electrode_indices);
-		DEALLOCATE((*map)->electrodes);
-		DEALLOCATE((*map)->electrode_drawn);
-		DEALLOCATE((*map)->auxiliary);
-		DEALLOCATE((*map)->auxiliary_x);
-		DEALLOCATE((*map)->auxiliary_y);
-		DEALLOCATE((*map)->draw_region_number);
-		DEALLOCATE((*map)->electrode_drawn);
-		map_destroy_Sub_maps(*map);
+		Map_flush_cache(*map);
 		DEALLOCATE(*map);
 	}
 	LEAVE;

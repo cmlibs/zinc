@@ -386,7 +386,7 @@ of frames, map dialog information, etc. and set <recalculate>
 static void update_map_from_dialog(Widget widget,XtPointer mapping_window,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 Updates the map settings based on the map dialog and redraws the map if
@@ -407,11 +407,16 @@ necessary.
 	struct Map_drawing_information *drawing_information;
 	struct Mapping_window *mapping;
 	Widget option_widget;
-	struct Spectrum *spectrum=(struct Spectrum *)NULL;
-	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
-	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
+	struct Spectrum *spectrum;
+	struct Spectrum *spectrum_to_be_modified_copy;
+	struct MANAGER(Spectrum) *spectrum_manager;
+	struct Time_keeper *time_keeper;
 
 	ENTER(update_map_from_dialog);
+	time_keeper=(struct Time_keeper *)NULL;
+	spectrum=(struct Spectrum *)NULL;
+	spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
+	spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 	USE_PARAMETER(call_data);
 #if !defined (UNEMAP_USE_3D)
 	USE_PARAMETER(spectrum_manager);
@@ -940,9 +945,12 @@ necessary.
 			switch(map->interpolation_type)
 			{
 				case BICUBIC_INTERPOLATION:
-				{
+				{				
 					update_movie_frames_information(mapping,&recalculate,
-						&map_settings_changed);
+						&map_settings_changed);					
+					/*the time can have changed so update the timekeeper*/
+					time_keeper=Time_object_get_time_keeper(mapping->potential_time_object);
+					Time_keeper_request_new_time(time_keeper,map->start_time);					
 				}break; /*case BICUBIC_INTERPOLATION:*/
 				case NO_INTERPOLATION:
 				case DIRECT_INTERPOLATION:
@@ -3163,7 +3171,7 @@ The callback for redrawing part of a mapping drawing area.
 										drawing_information->graphics_context).
 										background_drawing_colour,0,0,drawing->width,
 										drawing->height);							
-									/* draw the map */									
+									/* draw the map */				
 									draw_map(mapping->map,3,drawing);
 									update_mapping_colour_or_auxili(mapping);
 									/* set the sensitivity of the save electrode values button */
@@ -3289,7 +3297,17 @@ The callback for resizing a mapping drawing area.
 								drawing_information->graphics_context).
 								background_drawing_colour,0,0,drawing->width,drawing->height);
 							/* redraw the map */
-							draw_map(mapping->map,3,drawing);
+
+							if(mapping->map->activation_front==0)
+							{
+								/*playing a movie*/
+								draw_map(mapping->map,2,drawing);
+							}
+							else
+							{
+								/*manual time update*/
+								update_map_from_manual_time_update(mapping);
+							}
 							/* set the sensitivity of the save electrode values button */
 							update_mapping_window_file_menu(mapping);
 							mapping_window_set_animation_buttons(mapping);
