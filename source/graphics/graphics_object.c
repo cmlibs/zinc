@@ -2933,8 +2933,18 @@ and sets <*object> to NULL.
 				GT_object_delete_time_number(object,i);
 			}
 			DEALLOCATE(object->name);
-			DEACCESS(Graphical_material)(&(object->default_material));
-			DEACCESS(Spectrum)(&(object->spectrum));
+			if (object->default_material)
+			{
+				DEACCESS(Graphical_material)(&(object->default_material));
+			}
+			if (object->selected_material)
+			{
+				DEACCESS(Graphical_material)(&(object->selected_material));
+			}
+			if (object->spectrum)
+			{
+				DEACCESS(Spectrum)(&(object->spectrum));
+			}
 			callback_data = object->update_callback_list;
 			while(callback_data)
 			{
