@@ -5853,6 +5853,7 @@ Requests a full redraw immediately.
 			scene_viewer->idle_update_callback_id = (struct Event_dispatcher_idle_callback *)NULL;
 			if (scene_viewer->tumble_active)
 			{
+				Scene_viewer_automatic_tumble_callback((void *)scene_viewer);
 				if(!scene_viewer->tumble_callback_id)
 				{
 					scene_viewer->tumble_callback_id = Event_dispatcher_add_idle_event_callback(
