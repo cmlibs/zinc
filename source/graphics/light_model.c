@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : light_model.c
 
-LAST MODIFIED : 21 December 2000
+LAST MODIFIED : 22 December 2000
 
 DESCRIPTION :
 The functions for manipulating light models.
@@ -1037,7 +1037,7 @@ Modifies the properties of a light model.
 
 int list_Light_model(struct Light_model *light_model,void *dummy)
 /*******************************************************************************
-LAST MODIFIED : 13 December 1997
+LAST MODIFIED : 22 December 2000
 
 DESCRIPTION :
 Writes the properties of the <light_model> to the command window.
@@ -1047,7 +1047,7 @@ Writes the properties of the <light_model> to the command window.
 	int return_code;
 
 	ENTER(list_Light_model);
-	/* check the arguments */
+	USE_PARAMETER(dummy);
 	if (light_model)
 	{
 		display_message(INFORMATION_MESSAGE,"light model : ");
