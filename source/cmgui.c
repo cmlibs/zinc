@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 1 August 2002
+LAST MODIFIED : 6 August 2002
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -349,10 +349,59 @@ Command line options to be parsed by read_cmgui_command_line_options.
 	char *command_file_name;
 };
 
+int set_string_no_command_line_option(struct Parse_state *state,
+	void *string_address_void, void *string_description_void)
+/*******************************************************************************
+LAST MODIFIED : 6 August 2002
+
+DESCRIPTION :
+Calls set_string unless the first character of the current token is a hyphen.
+Used to avoid parsing possible command line switches.
+==============================================================================*/
+{
+	char *current_token;
+	int return_code;
+
+	ENTER(set_string_no_command_line_option);
+	if (state)
+	{
+		if (current_token = state->current_token)
+		{
+			if ('-' != current_token[0])
+			{
+				return_code = set_string(state, string_address_void,
+					string_description_void);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "Invalid command line option \"%s\"",
+					current_token);
+				display_parse_state_location(state);
+				return_code = 0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Missing string");
+			display_parse_state_location(state);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_string_no_command_line_option.  Missing state");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_string_no_command_line_option */
+
 static int read_cmgui_command_line_options(struct Parse_state *state,
 	void *dummy_to_be_modified, void *cmgui_command_line_options_void)
 /*******************************************************************************
-LAST MODIFIED : 1 August 2002
+LAST MODIFIED : 5 August 2002
 
 DESCRIPTION :
 Parses command line options from <state>.
@@ -423,7 +472,7 @@ Parses command line options from <state>.
 		/* [default option == command_file_name] */
 		Option_table_add_entry(option_table, (char *)NULL,
 			&(command_line_options->command_file_name),
-			(void *)"COMMAND_FILE_NAME", set_string);
+			(void *)"COMMAND_FILE_NAME", set_string_no_command_line_option);
 		return_code = Option_table_multi_parse(option_table, state);
 		DESTROY(Option_table)(&option_table);
 	}
