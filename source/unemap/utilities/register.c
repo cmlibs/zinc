@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : register.c
 
-LAST MODIFIED : 21 August 2003
+LAST MODIFIED : 10 November 2004
 
 DESCRIPTION :
 For setting and checking registers on second version of the signal conditioning
@@ -31,8 +31,11 @@ Compilation flags
 */
 /*#define CALIBRATE_SQUARE_WAVE 1*/
 
+#if defined (OLD_CODE)
+/* have changed from ANSI to c99 */
 /* fileno is not ANSI */
 extern int fileno(FILE *);
+#endif /* defined (OLD_CODE) */
 
 int unemap_get_card_state(int channel_number,int *battA_state,
 	int *battGood_state,float *filter_frequency,int *filter_taps,
