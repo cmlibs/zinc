@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_ranges.h
 
-LAST MODIFIED : 8 June 2000
+LAST MODIFIED : 16 June 2000
 
 DESCRIPTION :
 Structure for storing ranges of points in elements according to the various
@@ -10,6 +10,7 @@ Xi_discretization_modes.
 #if !defined (ELEMENT_POINT_RANGES_H)
 #define ELEMENT_POINT_RANGES_H
 
+#include "finite_element/field_value_index_ranges.h"
 #include "finite_element/finite_element.h"
 #include "general/list.h"
 #include "general/multi_range.h"
@@ -60,6 +61,49 @@ contains the range of values of <grid_fe_field> for which points are added to
 	struct LIST(Element_point_ranges) *element_point_ranges_list;
 	struct FE_field *grid_fe_field;
 	struct Multi_range *grid_value_ranges;
+};
+
+struct Element_point_ranges_grid_to_multi_range_data
+/*******************************************************************************
+LAST MODIFIED : 16 June 2000
+
+DESCRIPTION :
+Data for passing to Element_point_ranges_grid_to_multi_range.
+==============================================================================*/
+{
+	/* following field must be single component integer field */
+	struct FE_field *grid_fe_field;
+	struct Multi_range *multi_range;
+	/* set following to 1 before calling - after calling, if set can report that
+		 some element points were not at native/grid discretizations */
+	int all_points_native;
+};
+
+struct Element_point_ranges_set_grid_values_data
+/*******************************************************************************
+LAST MODIFIED : 19 June 2000
+
+DESCRIPTION :
+Data for passing to Element_point_ranges_set_grid_values and for it to pass to
+Field_value_index_ranges_set_grid_values.
+==============================================================================*/
+{
+	/* the source element points for setting grid values from */
+	struct Element_point_ranges_identifier *source_identifier;
+	int source_element_point_number;
+	/* the list of field components ranges being set - not needed in
+		 Field_value_index_ranges_set_grid_values */
+	struct LIST(Field_value_index_ranges) *field_component_ranges_list;
+	/* the element points being set. Note values are modified in element_copy by
+		 Field_value_index_ranges_set_grid_values */
+	struct Element_point_ranges_identifier *destination_identifier;
+	struct Multi_range *destination_element_point_numbers;
+	struct FE_element *element_copy;
+	/* the manager used by Element_point_ranges_set_grid_values */
+	struct MANAGER(FE_element) *element_manager;
+	/* set following to 1 before calling - after calling, if set can report that
+		 some element points were not at native/grid discretizations */
+	int all_points_native;
 };
 
 /*
@@ -199,6 +243,19 @@ DESCRIPTION :
 Ensures the <element_point_ranges> are in <element_point_ranges_list>.
 ==============================================================================*/
 
+int Element_point_ranges_list_add_element_point(
+	struct LIST(Element_point_ranges) *element_point_ranges_list,
+	struct Element_point_ranges_identifier *element_point_ranges_identifier,
+	int element_point_number);
+/*******************************************************************************
+LAST MODIFIED : 16 June 2000
+
+DESCRIPTION :
+Shortcut for ensuring the element point indicated by
+<element_point_ranges_identifier> <element_point_number> is in the
+<element_point_ranges_list>.
+==============================================================================*/
+
 int Element_point_ranges_remove_from_list(
 	struct Element_point_ranges *element_point_ranges,
 	void *element_point_ranges_list_void);
@@ -270,6 +327,33 @@ The structure is then added to the <element_point_ranges_list>.
 select_data_void should point to a
 struct FE_element_grid_to_Element_point_ranges_list_data.
 Uses only top level elements, type CM_ELEMENT.
+==============================================================================*/
+
+int Element_point_ranges_grid_to_multi_range(
+	struct Element_point_ranges *element_point_ranges,
+	void *grid_to_multi_range_data_void);
+/*******************************************************************************
+LAST MODIFIED : 16 June 2000
+
+DESCRIPTION :
+Last parameter is a struct Element_point_ranges_grid_to_multi_range_data.
+If <grid_fe_field> is grid-based as in <element_point_ranges>, adds the values
+for this field for points in the ranges to the <multi_range>.
+If field and element_point_ranges not identically grid-based, clear
+<all_points_native> flag.
+==============================================================================*/
+
+int Element_point_ranges_set_grid_values(
+	struct Element_point_ranges *element_point_ranges,
+	void *set_grid_values_data_void);
+/*******************************************************************************
+LAST MODIFIED : 19 June 2000
+
+DESCRIPTION :
+Last parameter is a struct Element_point_ranges_set_grid_values_data. Sets the
+listed field components in <element_point_ranges> to the values taken from
+<source_identifier><element_point_number>. Works on a local element_copy, then
+uses a manager_modify to make changes global.
 ==============================================================================*/
 
 #endif /* !defined (ELEMENT_POINT_RANGES_H) */
