@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : image_utilities.h
 
-LAST MODIFIED : 28 may 1999
+LAST MODIFIED : 8 September 2000
 
 DESCRIPTION :
 Utilities for handling images.
@@ -18,10 +18,22 @@ Global types
 ------------
 */
 enum Image_file_format
+/*******************************************************************************
+LAST MODIFIED : 8 September 2000
+
+DESCRIPTION :
+Enumerator for specifying the image file format.
+Have members BEFORE_FIRST and AFTER_LAST to enable iterating through the
+list for automatic creation of choose_enumerator widgets.
+==============================================================================*/
 {
+	UNKNOWN_IMAGE_FILE_FORMAT,
+	IMAGE_FILE_FORMAT_BEFORE_FIRST,
 	POSTSCRIPT_FILE_FORMAT,
 	RGB_FILE_FORMAT,
-	TIFF_FILE_FORMAT
+	TIFF_FILE_FORMAT,
+	YUV_FILE_FORMAT,
+	IMAGE_FILE_FORMAT_AFTER_LAST
 }; /* enum Image_file_format */
 
 enum Image_orientation
@@ -41,6 +53,72 @@ enum Tiff_image_compression
 Global functions
 ----------------
 */
+
+char *Image_file_format_extension(enum Image_file_format image_file_format);
+/*******************************************************************************
+LAST MODIFIED : 8 September 2000
+
+DESCRIPTION :
+Returns the expected file extension stem for a given <image_file_format>. By
+stem it is meant that the given characters follow the final . in the file name,
+but extra characters may follow. This is especially true for .tif/.tiff and
+.yuv#### extensions.
+==============================================================================*/
+
+char *Image_file_format_string(enum Image_file_format image_file_format);
+/*******************************************************************************
+LAST MODIFIED : 8 September 2000
+
+DESCRIPTION :
+Returns the token that should represent the file format
+expected file string stem for a given <image_file_format>. By
+stem it is meant that the given characters follow the final . in the file name,
+but extra characters may follow. This is especially true for .tif/.tiff and
+.yuv#### strings.
+==============================================================================*/
+
+char **Image_file_format_get_valid_strings_for_reading(
+	int *number_of_valid_strings);
+/*******************************************************************************
+LAST MODIFIED : 8 September 2000
+
+DESCRIPTION :
+Returns an allocated array of pointers to all static strings for
+Image_file_formats that can be used for reading.
+Strings are obtained from function Image_file_format_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+
+char **Image_file_format_get_valid_strings_for_writing(
+	int *number_of_valid_strings);
+/*******************************************************************************
+LAST MODIFIED : 8 September 2000
+
+DESCRIPTION :
+Returns an allocated array of pointers to all static strings for
+Image_file_formats that can be used for writing.
+Strings are obtained from function Image_file_format_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+
+enum Image_file_format Image_file_format_from_string(
+	char *image_file_format_string);
+/*******************************************************************************
+LAST MODIFIED : 8 September 2000
+
+DESCRIPTION :
+Returns the <Image_file_format> described by <image_file_format_string>.
+==============================================================================*/
+
+enum Image_file_format Image_file_format_from_file_name(char *file_name);
+/*******************************************************************************
+LAST MODIFIED : 8 September 2000
+
+DESCRIPTION :
+Returns the <Image_file_format> determined from the file_extension in
+<file_name>, or UNKNOWN_IMAGE_FILE_FORMAT if none found or no match made.
+==============================================================================*/
+
 int write_rgb_image_file(char *file_name,int number_of_components,
 	int number_of_bytes_per_component,
 	int number_of_rows,int number_of_columns,int row_padding,

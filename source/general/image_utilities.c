@@ -626,6 +626,259 @@ For reading a field in an image file directory.
 Global functions
 ----------------
 */
+
+char *Image_file_format_extension(enum Image_file_format image_file_format)
+/*******************************************************************************
+LAST MODIFIED : 8 September 2000
+
+DESCRIPTION :
+Returns the expected file extension stem for a given <image_file_format>. By
+stem it is meant that the given characters follow the final . in the file name,
+but extra characters may follow. This is especially true for .tif/.tiff and
+.yuv#### extensions.
+==============================================================================*/
+{
+	char *file_format_extension;
+
+	ENTER(Image_file_format_extension);
+	switch (image_file_format)
+	{
+		case POSTSCRIPT_FILE_FORMAT:
+		{
+			file_format_extension="ps";
+		} break;
+		case RGB_FILE_FORMAT:
+		{
+			file_format_extension="rgb";
+		} break;
+		case TIFF_FILE_FORMAT:
+		{
+			file_format_extension="tif";
+		} break;
+		case YUV_FILE_FORMAT:
+		{
+			file_format_extension="yuv";
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"Image_file_format_extension.  Unknown image file format");
+			file_format_extension="";
+		} break;
+	}
+	LEAVE;
+
+	return (file_format_extension);
+} /* Image_file_format_extension */
+
+char *Image_file_format_string(enum Image_file_format image_file_format)
+/*******************************************************************************
+LAST MODIFIED : 8 September 2000
+
+DESCRIPTION :
+Returns the token that should represent the file format
+expected file string stem for a given <image_file_format>. By
+stem it is meant that the given characters follow the final . in the file name,
+but extra characters may follow. This is especially true for .tif/.tiff and
+.yuv#### strings.
+==============================================================================*/
+{
+	char *file_format_string;
+
+	ENTER(Image_file_format_string);
+	switch (image_file_format)
+	{
+		case POSTSCRIPT_FILE_FORMAT:
+		{
+			file_format_string="postscript";
+		} break;
+		case RGB_FILE_FORMAT:
+		{
+			file_format_string="rgb";
+		} break;
+		case TIFF_FILE_FORMAT:
+		{
+			file_format_string="tiff";
+		} break;
+		case YUV_FILE_FORMAT:
+		{
+			file_format_string="yuv";
+		} break;
+		default:
+		{
+			display_message(ERROR_MESSAGE,
+				"Image_file_format_string.  Unknown image file format");
+			file_format_string="";
+		} break;
+	}
+	LEAVE;
+
+	return (file_format_string);
+} /* Image_file_format_string */
+
+char **Image_file_format_get_valid_strings_for_reading(
+	int *number_of_valid_strings)
+/*******************************************************************************
+LAST MODIFIED : 8 September 2000
+
+DESCRIPTION :
+Returns an allocated array of pointers to all static strings for
+Image_file_formats that can be used for reading.
+Strings are obtained from function Image_file_format_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+{
+	char **valid_strings;
+
+	ENTER(Image_file_format_get_valid_strings_for_reading);
+	if (number_of_valid_strings)
+	{
+		*number_of_valid_strings=3;
+		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
+		{
+			valid_strings[0]=Image_file_format_string(RGB_FILE_FORMAT);
+			valid_strings[1]=Image_file_format_string(TIFF_FILE_FORMAT);
+			valid_strings[2]=Image_file_format_string(YUV_FILE_FORMAT);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Image_file_format_get_valid_strings_for_reading.  Not enough memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Image_file_format_get_valid_strings_for_reading.  Invalid argument(s)");
+		valid_strings=(char **)NULL;
+	}
+	LEAVE;
+
+	return (valid_strings);
+} /* Image_file_format_get_valid_strings_for_reading */
+
+char **Image_file_format_get_valid_strings_for_writing(
+	int *number_of_valid_strings)
+/*******************************************************************************
+LAST MODIFIED : 8 September 2000
+
+DESCRIPTION :
+Returns an allocated array of pointers to all static strings for
+Image_file_formats that can be used for writing.
+Strings are obtained from function Image_file_format_string.
+Up to calling function to deallocate returned array - but not the strings in it!
+==============================================================================*/
+{
+	char **valid_strings;
+
+	ENTER(Image_file_format_get_valid_strings_for_writing);
+	if (number_of_valid_strings)
+	{
+		*number_of_valid_strings=3;
+		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
+		{
+			valid_strings[0]=Image_file_format_string(POSTSCRIPT_FILE_FORMAT);
+			valid_strings[1]=Image_file_format_string(RGB_FILE_FORMAT);
+			valid_strings[2]=Image_file_format_string(TIFF_FILE_FORMAT);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Image_file_format_get_valid_strings_for_writing.  Not enough memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Image_file_format_get_valid_strings_for_writing.  Invalid argument(s)");
+		valid_strings=(char **)NULL;
+	}
+	LEAVE;
+
+	return (valid_strings);
+} /* Image_file_format_get_valid_strings_for_writing */
+
+enum Image_file_format Image_file_format_from_string(
+	char *image_file_format_string)
+/*******************************************************************************
+LAST MODIFIED : 8 September 2000
+
+DESCRIPTION :
+Returns the <Image_file_format> described by <image_file_format_string>.
+==============================================================================*/
+{
+	enum Image_file_format image_file_format;
+
+	ENTER(Image_file_format_from_string);
+	if (image_file_format_string)
+	{
+		image_file_format=IMAGE_FILE_FORMAT_BEFORE_FIRST;
+		image_file_format++;
+		while ((image_file_format<IMAGE_FILE_FORMAT_AFTER_LAST)&&
+			(!fuzzy_string_compare_same_length(image_file_format_string,
+				Image_file_format_string(image_file_format))))
+		{
+			image_file_format++;
+		}
+		if (IMAGE_FILE_FORMAT_AFTER_LAST==image_file_format)
+		{
+			image_file_format=UNKNOWN_IMAGE_FILE_FORMAT;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Image_file_format_from_string.  Invalid argument");
+		image_file_format=UNKNOWN_IMAGE_FILE_FORMAT;
+	}
+	LEAVE;
+
+	return (image_file_format);
+} /* Image_file_format_from_string */
+
+enum Image_file_format Image_file_format_from_file_name(char *file_name)
+/*******************************************************************************
+LAST MODIFIED : 8 September 2000
+
+DESCRIPTION :
+Returns the <Image_file_format> determined from the file_extension in
+<file_name>, or UNKNOWN_IMAGE_FILE_FORMAT if none found or no match made.
+==============================================================================*/
+{
+	char *file_extension;
+	enum Image_file_format image_file_format;
+
+	ENTER(Image_file_format_from_file_name);
+	image_file_format=UNKNOWN_IMAGE_FILE_FORMAT;
+	if (file_name)
+	{
+		if (file_extension=strrchr(file_name,'.'))
+		{
+			file_extension++;
+			image_file_format=IMAGE_FILE_FORMAT_BEFORE_FIRST;
+			image_file_format++;
+			while ((image_file_format<IMAGE_FILE_FORMAT_AFTER_LAST)&&
+				(!fuzzy_string_compare(Image_file_format_extension(image_file_format),
+					file_extension)))
+			{
+				image_file_format++;
+			}
+			if (IMAGE_FILE_FORMAT_AFTER_LAST==image_file_format)
+			{
+				image_file_format=UNKNOWN_IMAGE_FILE_FORMAT;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Image_file_format_from_file_name.  Invalid argument");
+	}
+	LEAVE;
+
+	return (image_file_format);
+} /* Image_file_format_from_file_name */
+
 int write_rgb_image_file(char *file_name,int number_of_components,
 	int number_of_bytes_per_component,
 	int number_of_rows,int number_of_columns,int row_padding,
@@ -4280,51 +4533,49 @@ int read_image_file(char *file_name,int *number_of_components,
 	int *number_of_bytes_per_component,
 	long int *height,long int *width, long unsigned **image)
 /*******************************************************************************
-LAST MODIFIED : 30 August 2000
+LAST MODIFIED : 8 September 2000
 
 DESCRIPTION :
-Detects the image type from the file extension (rgb/tiff) and then reads.
+Detects the image type from the file extension (rgb/tiff) and then reads it.
 ==============================================================================*/
 {
-	char *file_extension;
+	enum Image_file_format image_file_format;
 	int return_code;
 
 	ENTER(read_image_file);
 	return_code=0;
 	if (file_name&&number_of_components&&height&&width&&image)
 	{
-		if (file_extension=strrchr(file_name,'.'))
+		image_file_format=Image_file_format_from_file_name(file_name);
+		switch (image_file_format)
 		{
-			file_extension++;
-			if (fuzzy_string_compare(file_extension,"rgb"))
+			case POSTSCRIPT_FILE_FORMAT:
+			{
+				display_message(ERROR_MESSAGE,"Cannot read postscript image file '%s'",
+					file_name);
+				return_code=0;
+			} break;
+			case RGB_FILE_FORMAT:
 			{
 				return_code=read_rgb_image_file(file_name,number_of_components,
-					number_of_bytes_per_component,
-					height,width,image);
-			}
-			else if (fuzzy_string_compare("tif",file_extension))
+					number_of_bytes_per_component,height,width,image);
+			} break;
+			case TIFF_FILE_FORMAT:
 			{
-				return_code=read_tiff_image_file(file_name,
-					number_of_components,number_of_bytes_per_component,
-					height,width,image);
-			}
-			/* note: yuv is followed by horizontal resolution, hence only compare
-				 file_extension to length 3 */
-			else if (fuzzy_string_compare("yuv",file_extension))
+				return_code=read_tiff_image_file(file_name,number_of_components,
+					number_of_bytes_per_component,height,width,image);
+			} break;
+			case YUV_FILE_FORMAT:
 			{
-				return_code=read_yuv_image_file(file_name,
-					number_of_components,number_of_bytes_per_component,
-					height,width,image);
-			}
-			else
+				return_code=read_yuv_image_file(file_name,number_of_components,
+					number_of_bytes_per_component,height,width,image);
+			} break;
+			default:
 			{
-				display_message(ERROR_MESSAGE,"Unknown image file extension '%s'",
-					file_extension);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"Missing image file extension");
+				display_message(ERROR_MESSAGE,
+					"Could not determine image format of file '%s'",file_name);
+				return_code=0;
+			} break;
 		}
 	}
 	else
