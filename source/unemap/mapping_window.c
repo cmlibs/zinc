@@ -2349,10 +2349,10 @@ Write the electrode values for the current map to a file.
 	ENTER(write_electrode_values_file);
 	return_code=0;
 	if ((mapping=(struct Mapping_window *)mapping_window)&&(map=mapping->map)&&
-		(map->type)&&file_name)
+		(map->sub_map/*!!jw more than one sub_map*/)&&(map->type)&&file_name)
 	{
 		if ((0<(number_of_electrodes=map->number_of_electrodes))&&
-			(electrode=map->electrodes)&&(value=map->electrode_value)&&
+			(electrode=map->electrodes)&&(value=map->sub_map->electrode_value)&&
 			(NO_MAP_FIELD!= *(map->type)))
 		{
 			if (output_file=fopen(file_name,"wt"))
@@ -3016,7 +3016,8 @@ window file menu.
 	{
 		return_code=1;
 		if ((map=mapping->map)&&(map->type)&&(0<map->number_of_electrodes)&&
-			(map->electrodes)&&(map->electrode_value)&&(NO_MAP_FIELD!= *(map->type)))
+			(map->electrodes)&&(map->sub_map/*!!jw more than one sub_map*/)&&
+			(map->sub_map->electrode_value)&&(NO_MAP_FIELD!= *(map->type)))
 		{
 			XtSetSensitive(mapping->file_menu.save_electrode_values_button,True);
 		}
@@ -5183,7 +5184,6 @@ Calls draw_map_3d or update_mapping_drawing_area_2d depending upon
 ==============================================================================*/
 {
 	int return_code;
-	struct Map *map;
 
 	ENTER(update_mapping_drawing_area);
 	if (mapping)
@@ -5576,7 +5576,7 @@ int highlight_electrode_or_auxiliar(struct Device *device,
 	int electrode_number,	int auxiliary_number,struct Map *map,
 	struct Mapping_window *mapping)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2001
+LAST MODIFIED : 26 July 2001
 
 DESCRIPTION :
 Highlights/dehighlights an electrode or an auxiliary device in the <mapping>
@@ -5594,6 +5594,7 @@ window.
 		xmin,xpos,xstart,ymax,ymin,ypos,ystart;
 	Pixel *spectrum_pixels;
 	struct Map_drawing_information *drawing_information;
+	struct sub_Map *sub_map;
 	XCharStruct bounds;
 	XFontStruct *font;
 #if defined (UNEMAP_USE_NODES)
@@ -5610,7 +5611,8 @@ window.
 	highlight_field=(struct FE_field *)NULL;
 #endif /* defined (UNEMAP_USE_NODES) */
 	return_code=0;
-	if (map&&mapping&&(drawing_information=map->drawing_information)&&
+	if (map&&(sub_map=map->sub_map/*!!jw more than one sub_map*/)
+		&&mapping&&(drawing_information=map->drawing_information)&&
 		(drawing_information->user_interface)&&
 #if defined (UNEMAP_USE_NODES)
 		((device&&!device_node)||(!device&&device_node)))
@@ -5659,7 +5661,7 @@ window.
 			((map->electrode_drawn)[electrode_number])&&mapping&&
 			(mapping->map_drawing_area_2d)&&(mapping->map_drawing))
 		{
-			f_value=(map->electrode_value)[electrode_number];
+			f_value=(sub_map->electrode_value)[electrode_number];
 			switch (map->electrodes_option)
 			{	
 				case HIDE_ELECTRODES:
@@ -5756,8 +5758,8 @@ window.
 			if (electrode_drawn)
 			{
 				/* draw marker */
-				xpos=(map->electrode_x)[electrode_number];
-				ypos=(map->electrode_y)[electrode_number];
+				xpos=(sub_map->electrode_x)[electrode_number];
+				ypos=(sub_map->electrode_y)[electrode_number];
 				marker_size=map->electrodes_marker_size;
 				xmin=xpos-marker_size;
 				xmax=xpos+marker_size;

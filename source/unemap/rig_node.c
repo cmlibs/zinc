@@ -643,9 +643,42 @@ create_config_template_node, and the field_order_info.
 						field_order_info,field_number);
 					field_number++;
 					coordinate_system =	get_FE_field_coordinate_system(component.field);
+					
+#if defined (DEBUG)
+					/* for IUPS heart usr/people/williams/unemap_notes/iups2001/poster/epi_trsf_new.signal */
+					{
+						FE_value a,b,c;
+						Linear_transformation *lt;
+					
+						if (ALLOCATE(lt,Linear_transformation,1))
+						{						
+							lt->translate_x=-19.0514;
+							lt->translate_y=-71.9462;
+							lt->translate_z=3.1975;
+
+							lt->txx=0.6457;
+							lt->txy= 0.6298;
+							lt->txz= 0.4316;
+
+							lt->tyx= 0.2155;
+							lt->tyy= -0.6927;
+							lt->tyz= 0.6883;
+
+							lt->tzx= -0.7325;
+							lt->tzy=   0.3514;
+							lt->tzz= 0.5830;
+
+							linear_transformation(lt,xpos,ypos,zpos,&a,&b,&c);	
+							cartesian_to_prolate_spheroidal(a,b,c,
+								coordinate_system->parameters.focus,&lambda,&mu,&theta,
+						(float *)NULL);
+						}
+					}
+#else
 					cartesian_to_prolate_spheroidal(xpos,ypos,zpos,
 						coordinate_system->parameters.focus,&lambda,&mu,&theta,
 						(float *)NULL);
+#endif/*  defined (DEBUG)*/
 					component.number = 0;					
 					set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,lambda);
 					component.number = 1;

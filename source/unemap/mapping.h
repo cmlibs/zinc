@@ -303,11 +303,23 @@ DESCRIPTION :
 #endif /* defined (MOTIF) */
 }; /* struct Map_frame */
 
-struct Map
+struct sub_Map
 /*******************************************************************************
-LAST MODIFIED : 4 July 2001
+LAST MODIFIED : 25 July 2001
 
 DESCRIPTION :
+Data unique to each sub map, passed from calculate step. to show step.
+==============================================================================*/
+{
+	float *electrode_value,*max_x,*max_y,*min_x,*min_y,*stretch_x,*stretch_y;
+	int *electrode_x,*electrode_y,number_of_drawn_regions,*start_x,*start_y;
+};
+
+struct Map
+/*******************************************************************************
+LAST MODIFIED : 25 July 2001
+
+DESCRIPTION : The Map.
 ==============================================================================*/
 {
 	enum Map_type *type;
@@ -336,10 +348,9 @@ DESCRIPTION :
 	struct Rig **rig_pointer;
 	int number_of_electrodes;
 	struct Device **electrodes;
-	int *electrode_x,*electrode_y;
-	float *electrode_value;
 	int number_of_auxiliary;
 	char *electrode_drawn;
+	int *draw_region_number,number_of_drawn_regions;
 	struct Device **auxiliary;
 	int *auxiliary_x,*auxiliary_y;
 	int fixed_range;
@@ -369,6 +380,9 @@ DESCRIPTION :
 	struct User_interface *user_interface;
 #endif /* defined (OLD_CODE) */
 	struct Unemap_package *unemap_package;
+	/*do sub_maps as a linked list? */
+	int number_of_sub_maps;
+	struct sub_Map *sub_map;
 }; /* struct Map */
 
 /*

@@ -2760,28 +2760,31 @@ pointer to the rig if successful and NULL if unsuccessful.
 												}
 #endif /* defined (DEBUG) */
 #if defined (DEBUG)
-												/*???DB.  Chris's heart */
+/* for IUPS heart usr/people/williams/unemap_notes/iups2001/poster/epi_trsf_new.signal */
 												((*region_item_address)->region->properties).sock.focus=
 													35.;
 												{
 													Linear_transformation *lt;
-
+												
 													if (ALLOCATE(lt,Linear_transformation,1))
 													{
 														((*region_item_address)->region->properties).sock.
 															linear_transformation=lt;
-														lt->translate_x=242.63;
-														lt->translate_y=144.32;
-														lt->translate_z= -227.63;
-														lt->txx=0.43008;
-														lt->txy= -0.49057;
-														lt->txz= -0.75787;
-														lt->tyx= -0.90185;
-														lt->tyy= -0.27177;
-														lt->tyz= -0.33586;
-														lt->tzx=0.04120;
-														lt->tzy= -0.82794;
-														lt->tzz=0.55931;
+														lt->translate_x=-19.0514;
+														lt->translate_y=-71.9462;
+														lt->translate_z=3.1975;
+
+														lt->txx=0.6457;
+														lt->txy= 0.6298;
+														lt->txz= 0.4316;
+
+														lt->tyx= 0.2155;
+														lt->tyy= -0.6927;
+														lt->tyz= 0.6883;
+
+														lt->tzx= -0.7325;
+														lt->tzy=   0.3514;
+														lt->tzz= 0.5830;
 													}
 												}
 #endif /* defined (DEBUG) */

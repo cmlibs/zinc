@@ -14265,9 +14265,9 @@ remain unchanged.
 		}
 		else
 		{
-			if (mapping&&map)
+			if (mapping&&map )
 			{
-				if (electrode_number&&((new_electrode_number= *electrode_number)>=0)&&
+				if (electrode_number&&((new_electrode_number= *electrode_number)>=0)&&				
 					(new_electrode_number<map->number_of_electrodes))
 				{
 					/* have specified an electrode number */
@@ -16314,10 +16314,20 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 	struct Analysis_work_area *analysis;
 	struct Map *map;
 	struct Mapping_window *mapping;
+	struct sub_Map *sub_map;
 	XButtonEvent *event;
 	XmDrawingAreaCallbackStruct *callback;
 
 	ENTER(analysis_select_map_drawing_are);
+	electrode_drawn=(char *)NULL;
+	electrode_x=(int *)NULL;
+	electrode_y=(int *)NULL;
+	analysis=(struct Analysis_work_area *)NULL;
+	map=(struct Map *)NULL;
+	mapping=(struct Mapping_window *)NULL;
+	sub_map=(struct sub_Map *)NULL;
+	event=(XButtonEvent *)NULL;
+	callback=(XmDrawingAreaCallbackStruct *)NULL;
 	USE_PARAMETER(widget);
 	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
 		(mapping=analysis->mapping_window))
@@ -16331,7 +16341,8 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 					if (ButtonPress==callback->event->type)
 					{
 						event= &(callback->event->xbutton);
-						if ((map=mapping->map)&&(map->number_of_electrodes>0))
+						if ((map=mapping->map)&&(sub_map=map->sub_map/*!!jw more than one sub_map??*/)
+							&&(map->number_of_electrodes>0))
 						{
 							/* the sensitivity depends on the size of the electrode marker */
 							pointer_sensitivity=map->electrodes_marker_size;
@@ -16340,8 +16351,8 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 #endif/*defined (OLD_CODE) */
 							/* determine the electrode number */
 							electrode_number=0;
-							electrode_x=map->electrode_x;
-							electrode_y=map->electrode_y;
+							electrode_x=sub_map->electrode_x;
+							electrode_y=sub_map->electrode_y;
 							electrode_drawn=map->electrode_drawn;
 							while ((electrode_number<map->number_of_electrodes)&&
 								((!(*electrode_drawn))||
