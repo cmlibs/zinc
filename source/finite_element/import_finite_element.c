@@ -2515,7 +2515,7 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 ==============================================================================*/
 {
 	char *component_name, *global_to_element_map_string,
-		*modify_function_name, *rest_of_line;
+		*modify_function_name, *rest_of_line, test_string[5];
 	enum FE_field_type fe_field_type;
 	FE_element_field_component_modify modify;
 	int *basis_index, *basis_type, component_number, dimension, i, index, j,
@@ -2663,7 +2663,12 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 																		node_index - 1, number_of_values)))
 															{
 																/* read the value indices */
-																fscanf(input_file, " Value indices:");
+ 																/* Use a %1[:] so that a successful read will return 1 */
+																if (1 != fscanf(input_file," Value indices%1[:] ", test_string))
+																{
+																	display_message(WARNING_MESSAGE, 
+																		"Truncated read of required \" Value indices: \" token in element file.");
+																}
 																for (j = 0; (j < number_of_values) &&
 																	return_code; j++)
 																{
@@ -2682,7 +2687,12 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 																if (return_code)
 																{
 																	/* read the scale factor indices */
-																	fscanf(input_file, " Scale factor indices:");
+																	/* Use a %1[:] so that a successful read will return 1 */
+																	if (1 != fscanf(input_file," Scale factor indices%1[:] ", test_string))
+																	{
+																		display_message(WARNING_MESSAGE, 
+																			"Truncated read of required \" Scale factor indices: \" token in element file.");
+																	}
 																	for (j = 0; (j < number_of_values) &&
 																		return_code; j++)
 																	{
@@ -3179,6 +3189,7 @@ Element info may now have no nodes and no scale factors - eg. for reading
 in a grid field.
 ==============================================================================*/
 {
+	char test_string[5];
 	enum Value_type value_type;
 	FE_value scale_factor;
 	int dimension, face_token_length, i, j, k, node_number, number_of_components,
@@ -3312,7 +3323,12 @@ in a grid field.
 				if (return_code && FE_element_has_values_storage(element))
 				{
 					/* read the values */
-					fscanf(input_file, " Values :");
+					/* Use a %1[:] so that a successful read will return 1 */
+					if (1 != fscanf(input_file," Values %1[:] ", test_string))
+					{
+						display_message(WARNING_MESSAGE, 
+							"Truncated read of required \" Values :\" token in element file.");
+					}
 					number_of_fields =
 						get_FE_field_order_info_number_of_fields(field_order_info);
 					for (i = 0; (i < number_of_fields) && return_code; i++)
@@ -3439,7 +3455,12 @@ in a grid field.
 						if (0 < number_of_nodes)
 						{
 							/* read the nodes */
-							fscanf(input_file, " Nodes:");
+							/* Use a %1[:] so that a successful read will return 1 */
+							if (1 != fscanf(input_file," Nodes%1[:]", test_string))
+							{
+								display_message(WARNING_MESSAGE, 
+									"Truncated read of required \" Nodes:\" token in element file.");
+							}
 							for (i = 0; (i < number_of_nodes) && return_code; i++)
 							{
 								if (1 == fscanf(input_file, "%d", &node_number))
@@ -3490,7 +3511,12 @@ in a grid field.
 						{
 							/*???RC scale_factors array in element_info should be private */
 							/* read the scale factors */
-							fscanf(input_file," Scale factors:");
+							/* Use a %1[:] so that a successful read will return 1 */
+							if (1 != fscanf(input_file," Scale factors%1[:]", test_string))
+							{
+								display_message(WARNING_MESSAGE, 
+									"Truncated read of required \" Scale factors:\" token in element file.");
+							}
 							for (i = 0; (i < number_of_scale_factors) && return_code; i++)
 							{
 								if (1 == fscanf(input_file,FE_VALUE_INPUT_STRING,
@@ -3583,7 +3609,7 @@ in the file; if no path is supplied they are placed in the root region.
 If objects are repeated in the file, they are merged correctly.
 ==============================================================================*/
 {
-	char first_character_in_token, *group_name, *last_character, *temp_string;
+	char first_character_in_token, *group_name, *last_character, *temp_string, test_string[5];
 	int input_result, return_code;
 	struct CM_element_information element_identifier;
 	struct Cmiss_region *root_region, *region;
@@ -3648,7 +3674,12 @@ If objects are repeated in the file, they are merged correctly.
 						}
 						region = (struct Cmiss_region *)NULL;
 						fe_region = (struct FE_region *)NULL;
-						fscanf(input_file,"roup name : "); /* the 'G' has gone */
+						/* Use a %1[:] so that a successful read will return 1 */
+						if (1 != fscanf(input_file,"roup name %1[:] ", test_string))
+						{
+							display_message(WARNING_MESSAGE, 
+								"Truncated read of required \"Group name : \" token in node file.");
+						}
 						/* read the name of the group */
 						group_name = (char *)NULL;
 						if (read_string(input_file, "[^\n]", &group_name))
