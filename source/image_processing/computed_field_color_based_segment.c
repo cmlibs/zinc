@@ -357,14 +357,16 @@ Perform a automatic thresholding operation on the image cache.
 {
         char *storage;
 	FE_value *data_index, *result_index, *color_mean, *dist_img, distance;
-	int i, j, k, l, return_code, storage_size, counter, counter3;
+	int i, j, k, l, return_code, storage_size, counter, back_counter;
+	int dd, cur_pt, in_back;
+	int *ctr;
 
 	ENTER(Image_cache_color_based_segment);
 	if (image && (image->dimension > 0) && (image->depth > 0))
 	{
 
 		return_code = 1;
-		counter3 = 0;
+		back_counter = 0;
 
 		/* Allocate a new storage block for our data */
 		storage_size = image->depth;
@@ -375,6 +377,7 @@ Perform a automatic thresholding operation on the image cache.
 		counter = storage_size/image->depth;
 		if (ALLOCATE(storage, char, storage_size * sizeof(FE_value))&&
                         ALLOCATE(dist_img, FE_value, counter)&&
+			ALLOCATE(ctr, int, image->dimension)&&
 			ALLOCATE(color_mean, FE_value, image->depth))
 		{
 			result_index = (FE_value *)storage;
@@ -390,34 +393,45 @@ Perform a automatic thresholding operation on the image cache.
 			data_index = (FE_value *)image->data;
 			result_index = (FE_value *)storage;
 			/*1. comput the mean of background*/
-                        l = my_Min(image->sizes[0]/4, image->sizes[1]/4);
+			l = 300;
+			for (i = 0; i < image->dimension; i++)
+			{
+			        l = my_Min(l, (int)((FE_value)image->sizes[i] / 8.0));
+			}
                         for (i = 0 ; return_code && i < counter ; i++)
 			{
-			        if ((i < l* image->sizes[0] + l)||(i > (image->sizes[1] - l - 1) * image->sizes[0] - l) )
-			        {
-			                for (k = 0; k < image->depth; k++)
-			                {
-			                         color_mean[k] += (1.0 - *(data_index + k));
-			                }
-				        counter3 ++;
-			        }
-				else
+			        cur_pt = i;
+			        for (j = 0; j < image->dimension; j++)
 				{
-				        for (j = l + 1; j < (image->sizes[1] - l -1); j++)
-					if ((i >= (j * image->sizes[0] - l)) && (i <= (j * image->sizes[0] + l)))
+				        dd = image->sizes[j];
+					ctr[j] = cur_pt % dd;
+					cur_pt = (int)((FE_value)cur_pt / ((FE_value)dd));
+				}
+				in_back = 1;
+				for (j = 0; j < image->dimension; j++)
+				{
+				        if ((ctr[j] < l) || (ctr[j] >= (image->sizes[j] - l)))
 					{
-					         for (k = 0; k < image->depth; k++)
-						 {
-						           color_mean[k] += (1.0 - *(data_index + k));
-						 }
-						 counter3 ++;
+					       in_back *= 1;
 					}
+					else
+					{
+					       in_back *= 0;
+					}
+				}
+				if (in_back)
+				{
+				        for(k = 0; k < image->depth; k++)
+					{
+					       color_mean[k] += *(data_index + k);
+					}
+					back_counter++;
 				}
 				data_index += image->depth;
 			}
 			for (k = 0; k < image->depth; k++)
 			{
-			        color_mean[k] = color_mean[k]/counter3;
+			        color_mean[k] = color_mean[k]/(FE_value)back_counter;
 			}
                         for (i = (counter -1); i >= 0; i--)
 			{
@@ -426,23 +440,22 @@ Perform a automatic thresholding operation on the image cache.
 			        dist_img[i] = 0.0;
                                 for (k = 0; k < image->depth; k++)
 				{
-				       dist_img[i] += (color_mean[k] - (1.0 - *(data_index + k))) * (color_mean[k] - (1.0 - *(data_index + k)));
+				       dist_img[i] += (color_mean[k] - *(data_index + k)) * (color_mean[k] - *(data_index + k));
 				}
-				dist_img[i] = (FE_value)(sqrt((double)dist_img[i]));
+				dist_img[i] = sqrt(dist_img[i]);
 				distance = my_Max(distance, dist_img[i]);
 			}
 			for (i = 0; i < counter; i++)
 			{
-			        data_index += image->depth;
-				if (dist_img[i] < 0.3 * distance)
+				if (dist_img[i] < 0.8 * distance)
 				{
 				         for (k = 0; k < image->depth; k++)
-					 result_index[k] = 0.0;
+					 result_index[k] = 1.0;
 				}
 				else
 				{
 				         for (k =0; k <image->depth; k++)
-					 result_index[k] = 1.0;
+					 result_index[k] = 0.0;
 				}
 				result_index += image->depth;
 			}
@@ -458,6 +471,7 @@ Perform a automatic thresholding operation on the image cache.
 			}
 			DEALLOCATE(dist_img);
 			DEALLOCATE(color_mean);
+			DEALLOCATE(ctr);
 
 		}
 		else
@@ -664,7 +678,9 @@ Returns allocated command string for reproducing field. Includes type.
 ==============================================================================*/
 {
 	char *command_string, *field_name;
+        char temp_string1[40], temp_string2[40], temp_string3[40],temp_string4[40];
 	int error;
+	struct Computed_field_color_based_segment_type_specific_data *data;
 
 	ENTER(Computed_field_color_based_segment_get_command_string);
 	command_string = (char *)NULL;
@@ -687,6 +703,20 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
+		sprintf(temp_string1, " dimension %d", data->image->dimension);
+		append_string(&command_string, temp_string1, &error);
+		
+		sprintf(temp_string2, " sizes %d %d ",
+		                    data->image->sizes[0],data->image->sizes[1]);
+		append_string(&command_string, temp_string2, &error);
+
+		sprintf(temp_string3, " minimums %f %f ",
+		                    data->image->minimums[0], data->image->minimums[1]);
+		append_string(&command_string, temp_string3, &error);
+
+		sprintf(temp_string4, " maximums %f %f ",
+		                    data->image->maximums[0], data->image->maximums[1]);
+		append_string(&command_string, temp_string4, &error);
 	}
 	else
 	{
