@@ -1025,7 +1025,7 @@ ifeq ($(SYSNAME:IRIX%=),)
 			@if [ ! -d $(OBJECT_PATH) ]; then \
 				mkdir -p $(OBJECT_PATH); \
 			fi
-			@if [-f $(OBJECT_PATH)/$(EXPORTS_FILE).c]; then \
+			@if [ -f $(OBJECT_PATH)/$(EXPORTS_FILE).c]; then \
 				rm $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
 			fi
       ifdef CMISS_ROOT_DEFINED
@@ -1063,7 +1063,7 @@ ifeq ($(SYSNAME),Linux)
 					@if [ ! -d $(OBJECT_PATH) ]; then \
 						mkdir -p $(OBJECT_PATH); \
 					fi
-					@if [-f $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c]; then \
+					@if [ -f $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c]; then \
 						rm $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c; \
 					fi
             ifdef CMISS_ROOT_DEFINED
