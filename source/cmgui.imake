@@ -301,8 +301,8 @@ IMAGEMAGICK_SWITCH = -DIMAGEMAGICK
 IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/includeirix-64/
 IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/libirix-64/libMagick.a $(IMAGEMAGICK_PATH)/libirix-64/libtiff.a $(IMAGEMAGICK_PATH)/libirix-64/libpng.a $(IMAGEMAGICK_PATH)/libirix-64/libjpeg.a $(IMAGEMAGICK_PATH)/libirix-64/libxml2.a $(IMAGEMAGICK_PATH)/libirix-64/libz.a
 #else /* defined (O64) */
-IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/includeirix-32/
-IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/libirix-32/libMagick.a $(IMAGEMAGICK_PATH)/libirix-32/libtiff.a $(IMAGEMAGICK_PATH)/libirix-32/libpng.a $(IMAGEMAGICK_PATH)/libirix-32/libjpeg.a $(IMAGEMAGICK_PATH)/libirix-32/libxml2.a $(IMAGEMAGICK_PATH)/libirix-32/libz.a
+IMAGEMAGICK_INC = -I$(IMAGEMAGICK_PATH)/includeirix-n32/
+IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/libirix-n32/libMagick.a $(IMAGEMAGICK_PATH)/libirix-n32/libtiff.a $(IMAGEMAGICK_PATH)/libirix-n32/libpng.a $(IMAGEMAGICK_PATH)/libirix-n32/libjpeg.a $(IMAGEMAGICK_PATH)/libirix-n32/libxml2.a $(IMAGEMAGICK_PATH)/libirix-n32/libz.a
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
 IMAGEMAGICK_SWITCH = -DIMAGEMAGICK -D_FILE_OFFSET_BITS=64
