@@ -4319,6 +4319,7 @@ Writes the properties of the <texture> to the command window.
 		/* write the compression type */
 		display_message(INFORMATION_MESSAGE,"  compression type : %s\n",
 			ENUMERATOR_STRING(Texture_compression_mode)(texture->compression_mode));
+#if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
 		if (TEXTURE_COMPRESSED_UNSPECIFIED == texture->compression_mode)
 		{
 			/* get the compressed texture size */
@@ -4326,6 +4327,7 @@ Writes the properties of the <texture> to the command window.
 			display_message(INFORMATION_MESSAGE,"  compressed storage used in graphics : %d\n",
 				ENUMERATOR_STRING(Texture_compression_mode)(texture_size));
 		}
+#endif /* defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D) */
 
 		/* write the colour */
 		display_message(INFORMATION_MESSAGE,
