@@ -6499,12 +6499,16 @@ SCENE_VIEWER_BLEND_TRUE_ALPHA is src=GL_SRC_ALPHA and dest=GL_ONE_MINUS_SRC_ALPH
 		return_code = 1;
 		if (blending_mode == SCENE_VIEWER_BLEND_TRUE_ALPHA)
 		{
-			if (!query_gl_version(1, 4))
+#if defined (GL_VERSION_1_4)
+			if (!Graphics_library_check_extension(GL_VERSION_1_4))
 			{
+#endif /* defined (GL_VERSION_1_4) */
 				display_message(ERROR_MESSAGE, "Scene_viewer_set_blending_mode.  "
 					"Blend_true_alpha (glBlendFuncSeparate) is not available on this display.");
 				return_code=0;
+#if defined (GL_VERSION_1_4)
 			}
+#endif /* defined (GL_VERSION_1_4) */
 		}
 		if (return_code)
 		{
