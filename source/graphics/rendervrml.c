@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rendervrml.c
 
-LAST MODIFIED : 31 May 2001
+LAST MODIFIED : 21 June 2001
 
 DESCRIPTION :
 Renders gtObjects to VRML file
@@ -2320,16 +2320,20 @@ static int write_graphics_object_vrml(FILE *vrml_file,
 	int object_is_glyph,struct Graphical_material *default_material,
 	int gt_object_already_prototyped)
 /*******************************************************************************
-LAST MODIFIED : 9 May 1999
+LAST MODIFIED : 21 June 2001
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	char *dot_pointer, *prototype_name, *material_name;
-	fpos_t file_pointer, save_file_pointer;
 	int group, in_def, return_code;
 	struct GT_object *temp_gt_object;
 	struct VRML_prototype *vrml_prototype;
+  /* DPN 21 June 2001 - Using fgetpos() like this is wrong! */
+#if defined (OLD_CODE)
+	fpos_t file_pointer, save_file_pointer;
+#endif
+	long file_pointer,save_file_pointer;
 
 	ENTER(write_graphics_object_vrml);
 	if (vrml_file&&gt_object&&gt_object->name&&default_material)
@@ -2371,7 +2375,10 @@ DESCRIPTION :
 				{
 					fprintf(vrml_file,"DEF %s\n", prototype_name);
 					/* save file pointer so we can see if anything was output */
+#if defined (OLD_CODE)
 					fgetpos(vrml_file, &save_file_pointer);
+#endif
+          save_file_pointer = ftell(vrml_file);
 					in_def = 1;
 					ADD_OBJECT_TO_LIST(VRML_prototype)(vrml_prototype,vrml_prototype_list);
 				}
@@ -2409,7 +2416,10 @@ DESCRIPTION :
 				if (in_def)
 				{
 					/* check if anything was output; if not, add a dummy node */
+#if defined (OLD_CODE)
 					fgetpos(vrml_file, &file_pointer);
+#endif
+          file_pointer = ftell(vrml_file);
 					if (file_pointer == save_file_pointer)
 					{
 						fprintf(vrml_file,"Group {\n");

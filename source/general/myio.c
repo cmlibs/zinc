@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : myio.c
 
-LAST MODIFIED : 6 March 2000
+LAST MODIFIED : 21 June 2001
 
 DESCRIPTION :
 Some additions/modifications to stdio.
@@ -107,32 +107,49 @@ fwrites the little endian form of <char_ptr>.
 
 int get_line_number(FILE *stream)
 /*******************************************************************************
-LAST MODIFIED : 6 March 2000
+LAST MODIFIED : 21 June 2001
 
 DESCRIPTION :
 Function for calculating the current line in a file.
 ==============================================================================*/
 {
 	int c,line_number;
+#if defined (OLD_CODE)
 	fpos_t location,temp_location;
+#endif
+  long location,temp_location;
 
 	ENTER(get_line_number);
 	line_number=0;
 	if (stream)
 	{
+    /* DPN 21 June 2001 - Using fgetpos() like this is wrong!
+       Check 'man fgetpos' */
+#if defined (OLD_CODE)
 		fgetpos(stream,&location);
 		rewind(stream);
 		fgetpos(stream,&temp_location);
+#endif
+    location = ftell(stream);
+		rewind(stream);
+    temp_location = ftell(stream);
 		while (temp_location<=location)
-		{
+    {
 			do
 			{
 				c=fgetc(stream);
 			} while (('\n'!=c)&&(EOF!=c));
+#if defined (OLD_CODE)
 			fgetpos(stream,&temp_location);
+#endif
+      temp_location = ftell(stream);
 			line_number++;
 		}
+#if defined (OLD_CODE)
 		fsetpos(stream,&location);
+#endif
+    /* Re-set the position in the stream to the original location */
+    fseek(stream,location,SEEK_SET);
 	}
 	LEAVE;
 
