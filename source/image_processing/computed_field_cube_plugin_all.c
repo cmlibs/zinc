@@ -411,6 +411,7 @@ Perform MIL analysis on the image cache.
 	FE_value *data_index1;
 
         /*  Variables required to generate random numbers  */
+	#if defined(UNIX)
         static long state1[32] = {
         	3,
         	0x9a319039, 0x32d9c024, 0x9b663182, 0x5da1f342,
@@ -422,7 +423,8 @@ Perform MIL analysis on the image cache.
         	0x36413f93, 0xc622c298, 0xf5a42ab8, 0x8a88d77b,
         	0xf5ad9d0e, 0x8999220b, 0x27fb47b9
         	};
-
+	int	n;				/* for random number gen.	*/
+	#endif
 
         int	xsize, ysize, zsize;	        /* size of data_index1			*/
 
@@ -449,7 +451,7 @@ Perform MIL analysis on the image cache.
 	FE_value SMI; /* structure model index */
 
         unsigned char seed;			/* seed for random number gen.	*/
-        int	n;				/* for random number gen.	*/
+
 
         FE_value	dradius;		/* test sphere radius (FE_value)	*/
         int	lmarg, rmarg;			/* x limits of analysis region	*/
@@ -548,6 +550,7 @@ Perform MIL analysis on the image cache.
 				/* number routine is (2**31 - 1) 	*/
 
                         /*   Generate the random rotations */
+			#if defined(UNIX)
                 	seed = 1;
                 	n = 256;
                 	initstate(seed, (char *) state1, n);
@@ -558,7 +561,15 @@ Perform MIL analysis on the image cache.
         	        	rot1[irot] =  CMGUI_RANDOM(double) * M_PI;
         	        	rot2[irot] =  CMGUI_RANDOM(double) * M_PI;
         	        }
-
+			#elif defined (WIN32_SYSTEM)
+			seed = 1;
+			CMGUI_SEED_RANDOM(seed);
+			for(irot=0;irot < number_of_dirs;irot++)
+			{
+        	        	rot1[irot] =  CMGUI_RANDOM(double) * M_PI;
+        	        	rot2[irot] =  CMGUI_RANDOM(double) * M_PI;
+        	        }
+			#endif
                        /*  Calculate the test line spacing in pixels in x-y plane using a 120.722	*/
                        /*	micron spacing							*/
 
