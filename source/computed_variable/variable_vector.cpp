@@ -1,25 +1,18 @@
 //******************************************************************************
 // FILE : variable_vector.cpp
 //
-// LAST MODIFIED : 23 December 2003
+// LAST MODIFIED : 9 February 2004
 //
 // DESCRIPTION :
 //???DB.  Should be template?
 //==============================================================================
 
+#include "computed_variable/variable_base.hpp"
+
 #include <new>
 #include <sstream>
 #include <string>
 #include <stdio.h>
-
-//???DB.  Put in include?
-const bool Assert_on=true;
-
-template<class Assertion,class Exception>inline void Assert(
-	Assertion assertion,Exception exception)
-{
-	if (Assert_on&&!(assertion)) throw exception;
-}
 
 #include "computed_variable/variable_vector.hpp"
 
@@ -29,9 +22,26 @@ template<class Assertion,class Exception>inline void Assert(
 // class Variable_input_vector_values
 // ----------------------------------
 
-class Variable_input_vector_values : public Variable_input
+class Variable_input_vector_values;
+
+#if defined (USE_INTRUSIVE_SMART_POINTER)
+typedef boost::intrusive_ptr<Variable_input_vector_values>
+	Variable_input_vector_values_handle;
+#elif defined (USE_SMART_POINTER)
+typedef boost::shared_ptr<Variable_input_vector_values>
+	Variable_input_vector_values_handle;
+#else
+typedef Variable_input_vector_values * Variable_input_vector_values_handle;
+#endif
+
+class Variable_input_vector_values : public
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
 //******************************************************************************
-// LAST MODIFIED : 7 December 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -49,19 +59,79 @@ class Variable_input_vector_values : public Variable_input
 			const ublas::vector<Variable_size_type>& indices):
 			variable_vector(variable_vector),indices(indices){};
 		~Variable_input_vector_values(){};
-		Variable_size_type size()
+#if defined (USE_ITERATORS)
+		// copy constructor
+		Variable_input_vector_values(
+			const Variable_input_vector_values& input_vector_values):
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+			(),
+			variable_vector(input_vector_values.variable_vector),
+			indices(input_vector_values.indices){};
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			clone() const
+		{
+			return (Variable_input_vector_values_handle(
+				new Variable_input_vector_values(*this)));
+		}
+		//???DB.  To be done
+		virtual bool is_atomic();
+#if defined (USE_ITERATORS_NESTED)
+		virtual Iterator begin_atomic_inputs();
+		virtual Iterator end_atomic_inputs();
+#else // defined (USE_ITERATORS_NESTED)
+#if defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+		virtual Variable_input_iterator begin_atomic_inputs();
+		virtual Variable_input_iterator end_atomic_inputs();
+#else // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+#if defined (USE_VARIABLE_INPUT)
+		virtual Handle_iterator<Variable_input_handle> begin_atomic_inputs();
+		virtual Handle_iterator<Variable_input_handle> end_atomic_inputs();
+#else // defined (USE_VARIABLE_INPUT)
+		virtual Handle_iterator<Variable_io_specifier_handle> begin_atomic();
+		virtual Handle_iterator<Variable_io_specifier_handle> end_atomic();
+#endif // defined (USE_VARIABLE_INPUT)
+#endif // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+#endif // defined (USE_ITERATORS_NESTED)
+#endif // defined (USE_ITERATORS)
+		virtual Variable_size_type
+#if defined (USE_ITERATORS)
+			number_differentiable
+#else // defined (USE_ITERATORS)
+			size
+#endif // defined (USE_ITERATORS)
+			()
 		{
 			Variable_size_type result;
 
 			result=indices.size();
 			if (0==result)
 			{
-				result=variable_vector->size();
+				result=variable_vector->
+#if defined (USE_ITERATORS)
+				number_differentiable
+#else // defined (USE_ITERATORS)
+				size
+#endif // defined (USE_VARIABLE_ITERATORS)
+				();
 			}
 
 			return (result);
 		};
-		virtual bool operator==(const Variable_input& input)
+		virtual bool operator==(const
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+			& input)
 		{
 			try
 			{
@@ -93,20 +163,128 @@ class Variable_input_vector_values : public Variable_input
 				return (false);
 			}
 		};
+#if defined (USE_SCALAR_MAPPING)
+	private:
+		virtual std::list< std::pair<Variable_size_type,Variable_size_type> >
+			scalar_mapping_local(Variable_input_handle target)
+		{
+			std::list< std::pair<Variable_size_type,Variable_size_type> > result(0);
+			const Variable_input_vector_values_handle input_vector_values=
+#if defined (USE_SMART_POINTER)
+				boost::dynamic_pointer_cast<Variable_input_vector_values,
+#if defined (USE_VARIABLE_INPUT)
+				Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+				Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+				>
+#else /* defined (USE_SMART_POINTER) */
+				dynamic_cast<Variable_input_vector_values *>
+#endif /* defined (USE_SMART_POINTER) */
+				(target);
+			Variable_size_type source_size,target_size;
+
+			target_size=target->size();
+			source_size=size();
+			if (input_vector_values)
+			{
+				if (variable_vector==input_vector_values->variable_vector)
+				{
+					if (0==indices.size())
+					{
+						if (0==(input_vector_values->indices).size())
+						{
+							result.push_back(
+								std::pair<Variable_size_type,Variable_size_type>(0,0));
+						}
+						else
+						{
+							Assert(target_size==(input_vector_values->indices).size(),
+								std::logic_error(
+								"Variable_input_vector_values::scalar_mapping_local.  "
+								"Error in calculating target size 1"));
+							
+							Variable_size_type i,j;
+
+							for (i=0;i<source_size;i++)
+							{
+								j=0;
+								while ((j<target_size)&&(i!=(input_vector_values->indices)[j]))
+								{
+									j++;
+								}
+								if ((0==i)||(i-(result.back()).first!=j-(result.back()).second))
+								{
+									result.push_back(std::pair<Variable_size_type,
+										Variable_size_type>(i,j));
+								}
+							}
+						}
+					}
+					else
+					{
+						Assert(source_size==indices.size(),std::logic_error(
+							"Variable_input_vector_values::scalar_mapping_local.  "
+							"Error in calculating source size"));
+						if (0==(input_vector_values->indices).size())
+						{
+							Variable_size_type i,j;
+
+							for (i=0;i<source_size;i++)
+							{
+								j=indices[i];
+								if ((0==i)||(i-(result.back()).first!=j-(result.back()).second))
+								{
+									result.push_back(std::pair<Variable_size_type,
+										Variable_size_type>(i,j));
+								}
+							}
+						}
+						else
+						{
+							Assert(target_size==(input_vector_values->indices).size(),
+								std::logic_error(
+								"Variable_input_vector_values::scalar_mapping_local.  "
+								"Error in calculating target size 2"));
+
+							Variable_size_type i,j;
+
+							for (i=0;i<source_size;i++)
+							{
+								j=0;
+								while ((j<target_size)&&
+									(indices[i]!=(input_vector_values->indices)[j]))
+								{
+									j++;
+								}
+								if ((0==i)||(i-(result.back()).first!=j-(result.back()).second))
+								{
+									result.push_back(std::pair<Variable_size_type,
+										Variable_size_type>(i,j));
+								}
+							}
+						}
+					}
+				}
+			}
+			if (0==result.size())
+			{
+				result.push_back(std::pair<Variable_size_type,Variable_size_type>(
+					0,target_size));
+			}
+			if (0<source_size)
+			{
+				result.push_back(std::pair<Variable_size_type,Variable_size_type>(
+					source_size,target_size));
+			}
+
+			return (result);
+		};
+#endif // defined (USE_SCALAR_MAPPING)
 	private:
 		Variable_vector_handle variable_vector;
 		ublas::vector<Variable_size_type> indices;
 };
-
-#if defined (USE_INTRUSIVE_SMART_POINTER)
-typedef boost::intrusive_ptr<Variable_input_vector_values>
-	Variable_input_vector_values_handle;
-#elif defined (USE_SMART_POINTER)
-typedef boost::shared_ptr<Variable_input_vector_values>
-	Variable_input_vector_values_handle;
-#else
-typedef Variable_input_vector_values * Variable_input_vector_values_handle;
-#endif
 
 // global classes
 // ==============
@@ -182,9 +360,15 @@ Scalar Variable_vector::operator[](Variable_size_type i) const
 	return (values[i]);
 }
 
-Variable_size_type Variable_vector::size() const
+Variable_size_type Variable_vector::
+#if defined (USE_ITERATORS)
+	number_differentiable
+#else // defined (USE_ITERATORS)
+	size
+#endif // defined (USE_VARIABLE_ITERATORS)
+	() const
 //******************************************************************************
-// LAST MODIFIED : 24 October 2003
+// LAST MODIFIED : 21 January 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -192,6 +376,8 @@ Variable_size_type Variable_vector::size() const
 	return (values.size());
 }
 
+#if defined (USE_ITERATORS)
+#else // defined (USE_ITERATORS)
 Vector *Variable_vector::scalars()
 //******************************************************************************
 // LAST MODIFIED : 24 October 2003
@@ -201,42 +387,73 @@ Vector *Variable_vector::scalars()
 {
 	return (new Vector(values));
 }
+#endif // defined (USE_VARIABLE_ITERATORS)
 
-Variable_input_handle Variable_vector::input_values()
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_vector::input_values()
 //******************************************************************************
-// LAST MODIFIED : 23 October 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 // Returns the values input for a vector.
 //==============================================================================
 {
-	return (Variable_input_handle(new Variable_input_vector_values(
-		Variable_vector_handle(this))));
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_vector_values(Variable_vector_handle(this))));
 }
 
-Variable_input_handle Variable_vector::input_values(Variable_size_type index)
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_vector::input_values(Variable_size_type index)
 //******************************************************************************
-// LAST MODIFIED : 24 October 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 // Returns the values input for a vector.
 //==============================================================================
 {
-	return (Variable_input_handle(new Variable_input_vector_values(
-		Variable_vector_handle(this),index)));
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_vector_values(Variable_vector_handle(this),index)));
 }
 
-Variable_input_handle Variable_vector::input_values(
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_vector::input_values(
 	const ublas::vector<Variable_size_type> indices)
 //******************************************************************************
-// LAST MODIFIED : 7 December 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 // Returns the values input for a vector.
 //==============================================================================
 {
-	return (Variable_input_handle(new Variable_input_vector_values(
-		Variable_vector_handle(this),indices)));
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_vector_values(Variable_vector_handle(this),indices)));
 }
 
 Scalar Variable_vector::norm() const
@@ -346,22 +563,38 @@ Variable_handle Variable_vector::evaluate_local()
 	return (Variable_handle(new Variable_vector(*this)));
 }
 
-void Variable_vector::evaluate_derivative_local(Matrix& matrix,
-	std::list<Variable_input_handle>& independent_variables)
+#if defined (USE_ITERATORS)
+//???DB.  To be done
+#else // defined (USE_ITERATORS)
+bool Variable_vector::evaluate_derivative_local(Matrix& matrix,
+	std::list<
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 5 November 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
+	bool result;
 	Variable_size_type i,index,number_of_input_values,number_of_values;
 	Variable_input_vector_values_handle input_values_handle;
 
+	result=true;
 	// matrix is zero'd on entry
 	if ((1==independent_variables.size())&&(input_values_handle=
 #if defined (USE_SMART_POINTER)
-		boost::dynamic_pointer_cast<Variable_input_vector_values,Variable_input>(
-		independent_variables.front())
+		boost::dynamic_pointer_cast<Variable_input_vector_values,
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+		>(independent_variables.front())
 #else /* defined (USE_SMART_POINTER) */
 		dynamic_cast<Variable_input_vector_values *>(independent_variables.front())
 #endif /* defined (USE_SMART_POINTER) */
@@ -392,12 +625,21 @@ void Variable_vector::evaluate_derivative_local(Matrix& matrix,
 			}
 		}
 	}
+
+	return (result);
 }
+#endif // defined (USE_ITERATORS)
 
 Variable_handle Variable_vector::get_input_value_local(
-	const Variable_input_handle& input)
+	const
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	& input)
 //******************************************************************************
-// LAST MODIFIED : 7 December 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -407,14 +649,25 @@ Variable_handle Variable_vector::get_input_value_local(
 
 	if ((input_values_handle=
 #if defined (USE_SMART_POINTER)
-		boost::dynamic_pointer_cast<Variable_input_vector_values,Variable_input>(
-		input)
+		boost::dynamic_pointer_cast<Variable_input_vector_values,
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+		>(input)
 #else /* defined (USE_SMART_POINTER) */
 		dynamic_cast<Variable_input_vector_values *>(input)
 #endif /* defined (USE_SMART_POINTER) */
 		)&&(input_values_handle->variable_vector==Variable_vector_handle(this)))
 	{
-		Variable_size_type number_of_input_values=input_values_handle->size();
+		Variable_size_type number_of_input_values=input_values_handle->
+#if defined (USE_ITERATORS)
+			number_differentiable
+#else // defined (USE_ITERATORS)
+			size
+#endif // defined (USE_VARIABLE_ITERATORS)
+			();
 
 		if (0==(input_values_handle->indices).size())
 		{
@@ -422,7 +675,13 @@ Variable_handle Variable_vector::get_input_value_local(
 		}
 		else
 		{
-			Variable_size_type i,index,number_of_values=this->size();
+			Variable_size_type i,index,number_of_values=this->
+#if defined (USE_ITERATORS)
+				number_differentiable
+#else // defined (USE_ITERATORS)
+				size
+#endif // defined (USE_VARIABLE_ITERATORS)
+				();
 			ublas::vector<Scalar> selected_values(number_of_input_values);
 
 			for (i=0;i<number_of_input_values;i++)
@@ -445,28 +704,58 @@ Variable_handle Variable_vector::get_input_value_local(
 	return (values_vector);
 }
 
-int Variable_vector::set_input_value_local(const Variable_input_handle& input,
-	const Variable_handle& values)
+bool Variable_vector::set_input_value_local(const
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	& input,
+	const
+#if defined (USE_VARIABLES_AS_COMPONENTS)
+	Variable_handle
+#else // defined (USE_VARIABLES_AS_COMPONENTS)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLES_AS_COMPONENTS)
+	&
+#if defined (USE_ITERATORS)
+	//???DB.  To be done
+#else // defined (USE_ITERATORS)
+	values
+#endif // defined (USE_VARIABLE_ITERATORS)
+	)
 //******************************************************************************
-// LAST MODIFIED : 5 November 2003
+// LAST MODIFIED : 9 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	int return_code;
+	bool result;
 	Variable_input_vector_values_handle input_values_handle;
 	Vector *values_vector;
 
-	return_code=0;
+	result=false;
 	if ((input_values_handle=
 #if defined (USE_SMART_POINTER)
-		boost::dynamic_pointer_cast<Variable_input_vector_values,Variable_input>(
-		input)
+		boost::dynamic_pointer_cast<Variable_input_vector_values,
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+		>(input)
 #else /* defined (USE_SMART_POINTER) */
 		dynamic_cast<Variable_input_vector_values *>(input)
 #endif /* defined (USE_SMART_POINTER) */
 		)&&(input_values_handle->variable_vector==Variable_vector_handle(this))&&
-		(values_vector=values->scalars()))
+		(values_vector=
+#if defined (USE_ITERATORS)
+		//???DB.  To be done
+		0
+#else // defined (USE_ITERATORS)
+		values->scalars()
+#endif // defined (USE_VARIABLE_ITERATORS)
+		))
 	{
 		Variable_size_type number_of_input_values=
 			(input_values_handle->indices).size();
@@ -476,7 +765,7 @@ int Variable_vector::set_input_value_local(const Variable_input_handle& input,
 			if ((this->values).size()==values_vector->size())
 			{
 				this->values= *values_vector;
-				return_code=1;
+				result=true;
 			}
 		}
 		else
@@ -493,13 +782,13 @@ int Variable_vector::set_input_value_local(const Variable_input_handle& input,
 						(this->values)[index-1]=(*values_vector)[i];
 					}
 				}
-				return_code=1;
+				result=true;
 			}
 		}
 		delete values_vector;
 	}
 
-	return (return_code);
+	return (result);
 }
 
 string_handle Variable_vector::get_string_representation_local()

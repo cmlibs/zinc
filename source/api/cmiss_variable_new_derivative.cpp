@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_variable_new_derivative.cpp
 
-LAST MODIFIED : 14 November 2003
+LAST MODIFIED : 2 February 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_variable_new derivative object.
@@ -19,7 +19,7 @@ Cmiss_variable_new_id Cmiss_variable_new_derivative_create(
 	Cmiss_variable_new_id dependent_variable,
 	Cmiss_variable_new_input_list_id independent_variables)
 /*******************************************************************************
-LAST MODIFIED : 14 November 2003
+LAST MODIFIED : 2 February 2004
 
 DESCRIPTION :
 Creates a Cmiss_variable_new derivative with the supplied <dependent_variable>
@@ -32,7 +32,13 @@ and <independent_variables>.
 #else /* defined (USE_SMART_POINTER) */
 	Variable_handle dependent_variable_handle;
 #endif /* defined (USE_SMART_POINTER) */
-	std::list<Variable_input_handle> *independent_variables_address;
+	std::list<
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		> *independent_variables_address;
 
 	result=0;
 	if (
@@ -44,8 +50,13 @@ and <independent_variables>.
 		dependent_variable))&&
 #endif /* defined (USE_SMART_POINTER) */
 		(independent_variables_address=
-		reinterpret_cast<std::list<Variable_input_handle> *>(
-    independent_variables)))
+		reinterpret_cast<std::list<
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		> *>(independent_variables)))
 	{
 		result=reinterpret_cast<Cmiss_variable_new_id>(
 #if defined (USE_SMART_POINTER)

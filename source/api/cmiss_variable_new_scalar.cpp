@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_variable_new_scalar.cpp
 
-LAST MODIFIED : 24 October 2003
+LAST MODIFIED : 2 February 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_variable_new scalar object.
@@ -38,7 +38,7 @@ Creates a Cmiss_variable_new scalar with the supplied <value>.
 Cmiss_variable_new_input_id Cmiss_variable_new_input_scalar_value(
 	Cmiss_variable_new_id variable_scalar)
 /*******************************************************************************
-LAST MODIFIED : 24 October 2003
+LAST MODIFIED : 2 February 2004
 
 DESCRIPTION :
 Returns the value input for the <variable_scalar>.
@@ -66,9 +66,17 @@ Returns the value input for the <variable_scalar>.
 	{
 		result=reinterpret_cast<Cmiss_variable_new_input_id>(
 #if defined (USE_SMART_POINTER)
-			new Variable_input_handle(variable_scalar_handle->input_value())
-#else /* defined (USE_SMART_POINTER) */
+			new
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			(
+#endif /* defined (USE_SMART_POINTER) */
 			variable_scalar_handle->input_value()
+#if defined (USE_SMART_POINTER)
+			)
 #endif /* defined (USE_SMART_POINTER) */
 			);
 	}

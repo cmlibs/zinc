@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_variable_new_finite_element.cpp
 
-LAST MODIFIED : 12 November 2003
+LAST MODIFIED : 2 February 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_variable_new finite_element object.
@@ -68,7 +68,7 @@ have <number_of_xi> values and <number_of_xi> should equal dimension(<element>).
 Cmiss_variable_new_input_id Cmiss_variable_new_input_element_xi_element_xi(
 	Cmiss_variable_new_id variable_element_xi)
 /*******************************************************************************
-LAST MODIFIED : 12 November 2003
+LAST MODIFIED : 2 February 2004
 
 DESCRIPTION :
 Returns the element/xi input for the <variable_element_xi>.
@@ -97,7 +97,13 @@ Returns the element/xi input for the <variable_element_xi>.
 	{
 		result=reinterpret_cast<Cmiss_variable_new_input_id>(
 #if defined (USE_SMART_POINTER)
-			new Variable_input_handle(
+			new
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			(
 #endif /* defined (USE_SMART_POINTER) */
 			variable_element_xi_handle->input_element_xi()
 #if defined (USE_SMART_POINTER)
@@ -113,7 +119,7 @@ Cmiss_variable_new_input_id Cmiss_variable_new_input_element_xi_xi(
 	Cmiss_variable_new_id variable_element_xi,unsigned int number_of_indices,
 	unsigned int *indices)
 /*******************************************************************************
-LAST MODIFIED : 12 November 2003
+LAST MODIFIED : 2 February 2004
 
 DESCRIPTION :
 Returns the xi input made up of the specified <indices> for the
@@ -122,7 +128,12 @@ then the input refers to all values.
 ==============================================================================*/
 {
 	Cmiss_variable_new_input_id result=0;
-	Variable_input_handle input_values;
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		input_values;
 	Variable_element_xi_handle variable_element_xi_handle;
 #if defined (USE_SMART_POINTER)
 	Variable_handle *variable_handle_address;
@@ -161,9 +172,17 @@ then the input refers to all values.
 		}
 		result=reinterpret_cast<Cmiss_variable_new_input_id>(
 #if defined (USE_SMART_POINTER)
-			new Variable_input_handle(input_values)
-#else /* defined (USE_SMART_POINTER) */
+			new
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			(
+#endif /* defined (USE_SMART_POINTER) */
 			input_values
+#if defined (USE_SMART_POINTER)
+			)
 #endif /* defined (USE_SMART_POINTER) */
 			);
 	}
@@ -211,7 +230,7 @@ particular component.
 Cmiss_variable_new_input_id Cmiss_variable_new_input_finite_element_element_xi(
 	Cmiss_variable_new_id variable_finite_element)
 /*******************************************************************************
-LAST MODIFIED : 12 November 2003
+LAST MODIFIED : 2 February 2004
 
 DESCRIPTION :
 Returns the element/xi input for the <variable_finite_element>.
@@ -240,7 +259,13 @@ Returns the element/xi input for the <variable_finite_element>.
 	{
 		result=reinterpret_cast<Cmiss_variable_new_input_id>(
 #if defined (USE_SMART_POINTER)
-			new Variable_input_handle(
+			new
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			(
 #endif /* defined (USE_SMART_POINTER) */
 			variable_finite_element_handle->input_element_xi()
 #if defined (USE_SMART_POINTER)
@@ -257,7 +282,7 @@ Cmiss_variable_new_input_id
 	Cmiss_variable_new_id variable_finite_element,struct Cmiss_node *node,
 	enum FE_nodal_value_type value_type,int version)
 /*******************************************************************************
-LAST MODIFIED : 12 November 2003
+LAST MODIFIED : 2 February 2004
 
 DESCRIPTION :
 Returns the nodal values input for the <variable_finite_element>.
@@ -286,7 +311,13 @@ Returns the nodal values input for the <variable_finite_element>.
 	{
 		result=reinterpret_cast<Cmiss_variable_new_input_id>(
 #if defined (USE_SMART_POINTER)
-			new Variable_input_handle(
+			new
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			(
 #endif /* defined (USE_SMART_POINTER) */
 			variable_finite_element_handle->input_nodal_values(node,value_type,
 			version)
@@ -303,7 +334,7 @@ Cmiss_variable_new_input_id Cmiss_variable_new_input_finite_element_xi(
 	Cmiss_variable_new_id variable_finite_element,unsigned int number_of_indices,
 	unsigned int *indices)
 /*******************************************************************************
-LAST MODIFIED : 12 November 2003
+LAST MODIFIED : 2 February 2004
 
 DESCRIPTION :
 Returns the xi input made up of the specified <indices> for the
@@ -312,7 +343,12 @@ then the input refers to all values.
 ==============================================================================*/
 {
 	Cmiss_variable_new_input_id result=0;
-	Variable_input_handle input_values;
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		input_values;
 	Variable_finite_element_handle variable_finite_element_handle;
 #if defined (USE_SMART_POINTER)
 	Variable_handle *variable_handle_address;
@@ -351,9 +387,17 @@ then the input refers to all values.
 		}
 		result=reinterpret_cast<Cmiss_variable_new_input_id>(
 #if defined (USE_SMART_POINTER)
-			new Variable_input_handle(input_values)
-#else /* defined (USE_SMART_POINTER) */
+			new
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			(
+#endif /* defined (USE_SMART_POINTER) */
 			input_values
+#if defined (USE_SMART_POINTER)
+			)
 #endif /* defined (USE_SMART_POINTER) */
 			);
 	}

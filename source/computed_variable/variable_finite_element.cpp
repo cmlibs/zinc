@@ -1,25 +1,18 @@
 //******************************************************************************
 // FILE : variable_finite_element.cpp
 //
-// LAST MODIFIED : 15 December 2003
+// LAST MODIFIED : 9 February 2004
 //
 // DESCRIPTION :
 // Finite element types - element/xi and finite element field.
 //==============================================================================
 
+#include "computed_variable/variable_base.hpp"
+
 #include <new>
 #include <sstream>
 #include <string>
 #include <stdio.h>
-
-//???DB.  Put in include?
-const bool Assert_on=true;
-
-template<class Assertion,class Exception>inline void Assert(
-	Assertion assertion,Exception exception)
-{
-	if (Assert_on&&!(assertion)) throw exception;
-}
 
 #include "computed_variable/variable_finite_element.hpp"
 #include "computed_variable/variable_vector.hpp"
@@ -33,12 +26,89 @@ extern "C"
 // module classes
 // ==============
 
+class Variable_input_element_xi;
+
+#if defined (USE_INTRUSIVE_SMART_POINTER)
+typedef boost::intrusive_ptr<Variable_input_element_xi>
+	Variable_input_element_xi_handle;
+#elif defined (USE_SMART_POINTER)
+typedef boost::shared_ptr<Variable_input_element_xi>
+	Variable_input_element_xi_handle;
+#else
+typedef Variable_input_element_xi * Variable_input_element_xi_handle;
+#endif
+
+#if defined (USE_ITERATORS)
+#if defined (USE_ITERATORS_NESTED)
+#else // defined (USE_ITERATORS_NESTED)
+// class Variable_input_iterator_representation_atomic_element_xi
+// --------------------------------------------------------------
+
+class Variable_input_iterator_representation_atomic_element_xi: public
+#if defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+	Variable_input_iterator_representation
+#else // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+	Handle_iterator_representation<
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		>
+#endif // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+//******************************************************************************
+// LAST MODIFIED : 3 February 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	public:
+		// constructor
+		Variable_input_iterator_representation_atomic_element_xi(const bool begin,
+			Variable_input_element_xi_handle input);
+		// destructor
+		~Variable_input_iterator_representation_atomic_element_xi();
+		// increment
+		void increment();
+		// equality
+		bool equality(const
+#if defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+			Variable_input_iterator_representation
+#else // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+			Handle_iterator_representation<
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			>
+#endif // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+			* representation);
+		// dereference
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			dereference() const;
+	private:
+		Variable_input_element_xi_handle atomic_input,input;
+		Variable_size_type input_index;
+};
+#endif // defined (USE_ITERATORS_NESTED)
+#endif // defined (USE_ITERATORS)
+
 // class Variable_input_element_xi
 // -------------------------------
 
-class Variable_input_element_xi : public Variable_input
+class Variable_input_element_xi : public
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
 //******************************************************************************
-// LAST MODIFIED : 7 December 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -46,41 +116,332 @@ class Variable_input_element_xi : public Variable_input
 	friend class Variable_element_xi;
 	friend class Variable_finite_element;
 	friend class Variable_finite_element_check_derivative_functor;
+#if defined (USE_ITERATORS_NESTED)
+#else // defined (USE_ITERATORS_NESTED)
+	friend class Variable_input_iterator_representation_atomic_element_xi;
+#endif // defined (USE_ITERATORS_NESTED)
 	public:
 		Variable_input_element_xi(
 			const Variable_finite_element_handle& variable_finite_element,
 			bool element=true,bool xi=true):element(element),xi(xi),indices(0),
-			variable_element_xi(),variable_finite_element(variable_finite_element){}
+			variable_element_xi(),variable_finite_element(variable_finite_element){};
 		Variable_input_element_xi(
 			const Variable_finite_element_handle& variable_finite_element,
 			Variable_size_type index):element(false),xi(true),indices(1),
 			variable_element_xi(),variable_finite_element(variable_finite_element)
 		{
 			indices[0]=index;
-		}
+		};
 		Variable_input_element_xi(
 			const Variable_finite_element_handle& variable_finite_element,
 			const ublas::vector<Variable_size_type>& indices):
 			element(false),xi(true),indices(indices),variable_element_xi(),
-			variable_finite_element(variable_finite_element){}
+			variable_finite_element(variable_finite_element)
+		{
+			// remove repeated indices
+			Variable_size_type number_of_indices=indices.size();
+			ublas::vector<Variable_size_type> unique_indices(number_of_indices);
+			Variable_size_type i,j,number_of_unique_indices;
+
+			number_of_unique_indices=0;
+			for (i=0;i<number_of_indices;i++)
+			{
+				j=0;
+				while ((j<number_of_unique_indices)&&(indices[i]!=unique_indices[j]))
+				{
+					j++;
+				}
+				if (j==number_of_unique_indices)
+				{
+					unique_indices[j]=indices[i];
+					number_of_unique_indices++;
+				}
+			}
+			if (number_of_indices!=number_of_unique_indices)
+			{
+				(this->indices).resize(number_of_unique_indices);
+				for (i=0;i<number_of_unique_indices;i++)
+				{
+					(this->indices)[i]=unique_indices[i];
+				}
+			}
+		};
 		Variable_input_element_xi(
 			const Variable_element_xi_handle& variable_element_xi,bool element=true,
 			bool xi=true):element(element),xi(xi),indices(0),
-			variable_element_xi(variable_element_xi),variable_finite_element(){}
+			variable_element_xi(variable_element_xi),variable_finite_element(){};
 		Variable_input_element_xi(
 			const Variable_element_xi_handle& variable_element_xi,
 			Variable_size_type index):element(false),xi(true),indices(1),
 			variable_element_xi(variable_element_xi),variable_finite_element()
 		{
 			indices[0]=index;
-		}
+		};
 		Variable_input_element_xi(
 			const Variable_element_xi_handle& variable_element_xi,
 			const ublas::vector<Variable_size_type>& indices):
 			element(false),xi(true),indices(indices),
-			variable_element_xi(variable_element_xi),variable_finite_element(){}
+			variable_element_xi(variable_element_xi),variable_finite_element()
+		{
+			// remove repeated indices
+			Variable_size_type number_of_indices=indices.size();
+			ublas::vector<Variable_size_type> unique_indices(number_of_indices);
+			Variable_size_type i,j,number_of_unique_indices;
+
+			number_of_unique_indices=0;
+			for (i=0;i<number_of_indices;i++)
+			{
+				j=0;
+				while ((j<number_of_unique_indices)&&(indices[i]!=unique_indices[j]))
+				{
+					j++;
+				}
+				if (j==number_of_unique_indices)
+				{
+					unique_indices[j]=indices[i];
+					number_of_unique_indices++;
+				}
+			}
+			if (number_of_indices!=number_of_unique_indices)
+			{
+				(this->indices).resize(number_of_unique_indices);
+				for (i=0;i<number_of_unique_indices;i++)
+				{
+					(this->indices)[i]=unique_indices[i];
+				}
+			}
+		};
 		~Variable_input_element_xi(){};
-		Variable_size_type size()
+#if defined (USE_ITERATORS)
+		// copy constructor
+		Variable_input_element_xi(
+			const Variable_input_element_xi& input_element_xi):
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+			(),
+			element(input_element_xi.element),xi(input_element_xi.xi),
+			indices(input_element_xi.indices),
+			variable_element_xi(input_element_xi.variable_element_xi),
+			variable_finite_element(input_element_xi.variable_finite_element){};
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		clone() const
+		{
+			return (Variable_input_element_xi_handle(
+				new Variable_input_element_xi(*this)));
+		};
+#if defined (USE_ITERATORS_NESTED)
+		class Iterator:public std::iterator<std::input_iterator_tag,
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			>
+		{
+			public:
+				// constructor
+				Iterator(Variable_input_element_xi_handle input):input(input),
+					input_index(0)
+				{
+					if (atomic_input=
+#if defined (USE_SMART_POINTER)
+						boost::dynamic_pointer_cast<Variable_input_element_xi,
+#if defined (USE_VARIABLE_INPUT)
+						Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+						Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+						>
+#else /* defined (USE_SMART_POINTER) */
+						dynamic_cast<Variable_input_element_xi *>
+#endif /* defined (USE_SMART_POINTER) */
+						(input->clone()))
+					{
+						atomic_input->indices.resize(1);
+						atomic_input->indices[0]=0;
+					}
+				};
+				// destructor
+				~Iterator(){};
+				// assignment
+				Iterator& operator=(const Iterator& iterator)
+				{
+					atomic_input=iterator.atomic_input;
+					input=iterator.input;
+					input_index=iterator.input_index;
+
+					return (*this);
+				};
+				// increment (prefix)
+				Iterator& operator++()
+				{
+					if (atomic_input->element)
+					{
+						atomic_input->element=false;
+						if (input->xi)
+						{
+							atomic_input->xi=true;
+							input_index=0;
+						}
+						else
+						{
+							atomic_input->xi=false;
+						}
+					}
+					else
+					{
+						if (atomic_input->xi)
+						{
+							input_index++;
+						}
+					}
+					if (atomic_input->xi)
+					{
+						if (0<(input->indices).size())
+						{
+							if (input_index<(input->indices).size())
+							{
+								atomic_input->indices[0]=(input->indices)[input_index];
+							}
+							else
+							{
+								atomic_input->xi=false;
+							}
+						}
+						else
+						{
+							if (input_index<input->number_differentiable())
+							{
+								atomic_input->indices[0]=input_index;
+							}
+							else
+							{
+								atomic_input->xi=false;
+							}
+						}
+						if (!(atomic_input->xi))
+						{
+							input_index=0;
+							atomic_input->indices[0]=0;
+						}
+					}
+
+					return (*this);
+				};
+				// increment (postfix)
+				Iterator operator++(int)
+				{
+					Iterator tmp= *this;
+
+					++(*this);
+
+					return (tmp);
+				};
+				// equality
+				bool operator==(const Iterator& iterator)
+				{
+					bool result;
+
+					result=false;
+					if ((input==iterator.input)&&
+						(*atomic_input== *(iterator.atomic_input)))
+					{
+						result=true;
+					}
+
+					return (result);
+				};
+				// inequality
+				bool operator!=(const Iterator& iterator)
+				{
+					return (!((*this)==iterator));
+				}
+				// dereference
+#if defined (USE_VARIABLE_INPUT)
+				Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+				Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+				operator*() const
+				{
+					return (atomic_input);
+				};
+				// don't have a operator-> because its not needed and it would return
+				//   a Variable_input_handle*
+			private:
+				Variable_input_element_xi_handle atomic_input,input;
+				Variable_size_type input_index;
+		};
+#endif // defined (USE_ITERATORS_NESTED)
+		virtual bool is_atomic()
+		{
+			return ((element&&!xi)||(!element&&xi&&((1==indices.size())||
+				(variable_element_xi&&
+				(1==variable_element_xi->number_differentiable()))||
+				(variable_finite_element&&(1==(variable_finite_element->xi).size())))));
+		}
+#if defined (USE_ITERATORS_NESTED)
+		virtual Iterator begin_atomic_inputs();
+		virtual Iterator end_atomic_inputs();
+#else // defined (USE_ITERATORS_NESTED)
+#if defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+		virtual Variable_input_iterator begin_atomic_inputs()
+		{
+			return (Variable_input_iterator(
+				new Variable_input_iterator_representation_atomic_element_xi(true,
+				Variable_input_element_xi_handle(this))));
+		};
+		virtual Variable_input_iterator end_atomic_inputs()
+		{
+			return (Variable_input_iterator(
+				new Variable_input_iterator_representation_atomic_element_xi(false,
+				Variable_input_element_xi_handle(this))));
+		};
+#else // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+#if defined (USE_VARIABLE_INPUT)
+		virtual Handle_iterator<Variable_input_handle> begin_atomic_inputs()
+		{
+			return (Handle_iterator<Variable_input_handle>(
+				new Variable_input_iterator_representation_atomic_element_xi(true,
+				Variable_input_element_xi_handle(this))));
+		};
+		virtual Handle_iterator<Variable_input_handle> end_atomic_inputs()
+		{
+			return (Handle_iterator<Variable_input_handle>(
+				new Variable_input_iterator_representation_atomic_element_xi(false,
+				Variable_input_element_xi_handle(this))));
+		};
+#else // defined (USE_VARIABLE_INPUT)
+		virtual Handle_iterator<Variable_io_specifier_handle> begin_atomic()
+		{
+			return (Handle_iterator<Variable_io_specifier_handle>(
+				new Variable_input_iterator_representation_atomic_element_xi(true,
+				Variable_input_element_xi_handle(this))));
+		};
+		virtual Handle_iterator<Variable_io_specifier_handle> end_atomic()
+		{
+			return (Handle_iterator<Variable_io_specifier_handle>(
+				new Variable_input_iterator_representation_atomic_element_xi(false,
+				Variable_input_element_xi_handle(this))));
+		};
+#endif // defined (USE_VARIABLE_INPUT)
+#endif // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+#endif // defined (USE_ITERATORS_NESTED)
+#endif // defined (USE_ITERATORS)
+		Variable_size_type
+#if defined (USE_ITERATORS)
+			number_differentiable
+#else // defined (USE_ITERATORS)
+			size
+#endif // defined (USE_ITERATORS)
+			()
 		{
 			Variable_size_type result;
 
@@ -92,18 +453,30 @@ class Variable_input_element_xi : public Variable_input
 				{
 					if (variable_element_xi)
 					{
-						result=variable_element_xi->size();
+						result=variable_element_xi->
+#if defined (USE_ITERATORS)
+							number_differentiable
+#else // defined (USE_ITERATORS)
+							size
+#endif // defined (USE_ITERATORS)
+							();
 					}
 					else if (variable_finite_element)
 					{
-						result=variable_finite_element->size();
+						result=(variable_finite_element->xi).size();
 					}
 				}
 			}
 
 			return (result);
 		};
-		virtual bool operator==(const Variable_input& input)
+		virtual bool operator==(const
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+			& input)
 		{
 			try
 			{
@@ -137,6 +510,504 @@ class Variable_input_element_xi : public Variable_input
 				return (false);
 			}
 		};
+#if defined (VARIABLE_INPUT_METHODS_FOR_SET_OPERATIONS) || defined (USE_SCALAR_MAPPING)
+	private:
+		virtual std::list< std::pair<Variable_size_type,Variable_size_type> >
+			scalar_mapping_local(Variable_input_handle target)
+		{
+			std::list< std::pair<Variable_size_type,Variable_size_type> > result(0);
+			const Variable_input_element_xi_handle input_element_xi=
+#if defined (USE_SMART_POINTER)
+				boost::dynamic_pointer_cast<Variable_input_element_xi,Variable_input>
+#else /* defined (USE_SMART_POINTER) */
+				dynamic_cast<Variable_input_element_xi *>
+#endif /* defined (USE_SMART_POINTER) */
+				(target);
+			Variable_size_type i,j,source_size,target_size;
+
+			target_size=target->size();
+			source_size=size();
+			if (input_element_xi)
+			{
+				if ((variable_element_xi==input_element_xi->variable_element_xi)&&
+					(variable_finite_element==input_element_xi->variable_finite_element))
+				{
+					if (xi)
+					{
+						if (0==indices.size())
+						{
+							if (input_element_xi->xi)
+							{
+								if (0==(input_element_xi->indices).size())
+								{
+									result.push_back(
+										std::pair<Variable_size_type,Variable_size_type>(0,0));
+								}
+								else
+								{
+									Assert(target_size==(input_element_xi->indices).size(),
+										std::logic_error(
+										"Variable_input_element_xi::scalar_mapping_local.  "
+										"Error in calculating target size 1"));
+									for (i=0;i<source_size;i++)
+									{
+										j=0;
+										while ((j<target_size)&&
+											(i!=(input_element_xi->indices)[j]))
+										{
+											j++;
+										}
+										result.push_back(
+											std::pair<Variable_size_type,Variable_size_type>(i,j));
+									}
+								}
+							}
+						}
+						else
+						{
+							Assert(source_size==indices.size(),std::logic_error(
+								"Variable_input_element_xi::scalar_mapping_local.  "
+								"Error in calculating source size"));
+							if (input_element_xi->xi)
+							{
+								if (0==(input_element_xi->indices).size())
+								{
+									for (i=0;i<source_size;i++)
+									{
+										result.push_back(
+											std::pair<Variable_size_type,Variable_size_type>(i,
+											indices[i]));
+									}
+								}
+								else
+								{
+									Assert(target_size==(input_element_xi->indices).size(),
+										std::logic_error(
+										"Variable_input_element_xi::scalar_mapping_local.  "
+										"Error in calculating target size 2"));
+									for (i=0;i<source_size;i++)
+									{
+										j=0;
+										while ((j<target_size)&&
+											(indices[i]!=(input_element_xi->indices)[j]))
+										{
+											j++;
+										}
+										result.push_back(
+											std::pair<Variable_size_type,Variable_size_type>(
+											indices[i],j));
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			if (0==result.size())
+			{
+				result.push_back(std::pair<Variable_size_type,Variable_size_type>(
+					0,target_size));
+			}
+#if defined (USE_SCALAR_MAPPING)
+			if (0<source_size)
+			{
+				result.push_back(std::pair<Variable_size_type,Variable_size_type>(
+					source_size,target_size));
+			}
+#endif // defined (USE_SCALAR_MAPPING)
+
+			return (result);
+		};
+#endif // defined (VARIABLE_INPUT_METHODS_FOR_SET_OPERATIONS) || defined (USE_SCALAR_MAPPING)
+#if defined (VARIABLE_INPUT_METHODS_FOR_SET_OPERATIONS)
+		virtual Variable_input_handle operator_plus_local(
+			const Variable_input_handle& second)
+		{
+			Variable_input_handle result(0);
+			const Variable_input_element_xi_handle input_element_xi=
+#if defined (USE_SMART_POINTER)
+				boost::dynamic_pointer_cast<Variable_input_element_xi,Variable_input>
+#else /* defined (USE_SMART_POINTER) */
+				dynamic_cast<Variable_input_element_xi *>
+#endif /* defined (USE_SMART_POINTER) */
+				(second);
+
+			if (input_element_xi)
+			{
+				if ((variable_element_xi==input_element_xi->variable_element_xi)&&
+					(variable_finite_element==input_element_xi->variable_finite_element))
+				{
+					if (xi||(input_element_xi->xi))
+					{
+						if ((xi&&(0==indices.size()))||
+							((input_element_xi->xi)&&(0==(input_element_xi->indices).size())))
+						{
+							if (variable_element_xi)
+							{
+								result=Variable_input_handle(new Variable_input_element_xi(
+									variable_element_xi,element||input_element_xi->element,true));
+							}
+							if (variable_finite_element)
+							{
+								result=Variable_input_handle(new Variable_input_element_xi(
+									variable_finite_element,element||input_element_xi->element,
+									true));
+							}
+						}
+						else
+						{
+							if (xi&&(0!=indices.size()))
+							{
+								if ((input_element_xi->xi)&&
+									(0!=(input_element_xi->indices).size()))
+								{
+									std::list<Variable_size_type> indices_plus_list(0);
+									Variable_size_type i,j;
+
+									i=0;
+									for (j=indices.size();j>0;j--)
+									{
+										indices_plus_list.push_back(indices[i]);
+										i++;
+									}
+									i=0;
+									for (j=(input_element_xi->indices).size();j>0;j--)
+									{
+										if (indices_plus_list.end()==std::find(
+											indices_plus_list.begin(),indices_plus_list.end(),
+											(input_element_xi->indices)[i]))
+										{
+											indices_plus_list.push_back(
+												(input_element_xi->indices)[i]);
+										}
+										i++;
+									}
+
+									ublas::vector<Variable_size_type>
+										indices_plus(indices_plus_list.size());
+									std::list<Variable_size_type>::iterator indices_iterator;
+
+									indices_iterator=indices_plus_list.begin();
+									i=0;
+									for (j=indices_plus_list.size();j>0;j--)
+									{
+										indices_plus[i]= *indices_iterator;
+										i++;
+									}
+									if (variable_element_xi)
+									{
+										result=Variable_input_handle(new Variable_input_element_xi(
+											variable_element_xi,indices_plus));
+									}
+									if (variable_finite_element)
+									{
+										result=Variable_input_handle(new Variable_input_element_xi(
+											variable_finite_element,indices_plus));
+									}
+								}
+								else
+								{
+									if (variable_element_xi)
+									{
+										result=Variable_input_handle(new Variable_input_element_xi(
+											variable_element_xi,indices));
+									}
+									if (variable_finite_element)
+									{
+										result=Variable_input_handle(new Variable_input_element_xi(
+											variable_finite_element,indices));
+									}
+								}
+							}
+							else
+							{
+								if (variable_element_xi)
+								{
+									result=Variable_input_handle(new Variable_input_element_xi(
+										variable_element_xi,input_element_xi->indices));
+								}
+								if (variable_finite_element)
+								{
+									result=Variable_input_handle(new Variable_input_element_xi(
+										variable_finite_element,input_element_xi->indices));
+								}
+							}
+						}
+					}
+					else
+					{
+						if (variable_element_xi)
+						{
+							result=Variable_input_handle(new Variable_input_element_xi(
+								variable_element_xi,element||input_element_xi->element,false));
+						}
+						if (variable_finite_element)
+						{
+							result=Variable_input_handle(new Variable_input_element_xi(
+								variable_finite_element,element||input_element_xi->element,
+								false));
+						}
+					}
+				}
+			}
+
+			return (result);
+		};
+		virtual Variable_input_handle operator_minus_local(
+			const Variable_input_handle& second)
+		{
+			Variable_input_handle result(0);
+			const Variable_input_element_xi_handle input_element_xi=
+#if defined (USE_SMART_POINTER)
+				boost::dynamic_pointer_cast<Variable_input_element_xi,Variable_input>
+#else /* defined (USE_SMART_POINTER) */
+				dynamic_cast<Variable_input_element_xi *>
+#endif /* defined (USE_SMART_POINTER) */
+				(second);
+
+			if (input_element_xi&&
+				((variable_element_xi==input_element_xi->variable_element_xi)&&
+				(variable_finite_element==input_element_xi->variable_finite_element)))
+			{
+				if (xi&&(input_element_xi->xi))
+				{
+					if (0==(input_element_xi->indices).size())
+					{
+						if (variable_element_xi)
+						{
+							result=Variable_input_handle(new Variable_input_element_xi(
+								variable_element_xi,element&&!(input_element_xi->element),
+								false));
+						}
+						if (variable_finite_element)
+						{
+							result=Variable_input_handle(new Variable_input_element_xi(
+								variable_finite_element,element&&!(input_element_xi->element),
+								false));
+						}
+					}
+					else
+					{
+						std::list<Variable_size_type> indices_minus_list(0);
+						Variable_size_type i,j;
+
+						if (0==indices.size())
+						{
+							j=0;
+							if (variable_element_xi)
+							{
+								j=variable_element_xi->size();
+							}
+							if (variable_finite_element)
+							{
+								j=(variable_finite_element->xi).size();
+							}
+							i=0;
+							for (;j>0;j--)
+							{
+								indices_minus_list.push_back(i);
+								i++;
+							}
+						}
+						else
+						{
+							i++;
+							for (j=indices.size();j>0;j--)
+							{
+								indices_minus_list.push_back(indices[i]);
+								i++;
+							}
+						}
+						i=0;
+						for (j=(input_element_xi->indices).size();j>0;j--)
+						{
+							indices_minus_list.remove((input_element_xi->indices)[i]);
+							i++;
+						}
+						if (0==indices_minus_list.size())
+						{
+							if (variable_element_xi)
+							{
+								result=Variable_input_handle(new Variable_input_element_xi(
+									variable_element_xi,element&&!(input_element_xi->element),
+									false));
+							}
+							if (variable_finite_element)
+							{
+								result=Variable_input_handle(new Variable_input_element_xi(
+									variable_finite_element,element&&!(input_element_xi->element),
+									false));
+							}
+						}
+						else
+						{
+							ublas::vector<Variable_size_type>
+								indices_minus(indices_minus_list.size());
+							std::list<Variable_size_type>::iterator indices_iterator;
+
+							indices_iterator=indices_minus_list.begin();
+							i=0;
+							for (j=indices_minus_list.size();j>0;j--)
+							{
+								indices_minus[i]= *indices_iterator;
+								i++;
+							}
+							if (variable_element_xi)
+							{
+								result=Variable_input_handle(new Variable_input_element_xi(
+									variable_element_xi,indices_minus));
+							}
+							if (variable_finite_element)
+							{
+								result=Variable_input_handle(new Variable_input_element_xi(
+									variable_finite_element,indices_minus));
+							}
+						}
+					}
+				}
+			}
+			else
+			{
+				if (0==result)
+				{
+					result=Variable_input_handle(this);
+				}
+			}
+
+			return (result);
+		};
+		virtual Variable_input_handle intersect_local(
+			const Variable_input_handle& second)
+		{
+			Variable_input_handle result(0);
+			const Variable_input_element_xi_handle input_element_xi=
+#if defined (USE_SMART_POINTER)
+				boost::dynamic_pointer_cast<Variable_input_element_xi,Variable_input>
+#else /* defined (USE_SMART_POINTER) */
+				dynamic_cast<Variable_input_element_xi *>
+#endif /* defined (USE_SMART_POINTER) */
+				(second);
+
+			if (input_element_xi&&
+				((variable_element_xi==input_element_xi->variable_element_xi)&&
+				(variable_finite_element==input_element_xi->variable_finite_element)))
+			{
+				if (xi&&(input_element_xi->xi))
+				{
+					if (0==indices.size())
+					{
+						if (0==(input_element_xi->indices).size())
+						{
+							if (variable_element_xi)
+							{
+								result=Variable_input_handle(new Variable_input_element_xi(
+									variable_element_xi,element&&(input_element_xi->element),
+									true));
+							}
+							if (variable_finite_element)
+							{
+								result=Variable_input_handle(new Variable_input_element_xi(
+									variable_finite_element,element&&(input_element_xi->element),
+									true));
+							}
+						}
+						else
+						{
+							if (variable_element_xi)
+							{
+								result=Variable_input_handle(new Variable_input_element_xi(
+									variable_element_xi,input_element_xi->indices));
+							}
+							if (variable_finite_element)
+							{
+								result=Variable_input_handle(new Variable_input_element_xi(
+									variable_finite_element,input_element_xi->indices));
+							}
+						}
+					}
+					else
+					{
+						if (0==(input_element_xi->indices).size())
+						{
+							if (variable_element_xi)
+							{
+								result=Variable_input_handle(new Variable_input_element_xi(
+									variable_element_xi,indices));
+							}
+							if (variable_finite_element)
+							{
+								result=Variable_input_handle(new Variable_input_element_xi(
+									variable_finite_element,indices));
+							}
+						}
+						else
+						{
+							std::list<Variable_size_type> indices_intersect_list(0);
+							Variable_size_type i,j;
+
+							i=0;
+							for (j=indices.size();j>0;j--)
+							{
+								if ((input_element_xi->indices).end()!=std::find(
+									(input_element_xi->indices).begin(),
+									(input_element_xi->indices).end(),indices[i]))
+								{
+									indices_intersect_list.push_back(indices[i]);
+								}
+								i++;
+							}
+							if (0==indices_intersect_list.size())
+							{
+								result=Variable_input_handle(0);
+							}
+							else
+							{
+								ublas::vector<Variable_size_type>
+									indices_intersect(indices_intersect_list.size());
+								std::list<Variable_size_type>::iterator indices_iterator;
+
+								indices_iterator=indices_intersect_list.begin();
+								i=0;
+								for (j=indices_intersect_list.size();j>0;j--)
+								{
+									indices_intersect[i]= *indices_iterator;
+									i++;
+								}
+								if (variable_element_xi)
+								{
+									result=Variable_input_handle(new Variable_input_element_xi(
+										variable_element_xi,indices_intersect));
+								}
+								if (variable_finite_element)
+								{
+									result=Variable_input_handle(new Variable_input_element_xi(
+										variable_finite_element,indices_intersect));
+								}
+							}
+						}
+					}
+				}
+				else
+				{
+					if (element&&(input_element_xi->element))
+					{
+						if (variable_element_xi)
+						{
+							result=Variable_input_handle(new Variable_input_element_xi(
+								variable_element_xi,true,false));
+						}
+						if (variable_finite_element)
+						{
+							result=Variable_input_handle(new Variable_input_element_xi(
+								variable_finite_element,true,false));
+						}
+					}
+				}
+			}
+
+			return (result);
+		};
+#endif // defined (VARIABLE_INPUT_METHODS_FOR_SET_OPERATIONS)
 	private:
 		bool element,xi;
 		ublas::vector<Variable_size_type> indices;
@@ -144,18 +1015,183 @@ class Variable_input_element_xi : public Variable_input
 		Variable_finite_element_handle variable_finite_element;
 };
 
-#if defined (USE_INTRUSIVE_SMART_POINTER)
-typedef boost::intrusive_ptr<Variable_input_element_xi>
-	Variable_input_element_xi_handle;
-#elif defined (USE_SMART_POINTER)
-typedef boost::shared_ptr<Variable_input_element_xi>
-	Variable_input_element_xi_handle;
-#else
-typedef Variable_input_element_xi * Variable_input_element_xi_handle;
-#endif
+#if defined (USE_ITERATORS)
+#if defined (USE_ITERATORS_NESTED)
+#else // defined (USE_ITERATORS_NESTED)
+// class Variable_input_iterator_representation_atomic_element_xi
+// --------------------------------------------------------------
 
-// class Variable_input_nodal_values
-// ---------------------------------
+Variable_input_iterator_representation_atomic_element_xi::
+	Variable_input_iterator_representation_atomic_element_xi(const bool begin,
+	Variable_input_element_xi_handle input):atomic_input(0),input(input),
+	input_index(0)
+//******************************************************************************
+// LAST MODIFIED : 3 February 2004
+//
+// DESCRIPTION :
+// Constructor.  If <begin> then the constructed iterator points to the first
+// atomic input, otherwise it points to one past the last atomic input.
+//==============================================================================
+{
+	if (begin&&input)
+	{
+		if (atomic_input=
+#if defined (USE_SMART_POINTER)
+			boost::dynamic_pointer_cast<Variable_input_element_xi,
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+			>
+#else /* defined (USE_SMART_POINTER) */
+			dynamic_cast<Variable_input_element_xi *>
+#endif /* defined (USE_SMART_POINTER) */
+			(input->clone()))
+		{
+			atomic_input->indices.resize(1);
+			atomic_input->indices[0]=0;
+			if (input->element)
+			{
+				atomic_input->xi=false;
+			}
+			else
+			{
+				if ((input->xi)&&(0<input->number_differentiable()))
+				{
+					if (0<(input->indices).size())
+					{
+						atomic_input->indices[0]=input->indices[0];
+					}
+				}
+				else
+				{
+					atomic_input=0;
+				}
+			}
+		}
+	}
+}
+
+Variable_input_iterator_representation_atomic_element_xi::
+	~Variable_input_iterator_representation_atomic_element_xi()
+//******************************************************************************
+// LAST MODIFIED : 26 January 2004
+//
+// DESCRIPTION :
+// Destructor.
+//==============================================================================
+{
+}
+
+void Variable_input_iterator_representation_atomic_element_xi::increment()
+//******************************************************************************
+// LAST MODIFIED : 26 January 2004
+//
+// DESCRIPTION :
+// Increments the iterator to the next atomic input.  NULL <atomic_input> is the
+// end iterator.
+//==============================================================================
+{
+	if (atomic_input)
+	{
+		if (atomic_input->element)
+		{
+			atomic_input->element=false;
+			if (input->xi)
+			{
+				atomic_input->xi=true;
+				input_index=0;
+			}
+			else
+			{
+				// end
+				atomic_input=0;
+			}
+		}
+		else
+		{
+			Assert(atomic_input->xi,std::logic_error(
+				"Variable_input_iterator_representation_atomic_element_xi::"
+				"increment.  Atomic input should not have element and xi both "
+				"false"));
+			input_index++;
+		}
+		if (atomic_input)
+		{
+			Assert(atomic_input->xi,std::logic_error(
+				"Variable_input_iterator_representation_atomic_element_xi::"
+				"increment.  Second and subsequent atomic inputs should be xi"));
+			if (input_index<input->number_differentiable())
+			{
+				if (input_index<(input->indices).size())
+				{
+					atomic_input->indices[0]=(input->indices)[input_index];
+				}
+				else
+				{
+					atomic_input->indices[0]=input_index;
+				}
+			}
+			else
+			{
+				// end
+				atomic_input=0;
+			}
+		}
+	}
+}
+
+bool Variable_input_iterator_representation_atomic_element_xi::equality(
+	const
+#if defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+	Variable_input_iterator_representation
+#else // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+	Handle_iterator_representation<
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	>
+#endif // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+	* representation)
+//******************************************************************************
+// LAST MODIFIED : 3 February 2004
+//
+// DESCRIPTION :
+// Tests <*this> and <*representation> for equality.
+//==============================================================================
+{
+	const Variable_input_iterator_representation_atomic_element_xi
+		*representation_element_xi=dynamic_cast<
+		const Variable_input_iterator_representation_atomic_element_xi *>(
+		representation);
+
+	return (representation_element_xi&&
+		(input==representation_element_xi->input)&&
+		((atomic_input&&(representation_element_xi->atomic_input)&&
+		(*atomic_input== *(representation_element_xi->atomic_input)))||
+		(!atomic_input&&!(representation_element_xi->atomic_input))));
+}
+
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_input_iterator_representation_atomic_element_xi::dereference() const
+//******************************************************************************
+// LAST MODIFIED : 3 February 2004
+//
+// DESCRIPTION :
+// Returns the atomic input for the iterator.
+//==============================================================================
+{
+	return (atomic_input);
+}
+#endif // defined (USE_ITERATORS_NESTED)
+#endif // defined (USE_ITERATORS)
 
 struct Count_nodal_values_data
 {
@@ -170,7 +1206,7 @@ static int component_count_nodal_values(struct FE_node *node,
 	struct FE_field *fe_field,int component_number,
 	enum FE_nodal_value_type value_type,int version)
 /*******************************************************************************
-LAST MODIFIED : 29 April 2003
+LAST MODIFIED : 29 December 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -179,34 +1215,41 @@ DESCRIPTION :
 	int i,number_of_versions,number_of_values;
 
 	ENTER(component_count_nodal_values);
-	number_of_values=1+get_FE_node_field_component_number_of_derivatives(node,
-		fe_field,component_number);
-	if (FE_NODAL_UNKNOWN!=value_type)
-	{
-		/*???DB.  Could use FE_nodal_value_version_exists instead */
-		i=number_of_values;
-		number_of_values=0;
-		if (nodal_value_types=get_FE_node_field_component_nodal_value_types(node,
-			fe_field,component_number))
-		{
-			nodal_value_type=nodal_value_types;
-			while ((i>0)&&(value_type!= *nodal_value_type))
-			{
-				nodal_value_type++;
-				i--;
-			}
-			if (i>0)
-			{
-				number_of_values++;
-			}
-			DEALLOCATE(nodal_value_types);
-		}
-	}
 	number_of_versions=get_FE_node_field_component_number_of_versions(node,
 		fe_field,component_number);
-	if ((version<0)||(version>number_of_versions))
+	if (version<number_of_versions)
 	{
-		number_of_values *= number_of_versions;
+		number_of_values=1+get_FE_node_field_component_number_of_derivatives(node,
+			fe_field,component_number);
+		if (FE_NODAL_UNKNOWN!=value_type)
+		{
+			/*???DB.  Could use FE_nodal_value_version_exists instead */
+			i=number_of_values;
+			number_of_values=0;
+			if (nodal_value_types=get_FE_node_field_component_nodal_value_types(node,
+				fe_field,component_number))
+			{
+				nodal_value_type=nodal_value_types;
+				while ((i>0)&&(value_type!= *nodal_value_type))
+				{
+					nodal_value_type++;
+					i--;
+				}
+				if (i>0)
+				{
+					number_of_values++;
+				}
+				DEALLOCATE(nodal_value_types);
+			}
+		}
+		if (version<0)
+		{
+			number_of_values *= number_of_versions;
+		}
+	}
+	else
+	{
+		number_of_values=0;
 	}
 	LEAVE;
 
@@ -281,15 +1324,462 @@ the <node>.
 	return (return_code);
 } /* count_nodal_values */
 
-class Variable_input_nodal_values : public Variable_input
+#if defined (VARIABLE_INPUT_METHODS_FOR_SET_OPERATIONS) || defined (USE_SCALAR_MAPPING)
+struct Scalar_mapping_nodal_values_data
+{
+	Scalar_mapping_nodal_values_data(struct FE_node *source_node,
+		struct FE_node *target_node,enum FE_nodal_value_type source_value_type,
+		enum FE_nodal_value_type target_value_type,int source_version,
+		int target_version,int source_component_number,int target_component_number,
+		struct FE_field *fe_field,
+		std::list< std::pair<Variable_size_type,Variable_size_type> >&
+		scalar_mapping):source_value_type(source_value_type),
+		target_value_type(target_value_type),
+		source_component_number(source_component_number),
+		target_component_number(target_component_number),
+		source_version(source_version),target_version(target_version),
+		number_of_components(get_FE_field_number_of_components(fe_field)),
+		fe_field(fe_field),source_node(source_node),target_node(target_node),
+		source_index(0),target_index(0),scalar_mapping(scalar_mapping) {};
+	enum FE_nodal_value_type source_value_type,target_value_type;
+	int source_component_number,target_component_number;
+	int source_version,target_version;
+	int number_of_components;
+	struct FE_field *fe_field;
+	struct FE_node *source_node,*target_node;
+	Variable_size_type source_index,target_index;
+	std::list< std::pair<Variable_size_type,Variable_size_type> >& scalar_mapping;
+}; /* struct Scalar_mapping_nodal_values_data */
+
+static int component_scalar_mapping_nodal_values(struct FE_node *node,
+	int component_number,struct Scalar_mapping_nodal_values_data
+	*scalar_mapping_nodal_values_data)
+/*******************************************************************************
+LAST MODIFIED : 29 December 2003
+
+DESCRIPTION :
+==============================================================================*/
+{
+	enum FE_nodal_value_type *nodal_value_type,*nodal_value_types,value_type;
+	int number_of_versions,number_of_values,return_code,source_value_index,
+		source_version,target_value_index,target_version,version;
+	struct FE_field *fe_field;
+	std::list< std::pair<Variable_size_type,Variable_size_type> >
+		&scalar_mapping=scalar_mapping_nodal_values_data->scalar_mapping;
+	std::list< std::pair<Variable_size_type,Variable_size_type> >::iterator
+		scalar_mapping_iterator;
+	Variable_size_type i,number_of_source_values,number_of_target_values,
+		source_index,target_index;
+
+	ENTER(component_scalar_mapping_nodal_values);
+	return_code=0;
+	fe_field=scalar_mapping_nodal_values_data->fe_field;
+	if ((FE_NODAL_UNKNOWN==scalar_mapping_nodal_values_data->source_value_type)||
+		(FE_NODAL_UNKNOWN==scalar_mapping_nodal_values_data->target_value_type))
+	{
+		if (nodal_value_types=get_FE_node_field_component_nodal_value_types(
+			node,fe_field,component_number))
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		return_code=1;
+		nodal_value_types=(FE_nodal_value_type *)NULL;
+	}
+	if (return_code)
+	{
+		number_of_values=1+get_FE_node_field_component_number_of_derivatives(node,
+			fe_field,component_number);
+		number_of_versions=get_FE_node_field_component_number_of_versions(node,
+			fe_field,component_number);
+		source_index=scalar_mapping_nodal_values_data->source_index;
+		source_version=scalar_mapping_nodal_values_data->source_version;
+		value_type=scalar_mapping_nodal_values_data->source_value_type;
+		if (FE_NODAL_UNKNOWN==value_type)
+		{
+			source_value_index= -1;
+		}
+		else
+		{
+			source_value_index=0;
+			nodal_value_type=nodal_value_types;
+			while ((source_value_index<number_of_values)&&
+				(value_type!= *nodal_value_type))
+			{
+				nodal_value_type++;
+				source_value_index++;
+			}
+		}
+		target_index=scalar_mapping_nodal_values_data->target_index;
+		target_version=scalar_mapping_nodal_values_data->target_version;
+		value_type=scalar_mapping_nodal_values_data->target_value_type;
+		if (FE_NODAL_UNKNOWN==value_type)
+		{
+			target_value_index= -1;
+		}
+		else
+		{
+			target_value_index=0;
+			nodal_value_type=nodal_value_types;
+			while ((target_value_index<number_of_values)&&
+				(value_type!= *nodal_value_type))
+			{
+				nodal_value_type++;
+				target_value_index++;
+			}
+		}
+		number_of_target_values=0;
+		if (((node==scalar_mapping_nodal_values_data->target_node)||
+			(NULL==scalar_mapping_nodal_values_data->target_node))&&
+			(target_version<number_of_versions)&&
+			(target_value_index<number_of_values))
+		{
+			// calculate number_of_target_values at node
+			if (-1==target_value_index)
+			{
+				number_of_target_values=(Variable_size_type)number_of_values;
+			}
+			else
+			{
+				number_of_target_values=1;
+			}
+			if (-1==target_version)
+			{
+				number_of_target_values *= (Variable_size_type)number_of_versions;
+			}
+			if (0<number_of_target_values)
+			{
+				// update "not in target" entries in <scalar_mapping>
+				scalar_mapping_iterator=scalar_mapping.begin();
+				for (i=scalar_mapping.size();i>0;i--)
+				{
+					if (target_index==scalar_mapping_iterator->second)
+					{
+						scalar_mapping_iterator->second += number_of_target_values;
+					}
+					scalar_mapping_iterator++;
+				}
+				// update saved target_index
+				scalar_mapping_nodal_values_data->target_index +=
+					number_of_target_values;
+			}
+		}
+		if (((node==scalar_mapping_nodal_values_data->source_node)||
+			(NULL==scalar_mapping_nodal_values_data->source_node))&&
+			(source_version<number_of_versions)&&
+			(source_value_index<number_of_values))
+		{
+			if (((node==scalar_mapping_nodal_values_data->target_node)||
+				(NULL==scalar_mapping_nodal_values_data->target_node))&&
+				(target_version<number_of_versions)&&
+				(target_value_index<number_of_values))
+			{
+				// update scalar_mapping
+				for (version=0;version<number_of_versions;version++)
+				{
+					if ((-1==version)||(source_version==version))
+					{
+						if ((-1==version)||(target_version==version))
+						{
+							if (0<=source_value_index)
+							{
+								if (0<=target_value_index)
+								{
+									if ((0==scalar_mapping.size())||
+										(source_index-(scalar_mapping.back()).first!=
+										target_index-(scalar_mapping.back()).second))
+									{
+										scalar_mapping.push_back(
+											std::pair<Variable_size_type,Variable_size_type>(
+											source_index,target_index));
+									}
+								}
+								else
+								{
+									if ((0==scalar_mapping.size())||
+										(source_index-(scalar_mapping.back()).first!=
+										target_index+source_value_index-
+										(scalar_mapping.back()).second))
+									{
+										scalar_mapping.push_back(
+											std::pair<Variable_size_type,Variable_size_type>(
+											source_index,target_index+source_value_index));
+									}
+								}
+							}
+							else
+							{
+								if (0<=target_value_index)
+								{
+									if ((0<target_value_index)&&
+										((0==scalar_mapping.size())||
+										(scalar_mapping_nodal_values_data->target_index!=
+										(scalar_mapping.back()).second)))
+									{
+										scalar_mapping.push_back(
+											std::pair<Variable_size_type,Variable_size_type>(
+											source_index,
+											scalar_mapping_nodal_values_data->target_index));
+									}
+									if ((0==scalar_mapping.size())||
+										(source_index+target_value_index-
+										(scalar_mapping.back()).first!=
+										target_index-(scalar_mapping.back()).second))
+									{
+										scalar_mapping.push_back(
+											std::pair<Variable_size_type,Variable_size_type>(
+											source_index+target_value_index,target_index));
+									}
+									if (target_value_index+1<number_of_values)
+									{
+										scalar_mapping.push_back(
+											std::pair<Variable_size_type,Variable_size_type>(
+											source_index+target_value_index+1,
+											scalar_mapping_nodal_values_data->target_index));
+									}
+								}
+								else
+								{
+									if ((0==scalar_mapping.size())||
+										(source_index-(scalar_mapping.back()).first!=
+										target_index-(scalar_mapping.back()).second))
+									{
+										scalar_mapping.push_back(
+											std::pair<Variable_size_type,Variable_size_type>(
+											source_index,target_index));
+									}
+								}
+							}
+						}
+						else
+						{
+							if ((0==scalar_mapping.size())||
+								(scalar_mapping_nodal_values_data->target_index!=
+								(scalar_mapping.back()).second))
+							{
+								scalar_mapping.push_back(
+									std::pair<Variable_size_type,Variable_size_type>(source_index,
+									scalar_mapping_nodal_values_data->target_index));
+							}
+						}
+						if (0<=source_value_index)
+						{
+							source_index++;
+						}
+						else
+						{
+							source_index += number_of_values;
+						}
+					}
+					if ((-1==version)||(target_version==version))
+					{
+						if (0<=target_value_index)
+						{
+							target_index++;
+						}
+						else
+						{
+							target_index += number_of_values;
+						}
+					}
+				}
+			}
+			else
+			{
+				// calculate number_of_source_values at node
+				if (-1==source_value_index)
+				{
+					number_of_source_values=(Variable_size_type)number_of_values;
+				}
+				else
+				{
+					number_of_source_values=1;
+				}
+				if (-1==source_version)
+				{
+					number_of_source_values *= (Variable_size_type)number_of_versions;
+				}
+				if (0<number_of_source_values)
+				{
+					// update scalar_mapping
+					if ((0==scalar_mapping.size())||
+						(target_index>(scalar_mapping.back()).second))
+					{
+						scalar_mapping.push_back(
+							std::pair<Variable_size_type,Variable_size_type>(source_index,
+							target_index));
+					}
+					// update saved source_index
+					scalar_mapping_nodal_values_data->source_index +=
+						number_of_source_values;
+				}
+			}
+		}
+		DEALLOCATE(nodal_value_types);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* component_scalar_mapping_nodal_values */
+
+static int scalar_mapping_nodal_values(struct FE_node *node,
+	void *scalar_mapping_nodal_values_data_void)
+/*******************************************************************************
+LAST MODIFIED : 29 December 2003
+
+DESCRIPTION :
+Updates the scalar mapping to include the <node> using the source and target
+information from <scalar_mapping_nodal_values_data_void>.
+==============================================================================*/
+{
+	int component_number,number_of_components,return_code;
+	struct Scalar_mapping_nodal_values_data *scalar_mapping_nodal_values_data;
+
+	ENTER(scalar_mapping_nodal_values);
+	return_code=0;
+	/* check arguments */
+	if (node&&(scalar_mapping_nodal_values_data=
+		(struct Scalar_mapping_nodal_values_data *)
+		scalar_mapping_nodal_values_data_void))
+	{
+		if ((node==scalar_mapping_nodal_values_data->source_node)||
+			(NULL==scalar_mapping_nodal_values_data->source_node)||
+			(node==scalar_mapping_nodal_values_data->target_node)||
+			(NULL==scalar_mapping_nodal_values_data->target_node))
+		{
+			number_of_components=
+				scalar_mapping_nodal_values_data->number_of_components;
+			component_number=
+				scalar_mapping_nodal_values_data->source_component_number;
+			if ((component_number==scalar_mapping_nodal_values_data->
+				target_component_number)&&(0<=component_number)&&
+				(component_number<number_of_components))
+			{
+				component_scalar_mapping_nodal_values(node,component_number,
+					scalar_mapping_nodal_values_data);
+			}
+			else
+			{
+				component_scalar_mapping_nodal_values(node,component_number,
+					scalar_mapping_nodal_values_data);
+			}
+		}
+		return_code=1;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* scalar_mapping_nodal_values */
+#endif // defined (VARIABLE_INPUT_METHODS_FOR_SET_OPERATIONS) || defined (USE_SCALAR_MAPPING)
+
+class Variable_input_nodal_values;
+
+#if defined (USE_INTRUSIVE_SMART_POINTER)
+typedef boost::intrusive_ptr<Variable_input_nodal_values>
+	Variable_input_nodal_values_handle;
+#elif defined (USE_SMART_POINTER)
+typedef boost::shared_ptr<Variable_input_nodal_values>
+	Variable_input_nodal_values_handle;
+#else
+typedef Variable_input_nodal_values * Variable_input_nodal_values_handle;
+#endif
+
+#if defined (USE_ITERATORS)
+#if defined (USE_ITERATORS_NESTED)
+#else // defined (USE_ITERATORS_NESTED)
+// class Variable_input_iterator_representation_atomic_nodal_values
+// --------------------------------------------------------------
+
+class Variable_input_iterator_representation_atomic_nodal_values:public
+#if defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+	Variable_input_iterator_representation
+#else // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+	Handle_iterator_representation<
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	>
+#endif // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
 //******************************************************************************
-// LAST MODIFIED : 28 November 2003
+// LAST MODIFIED : 4 February 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	friend int get_next_node(struct FE_node *node,void *get_next_node_data_void);
+	public:
+		// constructor
+		Variable_input_iterator_representation_atomic_nodal_values(const bool begin,
+			Variable_input_nodal_values_handle input);
+		// destructor
+		~Variable_input_iterator_representation_atomic_nodal_values();
+		// increment
+		void increment();
+		// equality
+		bool equality(const
+#if defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+			Variable_input_iterator_representation
+#else // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+			Handle_iterator_representation<
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			>
+#endif // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+			* representation);
+		// dereference
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			dereference() const;
+	private:
+		enum FE_nodal_value_type *value_types;
+#if defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+#else // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+		Handle_iterator<
+#if defined (USE_VARIABLES_AS_COMPONENTS)
+			Variable_handle
+#else // defined (USE_VARIABLES_AS_COMPONENTS)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLES_AS_COMPONENTS)
+			> component_iterator,component_end;
+#endif // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+		int number_of_values,number_of_versions,value_type_index;
+		struct FE_region *fe_region;
+		Variable_input_nodal_values_handle atomic_input,input;
+};
+#endif // defined (USE_ITERATORS_NESTED)
+#endif // defined (USE_ITERATORS)
+
+// class Variable_input_nodal_values
+// ---------------------------------
+
+class Variable_input_nodal_values : public
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+//******************************************************************************
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	friend class Variable_finite_element;
 	friend class Variable_finite_element_check_derivative_functor;
+#if defined (USE_ITERATORS)
+	friend class Variable_input_iterator_representation_atomic_nodal_values;
+#endif // defined (USE_ITERATORS)
+	friend int get_next_node(struct FE_node *node,void *get_next_node_data_void);
 	public:
 		Variable_input_nodal_values(
 			const Variable_finite_element_handle& variable_finite_element):
@@ -330,7 +1820,141 @@ class Variable_input_nodal_values : public Variable_input
 		{
 			DEACCESS(FE_node)(&node);
 		};
-		Variable_size_type size()
+#if defined (USE_ITERATORS)
+		// copy constructor
+		Variable_input_nodal_values(
+			const Variable_input_nodal_values& input_nodal_values):
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+			(),
+			value_type(input_nodal_values.value_type),
+			version(input_nodal_values.version),node(input_nodal_values.node),
+			variable_finite_element(input_nodal_values.variable_finite_element){};
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			clone() const
+		{
+			return (Variable_input_nodal_values_handle(
+				new Variable_input_nodal_values(*this)));
+		};
+		virtual bool is_atomic()
+		{
+			bool result;
+			enum FE_nodal_value_type *nodal_value_type,*nodal_value_types;
+			int component_number,i,number_of_components,number_of_values,
+				number_of_versions;
+			struct FE_field *fe_field;
+
+			result=false;
+			component_number=0;
+			if (node&&variable_finite_element&&
+				(fe_field=variable_finite_element->field)&&
+				((1==(number_of_components=get_FE_field_number_of_components(
+				fe_field)))||
+				((0<=(component_number=variable_finite_element->component_number))&&
+				(component_number<number_of_components))))
+			{
+				//???DB.  Could use FE_nodal_value_version_exists instead?  Not quite,
+				//  doesn't handle FE_NODAL_UNKNOWN
+				number_of_versions=get_FE_node_field_component_number_of_versions(node,
+					fe_field,component_number);
+				if ((version<number_of_versions)&&
+					((0<=version)||(1==number_of_versions)))
+				{
+					number_of_values=1+get_FE_node_field_component_number_of_derivatives(
+						node,fe_field,component_number);
+					if (FE_NODAL_UNKNOWN==value_type)
+					{
+						if (1==number_of_values)
+						{
+							result=true;
+						}
+					}
+					else
+					{
+						if (nodal_value_types=get_FE_node_field_component_nodal_value_types(
+							node,fe_field,component_number))
+						{
+							i=number_of_values;
+							nodal_value_type=nodal_value_types;
+							while ((i>0)&&(value_type!= *nodal_value_type))
+							{
+								nodal_value_type++;
+								i--;
+							}
+							if (i>0)
+							{
+								result=true;
+							}
+							DEALLOCATE(nodal_value_types);
+						}
+					}
+				}
+			}
+
+			return (result);
+		}
+#if defined (USE_ITERATORS_NESTED)
+		virtual Iterator begin_atomic_inputs();
+		virtual Iterator end_atomic_inputs();
+#else // defined (USE_ITERATORS_NESTED)
+#if defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+		virtual Variable_input_iterator begin_atomic_inputs()
+		{
+			return (Variable_input_iterator(
+				new Variable_input_iterator_representation_atomic_nodal_values(true,
+				Variable_input_nodal_values_handle(this))));
+		};
+		virtual Variable_input_iterator end_atomic_inputs()
+		{
+			return (Variable_input_iterator(
+				new Variable_input_iterator_representation_atomic_nodal_values(false,
+				Variable_input_nodal_values_handle(this))));
+		};
+#else // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+#if defined (USE_VARIABLE_INPUT)
+		virtual Handle_iterator<Variable_input_handle> begin_atomic_inputs()
+		{
+			return (Handle_iterator<Variable_input_handle>(
+				new Variable_input_iterator_representation_atomic_nodal_values(true,
+				Variable_input_nodal_values_handle(this))));
+		};
+		virtual Handle_iterator<Variable_input_handle> end_atomic_inputs()
+		{
+			return (Handle_iterator<Variable_input_handle>(
+				new Variable_input_iterator_representation_atomic_nodal_values(false,
+				Variable_input_nodal_values_handle(this))));
+		};
+#else // defined (USE_VARIABLE_INPUT)
+		virtual Handle_iterator<Variable_io_specifier_handle> begin_atomic()
+		{
+			return (Handle_iterator<Variable_io_specifier_handle>(
+				new Variable_input_iterator_representation_atomic_nodal_values(true,
+				Variable_input_nodal_values_handle(this))));
+		};
+		virtual Handle_iterator<Variable_io_specifier_handle> end_atomic()
+		{
+			return (Handle_iterator<Variable_io_specifier_handle>(
+				new Variable_input_iterator_representation_atomic_nodal_values(false,
+				Variable_input_nodal_values_handle(this))));
+		};
+#endif // defined (USE_VARIABLE_INPUT)
+#endif // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+#endif // defined (USE_ITERATORS_NESTED)
+#endif // defined (USE_ITERATORS)
+		Variable_size_type
+#if defined (USE_ITERATORS)
+			number_differentiable
+#else // defined (USE_ITERATORS)
+			size
+#endif // defined (USE_ITERATORS)
+			()
 		{
 			int component_number,number_of_components,return_code;
 			struct Count_nodal_values_data count_nodal_values_data;
@@ -340,7 +1964,7 @@ class Variable_input_nodal_values : public Variable_input
 
 			result=0;
 			if (variable_finite_element&&(fe_field=variable_finite_element->field)&&
-				(fe_region=FE_field_get_FE_region(fe_field))&&
+				(fe_region=variable_finite_element->region())&&
 				(0<(number_of_components=get_FE_field_number_of_components(fe_field))))
 			{
 				component_number=variable_finite_element->component_number;
@@ -371,7 +1995,13 @@ class Variable_input_nodal_values : public Variable_input
 
 			return (result);
 		};
-		virtual bool operator==(const Variable_input& input)
+		virtual bool operator==(const
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+			& input)
 		{
 			try
 			{
@@ -390,6 +2020,511 @@ class Variable_input_nodal_values : public Variable_input
 				return (false);
 			};
 		};
+#if defined (VARIABLE_INPUT_METHODS_FOR_SET_OPERATIONS) || defined (USE_SCALAR_MAPPING)
+	private:
+		virtual std::list< std::pair<Variable_size_type,Variable_size_type> >
+			scalar_mapping_local(Variable_input_handle target)
+		{
+			std::list< std::pair<Variable_size_type,Variable_size_type> > result(0);
+
+			if (this)
+			{
+				const Variable_input_nodal_values_handle input_nodal_values=
+#if defined (USE_SMART_POINTER)
+					boost::dynamic_pointer_cast<Variable_input_nodal_values,
+					Variable_input>
+#else /* defined (USE_SMART_POINTER) */
+					dynamic_cast<Variable_input_nodal_values *>
+#endif /* defined (USE_SMART_POINTER) */
+					(target);
+
+				if (input_nodal_values)
+				{
+					if (*this== *input_nodal_values)
+					{
+						result.push_back(std::pair<Variable_size_type,Variable_size_type>(
+							0,0));
+					}
+					else
+					{
+						if (variable_finite_element&&
+							(input_nodal_values->variable_finite_element)&&
+							(variable_finite_element->field==
+							input_nodal_values->variable_finite_element->field)&&
+							((variable_finite_element->component_number==
+							input_nodal_values->variable_finite_element->component_number)||
+							(-1==variable_finite_element->component_number)||
+							(-1==input_nodal_values->variable_finite_element->
+							component_number))&&
+							((node==input_nodal_values->node)||
+							(NULL==node)||(NULL==input_nodal_values->node))&&
+							((value_type==input_nodal_values->value_type)||
+							(FE_NODAL_UNKNOWN==value_type)||
+							(FE_NODAL_UNKNOWN==input_nodal_values->value_type))&&
+							((version==input_nodal_values->version)||
+							(-1==version)||(-1==input_nodal_values->version)))
+						{
+							int number_of_components,return_code;
+							struct FE_field *fe_field;
+							struct FE_region *fe_region;
+
+							if ((fe_field=variable_finite_element->field)&&
+								(fe_region=variable_finite_element->region())&&
+								(0<(number_of_components=get_FE_field_number_of_components(
+								fe_field))))
+							{
+								struct Scalar_mapping_nodal_values_data
+									scalar_mapping_nodal_values_data(node,input_nodal_values->
+									node,value_type,input_nodal_values->value_type,version,
+									input_nodal_values->version,variable_finite_element->
+									component_number,input_nodal_values->variable_finite_element->
+									component_number,fe_field,result);
+
+								if (node&&(input_nodal_values->node))
+								{
+									return_code=scalar_mapping_nodal_values(node,
+										(void *)&scalar_mapping_nodal_values_data);
+								}
+								else
+								{
+									return_code=FE_region_for_each_FE_node(fe_region,
+										scalar_mapping_nodal_values,
+										(void *)&scalar_mapping_nodal_values_data);
+								}
+							}
+						}
+					}
+				}
+				if (0==result.size())
+				{
+					result.push_back(std::pair<Variable_size_type,Variable_size_type>(
+						0,target->size()));
+				}
+#if defined (USE_SCALAR_MAPPING)
+				if (0<size())
+				{
+					result.push_back(std::pair<Variable_size_type,Variable_size_type>(
+						size(),target->size()));
+				}
+#endif // defined (USE_SCALAR_MAPPING)
+			}
+
+			return (result);
+		};
+#endif // defined (VARIABLE_INPUT_METHODS_FOR_SET_OPERATIONS) || defined (USE_SCALAR_MAPPING)
+#if defined (VARIABLE_INPUT_METHODS_FOR_SET_OPERATIONS)
+//???DB.  Where I'm up to
+		virtual Variable_input_handle operator_plus_local(
+			const Variable_input_handle& second)
+		{
+			Variable_input_handle result(0);
+
+			if (this)
+			{
+				const Variable_input_nodal_values_handle input_nodal_values=
+#if defined (USE_SMART_POINTER)
+					boost::dynamic_pointer_cast<Variable_input_nodal_values,
+					Variable_input>
+#else /* defined (USE_SMART_POINTER) */
+					dynamic_cast<Variable_input_nodal_values *>
+#endif /* defined (USE_SMART_POINTER) */
+					(second);
+
+				if (input_nodal_values&&(variable_finite_element==
+					input_nodal_values->variable_finite_element))
+				{
+					if (NULL==node)
+					{
+						if (NULL==input_nodal_values->node)
+						{
+							if (FE_NODAL_UNKNOWN==value_type)
+							{
+								if (FE_NODAL_UNKNOWN==input_nodal_values->value_type)
+								{
+									if ((-1==version)||(-1==input_nodal_values->version))
+									{
+										result=Variable_input_handle(
+											new Variable_input_nodal_values(
+											variable_finite_element));
+									}
+									else
+									{
+										if (version==input_nodal_values->version)
+										{
+											result=Variable_input_handle(
+												new Variable_input_nodal_values(
+												variable_finite_element,(struct FE_node *)NULL,
+												FE_NODAL_UNKNOWN,version));
+										}
+									}
+								}
+								else
+								{
+									if (-1==version)
+									{
+										result=Variable_input_handle(
+											new Variable_input_nodal_values(
+											variable_finite_element));
+									}
+									else
+									{
+										if (version==input_nodal_values->version)
+										{
+											result=Variable_input_handle(
+												new Variable_input_nodal_values(
+												variable_finite_element,(struct FE_node *)NULL,
+												FE_NODAL_UNKNOWN,version));
+										}
+									}
+								}
+							}
+							else
+							{
+								if (FE_NODAL_UNKNOWN==input_nodal_values->value_type)
+								{
+									if (-1==input_nodal_values->version)
+									{
+										result=Variable_input_handle(
+											new Variable_input_nodal_values(
+											variable_finite_element));
+									}
+									else
+									{
+										if (version==input_nodal_values->version)
+										{
+											result=Variable_input_handle(
+												new Variable_input_nodal_values(
+												variable_finite_element,(struct FE_node *)NULL,
+												FE_NODAL_UNKNOWN,version));
+										}
+									}
+								}
+								else
+								{
+									if (value_type==input_nodal_values->value_type)
+									{
+										if ((-1==version)||(-1==input_nodal_values->version))
+										{
+											result=Variable_input_handle(
+												new Variable_input_nodal_values(
+												variable_finite_element,(struct FE_node *)NULL,
+												value_type,-1));
+										}
+										else
+										{
+											if (version==input_nodal_values->version)
+											{
+												result=Variable_input_handle(
+													new Variable_input_nodal_values(
+													variable_finite_element,(struct FE_node *)NULL,
+													value_type,version));
+											}
+										}
+									}
+								}
+							}
+						}
+						else
+						{
+							if (FE_NODAL_UNKNOWN==value_type)
+							{
+								if ((-1==version)||(version==input_nodal_values->version))
+								{
+									result=Variable_input_handle(
+										new Variable_input_nodal_values(
+										variable_finite_element,(struct FE_node *)NULL,
+										FE_NODAL_UNKNOWN,version));
+								}
+							}
+							else
+							{
+								if (value_type==input_nodal_values->value_type)
+								{
+									if ((-1==version)||(version==input_nodal_values->version))
+									{
+										result=Variable_input_handle(
+											new Variable_input_nodal_values(
+											variable_finite_element,(struct FE_node *)NULL,
+											value_type,version));
+									}
+								}
+							}
+						}
+					}
+					else
+					{
+						if (NULL==input_nodal_values->node)
+						{
+							if (FE_NODAL_UNKNOWN==input_nodal_values->value_type)
+							{
+								if (-1==input_nodal_values->version)
+								{
+									result=Variable_input_handle(
+										new Variable_input_nodal_values(
+										variable_finite_element));
+								}
+								else
+								{
+									if (version==input_nodal_values->version)
+									{
+										result=Variable_input_handle(
+											new Variable_input_nodal_values(
+											variable_finite_element,(struct FE_node *)NULL,
+											FE_NODAL_UNKNOWN,version));
+									}
+								}
+							}
+							else
+							{
+								if (value_type==input_nodal_values->value_type)
+								{
+									if ((-1==input_nodal_values->version)||
+										(version==input_nodal_values->version))
+									{
+										result=Variable_input_handle(
+											new Variable_input_nodal_values(
+											variable_finite_element,(struct FE_node *)NULL,
+											value_type,input_nodal_values->version));
+									}
+								}
+							}
+						}
+						else
+						{
+							if (node==input_nodal_values->node)
+							{
+								if (FE_NODAL_UNKNOWN==value_type)
+								{
+									if ((-1==version)||(version==input_nodal_values->version))
+									{
+										result=Variable_input_handle(
+											new Variable_input_nodal_values(
+											variable_finite_element,node,
+											FE_NODAL_UNKNOWN,version));
+									}
+								}
+								else
+								{
+									if (FE_NODAL_UNKNOWN==input_nodal_values->value_type)
+									{
+										if ((-1==input_nodal_values->version)||
+											(version==input_nodal_values->version))
+										{
+											result=Variable_input_handle(
+												new Variable_input_nodal_values(
+												variable_finite_element,node,
+												FE_NODAL_UNKNOWN,input_nodal_values->version));
+										}
+									}
+									else
+									{
+										if (value_type==input_nodal_values->value_type)
+										{
+											if ((-1==version)||(-1==input_nodal_values->version))
+											{
+												result=Variable_input_handle(
+													new Variable_input_nodal_values(
+													variable_finite_element,node,value_type,-1));
+											}
+											else
+											{
+												if (version==input_nodal_values->version)
+												{
+													result=Variable_input_handle(
+														new Variable_input_nodal_values(
+														variable_finite_element,node,
+														value_type,version));
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			return (result);
+		};
+		virtual Variable_input_handle operator_minus_local(
+			const Variable_input_handle& second)
+		{
+			Variable_input_handle result(0);
+			const Variable_input_nodal_values_handle input_nodal_values=
+#if defined (USE_SMART_POINTER)
+				boost::dynamic_pointer_cast<Variable_input_nodal_values,Variable_input>
+#else /* defined (USE_SMART_POINTER) */
+				dynamic_cast<Variable_input_nodal_values *>
+#endif /* defined (USE_SMART_POINTER) */
+				(second);
+
+			if (input_nodal_values&&
+				(variable_finite_element==input_nodal_values->variable_finite_element))
+			{
+				if (xi&&(input_nodal_values->xi))
+				{
+					if (0==(input_nodal_values->indices).size())
+					{
+						result=Variable_input_handle(new Variable_input_nodal_values(
+							variable_finite_element,element&&!(input_nodal_values->element),
+							false));
+					}
+					else
+					{
+						std::list<Variable_size_type> indices_minus_list(0);
+						Variable_size_type i,j;
+
+						if (0==indices.size())
+						{
+							j=(variable_finite_element->xi).size();
+							i=0;
+							for (;j>0;j--)
+							{
+								indices_minus_list.push_back(i);
+								i++;
+							}
+						}
+						else
+						{
+							i++;
+							for (j=indices.size();j>0;j--)
+							{
+								indices_minus_list.push_back(indices[i]);
+								i++;
+							}
+						}
+						i=0;
+						for (j=(input_nodal_values->indices).size();j>0;j--)
+						{
+							indices_minus_list.remove((input_nodal_values->indices)[i]);
+							i++;
+						}
+						if (0==indices_minus_list.size())
+						{
+							result=Variable_input_handle(new Variable_input_nodal_values(
+								variable_finite_element,element&&!(input_nodal_values->element),
+								false));
+						}
+						else
+						{
+							ublas::vector<Variable_size_type>
+								indices_minus(indices_minus_list.size());
+							std::list<Variable_size_type>::iterator indices_iterator;
+
+							indices_iterator=indices_minus_list.begin();
+							i=0;
+							for (j=indices_minus_list.size();j>0;j--)
+							{
+								indices_minus[i]= *indices_iterator;
+								i++;
+							}
+							result=Variable_input_handle(new Variable_input_nodal_values(
+								variable_finite_element,indices_minus));
+						}
+					}
+				}
+			}
+			else
+			{
+				if (0==result)
+				{
+					result=Variable_input_handle(this);
+				}
+			}
+
+			return (result);
+		};
+		virtual Variable_input_handle intersect_local(
+			const Variable_input_handle& second)
+		{
+			Variable_input_handle result(0);
+			const Variable_input_nodal_values_handle input_nodal_values=
+#if defined (USE_SMART_POINTER)
+				boost::dynamic_pointer_cast<Variable_input_nodal_values,Variable_input>
+#else /* defined (USE_SMART_POINTER) */
+				dynamic_cast<Variable_input_nodal_values *>
+#endif /* defined (USE_SMART_POINTER) */
+				(second);
+
+			if (input_nodal_values&&
+				(variable_finite_element==input_nodal_values->variable_finite_element))
+			{
+				if (xi&&(input_nodal_values->xi))
+				{
+					if (0==indices.size())
+					{
+						if (0==(input_nodal_values->indices).size())
+						{
+							result=Variable_input_handle(new Variable_input_nodal_values(
+								variable_finite_element,element&&(input_nodal_values->element),
+								true));
+						}
+						else
+						{
+							result=Variable_input_handle(new Variable_input_nodal_values(
+								variable_finite_element,input_nodal_values->indices));
+						}
+					}
+					else
+					{
+						if (0==(input_nodal_values->indices).size())
+						{
+							result=Variable_input_handle(new Variable_input_nodal_values(
+								variable_finite_element,indices));
+						}
+						else
+						{
+							std::list<Variable_size_type> indices_intersect_list(0);
+							Variable_size_type i,j;
+
+							i=0;
+							for (j=indices.size();j>0;j--)
+							{
+								if ((input_nodal_values->indices).end()!=std::find(
+									(input_nodal_values->indices).begin(),
+									(input_nodal_values->indices).end(),indices[i]))
+								{
+									indices_intersect_list.push_back(indices[i]);
+								}
+								i++;
+							}
+							if (0==indices_intersect_list.size())
+							{
+								result=Variable_input_handle(0);
+							}
+							else
+							{
+								ublas::vector<Variable_size_type>
+									indices_intersect(indices_intersect_list.size());
+								std::list<Variable_size_type>::iterator indices_iterator;
+
+								indices_iterator=indices_intersect_list.begin();
+								i=0;
+								for (j=indices_intersect_list.size();j>0;j--)
+								{
+									indices_intersect[i]= *indices_iterator;
+									i++;
+								}
+								result=Variable_input_handle(new Variable_input_nodal_values(
+									variable_finite_element,indices_intersect));
+							}
+						}
+					}
+				}
+				else
+				{
+					if (element&&(input_nodal_values->element))
+					{
+						result=Variable_input_handle(new Variable_input_nodal_values(
+							variable_finite_element,true,false));
+					}
+				}
+			}
+
+			return (result);
+		};
+#endif // defined (VARIABLE_INPUT_METHODS_FOR_SET_OPERATIONS)
 	private:
 		enum FE_nodal_value_type value_type;
 		int version;
@@ -397,15 +2532,354 @@ class Variable_input_nodal_values : public Variable_input
 		Variable_finite_element_handle variable_finite_element;
 };
 
-#if defined (USE_INTRUSIVE_SMART_POINTER)
-typedef boost::intrusive_ptr<Variable_input_nodal_values>
-	Variable_input_nodal_values_handle;
-#elif defined (USE_SMART_POINTER)
-typedef boost::shared_ptr<Variable_input_nodal_values>
-	Variable_input_nodal_values_handle;
-#else
-typedef Variable_input_nodal_values * Variable_input_nodal_values_handle;
-#endif
+#if defined (USE_ITERATORS)
+#if defined (USE_ITERATORS_NESTED)
+#else // defined (USE_ITERATORS_NESTED)
+struct Get_next_node_data
+{
+	int found;
+	Variable_input_iterator_representation_atomic_nodal_values *representation;
+}; /* struct Get_next_node_data */
+
+int get_next_node(struct FE_node *node,void *get_next_node_data_void)
+/*******************************************************************************
+LAST MODIFIED : 28 January 2004
+
+DESCRIPTION :
+Finds the node after the on in <get_next_node_data>.
+==============================================================================*/
+{
+	enum FE_nodal_value_type *nodal_value_type,*nodal_value_types;
+	int number_of_values,number_of_versions,return_code,value_type_index;
+	struct Get_next_node_data *get_next_node_data;
+	Variable_finite_element_handle variable_finite_element;
+	Variable_input_iterator_representation_atomic_nodal_values *representation;
+	Variable_input_nodal_values_handle atomic_input,input;
+
+	ENTER(get_next_node);
+	return_code=0;
+	/* check arguments */
+	if (node&&
+		(get_next_node_data=(struct Get_next_node_data *)get_next_node_data_void)&&
+		(representation=get_next_node_data->representation)&&
+		(input=representation->input)&&(atomic_input=representation->atomic_input)&&
+		(variable_finite_element=atomic_input->variable_finite_element))
+	{
+		if (get_next_node_data->found)
+		{
+			number_of_versions=(variable_finite_element->number_of_versions)(node,0);
+			if (representation->input->version<number_of_versions)
+			{
+				number_of_values=1+(variable_finite_element->number_of_derivatives)(
+					node,0);
+				if (nodal_value_types=(variable_finite_element->nodal_value_types)(
+					node,0))
+				{
+					value_type_index=0;
+					if (FE_NODAL_UNKNOWN==representation->input->value_type)
+					{
+						return_code=1;
+					}
+					else
+					{
+						nodal_value_type=nodal_value_types;
+						while ((value_type_index<number_of_values)&&
+							(*nodal_value_type!=representation->input->value_type))
+						{
+							value_type_index++;
+							nodal_value_type++;
+						}
+						if (value_type_index<number_of_values)
+						{
+							return_code=1;
+						}
+					}
+					if (return_code)
+					{
+						representation->number_of_versions=number_of_versions;
+						representation->number_of_values=number_of_values;
+						DEALLOCATE(representation->value_types);
+						representation->value_types=nodal_value_types;
+						representation->value_type_index=value_type_index;
+					}
+					else
+					{
+						DEALLOCATE(nodal_value_types);
+					}
+				}
+			}
+		}
+		else
+		{
+			if (node==get_next_node_data->representation->atomic_input->node)
+			{
+				get_next_node_data->found=1;
+			}
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_next_node */
+
+// class Variable_input_iterator_representation_atomic_nodal_values
+// ----------------------------------------------------------------
+
+Variable_input_iterator_representation_atomic_nodal_values::
+	Variable_input_iterator_representation_atomic_nodal_values(const bool begin,
+	Variable_input_nodal_values_handle input):value_types(0),
+#if defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+#else // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+	component_iterator(input->variable_finite_element->begin_components()),
+	component_end(input->variable_finite_element->end_components()),
+#endif // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+	number_of_values(0),number_of_versions(0),value_type_index(0),
+	fe_region(input->variable_finite_element->region()),atomic_input(0),
+	input(input)
+//******************************************************************************
+// LAST MODIFIED : 30 January 2004
+//
+// DESCRIPTION :
+// Constructor.  If <begin> then the constructed iterator points to the first
+// atomic input, otherwise it points to one past the last atomic input.
+//
+//???DB.  Have to clone variable_finite_element as well as input
+//==============================================================================
+{
+	ACCESS(FE_region)(fe_region);
+	if (begin&&input&&(input->variable_finite_element))
+	{
+#if defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+#else // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+		Variable_finite_element_handle variable_finite_element;
+
+		while ((component_iterator!=component_end)&&
+			(!(variable_finite_element=
+#if defined (USE_SMART_POINTER)
+			boost::dynamic_pointer_cast<Variable_finite_element,Variable>
+#else /* defined (USE_SMART_POINTER) */
+			dynamic_cast<Variable_finite_element *>
+#endif /* defined (USE_SMART_POINTER) */
+			(*component_iterator))||
+			(1!=variable_finite_element->number_differentiable())))
+		{
+			component_iterator++;
+		}
+		if (component_iterator!=component_end)
+		{
+			if (atomic_input=Variable_input_nodal_values_handle(
+				new Variable_input_nodal_values(variable_finite_element,input->node,
+				input->value_type,input->version)))
+			{
+				//???DB.  This can be made more efficient by adding iterators to
+				//  LISTs or by adding a GET_NEXT function to LISTs
+				struct Get_next_node_data get_next_node_data;
+				struct FE_node *save_node;
+
+				// want first so set found to true
+				get_next_node_data.found=1;
+				get_next_node_data.representation=this;
+				// save atomic_input->node for DEACCESSing
+				save_node=atomic_input->node;
+				if (atomic_input->node=FE_region_get_first_FE_node_that(fe_region,
+					get_next_node,&get_next_node_data))
+				{
+					ACCESS(FE_node)(atomic_input->node);
+					if (input->version<0)
+					{
+						atomic_input->version=0;
+					}
+					atomic_input->value_type=value_types[value_type_index];
+				}
+				else
+				{
+					atomic_input=0;
+				}
+				DEACCESS(FE_node)(&save_node);
+			}
+		}
+#endif // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+	}
+}
+
+Variable_input_iterator_representation_atomic_nodal_values::
+	~Variable_input_iterator_representation_atomic_nodal_values()
+//******************************************************************************
+// LAST MODIFIED : 28 January 2004
+//
+// DESCRIPTION :
+// Destructor.
+//==============================================================================
+{
+	DEACCESS(FE_region)(&fe_region);
+}
+
+void Variable_input_iterator_representation_atomic_nodal_values::increment()
+//******************************************************************************
+// LAST MODIFIED : 28 January 2004
+//
+// DESCRIPTION :
+// Increments the iterator to the next atomic input.  The incrementing order
+// from fastest to slowest is: value type, version, node, component.
+//==============================================================================
+{
+	if (atomic_input)
+	{
+		bool finished;
+
+		finished=false;
+		if (FE_NODAL_UNKNOWN==input->value_type)
+		{
+			value_type_index++;
+			if (value_type_index<number_of_values)
+			{
+				atomic_input->value_type=value_types[value_type_index];
+				finished=true;
+			}
+		}
+		if (!finished)
+		{
+			if (input->version<0)
+			{
+				(atomic_input->version)++;
+				if (atomic_input->version<number_of_versions)
+				{
+					if (FE_NODAL_UNKNOWN==input->value_type)
+					{
+						value_type_index=0;
+						atomic_input->value_type=value_types[value_type_index];
+					}
+					finished=true;
+				}
+			}
+			if (!finished)
+			{
+				//???DB.  This can be made more efficient by adding iterators to
+				//  LISTs or by adding a GET_NEXT function to LISTs
+				struct Get_next_node_data get_next_node_data;
+				struct FE_node *save_node;
+
+				if ((struct FE_node *)NULL!=input->node)
+				{
+					get_next_node_data.found=0;
+					get_next_node_data.representation=this;
+					// save atomic_input->node for DEACCESSing
+					save_node=atomic_input->node;
+					if (atomic_input->node=FE_region_get_first_FE_node_that(
+						fe_region,get_next_node,&get_next_node_data))
+					{
+						ACCESS(FE_node)(atomic_input->node);
+						if (input->version<0)
+						{
+							atomic_input->version=0;
+						}
+						atomic_input->value_type=value_types[value_type_index];
+						finished=true;
+					}
+					DEACCESS(FE_node)(&save_node);
+				}
+				if (!finished)
+				{
+#if defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+#else // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+					Variable_finite_element_handle variable_finite_element;
+
+					do
+					{
+						component_iterator++;
+					} while ((component_iterator!=component_end)&&
+						(!(variable_finite_element=
+#if defined (USE_SMART_POINTER)
+						boost::dynamic_pointer_cast<Variable_finite_element,Variable>
+#else /* defined (USE_SMART_POINTER) */
+						dynamic_cast<Variable_finite_element *>
+#endif /* defined (USE_SMART_POINTER) */
+						(*component_iterator))||
+						(1!=variable_finite_element->number_differentiable())));
+					if (component_iterator!=component_end)
+					{
+						atomic_input->variable_finite_element=variable_finite_element;
+						// want first so set found to true
+						get_next_node_data.found=1;
+						get_next_node_data.representation=this;
+						// save atomic_input->node for DEACCESSing
+						save_node=atomic_input->node;
+						if (atomic_input->node=FE_region_get_first_FE_node_that(
+							fe_region,get_next_node,&get_next_node_data))
+						{
+							ACCESS(FE_node)(atomic_input->node);
+							if (input->version<0)
+							{
+								atomic_input->version=0;
+							}
+							atomic_input->value_type=value_types[value_type_index];
+							finished=true;
+						}
+						DEACCESS(FE_node)(&save_node);
+					}
+					if (!finished)
+					{
+						// end
+						atomic_input=0;
+					}
+#endif // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+				}
+			}
+		}
+	}
+}
+
+bool Variable_input_iterator_representation_atomic_nodal_values::equality(
+	const
+#if defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+	Variable_input_iterator_representation
+#else // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+	Handle_iterator_representation<
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	>
+#endif // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+	* representation)
+//******************************************************************************
+// LAST MODIFIED : 3 February 2004
+//
+// DESCRIPTION :
+// Tests <*this> and <*representation> for equality.
+//==============================================================================
+{
+	const Variable_input_iterator_representation_atomic_nodal_values
+		*representation_nodal_values=dynamic_cast<
+		const Variable_input_iterator_representation_atomic_nodal_values *>(
+		representation);
+
+	return (representation_nodal_values&&
+		(input==representation_nodal_values->input)&&
+		((atomic_input&&(representation_nodal_values->atomic_input)&&
+		(*atomic_input== *(representation_nodal_values->atomic_input)))||
+		(!atomic_input&&!(representation_nodal_values->atomic_input))));
+}
+
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_input_iterator_representation_atomic_nodal_values::dereference()
+	const
+//******************************************************************************
+// LAST MODIFIED : 26 January 2004
+//
+// DESCRIPTION :
+// Returns the atomic input for the iterator.
+//==============================================================================
+{
+	return (atomic_input);
+}
+#endif // defined (USE_ITERATORS_NESTED)
+#endif // defined (USE_ITERATORS)
 
 
 // global classes
@@ -513,9 +2987,33 @@ Variable_element_xi::~Variable_element_xi()
 	DEACCESS(FE_element)(&element);
 }
 
-Variable_size_type Variable_element_xi::size() const
+#if defined (USE_ITERATORS)
+#if defined (USE_VARIABLES_AS_COMPONENTS)
+bool Variable_element_xi::is_component()
 //******************************************************************************
-// LAST MODIFIED : 7 November 2003
+// LAST MODIFIED : 29 January 2004
+//
+// DESCRIPTION :
+// ???DB.  Where I'm up to
+// ???DB.  Not correct.  A component should refer back to the variable rather
+//   than having its own storage.  Like inputs.  No difference?
+//==============================================================================
+{
+	return ((element&&(0==xi.size()))||(!element&&(1==xi.size())));
+}
+#else // defined (USE_VARIABLES_AS_COMPONENTS)
+#endif // defined (USE_VARIABLES_AS_COMPONENTS)
+#endif // defined (USE_ITERATORS)
+
+Variable_size_type Variable_element_xi::
+#if defined (USE_ITERATORS)
+	number_differentiable
+#else // defined (USE_ITERATORS)
+	size
+#endif // defined (USE_ITERATORS)
+	() const
+//******************************************************************************
+// LAST MODIFIED : 20 January 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -523,6 +3021,8 @@ Variable_size_type Variable_element_xi::size() const
 	return (xi.size());
 }
 
+#if defined (USE_ITERATORS)
+#else // defined (USE_ITERATORS)
 Vector *Variable_element_xi::scalars()
 //******************************************************************************
 // LAST MODIFIED : 7 November 2003
@@ -532,72 +3032,123 @@ Vector *Variable_element_xi::scalars()
 {
 	return (new Vector(xi));
 }
+#endif // defined (USE_ITERATORS)
 
-Variable_input_handle Variable_element_xi::input_element_xi()
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_element_xi::input_element_xi()
 //******************************************************************************
-// LAST MODIFIED : 7 November 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 // Returns the element/xi input.
 //==============================================================================
 {
-	return (Variable_input_handle(new Variable_input_element_xi(
-		Variable_element_xi_handle(this))));
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_element_xi(Variable_element_xi_handle(this))));
 }
 
-Variable_input_handle Variable_element_xi::input_element()
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_element_xi::input_element()
 //******************************************************************************
-// LAST MODIFIED : 7 November 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 // Returns the element input.
 //==============================================================================
 {
-	return (Variable_input_handle(new Variable_input_element_xi(
-		Variable_element_xi_handle(this),true,false)));
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_element_xi(Variable_element_xi_handle(this),true,
+		false)));
 }
 
-Variable_input_handle Variable_element_xi::input_xi()
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_element_xi::input_xi()
 //******************************************************************************
-// LAST MODIFIED : 7 November 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 // Returns the xi input.
 //==============================================================================
 {
-	return (Variable_input_handle(new Variable_input_element_xi(
-		Variable_element_xi_handle(this),false)));
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_element_xi(Variable_element_xi_handle(this),false)));
 }
 
-Variable_input_handle Variable_element_xi::input_xi(Variable_size_type index)
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_element_xi::input_xi(Variable_size_type index)
 //******************************************************************************
-// LAST MODIFIED : 10 November 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 // Returns the xi input.
 //==============================================================================
 {
-	return (Variable_input_handle(new Variable_input_element_xi(
-		Variable_element_xi_handle(this),index)));
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_element_xi(Variable_element_xi_handle(this),index)));
 }
 
-Variable_input_handle Variable_element_xi::input_xi(
-	const ublas::vector<Variable_size_type> indices)
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_element_xi::input_xi(const ublas::vector<Variable_size_type> indices)
 //******************************************************************************
-// LAST MODIFIED : 7 December 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 // Returns the xi input.
 //==============================================================================
 {
-	return (Variable_input_handle(new Variable_input_element_xi(
-		Variable_element_xi_handle(this),indices)));
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_element_xi(Variable_element_xi_handle(this),indices)));
 }
 
 Variable_handle Variable_element_xi::operator-(const Variable& second)
 	const
 //******************************************************************************
-// LAST MODIFIED : 15 December 2003
+// LAST MODIFIED : 20 January 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -610,7 +3161,13 @@ Variable_handle Variable_element_xi::operator-(const Variable& second)
 			dynamic_cast<const Variable_vector&>(second);
 		Variable_size_type i,number_of_values;
 
-		number_of_values=second_vector.size();
+		number_of_values=second_vector.
+#if defined (USE_ITERATORS)
+			number_differentiable
+#else // defined (USE_ITERATORS)
+			size
+#endif // defined (USE_ITERATORS)
+			();
 		if (this&&(xi.size()==number_of_values)&&(0<number_of_values))
 		{
 			FE_value *increment_array,*xi_array;
@@ -653,7 +3210,7 @@ Variable_handle Variable_element_xi::operator-(const Variable& second)
 
 Variable_handle Variable_element_xi::operator-=(const Variable& second)
 //******************************************************************************
-// LAST MODIFIED : 15 December 2003
+// LAST MODIFIED : 20 January 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -664,7 +3221,13 @@ Variable_handle Variable_element_xi::operator-=(const Variable& second)
 			dynamic_cast<const Variable_vector&>(second);
 		Variable_size_type i,number_of_values;
 
-		number_of_values=second_vector.size();
+		number_of_values=second_vector.
+#if defined (USE_ITERATORS)
+			number_differentiable
+#else // defined (USE_ITERATORS)
+			size
+#endif // defined (USE_ITERATORS)
+			();
 		if (this&&(xi.size()==number_of_values)&&(0<number_of_values))
 		{
 			FE_value *increment_array,*xi_array;
@@ -727,22 +3290,38 @@ Variable_handle Variable_element_xi::evaluate_local()
 	return (Variable_handle(new Variable_element_xi(*this)));
 }
 
-void Variable_element_xi::evaluate_derivative_local(Matrix& matrix,
-	std::list<Variable_input_handle>& independent_variables)
+#if defined (USE_ITERATORS)
+//???DB.  To be done
+#else // defined (USE_ITERATORS)
+bool Variable_element_xi::evaluate_derivative_local(Matrix& matrix,
+	std::list<
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 12 November 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
+	bool result;
 	Variable_size_type i,index,number_of_input_values,number_of_values;
 	Variable_input_element_xi_handle input_element_xi_handle;
 
+	result=true;
 	// matrix is zero'd on entry
 	if ((1==independent_variables.size())&&(input_element_xi_handle=
 #if defined (USE_SMART_POINTER)
-		boost::dynamic_pointer_cast<Variable_input_element_xi,Variable_input>(
-		independent_variables.front())
+		boost::dynamic_pointer_cast<Variable_input_element_xi,
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+		>(independent_variables.front())
 #else /* defined (USE_SMART_POINTER) */
 		dynamic_cast<Variable_input_element_xi *>(independent_variables.front())
 #endif /* defined (USE_SMART_POINTER) */
@@ -774,12 +3353,21 @@ void Variable_element_xi::evaluate_derivative_local(Matrix& matrix,
 			}
 		}
 	}
+
+	return (result);
 }
+#endif // defined (USE_ITERATORS)
 
 Variable_handle Variable_element_xi::get_input_value_local(
-	const Variable_input_handle& input)
+	const
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	& input)
 //******************************************************************************
-// LAST MODIFIED : 7 December 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -789,7 +3377,13 @@ Variable_handle Variable_element_xi::get_input_value_local(
 
 	if ((input_element_xi_handle=
 #if defined (USE_SMART_POINTER)
-		boost::dynamic_pointer_cast<Variable_input_element_xi,Variable_input>(input)
+		boost::dynamic_pointer_cast<Variable_input_element_xi,
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+		>(input)
 #else /* defined (USE_SMART_POINTER) */
 		dynamic_cast<Variable_input_element_xi *>(input)
 #endif /* defined (USE_SMART_POINTER) */
@@ -799,7 +3393,13 @@ Variable_handle Variable_element_xi::get_input_value_local(
 		if (input_element_xi_handle->xi)
 		{
 			Variable_size_type number_of_input_values=
-				input_element_xi_handle->size();
+				input_element_xi_handle->
+#if defined (USE_ITERATORS)
+				number_differentiable
+#else // defined (USE_ITERATORS)
+				size
+#endif // defined (USE_ITERATORS)
+				();
 
 			if (0==(input_element_xi_handle->indices).size())
 			{
@@ -815,7 +3415,13 @@ Variable_handle Variable_element_xi::get_input_value_local(
 			}
 			else
 			{
-				Variable_size_type i,index,number_of_values=this->size();
+				Variable_size_type i,index,number_of_values=this->
+#if defined (USE_ITERATORS)
+					number_differentiable
+#else // defined (USE_ITERATORS)
+					size
+#endif // defined (USE_ITERATORS)
+					();
 				ublas::vector<Scalar> selected_values(number_of_input_values);
 
 				for (i=0;i<number_of_input_values;i++)
@@ -864,21 +3470,40 @@ Variable_handle Variable_element_xi::get_input_value_local(
 	return (value_element_xi);
 }
 
-int Variable_element_xi::set_input_value_local(
-	const Variable_input_handle& input,const Variable_handle& values)
+bool Variable_element_xi::set_input_value_local(
+	const
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	& input,
+	const
+#if defined (USE_VARIABLES_AS_COMPONENTS)
+	Variable_handle
+#else // defined (USE_VARIABLES_AS_COMPONENTS)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLES_AS_COMPONENTS)
+	& values)
 //******************************************************************************
-// LAST MODIFIED : 7 November 2003
+// LAST MODIFIED : 9 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	int return_code;
+	bool result;
 	Variable_input_element_xi_handle input_element_xi_handle;
 
-	return_code=0;
+	result=false;
 	if ((input_element_xi_handle=
 #if defined (USE_SMART_POINTER)
-		boost::dynamic_pointer_cast<Variable_input_element_xi,Variable_input>(input)
+		boost::dynamic_pointer_cast<Variable_input_element_xi,
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+		>(input)
 #else /* defined (USE_SMART_POINTER) */
 		dynamic_cast<Variable_input_element_xi *>(input)
 #endif /* defined (USE_SMART_POINTER) */
@@ -918,7 +3543,7 @@ int Variable_element_xi::set_input_value_local(
 							}
 							xi.resize(number_of_xi);
 							xi=values_element_xi_handle->xi;
-							return_code=1;
+							result=true;
 						}
 					}
 				}
@@ -930,7 +3555,14 @@ int Variable_element_xi::set_input_value_local(
 			{
 				Vector *values_vector;
 
-				if (values_vector=values->scalars())
+				if (values_vector=
+#if defined (USE_ITERATORS)
+					//???DB.  To be done
+					0
+#else // defined (USE_ITERATORS)
+					values->scalars()
+#endif // defined (USE_ITERATORS)
+					)
 				{
 					Variable_size_type number_of_input_values=
 						(input_element_xi_handle->indices).size();
@@ -940,7 +3572,6 @@ int Variable_element_xi::set_input_value_local(
 						if ((this->xi).size()==values_vector->size())
 						{
 							this->xi= *values_vector;
-							return_code=1;
 						}
 					}
 					else
@@ -957,16 +3588,16 @@ int Variable_element_xi::set_input_value_local(
 									(this->xi)[index-1]=(*values_vector)[i];
 								}
 							}
-							return_code=1;
 						}
 					}
 					delete values_vector;
+					result=true;
 				}
 			}
 		}
 	}
 
-	return (return_code);
+	return (result);
 }
 
 string_handle Variable_element_xi::get_string_representation_local()
@@ -1016,7 +3647,7 @@ Variable_finite_element::Variable_finite_element(struct FE_field *field,
 	element((struct FE_element *)NULL),field(field),node((struct FE_node *)NULL),
 	xi()
 //******************************************************************************
-// LAST MODIFIED : 7 November 2003
+// LAST MODIFIED : 28 January 2004
 //
 // DESCRIPTION :
 // Constructor.
@@ -1025,6 +3656,11 @@ Variable_finite_element::Variable_finite_element(struct FE_field *field,
 	if (field)
 	{
 		ACCESS(FE_field)(field);
+		if ((component_number<0)||
+			(component_number>get_FE_field_number_of_components(field)))
+		{
+			component_number= -1;
+		}
 	}
 }
 
@@ -1126,9 +3762,15 @@ Variable_finite_element::~Variable_finite_element()
 	DEACCESS(FE_node)(&node);
 }
 
-Variable_size_type Variable_finite_element::size() const
+Variable_size_type Variable_finite_element::
+#if defined (USE_ITERATORS)
+	number_differentiable
+#else // defined (USE_ITERATORS)
+	size
+#endif // defined (USE_ITERATORS)
+	() const
 //******************************************************************************
-// LAST MODIFIED : 7 November 2003
+// LAST MODIFIED : 20 January 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1151,6 +3793,8 @@ Variable_size_type Variable_finite_element::size() const
 	return (result);
 }
 
+#if defined (USE_ITERATORS)
+#else // defined (USE_ITERATORS)
 Vector *Variable_finite_element::scalars()
 //******************************************************************************
 // LAST MODIFIED : 7 November 2003
@@ -1160,130 +3804,318 @@ Vector *Variable_finite_element::scalars()
 {
 	return (evaluate_local()->scalars());
 }
+#endif // defined (USE_ITERATORS)
 
-Variable_input_handle Variable_finite_element::input_element_xi()
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_finite_element::input_element_xi()
 //******************************************************************************
-// LAST MODIFIED : 7 November 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 // Returns the element/xi input.
 //==============================================================================
 {
-	return (Variable_input_handle(new Variable_input_element_xi(
-		Variable_finite_element_handle(this))));
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_element_xi(Variable_finite_element_handle(this))));
 }
 
-Variable_input_handle Variable_finite_element::input_element()
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_finite_element::input_element()
 //******************************************************************************
-// LAST MODIFIED : 7 November 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 // Returns the element input.
 //==============================================================================
 {
-	return (Variable_input_handle(new Variable_input_element_xi(
-		Variable_finite_element_handle(this),true,false)));
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_element_xi(Variable_finite_element_handle(this),true,
+		false)));
 }
 
-Variable_input_handle Variable_finite_element::input_xi()
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_finite_element::input_xi()
 //******************************************************************************
-// LAST MODIFIED : 7 November 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 // Returns the xi input.
 //==============================================================================
 {
-	return (Variable_input_handle(new Variable_input_element_xi(
-		Variable_finite_element_handle(this),false)));
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_element_xi(Variable_finite_element_handle(this),
+		false)));
 }
 
-Variable_input_handle Variable_finite_element::input_xi(
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_finite_element::input_xi(
 	Variable_size_type index)
 //******************************************************************************
-// LAST MODIFIED : 10 November 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 // Returns the xi input.
 //==============================================================================
 {
-	return (Variable_input_handle(new Variable_input_element_xi(
-		Variable_finite_element_handle(this),index)));
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_element_xi(Variable_finite_element_handle(this),
+		index)));
 }
 
-Variable_input_handle Variable_finite_element::input_xi(
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_finite_element::input_xi(
 	const ublas::vector<Variable_size_type> indices)
 //******************************************************************************
-// LAST MODIFIED : 7 December 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 // Returns the xi input.
 //==============================================================================
 {
-	return (Variable_input_handle(new Variable_input_element_xi(
-		Variable_finite_element_handle(this),indices)));
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_element_xi(Variable_finite_element_handle(this),
+		indices)));
 }
 
-Variable_input_handle Variable_finite_element::input_nodal_values()
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_finite_element::input_nodal_values()
 //******************************************************************************
-// LAST MODIFIED : 7 November 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 // Returns the nodal values input.
 //==============================================================================
 {
-	return (Variable_input_handle(new Variable_input_nodal_values(
-		Variable_finite_element_handle(this))));
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_nodal_values(Variable_finite_element_handle(this))));
 }
 
-Variable_input_handle Variable_finite_element::input_nodal_values(
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_finite_element::input_nodal_values(
 	struct FE_node *node,enum FE_nodal_value_type value_type,int version)
 //******************************************************************************
-// LAST MODIFIED : 9 November 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 // Returns the nodal values input.
 //==============================================================================
 {
-	return (Variable_input_handle(new Variable_input_nodal_values(
-		Variable_finite_element_handle(this),node,value_type,version)));
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_nodal_values(Variable_finite_element_handle(this),node,
+		value_type,version)));
 }
 
-Variable_input_handle Variable_finite_element::input_nodal_values(
-	struct FE_node *node)
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_finite_element::input_nodal_values(struct FE_node *node)
 //******************************************************************************
-// LAST MODIFIED : 7 November 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 // Returns the nodal values input.
 //==============================================================================
 {
-	return (Variable_input_handle(new Variable_input_nodal_values(
-		Variable_finite_element_handle(this),node)));
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_nodal_values(Variable_finite_element_handle(this),
+		node)));
 }
 
-Variable_input_handle Variable_finite_element::input_nodal_values(
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_finite_element::input_nodal_values(
 	enum FE_nodal_value_type value_type)
 //******************************************************************************
-// LAST MODIFIED : 7 November 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 // Returns the nodal values input.
 //==============================================================================
 {
-	return (Variable_input_handle(new Variable_input_nodal_values(
-		Variable_finite_element_handle(this),value_type)));
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_nodal_values(Variable_finite_element_handle(this),
+		value_type)));
 }
 
-Variable_input_handle Variable_finite_element::input_nodal_values(int version)
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_finite_element::input_nodal_values(int version)
 //******************************************************************************
-// LAST MODIFIED : 7 November 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 // Returns the nodal values input.
 //==============================================================================
 {
-	return (Variable_input_handle(new Variable_input_nodal_values(
-		Variable_finite_element_handle(this),version)));
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_nodal_values(Variable_finite_element_handle(this),
+		version)));
+}
+
+struct FE_region *Variable_finite_element::region() const
+//******************************************************************************
+// LAST MODIFIED : 28 January 2004
+//
+// DESCRIPTION :
+// return the region that the field is defined for
+//
+// NB.  The calling program should use ACCESS(FE_region) and
+//   DEACCESS(FE_region) to manage the lifetime of the returned region
+//==============================================================================
+{
+	return (FE_field_get_FE_region(field));
+}
+
+Variable_size_type Variable_finite_element::number_of_versions(
+	struct FE_node *node,Variable_size_type component_number)
+//******************************************************************************
+// LAST MODIFIED : 28 January 2004
+//
+// DESCRIPTION :
+// Return the number of versions for the component at the node.
+//==============================================================================
+{
+	int local_component_number;
+
+	local_component_number=this->component_number;
+	if (-1==local_component_number)
+	{
+		local_component_number=(int)component_number;
+	}
+
+	return ((Variable_size_type)get_FE_node_field_component_number_of_versions(
+		node,field,local_component_number));
+}
+
+Variable_size_type Variable_finite_element::number_of_derivatives(
+	struct FE_node *node,Variable_size_type component_number)
+//******************************************************************************
+// LAST MODIFIED : 28 January 2004
+//
+// DESCRIPTION :
+// Return the number of derivatives for the component at the node.
+//==============================================================================
+{
+	int local_component_number;
+
+	local_component_number=this->component_number;
+	if (-1==local_component_number)
+	{
+		local_component_number=(int)component_number;
+	}
+
+	return ((Variable_size_type)get_FE_node_field_component_number_of_derivatives(
+		node,field,local_component_number));
+}
+
+enum FE_nodal_value_type *Variable_finite_element::nodal_value_types(
+	struct FE_node *node,Variable_size_type component_number)
+//******************************************************************************
+// LAST MODIFIED : 28 January 2004
+//
+// DESCRIPTION :
+// Return the nodal value types for the component at the node.
+//
+// NB.  The calling program should DEALLOCATE the returned array when its no
+//   longer needed
+//==============================================================================
+{
+	int local_component_number;
+
+	local_component_number=this->component_number;
+	if (-1==local_component_number)
+	{
+		local_component_number=(int)component_number;
+	}
+
+	return (get_FE_node_field_component_nodal_value_types(node,field,
+		local_component_number));
 }
 
 Variable_handle Variable_finite_element::clone() const
@@ -1358,6 +4190,9 @@ Variable_handle Variable_finite_element::evaluate_local()
 	return (result);
 }
 
+#if defined (USE_ITERATORS)
+//???DB.  To be done
+#else // defined (USE_ITERATORS)
 static int extract_component_values(
 	struct FE_element_field_values *element_field_values,
 	int number_of_components,int component_number,
@@ -1620,7 +4455,7 @@ static int nodal_value_calculate_component_values(
 	int *number_of_nodal_values_address,int **numbers_of_component_values_address,
 	FE_value ****component_values_address)
 /*******************************************************************************
-LAST MODIFIED : 26 November 2003
+LAST MODIFIED : 29 December 2003
 
 DESCRIPTION :
 Calculate the component values for the derivatives of the specified components
@@ -1726,13 +4561,37 @@ for the <fe_field> and <element> and can be passed in or computed in here.
 					{
 						for (j=0;j<number_of_components;j++)
 						{
-							number_of_values=
-								(1+get_FE_node_field_component_number_of_derivatives(
-								element_field_nodes[i],fe_field,j));
 							number_of_versions=
 								get_FE_node_field_component_number_of_versions(
 								element_field_nodes[i],fe_field,j);
-							if ((version<0)||(version>number_of_versions))
+							if (version<number_of_versions)
+							{
+								number_of_values=
+									(1+get_FE_node_field_component_number_of_derivatives(
+									element_field_nodes[i],fe_field,j));
+								if (version<0)
+								{
+									element_field_number_of_nodal_values[i] +=
+										number_of_values*number_of_versions;
+								}
+								else
+								{
+									element_field_number_of_nodal_values[i] += number_of_values;
+								}
+							}
+						}
+					}
+					else
+					{
+						number_of_versions=
+							get_FE_node_field_component_number_of_versions(
+							element_field_nodes[i],fe_field,component_number);
+						if (version<number_of_versions)
+						{
+							number_of_values=
+								(1+get_FE_node_field_component_number_of_derivatives(
+								element_field_nodes[i],fe_field,component_number));
+							if (version<0)
 							{
 								element_field_number_of_nodal_values[i] +=
 									number_of_values*number_of_versions;
@@ -1741,24 +4600,6 @@ for the <fe_field> and <element> and can be passed in or computed in here.
 							{
 								element_field_number_of_nodal_values[i] += number_of_values;
 							}
-						}
-					}
-					else
-					{
-						number_of_values=
-							(1+get_FE_node_field_component_number_of_derivatives(
-							element_field_nodes[i],fe_field,component_number));
-						number_of_versions=
-							get_FE_node_field_component_number_of_versions(
-							element_field_nodes[i],fe_field,component_number);
-						if ((version<0)||(version>number_of_versions))
-						{
-							element_field_number_of_nodal_values[i] +=
-								number_of_values*number_of_versions;
-						}
-						else
-						{
-							element_field_number_of_nodal_values[i] += number_of_values;
 						}
 					}
 				}
@@ -2104,10 +4945,11 @@ NB.  xi_1 is varying slowest (xi_n fastest)
 
 	return (return_code);
 } /* calculate_monomial_derivative_values */
+#endif // defined (USE_ITERATORS)
 
 class Variable_finite_element_check_derivative_functor
 //******************************************************************************
-// LAST MODIFIED : 7 December 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 //
@@ -2132,8 +4974,19 @@ class Variable_finite_element_check_derivative_functor
 			element_xi_input_iterator(element_xi_input_iterator),
 			number_of_columns(number_of_columns){};
 		~Variable_finite_element_check_derivative_functor(){};
-		int operator() (Variable_input_handle& input)
+		int operator() (
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			& input)
 		{
+#if defined (USE_ITERATORS)
+			//???DB.  To be done
+			//???DB.  May be similar to this because atomic inputs have size 1?
+			number_of_columns=1;
+#else // defined (USE_ITERATORS)
 			if (first)
 			{
 				number_of_columns=input->size();
@@ -2142,6 +4995,7 @@ class Variable_finite_element_check_derivative_functor
 			{
 				number_of_columns *= input->size();
 			}
+#endif // defined (USE_ITERATORS)
 			*element_xi_input_iterator=Variable_input_element_xi_handle(0);
 			if (!zero_derivative)
 			{
@@ -2150,8 +5004,13 @@ class Variable_finite_element_check_derivative_functor
 
 				if ((input_element_xi_handle=
 #if defined (USE_SMART_POINTER)
-					boost::dynamic_pointer_cast<Variable_input_element_xi,Variable_input>(
-					input)
+					boost::dynamic_pointer_cast<Variable_input_element_xi,
+#if defined (USE_VARIABLE_INPUT)
+					Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+					Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+					>(input)
 #else /* defined (USE_SMART_POINTER) */
 					dynamic_cast<Variable_input_element_xi *>(input)
 #endif /* defined (USE_SMART_POINTER) */
@@ -2165,7 +5024,12 @@ class Variable_finite_element_check_derivative_functor
 				else if ((input_nodal_values_handle=
 #if defined (USE_SMART_POINTER)
 					boost::dynamic_pointer_cast<Variable_input_nodal_values,
-					Variable_input>(input)
+#if defined (USE_VARIABLE_INPUT)
+					Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+					Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+					>(input)
 #else /* defined (USE_SMART_POINTER) */
 					dynamic_cast<Variable_input_nodal_values *>(input)
 #endif /* defined (USE_SMART_POINTER) */
@@ -2203,22 +5067,32 @@ class Variable_finite_element_check_derivative_functor
 		Variable_size_type& number_of_columns;
 };
 
-void Variable_finite_element::evaluate_derivative_local(Matrix& matrix,
-	std::list<Variable_input_handle>& independent_variables)
+#if defined (USE_ITERATORS)
+//???DB.  To be done
+#else // defined (USE_ITERATORS)
+bool Variable_finite_element::evaluate_derivative_local(Matrix& matrix,
+	std::list<
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 7 December 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 // ???DB.  Throw an exception for failure?
 //==============================================================================
 {
-	bool zero_derivative;
+	bool result,zero_derivative;
 	Variable_size_type derivative_order=independent_variables.size(),
 		number_of_columns,number_of_components;
 	Variable_input_nodal_values_handle nodal_values_input(0);
 	ublas::vector<Variable_input_element_xi_handle>
 		element_xi_inputs(derivative_order);
 
+	result=true;
 	// matrix is zero'd on entry
 	// check independent variables for a zero matrix
 	number_of_components=this->size();
@@ -2438,7 +5312,10 @@ void Variable_finite_element::evaluate_derivative_local(Matrix& matrix,
 			DESTROY(FE_element_field_values)(&element_field_values);
 		}
 	}
+
+	return (result);
 }
+#endif // defined (USE_ITERATORS)
 
 enum Swap_nodal_values_type
 {
@@ -2460,7 +5337,7 @@ struct Swap_nodal_values_data
 static int swap_nodal_values(struct FE_node *node,
 	void *swap_nodal_values_data_void)
 /*******************************************************************************
-LAST MODIFIED : 30 April 2003
+LAST MODIFIED : 29 December 2003
 
 DESCRIPTION :
 Swaps the nodal values specified by <swap_nodal_values_data_void> at the <node>.
@@ -2496,20 +5373,20 @@ Swaps the nodal values specified by <swap_nodal_values_data_void> at the <node>.
 			while (return_code&&(component_number<
 				swap_nodal_values_data->number_of_components))
 			{
+				number_of_versions=get_FE_node_field_component_number_of_versions(node,
+					fe_field,component_number);
+				version=swap_nodal_values_data->version;
 				number_of_values_per_version=
 					1+get_FE_node_field_component_number_of_derivatives(node,fe_field,
 					component_number);
-				number_of_versions=get_FE_node_field_component_number_of_versions(node,
-					fe_field,component_number);
-				if (all_components||
-					(component_number==swap_nodal_values_data->component_number))
+				if ((version<number_of_versions)&&(all_components||
+					(component_number==swap_nodal_values_data->component_number)))
 				{
 					swap_value_1=(swap_nodal_values_data->values)+
 						(swap_nodal_values_data->value_number);
 					if (FE_NODAL_UNKNOWN==value_type)
 					{
-						if ((0<=(version=swap_nodal_values_data->version))&&(version<
-							number_of_versions))
+						if (0<=version)
 						{
 							swap_value_2=value+(version*number_of_values_per_version);
 							number_of_swap_values=number_of_values_per_version;
@@ -2561,8 +5438,7 @@ Swaps the nodal values specified by <swap_nodal_values_data_void> at the <node>.
 							}
 							if (i<number_of_values_per_version)
 							{
-								if ((0<=(version=swap_nodal_values_data->version))&&(version<
-									number_of_versions))
+								if (0<=version)
 								{
 									i += version*number_of_values_per_version;
 									swap_value_1=(swap_nodal_values_data->values)+
@@ -2653,9 +5529,15 @@ Swaps the nodal values specified by <swap_nodal_values_data_void> at the <node>.
 } /* swap_nodal_values */
 
 Variable_handle Variable_finite_element::get_input_value_local(
-	const Variable_input_handle& input)
+	const
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	& input)
 //******************************************************************************
-// LAST MODIFIED : 13 November 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -2667,52 +5549,97 @@ Variable_handle Variable_finite_element::get_input_value_local(
 	result=Variable_vector_handle((Variable_vector *)0);
 	if ((input_element_xi_handle=
 #if defined (USE_SMART_POINTER)
-		boost::dynamic_pointer_cast<Variable_input_element_xi,Variable_input>(input)
+		boost::dynamic_pointer_cast<Variable_input_element_xi,
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+		>(input)
 #else /* defined (USE_SMART_POINTER) */
 		dynamic_cast<Variable_input_element_xi *>(input)
 #endif /* defined (USE_SMART_POINTER) */
 		)&&(input_element_xi_handle->variable_finite_element==
 		Variable_finite_element_handle(this)))
 	{
-		if (input_element_xi_handle->element)
+		if (input_element_xi_handle->xi)
 		{
-			// no indices if have element
-			result=Variable_handle(new Variable_element_xi(element,xi));
-		}
-		else
-		{
-			Variable_size_type
-				number_of_values=(input_element_xi_handle->indices).size();
+			Variable_size_type number_of_input_values=
+				input_element_xi_handle->
+#if defined (USE_ITERATORS)
+				number_differentiable
+#else // defined (USE_ITERATORS)
+				size
+#endif // defined (USE_ITERATORS)
+				();
 
-			if (0<number_of_values)
+			if (0==(input_element_xi_handle->indices).size())
 			{
-				Variable_size_type i,index,number_of_xi=xi.size();
-				Vector values_vector(number_of_values);
-
-				for (i=0;i<number_of_values;i++)
+				if (input_element_xi_handle->element)
 				{
-					index=(input_element_xi_handle->indices)[i];
-					if (index<number_of_xi)
-					{
-						values_vector[i]=xi[index];
-					}
-					else
-					{
-						values_vector[i]=(Scalar)0;
-					}
+					result=Variable_handle(new Variable_element_xi(element,xi));
 				}
-				result=Variable_vector_handle(new Variable_vector(values_vector));
+				else
+				{
+					result=Variable_handle(new Variable_vector(xi));
+				}
 			}
 			else
 			{
-				result=Variable_vector_handle(new Variable_vector(xi));
+				Variable_size_type i,index,number_of_values=this->
+#if defined (USE_ITERATORS)
+					number_differentiable
+#else // defined (USE_ITERATORS)
+				size
+#endif // defined (USE_ITERATORS)
+					();
+				ublas::vector<Scalar> selected_values(number_of_input_values);
+
+				for (i=0;i<number_of_input_values;i++)
+				{
+					index=input_element_xi_handle->indices[i];
+					if ((0<index)&&(index<=number_of_values))
+					{
+						selected_values[i]=xi[index-1];
+					}
+				}
+#if defined (OLD_CODE)
+				//???DB.  Doesn't make sense to have element and indices
+				if (input_element_xi_handle->element)
+				{
+					result=Variable_handle(new Variable_element_xi(element,
+						selected_values));
+				}
+				else
+				{
+#endif // defined (OLD_CODE)
+					result=Variable_handle(new Variable_vector(selected_values));
+#if defined (OLD_CODE)
+				}
+#endif // defined (OLD_CODE)
+			}
+		}
+		else
+		{
+			if (input_element_xi_handle->element)
+			{
+				result=Variable_handle(new Variable_element_xi(element,Vector(0)));
+			}
+			else
+			{
+				result=Variable_handle(new Variable_vector(Vector(0)));
 			}
 		}
 	}
 	else if ((input_nodal_values_handle=
 #if defined (USE_SMART_POINTER)
-		boost::dynamic_pointer_cast<Variable_input_nodal_values,Variable_input>(
-		input)
+		boost::dynamic_pointer_cast<Variable_input_nodal_values,
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+		>(input)
 #else /* defined (USE_SMART_POINTER) */
 		dynamic_cast<Variable_input_nodal_values *>(input)
 #endif /* defined (USE_SMART_POINTER) */
@@ -2720,11 +5647,17 @@ Variable_handle Variable_finite_element::get_input_value_local(
 		Variable_finite_element_handle(this)))
 	{
 		int return_code;
-		Variable_size_type number_of_values=input_nodal_values_handle->size();
+		Variable_size_type number_of_values=input_nodal_values_handle->
+#if defined (USE_ITERATORS)
+			number_differentiable
+#else // defined (USE_ITERATORS)
+			size
+#endif // defined (USE_ITERATORS)
+			();
 		struct FE_region *region;
 		struct Swap_nodal_values_data swap_nodal_values_data;
 
-		if (field&&(region=FE_field_get_FE_region(field))&&(0<number_of_values))
+		if (field&&(region=this->region())&&(0<number_of_values))
 		{
 			swap_nodal_values_data.swap_type=SWAP_NODAL_VALUES_GET;
 			swap_nodal_values_data.number_of_values=0;
@@ -2772,22 +5705,41 @@ Variable_handle Variable_finite_element::get_input_value_local(
 	return (result);
 }
 
-int Variable_finite_element::set_input_value_local(
-	const Variable_input_handle& input,const Variable_handle& values)
+bool Variable_finite_element::set_input_value_local(
+	const
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	& input,
+	const
+#if defined (USE_VARIABLES_AS_COMPONENTS)
+	Variable_handle
+#else // defined (USE_VARIABLES_AS_COMPONENTS)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLES_AS_COMPONENTS)
+	& values)
 //******************************************************************************
-// LAST MODIFIED : 10 November 2003
+// LAST MODIFIED : 9 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	int return_code;
+	bool result;
 	Variable_input_element_xi_handle input_element_xi_handle;
 	Variable_input_nodal_values_handle input_nodal_values_handle;
 
-	return_code=0;
+	result=false;
 	if ((input_element_xi_handle=
 #if defined (USE_SMART_POINTER)
-		boost::dynamic_pointer_cast<Variable_input_element_xi,Variable_input>(input)
+		boost::dynamic_pointer_cast<Variable_input_element_xi,
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+		>(input)
 #else /* defined (USE_SMART_POINTER) */
 		dynamic_cast<Variable_input_element_xi *>(input)
 #endif /* defined (USE_SMART_POINTER) */
@@ -2811,30 +5763,30 @@ int Variable_finite_element::set_input_value_local(
 				{
 					xi.resize((values_element_xi->xi).size());
 					xi=values_element_xi->xi;
-					return_code=1;
 				}
-				else
+				if (element)
 				{
-					return_code=1;
+					DEACCESS(FE_element)(&element);
 				}
-				if (return_code)
+				if (values_element_xi->element)
 				{
-					if (element)
-					{
-						DEACCESS(FE_element)(&element);
-					}
-					if (values_element_xi->element)
-					{
-						element=ACCESS(FE_element)(values_element_xi->element);
-					}
+					element=ACCESS(FE_element)(values_element_xi->element);
 				}
+				result=true;
 			}
 		}
 		else
 		{
 			Vector *values_vector;
 
-			if (values_vector=values->scalars())
+			if (values_vector=
+#if defined (USE_ITERATORS)
+				//???DB.  To be done
+				0
+#else // defined (USE_ITERATORS)
+				values->scalars()
+#endif // defined (USE_ITERATORS)
+				)
 			{
 				Variable_size_type
 					number_of_values=input_element_xi_handle->indices.size(),
@@ -2852,37 +5804,60 @@ int Variable_finite_element::set_input_value_local(
 							xi[index]=(*values_vector)[i];
 						}
 					}
-					return_code=1;
 				}
 				else
 				{
 					if (number_of_xi==values_vector->size())
 					{
 						xi=(*values_vector);
-						return_code=1;
 					}
 				}
 				delete values_vector;
+				result=true;
 			}
 		}
 	}
 	else if ((input_nodal_values_handle=
 #if defined (USE_SMART_POINTER)
-		boost::dynamic_pointer_cast<Variable_input_nodal_values,Variable_input>(
-		input)
+		boost::dynamic_pointer_cast<Variable_input_nodal_values,
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+		>(input)
 #else /* defined (USE_SMART_POINTER) */
 		dynamic_cast<Variable_input_nodal_values *>(input)
 #endif /* defined (USE_SMART_POINTER) */
 		)&&(input_nodal_values_handle->variable_finite_element==
 		Variable_finite_element_handle(this)))
 	{
-		Variable_size_type i,number_of_values=input_nodal_values_handle->size();
+		Variable_size_type i,number_of_values=input_nodal_values_handle->
+#if defined (USE_ITERATORS)
+			number_differentiable
+#else // defined (USE_ITERATORS)
+			size
+#endif // defined (USE_ITERATORS)
+			();
 		struct FE_region *region;
 		struct Swap_nodal_values_data swap_nodal_values_data;
 		Vector *values_vector;
 
-		if (field&&(region=FE_field_get_FE_region(field))&&(0<number_of_values)&&
-			(number_of_values==values->size())&&(values_vector=values->scalars()))
+		if (field&&(region=this->region())&&(0<number_of_values)&&
+			(number_of_values==values->
+#if defined (USE_ITERATORS)
+			number_differentiable
+#else // defined (USE_ITERATORS)
+			size
+#endif // defined (USE_ITERATORS)
+			())&&(values_vector=
+#if defined (USE_ITERATORS)
+			//???DB.  To be done
+			0
+#else // defined (USE_ITERATORS)
+			values->scalars()
+#endif // defined (USE_ITERATORS)
+			))
 		{
 			swap_nodal_values_data.swap_type=SWAP_NODAL_VALUES_SET;
 			swap_nodal_values_data.number_of_values=0;
@@ -2901,21 +5876,22 @@ int Variable_finite_element::set_input_value_local(
 				}
 				if (input_nodal_values_handle->node)
 				{
-					return_code=swap_nodal_values(input_nodal_values_handle->node,
+					swap_nodal_values(input_nodal_values_handle->node,
 						(void *)&swap_nodal_values_data);
 				}
 				else
 				{
-					return_code=FE_region_for_each_FE_node(region,swap_nodal_values,
+					FE_region_for_each_FE_node(region,swap_nodal_values,
 						(void *)&swap_nodal_values_data);
 				}
 				DEALLOCATE(swap_nodal_values_data.values);
+				result=true;
 			}
 			delete values_vector;
 		}
 	}
 
-	return (return_code);
+	return (result);
 }
 
 string_handle Variable_finite_element::get_string_representation_local()

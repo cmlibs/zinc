@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_variable_new_coordinates.cpp
 
-LAST MODIFIED : 20 November 2003
+LAST MODIFIED : 2 February 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_variable_new coordinates objects.
@@ -43,7 +43,7 @@ Cmiss_variable_new_input_id
 	Cmiss_variable_new_input_prolate_spheroidal_to_rectangular_cartesian_prolate(
 	Cmiss_variable_new_id variable_prolate_spheroidal_to_rectangular_cartesian)
 /*******************************************************************************
-LAST MODIFIED : 20 November 2003
+LAST MODIFIED : 2 February 2004
 
 DESCRIPTION :
 Returns the prolate input for the
@@ -79,7 +79,13 @@ Returns the prolate input for the
 	{
 		result=reinterpret_cast<Cmiss_variable_new_input_id>(
 #if defined (USE_SMART_POINTER)
-			new Variable_input_handle(
+			new
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			(
 #endif /* defined (USE_SMART_POINTER) */
 			variable_prolate_spheroidal_to_rectangular_cartesian_handle->
 			input_prolate()
@@ -96,7 +102,7 @@ Cmiss_variable_new_input_id
 	Cmiss_variable_new_input_prolate_spheroidal_to_rectangular_cartesian_lambda(
 	Cmiss_variable_new_id variable_prolate_spheroidal_to_rectangular_cartesian)
 /*******************************************************************************
-LAST MODIFIED : 20 November 2003
+LAST MODIFIED : 2 February 2004
 
 DESCRIPTION :
 Returns the lambda input for the
@@ -132,7 +138,13 @@ Returns the lambda input for the
 	{
 		result=reinterpret_cast<Cmiss_variable_new_input_id>(
 #if defined (USE_SMART_POINTER)
-			new Variable_input_handle(
+			new
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			(
 #endif /* defined (USE_SMART_POINTER) */
 			variable_prolate_spheroidal_to_rectangular_cartesian_handle->
 			input_lambda()
@@ -149,7 +161,7 @@ Cmiss_variable_new_input_id
 	Cmiss_variable_new_input_prolate_spheroidal_to_rectangular_cartesian_mu(
 	Cmiss_variable_new_id variable_prolate_spheroidal_to_rectangular_cartesian)
 /*******************************************************************************
-LAST MODIFIED : 20 November 2003
+LAST MODIFIED : 2 February 2004
 
 DESCRIPTION :
 Returns the mu input for the
@@ -185,7 +197,13 @@ Returns the mu input for the
 	{
 		result=reinterpret_cast<Cmiss_variable_new_input_id>(
 #if defined (USE_SMART_POINTER)
-			new Variable_input_handle(
+			new
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			(
 #endif /* defined (USE_SMART_POINTER) */
 			variable_prolate_spheroidal_to_rectangular_cartesian_handle->
 			input_mu()
@@ -202,7 +220,7 @@ Cmiss_variable_new_input_id
 	Cmiss_variable_new_input_prolate_spheroidal_to_rectangular_cartesian_theta(
 	Cmiss_variable_new_id variable_prolate_spheroidal_to_rectangular_cartesian)
 /*******************************************************************************
-LAST MODIFIED : 20 November 2003
+LAST MODIFIED : 2 February 2004
 
 DESCRIPTION :
 Returns the theta input for the
@@ -238,7 +256,13 @@ Returns the theta input for the
 	{
 		result=reinterpret_cast<Cmiss_variable_new_input_id>(
 #if defined (USE_SMART_POINTER)
-			new Variable_input_handle(
+			new
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			(
 #endif /* defined (USE_SMART_POINTER) */
 			variable_prolate_spheroidal_to_rectangular_cartesian_handle->
 			input_theta()
@@ -255,7 +279,7 @@ Cmiss_variable_new_input_id
 	Cmiss_variable_new_input_prolate_spheroidal_to_rectangular_cartesian_focus(
 	Cmiss_variable_new_id variable_prolate_spheroidal_to_rectangular_cartesian)
 /*******************************************************************************
-LAST MODIFIED : 20 November 2003
+LAST MODIFIED : 2 February 2004
 
 DESCRIPTION :
 Returns the focus input for the
@@ -291,7 +315,13 @@ Returns the focus input for the
 	{
 		result=reinterpret_cast<Cmiss_variable_new_input_id>(
 #if defined (USE_SMART_POINTER)
-			new Variable_input_handle(
+			new
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			(
 #endif /* defined (USE_SMART_POINTER) */
 			variable_prolate_spheroidal_to_rectangular_cartesian_handle->
 			input_focus()

@@ -1,24 +1,17 @@
 //******************************************************************************
 // FILE : variable_derivative.cpp
 //
-// LAST MODIFIED : 11 December 2003
+// LAST MODIFIED : 4 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
+
+#include "computed_variable/variable_base.hpp"
 
 #include <new>
 #include <sstream>
 #include <string>
 #include <stdio.h>
-
-//???DB.  Put in include?
-const bool Assert_on=true;
-
-template<class Assertion,class Exception>inline void Assert(
-	Assertion assertion,Exception exception)
-{
-	if (Assert_on&&!(assertion)) throw exception;
-}
 
 #include "computed_variable/variable_derivative.hpp"
 
@@ -30,11 +23,17 @@ template<class Assertion,class Exception>inline void Assert(
 
 Variable_derivative::Variable_derivative(
 	const Variable_handle& dependent_variable,
-	std::list<Variable_input_handle>& independent_variables):Variable(),
+	std::list<
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	>& independent_variables):Variable(),
 	dependent_variable(dependent_variable),
 	independent_variables(independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 14 November 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -81,17 +80,28 @@ Variable_derivative::~Variable_derivative()
 }
 
 Variable_handle Variable_derivative::evaluate_derivative(
-	std::list<Variable_input_handle>& independent_variables,
+	std::list<
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	>& independent_variables,
 	std::list<Variable_input_value_handle>& values)
 //******************************************************************************
-// LAST MODIFIED : 16 November 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 // Overload Variable::evaluate_derivative
 //==============================================================================
 {
-	std::list<Variable_input_handle>
-		merged_independent_variables=this->independent_variables;
+	std::list<
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		> merged_independent_variables=this->independent_variables;
 
 	merged_independent_variables.insert(merged_independent_variables.end(),
 		independent_variables.begin(),independent_variables.end());
@@ -100,9 +110,12 @@ Variable_handle Variable_derivative::evaluate_derivative(
 		values));
 }
 
+#if defined (USE_ITERATORS)
+//???DB.  To be done
+#else // defined (USE_ITERATORS)
 class Variable_derivative_calculate_size_functor
 //******************************************************************************
-// LAST MODIFIED : 14 November 2003
+// LAST MODIFIED : 15 January 2004
 //
 // DESCRIPTION :
 // A unary function (functor) for calculating the size of a derivative variable.
@@ -115,11 +128,21 @@ class Variable_derivative_calculate_size_functor
 		{
 			size=0;
 		};
+#if defined (USE_ITERATORS)
+		//???DB.  To be done
+		//???DB.  May be similar to this because atomic inputs have size 1?
+		int operator() (const Variable_input_handle&)
+		{
+			size += size+dependent_variable_size;
+			return (0);
+		};
+#else // defined (USE_ITERATORS)
 		int operator() (const Variable_input_handle& input)
 		{
 			size += (size+dependent_variable_size)*(input->size());
 			return (0);
 		};
+#endif // defined (USE_ITERATORS)
 	private:
 		Variable_size_type& size;
 		Variable_size_type dependent_variable_size;
@@ -150,6 +173,7 @@ Vector *Variable_derivative::scalars()
 {
 	return (evaluate_local()->scalars());
 }
+#endif // defined (USE_ITERATORS)
 
 Variable_handle Variable_derivative::clone() const
 //******************************************************************************
@@ -174,10 +198,16 @@ Variable_handle Variable_derivative::evaluate_local()
 		values));
 }
 
-void Variable_derivative::evaluate_derivative_local(Matrix&,
-	std::list<Variable_input_handle>&)
+bool Variable_derivative::evaluate_derivative_local(Matrix&,
+	std::list<
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	>&)
 //******************************************************************************
-// LAST MODIFIED : 14 November 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -186,12 +216,20 @@ void Variable_derivative::evaluate_derivative_local(Matrix&,
 	Assert(false,std::logic_error(
 		"Variable_derivative::evaluate_derivative_local.  "
 		"Should not come here"));
+	
+	return (false);
 }
 
 Variable_handle Variable_derivative::get_input_value_local(
-	const Variable_input_handle& input)
+	const
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	& input)
 //******************************************************************************
-// LAST MODIFIED : 14 November 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 //???DB.  Could use get_input_value_local
@@ -200,15 +238,28 @@ Variable_handle Variable_derivative::get_input_value_local(
 	return (dependent_variable->get_input_value(input));
 }
 
-int Variable_derivative::set_input_value_local(
-	const Variable_input_handle& input,const Variable_handle& values)
+bool Variable_derivative::set_input_value_local(
+	const
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	& input,
+	const
+#if defined (USE_VARIABLES_AS_COMPONENTS)
+	Variable_handle
+#else // defined (USE_VARIABLES_AS_COMPONENTS)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLES_AS_COMPONENTS)
+	& value)
 //******************************************************************************
-// LAST MODIFIED : 14 November 2003
+// LAST MODIFIED : 4 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	return (dependent_variable->set_input_value(input,values));
+	return (dependent_variable->set_input_value(input,value));
 }
 
 string_handle Variable_derivative::get_string_representation_local()

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_variable_new_matrix.cpp
 
-LAST MODIFIED : 12 December 2003
+LAST MODIFIED : 2 February 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_variable_new matrix object.
@@ -169,7 +169,7 @@ Cmiss_variable_new_input_id Cmiss_variable_new_input_matrix_values(
 	Cmiss_variable_new_id variable_matrix,unsigned int number_of_indices,
 	unsigned int *row_indices,unsigned int *column_indices)
 /*******************************************************************************
-LAST MODIFIED : 24 October 2003
+LAST MODIFIED : 2 February 2004
 
 DESCRIPTION :
 Returns the values input made up of the specified indices for the
@@ -178,7 +178,12 @@ Returns the values input made up of the specified indices for the
 ==============================================================================*/
 {
 	Cmiss_variable_new_input_id result;
-	Variable_input_handle input_values;
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		input_values;
 	Variable_matrix_handle variable_matrix_handle;
 #if defined (USE_SMART_POINTER)
 	Variable_handle *variable_handle_address;
@@ -218,9 +223,17 @@ Returns the values input made up of the specified indices for the
 		}
 		result=reinterpret_cast<Cmiss_variable_new_input_id>(
 #if defined (USE_SMART_POINTER)
-			new Variable_input_handle(input_values)
-#else /* defined (USE_SMART_POINTER) */
+			new
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			(
+#endif /* defined (USE_SMART_POINTER) */
 			input_values
+#if defined (USE_SMART_POINTER)
+			)
 #endif /* defined (USE_SMART_POINTER) */
 			);
 	}

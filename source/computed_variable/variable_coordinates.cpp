@@ -1,25 +1,18 @@
 //******************************************************************************
 // FILE : variable_coordinates.cpp
 //
-// LAST MODIFIED : 11 December 2003
+// LAST MODIFIED : 9 February 2004
 //
 // DESCRIPTION :
 // Implements variables which transform between coordinate systems.
 //==============================================================================
 
+#include "computed_variable/variable_base.hpp"
+
 #include <new>
 #include <sstream>
 #include <string>
 #include <stdio.h>
-
-//???DB.  Put in include?
-const bool Assert_on=true;
-
-template<class Assertion,class Exception>inline void Assert(
-	Assertion assertion,Exception exception)
-{
-	if (Assert_on&&!(assertion)) throw exception;
-}
 
 #include "computed_variable/variable_coordinates.hpp"
 #include "computed_variable/variable_vector.hpp"
@@ -30,10 +23,29 @@ template<class Assertion,class Exception>inline void Assert(
 // class Variable_input_prolate_spheroidal_to_rectangular_cartesian
 // ----------------------------------------------------------------
 
-class Variable_input_prolate_spheroidal_to_rectangular_cartesian :
-	public Variable_input
+class Variable_input_prolate_spheroidal_to_rectangular_cartesian;
+
+#if defined (USE_INTRUSIVE_SMART_POINTER)
+typedef boost::intrusive_ptr<
+	Variable_input_prolate_spheroidal_to_rectangular_cartesian>
+	Variable_input_prolate_spheroidal_to_rectangular_cartesian_handle;
+#elif defined (USE_SMART_POINTER)
+typedef boost::shared_ptr<
+	Variable_input_prolate_spheroidal_to_rectangular_cartesian>
+	Variable_input_prolate_spheroidal_to_rectangular_cartesian_handle;
+#else
+typedef Variable_input_prolate_spheroidal_to_rectangular_cartesian *
+	Variable_input_prolate_spheroidal_to_rectangular_cartesian_handle;
+#endif
+
+class Variable_input_prolate_spheroidal_to_rectangular_cartesian : public
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
 //******************************************************************************
-// LAST MODIFIED : 26 November 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -48,7 +60,62 @@ class Variable_input_prolate_spheroidal_to_rectangular_cartesian :
 			variable_prolate_spheroidal_to_rectangular_cartesian(
 			variable_prolate_spheroidal_to_rectangular_cartesian) {};
 		~Variable_input_prolate_spheroidal_to_rectangular_cartesian() {};
-		Variable_size_type size()
+#if defined (USE_ITERATORS)
+		//???DB.  What about assignment?
+		// copy constructor
+		Variable_input_prolate_spheroidal_to_rectangular_cartesian(
+			const Variable_input_prolate_spheroidal_to_rectangular_cartesian&
+			input_prolate_spheroidal_to_rectangular_cartesian):
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+			(),
+			focus(input_prolate_spheroidal_to_rectangular_cartesian.focus),
+			lambda(input_prolate_spheroidal_to_rectangular_cartesian.lambda),
+			mu(input_prolate_spheroidal_to_rectangular_cartesian.mu),
+			theta(input_prolate_spheroidal_to_rectangular_cartesian.theta),
+			variable_prolate_spheroidal_to_rectangular_cartesian(
+				input_prolate_spheroidal_to_rectangular_cartesian.
+				variable_prolate_spheroidal_to_rectangular_cartesian){};
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			clone() const
+		{
+			return (Variable_input_prolate_spheroidal_to_rectangular_cartesian_handle(
+				new Variable_input_prolate_spheroidal_to_rectangular_cartesian(*this)));
+		}
+		//???DB.  To be done
+		virtual bool is_atomic();
+#if defined (USE_ITERATORS_NESTED)
+		virtual Iterator begin_atomic_inputs();
+		virtual Iterator end_atomic_inputs();
+#else // defined (USE_ITERATORS_NESTED)
+#if defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+		virtual Variable_input_iterator begin_atomic_inputs();
+		virtual Variable_input_iterator end_atomic_inputs();
+#else // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+#if defined (USE_VARIABLE_INPUT)
+		virtual Handle_iterator<Variable_input_handle> begin_atomic_inputs();
+		virtual Handle_iterator<Variable_input_handle> end_atomic_inputs();
+#else // defined (USE_VARIABLE_INPUT)
+		virtual Handle_iterator<Variable_io_specifier_handle> begin_atomic();
+		virtual Handle_iterator<Variable_io_specifier_handle> end_atomic();
+#endif // defined (USE_VARIABLE_INPUT)
+#endif // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+#endif // defined (USE_ITERATORS_NESTED)
+#endif // defined (USE_ITERATORS)
+		virtual Variable_size_type
+#if defined (USE_ITERATORS)
+			number_differentiable
+#else // defined (USE_ITERATORS)
+			size
+#endif // defined (USE_ITERATORS)
+			()
 		{
 			Variable_size_type result;
 
@@ -72,7 +139,13 @@ class Variable_input_prolate_spheroidal_to_rectangular_cartesian :
 
 			return (result);
 		};
-		virtual bool operator==(const Variable_input& input)
+		virtual bool operator==(const
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+			& input)
 		{
 			try
 			{
@@ -94,24 +167,272 @@ class Variable_input_prolate_spheroidal_to_rectangular_cartesian :
 				return (false);
 			}
 		};
+#if defined (VARIABLE_INPUT_METHODS_FOR_SET_OPERATIONS) || defined (USE_SCALAR_MAPPING)
+	private:
+		virtual std::list< std::pair<Variable_size_type,Variable_size_type> >
+			scalar_mapping_local(Variable_input_handle target)
+		{
+			std::list< std::pair<Variable_size_type,Variable_size_type> > result(0);
+			const Variable_input_prolate_spheroidal_to_rectangular_cartesian_handle
+				input_prolate_spheroidal_to_rectangular_cartesian=
+#if defined (USE_SMART_POINTER)
+				boost::dynamic_pointer_cast<
+				Variable_input_prolate_spheroidal_to_rectangular_cartesian,
+				Variable_input>
+#else /* defined (USE_SMART_POINTER) */
+				dynamic_cast<
+				Variable_input_prolate_spheroidal_to_rectangular_cartesian *>
+#endif /* defined (USE_SMART_POINTER) */
+				(target);
+
+			if (input_prolate_spheroidal_to_rectangular_cartesian)
+			{
+				if (variable_prolate_spheroidal_to_rectangular_cartesian==
+					input_prolate_spheroidal_to_rectangular_cartesian->
+					variable_prolate_spheroidal_to_rectangular_cartesian)
+				{
+					bool change;
+					Variable_size_type index,index_target;
+
+					index=0;
+					index_target=0;
+					change=true;
+					if (lambda)
+					{
+						if (input_prolate_spheroidal_to_rectangular_cartesian->lambda)
+						{
+							if (change)
+							{
+								result.push_back(std::pair<Variable_size_type,
+									Variable_size_type>(index,index_target));
+								change=false;
+							}
+							index_target++;
+						}
+						else
+						{
+							change=true;
+						}
+						index++;
+					}
+					else
+					{
+						if (input_prolate_spheroidal_to_rectangular_cartesian->lambda)
+						{
+							index_target++;
+							change=true;
+						}
+					}
+					if (mu)
+					{
+						if (input_prolate_spheroidal_to_rectangular_cartesian->mu)
+						{
+							if (change)
+							{
+								result.push_back(std::pair<Variable_size_type,
+									Variable_size_type>(index,index_target));
+								change=false;
+							}
+							index_target++;
+						}
+						else
+						{
+							change=true;
+						}
+						index++;
+					}
+					else
+					{
+						if (input_prolate_spheroidal_to_rectangular_cartesian->mu)
+						{
+							index_target++;
+							change=true;
+						}
+					}
+					if (theta)
+					{
+						if (input_prolate_spheroidal_to_rectangular_cartesian->theta)
+						{
+							if (change)
+							{
+								result.push_back(std::pair<Variable_size_type,
+									Variable_size_type>(index,index_target));
+								change=false;
+							}
+							index_target++;
+						}
+						else
+						{
+							change=true;
+						}
+						index++;
+					}
+					else
+					{
+						if (input_prolate_spheroidal_to_rectangular_cartesian->theta)
+						{
+							index_target++;
+							change=true;
+						}
+					}
+					if (focus)
+					{
+						if (input_prolate_spheroidal_to_rectangular_cartesian->focus)
+						{
+							if (change)
+							{
+								result.push_back(std::pair<Variable_size_type,
+									Variable_size_type>(index,index_target));
+								change=false;
+							}
+							index_target++;
+						}
+						else
+						{
+							change=true;
+						}
+						index++;
+					}
+					else
+					{
+						if (input_prolate_spheroidal_to_rectangular_cartesian->focus)
+						{
+							index_target++;
+							change=true;
+						}
+					}
+				}
+			}
+			if (0==result.size())
+			{
+				result.push_back(std::pair<Variable_size_type,Variable_size_type>(
+					0,target->size()));
+			}
+#if defined (USE_SCALAR_MAPPING)
+			if (0<size())
+			{
+				result.push_back(std::pair<Variable_size_type,Variable_size_type>(
+					size(),target->size()));
+			}
+#endif // defined (USE_SCALAR_MAPPING)
+
+			return (result);
+		};
+#endif // defined (VARIABLE_INPUT_METHODS_FOR_SET_OPERATIONS) || defined (USE_SCALAR_MAPPING)
+#if defined (VARIABLE_INPUT_METHODS_FOR_SET_OPERATIONS)
+		virtual Variable_input_handle operator_plus_local(
+			const Variable_input_handle& second)
+		{
+			Variable_input_handle result(0);
+			const Variable_input_prolate_spheroidal_to_rectangular_cartesian_handle
+				input_prolate_spheroidal_to_rectangular_cartesian=
+#if defined (USE_SMART_POINTER)
+				boost::dynamic_pointer_cast<
+				Variable_input_prolate_spheroidal_to_rectangular_cartesian,
+				Variable_input>
+#else /* defined (USE_SMART_POINTER) */
+				dynamic_cast<
+				Variable_input_prolate_spheroidal_to_rectangular_cartesian *>
+#endif /* defined (USE_SMART_POINTER) */
+				(second);
+
+			if (input_prolate_spheroidal_to_rectangular_cartesian)
+			{
+				if (variable_prolate_spheroidal_to_rectangular_cartesian==
+					input_prolate_spheroidal_to_rectangular_cartesian->
+					variable_prolate_spheroidal_to_rectangular_cartesian)
+				{
+					result=Variable_input_handle(
+						new Variable_input_prolate_spheroidal_to_rectangular_cartesian(
+						variable_prolate_spheroidal_to_rectangular_cartesian,
+						lambda||input_prolate_spheroidal_to_rectangular_cartesian->lambda,
+						mu||input_prolate_spheroidal_to_rectangular_cartesian->mu,
+						theta||input_prolate_spheroidal_to_rectangular_cartesian->theta,
+						focus||input_prolate_spheroidal_to_rectangular_cartesian->focus));
+				}
+			}
+
+			return (result);
+		};
+		virtual Variable_input_handle operator_minus_local(
+			const Variable_input_handle& second)
+		{
+			Variable_input_handle result(0);
+			const Variable_input_prolate_spheroidal_to_rectangular_cartesian_handle
+				input_prolate_spheroidal_to_rectangular_cartesian=
+#if defined (USE_SMART_POINTER)
+				boost::dynamic_pointer_cast<
+				Variable_input_prolate_spheroidal_to_rectangular_cartesian,
+				Variable_input>
+#else /* defined (USE_SMART_POINTER) */
+				dynamic_cast<
+				Variable_input_prolate_spheroidal_to_rectangular_cartesian *>
+#endif /* defined (USE_SMART_POINTER) */
+				(second);
+
+			if (input_prolate_spheroidal_to_rectangular_cartesian)
+			{
+				if (variable_prolate_spheroidal_to_rectangular_cartesian==
+					input_prolate_spheroidal_to_rectangular_cartesian->
+					variable_prolate_spheroidal_to_rectangular_cartesian)
+				{
+					result=Variable_input_handle(
+						new Variable_input_prolate_spheroidal_to_rectangular_cartesian(
+						variable_prolate_spheroidal_to_rectangular_cartesian,lambda&&
+						!(input_prolate_spheroidal_to_rectangular_cartesian->lambda),
+						mu&&!(input_prolate_spheroidal_to_rectangular_cartesian->mu),
+						theta&&!(input_prolate_spheroidal_to_rectangular_cartesian->theta),
+						focus&&!(input_prolate_spheroidal_to_rectangular_cartesian->focus)
+						));
+				}
+			}
+			if (0==result)
+			{
+				result=Variable_input_handle(this);
+			}
+
+			return (result);
+		};
+		virtual Variable_input_handle intersect_local(
+			const Variable_input_handle& second)
+		{
+			Variable_input_handle result(0);
+			const Variable_input_prolate_spheroidal_to_rectangular_cartesian_handle
+				input_prolate_spheroidal_to_rectangular_cartesian=
+#if defined (USE_SMART_POINTER)
+				boost::dynamic_pointer_cast<
+				Variable_input_prolate_spheroidal_to_rectangular_cartesian,
+				Variable_input>
+#else /* defined (USE_SMART_POINTER) */
+				dynamic_cast<
+				Variable_input_prolate_spheroidal_to_rectangular_cartesian *>
+#endif /* defined (USE_SMART_POINTER) */
+				(second);
+
+			if (input_prolate_spheroidal_to_rectangular_cartesian)
+			{
+				if (variable_prolate_spheroidal_to_rectangular_cartesian==
+					input_prolate_spheroidal_to_rectangular_cartesian->
+					variable_prolate_spheroidal_to_rectangular_cartesian)
+				{
+					result=Variable_input_handle(
+						new Variable_input_prolate_spheroidal_to_rectangular_cartesian(
+						variable_prolate_spheroidal_to_rectangular_cartesian,
+						lambda&&(input_prolate_spheroidal_to_rectangular_cartesian->lambda),
+						mu&&(input_prolate_spheroidal_to_rectangular_cartesian->mu),
+						theta&&(input_prolate_spheroidal_to_rectangular_cartesian->theta),
+						focus&&(input_prolate_spheroidal_to_rectangular_cartesian->focus)));
+				}
+			}
+
+			return (result);
+		};
+#endif // defined (VARIABLE_INPUT_METHODS_FOR_SET_OPERATIONS)
 	private:
 		bool focus,lambda,mu,theta;
 		Variable_prolate_spheroidal_to_rectangular_cartesian_handle
 			variable_prolate_spheroidal_to_rectangular_cartesian;
 };
-
-#if defined (USE_INTRUSIVE_SMART_POINTER)
-typedef boost::intrusive_ptr<
-	Variable_input_prolate_spheroidal_to_rectangular_cartesian>
-	Variable_input_prolate_spheroidal_to_rectangular_cartesian_handle;
-#elif defined (USE_SMART_POINTER)
-typedef boost::shared_ptr<
-	Variable_input_prolate_spheroidal_to_rectangular_cartesian>
-	Variable_input_prolate_spheroidal_to_rectangular_cartesian_handle;
-#else
-typedef Variable_input_prolate_spheroidal_to_rectangular_cartesian *
-	Variable_input_prolate_spheroidal_to_rectangular_cartesian_handle;
-#endif
 
 // global classes
 // ==============
@@ -172,10 +493,15 @@ Variable_prolate_spheroidal_to_rectangular_cartesian::
 	// do nothing
 }
 
-Variable_size_type Variable_prolate_spheroidal_to_rectangular_cartesian::size()
-	const
+Variable_size_type Variable_prolate_spheroidal_to_rectangular_cartesian::
+#if defined (USE_ITERATORS)
+	number_differentiable
+#else // defined (USE_ITERATORS)
+	size
+#endif // defined (USE_ITERATORS)
+	() const
 //******************************************************************************
-// LAST MODIFIED : 20 November 2003
+// LAST MODIFIED : 20 January 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -183,6 +509,9 @@ Variable_size_type Variable_prolate_spheroidal_to_rectangular_cartesian::size()
 	return (3);
 }
 
+#if defined (USE_ITERATORS)
+//???DB.  To be done
+#else // defined (USE_ITERATORS)
 Vector *Variable_prolate_spheroidal_to_rectangular_cartesian::scalars()
 //******************************************************************************
 // LAST MODIFIED : 20 November 2003
@@ -192,78 +521,124 @@ Vector *Variable_prolate_spheroidal_to_rectangular_cartesian::scalars()
 {
 	return (evaluate_local()->scalars());
 }
+#endif // defined (USE_ITERATORS)
 
-Variable_input_handle Variable_prolate_spheroidal_to_rectangular_cartesian::
-	input_prolate()
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_prolate_spheroidal_to_rectangular_cartesian::input_prolate()
 //******************************************************************************
-// LAST MODIFIED : 20 November 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 // Returns the prolate input.
 //==============================================================================
 {
-	return (Variable_input_handle(
-		new Variable_input_prolate_spheroidal_to_rectangular_cartesian(
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_prolate_spheroidal_to_rectangular_cartesian(
 		Variable_prolate_spheroidal_to_rectangular_cartesian_handle(this),
 		true,true,true,false)));
 }
 
-Variable_input_handle Variable_prolate_spheroidal_to_rectangular_cartesian::
-	input_lambda()
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_prolate_spheroidal_to_rectangular_cartesian::input_lambda()
 //******************************************************************************
-// LAST MODIFIED : 20 November 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 // Returns the lambda input.
 //==============================================================================
 {
-	return (Variable_input_handle(
-		new Variable_input_prolate_spheroidal_to_rectangular_cartesian(
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_prolate_spheroidal_to_rectangular_cartesian(
 		Variable_prolate_spheroidal_to_rectangular_cartesian_handle(this),
 		true,false,false,false)));
 }
 
-Variable_input_handle Variable_prolate_spheroidal_to_rectangular_cartesian::
-	input_mu()
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_prolate_spheroidal_to_rectangular_cartesian::input_mu()
 //******************************************************************************
-// LAST MODIFIED : 20 November 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 // Returns the mu input.
 //==============================================================================
 {
-	return (Variable_input_handle(
-		new Variable_input_prolate_spheroidal_to_rectangular_cartesian(
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_prolate_spheroidal_to_rectangular_cartesian(
 		Variable_prolate_spheroidal_to_rectangular_cartesian_handle(this),
 		false,true,false,false)));
 }
 
-Variable_input_handle Variable_prolate_spheroidal_to_rectangular_cartesian::
-	input_theta()
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_prolate_spheroidal_to_rectangular_cartesian::input_theta()
 //******************************************************************************
-// LAST MODIFIED : 20 November 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 // Returns the theta input.
 //==============================================================================
 {
-	return (Variable_input_handle(
-		new Variable_input_prolate_spheroidal_to_rectangular_cartesian(
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_prolate_spheroidal_to_rectangular_cartesian(
 		Variable_prolate_spheroidal_to_rectangular_cartesian_handle(this),
 		false,false,true,false)));
 }
 
-Variable_input_handle Variable_prolate_spheroidal_to_rectangular_cartesian::
-	input_focus()
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_prolate_spheroidal_to_rectangular_cartesian::input_focus()
 //******************************************************************************
-// LAST MODIFIED : 20 November 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 // Returns the focus input.
 //==============================================================================
 {
-	return (Variable_input_handle(
-		new Variable_input_prolate_spheroidal_to_rectangular_cartesian(
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_prolate_spheroidal_to_rectangular_cartesian(
 		Variable_prolate_spheroidal_to_rectangular_cartesian_handle(this),
 		false,false,false,true)));
 }
@@ -306,11 +681,14 @@ Variable_handle Variable_prolate_spheroidal_to_rectangular_cartesian::
 	return (Variable_handle(new Variable_vector(rectangular_cartesian)));
 }
 
-void Variable_prolate_spheroidal_to_rectangular_cartesian::
+#if defined (USE_ITERATORS)
+//???DB.  To be done
+#else // defined (USE_ITERATORS)
+bool Variable_prolate_spheroidal_to_rectangular_cartesian::
 	evaluate_derivative_local(Matrix& matrix,
 	std::list<Variable_input_handle>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 7 December 2003
+// LAST MODIFIED : 22 January 2004
 //
 // DESCRIPTION :
 // ???DB.  Currently up to and including order 2 derivatives in prolate
@@ -590,12 +968,21 @@ void Variable_prolate_spheroidal_to_rectangular_cartesian::
 			}
 		}
 	}
+
+	return (true);
 }
+#endif // defined (USE_ITERATORS)
 
 Variable_handle Variable_prolate_spheroidal_to_rectangular_cartesian::
-	get_input_value_local(const Variable_input_handle& input)
+	get_input_value_local(const
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	& input)
 //******************************************************************************
-// LAST MODIFIED : 20 November 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -608,7 +995,12 @@ Variable_handle Variable_prolate_spheroidal_to_rectangular_cartesian::
 #if defined (USE_SMART_POINTER)
 		boost::dynamic_pointer_cast<
 		Variable_input_prolate_spheroidal_to_rectangular_cartesian,
-		Variable_input>(input)
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+		>(input)
 #else /* defined (USE_SMART_POINTER) */
 		dynamic_cast<
 		Variable_input_prolate_spheroidal_to_rectangular_cartesian *>(input)
@@ -618,7 +1010,13 @@ Variable_handle Variable_prolate_spheroidal_to_rectangular_cartesian::
 		Variable_handle(this)))
 	{
 		Variable_size_type j,number_of_input_values=
-			input_prolate_spheroidal_to_rectangular_cartesian_handle->size();
+			input_prolate_spheroidal_to_rectangular_cartesian_handle->
+#if defined (USE_ITERATORS)
+			number_differentiable
+#else // defined (USE_ITERATORS)
+			size
+#endif // defined (USE_ITERATORS)
+			();
 
 		values_vector=Variable_vector_handle(new Variable_vector(
 			Vector(number_of_input_values)));
@@ -652,35 +1050,73 @@ Variable_handle Variable_prolate_spheroidal_to_rectangular_cartesian::
 	return (values_vector);
 }
 
-int Variable_prolate_spheroidal_to_rectangular_cartesian::set_input_value_local(
-	const Variable_input_handle& input,const Variable_handle& values)
+bool
+	Variable_prolate_spheroidal_to_rectangular_cartesian::set_input_value_local(
+	const
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	& input,
+	const
+#if defined (USE_VARIABLES_AS_COMPONENTS)
+	Variable_handle
+#else // defined (USE_VARIABLES_AS_COMPONENTS)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLES_AS_COMPONENTS)
+	&
+#if defined (USE_ITERATORS)
+	//???DB.  To be done
+#else // defined (USE_ITERATORS)
+	values
+#endif // defined (USE_ITERATORS)
+	)
 //******************************************************************************
-// LAST MODIFIED : 20 November 2003
+// LAST MODIFIED : 9 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	int return_code;
+	bool result;
 	Variable_input_prolate_spheroidal_to_rectangular_cartesian_handle
 		input_prolate_spheroidal_to_rectangular_cartesian_handle;
 	Vector *values_vector;
 
-	return_code=0;
+	result=false;
 	if ((input_prolate_spheroidal_to_rectangular_cartesian_handle=
 #if defined (USE_SMART_POINTER)
 		boost::dynamic_pointer_cast<
 		Variable_input_prolate_spheroidal_to_rectangular_cartesian,
-		Variable_input>(input)
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+		>(input)
 #else /* defined (USE_SMART_POINTER) */
 		dynamic_cast<
 		Variable_input_prolate_spheroidal_to_rectangular_cartesian *>(input)
 #endif /* defined (USE_SMART_POINTER) */
 		)&&(input_prolate_spheroidal_to_rectangular_cartesian_handle->
 		variable_prolate_spheroidal_to_rectangular_cartesian==
-		Variable_handle(this))&&(values_vector=values->scalars()))
+		Variable_handle(this))&&(values_vector=
+#if defined (USE_ITERATORS)
+//???DB.  To be done
+		0
+#else // defined (USE_ITERATORS)
+		values->scalars()
+#endif // defined (USE_ITERATORS)
+		))
 	{
 		Variable_size_type j,number_of_input_values=
-			input_prolate_spheroidal_to_rectangular_cartesian_handle->size();
+			input_prolate_spheroidal_to_rectangular_cartesian_handle->
+#if defined (USE_ITERATORS)
+			number_differentiable
+#else // defined (USE_ITERATORS)
+			size
+#endif // defined (USE_ITERATORS)
+			();
 
 		if (values_vector->size()==number_of_input_values)
 		{
@@ -689,27 +1125,31 @@ int Variable_prolate_spheroidal_to_rectangular_cartesian::set_input_value_local(
 			{
 				lambda=(*values_vector)[j];
 				j++;
+				result=true;
 			}
 			if (input_prolate_spheroidal_to_rectangular_cartesian_handle->mu)
 			{
 				mu=(*values_vector)[j];
 				j++;
+				result=true;
 			}
 			if (input_prolate_spheroidal_to_rectangular_cartesian_handle->theta)
 			{
 				theta=(*values_vector)[j];
 				j++;
+				result=true;
 			}
 			if (input_prolate_spheroidal_to_rectangular_cartesian_handle->focus)
 			{
 				focus=(*values_vector)[j];
 				j++;
+				result=true;
 			}
 		}
 		delete values_vector;
 	}
 
-	return (return_code);
+	return (result);
 }
 
 string_handle Variable_prolate_spheroidal_to_rectangular_cartesian::

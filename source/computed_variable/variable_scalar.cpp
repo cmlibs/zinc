@@ -1,25 +1,18 @@
 //******************************************************************************
 // FILE : variable_scalar.cpp
 //
-// LAST MODIFIED : 15 December 2003
+// LAST MODIFIED : 9 February 2004
 //
 // DESCRIPTION :
 //???DB.  Should be template?
 //==============================================================================
 
+#include "computed_variable/variable_base.hpp"
+
 #include <new>
 #include <sstream>
 #include <string>
 #include <stdio.h>
-
-//???DB.  Put in include?
-const bool Assert_on=true;
-
-template<class Assertion,class Exception>inline void Assert(
-	Assertion assertion,Exception exception)
-{
-	if (Assert_on&&!(assertion)) throw exception;
-}
 
 #include "computed_variable/variable_scalar.hpp"
 
@@ -29,9 +22,26 @@ template<class Assertion,class Exception>inline void Assert(
 // class Variable_input_scalar_value
 // ---------------------------------
 
-class Variable_input_scalar_value : public Variable_input
+class Variable_input_scalar_value;
+
+#if defined (USE_INTRUSIVE_SMART_POINTER)
+typedef boost::intrusive_ptr<Variable_input_scalar_value>
+	Variable_input_scalar_value_handle;
+#elif defined (USE_SMART_POINTER)
+typedef boost::shared_ptr<Variable_input_scalar_value>
+	Variable_input_scalar_value_handle;
+#else
+typedef Variable_input_scalar_value * Variable_input_scalar_value_handle;
+#endif
+
+class Variable_input_scalar_value : public
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
 //******************************************************************************
-// LAST MODIFIED : 26 November 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -41,11 +51,64 @@ class Variable_input_scalar_value : public Variable_input
 		Variable_input_scalar_value(const Variable_scalar_handle& variable_scalar):
 			variable_scalar(variable_scalar){};
 		~Variable_input_scalar_value(){};
-		Variable_size_type size()
+#if defined (USE_ITERATORS)
+		// copy constructor
+		Variable_input_scalar_value(
+			const Variable_input_scalar_value& input_scalar_value):
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+			(),
+			variable_scalar(input_scalar_value.variable_scalar){};
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			clone() const
+		{
+			return (Variable_input_scalar_value_handle(
+				new Variable_input_scalar_value(*this)));
+		}
+		//???DB.  To be done
+		virtual bool is_atomic();
+#if defined (USE_ITERATORS_NESTED)
+		virtual Iterator begin_atomic_inputs();
+		virtual Iterator end_atomic_inputs();
+#else // defined (USE_ITERATORS_NESTED)
+#if defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+		virtual Variable_input_iterator begin_atomic_inputs();
+		virtual Variable_input_iterator end_atomic_inputs();
+#else // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+#if defined (USE_VARIABLE_INPUT)
+		virtual Handle_iterator<Variable_input_handle> begin_atomic_inputs();
+		virtual Handle_iterator<Variable_input_handle> end_atomic_inputs();
+#else // defined (USE_VARIABLE_INPUT)
+		virtual Handle_iterator<Variable_io_specifier_handle> begin_atomic();
+		virtual Handle_iterator<Variable_io_specifier_handle> end_atomic();
+#endif // defined (USE_VARIABLE_INPUT)
+#endif // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+#endif // defined (USE_ITERATORS_NESTED)
+#endif // defined (USE_ITERATORS)
+		virtual Variable_size_type
+#if defined (USE_ITERATORS)
+			number_differentiable
+#else // defined (USE_ITERATORS)
+			size
+#endif // defined (USE_ITERATORS)
+			()
 		{
 			return (1);
 		};
-		virtual bool operator==(const Variable_input& input)
+		virtual bool operator==(const
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+			& input)
 		{
 			try
 			{
@@ -64,16 +127,6 @@ class Variable_input_scalar_value : public Variable_input
 	private:
 		Variable_scalar_handle variable_scalar;
 };
-
-#if defined (USE_INTRUSIVE_SMART_POINTER)
-typedef boost::intrusive_ptr<Variable_input_scalar_value>
-	Variable_input_scalar_value_handle;
-#elif defined (USE_SMART_POINTER)
-typedef boost::shared_ptr<Variable_input_scalar_value>
-	Variable_input_scalar_value_handle;
-#else
-typedef Variable_input_scalar_value * Variable_input_scalar_value_handle;
-#endif
 
 // global classes
 // ==============
@@ -117,9 +170,15 @@ Variable_scalar& Variable_scalar::operator=(
 	return (*this);
 }
 
-Variable_size_type Variable_scalar::size() const
+Variable_size_type Variable_scalar::
+#if defined (USE_ITERATORS)
+	number_differentiable
+#else // defined (USE_ITERATORS)
+	size
+#endif // defined (USE_VARIABLE_ITERATORS)
+	() const
 //******************************************************************************
-// LAST MODIFIED : 24 October 2003
+// LAST MODIFIED : 21 January 2004
 //
 // DESCRIPTION :
 // Destructor.
@@ -128,6 +187,8 @@ Variable_size_type Variable_scalar::size() const
 	return (1);
 }
 
+#if defined (USE_ITERATORS)
+#else // defined (USE_ITERATORS)
 Vector *Variable_scalar::scalars()
 //******************************************************************************
 // LAST MODIFIED : 24 October 2003
@@ -144,6 +205,7 @@ Vector *Variable_scalar::scalars()
 
 	return (values_vector);
 }
+#endif // defined (USE_VARIABLE_ITERATORS)
 
 Variable_scalar::~Variable_scalar()
 //******************************************************************************
@@ -156,16 +218,26 @@ Variable_scalar::~Variable_scalar()
 	// do nothing
 }
 
-Variable_input_handle Variable_scalar::input_value()
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_scalar::input_value()
 //******************************************************************************
-// LAST MODIFIED : 11 October 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 // Returns the value input for a scalar.
 //==============================================================================
 {
-	return (Variable_input_handle(new Variable_input_scalar_value(
-		Variable_scalar_handle(this))));
+	return (
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		(new Variable_input_scalar_value(Variable_scalar_handle(this))));
 }
 
 Scalar Variable_scalar::norm() const
@@ -259,21 +331,37 @@ Variable_handle Variable_scalar::evaluate_local()
 	return (Variable_handle(new Variable_scalar(*this)));
 }
 
-void Variable_scalar::evaluate_derivative_local(Matrix& matrix,
-	std::list<Variable_input_handle>& independent_variables)
+#if defined (USE_ITERATORS)
+//???DB.  To be done
+#else // defined (USE_ITERATORS)
+bool Variable_scalar::evaluate_derivative_local(Matrix& matrix,
+	std::list<
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 17 October 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
+	bool result;
 	Variable_input_scalar_value_handle input_value_handle;
 
+	result=true;
 	// matrix is zero'd on entry
 	if ((1==independent_variables.size())&&(input_value_handle=
 #if defined (USE_SMART_POINTER)
-		boost::dynamic_pointer_cast<Variable_input_scalar_value,Variable_input>(
-		independent_variables.front())
+		boost::dynamic_pointer_cast<Variable_input_scalar_value,
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+		>(independent_variables.front())
 #else /* defined (USE_SMART_POINTER) */
 		dynamic_cast<Variable_input_scalar_value *>(independent_variables.front())
 #endif /* defined (USE_SMART_POINTER) */
@@ -284,12 +372,21 @@ void Variable_scalar::evaluate_derivative_local(Matrix& matrix,
 			"Incorrect matrix size"));
 		matrix(0,0)=1;
 	}
+
+	return (result);
 }
+#endif // defined (USE_ITERATORS)
 
 Variable_handle Variable_scalar::get_input_value_local(
-	const Variable_input_handle& input)
+	const
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	& input)
 //******************************************************************************
-// LAST MODIFIED : 15 October 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -299,8 +396,13 @@ Variable_handle Variable_scalar::get_input_value_local(
 
 	if ((input_value_handle=
 #if defined (USE_SMART_POINTER)
-		boost::dynamic_pointer_cast<Variable_input_scalar_value,Variable_input>(
-		input)
+		boost::dynamic_pointer_cast<Variable_input_scalar_value,
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+		>(input)
 #else /* defined (USE_SMART_POINTER) */
 		dynamic_cast<Variable_input_scalar_value *>(input)
 #endif /* defined (USE_SMART_POINTER) */
@@ -316,35 +418,65 @@ Variable_handle Variable_scalar::get_input_value_local(
 	return (value_scalar);
 }
 
-int Variable_scalar::set_input_value_local(const Variable_input_handle& input,
-	const Variable_handle& value)
+bool Variable_scalar::set_input_value_local(const
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	& input,
+	const
+#if defined (USE_VARIABLES_AS_COMPONENTS)
+	Variable_handle
+#else // defined (USE_VARIABLES_AS_COMPONENTS)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLES_AS_COMPONENTS)
+	& value)
 //******************************************************************************
-// LAST MODIFIED : 24 October 2003
+// LAST MODIFIED : 9 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	int return_code;
+	bool result;
 	Variable_input_scalar_value_handle input_value_handle;
 	Vector *values_vector;
 
-	return_code=0;
+	result=false;
 	if ((input_value_handle=
 #if defined (USE_SMART_POINTER)
-		boost::dynamic_pointer_cast<Variable_input_scalar_value,Variable_input>(
-		input)
+		boost::dynamic_pointer_cast<Variable_input_scalar_value,
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier
+#endif // defined (USE_VARIABLE_INPUT)
+		>(input)
 #else /* defined (USE_SMART_POINTER) */
 		dynamic_cast<Variable_input_scalar_value *>(input)
 #endif /* defined (USE_SMART_POINTER) */
 		)&&(input_value_handle->variable_scalar==Variable_scalar_handle(this))&&
-		(1==value->size())&&(values_vector=value->scalars()))
+		(1==value->
+#if defined (USE_ITERATORS)
+		number_differentiable
+#else // defined (USE_ITERATORS)
+		size
+#endif // defined (USE_VARIABLE_ITERATORS)
+		())&&(values_vector=
+#if defined (USE_ITERATORS)
+		//???DB.  To be done
+		0
+#else // defined (USE_ITERATORS)
+		value->scalars()
+#endif // defined (USE_VARIABLE_ITERATORS)
+		))
 	{
 		this->value=(*values_vector)[0];
-		return_code=1;
 		delete values_vector;
+		result=true;
 	}
 
-	return (return_code);
+	return (result);
 }
 
 string_handle Variable_scalar::get_string_representation_local()

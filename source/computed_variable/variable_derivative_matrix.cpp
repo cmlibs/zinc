@@ -1,27 +1,19 @@
 //******************************************************************************
 // FILE : variable_derivative_matrix.cpp
 //
-// LAST MODIFIED : 16 December 2003
+// LAST MODIFIED : 4 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
+
+#include "computed_variable/variable_base.hpp"
 
 #include <algorithm>
 #include <iterator>
 #include <new>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 #include <typeinfo>
-
-//???DB.  Put in include?
-const bool Assert_on=true;
-
-template<class Assertion,class Exception>inline void Assert(
-	Assertion assertion,Exception exception)
-{
-	if (Assert_on&&!(assertion)) throw exception;
-}
 
 #include "computed_variable/variable_derivative_matrix.hpp"
 
@@ -30,12 +22,18 @@ template<class Assertion,class Exception>inline void Assert(
 
 Variable_derivative_matrix::Variable_derivative_matrix(
 	const Variable_handle& dependent_variable,
-	const std::list<Variable_input_handle>& independent_variables,
+	const std::list<
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	>& independent_variables,
 	const std::list<Matrix>& matrices) : Variable(),
 	dependent_variable(dependent_variable),
 	independent_variables(independent_variables),matrices(matrices)
 //******************************************************************************
-// LAST MODIFIED : 19 November 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 // Constructor.
@@ -46,7 +44,7 @@ Variable_derivative_matrix::Variable_derivative_matrix(
 
 class Variable_derivative_matrix_create_matrices_inner_functor
 //******************************************************************************
-// LAST MODIFIED : 12 October 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 // A unary function (Functor) for creating and zeroing the list of matrices for
@@ -57,10 +55,21 @@ class Variable_derivative_matrix_create_matrices_inner_functor
 	public:
 		Variable_derivative_matrix_create_matrices_inner_functor(
 			const Variable_handle& dependent_variable,
-			const Variable_input_handle& independent_variable,
+			const
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			& independent_variable,
 			int number_of_independent_values,std::list<Matrix>& matrices,
-			std::list< std::list<Variable_input_handle> >&
-			matrix_independent_variables):
+			std::list< std::list<
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			> >& matrix_independent_variables):
 			number_of_independent_values(number_of_independent_values),
 			matrices(matrices),
 			matrix_independent_variables(matrix_independent_variables),
@@ -75,12 +84,22 @@ class Variable_derivative_matrix_create_matrices_inner_functor
 		{
 			Matrix new_matrix((matrix.size1)(),
 				number_of_independent_values*(matrix.size2)());
-			std::list<Variable_input_handle> new_matrix_independent_variables;
+			std::list<
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			> new_matrix_independent_variables;
 
 			new_matrix_independent_variables= *matrix_independent_variables_iterator;
 			new_matrix_independent_variables.push_back(independent_variable);
+#if defined (USE_ITERATORS)
+//???DB.  To be done
+#else // defined (USE_ITERATORS)
 			dependent_variable->evaluate_derivative_local(new_matrix,
 				new_matrix_independent_variables);
+#endif // defined (USE_ITERATORS)
 			matrices.push_back(new_matrix);
 			matrix_independent_variables.push_back(new_matrix_independent_variables);
 			matrix_independent_variables_iterator++;
@@ -90,16 +109,34 @@ class Variable_derivative_matrix_create_matrices_inner_functor
 	private:
 		int number_of_independent_values;
 		std::list<Matrix>& matrices;
-		std::list< std::list<Variable_input_handle> >& matrix_independent_variables;
-		std::list< std::list<Variable_input_handle> >::iterator
+		std::list< std::list<
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		> >& matrix_independent_variables;
+		std::list< std::list<
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		> >::iterator
 			matrix_independent_variables_iterator;
 		const Variable_handle& dependent_variable;
-		const Variable_input_handle& independent_variable;
+		const
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			& independent_variable;
 };
 
 class Variable_derivative_matrix_create_matrices_outer_functor
 //******************************************************************************
-// LAST MODIFIED : 25 November 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 // A unary function (Functor) for creating and zeroing the list of matrices for
@@ -110,21 +147,51 @@ class Variable_derivative_matrix_create_matrices_outer_functor
 	public:
 		Variable_derivative_matrix_create_matrices_outer_functor(
 			const Variable_handle& dependent_variable,std::list<Matrix>& matrices):
-			number_of_dependent_values(dependent_variable->size()),matrices(matrices),
+			number_of_dependent_values(dependent_variable->
+#if defined (USE_ITERATORS)
+			number_differentiable
+#else // defined (USE_ITERATORS)
+			size
+#endif // defined (USE_ITERATORS)
+			()),matrices(matrices),
 			matrix_independent_variables(),dependent_variable(dependent_variable)
 		{};
 		~Variable_derivative_matrix_create_matrices_outer_functor() {};
-		int operator() (const Variable_input_handle& independent_variable)
+		int operator() (const
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			& independent_variable)
 		{
-			int number_of_independent_values=independent_variable->size();
+			int number_of_independent_values=
+#if defined (USE_ITERATORS)
+				//???DB.  To be done
+				//???DB.  May be similar to this because atomic inputs have size 1?
+				1
+#else // defined (USE_ITERATORS)
+				independent_variable->size()
+#endif // defined (USE_ITERATORS)
+				;
 			Matrix new_matrix(number_of_dependent_values,
 				number_of_independent_values);
-			std::list<Variable_input_handle> new_matrix_independent_variables;
+			std::list<
+#if defined (USE_VARIABLE_INPUT)
+				Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+				Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+				> new_matrix_independent_variables;
 			std::list<Matrix>::iterator last;
 
 			new_matrix_independent_variables.push_back(independent_variable);
+#if defined (USE_ITERATORS)
+//???DB.  To be done
+#else // defined (USE_ITERATORS)
 			dependent_variable->evaluate_derivative_local(new_matrix,
 				new_matrix_independent_variables);
+#endif // defined (USE_ITERATORS)
 			matrices.push_back(new_matrix);
 			matrix_independent_variables.push_back(new_matrix_independent_variables);
 			last=matrices.end();
@@ -139,17 +206,29 @@ class Variable_derivative_matrix_create_matrices_outer_functor
 	private:
 		int number_of_dependent_values;
 		std::list<Matrix>& matrices;
-		std::list< std::list<Variable_input_handle> > matrix_independent_variables;
+		std::list< std::list<
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			> > matrix_independent_variables;
 		const Variable_handle& dependent_variable;
 };
 
 Variable_derivative_matrix::Variable_derivative_matrix(
 	const Variable_handle& dependent_variable,
-	const std::list<Variable_input_handle>& independent_variables) :
+	const std::list<
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	>& independent_variables) :
 	Variable(),dependent_variable(dependent_variable),
 	independent_variables(independent_variables),matrices()
 //******************************************************************************
-// LAST MODIFIED : 25 November 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 // Constructor.
@@ -183,6 +262,9 @@ Variable_derivative_matrix::~Variable_derivative_matrix()
 	//???DB.  To be done
 }
 
+#if defined (USE_ITERATORS)
+//???DB.  To be done
+#else // defined (USE_ITERATORS)
 class Variable_derivative_matrix_calculate_size_functor
 //******************************************************************************
 // LAST MODIFIED : 14 November 2003
@@ -264,10 +346,11 @@ Vector *Variable_derivative_matrix::scalars()
 
 	return (values_vector);
 }
+#endif // defined (USE_ITERATORS)
 
 class Variable_derivative_matrix_get_matrix_functor
 //******************************************************************************
-// LAST MODIFIED : 6 November 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -276,7 +359,13 @@ class Variable_derivative_matrix_get_matrix_functor
 		Variable_derivative_matrix_get_matrix_functor(Variable_size_type& index,
 			std::list<Matrix>::reverse_iterator& matrix_iterator,
 			std::list<Matrix>& matrices,
-			std::list<Variable_input_handle>& partial_independent_variables):
+			std::list<
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			>& partial_independent_variables):
 			matrix_iterator(matrix_iterator),partial_independent_variable_iterator(
 			partial_independent_variables.rbegin()),index(index),
 			offset(1+matrices.size())
@@ -284,7 +373,13 @@ class Variable_derivative_matrix_get_matrix_functor
 			matrix_iterator=matrices.rbegin();
 			index=partial_independent_variables.size();
 		};
-		int operator() (Variable_input_handle& independent_variable)
+		int operator() (
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			& independent_variable)
 		{
 			bool found;
 
@@ -316,16 +411,28 @@ class Variable_derivative_matrix_get_matrix_functor
 		}
 	private:
 		std::list<Matrix>::reverse_iterator& matrix_iterator;
-		std::list<Variable_input_handle>::reverse_iterator
+		std::list<
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			>::reverse_iterator
 			partial_independent_variable_iterator;
 		Variable_size_type& index;
 		Variable_size_type offset;
 };
 
 Variable_matrix_handle Variable_derivative_matrix::matrix(
-	std::list<Variable_input_handle>& partial_independent_variables)
+	std::list<
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	>& partial_independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 6 November 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 // Returns the specified partial derivative (<partial_independent_variables>).
@@ -362,7 +469,7 @@ Variable_derivative_matrix_handle Variable_derivative_matrix_compose(
 	const Variable_derivative_matrix_handle& derivative_f,
 	const Variable_derivative_matrix_handle& derivative_g)
 //******************************************************************************
-// LAST MODIFIED : 12 December 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 // This function implements the chain rule for differentiation.
@@ -438,8 +545,19 @@ Variable_derivative_matrix_handle Variable_derivative_matrix_compose(
 	if (derivative_f&&derivative_g&&
 		(0<(i=(derivative_f->independent_variables).size())))
 	{
-		std::list<Variable_input_handle>::iterator independent_variable_iterator;
-		Variable_input_handle last_independent_variable;
+		std::list<
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			>::iterator independent_variable_iterator;
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			last_independent_variable;
 
 #if defined (DEBUG)
 		//???debug
@@ -479,9 +597,8 @@ Variable_derivative_matrix_handle Variable_derivative_matrix_compose(
 			std::list<Matrix>::iterator *matrices_g;
 
 			// initialize
-			number_of_matrices=(derivative_g->matrices).size();
-			number_of_rows=derivative_f->dependent_variable->size();
-			number_of_intermediate_values=(derivative_g->dependent_variable)->size();
+			number_of_rows=((derivative_f->matrices).front()).size1();
+			number_of_intermediate_values=((derivative_g->matrices).front()).size1();
 			independent_variable_iterator=
 				(derivative_g->independent_variables).begin();
 			order=(derivative_g->independent_variables).size();
@@ -500,20 +617,28 @@ Variable_derivative_matrix_handle Variable_derivative_matrix_compose(
 				mapping_result&&numbers_of_independent_values&&product_orders&&order_g&&
 				sub_order_g&&matrices_g)
 			{
+				number_of_matrices=1;
+				matrix_g=(derivative_g->matrices).begin();
 				for (i=0;i<order;i++)
 				{
-					numbers_of_independent_values[i]=
-						(*independent_variable_iterator)->size();
-					independent_variable_iterator++;
-				}
-				matrix_g=(derivative_g->matrices).begin();
-				for (i=0;i<number_of_matrices;i++)
-				{
-					Matrix new_matrix(number_of_rows,matrix_g->size2());
+					Assert(number_of_matrices<=(derivative_g->matrices).size(),
+						std::logic_error("Variable_derivative_matrix_compose.  "
+						"Invalid number of matrices for derivative g"));
+					numbers_of_independent_values[i]=matrix_g->size2();
+					for (j=number_of_matrices;j>0;j--)
+					{
+						Matrix new_matrix(number_of_rows,matrix_g->size2());
 
-					matrices_result.push_back(new_matrix);
-					matrix_g++;
+						matrices_result.push_back(new_matrix);
+						matrix_g++;
+					}
+					number_of_matrices *= 2;
 				}
+				number_of_matrices -= 1;
+				Assert((number_of_matrices==(derivative_f->matrices).size())&&
+					(number_of_matrices==(derivative_g->matrices).size()),
+					std::logic_error("Variable_derivative_matrix_compose.  "
+					"Invalid number of matrices"));
 				/* loop over dependent values (rows) */
 				row_number=0;
 				while (row_number<number_of_rows)
@@ -896,7 +1021,7 @@ Variable_derivative_matrix_handle Variable_derivative_matrix_compose(
 Variable_handle Variable_derivative_matrix::inverse(
 	const Variable_inverse_handle& dependent_variable)
 //******************************************************************************
-// LAST MODIFIED : 16 December 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 // Compute the composition inverse from the chain rule and the relation
@@ -1005,10 +1130,26 @@ Variable_handle Variable_derivative_matrix::inverse(
 	if (derivative&&(0<(i=(derivative->independent_variables).size()))&&
 		dependent_variable)
 	{
-		std::list<Variable_input_handle> inverse_independent_variables;
-		std::list<Variable_input_handle>::iterator independent_variable_iterator;
-		Variable_input_handle inverse_dependent_variable,
-			inverse_independent_variable;
+		std::list<
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			> inverse_independent_variables;
+		std::list<
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			>::iterator independent_variable_iterator;
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			inverse_dependent_variable,inverse_independent_variable;
 
 		// check that all derivative independent variables are the same
 		if ((inverse_dependent_variable=dependent_variable->dependent_variable)&&
@@ -1023,8 +1164,8 @@ Variable_handle Variable_derivative_matrix::inverse(
 				i--;
 			}
 		}
-		if ((0==i)&&((derivative->dependent_variable)->size()==
-			((derivative->independent_variables).back())->size()))
+		if ((0==i)&&(((derivative->matrices).front()).size1()==
+			((derivative->matrices).front()).size2()))
 		{
 			bool found;
 			bool *not_used;
@@ -1043,7 +1184,7 @@ Variable_handle Variable_derivative_matrix::inverse(
 			ublas::vector<Matrix> order_matrices(order);
 
 			// initialize
-			number_of_rows=derivative->dependent_variable->size();
+			number_of_rows=((derivative->matrices).front()).size1();
 			not_used=new bool[order+1];
 			column_numbers_g=new Variable_size_type[order+1];
 			index_f=new Variable_size_type[order+1];
@@ -1534,10 +1675,13 @@ Variable_handle Variable_derivative_matrix::evaluate_local()
 	return (Variable_handle(new Variable_derivative_matrix(*this)));
 }
 
-void Variable_derivative_matrix::evaluate_derivative_local(Matrix &matrix,
+#if defined (USE_ITERATORS)
+//???DB.  To be done
+#else // defined (USE_ITERATORS)
+bool Variable_derivative_matrix::evaluate_derivative_local(Matrix &matrix,
 	std::list<Variable_input_handle>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 12 October 2003
+// LAST MODIFIED : 21 January 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1551,52 +1695,60 @@ void Variable_derivative_matrix::evaluate_derivative_local(Matrix &matrix,
 		//???DB.  Need to check matrix size
 		matrix(0,0)=1;
 	}
+
+	return (true);
 }
+#endif // defined (USE_ITERATORS)
 
 Variable_handle Variable_derivative_matrix::get_input_value_local(
-	const Variable_input_handle& input)
+	const
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	&
+	//???DB.  To be done
+	//input
+	)
 //******************************************************************************
-// LAST MODIFIED : 16 October 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	Variable_handle value;
-
 	//???DB.  To be done
-	//???DB.  Temporary code to use up arguments
-	if (0<(input->size()))
-	{
-		value=Variable_derivative_matrix_handle(new Variable_derivative_matrix(
-			*this));
-	}
-	else
-	{
-		value=Variable_handle((Variable *)0);
-	}
-
-	return (value);
+	return (Variable_handle((Variable *)0));
 }
 
-int Variable_derivative_matrix::set_input_value_local(
-	const Variable_input_handle& input,const Variable_handle& value)
+bool Variable_derivative_matrix::set_input_value_local(
+	const
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	&
+	//???DB.  To be done
+	//input
+	,const
+#if defined (USE_VARIABLES_AS_COMPONENTS)
+	Variable_handle
+#else // defined (USE_VARIABLES_AS_COMPONENTS)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLES_AS_COMPONENTS)
+	&
+	//???DB.  To be done
+	//value
+	)
 //******************************************************************************
-// LAST MODIFIED : 2 October 2003
+// LAST MODIFIED : 4 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	int return_code;
-
 	//???DB.  To be done
-	//???DB.  Temporary code to use up arguments
-	return_code=0;
-	if ((0<(input->size()))&&(value->get_string_representation()))
-	{
-		return_code=1;
-	}
-
-	return (return_code);
+	return (false);
 }
 
 string_handle Variable_derivative_matrix::get_string_representation_local()

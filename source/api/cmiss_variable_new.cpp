@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_variable_new.cpp
 
-LAST MODIFIED : 25 November 2003
+LAST MODIFIED : 2 February 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_variable_new object.
@@ -170,7 +170,7 @@ Cmiss_variable_new_id Cmiss_variable_new_evaluate_derivative(
 	Cmiss_variable_new_input_list_id independent_variables,
 	Cmiss_variable_new_input_value_list_id values)
 /*******************************************************************************
-LAST MODIFIED : 22 October 2003
+LAST MODIFIED : 2 February 2004
 
 DESCRIPTION :
 Calculates the derivative of the <variable> with the respect to the
@@ -179,7 +179,13 @@ setting, the current values.
 ==============================================================================*/
 {
 	Cmiss_variable_new_id result;
-	std::list<Variable_input_handle> *independent_variables_address;
+	std::list<
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		> *independent_variables_address;
 	std::list<Variable_input_value_handle> *values_address;
 #if defined (USE_SMART_POINTER)
 	Variable_handle *variable_handle_address;
@@ -195,9 +201,13 @@ setting, the current values.
 		(variable_address=reinterpret_cast<Variable *>(variable))&&
 #endif /* defined (USE_SMART_POINTER) */
 		(independent_variables_address=reinterpret_cast<std::list<
-		Variable_input_handle> *>(independent_variables))&&
-		(values_address=reinterpret_cast<std::list<Variable_input_value_handle> *>(
-		values)))
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		> *>(independent_variables))&&(values_address=
+		reinterpret_cast<std::list<Variable_input_value_handle> *>(values)))
 	{
 		result=reinterpret_cast<Cmiss_variable_new_id>(
 #if defined (USE_SMART_POINTER)
@@ -216,7 +226,7 @@ setting, the current values.
 Cmiss_variable_new_id Cmiss_variable_new_get_input_value(
 	Cmiss_variable_new_id variable,Cmiss_variable_new_input_id input)
 /*******************************************************************************
-LAST MODIFIED : 23 October 2003
+LAST MODIFIED : 2 February 2004
 
 DESCRIPTION :
 Gets the specified <input> for the <variable>.
@@ -226,7 +236,12 @@ Gets the specified <input> for the <variable>.
 	Variable_handle value;
 #if defined (USE_SMART_POINTER)
 	Variable_handle *variable_handle_address;
-	Variable_input_handle *variable_input_handle_address;
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		*variable_input_handle_address;
 #else /* defined (USE_SMART_POINTER) */
 	Variable *variable_address;
 	Variable_input *variable_input_address;
@@ -235,9 +250,13 @@ Gets the specified <input> for the <variable>.
 	if (
 #if defined (USE_SMART_POINTER)
 		(variable_handle_address=reinterpret_cast<Variable_handle *>(variable))&&
-		(variable_input_handle_address=reinterpret_cast<Variable_input_handle *>(
-		input))&&
-		(value=((*variable_handle_address)->get_input_value)(
+		(variable_input_handle_address=reinterpret_cast<
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		*>(input))&&(value=((*variable_handle_address)->get_input_value)(
 		*variable_input_handle_address))
 #else /* defined (USE_SMART_POINTER) */
 		(variable_address=reinterpret_cast<Variable *>(variable))&&
@@ -265,7 +284,7 @@ Gets the specified <input> for the <variable>.
 int Cmiss_variable_new_set_input_value(Cmiss_variable_new_id variable,
 	Cmiss_variable_new_input_id input,Cmiss_variable_new_id value)
 /*******************************************************************************
-LAST MODIFIED : 23 October 2003
+LAST MODIFIED : 2 February 2004
 
 DESCRIPTION :
 Sets the specified <input> for the <variable> with the given <value>.
@@ -274,18 +293,29 @@ Sets the specified <input> for the <variable> with the given <value>.
 	int return_code;
 #if defined (USE_SMART_POINTER)
 	Variable_handle *value_handle_address,*variable_handle_address;
-	Variable_input_handle *variable_input_handle_address;
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		*variable_input_handle_address;
 #else /* defined (USE_SMART_POINTER) */
 	Variable *value_address,*variable_address;
 	Variable_input *variable_input_address;
 #endif /* defined (USE_SMART_POINTER) */
 
+	return_code=0;
 	if (
 #if defined (USE_SMART_POINTER)
 		(variable_handle_address=reinterpret_cast<Variable_handle *>(variable))&&
 		(value_handle_address=reinterpret_cast<Variable_handle *>(value))&&
-		(variable_input_handle_address=reinterpret_cast<Variable_input_handle *>(
-		input))
+		(variable_input_handle_address=reinterpret_cast<
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		*>(input))
 #else /* defined (USE_SMART_POINTER) */
 		(variable_address=reinterpret_cast<Variable *>(variable))&&
 		(value_address=reinterpret_cast<Variable *>(value))&&
@@ -293,18 +323,17 @@ Sets the specified <input> for the <variable> with the given <value>.
 #endif /* defined (USE_SMART_POINTER) */
 		)
 	{
-		return_code=
+		if (
 #if defined (USE_SMART_POINTER)
 			((*variable_handle_address)->set_input_value)(
 			*variable_input_handle_address,*value_handle_address)
 #else /* defined (USE_SMART_POINTER) */
 			(variable_address->set_input_value)(variable_input_address,value_address)
 #endif /* defined (USE_SMART_POINTER) */
-			;
-	}
-	else
-	{
-		return_code=0;
+			)
+		{
+			return_code=1;
+		}
 	}
 
 	return (return_code);
@@ -484,7 +513,7 @@ int Cmiss_variable_new_input_value_list_add(
 	Cmiss_variable_new_input_value_list_id input_value_list,
 	Cmiss_variable_new_input_id input,Cmiss_variable_new_id value)
 /*******************************************************************************
-LAST MODIFIED : 6 October 2003
+LAST MODIFIED : 2 February 2004
 
 DESCRIPTION :
 Adds an input value to a list.
@@ -494,7 +523,12 @@ Adds an input value to a list.
 	std::list<Variable_input_value_handle> *input_value_list_address;
 #if defined (USE_SMART_POINTER)
 	Variable_handle *value_handle_address;
-	Variable_input_handle *input_handle_address;
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		*input_handle_address;
 	Variable_input_value_handle *input_value_handle_address;
 #else /* defined (USE_SMART_POINTER) */
 	Variable *value_address;
@@ -506,7 +540,13 @@ Adds an input value to a list.
 	if ((input_value_list_address=reinterpret_cast<std::list<
 		Variable_input_value_handle> *>(input_value_list))&&
 #if defined (USE_SMART_POINTER)
-		(input_handle_address=reinterpret_cast<Variable_input_handle *>(input))&&
+		(input_handle_address=reinterpret_cast<
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		*>(input))&&
 		(value_handle_address=reinterpret_cast<Variable_handle *>(value))
 #else /* defined (USE_SMART_POINTER) */
 		(input_address=reinterpret_cast<Variable_input *>(input))&&

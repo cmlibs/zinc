@@ -1,78 +1,114 @@
 //******************************************************************************
 // FILE : variable.cpp
 //
-// LAST MODIFIED : 18 December 2003
+// LAST MODIFIED : 4 February 2004
 //
 // DESCRIPTION :
+// Variable's are expressions that are constructed for:
+// - display eg. difference between measured and calculated positions
+// - minimization eg. fitting by minimizing the difference between measured and
+// 	 calculated positions
+// - solution eg. solving a FEM variational formulation equals zero
+//
+// Variable's are able to be:
+// - evaluated at a point (specific choice of values for independent variables)
+// - differentiated at a point (specific choice of values for independent
+// 	 variables ie. not symbolic)
+// - composed ie. the results of one Variable can replace independent
+// 	 variables for another Variable
 //
 // NOTES :
-// 1 To get correct linking with C functions, need
+// 1 Started as computed_variable.h
+//   - C -> C++
+//   - Cmiss_variable -> Variable
+//     ???DB.  Need a more unique name than Variable?
+//   - remove Cmiss_value
+//   - use identifiers to specify independent variables rather than Variables
+// 2 From "Effective C++" by Scott Meyers
+//   11 Define a copy constructor and an assignment operator for classes with
+//     dynamically allocated memory
+// 3 Variable_identifier/Degree_of_freedom
+//   - need to know how many values are referred to for calculating derivatives?
+//     If don't know degree of freedom then derivative is zero and could have a
+//     placeholder?  Difficult for composite (of known and unknown)?
+//   - could have a method that returns a multi-range of indices
+//   - is it "specific" to a particular variable (What about composition?  How
+//     can you say differentiate wrt element/xi?) or may be used and mean
+//     different things if applied to different variables?
+// 4 Possible definitions
+// 4.1 Variable has access to all its degrees of freedom (inputs) and a
+//     Variable_identifier is a specifier for a list of degrees of freedom which
+//     can resolve to locations in memory
+//     ???DB.  Variables also have identifiers so that can comparisons easier?
+//       Overlapping identifiers?
+// 5 Pimpl - Pointer implementation.  http://c2.com/cgi-bin/wiki?PimplIdiom
+// 6 To get correct linking with C functions, need
 //     extern "C"
 //     {
 //     }
 //   around header files
-// 2 Started by using old dynamic memory allocation ie use new(nothrow), but
+// 7 Started by using old dynamic memory allocation ie use new(nothrow), but
 //   changed to new - program stops if throw an exception (without being caught)
-// 3 Need -lstdc++ when start using standard library
-// 4 I was trying too much by doing Pimpl at the same time as
+// 8 Need -lstdc++ when start using standard library
+// 9 I was trying too much by doing Pimpl at the same time as
 //   Variable_inputs.  So moved Pimpl to *.pimpl and got rid of Pimpl for the
 //   moment
-// 5 Virtual destructors.  Needed if delete a pointer to a derived object when
+// 10 Virtual destructors.  Needed if delete a pointer to a derived object when
 //   the pointer is of type pointer to base class (so that correct destructor
 //   is called and delete is called with the correct size).
-// 6 "Virtual" constructor.  Constructors cannot be virtual, but can get the
+// 11 "Virtual" constructor.  Constructors cannot be virtual, but can get the
 //   desired effect - see Stroustrup 3rd:424.
-// 7 Constructors have to construct their members (using : member initializer
+// 12 Constructors have to construct their members (using : member initializer
 //   list.
-// 8 The members' constructors are called before the body of the containing
+// 13 The members' constructors are called before the body of the containing
 //   class' own constructor is executed.  The constructors are called in the
 //   order in which the members are declared in the class (rather than the order
 //   in which the members appear in the initializer list.  If a member
 //   constructor needs no arguments, the member need not be mentioned in the
 //   member initializer list.  Stroustrup 3rd:247-8
-// 9 The member destructors are called in the reverse order of construction
+// 14 The member destructors are called in the reverse order of construction
 //   after the body of the class' own destructor has executed.
 //   Stroustrup 3rd:247
-// 10 Member initializers are essential for types for which initialization
+// 15 Member initializers are essential for types for which initialization
 //   differs from assignment.  Stroustrup 3rd:248
-// 11 A reference cannot be made to refer to another object at run-time.  A
+// 16 A reference cannot be made to refer to another object at run-time.  A
 //   reference must be initialized so that it refers to an object.  If a data
 //   member is a reference, it must be initialized in the constructors'
 //   initializer list.
-// 12 A local class cannot be used as a template argument.  Lischner 138
-// 13 By default a single argument constructor also defines an implicit
+// 17 A local class cannot be used as a template argument.  Lischner 138
+// 18 By default a single argument constructor also defines an implicit
 //   conversion.  Implicit conversion from a particular constructor can be
 //   suppressed by declaring the constructor implicit.  Stroustrup 3rd:284
-// 14 Smart pointers (avoid bare pointers - Lischner 618)
-// 14.1 Suggestions Alexandrescu 157-
-// 14.1.1 A smart pointer should not use member functions
-// 14.2 Have added option (USE_SMART_POINTER) of boost::shared_ptr (can be used
+// 19 Smart pointers (avoid bare pointers - Lischner 618)
+// 19.1 Suggestions Alexandrescu 157-
+// 19.1.1 A smart pointer should not use member functions
+// 19.2 Have added option (USE_SMART_POINTER) of boost::shared_ptr (can be used
 //      with containers, std::autoptr cannot because it does a destructive
 //      copy).  Tried Loki (Alexandrescu) but had lots of template compiler
 //      errors which changed, but did not go away, as upgraded gcc
-// 14.3 Having a smart pointer wrapper is not ideal because have to do things
+// 19.3 Having a smart pointer wrapper is not ideal because have to do things
 //      differently in the api (if went to a Variable** for the bare pointer
 //      case would then destructors wouldn't be called).  Could include smart
 //      pointer into Variable (Pimpl), but lose code re-use
-// 15 Are using the ideas of "automatic differentiation" (technology for
+// 20 Are using the ideas of "automatic differentiation" (technology for
 //    automatically augmenting computer programs with statements for the
 //    computation of derivatives), see
 //      http://www-sop.inria.fr/tropics/ad/whatisad.html,
 //    to get derivatives
-// 16 Tried templating the constructor for Variable_input so that don't need
+// 21 Tried templating the constructor for Variable_input so that don't need
 //    string& and char* versions.  Problems
-// 16.1 Can do if have template definition visible where the constructor is
+// 21.1 Can do if have template definition visible where the constructor is
 //      instantiated, but this means having the definition in the .h file
-// 16.2 Tried explicitly instantiating in .cpp eg
+// 21.2 Tried explicitly instantiating in .cpp eg
 //        template Variable_input::Variable_input<char *>(char *);
 //      but this doesn't compile because it doesn't have a return type.
 //      However, a constructor doesn't have a return type (not even void).
 //    Got round by just having string& and letting the string constructors
 //    (called for pass by value) sort it out
-// 17 Would like a general way of creating *_handle
-// 17.1 Template handle<>.  Can't see how because want to rename a class, not
+// 22 Would like a general way of creating *_handle
+// 22.1 Template handle<>.  Can't see how because want to rename a class, not
 //      create a new one
-// 17.2 Macro HANDLE() may have trouble with
+// 22.2 Macro HANDLE() may have trouble with
 //        #if defined (USE_SMART_POINTER)
 //        #define HANDLE( object_type ) boost::shared_ptr<object_type>
 //        #else // defined (USE_SMART_POINTER)
@@ -81,10 +117,10 @@
 //
 //        Variable_get_input_value get_input_value(HANDLE(Variable)(this));
 //      when HANDLE is an ordinary pointer
-// 18 Should only create a new _handle when create a new object to be pointed,
+// 23 Should only create a new _handle when create a new object to be pointed,
 //   otherwise the object could be destroyed at the wrong time (eg when the
 //   _handle that was created locally goes out of scope)
-// 19 Changed to intrusive smart pointer because need to be able to construct
+// 24 Changed to intrusive smart pointer because need to be able to construct
 //   a smart pointer from any pointer (not just the new one)
 //
 // ???DB.  Need to sort out pointers and references
@@ -140,41 +176,56 @@
 //   Would like to use const on methods more (means that <this> is not changed
 //     (eg. virtual Variable_handle clone() const=0), but prevented because of
 //     instrusive smart pointer
+//
+// ???DB.  04Feb04
+//   Why are components needed?
+//   - so that set_input_value can split input into atomic inputs and value into
+//     components
+//   Should components be variables or io_specifiers?
+//   variable
+//   - Have to be able to refer back to the variable that its a component of
+//     eg. for a vector variable, a component is not just a scalar variable,
+//     because it has to be the scalar at a particular location in the vector
+//   io_specifier
+//   - what should evaluate and evaluate_derivative do?
+//   - should there be a derivative variable but no evaluate_derivative_method?
+//   - should all variables store there result?  Then an io_specifier can always
+//     be referring to memory.  A composite wouldn't have its own storage for
+//     its result - maybe don't have composite variable, use composite
+//     io_specifier instead
 //==============================================================================
+
+#include "computed_variable/variable_base.hpp"
 
 #include <algorithm>
 #include <iterator>
 #include <new>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 #include <typeinfo>
-
-//???DB.  Put in include?
-const bool Assert_on=true;
-
-template<class Assertion,class Exception>inline void Assert(
-	Assertion assertion,Exception exception)
-{
-	if (Assert_on&&!(assertion)) throw exception;
-}
 
 #include "computed_variable/variable.hpp"
 #include "computed_variable/variable_composite.hpp"
 #include "computed_variable/variable_derivative_matrix.hpp"
+#if !defined (USE_ITERATORS)
 #include "computed_variable/variable_input_composite.hpp"
-#include "computed_variable/variable_input_composite.hpp"
+#endif // !defined (USE_ITERATORS)
 
 // class Variable_input_value
 // --------------------------
 
-Variable_input_value::Variable_input_value(Variable_input_handle& input,
-	Variable_handle& value):input_data(input),value_data(value)
+Variable_input_value::Variable_input_value(
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	& input,Variable_handle& value):input_data(input),value_data(value)
 #if defined (USE_INTRUSIVE_SMART_POINTER)
 	,reference_count(0)
 #endif
 //******************************************************************************
-// LAST MODIFIED : 16 October 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 // Constructor.
@@ -250,9 +301,14 @@ Variable_handle Variable_input_value::value() const
 	return (value_data);
 }
 
-Variable_input_handle Variable_input_value::input() const
+#if defined (USE_VARIABLE_INPUT)
+Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	Variable_input_value::input() const
 //******************************************************************************
-// LAST MODIFIED : 5 October 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -320,85 +376,186 @@ void intrusive_ptr_release(Variable *variable)
 }
 #endif // defined (USE_INTRUSIVE_SMART_POINTER)
 
-class Variable_get_input_value
+#if defined (USE_ITERATORS)
+#if defined (USE_ITERATORS_NESTED)
+Variable::Iterator::Iterator()
 //******************************************************************************
-// LAST MODIFIED : 16 October 2003
+// LAST MODIFIED : 21 January 2004
 //
 // DESCRIPTION :
-// A unary function (Functor) for getting a list of input values for a variable.
+// Constructor.
 //==============================================================================
-{
-	friend class Variable;
-	public:
-		Variable_get_input_value(Variable_handle variable,
-			std::list<Variable_input_value_handle> &values):variable(variable),
-			values(values){};
-		~Variable_get_input_value() {};
-		int operator() (Variable_input_value_handle& input_value)
-		{
-			Variable_handle value;
-			Variable_input_handle input;
+{}
 
-			input=input_value->input();
-			value=(variable->get_input_value)(input);
-			values.push_back(Variable_input_value_handle(new Variable_input_value(
-				input,value)));
-
-			return (1);
-		};
-	private:
-		Variable_handle variable;
-		std::list<Variable_input_value_handle>& values;
-			//???DB.  Seems that should be using transform, but then have to set up
-			//  the result to the correct size
-};
-
-class Variable_set_input_value
+Variable::Iterator::~Iterator()
 //******************************************************************************
-// LAST MODIFIED : 16 October 2003
+// LAST MODIFIED : 21 January 2004
 //
 // DESCRIPTION :
-// A unary function (Functor) for setting a list of input values for a variable.
+// Destructor.
 //==============================================================================
 {
-	public:
-		Variable_set_input_value(Variable_handle variable):variable(variable){};
-		~Variable_set_input_value() {};
-		int operator() (Variable_input_value_handle& input_value)
-		{
-			return ((variable->set_input_value)(input_value->input(),
-				input_value->value()));
-		};
-	private:
-		Variable_handle variable;
-};
+	// do nothing
+}
+
+#if defined (DO_NOT_WANT_TO_USE)
+//???DB.  Want a compile or link time way of making sure that the Iterator
+//  methods are defined for the Variable sub-classes
+Variable::Iterator& Variable::Iterator::operator=(const Variable::Iterator&)
+//******************************************************************************
+// LAST MODIFIED : 21 January 2004
+//
+// DESCRIPTION :
+// Assignment.
+//==============================================================================
+{
+	// should not come here - should be overloaded, but can't make pure
+	Assert(false,std::logic_error(
+		"Variable::Iterator::operator=().  Should not come here"));
+	
+	return (*this);
+}
+
+Variable::Iterator Variable::Iterator::operator++()
+//******************************************************************************
+// LAST MODIFIED : 21 January 2004
+//
+// DESCRIPTION :
+// Increment (prefix).
+//==============================================================================
+{
+	// should not come here - should be overloaded, but can't make pure
+	Assert(false,std::logic_error(
+		"Variable::Iterator::operator++().  Should not come here"));
+	
+	return (*this);
+}
+
+Variable::Iterator Variable::Iterator::operator++(int)
+//******************************************************************************
+// LAST MODIFIED : 21 January 2004
+//
+// DESCRIPTION :
+// Increment (postfix).
+//==============================================================================
+{
+	// should not come here - should be overloaded, but can't make pure
+	Assert(false,std::logic_error(
+		"Variable::Iterator::operator++(int).  Should not come here"));
+	
+	return (*this);
+}
+
+bool Variable::Iterator::operator==(const Iterator&)
+//******************************************************************************
+// LAST MODIFIED : 21 January 2004
+//
+// DESCRIPTION :
+// Equality.
+//==============================================================================
+{
+	// should not come here - should be overloaded, but can't make pure
+	Assert(false,std::logic_error(
+		"Variable::Iterator::operator==(const Iterator&).  Should not come here"));
+	
+	return (false);
+}
+
+bool Variable::Iterator::operator!=(const Iterator&)
+//******************************************************************************
+// LAST MODIFIED : 21 January 2004
+//
+// DESCRIPTION :
+// Inquality.
+//==============================================================================
+{
+	// should not come here - should be overloaded, but can't make pure
+	Assert(false,std::logic_error(
+		"Variable::Iterator::operator!=(const Iterator&).  Should not come here"));
+	
+	return (true);
+}
+
+Variable_handle& Variable::Iterator::operator*() const
+//******************************************************************************
+// LAST MODIFIED : 21 January 2004
+//
+// DESCRIPTION :
+// Dereference.
+//==============================================================================
+{
+	Variable_handle *result_address=new Variable_handle(0);
+
+	// should not come here - should be overloaded, but can't make pure
+	Assert(false,std::logic_error(
+		"Variable::Iterator::operator*().  Should not come here"));
+	
+	return (*result_address);
+}
+#endif // defined (DO_NOT_WANT_TO_USE)
+#endif // defined (USE_ITERATORS_NESTED)
+#endif // defined (USE_ITERATORS)
 
 Variable_handle Variable::evaluate(
 	std::list<Variable_input_value_handle>& values)
 //******************************************************************************
-// LAST MODIFIED : 25 November 2003
+// LAST MODIFIED : 1 January 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	std::list<Variable_input_value_handle> current_values;
-	Variable_handle variable;
+	std::list<Variable_input_value_handle> current_values(0);
+	Variable_handle result(0);
 
 	// get the specified values
-	std::for_each(values.begin(),values.end(),Variable_get_input_value(
+	std::for_each(values.begin(),values.end(),Variable_get_input_values(
 		Variable_handle(this),current_values));
 	// override the specified values
-	std::for_each(values.begin(),values.end(),Variable_set_input_value(
+	std::for_each(values.begin(),values.end(),Variable_set_input_values(
 		Variable_handle(this)));
 	// do the local evaluate
-	variable=(evaluate_local)();
+	result=(evaluate_local)();
 	// reset the current values
 	std::for_each(current_values.rbegin(),current_values.rend(),
-		Variable_set_input_value(Variable_handle(this)));
+		Variable_set_input_values(Variable_handle(this)));
 
-	return (variable);
+	return (result);
 }
 
+#if defined (USE_ITERATORS)
+Variable_handle Variable::evaluate_derivative(
+	std::list<
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	>& independent_variables,std::list<Variable_input_value_handle>& values)
+//******************************************************************************
+// LAST MODIFIED : 2 February 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	std::list<Variable_input_value_handle> current_values(0);
+	Variable_handle derivative(0);
+
+	// get the specified values
+	std::for_each(values.begin(),values.end(),Variable_get_input_values(
+		Variable_handle(this),current_values));
+	// override the specified values
+	std::for_each(values.begin(),values.end(),Variable_set_input_values(
+		Variable_handle(this)));
+	// calculate the derivative matrix
+	derivative=Variable_handle(new Variable_derivative_matrix(
+		Variable_handle(this),independent_variables));
+	// reset the current values
+	std::for_each(current_values.rbegin(),current_values.rend(),
+		Variable_set_input_values(this));
+
+	return (derivative);
+}
+#else // defined (USE_ITERATORS)
 class Variable_input_is_composite
 //******************************************************************************
 // LAST MODIFIED : 19 September 2003
@@ -416,63 +573,95 @@ class Variable_input_is_composite
 		};
 };
 
-class Find_result_input_iterator
-{
-	public:
-		Find_result_input_iterator(
-			std::list<Variable_input_handle>::iterator& result_input_iterator,
-			int& composite_independent_variable_factor):
-			result_input_iterator(result_input_iterator),
-			composite_independent_variable_factor(
-			composite_independent_variable_factor){};
-		~Find_result_input_iterator() {};
-		int operator() (Variable_input_handle&)
-		{
-			composite_independent_variable_factor *= 2;
-			result_input_iterator++;
-
-			return (1);
-		};
-	private:
-		std::list<Variable_input_handle>::iterator& result_input_iterator;
-		int& composite_independent_variable_factor;
-};
-
-class Calculate_composite_independent_variable_step
-{
-	public:
-		Calculate_composite_independent_variable_step(
-			int& composite_independent_variable_step,int derivative_index):
-			composite_independent_variable_step(
-			composite_independent_variable_step),derivative_index(derivative_index)
-		{
-			composite_independent_variable_step=1;
-		};
-		~Calculate_composite_independent_variable_step() {};
-		int operator() (Variable_input_handle& input)
-		{
-			if (derivative_index%2)
-			{
-				composite_independent_variable_step *= input->size();
-			}
-			derivative_index /= 2;
-
-			return (1);
-		};
-	private:
-		int& composite_independent_variable_step;
-		int derivative_index;
-};
-
-class Variable_input_composite_evaluate_derivative_functor
+#if defined (GENERALIZE_COMPOSITE_INPUT)
+Variable_handle Variable::evaluate_derivative(
+	std::list<Variable_input_handle>& independent_variables,
+	std::list<Variable_input_value_handle>& values)
 //******************************************************************************
-// LAST MODIFIED : 26 November 2003
+// LAST MODIFIED : 1 January 2004
 //
 // DESCRIPTION :
-// A unary functor (Functor) for ???DB
+//==============================================================================
+{
+	std::list<Variable_input_handle>::iterator input_iterator;
+	std::list<Variable_input_value_handle> current_values(0),no_values(0);
+#if defined (GENERALIZE_COMPOSITE_INPUT)
+#else // defined (GENERALIZE_COMPOSITE_INPUT)
+	std::list<Variable_input_handle>::iterator input_composite_iterator;
+	Variable_derivative_matrix_handle derivative_matrix;
+#endif // defined (GENERALIZE_COMPOSITE_INPUT)
+	Variable_handle derivative;
+	Variable_input_composite_handle input_composite;
+	Variable_input_is_composite is_composite_input_predicate;
+
+	// get the specified values
+	std::for_each(values.begin(),values.end(),Variable_get_input_values(
+		Variable_handle(this),current_values));
+	// override the specified values
+	std::for_each(values.begin(),values.end(),Variable_set_input_values(
+		Variable_handle(this)));
+	// check for composite inputs in the list of independent_variables
+	input_iterator=std::find_if(independent_variables.begin(),
+		independent_variables.end(),is_composite_input_predicate);
+	if (independent_variables.end()==input_iterator)
+	{
+		// none of the independent variables/inputs are composite
+		// do the local evaluate derivative
+		derivative=Variable_handle(new Variable_derivative_matrix(
+			Variable_handle(this),independent_variables));
+	}
+	else
+	{
+		// an independent variable/input is composite
+#if defined (USE_SMART_POINTER)
+		input_composite=
+			boost::dynamic_pointer_cast<Variable_input_composite,Variable_input>(
+			*input_iterator);
+#else /* defined (USE_SMART_POINTER) */
+		input_composite=
+			dynamic_cast<Variable_input_composite *>(*input_iterator);
+#endif /* defined (USE_SMART_POINTER) */
+#if defined (GENERALIZE_COMPOSITE_INPUT)
+		derivative=input_composite->evaluate_derivative(Variable_handle(this),
+			independent_variables,input_iterator,no_values);
+#else // defined (GENERALIZE_COMPOSITE_INPUT)
+		// calculate the derivatives for the variables/inputs making up the
+		//   composite
+		input_composite_iterator=input_composite->begin();
+		*input_iterator= *input_composite_iterator;
+		derivative=evaluate_derivative(independent_variables,no_values);
+		derivative_matrix=
+#if defined (USE_SMART_POINTER)
+			boost::dynamic_pointer_cast<Variable_derivative_matrix,Variable>(
+			derivative);
+#else /* defined (USE_SMART_POINTER) */
+			dynamic_cast<Variable_derivative_matrix *>(*derivative);
+#endif /* defined (USE_SMART_POINTER) */
+		input_composite_iterator++;
+		Variable_input_composite_evaluate_derivative_functor
+			evaluate_derivative_functor(Variable_handle(this),independent_variables,
+			no_values,input_iterator,derivative_matrix);
+		std::for_each(input_composite_iterator,input_composite->end(),
+			evaluate_derivative_functor);
+		*input_iterator=input_composite;
+		// need to set independent_variables because evaluate_derivative copies
+		derivative_matrix->independent_variables=independent_variables;
+#endif // defined (GENERALIZE_COMPOSITE_INPUT)
+	}
+	// reset the current values
+	std::for_each(current_values.rbegin(),current_values.rend(),
+		Variable_set_input_values(this));
+
+	return (derivative);
+}
+#else // defined (GENERALIZE_COMPOSITE_INPUT)
+class Variable_input_composite_evaluate_derivative_functor
+//******************************************************************************
+// LAST MODIFIED : 31 December 2003
 //
-// ???DB.  To be done
-// - Merge derivative matrices as go?
+// DESCRIPTION :
+// A unary functor (Functor) for merging derivative matrices for the different
+// components of a composite input
 //==============================================================================
 {
 	public:
@@ -483,17 +672,50 @@ class Variable_input_composite_evaluate_derivative_functor
 			std::list<Variable_input_handle>::iterator& input_iterator,
 			Variable_derivative_matrix_handle& result):input_iterator(input_iterator),
 			independent_variables(independent_variables),values(values),
-			result(result),variable(variable) {};
+			independent_variable_number_of_values(0),result(result),variable(variable)
+		{
+			std::list<Matrix>::iterator result_iterator;
+			std::list<Variable_input_handle>::iterator independent_variable_iterator;
+			Variable_size_type i,j;
+
+			input_index=0;
+			result_input_iterator=result->independent_variables.begin();
+			for (independent_variable_iterator=independent_variables.begin();
+				independent_variable_iterator!=input_iterator;
+				independent_variable_iterator++)
+			{
+				input_index++;
+				result_input_iterator++;
+			}
+			independent_variable_number_of_values.resize(input_index);
+			result_iterator=(result->matrices).begin();
+			number_of_matrices=1;
+			for (i=0;i<input_index;i++)
+			{
+				independent_variable_number_of_values[i]=result_iterator->size2();
+				for (j=number_of_matrices;j>0;j--)
+				{
+					result_iterator++;
+				}
+				number_of_matrices *= 2;
+			}
+			for (i=independent_variables.size()-input_index;i>0;i--)
+			{
+				number_of_matrices *= 2;
+			}
+			number_of_matrices -= 1;
+		};
 		~Variable_input_composite_evaluate_derivative_functor() {};
 		int operator() (Variable_input_handle& input)
 		{
 			int composite_independent_variable_factor,
 				composite_independent_variable_step;
 			std::list<Matrix>::iterator derivative_iterator,result_iterator;
-			std::list<Variable_input_handle>::iterator result_input_iterator;
-			unsigned i,j,matrix_number,number_of_matrices,number_of_rows;
+			unsigned i,j,matrix_number,number_of_rows;
 			Variable_derivative_matrix_handle derivative;
 			Variable_handle derivative_uncast;
+			Variable_size_type derivative_independent_number_of_values,
+				result_independent_number_of_values;
 
 			*input_iterator=input;
 			// calculate the derivative for input
@@ -509,24 +731,27 @@ class Variable_input_composite_evaluate_derivative_functor
 			if (derivative)
 			{
 				// merge derivative matrix into result
-				number_of_matrices=1;
-				for (i=independent_variables.size();i>0;i--)
-				{
-					number_of_matrices *= 2;
-				}
-				number_of_matrices -= 1;
 				Assert((number_of_matrices==(derivative->matrices).size())&&
 					(number_of_matrices==(result->matrices).size()),std::logic_error(
 					"Variable_input_composite_evaluate_derivative_functor().  "
 					"Incorrect number_of_matrices"));
 				composite_independent_variable_factor=1;
-				result_input_iterator=result->independent_variables.begin();
-				std::for_each(independent_variables.begin(),input_iterator,
-					Find_result_input_iterator(result_input_iterator,
-					composite_independent_variable_factor));
 				derivative_iterator=(derivative->matrices).begin();
 				result_iterator=(result->matrices).begin();
-				number_of_rows=variable->size();
+				for (i=input_index;i>0;i--)
+				{
+					for (j=composite_independent_variable_factor;j>0;j--)
+					{
+						derivative_iterator++;
+						result_iterator++;
+					}
+					composite_independent_variable_factor *= 2;
+				}
+				derivative_independent_number_of_values=derivative_iterator->size2();
+				result_independent_number_of_values=result_iterator->size2();
+				derivative_iterator=(derivative->matrices).begin();
+				result_iterator=(result->matrices).begin();
+				number_of_rows=result_iterator->size1();
 				for (matrix_number=1;matrix_number<=number_of_matrices;matrix_number++)
 				{
 					Assert((number_of_rows==derivative_iterator->size1())&&
@@ -541,16 +766,24 @@ class Variable_input_composite_evaluate_derivative_functor
 							result_column_number;
 						Matrix matrix(number_of_rows,number_of_columns);
 
-						std::for_each(independent_variables.begin(),input_iterator,
-							Calculate_composite_independent_variable_step(
-							composite_independent_variable_step,matrix_number));
+						composite_independent_variable_step=1;
+						j=matrix_number;
+						for (i=0;i<input_index;i++)
+						{
+							if (j%2)
+							{
+								composite_independent_variable_step *=
+									independent_variable_number_of_values[i];
+							}
+							j /= 2;
+						}
 						derivative_column_number=0;
 						result_column_number=0;
 						column_number=0;
 						while (column_number<number_of_columns)
 						{
 							for (j=composite_independent_variable_step*
-								((*result_input_iterator)->size());j>0;j--)
+								result_independent_number_of_values;j>0;j--)
 							{
 								for (i=0;i<number_of_rows;i++)
 								{
@@ -561,7 +794,7 @@ class Variable_input_composite_evaluate_derivative_functor
 								column_number++;
 							}
 							for (j=composite_independent_variable_step*
-								((*input_iterator)->size());j>0;j--)
+								derivative_independent_number_of_values;j>0;j--)
 							{
 								for (i=0;i<number_of_rows;i++)
 								{
@@ -595,46 +828,50 @@ class Variable_input_composite_evaluate_derivative_functor
 	private:
 		std::list<Variable_input_handle>::iterator& input_iterator;
 		std::list<Variable_input_handle>& independent_variables;
+		std::list<Variable_input_handle>::iterator result_input_iterator;
 		std::list<Variable_input_value_handle>& values;
+		std::vector<Variable_size_type> independent_variable_number_of_values;
 		Variable_derivative_matrix_handle& result;
 		Variable_handle variable;
+		Variable_size_type input_index,number_of_matrices;
 };
+#endif // defined (GENERALIZE_COMPOSITE_INPUT)
 
 Variable_handle Variable::evaluate_derivative(
 	std::list<Variable_input_handle>& independent_variables,
 	std::list<Variable_input_value_handle>& values)
 //******************************************************************************
-// LAST MODIFIED : 18 December 2003
+// LAST MODIFIED : 1 January 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	std::list<Variable_input_handle>::iterator input_composite_iterator,
-		input_iterator;
-	std::list<Variable_input_value_handle> current_values;
-	Variable_derivative_matrix_handle derivative;
-	Variable_handle derivative_uncast;
+	std::list<Variable_input_handle>::iterator input_iterator;
+	std::list<Variable_input_value_handle> current_values(0),no_values(0);
+#if defined (GENERALIZE_COMPOSITE_INPUT)
+#else // defined (GENERALIZE_COMPOSITE_INPUT)
+	std::list<Variable_input_handle>::iterator input_composite_iterator;
+	Variable_derivative_matrix_handle derivative_matrix;
+#endif // defined (GENERALIZE_COMPOSITE_INPUT)
+	Variable_handle derivative;
 	Variable_input_composite_handle input_composite;
 	Variable_input_is_composite is_composite_input_predicate;
 
+	// get the specified values
+	std::for_each(values.begin(),values.end(),Variable_get_input_values(
+		Variable_handle(this),current_values));
+	// override the specified values
+	std::for_each(values.begin(),values.end(),Variable_set_input_values(
+		Variable_handle(this)));
 	// check for composite inputs in the list of independent_variables
 	input_iterator=std::find_if(independent_variables.begin(),
 		independent_variables.end(),is_composite_input_predicate);
 	if (independent_variables.end()==input_iterator)
 	{
 		// none of the independent variables/inputs are composite
-		// get the specified values
-		std::for_each(values.begin(),values.end(),Variable_get_input_value(
-			Variable_handle(this),current_values));
-		// override the specified values
-		std::for_each(values.begin(),values.end(),Variable_set_input_value(
-			Variable_handle(this)));
 		// do the local evaluate derivative
-		derivative=Variable_derivative_matrix_handle(new Variable_derivative_matrix(
+		derivative=Variable_handle(new Variable_derivative_matrix(
 			Variable_handle(this),independent_variables));
-		// reset the current values
-		std::for_each(current_values.rbegin(),current_values.rend(),
-			Variable_set_input_value(this));
 	}
 	else
 	{
@@ -647,37 +884,46 @@ Variable_handle Variable::evaluate_derivative(
 		input_composite=
 			dynamic_cast<Variable_input_composite *>(*input_iterator);
 #endif /* defined (USE_SMART_POINTER) */
+#if defined (GENERALIZE_COMPOSITE_INPUT)
+		derivative=input_composite->evaluate_derivative(Variable_handle(this),
+			independent_variables,input_iterator,no_values);
+#else // defined (GENERALIZE_COMPOSITE_INPUT)
 		// calculate the derivatives for the variables/inputs making up the
 		//   composite
 		input_composite_iterator=input_composite->begin();
 		*input_iterator= *input_composite_iterator;
-		//???DB.  Why can't the values be set up once and the derivatives
-		//  evaluated locally?
-		derivative_uncast=evaluate_derivative(independent_variables,values);
-		derivative=
+		derivative=evaluate_derivative(independent_variables,no_values);
+		derivative_matrix=
 #if defined (USE_SMART_POINTER)
 			boost::dynamic_pointer_cast<Variable_derivative_matrix,Variable>(
-			derivative_uncast);
+			derivative);
 #else /* defined (USE_SMART_POINTER) */
-			dynamic_cast<Variable_derivative_matrix *>(*derivative_uncast);
+			dynamic_cast<Variable_derivative_matrix *>(*derivative);
 #endif /* defined (USE_SMART_POINTER) */
 		input_composite_iterator++;
 		Variable_input_composite_evaluate_derivative_functor
 			evaluate_derivative_functor(Variable_handle(this),independent_variables,
-			values,input_iterator,derivative);
+			no_values,input_iterator,derivative_matrix);
 		std::for_each(input_composite_iterator,input_composite->end(),
 			evaluate_derivative_functor);
 		*input_iterator=input_composite;
 		// need to set independent_variables because evaluate_derivative copies
-		derivative->independent_variables=independent_variables;
+		derivative_matrix->independent_variables=independent_variables;
+#endif // defined (GENERALIZE_COMPOSITE_INPUT)
 	}
+	// reset the current values
+	std::for_each(current_values.rbegin(),current_values.rend(),
+		Variable_set_input_values(this));
 
 	return (derivative);
 }
+#endif // defined (USE_ITERATORS)
 
+#if defined (USE_ITERATORS)
+#else // defined (USE_ITERATORS)
 class Variable_get_input_value_functor
 //******************************************************************************
-// LAST MODIFIED : 21 November 2003
+// LAST MODIFIED : 31 December 2003
 //
 // DESCRIPTION :
 //==============================================================================
@@ -689,7 +935,12 @@ class Variable_get_input_value_functor
 		~Variable_get_input_value_functor() {};
 		int operator() (Variable_input_handle& input)
 		{
-			variable_list.push_back((variable->get_input_value)(input));
+			Variable_handle value;
+
+			if (value=(variable->get_input_value)(input))
+			{
+				variable_list.push_back(value);
+			}
 
 			return (1);
 		};
@@ -697,18 +948,73 @@ class Variable_get_input_value_functor
 		std::list<Variable_handle>& variable_list;
 		const Variable_handle& variable;
 };
+#endif // defined (USE_ITERATORS)
 
-Variable_handle Variable::get_input_value(const Variable_input_handle& input)
+Variable_handle Variable::get_input_value(const
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	& input)
 //******************************************************************************
-// LAST MODIFIED : 25 November 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	Variable_handle result;
+#if defined (USE_ITERATORS)
+#else // defined (USE_ITERATORS)
 	Variable_input_composite_handle input_composite;
+#endif // defined (USE_ITERATORS)
 
 	result=0;
+#if defined (USE_ITERATORS)
+	if (input)
+	{
+		std::list<Variable_handle> variable_list(0);
+		Variable_handle value;
+#if defined (USE_ITERATORS_NESTED)
+		Variable_input::Iterator input_atomic_iterator;
+#else // defined (USE_ITERATORS_NESTED)
+#if defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+		Variable_input_iterator input_atomic_iterator(0);
+#else // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+		Handle_iterator<
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		> input_atomic_iterator(0);
+#endif // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+#endif // defined (USE_ITERATORS_NESTED)
+
+		// not using std::for_each because then functor would have to be a friend of
+		//   Variable
+		for (input_atomic_iterator=input->
+#if defined (USE_VARIABLE_INPUT)
+			begin_atomic_inputs
+#else // defined (USE_VARIABLE_INPUT)
+			begin_atomic
+#endif // defined (USE_VARIABLE_INPUT)
+			();input_atomic_iterator!=input->
+#if defined (USE_VARIABLE_INPUT)
+			end_atomic_inputs
+#else // defined (USE_VARIABLE_INPUT)
+			end_atomic
+#endif // defined (USE_VARIABLE_INPUT)
+			();input_atomic_iterator++)
+		{
+			if (value=(get_input_value_local)(*input_atomic_iterator))
+			{
+				variable_list.push_back(value);
+			}
+		}
+		result=Variable_handle(new Variable_composite(variable_list));
+	}
+#else // defined (USE_ITERATORS)
 	if (input_composite=
 #if defined (USE_SMART_POINTER)
 		boost::dynamic_pointer_cast<Variable_input_composite,Variable_input>(input)
@@ -717,31 +1023,111 @@ Variable_handle Variable::get_input_value(const Variable_input_handle& input)
 #endif /* defined (USE_SMART_POINTER) */
 		)
 	{
+#if defined (GENERALIZE_COMPOSITE_INPUT)
+		result=input_composite->get_input_value(Variable_handle(this));
+#else // defined (GENERALIZE_COMPOSITE_INPUT)
 		std::list<Variable_handle> variable_list(0);
 
 		std::for_each(input_composite->begin(),input_composite->end(),
 			Variable_get_input_value_functor(Variable_handle(this),variable_list));
 		result=Variable_handle(new Variable_composite(variable_list));
+#endif // defined (GENERALIZE_COMPOSITE_INPUT)
 	}
 	else
 	{
 		result=(get_input_value_local)(input);
 	}
+#endif // defined (USE_ITERATORS)
 
 	return (result);
 }
 
-int Variable::set_input_value(const Variable_input_handle& input,
-	const Variable_handle& value)
+bool Variable::set_input_value(const
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	& input,
+	const
+#if defined (USE_VARIABLES_AS_COMPONENTS)
+	Variable_handle
+#else // defined (USE_VARIABLES_AS_COMPONENTS)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLES_AS_COMPONENTS)
+	& value)
 //******************************************************************************
-// LAST MODIFIED : 18 September 2003
+// LAST MODIFIED : 4 February 2004
 //
 // DESCRIPTION :
-// ???DB.  Need to do composite input
 //==============================================================================
 {
+#if defined (USE_ITERATORS)
+	bool result;
+
+	result=false;
+	if (input)
+	{
+#if defined (USE_ITERATORS_NESTED)
+		Variable::Iterator component_iterator;
+		Variable_input::Iterator input_atomic_iterator;
+#else // defined (USE_ITERATORS_NESTED)
+#if defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+#else // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+		Handle_iterator<
+#if defined (USE_VARIABLES_AS_COMPONENTS)
+			Variable_handle
+#else // defined (USE_VARIABLES_AS_COMPONENTS)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLES_AS_COMPONENTS)
+			> component_iterator(0);
+		Handle_iterator<
+#if defined (USE_VARIABLE_INPUT)
+		Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+		Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+		> input_atomic_iterator(0);
+#endif // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+#endif // defined (USE_ITERATORS_NESTED)
+
+#if defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+		//???DB.  Temporary
+		result=set_input_value_local(input,value);
+#else // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+		// not using std::for_each because then functor would have to be a friend of
+		//   Variable
+		//???DB.  No failure recovery?
+		input_atomic_iterator=input->
+#if defined (USE_VARIABLE_INPUT)
+			begin_atomic_inputs
+#else // defined (USE_VARIABLE_INPUT)
+			begin_atomic
+#endif // defined (USE_VARIABLE_INPUT)
+			();
+		component_iterator=value->begin_components();
+		result=true;
+		while (result&&(input_atomic_iterator!=input->
+#if defined (USE_VARIABLE_INPUT)
+			end_atomic_inputs
+#else // defined (USE_VARIABLE_INPUT)
+			end_atomic
+#endif // defined (USE_VARIABLE_INPUT)
+			())&&(component_iterator!=value->end_components()))
+		{
+			result=set_input_value_local(*input_atomic_iterator,*component_iterator);
+			input_atomic_iterator++;
+			component_iterator++;
+		}
+#endif // defined (DO_NOT_USE_ITERATOR_TEMPLATES)
+	}
+
+	return (result);
+#else // defined (USE_ITERATORS)
+	//???DB.  Need to do composite input
 	// return the result of the local set_input_value
 	return (set_input_value_local(input,value));
+#endif // defined (USE_ITERATORS)
 }
 
 Scalar Variable::norm() const

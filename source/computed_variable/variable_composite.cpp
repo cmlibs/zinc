@@ -1,24 +1,17 @@
 //******************************************************************************
 // FILE : variable_composite.cpp
 //
-// LAST MODIFIED : 11 December 2003
+// LAST MODIFIED : 9 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
+
+#include "computed_variable/variable_base.hpp"
 
 #include <new>
 #include <sstream>
 #include <string>
 #include <stdio.h>
-
-//???DB.  Put in include?
-const bool Assert_on=true;
-
-template<class Assertion,class Exception>inline void Assert(
-	Assertion assertion,Exception exception)
-{
-	if (Assert_on&&!(assertion)) throw exception;
-}
 
 #include "computed_variable/variable_composite.hpp"
 #include "computed_variable/variable_derivative_matrix.hpp"
@@ -120,7 +113,7 @@ Variable_handle Variable_composite::clone() const
 
 class Variable_composite_evaluate_functor
 //******************************************************************************
-// LAST MODIFIED : 16 November 2003
+// LAST MODIFIED : 20 January 2004
 //
 // DESCRIPTION :
 // A unary function (functor) for evaluating a composite variable.
@@ -164,6 +157,9 @@ class Variable_composite_evaluate_functor
 					{
 						if (result_vector)
 						{
+#if defined (USE_ITERATORS)
+							//???DB.  To be done
+#else // defined (USE_ITERATORS)
 							Vector *vector_1=result_vector->scalars(),
 								*vector_2=variable_vector->scalars();
 							Variable_size_type i,j,size_1=vector_1->size(),
@@ -181,6 +177,7 @@ class Variable_composite_evaluate_functor
 							}
 							result_vector=Variable_vector_handle(new Variable_vector(
 								vector_composite));
+#endif // defined (USE_ITERATORS)
 						}
 						else
 						{
@@ -208,23 +205,33 @@ class Variable_composite_evaluate_functor
 Variable_handle Variable_composite::evaluate(
 	std::list<Variable_input_value_handle>& values)
 //******************************************************************************
-// LAST MODIFIED : 16 November 2003
+// LAST MODIFIED : 1 January 2004
 //
 // DESCRIPTION :
 // Overload Variable::evaluate.
 //==============================================================================
 {
+	std::list<Variable_input_value_handle> current_values(0),no_values(0);
 	Variable_handle result(0);
 
+	// get the specified values
+	std::for_each(values.begin(),values.end(),Variable_get_input_values(
+		Variable_handle(this),current_values));
+	// override the specified values
+	std::for_each(values.begin(),values.end(),Variable_set_input_values(
+		Variable_handle(this)));
 	std::for_each(variables_list.begin(),variables_list.end(),
-		Variable_composite_evaluate_functor(result,values));
+		Variable_composite_evaluate_functor(result,no_values));
+	// reset the current values
+	std::for_each(current_values.rbegin(),current_values.rend(),
+		Variable_set_input_values(Variable_handle(this)));
 
 	return (result);
 }
 
 class Variable_composite_evaluate_derivative_functor
 //******************************************************************************
-// LAST MODIFIED : 16 November 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 // A unary function (functor) for evaluating the derivative of a composite
@@ -235,7 +242,13 @@ class Variable_composite_evaluate_derivative_functor
 		Variable_composite_evaluate_derivative_functor(
 			const Variable_composite_handle& dependent_variable,
 			Variable_derivative_matrix_handle& result,
-			std::list<Variable_input_handle>& independent_variables,
+			std::list<
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			>& independent_variables,
 			std::list<Variable_input_value_handle>& values):first(true),
 			dependent_variable(dependent_variable),result(result),
 			independent_variables(independent_variables),values(values)
@@ -349,29 +362,55 @@ class Variable_composite_evaluate_derivative_functor
 		bool first;
 		Variable_composite_handle dependent_variable;
 		Variable_derivative_matrix_handle& result;
-		std::list<Variable_input_handle>& independent_variables;
+		std::list<
+#if defined (USE_VARIABLE_INPUT)
+			Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+			Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+			>& independent_variables;
 		std::list<Variable_input_value_handle>& values;
 };
 
 Variable_handle Variable_composite::evaluate_derivative(
-	std::list<Variable_input_handle>& independent_variables,
+	std::list<
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	>& independent_variables,
 	std::list<Variable_input_value_handle>& values)
 //******************************************************************************
-// LAST MODIFIED : 16 November 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 // Overload Variable::evaluate_derivative.
 //==============================================================================
 {
+	std::list<Variable_input_value_handle> current_values(0),no_values(0);
 	Variable_derivative_matrix_handle result(0);
 
+	// get the specified values
+	std::for_each(values.begin(),values.end(),Variable_get_input_values(
+		Variable_handle(this),current_values));
+	// override the specified values
+	std::for_each(values.begin(),values.end(),Variable_set_input_values(
+		Variable_handle(this)));
+	// evaluate derivative
 	std::for_each(variables_list.begin(),variables_list.end(),
 		Variable_composite_evaluate_derivative_functor(
-		Variable_composite_handle(this),result,independent_variables,values));
+		Variable_composite_handle(this),result,independent_variables,no_values));
+	// reset the current values
+	std::for_each(current_values.rbegin(),current_values.rend(),
+		Variable_set_input_values(Variable_handle(this)));
 
 	return (result);
 }
 
+#if defined (USE_ITERATORS)
+//???DB.  To be done
+#else // defined (USE_ITERATORS)
 class Variable_composite_calculate_size_functor
 //******************************************************************************
 // LAST MODIFIED : 11 December 2003
@@ -448,6 +487,7 @@ Vector *Variable_composite::scalars()
 
 	return (vector);
 }
+#endif // defined (USE_ITERATORS)
 
 Variable_handle Variable_composite::evaluate_local()
 //******************************************************************************
@@ -464,10 +504,16 @@ Variable_handle Variable_composite::evaluate_local()
 	return (0);
 }
 
-void Variable_composite::evaluate_derivative_local(Matrix&,
-	std::list<Variable_input_handle>&)
+bool Variable_composite::evaluate_derivative_local(Matrix&,
+	std::list<
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	>&)
 //******************************************************************************
-// LAST MODIFIED : 16 November 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -476,12 +522,20 @@ void Variable_composite::evaluate_derivative_local(Matrix&,
 	Assert(false,std::logic_error(
 		"Variable_composite::evaluate_derivative_local.  "
 		"Should not come here"));
+
+	return (false);
 }
 
 Variable_handle Variable_composite::get_input_value_local(
-	const Variable_input_handle& input)
+	const
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	& input)
 //******************************************************************************
-// LAST MODIFIED : 17 November 2003
+// LAST MODIFIED : 2 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -500,26 +554,43 @@ Variable_handle Variable_composite::get_input_value_local(
 	return (result);
 }
 
-int Variable_composite::set_input_value_local(
-	const Variable_input_handle& input,const Variable_handle& value)
+bool Variable_composite::set_input_value_local(
+	const
+#if defined (USE_VARIABLE_INPUT)
+	Variable_input_handle
+#else // defined (USE_VARIABLE_INPUT)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLE_INPUT)
+	& input,
+	const
+#if defined (USE_VARIABLES_AS_COMPONENTS)
+	Variable_handle
+#else // defined (USE_VARIABLES_AS_COMPONENTS)
+	Variable_io_specifier_handle
+#endif // defined (USE_VARIABLES_AS_COMPONENTS)
+	& value)
 //******************************************************************************
-// LAST MODIFIED : 17 November 2003
+// LAST MODIFIED : 9 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	int return_code=0;
+	int result;
 	std::list<Variable_handle>::iterator variable_iterator=variables_list.begin();
 	Variable_size_type i=variables_list.size();
 
-	while ((i>0)&&(0==return_code))
+	result=false;
+	while (i>0)
 	{
-		return_code=(*variable_iterator)->set_input_value(input,value);
+		if ((*variable_iterator)->set_input_value(input,value))
+		{
+			result=true;
+		}
 		variable_iterator++;
 		i--;
 	}
 
-	return (return_code);
+	return (result);
 }
 
 string_handle Variable_composite::get_string_representation_local()

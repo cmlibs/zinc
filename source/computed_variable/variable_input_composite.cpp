@@ -1,32 +1,86 @@
 //******************************************************************************
 // FILE : variable_input_composite.cpp
 //
-// LAST MODIFIED : 26 November 2003
+// LAST MODIFIED : 4 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
 
+#include "computed_variable/variable_base.hpp"
+
 #include <algorithm>
 #include <iterator>
-#include <stdexcept>
 #include <typeinfo>
 #include <iostream>
 
-//???DB.  Put in include?
-//???DB.  With smart pointers?
-const bool Assert_on=true;
-
-template<class Assertion,class Exception>inline void Assert(
-	Assertion assertion,Exception exception)
-{
-	if (Assert_on&&!(assertion)) throw exception;
-}
-
 #include "computed_variable/variable_input_composite.hpp"
+#if defined (GENERALIZE_COMPOSITE_INPUT)
+#include "computed_variable/variable_derivative_matrix.hpp"
+#endif // defined (GENERALIZE_COMPOSITE_INPUT)
 
 // class Variable_input_composite
 // ------------------------------
 
+#if defined (GENERALIZE_COMPOSITE_INPUT)
+Variable_input_composite::Variable_input_composite():Variable_input()
+//******************************************************************************
+// LAST MODIFIED : 13 January 2004
+//
+// DESCRIPTION :
+// Constructor.
+//==============================================================================
+{}
+
+Variable_input_composite::~Variable_input_composite()
+//******************************************************************************
+// LAST MODIFIED : 13 January 2004
+//
+// DESCRIPTION :
+// Destructor.
+//==============================================================================
+{
+	// do nothing
+}
+
+#if defined (USE_SCALAR_MAPPING)
+Variable_size_type Variable_input_composite::size()
+//******************************************************************************
+// LAST MODIFIED : 14 January 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	Variable_size_type result;
+
+	result=0;
+	if (this)
+	{
+		std::list< std::pair<Variable_size_type,Variable_size_type> >
+			identity_scalar_mapping=scalar_mapping(Variable_input_handle(this));
+
+		if (0<identity_scalar_mapping.size())
+		{
+			result=(identity_scalar_mapping.back()).first;
+		}
+	}
+
+	return (result);
+}
+#endif // defined (USE_SCALAR_MAPPING)
+
+#if defined (USE_ITERATORS)
+Variable_size_type Variable_input_composite::number_differentiable()
+//******************************************************************************
+// LAST MODIFIED : 20 January 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	//???DB.  To be done
+	return (0);
+}
+#endif // defined (USE_ITERATORS)
+#else // defined (GENERALIZE_COMPOSITE_INPUT)
 Variable_input_composite::Variable_input_composite(
 	std::list<Variable_input_handle>& inputs_list) : Variable_input(),
 	inputs_list(0)
@@ -68,7 +122,7 @@ Variable_input_composite::Variable_input_composite(
 }
 
 Variable_input_composite::Variable_input_composite(
-	Variable_input_handle& input_1,Variable_input_handle& input_2):
+	const Variable_input_handle& input_1,const Variable_input_handle& input_2):
 	Variable_input(),inputs_list(0)
 //******************************************************************************
 // LAST MODIFIED : 24 November 2003
@@ -133,7 +187,7 @@ Variable_input_composite& Variable_input_composite::operator=(
 
 class Variable_input_composite_sum_sizes_functor
 //******************************************************************************
-// LAST MODIFIED : 14 November 2003
+// LAST MODIFIED : 30 December 2003
 //
 // DESCRIPTION :
 // A unary function (functor) for summing the sizes of the inputs that make a
@@ -146,18 +200,30 @@ class Variable_input_composite_sum_sizes_functor
 		{
 			sum=0;
 		};
-		int operator() (Variable_input_handle& input)
+		int operator() (const Variable_input_handle& input)
 		{
-			sum += input->size();
+			sum += input->
+#if defined (USE_ITERATORS)
+				number_differentiable
+#else // defined (USE_ITERATORS)
+				size
+#endif // defined (USE_ITERATORS)
+				();
 			return (0);
 		};
 	private:
 		Variable_size_type& sum;
 };
 
-Variable_size_type Variable_input_composite::size()
+Variable_size_type Variable_input_composite::
+#if defined (USE_ITERATORS)
+	number_differentiable
+#else // defined (USE_ITERATORS)
+	size
+#endif // defined (USE_ITERATORS)
+	()
 //******************************************************************************
-// LAST MODIFIED : 14 November 2003
+// LAST MODIFIED : 3 February 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -190,7 +256,242 @@ bool Variable_input_composite::operator==(const Variable_input& input)
 		return (false);
 	}
 }
+#endif // defined (GENERALIZE_COMPOSITE_INPUT)
 
+#if defined (GENERALIZE_COMPOSITE_INPUT)
+//???DB.  Do for each composite separately?
+#if defined (OLD_CODE)
+class Variable_input_composite_evaluate_derivative_functor
+//******************************************************************************
+// LAST MODIFIED : 31 December 2003
+//
+// DESCRIPTION :
+// A unary functor (Functor) for merging derivative matrices for the different
+// components of a composite input
+//==============================================================================
+{
+	public:
+		Variable_input_composite_evaluate_derivative_functor(
+			const Variable_handle& variable,
+			std::list<Variable_input_handle>& independent_variables,
+			std::list<Variable_input_value_handle>& values,
+			std::list<Variable_input_handle>::iterator& input_iterator,
+			Variable_derivative_matrix_handle& result):input_iterator(input_iterator),
+			independent_variables(independent_variables),values(values),
+			independent_variable_number_of_values(0),result(result),variable(variable)
+		{
+			std::list<Matrix>::iterator result_iterator;
+			std::list<Variable_input_handle>::iterator independent_variable_iterator;
+			Variable_size_type i,j;
+
+			input_index=0;
+			result_input_iterator=result->independent_variables.begin();
+			for (independent_variable_iterator=independent_variables.begin();
+				independent_variable_iterator!=input_iterator;
+				independent_variable_iterator++)
+			{
+				input_index++;
+				result_input_iterator++;
+			}
+			independent_variable_number_of_values.resize(input_index);
+			result_iterator=(result->matrices).begin();
+			number_of_matrices=1;
+			for (i=0;i<input_index;i++)
+			{
+				independent_variable_number_of_values[i]=result_iterator->size2();
+				for (j=number_of_matrices;j>0;j--)
+				{
+					result_iterator++;
+				}
+				number_of_matrices *= 2;
+			}
+			for (i=independent_variables.size()-input_index;i>0;i--)
+			{
+				number_of_matrices *= 2;
+			}
+			number_of_matrices -= 1;
+		};
+		~Variable_input_composite_evaluate_derivative_functor() {};
+		int operator() (Variable_input_handle& input)
+		{
+			int composite_independent_variable_factor,
+				composite_independent_variable_step;
+			std::list<Matrix>::iterator derivative_iterator,result_iterator;
+			unsigned i,j,matrix_number,number_of_rows;
+			Variable_derivative_matrix_handle derivative;
+			Variable_handle derivative_uncast;
+			Variable_size_type derivative_independent_number_of_values,
+				result_independent_number_of_values;
+
+			*input_iterator=input;
+			// calculate the derivative for input
+			derivative_uncast=variable->evaluate_derivative(independent_variables,
+				values);
+			derivative=
+#if defined (USE_SMART_POINTER)
+				boost::dynamic_pointer_cast<Variable_derivative_matrix,Variable>(
+				derivative_uncast);
+#else /* defined (USE_SMART_POINTER) */
+				dynamic_cast<Variable_derivative_matrix *>(derivative_uncast);
+#endif /* defined (USE_SMART_POINTER) */
+			if (derivative)
+			{
+				// merge derivative matrix into result
+				Assert((number_of_matrices==(derivative->matrices).size())&&
+					(number_of_matrices==(result->matrices).size()),std::logic_error(
+					"Variable_input_composite_evaluate_derivative_functor().  "
+					"Incorrect number_of_matrices"));
+				composite_independent_variable_factor=1;
+				derivative_iterator=(derivative->matrices).begin();
+				result_iterator=(result->matrices).begin();
+				for (i=input_index;i>0;i--)
+				{
+					for (j=composite_independent_variable_factor;j>0;j--)
+					{
+						derivative_iterator++;
+						result_iterator++;
+					}
+					composite_independent_variable_factor *= 2;
+				}
+				derivative_independent_number_of_values=derivative_iterator->size2();
+				result_independent_number_of_values=result_iterator->size2();
+				derivative_iterator=(derivative->matrices).begin();
+				result_iterator=(result->matrices).begin();
+				number_of_rows=result_iterator->size1();
+				for (matrix_number=1;matrix_number<=number_of_matrices;matrix_number++)
+				{
+					Assert((number_of_rows==derivative_iterator->size1())&&
+						(number_of_rows==result_iterator->size1()),std::logic_error(
+						"Variable_input_composite_evaluate_derivative_functor().  "
+						"Incorrect number_of_rows"));
+					if ((matrix_number/composite_independent_variable_factor)%2)
+					{
+						/* derivative involves composite independent variable */
+						int column_number,derivative_column_number,number_of_columns=
+							(result_iterator->size2)()+(derivative_iterator->size2)(),
+							result_column_number;
+						Matrix matrix(number_of_rows,number_of_columns);
+
+						composite_independent_variable_step=1;
+						j=matrix_number;
+						for (i=0;i<input_index;i++)
+						{
+							if (j%2)
+							{
+								composite_independent_variable_step *=
+									independent_variable_number_of_values[i];
+							}
+							j /= 2;
+						}
+						derivative_column_number=0;
+						result_column_number=0;
+						column_number=0;
+						while (column_number<number_of_columns)
+						{
+							for (j=composite_independent_variable_step*
+								result_independent_number_of_values;j>0;j--)
+							{
+								for (i=0;i<number_of_rows;i++)
+								{
+									matrix(i,column_number)=
+										(*result_iterator)(i,result_column_number);
+								}
+								result_column_number++;
+								column_number++;
+							}
+							for (j=composite_independent_variable_step*
+								derivative_independent_number_of_values;j>0;j--)
+							{
+								for (i=0;i<number_of_rows;i++)
+								{
+									matrix(i,column_number)=
+										(*derivative_iterator)(i,derivative_column_number);
+								}
+								derivative_column_number++;
+								column_number++;
+							}
+						}
+						// update result matrix
+						result_iterator->resize(number_of_rows,number_of_columns);
+							//???DB.  Memory leak?
+						*result_iterator=matrix;
+					}
+					derivative_iterator++;
+					result_iterator++;
+				}
+			}
+			else
+			{
+				//???DB.  Currently only know how to merge derivative matrices
+			}
+			// update independent variables for result
+				//???DB.  Memory leak?
+			*result_input_iterator=Variable_input_handle(
+				new Variable_input_composite(*result_input_iterator,input));
+
+			return (1);
+		};
+	private:
+		std::list<Variable_input_handle>::iterator& input_iterator;
+		std::list<Variable_input_handle>& independent_variables;
+		std::list<Variable_input_handle>::iterator result_input_iterator;
+		std::list<Variable_input_value_handle>& values;
+		std::vector<Variable_size_type> independent_variable_number_of_values;
+		Variable_derivative_matrix_handle& result;
+		Variable_handle variable;
+		Variable_size_type input_index,number_of_matrices;
+};
+
+Variable_handle Variable_input_composite::evaluate_derivative(
+	Variable_handle dependent_variable,
+	std::list<Variable_input_handle>& independent_variables,
+	std::list<Variable_input_handle>::iterator& composite_independent_variable,
+	std::list<Variable_input_value_handle>& values)
+//******************************************************************************
+// LAST MODIFIED : 11 January 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	std::list<Variable_input_handle>::iterator input_composite_iterator;
+	std::list<Variable_input_value_handle> current_values(0),no_values(0);
+	Variable_derivative_matrix_handle derivative_matrix;
+	Variable_handle derivative;
+
+	// get the specified values
+	std::for_each(values.begin(),values.end(),Variable_get_input_values(
+		dependent_variable,current_values));
+	// override the specified values
+	std::for_each(values.begin(),values.end(),Variable_set_input_values(
+		dependent_variable));
+	input_composite_iterator=inputs_list.begin();
+	*composite_independent_variable= *input_composite_iterator;
+	derivative=dependent_variable->evaluate_derivative(independent_variables,
+		no_values);
+	derivative_matrix=
+#if defined (USE_SMART_POINTER)
+		boost::dynamic_pointer_cast<Variable_derivative_matrix,Variable>(
+		derivative);
+#else /* defined (USE_SMART_POINTER) */
+		dynamic_cast<Variable_derivative_matrix *>(*derivative);
+#endif /* defined (USE_SMART_POINTER) */
+	input_composite_iterator++;
+	Variable_input_composite_evaluate_derivative_functor
+		evaluate_derivative_functor(dependent_variable,independent_variables,
+		no_values,composite_independent_variable,derivative_matrix);
+	std::for_each(input_composite_iterator,inputs_list.end(),
+		evaluate_derivative_functor);
+	*composite_independent_variable=Variable_input_handle(this);
+	// need to set independent_variables because evaluate_derivative copies
+	derivative_matrix->independent_variables=independent_variables;
+	// reset the current values
+	std::for_each(current_values.rbegin(),current_values.rend(),
+		Variable_set_input_values(dependent_variable));
+
+	return (derivative);
+}
+#endif // defined (OLD_CODE)
+#else // defined (GENERALIZE_COMPOSITE_INPUT)
 std::list<Variable_input_handle>::iterator Variable_input_composite::begin()
 //******************************************************************************
 // LAST MODIFIED : 6 October 2003
@@ -210,3 +511,4 @@ std::list<Variable_input_handle>::iterator Variable_input_composite::end()
 {
 	return (inputs_list.end());
 }
+#endif // defined (GENERALIZE_COMPOSITE_INPUT)
