@@ -288,6 +288,7 @@ Main program for unemap
 	struct FE_field *map_fit_field=(struct FE_field *)NULL;
 	struct FE_node_selection *node_selection=(struct FE_node_selection *)NULL;
 	struct FE_node_selection *data_selection=(struct FE_node_selection *)NULL;
+	struct FE_time *fe_time = (struct FE_time *)NULL;
 	struct Graphical_material *default_graphical_material=(struct Graphical_material *)NULL;
 	struct Graphical_material *default_selected_material=(struct Graphical_material *)NULL;	
 	struct Graphical_material *electrode_selected_material=(struct Graphical_material *)NULL;
@@ -672,6 +673,8 @@ Main program for unemap
 		/* interactive_tool manager */
 		interactive_tool_manager=CREATE(MANAGER(Interactive_tool))();
 
+		fe_time = ACCESS(FE_time)(CREATE(FE_time)());
+
 		scene_manager=CREATE_MANAGER(Scene)();
 		if (light_model_manager=CREATE_MANAGER(Light_model)())
 		{
@@ -778,17 +781,6 @@ Main program for unemap
 			{
 				DESTROY(Computed_field)(&computed_field);
 			}
-			if (!((computed_field=CREATE(Computed_field)("default_coordinate"))&&
-				Computed_field_set_coordinate_system(computed_field,
-					&rect_coord_system)&&
-				Computed_field_set_type_default_coordinate(computed_field,
-					computed_field_manager)&&
-				Computed_field_set_read_only(computed_field)&&
-				ADD_OBJECT_TO_MANAGER(Computed_field)(computed_field,
-					computed_field_manager)))
-			{
-				DESTROY(Computed_field)(&computed_field);
-			}
 			if (!((computed_field=CREATE(Computed_field)("xi"))&&
 				Computed_field_set_coordinate_system(computed_field,
 					&rect_coord_system)&&
@@ -802,6 +794,8 @@ Main program for unemap
 			/* Add Computed_fields to the Computed_field_package */			
 			if (computed_field_package)
 			{
+				Computed_field_register_types_coordinate(
+					computed_field_package);
 				Computed_field_register_types_vector_operations(
 					computed_field_package);
 				Computed_field_register_types_component_operations(
@@ -810,7 +804,7 @@ Main program for unemap
 				{
 						Computed_field_register_types_finite_element(
 							computed_field_package,
-							fe_field_manager);
+							fe_field_manager, fe_time);
 				}
 			}
 		}
@@ -877,14 +871,14 @@ Main program for unemap
 		node_tool=CREATE(Node_tool)(interactive_tool_manager,
 			node_manager,/*use_data*/0,node_group_manager,element_manager,
 			node_selection,computed_field_package,default_graphical_material,
-			&user_interface);		
+			&user_interface, time_keeper);		
 		transform_tool=create_Interactive_tool_transform(&user_interface);
 		ADD_OBJECT_TO_MANAGER(Interactive_tool)(transform_tool,interactive_tool_manager);
 		all_FE_element_field_info=CREATE_LIST(FE_element_field_info)();
 		/* FE_element_shape manager */
 		/*???DB.  To be done */
 		all_FE_element_shape=CREATE_LIST(FE_element_shape)();
-		unemap_package=CREATE(Unemap_package)(fe_field_manager,
+		unemap_package=CREATE(Unemap_package)(fe_field_manager, fe_time,
 			element_group_manager,node_manager,data_manager,data_group_manager,
 			node_group_manager,fe_basis_manager,element_manager,computed_field_manager,
 			interactive_tool_manager,node_selection);	
@@ -941,7 +935,8 @@ Main program for unemap
 			system_window_data.y = -1;
 #if defined (UNEMAP_USE_3D)
 			/* create and store the map fit field  */
-			map_fit_field=create_mapping_type_fe_field("fit",fe_field_manager);
+			map_fit_field=create_mapping_type_fe_field("fit",fe_field_manager,
+				fe_time);
 			set_unemap_package_map_fit_field(unemap_package,map_fit_field);
 			/* get the location of the default_torso file from Xresoures*/
 			standard_torso_defaults.standard_torso_file= "";			
@@ -954,7 +949,7 @@ Main program for unemap
 				/* read in the default torso node and element groups */
 				if(read_FE_node_and_elem_groups_and_return_name_given_file_name(
 					standard_torso_defaults.standard_torso_file,fe_field_manager,
-					node_manager,element_manager,node_group_manager,
+					fe_time, node_manager,element_manager,node_group_manager,
 					data_group_manager,element_group_manager,fe_basis_manager,
 					&default_torso_group_name))
 				{
@@ -1084,6 +1079,8 @@ Main program for unemap
 			DEACCESS(Graphical_material)(&electrode_selected_material);			
 			DESTROY(MANAGER(Graphical_material))(&graphical_material_manager);
 			DESTROY(MANAGER(Texture))(&texture_manager);
+
+			DEACCESS(FE_time)(&fe_time);
 
 			DEACCESS(Light_model)(&default_light_model);
 			DESTROY(MANAGER(Light_model))(&light_model_manager);
