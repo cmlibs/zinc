@@ -454,6 +454,28 @@ Calls Element_point_ranges_selection_update.
 	return (return_code);
 } /* Element_point_ranges_selection_select_element_point_ranges */
 
+int Element_point_ranges_select_in_Element_point_ranges_selection(
+	struct Element_point_ranges *element_point_ranges,
+	void *element_point_ranges_selection_void)
+/*******************************************************************************
+LAST MODIFIED : 18 May 2000
+
+DESCRIPTION :
+Element_point_ranges iterator version of
+Element_point_ranges_selection_select_element_point_ranges
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Element_point_ranges_select_in_Element_point_ranges_selection);
+	return_code=Element_point_ranges_selection_select_element_point_ranges(
+		(struct Element_point_ranges_selection *)
+		element_point_ranges_selection_void,element_point_ranges);
+	LEAVE;
+
+	return (return_code);
+} /* Element_point_ranges_select_in_Element_point_ranges_selection */
+
 int FE_element_select_grid_field_ranges(struct FE_element *element,
 	void *select_data_void)
 /*******************************************************************************

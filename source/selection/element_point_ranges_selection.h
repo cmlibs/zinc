@@ -158,6 +158,17 @@ newly_unselected_element_point_ranges_list if it is currently there.
 Calls Element_point_ranges_selection_update.
 ==============================================================================*/
 
+int Element_point_ranges_select_in_Element_point_ranges_selection(
+	struct Element_point_ranges *element_point_ranges,
+	void *element_point_ranges_selection_void);
+/*******************************************************************************
+LAST MODIFIED : 18 May 2000
+
+DESCRIPTION :
+Element_point_ranges iterator version of
+Element_point_ranges_selection_select_element_point_ranges
+==============================================================================*/
+
 int FE_element_select_grid_field_ranges(struct FE_element *element,
 	void *select_data_void);
 /*******************************************************************************
