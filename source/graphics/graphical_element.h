@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element.h
 
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 29 February 2000
 
 DESCRIPTION :
 Graphical element group data structure.
@@ -415,6 +415,74 @@ Clears all the selected objects in the <gt_element_group>.
 Only parent scene is authorised to do this.
 Should only be called by Scene_object_clear_selected, otherwise need callback to
 inform it of change.
+==============================================================================*/
+
+int GT_element_group_is_element_point_ranges_selected(
+	struct GT_element_group *gt_element_group,
+	struct Element_point_ranges *element_point_ranges);
+/*******************************************************************************
+LAST MODIFIED : 29 February 2000
+
+DESCRIPTION :
+Returns true if <element_point_ranges> overlaps any of the
+selected_element_point_ranges list of <gt_element_group>.
+==============================================================================*/
+
+int GT_element_group_get_selected_element_point_ranges_list(
+	struct GT_element_group *gt_element_group,
+	struct LIST(Element_point_ranges) *element_point_ranges_list);
+/*******************************************************************************
+LAST MODIFIED : 29 February 2000
+
+DESCRIPTION :
+Ensures all the selected elements in <gt_element_group> are in
+<element_point_ranges_list>. Does not clear <element_point_ranges_list> first.
+==============================================================================*/
+
+int GT_element_group_modify_selected_element_point_ranges_list(
+	struct GT_element_group *gt_element_group,
+	enum GT_element_group_select_modify_mode modify_mode,
+	struct LIST(Element_point_ranges) *element_point_ranges_list);
+/*******************************************************************************
+LAST MODIFIED : 29 February 2000
+
+DESCRIPTION :
+Modifies the list of selected elements in <gt_element_group> with
+<element_point_ranges_list> according to the <modify_mode>: add, remove,
+replace, toggle etc.
+==============================================================================*/
+
+int GT_element_group_is_element_selected(
+	struct GT_element_group *gt_element_group,struct FE_element *element);
+/*******************************************************************************
+LAST MODIFIED : 25 February 2000
+
+DESCRIPTION :
+Returns true if <element> is in the selected elements list of
+<gt_element_group>.
+==============================================================================*/
+
+int GT_element_group_get_selected_element_list(
+	struct GT_element_group *gt_element_group,
+	struct LIST(FE_element) *element_list);
+/*******************************************************************************
+LAST MODIFIED : 25 February 2000
+
+DESCRIPTION :
+Ensures all the selected elements in <gt_element_group> are in <element_list>.
+Does not clear <element_list> first.
+==============================================================================*/
+
+int GT_element_group_modify_selected_element_list(
+	struct GT_element_group *gt_element_group,
+	enum GT_element_group_select_modify_mode modify_mode,
+	struct LIST(FE_element) *element_list);
+/*******************************************************************************
+LAST MODIFIED : 25 February 2000
+
+DESCRIPTION :
+Modifies the list of selected elements in <gt_element_group> with <element_list>
+according to the <modify_mode>: add, remove, replace, toggle etc.
 ==============================================================================*/
 
 int GT_element_group_is_node_selected(

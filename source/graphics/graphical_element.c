@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element.c
 
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 29 February 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -16,6 +16,7 @@ DESCRIPTION :
 #include "general/object.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/element_group_settings.h"
+#include "graphics/element_point_ranges.h"
 #include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
 #include "graphics/makegtobj.h"
@@ -36,7 +37,7 @@ struct GT_element_group_callback_data
 
 struct GT_element_group
 /*******************************************************************************
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 28 February 2000
 
 DESCRIPTION :
 Structure for maintaining a graphical rendition of an element group.
@@ -50,6 +51,7 @@ Structure for maintaining a graphical rendition of an element group.
 	/* the data group - of the same name as the element group */
 	struct GROUP(FE_node) *data_group;
 	/* selected object lists */
+	struct LIST(Element_point_ranges) *selected_element_point_ranges_list;
 	struct LIST(FE_element) *selected_element_list;
 	struct LIST(FE_node) *selected_node_list;
 	/* settings shared by whole rendition */
@@ -81,7 +83,7 @@ struct GT_element_group *CREATE(GT_element_group)(
 	struct GROUP(FE_element) *element_group,struct GROUP(FE_node) *node_group,
 	struct GROUP(FE_node) *data_group)
 /*******************************************************************************
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 28 February 2000
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphical finite element group for
@@ -104,10 +106,14 @@ precede removing the node and data groups from their respective managers.
 		{
 			gt_element_group->list_of_settings=
 				(struct LIST(GT_element_settings) *)NULL;
+			gt_element_group->selected_element_point_ranges_list=
+				(struct LIST(Element_point_ranges) *)NULL;
 			gt_element_group->selected_element_list=(struct LIST(FE_element) *)NULL;
 			gt_element_group->selected_node_list=(struct LIST(FE_node) *)NULL;
 			if ((gt_element_group->list_of_settings=
 				CREATE(LIST(GT_element_settings))())&&
+				(gt_element_group->selected_element_point_ranges_list=
+					CREATE(LIST(Element_point_ranges))())&&
 				(gt_element_group->selected_element_list=CREATE(LIST(FE_element))())&&
 				(gt_element_group->selected_node_list=CREATE(LIST(FE_node))()))
 			{
@@ -137,6 +143,8 @@ precede removing the node and data groups from their respective managers.
 			{
 				DESTROY(LIST(GT_element_settings))(
 					&(gt_element_group->list_of_settings));
+				DESTROY(LIST(Element_point_ranges))(
+					&(gt_element_group->selected_element_point_ranges_list));
 				DESTROY(LIST(FE_element))(&(gt_element_group->selected_element_list));
 				DESTROY(LIST(FE_node))(&(gt_element_group->selected_node_list));
 				DEALLOCATE(gt_element_group);
@@ -162,7 +170,7 @@ precede removing the node and data groups from their respective managers.
 int DESTROY(GT_element_group)(
 	struct GT_element_group **gt_element_group_address)
 /*******************************************************************************
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 28 February 2000
 
 DESCRIPTION :
 Frees the memory for <**gt_element_group> and sets <*gt_element_group> to NULL.
@@ -189,6 +197,8 @@ Frees the memory for <**gt_element_group> and sets <*gt_element_group> to NULL.
 			{
 				DESTROY(LIST(GT_element_settings))(
 					&(gt_element_group->list_of_settings));
+				DESTROY(LIST(Element_point_ranges))(
+					&(gt_element_group->selected_element_point_ranges_list));
 				DESTROY(LIST(FE_element))(&(gt_element_group->selected_element_list));
 				DESTROY(LIST(FE_node))(&(gt_element_group->selected_node_list));
 #if defined (OLD_CODE)
@@ -823,7 +833,7 @@ int GT_element_group_build_graphics_objects(
 	struct GT_element_group *gt_element_group,struct FE_element *changed_element,
 	struct FE_node *changed_node)
 /*******************************************************************************
-LAST MODIFIED : 20 February 2000
+LAST MODIFIED : 28 February 2000
 
 DESCRIPTION :
 Adds or edits a graphics object for each settings in <gt_element_group> without
@@ -860,6 +870,8 @@ a graphics object or affected by <changed_element> or <changed_node>.
 				gt_element_group->circle_discretization;
 			settings_to_object_data.changed_element=changed_element;
 			settings_to_object_data.changed_node=changed_node;
+			settings_to_object_data.selected_element_point_ranges_list=
+				gt_element_group->selected_element_point_ranges_list;
 			settings_to_object_data.selected_element_list=
 				gt_element_group->selected_element_list;
 			settings_to_object_data.selected_node_list=
@@ -1594,7 +1606,7 @@ DESCRIPTION :
 
 int GT_element_group_clear_selected(struct GT_element_group *gt_element_group)
 /*******************************************************************************
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 28 February 2000
 
 DESCRIPTION :
 Clears all the selected objects in the <gt_element_group>.
@@ -1608,16 +1620,33 @@ inform it of change.
 	ENTER(GT_element_group_clear_selected);
 	if (gt_element_group)
 	{
-		REMOVE_ALL_OBJECTS_FROM_LIST(FE_element)(
-			gt_element_group->selected_element_list);
-		REMOVE_ALL_OBJECTS_FROM_LIST(FE_node)(gt_element_group->selected_node_list);
-		/* update the graphics to match */
-		FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
-			GT_element_settings_selected_elements_change,(void *)NULL,
-			gt_element_group->list_of_settings);
-		FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
-			GT_element_settings_selected_nodes_change,(void *)NULL,
-			gt_element_group->list_of_settings);
+		if (0<NUMBER_IN_LIST(Element_point_ranges)(
+			gt_element_group->selected_element_point_ranges_list))
+		{
+			REMOVE_ALL_OBJECTS_FROM_LIST(Element_point_ranges)(
+				gt_element_group->selected_element_point_ranges_list);
+			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+				GT_element_settings_selected_element_points_change,(void *)NULL,
+				gt_element_group->list_of_settings);
+		}
+		if (0<NUMBER_IN_LIST(FE_element)(
+			gt_element_group->selected_element_list))
+		{
+			REMOVE_ALL_OBJECTS_FROM_LIST(FE_element)(
+				gt_element_group->selected_element_list);
+			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+				GT_element_settings_selected_elements_change,(void *)NULL,
+				gt_element_group->list_of_settings);
+		}
+		if (0<NUMBER_IN_LIST(FE_node)(
+			gt_element_group->selected_node_list))
+		{
+			REMOVE_ALL_OBJECTS_FROM_LIST(FE_node)(
+				gt_element_group->selected_node_list);
+			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+				GT_element_settings_selected_nodes_change,(void *)NULL,
+				gt_element_group->list_of_settings);
+		}
 		GT_element_group_build_graphics_objects(gt_element_group,
 			(struct FE_element *)NULL,(struct FE_node *)NULL);
 		return_code=1;
@@ -1632,6 +1661,161 @@ inform it of change.
 
 	return (return_code);
 } /* GT_element_group_clear_selected */
+
+int GT_element_group_is_element_point_ranges_selected(
+	struct GT_element_group *gt_element_group,
+	struct Element_point_ranges *element_point_ranges)
+/*******************************************************************************
+LAST MODIFIED : 29 February 2000
+
+DESCRIPTION :
+Returns true if <element_point_ranges> overlaps any of the
+selected_element_point_ranges list of <gt_element_group>.
+==============================================================================*/
+{
+	int return_code;
+	struct Element_point_ranges *existing_element_point_ranges;
+	struct Element_point_ranges_identifier identifier;
+
+	ENTER(GT_element_group_is_element_point_ranges_selected);
+	if (gt_element_group&&element_point_ranges)
+	{
+		Element_point_ranges_get_identifier(element_point_ranges,&identifier);
+		if (existing_element_point_ranges=
+			FIND_BY_IDENTIFIER_IN_LIST(Element_point_ranges,identifier)(
+				&identifier,gt_element_group->selected_element_point_ranges_list))
+		{
+			return_code=Multi_ranges_overlap(
+				Element_point_ranges_get_ranges(element_point_ranges),
+				Element_point_ranges_get_ranges(existing_element_point_ranges));
+		}
+		else
+		{
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_group_is_element_point_ranges_selected.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_group_is_element_point_ranges_selected */
+
+int GT_element_group_get_selected_element_point_ranges_list(
+	struct GT_element_group *gt_element_group,
+	struct LIST(Element_point_ranges) *element_point_ranges_list)
+/*******************************************************************************
+LAST MODIFIED : 29 February 2000
+
+DESCRIPTION :
+Ensures all the selected elements in <gt_element_group> are in
+<element_point_ranges_list>. Does not clear <element_point_ranges_list> first.
+Note that all structures added to <element_point_ranges_list> will be new.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_element_group_get_selected_element_point_ranges_list);
+	if (gt_element_group&&element_point_ranges_list)
+	{
+		return_code=FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
+			Element_point_ranges_add_to_list,(void *)element_point_ranges_list,
+			gt_element_group->selected_element_point_ranges_list);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_group_get_selected_element_point_ranges_list.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_group_get_selected_element_point_ranges_list */
+
+int GT_element_group_modify_selected_element_point_ranges_list(
+	struct GT_element_group *gt_element_group,
+	enum GT_element_group_select_modify_mode modify_mode,
+	struct LIST(Element_point_ranges) *element_point_ranges_list)
+/*******************************************************************************
+LAST MODIFIED : 29 February 2000
+
+DESCRIPTION :
+Modifies the list of selected elements in <gt_element_group> with
+<element_point_ranges_list> according to the <modify_mode>: add, remove,
+replace, toggle etc.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_element_group_modify_selected_element_point_ranges_list);
+	if (gt_element_group&&element_point_ranges_list)
+	{
+		switch (modify_mode)
+		{
+			case GT_ELEMENT_GROUP_SELECT_ADD:
+			{
+				return_code=FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
+					Element_point_ranges_add_to_list,
+					(void *)gt_element_group->selected_element_point_ranges_list,
+					element_point_ranges_list);
+			} break;
+			case GT_ELEMENT_GROUP_SELECT_REMOVE:
+			{
+				return_code=FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
+					Element_point_ranges_remove_from_list,
+					(void *)gt_element_group->selected_element_point_ranges_list,
+					element_point_ranges_list);
+			} break;
+			case GT_ELEMENT_GROUP_SELECT_REPLACE:
+			{
+				return_code=
+					REMOVE_ALL_OBJECTS_FROM_LIST(Element_point_ranges)(
+						gt_element_group->selected_element_point_ranges_list)&&
+					FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
+						Element_point_ranges_add_to_list,
+						(void *)gt_element_group->selected_element_point_ranges_list,
+						element_point_ranges_list);
+			} break;
+			case GT_ELEMENT_GROUP_SELECT_TOGGLE:
+			{
+				return_code=FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
+					Element_point_ranges_toggle_in_list,
+					(void *)gt_element_group->selected_element_point_ranges_list,
+					element_point_ranges_list);
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"GT_element_group_modify_selected_element_point_ranges_list.  "
+					"Unknown modify_mode");
+				return_code=0;
+			}
+		}
+		/* update the graphics to match */
+		FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+			GT_element_settings_selected_element_points_change,(void *)NULL,
+			gt_element_group->list_of_settings);
+		GT_element_group_build_graphics_objects(gt_element_group,
+			(struct FE_element *)NULL,(struct FE_node *)NULL);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_group_modify_selected_element_point_ranges_list.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_group_modify_selected_element_point_ranges_list */
 
 int GT_element_group_is_element_selected(
 	struct GT_element_group *gt_element_group,struct FE_element *element)
@@ -1886,6 +2070,33 @@ according to the <modify_mode>: add, remove, replace, toggle etc.
 				return_code=0;
 			}
 		}
+#if defined (TEST_CODE)
+		/*???RC temporary */
+		{
+			struct Element_point_ranges *element_point_ranges;
+			struct Element_point_ranges_identifier element_point_ranges_identifier;
+			
+			element_point_ranges_identifier.element=
+				FIRST_OBJECT_IN_GROUP_THAT(FE_element)(FE_element_is_dimension_3,
+					(void *)NULL,gt_element_group->element_group);
+			element_point_ranges_identifier.xi_discretization_mode=
+				XI_DISCRETIZATION_CELL_CORNERS;
+			element_point_ranges_identifier.number_in_xi[0]=4;
+			element_point_ranges_identifier.number_in_xi[1]=4;
+			element_point_ranges_identifier.number_in_xi[2]=4;
+			element_point_ranges=CREATE(Element_point_ranges)(
+				&element_point_ranges_identifier);
+			Element_point_ranges_add_range(element_point_ranges,3,15);
+			Element_point_ranges_toggle_in_list(element_point_ranges,
+				(void *)gt_element_group->selected_element_point_ranges_list);
+			DESTROY(Element_point_ranges)(&element_point_ranges);
+			/* update the graphics to match */
+			FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
+				GT_element_settings_selected_element_points_change,(void *)NULL,
+				gt_element_group->list_of_settings);
+		}
+#endif /* defined (TEST_CODE) */
+
 		/* update the graphics to match */
 		FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
 			GT_element_settings_selected_nodes_change,(void *)NULL,
