@@ -92,7 +92,7 @@ class Variable_input_prolate_spheroidal_to_rectangular_cartesian :
 			catch (std::bad_cast)
 			{
 				return (false);
-			};
+			}
 		};
 	private:
 		bool focus,lambda,mu,theta;

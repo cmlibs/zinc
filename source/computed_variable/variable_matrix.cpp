@@ -94,7 +94,7 @@ class Variable_input_matrix_values : public Variable_input
 			catch (std::bad_cast)
 			{
 				return (false);
-			};
+			}
 		};
 	private:
 		Variable_matrix_handle variable_matrix;

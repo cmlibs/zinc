@@ -188,7 +188,7 @@ bool Variable_input_composite::operator==(const Variable_input& input)
 	{
 		return (false);
 	}
-};
+}
 
 std::list<Variable_input_handle>::iterator Variable_input_composite::begin()
 //******************************************************************************

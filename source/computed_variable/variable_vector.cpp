@@ -91,7 +91,7 @@ class Variable_input_vector_values : public Variable_input
 			catch (std::bad_cast)
 			{
 				return (false);
-			};
+			}
 		};
 	private:
 		Variable_vector_handle variable_vector;

@@ -135,7 +135,7 @@ class Variable_input_element_xi : public Variable_input
 			catch (std::bad_cast)
 			{
 				return (false);
-			};
+			}
 		};
 	private:
 		bool element,xi;
