@@ -1043,7 +1043,7 @@ Create a new model dialog.
 			sizeof(char *),
 			XtOffsetOf(User_settings,models_file),
 			XmRString,
-			"/www/cellml/unreal/cell.models"
+			"/product/cmiss/cellml/unreal/cell.models"
     }
   }; /* resources */
   User_settings *user_settings = (User_settings *)NULL;
