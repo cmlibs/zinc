@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.h
 
-LAST MODIFIED : 17 May 2002
+LAST MODIFIED : 18 August 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -53,7 +53,7 @@ The menu associated with the file button.
 #if defined (MOTIF)
 struct Mapping_print_menu
 /*******************************************************************************
-LAST MODIFIED : 23 May 2001
+LAST MODIFIED : 18 August 2002
 
 DESCRIPTION :
 The menu associated with the print button.
@@ -63,9 +63,11 @@ The menu associated with the print button.
 	Widget rgb_button;
 	Widget tiff_button;
 	Widget jpg_button;
+	Widget bmp_button;
 	Widget animate_rgb_button;
 	Widget animate_tiff_button;
 	Widget animate_jpg_button;
+	Widget animate_bmp_button;
 }; /* struct Mapping_print_menu */
 #endif /* defined (MOTIF) */
 

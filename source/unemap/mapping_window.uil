@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : mapping_window.uil
 !
-!LAST MODIFIED : 23 July 2001
+!LAST MODIFIED : 18 August 2002
 !
 !DESCRIPTION :
 !The widgets/gadgets for the mapping window in the mapping work area.
@@ -47,9 +47,11 @@ procedure
 	identify_mapping_print_rgb_butt;
 	identify_mapping_print_tiff_but;
 	identify_mapping_print_jpg_but;
+	identify_mapping_print_bmp_but;
 	id_mapping_print_animation_rgb;
 	id_mapping_print_animation_tiff;
 	id_mapping_print_animation_jpg;
+	id_mapping_print_animation_bmp;
 	identify_mapping_close_button;
 	close_mapping_work_area;
 	identify_mapping_area;
@@ -77,9 +79,11 @@ identifier
 	write_map_rgb_file_data;
 	write_map_tiff_file_data;
 	write_map_jpg_file_data;
+	write_map_bmp_file_data;
 	write_map_animate_rgb_file_data;
 	write_map_animate_tiff_file_dat;
 	write_map_animate_jpg_file_dat;
+	write_map_animate_bmp_file_dat;
 	mapping_window_structure;
 	mapping_rig;
 	system_window_structure;
@@ -833,9 +837,11 @@ object
 			XmPushButton mapping_print_rgb_button;
 			XmPushButton mapping_print_tiff_button;
 			XmPushButton mapping_print_jpg_button;
+			XmPushButton mapping_print_bmp_button;
 			XmPushButton mapping_print_animation_rgb_but;
 			XmPushButton mapping_print_animation_tiff_bu;
 			XmPushButton mapping_print_animation_jpg_bu;
+			XmPushButton mapping_print_animation_bmp_bu;
 			};
 		};
 	mapping_print_postscript_button: XmPushButton
@@ -918,6 +924,26 @@ object
 				};
 			};
 		};
+	mapping_print_bmp_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("BMP");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_print_bmp_but(mapping_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				open_file_and_write(write_map_bmp_file_data);
+				};
+			};
+		};
 	mapping_print_animation_rgb_but: XmPushButton
 		{
 		arguments
@@ -975,6 +1001,26 @@ object
 			XmNactivateCallback = procedures
 				{
 				open_file_and_write(write_map_animate_jpg_file_dat);
+				};
+			};
+		};
+		mapping_print_animation_bmp_bu: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Animation BMP");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_mapping_print_animation_bmp(mapping_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				open_file_and_write(write_map_animate_bmp_file_dat);
 				};
 			};
 		};
