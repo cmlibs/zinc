@@ -130,4 +130,81 @@ DESCRIPTION :
 Reads an element group from a file.
 ==============================================================================*/
 
+int read_exnode_or_exelem_file_from_string(char *exnode_string,char *exelem_string,
+	char *name,struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(FE_element) *element_manager,
+	struct MANAGER(GROUP(FE_node))*node_group_manager,
+	struct MANAGER(GROUP(FE_node))*data_group_manager,
+	struct MANAGER(GROUP(FE_element)) *element_group_manager,
+	struct MANAGER(FE_basis) *basis_manager);
+/*******************************************************************************
+LAST MODIFIED :9 October 2000
+
+DESCRIPTION : given a string <exnode_string> containing an entire exnode file,
+XOR a string <exelem_string> containing an entire exelem file, reads in the node 
+or element group(s). Renames the first node or element group <name> 
+(i.e ignores the first node or element group name in <exnode_string>/<exelem_string>)
+Does all this by writing out <exnode_string>/<exelem_string> to a temporary file, 
+and reading it back in with read_FE_node_group/read_FE_element_group
+This is generally done so we can statically include an exnode or exelem file (in
+<exnode_string>/<exelem_string>)
+==============================================================================*/
+
+int read_exnode_and_exelem_file_from_string_and_offset(
+	char *exnode_string,char *exelem_string,
+	char *name,int offset,struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(FE_element) *element_manager,
+	struct MANAGER(GROUP(FE_node))*node_group_manager,
+	struct MANAGER(GROUP(FE_node))*data_group_manager,
+	struct MANAGER(GROUP(FE_element)) *element_group_manager,
+	struct MANAGER(FE_basis) *basis_manager);
+/*******************************************************************************
+LAST MODIFIED : 3 November 2000
+
+DESCRIPTION :
+Given a string <exnode_string> containing an entire exnode file,and a string 
+<exelem_string> containing an entire exelem file, reads in the node and 
+element group(s), names them <name>, and shifts the node and element identifier 
+numbers to <offset>.
+==============================================================================*/
+
+char *get_first_group_name_from_FE_node_file(char *group_file_name);
+/*******************************************************************************
+LAST MODIFIED :2 November 2000
+
+DESCRIPTION :
+Allocates and returns the name of the first node group, in the exnode file refered 
+to by <group_file_name>. It is up to the user to DEALLOCATE the returned 
+group name.	
+Read in the group name by peering into the node file. This is a bit inelegant,
+and will only get the name of the FIRST group, so semi-assuming the exnode file 
+only has one group (although it'd be posible to get others). Do this as 
+read_FE_node_group doesn't (yet?) return info about the nodes, groups or 
+fields .
+==============================================================================*/
+
+int read_FE_node_and_elem_groups_and_return_name_given_file_name(
+	char *group_file_name,
+	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(FE_element) *element_manager,
+	struct MANAGER(GROUP(FE_node))*node_group_manager,
+	struct MANAGER(GROUP(FE_node))*data_group_manager,
+	struct MANAGER(GROUP(FE_element)) *element_group_manager,
+	struct MANAGER(FE_basis) *basis_manager,
+	char **group_name);
+/*******************************************************************************
+LAST MODIFIED :2 November 2000
+
+DESCRIPTION :
+Given a string <group_file_name>  reads in the corresponding node and 
+element group(s)
+Eg if <group_file_name> is "/usr/bob/default_torso", reads in 
+"/usr/bob/default_torso.exnode" and "/usr/bob/default_torso.exelem".
+Also returns the name of the first node and element group, in <group_name>.
+It is up to the user to DEALLOCATE <group_name>.
+==============================================================================*/
+
 #endif /* !defined (IMPORT_FINITE_ELEMENT_H) */

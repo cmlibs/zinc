@@ -4429,3 +4429,356 @@ Reads an element group from a file.
 
 	return (return_code);
 } /* file_read_FE_element_group */
+
+int read_exnode_or_exelem_file_from_string(char *exnode_string,char *exelem_string,
+	char *name,struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(FE_element) *element_manager,
+	struct MANAGER(GROUP(FE_node))*node_group_manager,
+	struct MANAGER(GROUP(FE_node))*data_group_manager,
+	struct MANAGER(GROUP(FE_element)) *element_group_manager,
+	struct MANAGER(FE_basis) *basis_manager)
+/*******************************************************************************
+LAST MODIFIED :9 October 2000
+
+DESCRIPTION : given a string <exnode_string> containing an entire exnode file,
+XOR a string <exelem_string> containing an entire exelem file, reads in the node 
+or element group(s). Renames the first node or element group <name> 
+(i.e ignores the first node or element group name in <exnode_string>/<exelem_string>)
+Does all this by writing out <exnode_string>/<exelem_string> to a temporary file, 
+and reading it back in with read_FE_node_group/read_FE_element_group
+This is generally done so we can statically include an exnode or exelem file (in
+<exnode_string>/<exelem_string>)
+==============================================================================*/
+{
+	int string_len;
+	char group_name_str[]=" Group name: ";
+	char *exnode_or_exelem_string,*line_str,*outstr;		
+	FILE *input_file,*output_file;
+	int return_code;
+
+	ENTER(read_exnode_or_exelem_file_from_string);
+	input_file=(FILE *)NULL;
+	output_file=(FILE *)NULL;
+	outstr=(char *)NULL;
+	line_str=(char *)NULL;		
+	return_code=0;
+	/* exnode_string XOR exelem_string defined, other NULL*/
+	if(((exnode_string&&!exelem_string)||(!exnode_string&&exelem_string))&&
+		fe_field_manager&&node_manager&&element_manager&&node_group_manager&&
+		data_group_manager&&element_group_manager)
+	{	
+		if(exnode_string)
+		{
+			exnode_or_exelem_string=exnode_string;
+		}
+		else
+		/* exelem_string */
+		{
+			exnode_or_exelem_string=exelem_string;
+		}
+		/* set up the new node group name */	
+		string_len = strlen(group_name_str);
+		string_len++;
+		string_len+=strlen(name);
+		string_len++;
+		if(ALLOCATE(line_str,char,string_len))
+		{
+			strcpy(line_str,group_name_str);
+			strcat(line_str,name);
+			strcat(line_str,"\n");	
+			/* open a temp file to write to */
+			if(output_file=fopen("temp_exnode_or_exelem_file", "w"))
+			{
+				/*write out the new group name */
+				if(fwrite(line_str,1,strlen(line_str),output_file))
+				{
+					/*move the start of the string to to the start of the second line (after the \n) */
+					/*(The first line is the group name and we've  just replaced this)*/
+					outstr=exnode_or_exelem_string;
+					while(*outstr!='\n')
+					{		
+						outstr++;				
+					}
+					/*move past the \n */
+					outstr++;
+					/*write the string to the temp file*/
+					if(fwrite(outstr,1,strlen(outstr),output_file))
+					{
+						fclose(output_file);
+						/* read the temp file in to a node or element group */
+						if (input_file=fopen("temp_exnode_or_exelem_file","r"))
+						{
+							if(exnode_string)
+							{
+								return_code=read_FE_node_group(input_file,fe_field_manager,
+									node_manager,element_manager,node_group_manager,data_group_manager,
+									element_group_manager);			
+							}
+							else
+							/* exelem_string */
+							{
+								return_code=read_FE_element_group(input_file,element_manager,
+									element_group_manager,fe_field_manager,node_manager,
+									node_group_manager,data_group_manager,basis_manager);	
+							}
+							fclose(input_file);
+						}
+					}
+					else
+					{
+						return_code=0;
+						fclose(output_file);
+						display_message(ERROR_MESSAGE,"read_exnode_or_exelem_file_from_string."
+							" failed to write file");
+					}
+				}
+				else
+				{
+					return_code=0;
+					fclose(output_file);
+					display_message(ERROR_MESSAGE,"read_exnode_or_exelem_file_from_string."
+						" failed to write name to file");
+				}			
+				/*remove the temp file*/						
+				remove("temp_exnode_or_exelem_file");				
+			}
+			else
+			{
+				return_code=0;
+				display_message(ERROR_MESSAGE,"read_exnode_or_exelem_file_from_string."
+					" failed to open file");
+			}
+		}
+		else
+		{
+			return_code=0;
+			display_message(ERROR_MESSAGE,"read_exnode_or_exelem_file_from_string. out of memory");
+		}
+		DEALLOCATE(line_str);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"read_exnode_or_exelem_file_from_string. Invalid arguments");
+	}
+	LEAVE;
+	return(return_code);
+} /* read_exnode_or_exelem_file_from_string */
+
+int read_exnode_and_exelem_file_from_string_and_offset(
+	char *exnode_string,char *exelem_string,
+	char *name,int offset,
+	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(FE_element) *element_manager,
+	struct MANAGER(GROUP(FE_node))*node_group_manager,
+	struct MANAGER(GROUP(FE_node))*data_group_manager,
+	struct MANAGER(GROUP(FE_element)) *element_group_manager,
+	struct MANAGER(FE_basis) *basis_manager)
+/*******************************************************************************
+LAST MODIFIED :3 November 2000
+
+DESCRIPTION :
+Given a string <exnode_string> containing an entire exnode file,and a string 
+<exelem_string> containing an entire exelem file, reads in the node and 
+element group(s), names them <name>, and shifts the node and element identifier 
+numbers to <offset>
+==============================================================================*/
+{	
+	int return_code;
+
+	ENTER(read_exnode_and_exelem_file_from_string_and_offset);
+	if(exnode_string&&exelem_string&&fe_field_manager&&node_manager&&element_manager&&
+		node_group_manager&&data_group_manager&&element_group_manager&&basis_manager)
+	{				
+		/* read in the default torso mesh nodes and elements */
+		/* (cleaned up when the program shuts down) */		
+		if((return_code=read_exnode_or_exelem_file_from_string(exnode_string,
+			(char *)NULL,name,fe_field_manager,node_manager,element_manager,
+			node_group_manager,data_group_manager,element_group_manager,basis_manager))&&
+			(return_code=read_exnode_or_exelem_file_from_string((char *)NULL,
+				exelem_string,name,fe_field_manager,node_manager,
+				element_manager,node_group_manager,data_group_manager,element_group_manager
+				,basis_manager)))
+		{
+			/* offset the nodea and elements */
+			return_code=offset_FE_node_and_element_identifiers_in_group(name,offset,
+				node_manager,element_manager,node_group_manager,
+				element_group_manager);
+		}								
+	}
+	else
+	{
+		return_code=0;
+		display_message(ERROR_MESSAGE,"read_exnode_and_exelem_file_from_string_and_offset."
+			" Invalid arguments");
+	}
+	LEAVE;
+	return(return_code);
+}
+
+char *get_first_group_name_from_FE_node_file(char *group_file_name)
+/*******************************************************************************
+LAST MODIFIED :2 November 2000
+
+DESCRIPTION :
+Allocates and returns the name of the first node group, in the exnode file refered 
+to by <group_file_name>. It is up to the user to DEALLOCATE the returned 
+group name.	
+Read in the group name by peering into the node file. This is a bit inelegant,
+and will only get the name of the FIRST group, so semi-assuming the exnode file 
+only has one group (although it'd be posible to get others). Do this as 
+read_FE_node_group doesn't (yet?) return info about the nodes, groups or 
+fields .
+==============================================================================*/
+{	
+	char *group_name,input_str[13];
+	FILE *input_file;
+
+	ENTER(get_first_group_name_from_FE_node_file);
+	group_name=(char *)NULL;
+	input_file=(FILE *)NULL;
+	if(group_file_name)
+	{
+		if (input_file=fopen(group_file_name,"r"))
+		{										
+			fscanf(input_file," ");
+			fscanf(input_file,"%12c",input_str);
+			/* NULL terminate for use with strcmp */	
+			input_str[12]='\0';
+			if(!strcmp("Group name: ",input_str))
+			{
+				read_string(input_file,"[^\n]",&group_name);			
+			}	
+			else
+			{			
+				display_message(ERROR_MESSAGE,
+					"get_first_group_name_from_FE_node_file."
+					" group name corrupt");
+			}	
+			fclose(input_file);
+		}
+		else
+		{		
+			display_message(ERROR_MESSAGE,
+				"get_first_group_name_from_FE_node_file. "
+				"failed to read group name from exnode file ");
+		}
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"get_first_group_name_from_FE_node_file. "
+			"invalid arguments ");
+	}
+	LEAVE;
+	return(group_name);
+}/* get_first_group_name_from_FE_node_file*/
+
+int read_FE_node_and_elem_groups_and_return_name_given_file_name(char *group_file_name,
+	struct MANAGER(FE_field) *fe_field_manager,
+	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(FE_element) *element_manager,
+	struct MANAGER(GROUP(FE_node))*node_group_manager,
+	struct MANAGER(GROUP(FE_node))*data_group_manager,
+	struct MANAGER(GROUP(FE_element)) *element_group_manager,
+	struct MANAGER(FE_basis) *basis_manager,
+	char **group_name)
+/*******************************************************************************
+LAST MODIFIED :2 November 2000
+
+DESCRIPTION :
+Given a string <group_file_name>  reads in the corresponding node and 
+element group(s)
+Eg if <group_file_name> is "/usr/bob/default_torso", reads in 
+"/usr/bob/default_torso.exnode" and "/usr/bob/default_torso.exelem".
+Also returns the name of the first node and element group, in <group_name>.
+It is up to the user to DEALLOCATE <group_name>.
+==============================================================================*/
+{	
+	char exnode_ext[]=".exnode";
+	char exelem_ext[]=".exelem";
+	char *exnode_name_str,*exelem_name_str;
+	FILE *input_file;
+	int exnode_name_str_len,exelem_name_str_len,return_code,string_len;
+
+	ENTER(read_FE_node_and_elem_groups_and_return_name_given_file_name);
+	input_file=(FILE *)NULL;
+	exnode_name_str=(char *)NULL;
+	exelem_name_str=(char *)NULL;
+	if(group_file_name&&fe_field_manager&&node_manager&&element_manager&&
+		node_group_manager&&data_group_manager&&element_group_manager&&
+		basis_manager)
+	{
+		/*construct full names for exnode and exelem files*/
+		string_len = strlen(group_file_name);
+		exnode_name_str_len = string_len +strlen(exnode_ext); 
+		exelem_name_str_len = string_len +strlen(exelem_ext);
+		if(ALLOCATE(exnode_name_str,char,exnode_name_str_len)&&
+			ALLOCATE(exelem_name_str,char,exelem_name_str_len))
+		{
+			return_code=1;
+			/* add the extensions to the file name */
+			strcpy(exnode_name_str,group_file_name);
+			strcat(exnode_name_str,exnode_ext);
+			strcpy(exelem_name_str,group_file_name);
+			strcat(exelem_name_str,exelem_ext);
+			/*get thenode and element  group name*/
+			*group_name=get_first_group_name_from_FE_node_file(exnode_name_str);
+			/* read in the node file */
+			if(*group_name)
+			{
+				if (input_file=fopen(exnode_name_str,"r"))
+				{
+					return_code=read_FE_node_group(input_file,fe_field_manager,node_manager,
+						element_manager,node_group_manager,data_group_manager,element_group_manager);
+				}
+				else
+				{
+					return_code=0;
+					display_message(ERROR_MESSAGE,
+						"read_FE_node_and_elem_groups_and_return_name_given_file_name."
+						" failed to open file exnode_name_str  ");
+				}
+				fclose(input_file);
+			}
+			/* read in the element file */
+			if(return_code)
+			{
+				if (input_file=fopen(exelem_name_str,"r"))
+				{
+					return_code=read_FE_element_group(input_file,element_manager,
+						element_group_manager,fe_field_manager,node_manager,
+						node_group_manager,data_group_manager,basis_manager);	
+				}
+				else
+				{
+					return_code=0;
+					display_message(ERROR_MESSAGE,
+						"read_FE_node_and_elem_groups_and_return_name_given_file_name. "
+						"failed to open file exnode_name_str  ");
+				}
+				fclose(input_file);
+			}		
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"read_FE_node_and_elem_groups_and_return_name_given_file_name. "
+				"out of memory for exnode_name_str ");
+			return_code=0;
+		}									
+		DEALLOCATE(exnode_name_str);
+		DEALLOCATE(exelem_name_str);	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"read_FE_node_and_elem_groups_and_return_name_given_file_name. "
+			"invalid arguments ");
+		return_code=0;
+	}	
+	LEAVE;
+	return(return_code);
+} /* read_FE_node_and_elem_groups_and_return_name_given_file_name */
+

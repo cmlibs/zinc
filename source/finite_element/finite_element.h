@@ -3959,6 +3959,26 @@ Iterator function which, if <element> is top-level (ie. cm.type is CM_ELEMENT),
 ensures none of its nodes are in <node_list>.
 ==============================================================================*/
 
+int ensure_top_level_FE_element_nodes_are_in_group(struct FE_element *element,
+	void *node_group_void);
+/*******************************************************************************
+LAST MODIFIED : 18 October 2000
+
+DESCRIPTION :
+Iterator function which, if <element> is top-level (ie. cm.type is CM_ELEMENT),
+ensures all its nodes are added to the <node_group> if not currently in it.
+==============================================================================*/
+
+int ensure_top_level_FE_element_nodes_are_not_in_group(
+	struct FE_element *element,void *node_group_void);
+/*******************************************************************************
+LAST MODIFIED : 18 October 2000
+
+DESCRIPTION :
+Iterator function which, if <element> is top-level (ie. cm.type is CM_ELEMENT),
+ensures none of its nodes are in <node_group>.
+==============================================================================*/
+
 int FE_element_or_parent_has_field(struct FE_element *element,
 	struct FE_field *field,struct GROUP(FE_element) *element_group);
 /*******************************************************************************
@@ -4467,6 +4487,35 @@ DESCRIPTION :
 Given a <node_group>, frees it's asscoiated element and data groups
 Deaccesses the <node_group> and attempts to remove it from the manager.
 (i.e assumes the <node_group> has been accessed somewhere)
+==============================================================================*/
+
+int FE_element_get_scale_factor_for_nodal_value( 
+	struct FE_element *element, struct FE_node *node, struct FE_field *field,
+	int component_number,	enum FE_nodal_value_type nodal_value_type,
+	FE_value *scale_factor);
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+Given  <component_number>  and <nodal_value_type> of <field> at a 
+<node> in an <element>, find the  corresponding <scale_factor>.
+===============================================================================*/
+
+int offset_FE_node_and_element_identifiers_in_group(char *name,int last_identifier,
+	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(FE_element) *element_manager,
+	struct MANAGER(GROUP(FE_node))*node_group_manager,
+	struct MANAGER(GROUP(FE_element)) *element_group_manager);
+/*******************************************************************************
+LAST MODIFIED :3 November 2000
+
+DESCRIPTION :
+Finds the node and element groups matching  <name>, and shifts the contained nodes 
+and elements  identifier numbers so that the groups identifiers end at 
+<last_identifier>. Eg if you wanted to shift the groups to the end of 
+the legal integer range, <last_identifier> would be INT_MAX.
+Currently, there must be NO other node and elemnt groups in the manager when
+this function is called.
 ==============================================================================*/
 
 #if !defined (WINDOWS_DEV_FLAG)

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 21 September 2000
+LAST MODIFIED : 25 October 2000
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -24819,7 +24819,7 @@ values - like in the .exelem files.
 
 int merge_FE_element(struct FE_element *destination,struct FE_element *source)
 /*******************************************************************************
-LAST MODIFIED : 24 January 2000
+LAST MODIFIED : 25 October 2000
 
 DESCRIPTION :
 Merges the fields in <destination> with those from <source>, leaving the
@@ -24829,9 +24829,10 @@ combined fields in <destination>.
 	FE_value *destination_scale_factor,*scale_factor,*scale_factors,
 		*source_scale_factor;
 	int destination_dimension,*destination_number_in_scale_factor_set,i,j,
-		*number_in_scale_factor_set,number_of_nodes,number_of_scale_factors,
-		number_of_scale_factor_sets,*numbers_in_scale_factor_sets,
-		return_code,*source_number_in_scale_factor_set,values_storage_size;
+		*number_in_scale_factor_set,number_of_nodes,
+		number_of_scale_factors,number_of_scale_factor_sets,
+		*numbers_in_scale_factor_sets,return_code,*source_number_in_scale_factor_set,
+		values_storage_size;
 	struct Copy_element_grid_map_data copy_element_grid_map_data;
 	struct FE_element **destination_face,**source_face;
 	struct FE_element_field_info *destination_field_info;
@@ -24843,59 +24844,44 @@ combined fields in <destination>.
 	Value_storage *values_storage;
 
 	ENTER(merge_FE_element);
-	/* check arguments */
 	if (source&&destination)
 	{
 		/* check the element shape for consistency */
 			/*???DB.  If things are set up properly, non-equality should imply that
 				they're different */
-		if (source->shape==destination->shape)
+		if (source->shape == destination->shape)
 		{
 			return_code=1;
-			/* check the faces */
-			if (source_face=source->faces)
+			/* check faces are consistent if defined for both source and
+				 destination */
+			/* set_FE_element_shape should ensure following is true */
+			if (source->faces && destination->faces)
 			{
-				if ((i=destination->shape->number_of_faces)>0)
+				source_face = source->faces;
+				destination_face = destination->faces;
+				i = source->shape->number_of_faces;
+				while ((0 < i) && return_code)
 				{
-					destination_face=destination->faces;
-					while (return_code&&(i>0))
+					if ((!(*source_face)) || (!(*destination_face)) ||
+						(*source_face == *destination_face))
 					{
-						if (source_face&&destination_face&&
-							(*source_face== *destination_face))
-						{
-							source_face++;
-							destination_face++;
-							i--;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"merge_FE_element.  Inconsistent faces No. 1");
-							return_code=0;
-/*???debug */
-printf("Inconsistent faces 1.  %d \n",source->cm.number);
-						}
+						source_face++;
+						destination_face++;
+						i--;
 					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"merge_FE_element.  Inconsistent faces No. 2");
-					return_code=0;
-/*???debug */
-printf("Inconsistent faces 2.  %d \n",source->cm.number);
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"merge_FE_element.  Faces do not match");
+						return_code=0;
+					}
 				}
 			}
 			else
 			{
-				if (destination->shape->number_of_faces>0)
-				{
-					display_message(ERROR_MESSAGE,
-						"merge_FE_element.  Inconsistent faces No. 3");
-					return_code=0;
-/*???debug */
-printf("Inconsistent faces 3.  %d \n",source->cm.number);
-				}
+				display_message(ERROR_MESSAGE,
+					"merge_FE_element.  Missing source or destination faces");
+				return_code=0;
 			}
 			if (return_code)
 			{
@@ -24932,6 +24918,19 @@ printf("Inconsistent faces 3.  %d \n",source->cm.number);
 					}
 					if (return_code)
 					{
+						/* merge the faces */
+						source_face = source->faces;
+						destination_face = destination->faces;
+						for (i = source->shape->number_of_faces; 0 < i; i--)
+						{
+							if ((!(*destination_face)) && (*source_face))
+							{
+								*destination_face = ACCESS(FE_element)(*source_face);
+							}
+							source_face++;
+							destination_face++;
+						}
+
 						/* merge the node information */
 						number_of_nodes=source_info->number_of_nodes;
 						nodes=(struct FE_node **)NULL;
@@ -29404,7 +29403,7 @@ storage for the <value> should have been allocated outside the function.
 				return_code=0;
 			}
 		}
-		else
+		else	
 		{
 			/* calculate field for element */
 			/* determine if the field is defined over the element */
@@ -33620,6 +33619,123 @@ ensures none of its nodes are in <node_list>.
 	return (return_code);
 } /* ensure_top_level_FE_element_nodes_are_not_in_list */
 
+int ensure_top_level_FE_element_nodes_are_in_group(struct FE_element *element,
+	void *node_group_void)
+/*******************************************************************************
+LAST MODIFIED : 18 October 2000
+
+DESCRIPTION :
+Iterator function which, if <element> is top-level (ie. cm.type is CM_ELEMENT),
+ensures all its nodes are added to the <node_group> if not currently in it.
+==============================================================================*/
+{
+	int i,return_code;
+	struct FE_node **node;
+	struct GROUP(FE_node) *node_group;
+
+	ENTER(ensure_top_level_FE_element_nodes_are_in_group);
+	if (element&&(node_group=(struct GROUP(FE_node) *)node_group_void))
+	{
+		return_code=1;
+		/* only nodes in parentless elements need be added */
+		/*???SAB Mark Sagar uses CM_FACE instead of CM_ELEMENT for his toplevel
+		  elements in some meshes, hence we don't check for CM_ELEMENT here */
+		if (element->information)
+		{
+			/* note that element may have no node-based fields */
+			if (node=element->information->nodes)
+			{
+				for (i=element->information->number_of_nodes;(0<i)&&return_code;i--)
+				{
+					if ((*node)&&(!IS_OBJECT_IN_GROUP(FE_node)(*node,node_group)))
+					{
+						if (!ADD_OBJECT_TO_GROUP(FE_node)(*node,node_group))
+						{
+							display_message(ERROR_MESSAGE,
+								"ensure_top_level_FE_element_nodes_are_in_group.  "
+								"Could not add node to list");
+							return_code=0;
+						}
+					}
+					node++;
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"ensure_top_level_FE_element_nodes_are_in_group.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* ensure_top_level_FE_element_nodes_are_in_group */
+
+int ensure_top_level_FE_element_nodes_are_not_in_group(
+	struct FE_element *element,void *node_group_void)
+/*******************************************************************************
+LAST MODIFIED : 18 October 2000
+
+DESCRIPTION :
+Iterator function which, if <element> is top-level (ie. cm.type is CM_ELEMENT),
+ensures none of its nodes are in <node_group>.
+==============================================================================*/
+{
+	int i,return_code;
+	struct FE_node **node;
+	struct GROUP(FE_node) *node_group;
+
+	ENTER(ensure_top_level_FE_element_nodes_are_not_in_group);
+	if (element&&(node_group=(struct GROUP(FE_node) *)node_group_void))
+	{
+		return_code=1;
+		/* only nodes in parentless elements need be added */
+		if (CM_ELEMENT==element->cm.type)
+		{
+			if (element->information)
+			{
+				/* note that element may have no node-based fields */
+				if (node=element->information->nodes)
+				{
+					for (i=element->information->number_of_nodes;(0<i)&&return_code;i--)
+					{
+						if ((*node)&&IS_OBJECT_IN_GROUP(FE_node)(*node,node_group))
+						{
+							if (!REMOVE_OBJECT_FROM_GROUP(FE_node)(*node,node_group))
+							{
+								display_message(ERROR_MESSAGE,
+									"ensure_top_level_FE_element_nodes_are_not_in_group.  "
+									"Could not remove node from list");
+								return_code=0;
+							}
+						}
+						node++;
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"ensure_top_level_FE_element_nodes_are_not_in_group.  "
+					"Missing node scale field information");
+				return_code=0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"ensure_top_level_FE_element_nodes_are_not_in_group.  "
+			"Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* ensure_top_level_FE_element_nodes_are_not_in_group */
+
 int FE_element_or_parent_has_field(struct FE_element *element,
 	struct FE_field *field,struct GROUP(FE_element) *element_group)
 /*******************************************************************************
@@ -37091,6 +37207,291 @@ Deaccesses the <node_group> and attempts to remove it from the manager.
 	LEAVE;
 	return(return_code);
 } /* free_node_and_element_and_data_groups */
+
+
+int FE_element_get_scale_factor_for_nodal_value(
+	struct FE_element *element, struct FE_node *node, struct FE_field *field,
+	int component_number,	enum FE_nodal_value_type nodal_value_type,
+	FE_value *scale_factor)
+/*******************************************************************************
+LAST MODIFIED : 26 October 2000
+
+DESCRIPTION :
+Given  <component_number>  and <nodal_value_type> of <field> at a 
+<node> in an <element>, find the  corresponding <scale_factor>.
+===============================================================================*/
+{
+	int i, nodal_value_index, nodal_value_number, number_of_nodes, 
+		number_of_versions, return_code,	scale_factor_index;
+	struct FE_element_field *element_field;
+	struct FE_element_field_component *element_field_component;
+	struct FE_node **nodes;
+	struct FE_node_field *node_field;
+	struct FE_node_field_component *node_field_component;
+	struct Standard_node_to_element_map *node_to_element_map,
+		**node_to_element_maps;
+
+	ENTER(FE_element_get_scale_factor_for_nodal_value);
+	return_code = 0;
+	if (element && node && field && (0 <= component_number) &&
+		(component_number < field->number_of_components) && scale_factor)
+	{
+		/* get the element field*/
+		if (element->information && element->information->fields &&
+			(element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
+				field, element->information->fields->element_field_list)) &&
+			(element_field_component = element_field->components[component_number]))
+		{
+			/* ensure element has nodes*/
+			if (nodes = element->information->nodes)
+			{
+				switch (element_field_component->type)
+				{
+					case STANDARD_NODE_TO_ELEMENT_MAP:
+					{
+						/* get the node_to_element map*/
+						node_to_element_maps = element_field_component->
+							map.standard_node_based.node_to_element_maps;
+						node_to_element_map = (struct Standard_node_to_element_map *)NULL;
+						number_of_nodes =
+							element_field_component->map.standard_node_based.number_of_nodes;
+						for (i = 0; (!node_to_element_map) && (i < number_of_nodes); i++)
+						{
+							if (node_to_element_maps[i] &&
+								(node == nodes[node_to_element_maps[i]->node_index]))
+							{
+								node_to_element_map = node_to_element_maps[i];
+							}
+						}
+						if (node_to_element_map &&
+							node_to_element_map->nodal_value_indices &&
+							node_to_element_map->scale_factor_indices)
+						{
+							/* ensure element field is defined in node */
+							if (node->fields && (node_field =
+								FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
+									field, node->fields->node_field_list)) &&
+								(node_field_component =
+									&(node_field->components[component_number])))
+							{
+								/* ensure node field has nodal value types */
+								if (node_field_component->nodal_value_types &&
+									(number_of_versions=node_field_component->number_of_versions))
+								{
+									/* find the nodal value in the field*/
+									nodal_value_number = -1;
+									for (i = 0; (0 > nodal_value_number) &&
+										(i < node_to_element_map->number_of_nodal_values); i++)
+									{
+										nodal_value_index =
+											node_to_element_map->nodal_value_indices[i];
+										if (nodal_value_type == node_field_component->
+											nodal_value_types[nodal_value_index /	number_of_versions])
+										{
+											nodal_value_number = i;
+										}
+									}
+									/* find the scale factor corresponding to the nodal value */
+									if (0 <= nodal_value_number)
+									{
+										scale_factor_index = node_to_element_map->
+											scale_factor_indices[nodal_value_number];
+										if (-1 == scale_factor_index)
+										{
+											*scale_factor = 1.0;
+											return_code = 1;
+										}
+										else if ((0 <= scale_factor_index) && (scale_factor_index <
+											element->information->number_of_scale_factors))
+										{
+											*scale_factor =
+												element->information->scale_factors[scale_factor_index];
+											return_code = 1;
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+												"FE_element_get_scale_factor_for_nodal_value.  "
+												"Scale factor index out of range");
+										}
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"FE_element_get_scale_factor_for_nodal_value.  "
+											"Nodal value type not used for field");
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"FE_element_get_scale_factor_for_nodal_value.  "
+										"Node field has no nodal value types");
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"FE_element_get_scale_factor_for_nodal_value.  "
+									"Element field is corrupt as not defined in node it uses");
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_element_get_scale_factor_for_nodal_value.  "
+								"Node not used by field in element");
+						}
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"FE_element_get_scale_factor_for_nodal_value.  "
+							"Currently Only supports STANDARD_NODE_TO_ELEMENT_MAP"
+							" Write the code");
+					} break;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_element_get_scale_factor_for_nodal_value.  Element has no nodes");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_element_get_scale_factor_for_nodal_value.  "
+				"Field is not defined in this element");
+		}
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"FE_element_get_scale_factor_for_nodal_value.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_get_scale_factor_for_nodal_value */
+
+int offset_FE_node_and_element_identifiers_in_group(char *name,int last_identifier,
+	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(FE_element) *element_manager,
+	struct MANAGER(GROUP(FE_node))*node_group_manager,
+	struct MANAGER(GROUP(FE_element)) *element_group_manager)
+/*******************************************************************************
+LAST MODIFIED :3 November 2000
+
+DESCRIPTION :
+Finds the node and element groups matching  <name>, and shifts the contained nodes 
+and elements  identifier numbers so that the groups identifiers end at 
+<last_identifier>. Eg if you wanted to shift the groups to the end of 
+the legal integer range, <last_identifier> would be INT_MAX.
+Currently, there must be NO other node and elemnt groups in the manager when
+this function is called.
+==============================================================================*/
+{
+	int number_of_elements,number_of_nodes,offset,return_code;
+	struct Change_identifier_data data;
+	struct GROUP(FE_element) *element_group;
+	struct GROUP(FE_node) *node_group;
+
+	ENTER(offset_FE_node_and_element_identifiers_in_group);	
+	node_group=(struct GROUP(FE_node) *)NULL;
+	element_group = (struct GROUP(FE_element) *) NULL;
+	if(name)
+	{
+		return_code=1;
+		/* shift the nodes and elements */
+		if((node_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)
+			(name,node_group_manager))&&				
+			(number_of_nodes=NUMBER_IN_GROUP(FE_node)(node_group))&&
+			(element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
+				(name,element_group_manager))&&
+			(number_of_elements=NUMBER_IN_GROUP(FE_element)(element_group)))
+		{	
+			/* for now, can only change identifiers of nodes/elements if there's only ONE*/	
+			/* node/element group */
+			if((1==NUMBER_IN_MANAGER(GROUP(FE_element))(element_group_manager))&&
+				(1==NUMBER_IN_MANAGER(GROUP(FE_node))(node_group_manager)))
+			{				
+				/* offset the nodes and elements to 
+					 last_identifier-max(number_of_nodes,number_of_elements)*/			
+				if(number_of_nodes>=number_of_elements)
+				{
+					offset=number_of_nodes;
+				}
+				else
+				{
+					offset=number_of_elements;
+				}
+				offset=last_identifier-offset;			
+				data.element_offset = offset;
+				data.face_offset = 0;
+				data.line_offset = 0;
+				data.node_offset = offset;
+				/* shift nodes */
+				if (node_group)
+				{
+					data.count = 0;
+					data.node_manager = node_manager;
+					MANAGER_BEGIN_CACHE(FE_node)(node_manager);
+					FOR_EACH_OBJECT_IN_GROUP(FE_node)(FE_node_change_identifier_sub,
+						(void *)&data, node_group);
+					MANAGER_END_CACHE(FE_node)(node_manager);
+					if (data.count != NUMBER_IN_GROUP(FE_node)(node_group))
+					{
+						return_code=0;
+						display_message(ERROR_MESSAGE,
+							"offset_FE_node_and_element_identifiers_in_group."
+							"  Only able to update node numbers for %d nodes out of %d\n",
+							data.count, NUMBER_IN_GROUP(FE_node)(node_group));
+					}
+				}	
+				/* shift elements */		
+				if (element_group)
+				{
+					data.count = 0;
+					data.element_manager = element_manager;
+					MANAGER_BEGIN_CACHE(FE_element)(element_manager);
+					FOR_EACH_OBJECT_IN_GROUP(FE_element)(
+						FE_element_change_identifier_sub,
+						(void *)&data, element_group);
+					MANAGER_END_CACHE(FE_element)(element_manager);
+					if (data.count != NUMBER_IN_GROUP(FE_element)(element_group))
+					{
+						return_code=0;
+						display_message(ERROR_MESSAGE,
+							"offset_FE_node_and_element_identifiers_in_group."
+							"  Only able to update element numbers for %d elements out of %d\n",
+							data.count, NUMBER_IN_GROUP(FE_element)(element_group));
+					}
+				}
+			}
+			else
+			{
+				return_code=0;
+				display_message(ERROR_MESSAGE,"offset_FE_node_and_element_identifiers_in_group."
+					" Must be NO pre exisitng node and element groups when call this function");
+			}
+		}
+		else
+		{
+			return_code=0;
+			display_message(ERROR_MESSAGE,"offset_FE_node_and_element_identifiers_in_group."
+				" node or element groups empty");
+		}
+	}
+	else
+	{
+		return_code=0;
+		display_message(ERROR_MESSAGE,"offset_FE_node_and_element_identifiers_in_group."
+			" invalid arguments");
+	}
+	LEAVE;
+	return(return_code);
+}/* offset_FE_node_and_element_identifiers_in_group*/
 
 #if !defined (WINDOWS_DEV_FLAG)
 int FE_element_change_identifier_sub(struct FE_element *element,
