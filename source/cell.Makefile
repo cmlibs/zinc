@@ -119,6 +119,8 @@ ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
    PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
+$(BIN_TARGET) :
+
 ifdef MAKECMDGOALS
    define BUILDING_MESSAGE
 Making $(MAKECMDGOALS) for version $(BIN_TARGET)
@@ -131,11 +133,6 @@ Building $(BIN_TARGET)
    endef
 endif
 $(warning $(BUILDING_MESSAGE))
-
-$(BIN_TARGET) :
-
-DEPENDFILE = $(OBJECT_PATH)/$(BIN_TARGET).depend
-PRODUCT_DEPENDFILE = $(PRODUCT_OBJECT_PATH)/$(BIN_TARGET).depend
 
 ifdef CMISS_ROOT_DEFINED
    VPATH=$(BIN_PATH):$(UTILITIES_PATH):$(OBJECT_PATH):$(UIDH_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH):$(PRODUCT_UIDH_PATH)
@@ -590,35 +587,6 @@ endif # UIDH_PATH
 clobber : clean
 	-rm $(BIN_PATH)/Target
 
-depend :
-	if [ ! -d $(dir $(DEPENDFILE)) ]; then \
-		mkdir -p $(dir $(DEPENDFILE)); \
-	fi
-	echo > $(DEPENDFILE)
-	(makedepend -f $(DEPENDFILE) -o.o -Y -- $(ALL_FLAGS) -- $(MAIN_SRC) 2> $(DEPENDFILE).tmp)
-	(makedepend -f $(DEPENDFILE) -o.o -Y -a -- $(ALL_FLAGS) -- $(SRCS_1) 2>> $(DEPENDFILE).tmp)
-	(makedepend -f $(DEPENDFILE) -o.o -Y -a -- $(ALL_FLAGS) -- $(SRCS_2) 2>> $(DEPENDFILE).tmp)
-ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
-   # The uidh get their full path in the dependencies which stops the VPATH
-   #.uil.uidh rule from picking up dependencies so I remove this PATH
-	sed "s%$(UIDH_PATH)/%%g" $(DEPENDFILE) > $(DEPENDFILE).tmp2
-	mv $(DEPENDFILE).tmp2 $(DEPENDFILE)
-endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
-ifeq ($(SYSNAME:IRIX%=),)
-	(ls $(SRCS) 2>&1 | sed "s%Cannot access %%;s%: No such file or directory%%;s%.*%&: &%;s%\.[^.]*:%.o:%;s%UX:ls: ERROR: %%" >> $(DEPENDFILE))
-endif # SYSNAME == IRIX%=
-ifeq ($(SYSNAME),Linux)
-	(ls $(SRCS) 2>&1 | sed "s%ls: %%;s%: No such file or directory%%;s%.*%&: &%;s%\.[^.]*:%.o:%" >> $(DEPENDFILE))
-endif # SYSNAME == Linux
-ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
-   # Try and make a rule for the uidhs if they don't exist already,
-   # It is bad, based on the format of the error output from makedepend and it only
-   # gets the first inclusion.  If it fails then you can get the correct makedepend 
-   # by ensuring all the uidh files already exist before you makedepend
-	( grep uidh $(DEPENDFILE).tmp | grep makedepend | awk -v Obj=o -F "[ ,]" '{printf("%s.%s:",substr($$4, 1, length($$4) - 2),Obj); for(i = 1 ; i <= NF ; i++)  { if (match($$i,"uidh")) printf(" %s", substr($$i, 2, length($$i) -2)) } printf("\n");}' >> $(DEPENDFILE))
-endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
-	rm $(DEPENDFILE).tmp
-
 $(OBJECT_PATH)/version.o.h : $(OBJS) cell.Makefile
 	if [ ! -d $(OBJECT_PATH) ]; then \
 		mkdir -p $(OBJECT_PATH); \
@@ -735,6 +703,30 @@ $(DSO_PATH)/euler.so :
 	@set -x ; $(DSO_LINK) /tmp/euler.ObjSuffix $(DSO_LIB) -o $(DSO_PATH)/euler.so ;
 	@rm -f /tmp/euler.ObjSuffix ;
 
-# Still try and include both of them
-sinclude $(PRODUCT_DEPENDFILE)
-sinclude $(DEPENDFILE)
+DEPENDFILE = $(OBJECT_PATH)/$(BIN_TARGET).depend
+
+DEPEND_FILES = $(OBJS:%.o=%.d) $(MAIN_OBJ:%.o=%.d)
+#Look in the OBJECT_PATH
+DEPEND_FILES_OBJECT_PATH = $(DEPEND_FILES:%.d=$(OBJECT_PATH)/%.d)
+DEPEND_FILES_OBJECT_FOUND = $(wildcard $(DEPEND_FILES_OBJECT_PATH))
+DEPEND_FILES_OBJECT_NOTFOUND = $(filter-out $(DEPEND_FILES_OBJECT_FOUND),$(DEPEND_FILES_OBJECT_PATH))
+DEPEND_FILES_MISSING_PART1 = $(DEPEND_FILES_OBJECT_NOTFOUND:$(OBJECT_PATH)/%.d=%.d)
+#Look for missing files in the PRODUCT_OBJECT_PATH
+ifdef CMISS_ROOT_DEFINED
+   DEPEND_FILES_PRODUCT_PATH = $(DEPEND_FILES_MISSING_PART1:%.d=$(PRODUCT_OBJECT_PATH)/%.d)
+   DEPEND_FILES_PRODUCT_FOUND = $(wildcard $(DEPEND_FILES_PRODUCT_PATH))
+   DEPEND_FILES_PRODUCT_NOTFOUND = $(filter-out $(DEPEND_FILES_PRODUCT_FOUND),$(DEPEND_FILES_PRODUCT_PATH))
+
+   DEPEND_FILES_MISSING = $(DEPEND_FILES_PRODUCT_NOTFOUND:$(PRODUCT_OBJECT_PATH)/%.d=%.d)
+   DEPEND_FILES_INCLUDE = $(DEPEND_FILES_OBJECT_FOUND) $(DEPEND_FILES_PRODUCT_FOUND) $(DEPEND_FILES_MISSING)
+else
+   DEPEND_FILES_MISSING = $(DEPEND_FILES_MISSING_PART1)
+   DEPEND_FILES_INCLUDE = $(DEPEND_FILES_OBJECT_FOUND) $(DEPEND_FILES_MISSING)
+endif
+
+#Touch a dummy include so that this makefile is reloaded and therefore the new .ds
+$(DEPENDFILE) : $(DEPEND_FILES_MISSING)
+	touch $(DEPENDFILE)
+
+include $(DEPENDFILE)
+include $(DEPEND_FILES_INCLUDE)

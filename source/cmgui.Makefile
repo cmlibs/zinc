@@ -124,9 +124,6 @@ Building $(BIN_TARGET)
 endif
 $(warning $(BUILDING_MESSAGE))
 
-DEPENDFILE = $(OBJECT_PATH)/$(BIN_TARGET).depend
-PRODUCT_DEPENDFILE = $(PRODUCT_OBJECT_PATH)/$(BIN_TARGET).depend
-
 ifdef CMISS_ROOT_DEFINED
    VPATH=$(BIN_PATH):$(UTILITIES_PATH):$(OBJECT_PATH):$(UIDH_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH):$(PRODUCT_UIDH_PATH)
 else # CMISS_ROOT_DEFINED
@@ -843,8 +840,6 @@ endif # $(MEMORYCHECK) != true
 MAIN_SRC = cmgui.c
 MAIN_OBJ = $(MAIN_SRC:.c=.o)
 
-$(BIN_TARGET) :
-
 clean :
 	-rm -r $(OBJECT_PATH)
 ifdef UIDH_PATH
@@ -1183,6 +1178,8 @@ BUILD_TABS_TO_SPACES = $(call BuildNormalTarget,TabsToSpaces,$(UTILITIES_PATH),T
 TabsToSpaces: $(TABS_TO_SPACES_OBJS)
 	$(BUILD_TABS_TO_SPACES)
 
+DEPENDFILE = $(OBJECT_PATH)/$(BIN_TARGET).depend
+
 DEPEND_FILES = $(OBJS:%.o=%.d) $(MAIN_OBJ:%.o=%.d)
 #Look in the OBJECT_PATH
 DEPEND_FILES_OBJECT_PATH = $(DEPEND_FILES:%.d=$(OBJECT_PATH)/%.d)
@@ -1202,9 +1199,8 @@ else
    DEPEND_FILES_INCLUDE = $(DEPEND_FILES_OBJECT_FOUND) $(DEPEND_FILES_MISSING)
 endif
 
-
 #Touch a dummy include so that this makefile is reloaded and therefore the new .ds
-$(DEPENDFILE) : $(DEPEND_FILES_MISSING)
+$(DEPENDFILE) : $(DEPEND_FILES_INCLUDE)
 	touch $(DEPENDFILE)
 
 include $(DEPENDFILE)
