@@ -463,7 +463,7 @@ Perform a automatic thresholding operation on the image cache.
 					        Lstd += (kernel[j] - Lmean) * (kernel[j] - Lmean);
 					}
 					Lstd /= (FE_value)kernel_size;
-					if (Lstd == 0.0)
+					if (Lstd < 0.0001)
 					{
 					        rate = 20;
 					        result_index[k] = 1.0/(1.0 + exp((FE_value)rate * (Lmean - *(data_index + k))));
