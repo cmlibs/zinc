@@ -1022,7 +1022,10 @@ DESCRIPTION :
 	struct Computed_field_window_projection_type_specific_data *data;
 
 	ENTER(Computed_field_window_projection_find_element_xi);
-	if (field&&values&&(number_of_values==field->number_of_components)&&element&&xi&&
+	if (field&&&& (data = 
+		(struct Computed_field_window_projection_type_specific_data *)
+		field->type_specific_data) && values
+		&&(number_of_values==field->number_of_components)&&element&&xi&&
 		search_element_group)
 	{
 		if (data->projection_matrix ||
