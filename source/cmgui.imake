@@ -310,13 +310,13 @@ INTERPRETER_SWITCH = -DPERL_INTERPRETER
 INTERPRETER_SRCS =
 #if defined (IRIX) /* switch OperatingSystem */
 #if defined (O64)
+INTERPRETER_LIB = $(INTERPRETER_PATH)/generated/mips4-64-debug/libperlinterpreter.a
+#else /* defined (O64) */
 #if defined (OPTIMISED)
 INTERPRETER_LIB = $(INTERPRETER_PATH)/generated/mips4-n32-debug/libperlinterpreter.a
 #else /* defined (OPTIMISED) */
 INTERPRETER_LIB = $(INTERPRETER_PATH)/generated/mips3-n32-debug/libperlinterpreter.a
 #endif /* defined (OPTIMISED) */
-#else /* defined (O64) */
-INTERPRETER_LIB = $(INTERPRETER_PATH)/generated/mips4-64-debug/libperlinterpreter.a
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
 INTERPRETER_LIB = $(INTERPRETER_PATH)/generated/linuxdebug/libperlinterpreter.a
