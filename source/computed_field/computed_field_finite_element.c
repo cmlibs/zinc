@@ -1177,8 +1177,10 @@ DESCRIPTION :
 			find_element_xi_data.tolerance = 1e-06;
 			*element = (struct FE_element *)NULL;
 					
-			/* Try the cached element first */
-			if (!*element && field->element && Computed_field_iterative_element_conditional(
+			/* Try the cached element first if it is in the group */
+			if (!*element && field->element && IS_OBJECT_IN_GROUP(FE_element)
+				(field->element, search_element_group) &&
+				Computed_field_iterative_element_conditional(
 				field->element, (void *)&find_element_xi_data))
 			{
 				*element = field->element;
