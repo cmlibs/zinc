@@ -1796,8 +1796,8 @@ release.
 										DESTROY(LIST(Scene_picked_object))(
 											&(scene_picked_object_list));
 									}
-									DESTROY(Interaction_volume)(&temp_interaction_volume);
 								}
+								DESTROY(Interaction_volume)(&temp_interaction_volume);
 							}
 						}
 						if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
