@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.c
 
-LAST MODIFIED : 18 July 2001
+LAST MODIFIED : 10 February 2002
 
 DESCRIPTION :
 Contains function definitions for measurement rigs.
@@ -1449,22 +1449,26 @@ NULL if unsuccessful.
 
 struct Rig *create_standard_Rig(char *name,enum Region_type region_type,
 	enum Monitoring_status monitoring,enum Experiment_status experiment,
-	int number_of_rows,int *electrodes_in_row,int number_of_regions,
+	int number_of_rows,int *electrodes_in_row,
+	int number_of_regions_and_device_numbering,
 	int number_of_auxiliary_inputs,float sock_focus
 #if defined (UNEMAP_USE_3D)
 	,struct Unemap_package *unemap_package
 #endif /* defined (UNEMAP_USE_3D)*/
 	)
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 10 February 2002
 
 DESCRIPTION :
 This function is a specialized version of create_Rig (in rig.c).  It creates a
-rig with <number_of_regions> regions with identical electrode layouts.  In each
-region the electrodes are equally spaced in <number_of_rows> rows and
-<number_of_columns> columns.  There are <number_of_auxiliary_inputs> auxiliary
-inputs.  The auxiliaries are single channel inputs (rather than linear
-combinations of electrodes).
+rig with abs(<number_of_regions_and_device_numbering>) regions with identical
+electrode layouts.  In each region the electrodes are equally spaced in
+<number_of_rows> rows and <electrodes_in_row> columns.  If
+<number_of_regions_and_device_numbering> is positive then the device/channel
+number offset between electrodes in a region is
+<number_of_regions_and_device_numbering>, otherwise the offset is 1.  There are
+<number_of_auxiliary_inputs> auxiliary inputs.  The auxiliaries are single
+channel inputs (rather than linear combinations of electrodes).
 ==============================================================================*/
 {
 	struct Rig *rig;
@@ -1473,16 +1477,28 @@ combinations of electrodes).
 	struct Region_list_item **region_item,*region_list;
 	struct Device_description *description;
 	struct Channel *channel;
-	int column_number,device_number,electrodes_in_region,electrodes_in_row_max,i,
-		number_in_row,number_of_devices,region_number,row_number;
+	int column_number,device_number,device_number_offset,electrodes_in_region,
+		electrodes_in_row_max,i,number_in_row,number_of_devices,number_of_regions,
+		region_number,row_number;
 	char *device_name,no_error,*region_name;
 	float x,x_max,x_min,x_step,y,y_max,y_step;
 
 	ENTER(create_standard_Rig);
 	/* check the arguments */
-	if ((number_of_rows>0)&&electrodes_in_row&&(number_of_regions>0)&&
+	if ((number_of_rows>0)&&electrodes_in_row&&
+		(0!=number_of_regions_and_device_numbering)&&
 		(number_of_auxiliary_inputs>=0)&&((region_type!=SOCK)||(sock_focus>0)))
 	{
+		if (0<number_of_regions_and_device_numbering)
+		{
+			number_of_regions=number_of_regions_and_device_numbering;
+			device_number_offset=number_of_regions;
+		}
+		else
+		{
+			number_of_regions= -number_of_regions_and_device_numbering;
+			device_number_offset=1;
+		}
 		/* create the list of devices */
 		electrodes_in_region=0;
 		electrodes_in_row_max=0;
@@ -1540,7 +1556,10 @@ combinations of electrodes).
 				}
 				while ((region_number<number_of_regions)&&no_error)
 				{
-					device_number=region_number;
+					if (0<number_of_regions_and_device_numbering)
+					{
+						device_number=region_number;
+					}
 					/* create the region */
 					sprintf(region_name+7,"%d",region_number+1);
 					if ((region=create_Region(region_name,region_type,region_number,
@@ -1617,7 +1636,7 @@ combinations of electrodes).
 													(float *)NULL);
 											} break;
 										}
-										device_number += number_of_regions;
+										device_number += device_number_offset;
 										device++;
 									}
 									else

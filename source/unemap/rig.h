@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.h
 
-LAST MODIFIED : 29 July 2000
+LAST MODIFIED : 10 February 2002
 
 DESCRIPTION :
 Contains data and function descriptions for measurement rigs.
@@ -808,22 +808,26 @@ NULL if unsuccessful.
 
 struct Rig *create_standard_Rig(char *name,enum Region_type region_type,
 	enum Monitoring_status monitoring,enum Experiment_status experiment,
-	int number_of_rows,int *electrodes_in_row,int number_of_regions,
+	int number_of_rows,int *electrodes_in_row,
+	int number_of_regions_and_device_numbering,
 	int number_of_auxiliary_inputs,float sock_focus
 #if defined (UNEMAP_USE_3D)
 	,struct Unemap_package *unemap_package
 #endif /* defined (UNEMAP_USE_3D)*/
-		);
+	);
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 10 February 2002
 
 DESCRIPTION :
 This function is a specialized version of create_Rig (in rig.c).  It creates a
-rig with <number_of_regions> regions with identical electrode layouts.  In each
-region the electrodes are equally spaced in <number_of_rows> rows and
-<number_of_columns> columns.  There are <number_of_auxiliary_inputs> auxiliary
-inputs.  The auxiliaries are single channel inputs (rather than linear 
-combinations of electrodes).
+rig with abs(<number_of_regions_and_device_numbering>) regions with identical
+electrode layouts.  In each region the electrodes are equally spaced in
+<number_of_rows> rows and <electrodes_in_row> columns.  If
+<number_of_regions_and_device_numbering> is positive then the device/channel
+number offset between electrodes in a region is
+<number_of_regions_and_device_numbering>, otherwise the offset is 1.  There are
+<number_of_auxiliary_inputs> auxiliary inputs.  The auxiliaries are single
+channel inputs (rather than linear combinations of electrodes).
 ==============================================================================*/
 
 int destroy_Rig(struct Rig **rig);
