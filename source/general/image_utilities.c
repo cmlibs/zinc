@@ -6658,7 +6658,7 @@ equal to the number_of_components.
 			case 2:
 			{
 				magick_image_storage = "RA";
-				reverse_alpha = 1;
+				reverse_alpha = 0;
 			} break;
 			case 3:
 			{
@@ -6668,7 +6668,7 @@ equal to the number_of_components.
 			case 4:
 			{
 				magick_image_storage = "RGBA";
-				reverse_alpha = 1;
+				reverse_alpha = 0;
 			} break;
 			default:
 			{
