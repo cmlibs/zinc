@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_selection.c
 
-LAST MODIFIED : 23 March 2000
+LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
 Global store of selected elements for group actions and highlighting.
@@ -413,6 +413,25 @@ Calls FE_element_selection_update.
 	return (return_code);
 } /* FE_element_selection_select_element */
 
+int FE_element_select_in_FE_element_selection(struct FE_element *element,
+	void *element_selection_void)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+FE_element iterator version of FE_element_selection_select_element.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_element_select_in_FE_element_selection);
+	return_code=FE_element_selection_select_element(
+		(struct FE_element_selection *)element_selection_void,element);
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_select_in_FE_element_selection */
+
 int FE_element_selection_unselect_element(
 	struct FE_element_selection *element_selection,struct FE_element *element)
 /*******************************************************************************
@@ -456,6 +475,25 @@ is currently there. Calls FE_element_selection_update.
 
 	return (return_code);
 } /* FE_element_selection_unselect_element */
+
+int FE_element_unselect_in_FE_element_selection(struct FE_element *element,
+	void *element_selection_void)
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+FE_element iterator version of FE_element_selection_unselect_element.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_element_unselect_in_FE_element_selection);
+	return_code=FE_element_selection_unselect_element(
+		(struct FE_element_selection *)element_selection_void,element);
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_unselect_in_FE_element_selection */
 
 struct LIST(FE_element) *FE_element_selection_get_element_list(
 	struct FE_element_selection *element_selection)

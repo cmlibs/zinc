@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_selection.h
 
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
 Global store of selected elements for group actions and highlighting.
@@ -134,6 +134,15 @@ newly_unselected_element_list if it is currently there.
 Calls FE_element_selection_update.
 ==============================================================================*/
 
+int FE_element_select_in_FE_element_selection(struct FE_element *element,
+	void *element_selection_void);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+FE_element iterator version of FE_element_selection_select_element.
+==============================================================================*/
+
 int FE_element_selection_unselect_element(
 	struct FE_element_selection *element_selection,struct FE_element *element);
 /*******************************************************************************
@@ -144,6 +153,15 @@ If <element> is in <element_selection> it is removed and added to the
 newly_unselected_element_list. Note it is added to this list if not currently
 selected. Also ensures it is removed from the newly_selected_element_list if it
 is currently there. Calls FE_element_selection_update.
+==============================================================================*/
+
+int FE_element_unselect_in_FE_element_selection(struct FE_element *element,
+	void *element_selection_void);
+/*******************************************************************************
+LAST MODIFIED : 5 July 2000
+
+DESCRIPTION :
+FE_element iterator version of FE_element_selection_unselect_element.
 ==============================================================================*/
 
 struct LIST(FE_element) *FE_element_selection_get_element_list(
