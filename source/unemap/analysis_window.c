@@ -2445,14 +2445,12 @@ similar to rig->devices. This FE_node_order_info is also used elsewhere.
 	struct User_interface *user_interface;
 	Pixmap pixel_map;
 #if defined (UNEMAP_USE_NODES)
-	int node_number;
-	struct FE_field *field;
+	int node_number;	
 	struct FE_node *node;
 	struct FE_node_order_info *node_order_info;	
 #endif /* defined (UNEMAP_USE_NODES) */
 	ENTER(draw_all_signals);
 #if defined (UNEMAP_USE_NODES)
-	field=(struct FE_field *)NULL;
 	node_order_info=(struct FE_node_order_info *)NULL;
 	node=(struct FE_node *)NULL;
 #endif /* defined (UNEMAP_USE_NODES) */
@@ -2499,11 +2497,11 @@ similar to rig->devices. This FE_node_order_info is also used elsewhere.
 #if defined (UNEMAP_USE_NODES)
 				using_rig_node_group=1;
 				return_code=Analysis_window_set_and_sort_rig_node_order_info(analysis_window);
-				node_order_info=analysis_window->rig_node_order_info;	
+				node_order_info=analysis_window->rig_node_order_info;
+				/*for device nodes,first_data, last_data not used, so just set to 0 */
+				/* device node fields display_start(end)_time used instead*/
 				first_data=0;
-				/* time is stored at signal field. For moment, assume only 1 signal per node */
-				field=get_Signal_drawing_package_signal_field(signal_drawing_package);
-				last_data=get_FE_field_number_of_times(field)-1;
+				last_data=0;									
 				node_number=0;
 				node=get_FE_node_order_info_node(node_order_info,node_number);
 				number_of_signals=get_FE_node_order_info_number_of_nodes(node_order_info);

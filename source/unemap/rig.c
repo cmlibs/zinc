@@ -785,8 +785,8 @@ the devices in the device list.
 		unemap_package=the_region->unemap_package;
 		if(the_region&&unemap_package)
 		{
-			/* following will deaccess the rig_node_group */
-			free_unemap_package_rig_node_group(unemap_package,&(the_region->rig_node_group));
+			/* following will deaccess the rig_node_group */			
+			free_unemap_package_rig_node_group(unemap_package,&(the_region->rig_node_group));			
 			computed_field_manager=get_unemap_package_Computed_field_manager(unemap_package);
 			fe_field_manager=get_unemap_package_FE_field_manager(unemap_package);
 			if(the_region->electrode_position_field)

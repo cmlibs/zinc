@@ -2576,12 +2576,12 @@ int draw_signal(struct FE_node *device_node,
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 22 June 2000
+LAST MODIFIED : 2 August 2000
 
 DESCRIPTION :
 Draws the <device> signal in the <pixel_map> at the specified position
 (<x_pos>, <y_pos>), size (<width>, <height>) and <detail>.
-NB.  0<=current_data_interval<number_of_data_intervals
+NB.  0<=current_data_interval<number_of_data_intervals 
 ???missing data ? times ?
 ???DB.  Needs more checking and more on return_code
 ???DB.  Change first_data and last_data to times
@@ -2639,7 +2639,7 @@ NB.  0<=current_data_interval<number_of_data_intervals
 				times[i]=(float *)NULL;
 				name[i]=(char *)NULL;
 			}
-			i=0;
+			i=0;		
 			while ((i<number_of_data_intervals)&&extract_signal_information(
 				device_node,signal_drawing_package,device,0,first_data[i],last_data[i],
 				number_of_signals+i,number_of_points+i,times+i,signals_values+i,

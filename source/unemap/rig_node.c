@@ -4078,7 +4078,7 @@ int extract_signal_information(struct FE_node *device_node,
 	int *highlight_address,float *signal_minimum_address,
 	float *signal_maximum_address)
 /*******************************************************************************
-LAST MODIFIED : 13 August 1999
+LAST MODIFIED : 2 August 2000
 
 DESCRIPTION :
 Extracts the specified signal information.  The specification arguments are:
@@ -4086,9 +4086,12 @@ Extracts the specified signal information.  The specification arguments are:
 	stored. Either supply a <device>, with <device_node>, <signal_drawing_package> NULL
 	to extract info from <device>, or supply a <device_node> and a <signal_drawing_package>
 	with <device> = NULL, to extract info from <device_node>.
-- <signal_number> specifies which signal (zero indicates all)
-- <first_data>, <last_data> specify the part of the signal required.  If
-	<first_data> is greater than <last_data> then return the whole signal
+- <signal_number> specifies which signal (zero indicates all)	
+- if device is set (device_node is NULL) <first_data>, <last_data> specify the 
+  part of the signal required. If <first_data> is greater than <last_data> then 
+  return the whole signal
+- if device_node is set (device is NULL)<first_data>, <last_data> not used,
+  <device_node> fields display_start(end)_time used instead
 The extraction arguments are:
 - <number_of_signals_address> if not NULL, <*number_of_signals_address> is set
 	to the number of signals extracted
@@ -4527,16 +4530,14 @@ The extraction arguments are:
 		{
 			enum Value_type value_type;
 			FE_value *FE_value_signal_data=(FE_value *)NULL;
-			FE_value 	time;
-			int i,number_of_nodal_values;
+			FE_value 	end_time,start_time,time,time_high,time_low;
+			int end_array_index,i,index_high,index_low,number_of_nodal_values,start_array_index;
 			short int *short_signal_data=(short int *)NULL;
 			struct FE_field_component component;						
-			struct FE_field *display_start_time_field=(struct FE_field *)NULL;/*!!jw*/
-			struct FE_field *display_end_time_field=(struct FE_field *)NULL;	/*!!jw*/
-			struct FE_field *signal_field=(struct FE_field *)NULL;/*!!jw*/	
-			FE_value end_time,start_time,time_high,time_low;/*!!jw*/
-			int end_array_index,start_array_index,index_high,index_low;/*!!jw*/
-
+			struct FE_field *display_start_time_field=(struct FE_field *)NULL;
+			struct FE_field *display_end_time_field=(struct FE_field *)NULL;	
+			struct FE_field *signal_field=(struct FE_field *)NULL;	
+		
 			return_code=1;
 			/*???DB.  Currently only storing one signal at node */
 			number_of_signals=1;
@@ -4558,36 +4559,28 @@ The extraction arguments are:
 			number_of_nodal_values=get_FE_nodal_array_number_of_elements(device_node,
 				&component,0,FE_NODAL_VALUE);
 			value_type= get_FE_nodal_value_type(device_node,&component,0);
-			/*!!jw*/
+			/*get the fields for time information */
 			display_start_time_field=
 							get_Signal_drawing_package_display_start_time_field(signal_drawing_package);
 			display_end_time_field=
 							get_Signal_drawing_package_display_end_time_field(signal_drawing_package);
 			signal_field=
-							get_Signal_drawing_package_signal_field(signal_drawing_package);
-			/*!!jw*/		
+							get_Signal_drawing_package_signal_field(signal_drawing_package);					
 			if((number_of_nodal_values>0)&&(value_type!=UNKNOWN_VALUE)&&
 				display_start_time_field&&display_end_time_field&&signal_field)
 			{
-				/*!!jw*/
+				/*get the display start time, end time*/
 				return_code=get_FE_field_FE_value_value(display_start_time_field,0,
 					&start_time);
 				return_code=get_FE_field_FE_value_value(display_end_time_field,0,
 					&end_time);
+				/*get the array indices for start time, end time*/
 				return_code=get_FE_field_time_array_index_at_FE_value_time(
 					signal_field,start_time,&time_high,&time_low,&start_array_index,
 					&index_high,&index_low);	
 				return_code=get_FE_field_time_array_index_at_FE_value_time(
 					signal_field,end_time,&time_high,&time_low,&end_array_index,
-					&index_high,&index_low);
-				/*
-				printf("\n");
-				printf("start_time= %g start_array_index=%d \n",start_time,start_array_index);
-				printf("end_time= %g end_array_index=%d \n",end_time,end_array_index);
-				fflush(NULL);
-				*/
-				/*!!jw*/
-				/* return_code=1;*/
+					&index_high,&index_low);						
 			}
 			else
 			{			
@@ -4601,9 +4594,9 @@ The extraction arguments are:
 					last_data_local=number_of_nodal_values-1;
 				}
 				else
-				{
-					first_data_local=first_data;
-					last_data_local=last_data;
+				{				
+					first_data_local=start_array_index;
+					last_data_local=end_array_index;
 				}
 				if ((0<=first_data_local)&&(first_data_local<=last_data_local)&&
 					(last_data_local<number_of_nodal_values))

@@ -391,15 +391,20 @@ int extract_signal_information(struct FE_node *device_node,
 	int *highlight_address,float *signal_minimum_address,
 	float *signal_maximum_address);
 /*******************************************************************************
-LAST MODIFIED : 13 August 1999
+LAST MODIFIED : 2 August 2000
 
 DESCRIPTION :
 Extracts the specified signal information.  The specification arguments are:
 - <device_node>, <signal_drawing_package>, <device> identify where the information is
-	stored
-- <signal_number> specifies which signal (zero indicates all)
-- <first_data>, <last_data> specify the part of the signal required.  If
-	<first_data> is greater than <last_data> then return the whole signal
+	stored. Either supply a <device>, with <device_node>, <signal_drawing_package> NULL
+	to extract info from <device>, or supply a <device_node> and a <signal_drawing_package>
+	with <device> = NULL, to extract info from <device_node>.
+- <signal_number> specifies which signal (zero indicates all)	
+- if device is set (device_node is NULL) <first_data>, <last_data> specify the 
+  part of the signal required. If <first_data> is greater than <last_data> then 
+  return the whole signal
+- if device_node is set (device is NULL)<first_data>, <last_data> not used,
+  <device_node> fields display_start(end)_time used instead
 The extraction arguments are:
 - <number_of_signals_address> if not NULL, <*number_of_signals_address> is set
 	to the number of signals extracted
