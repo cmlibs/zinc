@@ -3829,7 +3829,7 @@ longer in <node_group_manager>.
 int Scene_object_get_range(struct Scene_object *scene_object,
 	void *graphics_object_range_void)
 /*******************************************************************************
-LAST MODIFIED : 15 June 1998
+LAST MODIFIED : 6 April 2000
 
 DESCRIPTION :
 Scene_object list iterator function. If <scene_object> is visible, expands
@@ -3837,12 +3837,27 @@ the <graphics_object_range> to include the range of the linked list of
 graphics objects in scene_object.
 ==============================================================================*/
 {
-	int return_code;
+	float coordinates[4],transformed_coordinates[4];
+	gtMatrix *transformation;
+	int i,j,k,return_code;
+	struct Graphics_object_range_struct *graphics_object_range,
+		temp_graphics_object_range;
 	struct GT_object *graphics_object;
+	void *use_range_void;
 
 	ENTER(Scene_object_get_range);
-	if (scene_object)
+	if (scene_object&&(graphics_object_range=
+		(struct Graphics_object_range_struct *)graphics_object_range_void))
 	{
+		if (transformation=scene_object->transformation)
+		{
+			temp_graphics_object_range.first=1;
+			use_range_void=(void *)&temp_graphics_object_range;
+		}
+		else
+		{
+			use_range_void=graphics_object_range_void;
+		}
 		switch(scene_object->type)
 		{
 			case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
@@ -3853,7 +3868,7 @@ graphics objects in scene_object.
 					return_code=for_each_settings_in_GT_element_group(
 						scene_object->gt_element_group,
 						GT_element_settings_get_visible_graphics_object_range,
-						graphics_object_range_void);
+						use_range_void);
 				}
 			} break;
 			case SCENE_OBJECT_GRAPHICS_OBJECT:
@@ -3861,20 +3876,89 @@ graphics objects in scene_object.
 				return_code=1;
 				if (g_VISIBLE==scene_object->visibility)
 				{
-					graphics_object=scene_object->gt_object;
-					for (;return_code&&(graphics_object != NULL);
-						  graphics_object=graphics_object->nextobject)
+					for (graphics_object=scene_object->gt_object;
+						return_code&&(graphics_object != NULL);
+						graphics_object=graphics_object->nextobject)
 					{
-						return_code=get_graphics_object_range(graphics_object,
-							graphics_object_range_void);
+						return_code=
+							get_graphics_object_range(graphics_object,use_range_void);
 					}
 				}
 			} break;
 			case SCENE_OBJECT_SCENE:
 			{
 				for_each_Scene_object_in_Scene(scene_object->child_scene,
-					Scene_object_get_range,graphics_object_range_void);
+					Scene_object_get_range,use_range_void);
 			} break;
+		}
+		if (transformation&&(!temp_graphics_object_range.first))
+		{
+			coordinates[3]=1.0;
+			/* transform and compare ranges of each of 8 corners of the cube */
+			for (i=0;i<8;i++)
+			{
+				if (i & 1)
+				{
+					coordinates[0]=temp_graphics_object_range.maximum[0];
+				}
+				else
+				{
+					coordinates[0]=temp_graphics_object_range.minimum[0];
+				}
+				if (i & 2)
+				{
+					coordinates[1]=temp_graphics_object_range.maximum[1];
+				}
+				else
+				{
+					coordinates[1]=temp_graphics_object_range.minimum[1];
+				}
+				if (i & 4)
+				{
+					coordinates[2]=temp_graphics_object_range.maximum[2];
+				}
+				else
+				{
+					coordinates[2]=temp_graphics_object_range.minimum[2];
+				}
+				for (j=0;j<4;j++)
+				{
+					transformed_coordinates[j]=0.0;
+					for (k=0;k<4;k++)
+					{
+						transformed_coordinates[j] +=
+							(*transformation)[k][j]*coordinates[k];
+					}
+				}
+				if (0.0<transformed_coordinates[3])
+				{
+					transformed_coordinates[0] /= transformed_coordinates[3];
+					transformed_coordinates[1] /= transformed_coordinates[3];
+					transformed_coordinates[2] /= transformed_coordinates[3];
+					for (j=0;j<3;j++)
+					{
+						if (graphics_object_range->first)
+						{
+							graphics_object_range->minimum[j]=
+								graphics_object_range->maximum[j]=transformed_coordinates[j];
+						}
+						else
+						{
+							if (transformed_coordinates[j] >
+								graphics_object_range->maximum[j])
+							{
+								graphics_object_range->maximum[j]=transformed_coordinates[j];
+							}
+							else if (transformed_coordinates[j] <
+								graphics_object_range->minimum[j])
+							{
+								graphics_object_range->minimum[j]=transformed_coordinates[j];
+							}
+						}
+					}
+					graphics_object_range->first=0;
+				}
+			}
 		}
 	}
 	else
