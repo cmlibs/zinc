@@ -158,7 +158,6 @@ $(SOURCE_PATH)/unemap_linux_3d.make : $(SOURCE_PATH)/unemap.imake $(SOURCE_PATH)
 
 update :
 	if ( [ "$(PWD)" -ef "$(PRODUCT_PATH)" ] && [ "$(USER)" = "cmiss" ] ); then \
-		cvs update && \
 		cd $(PRODUCT_SOURCE_PATH) && \
 		chgrp -R cmgui_programmers * && \
 		cd $(PRODUCT_PATH) && \
