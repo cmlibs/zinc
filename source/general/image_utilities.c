@@ -17,8 +17,10 @@ Utilities for handling images.
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
-/*#define DEBUG 1*/
-
+#define DEBUG 1
+#if defined SGI
+#define __BYTE_ORDER 4321 
+#endif /* defined SGI */
 /*
 Module constants
 ----------------
@@ -363,7 +365,7 @@ For reading a field in an image file directory.
 	printf("Field");
 #endif /* defined (DEBUG) */
 	/* read tag */
-	if (2==read_and_byte_swap(byte_array,sizeof(char),2,least_to_most,tiff_file))
+	if (1==read_and_byte_swap(byte_array,2,1,least_to_most,tiff_file))
 	{
 		*tag= *((unsigned short int *)byte_array);
 #if defined (DEBUG)
@@ -371,7 +373,7 @@ For reading a field in an image file directory.
 		printf(".  tag=%d",*tag);
 #endif /* defined (DEBUG) */
 		/* read field type: short, long, rational ... */
-		if (2==read_and_byte_swap(byte_array,sizeof(char),2,least_to_most,
+		if (1==read_and_byte_swap(byte_array,2,1,least_to_most,
 			tiff_file))
 		{
 			*type= *((unsigned short int *)byte_array);
@@ -500,7 +502,7 @@ For reading a field in an image file directory.
 				} break;
 			}
 			/* read field count: (how many values are present) */
-			if (4==read_and_byte_swap(byte_array,sizeof(char),4,least_to_most,
+			if (1==read_and_byte_swap(byte_array,4,1,least_to_most,
 				tiff_file))
 			{
 				*count= *((unsigned long int *)byte_array);
@@ -554,7 +556,12 @@ For reading a field in an image file directory.
 							}
 							else
 							{
-								byte_swap(byte_array,number_of_bytes,1,least_to_most);
+								byte_swap(byte_array,value_component_size,
+								  (*count)*number_of_value_components,least_to_most);
+#if defined (DEBUG)
+								/*???debug */
+								printf(", swapped_byte_array=%lx",*((unsigned long int *)byte_array));
+#endif /* defined (DEBUG) */
 								for (i=0;i<number_of_bytes;i++)
 								{
 									value[i]=byte_array[i];
@@ -573,7 +580,7 @@ For reading a field in an image file directory.
 								if (4<number_of_bytes)
 								{
 									return_code=byte_swap(value,value_component_size,
-										number_of_value_components,least_to_most);
+										(*count)*number_of_value_components,least_to_most);
 								}
 							}
 						}
@@ -2807,7 +2814,7 @@ the second the denominator.
 				printf("           1 = least to most significant\n\n");
 #endif /* defined (DEBUG) */
 				/* check file number */
-				if (2==read_and_byte_swap(byte_array,sizeof(char),2,least_to_most,
+				if (1==read_and_byte_swap(byte_array,2,1,least_to_most,
 					tiff_file))
 				{
 					file_type= *((unsigned short int *)byte_array);
@@ -2833,7 +2840,7 @@ the second the denominator.
 				{
 					/* find offset of first image file directory */
 						/*???DB.  Only reading first */
-					if (4==read_and_byte_swap(byte_array,sizeof(char),4,least_to_most,
+					if (1==read_and_byte_swap(byte_array,4,1,least_to_most,
 						tiff_file))
 					{
 						ifd_offset= *((unsigned long int *)byte_array);
@@ -2859,7 +2866,7 @@ the second the denominator.
 						/* go to image file directory and find out the number of fields */
 						if (0==fseek(tiff_file,(signed long int)ifd_offset,0))
 						{
-							if (2==read_and_byte_swap(byte_array,sizeof(char),2,
+							if (1==read_and_byte_swap(byte_array,2,1,
 								least_to_most,tiff_file))
 							{
 								number_of_fields= *((unsigned short int *)byte_array);
@@ -3801,8 +3808,16 @@ present in some files */
 											}
 											else
 											{
-												display_message(ERROR_MESSAGE,
-						"read_tiff_image_file.  Invalid field(s) for grey scale image");
+												if (TIFF_NO_COMPRESSION_VALUE==compression)
+												{
+													display_message(ERROR_MESSAGE,
+														"read_tiff_image_file.  Invalid field(s) for rgb image");
+												}
+												else
+												{
+													display_message(ERROR_MESSAGE,
+														"read_tiff_image_file.  Compression in tiff not supported for rgb image");
+												}
 												return_code=0;
 											}
 										} break;
