@@ -287,4 +287,11 @@ DESCRIPTION :
 If the <mapping> has a time keeper, stop it .
 ==============================================================================*/
 
+int mapping_window_update_time_limits(struct Mapping_window *mapping);
+/*******************************************************************************
+LAST MODIFIED : 15 January 2003
+
+DESCRIPTION :
+Sets the minimum and maximum of the time_keeper to relate to the current map.
+==============================================================================*/
 #endif /* !defined (MAPPING_WINDOW_H) */

@@ -125,109 +125,6 @@ Finds the id of the mapping map button.
 	LEAVE;
 } /* identify_mapping_map_button */
 
-static void mapping_window_update_time_limits(struct Mapping_window *mapping)
-/*******************************************************************************
-LAST MODIFIED : 6 May 2002
-
-DESCRIPTION :
-Sets the minimum and maximum of the time_keeper to relate to the current map
-==============================================================================*/
-{
-	struct Map *map;
-	struct Signal_buffer *buffer;
-
-	ENTER(mapping_window_update_time_limits);
-	if (mapping)
-	{
-		if (mapping->potential_time_object&&(map=mapping->map)&&
-			(*(map->rig_pointer))&&((*(map->rig_pointer))->devices)&&
-			((*((*(map->rig_pointer))->devices))->signal)&&
-			(buffer=(*((*(map->rig_pointer))->devices))->signal->buffer))
-		{
-			switch (*mapping->map->type)
-			{
-				case POTENTIAL:
-				{
-					switch (map->interpolation_type)
-					{
-						case BICUBIC_INTERPOLATION:
-						{
-							Time_keeper_set_minimum(Time_object_get_time_keeper(
-								mapping->potential_time_object),(map->start_time)/1000.0-
-								0.5/(buffer->frequency));
-							Time_keeper_set_maximum(Time_object_get_time_keeper(
-								mapping->potential_time_object),(map->end_time)/1000.0+
-								0.5/(buffer->frequency));
-						} break;
-						case NO_INTERPOLATION:
-						case DIRECT_INTERPOLATION:
-						default:
-						{
-							Time_keeper_set_minimum(Time_object_get_time_keeper(
-								mapping->potential_time_object),
-								(float)buffer->times[*(map->start_search_interval)]/
-								(buffer->frequency));
-							Time_keeper_set_maximum(Time_object_get_time_keeper(
-								mapping->potential_time_object),
-								(float)buffer->times[*(map->end_search_interval)]/
-								buffer->frequency);
-						} break;
-					}/*switch (map->interpolation_type)*/
-				} break;
-				case SINGLE_ACTIVATION:
-				{
-#if defined (NEW_CODE)
-/*???DB.  Shouldn't start_time, end_time and number_of_frames be updated? */
-					if (map->drawing_information)
-					{
-						map->number_of_frames=
-							map->drawing_information->number_of_spectrum_colours;
-					}
-					else
-					{
-						map->number_of_frames=1;
-						display_message(ERROR_MESSAGE,"mapping_window_update_time_limits.  "
-							"Missing map drawing information");
-					}
-					map->start_time=(map->minimum_value)/1000.0+
-						(float)(buffer->times[*(map->datum)])/(buffer->frequency);
-					map->end_time=(map->maximum_value)/1000.0+
-						(float)(buffer->times[*(map->datum)])/(buffer->frequency);
-					Time_keeper_set_minimum(Time_object_get_time_keeper(
-						mapping->potential_time_object),map->start_time);
-					Time_keeper_set_maximum(Time_object_get_time_keeper(
-						mapping->potential_time_object),map->end_time);
-#else /* defined (NEW_CODE) */
-					Time_keeper_set_minimum(Time_object_get_time_keeper(
-						mapping->potential_time_object),(map->minimum_value)/1000.0+
-						((float)(buffer->times)[*(map->datum)]-0.5)/(buffer->frequency));
-					Time_keeper_set_maximum(Time_object_get_time_keeper(
-						mapping->potential_time_object),(map->maximum_value)/1000.0+
-						((float)(buffer->times)[*(map->datum)]+0.5)/(buffer->frequency));
-#endif /* defined (NEW_CODE) */
-				} break;
-				default:
-				{
-					Time_keeper_set_minimum(Time_object_get_time_keeper(
-						mapping->potential_time_object),
-						(float)buffer->times[*(map->start_search_interval)]/
-						(buffer->frequency));
-					Time_keeper_set_maximum(Time_object_get_time_keeper(
-						mapping->potential_time_object),
-						(float)buffer->times[*(map->end_search_interval)]/
-						buffer->frequency);
-				} break;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"mapping_window_update_time_limits.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* mapping_window_update_time_limits */
-
 static int update_movie_frames_information(struct Mapping_window *mapping,
 	int *recalculate,char *map_settings_changed)
 /*******************************************************************************
@@ -6400,5 +6297,113 @@ DESCRIPTION :
 
 	return (return_code);
 } /* Mapping_window_set_potential_time_object */
+
+int mapping_window_update_time_limits(struct Mapping_window *mapping)
+/*******************************************************************************
+LAST MODIFIED : 15 January 2003
+
+DESCRIPTION :
+Sets the minimum and maximum of the time_keeper to relate to the current map.
+==============================================================================*/
+{
+	int return_code;
+	struct Map *map;
+	struct Signal_buffer *buffer;
+
+	ENTER(mapping_window_update_time_limits);
+	return_code=0;
+	if (mapping)
+	{
+		if (mapping->potential_time_object&&(map=mapping->map)&&
+			(*(map->rig_pointer))&&((*(map->rig_pointer))->devices)&&
+			((*((*(map->rig_pointer))->devices))->signal)&&
+			(buffer=(*((*(map->rig_pointer))->devices))->signal->buffer))
+		{
+			return_code=1;
+			switch (*mapping->map->type)
+			{
+				case POTENTIAL:
+				{
+					switch (map->interpolation_type)
+					{
+						case BICUBIC_INTERPOLATION:
+						{
+							Time_keeper_set_minimum(Time_object_get_time_keeper(
+								mapping->potential_time_object),(map->start_time)/1000.0-
+								0.5/(buffer->frequency));
+							Time_keeper_set_maximum(Time_object_get_time_keeper(
+								mapping->potential_time_object),(map->end_time)/1000.0+
+								0.5/(buffer->frequency));
+						} break;
+						case NO_INTERPOLATION:
+						case DIRECT_INTERPOLATION:
+						default:
+						{
+							Time_keeper_set_minimum(Time_object_get_time_keeper(
+								mapping->potential_time_object),
+								(float)buffer->times[*(map->start_search_interval)]/
+								(buffer->frequency));
+							Time_keeper_set_maximum(Time_object_get_time_keeper(
+								mapping->potential_time_object),
+								(float)buffer->times[*(map->end_search_interval)]/
+								buffer->frequency);
+						} break;
+					}/*switch (map->interpolation_type)*/
+				} break;
+				case SINGLE_ACTIVATION:
+				{
+#if defined (NEW_CODE)
+/*???DB.  Shouldn't start_time, end_time and number_of_frames be updated? */
+					if (map->drawing_information)
+					{
+						map->number_of_frames=
+							map->drawing_information->number_of_spectrum_colours;
+					}
+					else
+					{
+						map->number_of_frames=1;
+						display_message(ERROR_MESSAGE,"mapping_window_update_time_limits.  "
+							"Missing map drawing information");
+					}
+					map->start_time=(map->minimum_value)/1000.0+
+						(float)(buffer->times[*(map->datum)])/(buffer->frequency);
+					map->end_time=(map->maximum_value)/1000.0+
+						(float)(buffer->times[*(map->datum)])/(buffer->frequency);
+					Time_keeper_set_minimum(Time_object_get_time_keeper(
+						mapping->potential_time_object),map->start_time);
+					Time_keeper_set_maximum(Time_object_get_time_keeper(
+						mapping->potential_time_object),map->end_time);
+#else /* defined (NEW_CODE) */
+					Time_keeper_set_minimum(Time_object_get_time_keeper(
+						mapping->potential_time_object),(map->minimum_value)/1000.0+
+						((float)(buffer->times)[*(map->datum)]-0.5)/(buffer->frequency));
+					Time_keeper_set_maximum(Time_object_get_time_keeper(
+						mapping->potential_time_object),(map->maximum_value)/1000.0+
+						((float)(buffer->times)[*(map->datum)]+0.5)/(buffer->frequency));
+#endif /* defined (NEW_CODE) */
+				} break;
+				default:
+				{
+					Time_keeper_set_minimum(Time_object_get_time_keeper(
+						mapping->potential_time_object),
+						(float)buffer->times[*(map->start_search_interval)]/
+						(buffer->frequency));
+					Time_keeper_set_maximum(Time_object_get_time_keeper(
+						mapping->potential_time_object),
+						(float)buffer->times[*(map->end_search_interval)]/
+						buffer->frequency);
+				} break;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"mapping_window_update_time_limits.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* mapping_window_update_time_limits */
 
 
