@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : control_curve_editor.c
 
-LAST MODIFIED : 9 February 2000
+LAST MODIFIED : 16 June 2000
 
 DESCRIPTION :
 Provides the widgets to modify Control_curve structures.
@@ -799,14 +799,13 @@ Note that yscale will be negative since y coordinates increase downwards.
 static int control_curve_editor_drawing_layout_change(
 	struct Control_curve_editor *curve_editor)
 /*******************************************************************************
-LAST MODIFIED : 21 October 1997
+LAST MODIFIED : 16 June 2000
 
 DESCRIPTION :
 Calculates the size of the various parts of the drawing_area based on the
 window dimensions, number of components in view and default drawing information.
 Call this routine after the drawing area is opened or resized or the number of
 components being displayed is changed.
-Also calls control_curve_editor_calc_x_axis_scale at the end.
 ==============================================================================*/
 {
 	Dimension winwidth,winheight;
@@ -3982,7 +3981,7 @@ Returns the Control_curve currently being edited.
 int control_curve_editor_set_curve(Widget control_curve_editor_widget,
 	struct Control_curve *curve)
 /*******************************************************************************
-LAST MODIFIED : 9 February 2000
+LAST MODIFIED : 16 June 2000
 
 DESCRIPTION :
 Sets the Control_curve to be edited by the control_curve_editor widget.
@@ -3992,6 +3991,7 @@ Sets the Control_curve to be edited by the control_curve_editor widget.
 	FE_value component_grid_size,parameter_grid_size;
 	int return_code;
 	struct Callback_data callback;
+	struct Control_curve *temp_curve;
 	struct Control_curve_editor *curve_editor;
 
 	ENTER(control_curve_editor_set_curve);
@@ -4046,14 +4046,14 @@ Sets the Control_curve to be edited by the control_curve_editor widget.
 					control_curve_editor_drawing_area_redraw(curve_editor,0);
 					/* turn on callbacks */
 					callback.data=(void *)curve_editor;
+					callback.procedure=control_curve_editor_update_basis_type;
+					choose_enumerator_set_callback(
+						curve_editor->basis_type_widget,&callback);
 					callback.procedure=control_curve_editor_change_component;
 					choose_field_component_set_callback(
 						curve_editor->component_widget,&callback);
-					callback.procedure=control_curve_editor_update_basis_type;
-					choose_field_component_set_callback(
-						curve_editor->basis_type_widget,&callback);
 					callback.procedure=control_curve_editor_update_extend_mode;
-					choose_field_component_set_callback(
+					choose_enumerator_set_callback(
 						curve_editor->extend_mode_widget,&callback);
 					XtSetSensitive(curve_editor->widget,True);
 				}
@@ -4071,18 +4071,29 @@ Sets the Control_curve to be edited by the control_curve_editor widget.
 			}
 			if (!curve)
 			{
-				/* switch off subwidget callbacks */
-				callback.procedure=(Callback_procedure *)NULL;
-				callback.data=(void *)NULL;
-				choose_field_component_set_callback(
-					curve_editor->component_widget,&callback);
-				choose_field_component_set_callback(
-					curve_editor->basis_type_widget,&callback);
-				choose_field_component_set_callback(
-					curve_editor->extend_mode_widget,&callback);
-				/* set subwidget curves to NULL */
-				choose_field_component_set_field_component(
-					curve_editor->component_widget,(struct FE_field *)NULL,0);
+				/* make simple curve to show parameters for one that will be created */
+				if (temp_curve=CREATE(Control_curve)("temp",LINEAR_LAGRANGE,1))
+				{
+					control_curve_editor_set_curve(control_curve_editor_widget,
+						temp_curve);
+					DESTROY(Control_curve)(&temp_curve);
+				}
+				else
+				{
+					/* switch off subwidget callbacks */
+					callback.procedure=(Callback_procedure *)NULL;
+					callback.data=(void *)NULL;
+					choose_enumerator_set_callback(
+						curve_editor->basis_type_widget,&callback);
+					choose_field_component_set_callback(
+						curve_editor->component_widget,&callback);
+					choose_enumerator_set_callback(
+						curve_editor->extend_mode_widget,&callback);
+					/* set subwidget curves to NULL */
+					choose_field_component_set_field_component(
+						curve_editor->component_widget,(struct FE_field *)NULL,0);
+				}
+				/* gray out widgets */
 				XtSetSensitive(curve_editor->widget,False);
 			}
 		}
