@@ -438,7 +438,8 @@ will be destroyed with it.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"CREATE(Unemap_command_data).  Missing argument(s)");
+			"CREATE(Unemap_command_data).  Missing argument(s); User_interface %p",
+			user_interface);
 	}
 	LEAVE;
 
