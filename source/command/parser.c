@@ -1300,7 +1300,7 @@ If fails, marks the option_table as invalid.
 	int return_code;
 
 	ENTER(Option_table_add_entry);
-	if (option_table&&((to_be_modified&&modifier)||user_data))
+	if (option_table)
 	{
 		if (!(return_code=Option_table_add_entry_private(option_table,token,
 			to_be_modified,user_data,modifier)))
