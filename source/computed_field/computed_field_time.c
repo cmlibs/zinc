@@ -980,20 +980,16 @@ already) and allows its contents to be modified.
 		(struct Computed_field_time_package *)
 		computed_field_time_package_void))
 	{
-		return_code=1;
-		/* get valid parameters for projection field */
-		return_code = Computed_field_set_type_time_value(field,
-			computed_field_time_package->time_keeper);
-	}
-	if (!return_code)
-	{
-		if ((!state->current_token)||
-			(strcmp(PARSER_HELP_STRING,state->current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token)))
+		if (strcmp(PARSER_HELP_STRING,state->current_token)&&
+			strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
 		{
-			/* error */
-			display_message(ERROR_MESSAGE,
-				"define_Computed_field_type_time_value.  Failed");
+			return_code = Computed_field_set_type_time_value(field,
+				computed_field_time_package->time_keeper);
+		}
+		else
+		{
+			/* Help */
+			return_code = 0;
 		}
 	}
 	LEAVE;
