@@ -34,7 +34,7 @@ un-selected graphics are drawn.
 	int itime, name_selected, number_of_times, picking_names, return_code, strip,
 		wireframe_flag;
 #if defined (OPENGL_API)
-	int lighting_off;
+	int lighting_off, line_width;
 #endif /* defined (OPENGL_API) */
 	struct Graphical_material *material;
 	struct GT_glyph_set *interpolate_glyph_set,*glyph_set,*glyph_set_2;
@@ -446,6 +446,7 @@ un-selected graphics are drawn.
 								}
 								else
 								{
+									line_width = 0;
 									while (line)
 									{
 										/* work out if subobjects selected */
@@ -460,11 +461,27 @@ un-selected graphics are drawn.
 												/* put out name for picking - cast to GLuint */
 												glLoadName((GLuint)line->object_name);
 											}
+											if (line->line_width != line_width)
+											{
+												if (line->line_width)
+												{
+													glLineWidth(line->line_width);
+												}
+												else
+												{
+													glLineWidth(global_line_width);
+												}
+												line_width = line->line_width;
+											}
 											draw_polylineGL(line->pointlist,line->normallist,
 												line->n_pts, line->n_data_components, line->data,
 												material,spectrum);
 										}
 										line=line->ptrnext;
+									}
+									if (line_width)
+									{
+										glLineWidth(global_line_width);
 									}
 								}
 								return_code=1;

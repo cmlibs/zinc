@@ -98,7 +98,8 @@ Contains all the information carried by the graphical element editor widget.
 		stream_vector_field_widget,streamline_reverse_button,
 		select_mode_entry,select_mode_form,select_mode_widget;
 	/* appearance widgets */
-	Widget material_form,material_widget,texture_coord_field_entry,
+	Widget material_form,material_widget,line_width_entry,line_width_text,
+		texture_coord_field_entry,
 		texture_coord_field_form,texture_coord_field_widget,
 		texture_coord_field_button,data_field_button,data_field_form,
 		data_field_widget,render_type_entry,render_type_form,render_type_widget,
@@ -376,6 +377,10 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 /* identify appearance settings widgets */
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,material_form)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
+	Settings_editor,line_width_entry)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
+	Settings_editor,line_width_text)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,texture_coord_field_entry)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
@@ -2518,6 +2523,61 @@ Callback for change of selected_material.
 	LEAVE;
 } /* settings_editor_update_selected_material */
 
+static void settings_editor_line_width_text_CB(
+	Widget widget,XtPointer client_data,unsigned long *reason)
+/*******************************************************************************
+LAST MODIFIED : 22 April 2004
+
+DESCRIPTION :
+Called when entry is made into the line_width_text field.
+==============================================================================*/
+{
+	char *text_entry,temp_string[50];
+	int line_width, new_line_width;
+	struct Settings_editor *settings_editor;
+
+	ENTER(settings_editor_line_width_text_CB);
+	USE_PARAMETER(reason);
+	if (widget&&(settings_editor=(struct Settings_editor *)client_data))
+	{
+		/* must check if have current settings since we can get losingFocus
+			 callback after it is cleared */
+		if (settings_editor->current_settings)
+		{
+			line_width = GT_element_settings_get_line_width(settings_editor->current_settings);
+			new_line_width = line_width;
+			/* Get the text string */
+			XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
+			if (text_entry)
+			{
+				sscanf(text_entry,"%d",&new_line_width);
+				if (new_line_width != line_width)
+				{
+					GT_element_settings_set_line_width(
+						settings_editor->current_settings, new_line_width);
+					/* inform the client of the change */
+					settings_editor_update(settings_editor);
+				}
+				XtFree(text_entry);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"settings_editor_line_width_text_CB.  Missing text");
+			}
+			/* always restore streamline_width to actual value in use */
+			sprintf(temp_string,"%d",new_line_width);
+			XtVaSetValues(widget,XmNvalue,temp_string,NULL);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"settings_editor_line_width_text_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* settings_editor_line_width_text_CB */
+
 static void settings_editor_texture_coord_field_button_CB(Widget widget,
 	XtPointer settings_editor_void,unsigned long *reason)
 /*******************************************************************************
@@ -2951,6 +3011,10 @@ Creates a settings_editor widget.
 			DIALOG_IDENTIFY(settings_editor,spectrum_form)},
 		{"seted_id_selected_mat_form",(XtPointer)
 			DIALOG_IDENTIFY(settings_editor,selected_material_form)},
+		{"seted_id_line_width_entry",(XtPointer)
+		   DIALOG_IDENTIFY(settings_editor,line_width_entry)},
+		{"seted_id_line_width_text",(XtPointer)
+		   DIALOG_IDENTIFY(settings_editor,line_width_text)},
 		{"seted_coordinate_btn_CB",(XtPointer)
 			settings_editor_coordinate_button_CB},
 		{"seted_exterior_btn_CB",(XtPointer)
@@ -2993,10 +3057,14 @@ Creates a settings_editor widget.
 			settings_editor_streamline_width_text_CB},
 		{"seted_strline_reverse_btn_CB",(XtPointer)
 			settings_editor_streamline_reverse_button_CB},
+		{"seted_strline_length_text_CB",(XtPointer)
+			settings_editor_streamline_length_text_CB},
+		{"seted_line_width_text_CB",(XtPointer)
+			settings_editor_line_width_text_CB},
 		{"seted_texture_coord_btn_CB",(XtPointer)
 			settings_editor_texture_coord_field_button_CB},
 		{"seted_data_field_btn_CB",(XtPointer)
-			settings_editor_data_button_CB}
+		   settings_editor_data_button_CB}
 	};
 	static MrmRegisterArg identifier_list[]=
 	{
@@ -3616,7 +3684,7 @@ Changes the currently chosen settings.
 	enum Xi_discretization_mode xi_discretization_mode;
 	float constant_radius,scale_factor,streamline_length,
 		streamline_width;
-	int field_set,return_code,reverse_track;
+	int field_set,line_width,return_code,reverse_track;
 	struct Callback_data callback;
 	struct Computed_field *coordinate_field, *data_field, *iso_scalar_field,
 		*label_field, *radius_scalar_field, *stream_vector_field,
@@ -4085,6 +4153,20 @@ Changes the currently chosen settings.
 							callback.procedure=settings_editor_update_material;
 							CHOOSE_OBJECT_SET_CALLBACK(Graphical_material)(
 								settings_editor->material_widget,&callback);
+
+							/* line_width */
+							if (GT_ELEMENT_SETTINGS_LINES==settings_type)
+							{
+								line_width = GT_element_settings_get_line_width(new_settings);
+								sprintf(temp_string,"%d",line_width);
+								XtVaSetValues(settings_editor->line_width_text,XmNvalue,
+									temp_string,NULL);
+								XtManageChild(settings_editor->line_width_entry);
+							}
+							else
+							{
+								XtUnmanageChild(settings_editor->line_width_entry);
+							}
 
 							if (GT_ELEMENT_SETTINGS_STREAMLINES==settings_type)
 							{

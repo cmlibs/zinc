@@ -170,8 +170,8 @@ from the shaft.
 			points[ 8][0]=1.0;
 			points[ 9][0]=1.0-head_length;
 			points[ 9][2]=-half_head_width;
-			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,5,points,
-				/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
+			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
+				5,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
 			{
 				DEALLOCATE(points);
 			}
@@ -400,8 +400,8 @@ The length and width of the arrow heads are specified by the final parameters.
 			points[28][2]=1.0;
 			points[29][2]=1.0-head_length;
 			points[29][1]=-half_head_width;
-			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,15,points,
-				/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
+			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
+				15,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
 			{
 				DEALLOCATE(points);
 			}
@@ -673,8 +673,8 @@ from <0,0,-0.5> to <0,0,+0.5>
 			points[5][0]=0.0;
 			points[5][1]=0.0;
 			points[5][2]=+0.5;
-			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,3,points,
-				/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
+			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
+				3,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
 			{
 				DEALLOCATE(points);
 			}
@@ -881,8 +881,8 @@ wireframe cube centred at <0,0,0>.
 					vertex++;
 				}
 			}
-			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,12,points,
-				/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
+			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
+				12,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
 			{
 				DEALLOCATE(points);
 			}
@@ -1131,8 +1131,8 @@ Creates a graphics object named <name> consisting of a line from <0,0,0> to
 			points[1][0]=1.0;
 			points[1][1]=0.0;
 			points[1][2]=0.0;
-			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,1,points,
-				/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
+			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
+				1,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
 			{
 				DEALLOCATE(points);
 			}

@@ -497,7 +497,8 @@ DESCRIPTION :
 											}
 										} break;
 									}
-									polyline = CREATE(GT_polyline)(polyline_type,npts1,
+									polyline = CREATE(GT_polyline)(polyline_type,
+										/*line_width=default*/0,npts1,
 										pointlist, normallist, g_NO_DATA, (GTDATA *)NULL);
 									GT_OBJECT_ADD(GT_polyline)(obj,time,polyline);
 								}

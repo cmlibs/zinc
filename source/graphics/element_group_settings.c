@@ -122,6 +122,8 @@ finite element group rendition.
 	int autorange_spectrum_flag;
 	/* for surfaces */
 	enum Render_type render_type;
+	/* for lines, a non zero line width overrides the default */
+	int line_width;
 
 	/* rendering information */
 	/* the graphics_object generated for this settings */
@@ -708,6 +710,8 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			settings->render_type = RENDER_TYPE_SHADED;
 			/* for streamlines only */
 			settings->streamline_data_type=STREAM_NO_DATA;
+			/* for lines */
+			settings->line_width = 0;
 
 			/* rendering information defaults */
 			settings->graphics_object = (struct GT_object *)NULL;
@@ -1029,6 +1033,7 @@ graphics_object is NOT copied; destination->graphics_object is cleared.
 		/* copy appearance settings */
 		/* for all graphic types */
 		destination->visibility=source->visibility;
+		destination->line_width = source->line_width;
 		REACCESS(Graphical_material)(&(destination->material),source->material);
 		GT_element_settings_set_render_type(destination,source->render_type);
 		if (GT_ELEMENT_SETTINGS_STREAMLINES==source->settings_type)
@@ -1572,6 +1577,60 @@ Set the type for how the graphics will be rendered in GL.
 
 	return (return_code);
 } /* GT_element_settings_set_render_type */
+
+int GT_element_settings_get_line_width(struct GT_element_settings *settings)
+/*******************************************************************************
+LAST MODIFIED : 22 April 2004
+
+DESCRIPTION :
+Get the settings line width.  If it is 0 then the line will use the scene default.
+==============================================================================*/
+{
+	int line_width;
+
+	ENTER(GT_element_settings_get_line_width);
+	if (settings)
+	{
+		line_width=settings->line_width;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_get_line_width.  Invalid argument(s)");
+		line_width = 0;
+	}
+	LEAVE;
+
+	return (line_width);
+} /* GT_element_settings_get_line_width */
+
+int GT_element_settings_set_line_width(struct GT_element_settings *settings,
+	int line_width)
+/*******************************************************************************
+LAST MODIFIED : 22 April 2004
+
+DESCRIPTION :
+Sets the settings line width.  If it is 0 then the line will use the scene default.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_element_settings_set_line_width);
+	if (settings)
+	{
+		return_code = 1;
+		settings->line_width = line_width;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_set_line_width.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_set_line_width */
 
 int GT_element_settings_get_dimension(struct GT_element_settings *settings)
 /*******************************************************************************
@@ -4238,6 +4297,7 @@ visibility and spectrum.
 			GT_element_settings_same_geometry(settings,second_settings_void)&&
 			(settings->data_field==second_settings->data_field)&&
 			(settings->render_type==second_settings->render_type)&&
+			(settings->line_width==second_settings->line_width)&&
 			(settings->texture_coordinate_field==second_settings->texture_coordinate_field)&&
 			((GT_ELEMENT_SETTINGS_STREAMLINES != settings->settings_type)||
 				(settings->streamline_data_type==
@@ -4304,6 +4364,7 @@ Returns true if <settings1> and <settings2> would product identical graphics.
 			GT_element_settings_same_geometry(settings1, (void *)settings2) &&
 			(settings1->visibility == settings2->visibility) &&
 			(settings1->material == settings2->material) &&
+			(settings1->line_width == settings2->line_width) &&
 			(settings1->selected_material == settings2->selected_material) &&
 			(settings1->data_field == settings2->data_field) &&
 			(settings1->spectrum == settings2->spectrum) &&
@@ -4510,6 +4571,15 @@ if no coordinate field. Currently only write if we have a field.
 						error=1;
 					} break;
 				}
+			}
+		}
+		/* for element_points and iso_surfaces */
+		if (GT_ELEMENT_SETTINGS_LINES==settings->settings_type)
+		{
+			if (0 != settings->line_width)
+			{
+				sprintf(temp_string, " line_width %d", settings->line_width);
+				append_string(&settings_string,temp_string,&error);
 			}
 		}
 		/* for cylinders only */
@@ -5166,7 +5236,7 @@ Converts a finite element into a graphics object with the supplied settings.
 								(polyline = create_GT_polyline_from_FE_element(element,
 									settings_to_object_data->rc_coordinate_field,
 									settings->data_field, number_in_xi[0], top_level_element,
-									settings_to_object_data->time)))
+									settings_to_object_data->time, settings->line_width)))
 							{
 								if (!GT_OBJECT_ADD(GT_polyline)(
 									settings->graphics_object, time, polyline))
@@ -7253,6 +7323,9 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					/* invisible */
 					Option_table_add_entry(option_table,"invisible",&(invisible_flag),
 						NULL,set_char_flag);
+					/* line_width */
+					Option_table_add_int_non_negative_entry(option_table,"line_width",
+						&(settings->line_width));
 					/* material */
 					Option_table_add_entry(option_table,"material",&(settings->material),
 						g_element_command_data->graphical_material_manager,

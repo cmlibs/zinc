@@ -1114,7 +1114,8 @@ Creates a spectrum_editor widget.
 											spectrum_editor->graphics_object->nextobject = 
 												ACCESS(GT_object)(spectrum_editor->tick_lines_graphics_object);
 											if (tick_lines = CREATE(GT_polyline)(
-												g_PLAIN_DISCONTINUOUS, 0, points, /* normalpoints */(Triple *)NULL,
+												g_PLAIN_DISCONTINUOUS, /*line_width=default*/0,
+												0, points, /* normalpoints */(Triple *)NULL,
 												g_NO_DATA, (GTDATA *)NULL))
 											{
 												GT_OBJECT_ADD(GT_polyline)(

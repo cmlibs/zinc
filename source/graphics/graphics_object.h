@@ -385,6 +385,8 @@ DESCRIPTION :
 {
 	enum GT_polyline_type polyline_type;
 	int n_pts;
+	/* If non zero then this specifies to use a non default pixel line width */
+	int line_width;
 	int n_data_components;
 	Triple *pointlist;
 	Triple *normallist;
@@ -923,9 +925,10 @@ Frees the frees the memory for <**pointset> and sets <*pointset> to NULL.
 ==============================================================================*/
 
 struct GT_polyline *CREATE(GT_polyline)(enum GT_polyline_type polyline_type,
-	int n_pts,Triple *pointlist,Triple *normallist,int n_data_components,GTDATA *data);
+	int line_width, int n_pts,Triple *pointlist,Triple *normallist,
+	int n_data_components,GTDATA *data);
 /*******************************************************************************
-LAST MODIFIED : 31 May 1999
+LAST MODIFIED : 22 April 2004
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphics polyline.

@@ -84,6 +84,9 @@ procedure
 !Identify appearance widgets:
   seted_id_material_form;
 
+  seted_id_line_width_entry;
+  seted_id_line_width_text;
+
   seted_id_texture_coord_entry;
   seted_id_texture_coord_btn;
   seted_id_texture_coord_form;
@@ -113,6 +116,8 @@ procedure
   seted_iso_value_text_CB;
 	seted_discretization_text_CB;
 	seted_native_disc_btn_CB;
+
+	seted_line_width_text_CB;
 
 	seted_glyph_size_text_CB;
 	seted_glyph_centre_text_CB;
@@ -237,6 +242,7 @@ object
     controls
       {
       XmRowColumn seted_material_entry;
+      XmRowColumn seted_line_width_entry;
       XmRowColumn seted_render_type_entry;
 			XmRowColumn seted_texture_coord_entry;
       XmRowColumn seted_strline_datatype_entry;
@@ -1788,6 +1794,55 @@ object
       {
 			XmLabelGadget seted_selected_mat_label;
 			XmForm seted_selected_mat_form;
+      };
+    };
+!*******************************************************************************
+  seted_line_width_entry: XmRowColumn
+    {
+    arguments
+      {
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+      };
+    controls
+      {
+      XmLabelGadget seted_line_width_label;
+      XmTextField seted_line_width_text;
+      };
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+				seted_id_line_width_entry(seted_structure);
+      };
+    };
+  seted_line_width_label: XmLabelGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Width:");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = normal_font;
+      };
+    };
+  seted_line_width_text: XmTextField
+    {
+    arguments
+      {
+      XmNvalue = "";
+      XmNcolumns = 12;
+      XmNfontList = normal_font;
+      };
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+				seted_id_line_width_text(seted_structure);
+      XmNactivateCallback = procedure
+				seted_line_width_text_CB(seted_structure);
+      XmNlosingFocusCallback = procedure
+				seted_line_width_text_CB(seted_structure);
       };
     };
 !*******************************************************************************

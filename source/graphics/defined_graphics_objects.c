@@ -310,9 +310,9 @@ graphics_objects that don't come from finite_elements?
 					point += 2;
 				}
 				return_code=(
-					(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,number_of_ticks,
-						points,/*normalpoints*/(Triple *)NULL,/*n_data_components*/0,
-						(GTDATA *)NULL))&&
+					(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,/*line_width=default*/0,
+						number_of_ticks,points,/*normalpoints*/(Triple *)NULL,
+						/*n_data_components*/0,(GTDATA *)NULL))&&
 					set_GT_object_default_material(tick_graphics_object,
 						tick_label_material) &&
 					GT_OBJECT_ADD(GT_polyline)(tick_graphics_object,time,polyline));

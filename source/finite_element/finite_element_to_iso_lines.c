@@ -233,8 +233,8 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 					memcpy(data,polyline->data,polyline->number_of_points*
 						sizeof(GTDATA)*contour_lines->number_of_data_components);
 				}
-				if (gt_polyline=CREATE(GT_polyline)(g_PLAIN,polyline->number_of_points,
-					point_list,(Triple *)NULL,
+				if (gt_polyline=CREATE(GT_polyline)(g_PLAIN,/*line_width=default*/0,
+					polyline->number_of_points,point_list,(Triple *)NULL,
 					contour_lines->number_of_data_components,data))
 				{
 					/* for selective editing of primitives, record object_name */

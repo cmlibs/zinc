@@ -468,6 +468,23 @@ DESCRIPTION :
 Set the type for how the graphics will be rendered in GL.
 ==============================================================================*/
 
+int GT_element_settings_get_line_width(struct GT_element_settings *settings);
+/*******************************************************************************
+LAST MODIFIED : 22 April 2004
+
+DESCRIPTION :
+Get the settings line width.  If it is 0 then the line will use the scene default.
+==============================================================================*/
+
+int GT_element_settings_set_line_width(struct GT_element_settings *settings,
+	int line_width);
+/*******************************************************************************
+LAST MODIFIED : 22 April 2004
+
+DESCRIPTION :
+Sets the settings line width.  If it is 0 then the line will use the scene default.
+==============================================================================*/
+
 int GT_element_settings_get_dimension(struct GT_element_settings *settings);
 /*******************************************************************************
 LAST MODIFIED : 15 September 1998

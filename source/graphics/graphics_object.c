@@ -1213,6 +1213,7 @@ Creates a new GT_polyline which is the interpolation of two GT_polylines.
 	if ((initial->n_pts==final->n_pts)&&
 		(initial->n_data_components==final->n_data_components)&&
 		(initial->polyline_type==final->polyline_type)&&
+		(initial->line_width==final->line_width)&&
 		((initial->normallist&&final->normallist)||
 		((!initial->normallist)&&(!final->normallist))))
 	{
@@ -1295,7 +1296,7 @@ Creates a new GT_polyline which is the interpolation of two GT_polylines.
 			if (point)
 			{
 				if (polyline=CREATE(GT_polyline)(initial->polyline_type,
-					initial->n_pts,point,normallist,
+					initial->line_width,initial->n_pts,point,normallist,
 					initial->n_data_components,data))
 				{
 #if defined (OLD_CODE)
@@ -2686,9 +2687,10 @@ Frees the frees the memory for <**pointset> and sets <*pointset> to NULL.
 } /* DESTROY(GT_pointset) */
 
 struct GT_polyline *CREATE(GT_polyline)(enum GT_polyline_type polyline_type,
-	int n_pts,Triple *pointlist,Triple *normallist,int n_data_components,GTDATA *data)
+	int line_width, int n_pts,Triple *pointlist,Triple *normallist,
+	int n_data_components,GTDATA *data)
 /*******************************************************************************
-LAST MODIFIED : 31 May 1999
+LAST MODIFIED : 22 April 2004
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphics polyline.
@@ -2700,6 +2702,7 @@ Allocates memory and assigns fields for a graphics polyline.
 	if (ALLOCATE(polyline,struct GT_polyline,1))
 	{
 		polyline->polyline_type=polyline_type;
+		polyline->line_width=line_width;
 		polyline->n_pts=n_pts;
 		polyline->pointlist=pointlist;
 		polyline->normallist=normallist;

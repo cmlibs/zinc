@@ -1320,9 +1320,10 @@ Notes:
 struct GT_polyline *create_GT_polyline_from_FE_element(
 	struct FE_element *element,struct Computed_field *coordinate_field,
 	struct Computed_field *data_field,int number_of_segments,
-	struct FE_element *top_level_element, FE_value time)
+	struct FE_element *top_level_element, FE_value time,
+	int line_width)
 /*******************************************************************************
-LAST MODIFIED : 13 March 2003
+LAST MODIFIED : 22 April 2004
 
 DESCRIPTION :
 Creates a <GT_polyline> from the <coordinate_field> for the 1-D finite <element>
@@ -1331,6 +1332,7 @@ The optional <data_field> (currently only a scalar) is calculated as data over
 the polyline, for later colouration by a spectrum.
 The optional <top_level_element> may be provided as a clue to Computed_fields
 to say which parent element they should be evaluated on as necessary.
+If the <line_width> is non zero then it will override the default line width.
 Notes:
 - the coordinate field is assumed to be rectangular cartesian.
 ==============================================================================*/
@@ -1366,8 +1368,8 @@ Notes:
 		}
 		if ((data||(!n_data_components))&&
 			ALLOCATE(points,Triple,number_of_segments+1)&&
-			(polyline=CREATE(GT_polyline)(g_PLAIN,number_of_segments+1,
-				points,/* normalpoints */NULL,n_data_components,data)))
+			(polyline=CREATE(GT_polyline)(g_PLAIN, line_width,
+			number_of_segments+1,points,/* normalpoints */NULL,n_data_components,data)))
 		{
 			/* for selective editing of GT_object primitives, record element ID */
 			get_FE_element_identifier(element, &cm);
@@ -5783,7 +5785,7 @@ Converts a finite element into a polyline and adds it to a graphics_object.
 				element_to_polyline_data->data_field,
 				element_to_polyline_data->number_of_segments_in_xi1,
 				/*top_level_element*/(struct FE_element *)NULL,
-				element_to_polyline_data->time))
+				element_to_polyline_data->time, /*line_width=default*/0))
 			{
 				if (!(return_code=GT_OBJECT_ADD(GT_polyline)(
 					element_to_polyline_data->graphics_object,

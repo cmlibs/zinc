@@ -399,9 +399,10 @@ Notes:
 struct GT_polyline *create_GT_polyline_from_FE_element(
 	struct FE_element *element,struct Computed_field *coordinate_field,
 	struct Computed_field *data_field,int number_of_segments,
-	struct FE_element *top_level_element, FE_value time);
+	struct FE_element *top_level_element, FE_value time,
+	int line_width);
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 22 April 2004
 
 DESCRIPTION :
 Creates a <GT_polyline> from the <coordinate_field> for the 1-D finite <element>
@@ -410,6 +411,7 @@ The optional <data_field> (currently only a scalar) is calculated as data over
 the polyline, for later colouration by a spectrum.
 The optional <top_level_element> may be provided as a clue to Computed_fields
 to say which parent element they should be evaluated on as necessary.
+If the <line_width> is non zero then it will override the default line width.
 Notes:
 - the coordinate field is assumed to be rectangular cartesian.
 ==============================================================================*/
