@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable.c
 
-LAST MODIFIED : 9 May 2003
+LAST MODIFIED : 19 May 2003
 
 DESCRIPTION :
 Cmiss_variable's are expressions that are constructed for:
@@ -2950,11 +2950,15 @@ The calling program must not DEALLOCATE the returned structures.
 int Cmiss_value_derivative_matrix_get_matrix(Cmiss_value_id value,int order,
 	Cmiss_variable_id *independent_variables,Cmiss_value_id *matrix_address)
 /*******************************************************************************
-LAST MODIFIED : 9 May 2003
+LAST MODIFIED : 19 May 2003
 
 DESCRIPTION :
 If <value> is of type derivative_matrix, this function returns the specified
 partial derivative (<order> and <independent_variables>) in <*matrix_address>.
+
+???DB.  Extend so that can have an independent varible that is a subset of
+	one of the independent variables for the derivative matrix.  eg nodal values
+	for a particular node as a subset of all nodal values
 ==============================================================================*/
 {
 	Cmiss_value_id *matrix_ptr;
@@ -2969,30 +2973,38 @@ partial derivative (<order> and <independent_variables>) in <*matrix_address>.
 		&order_full,&independent_variables_full,&matrix_ptr))
 	{
 		return_code=1;
-		offset=0;
+		offset=1;
 		for (i=order_full;i>0;i--)
 		{
 			matrix_ptr += offset;
 			offset *= 2;
 		}
-		i=order;
-		j=order_full;
+		matrix_ptr--;
+		i=order-1;
+		j=order_full-1;
 		do
 		{
-			i--;
-			found=0;
-			do
+			offset /= 2;
+			if (i>=0)
 			{
-				j--;
-				offset /= 2;
-				if (!(found=Cmiss_variable_same_variable(independent_variables[i],
-					independent_variables_full[j])))
-				{
-					matrix_ptr -= offset;
-				}
-			} while ((j>0)&&!found);
-		} while ((i>0)&&found);
-		if (found)
+				found=Cmiss_variable_same_variable(independent_variables[i],
+					independent_variables_full[j]);
+			}
+			else
+			{
+				found=0;
+			}
+			if (found)
+			{
+				i--;
+			}
+			else
+			{
+				matrix_ptr -= offset;
+			}
+			j--;
+		} while (j>=0);
+		if (i<0)
 		{
 			*matrix_address= *matrix_ptr;
 		}

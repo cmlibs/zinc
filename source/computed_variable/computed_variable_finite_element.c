@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable_finite_element.c
 
-LAST MODIFIED : 11 May 2003
+LAST MODIFIED : 21 May 2003
 
 DESCRIPTION :
 Implements computed variables which interface to finite element fields:
@@ -2293,7 +2293,7 @@ END_CMISS_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(finite_element)
 static START_CMISS_VARIABLE_EVALUATE_DERIVATIVE_TYPE_SPECIFIC_FUNCTION(
 	finite_element)
 /*******************************************************************************
-LAST MODIFIED : 9 May 2003
+LAST MODIFIED : 21 May 2003
 
 DESCRIPTION :
 ???DB.  Only valid for monomial standard basis and nodal value based.  This is
@@ -2304,10 +2304,11 @@ DESCRIPTION :
 	Cmiss_value_id *matrices,*matrix,value_type;
 	Cmiss_variable_id independent_fe_variable,independent_variable,
 		*local_independent_variables,variable_temp;
+	double component_value;
 	enum Cmiss_variable_evaluate_derivative_finite_element_type
 		*independent_variables_type;
 	enum FE_nodal_value_type independent_value_type;
-	FE_value component_value,**component_values,**derivative_component_values,
+	FE_value **component_values,**derivative_component_values,
 		****independent_variables_component_values,*monomial_derivative_values,
 		***nodal_value_component_values,*value_address_1,*value_address_2,*xi;
 	int carry,column_number,component_number,**component_monomial_info,
@@ -2659,13 +2660,14 @@ DESCRIPTION :
 													xi_derivative_orders,xi,monomial_derivative_values))
 												{
 													/* calculate the derivative */
-													component_value=0;
+													component_value=(double)0;
 													value_address_1=monomial_derivative_values;
 													value_address_2=derivative_component_values[i];
 													for (j=numbers_of_component_values[i];j>0;j--)
 													{
 														component_value +=
-															(*value_address_1)*(*value_address_2);
+															(double)(*value_address_1)*
+															(double)(*value_address_2);
 														value_address_1++;
 														value_address_2++;
 													}

@@ -428,7 +428,7 @@ int Cmiss_variable_ ## variable_type ## _overlap_type_specific( \
 typedef int (*Cmiss_variable_same_variable_type_specific_function)(
 	Cmiss_variable_id variable_1,Cmiss_variable_id variable_2);
 /*******************************************************************************
-LAST MODIFIED : 9 April 2003
+LAST MODIFIED : 19 May 2003
 
 DESCRIPTION :
 Returns nonzero if <variable_1> and <variable_2> are the same variable (eg. the
@@ -445,10 +445,11 @@ int Cmiss_variable_ ## variable_type ## _same_variable_type_specific( \
 	ENTER(Cmiss_variable_ ## variable_type ## _same_variable_type_specific); \
 	return_code=0; \
 	/* check arguments */ \
-	ASSERT_IF(variable_1&&(Cmiss_variable_ ## variable_type ## _type_string== \
-		Cmiss_variable_get_type_id_string(variable_1))&&variable_2&& \
+	ASSERT_IF(variable_1&&variable_2,return_code,0) \
+	if ((Cmiss_variable_ ## variable_type ## _type_string== \
+		Cmiss_variable_get_type_id_string(variable_1))&& \
 		(Cmiss_variable_ ## variable_type ## _type_string== \
-		Cmiss_variable_get_type_id_string(variable_2)),return_code,0)
+		Cmiss_variable_get_type_id_string(variable_2)))
 
 #define END_CMISS_VARIABLE_SAME_VARIABLE_TYPE_SPECIFIC_FUNCTION( \
 	variable_type ) \
