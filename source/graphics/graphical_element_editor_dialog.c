@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element_editor_dialog.c
 
-LAST MODIFIED : 31 August 1999
+LAST MODIFIED : 21 March 2000
 
 DESCRIPTION :
 Routines for creating an element group editor dialog shell and standard buttons.
@@ -34,15 +34,18 @@ static int graphical_element_editor_dialog_hierarchy_open=0;
 static MrmHierarchy graphical_element_editor_dialog_hierarchy;
 #endif /* defined (MOTIF) */
 
-struct Graphical_element_editor_dialog_struct
+struct Graphical_element_editor_dialog
 /*******************************************************************************
-LAST MODIFIED : 16 February 1999
+LAST MODIFIED : 21 March 2000
 
 DESCRIPTION :
 Contains all the information carried by the graphical element editor dialog
 widget.
 ==============================================================================*/
 {
+	/* if autoapply flag is set, any changes to the currently edited graphical
+		 element will automatically be applied globally */
+	int autoapply;
 	struct Callback_data update_callback;
 	struct Computed_field_package *computed_field_package;
 	struct GROUP(FE_element) *element_group;
@@ -57,17 +60,19 @@ widget.
 	struct User_interface *user_interface;
 	struct MANAGER(VT_volume_texture) *volume_texture_manager;
 	Widget egroup_form,egroup_widget,scene_form,scene_widget,visibility_button,
-		editor_form,editor_widget,ok_button,apply_button,revert_button,
-		cancel_button;
+		autoapply_button,editor_form,editor_widget,ok_button,apply_button,
+		revert_button,cancel_button;
 	Widget *dialog_address,dialog,widget,dialog_parent;
-}; /* Graphical_element_editor_dialog_struct */
+}; /* Graphical_element_editor_dialog */
 
 /*
 Module functions
 ----------------
 */
+
+#if defined (OLD_CODE)
 static int graphical_element_dialog_editor_update(
-	struct Graphical_element_editor_dialog_struct *gelem_editor_dialog)
+	struct Graphical_element_editor_dialog *gelem_editor_dialog)
 /*******************************************************************************
 LAST MODIFIED : 1 August 1997
 
@@ -104,23 +109,26 @@ ie. the graphical region is a class derived from a scene.
 
 	return (return_code);
 } /* graphical_element_editor_dialog_update */
+#endif /* defined (OLD_CODE) */
 
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor_dialog, \
-	Graphical_element_editor_dialog_struct,egroup_form)
+	Graphical_element_editor_dialog,egroup_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor_dialog, \
-	Graphical_element_editor_dialog_struct,scene_form)
+	Graphical_element_editor_dialog,scene_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor_dialog, \
-	Graphical_element_editor_dialog_struct,visibility_button)
+	Graphical_element_editor_dialog,visibility_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor_dialog, \
-	Graphical_element_editor_dialog_struct,editor_form)
+	Graphical_element_editor_dialog,autoapply_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor_dialog, \
-	Graphical_element_editor_dialog_struct,ok_button)
+	Graphical_element_editor_dialog,editor_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor_dialog, \
-	Graphical_element_editor_dialog_struct,apply_button)
+	Graphical_element_editor_dialog,ok_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor_dialog, \
-	Graphical_element_editor_dialog_struct,revert_button)
+	Graphical_element_editor_dialog,apply_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor_dialog, \
-	Graphical_element_editor_dialog_struct,cancel_button)
+	Graphical_element_editor_dialog,revert_button)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(graphical_element_editor_dialog, \
+	Graphical_element_editor_dialog,cancel_button)
 
 static void graphical_element_editor_dialog_destroy_CB(Widget widget,int *tag,
 	unsigned long *reason)
@@ -132,9 +140,11 @@ Callback for when the graphical_element_editor_dialog is closed. Tidies up all
 details: dynamic allocations, etc.
 ==============================================================================*/
 {
-	struct Graphical_element_editor_dialog_struct *gelem_editor_dialog;
+	struct Graphical_element_editor_dialog *gelem_editor_dialog;
 
 	ENTER(graphical_element_editor_dialog_destroy_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	if (widget)
 	{
 		/* get the pointer to the data for the widget */
@@ -172,13 +182,13 @@ DESCRIPTION :
 Visibility toggle for entire graphical element group.
 ==============================================================================*/
 {
-	struct Graphical_element_editor_dialog_struct *gelem_editor_dialog;
+	struct Graphical_element_editor_dialog *gelem_editor_dialog;
 	enum GT_visibility_type visibility;
 
 	ENTER(graphical_element_editor_dialog_visibility_button_CB);
-	/* check arguments */
+	USE_PARAMETER(call_data);
 	if (widget&&(gelem_editor_dialog=
-		(struct Graphical_element_editor_dialog_struct *)client_data))
+		(struct Graphical_element_editor_dialog *)client_data))
 	{
 		if (XmToggleButtonGetState(widget))
 		{
@@ -200,8 +210,43 @@ Visibility toggle for entire graphical element group.
 	LEAVE;
 } /* graphical_element_editor_dialog_visibility_button_CB */
 
+static void graphical_element_editor_dialog_autoapply_button_CB(Widget widget,
+	XtPointer client_data,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 21 March 2000
+
+DESCRIPTION :
+Autoapply toggle for entire graphical element group.
+==============================================================================*/
+{
+	struct Graphical_element_editor_dialog *gelem_editor_dialog;
+
+	ENTER(graphical_element_editor_dialog_autoapply_button_CB);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if (gelem_editor_dialog=
+		(struct Graphical_element_editor_dialog *)client_data)
+	{
+		if (XmToggleButtonGetState(widget))
+		{
+			gelem_editor_dialog->autoapply = 1;
+		}
+		else
+		{
+			gelem_editor_dialog->autoapply = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"graphical_element_editor_dialog_autoapply_button_CB.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+} /* graphical_element_editor_dialog_autoapply_button_CB */
+
 static int graphical_element_editor_dialog_apply_settings(
-	struct Graphical_element_editor_dialog_struct *gelem_editor_dialog)
+	struct Graphical_element_editor_dialog *gelem_editor_dialog)
 /*******************************************************************************
 LAST MODIFIED : 19 October 1998
 
@@ -268,11 +313,12 @@ DESCRIPTION :
 Called when element group is changed.
 ==============================================================================*/
 {
-	struct Graphical_element_editor_dialog_struct *gelem_editor_dialog;
+	struct Graphical_element_editor_dialog *gelem_editor_dialog;
 
 	ENTER(graphical_element_editor_dialog_update_egroup);
+	USE_PARAMETER(surface_settings_editor_widget);
 	if (gelem_editor_dialog=
-		(struct Graphical_element_editor_dialog_struct *)gelem_editor_dialog_void)
+		(struct Graphical_element_editor_dialog *)gelem_editor_dialog_void)
 	{
 		/*???RC New: always apply the settings here: */
 		if (gelem_editor_dialog->element_group&&gelem_editor_dialog->scene)
@@ -302,11 +348,12 @@ DESCRIPTION :
 Called when scene is changed.
 ==============================================================================*/
 {
-	struct Graphical_element_editor_dialog_struct *gelem_editor_dialog;
+	struct Graphical_element_editor_dialog *gelem_editor_dialog;
 
 	ENTER(graphical_element_editor_dialog_update_scene);
+	USE_PARAMETER(surface_settings_editor_widget);
 	if (gelem_editor_dialog=
-		(struct Graphical_element_editor_dialog_struct *)gelem_editor_dialog_void)
+		(struct Graphical_element_editor_dialog *)gelem_editor_dialog_void)
 	{
 		/*???RC New: always apply the settings here: */
 		if (gelem_editor_dialog->element_group&&gelem_editor_dialog->scene)
@@ -334,9 +381,11 @@ LAST MODIFIED : 16 July 1997
 DESCRIPTION :
 ==============================================================================*/
 {
-	struct Graphical_element_editor_dialog_struct *gelem_editor_dialog;
+	struct Graphical_element_editor_dialog *gelem_editor_dialog;
 
 	ENTER(graphical_element_editor_dialog_ok_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	if (widget)
 	{
 		/* get the pointer to the data for the widget */
@@ -374,9 +423,11 @@ LAST MODIFIED : 16 July 1997
 DESCRIPTION :
 ==============================================================================*/
 {
-	struct Graphical_element_editor_dialog_struct *gelem_editor_dialog;
+	struct Graphical_element_editor_dialog *gelem_editor_dialog;
 
 	ENTER(graphical_element_editor_dialog_apply_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	if (widget)
 	{
 		/* get the pointer to the data for the widget */
@@ -410,10 +461,12 @@ Finds the gt_element_group for the current element_group and scene in the
 gelem_editor_dialog and passes this to the graphical_element_editor.
 ==============================================================================*/
 {
-	struct Graphical_element_editor_dialog_struct *gelem_editor_dialog;
+	struct Graphical_element_editor_dialog *gelem_editor_dialog;
 	struct GT_element_group *gt_element_group;
 
 	ENTER(graphical_element_editor_dialog_revert_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	if (widget)
 	{
 		/* get the pointer to the data for the widget */
@@ -456,9 +509,11 @@ LAST MODIFIED : 8 July 1997
 DESCRIPTION :
 ==============================================================================*/
 {
-	struct Graphical_element_editor_dialog_struct *gelem_editor_dialog;
+	struct Graphical_element_editor_dialog *gelem_editor_dialog;
 
 	ENTER(graphical_element_editor_dialog_cancel_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	if (widget)
 	{
 		/* get the pointer to the data for the widget */
@@ -483,6 +538,38 @@ DESCRIPTION :
 	LEAVE;
 } /* graphical_element_editor_dialog_cancel_CB */
 
+static void graphical_element_editor_dialog_update_graphical_element(
+	Widget widget,void *gelem_editor_dialog_void,void *gt_element_group_void)
+/*******************************************************************************
+LAST MODIFIED : 21 March 2000
+
+DESCRIPTION :
+Callback for when changes are made in the graphical element editor. If autoapply
+is on, changes are applied globally, otherwise nothing happens.
+==============================================================================*/
+{
+	struct Graphical_element_editor_dialog *gelem_editor_dialog;
+
+	ENTER(graphical_element_editor_dialog_update_graphical_element);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(gt_element_group_void);
+	if (gelem_editor_dialog=
+		(struct Graphical_element_editor_dialog *)gelem_editor_dialog_void)
+	{
+		if (gelem_editor_dialog->autoapply)
+		{
+			graphical_element_editor_dialog_apply_settings(gelem_editor_dialog);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"graphical_element_editor_dialog_update_graphical_element.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+} /* graphical_element_editor_dialog_update_graphical_element */
+
 static Widget create_graphical_element_editor_dialog(
 	Widget *graphical_element_editor_dialog_address,Widget parent,
 	struct Computed_field_package *computed_field_package,
@@ -500,15 +587,15 @@ static Widget create_graphical_element_editor_dialog(
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 16 February 1999
+LAST MODIFIED : 21 March 2000
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	int i,init_widgets;
+	int init_widgets;
 	MrmType graphical_element_editor_dialog_dialog_class;
 	struct Callback_data callback;
-	struct Graphical_element_editor_dialog_struct *gelem_editor_dialog;
+	struct Graphical_element_editor_dialog *gelem_editor_dialog;
 	static MrmRegisterArg callback_list[]=
 	{
 		{"gelem_ed_d_id_egroup_form",(XtPointer)
@@ -517,6 +604,8 @@ DESCRIPTION :
 			DIALOG_IDENTIFY(graphical_element_editor_dialog,scene_form)},
 		{"gelem_ed_d_id_visibility_btn",(XtPointer)
 			DIALOG_IDENTIFY(graphical_element_editor_dialog,visibility_button)},
+		{"gelem_ed_d_id_autoapply_btn",(XtPointer)
+			DIALOG_IDENTIFY(graphical_element_editor_dialog,autoapply_button)},
 		{"gelem_ed_d_id_editor_form",(XtPointer)
 			DIALOG_IDENTIFY(graphical_element_editor_dialog,editor_form)},
 		{"gelem_ed_d_id_ok_btn",(XtPointer)
@@ -531,6 +620,8 @@ DESCRIPTION :
 			graphical_element_editor_dialog_destroy_CB},
 		{"gelem_ed_d_visibility_btn_CB",(XtPointer)
 			graphical_element_editor_dialog_visibility_button_CB},
+		{"gelem_ed_d_autoapply_btn_CB",(XtPointer)
+			graphical_element_editor_dialog_autoapply_button_CB},
 		{"gelem_ed_d_ok_CB",(XtPointer)
 			graphical_element_editor_dialog_ok_CB},
 		{"gelem_ed_d_apply_CB",(XtPointer)
@@ -558,9 +649,10 @@ DESCRIPTION :
 		{
 			/* allocate memory */
 			if (ALLOCATE(gelem_editor_dialog,
-				struct Graphical_element_editor_dialog_struct,1))
+				struct Graphical_element_editor_dialog,1))
 			{
 				/* initialise the structure */
+				gelem_editor_dialog->autoapply=0;
 				gelem_editor_dialog->dialog_parent=parent;
 				gelem_editor_dialog->dialog_address=
 					graphical_element_editor_dialog_address;
@@ -584,6 +676,7 @@ DESCRIPTION :
 				gelem_editor_dialog->scene_form=(Widget)NULL;
 				gelem_editor_dialog->scene_widget=(Widget)NULL;
 				gelem_editor_dialog->visibility_button=(Widget)NULL;
+				gelem_editor_dialog->autoapply_button=(Widget)NULL;
 				gelem_editor_dialog->editor_form=(Widget)NULL;
 				gelem_editor_dialog->editor_widget=(Widget)NULL;
 				gelem_editor_dialog->ok_button=(Widget)NULL;
@@ -667,6 +760,13 @@ DESCRIPTION :
 									create_Shell_list_item(&(gelem_editor_dialog->dialog),
 										gelem_editor_dialog->user_interface);
 									return_widget=gelem_editor_dialog->dialog;
+									/* get callbacks from graphical element editor for
+										 autoapply functionality */
+									callback.procedure=
+										graphical_element_editor_dialog_update_graphical_element;
+									callback.data=(void *)gelem_editor_dialog;
+									graphical_element_editor_set_callback(
+										gelem_editor_dialog->editor_widget,&callback);
 								}
 								else
 								{
@@ -749,7 +849,7 @@ graphical_element_editor_dialog widget.
 ==============================================================================*/
 {
 	int num_children,return_code;
-	struct Graphical_element_editor_dialog_struct *gelem_editor_dialog;
+	struct Graphical_element_editor_dialog *gelem_editor_dialog;
 	Widget *child_list;
 
 	ENTER(graphical_element_editor_dialog_get_element_group_and_scene);
@@ -799,19 +899,16 @@ int graphical_element_editor_dialog_set_element_group_and_scene(
 	Widget graphical_element_editor_dialog,
 	struct GROUP(FE_element) *element_group,struct Scene *scene)
 /*******************************************************************************
-LAST MODIFIED : 19 October 1998
+LAST MODIFIED : 21 March 2000
 
 DESCRIPTION :
 Sets which element_group and scene are looked at with the
 graphical_element_editor_dialog widget.
 ==============================================================================*/
 {
-	char temp_string[30];
 	int num_children,return_code;
-	struct Callback_data callback;
-	struct Graphical_element_editor_dialog_struct *gelem_editor_dialog;
+	struct Graphical_element_editor_dialog *gelem_editor_dialog;
 	struct GT_element_group *gt_element_group;
-	struct Scene_object *window_object;
 	Widget *child_list;
 
 	ENTER(graphical_element_editor_dialog_set_element_group_and_scene);
@@ -863,8 +960,12 @@ graphical_element_editor_dialog widget.
 					XmToggleButtonSetState(gelem_editor_dialog->visibility_button,
 						g_VISIBLE==Scene_get_element_group_visibility(scene,element_group),
 						False);
+					XmToggleButtonSetState(gelem_editor_dialog->autoapply_button,
+						gelem_editor_dialog->autoapply,False);
 				}
 				XtSetSensitive(gelem_editor_dialog->visibility_button,
+					(struct GT_element_group *)NULL != gt_element_group);
+				XtSetSensitive(gelem_editor_dialog->autoapply_button,
 					(struct GT_element_group *)NULL != gt_element_group);
 				XtSetSensitive(gelem_editor_dialog->apply_button,
 					(struct GT_element_group *)NULL != gt_element_group);

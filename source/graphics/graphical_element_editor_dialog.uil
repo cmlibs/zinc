@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : graphical_element_editor_dialog.uil
 !
-! LAST MODIFIED : 9 June 1998
+! LAST MODIFIED : 21 March 2000
 !
 ! DESCRIPTION :
 ! The widgets for the graphical element group editor dialog widget.
@@ -13,6 +13,7 @@ procedure
 ! ---------|---------|---------|- 31 characters max
 	gelem_ed_d_destroy_CB;
 	gelem_ed_d_id_visibility_btn;
+	gelem_ed_d_id_autoapply_btn;
 	gelem_ed_d_id_egroup_form;
 	gelem_ed_d_id_scene_form;
 	gelem_ed_d_id_editor_form;
@@ -21,6 +22,7 @@ procedure
 	gelem_ed_d_id_revert_btn;
 	gelem_ed_d_id_cancel_btn;
 	gelem_ed_d_visibility_btn_CB;
+	gelem_ed_d_autoapply_btn_CB;
 	gelem_ed_d_ok_CB;
 	gelem_ed_d_apply_CB;
 	gelem_ed_d_revert_CB;
@@ -68,7 +70,7 @@ object
 		controls
 			{
 			XmRowColumn gelem_ed_d_heading_rowcol;
-			XmToggleButtonGadget gelem_ed_d_visibility_btn;
+			XmForm gelem_ed_d_global_buttons_form;
 			XmForm gelem_ed_d_editor_form;
 			XmRowColumn gelem_ed_d_control;
 			};
@@ -100,6 +102,22 @@ object
 			XmForm gelem_ed_d_scene_form;
 			};
 		};
+	gelem_ed_d_global_buttons_form: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = gelem_ed_d_heading_rowcol;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmToggleButtonGadget gelem_ed_d_visibility_btn;
+			XmToggleButtonGadget gelem_ed_d_autoapply_btn;
+			};
+		};
 	gelem_ed_d_visibility_btn: XmToggleButton
 		{
 		arguments
@@ -108,10 +126,9 @@ object
 			XmNalignment = XmALIGNMENT_BEGINNING;
 			XmNfontList = button_font;
 			XmNleftAttachment = XmATTACH_FORM;
-			XmNleftOffset = 3;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNtopAttachment = XmATTACH_WIDGET;
-			XmNtopWidget = gelem_ed_d_heading_rowcol;
+!			XmNleftOffset = 3;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
 			XmNbottomAttachment = XmATTACH_NONE;
 			};
 		callbacks
@@ -122,6 +139,27 @@ object
 				gelem_ed_d_visibility_btn_CB(gelem_ed_d_structure);
 			};
 		};
+	gelem_ed_d_autoapply_btn: XmToggleButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Auto Apply");
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 50;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				gelem_ed_d_id_autoapply_btn(gelem_ed_d_structure);
+			XmNvalueChangedCallback = procedure
+				gelem_ed_d_autoapply_btn_CB(gelem_ed_d_structure);
+			};
+		};
 	gelem_ed_d_editor_form: XmForm
 		{
 		arguments
@@ -129,7 +167,7 @@ object
 			XmNleftAttachment = XmATTACH_FORM;
 			XmNrightAttachment = XmATTACH_FORM;
 			XmNtopAttachment = XmATTACH_WIDGET;
-			XmNtopWidget = gelem_ed_d_visibility_btn;
+			XmNtopWidget = gelem_ed_d_global_buttons_form;
 			XmNbottomAttachment = XmATTACH_WIDGET;
 			XmNbottomWidget = XmRowColumn gelem_ed_d_control;
 			XmNuserData = gelem_ed_d_structure;
