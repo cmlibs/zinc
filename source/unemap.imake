@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 17 October 2001
+XCOMM LAST MODIFIED : 17 December 2001
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap
@@ -627,6 +627,7 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_find_xi.c \
 	computed_field/computed_field_fibres.c \
 	computed_field/computed_field_integration.c \
+	computed_field/computed_field_set.c \
 	computed_field/computed_field_value_index_ranges.c \
 	computed_field/computed_field_vector_operations.c \
 	computed_field/computed_field_wrappers.c
