@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM  FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 30 January 2000
+XCOMM LAST MODIFIED : 2 February 2000
 XCOMM
 XCOMM  DESCRIPTION :
 XCOMM  Makefile for unemap
@@ -399,6 +399,7 @@ FINITE_ELEMENT_SRCS = \
 	finite_element/computed_field.c \
 	finite_element/export_finite_element.c \
 	finite_element/finite_element_to_graphics_object.c \
+	finite_element/finite_element_to_iso_lines.c \
 	finite_element/finite_element_to_streamlines.c \
 	finite_element/finite_element.c \
 	finite_element/import_finite_element.c
