@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : parser.c
 
-LAST MODIFIED : 6 September 2002
+LAST MODIFIED : 11 September 2002
 
 DESCRIPTION :
 A module for supporting command parsing.
@@ -1635,7 +1635,7 @@ entered.
 
 static int extract_token(char **source_address,char **token_address)
 /*******************************************************************************
-LAST MODIFIED : 6 September 2002
+LAST MODIFIED : 11 September 2002
 
 DESCRIPTION :
 On successful return, <*token_address> will point to a newly-allocated string
@@ -1664,7 +1664,8 @@ as working space in which the token is constructed from the source string.
 		return_code=1;
 		destination = source = *source_address;
 		/* pass over leading white space and other delimiters */
-		while ((*source) && (isspace(*source)))
+		while ((*source) && (isspace(*source) ||
+			('=' == *source) || (',' == *source) || (';' == *source)))
 		{
 			source++;
 		}
