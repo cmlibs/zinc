@@ -82,7 +82,11 @@ CC = egcs -c
 CPP = egcs -c
 FORTRAN = g77 -c
 LINK = egcs -static -L/usr/X11R6/lib
+#if defined (OPTIMISED)
+OPTIMISATION_FLAGS = -O
+#else /* defined (OPTIMISED) */
 OPTIMISATION_FLAGS = -g
+#endif /* defined (OPTIMISED) */
 COMPILE_FLAGS = 
 COMPILE_DEFINES = 
 STRICT_FLAGS = 
