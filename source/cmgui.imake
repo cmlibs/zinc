@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 26 March 2001
+XCOMM LAST MODIFIED : 21 April 2001
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -246,6 +246,7 @@ GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
 GRAPHICS_LIB = -lGL -lGLU 
 #else /* defined (DYNAMIC_GL_LINUX) */
 GRAPHICS_LIB = -L/usr/local/lib -lGL -lGLU
+/*GRAPHICS_LIB = -L/home/nickerso/cmiss/cmgui -lMesaGL -lMesaGLU*/
 #endif /* defined (DYNAMIC_GL_LINUX) */
 #endif /* switch OperatingSystem */
 #if defined (OLD_CODE)
@@ -537,6 +538,7 @@ XML_INC = -I$(XML_PATH)/include
 #elif defined(LINUX) /* switch OperatingSystem */
 XML_DEFINES = -DLINUX -D_REENTRANT
 XML_LIB = $(XML_PATH)/library/libXML_linux_optimised_1.0.0.a -lstdc++-2-libc6.1-1-2.9.0
+XML_LIB = $(XML_PATH)/library/libXML_linux_optimised_1.0.0.a
 XML_INC = -I$(XML_PATH)/include 
 /* XML_LIB = -static -L$(XML_PATH)/expat_lib/lib -lExpat_linux -shared */
 /* XML_INC = -I$(XML_PATH)/expat_lib/include */
@@ -666,7 +668,7 @@ START_ALL_DEFINES =
 END_ALL_DEFINES =
 
 START_ALL_INCLUDES =
-END_ALL_INCLUDES =
+END_ALL_INCLUDES = -I/usr/X11R6/include
 
 ALL_DEFINES = $(START_ALL_DEFINES) \
 	$(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
