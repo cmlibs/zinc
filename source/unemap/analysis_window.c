@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.c
 
-LAST MODIFIED : 7 May 2004
+LAST MODIFIED : 15 June 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1680,7 +1680,7 @@ except the warning box shell.
 static void write_event_times_file(Widget widget,XtPointer analysis_window,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 3 June 1999
+LAST MODIFIED : 15 June 2004
 
 DESCRIPTION :
 Check the analysis rig for events and for undecided events.  Prompt user for
@@ -1715,7 +1715,7 @@ continuation.  Write the file.
 					{
 						no_undecided=0;
 					}
-					event++;
+					event=event->next;
 				}
 			}
 			device++;
