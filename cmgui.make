@@ -78,32 +78,6 @@ $(SOURCE_PATH)/cmgui_sgilite.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/co
 	$(COMMON_IMAKE_RULE) \
 	imake -DIRIX -DOPTIMISED -DLITEWEIGHT $${CMISS_ROOT_DEF} -s cmgui_sgilite.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
-#SGI F90 Interpreter version
-cmgui_f90 : force $(SOURCE_PATH)/cmgui_sgif90.make
-	$(COMMON_MAKE_RULE) \
-	if [ -f cmgui_sgif90.make ]; then \
-		$(MAKE) -f cmgui_sgif90.make $(TARGET) ; \
-	else \
-		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_sgif90.make $(TARGET) ; \
-	fi	
-
-$(SOURCE_PATH)/cmgui_sgif90.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
-	$(COMMON_IMAKE_RULE) \
-	imake -DIRIX -DOPTIMISED -DF90_INTERPRETER $${CMISS_ROOT_DEF} -s cmgui_sgif90.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
-
-#SGI Perl Interpreter version
-cmgui_perl : force $(SOURCE_PATH)/cmgui_sgiperl.make
-	$(COMMON_MAKE_RULE) \
-	if [ -f cmgui_sgiperl.make ]; then \
-		$(MAKE) -f cmgui_sgiperl.make $(TARGET) ; \
-	else \
-		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_sgiperl.make $(TARGET) ; \
-	fi	
-
-$(SOURCE_PATH)/cmgui_sgiperl.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
-	$(COMMON_IMAKE_RULE) \
-	imake -DIRIX -DPERL_INTERPRETER $${CMISS_ROOT_DEF} -s cmgui_sgiperl.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
-
 #SGI debug memory check version
 cmgui_memorycheck : force $(SOURCE_PATH)/cmgui_sgi_memorycheck.make
 	$(COMMON_MAKE_RULE) \
@@ -142,6 +116,19 @@ cmgui_linux : force $(SOURCE_PATH)/cmgui_linux.make
 $(SOURCE_PATH)/cmgui_linux.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
 	$(COMMON_IMAKE_RULE) \
 	imake -DLINUX $${CMISS_ROOT_DEF} -s cmgui_linux.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
+
+#Linux debug memory check version
+cmgui_linux_memorycheck : force $(SOURCE_PATH)/cmgui_linux_memorycheck.make
+	$(COMMON_MAKE_RULE) \
+	if [ -f cmgui_linux_memorycheck.make ]; then \
+		$(MAKE) -f cmgui_linux_memorycheck.make $(TARGET) ; \
+	else \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cmgui_linux_memorycheck.make $(TARGET) ; \
+	fi
+
+$(SOURCE_PATH)/cmgui_linux_memorycheck.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
+	$(COMMON_IMAKE_RULE) \
+	imake -DLINUX -DMEMORY_CHECK $${CMISS_ROOT_DEF} -s cmgui_linux_memorycheck.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 #Linux optimised version
 cmgui_linux_optimised : force $(SOURCE_PATH)/cmgui_linux_optimised.make
@@ -195,7 +182,7 @@ update :
 		echo "Must be cmiss and in $(PRODUCT_PATH)"; \
 	fi
 
-depend : $(SOURCE_PATH)/cmgui_sgi.make $(SOURCE_PATH)/cmgui_sgioptimised.make $(SOURCE_PATH)/cmgui_sgi64.make $(SOURCE_PATH)/cmgui_linux.make $(SOURCE_PATH)/cmgui_sgi_memorycheck.make $(SOURCE_PATH)/cmgui_linux_optimised.make 
+depend : $(SOURCE_PATH)/cmgui_sgi.make $(SOURCE_PATH)/cmgui_sgioptimised.make $(SOURCE_PATH)/cmgui_sgi64.make $(SOURCE_PATH)/cmgui_linux.make $(SOURCE_PATH)/cmgui_linux_memorycheck.make $(SOURCE_PATH)/cmgui_sgi_memorycheck.make $(SOURCE_PATH)/cmgui_linux_optimised.make 
 	if [ "$(USER)" = "cmiss" ]; then \
 		CMGUI_DEV_ROOT=$(PWD) ; \
 		export CMGUI_DEV_ROOT ; \
@@ -206,11 +193,11 @@ depend : $(SOURCE_PATH)/cmgui_sgi.make $(SOURCE_PATH)/cmgui_sgioptimised.make $(
 		$(MAKE) -f cmgui_sgi_memorycheck.make depend ; \
 		$(MAKE) -f cmgui_sgilite.make depend ; \
 		$(MAKE) -f cmgui_sgi64.make depend ; \
-		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; setenv CMGUI_DEV_ROOT $(PWD) ; cd $(PRODUCT_SOURCE_PATH) ; $(MAKE) -f cmgui_linux.make depend ; $(MAKE) -f cmgui_linux_optimised.make depend ; $(MAKE) -f cmgui_linux_optimised_dynamic.make depend ' ; \
+		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; setenv CMGUI_DEV_ROOT $(PWD) ; cd $(PRODUCT_SOURCE_PATH) ; $(MAKE) -f cmgui_linux.make depend ; $(MAKE) -f cmgui_linux_memorycheck.make depend ; $(MAKE) -f cmgui_linux_optimised.make depend ; $(MAKE) -f cmgui_linux_optimised_dynamic.make depend ' ; \
 	else \
 		echo "Must be cmiss"; \
 	fi
-	
+
 run_tests :
 	if [ "$(USER)" = "cmiss" ]; then \
 		cd $(TEST_PATH); \
