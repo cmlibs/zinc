@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_viewer.c
 
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 12 July 2000
 
 DESCRIPTION :
 Three_D_drawing derivative for viewing a Scene from an arbitrary position.
@@ -441,10 +441,181 @@ DESCRIPTION :
 	return (return_code);
 } /* Scene_viewer_render_background_texture */
 
+static int Scene_viewer_calculate_transformation(
+	struct Scene_viewer *scene_viewer, int viewport_width, int viewport_height)
+/*******************************************************************************
+LAST MODIFIED : 12 July 2000
+
+DESCRIPTION :
+Calculates the projection_matrix, window_projection_matrix and modelview_materix
+for the <scene_viewer> onto a given <viewport_width>.<viewport_height> in
+pixels, both of which must be positive.
+In CUSTOM projections, the projection_matrix and modelview_matrix are supplied
+and hence these are only calculated for other projection modes. In all cases
+the projection_matrix is understood to project space onto the NDC_info; In
+absolute_viewport mode this is some fixed region relative to the user
+viewport coordinates. In relative_viewport mode, the NDC_width and NDC_height
+are made as large as can fit in the viewport size without a shape change.
+As a result, the projection_matrix in both relative and absolute viewport modes
+is not the projection that will fill the entire viewport/window - this function
+calculates the window_projection_matrix for this purpose.
+Note that this function makes changes to the OpenGL rendering matrices in some
+modes, so push/pop them if you want them preserved.
+==============================================================================*/
+{
+	double dx,dy,dz,premultiply_matrix[16],factor;
+	GLdouble temp_matrix[16];
+	int return_code,i,j;
+
+	ENTER(Scene_viewer_calculate_transformation);
+	if (scene_viewer&&(0<viewport_width)&&(0<viewport_height))
+	{
+		return_code=1;
+
+		/* 1. calculate and store projection_matrix - no need in CUSTOM mode */
+		if (SCENE_VIEWER_CUSTOM != scene_viewer->projection_mode)
+		{
+			glMatrixMode(GL_PROJECTION);
+			glLoadIdentity();
+			switch (scene_viewer->projection_mode)
+			{
+				case SCENE_VIEWER_PARALLEL:
+				{
+					glOrtho(scene_viewer->left, scene_viewer->right,
+						scene_viewer->bottom, scene_viewer->top,
+						scene_viewer->near, scene_viewer->far);
+				} break;
+				case SCENE_VIEWER_PERSPECTIVE:
+				{
+					/* adjust left, right, bottom, top from lookat plane to near plane */
+					dx = scene_viewer->eyex-scene_viewer->lookatx;
+					dy = scene_viewer->eyey-scene_viewer->lookaty;
+					dz = scene_viewer->eyez-scene_viewer->lookatz;
+					factor = scene_viewer->near/sqrt(dx*dx+dy*dy+dz*dz);
+					/* perspective projection */
+					glFrustum(scene_viewer->left*factor, scene_viewer->right*factor,
+						scene_viewer->bottom*factor, scene_viewer->top*factor,
+						scene_viewer->near, scene_viewer->far);
+				} break;
+			}
+			glGetDoublev(GL_PROJECTION_MATRIX,temp_matrix);
+			/* convert from OpenGL to our matrix format (transpose) */
+			for (i=0;i<4;i++)
+			{
+				for (j=0;j<4;j++)
+				{
+					scene_viewer->projection_matrix[i*4+j] = (double)temp_matrix[j*4+i];
+				}
+			}
+		}
+
+		/* 2. calculate and store window_projection_matrix - all modes */
+		/* the projection matrix converts the viewing volume into the Normalised
+			 Device Coordinates (NDCs) ranging from -1 to +1 in each coordinate
+			 direction. Need to scale this range to fit the viewport/window by
+			 premultiplying with a matrix. First start with identity: Note that
+			 numbers go down columns first in OpenGL matrices */
+		for (i=1;i<15;i++)
+		{
+			premultiply_matrix[i] = 0.0;
+		}
+		premultiply_matrix[ 0] = 1.0;
+		premultiply_matrix[ 5] = 1.0;
+		premultiply_matrix[10] = 1.0;
+		premultiply_matrix[15] = 1.0;
+		switch (scene_viewer->viewport_mode)
+		{
+			case SCENE_VIEWER_ABSOLUTE_VIEWPORT:
+			{
+				/* absolute viewport: NDC volume is placed in the position
+					 described by the NDC_info relative to user viewport
+					 coordinates - as with the background texture */
+				premultiply_matrix[0] *= scene_viewer->NDC_width*
+					scene_viewer->viewport_pixels_per_unit_x/viewport_width;
+				premultiply_matrix[3] = -1.0+
+					((scene_viewer->viewport_pixels_per_unit_x)/viewport_width)*
+					((scene_viewer->NDC_width)+
+						2.0*(scene_viewer->NDC_left-scene_viewer->viewport_left));
+				premultiply_matrix[5] *= scene_viewer->NDC_height*
+					scene_viewer->viewport_pixels_per_unit_y/viewport_height;
+				premultiply_matrix[7] =1.0+
+					((scene_viewer->viewport_pixels_per_unit_y)/viewport_height)*
+					(-(scene_viewer->NDC_height)+
+						2.0*(scene_viewer->NDC_top-scene_viewer->viewport_top));
+			} break;
+			case SCENE_VIEWER_RELATIVE_VIEWPORT:
+			{
+				/* relative viewport: NDC volume is scaled to the largest size
+					 that can fit in the viewport without distorting its shape. Note that
+					 the NDC_height and NDC_width are all that is needed to characterise
+					 the size/shape of the NDC volume in relative mode */
+				if (scene_viewer->NDC_height/scene_viewer->NDC_width >
+					(double)viewport_height/(double)viewport_width)
+				{
+					/* make NDC represent a wider viewing volume. */
+					premultiply_matrix[0] *= (scene_viewer->NDC_width*viewport_height/
+						(scene_viewer->NDC_height*viewport_width));
+				}
+				else
+				{
+					/* make NDC represent a taller viewing volume */
+					premultiply_matrix[5] *= (scene_viewer->NDC_height*viewport_width/
+						(scene_viewer->NDC_width*viewport_height));
+				}
+			} break;
+		}
+		multiply_matrix(4,4,4,premultiply_matrix,scene_viewer->projection_matrix,
+			scene_viewer->window_projection_matrix);
+
+		/* 3. Calculate and store modelview_matrix - no need in CUSTOM mode */
+		if (SCENE_VIEWER_CUSTOM != scene_viewer->projection_mode)
+		{
+			glMatrixMode(GL_MODELVIEW);
+			glLoadIdentity();
+			gluLookAt(scene_viewer->eyex,scene_viewer->eyey,
+				scene_viewer->eyez,scene_viewer->lookatx,
+				scene_viewer->lookaty,scene_viewer->lookatz,
+				scene_viewer->upx,scene_viewer->upy,scene_viewer->upz);
+			glGetDoublev(GL_MODELVIEW_MATRIX,temp_matrix);
+			/* store calculated modelview matrix for later reference - convert from
+				 OpenGL to our matrix format (transpose) */
+			for (i=0;i<4;i++)
+			{
+				for (j=0;j<4;j++)
+				{
+					scene_viewer->modelview_matrix[i*4+j]=
+						(double)temp_matrix[j*4+i];
+				}
+			}
+		}
+#if defined (REPORT_GL_ERRORS)
+		{
+			char message[200];
+			GLenum error;
+			while(GL_NO_ERROR!=(error = glGetError()))
+			{
+				strcpy(message,"Scene_viewer_calculate_transformation: GL ERROR ");
+				strcat(message, (char *)gluErrorString(error));
+				display_message(ERROR_MESSAGE, message);
+			}
+		}
+#endif /* defined (REPORT_GL_ERRORS) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_calculate_transformation.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_calculate_transformation */
+
 static int Scene_viewer_render_scene_private(struct Scene_viewer *scene_viewer,
 	int picking_on, int left, int bottom, int right, int top)
 /*******************************************************************************
-LAST MODIFIED : 1 June 2000
+LAST MODIFIED : 12 July 2000
 
 DESCRIPTION :
 Called to redraw the Scene_viewer scene after changes in the display lists or
@@ -459,14 +630,14 @@ access this function.
 ==============================================================================*/
 {
 	Dimension xwidth, xheight;
-	double dx,dy,dz,factor,max_x,max_y,pixel_offset_x,pixel_offset_y;
+	double max_x,max_y,pixel_offset_x,pixel_offset_y;
 	GLboolean valid_raster;
 	static GLint viewport[4]={0,0,1,1};
 	GLint stencil_bits;
 	GLdouble model_matrix[16],obj_x,obj_y,obj_z,projection_matrix[16],
-		temp_matrix[16],temp_proj_matrix[16];
-	int accumulation_count,antialias,do_render,layer, layers, return_code,height,
-		i,j,scene_redraws,width;
+		temp_matrix[16];
+	int accumulation_count,antialias,do_render,i,j,layer,layers,
+		return_code,scene_redraws,viewport_height,viewport_width;
 	float j2[2][2]=
 		{
 			{0.25,0.75},
@@ -506,11 +677,13 @@ access this function.
 			right = xwidth;
 			top = xheight;
 		}
-		width = right - left;
-		height = top - bottom;
+		viewport_width = right - left;
+		viewport_height = top - bottom;
+
 		/* only redraw if the drawing widget has area and neither it nor any of its
 			 parents are unmanaged */
-		do_render=(0<width)&&(0<height)&&XtIsManaged(scene_viewer->drawing_widget)&&
+		do_render=(0<viewport_width)&&(0<viewport_height)&&
+			XtIsManaged(scene_viewer->drawing_widget)&&
 			XtIsManaged(scene_viewer->parent);
 		if (do_render)
 		{
@@ -567,6 +740,12 @@ access this function.
 				}
 				else
 				{
+					/* in picking mode the transformations are left unchanged */
+					if (!picking_on)
+					{
+						Scene_viewer_calculate_transformation(scene_viewer,
+							viewport_width,viewport_height);
+					}
 					/* It is also possible to test the extensions at compile time
 						 by using #if defined GL_EXT_polygon_offset */
 					if (query_gl_extension("GL_EXT_polygon_offset"))
@@ -612,77 +791,18 @@ access this function.
 						/* turn on alpha */
 						glEnable(GL_BLEND);
 						glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-						glViewport((GLint)left, (GLint)bottom, (GLint)width, (GLint)height);
-						glScissor((GLint)left, (GLint)bottom, (GLint)width, (GLint)height);
+						glViewport((GLint)left, (GLint)bottom,
+							(GLint)viewport_width, (GLint)viewport_height);
+						glScissor((GLint)left, (GLint)bottom,
+							(GLint)viewport_width, (GLint)viewport_height);
 						glEnable(GL_SCISSOR_TEST);
 						/* glPushAttrib(GL_VIEWPORT_BIT); */
-#if defined (OLD_CODE)
-						/* clear the screen: colour buffer and depth buffer */
-						glClearColor((scene_viewer->background_colour).red,
-							(scene_viewer->background_colour).green,
-							(scene_viewer->background_colour).blue,0.);
-						glClearDepth(1.0);
-						if (0<stencil_bits)
-						{
-							glClearStencil(0);
-							glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT |
-								GL_STENCIL_BUFFER_BIT);
-						}
-						else
-						{
-							glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-						}
-#endif /* defined (OLD_CODE) */
 						reset_Lights();
 
 						/* light model */
 						compile_Light_model(scene_viewer->light_model);
 						execute_Light_model(scene_viewer->light_model);
-						/* in picking mode the starting projection matrix is already
-							 supplied */
-						if (!picking_on)
-						{
-							/* set projection matrix/viewing volume */
-							glMatrixMode(GL_PROJECTION);
-							glLoadIdentity();
-							if (SCENE_VIEWER_CUSTOM != scene_viewer->projection_mode)
-							{
-								/* store calculated projection matrix for later reference */
-								if (SCENE_VIEWER_PARALLEL==scene_viewer->projection_mode)
-								{
-									glOrtho(scene_viewer->left,scene_viewer->right,
-										scene_viewer->bottom,scene_viewer->top,
-										scene_viewer->near,scene_viewer->far);
-								}
-								else
-								{
-									/* adjust left,right,bottom,top from lookat plane to near
-										 plane */
-									dx=scene_viewer->eyex-scene_viewer->lookatx;
-									dy=scene_viewer->eyey-scene_viewer->lookaty;
-									dz=scene_viewer->eyez-scene_viewer->lookatz;
-									factor=scene_viewer->near/sqrt(dx*dx+dy*dy+dz*dz);
-									/* perspective projection */
-									glFrustum(
-										scene_viewer->left*factor,
-										scene_viewer->right*factor,
-										scene_viewer->bottom*factor,
-										scene_viewer->top*factor,
-										scene_viewer->near,
-										scene_viewer->far);
-								}
-								glGetDoublev(GL_PROJECTION_MATRIX,temp_matrix);
-								/* convert from OpenGL to our matrix format (transpose) */
-								for (i=0;i<4;i++)
-								{
-									for (j=0;j<4;j++)
-									{
-										scene_viewer->projection_matrix[i*4+j]=
-											(double)temp_matrix[j*4+i];
-									}
-								}
-							}
-						}
+
 						pixel_offset_x=0;
 						pixel_offset_y=0;
 
@@ -738,7 +858,7 @@ access this function.
 								glDisable(GL_LIGHTING);
 								glColor3f(1,1,1);
 								Scene_viewer_render_background_texture(scene_viewer,
-									width,height);
+									viewport_width,viewport_height);
 								glEnable(GL_LIGHTING);
 							}
 
@@ -779,28 +899,32 @@ access this function.
 								 viewport by premultiplying with a matrix. First start with
 								 identity: Note that numbers go down columns first in OpenGL
 								 matrices */
-							for (i=0;i<16;i++)
-							{
-								if (0==(i%5))
-								{
-									temp_matrix[i]=1.0;
-								}
-								else
-								{
-									temp_matrix[i]=0.0;
-								}
-							}
+							temp_matrix[0] = 1.0;
+							temp_matrix[1] = 0.0;
+							temp_matrix[2] = 0.0;
+							temp_matrix[3] = 0.0;
+
+							temp_matrix[4] = 0.0;
+							temp_matrix[5] = 1.0;
+							temp_matrix[6] = 0.0;
+							temp_matrix[7] = 0.0;
+
+							temp_matrix[8] = 0.0;
+							temp_matrix[9] = 0.0;
+							temp_matrix[10] = 1.0;
+							temp_matrix[11] = 0.0;
 							/* offsetting image by [sub]pixel distances for anti-aliasing.
 								 offset_x is distance image is shifted to the right, offset_y is
 								 distance image is shifted up. The actual offsets used are
 								 fractions of half the viewport width or height,since normalized
 								 device coordinates (NDCs) range from -1 to +1 */
-							temp_matrix[12]=2.0*pixel_offset_x/width;
-							temp_matrix[13]=2.0*pixel_offset_y/height;
+							temp_matrix[12] = 2.0*pixel_offset_x/viewport_width;
+							temp_matrix[13] = 2.0*pixel_offset_y/viewport_height;
+							temp_matrix[14] = 0.0;
+							temp_matrix[15] = 1.0;
 
 							/********* RENDER OVERLAY SCENE *********/
-							if (!picking_on&&scene_viewer->overlay_scene&&(0<width)&&
-								(0<height))
+							if (!picking_on&&scene_viewer->overlay_scene)
 							{
 								/* set up parallel projection/modelview combination that gives
 									 coordinates ranging from -1 to +1 from left to right and
@@ -812,15 +936,15 @@ access this function.
 								{
 									glMultMatrixd(temp_matrix);
 								}
-								if (width > height)
+								if (viewport_width > viewport_height)
 								{
-									max_x = (double)width/(double)height;
+									max_x = (double)viewport_width/(double)viewport_height;
 									max_y = 1.0;
 								}
 								else
 								{
 									max_x = 1.0;
-									max_y = (double)height/(double)width;
+									max_y = (double)viewport_height/(double)viewport_width;
 								}
 								if (0<stencil_bits)
 								{
@@ -889,111 +1013,41 @@ access this function.
 							{
 								glMultMatrixd(temp_matrix);
 							}
-							temp_matrix[12]=0.0;
-							temp_matrix[13]=0.0;
-							if (SCENE_VIEWER_RELATIVE_VIEWPORT==scene_viewer->viewport_mode)
-							{
-								/* relative viewport: NDC volume is scaled to the largest size
-									 that can fit in the viewport without distorting its shape. */
-								if (scene_viewer->NDC_height/scene_viewer->NDC_width >
-									(double)height/(double)width)
-								{
-									/* make NDC represent a wider viewing volume. */
-									temp_matrix[0] *= (scene_viewer->NDC_width*height/
-										(scene_viewer->NDC_height*width));
-								}
-								else
-								{
-									/* make NDC represent a taller viewing volume */
-									temp_matrix[5] *= (scene_viewer->NDC_height*width/
-										(scene_viewer->NDC_width*height));
-								}
-							}
-							else
-							{
-								/* absolute viewport: NDC volume is placed in the position
-									 described by the NDC_info relative to user viewport
-									 coordinates - as with the background texture */
-								temp_matrix[0] *= scene_viewer->NDC_width*
-									scene_viewer->viewport_pixels_per_unit_x/width;
-								temp_matrix[5] *= scene_viewer->NDC_height*
-									scene_viewer->viewport_pixels_per_unit_y/height;
-								temp_matrix[12]= -1.0+
-									((scene_viewer->viewport_pixels_per_unit_x)/width)*
-									((scene_viewer->NDC_width)+
-										2.0*(scene_viewer->NDC_left-scene_viewer->viewport_left));
-								temp_matrix[13]=1.0+
-									((scene_viewer->viewport_pixels_per_unit_y)/height)*
-									(-(scene_viewer->NDC_height)+
-										2.0*(scene_viewer->NDC_top-scene_viewer->viewport_top));
-							}
-							glMultMatrixd(temp_matrix);
-							/* copy projection_matrix to OpenGL format (ie. transpose) and
-								 apply. Also save the actual projection matrix used to fill
-								 window */
+							/* multiply by saved window_projection_matrix */
 							for (i=0;i<4;i++)
 							{
 								for (j=0;j<4;j++)
 								{
-									temp_proj_matrix[j*4+i]=
-										(GLdouble)(scene_viewer->projection_matrix)[i*4+j];
-									scene_viewer->window_projection_matrix[i*4+j]=
-										temp_matrix[   i]*scene_viewer->projection_matrix[   j]+
-										temp_matrix[ 4+i]*scene_viewer->projection_matrix[ 4+j]+
-										temp_matrix[ 8+i]*scene_viewer->projection_matrix[ 8+j]+
-										temp_matrix[12+i]*scene_viewer->projection_matrix[12+j];
+									temp_matrix[j*4+i]=
+										(GLdouble)(scene_viewer->window_projection_matrix)[i*4+j];
 								}
 							}
-							glMultMatrixd(temp_proj_matrix);
+							glMultMatrixd(temp_matrix);
+							
 							/* ModelView matrix */
 							glMatrixMode(GL_MODELVIEW);
 							glLoadIdentity();
-#if defined (OLD_CODE)
-							if (0==accumulation_count)
+							reset_Lights();
+							/* turn on lights that are part of the Scene_viewer,
+								 ie. headlamps */
+							FOR_EACH_OBJECT_IN_LIST(Light)(execute_Light,(void *)NULL,
+								scene_viewer->list_of_lights);
+							
+							/* multiply by saved modelview_matrix */
+							for (i=0;i<4;i++)
 							{
-#endif /* defined (OLD_CODE) */
-								reset_Lights();
-								/* turn on lights that are part of the Scene_viewer,
-									 ie. headlamps */
-								FOR_EACH_OBJECT_IN_LIST(Light)(execute_Light,(void *)NULL,
-									scene_viewer->list_of_lights);
-#if defined (OLD_CODE)
-							}
-#endif /* defined (OLD_CODE) */
-							if (SCENE_VIEWER_CUSTOM==scene_viewer->projection_mode)
-							{
-								for (i=0;i<4;i++)
+								for (j=0;j<4;j++)
 								{
-									for (j=0;j<4;j++)
-									{
-										temp_matrix[j*4+i]=
-											(GLdouble)scene_viewer->modelview_matrix[i*4+j];
-									}
-								}
-								glMultMatrixd(temp_matrix);
-							}
-							else
-							{
-								gluLookAt(scene_viewer->eyex,scene_viewer->eyey,
-									scene_viewer->eyez,scene_viewer->lookatx,
-									scene_viewer->lookaty,scene_viewer->lookatz,
-									scene_viewer->upx,scene_viewer->upy,scene_viewer->upz);
-								glGetDoublev(GL_MODELVIEW_MATRIX,temp_matrix);
-								/* store calculated modelview matrix for later reference */
-								/* convert from OpenGL to our matrix format (transpose) */
-								for (i=0;i<4;i++)
-								{
-									for (j=0;j<4;j++)
-									{
-										scene_viewer->modelview_matrix[i*4+j]=
-											(double)temp_matrix[j*4+i];
-									}
+									temp_matrix[j*4+i]=
+										(GLdouble)scene_viewer->modelview_matrix[i*4+j];
 								}
 							}
+							glMultMatrixd(temp_matrix);
 							/* turn on lights that are part of the Scene and fixed relative
 								 to it. Note the scene will have compiled them already. */
 							for_each_Light_in_Scene(scene_viewer->scene,execute_Light,
 								(void *)NULL);
+
 							if (0<stencil_bits)
 							{
 								/* use full z-buffer for overlay ranging from -1 to 1 in z */
@@ -1079,13 +1133,13 @@ access this function.
 					if (SCENE_VIEWER_PIXEL_BUFFER==scene_viewer->buffer_mode)
 					{
 						if (REALLOCATE(new_data,scene_viewer->pixel_data,char,
-							3*(width+1)*(height+1)))
+							3*(viewport_width+1)*(viewport_height+1)))
 						{
 							scene_viewer->pixel_data=new_data;
-							glReadPixels(0,0,width,height,GL_RGB,GL_BYTE,
+							glReadPixels(0,0,viewport_width,viewport_height,GL_RGB,GL_BYTE,
 								scene_viewer->pixel_data);
-							scene_viewer->pixel_width=width;
-							scene_viewer->pixel_height=height;
+							scene_viewer->pixel_width=viewport_width;
+							scene_viewer->pixel_height=viewport_height;
 							scene_viewer->update_pixel_image=0;
 						}
 						else
