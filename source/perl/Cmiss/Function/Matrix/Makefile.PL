@@ -27,8 +27,6 @@ while ( -f $typemap_file )
 #Other typemaps we require
 unshift @typemap_array, "$ENV{CMGUI_DEV_SOURCE}/perl/Cmiss/Value/typemap";
 
-# Problems with "Manifying" in a FAT32 filesystem because Cmiss::Function::Matrix.3 is not
-#   a valid file name
 WriteMakefile(
     'NAME'    => 'Cmiss::Function::Matrix',
   #          
@@ -41,6 +39,9 @@ WriteMakefile(
     'DEFINE'    => '-DFULL_NAMES', # e.g., '-DHAVE_SOMETHING'
   # Insert -I. if you add *.h files later:
     'INC'    => "-I$ENV{CMGUI_DEV_SOURCE}", # e.g., '-I/usr/include/other'
+	# Turn off "Manifying" because can't create files with names containing :'s in
+	#   a FAT32 filesystem
+		'INSTALLMAN3DIR' => 'none',
   # Un-comment this if you add C files to link with later:
     # 'OBJECT'    => '$(O_FILES)', # link all the C files too
   # Include the typemap files of any directories above here

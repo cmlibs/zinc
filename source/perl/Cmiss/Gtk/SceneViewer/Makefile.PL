@@ -14,6 +14,9 @@ WriteMakefile(
     'DEFINE'		=> '', # e.g., '-DHAVE_SOMETHING'
 	# Insert -I. if you add *.h files later:
     'INC'		=> "-I$ENV{CMGUI_DEV_SOURCE} -I/usr/include/gtk-1.2/ -I/usr/include/glib-1.2/ -I/usr/lib/glib/include/ -I/usr/lib/perl5/site_perl/5.6.1/i386-linux/Gtk/Install/",
+	# Turn off "Manifying" because can't create files with names containing :'s in
+	#   a FAT32 filesystem
+		'INSTALLMAN3DIR' => 'none',
 	# Un-comment this if you add C files to link with later:
     'OBJECT'		=> '$(O_FILES)', # link all the C files too
 	 'TYPEMAPS'   => ['/usr/lib/perl5/5.6.1/ExtUtils/typemap',  '/home/blackett/gtk/Gtk-Perl-0.7008/GtkGLArea/../Gtk/blib/arch/Gtk/Install//GtkTypemap','/home/blackett/gtk/Gtk-Perl-0.7008/GtkGLArea/../Gtk/blib/arch/Gtk/Install//gtk-0.99.typemap','/home/blackett/gtk/Gtk-Perl-0.7008/GtkGLArea/../Gtk/blib/arch/Gtk/Install//gtk-1.2.typemap'],
