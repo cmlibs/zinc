@@ -1473,7 +1473,7 @@ the drawable (not sure which)
 		/*???Use src, dest and size ? */
 		if (image&&screen_visual&&(postscript.spectrum_pixels)&&
 			(0<postscript.number_of_spectrum_colours)&&
-			((unsigned int)postscript.number_of_spectrum_colours<=
+			(postscript.number_of_spectrum_colours<=
 			screen_visual->map_entries))
 		{
 			return_code=1;
