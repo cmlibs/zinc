@@ -17602,7 +17602,7 @@ DESCRIPTION :
 		{
 			/* get settings describing same geometry in list */
 			same_settings=first_settings_in_GT_element_group_that(
-				gt_element_group,GT_element_settings_same_geometry,
+				gt_element_group,GT_element_settings_same_name_or_geometry,
 				(void *)(modify_g_element_data->settings));
 			if (modify_g_element_data->delete_flag)
 			{

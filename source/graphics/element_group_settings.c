@@ -3940,6 +3940,44 @@ settings describe EXACTLY the same geometry.
 	return (return_code);
 } /* GT_element_settings_same_geometry */
 
+int GT_element_settings_same_name_or_geometry(struct GT_element_settings *settings,
+	void *second_settings_void)
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+GT_element_settings list conditional function returning 1 iff the two
+settings have the same name or describe EXACTLY the same geometry.
+==============================================================================*/
+{
+	int return_code;
+	struct GT_element_settings *second_settings;
+
+	ENTER(GT_element_settings_same_name_or_geometry);
+	if (settings
+		&&(second_settings=(struct GT_element_settings *)second_settings_void))
+	{
+		if (settings->name && second_settings->name)
+		{
+			return_code = (0==strcmp(settings->name,second_settings->name));
+		}
+		else
+		{
+			return_code = GT_element_settings_same_geometry(settings,
+				second_settings_void);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_same_name_or_geometry.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_same_name_or_geometry */
+
 int GT_element_settings_same_non_trivial(struct GT_element_settings *settings,
 	void *second_settings_void)
 /*******************************************************************************

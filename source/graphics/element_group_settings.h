@@ -1099,6 +1099,16 @@ LIST(GT_element_settings) conditional function returning 1 iff the two
 gt_element_settings describe the same geometry.
 ==============================================================================*/
 
+int GT_element_settings_same_name_or_geometry(struct GT_element_settings *settings,
+	void *second_settings_void);
+/*******************************************************************************
+LAST MODIFIED : 5 November 2002
+
+DESCRIPTION :
+GT_element_settings list conditional function returning 1 iff the two
+settings have the same name or describe EXACTLY the same geometry.
+==============================================================================*/
+
 int GT_element_settings_same_non_trivial(struct GT_element_settings *settings,
 	void *second_settings_void);
 /*******************************************************************************
