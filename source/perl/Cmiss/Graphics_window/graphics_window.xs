@@ -35,10 +35,8 @@ constant(sv,arg)
 	RETVAL
 
 NO_OUTPUT int
-Cmiss_graphics_window_get_scene_viewer_by_name(IN graphics_window_name, IN pane_number, OUTLIST scene_viewer_id)
-	char *graphics_window_name
- 	int pane_number
-	Cmiss_scene_viewer_id scene_viewer_id
+Cmiss_graphics_window_get_scene_viewer_by_name(IN char *graphics_window_name, \
+	IN int pane_number, OUTLIST Cmiss_scene_viewer_id scene_viewer_id)
    POSTCALL:
 	if (RETVAL == 0)
 			XSRETURN_UNDEF;
