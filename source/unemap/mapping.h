@@ -305,14 +305,16 @@ DESCRIPTION :
 
 struct sub_Map
 /*******************************************************************************
-LAST MODIFIED : 25 July 2001
+LAST MODIFIED : 10 September 2001
 
 DESCRIPTION :
-Data unique to each sub map, passed from calculate step. to show step.
+Data unique to each sub map, passed from calculate step to show step.
 ==============================================================================*/
 {
-	float *electrode_value,*max_x,*max_y,*min_x,*min_y,*stretch_x,*stretch_y;
-	int *electrode_x,*electrode_y,number_of_drawn_regions,*start_x,*start_y;
+	float *electrode_value,frame_start_time,frame_end_time,*max_x,*max_y,*min_x,
+		*min_y,*stretch_x,*stretch_y;
+	int *electrode_x,*electrode_y,height,number_of_drawn_regions,*start_x,
+		*start_y,potential_time_index,width,x_offset,y_offset;
 };
 
 struct Map
@@ -380,9 +382,12 @@ DESCRIPTION : The Map.
 	struct User_interface *user_interface;
 #endif /* defined (OLD_CODE) */
 	struct Unemap_package *unemap_package;
-	/*do sub_maps as a linked list? */
+	/*do sub_maps as a linked list, or array? */
 	int number_of_sub_maps;
-	struct sub_Map *sub_map;
+	struct sub_Map **sub_map;
+	int contour_x_spacing,contour_y_spacing;
+	/* rows and columns for drawing regions */
+	int number_of_region_rows,number_of_region_columns;
 }; /* struct Map */
 
 /*
@@ -468,29 +473,6 @@ LAST MODIFIED : 10 July 2001
 DESCRIPTION: Given <map>,<drawing> returns the number_of_maps (based upon the
 number of Electrical_imaging_events) and the x_step and y_step, (offsets in the 
 drawing) and map_rows, map_cols, the number of map rows and columns.
-==============================================================================*/
-
-int draw_map_2d(struct Map *map,int recalculate,struct Drawing_2d *drawing,
-		int map_width,int map_height, int map_x_offset,int map_y_offset);
-/*******************************************************************************
-LAST MODIFIED : 13 July 2001
-
-DESCRIPTION :
-This function draws the <map> in the <drawing>, with <map_width>, <map_height> 
-at <map_x_offset> <map_y_offset>. <map_width>, <map_height> <map_x_offset> 
-<map_y_offset> must be inside drawing->width,drawing->height. (This is checked)
- If <recalculate> is >0 then the
-colours for the pixels are recalculated.  If <recalculate> is >1 then the
-interpolation functions are also recalculated.  If <recalculate> is >2 then the
-<map> is resized to match the <drawing>.
-???Would like to develop a "PostScript driver" for X.  To get an idea of whats
-involved I'll put a PostScript switch into this routine so that it either draws
-to the drawing or writes to a postscript file.
-???DB.  Use XDrawSegments for contours ?
-
-??JW added options for Gouraund shading, selected using the defines
-GOURAUD_FROM_MESH or GOURAUD_FROM_PIXEL_VALUE. A test thing really, for
-comparison with 3D maps.
 ==============================================================================*/
 
 int draw_colour_or_auxiliary_area(struct Map *map,struct Drawing_2d *drawing);

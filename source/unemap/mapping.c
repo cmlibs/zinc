@@ -703,10 +703,83 @@ Destroy a sub map
 	return(return_code);
 }/* destroy_sub_Map */
 
-struct sub_Map *create_sub_Map(int number_of_drawn_regions,
-	int number_of_electrodes)
+int map_destroy_sub_Maps(struct Map *map)
 /*******************************************************************************
-LAST MODIFIED : 25 July 2001
+LAST MODIFIED : 7 September 2001
+
+DESCRIPTION :
+Destroy  sub_Maps in <map>. Assumes first_sub_map is the 1st sub map 
+in an array of number_of_sub_maps sub_Maps.
+==============================================================================*/
+{
+	int i,number_of_sub_maps,return_code;
+	struct sub_Map **sub_map,**first_sub_map;
+
+	ENTER(map_destroy_sub_Maps);
+	sub_map=(struct sub_Map **)NULL;
+	first_sub_map=(struct sub_Map **)NULL;
+	return_code=1;
+	/*not necessarily an error if below untrue, as may be no sub_maps to destroy*/
+	if((number_of_sub_maps=map->number_of_sub_maps)&&(map->sub_map))
+	{
+		first_sub_map=map->sub_map;
+		sub_map=first_sub_map;
+		for(i=0;i<number_of_sub_maps;i++)
+		{
+			if(sub_map&&*sub_map)
+			{
+				return_code=destroy_sub_Map(sub_map);
+				sub_map++;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"map_destroy_sub_Maps. Expected a sub_Map to destroy");
+				return_code=0;
+			}
+		}
+		map->number_of_sub_maps=0;
+		DEALLOCATE(map->sub_map);		
+	}
+	LEAVE;
+	return(return_code);
+}/* map_destroy_sub_Maps */
+
+int map_add_sub_Map(struct Map *map,struct sub_Map *sub_map)
+/*******************************************************************************
+LAST MODIFIED : 7 September  2001
+
+DESCRIPTION :
+Add <sub_map> to the list in <map>
+==============================================================================*/
+{
+	int return_code;
+	struct sub_Map **new_sub_maps;
+
+	ENTER(map_add_sub_Map);
+	return_code=1;
+	if(map&&sub_map)
+	{
+		map->number_of_sub_maps++;
+		REALLOCATE(new_sub_maps,map->sub_map,struct sub_Map *,map->number_of_sub_maps);
+		map->sub_map=new_sub_maps;
+		map->sub_map[map->number_of_sub_maps-1]=sub_map;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"map_add_sub_Map. invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* map_add_sub_Map */
+
+struct sub_Map *create_sub_Map(int number_of_drawn_regions,
+	int number_of_electrodes,int x_offset,int y_offset,int height,int width,
+	int potential_time_index,float frame_start_time,float frame_end_time)
+/*******************************************************************************
+LAST MODIFIED : 10 September 2001
 
 DESCRIPTION :
 Create a sub map
@@ -719,7 +792,14 @@ Create a sub map
 	if((number_of_drawn_regions>0)&&(number_of_electrodes>0))
 	{
 		if(ALLOCATE(sub_map,struct sub_Map,1))
-		{											
+		{	
+			sub_map->height=height;
+			sub_map->width=width;
+			sub_map->x_offset=x_offset;
+			sub_map->y_offset=y_offset;
+			sub_map->potential_time_index=potential_time_index;
+			sub_map->frame_start_time=frame_start_time;
+			sub_map->frame_end_time=frame_end_time;
 			ALLOCATE(sub_map->electrode_value,float,number_of_electrodes);
 			ALLOCATE(sub_map->max_x,float,number_of_drawn_regions);
 			ALLOCATE(sub_map->max_y,float,number_of_drawn_regions);
@@ -2208,7 +2288,7 @@ Make the elements for the 3d map surface.
 							/* set scale factors for fit field at element nodes*/
 							/* the fit field (should really search by name in manager) */
 							field=get_FE_field_order_info_field(field_order_info,1);
-							/* see draw_map_2d for derivation of width,height*/
+							/* see draw_2d_make_map for derivation of width,height*/
 							mesh_row=number_of_rows-i;/*reversed so runs from max down to 1*/
 							mesh_col=j+1;
 							width=x_mesh[mesh_col]-x_mesh[mesh_col-1];
@@ -6366,7 +6446,11 @@ NULL if not successful.
 		if (ALLOCATE(map,struct Map,1)&&ALLOCATE(map->frames,struct Map_frame,1))
 		{
 			map->number_of_sub_maps=0;
-			map->sub_map=(struct sub_Map *)NULL;
+			map->sub_map=(struct sub_Map **)NULL;
+			map->contour_x_spacing=0;
+			map->contour_y_spacing=0;
+			map->number_of_region_rows=1;
+			map->number_of_region_columns=1;
 			/* assign fields */		
 			map->analysis_mode=analysis_mode;
 			map->first_eimaging_event=eimaging_event_list;
@@ -6544,6 +6628,7 @@ deallocates the memory for <**map> and sets <*map> to NULL.
 			}
 			DEALLOCATE((*map)->frames);
 		}
+		map_destroy_sub_Maps(*map);
 		DEALLOCATE(*map);
 	}
 	LEAVE;
@@ -7424,913 +7509,940 @@ Removes 3d drawing for non-current region(s).
 } /* draw_map_3d */
 #endif /* #if defined (UNEMAP_USE_3D) */
 
-int get_number_of_maps_x_step_y_step_rows_cols(struct Map *map,
-	struct Drawing_2d *drawing,int *number_of_maps,int *x_step, int *y_step, 
-	int *map_rows, int *map_cols)
+int get_number_of_sub_maps_x_step_y_step_rows_cols(struct Map *map,
+	struct Drawing_2d *drawing,int *number_of_sub_maps,int *x_step, int *y_step, 
+	int *sub_map_rows, int *sub_map_cols)
 /*******************************************************************************
 LAST MODIFIED : 10 July 2001
 
-DESCRIPTION: Given <map>,<drawing> returns the number_of_maps (based upon the
+DESCRIPTION: Given <map>,<drawing> returns the number_of_sub_maps (based upon the
 number of Electrical_imaging_events) and the x_step and y_step, (offsets in the 
-drawing) and map_rows, map_cols, the number of map rows and columns.
+drawing) and sub_map_rows, sub_map_cols, the number of sub_map rows and columns.
 ==============================================================================*/
 {	
 	float k;
 	int return_code;
 
-	ENTER(get_number_of_maps_x_step_y_step_rows_cols);
+	ENTER(get_number_of_sub_maps_x_step_y_step_rows_cols);
 	if (map&&drawing)
 	{
 		return_code=1;
 		if (*map->first_eimaging_event)
 		{
-			*number_of_maps=count_Electrical_imaging_events(*map->first_eimaging_event);
+			*number_of_sub_maps=count_Electrical_imaging_events(*map->first_eimaging_event);
 		}
 		else
 		{
-			*number_of_maps=1;
+			*number_of_sub_maps=1;
 		}
-		k=sqrt(*number_of_maps);
-		*map_rows=ceil(k);
-		*map_cols=ceil((float)(*number_of_maps)/(*map_rows));					
-		*x_step=drawing->width/(*map_rows);
-		*y_step=drawing->height/(*map_cols);
+		k=sqrt(*number_of_sub_maps);
+		*sub_map_rows=ceil(k);
+		*sub_map_cols=ceil((float)(*number_of_sub_maps)/(*sub_map_rows));					
+		*x_step=drawing->width/(*sub_map_rows);
+		*y_step=drawing->height/(*sub_map_cols);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"get_number_of_maps_x_step_y_step_rows_cols.  Invalid argument(s)");
+			"get_number_of_sub_maps_x_step_y_step_rows_cols.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 	return(return_code);
-} /* get_number_of_maps_x_step_y_step_rows_cols */
+} /* get_number_of_sub_maps_x_step_y_step_rows_cols */
 
-int draw_map(struct Map *map,int recalculate,struct Drawing_2d *drawing)
+static int draw_2d_fill_in_image(struct Map *map,int map_height,int map_width,
+	Pixel *spectrum_pixels)
 /*******************************************************************************
-LAST MODIFIED : 12 July 2001
-
-DESCRIPTION:
-Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(draw_map);
-	if (map)
-	{
-#if defined (UNEMAP_USE_3D) 
-		/* 3d map for 3d projection */
-		if (map->projection_type==THREED_PROJECTION)
-		{			
-			return_code=draw_map_3d(map);	
-			/*???JW.  update_colour_map_unemap() necessary for old style colour strip
-				at top of mapping window. Will become obselete when only cmgui methods
-				used  */						
-			update_colour_map_unemap(map,drawing);		
-		}
-		else
-		{				
-#if (!defined (NEW_CODE))
-			/* 2d map for 2d projection */	
-			/* draw one full size map*/
-			return_code=draw_map_2d(map,recalculate,drawing,drawing->width,
-				drawing->height,0/*x_offset*/,0/*y_offset*/);
-#else
-			/*works, but needs tidying,extending before ready for the big time*/
-			{
-				float old_map_frame_start_time;
-				int num_maps,rows,cols,count,x_step,y_step,i,j,map_width,map_height,
-					map_x_offset,map_y_offset;				
-				struct Electrical_imaging_event *event;	
-				struct Signal *signal;
-				struct Signal_buffer *buffer;
-				int *times,*old_map_potential_time;
-				struct Rig *rig;
-				struct Device *device;			
-		
-				if ((event=*map->first_eimaging_event)&&
-					(ELECTRICAL_IMAGING==*map->analysis_mode)&&(*(map->type)==POTENTIAL))
-				{					
-					rig= *(map->rig_pointer);
-					device=*(rig->devices);
-					signal=(device)->signal;
-					buffer=signal->buffer;
-					times=buffer->times;
-					get_number_of_maps_x_step_y_step_rows_cols(map,drawing,&num_maps,
-						&x_step,&y_step,&rows,&cols);	 
-					map_width=drawing->width/rows;
-					map_height=drawing->height/cols;				
-					map_x_offset=0;
-					map_y_offset=0;
-					count=0;
-					i=1;
-					j=1;
-					/*cache map->potential_time, map->frame_start_time as we're altering */
-					/*these from Electrical imaging events */
-					old_map_potential_time=map->potential_time;
-					old_map_frame_start_time=map->frame_start_time;
-					while(count<num_maps)
-					{																		
-						map->potential_time=&event->time;					
- 						map->frame_start_time=(int)((float)((times)[event->time])
-								*1000./buffer->frequency+0.5);
-						return_code=draw_map_2d(map,recalculate,drawing,map_width,map_height,
-							map_x_offset,map_y_offset);				
-						/* remove offset on the electrodes */
-						for(i=0;i<map->number_of_electrodes;i++)
-						{
-							map->sub_map->electrode_x[i]-=map_x_offset;
-							map->sub_map->electrode_y[i]-=map_y_offset;
-						}						
-						map_x_offset+=x_step;						
-						count++;
-						j++;
-						if (j>rows)
-						{
-							j=1;
-							map_x_offset=0;
-							map_y_offset+=y_step;
-						}	
-						event=event->next;					
-					}	
-					/*restore  map->potential_time, map->frame_start_time */
-					map->potential_time=old_map_potential_time;
-					map->frame_start_time=old_map_frame_start_time;
-				}
-				else
-				{	
-					map_width=drawing->width;
-					map_height=drawing->height;				
-					map_x_offset=0;
-					map_y_offset=0;
-					return_code=draw_map_2d(map,recalculate,drawing,map_width,map_height,
-						map_x_offset,map_y_offset);		
-				}
-			}		
-#endif 
-		}	/*defined( UNEMAP_USE_3D) */
-#else
-		/* 2d map */	
-		return_code=draw_map_2d(map,recalculate,drawing,drawing->width,
-				drawing->height,0/*x_offset*/,0/*y_offset*/);
-#endif /*defined( UNEMAP_USE_3D) */	
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"draw_map invalid arguments");
-		return_code=0;
-	}	
-	LEAVE;
-
-	return (return_code);
-} /* draw_map  */
-
-static int confine_text_to_map(int *x_string,int *y_string,XCharStruct *bounds,
-	int ascent,int descent,int map_x_offset,int map_y_offset,int map_width,
-	int map_height)
-/*******************************************************************************
-LAST MODIFIED : 16 July 2001
+LAST MODIFIED : 17 July 2001
 
 DESCRIPTION :
-Limits the string position given by <x_string> <y_string>, <bounds> <ascent>,
-<descent> to the map given by <map_x_offset> <map_y_offset> <map_width> 
-< map_height>
-*******************************************************************************/
-{	
-	int return_code;
-
-	ENTER(confine_text_to_map);
-	if (x_string&&y_string&&bounds)
-	{
-		return_code=1;
-		if (*x_string-(*bounds).lbearing<(0+map_x_offset))
-		{
-			*x_string=(*bounds).lbearing+map_x_offset;
-		}
-		else
-		{
-			if (*x_string+(*bounds).rbearing>(map_width+map_x_offset))
-			{
-				*x_string=(map_width+map_x_offset)-(*bounds).rbearing;
-			}
-		}
-		if (*y_string-ascent<(0+map_y_offset))
-		{
-			*y_string=ascent+map_y_offset;
-		}
-		else
-		{
-			if (*y_string+descent>(map_height+map_y_offset))
-			{
-				*y_string=(map_height+map_y_offset)-descent;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"confine_text_to_map. invalid arguments");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* confine_text_to_map */
-
-static int write_map_title(struct Map *map, int map_width,int map_height, 
-	int map_x_offset,int map_y_offset,struct Drawing_2d *drawing)
-/*******************************************************************************
-LAST MODIFIED : 16 July 2001
-
-DESCRIPTION :
-Write the title,using the map->potential_time
+Fill in the 2D map pixel image.
 *******************************************************************************/
 {
-	char title[12];
-	float title_x,title_y,title_value;
-	int ascent,descent,direction,return_code,title_length,x_string,y_string;
+	float background_pixel_value,boundary_pixel_value,f_approx,max_f,min_f,
+		*pixel_value,range_f;
+	int cell_number,contour_area,contour_areas_in_x,frame_number,next_contour_x,
+		number_of_contour_areas,number_of_frames,number_of_spectrum_colours,
+		return_code,x_pixel,y_pixel;
+	Pixel background_pixel,boundary_pixel;
+	short int *contour_x,*contour_y;
 	struct Map_drawing_information *drawing_information;
-	struct Signal_buffer *buffer;
-	struct Signal *signal;
-	struct Device *device;
-	Display *display;
-	XCharStruct bounds;
-	XFontStruct *font;
+	struct Map_frame *frame;
+	XImage *frame_image=(XImage *)NULL;
 
-	ENTER(write_map_title);	
-	buffer=(struct Signal_buffer *)NULL;
-	signal=(struct Signal *)NULL;
-	device=(struct Device *)NULL;
-	font=(XFontStruct *)NULL;
+	ENTER(draw_2d_fill_in_image);
+	frame=(struct Map_frame *)NULL;
+	pixel_value=(float *)NULL;
+	contour_x=(short int *)NULL;
+	contour_y=(short int *)NULL;
 	drawing_information=(struct Map_drawing_information *)NULL;
-	display=(Display *)NULL;
-	if (drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
-		&&map&&(map->electrodes)&&(device=*map->electrodes)&&(signal=device->signal)&&
-		(buffer=signal->buffer)&&(drawing_information=map->drawing_information))
+	if (map&&(drawing_information=map->drawing_information))
 	{
-		return_code=1;
-		font=drawing_information->font;
-		/* write the title,using the map->potential_time */							
-		title_x=map_width/2+map_x_offset;
-		title_y=0;
-		title_value=(float)((buffer->times)[*map->potential_time])*1000./
-			(buffer->frequency);
-		sprintf(title,"%.4g",title_value);
-		title_length=strlen(title);
-		XTextExtents(font,title,title_length,&direction,&ascent,&descent,
-			&bounds);
-		x_string= (title_x)+(bounds.lbearing-bounds.rbearing+1)/2;
-		y_string= (title_y)-descent-1;
-		confine_text_to_map(&x_string,&y_string,&bounds,ascent,descent,map_x_offset,
-			map_y_offset,map_width,map_height);
-		XPSDrawString(display,drawing->pixel_map,
-			(drawing_information->graphics_context).
-			highlighted_colour,
-#if defined (NO_ALIGNMENT)
-			x_string,y_string,title,title_length);
-#else
-		(title_x),(title_y),name,title_length);
-#endif 
-  }
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"write_map_title invalid arguments");
-		return_code=0;
-	}
-  LEAVE;
-	return(return_code);
-}/* write_map_title */
-
-static int set_electrode_2d_name_and_colour(struct Map *map,struct Drawing_2d *drawing,
-  GC *graphics_context,struct Device *electrode,char *name,float electrode_value,
-  char *electrode_drawn,float range_f)
-/*******************************************************************************
-LAST MODIFIED : 16 July 2001
-
-DESCRIPTION :  Set the colour (in <graphics_context>) and <name> of the electrode.
-Name must already have been allocated. It's only a short string, so pass it
-a static string of length 11.
-*******************************************************************************/
-{
-  enum Map_type map_type;
-  float f_value,max_f,min_f;
-  int number_of_spectrum_colours,return_code;
-  Display *display;
-  Pixel *spectrum_pixels;
-  struct Map_drawing_information *drawing_information;
-	
-  ENTER(set_electrode_2d_name_and_colour);
-  spectrum_pixels=(Pixel *)NULL;
-  if (map&&(drawing_information=map->drawing_information)&&graphics_context&&
-	  electrode&&electrode_drawn&&(display=drawing->user_interface->display))
-  {
-    return_code=1;
-    number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;
-    spectrum_pixels=drawing_information->spectrum_colours;
+		return_code=1;		
+		background_pixel=drawing_information->background_drawing_colour;	
+		boundary_pixel=drawing_information->boundary_colour;
+		contour_areas_in_x=map->number_of_contour_areas_in_x;
+		number_of_contour_areas=map->number_of_contour_areas;
+		number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;
+		number_of_frames=map->number_of_frames;
+		/* fill in the image */
 		min_f=map->minimum_value;
 		max_f=map->maximum_value;
-		if (map->type)
+		/* calculate range of values */
+		range_f=max_f-min_f;
+		if (range_f<=0)
 		{
-			map_type= *(map->type);
+			range_f=1;
 		}
-		else
+		frame=map->frames;
+		frame_number=0;
+		while ((frame_number<number_of_frames)&&return_code)
 		{
-			map_type=NO_MAP_FIELD;
-		}		
-		switch (map->electrodes_option)
-		{								
-			case HIDE_ELECTRODES:									
+			background_pixel_value=frame->minimum;
+			boundary_pixel_value=frame->maximum;
+			pixel_value=frame->pixel_values;
+			frame_image=frame->image;
+			for (y_pixel=0;y_pixel<map_height;y_pixel++)
 			{
-        sprintf(name,"%s","");
-				if (electrode->highlight)
+				contour_area=
+					(y_pixel/map->contour_y_spacing)*contour_areas_in_x;
+				next_contour_x=map->contour_x_spacing-1;
+				contour_x=(frame->contour_x)+contour_area;
+				contour_y=(frame->contour_y)+contour_area;
+				for (x_pixel=0;x_pixel<map_width;x_pixel++)
 				{
-					*graphics_context=(drawing_information->graphics_context).
-						highlighted_colour;
-				}
-				else
-				{
-					*graphics_context=(drawing_information->graphics_context).
-						unhighlighted_colour;
-				};
-			} break;										
-			case SHOW_ELECTRODE_NAMES:
-			case SHOW_CHANNEL_NUMBERS:
-			{	
-				/* they're not now always drawn */
-				if (SHOW_ELECTRODE_NAMES==map->electrodes_option)
-				{
-					sprintf(name,"%s",electrode->description->name);			
-				}
-				else
-				{
-					sprintf(name,"%d",electrode->channel->number);
-				}
-			} break;								
-			case SHOW_ELECTRODE_VALUES:
-			{											
-				f_value= electrode_value;
-				/* if not animation */
-				if (map->activation_front<0)
-				{
-					if (NO_MAP_FIELD==map_type)
+					f_approx= *pixel_value;
+					if (f_approx>=background_pixel_value)
 					{
-						sprintf(name,"%s","");
-					}
-					else
-					{
-						sprintf(name,"%.4g",f_value);						
-					}
-				}
-				else
-				{
-					 sprintf(name,"%s","");
-				}
-
-			} break;								
-			default:
-			{
-				*electrode_drawn=0;
-				sprintf(name,"%s","");
-
-			} break;
-		} /* switch (map->electrodes_option) */
-		/* colour with data values*/
-		if (map->colour_electrodes_with_signal)
-		{
-			/* electrode_drawn and electrode_value already calculated */
-			f_value= electrode_value;
-			switch (map_type)
-			{
-				case MULTIPLE_ACTIVATION:
-				{
-					if ((f_value<min_f)||(f_value>max_f))
-					{
-						*electrode_drawn=0;
-					}
-				} break;
-			}
-			if (*electrode_drawn)
-			{
-				/* if not animation */
-				if (map->activation_front<0)
-				{
-					if (electrode->highlight)
-					{
-						*graphics_context=(drawing_information->graphics_context).
-						highlighted_colour;
-					}
-					else
-					{
-						if ((HIDE_COLOUR==map->colour_option)&&
-							(SHOW_CONTOURS==map->contours_option))
+						if (f_approx<=boundary_pixel_value)
 						{
-							*graphics_context=(drawing_information->graphics_context).
-								unhighlighted_colour;
-						}
-						else
-						{
-							*graphics_context=(drawing_information->graphics_context).spectrum;
-							if (f_value<=min_f)
+							if (f_approx<min_f)
 							{
-								XSetForeground(display,*graphics_context,spectrum_pixels[0]);
+								f_approx=min_f;
 							}
 							else
 							{
-								if (f_value>=max_f)
+								if (f_approx>max_f)
 								{
-									XSetForeground(display,*graphics_context,spectrum_pixels
-										[number_of_spectrum_colours-1]);
-								}
-								else
-								{
-									XSetForeground(display,*graphics_context,spectrum_pixels[(int)
-										((f_value-min_f)*(float)(number_of_spectrum_colours-1)/
-										range_f)]);
+									f_approx=max_f;
 								}
 							}
-						}
-					}
-				}
-				else
-				{
-					sprintf(name,"%s","");
-					*graphics_context=(drawing_information->graphics_context).spectrum;
-					if (f_value<=min_f)
-					{
-						XSetForeground(display,*graphics_context,spectrum_pixels[0]);
-					}
-					else
-					{
-						if (f_value>=max_f)
-						{
-							XSetForeground(display,*graphics_context,spectrum_pixels
-							[number_of_spectrum_colours-1]);
+							cell_number=(int)((f_approx-min_f)*
+								(float)(number_of_spectrum_colours-1)/
+								range_f+0.5);
+							XPutPixel(frame_image,x_pixel,y_pixel,
+								spectrum_pixels[cell_number]);
+							cell_number *= number_of_contour_areas;
+							contour_x[cell_number]=x_pixel;
+							contour_y[cell_number]=y_pixel;
 						}
 						else
 						{
-							XSetForeground(display,*graphics_context,spectrum_pixels[(int)
-								((f_value-min_f)*(float)(number_of_spectrum_colours-1)/range_f)]);
+							XPutPixel(frame_image,x_pixel,y_pixel,
+								boundary_pixel);
 						}
+					}
+					else
+					{
+						XPutPixel(frame_image,x_pixel,y_pixel,
+							background_pixel);
+					}
+					pixel_value++;
+					if (x_pixel>=next_contour_x)
+					{
+						contour_x++;
+						contour_y++;
+						next_contour_x += map->contour_x_spacing;
 					}
 				}
 			}
-		} /* if (map->colour_electrodes_with_signal) */
-		else
-		{												
-			if (electrode->highlight)
+			frame_number++;
+			frame++;
+		}/* while ((frame_number<number_of_frames)&&return_code) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"draw_2d_fill_in_image invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* draw_2d_fill_in_image */
+
+static int draw_2d_constant_thickness_contours(struct Map *map,
+	struct sub_Map *sub_map,struct Drawing_2d *drawing,struct Map_frame *frame,
+	float *pixel_value,float *min_f,float *max_f,char draw_boundary)
+/*******************************************************************************
+LAST MODIFIED : 10 September 2001
+
+DESCRIPTION :
+draw the constant thickness contours
+*******************************************************************************/
+{
+	char draw_contours;
+	Display *display;
+	GC graphics_context;
+	int boundary_type,end,i,j,k,map_x_offset,map_y_offset,map_width,map_height,
+		number_of_contours,return_code,start,valid_i_j,valid_i_jm1,valid_im1_j,
+		valid_im1_jm1;
+	float a,b,background_pixel_value,boundary_pixel_value,contour_step,contour_maximum,
+		contour_minimum,f_i_j,f_i_jm1,f_im1_j,f_im1_jm1;
+	struct Map_drawing_information *drawing_information;
+
+	ENTER(draw_2d_constant_thickness_contours);
+	display=(Display *)NULL;
+	if (frame&&map&&sub_map&&drawing&&(drawing_information=map->drawing_information)&&
+		pixel_value)
+	{
+		return_code=1;
+		map_x_offset=sub_map->x_offset;
+		map_y_offset=sub_map->y_offset;
+		map_width=sub_map->width;
+		map_height=sub_map->height;
+		display=drawing->user_interface->display;
+		number_of_contours=map->number_of_contours;
+		contour_minimum=map->contour_minimum;
+		contour_maximum=map->contour_maximum;
+
+		busy_cursor_on((Widget)NULL,drawing_information->user_interface);
+		contour_step=(contour_maximum-contour_minimum)/
+			(float)(number_of_contours-1);
+		graphics_context=(drawing_information->graphics_context).contour_colour;
+		background_pixel_value=frame->minimum;
+		boundary_pixel_value=frame->maximum;
+		for (j=1+map_y_offset;j<map_height+map_y_offset;j++)
+		{
+			f_i_jm1= *pixel_value;
+			if ((background_pixel_value<=f_i_jm1)&&
+				(f_i_jm1<=boundary_pixel_value))
 			{
-				*graphics_context=(drawing_information->graphics_context).highlighted_colour;
+				valid_i_jm1=1;
 			}
 			else
 			{
-				*graphics_context=(drawing_information->graphics_context).unhighlighted_colour;
+				valid_i_jm1=0;
 			}
+			f_i_j=pixel_value[map_width];
+			if ((background_pixel_value<=f_i_j)&&
+				(f_i_j<=boundary_pixel_value))
+			{
+				valid_i_j=1;
+			}
+			else
+			{
+				valid_i_j=0;
+			}
+			pixel_value++;
+			for (i=1+map_x_offset;i<map_width+map_x_offset;i++)
+			{
+				valid_im1_jm1=valid_i_jm1;
+				f_im1_jm1=f_i_jm1;
+				valid_im1_j=valid_i_j;
+				f_im1_j=f_i_j;
+				f_i_jm1= *pixel_value;
+				if ((background_pixel_value<=f_i_jm1)&&
+					(f_i_jm1<=boundary_pixel_value))
+				{
+					valid_i_jm1=1;
+				}
+				else
+				{
+					valid_i_jm1=0;
+				}
+				f_i_j=pixel_value[map_width];
+				if ((background_pixel_value<=f_i_j)&&
+					(f_i_j<=boundary_pixel_value))
+				{
+					valid_i_j=1;
+				}
+				else
+				{
+					valid_i_j=0;
+				}
+				pixel_value++;
+				boundary_type=((valid_im1_jm1*2+valid_im1_j)*2+
+					valid_i_jm1)*2+valid_i_j;
+				if (draw_contours&&(15==boundary_type))
+				{
+					/* calculate contour using bilinear */
+					if (f_im1_jm1<f_i_j)
+					{
+						*min_f=f_im1_jm1;
+						*max_f=f_i_j;
+					}
+					else
+					{
+						*min_f=f_i_j;
+						*max_f=f_im1_jm1;
+					}
+					if (f_im1_j<*min_f)
+					{
+						*min_f=f_im1_j;
+					}
+					else
+					{
+						if (f_im1_j>*max_f)
+						{
+							*max_f=f_im1_j;
+						}
+					}
+					if (f_i_jm1<*min_f)
+					{
+						*min_f=f_i_jm1;
+					}
+					else
+					{
+						if (f_i_jm1>*max_f)
+						{
+							*max_f=f_i_jm1;
+						}
+					}
+					if ((*min_f<=contour_maximum)&&
+						(contour_minimum<=*max_f))
+					{
+						if (*min_f<=contour_minimum)
+						{
+							start=0;
+						}
+						else
+						{
+							start=1+(int)((*min_f-contour_minimum)/
+								contour_step);
+						}
+						if (contour_maximum<=*max_f)
+						{
+							end=number_of_contours;
+						}
+						else
+						{
+							end=(int)((*max_f-contour_minimum)/contour_step);
+						}
+						for (k=start;k<=end;k++)
+						{
+							a=contour_minimum+contour_step*(float)k;
+							if (fabs(a)<0.00001*(fabs(contour_maximum)+
+								fabs(contour_minimum)))
+							{
+								a=0;
+							}
+							/* dashed lines for -ve contours */
+							if ((a>=0)||((i+j)%5<2))
+							{
+								if (((f_im1_jm1<=a)&&(a<f_i_jm1))||
+									((f_im1_jm1>=a)&&(a>f_i_jm1)))
+								{
+									if (((f_im1_jm1<=a)&&(a<f_im1_j))||
+										((f_im1_jm1>=a)&&(a>f_im1_j)))
+									{
+										if ((((f_i_jm1<=a)&&(a<f_i_j))||
+											((f_i_jm1>=a)&&(a>f_i_j)))&&
+											(((f_im1_j<=a)&&(a<f_i_j))||
+												((f_im1_j>=a)&&(a>f_i_j))))
+										{
+											b=(a-f_im1_jm1)*
+												(f_im1_jm1+f_i_j-f_im1_j-f_i_jm1)+
+												(f_im1_j-f_im1_jm1)*
+												(f_i_jm1-f_im1_jm1);
+											if (b<0)
+											{
+												XPSDrawLineFloat(display,
+													drawing->pixel_map,graphics_context,
+													(float)i-(a-f_i_jm1)/
+													(f_im1_jm1-f_i_jm1),(float)(j-1),
+													(float)(i-1),(float)j-(a-f_im1_j)/
+													(f_im1_jm1-f_im1_j));
+												XPSDrawLineFloat(display,
+													drawing->pixel_map,graphics_context,
+													(float)i-(a-f_i_j)/(f_im1_j-f_i_j),
+													(float)j,
+													(float)i,
+													(float)j-(a-f_i_j)/(f_i_jm1-f_i_j));
+											}
+											else
+											{
+												if (b>0)
+												{
+													XPSDrawLineFloat(display,
+														drawing->pixel_map,
+														graphics_context,
+														(float)i-(a-f_i_jm1)/
+														(f_im1_jm1-f_i_jm1),(float)(j-1),
+														(float)i,(float)j-(a-f_i_j)/
+														(f_i_jm1-f_i_j));
+													XPSDrawLineFloat(display,
+														drawing->pixel_map,
+														graphics_context,
+														(float)i-(a-f_i_j)/
+														(f_im1_j-f_i_j),
+														(float)j,(float)(i-1),(float)j-
+														(a-f_im1_j)/(f_im1_jm1-f_im1_j));
+												}
+												else
+												{
+													XPSDrawLineFloat(display,
+														drawing->pixel_map,
+														graphics_context,
+														(float)(i-1),(float)j-(a-f_im1_j)/
+														(f_im1_jm1-f_im1_j),(float)i,
+														(float)j-(a-f_i_j)/
+														(f_i_jm1-f_i_j));																
+													XPSDrawLineFloat(display,
+														drawing->pixel_map,
+														graphics_context,
+														(float)i-(a-f_i_jm1)/
+														(f_im1_jm1-f_i_jm1),(float)(j-1),
+														(float)i-(a-f_i_j)/
+														(f_im1_j-f_i_j),(float)j);
+												}
+											}
+										}
+										else
+										{
+											XPSDrawLineFloat(display,
+												drawing->pixel_map,
+												graphics_context,(float)i-(a-f_i_jm1)/
+												(f_im1_jm1-f_i_jm1),(float)(j-1),
+												(float)(i-1),(float)j-(a-f_im1_j)/
+												(f_im1_jm1-f_im1_j));
+										}
+									}
+									else
+									{
+										if (((f_i_jm1<=a)&&(a<f_i_j))||
+											((f_i_jm1>=a)&&(a>f_i_j)))
+										{
+											XPSDrawLineFloat(display,
+												drawing->pixel_map,graphics_context,
+												(float)i-(a-f_i_jm1)/
+												(f_im1_jm1-f_i_jm1),(float)(j-1),
+												(float)i,
+												(float)j-(a-f_i_j)/(f_i_jm1-f_i_j));
+										}
+										else
+										{
+											if (((f_im1_j<=a)&&(a<f_i_j))||
+												((f_im1_j>=a)&&(a>f_i_j)))
+											{
+												XPSDrawLineFloat(display,
+													drawing->pixel_map,graphics_context,
+													(float)i-(a-f_i_jm1)/
+													(f_im1_jm1-f_i_jm1),(float)(j-1),
+													(float)i-(a-f_i_j)/
+													(f_im1_j-f_i_j),(float)j);
+											}
+										}
+									}
+								}
+								else
+								{
+									if (((f_im1_jm1<=a)&&(a<f_im1_j))||
+										((f_im1_jm1>=a)&&(a>f_im1_j)))
+									{
+										if (((f_i_jm1<=a)&&(a<f_i_j))||
+											((f_i_jm1>=a)&&(a>f_i_j)))
+										{
+											XPSDrawLineFloat(display,
+												drawing->pixel_map,graphics_context,
+												(float)(i-1),(float)j-(a-f_im1_j)/
+												(f_im1_jm1-f_im1_j),(float)i,
+												(float)j-(a-f_i_j)/(f_i_jm1-f_i_j));
+										}
+										else
+										{
+											if (((f_im1_j<=a)&&(a<f_i_j))||
+												((f_im1_j>=a)&&(a>f_i_j)))
+											{
+												XPSDrawLineFloat(display,
+													drawing->pixel_map,graphics_context,
+													(float)(i-1),(float)j-(a-f_im1_j)/
+													(f_im1_jm1-f_im1_j),(float)i-
+													(a-f_i_j)/(f_im1_j-f_i_j),(float)j);
+											}
+										}
+									}
+									else
+									{
+										if ((((f_i_jm1<=a)&&(a<f_i_j))||
+											((f_i_jm1>=a)&&(a>f_i_j)))&&
+											(((f_im1_j<=a)&&(a<f_i_j))||
+												((f_im1_j>=a)&&(a>f_i_j))))
+										{
+											XPSDrawLineFloat(display,
+												drawing->pixel_map,
+												graphics_context,(float)i-(a-f_i_j)/
+												(f_im1_j-f_i_j),(float)j,(float)i,
+												(float)j-(a-f_i_j)/(f_i_jm1-f_i_j));
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				if (draw_boundary&&(0<boundary_type)&&
+					(boundary_type<15))
+				{
+					switch (boundary_type)
+					{
+						case 1: case 8:
+						{
+							XPSDrawLine(display,drawing->pixel_map,
+								graphics_context,i-1,j,i,j-1);
+						} break;
+						case 2: case 4:
+						{
+							XPSDrawLine(display,drawing->pixel_map,
+								graphics_context,i-1,j-1,i,j);
+						} break;
+						case 3:
+						{
+							XPSDrawLine(display,drawing->pixel_map,
+								graphics_context,i-1,j-1,i-1,j);
+						} break;
+						case 5:
+						{
+							XPSDrawLine(display,drawing->pixel_map,
+								graphics_context,i-1,j-1,i,j-1);
+						} break;
+						case 10:
+						{
+							XPSDrawLine(display,drawing->pixel_map,
+								graphics_context,i-1,j,i,j);
+						} break;
+						case 12:
+						{
+							XPSDrawLine(display,drawing->pixel_map,
+								graphics_context,i,j-1,i,j);
+						} break;
+					}
+				}
+			}
+		}
+		busy_cursor_off((Widget)NULL,
+			drawing_information->user_interface);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"draw_2d_constant_thickness_contours invalid arguments");
+    return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* draw_2d_constant_thickness_contours */
+
+static int set_map_2d_frame_min_max(struct Map_frame *frame,float max_f,
+	float min_f,int minimum_x,int maximum_x,int minimum_y,int maximum_y)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2001
+
+DESCRIPTION :
+<frame>'s minimum and maximum.
+*******************************************************************************/
+{
+	int return_code;
+
+	ENTER(set_map_2d_fram_min_max);
+	if (frame)
+	{
+		return_code=1;
+		if (max_f<min_f)
+		{
+			frame->maximum=0;
+			frame->maximum_x= -1;
+			frame->maximum_y= -1;
+			frame->minimum=0;
+			frame->minimum_x= -1;
+			frame->minimum_y= -1;	
+		}/* if (max_f<min_f) */
+		else
+		{
+			frame->maximum=max_f;
+			frame->maximum_x=maximum_x;
+			frame->maximum_y=maximum_y;
+			frame->minimum=min_f;
+			frame->minimum_x=minimum_x;
+			frame->minimum_y=minimum_y;
 		}
 	}
 	else
-  {
-    display_message(ERROR_MESSAGE,"set_electrode_2d_name_and_colour");
+	{
+		display_message(ERROR_MESSAGE,
+			"set_map_2d_frame_min_max invalid arguments");
     return_code=0;
-  }
+	}	
 	LEAVE;
 	return(return_code);
-}/* set_electrode_2d_name_and_colour */
+}/* set_map_2d_frame_min_max */
 
-static int draw_2d_electrode(struct Map *map,struct Drawing_2d *drawing,int screen_x,
-  int screen_y,GC *graphics_context,char *name,struct Device *electrode,
-  int map_x_offset,int map_y_offset,int map_width,int map_height)
+static int set_map_2d_map_min_max(struct Map *map)
 /*******************************************************************************
-LAST MODIFIED : 16 July 2001
-
-DESCRIPTION :  Draw the electrode in 2D, and write it's name.
-*******************************************************************************/
-{
-  Display *display;
-  enum Electrodes_marker_type electrodes_marker_type;
-  int ascent,descent,direction,marker_size,name_length,return_code,x_string,
-		y_string;
-  struct Map_drawing_information *drawing_information;
-  XFontStruct *font;
-	XCharStruct bounds;
-
-  ENTER(draw_2d_electrode);
-  display=(Display *)NULL;
-  drawing_information=(struct Map_drawing_information *)NULL;
-  if (drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
-		 &&(drawing->pixel_map)&&electrode&&(drawing_information=map->drawing_information))
-  { 
-		return_code=1;
-		font=drawing_information->font;	
-		electrodes_marker_type=map->electrodes_marker_type;
-    marker_size=map->electrodes_marker_size;
-	  if (marker_size<1)
-    {
-	    marker_size=1;
-    }									
-	  switch (electrodes_marker_type)
-		{
-			case CIRCLE_ELECTRODE_MARKER:
-			{
-				/* draw circle */
-				XPSFillArc(display,drawing->pixel_map,*graphics_context,
-					screen_x-marker_size,screen_y-marker_size,
-					2*marker_size+1,2*marker_size+1,(int)0,(int)(360*64));
-			} break;
-			case PLUS_ELECTRODE_MARKER:
-			{
-				/* draw plus */
-				XPSDrawLine(display,drawing->pixel_map,*graphics_context,
-					screen_x-marker_size,screen_y,screen_x+marker_size,
-					screen_y);
-				XPSDrawLine(display,drawing->pixel_map,*graphics_context,
-					screen_x,screen_y-marker_size,screen_x,
-					screen_y+marker_size);
-			} break;
-			case SQUARE_ELECTRODE_MARKER:
-			{
-				/* draw square */
-				XPSFillRectangle(display,drawing->pixel_map,
-					*graphics_context,screen_x-marker_size,
-					screen_y-marker_size,2*marker_size+1,2*marker_size+1);
-			} break;		
-			case HIDE_ELECTRODE_MARKER:
-			{
-				/* no name if hiding electrodes */
-				sprintf(name,"%s","");
-			} break;											
-		}
-		if (name)
-		{
-			/* write name */
-			name_length=strlen(name);
-#if defined (NO_ALIGNMENT)
-			XTextExtents(font,name,name_length,&direction,&ascent,
-				&descent,&bounds);
-			x_string= (screen_x)+(bounds.lbearing-bounds.rbearing+1)/2;
-			y_string= (screen_y)-descent-1;
-			/* make sure that the string doesn't extend outside the
-				 window */
-			confine_text_to_map(&x_string,&y_string,&bounds,ascent,
-				descent,map_x_offset,map_y_offset,map_width,map_height);
-#endif
-			if (electrode->highlight)
-			{
-				XPSDrawString(display,drawing->pixel_map,
-					(drawing_information->graphics_context).
-					highlighted_colour,
-#if defined (NO_ALIGNMENT)
-					x_string,y_string,name,name_length);
-#else
-				(screen_x),(screen_y)-marker_size,name,name_length);
-#endif
-		  }
-		  else
-			{
-				XPSDrawString(display,drawing->pixel_map,
-					(drawing_information->graphics_context).
-					node_marker_colour,
-#if defined (NO_ALIGNMENT)
-					x_string,y_string,name,name_length);
-#else
-				(screen_x),(screen_y)-marker_size,name,name_length);
-#endif
-	    }								
-    }
-  }
-  else
-  {	
-    display_message(ERROR_MESSAGE,"draw_2d_electrode invalid arguments");
-    return_code=0;
-  }
-  LEAVE;
-  return(return_code);
-}/* draw_2d_electrode */
-
-static int draw_2d_extrema(struct Map *map,struct Drawing_2d *drawing,
-  int map_x_offset,int map_y_offset,int map_width,int map_height)
-/*******************************************************************************
-LAST MODIFIED : 16 July 2001
+LAST MODIFIED : 18 July 2001
 
 DESCRIPTION :
-draw the extrema
+Sets the (possibly multi frame) <map>'s minimum and maximum, 
+based upon the map's frame's min and max.
 *******************************************************************************/
 {
-  Display *display;
-  char *name,value_string[11];  
-  GC graphics_context;
-  int ascent,descent,frame_number,direction,*draw_region_number,name_length,
-		number_of_frames,number_of_regions,region_number,return_code,temp_region_number,
-		x_string,y_string;
-  struct Map_drawing_information *drawing_information;
-  struct Map_frame *frame=(struct Map_frame *)NULL;
-  struct Region *current_region;
-  struct Region_list_item *region_item;
-  struct Rig *rig;
-  XFontStruct *font;
-	XCharStruct bounds;
+	float min_f,max_f;
+	int i,number_of_frames,return_code;
+	struct Map_frame *frame;
 
-  ENTER(draw_2d_extrema);
-  name=(char *)NULL;
-  display=(Display *)NULL;
-  region_item=(struct Region_list_item *)NULL;
-  drawing_information=(struct Map_drawing_information *)NULL;
-  if (map&&drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
-		 &&(drawing->pixel_map)&&(drawing_information=map->drawing_information)
-		 &&(rig=*(map->rig_pointer)))
-  {
-   draw_region_number=map->draw_region_number;
-   font=drawing_information->font;	
-   number_of_regions=rig->number_of_regions;
-   if ((0<(number_of_frames=map->number_of_frames))&&
-	  (0<=(frame_number=map->frame_number))&&
-	  (frame_number<number_of_frames)&&(frame=map->frames))
-   {
-     return_code=1;
-		 frame += frame_number;
-		 /* set the colour for the extrema */
-		 graphics_context=(drawing_information->graphics_context).spectrum,
-		 XSetForeground(display,graphics_context,drawing_information->landmark_colour);
-		 region_item=get_Rig_region_list(rig);
-		 for (temp_region_number=0;temp_region_number<number_of_regions;
-			 temp_region_number++)
-		 {
-			 region_number=draw_region_number[temp_region_number];
-			 if (0<=region_number)
-			 {
-				 current_region=get_Region_list_item_region(region_item);
-				 if (frame->maximum_region==current_region)
-				 {
-					 /* draw plus */
-					 XPSFillRectangle(display,drawing->pixel_map,graphics_context,
-						 (frame->maximum_x-5)+map_x_offset,(frame->maximum_y-1)+map_y_offset,
-						 11,3);
-					 XPSFillRectangle(display,drawing->pixel_map,graphics_context,
-						 (frame->maximum_x-1)+map_x_offset,(frame->maximum_y-5)+map_y_offset,
-						 3,11);
-					 /* if not animation */
-					 if (map->activation_front<0)
-					 {
-						 /* write value */
-						 sprintf(value_string,"%.4g",frame->maximum);
-						 name=value_string;
-						 name_length=strlen(value_string);
-						 x_string=frame->maximum_x;
-#if defined (NO_ALIGNMENT)
-						 XTextExtents(font,name,name_length,&direction,&ascent,&descent,&bounds);
-						 x_string += (bounds.lbearing-bounds.rbearing+1)/2+map_x_offset;
-#else /* defined (NO_ALIGNMENT) */
-						 SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
-#endif /* defined (NO_ALIGNMENT) */
-						 if ((frame->maximum_y+map_y_offset)>(map_height/2 +map_y_offset))
-						 {
-							 y_string=frame->maximum_y-6 +map_y_offset;
-#if defined (NO_ALIGNMENT)
-							 y_string -= descent+1;
-#else /* defined (NO_ALIGNMENT) */
-							 SET_VERTICAL_ALIGNMENT(BOTTOM_ALIGNMENT);
-#endif /* defined (NO_ALIGNMENT) */
-						 }
-						 else
-						 {
-							 y_string=frame->maximum_y+6 +map_y_offset;
-#if defined (NO_ALIGNMENT)
-							 y_string += ascent+1;
-#else /* defined (NO_ALIGNMENT) */
-							 SET_VERTICAL_ALIGNMENT(TOP_ALIGNMENT);
-#endif /* defined (NO_ALIGNMENT) */
-						 }
-#if defined (NO_ALIGNMENT)
-/* make sure that the string doesn't extend outside the
-	 window */
-						 confine_text_to_map(&x_string,&y_string,&bounds,ascent,
-							 descent,map_x_offset,map_y_offset,map_width,map_height);
-#endif /* defined (NO_ALIGNMENT) */
-						 XPSDrawString(display,drawing->pixel_map,graphics_context,x_string,
-							 y_string,name,name_length);
-					 }
-				 }
-				 if (frame->minimum_region==current_region)
-				 {
-					 /* draw minus */
-					 XPSFillRectangle(display,drawing->pixel_map,graphics_context,
-						 (frame->minimum_x-5)+map_x_offset,(frame->minimum_y-1)+map_y_offset,
-						 11,3);
-					 /* if not animation */
-					 if (map->activation_front<0)
-					 {
-						 /* write value */
-						 sprintf(value_string,"%.4g",frame->minimum);
-						 name=value_string;
-						 name_length=strlen(value_string);
-						 x_string=frame->minimum_x;
-#if defined (NO_ALIGNMENT)
-						 XTextExtents(font,name,name_length,&direction,&ascent,&descent,
-							 &bounds);
-						 x_string += (bounds.lbearing-bounds.rbearing+1)/2+map_x_offset;
-#else /* defined (NO_ALIGNMENT) */
-						 SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
-#endif /* defined (NO_ALIGNMENT) */
-						 if (frame->minimum_y+map_y_offset>map_height/2+map_y_offset)
-						 {
-							 y_string=frame->minimum_y-6 +map_y_offset;
-#if defined (NO_ALIGNMENT)
-							 y_string -= descent+1;
-#else /* defined (NO_ALIGNMENT) */
-							 SET_VERTICAL_ALIGNMENT(BOTTOM_ALIGNMENT);
-#endif /* defined (NO_ALIGNMENT) */
-						 }
-						 else
-						 {
-							 y_string=frame->minimum_y+6 +map_y_offset;
-#if defined (NO_ALIGNMENT)
-							 y_string += ascent+1;
-#else /* defined (NO_ALIGNMENT) */
-							 SET_VERTICAL_ALIGNMENT(TOP_ALIGNMENT);
-#endif /* defined (NO_ALIGNMENT) */
-						 }
-#if defined (NO_ALIGNMENT)
-						 /* make sure that the string doesn't extend outside the window */
-						 confine_text_to_map(&x_string,&y_string,&bounds,ascent,
-							 descent,map_x_offset,map_y_offset,map_width,map_height);
-#endif /* defined (NO_ALIGNMENT) */
-						 XPSDrawString(display,drawing->pixel_map,graphics_context,x_string,
-							 y_string,name,name_length);
-					 }
-				 }
-			 }
-			 region_item=get_Region_list_item_next(region_item);
-		 }
-	 }
-	 else
-	 {
-		 display_message(ERROR_MESSAGE,"draw_map_extrema.  Invalid frames");
-	 }
-	}
-  else
-  {	
-    display_message(ERROR_MESSAGE,"draw_2d_extrema invalid arguments");
-    return_code=0;
-  }
-  LEAVE;
-  return(return_code);
-}/* draw_2d_extrema */
-
-static int draw_2d_landmarks(struct Map *map,struct sub_Map *sub_map,
-	struct Drawing_2d *drawing,int map_x_offset,int map_y_offset)
-/*******************************************************************************
-LAST MODIFIED : 17 July 2001
-
-DESCRIPTION :
-draw the landmarks
-*******************************************************************************/
-{
-  Display *display;
-  GC graphics_context;
-	float lambda,*landmark_point,*max_x,*max_y,*min_x,*min_y,mu,*stretch_x,
-		*stretch_y,theta,x_screen,y_screen;
-  int *draw_region_number,i,number_of_regions,region_number,return_code,
-		*start_x,*start_y,temp_region_number,x_pixel,y_pixel;
-  struct Map_drawing_information *drawing_information;
-  struct Region *current_region;
-  struct Region_list_item *region_item;
-  struct Rig *rig; 
-
-  ENTER(draw_2d_landmarks);
-  display=(Display *)NULL;	
-	landmark_point=(float *)NULL;
-  region_item=(struct Region_list_item *)NULL;
-  drawing_information=(struct Map_drawing_information *)NULL;
-  if (map&&drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
-		 &&(drawing->pixel_map)&&(drawing_information=map->drawing_information)
-		 &&(rig=*(map->rig_pointer)))
-  {	
+	ENTER(set_map_2d_map_min_max);
+	if (map)
+	{
 		return_code=1;
-		draw_region_number=map->draw_region_number;
-		start_x=sub_map->start_x;
-		start_y=sub_map->start_y;
-		max_x=sub_map->max_x;
-		max_y=sub_map->max_y;
-		min_x=sub_map->min_x;
-		min_y=sub_map->min_y;
-		stretch_x=sub_map->stretch_x;
-		stretch_y=sub_map->stretch_y;
-		number_of_regions=rig->number_of_regions;
-		/* set the colour for the landmarks */
-		graphics_context=(drawing_information->graphics_context).spectrum,
-			XSetForeground(display,graphics_context,
-				drawing_information->landmark_colour);
-		region_item=get_Rig_region_list(rig);
-		for (temp_region_number=0;temp_region_number<number_of_regions;
-				 temp_region_number++)
+		number_of_frames=map->number_of_frames;
+		/*???DB.  loop over frames */
+		if (!(map->fixed_range)||(map->minimum_value>map->maximum_value))
 		{
-			region_number=draw_region_number[temp_region_number];
-			if (0<=region_number)
+			frame=map->frames;
+			min_f=frame->minimum;
+			max_f=frame->maximum;
+			for (i=number_of_frames-1;i>0;i--)
 			{
-				current_region=get_Region_list_item_region(region_item);
-				switch (current_region->type)
+				frame++;
+				if (frame->minimum<=frame->maximum)
 				{
-					case SOCK:
+					if (min_f<=max_f)
 					{
-						landmark_point=landmark_points;
-						for (i=NUMBER_OF_LANDMARK_POINTS;i>0;i--)
+						if (frame->minimum<min_f)
 						{
-							cartesian_to_prolate_spheroidal(landmark_point[0],
-								landmark_point[1],landmark_point[2],LANDMARK_FOCUS,
-								&lambda,&mu,&theta,(float *)NULL);
-							switch (map->projection_type)
-							{
-								case HAMMER_PROJECTION:
-								{
-									Hammer_projection(mu,theta,&x_screen,&y_screen,
-										(float *)NULL);
-								} break;
-								case POLAR_PROJECTION:
-								{
-									polar_projection(mu,theta,&x_screen,&y_screen,
-										(float *)NULL);
-								} break;
-							}
-							x_pixel=start_x[region_number]+
-								(int)((x_screen-min_x[region_number])*
-									stretch_x[region_number]);
-							y_pixel=start_y[region_number]-
-								(int)((y_screen-min_y[region_number])*
-									stretch_y[region_number]);
-							/* draw asterisk */
-							XPSDrawLine(display,drawing->pixel_map,graphics_context,
-								x_pixel-2+map_x_offset,y_pixel+map_y_offset,
-								x_pixel+2+map_x_offset,y_pixel+map_y_offset);
-							XPSDrawLine(display,drawing->pixel_map,graphics_context,
-								x_pixel+map_x_offset,y_pixel-2+map_y_offset,
-								x_pixel+map_x_offset,y_pixel+2+map_y_offset);
-							XPSDrawLine(display,drawing->pixel_map,graphics_context,
-								x_pixel-2+map_x_offset,y_pixel-2+map_y_offset,
-								x_pixel+map_x_offset+2,y_pixel+2+map_y_offset);
-							XPSDrawLine(display,drawing->pixel_map,graphics_context,
-								x_pixel+2+map_x_offset,y_pixel+2+map_y_offset,
-								x_pixel+map_x_offset-2,y_pixel-2+map_y_offset);
-							landmark_point += 3;
+							min_f=frame->minimum;
 						}
-					} break;
-					case TORSO:
+						if (frame->maximum<max_f)
+						{
+							max_f=frame->maximum;
+						}
+					}
+					else
 					{
-						/* draw boundary between front and back */
-						x_pixel=start_x[region_number]+
-							(int)((max_x[region_number]-min_x[region_number])*0.5*
-								stretch_x[region_number]);
-						XPSDrawLine(display,drawing->pixel_map,graphics_context,
-							x_pixel+map_x_offset,
-							start_y[region_number]+map_y_offset,
-							x_pixel+map_x_offset,
-							start_y[region_number]-(int)((max_y[region_number]-
-								min_y[region_number])*stretch_y[region_number])+map_y_offset);
-						x_pixel=start_x[region_number];
-						XPSDrawLine(display,drawing->pixel_map,graphics_context,
-							x_pixel+map_x_offset,
-							start_y[region_number]+map_y_offset,
-							x_pixel+map_x_offset,
-							start_y[region_number]-(int)((max_y[region_number]-
-								min_y[region_number])*stretch_y[region_number])+map_y_offset);
-						/* draw shoulders */
-						y_pixel=start_y[region_number]-
-							(int)((max_y[region_number]-min_y[region_number])*
-								stretch_y[region_number]);
-						XPSDrawLine(display,drawing->pixel_map,graphics_context,
-							start_x[region_number]+map_x_offset,
-							y_pixel+map_y_offset,
-							start_x[region_number]+(int)((max_x[region_number]-
-								min_x[region_number])*0.1875*stretch_x[region_number])+map_x_offset,
-							y_pixel-5+map_y_offset);
-						XPSDrawLine(display,drawing->pixel_map,graphics_context,
-							start_x[region_number]+(int)((max_x[region_number]-
-								min_x[region_number])*0.5*stretch_x[region_number])+map_x_offset,
-							y_pixel+map_y_offset,
-							start_x[region_number]+(int)((max_x[region_number]-
-								min_x[region_number])*0.3125*stretch_x[region_number])+map_x_offset,
-							y_pixel-5+map_y_offset);
-					} break;
+						min_f=frame->minimum;
+						max_f=frame->maximum;
+					}
 				}
 			}
-			region_item=get_Region_list_item_next(region_item);
+			map->minimum_value=min_f;
+			map->maximum_value=max_f;
+			map->contour_minimum=min_f;
+			map->contour_maximum=max_f;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_map_2d_map_min_max invalid arguments");
+    return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_map_2d_map_min_max */
+
+static int set_map_2d_no_interpolation_min_max(struct Map *map,
+	struct sub_Map *sub_map)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2001
+
+DESCRIPTION :
+Sets the (possibly multi frame) <map>'s minimum and maximum, 
+for the case map->interpolation_type==NO_INTERPOLATION.
+*******************************************************************************/
+{
+	float *electrode_value,f_approx,max_f,min_f;
+	int *draw_region_number,frame_number,number_of_frames,i,maximum_x,maximum_y,
+		minimum_x,minimum_y,number_of_electrodes,number_of_regions,region_number,
+		return_code,*screen_x,*screen_y,temp_region_number;
+	struct Device	**electrode;
+	struct Map_frame *frame;
+	struct Region *maximum_region,*minimum_region,*current_region;
+	struct Region_list_item *region_item;
+	struct Rig *rig;
+
+	ENTER(set_map_2d_no_interpolation_min_max);
+	frame=(struct Map_frame *)NULL;
+	region_item=(struct Region_list_item *)NULL;
+	rig=(struct Rig *)NULL;
+	electrode=(struct Device **)NULL;
+	screen_x=(int *)NULL;
+	screen_y=(int *)NULL;
+	electrode_value=(float *)NULL;
+	draw_region_number=(int *)NULL;
+	if(map&&sub_map)
+	{
+		return_code=1;
+		draw_region_number=map->draw_region_number;
+		number_of_electrodes=map->number_of_electrodes;
+		rig=*(map->rig_pointer);
+		number_of_regions=rig->number_of_regions;
+		/*???DB.  Put the frame loop on the inside ? */
+		/*???DB.  Electrode values are not changing with frame */
+		frame=map->frames;
+		frame_number=0;
+		number_of_frames=map->number_of_frames;
+		while ((frame_number<number_of_frames)&&return_code)
+		{
+			min_f=1;
+			max_f=0;
+			maximum_region=(struct Region *)NULL;
+			minimum_region=(struct Region *)NULL;
+			/* for each region */
+			region_item=get_Rig_region_list(rig);
+			for (temp_region_number=0;temp_region_number<number_of_regions;
+					 temp_region_number++)
+			{
+				region_number=draw_region_number[temp_region_number];
+				if (0<=region_number)
+				{
+					current_region=get_Region_list_item_region(region_item);
+					/* find maximum and minimum electrodes for region */
+					electrode=map->electrodes;
+					screen_x=sub_map->electrode_x;
+					screen_y=sub_map->electrode_y;
+					electrode_value=sub_map->electrode_value;
+					for (i=number_of_electrodes;i>0;i--)
+					{
+						if (current_region==(*electrode)->description->region)
+						{
+							f_approx= *electrode_value;
+							if (max_f<min_f)
+							{
+								min_f=f_approx;
+								max_f=f_approx;
+								maximum_region=current_region;
+								minimum_region=current_region;
+								maximum_x= *screen_x;
+								maximum_y= *screen_y;
+								minimum_x=maximum_x;
+								minimum_y=minimum_y;
+							}
+							else
+							{
+								if (f_approx<min_f)
+								{
+									min_f=f_approx;
+									minimum_region=current_region;
+									minimum_x= *screen_x;
+									minimum_y= *screen_y;
+								}
+								else
+								{
+									if (f_approx>max_f)
+									{
+										max_f=f_approx;
+										maximum_region=current_region;
+										maximum_x= *screen_x;
+										maximum_y= *screen_y;
+									}
+								}
+							}
+						}
+						electrode++;
+						screen_x++;
+						screen_y++;
+						electrode_value++;
+					}
+				}
+				region_item=get_Region_list_item_next(region_item);
+			}
+			frame->maximum_region=maximum_region;
+			frame->minimum_region=minimum_region;
+			set_map_2d_frame_min_max(frame,max_f,min_f,minimum_x,maximum_x,
+				minimum_y,maximum_y);
+			frame_number++;
+			frame++;
+		}
+		set_map_2d_map_min_max(map);
+	}			
+	else
+	{		
+		display_message(ERROR_MESSAGE,
+			"set_map_2d_no_interpolation_min_max invalid arguments");
+    return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* set_map_2d_no_interpolation_min_max */
+
+static int draw_2d_contour_values(struct Map *map,struct sub_Map *sub_map,
+	struct Drawing_2d *drawing)
+/*******************************************************************************
+LAST MODIFIED : 10 September 2001
+
+DESCRIPTION :
+Write the values of the contours.
+*******************************************************************************/
+{
+	char draw_contour_value,value_string[11];
+  Display *display;
+  GC graphics_context;
+	float a,contour_maximum,contour_minimum,maximum_value,minimum_value,
+		string_length;
+  int ascent,cell_range,cell_number,contour_areas_in_x,descent,direction,end,
+		frame_number,i,j,number_of_contours,number_of_contour_areas,map_x_offset,
+		map_y_offset,number_of_spectrum_colours,number_of_frames,pixel_left,pixel_top,
+		return_code,start,temp_int,x_offset,x_pixel,x_separation,y_offset,y_pixel,
+		y_separation;
+	short int *contour_x,*contour_y;
+	struct Map_frame *frame;
+  struct Map_drawing_information *drawing_information;  
+	XCharStruct bounds;
+	XFontStruct *font;
+
+  ENTER(draw_2d_contour_values);	
+	contour_x=(short int *)NULL;
+	contour_y=(short int *)NULL;
+	font=(XFontStruct *)NULL;
+  display=(Display *)NULL;
+	frame=(struct Map_frame *)NULL;	
+  drawing_information=(struct Map_drawing_information *)NULL;
+  if (map&&sub_map&&drawing&&(drawing->user_interface)&&
+		(display=drawing->user_interface->display)
+		 &&(drawing->pixel_map)&&(drawing_information=map->drawing_information))
+  {	
+		return_code=1;
+		map_x_offset=sub_map->x_offset;
+		map_y_offset=sub_map->y_offset;
+		font=drawing_information->font;
+		if ((0<(number_of_frames=map->number_of_frames))&&
+			(0<=(frame_number=map->frame_number))&&
+			(frame_number<number_of_frames)&&(frame=map->frames))
+		{
+			frame += frame_number;
+			if ((frame->contour_x)&&(frame->contour_y))
+			{
+				number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;		
+				number_of_contour_areas=map->number_of_contour_areas;
+				contour_areas_in_x=map->number_of_contour_areas_in_x;
+				minimum_value=map->minimum_value;
+				maximum_value=map->maximum_value;
+				contour_minimum=map->contour_minimum;
+				contour_maximum=map->contour_maximum;
+				graphics_context=(drawing_information->graphics_context).
+					contour_colour;
+				if (maximum_value==minimum_value)
+				{
+					start=0;
+					end=number_of_spectrum_colours;
+				}
+				else
+				{
+					start=(int)((contour_minimum-minimum_value)/
+						(maximum_value-minimum_value)*
+						(float)(number_of_spectrum_colours-1)+0.5);
+					end=(int)((contour_maximum-minimum_value)/
+						(maximum_value-minimum_value)*
+						(float)(number_of_spectrum_colours-1)+0.5);
+				}
+				cell_range=end-start;
+				number_of_contours=map->number_of_contours;
+				for (i=number_of_contours;i>0;)
+				{
+					i--;
+					cell_number=start+(int)((float)(i*cell_range)/
+						(float)(number_of_contours-1)+0.5);
+					a=(contour_maximum*(float)i+contour_minimum*
+						(float)(number_of_contours-i-1))/
+						(float)(number_of_contours-1);
+					if (fabs(a)<
+						0.00001*(fabs(contour_maximum)+fabs(contour_minimum)))
+					{
+						a=0;
+					}
+					sprintf(value_string,"%.4g",a);
+					string_length=strlen(value_string);
+					XTextExtents(font,value_string,string_length,&direction,
+						&ascent,&descent,&bounds);
+					x_offset=(bounds.lbearing-bounds.rbearing)/2;
+					y_offset=(bounds.ascent-bounds.descent)/2;
+					x_separation=(bounds.lbearing+bounds.rbearing);
+					y_separation=(bounds.ascent+bounds.descent);
+					contour_x=
+						(frame->contour_x)+(cell_number*number_of_contour_areas);
+					contour_y=
+						(frame->contour_y)+(cell_number*number_of_contour_areas);
+					for (j=0;j<number_of_contour_areas;j++)
+					{
+						if ((x_pixel= *contour_x)>=0)
+						{
+							y_pixel= *contour_y;
+							/* check that its not too close to previously drawn
+								 values */
+							draw_contour_value=1;
+							if (0<j%contour_areas_in_x)
+							{
+								if ((pixel_left= *(contour_x-1))>=0)
+								{
+									temp_int=y_pixel-(*(contour_y-1));
+									if (temp_int<0)
+									{
+										temp_int= -temp_int;
+									}
+									if ((x_pixel-pixel_left<=x_separation)&&
+										(temp_int<=y_separation))
+									{
+										draw_contour_value=0;
+									}
+								}
+								if (draw_contour_value&&(j>contour_areas_in_x)&&
+									((pixel_top=
+										*(contour_x-(contour_areas_in_x+1)))>=0))
+								{
+									if ((x_pixel-pixel_top<=x_separation)&&
+										(y_pixel-(*(contour_y-(contour_areas_in_x+1)))<=
+											y_separation))
+									{
+										draw_contour_value=0;
+									}
+								}
+							}
+							if (draw_contour_value&&(j>=contour_areas_in_x)&&
+								((pixel_top= *(contour_x-contour_areas_in_x))>=0))
+							{
+								temp_int=x_pixel-pixel_top;
+								if (temp_int<0)
+								{
+									temp_int= -temp_int;
+								}
+								if ((temp_int<=x_separation)&&
+									(y_pixel-(*(contour_y-contour_areas_in_x))<=
+										y_separation))
+								{
+									draw_contour_value=0;
+								}
+							}
+							if (draw_contour_value)
+							{
+								XPSDrawString(display,drawing->pixel_map,
+									graphics_context,x_pixel+x_offset+map_x_offset,y_pixel+
+									y_offset+map_y_offset,value_string,string_length);
+							}
+						}
+						contour_x++;
+						contour_y++;
+					}
+				}
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"draw_2d_contour_values.  Invalid frames");
 		}
 	}
   else
   {	
-    display_message(ERROR_MESSAGE,"draw_2d_landmarks invalid arguments");
+    display_message(ERROR_MESSAGE,"draw_2d_contour_values invalid arguments");
     return_code=0;
   }
   LEAVE;
   return(return_code);
-}/* draw_2d_landmarks */
+}/* draw_2d_contour_values */
 
 static int draw_2d_fibres(struct Map *map,struct sub_Map *sub_map,
-	struct Drawing_2d *drawing,int map_x_offset,int map_y_offset,
-	int number_of_rows,int number_of_columns,int map_width,
-	int map_height,int screen_region_width, int screen_region_height)
+	struct Drawing_2d *drawing,int screen_region_width, int screen_region_height)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2001
+LAST MODIFIED :10 September 2001
 
 DESCRIPTION :
 Draw the fibres
@@ -8345,7 +8457,8 @@ Draw the fibres
 		pi_over_2,sin_mu_hat,sin_theta_hat,*stretch_x,*stretch_y,theta,theta_1,
 		theta_2,theta_3,theta_4,two_pi,xi_1,xi_2,x_screen,x_screen_left,x_screen_step,
 		y_screen,y_screen_top,y_screen_step;
-  int *draw_region_number,fibre_iteration,fibre_spacing,i,j,k,l,number_of_regions,
+  int *draw_region_number,fibre_iteration,fibre_spacing,i,j,k,l,map_x_offset,
+		map_y_offset,map_width,map_height,number_of_regions,
 		pixel_left,pixel_top,region_number,return_code,*start_x,*start_y,
 		temp_region_number,x_pixel,y_pixel;	
 	struct Fibre_node *local_fibre_node_1,*local_fibre_node_2,*local_fibre_node_3,
@@ -8368,6 +8481,10 @@ Draw the fibres
 		 &&(rig=*(map->rig_pointer)))
   {	
 		draw_region_number=map->draw_region_number;
+		map_x_offset=sub_map->x_offset;
+		map_y_offset=sub_map->y_offset;
+		map_width=sub_map->width;
+		map_height=sub_map->height;
 		start_x=sub_map->start_x;
 		start_y=sub_map->start_y;
 		min_x=sub_map->min_x;
@@ -8413,10 +8530,10 @@ Draw the fibres
 					(0!=stretch_y[region_number]))
 				{
 					/* draw fibres */
-					pixel_left=((region_number/number_of_rows)*
-						map_width)/number_of_columns+fibre_spacing/2;
-					pixel_top=((region_number%number_of_rows)*
-						map_height)/number_of_rows+fibre_spacing/2;
+					pixel_left=((region_number/map->number_of_region_rows)*
+						map_width)/map->number_of_region_columns+fibre_spacing/2;
+					pixel_top=((region_number%map->number_of_region_rows)*
+						map_height)/map->number_of_region_rows+fibre_spacing/2;
 					x_screen_step=(float)fibre_spacing/stretch_x[region_number];
 					y_screen_step=
 						-(float)fibre_spacing/stretch_y[region_number];
@@ -8774,885 +8891,966 @@ Draw the fibres
   return(return_code);
 }/* draw_2d_fibres */
 
-static int draw_2d_contour_values(struct Map *map,struct Drawing_2d *drawing,
-	int map_x_offset,int map_y_offset)
+static int confine_text_to_map(int *x_string,int *y_string,XCharStruct *bounds,
+	int ascent,int descent,int map_x_offset,int map_y_offset,int map_width,
+	int map_height)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2001
+LAST MODIFIED : 16 July 2001
 
 DESCRIPTION :
-Write the values of the contours.
+Limits the string position given by <x_string> <y_string>, <bounds> <ascent>,
+<descent> to the map given by <map_x_offset> <map_y_offset> <map_width> 
+< map_height>
 *******************************************************************************/
-{
-	char draw_contour_value,value_string[11];
-  Display *display;
-  GC graphics_context;
-	float a,contour_maximum,contour_minimum,maximum_value,minimum_value,
-		string_length;
-  int ascent,cell_range,cell_number,contour_areas_in_x,descent,direction,end,
-		frame_number,i,j,number_of_contours,number_of_contour_areas,
-		number_of_spectrum_colours,number_of_frames,pixel_left,pixel_top,return_code,
-		start,temp_int,x_offset,x_pixel,x_separation,y_offset,y_pixel,y_separation;
-	short int *contour_x,*contour_y;
-	struct Map_frame *frame;
-  struct Map_drawing_information *drawing_information;  
-	XCharStruct bounds;
-	XFontStruct *font;
-
-  ENTER(draw_2d_contour_values);	
-	contour_x=(short int *)NULL;
-	contour_y=(short int *)NULL;
-	font=(XFontStruct *)NULL;
-  display=(Display *)NULL;
-	frame=(struct Map_frame *)NULL;	
-  drawing_information=(struct Map_drawing_information *)NULL;
-  if (map&&drawing&&(drawing->user_interface)&&(display=drawing->user_interface->display)
-		 &&(drawing->pixel_map)&&(drawing_information=map->drawing_information))
-  {	
-		return_code=1;
-		font=drawing_information->font;
-		if ((0<(number_of_frames=map->number_of_frames))&&
-			(0<=(frame_number=map->frame_number))&&
-			(frame_number<number_of_frames)&&(frame=map->frames))
-		{
-			frame += frame_number;
-			if ((frame->contour_x)&&(frame->contour_y))
-			{
-				number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;		
-				number_of_contour_areas=map->number_of_contour_areas;
-				contour_areas_in_x=map->number_of_contour_areas_in_x;
-				minimum_value=map->minimum_value;
-				maximum_value=map->maximum_value;
-				contour_minimum=map->contour_minimum;
-				contour_maximum=map->contour_maximum;
-				graphics_context=(drawing_information->graphics_context).
-					contour_colour;
-				if (maximum_value==minimum_value)
-				{
-					start=0;
-					end=number_of_spectrum_colours;
-				}
-				else
-				{
-					start=(int)((contour_minimum-minimum_value)/
-						(maximum_value-minimum_value)*
-						(float)(number_of_spectrum_colours-1)+0.5);
-					end=(int)((contour_maximum-minimum_value)/
-						(maximum_value-minimum_value)*
-						(float)(number_of_spectrum_colours-1)+0.5);
-				}
-				cell_range=end-start;
-				number_of_contours=map->number_of_contours;
-				for (i=number_of_contours;i>0;)
-				{
-					i--;
-					cell_number=start+(int)((float)(i*cell_range)/
-						(float)(number_of_contours-1)+0.5);
-					a=(contour_maximum*(float)i+contour_minimum*
-						(float)(number_of_contours-i-1))/
-						(float)(number_of_contours-1);
-					if (fabs(a)<
-						0.00001*(fabs(contour_maximum)+fabs(contour_minimum)))
-					{
-						a=0;
-					}
-					sprintf(value_string,"%.4g",a);
-					string_length=strlen(value_string);
-					XTextExtents(font,value_string,string_length,&direction,
-						&ascent,&descent,&bounds);
-					x_offset=(bounds.lbearing-bounds.rbearing)/2;
-					y_offset=(bounds.ascent-bounds.descent)/2;
-					x_separation=(bounds.lbearing+bounds.rbearing);
-					y_separation=(bounds.ascent+bounds.descent);
-					contour_x=
-						(frame->contour_x)+(cell_number*number_of_contour_areas);
-					contour_y=
-						(frame->contour_y)+(cell_number*number_of_contour_areas);
-					for (j=0;j<number_of_contour_areas;j++)
-					{
-						if ((x_pixel= *contour_x)>=0)
-						{
-							y_pixel= *contour_y;
-							/* check that its not too close to previously drawn
-								 values */
-							draw_contour_value=1;
-							if (0<j%contour_areas_in_x)
-							{
-								if ((pixel_left= *(contour_x-1))>=0)
-								{
-									temp_int=y_pixel-(*(contour_y-1));
-									if (temp_int<0)
-									{
-										temp_int= -temp_int;
-									}
-									if ((x_pixel-pixel_left<=x_separation)&&
-										(temp_int<=y_separation))
-									{
-										draw_contour_value=0;
-									}
-								}
-								if (draw_contour_value&&(j>contour_areas_in_x)&&
-									((pixel_top=
-										*(contour_x-(contour_areas_in_x+1)))>=0))
-								{
-									if ((x_pixel-pixel_top<=x_separation)&&
-										(y_pixel-(*(contour_y-(contour_areas_in_x+1)))<=
-											y_separation))
-									{
-										draw_contour_value=0;
-									}
-								}
-							}
-							if (draw_contour_value&&(j>=contour_areas_in_x)&&
-								((pixel_top= *(contour_x-contour_areas_in_x))>=0))
-							{
-								temp_int=x_pixel-pixel_top;
-								if (temp_int<0)
-								{
-									temp_int= -temp_int;
-								}
-								if ((temp_int<=x_separation)&&
-									(y_pixel-(*(contour_y-contour_areas_in_x))<=
-										y_separation))
-								{
-									draw_contour_value=0;
-								}
-							}
-							if (draw_contour_value)
-							{
-								XPSDrawString(display,drawing->pixel_map,
-									graphics_context,x_pixel+x_offset+map_x_offset,y_pixel+
-									y_offset+map_y_offset,value_string,string_length);
-							}
-						}
-						contour_x++;
-						contour_y++;
-					}
-				}
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"draw_2d_contour_values.  Invalid frames");
-		}
-	}
-  else
-  {	
-    display_message(ERROR_MESSAGE,"draw_2d_contour_values invalid arguments");
-    return_code=0;
-  }
-  LEAVE;
-  return(return_code);
-}/* draw_2d_contour_values */
-
-static int draw_2d_constant_thickness_contours(struct Map *map,
-	struct Drawing_2d *drawing,struct Map_frame *frame,int map_x_offset,
-	int map_y_offset,int map_width,int map_height,float *pixel_value,
-	float *min_f,float *max_f,char draw_boundary)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2001
-
-DESCRIPTION :
-draw the constant thickness contours
-*******************************************************************************/
-{
-	char draw_contours;
-	Display *display;
-	GC graphics_context;
-	int boundary_type,end,i,j,k,number_of_contours,return_code,start,valid_i_j,
-		valid_i_jm1,valid_im1_j,valid_im1_jm1;
-	float a,b,background_pixel_value,boundary_pixel_value,contour_step,contour_maximum,
-		contour_minimum,f_i_j,f_i_jm1,f_im1_j,f_im1_jm1;
-	struct Map_drawing_information *drawing_information;
-
-	ENTER(draw_2d_constant_thickness_contours);
-	display=(Display *)NULL;
-	if (frame&&map&&drawing&&(drawing_information=map->drawing_information)&&
-		pixel_value)
-	{
-		return_code=1;
-		display=drawing->user_interface->display;
-		number_of_contours=map->number_of_contours;
-		contour_minimum=map->contour_minimum;
-		contour_maximum=map->contour_maximum;
-
-		busy_cursor_on((Widget)NULL,drawing_information->user_interface);
-		contour_step=(contour_maximum-contour_minimum)/
-			(float)(number_of_contours-1);
-		graphics_context=(drawing_information->graphics_context).contour_colour;
-		background_pixel_value=frame->minimum;
-		boundary_pixel_value=frame->maximum;
-		for (j=1+map_y_offset;j<map_height+map_y_offset;j++)
-		{
-			f_i_jm1= *pixel_value;
-			if ((background_pixel_value<=f_i_jm1)&&
-				(f_i_jm1<=boundary_pixel_value))
-			{
-				valid_i_jm1=1;
-			}
-			else
-			{
-				valid_i_jm1=0;
-			}
-			f_i_j=pixel_value[map_width];
-			if ((background_pixel_value<=f_i_j)&&
-				(f_i_j<=boundary_pixel_value))
-			{
-				valid_i_j=1;
-			}
-			else
-			{
-				valid_i_j=0;
-			}
-			pixel_value++;
-			for (i=1+map_x_offset;i<map_width+map_x_offset;i++)
-			{
-				valid_im1_jm1=valid_i_jm1;
-				f_im1_jm1=f_i_jm1;
-				valid_im1_j=valid_i_j;
-				f_im1_j=f_i_j;
-				f_i_jm1= *pixel_value;
-				if ((background_pixel_value<=f_i_jm1)&&
-					(f_i_jm1<=boundary_pixel_value))
-				{
-					valid_i_jm1=1;
-				}
-				else
-				{
-					valid_i_jm1=0;
-				}
-				f_i_j=pixel_value[map_width];
-				if ((background_pixel_value<=f_i_j)&&
-					(f_i_j<=boundary_pixel_value))
-				{
-					valid_i_j=1;
-				}
-				else
-				{
-					valid_i_j=0;
-				}
-				pixel_value++;
-				boundary_type=((valid_im1_jm1*2+valid_im1_j)*2+
-					valid_i_jm1)*2+valid_i_j;
-				if (draw_contours&&(15==boundary_type))
-				{
-					/* calculate contour using bilinear */
-					if (f_im1_jm1<f_i_j)
-					{
-						*min_f=f_im1_jm1;
-						*max_f=f_i_j;
-					}
-					else
-					{
-						*min_f=f_i_j;
-						*max_f=f_im1_jm1;
-					}
-					if (f_im1_j<*min_f)
-					{
-						*min_f=f_im1_j;
-					}
-					else
-					{
-						if (f_im1_j>*max_f)
-						{
-							*max_f=f_im1_j;
-						}
-					}
-					if (f_i_jm1<*min_f)
-					{
-						*min_f=f_i_jm1;
-					}
-					else
-					{
-						if (f_i_jm1>*max_f)
-						{
-							*max_f=f_i_jm1;
-						}
-					}
-					if ((*min_f<=contour_maximum)&&
-						(contour_minimum<=*max_f))
-					{
-						if (*min_f<=contour_minimum)
-						{
-							start=0;
-						}
-						else
-						{
-							start=1+(int)((*min_f-contour_minimum)/
-								contour_step);
-						}
-						if (contour_maximum<=*max_f)
-						{
-							end=number_of_contours;
-						}
-						else
-						{
-							end=(int)((*max_f-contour_minimum)/contour_step);
-						}
-						for (k=start;k<=end;k++)
-						{
-							a=contour_minimum+contour_step*(float)k;
-							if (fabs(a)<0.00001*(fabs(contour_maximum)+
-								fabs(contour_minimum)))
-							{
-								a=0;
-							}
-							/* dashed lines for -ve contours */
-							if ((a>=0)||((i+j)%5<2))
-							{
-								if (((f_im1_jm1<=a)&&(a<f_i_jm1))||
-									((f_im1_jm1>=a)&&(a>f_i_jm1)))
-								{
-									if (((f_im1_jm1<=a)&&(a<f_im1_j))||
-										((f_im1_jm1>=a)&&(a>f_im1_j)))
-									{
-										if ((((f_i_jm1<=a)&&(a<f_i_j))||
-											((f_i_jm1>=a)&&(a>f_i_j)))&&
-											(((f_im1_j<=a)&&(a<f_i_j))||
-												((f_im1_j>=a)&&(a>f_i_j))))
-										{
-											b=(a-f_im1_jm1)*
-												(f_im1_jm1+f_i_j-f_im1_j-f_i_jm1)+
-												(f_im1_j-f_im1_jm1)*
-												(f_i_jm1-f_im1_jm1);
-											if (b<0)
-											{
-												XPSDrawLineFloat(display,
-													drawing->pixel_map,graphics_context,
-													(float)i-(a-f_i_jm1)/
-													(f_im1_jm1-f_i_jm1),(float)(j-1),
-													(float)(i-1),(float)j-(a-f_im1_j)/
-													(f_im1_jm1-f_im1_j));
-												XPSDrawLineFloat(display,
-													drawing->pixel_map,graphics_context,
-													(float)i-(a-f_i_j)/(f_im1_j-f_i_j),
-													(float)j,
-													(float)i,
-													(float)j-(a-f_i_j)/(f_i_jm1-f_i_j));
-											}
-											else
-											{
-												if (b>0)
-												{
-													XPSDrawLineFloat(display,
-														drawing->pixel_map,
-														graphics_context,
-														(float)i-(a-f_i_jm1)/
-														(f_im1_jm1-f_i_jm1),(float)(j-1),
-														(float)i,(float)j-(a-f_i_j)/
-														(f_i_jm1-f_i_j));
-													XPSDrawLineFloat(display,
-														drawing->pixel_map,
-														graphics_context,
-														(float)i-(a-f_i_j)/
-														(f_im1_j-f_i_j),
-														(float)j,(float)(i-1),(float)j-
-														(a-f_im1_j)/(f_im1_jm1-f_im1_j));
-												}
-												else
-												{
-													XPSDrawLineFloat(display,
-														drawing->pixel_map,
-														graphics_context,
-														(float)(i-1),(float)j-(a-f_im1_j)/
-														(f_im1_jm1-f_im1_j),(float)i,
-														(float)j-(a-f_i_j)/
-														(f_i_jm1-f_i_j));																
-													XPSDrawLineFloat(display,
-														drawing->pixel_map,
-														graphics_context,
-														(float)i-(a-f_i_jm1)/
-														(f_im1_jm1-f_i_jm1),(float)(j-1),
-														(float)i-(a-f_i_j)/
-														(f_im1_j-f_i_j),(float)j);
-												}
-											}
-										}
-										else
-										{
-											XPSDrawLineFloat(display,
-												drawing->pixel_map,
-												graphics_context,(float)i-(a-f_i_jm1)/
-												(f_im1_jm1-f_i_jm1),(float)(j-1),
-												(float)(i-1),(float)j-(a-f_im1_j)/
-												(f_im1_jm1-f_im1_j));
-										}
-									}
-									else
-									{
-										if (((f_i_jm1<=a)&&(a<f_i_j))||
-											((f_i_jm1>=a)&&(a>f_i_j)))
-										{
-											XPSDrawLineFloat(display,
-												drawing->pixel_map,graphics_context,
-												(float)i-(a-f_i_jm1)/
-												(f_im1_jm1-f_i_jm1),(float)(j-1),
-												(float)i,
-												(float)j-(a-f_i_j)/(f_i_jm1-f_i_j));
-										}
-										else
-										{
-											if (((f_im1_j<=a)&&(a<f_i_j))||
-												((f_im1_j>=a)&&(a>f_i_j)))
-											{
-												XPSDrawLineFloat(display,
-													drawing->pixel_map,graphics_context,
-													(float)i-(a-f_i_jm1)/
-													(f_im1_jm1-f_i_jm1),(float)(j-1),
-													(float)i-(a-f_i_j)/
-													(f_im1_j-f_i_j),(float)j);
-											}
-										}
-									}
-								}
-								else
-								{
-									if (((f_im1_jm1<=a)&&(a<f_im1_j))||
-										((f_im1_jm1>=a)&&(a>f_im1_j)))
-									{
-										if (((f_i_jm1<=a)&&(a<f_i_j))||
-											((f_i_jm1>=a)&&(a>f_i_j)))
-										{
-											XPSDrawLineFloat(display,
-												drawing->pixel_map,graphics_context,
-												(float)(i-1),(float)j-(a-f_im1_j)/
-												(f_im1_jm1-f_im1_j),(float)i,
-												(float)j-(a-f_i_j)/(f_i_jm1-f_i_j));
-										}
-										else
-										{
-											if (((f_im1_j<=a)&&(a<f_i_j))||
-												((f_im1_j>=a)&&(a>f_i_j)))
-											{
-												XPSDrawLineFloat(display,
-													drawing->pixel_map,graphics_context,
-													(float)(i-1),(float)j-(a-f_im1_j)/
-													(f_im1_jm1-f_im1_j),(float)i-
-													(a-f_i_j)/(f_im1_j-f_i_j),(float)j);
-											}
-										}
-									}
-									else
-									{
-										if ((((f_i_jm1<=a)&&(a<f_i_j))||
-											((f_i_jm1>=a)&&(a>f_i_j)))&&
-											(((f_im1_j<=a)&&(a<f_i_j))||
-												((f_im1_j>=a)&&(a>f_i_j))))
-										{
-											XPSDrawLineFloat(display,
-												drawing->pixel_map,
-												graphics_context,(float)i-(a-f_i_j)/
-												(f_im1_j-f_i_j),(float)j,(float)i,
-												(float)j-(a-f_i_j)/(f_i_jm1-f_i_j));
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-				if (draw_boundary&&(0<boundary_type)&&
-					(boundary_type<15))
-				{
-					switch (boundary_type)
-					{
-						case 1: case 8:
-						{
-							XPSDrawLine(display,drawing->pixel_map,
-								graphics_context,i-1,j,i,j-1);
-						} break;
-						case 2: case 4:
-						{
-							XPSDrawLine(display,drawing->pixel_map,
-								graphics_context,i-1,j-1,i,j);
-						} break;
-						case 3:
-						{
-							XPSDrawLine(display,drawing->pixel_map,
-								graphics_context,i-1,j-1,i-1,j);
-						} break;
-						case 5:
-						{
-							XPSDrawLine(display,drawing->pixel_map,
-								graphics_context,i-1,j-1,i,j-1);
-						} break;
-						case 10:
-						{
-							XPSDrawLine(display,drawing->pixel_map,
-								graphics_context,i-1,j,i,j);
-						} break;
-						case 12:
-						{
-							XPSDrawLine(display,drawing->pixel_map,
-								graphics_context,i,j-1,i,j);
-						} break;
-					}
-				}
-			}
-		}
-		busy_cursor_off((Widget)NULL,
-			drawing_information->user_interface);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"draw_2d_constant_thickness_contours invalid arguments");
-    return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* draw_2d_constant_thickness_contours */
-
-static int set_map_2d_map_min_max(struct Map *map)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2001
-
-DESCRIPTION :
-Sets the (possibly multi frame) <map>'s minimum and maximum, 
-based upon the map's frame's min and max.
-*******************************************************************************/
-{
-	float min_f,max_f;
-	int i,number_of_frames,return_code;
-	struct Map_frame *frame;
-
-	ENTER(set_map_2d_map_min_max);
-	if (map)
-	{
-		return_code=1;
-		number_of_frames=map->number_of_frames;
-		/*???DB.  loop over frames */
-		if (!(map->fixed_range)||(map->minimum_value>map->maximum_value))
-		{
-			frame=map->frames;
-			min_f=frame->minimum;
-			max_f=frame->maximum;
-			for (i=number_of_frames-1;i>0;i--)
-			{
-				frame++;
-				if (frame->minimum<=frame->maximum)
-				{
-					if (min_f<=max_f)
-					{
-						if (frame->minimum<min_f)
-						{
-							min_f=frame->minimum;
-						}
-						if (frame->maximum<max_f)
-						{
-							max_f=frame->maximum;
-						}
-					}
-					else
-					{
-						min_f=frame->minimum;
-						max_f=frame->maximum;
-					}
-				}
-			}
-			map->minimum_value=min_f;
-			map->maximum_value=max_f;
-			map->contour_minimum=min_f;
-			map->contour_maximum=max_f;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_map_2d_map_min_max invalid arguments");
-    return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* set_map_2d_map_min_max */
-
-static int set_map_2d_frame_min_max(struct Map_frame *frame,float max_f,
-	float min_f,int minimum_x,int maximum_x,int minimum_y,int maximum_y)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2001
-
-DESCRIPTION :
-<frame>'s minimum and maximum.
-*******************************************************************************/
-{
+{	
 	int return_code;
 
-	ENTER(set_map_2d_fram_min_max);
-	if (frame)
+	ENTER(confine_text_to_map);
+	if (x_string&&y_string&&bounds)
 	{
 		return_code=1;
-		if (max_f<min_f)
+		if (*x_string-(*bounds).lbearing<(0+map_x_offset))
 		{
-			frame->maximum=0;
-			frame->maximum_x= -1;
-			frame->maximum_y= -1;
-			frame->minimum=0;
-			frame->minimum_x= -1;
-			frame->minimum_y= -1;	
-		}/* if (max_f<min_f) */
+			*x_string=(*bounds).lbearing+map_x_offset;
+		}
 		else
 		{
-			frame->maximum=max_f;
-			frame->maximum_x=maximum_x;
-			frame->maximum_y=maximum_y;
-			frame->minimum=min_f;
-			frame->minimum_x=minimum_x;
-			frame->minimum_y=minimum_y;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_map_2d_frame_min_max invalid arguments");
-    return_code=0;
-	}	
-	LEAVE;
-	return(return_code);
-}/* set_map_2d_frame_min_max */
-
-static int set_map_2d_no_interpolation_min_max(struct Map *map,
-	struct sub_Map *sub_map)
-/*******************************************************************************
-LAST MODIFIED : 18 July 2001
-
-DESCRIPTION :
-Sets the (possibly multi frame) <map>'s minimum and maximum, 
-for the case map->interpolation_type==NO_INTERPOLATION.
-*******************************************************************************/
-{
-	float *electrode_value,f_approx,max_f,min_f;
-	int *draw_region_number,frame_number,number_of_frames,i,maximum_x,maximum_y,
-		minimum_x,minimum_y,number_of_electrodes,number_of_regions,region_number,
-		return_code,*screen_x,*screen_y,temp_region_number;
-	struct Device	**electrode;
-	struct Map_frame *frame;
-	struct Region *maximum_region,*minimum_region,*current_region;
-	struct Region_list_item *region_item;
-	struct Rig *rig;
-
-	ENTER(set_map_2d_no_interpolation_min_max);
-	frame=(struct Map_frame *)NULL;
-	region_item=(struct Region_list_item *)NULL;
-	rig=(struct Rig *)NULL;
-	electrode=(struct Device **)NULL;
-	screen_x=(int *)NULL;
-	screen_y=(int *)NULL;
-	electrode_value=(float *)NULL;
-	draw_region_number=(int *)NULL;
-	if(map&&sub_map)
-	{
-		return_code=1;
-		draw_region_number=map->draw_region_number;
-		number_of_electrodes=map->number_of_electrodes;
-		rig=*(map->rig_pointer);
-		number_of_regions=rig->number_of_regions;
-		/*???DB.  Put the frame loop on the inside ? */
-		/*???DB.  Electrode values are not changing with frame */
-		frame=map->frames;
-		frame_number=0;
-		number_of_frames=map->number_of_frames;
-		while ((frame_number<number_of_frames)&&return_code)
-		{
-			min_f=1;
-			max_f=0;
-			maximum_region=(struct Region *)NULL;
-			minimum_region=(struct Region *)NULL;
-			/* for each region */
-			region_item=get_Rig_region_list(rig);
-			for (temp_region_number=0;temp_region_number<number_of_regions;
-					 temp_region_number++)
+			if (*x_string+(*bounds).rbearing>(map_width+map_x_offset))
 			{
-				region_number=draw_region_number[temp_region_number];
-				if (0<=region_number)
-				{
-					current_region=get_Region_list_item_region(region_item);
-					/* find maximum and minimum electrodes for region */
-					electrode=map->electrodes;
-					screen_x=sub_map->electrode_x;
-					screen_y=sub_map->electrode_y;
-					electrode_value=sub_map->electrode_value;
-					for (i=number_of_electrodes;i>0;i--)
-					{
-						if (current_region==(*electrode)->description->region)
-						{
-							f_approx= *electrode_value;
-							if (max_f<min_f)
-							{
-								min_f=f_approx;
-								max_f=f_approx;
-								maximum_region=current_region;
-								minimum_region=current_region;
-								maximum_x= *screen_x;
-								maximum_y= *screen_y;
-								minimum_x=maximum_x;
-								minimum_y=minimum_y;
-							}
-							else
-							{
-								if (f_approx<min_f)
-								{
-									min_f=f_approx;
-									minimum_region=current_region;
-									minimum_x= *screen_x;
-									minimum_y= *screen_y;
-								}
-								else
-								{
-									if (f_approx>max_f)
-									{
-										max_f=f_approx;
-										maximum_region=current_region;
-										maximum_x= *screen_x;
-										maximum_y= *screen_y;
-									}
-								}
-							}
-						}
-						electrode++;
-						screen_x++;
-						screen_y++;
-						electrode_value++;
-					}
-				}
-				region_item=get_Region_list_item_next(region_item);
+				*x_string=(map_width+map_x_offset)-(*bounds).rbearing;
 			}
-			frame->maximum_region=maximum_region;
-			frame->minimum_region=minimum_region;
-			set_map_2d_frame_min_max(frame,max_f,min_f,minimum_x,maximum_x,
-				minimum_y,maximum_y);
-			frame_number++;
-			frame++;
 		}
-		set_map_2d_map_min_max(map);
-	}			
-	else
-	{		
-		display_message(ERROR_MESSAGE,
-			"set_map_2d_no_interpolation_min_max invalid arguments");
-    return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-}/* set_map_2d_no_interpolation_min_max */
-
-static int draw_2d_fill_in_image(struct Map *map,int map_height,int map_width,
-	int contour_x_spacing,int contour_y_spacing,Pixel *spectrum_pixels)
-/*******************************************************************************
-LAST MODIFIED : 17 July 2001
-
-DESCRIPTION :
-Fill in the 2D map pixel image.
-*******************************************************************************/
-{
-	float background_pixel_value,boundary_pixel_value,f_approx,max_f,min_f,
-		*pixel_value,range_f;
-	int cell_number,contour_area,contour_areas_in_x,frame_number,next_contour_x,
-		number_of_contour_areas,number_of_frames,number_of_spectrum_colours,
-		return_code,x_pixel,y_pixel;
-	Pixel background_pixel,boundary_pixel;
-	short int *contour_x,*contour_y;
-	struct Map_drawing_information *drawing_information;
-	struct Map_frame *frame;
-	XImage *frame_image=(XImage *)NULL;
-
-	ENTER(draw_2d_fill_in_image);
-	frame=(struct Map_frame *)NULL;
-	pixel_value=(float *)NULL;
-	contour_x=(short int *)NULL;
-	contour_y=(short int *)NULL;
-	drawing_information=(struct Map_drawing_information *)NULL;
-	if (map&&(drawing_information=map->drawing_information))
-	{
-		return_code=1;		
-		background_pixel=drawing_information->background_drawing_colour;	
-		boundary_pixel=drawing_information->boundary_colour;
-		contour_areas_in_x=map->number_of_contour_areas_in_x;
-		number_of_contour_areas=map->number_of_contour_areas;
-		number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;
-		number_of_frames=map->number_of_frames;
-		/* fill in the image */
-		min_f=map->minimum_value;
-		max_f=map->maximum_value;
-		/* calculate range of values */
-		range_f=max_f-min_f;
-		if (range_f<=0)
+		if (*y_string-ascent<(0+map_y_offset))
 		{
-			range_f=1;
+			*y_string=ascent+map_y_offset;
 		}
-		frame=map->frames;
-		frame_number=0;
-		while ((frame_number<number_of_frames)&&return_code)
+		else
 		{
-			background_pixel_value=frame->minimum;
-			boundary_pixel_value=frame->maximum;
-			pixel_value=frame->pixel_values;
-			frame_image=frame->image;
-			for (y_pixel=0;y_pixel<map_height;y_pixel++)
+			if (*y_string+descent>(map_height+map_y_offset))
 			{
-				contour_area=
-					(y_pixel/contour_y_spacing)*contour_areas_in_x;
-				next_contour_x=contour_x_spacing-1;
-				contour_x=(frame->contour_x)+contour_area;
-				contour_y=(frame->contour_y)+contour_area;
-				for (x_pixel=0;x_pixel<map_width;x_pixel++)
-				{
-					f_approx= *pixel_value;
-					if (f_approx>=background_pixel_value)
-					{
-						if (f_approx<=boundary_pixel_value)
-						{
-							if (f_approx<min_f)
-							{
-								f_approx=min_f;
-							}
-							else
-							{
-								if (f_approx>max_f)
-								{
-									f_approx=max_f;
-								}
-							}
-							cell_number=(int)((f_approx-min_f)*
-								(float)(number_of_spectrum_colours-1)/
-								range_f+0.5);
-							XPutPixel(frame_image,x_pixel,y_pixel,
-								spectrum_pixels[cell_number]);
-							cell_number *= number_of_contour_areas;
-							contour_x[cell_number]=x_pixel;
-							contour_y[cell_number]=y_pixel;
-						}
-						else
-						{
-							XPutPixel(frame_image,x_pixel,y_pixel,
-								boundary_pixel);
-						}
-					}
-					else
-					{
-						XPutPixel(frame_image,x_pixel,y_pixel,
-							background_pixel);
-					}
-					pixel_value++;
-					if (x_pixel>=next_contour_x)
-					{
-						contour_x++;
-						contour_y++;
-						next_contour_x += contour_x_spacing;
-					}
-				}
+				*y_string=(map_height+map_y_offset)-descent;
 			}
-			frame_number++;
-			frame++;
-		}/* while ((frame_number<number_of_frames)&&return_code) */
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"draw_2d_fill_in_image invalid arguments");
+			"confine_text_to_map. invalid arguments");
 		return_code=0;
 	}
 	LEAVE;
 	return(return_code);
-}/* draw_2d_fill_in_image */
+}/* confine_text_to_map */
+
+static int draw_2d_extrema(struct Map *map,struct sub_Map *sub_map,
+	struct Drawing_2d *drawing)
+/*******************************************************************************
+LAST MODIFIED : 10 September 2001
+
+DESCRIPTION :
+draw the extrema
+*******************************************************************************/
+{
+  Display *display;
+  char *name,value_string[11];  
+  GC graphics_context;
+  int ascent,descent,frame_number,direction,*draw_region_number,map_width,
+		map_height,map_x_offset,map_y_offset,name_length,number_of_frames,
+		number_of_regions,region_number,return_code,temp_region_number,x_string,
+		y_string;
+  struct Map_drawing_information *drawing_information;
+  struct Map_frame *frame=(struct Map_frame *)NULL;
+  struct Region *current_region;
+  struct Region_list_item *region_item;
+  struct Rig *rig;
+  XFontStruct *font;
+	XCharStruct bounds;
+
+  ENTER(draw_2d_extrema);
+  name=(char *)NULL;
+  display=(Display *)NULL;
+  region_item=(struct Region_list_item *)NULL;
+  drawing_information=(struct Map_drawing_information *)NULL;
+  if (map&&sub_map&&drawing&&(drawing->user_interface)&&
+		(display=drawing->user_interface->display)
+		 &&(drawing->pixel_map)&&(drawing_information=map->drawing_information)
+		 &&(rig=*(map->rig_pointer)))
+  {
+   map_x_offset=sub_map->x_offset;
+	 map_y_offset=sub_map->y_offset;
+	 map_width=sub_map->width;
+	 map_height=sub_map->height;
+   draw_region_number=map->draw_region_number;
+   font=drawing_information->font;	
+   number_of_regions=rig->number_of_regions;
+   if ((0<(number_of_frames=map->number_of_frames))&&
+	  (0<=(frame_number=map->frame_number))&&
+	  (frame_number<number_of_frames)&&(frame=map->frames))
+   {
+     return_code=1;
+		 frame += frame_number;
+		 /* set the colour for the extrema */
+		 graphics_context=(drawing_information->graphics_context).spectrum,
+		 XSetForeground(display,graphics_context,drawing_information->landmark_colour);
+		 region_item=get_Rig_region_list(rig);
+		 for (temp_region_number=0;temp_region_number<number_of_regions;
+			 temp_region_number++)
+		 {
+			 region_number=draw_region_number[temp_region_number];
+			 if (0<=region_number)
+			 {
+				 current_region=get_Region_list_item_region(region_item);
+				 if (frame->maximum_region==current_region)
+				 {
+					 /* draw plus */
+					 XPSFillRectangle(display,drawing->pixel_map,graphics_context,
+						 (frame->maximum_x-5)+map_x_offset,(frame->maximum_y-1)+map_y_offset,
+						 11,3);
+					 XPSFillRectangle(display,drawing->pixel_map,graphics_context,
+						 (frame->maximum_x-1)+map_x_offset,(frame->maximum_y-5)+map_y_offset,
+						 3,11);
+					 /* if not animation */
+					 if (map->activation_front<0)
+					 {
+						 /* write value */
+						 sprintf(value_string,"%.4g",frame->maximum);
+						 name=value_string;
+						 name_length=strlen(value_string);
+						 x_string=frame->maximum_x;
+#if defined (NO_ALIGNMENT)
+						 XTextExtents(font,name,name_length,&direction,&ascent,&descent,&bounds);
+						 x_string += (bounds.lbearing-bounds.rbearing+1)/2+map_x_offset;
+#else /* defined (NO_ALIGNMENT) */
+						 SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
+#endif /* defined (NO_ALIGNMENT) */
+						 if ((frame->maximum_y+map_y_offset)>(map_height/2 +map_y_offset))
+						 {
+							 y_string=frame->maximum_y-6 +map_y_offset;
+#if defined (NO_ALIGNMENT)
+							 y_string -= descent+1;
+#else /* defined (NO_ALIGNMENT) */
+							 SET_VERTICAL_ALIGNMENT(BOTTOM_ALIGNMENT);
+#endif /* defined (NO_ALIGNMENT) */
+						 }
+						 else
+						 {
+							 y_string=frame->maximum_y+6 +map_y_offset;
+#if defined (NO_ALIGNMENT)
+							 y_string += ascent+1;
+#else /* defined (NO_ALIGNMENT) */
+							 SET_VERTICAL_ALIGNMENT(TOP_ALIGNMENT);
+#endif /* defined (NO_ALIGNMENT) */
+						 }
+#if defined (NO_ALIGNMENT)
+/* make sure that the string doesn't extend outside the
+	 window */
+						 confine_text_to_map(&x_string,&y_string,&bounds,ascent,
+							 descent,map_x_offset,map_y_offset,map_width,map_height);
+#endif /* defined (NO_ALIGNMENT) */
+						 XPSDrawString(display,drawing->pixel_map,graphics_context,x_string,
+							 y_string,name,name_length);
+					 }
+				 }
+				 if (frame->minimum_region==current_region)
+				 {
+					 /* draw minus */
+					 XPSFillRectangle(display,drawing->pixel_map,graphics_context,
+						 (frame->minimum_x-5)+map_x_offset,(frame->minimum_y-1)+map_y_offset,
+						 11,3);
+					 /* if not animation */
+					 if (map->activation_front<0)
+					 {
+						 /* write value */
+						 sprintf(value_string,"%.4g",frame->minimum);
+						 name=value_string;
+						 name_length=strlen(value_string);
+						 x_string=frame->minimum_x;
+#if defined (NO_ALIGNMENT)
+						 XTextExtents(font,name,name_length,&direction,&ascent,&descent,
+							 &bounds);
+						 x_string += (bounds.lbearing-bounds.rbearing+1)/2+map_x_offset;
+#else /* defined (NO_ALIGNMENT) */
+						 SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
+#endif /* defined (NO_ALIGNMENT) */
+						 if (frame->minimum_y+map_y_offset>map_height/2+map_y_offset)
+						 {
+							 y_string=frame->minimum_y-6 +map_y_offset;
+#if defined (NO_ALIGNMENT)
+							 y_string -= descent+1;
+#else /* defined (NO_ALIGNMENT) */
+							 SET_VERTICAL_ALIGNMENT(BOTTOM_ALIGNMENT);
+#endif /* defined (NO_ALIGNMENT) */
+						 }
+						 else
+						 {
+							 y_string=frame->minimum_y+6 +map_y_offset;
+#if defined (NO_ALIGNMENT)
+							 y_string += ascent+1;
+#else /* defined (NO_ALIGNMENT) */
+							 SET_VERTICAL_ALIGNMENT(TOP_ALIGNMENT);
+#endif /* defined (NO_ALIGNMENT) */
+						 }
+#if defined (NO_ALIGNMENT)
+						 /* make sure that the string doesn't extend outside the window */
+						 confine_text_to_map(&x_string,&y_string,&bounds,ascent,
+							 descent,map_x_offset,map_y_offset,map_width,map_height);
+#endif /* defined (NO_ALIGNMENT) */
+						 XPSDrawString(display,drawing->pixel_map,graphics_context,x_string,
+							 y_string,name,name_length);
+					 }
+				 }
+			 }
+			 region_item=get_Region_list_item_next(region_item);
+		 }
+	 }
+	 else
+	 {
+		 display_message(ERROR_MESSAGE,"draw_map_extrema.  Invalid frames");
+	 }
+	}
+  else
+  {	
+    display_message(ERROR_MESSAGE,"draw_2d_extrema invalid arguments");
+    return_code=0;
+  }
+  LEAVE;
+  return(return_code);
+}/* draw_2d_extrema */
+
+static int draw_2d_landmarks(struct Map *map,struct sub_Map *sub_map,
+	struct Drawing_2d *drawing)
+/*******************************************************************************
+LAST MODIFIED : 10 September 2001
+
+DESCRIPTION :
+draw the landmarks
+*******************************************************************************/
+{
+  Display *display;
+  GC graphics_context;
+	float lambda,*landmark_point,*max_x,*max_y,map_x_offset,map_y_offset,
+		*min_x,*min_y,mu,*stretch_x,*stretch_y,theta,x_screen,y_screen;
+  int *draw_region_number,i,number_of_regions,region_number,return_code,
+		*start_x,*start_y,temp_region_number,x_pixel,y_pixel;
+  struct Map_drawing_information *drawing_information;
+  struct Region *current_region;
+  struct Region_list_item *region_item;
+  struct Rig *rig; 
+
+  ENTER(draw_2d_landmarks);
+  display=(Display *)NULL;	
+	landmark_point=(float *)NULL;
+  region_item=(struct Region_list_item *)NULL;
+  drawing_information=(struct Map_drawing_information *)NULL;
+  if (map&&sub_map&&drawing&&(drawing->user_interface)&&
+		 (display=drawing->user_interface->display)
+		 &&(drawing->pixel_map)&&(drawing_information=map->drawing_information)
+		 &&(rig=*(map->rig_pointer)))
+  {	
+		return_code=1;
+		map_x_offset=sub_map->x_offset;
+		map_y_offset=sub_map->y_offset;
+		draw_region_number=map->draw_region_number;
+		start_x=sub_map->start_x;
+		start_y=sub_map->start_y;
+		max_x=sub_map->max_x;
+		max_y=sub_map->max_y;
+		min_x=sub_map->min_x;
+		min_y=sub_map->min_y;
+		stretch_x=sub_map->stretch_x;
+		stretch_y=sub_map->stretch_y;
+		number_of_regions=rig->number_of_regions;
+		/* set the colour for the landmarks */
+		graphics_context=(drawing_information->graphics_context).spectrum,
+			XSetForeground(display,graphics_context,
+				drawing_information->landmark_colour);
+		region_item=get_Rig_region_list(rig);
+		for (temp_region_number=0;temp_region_number<number_of_regions;
+				 temp_region_number++)
+		{
+			region_number=draw_region_number[temp_region_number];
+			if (0<=region_number)
+			{
+				current_region=get_Region_list_item_region(region_item);
+				switch (current_region->type)
+				{
+					case SOCK:
+					{
+						landmark_point=landmark_points;
+						for (i=NUMBER_OF_LANDMARK_POINTS;i>0;i--)
+						{
+							cartesian_to_prolate_spheroidal(landmark_point[0],
+								landmark_point[1],landmark_point[2],LANDMARK_FOCUS,
+								&lambda,&mu,&theta,(float *)NULL);
+							switch (map->projection_type)
+							{
+								case HAMMER_PROJECTION:
+								{
+									Hammer_projection(mu,theta,&x_screen,&y_screen,
+										(float *)NULL);
+								} break;
+								case POLAR_PROJECTION:
+								{
+									polar_projection(mu,theta,&x_screen,&y_screen,
+										(float *)NULL);
+								} break;
+							}
+							x_pixel=start_x[region_number]+
+								(int)((x_screen-min_x[region_number])*
+									stretch_x[region_number]);
+							y_pixel=start_y[region_number]-
+								(int)((y_screen-min_y[region_number])*
+									stretch_y[region_number]);
+							/* draw asterisk */
+							XPSDrawLine(display,drawing->pixel_map,graphics_context,
+								x_pixel-2+map_x_offset,y_pixel+map_y_offset,
+								x_pixel+2+map_x_offset,y_pixel+map_y_offset);
+							XPSDrawLine(display,drawing->pixel_map,graphics_context,
+								x_pixel+map_x_offset,y_pixel-2+map_y_offset,
+								x_pixel+map_x_offset,y_pixel+2+map_y_offset);
+							XPSDrawLine(display,drawing->pixel_map,graphics_context,
+								x_pixel-2+map_x_offset,y_pixel-2+map_y_offset,
+								x_pixel+map_x_offset+2,y_pixel+2+map_y_offset);
+							XPSDrawLine(display,drawing->pixel_map,graphics_context,
+								x_pixel+2+map_x_offset,y_pixel+2+map_y_offset,
+								x_pixel+map_x_offset-2,y_pixel-2+map_y_offset);
+							landmark_point += 3;
+						}
+					} break;
+					case TORSO:
+					{
+						/* draw boundary between front and back */
+						x_pixel=start_x[region_number]+
+							(int)((max_x[region_number]-min_x[region_number])*0.5*
+								stretch_x[region_number]);
+						XPSDrawLine(display,drawing->pixel_map,graphics_context,
+							x_pixel+map_x_offset,
+							start_y[region_number]+map_y_offset,
+							x_pixel+map_x_offset,
+							start_y[region_number]-(int)((max_y[region_number]-
+								min_y[region_number])*stretch_y[region_number])+map_y_offset);
+						x_pixel=start_x[region_number];
+						XPSDrawLine(display,drawing->pixel_map,graphics_context,
+							x_pixel+map_x_offset,
+							start_y[region_number]+map_y_offset,
+							x_pixel+map_x_offset,
+							start_y[region_number]-(int)((max_y[region_number]-
+								min_y[region_number])*stretch_y[region_number])+map_y_offset);
+						/* draw shoulders */
+						y_pixel=start_y[region_number]-
+							(int)((max_y[region_number]-min_y[region_number])*
+								stretch_y[region_number]);
+						XPSDrawLine(display,drawing->pixel_map,graphics_context,
+							start_x[region_number]+map_x_offset,
+							y_pixel+map_y_offset,
+							start_x[region_number]+(int)((max_x[region_number]-
+								min_x[region_number])*0.1875*stretch_x[region_number])+map_x_offset,
+							y_pixel-5+map_y_offset);
+						XPSDrawLine(display,drawing->pixel_map,graphics_context,
+							start_x[region_number]+(int)((max_x[region_number]-
+								min_x[region_number])*0.5*stretch_x[region_number])+map_x_offset,
+							y_pixel+map_y_offset,
+							start_x[region_number]+(int)((max_x[region_number]-
+								min_x[region_number])*0.3125*stretch_x[region_number])+map_x_offset,
+							y_pixel-5+map_y_offset);
+					} break;
+				}
+			}
+			region_item=get_Region_list_item_next(region_item);
+		}
+	}
+  else
+  {	
+    display_message(ERROR_MESSAGE,"draw_2d_landmarks invalid arguments");
+    return_code=0;
+  }
+  LEAVE;
+  return(return_code);
+}/* draw_2d_landmarks */
+
+static int write_map_title(struct Map *map,struct sub_Map *sub_map,
+	struct Drawing_2d *drawing)
+/*******************************************************************************
+LAST MODIFIED : 10 September 2001
+
+DESCRIPTION :
+Write the title,using the sub_map->potential_time
+*******************************************************************************/
+{
+	char title[12];
+	float title_x,title_y,title_value;
+	int ascent,descent,direction,map_width,map_height,map_x_offset,map_y_offset,
+		return_code,title_length,x_string,y_string;
+	struct Map_drawing_information *drawing_information;
+	struct Signal_buffer *buffer;
+	struct Signal *signal;
+	struct Device *device;
+	Display *display;
+	XCharStruct bounds;
+	XFontStruct *font;
+
+	ENTER(write_map_title);	
+	buffer=(struct Signal_buffer *)NULL;
+	signal=(struct Signal *)NULL;
+	device=(struct Device *)NULL;
+	font=(XFontStruct *)NULL;
+	drawing_information=(struct Map_drawing_information *)NULL;
+	display=(Display *)NULL;
+	if (drawing&&sub_map&&(drawing->user_interface)&&
+		(display=drawing->user_interface->display)&&map&&(map->electrodes)&&
+		(device=*map->electrodes)&&(signal=device->signal)&&
+		(buffer=signal->buffer)&&(drawing_information=map->drawing_information))
+	{
+		return_code=1;
+		map_width=sub_map->width;
+		map_height=sub_map->height;
+		map_x_offset=sub_map->x_offset;
+		map_y_offset=sub_map->y_offset;
+		font=drawing_information->font;
+		/* write the title,using the sub_map->potential_time_index */							
+		title_x=map_width/2+map_x_offset;
+		title_y=0;
+		title_value=(float)((buffer->times)[sub_map->potential_time_index])*1000./
+			(buffer->frequency);
+		sprintf(title,"%.4g",title_value);
+		title_length=strlen(title);
+		XTextExtents(font,title,title_length,&direction,&ascent,&descent,
+			&bounds);
+		x_string= (title_x)+(bounds.lbearing-bounds.rbearing+1)/2;
+		y_string= (title_y)-descent-1;
+		confine_text_to_map(&x_string,&y_string,&bounds,ascent,descent,map_x_offset,
+			map_y_offset,map_width,map_height);
+		XPSDrawString(display,drawing->pixel_map,
+			(drawing_information->graphics_context).
+			highlighted_colour,
+#if defined (NO_ALIGNMENT)
+			x_string,y_string,title,title_length);
+#else
+		(title_x),(title_y),name,title_length);
+#endif 
+  }
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"write_map_title invalid arguments");
+		return_code=0;
+	}
+  LEAVE;
+	return(return_code);
+}/* write_map_title */
+
+static int set_electrode_2d_name_and_colour(struct Map *map,struct Drawing_2d *drawing,
+  GC *graphics_context,struct Device *electrode,char *name,float electrode_value,
+  char *electrode_drawn,float range_f)
+/*******************************************************************************
+LAST MODIFIED : 16 July 2001
+
+DESCRIPTION :  Set the colour (in <graphics_context>) and <name> of the electrode.
+Name must already have been allocated. It's only a short string, so pass it
+a static string of length 11.
+*******************************************************************************/
+{
+  enum Map_type map_type;
+  float f_value,max_f,min_f;
+  int number_of_spectrum_colours,return_code;
+  Display *display;
+  Pixel *spectrum_pixels;
+  struct Map_drawing_information *drawing_information;
+	
+  ENTER(set_electrode_2d_name_and_colour);
+  spectrum_pixels=(Pixel *)NULL;
+  if (map&&(drawing_information=map->drawing_information)&&graphics_context&&
+	  electrode&&electrode_drawn&&(display=drawing->user_interface->display))
+  {
+    return_code=1;
+    number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;
+    spectrum_pixels=drawing_information->spectrum_colours;
+		min_f=map->minimum_value;
+		max_f=map->maximum_value;
+		if (map->type)
+		{
+			map_type= *(map->type);
+		}
+		else
+		{
+			map_type=NO_MAP_FIELD;
+		}		
+		switch (map->electrodes_option)
+		{								
+			case HIDE_ELECTRODES:									
+			{
+        sprintf(name,"%s","");
+				if (electrode->highlight)
+				{
+					*graphics_context=(drawing_information->graphics_context).
+						highlighted_colour;
+				}
+				else
+				{
+					*graphics_context=(drawing_information->graphics_context).
+						unhighlighted_colour;
+				};
+			} break;										
+			case SHOW_ELECTRODE_NAMES:
+			case SHOW_CHANNEL_NUMBERS:
+			{	
+				/* they're not now always drawn */
+				if (SHOW_ELECTRODE_NAMES==map->electrodes_option)
+				{
+					sprintf(name,"%s",electrode->description->name);			
+				}
+				else
+				{
+					sprintf(name,"%d",electrode->channel->number);
+				}
+			} break;								
+			case SHOW_ELECTRODE_VALUES:
+			{											
+				f_value= electrode_value;
+				/* if not animation */
+				if (map->activation_front<0)
+				{
+					if (NO_MAP_FIELD==map_type)
+					{
+						sprintf(name,"%s","");
+					}
+					else
+					{
+						sprintf(name,"%.4g",f_value);						
+					}
+				}
+				else
+				{
+					 sprintf(name,"%s","");
+				}
+
+			} break;								
+			default:
+			{
+				*electrode_drawn=0;
+				sprintf(name,"%s","");
+
+			} break;
+		} /* switch (map->electrodes_option) */
+		/* colour with data values*/
+		if (map->colour_electrodes_with_signal)
+		{
+			/* electrode_drawn and electrode_value already calculated */
+			f_value= electrode_value;
+			switch (map_type)
+			{
+				case MULTIPLE_ACTIVATION:
+				{
+					if ((f_value<min_f)||(f_value>max_f))
+					{
+						*electrode_drawn=0;
+					}
+				} break;
+			}
+			if (*electrode_drawn)
+			{
+				/* if not animation */
+				if (map->activation_front<0)
+				{
+					if (electrode->highlight)
+					{
+						*graphics_context=(drawing_information->graphics_context).
+						highlighted_colour;
+					}
+					else
+					{
+						if ((HIDE_COLOUR==map->colour_option)&&
+							(SHOW_CONTOURS==map->contours_option))
+						{
+							*graphics_context=(drawing_information->graphics_context).
+								unhighlighted_colour;
+						}
+						else
+						{
+							*graphics_context=(drawing_information->graphics_context).spectrum;
+							if (f_value<=min_f)
+							{
+								XSetForeground(display,*graphics_context,spectrum_pixels[0]);
+							}
+							else
+							{
+								if (f_value>=max_f)
+								{
+									XSetForeground(display,*graphics_context,spectrum_pixels
+										[number_of_spectrum_colours-1]);
+								}
+								else
+								{
+									XSetForeground(display,*graphics_context,spectrum_pixels[(int)
+										((f_value-min_f)*(float)(number_of_spectrum_colours-1)/
+										range_f)]);
+								}
+							}
+						}
+					}
+				}
+				else
+				{
+					sprintf(name,"%s","");
+					*graphics_context=(drawing_information->graphics_context).spectrum;
+					if (f_value<=min_f)
+					{
+						XSetForeground(display,*graphics_context,spectrum_pixels[0]);
+					}
+					else
+					{
+						if (f_value>=max_f)
+						{
+							XSetForeground(display,*graphics_context,spectrum_pixels
+							[number_of_spectrum_colours-1]);
+						}
+						else
+						{
+							XSetForeground(display,*graphics_context,spectrum_pixels[(int)
+								((f_value-min_f)*(float)(number_of_spectrum_colours-1)/range_f)]);
+						}
+					}
+				}
+			}
+		} /* if (map->colour_electrodes_with_signal) */
+		else
+		{												
+			if (electrode->highlight)
+			{
+				*graphics_context=(drawing_information->graphics_context).highlighted_colour;
+			}
+			else
+			{
+				*graphics_context=(drawing_information->graphics_context).unhighlighted_colour;
+			}
+		}
+	}
+	else
+  {
+    display_message(ERROR_MESSAGE,"set_electrode_2d_name_and_colour");
+    return_code=0;
+  }
+	LEAVE;
+	return(return_code);
+}/* set_electrode_2d_name_and_colour */
+
+static int draw_2d_electrode(struct Map *map,struct sub_Map *sub_map,
+	struct Drawing_2d *drawing,int screen_x,int screen_y,
+	GC *graphics_context,char *name,struct Device *electrode)
+/*******************************************************************************
+LAST MODIFIED : 10 September 2001
+
+DESCRIPTION :  Draw the electrode in 2D, and write it's name.
+*******************************************************************************/
+{
+  Display *display;
+  enum Electrodes_marker_type electrodes_marker_type;
+  int ascent,descent,direction,map_x_offset,map_y_offset,map_width,map_height,
+		marker_size,name_length,return_code,x_string,
+		y_string;
+  struct Map_drawing_information *drawing_information;
+  XFontStruct *font;
+	XCharStruct bounds;
+
+  ENTER(draw_2d_electrode);
+  display=(Display *)NULL;
+  drawing_information=(struct Map_drawing_information *)NULL;
+  if (map&&sub_map&&drawing&&(drawing->user_interface)&&
+		(display=drawing->user_interface->display)
+		 &&(drawing->pixel_map)&&electrode&&(drawing_information=map->drawing_information))
+  { 
+		return_code=1;
+	  map_x_offset=sub_map->x_offset;
+		map_y_offset=sub_map->y_offset;
+		map_width=sub_map->width;
+		map_height=sub_map->height;
+		font=drawing_information->font;	
+		electrodes_marker_type=map->electrodes_marker_type;
+    marker_size=map->electrodes_marker_size;
+	  if (marker_size<1)
+    {
+	    marker_size=1;
+    }									
+	  switch (electrodes_marker_type)
+		{
+			case CIRCLE_ELECTRODE_MARKER:
+			{
+				/* draw circle */
+				XPSFillArc(display,drawing->pixel_map,*graphics_context,
+					screen_x-marker_size,screen_y-marker_size,
+					2*marker_size+1,2*marker_size+1,(int)0,(int)(360*64));
+			} break;
+			case PLUS_ELECTRODE_MARKER:
+			{
+				/* draw plus */
+				XPSDrawLine(display,drawing->pixel_map,*graphics_context,
+					screen_x-marker_size,screen_y,screen_x+marker_size,
+					screen_y);
+				XPSDrawLine(display,drawing->pixel_map,*graphics_context,
+					screen_x,screen_y-marker_size,screen_x,
+					screen_y+marker_size);
+			} break;
+			case SQUARE_ELECTRODE_MARKER:
+			{
+				/* draw square */
+				XPSFillRectangle(display,drawing->pixel_map,
+					*graphics_context,screen_x-marker_size,
+					screen_y-marker_size,2*marker_size+1,2*marker_size+1);
+			} break;		
+			case HIDE_ELECTRODE_MARKER:
+			{
+				/* no name if hiding electrodes */
+				sprintf(name,"%s","");
+			} break;											
+		}
+		if (name)
+		{
+			/* write name */
+			name_length=strlen(name);
+#if defined (NO_ALIGNMENT)
+			XTextExtents(font,name,name_length,&direction,&ascent,
+				&descent,&bounds);
+			x_string= (screen_x)+(bounds.lbearing-bounds.rbearing+1)/2;
+			y_string= (screen_y)-descent-1;
+			/* make sure that the string doesn't extend outside the
+				 window */
+			confine_text_to_map(&x_string,&y_string,&bounds,ascent,
+				descent,map_x_offset,map_y_offset,map_width,map_height);
+#endif
+			if (electrode->highlight)
+			{
+				XPSDrawString(display,drawing->pixel_map,
+					(drawing_information->graphics_context).
+					highlighted_colour,
+#if defined (NO_ALIGNMENT)
+					x_string,y_string,name,name_length);
+#else
+				(screen_x),(screen_y)-marker_size,name,name_length);
+#endif
+		  }
+		  else
+			{
+				XPSDrawString(display,drawing->pixel_map,
+					(drawing_information->graphics_context).
+					node_marker_colour,
+#if defined (NO_ALIGNMENT)
+					x_string,y_string,name,name_length);
+#else
+				(screen_x),(screen_y)-marker_size,name,name_length);
+#endif
+	    }								
+    }
+  }
+  else
+  {	
+    display_message(ERROR_MESSAGE,"draw_2d_electrode invalid arguments");
+    return_code=0;
+  }
+  LEAVE;
+  return(return_code);
+}/* draw_2d_electrode */
+
+static int draw_2d_show_map(struct Map *map,struct sub_Map *sub_map,
+	int recalculate,struct Drawing_2d *drawing)
+/*******************************************************************************
+LAST MODIFIED : 10 September 2001
+
+DESCRIPTION :
+Actually draw the map from the calculated data. 
+*******************************************************************************/
+{
+	char draw_boundary,draw_contours,*electrode_drawn,name[11];
+	Display *display;
+	enum Map_type map_type;
+	float *electrode_value,max_f,min_f,*pixel_value,range_f;
+	GC graphics_context;
+	int map_width,map_height,map_x_offset,map_y_offset,number_of_electrodes,
+		return_code,screen_region_height,screen_region_width,*screen_x,*screen_y;
+	Pixel *spectrum_pixels;
+	struct Device	**electrode;
+	struct Map_drawing_information *drawing_information;
+	struct Map_frame *frame;
+	XImage *frame_image;
+
+	ENTER(draw_2d_show_map);
+	spectrum_pixels=(Pixel *)NULL;
+	frame=(struct Map_frame *)NULL;
+	frame_image=(XImage *)NULL;
+	pixel_value=(float *)NULL;
+	display=(Display *)NULL;
+	screen_x=(int *)NULL;
+	screen_y=(int *)NULL;
+	electrode=(struct Device **)NULL;
+	electrode_drawn=(char *)NULL;
+	electrode_value=(float *)NULL;
+	if(map&&sub_map&&drawing&&(drawing_information=map->drawing_information)&&
+		(drawing->user_interface))
+	{
+		return_code=1;
+    map_width=sub_map->width;
+    map_height=sub_map->height;
+	  map_x_offset=sub_map->x_offset;
+    map_y_offset=sub_map->y_offset;
+		screen_region_width=(map_width)/map->number_of_region_columns;
+		screen_region_height=(map_height)/map->number_of_region_rows;
+		map_type=*(map->type);
+		spectrum_pixels=drawing_information->spectrum_colours;
+		number_of_electrodes=map->number_of_electrodes;
+		display=drawing->user_interface->display;
+		if (NO_MAP_FIELD!=map_type)
+		{						
+			if (NO_INTERPOLATION!=map->interpolation_type)
+			{
+				if (recalculate)
+				{
+					draw_2d_fill_in_image(map,map_height,map_width,spectrum_pixels);
+				}								
+				frame=(map->frames)+(map->frame_number);
+				if (frame_image=frame->image)
+				{											
+					update_colour_map_unemap(map,drawing);									
+					/*!!jw this is a problem! for BLUE_WHITE_RED_SPECTRUM need to do*/
+					/* (something in) update_colour_map_unemap again, as */
+					/* fix_minimum, fix_maximum cause problems */
+					if (BLUE_WHITE_RED_SPECTRUM == Spectrum_get_simple_type(
+						drawing_information->spectrum))
+					{
+						update_colour_map_unemap(map,drawing);
+					}/*!!jw*/
+
+					if ((CONSTANT_THICKNESS==map->contour_thickness)&&
+						(pixel_value=frame->pixel_values))
+					{
+						if (SHOW_COLOUR==map->colour_option)
+						{																				
+							XPSPutImage(display,drawing->pixel_map,
+								(drawing_information->graphics_context).copy,
+								frame_image,0,0,map_x_offset,map_y_offset,map_width,map_height);
+							draw_boundary=0;
+						}
+						else
+						{
+							if (map->print)
+							{
+								draw_boundary=1;
+							}
+							else
+							{									
+								XPSPutImage(display,drawing->pixel_map,
+									(drawing_information->graphics_context).copy,
+									frame_image,0,0,map_x_offset,map_y_offset,map_width,map_height);
+								draw_boundary=0;
+							}
+						}
+						if ((SHOW_CONTOURS==map->contours_option)&&
+							(map->contour_minimum<map->contour_maximum)&&
+							(1<map->number_of_contours))
+						{
+							draw_contours=1;
+						}
+						else
+						{
+							draw_contours=0;
+						}
+						if (draw_contours||draw_boundary)
+						{							
+							min_f=frame->minimum;
+							max_f=frame->maximum;
+							draw_2d_constant_thickness_contours(map,sub_map,drawing,frame,
+								pixel_value,&min_f,&max_f,draw_boundary);
+						}
+					}/* if ((CONSTANT_THICKNESS==map->contour_thickness)&&*/
+					else
+					{										
+						XPSPutImage(display,drawing->pixel_map,
+							(drawing_information->graphics_context).copy,
+							frame_image,0,0,map_x_offset,map_y_offset,map_width,map_height);
+					}
+				}/* if (frame_image=frame->image) */
+				else
+				{
+					display_message(ERROR_MESSAGE,"draw_2d_show_map.  Missing image");
+				}
+			}
+			else /* if (NO_INTERPOLATION!=map->interpolation_type) */
+			{
+				if (1<recalculate)
+				{							
+					set_map_2d_no_interpolation_min_max(map,sub_map);
+				}								
+				update_colour_map_unemap(map,drawing);								
+			} /* if (NO_INTERPOLATION!=map->interpolation_type) */
+		}/* if (NO_MAP_FIELD!=map_type) */
+		/* write contour values */
+		if ((HIDE_COLOUR==map->colour_option)&&
+			(SHOW_CONTOURS==map->contours_option))
+		{
+			draw_2d_contour_values(map,sub_map,drawing);
+		}
+		/* draw the fibres */
+		if (HIDE_FIBRES!=map->fibres_option)
+		{
+			draw_2d_fibres(map,sub_map,drawing,screen_region_width,
+				screen_region_height);
+		}
+		/* draw the landmarks */
+		if (SHOW_LANDMARKS==map->landmarks_option)
+		{
+			draw_2d_landmarks(map,sub_map,drawing);
+		}
+		/* draw the extrema */
+		if (SHOW_EXTREMA==map->extrema_option)
+		{
+			draw_2d_extrema(map,sub_map,drawing);
+		}									
+		if (map_type==POTENTIAL)
+		{							
+			write_map_title(map,sub_map,drawing);
+		}
+		/* for each electrode (possibly) draw a marker at its position and its name/ */
+		/* value/channel  above*/
+#if !defined (NO_ALIGNMENT)
+		SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
+		SET_VERTICAL_ALIGNMENT(BOTTOM_ALIGNMENT);
+#endif /* !defined (NO_ALIGNMENT) */
+		electrode=map->electrodes;
+		screen_x=sub_map->electrode_x;
+		screen_y=sub_map->electrode_y;
+		electrode_drawn=map->electrode_drawn;
+		electrode_value=sub_map->electrode_value;
+		min_f=map->minimum_value;
+		max_f=map->maximum_value;
+		if ((range_f=max_f-min_f)<=0)
+		{
+			range_f=1;
+		}
+		for (;number_of_electrodes>0;number_of_electrodes--)
+		{
+			set_electrode_2d_name_and_colour(map,drawing,&graphics_context,
+				*electrode,name,*electrode_value,electrode_drawn,range_f);
+			if (*electrode_drawn)
+			{									
+				*screen_x+=map_x_offset;
+				*screen_y+=map_y_offset;
+				draw_2d_electrode(map,sub_map,drawing,*screen_x,*screen_y,
+					&graphics_context,name,*electrode);
+			}
+			electrode++;
+			screen_x++;
+			screen_y++;
+			electrode_drawn++;
+			electrode_value++;
+		}/* for (;number_of_electrodes>0;number_of_electrodes--) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"draw_2d_show_map Invalid arguments");
+		return_code=0;
+	}	
+	LEAVE;
+	return(return_code);
+}/* draw_2d_show_map */
 
 static int draw_2d_perform_projection_update_ranges(struct Map *map,
 	struct sub_Map *sub_map,struct Device_description *description,
@@ -9816,9 +10014,10 @@ Perform projection and update ranges for 2d map
 }/* draw_2d_perform_projection_update_ranges */
 
 static int draw_2d_calculate_electrode_value(struct Map *map,
-	char *electrode_drawn,struct Device	**electrode,float *f_value)
+	struct sub_Map *sub_map,char *electrode_drawn,struct Device	**electrode,
+	float *f_value)
 /*******************************************************************************
-LAST MODIFIED : 23 July 2001
+LAST MODIFIED : 10 September 2001
 
 DESCRIPTION :
 Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
@@ -9827,10 +10026,11 @@ Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
 	char undecided_accepted;
 	double integral;
 	enum Map_type map_type;
-	float a,*float_value,frame_time,frame_time_freq,proportion;
+	float a,*float_value,frame_end_time,frame_start_time,frame_time,
+		frame_time_freq,proportion;
 	int after,before,datum,end_search_interval,event_number,frame_number,
-		found,i,middle,number_of_frames,number_of_signals,return_code,
-		start_search_interval,*times;
+		found,i,middle,number_of_frames,number_of_signals,potential_time_index,
+		return_code,start_search_interval,*times;
 	short int	*short_int_value;
 	struct Event *event;
 	struct Signal *signal;
@@ -9843,8 +10043,11 @@ Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
 	times=(int *)NULL;
 	short_int_value=(short int *)NULL;
 	float_value=(float *)NULL;
-	if (electrode_drawn)
+	if (map&&sub_map&&electrode_drawn)
 	{
+		potential_time_index=sub_map->potential_time_index;
+		frame_start_time=sub_map->frame_start_time;
+		frame_end_time=sub_map->frame_end_time;
 		return_code=1;
 		if ((map->type)&&(NO_MAP_FIELD!=(map_type= *(map->type)))&&(map->datum)&&
 			(map->event_number)&&(map->end_search_interval)&&
@@ -9978,7 +10181,7 @@ Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
 								case SHORT_INT_VALUE:
 								{
 									*f_value=((float)((buffer->signals.
-										short_int_values)[(*(map->potential_time))*
+										short_int_values)[(potential_time_index)*
 											(buffer->number_of_signals)+(signal->index)])-
 										((*electrode)->channel->offset))*
 										((*electrode)->channel->gain);
@@ -9986,7 +10189,7 @@ Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
 								case FLOAT_VALUE:
 								{
 									*f_value=((buffer->signals.float_values)[
-										(*(map->potential_time))*
+										(potential_time_index)*
 										(buffer->number_of_signals)+(signal->index)]-
 										((*electrode)->channel->offset))*
 										((*electrode)->channel->gain);
@@ -10001,12 +10204,12 @@ Calculate electrode value for 2d <map>'s <electrode>, returns in <f_value>
 						{
 							frame_number=map->frame_number;
 							frame_time=((float)(number_of_frames-frame_number-1)*
-								(map->frame_start_time)+(float)frame_number*
-								(map->frame_end_time))/(float)(number_of_frames-1);
+								(frame_start_time)+(float)frame_number*
+								(frame_end_time))/(float)(number_of_frames-1);
 						}
 						else
 						{
-							frame_time=map->frame_start_time;
+							frame_time=frame_start_time;
 						}
 						if ((signal=(*electrode)->signal)&&
 							((ACCEPTED==signal->status)||(undecided_accepted&&
@@ -10709,10 +10912,9 @@ sets <sub_map>'s min_x, max_x min_y max_y
 
 static int draw_2d_calc_map_to_screen_transform(struct Map *map,
 	struct sub_Map *sub_map,Display *display,int screen_region_width,
-	int screen_region_height,int x_border,int y_border,int ascent,int descent,
-	int number_of_rows,int number_of_columns,int map_height,int map_width)
+	int screen_region_height,int x_border,int y_border,int ascent,int descent)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2001
+LAST MODIFIED : 10 September 2001
 
 DESCRIPTION : 
 Calculate the screen to map transform for the 2d Map.
@@ -10720,12 +10922,15 @@ Calculate the screen to map transform for the 2d Map.
 {	
 	float *min_x,*max_x,*min_y,*max_y,*stretch_x,*stretch_y,
 		pixel_aspect_ratio;	
-	int i,number_of_drawn_regions,return_code,*start_x,*start_y;
+	int i,map_height,map_width,number_of_drawn_regions,return_code,*start_x,
+		*start_y;
 
 	ENTER(draw_2d_calc_map_to_screen_transform);
 	if(map&&display&&sub_map)
 	{
 		return_code=1;
+		map_height=sub_map->height;
+		map_width=sub_map->width;
 		number_of_drawn_regions=map->number_of_drawn_regions;
 		min_x=sub_map->min_x;
 		max_x=sub_map->max_x;
@@ -10792,9 +10997,10 @@ Calculate the screen to map transform for the 2d Map.
 						(2*y_border+ascent+descent+1)))/(max_y[i]-min_y[i]);
 				}
 			}
-			start_x[i] += ((i/number_of_rows)*map_width)/
-				number_of_columns;
-			start_y[i] += ((i%number_of_rows)*map_height)/number_of_rows;
+			start_x[i] += ((i/map->number_of_region_rows)*map_width)/
+				map->number_of_region_columns;
+			start_y[i] += ((i%map->number_of_region_rows)*map_height)/
+				map->number_of_region_rows;
 		}/* for (i=0;i<number_of_drawn_regions;i++) */
 	}
 	else
@@ -10807,215 +11013,9 @@ Calculate the screen to map transform for the 2d Map.
 	return(return_code); 
 }/* draw_2d_calc_map_to_screen_transform */
 
-static int draw_2d_show_map(struct Map *map,struct sub_Map *sub_map,
-	int recalculate,struct Drawing_2d *drawing,int map_width,int map_height,
-	int map_x_offset,int map_y_offset,int contour_x_spacing, int contour_y_spacing,
-	int number_of_rows,int number_of_columns)
-/*******************************************************************************
-LAST MODIFIED : 26 July 2001
-
-DESCRIPTION :
-Actually draw the map from the calculated data. 
-*******************************************************************************/
-{
-	char draw_boundary,draw_contours,*electrode_drawn,name[11];
-	Display *display;
-	enum Map_type map_type;
-	float *electrode_value,max_f,min_f,*pixel_value,range_f;
-	GC graphics_context;
-	int number_of_electrodes,return_code,screen_region_height,
-		screen_region_width,*screen_x,*screen_y;
-	Pixel *spectrum_pixels;
-	struct Device	**electrode;
-	struct Map_drawing_information *drawing_information;
-	struct Map_frame *frame;
-	XImage *frame_image;
-
-	ENTER(draw_2d_show_map);
-	spectrum_pixels=(Pixel *)NULL;
-	frame=(struct Map_frame *)NULL;
-	frame_image=(XImage *)NULL;
-	pixel_value=(float *)NULL;
-	display=(Display *)NULL;
-	screen_x=(int *)NULL;
-	screen_y=(int *)NULL;
-	electrode=(struct Device **)NULL;
-	electrode_drawn=(char *)NULL;
-	electrode_value=(float *)NULL;
-	if(map&&sub_map&&drawing&&(drawing_information=map->drawing_information)&&
-		(drawing->user_interface))
-	{
-		return_code=1;
-		screen_region_width=(map_width)/number_of_columns;
-		screen_region_height=(map_height)/number_of_rows;
-		map_type=*(map->type);
-		spectrum_pixels=drawing_information->spectrum_colours;
-		number_of_electrodes=map->number_of_electrodes;
-		display=drawing->user_interface->display;
-		if (NO_MAP_FIELD!=map_type)
-		{						
-			if (NO_INTERPOLATION!=map->interpolation_type)
-			{
-				if (recalculate)
-				{
-					draw_2d_fill_in_image(map,map_height,map_width,
-						contour_x_spacing,contour_y_spacing,spectrum_pixels);
-				}								
-				frame=(map->frames)+(map->frame_number);
-				if (frame_image=frame->image)
-				{											
-					update_colour_map_unemap(map,drawing);									
-					/*!!jw this is a problem! for BLUE_WHITE_RED_SPECTRUM need to do*/
-					/* (something in) update_colour_map_unemap again, as */
-					/* fix_minimum, fix_maximum cause problems */
-					if (BLUE_WHITE_RED_SPECTRUM == Spectrum_get_simple_type(
-						drawing_information->spectrum))
-					{
-						update_colour_map_unemap(map,drawing);
-					}/*!!jw*/
-
-					if ((CONSTANT_THICKNESS==map->contour_thickness)&&
-						(pixel_value=frame->pixel_values))
-					{
-						if (SHOW_COLOUR==map->colour_option)
-						{																				
-							XPSPutImage(display,drawing->pixel_map,
-								(drawing_information->graphics_context).copy,
-								frame_image,0,0,map_x_offset,map_y_offset,map_width,map_height);
-							draw_boundary=0;
-						}
-						else
-						{
-							if (map->print)
-							{
-								draw_boundary=1;
-							}
-							else
-							{									
-								XPSPutImage(display,drawing->pixel_map,
-									(drawing_information->graphics_context).copy,
-									frame_image,0,0,map_x_offset,map_y_offset,map_width,map_height);
-								draw_boundary=0;
-							}
-						}
-						if ((SHOW_CONTOURS==map->contours_option)&&
-							(map->contour_minimum<map->contour_maximum)&&
-							(1<map->number_of_contours))
-						{
-							draw_contours=1;
-						}
-						else
-						{
-							draw_contours=0;
-						}
-						if (draw_contours||draw_boundary)
-						{							
-							min_f=frame->minimum;
-							max_f=frame->maximum;
-							draw_2d_constant_thickness_contours(map,drawing,frame,
-								map_x_offset,map_y_offset,map_width,map_height,
-								pixel_value,&min_f,&max_f,draw_boundary);
-						}
-					}/* if ((CONSTANT_THICKNESS==map->contour_thickness)&&*/
-					else
-					{										
-						XPSPutImage(display,drawing->pixel_map,
-							(drawing_information->graphics_context).copy,
-							frame_image,0,0,map_x_offset,map_y_offset,map_width,map_height);
-					}
-				}/* if (frame_image=frame->image) */
-				else
-				{
-					display_message(ERROR_MESSAGE,"draw_2d_show_map.  Missing image");
-				}
-			}
-			else /* if (NO_INTERPOLATION!=map->interpolation_type) */
-			{
-				if (1<recalculate)
-				{							
-					set_map_2d_no_interpolation_min_max(map,sub_map);
-				}								
-				update_colour_map_unemap(map,drawing);								
-			} /* if (NO_INTERPOLATION!=map->interpolation_type) */
-		}/* if (NO_MAP_FIELD!=map_type) */
-		/* write contour values */
-		if ((HIDE_COLOUR==map->colour_option)&&
-			(SHOW_CONTOURS==map->contours_option))
-		{
-			draw_2d_contour_values(map,drawing,map_x_offset,map_y_offset);
-		}
-		/* draw the fibres */
-		if (HIDE_FIBRES!=map->fibres_option)
-		{
-			draw_2d_fibres(map,sub_map,drawing,map_x_offset,map_y_offset,
-				number_of_rows,number_of_columns,map_width,
-				map_height,screen_region_width,screen_region_height);
-		}
-		/* draw the landmarks */
-		if (SHOW_LANDMARKS==map->landmarks_option)
-		{
-			draw_2d_landmarks(map,sub_map,drawing,map_x_offset,map_y_offset);
-		}
-		/* draw the extrema */
-		if (SHOW_EXTREMA==map->extrema_option)
-		{
-			draw_2d_extrema(map,drawing,map_x_offset,map_y_offset,map_width,
-				map_height);
-		}									
-		if (map_type==POTENTIAL)
-		{							
-			write_map_title(map,map_width,map_height,map_x_offset,
-				map_y_offset,drawing);
-		}
-		/* for each electrode (possibly) draw a marker at its position and its name/ */
-		/* value/channel  above*/
-#if !defined (NO_ALIGNMENT)
-		SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
-		SET_VERTICAL_ALIGNMENT(BOTTOM_ALIGNMENT);
-#endif /* !defined (NO_ALIGNMENT) */
-		electrode=map->electrodes;
-		screen_x=sub_map->electrode_x;
-		screen_y=sub_map->electrode_y;
-		electrode_drawn=map->electrode_drawn;
-		electrode_value=sub_map->electrode_value;
-		min_f=map->minimum_value;
-		max_f=map->maximum_value;
-		if ((range_f=max_f-min_f)<=0)
-		{
-			range_f=1;
-		}
-		for (;number_of_electrodes>0;number_of_electrodes--)
-		{
-			set_electrode_2d_name_and_colour(map,drawing,&graphics_context,
-				*electrode,name,*electrode_value,electrode_drawn,range_f);
-			if (*electrode_drawn)
-			{									
-				*screen_x+=map_x_offset;
-				*screen_y+=map_y_offset;
-				draw_2d_electrode(map,drawing,*screen_x,*screen_y,&graphics_context,
-					name,*electrode,map_x_offset,map_y_offset,map_width,map_height);
-			}
-			electrode++;
-			screen_x++;
-			screen_y++;
-			electrode_drawn++;
-			electrode_value++;
-		}/* for (;number_of_electrodes>0;number_of_electrodes--) */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"draw_2d_show_map Invalid arguments");
-		return_code=0;
-	}	
-	LEAVE;
-	return(return_code);
-}/* draw_2d_show_map */
-
 static int draw_2d_construct_image_map(struct Map *map,struct sub_Map *sub_map,
-	struct Drawing_2d *drawing,int recalculate,int *contour_x_spacing,
-	int *contour_y_spacing,int map_width,int map_height,char undecided_accepted,
-	int number_of_rows,int number_of_columns,float pi_over_2,float pi,float two_pi,
+	struct Drawing_2d *drawing,int recalculate,
+	char undecided_accepted,float pi_over_2,float pi,float two_pi,
 	int screen_region_height,int screen_region_width)
 /*******************************************************************************
 LAST MODIFIED : 27 July 2001
@@ -11029,12 +11029,13 @@ Construct a colour map image for colour map or contours or  values  in the
 		valid_u_and_v;
 	Display *display;	
 	enum Map_type map_type;
-	float background_pixel_value,boundary_pixel_value,f_approx,frame_time,max_f,
-		min_f,*min_x,*min_y,*pixel_value,*stretch_x,*stretch_y,u,v,*x_mesh,*y_mesh,
-		x_screen,x_screen_left,x_screen_step,y_screen,y_screen_top,y_screen_step;
+	float background_pixel_value,boundary_pixel_value,f_approx,frame_end_time,
+		frame_start_time,frame_time,max_f,min_f,*min_x,*min_y,*pixel_value,
+		*stretch_x,*stretch_y,u,v,*x_mesh,*y_mesh,x_screen,x_screen_left,
+		x_screen_step,y_screen,y_screen_top,y_screen_step;
 	int bit_map_pad,bit_map_unit,column,contour_areas_in_x,contour_areas_in_y,
-		*draw_region_number,frame_number,i,j,maximum_x,maximum_y,minimum_x,minimum_y,
-		number_of_contour_areas,number_of_frames,number_of_regions,
+		*draw_region_number,frame_number,i,j,map_width,map_height,maximum_x,maximum_y,
+		minimum_x,minimum_y,number_of_contour_areas,number_of_frames,number_of_regions,
 		number_of_mesh_rows,number_of_mesh_columns,number_of_spectrum_colours,
 		pixel_left,pixel_top,region_number,return_code,row,scan_line_bytes,*start_x,
 		*start_y,temp_region_number,x_pixel,y_pixel;
@@ -11082,7 +11083,11 @@ Construct a colour map image for colour map or contours or  values  in the
 	start_y=(int *)NULL;
 	if(map&&sub_map&&drawing&&(drawing_information=map->drawing_information))
 	{
-		return_code=1;
+		return_code=1;		
+		map_width=sub_map->width;
+		map_height=sub_map->height;
+		frame_start_time=sub_map->frame_start_time;
+		frame_end_time=sub_map->frame_end_time;
 		draw_region_number=map->draw_region_number;
 		rig= *(map->rig_pointer);
 		number_of_regions=rig->number_of_regions;
@@ -11109,40 +11114,40 @@ Construct a colour map image for colour map or contours or  values  in the
 			busy_cursor_on((Widget)NULL,
 				drawing_information->user_interface);
 			/* reallocate memory for frames */
-			*contour_x_spacing=
+			map->contour_x_spacing=
 				drawing_information->pixels_between_contour_values;
-			contour_areas_in_x=map_width/(*contour_x_spacing);
+			contour_areas_in_x=map_width/(map->contour_x_spacing);
 			if (contour_areas_in_x<1)
 			{
 				contour_areas_in_x=1;
 			}
-			*contour_x_spacing=map_width/contour_areas_in_x;
-			if (*contour_x_spacing*contour_areas_in_x<map_width)
+			map->contour_x_spacing=map_width/contour_areas_in_x;
+			if (map->contour_x_spacing*contour_areas_in_x<map_width)
 			{
-				if ((*contour_x_spacing+1)*(contour_areas_in_x-1)<
-					(*contour_x_spacing-1)*(contour_areas_in_x+1))
+				if ((map->contour_x_spacing+1)*(contour_areas_in_x-1)<
+					(map->contour_x_spacing-1)*(contour_areas_in_x+1))
 				{
-					*contour_x_spacing++;
+					map->contour_x_spacing++;
 				}
 				else
 				{
 					contour_areas_in_x++;
 				}
 			}
-			*contour_y_spacing=
+			map->contour_y_spacing=
 				drawing_information->pixels_between_contour_values;
-			contour_areas_in_y=map_height/(*contour_y_spacing);
+			contour_areas_in_y=map_height/(map->contour_y_spacing);
 			if (contour_areas_in_y<1)
 			{
 				contour_areas_in_y=1;
 			}
-			*contour_y_spacing=map_height/contour_areas_in_y;
-			if ((*contour_y_spacing)*contour_areas_in_y<map_height)
+			map->contour_y_spacing=map_height/contour_areas_in_y;
+			if ((map->contour_y_spacing)*contour_areas_in_y<map_height)
 			{
-				if ((*contour_y_spacing+1)*(contour_areas_in_y-1)<
-					(*contour_y_spacing-1)*(contour_areas_in_y+1))
+				if ((map->contour_y_spacing+1)*(contour_areas_in_y-1)<
+					(map->contour_y_spacing-1)*(contour_areas_in_y+1))
 				{
-					*contour_y_spacing++;
+					map->contour_y_spacing++;
 				}
 				else
 				{
@@ -11223,7 +11228,7 @@ Construct a colour map image for colour map or contours or  values  in the
 								DEALLOCATE(frame->contour_y);
 								DEALLOCATE(frame->pixel_values);
 								display_message(ERROR_MESSAGE,
-									"draw_map_2d.  Insufficient memory for frame image");
+									"draw_2d_construct_image_map.  Insufficient memory for frame image");
 								return_code=0;
 							}
 						}
@@ -11243,7 +11248,7 @@ Construct a colour map image for colour map or contours or  values  in the
 								DEALLOCATE(frame->pixel_values);
 							}
 							display_message(ERROR_MESSAGE,
-								"draw_map_2d.  Insufficient memory for frame pixel values");
+								"draw_2d_construct_image_map.  Insufficient memory for frame pixel values");
 							return_code=0;
 						}
 					}
@@ -11271,7 +11276,7 @@ Construct a colour map image for colour map or contours or  values  in the
 							DEALLOCATE(frame->contour_y);
 						}
 						display_message(ERROR_MESSAGE,
-							"draw_map_2d.  Insufficient memory for frame contour values");
+							"draw_2d_construct_image_map.  Insufficient memory for frame contour values");
 						return_code=0;
 					}
 				}
@@ -11314,13 +11319,13 @@ Construct a colour map image for colour map or contours or  values  in the
 							{
 								frame_time=
 									((float)(number_of_frames-frame_number-1)*
-										(map->frame_start_time)+(float)frame_number*
-										(map->frame_end_time))/
+										(frame_start_time)+(float)frame_number*
+										(frame_end_time))/
 									(float)(number_of_frames-1);
 							}
 							else
 							{
-								frame_time=map->frame_start_time;
+								frame_time=frame_start_time;
 							}
 							pixel_value=frame->pixel_values;
 							/* clear the image */
@@ -11366,10 +11371,10 @@ Construct a colour map image for colour map or contours or  values  in the
 										y_mesh=function->y_mesh;
 										x_mesh=function->x_mesh;
 										/* calculate pixel values */
-										pixel_left=((region_number/number_of_rows)*
-											map_width)/number_of_columns;
-										pixel_top=((region_number%number_of_rows)*
-											map_height)/number_of_rows;
+										pixel_left=((region_number/map->number_of_region_rows)*
+											map_width)/map->number_of_region_columns;
+										pixel_top=((region_number%map->number_of_region_rows)*
+											map_height)/map->number_of_region_rows;
 										x_screen_step=1/stretch_x[region_number];
 										y_screen_step= -1/stretch_y[region_number];
 										x_screen_left=min_x[region_number]+
@@ -11388,7 +11393,7 @@ Construct a colour map image for colour map or contours or  values  in the
 											map_width*map_height)))
 										{	
 											display_message(ERROR_MESSAGE,
-												"draw_map_2d. ALLOCATE just_map_pixel_value failed");
+												"draw_2d_construct_image_map. ALLOCATE just_map_pixel_value failed");
 											return_code=0;
 										}														
 #endif /* defined(GOURAUD_FROM_PIXEL_VALUE) */
@@ -11505,7 +11510,7 @@ Construct a colour map image for colour map or contours or  values  in the
 									(boundary_pixel_value<=max_f))
 								{
 									display_message(ERROR_MESSAGE,
-										"draw_map_2d.  Problems with background/boundary");
+										"draw_2d_construct_image_map.  Problems with background/boundary");
 								}
 							}/* if (max_f<min_f) */
 							draw_2d_map_boundary(background_map_boundary_base,
@@ -11520,7 +11525,7 @@ Construct a colour map image for colour map or contours or  values  in the
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"draw_map_2d.  Insufficient memory for background_map_boundary_base");
+							"draw_2d_construct_image_map. Insufficient memory for background_map_boundary_base");
 					}
 				}/*	if (recalculate>1) */	
 			} /* if (return_code) */
@@ -11538,8 +11543,9 @@ Construct a colour map image for colour map or contours or  values  in the
 	return(return_code);
 }/* draw_2d_construct_image_map*/
 
-int draw_map_2d(struct Map *map,int recalculate,struct Drawing_2d *drawing,
-	int map_width,int map_height, int map_x_offset,int map_y_offset)
+static int draw_2d_make_map(struct Map *map,int recalculate,struct Drawing_2d *drawing,
+	int map_width,int map_height, int map_x_offset,int map_y_offset,
+	int potential_time_index,float frame_start_time,float frame_end_time)
 /*******************************************************************************
 LAST MODIFIED : 26 July 2001
 DESCRIPTION :
@@ -11573,12 +11579,10 @@ comparison with 3D maps.
 	float *x_item=(float *)NULL;
 	float *y=(float *)NULL;
 	float *y_item=(float *)NULL;
-	int ascent,contour_x_spacing,contour_y_spacing,descent,direction,
-		*draw_region_number,i,number_of_devices,number_of_columns,
-		number_of_drawn_regions,number_of_electrodes,	number_of_frames,
-		number_of_regions,number_of_rows,region_number,return_code,
-		screen_region_height,screen_region_width,x_border,x_name_border,
-		y_border,y_name_border;
+	int ascent,descent,direction,*draw_region_number,i,number_of_devices,
+		number_of_drawn_regions,number_of_electrodes,number_of_frames,
+		number_of_regions,region_number,return_code,screen_region_height,
+		screen_region_width,x_border,x_name_border,y_border,y_name_border;
 	int *screen_x=(int *)NULL;
 	int *screen_y=(int *)NULL;
 	int *start_x=(int *)NULL;
@@ -11593,9 +11597,9 @@ comparison with 3D maps.
 	struct Rig *rig=(struct Rig *)NULL;
 	XCharStruct bounds;
 	XFontStruct *font=(XFontStruct *)NULL;
-	struct sub_Map *sub_map=(struct sub_Map *)NULL;/*!!jw*/
+	struct sub_Map *sub_map=(struct sub_Map *)NULL;
 
-	ENTER(draw_map_2d);
+	ENTER(draw_2d_make_map);
 	return_code=1;
 	/* check arguments */
 	if (map&&drawing&&(drawing_information=map->drawing_information)&&
@@ -11630,11 +11634,11 @@ comparison with 3D maps.
 				undecided_accepted=map->undecided_accepted;
 				if (!map->event_number)
 				{
-					display_message(ERROR_MESSAGE,"draw_map_2d.  Missing event_number");
+					display_message(ERROR_MESSAGE,"draw_2d_make_map.  Missing event_number");
 				}			
 				if (!map->datum)
 				{
-					display_message(ERROR_MESSAGE,"draw_map_2d.  Missing datum");
+					display_message(ERROR_MESSAGE,"draw_2d_make_map.  Missing datum");
 				}			
 			} break;
 			case MULTIPLE_ACTIVATION:
@@ -11642,7 +11646,7 @@ comparison with 3D maps.
 				undecided_accepted=map->undecided_accepted;
 				if (!map->datum)
 				{
-					display_message(ERROR_MESSAGE,"draw_map_2d.  Missing datum");
+					display_message(ERROR_MESSAGE,"draw_2d_make_map.  Missing datum");
 				}
 			} break;
 			case INTEGRAL:
@@ -11651,12 +11655,12 @@ comparison with 3D maps.
 				if (!map->start_search_interval)
 				{
 					display_message(ERROR_MESSAGE,
-						"draw_map_2d.  Missing start_search_interval");
+						"draw_2d_make_map.  Missing start_search_interval");
 				}			
 				if (!map->end_search_interval)
 				{
 					display_message(ERROR_MESSAGE,
-						"draw_map_2d.  Missing end_search_interval");	
+						"draw_2d_make_map.  Missing end_search_interval");	
 				}
 			
 			} break;
@@ -11721,18 +11725,12 @@ comparison with 3D maps.
 						ALLOCATE(first,char,number_of_drawn_regions))
 					{
 						map->electrodes=electrode;
-						map->electrode_drawn=electrode_drawn;
-						/* Destroy any existing sub map */
-						/*!!jw more than one sub map?*/
-						if(map->sub_map)
-						{	
-							destroy_sub_Map(&map->sub_map);
-						}
-						map->number_of_sub_maps=0;						
-						if(sub_map=create_sub_Map(number_of_drawn_regions,number_of_electrodes))
+						map->electrode_drawn=electrode_drawn;															
+						if((sub_map=create_sub_Map(number_of_drawn_regions,number_of_electrodes,
+							map_x_offset,map_y_offset,map_height,map_width,potential_time_index,
+							frame_start_time,frame_end_time))
+							&&(map_add_sub_Map(map,sub_map)))
 						{
-							map->sub_map=sub_map;
-							map->number_of_sub_maps=1;						
 							screen_x=sub_map->electrode_x;
 							screen_y=sub_map->electrode_y;
 							electrode_value=sub_map->electrode_value;													
@@ -11785,8 +11783,8 @@ comparison with 3D maps.
 									/* calculate electrode value */
 									f_value=0;
 									*electrode_drawn=0;
-									draw_2d_calculate_electrode_value(map,electrode_drawn,electrode,
-										&f_value);
+									draw_2d_calculate_electrode_value(map,sub_map,electrode_drawn,
+										electrode,&f_value);
 									*electrode_value=f_value;
 									electrode_value++;
 									electrode_drawn++;
@@ -11798,29 +11796,30 @@ comparison with 3D maps.
 								number_of_devices--;
 							}/* while (number_of_devices>0) */			
 							draw_2d_set_min_x_max_x(map,sub_map,&a,pi,map->projection_type);
-							number_of_columns=(int)(0.5+sqrt((double)number_of_drawn_regions));
-							if (number_of_columns<1)
+							map->number_of_region_columns=(int)(0.5+sqrt((double)number_of_drawn_regions));
+							if (map->number_of_region_columns<1)
 							{
-								number_of_columns=1;
+								map->number_of_region_columns=1;
 							}
-							number_of_rows=(number_of_drawn_regions-1)/number_of_columns+1;
-							if (number_of_rows<1)
+							map->number_of_region_rows=(number_of_drawn_regions-1)/
+								map->number_of_region_columns+1;
+							if (map->number_of_region_rows<1)
 							{
-								number_of_rows=1;
+								map->number_of_region_rows=1;
 							}
 							/* equalize the columns */
-							if ((number_of_drawn_regions>1)&&(number_of_columns>1)&&
-								((i=number_of_rows*number_of_columns-
+							if ((number_of_drawn_regions>1)&&(map->number_of_region_columns>1)&&
+								((i=map->number_of_region_rows*map->number_of_region_columns-
 									number_of_drawn_regions-1)>0))
 							{
-								number_of_rows -= i/(number_of_columns-1);
+								map->number_of_region_rows -= i/(map->number_of_region_columns-1);
 							}
 							/* make the regions fill the width and the height */
-							screen_region_width=(map_width)/number_of_columns;
-							screen_region_height=(map_height)/number_of_rows;
+							screen_region_width=(map_width)/map->number_of_region_columns;
+							screen_region_height=(map_height)/map->number_of_region_rows;
 							draw_2d_calc_map_to_screen_transform(map,sub_map,display,
 								screen_region_width,screen_region_height,x_border,y_border,ascent,
-								descent,number_of_rows,number_of_columns,map_height,map_width);
+								descent);
 							/* calculate the electrode screen locations */
 							electrode=map->electrodes;
 							x_item=x;
@@ -11853,19 +11852,15 @@ comparison with 3D maps.
 								if (NO_INTERPOLATION!=map->interpolation_type)
 								{
 									draw_2d_construct_image_map(map,sub_map,drawing,recalculate,
-										&contour_x_spacing,&contour_y_spacing,map_width,map_height,
-										undecided_accepted,number_of_rows,number_of_columns,
-										pi_over_2,pi,two_pi,screen_region_height,screen_region_width);
+										undecided_accepted,pi_over_2,pi,two_pi,screen_region_height,
+										screen_region_width);
 								}/* (NO_INTERPOLATION!=map->interpolation_type) */
-							}/* if (NO_MAP_FIELD!=map_type) */						
-							draw_2d_show_map(map,sub_map,recalculate,drawing,map_width,map_height,
-								map_x_offset,map_y_offset,contour_x_spacing,contour_y_spacing,
-								number_of_rows,number_of_columns);					
+							}/* if (NO_MAP_FIELD!=map_type) */
 						}/* if (x&&y&&electrode&&screen_x&&screen_y&&electrode_value&& */
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"draw_map_2d. creation of sub_map failed");
+								"draw_2d_make_map. creation of sub_map failed");
 							return_code=0;
 						}	
 						DEALLOCATE(x);
@@ -11875,14 +11870,14 @@ comparison with 3D maps.
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"draw_map_2d. out of memory for electrode/electrode_drawnx/y/first");
+							"draw_2d_make_map. out of memory for electrode/electrode_drawnx/y/first");
 						return_code=0;
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"draw_map_2d. out of memory for draw_region_number");
+						"draw_2d_make_map. out of memory for draw_region_number");
 					return_code=0;
 				}
 			} /* if ((rig= *(map->rig_pointer))&& */
@@ -11890,12 +11885,162 @@ comparison with 3D maps.
 	}/* if (map&&drawing&&(drawing_information=map->drawing_information)&& */
 	else
 	{
-		display_message(ERROR_MESSAGE,"draw_map_2d.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE,"draw_2d_make_map.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 	return (return_code);
-} /* draw_map_2d */
+} /* draw_2d_make_map */
+
+static int draw_map_2d(struct Map *map,int recalculate,struct Drawing_2d *drawing)
+/*******************************************************************************
+LAST MODIFIED :10 September 2001
+
+DESCRIPTION:
+Draws all the sub maps of the 2D <map>, by first making it with draw_2d_make_map, 
+then drawing it with draw_2d_show_map. Arranges the sub maps on the page.
+==============================================================================*/
+{
+	float frame_start_time,frame_end_time;
+	int num_maps,sub_map_rows,sub_map_cols,count,x_step,y_step,j,map_width,map_height,
+		map_x_offset,map_y_offset,potential_time_index,return_code,*times;				
+	struct Electrical_imaging_event *eimaging_event;	
+	struct Signal *signal;
+	struct Signal_buffer *buffer;
+	struct Rig *rig;
+	struct Device *device;
+	struct sub_Map *sub_map;
+
+	ENTER(draw_map_2d);
+	eimaging_event=(struct Electrical_imaging_event *)NULL;
+	signal=(struct Signal *)NULL;
+	buffer=(struct Signal_buffer *)NULL;
+	times=(int *)NULL;
+	rig=(struct Rig *)NULL;
+	device=(struct Device *)NULL;
+	sub_map=(struct sub_Map *)NULL;
+	return_code=1;
+	if(map&&drawing)
+	{	
+		/* Destroy any existing sub maps */
+		map_destroy_sub_Maps(map);
+		if ((eimaging_event=*map->first_eimaging_event)&&
+			(ELECTRICAL_IMAGING==*map->analysis_mode)&&(*(map->type)==POTENTIAL))
+		{					
+			rig= *(map->rig_pointer);
+			device=*(rig->devices);
+			signal=(device)->signal;
+			buffer=signal->buffer;
+			times=buffer->times;
+			/*get size and position of sub_maps*/
+			get_number_of_sub_maps_x_step_y_step_rows_cols(map,drawing,&num_maps,
+				&x_step,&y_step,&sub_map_rows,&sub_map_cols);	 
+			map_width=drawing->width/sub_map_rows;
+			map_height=drawing->height/sub_map_cols;				
+			map_x_offset=0;
+			map_y_offset=0;
+			count=0;
+			j=1;
+			while(count<num_maps)
+			{	
+				/*set the sub_map's times from the electrical imaging events */
+				potential_time_index=eimaging_event->time;
+				frame_start_time=(int)((float)((times)[eimaging_event->time])
+					*1000./buffer->frequency+0.5);
+				/* frame_end_time irrelevent, so just set to start time*/
+				frame_end_time=frame_start_time;
+				return_code=draw_2d_make_map(map,recalculate,drawing,map_width,map_height,
+					map_x_offset,map_y_offset,potential_time_index,frame_start_time,
+					frame_end_time);
+				map_x_offset+=x_step;						
+				count++;
+				j++;
+				if (j>sub_map_rows)
+				{
+					j=1;
+					map_x_offset=0;
+					map_y_offset+=y_step;
+				}	
+				eimaging_event=eimaging_event->next;					
+			}		 
+			/* loop through and draw all the sub maps*/		
+			count=0;	
+			while(count<num_maps)
+			{
+				sub_map=map->sub_map[count];
+				draw_2d_show_map(map,sub_map,recalculate,drawing);
+				count++;
+			}
+		}
+		else
+		{	
+			/*just one sub map*/
+			map_width=drawing->width;
+			map_height=drawing->height;				
+			map_x_offset=0;
+			map_y_offset=0;
+			/* set the (single) sub_map's times from the map. map times controled*/
+			/* from the time object */
+			potential_time_index=*map->potential_time;
+			frame_start_time=map->frame_start_time;
+			frame_end_time=map->frame_end_time;
+			return_code=draw_2d_make_map(map,recalculate,drawing,map_width,map_height,
+				map_x_offset,map_y_offset,potential_time_index,frame_start_time,
+				frame_end_time);			
+			draw_2d_show_map(map,*(map->sub_map),recalculate,drawing);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"draw_map_2d. Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* draw_map_2d */
+
+int draw_map(struct Map *map,int recalculate,struct Drawing_2d *drawing)
+/*******************************************************************************
+LAST MODIFIED : 12 July 2001
+
+DESCRIPTION:
+Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(draw_map);
+	if (map)
+	{
+#if defined (UNEMAP_USE_3D) 
+		/* 3d map for 3d projection */
+		if (map->projection_type==THREED_PROJECTION)
+		{			
+			return_code=draw_map_3d(map);	
+			/*???JW.  update_colour_map_unemap() necessary for old style colour strip
+				at top of mapping window. Will become obselete when only cmgui methods
+				used  */						
+			update_colour_map_unemap(map,drawing);		
+		}
+		else
+		{				
+			draw_map_2d(map,recalculate,drawing);
+		}	/*defined( UNEMAP_USE_3D) */
+#else/* defined (UNEMAP_USE_3D) */
+		/* 2d map */
+		draw_map_2d(map,recalculate,drawing);
+#endif /*defined( UNEMAP_USE_3D) */	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"draw_map invalid arguments");
+		return_code=0;
+	}	
+	LEAVE;
+
+	return (return_code);
+} /* draw_map */
 
 int draw_colour_or_auxiliary_area(struct Map *map,struct Drawing_2d *drawing)
 /*******************************************************************************

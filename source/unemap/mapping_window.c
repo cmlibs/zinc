@@ -2349,10 +2349,11 @@ Write the electrode values for the current map to a file.
 	ENTER(write_electrode_values_file);
 	return_code=0;
 	if ((mapping=(struct Mapping_window *)mapping_window)&&(map=mapping->map)&&
-		(map->sub_map/*!!jw more than one sub_map*/)&&(map->type)&&file_name)
+		(map->sub_map/*!!jw more than one sub_map?*/)&&(map->type)&&file_name)
 	{
 		if ((0<(number_of_electrodes=map->number_of_electrodes))&&
-			(electrode=map->electrodes)&&(value=map->sub_map->electrode_value)&&
+			(electrode=map->electrodes)&&
+			(/*!!jw more than one sub_map?*/value=(*(map->sub_map))->electrode_value)&&
 			(NO_MAP_FIELD!= *(map->type)))
 		{
 			if (output_file=fopen(file_name,"wt"))
@@ -3017,7 +3018,7 @@ window file menu.
 		return_code=1;
 		if ((map=mapping->map)&&(map->type)&&(0<map->number_of_electrodes)&&
 			(map->electrodes)&&(map->sub_map/*!!jw more than one sub_map*/)&&
-			(map->sub_map->electrode_value)&&(NO_MAP_FIELD!= *(map->type)))
+			((*map->sub_map)->electrode_value)&&(NO_MAP_FIELD!= *(map->type)))
 		{
 			XtSetSensitive(mapping->file_menu.save_electrode_values_button,True);
 		}
@@ -5611,7 +5612,7 @@ window.
 	highlight_field=(struct FE_field *)NULL;
 #endif /* defined (UNEMAP_USE_NODES) */
 	return_code=0;
-	if (map&&(sub_map=map->sub_map/*!!jw more than one sub_map*/)
+	if (map&&(sub_map=map->sub_map[map->number_of_sub_maps-1]/*!!jw more than one sub_map*/)
 		&&mapping&&(drawing_information=map->drawing_information)&&
 		(drawing_information->user_interface)&&
 #if defined (UNEMAP_USE_NODES)
