@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 8 June 2000
+LAST MODIFIED : 21 June 2000
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -180,7 +180,7 @@ struct Element_point_ranges_select_in_graphics_object_data
 static int Element_point_ranges_select_in_graphics_object(
 	struct Element_point_ranges *element_point_ranges,void *select_data_void)
 /*******************************************************************************
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 21 June 2000
 
 DESCRIPTION :
 If <settings> is of type GT_ELEMENT_SETTINGS_ELEMENT_POINTS and has a graphics
@@ -267,7 +267,8 @@ graphics_object.
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,"element_to_graphics_object.  "
+					display_message(ERROR_MESSAGE,
+						"Element_point_ranges_select_in_graphics_object.  "
 						"Error getting discretization");
 					return_code=0;
 				}
@@ -4200,7 +4201,7 @@ Makes a copy of the settings and puts it in the list_of_settings.
 static int FE_element_to_graphics_object(struct FE_element *element,
 	void *settings_to_object_data_void)
 /*******************************************************************************
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 21 June 2000
 
 DESCRIPTION :
 Converts a finite element into a graphics object with the supplied settings.
@@ -4239,18 +4240,21 @@ Converts a finite element into a graphics object with the supplied settings.
 		/* edit_mode is when a node or element has changed, not the settings */
 		/* in this mode any previous primitives using the element are wiped first */
 		edit_mode=0;
-		if (settings_to_object_data->changed_element ||
-			settings_to_object_data->changed_node)
+		if (process && (settings_to_object_data->changed_element ||
+			settings_to_object_data->changed_node))
 		{
 			/* process in edit_mode only if graphics for element affected by changed
 				 node or element */
-			if (!(edit_mode=((element==settings_to_object_data->changed_element)||
+			if (!(edit_mode=((settings_to_object_data->changed_element&&
+				FE_element_or_parent_is_element(element,
+					(void *)settings_to_object_data->changed_element))||
 				(settings_to_object_data->changed_node&&
 					FE_element_or_parent_contains_node(element,
 						(void *)settings_to_object_data->changed_node)))))
 			{
 				process=0;
 			}
+			
 		}
 		return_code=1;
 		if (process)
