@@ -175,14 +175,14 @@ update :
 		chgrp -R cmgui_programmers * && \
 		cd $(PRODUCT_PATH) && \
 		$(MAKE) -f cmgui.make cmgui cmgui_optimised cmgui64 cmgui_lite cmgui_memorycheck && \
-		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f cmgui.make cmgui_linux cmgui_linux_memorycheck cmgui_linux_optimised cmgui_linux_optimised_dynamic' && \
+		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; cd $(PRODUCT_PATH) ; $(MAKE) -f cmgui.make cmgui_linux cmgui_linux_memorycheck cmgui_linux_dynamic cmgui_linux_optimised cmgui_linux_optimised_dynamic' && \
 		cd $(PRODUCT_SOURCE_PATH) && \
 		chgrp -R cmgui_programmers *; \
 	else \
 		echo "Must be cmiss and in $(PRODUCT_PATH)"; \
 	fi
 
-depend : $(SOURCE_PATH)/cmgui_sgi.make $(SOURCE_PATH)/cmgui_sgioptimised.make $(SOURCE_PATH)/cmgui_sgi64.make $(SOURCE_PATH)/cmgui_linux.make $(SOURCE_PATH)/cmgui_linux_memorycheck.make $(SOURCE_PATH)/cmgui_sgi_memorycheck.make $(SOURCE_PATH)/cmgui_linux_optimised.make 
+depend : $(SOURCE_PATH)/cmgui_sgi.make $(SOURCE_PATH)/cmgui_sgioptimised.make $(SOURCE_PATH)/cmgui_sgi64.make $(SOURCE_PATH)/cmgui_linux.make $(SOURCE_PATH)/cmgui_linux_memorycheck.make $(SOURCE_PATH)/cmgui_linux_dynamic.make $(SOURCE_PATH)/cmgui_sgi_memorycheck.make $(SOURCE_PATH)/cmgui_linux_optimised.make 
 	if [ "$(USER)" = "cmiss" ]; then \
 		CMGUI_DEV_ROOT=$(PWD) ; \
 		export CMGUI_DEV_ROOT ; \
@@ -193,7 +193,7 @@ depend : $(SOURCE_PATH)/cmgui_sgi.make $(SOURCE_PATH)/cmgui_sgioptimised.make $(
 		$(MAKE) -f cmgui_sgi_memorycheck.make depend ; \
 		$(MAKE) -f cmgui_sgilite.make depend ; \
 		$(MAKE) -f cmgui_sgi64.make depend ; \
-		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; setenv CMGUI_DEV_ROOT $(PWD) ; cd $(PRODUCT_SOURCE_PATH) ; $(MAKE) -f cmgui_linux.make depend ; $(MAKE) -f cmgui_linux_memorycheck.make depend ; $(MAKE) -f cmgui_linux_optimised.make depend ; $(MAKE) -f cmgui_linux_optimised_dynamic.make depend ' ; \
+		ssh 130.216.208.156 'setenv CMISS_ROOT /product/cmiss ; setenv CMGUI_DEV_ROOT $(PWD) ; cd $(PRODUCT_SOURCE_PATH) ; $(MAKE) -f cmgui_linux.make depend ; $(MAKE) -f cmgui_linux_memorycheck.make depend; $(MAKE) -f cmgui_linux_dynamic.make depend ; $(MAKE) -f cmgui_linux_optimised.make depend ; $(MAKE) -f cmgui_linux_optimised_dynamic.make depend ' ; \
 	else \
 		echo "Must be cmiss"; \
 	fi
