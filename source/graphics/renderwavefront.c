@@ -1159,7 +1159,7 @@ Global functions
 int export_to_wavefront(char *file_name,struct Scene *scene,
 	struct Scene_object *scene_object, int full_comments)
 /******************************************************************************
-LAST MODIFIED : 15 May 1998
+LAST MODIFIED : 15 May 2000
 
 DESCRIPTION :
 Renders the visible objects to Wavefront object files.
@@ -1179,7 +1179,7 @@ Renders the visible objects to Wavefront object files.
 		{
 			if (1==Scene_get_number_of_scene_objects(scene))
 			{
-				scene_object = Scene_get_first_scene_object_that(scene,
+				scene_object = first_Scene_object_in_Scene_that(scene,
 					(LIST_CONDITIONAL_FUNCTION(Scene_object) *)NULL, NULL);
 			}
 		}
