@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cell.imake
 XCOMM
-XCOMM LAST MODIFIED : 14 April 2001
+XCOMM LAST MODIFIED : 21 April 2001
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -199,9 +199,10 @@ GRAPHICS_LIB = -lGL -lGLU
 #elif defined(LINUX) /* switch OperatingSystem */
 GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
 #if defined (DYNAMIC_GL_LINUX)
-GRAPHICS_LIB = -lGLU -lGL
+GRAPHICS_LIB = -lGLU -lGLXX
 #else /* defined (DYNAMIC_GL_LINUX) */
 GRAPHICS_LIB = -L/usr/local/lib -lMesaGL -lMesaGLU
+/*GRAPHICS_LIB = -L/home/nickerso/cmiss/cmgui -lMesaGL -lMesaGLU*/
 #endif /* defined (DYNAMIC_GL_LINUX) */
 #endif /* switch OperatingSystem */
 
@@ -335,18 +336,30 @@ XML_PATH = ${CMISS_ROOT}/xml
 #if defined (IRIX) /* switch OperatingSystem */
 XML_DEFINES = -DIRIX -D_REENTRANT
 #if defined (O64)
+#if defined (OPTIMISED)
 XML_LIB = $(XML_PATH)/library/libXML-mips3-64-optimised-1.0.0.a
+#else
+XML_LIB = $(XML_PATH)/library/libXML-mips3-64-debug-1.0.0.a
+#endif
 XML_INC = -I$(XML_PATH)/include
 #else /* defined (O64) */
 /*  XML_LIB = -L$(XML_PATH)/lib.28nov00 -lCellML-n32-mips3-opt */
+#if defined (OPTIMISED)
 XML_LIB = $(XML_PATH)/library/libXML-mips3-n32-optimised-1.0.0.a
-/*XML_LIB = $(XML_PATH)/library/libXML-mips3-n32-debug-1.0.0.a*/
+#else
+XML_LIB = $(XML_PATH)/library/libXML-mips3-n32-debug-1.0.0.a
+#endif
 XML_INC = -I$(XML_PATH)/include
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
 XML_DEFINES = -DLINUX -D_REENTRANT
+#if defined (OPTIMISED)
 XML_LIB = $(XML_PATH)/library/libXML_linux_optimised_1.0.0.a -lstdc++-2-libc6.1-1-2.9.0
-/*XML_LIB = $(XML_PATH)/library/libXML_linux_debug_1.0.0.a -lstdc++-2-libc6.1-1-2.9.0*/
+XML_LIB = $(XML_PATH)/library/libXML_linux_optimised_1.0.0.a
+#else
+XML_LIB = $(XML_PATH)/library/libXML_linux_debug_1.0.0.a -lstdc++-2-libc6.1-1-2.9.0
+XML_LIB = $(XML_PATH)/library/libXML_linux_debug_1.0.0.a
+#endif
 XML_INC = -I$(XML_PATH)/include 
 #endif /* switch OperatingSystem */
 #else /* defined (CELL) */
@@ -395,7 +408,11 @@ START_ALL_DEFINES =
 END_ALL_DEFINES =
 
 START_ALL_INCLUDES =
+#if defined (LINUX)
+END_ALL_INCLUDES = -I/usr/X11R6/include
+#else
 END_ALL_INCLUDES =
+#endif
 
 ALL_DEFINES = $(START_ALL_DEFINES) \
 	$(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
