@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture_graphics.c
 
-LAST MODIFIED : 23 November 2001
+LAST MODIFIED : 8 March 2002
 
 DESCRIPTION :
 Routines for GL texture display window
@@ -917,7 +917,7 @@ Global functions
 */
 void draw_texture_isosurface(struct Texture_window *texture_window)
 /*******************************************************************************
-LAST MODIFIED : 27 July 1998
+LAST MODIFIED : 8 March 2002
 
 DESCRIPTION :
 Calculates an isosurface from the volume texture, and creates an isosurface
@@ -928,10 +928,9 @@ object.
 	int face_index,i,j,n_iso_polys,n_scalar_fields,n_vertices,*texturemap_index,
 		*triangle_list;
 	float *texturemap_coord;
+	struct Graphical_material *material;
 	struct GT_voltex *voltex;
 	struct Environment_map **iso_env_map;
-	struct Graphical_material **iso_poly_material;
-
 	struct VT_iso_vertex *vertex_list;
 	struct VT_scalar_field *scalar_field_list[MAX_SCALAR_FIELDS];
 	struct VT_volume_texture *current_texture;
@@ -1136,8 +1135,7 @@ printf("DEBUG:Before allocate npolys = %d n_verts = %d\n",n_iso_polys,
 
 		if ((n_iso_polys>0)&&(n_vertices>0))
 		{
-			if (ALLOCATE(triangle_list,int,3*n_iso_polys)&&ALLOCATE(iso_poly_material,
-				struct Graphical_material *,3*n_iso_polys)&&ALLOCATE(iso_poly_cop,
+			if (ALLOCATE(triangle_list,int,3*n_iso_polys)&&ALLOCATE(iso_poly_cop,
 				double,3*n_iso_polys*3)&&ALLOCATE(texturemap_coord,float,
 				3*n_iso_polys*3)&&ALLOCATE(texturemap_index,int,3*n_iso_polys)&&
 				ALLOCATE(vertex_list,struct VT_iso_vertex,n_vertices*1
@@ -1145,7 +1143,7 @@ printf("DEBUG:Before allocate npolys = %d n_verts = %d\n",n_iso_polys,
 				struct Environment_map *,3*n_iso_polys))
 			{
 				if (!(texture_window->voltex=CREATE(GT_voltex)(n_iso_polys,n_vertices,
-					triangle_list,vertex_list,iso_poly_material,iso_env_map,iso_poly_cop,
+					triangle_list,vertex_list,iso_env_map,iso_poly_cop,
 					texturemap_coord,texturemap_index,1
 					/* n_xi_rep[0]*n_xi_rep[1]*n_xi_rep[2]*/,
 					0 /*n_data_components*/, (GTDATA *)NULL, g_VOLTEX_SHADED_TEXMAP )))
@@ -1168,7 +1166,6 @@ printf("DEBUG:voltex successfully created: t_list = %p, v_list = %p\n",
 				display_message(ERROR_MESSAGE,
 		"create_GTVOLTEX_from_FE_element.   Could not allocate memory for voltex");
 				triangle_list=(int *)NULL;
-				iso_poly_material=(struct Graphical_material **)NULL;
 				iso_poly_cop=(double *)NULL;
 				texturemap_coord=(float *)NULL;
 				texturemap_index=(int *)NULL;
@@ -1198,11 +1195,11 @@ if (triangle_list[3*i+j] > n_vertices || triangle_list[3*i+j] < 0)
 		printf("ERROR---- triangle_list[3*%d+%d] = %d > %d\n", i, j, triangle_list[3*i+j], n_vertices);
 
 }
-
-
-						iso_poly_material[3*i+j]=
-						current_texture->mc_iso_surface->
-							compiled_triangle_list[i]->material[j];
+						if (material = current_texture->mc_iso_surface->
+							compiled_triangle_list[i]->material[j])
+						{
+							GT_voltex_set_vertex_material(voltex, 3*i+j, material);
+						}
 
 						iso_env_map[3*i+j] =
 						current_texture->mc_iso_surface->
@@ -1278,7 +1275,8 @@ printf("DEBUG:voltex->n_iso_polys = %d\n",voltex->n_iso_polys);
 			{
 				draw_voltexGL(voltex->n_iso_polys,voltex->triangle_list,
 					voltex->vertex_list,voltex->n_vertices,voltex->n_rep,
-					voltex->iso_poly_material,voltex->iso_env_map,
+					voltex->per_vertex_materials,
+					voltex->iso_poly_material_index, voltex->iso_env_map,
 					voltex->texturemap_coord, voltex->texturemap_index,
 					/*n_data_components*/0,/*data*/(GTDATA *)NULL,
 					(struct Graphical_material *)NULL,(struct Spectrum *)NULL);
@@ -1291,7 +1289,6 @@ printf("DEBUG:voltex->n_iso_polys = %d\n",voltex->n_iso_polys);
 				DEALLOCATE(vertex_list);
 				DEALLOCATE(texturemap_coord);
 				DEALLOCATE(texturemap_index);
-				DEALLOCATE(iso_poly_material);
 				DEALLOCATE(iso_env_map);
 				DEALLOCATE(iso_poly_cop);
 			} /* if voltex */
