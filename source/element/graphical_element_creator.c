@@ -652,7 +652,7 @@ creates nodes and elements from the entered positions.
 	struct FE_node *node,*temp_node;
 	struct Graphical_element_creator *element_creator;
 	struct GT_element_group *gt_element_group;
-	struct LIST(FE_node) *selected_nodes;
+	struct LIST(FE_node) *selected_node_list;
 
 	ENTER(Graphical_element_creator_scene_input_callback);
 	if (scene&&(element_creator=(struct Graphical_element_creator *)
@@ -788,13 +788,13 @@ creates nodes and elements from the entered positions.
 						if (node)
 						{
 							/* highlight node just created */
-							if (selected_nodes=CREATE(LIST(FE_node))())
+							if (selected_node_list=CREATE(LIST(FE_node))())
 							{
 								switch (element_creator->mesh_editor_create_mode)
 								{
 									case MESH_EDITOR_CREATE_ONLY_NODES:
 									{
-										ADD_OBJECT_TO_LIST(FE_node)(node,selected_nodes);
+										ADD_OBJECT_TO_LIST(FE_node)(node,selected_node_list);
 									} break;
 									case MESH_EDITOR_CREATE_ELEMENTS:
 									case MESH_EDITOR_CREATE_NODES_AND_ELEMENTS:
@@ -804,15 +804,15 @@ creates nodes and elements from the entered positions.
 											get_FE_element_node(element_creator->element,i,
 												&temp_node);
 											ensure_FE_node_is_in_list(temp_node,
-												(void *)selected_nodes);
+												(void *)selected_node_list);
 										}
 									} break;
 								}
 								gt_element_group=Scene_get_graphical_element_group(scene,
 									element_creator->element_group);
-								GT_element_group_modify_selected_nodes(gt_element_group,
-									GT_ELEMENT_GROUP_SELECT_REPLACE,selected_nodes);
-								DESTROY(LIST(FE_node))(&selected_nodes);
+								GT_element_group_modify_selected_node_list(gt_element_group,
+									GT_ELEMENT_GROUP_SELECT_REPLACE,selected_node_list);
+								DESTROY(LIST(FE_node))(&selected_node_list);
 							}
 						}
 					}

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_node_editor.c
 
-LAST MODIFIED : 22 February 2000
+LAST MODIFIED : 25 February 2000
 
 DESCRIPTION :
 Functions mouse controlled node editing to a Scene.
@@ -756,12 +756,12 @@ processes them into node movements as necessary.
 						ADD_OBJECT_TO_LIST(FE_node)(picked_node,node_list);
 						if (shift_pressed)
 						{
-							GT_element_group_modify_selected_nodes(gt_element_group,
+							GT_element_group_modify_selected_node_list(gt_element_group,
 								GT_ELEMENT_GROUP_SELECT_ADD,node_list);
 						}
 						else
 						{
-							GT_element_group_modify_selected_nodes(gt_element_group,
+							GT_element_group_modify_selected_node_list(gt_element_group,
 								GT_ELEMENT_GROUP_SELECT_REPLACE,node_list);
 						}
 						node_editor->last_picked_node_just_added=1;
@@ -884,7 +884,7 @@ processes them into node movements as necessary.
 					{
 						if (node_editor->motion_detected)
 						{
-							if (GT_element_group_get_selected_nodes(
+							if (GT_element_group_get_selected_node_list(
 								node_editor->gt_element_group,node_list))
 							{
 								number_of_selected_nodes=NUMBER_IN_LIST(FE_node)(node_list);
@@ -939,7 +939,7 @@ processes them into node movements as necessary.
 							{
 								ADD_OBJECT_TO_LIST(FE_node)(
 									node_editor->last_picked_node,node_list);
-								GT_element_group_modify_selected_nodes(
+								GT_element_group_modify_selected_node_list(
 									node_editor->gt_element_group,
 									GT_ELEMENT_GROUP_SELECT_REMOVE,node_list);
 							}
