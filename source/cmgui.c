@@ -947,6 +947,19 @@ Main program for the CMISS Graphical User Interface
 	}
 #endif /* !defined (WIN32_USER_INTERFACE) */
 
+#if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
+	/* SAB I want to do this before CREATEing the User_interface
+		as X modifies the argc, argv removing the options it understands
+		however I want a full copy for the interpreter so that we can use
+		-display for example for both */
+	create_interpreter(argc, argv, comfile_name, &status);
+
+	/* SAB Set a useful default for the interpreter variable, need to 
+	   specify full name as this function does not run embedded by
+		a package directive */
+	interpreter_set_string("cmiss::example", ".", &status);
+#endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
+
 	if ((!command_list) && (!write_help))
 	{
 		if (command_data.event_dispatcher = CREATE(Event_dispatcher)())
@@ -1361,15 +1374,6 @@ Main program for the CMISS Graphical User Interface
 			}
 		}
 	}
-
-#if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
-	create_interpreter(argc, argv, comfile_name, &status);
-
-	/* Set a useful default for the interpreter variable, need to 
-	   specify full name as this function does not run embedded by
-		a package directive */
-	interpreter_set_string("cmiss::example", ".", &status);
-#endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 
 	command_data.default_time_keeper=ACCESS(Time_keeper)(
 		CREATE(Time_keeper)("default", command_data.event_dispatcher,
