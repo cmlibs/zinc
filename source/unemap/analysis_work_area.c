@@ -14342,7 +14342,7 @@ LAST MODIFIED : 3 October 2000
 DESCRIPTION :
 Change the highlight status of the node/device
 ==============================================================================*/
-{
+{	
 	int auxiliary_number,device_number,electrode_number,return_code;
 	struct Analysis_work_area *analysis;
 	struct Device **device;
@@ -14376,7 +14376,7 @@ Change the highlight status of the node/device
 			if ((mapping=analysis->mapping_window)&&(map=mapping->map))
 			{
 				analysis_get_numbers_from_device(analysis,device,&device_number,
-					&electrode_number,&auxiliary_number);
+					&electrode_number,&auxiliary_number);		
 				highlight_electrode_or_auxiliar(*device,
 #if defined (UNEMAP_USE_NODES)
 					(struct FE_node *)NULL,
@@ -14423,23 +14423,29 @@ the rig_node group. If are highlights them.
 			"rig_node_group_node_selection_change. Update to work with nodes! ");
 	LEAVE;
 #else /* if defined(UNEMAP_USE_NODES) */
+	int auxiliary_number,device_number,electrode_number,end_analysis_interval,
+		num_selected,num_unselected,start_analysis_interval;
 	struct rig_node_selection_change_data data;
 	struct Analysis_work_area *analysis;
 	struct FE_node *node;
 	struct FE_field *device_name_field;
 	struct Device **device;
+	struct Signal_buffer *buffer;
+	struct Signals_area *signals;
 
 	ENTER(rig_node_group_node_selection_change);
 	device=(struct Device **)NULL;
 	node=(struct FE_node *)NULL;
-	device_name_field=(struct FE_field *)NULL;
+	device_name_field=(struct FE_field *)NULL;	
+	buffer=(struct Signal_buffer *)NULL;
+	signals=(struct Signals_area *)NULL;
 	if (node_selection&&changes&&(analysis=(struct Analysis_work_area *)
 		analysis_work_area_void))
-	{
+	{ 
+		num_selected=NUMBER_IN_LIST(FE_node)(changes->newly_selected_node_list);
+		num_unselected=NUMBER_IN_LIST(FE_node)(changes->newly_unselected_node_list);
 		data.analysis_work_area=analysis;
-		/* data.multiple_selection flag  not used for rig_node_highlight_change*/
-		/* this method is more efficient if many nodes are (un)selected
-			 unhighlight the unselected nodes/devices */
+		/* data.multiple_selection flag  not used for rig_node_highlight_change*/	
 		data.highlight=0;
 		FOR_EACH_OBJECT_IN_LIST(FE_node)(rig_node_highlight_change,(void *)&data,
 			changes->newly_unselected_node_list);
@@ -14462,8 +14468,35 @@ the rig_node group. If are highlights them.
 		device=find_device_given_rig_node(node,device_name_field,analysis->rig);
 		/*make it THE highlighted device */
 		analysis->highlight=device;
-		/* update the  windows*/
-		update_signals_drawing_area(analysis->window);
+	
+		/* this is an xor; if there's just one electrode/signal (un)selected */
+		/* draw (via highlight_signal) just this signal, else  */ 
+		if(((num_selected==1)&&(num_unselected==0))||((num_unselected==1)&&(num_selected==0)))
+		{			
+			signals= &(analysis->window->signals);
+			if((signals->number_of_rows)&&(signals->number_of_columns))
+			{			
+				buffer=get_Device_signal_buffer(*(analysis->rig->devices));
+				start_analysis_interval=buffer->start;
+				end_analysis_interval=buffer->end;				
+				analysis_get_numbers_from_device(analysis,device,&device_number,
+					&electrode_number,&auxiliary_number);					
+				highlight_signal(*device,
+#if defined (UNEMAP_USE_NODES)
+					(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
+#endif /* defined (UNEMAP_USE_NODES)*/
+					device_number,start_analysis_interval,end_analysis_interval,
+					analysis->datum,analysis->potential_time,signals,
+					analysis->signal_drawing_information,analysis->user_interface,
+					&(analysis->window->interval));
+			}
+		}
+		else
+		/* draw all the signals */
+		{		
+			update_signals_drawing_area(analysis->window);
+		}	
+		/* update the  windows*/	
 		update_interval_drawing_area(analysis->window);
 		trace_change_signal(analysis->trace);		
 	}
