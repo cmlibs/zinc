@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : map_dialog.c
 
-LAST MODIFIED : 26 November 2001
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2071,7 +2071,7 @@ initializes the appropriate fields.
 
 int open_map_dialog(struct Map_dialog *map_dialog)
 /*******************************************************************************
-LAST MODIFIED : 22 November 2001
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Opens the <map_dialog>.
@@ -2155,7 +2155,8 @@ Opens the <map_dialog>.
 				XmNmenuHistory,option_widget,
 				NULL);
 			if((map->rig_pointer)&&(rig=*(map->rig_pointer))&&(rig->current_region)&&
-				(rig->current_region->type==TORSO)&&(*(map->type)==POTENTIAL))
+				(rig->current_region->type==TORSO)&&
+				((*(map->type)==POTENTIAL)||(*(map->type)==NO_MAP_FIELD)) )
 			/* can only have DIRECT_INTERPOLATION for TORSO,POTENTIAL */	
 			{
 				XtSetSensitive(map_dialog->interpolation.option.direct,True);
