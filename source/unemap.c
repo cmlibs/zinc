@@ -20,6 +20,9 @@ Main program for unemap.  Based on cmgui.
 #if defined (NOT_ACQUISITION_ONLY)
 #if defined (UNEMAP_USE_NODES)
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_component_operations.h"
+#include "computed_field/computed_field_finite_element.h"
+#include "computed_field/computed_field_vector_operations.h"
 #include "graphics/glyph.h"
 #include "graphics/light.h"
 #include "graphics/light_model.h"
@@ -273,6 +276,8 @@ Main program for unemap
 	struct Computed_field *computed_field=(struct Computed_field *)NULL;
 	struct Computed_field_package *computed_field_package=
 		(struct Computed_field_package *)NULL;
+	struct Computed_field_finite_element_package *computed_field_finite_element_package=
+		(struct Computed_field_finite_element_package *)NULL;
 	struct Coordinate_system rect_coord_system;
 	struct Element_point_ranges_selection *element_point_ranges_selection=
 		(struct Element_point_ranges_selection *)NULL;
@@ -746,6 +751,23 @@ Main program for unemap
 					computed_field_manager)))
 			{
 				DESTROY(Computed_field)(&computed_field);
+			}
+			/* Add Computed_fields to the Computed_field_package */
+			computed_field_finite_element_package = 
+			  (struct Computed_field_finite_element_package *)NULL;
+			if (computed_field_package)
+			{
+				Computed_field_register_types_vector_operations(
+					computed_field_package);
+				Computed_field_register_types_component_operations(
+					computed_field_package);
+				if (fe_field_manager)
+				{
+					computed_field_finite_element_package =
+						Computed_field_register_types_finite_element(
+							computed_field_package,
+							fe_field_manager);
+				}
 			}
 		}
 		if (glyph_list=CREATE(LIST(GT_object))())
