@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 28 November 2000
+LAST MODIFIED : 4 December 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -3047,7 +3047,7 @@ float parameters.
 static int gfx_create_iso_surfaces(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 August 2000
+LAST MODIFIED : 4 December 2000
 
 DESCRIPTION :
 Executes a GFX CREATE ISO_SURFACES command.
@@ -3062,7 +3062,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 	struct Clipping *clipping;
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *coordinate_field, *data_field, *scalar_field,
-		*surface_data_density_field;
+		*surface_data_coordinate_field, *surface_data_density_field;
 	struct Element_discretization discretization;
 	struct Element_to_iso_scalar_data element_to_iso_scalar_data;
 	struct FE_element *first_element;
@@ -3076,7 +3076,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_data_field_data, set_scalar_field_data,
-		set_surface_data_density_field_data;
+		set_surface_data_coordinate_field_data, set_surface_data_density_field_data;
 	struct Spectrum *spectrum;
 
 	ENTER(gfx_create_iso_surfaces);
@@ -3097,12 +3097,13 @@ Executes a GFX CREATE ISO_SURFACES command.
 				graphics_object_name=(char *)NULL;
 			}
 			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-				"default_coordinate",computed_field_manager);
+				"default_coordinate", computed_field_manager);
 			/* must access it now, because we deaccess it later */
 			ACCESS(Computed_field)(coordinate_field);
 			data_field=(struct Computed_field *)NULL;
 			surface_data_group = (struct GROUP(FE_node) *)NULL;
-			surface_data_density_field=(struct Computed_field *)NULL;
+			surface_data_coordinate_field = (struct Computed_field *)NULL;
+			surface_data_density_field = (struct Computed_field *)NULL;
 			time=0;
 			material=ACCESS(Graphical_material)(
 				command_data->default_graphical_material);
@@ -3185,6 +3186,17 @@ Executes a GFX CREATE ISO_SURFACES command.
 			/* spectrum */
 			Option_table_add_entry(option_table,"spectrum",&spectrum,
 				command_data->spectrum_manager,set_Spectrum);
+			/* surface_data_coordinate */
+			set_surface_data_coordinate_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
+			set_surface_data_coordinate_field_data.conditional_function=
+				Computed_field_has_up_to_3_numerical_components;
+			set_surface_data_coordinate_field_data.conditional_function_user_data =
+				(void *)NULL;
+			Option_table_add_entry(option_table,"surface_data_coordinate",
+				&surface_data_coordinate_field,
+				&set_surface_data_coordinate_field_data,set_Computed_field_conditional);
 			/* surface_data_density */
 			set_surface_data_density_field_data.computed_field_manager=
 				Computed_field_package_get_computed_field_manager(
@@ -3347,6 +3359,11 @@ Executes a GFX CREATE ISO_SURFACES command.
 					element_to_iso_scalar_data.scalar_field=scalar_field;
 					element_to_iso_scalar_data.graphics_object=graphics_object;
 					element_to_iso_scalar_data.clipping=clipping;
+					element_to_iso_scalar_data.surface_data_coordinate_field = 
+						surface_data_coordinate_field;
+					element_to_iso_scalar_data.computed_field_manager =
+						Computed_field_package_get_computed_field_manager(
+							command_data->computed_field_package);
 					element_to_iso_scalar_data.surface_data_density_field = 
 						surface_data_density_field;
 					element_to_iso_scalar_data.surface_data_group = 
@@ -3436,6 +3453,10 @@ Executes a GFX CREATE ISO_SURFACES command.
 			if (scalar_field)
 			{
 				DEACCESS(Computed_field)(&scalar_field);
+			}
+			if (surface_data_coordinate_field)
+			{
+				DEACCESS(Computed_field)(&surface_data_coordinate_field);
 			}
 			if (surface_data_density_field)
 			{
@@ -8193,7 +8214,7 @@ Executes a GFX CREATE VOLUME_EDITOR command.
 static int gfx_create_volumes(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED :  4 December 2000
 
 DESCRIPTION :
 Executes a GFX CREATE VOLUMES command.
@@ -8206,8 +8227,8 @@ Executes a GFX CREATE VOLUMES command.
 	struct Clipping *clipping;
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *coordinate_field, *data_field,
-		*displacement_map_field, *surface_data_density_field,
-		*blur_field;
+		*displacement_map_field, *surface_data_coordinate_field,
+		*surface_data_density_field, *blur_field;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Element_to_volume_data element_to_volume_data;
 	struct FE_element *seed_element;
@@ -8219,7 +8240,8 @@ Executes a GFX CREATE VOLUMES command.
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_data_field_data, set_displacement_map_field_data, 
-		set_surface_data_density_field_data, set_blur_field_data;
+		set_surface_data_coordinate_field_data, set_surface_data_density_field_data,
+		set_blur_field_data;
 	struct Spectrum *spectrum;
 	struct VT_volume_texture *volume_texture;
 
@@ -8252,6 +8274,7 @@ Executes a GFX CREATE VOLUMES command.
 				ACCESS(Graphical_material)(command_data->default_graphical_material);
 			spectrum=ACCESS(Spectrum)(command_data->default_spectrum);
 			surface_data_group = (struct GROUP(FE_node) *)NULL;
+			surface_data_coordinate_field = (struct Computed_field *)NULL;
 			surface_data_density_field=(struct Computed_field *)NULL;
 			time=0;
 			volume_texture=(struct VT_volume_texture *)NULL;
@@ -8327,6 +8350,17 @@ Executes a GFX CREATE VOLUMES command.
 			/* spectrum */
 			Option_table_add_entry(option_table,"spectrum",&spectrum,
 				command_data->spectrum_manager,set_Spectrum);
+			/* surface_data_coordinate */
+			set_surface_data_coordinate_field_data.computed_field_manager=
+				Computed_field_package_get_computed_field_manager(
+					command_data->computed_field_package);
+			set_surface_data_coordinate_field_data.conditional_function=
+				Computed_field_has_up_to_3_numerical_components;
+			set_surface_data_coordinate_field_data.conditional_function_user_data =
+				(void *)NULL;
+			Option_table_add_entry(option_table,"surface_data_coordinate",
+				&surface_data_coordinate_field,
+				&set_surface_data_coordinate_field_data,set_Computed_field_conditional);
 			/* surface_data_density */
 			set_surface_data_density_field_data.computed_field_manager=
 				Computed_field_package_get_computed_field_manager(
@@ -8436,9 +8470,15 @@ Executes a GFX CREATE VOLUMES command.
 					element_to_volume_data.render_type=
 						Render_type_from_string(render_type_string);
 					element_to_volume_data.volume_texture=volume_texture;
-					element_to_volume_data.displacement_map_field = displacement_map_field;
+					element_to_volume_data.displacement_map_field =
+						displacement_map_field;
 					element_to_volume_data.displacement_map_xi_direction =
 						displacement_map_xi_direction;
+					element_to_volume_data.surface_data_coordinate_field = 
+						surface_data_coordinate_field;
+					element_to_volume_data.computed_field_manager =
+						Computed_field_package_get_computed_field_manager(
+							command_data->computed_field_package);
 					element_to_volume_data.surface_data_density_field = 
 						surface_data_density_field;
 					element_to_volume_data.surface_data_group = 
@@ -8525,6 +8565,10 @@ Executes a GFX CREATE VOLUMES command.
 			if (seed_element)
 			{
 				DEACCESS(FE_element)(&seed_element);
+			}
+			if (surface_data_coordinate_field)
+			{
+				DEACCESS(Computed_field)(&surface_data_coordinate_field);
 			}
 			if (surface_data_density_field)
 			{
@@ -12567,7 +12611,7 @@ Executes a GFX LIST FIELD.
 static int gfx_list_FE_element(struct Parse_state *state,
 	void *cm_element_type_void,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 November 200
+LAST MODIFIED : 4 December 2000
 
 DESCRIPTION :
 Executes a GFX LIST ELEMENT.
@@ -12667,7 +12711,8 @@ Executes a GFX LIST ELEMENT.
 				{
 					if (0 < NUMBER_IN_LIST(FE_element)(element_list))
 					{
-						if (verbose_flag)
+						/* always write verbose details if just 1 element */
+						if (verbose_flag || (1 == NUMBER_IN_LIST(FE_element)(element_list)))
 						{
 							return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(list_FE_element,
 								(void *)NULL, element_list);
@@ -12718,20 +12763,34 @@ Executes a GFX LIST ELEMENT.
 						{
 							case CM_ELEMENT:
 							{
-								display_message(WARNING_MESSAGE,
-									"gfx list elements:  No elements specified");
+								display_message(INFORMATION_MESSAGE,"No elements");
 							} break;
 							case CM_FACE:
 							{
-								display_message(WARNING_MESSAGE,
-									"gfx list faces:  No faces specified");
+								display_message(INFORMATION_MESSAGE,"No faces");
 							} break;
 							case CM_LINE:
 							{
-								display_message(WARNING_MESSAGE,
-									"gfx list lines:  No lines specified");
+								display_message(INFORMATION_MESSAGE,"No lines");
 							} break;
 						}
+						if (selected_flag)
+						{
+							display_message(INFORMATION_MESSAGE," selected");
+							if (ranges_flag)
+							{
+								display_message(INFORMATION_MESSAGE," and in given ranges");
+							}
+						}
+						else if (ranges_flag)
+						{
+							display_message(INFORMATION_MESSAGE," in given ranges");
+						}
+						else if (!all_flag)
+						{
+							display_message(INFORMATION_MESSAGE," chosen");
+						}
+						display_message(INFORMATION_MESSAGE,"\n");
 					}
 				}
 				else
@@ -12765,7 +12824,7 @@ Executes a GFX LIST ELEMENT.
 static int gfx_list_FE_node(struct Parse_state *state,
 	void *use_data,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 21 September 2000
+LAST MODIFIED : 4 November 2000
 
 DESCRIPTION :
 Executes a GFX LIST NODES.
@@ -12847,12 +12906,13 @@ use node_manager and node_selection.
 				}
 				if (return_code)
 				{
-					if (0<NUMBER_IN_LIST(FE_node)(node_list))
+					if (0 < NUMBER_IN_LIST(FE_node)(node_list))
 					{
-						if (verbose_flag)
+						/* always write verbose details if just 1 node */
+						if (verbose_flag || (1 == NUMBER_IN_LIST(FE_node)(node_list)))
 						{
-							return_code=FOR_EACH_OBJECT_IN_LIST(FE_node)(list_FE_node,
-								(void *)1,node_list);
+							return_code = FOR_EACH_OBJECT_IN_LIST(FE_node)(list_FE_node,
+								(void *)1, node_list);
 						}
 						else
 						{
@@ -12885,14 +12945,29 @@ use node_manager and node_selection.
 					{
 						if (use_data)
 						{
-							display_message(WARNING_MESSAGE,
-								"gfx list data:  No data specified");
+							display_message(INFORMATION_MESSAGE,"No data");
 						}
 						else
 						{
-							display_message(WARNING_MESSAGE,
-								"gfx list nodes:  No nodes specified");
+							display_message(INFORMATION_MESSAGE,"No nodes");
 						}
+						if (selected_flag)
+						{
+							display_message(INFORMATION_MESSAGE," selected");
+							if (ranges_flag)
+							{
+								display_message(INFORMATION_MESSAGE," and in given ranges");
+							}
+						}
+						else if (ranges_flag)
+						{
+							display_message(INFORMATION_MESSAGE," in given ranges");
+						}
+						else if (!all_flag)
+						{
+							display_message(INFORMATION_MESSAGE," chosen");
+						}
+						display_message(INFORMATION_MESSAGE,"\n");
 					}
 				}
 				else
