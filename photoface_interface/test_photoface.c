@@ -106,9 +106,6 @@ Runs a job through the photoface interface.
 	pf_set_display_message_function(PF_WARNING_MESSAGE,display_message_function,NULL);
 #endif /* defined (MANUAL_CMISS) */
 
-	/* pf_specify_paths("/hosts/netapp/lifefx/data/photoface/", "/hosts/netapp/lifefx/data/photoface/"); */
-	/* pf_specify_paths("/hosts/netapp/home/shane/photoface/", "/hosts/netapp/home/shane/photoface/"); */
-	/* pf_specify_paths("/blackett/mirage/photoface/", "/blackett/mirage/photoface/"); */
 	pf_specify_paths("/home/blackett/lifefx/photoface/", "/home/blackett/lifefx/photoface/");
 
 	pf_setup("rachelv_r05m", "", &pf_job_id);
@@ -156,8 +153,6 @@ Runs a job through the photoface interface.
 			image_ptr++;
 			*image_ptr = 128.0;
 			image_ptr++;
-			printf("%ud %ud %ud\n", *(image_ptr - 3), *(image_ptr - 2), 
-				*(image_ptr - 1)); 
 		}
 	}
 	
@@ -204,13 +199,12 @@ Runs a job through the photoface interface.
 			texture_array[3 * 70 * 100 + 3 * 70 + 1], texture_array[3 * 70 * 100 + 3 * 70 + 2]);
 	}
 
-	/* Free up the path memory */
-	pf_specify_paths(NULL, NULL);
-
 
 	/* Write out the files */
-	pf_write_head_model("test_photoface.obj", obj.number_of_vertices, obj.vertex_3d_locations,
-		obj.number_of_texture_vertices, obj.texture_vertex_3d_locations,
+	/* Most of the model comes from pf_get_head_model but the number of dynamic vertices
+		comes from pf_get_basis */
+	pf_write_head_model("test_photoface.obj", obj.number_of_vertices, number_of_vertices, 
+		obj.vertex_3d_locations, obj.number_of_texture_vertices, obj.texture_vertex_3d_locations,
 		obj.number_of_triangles, obj.triangle_vertices,
 		obj.triangle_texture_vertices);
 	
@@ -222,4 +216,13 @@ Runs a job through the photoface interface.
 	pf_write_scene_graph("test_photoface_scenegraph.txt",
 		eye_point, interest_point, up_vector, view_angle,
 		eyeball_fitted_3d_positions, eyeball_fitted_3d_positions + 3);
+	/* Now we could use these files to generate a head */
+
+
+	/* End this job */
+	pf_close(pf_job_id);
+
+
+	/* Free up the path memory */
+	pf_specify_paths(NULL, NULL);
 }

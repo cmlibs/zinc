@@ -1950,7 +1950,6 @@ the memory associated with it and unlocks the access to that job.
 				DEALLOCATE(*pf_job_address);
 
 				/* Unlock the directory */
-				printf("Removing lock %s\n", working_path);
 #if defined (WIN32)
 				RemoveDirectory(working_path);
 #else /* defined (WIN32) */
