@@ -3393,7 +3393,7 @@ the second the denominator.
 					if (42!=file_type)
 					{
 						display_message(ERROR_MESSAGE,
-							"read_tiff_image_file.  Invalid TIFF file type");
+							"read_tiff_image_file.  Invalid TIFF file type %d", file_type);
 						return_code=0;
 					}
 				}
