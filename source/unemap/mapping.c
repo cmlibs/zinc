@@ -4005,7 +4005,7 @@ referenced by <map_number>. Glyph type taken from <electrodes_marker_type>
 #endif
 
 					GT_element_settings_set_material(settings,material);
-					GT_element_settings_set_glyph_edit_mode(settings,GLYPH_EDIT_POSITION);
+					GT_element_settings_set_select_mode(settings,GRAPHICS_SELECT_ON);
 					glyph_centre[0]=0.0;
 					glyph_centre[1]=0.0;
 					glyph_centre[2]=0.0;

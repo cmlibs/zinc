@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : movie.c
 
-LAST MODIFIED : 4 February 2000
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1363,7 +1363,7 @@ static int Mirage_movie_graphics_show_points(struct Scene *scene,
 	struct GROUP(FE_element) *element_group,struct Graphical_material *material,
 	struct GT_object *glyph,float point_size,struct Computed_field *label_field)
 /*******************************************************************************
-LAST MODIFIED : 19 August 1999
+LAST MODIFIED : 23 February 2000
 
 DESCRIPTION :
 Adds points in the given <material>, possibly with node numbers on to the
@@ -1385,7 +1385,7 @@ Regenerates the GFE but does not update the scene.
 			if (settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_NODE_POINTS))
 			{
 				GT_element_settings_set_material(settings,material);
-				GT_element_settings_set_glyph_edit_mode(settings,GLYPH_EDIT_POSITION);
+				GT_element_settings_set_select_mode(settings,GRAPHICS_SELECT_ON);
 				glyph_centre[0]=0.0;
 				glyph_centre[1]=0.0;
 				glyph_centre[2]=0.0;
