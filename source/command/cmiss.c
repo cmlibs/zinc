@@ -16472,34 +16472,35 @@ help mode.
 							{
 								component_derivatives_data->components_number_of_derivatives[i]
 									= number_of_derivatives;
-								if (ALLOCATE(nodal_value_types, enum FE_nodal_value_type,
-									1 + number_of_derivatives))
+								if (0 < number_of_derivatives)
 								{
-									component_derivatives_data->components_nodal_value_types[i] =
-										nodal_value_types;
-									/* first FE_NODAL_VALUE, then derivatives */
-									nodal_value_types[0] = FE_NODAL_VALUE;
-									for (j = 0; return_code && (j < number_of_derivatives); j++)
+									if (ALLOCATE(nodal_value_types,
+										enum FE_nodal_value_type, number_of_derivatives))
 									{
-										if (!((current_token = state->current_token) &&
-											STRING_TO_ENUMERATOR(FE_nodal_value_type)(current_token,
-												&(nodal_value_types[j+1])) &&
-											shift_Parse_state(state, 1)))
+										component_derivatives_data->components_nodal_value_types[i]
+											= nodal_value_types;
+										for (j = 0; return_code && (j < number_of_derivatives); j++)
 										{
-											display_message(ERROR_MESSAGE,
-												"Missing or invalid nodal value type: %s",
-												current_token);
-											display_parse_state_location(state);
-											return_code = 0;
+											if (!((current_token = state->current_token) &&
+												STRING_TO_ENUMERATOR(FE_nodal_value_type)(current_token,
+													&(nodal_value_types[j])) &&
+												shift_Parse_state(state, 1)))
+											{
+												display_message(ERROR_MESSAGE,
+													"Missing or invalid nodal value type: %s",
+													current_token);
+												display_parse_state_location(state);
+												return_code = 0;
+											}
 										}
 									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"set_FE_node_field_component_derivatives.  "
-										"Not enough memory for nodal_value_types");
-									return_code = 0;
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"set_FE_node_field_component_derivatives.  "
+											"Not enough memory for nodal_value_types");
+										return_code = 0;
+									}
 								}
 							}
 							else
@@ -16850,7 +16851,7 @@ use node_manager and node_selection.
 							}
 							/* else leave the default */
 
-							if (component_versions_data.number_of_components)
+							if (component_derivatives_data.number_of_components)
 							{
 								if (number_of_components ==
 									component_derivatives_data.number_of_components)
