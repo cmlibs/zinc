@@ -1182,5 +1182,5 @@ TabsToSpaces: $(TABS_TO_SPACES_OBJS)
 
 # sinclude used so that the makefile can be run when the dependency file doesn't exist,
 # it should then make one
-# sinclude $(PRODUCT_SOURCE_PATH)/$(DEPENDFILE)
+sinclude $(PRODUCT_SOURCE_PATH)/$(DEPENDFILE)
 sinclude $(DEPENDFILE)
