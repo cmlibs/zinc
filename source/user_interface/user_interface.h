@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : user_interface.h
 
-LAST MODIFIED : 22 July 2002
+LAST MODIFIED : 24 July 2002
 
 DESCRIPTION :
 Function definitions for the user interface.
@@ -216,6 +216,7 @@ Returns the application shell widget
 ==============================================================================*/
 #endif /* defined (MOTIF) */
 
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
 int User_interface_get_widget_spacing(struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
@@ -223,6 +224,7 @@ LAST MODIFIED : 5 March 2002
 DESCRIPTION :
 Returns the application shell widget
 ==============================================================================*/
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
 
 #if defined (OPENGL_API)
 int User_interface_set_specified_visual_id(struct User_interface *user_interface,
