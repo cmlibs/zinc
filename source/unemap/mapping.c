@@ -12822,7 +12822,9 @@ cylinder with z axis  up centre.
 cf construct_rgb_triple_gouraud_map which works with rgb triples, not floats
 ==============================================================================*/
 {
+#if defined (OLD_CODE)
 	enum Map_type map_type;
+#endif /* defined (OLD_CODE) */
 	float delta_value,delta_y,end_value,*electrode_value,gradient[3],
 		inv_edge_y_length[3],*pixel_value,start_value,*stretch_x,*stretch_y,value,
 		vertex_value[3];
@@ -12860,6 +12862,7 @@ cf construct_rgb_triple_gouraud_map which works with rgb triples, not floats
 		map_width=sub_map->width;
 		stretch_x=sub_map->stretch_x;
 		stretch_y=sub_map->stretch_y;
+#if defined (OLD_CODE)
 		if (map->type)
 		{
 			map_type= *(map->type);
@@ -12868,7 +12871,6 @@ cf construct_rgb_triple_gouraud_map which works with rgb triples, not floats
 		{
 			map_type=NO_MAP_FIELD;
 		}
-#if defined (OLD_CODE)
 		if (map_type==POTENTIAL)
 #endif /* defined (OLD_CODE) */
 		{
