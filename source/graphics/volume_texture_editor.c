@@ -5312,7 +5312,7 @@ printf("texture_window=%p\n",texture_window);
 				texture_window->material_val_tf=NULL;
 				/* create and clear voltex */
 				texture_window->voltex=
-					CREATE(GT_voltex)(0,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,NULL,
+					CREATE(GT_voltex)(0,0,NULL,NULL,NULL,NULL,NULL,NULL,0,0,NULL,
 					  g_VOLTEX_SHADED_TEXMAP);
 /*???debug */
 printf("create_texture_edit_window  %p\n",texture_window->voltex);

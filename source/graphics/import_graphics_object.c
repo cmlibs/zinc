@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : import_graphics_object.c
 
-LAST MODIFIED : 16 April 1999
+LAST MODIFIED : 8 March 2002
 
 DESCRIPTION :
 Functions for reading graphics object data from a file.
@@ -925,7 +925,7 @@ DESCRIPTION :
 int file_read_voltex_graphics_object_from_obj(char *file_name,
 	void *file_read_graphics_object_from_obj_data_void)
 /*******************************************************************************
-LAST MODIFIED : 3 February 1999
+LAST MODIFIED : 8 March 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -941,7 +941,7 @@ DESCRIPTION :
 	char objname[100];
 	struct Environment_map **iso_env_map;
 	struct File_read_graphics_object_from_obj_data *file_read_graphics_object_data;
-	struct Graphical_material **iso_poly_material, *object_material;
+	struct Graphical_material *material, *object_material;
 	struct GT_voltex *voltex;
 	struct VT_volume_texture *vtexture;
 	struct VT_iso_vertex *vertex_list;
@@ -969,7 +969,6 @@ DESCRIPTION :
 					n_iso_polys = n_triangles;
 
 					if (ALLOCATE(triangle_list, int, 3*n_triangles)
-						&& ALLOCATE(iso_poly_material,struct Graphical_material *,3*n_triangles)
 						&& ALLOCATE(iso_poly_cop,double,3*n_triangles*3)
 						&& ALLOCATE(texturemap_coord,float,3*n_triangles*3)
 						&& ALLOCATE(texturemap_index,int,3*n_triangles)
@@ -1025,14 +1024,14 @@ DESCRIPTION :
 								case RENDER_TYPE_SHADED:
 								{
 									voltex = CREATE(GT_voltex)(n_triangles, n_vertices,
-										triangle_list, vertex_list, iso_poly_material,
+										triangle_list, vertex_list, 
 										iso_env_map, iso_poly_cop, texturemap_coord, texturemap_index,
 										/*n_rep*/1, /*n_data_components*/0, (GTDATA *)NULL, g_VOLTEX_SHADED_TEXMAP);
 								} break;
 								case RENDER_TYPE_WIREFRAME:
 								{
 									voltex = CREATE(GT_voltex)(n_triangles, n_vertices,
-										triangle_list, vertex_list, iso_poly_material,
+										triangle_list, vertex_list, 
 										iso_env_map, iso_poly_cop, texturemap_coord, texturemap_index,
 										/*n_rep*/1, /*n_data_components*/0, (GTDATA *)NULL, 
 										g_VOLTEX_WIREFRAME_SHADED_TEXMAP);
@@ -1055,9 +1054,12 @@ DESCRIPTION :
 										triangle_list[3*acc_triangle_index+j]=
 											vtexture->mc_iso_surface->
 											compiled_triangle_list[i]->vertex_index[j];
-										iso_poly_material[3*acc_triangle_index+j]=
-											vtexture->mc_iso_surface->
-											compiled_triangle_list[i]->material[j];
+										if (material = vtexture->mc_iso_surface->
+											compiled_triangle_list[i]->material[j])
+										{
+											GT_voltex_set_vertex_material(voltex,
+												3*acc_triangle_index+j, material);
+										}
 										iso_env_map[3*acc_triangle_index+j]=
 											vtexture->mc_iso_surface->
 											compiled_triangle_list[i]->env_map[j];

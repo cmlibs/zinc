@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : makegtobj.c
 
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 8 March 2002
 
 DESCRIPTION :
 Call graphics routines in the API.
@@ -22,7 +22,7 @@ Call graphics routines in the API.
 
 int makegtobject(gtObject *object,float time,int draw_selected)
 /*******************************************************************************
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 8 March 2002
 
 DESCRIPTION :
 Convert graphical object into API object.
@@ -313,7 +313,8 @@ un-selected graphics are drawn.
 								}
 								draw_voltexGL(voltex->n_iso_polys,voltex->triangle_list,
 									voltex->vertex_list,voltex->n_vertices,voltex->n_rep,
-									voltex->iso_poly_material,voltex->iso_env_map,
+									voltex->per_vertex_materials,
+									voltex->iso_poly_material_index,voltex->iso_env_map,
 									voltex->texturemap_coord,voltex->texturemap_index,
 									voltex->n_data_components,voltex->data,
 									material,spectrum);

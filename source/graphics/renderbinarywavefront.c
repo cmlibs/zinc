@@ -354,12 +354,13 @@ DESCRIPTION :
 static int draw_voltex_wavefront(struct Binary_wavefront_data *data,
 	int full_write, int n_iso_polys,int *triangle_list,
 	struct VT_iso_vertex *vertex_list,int n_vertices,int n_rep,
-	struct Graphical_material **iso_poly_material,
-	struct Environment_map **iso_env_map,double *iso_poly_cop,
+	struct Graphical_material **per_vertex_materials,
+	int *iso_poly_material_index,
+	struct Environment_map **iso_env_map, double *iso_poly_cop,
 	float *texturemap_coord,int *texturemap_index,int n_data_components,
 	struct Graphical_material *default_material, struct Spectrum *spectrum)
 /*******************************************************************************
-LAST MODIFIED : 2 October 1997
+LAST MODIFIED : 8 March 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -377,7 +378,8 @@ DESCRIPTION :
 	USE_PARAMETER(spectrum);
 	/* default return code */
 	return_code=0;
-	if (triangle_list&&vertex_list&&iso_poly_material&&iso_env_map&&
+	if (triangle_list && vertex_list &&
+		((!iso_poly_material_index) || per_vertex_materials) && iso_env_map &&
 		texturemap_coord&&texturemap_index&&(0<n_rep)&&(0<n_iso_polys))
 	{
 		last_material=(struct Graphical_material *)NULL;
@@ -403,24 +405,32 @@ DESCRIPTION :
 			{
 				/* if an environment map exists use it in preference to a material */
 				/*???MS.  What am I doing with these crazy index orders? */
+				/*???RC.  Don't do anything with these materials here anyway! */
 				if (iso_env_map[i*3])
 				{
-					if (iso_env_map[i*3]->face_material[texturemap_index[i*3]])
+					if ((iso_env_map[i*3]->face_material)[texturemap_index[i*3]])
 					{
-						if (last_material!=(next_material=iso_env_map[i*3]->
-							face_material[texturemap_index[i*3]]))
-						{
-							last_material=next_material;
-						}
+						next_material =
+							iso_env_map[i*3]->face_material[texturemap_index[i*3]];
 					}
 				}
 				else
 				{
-					if (last_material!=(next_material=iso_poly_material[i*3]))
+					if (iso_poly_material_index && iso_poly_material_index[i*3])
 					{
-						last_material=next_material;
+						next_material =
+							per_vertex_materials[iso_poly_material_index[i*3] - 1];
 					}
 				}
+				if (!next_material)
+				{
+					next_material = default_material;
+				}
+				if (next_material != last_material)
+				{
+					last_material = next_material;
+				}
+
 				j=0;
 				for (k=0;k<3;k++)
 				{
@@ -428,24 +438,33 @@ DESCRIPTION :
 					vt[j][k]=texturemap_coord[3*(3*i+0)+k];
 					/* vn[j][k]=vertex_list[triangle_list[i*3+0]+n_vertices*ii].normal[k]; */
 				}
+
+				next_material = default_material;
 				if (iso_env_map[i*3+2])
 				{
 					if (iso_env_map[i*3+2]->face_material[texturemap_index[i*3+2]])
 					{
-						if (last_material!=(next_material=iso_env_map[i*3+2]->
-							face_material[texturemap_index[i*3+2]]))
-						{
-							last_material=next_material;
-						}
+						next_material=
+							iso_env_map[i*3+2]->face_material[texturemap_index[i*3+2]];
 					}
 				}
 				else
 				{
-					if (last_material!=(next_material=iso_poly_material[i*3+2]))
+					if (iso_poly_material_index && iso_poly_material_index[i*3+2])
 					{
-						last_material=next_material;
+						next_material =
+							per_vertex_materials[iso_poly_material_index[i*3+2] - 1];
 					}
 				}
+				if (!next_material)
+				{
+					next_material = default_material;
+				}
+				if (next_material != last_material)
+				{
+					last_material=next_material;
+				}
+
 				j=1;
 				for (k=0;k<3;k++)
 				{
@@ -453,24 +472,33 @@ DESCRIPTION :
 					vt[j][k]=texturemap_coord[3*(3*i+1)+k];
 					/* vn[j][k]=vertex_list[triangle_list[i*3+2]+n_vertices*ii].normal[k]; */
 				}
+
+				next_material=default_material;
 				if (iso_env_map[i*3+1])
 				{
 					if (iso_env_map[i*3+1]->face_material[texturemap_index[i*3+1]])
 					{
-						if (last_material!=(next_material=iso_env_map[i*3+1]->
-							face_material[texturemap_index[i*3+1]]))
-						{
-							last_material=next_material;
-						}
+						next_material=
+							iso_env_map[i*3+1]->face_material[texturemap_index[i*3+1]];
 					}
 				}
 				else
 				{
-					if (last_material!=(next_material=iso_poly_material[i*3+1]))
+					if (iso_poly_material_index && iso_poly_material_index[i*3+1])
 					{
-						last_material=next_material;
+						next_material =
+							per_vertex_materials[iso_poly_material_index[i*3+1] - 1];
 					}
 				}
+				if (!next_material)
+				{
+					next_material = default_material;
+				}
+				if (next_material != last_material)
+				{
+					last_material = next_material;
+				}
+
 				j=2;
 				for(k=0;k<3;k++)
 				{
@@ -551,11 +579,10 @@ DESCRIPTION :
 static int make_binary_wavefront(struct Binary_wavefront_data *data, int full_write,
 	gtObject *object, float time)
 /*******************************************************************************
-LAST MODIFIED : 8 October 1997
+LAST MODIFIED : 8 March 2002
 
 DESCRIPTION :
 Convert graphical object into Wavefront object file.
-
 ==============================================================================*/
 {
 	float proportion, *times;
@@ -680,7 +707,8 @@ Convert graphical object into Wavefront object file.
 							draw_voltex_wavefront(data, full_write,
 								voltex->n_iso_polys,voltex->triangle_list,
 								voltex->vertex_list,voltex->n_vertices,voltex->n_rep,
-								voltex->iso_poly_material,voltex->iso_env_map,
+								voltex->per_vertex_materials,
+								voltex->iso_poly_material_index,voltex->iso_env_map,
 								voltex->iso_poly_cop, voltex->texturemap_coord,
 								voltex->texturemap_index,voltex->n_data_components,
 								object->default_material, object->spectrum);

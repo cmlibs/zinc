@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rendervrml.c
 
-LAST MODIFIED : 16 January 2002
+LAST MODIFIED : 8 March 2002
 
 DESCRIPTION :
 Renders gtObjects to VRML file
@@ -233,19 +233,30 @@ static int write_graphics_object_vrml(FILE *vrml_file,
 
 static int write_texture_vrml(FILE *file,struct Texture *texture)
 /*******************************************************************************
-LAST MODIFIED : 23 November 1999
+LAST MODIFIED : 11 February 2002
 
 DESCRIPTION :
-Writes VRML that defines the texture
+Writes VRML that defines the texture.
 ==============================================================================*/
 {
-	float width,height;
-	int return_code;
+	char *texture_name;
+	float width, height, depth;
+	int width_texels, height_texels, depth_texels, return_code;
 
 	ENTER(write_texture_vrml);
-	if (texture&&file)
+	if (texture && file)
 	{
-		Texture_get_physical_size(texture,&width,&height);
+		Texture_get_size(texture, &width_texels, &height_texels, &depth_texels);
+		if (1 != depth_texels)
+		{
+			GET_NAME(Texture)(texture, &texture_name);
+			display_message(WARNING_MESSAGE,
+				"write_texture_vrml.  VRML97 file cannot use 3-D texture %s; "
+				"file will refer to nonexistent 3-D image series template %s",
+				texture_name, Texture_get_image_file_name(texture));
+			DEALLOCATE(texture_name);
+		}
+		Texture_get_physical_size(texture, &width, &height, &depth);
 		fprintf(file,"texture  ImageTexture\n{\n");
 		fprintf(file,"  url \"%s\"\n",Texture_get_image_file_name(texture));
 		fprintf(file,"} #ImageTexture\n");
@@ -255,7 +266,7 @@ Writes VRML that defines the texture
 		fprintf(file,"  scale %f %f\n", 1./width , 1./height );
 		fprintf(file,"  center	0.0 0.0\n" );
 		fprintf(file,"} #TextureTransform\n");
-		return_code=1;
+		return_code = 1;
 	}
 	else
 	{
@@ -1953,24 +1964,25 @@ DESCRIPTION :
 
 static int draw_voltex_vrml(FILE *vrml_file,int n_iso_polys,int *triangle_list,
 	struct VT_iso_vertex *vertex_list,int n_vertices,int n_rep,
-	struct Graphical_material **iso_poly_material,
-	struct Environment_map **iso_env_map,
+	struct Graphical_material **per_vertex_materials,
+	int *iso_poly_material_index, struct Environment_map **iso_env_map,
 	float *texturemap_coord,int *texturemap_index,int number_of_data_components,
 	GTDATA *data,struct Graphical_material *default_material,struct Spectrum *spectrum,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 /*******************************************************************************
-LAST MODIFIED : 9 May 1999
+LAST MODIFIED : 8 March 2002
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	int i,ii,return_code;
-	struct Graphical_material *last_material,*material,*next_material;
+	struct Graphical_material *last_material, *next_material;
 
 	ENTER(draw_voltex_vrml);
 	/* default return code */
 	return_code=0;
-	if (triangle_list&&vertex_list&&iso_poly_material&&iso_env_map&&
+	if (triangle_list && vertex_list &&
+		((!iso_poly_material_index) || per_vertex_materials) && iso_env_map &&
 		texturemap_coord&&texturemap_index&&(0<n_rep)&&(0<n_iso_polys))
 	{
 		last_material=(struct Graphical_material *)NULL;
@@ -1979,32 +1991,39 @@ DESCRIPTION :
 			for (i=0;i<n_iso_polys;i++)
 			{
 				/* if an environment map exists use it in preference to a material */
-				next_material=(struct Graphical_material *)NULL;
+				next_material = default_material;
 				if (iso_env_map[i*3])
 				{
 					if ((iso_env_map[i*3]->face_material)[texturemap_index[i*3]])
 					{
-						if (next_material=iso_env_map[i*3]->
-							face_material[texturemap_index[i*3]])
-						{
-							last_material=next_material;
-						}
+						next_material =
+							iso_env_map[i*3]->face_material[texturemap_index[i*3]];
 					}
 				}
 				else
 				{
-					if (next_material=iso_poly_material[i*3])
+					if (iso_poly_material_index && iso_poly_material_index[i*3])
 					{
-						last_material=next_material;
+						next_material =
+							per_vertex_materials[iso_poly_material_index[i*3] - 1];
 					}
 				}
+				if (!next_material)
+				{
+					next_material = default_material;
+				}
+				if (next_material != last_material)
+				{
+					last_material = next_material;
+				}
+
 				fprintf(vrml_file,"Shape {\n");
 				fprintf(vrml_file,"  appearance\n");
-				if ((material=next_material)||(material=default_material))
+				if (next_material)
 				{
 					fprintf(vrml_file,"Appearance {\n");
 					fprintf(vrml_file,"  material\n");
-					activate_material_vrml(vrml_file,material,
+					activate_material_vrml(vrml_file, next_material,
 						vrml_prototype_list,
 						/*no_define*/0,/*emissive_only*/0);
 					fprintf(vrml_file,"} #Appearance\n");
@@ -2052,25 +2071,32 @@ DESCRIPTION :
 #if defined (VRML_TEXTURES)
 				/*???SAB.  Not supported yet */
 				glTexCoord2fv(&(texturemap_coord[3*(3*i+0)]));
+
+				next_material = default_material;
 				if (iso_env_map[i*3+2])
 				{
 					if (iso_env_map[i*3+2]->face_material[texturemap_index[i*3+2]])
 					{
-						if (last_material!=(next_material=iso_env_map[i*3+2]->
-							face_material[texturemap_index[i*3+2]]))
-						{
-							execute_Graphical_material(next_material);
-							last_material=next_material;
-						}
+						next_material=
+							iso_env_map[i*3+2]->face_material[texturemap_index[i*3+2]];
 					}
 				}
 				else
 				{
-					if (last_material!=(next_material=iso_poly_material[i*3+2]))
+					if (iso_poly_material_index && iso_poly_material_index[i*3+2])
 					{
-						execute_Graphical_material(next_material);
-						last_material=next_material;
+						next_material =
+							per_vertex_materials[iso_poly_material_index[i*3+2] - 1];
 					}
+				}
+				if (!next_material)
+				{
+					next_material = default_material;
+				}
+				if (next_material != last_material)
+				{
+					execute_Graphical_material(next_material);
+					last_material=next_material;
 				}
 #endif /* defined (VRML_TEXTURES) */
 				if (spectrum&&number_of_data_components&&data)
@@ -2117,7 +2143,7 @@ DESCRIPTION :
 int makevrml(FILE *vrml_file,gtObject *object,float time,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 /*******************************************************************************
-LAST MODIFIED : 9 July 1999
+LAST MODIFIED : 8 March 2002
 
 DESCRIPTION :
 Convert graphical object into API object.
@@ -2466,7 +2492,10 @@ Only writes the geometry field.
 						{
 							draw_voltex_vrml(vrml_file,voltex->n_iso_polys,
 								voltex->triangle_list,voltex->vertex_list,voltex->n_vertices,
-								voltex->n_rep,voltex->iso_poly_material,voltex->iso_env_map,
+								voltex->n_rep,
+								voltex->per_vertex_materials,
+								voltex->iso_poly_material_index,
+								voltex->iso_env_map,
 								voltex->texturemap_coord,
 								voltex->texturemap_index,voltex->n_data_components,voltex->data,
 								object->default_material,object->spectrum,
