@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_finite_element.c
 
-LAST MODIFIED : 19 July 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -2996,7 +2996,7 @@ DESCRIPTION :
 
 int Computed_field_set_type_cmiss_number(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_CMISS_NUMBER with the supplied
@@ -3011,6 +3011,7 @@ although its cache may be lost.
 	ENTER(Computed_field_set_type_cmiss_number);
 	if (field)
 	{
+		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		/* none */
 		/* 2. free current type-specific data */
@@ -3468,7 +3469,7 @@ DESCRIPTION :
 
 int Computed_field_set_type_xi_coordinates(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_XI_COORDINATES with the supplied
@@ -3483,6 +3484,7 @@ although its cache may be lost.
 	ENTER(Computed_field_set_type_xi_coordinates);
 	if (field)
 	{
+		return_code=1;
 		/* 1. make dynamic allocations for any new type-specific data */
 		/* none */
 		/* 2. free current type-specific data */
