@@ -6263,9 +6263,9 @@ if they should be 1-D or 2-D arrays ?
 															(event->time)*(signal->buffer->number_of_signals)+
 															(signal->index)];
 													} break;
-													*value=((*value)-((*device)->channel->offset))*
-														((*device)->channel->gain);
 												}
+												*value=((*value)-((*device)->channel->offset))*
+													((*device)->channel->gain);
 											} break;
 										}
 										x_data++;
