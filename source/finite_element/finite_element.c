@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 21 December 1999
+LAST MODIFIED : 24 January 2000
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -23274,7 +23274,7 @@ values - like in the .exelem files.
 
 int merge_FE_element(struct FE_element *destination,struct FE_element *source)
 /*******************************************************************************
-LAST MODIFIED : 5 October 1999
+LAST MODIFIED : 24 January 2000
 
 DESCRIPTION :
 Merges the fields in <destination> with those from <source>, leaving the
@@ -23282,7 +23282,7 @@ combined fields in <destination>.
 ==============================================================================*/
 {
 	FE_value *destination_scale_factor,*scale_factor,*scale_factors,
-		*source_scale_factor,*values;
+		*source_scale_factor;
 	int destination_dimension,*destination_number_in_scale_factor_set,i,j,
 		*number_in_scale_factor_set,number_of_nodes,number_of_scale_factors,
 		number_of_scale_factor_sets,*numbers_in_scale_factor_sets,
@@ -23500,7 +23500,7 @@ printf("Inconsistent faces 3.  %d \n",source->cm.number);
 										{
 											/* existing scale factor set */
 											if (*number_in_scale_factor_set==
-												*destination_number_in_scale_factor_set)
+											*destination_number_in_scale_factor_set)
 											{
 												for (j= *number_in_scale_factor_set;j>0;j--)
 												{
@@ -23518,7 +23518,6 @@ printf("Inconsistent faces 3.  %d \n",source->cm.number);
 												DEALLOCATE(scale_factor_set_identifiers);
 												DEALLOCATE(numbers_in_scale_factor_sets);
 												DEALLOCATE(nodes);
-												DEALLOCATE(values);
 											}
 										}
 										else
@@ -23624,7 +23623,6 @@ printf("Inconsistent faces 3.  %d \n",source->cm.number);
 															DEALLOCATE(scale_factor_set_identifiers);
 															DEALLOCATE(numbers_in_scale_factor_sets);
 															DEALLOCATE(nodes);
-															DEALLOCATE(values);
 														}
 													}
 													else
@@ -23638,7 +23636,6 @@ printf("Inconsistent faces 3.  %d \n",source->cm.number);
 														DEALLOCATE(scale_factor_set_identifiers);
 														DEALLOCATE(numbers_in_scale_factor_sets);
 														DEALLOCATE(nodes);
-														DEALLOCATE(values);
 													}
 												}
 												else
@@ -23650,7 +23647,6 @@ printf("Inconsistent faces 3.  %d \n",source->cm.number);
 													DEALLOCATE(scale_factor_set_identifiers);
 													DEALLOCATE(numbers_in_scale_factor_sets);
 													DEALLOCATE(nodes);
-													DEALLOCATE(values);
 												}											
 											}
 											else
@@ -23662,7 +23658,6 @@ printf("Inconsistent faces 3.  %d \n",source->cm.number);
 												DEALLOCATE(scale_factor_set_identifiers);
 												DEALLOCATE(numbers_in_scale_factor_sets);
 												DEALLOCATE(nodes);
-												DEALLOCATE(values);
 											}
 										}
 										else
@@ -23689,7 +23684,6 @@ printf("Inconsistent faces 3.  %d \n",source->cm.number);
 											}
 											DEALLOCATE(numbers_in_scale_factor_sets);
 											DEALLOCATE(nodes);
-											DEALLOCATE(values);
 										}
 									}
 								}
@@ -23703,7 +23697,6 @@ printf("Inconsistent faces 3.  %d \n",source->cm.number);
 										DEALLOCATE(scale_factor_set_identifiers);
 									}
 									DEALLOCATE(nodes);
-									DEALLOCATE(values);
 									return_code=0;
 								}
 							}
@@ -23711,7 +23704,6 @@ printf("Inconsistent faces 3.  %d \n",source->cm.number);
 							{
 								display_message(ERROR_MESSAGE,
 									"merge_FE_element.  Could not merge node information");
-								DEALLOCATE(values);
 								return_code=0;
 							}
 						}
@@ -23719,7 +23711,6 @@ printf("Inconsistent faces 3.  %d \n",source->cm.number);
 						{
 							display_message(ERROR_MESSAGE,
 						"merge_FE_element.  Insufficient memory to merge node information");
-							DEALLOCATE(values);
 							return_code=0;
 						}
 					}
