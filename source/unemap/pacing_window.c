@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : pacing_window.c
 
-LAST MODIFIED : 15 August 2003
+LAST MODIFIED : 14 October 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -304,7 +304,7 @@ Updates after a change to the cycle length for a stimulus type.
 static int change_control_width(struct Pacing_window *pacing_window,
 	float control_width)
 /*******************************************************************************
-LAST MODIFIED : 15 August 2003
+LAST MODIFIED : 14 October 2003
 
 DESCRIPTION :
 Called to change the control_width.
@@ -329,7 +329,6 @@ Called to change the control_width.
 			pacing_window->control_width=(pacing_window->resolution)*
 				(float)floor(control_width/(pacing_window->resolution)+0.5);
 		}
-		pacing_window->control_width=control_width;
 		sprintf(value_string,"%g",pacing_window->control_width);
 #if defined (MOTIF)
 		XtVaSetValues(pacing_window->control_width_value,
