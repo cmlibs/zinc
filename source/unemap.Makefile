@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : unemap.Makefile
 #
-# LAST MODIFIED : 13 August 2003
+# LAST MODIFIED : 23 December 2003
 #
 # DESCRIPTION :
 #
@@ -775,7 +775,7 @@ $(OBJECT_PATH)/version.o.h : $(OBJS) unemap.Makefile
 	fi	
 	echo '/* This is a generated file.  Do not edit.  Edit unemap.c or unemap.Makefile instead */' > $(OBJECT_PATH)/version.o.h;	  
 	date > date.h ;
-	sed 's/"//;s/./#define VERSION "unemap version 001.001.010  &/;s/.$$/&\\nCopyright 1996-2002, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.o.h
+	sed 's/"//;s/./#define VERSION "unemap version 001.001.010  &/;s/.$$/&\\nCopyright 1996-2004, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.o.h
 
 $(MAIN_OBJ) : $(MAIN_SRC) $(OBJECT_PATH)/version.o.h $(INTERPRETER_LIB)
 	@if [ -f $*.c ]; then \
