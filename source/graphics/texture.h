@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture.h
 
-LAST MODIFIED : 27 September 1999
+LAST MODIFIED : 3 February 2000
 
 DESCRIPTION :
 The data structures used for representing textures.
@@ -235,6 +235,14 @@ performed.
 ==============================================================================*/
 
 struct X3d_movie;
+
+struct X3d_movie *Texture_get_movie(struct Texture *texture);
+/*******************************************************************************
+LAST MODIFIED : 3 February 2000
+
+DESCRIPTION :
+Gets the current X3d_movie from the texture.
+==============================================================================*/
 
 int Texture_set_movie(struct Texture *texture,struct X3d_movie *movie,
 	struct User_interface *user_interface, char *image_file_name);

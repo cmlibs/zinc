@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture.c
 
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 3 February 2000
 
 DESCRIPTION :
 The functions for manipulating graphical textures.
@@ -2288,6 +2288,30 @@ performed.
 	return (return_code);
 } /* Texture_set_image_file */
 
+struct X3d_movie *Texture_get_movie(struct Texture *texture)
+/*******************************************************************************
+LAST MODIFIED : 3 February 2000
+
+DESCRIPTION :
+Gets the current X3d_movie from the texture.
+==============================================================================*/
+{
+	struct X3d_movie *movie;
+	ENTER(Texture_get_movie);
+	if (texture)
+	{
+		movie=texture->movie;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Texture_get_movie.  Invalid argument");
+		movie=(struct X3d_movie *)NULL;
+	}
+	LEAVE;
+
+	return (movie);
+} /* Texture_get_movie */
+
 int Texture_set_movie(struct Texture *texture,struct X3d_movie *movie,
 	struct User_interface *user_interface, char *image_file_name)
 /*******************************************************************************
@@ -2387,6 +2411,8 @@ texture, and must be given a value.
 
 			X3d_movie_add_callback(movie, user_interface->application_context,
 				Texture_movie_callback, (void *)texture);
+			X3d_movie_add_destroy_callback(movie,
+				Texture_movie_destroy_callback, (void *)texture);
 
 			if (ALLOCATE(temp_file_name,char,strlen(image_file_name)+1))
 			{

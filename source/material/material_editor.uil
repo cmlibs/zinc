@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : material_editor.uil
 !
-! LAST MODIFIED : 24 July 1995
+! LAST MODIFIED : 3 February 2000
 !
 ! DESCRIPTION :
 ! The widgets for the material_editor material_editor widget.
@@ -12,6 +12,7 @@ module mat_editor
 procedure
 	mat_editor_identify_button    (integer);
 	mat_editor_destroy_CB          ();
+	mat_editor_texture_btn_CB;
 
 value
 	shadow_size        : 2;
@@ -38,7 +39,11 @@ identifier
 	mat_editor_specular_form_ID;
 	mat_editor_alpha_form_ID;
 	mat_editor_shininess_form_ID;
+	mat_editor_texture_btn_ID;
+	mat_editor_texture_form_ID;
 	mat_editor_a3d_form_ID;
+  !fonts here
+  button_font;
 
 !**************************************************************************************
 !**************************************************************************************
@@ -420,6 +425,7 @@ object
 			{
 			XmForm mat_editor_alpha_form;
 			XmForm mat_editor_shininess_form;
+			XmRowColumn mat_editor_texture_entry;
 			};
 		};
 	mat_editor_alpha_form: XmForm
@@ -434,7 +440,8 @@ object
 			XmNrightPosition = 100;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomWidget = mat_editor_texture_entry;
 			XmNbottomOffset = 0;
 			XmNuserData = mat_editor_structure;
 			};
@@ -455,7 +462,8 @@ object
 			XmNrightOffset = 0;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomWidget = mat_editor_texture_entry;
 			XmNbottomOffset = 0;
 			XmNuserData = mat_editor_structure;
 			};
@@ -464,6 +472,58 @@ object
 			MrmNcreateCallback = procedure mat_editor_identify_button(mat_editor_shininess_form_ID);
 			};
 		};
+  mat_editor_texture_entry: XmRowColumn
+    {
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNbottomAttachment = XmATTACH_FORM;
+!Uncomment the following to reduce size of rowcolumn.
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+			XmNuserData = mat_editor_structure;
+			};
+    controls
+      {
+      XmToggleButtonGadget mat_editor_texture_btn;
+      XmForm mat_editor_texture_form;
+      };
+    };
+  mat_editor_texture_btn: XmToggleButtonGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Texture:");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+			XmNuserData = mat_editor_structure;
+      };
+    callbacks
+      {
+      MrmNcreateCallback =
+				procedure mat_editor_identify_button(mat_editor_texture_btn_ID);
+      XmNvalueChangedCallback = procedure
+				mat_editor_texture_btn_CB(mat_editor_structure);
+      };
+    };
+  mat_editor_texture_form: XmForm
+    {
+    arguments
+      {
+ 			XmNuserData = mat_editor_structure;
+      };
+    callbacks
+      {
+      MrmNcreateCallback =
+				procedure mat_editor_identify_button(mat_editor_texture_form_ID);
+      };
+    };
 !**************************************************************************************
 	mat_editor_3d: XmForm
 		{
