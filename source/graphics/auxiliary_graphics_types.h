@@ -1,13 +1,13 @@
 /*******************************************************************************
 FILE : auxiliary_graphics_types.h
 
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
 Structures and enumerated types needed to produce graphics primitives but not
 specific to any of them. Examples are:
 - struct Element_discretization: stores the number of segments used to
-represent curvesin three xi-directions;
+represent curves in three xi-directions;
 - Triple;
 ==============================================================================*/
 #if !defined (AUXILIARY_GRAPHICS_TYPES_H)
@@ -94,7 +94,7 @@ typedef float Triple[3];
 
 enum Xi_discretization_mode
 /*******************************************************************************
-LAST MODIFIED : 22 March 1999
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
 Enumerator for controlling where discrete objects are placed in the Xi space of
@@ -121,6 +121,7 @@ Make sure Xi_discretization_mode_string handles any enumerated values you add.
 	XI_DISCRETIZATION_CELL_CENTRES,
 	XI_DISCRETIZATION_CELL_CORNERS,
 	XI_DISCRETIZATION_CELL_RANDOM,
+	XI_DISCRETIZATION_EXACT_XI,
 	XI_DISCRETIZATION_MODE_AFTER_LAST
 }; /* enum Xi_discretization_mode */
 
@@ -273,9 +274,9 @@ direction.
 
 Triple *Xi_discretization_mode_get_xi_points(
 	enum Xi_discretization_mode xi_discretization_mode,int dimension,
-	int *number_in_xi,int *number_of_xi_points);
+	int *number_in_xi,Triple exact_xi,int *number_of_xi_points);
 /*******************************************************************************
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
 Allocates and returns the set of points for <xi_discretization_mode>
@@ -284,18 +285,22 @@ xi direction. Layout of points is controlled by the <xi_discretization_mode>.
 Function also returns <number_of_xi_points> calculated. Xi positions are always
 returned as triples with remaining xi coordinates 0 for 1-D and 2-D cases.
 Note: xi changes from 0 to 1 over each element direction.
+<exact_xi> should be supplied for mode XI_DISCRETIZATION_EXACT_XI - passed and
+allocated here for a consistent interface.
 ==============================================================================*/
 
 int Xi_discretization_mode_get_element_point_xi(
 	enum Xi_discretization_mode xi_discretization_mode,int dimension,
-	int *number_in_xi,int element_point_number,FE_value *xi);
+	int *number_in_xi,Triple exact_xi,int element_point_number,FE_value *xi);
 /*******************************************************************************
-LAST MODIFIED : 24 May 2000
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
 Returns in <xi> the single xi location for <element_point_number> from those
 that would be returned by Xi_discretization_mode_get_xi_points.
 Fails for truly random discretization modes.
+<exact_xi> should be supplied for mode XI_DISCRETIZATION_EXACT_XI - passed here
+for a consistent interface.
 ==============================================================================*/
 
 char **Xi_discretization_mode_get_valid_strings(int *number_of_valid_strings);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : auxiliary_graphics_types.c
 
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
 Structures and enumerated types needed to produce graphics primitives but not
@@ -801,7 +801,7 @@ A modifier function for setting discretization in each element direction.
 char *Xi_discretization_mode_string(
 	enum Xi_discretization_mode xi_discretization_mode)
 /*******************************************************************************
-LAST MODIFIED : 2 March 1999
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
 Returns a pointer to a static string describing the <xi_discretization_mode>,
@@ -826,6 +826,10 @@ The returned string must not be DEALLOCATEd!
 		case XI_DISCRETIZATION_CELL_RANDOM:
 		{
 			return_string="cell_random";
+		} break;
+		case XI_DISCRETIZATION_EXACT_XI:
+		{
+			return_string="exact_xi";
 		} break;
 		default:
 		{
@@ -887,6 +891,10 @@ less than 1 in any direction.
 						number_of_xi_points *= (number_in_xi[i]+1);
 					}
 				} break;
+				case XI_DISCRETIZATION_EXACT_XI:
+				{
+					number_of_xi_points=1;
+				} break;
 				default:
 				{
 					display_message(ERROR_MESSAGE,
@@ -910,9 +918,9 @@ less than 1 in any direction.
 
 Triple *Xi_discretization_mode_get_xi_points(
 	enum Xi_discretization_mode xi_discretization_mode,int dimension,
-	int *number_in_xi,int *number_of_xi_points)
+	int *number_in_xi,Triple exact_xi,int *number_of_xi_points)
 /*******************************************************************************
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
 Allocates and returns the set of points for <xi_discretization_mode>
@@ -921,6 +929,8 @@ xi direction. Layout of points is controlled by the <xi_discretization_mode>.
 Function also returns <number_of_xi_points> calculated. Xi positions are always
 returned as triples with remaining xi coordinates 0 for 1-D and 2-D cases.
 Note: xi changes from 0 to 1 over each element direction.
+<exact_xi> should be supplied for mode XI_DISCRETIZATION_EXACT_XI - passed and
+allocated here for a consistent interface.
 ==============================================================================*/
 {
 	float spread[MAXIMUM_ELEMENT_XI_DIMENSIONS],xi_j,xi_k;
@@ -1091,6 +1101,22 @@ Note: xi changes from 0 to 1 over each element direction.
 							} break;
 						}
 					} break;
+					case XI_DISCRETIZATION_EXACT_XI:
+					{
+						if (exact_xi)
+						{
+							(*xi_points)[0]=exact_xi[0];
+							(*xi_points)[1]=exact_xi[1];
+							(*xi_points)[2]=exact_xi[2];
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Xi_discretization_mode_get_xi_points.  Missing exact Xi");
+							DEALLOCATE(xi_points);
+							*number_of_xi_points=0;
+						}
+					} break;
 					default:
 					{
 						display_message(ERROR_MESSAGE,
@@ -1128,21 +1154,24 @@ Note: xi changes from 0 to 1 over each element direction.
 
 int Xi_discretization_mode_get_element_point_xi(
 	enum Xi_discretization_mode xi_discretization_mode,int dimension,
-	int *number_in_xi,int element_point_number,FE_value *xi)
+	int *number_in_xi,Triple exact_xi,int element_point_number,FE_value *xi)
 /*******************************************************************************
-LAST MODIFIED : 25 May 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 Returns in <xi> the single xi location for <element_point_number> from those
 that would be returned by Xi_discretization_mode_get_xi_points.
 Fails for truly random discretization modes.
+<exact_xi> should be supplied for mode XI_DISCRETIZATION_EXACT_XI - passed here
+for a consistent interface.
 ==============================================================================*/
 {
 	int i,j,k,m,n,number_of_xi_points,return_code;
 
 	ENTER(Xi_discretization_mode_get_element_point_xi);
 	if (((XI_DISCRETIZATION_CELL_CENTRES==xi_discretization_mode)||
-		(XI_DISCRETIZATION_CELL_CORNERS==xi_discretization_mode))&&
+		(XI_DISCRETIZATION_CELL_CORNERS==xi_discretization_mode)||
+		(XI_DISCRETIZATION_EXACT_XI==xi_discretization_mode))&&
 		(0<dimension)&&(3>=dimension)&&number_in_xi&&xi&&
 		(number_of_xi_points=Xi_discretization_mode_get_number_of_xi_points(
 			xi_discretization_mode,dimension,number_in_xi))&&
@@ -1212,6 +1241,31 @@ Fails for truly random discretization modes.
 						xi[1] = (float)j/(float)number_in_xi[1];
 						xi[2] = (float)k/(float)number_in_xi[2];
 					} break;
+				}
+			} break;
+			case XI_DISCRETIZATION_EXACT_XI:
+			{
+				if (exact_xi)
+				{
+					if (0==element_point_number)
+					{
+						xi[0]=exact_xi[0];
+						xi[1]=exact_xi[1];
+						xi[2]=exact_xi[2];
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Xi_discretization_mode_get_element_point_xi.  "
+							"element_point_number must be 0 for exact_xi");
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Xi_discretization_mode_get_element_point_xi.  Missing exact Xi");
+					return_code=0;
 				}
 			} break;
 			default:
