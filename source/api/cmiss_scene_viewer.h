@@ -404,8 +404,36 @@ DESCRIPTION :
 Forces a redraw of the given scene viewer to take place immediately
 ==============================================================================*/
 
+int Cmiss_scene_viewer_get_freespin_tumble_angle(Cmiss_scene_viewer_id scene_viewer,
+	double *tumble_angle);
+/*******************************************************************************
+LAST MODIFIED : 15 October 1998
+
+DESCRIPTION :
+Returns the <scene_viewer> freespin tool tumble angle.
+==============================================================================*/
+
+int Cmiss_scene_viewer_set_freespin_tumble_angle(Cmiss_scene_viewer_id scene_viewer,
+	double *tumble_angle);
+/*******************************************************************************
+LAST MODIFIED : 15 October 1998
+
+DESCRIPTION :
+Sets the <scene_viewer> freespin tool tumble angle.
+==============================================================================*/
+
+int Cmiss_scene_viewer_get_freespin_tumble_axis(Cmiss_scene_viewer_id scene_viewer,
+	float *tumble_axis);
+/*******************************************************************************
+LAST MODIFIED : 9 October 2003
+
+DESCRIPTION :
+Gets the <scene_viewer> tumble axis.  The <tumble_axis> is the vector
+about which the scene is turning relative to its lookat point.
+==============================================================================*/
+
 int Cmiss_scene_viewer_start_freespin(Cmiss_scene_viewer_id scene_viewer,
-	float *tumble_axis, float tumble_angle);
+	float *tumble_axis, double tumble_angle);
 /*******************************************************************************
 LAST MODIFIED : 10 September 2003
 

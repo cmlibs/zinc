@@ -4199,8 +4199,95 @@ Scene_viewer_sleep to restore normal activity.
 	return (return_code);
 } /* Scene_viewer_awaken */
 
+int Scene_viewer_get_freespin_tumble_angle(struct Scene_viewer *scene_viewer,
+	double *tumble_angle)
+/*******************************************************************************
+LAST MODIFIED : 9 October 2003
+
+DESCRIPTION :
+Gets the <scene_viewer> tumble angle.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_get_freespin_tumble_angle);
+	if (scene_viewer && tumble_angle)
+	{
+		*tumble_angle = scene_viewer->tumble_angle;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_get_freespin_tumble_angle.  Missing scene_viewer");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_get_freespin_tumble_angle */
+
+int Scene_viewer_set_freespin_tumble_angle(struct Scene_viewer *scene_viewer,
+	double *tumble_angle)
+/*******************************************************************************
+LAST MODIFIED : 9 October 2003
+
+DESCRIPTION :
+Sets the <scene_viewer> tumble angle.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_get_freespin_tumble_angle);
+	if (scene_viewer && tumble_angle)
+	{
+		scene_viewer->tumble_angle = *tumble_angle;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_set_freespin_tumble_angle.  Missing scene_viewer");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_set_freespin_tumble_angle */
+
+int Scene_viewer_get_freespin_tumble_axis(struct Scene_viewer *scene_viewer,
+	float *tumble_axis)
+/*******************************************************************************
+LAST MODIFIED : 9 October 2003
+
+DESCRIPTION :
+Gets the <scene_viewer> tumble axis.  The <tumble_axis> is the vector
+about which the scene is turning relative to its lookat point.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_get_freespin_tumble_axis);
+	if (scene_viewer && tumble_axis)
+	{
+		tumble_axis[0] = scene_viewer->tumble_axis[0];
+		tumble_axis[1] = scene_viewer->tumble_axis[1];
+		tumble_axis[2] = scene_viewer->tumble_axis[2];
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_get_freespin_tumble_axis.  Missing scene_viewer");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_get_freespin_tumble_axis */
+
 int Scene_viewer_start_freespin(struct Scene_viewer *scene_viewer,
-	float *tumble_axis, float tumble_angle)
+	float *tumble_axis, double tumble_angle)
 /*******************************************************************************
 LAST MODIFIED : 10 September 2003
 
@@ -4212,7 +4299,7 @@ about which the scene is turning relative to its lookat point and the
 {
 	int return_code;
 
-	ENTER(Scene_viewer_stop_animations);
+	ENTER(Scene_viewer_start_freespin);
 	if (scene_viewer && tumble_axis)
 	{
 		scene_viewer->tumble_active = 1;

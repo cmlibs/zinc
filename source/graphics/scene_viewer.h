@@ -68,6 +68,9 @@ and the functions given their public names.
 #define Scene_viewer_set_perturb_lines Cmiss_scene_viewer_set_perturb_lines
 #define Scene_viewer_view_all Cmiss_scene_viewer_view_all
 #define Scene_viewer_redraw_now Cmiss_scene_viewer_redraw_now
+#define Scene_viewer_get_freespin_tumble_angle Cmiss_scene_viewer_get_freespin_tumble_angle
+#define Scene_viewer_set_freespin_tumble_angle Cmiss_scene_viewer_set_freespin_tumble_angle
+#define Scene_viewer_get_freespin_tumble_axis Cmiss_scene_viewer_get_freespin_tumble_axis
 #define Scene_viewer_start_freespin Cmiss_scene_viewer_start_freespin
 #define Scene_viewer_stop_animations Cmiss_scene_viewer_stop_animations
 
@@ -213,8 +216,36 @@ Restores manager callbacks of previously inactive scene_viewer. Must call after
 Scene_viewer_sleep to restore normal activity.
 ==============================================================================*/
 
+int Scene_viewer_get_freespin_tumble_angle(struct Scene_viewer *scene_viewer,
+	double *tumble_angle);
+/*******************************************************************************
+LAST MODIFIED : 9 October 2003
+
+DESCRIPTION :
+Gets the <scene_viewer> tumble angle.  
+==============================================================================*/
+
+int Scene_viewer_set_freespin_tumble_angle(struct Scene_viewer *scene_viewer,
+	double *tumble_angle);
+/*******************************************************************************
+LAST MODIFIED : 9 October 2003
+
+DESCRIPTION :
+Sets the <scene_viewer> tumble angle.  
+==============================================================================*/
+
+int Scene_viewer_get_freespin_tumble_axis(struct Scene_viewer *scene_viewer,
+	float *tumble_axis);
+/*******************************************************************************
+LAST MODIFIED : 9 October 2003
+
+DESCRIPTION :
+Gets the <scene_viewer> tumble axis.  The <tumble_axis> is the vector
+about which the scene is turning relative to its lookat point.
+==============================================================================*/
+
 int Scene_viewer_start_freespin(struct Scene_viewer *scene_viewer,
-	float *tumble_axis, float tumble_angle);
+	float *tumble_axis, double tumble_angle);
 /*******************************************************************************
 LAST MODIFIED : 10 September 2003
 
