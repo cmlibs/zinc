@@ -1933,46 +1933,6 @@ Main program for the CMISS Graphical User Interface
 						/* free application memory */
 					}
 				}
-				else
-				{
-					display_message(INFORMATION_MESSAGE,
-						"Usage :\n");
-					display_message(INFORMATION_MESSAGE,
-						"  cmgui\n");
-					display_message(INFORMATION_MESSAGE,
-						"    <-batch>                                batch mode\n");
-					display_message(INFORMATION_MESSAGE,
-						"    <-cm>                                   start cm on entry\n");
-					display_message(INFORMATION_MESSAGE,
-						"    <-cm_epath PATH_TO_EXAMPLES_DIRECTORY>  override the cm examples directory\n");
-					display_message(INFORMATION_MESSAGE,
-						"    <-id ID>                                an id for this instance\n");
-					display_message(INFORMATION_MESSAGE,
-						"    <-cm_parameters PARAMETER_FILE_NAME>    parameters for cm\n");
-					display_message(INFORMATION_MESSAGE,
-						"    <-command_list>                         write a list of the commands\n");
-					display_message(INFORMATION_MESSAGE,
-						"    <-display HOST:0>                       override host to display on\n");
-					display_message(INFORMATION_MESSAGE,
-						"    <-epath PATH_TO_EXAMPLES_DIRECTORY>     override the examples directory\n");
-					display_message(INFORMATION_MESSAGE,
-						"    <-example EXAMPLE_ID>                   command file is an example\n");
-					display_message(INFORMATION_MESSAGE,
-						"    <-execute EXECUTE_STRING>               string executed by cmiss before comfiles\n");
-#if defined (OLD_CODE)
-					display_message(INFORMATION_MESSAGE,
-						"    <-host HOSTNAME>                        host that Cmiss is running on\n");
-					display_message(INFORMATION_MESSAGE,
-						"    <-port NUMBER>                          socket port number to use\n");
-#endif /* defined (OLD_CODE) */
-					display_message(INFORMATION_MESSAGE,
-						"    <-mycm>                                 start mycm on entry\n");
-					display_message(INFORMATION_MESSAGE,
-						"    <-random NUMBER>                        random number seed (else random)\n");
-					display_message(INFORMATION_MESSAGE,
-						"    <COMMAND_FILE_NAME>                     execute the command file\n");
-					return_code=0;
-				}
 				if(!no_display)
 				{
 					DESTROY(Command_window)(&command_data.command_window);
@@ -2137,6 +2097,49 @@ Main program for the CMISS Graphical User Interface
 			}
 		}
 	}
+	if (!return_code)
+	{
+		display_message(INFORMATION_MESSAGE,
+			"Usage :\n");
+		display_message(INFORMATION_MESSAGE,
+			"  cmgui\n");
+		display_message(INFORMATION_MESSAGE,
+			"    <-batch>                                batch mode\n");
+		display_message(INFORMATION_MESSAGE,
+			"    <-cm>                                   start cm on entry\n");
+		display_message(INFORMATION_MESSAGE,
+			"    <-cm_epath PATH_TO_EXAMPLES_DIRECTORY>  override the cm examples directory\n");
+		display_message(INFORMATION_MESSAGE,
+			"    <-cm_parameters PARAMETER_FILE_NAME>    parameters for cm\n");
+		display_message(INFORMATION_MESSAGE,
+			"    <-command_list>                         write a list of the commands\n");
+		display_message(INFORMATION_MESSAGE,
+			"    <-display HOST:0>                       override host to display on\n");
+		display_message(INFORMATION_MESSAGE,
+			"    <-epath PATH_TO_EXAMPLES_DIRECTORY>     override the examples directory\n");
+		display_message(INFORMATION_MESSAGE,
+			"    <-example EXAMPLE_ID>                   command file is an example\n");
+		display_message(INFORMATION_MESSAGE,
+			"    <-execute EXECUTE_STRING>               string executed by cmiss before comfiles\n");
+#if defined (OLD_CODE)
+		display_message(INFORMATION_MESSAGE,
+			"    <-host HOSTNAME>                        host that Cmiss is running on\n");
+		display_message(INFORMATION_MESSAGE,
+			"    <-port NUMBER>                          socket port number to use\n");
+#endif /* defined (OLD_CODE) */
+		display_message(INFORMATION_MESSAGE,
+			"    <-h>                                    display this usage\n");
+		display_message(INFORMATION_MESSAGE,
+			"    <-id ID>                                an id for this instance\n");
+		display_message(INFORMATION_MESSAGE,
+			"    <-mycm>                                 start mycm on entry\n");
+		display_message(INFORMATION_MESSAGE,
+			"    <-random NUMBER>                        random number seed (else random)\n");
+		display_message(INFORMATION_MESSAGE,
+			"    <COMMAND_FILE_NAME>                     execute the command file\n");
+		return_code=0;
+	}
+
 	LEAVE;
 
 	return (return_code);
