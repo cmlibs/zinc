@@ -868,7 +868,7 @@ Open the <user_interface>.
 			sizeof(XFontStruct *),
 			XtOffsetOf(User_settings,button_font),
 			XmRString,
-			"*-Helvetica-medium-r-narrow--*-120-*"
+			"*-Helvetica-medium-r-*--*-120-*"
 		},
 		{
 			XmNlistFont,
