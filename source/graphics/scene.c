@@ -441,6 +441,36 @@ Private to the Scene and Scene_objects.
 	return (return_code);
 } /* Scene_changed_private */
 
+static int Scene_time_update_callback(struct Time_object *time_object,
+	double current_time, void *scene_void)
+/*******************************************************************************
+LAST MODIFIED : 5 October 1998
+
+DESCRIPTION :
+Responds to changes in the time object.
+==============================================================================*/
+{
+	int return_code;
+	struct Scene *scene;
+
+	ENTER(Scene_time_update_callback);
+	USE_PARAMETER(current_time);
+	if (time_object && (scene=(struct Scene *)scene_void))
+	{
+		Scene_notify_object_changed(scene,/*fast_changing*/0);
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_time_update_callback.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_time_update_callback */
+
 static int Scene_object_changed_external(struct Scene_object *scene_object)
 /*******************************************************************************
 LAST MODIFIED : 12 July 2000
@@ -560,7 +590,24 @@ before the scene itself is destroyed.
 		}
 		else
 		{
+			if (scene_object->time_object)
+			{
+				/* If setting to NULL we want to clear out the old callback */
+				if (scene_object->scene)
+				{
+					Time_object_remove_callback(scene_object->time_object,
+						Scene_time_update_callback, scene_object->scene);
+				}
+			}
 			scene_object->scene = scene;
+			if (scene_object->time_object)
+			{
+				if (scene_object->scene)
+				{
+					Time_object_add_callback(scene_object->time_object,
+						Scene_time_update_callback, scene_object->scene);
+				}
+			}
 			return_code=1;
 		}
 	}
@@ -1157,10 +1204,6 @@ DEACCESSes the member GT_object and removes any other dynamic fields.
 				{
 					DEACCESS(Scene)(&(scene_object->child_scene));
 				}
-				/* The scene_object is not accessing the scene as the
-					scene owns these objects and destroys them all before
-					destroying itself */
-				scene_object->scene = (struct Scene *)NULL;
 				if (scene_object->scene_manager_callback_id &&
 					scene_object->scene_manager)
 				{
@@ -1184,8 +1227,17 @@ DEACCESSes the member GT_object and removes any other dynamic fields.
 				{
 					Time_object_remove_callback(scene_object->time_object, 
 						Scene_object_time_update_callback, scene_object);
+					if (scene_object->scene)
+					{
+						Time_object_remove_callback(scene_object->time_object, 
+							Scene_time_update_callback, scene_object->scene);
+					}
 					DEACCESS(Time_object)(&(scene_object->time_object));
 				}
+				/* The scene_object is not accessing the scene as the
+					scene owns these objects and destroys them all before
+					destroying itself */
+				scene_object->scene = (struct Scene *)NULL;
 				if(scene_object->name)
 				{
 					DEALLOCATE(scene_object->name);
@@ -1997,36 +2049,6 @@ to material independently!
 	}
 	LEAVE;
 } /* Scene_Texture_change */
-
-static int Scene_time_update_callback(struct Time_object *time_object,
-	double current_time, void *scene_void)
-/*******************************************************************************
-LAST MODIFIED : 5 October 1998
-
-DESCRIPTION :
-Responds to changes in the time object.
-==============================================================================*/
-{
-	int return_code;
-	struct Scene *scene;
-
-	ENTER(Scene_time_update_callback);
-	USE_PARAMETER(current_time);
-	if (time_object && (scene=(struct Scene *)scene_void))
-	{
-		Scene_notify_object_changed(scene,/*fast_changing*/0);
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_time_update_callback.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_time_update_callback */
 
 static int Scene_object_update_time_behaviour(
 	struct Scene_object *scene_object, void *time_object_void)
@@ -3611,16 +3633,22 @@ the references to the time_object.
 				{
 					Time_object_remove_callback(scene_object->time_object,
 						Scene_object_time_update_callback, scene_object);
-					Time_object_remove_callback(scene_object->time_object,
-						Scene_time_update_callback, scene_object->scene);
+					if (scene_object->scene)
+					{
+						Time_object_remove_callback(scene_object->time_object,
+							Scene_time_update_callback, scene_object->scene);
+					}
 				}
 				REACCESS(Time_object)(&(scene_object->time_object),time);
 				if (time)
 				{
 					Time_object_add_callback(scene_object->time_object,
 						Scene_object_time_update_callback, scene_object);
-					Time_object_add_callback(scene_object->time_object,
-						Scene_time_update_callback, scene_object->scene);
+					if (scene_object->scene)
+					{
+						Time_object_add_callback(scene_object->time_object,
+							Scene_time_update_callback, scene_object->scene);
+					}
 				}
 			}
 			return_code=1;
