@@ -117,7 +117,33 @@ transformation_2 and 1 if transformation_1 > transformation_2.
 	return (return_code);
 } /* compare_transformation */
 
-DECLARE_DEFAULT_DESTROY_OBJECT_FUNCTION(Cmgui_coordinate)
+int DESTROY(Cmgui_coordinate)(struct Cmgui_coordinate **object_address)
+/*****************************************************************************
+LAST MODIFIED : 25 February 2000
+
+DESCRIPTION :
+Destroys the object.  Sets *object_address to NULL
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(DESTROY(Cmgui_coordinate));
+	if (object_address&&(*object_address))
+	{
+		DEALLOCATE((*object_address)->name);
+		DEALLOCATE(*object_address);
+		*object_address = (struct Cmgui_coordinate *)NULL;
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Cmgui_coordinate) */
+
 DECLARE_DEFAULT_DESTROY_OBJECT_FUNCTION(Coord_widget)
 DECLARE_DEFAULT_DESTROY_OBJECT_FUNCTION(Coord_data)
 DECLARE_OBJECT_FUNCTIONS(Cmgui_coordinate)
@@ -165,6 +191,7 @@ Finds the id of the buttons on the coord widget.
 	struct Coord_struct *temp_coord;
 
 	ENTER(coord_identify_button);
+	USE_PARAMETER(reason);
 	switch (button_num)
 	{
 		case coord_menu_ID:
@@ -193,6 +220,8 @@ Callback for the coordment dialog - tidies up all details - mem etc
 	struct Coord_struct *temp_coord;
 
 	ENTER(coord_destroy_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	/* Get the pointer to the data for the coord widget */
 	XtVaGetValues(w,XmNuserData,&temp_coord,NULL);
 	/* clear the list of widgets */
@@ -216,6 +245,8 @@ now using.
 	struct Coord_data *temp_data;
 
 	ENTER(coord_button_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	XtVaGetValues(XtParent(w),XmNuserData,&temp_coord,NULL);
 	if (temp_data=FIND_BY_IDENTIFIER_IN_LIST(Coord_data,button)(w,
 		temp_coord->coord_list))
@@ -608,7 +639,6 @@ Changes a data item of the coord widget.
 	void *return_code;
 	struct Coord_struct *temp_coord;
 	static struct Callback_data dat_callback;
-	static struct Cmgui_coordinate *dat_coord;
 
 	ENTER(coord_get_data);
 	/* Get the pointer to the data for the coord dialog */
@@ -801,6 +831,7 @@ Modifier function to set the coordinate from a command.
 	struct Cmgui_coordinate *temp_coordinate,**coordinate_address;
 
 	ENTER(set_Cmgui_coordinate);
+	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
 		if (current_token=state->current_token)
