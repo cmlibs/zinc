@@ -1,0 +1,413 @@
+!*******************************************************************************
+! FILE : poi.uil
+!
+! LAST MODIFIED : 21 January 1995
+!
+! DESCRIPTION :
+! The widgets for the poi poi widget.
+!===============================================================================
+module poi
+	version = 'v1.0'
+
+procedure
+	poi_identify_button    (integer);
+	poi_destroy_CB          ();
+
+value
+	shadow_size          : 2;
+
+value
+	poi_font              : font_table(font('-*-HELVETICA-MEDIUM-R-*--*-80-*-*-*-*-ISO8859-1'));
+	poi_font_large        : font_table(font('-*-HELVETICA-BOLD-R-*--*-100-*-*-*-*-ISO8859-1'));
+	poi_font_bold          : font_table(font('-*-HELVETICA-BOLD-R-*--*-80-*-*-*-*-ISO8859-1'));
+
+identifier
+	!The gap between widgets
+	widget_spacing;
+	!Pointer to data specific to this instance of the poi widget
+	Poi_structure;
+	!value identifier
+	poi_menu_position_ID;
+	poi_menu_poi_ID;
+	poi_position_form_ID;
+	poi_poi_form_ID;
+	poi_up_vector_form_ID;
+	poi_coord_position_ID;
+	poi_coord_poi_ID;
+
+
+!**************************************************************************************
+!**************************************************************************************
+! The poi widget
+object
+	poi_widget: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = Poi_structure;
+			};
+		controls
+			{
+			XmFrame poi_up_vector_frame;
+			XmForm poi_dof3_form;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure poi_destroy_CB ();
+			};
+		};
+	poi_up_vector_frame: XmFrame
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = Poi_structure;
+			};
+		controls
+			{
+			XmForm poi_up_vector_form;
+			};
+		};
+	poi_position_frame: XmFrame
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomOffset = 0;
+			XmNbottomPosition = 50;
+			XmNuserData = Poi_structure;
+			};
+		controls
+			{
+			XmForm poi_position_form;
+			};
+		};
+	poi_poi_frame: XmFrame
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNtopOffset = 0;
+			XmNtopPosition = 50;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = Poi_structure;
+			};
+		controls
+			{
+			XmForm poi_poi_form;
+			};
+		};
+!**************************************************************************************
+	poi_dof3_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = 0;
+			XmNbottomWidget = XmFrame poi_up_vector_frame;
+			XmNfractionBase = 100;
+			XmNuserData = Poi_structure;
+			};
+		controls
+			{
+			XmFrame poi_position_frame;
+			XmFrame poi_poi_frame;
+			};
+		};
+	poi_up_vector_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNuserData = Poi_structure;
+			};
+		controls
+			{
+			XmLabelGadget poi_up_vector_name;
+			XmForm poi_up_vector_form_form;
+			};
+		};
+!**************************************************************************************
+	poi_position_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNuserData = Poi_structure;
+			};
+		controls
+			{
+			XmLabelGadget poi_position_name;
+			XmForm poi_position_coord_form;
+			XmMenuBar poi_position_menu;
+			XmForm poi_dof3_position_form;
+			};
+		};
+	poi_position_name: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Eye position:");
+			XmNfontList = poi_font_large;
+			XmNshadowThickness = shadow_size;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = Poi_structure;
+			};
+		};
+	poi_position_coord_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+!      XmNleftAttachment = XmATTACH_WIDGET;
+!      XmNleftOffset = 0;
+!      XmNleftWidget = XmMenuBar poi_position_menu;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmLabelGadget poi_position_name;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = Poi_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure poi_identify_button (poi_coord_position_ID);
+			};
+		};
+	poi_position_menu: XmMenuBar
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+!      XmNrightAttachment = XmATTACH_WIDGET;
+!      XmNrightOffset = 0;
+!      XmNrightWidget = XmForm poi_position_coord_form;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmLabelGadget poi_position_name;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNisHomogeneous = false;
+			XmNuserData = Poi_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure poi_identify_button (poi_menu_position_ID);
+			};
+		};
+	poi_dof3_position_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmMenuBar poi_position_menu;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = Poi_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure poi_identify_button (poi_position_form_ID);
+			};
+		};
+	poi_poi_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNuserData = Poi_structure;
+			};
+		controls
+			{
+			XmLabelGadget poi_poi_name;
+			XmForm poi_poi_coord_form;
+			XmMenuBar poi_poi_menu;
+			XmForm poi_dof3_poi_form;
+			};
+		};
+	poi_poi_name: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Point of interest:");
+			XmNfontList = poi_font_large;
+			XmNshadowThickness = shadow_size;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = Poi_structure;
+			};
+		};
+	poi_poi_coord_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmLabelGadget poi_poi_name;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = Poi_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure poi_identify_button (poi_coord_poi_ID);
+			};
+		};
+	poi_poi_menu: XmMenuBar
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+!      XmNrightAttachment = XmATTACH_WIDGET;
+!      XmNrightOffset = 0;
+!      XmNrightWidget = XmForm poi_poi_coord_form;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmLabelGadget poi_poi_name;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNisHomogeneous = false;
+			XmNuserData = Poi_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure poi_identify_button (poi_menu_poi_ID);
+			};
+		};
+	poi_dof3_poi_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmMenuBar poi_poi_menu;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = Poi_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure poi_identify_button (poi_poi_form_ID);
+			};
+		};
+!**************************************************************************************
+	poi_up_vector_name: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Up vector:");
+			XmNfontList = poi_font_large;
+			XmNshadowThickness = shadow_size;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = 0;
+			XmNrightWidget = XmForm poi_up_vector_form_form;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = Poi_structure;
+			};
+		};
+	poi_up_vector_form_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = Poi_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure poi_identify_button (poi_up_vector_form_ID);
+			};
+		};
+end module;
+!**************************************************************************************

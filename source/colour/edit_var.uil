@@ -1,0 +1,170 @@
+!*******************************************************************************
+! FILE : edit_var.uil
+!
+! LAST MODIFIED : 16 September 1995
+!
+! DESCRIPTION :
+! Contains a description, a slider and a text field for editing the value
+! of a variable.
+!===============================================================================
+module edit_var
+				version = 'v1.0'
+
+procedure
+	edit_var_identify_button      (integer);
+	edit_var_slider_CB            ();
+	edit_var_number_CB            ();
+	edit_var_destroy_CB            ();
+
+value
+	edit_var_font              : font_table(font('-*-HELVETICA-MEDIUM-R-*--*-80-*-*-*-*-ISO8859-1'));
+	edit_var_font_large        : font_table(font('-*-HELVETICA-BOLD-R-*--*-100-*-*-*-*-ISO8859-1'));
+	edit_var_font_bold        : font_table(font('-*-HELVETICA-BOLD-R-*--*-80-*-*-*-*-ISO8859-1'));
+	edit_var_text_margin      : 1; ! how much gap around the text - small so the dialog is small
+
+value
+	edit_var_slider_max        : 125;
+	edit_var_slider_min        : 0;
+	edit_var_slider_size      : 25;
+	shadow_size                : 2;
+	edit_var_data_size          : 9;
+	edit_var_data_init          : "";
+	edit_var_data_maxlen        : 20;
+	edit_var_patch_space        :  5;
+	edit_var_combo_space        : 5;
+	edit_var_slider_space      : 2;
+
+identifier
+	!The gap between widgets
+	widget_spacing;
+	!Pointer to data specific to this instance of the edit_var control dialog
+	Edit_var_structure;
+	edit_var_text_ID;
+	edit_var_slider_ID;
+	edit_var_label_ID;
+
+
+object
+	edit_var_widget: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = Edit_var_structure;
+			};
+		controls
+			{
+			XmScrollBar edit_var_control_combo_slider;
+			XmText edit_var_control_combo_text;
+			XmLabelGadget edit_var_control_combo_label;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure edit_var_destroy_CB ();
+			};
+		};
+!**************************************************************************************
+!**************************************************************************************
+!**************************************************************************************
+	edit_var_control_combo_slider: XmScrollBar
+		{
+		arguments
+			{
+			XmNtraversalOn = true;
+			XmNshadowThickness = shadow_size;
+			XmNhighlightThickness = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNleftAttachment = XmATTACH_FORM;
+!?????DB.  Motif 2.0 for Linux doesn't like this
+!      XmNleftOffset = shadow_size;
+			XmNleftOffset = edit_var_text_margin;
+			XmNrightAttachment = XmATTACH_FORM;
+!?????DB.  Motif 2.0 for Linux doesn't like this
+!      XmNrightOffset = shadow_size;
+			XmNrightOffset = edit_var_text_margin;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+!?????DB.  Motif 2.0 for Linux doesn't like this
+!      XmNbottomOffset = shadow_size;
+			XmNbottomOffset = edit_var_text_margin;
+			XmNuserData = Edit_var_structure;
+			XmNvalue = 0;
+			XmNmaximum = edit_var_slider_max;
+			XmNminimum = edit_var_slider_min;
+			XmNsliderSize = edit_var_slider_size;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure edit_var_identify_button (edit_var_slider_ID);
+			XmNvalueChangedCallback = procedure edit_var_slider_CB ();
+			XmNdragCallback = procedure edit_var_slider_CB ();
+			};
+		};
+	edit_var_control_combo_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Description");
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNfontList = edit_var_font_large;
+			XmNshadowThickness = shadow_size;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = 0;
+			XmNrightWidget = XmText edit_var_control_combo_text;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = edit_var_slider_space;
+			XmNbottomWidget = XmScrollBar edit_var_control_combo_slider;
+			XmNuserData = Edit_var_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure edit_var_identify_button (edit_var_label_ID);
+			};
+		};
+	edit_var_control_combo_text: XmText
+		{
+		arguments
+			{
+			XmNfontList = edit_var_font_large;
+			XmNeditMode = XmSINGLE_LINE_EDIT;
+			XmNshadowThickness = shadow_size;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = edit_var_slider_space;
+			XmNbottomWidget = XmScrollBar edit_var_control_combo_slider;
+			XmNuserData = Edit_var_structure;
+			XmNvalue = edit_var_data_init;
+			XmNmaxLength = edit_var_data_maxlen;
+			XmNcolumns = edit_var_data_size;
+			XmNmarginHeight = edit_var_text_margin;
+			XmNmarginWidth = edit_var_text_margin;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure edit_var_identify_button (edit_var_text_ID);
+			XmNactivateCallback = procedure edit_var_number_CB ();
+			XmNlosingFocusCallback = procedure edit_var_number_CB ();
+			};
+		};
+end module;

@@ -1,0 +1,252 @@
+module InputDialog_uil
+
+procedure	activateCB_pushButtonGadget2;
+procedure	activateCB_pushButtonGadget3;
+
+object InputDialog : XmFormDialog
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNwidth = 300;
+		XmNheight = 300;
+		XmNdialogStyle = XmDIALOG_FULL_APPLICATION_MODAL;
+	};
+	controls
+	{
+		XmText XScaleTW;
+		XmLabel label1;
+		XmPushButtonGadget pushButtonGadget2;
+		XmPushButtonGadget pushButtonGadget3;
+		XmLabelGadget labelGadget5;
+		XmText YScaleTW;
+		XmLabel label2;
+		XmText ZPlaneTW;
+		XmLabel label3;
+		XmText XOrgTW;
+		XmLabel label4;
+		XmText YOrgTW;
+		XmLabel label5;
+	};
+};
+
+object XScaleTW : XmText
+{
+	arguments
+	{
+		XmNx = 145;
+		XmNy = 40;
+		XmNwidth = 100;
+		XmNheight = 40;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 150;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNrightOffset = 5;
+	};
+};
+
+object label1 : XmLabel
+{
+	arguments
+	{
+		XmNx = 0;
+		XmNy = 60;
+		XmNwidth = 145;
+		XmNheight = 30;
+		XmNlabelString = compound_string( "X scale (m / pixel) :" );
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 5;
+		XmNbottomAttachment = XmATTACH_OPPOSITE_WIDGET;
+		XmNbottomWidget = XScaleTW;
+		XmNalignment = XmALIGNMENT_BEGINNING;
+	};
+};
+
+object pushButtonGadget2 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNx = 70;
+		XmNy = 240;
+		XmNwidth = 75;
+		XmNheight = 30;
+		XmNbottomAttachment = XmATTACH_FORM;
+		XmNbottomOffset = 5;
+		XmNlabelString = compound_string( "Apply" );
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 5;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_pushButtonGadget2 ();
+	};
+};
+
+object pushButtonGadget3 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNx = 160;
+		XmNy = 240;
+		XmNwidth = 75;
+		XmNheight = 30;
+		XmNbottomAttachment = XmATTACH_FORM;
+		XmNbottomOffset = 5;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNrightOffset = 5;
+		XmNlabelString = compound_string( "Cancel" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_pushButtonGadget3 ();
+	};
+};
+
+object labelGadget5 : XmLabelGadget
+{
+	arguments
+	{
+		XmNx = 90;
+		XmNy = 10;
+		XmNwidth = 110;
+		XmNheight = 20;
+		XmNlabelString = compound_string( "Image parameters" );
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 2;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNrightOffset = 2;
+	};
+};
+
+object YScaleTW : XmText
+{
+	arguments
+	{
+		XmNwidth = 100;
+		XmNheight = 40;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 150;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNrightOffset = 5;
+		XmNtopAttachment = XmATTACH_WIDGET;
+		XmNtopOffset = 0;
+		XmNtopWidget = XScaleTW;
+	};
+};
+
+object label2 : XmLabel
+{
+	arguments
+	{
+		XmNx = 0;
+		XmNy = 90;
+		XmNwidth = 145;
+		XmNheight = 30;
+		XmNlabelString = compound_string( "Y scale (m / pixel) :" );
+		XmNbottomAttachment = XmATTACH_OPPOSITE_WIDGET;
+		XmNbottomWidget = YScaleTW;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 5;
+		XmNalignment = XmALIGNMENT_BEGINNING;
+	};
+};
+
+object ZPlaneTW : XmText
+{
+	arguments
+	{
+		XmNwidth = 100;
+		XmNheight = 40;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 150;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNrightOffset = 5;
+		XmNtopAttachment = XmATTACH_WIDGET;
+		XmNtopWidget = YScaleTW;
+	};
+};
+
+object label3 : XmLabel
+{
+	arguments
+	{
+		XmNx = 0;
+		XmNy = 120;
+		XmNwidth = 145;
+		XmNheight = 30;
+		XmNlabelString = compound_string( "Z plane (m) :" );
+		XmNbottomAttachment = XmATTACH_OPPOSITE_WIDGET;
+		XmNbottomWidget = ZPlaneTW;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 5;
+		XmNalignment = XmALIGNMENT_BEGINNING;
+	};
+};
+
+object XOrgTW : XmText
+{
+	arguments
+	{
+		XmNwidth = 100;
+		XmNheight = 40;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 150;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNrightOffset = 5;
+		XmNtopAttachment = XmATTACH_WIDGET;
+		XmNtopWidget = ZPlaneTW;
+	};
+};
+
+object label4 : XmLabel
+{
+	arguments
+	{
+		XmNx = 10;
+		XmNy = 160;
+		XmNwidth = 145;
+		XmNheight = 30;
+		XmNlabelString = compound_string( "X origin (pixels) :" );
+		XmNbottomAttachment = XmATTACH_OPPOSITE_WIDGET;
+		XmNbottomWidget = XOrgTW;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 5;
+		XmNalignment = XmALIGNMENT_BEGINNING;
+	};
+};
+
+object YOrgTW : XmText
+{
+	arguments
+	{
+		XmNwidth = 100;
+		XmNheight = 40;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 150;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNrightOffset = 5;
+		XmNtopAttachment = XmATTACH_WIDGET;
+		XmNtopWidget = XOrgTW;
+		XmNtopOffset = 0;
+	};
+};
+
+object label5 : XmLabel
+{
+	arguments
+	{
+		XmNx = 10;
+		XmNy = 190;
+		XmNwidth = 145;
+		XmNheight = 30;
+		XmNlabelString = compound_string( "Y origin (pixels) :" );
+		XmNbottomAttachment = XmATTACH_OPPOSITE_WIDGET;
+		XmNbottomWidget = YOrgTW;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 5;
+		XmNalignment = XmALIGNMENT_BEGINNING;
+	};
+};
+
+
+end module;

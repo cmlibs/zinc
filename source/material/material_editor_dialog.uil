@@ -1,0 +1,200 @@
+!*******************************************************************************
+! FILE : material_editor_d.uil
+!
+! LAST MODIFIED : 24 July 1995
+!
+! DESCRIPTION :
+! The widgets for the material_editor_d material_editor_d widget.
+!===============================================================================
+module material_editor_dialog
+	version = 'v1.0'
+
+procedure
+	mat_editor_d_identify_button    (integer);
+	mat_editor_d_destroy_CB          ();
+	mat_editor_d_control_CB          (integer);
+
+value
+	sash_width : 50;
+	shadow_size        : 2;
+	form_space_out    :  2;
+	form_space_in      :  4;
+	mat_editor_d_3d_space  :  3;
+	mat_editor_d_3d_height  :  200;
+
+value
+	mat_editor_d_font              : font_table(font('-*-HELVETICA-MEDIUM-R-*--*-80-*-*-*-*-ISO8859-1'));
+	mat_editor_d_font_large        : font_table(font('-*-HELVETICA-BOLD-R-*--*-100-*-*-*-*-ISO8859-1'));
+	mat_editor_d_font_bold        : font_table(font('-*-HELVETICA-BOLD-R-*--*-80-*-*-*-*-ISO8859-1'));
+
+identifier
+	!The gap between widgets
+	widget_spacing;
+	!Pointer to data specific to this instance of the mat_editor_d widget
+	mat_editor_d_structure;
+	!value identifier
+	mat_editor_d_select_form_ID;
+	mat_editor_d_editor_form_ID;
+	mat_editor_d_ok_ID;
+	mat_editor_d_apply_ID;
+	mat_editor_d_revert_ID;
+	mat_editor_d_cancel_ID;
+
+! The mat_editor_d widget
+object
+	mat_editor_dialog_widget: XmForm
+	{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = mat_editor_d_structure;
+			};
+		controls
+			{
+			XmPanedWindow mat_editor_main_pw;
+			XmRowColumn mat_editor_d_control;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure mat_editor_d_destroy_CB();
+			};
+		};
+	mat_editor_main_pw: XmPanedWindow
+		{
+		arguments
+			{
+			XmNsashWidth = sash_width;
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomWidget = XmRowColumn mat_editor_d_control;
+			XmNuserData = mat_editor_d_structure;
+			};
+		controls
+			{
+			XmForm mat_editor_d_select;
+			XmForm mat_editor_d_editor;
+			};
+		};
+	mat_editor_d_select: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNuserData = mat_editor_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure mat_editor_d_identify_button(mat_editor_d_select_form_ID);
+			};
+		};
+	mat_editor_d_editor: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNuserData = mat_editor_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure mat_editor_d_identify_button(mat_editor_d_editor_form_ID);
+			};
+		};
+!**************************************************************************************
+	mat_editor_d_control: XmRowColumn
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNpacking = XmPACK_COLUMN;
+			XmNorientation = XmHORIZONTAL;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = mat_editor_d_structure;
+			};
+		controls
+			{
+			XmPushButtonGadget mat_editor_d_control_ok;
+			XmPushButtonGadget mat_editor_d_control_apply;
+			XmPushButtonGadget mat_editor_d_control_revert;
+			XmPushButtonGadget mat_editor_d_control_cancel;
+			};
+		};
+	mat_editor_d_control_ok: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("OK");
+			XmNuserData = mat_editor_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure mat_editor_d_identify_button(mat_editor_d_ok_ID);
+			XmNactivateCallback = procedure mat_editor_d_control_CB(mat_editor_d_ok_ID);
+			};
+		};
+	mat_editor_d_control_apply: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Apply");
+			XmNuserData = mat_editor_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure mat_editor_d_identify_button(mat_editor_d_apply_ID);
+			XmNactivateCallback = procedure mat_editor_d_control_CB(mat_editor_d_apply_ID);
+			};
+		};
+	mat_editor_d_control_revert: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Revert");
+			XmNuserData = mat_editor_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+				procedure mat_editor_d_identify_button(mat_editor_d_revert_ID);
+			XmNactivateCallback =
+				procedure mat_editor_d_control_CB(mat_editor_d_revert_ID);
+			};
+		};
+	mat_editor_d_control_cancel: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Cancel");
+			XmNuserData = mat_editor_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+				procedure mat_editor_d_identify_button(mat_editor_d_cancel_ID);
+			XmNactivateCallback =
+				procedure mat_editor_d_control_CB(mat_editor_d_cancel_ID);
+			};
+		};
+end module;
+!**************************************************************************************

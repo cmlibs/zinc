@@ -1,0 +1,93 @@
+//???DB.  #include "command\comman~1.h"
+#include "windows.h"
+//???DB.  #include "ver.h"
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+//???DB.  Command_window ICON "../cmgui.ico"
+//???DB.  Command_window_small ICON "../cmgui_s.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+/*???DB.
+Command_window_menu MENU 
+{
+ POPUP "&File"
+ {
+  MENUITEM "&New", IDM_NEW, GRAYED
+  MENUITEM "&Open...", IDM_OPEN, GRAYED
+  MENUITEM "&Save", IDM_SAVE, GRAYED
+  MENUITEM "Save &As...", IDM_SAVEAS, GRAYED
+  MENUITEM SEPARATOR
+  MENUITEM "&Print...", IDM_PRINT, GRAYED
+  MENUITEM "P&rint Setup...", IDM_PRINTSETUP, GRAYED
+  MENUITEM SEPARATOR
+  MENUITEM "E&xit", IDM_EXIT
+ }
+
+ POPUP "&Edit"
+ {
+  MENUITEM "&Undo\tCtrl+Z", IDM_UNDO, GRAYED
+  MENUITEM SEPARATOR
+  MENUITEM "Cu&t\tCtrl+X", IDM_CUT, GRAYED
+  MENUITEM "&Copy\tCtrl+C", IDM_COPY, GRAYED
+  MENUITEM "&Paste\tCtrl+V", IDM_PASTE, GRAYED
+  MENUITEM "Paste &Link", IDM_LINK, GRAYED
+  MENUITEM SEPARATOR
+  MENUITEM "Lin&ks...", IDM_LINKS, GRAYED
+ }
+
+ POPUP "&Help", HELP
+ {
+  MENUITEM "&Help Topics...", IDM_HELPTOPICS
+  MENUITEM SEPARATOR
+  MENUITEM "&About Generic...", IDM_ABOUT
+ }
+
+}
+*/
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Data
+//
+
+Command_window DIALOG 19, 33, 218, 229
+STYLE WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX
+CLASS "Command_window"
+CAPTION "Command Window"
+/*???DB.
+MENU Command_window_menu
+FONT 8, "MS Sans Serif"
+{
+ EDITTEXT IDC_command_entry, 0, 100, 218, 12, WS_BORDER | WS_TABSTOP
+ LISTBOX IDC_command_history, 0, 0, 218, 100, LBS_NOTIFY | WS_BORDER | LBS_NOINTEGRALHEIGHT | WS_BORDER | WS_VSCROLL | WS_HSCROLL | WS_TABSTOP
+ EDITTEXT IDC_output_pane, 0, 112, 218, 117, ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | NOT WS_TABSTOP | WS_BORDER | WS_VSCROLL | WS_HSCROLL
+}
+*/
+{
+ PUSHBUTTON "Close",1,50,50,50,50
+}

@@ -1,0 +1,227 @@
+!*******************************************************************************
+!FILE : filedir.uil
+!
+!LAST MODIFIED : 23 December 1996
+!
+!DESCRIPTION :
+!The widgets/gadgets used for specifying files to open.
+!===============================================================================
+module filedir
+	names = case_sensitive
+
+procedure
+	identify_file_selection_label;
+	identify_file_selection_text;
+	file_selection_write;
+	close_file_selection;
+
+identifier
+	widget_spacing;
+	file_open_data;
+
+object
+	file_selection_box: XmFileSelectionBox
+		{
+		arguments
+			{
+			XmNapplyLabelString =
+			compound_string("Change directory");
+			XmNdialogStyle = XmDIALOG_FULL_APPLICATION_MODAL;
+			};
+		};
+	file_selection_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			XmNallowOverlap = false;
+			XmNdialogStyle = XmDIALOG_FULL_APPLICATION_MODAL;
+			};
+		controls
+			{
+			XmLabel file_selection_label;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmLabel file_selection_label;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmText file_selection_text;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmText file_selection_text;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_FORM;
+					XmNleftOffset = widget_spacing;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_WIDGET;
+					XmNtopWidget = XmText file_selection_text;
+					XmNtopOffset = widget_spacing;
+					XmNbottomAttachment = XmATTACH_WIDGET;
+					XmNbottomWidget = XmForm file_selection_ok_cancel;
+					XmNbottomOffset = widget_spacing;
+					};
+				};
+			XmForm file_selection_ok_cancel;
+			};
+		};
+	file_selection_label: XmLabel
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_file_selection_label(file_open_data);
+				};
+			};
+		};
+	file_selection_text: XmText
+		{
+		arguments
+			{
+			XmNmaxLength = 20;
+			XmNcolumns = 20;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmLabel file_selection_label;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_file_selection_text(file_open_data);
+				};
+			XmNactivateCallback = procedures
+				{
+				file_selection_write(file_open_data);
+				};
+			};
+		};
+	file_selection_ok_cancel: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNallowOverlap = false;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = widget_spacing;
+			};
+		controls
+			{
+			XmPushButton file_selection_ok_button;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftOffset = widget_spacing;
+					XmNleftWidget = XmPushButton file_selection_ok_button;
+					XmNrightAttachment = XmATTACH_WIDGET;
+					XmNrightOffset = widget_spacing;
+					XmNrightWidget = XmPushButton file_selection_cancel_button;
+					XmNtopAttachment = XmATTACH_FORM;
+					XmNtopOffset = 0;
+					XmNbottomAttachment = XmATTACH_FORM;
+					XmNbottomOffset = 0;
+					};
+				};
+			XmPushButton file_selection_cancel_button;
+			};
+		};
+	file_selection_ok_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("OK");
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				file_selection_write(file_open_data);
+				};
+			};
+		};
+	file_selection_cancel_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Cancel");
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				close_file_selection(file_open_data);
+				};
+			};
+		};
+	file_exists_warning_box: XmMessageBox
+		{
+		arguments
+			{
+			XmNmessageString = compound_string("File already exists.  Overwrite ?");
+			XmNdialogType = XmDIALOG_WARNING;
+			XmNdialogStyle = XmDIALOG_FULL_APPLICATION_MODAL;
+			};
+		};
+end module;

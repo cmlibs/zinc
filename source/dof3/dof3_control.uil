@@ -1,0 +1,187 @@
+!*******************************************************************************
+! FILE : dof3_control.uil
+!
+! LAST MODIFIED : 25 January 1995
+!
+! DESCRIPTION :
+! The widgets for the three degree of freedom widget.
+!===============================================================================
+module dof3
+	version = 'v1.0'
+
+procedure
+	control_identify_button  (integer);
+	control_destroy_CB      ();
+	control_save_CB          ();
+	control_reset_CB        ();
+	control_lockval_CB      ();
+	control_linkres_CB      ();
+	control_coord_CB        ();
+
+value
+	shadow_size        : 2;
+
+value
+	control_font          : font_table(font('-*-HELVETICA-MEDIUM-R-*--*-80-*-*-*-*-ISO8859-1'));
+	control_font_large    : font_table(font('-*-HELVETICA-BOLD-R-*--*-100-*-*-*-*-ISO8859-1'));
+	control_font_bold      : font_table(font('-*-HELVETICA-BOLD-R-*--*-80-*-*-*-*-ISO8859-1'));
+
+identifier
+	!The gap between widgets
+	widget_spacing;
+	!Pointer to data specific to this instance of the control widget
+	Control_structure;
+	!Value identifiers
+	control_save_button_ID;
+	control_reset_button_ID;
+	control_lockval_button_ID;
+	control_linkres_button_ID;
+	control_coord_menu_button_ID;
+	control_coord_item_button_ID;
+
+!**************************************************************************************
+!**************************************************************************************
+object
+! The control widget
+	control_widget: XmCascadeButton
+		{
+		arguments
+			{
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Description");
+			XmNfontList = control_font_bold;
+			XmNuserData = Control_structure;
+			};
+		controls
+			{
+			XmPulldownMenu control_menu;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure control_destroy_CB ();
+			};
+		};
+	control_menu: XmPulldownMenu
+		{
+		arguments
+			{
+			XmNuserData = Control_structure;
+			};
+		controls
+			{
+			XmPushButtonGadget control_menu_save;
+			XmPushButtonGadget control_menu_reset;
+			XmToggleButtonGadget control_menu_lockval;
+			XmToggleButtonGadget control_menu_linkres;
+			XmCascadeButtonGadget control_menu_coord;
+			};
+		};
+!**************************************************************************************
+	control_menu_coord: XmCascadeButtonGadget
+		{
+		arguments
+			{
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Coord System");
+			XmNfontList = control_font_large;
+			XmNuserData = Control_structure;
+			};
+		controls
+			{
+			XmPulldownMenu control_menu_coord_menu;
+			};
+		};
+	control_menu_save: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Save");
+			XmNfontList = control_font_large;
+			XmNuserData = Control_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure control_identify_button (control_save_button_ID);
+			XmNactivateCallback = procedure control_save_CB ();
+			};
+		};
+	control_menu_reset: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Reset");
+			XmNfontList = control_font_large;
+			XmNuserData = Control_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure control_identify_button (control_reset_button_ID);
+			XmNactivateCallback = procedure control_reset_CB ();
+			};
+		};
+	control_menu_lockval: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNindicatorType = XmN_OF_MANY;
+			XmNset = false;
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Lock Data");
+			XmNfontList = control_font_large;
+			XmNuserData = Control_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure control_identify_button (control_lockval_button_ID);
+			XmNvalueChangedCallback = procedure control_lockval_CB ();
+			};
+		};
+	control_menu_linkres: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNindicatorType = XmN_OF_MANY;
+			XmNset = false;
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Link Resolution");
+			XmNfontList = control_font_large;
+			XmNuserData = Control_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure control_identify_button (control_linkres_button_ID);
+			XmNvalueChangedCallback = procedure control_linkres_CB ();
+			};
+		};
+	control_menu_coord_menu: XmPulldownMenu
+		{
+		arguments
+			{
+			XmNuserData = Control_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure control_identify_button (control_coord_menu_button_ID);
+			};
+		};
+	control_menu_coord_menu_item: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNindicatorType = XmONE_OF_MANY;
+			XmNset = false;
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Description");
+			XmNfontList = control_font_large;
+			XmNuserData = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure control_identify_button (control_coord_item_button_ID);
+			XmNvalueChangedCallback = procedure control_coord_CB ();
+			};
+		};
+end module;
+!**************************************************************************************

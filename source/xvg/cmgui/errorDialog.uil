@@ -1,0 +1,28 @@
+module errorDialog_uil
+
+procedure	okCallback_errorDialog;
+procedure	createCB_errorDialog;
+
+object errorDialog : XmErrorDialog
+{
+	arguments
+	{
+		XmNdialogType = XmDIALOG_ERROR;
+		XmNunitType = XmPIXELS;
+		XmNx = 240;
+		XmNy = 210;
+		XmNwidth = 800;
+		XmNheight = 180;
+		XmNdialogTitle = compound_string( "Xvg Error Message" );
+		XmNmessageAlignment = XmALIGNMENT_CENTER;
+		XmNdialogStyle = XmDIALOG_FULL_APPLICATION_MODAL;
+	};
+	callbacks
+	{
+		XmNokCallback = procedure okCallback_errorDialog ();
+		MrmNcreateCallback = procedure createCB_errorDialog ();
+	};
+};
+
+
+end module;

@@ -1,0 +1,157 @@
+!*******************************************************************************
+! FILE : i_node_editor.uil
+!
+! LAST MODIFIED : 21 July 1996
+!
+! DESCRIPTION :
+! The widgets for the i_node_editor widget.
+!===============================================================================
+module i_node_editor
+	version = 'v1.0'
+
+procedure
+	i_node_editor_identify_button    (integer);
+	i_node_editor_destroy_CB          ();
+
+value
+	shadow_size          : 2;
+
+identifier
+	!The gap between widgets
+	widget_spacing;
+	!Pointer to data specific to this instance of the i_node_editor widget
+	I_node_editor_structure;
+	!value identifier
+	i_node_editor_menu_ID;
+	i_node_editor_position_form_ID;
+	i_node_editor_coord_form_ID;
+	!Fonts go here
+	button_font;
+	heading_font;
+	list_font;
+	menu_font;
+	normal_font;
+	normal_non_proportional_font;
+	small_font;
+
+
+!**************************************************************************************
+!**************************************************************************************
+! The i_node_editor widget
+object
+	i_node_editor_widget: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = I_node_editor_structure;
+			};
+		controls
+			{
+			XmLabelGadget i_node_editor_position_name;
+			XmForm i_node_editor_coord_form;
+			XmMenuBar i_node_editor_position_menu;
+			XmForm i_node_editor_position_form;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure i_node_editor_destroy_CB ();
+			};
+		};
+!**************************************************************************************
+	i_node_editor_position_name: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Node position:");
+			XmNfontList = heading_font;
+			XmNshadowThickness = shadow_size;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = I_node_editor_structure;
+			};
+		};
+	i_node_editor_coord_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+!      XmNleftAttachment = XmATTACH_WIDGET;
+!      XmNleftOffset = 0;
+!      XmNleftWidget = XmMenuBar i_node_editor_position_menu;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmLabelGadget i_node_editor_position_name;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = I_node_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure i_node_editor_identify_button (i_node_editor_coord_form_ID);
+			};
+		};
+	i_node_editor_position_menu: XmMenuBar
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmLabelGadget i_node_editor_position_name;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNisHomogeneous = false;
+			XmNuserData = I_node_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure i_node_editor_identify_button (i_node_editor_menu_ID);
+			};
+		};
+	i_node_editor_position_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmMenuBar i_node_editor_position_menu;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = I_node_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure i_node_editor_identify_button (i_node_editor_position_form_ID);
+			};
+		};
+end module;
+!**************************************************************************************

@@ -1,0 +1,19 @@
+module InfoDialog_uil
+
+
+object InfoDialog : XmInformationDialog
+{
+	arguments
+	{
+		XmNdialogType = XmDIALOG_INFORMATION;
+		XmNunitType = XmPIXELS;
+		XmNx = 590;
+		XmNy = 360;
+		XmNwidth = 800;
+		XmNheight = 160;
+		XmNdialogTitle = compound_string( "Xvg Help Dialog" );
+	};
+};
+
+
+end module;

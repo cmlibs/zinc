@@ -1,0 +1,105 @@
+/*******************************************************************************
+FILE : myio.c
+
+LAST MODIFIED : 24 December 1996
+
+DESCRIPTION :
+Some additions/modifications to stdio.
+==============================================================================*/
+#include <stddef.h>
+#include "general/myio.h"
+#include "general/debug.h"
+
+/*
+Global functions
+----------------
+*/
+#if defined (__BYTE_ORDER) && (1234==__BYTE_ORDER)
+int fread_little_to_big_endian(char *char_ptr,unsigned sizeof_type,int count,
+	FILE* binary_file)
+/*******************************************************************************
+LAST MODIFIED : 4 September 1995
+
+DESCRIPTION :
+Does an fread and then converts from little to big endian.
+==============================================================================*/
+{
+  char *bottom_byte,byte,*element,*top_byte;
+	int fread_result,i,j;
+
+	ENTER(fread_little_to_big_endian);
+	if (count==(fread_result=fread(char_ptr,sizeof_type,count,binary_file)))
+	{
+		if ((sizeof(short)==sizeof_type)||(sizeof(int)==sizeof_type)||
+			(sizeof(float)==sizeof_type)||(sizeof(double)==sizeof_type))
+		{
+			element=char_ptr;
+			for (j=count;j>0;j--)
+			{
+				bottom_byte=element;
+				top_byte=element+sizeof_type;
+				for (i=sizeof_type/2;i>0;i--)
+				{
+					top_byte--;
+					byte= *bottom_byte;
+					*bottom_byte= *top_byte;
+					*top_byte=byte;
+					bottom_byte++;
+				}
+				element += sizeof_type;
+			}
+		}
+	}
+	LEAVE;
+
+	return (fread_result);
+} /* fread_little_to_big_endian */
+
+int fwrite_big_to_little_endian(char *char_ptr,unsigned sizeof_type,int count,
+	FILE* binary_file)
+/*******************************************************************************
+LAST MODIFIED : 4 September 1995
+
+DESCRIPTION :
+fwrites the little endian form of <char_ptr>.
+==============================================================================*/
+{
+  char *bottom_byte,*element,*top_byte,*temp_char_ptr;
+	int fwrite_result,i,j;
+
+	ENTER(fwrite_big_to_little_endian);
+	if ((sizeof(short)==sizeof_type)||(sizeof(int)==sizeof_type)||
+		(sizeof(float)==sizeof_type)||(sizeof(double)==sizeof_type))
+	{
+		if (ALLOCATE(temp_char_ptr,char,sizeof_type*count))
+		{
+			element=temp_char_ptr;
+			bottom_byte=char_ptr;
+			for (j=count;j>0;j--)
+			{
+				top_byte=element+sizeof_type;
+				for (i=sizeof_type;i>0;i--)
+				{
+					top_byte--;
+					*top_byte= *bottom_byte;
+					bottom_byte++;
+				}
+				element += sizeof_type;
+			}
+			fwrite_result=fwrite(temp_char_ptr,sizeof_type,count,binary_file);
+			DEALLOCATE(temp_char_ptr);
+		}
+		else
+		{
+			fwrite_result=0;
+		}
+	}
+	else
+	{
+		fwrite_result=fwrite(char_ptr,sizeof_type,count,binary_file);
+	}
+	LEAVE;
+
+	return (fwrite_result);
+} /* fwrite_big_to_little_endian */
+#endif

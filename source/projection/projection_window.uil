@@ -1,0 +1,408 @@
+!*******************************************************************************
+! FILE : projection_window.uil
+!
+! LAST MODIFIED : 23 July 1998
+!
+! DESCRIPTION :
+! The widgets/gadgets for the projection window.
+! ???DB.  Started as mapping_window.uil in emap
+!===============================================================================
+module projection_window_module
+	names = case_sensitive
+
+procedure
+	identify_projection_configure_b;
+	configure_projection;
+	identify_projection_animate_but;
+	animate_projection;
+	identify_projection_print_butto;
+	identify_projection_print_posts;
+	identify_projection_print_rgb_b;
+	identify_projection_print_tiff;
+	open_file_and_write;
+	identify_projection_close_butto;
+	identify_projection_drawing_are;
+	expose_projection_drawing_area;
+	resize_projection_drawing_area;
+	identify_projection_spectrum_ar;
+	expose_projection_spectrum_area;
+	resize_projection_spectrum_area;
+	destroy_Projection_window;
+
+identifier
+	widget_spacing;
+	write_projection_postscript_dat;
+	write_projection_rgb_file_data;
+	write_projection_tiff_file_data;
+	projection_window_structure;
+
+object
+!  projection_window_outer_form: XmForm
+!    {
+!    arguments
+!      {
+!      XmNborderWidth = 0;
+!      XmNdialogTitle = "Projection";
+!      };
+!    };
+	projection_window: XmForm
+		{
+		arguments
+			{
+			XmNdialogTitle = "Projection";
+			XmNborderWidth = 0;
+!      XmNallowOverlap = false;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmForm projection_menu;
+			XmPanedWindow projection_paned_window;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedures
+				{
+				destroy_Projection_window(projection_window_structure);
+				};
+			};
+		};
+	projection_menu: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			XmNallowOverlap = false;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmPushButton projection_configure_button;
+			XmPushButtonGadget projection_animate_button;
+			XmMenuBar projection_menu_bar;
+			XmPushButtonGadget projection_close_button;
+			};
+		};
+	projection_configure_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Configure");
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_projection_configure_b(projection_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				configure_projection(projection_window_structure);
+				};
+			};
+		};
+	projection_animate_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Animate");
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmPushButton projection_configure_button;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_projection_animate_but(projection_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				animate_projection(projection_window_structure);
+				};
+			};
+		};
+	projection_menu_bar: XmMenuBar 
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNspacing = widget_spacing;
+			XmNentryAlignment = XmALIGNMENT_CENTER;
+			XmNpacking = XmPACK_TIGHT;
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNshadowThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmPushButton projection_animate_button;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmCascadeButtonGadget projection_print_button;
+			};
+		};
+	projection_print_button: XmCascadeButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Print");
+			};
+		controls
+			{
+			XmPulldownMenu projection_print_menu;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_projection_print_butto(projection_window_structure);
+				};
+			};
+		};
+	projection_print_menu: XmPulldownMenu 
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			};
+		controls
+			{
+			XmPushButton projection_print_postscript_but;
+			XmPushButton projection_print_rgb_button;
+			XmPushButton projection_print_tiff_button;
+			};
+		};
+	projection_print_postscript_but: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Postscript");
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_projection_print_posts(projection_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				open_file_and_write(write_projection_postscript_dat);
+				};
+			};
+		};
+	projection_print_rgb_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("RGB");
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_projection_print_rgb_b(projection_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				open_file_and_write(write_projection_rgb_file_data);
+				};
+			};
+		};
+	projection_print_tiff_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("TIFF");
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_projection_print_tiff(projection_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				open_file_and_write(write_projection_tiff_file_data);
+				};
+			};
+		};
+	projection_close_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Close");
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_projection_close_butto(projection_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+!???DB.  What to do ?
+!        close_mapping_work_area(system_window_structure);
+				};
+			};
+		};
+	projection_paned_window: XmPanedWindow
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNmarginWidth = 0;
+			XmNmarginHeight = 0;
+			XmNspacing = widget_spacing;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmForm projection_menu;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmForm spectrum_area;
+			XmForm projection_area;
+			};
+		};
+	spectrum_area: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			};
+		controls
+			{
+			XmDrawingArea spectrum_drawing_area;
+			};
+		};
+	spectrum_drawing_area: XmDrawingArea
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = widget_spacing;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_projection_spectrum_ar(projection_window_structure);
+				};
+			XmNexposeCallback = procedures
+				{
+				expose_projection_spectrum_area(projection_window_structure);
+				};
+			XmNresizeCallback = procedures
+				{
+				resize_projection_spectrum_area(projection_window_structure);
+				};
+			};
+		};
+	projection_area: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			};
+		controls
+			{
+			XmDrawingArea projection_drawing_area;
+			};
+		};
+	projection_drawing_area: XmDrawingArea
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = widget_spacing;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_projection_drawing_are(projection_window_structure);
+				};
+			XmNexposeCallback = procedures
+				{
+				expose_projection_drawing_area(projection_window_structure);
+				};
+			XmNresizeCallback = procedures
+				{
+				resize_projection_drawing_area(projection_window_structure);
+				};
+			};
+		};
+
+end module;
+

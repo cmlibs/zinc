@@ -1,0 +1,84 @@
+!*******************************************************************************
+! FILE : time_editor_d.uil
+!
+! LAST MODIFIED : 8 December 1998
+!
+! DESCRIPTION :
+! The widgets for the time_editor_d time_editor_d widget.
+!===============================================================================
+module time_editor_dialog
+	version = 'v1.0'
+
+procedure
+	time_editor_d_destroy_CB          ();
+	time_editor_d_identify_widget (integer);
+	
+value
+	shadow_size        : 2;
+	form_space_out    :  2;
+	form_space_in      :  4;
+	time_editor_d_3d_space  :  3;
+	time_editor_d_3d_height  :  200;
+
+value
+	time_editor_d_font              : font_table(font('-*-HELVETICA-MEDIUM-R-*--*-80-*-*-*-*-ISO8859-1'));
+	time_editor_d_font_large        : font_table(font('-*-HELVETICA-BOLD-R-*--*-100-*-*-*-*-ISO8859-1'));
+	time_editor_d_font_bold        : font_table(font('-*-HELVETICA-BOLD-R-*--*-80-*-*-*-*-ISO8859-1'));
+
+identifier
+	!The gap between widgets
+	widget_spacing;
+	!Pointer to data specific to this instance of the time_editor_d widget
+	time_editor_d_structure;
+	!value identifier
+	time_editor_d_editor_form_ID;
+
+! The time_editor_d widget
+object
+	time_editor_dialog_widget: XmForm
+	{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = time_editor_d_structure;
+			};
+		controls
+			{
+			XmForm time_editor_d_editor;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure time_editor_d_destroy_CB();
+			};
+		};
+	time_editor_d_editor: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = time_editor_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure time_editor_d_identify_widget(
+				time_editor_d_editor_form_ID);
+			};
+		};
+end module;
+!**************************************************************************************

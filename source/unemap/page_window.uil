@@ -1,0 +1,1289 @@
+!*******************************************************************************
+! FILE : page_window.uil
+!
+! LAST MODIFIED : 27 September 1999
+!
+! DESCRIPTION :
+! The widgets/gadgets for a page window in the acquisition work area.
+!===============================================================================
+module page
+	names = case_sensitive
+
+procedure
+	decrement_electrode;
+	decrement_stimulate;
+	decrement_stimulator;
+	destroy_Page_window_callback;
+	expose_page_drawing_area;
+	identify_page_calibrate_button;
+	identify_page_close_button;
+	identify_page_drawing_area;
+	identify_page_electrode_form;
+	identify_page_electrode_value;
+	identify_page_experiment_checkb;
+	identify_page_gain_form;
+	identify_page_gain_value;
+	identify_page_low_pass_form;
+	identify_page_low_pass_value;
+	identify_page_maximum_form;
+	identify_page_maximum_value;
+	identify_page_minimum_form;
+	identify_page_minimum_value;
+	identify_page_isolate_checkbox;
+	identify_page_reset_scale_butto;
+	identify_page_sample_checkbox;
+	identify_page_save_button;
+	identify_page_scale_button;
+	identify_page_stimulate_arrows;
+	identify_page_stimulate_form;
+	identify_page_stimulate_checkbo;
+	identify_page_stimulate_value;
+	identify_page_stimulator_form;
+	identify_page_stimulator_label;
+	identify_page_test_checkbox;
+	increment_electrode;
+	increment_stimulate;
+	increment_stimulator;
+	page_reset_scale;
+	page_scale;
+	resize_page_drawing_area;
+	save_data;
+	start_calibrating;
+	start_stop_experiment_callback;
+	start_stop_isolating_callback;
+	start_stop_sampling_callback;
+	start_stop_stimulating_callback;
+	start_stop_testing_callback;
+	update_display_device_callback;
+	update_display_gain_callback;
+	update_display_maximum_callback;
+	update_display_minimum_callback;
+	update_filter_callback;
+	update_stimulate_device_callbac;
+
+identifier
+	identifying_colour;
+	page_window_structure;
+	widget_spacing;
+	! Fonts
+	button_font;
+	heading_font;
+	list_font;
+	menu_font;
+	normal_font;
+	normal_non_proportional_font;
+	small_font;
+
+object
+!The window for monitoring signals
+	page_window: XmForm 
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNdialogTitle = "Acquisition";
+			XmNbackground = identifying_colour;
+			};
+		controls
+			{
+			XmForm page_menu;
+			XmDrawingArea page_drawing_area;
+			};
+		callbacks
+			{
+			XmNfocusCallback = procedures
+				{
+!				associate_mapping_acquisition(system_window_structure);
+				};
+			XmNdestroyCallback = procedures
+				{
+				destroy_Page_window_callback(page_window_structure);
+				};
+			};
+		};
+!The area within the page window for drawing the signals as they come in
+	page_drawing_area: XmDrawingArea 
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			XmNresizePolicy = XmRESIZE_NONE;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopWidget = XmForm page_menu;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_drawing_area(page_window_structure);
+				};
+			XmNexposeCallback = procedures
+				{
+				expose_page_drawing_area(page_window_structure);
+				};
+			XmNresizeCallback = procedures
+				{
+				resize_page_drawing_area(page_window_structure);
+				};
+			};
+		};
+!The menu for the page window
+	page_menu: XmForm 
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = widget_spacing;
+			};
+		controls
+			{
+			XmForm page_menu_1;
+			XmForm page_menu_2;
+			};
+		};
+	page_menu_1: XmForm 
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			};
+		controls
+			{
+			XmToggleButton page_experiment_checkbox;
+			XmToggleButton page_isolate_checkbox;
+			XmToggleButton page_sample_checkbox;
+			XmPushButtonGadget page_save_button;
+			XmPushButtonGadget page_calibrate_button;
+			XmForm page_stimulator;
+			XmToggleButton page_test_checkbox;
+			XmForm page_low_pass;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftOffset = 0;
+					XmNleftWidget = XmForm page_low_pass;
+					XmNrightAttachment = XmATTACH_WIDGET;
+					XmNrightOffset = 0;
+					XmNrightWidget = XmPushButtonGadget page_close_button;
+					XmNtopAttachment = XmATTACH_FORM;
+					XmNtopOffset = 0;
+					XmNbottomAttachment = XmATTACH_FORM;
+					XmNbottomOffset = 0;
+					};
+				};
+			XmPushButtonGadget page_close_button;
+			};
+		};
+	page_menu_2: XmForm 
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = widget_spacing;
+			XmNtopWidget = XmForm page_menu_1;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmForm page_electrode;
+			XmForm page_gain;
+			XmPushButtonGadget page_scale_button;
+			XmPushButtonGadget page_reset_scale_button;
+			XmForm page_minimum;
+			XmForm page_maximum;
+			};
+		};
+!Clicking this button toggles power to the acquisition hardware between on and
+!  off
+	page_experiment_checkbox: XmToggleButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Experiment");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_experiment_checkb(page_window_structure);
+				};
+			XmNvalueChangedCallback = procedures
+				{
+				start_stop_experiment_callback(page_window_structure);
+				};
+			};
+		};
+!Clicking this button toggles between isolate and record modes
+	page_isolate_checkbox: XmToggleButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Isolate");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmToggleButton page_experiment_checkbox;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_isolate_checkbox(page_window_structure);
+				};
+			XmNvalueChangedCallback = procedures
+				{
+				start_stop_isolating_callback(page_window_structure);
+				};
+			};
+		};
+!Clicking this button turns sampling on and off
+	page_sample_checkbox: XmToggleButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Sample");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmToggleButton page_isolate_checkbox;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_sample_checkbox(page_window_structure);
+				};
+			XmNvalueChangedCallback = procedures
+				{
+				start_stop_sampling_callback(page_window_structure);
+				};
+			};
+		};
+!Clicking this button prompts for a file to write the samples to
+	page_save_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Save");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmToggleButton page_sample_checkbox;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_save_button(page_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				save_data(page_window_structure);
+				};
+			};
+		};
+!Controls which device is currently shown in the scrolling display
+	page_electrode: XmForm 
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmLabelGadget page_electrode_label;
+			XmTextField page_electrode_value;
+			XmForm page_electrode_arrows;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_electrode_form(page_window_structure);
+				};
+			};
+		};
+	page_electrode_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Electrode:");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_END;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	page_electrode_value: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 4;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabelGadget page_electrode_label;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightWidget = XmForm page_electrode_arrows;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_electrode_value(page_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				update_display_device_callback(page_window_structure);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				update_display_device_callback(page_window_structure);
+				};
+			};
+		};
+	page_electrode_arrows: XmForm 
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmArrowButtonGadget page_electrode_down_arrow;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_FORM;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = 0;
+					XmNtopAttachment = XmATTACH_WIDGET;
+					XmNtopOffset = 0;
+					XmNtopWidget = XmArrowButtonGadget page_electrode_up_arrow;
+					XmNbottomAttachment = XmATTACH_WIDGET;
+					XmNbottomOffset = 0;
+					XmNbottomWidget = XmArrowButtonGadget page_electrode_down_arrow;
+					};
+				};
+			XmArrowButtonGadget page_electrode_up_arrow;
+			};
+		};
+	page_electrode_down_arrow: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNarrowDirection = XmARROW_DOWN;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				decrement_electrode(page_window_structure);
+				};
+			};
+		};
+	page_electrode_up_arrow: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNarrowDirection = XmARROW_UP;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				increment_electrode(page_window_structure);
+				};
+			};
+		};
+!Controls the display gain
+	page_gain: XmForm 
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmForm page_electrode;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmLabelGadget page_gain_label;
+			XmTextField page_gain_value;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_gain_form(page_window_structure);
+				};
+			};
+		};
+	page_gain_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Gain:");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_END;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	page_gain_value: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 4;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabelGadget page_gain_label;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_gain_value(page_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				update_display_gain_callback(page_window_structure);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				update_display_gain_callback(page_window_structure);
+				};
+			};
+		};
+!Clicking this button rescales the scrolling display to fit all values since the
+!  last press of page_reset_scale_button
+	page_scale_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Scale");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmForm page_gain;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_scale_button(page_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				page_scale(page_window_structure);
+				};
+			};
+		};
+!Clicking this button causes the display minimum/maximum calculation to be
+! re-started
+	page_reset_scale_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Reset scale");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmPushButtonGadget page_scale_button;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_reset_scale_butto(page_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				page_reset_scale(page_window_structure);
+				};
+			};
+		};
+!Controls the display minimum
+	page_minimum: XmForm 
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmPushButtonGadget page_reset_scale_button;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmLabelGadget page_minimum_label;
+			XmTextField page_minimum_value;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_minimum_form(page_window_structure);
+				};
+			};
+		};
+	page_minimum_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Minimum:");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_END;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	page_minimum_value: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 6;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabelGadget page_minimum_label;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_minimum_value(page_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				update_display_minimum_callback(page_window_structure);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				update_display_minimum_callback(page_window_structure);
+				};
+			};
+		};
+!Controls the display maximum
+	page_maximum: XmForm 
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmForm page_minimum;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmLabelGadget page_maximum_label;
+			XmTextField page_maximum_value;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_maximum_form(page_window_structure);
+				};
+			};
+		};
+	page_maximum_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Maximum:");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_END;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	page_maximum_value: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 6;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabelGadget page_maximum_label;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_maximum_value(page_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				update_display_maximum_callback(page_window_structure);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				update_display_maximum_callback(page_window_structure);
+				};
+			};
+		};
+!Clicking this button starts calibration
+	page_calibrate_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Calibrate");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmPushButtonGadget page_save_button;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_calibrate_button(page_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				start_calibrating(page_window_structure);
+				};
+			};
+		};
+!Controls stimulation
+	page_stimulator: XmForm 
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmPushButtonGadget page_calibrate_button;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmLabelGadget page_stimulator_label;
+			XmForm page_stimulator_arrows;
+			XmForm page_stimulate;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_stimulator_form(page_window_structure);
+				};
+			};
+		};
+	page_stimulator_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Stimulator:");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_END;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_stimulator_label(page_window_structure);
+				};
+			};
+		};
+	page_stimulator_arrows: XmForm 
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabelGadget page_stimulator_label;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmArrowButtonGadget page_stimulator_down_arrow;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_FORM;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = 0;
+					XmNtopAttachment = XmATTACH_WIDGET;
+					XmNtopOffset = 0;
+					XmNtopWidget = XmArrowButtonGadget page_stimulator_up_arrow;
+					XmNbottomAttachment = XmATTACH_WIDGET;
+					XmNbottomOffset = 0;
+					XmNbottomWidget = XmArrowButtonGadget page_stimulator_down_arrow;
+					};
+				};
+			XmArrowButtonGadget page_stimulator_up_arrow;
+			};
+		};
+	page_stimulator_down_arrow: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNarrowDirection = XmARROW_DOWN;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				decrement_stimulator(page_window_structure);
+				};
+			};
+		};
+	page_stimulator_up_arrow: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNarrowDirection = XmARROW_UP;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				increment_stimulator(page_window_structure);
+				};
+			};
+		};
+	page_stimulate: XmForm 
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmForm page_stimulator_arrows;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmToggleButton page_stimulate_checkbox;
+			XmTextField page_stimulate_value;
+			XmForm page_stimulate_arrows;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_stimulate_form(page_window_structure);
+				};
+			};
+		};
+	page_stimulate_checkbox: XmToggleButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Stimulate:");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_END;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_stimulate_checkbo(page_window_structure);
+				};
+			XmNvalueChangedCallback = procedures
+				{
+				start_stop_stimulating_callback(page_window_structure);
+				};
+			};
+		};
+	page_stimulate_value: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 4;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmToggleButton page_stimulate_checkbox;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightWidget = XmForm page_stimulate_arrows;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_stimulate_value(page_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				update_stimulate_device_callbac(page_window_structure);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				update_stimulate_device_callbac(page_window_structure);
+				};
+			};
+		};
+	page_stimulate_arrows: XmForm 
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmArrowButtonGadget page_stimulate_down_arrow;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_FORM;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = 0;
+					XmNtopAttachment = XmATTACH_WIDGET;
+					XmNtopOffset = 0;
+					XmNtopWidget = XmArrowButtonGadget page_stimulate_up_arrow;
+					XmNbottomAttachment = XmATTACH_WIDGET;
+					XmNbottomOffset = 0;
+					XmNbottomWidget = XmArrowButtonGadget page_stimulate_down_arrow;
+					};
+				};
+			XmArrowButtonGadget page_stimulate_up_arrow;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_stimulate_arrows(page_window_structure);
+				};
+			};
+		};
+	page_stimulate_down_arrow: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNarrowDirection = XmARROW_DOWN;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				decrement_stimulate(page_window_structure);
+				};
+			};
+		};
+	page_stimulate_up_arrow: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNarrowDirection = XmARROW_UP;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				increment_stimulate(page_window_structure);
+				};
+			};
+		};
+!Clicking this button toggles in and out of test mode (electrodes connected to
+!  and displaying test signal)
+	page_test_checkbox: XmToggleButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Test");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmForm page_stimulate;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_test_checkbox(page_window_structure);
+				};
+			XmNvalueChangedCallback = procedures
+				{
+				start_stop_testing_callback(page_window_structure);
+				};
+			};
+		};
+!Controls the anti-aliasing/low-pass filter
+	page_low_pass: XmForm 
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmToggleButton page_test_checkbox;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmLabelGadget page_low_pass_label;
+			XmTextField page_low_pass_value;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_low_pass_form(page_window_structure);
+				};
+			};
+		};
+	page_low_pass_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Low pass:");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_END;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	page_low_pass_value: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 4;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabelGadget page_low_pass_label;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_low_pass_value(page_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				update_filter_callback(page_window_structure);
+				};
+			XmNlosingFocusCallback = procedures
+				{
+				update_filter_callback(page_window_structure);
+				};
+			};
+		};
+!Closes the page window
+	page_close_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Close");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_page_close_button(page_window_structure);
+				};
+			};
+		};
+
+end module;

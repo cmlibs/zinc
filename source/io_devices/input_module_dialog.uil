@@ -1,0 +1,911 @@
+!*******************************************************************************
+! FILE : input_module_d.uil
+!
+! LAST MODIFIED : 14 May 1998
+!
+! DESCRIPTION :
+! The widgets for the input_module_d input_module_d widget.
+!===============================================================================
+module input_module_d
+	version = 'v1.0'
+
+procedure
+	input_module_d_identify (integer);
+	input_module_d_destroy_CB ();
+	input_module_d_control_CB (integer);
+
+	! For the input calibration dialog
+	input_calib_destroy_CB ();
+	input_calib_identify_button (integer);
+	input_calib_control_CB (integer);
+
+	! For the input calibration dialog
+	input_faro_destroy_CB ();
+	input_faro_identify (integer);
+	input_faro_control_CB (integer);
+
+value
+	shadow_size        : 2;
+	form_space_out    :  2;
+	form_space_in      :  4;
+	input_module_d_3d_space  :  3;
+	input_module_d_3d_height  :  200;
+
+value
+	input_module_d_font :
+		font_table(font('-*-HELVETICA-MEDIUM-R-*--*-80-*-*-*-*-ISO8859-1'));
+	input_module_d_font_large :
+		font_table(font('-*-HELVETICA-BOLD-R-*--*-100-*-*-*-*-ISO8859-1'));
+	input_module_d_font_bold :
+		font_table(font('-*-HELVETICA-BOLD-R-*--*-80-*-*-*-*-ISO8859-1'));
+
+identifier
+	!The gap between widgets
+	widget_spacing;
+	!Pointer to data specific to this instance of the input_module_d widget
+	input_module_d_structure;
+	!value identifier
+	input_module_chooser_form_ID;
+	input_module_data_rowcol_ID;
+	input_module_scale_frame_ID;
+	input_module_offset_frame_ID;
+	input_module_form_label_ID;
+	input_module_current_x_ID;
+	input_module_current_y_ID;
+	input_module_current_z_ID;
+	input_module_display_change;
+	input_module_scene_chooser_ID;
+	input_module_material_ID;
+	input_module_display_control_ID;
+	input_module_set_origin;
+	input_module_calibrate;
+	input_module_cross;
+	input_module_pixel;
+	input_module_sphere;
+! For the input calibration dialog
+	input_calib_control_ID;
+	input_calib_scroll_ID;
+	input_calib_cont_record_ID;
+	input_calib_cont_solve_ID;
+	input_calib_cont_delete_ID;
+	input_calib_cont_clear_ID;
+! For the input faro arm calibration dialog
+	input_faro_control_ID;
+	input_faro_scroll_ID;
+	input_faro_three_point_ID;
+
+! the input_module_d widget
+object
+	input_module_dialog_widget: XmForm
+	{
+		arguments
+		{
+			XmNborderWidth = 0;
+			XmNfractionBase = 30;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = input_module_d_structure;
+		};
+		controls
+		{
+			XmMenuBar input_module_device_chooser;
+			XmToggleButtonGadget input_module_display_button;
+			XmForm input_module_display_control;
+			XmForm input_module_form;
+		};
+		callbacks
+		{
+			XmNdestroyCallback = procedure input_module_d_destroy_CB();
+		};
+	};
+
+	input_module_device_chooser: XmMenuBar
+	{
+		arguments
+		{
+			XmNborderWidth = 0;
+!			XmNorientation = XmHORIZONTAL;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNuserData = input_module_d_structure;
+		};
+		callbacks
+		{
+			MrmNcreateCallback = procedure input_module_d_identify(input_module_chooser_form_ID);
+		};
+	};
+
+	input_module_display_button: XmToggleButtonGadget
+	{
+		arguments
+		{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 15;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = input_module_device_chooser;
+			XmNbottomAttachment = XmATTACH_OPPOSITE_WIDGET;
+			XmNbottomOffset = 0;
+			XmNbottomWidget = input_module_display_control;
+			XmNlabelString = compound_string("Show");
+			XmNset = false;
+			XmNuserData = input_module_d_structure;
+		};
+		callbacks
+		{
+			XmNvalueChangedCallback = procedure input_module_d_control_CB(input_module_display_change);
+		};
+	};
+
+	input_module_display_control: XmForm
+	{
+		arguments
+		{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftOffset = 0;
+			XmNleftPosition = 10;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = input_module_device_chooser;
+!			XmNsensitive = false;
+			XmNuserData = input_module_d_structure;
+		};
+		controls
+		{
+			XmOptionMenu input_module_graphic_type_menu;
+			XmLabelGadget input_module_scene_label;
+			XmForm input_module_scene_chooser;
+			XmLabelGadget input_module_material_label;
+			XmForm input_module_material_chooser;
+		};
+		callbacks
+		{
+			MrmNcreateCallback = procedure input_module_d_identify(input_module_display_control_ID);
+		};
+	};
+
+object
+	input_module_form: XmForm
+	{
+		arguments
+		{
+			XmNfractionBase = 20;
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = input_module_display_control;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = input_module_d_structure;
+		};
+		controls
+		{
+			XmPushButton input_module_origin_button;
+			XmPushButton input_module_calibrate_button;
+			XmFrame input_module_data_frame;
+		};
+	};
+
+!***************************************************
+!*** Display control
+
+object
+	input_module_graphic_type_menu: XmOptionMenu
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Type:");
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNuserData = input_module_d_structure;
+			};
+		controls
+			{
+			XmPulldownMenu input_module_graphic_pulldown;
+			};
+		};
+
+	input_module_graphic_pulldown: XmPulldownMenu
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			XmNuserData = input_module_d_structure;
+			};
+		controls
+			{
+			XmPushButtonGadget input_module_cross_button;
+			XmPushButtonGadget input_module_pixel_button;
+			XmPushButtonGadget input_module_sphere_button;
+			};
+		};
+
+	input_module_cross_button:	XmPushButtonGadget
+	{
+		arguments
+		{
+			XmNlabelString = compound_string("Cross");
+			XmNuserData = input_module_d_structure;
+		};
+		callbacks
+		{
+			XmNactivateCallback = procedure input_module_d_control_CB(input_module_cross );
+		};
+	};
+
+	input_module_pixel_button:	XmPushButtonGadget
+	{
+		arguments
+		{
+			XmNlabelString = compound_string("Pixel");
+			XmNuserData = input_module_d_structure;
+		};
+		callbacks
+		{
+			XmNactivateCallback = procedure input_module_d_control_CB(input_module_pixel );
+		};
+	};
+
+	input_module_sphere_button:	XmPushButtonGadget
+	{
+		arguments
+		{
+			XmNlabelString = compound_string("Sphere");
+			XmNuserData = input_module_d_structure;
+		};
+		callbacks
+		{
+			XmNactivateCallback = procedure input_module_d_control_CB(input_module_sphere );
+		};
+	};
+
+	input_module_scene_label: XmLabelGadget
+	{
+		arguments
+		{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 0;
+			XmNleftWidget = input_module_graphic_type_menu;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_OPPOSITE_WIDGET;
+			XmNbottomOffset = 0;
+			XmNbottomWidget = input_module_graphic_type_menu;
+			XmNlabelString = compound_string("Scene:");
+			XmNuserData = input_module_d_structure;
+		};
+	};
+
+	input_module_scene_chooser: XmForm
+	{
+		arguments
+		{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 0;
+			XmNleftWidget = input_module_scene_label;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNuserData = input_module_d_structure;
+		};
+		callbacks
+		{
+			MrmNcreateCallback = procedure input_module_d_identify(input_module_scene_chooser_ID);
+		};
+	};
+
+	input_module_material_label: XmLabelGadget
+	{
+		arguments
+		{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_OPPOSITE_WIDGET;
+			XmNleftOffset = 0;
+			XmNleftWidget = input_module_graphic_type_menu;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = input_module_graphic_type_menu;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNlabelString = compound_string("Material:");
+			XmNuserData = input_module_d_structure;
+		};
+	};
+
+	input_module_material_chooser: XmForm
+	{
+		arguments
+		{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 0;
+			XmNleftWidget = input_module_material_label;
+			XmNtopAttachment = XmATTACH_OPPOSITE_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = input_module_material_label;
+			XmNuserData = input_module_d_structure;
+		};
+		callbacks
+		{
+			MrmNcreateCallback = procedure input_module_d_identify(input_module_material_ID);
+		};
+	};
+
+!**************************************************************
+
+	input_module_origin_button: XmPushButton
+	{
+		arguments
+		{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 5;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightOffset = 5;
+			XmNrightPosition = 10;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNtopWidget = input_module_origin_button;
+			XmNuserData = input_module_d_structure;
+
+			XmNlabelString = compound_string("Set Origin");
+		};
+		callbacks
+		{
+			XmNactivateCallback = procedure input_module_d_control_CB(input_module_set_origin );
+		};
+	};
+
+	input_module_calibrate_button: XmPushButton
+	{
+		arguments
+		{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftOffset = 5;
+			XmNleftPosition = 10;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 5;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNuserData = input_module_d_structure;
+
+			XmNlabelString = compound_string("Calibrate");
+		};
+		callbacks
+		{
+			XmNactivateCallback = procedure input_module_d_control_CB(input_module_calibrate );
+		};
+	};
+
+	input_module_data_frame: XmFrame
+	{
+		arguments
+		{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = input_module_origin_button;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = input_module_d_structure;
+		};
+		controls
+		{
+			XmRowColumn input_module_data_rowcol;
+		};
+	};
+
+!**************************************************************
+
+	input_module_data_rowcol: XmRowColumn
+	{
+		arguments
+		{
+			XmNuserData = input_module_d_structure;
+		};
+		callbacks
+		{
+			MrmNcreateCallback = procedure input_module_d_identify(input_module_data_rowcol_ID);
+		};
+	};
+
+	input_module_dialog_data_form: XmForm
+	{
+		arguments
+		{
+			XmNuserData = 0;
+		};
+		controls
+		{
+			XmLabelGadget input_module_d_form_heading;
+			XmForm input_d_current_value_form;
+			XmForm input_d_value_controls_form;
+			XmForm input_module_d_dof3_form;
+		};
+	};
+
+	input_module_d_form_heading: XmLabelGadget
+	{
+		arguments
+		{
+			XmNlabelString = compound_string("Description");
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = input_module_d_structure;
+		};
+		callbacks
+		{
+			MrmNcreateCallback = procedure input_module_d_identify(input_module_form_label_ID);
+		};
+	};
+
+	input_d_current_value_form: XmForm
+	{
+		arguments
+		{
+			XmNheight = 30;
+			XmNfractionBase = 30;
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = input_module_d_form_heading;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = input_module_d_structure;
+		};
+		controls
+		{
+			XmLabelGadget input_d_current_x_value;
+			XmLabelGadget input_d_current_y_value;
+			XmLabelGadget input_d_current_z_value;
+		};
+	};
+
+	input_d_current_x_value: XmLabelGadget
+	{
+		arguments
+		{
+			XmNlabelString = compound_string("0.00");
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightOffset = 0;
+			XmNrightPosition = 10;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNalignment = XmALIGNMENT_CENTER;
+			XmNuserData = input_module_d_structure;
+		};
+		callbacks
+		{
+			MrmNcreateCallback = procedure input_module_d_identify(input_module_current_x_ID);
+		};
+	};
+
+	input_d_current_y_value: XmLabelGadget
+	{
+		arguments
+		{
+			XmNlabelString = compound_string("0.00");
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftOffset = 0;
+			XmNleftPosition = 10;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightOffset = 0;
+			XmNrightPosition = 20;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNalignment = XmALIGNMENT_CENTER;
+			XmNuserData = input_module_d_structure;
+		};
+		callbacks
+		{
+			MrmNcreateCallback = procedure input_module_d_identify(input_module_current_y_ID);
+		};
+	};
+
+	input_d_current_z_value: XmLabelGadget
+	{
+		arguments
+		{
+			XmNlabelString = compound_string("0.00");
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftOffset = 0;
+			XmNleftPosition = 20;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNalignment = XmALIGNMENT_CENTER;
+			XmNuserData = input_module_d_structure;
+		};
+		callbacks
+		{
+			MrmNcreateCallback = procedure input_module_d_identify(input_module_current_z_ID);
+		};
+	};
+
+	input_d_value_controls_form: XmForm
+	{
+		arguments
+		{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = input_d_current_value_form;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = input_module_d_structure;
+		};
+	};
+
+	input_module_d_dof3_form: XmForm
+	{
+		arguments
+		{
+			XmNborderWidth = 0;
+			XmNfractionBase = 20;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = input_d_value_controls_form;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = input_module_d_structure;
+		};
+		controls
+		{
+			XmForm input_module_d_scale_frame;
+			XmForm input_module_d_offset_frame;
+		};
+	};
+
+	input_module_d_scale_frame: XmForm
+	{
+		arguments
+		{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightOffset = 0;
+			XmNrightPosition = 10;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = input_module_d_structure;
+		};
+		callbacks
+		{
+			MrmNcreateCallback = procedure input_module_d_identify(input_module_scale_frame_ID);
+		};
+	};
+
+	input_module_d_offset_frame: XmForm
+	{
+		arguments
+		{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftOffset = 0;
+			XmNleftPosition = 10;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = input_module_d_structure;
+		};
+		callbacks
+		{
+			MrmNcreateCallback = procedure input_module_d_identify(input_module_offset_frame_ID);
+		};
+	};
+
+!**************************************************************
+!** Input Module Calibration window
+
+	input_calib_widget: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = 0;
+			};
+		controls
+			{
+			XmRowColumn input_calib_control;
+			XmScrolledList input_calib_scroll;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure input_calib_destroy_CB();
+			};
+		};
+
+	input_calib_control: XmRowColumn
+		{
+		arguments
+			{
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_COLUMN;
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = input_module_d_structure;
+			};
+		controls
+			{
+			XmPushButton input_calib_control_record;
+			XmPushButton input_calib_control_solve;
+			XmPushButton input_calib_control_delete;
+			XmPushButton input_calib_control_clear;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+				procedure input_calib_identify_button(input_calib_control_ID);
+			};
+		};
+	input_calib_scroll: XmScrolledList
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = 0;
+			XmNbottomWidget = XmRowColumn input_calib_control;
+			XmNscrollingPolicy = XmAUTOMATIC;
+			XmNlistSizePolicy = XmRESIZE_IF_POSSIBLE;
+			XmNselectionPolicy = XmEXTENDED_SELECT;
+			XmNuserData = input_module_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+				procedure input_calib_identify_button(input_calib_scroll_ID);
+			};
+		};
+	input_calib_control_record: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Record");
+			XmNuserData = input_module_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+				procedure input_calib_identify_button(input_calib_cont_record_ID);
+			XmNactivateCallback =
+				procedure input_calib_control_CB(input_calib_cont_record_ID);
+			};
+		};
+	input_calib_control_solve: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Solve");
+			XmNuserData = input_module_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+				procedure input_calib_identify_button(input_calib_cont_solve_ID);
+			XmNactivateCallback =
+				procedure input_calib_control_CB(input_calib_cont_solve_ID);
+			};
+		};
+	input_calib_control_delete: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Delete");
+			XmNuserData = input_module_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+				procedure input_calib_identify_button(input_calib_cont_delete_ID);
+			XmNactivateCallback =
+				procedure input_calib_control_CB(input_calib_cont_delete_ID);
+			};
+		};
+	input_calib_control_clear: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Clear");
+			XmNuserData = input_module_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+				procedure input_calib_identify_button(input_calib_cont_clear_ID);
+			XmNactivateCallback =
+				procedure input_calib_control_CB(input_calib_cont_clear_ID);
+			};
+		};
+
+!**************************************************************
+!** Input Module Faro Arm Calibration window
+
+	input_faro_widget: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = 0;
+			};
+		controls
+			{
+			XmRowColumn input_faro_control;
+			XmScrolledList input_faro_scroll;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure input_faro_destroy_CB();
+			};
+		};
+
+	input_faro_control: XmRowColumn
+		{
+		arguments
+			{
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_COLUMN;
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = input_module_d_structure;
+			};
+		controls
+			{
+			XmPushButton input_faro_control_three_point;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+				procedure input_faro_identify(input_faro_control_ID);
+			};
+		};
+	input_faro_scroll: XmScrolledList
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = 0;
+			XmNbottomWidget = XmRowColumn input_calib_control;
+			XmNscrollingPolicy = XmAUTOMATIC;
+			XmNlistSizePolicy = XmRESIZE_IF_POSSIBLE;
+			XmNselectionPolicy = XmEXTENDED_SELECT;
+			XmNuserData = input_module_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+				procedure input_faro_identify(input_faro_scroll_ID);
+			};
+		};
+	input_faro_control_three_point: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Three Point");
+			XmNuserData = input_module_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+				procedure input_faro_identify(input_faro_three_point_ID);
+			XmNactivateCallback =
+				procedure input_faro_control_CB(input_faro_three_point_ID);
+			};
+		};
+
+end module;
+
+

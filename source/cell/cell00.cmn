@@ -1,0 +1,32 @@
+!  cell00.cmn
+      INTEGER MECHANICS_MODEL,MEMBRANE_MODEL,CMMODEL(9),NUM_INITS,
+     '  NUM_PARAMS
+      COMMON /CELL00I/ MECHANICS_MODEL,MEMBRANE_MODEL,CMMODEL,NUM_INITS,
+     '  NUM_PARAMS
+
+      LOGICAL TENSION_DEPENDENT_RELEASE,USE_LR_INA
+      COMMON /CELL00L/ TENSION_DEPENDENT_RELEASE,USE_LR_INA
+
+      REAL*8 JRW_GCab_max,JRW_f,JRW_g,JRW_f_dash,JRW_g_dash,JRW_a,
+     '  JRW_b,JRW_w,JRW_PCa,JRW_PK,JRW_ICa_half,JRW_kNaCa,JRW_km_Na,
+     '  JRW_km_Ca,JRW_ksat,JRW_eta,JRW_ICap_max,JRW_km_Cap,JRW_P_ns,
+     '  JRW_km_ns,JRW_Faraday,JRW_Temp,JRW_R,JRW_Acap,JRW_V_myo,
+     '  JRW_V_SS,JRW_v1,JRW_kap,JRW_kam,JRW_kbp,JRW_kbm,JRW_kcp,JRW_kcm,
+     '  JRW_n,JRW_m,JRW_CSQN_tot,JRW_km_CSQN,JRW_V_JSR,JRW_tau_xfer,
+     '  JRW_tau_tr,JRW_v2,JRW_v3,JRW_km_up,JRW_V_NSR,JRW_LTRPN_tot,
+     '  JRW_HTRPN_tot,JRW_kp_htrpn,JRW_km_htrpn,JRW_kp_ltrpn,
+     '  JRW_km_ltrpn,JRW_CMDN_tot,JRW_km_CMDN,JRW_GKp_max,JRW_PNaK,
+     '  JRW_Nao,JRW_Ko,JRW_INaK_max,JRW_km_Nai,JRW_km_Ko,JRW_GNab_max,
+     '  JRW_GNa_max,JRW_Istim
+      COMMON /CELL00R/ 
+     '  JRW_GCab_max,JRW_f,JRW_g,JRW_f_dash,JRW_g_dash,JRW_a,
+     '  JRW_b,JRW_w,JRW_PCa,JRW_PK,JRW_ICa_half,JRW_kNaCa,JRW_km_Na,
+     '  JRW_km_Ca,JRW_ksat,JRW_eta,JRW_ICap_max,JRW_km_Cap,JRW_P_ns,
+     '  JRW_km_ns,JRW_Faraday,JRW_Temp,JRW_R,JRW_Acap,JRW_V_myo,
+     '  JRW_V_SS,JRW_v1,JRW_kap,JRW_kam,JRW_kbp,JRW_kbm,JRW_kcp,JRW_kcm,
+     '  JRW_n,JRW_m,JRW_CSQN_tot,JRW_km_CSQN,JRW_V_JSR,JRW_tau_xfer,
+     '  JRW_tau_tr,JRW_v2,JRW_v3,JRW_km_up,JRW_V_NSR,JRW_LTRPN_tot,
+     '  JRW_HTRPN_tot,JRW_kp_htrpn,JRW_km_htrpn,JRW_kp_ltrpn,
+     '  JRW_km_ltrpn,JRW_CMDN_tot,JRW_km_CMDN,JRW_GKp_max,JRW_PNaK,
+     '  JRW_Nao,JRW_Ko,JRW_INaK_max,JRW_km_Nai,JRW_km_Ko,JRW_GNab_max,
+     '  JRW_GNa_max,JRW_Istim

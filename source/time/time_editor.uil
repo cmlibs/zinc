@@ -1,0 +1,460 @@
+!*******************************************************************************
+! FILE : time_editor.uil
+!
+! LAST MODIFIED : 10 December 1998
+!
+! DESCRIPTION :
+! The widgets for the time_editor  widget.
+!===============================================================================
+module time_editor
+	version = 'v1.0'
+
+procedure
+	time_editor_identify_widget    (integer);
+	time_editor_destroy_CB          ();
+	time_editor_control_CB          (integer);
+
+value
+	shadow_size        : 2;
+	form_space_out    :  2;
+	form_space_in      :  4;
+
+value
+	time_editor_font              : font_table(font('-*-HELVETICA-MEDIUM-R-*--*-80-*-*-*-*-ISO8859-1'));
+	time_editor_font_large        : font_table(font('-*-HELVETICA-BOLD-R-*--*-100-*-*-*-*-ISO8859-1'));
+	time_editor_font_bold        : font_table(font('-*-HELVETICA-BOLD-R-*--*-80-*-*-*-*-ISO8859-1'));
+	black : color('black', foreground);
+	time_editor_colour_table :
+		color_table(
+		black='o',
+		foreground color='.',
+		background color=' ');
+
+identifier
+	!The gap between widgets
+	widget_spacing;
+	!Pointer to data specific to this instance of the time_editor widget
+	time_editor_structure;
+	!value identifier
+	time_editor_play_ID;
+	time_editor_play_reverse_ID;
+	time_editor_stop_ID;
+	time_editor_frame_text_ID;
+	time_editor_step_ID;
+	time_editor_step_back_ID;
+	time_editor_two_step_ID;
+	time_editor_two_step_back_ID;
+	time_editor_set_framerate_ID;
+	time_editor_set_step_ID;
+	time_editor_play_every_ID;
+	time_editor_close_ID;
+	time_editor_settings_ID;
+
+include file 'time_editor_icon.uil';
+
+!**************************************************************************************
+!**************************************************************************************
+
+! The time_editor widget
+object
+	time_editor_widget: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = time_editor_structure;
+			};
+		controls
+			{
+			XmMenuBar time_editor_menu;
+			XmForm time_editor_frame_controls;
+			XmForm time_editor_play_controls;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure time_editor_destroy_CB();
+			};
+		};
+
+!**************************************************************************************
+
+	time_editor_menu: XmMenuBar
+		{
+		arguments
+			{
+			XmNspacing = widget_spacing;
+			XmNshadowThickness = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNuserData = time_editor_structure;
+			};
+		controls
+			{
+			XmCascadeButton time_editor_settings_button;
+			};
+		};
+
+	time_editor_settings_button: XmCascadeButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Settings");
+			XmNmnemonic = keysym("S");
+			XmNuserData = time_editor_structure;
+			};
+		controls
+			{
+			XmPulldownMenu time_editor_settings_pulldown;
+			};
+		callbacks
+			{
+			XmNcascadingCallback = procedure time_editor_control_CB(
+				time_editor_settings_ID);
+			};
+		};
+
+	time_editor_settings_pulldown: XmPulldownMenu
+		{
+		arguments
+			{
+			XmNuserData = time_editor_structure;
+			};
+		controls
+			{
+			XmPushButton time_editor_set_framerate_btn;
+			XmPushButton time_editor_set_step_button;
+			XmToggleButton time_editor_play_every_btn;
+			XmPushButton time_editor_close_button;
+			};
+		};
+
+	time_editor_set_framerate_btn: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("set Framerate");
+			XmNmnemonic = keysym("F");
+			XmNuserData = time_editor_structure;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedure time_editor_control_CB(
+				time_editor_set_framerate_ID);
+			};
+		};
+
+	time_editor_set_step_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("set Step");
+			XmNmnemonic = keysym("S");
+			XmNuserData = time_editor_structure;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedure time_editor_control_CB(
+				time_editor_set_step_ID);
+			};
+		};
+
+	time_editor_play_every_btn: XmToggleButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Play Every Frame");
+			XmNmnemonic = keysym("E");
+			XmNindicatorType = XmN_OF_MANY;
+			XmNuserData = time_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure time_editor_identify_widget(
+				time_editor_play_every_ID);
+			XmNvalueChangedCallback = procedure time_editor_control_CB(
+				time_editor_play_every_ID);
+			};
+		};
+
+	time_editor_close_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Close");
+			XmNmnemonic = keysym("C");
+			XmNuserData = time_editor_structure;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedure time_editor_control_CB(time_editor_close_ID);
+			};
+		};
+
+!**************************************************************************************
+
+	time_editor_frame_controls: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = time_editor_menu;
+
+			XmNuserData = time_editor_structure;
+			};
+		controls
+			{
+			XmPushButton time_editor_two_step_back;
+			XmPushButton time_editor_step_back;
+			XmTextField time_editor_frame_text;
+			XmPushButton time_editor_step;
+			XmPushButton time_editor_two_step;
+			};
+		};
+
+	time_editor_two_step_back: XmPushButton
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+
+			XmNlabelType = XmPIXMAP;
+			XmNlabelPixmap = time_editor_two_step_back_icon;
+ 			XmNuserData = time_editor_structure;
+			};
+		callbacks
+			{
+			XmNarmCallback = procedure time_editor_control_CB(
+				time_editor_two_step_back_ID);
+			};
+		};
+
+	time_editor_step_back: XmPushButton
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 0;
+			XmNleftWidget = time_editor_two_step_back;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+
+			XmNlabelType = XmPIXMAP;
+			XmNlabelPixmap = time_editor_step_back_icon;
+ 			XmNuserData = time_editor_structure;
+			};
+		callbacks
+			{
+			XmNarmCallback = procedure time_editor_control_CB(
+				time_editor_step_back_ID);
+			};
+		};
+
+	time_editor_frame_text: XmTextField
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 5;
+			XmNleftWidget = time_editor_step_back;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = 5;
+			XmNrightWidget = time_editor_step;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 5;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 5;
+
+			XmNmarginWidth = 14;
+			XmNmarginHeight = 4;
+			XmNcolumns = 12;
+			XmNuserData = time_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure time_editor_identify_widget(
+				time_editor_frame_text_ID);
+			XmNactivateCallback = procedure time_editor_control_CB(
+				time_editor_frame_text_ID);
+			XmNlosingFocusCallback = procedure time_editor_control_CB(
+				time_editor_frame_text_ID);
+			};
+		};
+
+	time_editor_step: XmPushButton
+		{
+		arguments
+			{
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = 0;
+			XmNrightWidget = time_editor_two_step;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+
+			XmNlabelType = XmPIXMAP;
+			XmNlabelPixmap = time_editor_step_icon;
+ 			XmNuserData = time_editor_structure;
+			};
+		callbacks
+			{
+			XmNarmCallback = procedure time_editor_control_CB(
+				time_editor_step_ID);
+			};
+		};
+
+	time_editor_two_step: XmPushButton
+		{
+		arguments
+			{
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+
+			XmNlabelType = XmPIXMAP;
+			XmNlabelPixmap = time_editor_two_step_icon;
+ 			XmNuserData = time_editor_structure;
+			};
+		callbacks
+			{
+			XmNarmCallback = procedure time_editor_control_CB(
+				time_editor_two_step_ID);
+			};
+		};
+
+!**************************************************************************************
+
+	time_editor_play_controls: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+!			XmNorientation = XmHORIZONTAL;
+!			XmNnumColumns = 3;
+!			XmNpacking = XmPACK_COLUMN;
+!			XmNisAligned = true;
+!			XmNentryAlignment = XmALIGNMENT_CENTER;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = time_editor_frame_controls;
+!			XmNbottomAttachment = XmATTACH_FORM;
+!			XmNbottomOffset = 0;
+
+			XmNfractionBase = 5;
+			XmNuserData = time_editor_structure;
+			};
+		controls
+			{
+			XmToggleButton time_editor_play_reverse;
+			XmPushButton time_editor_stop;
+			XmToggleButton time_editor_play;
+			};
+		};
+
+	time_editor_play_reverse: XmToggleButton
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftOffset = 0;
+			XmNleftPosition = 1;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNlabelType = XmPIXMAP;
+			XmNlabelPixmap = time_editor_play_reverse_icon;
+			XmNindicatorOn = false;
+!			XmNsensitive = false;
+ 			XmNuserData = time_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure time_editor_identify_widget(time_editor_play_reverse_ID);
+			XmNvalueChangedCallback = procedure time_editor_control_CB(
+				time_editor_play_reverse_ID);
+			};
+		};
+
+	time_editor_stop: XmPushButton
+		{
+		arguments
+			{
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = 0;
+			XmNrightWidget = time_editor_play;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 0;
+			XmNleftWidget = time_editor_play_reverse;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNlabelType = XmPIXMAP;
+			XmNlabelPixmap = time_editor_stop_icon;
+!			XmNlabelString = compound_string("STOP");
+			XmNuserData = time_editor_structure;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedure time_editor_control_CB(
+				time_editor_stop_ID);
+			};
+		};
+
+	time_editor_play: XmToggleButton
+		{
+		arguments
+			{
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightOffset = 0;
+			XmNrightPosition = 4;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNlabelType = XmPIXMAP;
+			XmNlabelPixmap = time_editor_play_icon;
+			XmNindicatorOn = false;
+ 			XmNuserData = time_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure time_editor_identify_widget(time_editor_play_ID);
+			XmNvalueChangedCallback = procedure time_editor_control_CB(
+				time_editor_play_ID);
+			};
+		};
+
+end module;
+!**************************************************************************************

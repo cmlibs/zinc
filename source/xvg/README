@@ -1,0 +1,300 @@
+This directory tree contains the AIC1.2 project files,interface files,
+and other associated custom stuff required to build the "xvg" program.
+
+The "xvg" program is a general image data acquisition and processing
+utility originally designed to run on an IBM RISK System/6000 platform
+under IBM AIX Windows, with optional hardware such as a VCAA Frame
+grabber, a 3D graphics card, and a UNIMA A/D D/A interface system. The
+program has a flexible graphical user interface (GUI) outer shell
+which was built with the help of the IBM AIC interface composer
+utility. The program consists of over 35000 lines of C code.
+
+The program code is separated into six functional blocks:
+
+(1) Image acquisition: this functional block includes code to control
+the image acquisition from the frame grabber board.
+
+(2) Image processing: this functional block includes code to execute a
+variety of image processing functions on the data such as space and
+frequency domain filtering, morphological operations, polynomial and
+spline modeling, etc. This functional block also included finite
+element analysis and modeling code.
+
+(3) File I/O: this functional block includes code to save the data to
+disk under a variety of formats such as TIFF, MATLAB, etc.
+
+(4) UNIMA interface: this functional block provides a library of
+interface routines to the various UNIMA subsystems, for use by other
+functional blocks.
+
+(5) 3D graphics display: this functional block includes code to
+interactively manipulate the data sets in three dimensional space,
+using the GL graphics library (A GL based 3D graphics adapter is
+required for this subsystem to work properly).
+
+(6) Sequence animation: this functional block includes code to create
+animated sequences from data set sequences, which can be shown on the
+workstation screen or downloaded directly to a digitally controlled
+VCR.
+
+Here is a brief description of the controls on the main interface
+window (the one that first comes up with "Bill the cat"):
+
+Windows:
+	Raw Image : 		Raw image viewing window.
+	Processed Image:	Viewing window which displays data resulting
+				from image processing operations.
+	IP Operations:		Brings up the image processing control
+				window. IP (image processing) operations
+				are selected by using the right mouse
+				button in the "IP Operations Editing 
+				Window" and selecting "Load New IP Op".
+				When the required IP Op parameters have
+				been entered in the text fields, the
+				operation is then loaded into the 
+				IP Op list, by using the right mouse
+				button in the "Current IP Operations List"
+				window. The IP Ops in the list are executed 
+				by using the control buttons at the bottom
+				of the interface. The execution of IP Ops
+				works like an RPN calculator with a stack
+				which is ten images deep, hence some 
+				operations require operands on the stack
+				(ex: +, -, etc.) whereas others do not
+				(ex: median filter, averaging filter, etc.).
+				Stack manipulation operations are available
+				either as list operations or interactively
+				with the right mouse button in the 
+				"IP Operations Editing Window". List
+				manipulation functions are available
+				with the right mouse button in the 
+				"Current IP Operations List".
+	Galvanometer Control:	Custom experimental apparatus control.
+	Histograms:		Histograms of raw and processed images
+				showing image statistics and controlling
+				the lookup table mapping dymanic range
+				of the processed image window.
+	XY Slices:		Enables slice projection windows in the 
+				image display windows (raw and processed).
+	UDAC:			Enables interactive control window of
+				16 DA Unima channels.
+	EMAP:			Dynamic display of 32 EMAP channels.
+	LCR Control:		Custom control of a liquid crystal
+				spatial light modulator.
+	Color LUT:		User specification of the color lookup
+				table control points (This lut is selected
+				using the cmap options menu).
+	GL Window:		3D Graphics display window.
+	Movie Controls:		Generation, control and playback of 
+				movie sequences.
+
+Actions:
+	Grab Window:		Select screen window for capture by clicking
+				the mouse button on any popped up window.
+				(User lut must be selected using the
+				cmap options menu, for the correct colors
+				to appear).
+	Load Data Set:		Load data (image) file.
+	Load IPOps:		Load IP Op file.
+	Save Histogram:		Save histogram data to disk file.
+	Init VCR:		Initialize VCR recorder for movie recording.
+	Init VCAA:		Initialize VCAA frame grabber.
+	Init UNIMA:		Initialize UNIMA system.
+	Quit:			Exit the program.
+	Resize 640x480:		Resize the image viewing window for
+				optimal VCR recording.
+	Save Data Set:		Save data (image) to disk file.
+	Save IPOps:		Save IP Op list to disk file.
+	Save GL Image:		Save 3D color rendered image to disk file.
+	VCR Write:		Write a single image to multiple
+				VCR frames.
+	VCAA Write:		Write image to the VCAA output.
+	VCAA Grab:		Frame capture with the VCAA.
+
+General Options:
+	Scroll bar:		Gamma or Intensity control for lookup table
+				mapping.
+	cmap option button:	Selection of lookup tables for image
+				rendition.
+	Zoom option button:	Zooming of image display windows.
+	Verbose option button:	Debugging messages.
+
+Grabbing Options:
+	Various experimental controls.
+	
+
+Typing CTRL-C while running image processing functions will interrupt
+the current operation and return control to the user. A second
+consecutive CTRL-C will exit the program.
+
+Note that the xvg IP operations can be run interactively with the
+IP Operations interface or in "batch" mode by specifying operations
+on the command line.
+
+The xvg image processing repertoire is fully expandible by linking
+in any new object module where the function calling interfaces
+conform to the xvg standard: see custom/*IPOPs.c for examples.
+By inserting the new function names in the file XvgRegisterIPOps.c,
+the new IP operations will automatically appear in the correct submenu
+in the IP Operations window and be available for use.
+
+The program source code can be generated into one of two flavours:
+	1) Ux code (AIC proprietary high-level code, IBM AIX specific)
+	2) UIL code (Universal Interface Language,
+		     good for porting to other plaforms)
+
+The two corresponding AIC1.2 project files are:
+	1) xvg_Ux.prj
+	2) xvg_UIL.prj
+
+The directory tree is arranged as follows:
+	1) UILCode         : UIL version include files, resource files,
+			     C and UIL source code generated by AIC,
+			     as well as all compiled object modules.
+	2) UxCode          : Ux version include files, resource files,
+			     and C source code generated by AIC,
+			     as well as all compiled object modules.
+	3) custom          : Custom C source code modules.
+	4) include         : Custom include files used by files in custom/*.c
+	5) interfaces      : AIC project interface definition files
+	6) ux_backupxvg_UIL: AIC autogenerated backups
+	7) ux_backupxvg_Ux : AIC autogenerated backups
+	8) sgi		   : Custom code which is required to run xvg
+			     on Sillicon Graphics workstations.
+	9) images	   : Demo images in TIFF and MATLAB formats.
+
+Other files:
+	Xvg_All.tar	   : TAR archive of both projects
+	XvgFilesAll	   : List of all files required to work on
+			     the project, built with:
+			     "tar -cvf xvg_ALL.tar -L XvgFilesAll"
+
+	Xvg_UIL.tar	   : TAR archive for building the UIL version
+	XvgFilesUIL	   : List of all files required to build
+			     the UIL version, built with:
+			     "tar -cvf xvg_UIL.tar -L XvgFilesUIL"
+
+	Xvg_Ux.tar	   : TAR archive for building the Ux version
+	XvgFilesUx	   : List of all files required to build
+			     the Ux version, built with:
+			     "tar -cvf xvg_Ux.tar -L XvgFilesUx"
+
+Both project versions share the same interface definition files (*.i),
+custom source code files (custom/*.c) and custom include files
+(include/*). They simply generate different interface C source code
+in their respective directories (UxCode/* and UILCode/*), along
+with corresponding make files (UxCode/xvg.mk and UILCode/xvg.mk).
+
+To startup AIC1.2 in order to modify the project definition files :
+	UIL:		aic12 xvg_UIL.prj
+	Ux:		aic12 xvg_Ux.prj
+
+To build the executables:
+	xvg_Ux:		cd UxCode
+			make -f xvg.mk
+
+	xvg_UIL:	cd UILCode
+			make -f xvg.mk
+	
+			Note that the following line must be added to the
+			file "DAShell.uil", just after the "module"
+			declaration:
+				include file "UDACCalibrationData_UIL.h";
+
+For building the UIL executable on SGI machines:
+	1) Comment out line 60 in UxXt.h: "typedef char *caddr_t;"
+	   (you must give yourself write permission to the file first)
+	2) Replace UILCode/xvg.mk with sgi/xvg.mk
+	3) Copy sgi/catoon.px to UILCode/catoon.px
+
+In order to link the object modules, the following libraries are 
+required:
+	/usr/lpp/matlab/extern/lib/ibm_rs/libmat.a
+	/lib/libnag.a
+
+To run xvg:
+	UIL:	cd UILCode
+		xvg_UIL
+	Ux:	cd UxCode
+		xvg_Ux
+
+The various command line flags and image processing functions used
+by xvg can be listed by typing: "xvg_Ux -usage".
+
+KNOWN BUGS:
+	- Certain text labels in the Ux version appear in incorrect
+	  sizes.
+	- The UIL project is not yet 100% operational.
+
+
+X resources used by the xvg program must be specified by including the
+following lines in the .Xdefaults file in the user's home directory:
+
+! xvg stuff
+!
+! General stuff
+xvg*.background: BlueViolet
+xvg*.foregound: White
+xvg*fontList: *-helvetica-bold-r-*--*-140-*
+!
+! XvgShell stuff
+xvg*.form1.height: 110
+xvg*.RawImageTBG.set: false
+xvg*.ProcessedImageTBG.set: false
+xvg*.IPOperationsTBG.set: false
+xvg*.GalvoControlTBG.set: false
+xvg*.HistogramTBG.set: false
+xvg*.XYSlicesTBG.set: false
+xvg*.DAValuesTBG.set: false
+xvg*.ADValuesTBG.set: false
+xvg*.LCRTBG.set: false
+xvg*.LUTShellTBG.set: false
+xvg*.GLShellTBG.set: false
+xvg*.MovieControlsTBG.set: false
+!
+! RawImageShell stuff
+*.RawImageDrawingArea.width: 300
+*.RawImageDrawingArea.height: 200
+*.RawImageDrawingArea.background: black
+*.RawXSliceDA.background: black
+*.frame2.background: #8a2be2
+*.RawYSliceDA.background: black
+!
+! ProcessedImageShell stuff
+*.ProcessedImageDrawingArea.width: 300
+*.ProcessedImageDrawingArea.height: 200
+*.ProcessedImageDrawingArea.background: black
+*.ProcessedXSliceDA.background: black
+*.frame8.background: #8a2be2
+*.ProcessedYSliceDA.background: black
+!
+! Histogram Shell
+xvg*.RawHistogramDA.background: black
+xvg*.ProcessedHistogramDA.background: black
+xvg*.RawColorBarDA.background: black
+xvg*.ProcessedColorBarDA.background: black
+!
+! IPOperationsShell stuff
+*.RepsLG.foreground: yellow
+*.Parm4LG.foreground: yellow
+*.Parm3LG.foreground: yellow
+*.Parm2LG.foreground: yellow
+*.FNameLG.foreground: yellow
+*.Parm1LG.foreground: yellow
+*.Parm1TW.background: #7d87aa
+*.Parm2TW.background: #7d87aa
+*.Parm3TW.background: #7d87aa
+*.Parm4TW.background: #7d87aa
+*.RepsTW.background: #7d87aa
+*.scrolledWindow1.background: #7d87aa
+*.scrolledList1.background: #7d87aa
+*.menu8.background: #8a2be2
+*.menu8_p1_title1.background: #8a2be2
+
+
+
+Paul Charette, 7 August 1994
+email: p.charette@auckland.ac.nz
+
+
+

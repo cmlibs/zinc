@@ -1,0 +1,285 @@
+!*******************************************************************************
+! FILE : sync_2d_3d.uil
+!
+! LAST MODIFIED : 22 November 1996
+!
+! DESCRIPTION :
+! Contains a description of the components of the sync_2d_3d dialog
+!===============================================================================
+module data_grabber
+	version = 'v1.0'
+
+procedure
+	sync_2d_3d_identify_button(integer);
+	sync_2d_3d_control_CB(integer);
+	sync_2d_3d_destroy_CB();
+	sync_2d_3d_item_CB(integer);
+
+identifier
+	! pointer to data specific to this instance of the dg control dialog
+	Sync_2d_3d_structure;
+	sync_2d_3d_image_base_name_ID;
+	sync_2d_3d_axis_name_ID;
+	sync_2d_3d_depth_ID;
+	sync_2d_3d_thickness_ID;
+	sync_2d_3d_node_group_form_ID;
+	sync_2d_3d_sync_button_ID;
+	!Fonts go here
+	button_font;
+	heading_font;
+	list_font;
+	menu_font;
+	normal_font;
+	normal_non_proportional_font;
+	small_font;
+
+
+object
+	sync_2d_3d_dialog: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNuserData = Sync_2d_3d_structure;
+			};
+		controls
+			{
+			XmRowColumn sync_2d_3d_item_rowcol;
+			XmForm sync_2d_3d_node_group_form;
+			XmRowColumn sync_2d_3d_control_rowcol;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure sync_2d_3d_destroy_CB();
+			};
+		};
+	sync_2d_3d_item_rowcol: XmRowColumn
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmForm sync_2d_3d_ibn_form;
+			XmForm sync_2d_3d_an_form;
+			XmForm sync_2d_3d_depth_form;
+			XmForm sync_2d_3d_thick_form;
+			};
+		};
+	sync_2d_3d_node_group_form: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmRowColumn sync_2d_3d_item_rowcol;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomWidget = XmRowColumn sync_2d_3d_control_rowcol;
+			XmNuserData = Sync_2d_3d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure sync_2d_3d_identify_button(sync_2d_3d_node_group_form_ID);
+			};
+		};
+	sync_2d_3d_control_rowcol: XmRowColumn
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNbottomAttachment = XmATTACH_FORM;
+			};
+		controls
+			{
+			XmPushButton sync_2d_3d_sync_button;
+			};
+		};
+	sync_2d_3d_sync_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Synchronise");
+			XmNfontList = button_font;
+			XmNuserData = Sync_2d_3d_structure;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedure sync_2d_3d_control_CB(sync_2d_3d_sync_button_ID);
+			};
+		};
+!*******************************************************************************
+! Items go after here...
+!===============================================================================
+	sync_2d_3d_ibn_form: XmForm
+		{
+		controls
+			{
+			XmLabelGadget sync_2d_3d_ibn_label;
+			XmText sync_2d_3d_ibn;
+			};
+		};
+	sync_2d_3d_ibn_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Base image name:");
+			XmNfontList = heading_font;
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			};
+		};
+	sync_2d_3d_ibn: XmText
+		{
+		arguments
+			{
+			XmNfontList = normal_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabelGadget	sync_2d_3d_ibn_label;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNuserData = Sync_2d_3d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure sync_2d_3d_identify_button(sync_2d_3d_image_base_name_ID);
+			XmNactivateCallback = procedure sync_2d_3d_item_CB(sync_2d_3d_image_base_name_ID);
+			};
+		};
+	sync_2d_3d_an_form: XmForm
+		{
+		controls
+			{
+			XmLabelGadget sync_2d_3d_an_label;
+			XmText sync_2d_3d_an;
+			};
+		};
+	sync_2d_3d_an_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Axis name:");
+			XmNfontList = heading_font;
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			};
+		};
+	sync_2d_3d_an: XmText
+		{
+		arguments
+			{
+			XmNfontList = normal_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabelGadget	sync_2d_3d_an_label;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNuserData = Sync_2d_3d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure sync_2d_3d_identify_button(sync_2d_3d_axis_name_ID);
+			XmNactivateCallback = procedure sync_2d_3d_item_CB(sync_2d_3d_axis_name_ID);
+			};
+		};
+	sync_2d_3d_depth_form: XmForm
+		{
+		controls
+			{
+			XmLabelGadget sync_2d_3d_depth_label;
+			XmText sync_2d_3d_depth;
+			};
+		};
+	sync_2d_3d_depth_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Depth:");
+			XmNfontList = heading_font;
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			};
+		};
+	sync_2d_3d_depth: XmText
+		{
+		arguments
+			{
+			XmNfontList = normal_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabelGadget	sync_2d_3d_depth_label;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNuserData = Sync_2d_3d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure sync_2d_3d_identify_button(sync_2d_3d_depth_ID);
+			XmNactivateCallback = procedure sync_2d_3d_item_CB(sync_2d_3d_depth_ID);
+			};
+		};
+	sync_2d_3d_thick_form: XmForm
+		{
+		controls
+			{
+			XmLabelGadget sync_2d_3d_thick_label;
+			XmText sync_2d_3d_thick;
+			};
+		};
+	sync_2d_3d_thick_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Thickness:");
+			XmNfontList = heading_font;
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			};
+		};
+	sync_2d_3d_thick: XmText
+		{
+		arguments
+			{
+			XmNfontList = normal_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabelGadget	sync_2d_3d_thick_label;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNuserData = Sync_2d_3d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure sync_2d_3d_identify_button(sync_2d_3d_thickness_ID);
+			XmNactivateCallback = procedure sync_2d_3d_item_CB(sync_2d_3d_thickness_ID);
+			};
+		};
+end module;

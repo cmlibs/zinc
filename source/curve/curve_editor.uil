@@ -1,0 +1,920 @@
+!*******************************************************************************
+! FILE : control_curve_editor.uil
+!
+! LAST MODIFIED : 23 November 1999
+!
+! DESCRIPTION :
+! The widgets for the control_curve editor widget.
+!===============================================================================
+module curve_ed
+	version = 'v1.0'
+
+procedure
+! ---------|---------|---------|- 31 characters max
+	curve_ed_destroy_CB;
+	curve_ed_id_drawing_area;
+	curve_ed_id_basis_option;
+	curve_ed_id_basis_menu;
+	curve_ed_id_num_components_text;
+	curve_ed_id_component_form;
+	curve_ed_id_min_comp_text;
+	curve_ed_id_max_comp_text;
+	curve_ed_id_comp_grid_text;
+	curve_ed_id_parameter_grid_text;
+	curve_ed_id_full_range_btn;
+	curve_ed_id_min_parameter_text;
+	curve_ed_id_max_parameter_text;
+	curve_ed_id_extend_mode_option;
+	curve_ed_id_extend_mode_menu;
+	curve_ed_id_snap_value_btn;
+	curve_ed_id_snap_parameter_btn;
+	curve_ed_id_comps_shown_text;
+	curve_ed_id_up_btn;
+	curve_ed_id_down_btn;
+	curve_ed_expose_drawing_area_CB;
+	curve_ed_resize_drawing_area_CB;
+	curve_ed_drawing_area_input_CB;
+	curve_ed_basis_menu_CB;
+	curve_ed_num_components_text_CB;
+	curve_ed_min_comp_text_CB;
+	curve_ed_max_comp_text_CB;
+	curve_ed_comp_grid_text_CB;
+	curve_ed_parameter_grid_text_CB;
+	curve_ed_full_range_btn_CB;
+	curve_ed_min_parameter_text_CB;
+	curve_ed_max_parameter_text_CB;
+	curve_ed_extend_mode_menu_CB;
+	curve_ed_snap_value_btn_CB;
+	curve_ed_snap_parameter_btn_CB;
+	curve_ed_comps_shown_text_CB;
+	curve_ed_up_btn_CB;
+	curve_ed_down_btn_CB;
+
+value
+	shadow_size         :   2;
+	form_space_out      :   2;
+	form_space_in       :   4;
+	curve_ed_3d_space     :   3;
+	curve_ed_3d_height    : 200;
+
+value
+	curve_ed_font        : font_table(font('-*-HELVETICA-MEDIUM-R-*--*-80-*-*-*-*-ISO8859-1'));
+	curve_ed_font_large  : font_table(font('-*-HELVETICA-BOLD-R-*--*-100-*-*-*-*-ISO8859-1'));
+	curve_ed_font_bold   : font_table(font('-*-HELVETICA-BOLD-R-*--*-80-*-*-*-*-ISO8859-1'));
+
+identifier
+	!The gap between widgets
+	widget_spacing;
+	!Pointer to data specific to this instance of the curve_ed widget
+	curve_ed_structure;
+	!control_curve basis types;
+	curve_ed_cubic_Hermite;
+	curve_ed_linear_Lagrange;
+	curve_ed_quadratic_Lagrange;
+	curve_ed_cubic_Lagrange;
+	curve_ed_extend_clamp;
+	curve_ed_extend_cycle;
+	curve_ed_extend_swing;
+	!fonts here
+	normal_font;
+	button_font;
+	list_font;
+
+! The curve_ed widget
+object
+	curve_ed_widget: XmFrame
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = curve_ed_structure;
+			};
+		controls
+			{
+			XmForm curve_ed_main_form;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure curve_ed_destroy_CB();
+			};
+		};
+	curve_ed_main_form: XmForm
+		{
+		arguments
+			{
+			};
+		controls
+			{
+			XmForm curve_ed_controls_form;
+			XmSeparatorGadget curve_ed_drawing_separator;
+			XmDrawingArea curve_ed_drawing_area;
+			XmSeparatorGadget curve_ed_scroll_separator;
+			XmForm curve_ed_scroll_form;
+			};
+		};
+	curve_ed_controls_form: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = curve_ed_structure;
+			};
+		controls
+			{
+			XmRowColumn curve_ed_internal_rc;
+			XmSeparatorGadget curve_ed_form_separator;
+			XmForm curve_ed_external_form;
+			};
+		};
+	curve_ed_internal_rc: XmRowColumn
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 2;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNuserData = curve_ed_structure;
+			};
+		controls
+			{
+			XmOptionMenu curve_ed_basis_option;
+			XmRowColumn curve_ed_num_comp_entry;
+			XmRowColumn curve_ed_comp_no_entry;
+			XmRowColumn curve_ed_comp_range_entry;
+			XmRowColumn curve_ed_parameter_grid_entry;
+			XmRowColumn curve_ed_value_grid_entry;
+			XmOptionMenu curve_ed_extend_mode_option;
+			};
+		};
+  curve_ed_num_comp_entry: XmRowColumn
+    {
+		arguments
+			{
+!Uncomment the following to reduce size of rowcolumn.
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+			};
+    controls
+      {
+			XmLabelGadget curve_ed_num_components_label;
+			XmTextField curve_ed_num_components_text;
+      };
+    };
+  curve_ed_comp_no_entry: XmRowColumn
+    {
+		arguments
+			{
+!Uncomment the following to reduce size of rowcolumn.
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+			};
+    controls
+      {
+			XmLabelGadget curve_ed_comp_no_label;
+			XmForm curve_ed_component_form;
+      };
+    };
+  curve_ed_comp_range_entry: XmRowColumn
+    {
+		arguments
+			{
+!Uncomment the following to reduce size of rowcolumn.
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+			};
+    controls
+      {
+			XmTextField curve_ed_min_comp_text;
+			XmLabelGadget curve_ed_comp_to_label;
+			XmTextField curve_ed_max_comp_text;
+      };
+    };
+  curve_ed_value_grid_entry: XmRowColumn
+    {
+		arguments
+			{
+!Uncomment the following to reduce size of rowcolumn.
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+			};
+    controls
+      {
+			XmLabelGadget curve_ed_comp_grid_label;
+			XmTextField curve_ed_comp_grid_text;
+			XmToggleButtonGadget curve_ed_snap_value_btn;
+      };
+    };
+  curve_ed_parameter_grid_entry: XmRowColumn
+    {
+		arguments
+			{
+!Uncomment the following to reduce size of rowcolumn.
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+			};
+    controls
+      {
+			XmLabelGadget curve_ed_parameter_grid_label;
+			XmTextField curve_ed_parameter_grid_text;
+			XmToggleButtonGadget curve_ed_snap_parameter_btn;
+      };
+    };
+	curve_ed_form_separator: XmSeparatorGadget
+		{
+		arguments
+			{
+			XmNorientation = XmHORIZONTAL;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 2;
+			XmNtopWidget = curve_ed_internal_rc;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			};
+		};
+	curve_ed_external_form: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmSeparatorGadget curve_ed_form_separator;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = curve_ed_structure;
+			};
+		controls
+			{
+			XmPushButtonGadget curve_ed_full_range_btn;
+			XmLabelGadget curve_ed_parameter_range_label;
+			XmTextField curve_ed_min_parameter_text;
+			XmLabelGadget curve_ed_parameter_to_label;
+			XmTextField curve_ed_max_parameter_text;
+			XmLabelGadget curve_ed_comps_shown_label;
+			XmTextField curve_ed_comps_shown_text;
+			};
+		};
+	curve_ed_drawing_separator: XmSeparatorGadget
+		{
+		arguments
+			{
+			XmNorientation = XmVERTICAL;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 2;
+			XmNleftWidget = XmForm curve_ed_controls_form;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	curve_ed_drawing_area: XmDrawingArea
+		{
+		arguments
+			{
+			XmNheight = 300;
+			XmNwidth = 400;
+			XmNborderWidth = 1;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 1;
+			XmNleftWidget = XmSeparatorGadget curve_ed_drawing_separator;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = 1;
+			XmNrightWidget = XmSeparatorGadget curve_ed_scroll_separator;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 1;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 1;
+			XmNuserData = curve_ed_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				curve_ed_id_drawing_area(curve_ed_structure);
+			XmNexposeCallback = procedures
+				{
+				curve_ed_expose_drawing_area_CB(curve_ed_structure);
+				};
+			XmNresizeCallback = procedures
+				{
+				curve_ed_resize_drawing_area_CB(curve_ed_structure);
+				};
+			XmNinputCallback = procedures
+				{
+				curve_ed_drawing_area_input_CB(curve_ed_structure);
+				};
+			};
+		};
+	curve_ed_scroll_separator: XmSeparatorGadget
+		{
+		arguments
+			{
+			XmNorientation = XmVERTICAL;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = 0;
+			XmNrightWidget = XmForm curve_ed_scroll_form;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	curve_ed_scroll_form: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = curve_ed_structure;
+			};
+		controls
+			{
+			XmArrowButton curve_ed_up_button;
+			XmArrowButton curve_ed_down_button;
+			};
+		};
+!*******************************************************************************
+	curve_ed_basis_option: XmOptionMenu
+		{
+		arguments
+			{
+!      XmNlabelString = compound_string("Basis:");
+			XmNuserData = curve_ed_structure;
+			};
+		controls
+			{
+			XmPulldownMenu curve_ed_basis_menu;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				curve_ed_id_basis_option(curve_ed_structure);
+			};
+		};
+	curve_ed_basis_menu: XmPulldownMenu
+		{
+		arguments
+			{
+!      XmNborderWidth = 1;
+			XmNbuttonFontList = button_font;
+			XmNuserData = curve_ed_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				curve_ed_id_basis_menu(curve_ed_structure);
+			XmNentryCallback = procedure
+				curve_ed_basis_menu_CB(curve_ed_structure);
+			};
+		controls
+			{
+			XmPushButtonGadget
+				{
+				arguments
+					{
+					XmNlabelString = compound_string("cubic Hermite");
+					XmNfontList = button_font;
+					XmNuserData = curve_ed_cubic_Hermite;
+					};
+				};
+			XmPushButtonGadget
+				{
+				arguments
+					{
+					XmNlabelString = compound_string("linear Lagrange");
+					XmNfontList = button_font;
+					XmNuserData = curve_ed_linear_Lagrange;
+					};
+				};
+			XmPushButtonGadget
+				{
+				arguments
+					{
+					XmNlabelString = compound_string("quadratic Lagrange");
+					XmNfontList = button_font;
+					XmNuserData = curve_ed_quadratic_Lagrange;
+					};
+				};
+			XmPushButtonGadget
+				{
+				arguments
+					{
+					XmNlabelString = compound_string("cubic Lagrange");
+					XmNfontList = button_font;
+					XmNuserData = curve_ed_cubic_Lagrange;
+					};
+				};
+			};
+		};
+	curve_ed_num_components_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Components:");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNuserData = curve_ed_structure;
+			};
+		};
+	curve_ed_num_components_text: XmTextField
+		{
+		arguments
+			{
+      XmNcolumns = 6;
+!			XmNwidth = 80;
+			XmNvalue = "?";
+			XmNuserData = curve_ed_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				curve_ed_id_num_components_text(curve_ed_structure);
+			XmNactivateCallback = procedure curve_ed_num_components_text_CB();
+			XmNlosingFocusCallback = procedure curve_ed_num_components_text_CB();
+			};
+		};
+	curve_ed_comp_no_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Range of comp.");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			};
+		};
+	curve_ed_component_form: XmForm
+		{
+		arguments
+			{
+			XmNuserData = curve_ed_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				curve_ed_id_component_form(curve_ed_structure);
+			};
+		};
+	curve_ed_min_comp_text: XmTextField
+		{
+		arguments
+			{
+      XmNcolumns = 6;
+!			XmNwidth = 80;
+			XmNvalue = "";
+			XmNfontList = normal_font;
+			XmNuserData = curve_ed_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				curve_ed_id_min_comp_text(curve_ed_structure);
+			XmNactivateCallback = procedure curve_ed_min_comp_text_CB();
+			XmNlosingFocusCallback = procedure curve_ed_min_comp_text_CB();
+			};
+		};
+	curve_ed_comp_to_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("to");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			};
+		};
+	curve_ed_max_comp_text: XmTextField
+		{
+		arguments
+			{
+      XmNcolumns = 6;
+!			XmNwidth = 80;
+			XmNvalue = "";
+			XmNfontList = normal_font;
+			XmNuserData = curve_ed_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				curve_ed_id_max_comp_text(curve_ed_structure);
+			XmNactivateCallback = procedure curve_ed_max_comp_text_CB();
+			XmNlosingFocusCallback = procedure curve_ed_max_comp_text_CB();
+			};
+		};
+	curve_ed_parameter_grid_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Param grid:");
+			XmNfontList = button_font;
+			};
+		};
+	curve_ed_parameter_grid_text: XmTextField
+		{
+		arguments
+			{
+      XmNcolumns = 6;
+!			XmNwidth = 80;
+			XmNvalue = "?";
+			XmNfontList = normal_font;
+			XmNuserData = curve_ed_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				curve_ed_id_parameter_grid_text(curve_ed_structure);
+			XmNactivateCallback = procedure curve_ed_parameter_grid_text_CB();
+			XmNlosingFocusCallback = procedure curve_ed_parameter_grid_text_CB();
+			};
+		};
+	curve_ed_snap_parameter_btn: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Snap");
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNfontList = button_font;
+			XmNuserData = curve_ed_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				curve_ed_id_snap_parameter_btn(curve_ed_structure);
+			XmNvalueChangedCallback = procedure
+				curve_ed_snap_parameter_btn_CB(curve_ed_structure);
+			};
+		};
+	curve_ed_comp_grid_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Value grid:");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNuserData = curve_ed_structure;
+			};
+		};
+	curve_ed_comp_grid_text: XmTextField
+		{
+		arguments
+			{
+      XmNcolumns = 6;
+!			XmNwidth = 80;
+			XmNvalue = "?";
+			XmNfontList = normal_font;
+			XmNuserData = curve_ed_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				curve_ed_id_comp_grid_text(curve_ed_structure);
+			XmNactivateCallback = procedure curve_ed_comp_grid_text_CB();
+			XmNlosingFocusCallback = procedure curve_ed_comp_grid_text_CB();
+			};
+		};
+	curve_ed_snap_value_btn: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Snap");
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNfontList = button_font;
+			XmNuserData = curve_ed_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				curve_ed_id_snap_value_btn(curve_ed_structure);
+			XmNvalueChangedCallback = procedure
+				curve_ed_snap_value_btn_CB(curve_ed_structure);
+			};
+		};
+	curve_ed_extend_mode_option: XmOptionMenu
+		{
+		arguments
+			{
+			XmNuserData = curve_ed_structure;
+			};
+		controls
+			{
+				XmPulldownMenu curve_ed_extend_mode_menu;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				curve_ed_id_extend_mode_option(curve_ed_structure);
+			};
+		};
+	curve_ed_extend_mode_menu: XmPulldownMenu
+		{
+		arguments
+			{
+			XmNbuttonFontList = button_font;
+			XmNuserData = curve_ed_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				curve_ed_id_extend_mode_menu(curve_ed_structure);
+			XmNentryCallback = procedure
+				curve_ed_extend_mode_menu_CB(curve_ed_structure);
+			};
+		controls
+			{
+			XmPushButtonGadget
+				{
+				arguments
+					{
+					XmNlabelString = compound_string("Extend Clamp");
+					XmNfontList = button_font;
+					XmNuserData = curve_ed_extend_clamp;
+					};
+				};
+			XmPushButtonGadget
+				{
+				arguments
+					{
+					XmNlabelString = compound_string("Extend Cycle");
+					XmNfontList = button_font;
+					XmNuserData = curve_ed_extend_cycle;
+					};
+				};
+			XmPushButtonGadget
+				{
+				arguments
+					{
+					XmNlabelString = compound_string("Extend Swing");
+					XmNfontList = button_font;
+					XmNuserData = curve_ed_extend_swing;
+					};
+				};
+			};
+		};
+
+!*******************************************************************************
+	curve_ed_full_range_btn: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("View Full Range");
+			XmNalignment = XmALIGNMENT_CENTER;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 2;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNfontList = button_font;
+			XmNuserData = curve_ed_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				curve_ed_id_full_range_btn(curve_ed_structure);
+			XmNactivateCallback = procedure curve_ed_full_range_btn_CB();
+			};
+		};
+	curve_ed_parameter_range_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Visible parameter range:");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmPushButtonGadget curve_ed_full_range_btn;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = curve_ed_structure;
+			};
+		};
+	curve_ed_min_parameter_text: XmTextField
+		{
+		arguments
+			{
+      XmNcolumns = 6;
+!			XmNwidth = 80;
+			XmNvalue = "";
+			XmNfontList = normal_font;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmLabelGadget curve_ed_parameter_range_label;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = curve_ed_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				curve_ed_id_min_parameter_text(curve_ed_structure);
+			XmNactivateCallback = procedure curve_ed_min_parameter_text_CB();
+			XmNlosingFocusCallback = procedure curve_ed_min_parameter_text_CB();
+			};
+		};
+	curve_ed_parameter_to_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("to");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 0;
+			XmNleftWidget = XmTextField curve_ed_min_parameter_text;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 7;
+			XmNtopWidget = XmLabelGadget curve_ed_parameter_range_label;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = curve_ed_structure;
+			};
+		};
+	curve_ed_max_parameter_text: XmTextField
+		{
+		arguments
+			{
+      XmNcolumns = 6;
+!			XmNwidth = 80;
+			XmNvalue = "";
+			XmNfontList = normal_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 0;
+			XmNleftWidget = XmLabelGadget curve_ed_parameter_to_label;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmLabelGadget curve_ed_parameter_range_label;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = curve_ed_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				curve_ed_id_max_parameter_text(curve_ed_structure);
+			XmNactivateCallback = procedure curve_ed_max_parameter_text_CB();
+			XmNlosingFocusCallback = procedure curve_ed_max_parameter_text_CB();
+			};
+		};
+	curve_ed_comps_shown_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Components shown:");
+			XmNfontList = button_font;
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 7;
+			XmNtopWidget = curve_ed_max_parameter_text;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNuserData = curve_ed_structure;
+			};
+		};
+	curve_ed_comps_shown_text: XmTextField
+		{
+		arguments
+			{
+      XmNcolumns = 3;
+!			XmNwidth = 40;
+			XmNvalue = "?";
+			XmNfontList = normal_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = curve_ed_comps_shown_label;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 2;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = curve_ed_max_parameter_text;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNuserData = curve_ed_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				curve_ed_id_comps_shown_text(curve_ed_structure);
+			XmNactivateCallback = procedure curve_ed_comps_shown_text_CB();
+			XmNlosingFocusCallback = procedure curve_ed_comps_shown_text_CB();
+			};
+		};
+!*******************************************************************************
+	curve_ed_up_button: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNwidth=22;
+!      XmNheight=44;
+!      XmNlabelString = compound_string("Up");
+!      XmNfontList = button_font;
+!      XmNalignment = XmALIGNMENT_CENTER;
+			XmNarrowDirection=XmARROW_UP;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+!      XmNbottomAttachment = XmATTACH_NONE;
+!      XmNbottomOffset = 0;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 25;
+			XmNuserData = curve_ed_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				curve_ed_id_up_btn(curve_ed_structure);
+			XmNactivateCallback = procedure curve_ed_up_btn_CB();
+			};
+		};
+	curve_ed_down_button: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNwidth=22;
+!      XmNheight=44;
+!      XmNlabelString = compound_string("Down");
+!      XmNfontList = button_font;
+!      XmNalignment = XmALIGNMENT_CENTER;
+			XmNarrowDirection=XmARROW_DOWN;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+!      XmNtopAttachment = XmATTACH_NONE;
+!      XmNtopOffset = 0;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNtopPosition = 75;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = curve_ed_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				curve_ed_id_down_btn(curve_ed_structure);
+			XmNactivateCallback = procedure curve_ed_down_btn_CB();
+			};
+		};
+!*******************************************************************************
+end module;

@@ -1,0 +1,456 @@
+module MovieControlsShell_uil
+
+procedure	destroyCB_MovieControlsShell;
+procedure	popdownCB_MovieControlsShell;
+procedure	popupCB_MovieControlsShell;
+procedure	activateCB_LoopPBG;
+procedure	activateCB_ResetPBG;
+procedure	activateCB_BackwardPBG;
+procedure	activateCB_ForwardPBG;
+procedure	activateCB_IndexPBG;
+procedure	activateCB_LoadMFPBG;
+procedure	activateCB_menu3_p2_b2;
+procedure	activateCB_menu3_p2_b5;
+procedure	activateCB_menu3_p2_b1;
+procedure	activateCB_menu3_p2_b3;
+procedure	activateCB_menu3_p2_b4;
+procedure	activateCB_LoadXMoviePBG;
+procedure	activateCB_LoadGLMoviePBG;
+
+object form5 : XmForm
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNx = 100;
+		XmNy = 90;
+		XmNwidth = 470;
+		XmNheight = 240;
+	};
+	controls
+	{
+		XmRowColumn rowColumn9;
+		XmOptionMenu menu3;
+		XmOptionMenu menu6;
+		XmSeparatorGadget separatorGadget19;
+		XmPushButtonGadget LoadXMoviePBG;
+		XmLabelGadget MovieNameLG;
+		XmPushButtonGadget LoadGLMoviePBG;
+		XmSeparatorGadget separatorGadget21;
+		XmLabelGadget labelGadget134;
+		XmText MovieDelayTW;
+	};
+};
+
+object rowColumn9 : XmRowColumn
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNx = 10;
+		XmNy = 20;
+		XmNwidth = 212;
+		XmNheight = 89;
+		XmNnumColumns = 2;
+		XmNorientation = XmHORIZONTAL;
+		XmNentryAlignment = XmALIGNMENT_CENTER;
+		XmNresizeHeight = false;
+		XmNresizeWidth = false;
+	};
+	controls
+	{
+		XmPushButtonGadget LoopPBG;
+		XmPushButtonGadget ResetPBG;
+		XmPushButtonGadget BackwardPBG;
+		XmPushButtonGadget ForwardPBG;
+		XmPushButtonGadget IndexPBG;
+		XmPushButtonGadget LoadMFPBG;
+	};
+};
+
+object LoopPBG : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNx = 30;
+		XmNy = 20;
+		XmNwidth = 100;
+		XmNheight = 25;
+		XmNrecomputeSize = false;
+		XmNlabelString = compound_string( "Loop" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_LoopPBG ();
+	};
+};
+
+object ResetPBG : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNx = 472;
+		XmNy = 13;
+		XmNwidth = 100;
+		XmNheight = 25;
+		XmNrecomputeSize = false;
+		XmNlabelString = compound_string( "Reset" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_ResetPBG ();
+	};
+};
+
+object BackwardPBG : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNx = 310;
+		XmNy = 0;
+		XmNwidth = 100;
+		XmNheight = 25;
+		XmNrecomputeSize = false;
+		XmNlabelString = compound_string( "Step -" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_BackwardPBG ();
+	};
+};
+
+object ForwardPBG : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNx = 13;
+		XmNy = 13;
+		XmNwidth = 100;
+		XmNheight = 25;
+		XmNrecomputeSize = false;
+		XmNlabelString = compound_string( "Step +" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_ForwardPBG ();
+	};
+};
+
+object IndexPBG : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNx = 116;
+		XmNy = 69;
+		XmNwidth = 100;
+		XmNheight = 25;
+		XmNrecomputeSize = false;
+		XmNlabelString = compound_string( "Index" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_IndexPBG ();
+	};
+};
+
+object LoadMFPBG : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNx = 116;
+		XmNy = 41;
+		XmNwidth = 100;
+		XmNheight = 25;
+		XmNrecomputeSize = false;
+		XmNlabelString = compound_string( "Load MF" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_LoadMFPBG ();
+	};
+};
+
+object menu3 : XmOptionMenu
+{
+	arguments
+	{
+		XmNmarginHeight = 0;
+		XmNmarginWidth = 0;
+		XmNx = 230;
+		XmNy = 50;
+		XmNlabelString = compound_string( "" );
+		XmNentryAlignment = XmALIGNMENT_BEGINNING;
+	};
+	controls
+	{
+		XmPulldownMenu menu3_p2;
+	};
+};
+
+object menu3_p2 : XmPulldownMenu
+{
+	arguments
+	{
+		XmNentryAlignment = XmALIGNMENT_BEGINNING;
+	};
+	controls
+	{
+		XmPushButtonGadget menu3_p2_b2;
+		XmPushButtonGadget menu3_p2_b5;
+		XmPushButtonGadget menu3_p2_b1;
+	};
+};
+
+object menu3_p2_b2 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Normal Output" );
+		XmNheight = 25;
+		XmNrecomputeSize = false;
+		XmNmarginHeight = 0;
+		XmNwidth = 150;
+		XmNmarginWidth = 0;
+		XmNaccelerator = "";
+		XmNacceleratorText = compound_string( "" );
+		XmNalignment = XmALIGNMENT_BEGINNING;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu3_p2_b2 ();
+	};
+};
+
+object menu3_p2_b5 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "VCAA Output  " );
+		XmNaccelerator = "";
+		XmNacceleratorText = compound_string( "" );
+		XmNalignment = XmALIGNMENT_BEGINNING;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu3_p2_b5 ();
+	};
+};
+
+object menu3_p2_b1 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "VCR Record    " );
+		XmNheight = 25;
+		XmNrecomputeSize = false;
+		XmNmarginHeight = 0;
+		XmNwidth = 150;
+		XmNmarginWidth = 0;
+		XmNaccelerator = "";
+		XmNacceleratorText = compound_string( "" );
+		XmNalignment = XmALIGNMENT_BEGINNING;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu3_p2_b1 ();
+	};
+};
+
+object menu6 : XmOptionMenu
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "" );
+		XmNmarginHeight = 0;
+		XmNmarginWidth = 0;
+		XmNx = 230;
+		XmNy = 20;
+		XmNentryAlignment = XmALIGNMENT_BEGINNING;
+	};
+	controls
+	{
+		XmPulldownMenu menu3_p3;
+	};
+};
+
+object menu3_p3 : XmPulldownMenu
+{
+	arguments
+	{
+		XmNentryAlignment = XmALIGNMENT_BEGINNING;
+	};
+	controls
+	{
+		XmPushButtonGadget menu3_p2_b3;
+		XmPushButtonGadget menu3_p2_b4;
+	};
+};
+
+object menu3_p2_b3 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Dyn Range Free " );
+		XmNaccelerator = "";
+		XmNacceleratorText = compound_string( "" );
+		XmNheight = 25;
+		XmNrecomputeSize = false;
+		XmNmarginHeight = 0;
+		XmNwidth = 150;
+		XmNmarginWidth = 0;
+		XmNalignment = XmALIGNMENT_BEGINNING;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu3_p2_b3 ();
+	};
+};
+
+object menu3_p2_b4 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Dyn Range Fixed" );
+		XmNaccelerator = "";
+		XmNacceleratorText = compound_string( "" );
+		XmNheight = 25;
+		XmNrecomputeSize = false;
+		XmNmarginHeight = 0;
+		XmNwidth = 150;
+		XmNmarginWidth = 0;
+		XmNalignment = XmALIGNMENT_BEGINNING;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu3_p2_b4 ();
+	};
+};
+
+object separatorGadget19 : XmSeparatorGadget
+{
+	arguments
+	{
+		XmNx = 2;
+		XmNy = 120;
+		XmNwidth = 470;
+		XmNheight = 5;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 2;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNrightOffset = 2;
+	};
+};
+
+object LoadXMoviePBG : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNx = 40;
+		XmNy = 159;
+		XmNwidth = 150;
+		XmNheight = 30;
+		XmNrecomputeSize = false;
+		XmNlabelString = compound_string( "Load X movie" );
+		XmNbottomAttachment = XmATTACH_FORM;
+		XmNbottomOffset = 10;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_LoadXMoviePBG ();
+	};
+};
+
+object MovieNameLG : XmLabelGadget
+{
+	arguments
+	{
+		XmNx = 10;
+		XmNy = 130;
+		XmNwidth = 350;
+		XmNheight = 20;
+		XmNalignment = XmALIGNMENT_BEGINNING;
+		XmNlabelString = compound_string( "Movie file :" );
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 10;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNrightOffset = 10;
+	};
+};
+
+object LoadGLMoviePBG : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNx = 240;
+		XmNy = 159;
+		XmNwidth = 150;
+		XmNheight = 30;
+		XmNrecomputeSize = false;
+		XmNlabelString = compound_string( "Load GL movie" );
+		XmNbottomAttachment = XmATTACH_FORM;
+		XmNbottomOffset = 10;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_LoadGLMoviePBG ();
+	};
+};
+
+object separatorGadget21 : XmSeparatorGadget
+{
+	arguments
+	{
+		XmNx = 215;
+		XmNy = 71;
+		XmNwidth = 10;
+		XmNheight = 110;
+		XmNorientation = XmVERTICAL;
+		XmNbottomAttachment = XmATTACH_WIDGET;
+		XmNbottomOffset = 0;
+		XmNbottomWidget = separatorGadget19;
+		XmNtopAttachment = XmATTACH_FORM;
+		XmNtopOffset = 2;
+		XmNleftAttachment = XmATTACH_WIDGET;
+		XmNleftOffset = 0;
+		XmNleftWidget = rowColumn9;
+	};
+};
+
+object labelGadget134 : XmLabelGadget
+{
+	arguments
+	{
+		XmNx = 240;
+		XmNy = 80;
+		XmNwidth = 60;
+		XmNheight = 30;
+		XmNlabelString = compound_string( "Delay (ms) :" );
+		XmNbottomAttachment = XmATTACH_WIDGET;
+		XmNbottomOffset = 7;
+		XmNbottomWidget = separatorGadget19;
+		XmNleftAttachment = XmATTACH_WIDGET;
+		XmNleftOffset = 10;
+		XmNleftWidget = separatorGadget21;
+	};
+};
+
+object MovieDelayTW : XmText
+{
+	arguments
+	{
+		XmNx = 330;
+		XmNy = 70;
+		XmNwidth = 90;
+		XmNheight = 30;
+		XmNvalue = "0";
+		XmNbottomAttachment = XmATTACH_WIDGET;
+		XmNbottomWidget = separatorGadget19;
+		XmNbottomOffset = 3;
+		XmNleftAttachment = XmATTACH_WIDGET;
+		XmNleftOffset = 100;
+		XmNleftWidget = separatorGadget21;
+	};
+};
+
+
+end module;

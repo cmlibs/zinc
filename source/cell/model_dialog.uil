@@ -1,0 +1,394 @@
+!*******************************************************************************
+! FILE : model_dialog.uil
+!
+! LAST MODIFIED : 28 February 1999
+!
+! DESCRIPTION :
+! The widgets/gadgets for the model dialog.
+!===============================================================================
+module Model_Dialog
+	names = case_sensitive
+
+procedure
+	default_button_callback;
+	read_button_callback;
+	cancel_button_callback;
+	help_button_callback;
+	identify_current_model_label;
+	identify_membrane_list;
+	identify_mechanics_list;
+	identify_metabolism_list;
+	identify_coupled_list;
+	default_action_callback;
+	membrane_item_selected;
+	mechanics_item_selected;
+	metabolism_item_selected;
+	coupled_item_selected;
+
+identifier
+	cell_window_structure;
+	text_emphasis_colour;
+	button_font;
+	heading_font;
+
+value
+	sash_width : 50;
+	small_widget_spacing : 1;
+	large_widget_spacing : 4;
+	max_pane_size : 1000;
+	min_pane_size : 50;
+	visible_items : 4;
+
+object
+	model_dialog: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNdefaultPosition = false;
+			XmNresizePolicy = XmRESIZE_ANY;
+			XmNdialogTitle = compound_string("Model Selection");
+			};
+		controls
+			{
+			XmRowColumn main_rowcol;
+			XmForm button_form;
+			};
+		};
+	main_rowcol: XmRowColumn
+		{
+		arguments
+			{
+			XmNtopOffset = small_widget_spacing;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNleftOffset = small_widget_spacing;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightOffset = small_widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNbottomOffset = small_widget_spacing;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomWidget = button_form;
+			XmNentryAlignment = XmALIGNMENT_CENTER;
+			XmNpacking = XmPACK_TIGHT;
+			XmNorientation = XmVERTICAL;
+			XmNnumColumns = 1;
+			};
+		controls
+			{
+			XmLabel current_model_label;
+			XmLabel membrane_label;
+			XmScrolledWindow membrane_window;
+			XmLabel mechanics_label;
+			XmScrolledWindow mechanics_window;
+			XmLabel metabolism_label;
+			XmScrolledWindow metabolism_window;
+			XmLabel coupled_label;
+			XmScrolledWindow coupled_window;
+			};
+		};
+	current_model_label: XmLabel
+		{
+		arguments
+			{
+			XmNforeground = text_emphasis_colour;
+			XmNfontList = heading_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_current_model_label(
+					cell_window_structure);
+				};
+			};
+		};
+	membrane_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString = compound_string(
+				"Membrane ionic current models");
+			XmNfontList = heading_font;
+			};
+		};
+	membrane_window: XmScrolledWindow
+		{
+		arguments
+			{
+			XmNscrollBarDisplayPolicy = XmSTATIC;
+			XmNworkWindow =  XmList membrane_list;
+			};
+		controls
+			{
+			XmList membrane_list;
+			};
+		};
+	membrane_list: XmList
+		{
+		arguments
+			{
+			XmNvisibleItemCount = visible_items;
+			XmNlistSizePolicy = XmRESIZE_IF_POSSIBLE;
+			XmNselectionPolicy = XmBROWSE_SELECT;
+			XmNautomaticSelection = true;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_membrane_list(cell_window_structure);
+				};
+			XmNdefaultActionCallback = procedures
+				{
+				default_action_callback(cell_window_structure);
+				};
+			XmNbrowseSelectionCallback = procedures
+				{
+				membrane_item_selected(cell_window_structure);
+				};
+			};
+		};
+	mechanics_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString = compound_string(
+				"Mechanical models");
+			XmNfontList = heading_font;
+			};
+		};
+	mechanics_window: XmScrolledWindow
+		{
+		arguments
+			{
+			XmNscrollBarDisplayPolicy = XmSTATIC;
+			XmNworkWindow =  XmList mechanics_list;
+			};
+		controls
+			{
+			XmList mechanics_list;
+			};
+		};
+	mechanics_list: XmList
+		{
+		arguments
+			{
+			XmNvisibleItemCount = visible_items;
+			XmNlistSizePolicy = XmRESIZE_IF_POSSIBLE;
+			XmNselectionPolicy = XmBROWSE_SELECT;
+			XmNautomaticSelection = true;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mechanics_list(cell_window_structure);
+				};
+			XmNdefaultActionCallback = procedures
+				{
+				default_action_callback(cell_window_structure);
+				};
+			XmNbrowseSelectionCallback = procedures
+				{
+				mechanics_item_selected(cell_window_structure);
+				};
+			};
+		};
+	metabolism_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString = compound_string(
+				"Metabolic/Biochemical models");
+			XmNfontList = heading_font;
+			};
+		};
+	metabolism_window: XmScrolledWindow
+		{
+		arguments
+			{
+			XmNscrollBarDisplayPolicy = XmSTATIC;
+			XmNworkWindow =  XmList metabolism_list;
+			};
+		controls
+			{
+			XmList metabolism_list;
+			};
+		};
+	metabolism_list: XmList
+		{
+		arguments
+			{
+			XmNvisibleItemCount = visible_items;
+			XmNlistSizePolicy = XmRESIZE_IF_POSSIBLE;
+			XmNselectionPolicy = XmBROWSE_SELECT;
+			XmNautomaticSelection = true;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_metabolism_list(cell_window_structure);
+				};
+			XmNdefaultActionCallback = procedures
+				{
+				default_action_callback(cell_window_structure);
+				};
+			XmNbrowseSelectionCallback = procedures
+				{
+				metabolism_item_selected(cell_window_structure);
+				};
+			};
+		};
+	coupled_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString = compound_string(
+				"Coupled models");
+			XmNfontList = heading_font;
+			};
+		};
+	coupled_window: XmScrolledWindow
+		{
+		arguments
+			{
+			XmNscrollBarDisplayPolicy = XmSTATIC;
+			XmNworkWindow =  XmList coupled_list;
+			};
+		controls
+			{
+			XmList coupled_list;
+			};
+		};
+	coupled_list: XmList
+		{
+		arguments
+			{
+			XmNvisibleItemCount = visible_items;
+			XmNlistSizePolicy = XmRESIZE_IF_POSSIBLE;
+			XmNselectionPolicy = XmBROWSE_SELECT;
+			XmNautomaticSelection = true;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_coupled_list(cell_window_structure);
+				};
+			XmNdefaultActionCallback = procedures
+				{
+				default_action_callback(cell_window_structure);
+				};
+			XmNbrowseSelectionCallback = procedures
+				{
+				coupled_item_selected(cell_window_structure);
+				};
+			};
+		};
+	button_form: XmForm
+		{
+		arguments
+			{
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = small_widget_spacing;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = small_widget_spacing;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = small_widget_spacing;
+			XmNfractionBase = 4;
+			};
+		controls
+			{
+			XmPushButton default_button;
+			XmPushButton read_button;
+			XmPushButton cancel_button;
+			XmPushButton help_button;
+			};
+		};
+	default_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Set default values");
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 0;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 1;
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				default_button_callback(cell_window_structure);
+				};
+			};
+		};
+	read_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString =
+				compound_string("Read model from file");
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 1;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 2;
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				read_button_callback(cell_window_structure);
+				};
+			};
+		};
+	cancel_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Cancel");
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 2;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 3;
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				cancel_button_callback(cell_window_structure);
+				};
+			};
+		};
+	help_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Help");
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 3;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 4;
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				help_button_callback(cell_window_structure);
+				};
+			};
+		};
+end module;

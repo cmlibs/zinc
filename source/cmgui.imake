@@ -1,0 +1,1328 @@
+XCOMM **************************************************************************
+XCOMM FILE : cmgui.imake
+XCOMM
+XCOMM LAST MODIFIED : 11 November 1999
+XCOMM
+XCOMM DESCRIPTION :
+XCOMM SAB.  I have changed all this to use cmgui.imake now, if you want to
+XCOMM   change things then that is the file to do it in.
+XCOMM
+XCOMM Makefile for cmgui (the front end to CMISS)
+XCOMM ???DB.  Separate make for xvg
+XCOMM ???DB.  For VMS need to do  $define GL sys$library
+XCOMM ???DB.  Get rid of PLATFORM_SWITCH altogether ?  Split UNIX into IRIX, AIX
+XCOMM   and LINUX ?
+XCOMM ???DB.  Should the parts shared with other applications (eg unemap.make)
+XCOMM   be put in an include file ?
+XCOMM ???DB.  UNIMA ?
+XCOMM ???DB.  Error message for cm commands if not connected ?
+XCOMM ???DB.  Move unemap/drawing_2d.* to graphics ?
+XCOMM ???DB.  5 January 1998.  Tried lint (-wlint not yet implemented for
+XCOMM   cc -n32), but gave lots of errors for Xlib.h
+XCOMM ???DB.  6 January 1998.  multigot linker option allows multiple Global
+XCOMM   Offset Tables
+XCOMM ==========================================================================
+
+/* The CmguiMake filename should match the filename into which this is being
+	written.  This is done in the dependency rules in cmgui.make i.e.
+	for sgi
+		image -T cmgui.imake -f dummy.imake -s cmgui.make
+	for linux
+		image -DLINUX -T cmgui.imake -f dummy.imake -s cmgui_linux.make */
+
+#if defined (IRIX) /* switch OperatingSystem */
+#if ! defined (LITEWEIGHT)
+#define MIRAGE
+#define UNEMAP
+#define XVG
+XCOMM ???DB.  Temporary.  Need xml libraries for other than n32
+#if !defined(O64) && !defined(OPTIMISED)
+#define CELL
+#endif /* !defined(O64) && !defined(OPTIMISED) */
+#endif /* ! defined (LITEWEIGHT) */
+
+#define SharedObjectVersion 1.0
+
+#if !defined (O64)
+#define UidPath uid
+#if defined (LITEWEIGHT)
+#define CmguiTarget cmgui_lite
+#define SpacesToTabsTarget utilities/spaces_to_tabs_lite
+#define TabsToSpacesTarget utilities/tabs_to_spaces_lite
+#define Uid2uid64Target utilities/uid2uid64_lite
+#define CmguiMake cmgui_sgilite.make
+#define DependMake cmgui_sgilite.depend
+#define ObjSuffix olite
+#else /* defined (LITEWEIGHT) */
+#if !defined (OPTIMISED)
+/* The normal debug and memory check versions keep the same extension
+	as they only differ in one file */
+#if !defined (MEMORY_CHECK)
+#define CmguiTarget cmgui
+#define CmguiFiltLibrary libCmguiFilt.so
+#define SpacesToTabsTarget utilities/spaces_to_tabs
+#define TabsToSpacesTarget utilities/tabs_to_spaces
+#define Uid2uid64Target utilities/uid2uid64
+#define CmguiMake cmgui_sgi.make
+#define DependMake cmgui_sgi.depend
+#define ObjSuffix o
+#else /* !defined (MEMORY_CHECK) */
+#define CmguiTarget cmgui_memorycheck
+#define SpacesToTabsTarget utilities/spaces_to_tabs
+#define TabsToSpacesTarget utilities/tabs_to_spaces
+#define Uid2uid64Target utilities/uid2uid64
+#define CmguiMake cmgui_sgi_memorycheck.make
+#define DependMake cmgui_sgi_memorycheck.depend
+#define ObjSuffix o
+#endif /* !defined (MEMORY_CHECK) */
+#else /* !defined (OPTIMISED) */
+#define CmguiTarget cmgui_optimised
+#define SpacesToTabsTarget utilities/spaces_to_tabs_optimised
+#define TabsToSpacesTarget utilities/tabs_to_spaces_optimised
+#define Uid2uid64Target utilities/uid2uid64_optimised
+#define CmguiMake cmgui_sgioptimised.make
+#define DependMake cmgui_sgioptimised.depend
+#define ObjSuffix oopt
+#endif /* !defined (OPTIMISED) */
+#endif /* defined (LITEWEIGHT) */
+#else /* !defined (O64) */
+/* The O64 version can be either OPTIMISED or not but only one
+	version is kept at the moment */
+#define UidPath uid64
+#define CmguiTarget cmgui64
+#define SpacesToTabsTarget utilities/spaces_to_tabs64
+#define TabsToSpacesTarget utilities/tabs_to_spaces64
+#define Uid2uid64Target utilities/uid2uid6464
+#define CmguiMake cmgui_sgi64.make
+#define DependMake cmgui_sgi64.depend
+#define ObjSuffix o64
+#endif /* !defined (O64) */
+
+#elif defined (LINUX) /* switch OperatingSystem */
+#define MIRAGE
+#define UNEMAP
+XCOMM ???DB.  Temporary.  Need xml libraries for other than n32
+XCOMM #define CELL
+
+#define UidPath uid_linux
+#define CmguiTarget cmgui_linux
+#define SpacesToTabsTarget utilities/spaces_to_tabs_linux
+#define TabsToSpacesTarget utilities/tabs_to_spaces_linux
+#define Uid2uid64Target utilities/uid2uid64_linux
+#define CmguiMake cmgui_linux.make
+#define DependMake cmgui_linux.depend
+#define ObjSuffix olinux
+
+#endif /* switch OperatingSystem */
+
+#if defined (OLD_CODE)
+SHELL=/bin/tcsh
+#endif /* defined (OLD_CODE) */
+SHELL=/bin/sh
+
+PRODUCT_PATH=$(CMISS_ROOT)/cmgui/source
+UTILITIES_PATH=$(CMISS_ROOT)/cmgui/source/utilities
+#if defined (OLD_CODE)
+PRODUCT_PATH=.
+#endif /* defined (OLD_CODE) */
+
+#if defined (IRIX) /* switch OperatingSystem */
+VPATH=$(PRODUCT_PATH)
+#elif defined (LINUX) /* switch OperatingSystem */
+XCOMM LINUX treats VPATH slightly differently and does not notice
+XCOMM	that a local *.c file has changed if a valid *.olinux file
+XCOMM	is found in the PRODUCT_PATH directories so use vpath and
+XCOMM the VPATH is not searched for *.olinux.  This has the penalty
+XCOMM of requiring all the objects to be built locally.
+vpath %.c $(PRODUCT_PATH)
+vpath %.f $(PRODUCT_PATH)
+vpath %.h $(PRODUCT_PATH)
+vpath %.cpp $(PRODUCT_PATH)
+vpath %.uil $(PRODUCT_PATH)
+#endif /* switch OperatingSystem */
+
+#if defined (OLD_CODE)
+CC = cc -n32 -c -o
+CPP = CC -n32 -c -o
+FORTRAN = f77 -n32 -c -o
+LINK = cc -n32 -o
+LINK = cc -n32 -multigot -o
+CC = cc -n32 -c -g -o
+CPP = CC -n32 -c -g -o
+FORTRAN = f77 -n32 -c -g -o
+LINK = ld -n32 -g -multigot -o
+LINK = cc -n32 -g -multigot -o
+LINK = f77 -n32 -g -multigot -o
+CC = cc -c -o
+CPP = CC -c -o
+FORTRAN = f77 -c -o
+LINK = cc -o
+#endif
+
+#if defined (IRIX) /* switch OperatingSystem */
+#define WildC *.c
+UIDTOUID64 = $(UTILITIES_PATH)/uid2uid64
+UIL = uil
+UIL64 = uil64
+CC = cc -c
+CPP = CC -c
+FORTRAN = f77 -c
+LINK = cc -o
+#if defined (OPTIMISED)
+OPTIMISATION_FLAGS = -O
+COMPILE_FLAGS = -ansi -pedantic -woff 1521,1048
+COMPILE_DEFINES = 
+STRICT_FLAGS = 
+STRICT_FLAGS_PATTERN = NONE /* Must specify a pattern that doesn't match */
+#else /* defined (OPTIMISED) */
+OPTIMISATION_FLAGS = -g -mips3
+COMPILE_FLAGS = -ansi -fullwarn -pedantic -woff 1521,1048
+COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON 
+STRICT_FLAGS = -diag_error 1196
+STRICT_FLAGS_PATTERN = choose/WildC | command/WildC | curve/WildC | data/WildC | finite_element/WildC | general/WildC | graphics/WildC | material/WildC | mirage/WildC | select/WildC | three_d_drawing/WildC | time/WildC | user_interface/WildC | view/WildC
+#endif /* defined (OPTIMISED) */
+
+#if defined (O64)
+TARGET_TYPE_FLAGS = -G0 -64
+TARGET_TYPE_DEFINES = -DO64
+#else /* defined (O64) */
+TARGET_TYPE_FLAGS = -n32
+TARGET_TYPE_DEFINES =
+#endif /* defined (O64) */
+#elif defined(LINUX) /* switch OperatingSystem */
+
+UIDTOUID64 = $(UTILITIES_PATH)/uid2uid64_linux
+UIL = uil
+UIL64 = uil64  /* There is a test in the rule to see if this is available */
+CC = egcs -c
+CPP = egcs -c
+FORTRAN = g77 -c
+LINK = egcs -static -L/usr/X11R6/lib -o
+OPTIMISATION_FLAGS = -g
+COMPILE_FLAGS = 
+COMPILE_DEFINES = 
+STRICT_FLAGS = 
+STRICT_FLAGS_PATTERN = NONE /* Must specify a pattern that doesn't match */
+TARGET_TYPE_FLAGS =
+TARGET_TYPE_DEFINES =
+#endif /* switch OperatingSystem */
+
+BASE_DIRECTORY_INC = -I$(CMGUI_BASE_DIRECTORY) -I$(PRODUCT_PATH)
+
+#if defined (IRIX) /* switch OperatingSystem */
+PLATFORM_SWITCH = -DSGI -Dmips
+#elif defined(LINUX) /* switch OperatingSystem */
+PLATFORM_SWITCH = -DGENERIC_PC
+#endif /* switch OperatingSystem */
+
+#if defined (OLD_CODE)
+PLATFORM_SWITCH = -DIBM
+PLATFORM_SWITCH = -DSGI
+PLATFORM_SWITCH = -DVAX
+PLATFORM_SWITCH = -DALPHA
+#endif /* (OLD_CODE) */
+
+OPERATING_SYSTEM = -DUNIX
+#if defined (OLD_CODE)
+OPERATING_SYSTEM = -DWIN32
+???DB.  Win32 is an API not an operating system
+OPERATING_SYSTEM = -DVMS
+#endif /* (OLD_CODE) */
+
+WINDOWING_SYSTEM = -DMOTIF
+#if defined (OLD_CODE)
+WINDOWING_SYSTEM = -DWINDOWS
+#endif /* (OLD_CODE) */
+
+#if defined (OLD_CODE)
+ for GL
+GRAPHICS_LIBRARY_SWITCH = -DGL_API
+GRAPHICS_LIB = -lgl
+#endif /* (OLD_CODE) */
+#if defined (IRIX) /* switch OperatingSystem */
+#if defined (O64)
+XCOMM for OpenGL without SGI movie (64bit doesnt have libraries as of Jan99)
+GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
+GRAPHICS_LIB = -lGL -lGLU
+#else /* defined (O64) */
+XCOMM  for OpenGL with SGI movie
+GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API -DSGI_MOVIE_FILE -DSGI_DIGITAL_MEDIA
+GRAPHICS_LIB = -delay_load -lmoviefile -delay_load -ldmedia -lGL -lGLU
+#endif /* defined (O64) */
+#elif defined(LINUX) /* switch OperatingSystem */
+XCOMM for OpenGL without SGI movie
+GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
+GRAPHICS_LIB = -lGL -lGLU
+#endif /* switch OperatingSystem */
+#if defined (OLD_CODE)
+XCOMM GRAPHICS_LIB = -delay_load -lmoviefile -delay_load -lmovieplay -lGL -lGLU -delay_load -ldmedia
+XCOMM  for PEX
+XCOMM GRAPHICS_LIBRARY_SWITCH = -DPEXLIB_API
+XCOMM GRAPHICS_LIB = -lPEX5
+#endif /* (OLD_CODE) */
+
+XCOMM ???DB.  INSTALL_COLOURMAP seems to be needed for Mesa.  Mesa seems to have
+XCOMM   trouble with some visuals
+#if defined (IRIX) /* switch OperatingSystem */
+THREE_D_DRAWING_DEFINES = 
+#elif defined(LINUX) /* switch OperatingSystem */
+THREE_D_DRAWING_DEFINES = -DINSTALL_COLOURMAP -DUSING_MESA
+#endif /* switch OperatingSystem */
+
+CONNECTIVITY_DEFINES = -DLINK_CMISS
+#if defined (OLD_CODE)
+XCOMM CONNECTIVITY_DEFINES =
+#endif /* (OLD_CODE) */
+
+#if !defined (FACE_APPLICATION)
+FACE_APPLICATION_SWITCH =
+#else /* !defined (FACE_APPLICATION) */
+FACE_APPLICATION_SWITCH = -DFACE_APPLICATION
+#endif /* !defined (FACE_APPLICATION) */
+
+#if !defined (MIRAGE)
+MIRAGE_SWITCH =
+MIRAGE_SRCS =
+#else /* !defined (MIRAGE) */
+MIRAGE_SWITCH = -DMIRAGE
+MIRAGE_SRCS = \
+	mirage/digitiser_window.c \
+	mirage/em_cmgui.c \
+	mirage/mirage_node_editor.c \
+	mirage/movie.c \
+	mirage/movie_data.c \
+	mirage/photogrammetry.c \
+	mirage/tracking_editor_data.c \
+	mirage/tracking_editor_dialog.c \
+	slider/emoter_dialog.c
+#endif /* !defined (MIRAGE) */
+
+#if !defined (ROBO_APPLICATION)
+ROBO_APPLICATION_SWITCH =
+ROBO_APPLICATION_SRCS =
+#else /* !defined (ROBO_APPLICATION) */
+ROBO_APPLICATION_SWITCH = -DROBO_APPLICATION
+ROBO_APPLICATION_SRCS = graphics/robo_window.c
+#endif /* !defined (ROBO_APPLICATION) */
+
+#if !defined (UNEMAP)
+UNEMAP_SWITCH =
+UNEMAP_SRCS = \
+	unemap/drawing_2d.c
+#else /* !defined (UNEMAP) */
+UNEMAP_SWITCH = -DUNEMAP -DSPECTRAL_TOOLS -DUNEMAP_USE_NODES 
+UNEMAP_SRCS = \
+	unemap/acquisition.c \
+	unemap/acquisition_window.c \
+	unemap/acquisition_work_area.c \
+	unemap/analysis.c \
+	unemap/analysis_window.c \
+	unemap/analysis_work_area.c \
+	unemap/bard.c \
+	unemap/beekeeper.c \
+	unemap/cardiomapp.c \
+	unemap/drawing_2d.c \
+	unemap/interpolate.c \
+	unemap/map_dialog.c \
+	unemap/mapping.c \
+	unemap/mapping_window.c \
+	unemap/neurosoft.c \
+	unemap/page_window.c \
+	unemap/rig.c \
+	unemap/rig_node.c \
+	unemap/setup_dialog.c \
+	unemap/spectral_methods.c \
+	unemap/system_window.c \
+	unemap/trace_window.c \
+	unemap/unemap_hardware_client.c \
+	unemap/unemap_package.c 
+#endif /* !defined (UNEMAP) */
+
+#if !defined (XVG)
+XVG_SWITCH =
+XVG_OPTION_DEFINES = 
+XVG_INC = -I$(PRODUCT_PATH)/xvg/include
+XVG_SRCS =
+#else /* !defined (XVG) */
+XVG_SWITCH = -DINCLUDE_XVG
+XVG_OPTION_DEFINES = -DXT_CODE -DUIL_CODE -DCMGUI -DNO_XVGMAIN
+#if defined (OLD_CODE)
+XCOMM XVG_OPTION_DEFINES = -DXT_CODE -D_XOPEN_SOURCE -D_ANSI_C_SOURCE \
+	-DUIL_CODE -DCMGUI -DNO_XVGMAIN
+#endif /* defined (OLD_CODE) */
+XVG_INC = -I$(CMGUI_BASE_DIRECTORY)/xvg/include -I$(CMGUI_BASE_DIRECTORY)/xvg/cmgui -I$(CMGUI_BASE_DIRECTORY)/xvg -I$(PRODUCT_PATH)/xvg/include -I$(PRODUCT_PATH)/xvg/cmgui -I$(PRODUCT_PATH)/xvg
+/* SAB This hack is to escape the replacement of sgi
+	but not affect its definition, if anyone knows a better way
+   to stop the token replacement, be my guest */
+#if defined (sgi)
+#define KeepSgiDef sgi
+#undef sgi
+#endif /* defined (sgi) */
+XVG_SRCS = \
+	xvg/cmgui/GLShell.c \
+	xvg/cmgui/HistogramShell.c \
+	xvg/cmgui/IPOperationsShell.c \
+	xvg/cmgui/InfoDialog.c \
+	xvg/cmgui/InputDialog.c \
+	xvg/cmgui/LUTShell.c \
+	xvg/cmgui/MovieControlsShell.c \
+	xvg/cmgui/ProcessedImageShell.c \
+	xvg/cmgui/RawImageShell.c \
+	xvg/cmgui/ScrolledWindowDialog.c \
+	xvg/cmgui/XvgShell.c \
+	xvg/cmgui/fileSelectionBoxDialog.c \
+	xvg/cmgui/promptDialog.c \
+	xvg/cmgui/xvg.c \
+	xvg/custom/GLUtils.c \
+	xvg/custom/NRC_SVD.c \
+	xvg/custom/SGIGrabIPOPs.c \
+	xvg/custom/UxDummies.c \
+	xvg/custom/UxMethod.c \
+	xvg/custom/UxXt.c \
+	xvg/custom/XWDUtils.c \
+	xvg/custom/XvgMemoryManager.c \
+	xvg/custom/XvgRegisterIPOps.c \
+	xvg/custom/XvgSystem.c \
+	xvg/custom/binaryIPOPs.c \
+	xvg/custom/e04uef_calls.c \
+	xvg/custom/feIPOPs.c \
+	xvg/custom/fftIPOPs.c \
+	xvg/custom/fileIPOPs.c \
+	xvg/custom/fileio.c \
+	xvg/custom/fitIPOPs.c \
+	xvg/custom/grab.c \
+	xvg/custom/grabIPOPs.c \
+	xvg/custom/imgproc.c \
+	xvg/custom/matlab.c \
+	xvg/custom/morphoIPOPs.c \
+	xvg/custom/sgi.c \
+	xvg/custom/spacedomIPOPs.c \
+	xvg/custom/stereoIPOPs.c \
+	xvg/custom/unima.c \
+	xvg/custom/utils.c \
+	xvg/custom/wrappingIPOPs.c
+#if defined (KeepSgiDef)
+#define sgi KeepSgiDef
+#endif /* defined (KeepSgiDef) */
+#endif /* !defined (XVG) */
+
+#if !defined (CELL)
+CELL_SWITCH =
+CELL_SRCS =
+#else /* !defined (CELL) */
+CELL_SWITCH = -DCELL -DCELL_CONTROL_CURVE
+CELL_SRCS = \
+	cell/calculate.c \
+	cell/cell_3d.c \
+	cell/cell_calculate.f \
+	cell/cell_component.c \
+	cell/cell_parameter.c \
+	cell/cell_control_curve.c \
+	cell/cell_variable.c \
+	cell/cell_window.c \
+	cell/cmgui_connection.c \
+	cell/input.c \
+	cell/messages.c \
+	cell/model_dialog.c \
+	cell/parameter_dialog.c \
+	cell/output.c \
+	cell/parser.c \
+	cell/variables_dialog.c
+#endif /* !defined (CELL) */
+
+#if defined (IRIX) /* switch OperatingSystem */
+EXTERNAL_INPUT_DEFINES = -DDIALS -DSPACEBALL -DPOLHEMUS -DFARO -DEXT_INPUT 
+EXTERNAL_INPUT_LIB = -lXext -lXi
+#elif defined(LINUX) /* switch OperatingSystem */
+EXTERNAL_INPUT_DEFINES = 
+EXTERNAL_INPUT_LIB = 
+#endif /* switch OperatingSystem */
+#if defined (OLD_CODE)
+EXTERNAL_INPUT_DEFINES = -DSPACEBALL -DEXT_INPUT 
+EXTERNAL_INPUT_LIB = 
+EXTERNAL_INPUT_DEFINES = -DDIALS -DSPACEBALL -DPOLHEMUS -DEXT_INPUT -DHAPTIC
+EXTERNAL_INPUT_LIB = -lXext -lXi
+#endif /* defined (OLD_CODE) */
+
+HAPTIC_LIB =
+HAPTIC_INC =
+#if defined (OLD_CODE)
+HAPTIC_LIB = -L/usr/local/phantom/GHOST/lib -lghost_n32Mips3
+HAPTIC_INC = -I/usr/local/phantom/GHOST/lib
+HAPTIC_LIB = -L/usr/local/phantom/GHOST/lib -lghost_o32
+HAPTIC_INC = -I/usr/local/phantom/GHOST/lib
+#endif /* defined (OLD_CODE) */
+
+#if defined (OLD_CODE)
+WORMHOLE_LIB = product_1:[product.cmiss.wormhole.lib]wormhole/lib
+WORMHOLE_INC = -Iproduct_1:[product.cmiss.wormhole.source]
+WORMHOLE_LIB = -L/usr/people/bullivan/wormhole/lib -lwormhole_n32
+WORMHOLE_INC = -I/usr/people/bullivan/wormhole/source
+WORMHOLE_LIB = -L/usr/people/bullivan/wormhole/lib -lwormhole
+WORMHOLE_INC = -I/usr/people/bullivan/wormhole/source
+#endif /* defined (OLD_CODE) */
+#if defined (IRIX) /* switch OperatingSystem */
+#if defined (O64)
+WORMHOLE_LIB = -L${CMISS_ROOT}/wormhole/lib -lwormhole_64
+WORMHOLE_INC = -I${CMISS_ROOT}/wormhole/source
+#else /* defined (O64) */
+WORMHOLE_LIB = -L${CMISS_ROOT}/wormhole/lib -lwormhole_n32
+WORMHOLE_INC = -I${CMISS_ROOT}/wormhole/source
+#endif /* defined (O64) */
+#elif defined(LINUX) /* switch OperatingSystem */
+WORMHOLE_LIB = -L/usr/local/cmiss/wormhole/lib -lwormhole
+WORMHOLE_INC = -I/usr/local/cmiss/wormhole/source
+#endif /* switch OperatingSystem */
+
+#if defined (CELL)
+#if defined (IRIX) /* switch OperatingSystem */
+#if defined (O64)
+XML_LIB = -L${CMISS_ROOT}/xml/expat_lib/lib -lExpat_64
+XML_INC = -I${CMISS_ROOT}/xml/expat_lib/include
+#else /* defined (O64) */
+XML_LIB = -B static -L${CMISS_ROOT}/xml/expat_lib/lib -lExpat_n32 -B dynamic
+XML_INC = -I${CMISS_ROOT}/xml/expat_lib/include
+#endif /* defined (O64) */
+#elif defined(LINUX) /* switch OperatingSystem */
+XML_LIB = -L/usr/local/cmiss/xml/expat_lib/lib -lExpat
+XML_INC = -I/usr/local/cmiss/xml/expat_lib/include
+#endif /* switch OperatingSystem */
+#endif /* defined (CELL) */
+
+#if defined (OLD_CODE)
+SOCKET_DEFINES = -Dsgi -Dmips
+SOCKET_LIB = -L/usr/local/lib/sklib -lsk
+SOCKET_INC = -I${CMISS_ROOT}/sklib
+SOCKET_DEFINES = -Dsgi -Dmips
+SOCKET_LIB = -L${CMISS_ROOT}/sklib -lsk
+SOCKET_INC = -I${CMISS_ROOT}/sklib
+SOCKET_DEFINES = -Dlinux -Dintel
+SOCKET_LIB = -L/home/bullivan/sklib -lsk
+SOCKET_INC = -I/home/bullivan/sklib
+SOCKET_DEFINES = -Dsgi -Dmips
+SOCKET_LIB = -L/usr/people/bullivan/sklib -lsk
+SOCKET_INC = -I/usr/people/bullivan/sklib
+SOCKET_DEFINES = -D"alpha=alpha" -D"vms"
+SOCKET_INC = -Iproduct_1:[product.cmiss.sklib]
+SOCKET_LIB = product_1:[product.cmiss.sklib]sklib/lib, sys$library:ucx$ipc/lib
+SOCKET_DEFINES = -DDO_NOT_USE_SOCKETS
+SOCKET_LIB = -L/u/bullivan/cmiss/sklib -lsk
+SOCKET_INC = -I/u/bullivan/cmiss/sklib
+SOCKET_DEFINES = -DDO_NOT_USE_SOCKETS
+SOCKET_LIB = -L/data/bullivan/cmiss/sklib -lsk
+SOCKET_INC = -I/data/bullivan/cmiss/sklib
+#endif /* defined (OLD_CODE) */
+
+
+STEREO_DISPLAY_SWITCH = -DSTEREO
+#if defined (OLD_CODE)
+STEREO_DISPLAY_SWITCH =
+#endif /* defined (OLD_CODE) */
+
+
+#if defined (OLD_CODE)
+POSTSCRIPT_DEFINES = -DFEEDBACK_POSTSCRIPT
+#endif /* defined (OLD_CODE) */
+POSTSCRIPT_DEFINES =
+
+#if defined (OLD_CODE)
+XCOMM  By default some names are "mangled" to get external names <= 32 characters
+NAME_DEFINES =
+#endif /* defined (OLD_CODE) */
+NAME_DEFINES = -DFULL_NAMES
+
+XCOMM  Temporary flags that are used during development
+TEMPORARY_DEVELOPMENT_FLAGS =
+#if defined (OLD_CODE)
+TEMPORARY_DEVELOPMENT_FLAGS = -DINTERNAL_UIDS -DPHANTOM_FARO
+TEMPORARY_DEVELOPMENT_FLAGS = -DINTERPOLATE_TEXELS -DOTHER_FIBRE_DIR -DREPORT_GL_ERRORS
+TEMPORARY_DEVELOPMENT_FLAGS = -DDO_NOT_ADD_DETAIL
+TEMPORARY_DEVELOPMENT_FLAGS = -DSELECT_ELEMENTS -DMERGE_TIMES -DPETURB_LINES -DDEPTH_OF_FIELD -DDO_NOT_ADD_DETAIL -DSGI_MOVIE_FILE
+TEMPORARY_DEVELOPMENT_FLAGS = -DSELECT_ELEMENTS -DMERGE_TIMES -DPETURB_LINES -DDEPTH_OF_FIELD -DBLEND_NODAL_VALUES -DNEW_SPECTRUM
+TEMPORARY_DEVELOPMENT_FLAGS = -DSELECT_ELEMENTS -DMERGE_TIMES -DPETURB_LINES -DDEPTH_OF_FIELD -DDO_NOT_ADD_DETAIL -DBLEND_NODAL_VALUES -DALLOW_MORPH_UNEQUAL_POINTSETS
+TEMPORARY_DEVELOPMENT_FLAGS = -DWINDOWS_DEV_FLAG
+#endif /* defined (OLD_CODE) */
+
+#if defined (OLD_CODE)
+XCOMM ???DB.  Video needs tidying.  There are flags SGI_VIDEO, IBM_VIDEO, IBM_VCA
+XCOMM   (also used in relation to how the animation is done) and SVIDEO
+VIDEO_SWITCH = -DIBM_VCA
+VIDEO_LIB = /usr/lpp/bos/samples/vca/lib/libvca.a
+VIDEO_SRCS = graphics/smtv.c graphics/vca.c
+VIDEO_SWITCH = -DSVIDEO
+VIDEO_LIB = -lsvideo 
+#endif /* defined (OLD_CODE) */
+VIDEO_SWITCH =
+VIDEO_LIB =
+VIDEO_SRCS =
+
+#if defined (OLD_CODE)
+NAG_LIB = -lnag
+NAG_LIB = /usr/local/libnag.a
+NAG_LIB =
+#endif /* defined (OLD_CODE) */
+NAG_SRCS = xvg/custom/nag.c
+NAG_LIB =
+
+#if defined (OLD_CODE)
+HELP_DEFINES = -DNO_HELP
+HELP_INCLUDE =
+HELP_LIB =
+HELP_DEFINES =
+HELP_INCLUDE =
+HELP_LIB =
+HELP_OBJS = \
+	help/help_interface.o \
+	help/help_window.o \
+	help/help_work.o
+HELP_DEFINES = -DHYPERTEXT_HELP
+HELP_INCLUDE = -Ihypertext_help
+HELP_LIB = -lXaw
+HELP_LIB =
+XCOMM ???DB.  Get rid of Xaw altogether ?
+HELP_OBJS = \
+	help/help_interface.o \
+	hypertext_help/libhthelp.a \
+	html_widget/libhtmlw.a
+HELP_DEFINES = -DHYPERTEXT_HELP
+HELP_INCLUDE = -Ihypertext_help
+HELP_LIB = -lXaw
+HELP_OBJS = \
+	help/help_interface.o \
+	hypertext_help/hthelp.olb \
+	html_widget/htmlw.olb
+#endif /* defined (OLD_CODE) */
+HELP_DEFINES = -DNETSCAPE_HELP
+HELP_INCLUDE =
+HELP_LIB =
+HELP_SRCS = \
+	help/help_interface.c
+
+#if defined (OLD_CODE)
+CFLAGS = /float=ieee /standard=ansi89
+CFLAGS =
+CFLAGS = -ansi -pedantic -fullwarn -woff 841 -wlint,-faivu
+#if defined (IRIX) /* switch OperatingSystem */
+CFLAGS = -ansi -pedantic -woff 1521,1048
+#elif defined(LINUX) /* switch OperatingSystem */
+CFLAGS =
+#endif /* switch OperatingSystem */
+#endif /* defined (OLD_CODE) */
+
+#if defined (OLD_CODE)
+LIB = -lMrm -lXm -lXt -lX11 -lXmu -lPW -lm -lmalloc_cv
+LIB = -lMrm -lXm -lXt -lX11 -lXmu -lPW -lm
+LIB = -lMrm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm
+#endif /* defined (OLD_CODE) */
+#if defined (IRIX) /* switch OperatingSystem */
+LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm
+#elif defined(LINUX) /* switch OperatingSystem */
+LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXpm -lXext -lf2c -lm -ldl -lXp -lSM -lICE
+#endif /* switch OperatingSystem */
+
+START_ALL_DEFINES =
+END_ALL_DEFINES =
+
+START_ALL_INCLUDES =
+END_ALL_INCLUDES =
+
+#if defined (OLD_CODE)
+ALL_DEFINES = $(START_ALL_DEFINES) \
+	$(PLATFORM_SWITCH) $(OPERATING_SYSTEM) $(WINDOWING_SYSTEM) \
+	$(STEREO_DISPLAY_SWITCH) $(SOCKET_DEFINES) \
+	$(CONNECTIVITY_DEFINES) \
+	$(EXTERNAL_INPUT_DEFINES) $(XVG_SWITCH) $(XVG_OPTION_DEFINES) \
+	$(ROBO_APPLICATION_SWITCH) $(FACE_APPLICATION_SWITCH) \
+	$(GRAPHICS_LIBRARY_SWITCH) $(VIDEO_SWITCH) $(HELP_DEFINES) \
+	$(POSTSCRIPT_DEFINES) $(NAME_DEFINES) $(TEMPORARY_DEVELOPMENT_FLAGS) \
+	$(UNEMAP_SWITCH) \
+	$(END_ALL_DEFINES)
+
+ALL_INCLUDES = $(START_ALL_INCLUDES) \
+	$(BASE_DIRECTORY_INC) $(XVG_INC) $(SOCKET_INC) $(WORMHOLE_INC) $(XML_INC) \
+	$(END_ALL_INCLUDES)
+#endif /* defined (OLD_CODE) */
+
+ALL_DEFINES = $(START_ALL_DEFINES) \
+	$(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
+	$(PLATFORM_SWITCH) $(OPERATING_SYSTEM) $(WINDOWING_SYSTEM) \
+	$(STEREO_DISPLAY_SWITCH) $(CONNECTIVITY_DEFINES) \
+	$(EXTERNAL_INPUT_DEFINES) $(XVG_SWITCH) $(XVG_OPTION_DEFINES) \
+	$(ROBO_APPLICATION_SWITCH) $(FACE_APPLICATION_SWITCH) \
+	$(GRAPHICS_LIBRARY_SWITCH) $(VIDEO_SWITCH) $(HELP_DEFINES) \
+	$(POSTSCRIPT_DEFINES) $(NAME_DEFINES) $(TEMPORARY_DEVELOPMENT_FLAGS) \
+	$(THREE_D_DRAWING_DEFINES) $(UNEMAP_SWITCH) $(MIRAGE_SWITCH) \
+	$(CELL_SWITCH) $(MOVIE_FILE_SWITCH) \
+	$(END_ALL_DEFINES)
+
+ALL_INCLUDES = $(START_ALL_INCLUDES) \
+	$(BASE_DIRECTORY_INC) $(HAPTIC_INC) $(XVG_INC) $(WORMHOLE_INC) $(XML_INC) \
+	$(END_ALL_INCLUDES)
+
+ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
+	$(ALL_DEFINES) $(ALL_INCLUDES)
+
+#if defined (OLD_CODE)
+ALL_LIB = $(GRAPHICS_LIB) $(LIB) $(VIDEO_LIB) $(SOCKET_LIB) \
+	$(WORMHOLE_LIB) $(EXTERNAL_INPUT_LIB) $(NAG_LIB) $(HELP_LIB)
+ALL_LIB = alpha.opt/opt
+#endif /* defined (OLD_CODE) */
+ALL_LIB = $(GRAPHICS_LIB) $(HAPTIC_LIB) $(LIB) $(VIDEO_LIB) $(WORMHOLE_LIB) \
+	$(EXTERNAL_INPUT_LIB) $(NAG_LIB) $(HELP_LIB) $(MOVIE_FILE_LIB) $(XML_LIB)
+
+.MAKEOPTS : -r
+
+.SUFFIXES :
+.SUFFIXES : .ObjSuffix .c .cpp .f .uil .uid64
+
+.c.ObjSuffix: 
+	@if [ -d $(*D) ]; then \
+		: ; \
+	else \
+		mkdir -p $(*D); \
+	fi
+	@if [ -f $*.c ]; then \
+	   case $*.c in  \
+	      $(STRICT_FLAGS_PATTERN) ) \
+   		   set -x ; $(CC) -o $*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $*.c ;; \
+	      * ) \
+	   	   set -x ; $(CC) -o $*.ObjSuffix $(ALL_FLAGS) $*.c ;; \
+	   esac ; \
+	else \
+		set -x ; $(CC) -o $*.ObjSuffix $(ALL_FLAGS) $(PRODUCT_PATH)/$*.c; \
+	fi
+
+.cpp.ObjSuffix:
+	@if [ -d $(*D) ]; then \
+		: ; \
+	else \
+		mkdir -p $(*D); \
+	fi
+	@if [ -f $*.cpp ]; then \
+		set -x ; $(CPP) -o $*.ObjSuffix $(ALL_FLAGS) $*.cpp ; \
+	else \
+		set -x ; $(CPP) -o $*.ObjSuffix $(ALL_FLAGS) $(PRODUCT_PATH)/$*.cpp ; \
+	fi
+
+.f.ObjSuffix: 
+	@if [ -d $(*D) ]; then \
+		: ; \
+	else \
+		mkdir -p $(*D); \
+	fi
+	@if [ -f $*.f ]; then \
+		set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) -o $*.ObjSuffix $(BASE_DIRECTORY_INC) $*.f ; \
+	else \
+		set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) -o $*.ObjSuffix $(BASE_DIRECTORY_INC) $(PRODUCT_PATH)/$*.f ; \
+	fi
+#if defined (OLD_CODE) /* Used to put object in correct directory with g77 */
+#if defined (LINUX)
+	mv `echo $*.o | cut -f2 -d/` $*.ObjSuffix
+#endif /* defined (LINUX) */
+#endif /* defined (OLD_CODE) */
+
+.uil.uid64:
+	@if [ -d $(*D) ]; then \
+		: ; \
+	else \
+		mkdir -p $(*D); \
+	fi
+	@if [ -f $*.uil ]; then \
+	   set -x ; \
+	   $(UIL) -o $*.uid $*.uil; \
+	   if which $(UIL64) > /dev/null ; then \
+	   	$(UIL64) -o $*_64bit.uid $*.uil; \
+	   	$(UIDTOUID64) $*.uid -64bit $*_64bit.uid $*.uid64; \
+         rm $*.uid $*_64bit.uid; \
+	   else \
+	   	$(UIDTOUID64) $*.uid $*.uid64; \
+		   rm $*.uid; \
+	   fi ; \
+	else \
+	   set -x ; \
+	   $(UIL) -o $*.uid $(PRODUCT_PATH)/$*.uil; \
+	   if which $(UIL64) > /dev/null ; then \
+	   	$(UIL64) -o $*_64bit.uid $(PRODUCT_PATH)/$*.uil; \
+	   	$(UIDTOUID64) $*.uid -64bit $*_64bit.uid $*.uid64; \
+		   rm $*.uid $*_64bit.uid; \
+	   else \
+	   	$(UIDTOUID64) $*.uid $*.uid64; \
+		   rm $*.uid; \
+	   fi ; \
+	fi
+
+APPLICATION_SRCS = \
+	application/application.c 
+CHOOSE_SRCS = \
+	choose/choose_computed_field.c \
+	choose/choose_control_curve.c \
+	choose/choose_element_group.c \
+	choose/choose_enumerator.c \
+	choose/choose_fe_field.c \
+	choose/choose_field_component.c \
+	choose/choose_node_group.c \
+	choose/choose_graphical_material.c \
+	choose/choose_gt_object.c \
+	choose/choose_scene.c \
+	choose/choose_spectrum.c \
+	choose/choose_volume_texture.c \
+	choose/text_choose_fe_element.c \
+	choose/text_choose_fe_node.c
+COLOUR_SRCS = \
+	colour/colour_editor.c \
+	colour/edit_var.c 
+COMFILE_SRCS = \
+	comfile/comfile_window.c 
+COMMAND_SRCS = \
+	command/cmiss.c \
+	command/command.c \
+	command/command_window.c \
+	command/parser.c 
+DATA_SRCS = \
+	data/data_2d.c \
+	data/data_2d_dialog.c \
+	data/data_grabber.c \
+	data/data_grabber_dialog.c \
+	data/node_transform.c \
+	data/sync_2d_3d.c
+DOF3_SRCS = \
+	dof3/dof3.c \
+	dof3/dof3_control.c \
+	dof3/dof3_input.c 
+ELEMENT_SRCS = \
+	element/graphical_element_creator.c
+FINITE_ELEMENT_SRCS = \
+	finite_element/computed_field.c \
+	finite_element/export_finite_element.c \
+	finite_element/finite_element.c \
+	finite_element/finite_element_to_graphics_object.c \
+	finite_element/finite_element_to_streamlines.c \
+	finite_element/import_finite_element.c
+GENERAL_SRCS = \
+	general/callback.c \
+	general/child_process.c \
+	general/compare.c \
+	general/debug.c \
+	general/error_handler.c \
+	general/geometry.c \
+	general/heapsort.c \
+	general/image_utilities.c \
+	general/machine.c \
+	general/matrix_vector.c \
+	general/multi_range.c \
+	general/myio.c \
+	general/mystring.c \
+	general/postscript.c \
+	general/value.c 
+GRAPHICS_SRCS = \
+	graphics/animation_window.c \
+	graphics/auxiliary_graphics_types.c \
+	graphics/colour.c \
+	graphics/complex.c \
+	graphics/element_group_settings.c \
+	graphics/environment_map.c \
+	graphics/face_window.c \
+	graphics/glyph.c \
+	graphics/graphical_element.c \
+	graphics/graphical_element_editor.c \
+	graphics/graphical_element_editor_dialog.c \
+	graphics/graphics_library.c \
+	graphics/graphics_object.c \
+	graphics/graphics_window.c \
+	graphics/import_graphics_object.c \
+	graphics/interactive_streamlines_dialog.c \
+	graphics/iso_field_calculation.c \
+	graphics/laguer.c \
+	graphics/light.c \
+	graphics/light_model.c \
+	graphics/material.c \
+	graphics/makegtobj.c \
+	graphics/mcubes.c \
+	graphics/movie_graphics.c \
+	graphics/nrutil.c \
+	graphics/renderbinarywavefront.c \
+	graphics/rendergl.c \
+	graphics/rendervrml.c \
+	graphics/renderwavefront.c \
+	graphics/scene.c \
+	graphics/scene_viewer.c \
+	graphics/settings_editor.c \
+	graphics/spectrum.c \
+	graphics/spectrum_editor.c \
+	graphics/spectrum_editor_dialog.c \
+	graphics/spectrum_editor_settings.c \
+	graphics/spectrum_settings.c \
+	graphics/splines.c \
+	graphics/texture.c \
+	graphics/texture_graphics.c \
+	graphics/texture_line.c \
+	graphics/texturemap.c \
+	graphics/userdef_objects.c \
+	graphics/volume_texture.c \
+	graphics/volume_texture_editor.c \
+	graphics/volume_texture_editor_dialog.c \
+	graphics/write_to_video.c 
+IO_DEVICES_SRCS = \
+	io_devices/conversion.c \
+	io_devices/haptic_input_module.cpp \
+	io_devices/input_module.c \
+	io_devices/input_module_dialog.c \
+	io_devices/input_module_widget.c \
+	io_devices/matrix.c 
+LINK_SRCS = \
+	link/cmiss.c
+MATERIAL_SRCS = \
+	material/material_editor.c \
+	material/material_editor_dialog.c
+MENU_SRCS = \
+	menu/menu_window.c
+NODE_SRCS = \
+	node/graphical_node_editor.c \
+	node/interactive_node_editor.c \
+	node/interactive_node_editor_dialog.c \
+	node/node_editor.c \
+	node/node_editor_dialog.c \
+	node/node_field_editor.c
+PROJECTION_SRCS = \
+	projection/projection.c \
+	projection/projection_dialog.c \
+	projection/projection_window.c
+PROMPT_SRCS = \
+	prompt/prompt_window.c 
+SELECT_SRCS = \
+	select/select_control_curve.c \
+	select/select_environment_map.c \
+	select/select_finite_element.c \
+	select/select_graphical_material.c \
+	select/select_interactive_streamline.c \
+	select/select_private.c \
+	select/select_spectrum.c
+SLIDER_SRCS = \
+	slider/node_group_slider_dialog.c
+THREE_D_DRAWING_SRCS = \
+	three_d_drawing/dm_interface.c \
+	three_d_drawing/movie_extensions.c \
+	three_d_drawing/ThreeDDraw.c
+TRANSFORMATION_SRCS = \
+	transformation/transformation_editor.c \
+	transformation/transformation_editor_dialog.c 
+TIME_SRCS = \
+	time/time.c \
+	time/time_keeper.c \
+	time/time_editor.c \
+	time/time_editor_dialog.c
+USER_INTERFACE_SRCS = \
+	user_interface/confirmation.c \
+	user_interface/filedir.c \
+	user_interface/message.c \
+	user_interface/printer.c \
+	user_interface/user_interface.c
+CURVE_SRCS = \
+	curve/control_curve.c \
+	curve/control_curve_editor.c \
+	curve/control_curve_editor_dialog.c
+VIEW_SRCS = \
+	view/camera.c \
+	view/coord.c \
+	view/coord_trans.c \
+	view/poi.c \
+	view/vector.c \
+	view/view.c \
+	view/view_control.c 
+
+XCOMM DB.  makedepend has problems if too many files
+SRCS_1 = \
+	$(APPLICATION_SRCS) \
+	$(CELL_SRCS) \
+	$(CHOOSE_SRCS) \
+	$(COLOUR_SRCS) \
+	$(COMFILE_SRCS) \
+	$(COMMAND_SRCS) \
+	$(CURVE_SRCS) \
+	$(DATA_SRCS) \
+	$(DOF3_SRCS) \
+	$(ELEMENT_SRCS) \
+	$(FINITE_ELEMENT_SRCS) \
+	$(GENERAL_SRCS) \
+	$(GRAPHICS_SRCS) \
+	$(HELP_SRCS) \
+	$(IO_DEVICES_SRCS) \
+	$(LINK_SRCS) \
+	$(MATERIAL_SRCS) \
+	$(MENU_SRCS) \
+	$(MIRAGE_SRCS) \
+	$(NAG_SRCS) \
+	$(NODE_SRCS) \
+	$(PROJECTION_SRCS) \
+	$(PROMPT_SRCS) \
+	$(SELECT_SRCS) \
+	$(SLIDER_SRCS) \
+	$(THREE_D_DRAWING_SRCS)
+
+SRCS_2 = \
+	$(TIME_SRCS) \
+	$(TRANSFORMATION_SRCS) \
+	$(USER_INTERFACE_SRCS) \
+	$(XVG_SRCS) \
+	$(VIDEO_SRCS) \
+	$(UNEMAP_SRCS) \
+	$(VIEW_SRCS)
+
+SRCS = $(SRCS_1) $(SRCS_2)
+
+#if defined (MEMORY_CHECK)
+OBJSA = $(SRCS:.c=.ObjSuffix)
+OBJSB = $(OBJSA:.cpp=.ObjSuffix)
+	  /* Override the one changed file in the source list */
+OBJSC = $(OBJSB:general/debug.ObjSuffix=general/debug_memory_check.ObjSuffix)
+OBJS = $(OBJSC:.f=.ObjSuffix)
+#else /* defined (MEMORY_CHECK) */
+OBJSA = $(SRCS:.c=.ObjSuffix)
+OBJSB = $(OBJSA:.cpp=.ObjSuffix)
+OBJS = $(OBJSB:.f=.ObjSuffix)
+#endif /* defined (MEMORY_CHECK) */
+
+/* Stuff for the filt dynamic shared object library */
+LIB_FILT_SRCS = \
+	command/parser.c \
+   filt/exnodecmgui.c \
+   finite_element/export_finite_element.c \
+	finite_element/finite_element.c \
+	finite_element/import_finite_element.c \
+	general/compare.c \
+	general/debug.c \
+   general/geometry.c \
+   general/heapsort.c \
+	general/matrix_vector.c \
+	general/mystring.c \
+	general/value.c \
+   user_interface/message.c
+
+#if defined (MEMORY_CHECK)
+LIB_FILT_OBJSA = $(LIB_FILT_SRCS:.c=.ObjSuffix)
+LIB_FILT_OBJSB = $(LIB_FILT_OBJSA:.cpp=.ObjSuffix)
+	  /* Override the one changed file in the source list */
+LIB_FILT_OBJSC = $(LIB_FILT_OBJSB:general/debug.ObjSuffix=general/debug_memory_check.ObjSuffix)
+LIB_FILT_OBJS = $(LIB_FILT_OBJSC:.f=.ObjSuffix)
+#else /* defined (MEMORY_CHECK) */
+LIB_FILT_OBJSA = $(LIB_FILT_SRCS:.c=.ObjSuffix)
+LIB_FILT_OBJSB = $(LIB_FILT_OBJSA:.cpp=.ObjSuffix)
+LIB_FILT_OBJS = $(LIB_FILT_OBJSB:.f=.ObjSuffix)
+#endif /* defined (MEMORY_CHECK) */
+
+all : oscheck
+	if [ -s $(PRODUCT_PATH)/DependMake ] ; then \
+		make -f CmguiMake CmguiTarget ; \
+	else \
+		make -f CmguiMake depend ; \
+		make -f CmguiMake CmguiTarget ; \
+	fi
+
+XCOMM Check that the makefile is being used on the correct system
+#if defined (IRIX)
+oscheck : 
+	@if ! sysinfo > /dev/null ; then \
+	   echo "Incorrect Operating System for SGI Make" ;\
+      exit ;\
+   fi
+#else /* defined (IRIX) */
+#if defined (LINUX) 
+oscheck :
+	/* Do something that only works under LINUX */
+	@echo -n > /dev/null   
+#else /* defined (LINUX) */
+oscheck :
+	echo "No known operating system defined for imake"
+#endif  /* defined (LINUX) */
+#endif  /* defined (IRIX) */
+
+depend :
+	echo -n > DependMake
+	(makedepend -f DependMake -o.ObjSuffix -Y -- $(ALL_FLAGS) -- cmgui.c 2> DependMake.tmp)
+	(makedepend -f DependMake -o.ObjSuffix -Y -a -- $(ALL_FLAGS) -- $(SRCS_1) 2>> DependMake.tmp)
+	(makedepend -f DependMake -o.ObjSuffix -Y -a -- $(ALL_FLAGS) -- $(SRCS_2) 2>> DependMake.tmp)
+	(makedepend -f DependMake -o.ObjSuffix -Y -a -- $(ALL_FLAGS) -- filt/exnodecmgui.c 2>> DependMake.tmp)
+#if defined (IRIX) /* switch OperatingSystem */
+	(ls $(SRCS) 2>&1 | sed "s%Cannot access %%;s%: No such file or directory%%;s%.*%&: &%;s%\.[^.]*:%.o:%" >> DependMake)
+#elif defined(LINUX) /* switch OperatingSystem */
+	(ls $(SRCS) 2>&1 | sed "s%ls: %%;s%: No such file or directory%%;s%.*%&: &%;s%\.[^.]*:%.o:%" >> DependMake)
+#endif /* switch OperatingSystem */
+	/* Try and make a rule for the uid64s if they don't exist already,
+	It is bad, based on the format of the error output from makedepend and it only
+	gets the first inclusion.  If it fails then you can get the correct makedepend 
+	by ensuring all the uid64 files already exist before you makedepend */
+	( grep uid64 DependMake.tmp | grep makedepend | awk -F "[ ,]" '{printf("%s:",$$4); for(i = 1 ; i <= NF ; i++)  { if (match($$i,"uid64")) printf(" %s", substr($$i, 2, length($$i) -2)) } printf("\n");}' >> DependMake)
+	rm DependMake.tmp
+
+	  /* Can't put / by * or it thinks there is a comment so I have put the *
+		  into the variable and used that instead */
+#define WildObj *.ObjSuffix
+#define WildUil *.uil
+#define WildUid *.uid
+#define WildCpp *.cpp
+#define WildCmn *.cmn
+#define WildH *.h
+#define WildF *.f
+#define WildMms *.mms
+#define WildXbm *.xbm
+#define WildRc *.rc
+#define WildPx *.px
+clean :
+	-rm cmgui.ObjSuffix
+	-rm application/WildObj
+	-rm cell/WildObj
+	-rm choose/WildObj
+	-rm colour/WildObj
+	-rm comfile/WildObj
+	-rm command/WildObj
+	-rm curve/WildObj
+	-rm data/WildObj
+	-rm dof3/WildObj
+	-rm finite_element/WildObj
+	-rm general/WildObj
+	-rm graphics/WildObj
+	-rm help/WildObj
+	-rm html_widget/WildObj
+	-rm hypertext_help/WildObj
+	-rm io_devices/WildObj
+	-rm link/WildObj
+	-rm material/WildObj
+	-rm menu/WildObj
+	-rm mirage/WildObj
+	-rm node/WildObj
+	-rm prompt/WildObj
+	-rm projection/WildObj
+	-rm select/WildObj
+	-rm slider/WildObj
+	-rm socket/WildObj
+	-rm three_d_drawing/WildObj
+	-rm transformation/WildObj
+	-rm time/WildObj
+	-rm unemap/WildObj
+	-rm user_interface/WildObj
+	-rm view/WildObj
+	-rm xvg/cmgui/WildObj
+	-rm xvg/custom/WildObj
+
+clobber : clean
+	-rm object.list
+	-rm version.ObjSuffix.h
+	-rm cmgui
+	-rm UidPath/WildUid
+
+problems/mark/test_read_image : problems/mark/test_read_image.o $(OBJS)
+	$(LINK) test_read_image problems/mark/test_read_image.o $(OBJS) $(ALL_LIB)
+	strip test_read_image
+	mv test_read_image problems/mark
+
+transfer :
+	tar -cvf - \
+	readme.* *.make *.imake *.c version.ObjSuffix.h Cmgui \
+	utilities/uid2uid64 utilities/uid2uid64linux \
+	*.mms *.sed *.com *.opt *.ico \
+	application/WildC application/WildH application/WildUil \
+	choose/WildC choose/WildH choose/WildUil \
+	colour/WildC colour/WildH colour/WildUil \
+	comfile/WildC comfile/WildH comfile/WildRc comfile/WildUil \
+	curve/WildC curve/WildH curve/WildUil \
+	data/WildC data/WildH data/WildUil \
+	database/WildC database/WildH database/WildUil \
+	dof3/WildC dof3/WildH dof3/WildUil \
+	element/WildC element/WildH element/WildUil \
+	general/WildC general/WildH general/WildUil \
+	graphics/Makefile graphics/WildC graphics/WildH graphics/WildRc graphics/WildUil \
+	graphics/WildCpp graphics/marchg.dat graphics/mcubes.dat \
+	help/WildC help/WildH help/WildUil \
+	io_devices/WildC io_devices/WildCpp io_devices/WildH io_devices/WildUil \
+	link/WildC link/WildH link/WildUil \
+	material/WildC material/WildH material/WildUil \
+	menu/WildC menu/WildH menu/WildUil \
+	node/WildC node/WildH node/WildUil \
+	projection/WildC projection/WildH projection/WildUil \
+	prompt/WildC prompt/WildH prompt/WildUil \
+	select/WildC select/WildH select/WildUil \
+	slider/WildC slider/WildH slider/WildUil \
+	three_d_drawing/Makefile three_d_drawing/WildC three_d_drawing/WildH \
+	time/WildC time/WildH time/WildUil \
+	transformation/WildC transformation/WildH transformation/WildUil \
+	unemap/drawing_2d.c unemap/drawing_2d.h \
+	user_interface/WildC user_interface/WildH user_interface/WildUil \
+	utilities/WildC utilities/WildH utilities/WildUil \
+	view/WildC view/WildH view/WildUil \
+	| gzip > cmgui_tar1.gz
+	tar -cvf - \
+	cell/WildC cell/WildCmn cell/WildF cell/WildH cell/WildUil cell/bitmaps/WildXbm \
+	hypertext_help/WildC hypertext_help/WildH hypertext_help/Makefile \
+	hypertext_help/WildMms \
+	mirage/WildC mirage/WildH mirage/WildUil \
+	unemap/WildC unemap/WildH unemap/WildUil unemap/WildRc \
+	unemap/utilities/Makefile unemap/utilities/WildC unemap/utilities/WildH  \
+	unemap/utilities/WildUil unemap/utilities/WildRc \
+	unemap_hardware_service/WildC unemap_hardware_service/WildH unemap_hardware_service/WildUil unemap_hardware_service/WildRc \
+	xvg/README xvg/custom/WildC xvg/custom/WildF xvg/include/WildH xvg/cmgui/WildUil \
+	xvg/cmgui/WildC xvg/cmgui/WildPx xvg/cmgui/WildH \
+	| gzip > cmgui_tar2.gz
+	tar -cvf - \
+	command/WildC command/WildH command/WildRc command/WildUil \
+	finite_element/WildC finite_element/WildH finite_element/WildUil \
+	html_widget/WildXbm html_widget/WildC html_widget/WildH html_widget/Makefile \
+	html_widget/WildMms \
+	socket/WildC socket/WildH \
+	| gzip > cmgui_tar3.gz
+
+compare :
+	mv cmgui_tar tmp
+	(cd tmp; tar -xvf cmgui_tar > tar.list 2>&1; \
+sed "s/./diff/;s/,.*/ >> out.diff/;h;G;G;s/\n//2;s%>> out\.diffdiff %tmp/%;s/diff/echo FILE:/" \
+<tar.list >compare.script; rm tar.list)
+	mv tmp/cmgui_tar .
+	sh tmp/compare.script
+#if defined (OLD_CODE)
+ 	(cd tmp; tar -xvf cmgui_tar > tar.list;
+#endif /* defined (OLD_CODE) */
+
+descrip.mms : CmguiMake descrip_mms.sed
+	sed -f descrip_mms.sed < CmguiMake > descrip.mms
+
+$(CMGUI_BASE_DIRECTORY)/version.ObjSuffix.h : $(OBJS)
+	date > date.h
+	sed 's/"//;s/./#define VERSION "CMISS(cmgui) version 001.001.018  &/;s/.$$/&\\nCopyright 1996-1999, Auckland UniServices Ltd."/' < date.h > version.ObjSuffix.h
+XCOMM	sed 's/"//;s/./"CMISS(cmgui) version 001.001.018  &/;s/.$$/&\\nCopyright 1996-1998, Auckland UniServices Ltd."/' < date.h > version.ObjSuffix.h
+XCOMM 	sed 's/./#define VERSION "CMISS(cmgui) version 001.001.018  &/;s/.$$/&\\nCopyright 1996-1998, Auckland UniServices Ltd."/' < date.h > version.ObjSuffix.h
+
+cmgui.ObjSuffix : cmgui.c $(CMGUI_BASE_DIRECTORY)/version.ObjSuffix.h
+	@if [ -f $*.c ]; then \
+	   set -x; \
+	   cat $(CMGUI_BASE_DIRECTORY)/version.ObjSuffix.h $*.c > $*.ObjSuffix.c ; \
+		$(CC) -o $*.ObjSuffix $(ALL_FLAGS) $*.ObjSuffix.c; \
+	else \
+	   set -x; \
+	   cat $(CMGUI_BASE_DIRECTORY)/version.ObjSuffix.h $(PRODUCT_PATH)/$*.c > $*.ObjSuffix.c ; \
+		$(CC) -o $*.ObjSuffix $(ALL_FLAGS) $*.ObjSuffix.c; \
+		rm $*.ObjSuffix.c ; \
+	fi
+
+CmguiTarget : $(OBJS) cmgui.ObjSuffix
+	: /* The #if leaves a blank line which isn't accepted by the makefile */
+#if defined (IRIX) /* switch OperatingSystem */
+	(ls $(OBJS) cmgui.ObjSuffix 2>&1 | sed "s%Cannot access %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
+#elif defined(LINUX) /* switch OperatingSystem */
+	(ls $(OBJS) cmgui.ObjSuffix 2>&1 | sed "s%ls: %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
+#endif /* switch OperatingSystem */
+	$(LINK) CmguiTarget $(ALL_FLAGS) `cat object.list` $(ALL_LIB)
+
+CmguiFiltLibrary : $(LIB_FILT_OBJS) $(FILT_OBJ) CmguiMake libCmguiFiltExports
+	@if [ -z "$(FILT_ROOT)" ]; then \
+	   echo "Must have filt source and set FILT_ROOT environment variable to make this library"; \
+	   exit 1; \
+	fi
+	rm -f CmguiFiltLibrary.SharedObjectVersion
+	rm -f CmguiFiltLibrary
+#if defined (IRIX) /* switch OperatingSystem */
+	(ls $(LIB_FILT_OBJS) 2>&1 | sed "s%Cannot access %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
+#elif defined(LINUX) /* switch OperatingSystem */
+	(ls $(LIB_FILT_OBJS) 2>&1 | sed "s%ls: %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
+#endif /* switch OperatingSystem */
+	$(LINK) CmguiFiltLibrary.SharedObjectVersion -shared -exports_file libCmguiFiltExports -check_registry /usr/lib32/so_locations -soname CmguiFiltLibrary $(ALL_FLAGS) `cat object.list` -lm
+	ln -s CmguiFiltLibrary.SharedObjectVersion CmguiFiltLibrary
+
+/* Specify special rule for exnodecmgui.c as it needs headers from Filt */
+filt/exnodecmgui.ObjSuffix: filt/exnodecmgui.c force
+	@if [ -z "$(FILT_ROOT)" ]; then \
+	   echo "Must have filt source and set FILT_ROOT environment variable to make this library"; \
+	   exit 1; \
+	fi
+	@if [ -d filt ]; then \
+		: ; \
+	else \
+		mkdir -p filt; \
+	fi
+	@if [ -f filt/exnodecmgui.c ]; then \
+	   case filt/exnodecmgui.c in  \
+	      ( $(STRICT_FLAGS_PATTERN) ) \
+   		   set -x ; $(CC) -o filt/exnodecmgui.ObjSuffix -I$(FILT_ROOT)/lib $(ALL_FLAGS) $(STRICT_FLAGS) $*.c ;; \
+	      ( * ) \
+	   	   set -x ; $(CC) -o filt/exnodecmgui.ObjSuffix -I$(FILT_ROOT)/lib $(ALL_FLAGS) $*.c ;; \
+	   esac ; \
+	else \
+		set -x ; $(CC) -o filt/exnodecmgui.ObjSuffix -I$(FILT_ROOT)/lib $(ALL_FLAGS) $(PRODUCT_PATH)/$*.c; \
+	fi
+
+/* Force is a dummy rule used to ensure some objects are made every time as the
+	target 'force' doesnt exist */
+force :
+	@echo "\n" > /dev/null
+
+#if defined (MEMORY_CHECK)
+	  /* Specify rule for making a memory checking object with the normal c file */
+	  /* This allows us to make a memory checking version without creating a new
+		  extension */
+general/debug_memory_check.ObjSuffix: general/debug.c general/debug.h
+	if [ -d general ]; \
+	then \
+		: ; \
+	else \
+		mkdir -p general; \
+	fi
+	if [ -f general/debug.c ]; \
+	then \
+		$(CC) -o general/debug_memory_check.ObjSuffix $(ALL_FLAGS) -DMEMORY_CHECKING general/debug.c; \
+	else \
+		$(CC) -o general/debug_memory_check.ObjSuffix $(ALL_FLAGS) -DMEMORY_CHECKING $(PRODUCT_PATH)/general/debug.c; \
+	fi
+#endif /* defined (MEMORY_CHECK) */
+
+utilities : SpacesToTabsTarget TabsToSpacesTarget Uid2uid64Target
+
+SPACES_TO_TABS_SRCS = \
+	utilities/spaces_to_tabs.c
+
+SPACES_TO_TABS_OBJSA = $(SPACES_TO_TABS_SRCS:.c=.ObjSuffix)
+SPACES_TO_TABS_OBJSB = $(SPACES_TO_TABS_OBJSA:.cpp=.ObjSuffix)
+SPACES_TO_TABS_OBJS = $(SPACES_TO_TABS_OBJSB:.f=.ObjSuffix)
+
+SpacesToTabsTarget: $(SPACES_TO_TABS_OBJS)
+	: /* The #if leaves a blank line which isn't accepted by the makefile */
+#if defined (IRIX) /* switch OperatingSystem */
+	(ls $(SPACES_TO_TABS_OBJS) 2>&1 | sed "s%Cannot access %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
+#elif defined(LINUX) /* switch OperatingSystem */
+	(ls $(SPACES_TO_TABS_OBJS) 2>&1 | sed "s%ls: %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
+#endif /* switch OperatingSystem */
+	$(LINK) SpacesToTabsTarget `cat object.list` $(LIB)
+
+TABS_TO_SPACES_SRCS = \
+	utilities/tabs_to_spaces.c
+
+TABS_TO_SPACES_OBJSA = $(TABS_TO_SPACES_SRCS:.c=.ObjSuffix)
+TABS_TO_SPACES_OBJSB = $(TABS_TO_SPACES_OBJSA:.cpp=.ObjSuffix)
+TABS_TO_SPACES_OBJS = $(TABS_TO_SPACES_OBJSB:.f=.ObjSuffix)
+
+TabsToSpacesTarget: $(TABS_TO_SPACES_OBJS)
+	: /* The #if leaves a blank line which isn't accepted by the makefile */
+#if defined (IRIX) /* switch OperatingSystem */
+	(ls $(TABS_TO_SPACES_OBJS) 2>&1 | sed "s%Cannot access %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
+#elif defined(LINUX) /* switch OperatingSystem */
+	(ls $(TABS_TO_SPACES_OBJS) 2>&1 | sed "s%ls: %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
+#endif /* switch OperatingSystem */
+	$(LINK) TabsToSpacesTarget `cat object.list` $(LIB)
+
+UID2UID64_SRCS = \
+	utilities/uid2uid64.c
+
+UID2UID64_OBJSA = $(UID2UID64_SRCS:.c=.ObjSuffix)
+UID2UID64_OBJSB = $(UID2UID64_OBJSA:.cpp=.ObjSuffix)
+UID2UID64_OBJS = $(UID2UID64_OBJSB:.f=.ObjSuffix)
+
+Uid2uid64Target: $(UID2UID64_OBJS)
+	: /* The #if leaves a blank line which isn't accepted by the makefile */
+#if defined (IRIX) /* switch OperatingSystem */
+	(ls $(UID2UID64_OBJS) 2>&1 | sed "s%Cannot access %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
+#elif defined(LINUX) /* switch OperatingSystem */
+	(ls $(UID2UID64_OBJS) 2>&1 | sed "s%ls: %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
+#endif /* switch OperatingSystem */
+	$(LINK) Uid2uid64Target `cat object.list` $(LIB)
+
+/* sinclude used so that the makefile can be run when the dependency file doesn't exist,
+ it should then make one */
+sinclude $(PRODUCT_PATH)/DependMake
+sinclude DependMake

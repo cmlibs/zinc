@@ -1,0 +1,2891 @@
+!*******************************************************************************
+!FILE : volume_texture_editor.uil
+!
+!LAST MODIFIED : 6 January 1998
+!
+!DESCRIPTION :
+! A reference to this window is passed with each call
+! this is important when multiple such windows may exist
+! (not an issue in this case, but it keeps the format the same
+! as other cmiss 3d application windows)
+!
+! To identify textfields and scrollbars, and to do callbacks
+! the XmNuserData field is used with a specific id eg for tf1 = 1
+! this is one (and not necessarily the best) method to do this
+! but is convienient in this case as the textfields & scrollbars
+! are stored in arrays.
+!===============================================================================
+module Volume_texture_editor
+		names = case_sensitive
+
+procedure
+	identify_tf;
+	identify_sb;
+	identify_tb;
+	tf_activated;
+	sb_activated;
+	exit_window;
+!  open_material_editor;
+	open_transformation_editor;
+	toggle_node_cell;
+	toggle_paint_mode;
+	toggle_delete_mode;
+	toggle_delete_paint_mode;
+	toggle_auto;
+	toggle_cubes;
+	toggle_pick;
+	toggle_grid;
+	toggle_isosurface;
+	toggle_fill_mode;
+	toggle_see_paint;
+	toggle_closed_surface;
+	toggle_shaded_surfaces;
+	toggle_normals;
+	toggle_wireframe;
+	toggle_cutting_plane;
+	toggle_line_mode;
+	toggle_curve_mode;
+	toggle_blob_mode;
+	toggle_soft_mode;
+	toggle_hollow;
+	toggle_decimation;
+	toggle_cop;
+	toggle_env;
+	toggle_detail;
+	open_file_and_read;
+	open_file_and_write;
+	save_as_finite_elements;
+	select_cb;
+	load_2d_texture;
+	deselect_cb;
+	select_gm_cb;
+	select_envmap_cb;
+	vt_select_mat_create;
+	irregular_mesh;
+	regular_mesh;
+	slit_cb;
+	group_cb;
+	group_list_select_cb;
+	group_list_create_cb;
+
+identifier
+!Pointer to this window
+	texture_window_pointer;
+	read_settings_file_data;
+	write_settings_file_data;
+object
+		texture_window: XmForm
+				{
+				arguments
+						{
+!						XmNx = 17;
+!						XmNy = 18;
+						XmNwidth = 450;
+						XmNheight = 697;
+						XmNborderWidth = 1;
+						XmNfractionBase = 100;
+						};
+				controls
+						{
+
+						XmMenuBar menu1;
+						XmTextField tf0;
+						XmTextField tf1;
+						XmTextField tf2;
+						XmTextField tf3;
+						XmScrollBar sb1;
+						XmLabelGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("Min");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNleftPosition = 7;
+										XmNtopPosition = 10;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 12;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 18;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										};
+								};
+						XmLabelGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("Max");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNtopPosition = 10;
+										XmNleftPosition = 32;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 44;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 12;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										};
+								};
+						XmLabelGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("Res");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNleftPosition = 82;
+										XmNtopPosition = 10;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 12;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 94;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										};
+								};
+						XmLabelGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("Xi");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNheight = 76;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 6;
+										XmNtopPosition = 10;
+										XmNleftPosition = 0;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 12;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										};
+								};
+						XmLabelGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("1");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNheight = 74;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 6;
+										XmNleftPosition = 0;
+										XmNtopPosition = 12;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 17;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										};
+								};
+						XmTextField tf5;
+						XmTextField tf6;
+						XmTextField tf7;
+						XmScrollBar sb2;
+						XmTextField tf8;
+						XmLabelGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("2");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNheight = 92;
+										XmNtopPosition = 18;
+										XmNleftPosition = 0;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 6;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 23;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										};
+								};
+						XmTextField tf9;
+						XmTextField tf10;
+						XmTextField tf11;
+						XmScrollBar sb3;
+						XmTextField tf12;
+						XmLabelGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("3");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNtopPosition = 24;
+										XmNwidth = 10;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 6;
+										XmNleftPosition = 0;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 29;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										};
+								};
+						XmSeparatorGadget
+								{
+								arguments
+										{
+										XmNwidth = 381;
+										XmNheight = 16;
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNleftPosition = 2;
+										XmNtopPosition = 30;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 98;
+										};
+								};
+
+						XmTextField tf13;
+						XmTextField tf18;
+						XmTextField tf19;
+
+						XmLabelGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("Cursor size");
+									XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNleftPosition = 30;
+										XmNtopPosition = 32;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 47;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 37;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										};
+								};
+						XmPushButtonGadget pb1;
+						XmPushButtonGadget pb2;
+		XmSeparatorGadget
+				{
+				arguments
+					{
+					XmNwidth = 16;
+					XmNheight = 76;
+					XmNorientation = XmVERTICAL;
+					XmNleftAttachment = XmATTACH_POSITION;
+					XmNtopAttachment = XmATTACH_POSITION;
+					XmNbottomAttachment = XmATTACH_POSITION;
+					XmNleftPosition = 28;
+					XmNtopPosition = 31;
+					XmNbottomPosition = 45;
+					};
+				};
+
+						XmSeparatorGadget
+								{
+								arguments
+										{
+										XmNwidth = 390;
+										XmNheight = 16;
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNleftPosition = 30;
+										XmNtopPosition = 37;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 98;
+										};
+								};
+						XmTextField tf14;
+						XmTextField tf15;
+						XmTextField tf16;
+						XmTextField tf17;
+						XmLabelGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("COP / Scaling");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNleftPosition = 32;
+										XmNtopPosition = 40;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 52;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 43;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										};
+								};
+						XmSeparatorGadget
+								{
+								arguments
+										{
+										XmNwidth = 394;
+										XmNheight = 16;
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 98;
+										XmNx = 8;
+										XmNleftPosition = 2;
+										XmNtopPosition = 44;
+										};
+								};
+						XmLabelGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("Groups");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNleftPosition = 1;
+										XmNtopPosition = 47;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										};
+								};
+						XmScrolledList
+								{
+								arguments
+										{
+!										XmNitems = string_table('default');
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNleftPosition = 12;
+										XmNtopPosition = 46;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 36;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 50;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										};
+								callbacks
+								{
+									MrmNcreateCallback = procedures
+									{
+										group_list_create_cb(texture_window_pointer);
+									};
+									XmNsingleSelectionCallback = procedures
+									{
+										group_list_select_cb(texture_window_pointer);
+									};
+									XmNbrowseSelectionCallback = procedures
+									{
+										group_list_select_cb(texture_window_pointer);
+									};
+								};
+								};
+						XmTextField tf4;
+						XmScrollBar sb5;
+						XmScrollBar sb6;
+						XmScrollBar sb7;
+						XmScrollBar sb8;
+						XmLabelGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("Cutting Plane : Xi1-3,d");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										XmNwidth = 84;
+										XmNleftPosition = 10;
+										XmNtopPosition = 50;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 56;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 47;
+										};
+								};
+						XmLabelGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("Rotate Xi1-3");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNtopPosition = 62;
+										XmNleftPosition = 10;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 36;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 65;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										};
+								};
+						XmScrollBar sb9;
+						XmScrollBar sb10;
+						XmScrollBar sb11;
+						XmScrollBar sb12;
+						XmScrollBar sb13;
+						XmScrollBar sb14;
+						XmForm vt_editor_select;
+						XmLabelGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("Zoom");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNleftPosition = 10;
+										XmNtopPosition = 76;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 25;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 79;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										};
+								};
+						XmLabelGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("Resolution");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNleftPosition = 10;
+										XmNtopPosition = 79;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 31;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 84;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										};
+								};
+					XmLabelGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("Isovalue");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNleftPosition = 10;
+										XmNtopPosition = 83;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 31;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 87;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										};
+								};
+						};
+				};
+
+		tf0: XmTextField
+				{
+				arguments
+						{
+						XmNwidth = 25;
+						XmNheight = 25;
+						XmNcolumns = 1;
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNtopPosition = 5;
+						XmNleftPosition = 0;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 10;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 100;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 0;
+						};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tf(texture_window_pointer);
+								};
+						XmNactivateCallback = procedures
+								{
+								tf_activated(texture_window_pointer);
+								};
+						};
+				};
+		tf1: XmTextField
+				{
+				arguments
+						{
+						XmNwidth = 25;
+						XmNheight = 25;
+						XmNcolumns = 1;
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNtopPosition = 12;
+						XmNleftPosition = 8;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 17;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 20;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 1;
+						};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tf(texture_window_pointer);
+								};
+						XmNactivateCallback = procedures
+								{
+								tf_activated(texture_window_pointer);
+								};
+						};
+				};
+		tf2: XmTextField
+				{
+				arguments
+						{
+						XmNwidth = 25;
+						XmNheight = 25;
+						XmNcolumns = 1;
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNtopPosition = 12;
+						XmNleftPosition = 20;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 17;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 32;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 2;
+						};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tf(texture_window_pointer);
+								};
+						XmNactivateCallback = procedures
+								{
+								tf_activated(texture_window_pointer);
+								};
+						};
+				};
+		tf3: XmTextField
+				{
+				arguments
+						{
+						XmNwidth = 25;
+						XmNheight = 25;
+						XmNcolumns = 1;
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNtopPosition = 12;
+						XmNleftPosition = 32;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 17;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 44;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 3;
+						};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tf(texture_window_pointer);
+								};
+						XmNactivateCallback = procedures
+								{
+								tf_activated(texture_window_pointer);
+								};
+						};
+				};
+		sb1: XmScrollBar
+				{
+				arguments
+						{
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNorientation = XmHORIZONTAL;
+						XmNleftPosition = 48;
+						XmNtopPosition = 13;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 16;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 78;
+			XmNuserData = 1;
+						};
+				callbacks
+						{
+						MrmNcreateCallback = procedures
+							{
+								identify_sb(texture_window_pointer);
+								};
+						XmNdragCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						};
+				};
+		tf4: XmTextField
+				{
+				arguments
+						{
+						XmNwidth = 25;
+						XmNheight = 25;
+						XmNcolumns = 1;
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNtopPosition = 12;
+						XmNleftPosition = 82;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 17;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 94;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 4;
+						};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tf(texture_window_pointer);
+								};
+						XmNactivateCallback = procedures
+								{
+								tf_activated(texture_window_pointer);
+								};
+						};
+				};
+		tf5: XmTextField
+				{
+				arguments
+						{
+						XmNwidth = 25;
+						XmNheight = 25;
+						XmNcolumns = 1;
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNtopPosition = 18;
+						XmNleftPosition = 8;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 23;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 20;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 5;
+						};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tf(texture_window_pointer);
+								};
+						XmNactivateCallback = procedures
+								{
+								tf_activated(texture_window_pointer);
+								};
+						};
+				};
+		tf6: XmTextField
+				{
+				arguments
+						{
+						XmNwidth = 25;
+						XmNheight = 25;
+						XmNcolumns = 1;
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNtopPosition = 18;
+						XmNleftPosition = 20;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 23;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 32;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 6;
+						};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tf(texture_window_pointer);
+								};
+						XmNactivateCallback = procedures
+								{
+								tf_activated(texture_window_pointer);
+								};
+						};
+				};
+		tf7: XmTextField
+				{
+				arguments
+						{
+						XmNwidth = 25;
+						XmNheight = 25;
+						XmNcolumns = 1;
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNtopPosition = 18;
+						XmNleftPosition = 32;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 44;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 23;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 7;
+						};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tf(texture_window_pointer);
+								};
+						XmNactivateCallback = procedures
+								{
+								tf_activated(texture_window_pointer);
+								};
+						};
+				};
+		sb2: XmScrollBar
+				{
+				arguments
+						{
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNorientation = XmHORIZONTAL;
+						XmNleftPosition = 48;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 22;
+						XmNtopPosition = 19;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 78;
+			XmNuserData = 2;
+						};
+				callbacks
+						{
+						MrmNcreateCallback = procedures
+							{
+								identify_sb(texture_window_pointer);
+								};
+						XmNdragCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						};
+				};
+		tf8: XmTextField
+				{
+				arguments
+						{
+						XmNwidth = 25;
+						XmNheight = 25;
+						XmNcolumns = 1;
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNtopPosition = 18;
+						XmNleftPosition = 82;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 23;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 94;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 8;
+						};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tf(texture_window_pointer);
+								};
+						XmNactivateCallback = procedures
+								{
+								tf_activated(texture_window_pointer);
+								};
+						};
+				};
+		tf9: XmTextField
+				{
+				arguments
+						{
+						XmNwidth = 25;
+						XmNheight = 25;
+						XmNcolumns = 1;
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNtopPosition = 24;
+						XmNleftPosition = 8;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 29;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 20;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 9;
+						};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tf(texture_window_pointer);
+								};
+						XmNactivateCallback = procedures
+								{
+								tf_activated(texture_window_pointer);
+								};
+						};
+				};
+		tf10: XmTextField
+				{
+				arguments
+						{
+						XmNwidth = 25;
+						XmNheight = 25;
+						XmNcolumns = 1;
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNtopPosition = 24;
+						XmNleftPosition = 20;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 29;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 32;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 10;
+						};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tf(texture_window_pointer);
+								};
+						XmNactivateCallback = procedures
+								{
+								tf_activated(texture_window_pointer);
+								};
+						};
+				};
+		tf11: XmTextField
+				{
+				arguments
+						{
+						XmNwidth = 25;
+						XmNheight = 25;
+						XmNcolumns = 1;
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNtopPosition = 24;
+						XmNleftPosition = 32;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 29;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 44;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 11;
+						};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tf(texture_window_pointer);
+								};
+						XmNactivateCallback = procedures
+								{
+								tf_activated(texture_window_pointer);
+								};
+						};
+				};
+		sb3: XmScrollBar
+				{
+				arguments
+						{
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNorientation = XmHORIZONTAL;
+						XmNleftPosition = 48;
+						XmNtopPosition = 25;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 78;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 28;
+			XmNuserData = 3;
+						};
+				callbacks
+						{
+						MrmNcreateCallback = procedures
+							{
+								identify_sb(texture_window_pointer);
+								};
+						XmNdragCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						};
+				};
+		tf12: XmTextField
+				{
+				arguments
+						{
+						XmNwidth = 25;
+						XmNheight = 25;
+						XmNcolumns = 1;
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNtopPosition = 24;
+						XmNleftPosition = 82;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 94;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 29;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 12;
+						};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tf(texture_window_pointer);
+								};
+						XmNactivateCallback = procedures
+								{
+								tf_activated(texture_window_pointer);
+								};
+						};
+				};
+
+		tf18: XmTextField
+				{
+				arguments
+						{
+						XmNwidth = 25;
+						XmNheight = 25;
+						XmNcolumns = 1;
+						XmNvalue = "1";
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNtopPosition = 32;
+						XmNleftPosition = 58;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 70;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 37;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 18;
+						};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tf(texture_window_pointer);
+								};
+						XmNactivateCallback = procedures
+								{
+								tf_activated(texture_window_pointer);
+								};
+						};
+				};
+		tf19: XmTextField
+				{
+				arguments
+						{
+						XmNwidth = 25;
+						XmNheight = 25;
+						XmNcolumns = 1;
+						XmNvalue = "1";
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNtopPosition = 32;
+						XmNleftPosition = 70;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 82;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 37;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 19;
+						};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tf(texture_window_pointer);
+								};
+						XmNactivateCallback = procedures
+								{
+								tf_activated(texture_window_pointer);
+								};
+						};
+				};
+		tf13: XmTextField
+				{
+				arguments
+						{
+						XmNwidth = 25;
+						XmNheight = 25;
+						XmNcolumns = 1;
+						XmNvalue = "1";
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNtopPosition = 32;
+						XmNleftPosition = 82;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 94;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 37;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 13;
+						};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tf(texture_window_pointer);
+								};
+						XmNactivateCallback = procedures
+								{
+								tf_activated(texture_window_pointer);
+								};
+						};
+				};
+		tf14: XmTextField
+				{
+				arguments
+						{
+						XmNwidth = 25;
+						XmNheight = 25;
+						XmNcolumns = 1;
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNtopPosition = 39;
+						XmNleftPosition = 58;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 44;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 70;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 14;
+						};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tf(texture_window_pointer);
+								};
+						XmNactivateCallback = procedures
+								{
+								tf_activated(texture_window_pointer);
+								};
+						};
+				};
+		tf15: XmTextField
+				{
+				arguments
+						{
+						XmNwidth = 25;
+						XmNheight = 25;
+						XmNcolumns = 1;
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNtopPosition = 39;
+						XmNleftPosition = 70;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 44;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 82;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 15;
+						};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tf(texture_window_pointer);
+								};
+						XmNactivateCallback = procedures
+								{
+								tf_activated(texture_window_pointer);
+								};
+						};
+				};
+		tf16: XmTextField
+				{
+				arguments
+						{
+						XmNwidth = 25;
+						XmNheight = 25;
+						XmNcolumns = 1;
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNtopPosition = 39;
+						XmNleftPosition = 82;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 44;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 94;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 16;
+						};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tf(texture_window_pointer);
+								};
+						XmNactivateCallback = procedures
+								{
+								tf_activated(texture_window_pointer);
+								};
+						};
+				};
+		tf17: XmTextField
+				{
+				arguments
+						{
+						XmNwidth = 25;
+						XmNheight = 25;
+						XmNcolumns = 1;
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNleftPosition = 18;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNtopPosition = 32;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 37;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 29;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 17;
+						};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tf(texture_window_pointer);
+								};
+						XmNactivateCallback = procedures
+								{
+								tf_activated(texture_window_pointer);
+								};
+						};
+				};
+		sb5: XmScrollBar
+				{
+				arguments
+						{
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNorientation = XmHORIZONTAL;
+						XmNleftPosition = 57;
+						XmNtopPosition = 47;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 49;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 92;
+			XmNuserData = 5;
+						};
+				callbacks
+						{
+						MrmNcreateCallback = procedures
+							{
+								identify_sb(texture_window_pointer);
+								};
+						XmNdragCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						};
+				};
+		sb6: XmScrollBar
+				{
+				arguments
+						{
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNorientation = XmHORIZONTAL;
+						XmNleftPosition = 57;
+						XmNtopPosition = 50;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 92;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 52;
+			XmNuserData = 6;
+						};
+				callbacks
+						{
+						MrmNcreateCallback = procedures
+							{
+								identify_sb(texture_window_pointer);
+								};
+						XmNdragCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						};
+				};
+		sb7: XmScrollBar
+				{
+				arguments
+						{
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNorientation = XmHORIZONTAL;
+						XmNx = 236;
+						XmNleftPosition = 57;
+						XmNtopPosition = 53;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 55;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 92;
+			XmNuserData = 7;
+						};
+				callbacks
+						{
+						MrmNcreateCallback = procedures
+							{
+								identify_sb(texture_window_pointer);
+								};
+						XmNdragCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						};
+				};
+		sb8: XmScrollBar
+				{
+				arguments
+						{
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNorientation = XmHORIZONTAL;
+						XmNleftPosition = 57;
+						XmNtopPosition = 56;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 58;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 92;
+			XmNuserData = 8;
+						};
+				callbacks
+						{
+						MrmNcreateCallback = procedures
+							{
+								identify_sb(texture_window_pointer);
+								};
+						XmNdragCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						};
+				};
+		sb9: XmScrollBar
+				{
+				arguments
+						{
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNorientation = XmHORIZONTAL;
+						XmNleftPosition = 39;
+						XmNtopPosition = 62;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 65;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 92;
+			XmNuserData = 9;
+						};
+				callbacks
+						{
+						MrmNcreateCallback = procedures
+							{
+								identify_sb(texture_window_pointer);
+								};
+						XmNdragCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						};
+				};
+		sb10: XmScrollBar
+				{
+				arguments
+						{
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNorientation = XmHORIZONTAL;
+						XmNleftPosition = 39;
+						XmNtopPosition = 66;
+						XmNheight = 36;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 69;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 92;
+			XmNuserData = 10;
+						};
+				callbacks
+						{
+						MrmNcreateCallback = procedures
+							{
+								identify_sb(texture_window_pointer);
+								};
+						XmNdragCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						};
+				};
+		sb11: XmScrollBar
+				{
+				arguments
+						{
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNorientation = XmHORIZONTAL;
+						XmNleftPosition = 39;
+						XmNtopPosition = 70;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 92;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 73;
+			XmNuserData = 11;
+						};
+				callbacks
+						{
+						MrmNcreateCallback = procedures
+							{
+								identify_sb(texture_window_pointer);
+								};
+						XmNdragCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						};
+				};
+		sb12: XmScrollBar
+				{
+				arguments
+						{
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNorientation = XmHORIZONTAL;
+						XmNwidth = 212;
+						XmNleftPosition = 39;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 92;
+						XmNtopPosition = 77;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 79;
+			XmNuserData = 12;
+						};
+				callbacks
+						{
+						MrmNcreateCallback = procedures
+							{
+								identify_sb(texture_window_pointer);
+								};
+						XmNdragCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						};
+				};
+		sb13: XmScrollBar
+				{
+				arguments
+						{
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNorientation = XmHORIZONTAL;
+						XmNleftPosition = 39;
+						XmNtopPosition = 81;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 92;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 83;
+			XmNuserData = 13;
+						};
+				callbacks
+						{
+						MrmNcreateCallback = procedures
+							{
+								identify_sb(texture_window_pointer);
+								};
+						XmNdragCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						};
+				};
+		sb14: XmScrollBar
+				{
+				arguments
+						{
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNorientation = XmHORIZONTAL;
+						XmNleftPosition = 39;
+						XmNtopPosition = 85;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 92;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 87;
+			XmNuserData = 14;
+						};
+				callbacks
+						{
+						MrmNcreateCallback = procedures
+							{
+								identify_sb(texture_window_pointer);
+								};
+						XmNdragCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								sb_activated(texture_window_pointer);
+								};
+						};
+				};
+
+		vt_editor_select: XmForm
+				{
+				arguments
+						{
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNleftPosition = 2;
+						XmNtopPosition = 89;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 98;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 99;
+						};
+				controls
+							{
+							XmFrame vt_select_frame;
+							};
+					};
+		vt_select_frame: XmFrame
+			{
+			arguments
+				{
+				XmNleftAttachment = XmATTACH_FORM;
+
+				XmNrightAttachment = XmATTACH_FORM;
+
+				XmNtopAttachment = XmATTACH_FORM;
+
+				XmNbottomAttachment = XmATTACH_FORM;
+
+				};
+		controls
+					{
+					XmForm vt_3d_select_form;
+					};
+				};
+		vt_3d_select_form: XmForm
+					{
+					arguments
+					{
+						XmNborderWidth = 0;
+						XmNuserData = 0;
+					};
+		callbacks
+			{
+				MrmNcreateCallback =
+				procedure vt_select_mat_create(texture_window_pointer);
+			};
+
+		};
+
+		menu1: XmMenuBar
+				{
+				arguments
+						{
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNtopPosition = 0;
+						XmNleftPosition = 0;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 100;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 5;
+						};
+				controls
+						{
+						XmCascadeButtonGadget cb1;
+						XmCascadeButtonGadget cb2;
+						XmCascadeButtonGadget cb4;
+						XmCascadeButtonGadget cb5;
+						XmCascadeButtonGadget cb3;
+						XmCascadeButtonGadget cb6;
+						XmCascadeButtonGadget cb7;
+						XmCascadeButtonGadget cb8;
+						};
+				};
+		cb1: XmCascadeButtonGadget
+				{
+				arguments
+						{
+						XmNx = 13;
+						XmNy = 8;
+						XmNlabelString =
+						compound_string("File");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+						};
+	controls
+			{
+			XmPulldownMenu file_menu;
+			};
+				};
+		cb2: XmCascadeButtonGadget
+				{
+				arguments
+						{
+						XmNx = 70;
+						XmNy = 12;
+						XmNlabelString =
+						compound_string("Volume");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+						};
+	controls
+			{
+			XmPulldownMenu mode_menu;
+			};
+				};
+		cb3: XmCascadeButtonGadget
+				{
+				arguments
+						{
+						XmNx = 113;
+						XmNy = 10;
+						XmNlabelString =
+						compound_string("Mesh");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+						};
+
+	controls
+			{
+			XmPulldownMenu mesh_menu;
+			};
+				};
+		cb4: XmCascadeButtonGadget
+				{
+				arguments
+						{
+						XmNx = 206;
+						XmNy = 7;
+						XmNlabelString =
+						compound_string("Properties");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+						};
+	controls
+			{
+			XmPulldownMenu property_menu;
+			};
+				};
+		cb5: XmCascadeButtonGadget
+				{
+				arguments
+						{
+						XmNx = 291;
+						XmNy = 9;
+						XmNlabelString =
+!            compound_string("Material");
+						compound_string("Display");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+						};
+
+	controls
+			{
+			XmPulldownMenu display_menu;
+			};
+				};
+
+		cb6: XmCascadeButtonGadget
+				{
+				arguments
+						{
+						XmNx = 331;
+						XmNy = 42;
+						XmNlabelString =
+						compound_string("Surface");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+						};
+				controls
+			{
+			XmPulldownMenu texture_menu;
+			};
+				};
+		cb7: XmCascadeButtonGadget
+				{
+				arguments
+						{
+						XmNx = 354;
+						XmNy = 42;
+						XmNlabelString =
+						compound_string("Groups");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+						};
+				controls
+			{
+				XmPulldownMenu group_menu;
+			};
+				};
+
+		cb8: XmCascadeButtonGadget
+				{
+				arguments
+						{
+						XmNx = 378;
+						XmNy = 42;
+						XmNlabelString =
+						compound_string("Fields");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+						};
+				};
+
+
+
+!-----------------------------------------------------------------------------------
+
+
+
+	mesh_menu : XmPulldownMenu
+		{
+		controls
+			{
+
+			XmPushButtonGadget meshbtn1;
+			XmPushButtonGadget meshbtn2;
+			XmSeparatorGadget
+				{
+				arguments
+					{
+					XmNwidth = 16;
+					};
+				};
+			XmLabelGadget
+				{
+				arguments
+					{
+					XmNlabelString =
+					compound_string("DISCONTINUITY :");
+					XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+					};
+				};
+				XmToggleButtonGadget slitb0;
+				XmToggleButtonGadget slitb1;
+				XmToggleButtonGadget slitb2;
+				XmToggleButtonGadget slitb3;
+			XmSeparatorGadget
+				{
+				arguments
+					{
+					XmNwidth = 16;
+					};
+				};
+			XmLabelGadget
+				{
+				arguments
+					{
+					XmNlabelString =
+					compound_string("COORDINATES:");
+
+					XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+					};
+				};
+
+			XmToggleButtonGadget meshbtn3;
+			XmToggleButtonGadget meshbtn4;
+			XmToggleButtonGadget meshbtn5;
+			XmToggleButtonGadget meshbtn6;
+
+			};
+		};
+		meshbtn1 : XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Regular Mesh");
+			XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+
+			XmNuserData = 3;
+			};
+		callbacks
+			{
+
+			XmNactivateCallback = procedures
+				{
+				regular_mesh(texture_window_pointer);
+				};
+			};
+		};
+		meshbtn2 : XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Irregular Mesh");
+			XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+
+			XmNuserData = 3;
+			};
+		callbacks
+			{
+
+			XmNactivateCallback = procedures
+				{
+				irregular_mesh(texture_window_pointer);
+				};
+			};
+		};
+		meshbtn3 : XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Rectangular Cartesian");
+			XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			XmNuserData = 3;
+			};
+		};
+		meshbtn4 : XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Cylindrical");
+			XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			XmNuserData = 3;
+			};
+		};
+		meshbtn5 : XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Spherical");
+			XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			XmNuserData = 3;
+			};
+		};
+		meshbtn6 : XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Prolate Spherical");
+			XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			XmNuserData = 3;
+			};
+		};
+!-----------------------------------------------------------------------------------
+
+
+
+		slitb0 : XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Activate slitting");
+			XmNfontList =
+				font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			XmNuserData = 0;
+			};
+			callbacks
+			{
+				XmNvalueChangedCallback = procedures
+				{
+					slit_cb(texture_window_pointer);
+				};
+			};
+		};
+		slitb1 : XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Slit in Xi 1");
+			XmNfontList =
+				font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			XmNuserData = 1;
+			};
+			callbacks
+			{
+				XmNvalueChangedCallback = procedures
+				{
+					slit_cb(texture_window_pointer);
+				};
+			};
+
+		};
+		slitb2 : XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Slit in Xi 2");
+			XmNfontList =
+				font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			XmNuserData = 2;
+			};
+			callbacks
+			{
+				XmNvalueChangedCallback = procedures
+				{
+					slit_cb(texture_window_pointer);
+				};
+			};
+
+		};
+		slitb3 : XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Slit in Xi 3");
+			XmNfontList =
+				font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			XmNuserData = 3;
+			};
+			callbacks
+			{
+				XmNvalueChangedCallback = procedures
+				{
+					slit_cb(texture_window_pointer);
+				};
+			};
+		};
+
+
+
+
+	file_menu : XmPulldownMenu
+		{
+		controls
+			{
+			XmPushButtonGadget new_volume_texture_button;
+			XmPushButtonGadget read_settings_button;
+			XmPushButtonGadget write_settings_button;
+			XmPushButtonGadget save_as_vt_button;
+			XmPushButtonGadget save_as_finite_elements_button;
+			XmPushButtonGadget load_2d_texture_button;
+			XmPushButtonGadget exit_button;
+			};
+		};
+	new_volume_texture_button : XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("New");
+			XmNfontList =
+				font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			};
+		};
+	read_settings_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Open");
+			XmNfontList =
+				font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				open_file_and_read(read_settings_file_data);
+				};
+			};
+		};
+	write_settings_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Save");
+			XmNfontList =
+				font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				open_file_and_write(write_settings_file_data);
+				};
+			};
+		};
+	save_as_vt_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Save as volume textures");
+			XmNfontList =
+				font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				open_file_and_write(write_settings_file_data);
+				};
+			};
+		};
+	save_as_finite_elements_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Save as finite elements");
+			XmNfontList =
+				font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				save_as_finite_elements(texture_window_pointer);
+				};
+			};
+		};
+	load_2d_texture_button : XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Load 2D Texture");
+			XmNfontList =
+				font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				load_2d_texture(texture_window_pointer);
+				};
+			};
+		};
+	exit_button : XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Exit");
+			XmNfontList =
+				font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				exit_window(texture_window_pointer);
+				};
+			};
+		};
+!----------------------------------------------------------------------------------------------------------
+	property_menu : XmPulldownMenu
+		{
+		controls
+			{
+			XmToggleButtonGadget propertybtn1;
+			XmToggleButtonGadget propertybtn2;
+			XmToggleButtonGadget propertybtn3;
+			XmToggleButtonGadget propertybtn4;
+			XmToggleButtonGadget propertybtn5;
+			XmSeparatorGadget
+				{
+				arguments
+					{
+					XmNwidth = 16;
+					};
+				};
+
+
+			XmLabelGadget
+				{
+				arguments
+					{
+					XmNlabelString =
+					compound_string("PALETTES:");
+
+					XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+					};
+				};
+
+			XmPushButtonGadget graph_materials_button;
+			XmPushButtonGadget env_map_button;
+			XmPushButtonGadget element_button;
+			XmPushButtonGadget constraints_button;
+			};
+		};
+	propertybtn1 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("Paint On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			XmNuserData = 2;
+			};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tb(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_paint_mode(texture_window_pointer);
+								};
+			};
+				};
+
+
+	propertybtn2 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("Delete Paint On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			XmNuserData = 13;
+			};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tb(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_delete_paint_mode(texture_window_pointer);
+								};
+			};
+				};
+
+
+	propertybtn3 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("Edit COP On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			};
+	callbacks
+			{
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_cop(texture_window_pointer);
+								};
+			};
+				};
+
+	propertybtn4 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("Environment map On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			};
+	callbacks
+			{
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_env(texture_window_pointer);
+								};
+			};
+				};
+
+	propertybtn5 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("Detail On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			};
+	callbacks
+			{
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_detail(texture_window_pointer);
+								};
+			};
+				};
+
+	graph_materials_button : XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Graphical materials");
+			XmNfontList =
+				font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			};
+
+	callbacks
+			{
+						XmNactivateCallback = procedures
+								{
+								select_gm_cb(texture_window_pointer);
+								};
+			};
+				};
+	env_map_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Environment maps");
+			XmNfontList =
+				font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			};
+	callbacks
+			{
+						XmNactivateCallback = procedures
+								{
+								select_envmap_cb(texture_window_pointer);
+								};
+			};
+
+
+		};
+	element_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("FE materials");
+			XmNfontList =
+				font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			};
+
+		};
+	constraints_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("FE constraints");
+			XmNfontList =
+				font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			};
+
+		};
+
+!-------------------------------------------------------------------------------------------------------
+		display_menu : XmPulldownMenu
+	{
+	controls
+			{
+			XmToggleButtonGadget pickbtn1;
+			XmSeparatorGadget
+				{
+				arguments
+					{
+					XmNwidth = 16;
+					};
+				};
+			XmToggleButtonGadget dispbtn1;
+			XmToggleButtonGadget dispbtn2;
+			XmToggleButtonGadget dispbtn5;
+			XmToggleButtonGadget dispbtn3;
+			XmToggleButtonGadget dispbtn4;
+
+			XmToggleButtonGadget dispbtn6;
+			XmToggleButtonGadget dispbtn7;
+			XmToggleButtonGadget dispbtn8;
+			XmToggleButtonGadget dispbtn10;
+			XmPushButtonGadget dispbtn9;
+
+
+			};
+	};
+
+		pickbtn1 : XmToggleButtonGadget
+		{
+			arguments
+			{
+						XmNlabelString =
+						compound_string("Picking On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+						XmNset = false;
+			};
+			callbacks
+			{
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_pick(texture_window_pointer);
+								};
+			};
+		};
+		dispbtn1 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("Isosurface On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			XmNuserData = 5;
+			};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tb(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_isosurface(texture_window_pointer);
+								};
+			};
+				};
+		dispbtn2 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("Grid On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			XmNuserData = 6;
+			};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tb(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_grid(texture_window_pointer);
+								};
+			};
+				};
+		dispbtn3 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("Auto Update On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			XmNuserData = 7;
+			};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tb(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_auto(texture_window_pointer);
+								};
+			};
+				};
+		dispbtn4 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("See Paint space On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			XmNuserData = 8;
+			};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tb(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_see_paint(texture_window_pointer);
+								};
+			};
+				};
+
+		dispbtn5 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("Cubes On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			XmNuserData = 4;
+			};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tb(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_cubes(texture_window_pointer);
+								};
+			};
+				};
+		dispbtn6 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("Shaded Surfaces On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = true;
+			};
+	callbacks
+			{
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_shaded_surfaces(texture_window_pointer);
+								};
+			};
+				};
+		dispbtn7 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("Normals On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			};
+	callbacks
+			{
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_normals(texture_window_pointer);
+								};
+			};
+				};
+	dispbtn8 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("Wireframe On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			};
+	callbacks
+			{
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_wireframe(texture_window_pointer);
+								};
+			};
+				};
+
+	dispbtn10 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("2D Projection");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			};
+
+				};
+
+
+	dispbtn9 : XmPushButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("3D Control");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+
+			};
+	callbacks
+			{
+						XmNactivateCallback = procedures
+								{
+								open_transformation_editor(texture_window_pointer);
+								};
+			};
+	};
+!--------------------------------------------------------------------------------------------------
+		mode_menu : XmPulldownMenu
+	{
+	controls
+			{
+
+			XmToggleButtonGadget modebtn1;
+			XmSeparatorGadget
+				{
+				arguments
+					{
+					XmNwidth = 16;
+					};
+				};
+
+
+			XmLabelGadget
+				{
+				arguments
+					{
+					XmNlabelString =
+					compound_string("VOXEL:");
+
+					XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+					};
+				};
+			XmToggleButtonGadget modebtn0;
+
+			XmToggleButtonGadget modebtn3;
+			XmSeparatorGadget
+				{
+				arguments
+					{
+					XmNwidth = 16;
+					};
+				};
+
+
+			XmLabelGadget
+				{
+				arguments
+					{
+					XmNlabelString =
+					compound_string("IMPLICIT SURFACE:");
+
+					XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+					};
+				};
+
+			XmToggleButtonGadget modebtn10;
+			XmToggleButtonGadget modebtn11;
+			XmToggleButtonGadget modebtn12;
+			XmToggleButtonGadget modebtn13;
+			};
+	};
+		modebtn0 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("Fill On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			XmNuserData = 0;
+			};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tb(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_fill_mode(texture_window_pointer);
+								};
+			};
+				};
+
+		modebtn1 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("Node/Cell");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			XmNuserData = 1;
+			};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tb(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_node_cell(texture_window_pointer);
+								};
+			};
+				};
+
+		modebtn3 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("Delete On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			XmNuserData = 3;
+			};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tb(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_delete_mode(texture_window_pointer);
+								};
+			};
+				};
+
+
+
+
+		modebtn10 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("Line Mode On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			XmNuserData = 10;
+			};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tb(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_line_mode(texture_window_pointer);
+								};
+			};
+				};
+		modebtn11 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("Curve Mode On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			XmNuserData = 11;
+			};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tb(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_curve_mode(texture_window_pointer);
+								};
+			};
+				};
+		modebtn12 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("Blob Mode On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			XmNuserData = 11;
+			};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tb(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_blob_mode(texture_window_pointer);
+								};
+			};
+				};
+		modebtn13 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("Soft Object Mode On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			XmNuserData = 13;
+			};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tb(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_soft_mode(texture_window_pointer);
+								};
+			};
+				};
+!----------------------------------------------------------------------------------------------------------
+	texture_menu : XmPulldownMenu
+	{
+	controls
+			{
+
+			XmToggleButtonGadget texturebtn4;
+			XmToggleButtonGadget texturebtn1;
+			XmToggleButtonGadget texturebtn2;
+			XmToggleButtonGadget texturebtn3;
+			};
+	};
+
+
+
+	texturebtn1 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("Cutting Plane On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			};
+	callbacks
+			{
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_cutting_plane(texture_window_pointer);
+								};
+			};
+				};
+	texturebtn2 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("Hollow surfaces On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			};
+	callbacks
+			{
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_hollow(texture_window_pointer);
+								};
+			};
+				};
+	texturebtn3 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("Decimation On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			};
+	callbacks
+			{
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_decimation(texture_window_pointer);
+								};
+			};
+				};
+
+	texturebtn4 : XmToggleButtonGadget
+	{
+	arguments
+			{
+						XmNlabelString =
+						compound_string("Closed Surface On/Off");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNset = false;
+			XmNuserData = 9;
+			};
+	callbacks
+			{
+						MrmNcreateCallback = procedures
+							{
+								identify_tb(texture_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								toggle_closed_surface(texture_window_pointer);
+								};
+			};
+				};
+!-------------------------------------------------------------------------------------------
+
+	group_menu : XmPulldownMenu
+		{
+		controls
+			{
+				XmPushButtonGadget groupbtn1;
+				XmPushButtonGadget groupbtn2;
+				XmToggleButtonGadget groupbtn3;
+			};
+		};
+
+		groupbtn1 : XmPushButtonGadget
+			{
+				arguments
+						{
+						XmNx = 13;
+						XmNy = 8;
+						XmNlabelString =
+						compound_string("Create group");
+						XmNuserData = 0;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+						};
+				callbacks
+				{
+					XmNactivateCallback = procedures
+					{
+						group_cb(texture_window_pointer);
+					};
+				};
+			};
+
+
+		groupbtn2 : XmPushButtonGadget
+			{
+				arguments
+						{
+						XmNx = 13;
+						XmNy = 8;
+						XmNuserData = 1;
+						XmNlabelString =
+						compound_string("Remove group");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+						};
+				callbacks
+				{
+					XmNactivateCallback = procedures
+					{
+						group_cb(texture_window_pointer);
+					};
+				};
+			};
+
+		groupbtn3 : XmToggleButtonGadget
+			{
+				arguments
+						{
+						XmNx = 13;
+						XmNy = 8;
+						XmNuserData = 2;
+						XmNlabelString =
+						compound_string("Edit current");
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+						};
+				callbacks
+				{
+					XmNvalueChangedCallback = procedures
+					{
+						group_cb(texture_window_pointer);
+					};
+				};
+			};
+
+
+
+!-------------------------------------------------------------------------------------------------------
+		pb1: XmPushButtonGadget
+				{
+				arguments
+						{
+						XmNlabelString =
+						compound_string("Select");
+
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+						XmNleftPosition = 1;
+						XmNtopPosition = 32;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 37;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 17;
+						};
+				callbacks
+			{
+						XmNactivateCallback = procedures
+								{
+								select_cb(texture_window_pointer);
+								};
+			};
+	};
+		pb2: XmPushButtonGadget
+				{
+				arguments
+						{
+						XmNlabelString =
+						compound_string("Unselect");
+
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+						XmNleftPosition = 1;
+						XmNtopPosition = 39;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 44;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNrightPosition = 17;
+						};
+				callbacks
+			{
+						XmNactivateCallback = procedures
+								{
+								deselect_cb(texture_window_pointer);
+								};
+			};
+				};
+end module;

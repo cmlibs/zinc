@@ -1,0 +1,970 @@
+!*******************************************************************************
+!FILE : mapping_window.uil
+!
+!LAST MODIFIED : 23 July 1998
+!
+!DESCRIPTION :
+!The widgets/gadgets for the mapping window in the mapping work area.
+!===============================================================================
+module mapping_window_module
+	names = case_sensitive
+
+procedure
+	identify_mapping_menu;
+	identify_mapping_map_button;
+	configure_map;
+	identify_mapping_animate_button;
+	animate_activation_map;
+	identify_mapping_setup_button;
+	setup_simple_rig;
+	identify_mapping_modify_button;
+	identify_mapping_page_button;
+	identify_mapping_file_button;
+	identify_mapping_file_save_butt;
+	open_file_and_write;
+	identify_mapping_file_read_butt;
+	open_file_and_read;
+	identify_mapping_file_bard_elec;
+	identify_mapping_file_default_b;
+	set_default_configuration_file;
+	identify_mapping_projection_cho;
+	set_projection_Hammer;
+	set_projection_polar;
+	identify_mapping_region_choice;
+	identify_mapping_region_pull_do;
+	identify_mapping_region_place_h;
+	identify_mapping_print_button;
+	identify_mapping_print_postscri;
+	identify_mapping_print_rgb_butt;
+	identify_mapping_print_tiff_but;
+	id_mapping_print_animation_rgb;
+	id_mapping_print_animation_tiff;
+	identify_mapping_close_button;
+	close_mapping_work_area;
+	identify_mapping_drawing_area;
+	expose_mapping_drawing_area;
+	resize_mapping_drawing_area;
+	identify_mapping_colour_or_auxi;
+	expose_mapping_colour_or_auxili;
+	resize_mapping_colour_or_auxili;
+	identify_mapping_colour_scroll;
+	destroy_Mapping_window;
+
+identifier
+	widget_spacing;
+	identifying_colour;
+	write_configuration_file_data;
+	read_configuration_file_data;
+	read_bard_electrode_file_data;
+	write_map_postscript_file_data;
+	write_map_rgb_file_data;
+	write_map_tiff_file_data;
+	write_map_animate_rgb_file_data;
+	write_map_animate_tiff_file_dat;
+	mapping_window_structure;
+	mapping_rig;
+	system_window_structure;
+	! Fonts
+	button_font;
+	heading_font;
+	list_font;
+	menu_font;
+	normal_font;
+	normal_non_proportional_font;
+	small_font;
+
+object
+	mapping_window_outer_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNdialogTitle = "Mapping";
+			};
+		};
+	mapping_window: XmForm 
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNbackground = identifying_colour;
+!			XmNallowOverlap = false;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmForm mapping_menu;
+			XmPanedWindow mapping_paned_window;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedures
+				{
+				destroy_Mapping_window(mapping_window_structure);
+				};
+			};
+		};
+	mapping_menu: XmForm 
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			XmNallowOverlap = false;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmPushButton mapping_map_button;
+			XmPushButtonGadget mapping_animate_button;
+			XmPushButton mapping_setup_button;
+			XmMenuBar mapping_menu_bar;
+			XmOptionMenu mapping_projection_choice;
+			XmOptionMenu mapping_region_choice;
+!			XmSeparator
+!				{
+!				arguments
+!					{
+!					XmNseparatorType = XmNO_LINE;
+!					XmNleftAttachment = XmATTACH_WIDGET;
+!					XmNleftWidget = XmOptionMenu mapping_region_choice;
+!					XmNleftOffset = widget_spacing;
+!					XmNrightAttachment = XmATTACH_WIDGET;
+!					XmNrightWidget = XmPushButtonGadget mapping_close_button;
+!					XmNrightOffset = widget_spacing;
+!					XmNtopAttachment = XmATTACH_FORM;
+!					XmNtopOffset = 0;
+!					XmNbottomAttachment = XmATTACH_FORM;
+!					XmNbottomOffset = 0;
+!					};
+!				};
+			XmPushButtonGadget mapping_close_button;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_menu(mapping_window_structure);
+				};
+			};
+		};
+	mapping_map_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Map");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_map_button(mapping_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				configure_map(mapping_window_structure);
+				};
+			};
+		};
+	mapping_animate_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Animate");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmPushButton mapping_map_button;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_animate_button(mapping_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				animate_activation_map(mapping_window_structure);
+				};
+			};
+		};
+	mapping_setup_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Set up");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_setup_button(mapping_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				setup_simple_rig(mapping_window_structure);
+				};
+			};
+		};
+	mapping_menu_bar: XmMenuBar 
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNspacing = widget_spacing;
+			XmNentryAlignment = XmALIGNMENT_CENTER;
+			XmNpacking = XmPACK_TIGHT;
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNshadowThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmPushButton mapping_setup_button;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmCascadeButtonGadget mapping_modify_button;
+			XmCascadeButtonGadget mapping_page_button;
+			XmCascadeButtonGadget mapping_file_button;
+			XmCascadeButtonGadget mapping_print_button;
+			};
+		};
+	mapping_projection_choice: XmOptionMenu 
+		{
+		arguments
+			{
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmMenuBar mapping_menu_bar;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmPulldownMenu
+				{
+				arguments
+					{
+					XmNborderWidth = 1;
+					};
+				controls
+					{
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString = 
+							compound_string("Hammer");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							XmNactivateCallback = procedures
+								{
+								set_projection_Hammer(mapping_window_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString = 
+							compound_string("Polar");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							XmNactivateCallback = procedures
+								{
+								set_projection_polar(mapping_window_structure);
+								};
+							};
+						};
+					};
+				};
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_projection_cho(mapping_window_structure);
+				};
+			};
+		};
+	mapping_region_choice: XmOptionMenu 
+		{
+		arguments
+			{
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmOptionMenu mapping_projection_choice;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmPulldownMenu mapping_region_pull_down_menu;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_region_choice(mapping_window_structure);
+				};
+			};
+		};
+	mapping_region_pull_down_menu: XmPulldownMenu
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			};
+		controls
+			{
+			XmPushButtonGadget
+				{
+				arguments
+					{
+					XmNlabelString = 
+					compound_string("Place holder");
+					XmNfontList = button_font;
+					};
+				callbacks
+					{
+					MrmNcreateCallback = procedures
+						{
+						identify_mapping_region_place_h(mapping_window_structure);
+						};
+					};
+				};
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_region_pull_do(mapping_window_structure);
+				};
+			};
+		};
+	mapping_close_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Close");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_close_button(mapping_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				close_mapping_work_area(system_window_structure);
+				};
+			};
+		};
+	mapping_modify_button: XmCascadeButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Modify");
+			XmNfontList = button_font;
+			};
+		controls
+			{
+			XmPulldownMenu mapping_modify_menu;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_modify_button(mapping_window_structure);
+				};
+			};
+		};
+	mapping_page_button: XmCascadeButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Page");
+			XmNfontList = button_font;
+			};
+		controls
+			{
+			XmPulldownMenu mapping_page_menu;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_page_button(mapping_window_structure);
+				};
+			};
+		};
+	mapping_file_button: XmCascadeButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("File");
+			XmNfontList = button_font;
+			};
+		controls
+			{
+			XmPulldownMenu mapping_file_menu;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_file_button(mapping_window_structure);
+				};
+			};
+		};
+	mapping_print_button: XmCascadeButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Print");
+			XmNfontList = button_font;
+			};
+		controls
+			{
+			XmPulldownMenu mapping_print_menu;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_print_button(mapping_window_structure);
+				};
+			};
+		};
+	mapping_modify_menu: XmPulldownMenu 
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			};
+		controls
+			{
+			XmPushButtonGadget mapping_modify_position_button;
+			XmPushButtonGadget mapping_modify_number_button;
+			XmPushButtonGadget mapping_modify_name_button;
+			XmPushButtonGadget mapping_modify_polarity_button;
+			};
+		};
+	mapping_modify_position_button: XmPushButtonGadget
+		{
+		arguments
+			{
+!???temporary
+			XmNsensitive = false;
+			XmNlabelString = 
+			compound_string("Position");
+			XmNfontList = button_font;
+			};
+		};
+	mapping_modify_number_button: XmPushButtonGadget
+		{
+		arguments
+			{
+!???temporary
+			XmNsensitive = false;
+			XmNlabelString = 
+			compound_string("Number");
+			XmNfontList = button_font;
+			};
+		};
+	mapping_modify_name_button: XmPushButtonGadget
+		{
+		arguments
+			{
+!???temporary
+			XmNsensitive = false;
+			XmNlabelString = 
+			compound_string("Name");
+			XmNfontList = button_font;
+			};
+		};
+	mapping_modify_polarity_button: XmPushButtonGadget
+		{
+		arguments
+			{
+!???temporary
+			XmNsensitive = false;
+			XmNlabelString = 
+			compound_string("Polarity");
+			XmNfontList = button_font;
+			};
+		};
+	mapping_page_menu: XmPulldownMenu 
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			};
+		controls
+			{
+			XmPushButtonGadget mapping_page_create_button;
+			XmPushButtonGadget mapping_page_modify_button;
+			XmPushButtonGadget mapping_page_delete_button;
+			};
+		};
+	mapping_page_create_button: XmPushButtonGadget
+		{
+		arguments
+			{
+!???temporary
+			XmNsensitive = false;
+			XmNlabelString = 
+			compound_string("Create");
+			XmNfontList = button_font;
+			};
+		};
+	mapping_page_modify_button: XmPushButtonGadget
+		{
+		arguments
+			{
+!???temporary
+			XmNsensitive = false;
+			XmNlabelString = 
+			compound_string("Modify");
+			XmNfontList = button_font;
+			};
+		};
+	mapping_page_delete_button: XmPushButtonGadget
+		{
+		arguments
+			{
+!???temporary
+			XmNsensitive = false;
+			XmNlabelString = 
+			compound_string("Delete");
+			XmNfontList = button_font;
+			};
+		};
+	mapping_file_menu: XmPulldownMenu 
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			};
+		controls
+			{
+			XmPushButton mapping_file_save_button;
+			XmPushButton mapping_file_read_button;
+			XmPushButton mapping_file_bard_electrode_but;
+			XmPushButtonGadget mapping_file_default_button;
+			};
+		};
+	mapping_file_save_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Save configuration");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_file_save_butt(mapping_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				open_file_and_write(write_configuration_file_data);
+				};
+			};
+		};
+	mapping_file_read_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Read configuration");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_file_read_butt(mapping_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				open_file_and_read(read_configuration_file_data);
+				};
+			};
+		};
+	mapping_file_bard_electrode_but: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Read Bard configuration");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_file_bard_elec(mapping_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				open_file_and_read(read_bard_electrode_file_data);
+				};
+			};
+		};
+	mapping_file_default_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Set default");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_file_default_b(mapping_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				set_default_configuration_file(mapping_rig);
+				};
+			};
+		};
+	mapping_print_menu: XmPulldownMenu 
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			};
+		controls
+			{
+			XmPushButton mapping_print_postscript_button;
+			XmPushButton mapping_print_rgb_button;
+			XmPushButton mapping_print_tiff_button;
+			XmPushButton mapping_print_animation_rgb_but;
+			XmPushButton mapping_print_animation_tiff_bu;
+			};
+		};
+	mapping_print_postscript_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Postscript");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_print_postscri(mapping_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				open_file_and_write(write_map_postscript_file_data);
+				};
+			};
+		};
+	mapping_print_rgb_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("RGB");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_print_rgb_butt(mapping_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				open_file_and_write(write_map_rgb_file_data);
+				};
+			};
+		};
+	mapping_print_tiff_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("TIFF");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_print_tiff_but(mapping_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				open_file_and_write(write_map_tiff_file_data);
+				};
+			};
+		};
+	mapping_print_animation_rgb_but: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Animation RGB");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_mapping_print_animation_rgb(mapping_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				open_file_and_write(write_map_animate_rgb_file_data);
+				};
+			};
+		};
+	mapping_print_animation_tiff_bu: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Animation TIFF");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_mapping_print_animation_tiff(mapping_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				open_file_and_write(write_map_animate_tiff_file_dat);
+				};
+			};
+		};
+	mapping_paned_window: XmPanedWindow
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNmarginWidth = 0;
+			XmNmarginHeight = 0;
+			XmNspacing = widget_spacing;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmForm mapping_menu;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmForm colour_or_auxiliary_area;
+			XmForm mapping_area;
+			};
+		};
+	colour_or_auxiliary_area: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNbackground = identifying_colour;
+			};
+		controls
+			{
+			XmDrawingArea colour_or_auxiliary_drawing_are;
+!			XmScrollBar colour_or_auxiliary_scroll_bar;
+			};
+		};
+	colour_or_auxiliary_drawing_are: XmDrawingArea 
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+!			XmNrightAttachment = XmATTACH_WIDGET;
+!			XmNrightWidget = XmScrollBar colour_or_auxiliary_scroll_bar;
+!			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = widget_spacing;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_colour_or_auxi(mapping_window_structure);
+				};
+			XmNexposeCallback = procedures
+				{
+				expose_mapping_colour_or_auxili(mapping_window_structure);
+				};
+			XmNresizeCallback = procedures
+				{
+				resize_mapping_colour_or_auxili(mapping_window_structure);
+				};
+			};
+		};
+	colour_or_auxiliary_scroll_bar: XmScrollBar
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			XmNorientation = XmVERTICAL;
+			XmNprocessingDirection = XmMAX_ON_BOTTOM;
+			XmNleftAttachment = XmATTACH_NONE;
+!			XmNleftAttachment = XmATTACH_WIDGET;
+!			XmNleftWidget = XmDrawingArea colour_or_auxiliary_drawing_are;
+!			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = widget_spacing;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_colour_scroll(mapping_window_structure);
+				};
+			};
+		};
+	mapping_area: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNbackground = identifying_colour;
+			};
+		controls
+			{
+			XmDrawingArea mapping_drawing_area;
+			};
+		};
+	mapping_drawing_area: XmDrawingArea 
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = widget_spacing;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_drawing_area(mapping_window_structure);
+				};
+			XmNexposeCallback = procedures
+				{
+				expose_mapping_drawing_area(mapping_window_structure);
+				};
+			XmNresizeCallback = procedures
+				{
+				resize_mapping_drawing_area(mapping_window_structure);
+				};
+			};
+		};
+
+end module;
+

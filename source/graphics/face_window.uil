@@ -1,0 +1,217 @@
+module vuitDummy
+		names = case_sensitive
+
+procedure
+		facebtn1CB;
+		close_faceCB;
+		faceslider1CB;
+		faceslider2CB;
+		faceslider3CB;
+
+value
+		slider_min: 0;
+		slider_max: 111;
+
+identifier
+		face_window_pointer ;
+
+object
+		face_window: XmForm
+				{
+				arguments
+						{
+						XmNx = 0;
+						XmNy = 0;
+						XmNwidth = 220;
+						XmNheight = 385;
+						XmNborderWidth = 1;
+						XmNfractionBase = 100;
+						};
+!       XmNautoUnmanage = FALSE;
+				controls
+						{
+!       XmNautoUnmanage = FALSE;
+						XmPushButton facebtn1;
+						XmPushButton faceclose;
+						XmScrollBar facescale1;
+						XmScrollBar facescale2;
+						XmScrollBar facescale3;
+						XmLabelGadget facelabel1;
+						XmLabelGadget facelabel2;
+						XmLabelGadget facelabel3;
+						};
+				};
+		facebtn1: XmPushButton
+				{
+				arguments
+						{
+						XmNlabelString =
+						compound_string("Btn1");
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNx = 16;
+						XmNy = 339;
+						XmNbottomAttachment = XmATTACH_NONE;
+						XmNheight = 30;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNwidth = 64;
+						XmNtopPosition = 87;
+						XmNleftPosition = 6;
+						XmNrightPosition = 35;
+						};
+				callbacks
+						{
+						XmNactivateCallback = procedures
+								{
+								facebtn1CB(face_window_pointer);
+								};
+						};
+				};
+		faceclose: XmPushButton
+				{
+				arguments
+						{
+						XmNlabelString =
+						compound_string("Close");
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNbottomAttachment = XmATTACH_NONE;
+						XmNheight = 30;
+						XmNrightAttachment = XmATTACH_POSITION;
+						XmNwidth = 64;
+						XmNleftPosition = 60;
+						XmNtopPosition = 87;
+						XmNrightPosition = 89;
+						};
+				callbacks
+						{
+						XmNactivateCallback = procedures
+								{
+								close_faceCB(face_window_pointer);
+								};
+						};
+				};
+		facescale1: XmScrollBar
+				{
+				arguments
+						{
+						XmNborderWidth = 1;
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNheight = 187;
+						XmNleftPosition = 10;
+						XmNtopPosition = 20;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNrightAttachment = XmATTACH_NONE;
+						XmNmaximum = slider_max;
+						XmNminimum = slider_min;
+						XmNbottomPosition = 69;
+						};
+				callbacks
+						{
+						XmNdragCallback = procedures
+								{
+								faceslider1CB(face_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								faceslider1CB(face_window_pointer);
+								};
+						};
+				};
+		facescale2: XmScrollBar
+				{
+				arguments
+						{
+						XmNborderWidth = 1;
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNvalue = 50;
+						XmNheight = 189;
+						XmNleftPosition = 41;
+						XmNtopPosition = 20;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 69;
+						XmNmaximum = slider_max;
+						XmNminimum = slider_min;
+						};
+				callbacks
+						{
+						XmNdragCallback = procedures
+								{
+								faceslider2CB(face_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								faceslider2CB(face_window_pointer);
+								};
+						};
+				};
+		facescale3: XmScrollBar
+				{
+				arguments
+						{
+						XmNborderWidth = 1;
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNheight = 189;
+						XmNleftPosition = 73;
+						XmNtopPosition = 20;
+						XmNbottomAttachment = XmATTACH_POSITION;
+						XmNbottomPosition = 69;
+						XmNmaximum = slider_max;
+						XmNminimum = slider_min;
+						};
+				callbacks
+						{
+						XmNdragCallback = procedures
+								{
+								faceslider3CB(face_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								faceslider3CB(face_window_pointer);
+								};
+						};
+				};
+		facelabel1: XmLabelGadget
+				{
+				arguments
+						{
+						XmNlabelString =
+						compound_string("eyelid");
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNleftPosition = 2;
+						XmNtopPosition = 74;
+						};
+				};
+		facelabel2: XmLabelGadget
+				{
+				arguments
+						{
+						XmNlabelString =
+						compound_string("eyeball");
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNrightAttachment = XmATTACH_NONE;
+						XmNwidth = 47;
+						XmNtopPosition = 74;
+						XmNleftPosition = 35;
+						};
+				};
+		facelabel3: XmLabelGadget
+				{
+				arguments
+						{
+						XmNlabelString =
+						compound_string("pupil");
+						XmNleftAttachment = XmATTACH_POSITION;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNtopPosition = 74;
+						XmNleftPosition = 68;
+						};
+				};
+
+end module;
+

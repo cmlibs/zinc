@@ -1,0 +1,419 @@
+!*******************************************************************************
+! FILE : spectrum_editor.uil
+!
+! LAST MODIFIED : 9 May 1999
+!
+! DESCRIPTION :
+! The widgets for the spectrum editor widget.
+!===============================================================================
+module spec_ed
+	version = 'v1.0'
+
+procedure
+! ---------|---------|---------|- 31 characters max
+	spec_ed_destroy_CB;
+	spec_ed_identify_general_btn;
+	spec_ed_identify_general_form;
+	spec_ed_identify_disc_text;
+	spec_ed_identify_points_btn;
+	spec_ed_identify_lines_btn;
+	spec_ed_identify_surfaces_btn;
+	spec_ed_identify_add_btn;
+	spec_ed_identify_delete_btn;
+	spec_ed_identify_top_btn;
+	spec_ed_identify_settings_scr;
+	spec_ed_identify_settings_rc;
+	spec_ed_identify_settings_form;
+	spec_ed_id_add_btn;
+	spec_ed_id_delete_btn;
+	spec_ed_id_up_btn;
+	spec_ed_id_down_btn;
+	spec_ed_id_viewer_form;
+	spec_ed_general_btn_CB;
+	spec_ed_disc_text_CB;
+	spec_ed_points_btn_CB;
+	spec_ed_lines_btn_CB;
+	spec_ed_surfaces_btn_CB;
+	spec_ed_autorange_btn_CB;
+	spec_ed_id_autorange_scene_form;
+	spec_ed_settings_visibility_CB;
+	spec_ed_settings_select_CB;
+	spec_ed_modify_CB;
+	spec_ed_id_opaque_button;
+	spec_ed_opaque_button_CB;
+value
+	sash_width         :  50;
+	shadow_size        :   2;
+	form_space_out     :   2;
+	form_space_in      :   4;
+	spec_ed_3d_space   :   3;
+	spec_ed_3d_height  : 200;
+
+value
+	spec_ed_font        : font_table(font('-*-HELVETICA-MEDIUM-R-*--*-80-*-*-*-*-ISO8859-1'));
+	spec_ed_font_large  : font_table(font('-*-HELVETICA-BOLD-R-*--*-100-*-*-*-*-ISO8859-1'));
+	spec_ed_font_bold   : font_table(font('-*-HELVETICA-BOLD-R-*--*-80-*-*-*-*-ISO8859-1'));
+
+identifier
+	!The gap between widgets
+	widget_spacing;
+	!Pointer to data specific to this instance of the spec_ed widget
+	spec_ed_structure;
+	!fonts here
+	normal_font;
+	button_font;
+	list_font;
+
+! The spec_ed widget
+object
+	spec_ed_widget: XmFrame
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = spec_ed_structure;
+			};
+		controls
+			{
+			XmForm spec_ed_main_form;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure spec_ed_destroy_CB();
+			};
+		};
+	spec_ed_main_form: XmForm
+		{
+		arguments
+			{
+			XmNuserData = spec_ed_structure;
+			};
+		controls
+			{
+			XmToggleButtonGadget spec_ed_opaque_button;
+			XmForm spec_ed_viewer_form;
+			XmSeparatorGadget spec_ed_separator;
+			XmForm spec_ed_specific_set_form;
+			};
+		};
+	spec_ed_opaque_button: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNset = true;
+			XmNshadowThickness = 1;
+			XmNlabelString = compound_string("Clear colour before settings");
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNuserData = spec_ed_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				spec_ed_id_opaque_button(spec_ed_structure);
+			XmNvalueChangedCallback = procedure
+				spec_ed_opaque_button_CB(spec_ed_structure);
+			};
+		};
+	spec_ed_viewer_form: XmForm
+		{
+		arguments
+			{
+			XmNwidth = 400;
+			XmNheight = 150;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 5;
+			XmNtopWidget = spec_ed_opaque_button;
+			XmNuserData = spec_ed_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				spec_ed_id_viewer_form(spec_ed_structure);
+			};
+		};
+	spec_ed_separator: XmSeparatorGadget
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = spec_ed_viewer_form;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = spec_ed_structure;
+			};
+		};
+	spec_ed_specific_set_form: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = spec_ed_separator;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = spec_ed_structure;
+			};
+		controls
+			{
+			XmPanedWindow spec_ed_specific_set_pw;
+			};
+		};
+	spec_ed_specific_set_pw: XmPanedWindow
+		{
+		arguments
+			{
+			XmNsashWidth = sash_width;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			};
+		controls
+			{
+			XmForm spec_ed_settings_list_form;
+			XmForm spec_ed_settings_form;
+			};
+		};
+	spec_ed_settings_list_form: XmForm
+		{
+		controls
+			{
+			XmRowColumn spec_ed_modify;
+			XmScrolledWindow spec_ed_settings_scroll;
+			};
+		};
+!*******************************************************************************
+	spec_ed_modify: XmRowColumn
+		{
+		arguments
+			{
+!			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_COLUMN;
+			XmNentryAlignment = XmALIGNMENT_CENTER;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNbottomWidget = XmForm spec_ed_settings_form;
+			XmNuserData = spec_ed_structure;
+			};
+		controls
+			{
+			XmPushButtonGadget spec_ed_add_btn;
+			XmPushButtonGadget spec_ed_delete_btn;
+			XmPushButtonGadget spec_ed_up_btn;
+			XmPushButtonGadget spec_ed_down_btn;
+			};
+		callbacks
+			{
+			XmNentryCallback = procedure spec_ed_modify_CB(spec_ed_structure);
+			};
+		};
+	spec_ed_settings_scroll: XmScrolledWindow
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = spec_ed_modify;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = 0;
+			XmNbottomWidget = XmForm spec_ed_settings_form;
+			XmNscrollingPolicy = XmAUTOMATIC;
+			XmNuserData = spec_ed_structure;
+			};
+		controls
+			{
+			XmRowColumn spec_ed_settings_rowcol;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				spec_ed_identify_settings_scr(spec_ed_structure);
+			};
+		};
+	spec_ed_settings_form: XmForm
+		{
+		arguments
+			{
+			XmNuserData = spec_ed_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				spec_ed_identify_settings_form(spec_ed_structure);
+			};
+		};
+!*******************************************************************************
+	spec_ed_settings_rowcol: XmRowColumn
+		{
+		arguments
+			{
+			XmNorientation = XmVERTICAL;
+			XmNpacking = XmPACK_COLUMN;
+			XmNradioBehavior = true;
+			XmNnumColumns = 1;
+			XmNuserData = spec_ed_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				spec_ed_identify_settings_rc(spec_ed_structure);
+!			XmNentryCallback = procedure
+!				spec_ed_settings_item_CB(spec_ed_structure);
+			};
+!    controls
+!      {
+!        XmToggleButtonGadget spec_ed_settings_item;
+!      };
+	};
+	spec_ed_settings_item: XmForm
+		{
+		arguments
+			{
+!User data is set by program to equal settings referred to by form.
+			};
+    controls
+      	{
+        	XmToggleButtonGadget spec_ed_settings_visibility;
+        	XmToggleButton spec_ed_settings_select;
+      	};
+		};
+	spec_ed_settings_visibility: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("");
+			XmNspacing = 0;
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNindicatorOn = true;
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			};
+		callbacks
+			{
+			XmNvalueChangedCallback = procedure
+				spec_ed_settings_visibility_CB(spec_ed_structure);
+			};
+		};
+	spec_ed_settings_select: XmToggleButton
+		{
+		arguments
+			{
+			XmNshadowThickness = 1;
+			XmNlabelString = compound_string("Place holder");
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNindicatorOn = false;
+			XmNindicatorType = XmONE_OF_MANY;
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = spec_ed_settings_visibility;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			};
+		callbacks
+			{
+			XmNvalueChangedCallback = procedure
+				spec_ed_settings_select_CB(spec_ed_structure);
+			};
+		};
+!	spec_ed_settings_item: XmToggleButtonGadget
+!		{
+!		arguments
+!			{
+!			XmNlabelString = compound_string("Place holder");
+!			XmNalignment = XmALIGNMENT_BEGINNING;
+!			XmNfontList = button_font;
+!			XmNuserData = 0;
+!			};
+!		};
+!*******************************************************************************
+	spec_ed_add_btn: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Add");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure spec_ed_id_add_btn(spec_ed_structure);
+			};
+		};
+	spec_ed_delete_btn: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Del");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure spec_ed_id_delete_btn(spec_ed_structure);
+			};
+		};
+	spec_ed_up_btn: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =compound_string("Up");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure spec_ed_id_up_btn(spec_ed_structure);
+			};
+		};
+	spec_ed_down_btn: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =compound_string("Dn");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure spec_ed_id_down_btn(spec_ed_structure);
+			};
+		};
+!*******************************************************************************
+end module;

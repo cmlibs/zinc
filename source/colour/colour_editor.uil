@@ -1,0 +1,413 @@
+!*******************************************************************************
+! FILE : colour_editor.uil
+!
+! LAST MODIFIED : 16 September 1995
+!
+! DESCRIPTION :
+! The widgets for the colour_editor input box
+!===============================================================================
+module colour_editor
+				version = 'v1.0'
+
+procedure
+	colour_editor_identify_button      (integer);
+	colour_editor_slider_CB            (integer);
+	colour_editor_number_CB            (integer);
+	colour_editor_destroy_CB                 ();
+	colour_editor_mode_CB              (integer);
+
+value
+	colour_editor_font        : font_table(font('-*-HELVETICA-MEDIUM-R-*--*-80-*-*-*-*-ISO8859-1'));
+	colour_editor_font_large        : font_table(font('-*-HELVETICA-BOLD-R-*--*-100-*-*-*-*-ISO8859-1'));
+	colour_editor_font_bold        : font_table(font('-*-HELVETICA-BOLD-R-*--*-80-*-*-*-*-ISO8859-1'));
+	colour_editor_text_margin      : 1; ! how much gap around the text - small so the dialog is small
+
+value
+	colour_editor_slider_max        : 125;
+	colour_editor_slider_min        : 0;
+	colour_editor_slider_size        : 25;
+	shadow_size              : 2;
+	colour_editor_data_size          : 9;
+	colour_editor_data_init          : "";
+	colour_editor_data_maxlen        : 20;
+	colour_editor_patch_space        :  3;  !space between the patch and its frame borders
+	colour_editor_combo_space        : 1;  !space between the combo's
+	colour_editor_slider_space      : 1;    !space between the (label and text) and the slider
+	colour_editor_patch_size        : 80;    !dimensions of the patch
+
+identifier
+	!The gap between widgets
+	widget_spacing;
+	!Pointer to data specific to this instance of the colour_editor control dialog
+	Colour_editor_structure;
+	colour_editor_text_ID;
+	colour_editor_slider_ID;
+	colour_editor_label_ID;
+	colour_editor_patch_ID;
+	colour_editor_option_ID;
+	colour_editor_mode0_ID;
+	colour_editor_mode1_ID;
+	colour_editor_mode2_ID;
+
+object
+	!Colour_Editor input dialog box - allows the user to use either sliders or type in
+	!numbers to create a colour_editor of their choice.  User may choose to either
+	!  OK - Accept the current colour_editor and close the dialog
+	! Apply - Reflect the colour_editor in the calling application but keep the dialog up
+	! Cancel - Close the dialog without keeping changes.
+	! The current colour_editor is shown on a patch on the window.
+	colour_editor_dialog: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = Colour_editor_structure;
+			};
+		controls
+			{
+			XmOptionMenu colour_editor_mode_option;
+			XmForm colour_editor_control_form;
+			XmForm colour_editor_patch_form;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure colour_editor_destroy_CB ();
+			};
+		};
+!**************************************************************************************
+	!Allows the user to set the mode of operation - RGB/HSV etc.
+	colour_editor_mode_option: XmOptionMenu
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("");
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNwidth = 100;
+			XmNuserData = Colour_editor_structure;
+			};
+		controls
+			{
+			XmPulldownMenu colour_editor_mode_menu;
+			};
+		};
+	colour_editor_mode_menu: XmPulldownMenu
+		{
+		arguments
+			{
+			XmNuserData = Colour_editor_structure;
+			XmNmenuHistory = XmPushButtonGadget colour_editor_mode_menu0;
+			};
+		controls
+			{
+			XmPushButtonGadget colour_editor_mode_menu0;
+			XmPushButtonGadget colour_editor_mode_menu1;
+			XmPushButtonGadget colour_editor_mode_menu2;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure colour_editor_identify_button (colour_editor_option_ID);
+			};
+		};
+	colour_editor_mode_menu0: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("RGB");
+			XmNfontList = colour_editor_font_bold;
+			XmNuserData = Colour_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure colour_editor_identify_button (colour_editor_mode0_ID);
+			XmNactivateCallback = procedure colour_editor_mode_CB (colour_editor_mode0_ID);
+			};
+		};
+	colour_editor_mode_menu1: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("HSV");
+			XmNfontList = colour_editor_font_bold;
+			XmNuserData = Colour_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure colour_editor_identify_button (colour_editor_mode1_ID);
+			XmNactivateCallback = procedure colour_editor_mode_CB (colour_editor_mode1_ID);
+			};
+		};
+	colour_editor_mode_menu2: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("CMY");
+			XmNfontList = colour_editor_font_bold;
+			XmNuserData = Colour_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure colour_editor_identify_button (colour_editor_mode2_ID);
+			XmNactivateCallback = procedure colour_editor_mode_CB (colour_editor_mode2_ID);
+			};
+		};
+!**************************************************************************************
+	!Contains a form, which has its background colour_editor set to reflect the current
+	!colour_editor.
+	colour_editor_patch_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmOptionMenu colour_editor_mode_option;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNwidth = colour_editor_patch_size;
+			};
+		controls
+			{
+			XmFrame colour_editor_patch_frame;
+			};
+		};
+	colour_editor_patch_frame: XmFrame
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = colour_editor_patch_space;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = colour_editor_patch_space;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = colour_editor_patch_space;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = colour_editor_patch_space;
+			};
+		controls
+			{
+			XmForm colour_editor_patch_square;
+			};
+		};
+	colour_editor_patch_square: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNuserData = Colour_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure colour_editor_identify_button (colour_editor_patch_ID);
+			};
+		};
+!**************************************************************************************
+	!Three sets of labels, text and sliders.
+	colour_editor_control_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 0;
+			XmNleftWidget = XmForm colour_editor_patch_form;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = Colour_editor_structure;
+			XmNfractionBase = 300;
+			};
+		controls
+			{
+			XmForm colour_editor_control_combo0;
+			XmForm colour_editor_control_combo1;
+			XmForm colour_editor_control_combo2;
+			};
+		};
+	colour_editor_control_combo0: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = colour_editor_combo_space;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = colour_editor_combo_space;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 100;
+			XmNbottomOffset = 0;
+			XmNuserData = 0;
+			};
+		controls
+			{
+			XmScrollBar colour_editor_control_combo_sli;
+			XmText colour_editor_control_combo_tex;
+			XmLabelGadget colour_editor_control_combo_lab;
+			};
+		};
+	colour_editor_control_combo1: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = colour_editor_combo_space;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNtopPosition = 100;
+			XmNtopOffset = colour_editor_combo_space;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 200;
+			XmNbottomOffset = 0;
+			XmNuserData = 1;
+			};
+		controls
+			{
+			XmScrollBar colour_editor_control_combo_sli;
+			XmText colour_editor_control_combo_tex;
+			XmLabelGadget colour_editor_control_combo_lab;
+			};
+		};
+	colour_editor_control_combo2: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = colour_editor_combo_space;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNtopPosition = 200;
+			XmNtopOffset = colour_editor_combo_space;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = 2;
+			};
+		controls
+			{
+			XmScrollBar colour_editor_control_combo_sli;
+			XmText colour_editor_control_combo_tex;
+			XmLabelGadget colour_editor_control_combo_lab;
+			};
+		};
+	colour_editor_control_combo_sli: XmScrollBar
+		{
+		arguments
+			{
+			XmNtraversalOn = true;
+			XmNshadowThickness = shadow_size;
+			XmNhighlightThickness = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNleftAttachment = XmATTACH_FORM;
+!?????DB.  Motif 2.0 for Linux doesn't like this
+!      XmNleftOffset = shadow_size;
+			XmNleftOffset = colour_editor_text_margin;
+			XmNrightAttachment = XmATTACH_FORM;
+!?????DB.  Motif 2.0 for Linux doesn't like this
+!      XmNrightOffset = shadow_size;
+			XmNrightOffset = colour_editor_text_margin;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+!?????DB.  Motif 2.0 for Linux doesn't like this
+!      XmNbottomOffset = shadow_size;
+			XmNbottomOffset = colour_editor_text_margin;
+			XmNuserData = Colour_editor_structure;
+			XmNvalue = 0;
+			XmNmaximum = colour_editor_slider_max;
+			XmNminimum = colour_editor_slider_min;
+			XmNsliderSize = colour_editor_slider_size;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure colour_editor_identify_button (colour_editor_slider_ID);
+			XmNvalueChangedCallback = procedure colour_editor_slider_CB (colour_editor_slider_ID);
+			XmNdragCallback = procedure colour_editor_slider_CB (colour_editor_slider_ID);
+			};
+		};
+	colour_editor_control_combo_lab: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Component");
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNfontList = colour_editor_font_bold;
+			XmNshadowThickness = shadow_size;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = 0;
+			XmNrightWidget = XmText colour_editor_control_combo_tex;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = colour_editor_slider_space;
+			XmNbottomWidget = XmScrollBar colour_editor_control_combo_sli;
+			XmNuserData = Colour_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure colour_editor_identify_button (colour_editor_label_ID);
+			};
+		};
+	colour_editor_control_combo_tex: XmText
+		{
+		arguments
+			{
+			XmNfontList = colour_editor_font;
+			XmNeditMode = XmSINGLE_LINE_EDIT;
+			XmNshadowThickness = shadow_size;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = colour_editor_slider_space;
+			XmNbottomWidget = XmScrollBar colour_editor_control_combo_sli;
+			XmNuserData = Colour_editor_structure;
+			XmNvalue = colour_editor_data_init;
+			XmNmaxLength = colour_editor_data_maxlen;
+			XmNcolumns = colour_editor_data_size;
+			XmNmarginHeight = colour_editor_text_margin;
+			XmNmarginWidth = colour_editor_text_margin;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure colour_editor_identify_button (colour_editor_text_ID);
+			XmNactivateCallback = procedure colour_editor_number_CB (colour_editor_text_ID);
+			XmNlosingFocusCallback = procedure colour_editor_number_CB (colour_editor_text_ID);
+			};
+		};
+end module;

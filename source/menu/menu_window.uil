@@ -1,0 +1,103 @@
+!*******************************************************************************
+! FILE : menu_window.uil
+!
+! LAST MODIFIED : 12 June 1993
+!
+! DESCRIPTION :
+! The widgets/gadgets for the menu window.
+!===============================================================================
+module Menu_window
+	names = case_sensitive
+
+procedure
+	close_menu_window;
+	execute_menu_item;
+	identify_menu_list;
+
+identifier
+	menu_window_structure;
+
+value
+	small_widget_spacing : 2;
+	large_widget_spacing : 4;
+	menu_visible_items : 8;
+
+object
+	menu_window: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNautoUnmanage = false;
+			XmNdefaultPosition = false;
+			XmNresizePolicy = XmRESIZE_ANY;
+			};
+		controls
+			{
+			XmScrolledWindow menu_scrolled_window;
+			XmPushButton menu_close_button;
+			};
+		};
+	menu_scrolled_window: XmScrolledWindow
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomWidget = XmPushButton menu_close_button;
+			XmNtopOffset = small_widget_spacing;
+			XmNleftOffset = small_widget_spacing;
+			XmNrightOffset = small_widget_spacing;
+			XmNbottomOffset = small_widget_spacing;
+			XmNresizable = true;
+			XmNscrollBarDisplayPolicy = XmSTATIC;
+			XmNworkWindow = XmList menu_list_box;
+			};
+		controls
+			{
+			XmList menu_list_box;
+			};
+		};
+	menu_list_box: XmList
+		{
+		arguments
+			{
+			XmNlistSizePolicy = XmRESIZE_IF_POSSIBLE;
+			XmNselectionPolicy = XmBROWSE_SELECT;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_menu_list(menu_window_structure);
+				};
+			XmNdefaultActionCallback = procedures
+				{
+				execute_menu_item(menu_window_structure);
+				};
+			};
+		};
+	menu_close_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Close");
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = small_widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = small_widget_spacing;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				close_menu_window(menu_window_structure);
+				};
+			};
+		};
+
+end module;
+

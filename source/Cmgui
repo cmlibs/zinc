@@ -1,0 +1,243 @@
+!
+! Global
+! ------
+!
+! Note that cmgui/cmiss batch mode does not read this file.
+!
+!Nicer Motif widgets than the standard ones
+*useSchemes:    all
+!Old Motif widgets
+!*useSchemes:    none
+!Smarter looking widgets but not robust
+!*sgiMode:       True
+!
+! Fonts
+cmgui.*.buttonFont: *-Helvetica-medium-R-*--*-120-*
+cmgui.*.headingFont: *-Helvetica-medium-R-*--*-120-*
+cmgui.*.listFont: *-Helvetica-medium-R-*--*-120-*
+cmgui.*.menuFont: *-Helvetica-medium-R-*--*-120-*
+cmgui.*.normalFont: *-Helvetica-medium-R-*--*-120-*
+cmgui.*.normalNonProportionalFont: *-Helvetica-medium-R-*--*-120-*
+cmgui.*.smallFont: *-Helvetica-medium-R-*--*-120-*
+!
+! The cm executable to be run
+cmgui.*.cmExecutable: cm
+!
+! The directory containing the cmiss examples
+cmgui.*.examplesDirectory: /product/cmiss/examples/
+!
+! The URL for cmiss help
+cmgui.*.helpUrl: http://www.esc.auckland.ac.nz/Groups/Bioengineering/CMISS/help/index.html
+!
+! The mycm executable to be run
+cmgui.*.mycmExecutable: mycm
+!
+! The directory containing the cmgui uid files
+! (Not required from version (001.001.019) on)
+cmgui.*.uidDirectory: /usr/local/cmiss/cmgui/uid/
+!
+! The number of seconds before the connection between the front and back ends
+! times out
+cmgui.*.wormholeTimeoutSeconds: 300
+!
+! The netscape executable run when the help button is pushed
+cmgui.*.netscapeCommand: netscape
+!
+! This comfile is executed first before any others (including one specified on
+! the command line) every time cmgui/cmiss is run.  You can specify a full path
+! or a relative path.  When this resource is not set then no such comfile is run.
+!cmgui.*.startupComfile: cmiss.com
+!
+!
+! Comfile window
+! --------------
+*.comfile_window.x:                     0
+*.comfile_window.y:                   520
+*.comfile_window.height:              200
+*.comfile_window.width:               300
+!
+!
+! Command window
+! --------------
+cmgui.*.command_window.x:               0
+cmgui.*.command_window.y:            2000
+cmgui.*.command_window.*.output_text.fontList: *-courier-medium-r-normal--12-*
+cmgui.*.command_window.*.output_text.columns: 100
+cmgui.*.command_window.*.output_text.rows: 30
+cmgui.*.command_window.*.command_box.textFontList: *-courier-medium-r-normal--12-*
+cmgui.*.command_window.*.menu_form.*.fontList: *-helvetica-bold-r-normal--12-*
+!The following lines show how you define mnemonic keys that can be
+!used to activate menu buttons.  This can be done for any menu so long as you
+!know the correct widget name.  These are all the widgets and their names for
+!the tools menu on the command window although I have only activated a few of
+!them.  To change a letter all you do is change this file.
+cmgui.*.command_window.*.cell_create_button.mnemonic: C
+!cmgui.*.command_window.*.data_editor_create_button.mnemonic:
+!cmgui.*.command_window.*.interactive_data_editor_cbutton.mnemonic:
+cmgui.*.command_window.*.g_element_editor_create_button.mnemonic: G
+cmgui.*.command_window.*.material_editor_create_button.mnemonic: m
+!cmgui.*.command_window.*.im_control_create_button.mnemonic:
+!cmgui.*.command_window.*.image_processing_create_button.mnemonic;
+!cmgui.*.command_window.*.node_editor_create_button.mnemonic;
+!cmgui.*.command_window.*.interactive_node_editor_cbutton.mnemonic;
+cmgui.*.command_window.*.spectrum_editor_create_button.mnemonic: S
+!cmgui.*.command_window.*.time_variable_editor_create_btn.mnemonic:
+cmgui.*.command_window.*.time_editor_create_button.mnemonic: T
+!cmgui.*.command_window.*.tracking_editor_create_button.mnemonic;
+cmgui.*.command_window.*.unemap_create_button.mnemonic: U
+cmgui.*.command_window.*.volume_editor_create_button.mnemonic: V
+!cmgui.*.command_window.*.digitizer_3d_create_button.mnemonic:
+cmgui.*.command_window.*.three_d_window_create_button.mnemonic: 3
+!
+!
+! CMISS_plugin
+! ----------------
+! These resources control which executable is started by the plugin buttons
+! If the CMISS_RESOURCE parameter on the html document is set then
+! the plugin looks for a resource here of the form 
+! cmiss_plugin.CMISS_RESOURCE.cmissCommand.  This is the executable started
+! if no cmiss windows are found on the display. cmiss_plugin.*.cmissCommand 
+! matches any that aren't otherwise specified. 
+cmiss_plugin.*.cmissCommand: cmgui
+cmiss_plugin.development.cmissCommand: /product/cmiss/cmgui/bin/cmgui
+!
+!
+! Digitiser window
+! ----------------
+cmgui.*.digitiser_window.*.digwin_viewing_area.height: 402
+cmgui.*.digitiser_window.*.digwin_viewing_area.width:  402
+!
+!
+! Graphical finite elements
+! -------------------------
+! default number of line segments used to draw element curves (>= 1)
+cmgui.*.defaultElementDiscretization:   4
+! maximum number of line segments used to draw element curves
+cmgui.*.maximumElementDiscretization:  50
+! default number of line segments used to draw circles (>= 2)
+! 5 is the first number that looks remotely round
+cmgui.*.defaultCircleDiscretization:    6
+! maximum number of line segments used to draw circles
+cmgui.*.maximumCircleDiscretization:   64
+!
+!
+! Help window (replaced by netscape)
+! -----------
+*.cm_help_window.height:              500
+*.cm_help_window.width:               800
+*.help_text.fontList:                 *-courier-medium-r-*--*-120-*
+*.help_topic.fontList:                *-helvetica-medium-r-*--*-120-*
+!
+!
+! Menu window
+! -----------
+*.menu_window.x:                        0
+*.menu_window.y:                      520
+*.menu_window.height:                 200
+*.menu_window.width:                  300
+!
+!
+! Projection window
+! -----------------
+*.projection_window.*.spectrum_drawing_area.height: 75
+*.projection_window.*.projection_drawing_area.height: 400
+*.projection_window.*.projection_drawing_area.width: 600
+!
+!
+! Prompt window
+! -------------
+cmgui.*.prompt_window.x:                0
+cmgui.*.prompt_window.y:              250
+cmgui.*.prompt_history.columns:       100
+cmgui.*.prompt_history.rows:           20
+cmgui.*.prompt_history.fontList: *-courier-medium-r-normal--12-*
+cmgui.*.prompt_reply.fontList: *-courier-medium-r-normal--12-*
+!
+!
+! Time
+! ----
+! Sets defaults for the time keepers
+cmgui.*.timePlaySpeed: 20
+cmgui.*.timePlayEveryFrame: False
+cmgui.*.timeEditorStep: 10
+!Set up accelerator key choices, to change default change keypress letter
+cmgui.*.time_editor_play.accelerators: <KeyPress>f:   ArmAndActivate()
+cmgui.*.time_editor_play_reverse.accelerators: <KeyPress>b:   ArmAndActivate()
+cmgui.*.time_editor_stop.accelerators: <KeyPress>s:   ArmAndActivate()
+cmgui.*.time_editor_step.accelerators: <KeyPress>j:   ArmAndActivate()
+!
+!
+! Unemap
+! ------
+! Setting just a few of the many possible resources for Unemap
+!cmgui.*.finiteElementInterpolation: none
+!cmgui.*.electrodeMarker: square
+!cmgui.*.electrodeSize: 4
+!cmgui.*.signalFileExtension: sig*
+! Reposition the unemap system window. Default is centre of the screen.
+!cmgui.system_window_shell.x: 200
+!cmgui.system_window_shell.y: 350
+!Set up accelerator key choices, to change default change keypress letter
+*.analysis_previous_button.accelerators: #override <Key>p: ArmAndActivate()
+*.analysis_next_button.accelerators: #override <Key>n: ArmAndActivate()
+*.analysis_accept_button.accelerators: #override <Key>a: ArmAndActivate()
+*.analysis_reject_button.accelerators: #override <Key>r: ArmAndActivate()
+*.trace_edit_previous_button.accelerators: #override <Key>p: ArmAndActivate()
+*.trace_edit_next_button.accelerators: #override <Key>n: ArmAndActivate()
+*.trace_edit_accept_button.accelerators: #override <Key>a: ArmAndActivate()
+*.trace_edit_reject_button.accelerators: #override <Key>r: ArmAndActivate()
+!
+!
+! Variable editor
+! ---------------
+!cmgui.*.variableEditorAxisColour: white
+!cmgui.*.variableEditorBackgroundColour: midnight blue
+!cmgui.*.variableEditorControlPointColour: white
+!cmgui.*.variableEditorDragColour: green
+!cmgui.*.variableEditorFunctionColour: yellow
+!cmgui.*.variableEditorMajorGridColour: grey60
+!cmgui.*.variableEditorMinorGridColour: grey40
+!cmgui.*.variableEditorSeparatorColour: orange red
+!cmgui.*.variableEditorCurveSegments:   4
+!cmgui.*.variableHorizontalAxisHeight: 32
+!cmgui.*.variableVerticalAxisWidth:    40
+!cmgui.*.variableTickLength:            8
+!cmgui.*.variableExtraComponentRange: 0.1
+!cmgui.*.variableExtraTimeRange:     0.05
+!cmgui.*.variableControlPointSize:      5
+!cmgui.*.variablePickDistance:          7
+!cmgui.*.variableEditorMinGridSpacing: 10
+!cmgui.*.variableEditorMinHorizontalLabelSpacing: 60
+!cmgui.*.variableEditorMinVerticalLabelSpacing: 30
+!
+!
+! 3-D window
+! ----------
+!positioning the graphics window:
+!cmgui.*.graphics_window.x:            200
+!cmgui.*.graphics_window.y:            100
+! The following width and height values specify the size of the viewing area of
+! the graphics window when it has only a single pane. Multiple viewing panes are
+! separated by a 2 pixel border.
+cmgui.*.graphicsWindowViewingHeight:  400
+cmgui.*.graphicsWindowViewingWidth:   400
+! The following values control the rate of translate, tumble and zoom
+! transformations in relation to mouse dragging in the graphics window. Values
+! around 1.0 are recommended. Negative values may be used to reverse the zoom
+! control, while zero values turn off the respective function.
+cmgui.*.graphicsWindowTranslateRate:  1.0
+cmgui.*.graphicsWindowTumbleRate:     1.5
+cmgui.*.graphicsWindowZoomRate:       1.0
+! These control the font and offset for text in all the graphics windows.
+! Assumptions have been made in the construction of some windows, like the
+! digitiser window, so be careful.
+!cmgui.*.graphicsFont: *-helvetica-bold-r-normal--18-*
+!cmgui.*.graphicsTextOffsetX: 10
+!cmgui.*.graphicsTextOffsetY: 10
+! Default orthographic up and front axis directions
+!Heart: (Wonky!)
+!cmgui.*.graphicsWindowOrthoUpAxis:     -X
+!cmgui.*.graphicsWindowOrthoFrontAxis:   Z
+!Torso: (Normal!)
+!cmgui.*.graphicsWindowOrthoUpAxis:      Z
+!cmgui.*.graphicsWindowOrthoFrontAxis:  -Y

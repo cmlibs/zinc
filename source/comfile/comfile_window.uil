@@ -1,0 +1,152 @@
+!*******************************************************************************
+! FILE : comfile_window.uil
+!
+! LAST MODIFIED : 24 June 1993
+!
+! DESCRIPTION :
+! The widgets/gadgets for a comfile window,
+!===============================================================================
+module Comfile_window
+	names = case_sensitive
+
+procedure
+	close_comfile_window;
+	execute_all;
+	execute_one;
+	execute_selected;
+	identify_command_list;
+	item_selected;
+
+identifier
+	comfile_window_structure;
+
+value
+	small_widget_spacing : 2;
+	large_widget_spacing : 4;
+	comfile_visible_items : 8;
+
+object
+	comfile_window: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNdefaultPosition = false;
+!      XmNautoUnmanage = false;
+!      XmNresizePolicy = XmRESIZE_ANY;
+			};
+		controls
+			{
+			XmPushButton comfile_all_button;
+			XmPushButton comfile_selected_button;
+			XmPushButton comfile_close_button;
+			XmScrolledWindow comfile_scrolled_window;
+			};
+		};
+	comfile_scrolled_window: XmScrolledWindow
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomWidget = XmPushButton comfile_close_button;
+			XmNtopOffset = small_widget_spacing;
+			XmNleftOffset = small_widget_spacing;
+			XmNrightOffset = small_widget_spacing;
+			XmNbottomOffset = small_widget_spacing;
+			XmNresizable = true;
+			XmNscrollBarDisplayPolicy = XmSTATIC;
+			XmNworkWindow = XmList comfile_command_list;
+			};
+		controls
+			{
+			XmList comfile_command_list;
+			};
+		};
+	comfile_command_list: XmList
+		{
+		arguments
+			{
+			XmNvisibleItemCount = comfile_visible_items;
+			XmNlistSizePolicy = XmRESIZE_IF_POSSIBLE;
+			XmNselectionPolicy = XmEXTENDED_SELECT;
+			XmNautomaticSelection = true;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_command_list(comfile_window_structure);
+				};
+			XmNdefaultActionCallback = procedures
+				{
+				execute_one(comfile_window_structure);
+				};
+			XmNextendedSelectionCallback = procedures
+				{
+				item_selected(comfile_window_structure);
+				};
+			};
+		};
+	comfile_all_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string(" All ");
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = small_widget_spacing;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = small_widget_spacing;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				execute_all(comfile_window_structure);
+				};
+			};
+		};
+	comfile_selected_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string(" Selected ");
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = small_widget_spacing;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = small_widget_spacing;
+			XmNleftWidget = XmPushButton comfile_all_button;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				execute_selected(comfile_window_structure);
+				};
+			};
+		};
+	comfile_close_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Close");
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = small_widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = small_widget_spacing;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				close_comfile_window(comfile_window_structure);
+				};
+			};
+		};
+
+end module;

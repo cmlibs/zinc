@@ -1,0 +1,186 @@
+!*******************************************************************************
+! FILE : i_node_editor_d.uil
+!
+! LAST MODIFIED : 21 July 1996
+!
+! DESCRIPTION :
+! The widgets for the i_node_editor_d i_node_editor_d widget.
+!===============================================================================
+module i_node_editor_d
+	version = 'v1.0'
+
+procedure
+	i_node_editor_d_identify_button    (integer);
+	i_node_editor_d_destroy_CB          ();
+	i_node_editor_d_comfile_text_CB          ();
+
+value
+	shadow_size        : 2;
+	form_space_out    :  2;
+	form_space_in      :  4;
+	i_node_editor_d_3d_space  :  3;
+	i_node_editor_d_3d_height  :  200;
+
+identifier
+	!The gap between widgets
+	widget_spacing;
+	!Pointer to data specific to this instance of the i_node_editor_d widget
+	I_node_editor_d_structure;
+	!value identifier
+	i_node_editor_d_select_form_ID;
+	i_node_editor_d_editor_form_ID;
+	i_node_editor_d_com_label_ID;
+	i_node_editor_d_com_text_ID;
+	!Fonts go here
+	button_font;
+	heading_font;
+	list_font;
+	menu_Font;
+	normal_font;
+	normal_non_proportional_font;
+	small_font;
+
+!**************************************************************************************
+!**************************************************************************************
+! The i_node_editor_d widget
+object
+	i_node_editor_dialog_widget: XmForm
+	{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = I_node_editor_d_structure;
+			};
+		controls
+			{
+			XmForm i_node_editor_d_select;
+			XmForm i_node_editor_d_editor;
+			XmForm i_node_editor_d_comfile;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure i_node_editor_d_destroy_CB ();
+			};
+		};
+	i_node_editor_d_select: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = I_node_editor_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure i_node_editor_d_identify_button (i_node_editor_d_select_form_ID);
+			};
+		};
+	i_node_editor_d_editor: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmForm i_node_editor_d_select;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = 0;
+			XmNbottomWidget = XmForm i_node_editor_d_comfile;
+			XmNuserData = I_node_editor_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure i_node_editor_d_identify_button (i_node_editor_d_editor_form_ID);
+			};
+		};
+	i_node_editor_d_comfile: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = I_node_editor_d_structure;
+			};
+		controls
+			{
+			XmLabelGadget i_node_editor_d_comfile_label;
+			XmTextField i_node_editor_d_comfile_text;
+			};
+		};
+!**************************************************************************************
+	i_node_editor_d_comfile_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Comfile Name:");
+			XmNalignment = XmALIGNMENT_END;
+			XmNfontList = heading_font;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = I_node_editor_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure i_node_editor_d_identify_button (i_node_editor_d_com_label_ID);
+			};
+		};
+	i_node_editor_d_comfile_text: XmTextField
+		{
+		arguments
+			{
+			XmNvalue = "";
+			XmNresizeWidth = true;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 0;
+			XmNleftWidget = XmLabelGadget i_node_editor_d_comfile_label;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNfontList = normal_font;
+			XmNuserData = I_node_editor_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure i_node_editor_d_identify_button (i_node_editor_d_com_text_ID);
+			XmNactivateCallback = procedure i_node_editor_d_comfile_text_CB();
+			XmNlosingFocusCallback = procedure i_node_editor_d_comfile_text_CB();
+			};
+		};
+end module;
+!**************************************************************************************

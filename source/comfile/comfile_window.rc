@@ -1,0 +1,51 @@
+#include "comfile/comfil~1.h"
+#include "windows.h"
+#include "ver.h"
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+Comfile_window ICON "../cmgui.ico"
+comfile_window_small ICON "../cmgui_s.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Data
+//
+
+Comfile_window DIALOG 19, 33, 218, 229
+STYLE WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX
+CLASS "Comfile_window"
+CAPTION "Comfile Window"
+FONT 8, "MS Sans Serif"
+{
+ DEFPUSHBUTTON "All", IDC_execute_all, 12, 194, 46, 20
+ PUSHBUTTON "Selected", IDC_execute_selected, 75, 198, 46, 20
+ LISTBOX IDC_command_list, 28, 33, 170, 150, LBS_STANDARD | LBS_MULTIPLESEL
+}

@@ -1,0 +1,169 @@
+!*******************************************************************************
+! FILE : node_editor.uil
+!
+! LAST MODIFIED : 21 January 1995
+!
+! DESCRIPTION :
+! The widgets for the node_editor node_editor widget.
+!===============================================================================
+module node_editor
+	version = 'v1.0'
+
+procedure
+	node_editor_identify_button    (integer);
+	node_editor_toggle_CB          ();
+	node_editor_destroy_CB          ();
+
+value
+	shadow_size        : 2;
+
+identifier
+	!The gap between widgets
+	widget_spacing;
+	!Pointer to data specific to this instance of the node_editor widget
+	Node_editor_structure;
+	!value identifier
+	node_editor_name_ID;
+	node_editor_field_form_ID;
+	node_editor_toggle_rowcol_ID;
+	node_editor_toggle_position_ID;
+	!Fonts go here
+	button_font;
+	heading_font;
+	list_font;
+	menu_Font;
+	normal_font;
+	normal_non_proportional_font;
+	small_font;
+
+!**************************************************************************************
+!**************************************************************************************
+! The node_editor widget
+object
+	node_editor_widget: XmForm
+	{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = Node_editor_structure;
+			};
+		controls
+			{
+!corresponds to #if defined (NODE_EDITOR_NAME)
+!      XmLabelGadget node_editor_name;
+			XmForm node_editor_field_form;
+			XmForm node_editor_toggle_position;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure node_editor_destroy_CB ();
+			};
+		};
+	node_editor_field_form: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmForm node_editor_toggle_position;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = Node_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure node_editor_identify_button (node_editor_field_form_ID);
+			};
+		};
+	node_editor_toggle_position: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+!corresponds to #if defined (NODE_EDITOR_NAME)
+!      XmNtopAttachment = XmATTACH_WIDGET;
+!      XmNtopOffset = 0;
+!      XmNtopWidget = XmLabelGadget node_editor_name;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = Node_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure node_editor_identify_button (node_editor_toggle_position_ID);
+			};
+		};
+	node_editor_toggle_rowcol: XmRowColumn
+		{
+		arguments
+			{
+			XmNradioAlwaysOne = true;
+			XmNradioBehavior = true;
+			XmNuserData = Node_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure node_editor_identify_button (node_editor_toggle_rowcol_ID);
+			};
+		};
+!**************************************************************************************
+	node_editor_name: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Description");
+			XmNshadowThickness = shadow_size;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = Node_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure node_editor_identify_button (node_editor_name_ID);
+			};
+		};
+	node_editor_toggle_item: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNindicatorType = XmONE_OF_MANY;
+			XmNset = false;
+			XmNlabelString =
+			compound_string("Description");
+			XmNfontList = list_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNuserData = Node_editor_structure;
+			};
+		callbacks
+			{
+			XmNvalueChangedCallback = procedure node_editor_toggle_CB ();
+			};
+		};
+end module;
+!**************************************************************************************

@@ -1,0 +1,512 @@
+module vuitDummy
+		names = case_sensitive
+
+procedure
+		robobtn1CB;
+		robobtn3CB;
+		close_roboCB;
+		roboslider1CB;
+		roboslider2CB;
+		roboslider3CB;
+		roboslider4CB;
+		roboslider5CB;
+		roboslider6CB;
+		roboslider7CB;
+		identifyslider1;
+		identifyslider2;
+		identifyslider3;
+		identifyslider4;
+		identifyslider5;
+		identifyslider6;
+		identifyslider7;
+value
+		slider_min: -1000;
+		slider_max: 1225;
+
+identifier
+		robo_window_pointer ;
+
+object
+		robo_window: XmForm
+				{
+				arguments
+						{
+						XmNx = 1;
+						XmNy = 0;
+						XmNwidth = 237;
+						XmNheight = 392;
+						XmNborderWidth = 1;
+						XmNfractionBase = 100;
+						};
+				controls
+						{
+						XmScrollBar roboscale1;
+						XmScrollBar roboscale2;
+						XmScrollBar roboscale3;
+						XmScrollBar roboscale4;
+						XmScrollBar roboscale5;
+						XmScrollBar roboscale6;
+			XmScrollBar roboscale7;
+					XmLabel
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("Position");
+										XmNleftAttachment = XmATTACH_FORM;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										XmNleftOffset = 17;
+										XmNrightAttachment = XmATTACH_NONE;
+										XmNwidth = 45;
+										XmNtopPosition = 10;
+										};
+								};
+						XmLabel label2;
+						XmLabel label0;
+						XmLabel
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("x");
+										XmNleftAttachment = XmATTACH_FORM;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										XmNleftOffset = 2;
+										XmNtopPosition = 18;
+										};
+								};
+						XmLabel
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("y");
+										XmNleftAttachment = XmATTACH_FORM;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										XmNleftOffset = 3;
+										XmNtopPosition = 25;
+										};
+								};
+						XmLabel
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("z");
+										XmNleftAttachment = XmATTACH_FORM;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										XmNleftOffset = 4;
+										XmNtopPosition = 31;
+										};
+								};
+						XmLabel
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("t");
+										XmNleftAttachment = XmATTACH_FORM;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										XmNleftOffset = 6;
+										XmNtopPosition = 47;
+										};
+								};
+						XmLabel
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("p");
+										XmNleftAttachment = XmATTACH_FORM;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										XmNleftOffset = 7;
+										XmNtopPosition = 54;
+										};
+								};
+						XmLabel
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("Advance");
+										XmNleftAttachment = XmATTACH_FORM;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										XmNleftOffset = 11;
+										XmNwidth = 59;
+										XmNrightAttachment = XmATTACH_NONE;
+										XmNrightOffset = -44;
+										XmNtopPosition = 63;
+										};
+								};
+						XmLabel
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("Rotate");
+										XmNleftAttachment = XmATTACH_FORM;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										XmNleftOffset = 10;
+										XmNwidth = 49;
+										XmNtopPosition = 74;
+										};
+								};
+						XmPushButtonGadget robobtn1;
+						XmPushButtonGadget robobtn2;
+			XmPushButtonGadget robobtn3;
+						};
+				};
+		roboscale1: XmScrollBar
+				{
+				arguments
+						{
+						XmNleftAttachment = XmATTACH_FORM;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNorientation = XmHORIZONTAL;
+						XmNwidth = 198;
+						XmNrightAttachment = XmATTACH_FORM;
+						XmNleftOffset = 26;
+						XmNrightOffset = 24;
+						XmNtopPosition = 19;
+						XmNmaximum = slider_max;
+						XmNminimum = slider_min;
+			XmNvalue = 0;
+						};
+				callbacks
+						{
+			MrmNcreateCallback = procedures
+		{
+		identifyslider1(robo_window_pointer);
+		};
+						XmNdragCallback = procedures
+								{
+								roboslider1CB(robo_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								roboslider1CB(robo_window_pointer);
+								};
+						};
+				};
+		roboscale2: XmScrollBar
+				{
+				arguments
+						{
+						XmNleftAttachment = XmATTACH_FORM;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNorientation = XmHORIZONTAL;
+						XmNwidth = 198;
+						XmNrightAttachment = XmATTACH_FORM;
+						XmNy = 101;
+						XmNrightOffset = 24;
+						XmNleftOffset = 26;
+						XmNtopPosition = 25;
+						XmNmaximum = slider_max;
+						XmNminimum = slider_min;
+			XmNvalue = 0;
+						};
+				callbacks
+						{
+			MrmNcreateCallback = procedures
+		{
+		identifyslider2(robo_window_pointer);
+		};
+						XmNdragCallback = procedures
+								{
+								roboslider2CB(robo_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								roboslider2CB(robo_window_pointer);
+								};
+						};
+				};
+		roboscale3: XmScrollBar
+				{
+				arguments
+						{
+						XmNleftAttachment = XmATTACH_FORM;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNorientation = XmHORIZONTAL;
+						XmNwidth = 198;
+						XmNrightAttachment = XmATTACH_FORM;
+						XmNbottomAttachment = XmATTACH_NONE;
+						XmNheight = 15;
+						XmNrightOffset = 24;
+						XmNleftOffset = 26;
+						XmNtopPosition = 31;
+						XmNmaximum = slider_max;
+						XmNminimum = slider_min;
+			XmNvalue = 0;
+						};
+				callbacks
+						{
+			MrmNcreateCallback = procedures
+		{
+		identifyslider3(robo_window_pointer);
+		};
+						XmNdragCallback = procedures
+								{
+								roboslider3CB(robo_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								roboslider3CB(robo_window_pointer);
+								};
+						};
+				};
+		roboscale4: XmScrollBar
+				{
+				arguments
+						{
+						XmNleftAttachment = XmATTACH_FORM;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNorientation = XmHORIZONTAL;
+						XmNwidth = 198;
+						XmNrightAttachment = XmATTACH_FORM;
+						XmNbottomAttachment = XmATTACH_NONE;
+						XmNheight = 15;
+						XmNy = 191;
+						XmNleftOffset = 26;
+						XmNrightOffset = 24;
+						XmNtopPosition = 47;
+						XmNmaximum = slider_max;
+						XmNminimum = slider_min;
+			XmNvalue = 0;
+						};
+				callbacks
+						{
+			MrmNcreateCallback = procedures
+		{
+		identifyslider4(robo_window_pointer);
+		};
+						XmNdragCallback = procedures
+								{
+								roboslider4CB(robo_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								roboslider4CB(robo_window_pointer);
+								};
+						};
+				};
+		roboscale5: XmScrollBar
+				{
+				arguments
+						{
+						XmNleftAttachment = XmATTACH_FORM;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNorientation = XmHORIZONTAL;
+						XmNwidth = 198;
+						XmNrightAttachment = XmATTACH_FORM;
+						XmNbottomAttachment = XmATTACH_NONE;
+						XmNheight = 15;
+						XmNy = 219;
+						XmNleftOffset = 26;
+						XmNrightOffset = 24;
+						XmNtopPosition = 54;
+						XmNmaximum = slider_max;
+						XmNminimum = slider_min;
+			XmNvalue = 0;
+						};
+				callbacks
+						{
+			MrmNcreateCallback = procedures
+		{
+		identifyslider5(robo_window_pointer);
+		};
+						XmNdragCallback = procedures
+								{
+								roboslider5CB(robo_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								roboslider5CB(robo_window_pointer);
+								};
+						};
+				};
+		roboscale6: XmScrollBar
+				{
+				arguments
+						{
+						XmNleftAttachment = XmATTACH_FORM;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNorientation = XmHORIZONTAL;
+						XmNwidth = 198;
+						XmNrightAttachment = XmATTACH_FORM;
+						XmNbottomAttachment = XmATTACH_NONE;
+						XmNheight = 14;
+						XmNy = 252;
+						XmNrightOffset = 24;
+						XmNleftOffset = 26;
+						XmNtopPosition = 69;
+						XmNmaximum = slider_max;
+						XmNminimum = slider_min;
+			XmNvalue = 0;
+						};
+				callbacks
+						{
+			MrmNcreateCallback = procedures
+		{
+		identifyslider6(robo_window_pointer);
+		};
+						XmNdragCallback = procedures
+								{
+								roboslider6CB(robo_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								roboslider6CB(robo_window_pointer);
+								};
+						};
+				};
+		label2: XmLabel
+				{
+				arguments
+						{
+						XmNlabelString =
+						compound_string("Direction");
+						XmNleftAttachment = XmATTACH_FORM;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+						XmNleftOffset = 17;
+						XmNtopPosition = 39;
+						};
+				};
+		label0: XmLabel
+				{
+				arguments
+						{
+						XmNlabelString =
+						compound_string("ROBOT CONTROLLER");
+						XmNleftAttachment = XmATTACH_FORM;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+						XmNleftOffset = 18;
+						XmNtopPosition = 3;
+						};
+				};
+		roboscale7: XmScrollBar
+				{
+				arguments
+						{
+						XmNleftAttachment = XmATTACH_FORM;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNorientation = XmHORIZONTAL;
+						XmNwidth = 198;
+						XmNrightAttachment = XmATTACH_FORM;
+						XmNbottomAttachment = XmATTACH_NONE;
+						XmNheight = 14;
+						XmNy = 252;
+						XmNrightOffset = 24;
+						XmNleftOffset = 27;
+						XmNtopPosition = 79;
+						XmNmaximum = slider_max;
+						XmNminimum = slider_min;
+			XmNvalue = 0;
+						};
+				callbacks
+						{
+			MrmNcreateCallback = procedures
+		{
+		identifyslider7(robo_window_pointer);
+		};
+						XmNdragCallback = procedures
+								{
+								roboslider7CB(robo_window_pointer);
+								};
+						XmNvalueChangedCallback = procedures
+								{
+								roboslider7CB(robo_window_pointer);
+								};
+						};
+				};
+		robobtn1: XmPushButtonGadget
+				{
+				arguments
+						{
+						XmNlabelString =
+			compound_string("Tool");
+						XmNleftAttachment = XmATTACH_FORM;
+						XmNtopAttachment = XmATTACH_POSITION;
+						XmNleftOffset = 22;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+						XmNwidth = 50;
+						XmNrightAttachment = XmATTACH_NONE;
+						XmNrightOffset = 165;
+						XmNy = 342;
+						XmNbottomAttachment = XmATTACH_NONE;
+						XmNbottomOffset = 23;
+						XmNtopPosition = 87;
+						XmNheight = 28;
+						};
+				callbacks
+						{
+						XmNactivateCallback = procedures
+								{
+								robobtn1CB(robo_window_pointer);
+								};
+						};
+				};
+		robobtn2: XmPushButtonGadget
+	{
+	arguments
+			{
+			XmNlabelString =
+			compound_string("Close");
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNleftOffset = 162;
+			XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNwidth = 50;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 25;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNx = 162;
+			XmNy = 342;
+			XmNtopPosition = 87;
+			XmNheight = 27;
+			};
+	callbacks
+			{
+			XmNactivateCallback = procedures
+		{
+		close_roboCB(robo_window_pointer);
+		};
+			};
+	};
+		robobtn3: XmPushButtonGadget
+				{
+				arguments
+						{
+						XmNlabelString =
+			compound_string("on/off");
+						XmNtopAttachment = XmATTACH_POSITION;
+			XmNleftOffset = 90;
+						XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+						XmNwidth = 50;
+			XmNleftAttachment = XmATTACH_FORM;
+						XmNbottomAttachment = XmATTACH_NONE;
+						XmNy = 342;
+						XmNtopPosition = 87;
+						XmNheight = 27;
+						};
+				callbacks
+						{
+						XmNactivateCallback = procedures
+								{
+		robobtn3CB(robo_window_pointer);
+								};
+						};
+				};
+
+end module;
+

@@ -1,0 +1,1245 @@
+!*******************************************************************************
+! FILE : emoter_dialog.uil
+!
+! LAST MODIFIED : 7 April 1998
+!
+! DESCRIPTION :
+! The widgets for the emoter dialog widget.
+!===============================================================================
+module emoter_dialog
+	version = 'v1.0'
+
+procedure
+	emoter_dialog_destroy_CB          ();
+	emoter_slider_destroy_CB;
+	emoter_loadslider_CB;
+	emoter_saveslider_CB;
+	emoter_exportslider_CB;
+	emoter_id_slider_togglebutton;
+	emoter_slider_toggle_activate;
+	emoter_slider_select_activate;
+	emoter_add_marker_CB;
+	emoter_keyframe_CB;
+	emoter_id_slider_selectbutton;
+	emoter_id_emoter_slider;
+	emoter_slider_CB;
+	emoter_id_slider_value_text;
+	emoter_slider_value_text_CB;
+	emoter_id_play_slider;
+	emoter_play_slider_CB;
+	emoter_id_slider_form;
+	emoter_newslider_CB;
+	emoter_id_play_value_text;
+	emoter_play_value_text_CB;
+	emoter_id_slider_anim_pixmap;
+	emoter_id_play_max_text;
+	emoter_id_play_min_text;
+	emoter_id_play_button;
+	emoter_id_input_seq_button;
+	emoter_play_range_text_CB;
+	emoter_id_slider_markerrowcol;
+	emoter_convert_raw_CB;
+	emoter_playbutton_CB;
+	emoter_id_solid_motion_button;
+	emoter_solid_motion_CB;
+	emoter_input_sequence_CB;
+	emoter_movie_play_CB;
+	emoter_id_movie_framerate_text;
+	emoter_movie_framerate_CB;
+
+	emoter_id_marker;
+	emoter_marker_destroy_CB;
+	emoter_id_marker_value_text;
+	emoter_marker_value_text_CB;
+
+	emoter_id_mode_subform;
+	emoter_id_mode_text;
+	emoter_mode_show_CB;
+	emoter_mode_text_CB;
+	emoter_mode_up_CB;
+	emoter_mode_down_CB;
+
+	emoter_id_movie_control_form;
+	emoter_movie_every_frame_CB;
+	emoter_movie_loop_CB;
+
+value
+	shadow_size        : 2;
+	form_space_out    :  2;
+	form_space_in      :  4;
+	emoter_dialog_3d_space  :  3;
+	emoter_dialog_3d_height  :  200;
+
+value
+	emoter_font :
+		font_table(font('-*-HELVETICA-MEDIUM-R-*--*-80-*-*-*-*-ISO8859-1'));
+	emoter_font_large :
+		font_table(font('-*-HELVETICA-BOLD-R-*--*-100-*-*-*-*-ISO8859-1'));
+	emoter_font_bold :
+		font_table(font('-*-HELVETICA-BOLD-R-*--*-80-*-*-*-*-ISO8859-1'));
+	emoter_font_tiny :
+		font_table(font('-*-HELVETICA-MEDIUM-R-*--8-80-*-*-*-*-ISO8859-1'));
+	button_font :
+		font_table(font('-*-HELVETICA-MEDIUM-R-*--*-80-*-*-*-*-ISO8859-1'));
+	black : color('black', foreground);
+	emoter_icon_colour_table :
+		color_table(
+		black='o',
+		foreground color='.',
+		background color=' ');
+
+include file 'emoter_dialog_icon.uil';
+
+identifier
+	!The gap between widgets
+	widget_spacing;
+	emoter_dialog_structure;
+	emoter_slider_structure;
+	emoter_slider_name;
+	emoter_marker_structure;
+	emoter_marker_name;
+
+! the emoter_dialog widget
+object
+	emoter_dialog_widget: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure emoter_dialog_destroy_CB();
+			};
+		controls
+			{
+			XmRowColumn emoter_slider_rowcol;
+			XmForm emoter_dialog_top_controls_form;
+			XmForm emoter_dialog_controls_form;
+			};
+		};
+!**************************************************************************************
+	emoter_slider_rowcol: XmRowColumn
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = widget_spacing;
+			XmNbottomWidget = emoter_dialog_top_controls_form;
+			XmNborderWidth = 0;
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+				procedure emoter_id_slider_form(emoter_dialog_structure);
+			};
+		};
+
+	emoter_dialog_controls_form: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = emoter_dialog_structure;
+			XmNfractionBase = 120;
+			};
+		controls
+			{
+			XmPushButtonGadget emoter_load_button;
+			XmPushButtonGadget emoter_save_button;
+			XmPushButtonGadget emoter_export_button;
+			XmPushButtonGadget emoter_new_button;
+			XmPushButtonGadget emoter_convert_raw_button;
+			XmPushButtonGadget emoter_setkey_button;
+			XmScrollBar emoter_play_slider;
+			XmText emoter_play_value_text;
+			XmRowColumn emoter_play_range_rowcol;
+			XmToggleButton emoter_play_button;
+			};
+		};
+
+	emoter_dialog_top_controls_form: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = 0;
+			XmNbottomWidget = emoter_dialog_controls_form;
+			XmNuserData = emoter_dialog_structure;
+			XmNfractionBase = 120;
+			};
+		controls
+			{
+			XmToggleButton emoter_solid_motion_button;
+			XmToggleButton emoter_input_sequence_button;
+			XmToggleButton emoter_movie_play_button;
+			XmForm emoter_movie_control_form;
+			XmForm emoter_mode_control_form;
+			};
+		};
+
+!**************************************************************************************
+	emoter_solid_motion_button: XmToggleButton
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = widget_spacing;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftOffset = 0;
+			XmNleftPosition = 10;
+
+			XmNset = true;
+			XmNlabelString = compound_string("Rigid body motion");
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				emoter_id_solid_motion_button(emoter_dialog_structure);
+			XmNvalueChangedCallback = procedure
+				emoter_solid_motion_CB(emoter_dialog_structure);
+			};
+		};
+
+	emoter_input_sequence_button: XmToggleButton
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = widget_spacing;
+			XmNtopWidget = emoter_solid_motion_button;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftOffset = 0;
+			XmNleftPosition = 10;
+
+			XmNset = false;
+			XmNlabelString = compound_string("Input file sequence");
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+			   emoter_id_input_seq_button(emoter_dialog_structure);
+			XmNvalueChangedCallback = procedure
+			   emoter_input_sequence_CB(emoter_dialog_structure);
+			};
+		};
+
+	emoter_movie_play_button: XmToggleButton
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = widget_spacing;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftOffset = 0;
+			XmNleftPosition = 70;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+
+			XmNindicatorOn = false;
+			XmNlabelString = compound_string("Movie");
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			XmNvalueChangedCallback = procedure
+				emoter_movie_play_CB(emoter_dialog_structure);
+			};
+		};
+
+	emoter_load_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightOffset = widget_spacing;
+			XmNrightPosition = 20;
+			XmNlabelString = compound_string("Load");
+			XmNfontList = button_font;
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			XmNactivateCallback =
+						procedure emoter_loadslider_CB(emoter_dialog_structure);
+			};
+		};
+
+	emoter_save_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftOffset =  widget_spacing;
+			XmNleftPosition = 20;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightOffset =  widget_spacing;
+			XmNrightPosition = 40;
+			XmNlabelString = compound_string("Save");
+			XmNfontList = button_font;
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			XmNactivateCallback =
+						procedure emoter_saveslider_CB(emoter_dialog_structure);
+			};
+		};
+
+	emoter_export_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftOffset =  widget_spacing;
+			XmNleftPosition = 40;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightOffset =  widget_spacing;
+			XmNrightPosition = 60;
+			XmNlabelString = compound_string("Export nodes");
+			XmNfontList = button_font;
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			XmNactivateCallback =
+						procedure emoter_exportslider_CB(emoter_dialog_structure);
+			};
+		};
+
+	emoter_new_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftOffset =  widget_spacing;
+			XmNleftPosition = 60;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightOffset =  widget_spacing;
+			XmNrightPosition = 80;
+			XmNlabelString = compound_string("New");
+			XmNfontList = button_font;
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			XmNactivateCallback =
+						procedure emoter_newslider_CB(emoter_dialog_structure);
+			};
+		};
+
+	emoter_convert_raw_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftOffset =  widget_spacing;
+			XmNleftPosition = 80;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightOffset =  widget_spacing;
+			XmNrightPosition = 100;
+			XmNlabelString = compound_string("Convert data");
+			XmNfontList = button_font;
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			XmNactivateCallback =
+						procedure emoter_convert_raw_CB(emoter_dialog_structure);
+			};
+		};
+
+	emoter_setkey_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftOffset =  widget_spacing;
+			XmNleftPosition = 100;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset =  widget_spacing;
+			XmNlabelString = compound_string("Set Keyframe");
+			XmNfontList = button_font;
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			XmNactivateCallback =
+						procedure emoter_keyframe_CB(emoter_dialog_structure);
+			};
+		};
+
+	emoter_play_slider: XmScrollBar
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = widget_spacing;
+			XmNtopWidget = emoter_load_button;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = widget_spacing;
+			XmNrightWidget = emoter_play_value_text;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = widget_spacing;
+			XmNorientation = XmHORIZONTAL;
+			XmNminimum = 0;
+			XmNmaximum = 400;
+			XmNsliderSize = 1;
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+						procedure emoter_id_play_slider(emoter_dialog_structure);
+			XmNvalueChangedCallback =
+				procedure emoter_play_slider_CB(emoter_dialog_structure);
+			XmNdragCallback =
+				procedure emoter_play_slider_CB(emoter_dialog_structure);
+			};
+		};
+
+	emoter_play_value_text: XmText
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = widget_spacing;
+			XmNtopWidget = emoter_load_button;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = widget_spacing;
+			XmNrightWidget = emoter_play_range_rowcol;
+			XmNwidth = 85;
+			XmNvalue = "Value";
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				emoter_id_play_value_text(emoter_dialog_structure);
+			XmNactivateCallback = procedure
+				emoter_play_value_text_CB(emoter_dialog_structure);
+			};
+		};
+
+	emoter_play_range_rowcol: XmRowColumn
+		{
+		arguments
+			{
+			XmNmarginHeight = 1;
+			XmNmarginWidth = 1;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = emoter_load_button;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = widget_spacing;
+			XmNrightWidget = emoter_play_button;
+			XmNspacing = 0;
+			};
+		controls
+			{
+			XmRowColumn emoter_play_rowcol_max;
+			XmRowColumn emoter_play_rowcol_min;
+			};
+		};
+
+	emoter_play_rowcol_max: XmRowColumn
+		{
+		arguments
+			{
+			XmNmarginHeight = 1;
+			XmNmarginWidth = 1;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			};
+		controls
+			{
+			XmLabel emoter_play_max_label;
+			XmText emoter_play_range_max;
+			};
+		};
+
+	emoter_play_max_label: XmLabel
+		{
+		arguments
+			{
+			XmNwidth = 20;
+			XmNrecomputeSize = false;
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNlabelString = compound_string("Max:");
+			XmNfontList = emoter_font_tiny;
+			XmNuserData = emoter_dialog_structure;
+			};
+		};
+
+	emoter_play_range_max: XmText
+		{
+		arguments
+			{
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNwidth = 45;
+			XmNvalue = "Max";
+			XmNfontList = emoter_font_tiny;
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				emoter_id_play_max_text(emoter_dialog_structure);
+			XmNactivateCallback = procedure
+				emoter_play_range_text_CB(emoter_dialog_structure);
+			};
+		};
+
+	emoter_play_rowcol_min: XmRowColumn
+		{
+		arguments
+			{
+			XmNmarginHeight = 1;
+			XmNmarginWidth = 1;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			};
+		controls
+			{
+			XmLabel emoter_play_min_label;
+			XmText emoter_play_range_min;
+			};
+		};
+
+	emoter_play_min_label: XmLabel
+		{
+		arguments
+			{
+			XmNwidth = 20;
+			XmNrecomputeSize = false;
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNlabelString = compound_string("Min:");
+			XmNfontList = emoter_font_tiny;
+			XmNuserData = emoter_dialog_structure;
+			};
+		};
+
+	emoter_play_range_min: XmText
+		{
+		arguments
+			{
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNwidth = 45;
+			XmNvalue = "Min";
+			XmNfontList = emoter_font_tiny;
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				emoter_id_play_min_text(emoter_dialog_structure);
+			XmNactivateCallback = procedure
+				emoter_play_range_text_CB(emoter_dialog_structure);
+			};
+		};
+
+	emoter_play_button: XmToggleButton
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = widget_spacing;
+			XmNtopWidget = emoter_load_button;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNlabelType = XmPIXMAP;
+			XmNlabelPixmap = emoter_play_icon;
+			XmNfontList = button_font;
+			XmNindicatorOn = false;
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				emoter_id_play_button(emoter_dialog_structure);
+			XmNvalueChangedCallback =
+						procedure emoter_playbutton_CB(emoter_dialog_structure);
+			};
+		};
+
+
+!**************************************************************************************
+
+	emoter_slider: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+
+			XmNuserData = emoter_slider_structure;
+			};
+		controls
+			{
+			XmRowColumn emoter_slider_marker_rowcol;
+			XmToggleButtonGadget emoter_slider_toggle;
+!			XmLabel emoter_slider_anim_icon;
+			XmForm emoter_slider_anim_icon;
+			XmText emoter_slider_value_text;
+			XmScrollBar emoter_slider_scroll;
+			XmToggleButtonGadget emoter_slider_label;
+			XmSeparator emoter_slider_separator;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure
+				emoter_slider_destroy_CB(emoter_slider_structure);
+			};
+		};
+
+	emoter_slider_toggle: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = 0;
+			XmNbottomWidget = emoter_slider_separator;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+
+			XmNindicatorType = XmONE_OF_MANY;
+			XmNlabelString =
+				compound_string("");
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNuserData = emoter_slider_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				emoter_id_slider_togglebutton(emoter_slider_structure);
+			XmNvalueChangedCallback = procedure
+				emoter_slider_toggle_activate(emoter_slider_structure);
+			};
+		};
+
+	emoter_slider_scroll: XmScrollBar
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 0;
+			XmNleftWidget = emoter_slider_toggle;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = 0;
+			XmNrightWidget = emoter_slider_value_text;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = 0;
+			XmNbottomWidget = emoter_slider_marker_rowcol;
+			XmNorientation = XmHORIZONTAL;
+			XmNminimum = 0;
+			XmNmaximum = 1;
+			XmNsliderSize = 1;
+			XmNuserData = emoter_slider_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				emoter_id_emoter_slider(emoter_slider_structure);
+				emoter_slider_CB(emoter_slider_structure);
+				};
+			XmNvalueChangedCallback =
+				procedure emoter_slider_CB(emoter_slider_structure);
+			XmNdragCallback =
+				procedure emoter_slider_CB(emoter_slider_structure);
+			};
+		};
+
+	emoter_slider_value_text: XmText
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = 0;
+			XmNrightWidget = emoter_slider_anim_icon;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = 0;
+			XmNbottomWidget = emoter_slider_marker_rowcol;
+			XmNwidth = 65;
+			XmNvalue = "1.0";
+			XmNuserData = emoter_slider_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				emoter_id_slider_value_text(emoter_slider_structure);
+			XmNactivateCallback = procedure
+				emoter_slider_value_text_CB(emoter_slider_structure);
+			};
+		};
+
+	emoter_slider_anim_icon: XmForm
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = 0;
+			XmNrightWidget = emoter_slider_label;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = 0;
+			XmNbottomWidget = emoter_slider_separator;
+			XmNwidth = 100;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				emoter_id_slider_anim_pixmap(emoter_slider_structure);
+			};
+		};
+
+!	emoter_slider_anim_icon: XmLabel
+!		{
+!		arguments
+!			{
+!			XmNtopAttachment = XmATTACH_FORM;
+!			XmNtopOffset = 0;
+!			XmNrightAttachment = XmATTACH_WIDGET;
+!			XmNrightOffset = 0;
+!			XmNrightWidget = emoter_slider_label;
+!			XmNbottomAttachment = XmATTACH_WIDGET;
+!			XmNbottomOffset = 0;
+!			XmNbottomWidget = emoter_slider_separator;
+!			XmNlabelType = XmPIXMAP;
+!			XmNsensitive = false;
+!			XmNlabelPixmap = emoter_tricky_icon;
+!			};
+!		callbacks
+!			{
+!			MrmNcreateCallback = procedure
+!			   emoter_id_slider_anim_pixmap(emoter_slider_structure);
+!			};
+!		};
+
+	emoter_slider_label: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = 0;
+			XmNbottomWidget = emoter_slider_separator;
+			XmNwidth = 150;
+			XmNlabelString = emoter_slider_name;
+			XmNindicatorOn = false;
+			XmNuserData = emoter_slider_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				emoter_id_slider_selectbutton(emoter_slider_structure);
+			XmNvalueChangedCallback = procedure
+				emoter_slider_select_activate(emoter_slider_structure);
+			};
+		};
+
+	emoter_slider_marker_rowcol: XmRowColumn
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = emoter_slider_toggle;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = widget_spacing;
+			XmNrightWidget = emoter_slider_anim_icon;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = 0;
+			XmNbottomWidget = emoter_slider_separator;
+			XmNorientation = XmHORIZONTAL;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				emoter_id_slider_markerrowcol(emoter_slider_structure);
+			};
+		};
+
+	emoter_slider_separator: XmSeparator
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = emoter_slider_structure;
+			};
+		};
+
+
+!**************************************************************************************
+
+	emoter_marker: XmForm
+		{
+		arguments
+			{
+			XmNuserData = emoter_marker_structure;
+			};
+		controls
+			{
+			XmLabel emoter_marker_label;
+			XmText emoter_marker_value_text;
+			XmPushButton emoter_marker_add_button;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure
+				emoter_marker_destroy_CB(emoter_marker_structure);
+			};
+		};
+
+	emoter_marker_end: XmForm
+		{
+		arguments
+			{
+			XmNuserData = emoter_marker_structure;
+			};
+		controls
+			{
+			XmLabel emoter_marker_label;
+			XmText emoter_marker_value_text;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure
+				emoter_marker_destroy_CB(emoter_marker_structure);
+			};
+		};
+
+	emoter_marker_label: XmLabel
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = 0;
+			XmNrightWidget = emoter_marker_add_button;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNlabelString = emoter_marker_name;
+			XmNfontList = emoter_font_tiny;
+			XmNuserData = emoter_marker_structure;
+			};
+		};
+
+	emoter_marker_value_text: XmText
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = emoter_marker_label;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = 0;
+			XmNrightWidget = emoter_marker_add_button;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNfontList = emoter_font_tiny;
+			XmNwidth = 50;
+			XmNvalue = "0.0";
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+
+			XmNuserData = emoter_marker_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				emoter_id_marker_value_text(emoter_marker_structure);
+			XmNactivateCallback = procedure
+				emoter_marker_value_text_CB(emoter_marker_structure);
+			};
+		};
+
+	emoter_marker_add_button: XmPushButton
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+
+			XmNnavigationType = XmNONE;
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNlabelType = XmPIXMAP;
+			XmNlabelPixmap = emoter_add_marker_icon;
+			XmNuserData = emoter_marker_structure;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedure
+				emoter_add_marker_CB(emoter_marker_structure);
+			};
+		};
+
+!**************************************************************************************
+	emoter_mode_control_form: XmForm
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+			XmToggleButton emoter_mode_show_button;
+			XmForm emoter_mode_sub_form;
+			};
+		};
+
+	emoter_mode_show_button: XmToggleButton
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = 0;
+			XmNrightWidget = emoter_mode_sub_form;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+
+			XmNnavigationType = XmNONE;
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+!			XmNlabelType = XmPIXMAP;
+!			XmNlabelPixmap = emoter_add_marker_icon;
+			XmNlabelString = compound_string("Modes");
+			XmNindicatorOn = false;
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			XmNvalueChangedCallback = procedure
+				emoter_mode_show_CB(emoter_dialog_structure);
+			};
+		};
+
+	emoter_mode_sub_form: XmForm
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNfractionBase = 120;
+
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				emoter_id_mode_subform(emoter_dialog_structure);
+			};
+		controls
+			{
+			XmLabel emoter_mode_label;
+			XmPushButtonGadget emoter_mode_up_button;
+			XmText emoter_mode_text;
+			XmPushButtonGadget emoter_mode_down_button;
+			};
+		};
+
+	emoter_mode_label: XmLabel
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNlabelString = compound_string("Mode limit:");
+			XmNfontList = emoter_font_tiny;
+			XmNuserData = emoter_dialog_structure;
+			};
+		};
+
+	emoter_mode_text: XmText
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = emoter_mode_label;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNfontList = emoter_font_tiny;
+			XmNvalue = "Mode";
+			XmNwidth = 50;
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				emoter_id_mode_text(emoter_dialog_structure);
+			XmNactivateCallback = procedure
+				emoter_mode_text_CB(emoter_dialog_structure);
+			};
+		};
+
+	emoter_mode_up_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 0;
+			XmNleftWidget = emoter_mode_text;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomOffset = 0;
+			XmNbottomPosition = 60;
+			XmNlabelType = XmPIXMAP;
+			XmNlabelPixmap = emoter_mode_up_icon;
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			XmNactivateCallback =
+						procedure emoter_mode_up_CB(emoter_dialog_structure);
+			};
+		};
+
+	emoter_mode_down_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNtopOffset = 0;
+			XmNtopPosition = 60;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset =  0;
+			XmNleftWidget = emoter_mode_text;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset =  0;
+			XmNlabelType = XmPIXMAP;
+			XmNlabelPixmap = emoter_mode_down_icon;
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			XmNactivateCallback =
+						procedure emoter_mode_down_CB(emoter_dialog_structure);
+			};
+		};
+
+!**************************************************************************************
+
+	emoter_movie_control_form: XmForm
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 0;
+			XmNleftWidget = emoter_movie_play_button;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = widget_spacing;
+			XmNrightWidget = emoter_mode_control_form;
+			XmNfractionBase = 120;
+
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				emoter_id_movie_control_form(emoter_dialog_structure);
+			};
+		controls
+			{
+			XmToggleButtonGadget emoter_movie_loop_button;
+			XmToggleButtonGadget emoter_movie_every_button;
+			XmLabel emoter_movie_frame_rate_label;
+			XmText emoter_movie_frame_rate_text;
+			};
+		};
+
+	emoter_movie_loop_button: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNlabelString = compound_string("Loop");
+			XmNset = true;
+
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			XmNvalueChangedCallback =
+						procedure emoter_movie_loop_CB(emoter_dialog_structure);
+			};
+		};
+
+	emoter_movie_every_button: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = emoter_movie_loop_button;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset =  0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset =  0;
+			XmNlabelString = compound_string("Play every frame");
+			XmNset = true;
+
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			XmNvalueChangedCallback =
+						procedure emoter_movie_every_frame_CB(emoter_dialog_structure);
+			};
+		};
+
+	emoter_movie_frame_rate_label: XmLabel
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = emoter_movie_every_button;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNlabelString = compound_string("Frame rate:");
+			XmNuserData = emoter_dialog_structure;
+			};
+		};
+
+	emoter_movie_frame_rate_text: XmText
+		{
+		arguments
+			{
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = emoter_movie_every_button;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 0;
+			XmNleftWidget = emoter_movie_frame_rate_label;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNvalue = "  15.0";
+			XmNwidth = 30;
+
+			XmNuserData = emoter_dialog_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				emoter_id_movie_framerate_text(emoter_dialog_structure);
+			XmNactivateCallback = procedure
+				emoter_movie_framerate_CB(emoter_dialog_structure);
+			};
+		};
+
+
+end module;
+!**************************************************************************************

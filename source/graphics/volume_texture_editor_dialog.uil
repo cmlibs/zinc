@@ -1,0 +1,1002 @@
+!*******************************************************************************
+!FILE : volume_texture_editor_dialog.uil
+!
+!LAST MODIFIED : 28 April 1998
+!
+!DESCRIPTION :
+!The dialog for creating finite elements (.exnode and .exelem files) from the
+!volume texture.
+!===============================================================================
+module Volume_texture_editor_dialog
+	names = case_sensitive
+
+procedure
+	identify_coordinate_field_toggl;
+	identify_undeformed_field_toggl;
+	identify_fibre_field_toggle;
+	identify_x_interpolation_option;
+	identify_x_int_linear_lagrange;
+	identify_x_int_cubic_hermite;
+	identify_y_interpolation_option;
+	identify_y_int_linear_lagrange;
+	identify_y_int_cubic_hermite;
+	identify_z_interpolation_option;
+	identify_z_int_linear_lagrange;
+	identify_z_int_cubic_hermite;
+	identify_starting_node_number;
+	identify_starting_line_number;
+	identify_starting_face_number;
+	identify_starting_element_numbe;
+	identify_file_group_name_text;
+	identify_x_output_elements_text;
+	identify_y_output_elements_text;
+	identify_z_output_elements_text;
+	identify_ok_button;
+	write_finite_elements;
+	identify_cancel_button;
+	close_create_finite_elements_di;
+
+identifier
+	create_finite_elements_dialog_s;
+	widget_spacing;
+
+object
+	create_finite_elements_dialog: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			XmNallowOverlap = false;
+			XmNdialogStyle = XmDIALOG_FULL_APPLICATION_MODAL;
+			};
+		controls
+			{
+			XmToggleButton coordinate_field_toggle;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmToggleButton coordinate_field_toggle;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmToggleButton undeformed_field_toggle;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmToggleButton undeformed_field_toggle;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmToggleButton fibre_field_toggle;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmToggleButton fibre_field_toggle;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmOptionMenu x_interpolation_option;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmOptionMenu x_interpolation_option;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmOptionMenu y_interpolation_option;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmOptionMenu y_interpolation_option;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmOptionMenu z_interpolation_option;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmOptionMenu z_interpolation_option;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmForm starting_node_number_form;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmForm starting_node_number_form;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmForm starting_line_number_form;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmForm starting_line_number_form;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmForm starting_face_number_form;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmForm starting_face_number_form;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmForm starting_element_number_form;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmForm starting_element_number_form;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmForm file_group_name_form;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmForm file_group_name_form;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmForm output_elements_form;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmForm output_elements_form;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_FORM;
+					XmNleftOffset = widget_spacing;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_WIDGET;
+					XmNtopWidget = XmForm output_elements_form;
+					XmNtopOffset = widget_spacing;
+					XmNbottomAttachment = XmATTACH_WIDGET;
+					XmNbottomWidget = XmForm ok_cancel_form;
+					XmNbottomOffset = widget_spacing;
+					};
+				};
+			XmForm ok_cancel_form;
+			};
+		};
+	coordinate_field_toggle: XmToggleButton
+		{
+		arguments
+			{
+			XmNset = true;
+			XmNlabelString = compound_string("coordinate");
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_coordinate_field_toggl(create_finite_elements_dialog_s);
+				};
+			};
+		};
+	undeformed_field_toggle: XmToggleButton
+		{
+		arguments
+			{
+			XmNset = true;
+			XmNlabelString = compound_string("undeformed");
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmToggleButton coordinate_field_toggle;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_undeformed_field_toggl(create_finite_elements_dialog_s);
+				};
+			};
+		};
+	fibre_field_toggle: XmToggleButton
+		{
+		arguments
+			{
+			XmNset = true;
+			XmNlabelString = compound_string("fibre");
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmToggleButton undeformed_field_toggle;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_fibre_field_toggle(create_finite_elements_dialog_s);
+				};
+			};
+		};
+	x_interpolation_option: XmOptionMenu
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("x interpolation :");
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmToggleButton fibre_field_toggle;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmPulldownMenu
+				{
+				arguments
+					{
+					XmNborderWidth = 1;
+					};
+				controls
+					{
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString = compound_string("linear Lagrange");
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_x_int_linear_lagrange(create_finite_elements_dialog_s);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString = compound_string("cubic Hermite");
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_x_int_cubic_hermite(create_finite_elements_dialog_s);
+								};
+							};
+						};
+					};
+				};
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_x_interpolation_option(create_finite_elements_dialog_s);
+				};
+			};
+		};
+	y_interpolation_option: XmOptionMenu
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("y interpolation :");
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmOptionMenu x_interpolation_option;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmPulldownMenu
+				{
+				arguments
+					{
+					XmNborderWidth = 1;
+					};
+				controls
+					{
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString = compound_string("linear Lagrange");
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_y_int_linear_lagrange(create_finite_elements_dialog_s);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString = compound_string("cubic Hermite");
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_y_int_cubic_hermite(create_finite_elements_dialog_s);
+								};
+							};
+						};
+					};
+				};
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_y_interpolation_option(create_finite_elements_dialog_s);
+				};
+			};
+		};
+	z_interpolation_option: XmOptionMenu
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("z interpolation :");
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmOptionMenu y_interpolation_option;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmPulldownMenu
+				{
+				arguments
+					{
+					XmNborderWidth = 1;
+					};
+				controls
+					{
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString = compound_string("linear Lagrange");
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_z_int_linear_lagrange(create_finite_elements_dialog_s);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString = compound_string("cubic Hermite");
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_z_int_cubic_hermite(create_finite_elements_dialog_s);
+								};
+							};
+						};
+					};
+				};
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_z_interpolation_option(create_finite_elements_dialog_s);
+				};
+			};
+		};
+	starting_node_number_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmOptionMenu z_interpolation_option;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmLabel
+				{
+				arguments
+					{
+					XmNlabelString = compound_string("starting node number");
+					XmNleftAttachment = XmATTACH_FORM;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_WIDGET;
+					XmNrightWidget = XmTextField starting_node_number_text;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_FORM;
+					XmNtopOffset = 0;
+					XmNbottomAttachment = XmATTACH_FORM;
+					XmNbottomOffset = 0;
+					};
+				};
+			XmTextField starting_node_number_text;
+			};
+		};
+	starting_node_number_text: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_starting_node_number(create_finite_elements_dialog_s);
+				};
+			};
+		};
+	starting_line_number_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmForm starting_node_number_form;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmLabel
+				{
+				arguments
+					{
+					XmNlabelString = compound_string("starting line number");
+					XmNleftAttachment = XmATTACH_FORM;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_WIDGET;
+					XmNrightWidget = XmTextField starting_line_number_text;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_FORM;
+					XmNtopOffset = 0;
+					XmNbottomAttachment = XmATTACH_FORM;
+					XmNbottomOffset = 0;
+					};
+				};
+			XmTextField starting_line_number_text;
+			};
+		};
+	starting_line_number_text: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_starting_line_number(create_finite_elements_dialog_s);
+				};
+			};
+		};
+	starting_face_number_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmForm starting_line_number_form;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmLabel
+				{
+				arguments
+					{
+					XmNlabelString = compound_string("starting face number");
+					XmNleftAttachment = XmATTACH_FORM;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_WIDGET;
+					XmNrightWidget = XmTextField starting_face_number_text;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_FORM;
+					XmNtopOffset = 0;
+					XmNbottomAttachment = XmATTACH_FORM;
+					XmNbottomOffset = 0;
+					};
+				};
+			XmTextField starting_face_number_text;
+			};
+		};
+	starting_face_number_text: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_starting_face_number(create_finite_elements_dialog_s);
+				};
+			};
+		};
+	starting_element_number_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmForm starting_face_number_form;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmLabel
+				{
+				arguments
+					{
+					XmNlabelString = compound_string("starting element number");
+					XmNleftAttachment = XmATTACH_FORM;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_WIDGET;
+					XmNrightWidget = XmTextField starting_element_number_text;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_FORM;
+					XmNtopOffset = 0;
+					XmNbottomAttachment = XmATTACH_FORM;
+					XmNbottomOffset = 0;
+					};
+				};
+			XmTextField starting_element_number_text;
+			};
+		};
+	starting_element_number_text: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_starting_element_numbe(create_finite_elements_dialog_s);
+				};
+			};
+		};
+	file_group_name_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmForm starting_element_number_form;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmLabel
+				{
+				arguments
+					{
+					XmNlabelString = compound_string("file/group name");
+					XmNleftAttachment = XmATTACH_FORM;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_WIDGET;
+					XmNrightWidget = XmTextField file_group_name_text;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_FORM;
+					XmNtopOffset = 0;
+					XmNbottomAttachment = XmATTACH_FORM;
+					XmNbottomOffset = 0;
+					};
+				};
+			XmTextField file_group_name_text;
+			};
+		};
+	file_group_name_text: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 20;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_file_group_name_text(create_finite_elements_dialog_s);
+				};
+			};
+		};
+	output_elements_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmForm file_group_name_form;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmLabel x_output_elements_label;
+			XmTextField x_output_elements_text;
+			XmLabel y_output_elements_label;
+			XmTextField y_output_elements_text;
+			XmLabel z_output_elements_label;
+			XmTextField z_output_elements_text;
+			};
+		};
+	x_output_elements_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("output elements.  x=");
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	x_output_elements_text: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 2;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabel x_output_elements_label;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_x_output_elements_text(create_finite_elements_dialog_s);
+				};
+			};
+		};
+	y_output_elements_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("y=");
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmTextField x_output_elements_text;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	y_output_elements_text: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 2;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabel y_output_elements_label;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_y_output_elements_text(create_finite_elements_dialog_s);
+				};
+			};
+		};
+	z_output_elements_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("z=");
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmTextField y_output_elements_text;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	z_output_elements_text: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 2;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabel z_output_elements_label;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_z_output_elements_text(create_finite_elements_dialog_s);
+				};
+			};
+		};
+	ok_cancel_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNallowOverlap = false;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = widget_spacing;
+			};
+		controls
+			{
+			XmPushButtonGadget ok_button;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftOffset = widget_spacing;
+					XmNleftWidget = XmPushButtonGadget ok_button;
+					XmNrightAttachment = XmATTACH_WIDGET;
+					XmNrightOffset = widget_spacing;
+					XmNrightWidget = XmPushButtonGadget cancel_button;
+					XmNtopAttachment = XmATTACH_FORM;
+					XmNtopOffset = 0;
+					XmNbottomAttachment = XmATTACH_FORM;
+					XmNbottomOffset = 0;
+					};
+				};
+			XmPushButtonGadget cancel_button;
+			};
+		};
+	ok_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("OK");
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_ok_button(create_finite_elements_dialog_s);
+				};
+			XmNactivateCallback = procedures
+				{
+				write_finite_elements(create_finite_elements_dialog_s);
+				};
+			};
+		};
+	cancel_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Cancel");
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_cancel_button(create_finite_elements_dialog_s);
+				};
+			XmNactivateCallback = procedures
+				{
+				close_create_finite_elements_di(create_finite_elements_dialog_s);
+				};
+			};
+		};
+end module;

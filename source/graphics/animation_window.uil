@@ -1,0 +1,596 @@
+module scum
+		names = case_sensitive
+
+identifier
+		animation_window_pointer ;
+
+object
+		animation_window: XmForm
+				{
+				arguments
+						{
+						XmNx = 14;
+						XmNy = 16;
+						XmNwidth = 458;
+						XmNheight = 208;
+						XmNborderWidth = 1;
+						XmNfractionBase = 100;
+						};
+				controls
+						{
+						XmTextField
+								{
+								arguments
+										{
+										XmNwidth = 67;
+										XmNheight = 37;
+										XmNcolumns = 1;
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNleftPosition = 38;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 53;
+										XmNy = 40;
+										XmNtopPosition = 18;
+										XmNbottomPosition = 35;
+										XmNfontList = font_table(font('-*-COURIER-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										XmNuserData = 0;
+										};
+								callbacks
+										{
+										MrmNcreateCallback = procedures
+												{
+												animation_text_field_created(animation_window_pointer);
+												};
+										XmNactivateCallback = procedures
+												{
+												animation_text_value_changed(animation_window_pointer);
+												};
+										};
+								};
+						XmTextField
+								{
+								arguments
+										{
+										XmNwidth = 62;
+										XmNheight = 25;
+										XmNcolumns = 1;
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNleftPosition = 53;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 67;
+										XmNy = 40;
+										XmNtopPosition = 18;
+										XmNbottomPosition = 35;
+										XmNfontList = font_table(font('-*-COURIER-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										XmNuserData = 1;
+										};
+								callbacks
+										{
+										MrmNcreateCallback = procedures
+												{
+												animation_text_field_created(animation_window_pointer);
+												};
+										XmNactivateCallback = procedures
+												{
+												animation_text_value_changed(animation_window_pointer);
+												};
+										};
+								};
+						XmTextField
+								{
+								arguments
+										{
+										XmNwidth = 53;
+										XmNheight = 34;
+										XmNcolumns = 1;
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNleftPosition = 67;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 82;
+										XmNy = 40;
+										XmNtopPosition = 18;
+										XmNbottomPosition = 35;
+										XmNfontList = font_table(font('-*-COURIER-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										XmNuserData = 2;
+										};
+								callbacks
+										{
+										MrmNcreateCallback = procedures
+												{
+												animation_text_field_created(animation_window_pointer);
+												};
+										XmNactivateCallback = procedures
+												{
+												animation_text_value_changed(animation_window_pointer);
+												};
+										};
+								};
+						XmTextField
+								{
+								arguments
+										{
+										XmNwidth = 71;
+										XmNheight = 25;
+										XmNcolumns = 1;
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNleftPosition = 38;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 53;
+										XmNy = 96;
+										XmNtopPosition = 44;
+										XmNbottomPosition = 60;
+										XmNfontList = font_table(font('-*-COURIER-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										XmNuserData = 3;
+										};
+								callbacks
+										{
+										MrmNcreateCallback = procedures
+												{
+												animation_text_field_created(animation_window_pointer);
+												};
+										XmNactivateCallback = procedures
+												{
+												animation_text_value_changed(animation_window_pointer);
+												};
+										};
+								};
+						XmTextField
+								{
+								arguments
+										{
+										XmNwidth = 58;
+										XmNheight = 25;
+										XmNcolumns = 1;
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNleftPosition = 53;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 67;
+										XmNy = 96;
+										XmNtopPosition = 44;
+										XmNbottomPosition = 60;
+										XmNfontList = font_table(font('-*-COURIER-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										XmNuserData = 4;
+										};
+								callbacks
+										{
+										MrmNcreateCallback = procedures
+												{
+												animation_text_field_created(animation_window_pointer);
+												};
+										XmNactivateCallback = procedures
+												{
+												animation_text_value_changed(animation_window_pointer);
+												};
+										};
+								};
+						XmTextField
+								{
+								arguments
+										{
+										XmNwidth = 25;
+										XmNheight = 37;
+										XmNcolumns = 1;
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNleftPosition = 67;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 82;
+										XmNy = 90;
+										XmNtopPosition = 44;
+										XmNbottomPosition = 60;
+										XmNfontList = font_table(font('-*-COURIER-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										XmNuserData = 5;
+										};
+								callbacks
+										{
+										MrmNcreateCallback = procedures
+												{
+												animation_text_field_created(animation_window_pointer);
+												};
+										XmNactivateCallback = procedures
+												{
+												animation_text_value_changed(animation_window_pointer);
+												};
+										};
+								};
+						XmTextField
+								{
+								arguments
+										{
+										XmNwidth = 45;
+										XmNheight = 40;
+										XmNcolumns = 1;
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNleftPosition = 3;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 13;
+										XmNy = 60;
+										XmNtopPosition = 15;
+										XmNbottomPosition = 35;
+										XmNfontList = font_table(font('-*-COURIER-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										XmNuserData = 6;
+										};
+								callbacks
+										{
+										MrmNcreateCallback = procedures
+												{
+												animation_text_field_created(animation_window_pointer);
+												};
+										XmNactivateCallback = procedures
+												{
+												animation_text_value_changed(animation_window_pointer);
+												};
+										};
+								};
+						XmArrowButtonGadget
+								{
+								arguments
+										{
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNwidth = 26;
+										XmNleftPosition = 13;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 21;
+										XmNarrowDirection = XmARROW_DOWN;
+										XmNy = 109;
+										XmNheight = 22;
+										XmNtopPosition = 25;
+										XmNbottomPosition = 35;
+										};
+								callbacks
+										{
+										XmNactivateCallback = procedures
+												{
+												animation_dec_point(animation_window_pointer);
+												};
+										};
+								};
+						XmArrowButtonGadget
+								{
+								arguments
+										{
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNleftPosition = 13;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 21;
+										XmNheight = 24;
+										XmNy = 33;
+										XmNtopPosition = 15;
+										XmNbottomPosition = 25;
+										};
+								callbacks
+										{
+										XmNactivateCallback = procedures
+												{
+												animation_inc_point(animation_window_pointer);
+												};
+										};
+								};
+						XmLabelGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("Camera");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNwidth = 68;
+										XmNheight = 35;
+										XmNleftPosition = 22;
+										XmNtopPosition = 18;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 34;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 38;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-120-*-*-*-*-ISO8859-1'));
+										};
+								};
+						XmLabelGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("P.O.I");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNtopPosition = 45;
+										XmNleftPosition = 22;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 37;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 61;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-120-*-*-*-*-ISO8859-1'));
+										};
+								};
+						XmLabelGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("Point");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNtopPosition = 1;
+										XmNleftPosition = 1;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 22;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 15;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-120-*-*-*-*-ISO8859-1'));
+										};
+								};
+						XmLabelGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("Coordinates");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNwidth = 184;
+										XmNtopPosition = 1;
+										XmNleftPosition = 39;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 79;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 15;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-120-*-*-*-*-ISO8859-1'));
+										};
+								};
+						XmPushButtonGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("Accept");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNwidth = 94;
+										XmNleftPosition = 3;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 20;
+										XmNheight = 30;
+										XmNy = 147;
+										XmNtopPosition = 70;
+										XmNbottomPosition = 84;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-120-*-*-*-*-ISO8859-1'));
+										};
+								callbacks
+										{
+										XmNactivateCallback = procedures
+												{
+												animation_accept(animation_window_pointer);
+												};
+										};
+								};
+						XmPushButtonGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("Clear");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNleftPosition = 21;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 37;
+										XmNheight = 30;
+										XmNy = 147;
+										XmNtopPosition = 70;
+										XmNbottomPosition = 84;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-120-*-*-*-*-ISO8859-1'));
+										};
+								callbacks
+										{
+										XmNactivateCallback = procedures
+												{
+												animation_clear(animation_window_pointer);
+												};
+										};
+								};
+						XmPushButtonGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("Create");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNwidth = 77;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 56;
+										XmNleftPosition = 38;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNy = 147;
+										XmNheight = 33;
+										XmNtopPosition = 70;
+										XmNbottomPosition = 84;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-120-*-*-*-*-ISO8859-1'));
+										};
+								callbacks
+										{
+										XmNactivateCallback = procedures
+												{
+												animation_create(animation_window_pointer);
+												};
+										};
+								};
+						XmPushButtonGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("Close");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNleftPosition = 77;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 96;
+										XmNy = 147;
+										XmNheight = 33;
+										XmNtopPosition = 70;
+										XmNbottomPosition = 85;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-120-*-*-*-*-ISO8859-1'));
+										};
+								callbacks
+										{
+										XmNactivateCallback = procedures
+												{
+												animation_close(animation_window_pointer);
+												};
+										};
+								};
+						XmTextField
+								{
+								arguments
+										{
+										XmNwidth = 25;
+										XmNheight = 25;
+										XmNcolumns = 1;
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNtopPosition = 32;
+										XmNleftPosition = 84;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 97;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 49;
+										XmNfontList = font_table(font('-*-COURIER-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										XmNuserData = 7;
+										};
+								callbacks
+										{
+										MrmNcreateCallback = procedures
+												{
+												animation_text_field_created(animation_window_pointer);
+												};
+										XmNactivateCallback = procedures
+												{
+												animation_text_value_changed(animation_window_pointer);
+												};
+										};
+								};
+						XmLabelGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("FOV");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNtopPosition = 18;
+										XmNleftPosition = 84;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 32;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 95;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-120-*-*-*-*-ISO8859-1'));
+										};
+								};
+						XmTextField
+								{
+								arguments
+										{
+										XmNwidth = 25;
+										XmNheight = 25;
+										XmNcolumns = 1;
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNtopPosition = 46;
+										XmNleftPosition = 3;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 21;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 64;
+										XmNfontList = font_table(font('-*-COURIER-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+										XmNuserData = 8;
+										};
+								callbacks
+										{
+										MrmNcreateCallback = procedures
+												{
+												animation_text_field_created(animation_window_pointer);
+												};
+										XmNactivateCallback = procedures
+												{
+												animation_text_value_changed(animation_window_pointer);
+												};
+										};
+								};
+						XmLabelGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("Time");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNwidth = 89;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 22;
+										XmNtopPosition = 35;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 47;
+										XmNleftPosition = 1;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-120-*-*-*-*-ISO8859-1'));
+										};
+								};
+						XmPushButtonGadget
+								{
+								arguments
+										{
+										XmNlabelString =
+										compound_string("Load");
+										XmNleftAttachment = XmATTACH_POSITION;
+										XmNtopAttachment = XmATTACH_POSITION;
+										XmNtopPosition = 70;
+										XmNleftPosition = 57;
+										XmNbottomAttachment = XmATTACH_POSITION;
+										XmNbottomPosition = 84;
+										XmNrightAttachment = XmATTACH_POSITION;
+										XmNrightPosition = 73;
+										XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-120-*-*-*-*-ISO8859-1'));
+										};
+								callbacks
+										{
+										XmNactivateCallback = procedures
+												{
+												animation_load(animation_window_pointer);
+												};
+										};
+								};
+						};
+				};
+
+procedure
+		animation_inc_point;
+		animation_dec_point;
+		animation_text_field_created;
+		animation_text_value_changed;
+		animation_accept;
+		animation_clear;
+		animation_create;
+		animation_close;
+		animation_load;
+end module;
+

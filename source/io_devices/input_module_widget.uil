@@ -1,0 +1,148 @@
+!*******************************************************************************
+! FILE : input_module_widget.uil
+!
+! LAST MODIFIED : 14 May 1995
+!
+! DESCRIPTION :
+! The widgets for the three degree of freedom widget.
+!===============================================================================
+module dof3
+	version = 'v1.0'
+
+procedure
+	input_module_identify_button    (integer);
+	input_module_destroy_CB        ();
+	input_module_device_CB          ();
+	input_module_polhemus_CB        ();
+
+value
+	shadow_size        : 2;
+
+value
+	input_module_font            : font_table(font('-*-HELVETICA-MEDIUM-R-*--*-80-*-*-*-*-ISO8859-1'));
+	input_module_font_large      : font_table(font('-*-HELVETICA-BOLD-R-*--*-100-*-*-*-*-ISO8859-1'));
+	input_module_font_bold        : font_table(font('-*-HELVETICA-BOLD-R-*--*-80-*-*-*-*-ISO8859-1'));
+
+
+identifier
+	!The gap between widgets
+	widget_spacing;
+	!Pointer to data specific to this instance of the input_module widget
+	Input_module_structure;
+	!Value identifiers
+	input_module_device_button_ID;
+	input_module_polhemus_button_ID;
+	input_module_pulldown_ID;
+
+!**************************************************************************************
+!**************************************************************************************
+object
+! The input_module widget
+	input_module_widget: XmCascadeButton
+		{
+		arguments
+			{
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Input Device");
+!			XmNfontList = input_module_font;
+			XmNuserData = Input_module_structure;
+			};
+		controls
+			{
+			XmPulldownMenu input_module_menu;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure input_module_destroy_CB ();
+			};
+		};
+	input_module_menu: XmPulldownMenu
+		{
+		arguments
+			{
+			XmNuserData = Input_module_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure input_module_identify_button (input_module_pulldown_ID);
+			};
+		};
+!**************************************************************************************
+	input_module_menu_item: XmToggleButton
+		{
+		arguments
+			{
+			XmNset = false;
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Description");
+			XmNfontList = input_module_font_large;
+			XmNuserData = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure input_module_identify_button (input_module_device_button_ID);
+			XmNvalueChangedCallback = procedure input_module_device_CB ();
+			};
+		};
+	input_module_menu_sep: XmSeparator
+		{
+		};
+	input_module_menu_pol: XmCascadeButton
+		{
+		arguments
+			{
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Set Polhemus");
+			XmNfontList = input_module_font_large;
+			XmNuserData = Input_module_structure;
+			};
+		controls
+			{
+			XmPulldownMenu input_module_menu_pol_menu;
+			};
+		};
+	input_module_menu_pol_menu: XmPulldownMenu
+		{
+		arguments
+			{
+			XmNuserData = Input_module_structure;
+			};
+		controls
+			{
+			XmPushButton input_module_menu_pol_menu_0;
+			XmPushButton input_module_menu_pol_menu_1;
+			};
+		};
+!**************************************************************************************
+	input_module_menu_pol_menu_0: XmPushButton
+		{
+		arguments
+			{
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Set");
+			XmNfontList = input_module_font_large;
+			XmNuserData = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure input_module_identify_button (input_module_polhemus_button_ID);
+			XmNactivateCallback = procedure input_module_polhemus_CB ();
+			};
+		};
+	input_module_menu_pol_menu_1: XmPushButton
+		{
+		arguments
+			{
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Reset");
+			XmNfontList = input_module_font_large;
+			XmNuserData = 1;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure input_module_identify_button (input_module_polhemus_button_ID);
+			XmNactivateCallback = procedure input_module_polhemus_CB ();
+			};
+		};
+end module;
+!**************************************************************************************

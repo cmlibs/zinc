@@ -1,0 +1,3637 @@
+/*******************************************************************************
+FILE : parser.c
+
+LAST MODIFIED : 21 September 1999
+
+DESCRIPTION :
+A module for supporting command parsing.
+???DB.  What about allocate and deallocate
+???DB.  Make the set functions all look for "?" instead of NULL parser_state ?
+???DB.  Move variables into own module ?
+???DB.  Help for set_char_flag ?
+???DB.  Move fuzzy_string_compare to compare.c ?
+???DB.  Move extract_token into mystring.h ?
+==============================================================================*/
+#include <stddef.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include <ctype.h>
+#include "command/parser.h"
+#include "general/debug.h"
+#include "general/mystring.h"
+#include "user_interface/message.h"
+#include "user_interface/user_interface.h"
+
+/*
+Module types
+------------
+*/
+enum Variable_operation_type
+{
+	ADD_VARIABLE_OPERATION,
+	DIVIDE_VARIABLE_OPERATION,
+	MULTIPLY_VARIABLE_OPERATION,
+	SET_VARIABLE_OPERATION,
+	SUBTRACT_VARIABLE_OPERATION
+}; /* enum Variable_operation_type */
+
+/*
+Module variables
+----------------
+*/
+/*???DB.  Initial go at variables of form %<f|i|z|l><#>% , where the %'s are
+	required, f(loat) i(nteger) z(ero extended integer) l(ogical) are the variable
+	type and the # is an integer.  Can easily be extended to general names and
+	arbitrary numbers of variables */
+#define MAX_VARIABLES 100
+static float variable_float[MAX_VARIABLES];
+static int exclusive_option=0,multiple_options=0,usage_indentation_level=0,
+	usage_newline;
+
+/*
+Module functions
+----------------
+*/
+static int reduce_fuzzy_string(char *reduced_string,char *string)
+/*******************************************************************************
+LAST MODIFIED : 16 September 1998
+
+DESCRIPTION :
+Copies <string> to <reduced_string> converting to upper case and removing
+whitespace, -'s and _'s.
+???RC Removed filtering of dash and underline.
+==============================================================================*/
+{
+	char *destination,*source;
+	int return_code;
+
+	ENTER(reduce_fuzzy_string);
+	if ((source=string)&&(destination=reduced_string))
+	{
+		while (*source)
+		{
+			/* remove whitespace, -'s and _'s */
+			/*???RC don't know why you want to exclude - and _. I had a case where
+				I typed gfx create fibre_ (short for fibre_field) and it thought it was
+				ambiguous since there is also a gfx create fibres commands. */
+			if (!isspace(*source)/*&&(*source!='-')&&(*source!='_')*/)
+			{
+				*destination=toupper(*source);
+				destination++;
+			}
+			source++;
+		}
+		/* terminate the string */
+		*destination='\0';
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"reduce_fuzzy_string.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* reduce_fuzzy_string */
+
+static int execute_variable_command_operation(struct Parse_state *state,
+	void *operation_type_void,void *dummy_user_data)
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+Executes a VARIABLE operation command.
+==============================================================================*/
+{
+	char *current_token;
+	enum Variable_operation_type *operation_type;
+	float value;
+	int number,return_code;
+
+	ENTER(execute_variable_command_operation);
+	USE_PARAMETER(dummy_user_data);
+	if (state)
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				if (operation_type=(enum Variable_operation_type *)operation_type_void)
+				{
+					/* get number */
+					if (1==sscanf(current_token," %i",&number))
+					{
+						shift_Parse_state(state,1);
+						if (current_token=state->current_token)
+						{
+							/* get value */
+							if (1==sscanf(current_token," %f",&value))
+							{
+								return_code=0;
+								switch (*operation_type)
+								{
+									case ADD_VARIABLE_OPERATION:
+									{
+										variable_float[number] += value;
+									} break;
+									case DIVIDE_VARIABLE_OPERATION:
+									{
+										variable_float[number] /= value;
+									} break;
+									case MULTIPLY_VARIABLE_OPERATION:
+									{
+										variable_float[number] *= value;
+									} break;
+									case SET_VARIABLE_OPERATION:
+									{
+										variable_float[number]=value;
+									} break;
+									case SUBTRACT_VARIABLE_OPERATION:
+									{
+										variable_float[number] -= value;
+									} break;
+									default:
+									{
+										display_message(ERROR_MESSAGE,
+						"execute_variable_command_operation.  Unknown variable operation");
+										return_code=0;
+									} break;
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,"Invalid variable value: %s",
+									current_token);
+								display_parse_state_location(state);
+								return_code=0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"Missing variable value");
+							display_parse_state_location(state);
+							return_code=0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Invalid variable number: %s",
+							current_token);
+						display_parse_state_location(state);
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"execute_variable_command_show.  Missing operation_type");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," VARIABLE_NUMBER SET_VALUE");
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing variable number");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"execute_variable_command_operation.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_variable_command_operation */
+
+static int execute_variable_command_show(struct Parse_state *state,
+	void *dummy_to_be_modified,void *dummy_user_data)
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+Executes a VARIABLE SHOW command.
+==============================================================================*/
+{
+	char *current_token;
+	int number,return_code;
+
+	ENTER(execute_variable_command_show);
+	USE_PARAMETER(dummy_to_be_modified);
+	USE_PARAMETER(dummy_user_data);
+	if (state)
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				/* get number */
+				if (1==sscanf(current_token," %i",&number))
+				{
+					display_message(INFORMATION_MESSAGE,"Variable %i = %g\n",number,
+						variable_float[number]);
+					return_code=1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"Invalid variable number: %s",
+						current_token);
+					display_parse_state_location(state);
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," VARIABLE_NUMBER");
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing variable number");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"execute_variable_command_show.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_variable_command_show */
+
+/*
+Global functions
+----------------
+*/
+int fuzzy_string_compare(char *first,char *second)
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+This is a case insensitive compare disregarding certain characters (whitespace,
+dashes and underscores).  For example, "Ambient Colour" matches the following:
+
+"AMBIENT_COLOUR", "ambient_colour", "ambientColour", "Ambient_Colour",
+"ambient-colour", "AmBiEnTcOlOuR", "Ambient-- Colour"
+
+and a large set of even louder versions. The strings are compared up to the
+length of the shortest of first and second.
+
+Returns 1 if the strings match, 0 if they do not.
+==============================================================================*/
+{
+	char *first_reduced,*second_reduced;
+	int compare_length,first_length,return_code,second_length;
+
+	ENTER(fuzzy_string_compare);
+	/* check arguments */
+	if (first&&second)
+	{
+		/*???Edouard.  Malloc()ing and free()ing space for every string compare is
+			perhaps going to eat a few too many cycles in the final analysis. I think
+			that the best idea would be to at some point in the future recode the
+			following to compare the strings 'live' by reducing and skipping the chars
+			one by one. I've done this before, but it's generally not all that
+			clean-looking, so I'm trying to write a simple one first off */
+		/* allocate memory */
+		if (ALLOCATE(first_reduced,char,strlen(first)+1)&&
+			ALLOCATE(second_reduced,char,strlen(second)+1))
+		{
+			/* reduce strings */
+			if (reduce_fuzzy_string(first_reduced,first)&&
+				reduce_fuzzy_string(second_reduced,second))
+			{
+				first_length=strlen(first_reduced);
+				second_length=strlen(second_reduced);
+				/* determine length to compare on */
+/*        if ((first_length>=minimum_length)&&
+					(second_length>=minimum_length))
+				{*/
+					if (first_length<=second_length)
+					{
+						compare_length=first_length;
+						if (strncmp(first_reduced,second_reduced,compare_length))
+						{
+							return_code=0;
+						}
+						else
+						{
+							return_code=1;
+						}
+					}
+					else
+					{
+						return_code=0;
+					}
+#if defined (OLD_CODE)
+					if (first_length<second_length)
+					{
+						compare_length=first_length;
+					}
+					else
+					{
+						compare_length=second_length;
+					}
+					if (strncmp(first_reduced,second_reduced,compare_length))
+					{
+						return_code=0;
+					}
+					else
+					{
+						return_code=1;
+					}
+#endif /* defined (OLD_CODE) */
+/*        }
+				else
+				{
+					return_code=0;
+				}*/
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"fuzzy_string_compare.  Error reducing");
+				return_code=0;
+			}
+			DEALLOCATE(first_reduced);
+			DEALLOCATE(second_reduced);
+		}
+		else
+		{
+			DEALLOCATE(first_reduced);
+			display_message(ERROR_MESSAGE,
+				"fuzzy_string_compare.  Insufficient memory");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"fuzzy_string_compare.  Invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* fuzzy_string_compare */
+
+int fuzzy_string_compare_same_length(char *first,char *second)
+/*******************************************************************************
+LAST MODIFIED : 14 August 1998
+
+DESCRIPTION :
+Same as fuzzy_string_compare except that the two reduced strings must be the
+same length.
+==============================================================================*/
+{
+	char *first_reduced,*second_reduced;
+	int return_code;
+
+	ENTER(fuzzy_string_compare_same_length);
+	if (first&&second)
+	{
+		if (ALLOCATE(first_reduced,char,strlen(first)+1)&&
+			ALLOCATE(second_reduced,char,strlen(second)+1))
+		{
+			/* reduce strings */
+			if (reduce_fuzzy_string(first_reduced,first)&&
+				reduce_fuzzy_string(second_reduced,second))
+			{
+				if (0==strcmp(first_reduced,second_reduced))
+				{
+					return_code=1;
+				}
+				else
+				{
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"fuzzy_string_compare_same_length.  Error reducing");
+				return_code=0;
+			}
+			DEALLOCATE(first_reduced);
+			DEALLOCATE(second_reduced);
+		}
+		else
+		{
+			DEALLOCATE(first_reduced);
+			display_message(ERROR_MESSAGE,
+				"fuzzy_string_compare_same_length.  Insufficient memory");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"fuzzy_string_compare_same_length.  Invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* fuzzy_string_compare_same_length */
+
+#if defined (OLD_CODE)
+struct Parse_state *create_Parse_state(char *command_string)
+/*******************************************************************************
+LAST MODIFIED : 17 March 1997
+
+DESCRIPTION :
+Creates a Parse_state structure which contains
+- a trimmed copy of the <command_string>
+- the <command_string> split into tokens
+NB
+1 ! and # indicate that the rest of the command string is a comment (not split
+	into tokens
+2 Variables are converted into values
+==============================================================================*/
+{
+	char character,*string,**token,*token_start;
+	int number_of_tokens,return_code,token_length;
+	struct Parse_state *state;
+
+	ENTER(create_Parse_state);
+	/* check arguments */
+	if (command_string)
+	{
+		/* allocate memory for parse state */
+		if (ALLOCATE(state,struct Parse_state,1))
+		{
+			/* allocate memory for and create a trimmed version of the command
+				string */
+			if (state->command_string=trim_string(command_string))
+			{
+				string=state->command_string;
+				if ((character= *string)&&('!'!=character)&&('#'!=character))
+				{
+					/* count the number of tokens */
+					number_of_tokens=1;
+					do
+					{
+						switch (character)
+						{
+							case ' ': case '=': case ',': case ';':
+								/*???DB.  What about other whitespace ? */
+								/*???DB.  '=' was added specifically for set dir doc=dir_name */
+							{
+								/* skip separator */
+								do
+								{
+									string++;
+								}
+								while ((character= *string)&&((' '==character)||
+									('='==character)||(','==character)||(';'==character)));
+								if (character&&('!'!=character)&&('#'!=character))
+								{
+									number_of_tokens++;
+								}
+							} break;
+							default:
+							{
+								string++;
+							} break;
+						}
+					}
+					while ((character= *string)&&('!'!=character)&&('#'!=character));
+					/* allocate memory for tokens */
+					if (ALLOCATE(token,char *,number_of_tokens))
+					{
+						state->tokens=token;
+						state->number_of_tokens=number_of_tokens;
+						/* assign tokens */
+						string=state->command_string;
+						token_start=string;
+						token_length=0;
+						character= *string;
+						return_code=1;
+						do
+						{
+							switch (character)
+							{
+								case ' ': case '\0': case '!': case '#': case '=': case ',':
+									case ';':
+									/*???DB.  What about other whitespace ? */
+								{
+									/* allocate token */
+									if (ALLOCATE(*token,char,token_length+1))
+									{
+										strncpy(*token,token_start,token_length);
+										(*token)[token_length]='\0';
+										/* convert variables into numbers */
+										return_code=parse_variable(token);
+										token++;
+										number_of_tokens--;
+										/* skip separator */
+										while ((character= *string)&&((' '==character)||
+											('='==character)||(','==character)||(';'==character)))
+										{
+											string++;
+										}
+										token_start=string;
+										token_length=0;
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+										"create_Parse_state.  Could not allocate memory for token");
+										return_code=0;
+									}
+								} break;
+								default:
+								{
+									string++;
+									character= *string;
+									token_length++;
+								} break;
+							}
+						}
+						while (return_code&&(number_of_tokens>0));
+						if (return_code)
+						{
+							state->current_index=0;
+							state->current_token= *(state->tokens);
+						}
+						else
+						{
+							while (number_of_tokens<state->number_of_tokens)
+							{
+								token--;
+								DEALLOCATE(*token);
+								number_of_tokens++;
+							}
+							DEALLOCATE(state->tokens);
+							DEALLOCATE(state->command_string);
+							DEALLOCATE(state);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"create_Parse_state.  Could not allocate memory for tokens");
+						DEALLOCATE(state->command_string);
+						DEALLOCATE(state);
+					}
+				}
+				else
+				{
+					/* empty command */
+					state->tokens=(char **)NULL;
+					state->number_of_tokens=0;
+					state->current_index=0;
+					state->current_token=(char *)NULL;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"create_Parse_state.  Could not trim command string");
+				DEALLOCATE(state);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"create_Parse_state.  Insufficient memory for parse state");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"create_Parse_state.  Missing command string");
+		state=(struct Parse_state *)NULL;
+	}
+	LEAVE;
+
+	return (state);
+} /* create_Parse_state */
+#endif /* defined (OLD_CODE) */
+
+#if defined (OLD_CODE_TO_KEEP)
+static int extract_token(char **source_address,char **token_address)
+/*******************************************************************************
+LAST MODIFIED : 24 November 1998
+
+DESCRIPTION :
+On successful return, <*token_address> will point to a newly-allocated string
+containing the first token in the string at <*source_address>. <source_address>
+is then updated to point to the next character after the last one used in
+creating the token.
+The function skips any leading whitespace and stops at the first token delimiter
+(whitespace/=/,/;), comment character (!/#) or end of string. Tokens containing
+any of the above special characters may be produced by enclosing them in single
+or double quotes - but not a mixture of them. Repeating the chosen quote mark
+inside the quote puts one into the final token. The end of source string is a
+valid, automatic end of quote.
+To minimise memory allocation, the function uses the string at <*source_address>
+as working space in which the token is constructed from the source string.
+
+"FERRARI" version: Will turn <con"cat"'enation'> to <concatenation>. Dave does
+not like it since it is too generous to our users - and maybe not supportable
+in future.
+==============================================================================*/
+{
+	char quote_mark,*token,*token_destination,*token_source;
+	int check_quote,mid_quote,return_code,still_working,token_length;
+	struct Parse_state *state;
+
+	ENTER(extract_token);
+	if (source_address && *source_address && token_address)
+	{
+		return_code=1;
+		token_destination = token_source = *source_address;
+		/* pass over leading white space and other delimiters */
+		while (*token_source&&(isspace(*token_source)||
+			('=' == *token_source)||(',' == *token_source)||(';' == *token_source)))
+		{
+			token_source++;
+		}
+		mid_quote=0;
+		still_working=('\0' != *token_source);
+		while (still_working)
+		{
+			check_quote=1;
+			while (check_quote)
+			{
+				check_quote=0;
+				if (mid_quote)
+				{
+					/* check for end of quote or two quote marks together */
+					if (quote_mark == *token_source)
+					{
+						token_source++;
+						if (quote_mark != *token_source)
+						{
+							/* end of quote */
+							mid_quote=0;
+							/* allow immediate start of new quote */
+							check_quote=('\0' != *token_source);
+						}
+					}
+				}
+				else
+				{
+					/* see if quote beginning */
+					if (('\''== *token_source)||('\"'== *token_source))
+					{
+						mid_quote=1;
+						quote_mark= *token_source;
+						token_source++;
+						check_quote=('\0' != *token_source);
+					}
+				}
+			}
+			/* quote handling may have emptied string */
+			if (*token_source)
+			{
+				/* delimiter or comment characters end parsing */
+				if (!mid_quote&&(isspace(*token_source)||('=' == *token_source)||
+					(',' == *token_source)||(';' == *token_source)||
+					('!' == *token_source)||('#' == *token_source)))
+				{
+					still_working=0;
+				}
+				else
+				{
+					/* put character in token */
+					*token_destination = *token_source;
+					token_destination++;
+					token_source++;
+				}
+			}
+			else
+			{
+				still_working=0;
+			}
+		}
+		if (0<(token_length= token_destination - *source_address))
+		{
+			if (ALLOCATE(token,char,token_length+1))
+			{
+				strncpy(token,*source_address,token_length);
+				token[token_length]='\0';
+				*token_address = token;
+				*source_address = token_source;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"extract_token.  Not enough memory");
+				return_code=0;
+			}
+		}
+		else
+		{
+			/* source string empty or only contained whitespace/delimiters */
+			*token_address = (char *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"extract_token.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* extract_token */
+#endif /* defined (OLD_CODE_TO_KEEP) */
+
+static int extract_token(char **source_address,char **token_address)
+/*******************************************************************************
+LAST MODIFIED : 24 November 1998
+
+DESCRIPTION :
+On successful return, <*token_address> will point to a newly-allocated string
+containing the first token in the string at <*source_address>. <source_address>
+is then updated to point to the next character after the last one used in
+creating the token.
+The function skips any leading whitespace and stops at the first token delimiter
+(whitespace/=/,/;), comment character (!/#) or end of string. Tokens containing
+any of the above special characters may be produced by enclosing them in single
+or double quotes - but not a mixture of them. Repeating the chosen quote mark
+inside the quote puts one into the final token. The end of source string is a
+valid, automatic end of quote. Note that the quote marks are the start and end
+of the token - the token will not be concatenated with subsequent text.
+To minimise memory allocation, the function uses the string at <*source_address>
+as working space in which the token is constructed from the source string.
+==============================================================================*/
+{
+	char quote_mark,*token,*token_destination,*token_source;
+	int return_code,reading_token,token_length;
+
+	ENTER(extract_token);
+	if (source_address && *source_address && token_address)
+	{
+		return_code=1;
+		token_destination = token_source = *source_address;
+		/* pass over leading white space and other delimiters */
+		while (*token_source&&(isspace(*token_source)||
+			('=' == *token_source)||(',' == *token_source)||(';' == *token_source)))
+		{
+			token_source++;
+		}
+		if (*token_source)
+		{
+			reading_token=1;
+			if (('\''== *token_source)||('\"'== *token_source))
+			{
+				quote_mark= *token_source;
+				/* read token until final quote_mark or end of string, reading repeated
+					 quote_marks as single marks into the token */
+				token_source++;
+				while (reading_token)
+				{
+					if (*token_source)
+					{
+						if (quote_mark == *token_source)
+						{
+							/* work out if end of quote or repeared quote to go in token */
+							token_source++;
+							if (quote_mark != *token_source)
+							{
+								/* end of quote */
+								reading_token=0;
+								if (('\0' != *token_source)&&!isspace(*token_source)&&
+									('=' != *token_source)&&(',' != *token_source)&&
+									(';' != *token_source)&&('!' != *token_source)&&
+									('#' != *token_source))
+								{
+									/* string missing delimiter after quote; report error */
+									display_message(ERROR_MESSAGE,
+										"Token missing delimiter after final quote (%c)",
+										quote_mark);
+									return_code=0;
+								}
+							}
+						}
+						if (reading_token)
+						{
+							/* put character in token */
+							*token_destination = *token_source;
+							token_destination++;
+							token_source++;
+						}
+					}
+					else
+					{
+						/* string ended without final quote; report error */
+						display_message(ERROR_MESSAGE,
+							"Token missing final quote (%c)",quote_mark);
+						return_code=reading_token=0;
+					}
+				}
+			}
+			else
+			{
+				/* read token until first whitespace/delimiter/comment character */
+				while (reading_token)
+				{
+					if (('\0' == *token_source)||isspace(*token_source)||
+						('=' == *token_source)||(',' == *token_source)||
+						(';' == *token_source)||('!' == *token_source)||
+						('#' == *token_source))
+					{
+						reading_token=0;
+					}
+					else
+					{
+						/* put character in token */
+						*token_destination = *token_source;
+						token_destination++;
+						token_source++;
+					}
+				}
+			}
+		}
+		if (return_code)
+		{
+			if (0<(token_length= token_destination - *source_address))
+			{
+				if (ALLOCATE(token,char,token_length+1))
+				{
+					strncpy(token,*source_address,token_length);
+					token[token_length]='\0';
+					*token_address = token;
+					*source_address = token_source;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"extract_token.  Not enough memory");
+					return_code=0;
+				}
+			}
+			else
+			{
+				/* source string empty or only contained whitespace/delimiters */
+				*token_address = (char *)NULL;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"extract_token.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* extract_token */
+
+struct Parse_state *create_Parse_state(char *command_string)
+/*******************************************************************************
+LAST MODIFIED : 24 November 1998
+
+DESCRIPTION :
+Creates a Parse_state structure which contains
+- a trimmed copy of the <command_string>
+- the <command_string> split into tokens
+NB
+1 ! and # indicate that the rest of the command string is a comment (not split
+	into tokens;
+2 tokens containing normal token separator commands may be entered by surround-
+  ing them with single '' or double "" quotes - useful for entering text. Paired
+	quotes in such strings are read as a quote mark in the final token;
+3 Variables are converted into values;
+==============================================================================*/
+{
+	char *next_token,**temp_tokens,**tokens,*token_source,*working_string;
+	int allocated_tokens,i,number_of_tokens,return_code,still_tokenising;
+	struct Parse_state *state;
+
+	ENTER(create_Parse_state);
+	if (command_string)
+	{
+		if (ALLOCATE(state,struct Parse_state,1))
+		{
+			/* create 2 command_string copies: one for working, one to go in state */
+			/*???RC trim_string not used as trailing whitespace may be in a quote */
+			if (ALLOCATE(working_string,char,strlen(command_string)+1)&&
+				ALLOCATE(state->command_string,char,strlen(command_string)+1))
+			{
+				strcpy(working_string,command_string);
+				strcpy(state->command_string,command_string);
+				token_source=working_string;
+				tokens=(char **)NULL;
+				allocated_tokens=0;
+				number_of_tokens=0;
+				return_code=1;
+				still_tokenising=1;
+				while (still_tokenising)
+				{
+					if (extract_token(&token_source,&next_token))
+					{
+						if (next_token)
+						{
+							/* convert variables into numbers */
+							if (parse_variable(&next_token))
+							{
+								if (number_of_tokens == allocated_tokens)
+								{
+									if (REALLOCATE(temp_tokens,tokens,char *,allocated_tokens+10))
+									{
+										tokens=temp_tokens;
+										allocated_tokens += 10;
+									}
+									else
+									{
+										return_code=0;
+									}
+								}
+								if (return_code)
+								{
+									tokens[number_of_tokens]=next_token;
+									number_of_tokens++;
+								}
+							}
+							else
+							{
+								return_code=0;
+							}
+							if (!return_code)
+							{
+								DEALLOCATE(next_token);
+								still_tokenising=0;
+							}
+						}
+						else
+						{
+							/* successful end of tokenising */
+							still_tokenising=0;
+						}
+					}
+					else
+					{
+						/* tokenising failed */
+						return_code=still_tokenising=0;
+					}
+				}
+				if (return_code)
+				{
+					state->tokens=tokens;
+					state->number_of_tokens=number_of_tokens;
+					state->current_index=0;
+					if (tokens)
+					{
+						state->current_token=tokens[0];
+					}
+					else
+					{
+						state->current_token=(char *)NULL;
+					}
+				}
+				else
+				{
+					/* clean up any memory allocated for tokens */
+					if (tokens)
+					{
+						for (i=0;i<number_of_tokens;i++)
+						{
+							DEALLOCATE(tokens[i]);
+						}
+						DEALLOCATE(tokens);
+					}
+					DEALLOCATE(state->command_string);
+				}
+			}
+			else
+			{
+				return_code=0;
+			}
+			DEALLOCATE(working_string);
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,
+					"create_Parse_state.  Error filling parse state");
+				DEALLOCATE(state);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"create_Parse_state.  Insufficient memory for parse state");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"create_Parse_state.  Missing command string");
+		state=(struct Parse_state *)NULL;
+	}
+	LEAVE;
+
+	return (state);
+} /* create_Parse_state */
+
+int destroy_Parse_state(struct Parse_state **state_address)
+/*******************************************************************************
+LAST MODIFIED : 12 June 1996
+
+DESCRIPTION :
+==============================================================================*/
+{
+	char **token;
+	int number_of_tokens,return_code;
+	struct Parse_state *state;
+
+	ENTER(destroy_Parse_state);
+	if (state_address)
+	{
+		if (state= *state_address)
+		{
+			if ((number_of_tokens=state->number_of_tokens)>0)
+			{
+				token=state->tokens;
+				while (number_of_tokens>0)
+				{
+					DEALLOCATE(*token);
+					token++;
+					number_of_tokens--;
+				}
+				DEALLOCATE(state->tokens);
+			}
+			DEALLOCATE(state->command_string);
+			DEALLOCATE(*state_address);
+			return_code=1;
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"destroy_Parse_state.  Invalid argument");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* destroy_Parse_state */
+
+int shift_Parse_state(struct Parse_state *state,int shift)
+/*******************************************************************************
+LAST MODIFIED : 12 June 1996
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(shift_Parse_state);
+	if (state&&(shift>0))
+	{
+		state->current_index += shift;
+		if (state->current_index<=state->number_of_tokens)
+		{
+			if (state->current_index==state->number_of_tokens)
+			{
+				state->current_token=(char *)NULL;
+			}
+			else
+			{
+				state->current_token=state->tokens[state->current_index];
+			}
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"shift_Parse_state.  Cannot shift beyond end of token list");
+			state->current_token=(char *)NULL;
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"shift_Parse_state.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* shift_Parse_state */
+
+int display_parse_state_location(struct Parse_state *state)
+/*******************************************************************************
+LAST MODIFIED : 27 June 1996
+
+DESCRIPTION :
+Shows the current location in the parse <state>.
+==============================================================================*/
+{
+	char **token;
+	int i,return_code;
+
+	ENTER(display_parse_state_location);
+	if (state)
+	{
+		if (state->current_token)
+		{
+			i=state->current_index;
+		}
+		else
+		{
+			i=state->number_of_tokens;
+		}
+		token=state->tokens;
+		while (i>0)
+		{
+			display_message(INFORMATION_MESSAGE,"%s ",*token);
+			token++;
+			i--;
+		}
+		display_message(INFORMATION_MESSAGE,"*\n");
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"display_parse_state_location.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* display_parse_state_location */
+
+int Parse_state_append_to_command_string(struct Parse_state *state,
+	char *addition)
+/*******************************************************************************
+LAST MODIFIED : 29 October 1999
+
+DESCRIPTION :
+Appends the <addition> string to the end of the current command_string stored in
+the <state>.  Useful for changing the kept history echoed to the command window.
+==============================================================================*/
+{
+	char *new_command_string;
+	int return_code;
+
+	ENTER(Parse_state_append_to_command_string);
+	if (state && addition)
+	{
+		if (REALLOCATE(new_command_string, state->command_string,
+			char, strlen(state->command_string) + strlen(addition) + 1))
+		{
+			strcat(new_command_string, addition);
+			state->command_string = new_command_string;
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Parse_state_append_to_command_string.  "
+				"Unable to reallocate command string");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Parse_state_append_to_command_string.  Invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Parse_state_append_to_command_string */
+
+int process_option(struct Parse_state *state,
+	struct Modifier_entry *modifier_table)
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+If the <state->current_token> is "?", then the options in the <modifier_table>
+and the values expected for each will be written to the command window and 1
+returned.  Otherwise, the <modifier_table> is searched for entries whose option
+field matchs <state->current_token>.  If no matchs are found, then if the
+terminating entry in the <modifier_table> has a modifier function it is called,
+otherwise an error message is written and 0 returned.  If one match is found,
+then the modifier function of the entry is called and its return value returned.
+If more than one match is found then the possible matchs are written to the
+command window and 0 is returned.  Note that <process_option> is a modifier
+function.
+==============================================================================*/
+{
+	char *current_token,*error_message,*temp_message,**token;
+	int first,i,match_length,return_code;
+	struct Modifier_entry *entry,*matching_entry,*sub_entry;
+
+	ENTER(process_option);
+	exclusive_option++;
+	if (state&&(entry=modifier_table))
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				return_code=0;
+				matching_entry=(struct Modifier_entry *)NULL;
+				match_length=strlen(current_token);
+				error_message=(char *)NULL;
+				while ((entry->option)||((entry->user_data)&&!(entry->modifier)))
+				{
+					if (entry->option)
+					{
+						if (fuzzy_string_compare(current_token,entry->option))
+						{
+							if (matching_entry)
+							{
+								if (return_code)
+								{
+									return_code=0;
+									if (ALLOCATE(error_message,char,38+match_length+
+										strlen(matching_entry->option)+strlen(entry->option)))
+									{
+										strcpy(error_message,"Ambiguous option <");
+										strcat(error_message,current_token);
+										strcat(error_message,"> could be <");
+										strcat(error_message,matching_entry->option);
+										strcat(error_message,"> or <");
+										strcat(error_message,entry->option);
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"process_option.  Multiple match, insufficient memory");
+									}
+								}
+								else
+								{
+									if (error_message)
+									{
+										if (REALLOCATE(temp_message,error_message,char,
+											strlen(error_message)+8+strlen(entry->option)))
+										{
+											error_message=temp_message;
+											strcat(error_message,"> or <");
+											strcat(error_message,entry->option);
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+												"process_option.  Multiple match, insufficient memory");
+											DEALLOCATE(error_message);
+										}
+									}
+								}
+							}
+							else
+							{
+								matching_entry=entry;
+								return_code=1;
+							}
+						}
+					}
+					else
+					{
+						/* assume that the user_data is another option table */
+						sub_entry=(struct Modifier_entry *)(entry->user_data);
+						while (sub_entry->option)
+						{
+							if (fuzzy_string_compare(current_token,sub_entry->option))
+							{
+								if (matching_entry)
+								{
+									if (return_code)
+									{
+										return_code=0;
+										if (ALLOCATE(error_message,char,38+match_length+
+											strlen(matching_entry->option)+strlen(sub_entry->option)))
+										{
+											strcpy(error_message,"Ambiguous option <");
+											strcat(error_message,current_token);
+											strcat(error_message,"> could be <");
+											strcat(error_message,matching_entry->option);
+											strcat(error_message,"> or <");
+											strcat(error_message,sub_entry->option);
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+												"process_option.  Multiple match, insufficient memory");
+										}
+									}
+									else
+									{
+										if (error_message)
+										{
+											if (REALLOCATE(temp_message,error_message,char,
+												strlen(error_message)+8+strlen(sub_entry->option)))
+											{
+												error_message=temp_message;
+												strcat(error_message,"> or <");
+												strcat(error_message,sub_entry->option);
+											}
+											else
+											{
+												display_message(ERROR_MESSAGE,
+												"process_option.  Multiple match, insufficient memory");
+												DEALLOCATE(error_message);
+											}
+										}
+									}
+								}
+								else
+								{
+									matching_entry=sub_entry;
+									return_code=1;
+								}
+							}
+							sub_entry++;
+						}
+					}
+					entry++;
+				}
+				if (return_code)
+				{
+					if (shift_Parse_state(state,1))
+					{
+						return_code=(matching_entry->modifier)(state,
+							matching_entry->to_be_modified,matching_entry->user_data);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"process_option.  Error parsing");
+						return_code=0;
+					}
+				}
+				else
+				{
+					if (!matching_entry)
+					{
+						/* use the default modifier function if it exists */
+						if (entry->modifier)
+						{
+							return_code=(entry->modifier)(state,entry->to_be_modified,
+								entry->user_data);
+						}
+						else
+						{
+							if (ALLOCATE(error_message,char,18+match_length))
+							{
+								strcpy(error_message,"Unknown option <");
+								strcat(error_message,current_token);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"process_option.  No match, insufficient memory");
+							}
+						}
+					}
+					if (error_message)
+					{
+						strcat(error_message,">");
+						display_message(ERROR_MESSAGE,error_message);
+						DEALLOCATE(error_message);
+						display_parse_state_location(state);
+					}
+				}
+			}
+			else
+			{
+				/* write help */
+				if (0==usage_indentation_level)
+				{
+					display_message(INFORMATION_MESSAGE,"Usage :");
+					token=state->tokens;
+					for (i=state->current_index;i>0;i--)
+					{
+						display_message(INFORMATION_MESSAGE," %s",*token);
+						token++;
+					}
+					display_message(INFORMATION_MESSAGE," %s",*token);
+				}
+				if (!((multiple_options>0)&&(exclusive_option>1)))
+				{
+					display_message(INFORMATION_MESSAGE,"\n");
+				}
+				usage_indentation_level += 2;
+				if (strcmp(PARSER_HELP_STRING,current_token)||(multiple_options>0))
+				{
+					/* recursive help */
+					first=1;
+					while ((entry->option)||((entry->user_data)&&!(entry->modifier)))
+					{
+						if (entry->option)
+						{
+							if (entry->modifier)
+							{
+								if (multiple_options>0)
+								{
+									if (exclusive_option>1)
+									{
+										if (first)
+										{
+											display_message(INFORMATION_MESSAGE,"\n%*s(%s",
+												usage_indentation_level," ",entry->option);
+										}
+										else
+										{
+											display_message(INFORMATION_MESSAGE,"|%s",entry->option);
+										}
+									}
+									else
+									{
+										display_message(INFORMATION_MESSAGE,"%*s<%s",
+											usage_indentation_level," ",entry->option);
+									}
+								}
+								else
+								{
+									display_message(INFORMATION_MESSAGE,"%*s%s",
+										usage_indentation_level," ",entry->option);
+								}
+								usage_newline=1;
+								(entry->modifier)(state,entry->to_be_modified,entry->user_data);
+								if (multiple_options>0)
+								{
+									if (exclusive_option<=1)
+									{
+										display_message(INFORMATION_MESSAGE,">");
+										if (usage_newline)
+										{
+											display_message(INFORMATION_MESSAGE,"\n");
+											usage_newline=0;
+										}
+									}
+								}
+								else
+								{
+									if (usage_newline)
+									{
+										display_message(INFORMATION_MESSAGE,"\n");
+										usage_newline=0;
+									}
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"process_option.  Missing modifier: %s",entry->option);
+								display_parse_state_location(state);
+							}
+						}
+						else
+						{
+							/* assume that the user_data is another option table */
+							sub_entry=(struct Modifier_entry *)(entry->user_data);
+							if (sub_entry->option)
+							{
+								if (multiple_options>0)
+								{
+									display_message(INFORMATION_MESSAGE,"%*s<%s",
+										usage_indentation_level," ",sub_entry->option);
+								}
+								else
+								{
+									display_message(INFORMATION_MESSAGE,"%*s%s",
+										usage_indentation_level," ",sub_entry->option);
+								}
+								sub_entry++;
+								while (sub_entry->option)
+								{
+									if (sub_entry->modifier)
+									{
+										display_message(INFORMATION_MESSAGE,"|%s",
+											sub_entry->option);
+										(sub_entry->modifier)(state,sub_entry->to_be_modified,
+											sub_entry->user_data);
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"process_option.  Missing modifier: %s",
+											sub_entry->option);
+										display_parse_state_location(state);
+									}
+									sub_entry++;
+								}
+								if (multiple_options>0)
+								{
+									display_message(INFORMATION_MESSAGE,">");
+								}
+								display_message(INFORMATION_MESSAGE,"\n");
+								usage_newline=0;
+							}
+						}
+						first=0;
+						entry++;
+					}
+					/* write help for default modifier it it exists */
+					if (entry->modifier)
+					{
+						if (multiple_options>0)
+						{
+							if (exclusive_option>1)
+							{
+								if (first)
+								{
+									display_message(INFORMATION_MESSAGE,"\n%*s(",
+										usage_indentation_level," ");
+								}
+								else
+								{
+									display_message(INFORMATION_MESSAGE,"|");
+								}
+							}
+							else
+							{
+								display_message(INFORMATION_MESSAGE,"%*s<",
+									usage_indentation_level," ");
+							}
+						}
+						else
+						{
+							display_message(INFORMATION_MESSAGE,"%*s",usage_indentation_level,
+								" ");
+						}
+						usage_newline=1;
+						(entry->modifier)(state,entry->to_be_modified,entry->user_data);
+						if (multiple_options>0)
+						{
+							if (exclusive_option<=1)
+							{
+								display_message(INFORMATION_MESSAGE,">");
+								if (usage_newline)
+								{
+									display_message(INFORMATION_MESSAGE,"\n");
+									usage_newline=0;
+								}
+							}
+							else
+							{
+								display_message(INFORMATION_MESSAGE,")");
+							}
+						}
+						else
+						{
+							if (usage_newline)
+							{
+								display_message(INFORMATION_MESSAGE,"\n");
+								usage_newline=0;
+							}
+						}
+					}
+				}
+				else
+				{
+					/* one level of help */
+						/*???DB.  Have added  multiple_options>0  to then so won't come
+							here, but haven't stripped out yet */
+					while ((entry->option)||((entry->user_data)&&!(entry->modifier)))
+					{
+						if (entry->option)
+						{
+							if (multiple_options>0)
+							{
+								display_message(INFORMATION_MESSAGE,"%*s<%s>\n",
+									usage_indentation_level," ",entry->option);
+							}
+							else
+							{
+								display_message(INFORMATION_MESSAGE,"%*s%s\n",
+									usage_indentation_level," ",entry->option);
+							}
+						}
+						else
+						{
+							/* assume that the user_data is another option table */
+							sub_entry=(struct Modifier_entry *)(entry->user_data);
+							if (sub_entry->option)
+							{
+								if (multiple_options>0)
+								{
+									display_message(INFORMATION_MESSAGE,"%*s<%s",
+										usage_indentation_level," ",sub_entry->option);
+								}
+								else
+								{
+									display_message(INFORMATION_MESSAGE,"%*s(%s",
+										usage_indentation_level," ",sub_entry->option);
+								}
+								sub_entry++;
+								while (sub_entry->option)
+								{
+									display_message(INFORMATION_MESSAGE,"|%s",sub_entry->option);
+									sub_entry++;
+								}
+								if (multiple_options>0)
+								{
+									display_message(INFORMATION_MESSAGE,">");
+								}
+								else
+								{
+									display_message(INFORMATION_MESSAGE,")");
+								}
+								display_message(INFORMATION_MESSAGE,"\n");
+								usage_newline=0;
+							}
+						}
+						entry++;
+					}
+					/* write help for default modifier if it exists */
+					if (entry->modifier)
+					{
+						if (multiple_options>0)
+						{
+							display_message(INFORMATION_MESSAGE,"%*s<",
+								usage_indentation_level," ");
+						}
+						else
+						{
+							display_message(INFORMATION_MESSAGE,"%*s",usage_indentation_level,
+								" ");
+						}
+						(entry->modifier)(state,entry->to_be_modified,entry->user_data);
+						if (multiple_options>0)
+						{
+							display_message(INFORMATION_MESSAGE,">");
+						}
+						display_message(INFORMATION_MESSAGE,"\n");
+					}
+				}
+				usage_indentation_level -= 2;
+				/* so that process_option is only called once in parsing loop */
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing token");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"process_option.  Invalid argument(s)");
+		return_code=0;
+	}
+	exclusive_option--;
+	LEAVE;
+
+	return (return_code);
+} /* process_option */
+
+int process_multiple_options(struct Parse_state *state,
+	struct Modifier_entry *modifier_table)
+/*******************************************************************************
+LAST MODIFIED : 4 October 1996
+
+DESCRIPTION :
+==============================================================================*/
+{
+	int local_exclusive_option,return_code;
+
+	ENTER(process_multiple_options);
+	if (state&&modifier_table)
+	{
+		multiple_options++;
+		local_exclusive_option=exclusive_option;
+		exclusive_option=0;
+		return_code=1;
+		while ((state->current_token)&&(return_code=process_option(state,
+			(void *)modifier_table)));
+		multiple_options--;
+		exclusive_option=local_exclusive_option;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"process_multiple_options.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* process_multiple_options */
+
+int parse_variable(char **token)
+/*******************************************************************************
+LAST MODIFIED : 17 February 1998
+
+DESCRIPTION :
+Replaces occurrences of %<f/i/z/l><nnn>% with the value of that variable.  May
+be called recursively.  Reallocates <*token>, so there is no problem with
+over-writing.
+==============================================================================*/
+{
+	char *begin,*end,*new_token,temp_string[100];
+	int length,temp_int,number,return_code,temp_string_offset;
+
+	ENTER(parse_variable);
+	/* check argument */
+	if (token&&(*token))
+	{
+		return_code=1;
+		/* try to find a % */
+		if (begin=strchr(*token,'%'))
+		{
+			/* look for another % */
+			if (end=strchr(begin+1,'%'))
+			{
+				length=end-begin+1;
+				/* find the variable number (starting after the format) */
+				if (1==sscanf(begin+2,"%i",&number))
+				{
+					if ((number>=0)&&(number<MAX_VARIABLES))
+					{
+						switch (begin[1])
+						{
+							case 'f':
+							{
+								sprintf(temp_string,"%f",variable_float[number]);
+								temp_string_offset=0;
+							} break;
+							case 'i':
+							{
+								/* write it as an integer */
+								temp_int=(int)variable_float[number];
+								sprintf(temp_string,"%i",temp_int);
+								temp_string_offset=0;
+							} break;
+							case 'z':
+							{
+								/* leading zeros and the width of the existing field */
+								temp_int=(int)variable_float[number];
+								sprintf(temp_string,"%0*i",length,temp_int);
+								temp_string_offset=strlen(temp_string)-length;
+							} break;
+							case 'l':
+							{
+								/* write it as a logical - check for <0.1 so that close to
+									zero=false */
+								if (fabs(variable_float[number])<0.1)
+								{
+									strcpy(temp_string,"off");
+								}
+								else
+								{
+									strcpy(temp_string,"on");
+								}
+								temp_string_offset=0;
+							} break;
+							default:
+							{
+								display_message(ERROR_MESSAGE,
+									"Variable format not known: %c : %s",begin[1],*token);
+								return_code=0;
+							} break;
+						}
+						if (return_code)
+						{
+							if (ALLOCATE(new_token,char,(begin-(*token))+
+								strlen(temp_string+temp_string_offset)+strlen(end+1)+1))
+							{
+								strncpy(new_token,*token,begin-(*token));
+								new_token[begin-(*token)]='\0';
+								strcat(new_token,temp_string+temp_string_offset);
+								strcat(new_token,end+1);
+								DEALLOCATE(*token);
+								*token=new_token;
+								/* see if there are any more to parse */
+								return_code=parse_variable(token);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"parse_variable.  Could not allocate new token");
+								return_code=0;
+							}
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Variable number out of range: %d : %s",number,*token);
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"Variable number not found: %s",*token);
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"Two percentage signs required: %s",
+					*token);
+				return_code=0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"parse_variable.  Missing token");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* parse_variable */
+
+int execute_variable_command(struct Parse_state *state,
+	void *dummy_to_be_modified,void *dummy_user_data)
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+Executes a VARIABLE command.
+==============================================================================*/
+{
+	static enum Variable_operation_type add=ADD_VARIABLE_OPERATION,
+		divide=DIVIDE_VARIABLE_OPERATION,multiply=MULTIPLY_VARIABLE_OPERATION,
+		set=SET_VARIABLE_OPERATION,subtract=SUBTRACT_VARIABLE_OPERATION;
+	int return_code;
+	static struct Modifier_entry option_table[]=
+	{
+		{"add",&add,(void *)NULL,execute_variable_command_operation},
+		{"divide",&divide,(void *)NULL,execute_variable_command_operation},
+		{"multiply",&multiply,(void *)NULL,execute_variable_command_operation},
+		{"set",&set,(void *)NULL,execute_variable_command_operation},
+		{"show",NULL,(void *)NULL,execute_variable_command_show},
+		{"subtract",&subtract,(void *)NULL,execute_variable_command_operation},
+		{NULL,NULL,NULL}
+	};
+
+	ENTER(execute_variable_command);
+	USE_PARAMETER(dummy_to_be_modified);
+	USE_PARAMETER(dummy_user_data);
+	if (state)
+	{
+		if (state->current_token)
+		{
+			return_code=process_option(state,(void *)option_table);
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"execute_variable_command.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_variable_command */
+
+int set_name(struct Parse_state *state,void *name_address_void,
+	void *prefix_space)
+/*******************************************************************************
+LAST MODIFIED : 27 May 1997
+
+DESCRIPTION :
+Allocates memory for a name, then copies the passed string into it.
+==============================================================================*/
+{
+	char *current_token,**name_address;
+	int return_code;
+
+	ENTER(set_name);
+	if (state)
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				if (name_address=(char **)name_address_void)
+				{
+					if (*name_address)
+					{
+						DEALLOCATE(*name_address);
+					}
+					if (ALLOCATE(*name_address,char,strlen(current_token)+1))
+					{
+						strcpy(*name_address,current_token);
+						return_code=shift_Parse_state(state,1);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"set_name.  Could not allocate memory for name");
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"set_name.  Missing name_address");
+					return_code=0;
+				}
+			}
+			else
+			{
+				if (prefix_space)
+				{
+					display_message(INFORMATION_MESSAGE," NAME");
+				}
+				else
+				{
+					display_message(INFORMATION_MESSAGE,"NAME");
+				}
+				if ((name_address=(char **)name_address_void)&&(*name_address))
+				{
+					display_message(INFORMATION_MESSAGE,"[%s]",*name_address);
+				}
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing name");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_name.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_name */
+
+int set_int(struct Parse_state *state,void *value_address_void,
+	void *dummy_user_data)
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+A modifier function for setting a int.
+==============================================================================*/
+{
+	char *current_token;
+	int return_code,value,*value_address;
+
+	ENTER(set_int);
+	USE_PARAMETER(dummy_user_data);
+	if (state)
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				if (value_address=(int *)value_address_void)
+				{
+					if (1==sscanf(current_token," %d ",&value))
+					{
+						*value_address=value;
+						return_code=shift_Parse_state(state,1);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Invalid integer: %s",current_token);
+						display_parse_state_location(state);
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"set_int.  Missing value_address");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," #");
+				if (value_address=(int *)value_address_void)
+				{
+					display_message(INFORMATION_MESSAGE,"[%d]",*value_address);
+				}
+				display_message(INFORMATION_MESSAGE,"{integer}");
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing integer");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_int.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_int */
+
+int set_int_optional(struct Parse_state *state,void *value_address_void,
+	void *dummy_user_data)
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+If the next token is an integer then the int is set to that value otherwise the
+int is set to 1.
+==============================================================================*/
+{
+	char *current_token;
+	int return_code,value,*value_address;
+
+	ENTER(set_int_optional);
+	USE_PARAMETER(dummy_user_data);
+	if (state)
+	{
+		if (value_address=(int *)value_address_void)
+		{
+			if (current_token=state->current_token)
+			{
+				if (strcmp(PARSER_HELP_STRING,current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+				{
+					if (1==sscanf(current_token," %d ",&value))
+					{
+						*value_address=value;
+						return_code=shift_Parse_state(state,1);
+					}
+					else
+					{
+						*value_address=1;
+						return_code=1;
+					}
+				}
+				else
+				{
+					display_message(INFORMATION_MESSAGE," <#>[1]{integer}");
+					return_code=1;
+				}
+			}
+			else
+			{
+				*value_address=1;
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"set_int_optional.  Missing value_address");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_int_optional.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_int_optional */
+
+int set_int_non_negative(struct Parse_state *state,void *value_address_void,
+	void *dummy_user_data)
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+A modifier function for setting a int to a non-negative value.
+==============================================================================*/
+{
+	char *current_token;
+	int return_code,value,*value_address;
+
+	ENTER(set_int_non_negative);
+	USE_PARAMETER(dummy_user_data);
+	if (state)
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				if (value_address=(int *)value_address_void)
+				{
+					if (1==sscanf(current_token," %d ",&value))
+					{
+						/* make sure that the value value is non-negative */
+						if (value>=0)
+						{
+							*value_address=value;
+							return_code=shift_Parse_state(state,1);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Value must be a non-negative integer: %s\n",current_token);
+							display_parse_state_location(state);
+							return_code=0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Invalid non-negative integer: %s",
+							current_token);
+						display_parse_state_location(state);
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_int_non_negative.  Missing value_address");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," #");
+				if (value_address=(int *)value_address_void)
+				{
+					display_message(INFORMATION_MESSAGE,"[%d]",*value_address);
+				}
+				display_message(INFORMATION_MESSAGE,"{>=0,integer}");
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing non_negative integer");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_int_non_negative.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_int_non_negative */
+
+int set_int_positive(struct Parse_state *state,void *value_address_void,
+	void *dummy_user_data)
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+A modifier function for setting a int to a positive value.
+==============================================================================*/
+{
+	char *current_token;
+	int return_code,value,*value_address;
+
+	ENTER(set_int_positive);
+	USE_PARAMETER(dummy_user_data);
+	if (state)
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				if (value_address=(int *)value_address_void)
+				{
+					if (1==sscanf(current_token," %d ",&value))
+					{
+						/* make sure that the value value is positive */
+						if (value>0)
+						{
+							*value_address=value;
+							return_code=shift_Parse_state(state,1);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Value must be a positive integer: %s\n",current_token);
+							display_parse_state_location(state);
+							return_code=0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Invalid positive integer: %s",
+							current_token);
+						display_parse_state_location(state);
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_int_positive.  Missing value_address");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," #");
+				if (value_address=(int *)value_address_void)
+				{
+					display_message(INFORMATION_MESSAGE,"[%d]",*value_address);
+				}
+				display_message(INFORMATION_MESSAGE,"{>0,integer}");
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing positive integer");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_int_positive.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_int_positive */
+
+int set_float(struct Parse_state *state,void *value_address_void,
+	void *dummy_user_data)
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+A modifier function for setting a float.
+==============================================================================*/
+{
+	char *current_token;
+	float value,*value_address;
+	int return_code;
+
+	ENTER(set_float);
+	USE_PARAMETER(dummy_user_data);
+	if (state)
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				if (value_address=(float *)value_address_void)
+				{
+					if (1==sscanf(current_token," %f ",&value))
+					{
+						*value_address=value;
+						return_code=shift_Parse_state(state,1);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Invalid float: %s",
+							current_token);
+						display_parse_state_location(state);
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"set_float.  Missing value_address");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," #");
+				if (value_address=(float *)value_address_void)
+				{
+					display_message(INFORMATION_MESSAGE,"[%g]",*value_address);
+				}
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing float");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_float.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_float */
+
+int set_float_and_char_flag(struct Parse_state *state,void *value_address_void,
+	void *flag_address_void)
+/*******************************************************************************
+LAST MODIFIED : 9 September 1999
+
+DESCRIPTION :
+A modifier function for setting a float, and a char flag in the user data to
+indicate that the float has been set.
+==============================================================================*/
+{
+	char *current_token, *flag_address;
+	float value,*value_address;
+	int return_code;
+
+	ENTER(set_float_and_char_flag);
+	if (state)
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				if ((value_address=(float *)value_address_void) &&
+					 (flag_address=(char *)flag_address_void))
+				{
+					if (1==sscanf(current_token," %f ",&value))
+					{
+						*value_address=value;
+						*flag_address=1;
+						return_code=shift_Parse_state(state,1);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Invalid float: %s",
+							current_token);
+						display_parse_state_location(state);
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_float_and_char_flag.  Missing value_address");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," #");
+				if (value_address=(float *)value_address_void)
+				{
+					display_message(INFORMATION_MESSAGE,"[%g]",*value_address);
+				}
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing float");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_float_and_char_flag.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_float_and_char_flag */
+
+int set_float_positive(struct Parse_state *state,void *value_address_void,
+	void *dummy_user_data)
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+A modifier function for setting a float to a positive value.
+==============================================================================*/
+{
+	char *current_token;
+	float value,*value_address;
+	int return_code;
+
+	ENTER(set_float_positive);
+	USE_PARAMETER(dummy_user_data);
+	if (state)
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				if (value_address=(float *)value_address_void)
+				{
+					if (1==sscanf(current_token," %f ",&value))
+					{
+						/* make sure that the value value is positive */
+						if (value>0)
+						{
+							*value_address=value;
+							return_code=shift_Parse_state(state,1);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Value must be a positive float: %s\n",current_token);
+							display_parse_state_location(state);
+							return_code=0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Invalid positive float: %s",
+							current_token);
+						display_parse_state_location(state);
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_float_positive.  Missing value_address");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," #");
+				if (value_address=(float *)value_address_void)
+				{
+					display_message(INFORMATION_MESSAGE,"[%g]",*value_address);
+				}
+				display_message(INFORMATION_MESSAGE,"{>0}");
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing positive float");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_float_positive.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_float_positive */
+
+int set_float_non_negative(struct Parse_state *state,void *value_address_void,
+	void *dummy_user_data)
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+A modifier function for setting a float to a non_negative value.
+==============================================================================*/
+{
+	char *current_token;
+	float value,*value_address;
+	int return_code;
+
+	ENTER(set_float_non_negative);
+	USE_PARAMETER(dummy_user_data);
+	if (state)
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				if (value_address=(float *)value_address_void)
+				{
+					if (1==sscanf(current_token," %f ",&value))
+					{
+						/* make sure that the value value is non-negative */
+						if (value>=0)
+						{
+							*value_address=value;
+							return_code=shift_Parse_state(state,1);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Value must be a non_negative float: %s\n",current_token);
+							display_parse_state_location(state);
+							return_code=0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Invalid non-negative float: %s",
+							current_token);
+						display_parse_state_location(state);
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_float_non_negative.  Missing value_address");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," #");
+				if (value_address=(float *)value_address_void)
+				{
+					display_message(INFORMATION_MESSAGE,"[%g]",*value_address);
+				}
+				display_message(INFORMATION_MESSAGE,"{>=0}");
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing non-negative float");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_float_non_negative.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_float_non_negative */
+
+int set_float_0_to_1_inclusive(struct Parse_state *state,
+	void *value_address_void,void *dummy_user_data)
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+A modifier function for setting a float to a value in [0,1].
+==============================================================================*/
+{
+	char *current_token;
+	float value,*value_address;
+	int return_code;
+
+	ENTER(set_float_0_to_1_inclusive);
+	USE_PARAMETER(dummy_user_data);
+	if (state)
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				if (value_address=(float *)value_address_void)
+				{
+					if (1==sscanf(current_token," %f ",&value))
+					{
+						/* make sure that the value value is non-negative */
+						if (value>=0)
+						{
+							*value_address=value;
+							return_code=shift_Parse_state(state,1);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"Value must be a 0<=float<=1: %s\n",
+								current_token);
+							display_parse_state_location(state);
+							return_code=0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Invalid 0<=float<=1: %s",
+							current_token);
+						display_parse_state_location(state);
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_float_0_to_1_inclusive.  Missing value_address");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," #");
+				if (value_address=(float *)value_address_void)
+				{
+					display_message(INFORMATION_MESSAGE,"[%g]",*value_address);
+				}
+				display_message(INFORMATION_MESSAGE,"{>=0,<=1}");
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing 0<=float<=1");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_float_0_to_1_inclusive.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_float_0_to_1_inclusive */
+
+int set_double(struct Parse_state *state,void *value_address_void,
+	void *dummy_user_data)
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+A modifier function for setting a double.
+==============================================================================*/
+{
+	char *current_token;
+	double value,*value_address;
+	int return_code;
+
+	ENTER(set_double);
+	USE_PARAMETER(dummy_user_data);
+	if (state)
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				if (value_address=(double *)value_address_void)
+				{
+					if (1==sscanf(current_token," %lf ",&value))
+					{
+						*value_address=value;
+						return_code=shift_Parse_state(state,1);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Invalid double: %s",
+							current_token);
+						display_parse_state_location(state);
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"set_double.  Missing value_address");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," #");
+				if (value_address=(double *)value_address_void)
+				{
+					display_message(INFORMATION_MESSAGE,"[%g]",*value_address);
+				}
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing double");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_double.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_double */
+
+int set_double_and_char_flag(struct Parse_state *state,void *value_address_void,
+	void *flag_address_void)
+/*******************************************************************************
+LAST MODIFIED : 19 October 1998
+
+DESCRIPTION :
+A modifier function for setting a double, and a char flag in the user data to
+indicate that the double has been set.
+???SAB  The user_data could be used to supply many more helpful things such as
+	limits on the double or a string used in the help.
+==============================================================================*/
+{
+	char *current_token, *flag_address;
+	double value,*value_address;
+	int return_code;
+
+	ENTER(set_double_and_char_flag);
+	if (state)
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				if ((value_address=(double *)value_address_void) &&
+					 (flag_address=(char *)flag_address_void))
+				{
+					if (1==sscanf(current_token," %lf ",&value))
+					{
+						*value_address=value;
+						*flag_address=1;
+						return_code=shift_Parse_state(state,1);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Invalid double: %s",
+							current_token);
+						display_parse_state_location(state);
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_double_and_char_flag.  Missing value_address");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," #");
+				if (value_address=(double *)value_address_void)
+				{
+					display_message(INFORMATION_MESSAGE,"[%g]",*value_address);
+				}
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing double");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_double_and_char_flag.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_double_and_char_flag */
+
+int set_special_float3(struct Parse_state *state,void *values_address_void,
+	void *separation_char_address_void)
+/*******************************************************************************
+LAST MODIFIED : 9 July 1998
+
+DESCRIPTION :
+Modifier function for setting a float[3] from a token with 1 to 3 characters
+separated by the character at <separation_char_address> which may be either an
+asterisk or a comma. If '*' is used missing components take the values of the
+last number entered, eg '3' -> 3,3,3, while  '2.4*7.6' becomes 2.4,7.6,7.6.
+This functionality is useful for setting the size of glyphs. If the separation
+character is ',', values of unspecified components are left untouched, useful
+for setting glyph offsets which default to zero or some other number.
+Missing a number by putting two separators together works as expected, eg:
+'1.2**3.0' returns 1.2,1.2,3.0, '*2' gives 0.0,2.0,2.0 while ',,3' changes the
+third component of the float only to 3.
+???RC The comma case does not work since ',' is a delimiter for the parser.
+==============================================================================*/
+{
+	char *current_token,separator;
+	float value,*values;
+	int i,return_code;
+
+	ENTER(set_special_float3);
+	if (state&&(values=(float *)values_address_void)&&
+		(separator=*((char *)separation_char_address_void))&&
+		(('*'==separator)||(','==separator)))
+	{
+		if (current_token=state->current_token)
+		{
+			return_code=1;
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				value=(float)0.0;
+				for (i=0;i<3;i++)
+				{
+					if (current_token&&(*current_token != separator))
+					{
+						value=(float)atof(current_token);
+						values[i]=value;
+						current_token=strchr(current_token,separator);
+					}
+					else
+					{
+						if ('*' == separator)
+						{
+							values[i]=value;
+						}
+					}
+					if (current_token)
+					{
+						current_token++;
+						if ('\0' == *current_token)
+						{
+							current_token=(char *)NULL;
+						}
+					}
+				}
+				return_code=shift_Parse_state(state,1);
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE,
+					" #%c#%c#[%g%c%g%c%g]{float[%cfloat[%cfloat]]}",separator,separator,
+					values[0],separator,values[1],separator,values[2],
+					separator,separator);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing vector");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_float_vector.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_special_float3 */
+
+int set_float_vector(struct Parse_state *state,void *values_address_void,
+	void *number_of_components_address_void)
+/*******************************************************************************
+LAST MODIFIED : 20 November 1998
+
+DESCRIPTION :
+Modifier function for reading number_of_components (>0) floats from <state>.
+User data consists of a pointer to an integer containing number_of_components,
+while <values_address_void> should point to a large enough space to store the
+number_of_components floats.
+Now prints current contents of the vector with help.
+==============================================================================*/
+{
+	char *current_token;
+	float value,*values_address;
+	int comp_no,number_of_components,return_code;
+
+	ENTER(set_float_vector);
+	if (state)
+	{
+		if ((values_address=(float *)values_address_void)&&
+			number_of_components_address_void&&(0<(number_of_components=
+			*((int *)number_of_components_address_void))))
+		{
+			if (current_token=state->current_token)
+			{
+				return_code=1;
+				if (strcmp(PARSER_HELP_STRING,current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+				{
+					for (comp_no=0;return_code&&(comp_no<number_of_components);comp_no++)
+					{
+						if (current_token=state->current_token)
+						{
+							if (1==sscanf(current_token," %f ",&value))
+							{
+								values_address[comp_no]=value;
+								return_code=shift_Parse_state(state,1);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,"Invalid float: %s",
+									current_token);
+								display_parse_state_location(state);
+								return_code=0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Missing float vector component(s)");
+							display_parse_state_location(state);
+							return_code=0;
+						}
+					}
+				}
+				else
+				{
+					/* write help text */
+					for (comp_no=0;comp_no<number_of_components;comp_no++)
+					{
+						display_message(INFORMATION_MESSAGE," #");
+					}
+					display_message(INFORMATION_MESSAGE,"[%g",values_address[0]);
+					for (comp_no=1;comp_no<number_of_components;comp_no++)
+					{
+						display_message(INFORMATION_MESSAGE," %g",values_address[comp_no]);
+					}
+					display_message(INFORMATION_MESSAGE,"]");
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Missing %d component float vector",number_of_components);
+				display_parse_state_location(state);
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"set_float_vector.  Invalid argument(s)");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_float_vector.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_float_vector */
+
+int set_FE_value_array(struct Parse_state *state,void *values_address_void,
+	void *number_of_components_address_void)
+/*******************************************************************************
+LAST MODIFIED : 11 March 1999
+
+DESCRIPTION :
+Modifier function for reading number_of_components (>0) FE_values from <state>.
+User data consists of a pointer to an integer containing number_of_components,
+while <values_address_void> should point to a large enough space to store the
+number_of_components FE_values.
+Now prints current contents of the vector with help.
+==============================================================================*/
+{
+	char *current_token;
+	FE_value value,*values_address;
+	int i,number_of_components,return_code;
+
+	ENTER(set_FE_value_array);
+	if (state)
+	{
+		if ((values_address=(FE_value *)values_address_void)&&
+			number_of_components_address_void&&(0<(number_of_components=
+			*((int *)number_of_components_address_void))))
+		{
+			if (current_token=state->current_token)
+			{
+				return_code=1;
+				if (strcmp(PARSER_HELP_STRING,current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+				{
+					for (i=0;return_code&&(i<number_of_components);i++)
+					{
+						if (current_token=state->current_token)
+						{
+							if (1==sscanf(current_token," %f ",&value))
+							{
+								values_address[i]=value;
+								return_code=shift_Parse_state(state,1);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,"Invalid FE_value: %s",
+									current_token);
+								display_parse_state_location(state);
+								return_code=0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Missing FE_value vector component(s)");
+							display_parse_state_location(state);
+							return_code=0;
+						}
+					}
+				}
+				else
+				{
+					/* write help text */
+					for (i=0;i<number_of_components;i++)
+					{
+						display_message(INFORMATION_MESSAGE," #");
+					}
+					display_message(INFORMATION_MESSAGE,"[%g",values_address[0]);
+					for (i=1;i<number_of_components;i++)
+					{
+						display_message(INFORMATION_MESSAGE," %g",values_address[i]);
+					}
+					display_message(INFORMATION_MESSAGE,"]");
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Missing %d component FE_value vector",number_of_components);
+				display_parse_state_location(state);
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"set_FE_value_array.  Invalid argument(s)");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_FE_value_array.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_FE_value_array */
+
+int set_double_vector(struct Parse_state *state,void *values_address_void,
+	void *number_of_components_address_void)
+/*******************************************************************************
+LAST MODIFIED : 20 November 1998
+
+DESCRIPTION :
+Modifier function for reading number_of_components (>0) floats from <state>.
+User data consists of a pointer to an integer containing number_of_components,
+while <values_address_void> should point to a large enough space to store the
+number_of_components floats.
+Now prints current contents of the vector with help.
+==============================================================================*/
+{
+	char *current_token;
+	double value,*values_address;
+	int comp_no,number_of_components,return_code;
+
+	ENTER(set_double_vector);
+	if (state)
+	{
+		if ((values_address=(double *)values_address_void)&&
+			number_of_components_address_void&&(0<(number_of_components=
+			*((int *)number_of_components_address_void))))
+		{
+			if (current_token=state->current_token)
+			{
+				return_code=1;
+				if (strcmp(PARSER_HELP_STRING,current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+				{
+					for (comp_no=0;return_code&&(comp_no<number_of_components);comp_no++)
+					{
+						if (current_token=state->current_token)
+						{
+							if (1==sscanf(current_token," %lf ",&value))
+							{
+								values_address[comp_no]=value;
+								return_code=shift_Parse_state(state,1);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,"Invalid double: %s",
+									current_token);
+								display_parse_state_location(state);
+								return_code=0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Missing double vector component(s)");
+							display_parse_state_location(state);
+							return_code=0;
+						}
+					}
+				}
+				else
+				{
+					/* write help text */
+					for (comp_no=0;comp_no<number_of_components;comp_no++)
+					{
+						display_message(INFORMATION_MESSAGE," #");
+					}
+					display_message(INFORMATION_MESSAGE,"[%g",values_address[0]);
+					for (comp_no=1;comp_no<number_of_components;comp_no++)
+					{
+						display_message(INFORMATION_MESSAGE," %g",values_address[comp_no]);
+					}
+					display_message(INFORMATION_MESSAGE,"]");
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Missing %d component double vector",number_of_components);
+				display_parse_state_location(state);
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"set_double_vector.  Invalid argument(s)");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_double_vector.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_double_vector */
+
+int set_double_vector_with_help(struct Parse_state *state,
+	void *vector_void,void *set_vector_with_help_data_void)
+/*******************************************************************************
+LAST MODIFIED : 20 November 1998
+
+DESCRIPTION :
+Modifier function to parse a variable number of double values with appropriate
+help text. Number of components in vectoy, help text and set flag are contained
+in the struct Set_vector_with_help_data passed as the last argument. The 'set'
+flag is set if values are entered into the vector.
+The current values of the vector are not printed with the help text since they
+may not be initialised (calling function could put them in the help text).
+==============================================================================*/
+{
+	char *current_token;
+	double *vector;
+	int return_code,i;
+	struct Set_vector_with_help_data *set_vector_data;
+
+	ENTER(set_double_vector_with_help);
+	if (state&&(vector=(double *)vector_void)&&(set_vector_data=
+		(struct Set_vector_with_help_data *)set_vector_with_help_data_void)&&
+		(0<set_vector_data->num_values)&&set_vector_data->help_text)
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				set_vector_data->set=1;
+				return_code=1;
+				for (i=set_vector_data->num_values;return_code&&(0<i);i--)
+				{
+					if (current_token=state->current_token)
+					{
+						*vector=atof(current_token);
+						vector++;
+						return_code=shift_Parse_state(state,1);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Missing vector component(s)");
+						return_code=0;
+					}
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE,set_vector_data->help_text);
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing%s",set_vector_data->help_text);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_double_vector_with_help.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_double_vector_with_help */
+
+int set_char_flag(struct Parse_state *state,void *value_address_void,
+	void *dummy_user_data)
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+A modifier function for setting a character flag to 1.
+==============================================================================*/
+{
+	char *value_address;
+	int return_code;
+
+	ENTER(set_char_flag);
+	USE_PARAMETER(dummy_user_data);
+	if (state)
+	{
+		if (value_address=(char *)value_address_void)
+		{
+			*value_address=1;
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"set_char_flag.  Missing value_address");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_char_flag.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_char_flag */
+
+int unset_char_flag(struct Parse_state *state,void *value_address_void,
+	void *dummy_user_data)
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+A modifier function for setting a character flag to 0.
+==============================================================================*/
+{
+	char *value_address;
+	int return_code;
+
+	ENTER(unset_char_flag);
+	USE_PARAMETER(dummy_user_data);
+	if (state)
+	{
+		if (value_address=(char *)value_address_void)
+		{
+			*value_address=0;
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"unset_char_flag.  Missing value_address");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"unset_char_flag.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* unset_char_flag */
+
+int set_file_name(struct Parse_state *state,void *name_address_void,
+	void *directory_name_address_void)
+/*******************************************************************************
+LAST MODIFIED : 26 September 1996
+
+DESCRIPTION :
+Allows the user to specify "special" directories, eg examples.  Allocates the
+memory for the file name string.
+==============================================================================*/
+{
+	char *current_token,*directory_name,**name_address;
+	int file_name_length,return_code;
+
+	ENTER(set_file_name);
+	if (state)
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				if (name_address=(char **)name_address_void)
+				{
+					if (*name_address)
+					{
+						DEALLOCATE(*name_address);
+					}
+					if (directory_name_address_void)
+					{
+						directory_name= *((char **)directory_name_address_void);
+					}
+					else
+					{
+						directory_name=(char *)NULL;
+					}
+					file_name_length=strlen(current_token)+1;
+					if (directory_name)
+					{
+						file_name_length += strlen(directory_name);
+					}
+					if (ALLOCATE(*name_address,char,file_name_length+1))
+					{
+						(*name_address)[0]='\0';
+						if (directory_name)
+						{
+							strcat(*name_address,directory_name);
+						}
+						strcat(*name_address,current_token);
+						return_code=shift_Parse_state(state,1);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"set_file_name.  Could not allocate memory for name");
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_file_name.  Missing name_address");
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," FILE_NAME");
+				if ((name_address=(char **)name_address_void)&&(*name_address))
+				{
+					display_message(INFORMATION_MESSAGE,"[%s]",*name_address);
+				}
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing file name");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_file_name.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_file_name */
+
+int set_nothing(struct Parse_state *state,void *dummy_to_be_modified,
+	void *dummy_user_data)
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+Always succeeds and does nothing to the parse <state>.
+???DB.  Temporary ?
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_nothing);
+	USE_PARAMETER(state);
+	USE_PARAMETER(dummy_to_be_modified);
+	USE_PARAMETER(dummy_user_data);
+	return_code=1;
+	LEAVE;
+
+	return (return_code);
+} /* set_nothing */
+
+int set_integer_range(struct Parse_state *state,
+	void *integer_range_address_void,void *dummy_user_data)
+/*******************************************************************************
+LAST MODIFIED : 21 June 1999
+
+DESCRIPTION :
+integer_range= *((int **)integer_range_address_void) is an array.
+integer_range[0] is the number of pairs of ints in the rest of integer_range, so
+that the size of integer_range is 1+2*integer_range[0].  integer_range is
+ordered integer_range[2*i+1]<=integer_range[2*i+2]<integer_range[2*i+3] for
+i>=0.  The integers in integer_range are those j for which
+integer_range[2*i+1]<=j<=integer_range[2*i+2] for some i>=0.
+
+This routine updates the integer_range based on the current token which can be
+of two forms - # or #..#
+==============================================================================*/
+{
+	char *current_token;
+	int first,i,*integer_range,**integer_range_address,j,last,
+		number_of_sub_ranges,return_code;
+
+	ENTER(set_integer_range);
+	USE_PARAMETER(dummy_user_data);
+	if (state)
+	{
+		if (current_token=state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				return_code=0;
+				if (2==sscanf(current_token,"%d..%d",&first,&last))
+				{
+					if (first<=last)
+					{
+						return_code=1;
+					}
+				}
+				else
+				{
+					if (1==sscanf(current_token,"%d",&first))
+					{
+						last=first;
+						return_code=1;
+					}
+				}
+				if (return_code)
+				{
+					if (integer_range_address=(int **)integer_range_address_void)
+					{
+						if ((integer_range= *integer_range_address)&&
+							(0<(number_of_sub_ranges=integer_range[0])))
+						{
+							i=0;
+							while ((i<number_of_sub_ranges)&&(first>=integer_range[2*i+1]))
+							{
+								i++;
+							}
+							if (i<number_of_sub_ranges)
+							{
+								if (last>=integer_range[2*i+1]-1)
+								{
+									integer_range[2*i+1]=first;
+									if (last>integer_range[2*i+2])
+									{
+										integer_range[2*i+2]=last;
+									}
+									i= -1;
+								}
+							}
+							if (i>0)
+							{
+								if (first<=integer_range[2*i]+1)
+								{
+									integer_range[2*i]=last;
+									if (first<integer_range[2*i-1])
+									{
+										integer_range[2*i-1]=first;
+									}
+									i= -1;
+								}
+							}
+							if (i>=0)
+							{
+								number_of_sub_ranges++;
+								if (REALLOCATE(integer_range,integer_range,int,
+									2*number_of_sub_ranges+1))
+								{
+									*integer_range_address=integer_range;
+									integer_range[0]=number_of_sub_ranges;
+									for (j=number_of_sub_ranges-1;j>i;j--)
+									{
+										integer_range[2*j+2]=integer_range[2*j];
+										integer_range[2*j+1]=integer_range[2*j-1];
+									}
+									integer_range[2*i+2]=last;
+									integer_range[2*i+1]=first;
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"set_integer_range.  Could not reallocate integer_range");
+									return_code=0;
+								}
+							}
+						}
+						else
+						{
+							if (REALLOCATE(integer_range,integer_range,int,3))
+							{
+								integer_range[0]=1;
+								integer_range[1]=first;
+								integer_range[2]=last;
+								*integer_range_address=integer_range;
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"set_integer_range.  Could not reallocate integer_range");
+								return_code=0;
+							}
+						}
+						if (return_code)
+						{
+							return_code=shift_Parse_state(state,1);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"set_integer_range.  Missing integer_range_address");
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"Invalid integer range");
+					display_parse_state_location(state);
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE," #|#..#");
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Missing integer range");
+			display_parse_state_location(state);
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_integer_range.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_integer_range */
+
+int set_enum(struct Parse_state *state,void *set_value_address_void,
+	void *enum_value_address_void)
+/*******************************************************************************
+LAST MODIFIED : 19 November 1998
+
+DESCRIPTION :
+A modifier function for setting an enumerated type variable to a specified
+value.
+NB.  *enum_value_address_void is put in *set_value_address_void
+???DB.  Unwieldy.  Can it be done better ?
+==============================================================================*/
+{
+	int *enum_value_address,return_code,*set_value_address;
+
+	ENTER(set_enum);
+	USE_PARAMETER(state);
+	if ((set_value_address=(int *)set_value_address_void)&&
+		(enum_value_address=(int *)enum_value_address_void))
+	{
+		*set_value_address=*enum_value_address;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_enum.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_enum */

@@ -1,0 +1,824 @@
+module XvgShell_uil
+
+procedure	valueChangedCB_RawImageTBG;
+procedure	valueChangedCB_ProcImageTBG;
+procedure	valueChangedCB_IPOperationsTBG;
+procedure	valueChangedCB_HistogramTBG;
+procedure	valueChangedCB_XYSlicesTBG;
+procedure	valueChangedCB_LUTShellTBG;
+procedure	valueChangedCB_MovieControlsTBG;
+procedure	valueChangedCB_GLShellTBG;
+procedure	activateCB_Resize640x480PBG;
+procedure	activateCB_LoadDataSetPBG;
+procedure	activateCB_LoadIPOpsPBG;
+procedure	activateCB_SaveHistogramPBG;
+procedure	activateCB_SaveDataSetPBG;
+procedure	activateCB_SaveIPOpsPBG;
+procedure	valueChangedCB_GammaScale;
+procedure	dragCB_GammaScale;
+procedure	activateCB_menu1_p4_b1;
+procedure	activateCB_menu1_p4_b16;
+procedure	activateCB_menu1_p4_b6;
+procedure	activateCB_menu1_p4_b5;
+procedure	activateCB_menu1_p1_b6;
+procedure	activateCB_menu1_p1_b7;
+procedure	activateCB_menu1_p1_b8;
+procedure	activateCB_menu1_p1_b10;
+procedure	activateCB_menu1_p1_b1;
+procedure	activateCB_menu1_p1_b12;
+procedure       exposeCB_LogoDAW;
+
+object scrolledWindow1 : XmScrolledWindow
+{
+	arguments
+	{
+		XmNwidth = 285;
+		XmNheight = 690;
+		XmNscrollingPolicy = XmAUTOMATIC;
+	};
+	controls
+	{
+		XmForm form1;
+	};
+};
+
+object form1 : XmForm
+{
+	arguments
+	{
+	};
+	controls
+	{
+		XmLabelGadget labelGadget1;
+		XmRowColumn rowColumn1;
+		XmRowColumn rowColumn4;
+		XmSeparatorGadget separatorGadget1;
+		XmLabelGadget FilenameLG;
+		XmLabelGadget SizeLG;
+		XmSeparatorGadget separatorGadget9;
+		XmLabelGadget labelGadget2;
+		XmRowColumn rowColumn2;
+		XmSeparatorGadget separatorGadget2;
+		XmLabelGadget labelGadget3;
+		XmScale GammaScale;
+		XmRowColumn rowColumn3;
+		XmDrawingArea LogoDAW;
+	};
+};
+
+object LogoDAW : XmDrawingArea
+{
+	arguments
+	{
+		XmNwidth = 128;
+		XmNheight = 128;
+		XmNtopAttachment = XmATTACH_FORM;
+		XmNtopOffset = 125;
+		XmNleftAttachment = XmATTACH_WIDGET;
+		XmNleftWidget = rowColumn4;
+	};
+	callbacks
+	{
+		XmNexposeCallback = procedure exposeCB_LogoDAW ();
+	};
+};
+
+object labelGadget1 : XmLabelGadget
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNtopAttachment = XmATTACH_FORM;
+		XmNbottomOffset = 2;
+		XmNleftOffset = 2;
+		XmNrightOffset = 2;
+		XmNtopOffset = 2;
+		XmNlabelString = compound_string( "Windows" );
+	};
+};
+
+object rowColumn1 : XmRowColumn
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNrightAttachment = XmATTACH_NONE;
+		XmNtopAttachment = XmATTACH_WIDGET;
+		XmNtopWidget = labelGadget1;
+		XmNbottomOffset = 0;
+		XmNleftOffset = 2;
+		XmNrightOffset = 2;
+		XmNtopOffset = 0;
+		XmNmarginWidth = 3;
+		XmNspacing = 3;
+	};
+	controls
+	{
+		XmToggleButtonGadget RawImageTBG;
+		XmToggleButtonGadget ProcessedImageTBG;
+		XmToggleButtonGadget IPOperationsTBG;
+	};
+};
+
+object RawImageTBG : XmToggleButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Raw Image" );
+		XmNhighlightThickness = 0;
+	};
+	callbacks
+	{
+		XmNvalueChangedCallback = procedure valueChangedCB_RawImageTBG ();
+	};
+};
+
+object ProcessedImageTBG : XmToggleButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Processed Image" );
+		XmNhighlightThickness = 0;
+	};
+	callbacks
+	{
+		XmNvalueChangedCallback = procedure valueChangedCB_ProcImageTBG ();
+	};
+};
+
+object IPOperationsTBG : XmToggleButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "IP Operations" );
+		XmNhighlightThickness = 0;
+	};
+	callbacks
+	{
+		XmNvalueChangedCallback = procedure valueChangedCB_IPOperationsTBG ();
+	};
+};
+
+object rowColumn4 : XmRowColumn
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 2;
+		XmNrightAttachment = XmATTACH_NONE;
+		XmNrightOffset = 2;
+		XmNtopAttachment = XmATTACH_WIDGET;
+		XmNtopWidget = rowColumn1;
+		XmNtopOffset = 0;
+	};
+	controls
+	{
+		XmToggleButtonGadget HistogramTBG;
+		XmToggleButtonGadget XYSlicesTBG;
+		XmToggleButtonGadget LUTShellTBG;
+		XmToggleButtonGadget MovieControlsTBG;
+		XmToggleButtonGadget GLShellTBG;
+	};
+};
+
+object HistogramTBG : XmToggleButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Histograms" );
+		XmNhighlightThickness = 0;
+	};
+	callbacks
+	{
+		XmNvalueChangedCallback = procedure valueChangedCB_HistogramTBG ();
+	};
+};
+
+object XYSlicesTBG : XmToggleButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "XY Slices" );
+		XmNhighlightThickness = 0;
+	};
+	callbacks
+	{
+		XmNvalueChangedCallback = procedure valueChangedCB_XYSlicesTBG ();
+	};
+};
+
+object LUTShellTBG : XmToggleButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Color LUT" );
+		XmNhighlightThickness = 0;
+	};
+	callbacks
+	{
+		XmNvalueChangedCallback = procedure valueChangedCB_LUTShellTBG ();
+	};
+};
+
+object MovieControlsTBG : XmToggleButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Movie Controls" );
+		XmNhighlightThickness = 0;
+	};
+	callbacks
+	{
+		XmNvalueChangedCallback = procedure valueChangedCB_MovieControlsTBG ();
+	};
+};
+
+object GLShellTBG : XmToggleButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "3D GL Window" );
+		XmNhighlightThickness = 0;
+	};
+	callbacks
+	{
+		XmNvalueChangedCallback = procedure valueChangedCB_GLShellTBG ();
+	};
+};
+
+object separatorGadget1 : XmSeparatorGadget
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNtopAttachment = XmATTACH_WIDGET;
+		XmNtopWidget = rowColumn4;
+		XmNbottomOffset = 2;
+		XmNleftOffset = 2;
+		XmNrightOffset = 2;
+		XmNtopOffset = 2;
+	};
+};
+
+object FilenameLG : XmLabelGadget
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNlabelString = compound_string( "File : None" );
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 6;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNrightOffset = 2;
+		XmNtopAttachment = XmATTACH_WIDGET;
+		XmNtopWidget = separatorGadget1;
+		XmNalignment = XmALIGNMENT_BEGINNING;
+	};
+};
+
+object SizeLG : XmLabelGadget
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNlabelString = compound_string( "Size : 100x100" );
+		XmNalignment = XmALIGNMENT_BEGINNING;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 6;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNrightOffset = 2;
+		XmNtopAttachment = XmATTACH_WIDGET;
+		XmNtopWidget = FilenameLG;
+	};
+};
+
+object separatorGadget9 : XmSeparatorGadget
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNtopAttachment = XmATTACH_WIDGET;
+		XmNtopWidget = SizeLG;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 2;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNrightOffset = 2;
+	};
+};
+
+object labelGadget2 : XmLabelGadget
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNtopWidget = separatorGadget9;
+		XmNtopAttachment = XmATTACH_WIDGET;
+		XmNbottomOffset = 2;
+		XmNleftOffset = 2;
+		XmNrightOffset = 2;
+		XmNtopOffset = 2;
+		XmNlabelString = compound_string( "Actions" );
+	};
+};
+
+object rowColumn2 : XmRowColumn
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNtopAttachment = XmATTACH_WIDGET;
+		XmNtopWidget = labelGadget2;
+		XmNbottomOffset = 2;
+		XmNleftOffset = 2;
+		XmNrightOffset = 2;
+		XmNtopOffset = 2;
+		XmNentryAlignment = XmALIGNMENT_CENTER;
+		XmNmarginWidth = 0;
+		XmNnumColumns = 2;
+		XmNisAligned = true;
+		XmNpacking = XmPACK_COLUMN;
+		XmNadjustLast = true;
+	};
+	controls
+	{
+		XmPushButtonGadget Resize640x480PBG;
+		XmPushButtonGadget LoadDataSetPBG;
+		XmPushButtonGadget LoadIPOpsPBG;
+		XmPushButtonGadget SaveHistogramPBG;
+		XmPushButtonGadget SaveDataSetPBG;
+		XmPushButtonGadget SaveIPOpsPBG;
+	};
+};
+
+object Resize640x480PBG : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Resize 640x480" );
+		XmNalignment = XmALIGNMENT_CENTER;
+		XmNmarginWidth = 0;
+		XmNhighlightThickness = 0;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_Resize640x480PBG ();
+	};
+};
+
+object LoadDataSetPBG : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Load Data Set" );
+		XmNalignment = XmALIGNMENT_CENTER;
+		XmNmarginWidth = 0;
+		XmNhighlightThickness = 0;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_LoadDataSetPBG ();
+	};
+};
+
+object LoadIPOpsPBG : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Load IPOps" );
+		XmNalignment = XmALIGNMENT_CENTER;
+		XmNmarginWidth = 0;
+		XmNhighlightThickness = 0;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_LoadIPOpsPBG ();
+	};
+};
+
+object SaveHistogramPBG : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNalignment = XmALIGNMENT_CENTER;
+		XmNlabelString = compound_string( "Save Histogram" );
+		XmNhighlightThickness = 0;
+		XmNsensitive = true;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_SaveHistogramPBG ();
+	};
+};
+
+object SaveDataSetPBG : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNalignment = XmALIGNMENT_CENTER;
+		XmNlabelString = compound_string( "Save Data Set" );
+		XmNhighlightThickness = 0;
+		XmNsensitive = true;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_SaveDataSetPBG ();
+	};
+};
+
+object SaveIPOpsPBG : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNalignment = XmALIGNMENT_CENTER;
+		XmNlabelString = compound_string( "Save IPOps" );
+		XmNhighlightThickness = 0;
+		XmNsensitive = true;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_SaveIPOpsPBG ();
+	};
+};
+
+object separatorGadget2 : XmSeparatorGadget
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNtopAttachment = XmATTACH_WIDGET;
+		XmNtopWidget = rowColumn2;
+		XmNbottomOffset = 2;
+		XmNleftOffset = 2;
+		XmNrightOffset = 2;
+		XmNtopOffset = 2;
+	};
+};
+
+object labelGadget3 : XmLabelGadget
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNtopAttachment = XmATTACH_WIDGET;
+		XmNtopWidget = separatorGadget2;
+		XmNbottomOffset = 2;
+		XmNleftOffset = 2;
+		XmNrightOffset = 2;
+		XmNtopOffset = 2;
+		XmNlabelString = compound_string( "General Options" );
+	};
+};
+
+object GammaScale : XmScale
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNorientation = XmHORIZONTAL;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 10;
+		XmNmaximum = 100;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNrightOffset = 10;
+		XmNtitleString = compound_string( "Wrapping factor" );
+		XmNtopAttachment = XmATTACH_WIDGET;
+		XmNtopWidget = labelGadget3;
+		XmNshowValue = true;
+		XmNsensitive = true;
+		XmNdecimalPoints = 2;
+		XmNvalue = 0;
+	};
+	callbacks
+	{
+		XmNvalueChangedCallback = procedure valueChangedCB_GammaScale ();
+		XmNdragCallback = procedure dragCB_GammaScale ();
+	};
+};
+
+object rowColumn3 : XmRowColumn
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNbottomOffset = 2;
+		XmNleftOffset = 2;
+		XmNrightOffset = 2;
+		XmNbottomAttachment = XmATTACH_NONE;
+		XmNpacking = XmPACK_TIGHT;
+		XmNmarginWidth = 0;
+		XmNtopWidget = GammaScale;
+		XmNtopAttachment = XmATTACH_WIDGET;
+		XmNentryAlignment = XmALIGNMENT_CENTER;
+		XmNisAligned = false;
+		XmNtopOffset = 0;
+		XmNspacing = 0;
+	};
+	controls
+	{
+		XmOptionMenu LUTMenuOMW;
+		XmOptionMenu menu1;
+		XmOptionMenu menu13;
+	};
+};
+
+object LUTMenuOMW : XmOptionMenu
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "" );
+		XmNentryAlignment = XmALIGNMENT_BEGINNING;
+		XmNmarginWidth = 0;
+		XmNisAligned = false;
+		XmNsensitive = true;
+	};
+	controls
+	{
+		XmPulldownMenu menu1_p4;
+	};
+};
+
+object menu1_p4 : XmPulldownMenu
+{
+	arguments
+	{
+		XmNentryAlignment = XmALIGNMENT_BEGINNING;
+		XmNisAligned = false;
+	};
+	controls
+	{
+		XmPushButtonGadget menu1_p4_b1;
+		XmSeparatorGadget menu1_p4_b8;
+		XmPushButtonGadget menu1_p4_b16;
+		XmSeparatorGadget menu1_p4_b17;
+		XmPushButtonGadget menu1_p4_b6;
+		XmSeparatorGadget menu1_p4_b7;
+		XmPushButtonGadget menu1_p4_b5;
+	};
+};
+
+object menu1_p4_b1 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "GrayLevel cmap      " );
+		XmNaccelerator = "";
+		XmNacceleratorText = compound_string( "" );
+		XmNhighlightThickness = 0;
+		XmNalignment = XmALIGNMENT_BEGINNING;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu1_p4_b1 ();
+	};
+};
+
+object menu1_p4_b8 : XmSeparatorGadget
+{
+};
+
+object menu1_p4_b16 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "GammaGray cmap  " );
+		XmNaccelerator = "";
+		XmNacceleratorText = compound_string( "" );
+		XmNalignment = XmALIGNMENT_BEGINNING;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu1_p4_b16 ();
+	};
+};
+
+object menu1_p4_b17 : XmSeparatorGadget
+{
+};
+
+object menu1_p4_b6 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Color cmap             " );
+		XmNaccelerator = "";
+		XmNacceleratorText = compound_string( "" );
+		XmNalignment = XmALIGNMENT_BEGINNING;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu1_p4_b6 ();
+	};
+};
+
+object menu1_p4_b7 : XmSeparatorGadget
+{
+};
+
+object menu1_p4_b5 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "User cmap               " );
+		XmNaccelerator = "";
+		XmNacceleratorText = compound_string( "" );
+		XmNhighlightThickness = 0;
+		XmNalignment = XmALIGNMENT_BEGINNING;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu1_p4_b5 ();
+	};
+};
+
+object menu1 : XmOptionMenu
+{
+	arguments
+	{
+		XmNentryAlignment = XmALIGNMENT_BEGINNING;
+		XmNmarginWidth = 0;
+		XmNisAligned = false;
+		XmNsensitive = true;
+	};
+	controls
+	{
+		XmPulldownMenu menu1_p1;
+	};
+};
+
+object menu1_p1 : XmPulldownMenu
+{
+	arguments
+	{
+		XmNentryAlignment = XmALIGNMENT_BEGINNING;
+		XmNisAligned = false;
+	};
+	controls
+	{
+		XmPushButtonGadget menu1_p1_b6;
+		XmSeparatorGadget menu1_p1_b4;
+		XmPushButtonGadget menu1_p1_b7;
+		XmSeparatorGadget menu1_p1_b5;
+		XmPushButtonGadget menu1_p1_b8;
+		XmSeparatorGadget menu1_p1_b9;
+		XmPushButtonGadget menu1_p1_b10;
+	};
+};
+
+object menu1_p1_b6 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "No Zoom                 " );
+		XmNhighlightThickness = 0;
+		XmNalignment = XmALIGNMENT_BEGINNING;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu1_p1_b6 ();
+	};
+};
+
+object menu1_p1_b4 : XmSeparatorGadget
+{
+	arguments
+	{
+		XmNhighlightThickness = 0;
+	};
+};
+
+object menu1_p1_b7 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Zoom x2                 " );
+		XmNhighlightThickness = 0;
+		XmNalignment = XmALIGNMENT_BEGINNING;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu1_p1_b7 ();
+	};
+};
+
+object menu1_p1_b5 : XmSeparatorGadget
+{
+	arguments
+	{
+		XmNhighlightThickness = 0;
+	};
+};
+
+object menu1_p1_b8 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Zoom x4                 " );
+		XmNhighlightThickness = 0;
+		XmNalignment = XmALIGNMENT_BEGINNING;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu1_p1_b8 ();
+	};
+};
+
+object menu1_p1_b9 : XmSeparatorGadget
+{
+	arguments
+	{
+		XmNhighlightThickness = 0;
+	};
+};
+
+object menu1_p1_b10 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Zoom x8                 " );
+		XmNhighlightThickness = 0;
+		XmNalignment = XmALIGNMENT_BEGINNING;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu1_p1_b10 ();
+	};
+};
+
+object menu13 : XmOptionMenu
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "" );
+		XmNentryAlignment = XmALIGNMENT_BEGINNING;
+		XmNmarginWidth = 0;
+		XmNisAligned = false;
+		XmNsensitive = true;
+	};
+	controls
+	{
+		XmPulldownMenu menu1_p3;
+	};
+};
+
+object menu1_p3 : XmPulldownMenu
+{
+	arguments
+	{
+		XmNentryAlignment = XmALIGNMENT_BEGINNING;
+		XmNisAligned = false;
+	};
+	controls
+	{
+		XmPushButtonGadget menu1_p1_b1;
+		XmPushButtonGadget menu1_p1_b12;
+	};
+};
+
+object menu1_p1_b1 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Verbose Off" );
+		XmNaccelerator = "";
+		XmNacceleratorText = compound_string( "" );
+		XmNhighlightThickness = 0;
+		XmNalignment = XmALIGNMENT_BEGINNING;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu1_p1_b1 ();
+	};
+};
+
+object menu1_p1_b12 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Verbose On" );
+		XmNaccelerator = "";
+		XmNacceleratorText = compound_string( "" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu1_p1_b12 ();
+	};
+};
+
+
+end module;

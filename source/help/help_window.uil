@@ -1,0 +1,263 @@
+!*******************************************************************************
+! FILE : help_window.uil
+!
+! LAST MODIFIED : 16 February 1995
+!
+! DESCRIPTION :
+! The widgets and gadgets for the CMISS help window.
+!===============================================================================
+
+module Help_window
+		names = case_sensitive
+
+
+
+!**********Procedure Definitions
+procedure
+
+		help_identify;
+
+		changed_help_topic;
+		return_in_help_topic;
+
+		do_help_find_button;
+
+		do_help_other_button;
+
+		do_help_close_button;
+
+
+
+!**********Value Definitions
+value
+		object_border:    0;
+		topic_font:
+	font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1');
+		text_font:
+	font('-*-COURIER-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1');
+
+!**********Identifiers
+identifier
+
+!**********Help structure pointer
+		help_window_pointer;
+
+!**********Part numbers
+		HELP_TEXT;
+		HELP_TOPIC;
+		HELP_FIND_BUTTON;
+		HELP_DO_BUTTON;
+		HELP_SELECT_BUTTON;
+		HELP_COPY_BUTTON;
+
+object
+
+!**********Main window enclosure
+		help_window: XmForm
+	{
+	arguments
+			{
+						XmNdefaultPosition = false;
+			XmNdialogTitle = "Help";
+			XmNautoUnmanage = false;
+			};
+	controls
+			{
+			XmScrolledWindow help_text_window;
+			XmPushButton help_close_button;
+			XmPushButton help_copy_button;
+			XmPushButton help_select_button;
+			XmPushButton help_do_button;
+			XmPushButton help_find_button;
+			XmTextField help_topic;
+			};
+	};
+
+
+!**********Find Button
+
+		help_find_button: XmPushButton
+	{
+	arguments
+			{
+						XmNuserData = help_window_pointer;
+			XmNlabelString = compound_string("Find");
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = object_border;
+			XmNbottomOffset = object_border;
+			XmNbottomWidget = XmPushButton help_do_button;
+			XmNsensitive = false;
+			};
+	callbacks
+			{
+			MrmNcreateCallback =
+		procedure help_identify(HELP_FIND_BUTTON);
+
+			XmNactivateCallback =
+		procedure do_help_find_button(help_window_pointer);
+			};
+	};
+
+
+!**********Other Buttons
+		help_do_button: XmPushButton
+	{
+	arguments
+			{
+						XmNuserData = help_window_pointer;
+			XmNlabelString = compound_string("Do");
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNleftOffset = object_border;
+			XmNbottomOffset = object_border;
+			XmNsensitive = false;
+			};
+	callbacks
+			{
+			MrmNcreateCallback =
+		procedure help_identify(HELP_DO_BUTTON);
+
+			XmNactivateCallback =
+		procedure do_help_other_button(HELP_DO_BUTTON);
+			};
+	};
+
+		help_select_button: XmPushButton
+	{
+	arguments
+			{
+						XmNuserData = help_window_pointer;
+			XmNlabelString = compound_string("Select");
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNleftOffset = object_border;
+			XmNbottomOffset = object_border;
+			XmNleftWidget = XmPushButton help_do_button;
+			XmNsensitive = false;
+			};
+	callbacks
+			{
+			MrmNcreateCallback =
+		procedure help_identify(HELP_SELECT_BUTTON);
+
+			XmNactivateCallback =
+		procedure do_help_other_button(HELP_SELECT_BUTTON);
+			};
+	};
+
+		help_copy_button: XmPushButton
+	{
+	arguments
+			{
+						XmNuserData = help_window_pointer;
+			XmNlabelString = compound_string("Copy...");
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNleftOffset = object_border;
+			XmNbottomOffset = object_border;
+			XmNleftWidget = XmPushButton help_select_button;
+			XmNsensitive = false;
+			};
+	callbacks
+			{
+			MrmNcreateCallback =
+		procedure help_identify(HELP_COPY_BUTTON);
+
+			XmNactivateCallback =
+		procedure do_help_other_button(HELP_COPY_BUTTON);
+			};
+	};
+
+
+!**********Close button
+
+		help_close_button: XmPushButton
+	{
+	arguments
+			{
+						XmNuserData = help_window_pointer;
+			XmNlabelString = compound_string("Close Help");
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNrightOffset = object_border;
+			XmNbottomOffset = object_border;
+			};
+	callbacks
+			{
+			XmNactivateCallback =
+		procedure do_help_close_button(help_window_pointer);
+			};
+	};
+
+!**********Text area
+		help_text_window: XmScrolledWindow
+	{
+	arguments
+			{
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = object_border;
+			XmNleftOffset = object_border;
+			XmNbottomOffset = object_border;
+			XmNrightOffset = object_border;
+			XmNbottomWidget = XmTextField help_topic;
+			XmNworkWindow = XmText help_text;
+			XmNscrollingPolicy = XmAPPLICATION_DEFINED;
+			XmNscrollBarDisplayPolicy = XmSTATIC;
+			XmNvisualPolicy = XmVARIABLE;
+			};
+	controls
+			{
+			XmText help_text;
+			};
+	};
+		help_text: XmText
+	{
+	arguments
+			{
+						XmNuserData = help_window_pointer;
+			XmNeditMode = XmMULTI_LINE_EDIT;
+			XmNeditable = false;
+			XmNsensitive = true;
+			XmNwordWrap = true;
+			XmNfontList = text_font;
+			};
+	callbacks
+			{
+			MrmNcreateCallback =
+		procedure help_identify(HELP_TEXT);
+			};
+	};
+		help_topic: XmTextField
+	{
+	arguments
+			{
+						XmNuserData = help_window_pointer;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = object_border;
+			XmNbottomOffset = object_border;
+			XmNrightOffset = object_border;
+			XmNrightWidget = XmPushButton help_find_button;
+			XmNbottomWidget = XmPushButton help_do_button;
+			XmNeditable = true;
+			XmNfontList = topic_font;
+			};
+	callbacks
+			{
+			MrmNcreateCallback =
+		procedure help_identify(HELP_TOPIC);
+
+			XmNvalueChangedCallback =
+		procedure changed_help_topic(help_window_pointer);
+
+			XmNactivateCallback =
+		procedure return_in_help_topic(help_window_pointer);
+			};
+	};
+
+end module;

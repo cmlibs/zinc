@@ -1,0 +1,651 @@
+!*******************************************************************************
+! FILE : command_window.uil
+!
+! LAST MODIFIED : 2 February 1995
+!
+! DESCRIPTION :
+! The widgets/gadgets for the command window.
+!===============================================================================
+module Command_Window
+	names = case_sensitive
+
+procedure
+	command_changed;
+	command_entered;
+	identify_command_box;
+	identify_output_pane;
+	identify_message_pane;
+	identify_three_d_window_create_but;
+	identify_image_processing_create_b;
+	identify_volume_editor_create_butt;
+	identify_material_editor_create_bu;
+	callback_command;
+	open_file_and_read;
+	change_scrolling;
+
+identifier
+	command_window_structure;
+	read_iod_file_structure;
+
+value
+	command_box_position_x : 0;
+	command_box_position_y : 0;
+	sash_width : 50;
+	small_widget_spacing : 1;
+	large_widget_spacing : 4;
+	command_history_items : 100;
+	max_pane_size : 1000;
+	command_min_pane_size : 50;
+	min_pane_size : 50;
+	message_default_height : 90;
+
+object
+	command_window: XmForm
+		{
+		arguments
+			{
+!      XmNx = command_box_position_x;
+!      XmNy = command_box_position_y;
+			XmNborderWidth = 0;
+!      XmNwidth = command_box_width;
+			XmNdefaultPosition = false;
+			XmNresizePolicy = XmRESIZE_ANY;
+			XmNdialogTitle = compound_string("CMISS Command Window");
+			};
+		controls
+			{
+			XmPanedWindow paned_window;
+			XmMenuBar menu_bar;
+			};
+		};
+	paned_window: XmPanedWindow
+		{
+		arguments
+			{
+			XmNsashWidth = sash_width;
+			XmNtopOffset = small_widget_spacing;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = small_widget_spacing;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightOffset = small_widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNbottomOffset = small_widget_spacing;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNtopWidget = XmMenuBar menu_bar;
+			};
+		controls
+			{
+			XmCommand command_box;
+			XmScrolledWindow output_scrolled_window;
+!      XmScrolledWindow message_scrolled_window;
+			};
+		};
+	command_box: XmCommand
+		{
+		arguments
+			{
+			XmNhistoryMaxItems = command_history_items;
+			XmNresizePolicy = XmRESIZE_ANY;
+			XmNnoResize = false;
+			XmNallowResize = true;
+			XmNpaneMaximum = max_pane_size;
+			XmNpaneMinimum = command_min_pane_size;
+			XmNpromptString = compound_string("");
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_command_box(command_window_structure);
+				};
+			XmNcommandChangedCallback = procedures
+				{
+				command_changed;
+				};
+			XmNcommandEnteredCallback = procedures
+				{
+				command_entered;
+				};
+			};
+		};
+	output_scrolled_window: XmScrolledWindow
+		{
+		arguments
+			{
+			XmNallowResize = true;
+			XmNpaneMaximum = max_pane_size;
+			XmNpaneMinimum = min_pane_size;
+!      XmNvisualPolicy = XmSTATIC;
+			XmNscrollBarDisplayPolicy = XmSTATIC;
+!      XmNscrollingPolicy = XmCONSTANT;
+			XmNworkWindow = XmText output_text;
+			};
+		controls
+			{
+			XmText output_text;
+			};
+		};
+	output_text: XmText
+		{
+		arguments
+			{
+			XmNeditMode = XmMULTI_LINE_EDIT;
+			XmNeditable = false;
+			XmNwordWrap = true;
+			XmNsensitive = true;
+!      XmNscrollHorizontal = false;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_output_pane(command_window_structure);
+				};
+			};
+		};
+	message_scrolled_window: XmScrolledWindow
+		{
+		arguments
+			{
+			XmNallowResize = true;
+			XmNpaneMaximum = message_default_height;
+			XmNpaneMinimum = min_pane_size;
+			XmNheight = message_default_height;
+!      XmNvisualPolicy = XmSTATIC;
+			XmNscrollBarDisplayPolicy = XmSTATIC;
+!      XmNscrollingPolicy = XmCONSTANT;
+			XmNworkWindow = XmText message_text;
+			};
+		controls
+			{
+			XmText message_text;
+			};
+		};
+	message_text: XmText
+		{
+		arguments
+			{
+			XmNeditMode = XmMULTI_LINE_EDIT;
+			XmNeditable = false;
+			XmNwordWrap = true;
+			XmNsensitive = true;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_message_pane(command_window_structure);
+				};
+			};
+		};
+	menu_bar: XmMenuBar
+		{
+		arguments
+			{
+			XmNmenuHelpWidget = XmCascadeButton help_button;
+			XmNspacing = large_widget_spacing;
+			XmNisHomogeneous = false;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = small_widget_spacing;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = small_widget_spacing;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = small_widget_spacing;
+			};
+		controls
+			{
+			XmCascadeButton file_button;
+			XmCascadeButton windows_button;
+			XmCascadeButton options_button;
+			XmCascadeButton scroll_button;
+			XmCascadeButton help_button;
+			};
+		};
+	file_button: XmCascadeButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("File");
+			XmNmnemonic = keysym("F");
+			};
+		controls
+			{
+			XmPulldownMenu file_pulldown_menu;
+			};
+		};
+	file_pulldown_menu: XmPulldownMenu
+		{
+		controls
+			{
+			XmCascadeButton open_button;
+			XmCascadeButton read_button;
+			XmSeparator
+				{
+				};
+			XmPushButton exit_button;
+			};
+		};
+	open_button: XmCascadeButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Open...");
+			XmNmnemonic = keysym("O");
+			};
+		controls
+			{
+			XmPulldownMenu open_menu;
+			};
+		};
+	open_menu: XmPulldownMenu
+		{
+		controls
+			{
+			XmPushButton open_comfile_button;
+			XmPushButton open_menu_button;
+			};
+		};
+	open_comfile_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Com File");
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				callback_command("open comfile");
+				};
+			};
+		};
+	open_menu_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Menu");
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				callback_command("open menu");
+				};
+			};
+		};
+	read_button: XmCascadeButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Read...");
+			XmNmnemonic = keysym("R");
+			};
+		controls
+			{
+			XmPulldownMenu read_menu;
+			};
+		};
+	read_menu: XmPulldownMenu
+		{
+		controls
+			{
+			XmPushButton read_iod_button;
+			};
+		};
+	read_iod_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("IOD File");
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				open_file_and_read(read_iod_file_structure);
+				};
+			};
+		};
+	exit_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Exit");
+			XmNmnemonic = keysym("x");
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				callback_command("Quit");
+				};
+			};
+		};
+	windows_button: XmCascadeButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Tools");
+			XmNmnemonic = keysym("T");
+			XmNsensitive = true;
+			};
+		controls
+			{
+			XmPulldownMenu windows_pulldown_menu;
+			};
+		};
+	windows_pulldown_menu: XmPulldownMenu
+		{
+		controls
+			{
+			XmPushButton three_d_window_create_button;
+			XmPushButton image_processing_create_button;
+			XmPushButton volume_editor_create_button;
+			XmPushButton material_editor_create_button;
+			XmCascadeButton projections_button;
+			};
+		};
+	three_d_window_create_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("3-D window");
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_three_d_window_create_but(command_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				callback_command("GFX Create Window");
+				};
+			};
+		};
+	image_processing_create_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Image processing");
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_image_processing_create_b(command_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				callback_command("IMP Open");
+				};
+			};
+		};
+	volume_editor_create_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Volume editor");
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_volume_editor_create_butt(command_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				callback_command("GFX create volume_editor");
+				};
+			};
+		};
+	material_editor_create_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Graphical material editor");
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_material_editor_create_bu(command_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				callback_command("GFX create graphical_material_editor");
+				};
+			};
+		};
+	projections_button: XmCascadeButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("2-D Projections");
+			XmNmnemonic = keysym("P");
+			XmNsensitive = true;
+			};
+		controls
+			{
+			XmPulldownMenu
+				{
+				controls
+					{
+					XmPushButton
+						{
+						arguments
+							{
+							XmNlabelString = compound_string("xy");
+							};
+						callbacks
+							{
+							XmNactivateCallback = procedures
+								{
+								callback_command("FEM define window on xy");
+								};
+							};
+						};
+					XmPushButton
+						{
+						arguments
+							{
+							XmNlabelString = compound_string("xz");
+							};
+						callbacks
+							{
+							XmNactivateCallback = procedures
+								{
+								callback_command("FEM define window on xz");
+								};
+							};
+						};
+					XmPushButton
+						{
+						arguments
+							{
+							XmNlabelString = compound_string("yz");
+							};
+						callbacks
+							{
+							XmNactivateCallback = procedures
+								{
+								callback_command("FEM define window on yz");
+								};
+							};
+						};
+					};
+				};
+			};
+		};
+	options_button: XmCascadeButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Options");
+			XmNmnemonic = keysym("O");
+			XmNsensitive = true;
+			};
+		controls
+			{
+			};
+		};
+	scroll_button: XmCascadeButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Stop Scrolling");
+			XmNmnemonic = keysym("S");
+			XmNsensitive = true;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				change_scrolling();
+				};
+			};
+		};
+	help_button: XmCascadeButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Help");
+			XmNmnemonic = keysym("H");
+			XmNsensitive = true;
+			};
+		controls
+			{
+			XmPulldownMenu help_pulldown_menu;
+			};
+		};
+	help_pulldown_menu: XmPulldownMenu
+		{
+		controls
+			{
+			XmPushButton help_common_blocks_button;
+			XmPushButton help_common_variables_button;
+			XmPushButton help_examples_button;
+			XmPushButton help_includes_button;
+			XmPushButton help_modules_button;
+			XmPushButton help_subroutines_button;
+			XmPushButton help_variables_button;
+			XmSeparator
+				{
+				};
+			XmPushButton help_help_button;
+			};
+		};
+	help_common_blocks_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Common Blocks");
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				callback_command("Help C_Blocks");
+				};
+			};
+		};
+	help_common_variables_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Common Variables");
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				callback_command("Help C_Variables");
+				};
+			};
+		};
+	help_examples_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Examples");
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				callback_command("Help Examples");
+				};
+			};
+		};
+	help_includes_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Include");
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				callback_command("Help Include");
+				};
+			};
+		};
+	help_modules_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Modules");
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				callback_command("Help Modules");
+				};
+			};
+		};
+	help_subroutines_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Subroutines");
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				callback_command("Help Subroutines");
+				};
+			};
+		};
+	help_variables_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Variables");
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				callback_command("Help Variables");
+				};
+			};
+		};
+	help_help_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("On Help");
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				callback_command("Help Help");
+				};
+			};
+		};
+
+end module;

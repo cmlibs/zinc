@@ -1,0 +1,523 @@
+!*******************************************************************************
+! FILE : material_editor.uil
+!
+! LAST MODIFIED : 24 July 1995
+!
+! DESCRIPTION :
+! The widgets for the material_editor material_editor widget.
+!===============================================================================
+module mat_editor
+	version = 'v1.0'
+
+procedure
+	mat_editor_identify_button    (integer);
+	mat_editor_destroy_CB          ();
+
+value
+	shadow_size        : 2;
+	form_space_out    :  2;
+	form_space_in      :  4;
+	mat_editor_3d_space  :  3;
+	mat_editor_3d_height  :  200;
+
+value
+	mat_editor_font              : font_table(font('-*-HELVETICA-MEDIUM-R-*--*-80-*-*-*-*-ISO8859-1'));
+	mat_editor_font_large        : font_table(font('-*-HELVETICA-BOLD-R-*--*-100-*-*-*-*-ISO8859-1'));
+	mat_editor_font_bold        : font_table(font('-*-HELVETICA-BOLD-R-*--*-80-*-*-*-*-ISO8859-1'));
+
+identifier
+	!The gap between widgets
+	widget_spacing;
+	!Pointer to data specific to this instance of the mat_editor widget
+	mat_editor_structure;
+	!value identifier
+	mat_editor_name_ID;
+	mat_editor_ambient_form_ID;
+	mat_editor_diffuse_form_ID;
+	mat_editor_emission_form_ID;
+	mat_editor_specular_form_ID;
+	mat_editor_alpha_form_ID;
+	mat_editor_shininess_form_ID;
+	mat_editor_a3d_form_ID;
+
+!**************************************************************************************
+!**************************************************************************************
+! The mat_editor widget
+object
+	mat_editor_widget: XmForm
+	{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = mat_editor_structure;
+			};
+		controls
+			{
+!corresponds to #if defined(MATERIAL_EDITOR_NAME)
+!      XmLabelGadget mat_editor_name;
+			XmFrame mat_editor_colours_frame;
+			XmFrame mat_editor_edit_frame;
+			XmForm mat_editor_3d;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure mat_editor_destroy_CB();
+			};
+		};
+	mat_editor_colours_frame: XmFrame
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+!corresponds to #if defined(MATERIAL_EDITOR_NAME)
+!      XmNtopAttachment = XmATTACH_WIDGET;
+!      XmNtopOffset = 0;
+!      XmNtopWidget = XmLabelGadget mat_editor_name;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = mat_editor_structure;
+			};
+		controls
+			{
+			XmForm mat_editor_colours_form;
+			};
+		};
+	mat_editor_edit_frame: XmFrame
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmFrame mat_editor_colours_frame;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = mat_editor_structure;
+			};
+		controls
+			{
+			XmForm mat_editor_edit_form;
+			};
+		};
+!**************************************************************************************
+	mat_editor_name: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Description");
+			XmNshadowThickness = shadow_size;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = mat_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure mat_editor_identify_button(mat_editor_name_ID);
+			};
+		};
+	mat_editor_colours_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNfractionBase = 200;
+			XmNuserData = mat_editor_structure;
+			};
+		controls
+			{
+			XmForm mat_editor_ambient;
+			XmForm mat_editor_diffuse;
+			XmForm mat_editor_emission;
+			XmForm mat_editor_specular;
+			};
+		};
+	mat_editor_ambient: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = form_space_out;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightOffset = form_space_in;
+			XmNrightPosition = 100;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = form_space_out;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomOffset = form_space_in;
+			XmNbottomPosition = 100;
+			XmNuserData = mat_editor_structure;
+			};
+		controls
+			{
+			XmLabelGadget mat_editor_ambient_name;
+			XmForm mat_editor_ambient_form;
+			};
+		};
+	mat_editor_ambient_name: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Ambient Colour:");
+			XmNfontList = mat_editor_font_large;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = mat_editor_structure;
+			};
+		};
+	mat_editor_ambient_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmLabelGadget mat_editor_ambient_name;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = mat_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure mat_editor_identify_button(mat_editor_ambient_form_ID);
+			};
+		};
+	mat_editor_diffuse: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftOffset = form_space_in;
+			XmNleftPosition = 100;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = form_space_out;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = form_space_out;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomOffset = form_space_in;
+			XmNbottomPosition = 100;
+			XmNuserData = mat_editor_structure;
+			};
+		controls
+			{
+			XmLabelGadget mat_editor_diffuse_name;
+			XmForm mat_editor_diffuse_form;
+			};
+		};
+	mat_editor_diffuse_name: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Diffuse Colour:");
+			XmNfontList = mat_editor_font_large;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = mat_editor_structure;
+			};
+		};
+	mat_editor_diffuse_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmLabelGadget mat_editor_diffuse_name;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = mat_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure mat_editor_identify_button(mat_editor_diffuse_form_ID);
+			};
+		};
+	mat_editor_emission: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = form_space_out;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightOffset = form_space_in;
+			XmNrightPosition = 100;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNtopOffset = form_space_in;
+			XmNtopPosition = 100;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = form_space_out;
+			XmNuserData = mat_editor_structure;
+			};
+		controls
+			{
+			XmLabelGadget mat_editor_emission_name;
+			XmForm mat_editor_emission_form;
+			};
+		};
+	mat_editor_emission_name: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Emitted Colour:");
+			XmNfontList = mat_editor_font_large;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = mat_editor_structure;
+			};
+		};
+	mat_editor_emission_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmLabelGadget mat_editor_emission_name;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = mat_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure mat_editor_identify_button(mat_editor_emission_form_ID);
+			};
+		};
+	mat_editor_specular: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftOffset = form_space_in;
+			XmNleftPosition = 100;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = form_space_out;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNtopOffset = form_space_in;
+			XmNtopPosition = 100;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = form_space_out;
+			XmNuserData = mat_editor_structure;
+			};
+		controls
+			{
+			XmLabelGadget mat_editor_specular_name;
+			XmForm mat_editor_specular_form;
+			};
+		};
+	mat_editor_specular_name: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Specular Colour:");
+			XmNfontList = mat_editor_font_large;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = mat_editor_structure;
+			};
+		};
+	mat_editor_specular_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmLabelGadget mat_editor_specular_name;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = mat_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure mat_editor_identify_button(mat_editor_specular_form_ID);
+			};
+		};
+!**************************************************************************************
+	mat_editor_edit_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNfractionBase = 200;
+			XmNuserData = mat_editor_structure;
+			};
+		controls
+			{
+			XmForm mat_editor_alpha_form;
+			XmForm mat_editor_shininess_form;
+			};
+		};
+	mat_editor_alpha_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightOffset = 0;
+			XmNrightPosition = 100;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = mat_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure mat_editor_identify_button(mat_editor_alpha_form_ID);
+			};
+		};
+	mat_editor_shininess_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftOffset = 0;
+			XmNleftPosition = 100;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = mat_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure mat_editor_identify_button(mat_editor_shininess_form_ID);
+			};
+		};
+!**************************************************************************************
+	mat_editor_3d: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmFrame mat_editor_edit_frame;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNheight = mat_editor_3d_height;
+			XmNuserData = mat_editor_structure;
+			};
+		controls
+			{
+			XmFrame mat_editor_3d_frame;
+			};
+		};
+	mat_editor_3d_frame: XmFrame
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = mat_editor_3d_space;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = mat_editor_3d_space;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = mat_editor_3d_space;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = mat_editor_3d_space;
+			XmNuserData = mat_editor_structure;
+			};
+		controls
+			{
+			XmForm mat_editor_3d_form;
+			};
+		};
+	mat_editor_3d_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNuserData = mat_editor_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+				procedure mat_editor_identify_button(mat_editor_a3d_form_ID);
+			};
+		};
+end module;
+!**************************************************************************************

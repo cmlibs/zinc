@@ -1,0 +1,607 @@
+!*******************************************************************************
+!FILE : graphics_window.uil
+!
+!LAST MODIFIED : 12 October 1998
+!
+!DESCRIPTION :
+!The widgets/gadgets for the 3-D graphics window
+!===============================================================================
+module Graphics_window
+	names = case_sensitive
+
+procedure
+! ---------|---------|---------|- 31 characters max
+	gwin_id_selection_list;
+	gwin_id_viewing_form;
+	gwin_id_viewing_area1;
+	gwin_id_viewing_area2;
+	gwin_id_viewing_area3;
+	gwin_id_viewing_area4;
+	gwin_id_view_all_btn;
+	gwin_id_time_edit_form;
+	gwin_id_perspective_btn;
+	gwin_id_layout_option;
+	gwin_id_layout_menu;
+	gwin_id_orthographic_form;
+	gwin_id_ortho_up_option;
+	gwin_id_ortho_up_menu;
+	gwin_id_ortho_front_btn;
+	gwin_id_select_btn;
+	gwin_id_transform_btn;
+	gwin_destroy_CB;
+	gwin_selection_list_CB;
+	gwin_view_all_btn_CB;
+	gwin_perspective_btn_CB;
+	gwin_layout_mode_CB;
+	gwin_ortho_up_menu_CB;
+	gwin_ortho_front_btn_CB;
+	gwin_input_mode_CB;
+
+!value
+!**********Value Definitions
+!	graphics_window_viewing_height: 402;
+!	graphics_window_viewing_width: 402;
+
+identifier
+	gwin_structure;
+	button_font;
+	heading_font;
+
+!*******************************************************************************
+!Graphics window widget
+!*******************************************************************************
+object
+	graphics_window: XmForm
+		{
+		arguments
+			{
+			XmNshadowThickness = 0;
+			XmNborderWidth = 0;
+			XmNdefaultPosition = false;
+			XmNautoUnmanage = false;
+			};
+		controls
+			{
+			XmForm gwin_control_panel;
+!      XmPanedWindow gwin_work_area;
+			XmForm gwin_viewing_form;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure gwin_destroy_CB();
+			};
+		};
+!*******************************************************************************
+	gwin_control_panel: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			};
+		controls
+			{
+			XmPushButtonGadget gwin_view_all_btn;
+			XmForm gwin_time_edit_form;
+			XmToggleButtonGadget gwin_perspective_btn;
+			XmOptionMenu gwin_layout_option;
+			XmForm gwin_orthographic_form;
+			XmFrame gwin_input_mode_frame;
+			};
+		};
+!*******************************************************************************
+	gwin_viewing_form: XmForm
+		{
+		arguments
+			{
+!			XmNshadowThickness = 0;
+!			XmNborderColor = color('orange');
+			XmNborderWidth = 0;
+!      XmNwidth = 402;
+!      XmNheight = 402;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 1;
+!			XmNleftOffset = graphics_window_border_width;
+			XmNleftWidget = XmForm gwin_control_panel;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 1;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 1;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 1;
+!			XmNtopOffset = graphics_window_border_width;
+!      XmNallowResize = true;
+			XmNfractionBase = 2;
+			XmNhorizontalSpacing = 0;
+			XmNverticalSpacing = 0;
+			};
+		controls
+			{
+			XmForm gwin_viewing_area1;
+			XmForm gwin_viewing_area2;
+			XmForm gwin_viewing_area3;
+			XmForm gwin_viewing_area4;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure gwin_id_viewing_form(gwin_structure);
+			};
+		};
+! top left:
+	gwin_viewing_area1: XmForm
+		{
+		arguments
+			{
+!			XmNshadowThickness = 0;
+!			XmNborderColor = color('gray');
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 0;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 1;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 1;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNtopPosition = 0;
+			XmNuserData = gwin_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure gwin_id_viewing_area1(gwin_structure);
+			};
+		};
+! top right:
+	gwin_viewing_area2: XmForm
+		{
+		arguments
+			{
+!			XmNshadowThickness = 0;
+!			XmNborderColor = color('gray');
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 1;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 2;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 1;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNtopPosition = 0;
+			XmNuserData = gwin_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure gwin_id_viewing_area2(gwin_structure);
+			};
+		};
+! bottom left:
+	gwin_viewing_area3: XmForm
+		{
+		arguments
+			{
+!			XmNshadowThickness = 0;
+!			XmNborderColor = color('gray');
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 0;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 1;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 2;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNtopPosition = 1;
+			XmNuserData = gwin_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure gwin_id_viewing_area3(gwin_structure);
+			};
+		};
+! bottom right:
+	gwin_viewing_area4: XmForm
+		{
+		arguments
+			{
+!			XmNshadowThickness = 0;
+!			XmNborderColor = color('gray');
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 1;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 2;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 2;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNtopPosition = 1;
+			XmNuserData = gwin_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure gwin_id_viewing_area4(gwin_structure);
+			};
+		};
+!*******************************************************************************
+	gwin_view_all_btn: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("View All");
+			XmNfontList = button_font;
+!      XmNsensitive = false;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNuserData = gwin_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				gwin_id_view_all_btn(gwin_structure);
+			XmNactivateCallback = procedure
+				gwin_view_all_btn_CB(gwin_structure);
+			};
+		};
+	gwin_time_edit_form: XmForm
+		{
+		arguments
+			{
+!      XmNsensitive = false;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmPushButtonGadget gwin_view_all_btn;
+			XmNuserData = gwin_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				gwin_id_time_edit_form(gwin_structure);
+			};
+		};
+	gwin_perspective_btn: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Perspective");
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNfontList = button_font;
+!      XmNsensitive = false;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmForm gwin_time_edit_form;
+			XmNuserData = gwin_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				gwin_id_perspective_btn(gwin_structure);
+			XmNvalueChangedCallback = procedure
+				gwin_perspective_btn_CB(gwin_structure);
+			};
+		};
+!*******************************************************************************
+	gwin_layout_option: XmOptionMenu
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = gwin_perspective_btn;
+			};
+		controls
+			{
+			XmPulldownMenu gwin_layout_menu;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure gwin_id_layout_option(gwin_structure);
+			};
+		};
+	gwin_layout_menu: XmPulldownMenu
+		{
+		arguments
+			{
+			XmNbuttonFontList = button_font;
+!			XmNlabelFontList = button_font;
+!			XmNtextFontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure gwin_id_layout_menu(gwin_structure);
+			XmNentryCallback = procedure gwin_layout_mode_CB(gwin_structure);
+			};
+		};
+/*
+	gwin_orthographic_btn: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Orthographic");
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNfontList = button_font;
+!      XmNsensitive = false;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmToggleButtonGadget gwin_perspective_btn;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				gwin_id_orthographic_btn(gwin_structure);
+			XmNvalueChangedCallback = procedure
+				gwin_orthographic_btn_CB(gwin_structure);
+			};
+		};
+*/
+	gwin_orthographic_form: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = gwin_layout_option;
+			};
+		controls
+			{
+			XmLabelGadget gwin_ortho_label;
+			XmOptionMenu gwin_ortho_up_option;
+			XmPushButtonGadget gwin_ortho_front_btn;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure gwin_id_orthographic_form(gwin_structure);
+			};
+		};
+!*******************************************************************************
+	gwin_ortho_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Ortho. Up, Front:");
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 2;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNuserData = gwin_structure;
+			};
+		};
+	gwin_ortho_up_option: XmOptionMenu
+		{
+		arguments
+			{
+!      XmNlabelString = compound_string("Up:");
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmLabelGadget gwin_ortho_label;
+			XmNuserData = gwin_structure;
+			};
+		controls
+			{
+			XmPulldownMenu gwin_ortho_up_menu;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				gwin_id_ortho_up_option(gwin_structure);
+			};
+		};
+	gwin_ortho_up_menu: XmPulldownMenu
+		{
+		arguments
+			{
+!      XmNborderWidth = 1;
+			XmNbuttonFontList = button_font;
+			XmNuserData = gwin_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				gwin_id_ortho_up_menu(gwin_structure);
+			XmNentryCallback = procedure
+				gwin_ortho_up_menu_CB(gwin_structure);
+			};
+		controls
+			{
+			XmPushButtonGadget
+				{
+				arguments
+					{
+					XmNlabelString = compound_string("x");
+					XmNfontList = button_font;
+					XmNuserData = 1;
+					};
+				};
+			XmPushButtonGadget
+				{
+				arguments
+					{
+					XmNlabelString = compound_string("y");
+					XmNfontList = button_font;
+					XmNuserData = 2;
+					};
+				};
+			XmPushButtonGadget
+				{
+				arguments
+					{
+					XmNlabelString = compound_string("z");
+					XmNfontList = button_font;
+					XmNuserData = 3;
+					};
+				};
+			XmPushButtonGadget
+				{
+				arguments
+					{
+					XmNlabelString = compound_string("-x");
+					XmNfontList = button_font;
+					XmNuserData = 4;
+					};
+				};
+			XmPushButtonGadget
+				{
+				arguments
+					{
+					XmNlabelString = compound_string("-y");
+					XmNfontList = button_font;
+					XmNuserData = 5;
+					};
+				};
+			XmPushButtonGadget
+				{
+				arguments
+					{
+					XmNlabelString = compound_string("-z");
+					XmNfontList = button_font;
+					XmNuserData = 6;
+					};
+				};
+			};
+		};
+	gwin_ortho_front_btn: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("??");
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 0;
+			XmNleftWidget = XmOptionMenu gwin_ortho_up_option;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNbottomAttachment = XmATTACH_OPPOSITE_WIDGET;
+			XmNbottomOffset = 3;
+			XmNbottomWidget = XmOptionMenu gwin_ortho_up_option;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 3;
+			XmNtopWidget = XmLabelGadget gwin_ortho_label;
+			XmNuserData = gwin_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				gwin_id_ortho_front_btn(gwin_structure);
+			XmNactivateCallback = procedure
+				gwin_ortho_front_btn_CB(gwin_structure);
+			};
+		};
+!*******************************************************************************
+	gwin_input_mode_frame: XmFrame
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmForm gwin_orthographic_form;
+			};
+		controls
+			{
+			XmRowColumn gwin_input_mode_rowcol;
+			};
+!    callbacks
+!      {
+!      MrmNcreateCallback = procedure gwin_id_input_mode_frame(gwin_structure);
+!      };
+		};
+	gwin_input_mode_rowcol: XmRowColumn
+		{
+		arguments
+			{
+			XmNorientation = XmVERTICAL;
+			XmNpacking = XmPACK_COLUMN;
+			XmNradioBehavior = true;
+      XmNentryAlignment = XmALIGNMENT_CENTER;
+			XmNnumColumns = 1;
+			XmNuserData = gwin_structure;
+			};
+		controls
+			{
+			XmToggleButton gwin_select_btn;
+			XmToggleButton gwin_transform_btn;
+			};
+    callbacks
+      {
+			XmNentryCallback = procedure gwin_input_mode_CB(gwin_structure);
+!      MrmNcreateCallback =
+!         procedure gwin_id_input_mode_rowcol(gwin_structure);
+      };
+		};
+	gwin_select_btn: XmToggleButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Select");
+			XmNfontList = button_font;
+			XmNindicatorOn = false;
+			XmNset = false;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure gwin_id_select_btn(gwin_structure);
+			};
+		};
+	gwin_transform_btn: XmToggleButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Transform");
+			XmNfontList = button_font;
+			XmNindicatorOn = false;
+			XmNset = true;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure gwin_id_transform_btn(gwin_structure);
+			};
+		};
+!*******************************************************************************
+end module;

@@ -1,0 +1,274 @@
+!*******************************************************************************
+! FILE : spectrum_editor_d.uil
+!
+! LAST MODIFIED : 10 March 1998
+!
+! DESCRIPTION :
+! The widgets for the spectrum_editor_d spectrum_editor_d widget.
+!===============================================================================
+module spectrum_editor_dialog
+	version = 'v1.0'
+
+procedure
+	spec_editor_d_identify_button    (integer);
+	spec_editor_d_destroy_CB          ();
+	spec_editor_d_control_CB          (integer);
+	spec_ed_d_autorange_btn_CB;
+	
+value
+	shadow_size        : 2;
+	form_space_out    :  2;
+	form_space_in      :  4;
+	spec_editor_d_3d_space  :  3;
+	spec_editor_d_3d_height  :  200;
+
+value
+	spec_editor_d_font              : font_table(font('-*-HELVETICA-MEDIUM-R-*--*-80-*-*-*-*-ISO8859-1'));
+	spec_editor_d_font_large        : font_table(font('-*-HELVETICA-BOLD-R-*--*-100-*-*-*-*-ISO8859-1'));
+	spec_editor_d_font_bold        : font_table(font('-*-HELVETICA-BOLD-R-*--*-80-*-*-*-*-ISO8859-1'));
+
+identifier
+	!The gap between widgets
+	widget_spacing;
+	!Pointer to data specific to this instance of the spec_editor_d widget
+	spec_editor_d_structure;
+	!value identifier
+	spec_editor_d_select_form_ID;
+	spec_editor_d_editor_form_ID;
+	spec_editor_d_ok_ID;
+	spec_editor_d_apply_ID;
+	spec_editor_d_revert_ID;
+	spec_editor_d_cancel_ID;
+	spec_ed_d_autorange_scene_ID;
+
+! The spec_editor_d widget
+object
+	spec_editor_dialog_widget: XmForm
+	{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = spec_editor_d_structure;
+			};
+		controls
+			{
+			XmForm spec_editor_d_select;
+			XmForm spec_ed_d_control_form;
+			XmForm spec_editor_d_editor;
+			XmRowColumn spec_editor_d_control;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure spec_editor_d_destroy_CB();
+			};
+		};
+	spec_editor_d_select: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = spec_editor_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure spec_editor_d_identify_button(spec_editor_d_select_form_ID);
+			};
+		};
+	spec_ed_d_control_form: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = form_space_in;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = form_space_out;
+			XmNtopWidget = spec_editor_d_select;
+			XmNuserData = spec_editor_d_structure;
+			};
+		controls
+			{
+			XmPushButtonGadget spec_ed_d_autorange_button;
+			XmLabelGadget spec_ed_d_scene_autorange_label;
+			XmForm spec_ed_d_autorange_scene_form;
+			};
+		};
+	spec_editor_d_editor: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = spec_ed_d_control_form;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = 0;
+			XmNbottomWidget = spec_editor_d_control;
+			XmNuserData = spec_editor_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure spec_editor_d_identify_button(spec_editor_d_editor_form_ID);
+			};
+		};
+!**************************************************************************************
+	spec_ed_d_autorange_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNlabelString = compound_string("Autorange");
+			XmNalignment = XmALIGNMENT_CENTER;
+			XmNuserData = spec_editor_d_structure;
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedure spec_ed_d_autorange_btn_CB();
+			};
+		};
+	spec_ed_d_scene_autorange_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("from scene");
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 0;
+			XmNleftWidget = spec_ed_d_autorange_button;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = spec_editor_d_structure;
+			};
+		};
+	spec_ed_d_autorange_scene_form: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 0;
+			XmNleftWidget = spec_ed_d_scene_autorange_label;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNuserData = spec_editor_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				spec_editor_d_identify_button(spec_ed_d_autorange_scene_ID);
+			};
+		};
+!*******************************************************************************
+	spec_editor_d_control: XmRowColumn
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNpacking = XmPACK_COLUMN;
+			XmNorientation = XmHORIZONTAL;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = spec_editor_d_structure;
+			};
+		controls
+			{
+			XmPushButtonGadget spec_editor_d_control_ok;
+			XmPushButtonGadget spec_editor_d_control_apply;
+			XmPushButtonGadget spec_editor_d_control_revert;
+			XmPushButtonGadget spec_editor_d_control_cancel;
+			};
+		};
+	spec_editor_d_control_ok: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("OK");
+			XmNuserData = spec_editor_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure spec_editor_d_identify_button(spec_editor_d_ok_ID);
+			XmNactivateCallback = procedure spec_editor_d_control_CB(spec_editor_d_ok_ID);
+			};
+		};
+	spec_editor_d_control_apply: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Apply");
+			XmNuserData = spec_editor_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure spec_editor_d_identify_button(spec_editor_d_apply_ID);
+			XmNactivateCallback = procedure spec_editor_d_control_CB(spec_editor_d_apply_ID);
+			};
+		};
+	spec_editor_d_control_revert: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Revert");
+			XmNuserData = spec_editor_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+				procedure spec_editor_d_identify_button(spec_editor_d_revert_ID);
+			XmNactivateCallback =
+				procedure spec_editor_d_control_CB(spec_editor_d_revert_ID);
+			};
+		};
+	spec_editor_d_control_cancel: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Cancel");
+			XmNuserData = spec_editor_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+				procedure spec_editor_d_identify_button(spec_editor_d_cancel_ID);
+			XmNactivateCallback =
+				procedure spec_editor_d_control_CB(spec_editor_d_cancel_ID);
+			};
+		};
+end module;
+!**************************************************************************************

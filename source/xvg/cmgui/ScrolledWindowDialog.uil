@@ -1,0 +1,135 @@
+module ScrolledWindowDialog_uil
+
+procedure	activateCB_ScrolWinOkPBG;
+procedure	activateCB_ScrolWinScanPBG;
+procedure	activateCB_ScrolWinCancelPBG;
+
+object ScrolledWindowDialog : XmFormDialog
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNx = 91;
+		XmNy = 212;
+		XmNwidth = 325;
+		XmNheight = 142;
+		XmNdialogStyle = XmDIALOG_FULL_APPLICATION_MODAL;
+	};
+	controls
+	{
+		XmScrolledWindow ScrolledWindowDialogSWW;
+		XmRowColumn rowColumn5;
+	};
+};
+
+object ScrolledWindowDialogSWW : XmScrolledWindow
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNx = 2;
+		XmNy = 2;
+		XmNbottomAttachment = XmATTACH_FORM;
+		XmNbottomOffset = 50;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNtopAttachment = XmATTACH_FORM;
+		XmNleftOffset = 2;
+		XmNrightOffset = 2;
+		XmNtopOffset = 2;
+		XmNshadowThickness = 0;
+	};
+	controls
+	{
+		XmList ScrolledWindowDialogSLW;
+	};
+};
+
+object ScrolledWindowDialogSLW : XmList
+{
+	arguments
+	{
+		XmNhighlightThickness = 0;
+		XmNautomaticSelection = true;
+		XmNselectionPolicy = XmSINGLE_SELECT;
+	};
+};
+
+object rowColumn5 : XmRowColumn
+{
+	arguments
+	{
+		XmNx = 130;
+		XmNy = 210;
+		XmNbottomAttachment = XmATTACH_FORM;
+		XmNbottomOffset = 5;
+		XmNentryAlignment = XmALIGNMENT_CENTER;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 5;
+		XmNnumColumns = 3;
+		XmNorientation = XmHORIZONTAL;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNrightOffset = 5;
+		XmNheight = 40;
+	};
+	controls
+	{
+		XmPushButtonGadget ScrolledWindowOkPBG;
+		XmPushButtonGadget ScrolledWindowScanPBG;
+		XmPushButtonGadget ScrolledWindowCancelPBG;
+	};
+};
+
+object ScrolledWindowOkPBG : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNx = 10;
+		XmNy = 170;
+		XmNlabelString = compound_string( "Ok" );
+		XmNrecomputeSize = false;
+		XmNwidth = 100;
+		XmNheight = 30;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_ScrolWinOkPBG ();
+	};
+};
+
+object ScrolledWindowScanPBG : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNx = 13;
+		XmNy = 13;
+		XmNlabelString = compound_string( "Scan" );
+		XmNrecomputeSize = false;
+		XmNwidth = 100;
+		XmNheight = 30;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_ScrolWinScanPBG ();
+	};
+};
+
+object ScrolledWindowCancelPBG : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNx = 10;
+		XmNy = 170;
+		XmNlabelString = compound_string( "Cancel" );
+		XmNrecomputeSize = false;
+		XmNwidth = 100;
+		XmNheight = 30;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_ScrolWinCancelPBG ();
+	};
+};
+
+
+end module;

@@ -1,0 +1,1706 @@
+!*******************************************************************************
+!FILE : map_dialog.uil
+!
+!LAST MODIFIED : 23 July 1998
+!
+!DESCRIPTION :
+!The widgets/gadgets for the map dialog in the mapping work area.
+!===============================================================================
+module map_dialog_module
+	names = case_sensitive
+
+procedure
+	identify_map_dialog_range_type;
+	identify_map_dialog_range_autom;
+	identify_map_dialog_range_fixed;
+	identify_map_dialog_range_minim;
+	identify_map_dialog_range_maxim;
+	identify_map_dialog_spectrum;
+	identify_map_dialog_spectrum_no;
+	identify_map_dialog_blue_red;
+	identify_map_dialog_red_blue;
+	identify_map_dialog_log_blue_re;
+	identify_map_dialog_log_red_blu;
+	identify_map_dialog_interpolati;
+	identify_map_dialog_inter_bicub;
+	set_interpolation_bicubic;
+	identify_map_dialog_inter_none;
+	set_interpolation_none;
+	id_map_dialog_inter_mrows;
+	id_map_dialog_inter_mrows_text;
+	id_map_dialog_inter_mcols;
+	id_map_dialog_inter_mcols_text;
+	identify_map_dialog_contours;
+	identify_map_dialog_contours_op;
+	identify_map_dialog_contours_no;
+	identify_map_dialog_contours_co;
+	identify_map_dialog_contours_va;
+	identify_map_dialog_contours_up;
+	increment_number_of_contours;
+	identify_map_dialog_contours_nu;
+	identify_map_dialog_contours_do;
+	decrement_number_of_contours;
+	identify_map_dialog_elect_menu;
+	identify_map_dialog_elect_name;
+	identify_map_dialog_elect_value;
+	identify_map_dialog_elect_chann;
+	identify_map_dialog_elect_hide;
+	identify_map_dialog_elect_marke;
+	identify_map_dialog_elect_circl;
+	identify_map_dialog_elect_plus;
+	identify_map_dialog_elect_squar;
+	identify_map_dialog_elect_size;
+	identify_map_dialog_fibre_menu;
+	identify_map_dialog_fibre_hide;
+	identify_map_dialog_fibre_fine;
+	identify_map_dialog_fibre_mediu;
+	identify_map_dialog_fibre_coars;
+	identify_map_dialog_landmarks_b;
+	identify_map_dialog_extrema_but;
+	identify_map_dialog_aspect_rati;
+	identify_map_dialog_print_spect;
+	id_map_dialog_animation_frame_n;
+	id_map_dialog_animation_num_fra;
+	id_map_dialog_animation_end_tim;
+	id_map_dialog_animation_start_t;
+	identify_map_dialog_animation;
+	identify_map_dialog_ok_button;
+	update_map_from_dialog;
+	identify_map_dialog_apply_butto;
+	identify_map_dialog_cancel_butt;
+	close_map_dialog;
+
+identifier
+	widget_spacing;
+	map_dialog_structure;
+	mapping_window_structure;
+	! Fonts
+	button_font;
+	heading_font;
+	list_font;
+	menu_font;
+	normal_font;
+	normal_non_proportional_font;
+	small_font;
+
+object
+	map_dialog: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			XmNallowOverlap = false;
+			XmNdialogStyle = XmDIALOG_FULL_APPLICATION_MODAL;
+			};
+		controls
+			{
+			XmRowColumn map_dialog_range;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmRowColumn map_dialog_range;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = 0;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmRowColumn map_dialog_spectrum;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmRowColumn map_dialog_spectrum;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmRowColumn map_dialog_interpolation;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmRowColumn map_dialog_interpolation;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmRowColumn map_dialog_contours;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmRowColumn map_dialog_contours;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmRowColumn map_dialog_electrodes;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmRowColumn map_dialog_electrodes;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmOptionMenu map_dialog_fibres_option;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmOptionMenu map_dialog_fibres_option;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmToggleButtonGadget map_dialog_landmarks_button;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmToggleButtonGadget map_dialog_landmarks_button;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmToggleButtonGadget map_dialog_extrema_button;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmToggleButtonGadget map_dialog_extrema_button;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmToggleButtonGadget map_dialog_aspect_ratio_button;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmToggleButtonGadget map_dialog_aspect_ratio_button;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmToggleButtonGadget map_dialog_print_spectrum_butto;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmToggleButtonGadget map_dialog_print_spectrum_butto;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmRowColumn map_dialog_animation;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmRowColumn map_dialog_animation;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = 0;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_FORM;
+					XmNleftOffset = widget_spacing;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_WIDGET;
+					XmNtopWidget = XmRowColumn map_dialog_animation;
+					XmNtopOffset = widget_spacing;
+					XmNbottomAttachment = XmATTACH_WIDGET;
+					XmNbottomWidget = XmForm map_dialog_ok_apply_cancel;
+					XmNbottomOffset = widget_spacing;
+					};
+				};
+			XmForm map_dialog_ok_apply_cancel;
+			};
+		};
+	map_dialog_range: XmRowColumn
+		{
+		arguments
+			{
+			XmNnumColumns = 3;
+			XmNorientation = XmHORIZONTAL;
+			XmNspacing = widget_spacing;
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmOptionMenu map_dialog_range_option;
+			XmRowColumn map_dialog_range_minimum_form;
+			XmRowColumn map_dialog_range_maximum_form;
+			};
+		};
+	map_dialog_range_option: XmOptionMenu
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Range :");
+			};
+		controls
+			{
+			XmPulldownMenu
+				{
+				arguments
+					{
+					XmNborderWidth = 1;
+					};
+				controls
+					{
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("Automatic");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_range_autom(map_dialog_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("Fixed");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_range_fixed(map_dialog_structure);
+								};
+							};
+						};
+					};
+				};
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_range_type(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_range_minimum_form: XmRowColumn
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNnumColumns = 2;
+			XmNorientation = XmHORIZONTAL;
+			XmNspacing = widget_spacing;
+			};
+		controls
+			{
+			XmLabel
+				{
+				arguments
+					{
+					XmNlabelString =
+					compound_string("min");
+					XmNfontList = button_font;
+					};
+				};
+			XmTextField map_dialog_range_minimum_text;
+			};
+		};
+	map_dialog_range_minimum_text: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_range_minim(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_range_maximum_form: XmRowColumn
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNnumColumns = 2;
+			XmNorientation = XmHORIZONTAL;
+			XmNspacing = widget_spacing;
+			};
+		controls
+			{
+			XmLabel
+				{
+				arguments
+					{
+					XmNlabelString =
+					compound_string("max");
+					XmNfontList = button_font;
+					};
+				};
+			XmTextField map_dialog_range_maximum_text;
+			};
+		};
+	map_dialog_range_maximum_text: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_range_maxim(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_spectrum: XmRowColumn
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNnumColumns = 1;
+			XmNorientation = XmHORIZONTAL;
+			XmNspacing = widget_spacing;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmRowColumn map_dialog_range;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmOptionMenu map_dialog_spectrum_type_option;
+			};
+		};
+	map_dialog_spectrum_type_option: XmOptionMenu
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Spectrum :");
+			};
+		controls
+			{
+			XmPulldownMenu
+				{
+				arguments
+					{
+					XmNborderWidth = 1;
+					};
+				controls
+					{
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("none");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_spectrum_no(map_dialog_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("blue->red");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_blue_red(map_dialog_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("red->blue");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_red_blue(map_dialog_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("log(blue->red)");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_log_blue_re(map_dialog_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("log(red->blue)");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_log_red_blu(map_dialog_structure);
+								};
+							};
+						};
+					};
+				};
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_spectrum(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_interpolation: XmRowColumn
+		{
+		arguments
+			{
+			XmNnumColumns = 3;
+			XmNorientation = XmHORIZONTAL;
+			XmNspacing = widget_spacing;
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmRowColumn map_dialog_spectrum;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmOptionMenu map_dialog_interpolation_choi;
+			XmRowColumn map_dialog_interpolation_mrow;
+			XmRowColumn map_dialog_interpolation_mcol;
+			};
+		};
+	map_dialog_interpolation_choi: XmOptionMenu
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Interpolation :");
+			};
+		controls
+			{
+			XmPulldownMenu
+				{
+				arguments
+					{
+					XmNborderWidth = 1;
+					};
+				controls
+					{
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("Bicubic");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_inter_bicub(map_dialog_structure);
+								};
+							XmNactivateCallback = procedures
+								{
+								set_interpolation_bicubic(map_dialog_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("None");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_inter_none(map_dialog_structure);
+								};
+							XmNactivateCallback = procedures
+								{
+								set_interpolation_none(map_dialog_structure);
+								};
+							};
+						};
+					};
+				};
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_interpolati(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_interpolation_mrow: XmRowColumn
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNnumColumns = 2;
+			XmNorientation = XmHORIZONTAL;
+			XmNspacing = widget_spacing;
+			};
+		controls
+			{
+			XmLabel
+				{
+				arguments
+					{
+					XmNlabelString =
+					compound_string("mesh rows");
+					XmNfontList = button_font;
+					};
+				};
+			XmTextField map_dialog_inter_mrows_text;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_map_dialog_inter_mrows(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_inter_mrows_text: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 2;
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_map_dialog_inter_mrows_text(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_interpolation_mcol: XmRowColumn
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNnumColumns = 2;
+			XmNorientation = XmHORIZONTAL;
+			XmNspacing = widget_spacing;
+			};
+		controls
+			{
+			XmLabel
+				{
+				arguments
+					{
+					XmNlabelString =
+					compound_string("mesh columns");
+					XmNfontList = button_font;
+					};
+				};
+			XmTextField map_dialog_inter_mcols_text;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_map_dialog_inter_mcols(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_inter_mcols_text: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 2;
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_map_dialog_inter_mcols_text(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_contours: XmRowColumn
+		{
+		arguments
+			{
+			XmNnumColumns = 2;
+			XmNorientation = XmHORIZONTAL;
+			XmNspacing = widget_spacing;
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmRowColumn map_dialog_interpolation;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmOptionMenu map_dialog_contours_type_option;
+			XmForm map_dialog_contours_number_form;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_contours(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_contours_type_option: XmOptionMenu
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Contours :");
+			};
+		controls
+			{
+			XmPulldownMenu
+				{
+				arguments
+					{
+					XmNborderWidth = 1;
+					};
+				controls
+					{
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("none");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_contours_no(map_dialog_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("variable thickness");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_contours_va(map_dialog_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("constant thickness");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_contours_co(map_dialog_structure);
+								};
+							};
+						};
+					};
+				};
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_contours_op(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_contours_number_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			};
+		controls
+			{
+			XmArrowButtonGadget map_dialog_contours_down;
+			XmLabel map_dialog_contours_number;
+			XmArrowButtonGadget map_dialog_contours_up;
+			};
+		};
+	map_dialog_contours_down: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNarrowDirection = XmARROW_DOWN;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_contours_do(map_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				decrement_number_of_contours(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_contours_number: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("99");
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmArrowButtonGadget map_dialog_contours_down;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_contours_nu(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_contours_up: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNarrowDirection = XmARROW_UP;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabel map_dialog_contours_number;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_contours_up(map_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				increment_number_of_contours(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_electrodes: XmRowColumn
+		{
+		arguments
+			{
+			XmNnumColumns = 3;
+			XmNorientation = XmHORIZONTAL;
+			XmNspacing = widget_spacing;
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmRowColumn map_dialog_contours;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmOptionMenu map_dialog_electrodes_option;
+			XmOptionMenu map_dialog_electrodes_marker;
+			XmRowColumn map_dialog_electrodes_size;
+			};
+		};
+	map_dialog_electrodes_option: XmOptionMenu
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Electrodes :");
+			};
+		controls
+			{
+			XmPulldownMenu
+				{
+				arguments
+					{
+					XmNborderWidth = 1;
+					};
+				controls
+					{
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("Name");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_elect_name(map_dialog_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("Value");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_elect_value(map_dialog_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("Channel");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_elect_chann(map_dialog_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("Hide");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_elect_hide(map_dialog_structure);
+								};
+							};
+						};
+					};
+				};
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_elect_menu(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_electrodes_marker: XmOptionMenu
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("marker :");
+			};
+		controls
+			{
+			XmPulldownMenu
+				{
+				arguments
+					{
+					XmNborderWidth = 1;
+					};
+				controls
+					{
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("Circle");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_elect_circl(map_dialog_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("Plus");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_elect_plus(map_dialog_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("Square");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_elect_squar(map_dialog_structure);
+								};
+							};
+						};
+					};
+				};
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_elect_marke(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_electrodes_size: XmRowColumn
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNnumColumns = 2;
+			XmNorientation = XmHORIZONTAL;
+			XmNspacing = widget_spacing;
+			};
+		controls
+			{
+			XmLabel
+				{
+				arguments
+					{
+					XmNlabelString =
+					compound_string("size");
+					XmNfontList = button_font;
+					};
+				};
+			XmTextField map_dialog_electrodes_size_text;
+			};
+		};
+	map_dialog_electrodes_size_text: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 3;
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_elect_size(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_fibres_option: XmOptionMenu
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Fibres :");
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmOptionMenu map_dialog_electrodes_option;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmPulldownMenu
+				{
+				arguments
+					{
+					XmNborderWidth = 1;
+					};
+				controls
+					{
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("Hide");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_fibre_hide(map_dialog_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("Fine");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_fibre_fine(map_dialog_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("Medium");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_fibre_mediu(map_dialog_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("Coarse");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_map_dialog_fibre_coars(map_dialog_structure);
+								};
+							};
+						};
+					};
+				};
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_fibre_menu(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_landmarks_button : XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Landmarks");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNfillOnSelect = true;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmOptionMenu map_dialog_fibres_option;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_landmarks_b(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_extrema_button : XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Extrema");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNfillOnSelect = true;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmToggleButtonGadget map_dialog_landmarks_button;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_extrema_but(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_aspect_ratio_button : XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Maintain aspect ratio");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNfillOnSelect = true;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmToggleButtonGadget map_dialog_extrema_button;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_aspect_rati(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_print_spectrum_butto : XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Print spectrum");
+			XmNfontList = button_font;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNfillOnSelect = true;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmToggleButtonGadget map_dialog_aspect_ratio_button;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_print_spect(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_animation: XmRowColumn
+		{
+		arguments
+			{
+			XmNnumColumns = 5;
+			XmNorientation = XmHORIZONTAL;
+			XmNspacing = widget_spacing;
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmToggleButtonGadget map_dialog_print_spectrum_butto;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmLabel
+				{
+				arguments
+					{
+					XmNlabelString =
+					compound_string("Animation :");
+					XmNfontList = button_font;
+					};
+				};
+			XmRowColumn
+				{
+				arguments
+					{
+					XmNborderWidth = 0;
+					XmNnumColumns = 2;
+					XmNorientation = XmHORIZONTAL;
+					XmNspacing = widget_spacing;
+					};
+				controls
+					{
+					XmLabel
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("start time");
+							XmNfontList = button_font;
+							};
+						};
+					XmTextField map_dialog_animation_start_time;
+					};
+				};
+			XmRowColumn
+				{
+				arguments
+					{
+					XmNborderWidth = 0;
+					XmNnumColumns = 2;
+					XmNorientation = XmHORIZONTAL;
+					XmNspacing = widget_spacing;
+					};
+				controls
+					{
+					XmLabel
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("end time");
+							XmNfontList = button_font;
+							};
+						};
+					XmTextField map_dialog_animation_end_time;
+					};
+				};
+			XmRowColumn
+				{
+				arguments
+					{
+					XmNborderWidth = 0;
+					XmNnumColumns = 2;
+					XmNorientation = XmHORIZONTAL;
+					XmNspacing = widget_spacing;
+					};
+				controls
+					{
+					XmLabel
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("#frames");
+							XmNfontList = button_font;
+							};
+						};
+					XmTextField map_dialog_animation_num_frames;
+					};
+				};
+			XmRowColumn
+				{
+				arguments
+					{
+					XmNborderWidth = 0;
+					XmNnumColumns = 2;
+					XmNorientation = XmHORIZONTAL;
+					XmNspacing = widget_spacing;
+					};
+				controls
+					{
+					XmLabel
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("frame#");
+							XmNfontList = button_font;
+							};
+						};
+					XmTextField map_dialog_animation_frame_num;
+					};
+				};
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_animation(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_animation_start_time: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_map_dialog_animation_start_t(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_animation_end_time: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_map_dialog_animation_end_tim(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_animation_num_frames: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_map_dialog_animation_num_fra(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_animation_frame_num: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_map_dialog_animation_frame_n(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_ok_apply_cancel: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNallowOverlap = false;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = widget_spacing;
+			};
+		controls
+			{
+			XmPushButtonGadget map_dialog_ok_button;
+			XmSeparator map_dialog_ok_separator;
+			XmPushButtonGadget map_dialog_apply_button;
+			XmSeparator map_dialog_cancel_separator;
+			XmPushButtonGadget map_dialog_cancel_button;
+			};
+		};
+	map_dialog_ok_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("OK");
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_ok_button(map_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				update_map_from_dialog(mapping_window_structure);
+				};
+			};
+		};
+	map_dialog_ok_separator: XmSeparator
+		{
+		arguments
+			{
+			XmNseparatorType = XmNO_LINE;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmPushButtonGadget map_dialog_ok_button;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	map_dialog_apply_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Apply");
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = widget_spacing;
+			XmNleftWidget = XmSeparator map_dialog_ok_separator;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = widget_spacing;
+			XmNrightWidget = XmSeparator map_dialog_cancel_separator;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_apply_butto(map_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				update_map_from_dialog(mapping_window_structure);
+				};
+			};
+		};
+	map_dialog_cancel_separator: XmSeparator
+		{
+		arguments
+			{
+			XmNseparatorType = XmNO_LINE;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = widget_spacing;
+			XmNrightWidget = XmPushButtonGadget map_dialog_cancel_button;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		};
+	map_dialog_cancel_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Cancel");
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_map_dialog_cancel_butt(map_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				close_map_dialog(map_dialog_structure);
+				};
+			};
+		};
+
+end module;

@@ -1,0 +1,187 @@
+/*******************************************************************************
+FILE : matrix_vector.h
+
+LAST MODIFIED : 27 September 1999
+
+DESCRIPTION:
+Code for performing vector calculations - normalize, dot product etc. -, and
+matrix calculations - multiplication, LU decomposition etc. - on small matrices.
+
+Data format:
+* All vectors and matrices are to be passed as one-dimensional arrays of
+	double precision reals. Index v[0] is the first value.
+* When vectors are passed as parameters to subroutines they are preceded by
+	the [int] size of the vector. Similarly, matrix parameters are preceded by
+	num_rows, num_columns, or just size if a square matrix is expected.
+	Furthermore, if a routine expects vectors or matrices of a certain dimension,
+	then the size will be evident from its name, eg. normalize3().
+* Values in rows of matrices are sequential in the array. The first value in
+	the second row is therefore m[num_columns].
+
+Request:
+Bit by bit all bits of vector and matrix code should be put in here - and not
+be scattered around the source code as it is now. Routines known to contain
+vector or matrix routines that should be in here are listed in matrix_vector.c.
+==============================================================================*/
+#if !defined (MATRIX_VECTOR_H)
+#define MATRIX_VECTOR_H
+
+#include "general/value.h"
+
+int cross_product3(double *a,double *b,double *result);
+/*******************************************************************************
+LAST MODIFIED : 28 January 1998
+
+DESCRIPTION :
+Returns in <result> the cross product of the two vectors = a (x) b.
+==============================================================================*/
+
+double dot_product3(double *a,double *b);
+/*******************************************************************************
+LAST MODIFIED : 28 January 1998
+
+DESCRIPTION :
+Returns the dot product of the two vectors = a.b.
+==============================================================================*/
+
+double norm3(double *v);
+/*******************************************************************************
+LAST MODIFIED : 28 January 1998
+
+DESCRIPTION :
+Returns the norm/length/magnitude of vector <v>.
+==============================================================================*/
+
+double normalize3(double *v);
+/*******************************************************************************
+LAST MODIFIED : 26 November 1997
+
+DESCRIPTION :
+Normalizes vector v - of dimension 3 - and returns its length. If its length
+is zero, v is converted to unit vector [1,0,0].
+==============================================================================*/
+
+int normalize_float3(float vector[3]);
+/*******************************************************************************
+LAST MODIFIED : 27 December 1995
+
+DESCRIPTION :
+Normalizes the given <vector>.
+==============================================================================*/
+
+int normalized_crossproduct_float3(float vector_1[3],float vector_2[3],
+	float result[3]);
+/*******************************************************************************
+LAST MODIFIED : 28 December 1995
+
+DESCRIPTION :
+Calculates the normalized cross product of <vector_1> and <vector_2> and puts
+it in <result>.
+==============================================================================*/
+
+int crossproduct_float3(float vector_1[3],float vector_2[3],
+	float result[3]);
+/*******************************************************************************
+LAST MODIFIED : 22 September 1999
+
+DESCRIPTION :
+Calculates the normalized cross product of <vector_1> and <vector_2> and puts
+it in <result>.
+==============================================================================*/
+
+double scalar_triple_product3(double *a,double *b,double *c);
+/*******************************************************************************
+LAST MODIFIED : 28 January 1998
+
+DESCRIPTION :
+Returns the scalar triple product, [abc]=a.(bxc) of vectors a,b and c.
+==============================================================================*/
+
+int copy_matrix(int m,int n,double *a,double *a_copy);
+/*******************************************************************************
+LAST MODIFIED : 28 January 1998
+
+DESCRIPTION :
+Copies the contents of m rows x n columns matrix <a> to <a_copy>.
+==============================================================================*/
+
+int multiply_matrix(int m,int s,int n,double *a,double *b,double *c);
+/*******************************************************************************
+LAST MODIFIED : 28 January 1998
+
+DESCRIPTION :
+Returns in the m rows x n columns matrix <c> that is the product of
+m x s matrix <a> and s x n matrix <b>.
+==============================================================================*/
+
+
+int multiply_matrix_float(int m,int s,int n,float *a,float *b,float *c);
+/*******************************************************************************
+LAST MODIFIED : 2 February 1998
+
+DESCRIPTION :
+Returns in the m rows x n columns matrix <c> that is the product of
+m x s matrix <a> and s x n matrix <b>.
+Uses matrices of floats, not doubles. For matrices od doubles, use "multiply_matrix()"
+==============================================================================*/
+
+int print_matrix(int m,int n,double *a,char *number_format);
+/*******************************************************************************
+LAST MODIFIED : 28 January 1998
+
+DESCRIPTION :
+Prints out the contents of m rows x n columns matrix <a>.
+==============================================================================*/
+
+int transpose_matrix(int m,int n,double *a,double *a_transpose);
+/*******************************************************************************
+LAST MODIFIED : 28 January 1998
+
+DESCRIPTION :
+Return the transpose of m rows x n columns matrix <a> in <a_transpose> - which
+will then be n rows x m columns.
+==============================================================================*/
+
+int LU_decompose(int n,double *a,int *indx,double *d);
+/*******************************************************************************
+LAST MODIFIED : 28 January 1998
+
+DESCRIPTION :
+Performs LU decomposition on n x n matrix <a>. <indx> should be a preallocated
+integer array of dimension n. On return, <a> contains the lower and upper
+decomposed matrix such that a = LU. The indx array contains information about
+the partial pivoting performed during decomposition, while the sign of *d
+indicates whether an even =+ve, or odd =-ve number of row interchanges have been
+performed - I think ;-).
+Adapted from "Numerical Recipes in C".
+==============================================================================*/
+
+int LU_backsubstitute(int n,double *a,int *indx,double *b);
+/*******************************************************************************
+LAST MODIFIED : 28 January 1998
+
+DESCRIPTION :
+Partner routine for LU_decompose which takes the n x n LU matrix (a) and indx
+vector returned by LU_decompose and solves for x, where LU.x=b. The solution
+vector x is returned in the former right-hand-side vector <b>.
+Adapted from "Numerical Recipes in C".
+==============================================================================*/
+
+int invert_FE_value_matrix3(FE_value *a,FE_value *a_inv);
+/*******************************************************************************
+LAST MODIFIED : 15 March 1999
+
+DESCRIPTION :
+Calculates the inverse of 3X3 FE_value matrix <a>, returning it in <a_inv>.
+==============================================================================*/
+
+int multiply_FE_value_matrix3(FE_value *a,FE_value *b,FE_value *result);
+/*******************************************************************************
+LAST MODIFIED : 15 March 1999
+
+DESCRIPTION :
+Calculates and returns in <result> the matrix product of 3x3 FE_value matrices
+<a> and <b>.
+==============================================================================*/
+
+#endif /* !defined (MATRIX_VECTOR_H) */

@@ -1,0 +1,251 @@
+!*******************************************************************************
+! FILE : dof3.uil
+!
+! LAST MODIFIED : 25 January 1995
+!
+! DESCRIPTION :
+! The widgets for the three degree of freedom widget.
+!===============================================================================
+module dof3
+	version = 'v1.0'
+
+procedure
+	input_identify_button    (integer);
+	input_destroy_CB        ();
+	input_device_CB          ();
+	input_polhemus_CB        ();
+
+value
+	shadow_size        : 2;
+
+value
+	input_font            : font_table(font('-*-HELVETICA-MEDIUM-R-*--*-80-*-*-*-*-ISO8859-1'));
+	input_font_large      : font_table(font('-*-HELVETICA-BOLD-R-*--*-100-*-*-*-*-ISO8859-1'));
+	input_font_bold        : font_table(font('-*-HELVETICA-BOLD-R-*--*-80-*-*-*-*-ISO8859-1'));
+
+
+identifier
+	!The gap between widgets
+	widget_spacing;
+	!Pointer to data specific to this instance of the input widget
+	Input_structure;
+	!Value identifiers
+	input_device_button_ID;
+	input_polhemus_button_ID;
+
+!**************************************************************************************
+!**************************************************************************************
+object
+! The input widget
+	input_widget: XmCascadeButton
+		{
+		arguments
+			{
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Input");
+			XmNfontList = input_font_bold;
+			XmNuserData = Input_structure;
+			};
+		controls
+			{
+			XmPulldownMenu input_menu;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure input_destroy_CB ();
+			};
+		};
+	input_menu: XmPulldownMenu
+		{
+		arguments
+			{
+			XmNuserData = Input_structure;
+			};
+		controls
+			{
+			XmToggleButtonGadget input_menu_0;
+			XmToggleButtonGadget input_menu_1;
+			XmToggleButtonGadget input_menu_2;
+			XmToggleButtonGadget input_menu_3;
+			XmToggleButtonGadget input_menu_4;
+			XmToggleButtonGadget input_menu_5;
+			XmToggleButtonGadget input_menu_6;
+			XmSeparatorGadget input_menu_sep;
+			XmCascadeButtonGadget input_menu_pol;
+			};
+		};
+!**************************************************************************************
+	input_menu_0: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNset = false;
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Spaceball");
+			XmNfontList = input_font_large;
+			XmNuserData = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure input_identify_button (input_device_button_ID);
+			XmNvalueChangedCallback = procedure input_device_CB ();
+			};
+		};
+	input_menu_1: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNset = false;
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Polhemus 1");
+			XmNfontList = input_font_large;
+			XmNuserData = 1;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure input_identify_button (input_device_button_ID);
+			XmNvalueChangedCallback = procedure input_device_CB ();
+			};
+		};
+	input_menu_2: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNset = false;
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Polhemus 2");
+			XmNfontList = input_font_large;
+			XmNuserData = 2;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure input_identify_button (input_device_button_ID);
+			XmNvalueChangedCallback = procedure input_device_CB ();
+			};
+		};
+	input_menu_3: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNset = false;
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Polhemus 3");
+			XmNfontList = input_font_large;
+			XmNuserData = 3;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure input_identify_button (input_device_button_ID);
+			XmNvalueChangedCallback = procedure input_device_CB ();
+			};
+		};
+	input_menu_4: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNset = false;
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Polhemus 4");
+			XmNfontList = input_font_large;
+			XmNuserData = 4;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure input_identify_button (input_device_button_ID);
+			XmNvalueChangedCallback = procedure input_device_CB ();
+			};
+		};
+	input_menu_5: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNset = false;
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Dials");
+			XmNfontList = input_font_large;
+			XmNuserData = 5;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure input_identify_button (input_device_button_ID);
+			XmNvalueChangedCallback = procedure input_device_CB ();
+			};
+		};
+	input_menu_6: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNset = false;
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Haptic Device");
+			XmNfontList = input_font_large;
+			XmNuserData = 6;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure input_identify_button (input_device_button_ID);
+			XmNvalueChangedCallback = procedure input_device_CB ();
+			};
+		};
+	input_menu_sep: XmSeparatorGadget
+		{
+		};
+	input_menu_pol: XmCascadeButtonGadget
+		{
+		arguments
+			{
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Set Polhemus");
+			XmNfontList = input_font_large;
+			XmNuserData = Input_structure;
+			};
+		controls
+			{
+			XmPulldownMenu input_menu_pol_menu;
+			};
+		};
+	input_menu_pol_menu: XmPulldownMenu
+		{
+		arguments
+			{
+			XmNuserData = Input_structure;
+			};
+		controls
+			{
+			XmPushButtonGadget input_menu_pol_menu_0;
+			XmPushButtonGadget input_menu_pol_menu_1;
+			};
+		};
+!**************************************************************************************
+	input_menu_pol_menu_0: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Set");
+			XmNfontList = input_font_large;
+			XmNuserData = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure input_identify_button (input_polhemus_button_ID);
+			XmNactivateCallback = procedure input_polhemus_CB ();
+			};
+		};
+	input_menu_pol_menu_1: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Reset");
+			XmNfontList = input_font_large;
+			XmNuserData = 1;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure input_identify_button (input_polhemus_button_ID);
+			XmNactivateCallback = procedure input_polhemus_CB ();
+			};
+		};
+end module;
+!**************************************************************************************

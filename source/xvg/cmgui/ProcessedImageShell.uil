@@ -1,0 +1,373 @@
+module ProcessedImageShell_uil
+
+procedure	destroyCB_ProcessedImageShell;
+procedure	popdownCB_ProcessedImageShell;
+procedure	popupCB_ProcessedImageShell;
+procedure	exposeCB_ProcImageDrawingArea;
+procedure	activateCB_menu4_p1_b1;
+procedure	activateCB_menu4_p1_b2;
+procedure	activateCB_menu4_p1_b3;
+procedure	activateCB_menu4_p1_b5;
+procedure	activateCB_menu4_p1_b6;
+procedure	activateCB_menu4_p1_b10;
+procedure	activateCB_FFTShift;
+procedure	activateCB_menu4_p1_b15;
+procedure       activateCB_menu4_p1_b16;
+
+value DrawingAreaTTable : translation_table(
+	'#replace',
+	'<Btn1Down>:ProcDABtn1Down()',
+	'<Btn1Up>:ProcDABtn1Up()',
+	'<MotionNotify>:ProcMotionNotify()');
+
+value ScrolledWindowTTable : translation_table(
+	'#override',
+	'<ConfigureNotify>:UpdateProcessedWinsize()');
+
+object form9 : XmForm
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNx = 80;
+		XmNy = 50;
+		XmNwidth = 170;
+		XmNheight = 140;
+	};
+	controls
+	{
+		XmScrolledWindow ProcessedImageScrolledWindow;
+		XmFrame frame7;
+		XmFrame frame8;
+		XmFrame frame9;
+	};
+};
+
+object ProcessedImageScrolledWindow : XmScrolledWindow
+{
+	arguments
+	{
+		XmNscrollingPolicy = XmAUTOMATIC;
+		XmNunitType = XmPIXELS;
+!		XmNx = 50;
+!		XmNy = 30;
+!		XmNwidth = 230;
+!		XmNheight = 170;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 2;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNrightOffset = 2;
+		XmNtopAttachment = XmATTACH_FORM;
+		XmNtopOffset = 2;
+		XmNbottomAttachment = XmATTACH_FORM;
+		XmNbottomOffset = 2;
+		XmNscrollBarDisplayPolicy = XmSTATIC;
+		XmNtranslations = ScrolledWindowTTable;
+	};
+	controls
+	{
+		XmDrawingArea ProcessedImageDrawingArea;
+	};
+};
+
+object ProcessedImageDrawingArea : XmDrawingArea
+{
+	arguments
+	{
+		XmNresizePolicy = XmRESIZE_NONE;
+		XmNunitType = XmPIXELS;
+		XmNx = 38;
+		XmNy = 38;
+		XmNtranslations = DrawingAreaTTable;
+	};
+	callbacks
+	{
+		XmNexposeCallback = procedure exposeCB_ProcImageDrawingArea ();
+	};
+	controls
+	{
+		unmanaged XmPopupMenu menu4;
+	};
+};
+
+object menu4 : XmPopupMenu
+{
+	arguments
+	{
+		XmNmenuAccelerator = "<KeyUp>F4";
+	};
+	controls
+	{
+		XmPushButtonGadget menu4_p1_b1;
+		XmPushButtonGadget menu4_p1_b10;
+		XmSeparatorGadget menu4_p1_b4;
+		XmPushButtonGadget menu4_p1_b2;
+		XmPushButtonGadget menu4_p1_b5;
+		XmPushButtonGadget menu4_p1_b6;
+		XmPushButtonGadget menu4_p1_b3;
+		XmSeparatorGadget menu4_p1_b13;
+		XmPushButtonGadget menu4_p1_b12;
+		XmSeparatorGadget menu4_p1_b25;
+		XmPushButtonGadget menu4_p1_b16;
+		XmPushButtonGadget menu4_p1_b15;
+	};
+};
+
+object menu4_p1_b1 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Define clipping contour" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu4_p1_b1 ();
+	};
+};
+
+object menu4_p1_b4 : XmSeparatorGadget
+{
+};
+
+object menu4_p1_b2 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Refresh" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu4_p1_b2 ();
+	};
+};
+
+object menu4_p1_b3 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Disable overlays" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu4_p1_b3 ();
+	};
+};
+
+object menu4_p1_b5 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Enable overlays" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu4_p1_b3 ();
+	};
+};
+
+object menu4_p1_b6 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Digitize nodes" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu4_p1_b6 ();
+	};
+};
+
+object menu4_p1_b10 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Cancel clipping contour definition" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu4_p1_b10 ();
+	};
+};
+
+object menu4_p1_b13 : XmSeparatorGadget
+{
+};
+
+object menu4_p1_b12 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "FFT Shift" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_FFTShift();
+	};
+};
+
+object menu4_p1_b25 : XmSeparatorGadget
+{
+};
+
+object menu4_p1_b16 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Specify image physical parameters" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu4_p1_b16 ();
+	};
+};
+
+object menu4_p1_b15 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Compute distance" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu4_p1_b15 ();
+	};
+};
+
+object frame7 : XmFrame
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNbottomAttachment = XmATTACH_FORM;
+		XmNbottomOffset = 2;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 2;
+		XmNmappedWhenManaged = false;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNrightOffset = 107;
+	};
+	controls
+	{
+		XmDrawingArea ProcessedXSliceDA;
+	};
+};
+
+object ProcessedXSliceDA : XmDrawingArea
+{
+	arguments
+	{
+		XmNresizePolicy = XmRESIZE_NONE;
+		XmNunitType = XmPIXELS;
+		XmNmappedWhenManaged = true;
+		XmNheight = 80;
+	};
+};
+
+object frame8 : XmFrame
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNbottomAttachment = XmATTACH_FORM;
+		XmNmappedWhenManaged = false;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNrightOffset = 2;
+		XmNtopAttachment = XmATTACH_FORM;
+		XmNtopOffset = 2;
+		XmNbottomOffset = 107;
+	};
+	controls
+	{
+		XmDrawingArea ProcessedYSliceDA;
+	};
+};
+
+object ProcessedYSliceDA : XmDrawingArea
+{
+	arguments
+	{
+		XmNresizePolicy = XmRESIZE_NONE;
+		XmNunitType = XmPIXELS;
+		XmNwidth = 80;
+	};
+};
+
+object frame9 : XmFrame
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNbottomAttachment = XmATTACH_FORM;
+		XmNbottomOffset = 2;
+		XmNleftAttachment = XmATTACH_WIDGET;
+		XmNleftOffset = 0;
+		XmNleftWidget = frame7;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNrightOffset = 0;
+		XmNtopAttachment = XmATTACH_WIDGET;
+		XmNtopOffset = 24;
+		XmNtopWidget = frame8;
+		XmNmappedWhenManaged = false;
+	};
+	controls
+	{
+		XmRowColumn rowColumn8;
+	};
+};
+
+object rowColumn8 : XmRowColumn
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNresizeHeight = false;
+		XmNresizeWidth = false;
+		XmNspacing = 1;
+		XmNnumColumns = 1;
+	};
+	controls
+	{
+		XmLabelGadget PVLG;
+		XmLabelGadget PXLG;
+		XmLabelGadget PYLG;
+	};
+};
+
+object PXLG : XmLabelGadget
+{
+	arguments
+	{
+!		XmNx = 10;
+!		XmNy = 0;
+!		XmNwidth = 30;
+!		XmNheight = 20;
+		XmNlabelString = compound_string( "X: xxxx" );
+	};
+};
+
+object PYLG : XmLabelGadget
+{
+	arguments
+	{
+!		XmNx = 13;
+!		XmNy = 13;
+!		XmNwidth = 30;
+!		XmNheight = 20;
+		XmNlabelString = compound_string( "Y: xxxx" );
+	};
+};
+
+object PVLG : XmLabelGadget
+{
+	arguments
+	{
+!		XmNx = 13;
+!		XmNy = 36;
+!		XmNwidth = 30;
+!		XmNheight = 20;
+		XmNlabelString = compound_string( "V: xxxx" );
+	};
+};
+
+
+end module;

@@ -1,0 +1,190 @@
+module fileSelectionBoxDialog_uil
+
+procedure	cancelCB_fileSelectionBoxDialog;
+procedure	okCallback_fileSelBoxDialog;
+procedure	activateCB_menu13_p1_b1;
+procedure	activateCB_menu13_p1_b3;
+procedure	activateCB_menu13_p1_b7;
+procedure	activateCB_menu13_p1_b2;
+procedure	activateCB_menu13_p1_b4;
+procedure	activateCB_menu13_p1_b5;
+procedure	activateCB_menu13_p1_b6;
+procedure	activateCB_menu13_p1_b8;
+
+object fileSelectionBoxDialog : XmFileSelectionDialog
+{
+	arguments
+	{
+		XmNdialogTitle = compound_string( "Xvg File Selection" );
+		XmNdialogStyle = XmDIALOG_FULL_APPLICATION_MODAL;
+		XmNx = 470;
+		XmNy = 286;
+		XmNwidth = 326;
+		XmNheight = 488;
+	};
+	callbacks
+	{
+		XmNcancelCallback = procedure cancelCB_fileSelectionBoxDialog ();
+		XmNokCallback = procedure okCallback_fileSelBoxDialog ();
+	};
+	controls
+	{
+		XmOptionMenu FileFormatOM;
+	};
+};
+
+object FileFormatOM : XmOptionMenu
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "" );
+		XmNx = 10;
+		XmNy = 0;
+		XmNentryAlignment = XmALIGNMENT_BEGINNING;
+		XmNmarginHeight = 0;
+		XmNmarginWidth = 0;
+		XmNspacing = 0;
+		XmNsensitive = false;
+	};
+	controls
+	{
+		XmPulldownMenu menu13_p1;
+	};
+};
+
+object menu13_p1 : XmPulldownMenu
+{
+	arguments
+	{
+		XmNentryAlignment = XmALIGNMENT_BEGINNING;
+	};
+	controls
+	{
+		XmPushButtonGadget menu13_p1_b1;
+		XmPushButtonGadget menu13_p1_b8;
+		XmPushButtonGadget menu13_p1_b3;
+		XmPushButtonGadget menu13_p1_b7;
+		XmPushButtonGadget menu13_p1_b2;
+		XmPushButtonGadget menu13_p1_b4;
+		XmPushButtonGadget menu13_p1_b5;
+		XmPushButtonGadget menu13_p1_b6;
+	};
+};
+
+object menu13_p1_b1 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Save data in  MATLAB file" );
+		XmNaccelerator = "";
+		XmNacceleratorText = compound_string( "" );
+		XmNalignment = XmALIGNMENT_BEGINNING;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu13_p1_b1 ();
+	};
+};
+
+object menu13_p1_b3 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Save image in 8 bit grey level TIFF file" );
+		XmNaccelerator = "";
+		XmNacceleratorText = compound_string( "" );
+		XmNalignment = XmALIGNMENT_BEGINNING;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu13_p1_b3 ();
+	};
+};
+
+object menu13_p1_b7 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Save image in 24 bit Color TIFF file" );
+		XmNaccelerator = "";
+		XmNacceleratorText = compound_string( "" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu13_p1_b7 ();
+	};
+};
+
+object menu13_p1_b2 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Save data in IGS file" );
+		XmNaccelerator = "";
+		XmNacceleratorText = compound_string( "" );
+		XmNalignment = XmALIGNMENT_BEGINNING;
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu13_p1_b2 ();
+	};
+};
+
+object menu13_p1_b4 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Save data in px file (8 cols)" );
+		XmNaccelerator = "";
+		XmNacceleratorText = compound_string( "" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu13_p1_b4 ();
+	};
+};
+
+object menu13_p1_b5 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Save data in px file (16 cols)" );
+		XmNaccelerator = "";
+		XmNacceleratorText = compound_string( "" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu13_p1_b5 ();
+	};
+};
+
+object menu13_p1_b6 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Save data in px file (32 cols)" );
+		XmNaccelerator = "";
+		XmNacceleratorText = compound_string( "" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu13_p1_b6 ();
+	};
+};
+
+object menu13_p1_b8 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Save data in compressed 16bit MATLAB file" );
+		XmNaccelerator = "";
+		XmNacceleratorText = compound_string( "" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu13_p1_b8 ();
+	};
+};
+
+
+end module;

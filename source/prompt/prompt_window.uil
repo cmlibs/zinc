@@ -1,0 +1,112 @@
+!*******************************************************************************
+! FILE : prompt_window.uil
+!
+! LAST MODIFIED : 25 February 1995
+!
+! DESCRIPTION :
+! The widgets/gadgets for the prompt window.
+!===============================================================================
+module Prompt_window
+		names = case_sensitive
+
+procedure
+		identify_prompt_history;
+		identify_prompt_reply;
+		get_reply;
+
+identifier
+		prompt_window_structure;
+
+value
+		small_widget_spacing : 2;
+		large_widget_spacing : 4;
+
+object
+		prompt_window: XmForm
+				{
+				arguments
+						{
+						XmNborderWidth = 0;
+						XmNautoUnmanage = false;
+						XmNdefaultPosition = false;
+						XmNresizePolicy = XmRESIZE_ANY;
+						XmNdialogTitle =
+						compound_string("Prompt Window");
+!						XmNdialogStyle = XmDIALOG_FULL_APPLICATION_MODAL;
+						};
+				controls
+						{
+						XmScrolledWindow scrolled_window;
+						XmText prompt_reply;
+						};
+				};
+		scrolled_window: XmScrolledWindow
+				{
+				arguments
+						{
+						XmNborderWidth = 0;
+						XmNtopAttachment = XmATTACH_FORM;
+						XmNleftAttachment = XmATTACH_FORM;
+						XmNrightAttachment = XmATTACH_FORM;
+						XmNbottomAttachment = XmATTACH_WIDGET;
+						XmNtopOffset = small_widget_spacing;
+						XmNleftOffset = small_widget_spacing;
+						XmNrightOffset = small_widget_spacing;
+						XmNbottomOffset = small_widget_spacing;
+						XmNbottomWidget = XmText prompt_reply;
+!            XmNvisualPolicy = XmSTATIC;
+						XmNscrollBarDisplayPolicy = XmSTATIC;
+!            XmNscrollingPolicy = XmCONSTANT;
+						XmNworkWindow = XmText prompt_history;
+						};
+				controls
+						{
+						XmText prompt_history;
+						};
+				};
+		prompt_history: XmText
+				{
+				arguments
+						{
+						XmNeditMode = XmMULTI_LINE_EDIT;
+						XmNeditable = false;
+!            XmNnavigationType = XmNONE;
+						XmNwordWrap = true;
+						XmNsensitive = true;
+						XmNcursorPositionVisible = false;
+						};
+				callbacks
+						{
+						MrmNcreateCallback = procedures
+								{
+								identify_prompt_history(prompt_window_structure);
+								};
+						};
+				};
+		prompt_reply: XmText
+				{
+				arguments
+						{
+						XmNeditMode = XmSINGLE_LINE_EDIT;
+						XmNleftAttachment = XmATTACH_FORM;
+						XmNrightAttachment = XmATTACH_FORM;
+						XmNbottomAttachment = XmATTACH_FORM;
+						XmNleftOffset = small_widget_spacing;
+						XmNrightOffset = small_widget_spacing;
+						XmNbottomOffset = small_widget_spacing;
+						};
+				callbacks
+						{
+						XmNactivateCallback = procedures
+								{
+								get_reply(prompt_window_structure);
+								};
+						MrmNcreateCallback = procedures
+								{
+								identify_prompt_reply(prompt_window_structure);
+								};
+						};
+				};
+
+end module;
+

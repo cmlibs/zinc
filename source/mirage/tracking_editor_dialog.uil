@@ -1,0 +1,787 @@
+!*******************************************************************************
+!FILE : track_ed_dialog.uil
+!
+!LAST MODIFIED : 28 April 1998
+!
+!DESCRIPTION :
+!The dialog for editing the retrack information.
+!===============================================================================
+
+module Tracking_editor_dialog
+	names = case_sensitive
+	objects =
+	{
+		XmLabel         = gadget;
+		XmCascadeButton = gadget;
+		XmPushButton    = gadget;
+		XmToggleButton  = widget;
+		XmSeparator     = gadget;
+	}
+
+procedure
+	/* widget register callbacks: */
+	track_ed_id_file_menu;
+	track_ed_id_edit_menu;
+	track_ed_id_view_2d_points;
+	track_ed_id_view_2d_lines;
+	track_ed_id_view_2d_surfaces;
+	track_ed_id_view_3d_points;
+	track_ed_id_view_3d_lines;
+	track_ed_id_view_3d_surfaces;
+	track_ed_id_view_node_numbers;
+	track_ed_id_frame_form;
+	track_ed_id_frame_text;
+	track_ed_id_frame_range;
+	track_ed_id_control_form;
+	track_ed_id_control_mode_rc;
+	track_ed_id_track_btn;
+	track_ed_id_backtrack_btn;
+	track_ed_id_substitute_btn;
+	track_ed_id_interpolate_btn;
+	track_ed_id_process_btn;
+	track_ed_id_abort_btn;
+	track_ed_id_drawing_form;
+
+	/* menu callbacks: */
+	track_ed_open_movie_cb;
+	track_ed_save_movie_cb;
+	track_ed_close_cb;
+	track_ed_clear_pending_cb;
+	track_ed_revert_cb;
+	track_ed_write_2d_cb;
+	track_ed_view_objects_cb;
+	track_ed_view_node_numbers_cb;
+	track_ed_digitiser_cb;
+	track_ed_3d_window_cb;
+
+	/* other widget callbacks: */
+	track_ed_destroy_cb;
+	track_ed_frame_text_cb;
+	track_ed_control_mode_cb;
+	track_ed_process_cb;
+	track_ed_abort_cb;
+
+value
+! enum Tracking_editor_operating_mode
+!*******************************************************************************
+!LAST MODIFIED : 27 March 1998
+!
+!DESCRIPTION :
+!Modes of operation of the tracking editor.
+!Must be kept in sync with the names in tracking_editor_dialog.h
+!=============================================================================*/
+	TRACK_MODE       : 0;
+	BACKTRACK_MODE   : 1;
+	SUBSTITUTE_MODE	 : 2;
+	INTERPOLATE_MODE : 3;
+	MAKE_BAD_MODE    : 4;
+	MAKE_GOOD_MODE   : 5;
+
+identifier
+	track_ed_structure;
+	track_ed_dialog_shell;
+	button_font;
+
+!*******************************************************************************
+!LAST MODIFIED : 27 March 1998
+!
+!DESCRIPTION :
+!Menubar
+!===============================================================================
+
+! Top menu bar
+
+object track_ed_menu : exported XmMenuBar {
+	controls {
+		XmCascadeButton  track_ed_file_menu;
+		XmCascadeButton  track_ed_edit_menu;
+		XmCascadeButton  track_ed_view_menu;
+		XmCascadeButton  track_ed_tools_menu;
+	};
+};
+
+! File menu
+
+object track_ed_file_menu : XmCascadeButton {
+	controls {
+		file_menu : XmPulldownMenu {
+			controls {
+				XmPushButton  track_ed_file_open_movie;
+				XmPushButton  track_ed_file_save_movie;
+				XmSeparator   { };
+				XmPushButton  track_ed_file_write_2d;
+				XmSeparator   { };
+				XmPushButton  track_ed_file_close;
+			};
+		};
+	};
+	arguments {
+		XmNlabelString = "File";
+		XmNmnemonic    = keysym ('F');
+	};
+	callbacks {
+		MrmNcreateCallback =
+			procedure track_ed_id_file_menu(track_ed_structure);
+	};
+};
+
+object track_ed_file_open_movie : XmPushButton {
+	arguments {
+		XmNlabelString = "Open Movie...";
+		XmNmnemonic    = keysym ('O');
+	};
+	callbacks {
+		XmNactivateCallback = procedure track_ed_open_movie_cb(track_ed_structure);
+	};
+};
+
+object track_ed_file_save_movie : XmPushButton {
+	arguments {
+		XmNlabelString = "Save Movie";
+		XmNmnemonic    = keysym ('S');
+	};
+	callbacks {
+		XmNactivateCallback = procedure track_ed_save_movie_cb(track_ed_structure);
+	};
+};
+
+object track_ed_file_write_2d : XmPushButton {
+	arguments {
+		XmNlabelString     = "Write 2d points";
+		XmNmnemonic    = keysym ('W');
+	};
+	callbacks {
+		XmNactivateCallback = procedure track_ed_write_2d_cb(track_ed_structure);
+	};
+};
+
+object track_ed_file_close : XmPushButton {
+	arguments {
+		XmNlabelString     = "Close";
+		XmNmnemonic        = keysym ('C');
+		XmNaccelerator     = 'Ctrl<Key>c';
+		XmNacceleratorText = "Ctrl+C";
+	};
+	callbacks {
+	XmNactivateCallback = procedure track_ed_close_cb(track_ed_structure);
+	};
+};
+
+! Edit menu
+
+object track_ed_edit_menu : XmCascadeButton {
+	controls {
+		edit_menu : XmPulldownMenu {
+			controls {
+				XmPushButton  track_ed_edit_clear_pending;
+				XmPushButton  track_ed_edit_revert;
+			};
+		};
+	};
+	arguments {
+		XmNlabelString = "Edit";
+		XmNmnemonic    = keysym ('E');
+	};
+	callbacks {
+		MrmNcreateCallback =
+			procedure track_ed_id_edit_menu(track_ed_structure);
+	};
+};
+
+object track_ed_edit_clear_pending : XmPushButton {
+	arguments {
+		XmNlabelString     = "Clear pending ranges...";
+	};
+	callbacks {
+		XmNactivateCallback =
+			procedure track_ed_clear_pending_cb(track_ed_structure);
+	};
+};
+
+object track_ed_edit_revert : XmPushButton {
+	arguments {
+		XmNlabelString     = "Revert nodes";
+	};
+	callbacks {
+		XmNactivateCallback =
+			procedure track_ed_revert_cb(track_ed_structure);
+	};
+};
+
+! View menu
+
+object track_ed_view_menu : XmCascadeButton {
+	controls {
+		view_menu : XmPulldownMenu {
+			controls {
+				XmToggleButtonGadget track_ed_view_2d_points;
+				XmToggleButtonGadget track_ed_view_2d_lines;
+				XmToggleButtonGadget track_ed_view_2d_surfaces;
+				XmSeparator   { };
+				XmToggleButtonGadget track_ed_view_3d_points;
+				XmToggleButtonGadget track_ed_view_3d_lines;
+				XmToggleButtonGadget track_ed_view_3d_surfaces;
+				XmSeparator   { };
+				XmToggleButtonGadget track_ed_view_node_numbers;
+			};
+		};
+	};
+	arguments {
+		XmNlabelString = "View";
+		XmNmnemonic    = keysym ('V');
+	};
+};
+
+object track_ed_view_2d_points : XmToggleButtonGadget {
+	arguments {
+		XmNlabelString     = "2-D points";
+		XmNmnemonic    = keysym ('o');
+!		XmNaccelerator     = 'Ctrl<Key>o';
+!		XmNacceleratorText = "Ctrl+O";
+	};
+	callbacks {
+	MrmNcreateCallback =
+		procedure track_ed_id_view_2d_points(track_ed_structure);
+	XmNvalueChangedCallback =
+		procedure track_ed_view_objects_cb(track_ed_structure);
+	};
+};
+
+object track_ed_view_2d_lines : XmToggleButtonGadget {
+	arguments {
+		XmNlabelString     = "2-D lines";
+		XmNmnemonic    = keysym ('i');
+!		XmNaccelerator     = 'Ctrl<Key>i';
+!		XmNacceleratorText = "Ctrl+I";
+	};
+	callbacks {
+	MrmNcreateCallback =
+		procedure track_ed_id_view_2d_lines(track_ed_structure);
+	XmNvalueChangedCallback =
+		procedure track_ed_view_objects_cb(track_ed_structure);
+	};
+};
+
+object track_ed_view_2d_surfaces : XmToggleButtonGadget {
+	arguments {
+		XmNlabelString     = "2-D surfaces";
+		XmNmnemonic    = keysym ('u');
+!		XmNaccelerator     = 'Ctrl<Key>u';
+!		XmNacceleratorText = "Ctrl+U";
+	};
+	callbacks {
+	MrmNcreateCallback =
+		procedure track_ed_id_view_2d_surfaces(track_ed_structure);
+	XmNvalueChangedCallback =
+		procedure track_ed_view_objects_cb(track_ed_structure);
+	};
+};
+
+object track_ed_view_3d_points : XmToggleButtonGadget {
+	arguments {
+		XmNlabelString     = "3-D points";
+		XmNmnemonic    = keysym ('p');
+!		XmNaccelerator     = 'Ctrl<Key>p';
+!		XmNacceleratorText = "Ctrl+P";
+	};
+	callbacks {
+	MrmNcreateCallback =
+		procedure track_ed_id_view_3d_points(track_ed_structure);
+	XmNvalueChangedCallback =
+		procedure track_ed_view_objects_cb(track_ed_structure);
+	};
+};
+
+object track_ed_view_3d_lines : XmToggleButtonGadget {
+	arguments {
+		XmNlabelString     = "3-D lines";
+		XmNmnemonic    = keysym ('l');
+!		XmNaccelerator     = 'Ctrl<Key>l';
+!		XmNacceleratorText = "Ctrl+L";
+	};
+	callbacks {
+	MrmNcreateCallback =
+		procedure track_ed_id_view_3d_lines(track_ed_structure);
+	XmNvalueChangedCallback =
+		procedure track_ed_view_objects_cb(track_ed_structure);
+	};
+};
+
+object track_ed_view_3d_surfaces : XmToggleButtonGadget {
+	arguments {
+		XmNlabelString     = "3-D surfaces";
+		XmNmnemonic    = keysym ('s');
+!		XmNaccelerator     = 'Ctrl<Key>s';
+!		XmNacceleratorText = "Ctrl+S";
+	};
+	callbacks {
+	MrmNcreateCallback =
+		procedure track_ed_id_view_3d_surfaces(track_ed_structure);
+	XmNvalueChangedCallback =
+		procedure track_ed_view_objects_cb(track_ed_structure);
+	};
+};
+
+object track_ed_view_node_numbers : XmToggleButtonGadget {
+	arguments {
+		XmNlabelString     = "Node numbers";
+		XmNmnemonic    = keysym ('n');
+!		XmNaccelerator     = 'Ctrl<Key>n';
+!		XmNacceleratorText = "Ctrl+N";
+	};
+	callbacks {
+	MrmNcreateCallback =
+		procedure track_ed_id_view_node_numbers(track_ed_structure);
+	XmNvalueChangedCallback =
+		procedure track_ed_view_node_numbers_cb(track_ed_structure);
+	};
+};
+
+! Tools menu
+
+object track_ed_tools_menu : XmCascadeButton {
+	controls {
+		operation_menu : XmPulldownMenu {
+			controls {
+				XmPushButton  track_ed_tools_digitiser;
+				XmPushButton  track_ed_tools_3d_window;
+			};
+		};
+	};
+	arguments {
+		XmNlabelString = "Tools";
+		XmNmnemonic    = keysym ('T');
+	};
+};
+
+object track_ed_tools_digitiser : XmPushButton {
+	arguments {
+		XmNlabelString     = "Digitiser window";
+		XmNmnemonic    = keysym ('D');
+!		XmNaccelerator     = 'Ctrl<Key>d';
+!		XmNacceleratorText = "Ctrl+D";
+	};
+	callbacks {
+	XmNactivateCallback = procedure track_ed_digitiser_cb(track_ed_structure);
+	};
+};
+
+object track_ed_tools_3d_window : XmPushButton {
+	arguments {
+		XmNlabelString     = "3-D window";
+		XmNmnemonic    = keysym ('3');
+!		XmNaccelerator     = 'Ctrl<Key>w';
+!		XmNacceleratorText = "Ctrl+W";
+	};
+	callbacks {
+	XmNactivateCallback = procedure track_ed_3d_window_cb(track_ed_structure);
+	};
+};
+
+!*******************************************************************************
+!LAST MODIFIED : 27 March 1998
+!
+!DESCRIPTION :
+!Main window
+!===============================================================================
+object tracking_editor_dialog : XmMainWindow
+{
+	arguments
+	{
+		XmNuserData = track_ed_structure;
+	};
+	controls
+	{
+		XmMenuBar track_ed_menu;
+		XmForm track_ed_form;
+	};
+	callbacks
+	{
+		XmNdestroyCallback = procedure track_ed_destroy_cb;
+	};
+};
+!*******************************************************************************
+object track_ed_form : XmForm {
+	arguments
+	{
+!		XmNwidth            = LIST_WIDTH;
+!		XmNleftAttachment   = XmATTACH_FORM;
+!		XmNrightAttachment  = XmATTACH_FORM;
+!		XmNtopAttachment    = XmATTACH_FORM;
+!		XmNbottomAttachment = XmATTACH_FORM;
+	};
+	controls
+	{
+		XmForm track_ed_frame_form;
+		XmSeparator track_ed_separator0;
+		XmForm track_ed_control_form;
+		XmSeparator track_ed_separator1;
+		XmForm track_ed_drawing_form;
+	};
+};
+!*******************************************************************************
+object track_ed_frame_form : XmForm
+{
+	arguments
+	{
+		XmNleftAttachment   = XmATTACH_FORM;
+		XmNrightAttachment  = XmATTACH_FORM;
+		XmNtopAttachment    = XmATTACH_FORM;
+		XmNbottomAttachment = XmATTACH_NONE;
+	};
+	controls
+	{
+		XmLabelGadget track_ed_frame_label;
+		XmTextField track_ed_frame_text;
+		XmLabelGadget track_ed_frame_range;
+	};
+	callbacks
+	{
+		MrmNcreateCallback =
+			procedure track_ed_id_frame_form(track_ed_structure);
+	};
+};
+track_ed_frame_label: XmLabelGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string("Current frame:");
+		XmNalignment = XmALIGNMENT_BEGINNING;
+!		XmNfontList = button_font;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 0;
+		XmNrightAttachment = XmATTACH_NONE;
+		XmNrightOffset = 0;
+		XmNtopAttachment = XmATTACH_FORM;
+		XmNtopOffset = 5;
+		XmNbottomAttachment = XmATTACH_NONE;
+		XmNbottomOffset = 0;
+		XmNuserData = 0;
+	};
+};
+track_ed_frame_text: XmTextField
+{
+	arguments
+	{
+		XmNwidth = 80;
+		XmNvalue = "?";
+!		XmNfontList = normal_font;
+		XmNleftAttachment = XmATTACH_WIDGET;
+		XmNleftOffset = 0;
+		XmNleftWidget = XmLabelGadget track_ed_frame_label;
+		XmNrightAttachment = XmATTACH_NONE;
+		XmNrightOffset = 0;
+		XmNtopAttachment = XmATTACH_FORM;
+		XmNtopOffset = 0;
+		XmNbottomAttachment = XmATTACH_NONE;
+		XmNbottomOffset = 0;
+		XmNuserData = track_ed_structure;
+	};
+	callbacks {
+		MrmNcreateCallback =
+			procedure track_ed_id_frame_text(track_ed_structure);
+		XmNactivateCallback = procedure track_ed_frame_text_cb(track_ed_structure);
+!		XmNlosingFocusCallback = procedure track_ed_frame_text_cb;
+	};
+};
+track_ed_frame_range: XmLabelGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string(" from range 0..max");
+		XmNalignment = XmALIGNMENT_BEGINNING;
+!		XmNfontList = button_font;
+		XmNleftAttachment = XmATTACH_WIDGET;
+		XmNleftOffset = 0;
+		XmNleftWidget = XmTextField track_ed_frame_text;
+		XmNrightAttachment = XmATTACH_NONE;
+		XmNrightOffset = 0;
+		XmNtopAttachment = XmATTACH_FORM;
+		XmNtopOffset = 5;
+		XmNbottomAttachment = XmATTACH_NONE;
+		XmNbottomOffset = 0;
+		XmNuserData = track_ed_structure;
+	};
+	callbacks
+	{
+		MrmNcreateCallback =
+			procedure track_ed_id_frame_range(track_ed_structure);
+	};
+};
+!*******************************************************************************
+object track_ed_separator0 : XmSeparator
+{
+	arguments
+	{
+		XmNorientation      = XmHORIZONTAL;
+		XmNtopAttachment    = XmATTACH_WIDGET;
+		XmNtopWidget        = XmForm track_ed_frame_form;
+		XmNrightAttachment  = XmATTACH_FORM;
+		XmNleftAttachment   = XmATTACH_FORM;
+		XmNbottomAttachment = XmATTACH_NONE;
+		XmNseparatorType    = XmSHADOW_ETCHED_IN;
+	};
+};
+!*******************************************************************************
+object track_ed_control_form : XmForm
+{
+	arguments
+	{
+		XmNleftAttachment   = XmATTACH_FORM;
+		XmNrightAttachment  = XmATTACH_FORM;
+		XmNtopAttachment    = XmATTACH_WIDGET;
+		XmNtopWidget        = XmSeparator track_ed_separator0;
+		XmNbottomAttachment = XmATTACH_NONE;
+	};
+	controls
+	{
+		XmRowColumn track_ed_control_mode_rc;
+		XmRowColumn track_ed_process_rc;
+	};
+	callbacks
+	{
+		MrmNcreateCallback =
+			procedure track_ed_id_control_form(track_ed_structure);
+	};
+};
+object track_ed_control_mode_rc: XmRowColumn
+{
+	arguments
+	{
+		XmNorientation = XmHORIZONTAL;
+		XmNpacking = XmPACK_COLUMN;
+		XmNradioBehavior = true;
+		XmNnumColumns = 1;
+		XmNisAligned = true;
+		XmNentryAlignment = XmALIGNMENT_CENTER;
+		XmNleftAttachment   = XmATTACH_FORM;
+		XmNrightAttachment  = XmATTACH_NONE;
+		XmNtopAttachment    = XmATTACH_FORM;
+		XmNbottomAttachment = XmATTACH_NONE;
+		XmNuserData = track_ed_structure;
+	};
+	controls
+	{
+		XmToggleButton track_ed_track_btn;
+		XmToggleButton track_ed_backtrack_btn;
+		XmToggleButton track_ed_substitute_svd_btn;
+		XmToggleButton track_ed_interpolate_btn;
+		XmToggleButton track_ed_make_bad_btn;
+		XmToggleButton track_ed_make_good_btn;
+	};
+	callbacks
+	{
+		MrmNcreateCallback =
+			procedure track_ed_id_control_mode_rc(track_ed_structure);
+		XmNentryCallback = procedure
+			track_ed_control_mode_cb(track_ed_structure);
+	};
+};
+object track_ed_track_btn: XmToggleButton
+{
+	arguments
+	{
+		XmNlabelString = compound_string("Track");
+		XmNalignment = XmALIGNMENT_CENTER;
+		XmNfontList = button_font;
+		XmNindicatorOn = false;
+		XmNset = false;
+		XmNuserData = TRACK_MODE;
+	};
+	callbacks
+	{
+		MrmNcreateCallback = procedure
+			track_ed_id_track_btn(track_ed_structure);
+!		XmNvalueChangedCallback = procedure
+!			track_ed_track_btn_cb(track_ed_structure);
+	};
+};
+object track_ed_backtrack_btn: XmToggleButton
+{
+	arguments
+	{
+		XmNlabelString = compound_string("Backtrack");
+		XmNalignment = XmALIGNMENT_CENTER;
+		XmNfontList = button_font;
+		XmNindicatorOn = false;
+		XmNset = false;
+		XmNuserData = BACKTRACK_MODE;
+	};
+	callbacks
+	{
+		MrmNcreateCallback = procedure
+			track_ed_id_backtrack_btn(track_ed_structure);
+!		XmNvalueChangedCallback = procedure
+!			track_ed_backtrack_btn_cb(track_ed_structure);
+	};
+};
+object track_ed_substitute_svd_btn: XmToggleButton
+{
+	arguments
+	{
+		XmNlabelString = compound_string("Substitute");
+		XmNalignment = XmALIGNMENT_CENTER;
+		XmNfontList = button_font;
+		XmNindicatorOn = false;
+		XmNset = false;
+		XmNuserData = SUBSTITUTE_MODE;
+	};
+	callbacks
+	{
+		MrmNcreateCallback = procedure
+			track_ed_id_substitute_btn(track_ed_structure);
+!		XmNvalueChangedCallback = procedure
+!			track_ed_track_btn_cb(track_ed_structure);
+	};
+};
+object track_ed_interpolate_btn: XmToggleButton
+{
+	arguments
+	{
+		XmNlabelString = compound_string("Interpolate");
+		XmNalignment = XmALIGNMENT_CENTER;
+		XmNfontList = button_font;
+		XmNindicatorOn = false;
+		XmNset = false;
+		XmNuserData = INTERPOLATE_MODE;
+	};
+	callbacks
+	{
+		MrmNcreateCallback = procedure
+			track_ed_id_interpolate_btn(track_ed_structure);
+!		XmNvalueChangedCallback = procedure
+!			track_ed_interpolate_btn_cb(track_ed_structure);
+	};
+};
+object track_ed_make_bad_btn: XmToggleButton
+{
+	arguments
+	{
+		XmNlabelString = compound_string("Bad");
+		XmNalignment = XmALIGNMENT_CENTER;
+		XmNfontList = button_font;
+		XmNindicatorOn = false;
+		XmNset = false;
+		XmNuserData = MAKE_BAD_MODE;
+	};
+	callbacks
+	{
+!		MrmNcreateCallback = procedure
+!			track_ed_id_make_bad_btn(track_ed_structure);
+!		XmNvalueChangedCallback = procedure
+!			track_ed_make_bad_btn_cb(track_ed_structure);
+	};
+};
+object track_ed_make_good_btn: XmToggleButton
+{
+	arguments
+	{
+		XmNlabelString = compound_string("Good");
+		XmNalignment = XmALIGNMENT_CENTER;
+		XmNfontList = button_font;
+		XmNindicatorOn = false;
+		XmNset = false;
+		XmNuserData = MAKE_GOOD_MODE;
+	};
+	callbacks
+	{
+!		MrmNcreateCallback = procedure
+!			track_ed_id_make_good_btn(track_ed_structure);
+!		XmNvalueChangedCallback = procedure
+!			track_ed_make_good_btn_cb(track_ed_structure);
+	};
+};
+!*******************************************************************************
+object track_ed_process_rc: XmRowColumn
+{
+	arguments
+	{
+		XmNorientation = XmHORIZONTAL;
+		XmNpacking = XmPACK_COLUMN;
+!		XmNradioBehavior = true;
+		XmNnumColumns = 1;
+		XmNisAligned = true;
+		XmNentryAlignment = XmALIGNMENT_CENTER;
+		XmNtopAttachment    = XmATTACH_FORM;
+!		XmNtopOffset = 0;
+		XmNrightAttachment  = XmATTACH_FORM;
+		XmNleftAttachment   = XmATTACH_NONE;
+		XmNbottomAttachment = XmATTACH_NONE;
+!		XmNbottomOffset = 0;
+		XmNuserData = track_ed_structure;
+	};
+	controls
+	{
+		XmPushButton track_ed_process_btn;
+		XmPushButton track_ed_abort_btn;
+	};
+};
+object track_ed_process_btn : XmPushButton
+{
+	arguments
+	{
+		XmNlabelString = "Process";
+		XmNuserData = track_ed_structure;
+	};
+	callbacks
+	{
+		MrmNcreateCallback =
+			procedure track_ed_id_process_btn(track_ed_structure);
+		XmNactivateCallback = procedure track_ed_process_cb(track_ed_structure);
+	};
+};
+object track_ed_abort_btn : XmPushButton
+{
+	arguments
+	{
+		XmNlabelString = "Abort";
+		XmNuserData = track_ed_structure;
+	};
+	callbacks
+	{
+		MrmNcreateCallback =
+			procedure track_ed_id_abort_btn(track_ed_structure);
+		XmNactivateCallback = procedure track_ed_abort_cb(track_ed_structure);
+	};
+};
+!*******************************************************************************
+object track_ed_separator1 : XmSeparator
+{
+	arguments
+	{
+		XmNorientation      = XmHORIZONTAL;
+		XmNtopAttachment    = XmATTACH_WIDGET;
+		XmNtopWidget        = XmForm track_ed_control_form;
+		XmNrightAttachment  = XmATTACH_FORM;
+		XmNleftAttachment   = XmATTACH_FORM;
+		XmNbottomAttachment = XmATTACH_NONE;
+		XmNseparatorType    = XmSHADOW_ETCHED_IN;
+	};
+};
+!*******************************************************************************
+object track_ed_drawing_form : XmForm
+{
+	arguments
+	{
+		XmNleftAttachment   = XmATTACH_FORM;
+		XmNrightAttachment  = XmATTACH_FORM;
+		XmNtopAttachment    = XmATTACH_WIDGET;
+		XmNtopWidget        = XmSeparator track_ed_separator1;
+		XmNwidth = 640;
+		XmNheight = 128;
+		XmNbottomAttachment = XmATTACH_FORM;
+	};
+!	controls
+!	{
+!		XmLabelGadget 	track_ed_frame_label;
+!		XmTextField    	track_ed_frame_text;
+!		XmLabelGadget 	track_ed_range_label;
+!	};
+	callbacks
+	{
+		MrmNcreateCallback =
+			procedure track_ed_id_drawing_form(track_ed_structure);
+	};
+};
+!*******************************************************************************
+end module;

@@ -1,0 +1,384 @@
+!*******************************************************************************
+! FILE : select.uil
+!
+! LAST MODIFIED : 25 May 1997
+!
+! DESCRIPTION :
+!===============================================================================
+module select
+	names = case_sensitive
+
+procedure
+	select_identify_main_form;
+	select_identify_edit_name;
+	select_identify_edit_label;
+	select_identify_edit_text;
+	select_identify_create_btn;
+	select_identify_delete_btn;
+	select_identify_rename_btn;
+	select_identify_text_label;
+	select_identify_text_text;
+	select_identify_list_scroll;
+	select_identify_list_rowcol;
+	select_destroy_CB;
+	select_name_CB;
+	select_create_CB;
+	select_delete_CB;
+	select_rename_CB;
+	select_select_text_CB;
+	select_focus_CB;
+
+identifier
+	!pointer to data specific to this instance of the select control dialog
+	select_structure;
+	!fonts here
+	button_font;
+	heading_font;
+	list_font;
+	menu_Font;
+	normal_font;
+	normal_non_proportional_font;
+	small_font;
+
+object
+	select_widget: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = select_structure;
+			};
+		controls
+			{
+			XmForm select_main_form;
+			XmForm select_edit_name_form;
+			XmRowColumn select_control;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure select_destroy_CB();
+			};
+		};
+	select_main_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = 0;
+			XmNbottomWidget = XmForm select_edit_name_form;
+			XmNuserData = select_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+			procedure select_identify_main_form(select_structure);
+			};
+		};
+	select_edit_name_form: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = 0;
+			XmNbottomWidget = XmRowColumn select_control;
+			XmNuserData = select_structure;
+			};
+		controls
+			{
+			XmForm select_edit_name;
+			};
+		};
+	select_edit_name: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = select_structure;
+			};
+		controls
+			{
+			XmLabelGadget select_edit_label;
+			XmTextField select_edit_text;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+			procedure select_identify_edit_name(select_structure);
+			};
+		};
+	select_edit_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("New name:");
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNfontList = heading_font;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = select_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+			procedure select_identify_edit_label(select_structure);
+			};
+		};
+	select_edit_text: XmTextField
+		{
+		arguments
+			{
+			XmNvalue = "";
+			XmNfontList = normal_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 0;
+			XmNleftWidget = XmLabelGadget select_edit_label;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = select_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+			procedure select_identify_edit_text(select_structure);
+			XmNactivateCallback = procedure select_name_CB();
+			};
+		};
+	select_control: XmRowColumn
+		{
+		arguments
+			{
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_COLUMN;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = select_structure;
+			};
+		controls
+			{
+			XmPushButton select_create_btn;
+			XmPushButton select_delete_btn;
+			XmPushButton select_rename_btn;
+			};
+		};
+	select_create_btn: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Create");
+			XmNfontList = button_font;
+			XmNuserData = select_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+			procedure select_identify_create_btn(select_structure);
+			XmNactivateCallback = procedure select_create_CB();
+			};
+		};
+	select_delete_btn: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Delete");
+			XmNfontList = button_font;
+			XmNuserData = select_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+			procedure select_identify_delete_btn(select_structure);
+			XmNactivateCallback = procedure select_delete_CB();
+			};
+		};
+	select_rename_btn: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Rename");
+			XmNfontList = button_font;
+			XmNuserData = select_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+			procedure select_identify_rename_btn(select_structure);
+			XmNactivateCallback = procedure select_rename_CB();
+			};
+		};
+	select_text_form: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = select_structure;
+			};
+		controls
+			{
+			XmLabelGadget select_text_label;
+			XmTextField select_text_text;
+			};
+		};
+	select_text_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Description");
+			XmNalignment = XmALIGNMENT_END;
+			XmNfontList = heading_font;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = select_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+			procedure select_identify_text_label(select_structure);
+			};
+		};
+	select_text_text: XmTextField
+		{
+		arguments
+			{
+			XmNvalue = "";
+			XmNresizeWidth = true;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 0;
+			XmNleftWidget = XmLabelGadget select_text_label;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNfontList = normal_font;
+			XmNuserData = select_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+			procedure select_identify_text_text(select_structure);
+			XmNactivateCallback = procedure select_select_text_CB();
+!			XmNlosingFocusCallback = procedure select_select_text_CB();
+			};
+		};
+	select_list_scroll: XmScrolledWindow
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNscrollingPolicy = XmAUTOMATIC;
+			XmNuserData = select_structure;
+			};
+		controls
+			{
+			XmRowColumn select_list_rowcol;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+			procedure select_identify_list_scroll(select_structure);
+			};
+		};
+	select_list_rowcol: XmRowColumn
+		{
+		arguments
+			{
+			XmNorientation = XmVERTICAL;
+			XmNpacking = XmPACK_COLUMN;
+			XmNradioBehavior = true;
+			XmNnumColumns = 1;
+			XmNuserData = select_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+			procedure select_identify_list_rowcol(select_structure);
+			};
+		};
+	select_item: XmToggleButton
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Description");
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNfontList = list_font;
+			XmNuserData = 0;
+			};
+		callbacks
+			{
+			XmNvalueChangedCallback = procedure select_focus_CB();
+			};
+		};
+end module;

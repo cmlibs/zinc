@@ -1,0 +1,105 @@
+!*******************************************************************************
+! FILE : data_2d_d.uil
+!
+! LAST MODIFIED : 21 January 1995
+!
+! DESCRIPTION :
+! The widgets for the data_2d_d data_2d_d widget.
+!===============================================================================
+module data_2d_d
+	version = 'v1.0'
+
+procedure
+	data_2d_d_identify_button    (integer);
+	data_2d_d_destroy_CB          ();
+	data_2d_d_control_CB          (integer);
+
+identifier
+	!The gap between widgets
+	widget_spacing;
+	!Pointer to data specific to this instance of the data_2d_d widget
+	Data_2d_d_structure;
+	!value identifier
+	data_2d_d_select_form_ID;
+	data_2d_d_editor_form_ID;
+	!Fonts go here
+	button_font;
+	heading_font;
+	list_font;
+	menu_Font;
+	normal_font;
+	normal_non_proportional_font;
+	small_font;
+
+!**************************************************************************************
+!**************************************************************************************
+! The data_2d_d widget
+object
+	data_2d_dialog_widget: XmForm
+	{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = Data_2d_d_structure;
+			};
+		controls
+			{
+			XmForm data_2d_d_select;
+			XmForm data_2d_d_editor;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure data_2d_d_destroy_CB ();
+			};
+		};
+	data_2d_d_select: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = Data_2d_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure data_2d_d_identify_button (data_2d_d_select_form_ID);
+			};
+		};
+	data_2d_d_editor: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmForm data_2d_d_select;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = Data_2d_d_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure data_2d_d_identify_button (data_2d_d_editor_form_ID);
+			};
+		};
+end module;
+!**************************************************************************************

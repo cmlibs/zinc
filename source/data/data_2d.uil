@@ -1,0 +1,197 @@
+!*******************************************************************************
+! FILE : data_grabber.uil
+!
+! LAST MODIFIED : 21 December 1994
+!
+! DESCRIPTION :
+! Contains a description, a slider and a text field for editing the value
+! of a variable.
+!===============================================================================
+module data_grabber
+	version = 'v1.0'
+
+procedure
+	d2_identify_button(integer);
+	d2_control_CB(integer);
+	d2_select_CB();
+	d2_destroy_CB();
+
+identifier
+	! the gap between widgets
+	widget_spacing;
+	! pointer to data specific to this instance of the dg control dialog
+	D2_structure;
+	d2_datalist_ID;
+	d2_mode_ID;
+	d2_control_ID;
+	d2_control_digitise_ID;
+	d2_control_delete_ID;
+	d2_control_move_ID;
+	!Fonts go here
+	button_font;
+	heading_font;
+	list_font;
+	menu_font;
+	normal_font;
+	normal_non_proportional_font;
+	small_font;
+
+
+object
+	d2_widget: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = D2_structure;
+			};
+		controls
+			{
+			XmRowColumn d2_control;
+			XmLabelGadget d2_mode;
+			XmScrolledList d2_datalist;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure d2_destroy_CB();
+			};
+		};
+	d2_mode: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Mode:");
+			XmNfontList = heading_font;
+			XmNalignment = XmALIGNMENT_BEGINNING;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = D2_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure d2_identify_button (d2_mode_ID);
+			};
+		};
+	d2_datalist: XmScrolledList
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmLabelGadget d2_mode;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = 0;
+			XmNbottomWidget = XmRowColumn d2_control;
+			XmNlistSizePolicy = XmRESIZE_IF_POSSIBLE;
+			XmNselectionPolicy = XmEXTENDED_SELECT;
+			XmNvisibleItemCount = 5;
+!GMH 7/2/96
+!vis count <=5 or else x bug with number of items displayed
+			XmNuserData = D2_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure d2_identify_button(d2_datalist_ID);
+			XmNextendedSelectionCallback = procedure d2_select_CB();
+			};
+		};
+	d2_control: XmRowColumn
+		{
+		arguments
+			{
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_COLUMN;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = D2_structure;
+			};
+		controls
+			{
+			XmPushButton d2_control_digitise;
+			XmPushButton d2_control_move;
+			XmPushButton d2_control_delete;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+				procedure d2_identify_button(d2_control_ID);
+			};
+		};
+	d2_control_digitise: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Digitise");
+			XmNfontList = button_font;
+			XmNuserData = D2_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+				procedure d2_identify_button(d2_control_digitise_ID);
+			XmNactivateCallback =
+				procedure d2_control_CB(d2_control_digitise_ID);
+			};
+		};
+	d2_control_delete: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Delete");
+			XmNfontList = button_font;
+			XmNuserData = D2_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+				procedure d2_identify_button(d2_control_delete_ID);
+			XmNactivateCallback =
+				procedure d2_control_CB(d2_control_delete_ID);
+			};
+		};
+	d2_control_move: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Move");
+			XmNfontList = button_font;
+			XmNuserData = D2_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback =
+				procedure d2_identify_button(d2_control_move_ID);
+			XmNactivateCallback =
+				procedure d2_control_CB(d2_control_move_ID);
+			};
+		};
+end module;

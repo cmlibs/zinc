@@ -1,0 +1,410 @@
+!*******************************************************************************
+! FILE : dof3.uil
+!
+! LAST MODIFIED : 16 September 1995
+!
+! DESCRIPTION :
+! The widgets for the three degree of freedom widget.
+!===============================================================================
+module dof3
+	names = case_sensitive
+	version = 'v1.0'
+
+procedure
+	dof3_identify_button    (integer);
+	dof3_destroy_CB          ();
+	dof3_slider_CB          ();
+	dof3_toggle_CB          ();
+	dof3_data_CB            ();
+	dof3_dataexp_CB          ();
+	dof3_arrow_CB            (integer);
+
+value
+	shadow_size        : 2;
+
+value
+	dof3_slider_max        : 125;
+	dof3_slider_min        : -100;
+	dof3_slider_size      : 25;
+	dof3_data_size        : 9;  ! how many digits for the mantissa of the data
+	dof3_data_init        : "";
+	dof3_data_maxlen      : 20;
+	dof3_dataexp_size      : 3;  ! how many digits for the exponent of the data
+	dof3_dataexp_init      : "";
+	dof3_dataexp_maxlen    : 3;
+	dof3_font              : font_table(font('-*-HELVETICA-MEDIUM-R-*--*-80-*-*-*-*-ISO8859-1'));
+	dof3_font_large        : font_table(font('-*-HELVETICA-BOLD-R-*--*-100-*-*-*-*-ISO8859-1'));
+	dof3_font_bold        : font_table(font('-*-HELVETICA-BOLD-R-*--*-80-*-*-*-*-ISO8859-1'));
+	dof3_arrow_height      : 17;
+	dof3_text_margin      : 1; ! how much gap around the text - small so the dialog is small
+
+value
+	red                    : exported color('red', background);
+	! this is exported so we can make the buttons yellow when selected.
+	yellow                : exported color('yellow', background);
+	! this is the color that we fill in the toggle buttons with when selected
+	toggle_select          : exported color('yellow', background);
+	black                  : color('black', foreground);
+
+value
+	dof3_icon_ct          : color_table(
+														black='o',
+														foreground color='.',
+														background color=' ');
+
+! include the definitions for the icons
+include file 'dof3_icon.uil';
+
+identifier
+	!The gap between widgets
+	widget_spacing;
+	!Pointer to data specific to this instance of the dof3 widget
+	Dof3_structure;
+	dof3_slider_ID;
+	dof3_combo_label_ID;
+	dof3_combo_data_ID;
+	dof3_combo_arrneg_ID;
+	dof3_combo_dataexp_ID;
+	dof3_combo_arrpos_ID;
+	dof3_combo_toggle_ID;
+
+!**************************************************************************************
+!**************************************************************************************
+! The dof3 widget
+object
+	dof3_dialog: XmForm
+	{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNfractionBase = 300;
+			XmNuserData = Dof3_structure;
+			};
+		controls
+			{
+			XmForm dof3_combo0;
+			XmForm dof3_combo1;
+			XmForm dof3_combo2;
+			XmScrollBar dof3_slider;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure dof3_destroy_CB ();
+			};
+		};
+!**************************************************************************************
+	dof3_slider: XmScrollBar
+		{
+		arguments
+			{
+			XmNtraversalOn = true;
+			XmNshadowThickness = shadow_size;
+			XmNhighlightThickness = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = shadow_size;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = shadow_size;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNtopOffset = 70;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = shadow_size;
+			XmNuserData = Dof3_structure;
+			XmNvalue = 0;
+			XmNmaximum = dof3_slider_max;
+			XmNminimum = dof3_slider_min;
+			XmNsliderSize = dof3_slider_size;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure dof3_identify_button (dof3_slider_ID);
+			XmNvalueChangedCallback = procedure dof3_slider_CB ();
+			XmNdragCallback = procedure dof3_slider_CB ();
+			};
+		};
+	!The combo panel - 1 toggle, 1 label 1 data.
+	dof3_combo0: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = shadow_size;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 100;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = 0;
+			XmNbottomWidget = XmScrollBar dof3_slider;
+			XmNuserData = 0;
+			};
+		controls
+			{
+			XmLabelGadget dof3_combo_label;
+			XmText dof3_combo_data;
+			XmSeparator dof3_combo_separator_arr;
+			XmArrowButtonGadget dof3_combo_arrneg;
+			XmArrowButtonGadget dof3_combo_arrpos;
+			XmText dof3_combo_dataexp;
+			XmToggleButton dof3_combo_toggle;
+			};
+		};
+	dof3_combo1: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 100;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 200;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = 0;
+			XmNbottomWidget = XmScrollBar dof3_slider;
+			XmNuserData = 1;
+			};
+		controls
+			{
+			XmLabelGadget dof3_combo_label;
+			XmText dof3_combo_data;
+			XmSeparator dof3_combo_separator_arr;
+			XmArrowButtonGadget dof3_combo_arrneg;
+			XmArrowButtonGadget dof3_combo_arrpos;
+			XmText dof3_combo_dataexp;
+			XmToggleButton dof3_combo_toggle;
+			};
+		};
+	dof3_combo2: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 200;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = shadow_size;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_WIDGET;
+			XmNbottomOffset = 0;
+			XmNbottomWidget = XmScrollBar dof3_slider;
+			XmNuserData = 2;
+			};
+		controls
+			{
+			XmLabelGadget dof3_combo_label;
+			XmText dof3_combo_data;
+			XmSeparator dof3_combo_separator_arr;
+			XmArrowButtonGadget dof3_combo_arrneg;
+			XmArrowButtonGadget dof3_combo_arrpos;
+			XmText dof3_combo_dataexp;
+			XmToggleButton dof3_combo_toggle;
+			};
+		};
+!**************************************************************************************
+!This contains the actual combo data items
+	dof3_combo_label: XmLabelGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("axis");
+			XmNfontList = dof3_font_bold;
+			XmNshadowThickness = shadow_size;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = Dof3_structure;
+!?????DB.  Motif 2.0 for Linux doesn't like this
+!      XmNmarginHeight = 0;
+			XmNmarginHeight = dof3_text_margin;
+			XmNmarginWidth = shadow_size;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure dof3_identify_button (dof3_combo_label_ID);
+			};
+		};
+	dof3_combo_data: XmText
+		{
+		arguments
+			{
+			XmNfontList = dof3_font;
+			XmNeditMode = XmSINGLE_LINE_EDIT;
+			XmNshadowThickness = shadow_size;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmLabelGadget dof3_combo_label;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = Dof3_structure;
+			XmNvalue = dof3_data_init;
+			XmNmaxLength = dof3_data_maxlen;
+			XmNcolumns = dof3_data_size;
+			XmNmarginHeight = dof3_text_margin;
+			XmNmarginWidth = dof3_text_margin;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure dof3_identify_button (dof3_combo_data_ID);
+			XmNactivateCallback = procedure dof3_data_CB ();
+			XmNlosingFocusCallback = procedure dof3_data_CB ();
+			XmNfocusCallback = procedure dof3_data_CB ();
+			};
+		};
+	dof3_combo_separator_arr: XmSeparator
+		{
+		arguments
+			{
+			XmNseparatorType = XmNO_LINE;
+			XmNorientation = XmVERTICAL;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmText dof3_combo_data;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = Dof3_structure;
+			};
+		};
+	dof3_combo_arrneg: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNshadowThickness = shadow_size;
+			XmNheight = dof3_arrow_height;
+			XmNhighlightThickness = 0;
+			XmNarrowDirection = XmARROW_LEFT;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmSeparator dof3_combo_separator_arr;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = Dof3_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure dof3_identify_button (dof3_combo_arrneg_ID);
+			XmNactivateCallback = procedure dof3_arrow_CB(dof3_combo_arrneg_ID);
+			};
+		};
+	dof3_combo_dataexp: XmText
+		{
+		arguments
+			{
+			XmNfontList = dof3_font;
+			XmNeditMode = XmSINGLE_LINE_EDIT;
+			XmNmarginHeight = dof3_text_margin;
+			XmNmarginWidth = dof3_text_margin;
+			XmNheight = dof3_arrow_height;
+			XmNshadowThickness = shadow_size;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 0;
+			XmNleftWidget = XmArrowButtonGadget dof3_combo_arrneg;
+			XmNrightAttachment = XmATTACH_WIDGET;
+			XmNrightOffset = 0;
+			XmNrightWidget = XmArrowButtonGadget dof3_combo_arrpos;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmSeparator dof3_combo_separator_arr;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = Dof3_structure;
+			XmNvalue = dof3_dataexp_init;
+			XmNmaxLength = dof3_dataexp_maxlen;
+			XmNcolumns = dof3_dataexp_size;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure dof3_identify_button (dof3_combo_dataexp_ID);
+			XmNactivateCallback = procedure dof3_dataexp_CB ();
+			XmNlosingFocusCallback = procedure dof3_dataexp_CB ();
+			XmNfocusCallback = procedure dof3_dataexp_CB ();
+			};
+		};
+	dof3_combo_arrpos: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNshadowThickness = shadow_size;
+			XmNheight = dof3_arrow_height;
+			XmNhighlightThickness = 0;
+			XmNarrowDirection = XmARROW_RIGHT;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNleftOffset = 0;
+!      XmNleftWidget = XmText dof3_combo_dataexp;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmSeparator dof3_combo_separator_arr;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNbottomOffset = 0;
+			XmNuserData = Dof3_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure dof3_identify_button (dof3_combo_arrpos_ID);
+			XmNactivateCallback = procedure dof3_arrow_CB(dof3_combo_arrpos_ID);
+			};
+		};
+	dof3_combo_toggle: XmToggleButton
+		{
+		arguments
+			{
+			XmNindicatorOn = false;
+			XmNlabelType = XmPIXMAP;
+			XmNlabelPixmap = dof3_axis_null_icon;
+			XmNselectPixmap = dof3_axis_null_icon;
+			XmNset = false;
+			XmNshadowThickness = shadow_size;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = 0;
+			XmNtopWidget = XmArrowButtonGadget dof3_combo_arrneg;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			XmNuserData = Dof3_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure dof3_identify_button (dof3_combo_toggle_ID);
+			XmNvalueChangedCallback = procedure dof3_toggle_CB ();
+			};
+		};
+end module;
+!**************************************************************************************

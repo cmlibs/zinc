@@ -1,0 +1,882 @@
+!*******************************************************************************
+!FILE : setup_dialog.uil
+!
+!LAST MODIFIED : 1 January 1997
+!
+!DESCRIPTION :
+!The widgets/gadgets for the setup dialog in the mapping work area.
+!===============================================================================
+module setup_dialog_module
+	names = case_sensitive
+
+procedure
+	identify_electrodes_in_row_form;
+	identify_electrodes_in_row_labe;
+	identify_electrodes_in_row_down;
+	decrement_electrodes_in_row;
+	identify_electrodes_in_row_numb;
+	identify_electrodes_in_row_up;
+	increment_electrodes_in_row;
+	identify_setup_rig_choice;
+	identify_setup_rig_sock;
+	identify_setup_rig_patch;
+	identify_setup_rig_torso;
+	identify_setup_auxiliary_down;
+	decrement_number_of_auxiliary;
+	identify_setup_auxiliary_number;
+	identify_setup_auxiliary_up;
+	increment_number_of_auxiliary;
+	identify_setup_regions_down;
+	decrement_number_of_regions;
+	identify_setup_regions_number;
+	identify_setup_regions_up;
+	increment_number_of_regions;
+	identify_setup_rows_form;
+	identify_setup_rows_down;
+	decrement_number_of_rows;
+	identify_setup_rows_number;
+	identify_setup_rows_up;
+	increment_number_of_rows;
+	identify_setup_separator;
+	identify_setup_setup_button;
+	create_simple_rig_from_dialog;
+	identify_setup_cancel_button;
+	close_setup_dialog;
+
+identifier
+	electrodes_in_row_structure;
+	mapping_window_structure;
+	setup_dialog_structure;
+	widget_spacing;
+	! Fonts
+	button_font;
+	heading_font;
+	list_font;
+	menu_font;
+	normal_font;
+	normal_non_proportional_font;
+	small_font;
+
+object
+	setup_electrodes_in_row: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmLabel setup_electrodes_in_row_label;
+			XmArrowButtonGadget setup_electrodes_in_row_down;
+			XmLabel setup_electrodes_in_row_number;
+			XmArrowButtonGadget setup_electrodes_in_row_up;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_electrodes_in_row_form(electrodes_in_row_structure);
+				};
+			};
+		};
+	setup_electrodes_in_row_label: XmLabel
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset =0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_electrodes_in_row_labe(electrodes_in_row_structure);
+				};
+			};
+		};
+	setup_electrodes_in_row_down: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNarrowDirection = XmARROW_DOWN;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabel setup_electrodes_in_row_label;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_electrodes_in_row_down(electrodes_in_row_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				decrement_electrodes_in_row(electrodes_in_row_structure);
+				};
+			};
+		};
+	setup_electrodes_in_row_number: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("99");
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmArrowButtonGadget setup_electrodes_in_row_down;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_electrodes_in_row_numb(electrodes_in_row_structure);
+				};
+			};
+		};
+	setup_electrodes_in_row_up: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNarrowDirection = XmARROW_UP;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabel setup_electrodes_in_row_number;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_electrodes_in_row_up(electrodes_in_row_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				increment_electrodes_in_row(electrodes_in_row_structure);
+				};
+			};
+		};
+	setup_dialog: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 1;
+			XmNallowOverlap = false;
+			XmNdialogStyle = XmDIALOG_FULL_APPLICATION_MODAL;
+			};
+		controls
+			{
+			XmOptionMenu setup_rig_choice;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmOptionMenu setup_rig_choice;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+!			XmOptionMenu setup_polarity_button;
+!			XmSeparator
+!				{
+!				arguments
+!					{
+!					XmNseparatorType = XmNO_LINE;
+!					XmNleftAttachment = XmATTACH_WIDGET;
+!					XmNleftWidget = XmOptionMenu setup_polarity_button;
+!					XmNleftOffset = 0;
+!					XmNrightAttachment = XmATTACH_FORM;
+!					XmNrightOffset = widget_spacing;
+!					XmNtopAttachment = XmATTACH_NONE;
+!					XmNbottomAttachment = XmATTACH_NONE;
+!					};
+!				};
+			XmForm setup_auxiliary;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmForm setup_auxiliary;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmForm setup_regions;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmForm setup_regions;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmForm setup_rows;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftWidget = XmForm setup_rows;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_NONE;
+					XmNbottomAttachment = XmATTACH_NONE;
+					};
+				};
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_FORM;
+					XmNleftOffset = widget_spacing;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = widget_spacing;
+					XmNtopAttachment = XmATTACH_WIDGET;
+					XmNtopWidget = XmForm setup_regions;
+					XmNtopOffset = widget_spacing;
+					XmNbottomAttachment = XmATTACH_WIDGET;
+					XmNbottomWidget = XmForm setup_setup_cancel;
+					XmNbottomOffset = widget_spacing;
+					};
+				callbacks
+					{
+					MrmNcreateCallback = procedures
+						{
+						identify_setup_separator(setup_dialog_structure);
+						};
+					};
+				};
+			XmForm setup_setup_cancel;
+			};
+		};
+	setup_rig_choice: XmOptionMenu 
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Rig :");
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmPulldownMenu
+				{
+				arguments
+					{
+					XmNborderWidth = 1;
+					};
+				controls
+					{
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString = 
+							compound_string("Sock");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_setup_rig_sock(setup_dialog_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString = 
+							compound_string("Patch");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_setup_rig_patch(setup_dialog_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString = 
+							compound_string("Torso");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_setup_rig_torso(setup_dialog_structure);
+								};
+							};
+						};
+					};
+				};
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_setup_rig_choice(setup_dialog_structure);
+				};
+			};
+		};
+!	setup_polarity_button: XmOptionMenu 
+!		{
+!		arguments
+!			{
+!			XmNlabelString = 
+!			compound_string("Polarity :");
+!			XmNfontList = button_font;
+!			XmNleftAttachment = XmATTACH_FORM;
+!			XmNleftOffset = widget_spacing;
+!			XmNrightAttachment = XmATTACH_NONE;
+!			XmNtopAttachment = XmATTACH_WIDGET;
+!			XmNtopWidget = XmOptionMenu setup_rig_choice;
+!			XmNtopOffset = widget_spacing;
+!			XmNbottomAttachment = XmATTACH_NONE;
+!			};
+!		controls
+!			{
+!			XmPulldownMenu
+!				{
+!				arguments
+!					{
+!					XmNborderWidth = 1;
+!					};
+!				controls
+!					{
+!					XmPushButtonGadget
+!						{
+!						arguments
+!							{
+!							XmNlabelString = 
+!							compound_string("Unipolar");
+!							};
+!						};
+!					XmPushButtonGadget
+!						{
+!						arguments
+!							{
+!							XmNlabelString = 
+!							compound_string("Bipolar");
+!							};
+!						};
+!					};
+!				};
+!			};
+!		};
+	setup_auxiliary: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+!			XmNtopWidget = XmOptionMenu setup_polarity_button;
+			XmNtopWidget = XmOptionMenu setup_rig_choice;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmLabel setup_auxiliary_label;
+			XmArrowButtonGadget setup_auxiliary_down;
+			XmLabel setup_auxiliary_number;
+			XmArrowButtonGadget setup_auxiliary_up;
+			};
+		};
+	setup_auxiliary_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Auxiliary inputs :");
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset =0;
+			};
+		};
+	setup_auxiliary_down: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNarrowDirection = XmARROW_DOWN;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabel setup_auxiliary_label;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_setup_auxiliary_down(setup_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				decrement_number_of_auxiliary(setup_dialog_structure);
+				};
+			};
+		};
+	setup_auxiliary_number: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("99");
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmArrowButtonGadget setup_auxiliary_down;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_setup_auxiliary_number(setup_dialog_structure);
+				};
+			};
+		};
+	setup_auxiliary_up: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNarrowDirection = XmARROW_UP;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabel setup_auxiliary_number;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_setup_auxiliary_up(setup_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				increment_number_of_auxiliary(setup_dialog_structure);
+				};
+			};
+		};
+	setup_regions: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmForm setup_auxiliary;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmLabel setup_regions_label;
+			XmArrowButtonGadget setup_regions_down;
+			XmLabel setup_regions_number;
+			XmArrowButtonGadget setup_regions_up;
+			};
+		};
+	setup_regions_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Regions :");
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset =0;
+			};
+		};
+	setup_regions_down: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNarrowDirection = XmARROW_DOWN;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabel setup_regions_label;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_setup_regions_down(setup_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				decrement_number_of_regions(setup_dialog_structure);
+				};
+			};
+		};
+	setup_regions_number: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("99");
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmArrowButtonGadget setup_regions_down;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_setup_regions_number(setup_dialog_structure);
+				};
+			};
+		};
+	setup_regions_up: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNarrowDirection = XmARROW_UP;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabel setup_regions_number;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_setup_regions_up(setup_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				increment_number_of_regions(setup_dialog_structure);
+				};
+			};
+		};
+	setup_rows: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = XmForm setup_regions;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		controls
+			{
+			XmLabel setup_rows_label;
+			XmArrowButtonGadget setup_rows_down;
+			XmLabel setup_rows_number;
+			XmArrowButtonGadget setup_rows_up;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_setup_rows_form(setup_dialog_structure);
+				};
+			};
+		};
+	setup_rows_label: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Rows :");
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset =0;
+			};
+		};
+	setup_rows_down: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNarrowDirection = XmARROW_DOWN;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabel setup_rows_label;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_setup_rows_down(setup_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				decrement_number_of_rows(setup_dialog_structure);
+				};
+			};
+		};
+	setup_rows_number: XmLabel
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("99");
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmArrowButtonGadget setup_rows_down;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_setup_rows_number(setup_dialog_structure);
+				};
+			};
+		};
+	setup_rows_up: XmArrowButtonGadget
+		{
+		arguments
+			{
+			XmNarrowDirection = XmARROW_UP;
+			XmNshadowThickness = 0;
+			XmNhighlightThickness = 0;
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftWidget = XmLabel setup_rows_number;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_setup_rows_up(setup_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				increment_number_of_rows(setup_dialog_structure);
+				};
+			};
+		};
+	setup_setup_cancel: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNallowOverlap = false;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_NONE;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = widget_spacing;
+			};
+		controls
+			{
+			XmPushButtonGadget setup_setup_button;
+			XmSeparator
+				{
+				arguments
+					{
+					XmNseparatorType = XmNO_LINE;
+					XmNleftAttachment = XmATTACH_WIDGET;
+					XmNleftOffset = widget_spacing;
+					XmNleftWidget = XmPushButtonGadget setup_setup_button;
+					XmNrightAttachment = XmATTACH_WIDGET;
+					XmNrightOffset = widget_spacing;
+					XmNrightWidget = XmPushButtonGadget setup_cancel_button;
+					XmNtopAttachment = XmATTACH_FORM;
+					XmNtopOffset = 0;
+					XmNbottomAttachment = XmATTACH_FORM;
+					XmNbottomOffset = 0;
+					};
+				};
+			XmPushButtonGadget setup_cancel_button;
+			};
+		};
+	setup_setup_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Set up");
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = 0;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_setup_setup_button(setup_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				create_simple_rig_from_dialog(mapping_window_structure);
+				};
+			};
+		};
+	setup_cancel_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Cancel");
+			XmNfontList = button_font;
+			XmNleftAttachment = XmATTACH_NONE;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = 0;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_setup_cancel_button(setup_dialog_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				close_setup_dialog(setup_dialog_structure);
+				};
+			};
+		};
+
+end module;
+

@@ -1,0 +1,82 @@
+!*******************************************************************************
+! FILE : vector.uil
+!
+! LAST MODIFIED : 11 January 1995
+!
+! DESCRIPTION :
+! The widgets for the vector vector widget.
+!===============================================================================
+module vector
+				version = 'v1.0'
+
+procedure
+	vector_identify_button    (integer);
+	vector_destroy_CB          ();
+	vector_button_CB            ();
+
+value
+	shadow_size        : 2;
+
+value
+	vector_font              : font_table(font('-*-HELVETICA-MEDIUM-R-*--*-80-*-*-*-*-ISO8859-1'));
+	vector_font_large        : font_table(font('-*-HELVETICA-BOLD-R-*--*-100-*-*-*-*-ISO8859-1'));
+	vector_font_bold        : font_table(font('-*-HELVETICA-BOLD-R-*--*-80-*-*-*-*-ISO8859-1'));
+
+identifier
+	!The gap between widgets
+	widget_spacing;
+	!Pointer to data specific to this instance of the vector widget
+	Vector_structure;
+	!value identifier
+	vector_menu_ID;
+	vector_toggle_ID;
+
+!**************************************************************************************
+!**************************************************************************************
+! The vector widget
+object
+	vector_widget: XmOptionMenu
+		{
+		arguments
+			{
+			XmNshadowThickness = shadow_size;
+			XmNborderWidth = 0;
+			XmNuserData = Vector_structure;
+			};
+		controls
+			{
+			XmPulldownMenu vector_menu;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure vector_destroy_CB ();
+			};
+		};
+	vector_menu: XmPulldownMenu
+		{
+		arguments
+			{
+			XmNuserData = Vector_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure vector_identify_button (vector_menu_ID);
+			};
+		};
+	vector_menu_item: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNshadowThickness = shadow_size;
+			XmNlabelString = compound_string("Description");
+			XmNfontList = vector_font_large;
+			XmNuserData = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure vector_identify_button (vector_toggle_ID);
+			XmNactivateCallback = procedure vector_button_CB ();
+			};
+		};
+end module;
+!**************************************************************************************

@@ -1,0 +1,4 @@
+!  oxs002.cmn
+      REAL*8 F1
+      COMMON /OXS002R/ F1
+

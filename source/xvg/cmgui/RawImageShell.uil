@@ -1,0 +1,277 @@
+module RawImageShell_uil
+
+procedure	destroyCB_RawImageShell;
+procedure	popdownCB_RawImageShell;
+procedure	popupCB_RawImageShell;
+procedure	exposeCB_RawImageDrawingArea;
+procedure	activateCB_menu12_p1_b1;
+procedure	activateCB_menu12_p1_b2;
+
+value DrawingAreaTT : translation_table(
+	'#override',
+	'<MotionNotify>:DrawSlices()');
+
+value ScrolledWindowTT : translation_table(
+	'#override',
+	'<ConfigureNotify>:UpdateWinsize()');
+
+object form2 : XmForm
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNx = 80;
+		XmNy = 50;
+		XmNwidth = 170;
+		XmNheight = 140;
+	};
+	controls
+	{
+		XmScrolledWindow RawImageScrolledWindow;
+		XmFrame frame1;
+		XmFrame frame2;
+		XmFrame frame3;
+	};
+};
+
+object RawImageScrolledWindow : XmScrolledWindow
+{
+	arguments
+	{
+		XmNscrollingPolicy = XmAUTOMATIC;
+		XmNunitType = XmPIXELS;
+		XmNx = 50;
+		XmNy = 30;
+		XmNwidth = 230;
+		XmNheight = 170;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 2;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNrightOffset = 2;
+		XmNtopAttachment = XmATTACH_FORM;
+		XmNtopOffset = 2;
+		XmNbottomAttachment = XmATTACH_FORM;
+		XmNbottomOffset = 2;
+		XmNscrollBarDisplayPolicy = XmSTATIC;
+		XmNtranslations = ScrolledWindowTT;
+	};
+	controls
+	{
+		XmDrawingArea RawImageDrawingArea;
+	};
+};
+
+object RawImageDrawingArea : XmDrawingArea
+{
+	arguments
+	{
+		XmNresizePolicy = XmRESIZE_NONE;
+		XmNunitType = XmPIXELS;
+		XmNx = 38;
+		XmNy = 38;
+		XmNtranslations = DrawingAreaTT;
+	};
+	callbacks
+	{
+		XmNexposeCallback = procedure exposeCB_RawImageDrawingArea ();
+	};
+	controls
+	{
+		unmanaged XmPopupMenu menu12;
+	};
+};
+
+object menu12 : XmPopupMenu
+{
+	arguments
+	{
+		XmNmenuAccelerator = "<KeyUp>F4";
+	};
+	controls
+	{
+		XmPushButtonGadget menu12_p1_b1;
+		XmPushButtonGadget menu12_p1_b2;
+	};
+};
+
+object menu12_p1_b1 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Transpose" );
+		XmNaccelerator = "";
+		XmNacceleratorText = compound_string( "" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu12_p1_b1 ();
+	};
+};
+
+object menu12_p1_b2 : XmPushButtonGadget
+{
+	arguments
+	{
+		XmNlabelString = compound_string( "Rotate" );
+		XmNaccelerator = "";
+		XmNacceleratorText = compound_string( "" );
+	};
+	callbacks
+	{
+		XmNactivateCallback = procedure activateCB_menu12_p1_b2 ();
+	};
+};
+
+object frame1 : XmFrame
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNx = 60;
+		XmNy = 40;
+		XmNheight = 80;
+		XmNbottomAttachment = XmATTACH_FORM;
+		XmNbottomOffset = 2;
+		XmNleftAttachment = XmATTACH_FORM;
+		XmNleftOffset = 2;
+		XmNmappedWhenManaged = false;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNrightOffset = 107;
+	};
+	controls
+	{
+		XmDrawingArea RawXSliceDA;
+	};
+};
+
+object RawXSliceDA : XmDrawingArea
+{
+	arguments
+	{
+		XmNresizePolicy = XmRESIZE_NONE;
+		XmNunitType = XmPIXELS;
+		XmNmappedWhenManaged = true;
+		XmNheight = 80;
+	};
+};
+
+object frame2 : XmFrame
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNx = 70;
+		XmNy = 50;
+		XmNwidth = 80;
+		XmNbottomAttachment = XmATTACH_FORM;
+		XmNbottomPosition = 0;
+		XmNmappedWhenManaged = false;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNrightOffset = 2;
+		XmNtopAttachment = XmATTACH_FORM;
+		XmNtopOffset = 2;
+		XmNbottomOffset = 107;
+	};
+	controls
+	{
+		XmDrawingArea RawYSliceDA;
+	};
+};
+
+object RawYSliceDA : XmDrawingArea
+{
+	arguments
+	{
+		XmNresizePolicy = XmRESIZE_NONE;
+		XmNunitType = XmPIXELS;
+		XmNwidth = 80;
+	};
+};
+
+object frame3 : XmFrame
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNx = 300;
+		XmNy = 200;
+		XmNwidth = 30;
+		XmNheight = 30;
+		XmNbottomAttachment = XmATTACH_FORM;
+		XmNbottomOffset = 2;
+		XmNleftAttachment = XmATTACH_WIDGET;
+		XmNleftOffset = 8;
+		XmNleftWidget = frame1;
+		XmNrightAttachment = XmATTACH_FORM;
+		XmNrightOffset = 2;
+		XmNtopAttachment = XmATTACH_WIDGET;
+		XmNtopOffset = 25;
+		XmNtopWidget = frame2;
+		XmNmappedWhenManaged = false;
+	};
+	controls
+	{
+		XmRowColumn rowColumn6;
+	};
+};
+
+object rowColumn6 : XmRowColumn
+{
+	arguments
+	{
+		XmNunitType = XmPIXELS;
+		XmNx = 20;
+		XmNy = 20;
+		XmNwidth = 20;
+		XmNheight = 20;
+		XmNresizeHeight = false;
+		XmNresizeWidth = false;
+		XmNspacing = 1;
+		XmNnumColumns = 1;
+	};
+	controls
+	{
+		XmLabelGadget RVLG;
+		XmLabelGadget RXLG;
+		XmLabelGadget RYLG;
+	};
+};
+
+object RXLG : XmLabelGadget
+{
+	arguments
+	{
+		XmNx = 10;
+		XmNy = 0;
+		XmNwidth = 30;
+		XmNheight = 20;
+		XmNlabelString = compound_string( "X: xxxx" );
+	};
+};
+
+object RYLG : XmLabelGadget
+{
+	arguments
+	{
+		XmNx = 13;
+		XmNy = 13;
+		XmNwidth = 30;
+		XmNheight = 20;
+		XmNlabelString = compound_string( "Y: xxxx" );
+	};
+};
+
+object RVLG : XmLabelGadget
+{
+	arguments
+	{
+		XmNx = 13;
+		XmNy = 36;
+		XmNwidth = 30;
+		XmNheight = 20;
+		XmNlabelString = compound_string( "V: xxxx" );
+	};
+};
+
+
+end module;

@@ -1,0 +1,902 @@
+!*******************************************************************************
+!FILE : material_editor.uil
+!
+!LAST MODIFIED : 14 December 1994
+!
+!DESCRIPTION :
+!The widgets/gadgets for the material editor
+!===============================================================================
+module Material_editor
+	names = case_sensitive
+
+procedure
+	identify_material_text_fields;
+	material_text_field_activated;
+	identify_material_scroll_bars;
+	material_scroll_bar_activated;
+	identify_material_toggle_buttons;
+	destroy_material_editor;
+	close_material_editor;
+	store_material;
+	load_material;
+	open_file_and_write;
+
+identifier
+	material_editor_structure;
+	write_settings_file_data;
+	scroll_bar_size;
+	scroll_bar_slider_size;
+
+object
+	material_editor: XmForm
+		{
+		arguments
+			{
+			XmNx = 17;
+			XmNy = 18;
+			XmNwidth = 321;
+			XmNheight = 566;
+			XmNborderWidth = 1;
+			XmNfractionBase = 100;
+			};
+		controls
+			{
+			XmMenuBar menu1;
+			XmScrollBar scroll_bar_0;
+			XmScrollBar scroll_bar_1;
+			XmScrollBar scroll_bar_2;
+			XmScrollBar scroll_bar_3;
+			XmScrollBar scroll_bar_4;
+			XmScrollBar scroll_bar_5;
+			XmScrollBar scroll_bar_6;
+			XmScrollBar scroll_bar_7;
+			XmScrollBar scroll_bar_8;
+			XmScrollBar scroll_bar_9;
+			XmScrollBar scroll_bar_10;
+			XmScrollBar scroll_bar_11;
+			XmScrollBar scroll_bar_12;
+			XmScrollBar scroll_bar_13;
+			XmToggleButtonGadget toggle_button_0;
+			XmToggleButtonGadget toggle_button_1;
+			XmToggleButtonGadget toggle_button_2;
+			XmToggleButtonGadget toggle_button_3;
+			XmToggleButtonGadget toggle_button_4;
+			XmToggleButtonGadget toggle_button_5;
+			XmSeparatorGadget
+				{
+				arguments
+					{
+					XmNwidth = 16;
+					XmNheight = 16;
+					XmNleftAttachment = XmATTACH_POSITION;
+					XmNtopAttachment = XmATTACH_POSITION;
+					XmNtopPosition = 24;
+					XmNleftPosition = 2;
+					XmNrightAttachment = XmATTACH_POSITION;
+					XmNrightPosition = 98;
+					};
+				};
+			XmSeparatorGadget
+				{
+				arguments
+					{
+					XmNwidth = 16;
+					XmNheight = 16;
+					XmNleftAttachment = XmATTACH_POSITION;
+					XmNtopAttachment = XmATTACH_POSITION;
+					XmNtopPosition = 38;
+					XmNleftPosition = 2;
+					XmNrightAttachment = XmATTACH_POSITION;
+					XmNrightPosition = 98;
+					};
+				};
+			XmSeparatorGadget
+				{
+				arguments
+					{
+					XmNwidth = 16;
+					XmNheight = 16;
+					XmNleftAttachment = XmATTACH_POSITION;
+					XmNtopAttachment = XmATTACH_POSITION;
+					XmNleftPosition = 2;
+					XmNtopPosition = 52;
+					XmNrightAttachment = XmATTACH_POSITION;
+					XmNrightPosition = 98;
+					};
+				};
+			XmSeparatorGadget
+				{
+				arguments
+					{
+					XmNwidth = 16;
+					XmNheight = 16;
+					XmNleftAttachment = XmATTACH_POSITION;
+					XmNtopAttachment = XmATTACH_POSITION;
+					XmNleftPosition = 2;
+					XmNtopPosition = 66;
+					XmNrightAttachment = XmATTACH_POSITION;
+					XmNrightPosition = 98;
+					};
+				};
+			XmSeparatorGadget
+				{
+				arguments
+					{
+					XmNwidth = 16;
+					XmNheight = 16;
+					XmNleftAttachment = XmATTACH_POSITION;
+					XmNtopAttachment = XmATTACH_POSITION;
+					XmNleftPosition = 2;
+					XmNtopPosition = 72;
+					XmNrightAttachment = XmATTACH_POSITION;
+					XmNrightPosition = 98;
+					};
+				};
+			XmPushButtonGadget
+				{
+				arguments
+					{
+					XmNlabelString =
+					compound_string("Store");
+					XmNleftAttachment = XmATTACH_POSITION;
+					XmNtopAttachment = XmATTACH_POSITION;
+					XmNtopPosition = 81;
+					XmNleftPosition = 2;
+					XmNrightAttachment = XmATTACH_POSITION;
+					XmNrightPosition = 24;
+					XmNbottomAttachment = XmATTACH_POSITION;
+					XmNbottomPosition = 86;
+					XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+					};
+				callbacks
+					{
+					XmNactivateCallback = procedures
+						{
+						store_material(material_editor_structure);
+						};
+					};
+				};
+			XmTextField text_field_0;
+			XmLabelGadget
+				{
+				arguments
+					{
+					XmNlabelString =
+					compound_string("Name");
+					XmNleftAttachment = XmATTACH_POSITION;
+					XmNtopAttachment = XmATTACH_POSITION;
+					XmNleftPosition = 3;
+					XmNtopPosition = 6;
+					XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+					XmNheight = 24;
+					};
+				};
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedures
+				{
+				destroy_material_editor(material_editor_structure);
+				};
+			};
+		};
+	toggle_button_0: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Diffuse");
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 2;
+			XmNtopPosition = 12;
+			XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_material_toggle_buttons(material_editor_structure);
+				};
+			};
+		};
+	toggle_button_1: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Specular");
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 2;
+			XmNtopPosition = 26;
+			XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 1;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_material_toggle_buttons(material_editor_structure);
+				};
+			};
+		};
+	toggle_button_2: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Ambient");
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 2;
+			XmNtopPosition = 40;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 45;
+			XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 2;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_material_toggle_buttons(material_editor_structure);
+				};
+			};
+		};
+	toggle_button_3: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Emission");
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 2;
+			XmNtopPosition = 54;
+			XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 3;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_material_toggle_buttons(material_editor_structure);
+				};
+			};
+		};
+	toggle_button_4: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Shininess");
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNtopPosition = 68;
+			XmNleftPosition = 2;
+			XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 4;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_material_toggle_buttons(material_editor_structure);
+				};
+			};
+		};
+	toggle_button_5: XmToggleButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Alpha");
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNleftPosition = 2;
+			XmNtopPosition = 74;
+			XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 5;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_material_toggle_buttons(material_editor_structure);
+				};
+			};
+		};
+	scroll_bar_0: XmScrollBar
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNorientation = XmHORIZONTAL;
+			XmNleftPosition = 30;
+			XmNtopPosition = 13;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 16;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 90;
+			XmNmaximum = scroll_bar_size;
+			XmNminimum = 0;
+			XmNsliderSize = scroll_bar_slider_size;
+			XmNuserData = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_material_scroll_bars(material_editor_structure);
+				};
+			XmNdragCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			XmNvalueChangedCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			};
+		};
+	scroll_bar_1: XmScrollBar
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNorientation = XmHORIZONTAL;
+			XmNleftPosition = 30;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 20;
+			XmNtopPosition = 17;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 90;
+			XmNmaximum = scroll_bar_size;
+			XmNminimum = 0;
+			XmNsliderSize = scroll_bar_slider_size;
+			XmNuserData = 1;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_material_scroll_bars(material_editor_structure);
+				};
+			XmNdragCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			XmNvalueChangedCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			};
+		};
+	scroll_bar_2: XmScrollBar
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNorientation = XmHORIZONTAL;
+			XmNleftPosition = 30;
+			XmNtopPosition = 21;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 90;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 24;
+			XmNmaximum = scroll_bar_size;
+			XmNminimum = 0;
+			XmNsliderSize = scroll_bar_slider_size;
+			XmNuserData = 2;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_material_scroll_bars(material_editor_structure);
+				};
+			XmNdragCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			XmNvalueChangedCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			};
+		};
+	scroll_bar_3: XmScrollBar
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNorientation = XmHORIZONTAL;
+			XmNtopPosition = 27;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 30;
+			XmNleftPosition = 30;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 90;
+			XmNmaximum = scroll_bar_size;
+			XmNminimum = 0;
+			XmNsliderSize = scroll_bar_slider_size;
+			XmNuserData = 3;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_material_scroll_bars(material_editor_structure);
+				};
+			XmNdragCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			XmNvalueChangedCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			};
+		};
+	scroll_bar_4: XmScrollBar
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNorientation = XmHORIZONTAL;
+			XmNleftPosition = 30;
+			XmNtopPosition = 31;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 34;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 90;
+			XmNmaximum = scroll_bar_size;
+			XmNminimum = 0;
+			XmNsliderSize = scroll_bar_slider_size;
+			XmNuserData = 4;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_material_scroll_bars(material_editor_structure);
+				};
+			XmNdragCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			XmNvalueChangedCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			};
+		};
+	scroll_bar_5: XmScrollBar
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNorientation = XmHORIZONTAL;
+			XmNleftPosition = 30;
+			XmNtopPosition = 35;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 90;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 38;
+			XmNmaximum = scroll_bar_size;
+			XmNminimum = 0;
+			XmNsliderSize = scroll_bar_slider_size;
+			XmNuserData = 5;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_material_scroll_bars(material_editor_structure);
+				};
+			XmNdragCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			XmNvalueChangedCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			};
+		};
+	scroll_bar_6: XmScrollBar
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNorientation = XmHORIZONTAL;
+			XmNleftPosition = 30;
+			XmNtopPosition = 41;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 44;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 90;
+			XmNmaximum = scroll_bar_size;
+			XmNminimum = 0;
+			XmNsliderSize = scroll_bar_slider_size;
+			XmNuserData = 6;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_material_scroll_bars(material_editor_structure);
+				};
+			XmNdragCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			XmNvalueChangedCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			};
+		};
+	scroll_bar_7: XmScrollBar
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNorientation = XmHORIZONTAL;
+			XmNleftPosition = 30;
+			XmNtopPosition = 45;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 48;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 90;
+			XmNmaximum = scroll_bar_size;
+			XmNminimum = 0;
+			XmNsliderSize = scroll_bar_slider_size;
+			XmNuserData = 7;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_material_scroll_bars(material_editor_structure);
+				};
+			XmNdragCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			XmNvalueChangedCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			};
+		};
+	scroll_bar_8: XmScrollBar
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNorientation = XmHORIZONTAL;
+			XmNleftPosition = 30;
+			XmNtopPosition = 49;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 52;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 90;
+			XmNmaximum = scroll_bar_size;
+			XmNminimum = 0;
+			XmNsliderSize = scroll_bar_slider_size;
+			XmNuserData = 8;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_material_scroll_bars(material_editor_structure);
+				};
+			XmNdragCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			XmNvalueChangedCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			};
+		};
+	scroll_bar_9: XmScrollBar
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNorientation = XmHORIZONTAL;
+			XmNleftPosition = 30;
+			XmNtopPosition = 55;
+			XmNheight = 36;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 58;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 90;
+			XmNmaximum = scroll_bar_size;
+			XmNminimum = 0;
+			XmNsliderSize = scroll_bar_slider_size;
+			XmNuserData = 9;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_material_scroll_bars(material_editor_structure);
+				};
+			XmNdragCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			XmNvalueChangedCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			};
+		};
+	scroll_bar_10: XmScrollBar
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNorientation = XmHORIZONTAL;
+			XmNleftPosition = 30;
+			XmNtopPosition = 59;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 90;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 62;
+			XmNmaximum = scroll_bar_size;
+			XmNminimum = 0;
+			XmNsliderSize = scroll_bar_slider_size;
+			XmNuserData = 10;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_material_scroll_bars(material_editor_structure);
+				};
+			XmNdragCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			XmNvalueChangedCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			};
+		};
+	scroll_bar_11: XmScrollBar
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNorientation = XmHORIZONTAL;
+			XmNwidth = 212;
+			XmNleftPosition = 30;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 90;
+			XmNtopPosition = 63;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 66;
+			XmNmaximum = scroll_bar_size;
+			XmNminimum = 0;
+			XmNsliderSize = scroll_bar_slider_size;
+			XmNuserData = 11;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_material_scroll_bars(material_editor_structure);
+				};
+			XmNdragCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			XmNvalueChangedCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			};
+		};
+	scroll_bar_12: XmScrollBar
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNorientation = XmHORIZONTAL;
+			XmNleftPosition = 30;
+			XmNtopPosition = 69;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 90;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 72;
+			XmNmaximum = scroll_bar_size;
+			XmNminimum = 0;
+			XmNsliderSize = scroll_bar_slider_size;
+			XmNuserData = 12;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_material_scroll_bars(material_editor_structure);
+				};
+			XmNdragCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			XmNvalueChangedCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			};
+		};
+	menu1: XmMenuBar
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNtopPosition = 0;
+			XmNleftPosition = 0;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 100;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 5;
+			};
+		controls
+			{
+			XmCascadeButtonGadget cb1;
+			};
+		};
+	cb1: XmCascadeButtonGadget
+		{
+		arguments
+			{
+			XmNx = 13;
+			XmNy = 8;
+			XmNlabelString =
+			compound_string("File");
+			XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			};
+		controls
+			{
+			XmPulldownMenu file_menu;
+			};
+		};
+	file_menu: XmPulldownMenu
+		{
+		controls
+			{
+			XmPushButtonGadget filebtn1;
+			XmPushButtonGadget filebtn4;
+	XmPushButtonGadget write_settings_button;
+			};
+		};
+	filebtn1: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("New");
+			XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			};
+		};
+	filebtn4: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("Exit");
+			XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				close_material_editor(material_editor_structure);
+				};
+			};
+		};
+	write_settings_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNlabelString = compound_string("Write materials to com file");
+			};
+		callbacks
+			{
+			XmNactivateCallback = procedures
+				{
+				open_file_and_write(write_settings_file_data);
+				};
+			};
+		};
+	scroll_bar_13: XmScrollBar
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNorientation = XmHORIZONTAL;
+			XmNheight = 45;
+			XmNleftPosition = 30;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 90;
+			XmNtopPosition = 75;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 78;
+			XmNmaximum = scroll_bar_size;
+			XmNminimum = 0;
+			XmNsliderSize = scroll_bar_slider_size;
+			XmNuserData = 13;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_material_scroll_bars(material_editor_structure);
+				};
+			XmNdragCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			XmNvalueChangedCallback = procedures
+				{
+				material_scroll_bar_activated(material_editor_structure);
+				};
+			};
+		};
+	text_field_0: XmTextField
+		{
+		arguments
+			{
+			XmNwidth = 25;
+			XmNheight = 25;
+			XmNcolumns = 1;
+			XmNleftAttachment = XmATTACH_POSITION;
+			XmNtopAttachment = XmATTACH_POSITION;
+			XmNtopPosition = 5;
+			XmNleftPosition = 16;
+			XmNbottomAttachment = XmATTACH_POSITION;
+			XmNbottomPosition = 11;
+			XmNrightAttachment = XmATTACH_POSITION;
+			XmNrightPosition = 43;
+			XmNfontList = font_table(font('-*-HELVETICA-MEDIUM-R-*--*-100-*-*-*-*-ISO8859-1'));
+			XmNuserData = 0;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_material_text_fields(material_editor_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				material_text_field_activated(material_editor_structure);
+				};
+			};
+		};
+end module;
