@@ -380,7 +380,7 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 {
 	char *storage;
 	FE_value *data_index, *result_index, *diff;
-	FE_value *u_index, *v_index, *p1_index, *p2_index;
+	FE_value *u_index, *v_index, *p1_index, *p2_index, *q1_index, *q2_index;
 	int i, k, return_code, x, y;
 	int c, n, flag;
 	int storage_size;
@@ -407,6 +407,8 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 			ALLOCATE(v_index, FE_value, (storage_size/image->depth)) &&
 			ALLOCATE(p1_index, FE_value, (storage_size/image->depth)) &&
 			ALLOCATE(p2_index, FE_value, (storage_size/image->depth)) &&
+			ALLOCATE(q1_index, FE_value, (storage_size/image->depth)) &&
+			ALLOCATE(q2_index, FE_value, (storage_size/image->depth)) &&
 			ALLOCATE(diff, FE_value, (storage_size/image->depth)) &&
 			ALLOCATE(delta1, FE_value, (storage_size/image->depth)) &&
 			ALLOCATE(delta2, FE_value, (storage_size/image->depth)) &&
@@ -418,11 +420,7 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 				*result_index = 0.0;
 				result_index++;
 			}
-                        for (i = 0; i < storage_size/image->depth; i++)
-			{
-			        u_index[i] = 0.0;
-				v_index[i] = 0.0;
-			}
+                        
 			mean = 0.0;
 			data_index = (FE_value *)image->data;
 			for (i = 0; i < storage_size / image->depth; i++)
@@ -432,15 +430,134 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 			}
 			mean /= (FE_value)(storage_size/image->depth);
 			data_index = (FE_value *)image->data;
+			for (i = 0; i < storage_size/image->depth; i++)
+			{
+			        u_index[i] = 255.0 *(*data_index - mean);
+				v_index[i] = 0.0;
+				data_index += image->depth;
+			}
+			data_index = (FE_value *)image->data;
 			result_index = (FE_value *)storage;
 			for (n = 0; n < number_of_iterations; n++)
 			{
-			        for (i = 0; i < storage_size/image->depth; i++)
+			        
+				for (i = 0; i < storage_size/image->depth; i++)
+				{
+				        q1_index[i] = 0.0;
+					q2_index[i] = 0.0;
+				}
+				for (c = 0; c < 500; c++)
+				{ 
+				        for (y = 0; y < image->sizes[1]; y++)
+					{
+					        for (x = 0; x < image->sizes[0]; x++)
+						{
+						        if ((y > 0) && (y < (image->sizes[1] - 1)))
+							{
+							        diff[y*image->sizes[0] + x] = q2_index[y*image->sizes[0] + x] - q2_index[(y-1)*image->sizes[0] + x];
+							}
+							else if (y == 0)
+							{
+							        diff[y*image->sizes[0] + x] = q2_index[y*image->sizes[0] + x];
+							}
+							else
+							{
+							        diff[y*image->sizes[0] + x] = - q2_index[(y-1)*image->sizes[0] + x];
+							}
+							if ((x > 0) && (x < (image->sizes[0] - 1)))
+							{
+							        diff[y*image->sizes[0] + x] += q1_index[y*image->sizes[0] + x] - q1_index[y*image->sizes[0] + x -1];
+							}
+							else if (x == 0)
+							{
+							        diff[y*image->sizes[0] + x] += q1_index[y*image->sizes[0] + x];
+							}
+							else
+							{
+							        diff[y*image->sizes[0] + x] += - q1_index[y*image->sizes[0] + x - 1];
+							}
+							diff[y*image->sizes[0] + x] -= (255.0 *(*data_index - mean) - v_index[y*image->sizes[0] + x])  / lambda;
+							//diff[y*image->sizes[0] + x] -= (*data_index - v_index[y*image->sizes[0] + x])/ lambda;
+							data_index += image->depth;
+						}
+					}
+					for (y = 0; y < image->sizes[1]; y++)
+					{
+					        for (x = 0; x < image->sizes[0]; x++)
+						{
+						        if ( y < (image->sizes[1] -1))
+							{
+							        delta2[y*image->sizes[0] + x] = diff[(y+1)*image->sizes[0] + x] - diff[y*image->sizes[0] + x];
+							}
+							else
+							{
+							        delta2[y*image->sizes[0] + x] = 0.0;
+							}
+							if ( x < (image->sizes[0] -1))
+							{
+							        delta1[y*image->sizes[0] + x] = diff[y*image->sizes[0] + x + 1] - diff[y*image->sizes[0] + x];
+							}
+							else
+							{
+							        delta1[y*image->sizes[0] + x] = 0.0;
+							}
+						}
+					} 
+					for (y = 0; y < image->sizes[1]; y++)
+					{
+					        for (x = 0; x < image->sizes[0]; x++)
+						{
+						        q1_index[y*image->sizes[0] + x] += tou * delta1[y*image->sizes[0] + x];
+							q2_index[y*image->sizes[0] + x] += tou * delta2[y*image->sizes[0] + x];
+							norm = sqrt(delta1[y*image->sizes[0] + x] * delta1[y*image->sizes[0] + x] + delta2[y*image->sizes[0] + x] * delta2[y*image->sizes[0] + x]);
+							q1_index[y*image->sizes[0] + x] /= (1.0 + tou * norm);
+							q2_index[y*image->sizes[0] + x] /= (1.0 + tou * norm);
+							
+							/* data_index -= image->depth; */  
+						}
+					}
+					data_index = (FE_value *)image->data;     
+				}
+				for (y = 0; y < image->sizes[1]; y++)
+				{
+					for (x = 0; x < image->sizes[0]; x++)
+					{
+						if ((y > 0) && (y < (image->sizes[1] - 1)))
+						{
+							u_index[y*image->sizes[0] + x] = q2_index[y*image->sizes[0] + x] - q2_index[(y-1)*image->sizes[0] + x];
+						}
+						else if (y == 0)
+						{
+							u_index[y*image->sizes[0] + x] = q2_index[y*image->sizes[0] + x];
+						}
+						else
+						{
+							u_index[y*image->sizes[0] + x] = - q2_index[(y-1)*image->sizes[0] + x];
+						}
+						if ((x > 0) && (x < (image->sizes[0] - 1)))
+						{
+							u_index[y*image->sizes[0] + x] += q1_index[y*image->sizes[0] + x] - q1_index[y*image->sizes[0] + x -1];
+						}
+						else if (x == 0)
+						{
+						        u_index[y*image->sizes[0] + x] += q1_index[y*image->sizes[0] + x];
+						}
+						else
+						{
+							u_index[y*image->sizes[0] + x] += - q1_index[y*image->sizes[0] + x - 1];
+						}
+						u_index[y*image->sizes[0] + x] = 255.0 * (*data_index - mean)- v_index[y*image->sizes[0] + x] - lambda * u_index[y*image->sizes[0] + x];
+						//u_index[y*image->sizes[0] + x] = *data_index - v_index[y*image->sizes[0] + x] - u_index[y*image->sizes[0] + x];
+						data_index += image->depth;
+					}
+				}
+				data_index = (FE_value *)image->data;
+				for (i = 0; i < storage_size/image->depth; i++)
 				{
 				        p1_index[i] = 0.0;
 					p2_index[i] = 0.0;
 				}
-				for (c = 0; c < number_of_iterations; c++)
+				for (c = 0; c < 500; c++)
 				{ 
 				        for (y = 0; y < image->sizes[1]; y++)
 					{
@@ -470,7 +587,8 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 							{
 							        diff[y*image->sizes[0] + x] += - p1_index[y*image->sizes[0] + x - 1];
 							}
-							diff[y*image->sizes[0] + x] -= (*data_index - mean - u_index[y*image->sizes[0] + x])  / mu;
+							diff[y*image->sizes[0] + x] -= (255.0*(*data_index - mean) - u_index[y*image->sizes[0] + x])  / mu;
+							//diff[y*image->sizes[0] + x] -= (*data_index - u_index[y*image->sizes[0] + x])  / mu;
 							data_index += image->depth;
 						}
 					}
@@ -539,117 +657,9 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 						{
 							v_index[y*image->sizes[0] + x] += - p1_index[y*image->sizes[0] + x - 1];
 						}
+						v_index[y*image->sizes[0] + x] *= mu;
 					}
 				}
-				for (i = 0; i < storage_size/image->depth; i++)
-				{
-				        p1_index[i] = 0.0;
-					p2_index[i] = 0.0;
-				}
-				for (c = 0; c < number_of_iterations; c++)
-				{ 
-				        for (y = 0; y < image->sizes[1]; y++)
-					{
-					        for (x = 0; x < image->sizes[0]; x++)
-						{
-						        if ((y > 0) && (y < (image->sizes[1] - 1)))
-							{
-							        diff[y*image->sizes[0] + x] = p2_index[y*image->sizes[0] + x] - p2_index[(y-1)*image->sizes[0] + x];
-							}
-							else if (y == 0)
-							{
-							        diff[y*image->sizes[0] + x] = p2_index[y*image->sizes[0] + x];
-							}
-							else
-							{
-							        diff[y*image->sizes[0] + x] = - p2_index[(y-1)*image->sizes[0] + x];
-							}
-							if ((x > 0) && (x < (image->sizes[0] - 1)))
-							{
-							        diff[y*image->sizes[0] + x] += p1_index[y*image->sizes[0] + x] - p1_index[y*image->sizes[0] + x -1];
-							}
-							else if (x == 0)
-							{
-							        diff[y*image->sizes[0] + x] += p1_index[y*image->sizes[0] + x];
-							}
-							else
-							{
-							        diff[y*image->sizes[0] + x] += - p1_index[y*image->sizes[0] + x - 1];
-							}
-							diff[y*image->sizes[0] + x] -= (*data_index - mean - v_index[y*image->sizes[0] + x])  / lambda;
-							data_index += image->depth;
-						}
-					}
-					for (y = 0; y < image->sizes[1]; y++)
-					{
-					        for (x = 0; x < image->sizes[0]; x++)
-						{
-						        if ( y < (image->sizes[1] -1))
-							{
-							        delta2[y*image->sizes[0] + x] = diff[(y+1)*image->sizes[0] + x] - diff[y*image->sizes[0] + x];
-							}
-							else
-							{
-							        delta2[y*image->sizes[0] + x] = 0.0;
-							}
-							if ( x < (image->sizes[0] -1))
-							{
-							        delta1[y*image->sizes[0] + x] = diff[y*image->sizes[0] + x + 1] - diff[y*image->sizes[0] + x];
-							}
-							else
-							{
-							        delta1[y*image->sizes[0] + x] = 0.0;
-							}
-						}
-					} 
-					for (y = 0; y < image->sizes[1]; y++)
-					{
-					        for (x = 0; x < image->sizes[0]; x++)
-						{
-						        p1_index[y*image->sizes[0] + x] += tou * delta1[y*image->sizes[0] + x];
-							p2_index[y*image->sizes[0] + x] += tou * delta2[y*image->sizes[0] + x];
-							norm = sqrt(delta1[y*image->sizes[0] + x] * delta1[y*image->sizes[0] + x] + delta2[y*image->sizes[0] + x] * delta2[y*image->sizes[0] + x]);
-							p1_index[y*image->sizes[0] + x] /= (1.0 + tou * norm);
-							p2_index[y*image->sizes[0] + x] /= (1.0 + tou * norm);
-							
-							/* data_index -= image->depth; */  
-						}
-					}
-					data_index = (FE_value *)image->data;     
-				}
-				for (y = 0; y < image->sizes[1]; y++)
-				{
-					for (x = 0; x < image->sizes[0]; x++)
-					{
-						if ((y > 0) && (y < (image->sizes[1] - 1)))
-						{
-							u_index[y*image->sizes[0] + x] = p2_index[y*image->sizes[0] + x] - p2_index[(y-1)*image->sizes[0] + x];
-						}
-						else if (y == 0)
-						{
-							u_index[y*image->sizes[0] + x] = p2_index[y*image->sizes[0] + x];
-						}
-						else
-						{
-							u_index[y*image->sizes[0] + x] = - p2_index[(y-1)*image->sizes[0] + x];
-						}
-						if ((x > 0) && (x < (image->sizes[0] - 1)))
-						{
-							u_index[y*image->sizes[0] + x] += p1_index[y*image->sizes[0] + x] - p1_index[y*image->sizes[0] + x -1];
-						}
-						else if (x == 0)
-						{
-						        u_index[y*image->sizes[0] + x] += p1_index[y*image->sizes[0] + x];
-						}
-						else
-						{
-							u_index[y*image->sizes[0] + x] += - p1_index[y*image->sizes[0] + x - 1];
-						}
-						u_index[y*image->sizes[0] + x] = *data_index - mean - v_index[y*image->sizes[0] + x] - u_index[y*image->sizes[0] + x];
-						data_index += image->depth;
-					}
-				}
-				data_index = (FE_value *)image->data;
 			}
 			if (strcmp(result,"bounded_variation") == 0)
 			{
@@ -663,21 +673,25 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 			{
 			        flag = 3;
 			}
+			else if (strcmp(result,"difference") == 0)
+			{
+			        flag = 4;
+			}
 			switch (flag)
 			{
 			        case 1 :
 				        for (i = 0 ; i < storage_size / image->depth ; i++)
 					{
-						max = my_Max(max, (u_index[i] + mean));
-						min = my_Min(min, (u_index[i] + mean));
+						max = my_Max(max, 255.0*mean + u_index[i]);
+						min = my_Min(min, 255.0*mean + u_index[i]);
+						
 					}
 					for (i = 0 ; return_code && i < storage_size / image->depth ; i++)
 					{
 						for (k = 0 ; k < image->depth ; k++)
 						{
-				        /* the output <u> is the restored image */
-					/* the output <v> is the oscillatory component */
-                                        		result_index[k] = (u_index[i] + mean-min)/(max-min);
+                                        		result_index[k] = (255.0* mean + u_index[i] -min)/(max-min);
+							//result_index[k] = (mean*255.0 + u_index[i])/255.0;
 						}
 						result_index += image->depth;
 					}
@@ -692,8 +706,6 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 					{
 						for (k = 0 ; k < image->depth ; k++)
 						{
-				        /* the output <u> is the restored image */
-					/* the output <v> is the oscillatory component */
                                         		result_index[k] = (v_index[i]-min)/(max-min);
 						}
 						result_index += image->depth;
@@ -702,18 +714,34 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 				case 3 :
 				        for (i = 0 ; i < storage_size / image->depth ; i++)
 					{
-						max = my_Max(max, (mean + u_index[i] + v_index[i]));
-						min = my_Min(min, (mean + u_index[i] + v_index[i]));
+						max = my_Max(max, (255.0* mean + u_index[i] + v_index[i]));
+						min = my_Min(min, (255.0* mean + u_index[i] + v_index[i]));
 					}
 					for (i = 0 ; return_code && i < storage_size / image->depth ; i++)
 					{
 						for (k = 0 ; k < image->depth ; k++)
 						{
-				        /* the output <u + v + mean> is the reconstructed image */
-					/* the output <v> is the oscillatory component */
-                                        		result_index[k] = ((mean + u_index[i] + v_index[i])-min)/(max-min);
+                                        		result_index[k] = ((255.0* mean + u_index[i] + v_index[i])-min)/(max-min);
 						}
 						result_index += image->depth;
+					}
+					break;
+				case 4:
+				        for (i = 0 ; i < storage_size / image->depth ; i++)
+					{
+						max = my_Max(max, fabs(255.0* *data_index - (255.0* mean + u_index[i] + v_index[i])));
+						min = my_Min(min, fabs(255.0* *data_index - (255.0* mean + u_index[i] + v_index[i])));
+						data_index += image->depth;
+					}
+					data_index = (FE_value *)image->data;
+					for (i = 0 ; return_code && i < storage_size / image->depth ; i++)
+					{
+						for (k = 0 ; k < image->depth ; k++)
+						{
+                                        		result_index[k] = (fabs(255.0* *data_index - (255.0*mean + u_index[i] + v_index[i]))-min)/(max-min);
+						}
+						result_index += image->depth;
+						data_index += image->depth;
 					}
 					break;
 				default:
@@ -739,6 +767,8 @@ REFERENCE: J._F. Aujol, et al., "Image decomposition into a bounded variation co
 			DEALLOCATE(v_index);
                         DEALLOCATE(p1_index);
 			DEALLOCATE(p2_index);
+			DEALLOCATE(q1_index);
+			DEALLOCATE(q2_index);
 		}
 		else
 		{
@@ -1081,7 +1111,7 @@ int Computed_field_set_type_bvc_decomp(struct Computed_field *field,
 	struct Computed_field *source_field,
 	struct Computed_field *texture_coordinate_field,
 	int number_of_iterations, int bvc_index, int oc_index,
-	int rc_index, double tou, double lambda, double mu,
+	int rc_index, int dif_index, double tou, double lambda, double mu,
 	int dimension, int *sizes, FE_value *minimums, FE_value *maximums,
 	int element_dimension, struct MANAGER(Computed_field) *computed_field_manager,
 	struct Cmiss_region *region, struct Graphics_buffer_package *graphics_buffer_package)
@@ -1140,6 +1170,10 @@ although its cache may be lost.
 			{
 			        data->result = "reconstruction";
 			}
+			else if (dif_index > 0)
+			{
+			        data->result = "difference";
+			}
 			data->tou = tou;
 			data->lambda = lambda;
 			data->mu = mu;
@@ -1186,7 +1220,7 @@ int Computed_field_get_type_bvc_decomp(struct Computed_field *field,
 	struct Computed_field **source_field,
 	struct Computed_field **texture_coordinate_field,
 	int *number_of_iterations, int *bvc_index, int *oc_index,
-	int *rc_index, double *tou, double *lambda, double *mu,
+	int *rc_index, int *dif_index, double *tou, double *lambda, double *mu,
 	int *dimension, int **sizes, FE_value **minimums, FE_value **maximums,
 	int *element_dimension)
 /*******************************************************************************
@@ -1220,7 +1254,7 @@ parameters defining it are returned.
 			}
 			*element_dimension = data->element_dimension;
 			*number_of_iterations = data->number_of_iterations;
-			*bvc_index = *oc_index = *rc_index = 0;
+			*bvc_index = *oc_index = *rc_index = *dif_index = 0;
 			if (strcmp(data->result, "bounded_variation") == 0)
 			{
 				*bvc_index = 1;
@@ -1232,6 +1266,10 @@ parameters defining it are returned.
 			else if (strcmp(data->result, "reconstruction") == 0)
 			{
 				*rc_index = 1;
+			}
+			else if (strcmp(data->result, "difference") == 0)
+			{
+				*dif_index = 1;
 			}
 			*tou = data->tou;
 			*lambda = data->lambda;
@@ -1268,6 +1306,7 @@ already) and allows its contents to be modified.
 {
 	char *current_token;
 	char bvc_string[] = "bounded_variation", oc_string[] = "oscillating", rc_string[] = "reconstruction"; 
+	char dif_string[] = "difference";
 	int number_of_iterations;
 	double tou, lambda, mu;
 	FE_value *minimums, *maximums;
@@ -1311,14 +1350,16 @@ already) and allows its contents to be modified.
 			Computed_field_has_numerical_components;
 		set_texture_coordinate_field_data.conditional_function_user_data = (void *)NULL;
                 /* results, define a list of results */
-		result.number_of_tokens = 3;
-		ALLOCATE(result.tokens, struct Set_names_from_list_token, 3);
+		result.number_of_tokens = 4;
+		ALLOCATE(result.tokens, struct Set_names_from_list_token, 4);
 		result.tokens[0].string = bvc_string;
 		result.tokens[0].index = 0;
 		result.tokens[1].string = oc_string;
 		result.tokens[1].index = 0;
 		result.tokens[2].string = rc_string;
 		result.tokens[2].index = 0;
+		result.tokens[3].string = dif_string;
+		result.tokens[3].index = 0;
 		
 		if (computed_field_bvc_decomp_type_string ==
 			Computed_field_get_type_string(field))
@@ -1326,7 +1367,7 @@ already) and allows its contents to be modified.
 			return_code = Computed_field_get_type_bvc_decomp(field,
 				&source_field, &texture_coordinate_field,
 				&number_of_iterations, &result.tokens[0].index, &result.tokens[1].index,
-				&result.tokens[2].index, &tou, &lambda, &mu, 
+				&result.tokens[2].index, &result.tokens[3].index, &tou, &lambda, &mu, 
 				&dimension, &sizes, &minimums, &maximums, &element_dimension);
 		}
 		if (return_code)
@@ -1466,7 +1507,7 @@ already) and allows its contents to be modified.
 				return_code = Computed_field_set_type_bvc_decomp(field,
 					source_field, texture_coordinate_field, 
 					number_of_iterations, result.tokens[0].index, result.tokens[1].index,
-					result.tokens[2].index, tou, lambda, mu, 
+					result.tokens[2].index, result.tokens[3].index, tou, lambda, mu, 
 					dimension, sizes, minimums, maximums, element_dimension,
 					computed_field_bvc_decomp_package->computed_field_manager,
 					computed_field_bvc_decomp_package->root_region,
