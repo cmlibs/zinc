@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : biosense2sig.c
 
-LAST MODIFIED : 18 January 2000
+LAST MODIFIED : 19 January 2000
 
 DESCRIPTION :
 Converts a a Biosense location and activation time file to a signal file.
@@ -19,7 +19,7 @@ Converts a a Biosense location and activation time file to a signal file.
 
 static int analysis_write_signal_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 9 December 1999
+LAST MODIFIED : 17 January 2000
 
 DESCRIPTION :
 This function writes the rig configuration and interval of signal data to the
@@ -207,7 +207,7 @@ named file.
 
 int main(int argc,char *argv[])
 /*******************************************************************************
-LAST MODIFIED : 18 January 2000
+LAST MODIFIED : 19 January 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -215,8 +215,10 @@ DESCRIPTION :
 	char *device_name,flag;
 	enum Event_signal_status *status_array,*status_array_temp;
 	FILE *biosense_file;
-	float dfdx,dfdy,dfdz,f,f_prev,phi,r,ri,theta,sampling_frequency,tolerance,x,
-		*x_array,*x_array_temp,y,*y_array,*y_array_temp,z,*z_array,*z_array_temp;
+	float dfdx,dfdy,dfdz,drdx,drdy,drdz,d2fdxdy,d2fdxdz,d2fdx2,d2fdydx,d2fdydz,
+		d2fdy2,d2fdzdx,d2fdzdy,d2fdz2,f,f_prev,phi,r,ri,theta,sampling_frequency,
+		tolerance,x,*x_array,*x_array_temp,y,*y_array,*y_array_temp,z,*z_array,
+		*z_array_temp;
 	int converged,device_number,i,id,*id_array,*id_array_temp,max_steps,max_time,
 		min_time,number_of_devices,number_of_samples,return_code,step_number,time,
 		*time_array,*time_array_temp;
@@ -441,7 +443,7 @@ DESCRIPTION :
 								(r*(x-(*x_array_temp))/ri-ri*drdx)/(ri*(ri-r));
 							d2fdy2 += (ri-ri)/ri+(y-(*y_array_temp))*
 								(r*(y-(*y_array_temp))/ri-ri*drdy)/(ri*(ri-r));
-							d2fdydx += (y-(*y_array_temp))*
+							d2fdydz += (y-(*y_array_temp))*
 								(r*(z-(*z_array_temp))/ri-ri*drdz)/(ri*(ri-r));
 							d2fdzdx += (z-(*z_array_temp))*
 								(r*(x-(*x_array_temp))/ri-ri*drdx)/(ri*(ri-r));
@@ -655,7 +657,7 @@ C       Calculate the inverse of L(i,i)
 									}
 									else
 									{
-										printf("ERROR.  Could not allocate memory for device\n",
+										printf("ERROR.  Could not allocate memory for device %d\n",
 											device_number);
 										return_code=0;
 									}
