@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_unemap_interface.h
 
-LAST MODIFIED : 03 April 2001
+LAST MODIFIED : 07 May 2001
 
 DESCRIPTION :
 The interface between Cell and UnEMAP
@@ -122,6 +122,17 @@ LAST MODIFIED : 03 April 2001
 
 DESCRIPTION :
 Gets the save signals toggle in the <cell_unemap_interface> object.
+==============================================================================*/
+int Cell_unemap_interface_check_analysis_window(
+  struct Cell_unemap_interface *cell_unemap_interface,Widget parent,
+  struct User_interface *user_interface);
+/*******************************************************************************
+LAST MODIFIED : 07 May 2001
+
+DESCRIPTION :
+Checks the analysis work area for a analysis window and if one is not found try
+to create one. <parent> is used as the parent widget if the window needs to be
+created.
 ==============================================================================*/
 
 #endif /* !defined (CELL_UNEMAP_INTERFACE_H) */

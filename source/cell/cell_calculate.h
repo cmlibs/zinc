@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_calculate.h
 
-LAST MODIFIED : 04 April 2001
+LAST MODIFIED : 07 May 2001
 
 DESCRIPTION :
 Routines for model calculation
@@ -29,9 +29,10 @@ Global functions
 ----------------
 */
 struct Cell_calculate *CREATE(Cell_calculate)(
+  struct Cell_interface *cell_interface,
   struct Cell_unemap_interface *cell_unemap_interface);
 /*******************************************************************************
-LAST MODIFIED : 04 November 2000
+LAST MODIFIED : 07 May 2001
 
 DESCRIPTION :
 Creates a Cell_calculate object.

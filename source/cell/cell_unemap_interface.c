@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_unemap_interface.c
 
-LAST MODIFIED : 03 April 2001
+LAST MODIFIED : 07 May 2001
 
 DESCRIPTION :
 The interface between Cell and UnEMAP
@@ -1312,4 +1312,124 @@ Gets the save signals toggle in the <cell_unemap_interface> object.
   LEAVE;
   return(save);
 } /* Cell_unemap_interface_update_get_save_signals() */
+
+int Cell_unemap_interface_check_analysis_window(
+  struct Cell_unemap_interface *cell_unemap_interface,Widget parent,
+  struct User_interface *user_interface)
+/*******************************************************************************
+LAST MODIFIED : 07 May 2001
+
+DESCRIPTION :
+Checks the analysis work area for a analysis window and if one is not found try
+to create one. <parent> is used as the parent widget if the window needs to be
+created.
+==============================================================================*/
+{
+  int return_code = 0;
+  struct Analysis_work_area *analysis;
+  Widget activation;
+  struct Time_keeper *time_keeper;
+  Pixel identifying_colour;
+  
+  ENTER(Cell_unemap_interface_check_analysis_window);
+  if (cell_unemap_interface && parent && user_interface)
+  {
+    if (analysis = cell_unemap_interface->analysis_work_area)
+    {
+      if (analysis->window_shell && analysis->window)
+      {
+        /* The analysis window exists */
+        return_code = 1;
+      }
+      else
+      {
+        /* There is no analysis window, it must have been destroyed  - so
+           clear up the rest of the analysis work area and start again */
+        close_analysis_work_area((Widget)NULL,(XtPointer)(analysis),
+          (XtPointer)NULL);
+        /* Re-initialise the fields ?? */
+        /* save the current activation widget and time keeper and identifying
+           colour */
+        activation = analysis->activation;
+        time_keeper = analysis->time_keeper;
+        identifying_colour = analysis->identifying_colour;
+        analysis->activation = (Widget)NULL;
+        analysis->window_shell = (Widget)NULL;
+        analysis->window = (struct Analysis_window *)NULL;
+        analysis->trace = (struct Trace_window *)NULL;
+        analysis->mapping_work_area = (struct Mapping_work_area *)NULL;
+        analysis->mapping_window = (struct Mapping_window *)NULL;
+        analysis->raw_rig = (struct Rig *)NULL;
+        analysis->rig = (struct Rig *)NULL;
+        analysis->signal_drawing_package =
+          (struct Signal_drawing_package *)NULL;
+        analysis->highlight = (struct Device **)NULL;
+        analysis->signal_drawing_information =
+          (struct Signal_drawing_information *)NULL;
+        analysis->map_drawing_information =
+          (struct Map_drawing_information *)NULL;
+        analysis->user_interface = (struct User_interface *)NULL;
+        analysis->potential_time_object = (struct Time_object *)NULL;
+        analysis->time_keeper = (struct Time_keeper *)NULL;
+        analysis->datum_time_object = (struct Time_object *)NULL;
+        analysis->unemap_package = (struct Unemap_package *)NULL;
+        analysis->datum = 0;
+				analysis->objective = ABSOLUTE_SLOPE;
+				analysis->detection = EDA_INTERVAL;
+				analysis->datum_type = AUTOMATIC_DATUM;
+				analysis->edit_order = DEVICE_ORDER;
+				analysis->signal_order = CHANNEL_ORDER;
+				analysis->calculate_events = 0;
+				analysis->number_of_events = 1;
+				analysis->event_number = 1;
+				analysis->threshold = 90;
+				analysis->minimum_separation = 100;
+				analysis->average_width = 6;
+				analysis->level = 0;
+				analysis->map_type = NO_MAP_FIELD;
+				analysis->bard_signal_file_data = (struct File_open_data *)NULL;
+				analysis->cardiomapp_signal_file_data = (struct File_open_data *)NULL;
+				analysis->neurosoft_signal_file_data = (struct File_open_data *)NULL;
+        /* and re-create the analysis work area */
+        if (create_analysis_work_area(
+          analysis,activation,parent,
+          /*pointer_sensitivity*/2,
+          /*signal_file_extension_read*/".sig*",
+          /*signal_file_extension_write*/".signal",
+          /*postscript_file_extension*/".ps",
+          /*configuration_file_extension*/".cnfg",
+          identifying_colour,
+          (struct Map_drawing_information *)NULL,
+          user_interface,time_keeper,
+          (struct Unemap_package *)NULL))
+        {
+          return_code = 1;
+        }
+        else
+        {
+          display_message(ERROR_MESSAGE,
+            "Cell_unemap_interface_check_analysis_window.  "
+            "Unable to re-create the analysis work area");
+          return_code = 0;
+        }
+      }
+    }
+    else
+    {
+      display_message(WARNING_MESSAGE,
+        "Cell_unemap_interface_check_analysis_window.  "
+        "Missing UnEMAP interface");
+      return_code = 0;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,
+      "Cell_unemap_interface_check_analysis_window.  "
+      "Invalid argument(s)");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* Cell_unemap_interface_update_check_analysis_window() */
 

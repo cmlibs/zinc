@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_calculate.c
 
-LAST MODIFIED : 04 April 2001
+LAST MODIFIED : 07 May 2001
 
 DESCRIPTION :
 Routines for model calculation
@@ -57,7 +57,7 @@ Wrapper used in a cell variabl iterator function.
 
 struct Cell_calculate
 /*******************************************************************************
-LAST MODIFIED : 03 April 2001
+LAST MODIFIED : 07 May 2001
 
 DESCRIPTION :
 A data object which stores information used in the calculation of models
@@ -79,6 +79,8 @@ A data object which stores information used in the calculation of models
   struct Cell_calculate_dialog *dialog;
   /* The data file name */
   char *data_file_name;
+  /* The main cell interface object */
+  struct Cell_interface *cell_interface;
 }; /* struct Cell_calculate */
 
 /*
@@ -727,20 +729,35 @@ written to.
                             }
                           }
                         } /* while (value && return_code) */
-                        /* Now create the UnEmap signals */
-                        return_code = Cell_unemap_interface_add_signals(
+                        /* Now create the UnEmap signals - making sure that a
+                           Unemap window exists */
+                        if (Cell_unemap_interface_check_analysis_window(
                           cell_calculate->cell_unemap_interface,
-                          number_of_signals,variable_unemap_interfaces,
-                          cell_calculate->tabT);
-                        if (return_code)
+                          Cell_interface_get_shell(
+                            cell_calculate->cell_interface),
+                          Cell_interface_get_user_interface(
+                            cell_calculate->cell_interface)))
                         {
-                          Cell_unemap_interface_update_analysis_work_area(
-                            cell_calculate->cell_unemap_interface);
+                          return_code = Cell_unemap_interface_add_signals(
+                            cell_calculate->cell_unemap_interface,
+                            number_of_signals,variable_unemap_interfaces,
+                            cell_calculate->tabT);
+                          if (return_code)
+                          {
+                            Cell_unemap_interface_update_analysis_work_area(
+                              cell_calculate->cell_unemap_interface);
+                          }
+                          else
+                          {
+                            Cell_unemap_interface_clear_analysis_work_area(
+                              cell_calculate->cell_unemap_interface);
+                          }
                         }
                         else
                         {
-                          Cell_unemap_interface_clear_analysis_work_area(
-                            cell_calculate->cell_unemap_interface);
+                          display_message(ERROR_MESSAGE,"calculate_model.  "
+                            "Missing analysis window");
+                          return_code = 0;
                         }
                         /* and if required write out the data file */
                         if (cell_calculate->data_file_name)
@@ -847,9 +864,10 @@ Global functions
 ----------------
 */
 struct Cell_calculate *CREATE(Cell_calculate)(
+  struct Cell_interface *cell_interface,
   struct Cell_unemap_interface *cell_unemap_interface)
 /*******************************************************************************
-LAST MODIFIED : 03 April 2001
+LAST MODIFIED : 07 May 2001
 
 DESCRIPTION :
 Creates a Cell_calculate object.
@@ -870,6 +888,7 @@ Creates a Cell_calculate object.
     cell_calculate->dT = 0.0;
     cell_calculate->tabT = 0.0;
     cell_calculate->cell_unemap_interface = cell_unemap_interface;
+    cell_calculate->cell_interface = cell_interface;
     cell_calculate->dialog = (struct Cell_calculate_dialog *)NULL;
     cell_calculate->data_file_name = (char *)NULL;
   }
@@ -1388,7 +1407,7 @@ Brings up the calculate dialog - creating it if required.
 
 int Cell_calculate_pop_down_dialog(struct Cell_calculate *cell_calculate)
 /*******************************************************************************
-LAST MODIFIED : 22 January 2001
+LAST MODIFIED : 05 May 2001
 
 DESCRIPTION :
 Pops down the calculation dialog.
@@ -1405,9 +1424,8 @@ Pops down the calculation dialog.
     }
     else
     {
-      display_message(ERROR_MESSAGE,"Cell_calculate_pop_down_dialog.  "
-        "Missing calculate dialog");
-      return_code = 0;
+      /* Not really an error... */
+      return_code = 1;
     }
   }
   else

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_graphic.c
 
-LAST MODIFIED : 04 May 2001
+LAST MODIFIED : 05 May 2001
 
 DESCRIPTION :
 Routines for using the Cell_graphic objects
@@ -261,7 +261,7 @@ int Cell_graphic_create_graphical_material(struct Cell_graphic *cell_graphic,
   char *specular_red,char *specular_green,char *specular_blue,
   char *alpha,char *shininess)
 /*******************************************************************************
-LAST MODIFIED : 04 May 2001
+LAST MODIFIED : 05 May 2001
 
 DESCRIPTION :
 Creates the material for the given <cell_graphic> and assigns it to the
@@ -275,13 +275,16 @@ graphic's graphical object.
   ENTER(Cell_graphic_create_graphical_material);
   if (cell_graphic && cmgui_interface)
   {
-    /* create the material */
-    if ((cell_graphic->graphical_material =
+    /* create the material - if it doesn't already exist */
+    cell_graphic->graphical_material =
+      FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(cell_graphic->name,
+        Cell_cmgui_interface_get_graphical_material_manager(cmgui_interface));
+    if (cell_graphic->graphical_material || ((cell_graphic->graphical_material =
       ACCESS(Graphical_material)(CREATE(Graphical_material)(
         cell_graphic->name))) &&
       ADD_OBJECT_TO_MANAGER(Graphical_material)(
         cell_graphic->graphical_material,
-        Cell_cmgui_interface_get_graphical_material_manager(cmgui_interface)))
+        Cell_cmgui_interface_get_graphical_material_manager(cmgui_interface))))
     {
       /* Diffuse component */
       sscanf(diffuse_red,"%f",&red);

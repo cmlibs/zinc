@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_interface.c
 
-LAST MODIFIED : 18 April 2001
+LAST MODIFIED : 07 May 2001
 
 DESCRIPTION :
 The Cell Interface.
@@ -486,6 +486,7 @@ Reads in a Cell model. If no <filename> is given, then prompts for a file name.
         if (cell_interface->calculate == (struct Cell_calculate *)NULL)
         {
           cell_interface->calculate = CREATE(Cell_calculate)(
+            cell_interface,
             cell_interface->unemap_interface);
         }
         if (cell_interface->calculate)
@@ -2063,4 +2064,55 @@ Returns the data file name.
   LEAVE;
   return(name);
 } /* Cell_interface_get_data_file_name() */
+
+Widget Cell_interface_get_shell(struct Cell_interface *cell_interface)
+/*******************************************************************************
+LAST MODIFIED : 07 May 2001
+
+DESCRIPTION :
+Returns the shell widget for the cell window.
+==============================================================================*/
+{
+  Widget shell;
+
+  ENTER(Cell_interface_get_shell);
+  if (cell_interface)
+  {
+    shell = Cell_window_get_shell(cell_interface->window);
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_interface_get_shell.  "
+      "Invalid argument(s)");
+    shell = (Widget)NULL;
+  }
+  LEAVE;
+  return(shell);
+} /* Cell_interface_get_shell() */
+
+struct User_interface *Cell_interface_get_user_interface(
+  struct Cell_interface *cell_interface)
+/*******************************************************************************
+LAST MODIFIED : 07 May 2001
+
+DESCRIPTION :
+Returns a pointer to the main user interface object.
+==============================================================================*/
+{
+  struct User_interface *user_interface;
+
+  ENTER(Cell_interface_get_user_interface);
+  if (cell_interface)
+  {
+    user_interface = cell_interface->user_interface;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_interface_get_user_interface.  "
+      "Invalid argument(s)");
+    user_interface = (struct User_interface *)NULL;
+  }
+  LEAVE;
+  return(user_interface);
+} /* Cell_interface_get_user_interface() */
 

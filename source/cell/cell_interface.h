@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_interface.h
 
-LAST MODIFIED : 04 April 2001
+LAST MODIFIED : 07 May 2001
 
 DESCRIPTION :
 The Cell Interface.
@@ -420,6 +420,21 @@ LAST MODIFIED : 04 April 2001
 
 DESCRIPTION :
 Returns the data file name.
+==============================================================================*/
+Widget Cell_interface_get_shell(struct Cell_interface *cell_interface);
+/*******************************************************************************
+LAST MODIFIED : 07 May 2001
+
+DESCRIPTION :
+Returns the shell widget for the cell window.
+==============================================================================*/
+struct User_interface *Cell_interface_get_user_interface(
+  struct Cell_interface *cell_interface);
+/*******************************************************************************
+LAST MODIFIED : 07 May 2001
+
+DESCRIPTION :
+Returns a pointer to the main user interface object.
 ==============================================================================*/
 
 #endif /* !defined (CELL_INTERFACE_H) */
