@@ -133,7 +133,6 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 ==============================================================================*/
 {
 	char *temp_string,value_string[VALUE_STRING_SIZE];
-	enum Computed_field_type field_type;
 	FE_value *values;
 	int i,j,num_children,number_of_components;
 	struct Computed_field *field;
@@ -338,7 +337,6 @@ data, and then changes the correct value in the array structure.
 ==============================================================================*/
 {
 	char *value_string;
-	enum Computed_field_type field_type;
 	struct Computed_field *field;
 	struct FE_field *fe_field;
 	struct FE_field_component fe_field_component;
