@@ -302,8 +302,8 @@ INTERPRETER_SWITCH =
 INTERPRETER_SRCS =
 INTERPRETER_LIB =
 #else /* !defined (PERL_INTERPRETER) */
-PERL_PATH=/usr/local/perl5/lib/5.00503
-INTERPRETER_INC = -I$(PERL_PATH)/irix-n32/CORE
+PERL_PATH=
+INTERPRETER_INC = 
 INTERPRETER_SWITCH = -DPERL_INTERPRETER
 INTERPRETER_SRCS =
 INTERPRETER_LIB = /usr/people/blackett/perl_interpreter/generated/mips3-n32-debug/libperlinterpreter.a
