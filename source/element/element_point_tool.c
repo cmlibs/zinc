@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_tool.c
 
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 Interactive tool for selecting element/grid points with mouse and other devices.
@@ -33,11 +33,10 @@ Module types
 
 struct Element_point_tool
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
-Object storing all the parameters for converting scene input messages into
-changes in node position and derivatives etc.
+Object storing all the parameters for interactively selecting element points.
 ==============================================================================*/
 {
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
@@ -270,14 +269,14 @@ and as a child of <parent>.
 			}
 			else
 			{
-				display_message(WARNING_MESSAGE,
+				display_message(ERROR_MESSAGE,
 					"Element_point_tool_make_interactive_tool_button.  "
 					"Could not fetch widget");
 			}
 		}
 		else
 		{
-			display_message(WARNING_MESSAGE,
+			display_message(ERROR_MESSAGE,
 				"Element_point_tool_make_interactive_tool_button.  "
 				"Could not open heirarchy");
 		}
