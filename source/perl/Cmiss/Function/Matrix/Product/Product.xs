@@ -46,7 +46,7 @@ new_xs(AV *prodands_array)
 				else
 				{
 					Perl_croak(aTHX_ "Cmiss::Function::Matrix::Product::new.  "
-						"Invalid first multiplier");
+						"Invalid multiplier");
 				}
 			}
 			else
