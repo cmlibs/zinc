@@ -4667,7 +4667,11 @@ static struct Trace_window *create_Trace_window(
 	Pixel identifying_colour,enum Signal_analysis_mode analysis_mode,
 	enum Event_detection_algorithm *detection,
 	enum Event_detection_objective *objective,enum Datum_type *datum_type,
-	enum Edit_order *edit_order,struct Device ***highlight,struct Rig **rig,
+	enum Edit_order *edit_order,struct Device ***highlight,
+#if defined (UNEMAP_USE_NODES)
+	struct FE_node **highlight_rig_node,
+#endif /* defined (UNEMAP_USE_NODES) */
+	struct Rig **rig,struct Signal_drawing_package **signal_drawing_package,
 	int *datum,int *potential_time,int *event_number,int *number_of_events,
 	int *threshold,int *minimum_separation,float *level,int *average_width,
 	int *start_search_interval,int **search_interval_divisions,
@@ -5096,6 +5100,10 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->event_detection.datum_type=datum_type;
 				trace->event_detection.edit_order=edit_order;
 				trace->highlight=highlight;
+#if defined (UNEMAP_USE_NODES)
+				trace->highlight_rig_node=highlight_rig_node;
+#endif
+				trace->signal_drawing_package=signal_drawing_package;
 				trace->rig=rig;
 				trace->event_detection.datum=datum;
 				trace->event_detection.potential_time=potential_time;
@@ -7231,7 +7239,11 @@ int open_trace_window(struct Trace_window **trace_address,Widget parent,
 	Pixel identifying_colour,enum Signal_analysis_mode analysis_mode,
 	enum Event_detection_algorithm *detection,
 	enum Event_detection_objective *objective,enum Datum_type *datum_type,
-	enum Edit_order *edit_order,struct Device ***highlight,struct Rig **rig,
+	enum Edit_order *edit_order,struct Device ***highlight,
+#if defined (UNEMAP_USE_NODES)
+	struct FE_node **highlight_rig_node,
+#endif /* defined (UNEMAP_USE_NODES) */
+	struct Rig **rig,struct Signal_drawing_package **signal_drawing_package,
 	int *datum,int *potential_time,int *event_number,int *number_of_events,
 	int *threshold,int *minimum_separation,float *level,int *average_width,
 	int *start_search_interval,int **search_interval_divisions,
@@ -7260,7 +7272,11 @@ If <*trace_address> is NULL, a trace window with the specified <parent> and
 			{
 				if (trace=create_Trace_window(trace_address,(Widget)NULL,
 					trace_window_shell,identifying_colour,analysis_mode,detection,
-					objective,datum_type,edit_order,highlight,rig,datum,potential_time,
+					objective,datum_type,edit_order,highlight,
+#if defined (UNEMAP_USE_NODES)
+					highlight_rig_node,
+#endif /* defined (UNEMAP_USE_NODES) */
+					rig,signal_drawing_package,datum,potential_time,
 					event_number,number_of_events,threshold,minimum_separation,level,
 					average_width,start_search_interval,search_interval_divisions,
 					end_search_interval,screen_height,signal_drawing_information,
@@ -7449,19 +7465,36 @@ The callback for redrawing part of the drawing area in trace area 1.
 							{
 								/* draw the active signal */
 								if ((trace->highlight)&&(*(trace->highlight))&&
+#if defined (UNEMAP_USE_NODES)
+									(*(trace->highlight_rig_node))&&
+									(*(trace->signal_drawing_package))&&
+#endif
 									(device= **(trace->highlight))&&
 									(buffer=get_Device_signal_buffer(device)))
 								{
 									start_analysis_interval=buffer->start;
 									end_analysis_interval=buffer->end;
+#if defined (UNEMAP_USE_NODES)									
 									draw_signal(
-										(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,device,
+										*(trace->highlight_rig_node),*(trace->signal_drawing_package),
+										(struct Device *)NULL,
+										ENLARGE_AREA_DETAIL,1,0,&start_analysis_interval,
+										&end_analysis_interval,0,0,trace_area_1->drawing->width,
+										trace_area_1->drawing->height,
+										trace_area_1->drawing->pixel_map,&axes_left,&axes_top,
+										&axes_width,&axes_height,signal_drawing_information,
+										user_interface);									
+#else
+									draw_signal(
+										(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
+										device,
 										ENLARGE_AREA_DETAIL,1,0,&start_analysis_interval,
 										&end_analysis_interval,0,0,trace_area_1->drawing->width,
 										trace_area_1->drawing->height,
 										trace_area_1->drawing->pixel_map,&axes_left,&axes_top,
 										&axes_width,&axes_height,signal_drawing_information,
 										user_interface);
+#endif /* defined (UNEMAP_USE_NODES)*/
 									trace_area_1->axes_left=axes_left;
 									trace_area_1->axes_top=axes_top;
 									trace_area_1->axes_width=axes_width;
@@ -7593,19 +7626,36 @@ The callback for redrawing part of the drawing area in trace area 1.
 							{
 								if ((trace->highlight)&&(*(trace->highlight))&&
 									(device= **(trace->highlight))&&
+#if defined (UNEMAP_USE_NODES)
+									(*(trace->highlight_rig_node))&&
+									(*(trace->signal_drawing_package))&&
+#endif
 									(buffer=get_Device_signal_buffer(device)))
 								{
 									start_analysis_interval=buffer->start;
 									end_analysis_interval=buffer->end;
 									/* draw the active signal */
+#if defined (UNEMAP_USE_NODES)									
 									draw_signal(
-										(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,device,
+										*(trace->highlight_rig_node),*(trace->signal_drawing_package),
+										(struct Device *)NULL,EDIT_AREA_DETAIL,1,0,
+										&start_analysis_interval,
+										&end_analysis_interval,0,0,trace_area_1->drawing->width,
+										trace_area_1->drawing->height,
+										trace_area_1->drawing->pixel_map,&axes_left,&axes_top,
+										&axes_width,&axes_height,signal_drawing_information,
+										user_interface);									
+#else
+									draw_signal(
+										(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
+										device,
 										EDIT_AREA_DETAIL,1,0,&start_analysis_interval,
 										&end_analysis_interval,0,0,trace_area_1->drawing->width,
 										trace_area_1->drawing->height,
 										trace_area_1->drawing->pixel_map,&axes_left,&axes_top,
 										&axes_width,&axes_height,signal_drawing_information,
 										user_interface);
+#endif /* defined (UNEMAP_USE_NODES) */
 									trace_area_1->axes_left=axes_left;
 									trace_area_1->axes_top=axes_top;
 									trace_area_1->axes_width=axes_width;
@@ -7814,7 +7864,12 @@ The callback for redrawing part of the drawing area in trace area 3.
 							case EVENT_DETECTION:
 							{
 								if ((trace->highlight)&&(*(trace->highlight))&&
-									(device= **(trace->highlight)))
+									(device= **(trace->highlight))
+#if defined (UNEMAP_USE_NODES)
+									&&(*(trace->highlight_rig_node))&&
+									(*(trace->signal_drawing_package))
+#endif
+										)
 								{
 									/* draw the active signal */
 									first_data=trace_area_3->edit.first_data;
@@ -7838,6 +7893,16 @@ The callback for redrawing part of the drawing area in trace area 3.
 									}
 									else
 									{
+#if defined (UNEMAP_USE_NODES)
+										draw_signal(*(trace->highlight_rig_node),
+											*(trace->signal_drawing_package),
+											(struct Device *)NULL,EDIT_AREA_DETAIL,1,0,
+											&first_data,&last_data,0,0,trace_area_3->drawing->width,
+											trace_area_3->drawing->height,
+											trace_area_3->drawing->pixel_map,&axes_left,&axes_top,
+											&axes_width,&axes_height,signal_drawing_information,
+											user_interface);
+#else
 										draw_signal((struct FE_node *)NULL,
 											(struct Signal_drawing_package *)NULL,device,EDIT_AREA_DETAIL,1,0,
 											&first_data,&last_data,0,0,trace_area_3->drawing->width,
@@ -7845,6 +7910,7 @@ The callback for redrawing part of the drawing area in trace area 3.
 											trace_area_3->drawing->pixel_map,&axes_left,&axes_top,
 											&axes_width,&axes_height,signal_drawing_information,
 											user_interface);
+#endif /*defined (UNEMAP_USE_NODES) */
 									}
 									trace_area_3->axes_left=axes_left;
 									trace_area_3->axes_top=axes_top;
@@ -7887,49 +7953,6 @@ The callback for redrawing part of the drawing area in trace area 3.
 										if (True==XmToggleButtonGadgetGetState((trace->area_3).
 											beat_averaging.overlay_beats_toggle))
 										{
-#if defined (OLD_CODE)
-											if (*((trace->event_detection).search_interval_divisions))
-											{
-												first_data_array[0]=
-													*((trace->event_detection).start_search_interval);
-												for (i=1;i<number_of_events;i++)
-												{
-													first_data_array[i]=(*((trace->event_detection).
-														search_interval_divisions))[i-1];
-													last_data_array[i-1]=first_data_array[i];
-												}
-												last_data_array[number_of_events-1]=
-													*((trace->event_detection).end_search_interval);
-											}
-											else
-											{
-												edit_start=
-													*(trace->event_detection.start_search_interval);
-												edit_diff= *(trace->event_detection.
-													end_search_interval)-edit_start;
-												first_data_array[0]=edit_start;
-												for (i=1;i<number_of_events;i++)
-												{
-													first_data_array[i]=edit_start+
-														(int)((float)(edit_diff*i)/
-														(float)number_of_events+0.5);
-													last_data_array[i-1]=first_data_array[i];
-												}
-												last_data_array[number_of_events-1]=
-													*((trace->event_detection).end_search_interval);
-											}
-											number_of_data_intervals=number_of_events;
-											current_data_interval=
-												(*((trace->event_detection).event_number))-1;
-											if ((trace->valid_processing)&&
-												(True==XmToggleButtonGadgetGetState((trace->area_3).
-												beat_averaging.beat_averaging_toggle)))
-											{
-												number_of_data_intervals++;
-												first_data_array[number_of_events]=buffer->start;
-												last_data_array[number_of_events]=buffer->end;
-											}
-#endif /* defined (OLD_CODE) */
 											if ((trace->highlight)&&(*(trace->highlight))&&
 												(**(trace->highlight))&&
 												((**(trace->highlight))->signal))
@@ -8057,20 +8080,6 @@ The callback for redrawing part of the drawing area in trace area 3.
 										trace_area_3->axes_top=axes_top;
 										trace_area_3->axes_width=axes_width;
 										trace_area_3->axes_height=axes_height;
-#if defined (OLD_CODE)
-										if (True!=XmToggleButtonGadgetGetState((trace->area_3).
-											beat_averaging.beat_averaging_toggle))
-										{
-											draw_device_markers(device,trace_area_3->edit.first_data,
-												trace_area_3->edit.last_data,
-												*(trace->event_detection.datum),1,
-												*(trace->event_detection.potential_time),1,
-												EDIT_AREA_DETAIL,*(trace->event_detection.event_number),
-												axes_left,axes_top,axes_width,axes_height,(Window)NULL,
-												trace_area_3->drawing->pixel_map,
-												signal_drawing_information,user_interface);
-										}
-#endif /* defined (OLD_CODE) */
 									}
 									DEALLOCATE(first_data_array);
 									DEALLOCATE(last_data_array);

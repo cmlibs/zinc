@@ -2714,143 +2714,6 @@ Sets up the analysis work area for analysing a set of signals.
 				fclose(input_file);
 			}
 		}
-		if (return_code)
-		{
-			/*highlight the first device*/
-			if (analysis->highlight=analysis->rig->devices)
-			{
-				(*(analysis->highlight))->highlight=1;
-			}
-			/* assign the signal file name */
-			if (ALLOCATE(analysis->rig->signal_file_name,char,strlen(file_name)+1))
-			{
-				strcpy(analysis->rig->signal_file_name,file_name);
-				/* unghost the write interval button */
-				XtSetSensitive(analysis->window->file_menu.save_interval_button,True);
-				/* unghost the overlay signals button */
-				XtSetSensitive(analysis->window->file_menu.overlay_signals_button,True);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-"analysis_read_signal_file.  Could not allocate memory for signal file name");
-			}
-			/* set the analysis window title */
-			if (ALLOCATE(temp_string,char,strlen(file_name)+12))
-			{
-				strcpy(temp_string,"Analysing: ");
-				strcat(temp_string,file_name);
-				new_dialog_title=XmStringCreateSimple(temp_string);
-				DEALLOCATE(temp_string);
-			}
-			else
-			{
-				new_dialog_title=XmStringCreateSimple("Analysis");
-				display_message(ERROR_MESSAGE,
-			"analysis_read_signal_file.  Could not allocate memory for window title");
-			}
-			XtVaSetValues(analysis->window->window,
-				XmNdialogTitle,new_dialog_title,
-				NULL);
-			if (analysis->mapping_window)
-			{
-				/* unghost the mapping window file button */
-				XtSetSensitive(analysis->mapping_window->file_button,True);
-			}
-			/* unghost the write interval buttons */
-			XtSetSensitive(analysis->window->file_menu.save_interval_button,True);
-			XtSetSensitive(analysis->window->file_menu.save_interval_as_button,True);
-			/* unghost the overlay signals button */
-			XtSetSensitive(analysis->window->file_menu.overlay_signals_button,True);
-			/* ghost the reset button */
-			XtSetSensitive(analysis->window->interval.reset_button,False);
-			/* unghost the set baseline button */
-			XtSetSensitive(analysis->window->interval.baseline_button,True);
-			/* unghost the set range button */
-			XtSetSensitive(analysis->window->interval.range_button,True);	
-			/* unghost the signal_range */
-			XtSetSensitive(analysis->window->interval.signal_range,True);
-			/* unghost the display integral map button */
-			XtSetSensitive(analysis->window->map_menu.integral_button,True);
-			/* unghost the display potential map button */
-			XtSetSensitive(analysis->window->map_menu.potential_button,True);
-			/* unghost the print selected signals button */
-			XtSetSensitive(analysis->window->print_menu.selected_button,True);
-			/* unghost the print all signals button */
-			XtSetSensitive(analysis->window->print_menu.all_button,True);
-			trace_change_rig(analysis->trace);
-			/* open the trace window */
-			if (!open_trace_window(&(analysis->trace),analysis->window_shell,
-				analysis->identifying_colour,EVENT_DETECTION,&(analysis->detection),
-				&(analysis->objective),&(analysis->datum_type),&(analysis->edit_order),
-				&(analysis->highlight),&(analysis->rig),&(analysis->datum),
-				&(analysis->potential_time),&(analysis->event_number),
-				&(analysis->number_of_events),&(analysis->threshold),
-				&(analysis->minimum_separation),&(analysis->level),
-				&(analysis->average_width),&(analysis->start_search_interval),
-				&(analysis->search_interval_divisions),&(analysis->end_search_interval),
-				analysis->user_interface->screen_width,
-				analysis->user_interface->screen_height,
-				analysis->signal_drawing_information,analysis->user_interface))
-			{
-				display_message(ERROR_MESSAGE,
-					"analysis_read_signal_file.  Could not open trace window");
-			}
-		}
-		else
-		{
-			if (analysis->rig)
-			{
-				if ((*(analysis->rig->devices))&&
-					(buffer=get_Device_signal_buffer(*(analysis->rig->devices))))
-				{
-					destroy_Signal_buffer(&buffer);
-				}
-				destroy_Rig(&(analysis->rig));
-			}
-			if (analysis->mapping_window)
-			{
-				/* ghost the mapping window file button */
-				XtSetSensitive(analysis->mapping_window->file_button,False);
-			}
-			/* set the analysis window title */
-			new_dialog_title=XmStringCreateSimple("Analysis");
-			XtVaSetValues(analysis->window->window,
-				XmNdialogTitle,new_dialog_title,
-				NULL);
-			/* ghost the write interval buttons */
-			XtSetSensitive(analysis->window->file_menu.save_interval_button,False);
-			XtSetSensitive(analysis->window->file_menu.save_interval_as_button,False);
-			/* ghost the overlay signals button */
-			XtSetSensitive(analysis->window->file_menu.overlay_signals_button,False);
-			/* ghost the write event times button */
-			XtSetSensitive(analysis->window->file_menu.save_times_button,False);
-			/* ghost the reset button */
-			XtSetSensitive(analysis->window->interval.reset_button,False);
-			/* ghost the set baseline button */
-			XtSetSensitive(analysis->window->interval.baseline_button,False);
-			/* ghost the set range button */
-			XtSetSensitive(analysis->window->interval.range_button,False);
-			/* ghost the signal_range */
-			XtSetSensitive(analysis->window->interval.signal_range,False);
-			/* ghost the display potential map button */
-			XtSetSensitive(analysis->window->map_menu.potential_button,False);
-			/* ghost the display single activation map button */
-			XtSetSensitive(analysis->window->map_menu.single_activation_button,False);
-			/* ghost the display multiple activation map button */
-			XtSetSensitive(analysis->window->map_menu.multiple_activation_button,
-				False);
-			/* ghost the print selected signals button */
-			XtSetSensitive(analysis->window->print_menu.selected_button,False);
-			/* ghost the print all signals button */
-			XtSetSensitive(analysis->window->print_menu.all_button,False);
-			/* close the trace window */
-			if (analysis->trace)
-			{
-				XtPopdown(analysis->trace->shell);
-				analysis->trace->open=0;
-			}
-		}
 #if defined (UNEMAP_USE_NODES)
 		/* read the signal file into nodes */
 		/*???DB.  Would be better to be another callback from the same button ? */
@@ -2925,6 +2788,147 @@ Sets up the analysis work area for analysing a set of signals.
 				"analysis_read_signal_file. file_read_signal_FE_node_group failed ");
 		}
 #endif /* defined (UNEMAP_USE_NODES) */	
+		if (return_code)
+		{
+			/*highlight the first device*/
+			if (analysis->highlight=analysis->rig->devices)
+			{
+				(*(analysis->highlight))->highlight=1;
+			}
+			/* assign the signal file name */
+			if (ALLOCATE(analysis->rig->signal_file_name,char,strlen(file_name)+1))
+			{
+				strcpy(analysis->rig->signal_file_name,file_name);
+				/* unghost the write interval button */
+				XtSetSensitive(analysis->window->file_menu.save_interval_button,True);
+				/* unghost the overlay signals button */
+				XtSetSensitive(analysis->window->file_menu.overlay_signals_button,True);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+"analysis_read_signal_file.  Could not allocate memory for signal file name");
+			}
+			/* set the analysis window title */
+			if (ALLOCATE(temp_string,char,strlen(file_name)+12))
+			{
+				strcpy(temp_string,"Analysing: ");
+				strcat(temp_string,file_name);
+				new_dialog_title=XmStringCreateSimple(temp_string);
+				DEALLOCATE(temp_string);
+			}
+			else
+			{
+				new_dialog_title=XmStringCreateSimple("Analysis");
+				display_message(ERROR_MESSAGE,
+			"analysis_read_signal_file.  Could not allocate memory for window title");
+			}
+			XtVaSetValues(analysis->window->window,
+				XmNdialogTitle,new_dialog_title,
+				NULL);
+			if (analysis->mapping_window)
+			{
+				/* unghost the mapping window file button */
+				XtSetSensitive(analysis->mapping_window->file_button,True);
+			}
+			/* unghost the write interval buttons */
+			XtSetSensitive(analysis->window->file_menu.save_interval_button,True);
+			XtSetSensitive(analysis->window->file_menu.save_interval_as_button,True);
+			/* unghost the overlay signals button */
+			XtSetSensitive(analysis->window->file_menu.overlay_signals_button,True);
+			/* ghost the reset button */
+			XtSetSensitive(analysis->window->interval.reset_button,False);
+			/* unghost the set baseline button */
+			XtSetSensitive(analysis->window->interval.baseline_button,True);
+			/* unghost the set range button */
+			XtSetSensitive(analysis->window->interval.range_button,True);	
+			/* unghost the signal_range */
+			XtSetSensitive(analysis->window->interval.signal_range,True);
+			/* unghost the display integral map button */
+			XtSetSensitive(analysis->window->map_menu.integral_button,True);
+			/* unghost the display potential map button */
+			XtSetSensitive(analysis->window->map_menu.potential_button,True);
+			/* unghost the print selected signals button */
+			XtSetSensitive(analysis->window->print_menu.selected_button,True);
+			/* unghost the print all signals button */
+			XtSetSensitive(analysis->window->print_menu.all_button,True);
+			trace_change_rig(analysis->trace);
+			/* open the trace window */
+			if (!open_trace_window(&(analysis->trace),analysis->window_shell,
+				analysis->identifying_colour,EVENT_DETECTION,&(analysis->detection),
+				&(analysis->objective),&(analysis->datum_type),&(analysis->edit_order),
+				&(analysis->highlight),
+#if defined (UNEMAP_USE_NODES)
+				&(analysis->highlight_rig_node),
+#endif /* defined (UNEMAP_USE_NODES) */
+				&(analysis->rig),&(analysis->signal_drawing_package),&(analysis->datum),
+				&(analysis->potential_time),&(analysis->event_number),
+				&(analysis->number_of_events),&(analysis->threshold),
+				&(analysis->minimum_separation),&(analysis->level),
+				&(analysis->average_width),&(analysis->start_search_interval),
+				&(analysis->search_interval_divisions),&(analysis->end_search_interval),
+				analysis->user_interface->screen_width,
+				analysis->user_interface->screen_height,
+				analysis->signal_drawing_information,analysis->user_interface))
+			{
+				display_message(ERROR_MESSAGE,
+					"analysis_read_signal_file.  Could not open trace window");
+			}
+		}
+		else
+		{
+			if (analysis->rig)
+			{
+				if ((*(analysis->rig->devices))&&
+					(buffer=get_Device_signal_buffer(*(analysis->rig->devices))))
+				{
+					destroy_Signal_buffer(&buffer);
+				}
+				destroy_Rig(&(analysis->rig));
+			}
+			if (analysis->mapping_window)
+			{
+				/* ghost the mapping window file button */
+				XtSetSensitive(analysis->mapping_window->file_button,False);
+			}
+			/* set the analysis window title */
+			new_dialog_title=XmStringCreateSimple("Analysis");
+			XtVaSetValues(analysis->window->window,
+				XmNdialogTitle,new_dialog_title,
+				NULL);
+			/* ghost the write interval buttons */
+			XtSetSensitive(analysis->window->file_menu.save_interval_button,False);
+			XtSetSensitive(analysis->window->file_menu.save_interval_as_button,False);
+			/* ghost the overlay signals button */
+			XtSetSensitive(analysis->window->file_menu.overlay_signals_button,False);
+			/* ghost the write event times button */
+			XtSetSensitive(analysis->window->file_menu.save_times_button,False);
+			/* ghost the reset button */
+			XtSetSensitive(analysis->window->interval.reset_button,False);
+			/* ghost the set baseline button */
+			XtSetSensitive(analysis->window->interval.baseline_button,False);
+			/* ghost the set range button */
+			XtSetSensitive(analysis->window->interval.range_button,False);
+			/* ghost the signal_range */
+			XtSetSensitive(analysis->window->interval.signal_range,False);
+			/* ghost the display potential map button */
+			XtSetSensitive(analysis->window->map_menu.potential_button,False);
+			/* ghost the display single activation map button */
+			XtSetSensitive(analysis->window->map_menu.single_activation_button,False);
+			/* ghost the display multiple activation map button */
+			XtSetSensitive(analysis->window->map_menu.multiple_activation_button,
+				False);
+			/* ghost the print selected signals button */
+			XtSetSensitive(analysis->window->print_menu.selected_button,False);
+			/* ghost the print all signals button */
+			XtSetSensitive(analysis->window->print_menu.all_button,False);
+			/* close the trace window */
+			if (analysis->trace)
+			{
+				XtPopdown(analysis->trace->shell);
+				analysis->trace->open=0;
+			}
+		}
 		update_analysis_window_menu(analysis->window);
 		update_mapping_window_menu(analysis->mapping_window);
 		/* update the drawing areas */
@@ -3797,7 +3801,11 @@ signals.
 							analysis->identifying_colour,EVENT_DETECTION,
 							&(analysis->detection),&(analysis->objective),
 							&(analysis->datum_type),&(analysis->edit_order),
-							&(analysis->highlight),&(analysis->rig),&(analysis->datum),
+							&(analysis->highlight),
+#if defined (UNEMAP_USE_NODES)
+							&(analysis->highlight_rig_node),
+#endif /* defined (UNEMAP_USE_NODES) */
+							&(analysis->rig),&(analysis->signal_drawing_package),&(analysis->datum),
 							&(analysis->potential_time),&(analysis->event_number),
 							&(analysis->number_of_events),&(analysis->threshold),
 							&(analysis->minimum_separation),&(analysis->level),
@@ -4047,7 +4055,11 @@ analysing the signals.
 			if (!open_trace_window(&(analysis->trace),analysis->window_shell,
 				analysis->identifying_colour,EVENT_DETECTION,&(analysis->detection),
 				&(analysis->objective),&(analysis->datum_type),&(analysis->edit_order),
-				&(analysis->highlight),&(analysis->rig),&(analysis->datum),
+				&(analysis->highlight),
+#if defined (UNEMAP_USE_NODES)
+				&(analysis->highlight_rig_node),
+#endif /* defined (UNEMAP_USE_NODES) */
+				&(analysis->rig),&(analysis->signal_drawing_package),&(analysis->datum),
 				&(analysis->potential_time),&(analysis->event_number),
 				&(analysis->number_of_events),&(analysis->threshold),
 				&(analysis->minimum_separation),&(analysis->level),
@@ -4254,7 +4266,11 @@ for analysing the signals.
 			if (!open_trace_window(&(analysis->trace),analysis->window_shell,
 				analysis->identifying_colour,EVENT_DETECTION,&(analysis->detection),
 				&(analysis->objective),&(analysis->datum_type),&(analysis->edit_order),
-				&(analysis->highlight),&(analysis->rig),&(analysis->datum),
+				&(analysis->highlight),
+#if defined (UNEMAP_USE_NODES)
+				&(analysis->highlight_rig_node),
+#endif /* defined (UNEMAP_USE_NODES) */
+				&(analysis->rig),&(analysis->signal_drawing_package),&(analysis->datum),
 				&(analysis->potential_time),&(analysis->event_number),
 				&(analysis->number_of_events),&(analysis->threshold),
 				&(analysis->minimum_separation),&(analysis->level),
@@ -4406,7 +4422,11 @@ for analysing the signals.
 			if (!open_trace_window(&(analysis->trace),analysis->window_shell,
 				analysis->identifying_colour,EVENT_DETECTION,&(analysis->detection),
 				&(analysis->objective),&(analysis->datum_type),&(analysis->edit_order),
-				&(analysis->highlight),&(analysis->rig),&(analysis->datum),
+				&(analysis->highlight),
+#if defined (UNEMAP_USE_NODES)
+				&(analysis->highlight_rig_node),
+#endif /* defined (UNEMAP_USE_NODES) */
+				&(analysis->rig),&(analysis->signal_drawing_package),&(analysis->datum),
 				&(analysis->potential_time),&(analysis->event_number),
 				&(analysis->number_of_events),&(analysis->threshold),
 				&(analysis->minimum_separation),&(analysis->level),
@@ -4618,7 +4638,11 @@ for analysing the signals.
 			if (!open_trace_window(&(analysis->trace),analysis->window_shell,
 				analysis->identifying_colour,EVENT_DETECTION,&(analysis->detection),
 				&(analysis->objective),&(analysis->datum_type),&(analysis->edit_order),
-				&(analysis->highlight),&(analysis->rig),&(analysis->datum),
+				&(analysis->highlight),
+#if defined (UNEMAP_USE_NODES)
+				&(analysis->highlight_rig_node),
+#endif /* defined (UNEMAP_USE_NODES) */
+				&(analysis->rig),&(analysis->signal_drawing_package),&(analysis->datum),
 				&(analysis->potential_time),&(analysis->event_number),
 				&(analysis->number_of_events),&(analysis->threshold),
 				&(analysis->minimum_separation),&(analysis->level),
@@ -4803,7 +4827,12 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 									analysis->identifying_colour,EVENT_DETECTION,
 									&(analysis->detection),&(analysis->objective),
 									&(analysis->datum_type),&(analysis->edit_order),
-									&(analysis->highlight),&(analysis->rig),&(analysis->datum),
+									&(analysis->highlight),
+#if defined (UNEMAP_USE_NODES)
+				&(analysis->highlight_rig_node),
+#endif /* defined (UNEMAP_USE_NODES) */
+									&(analysis->rig),&(analysis->signal_drawing_package),
+									&(analysis->datum),
 									&(analysis->potential_time),&(analysis->event_number),
 									&(analysis->number_of_events),&(analysis->threshold),
 									&(analysis->minimum_separation),&(analysis->level),
@@ -6469,8 +6498,10 @@ drawing area.
 #if defined (UNEMAP_USE_NODES)															
 																time_index=buffer->start;
 																/*get the start time,update the display_start_time_field */
-																get_FE_field_time_FE_value(signal_field,time_index,&start_time);
-																set_FE_field_FE_value_value(display_start_time_field,0,start_time);
+																get_FE_field_time_FE_value(signal_field,time_index,
+																	&start_time);
+																set_FE_field_FE_value_value(display_start_time_field,0,
+																	start_time);
 #endif /* defined (UNEMAP_USE_NODES)*/	
 															}
 															if (right_box!=interval->right_box)
@@ -8129,7 +8160,7 @@ should be done as a callback from the trace_window.
 	Cursor cursor;
 	Display *display;
 	enum Moving_status moving;
-	float initial_value,frequency,signal_max,signal_min,x_scale,y_scale;
+	float frequency,initial_value,new_max,new_min,signal_max,signal_min,x_scale,y_scale;
 	int ascent,axes_bottom,axes_left,axes_right,axes_top,axes_width,datum,descent,
 		device_number,direction,drawing_height,drawing_width,end_analysis_interval,
 		event_number,event_time,first_data,i,initial_marker,keyboard_mode,
@@ -8162,11 +8193,25 @@ should be done as a callback from the trace_window.
 	XEvent xevent;
 	XFontStruct *font;
 	XmDrawingAreaCallbackStruct *callback;
-#if defined(OLD_CODE)
-	float datum_change;
-#endif
+#if defined (UNEMAP_USE_NODES)	
+	struct FE_field *signal_maximum_field,*signal_minimum_field;
+	struct FE_field_component component;	
+	struct FE_node_order_info *rig_node_order_info;
+	struct Signal_drawing_package	*signal_drawing_package;
+#if defined (NEW_CODE)
+	struct FE_node 	*highlight_device_node;
+	struct FE_node *device_node,*trace_area_3_device_node;
+#endif /* defined (NEW_CODE) */
+#endif /* defined (UNEMAP_USE_NODES)*/
 
 	ENTER(select_trace_3_drawing_area);
+#if defined (UNEMAP_USE_NODES)	
+	rig_node_order_info=(struct FE_node_order_info *)NULL;
+	signal_minimum_field=(struct FE_field *)NULL;
+	signal_minimum_field=(struct FE_field *)NULL;
+	rig_node_order_info=(struct FE_node_order_info *)NULL;
+	signal_drawing_package=(struct Signal_drawing_package	*)NULL;
+#endif /* defined (UNEMAP_USE_NODES)*/
 	USE_PARAMETER(widget);
 	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
 		(analysis->trace)&&(user_interface=analysis->user_interface)&&
@@ -8180,6 +8225,28 @@ should be done as a callback from the trace_window.
 				{
 					case EVENT_DETECTION: case BEAT_AVERAGING:
 					{
+#if defined (UNEMAP_USE_NODES)
+#if defined (NEW_CODE)
+						if (analysis->highlight_rig_node)
+						{
+							highlight_device_node= analysis->highlight_rig_node;
+						}
+						else
+						{
+							highlight_device_node=(struct FE_node *)NULL;
+						}
+						if ((BEAT_AVERAGING==analysis->trace->analysis_mode)&&
+							(analysis->trace->valid_processing))
+						{
+							trace_area_3_device_node=(struct FE_node *)NULL;
+							/*??JW need nodal analysis->trace->processed_device;*/
+						}
+						else
+						{
+							trace_area_3_device_node=highlight_device_node;
+						}
+#endif /*  defined (NEW_CODE)*/
+#endif /* defined (UNEMAP_USE_NODES) */
 						if (analysis->highlight)
 						{
 							highlight_device= *(analysis->highlight);
@@ -8672,7 +8739,7 @@ should be done as a callback from the trace_window.
 															default:
 															{
 																display_message(ERROR_MESSAGE,
-													"select_trace_1_drawing_area.  Invalid event status");
+													"select_trace_3_drawing_area.  Invalid event status");
 																event_graphics_context=
 																	(signal_drawing_information->
 																	graphics_context).undecided_colour;
@@ -8704,11 +8771,6 @@ should be done as a callback from the trace_window.
 														if ((signal_max<(float)0)||(signal_min>(float)0))
 														{
 															x_axis_y_marker=(axes_bottom+axes_top)/2;
-#if defined (OLD_CODE)
-/*???DB.  Changed when adding floats for signal values */
-															initial_value=SCALE_Y((float)x_axis_y_marker,
-																(float)axes_top,signal_max,1/y_scale);
-#endif
 															initial_value=signal_max+(float)(axes_top-
 																x_axis_y_marker)/y_scale;
 														}
@@ -8766,7 +8828,7 @@ should be done as a callback from the trace_window.
 									owner_events=True;
 									pointer_mode=GrabModeAsync;
 									keyboard_mode=GrabModeAsync;
-									confine_to=None;
+									confine_to=None;									
 									if (GrabSuccess==XtGrabPointer(trace_area_3->drawing_area,
 										owner_events,
 										ButtonMotionMask|ButtonPressMask|ButtonReleaseMask,
@@ -9028,7 +9090,7 @@ should be done as a callback from the trace_window.
 													if (xevent.xbutton.button==working_button)
 													{
 														display_message(ERROR_MESSAGE,
-											"select_trace_1_drawing_area.  Unexpected button press");
+											"select_trace_3_drawing_area.  Unexpected button press");
 														moving=MOVING_NONE;
 													}
 												} break;
@@ -9197,11 +9259,19 @@ should be done as a callback from the trace_window.
 																		case MOVING_EVENT_MARKER:
 																		case SCALING_Y_AXIS_POSITIVE:
 																		case SCALING_Y_AXIS_NEGATIVE:
-																		{
+																		{	
 																			device_number=0;
 																			device=analysis->rig->devices;
 																			current_region=get_Rig_current_region(
 																				analysis->rig);
+#if defined (UNEMAP_USE_NODES)
+																			rig_node_order_info=
+																				get_Analysis_window_rig_node_order_info(
+																					analysis->window);
+																			device_number=
+																				get_FE_node_order_info_current_node_number(
+																						rig_node_order_info);																			
+#else																		
 																			for (i=(analysis->highlight)-device;i>0;
 																				i--)
 																			{
@@ -9212,6 +9282,7 @@ should be done as a callback from the trace_window.
 																				}
 																				device++;
 																			}
+#endif /* defined (UNEMAP_USE_NODES) */
 																			switch (signals->layout)
 																			{
 																				case SEPARATE_LAYOUT:
@@ -9267,10 +9338,6 @@ should be done as a callback from the trace_window.
 																	{
 																		datum=SCALE_X(marker,axes_left,first_data,
 																			1/x_scale);
-#if defined(OLD_CODE)
-																		datum_change=(float)(times[datum]-
-																			times[analysis->datum])*1000/frequency;
-#endif
 																	} break;
 																	case MOVING_POTENTIAL_TIME_MARKER:
 																	{
@@ -9279,19 +9346,23 @@ should be done as a callback from the trace_window.
 																	} break;
 																	case SCALING_Y_AXIS_POSITIVE:
 																	{
-#if defined (OLD_CODE)
-/*???DB.  Changed when adding floats for signal values */
-																		highlight_device->signal_maximum=
-																			SCALE_Y(axes_top,x_axis_y_marker,
-																			initial_value,SCALE_FACTOR(
-																			initial_marker-x_axis_y_marker,
-																			marker-x_axis_y_marker)/y_scale);
-#endif
-																		highlight_device->signal_maximum=
-																			initial_value+
+																		new_max=initial_value+
 																			(float)(x_axis_y_marker-axes_top)*
 																			(float)(marker-x_axis_y_marker)/(y_scale*
-																			(float)(initial_marker-x_axis_y_marker));
+																				(float)(initial_marker-x_axis_y_marker));
+#if defined (UNEMAP_USE_NODES)																		
+																		signal_drawing_package=
+																			analysis->signal_drawing_package;
+																		signal_maximum_field=
+																			get_Signal_drawing_package_signal_maximum_field(
+																			signal_drawing_package);
+																		/* set the new signal_maximum*/
+																		component.number=0;
+																		component.field = signal_maximum_field;
+																		set_FE_nodal_FE_value_value(analysis->highlight_rig_node,
+																			&component,0,FE_NODAL_VALUE,new_max);	
+#endif /*	defined (UNEMAP_USE_NODES) */
+																		highlight_device->signal_maximum=new_max;
 																		if (highlight_device!=trace_area_3_device)
 																		{
 																			trace_area_3_device->signal_maximum=
@@ -9300,19 +9371,23 @@ should be done as a callback from the trace_window.
 																	} break;
 																	case SCALING_Y_AXIS_NEGATIVE:
 																	{
-#if defined (OLD_CODE)
-/*???DB.  Changed when adding floats for signal values */
-																		highlight_device->signal_minimum=
-																			SCALE_Y(axes_bottom,x_axis_y_marker,
-																			initial_value,SCALE_FACTOR(
-																			initial_marker-x_axis_y_marker,
-																			marker-x_axis_y_marker)/y_scale);
-#endif
-																		highlight_device->signal_minimum=
-																			initial_value+
+																		new_min=	initial_value+
 																			(float)(x_axis_y_marker-axes_bottom)*
 																			(float)(marker-x_axis_y_marker)/(y_scale*
 																			(float)(initial_marker-x_axis_y_marker));
+#if defined (UNEMAP_USE_NODES)																		
+																		signal_drawing_package=
+																			analysis->signal_drawing_package;
+																		signal_minimum_field=
+																			get_Signal_drawing_package_signal_minimum_field(
+																			signal_drawing_package);
+																		/* set the new signal_maximum*/
+																		component.number=0;
+																		component.field = signal_minimum_field;
+																		set_FE_nodal_FE_value_value(analysis->highlight_rig_node,
+																			&component,0,FE_NODAL_VALUE,new_min);	
+#endif /*	defined (UNEMAP_USE_NODES) */
+																		highlight_device->signal_minimum=new_min;
 																		if (highlight_device!=trace_area_3_device)
 																		{
 																			trace_area_3_device->signal_minimum=
@@ -9445,6 +9520,22 @@ should be done as a callback from the trace_window.
 																				background_drawing_colour,xpos,ypos,
 																				signals->signal_width,
 																				signals->signal_height);
+#if defined (UNEMAP_USE_NODES)									
+																			draw_signal(
+																				analysis->highlight_rig_node,
+																				analysis->signal_drawing_package,
+																				(struct Device *)NULL,
+																				SIGNAL_AREA_DETAIL,1,0,
+																				&start_analysis_interval,
+																				&end_analysis_interval,xpos,ypos,
+																				signals->signal_width,
+																				signals->signal_height,
+																				signals_pixel_map,&signals_axes_left,
+																				&signals_axes_top,&signals_axes_width,
+																				&signals_axes_height,
+																				signal_drawing_information,
+																				user_interface);
+#else
 																			draw_signal(
 																				(struct FE_node *)NULL,
 																				(struct Signal_drawing_package *)NULL,
@@ -9459,6 +9550,7 @@ should be done as a callback from the trace_window.
 																				&signals_axes_height,
 																				signal_drawing_information,
 																				user_interface);
+#endif /* defined (UNEMAP_USE_NODES)*/
 																			draw_device_markers(highlight_device,
 																				start_analysis_interval,
 																				end_analysis_interval,datum,1,
@@ -9487,114 +9579,6 @@ should be done as a callback from the trace_window.
 																		} break;
 																	}
 																}
-#if defined (OLD_CODE)
-																if (((SINGLE_ACTIVATION==analysis->map_type)||
-																	(MULTIPLE_ACTIVATION==analysis->map_type))&&
-																	(MOVING_DATUM_MARKER==moving)&&
-																	(mapping=analysis->mapping_window)&&
-																	(map=mapping->map))
-																{
-																	if (NO_INTERPOLATION==map->interpolation_type)
-																	{
-																		update_mapping_drawing_area(mapping,2);
-																		update_mapping_colour_or_auxili(mapping);
-																	}
-																	else
-																	{
-																		analysis->map_type=NO_MAP_FIELD;
-																		map->colour_option=HIDE_COLOUR;
-																		map->contours_option=HIDE_CONTOURS;
-																		map->electrodes_option=SHOW_ELECTRODE_NAMES;
-																		/* clear the colour map */
-																		map->activation_front= -1;
-																		update_mapping_drawing_area(mapping,2);
-																		update_mapping_colour_or_auxili(mapping);
-																		XtSetSensitive(mapping->animate_button,
-																			False);
-#if defined (OLD_CODE)
-/*???DB.  Could subtract datum change off everything, but probably not worth
-	it */
-																		/* update the map */
-																		map->contour_maximum -= datum_change;
-																		map->maximum_value -= datum_change;
-																		map->minimum_value -= datum_change;
-																		map->contour_minimum -= datum_change;
-																		region_item=get_Rig_region_list(analysis->rig);
-																		while (region_item)
-																		{
-																			if (interpolation_function=region_item->
-																				region->interpolation_function)
-																			{
-																				interpolation_function->f_max -=
-																					datum_change;
-																				interpolation_function->f_min -=
-																					datum_change;
-																				f=interpolation_function->f;
-																				for (i=interpolation_function->
-																					number_of_nodes;i>0;i--)
-																				{
-																					*f -= datum_change;
-																					f++;
-																				}
-																			}
-																			region_item=
-																				get_Region_list_item_next(region_item);
-																		}
-																		update_mapping_colour_or_auxili(mapping);
-																		if (SHOW_ELECTRODE_VALUES==
-																			map->electrodes_option)
-																		{
-																			update_mapping_drawing_area(mapping,0);
-																		}
-#endif /* defined (OLD_CODE) */
-																	}
-																}
-																else
-																{
-																	if ((POTENTIAL==analysis->map_type)&&
-																		((MOVING_EVENT_MARKER==moving)||
-																		(MOVING_POTENTIAL_TIME_MARKER==moving))&&
-																		(mapping=analysis->mapping_window)&&
-																		(map=mapping->map))
-																	{
-																		if (NO_INTERPOLATION==
-																			map->interpolation_type)
-																		{
-																			update_mapping_drawing_area(mapping,2);
-																			update_mapping_colour_or_auxili(mapping);
-																		}
-																		else
-																		{
-																			analysis->map_type=NO_MAP_FIELD;
-																			map->colour_option=HIDE_COLOUR;
-																			map->contours_option=HIDE_CONTOURS;
-																			map->electrodes_option=
-																				SHOW_ELECTRODE_NAMES;
-																			/* clear the colour map */
-																			map->activation_front= -1;
-																			update_mapping_drawing_area(mapping,2);
-																			update_mapping_colour_or_auxili(mapping);
-																			XtSetSensitive(mapping->animate_button,
-																				False);
-																		}
-																	}
-																	else
-																	{
-																		if (((SINGLE_ACTIVATION==
-																			analysis->map_type)||
-																			(MULTIPLE_ACTIVATION==
-																			analysis->map_type))&&
-																			(MOVING_EVENT_MARKER==moving)&&
-																			(mapping=analysis->mapping_window)&&
-																			(map=mapping->map)&&
-																			(SHOW_ELECTRODE_VALUES==
-																			map->electrodes_option))
-																		{
-																			update_mapping_drawing_area(mapping,0);
-																		}
-																	}
-																}
-#endif /* defined (OLD_CODE) */
 															}
 															switch (moving)
 															{
@@ -9722,7 +9706,7 @@ should be done as a callback from the trace_window.
 													XtDispatchEvent(&xevent);
 												}
 											}
-										}
+										}		
 										/* release the pointer */
 										XtUngrabPointer(trace_area_3->drawing_area,CurrentTime);
 									}
@@ -9741,7 +9725,6 @@ should be done as a callback from the trace_window.
 					 *(analysis->highlight)
 #endif /* defined (UNEMAP_USE_NODES)*/
 					);
-
 			}
 			else
 			{
@@ -10473,42 +10456,6 @@ value at the potential time.
 				}
 				device++;
 			}
-#if defined (OLD_CODE)
-			switch (buffer->value_type)
-			{
-				case SHORT_INT_VALUE:
-				{
-					for (i=rig->number_of_devices;i>0;i--)
-					{
-						/* for the electrodes in the current region */
-						if ((ELECTRODE==(*device)->description->type)&&(!current_region||
-							(current_region==(*device)->description->region)))
-						{
-							/* reset the channel offset */
-							(*device)->channel->offset=
-								(float)(buffer->signals.short_int_values)
-								[potential_time*buffer_offset+(*device)->signal->index];
-						}
-						device++;
-					}
-				} break;
-				case FLOAT_VALUE:
-				{
-					for (i=rig->number_of_devices;i>0;i--)
-					{
-						/* for the electrodes in the current region */
-						if ((ELECTRODE==(*device)->description->type)&&(!current_region||
-							(current_region==(*device)->description->region)))
-						{
-							/* reset the channel offset */
-							(*device)->channel->offset=(buffer->signals.float_values)
-								[potential_time*buffer_offset+(*device)->signal->index];
-						}
-						device++;
-					}
-				} break;
-			}
-#endif /* defined (OLD_CODE) */
 			/* update the display */
 			update_signals_drawing_area(analysis->window);
 			update_interval_drawing_area(analysis->window);
@@ -11747,12 +11694,6 @@ DESCRIPTION :
 								NULL);
 						} break;
 					}
-#if defined (OLD_CODE)
-					calculate_device_event_markers(*highlight,
-						analysis->start_search_interval,analysis->end_search_interval,
-						analysis->detection,analysis->objective,analysis->number_of_events,
-						threshold_percentage,minimum_separation,level,average_width);
-#endif /* defined (OLD_CODE) */
 					if ((analysis->trace)&&(analysis->trace->processed_device)&&
 						(analysis->trace->processed_device->signal)&&
 						(analysis->trace->processed_device->signal->buffer)&&
@@ -15619,7 +15560,7 @@ c.f update_signal_range_widget_from_highlight_signal
 			component.number=0;
 			component.field = signal_maximum_field;												
 			set_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,maximum);		
-#else		
+#else	
 			device->signal_maximum=maximum;				
 #endif /*	defined (UNEMAP_USE_NODES) */
 			/* update the display */

@@ -443,8 +443,12 @@ The trace window object.
 		*real_device_1,*real_device_2;
 	int valid_processing;
 	struct Device ***highlight;
+#if defined (UNEMAP_USE_NODES)
+	struct FE_node **highlight_rig_node;
+#endif /* defined (UNEMAP_USE_NODES) */
 	struct Rig **rig;
 	struct Signal_drawing_information *signal_drawing_information;
+	struct Signal_drawing_package **signal_drawing_package;
 	struct User_interface *user_interface;
 }; /* struct Trace_window */
 
@@ -494,7 +498,11 @@ int open_trace_window(struct Trace_window **trace_address,Widget parent,
 	Pixel identifying_colour,enum Signal_analysis_mode analysis_mode,
 	enum Event_detection_algorithm *detection,
 	enum Event_detection_objective *objective,enum Datum_type *datum_type,
-	enum Edit_order *edit_order,struct Device ***highlight,struct Rig **rig,
+	enum Edit_order *edit_order,struct Device ***highlight,
+#if defined (UNEMAP_USE_NODES)
+	struct FE_node **highlight_rig_node,
+#endif /* defined (UNEMAP_USE_NODES) */
+	struct Rig **rig,struct Signal_drawing_package **signal_drawing_package,
 	int *datum,int *potential_time,int *event_number,int *number_of_events,
 	int *threshold,int *minimum_separation,float *level,int *average_width,
 	int *start_search_interval,int **search_interval_divisions,

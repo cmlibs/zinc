@@ -2810,8 +2810,8 @@ c.f analysis_set_highlight_max, analysis_set_highlight_min
 			minimum=device->signal_minimum;
 			maximum=device->signal_maximum;
 #endif /*	defined (UNEMAP_USE_NODES) */
-			sprintf(min_string,"%d",(int)(minimum));
-			sprintf(max_string,"%d",(int)(maximum));		
+			sprintf(min_string,"%.3g",minimum);
+			sprintf(max_string,"%.3g",maximum);		
 			XtVaSetValues(interval_area->minimum_value,XmNvalue,min_string,NULL);
 			XtVaSetValues(interval_area->maximum_value,XmNvalue,max_string,NULL);
 		}
@@ -3552,6 +3552,19 @@ The callback for redrawing part of an analysis interval drawing area.
 									{
 										first_data=0;
 										last_data=buffer->number_of_samples-1;
+#if defined (UNEMAP_USE_NODES)		
+										draw_signal(
+											*(analysis->highlight_rig_node),
+											*(analysis->signal_drawing_package),
+											(struct Device *)NULL,
+											INTERVAL_AREA_DETAIL,1,0,&first_data,&last_data,0,0,
+											attributes.width,attributes.height,
+											interval->drawing->pixel_map,&(interval->axes_left),
+											&(interval->axes_top),&(interval->axes_width),
+											&(interval->axes_height),
+											analysis->signal_drawing_information,
+											analysis->user_interface);
+#else
 										draw_signal(
 											(struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
 											highlight_device,
@@ -3561,7 +3574,8 @@ The callback for redrawing part of an analysis interval drawing area.
 											&(interval->axes_top),&(interval->axes_width),
 											&(interval->axes_height),
 											analysis->signal_drawing_information,
-											analysis->user_interface);
+											analysis->user_interface);	
+#endif /* defined (UNEMAP_USE_NODES)	*/
 										draw_device_markers(highlight_device,first_data,last_data,
 											*(analysis->datum),1,*(analysis->potential_time),1,
 											INTERVAL_AREA_DETAIL,*(analysis->event_number),
@@ -3712,13 +3726,25 @@ The callback for resizing an analysis interval drawing area.
 							{
 								first_data=0;
 								last_data=buffer->number_of_samples-1;
-								draw_signal((struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
+#if defined (UNEMAP_USE_NODES)		
+								draw_signal(*(analysis->highlight_rig_node),
+									*(analysis->signal_drawing_package),(struct Device *)NULL,
+									INTERVAL_AREA_DETAIL,1,0,&first_data,
+									&last_data,0,0,attributes.width,attributes.height,
+									interval->drawing->pixel_map,&(interval->axes_left),
+									&(interval->axes_top),&(interval->axes_width),
+									&(interval->axes_height),analysis->signal_drawing_information,
+									analysis->user_interface);
+#else
+								draw_signal((struct FE_node *)NULL,
+									(struct Signal_drawing_package *)NULL,
 									highlight_device,INTERVAL_AREA_DETAIL,1,0,&first_data,
 									&last_data,0,0,attributes.width,attributes.height,
 									interval->drawing->pixel_map,&(interval->axes_left),
 									&(interval->axes_top),&(interval->axes_width),
 									&(interval->axes_height),analysis->signal_drawing_information,
 									analysis->user_interface);
+#endif /* defined (UNEMAP_USE_NODES)	*/
 								draw_device_markers(highlight_device,first_data,last_data,
 									*(analysis->datum),1,*(analysis->potential_time),1,
 									INTERVAL_AREA_DETAIL,*(analysis->event_number),
@@ -4978,7 +5004,17 @@ The function for redrawing the analysis interval drawing area.
 		{
 			/* draw all of the active signal */
 			first_data=0;
-			last_data=buffer->number_of_samples-1;
+			last_data=buffer->number_of_samples-1;			
+#if defined (UNEMAP_USE_NODES)		
+			draw_signal(*(analysis->highlight_rig_node),
+				*(analysis->signal_drawing_package),(struct Device *)NULL,
+				INTERVAL_AREA_DETAIL,1,0,&first_data,&last_data,0,0,
+				interval->drawing->width,interval->drawing->height,
+				interval->drawing->pixel_map,&(interval->axes_left),
+				&(interval->axes_top),&(interval->axes_width),
+				&(interval->axes_height),analysis->signal_drawing_information,
+				analysis->user_interface);
+#else			
 			draw_signal((struct FE_node *)NULL,(struct Signal_drawing_package *)NULL,
 				*highlight_device,INTERVAL_AREA_DETAIL,1,0,&first_data,&last_data,0,0,
 				interval->drawing->width,interval->drawing->height,
@@ -4986,6 +5022,7 @@ The function for redrawing the analysis interval drawing area.
 				&(interval->axes_top),&(interval->axes_width),
 				&(interval->axes_height),analysis->signal_drawing_information,
 				analysis->user_interface);
+#endif /*defined (UNEMAP_USE_NODES)	 */
 			draw_device_markers(*highlight_device,first_data,last_data,
 				*(analysis->datum),1,*(analysis->potential_time),1,INTERVAL_AREA_DETAIL,
 				*(analysis->event_number),interval->axes_left,interval->axes_top,
