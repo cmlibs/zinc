@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : tabs_to_spaces.c
 
-LAST MODIFIED : 9 March 1993
+LAST MODIFIED : 1 March 2002
 
 DESCRIPTION :
 Program to replace tabs at the beginning of lines by spaces.
@@ -11,7 +11,7 @@ Program to replace tabs at the beginning of lines by spaces.
 #include <stdio.h>
 #include <string.h>
 
-main()
+int main()
 {
 	char in_file_name[51],line[131],*line_start,out_file_name[51],*tab;
 	FILE *in_file,*out_file;
@@ -83,4 +83,6 @@ main()
 	{
 		printf("Could not allocate memeory for tab\n");
 	}
+
+	return (1);
 } /* main */

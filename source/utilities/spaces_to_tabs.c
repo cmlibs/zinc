@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : spaces_to_tabs.c
 
-LAST MODIFIED : 9 March 1993
+LAST MODIFIED : 1 March 2002
 
 DESCRIPTION :
 Program to replace spaces/tabs at the beginning of lines by tabs and remove
@@ -12,7 +12,7 @@ spaces/tabs from the end of lines.
 #include <stdio.h>
 #include <string.h>
 
-main()
+int main()
 {
 	char c,in_file_name[51],line[131],*line_end,*line_start,out_file_name[51];
 	FILE *in_file,*out_file;
@@ -84,4 +84,6 @@ main()
 	}
 	fclose(in_file);
 	fclose(out_file);
+
+	return (1);
 } /* main */
