@@ -1634,7 +1634,10 @@ Frees the memory for the texture and sets <*texture_address> to NULL.
 				}
 #endif /* defined (OPENGL_API) */
 				DEALLOCATE(texture->name);
-				DEALLOCATE(texture->image_file_name);
+				if (texture->image_file_name)
+				{
+					DEALLOCATE(texture->image_file_name);
+				}
 				if (texture->file_number_pattern)
 				{
 					DEALLOCATE(texture->file_number_pattern);
@@ -2316,7 +2319,14 @@ Crop and other parameters are cleared.
 			{
 				DEALLOCATE(texture->image_file_name);
 			}
-			texture->image_file_name = duplicate_string(source_name);
+			if (source_name)
+			{
+				texture->image_file_name = duplicate_string(source_name);
+			}
+			else
+			{
+				texture->image_file_name = (char *)NULL;
+			}
 			texture->file_number_pattern = (char *)NULL;
 			texture->start_file_number = 0;
 			texture->stop_file_number = 0;
@@ -4042,175 +4052,157 @@ execute_Texture should just call direct_render_Texture.
 			}
 			if (texture->display_list||(texture->display_list=glGenLists(1)))
 			{
-				if(/* 0 &&    SAB Digifarmers are occasionally getting 
-						            the wrong texture loaded up so can disable
-					               texture_objects here */
-					query_gl_extension("GL_EXT_texture_object"))
+				if(texture->display_list_current == 2)
 				{
-					if(texture->display_list_current == 2)
+					switch(texture->storage)
 					{
-						switch(texture->storage)
+						case TEXTURE_DMBUFFER:
 						{
-							case TEXTURE_DMBUFFER:
-							{
-								/* If copied by reference we don't need to do anything */
+							/* If copied by reference we don't need to do anything */
 #if defined (DEBUG)
-								Dm_buffer_glx_make_read_current(texture->dmbuffer);
-								glBindTextureEXT(GL_TEXTURE_2D, texture->texture_id);
-								glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_FALSE);
-								glCopyTexImage2DEXT(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0,
-									256, 256, 0);
-								glCopyTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0, 0, 0,
-									texture->original_width_texels, texture->original_height_texels);
-								Texture_get_type_and_format_from_storage_type(texture->storage,
-									&type, &format);
-								glTexImage2D(GL_TEXTURE_2D,(GLint)0,
-									GL_RGBA8_EXT,
-									(GLint)(texture->width_texels),
-									(GLint)(texture->height_texels),(GLint)0,
-									format,type, NULL);
-								glCopyTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0, 0, 0,
-									256, 256);
-								{
-									unsigned char test_pixels[262144];
+							Dm_buffer_glx_make_read_current(texture->dmbuffer);
+							glBindTextureEXT(GL_TEXTURE_2D, texture->texture_id);
+							glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_FALSE);
+							glCopyTexImage2DEXT(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0,
+								256, 256, 0);
+							glCopyTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0, 0, 0,
+								texture->original_width_texels, texture->original_height_texels);
+							Texture_get_type_and_format_from_storage_type(texture->storage,
+								&type, &format);
+							glTexImage2D(GL_TEXTURE_2D,(GLint)0,
+								GL_RGBA8_EXT,
+								(GLint)(texture->width_texels),
+								(GLint)(texture->height_texels),(GLint)0,
+								format,type, NULL);
+							glCopyTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0, 0, 0,
+								256, 256);
+							{
+								unsigned char test_pixels[262144];
 								
-									glReadPixels(0, 0, 256, 256,
-										GL_RGBA, GL_UNSIGNED_BYTE,
-										(void*)test_pixels);
-									glTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0,
-										256, 256,
-										GL_RGBA, GL_UNSIGNED_BYTE, test_pixels);
-								}
-								glRasterPos3i(1,1,1);
-								glCopyPixels(0,0, 256,256, GL_COLOR);
-								{
-									static int counter = 100;
-									unsigned char test_pixels[262144];
+								glReadPixels(0, 0, 256, 256,
+									GL_RGBA, GL_UNSIGNED_BYTE,
+									(void*)test_pixels);
+								glTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0,
+									256, 256,
+									GL_RGBA, GL_UNSIGNED_BYTE, test_pixels);
+							}
+							glRasterPos3i(1,1,1);
+							glCopyPixels(0,0, 256,256, GL_COLOR);
+							{
+								static int counter = 100;
+								unsigned char test_pixels[262144];
 
-									counter += 7;
-									memset(test_pixels, counter % 255, 262144);
-									glTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0,
-										256, 256,
-										GL_RGBA, GL_UNSIGNED_BYTE, test_pixels);
-								}
-								X3dThreeDDrawingRemakeCurrent();
-#endif /* defined (DEBUG) */
-							} break;
-							case TEXTURE_PBUFFER:
-							{
-#if defined (SGI_DIGITAL_MEDIA)
-								glPushAttrib(GL_PIXEL_MODE_BIT);
-								glBindTextureEXT(GL_TEXTURE_2D, texture->texture_id);
-								Dm_buffer_glx_make_read_current(texture->dmbuffer);
-								glPixelTransferf(GL_ALPHA_BIAS, 1.0);  /* This is required
-									cause the OCTANE seems to return alpha of zero from render
-									to buffer */
-								glCopyTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0, 0, 0,
-								  texture->width_texels, texture->height_texels);
-								{
-									/* This code is should be totally unnecessary but
-										it seems that the texture stuff is broken */
-									unsigned char test_pixels[262144];
-								
-									glReadPixels(0, 0, 256, 256,
-										GL_RGBA, GL_UNSIGNED_BYTE,
-										(void*)test_pixels);
-									glTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0,
-										256, 256,
-										GL_RGBA, GL_UNSIGNED_BYTE, test_pixels);
-								}
-								X3dThreeDDrawingRemakeCurrent();
-								glPopAttrib();
-#else /* defined (SGI_DIGITAL_MEDIA) */
-								display_message(ERROR_MESSAGE,
-								  "compile_Texture.  PBUFFER not supported");
-								return_code=0;								
-#endif /* defined (SGI_DIGITAL_MEDIA) */
-							} break;
-							default:
-							{
-								glBindTexture(texture_target, texture->texture_id);
-#if defined (EXT_subtexture)
-								Texture_get_type_and_format_from_storage_type(texture->storage,
-									&type, &format);
-								switch (texture->dimension)
-								{
-									case 1:
-									{
-										glTexSubImage1DEXT(texture_target, 0, 0, 0,
-											(GLint)(texture->width_texels),
-											(GLint)(texture->height_texels),
-											format, type, (GLvoid *)(texture->image));
-									} break;
-									case 2:
-									{
-										glTexSubImage2DEXT(texture_target, 0, 0, 0,
-											(GLint)(texture->width_texels),
-											(GLint)(texture->height_texels),
-											format, type, (GLvoid *)(texture->image));
-									} break;
-									case 3:
-									{
-										glTexSubImage3DEXT(texture_target, 0, 0, 0,
-											(GLint)(texture->width_texels),
-											(GLint)(texture->height_texels),
-											(GLint)(texture->depth_texels),
-											format, type, (GLvoid *)(texture->image));
-									} break;
-								}
-#else /* defined (EXT_subtexture) */
-								direct_render_Texture(texture);
-#endif /* defined (EXT_subtexture) */
-							} break;
-						}
-					}
-					else
-					{
-						/* SAB Mirage Octanes are not allowing the texture to be reread into
-							the bound texture so I am going to destroy them every time they
-							need to be reconstructed.  Further, a texture in both the window 
-							window background and loaded onto an object doesn't get updated
-							correctly still, now I'm making sure the new texture_id is at
-							least recently new */
-						old_texture_id = texture->texture_id;
-						glGenTextures(1, &(texture->texture_id));
-						if (old_texture_id)
-						{
-							glDeleteTextures(1, &(old_texture_id));
-						}
-						glBindTexture(texture_target, texture->texture_id);
-						if(texture->storage==TEXTURE_DMBUFFER || 
-							texture->storage==TEXTURE_PBUFFER)
-						{
-							Dm_buffer_glx_make_read_current(texture->dmbuffer);				
-							direct_render_Texture(texture);
+								counter += 7;
+								memset(test_pixels, counter % 255, 262144);
+								glTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0,
+									256, 256,
+									GL_RGBA, GL_UNSIGNED_BYTE, test_pixels);
+							}
 							X3dThreeDDrawingRemakeCurrent();
-						}
-						else
+#endif /* defined (DEBUG) */
+						} break;
+						case TEXTURE_PBUFFER:
 						{
+#if defined (SGI_DIGITAL_MEDIA)
+							glPushAttrib(GL_PIXEL_MODE_BIT);
+							glBindTextureEXT(GL_TEXTURE_2D, texture->texture_id);
+							Dm_buffer_glx_make_read_current(texture->dmbuffer);
+							glPixelTransferf(GL_ALPHA_BIAS, 1.0);  /* This is required
+																					cause the OCTANE seems to return alpha of zero from render
+																					to buffer */
+							glCopyTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0, 0, 0,
+								texture->width_texels, texture->height_texels);
+							{
+								/* This code is should be totally unnecessary but
+									it seems that the texture stuff is broken */
+								unsigned char test_pixels[262144];
+								
+								glReadPixels(0, 0, 256, 256,
+									GL_RGBA, GL_UNSIGNED_BYTE,
+									(void*)test_pixels);
+								glTexSubImage2DEXT(GL_TEXTURE_2D, 0, 0, 0,
+									256, 256,
+									GL_RGBA, GL_UNSIGNED_BYTE, test_pixels);
+							}
+							X3dThreeDDrawingRemakeCurrent();
+							glPopAttrib();
+#else /* defined (SGI_DIGITAL_MEDIA) */
+							display_message(ERROR_MESSAGE,
+								"compile_Texture.  PBUFFER not supported");
+							return_code=0;								
+#endif /* defined (SGI_DIGITAL_MEDIA) */
+						} break;
+						default:
+						{
+							glBindTexture(texture_target, texture->texture_id);
+#if defined (EXT_subtexture)
+							Texture_get_type_and_format_from_storage_type(texture->storage,
+								&type, &format);
+							switch (texture->dimension)
+							{
+								case 1:
+								{
+									glTexSubImage1DEXT(texture_target, 0, 0, 0,
+										(GLint)(texture->width_texels),
+										(GLint)(texture->height_texels),
+										format, type, (GLvoid *)(texture->image));
+								} break;
+								case 2:
+								{
+									glTexSubImage2DEXT(texture_target, 0, 0, 0,
+										(GLint)(texture->width_texels),
+										(GLint)(texture->height_texels),
+										format, type, (GLvoid *)(texture->image));
+								} break;
+								case 3:
+								{
+									glTexSubImage3DEXT(texture_target, 0, 0, 0,
+										(GLint)(texture->width_texels),
+										(GLint)(texture->height_texels),
+										(GLint)(texture->depth_texels),
+										format, type, (GLvoid *)(texture->image));
+								} break;
+							}
+#else /* defined (EXT_subtexture) */
 							direct_render_Texture(texture);
-						}
-						glNewList(texture->display_list,GL_COMPILE);
-						glBindTexture(texture_target, texture->texture_id);
-						/* As we have bound the texture we only need the 
-							environment in the display list */
-						direct_render_Texture_environment(texture);
-
-						glEndList();
+#endif /* defined (EXT_subtexture) */
+						} break;
 					}
 				}
 				else
 				{
+					/* SAB Mirage Octanes are not allowing the texture to be reread into
+						the bound texture so I am going to destroy them every time they
+						need to be reconstructed.  Further, a texture in both the window 
+						window background and loaded onto an object doesn't get updated
+						correctly still, now I'm making sure the new texture_id is at
+						least recently new */
+					old_texture_id = texture->texture_id;
+					glGenTextures(1, &(texture->texture_id));
+					if (old_texture_id)
+					{
+						glDeleteTextures(1, &(old_texture_id));
+					}
+					glBindTexture(texture_target, texture->texture_id);
+					if(texture->storage==TEXTURE_DMBUFFER || 
+						texture->storage==TEXTURE_PBUFFER)
+					{
+						Dm_buffer_glx_make_read_current(texture->dmbuffer);				
+						direct_render_Texture(texture);
+						X3dThreeDDrawingRemakeCurrent();
+					}
+					else
+					{
+						direct_render_Texture(texture);
+					}
 					glNewList(texture->display_list,GL_COMPILE);
+					glBindTexture(texture_target, texture->texture_id);
+					/* As we have bound the texture we only need the 
+						environment in the display list */
 					direct_render_Texture_environment(texture);
-					direct_render_Texture(texture);
+
 					glEndList();
 				}
-#if defined (OLD_CODE) /* ! defined (GL_EXT_texture_object) */
-				glNewList(texture->display_list,GL_COMPILE);
-				direct_render_Texture(texture);
-				glEndList();
-#endif /* defined (OLD_CODE) */
 				texture->display_list_current=1;
 				return_code=1;
 			}
