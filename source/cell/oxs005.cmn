@@ -1,7 +1,0 @@
-! oxs005.cmn
-	LOGICAL              DEBUG
-	COMMON /TEXT_OUTPUT/ DEBUG
-	!switch for when solving single cell only, needed to get the
-	!ionic currents for plotting in UnEMAP
-	LOGICAL                  SINGLE_CELL
-	COMMON /UNEMAP_PLOTTING/ SINGLE_CELL
