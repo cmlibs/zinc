@@ -33,6 +33,7 @@ Functions and structures for interfacing with the graphics library.
 #undef GL_VERSION_1_4
 #undef GL_ARB_vertex_program
 #undef GL_ARB_fragment_program
+#undef GL_ARB_multitexture
 #undef GL_NV_vertex_program
 #undef GL_NV_register_combiners2
 #endif /* defined (WIN32_SYSTEM) */
