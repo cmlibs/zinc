@@ -3,7 +3,7 @@
 /*******************************************************************************
 FILE : mcubes.c
 
-LAST MODIFIED : 01 November 1999
+LAST MODIFIED : 2 May 2002
 
 DESCRIPTION :
 Modified Marching cubes isosurface generating algorithm based on David
@@ -554,6 +554,7 @@ DESCRIPTION :
 								for (j=0;j<n_triangles;j++)
 								{
 									triangle=triangle_list[j];
+
 									mc_iso_surface->compiled_triangle_list[triangle_index]=
 										triangle;
 									triangle->triangle_index=triangle_index;
@@ -1036,83 +1037,95 @@ else
 static void dblcon(struct VT_scalar_field *scalar_field,int nx,int ny,int nz,
 	int ic,int jc,int kc,int iface,double cl,double *grads)
 /*******************************************************************************
-LAST MODIFIED : 18 February 1998
+LAST MODIFIED : 2 May 2002
 
 DESCRIPTION :
 Sorts out the tricky 'double contour' cases - returns gradient in grads
 ==============================================================================*/
 {
-int i,in,jn,kn;
-int icell;
-int border;
-double f1,f2,f3,f4,a,b,c,d;
-double fn[8];
+	int i,in,jn,kn;
+	int icell;
+	int border;
+	double f1,f2,f3,f4,a,b,c,d;
+	double fn[8];
 
-/* adjust nx etc if using virtual dim[n+1] cube for closed surfaces. I am not sure
-about this */
-if (scalar_field->dimension[0] !=nx) nx--;
-if (scalar_field->dimension[1] !=nx) ny--;
-if (scalar_field->dimension[2] !=nx) nz--;
-/*--------*/
+	/* adjust nx etc if using virtual dim[n+1] cube for closed surfaces.
+		 I am not sure about this -- Mark */
+	if (scalar_field->dimension[0] !=nx) nx--;
+	if (scalar_field->dimension[1] !=nx) ny--;
+	if (scalar_field->dimension[2] !=nx) nz--;
+	/*--------*/
 
-for (i=1;i<=4;i++)
+	for (i = 1; i <= 4; i++)
 	{
-	/*determine cell indices of an adjacent cell */
-	icell=adjcel[iface -1][i -1];
-	in=ic;
-	jn=jc;
-	kn=kc;
-	border=0;
-	switch (icell)
+		/*determine cell indices of an adjacent cell */
+		icell=adjcel[iface - 1][i - 1];
+		in=ic;
+		jn=jc;
+		kn=kc;
+		border=0;
+		switch (icell)
 		{
-		case(1):
-			in=in-1;
-			if (in <1)
+			case 1:
+			{
+				in = in - 1;
+				if (in < 1)
 				{
-				border=1;
+					border = 1;
 				}
-			break;
-		case(2):
-			in=in+1;
-			if (in >nx)
+			} break;
+			case 2:
+			{
+				in = in + 1;
+				if (in > nx)
 				{
-				border=1;
+					border = 1;
 				}
-			break;
-		case(3):
-			jn=jn-1;
-			if (jn <1)
+			} break;
+			case 3:
+			{
+				jn = jn - 1;
+				if (jn < 1)
 				{
-				border=1;
+					border = 1;
 				}
-			break;
-		case(4):
-			jn=jn+1;
-			if (jn >ny)
+			} break;
+			case 4:
+			{
+				jn = jn + 1;
+				if (jn > ny)
 				{
-				border=1;
+					border = 1;
 				}
-			break;
-		case(5):
-			kn=kn-1;
-			if (kn <1)
+			} break;
+			case 5:
+			{
+				kn = kn - 1;
+				if (kn < 1)
 				{
-				border=1;
+					border = 1;
 				}
-			break;
-		case(6):
-			kn=kn-1;
-			if (kn >nz)
+			} break;
+			case 6:
+			{
+#if defined (OLD_CODE)
+				/*???RC This is surely wrong */
+				kn = kn - 1;
+#endif /* defined (OLD_CODE) */
+				kn = kn + 1;
+				if (kn > nz)
 				{
-				border=1;
+					border = 1;
 				}
-			break;
-		default:
-			break;
+			} break;
+			default:
+			{
+				/* do nothing */
+			} break;
 		}
-	if (!border)
+		if (!border)
 		{
-		/* get scalar values for given cell in fn here */
+			/* get scalar values for given cell in fn here */
 			fn[0]=rqs(scalar_field,in-1,jn-1,kn-1);
 			fn[1]=rqs(scalar_field,in,jn-1,kn-1);
 			fn[2]=rqs(scalar_field,in-1,jn,kn-1);
@@ -1121,27 +1134,28 @@ for (i=1;i<=4;i++)
 			fn[5]=rqs(scalar_field,in,jn-1,kn);
 			fn[6]=rqs(scalar_field,in-1,jn,kn);
 			fn[7]=rqs(scalar_field,in,jn,kn);
-		}
+		
+			f1 = fn[facnod[iface - 1][0] - 1];
+			f2 = fn[facnod[iface - 1][1] - 1];
+			f3 = fn[facnod[iface - 1][2] - 1];
+			f4 = fn[facnod[iface - 1][3] - 1];
 
-	f1=fn[facnod[iface -1][1 -1]];
-	f2=fn[facnod[iface -1][2 -1]];
-	f3=fn[facnod[iface -1][3 -1]];
-	f4=fn[facnod[iface -1][4 -1]];
-	if (!(  ((f1>cl) && (f3>cl) && (f2 < cl) && (f4 < cl)) ||
-		((f1<cl) && (f3<cl) && (f2 > cl) && (f4 > cl)) ))
-		{
-		/* evaluate the sign of the gradient of the adjacent face */
-		a=f1 - cl;
-		b=f4 - f1;
-		c=f2 - f1;
-		d=f1 - f2 + f3 - f4;
-		*grads=a*d - b*c;
-		return;
+			if (!(  ((f1>cl) && (f3>cl) && (f2 < cl) && (f4 < cl)) ||
+				((f1<cl) && (f3<cl) && (f2 > cl) && (f4 > cl)) ))
+			{
+				/* evaluate the sign of the gradient of the adjacent face */
+				a=f1 - cl;
+				b=f4 - f1;
+				c=f2 - f1;
+				d=f1 - f2 + f3 - f4;
+				*grads=a*d - b*c;
+				return;
+			}
 		}
 	}
-/* all adjacent faces have double contours */
-*grads=1.0;
-return;
+	/* all adjacent faces have double contours */
+	*grads=1.0;
+	return;
 } /* dblcon */
 
 static int rqc(struct VT_vector_field *coordinate_field,int i,int j,int k,
@@ -3572,7 +3586,10 @@ for (k=z_min;k<=z_max;k++)
 			compile_mc_vertex_triangle_lists(mc_iso_surface,closed_surface))>0))
 		{
 			/* create vertex list */
+#if defined (OLD_CODE)
+			/*???RC Why was this called again? */
 			compile_mc_vertex_triangle_lists(mc_iso_surface, closed_surface);
+#endif /* defined (OLD_CODE) */
 
 #if defined (DEBUG)
 #if defined (UNIX)
