@@ -29,7 +29,7 @@ swap the endianness of values going into a64l
 #endif /* __GLIBC__ >= 2 */
 	static int return_code = -1;
 
-	ENTER(get_glibc_version);
+	/* ENTER(glibc_version_greater_than_2_2_4); */
 
 	/* This gets called a lot so lets make it fast */
 	if (return_code == -1)
@@ -59,10 +59,10 @@ swap the endianness of values going into a64l
 		return_code = 0;
 #endif/* __GLIBC__ >= 2 */
 	}
-	LEAVE;
+	/* LEAVE; */
 	
 	return (return_code);
-} /* get_glibc_version */
+} /* glibc_version_greater_than_2_2_4 */
 #endif /* (1234==BYTE_ORDER) */
 #endif /* defined (BYTE_ORDER) */
 
