@@ -690,6 +690,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 					z = (*point)[2] + f1*(*axis1)[2];
 					fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
 					point++;
+					scale++;
 					axis1++;
 				}
 				fprintf(vrml_file,"      ]\n");
@@ -708,7 +709,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 				fprintf(vrml_file,"    coordIndex [\n");
 				for (i=0;i<number_of_points;i++)
 				{
-					fprintf(vrml_file,"      %d,%d,-1,",2*i,2*i+1);
+					fprintf(vrml_file,"      %d,%d,-1,\n",2*i,2*i+1);
 				}
 				fprintf(vrml_file,"    ]\n");
 				fprintf(vrml_file,"  } #IndexedLineSet\n");
