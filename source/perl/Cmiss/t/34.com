@@ -248,3 +248,8 @@ print "$return_code $fun_13\n";
 $return_code=($fun_1->nodal_values(node=>$heart->get_node(name=>"13"),type=>'value'))->set_value(new Cmiss::Function::Matrix(n_columns=>1,values=>[1,2,3,4,5,6,7,8,9,10,11,12]));
 $fun_15=($fun_1->nodal_values(node=>$heart->get_node(name=>"13")))->evaluate();
 print "$return_code $fun_15\n";
+print "\n";
+
+# check single nodal value
+$fun_16=($fun_1->nodal_values(node=>$heart->get_node(name=>"5"),component_name=>"mu"))->evaluate();
+print "$fun_16\n";
