@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : common.Makefile
 #
-# LAST MODIFIED : 12 June 2003
+# LAST MODIFIED : 10 June 2004
 #
 # DESCRIPTION :
 #
@@ -154,7 +154,9 @@ ifeq ($(SYSNAME:IRIX%=),)
       # STRICT_FLAGS = -diag_error 1042,1174,1185,1196,1409,1551,1552,3201
       STRICT_FLAGS = -diag_error 1000-9999
       # need to suppress for Boost mostly but also for STL
-      CPP_STRICT_FLAGS = -diag_error 1000-9999 -diag_suppress 1110,1174,1209,1234,1375,1424,3201
+			#   1682 is if you have virtual functions with the same name and different
+			#     arguments, all or none need to be over-ridden in a derived class
+      CPP_STRICT_FLAGS = -diag_error 1000-9999 -diag_suppress 1110,1174,1209,1234,1375,1424,1682,3201
       DIGITAL_MEDIA_NON_STRICT_FLAGS = -diag_warning 1429
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = three_d_drawing/graphics_buffer.c | three_d_drawing/movie_extensions.c
    endif # DEBUG != true
