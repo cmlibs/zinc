@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : map_dialog.c
 
-LAST MODIFIED : 27 November 2001
+LAST MODIFIED : 1 May 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -509,7 +509,7 @@ Sets the sensitivity of widgets in the map dialog.
 		if ((map_dialog->map)&&(*(map_dialog->map))&&((*(map_dialog->map))->type)&&
 			(POTENTIAL== *((*(map_dialog->map))->type)))
 		{
-			if((*(map_dialog->map))->projection_type==THREED_PROJECTION)
+			if ((*(map_dialog->map))->projection_type==THREED_PROJECTION)
 			{
 				/*not sure what we're going to do with 3D movies yet*/
 				/*for now make them behave like bicubic 2D movies */
@@ -575,8 +575,8 @@ Sets the sensitivity of widgets in the map dialog.
 		XtSetSensitive(map_dialog->interpolation.mesh_columns,False);
 		if ((map_dialog->map)&&(*(map_dialog->map))&&((*(map_dialog->map))->type)&&
 			(POTENTIAL== *((*(map_dialog->map))->type)))
-		{	
-			if((*(map_dialog->map))->projection_type==THREED_PROJECTION)
+		{
+			if ((*(map_dialog->map))->projection_type==THREED_PROJECTION)
 			{
 				/*not sure what we're going to do with 3D movies yet*/
 				/*for now make them behave like bicubic 2D movies */
@@ -585,7 +585,7 @@ Sets the sensitivity of widgets in the map dialog.
 			else
 			{
 				XtSetSensitive(map_dialog->animation.row_column,False);
-			}		
+			}
 		}
 	}
 	else
@@ -1796,7 +1796,7 @@ initializes the appropriate fields.
 		{"identify_map_dialog_elect_marke",
 			(XtPointer)identify_map_dialog_elect_marke},
 		{"identify_map_dialog_elect_colou",
-			(XtPointer)identify_map_dialog_elect_colou},	
+			(XtPointer)identify_map_dialog_elect_colou},
 		{"identify_map_dialog_elect_size",
 			(XtPointer)identify_map_dialog_elect_size},
 		{"identify_map_dialog_landmarks_b",
@@ -1861,7 +1861,7 @@ initializes the appropriate fields.
 				map_dialog->range.maximum_value=(Widget)NULL;
 				map_dialog->spectrum.type_option_menu=(Widget)NULL;
 				map_dialog->spectrum.type_option.none=(Widget)NULL;
-				map_dialog->spectrum.type_option.blue_red=(Widget)NULL;	
+				map_dialog->spectrum.type_option.blue_red=(Widget)NULL;
 				map_dialog->spectrum.type_option.blue_white_red=(Widget)NULL;
 				map_dialog->spectrum.type_option.red_blue=(Widget)NULL;
 				map_dialog->spectrum.type_option.log_blue_red=(Widget)NULL;
@@ -1890,9 +1890,9 @@ initializes the appropriate fields.
 				map_dialog->electrodes.marker_type_menu=(Widget)NULL;
 				map_dialog->electrodes.marker_type.circle=(Widget)NULL;
 				map_dialog->electrodes.marker_type.plus=(Widget)NULL;
-				map_dialog->electrodes.marker_type.square=(Widget)NULL;	
+				map_dialog->electrodes.marker_type.square=(Widget)NULL;
 				map_dialog->electrodes.marker_type.none=(Widget)NULL;
-				map_dialog->electrodes.marker_colour_toggle=(Widget)NULL;	
+				map_dialog->electrodes.marker_colour_toggle=(Widget)NULL;
 				map_dialog->electrodes.marker_size_text=(Widget)NULL;
 				map_dialog->fibres_option_menu=(Widget)NULL;
 				map_dialog->fibres_option.hide=(Widget)NULL;
@@ -2071,7 +2071,7 @@ initializes the appropriate fields.
 
 int open_map_dialog(struct Map_dialog *map_dialog)
 /*******************************************************************************
-LAST MODIFIED : 27 November 2001
+LAST MODIFIED : 1 May 2002
 
 DESCRIPTION :
 Opens the <map_dialog>.
@@ -2080,7 +2080,7 @@ Opens the <map_dialog>.
 	char value_string[20];
 	enum Spectrum_simple_type spectrum_type;
 	int return_code;
-	struct Map *map;	
+	struct Map *map;
 	struct Rig *rig;
 	Widget option_widget;
 
@@ -2092,29 +2092,31 @@ Opens the <map_dialog>.
 		if ((map_dialog->map)&&(map= *(map_dialog->map)))
 		{
 			/* configure the dialog box to be consistent with the map */
-			if(map->colour_electrodes_with_signal)
-			/* colour_electrodes_with_signal can be changed in the code (draw_map_2d), as well  */
-			/* from the GUI, so ensure in synce here. cf update_map_from_dialog*/
+			if (map->colour_electrodes_with_signal)
 			{
-				XmToggleButtonGadgetSetState(map_dialog->electrodes.marker_colour_toggle
-					,True,False);
+				/* colour_electrodes_with_signal can be changed in the code
+					(draw_map_2d), as well from the GUI, so ensure in synce here.
+					cf update_map_from_dialog */
+				XmToggleButtonGadgetSetState(
+					map_dialog->electrodes.marker_colour_toggle,True,False);
 			}
 			else
-			{	
-				XmToggleButtonGadgetSetState(map_dialog->electrodes.marker_colour_toggle
-					,False,False);
-			}
-			if(*(map->type)==NO_MAP_FIELD)
-			/* if we have no map field, can't colour electrodes with signal, so disable this option*/
 			{
+				XmToggleButtonGadgetSetState(
+					map_dialog->electrodes.marker_colour_toggle,False,False);
+			}
+			if (NO_MAP_FIELD== *(map->type))
+			{
+				/* if we have no map field, can't colour electrodes with signal, so
+					disable this option */
 				XtSetSensitive(map_dialog->electrodes.marker_colour_toggle,False);
 			}
 			else
 			{
 				XtSetSensitive(map_dialog->electrodes.marker_colour_toggle,True);
 			}
-			if (map->colour_option==SHOW_COLOUR)
-			{ 
+			if (SHOW_COLOUR==map->colour_option)
+			{
 				spectrum_type=Spectrum_get_contoured_simple_type(
 					map->drawing_information->spectrum);
 				switch (spectrum_type)
@@ -2154,21 +2156,21 @@ Opens the <map_dialog>.
 			XtVaSetValues(map_dialog->spectrum.type_option_menu,
 				XmNmenuHistory,option_widget,
 				NULL);
-			if((map->rig_pointer)&&(rig=*(map->rig_pointer))&&(rig->current_region)&&
-				(rig->current_region->type==TORSO)&&
-				((*(map->type)==POTENTIAL)||(*(map->type)==NO_MAP_FIELD)) )
-			/* can only have DIRECT_INTERPOLATION for TORSO,POTENTIAL */	
+			/* can only have DIRECT_INTERPOLATION for TORSO,POTENTIAL */
+			if ((map->rig_pointer)&&(rig=*(map->rig_pointer))&&(rig->current_region)&&
+				(TORSO==rig->current_region->type)&&
+				((POTENTIAL== *(map->type))||(NO_MAP_FIELD== *(map->type))))
 			{
 				XtSetSensitive(map_dialog->interpolation.option.direct,True);
 			}
 			else
 			{
 				XtSetSensitive(map_dialog->interpolation.option.direct,False);
-				if(map->interpolation_type==DIRECT_INTERPOLATION)
+				if (map->interpolation_type==DIRECT_INTERPOLATION)
 				{
 					map->interpolation_type=BICUBIC_INTERPOLATION;
 				}
-			}			
+			}
 			switch (map->interpolation_type)
 			{
 				case NO_INTERPOLATION:
@@ -2192,8 +2194,7 @@ Opens the <map_dialog>.
 					XtSetSensitive(map_dialog->interpolation.mesh_rows,False);
 					XtSetSensitive(map_dialog->interpolation.mesh_columns,False);
 				} break;
-			}				
-
+			}
 			XtVaSetValues(map_dialog->interpolation.option_menu,
 				XmNmenuHistory,option_widget,
 				NULL);
@@ -2325,7 +2326,7 @@ Opens the <map_dialog>.
 				case SQUARE_ELECTRODE_MARKER:
 				{
 					option_widget=map_dialog->electrodes.marker_type.square;
-				} break;	
+				} break;
 				case HIDE_ELECTRODE_MARKER:
 				{
 					option_widget=map_dialog->electrodes.marker_type.none;
@@ -2390,7 +2391,7 @@ Opens the <map_dialog>.
 			/*??JW this will incorretly report the number of frames for*/
 			/*a 3D animations. Need to sort out the sub_maps for 3D */
 			/* 3D animation still works */
-			map_dialog->number_of_frames=map->number_of_sub_maps;	
+			map_dialog->number_of_frames=map->number_of_sub_maps;
 			sprintf(value_string,"%d",map->number_of_sub_maps);
 
 			XtVaSetValues(map_dialog->animation.number_of_frames_text,
@@ -2409,16 +2410,16 @@ Opens the <map_dialog>.
 			sscanf(value_string,"%f",&(map_dialog->end_time));
 			XtVaSetValues(map_dialog->animation.end_time_text,
 				XmNvalue,value_string,
-				NULL);					  
+				NULL);
 			if ((map->type)&&(POTENTIAL==*(map->type)))
 			{
-				switch(map->interpolation_type)
+				switch (map->interpolation_type)
 				{
 					case BICUBIC_INTERPOLATION:
 					{
-						if((ELECTRICAL_IMAGING==*map->analysis_mode)&&
+						if ((ELECTRICAL_IMAGING==*map->analysis_mode)&&
 							(*map->first_eimaging_event))
-						{	
+						{
 							/*no movies if showing (lots of little) maps of electrical imaging events*/
 							XtSetSensitive(map_dialog->animation.row_column,False);
 						}
@@ -2426,12 +2427,12 @@ Opens the <map_dialog>.
 						{
 							XtSetSensitive(map_dialog->animation.row_column,True);
 						}
-					}break;
+					} break;
 					case NO_INTERPOLATION:
 					case DIRECT_INTERPOLATION:
 					default:
 					{
-						if(map->projection_type==THREED_PROJECTION)
+						if (map->projection_type==THREED_PROJECTION)
 						{
 							/*not sure what we're going to do with 3D movies yet*/
 							/*for now make them behave like bicubic 2D movies */
@@ -2441,13 +2442,13 @@ Opens the <map_dialog>.
 						{
 							XtSetSensitive(map_dialog->animation.row_column,False);
 						}
-					}break;				
-				}/* switch(map->interpolation_type)	*/
+					} break;
+				}/* switch (map->interpolation_type)	*/
 			}
 			else
 			{
 				XtSetSensitive(map_dialog->animation.row_column,False);
-			}	
+			}
 			/*???Set menu history for interpolation choice */
 			/* ghost the activation button */
 			XtSetSensitive(map_dialog->activation,False);
