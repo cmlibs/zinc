@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_composite.hpp
 //
-// LAST MODIFIED : 22 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // A list of functions whose output is the composite of the functions' outputs
@@ -16,12 +16,15 @@
 
 class Function_composite : public Function
 //******************************************************************************
-// LAST MODIFIED : 22 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // A composite of other function(s).
 //==============================================================================
 {
+	template<class Value_type_1,class Value_type_2>
+		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
+		boost::intrusive_ptr<Value_type_2> const &);
 	public:
 		// constructor
 		Function_composite(const Function_handle& function_1,
@@ -47,6 +50,8 @@ class Function_composite : public Function
 		Function_composite(const Function_composite&);
 		// assignment
 		Function_composite& operator=(const Function_composite&);
+		// equality
+		bool operator==(const Function&) const;
 	private:
 		std::list<Function_handle> functions_list;
 };

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_composite.cpp
 //
-// LAST MODIFIED : 22 June 2004
+// LAST MODIFIED : 11 August 2004
 //
 // DESCRIPTION :
 //???DB.  Should make a Matrix if it can?  Changes type in constructors?
@@ -57,7 +57,7 @@ Function_composite::~Function_composite()
 
 string_handle Function_composite::get_string_representation()
 //******************************************************************************
-// LAST MODIFIED : 10 March 2004
+// LAST MODIFIED : 5 Auguat 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -72,7 +72,8 @@ string_handle Function_composite::get_string_representation()
 		out << "[" << i << "](";
 		while (i>0)
 		{
-			if (temp_string=(*function_iterator)->get_string_representation())
+			if ((*function_iterator)&&
+				(temp_string=(*function_iterator)->get_string_representation()))
 			{
 				out << *temp_string;
 				delete temp_string;
@@ -93,7 +94,7 @@ string_handle Function_composite::get_string_representation()
 
 Function_variable_handle Function_composite::input()
 //******************************************************************************
-// LAST MODIFIED : 15 March 2004
+// LAST MODIFIED : 5 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -104,7 +105,10 @@ Function_variable_handle Function_composite::input()
 
 	for (i=functions_list.size();i>0;i--)
 	{
-		variables_list.push_back((*function_iterator)->input());
+		if (*function_iterator)
+		{
+			variables_list.push_back((*function_iterator)->input());
+		}
 		function_iterator++;
 	}
 
@@ -114,7 +118,7 @@ Function_variable_handle Function_composite::input()
 
 Function_variable_handle Function_composite::output()
 //******************************************************************************
-// LAST MODIFIED : 9 March 2004
+// LAST MODIFIED : 5 August 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -125,12 +129,59 @@ Function_variable_handle Function_composite::output()
 
 	for (i=functions_list.size();i>0;i--)
 	{
-		variables_list.push_back((*function_iterator)->output());
+		if (*function_iterator)
+		{
+			variables_list.push_back((*function_iterator)->output());
+		}
 		function_iterator++;
 	}
 
 	return (Function_variable_handle(new Function_variable_composite(
 		Function_handle(this),variables_list)));
+}
+
+bool Function_composite::operator==(const Function& function) const
+//******************************************************************************
+// LAST MODIFIED : 13 August 2004
+//
+// DESCRIPTION :
+// Equality operator.
+//==============================================================================
+{
+	bool result;
+
+	result=false;
+	if (this)
+	{
+		try
+		{
+			const Function_composite& function_composite=
+				dynamic_cast<const Function_composite&>(function);
+
+			std::list<Function_handle>::const_iterator function_iterator_1,
+				function_iterator_1_end,function_iterator_2,function_iterator_2_end;
+
+			function_iterator_1=functions_list.begin();
+			function_iterator_1_end=functions_list.end();
+			function_iterator_2=function_composite.functions_list.begin();
+			function_iterator_2_end=function_composite.functions_list.end();
+			while ((function_iterator_1!=function_iterator_1_end)&&
+				(function_iterator_2!=function_iterator_2_end)&&
+				equivalent(*function_iterator_1,*function_iterator_2))
+			{
+				function_iterator_1++;
+				function_iterator_2++;
+			}
+			result=((function_iterator_1==function_iterator_1_end)&&
+				(function_iterator_2==function_iterator_2_end));
+		}
+		catch (std::bad_cast)
+		{
+			// do nothing
+		}
+	}
+
+	return (result);
 }
 
 Function_handle Function_composite::evaluate(

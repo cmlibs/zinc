@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_coordinates.hpp
 //
-// LAST MODIFIED : 23 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // Functions which transform between coordinate systems.
@@ -20,12 +20,15 @@ typedef
 
 class Function_prolate_spheroidal_to_rectangular_cartesian : public Function
 //******************************************************************************
-// LAST MODIFIED : 23 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // Converts from prolate spheroidal to rectangular cartesian.
 //==============================================================================
 {
+	template<class Value_type_1,class Value_type_2>
+		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
+		boost::intrusive_ptr<Value_type_2> const &);
 	public:
 		// constructor
 		Function_prolate_spheroidal_to_rectangular_cartesian(const Scalar lambda=0,
@@ -74,6 +77,8 @@ class Function_prolate_spheroidal_to_rectangular_cartesian : public Function
 		// assignment
 		Function_prolate_spheroidal_to_rectangular_cartesian& operator=(
 			const Function_prolate_spheroidal_to_rectangular_cartesian&);
+		// equality
+		bool operator==(const Function&) const;
 	private:
 		Function_size_type number_of_components_private;
 		Scalar focus_private,lambda_private,mu_private,theta_private,x_private,
