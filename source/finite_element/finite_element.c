@@ -11672,7 +11672,7 @@ on the boundary of the shape.
 					}
 					else
 					{
-						if (((SMALL_STEP) < step_size_local) && ((FE_value)step_size_local<*step_size))
+						if ((0 < step_size_local) && ((FE_value)step_size_local<*step_size))
 						{
 							for (j=1;j<dimension;j++)
 							{
