@@ -12,6 +12,7 @@ DESCRIPTION :
 #include <string.h>
 #include "general/debug.h"
 #include "general/postscript.h"
+#include "general/mystring.h"
 #include "unemap/analysis.h"
 #include "unemap/drawing_2d.h"
 #include "user_interface/message.h"
@@ -4281,7 +4282,7 @@ DESCRIPTION :
 			/*???DB.  Under Linux the overlay_colours_string is in some sort of read
 				only memory and can't be modified */
 			if (overlay_colours_string&&(temp_string_1=duplicate_string(
-				overlay_colours_string))
+				overlay_colours_string)))
 			{
 				overlay_colours_string=temp_string_1;
 				while (*temp_string_1)
