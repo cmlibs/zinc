@@ -774,6 +774,7 @@ because the initialize method is downward chained.
 		/* check the existence of the GLX server extension */
 		if (True==glXQueryExtension(display,&error_base,&event_base))
 		{
+#if defined (DEBUG)
 			/* find  version numbers for the GLX extension */
 			if (True==glXQueryVersion(display,&major_version_number,
 				&minor_version_number))
@@ -787,6 +788,7 @@ because the initialize method is downward chained.
 						major_version_number,minor_version_number);
 				}
 			}
+#endif /* defined (DEBUG) */
 			visual_info_template.screen=screen_number;
 			if (visual_info_list=XGetVisualInfo(display,VisualScreenMask,
 				&visual_info_template,&number_of_visual_infos))
@@ -908,6 +910,7 @@ because the initialize method is downward chained.
 							XGetVisualInfo(display,VisualAllMask,best_visual_info,
 							  &number_of_visual_infos)))
 						{
+#if defined (DEBUG)
 							/*???debug */
 							/* only want to print this once, unless using different visuals */
 							if (!shareable_context)
@@ -915,6 +918,7 @@ because the initialize method is downward chained.
 								printf("openGL visual id = %lu\n",(new->three_d_drawing)
 									.normal_buffer.visual_information->visualid);
 							}
+#endif /* defined (DEBUG) */
 							/* create the OpenGL rendering context */
 							direct_rendering=GL_TRUE;
 							if ((new->three_d_drawing).normal_buffer.rendering_context=
