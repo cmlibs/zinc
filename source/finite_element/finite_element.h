@@ -2666,6 +2666,8 @@ Sets scale_factor <scale_factor_number>, from 0 to number_of_scale_factors-1 of
 <element> to <scale_factor>.
 <element> must already have a shape and node_scale_field_information.
 Should only be called for unmanaged elements.
+This function is a bit naughty. Should really use 
+FE_element_set_scale_factor_for_nodal_value . 
 ==============================================================================*/
 
 int define_FE_field_at_element(struct FE_element *element,
@@ -4825,6 +4827,18 @@ LAST MODIFIED : 26 October 2000
 DESCRIPTION :
 Given  <component_number>  and <nodal_value_type> of <field> at a 
 <node> in an <element>, find the  corresponding <scale_factor>.
+===============================================================================*/
+
+int FE_element_set_scale_factor_for_nodal_value(
+	struct FE_element *element, struct FE_node *node, struct FE_field *field,
+	int component_number,	enum FE_nodal_value_type nodal_value_type,
+	FE_value scale_factor);
+/*******************************************************************************
+LAST MODIFIED : 31 January 2001
+
+DESCRIPTION :
+Given  <component_number>  and <nodal_value_type> of <field> at a 
+<node> in an <element>, set the  corresponding scale_factor to <scale_factor>.
 ===============================================================================*/
 
 int offset_FE_node_and_element_identifiers_in_group(char *name,int last_identifier,

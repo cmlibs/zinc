@@ -23018,6 +23018,8 @@ Sets scale_factor <scale_factor_number>, from 0 to number_of_scale_factors-1 of
 <element> to <scale_factor>.
 <element> must already have a shape and node_scale_field_information.
 Should only be called for unmanaged elements.
+This function is a bit naughty. Should really use 
+FE_element_set_scale_factor_for_nodal_value . 
 ==============================================================================*/
 {
 	int return_code;
@@ -37880,6 +37882,174 @@ Given  <component_number>  and <nodal_value_type> of <field> at a
 
 	return (return_code);
 } /* FE_element_get_scale_factor_for_nodal_value */
+
+int FE_element_set_scale_factor_for_nodal_value(
+	struct FE_element *element, struct FE_node *node, struct FE_field *field,
+	int component_number,	enum FE_nodal_value_type nodal_value_type,
+	FE_value scale_factor)
+/*******************************************************************************
+LAST MODIFIED : 31 January 2001
+
+DESCRIPTION :
+Given  <component_number>  and <nodal_value_type> of <field> at a 
+<node> in an <element>, set the  corresponding scale_factor to <scale_factor>.
+===============================================================================*/
+{
+	int i, nodal_value_index, nodal_value_number, number_of_nodes, 
+		number_of_versions, return_code,	scale_factor_index;
+	struct FE_element_field *element_field;
+	struct FE_element_field_component *element_field_component;
+	struct FE_node **nodes;
+	struct FE_node_field *node_field;
+	struct FE_node_field_component *node_field_component;
+	struct Standard_node_to_element_map *node_to_element_map,
+		**node_to_element_maps;
+
+	ENTER(FE_element_set_scale_factor_for_nodal_value);
+	return_code = 0;
+	if (element && node && field && (0 <= component_number) &&
+		(component_number < field->number_of_components) && scale_factor)
+	{
+		/* get the element field*/
+		if (element->information && element->information->fields &&
+			(element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
+				field, element->information->fields->element_field_list)) &&
+			(element_field_component = element_field->components[component_number]))
+		{
+			/* ensure element has nodes*/
+			if (nodes = element->information->nodes)
+			{
+				switch (element_field_component->type)
+				{
+					case STANDARD_NODE_TO_ELEMENT_MAP:
+					{
+						/* get the node_to_element map*/
+						node_to_element_maps = element_field_component->
+							map.standard_node_based.node_to_element_maps;
+						node_to_element_map = (struct Standard_node_to_element_map *)NULL;
+						number_of_nodes =
+							element_field_component->map.standard_node_based.number_of_nodes;
+						for (i = 0; (!node_to_element_map) && (i < number_of_nodes); i++)
+						{
+							if (node_to_element_maps[i] &&
+								(node == nodes[node_to_element_maps[i]->node_index]))
+							{
+								node_to_element_map = node_to_element_maps[i];
+							}
+						}
+						if (node_to_element_map &&
+							node_to_element_map->nodal_value_indices &&
+							node_to_element_map->scale_factor_indices)
+						{
+							/* ensure element field is defined in node */
+							if (node->fields && (node_field =
+								FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
+									field, node->fields->node_field_list)) &&
+								(node_field_component =
+									&(node_field->components[component_number])))
+							{
+								/* ensure node field has nodal value types */
+								if (node_field_component->nodal_value_types &&
+									(number_of_versions=node_field_component->number_of_versions))
+								{
+									/* find the nodal value in the field*/
+									nodal_value_number = -1;
+									for (i = 0; (0 > nodal_value_number) &&
+										(i < node_to_element_map->number_of_nodal_values); i++)
+									{
+										nodal_value_index =
+											node_to_element_map->nodal_value_indices[i];
+										if (nodal_value_type == node_field_component->
+											nodal_value_types[nodal_value_index /	number_of_versions])
+										{
+											nodal_value_number = i;
+										}
+									}
+									/* find the scale factor corresponding to the nodal value */
+									if (0 <= nodal_value_number)
+									{
+										scale_factor_index = node_to_element_map->
+											scale_factor_indices[nodal_value_number];
+										if (-1 == scale_factor_index)
+										{
+											display_message(WARNING_MESSAGE,
+												"FE_element_set_scale_factor_for_nodal_value.  "
+												"scale_factor_index = -1. can't set scale_factor ");
+											return_code = 1;
+											
+										}
+										else if ((0 <= scale_factor_index) && (scale_factor_index <
+											element->information->number_of_scale_factors))
+										{											
+											element->information->scale_factors[scale_factor_index]=scale_factor;
+											return_code = 1;
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+												"FE_element_set_scale_factor_for_nodal_value.  "
+												"Scale factor index out of range");
+										}
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"FE_element_set_scale_factor_for_nodal_value.  "
+											"Nodal value type not used for field");
+									}
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"FE_element_set_scale_factor_for_nodal_value.  "
+										"Node field has no nodal value types");
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"FE_element_set_scale_factor_for_nodal_value.  "
+									"Element field is corrupt as not defined in node it uses");
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_element_set_scale_factor_for_nodal_value.  "
+								"Node not used by field in element");
+						}
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"FE_element_set_scale_factor_for_nodal_value.  "
+							"Currently Only supports STANDARD_NODE_TO_ELEMENT_MAP"
+							" Write the code");
+					} break;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_element_set_scale_factor_for_nodal_value.  Element has no nodes");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_element_set_scale_factor_for_nodal_value.  "
+				"Field is not defined in this element");
+		}
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"FE_element_set_scale_factor_for_nodal_value.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_set_scale_factor_for_nodal_value */
 
 int node_is_in_list(struct FE_node *node,
 	void *node_is_in_list_data_void)
