@@ -56,76 +56,55 @@ fsm == finite state machine
 /*???DB.  Enable data transfer */
 #define NOT_TEMPORARY
 
-#if defined (REDO_CM_field_information)
-/*???DB.  Being redone */
+/*
+Module types
+------------
+*/
+enum CM_storage_array
+/*******************************************************************************
+LAST MODIFIED : 2 September 2001
+
+DESCRIPTION :
+The array that cm uses to store the array.  Values correspond to those sent by
+cm.
+==============================================================================*/
+{
+	CM_ARRAY_FIX=3,
+	CM_ARRAY_XP=1,
+	CM_ARRAY_YP=2
+}; /* enum CM_storage_array */
+
 struct CM_field_information
 /*******************************************************************************
-LAST MODIFIED : 2 February 1999
+LAST MODIFIED : 2 September 2001
 
 DESCRIPTION :
 Private structure containing field information needed by cm.
-???DB.  What about grids (element based fields) ?
-???DB.  Should this be hidden in the name as at present ?  This is how it would
-  have to be done for any other application communicating with cmgui.  User
-  data ?
 ==============================================================================*/
 {
+	/* region */
+	int nr;
+	/* array */
+	enum CM_storage_array array;
   union
   {
 		struct
     {
-      int nc,niy,nr,nxc,nxt;
-    } dependent;
+      int nc,nhx_index,nx;
+    } fix;
 		struct
     {
-      int nr;
-    } independent;
+      int nj_typ;
+    } xp;
+		struct
+    {
+      int iy,nc,nhx_index,nx;
+    } yp;
   } indices;
 }; /* struct CM_field_information */
 
-PROTOTYPE_COPY_OBJECT_FUNCTION(CM_field_information)
-/*******************************************************************************
-LAST MODIFIED: 4 February 1999
-
-DESCRIPTION:
-Copies the CM_Field_information from source to destination
-==============================================================================*/
-{
-	int return_code;
-	ENTER(COPY(CM_field_information));
-	if (destination&&source)
-	{
-		destination->type = source->type;
-		switch (source->type)
-		{
-			case CM_DEPENDENT_FIELD:
-			{
-				destination->indices.dependent.nc = source->indices.dependent.nc;
-				destination->indices.dependent.niy = source->indices.dependent.niy;
-				destination->indices.dependent.nr = source->indices.dependent.nr;
-				destination->indices.dependent.nxc = source->indices.dependent.nxc;
-				destination->indices.dependent.nxt = source->indices.dependent.nxt;			
-			} break;
-			default: /* everything else is independent*/
-			{
-				destination->indices.independent.nr = source->indices.independent.nr;;
-			} break;
-		}
-		return_code =1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"COPY(CM_field_informatio). Invalid arguments");
-		return_code = 0;
-	}
-	LEAVE;
-	return (return_code);
-
-}/* PROTOTYPE_COPY_OBJECT_FUNCTION(CM_field_information) */
-#endif /* defined (REDO_CM_field_information) */
-
 /*
-Module Variables
+Module variables
 ----------------
 */
 /* types of data */
@@ -157,10 +136,353 @@ static char *default_nodal_value_names[MAX_DEFAULT_NODAL_VALUE_NAMES]=
 #endif /* defined (OLD_CODE) */
 
 /*
-Module Functions
+Module functions
 ----------------
 */
-char *reformat_fortran_string(char *string)
+static int compare_FE_field_cm_information(
+	struct FE_field_external_information *information_1,
+	struct FE_field_external_information *information_2)
+/*******************************************************************************
+LAST MODIFIED : 2 September 2001
+
+DESCRIPTION :
+Returns -1 if <information_1> is "less than" <information_2>, 0 if they are the
+same and 1 if <information_1> is "greater than" <information_2>.
+==============================================================================*/
+{
+	int return_code;
+	struct CM_field_information *cm_information_1,*cm_information_2;
+
+	ENTER(compare_FE_field_cm_information);
+	return_code=0;
+	if (information_1)
+	{
+		if (information_2)
+		{
+			if ((compare_FE_field_cm_information==information_1->compare)&&
+				(compare_FE_field_cm_information==information_2->compare))
+			{
+				/* compare the cm information */
+				cm_information_1=information_1->information;
+				cm_information_2=information_2->information;
+				if (cm_information_1->nr<cm_information_2->nr)
+				{
+					return_code=1;
+				}
+				else
+				{
+					if (cm_information_1->nr>cm_information_2->nr)
+					{
+						return_code= -1;
+					}
+					else
+					{
+						if (cm_information_1->array<cm_information_2->array)
+						{
+							return_code=1;
+						}
+						else
+						{
+							if (cm_information_1->array>cm_information_2->array)
+							{
+								return_code= -1;
+							}
+							else
+							{
+								switch (cm_information_1->array)
+								{
+									case CM_ARRAY_FIX:
+									{
+										/* nhx_index */
+										if ((cm_information_1->indices).fix.nhx_index<
+											(cm_information_2->indices).fix.nhx_index)
+										{
+											return_code=1;
+										}
+										else
+										{
+											if ((cm_information_1->indices).fix.nhx_index>
+												(cm_information_2->indices).fix.nhx_index)
+											{
+												return_code= -1;
+											}
+											else
+											{
+												/* nx */
+												if ((cm_information_1->indices).fix.nx<
+													(cm_information_2->indices).fix.nx)
+												{
+													return_code=1;
+												}
+												else
+												{
+													if ((cm_information_1->indices).fix.nx>
+														(cm_information_2->indices).fix.nx)
+													{
+														return_code= -1;
+													}
+													else
+													{
+														/* nc */
+														if ((cm_information_1->indices).fix.nc<
+															(cm_information_2->indices).fix.nc)
+														{
+															return_code=1;
+														}
+														else
+														{
+															if ((cm_information_1->indices).fix.nc>
+																(cm_information_2->indices).fix.nc)
+															{
+																return_code= -1;
+															}
+															else
+															{
+																return_code=0;
+															}
+														}
+													}
+												}
+											}
+										}
+									} break;
+									case CM_ARRAY_XP:
+									{
+										if ((cm_information_1->indices).xp.nj_typ<
+											(cm_information_2->indices).xp.nj_typ)
+										{
+											return_code=1;
+										}
+										else
+										{
+											if ((cm_information_1->indices).xp.nj_typ>
+												(cm_information_2->indices).xp.nj_typ)
+											{
+												return_code= -1;
+											}
+											else
+											{
+												return_code=0;
+											}
+										}
+									} break;
+									case CM_ARRAY_YP:
+									{
+										/* nhx_index */
+										if ((cm_information_1->indices).yp.nhx_index<
+											(cm_information_2->indices).yp.nhx_index)
+										{
+											return_code=1;
+										}
+										else
+										{
+											if ((cm_information_1->indices).yp.nhx_index>
+												(cm_information_2->indices).yp.nhx_index)
+											{
+												return_code= -1;
+											}
+											else
+											{
+												/* nx */
+												if ((cm_information_1->indices).yp.nx<
+													(cm_information_2->indices).yp.nx)
+												{
+													return_code=1;
+												}
+												else
+												{
+													if ((cm_information_1->indices).yp.nx>
+														(cm_information_2->indices).yp.nx)
+													{
+														return_code= -1;
+													}
+													else
+													{
+														/* nc */
+														if ((cm_information_1->indices).yp.nc<
+															(cm_information_2->indices).yp.nc)
+														{
+															return_code=1;
+														}
+														else
+														{
+															if ((cm_information_1->indices).yp.nc>
+																(cm_information_2->indices).yp.nc)
+															{
+																return_code= -1;
+															}
+															else
+															{
+																/* iy */
+																if ((cm_information_1->indices).yp.iy<
+																	(cm_information_2->indices).yp.iy)
+																{
+																	return_code=1;
+																}
+																else
+																{
+																	if ((cm_information_1->indices).yp.iy>
+																		(cm_information_2->indices).yp.iy)
+																	{
+																		return_code= -1;
+																	}
+																	else
+																	{
+																		return_code=0;
+																	}
+																}
+															}
+														}
+													}
+												}
+											}
+										}
+									} break;
+									default:
+									{
+										return_code=0;
+									} break;
+								}
+							}
+						}
+					}
+				}
+			}
+			else
+			{
+				if (information_1->compare<information_2->compare)
+				{
+					return_code=1;
+				}
+				else
+				{
+					if (information_1->compare>information_2->compare)
+					{
+						return_code= -1;
+					}
+					else
+					{
+						return_code=0;
+					}
+				}
+			}
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		if (information_2)
+		{
+			return_code= -1;
+		}
+		else
+		{
+			return_code=0;
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+} /* compare_FE_field_cm_information */
+
+static int destroy_FE_field_cm_information(
+	struct FE_field_external_information **information)
+/*******************************************************************************
+LAST MODIFIED : 2 September 2001
+
+DESCRIPTION :
+Destroys the <information>.  Returns non-zero for success.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(destroy_FE_field_cm_information);
+	return_code=0;
+	if (information)
+	{
+		return_code=1;
+		if (*information)
+		{
+			DEALLOCATE((*information)->information);
+			*information=(struct FE_field_external_information *)NULL;
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+} /* destroy_FE_field_cm_information */
+
+static struct FE_field_external_information *duplicate_FE_field_cm_information(
+	struct FE_field_external_information *information)
+/*******************************************************************************
+LAST MODIFIED : 2 September 2001
+
+DESCRIPTION :
+Duplicates the <information>.
+==============================================================================*/
+{
+	struct CM_field_information *cm_information,*cm_information_duplicate;
+	struct FE_field_external_information *duplicate;
+
+	ENTER(duplicate_FE_field_cm_information);
+	duplicate=(struct FE_field_external_information *)NULL;
+	if (information&&(compare_FE_field_cm_information==information->compare)&&
+		(cm_information=(struct CM_field_information *)(information->information)))
+	{
+		if (ALLOCATE(duplicate,struct FE_field_external_information,1))
+		{
+			if (ALLOCATE(cm_information_duplicate,struct CM_field_information,1))
+			{
+				duplicate->compare=compare_FE_field_cm_information;
+				duplicate->destroy=destroy_FE_field_cm_information;
+				duplicate->duplicate=duplicate_FE_field_cm_information;
+				duplicate->information=(void *)cm_information_duplicate;
+				cm_information_duplicate->nr=cm_information->nr;
+				cm_information_duplicate->array=cm_information->array;
+				switch (cm_information->array)
+				{
+					case CM_ARRAY_FIX:
+					{
+						(cm_information_duplicate->indices).fix.nc=
+							(cm_information->indices).fix.nc;
+						(cm_information_duplicate->indices).fix.nhx_index=
+							(cm_information->indices).fix.nhx_index;
+						(cm_information_duplicate->indices).fix.nx=
+							(cm_information->indices).fix.nx;
+					} break;
+					case CM_ARRAY_XP:
+					{
+						(cm_information_duplicate->indices).xp.nj_typ=
+							(cm_information->indices).xp.nj_typ;
+					} break;
+					case CM_ARRAY_YP:
+					{
+						(cm_information_duplicate->indices).yp.iy=
+							(cm_information->indices).yp.iy;
+						(cm_information_duplicate->indices).yp.nc=
+							(cm_information->indices).yp.nc;
+						(cm_information_duplicate->indices).yp.nhx_index=
+							(cm_information->indices).yp.nhx_index;
+						(cm_information_duplicate->indices).yp.nx=
+							(cm_information->indices).yp.nx;
+					} break;
+				}
+			}
+			else
+			{
+				DEALLOCATE(duplicate);
+			}
+		}
+	}
+	LEAVE;
+
+	return (duplicate);
+} /* duplicate_FE_field_cm_information */
+
+static char *reformat_fortran_string(char *string)
 /*******************************************************************************
 LAST MODIFIED : 25 October 1994
 
@@ -241,7 +563,7 @@ Convert fortran-style strings to C-style printf strings.
 
 #define NUM_NODE_FIELD_INFO_DATA 4
 #define NUM_COMPONENT_DATA 3
-int CMISS_connection_get_data(struct CMISS_connection *connection)
+static int CMISS_connection_get_data(struct CMISS_connection *connection)
 /*******************************************************************************
 LAST MODIFIED : 31 August 2001
 
@@ -1923,7 +2245,7 @@ Something has changed globally about the objects this widget uses, so refresh.
 } /* CMISS_connection_element_global_change */
 
 /*
-Global Functions
+Global functions
 ----------------
 */
 struct CMISS_connection *CREATE(CMISS_connection)(char *machine,
