@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : unemap.Makefile
 #
-# LAST MODIFIED : 29 November 2002
+# LAST MODIFIED : 17 December 2002
 #
 # DESCRIPTION :
 #
@@ -813,6 +813,7 @@ endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 
 UNEMAP_UTILITIES_PATH = $(UTILITIES_PATH)/unemap
 
+utilities : $(UNEMAP_UTILITIES_PATH)/activation_summary$(TARGET_ABI_SUFFIX)
 utilities : $(UNEMAP_UTILITIES_PATH)/affine$(TARGET_ABI_SUFFIX)
 utilities : $(UNEMAP_UTILITIES_PATH)/analysis_calculate$(TARGET_ABI_SUFFIX).lib
 utilities : $(UNEMAP_UTILITIES_PATH)/bmsi2sig$(TARGET_ABI_SUFFIX)
@@ -841,6 +842,28 @@ utilities : $(UNEMAP_UTILITIES_PATH)/test_unemap_hardware$(TARGET_ABI_SUFFIX)
 utilities : $(UNEMAP_UTILITIES_PATH)/text2sig$(TARGET_ABI_SUFFIX)
 utilities : $(UNEMAP_UTILITIES_PATH)/tuff2sig$(TARGET_ABI_SUFFIX)
 utilities : $(UNEMAP_UTILITIES_PATH)/unique_channels$(TARGET_ABI_SUFFIX)
+
+ACTIVATION_SUMMARY_SRCS = \
+	unemap/utilities/activation_summary.c \
+	command/parser.c \
+	general/debug.c \
+	general/geometry.c \
+	general/matrix_vector.c \
+	general/myio.c \
+	general/mystring.c \
+	unemap/analysis_calculate.c \
+	unemap/analysis.c \
+	unemap/rig.c \
+	unemap/rig_node.c \
+	user_interface/message.c
+
+ACTIVATION_SUMMARY_OBJSA = $(ACTIVATION_SUMMARY_SRCS:.c=.o)
+ACTIVATION_SUMMARY_OBJSB = $(ACTIVATION_SUMMARY_OBJSA:.cpp=.o)
+ACTIVATION_SUMMARY_OBJS = $(ACTIVATION_SUMMARY_OBJSB:.f=.o)
+BUILD_ACTIVATION_SUMMARY = $(call BuildNormalTarget,activation_summary$(TARGET_ABI_SUFFIX),$(UNEMAP_UTILITIES_PATH),ACTIVATION_SUMMARY_OBJS,-lm) 
+
+$(UNEMAP_UTILITIES_PATH)/activation_summary$(TARGET_ABI_SUFFIX): $(ACTIVATION_SUMMARY_OBJS)
+	$(BUILD_ACTIVATION_SUMMARY)
 
 AFFINE_SRCS = \
 	unemap/utilities/affine.c \
