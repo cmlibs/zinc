@@ -981,7 +981,6 @@ transfer :
 	../WildMake readme.* *.make *.imake *.c version.ObjSuffix.h Cmgui \
 	$(UTILITIES_PATH)/uid2uidh $(UTILITIES_PATH)/uid2uidh_linux \
 	$(WORMHOLE_PATH)/lib/WildAll $(WORMHOLE_PATH)/source/wormhole.h \
-	$(XML_PATH)/expat_lib/lib/WildAll $(XML_PATH)/expat_lib/include/WildH \
 	*.mms *.sed *.com *.opt *.ico \
 	application/WildC application/WildH application/WildUil \
 	choose/WildC choose/WildH choose/WildUil \
@@ -1028,6 +1027,7 @@ transfer :
 	xvg/cmgui/WildC xvg/cmgui/WildPx xvg/cmgui/WildH \
 	| gzip > cmgui_tar2.gz
 	tar -cvf - \
+	$(XML_PATH)/expat_lib/lib/WildAll $(XML_PATH)/expat_lib/include/WildH \
 	command/WildC command/WildH command/WildRc command/WildUil \
 	finite_element/WildC finite_element/WildH finite_element/WildUil \
 	graphics/Makefile graphics/WildC graphics/WildH graphics/WildRc graphics/WildUil \
