@@ -3716,14 +3716,24 @@ Cartesian coordinates are converted into the coordinate system of the node
 for the coordinate_field used.
 ==============================================================================*/
 
+int FE_field_is_1_component_integer(struct FE_field *field,void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 18 May 2000
+
+DESCRIPTION :
+Conditional function returning true if <field> has exactly 1 component and a
+value type of integer.
+This type of field is used for storing eg. grid_point_number.
+==============================================================================*/
+
 int FE_field_is_coordinate_field(struct FE_field *field,void *dummy_void);
 /*******************************************************************************
 LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
-Returns true if the field is a coodinate field, as defined by having a
-CM_field_type of coordinate, a Value_type of FE_VALUE_VALUE and from 1 to 3
-components.
+Conditional function returning true if the <field> is a coodinate field, as
+defined by having a CM_field_type of coordinate, a Value_type of FE_VALUE_VALUE
+and from 1 to 3 components.
 ==============================================================================*/
 
 int FE_field_is_anatomical_fibre_field(struct FE_field *field,void *dummy_void);

@@ -32662,20 +32662,51 @@ for the coordinate_field used.
 	return (return_code);
 } /* FE_node_set_position_cartesian */
 
+int FE_field_is_1_component_integer(struct FE_field *field,void *dummy_void)
+/*******************************************************************************
+LAST MODIFIED : 18 May 2000
+
+DESCRIPTION :
+Conditional function returning true if <field> has exactly 1 component and a
+value type of integer.
+This type of field is used for storing eg. grid_point_number.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_field_is_1_component_integer);
+	USE_PARAMETER(dummy_void);
+	if (field)
+	{
+		return_code=(INT_VALUE==field->value_type)&&
+			(1==field->number_of_components);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_field_is_1_component_integer.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_field_is_1_component_integer */
+
 int FE_field_is_coordinate_field(struct FE_field *field,void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
-Returns true if the field is a coodinate field, as defined by having a
-CM_field_type of coordinate, a Value_type of FE_VALUE_VALUE and from 1 to 3
-components.
+Conditional function returning true if the <field> is a coodinate field, as
+defined by having a CM_field_type of coordinate, a Value_type of FE_VALUE_VALUE
+and from 1 to 3 components.
 ==============================================================================*/
 {
 	int return_code;
 
 	ENTER(FE_field_is_coordinate_field);
-	if (field&&!dummy_void)
+	USE_PARAMETER(dummy_void);
+	if (field)
 	{
 		return_code=
 			(CM_COORDINATE_FIELD==field->cm.type)&&
