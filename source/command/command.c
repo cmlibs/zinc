@@ -256,33 +256,37 @@ DESCRIPTION :
 	return (return_code);
 } /* Execute_command_execute_string */
 
-int execute_comfile(char *file_name,struct Execute_command *execute_command)
+int execute_comfile(char *file_name,struct IO_stream_package *io_stream_package,
+	struct Execute_command *execute_command)
 /******************************************************************************
-LAST MODIFIED : 16 April 2003
+LAST MODIFIED : 3 September 2004
 
 DESCRIPTION :
 Opens, executes and then closes a com file.  No window is created.
 =============================================================================*/
 {
 	char *command_string;
-	FILE *comfile;
 	int return_code;
+	struct IO_stream *comfile;
 
 	ENTER(execute_comfile);
 	if (file_name)
 	{
 		if (execute_command)
 		{
-			if (comfile=fopen(file_name,"r"))
+			if ((comfile=CREATE(IO_stream)(io_stream_package)) &&
+				IO_stream_open_for_read(comfile, file_name))
 			{
-				fscanf(comfile," ");
-				while (!feof(comfile)&&(read_string(comfile,"[^\n]",&command_string)))
+				IO_stream_scan(comfile," ");
+				while (!IO_stream_end_of_stream(comfile)&&
+					(IO_stream_read_string(comfile,"[^\n]",&command_string)))
 				{
 					Execute_command_execute_string(execute_command, command_string);
 					DEALLOCATE(command_string);
-					fscanf(comfile," ");
+					IO_stream_scan(comfile," ");
 				}
-				fclose(comfile);
+				IO_stream_close(comfile);
+				DESTROY(IO_stream)(&comfile);
 				return_code=1;
 			}
 			else

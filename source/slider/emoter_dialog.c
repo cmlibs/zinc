@@ -76,6 +76,7 @@ DESCRIPTION :
 	struct Emoter_slider *active_slider, **sliders;
 	struct Execute_command *execute_command;
 	struct Graphics_buffer_package *graphics_buffer_package;
+	struct IO_stream_package *io_stream_package;
 	struct Light *viewer_light;
 	struct Light_model *viewer_light_model;
 	struct MANAGER(FE_basis) *basis_manager;
@@ -242,7 +243,6 @@ Updates the node locations for the <emoter_slider>
 {
 	char input_filename[200];
 	double position[3], temp_two, temp_cos, temp_sin, *u,*weights;
-	FILE *input_file;
 	float euler_angles[3];
 	gtMatrix transformation; /* 4 x 4 */
 	int i,j,k,offset,return_code,versions;
@@ -251,6 +251,7 @@ Updates the node locations for the <emoter_slider>
 	struct FE_node *node,*temp_node;
 	struct FE_region *fe_region;
 	struct EM_Object *em_object;
+	struct IO_stream *input_file;
 
 	ENTER(emoter_update_nodes);
 	if (shared_data)
@@ -269,7 +270,8 @@ Updates the node locations for the <emoter_slider>
 				{
 					sprintf(input_filename,shared_data->input_sequence,
 						shared_data->time);
-					if (input_file = fopen(input_filename, "r"))
+					if ((input_file = CREATE(IO_stream)(shared_data->io_stream_package))
+						&& (IO_stream_open_for_read(input_file, input_filename)))
 					{
 						if (input_sequence=read_exregion_file(input_file,shared_data->basis_manager,
 							FE_region_get_FE_element_shape_list(fe_region),
@@ -302,7 +304,8 @@ Updates the node locations for the <emoter_slider>
 								"Unable to parse node file %s", input_filename);
 							return_code=0;							
 						}
-						fclose(input_file);
+						IO_stream_close(input_file);
+						DESTROY(IO_stream)(&input_file);
 					}
 					else
 					{
@@ -5922,6 +5925,8 @@ in existence, then bring it to the front, otherwise create new one.
 									= create_emoter_slider_data->viewer_light_model;
 								shared_emoter_slider_data->transformation_scene_object
 									= transformation_scene_object;
+								shared_emoter_slider_data->io_stream_package
+									= create_emoter_slider_data->io_stream_package;
 								return_code=bring_up_emoter_dialog(
 									create_emoter_slider_data->emoter_dialog_address,
 									create_emoter_slider_data->parent,

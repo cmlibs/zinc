@@ -4338,6 +4338,7 @@ DESCRIPTION :
 	int number_of_components;
 	int number_of_components_set;
 	struct Control_curve *curve,*curve_to_be_modified;
+	struct IO_stream_package *io_stream_package;
 }; /* struct Control_curve_definition */
 
 int define_Control_curve_information(struct Parse_state *state,
@@ -4440,7 +4441,8 @@ DESCRIPTION :
 					if (file_name)
 					{
 						if (temp_curve=create_Control_curve_from_file(
-							curve_definition->curve->name,file_name))
+							curve_definition->curve->name,file_name,
+							curve_definition->io_stream_package))
 						{
 							if (curve_definition->fe_basis_type_set)
 							{
@@ -4730,7 +4732,7 @@ DESCRIPTION :
 } /* define_Control_curve_fe_basis_type */
 
 int gfx_define_Control_curve(struct Parse_state *state,
-	void *dummy_to_be_modified,void *control_curve_manager_void)
+	void *dummy_to_be_modified,void *control_curve_command_data_void)
 /*******************************************************************************
 LAST MODIFIED : 29 November 1999
 
@@ -4746,15 +4748,14 @@ DESCRIPTION :
 	char *current_token;
 	int return_code;
 	struct Control_curve_definition curve_definition;
-	struct MANAGER(Control_curve) *control_curve_manager;
+	struct Control_curve_command_data *command_data;
 
 	ENTER(gfx_define_Control_curve);
 	USE_PARAMETER(dummy_to_be_modified);
 	return_code=0;
 	if (state)
 	{
-		if (control_curve_manager=
-			(struct MANAGER(Control_curve) *)control_curve_manager_void)
+		if (command_data=(struct Control_curve_command_data *)control_curve_command_data_void)
 		{
 			if (current_token=state->current_token)
 			{
@@ -4766,13 +4767,14 @@ DESCRIPTION :
 				curve_definition.number_of_components_set=0;
 				curve_definition.curve=(struct Control_curve *)NULL;
 				curve_definition.curve_to_be_modified=(struct Control_curve *)NULL;
+				curve_definition.io_stream_package=command_data->io_stream_package;
 				if (strcmp(PARSER_HELP_STRING,current_token)&&
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 				{
 					curve_definition.name=duplicate_string(current_token);
 					if (curve_definition.curve_to_be_modified=
 						FIND_BY_IDENTIFIER_IN_MANAGER(Control_curve,name)(
-							curve_definition.name,control_curve_manager))
+							curve_definition.name,command_data->control_curve_manager))
 					{
 						curve_definition.fe_basis_type=
 							Control_curve_get_fe_basis_type(
@@ -4789,12 +4791,12 @@ DESCRIPTION :
 						{
 							return_code=MANAGER_MODIFY_NOT_IDENTIFIER(Control_curve,name)(
 								curve_definition.curve_to_be_modified,curve_definition.curve,
-								control_curve_manager);
+								command_data->control_curve_manager);
 						}
 						else
 						{
 							return_code=ADD_OBJECT_TO_MANAGER(Control_curve)(
-								curve_definition.curve,control_curve_manager);
+								curve_definition.curve,command_data->control_curve_manager);
 						}
 					}
 					else
@@ -4827,7 +4829,7 @@ DESCRIPTION :
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"gfx_define_Control_curve.  Missing control_curve_manager");
+				"gfx_define_Control_curve.  Missing control_curve_command_data");
 			return_code=0;
 		}
 	}
@@ -5191,9 +5193,9 @@ eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 } /* write_Control_curve */
 
 struct Control_curve *create_Control_curve_from_file(char *curve_name,
-	char *file_name_stem)
+	char *file_name_stem, struct IO_stream_package *io_stream_package)
 /*******************************************************************************
-LAST MODIFIED : 29 November 1999
+LAST MODIFIED : 3 September 2004
 
 DESCRIPTION :
 Appends extension '.curve.exnode' on to <file_name_stem> and reads in nodes from
@@ -5206,11 +5208,11 @@ appropriateness to curve usage.
 	char *file_name;
 	enum FE_basis_type fe_basis_type;
 	int number_of_components,return_code;
-	FILE *element_file,*node_file, *region_file;
 	struct Cmiss_region *child_cmiss_region, *cmiss_region, *element_region;
 	struct Control_curve *curve;
 	struct FE_basis *fe_basis;
 	struct FE_region *fe_region;
+	struct IO_stream *element_file,*node_file, *region_file;
 	struct LIST(FE_element_shape) *element_shape_list;
 	struct MANAGER(FE_basis) *basis_manager;
 
@@ -5228,9 +5230,11 @@ appropriateness to curve usage.
 				cmiss_region = (struct Cmiss_region *)NULL;
 				return_code=1;
 				if (sprintf(file_name,"%s.curve.exnode",file_name_stem) &&
-					(node_file=fopen(file_name,"r")) && 
+					(node_file=CREATE(IO_stream)(io_stream_package)) &&
+					(IO_stream_open_for_read(node_file, file_name)) && 
 					sprintf(file_name,"%s.curve.exelem",file_name_stem) &&
-					(element_file=fopen(file_name,"r")))
+					(element_file=CREATE(IO_stream)(io_stream_package)) &&
+					(IO_stream_open_for_read(element_file, file_name)))
 				{
 					element_region = (struct Cmiss_region *)NULL;
 					if ((cmiss_region = read_exregion_file(node_file,
@@ -5256,15 +5260,18 @@ appropriateness to curve usage.
 					{
 						DESTROY(Cmiss_region)(&element_region);
 					}
-					fclose(node_file);
-					fclose(element_file);
+					IO_stream_close(node_file);
+					DESTROY(IO_stream)(&node_file);
+					IO_stream_close(element_file);
+					DESTROY(IO_stream)(&element_file);
 				}
 				else
 				{
 					/*???RC don't wish to use combined node & element files yet --
 						format not agreed; better to wait for FieldML */
 					if (sprintf(file_name,"%s.curve.exregion",file_name_stem) &&
-						(region_file=fopen(file_name,"r")))
+						(region_file=CREATE(IO_stream)(io_stream_package)) &&
+						(IO_stream_open_for_read(region_file, file_name)))
 					{
 						if (cmiss_region = read_exregion_file(region_file,
 							basis_manager, element_shape_list, (struct FE_import_time_index *)NULL))
@@ -5278,7 +5285,8 @@ appropriateness to curve usage.
 						{
 							return_code = 0;
 						}
-						fclose(node_file);
+						IO_stream_close(region_file);
+						DESTROY(IO_stream)(&region_file);
 					}
 					else
 					{

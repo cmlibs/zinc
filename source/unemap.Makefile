@@ -510,6 +510,7 @@ GENERAL_SRCS = \
 	general/geometry.c \
 	general/heapsort.c \
 	general/image_utilities.c \
+	general/io_stream.c \
 	general/indexed_multi_range.c \
 	general/machine.c \
 	general/matrix_vector.c \

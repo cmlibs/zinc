@@ -19,7 +19,7 @@ interface to CMISS.
 #include "general/indexed_list_private.h"
 #include "general/math.h"
 #include "general/multi_range.h"
-#include "general/myio.h"
+#include "general/io_stream.h"
 #include "general/mystring.h"
 #include "general/object.h"
 #include "user_interface/message.h"
@@ -79,7 +79,7 @@ Module functions
 */
 
 #if defined (OLD_CODE)
-static int read_FE_value_array(FILE *input_file,int *number_of_values,
+static int read_FE_value_array(struct IO_stream *input_file,int *number_of_values,
 	FE_value **values)
 /*******************************************************************************
 LAST MODIFIED : 22 September 1999
@@ -95,7 +95,7 @@ number_of_values in the array; the real values follow.
 	return_code=0;
 	if (input_file&&number_of_values&&values)
 	{
-		if (1==fscanf(input_file," %d",number_of_values))
+		if (1==IO_stream_scan(input_file," %d",number_of_values))
 		{
 			if (0< *number_of_values)
 			{
@@ -104,7 +104,7 @@ number_of_values in the array; the real values follow.
 					return_code=1;
 					for (i=0;(i<(*number_of_values))&&return_code;i++)
 					{
-						if (1!=fscanf(input_file,FE_VALUE_INPUT_STRING,&((*values)[i])))
+						if (1!=IO_stream_scan(input_file,FE_VALUE_INPUT_STRING,&((*values)[i])))
 						{
 							display_message(ERROR_MESSAGE,
 								"read_FE_value_array.  Missing array value(s)");
@@ -155,7 +155,7 @@ number_of_values in the array; the real values follow.
 } /* read_FE_value_array */
 #endif /* defined (OLD_CODE) */
 
-static int read_element_xi_value(FILE *input_file,
+static int read_element_xi_value(struct IO_stream *input_file,
 	struct Cmiss_region *root_region, struct FE_element **element_address,
 	FE_value *xi)
 /*******************************************************************************
@@ -172,7 +172,7 @@ is in the root_region itself. The REGION_PATH must end in
 <xi> should have space for up to MAXIMUM_ELEMENT_XI_DIMENSIONS FE_values.
 ==============================================================================*/
 {
-	char *element_type_string, *first_string, *second_string, *separator_string;
+	char *element_type_string, *first_string, *location, *second_string, *separator_string;
 	int dimension, k, return_code;
 	struct CM_element_information cm;
 	struct Cmiss_region *region;
@@ -190,9 +190,9 @@ is in the root_region itself. The REGION_PATH must end in
 		first_string = (char *)NULL;
 		separator_string = (char *)NULL;
 		second_string = (char *)NULL;
-		if (read_string(input_file, "[^ \n]", &first_string) &&
-			read_string(input_file, "[ \n]", &separator_string) &&
-			read_string(input_file, "[^ \n]", &second_string))
+		if (IO_stream_read_string(input_file, "[^ \n]", &first_string) &&
+			IO_stream_read_string(input_file, "[ \n]", &separator_string) &&
+			IO_stream_read_string(input_file, "[^ \n]", &second_string))
 		{
 			element_type_string = (char *)NULL;
 			/* first determine the element_number, which is in the second_string
@@ -202,7 +202,7 @@ is in the root_region itself. The REGION_PATH must end in
 				region = root_region;
 				element_type_string = first_string;
 			}
-			else if (1 == fscanf(input_file, " %d", &(cm.number)))
+			else if (1 == IO_stream_scan(input_file, " %d", &(cm.number)))
 			{
 				if (Cmiss_region_get_region_from_path(root_region, first_string,
 					&region) && region)
@@ -211,17 +211,21 @@ is in the root_region itself. The REGION_PATH must end in
 				}
 				else
 				{
+					location = IO_stream_get_location_string(input_file);
 					display_message(ERROR_MESSAGE,
-						"Invalid region path %s in element:xi value.  Line %d",
-						first_string, get_line_number(input_file));
+						"Invalid region path %s in element:xi value.  %s",
+						first_string, location);
+					DEALLOCATE(location);
 					return_code = 0;
 				}
 			}
 			else
 			{
+				location = IO_stream_get_location_string(input_file);
 				display_message(ERROR_MESSAGE,
-					"Missing element number in element:xi value.  Line %d",
-					get_line_number(input_file));
+					"Missing element number in element:xi value.  %s",
+					location);
+				DEALLOCATE(location);
 				return_code = 0;
 			}
 			/* determine the element_type */
@@ -241,18 +245,22 @@ is in the root_region itself. The REGION_PATH must end in
 				}
 				else
 				{
+					location = IO_stream_get_location_string(input_file);
 					display_message(ERROR_MESSAGE,
-						"Unknown element type %s for element_xi value.  Line %d",
-						element_type_string, get_line_number(input_file));
+						"Unknown element type %s for element_xi value.  %s",
+						element_type_string, location);
+					DEALLOCATE(location);
 					return_code = 0;
 				}
 			}
 		}
 		else
 		{
+			location = IO_stream_get_location_string(input_file);
 			display_message(ERROR_MESSAGE,
 				"Missing region path, element type or number in element:xi value.  "
-				"Line %d", get_line_number(input_file));
+				"%s", location);
+			DEALLOCATE(location)
 			return_code = 0;
 		}
 		DEALLOCATE(second_string);
@@ -263,7 +271,7 @@ is in the root_region itself. The REGION_PATH must end in
 			if (fe_region = Cmiss_region_get_FE_region(region))
 			{
 				element = (struct FE_element *)NULL;
-				if ((1 == fscanf(input_file, " %d", &dimension)) && (0 < dimension))
+				if ((1 == IO_stream_scan(input_file, " %d", &dimension)) && (0 < dimension))
 				{
 					/* get existing element and check it has the dimension, or create
 						 a dummy element with unspecified shape and the dimension */
@@ -274,44 +282,54 @@ is in the root_region itself. The REGION_PATH must end in
 						/* now read the xi position */
 						for (k = 0; (k < dimension) && return_code; k++)
 						{
-							if (1 == fscanf(input_file, FE_VALUE_INPUT_STRING, &(xi[k])))
+							if (1 == IO_stream_scan(input_file, FE_VALUE_INPUT_STRING, &(xi[k])))
 							{
 								if (!finite(xi[k]))
 								{
+									location = IO_stream_get_location_string(input_file);
 									display_message(ERROR_MESSAGE,
-										"Infinity or NAN xi coordinates read from file.  Line %d",
-										get_line_number(input_file));
+										"Infinity or NAN xi coordinates read from file.  %s",
+										location);
+									DEALLOCATE(location);
 									return_code = 0;
 								}
 							}
 							else
 							{
+								location = IO_stream_get_location_string(input_file);
 								display_message(ERROR_MESSAGE,
-									"Missing %d xi value(s).  Line %d",
-									dimension - k, get_line_number(input_file));
+									"Missing %d xi value(s).  %s",
+									dimension - k, location);
+								DEALLOCATE(location);
 								return_code = 0;
 							}
 						}
 					}
 					else
 					{
+						location = IO_stream_get_location_string(input_file);
 						display_message(ERROR_MESSAGE, "read_element_xi_value.  "
-							"Could not get or create element.  Line %d",
-							get_line_number(input_file));
+							"Could not get or create element.  %s",
+							location);
+						DEALLOCATE(location);
 						return_code = 0;
 					}
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE, "Error reading dimension.  Line %d",
-						get_line_number(input_file));
+					location = IO_stream_get_location_string(input_file);
+					display_message(ERROR_MESSAGE, "Error reading dimension.  %s",
+						location);
+					DEALLOCATE(location);
 					return_code = 0;
 				}
 			}
 			else
 			{
+				location = IO_stream_get_location_string(input_file);
 				display_message(ERROR_MESSAGE,
-					"Cmiss region does not contain a finite element region.  Line %d");
+					"Cmiss region does not contain a finite element region.  %s");
+				DEALLOCATE(location);
 				return_code = 0;
 			}
 		}
@@ -327,7 +345,7 @@ is in the root_region itself. The REGION_PATH must end in
 	return (return_code);
 } /* read_element_xi_value */
 
-static int read_string_value(FILE *input_file, char **string_address)
+static int read_string_value(struct IO_stream *input_file, char **string_address)
 /*******************************************************************************
 LAST MODIFIED : 15 January 2002
 
@@ -341,7 +359,7 @@ Special characters including the quote marks, $ and backslash must be preceded
 by the escape/backslash character in the input file.
 ==============================================================================*/
 {
-	char *the_string;
+	char *location, *the_string;
 	int allocated_length, length, quote_mark, reading_token, return_code,
 		this_char;
 
@@ -352,12 +370,12 @@ by the escape/backslash character in the input file.
 		allocated_length = 0; /* including space for \0 at end */
 		length = 0;
 		/* pass over leading white space */
-		while (isspace(this_char = fgetc(input_file)));
+		while (isspace(this_char = IO_stream_getc(input_file)));
 		/* determine if string is in quotes and which quote_mark is in use */
 		if (((int)'\'' == this_char) || ((int)'\"' == this_char))
 		{
 			quote_mark = this_char;
-			this_char = fgetc(input_file);
+			this_char = IO_stream_getc(input_file);
 		}
 		else
 		{
@@ -371,16 +389,20 @@ by the escape/backslash character in the input file.
 			{
 				if (quote_mark)
 				{
+					location = IO_stream_get_location_string(input_file);
 					display_message(ERROR_MESSAGE,
-						"End of file before end quote mark.  Line %d",
-						get_line_number(input_file));
+						"End of file before end quote mark.  %s",
+						location);
+					DEALLOCATE(location);
 					return_code = 0;
 				}
 				if (!the_string)
 				{
+					location = IO_stream_get_location_string(input_file);
 					display_message(ERROR_MESSAGE,
-						"Missing string in input file.  Line %d",
-						get_line_number(input_file));
+						"Missing string in input file.  %s",
+						location);
+					DEALLOCATE(location);
 					return_code = 0;
 				}
 				reading_token = 0;
@@ -391,23 +413,25 @@ by the escape/backslash character in the input file.
 			}
 			else if (quote_mark && ((int)'\\' == this_char))
 			{
-				this_char = fgetc(input_file);
+				this_char = IO_stream_getc(input_file);
 				if (!(((int)'\\' == this_char) ||
 					((int)'\"' == this_char) ||
 					((int)'\'' == this_char) ||
 					((int)'$' == this_char)))
 				{
+					location = IO_stream_get_location_string(input_file);
 					display_message(ERROR_MESSAGE,
-						"Invalid escape sequence: \\%c.  Line %d", this_char,
-						get_line_number(input_file));
+						"Invalid escape sequence: \\%c.  %s", this_char,
+						location);
 					DEALLOCATE(the_string);
+					DEALLOCATE(location);
 					reading_token = 0;					
 					return_code = 0;
 				}
 			}
 			else if (quote_mark && (quote_mark == this_char))
 			{
-				this_char = fgetc(input_file);
+				this_char = IO_stream_getc(input_file);
 				if ((EOF == this_char) || isspace(this_char))
 				{
 					if (!the_string)
@@ -428,9 +452,11 @@ by the escape/backslash character in the input file.
 				}
 				else
 				{
+					location = IO_stream_get_location_string(input_file);
 					display_message(ERROR_MESSAGE,
-						"Must have white space after end quote.  Line %d",
-						get_line_number(input_file));
+						"Must have white space after end quote.  %s",
+						location);
+					DEALLOCATE(location);
 					DEALLOCATE(the_string);
 					reading_token = 0;
 					return_code = 0;
@@ -460,7 +486,7 @@ by the escape/backslash character in the input file.
 				{
 					the_string[length - 1] = (char)this_char;
 				}
-				this_char = fgetc(input_file);
+				this_char = IO_stream_getc(input_file);
 			}
 		}
 		if (the_string)
@@ -481,7 +507,7 @@ by the escape/backslash character in the input file.
 	return (return_code);
 } /* read_string_value */
 
-static struct FE_field *read_FE_field(FILE *input_file,
+static struct FE_field *read_FE_field(struct IO_stream *input_file,
 	struct FE_region *fe_region)
 /*******************************************************************************
 LAST MODIFIED : 2 May 2003
@@ -496,7 +522,7 @@ This approach is used because component names are set later and differently
 for node and element fields.
 ==============================================================================*/
 {
-	char *field_name, *next_block;
+	char *field_name, *location, *next_block;
 	enum CM_field_type cm_field_type;
 	enum FE_field_type fe_field_type;
 	enum Value_type value_type;
@@ -512,13 +538,13 @@ for node and element fields.
 		return_code = 1;
 		field_name = (char *)NULL;
 		/* read the field information */
-		fscanf(input_file, " %*d) ");
+		IO_stream_scan(input_file, " %*d) ");
 		/* read the field name */
 		if (return_code)
 		{
-			if (read_string(input_file, "[^,]", &field_name))
+			if (IO_stream_read_string(input_file, "[^,]", &field_name))
 			{
-				fscanf(input_file, ", ");
+				IO_stream_scan(input_file, ", ");
 				/* remove trailing blanks off field name */
 				i = strlen(field_name);
 				while ((0 < i) && (isspace(field_name[i - 1])))
@@ -528,15 +554,19 @@ for node and element fields.
 				field_name[i] = '\0';
 				if (0 == i)
 				{
-					display_message(ERROR_MESSAGE, "No field name.  Line %d",
-						get_line_number(input_file));
+					location = IO_stream_get_location_string(input_file);
+					display_message(ERROR_MESSAGE, "No field name.  %s",
+						location);
+					DEALLOCATE(location);
 					return_code = 0;
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE, "Missing field name.  Line %d",
-					get_line_number(input_file));
+				location = IO_stream_get_location_string(input_file);
+				display_message(ERROR_MESSAGE, "Missing field name.  %s",
+					location);
+				DEALLOCATE(location);
 				return_code = 0;
 			}
 		}
@@ -544,23 +574,27 @@ for node and element fields.
 		if (return_code)
 		{
 			/* next string required for value_type, below */
-			if (!read_string(input_file, "[^,]", &next_block))
+			if (!IO_stream_read_string(input_file, "[^,]", &next_block))
 			{
+				location = IO_stream_get_location_string(input_file);
 				display_message(ERROR_MESSAGE,
-					"Field '%s' missing CM field type.  Line %d", field_name,
-					get_line_number(input_file));
+					"Field '%s' missing CM field type.  %s", field_name,
+					location);
+				DEALLOCATE(location);
 				return_code = 0;
 			}
-			fscanf(input_file, ", ");
+			IO_stream_scan(input_file, ", ");
 		}
 		/* read the CM_field_type */
 		if (return_code && next_block)
 		{
 			if (!STRING_TO_ENUMERATOR(CM_field_type)(next_block, &cm_field_type))
 			{
+				location = IO_stream_get_location_string(input_file);
 				display_message(ERROR_MESSAGE,
-					"Field '%s' has unknown CM field type '%s'.  Line %d", field_name,
-					next_block, get_line_number(input_file));
+					"Field '%s' has unknown CM field type '%s'.  %s", field_name,
+					next_block, location);
+				DEALLOCATE(location);
 				return_code = 0;
 			}
 		}
@@ -573,14 +607,16 @@ for node and element fields.
 		if (return_code)
 		{
 			/* next string required for value_type, below */
-			if (!read_string(input_file, "[^,]", &next_block))
+			if (!IO_stream_read_string(input_file, "[^,]", &next_block))
 			{
+				location = IO_stream_get_location_string(input_file);
 				display_message(ERROR_MESSAGE,
-					"Field '%s' missing field/value type.  Line %d", field_name,
-					get_line_number(input_file));
+					"Field '%s' missing field/value type.  %s", field_name,
+					location);
+				DEALLOCATE(location);
 				return_code = 0;
 			}
-			fscanf(input_file, ", ");
+			IO_stream_scan(input_file, ", ");
 		}
 		/* read the optional modifier: constant|indexed */
 		if (return_code && next_block)
@@ -593,8 +629,8 @@ for node and element fields.
 			{
 				fe_field_type = INDEXED_FE_FIELD;
 				DEALLOCATE(next_block);
-				if ((EOF != fscanf(input_file, " Index_field = ")) &&
-					read_string(input_file, "[^,]", &next_block))
+				if ((EOF != IO_stream_scan(input_file, " Index_field = ")) &&
+					IO_stream_read_string(input_file, "[^,]", &next_block))
 				{
 					if (!(indexer_field =
 						FE_region_get_FE_field_from_name(fe_region, next_block)))
@@ -613,24 +649,28 @@ for node and element fields.
 					}
 					if (return_code)
 					{
-						if (!((1 == fscanf(input_file, ", #Values=%d",
+						if (!((1 == IO_stream_scan(input_file, ", #Values=%d",
 							&number_of_indexed_values)) && (0 < number_of_indexed_values)))
 						{
+							location = IO_stream_get_location_string(input_file);
 							display_message(ERROR_MESSAGE,
-								"Field '%s' missing number of indexed values.  Line %d",
-								field_name, get_line_number(input_file));
+								"Field '%s' missing number of indexed values.  %s",
+								field_name, location);
+							DEALLOCATE(location);
 							return_code = 0;
 						}
 					}
 				}
 				else
 				{
+					location = IO_stream_get_location_string(input_file);
 					display_message(ERROR_MESSAGE,
-						"Field '%s' missing indexing information.  Line %d", field_name,
-						get_line_number(input_file));
+						"Field '%s' missing indexing information.  %s", field_name,
+						location);
+					DEALLOCATE(location);
 					return_code = 0;
 				}
-				fscanf(input_file, ", ");
+				IO_stream_scan(input_file, ", ");
 			}
 			else
 			{
@@ -642,8 +682,8 @@ for node and element fields.
 				if (return_code)
 				{
 					/* next string required for coordinate system or value_type */
-					return_code = read_string(input_file, "[^,]", &next_block);
-					fscanf(input_file, ", ");
+					return_code = IO_stream_read_string(input_file, "[^,]", &next_block);
+					IO_stream_scan(input_file, ", ");
 				}
 			}
 		}
@@ -677,27 +717,27 @@ for node and element fields.
 				"prolate spheroidal"))
 			{
 				coordinate_system.type = PROLATE_SPHEROIDAL;
-				fscanf(input_file, " focus=");
-				if ((1 != fscanf(input_file, FE_VALUE_INPUT_STRING, &focus)) ||
+				IO_stream_scan(input_file, " focus=");
+				if ((1 != IO_stream_scan(input_file, FE_VALUE_INPUT_STRING, &focus)) ||
 					(!finite(focus)))
 				{
 					focus = 1.0;
 				}
 				coordinate_system.parameters.focus = focus;
-				fscanf(input_file, " ,");
+				IO_stream_scan(input_file, " ,");
 			}
 			else if (fuzzy_string_compare_same_length(next_block,
 				"oblate spheroidal"))
 			{
 				coordinate_system.type = OBLATE_SPHEROIDAL;
-				fscanf(input_file," focus=");
-				if ((1 != fscanf(input_file,FE_VALUE_INPUT_STRING, &focus)) ||
+				IO_stream_scan(input_file," focus=");
+				if ((1 != IO_stream_scan(input_file,FE_VALUE_INPUT_STRING, &focus)) ||
 					(!finite(focus)))
 				{
 					focus = 1.0;
 				}
 				coordinate_system.parameters.focus = focus;
-				fscanf(input_file, " ,");
+				IO_stream_scan(input_file, " ,");
 			}
 			else if (fuzzy_string_compare_same_length(next_block,
 				"fibre"))
@@ -711,8 +751,8 @@ for node and element fields.
 				if (return_code)
 				{
 					/* next string required for value_type, below */
-					return_code = read_string(input_file, "[^,\n]", &next_block);
-					fscanf(input_file, ", ");
+					return_code = IO_stream_read_string(input_file, "[^,\n]", &next_block);
+					IO_stream_scan(input_file, ", ");
 				}
 			}
 		}
@@ -737,9 +777,11 @@ for node and element fields.
 				}
 				else
 				{
+					location = IO_stream_get_location_string(input_file);
 					display_message(ERROR_MESSAGE,
-						"Field '%s' has unknown value_type %s.  Line %d", field_name,
-						next_block, get_line_number(input_file));
+						"Field '%s' has unknown value_type %s.  %s", field_name,
+						next_block, location);
+					DEALLOCATE(location);
 					return_code = 0;
 				}
 			}
@@ -747,7 +789,7 @@ for node and element fields.
 			{
 				DEALLOCATE(next_block);
 				/* next string required for value_type, below */
-				return_code = read_string(input_file,"[^,\n]", &next_block);
+				return_code = IO_stream_read_string(input_file,"[^,\n]", &next_block);
 			}
 		}
 		else
@@ -762,9 +804,11 @@ for node and element fields.
 			if (!((1 == sscanf(next_block, " #Components=%d", &number_of_components))
 				&& (0 < number_of_components)))
 			{
+				location = IO_stream_get_location_string(input_file);
 				display_message(ERROR_MESSAGE,
-					"Field '%s' missing #Components.  Line %d", field_name,
-					get_line_number(input_file));
+					"Field '%s' missing #Components.  %s", field_name,
+					location);
+				DEALLOCATE(location);
 				return_code = 0;
 			}
 		}
@@ -824,7 +868,7 @@ for node and element fields.
 	return (field);
 } /* read_FE_field */
 
-static int read_FE_field_values(FILE *input_file,
+static int read_FE_field_values(struct IO_stream *input_file,
 	struct FE_region *fe_region, struct Cmiss_region *root_region,
 	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
@@ -835,7 +879,7 @@ Reads in from <input_file> the values for the constant and indexed fields in
 the <field_order_info>.
 ==============================================================================*/
 {
-	char *rest_of_line;
+	char *location, *rest_of_line;
 	enum Value_type value_type;
 	int i, k, number_of_fields, number_of_values, return_code;
 	struct FE_field *field;
@@ -845,7 +889,7 @@ the <field_order_info>.
 	if (input_file && fe_region && root_region && field_order_info)
 	{
 		rest_of_line = (char *)NULL;
-		read_string(input_file, "[^\n]", &rest_of_line);
+		IO_stream_read_string(input_file, "[^\n]", &rest_of_line);
 		return_code = string_matches_without_whitespace(rest_of_line, "alues : ");
 		DEALLOCATE(rest_of_line);
 		if (return_code)
@@ -874,9 +918,11 @@ the <field_order_info>.
 										&element, xi) &&
 										set_FE_field_element_xi_value(field, k, element, xi)))
 									{
+										location = IO_stream_get_location_string(input_file);
 										display_message(ERROR_MESSAGE,
-											"Error reading field element_xi value.  Line %d",
-											get_line_number(input_file));
+											"Error reading field element_xi value.  %s",
+											location);
+										DEALLOCATE(location);
 										return_code = 0;
 									}
 								}
@@ -887,13 +933,15 @@ the <field_order_info>.
 
 								for (k = 0;(k < number_of_values) && return_code; k++)
 								{
-									if (!((1 == fscanf(input_file, FE_VALUE_INPUT_STRING, &value))
+									if (!((1 == IO_stream_scan(input_file, FE_VALUE_INPUT_STRING, &value))
 										&& finite(value) &&
 										set_FE_field_FE_value_value(field, k, value)))
 									{
+										location = IO_stream_get_location_string(input_file);
 										display_message(ERROR_MESSAGE,
-											"Error reading field FE_value.  Line %d",
-											get_line_number(input_file));
+											"Error reading field FE_value.  %s",
+											location);
+										DEALLOCATE(location);
 										return_code = 0;
 									}
 								}
@@ -904,12 +952,14 @@ the <field_order_info>.
 
 								for (k = 0; (k < number_of_values) && return_code; k++)
 								{
-									if (!((1 == fscanf(input_file, "%d", &value)) &&
+									if (!((1 == IO_stream_scan(input_file, "%d", &value)) &&
 										set_FE_field_int_value(field, k, value)))
 									{
+										location = IO_stream_get_location_string(input_file);
 										display_message(ERROR_MESSAGE,
-											"Error reading field int.  Line %d",
-											get_line_number(input_file));
+											"Error reading field int.  %s",
+											location);
+										DEALLOCATE(location);
 										return_code = 0;
 									}
 								}
@@ -924,26 +974,32 @@ the <field_order_info>.
 									{
 										if (!set_FE_field_string_value(field, k, the_string))
 										{
+											location = IO_stream_get_location_string(input_file);
 											display_message(ERROR_MESSAGE,
-												"read_FE_field_values.  Error setting string");
+												"read_FE_field_values.  Error setting string.  %s");
+											DEALLOCATE(location);
 											return_code = 0;
 										}
 										DEALLOCATE(the_string);
 									}
 									else
 									{
+										location = IO_stream_get_location_string(input_file);
 										display_message(ERROR_MESSAGE,
-											"Error reading field string.  Line %d",
-											get_line_number(input_file));
+											"Error reading field string.  %s",
+											location);
+										DEALLOCATE(location);
 										return_code = 0;
 									}
 								}
 							} break;
 							default:
 							{
+								location = IO_stream_get_location_string(input_file);
 								display_message(ERROR_MESSAGE,
-									"Unsupported field value_type %s.  Line %d",
-									Value_type_string(value_type), get_line_number(input_file));
+									"Unsupported field value_type %s.  %s",
+									Value_type_string(value_type), location);
+								DEALLOCATE(location);
 								return_code = 0;
 							} break;
 						}
@@ -961,8 +1017,10 @@ the <field_order_info>.
 		}
 		else
 		{
+			location = IO_stream_get_location_string(input_file);
 			display_message(ERROR_MESSAGE,
-				"Invalid field 'Values:'.  Line %d", get_line_number(input_file));
+				"Invalid field 'Values:'.  %s", location);
+			DEALLOCATE(location);
 		}
 	}
 	else
@@ -975,7 +1033,7 @@ the <field_order_info>.
 	return (return_code);
 } /* read_FE_field_values */
 
-static int read_FE_node_field(FILE *input_file,
+static int read_FE_node_field(struct IO_stream *input_file,
 	struct FE_region *fe_region, struct FE_node *node,
 	struct FE_import_time_index *time_index, struct FE_field **field_address)
 /*******************************************************************************
@@ -986,7 +1044,7 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 <node>. <field> is returned.
 ==============================================================================*/
 {
-	char *component_name, *derivative_type_name, *nodal_value_type_string,
+	char *component_name, *derivative_type_name, *location, *nodal_value_type_string,
 		*rest_of_line;
 	enum FE_field_type fe_field_type;
 	enum FE_nodal_value_type derivative_type;	
@@ -1018,14 +1076,14 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 			component_number = 0;
 			while (return_code && (component_number < number_of_components))
 			{
-				fscanf(input_file, " ");
+				IO_stream_scan(input_file, " ");
 				/* read the component name */
 				if (component_name)
 				{
 					DEALLOCATE(component_name);
 					component_name = (char *)NULL;
 				}
-				if (read_string(input_file, "[^.]", &component_name))
+				if (IO_stream_read_string(input_file, "[^.]", &component_name))
 				{
 					/* strip trailing blanks from component name */
 					i = strlen(component_name);
@@ -1043,12 +1101,12 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 					if (GENERAL_FE_FIELD == fe_field_type)
 					{
 						/* ignore value index */
-						if ((2 == fscanf(input_file,
+						if ((2 == IO_stream_scan(input_file,
 							".  Value index=%d, #Derivatives=%d", &temp_int,
 							&number_of_derivatives)) && (0 <= number_of_derivatives))
 						{
 							/* first number which is the value, is automatically included */
-							if (read_string(input_file, "[^\n]", &rest_of_line))
+							if (IO_stream_read_string(input_file, "[^\n]", &rest_of_line))
 							{
 								derivative_type_name = rest_of_line;
 								derivative_type++;
@@ -1109,11 +1167,13 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 													FE_node_field_creator_define_derivative(
 														node_field_creator, component_number,
 														FE_NODAL_UNKNOWN);
+													location = IO_stream_get_location_string(input_file);
 													display_message(WARNING_MESSAGE,
 														"Unknown derivative type '%s' for field "
-														"component %s.%s .  Line %d",
+														"component %s.%s .  %s",
 														nodal_value_type_string, get_FE_field_name(field),
-														component_name, get_line_number(input_file));
+														component_name, location);
+													DEALLOCATE(location);
 												}
 											}
 											else
@@ -1121,10 +1181,12 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 												FE_node_field_creator_define_derivative(
 													node_field_creator, component_number,
 													FE_NODAL_UNKNOWN);
+												location = IO_stream_get_location_string(input_file);
 												display_message(WARNING_MESSAGE,
 													"Missing derivative type for field component "
-													"%s.%s .  Line %d", get_FE_field_name(field),
-													component_name, get_line_number(input_file));
+													"%s.%s .  %s", get_FE_field_name(field),
+													component_name, location);
+												DEALLOCATE(location);
 											}
 											derivative_type++;
 											i--;
@@ -1136,10 +1198,12 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 									}
 									else
 									{
+										location = IO_stream_get_location_string(input_file);
 										display_message(WARNING_MESSAGE,
 											"Derivative types missing for field component %s.%s"
-											" .  Line %d", get_FE_field_name(field), component_name,
-											get_line_number(input_file));
+											" .  %s", get_FE_field_name(field), component_name,
+											location);
+										DEALLOCATE(location);
 									}
 									/* Make sure we declare any derivatives that weren't 
 										given types */
@@ -1173,24 +1237,28 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 					{
 						/* non GENERAL_FE_FIELD */
 						/* check there is nothing on remainder of line */
-						if (read_string(input_file, "[^\n]", &rest_of_line))
+						if (IO_stream_read_string(input_file, "[^\n]", &rest_of_line))
 						{
 							if (!fuzzy_string_compare(rest_of_line, "."))
 							{
+								location = IO_stream_get_location_string(input_file);
 								display_message(ERROR_MESSAGE,
 									"Unexpected text on field '%s' component '%s'"
-									".  Line %d: %s", get_FE_field_name(field), component_name,
-									get_line_number(input_file), rest_of_line);
+									".  %s: %s", get_FE_field_name(field), component_name,
+									location, rest_of_line);
+								DEALLOCATE(location);
 								return_code = 0;
 							}
 							DEALLOCATE(rest_of_line);
 						}
 						else
 						{
+							location = IO_stream_get_location_string(input_file);
 							display_message(ERROR_MESSAGE,
-								"Unexpected end of field '%s' component '%s'.  Line %d",
+								"Unexpected end of field '%s' component '%s'.  %s",
 								get_FE_field_name(field), component_name,
-								get_line_number(input_file));
+								location);
+							DEALLOCATE(location);
 							return_code = 0;
 						}
 					}
@@ -1198,9 +1266,11 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 				}
 				else
 				{
+					location = IO_stream_get_location_string(input_file);
 					display_message(ERROR_MESSAGE,
 						"Error establishing component name.  Line",
-						get_line_number(input_file));
+						location);
+					DEALLOCATE(location);
 					return_code = 0;
 				}
 			}
@@ -1208,10 +1278,12 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 			{
 				/* first try to retrieve matching field from fe_region */
 				if (!(merged_fe_field = FE_region_merge_FE_field(fe_region, field)))
-				{
+				{	
+					location = IO_stream_get_location_string(input_file);
 					display_message(ERROR_MESSAGE,"read_FE_node_field.  "
-						"Could not merge field '%s' into finite element region.  Line %d",
-						get_FE_field_name(field), get_line_number(input_file));
+						"Could not merge field '%s' into finite element region.  %s",
+						get_FE_field_name(field), location);
+					DEALLOCATE(location);
 					return_code = 0;
 				}
 			}
@@ -1271,7 +1343,7 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 	return (return_code);
 } /* read_FE_node_field */
 
-static struct FE_node *read_FE_node_field_info(FILE *input_file,
+static struct FE_node *read_FE_node_field_info(struct IO_stream *input_file,
 	struct FE_region *fe_region, struct FE_field_order_info **field_order_info,
 	struct FE_import_time_index *time_index)
 /*******************************************************************************
@@ -1284,6 +1356,7 @@ Creates, fills in and returns field_order_info.
 from a previous call to this function.
 ==============================================================================*/
 {
+	char *location;
 	int number_of_fields,return_code,i;
 	struct FE_node *node;
 	struct FE_field *field;
@@ -1301,7 +1374,7 @@ from a previous call to this function.
 		if (node = CREATE(FE_node)(0, fe_region, (struct FE_node *)NULL))
 		{
 			return_code = 1;
-			if ((1 == fscanf(input_file, "Fields=%d", &number_of_fields)) &&
+			if ((1 == IO_stream_scan(input_file, "Fields=%d", &number_of_fields)) &&
 				(0 <= number_of_fields))
 			{
 				*field_order_info = CREATE(FE_field_order_info)();
@@ -1329,9 +1402,11 @@ from a previous call to this function.
 			}
 			else
 			{
+				location = IO_stream_get_location_string(input_file);
 				display_message(ERROR_MESSAGE,
-					"Error reading number of fields from file.  Line %d",
-					get_line_number(input_file));
+					"Error reading number of fields from file.  %s",
+					location);
+				DEALLOCATE(location);
 				return_code = 0;
 			}
 			if (!return_code)
@@ -1357,7 +1432,7 @@ from a previous call to this function.
 	return (node);
 } /* read_FE_node_field_info */
 
-static struct FE_node *read_FE_node(FILE *input_file,
+static struct FE_node *read_FE_node(struct IO_stream *input_file,
 	struct FE_node *template_node, struct FE_region *fe_region,
 	struct Cmiss_region *root_region,
 	struct FE_field_order_info *field_order_info,
@@ -1370,6 +1445,7 @@ Reads in a node from an <input_file>.
 <root_region> is root region for locating embedding elements.
 ==============================================================================*/
 {
+	char *location;
 	enum Value_type value_type;
 	int i, j, k, length, node_number, number_of_components, number_of_fields,
 		number_of_values, return_code;
@@ -1381,7 +1457,7 @@ Reads in a node from an <input_file>.
 	if (input_file && template_node && fe_region && root_region &&
 		field_order_info)
 	{
-		if (1 == fscanf(input_file, "ode :%d", &node_number))
+		if (1 == IO_stream_scan(input_file, "ode :%d", &node_number))
 		{
 			return_code = 1;
 			/* create node based on template node; read and fill in contents */
@@ -1425,18 +1501,22 @@ Reads in a node from an <input_file>.
 														field, /*component_number*/k, /*version*/0,
 														FE_NODAL_VALUE, element, xi)))
 												{
+													location = IO_stream_get_location_string(input_file);
 													display_message(ERROR_MESSAGE, "read_FE_node.  "
 														"Error getting element_xi value for field '%s'",
-														get_FE_field_name(field));
+														get_FE_field_name(field), location);
+													DEALLOCATE(location);
 													return_code = 0;
 												}
 											}
 										}
 										else
 										{
+											location = IO_stream_get_location_string(input_file);
 											display_message(ERROR_MESSAGE,
 												"Derivatives/versions not supported for element_xi"
-												".  Line %d", get_line_number(input_file));
+												".  %s", location);
+											DEALLOCATE(location);
 											return_code = 0;
 										}
 									} break;
@@ -1448,19 +1528,23 @@ Reads in a node from an <input_file>.
 										{
 											for (k = 0; (k < number_of_values) && return_code; k++)
 											{
-												if (1 != fscanf(input_file, FE_VALUE_INPUT_STRING,
+												if (1 != IO_stream_scan(input_file, FE_VALUE_INPUT_STRING,
 													&(values[k])))
 												{
+													location = IO_stream_get_location_string(input_file);
 													display_message(ERROR_MESSAGE,
-														"Error reading nodal value from file.  Line %d",
-														get_line_number(input_file));
+														"Error reading nodal value from file.  %s",
+														location);
+													DEALLOCATE(location);
 													return_code = 0;
 												}
 												if (!finite(values[k]))
 												{
+													location = IO_stream_get_location_string(input_file);
 													display_message(ERROR_MESSAGE,
-														"Infinity or NAN read from node file.  Line %d",
-														get_line_number(input_file));
+														"Infinity or NAN read from node file.  %s",
+														location);
+													DEALLOCATE(location);
 													return_code = 0;
 												}
 											}
@@ -1474,11 +1558,13 @@ Reads in a node from an <input_file>.
 													{
 														if (length != number_of_values)
 														{
+															location = IO_stream_get_location_string(input_file);
 															display_message(ERROR_MESSAGE,
 																"node %d field '%s' took %d values from %d"
-																" expected.  Line %d", node_number,
+																" expected.  %s", node_number,
 																get_FE_field_name(field), length,
-																number_of_values, get_line_number(input_file));
+																number_of_values, location);
+															DEALLOCATE(location);
 															return_code = 0;
 														}
 													}
@@ -1490,11 +1576,13 @@ Reads in a node from an <input_file>.
 													{
 														if (length != number_of_values)
 														{
+															location = IO_stream_get_location_string(input_file);
 															display_message(ERROR_MESSAGE,
 																"node %d field '%s' took %d values from %d"
-																" expected.  Line %d", node_number,
+																" expected.  %s", node_number,
 																get_FE_field_name(field), length,
-																number_of_values, get_line_number(input_file));
+																number_of_values, location);
+															DEALLOCATE(location);
 															return_code = 0;
 														}
 													}
@@ -1517,11 +1605,13 @@ Reads in a node from an <input_file>.
 										{
 											for (k = 0; (k < number_of_values) && return_code; k++)
 											{
-												if (1 != fscanf(input_file, "%d", &(values[k])))
+												if (1 != IO_stream_scan(input_file, "%d", &(values[k])))
 												{
+													location = IO_stream_get_location_string(input_file);
 													display_message(ERROR_MESSAGE,
-														"Error reading nodal value from file.  Line %d",
-														get_line_number(input_file));
+														"Error reading nodal value from file.  %s",
+														location);
+													DEALLOCATE(location);
 													return_code = 0;
 												}
 											}
@@ -1532,11 +1622,13 @@ Reads in a node from an <input_file>.
 												{
 													if (length != number_of_values)
 													{
+														location = IO_stream_get_location_string(input_file);
 														display_message(ERROR_MESSAGE,
 															"node %d field '%s' took %d values from %d"
-															" expected.  Line %d", node_number,
+															" expected.  %s", node_number,
 															get_FE_field_name(field), length,
-															number_of_values, get_line_number(input_file));
+															number_of_values, location);
+														DEALLOCATE(location);
 														return_code = 0;
 													}
 												}
@@ -1564,53 +1656,65 @@ Reads in a node from an <input_file>.
 														/*component_number*/k, /*version*/0, FE_NODAL_VALUE,
 														the_string))
 													{
+														location = IO_stream_get_location_string(input_file);
 														display_message(ERROR_MESSAGE,"read_FE_node.  "
 															"Error setting string value for field '%s'",
-															get_FE_field_name(field));
+															get_FE_field_name(field), location);
+														DEALLOCATE(location);
 														return_code = 0;
 													}
 													DEALLOCATE(the_string);
 												}
 												else
 												{
+													location = IO_stream_get_location_string(input_file);
 													display_message(ERROR_MESSAGE,
-														"Error reading string value for field '%s'"
-														".  Line %d", get_FE_field_name(field),
-														get_line_number(input_file));
+														"Error reading string value for field '%s'."
+														"  %s", get_FE_field_name(field),
+														location);
+													DEALLOCATE(location);
 													return_code = 0;
 												}
 											}
 										}
 										else
 										{
+											location = IO_stream_get_location_string(input_file);
 											display_message(ERROR_MESSAGE,
-												"Derivatives/versions not supported for string"
-												".  Line %d", get_line_number(input_file));
+												"Derivatives/versions not supported for string."
+												"  %s", location);
+											DEALLOCATE(location);
 											return_code = 0;
 										}
 									} break;
 									default:
 									{
-										display_message(ERROR_MESSAGE,"Unsupported value_type %s"
-											".  Line %d",Value_type_string(value_type),
-											get_line_number(input_file));
+										location = IO_stream_get_location_string(input_file);
+										display_message(ERROR_MESSAGE,"Unsupported value_type %s."
+											"  %s",Value_type_string(value_type),
+											location);
+										DEALLOCATE(location);
 										return_code = 0;
 									} break;
 								}
 							}
 							else
 							{
+								location = IO_stream_get_location_string(input_file);
 								display_message(ERROR_MESSAGE,
-									"No nodal values for field '%s'.  Line %d",
-									get_FE_field_name(field),	get_line_number(input_file));
+									"No nodal values for field '%s'.  %s",
+									get_FE_field_name(field),	location);
+								DEALLOCATE(location);
 								return_code = 0;
 							}
 						}
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE, "Invalid field #%d.  Line %d",
-							i + 1, get_line_number(input_file));
+						location = IO_stream_get_location_string(input_file);
+						display_message(ERROR_MESSAGE, "Invalid field #%d.  %s",
+							i + 1, location);
+						DEALLOCATE(location);
 						return_code = 0;
 					}
 				}
@@ -1621,15 +1725,20 @@ Reads in a node from an <input_file>.
 			}
 			else
 			{
+				location = IO_stream_get_location_string(input_file);
 				display_message(ERROR_MESSAGE,
-					"read_FE_node.  Could not create node.  Line %d",
-					get_line_number(input_file));
+					"read_FE_node.  Could not create node.  %s",
+					location);
+				DEALLOCATE(location);
 			}
 		}
 		else
 		{
+			location = IO_stream_get_location_string(input_file);
 			display_message(ERROR_MESSAGE,
-				"read_FE_node.  Error reading node number from file");
+				"read_FE_node.  Error reading node number from file.  %s", location);
+			DEALLOCATE(location);
+
 		}
 	}
 	else
@@ -1641,7 +1750,7 @@ Reads in a node from an <input_file>.
 	return (node);
 } /* read_FE_node */
 
-static int read_FE_element_shape(FILE *input_file,
+static int read_FE_element_shape(struct IO_stream *input_file,
 	struct FE_element_shape **element_shape_address, struct FE_region *fe_region)
 /*******************************************************************************
 LAST MODIFIED : 7 July 2003
@@ -1651,7 +1760,7 @@ Reads element shape information from <input_file>.
 Note the returned shape will be NULL if the dimension is 0, denoting nodes.
 ==============================================================================*/
 {
-	char *end_description,*shape_description_string,*start_description;
+	char *end_description,*location,*shape_description_string,*start_description;
 	int component,dimension,*first_simplex,i,j,number_of_polygon_vertices,
 		previous_component,return_code,*temp_entry,*type,*type_entry,
 		xi_number;
@@ -1662,25 +1771,27 @@ Note the returned shape will be NULL if the dimension is 0, denoting nodes.
 	if (input_file && element_shape_address)
 	{
 		/* file input */
-		if ((1 == fscanf(input_file, "hape.  Dimension=%d", &dimension)) &&
+		if ((1 == IO_stream_scan(input_file, "hape.  Dimension=%d", &dimension)) &&
 			(0 <= dimension))
 		{
 			return_code = 1;
 		}
 		else
 		{
+			location = IO_stream_get_location_string(input_file);
 			display_message(ERROR_MESSAGE,
-				"Error reading element dimension from file.  Line %d",
-				get_line_number(input_file));
+				"Error reading element dimension from file.  %s",
+				location);
+			DEALLOCATE(location);
 			return_code = 0;
 		}
 		if (return_code && (0 < dimension))
 		{
 			if (ALLOCATE(type, int, (dimension*(dimension + 1))/2))
 			{
-				fscanf(input_file,",");
+				IO_stream_scan(input_file,",");
 				/* read the shape description string */
-				if (read_string(input_file, "[^\n]", &shape_description_string))
+				if (IO_stream_read_string(input_file, "[^\n]", &shape_description_string))
 				{
 					if (shape_description_string)
 					{
@@ -1961,10 +2072,12 @@ Note the returned shape will be NULL if the dimension is 0, denoting nodes.
 				}
 				else
 				{
+					location = IO_stream_get_location_string(input_file);
 					display_message(ERROR_MESSAGE,
-						"Error reading shape description from file.  Line %d",
-						get_line_number(input_file));
+						"Error reading shape description from file.  %s",
+						location);
 					DEALLOCATE(type);
+					DEALLOCATE(location);
 					return_code = 0;
 				}
 			}
@@ -2001,7 +2114,7 @@ Note the returned shape will be NULL if the dimension is 0, denoting nodes.
 	return (return_code);
 } /* read_FE_element_shape */
 
-static struct FE_basis *read_FE_basis(FILE *input_file,
+static struct FE_basis *read_FE_basis(struct IO_stream *input_file,
 	struct FE_region *fe_region, int number_of_xi_coordinates, int *basis_type)
 /*******************************************************************************
 LAST MODIFIED : 15 October 2002
@@ -2021,7 +2134,7 @@ Some examples of basis descriptions in an input file are:
 	5-gon for xi1 and xi3.
 ==============================================================================*/
 {
-	char *basis_description_string,*end_basis_name,*start_basis_name;
+	char *basis_description_string,*end_basis_name,*location,*start_basis_name;
 	int component,i,j,*first_simplex,no_error,number_of_polygon_vertices,
 		previous_component,*temp_basis_type,*xi_basis_type,xi_number;
 	struct FE_basis *basis;
@@ -2032,7 +2145,7 @@ Some examples of basis descriptions in an input file are:
 	{
 		/* file input */
 		/* read the basis type */
-		if (read_string(input_file,"[^,]",&basis_description_string))
+		if (IO_stream_read_string(input_file,"[^,]",&basis_description_string))
 		{
 			/* decipher the basis description */
 			xi_number=0;
@@ -2065,9 +2178,10 @@ Some examples of basis descriptions in an input file are:
 					}
 					else
 					{
+					location = IO_stream_get_location_string(input_file);
 						display_message(ERROR_MESSAGE,
-							"Invalid basis description.  Line %d",
-							get_line_number(input_file));
+							"Invalid basis description.  %s",
+							location);
 						no_error=0;
 					}
 				}
@@ -2135,18 +2249,22 @@ Some examples of basis descriptions in an input file are:
 								else
 								{
 									/* have no links to succeeding xi directions */
+									location = IO_stream_get_location_string(input_file);
 									display_message(ERROR_MESSAGE,
-										"Invalid simplex component of basis.  Line %d",
-										get_line_number(input_file));
+										"Invalid simplex component of basis.  %s",
+										location);
+									DEALLOCATE(location);
 									no_error=0;
 								}
 							}
 							else
 							{
 								/* have no links to succeeding xi directions */
+								location = IO_stream_get_location_string(input_file);
 								display_message(ERROR_MESSAGE,
-									"Invalid simplex component of basis.  Line %d",
-									get_line_number(input_file));
+									"Invalid simplex component of basis.  %s",
+									location);
+								DEALLOCATE(location);
 								no_error=0;
 							}
 						}
@@ -2243,9 +2361,11 @@ Some examples of basis descriptions in an input file are:
 								else
 								{
 									/* have no links to succeeding xi directions */
+									location = IO_stream_get_location_string(input_file);
 									display_message(ERROR_MESSAGE,
-										"Invalid polygon component of basis.  Line %d",
-										get_line_number(input_file));
+										"Invalid polygon component of basis.  %s",
+										location);
+									DEALLOCATE(location);
 									no_error=0;
 								}
 							}
@@ -2337,9 +2457,11 @@ Some examples of basis descriptions in an input file are:
 												}
 												else
 												{
+													location = IO_stream_get_location_string(input_file);
 													display_message(ERROR_MESSAGE,
-														"Invalid basis type.  Line %d",
-														get_line_number(input_file));
+														"Invalid basis type.  %s",
+														location);
+													DEALLOCATE(location);
 													no_error=0;
 												}
 											}
@@ -2415,9 +2537,11 @@ Some examples of basis descriptions in an input file are:
 																}
 																else
 																{
+																	location = IO_stream_get_location_string(input_file);
 																	display_message(ERROR_MESSAGE,
-																		"Invalid basis type.  Line %d",
-																		get_line_number(input_file));
+																		"Invalid basis type.  %s",
+																		location);
+																	DEALLOCATE(location);
 																	no_error=0;
 																}
 															}
@@ -2456,9 +2580,11 @@ Some examples of basis descriptions in an input file are:
 									}
 									else
 									{
+										location = IO_stream_get_location_string(input_file);
 										display_message(ERROR_MESSAGE,
-											"Invalid basis type.  Line %d",
-											get_line_number(input_file));
+											"Invalid basis type.  %s",
+											location);
+										DEALLOCATE(location);
 										no_error=0;
 									}
 								}
@@ -2475,15 +2601,19 @@ Some examples of basis descriptions in an input file are:
 			DEALLOCATE(basis_description_string);
 			if (!no_error)
 			{
-				display_message(ERROR_MESSAGE,"Invalid basis description.  Line %d",
-					get_line_number(input_file));
+				location = IO_stream_get_location_string(input_file);
+				display_message(ERROR_MESSAGE,"Invalid basis description.  %s",
+					location);
+				DEALLOCATE(location);
 			}
 		}
 		else
 		{
+			location = IO_stream_get_location_string(input_file);
 			display_message(ERROR_MESSAGE,
-				"Error reading basis description from file.  Line %d",
-				get_line_number(input_file));
+				"Error reading basis description from file.  %s",
+				location);
+			DEALLOCATE(location);
 			no_error=0;
 		}
 		if (no_error)
@@ -2504,7 +2634,7 @@ Some examples of basis descriptions in an input file are:
 	return (basis);
 } /* read_FE_basis */
 
-static int read_FE_element_field(FILE *input_file, struct FE_region *fe_region,
+static int read_FE_element_field(struct IO_stream *input_file, struct FE_region *fe_region,
 	struct FE_element *element, struct FE_field **field_address)
 /*******************************************************************************
 LAST MODIFIED : 27 March 2003
@@ -2514,7 +2644,7 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 <element>. <field> is returned.
 ==============================================================================*/
 {
-	char *component_name, *global_to_element_map_string,
+	char *component_name, *global_to_element_map_string, *location,
 		*modify_function_name, *rest_of_line, test_string[5];
 	enum FE_field_type fe_field_type;
 	FE_element_field_component_modify modify;
@@ -2561,14 +2691,14 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 				component = components;
 				while (return_code && (component_number < number_of_components))
 				{
-					fscanf(input_file, " ");
+					IO_stream_scan(input_file, " ");
 					/* read the component name */
 					if (component_name)
 					{
 						DEALLOCATE(component_name);
 						component_name = (char *)NULL;
 					}
-					if (read_string(input_file, "[^.]", &component_name))
+					if (IO_stream_read_string(input_file, "[^.]", &component_name))
 					{
 						/* strip trailing blanks from component name */
 						i = strlen(component_name);
@@ -2585,14 +2715,14 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 						/* component name is sufficient for non-GENERAL_FE_FIELD */
 						if (GENERAL_FE_FIELD == fe_field_type)
 						{
-							fscanf(input_file, ". ");
+							IO_stream_scan(input_file, ". ");
 							/* read the basis */
 							if (basis =
 								read_FE_basis(input_file, fe_region, dimension, basis_type))
 							{
-								fscanf(input_file, ", ");
+								IO_stream_scan(input_file, ", ");
 								/* read the modify function name */
-								if (read_string(input_file, "[^,]", &modify_function_name))
+								if (IO_stream_read_string(input_file, "[^,]", &modify_function_name))
 								{
 									/* determine the modify function */
 									if (0 == strcmp("no modify", modify_function_name))
@@ -2626,26 +2756,28 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 									}
 									else
 									{
+										location = IO_stream_get_location_string(input_file);
 										display_message(ERROR_MESSAGE,
-											"Invalid modify function from file.  Line %d",
-											get_line_number(input_file));
+											"Invalid modify function from file.  %s",
+											location);
+										DEALLOCATE(location);
 										return_code = 0;
 									}
 									if (return_code)
 									{
-										fscanf(input_file, ", ");
+										IO_stream_scan(input_file, ", ");
 										/* read the global to element map type */
-										if (read_string(input_file, "[^.]",
+										if (IO_stream_read_string(input_file, "[^.]",
 											&global_to_element_map_string))
 										{
-											fscanf(input_file, ". ");
+											IO_stream_scan(input_file, ". ");
 											/* determine the global to element map type */
 											if (0 == strcmp("standard node based",
 												global_to_element_map_string))
 											{
 												/* standard node to element map */
 												/* read the number of nodes */
-												if ((1 == fscanf(input_file, "#Nodes=%d",
+												if ((1 == IO_stream_scan(input_file, "#Nodes=%d",
 													&number_of_nodes)) && (0 < number_of_nodes))
 												{
 													if (components[component_number] =
@@ -2656,7 +2788,7 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 														for (i = 0; (i < number_of_nodes) && return_code;
 															i++)
 														{
-															if ((2 == fscanf(input_file, "%d .  #Values=%d",
+															if ((2 == IO_stream_scan(input_file, "%d .  #Values=%d",
 																&node_index, &number_of_values)) &&
 																(standard_node_map =
 																	CREATE(Standard_node_to_element_map)(
@@ -2664,7 +2796,7 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 															{
 																/* read the value indices */
  																/* Use a %1[:] so that a successful read will return 1 */
-																if (1 != fscanf(input_file," Value indices%1[:] ", test_string))
+																if (1 != IO_stream_scan(input_file," Value indices%1[:] ", test_string))
 																{
 																	display_message(WARNING_MESSAGE, 
 																		"Truncated read of required \" Value indices: \" token in element file.");
@@ -2672,15 +2804,17 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 																for (j = 0; (j < number_of_values) &&
 																	return_code; j++)
 																{
-																	if (!((1 == fscanf(input_file, "%d",
+																	if (!((1 == IO_stream_scan(input_file, "%d",
 																		&index)) &&
 																		Standard_node_to_element_map_set_nodal_value_index(
 																		standard_node_map, j, index - 1)))
 																	{
+																		location = IO_stream_get_location_string(input_file);
 																		display_message(ERROR_MESSAGE,
 																			"Error reading nodal value index from "
-																			"file.  Line %d",
-																			get_line_number(input_file));
+																			"file.  %s",
+																			location);
+																		DEALLOCATE(location);
 																		return_code = 0;
 																	}
 																}
@@ -2688,7 +2822,7 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 																{
 																	/* read the scale factor indices */
 																	/* Use a %1[:] so that a successful read will return 1 */
-																	if (1 != fscanf(input_file," Scale factor indices%1[:] ", test_string))
+																	if (1 != IO_stream_scan(input_file," Scale factor indices%1[:] ", test_string))
 																	{
 																		display_message(WARNING_MESSAGE, 
 																			"Truncated read of required \" Scale factor indices: \" token in element file.");
@@ -2696,15 +2830,17 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 																	for (j = 0; (j < number_of_values) &&
 																		return_code; j++)
 																	{
-																		if (!((1 == fscanf(input_file, "%d",
+																		if (!((1 == IO_stream_scan(input_file, "%d",
 																			&index)) &&
 																			Standard_node_to_element_map_set_scale_factor_index(
 																				standard_node_map, j, index - 1)))
 																		{
+																			location = IO_stream_get_location_string(input_file);
 																			display_message(ERROR_MESSAGE,
 																				"Error reading scale factor index from "
-																				"file.  Line %d",
-																				get_line_number(input_file));
+																				"file.  %s",
+																				location);
+																			DEALLOCATE(location);
 																			return_code = 0;
 																		}
 																	}
@@ -2714,11 +2850,13 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 																			components[component_number],
 																			/*node_number*/i, standard_node_map))
 																		{
+																			location = IO_stream_get_location_string(input_file);
 																			display_message(ERROR_MESSAGE,
 																				"read_FE_element_field.  Error setting "
 																				"standard_node_to_element_map");
 																			DESTROY(Standard_node_to_element_map)(
 																				&standard_node_map);
+																			DEALLOCATE(location);
 																			return_code = 0;
 																		}
 																	}
@@ -2726,27 +2864,33 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 															}
 															else
 															{
+																location = IO_stream_get_location_string(input_file);
 																display_message(ERROR_MESSAGE,
 																	"Error creating standard node to element map "
-																	"from file.  Line %d",
-																	get_line_number(input_file));
+																	"from file.  %s",
+																	location);
+																DEALLOCATE(location);
 																return_code = 0;
 															}
 														}
 													}
 													else
 													{
+														location = IO_stream_get_location_string(input_file);
 														display_message(ERROR_MESSAGE,
 															"read_FE_element_field.  "
-															"Error creating component from file");
+															"Error creating component from file %s", location);
+														DEALLOCATE(location);
 														return_code = 0;
 													}
 												}
 												else
 												{
+													location = IO_stream_get_location_string(input_file);
 													display_message(ERROR_MESSAGE,
 														"Error reading component number of nodes from file."
-														"  Line %d", get_line_number(input_file));
+														"  %s", location);
+													DEALLOCATE(location);
 													return_code = 0;
 												}
 											}
@@ -2762,19 +2906,21 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 													i = 0;
 													while (return_code && (i < dimension))
 													{
-														if ((2 == fscanf(input_file, "#xi%d = %d", &j,
+														if ((2 == IO_stream_scan(input_file, "#xi%d = %d", &j,
 															&number_in_xi)) && (j == i + 1) &&
 													FE_element_field_component_set_grid_map_number_in_xi(
 																components[component_number], i, number_in_xi))
 														{
-															fscanf(input_file, " , ");
+															IO_stream_scan(input_file, " , ");
 															i++;
 														}
 														else
 														{
+															location = IO_stream_get_location_string(input_file);
 															display_message(ERROR_MESSAGE,
-																"Error reading #xi%d.  Line %d", i + 1,
-																get_line_number(input_file));
+																"Error reading #xi%d.  %s", i + 1,
+																location);
+															DEALLOCATE(location);
 															return_code = 0;
 														}
 													}
@@ -2815,18 +2961,22 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 														}
 														else
 														{
+															location = IO_stream_get_location_string(input_file);
 															display_message(ERROR_MESSAGE,
-																"Grid based must be linear.  Line %d",
-																get_line_number(input_file));
+																"Grid based must be linear.  %s",
+																location);
+															DEALLOCATE(location);
 															return_code = 0;
 														}
 													}
 												}
 												else
 												{
+													location = IO_stream_get_location_string(input_file);
 													display_message(ERROR_MESSAGE,
 														"read_FE_element_field.  "
 														"Error creating component from file");
+													DEALLOCATE(location);
 													return_code = 0;
 												}
 											}
@@ -2835,9 +2985,11 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 											{
 												/* GENERAL_NODE_TO_ELEMENT_MAP */
 												/*???DB.  Not yet implemented */
+												location = IO_stream_get_location_string(input_file);
 												display_message(ERROR_MESSAGE,
 													"Invalid global to element map type from file.  "
-													"Line %d", get_line_number(input_file));
+													"%s", location);
+												DEALLOCATE(location);
 												return_code = 0;
 											}
 											else if (0 == strcmp("field based",
@@ -2845,25 +2997,31 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 											{
 												/* FIELD_TO_ELEMENT_MAP */
 												/*???DB.  Not yet implemented */
+												location = IO_stream_get_location_string(input_file);
 												display_message(ERROR_MESSAGE,
 													"Invalid global to element map type from file.  "
-													"Line %d", get_line_number(input_file));
+													"%s", location);
+												DEALLOCATE(location);
 												return_code = 0;
 											}
 											else
 											{
+												location = IO_stream_get_location_string(input_file);
 												display_message(ERROR_MESSAGE,
 													"Invalid global to element map type from file.  "
-													"Line %d", get_line_number(input_file));
+													"%s", location);
+												DEALLOCATE(location);
 												return_code = 0;
 											}
 											DEALLOCATE(global_to_element_map_string);
 										}
 										else
 										{
+											location = IO_stream_get_location_string(input_file);
 											display_message(ERROR_MESSAGE,
 												"Error reading global to element map type from file.  "
-												"Line %d", get_line_number(input_file));
+												"%s", location);
+											DEALLOCATE(location);
 											return_code = 0;
 										}
 										DEALLOCATE(modify_function_name);
@@ -2871,16 +3029,20 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 								}
 								else
 								{
+									location = IO_stream_get_location_string(input_file);
 									display_message(ERROR_MESSAGE,
-										"Error reading modify function name from file.  Line %d",
-										get_line_number(input_file));
+										"Error reading modify function name from file.  %s",
+										location);
+									DEALLOCATE(location);
 									return_code = 0;
 								}
 							}
 							else
 							{
+								location = IO_stream_get_location_string(input_file);
 								display_message(ERROR_MESSAGE,
 									"read_FE_element_field.  Invalid basis from file");
+								DEALLOCATE(location);
 								return_code = 0;
 							}
 						}
@@ -2888,7 +3050,7 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 						{
 							/* non GENERAL_FE_FIELD */
 							/* check there is nothing on remainder of line */
-							if (read_string(input_file, "[^\n]", &rest_of_line))
+							if (IO_stream_read_string(input_file, "[^\n]", &rest_of_line))
 							{
 								if (fuzzy_string_compare(rest_of_line, "."))
 								{
@@ -2897,20 +3059,24 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 								}
 								else
 								{
+									location = IO_stream_get_location_string(input_file);
 									display_message(ERROR_MESSAGE,
 										"Unexpected text on field '%s' component '%s' line %d: %s",
 										get_FE_field_name(field), component_name,
-										get_line_number(input_file), rest_of_line);
+										location, rest_of_line);
+									DEALLOCATE(location);
 									return_code = 0;
 								}
 								DEALLOCATE(rest_of_line);
 							}
 							else
 							{
+								location = IO_stream_get_location_string(input_file);
 								display_message(ERROR_MESSAGE,
 									"Unexpected end of field '%s' component '%s' line %d",
 									get_FE_field_name(field), component_name,
-									get_line_number(input_file));
+									location);
+								DEALLOCATE(location);
 								return_code = 0;
 							}
 						}
@@ -2919,17 +3085,21 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 					}
 					else
 					{
+						location = IO_stream_get_location_string(input_file);
 						display_message(ERROR_MESSAGE,
-							"Error reading component name from file.  Line %d",
-							get_line_number(input_file));
+							"Error reading component name from file.  %s",
+							location);
+						DEALLOCATE(location);
 						return_code = 0;
 					}
 				}
 			}
 			else
 			{
+				location = IO_stream_get_location_string(input_file);
 				display_message(ERROR_MESSAGE,
 					"read_FE_element_field.  Could not allocate component information");
+				DEALLOCATE(location);
 				return_code = 0;
 			}
 			if (return_code)
@@ -2937,9 +3107,11 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 				/* first try to retrieve matching field from fe_region */
 				if (!(merged_fe_field = FE_region_merge_FE_field(fe_region, field)))
 				{
+					location = IO_stream_get_location_string(input_file);
 					display_message(ERROR_MESSAGE,"read_FE_element_field.  "
-						"Could not merge field '%s' into finite element region.  Line %d",
-						get_FE_field_name(field), get_line_number(input_file));
+						"Could not merge field '%s' into finite element region.  %s",
+						get_FE_field_name(field), location);
+					DEALLOCATE(location);
 					return_code = 0;
 				}
 			}
@@ -2952,8 +3124,10 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 				}
 				else
 				{
+					location = IO_stream_get_location_string(input_file);
 					display_message(ERROR_MESSAGE,
 						"read_FE_element_field.  Could not define field at element");
+					DEALLOCATE(location);
 					return_code = 0;
 				}
 			}
@@ -2974,14 +3148,18 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 		}
 		else
 		{
+			location = IO_stream_get_location_string(input_file);
 			display_message(ERROR_MESSAGE,
 				"read_FE_element_field.  Could not read field");
+			DEALLOCATE(location);
 		}
 	}
 	else
 	{
+		location = IO_stream_get_location_string(input_file);
 		display_message(ERROR_MESSAGE,
 			"read_FE_element_field.  Invalid argument(s)");
+		DEALLOCATE(location);
 	}
 	LEAVE;
 
@@ -2989,7 +3167,7 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 } /* read_FE_element_field */
 
 static struct FE_element *read_FE_element_field_info(
-	FILE *input_file, struct FE_region *fe_region,
+	struct IO_stream *input_file, struct FE_region *fe_region,
 	struct FE_element_shape *element_shape,
 	struct FE_field_order_info **field_order_info)
 /*******************************************************************************
@@ -3009,6 +3187,7 @@ Creates, fills in and returns field_order_info.
 from a previous call to this function.
 ==============================================================================*/
 {
+	char *location;
 	int *basis_type, dimension, i, number_of_fields, number_of_nodes,
 		number_of_scale_factor_sets, *numbers_in_scale_factor_sets, return_code;
 	struct CM_element_information element_identifier;
@@ -3034,12 +3213,14 @@ from a previous call to this function.
 			return_code = 1;
 			get_FE_element_shape_dimension(element_shape, &dimension);
 			/* read in the scale factor information */
-			if (!((1 == fscanf(input_file, "Scale factor sets=%d ",
+			if (!((1 == IO_stream_scan(input_file, "Scale factor sets=%d ",
 				&number_of_scale_factor_sets)) && (0 <= number_of_scale_factor_sets)))
 			{
+				location = IO_stream_get_location_string(input_file);
 				display_message(ERROR_MESSAGE,
-					"Error reading #scale sets from file.  Line %d",
-					get_line_number(input_file));
+					"Error reading #scale sets from file.  %s",
+					location);
+				DEALLOCATE(location);
 				return_code = 0;
 			}
 			if (return_code)
@@ -3061,40 +3242,48 @@ from a previous call to this function.
 						if (scale_factor_set_identifiers[i] = (void *)read_FE_basis(
 							input_file, fe_region, dimension, basis_type))
 						{
-							if (!((1 == fscanf(input_file, ", #Scale factors=%d ",
+							if (!((1 == IO_stream_scan(input_file, ", #Scale factors=%d ",
 								&(numbers_in_scale_factor_sets[i]))) &&
 								(0 < numbers_in_scale_factor_sets[i])))
 							{
+								location = IO_stream_get_location_string(input_file);
 								display_message(ERROR_MESSAGE,
-									"Error reading #Scale factors from file.  Line %d",
-									get_line_number(input_file));
+									"Error reading #Scale factors from file.  %s",
+									location);
+								DEALLOCATE(location);
 								return_code = 0;
 							}
 						}
 						else
 						{
+							location = IO_stream_get_location_string(input_file);
 							display_message(ERROR_MESSAGE,
 								"Error reading scale factor set identifier (basis) from file.  "
-								"Line %d", get_line_number(input_file));
+								"%s", location);
+							DEALLOCATE(location);
 							return_code = 0;
 						}
 					}
 					/* read in the node information */
-					if (!((1 == fscanf(input_file, "#Nodes=%d ", &number_of_nodes)) &&
+					if (!((1 == IO_stream_scan(input_file, "#Nodes=%d ", &number_of_nodes)) &&
 						(0 <= number_of_nodes)))
 					{
+						location = IO_stream_get_location_string(input_file);
 						display_message(ERROR_MESSAGE,
-							"Error reading #Nodes from file.  Line %d",
-							get_line_number(input_file));
+							"Error reading #Nodes from file.  %s",
+							location);
+						DEALLOCATE(location);
 						return_code = 0;
 					}
 					/* read in the field information */
-					if (!((1 == fscanf(input_file, "#Fields=%d ", &number_of_fields)) &&
+					if (!((1 == IO_stream_scan(input_file, "#Fields=%d ", &number_of_fields)) &&
 						(0 <= number_of_fields)))
 					{
+						location = IO_stream_get_location_string(input_file);
 						display_message(ERROR_MESSAGE,
-							"Error reading #fields from file.  Line %d",
-							get_line_number(input_file));
+							"Error reading #fields from file.  %s",
+							location);
+						DEALLOCATE(location);
 						return_code = 0;
 					}
 					if (return_code && (0 < number_of_fields))
@@ -3104,8 +3293,10 @@ from a previous call to this function.
 								number_of_scale_factor_sets, scale_factor_set_identifiers,
 								numbers_in_scale_factor_sets)))
 						{
+							location = IO_stream_get_location_string(input_file);
 							display_message(ERROR_MESSAGE, "read_FE_element_field_info.  "
 								"Error establishing element nodes and scale factor sets");
+							DEALLOCATE(location);
 							return_code = 0;
 						}
 					}
@@ -3120,15 +3311,19 @@ from a previous call to this function.
 							{
 								if (!add_FE_field_order_info_field(*field_order_info, field))
 								{
+									location = IO_stream_get_location_string(input_file);
 									display_message(ERROR_MESSAGE,
 										"read_FE_element_field_info.  Could not add field to list");
+									DEALLOCATE(location);
 									return_code = 0;
 								}
 							}
 							else
 							{
+								location = IO_stream_get_location_string(input_file);
 								display_message(ERROR_MESSAGE,
 									"read_FE_element_field_info.  Could not read element field");
+								DEALLOCATE(location);
 								return_code = 0;
 							}
 						}
@@ -3136,8 +3331,10 @@ from a previous call to this function.
 				}
 				else
 				{
+					location = IO_stream_get_location_string(input_file);
 					display_message(ERROR_MESSAGE,
 						"read_FE_element_field_info.  Not enough memory");
+					DEALLOCATE(location);
 					return_code=0;
 				}
 				if (basis_type)
@@ -3161,15 +3358,19 @@ from a previous call to this function.
 		}
 		else
 		{
+			location = IO_stream_get_location_string(input_file);
 			display_message(ERROR_MESSAGE,
 				"read_FE_element_field_info.  Could not create element");
+			DEALLOCATE(location);
 			return_code = 0;
 		}
 	}
 	else
 	{
+		location = IO_stream_get_location_string(input_file);
 		display_message(ERROR_MESSAGE,
 			"read_FE_element_field_info.  Invalid argument(s)");
+		DEALLOCATE(location);
 		return_code = 0;
 	}
 	LEAVE;
@@ -3177,7 +3378,7 @@ from a previous call to this function.
 	return (element);
 } /* read_FE_element_field_info */
 
-static struct FE_element *read_FE_element(FILE *input_file,
+static struct FE_element *read_FE_element(struct IO_stream *input_file,
 	struct FE_element *template_element, struct FE_region *fe_region,
 	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
@@ -3189,7 +3390,7 @@ Element info may now have no nodes and no scale factors - eg. for reading
 in a grid field.
 ==============================================================================*/
 {
-	char test_string[5];
+	char *location, test_string[5];
 	enum Value_type value_type;
 	FE_value scale_factor;
 	int dimension, face_token_length, i, j, k, node_number, number_of_components,
@@ -3207,7 +3408,7 @@ in a grid field.
 		fe_region && field_order_info)
 	{
 		/* read the element identifier */
-		if (3 == fscanf(input_file, "lement :%d %d %d",
+		if (3 == IO_stream_scan(input_file, "lement :%d %d %d",
 			&element_num, &face_num, &line_num))
 		{
 			if (element_num)
@@ -3229,9 +3430,11 @@ in a grid field.
 		}
 		else
 		{
+			location = IO_stream_get_location_string(input_file);
 			display_message(ERROR_MESSAGE,
-				"Error reading element identifier from file.  Line %d",
-				get_line_number(input_file));
+				"Error reading element identifier from file.  %s",
+				location);
+			DEALLOCATE(location);
 			return_code = 0;
 		}
 		if (return_code)
@@ -3245,13 +3448,13 @@ in a grid field.
 				{
 					/* if face_token_length > 0, then faces being read */
 					face_token_length = 0;
-					fscanf(input_file, " Faces:%n", &face_token_length);
+					IO_stream_scan(input_file, " Faces:%n", &face_token_length);
 					if (0 < face_token_length)
 					{
 						for (i = 0; (i < number_of_faces) && return_code; i++)
 						{
 							/* file input */			 
-							if (3 == fscanf(input_file, "%d %d %d",
+							if (3 == IO_stream_scan(input_file, "%d %d %d",
 								&element_num, &face_num, &line_num))
 							{
 								if (element_num)
@@ -3273,9 +3476,11 @@ in a grid field.
 							}
 							else
 							{
+								location = IO_stream_get_location_string(input_file);
 								display_message(ERROR_MESSAGE,
-									"Error reading face identifier from file.  Line %d",
-									get_line_number(input_file));
+									"Error reading face identifier from file.  %s",
+									location);
+								DEALLOCATE(location);
 								return_code = 0;
 							}
 							if (return_code)
@@ -3292,18 +3497,22 @@ in a grid field.
 									{
 										if (!set_FE_element_face(element, i, face_element))
 										{
+											location = IO_stream_get_location_string(input_file);
 											display_message(ERROR_MESSAGE,"read_FE_element.  "
 												"Could not set face %d of %s %d", i,
 												CM_element_type_string(element_identifier.type),
 												element_identifier.number);
+											DEALLOCATE(location);
 											return_code = 0;
 										}
 									}
 									else
 									{
+										location = IO_stream_get_location_string(input_file);
 										display_message(ERROR_MESSAGE, "read_FE_element.  "
-											"Could not get or create face element.  Line %d",
-											get_line_number(input_file));
+											"Could not get or create face element.  %s",
+											location);
+										DEALLOCATE(location);
 										return_code = 0;
 									}
 								}
@@ -3313,10 +3522,12 @@ in a grid field.
 				}
 				else
 				{
+					location = IO_stream_get_location_string(input_file);
 					display_message(ERROR_MESSAGE,
-						"read_FE_element.  Could not get number of faces of %s %d",
+						"read_FE_element.  Could not get number of faces of %s %d.  %s",
 						CM_element_type_string(element_identifier.type),
-						element_identifier.number);
+						element_identifier.number, location);
+					DEALLOCATE(location);
 					return_code = 0;
 				}
 				/* check whether element has any grid values */
@@ -3324,7 +3535,7 @@ in a grid field.
 				{
 					/* read the values */
 					/* Use a %1[:] so that a successful read will return 1 */
-					if (1 != fscanf(input_file," Values %1[:] ", test_string))
+					if (1 != IO_stream_scan(input_file," Values %1[:] ", test_string))
 					{
 						display_message(WARNING_MESSAGE, 
 							"Truncated read of required \" Values :\" token in element file.");
@@ -3355,19 +3566,23 @@ in a grid field.
 												for (k = 0; (k < number_of_values) && return_code;
 														 k++)
 												{
-													if (1 != fscanf(input_file, FE_VALUE_INPUT_STRING,
+													if (1 != IO_stream_scan(input_file, FE_VALUE_INPUT_STRING,
 														&(values[k])))
 													{
+														location = IO_stream_get_location_string(input_file);
 														display_message(ERROR_MESSAGE,
-															"Error reading grid FE_value value from file.  Line %d",
-															get_line_number(input_file));
+															"Error reading grid FE_value value from file.  %s",
+															location);
+														DEALLOCATE(location);
 														return_code = 0;
 													}
 													if (!finite(values[k]))
 													{
+														location = IO_stream_get_location_string(input_file);
 														display_message(ERROR_MESSAGE,
-															"Infinity or NAN element value read from element file.  Line %d",
-															get_line_number(input_file));
+															"Infinity or NAN element value read from element file.  %s",
+															location);
+														DEALLOCATE(location);
 														return_code = 0;
 													}
 												}
@@ -3376,8 +3591,10 @@ in a grid field.
 													if (!set_FE_element_field_component_grid_FE_value_values(
 														element, field, /*component_number*/j, values))
 													{
+														location = IO_stream_get_location_string(input_file);
 														display_message(ERROR_MESSAGE,
 															"read_FE_element.  Could not set grid FE_value values");
+														DEALLOCATE(location);
 													}
 												}
 											}
@@ -3385,8 +3602,10 @@ in a grid field.
 										}
 										else
 										{
+											location = IO_stream_get_location_string(input_file);
 											display_message(ERROR_MESSAGE,"read_FE_element.  "
 												"Insufficient memory for FE_value values");
+											DEALLOCATE(location);
 											return_code = 0;
 										}
 									} break;
@@ -3402,11 +3621,13 @@ in a grid field.
 												for (k = 0; (k < number_of_values) && return_code;
 														 k++)
 												{
-													if (1 != fscanf(input_file, "%d", &(values[k])))
+													if (1 != IO_stream_scan(input_file, "%d", &(values[k])))
 													{
+														location = IO_stream_get_location_string(input_file);
 														display_message(ERROR_MESSAGE,
-															"Error reading grid int value from file.  Line %d",
-															get_line_number(input_file));
+															"Error reading grid int value from file.  %s",
+															location);
+														DEALLOCATE(location);
 														return_code = 0;
 													}
 												}
@@ -3415,8 +3636,10 @@ in a grid field.
 													if (!set_FE_element_field_component_grid_int_values(
 														element, field, /*component_number*/j, values))
 													{
+														location = IO_stream_get_location_string(input_file);
 														display_message(ERROR_MESSAGE,
 															"read_FE_element.  Could not set grid int values");
+														DEALLOCATE(location);
 													}
 												}
 											}
@@ -3424,17 +3647,21 @@ in a grid field.
 										}
 										else
 										{
+											location = IO_stream_get_location_string(input_file);
 											display_message(ERROR_MESSAGE, "read_FE_element.  "
 												"Insufficient memory for int values");
+											DEALLOCATE(location);
 											return_code = 0;
 										}
 									} break;
 									default:
 									{
+										location = IO_stream_get_location_string(input_file);
 										display_message(ERROR_MESSAGE,
-											"Unsupported grid field value_type %s.  Line %d",
+											"Unsupported grid field value_type %s.  %s",
 											Value_type_string(value_type),
-											get_line_number(input_file));
+											location);
+										DEALLOCATE(location);
 										return_code = 0;
 									} break;
 								}
@@ -3442,8 +3669,10 @@ in a grid field.
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE, "Invalid field #%d.  Line %d",
-								i + 1, get_line_number(input_file));
+							location = IO_stream_get_location_string(input_file);
+							display_message(ERROR_MESSAGE, "Invalid field #%d.  %s",
+								i + 1, location);
+							DEALLOCATE(location);
 							return_code = 0;
 						}
 					}
@@ -3456,14 +3685,16 @@ in a grid field.
 						{
 							/* read the nodes */
 							/* Use a %1[:] so that a successful read will return 1 */
-							if (1 != fscanf(input_file," Nodes%1[:]", test_string))
+							if (1 != IO_stream_scan(input_file," Nodes%1[:]", test_string))
 							{
+								location = IO_stream_get_location_string(input_file);
 								display_message(WARNING_MESSAGE, 
-									"Truncated read of required \" Nodes:\" token in element file.");
+									"Truncated read of required \" Nodes:\" token in element file.  %s");
+								DEALLOCATE(location);
 							}
 							for (i = 0; (i < number_of_nodes) && return_code; i++)
 							{
-								if (1 == fscanf(input_file, "%d", &node_number))
+								if (1 == IO_stream_scan(input_file, "%d", &node_number))
 								{
 									/* get or create node with node_number */
 									if (node = FE_region_get_or_create_FE_node_with_identifier(
@@ -3471,23 +3702,29 @@ in a grid field.
 									{
 										if (!set_FE_element_node(element, i, node))
 										{
+											location = IO_stream_get_location_string(input_file);
 											display_message(ERROR_MESSAGE,
 												"read_FE_element.  Could not set node");
+											DEALLOCATE(location);
 											return_code = 0;
 										}
 									}
 									else
 									{
+										location = IO_stream_get_location_string(input_file);
 										display_message(ERROR_MESSAGE,
 											"read_FE_element.  Could not get or create node");
+										DEALLOCATE(location);
 										return_code = 0;
 									}
 								}
 								else
 								{
+									location = IO_stream_get_location_string(input_file);
 									display_message(ERROR_MESSAGE,
-										"Error reading node number from file.  Line %d",
-										get_line_number(input_file));
+										"Error reading node number from file.  %s",
+										location);
+									DEALLOCATE(location);
 									return_code = 0;
 								}
 							}
@@ -3495,10 +3732,12 @@ in a grid field.
 					}
 					else
 					{
+						location = IO_stream_get_location_string(input_file);
 						display_message(ERROR_MESSAGE,
 							"read_FE_element.  Could not get number of nodes for %s %d",
 							CM_element_type_string(element_identifier.type),
 							element_identifier.number);
+						DEALLOCATE(location);
 						return_code = 0;
 					}
 				}
@@ -3512,39 +3751,45 @@ in a grid field.
 							/*???RC scale_factors array in element_info should be private */
 							/* read the scale factors */
 							/* Use a %1[:] so that a successful read will return 1 */
-							if (1 != fscanf(input_file," Scale factors%1[:]", test_string))
+							if (1 != IO_stream_scan(input_file," Scale factors%1[:]", test_string))
 							{
 								display_message(WARNING_MESSAGE, 
 									"Truncated read of required \" Scale factors:\" token in element file.");
 							}
 							for (i = 0; (i < number_of_scale_factors) && return_code; i++)
 							{
-								if (1 == fscanf(input_file,FE_VALUE_INPUT_STRING,
+								if (1 == IO_stream_scan(input_file,FE_VALUE_INPUT_STRING,
 									&scale_factor))
 								{
 									if (finite(scale_factor))
 									{
 										if (!set_FE_element_scale_factor(element, i, scale_factor))
 										{
+											location = IO_stream_get_location_string(input_file);
 											display_message(ERROR_MESSAGE,
-												"Error setting scale factor.  Line %d",
-												get_line_number(input_file));
+												"Error setting scale factor.  %s",
+												location);
+											DEALLOCATE(location);
 											return_code = 0;
 										}
 									}
 									else
 									{
+										location = IO_stream_get_location_string(input_file);
 										display_message(ERROR_MESSAGE,
 											"Infinity or NAN scale factor read from element file.  "
-											"Line %d", get_line_number(input_file));
+											"%s", location);
+										DEALLOCATE(location);
 										return_code = 0;
 									}
 								}
 								else
 								{
+									location = IO_stream_get_location_string(input_file);
 									display_message(ERROR_MESSAGE,
-										"Error reading scale factor from file.  Line %d",
-										get_line_number(input_file));
+										"Error reading scale factor from file.  %s",
+										location);
+									DEALLOCATE(location);
 									return_code = 0;
 								}
 							}
@@ -3552,10 +3797,12 @@ in a grid field.
 					}
 					else
 					{
+						location = IO_stream_get_location_string(input_file);
 						display_message(ERROR_MESSAGE, "read_FE_element.  "
 							"Could not get number of scale factors for %s %d",
 							CM_element_type_string(element_identifier.type),
 							element_identifier.number);
+						DEALLOCATE(location);
 						return_code = 0;
 					}
 				}
@@ -3566,8 +3813,10 @@ in a grid field.
 			}
 			else
 			{
+				location = IO_stream_get_location_string(input_file);
 				display_message(ERROR_MESSAGE,
 					"read_FE_element.  Could not create element");
+				DEALLOCATE(location);
 				return_code = 0;
 			}
 		}
@@ -3586,12 +3835,12 @@ Global functions
 ----------------
 */
 
-struct Cmiss_region *read_exregion_file(FILE *input_file,
+struct Cmiss_region *read_exregion_file(struct IO_stream *input_file,
 	struct MANAGER(FE_basis) *basis_manager,
 	struct LIST(FE_element_shape) *element_shape_list,
 	struct FE_import_time_index *time_index)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2003
+LAST MODIFIED : 23 August 2004
 
 DESCRIPTION :
 Reads finite element groups in exnode/exelem format from <input_file>.
@@ -3610,7 +3859,8 @@ in the file; if no path is supplied they are placed in the root region.
 If objects are repeated in the file, they are merged correctly.
 ==============================================================================*/
 {
-	char first_character_in_token, *group_name, *last_character, *temp_string, test_string[5];
+	char first_character_in_token, *group_name, *last_character, *location,
+		*temp_string, test_string[5];
 	int input_result, return_code;
 	struct CM_element_information element_identifier;
 	struct Cmiss_region *root_region, *region;
@@ -3655,10 +3905,10 @@ If objects are repeated in the file, they are merged correctly.
 		while (return_code && (1 == input_result))
 		{
 			/* get first character in next token */
-			fscanf(input_file, " ");
+			IO_stream_scan(input_file, " ");
 			/*???DB.  On the alphas input_result is 0 at the end of file when the
-				fscanfs are combined " %c" ? */
-			input_result = fscanf(input_file, "%c", &first_character_in_token);
+				IO_stream_scans are combined " %c" ? */
+			input_result = IO_stream_scan(input_file, "%c", &first_character_in_token);
 			if (1 == input_result)
 			{
 				switch (first_character_in_token)
@@ -3676,14 +3926,14 @@ If objects are repeated in the file, they are merged correctly.
 						region = (struct Cmiss_region *)NULL;
 						fe_region = (struct FE_region *)NULL;
 						/* Use a %1[:] so that a successful read will return 1 */
-						if (1 != fscanf(input_file,"roup name %1[:] ", test_string))
+						if (1 != IO_stream_scan(input_file,"roup name %1[:] ", test_string))
 						{
 							display_message(WARNING_MESSAGE, 
 								"Truncated read of required \"Group name : \" token in node file.");
 						}
 						/* read the name of the group */
 						group_name = (char *)NULL;
-						if (read_string(input_file, "[^\n]", &group_name))
+						if (IO_stream_read_string(input_file, "[^\n]", &group_name))
 						{
 							/* trim trailing blanks */
 							last_character = group_name+(strlen(group_name)-1);
@@ -3696,9 +3946,11 @@ If objects are repeated in the file, they are merged correctly.
 						}
 						else
 						{
+							location = IO_stream_get_location_string(input_file);
 							display_message(ERROR_MESSAGE,
-								"Error reading group name from file.  Line %d",
-								get_line_number(input_file));
+								"Error reading group name from file.  %s",
+								location);
+							DEALLOCATE(location);
 							return_code = 0;
 						}
 						/* make sure we have a child region of that name */
@@ -3711,10 +3963,12 @@ If objects are repeated in the file, they are merged correctly.
 								if (!Cmiss_region_add_child_region(root_region,
 									region, group_name, /*child_position*/-1))
 								{
+									location = IO_stream_get_location_string(input_file);
 									display_message(ERROR_MESSAGE,
 										"read_exregion_file.  Could not add child region");
 									DESTROY(Cmiss_region)(&region);
 									region = (struct Cmiss_region *)NULL;
+									DEALLOCATE(location);
 									return_code = 0;
 								}
 							}
@@ -3728,10 +3982,12 @@ If objects are repeated in the file, they are merged correctly.
 										element_shape_list);
 									if (!Cmiss_region_attach_FE_region(region, fe_region))
 									{
+										location = IO_stream_get_location_string(input_file);
 										display_message(ERROR_MESSAGE, "read_exregion_file.  "
 											"Could not attach finite element region");
 										DESTROY(FE_region)(&fe_region);
 										fe_region = (struct FE_region *)NULL;
+										DEALLOCATE(location);
 										return_code = 0;
 									}
 								}
@@ -3821,16 +4077,20 @@ If objects are repeated in the file, they are merged correctly.
 							}
 							else
 							{
+								location = IO_stream_get_location_string(input_file);
 								display_message(ERROR_MESSAGE,
 									"read_FE_element_group.  Error reading element shape");
+								DEALLOCATE(location);
 								return_code = 0;
 							}
 						}
 						else
 						{
+							location = IO_stream_get_location_string(input_file);
 							display_message(ERROR_MESSAGE,
-								"Group not set before Shape token in file.  Line %d",
-								get_line_number(input_file));
+								"Group not set before Shape token in file.  %s",
+								location);
+							DEALLOCATE(location);
 							return_code = 0;
 						}
 					} break;
@@ -3857,8 +4117,10 @@ If objects are repeated in the file, they are merged correctly.
 								}
 								else
 								{
+									location = IO_stream_get_location_string(input_file);
 									display_message(ERROR_MESSAGE,
-										"Error reading element field information");
+										"Error reading element field information.  %s", location);
+									DEALLOCATE(location);
 									return_code = 0;
 								}
 							}
@@ -3872,17 +4134,21 @@ If objects are repeated in the file, they are merged correctly.
 								}
 								else
 								{
+									location = IO_stream_get_location_string(input_file);
 									display_message(ERROR_MESSAGE,
-										"Error reading node field information");
+										"Error reading node field information.  %s", location);
+									DEALLOCATE(location);
 									return_code = 0;
 								}
 							}
 						}
 						else
 						{
+							location = IO_stream_get_location_string(input_file);
 							display_message(ERROR_MESSAGE,
-								"Group not set before #Fields token in file.  Line %d",
-								get_line_number(input_file));
+								"Group not set before #Fields token in file.  %s",
+								location);
+							DEALLOCATE(location);
 							return_code = 0;
 						}
 					} break;
@@ -3922,9 +4188,11 @@ If objects are repeated in the file, they are merged correctly.
 						}
 						else
 						{
+							location = IO_stream_get_location_string(input_file);
 							display_message(ERROR_MESSAGE,
-								"Group not set before Node token in file.  Line %d",
-								get_line_number(input_file));
+								"Group not set before Node token in file.  %s",
+								location);
+							DEALLOCATE(location);
 							return_code = 0;
 						}
 					} break;
@@ -3950,23 +4218,31 @@ If objects are repeated in the file, they are merged correctly.
 								}
 								else
 								{
+									location = IO_stream_get_location_string(input_file);
 									display_message(ERROR_MESSAGE,
-										"read_exregion_file.  Error reading element");
+										"read_exregion_file.  Error reading element.  %s",
+										location);
+									DEALLOCATE(location);
 									return_code = 0;
 								}
 							}
 							else
 							{
+								location = IO_stream_get_location_string(input_file);
 								display_message(ERROR_MESSAGE,"read_FE_element_group.  "
-									"No current element field info for element");
+									"No current element field info for element.  %s",
+									location);
+								DEALLOCATE(location);
 								return_code = 0;
 							}
 						}
 						else
 						{
+							location = IO_stream_get_location_string(input_file);
 							display_message(ERROR_MESSAGE,
-								"Group not set before Element token in file.  Line %d",
-								get_line_number(input_file));
+								"Group not set before Element token in file.  %s",
+								location);
+							DEALLOCATE(location);
 							return_code = 0;
 						}
 					} break;
@@ -3978,33 +4254,43 @@ If objects are repeated in the file, they are merged correctly.
 							if (!read_FE_field_values(input_file, fe_region, root_region,
 								field_order_info))
 							{
+								location = IO_stream_get_location_string(input_file);
 								display_message(ERROR_MESSAGE,
-									"read_exregion_file.  Error reading field values");
+									"read_exregion_file.  Error reading field values.  %s",
+									location);
+								DEALLOCATE(location);
 								return_code = 0;
 							}
 						}
 						else
 						{
+							location = IO_stream_get_location_string(input_file);
 							display_message(ERROR_MESSAGE,
-								"read_exregion_file.  Unexpected V[alues] token in file");
+								"read_exregion_file.  Unexpected V[alues] token in file.  %s",
+								location);
+							DEALLOCATE(location);
 							return_code = 0;
 						}
 					} break;
 					default:
 					{
-						if (read_string(input_file, "[^\n]", &temp_string))
+						if (IO_stream_read_string(input_file, "[^\n]", &temp_string))
 						{
+							location = IO_stream_get_location_string(input_file);
 							display_message(ERROR_MESSAGE,
-								"Invalid flag \'%c\' in node file.  Line %d \'%c%s\'",
-								first_character_in_token, get_line_number(input_file),
+								"Invalid initial character \'%c\' in node, data or element file.  %s \'%c%s\'",
+								first_character_in_token, location,
 								first_character_in_token, temp_string);
 							DEALLOCATE(temp_string);
+							DEALLOCATE(location);
 						}
 						else
 						{
+							location = IO_stream_get_location_string(input_file);
 							display_message(ERROR_MESSAGE,
-								"Invalid flag \'%c\' in node file.  Line %d",
-								first_character_in_token, get_line_number(input_file));
+								"Invalid initial character \'%c\' in node, data or element file.  %s",
+								first_character_in_token, location);
+							DEALLOCATE(location);
 						}
 						return_code = 0;
 					} break;
@@ -4051,7 +4337,9 @@ If objects are repeated in the file, they are merged correctly.
 	}
 	else
 	{
+					location = IO_stream_get_location_string(input_file);
 		display_message(ERROR_MESSAGE, "read_exregion_file.  Invalid argument(s)");
+		DEALLOCATE(location);
 		return_code = 0;
 	}
 	LEAVE;
@@ -4060,28 +4348,31 @@ If objects are repeated in the file, they are merged correctly.
 } /* read_exregion_file */
 
 struct Cmiss_region *read_exregion_file_of_name(char *file_name,
+	struct IO_stream_package *io_stream_package,
 	struct MANAGER(FE_basis) *basis_manager,
 	struct LIST(FE_element_shape) *element_shape_list,
 	struct FE_import_time_index *time_index)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2003
+LAST MODIFIED : 3 Septemeber 2004
 
 DESCRIPTION :
 Version of read_exregion_file that opens and closes file <file_name>.
 Up to the calling function to merge the returned cmiss_region.
 ==============================================================================*/
 {
-	FILE *input_file;
+	struct IO_stream *input_file;
 	struct Cmiss_region *root_region;
 
 	ENTER(read_exregion_file_of_name);
 	root_region = (struct Cmiss_region *)NULL;
 	if (file_name)
 	{
-		if (input_file = fopen(file_name,"r"))
+		if ((input_file = CREATE(IO_stream)(io_stream_package))
+			&& (IO_stream_open_for_read(input_file, file_name)))
 		{
 			root_region = read_exregion_file(input_file, basis_manager, element_shape_list, time_index);
-			fclose(input_file);
+			IO_stream_close(input_file);
+			DESTROY(IO_stream)(&input_file);
 		}
 		else
 		{

@@ -10,6 +10,7 @@ The public interface to the Cmiss_regions.
 #include "api/cmiss_region.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/import_finite_element.h"
+#include "general/io_stream.h"
 #include "region/cmiss_region.h"
 #include "general/debug.h"
 #include "user_interface/message.h"
@@ -74,6 +75,7 @@ Returns the sub_region specified by the string <path> in <region>.
 	int return_code;
 	struct Cmiss_region *temp_region;
 	struct FE_region *fe_region;
+	struct IO_stream_package *io_stream_package;
 	struct LIST(FE_element_shape) *element_shape_list;
 	struct MANAGER(FE_basis) *basis_manager;
 
@@ -81,10 +83,11 @@ Returns the sub_region specified by the string <path> in <region>.
 	return_code = 0;
 	if (region&&file_name&&(fe_region=Cmiss_region_get_FE_region(region))&&
 		(basis_manager=FE_region_get_basis_manager(fe_region))&&
-		(element_shape_list=FE_region_get_FE_element_shape_list(fe_region)))
+		(element_shape_list=FE_region_get_FE_element_shape_list(fe_region)) && 
+		(io_stream_package=CREATE(IO_stream_package)()))
 	{
-		if (temp_region=read_exregion_file_of_name(file_name,basis_manager,
-			element_shape_list,(struct FE_import_time_index *)NULL))
+		if (temp_region=read_exregion_file_of_name(file_name,io_stream_package,
+			basis_manager,element_shape_list,(struct FE_import_time_index *)NULL))
 		{
 			ACCESS(Cmiss_region)(temp_region);
 			if (Cmiss_regions_FE_regions_can_be_merged(region,temp_region))
@@ -93,6 +96,7 @@ Returns the sub_region specified by the string <path> in <region>.
 			}
 			DEACCESS(Cmiss_region)(&temp_region);
 		}
+		DESTROY(IO_stream_package)(&io_stream_package);
 	}
 	LEAVE;
 

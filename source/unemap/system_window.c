@@ -1164,6 +1164,7 @@ struct System_window *CREATE(System_window)(Widget shell,
 	struct LIST(GT_object) *glyph_list,
 	struct Graphical_material *graphical_material,
 	struct Computed_field_package *computed_field_package,
+	struct IO_stream_package *io_stream_package,
 	struct Light *light,
 	struct Light_model *light_model,
 	struct Graphics_buffer_package *graphics_buffer_package,
@@ -1171,7 +1172,7 @@ struct System_window *CREATE(System_window)(Widget shell,
 	struct Time_keeper *time_keeper,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 8 May 2003
+LAST MODIFIED : 3 September 2004
 
 DESCRIPTION :
 This function allocates the memory for a system window structure.  It then
@@ -1686,10 +1687,11 @@ as a standalone application.
 							/*!!!!*/
 #if defined (UNEMAP_USE_3D)
 							if (system->unemap_package = CREATE(Unemap_package)(
-								fe_basis_manager, root_cmiss_region, data_root_cmiss_region,
+								fe_basis_manager, root_cmiss_region,
+								data_root_cmiss_region,
 								Computed_field_package_get_computed_field_manager(
 									computed_field_package),
-								interactive_tool_manager, node_selection))
+								interactive_tool_manager, node_selection, io_stream_package))
 							{
 								ACCESS(Unemap_package)(system->unemap_package);
 								/* create and store the map fit field  */

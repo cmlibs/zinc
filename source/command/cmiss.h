@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.h
 
-LAST MODIFIED : 30 July 2003
+LAST MODIFIED : 16 September 2004
 
 DESCRIPTION :
 Functions and types for executing cmiss commands.
@@ -12,6 +12,7 @@ This should only be included in cmgui.c and command/cmiss.c
 #define COMMAND_CMISS_H
 
 #include "command/command.h"
+#include "general/io_stream.h"
 #include "region/cmiss_region.h"
 
 /*
@@ -109,5 +110,14 @@ LAST MODIFIED : 28 May 2003
 DESCRIPTION :
 Returns the execute command structure from the <command_data>, useful for 
 executing cmiss commands from C.
+==============================================================================*/
+
+struct IO_stream_package *Cmiss_command_data_get_IO_stream_package(
+	struct Cmiss_command_data *command_data);
+/*******************************************************************************
+LAST MODIFIED : 16 September 2004
+
+DESCRIPTION :
+Returns the io_stream_package structure from the <command_data>
 ==============================================================================*/
 #endif /* !defined (COMMAND_CMISS_H) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : import_finite_element.h
 
-LAST MODIFIED : 12 May 2003
+LAST MODIFIED : 3 September 2004
 
 DESCRIPTION :
 Functions for importing finite element data from a file into the graphical
@@ -13,6 +13,7 @@ interface to CMISS.
 #include <stdio.h>
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
+#include "general/io_stream.h"
 #include "region/cmiss_region.h"
 
 /*
@@ -36,12 +37,12 @@ Global functions
 ----------------
 */
 
-struct Cmiss_region *read_exregion_file(FILE *input_file,
+struct Cmiss_region *read_exregion_file(struct IO_stream *input_file,
 	struct MANAGER(FE_basis) *basis_manager,
 	struct LIST(FE_element_shape) *element_shape_list,
 	struct FE_import_time_index *time_index);
 /*******************************************************************************
-LAST MODIFIED : 7 July 2003
+LAST MODIFIED : 23 August 2004
 
 DESCRIPTION :
 Reads finite element groups in exnode/exelem format from <input_file>.
@@ -61,11 +62,12 @@ If objects are repeated in the file, they are merged correctly.
 ==============================================================================*/
 
 struct Cmiss_region *read_exregion_file_of_name(char *file_name,
+	struct IO_stream_package *io_stream_package,
 	struct MANAGER(FE_basis) *basis_manager,
 	struct LIST(FE_element_shape) *element_shape_list,
 	struct FE_import_time_index *time_index);
 /*******************************************************************************
-LAST MODIFIED : 7 July 2003
+LAST MODIFIED : 3 September 2004
 
 DESCRIPTION :
 Version of read_exregion_file that opens and closes file <file_name>.

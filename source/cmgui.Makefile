@@ -804,6 +804,7 @@ GENERAL_SRCS = \
 	general/image_utilities.c \
 	general/indexed_multi_range.c \
 	general/integration.c \
+	general/io_stream.c \
 	general/machine.c \
 	general/matrix_vector.c \
 	general/multi_range.c \

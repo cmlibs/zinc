@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : control_curve.h
 
-LAST MODIFIED : 9 February 2000
+LAST MODIFIED : 3 September 2004
 
 DESCRIPTION :
 Definition of struct Control_curve used to describe parameter-value functions.
@@ -10,6 +10,7 @@ Simulation/animation parameters are controlled over time by these curves.
 #if !defined (CONTROL_CURVE_H)
 #define CONTROL_CURVE_H
 #include "finite_element/finite_element.h"
+#include "general/io_stream.h"
 #include "general/list.h"
 #include "general/manager.h"
 /*
@@ -86,6 +87,18 @@ struct Control_curve;
 
 DECLARE_LIST_TYPES(Control_curve);
 DECLARE_MANAGER_TYPES(Control_curve);
+
+struct Control_curve_command_data
+/*******************************************************************************
+LAST MODIFIED : 3 September 2004
+
+DESCRIPTION :
+Objects for the control curve commands.
+==============================================================================*/
+{
+	struct MANAGER(Control_curve) *control_curve_manager;
+	struct IO_stream_package *io_stream_package;
+}; /* struct Control_curve_command_data */
 
 /*
 Global functions
@@ -642,9 +655,9 @@ If there is an element in <curve> defined at <parameter>, returns the
 ==============================================================================*/
 
 int gfx_define_Control_curve(struct Parse_state *state,
-	void *dummy_to_be_modified,void *control_curve_manager_void);
+	void *dummy_to_be_modified,void *control_curve_command_data_void);
 /*******************************************************************************
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 3 September 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -694,9 +707,9 @@ eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 ==============================================================================*/
 
 struct Control_curve *create_Control_curve_from_file(char *curve_name,
-	char *file_name_stem);
+	char *file_name_stem, struct IO_stream_package *io_stream_package);
 /*******************************************************************************
-LAST MODIFIED : 29 November 1999
+LAST MODIFIED : 3 September 2004
 
 DESCRIPTION :
 Appends extension '.curve.exnode' on to <file_name_stem> and reads in nodes from

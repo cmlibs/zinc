@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap.c
 
-LAST MODIFIED : 16 May 2003
+LAST MODIFIED : 3 September 2004
 
 DESCRIPTION :
 Main program for unemap.  Based on cmgui.
@@ -393,6 +393,7 @@ Main program for unemap
 		(struct Graphical_material *)NULL;
 	struct Graphics_buffer_package *graphics_buffer_package=
 		(struct Graphics_buffer_package *)NULL;
+	struct IO_stream_package *io_stream_package = (struct IO_stream_package *)NULL;
 	struct Light *default_light=(struct Light *)NULL;
 	struct Light_model *default_light_model=(struct Light_model *)NULL;
 	struct LIST(FE_element_shape) *element_shape_list = (struct LIST(FE_element_shape) *)NULL;
@@ -720,6 +721,7 @@ Main program for unemap
 		/* interactive_tool manager */
 		interactive_tool_manager=CREATE(MANAGER(Interactive_tool))();
 		scene_manager=CREATE_MANAGER(Scene)();
+		io_stream_package=CREATE(IO_stream_package)();
 		if (light_model_manager=CREATE_MANAGER(Light_model)())
 		{
 			if (default_light_model=CREATE(Light_model)("default"))
@@ -853,8 +855,8 @@ Main program for unemap
 			texture_manager,interactive_tool_manager,scene_manager,
 			light_model_manager,light_manager,spectrum_manager,
 			Material_package_get_material_manager(material_package),glyph_list,
-			default_graphical_material,computed_field_package,default_light,
-			default_light_model, graphics_buffer_package,
+			default_graphical_material,computed_field_package,io_stream_package,
+			default_light,default_light_model, graphics_buffer_package,
 #endif /* defined (UNEMAP_USE_3D) */
 			time_keeper, user_interface))
 #else /* defined (NOT_ACQUISITION_ONLY) */
@@ -893,6 +895,7 @@ Main program for unemap
 				graphics_buffer_package,
 				Material_package_get_material_manager(material_package),
 				default_graphical_material,
+				io_stream_package,
 				interactive_tool_manager,
 				light_manager,
 				default_light,
@@ -962,7 +965,8 @@ Main program for unemap
 		}
 		/* clean up application memory */
 #if defined (NOT_ACQUISITION_ONLY)
-#if defined (UNEMAP_USE_3D )
+#if defined (UNEMAP_USE_3D)
+		DESTROY(IO_stream_package)(&io_stream_package);
 		DESTROY(MANAGER(Scene))(&scene_manager);
 		/* destroy Interactive_tools and manager */
 		DESTROY(Node_tool)(&node_tool);		

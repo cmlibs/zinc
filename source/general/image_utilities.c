@@ -17,6 +17,7 @@ Utilities for handling images.
 #include "general/enumerator_private.h"
 #include "general/image_utilities.h"
 #include "general/indexed_list_private.h"
+#include "general/io_stream.h"
 #include "general/myio.h"
 #include "general/mystring.h"
 #include "user_interface/message.h"
@@ -107,6 +108,7 @@ parameters are used to set the image dimensions and colour depth.
 	enum Raw_image_storage raw_image_storage;
 	int background_number_of_fill_bytes;
 	unsigned char *background_fill_bytes;
+	struct IO_stream_package *io_stream_package;
 };
 
 struct Cmgui_image
@@ -5459,6 +5461,7 @@ To create an image need to specify most dimension arguments.
 		cmgui_image_information->raw_image_storage = RAW_INTERLEAVED_RGB;
 		cmgui_image_information->background_number_of_fill_bytes = 0;
 		cmgui_image_information->background_fill_bytes = (unsigned char *)NULL;
+		cmgui_image_information->io_stream_package = (struct IO_stream_package *)NULL;
 	}
 	else
 	{
@@ -5986,6 +5989,36 @@ Clears 'valid' flag of cmgui_image_information if not correctly set.
 
 	return (return_code);
 } /* Cmgui_image_information_set_width */
+
+int Cmgui_image_information_set_io_stream_package(
+	struct Cmgui_image_information *cmgui_image_information,
+	struct IO_stream_package *io_stream_package)
+/*******************************************************************************
+LAST MODIFIED : 16 September 2004
+
+DESCRIPTION :
+Sets the <io_stream_package> recorded with the <cmgui_image_information>.
+Used to specify the io_stream_package for raw file formats read with Cmgui_image_read.
+Clears 'valid' flag of cmgui_image_information if not correctly set.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmgui_image_information_set_io_stream_package);
+	if (cmgui_image_information && io_stream_package)
+	{
+		cmgui_image_information->io_stream_package = io_stream_package;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_information_set_io_stream_package.  Missing information");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmgui_image_information_set_io_stream_package */
 
 #if defined (IMAGEMAGICK)
 static int get_magick_image_parameters(Image *magick_image, int *width,
@@ -6906,12 +6939,14 @@ and other parameters for formats that require them.
 	struct Cmgui_image *cmgui_image;
 #if defined (IMAGEMAGICK)
 	char *file_name_prefix, *old_magick_size, magick_size[41];
-	int length;
+	int image_data_length, length;
 	Image *magick_image, *temp_magick_image;
 	ImageInfo *magick_image_info;
 	ExceptionInfo magick_exception;
 	long int file_size;
 	struct stat buf;
+	struct IO_stream *image_file;
+	void *image_data;
 #else /* defined (IMAGEMAGICK) */
 	enum Image_file_format image_file_format;
 	int number_of_bytes_per_component, number_of_components;
@@ -7001,7 +7036,46 @@ and other parameters for formats that require them.
 							magick_image_info->interlace = PlaneInterlace;
 						} break;
 					}
-					magick_image = ReadImage(magick_image_info, &magick_exception);
+					if (IO_stream_uri_is_native_imagemagick(magick_image_info->filename))
+					{
+						magick_image = ReadImage(magick_image_info, &magick_exception);
+					}
+					else
+					{
+						if (image_file = CREATE(IO_stream)(cmgui_image_information->io_stream_package))
+						{
+							if (IO_stream_open_for_read(image_file, magick_image_info->filename))
+							{
+								if (IO_stream_read_to_memory(image_file, &image_data, &image_data_length))
+								{
+									SetImageInfo(magick_image_info, 0, &magick_exception);
+									magick_image = BlobToImage(magick_image_info,
+										image_data, image_data_length, &magick_exception);
+									IO_stream_deallocate_read_to_memory(image_file);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"Cmgui_image_read.  Unable to read image uri into memory buffer.");
+									return_code = 0;
+								}
+								IO_stream_close(image_file);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"Cmgui_image_read.  Unable to open image uri for reading.");
+								return_code = 0;
+							}
+							DESTROY(IO_stream)(&image_file);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Cmgui_image_read.  Unable to create IO_stream.");
+							return_code = 0;
+						}
+					}
 					if (magick_image)
 					{
 						if (cmgui_image->magick_image)

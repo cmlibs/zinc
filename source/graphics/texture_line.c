@@ -22,9 +22,9 @@ DESCRIPTION :
 Module constants
 ----------------
 */
-/*???DB.  Get rid of ? */
-#define INFINITY 10000000000.0
 
+#define TEXTURE_LINE_INFINITY 10000000000.0
+ 
 /*
 Global functions
 ----------------
@@ -264,7 +264,7 @@ Calculates distance potential at a point p from a line segment p1-p2 of charge
 			}
 			else
 			{
-				return_code=INFINITY;
+				return_code=TEXTURE_LINE_INFINITY;
 			}
 		}
 		else
@@ -312,7 +312,7 @@ Calculates distance potential at a point p from a blob segment p1-p2 of charge
 		r2=norm3(v);
 		if (0==r1*r2)
 		{
-			return_code=INFINITY;
+			return_code=TEXTURE_LINE_INFINITY;
 		}
 		else
 		{
@@ -503,7 +503,7 @@ translating to the origin and solving the minimum sum Q(t)*Q(t) =>
 			}
 			else
 			{
-				return_code=INFINITY;
+				return_code=TEXTURE_LINE_INFINITY;
 			}
 		}
 		else

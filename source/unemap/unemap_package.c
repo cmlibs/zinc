@@ -88,9 +88,10 @@ struct Unemap_package *CREATE(Unemap_package)(
 	struct Cmiss_region *data_root_cmiss_region,
 	struct MANAGER(Computed_field) *computed_field_manager,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
-	struct FE_node_selection *node_selection)
+	struct FE_node_selection *node_selection,
+	struct IO_stream_package *io_stream_package)
 /*******************************************************************************
-LAST MODIFIED : 12 May 2003
+LAST MODIFIED : 3 September 2004
 
 DESCRIPTION:
 Create a Unemap package, and fill in the managers.
@@ -112,6 +113,7 @@ The fields are filled in with set_unemap_package_fields()
 			package->computed_field_manager=computed_field_manager;
 			package->interactive_tool_manager=interactive_tool_manager;
 			package->node_selection=node_selection;
+			package->io_stream_package=io_stream_package;
 			/* fields of the rig_nodes */
 			package->device_name_field=(struct FE_field *)NULL;
 			package->device_type_field=(struct FE_field *)NULL;
@@ -1902,11 +1904,11 @@ The group name is then stored in the unemap_package.
 			strcat(exelem_name_str, exelem_ext);
 			/* read the node and element files */
 			torso_root_cmiss_region = read_exregion_file_of_name(exnode_name_str,
-				basis_manager,
+				package->io_stream_package, basis_manager,
 				FE_region_get_FE_element_shape_list(Cmiss_region_get_FE_region(root_cmiss_region)),
 				(struct FE_import_time_index *)NULL);
 			element_root_cmiss_region = read_exregion_file_of_name(exelem_name_str,
-				basis_manager,
+				package->io_stream_package, basis_manager,
 				FE_region_get_FE_element_shape_list(Cmiss_region_get_FE_region(root_cmiss_region)),
 				(struct FE_import_time_index *)NULL);
 			/* check the elements merge into the nodes and get the first child name */

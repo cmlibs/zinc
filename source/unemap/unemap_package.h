@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_package.h
 
-LAST MODIFIED : 8 May 2003
+LAST MODIFIED : 3 September 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -11,6 +11,7 @@ DESCRIPTION :
 #include "general/managed_group.h"
 #include "general/list.h"
 #include "general/manager.h"
+#include "general/io_stream.h"
 #include "general/object.h"
 #include "graphics/colour.h"
 #include "graphics/spectrum.h"
@@ -41,6 +42,7 @@ element,nodes, fields when they are no longer required.
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct FE_node_selection *node_selection;
+	struct IO_stream_package *io_stream_package;
 	/* fields of the rig_nodes, so we know what to clean up, and what to*/
 	/*construct draw package with */	
 	struct FE_field *channel_gain_field;
@@ -82,13 +84,14 @@ struct Unemap_package *CREATE(Unemap_package)(
 	struct Cmiss_region *data_root_cmiss_region,
 	struct MANAGER(Computed_field) *computed_field_manager,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
-	struct FE_node_selection *node_selection);
+	struct FE_node_selection *node_selection,
+	struct IO_stream_package *io_stream_package);
 /*******************************************************************************
-LAST MODIFIED : 8 May 2003
+LAST MODIFIED : 3 September 2004
 
 DESCRIPTION:
 Create a Unemap package, and fill in the managers.
-The fields are filed in with set_unemap_package_fields()
+The fields are filled in with set_unemap_package_fields()
 ==============================================================================*/
 
 int DESTROY(Unemap_package)(struct Unemap_package **package_address);

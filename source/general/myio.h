@@ -28,10 +28,13 @@ Some additions/modifications to stdio.
 #define BYTE_ORDER 1234
 #endif /* defined (WIN32_SYSTEM) */
 
+#if ! defined BYTE_ORDER
+Warning BYTE_ORDER not defined
+#endif /* ! defined BYTE_ORDER */
+
 #if defined (WIN32_SYSTEM)
 #define fileno _fileno
 #endif /* defined (WIN32_SYSTEM) */
-
 
 /*
 Global macros

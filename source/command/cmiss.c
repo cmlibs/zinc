@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 30 July 2003
+LAST MODIFIED : 16 September 2004
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -140,6 +140,7 @@ Functions for executing cmiss commands.
 #include "general/debug.h"
 #include "general/error_handler.h"
 #include "general/image_utilities.h"
+#include "general/io_stream.h"
 #include "general/matrix_vector.h"
 #include "general/multi_range.h"
 #include "general/mystring.h"
@@ -300,6 +301,7 @@ DESCRIPTION :
 	struct MANAGER(Graphics_window) *graphics_window_manager;
 #endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
+	struct IO_stream_package *io_stream_package;
 	struct MANAGER(Light) *light_manager;
 	struct Light *default_light;
 	struct MANAGER(Light_model) *light_model_manager;
@@ -6548,6 +6550,8 @@ Modifies the properties of a texture.
 								specify_width);
 							Cmgui_image_information_set_height(cmgui_image_information,
 								specify_height);
+							Cmgui_image_information_set_io_stream_package(cmgui_image_information,
+								command_data->io_stream_package);
 							STRING_TO_ENUMERATOR(Raw_image_storage)(
 								raw_image_storage_string, &raw_image_storage);
 							Cmgui_image_information_set_raw_image_storage(
@@ -8593,6 +8597,8 @@ Executes a GFX CREATE command.
 				create_emoter_slider_data.control_curve_manager=
 					command_data->control_curve_manager;
 				create_emoter_slider_data.scene_manager=command_data->scene_manager;
+				create_emoter_slider_data.io_stream_package =
+					command_data->io_stream_package;
 				create_emoter_slider_data.viewer_scene=command_data->default_scene;
 				create_emoter_slider_data.viewer_background_colour=
 					command_data->background_colour;
@@ -8808,15 +8814,10 @@ DESCRIPTION :
 Executes a GFX DEFINE command.
 ==============================================================================*/
 {
-	int i,return_code;
+	int return_code;
 	struct Cmiss_command_data *command_data;
-	auto struct Modifier_entry option_table[]=
-	{
-		{"curve",NULL,NULL,gfx_define_Control_curve},
-		{"faces",NULL,NULL,gfx_define_faces},
-		{"field",NULL,NULL,define_Computed_field},
-		{NULL,NULL,NULL,NULL}
-	};
+	struct Control_curve_command_data control_curve_command_data;
+	struct Option_table *option_table;
 
 	ENTER(execute_command_gfx_define);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -8826,17 +8827,22 @@ Executes a GFX DEFINE command.
 		{
 			if (state->current_token)
 			{
-				i=0;
+				option_table = CREATE(Option_table)();
 				/* curve */
-				(option_table[i]).user_data=command_data->control_curve_manager;
-				i++;
+				control_curve_command_data.control_curve_manager = 
+					command_data->control_curve_manager;
+				control_curve_command_data.io_stream_package = 
+					command_data->io_stream_package;
+				Option_table_add_entry(option_table, "curve", NULL,
+					&control_curve_command_data, gfx_define_Control_curve);
 				/* faces */
-				(option_table[i]).user_data=command_data_void;
-				i++;
+				Option_table_add_entry(option_table, "faces", NULL,
+					command_data_void, gfx_define_faces);
 				/* field */
-				(option_table[i]).user_data=command_data->computed_field_package;
-				i++;
-				return_code=process_option(state,option_table);
+				Option_table_add_entry(option_table, "field", NULL,
+					command_data->computed_field_package, define_Computed_field);
+				return_code = Option_table_parse(option_table, state);
+				DESTROY(Option_table)(&option_table);
 			}
 			else
 			{
@@ -15839,6 +15845,8 @@ Executes a GFX PRINT command.
 				cmgui_image_information, image_file_format);
 			Cmgui_image_information_add_file_name(cmgui_image_information,
 				file_name);
+			Cmgui_image_information_set_io_stream_package(cmgui_image_information,
+				command_data->io_stream_package);
 			if (cmgui_image = Graphics_window_get_image(window,
 				force_onscreen_flag, width, height, antialias,
 				transparency_layers, storage))
@@ -15929,7 +15937,7 @@ instruction to read in the mesh.
 					/* open the file */
 					if (return_code=check_suffix(&file_name,".curve.com"))
 					{
-						return_code=execute_comfile(file_name,
+						return_code=execute_comfile(file_name, command_data->io_stream_package,
 							command_data->execute_command);
 					}
 				}
@@ -15964,11 +15972,11 @@ user, otherwise the elements file is read.
 ==============================================================================*/
 {
 	char *file_name, *region_path;
-	FILE *input_file;
 	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct Cmiss_region *region, *top_region;
 	struct FE_region *fe_region;
+	struct IO_stream *input_file;
 	struct LIST(FE_element_shape) *element_shape_list;
 	struct MANAGER(FE_basis) *basis_manager;
 	struct Option_table *option_table;
@@ -16053,7 +16061,8 @@ user, otherwise the elements file is read.
 			if (return_code)
 			{
 				/* open the file */
-				if (input_file = fopen(file_name, "r"))
+				if ((input_file = CREATE(IO_stream)(command_data->io_stream_package))
+					&& (IO_stream_open_for_read(input_file, file_name)))
 				{
 					if (region = read_exregion_file(input_file,
 						command_data->basis_manager, command_data->element_shape_list,
@@ -16086,7 +16095,8 @@ user, otherwise the elements file is read.
 							"Error reading element file: %s", file_name);
 						return_code = 0;
 					}
-					fclose(input_file);
+					IO_stream_close(input_file);
+					DESTROY(IO_stream)(&input_file);
 				}
 				else
 				{
@@ -16129,13 +16139,13 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 {
 	char *file_name, *region_path, time_set_flag;
 	double maximum, minimum;
-	FILE *input_file;
 	float time;
 	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct Cmiss_region *region, *top_region;
 	struct FE_import_time_index *node_time_index, node_time_index_data;
 	struct FE_region *fe_region;
+	struct IO_stream *input_file;
 	struct LIST(FE_element_shape) *element_shape_list;
 	struct MANAGER(FE_basis) *basis_manager;
 	struct Option_table *option_table;
@@ -16256,8 +16266,9 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 					}
 					if (return_code)
 					{
-						if (input_file = fopen(file_name,"r"))
-						{
+						if ((input_file = CREATE(IO_stream)(command_data->io_stream_package))
+							&& (IO_stream_open_for_read(input_file, file_name)))
+				{
 							if (region = read_exregion_file(input_file,
 								command_data->basis_manager, command_data->element_shape_list,
 								node_time_index))
@@ -16297,7 +16308,8 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 									"Error reading node file: %s", file_name);
 								return_code = 0;
 							}
-							fclose(input_file);
+							IO_stream_close(input_file);
+							DESTROY(IO_stream)(&input_file);
 						}
 						else
 						{
@@ -19972,6 +19984,8 @@ Executes a GFX WRITE TEXTURE command.
 					cmgui_image_information, image_file_format);
 				Cmgui_image_information_set_number_of_bytes_per_component(
 					cmgui_image_information, number_of_bytes_per_component);
+				Cmgui_image_information_set_io_stream_package(cmgui_image_information,
+					command_data->io_stream_package);
 				if (file_number_pattern)
 				{
 					if (strstr(file_name, file_number_pattern))
@@ -22270,6 +22284,7 @@ Executes a READ command.
 				open_comfile_data.example_symbol=CMGUI_EXAMPLE_DIRECTORY_SYMBOL;
 				open_comfile_data.execute_command=command_data->execute_command;
 				open_comfile_data.set_command=command_data->set_command;
+				open_comfile_data.io_stream_package=command_data->io_stream_package;
 				open_comfile_data.file_extension=".com";
 #if defined (MOTIF)
 				open_comfile_data.comfile_window_manager =
@@ -22444,6 +22459,7 @@ Executes a OPEN command.
 				open_comfile_data.example_symbol=CMGUI_EXAMPLE_DIRECTORY_SYMBOL;
 				open_comfile_data.execute_command=command_data->execute_command;
 				open_comfile_data.set_command=command_data->set_command;
+				open_comfile_data.io_stream_package=command_data->io_stream_package;
 				open_comfile_data.file_extension=".com";
 #if defined (MOTIF)
 				open_comfile_data.comfile_window_manager =
@@ -23801,6 +23817,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->data_selection=(struct FE_node_selection *)NULL;
 		command_data->node_selection=(struct FE_node_selection *)NULL;
 		command_data->interactive_tool_manager=(struct MANAGER(Interactive_tool) *)NULL;
+		command_data->io_stream_package = (struct IO_stream_package *)NULL;
 		command_data->computed_field_package=(struct Computed_field_package *)NULL;
 		command_data->default_scene=(struct Scene *)NULL;
 		command_data->scene_manager=(struct MANAGER(Scene) *)NULL;
@@ -23941,6 +23958,8 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 			destroy_Parse_state(&state);
 		}
 #endif /* !defined (WIN32_USER_INTERFACE) */
+
+		command_data->io_stream_package = CREATE(IO_stream_package)();
 
 #if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
 		/* SAB I want to do this before CREATEing the User_interface
@@ -24644,6 +24663,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				command_data->graphics_buffer_package,
 				Material_package_get_material_manager(command_data->material_package),
 				Material_package_get_default_material(command_data->material_package),
+				command_data->io_stream_package,
 				command_data->interactive_tool_manager,
 				command_data->light_manager,
 				command_data->default_light,
@@ -25166,6 +25186,8 @@ Clean up the command_data, deallocating all the associated memory and resources.
 			DESTROY(Event_dispatcher)(&command_data->event_dispatcher);
 		}		
 
+		DESTROY(IO_stream_package)(&command_data->io_stream_package);
+
 		/* clean up command-line options */
 
 		if (command_data->examples_directory_override)
@@ -25267,10 +25289,32 @@ executing cmiss commands from C.
 	return (execute_command);
 } /* Cmiss_command_data_get_execute_command */
 
+struct IO_stream_package *Cmiss_command_data_get_IO_stream_package(
+	struct Cmiss_command_data *command_data)
+/*******************************************************************************
+LAST MODIFIED : 16 September 2004
+
+DESCRIPTION :
+Returns the io_stream_package structure from the <command_data>
+==============================================================================*/
+{
+	struct IO_stream_package *io_stream_package;
+
+	ENTER(Cmiss_command_data_get_io_stream_package);
+	io_stream_package=(struct IO_stream_package *)NULL;
+	if (command_data)
+	{
+		io_stream_package = command_data->io_stream_package;
+	}
+	LEAVE;
+
+	return (io_stream_package);
+} /* Cmiss_command_data_get_io_stream_package */
+
 struct MANAGER(Computed_field) *Cmiss_command_data_get_computed_field_manager(
 	struct Cmiss_command_data *command_data)
 /*******************************************************************************
-LAST MODIFIED : 18 April 2003
+LAST MODIFIED : 16 September 2004
 
 DESCRIPTION :
 Returns the root region from the <command_data>.

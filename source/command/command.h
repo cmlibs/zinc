@@ -10,6 +10,7 @@ Functions and types associated with commands.
 #define COMMAND_H
 
 #include "general/object.h"
+#include "general/io_stream.h"
 #if defined (MOTIF)
 #include <X11/Intrinsic.h>
 #endif /* defined (MOTIF) */
@@ -88,9 +89,10 @@ DESCRIPTION :
 Executes the given string using the Execute_command stucture
 ==============================================================================*/
 
-int execute_comfile(char *file_name,struct Execute_command *execute_command);
+int execute_comfile(char *file_name,struct IO_stream_package *io_stream_package,
+	struct Execute_command *execute_command);
 /******************************************************************************
-LAST MODIFIED : 16 June 1996
+LAST MODIFIED : 3 September 2004
 
 DESCRIPTION :
 Opens, executes and then closes a com file.  No window is created.

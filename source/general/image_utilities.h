@@ -270,6 +270,20 @@ Used to specify the width for raw file formats read with Cmgui_image_read.
 Clears 'valid' flag of cmgui_image_information if not correctly set.
 ==============================================================================*/
 
+struct IO_stream_package;
+
+int Cmgui_image_information_set_io_stream_package(
+	struct Cmgui_image_information *cmgui_image_information,
+	struct IO_stream_package *io_stream_package);
+/*******************************************************************************
+LAST MODIFIED : 16 September 2004
+
+DESCRIPTION :
+Sets the <io_stream_package> recorded with the <cmgui_image_information>.
+Used to specify the io_stream_package for raw file formats read with Cmgui_image_read.
+Clears 'valid' flag of cmgui_image_information if not correctly set.
+==============================================================================*/
+
 int DESTROY(Cmgui_image)(struct Cmgui_image **cmgui_image_address);
 /*******************************************************************************
 LAST MODIFIED : 13 February 2002

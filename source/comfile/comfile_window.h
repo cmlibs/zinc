@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : comfile_window.h
 
-LAST MODIFIED : 18 April 2002
+LAST MODIFIED : 3 September 2004
 
 DESCRIPTION :
 Definitions for the comfile window and structures.
@@ -12,6 +12,7 @@ Definitions for the comfile window and structures.
 #include <stddef.h>
 #include "command/command.h"
 #include "command/parser.h"
+#include "general/io_stream.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
@@ -42,12 +43,12 @@ Global functions
 */
 
 struct Comfile_window *CREATE(Comfile_window)(char *name,
-	char *file_name,
+	char *file_name, struct IO_stream_package *io_stream_package,
 	struct Execute_command *execute_command,
 	struct Execute_command *set_command,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 18 April 2002
+LAST MODIFIED : 3 September 2004
 
 DESCRIPTION :
 Creates the structures and retrieves a comfile window widget from the Motif

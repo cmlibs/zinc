@@ -13,6 +13,7 @@ Commands and functions for comfiles.
 #include "comfile/comfile_window.h"
 #endif /* defined (MOTIF) */
 #include "command/parser.h"
+#include "general/io_stream.h"
 #include "user_interface/user_interface.h"
 
 /*
@@ -31,6 +32,7 @@ DESCRIPTION :
 		*file_name;
 	int execute_count;
 	struct Execute_command *execute_command,*set_command;
+	struct IO_stream_package *io_stream_package;
 #if defined (MOTIF)
 	struct MANAGER(Comfile_window) *comfile_window_manager;
 #endif /* defined (MOTIF) */

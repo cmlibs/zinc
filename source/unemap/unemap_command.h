@@ -56,6 +56,7 @@ struct Unemap_command_data *CREATE(Unemap_command_data)(
 	struct Graphics_buffer_package *graphics_buffer_package,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_graphical_material,
+	struct IO_stream_package *io_stream_package,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct MANAGER(Light) *light_manager,
 	struct Light *default_light,

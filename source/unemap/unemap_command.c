@@ -49,6 +49,7 @@ Data required for Unemap commands.
 	struct Graphics_buffer_package *graphics_buffer_package;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct Graphical_material *default_graphical_material;
+	struct IO_stream_package *io_stream_package;
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct MANAGER(Light) *light_manager;
 	struct Light *default_light;
@@ -213,6 +214,7 @@ Executes a UNEMAP OPEN command.
 						unemap_command_data->glyph_list,						
 						unemap_command_data->default_graphical_material,
 						unemap_command_data->computed_field_package,
+						unemap_command_data->io_stream_package,
 						unemap_command_data->default_light,
 						unemap_command_data->default_light_model,
 						unemap_command_data->graphics_buffer_package,
@@ -303,6 +305,7 @@ struct Unemap_command_data *CREATE(Unemap_command_data)(
 	struct Graphics_buffer_package *graphics_buffer_package,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Graphical_material *default_graphical_material,
+	struct IO_stream_package *io_stream_package,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct MANAGER(Light) *light_manager,
 	struct Light *default_light,
@@ -387,6 +390,7 @@ will be destroyed with it.
 				graphical_material_manager;
 			unemap_command_data->default_graphical_material =
 				default_graphical_material;
+			unemap_command_data->io_stream_package = io_stream_package;
 			unemap_command_data->interactive_tool_manager = interactive_tool_manager;
 			unemap_command_data->light_manager = light_manager;
 			unemap_command_data->default_light = default_light;

@@ -119,7 +119,7 @@ specified on the command line, a file selection box is presented to the user.
 					{
 						for (i=open_comfile_data->execute_count;i>0;i--)
 						{
-							execute_comfile(filename,
+							execute_comfile(filename, open_comfile_data->io_stream_package,
 								open_comfile_data->execute_command);
 						}
 					}
@@ -131,7 +131,7 @@ specified on the command line, a file selection box is presented to the user.
 							filename))
 						{
 							if (comfile_window = CREATE(Comfile_window)(name,
-								filename,
+								filename, open_comfile_data->io_stream_package,
 								open_comfile_data->execute_command,
 								open_comfile_data->set_command,
 								open_comfile_data->user_interface))

@@ -11,6 +11,7 @@ used to scale the distance between a fixed node and a group of nodes.
 #if !defined (EMOTER_SLIDER_DIALOG_H)
 #define EMOTER_SLIDER_DIALOG_H
 
+#include "general/io_stream.h"
 #include "region/cmiss_region.h"
 #include "user_interface/user_interface.h"
 
@@ -38,6 +39,7 @@ DESCRIPTION :
 	struct MANAGER(Graphics_window) *graphics_window_manager;
 	struct MANAGER(Control_curve) *control_curve_manager;
 	struct MANAGER(Scene) *scene_manager;
+	struct IO_stream_package *io_stream_package;
 	struct Scene *viewer_scene;
 	struct Colour viewer_background_colour;
 	struct Graphics_buffer_package *graphics_buffer_package;

@@ -48,6 +48,7 @@ etc ?
 	/* need to keep comfile window manager so window can be destroyed by self */
 	struct MANAGER(Comfile_window) *comfile_window_manager;
 	char *file_name;
+	struct IO_stream_package *io_stream_package;
 	int number_of_commands;
 	char **commands;
 	Widget command_list;
@@ -98,7 +99,7 @@ commands from the comfile into the list.
 ==============================================================================*/
 {
 	char **command,*command_string,*line;
-	FILE *comfile;
+	struct IO_stream *comfile;
 	int i,number_of_commands;
 	struct Comfile_window *comfile_window;
 
@@ -108,11 +109,12 @@ commands from the comfile into the list.
 	{
 		comfile_window->command_list=widget;
 		if ((comfile_window->file_name)&&
-			(comfile=fopen(comfile_window->file_name,"r")))
+			(comfile=CREATE(IO_stream)(comfile_window->io_stream_package))&&
+			IO_stream_open_for_read(comfile, comfile_window->file_name))
 		{
 			number_of_commands=0;
-			while ((EOF!=fscanf(comfile," "))&&!feof(comfile)&&
-				read_string(comfile,"[^\n]",&line))
+			while ((EOF!=IO_stream_scan(comfile," "))&&!IO_stream_end_of_stream(comfile)&&
+				IO_stream_read_string(comfile,"[^\n]",&line))
 			{
 				if (command_string=trim_string(line))
 				{
@@ -126,7 +128,7 @@ commands from the comfile into the list.
 				}
 				DEALLOCATE(line);
 			}
-			if (!feof(comfile))
+			if (!IO_stream_end_of_stream(comfile))
 			{
 				display_message(ERROR_MESSAGE,
 					"identify_command_list.  Error reading comfile");
@@ -152,7 +154,8 @@ commands from the comfile into the list.
 						"identify_command_list.  Could not allocate memory for commands");
 				}
 			}
-			fclose(comfile);
+			IO_stream_close(comfile);
+			DESTROY(IO_stream)(&comfile);
 		}
 		else
 		{
@@ -431,7 +434,7 @@ Global functions
 */
 #if defined (MOTIF)
 struct Comfile_window *CREATE(Comfile_window)(char *name,
-	char *file_name,
+	char *file_name, struct IO_stream_package *io_stream_package,
 	struct Execute_command *execute_command,
 	struct Execute_command *set_command,
 	struct User_interface *user_interface)
@@ -444,7 +447,7 @@ resource manager hierarchy.
 ==============================================================================*/
 {
 	Atom WM_DELETE_WINDOW;
-	FILE *comfile;
+	struct IO_stream *comfile;
 	MrmType comfile_window_class;
 	static MrmRegisterArg callback_list[]=
 	{
@@ -459,10 +462,12 @@ resource manager hierarchy.
 	struct Comfile_window *comfile_window;
 
 	ENTER(CREATE(Comfile_window));
-	if (name && file_name && (comfile = fopen(file_name,"r")) &&
+	if (name && file_name && (comfile = CREATE(IO_stream)(io_stream_package))
+		&& IO_stream_open_for_read(comfile,file_name) &&
 		execute_command && set_command && user_interface)
 	{
-		fclose(comfile);
+		IO_stream_close(comfile);
+		DESTROY(IO_stream)(&comfile);
 		if (MrmOpenHierarchy_base64_string(comfile_window_uidh,
 			&comfile_window_hierarchy,&comfile_window_hierarchy_open))
 		{
@@ -471,6 +476,7 @@ resource manager hierarchy.
 				(comfile_window->name = duplicate_string(name)) &&
 				(comfile_window->file_name = duplicate_string(file_name)))
 			{
+				comfile_window->io_stream_package = io_stream_package;
 				comfile_window->comfile_window_manager=
 					(struct MANAGER(Comfile_window) *)NULL;
 				comfile_window->command_list=(Widget)NULL;

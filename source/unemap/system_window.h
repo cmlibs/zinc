@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : system_window.h
 
-LAST MODIFIED : 8 May 2003
+LAST MODIFIED : 3 September 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -14,6 +14,7 @@ DESCRIPTION :
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>
 #endif /* defined (MOTIF) */
+#include "general/io_stream.h"
 #include "unemap/acquisition_work_area.h"
 #include "unemap/analysis_work_area.h"
 #include "unemap/mapping_work_area.h"
@@ -63,6 +64,7 @@ struct System_window *CREATE(System_window)(Widget shell,
 	struct LIST(GT_object) *glyph_list,
 	struct Graphical_material *graphical_material,
 	struct Computed_field_package *computed_field_package,
+	struct IO_stream_package *io_stream_package,
 	struct Light *light,
 	struct Light_model *light_model,
 	struct Graphics_buffer_package *graphics_buffer_package,
@@ -70,7 +72,7 @@ struct System_window *CREATE(System_window)(Widget shell,
 	struct Time_keeper *time_keeper,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 8 May 2003
+LAST MODIFIED : 3 September 2004
 
 DESCRIPTION :
 This function allocates the memory for a system window structure.  It then

@@ -613,7 +613,7 @@ added to the end of the string.
 	ENTER(compare_suffix);
 	if (string&&(*string)&&suffix)
 	{
-		if (has_suffix(*string,suffix)||has_suffix(*string,".cmiss"))
+		if (strchr(*string, '.'))
 		{
 			return_code=1;
 		}

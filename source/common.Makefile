@@ -141,7 +141,7 @@ ifeq ($(SYSNAME:IRIX%=),)
    LINK = CC
    ifneq ($(DEBUG),true)
       OPTIMISATION_FLAGS = -O
-      COMPILE_FLAGS = -ansi -pedantic -woff 1521
+      COMPILE_FLAGS = -pedantic -woff 1521
       COMPILE_DEFINES = -DOPTIMISED
       STRICT_FLAGS = 
       CPP_STRICT_FLAGS = 
@@ -149,7 +149,7 @@ ifeq ($(SYSNAME:IRIX%=),)
       DIGITAL_MEDIA_NON_STRICT_FLAGS_PATTERN = NONE # Must specify a pattern that doesn't match */
    else # DEBUG != true
       OPTIMISATION_FLAGS = -g
-      COMPILE_FLAGS = -ansi -fullwarn -pedantic -woff 1521
+      COMPILE_FLAGS = -fullwarn -pedantic -woff 1521
       COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON 
       # STRICT_FLAGS = -diag_error 1042,1174,1185,1196,1409,1551,1552,3201
       STRICT_FLAGS = -diag_error 1000-9999
@@ -189,7 +189,7 @@ ifeq ($(SYSNAME),Linux)
 #       FORTRAN = efc -c -W1 -w95 -cm -auto -fpp0 -stack_temps
 #    else
       # gcc
-      CC = gcc -c
+      CC = gcc -c -std=gnu99
       CPP = g++ -c
       CPP_FLAGS =
       FORTRAN = g77 -c -fno-second-underscore
