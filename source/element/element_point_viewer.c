@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_viewer.c
 
-LAST MODIFIED : 31 May 2000
+LAST MODIFIED : 2 June 2000
 
 DESCRIPTION :
 Dialog for selecting an element point, viewing and editing its fields and
@@ -683,7 +683,7 @@ static void Element_point_viewer_update_element(Widget widget,
 LAST MODIFIED : 30 May 2000
 
 DESCRIPTION :
-Callback for change of seed element.
+Callback for change of element.
 ==============================================================================*/
 {
 	struct Element_point_viewer *element_point_viewer;
@@ -1178,7 +1178,7 @@ currently being viewed is affected by the change, re-send to viewer.
 static int Element_point_viewer_apply_changes(
 	struct Element_point_viewer *element_point_viewer)
 /*******************************************************************************
-LAST MODIFIED : 24 May 2000
+LAST MODIFIED : 2 June 2000
 
 DESCRIPTION :
 Makes the element_point change global.
@@ -1189,16 +1189,23 @@ Makes the element_point change global.
 	ENTER(Element_point_viewer_apply_changes);
 	if (element_point_viewer)
 	{
-		if (element_point_viewer->element_copy)
+		if (element_point_viewer->element_point_identifier.element)
 		{
-			display_message(WARNING_MESSAGE,
-				"Element_point_viewer_apply_changes.  Not implemented");
-			return_code=0;
-#if defined (NEW_CODE)
-			return_code=MANAGER_MODIFY_NOT_IDENTIFIER(FE_element,cm_element_point_identifier)(
-				SELECT_GET_SELECT_ITEM(FE_element)(element_point_viewer->select_widget),
-				element_point_viewer->element_copy,element_point_viewer->element_manager);
-#endif /* defined (NEW_CODE) */
+			if (MANAGER_MODIFY_NOT_IDENTIFIER(FE_element,identifier)(
+				element_point_viewer->element_point_identifier.element,
+				element_point_viewer->element_copy,
+				element_point_viewer->element_manager))
+			{
+				/* redisplay the grid_value_text as field may have been changed */
+				Element_point_viewer_refresh_grid_value_text(element_point_viewer);
+				return_code=1;
+			}
+			else
+			{
+				display_message(WARNING_MESSAGE,
+					"Element_point_viewer_apply_changes.  Failed");
+				return_code=0;
+			}
 		}
 		else
 		{
