@@ -45,9 +45,11 @@ sub locate_this_module
 {
   my $modlibname = (caller())[1];
   $modlibname =~ s,/Cmiss/Perl_cmiss.pm$,,;
+  $modlibname =~ s,blib/lib,blib/arch,;
   return $modlibname;
 }
 my $modlibname = locate_this_module();
+use Cmiss;
 Cmiss::require_library("$modlibname/auto/Cmiss/Perl_cmiss/Perl_cmiss.so");
 
 package Perl_cmiss;
@@ -62,7 +64,7 @@ my %keywords = ( 'command_window' => 1,
 					  'itp' => 1,
 					  'open' => 1,
 					  'quit' => 1,
-					  'list_memory',
+					  'list_memory' => 1,
 					  'set' => 1,
 					  'unemap' => 1 );
 

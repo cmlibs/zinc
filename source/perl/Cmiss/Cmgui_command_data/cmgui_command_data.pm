@@ -100,6 +100,29 @@ sub new
 	return $objref;
 }
 
+sub get_cmiss_root_region
+{
+  my $cmgui_command_data = $@;
+  my $objref;
+
+  if (defined $cmgui_command_data)
+  {
+	 $objref=command_data_get_root_region($cmgui_command_data);
+	 if ($objref)
+	 {
+		$objref;
+	 }
+	 else
+	 {
+		croak "Could not get root region.";
+	 }
+  }
+  else
+  {
+	 croak "Missing cmgui_command_data.";
+  }
+}
+
 sub DESTROY
 {
   if ($actually_destroy_command_data)

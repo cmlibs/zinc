@@ -155,7 +155,7 @@ sub matrix
 }
 
 use Cmiss;
-Cmiss::require_library('cmgui');
+Cmiss::require_library('cmgui_computed_variable');
 
 require XSLoader;
 XSLoader::load('Cmiss::Value::Derivative_matrix', $VERSION);

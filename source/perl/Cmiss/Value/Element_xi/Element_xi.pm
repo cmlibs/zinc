@@ -56,6 +56,7 @@ sub AUTOLOAD {
 use Cmiss;
 Cmiss::require_library('cmgui_finite_element');
 Cmiss::require_library('cmgui_computed_variable');
+Cmiss::require_library('cmgui_computed_variable_finite_element');
 
 # Named argument
 sub new

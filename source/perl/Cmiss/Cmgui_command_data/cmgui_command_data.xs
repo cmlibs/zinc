@@ -57,3 +57,13 @@ execute_command(Cmiss::cmgui_command_data cmgui_command_data, char *name)
 	}
 	OUTPUT:
 	RETVAL
+
+Cmiss::Region
+command_data_get_root_region(Cmiss::cmgui_command_data cmgui_command_data)
+	CODE:
+		if (RETVAL=Cmiss_command_data_get_root_region(cmgui_command_data))
+		{
+			ACCESS(Cmiss_region)(RETVAL);
+		}
+	OUTPUT:
+		RETVAL

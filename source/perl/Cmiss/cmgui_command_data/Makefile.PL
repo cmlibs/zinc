@@ -23,6 +23,8 @@ while ( -f $typemap_file )
 	 unshift @typemap_array, $typemap_file;
 	 $typemap_file = "../$typemap_file";
   }
+#Other typemaps we require
+unshift @typemap_array, "$ENV{CMGUI_DEV_SOURCE}/perl/Cmiss/Region/typemap";
 
 #
 # Problems with "Manifying" in a FAT32 filesystem because Cmiss::cmgui_command_data.3 is not

@@ -80,30 +80,6 @@ sub new
 #	get_type(shift);
 #}
 
-sub get_cmiss_root_region
-{
-  my (%args) = @_;
-  my $cmgui_command_data = $args{cmgui_command_data};
-  my $objref;
-
-  if (defined $cmgui_command_data)
-  {
-	 $objref=command_data_get_root_region($cmgui_command_data);
-	 if ($objref)
-	 {
-		$objref;
-	 }
-	 else
-	 {
-		croak "Could not get root region.";
-	 }
-  }
-  else
-  {
-	 croak "Missing cmgui_command_data.";
-  }
-}
-
 sub read_file
 {
 	my ($self, %args) = @_;

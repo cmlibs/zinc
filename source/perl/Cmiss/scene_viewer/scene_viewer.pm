@@ -90,7 +90,14 @@ sub AUTOLOAD {
     goto &$AUTOLOAD;
 }
 
-bootstrap Cmiss::scene_viewer $VERSION;
+use Cmiss;
+#Need an interpreter before we load the main "cmiss" library until we separate the
+#graphics from the command processing
+use Cmiss::Perl_cmiss;
+Cmiss::require_library('cmgui');
+
+require XSLoader;
+XSLoader::load('Cmiss::scene_viewer', $VERSION);
 
 # Preloaded methods go here.
 

@@ -61,7 +61,14 @@ sub AUTOLOAD {
     goto &$AUTOLOAD;
 }
 
-bootstrap Cmiss::graphics_window $VERSION;
+use Cmiss;
+#Need an interpreter before we load the main "cmiss" library until we separate the
+#graphics from the command processing
+use Cmiss::Perl_cmiss;
+Cmiss::require_library('cmgui');
+
+require XSLoader;
+XSLoader::load('Cmiss::graphics_window', $VERSION);
 
 # Preloaded methods go here.
 
