@@ -1,9 +1,22 @@
 //******************************************************************************
 // FILE : function_gradient.cpp
 //
-// LAST MODIFIED : 26 August 2004
+// LAST MODIFIED : 21 October 2004
 //
 // DESCRIPTION :
+// ***Not used***
+// API now uses a combination of Function_matrix_transpose and
+// Function_derivative.
+// ***Not correct***
+// Returns
+//   df1/dx1
+//   df2/dx2
+//   ...
+// Should return
+//   df1/dx1 df2/dx1 ...
+//   df1/dx2 df2/dx2 ...
+//   ...
+// which is the transpose of the derivative
 //==============================================================================
 
 #include <sstream>
