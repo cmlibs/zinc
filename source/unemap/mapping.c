@@ -4954,8 +4954,6 @@ Removes the map electrodes if they've changed, then redraws them.
 #endif /* UNEMAP_USE_NODES */
 
 #if defined (UNEMAP_USE_NODES)
-
-#endif /* UNEMAP_USE_NODES */
 int draw_torso_arms(struct Unemap_package *package,int map_number)
 /*******************************************************************************
 LAST MODIFIED : 15 June 2000
@@ -5082,6 +5080,8 @@ Creates a pair of arms, and adds to the scene. Or removes if not required.
 	LEAVE;
 	return(return_code);
 }/* draw_torso_arms */
+#endif /* UNEMAP_USE_NODES */
+
 #if defined (UNEMAP_USE_NODES)
 int draw_map_3d(struct Map *map)
 /*******************************************************************************
