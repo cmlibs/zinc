@@ -23,8 +23,10 @@ group of nodes
 #include "general/debug.h"
 #include "general/geometry.h"
 #include "general/manager.h"
+#include "graphics/graphics_library.h"
 #include "graphics/graphics_window.h"
 #include "graphics/movie_graphics.h"
+#include "graphics/scene.h"
 #include "graphics/scene_viewer.h"
 #include "mirage/em_cmgui.h"
 	/*???DB.  For EM analysis - move out of mirage ? */
@@ -84,6 +86,7 @@ DESCRIPTION :
 	struct MANAGER(Control_curve) *control_curve_manager;
 	struct EM_Object *em_object;
 	struct Scene *viewer_scene;
+	struct Scene_object *transformation_scene_object;
 	struct User_interface *user_interface;
 	Widget top_level, *control_curve_editor_dialog_address;
 }; /* struct Shared_emoter_slider_data */
@@ -254,6 +257,8 @@ Updates the node locations for the <emoter_slider>
 	char input_filename[200];
 	double position[3], temp_two, temp_cos, temp_sin, *u,*weights;
 	FILE *input_file;
+	float euler_angles[3];
+	gtMatrix transformation; /* 4 x 4 */
 	int i,j,k,offset,return_code,versions;
 	struct FE_field_component coordinate_field_component;
 	struct FE_node *node,*temp_node;
@@ -325,34 +330,47 @@ Updates the node locations for the <emoter_slider>
 
 								if ( solid_body_motion )
 								{
-									/* Need to apply rotations in reverse order */
-									weights = shared_data->weights + 5;
-									temp_sin = sin( -*weights );
-									temp_cos = cos( -*weights );
-									temp_two = temp_cos * position[0] - temp_sin * position[1];
-									position[1] = temp_sin * position[0] + temp_cos * position[1];
-									position[0] = temp_two;
-									weights--;
-
-									temp_sin = sin( -*weights );
-									temp_cos = cos( -*weights );
-									temp_two = temp_cos * position[2] - temp_sin * position[0];
-									position[0] = temp_sin * position[2] + temp_cos * position[0];
-									position[2] = temp_two;
-									weights--;
-
-									temp_sin = sin( -*weights );
-									temp_cos = cos( -*weights );
-									temp_two = temp_cos * position[1] - temp_sin * position[2];
-									position[2] = temp_sin * position[1] + temp_cos * position[2];
-									position[1] = temp_two;
-									weights--;
-
-									position[2] -= *weights;
-									weights--;
-									position[1] -= *weights;
-									weights--;
-									position[0] -= *weights;
+									if (shared_data->transformation_scene_object)
+									{
+										euler_angles[0] = shared_data->weights[5];
+										euler_angles[1] = shared_data->weights[4];
+										euler_angles[2] = shared_data->weights[3];
+										euler_to_gtMatrix(euler_angles, transformation);
+										Scene_object_set_transformation(
+											shared_data->transformation_scene_object,
+											&transformation);
+									}
+									else
+									{
+										/* Need to apply rotations in reverse order */
+										weights = shared_data->weights + 5;
+										temp_sin = sin( -*weights );
+										temp_cos = cos( -*weights );
+										temp_two = temp_cos * position[0] - temp_sin * position[1];
+										position[1] = temp_sin * position[0] + temp_cos * position[1];
+										position[0] = temp_two;
+										weights--;
+										
+										temp_sin = sin( -*weights );
+										temp_cos = cos( -*weights );
+										temp_two = temp_cos * position[2] - temp_sin * position[0];
+										position[0] = temp_sin * position[2] + temp_cos * position[0];
+										position[2] = temp_two;
+										weights--;
+										
+										temp_sin = sin( -*weights );
+										temp_cos = cos( -*weights );
+										temp_two = temp_cos * position[1] - temp_sin * position[2];
+										position[2] = temp_sin * position[1] + temp_cos * position[2];
+										position[1] = temp_two;
+										weights--;
+										
+										position[2] -= *weights;
+										weights--;
+										position[1] -= *weights;
+										weights--;
+										position[0] -= *weights;
+									}
 								}
 
 								for (k = 0 ; k < 3 ; k++)
@@ -5705,13 +5723,16 @@ Executes a GFX CREATE EMOTER command.  If there is a emoter dialog
 in existence, then bring it to the front, otherwise create new one.
 ==============================================================================*/
 {
-	char *basis_file_name, minimum_nodeset_flag;
+	char *basis_file_name, minimum_nodeset_flag,
+		*transformation_graphics_object_name;
 	int i,*index_nodes,number_of_modes,number_of_nodes,number_of_index_nodes,
 		return_code;
 	struct Create_emoter_slider_data *create_emoter_slider_data;
 	struct GROUP(FE_node) *node_group;
 	struct Index_list_data index_list_data;
 	struct MANAGER(FE_node) *node_manager;
+	struct Scene_object *transformation_scene_object;
+	struct Scene *transformation_scene;
 	struct Shared_emoter_slider_data *shared_emoter_slider_data;
 	struct EM_Object *em_object;
 	static struct Modifier_entry option_table[]=
@@ -5719,6 +5740,8 @@ in existence, then bring it to the front, otherwise create new one.
 		{"minimum_nodeset",NULL,NULL,set_char_flag},
 		{"basis",NULL,(void *)1,set_name},
 		{"ngroup",NULL,NULL,set_FE_node_group},
+		{"transformation_graphics_object",NULL,(void *)1,set_name},
+		{"transformation_scene",NULL,NULL,set_Scene},
 		{NULL,NULL,NULL,set_name}
 	};
 
@@ -5741,12 +5764,18 @@ in existence, then bring it to the front, otherwise create new one.
 		minimum_nodeset_flag = 0;
 		basis_file_name = (char *)NULL;
 		node_group = (struct GROUP(FE_node) *) NULL;
+		transformation_graphics_object_name=(char *)NULL;
+		transformation_scene=ACCESS(Scene)(create_emoter_slider_data->viewer_scene);
+		transformation_scene_object = (struct Scene_object *)NULL;
 		(option_table[0]).to_be_modified = &minimum_nodeset_flag;
 		(option_table[1]).to_be_modified = &basis_file_name;
 		(option_table[2]).to_be_modified = &node_group;
 		(option_table[2]).user_data=
 			create_emoter_slider_data->node_group_manager;
 		(option_table[3]).to_be_modified = &basis_file_name;
+		(option_table[4]).to_be_modified = &transformation_graphics_object_name;
+		(option_table[5]).to_be_modified = &transformation_scene;
+		(option_table[5]).user_data=create_emoter_slider_data->scene_manager;
 		return_code=process_multiple_options(state,option_table);
 		if (return_code)
 		{
@@ -5765,6 +5794,17 @@ in existence, then bring it to the front, otherwise create new one.
 			}
 			if (return_code)
 			{
+				if (transformation_scene && transformation_graphics_object_name)
+				{
+					if (transformation_scene_object = Scene_get_Scene_object_by_name(
+						transformation_scene, transformation_graphics_object_name))
+					{
+						display_message(ERROR_MESSAGE,
+							"gfx_create_emoter.  Unable to find object %s in scene %s",
+							transformation_graphics_object_name, transformation_scene);
+						return_code = 0;
+					}
+				}
 				em_object=(struct EM_Object *)NULL;
 				if (node_group)
 				{
@@ -5857,6 +5897,8 @@ in existence, then bring it to the front, otherwise create new one.
 									= create_emoter_slider_data->viewer_light;
 								shared_emoter_slider_data->viewer_light_model
 									= create_emoter_slider_data->viewer_light_model;
+								shared_emoter_slider_data->transformation_scene_object
+									= transformation_scene_object;
 								return_code=bring_up_emoter_dialog(
 									create_emoter_slider_data->emoter_slider_dialog_address,
 									create_emoter_slider_data->parent,
@@ -5898,6 +5940,10 @@ in existence, then bring it to the front, otherwise create new one.
 					DEALLOCATE(index_nodes);
 				}
 			}
+		}
+		if (transformation_scene)
+		{
+			DEACCESS(Scene)(&transformation_scene);
 		}
 		if (node_group)
 		{

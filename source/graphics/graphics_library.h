@@ -123,6 +123,24 @@ Returns true if <matrix1> and <matrix2> have no components different by
 more than <tolerance> times the largest absolute value in either matrix.
 ==============================================================================*/
 
+int gtMatrix_to_euler(gtMatrix matrix, float *euler_angles);
+/*******************************************************************************
+LAST MODIFIED : 21 November 2002
+
+DESCRIPTION :
+Cleaned this up from view/coord_trans.c
+Returns <euler_angles> in radians.
+==============================================================================*/
+
+int euler_to_gtMatrix(float *euler_angles, gtMatrix matrix);
+/*******************************************************************************
+LAST MODIFIED : 21 November 2002
+
+DESCRIPTION :
+Cleaned this up from view/coord_trans.c
+<euler_angles> are in radians.
+==============================================================================*/
+
 #if defined (OPENGL_API)
 void wrapperReadMatrix(GLenum matrixName,gtMatrix *theMatrix);
 /*******************************************************************************

@@ -221,6 +221,110 @@ Returns true if <matrix1> and <matrix2> are identical.
 	return (return_code);
 } /* gtMatrix_match */
 
+int gtMatrix_to_euler(gtMatrix matrix, float *euler_angles)
+/*******************************************************************************
+LAST MODIFIED : 21 November 2002
+
+DESCRIPTION :
+Cleaned this up from view/coord_trans.c
+Returns <euler_angles> in radians.
+==============================================================================*/
+{
+	int return_code;
+#define MATRIX_TO_EULER_TOLERANCE 1.0E-12
+
+	ENTER(matrix_euler_float4);
+	if ((fabs(matrix[0][0])>MATRIX_TO_EULER_TOLERANCE) &&
+		(fabs(matrix[0][1])>MATRIX_TO_EULER_TOLERANCE))
+	{
+		euler_angles[0] = atan2(matrix[0][1],matrix[0][0]);
+		euler_angles[2] = atan2(matrix[1][2],matrix[2][2]);
+		euler_angles[1] = atan2(-matrix[0][2],matrix[0][0]/
+			cos(euler_angles[0]));
+	}
+	else
+	{
+		if (fabs(matrix[0][0])>MATRIX_TO_EULER_TOLERANCE)
+		{
+			euler_angles[0] = atan2(matrix[0][1],matrix[0][0]);
+			euler_angles[2] = atan2(matrix[1][2],matrix[2][2]);
+			euler_angles[1] = atan2(-matrix[0][2],matrix[0][0]/
+				cos(euler_angles[0]));
+		}
+		else
+		{
+			if (fabs(matrix[0][1])>MATRIX_TO_EULER_TOLERANCE)
+			{
+				euler_angles[0] = atan2(matrix[0][1],matrix[0][0]);
+				euler_angles[2] = atan2(matrix[1][2],matrix[2][2]);
+				euler_angles[1] = atan2(-matrix[0][2],matrix[0][1]/
+					sin(euler_angles[0]));
+			}
+			else
+			{
+				euler_angles[1] = atan2(-matrix[0][2],0); /* get +/-1 */
+				euler_angles[0] = 0;
+				euler_angles[2] = atan2(-matrix[2][1],
+					-matrix[2][0]*matrix[0][2]);
+			}
+		}
+	}
+	return_code = 1;
+
+	LEAVE;
+	return(return_code);
+} /* matrix_euler */
+
+int euler_to_gtMatrix(float *euler_angles, gtMatrix matrix)
+/*******************************************************************************
+LAST MODIFIED : 21 November 2002
+
+DESCRIPTION :
+Cleaned this up from view/coord_trans.c
+<euler_angles> are in radians.
+==============================================================================*/
+{
+	double cos_azimuth,cos_elevation,cos_roll,sin_azimuth,sin_elevation,
+		sin_roll;
+	int return_code;
+
+	ENTER(euler_to_gtMatrix);
+
+	cos_azimuth = cos(euler_angles[0]);
+	sin_azimuth = sin(euler_angles[0]);
+	cos_elevation = cos(euler_angles[1]);
+	sin_elevation = sin(euler_angles[1]);
+	cos_roll = cos(euler_angles[2]);
+	sin_roll = sin(euler_angles[2]);
+	matrix[0][0] = cos_azimuth*cos_elevation;
+	matrix[0][1] = sin_azimuth*cos_elevation;
+	matrix[0][2] = -sin_elevation;
+	matrix[1][0] = cos_azimuth*sin_elevation*sin_roll-
+		sin_azimuth*cos_roll;
+	matrix[1][1] = sin_azimuth*sin_elevation*sin_roll+
+		cos_azimuth*cos_roll;
+	matrix[1][2] = cos_elevation*sin_roll;
+	matrix[2][0] = cos_azimuth*sin_elevation*cos_roll+
+		sin_azimuth*sin_roll;
+	matrix[2][1] = sin_azimuth*sin_elevation*cos_roll-
+		cos_azimuth*sin_roll;
+	matrix[2][2] = cos_elevation*cos_roll;
+
+	/* Populate the 4 x 4 */
+	matrix[3][0] = 0.0;
+	matrix[3][1] = 0.0;
+	matrix[3][2] = 0.0;
+	matrix[0][3] = 0.0;
+	matrix[1][3] = 0.0;
+	matrix[2][3] = 0.0;
+	matrix[3][3] = 1.0;
+
+	return_code = 1;
+
+	LEAVE;
+	return (return_code);
+} /* euler_matrix */
+
 int gtMatrix_match_with_tolerance(gtMatrix *matrix1, gtMatrix *matrix2,
 	float tolerance)
 /*******************************************************************************

@@ -34,6 +34,7 @@ DESCRIPTION :
 	struct MANAGER(GROUP(FE_node)) *node_group_manager;
 	struct MANAGER(GROUP(FE_node)) *data_group_manager;
 	struct MANAGER(Control_curve) *control_curve_manager;
+	struct MANAGER(Scene) *scene_manager;
 	struct Scene *viewer_scene;
 	struct Colour viewer_background_colour;
 	struct Light *viewer_light;

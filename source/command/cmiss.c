@@ -10868,6 +10868,7 @@ Executes a GFX CREATE command.
 					command_data->node_group_manager;
 				create_emoter_slider_data.control_curve_manager=
 					command_data->control_curve_manager;
+				create_emoter_slider_data.scene_manager=command_data->scene_manager;
 				create_emoter_slider_data.viewer_scene=command_data->default_scene;
 				create_emoter_slider_data.viewer_light=command_data->default_light;
 				create_emoter_slider_data.viewer_light_model=
