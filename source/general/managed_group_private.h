@@ -61,9 +61,6 @@ A named list of object_type. \
 	/* Keep pointer to group manager while managed so that adding and */ \
 	/* removing objects from a group results in manager modify messages */\
 	struct MANAGER(GROUP(object_type)) *group_manager; \
-	/* manager modify messages are suspended while cache is non-zero. Allows */ \
-	/* a single modify message to be sent for multiple adds and removes. */ \
-	int cache; \
 	/* the number of structures that point to this group.  The group cannot be \
 		destroyed while this is greater than 0 */ \
 	int access_count; \
@@ -75,56 +72,95 @@ FULL_DECLARE_MANAGER_TYPE(GROUP(object_type))
 Module functions
 ----------------
 */
+
 #if defined (FULL_NAMES)
-#define MANAGED_GROUP_MODIFY_MESSAGE( object_type ) \
-	managed_group_modify_message_ ## object_type
+#define MANAGED_GROUP_BEGIN_CHANGE( object_type ) \
+	managed_group_begin_change_ ## object_type
 #else
-#define MANAGED_GROUP_MODIFY_MESSAGE( object_type )  mgm ## object_type
+#define MANAGED_GROUP_BEGIN_CHANGE( object_type )  mgbc ## object_type
 #endif
 
-#define DECLARE_MANAGED_GROUP_MODIFY_MESSAGE_FUNCTION( object_type, \
+#define DECLARE_MANAGED_GROUP_BEGIN_CHANGE_FUNCTION( object_type, \
 	group_type ) \
-static int MANAGED_GROUP_MODIFY_MESSAGE(object_type)( \
+static int MANAGED_GROUP_BEGIN_CHANGE(object_type)( \
 	struct group_type *group) \
 /***************************************************************************** \
-LAST MODIFIED : 22 June 2000 \
+LAST MODIFIED : 18 May 2001 \
 \
 DESCRIPTION : \
-If the group is managed, sends a MANAGER_MODIFY message to inform clients of \
-its manager that the group has changed. \
+Must call this function before adding or removing objects from the group. \
+Ensures changes are transformed to manager messages and thus passed to clients \
+registered for callbacks from the group manager. \
 ???RC Originally wanted to pass object_type as macro argument, but can't work \
 because GROUP(object_type) is not substituted as I would like. \
 ============================================================================*/ \
 { \
 	int return_code; \
 \
-	ENTER(MANAGED_GROUP_MODIFY_MESSAGE(object_type)); \
+	ENTER(MANAGED_GROUP_BEGIN_CHANGE(object_type)); \
 	if (group) \
 	{ \
 		if (group->group_manager) \
 		{ \
-			MANAGER_NOTE_CHANGE(group_type)( \
-				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(group_type),group, \
-				group->group_manager); \
-			return_code=1; \
+			MANAGER_BEGIN_CHANGE(group_type)(group->group_manager, \
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(group_type), group); \
 		} \
-		else  \
-		{ \
-			display_message(ERROR_MESSAGE, \
-				"MANAGED_GROUP_MODIFY_MESSAGE(" #object_type ").  Group not managed"); \
-			return_code=0; \
-		} \
+		return_code = 1; \
 	} \
 	else  \
 	{ \
 		display_message(ERROR_MESSAGE, \
-			"MANAGED_GROUP_MODIFY_MESSAGE(" #object_type ").  Missing group"); \
-		return_code=0; \
+			"MANAGED_GROUP_BEGIN_CHANGE(" #object_type ").  Missing group"); \
+		return_code = 0; \
 	} \
 	LEAVE; \
 \
 	return (return_code); \
-} /* MANAGED_GROUP_MODIFY_MESSAGE(object_type) */
+} /* MANAGED_GROUP_BEGIN_CHANGE(object_type) */
+
+#if defined (FULL_NAMES)
+#define MANAGED_GROUP_END_CHANGE( object_type ) \
+	managed_group_end_change_ ## object_type
+#else
+#define MANAGED_GROUP_END_CHANGE( object_type )  mgec ## object_type
+#endif
+
+#define DECLARE_MANAGED_GROUP_END_CHANGE_FUNCTION( object_type, \
+	group_type ) \
+static int MANAGED_GROUP_END_CHANGE(object_type)( \
+	struct group_type *group) \
+/***************************************************************************** \
+LAST MODIFIED : 18 May 2001 \
+\
+DESCRIPTION : \
+Must call this function after adding or removing objects from the group. \
+Ensures changes are transformed to manager messages and thus passed to clients \
+registered for callbacks from the group manager. \
+???RC Originally wanted to pass object_type as macro argument, but can't work \
+because GROUP(object_type) is not substituted as I would like. \
+============================================================================*/ \
+{ \
+	int return_code; \
+\
+	ENTER(MANAGED_GROUP_END_CHANGE(object_type)); \
+	if (group) \
+	{ \
+		if (group->group_manager) \
+		{ \
+			MANAGER_END_CHANGE(group_type)(group->group_manager); \
+		} \
+		return_code = 1; \
+	} \
+	else  \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"MANAGED_GROUP_END_CHANGE(" #object_type ").  Missing group"); \
+		return_code = 0; \
+	} \
+	LEAVE; \
+\
+	return (return_code); \
+} /* MANAGED_GROUP_END_CHANGE(object_type) */
 
 /*
 Global functions
@@ -132,10 +168,10 @@ Global functions
 */
 #define DECLARE_CREATE_MANAGED_GROUP_FUNCTION( object_type ) \
 /***************************************************************************** \
-LAST MODIFIED : 10 February 1998 \
+LAST MODIFIED : 18 May 2001 \
 \
 DESCRIPTION : \
-Added lines to clear cache flag and pointer to group_manager. \
+Added line clearing pointer to group_manager. \
 ============================================================================*/ \
 PROTOTYPE_CREATE_GROUP_FUNCTION(object_type) \
 { \
@@ -177,7 +213,6 @@ PROTOTYPE_CREATE_GROUP_FUNCTION(object_type) \
 			if (group->object_list=CREATE_LIST(object_type)()) \
 			{ \
 				group->group_manager=(struct MANAGER(GROUP(object_type)) *)NULL; \
-				group->cache=0; \
 				group->access_count=0; \
 			} \
 			else \
@@ -205,23 +240,28 @@ PROTOTYPE_REMOVE_OBJECT_FROM_GROUP(object_type) \
 	int return_code; \
 \
 	ENTER(REMOVE_OBJECT_FROM_GROUP(object_type)); \
-	/* check the arguments */ \
-	if (object&&group) \
+	if (object && group) \
 	{ \
-		if (return_code=REMOVE_OBJECT_FROM_LIST(object_type)(object, \
-			group->object_list)) \
+		if (IS_OBJECT_IN_LIST(object_type)(object, group->object_list)) \
 		{ \
-			if (group->group_manager&&!group->cache) \
-			{ \
-				MANAGED_GROUP_MODIFY_MESSAGE(object_type)(group); \
-			} \
+			MANAGED_GROUP_BEGIN_CHANGE(object_type)(group); \
+			return_code = REMOVE_OBJECT_FROM_LIST(object_type)(object, \
+				group->object_list); \
+			MANAGED_GROUP_END_CHANGE(object_type)(group); \
+		} \
+		else \
+		{ \
+			display_message(ERROR_MESSAGE, \
+				"REMOVE_OBJECT_FROM_GROUP(" #object_type \
+				").  Object is not in group"); \
+			return_code = 0; \
 		} \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
 			"REMOVE_OBJECT_FROM_GROUP(" #object_type ").  Invalid argument(s)"); \
-		return_code=0; \
+		return_code = 0; \
 	} \
 	LEAVE; \
 \
@@ -234,23 +274,26 @@ PROTOTYPE_REMOVE_OBJECTS_FROM_GROUP_THAT(object_type) \
 	int return_code; \
 \
 	ENTER(REMOVE_OBJECTS_FROM_GROUP_THAT(object_type)); \
-	/* check the arguments */ \
-	if (conditional&&group) \
+	if (conditional && group) \
 	{ \
-		if (return_code=REMOVE_OBJECTS_FROM_LIST_THAT(object_type)(conditional, \
-			user_data,group->object_list)) \
+		if ((struct object_type *)NULL != FIRST_OBJECT_IN_LIST_THAT(object_type)( \
+			conditional, user_data, group->object_list)) \
 		{ \
-			if (group->group_manager&&!group->cache) \
-			{ \
-				MANAGED_GROUP_MODIFY_MESSAGE(object_type)(group); \
-			} \
+			MANAGED_GROUP_BEGIN_CHANGE(object_type)(group); \
+			return_code = REMOVE_OBJECTS_FROM_LIST_THAT(object_type)(conditional, \
+				user_data,group->object_list); \
+			MANAGED_GROUP_END_CHANGE(object_type)(group); \
+		} \
+		else \
+		{ \
+			return_code = 1; \
 		} \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
 		"REMOVE_OBJECT_FROM_GROUP_THAT(" #object_type ").  Invalid argument(s)"); \
-		return_code=0; \
+		return_code = 0; \
 	} \
 	LEAVE; \
 \
@@ -263,23 +306,25 @@ PROTOTYPE_REMOVE_ALL_OBJECTS_FROM_GROUP(object_type) \
 	int return_code; \
 \
 	ENTER(REMOVE_ALL_OBJECTS_FROM_GROUP(object_type)); \
-	/* check the arguments */ \
 	if (group) \
 	{ \
-		if (return_code=REMOVE_ALL_OBJECTS_FROM_LIST(object_type)( \
-			group->object_list)) \
+		if (0 < NUMBER_IN_LIST(object_type)(group->object_list)) \
 		{ \
-			if (group->group_manager&&!group->cache) \
-			{ \
-				MANAGED_GROUP_MODIFY_MESSAGE(object_type)(group); \
-			} \
+			MANAGED_GROUP_BEGIN_CHANGE(object_type)(group); \
+			return_code = REMOVE_ALL_OBJECTS_FROM_LIST(object_type)( \
+				group->object_list); \
+			MANAGED_GROUP_END_CHANGE(object_type)(group); \
+		} \
+		else \
+		{ \
+			return_code = 1; \
 		} \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
 		"REMOVE_ALL_OBJECTS_FROM_GROUP(" #object_type ").  Invalid argument(s)"); \
-		return_code=0; \
+		return_code = 0; \
 	} \
 	LEAVE; \
 \
@@ -292,23 +337,27 @@ PROTOTYPE_ADD_OBJECT_TO_GROUP(object_type) \
 	int return_code; \
 \
 	ENTER(ADD_OBJECT_TO_GROUP(object_type)); \
-	/* check the arguments */ \
-	if (object&&group) \
+	if (object && group) \
 	{ \
-		if (return_code=ADD_OBJECT_TO_LIST(object_type)(object, \
-			group->object_list)) \
+		if (IS_OBJECT_IN_LIST(object_type)(object, group->object_list)) \
 		{ \
-			if (group->group_manager&&!group->cache) \
-			{ \
-				MANAGED_GROUP_MODIFY_MESSAGE(object_type)(group); \
-			} \
+			display_message(ERROR_MESSAGE,"ADD_OBJECT_TO_GROUP(" #object_type  \
+				").  Object is already in group"); \
+			return_code = 0; \
+		} \
+		else \
+		{ \
+			MANAGED_GROUP_BEGIN_CHANGE(object_type)(group); \
+			return_code = ADD_OBJECT_TO_LIST(object_type)(object, \
+				group->object_list); \
+			MANAGED_GROUP_END_CHANGE(object_type)(group); \
 		} \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE,"ADD_OBJECT_TO_GROUP(" #object_type  \
 			").  Invalid argument(s)"); \
-		return_code=0; \
+		return_code = 0; \
 	} \
 	LEAVE; \
 \
@@ -321,26 +370,23 @@ PROTOTYPE_MANAGED_GROUP_BEGIN_CACHE_FUNCTION(object_type) \
 	int return_code; \
 \
 	ENTER(GROUP_BEGIN_CACHE(object_type)); \
-	/* check the arguments */ \
 	if (group) \
 	{ \
-		if (group->cache) \
+		if (group->group_manager) \
 		{ \
-			display_message(ERROR_MESSAGE, \
-				"GROUP_BEGIN_CACHE(" #object_type ").  Caching already enabled"); \
-			return_code=0; \
+			return_code = \
+				MANAGER_BEGIN_CACHE(GROUP(object_type))(group->group_manager); \
 		} \
 		else \
 		{ \
-			group->cache=1; \
-			return_code=1; \
+			return_code = 1; \
 		} \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
 			"GROUP_BEGIN_CACHE(" #object_type ").  Invalid argument"); \
-		return_code=0; \
+		return_code = 0; \
 	} \
 	LEAVE; \
 \
@@ -356,27 +402,21 @@ PROTOTYPE_MANAGED_GROUP_END_CACHE_FUNCTION(object_type) \
 	/* check the arguments */ \
 	if (group) \
 	{ \
-		if (group->cache) \
+		if (group->group_manager) \
 		{ \
-			group->cache=0; \
-			if (group->group_manager) \
-			{ \
-				MANAGED_GROUP_MODIFY_MESSAGE(object_type)(group); \
-			} \
-			return_code=1; \
+			return_code = \
+				MANAGER_END_CACHE(GROUP(object_type))(group->group_manager); \
 		} \
 		else \
 		{ \
-			display_message(ERROR_MESSAGE, \
-				"GROUP_END_CACHE(" #object_type ").  Caching not enabled"); \
-			return_code=0; \
+			return_code = 1; \
 		} \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
 			"GROUP_END_CACHE(" #object_type ").  Invalid argument"); \
-		return_code=0; \
+		return_code = 0; \
 	} \
 	LEAVE; \
 \
@@ -407,7 +447,8 @@ PROTOTYPE_MANAGED_GROUP_CAN_BE_DESTROYED_FUNCTION(object_type) \
 #define DECLARE_MANAGED_GROUP_MODULE_FUNCTIONS( object_type ) \
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(GROUP(object_type),name,char *,strcmp) \
 DECLARE_LOCAL_MANAGER_FUNCTIONS(GROUP(object_type)) \
-DECLARE_MANAGED_GROUP_MODIFY_MESSAGE_FUNCTION(object_type,GROUP(object_type))
+DECLARE_MANAGED_GROUP_BEGIN_CHANGE_FUNCTION(object_type,GROUP(object_type)) \
+DECLARE_MANAGED_GROUP_END_CHANGE_FUNCTION(object_type,GROUP(object_type))
 
 #define DECLARE_MANAGED_GROUP_FUNCTIONS( object_type ) \
 DECLARE_OBJECT_FUNCTIONS(GROUP(object_type)) \
