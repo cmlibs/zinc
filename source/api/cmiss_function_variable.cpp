@@ -11,7 +11,10 @@ or set to another value.
 
 #include <new>
 #include "api/cmiss_function_variable.h"
+#if defined (NOT_DEBUG)
 #include "computed_variable/function_variable.hpp"
+#else // defined (NOT_DEBUG)
+#endif // defined (NOT_DEBUG)
 extern "C"
 {
 #include "general/debug.h"
@@ -21,6 +24,7 @@ extern "C"
 Global functions
 ----------------
 */
+#if defined (NOT_DEBUG)
 int Cmiss_function_variable_destroy(
 	Cmiss_function_variable_id *variable_address)
 /*******************************************************************************
@@ -49,7 +53,25 @@ Destroys the variable.  Returns a non-zero if successful and zero otherwise.
 
 	return (return_code);
 }
+#else // defined (NOT_DEBUG)
+int Cmiss_function_variable_destroy(
+	Cmiss_function_variable_id *)
+/*******************************************************************************
+LAST MODIFIED : 25 February 2004
 
+DESCRIPTION :
+Destroys the variable.  Returns a non-zero if successful and zero otherwise.
+==============================================================================*/
+{
+	int return_code;
+
+	return_code=0;
+
+	return (return_code);
+}
+#endif // defined (NOT_DEBUG)
+
+#if defined (NOT_DEBUG)
 int Cmiss_function_variable_get_string_representation(
 	Cmiss_function_variable_id variable,char **result)
 /*******************************************************************************
@@ -87,7 +109,28 @@ it is no longer required.
 
 	return (return_code);
 }
+#else // defined (NOT_DEBUG)
+int Cmiss_function_variable_get_string_representation(
+	Cmiss_function_variable_id,char **)
+/*******************************************************************************
+LAST MODIFIED : 25 February 2004
 
+DESCRIPTION :
+Creates a string representation of the <variable> useful for output.  Returns a
+non-zero if successful and zero otherwise.  If successful <*result> contains an
+ALLOCATED string, it is up to the calling function to DEALLOCATE the string when
+it is no longer required.
+==============================================================================*/
+{
+	int return_code;
+
+	return_code=0;
+
+	return (return_code);
+}
+#endif // defined (NOT_DEBUG)
+
+#if defined (NOT_DEBUG)
 Cmiss_function_id Cmiss_function_variable_evaluate(
 	Cmiss_function_variable_id variable,Cmiss_function_variable_id input,
 	Cmiss_function_id value)
@@ -123,6 +166,24 @@ See the include file.
 
 	return (result);
 }
+#else // defined (NOT_DEBUG)
+Cmiss_function_id Cmiss_function_variable_evaluate(
+	Cmiss_function_variable_id,Cmiss_function_variable_id,
+	Cmiss_function_id)
+/*******************************************************************************
+LAST MODIFIED : 5 March 2004
+
+DESCRIPTION :
+See the include file.
+==============================================================================*/
+{
+	Cmiss_function_id result;
+
+	result=0;
+
+	return (result);
+}
+#endif // defined (NOT_DEBUG)
 
 #if defined (NOT_DEBUG)
 Cmiss_function_id Cmiss_function_variable_evaluate_derivative(
@@ -186,6 +247,7 @@ See the include file.
 }
 #endif // defined (NOT_DEBUG)
 
+#if defined (NOT_DEBUG)
 int Cmiss_function_variable_set_value(Cmiss_function_variable_id variable,
 	Cmiss_function_id value)
 /*******************************************************************************
@@ -212,6 +274,23 @@ See the include file.
 
 	return (return_code);
 }
+#else // defined (NOT_DEBUG)
+int Cmiss_function_variable_set_value(Cmiss_function_variable_id,
+	Cmiss_function_id)
+/*******************************************************************************
+LAST MODIFIED : 5 March 2004
+
+DESCRIPTION :
+See the include file.
+==============================================================================*/
+{
+	int return_code;
+
+	return_code=0;
+
+	return (return_code);
+}
+#endif // defined (NOT_DEBUG)
 
 Cmiss_function_variable_list_id Cmiss_function_variable_list_create(void)
 /*******************************************************************************
