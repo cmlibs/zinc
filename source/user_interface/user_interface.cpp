@@ -102,7 +102,9 @@ DESCRIPTION :
 #if defined (GTK_USER_INTERFACE)
 	GtkWidget *main_window;
 #if ! defined (USE_GTK_MAIN_STEP)
+#if GTK_MAJOR_VERSION >= 2
 	GMainContext *g_context;
+#endif /* GTK_MAJOR_VERSION >= 2 */
 #define MAX_GTK_FDS (50)
 	GPollFD gtk_fds[MAX_GTK_FDS];
 	gint records_in_gtk_fds;
@@ -497,6 +499,116 @@ This function is called to register and deregister X connections.
 
 #if defined (GTK_USER_INTERFACE)
 #if ! defined (USE_GTK_MAIN_STEP)
+#if GTK_MAJOR_VERSION < 2
+static struct User_interface *polling_user_interface =
+   (struct User_interface *)NULL;
+
+static gint User_interface_gtk_gpoll_callback(GPollFD *ufds, guint nfsd, 
+	gint timeout)
+/*******************************************************************************
+LAST MODIFIED : 19 November 2002
+
+DESCRIPTION :
+A dummy poll function used to find out which file descriptors that gtk is
+interested in and then in the check phase to return the results of our 
+actual polling.  Unnecessary in Gtk2 as there is a much more complete interface.
+==============================================================================*/
+{
+	int j;
+	gint return_code;
+	struct User_interface *user_interface;
+	unsigned int i;
+
+	ENTER(User_interface_gtk_query_callback);
+	if (user_interface = polling_user_interface)
+	{
+		if (user_interface->g_context_needs_prepare_and_query)
+		{
+			if (nfsd < MAX_GTK_FDS)
+			{
+				user_interface->records_in_gtk_fds = nfsd;
+				for (i = 0 ; i < nfsd ; i++)
+				{
+					user_interface->gtk_fds[i].fd = ufds[i].fd;
+					user_interface->gtk_fds[i].events = ufds[i].events;
+					user_interface->gtk_fds[i].revents = ufds[i].revents;
+				}
+				user_interface->g_context_timeout = timeout;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"User_interface_gtk_gpoll_callback.  "
+					"Internal array size is too small for number of active descriptors");
+				return_code = 0;
+			}
+			/* Always return no results this time, we just want to
+				harvest the file descriptor numbers */
+			return_code = 0;
+		}
+		else
+		{
+			if (nfsd < MAX_GTK_FDS)
+			{
+				/* Increment the return code for every fd found with
+					pending events */
+				return_code = 0;
+				for (i = 0 ; i < nfsd ; i++)
+				{
+					/* We can't assume we have the same lists so lets search */
+					j = 0;
+					while ((ufds[i].fd != user_interface->gtk_fds[j].fd)
+						&& (j < user_interface->records_in_gtk_fds))
+					{
+						j++;
+					}
+					if (j < user_interface->records_in_gtk_fds)
+					{
+						ufds[i].revents = user_interface->gtk_fds[j].revents;
+						if (user_interface->gtk_fds[j].revents)
+						{
+							return_code++;
+						}
+					}
+					else
+					{
+						/* Requested file descriptor isn't in the list we were
+							asked about in the query, hopefully this doesn't happen
+							too often, and even when it does that another query/check
+						   loop will happen so that the descriptor can be included. */
+#if defined (DEBUG)
+						display_message(ERROR_MESSAGE,
+							"User_interface_gtk_gpoll_callback.  "
+							"Requested a file descriptor not in our list");
+#endif /* defined (DEBUG) */
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"User_interface_gtk_gpoll_callback.  "
+					"Internal array size is too small for number of active descriptors");
+				return_code = 0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"User_interface_gtk_gpoll_callback.  Missing user_interface");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* User_interface_gtk_gpoll_callback */
+#endif /* GTK_MAJOR_VERSION < 2 */
+#endif /* ! defined (USE_GTK_MAIN_STEP) */
+#endif /* defined (GTK_USER_INTERFACE) */
+
+#if defined (GTK_USER_INTERFACE)
+#if ! defined (USE_GTK_MAIN_STEP)
 static int User_interface_gtk_query_callback(
 	struct Event_dispatcher_descriptor_set *descriptor_set, void *user_interface_void)
 /*******************************************************************************
@@ -515,6 +627,7 @@ those processed by the event dispatcher.
 	{
 		if (user_interface->g_context_needs_prepare_and_query)
 		{
+#if GTK_MAJOR_VERSION >= 2
 			if (g_main_context_prepare(user_interface->g_context,
 				&user_interface->max_priority))
 			{
@@ -526,6 +639,36 @@ those processed by the event dispatcher.
 			user_interface->records_in_gtk_fds = g_main_context_query(user_interface->g_context,
 				user_interface->max_priority, &user_interface->g_context_timeout,
 				user_interface->gtk_fds, MAX_GTK_FDS);
+#else /* GTK_MAJOR_VERSION >= 2 */
+			/* We can't query or check the records directly so we overload the 
+				g_poll_func and see what filehandles the function wants to
+				poll.  The results are basically we return to the poll are invalid.
+				Then we do our own poll and use the results to reply correctly
+				when Gtk calls us back with a poll from the check callback.
+				The g_context_needs_prepare_and_query flag is used to control
+				what mode the g_poll function has so it must be updated after
+				the call to g_main_pending.
+			   The user_interface is passed to the poll function as a static
+			   module variable.... yuk. */
+			user_interface->records_in_gtk_fds = 0;
+			user_interface->g_context_timeout = -1;
+			/* Check the static pointer to ensure we are taking turns correctly */
+			if (!polling_user_interface)
+			{
+				polling_user_interface = user_interface;
+				/* The result of this pending isn't very valuable as we didn't
+					really poll for it anyway */
+				g_main_pending();
+				polling_user_interface = (struct User_interface *)NULL;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"User_interface_gtk_query_callback.  "
+					"Already waiting for a poll callback.");
+				return_code = 0;
+			}
+#endif /* GTK_MAJOR_VERSION >= 2 */
 
 			user_interface->g_context_needs_prepare_and_query = 0;
 		}
@@ -609,6 +752,7 @@ DESCRIPTION :
 				user_interface->gtk_fds[i].revents |= G_IO_ERR;
 			}
 		}
+#if GTK_MAJOR_VERSION >= 2
 		if (g_main_context_check(user_interface->g_context, 
 			user_interface->max_priority, user_interface->gtk_fds, 
 			user_interface->records_in_gtk_fds))
@@ -619,6 +763,39 @@ DESCRIPTION :
 		{
 			return_code = 0;
 		}
+#else /* GTK_MAJOR_VERSION >= 2 */
+		/* We can't query or check the records directly so we overload the 
+			g_poll_func and see what filehandles the function wants to
+			poll.  The results are basically we return to the poll are invalid.
+			Then we do our own poll and use the results to reply correctly
+			when Gtk calls us back with a poll from the check callback.
+			The g_context_needs_prepare_and_query flag is used to control
+			what mode the g_poll function has so it must be updated after
+			the call to g_main_pending.
+			The user_interface is passed to the poll function as a static
+			module variable.... yuk. */
+		/* Check the static pointer to ensure we are taking turns correctly */
+		if (!polling_user_interface)
+		{
+			polling_user_interface = user_interface;
+			if (g_main_pending())
+			{
+				return_code = 1;
+			}
+			else
+			{
+				return_code = 0;
+			}
+			polling_user_interface = (struct User_interface *)NULL;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"User_interface_gtk_check_callback.  "
+				"Already waiting for a poll callback.");
+			return_code = 0;
+		}
+#endif /* GTK_MAJOR_VERSION >= 2 */
 		user_interface->g_context_needs_prepare_and_query = 1;
 	}
 	else
@@ -649,7 +826,24 @@ DESCRIPTION :
 	ENTER(User_interface_gtk_dispatch_callback);
 	if (user_interface=(struct User_interface *)user_interface_void)
 	{
+#if GTK_MAJOR_VERSION >= 2
 		g_main_context_dispatch(user_interface->g_context);
+#else /* GTK_MAJOR_VERSION >= 2 */
+		/* Can't call the dispatch directly unfortunately... */
+		if (!polling_user_interface)
+		{
+			polling_user_interface = user_interface;
+			g_main_iteration (/*block*/FALSE);
+			polling_user_interface = (struct User_interface *)NULL;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"User_interface_gtk_dispatch_callback.  "
+				"Already waiting for a poll callback.");
+			return_code = 0;
+		}
+#endif /* GTK_MAJOR_VERSION >= 2 */
 		return_code = 1;
 	}
 	else
@@ -1410,7 +1604,9 @@ Open the <user_interface>.
 #if defined (GTK_USER_INTERFACE)
 		user_interface->main_window = (GtkWidget *)NULL;
 #if ! defined (USE_GTK_MAIN_STEP)
+#if GTK_MAJOR_VERSION >= 2
 		user_interface->g_context = (GMainContext *)NULL;
+#endif /* GTK_MAJOR_VERSION >= 2 */
 		user_interface->records_in_gtk_fds = 0;
 		user_interface->gtk_descriptor_callback = 
 			(struct Event_dispatcher_descriptor_callback *)NULL;
@@ -1658,6 +1854,7 @@ Open the <user_interface>.
 		user_interface->main_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 
 #if ! defined (USE_GTK_MAIN_STEP)
+#if GTK_MAJOR_VERSION >= 2
 		if ((user_interface->g_context = g_main_context_default())
 			&& (g_main_context_acquire(user_interface->g_context)))
 		{
@@ -1677,6 +1874,16 @@ Open the <user_interface>.
 			DESTROY(User_interface)(&user_interface);
 			user_interface = (struct User_interface *)NULL;
 		}
+#else /* GTK_MAJOR_VERSION >= 2 */
+		g_main_set_poll_func(User_interface_gtk_gpoll_callback);
+		user_interface->gtk_descriptor_callback = 
+			Event_dispatcher_add_descriptor_callback(
+			user_interface->event_dispatcher,
+			User_interface_gtk_query_callback,
+			User_interface_gtk_check_callback,
+			User_interface_gtk_dispatch_callback,
+			user_interface);
+#endif /* GTK_MAJOR_VERSION >= 2 */
 #endif /* ! defined (USE_GTK_MAIN_STEP) */
 #endif /* defined (GTK_USER_INTERFACE) */
 
@@ -1753,11 +1960,13 @@ DESCRIPTION :
 			gtk_widget_destroy(user_interface->main_window);
 		}
 #if ! defined (USE_GTK_MAIN_STEP)
+#if GTK_MAJOR_VERSION >= 2
 		if (user_interface->g_context)
 		{
 			g_main_context_release(user_interface->g_context);
 			g_main_context_unref(user_interface->g_context);
 		}
+#endif /* GTK_MAJOR_VERSION >= 2 */
 		if (user_interface->gtk_descriptor_callback)
 		{
 			Event_dispatcher_remove_descriptor_callback(
