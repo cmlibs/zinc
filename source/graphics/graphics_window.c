@@ -1067,7 +1067,7 @@ the changes are to be applied to all panes.
 {
 	char all_panes_flag,no_undistort_flag,undistort_flag;
 	double max_pixels_per_polygon,texture_placement[4];
-	int first_pane,i,last_pane,pane_no,return_code,undistort_on;
+	int first_pane,i,last_pane,pane_no,pixelsx,pixelsy,return_code,undistort_on;
 	struct Colour background_colour;
 	struct Graphics_window *window;
 	struct Modify_graphics_window_data *modify_graphics_window_data;
@@ -1194,10 +1194,28 @@ the changes are to be applied to all panes.
 								&background_colour);
 							Scene_viewer_set_background_texture(scene_viewer,
 								background_texture);
-							Scene_viewer_set_background_texture_info(scene_viewer,
-								texture_placement[0],texture_placement[1],
-								texture_placement[2],texture_placement[3],
-								undistort_on,max_pixels_per_polygon);
+							if ((texture_placement[2] == 0.0) && (texture_placement[3] == 0.0))
+							{
+								if (background_texture)
+								{
+									/* Get the default size from the texture itself */
+									Texture_get_original_size(background_texture,
+										&pixelsx, &pixelsy);
+									texture_placement[2] = pixelsx;
+									texture_placement[3] = pixelsy;
+									Scene_viewer_set_background_texture_info(scene_viewer,
+										texture_placement[0],texture_placement[1],
+										texture_placement[2],texture_placement[3],
+										undistort_on,max_pixels_per_polygon);
+								}
+							}
+							else
+							{
+								Scene_viewer_set_background_texture_info(scene_viewer,
+									texture_placement[0],texture_placement[1],
+									texture_placement[2],texture_placement[3],
+									undistort_on,max_pixels_per_polygon);
+							}
 						}
 						Graphics_window_update_now(window);
 					}
@@ -2015,8 +2033,9 @@ view angle, interest point etc.
 {
 	char allow_skew_flag,absolute_viewport_flag,relative_viewport_flag,
 		custom_projection_flag,parallel_projection_flag,perspective_projection_flag;
-	double bottom,eye[3],far,left,lookat[3],modelview_matrix[16],ndc_placement[4],
-		near,photogrammetry_matrix[12],projection_matrix[16],right,
+	double bottom,eye[3],clip_plane_add[4],clip_plane_remove[4],far,left,lookat[3],
+		modelview_matrix[16],
+		ndc_placement[4],near,photogrammetry_matrix[12],projection_matrix[16],right,
 		top,up[3],view_angle,viewport_coordinates[4];
 	enum Scene_viewer_projection_mode projection_mode;
 	int i,number_of_components,return_code;
@@ -2040,6 +2059,8 @@ view angle, interest point etc.
 		option_table[]=
 		{
 			{"allow_skew",NULL,NULL,set_char_flag},
+			{"clip_plane_add",NULL,NULL,set_double_vector_with_help},
+			{"clip_plane_remove",NULL,NULL,set_double_vector_with_help},
 			{"eye_point",NULL,NULL,set_double_vector},
 			{"far_clipping_plane",NULL,NULL,set_double},
 			{"interest_point",NULL,NULL,set_double_vector},
@@ -2056,6 +2077,10 @@ view angle, interest point etc.
 			{NULL,NULL,NULL,NULL}
 		};
 	static struct Set_vector_with_help_data
+		clip_plane_add_data=
+			{4," A B C D",0},
+		clip_plane_remove_data=
+			{4," A B C D",0},
 		modelview_matrix_data=
 			{16," M11 M12 M13 M14 M21 M22 M23 M24 M31 M32 M33 M34 M41 M42 M43 M44",0},
 		ndc_placement_data=
@@ -2122,6 +2147,14 @@ view angle, interest point etc.
 				i=0;
 				/* allow_skew */
 				(option_table[i]).to_be_modified= &allow_skew_flag;
+				i++;
+				/* clip_plane_add */
+				(option_table[i]).to_be_modified= (void *)clip_plane_add;
+				(option_table[i]).user_data= &clip_plane_add_data;
+				i++;
+				/* clip_plane_remove */
+				(option_table[i]).to_be_modified= (void *)clip_plane_remove;
+				(option_table[i]).user_data= &clip_plane_remove_data;
 				i++;
 				/* eye_point */
 				(option_table[i]).to_be_modified= eye;
@@ -2341,6 +2374,18 @@ view angle, interest point etc.
 							Scene_viewer_set_viewport_info(scene_viewer,
 								viewport_coordinates[0],viewport_coordinates[1],
 								viewport_coordinates[2],viewport_coordinates[3]);
+						}
+						if (clip_plane_remove_data.set)
+						{
+							Scene_viewer_remove_clip_plane(scene_viewer,
+								clip_plane_remove[0], clip_plane_remove[1], clip_plane_remove[2],
+								clip_plane_remove[3]);
+						}
+						if (clip_plane_add_data.set)
+						{
+							Scene_viewer_add_clip_plane(scene_viewer,
+								clip_plane_add[0], clip_plane_add[1], clip_plane_add[2],
+								clip_plane_add[3]);
 						}
 						/* redraw the Scene_viewer */
 						Scene_viewer_redraw_now(scene_viewer);

@@ -354,6 +354,25 @@ DESCRIPTION :
 Removes a light from the Scene_viewer list_of_lights.
 ==============================================================================*/
 
+int Scene_viewer_add_clip_plane(struct Scene_viewer *scene_viewer,
+	double A, double B, double C, double D);
+/*******************************************************************************
+LAST MODIFIED : 12 December 2000
+
+DESCRIPTION :
+Sets a clip plane that defines a plane in Modelview space, (Ax+By+Cz=D).
+==============================================================================*/
+
+int Scene_viewer_remove_clip_plane(struct Scene_viewer *scene_viewer,
+	double A, double B, double C, double D);
+/*******************************************************************************
+LAST MODIFIED : 12 December 2000
+
+DESCRIPTION :
+Removes a clip plane that defines a plane in Modelview space, fails if the
+exact plane isn't defined as a clip plane.
+==============================================================================*/
+
 struct Light_model *Scene_viewer_get_light_model(
 	struct Scene_viewer *scene_viewer);
 /*******************************************************************************

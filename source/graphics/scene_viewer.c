@@ -35,6 +35,7 @@ November 97 Created from rendering part of Drawing.
 #include "general/debug.h"
 #include "general/geometry.h"
 #include "general/image_utilities.h"
+#include "general/indexed_list_private.h"
 #include "general/matrix_vector.h"
 #include "general/object.h"
 #include "graphics/colour.h"
@@ -54,6 +55,7 @@ Module constants
 ----------------
 */
 #define SCENE_VIEWER_PICK_SIZE 7.0
+#define MAX_CLIP_PLANES (6)
 
 /*
 Module types
@@ -197,6 +199,8 @@ DESCRIPTION :
 	int swap_buffers;
 	/* Flag that indicates the update includes a change of the projection matrices */
 	int transform_flag;
+	/* Clip planes */
+	double clip_planes[MAX_CLIP_PLANES * 4];
 	struct User_interface *user_interface;
 }; /* struct Scene_viewer */
 
@@ -1106,6 +1110,85 @@ access this function.
 								 to it. Note the scene will have compiled them already. */
 							for_each_Light_in_Scene(scene_viewer->scene,execute_Light,
 								(void *)NULL);
+
+							/* Clip planes */
+							for (i = 0 ; i < MAX_CLIP_PLANES ; i++)
+							{
+								if (scene_viewer->clip_planes[i * 4]||
+									 scene_viewer->clip_planes[i * 4 + 1]||
+									 scene_viewer->clip_planes[i * 4 + 2])
+								{
+									switch(i)
+									{
+										case 0:
+										{
+											glEnable(GL_CLIP_PLANE0);
+											glClipPlane(GL_CLIP_PLANE0,
+												&(scene_viewer->clip_planes[i * 4]));
+										} break;
+										case 1:
+										{
+											glEnable(GL_CLIP_PLANE1);
+											glClipPlane(GL_CLIP_PLANE1,
+												&(scene_viewer->clip_planes[i * 4]));
+										} break;
+										case 2:
+										{
+											glEnable(GL_CLIP_PLANE2);
+											glClipPlane(GL_CLIP_PLANE2,
+												&(scene_viewer->clip_planes[i * 4]));
+										} break;
+										case 3:
+										{
+											glEnable(GL_CLIP_PLANE3);
+											glClipPlane(GL_CLIP_PLANE3,
+												&(scene_viewer->clip_planes[i * 4]));
+										} break;
+										case 4:
+										{
+											glEnable(GL_CLIP_PLANE4);
+											glClipPlane(GL_CLIP_PLANE4,
+												&(scene_viewer->clip_planes[i * 4]));
+										} break;
+										case 5:
+										{
+											glEnable(GL_CLIP_PLANE5);
+											glClipPlane(GL_CLIP_PLANE5,
+												&(scene_viewer->clip_planes[i * 4]));
+										} break;
+									}
+								}
+								else
+								{
+									switch(i)
+									{
+										case 0:
+										{
+											glDisable(GL_CLIP_PLANE0);
+										} break;
+										case 1:
+										{
+											glDisable(GL_CLIP_PLANE1);
+										} break;
+										case 2:
+										{
+											glDisable(GL_CLIP_PLANE2);
+										} break;
+										case 3:
+										{
+											glDisable(GL_CLIP_PLANE3);
+										} break;
+										case 4:
+										{
+											glDisable(GL_CLIP_PLANE4);
+										} break;
+										case 5:
+										{
+											glDisable(GL_CLIP_PLANE5);
+										} break;
+									}
+								}
+							}
 
 							if (0<stencil_bits)
 							{
@@ -3127,8 +3210,8 @@ performed in idle time so that multiple redraws are avoided.
 					scene_viewer->background_texture=(struct Texture *)NULL;
 					scene_viewer->bk_texture_top=0.0;
 					scene_viewer->bk_texture_left=0.0;
-					scene_viewer->bk_texture_width=1.0;
-					scene_viewer->bk_texture_height=1.0;
+					scene_viewer->bk_texture_width=0.0;
+					scene_viewer->bk_texture_height=0.0;
 					scene_viewer->drag_mode=SV_DRAG_NOTHING;
 					scene_viewer->previous_pointer_x = 0;
 					scene_viewer->previous_pointer_y = 0;
@@ -3156,6 +3239,10 @@ performed in idle time so that multiple redraws are avoided.
 					if (SCENE_VIEWER_PIXEL_BUFFER==buffer_mode )
 					{
 						ALLOCATE(scene_viewer->pixel_data,char,1);
+					}
+					for (i = 0 ; i < 4 * MAX_CLIP_PLANES ; i++)
+					{
+						scene_viewer->clip_planes[i] = 0.0;
 					}
 					/* add callbacks to the drawing widget */
 					XtAddCallback(drawing_widget,X3dNinitializeCallback,
@@ -3901,6 +3988,105 @@ Removes a light from the Scene_viewer list_of_lights.
 
 	return (return_code);
 } /* Scene_viewer_remove_light */
+
+int Scene_viewer_add_clip_plane(struct Scene_viewer *scene_viewer,
+	double A, double B, double C, double D)
+/*******************************************************************************
+LAST MODIFIED : 12 December 2000
+
+DESCRIPTION :
+Sets a clip plane that defines a plane in Modelview space, (Ax+By+Cz=D).
+==============================================================================*/
+{
+	int empty, i, return_code;
+
+	ENTER(Scene_viewer_add_clip_plane);
+	if (scene_viewer)
+	{
+		return_code=1;
+		empty = -1;
+		for (i = 0 ; i < MAX_CLIP_PLANES ; i++)
+		{
+			if ((empty == -1) && !(scene_viewer->clip_planes[i * 4]
+				|| scene_viewer->clip_planes[i * 4 + 1] || 
+				scene_viewer->clip_planes[i * 4 + 2]))
+			{
+				empty = i;
+			}
+			if ((A == scene_viewer->clip_planes[i * 4]) &&
+				(B == scene_viewer->clip_planes[i * 4 + 1])  &&
+				(C == scene_viewer->clip_planes[i * 4 + 2])  &&
+				(D == scene_viewer->clip_planes[i * 4 + 3]))
+			{
+				display_message(ERROR_MESSAGE, "Scene_viewer_add_clip_plane.  "
+					"Clip plane %fx+%fy+%fz=%f already exists", A, B, C, D);
+				return_code=0;
+			}
+		}
+		if (return_code)
+		{
+			scene_viewer->clip_planes[empty * 4] = A;
+			scene_viewer->clip_planes[empty * 4 + 1] = B;
+			scene_viewer->clip_planes[empty * 4 + 2] = C;
+			scene_viewer->clip_planes[empty * 4 + 3] = D;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_add_clip_plane.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_add_clip_plane */
+
+int Scene_viewer_remove_clip_plane(struct Scene_viewer *scene_viewer,
+	double A, double B, double C, double D)
+/*******************************************************************************
+LAST MODIFIED : 12 December 2000
+
+DESCRIPTION :
+Removes a clip plane that defines a plane in Modelview space, fails if the
+exact plane isn't defined as a clip plane.
+==============================================================================*/
+{
+	int i, return_code;
+
+	ENTER(Scene_viewer_remove_clip_plane);
+	if (scene_viewer)
+	{
+		for (i = 0 ; i < MAX_CLIP_PLANES ; i++)
+		{
+			if ((A == scene_viewer->clip_planes[i * 4]) &&
+				(B == scene_viewer->clip_planes[i * 4 + 1])  &&
+				(C == scene_viewer->clip_planes[i * 4 + 2])  &&
+				(D == scene_viewer->clip_planes[i * 4 + 3]))
+			{
+				scene_viewer->clip_planes[i * 4] = 0;
+				scene_viewer->clip_planes[i * 4 + 1] = 0;
+				scene_viewer->clip_planes[i * 4 + 2] = 0;
+				scene_viewer->clip_planes[i * 4 + 3] = 0;
+				return_code = 1;
+			}
+		}
+		if (!return_code)
+		{
+			display_message(ERROR_MESSAGE, "Scene_viewer_remove_clip_plane.  "
+				"Clip plane %fx+%fy+%fz=%f not found.", A, B, C, D);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_remove_clip_plane.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_remove_clip_plane */
 
 struct Light_model *Scene_viewer_get_light_model(
 	struct Scene_viewer *scene_viewer)
