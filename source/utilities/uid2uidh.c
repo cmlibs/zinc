@@ -1,9 +1,35 @@
+/*******************************************************************************
+FILE : uid2uidh.c
+
+LAST MODIFIED : 12 June 2003
+
+DESCRIPTION :
+==============================================================================*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <ctype.h> /*???DB.  Contains definition of BYTE_ORDER for Linux */
-#include <libgen.h>
+#if defined (UNIX) && defined (GENERIC_PC)
+#if defined (CYGWIN)
+#include <sys/param.h>
+#else /* defined (CYGWIN) */
+#include <endian.h>
+#endif /* defined (CYGWIN) */
+#endif /* defined (UNIX) && defined (GENERIC_PC) */
+#if defined (SGI)
+#include <sys/endian.h>
+#endif /* defined (SGI) */
+#if defined (AIX)
+#include <sys/machine.h>
+#endif /* defined (AIX) */
+#if defined (WIN32_SYSTEM)
+#define BYTE_ORDER 1234
+#endif /* defined (WIN32_SYSTEM) */
+#if defined (CYGWIN)
+#include <sys/param.h>
+#endif /* defined (CYGWIN) */
+
 #if __GLIBC__ >= 2
 #include <gnu/libc-version.h>
 #endif
@@ -100,7 +126,21 @@ int main(int argc, char *argv[])
 				else
 				{
 					strcpy(string_name, argv[1]);
-					string_ptr = basename(string_name);
+					i=strlen(string_name);
+					while ((i>0)&&(' '==string_name[i-1]))
+					{
+						i--;
+					}
+					while ((i>0)&&('/'==string_name[i-1]))
+					{
+						i--;
+					}
+					string_name[i]='\0';
+					while ((i>0)&&('/'!=string_name[i-1]))
+					{
+						i--;
+					}
+					string_ptr = string_name+i;
 					if(dot_ptr = strchr(string_ptr, '.'))
 					{
 						*dot_ptr = 0;
