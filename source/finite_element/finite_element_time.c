@@ -578,11 +578,24 @@ of the time index array.
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"FE_time_version_get_interpolation_for_time.  "
-					"time out of range");
-				done = 1;
-				return_code = 0;
+				if (array_index < 0)
+				{
+					/* Before start of times, don't write an error as
+						we want the calling routine to decide how to treat this */
+					done = 1;
+					index_low = 0;
+					index_high = 0;
+					return_code = 0;
+				}
+				else
+				{
+					/* After end of times, don't write an error as
+						we want the calling routine to decide how to treat this */
+					done = 1;
+					index_low = number_of_times-1;
+					index_high = number_of_times-1;
+					return_code = 0;
+				}
 			}
 		}	/* while(!done)	*/
 		/* index_low and index_high should now be adjacent */

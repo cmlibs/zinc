@@ -14478,18 +14478,11 @@ at the <node> and <time>. \
 				{ \
 					if (time_version) \
 					{ \
-						if (FE_time_version_get_interpolation_for_time(time_version, \
-							time, &time_index_one, &time_index_two, &xi)) \
-						{ \
-							array = *((value_type **)values_storage); \
-							*value = array[time_index_one] * (1.0 - xi) + \
+						FE_time_version_get_interpolation_for_time(time_version, \
+							time, &time_index_one, &time_index_two, &xi); \
+	               array = *((value_type **)values_storage); \
+						*value = array[time_index_one] * (1.0 - xi) + \
 								array[time_index_two] * xi; \
-						} \
-						else \
-						{ \
-							display_message(ERROR_MESSAGE,"get_FE_nodal_" #value_type "_value.  " \
-								"Cannot evaluate node at given time."); \
-						} \
 					} \
 					else \
 					{ \
