@@ -936,7 +936,7 @@ Main program for unemap
 			system_window_data.y = -1;
 #if defined (UNEMAP_USE_3D)
 			/* create and store the map fit field  */
-			map_fit_field=create_map_fit_field("fit",fe_field_manager);
+			map_fit_field=create_1_comp_fe_value_field("fit",fe_field_manager);
 			set_unemap_package_map_fit_field(unemap_package,map_fit_field);
 			/* get the location of the default_torso file from Xresoures*/
 			standard_torso_defaults.standard_torso_file= "";			
@@ -963,7 +963,7 @@ Main program for unemap
 					torso_element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
 						(default_torso_group_name,element_group_manager);
 					define_fit_field_at_quad_elements_and_nodes(torso_element_group,
-						map_fit_field,fe_basis_manager,element_manager);
+						map_fit_field,fe_basis_manager,element_manager,node_manager);
 				}
 				else
 				{

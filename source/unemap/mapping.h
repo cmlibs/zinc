@@ -56,7 +56,8 @@ DESCRIPTION :
 {
 	NO_INTERPOLATION,
 	BICUBIC_INTERPOLATION,
-	BILINEAR_INTERPOLATION
+	BILINEAR_INTERPOLATION,
+	SIMPLEX_INTERPOLATION /* for torso gouraud */
 }; /* enum Interpolation_type */
 
 #if defined (OLD_CODE)
@@ -186,15 +187,17 @@ map_drawing_information.
 	/* a flag  */
 	int colour_electrodes_with_signal;
 	int access_count,number_of_contours,number_of_map_columns,number_of_map_rows;
-	struct GT_element_settings **contour_settings;
+	struct GT_element_settings **contour_settings;	
 	struct FE_field *map_position_field,*map_fit_field;	
 	struct FE_node_order_info *node_order_info;
 	/*element_group,node_group on the cylinder (or prolate spheroid or patch) surface*/
 	/* mapped_torso_element_group,mapped_torso_node_group on the loaded default torso mesh*/
-	struct GROUP(FE_element) *element_group,*mapped_torso_element_group;
-	struct GROUP(FE_node) *node_group,*mapped_torso_node_group;		
+	/* delauney_torso_element_group,delauney_torso_node_group on delauney surface*/
+	struct GROUP(FE_element) *element_group,*mapped_torso_element_group,
+		*delauney_torso_element_group;
+	struct GROUP(FE_node) *node_group,*mapped_torso_node_group,
+		*delauney_torso_node_group;		
 	struct GT_object *electrode_glyph;	
-	struct GT_object *torso_arm_labels;/*FOR AJP*/
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct MANAGER(FE_element) *element_manager;
 	struct MANAGER(FE_field) *fe_field_manager;
@@ -246,7 +249,9 @@ from here.
 #if defined (UNEMAP_USE_3D)
 	/* These are for the map 3d graphics */
 	/* Flag to record if done "view all" on scene*/
-	int viewed_scene; 
+	int viewed_scene;
+	/* Flag to record if have recently accpected or rejected electrodes */
+	int electrodes_accepted_or_rejected;
 	struct Colour *background_colour;
 	struct Colour *electrode_colour;
 	struct Colour *no_interpolation_colour;
@@ -269,7 +274,8 @@ from here.
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct MANAGER(FE_node) *data_manager;	
-	struct MANAGER(Interactive_tool) *interactive_tool_manager;		
+	struct MANAGER(Interactive_tool) *interactive_tool_manager;	
+	struct GT_object *torso_arm_labels;/*FOR AJP*/	
 #endif /* defined (UNEMAP_USE_3D) */
 	struct User_interface *user_interface;
 }; /* struct Map_drawing_information */
@@ -413,7 +419,7 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 ==============================================================================*/
 
 #if defined (UNEMAP_USE_3D)
-int map_remove_torso_arms(struct Map *map);
+int map_remove_torso_arms(struct Map_drawing_information *drawing_information);
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
 
@@ -492,12 +498,8 @@ DESCRIPTION :
 #if defined (UNEMAP_USE_3D)
 PROTOTYPE_OBJECT_FUNCTIONS(Map_3d_package);
 
-struct Map_3d_package *CREATE(Map_3d_package)(	int number_of_map_rows,
-	int number_of_map_columns,
-	char *fit_name,
-	struct FE_node_order_info *node_order_info,
-	struct FE_field *map_position_field,struct FE_field *map_fit_field,
-	struct GROUP(FE_node) *node_group,struct MANAGER(FE_field) *fe_field_manager,
+struct Map_3d_package *CREATE(Map_3d_package)(
+	struct MANAGER(FE_field) *fe_field_manager,
 	struct MANAGER(GROUP(FE_element))	*element_group_manager,
 	struct MANAGER(FE_node) *data_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
@@ -546,26 +548,6 @@ LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
 Sets the <electrode_glyph>  for <map_3d_package>
-??JW perhaps should maintain a list of GT_objects, cf CMGUI
-==============================================================================*/
-
-struct GT_object *get_map_3d_package_torso_arm_labels(
-	struct Map_3d_package *map_3d_package);/*FOR AJP*/
-/*******************************************************************************
-LAST MODIFIED : 5 July 2000
-
-DESCRIPTION :
-gets the map_torso_arm_labels for map_3d_package 
-??JW perhaps should maintain a list of GT_objects, cf CMGUI
-==============================================================================*/
-
-int set_map_3d_package_torso_arm_labels(struct Map_3d_package *map_3d_package,
-	struct GT_object *torso_arm_labels);/*FOR AJP*/
-/*******************************************************************************
-LAST MODIFIED : 5 July 2000
-
-DESCRIPTION :
-Sets the torso_arm_labels  for map_3d_package
 ??JW perhaps should maintain a list of GT_objects, cf CMGUI
 ==============================================================================*/
 
@@ -666,6 +648,15 @@ gets the number_of_map_rows for map_3d_package
 Returns -1 on error
 ==============================================================================*/
 
+int set_map_3d_package_number_of_map_rows(struct Map_3d_package *map_3d_package,
+	int number_of_map_rows);
+/*******************************************************************************
+LAST MODIFIED : 8 December 2000
+
+DESCRIPTION :
+sets the number_of_map_rows for map_3d_package 
+==============================================================================*/
+
 int get_map_3d_package_number_of_map_columns(struct Map_3d_package *map_3d_package);
 /*******************************************************************************
 LAST MODIFIED : 5 July 2000
@@ -673,6 +664,15 @@ LAST MODIFIED : 5 July 2000
 DESCRIPTION :
 gets the number_of_map_columns for map_3d_package
 Returns -1 on error
+==============================================================================*/
+
+int set_map_3d_package_number_of_map_columns(struct Map_3d_package *map_3d_package,
+	int number_of_map_columns);
+/*******************************************************************************
+LAST MODIFIED : 8 December 2000
+
+DESCRIPTION :
+sets the number_of_map_columns for map_3d_package 
 ==============================================================================*/
 
 int get_map_3d_package_contours(struct Map_3d_package *map_3d_package,
@@ -701,6 +701,15 @@ DESCRIPTION :
 gets the fit_name for map_3d_package 
 ==============================================================================*/
 
+int set_map_3d_package_fit_name(struct Map_3d_package *map_3d_package,
+	char *fit_name);
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+sets the fit_name for map_3d_package 
+==============================================================================*/
+
 struct FE_node_order_info *get_map_3d_package_node_order_info(
 	struct Map_3d_package *map_3d_package);
 /*******************************************************************************
@@ -708,6 +717,15 @@ LAST MODIFIED : 6 July 2000
 
 DESCRIPTION :
 gets the node_order_info for map_3d_package 
+==============================================================================*/
+
+int set_map_3d_package_node_order_info(struct Map_3d_package *map_3d_package,
+	struct FE_node_order_info *node_order_info);
+/*******************************************************************************
+LAST MODIFIED :8 December 2000
+
+DESCRIPTION :
+sets the node_order_info for map_3d_package 
 ==============================================================================*/
 
 struct FE_field *get_map_3d_package_position_field(struct Map_3d_package *map_3d_package);
@@ -718,6 +736,15 @@ DESCRIPTION :
 gets the map_position_field for map_3d_package 
 ==============================================================================*/
 
+int set_map_3d_package_position_field(struct Map_3d_package *map_3d_package,
+	struct FE_field *position_field);
+/*******************************************************************************
+LAST MODIFIED : December 8 2000
+
+DESCRIPTION :
+sets the map_position_field for map_3d_package
+==============================================================================*/
+
 struct FE_field *get_map_3d_package_fit_field(struct Map_3d_package *map_3d_package);
 /*******************************************************************************
 LAST MODIFIED : September 8 1999
@@ -726,12 +753,30 @@ DESCRIPTION :
 gets the map_fit_field for map_3d_package
 ==============================================================================*/
 
+int set_map_3d_package_fit_field(struct Map_3d_package *map_3d_package,
+	struct FE_field *fit_field);
+/*******************************************************************************
+LAST MODIFIED : December 8 2000
+
+DESCRIPTION :
+sets the map_fit_field for map_3d_package
+==============================================================================*/
+
 struct GROUP(FE_node) *get_map_3d_package_node_group(struct Map_3d_package *map_3d_package);
 /*******************************************************************************
 LAST MODIFIED : 6 July 2000
 
 DESCRIPTION :
 gets the node_group for map_3d_package 
+==============================================================================*/
+
+int set_map_3d_package_node_group(struct Map_3d_package *map_3d_package,
+	struct GROUP(FE_node) *map_node_group);
+/*******************************************************************************
+LAST MODIFIED : 8 December 2000
+
+DESCRIPTION :
+sets the node_group for map_3d_package 
 ==============================================================================*/
 
 struct GROUP(FE_node) *get_map_3d_package_mapped_torso_node_group(
@@ -750,6 +795,24 @@ LAST MODIFIED : 6 July 2000
 
 DESCRIPTION :
 Sets the mapped_torso_node_group for map_3d_package
+==============================================================================*/
+
+struct GROUP(FE_node) *get_map_3d_package_delauney_torso_node_group(
+	struct Map_3d_package *map_3d_package);
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+gets the delauney_torso_node_group for map_3d_package 
+==============================================================================*/
+
+int set_map_3d_package_delauney_torso_node_group(struct Map_3d_package *map_3d_package,
+	struct GROUP(FE_node) *delauney_torso_node_group);
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+Sets the delauney_torso_node_group for map_3d_package
 ==============================================================================*/
 
 struct GROUP(FE_element) *get_map_3d_package_element_group(
@@ -788,6 +851,24 @@ DESCRIPTION :
 Sets the mapped_torso_element_group for map_3d_package
 ==============================================================================*/
 
+struct GROUP(FE_element) *get_map_3d_package_delauney_torso_element_group(
+	struct Map_3d_package *map_3d_package);
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+gets the delauney_torso_element_group for map_3d_package
+==============================================================================*/
+
+int set_map_3d_package_delauney_torso_element_group(struct Map_3d_package *map_3d_package,
+	struct GROUP(FE_element) *delauney_torso_element_group);
+/*******************************************************************************
+LAST MODIFIED : 6 July 2000
+
+DESCRIPTION :
+Sets the delauney_torso_element_group for map_3d_package
+==============================================================================*/
+
 int get_map_drawing_information_viewed_scene(
 	struct Map_drawing_information *map_drawing_information);
 /*******************************************************************************
@@ -806,6 +887,47 @@ DESCRIPTION :
 sets the viewed_scene flag of the <map_drawing_information>
  to 1 if <scene_viewed> >0,
 0 if <scene_viewed> = 0.
+==============================================================================*/
+
+struct GT_object *get_map_drawing_information_torso_arm_labels(
+	struct Map_drawing_information *drawing_information);/*FOR AJP*/
+/*******************************************************************************
+LAST MODIFIED : 14 December 2000
+
+DESCRIPTION :
+gets the map_torso_arm_labels for drawing_information
+??JW perhaps should maintain a list of GT_objects, cf CMGUI
+==============================================================================*/
+
+int set_map_drawing_information_torso_arm_labels(
+struct Map_drawing_information *drawing_information,
+	struct GT_object *torso_arm_labels);/*FOR AJP*/
+/*******************************************************************************
+LAST MODIFIED : 14 December 2000
+
+DESCRIPTION :
+Sets the torso_arm_labels  for map_drawing_information
+??JW perhaps should maintain a list of GT_objects, cf CMGUI
+==============================================================================*/
+
+int get_map_drawing_information_electrodes_accepted_or_rejected(
+	struct Map_drawing_information *map_drawing_information);
+/*******************************************************************************
+LAST MODIFIED : 13 December 2000
+
+DESCRIPTION :
+gets the electrodes_accepted_or_rejected flag of the <map_drawing_information>
+==============================================================================*/
+
+int set_map_drawing_information_electrodes_accepted_or_rejected(
+struct Map_drawing_information *map_drawing_information,int accep_rej);
+/*******************************************************************************
+LAST MODIFIED : 13 December 2000
+
+DESCRIPTION :
+sets the electrodes_accepted_or_rejected flag of the <map_drawing_information>
+ to 1 if <accep_rej> >0,
+0 if <accep_rej> = 0.
 ==============================================================================*/
 
 struct Colour *get_map_drawing_information_background_colour(
@@ -1087,7 +1209,7 @@ cf Scene_viewer_view_all.
 Should be in Scene_viewer? RC doesn't think so.
 ==============================================================================*/
 
-struct FE_field *create_map_fit_field(char *field_name,
+struct FE_field *create_1_comp_fe_value_field(char *field_name,
 	struct MANAGER(FE_field) *fe_field_manager);
 /*******************************************************************************
 LAST MODIFIED : 6 October 2000
@@ -1099,9 +1221,10 @@ creates the map fit field, the name <field_name>
 int define_fit_field_at_quad_elements_and_nodes(
 	struct GROUP(FE_element) *torso_element_group,
 	struct FE_field *fit_field,struct MANAGER(FE_basis) *basis_manager,
-	struct MANAGER(FE_element) *element_manager);
+	struct MANAGER(FE_element) *element_manager,
+	struct MANAGER(FE_node) *node_manager);
 /*******************************************************************************
-LAST MODIFIED : 8 November 2000
+LAST MODIFIED : 7 December 2000
 
 DESCRIPTION :
 Finds all the elements in <torso_element_group> with 4 nodes, 

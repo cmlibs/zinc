@@ -2548,7 +2548,6 @@ creates (and returns) an FE_node_order_info containing the nodes of
 
 	ENTER(create_and_sort_FE_node_order_info_from_rig_node_group);
 	node_order_info=(struct FE_node_order_info *)NULL;	
-	node_order_info=(struct FE_node_order_info *)NULL;
 	rig_node_sort_array=(struct Rig_node_sort **)NULL;
 	rig_node_sort=(struct Rig_node_sort *)NULL;
 	highlight_field=(struct FE_field *)NULL;

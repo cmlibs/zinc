@@ -61,7 +61,8 @@ element,nodes, fields when they are no longer required.
 	char *default_torso_name;
 	/* map_fit_field also in map_3d_package. Need to store here between creation*/
 	/* of map_fit_field and creation of map_3d_package. ??JW Remove from map_3d_package? */
-	struct FE_field *map_fit_field;  
+	struct FE_field *map_fit_field; 
+	struct FE_field *delauney_signal_field;  
 	struct FE_field *read_order_field;
 	struct FE_field *signal_field;
 	struct FE_field *signal_minimum_field;
@@ -242,6 +243,26 @@ int set_unemap_package_map_fit_field(struct Unemap_package *package,
 	struct FE_field *read_order_field);
 /*******************************************************************************
 LAST MODIFIED :  6 October 2000
+
+DESCRIPTION :
+Sets the field of the unemap package.
+==============================================================================*/
+#endif /* defined (UNEMAP_USE_3D)*/
+
+#if defined (UNEMAP_USE_3D)
+struct FE_field *get_unemap_package_delauney_signal_field(
+	struct Unemap_package *package);
+/*******************************************************************************
+LAST MODIFIED : 8 December 2000
+
+DESCRIPTION :
+gets the field of the unemap package.
+==============================================================================*/
+
+int set_unemap_package_delauney_signal_field(struct Unemap_package *package,
+	struct FE_field *read_order_field);
+/*******************************************************************************
+LAST MODIFIED :  8 December 2000
 
 DESCRIPTION :
 Sets the field of the unemap package.

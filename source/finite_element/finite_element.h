@@ -923,6 +923,7 @@ struct Define_FE_field_at_node_data
 	struct FE_field *field;
 	int *number_of_derivatives,*number_of_versions;
 	enum FE_nodal_value_type **nodal_value_types;
+	struct MANAGER(FE_node) *node_manager;
 }; /* Define_FE_field_at_node_data */
 
 struct Node_is_in_list_data
@@ -1355,6 +1356,32 @@ conditional function with user_data is true.
 The node_list, conditional function and user_data are passed in a
 struct FE_node_list_conditional_data * in the second argument.
 Warning: Must not be iterating over the list being added to!
+==============================================================================*/
+
+struct FE_node_group_conditional_data
+/*******************************************************************************
+LAST MODIFIED : 5 December 2000
+
+DESCRIPTION :
+Data for passing to ensure_FE_node_is_in_group_conditional.
+==============================================================================*/
+{
+	struct GROUP(FE_node) *node_group;
+	LIST_CONDITIONAL_FUNCTION(FE_node) *function;
+	void *user_data;
+}; /* FE_node_group_conditional_data */
+
+int ensure_FE_node_is_in_group_conditional(struct FE_node *node,
+	void *group_conditional_data_void);
+/*******************************************************************************
+LAST MODIFIED : 5 December 2000
+
+DESCRIPTION :
+Iterator function for adding <node> to a group - if not already in it - if a
+conditional function with user_data is true.
+The node_group, conditional function and user_data are passed in a
+struct FE_node_group_conditional_data * in the second argument.
+Warning: Must not be iterating over the group being added to!
 ==============================================================================*/
 
 int ensure_FE_node_is_not_in_list(struct FE_node *node,void *node_list_void);
@@ -4352,9 +4379,7 @@ supplied group_name.
 This function is used for creating node group such that the nodes will be
 visible in the 3D window/graphical element editor.
 
-The node group is returned. The node group is cached, with
-MANAGED_GROUP_BEGIN_CACHE(FE_node).  The caching must be ended by the calling
-function.
+The node group is returned. 
 ==============================================================================*/
 
 struct FE_field_order_info *CREATE(FE_field_order_info)(int number_of_fields);

@@ -416,28 +416,28 @@ PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
 	int return_code; \
 	struct MANAGER(object_type) *manager; \
 	struct MANAGER_CALLBACK_ITEM(object_type) *current, *next; \
-	struct object_type *object; \
+	/*struct object_type *object;*/ \
 \
 	ENTER(DESTROY_MANAGER(object_type)); \
 	if (manager_address&&(manager= *manager_address)) \
 	{ \
 		return_code = 1; \
 		/* start the cache */ \
-		if (!manager->cache) \
+		/*if (!manager->cache) \
 		{ \
 			MANAGER_BEGIN_CACHE(object_type)(manager); \
-		} \
+		}*/ \
 		/* remove all objects from the manager */ \
-		while (return_code && (object = FIRST_OBJECT_IN_LIST_THAT(object_type)( \
+		/*while (return_code && (object = FIRST_OBJECT_IN_LIST_THAT(object_type)( \
 			(LIST_CONDITIONAL_FUNCTION(object_type) *)NULL, (void *)NULL, \
 			manager->object_list))) \
 		{ \
 			return_code = \
 				REMOVE_OBJECT_FROM_MANAGER_PRIVATE(object_type)(object, manager); \
-		} \
+		}*/ \
 		DESTROY_LIST(object_type)(&(manager->object_list)); \
 		/* send last message */ \
-    MANAGER_END_CACHE(object_type)(manager); \
+    /*MANAGER_END_CACHE(object_type)(manager);*/ \
 		/* destroy the callback list */ \
 		current=manager->callback_list; \
 		while (current) \
@@ -467,32 +467,32 @@ PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
 	int return_code; \
 	struct MANAGER(object_type) *manager; \
 	struct MANAGER_CALLBACK_ITEM(object_type) *current,*next; \
-	struct object_type *object; \
+	/*struct object_type *object;*/ \
 \
 	ENTER(DESTROY_OBJECT_WITH_MANAGER_MANAGER(object_type)); \
 	if (manager_address && (manager= *manager_address)) \
 	{ \
 		return_code = 1; \
 		/* start the cache */ \
-		if (!manager->cache) \
+		/*if (!manager->cache) \
 		{ \
       MANAGER_BEGIN_CACHE(object_type)(manager); \
-		} \
+		}*/ \
 		/* remove the manager_pointer from each object */ \
 		FOR_EACH_OBJECT_IN_LIST(object_type)( \
 			OBJECT_WITH_MANAGER_REMOVE_MANAGER(object_type), \
 			(void *)NULL, manager->object_list); \
 		/* remove all objects from the manager */ \
-		while (return_code && (object = FIRST_OBJECT_IN_LIST_THAT(object_type)( \
+		/*while (return_code && (object = FIRST_OBJECT_IN_LIST_THAT(object_type)( \
 			(LIST_CONDITIONAL_FUNCTION(object_type) *)NULL, (void *)NULL, \
 			manager->object_list))) \
 		{ \
 			return_code = \
 				REMOVE_OBJECT_FROM_MANAGER_PRIVATE(object_type)(object, manager); \
-		} \
+		}*/ \
 		DESTROY_LIST(object_type)(&(manager->object_list)); \
 		/* send last message */ \
-		MANAGER_END_CACHE(object_type)(manager); \
+		/*MANAGER_END_CACHE(object_type)(manager);*/ \
 		/* destroy the callback list */ \
 		current = manager->callback_list; \
 		while (current) \

@@ -69,6 +69,7 @@ The dialog box for configuring a map.
 		{
 			Widget none;
 			Widget bicubic;
+			Widget simplex;
 		} option;
 		Widget mesh_rows;
 		Widget mesh_rows_text;

@@ -2227,6 +2227,7 @@ in rig.c
 			all_devices_node_group	= make_node_and_element_and_data_groups(
 				node_group_manager,node_manager,element_manager,element_group_manager,
 				data_group_manager,"all_devices");
+			MANAGED_GROUP_BEGIN_CACHE(FE_node)(all_devices_node_group);
 			set_Rig_all_devices_rig_node_group(rig,all_devices_node_group);
 			last_node_number = 1;	
 			/* read the number of regions */
@@ -2282,7 +2283,8 @@ in rig.c
 										&electrode_position_field);
 									node_group = make_node_and_element_and_data_groups(
 											node_group_manager,node_manager,element_manager,
-											element_group_manager,data_group_manager,region_name);
+											element_group_manager,data_group_manager,region_name); 
+									MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
 									set_Region_electrode_position_field(region,electrode_position_field);
 									set_Region_rig_node_group(region,node_group);
 								} break;
@@ -2303,6 +2305,7 @@ in rig.c
 									node_group = make_node_and_element_and_data_groups(
 										node_group_manager,node_manager,element_manager,
 										element_group_manager,data_group_manager,region_name);
+									MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
 									set_Region_electrode_position_field(region,electrode_position_field);
 									set_Region_rig_node_group(region,node_group);
 								} break;
@@ -2323,6 +2326,7 @@ in rig.c
 									node_group = make_node_and_element_and_data_groups(
 										node_group_manager,node_manager,element_manager,
 										element_group_manager,data_group_manager,region_name);
+									MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
 									set_Region_electrode_position_field(region,electrode_position_field);
 									set_Region_rig_node_group(region,node_group);
 								}break;
@@ -2338,6 +2342,7 @@ in rig.c
 							node_group = make_node_and_element_and_data_groups(
 								node_group_manager,node_manager,element_manager,
 								element_group_manager,data_group_manager,region_name);
+							MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
 							set_Region_rig_node_group(region,node_group);
 							/*destroy any exisiting template,field_order_info*/
 							/* create the template node,(but may change it to auxiliary later*/							
@@ -2705,6 +2710,7 @@ files, and there are no text signal files.
 			all_devices_node_group=make_node_and_element_and_data_groups(
 				node_group_manager,node_manager,element_manager,element_group_manager,
 				data_group_manager,"all_devices");
+			MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
 			set_Rig_all_devices_rig_node_group(rig,all_devices_node_group);
 			last_node_number=1;	 
 			fscanf(input_file," ");				
@@ -2759,6 +2765,7 @@ files, and there are no text signal files.
 						node_group=make_node_and_element_and_data_groups(node_group_manager,
 							node_manager,element_manager,element_group_manager,
 							data_group_manager,rig_name);
+						MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
 						set_Region_electrode_position_field(region,electrode_position_field);
 						set_Region_rig_node_group(region,node_group);
 						/* new group, new rig, so reset device number */
@@ -2797,7 +2804,8 @@ files, and there are no text signal files.
 							0,&field_order_info,package,&electrode_position_field);
 						node_group=make_node_and_element_and_data_groups(node_group_manager,
 							node_manager,element_manager,element_group_manager,
-							data_group_manager,rig_name);		
+							data_group_manager,rig_name);
+						MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
 						set_Region_electrode_position_field(region,electrode_position_field);
 						set_Region_rig_node_group(region,node_group);
 						/* new group, new rig, so reset device number */
@@ -2845,6 +2853,7 @@ files, and there are no text signal files.
 						node_group=make_node_and_element_and_data_groups(node_group_manager,
 							node_manager,element_manager,element_group_manager,
 							data_group_manager,rig_name);
+						MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
 						set_Region_electrode_position_field(region,electrode_position_field);
 						set_Region_rig_node_group(region,node_group);
 						/* new group, new rig, so reset device number */
@@ -2869,6 +2878,7 @@ files, and there are no text signal files.
 						node_group=make_node_and_element_and_data_groups(node_group_manager,
 							node_manager,element_manager,element_group_manager,
 							data_group_manager,region_name);
+						MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
 						set_Region_rig_node_group(region,node_group);											
 						/*destroy any existing template,field_order_info*/	
 						/* create the template node (but may change it to auxiliary later) */					

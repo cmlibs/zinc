@@ -10732,6 +10732,56 @@ Warning: Must not be iterating over the list being added to!
 	return (return_code);
 } /* ensure_FE_node_is_in_list_conditional */
 
+int ensure_FE_node_is_in_group_conditional(struct FE_node *node,
+	void *group_conditional_data_void)
+/*******************************************************************************
+LAST MODIFIED : 5 December 2000
+
+DESCRIPTION :
+Iterator function for adding <node> to a group - if not already in it - if a
+conditional function with user_data is true.
+The node_group, conditional function and user_data are passed in a
+struct FE_node_group_conditional_data * in the second argument.
+Warning: Must not be iterating over the group being added to!
+==============================================================================*/
+{
+	int return_code;
+	struct FE_node_group_conditional_data *group_conditional_data;
+
+	ENTER(ensure_FE_node_is_in_group_conditional);
+	if (node&&(group_conditional_data=
+		(struct FE_node_group_conditional_data *)group_conditional_data_void)&&
+		group_conditional_data->node_group&&group_conditional_data->function)
+	{
+		if ((group_conditional_data->function)(node,
+			group_conditional_data->user_data))
+		{
+			if (!IS_OBJECT_IN_GROUP(FE_node)(node,group_conditional_data->node_group))
+			{
+				return_code=
+					ADD_OBJECT_TO_GROUP(FE_node)(node,group_conditional_data->node_group);
+			}
+			else
+			{
+				return_code=1;
+			}
+		}
+		else
+		{
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"ensure_FE_node_is_in_group_conditional.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* ensure_FE_node_is_in_list_conditional */
+
 int ensure_FE_node_is_not_in_list(struct FE_node *node,void *node_list_void)
 /*******************************************************************************
 LAST MODIFIED : 4 July 2000
@@ -36281,9 +36331,7 @@ Makes a node group ,and a corresponding element group and data group using the
 supplied group_name. If a group exists, it will be cleaned out.
 This function is used for creating node group such that the nodes will be visible 
 in the 3D window/graphical element editor.
-The node group is returned. The node group is cached, 
-with MANAGED_GROUP_BEGIN_CACHE(FE_node).
-The caching must be ended by the calling function.
+The node group is returned.
 ==============================================================================*/
 {
 	struct FE_element *element_to_destroy;
@@ -36406,11 +36454,7 @@ The caching must be ended by the calling function.
 				success = 0;
 			}
 		}
-		if(success)
-		{					
-			MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
-		}	
-		else
+		if(!success)		
 		{	
 			display_message(ERROR_MESSAGE,"make_node_and_element_and_data_groups."
 				" Failed to create or free groups");
@@ -36587,21 +36631,26 @@ field_order_info
 int iterative_define_FE_field_at_node(struct FE_node *node,
 	void *define_FE_field_at_node_data_void)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2000
+LAST MODIFIED : 7 December 2000
 
 DESCRIPTION :
-iterative wrapper for define_FE_field_at_node.
-first checks if field is already defined with FE_field_is_defined_at_node
+Iterative wrapper for define_FE_field_at_node.
+First checks if field is already defined with FE_field_is_defined_at_node
+Assumes the node is managed, copys the node out the manager to modify. 
 ===============================================================================*/
 {
 	int *number_of_derivatives,*number_of_versions,return_code;
 	enum FE_nodal_value_type **nodal_value_types;
 	struct FE_field *field;
 	struct Define_FE_field_at_node_data  *define_FE_field_at_node_data;
-	
+	struct FE_node *node_copy;
+	struct MANAGER(FE_node) *node_manager;
+
 	ENTER(iterative_define_FE_field_at_node);	
 	field=(struct FE_field *)NULL;
+	node_copy=(struct FE_node *)NULL;
 	define_FE_field_at_node_data=(struct Define_FE_field_at_node_data  *)NULL;
+	node_manager=(struct MANAGER(FE_node) *)NULL;
 	if(node&&define_FE_field_at_node_data_void&&(define_FE_field_at_node_data=
 		(struct Define_FE_field_at_node_data  *)define_FE_field_at_node_data_void))
 	{	
@@ -36609,13 +36658,32 @@ first checks if field is already defined with FE_field_is_defined_at_node
 		number_of_derivatives=define_FE_field_at_node_data->number_of_derivatives;
 		number_of_versions=define_FE_field_at_node_data->number_of_versions;
 		nodal_value_types=define_FE_field_at_node_data->nodal_value_types;
+		node_manager=define_FE_field_at_node_data->node_manager;
 		if(!FE_field_is_defined_at_node(field,node))
-		{
-			if(!(return_code=define_FE_field_at_node(node,field,number_of_derivatives,
-				number_of_versions,nodal_value_types)))
+		{	
+			/* create a node to work with */
+			node_copy=CREATE(FE_node)(0,(struct FE_node *)NULL);
+			if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
+				(node_copy,node))
 			{
-				display_message(ERROR_MESSAGE,"iterative_define_FE_field_at_node. define failed");
+				if(!(return_code=define_FE_field_at_node(node_copy,field,number_of_derivatives,
+					number_of_versions,nodal_value_types)))
+				{
+					display_message(ERROR_MESSAGE,
+						"iterative_define_FE_field_at_node. define failed");
+				}
+				/* copy it back into the manager */
+				MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
+					(node,node_copy,node_manager);
 			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"iterative_define_FE_field_at_node. MANAGER_COPY_WITH_IDENTIFIER failed ");
+				return_code=0;
+			}
+			/* destroy the working copy */
+			DESTROY(FE_node)(&node_copy);
 		}
 		else
 		{
@@ -37271,22 +37339,28 @@ Deaccesses the <node_group> and attempts to remove it from the manager.
 	ENTER(free_node_and_element_and_data_groups);
 	if(node_group=*a_node_group)
 	{
+		MANAGER_BEGIN_CACHE(FE_element)(element_manager);
+		MANAGER_BEGIN_CACHE(FE_node)(node_manager);
+		MANAGER_BEGIN_CACHE(FE_node)(data_manager);
+		
 		return_code=1;		
 		GET_NAME(GROUP(FE_node))(node_group,&group_name);	 
 		if ((element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
 			(group_name,element_group_manager)))
-		{					
+		{	
+			MANAGED_GROUP_BEGIN_CACHE(FE_element)(element_group);				
 			while(return_code&&(element_to_destroy=FIRST_OBJECT_IN_GROUP_THAT(FE_element)
 				((GROUP_CONDITIONAL_FUNCTION(FE_element) *)NULL, NULL,element_group)))
-			{
+			{					
 				return_code = REMOVE_OBJECT_FROM_GROUP(FE_element)(
 					element_to_destroy,element_group);				
 				if (FE_element_can_be_destroyed(element_to_destroy))
 				{				
 					return_code = REMOVE_OBJECT_FROM_MANAGER(FE_element)(element_to_destroy,
 						element_manager);					
-				}					
-			}	
+				}				
+			}
+			MANAGED_GROUP_END_CACHE(FE_element)(element_group);	
 			if(MANAGED_GROUP_CAN_BE_DESTROYED(FE_element)(element_group))
 			{
 			REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_element))(element_group,
@@ -37296,7 +37370,8 @@ Deaccesses the <node_group> and attempts to remove it from the manager.
 	
 		if ((data_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)
 			(group_name,data_group_manager)))
-		{					
+		{	
+			MANAGED_GROUP_BEGIN_CACHE(FE_node)(data_group);				
 			while(return_code&&(node_to_destroy=FIRST_OBJECT_IN_GROUP_THAT(FE_node)
 				((GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL, data_group)))
 			{
@@ -37307,13 +37382,15 @@ Deaccesses the <node_group> and attempts to remove it from the manager.
 					return_code = REMOVE_OBJECT_FROM_MANAGER(FE_node)(node_to_destroy,
 						data_manager);					
 				}					
-			}		
+			}	
+			MANAGED_GROUP_END_CACHE(FE_node)(data_group);	
 			if(MANAGED_GROUP_CAN_BE_DESTROYED(FE_node)(data_group))
 			{
 				REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(data_group,
 					data_group_manager);
 			}
-		}	
+		}
+		MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);		
 		while(return_code&&(node_to_destroy=FIRST_OBJECT_IN_GROUP_THAT(FE_node)
 			((GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL, node_group)))
 		{
@@ -37324,7 +37401,8 @@ Deaccesses the <node_group> and attempts to remove it from the manager.
 				return_code = REMOVE_OBJECT_FROM_MANAGER(FE_node)(node_to_destroy,
 					node_manager);					
 			}					
-		}		
+		}
+		MANAGED_GROUP_END_CACHE(FE_node)(node_group);		
 		if(!return_code)
 		{
 			display_message(ERROR_MESSAGE,"free_node_and_element_and_data_groups."
@@ -37348,7 +37426,12 @@ Deaccesses the <node_group> and attempts to remove it from the manager.
 			}
 		}
 		*a_node_group=node_group;
-		DEALLOCATE(group_name);				
+		DEALLOCATE(group_name);		
+
+	
+		MANAGER_END_CACHE(FE_node)(data_manager);	
+		MANAGER_END_CACHE(FE_node)(node_manager);			
+		MANAGER_END_CACHE(FE_element)(element_manager);		
 	}
 	else
 	{	

@@ -388,6 +388,10 @@ necessary.
 			{
 				interpolation_type=BICUBIC_INTERPOLATION;
 			}
+			else if (option_widget==map_dialog->interpolation.option.simplex)
+			{
+				interpolation_type=SIMPLEX_INTERPOLATION;
+			}
 		}
 		if (map->interpolation_type!=interpolation_type)
 		{

@@ -861,6 +861,7 @@ the devices in the device list.
 		unemap_package=the_region->unemap_package;
 		if(the_region&&unemap_package)
 		{
+			DEACCESS(Map_3d_package)(&((*region)->map_3d_package));
 			/* following will deaccess the rig_node_group */
 			if(the_region->rig_node_group)
 			{
@@ -884,8 +885,7 @@ the devices in the device list.
 					the_region->map_electrode_position_field);
 				the_region->map_electrode_position_field=(struct FE_field *)NULL;
 			}			
-		}		
-		DEACCESS(Map_3d_package)(&((*region)->map_3d_package));		
+		}	
 		DEACCESS(FE_field)(&((*region)->electrode_position_field));
 		DEACCESS(FE_field)(&((*region)->map_electrode_position_field));
 		DEACCESS(Unemap_package)(&((*region)->unemap_package));	

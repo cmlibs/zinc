@@ -21731,7 +21731,8 @@ Executes a UNEMAP OPEN command.
 									command_data->data_selection,
 									command_data->user_interface);								
 								/* create and store the map fit field  */
-								map_fit_field=create_map_fit_field("fit",command_data->fe_field_manager);
+								map_fit_field=create_1_comp_fe_value_field("fit",
+									command_data->fe_field_manager);
 								set_unemap_package_map_fit_field(command_data->unemap_package,
 									map_fit_field);
 								/* get the location of the default_torso file from Xresoures*/
@@ -21764,7 +21765,7 @@ Executes a UNEMAP OPEN command.
 											name)(default_torso_group_name,command_data->element_group_manager);
 										define_fit_field_at_quad_elements_and_nodes(torso_element_group,
 											map_fit_field,command_data->basis_manager,
-											command_data->element_manager);
+											command_data->element_manager,command_data->node_manager);
 									}
 									else
 									{

@@ -2087,9 +2087,12 @@ Sets up the analysis work area for analysing a set of signals.
 				destroy_Signal_buffer(&buffer);
 			}
 #if defined (UNEMAP_USE_3D)
-			if ((analysis->mapping_window)&&(analysis->mapping_window->map))
+			if ((analysis->mapping_window)&&(analysis->mapping_window->map&&
+				(analysis->mapping_window->map->drawing_information)))
 			{
-				map_remove_torso_arms(analysis->mapping_window->map);
+				map_remove_torso_arms(analysis->mapping_window->map->drawing_information);
+				/*SIMPLEX_INTERPOLATION will cause problems with no TORSOs*/
+				analysis->mapping_window->map->interpolation_type=BICUBIC_INTERPOLATION;
 			}
 #endif /* defined (UNEMAP_USE_3D)*/
 #if defined (UNEMAP_USE_NODES)
@@ -2108,7 +2111,7 @@ Sets up the analysis work area for analysing a set of signals.
 #endif /* defined (UNEMAP_USE_NODES)*/
 #if defined (UNEMAP_USE_3D)
 			free_unemap_package_time_computed_fields(analysis->unemap_package);
-			free_unemap_package_rig_fields(analysis->unemap_package);
+			free_unemap_package_rig_fields(analysis->unemap_package);			
 #endif /* defined (UNEMAP_USE_NODES)*/
 		}
 		/* initialize the new analysis */
@@ -6063,7 +6066,7 @@ drawing area.
 						owner_events=True;
 						pointer_mode=GrabModeAsync;
 						keyboard_mode=GrabModeAsync;
-						confine_to=None;
+						confine_to=None;				
 						if (GrabSuccess==XtGrabPointer(interval->drawing_area,owner_events,
 							ButtonMotionMask|ButtonPressMask|ButtonReleaseMask,
 							pointer_mode,keyboard_mode,confine_to,cursor,CurrentTime))
@@ -11409,7 +11412,7 @@ Reads in a signals file and adds the signals to the devices in the current rig.
 static void analysis_accept_signal(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 15 February 2000
+LAST MODIFIED : 6 December 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -11427,8 +11430,19 @@ DESCRIPTION :
 	struct Signal *signal;
 	struct Signal_buffer *buffer;
 	struct Signals_area *signals;
+#if defined(UNEMAP_USE_3D)
+	struct FE_field *device_name_field,*signal_status_field;
+	struct FE_node *rig_node;
+	struct GROUP(FE_node) *rig_node_group;
+#endif /* defined(UNEMAP_USE_3D) */
 
 	ENTER(analysis_accept_signal);
+#if defined(UNEMAP_USE_3D)
+	device_name_field=(struct FE_field *)NULL;
+	signal_status_field=(struct FE_field *)NULL;
+	rig_node=(struct FE_node *)NULL;
+	rig_node_group=(struct GROUP(FE_node) *)NULL;
+#endif /* defined(UNEMAP_USE_3D) */
 	USE_PARAMETER(call_data);
 	USE_PARAMETER(widget);
 	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
@@ -11571,12 +11585,38 @@ DESCRIPTION :
 				/* redraw the signal */
 				update_interval_drawing_area(analysis->window);
 				trace_change_signal_status(analysis->trace);
-				if ((mapping=analysis->mapping_window)&&(mapping->map)&&
+				mapping=analysis->mapping_window;
+#if defined(UNEMAP_USE_3D)
+				/* ??JW reject the corresponding node (until have a complete nodal version */ 
+				/* of analysis_accpet_signal) */
+				/*get the rig_node corresponding to the device */
+				device_name_field=get_unemap_package_device_name_field(analysis->unemap_package);
+				rig_node_group=get_Rig_all_devices_rig_node_group(analysis->rig);
+				rig_node=find_rig_node_given_device(*highlight,rig_node_group,
+					device_name_field);
+				signal_status_field=
+					get_unemap_package_signal_status_field(analysis->unemap_package);
+				set_FE_nodal_string_value(rig_node,signal_status_field,0,0,FE_NODAL_VALUE,
+					"ACCEPTED");
+				/* we've accpeted or rejected a signal so set the flag */
+				if(mapping&&(mapping->map))
+				{				
+					if(mapping->map->drawing_information)
+					{
+					set_map_drawing_information_electrodes_accepted_or_rejected
+						(mapping->map->drawing_information,1);
+					}	
+					update_mapping_drawing_area(mapping,0);
+					update_mapping_colour_or_auxili(mapping);
+				}
+			
+#else /* defined(UNEMAP_USE_3D) */
+				if ((mapping)&&(mapping->map)&&
 					(SHOW_ELECTRODE_VALUES==mapping->map->electrodes_option))
 				{
-
 					update_mapping_drawing_area(mapping,0);
 				}
+#endif /* defined(UNEMAP_USE_3D) */				
 			}
 		}
 	}
@@ -11591,7 +11631,7 @@ DESCRIPTION :
 static void analysis_reject_signal(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 24 December 1996
+LAST MODIFIED : 6 December 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -11605,8 +11645,19 @@ DESCRIPTION :
 	struct Signal *signal;
 	struct Signal_buffer *buffer;
 	struct Signals_area *signals;
+#if defined(UNEMAP_USE_3D)
+	struct FE_field *device_name_field,*signal_status_field;
+	struct FE_node *rig_node;
+	struct GROUP(FE_node) *rig_node_group;
+#endif /* defined(UNEMAP_USE_3D) */
 
 	ENTER(analysis_reject_signal);
+#if defined(UNEMAP_USE_3D)
+	device_name_field=(struct FE_field *)NULL;
+	signal_status_field=(struct FE_field *)NULL;
+	rig_node=(struct FE_node *)NULL;
+	rig_node_group=(struct GROUP(FE_node) *)NULL;
+#endif /* defined(UNEMAP_USE_3D) */
 	USE_PARAMETER(call_data);
 	USE_PARAMETER(widget);
 	if (analysis=(struct Analysis_work_area *)analysis_work_area)
@@ -11669,11 +11720,37 @@ DESCRIPTION :
 					highlighted */
 				update_interval_drawing_area(analysis->window);
 				trace_change_signal_status(analysis->trace);
-				if ((mapping=analysis->mapping_window)&&(mapping->map)&&
+				mapping=analysis->mapping_window;
+#if defined(UNEMAP_USE_3D)
+				/* ??JW reject the corresponding node (until have a complete nodal version */ 
+				/* of analysis_reject_signal) */
+				/*get the rig_node corresponding to the device */
+				device_name_field=get_unemap_package_device_name_field(analysis->unemap_package);
+				rig_node_group=get_Rig_all_devices_rig_node_group(analysis->rig);
+				rig_node=find_rig_node_given_device(*highlight,rig_node_group,
+					device_name_field);
+				signal_status_field=
+					get_unemap_package_signal_status_field(analysis->unemap_package);
+				set_FE_nodal_string_value(rig_node,signal_status_field,0,0,FE_NODAL_VALUE,
+					"REJECTED");
+				/* we've accpeted or rejected an signal so set the flag  */
+				if(mapping&&(mapping->map))
+				{				
+					if(mapping->map->drawing_information)
+					{
+						set_map_drawing_information_electrodes_accepted_or_rejected
+							(mapping->map->drawing_information,1);
+					}	
+					update_mapping_drawing_area(mapping,0);
+					update_mapping_colour_or_auxili(mapping);
+				}		
+#else/* defined(UNEMAP_USE_3D) */
+				if ((mapping)&&(mapping->map)&&
 					(SHOW_ELECTRODE_VALUES==mapping->map->electrodes_option))
 				{
 					update_mapping_drawing_area(mapping,0);
 				}
+#endif /* defined(UNEMAP_USE_3D) */
 			}
 		}
 	}

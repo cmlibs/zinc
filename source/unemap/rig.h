@@ -175,7 +175,7 @@ DESCRIPTION :
 	/* these fields stored here as each region can have a different one,*/ 
 	/* unlike fields in unemap_package,which are constant per rig  */
 	struct FE_field *electrode_position_field;
-	/*map_electrode_position_field is of rignode group, not map node group*/
+	/*map_electrode_position_field is of rig node group, not map node group*/
 	/* so its here */
 	struct FE_field *map_electrode_position_field;
 #endif /* defined (UNEMAP_USE_3D) */
