@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable.c
 
-LAST MODIFIED : 21 March 2003
+LAST MODIFIED : 23 March 2003
 
 DESCRIPTION :
 Computed_variable's are expressions that are constructed for:
@@ -152,34 +152,42 @@ static START_COMPUTED_VALUE_DUPLICATE_DATA_TYPE_SPECIFIC_FUNCTION(
 {
 	int i;
 
-	if (destination->fe_value_matrix=Computed_value_duplicate(
-		source->fe_value_matrix))
+	if (destination->fe_value_matrix=CREATE(Computed_value)())
 	{
-		destination->dependent_variable=
-			ACCESS(Computed_variable)(source->dependent_variable);
-		if (0<source->order)
+		if (Computed_value_copy(destination->fe_value_matrix,
+			source->fe_value_matrix))
 		{
-			if (ALLOCATE(destination->independent_variables,
-				struct Computed_variable *,source->order))
+			destination->dependent_variable=
+				ACCESS(Computed_variable)(source->dependent_variable);
+			if (0<source->order)
 			{
-				destination->order=source->order;
-				for (i=0;i<source->order;i++)
+				if (ALLOCATE(destination->independent_variables,
+					struct Computed_variable *,source->order))
 				{
-					(destination->independent_variables)[i]=ACCESS(Computed_variable)(
-						(source->independent_variables)[i]);
+					destination->order=source->order;
+					for (i=0;i<source->order;i++)
+					{
+						(destination->independent_variables)[i]=ACCESS(Computed_variable)(
+							(source->independent_variables)[i]);
+					}
+				}
+				else
+				{
+					DEACCESS(Computed_variable)(&(source->dependent_variable));
+					DESTROY(Computed_value)(&(destination->fe_value_matrix));
+					DEALLOCATE(destination);
 				}
 			}
 			else
 			{
-				DEACCESS(Computed_variable)(&(source->dependent_variable));
-				DESTROY(Computed_value)(&(destination->fe_value_matrix));
-				DEALLOCATE(destination);
+				destination->order=0;
+				destination->independent_variables=(struct Computed_variable **)NULL;
 			}
 		}
 		else
 		{
-			destination->order=0;
-			destination->independent_variables=(struct Computed_variable **)NULL;
+			DESTROY(Computed_value)(&(destination->fe_value_matrix));
+			DEALLOCATE(destination);
 		}
 	}
 	else
@@ -1995,6 +2003,87 @@ Frees memory/deaccess objects for Computed_variable at <*variable_address>.
 	return (return_code);
 } /* DESTROY(Computed_variable) */
 
+int Computed_variable_copy(struct Computed_variable *destination,
+	struct Computed_variable *source)
+/*******************************************************************************
+LAST MODIFIED : 23 March 2003
+
+DESCRIPTION :
+Copies the type and contents from <source> to <destination>.
+
+???DB.  What if the access_count>0?  Put in Computed_variable_clear_type?
+==============================================================================*/
+{
+	int i,return_code;
+
+	ENTER(Computed_variable_copy);
+	return_code=0;
+	/* check arguments */
+	if (destination&&source)
+	{
+		if (Computed_variable_clear_type(destination))
+		{
+			/* initialise data */
+			destination->type_string=source->type_string;
+			if (source->computed_variable_duplicate_data_type_specific_function)
+			{
+				destination->type_specific_data=
+					(source->computed_variable_duplicate_data_type_specific_function)(
+					source);
+			}
+			/* initialise methods */
+			Computed_variable_establish_methods(destination,
+				source->computed_variable_clear_type_specific_function,
+				source->computed_variable_duplicate_data_type_specific_function,
+				source->computed_variable_evaluate_derivative_type_specific_function,
+				source->computed_variable_evaluate_type_specific_function,
+				source->computed_variable_get_independent_variable_value_type_specific_function,
+				source->computed_variable_get_set_independent_variable_value_type_specific_function,
+				source->computed_variable_get_value_type_type_specific_function,
+				source->computed_variable_is_defined_type_specific_function,
+				source->computed_variable_is_independent_variable_of_type_specific_function,
+				source->computed_variable_not_in_use_type_specific_function,
+				source->computed_variable_overlap_type_specific_function,
+				source->computed_variable_same_variable_type_specific_function,
+				source->computed_variable_set_independent_variable_value_type_specific_function);
+			/* initialize source variables */
+			destination->number_of_source_variables=
+				source->number_of_source_variables;
+			ALLOCATE(destination->independent_variables,struct Computed_variable *,
+				destination->number_of_source_variables);
+			ALLOCATE(destination->source_variables,struct Computed_variable *,
+				destination->number_of_source_variables);
+			if ((destination->independent_variables)&&(destination->source_variables))
+			{
+				for (i=0;i<destination->number_of_source_variables;i++)
+				{
+					(destination->independent_variables)[i]=ACCESS(Computed_variable)(
+						(source->independent_variables)[i]);
+					(destination->source_variables)[i]=ACCESS(Computed_variable)(
+						(source->source_variables)[i]);
+				}
+				return_code=1;
+			}
+			else
+			{
+				DEALLOCATE(destination->independent_variables);
+				DEALLOCATE(destination->source_variables);
+				destination->number_of_source_variables=0;
+				Computed_variable_clear_type(destination);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Computed_variable_copy.  "
+			"Invalid argument(s).  %p %p",destination,source);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_variable_copy */
+
+#if defined (OLD_CODE)
 struct Computed_variable *Computed_variable_duplicate(
 	struct Computed_variable *variable)
 /*******************************************************************************
@@ -2058,7 +2147,7 @@ Returns a copy of the <variable>.
 				DESTROY(Computed_variable)(&duplicate);
 			}
 			/* initialise access_count */
-			variable->access_count=0;
+			duplicate->access_count=0;
 		}
 		else
 		{
@@ -2075,6 +2164,7 @@ Returns a copy of the <variable>.
 
 	return (duplicate);
 } /* Computed_variable_duplicate */
+#endif /* defined (OLD_CODE) */
 
 DECLARE_OBJECT_FUNCTIONS(Computed_variable)
 DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Computed_variable)

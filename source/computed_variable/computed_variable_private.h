@@ -498,6 +498,32 @@ int Computed_variable_ ## variable_type ## \
 Friend macros
 -------------
 */
+#define DECLARE_COMPUTED_VARIABLE_IS_TYPE_FUNCTION( variable_type ) \
+PROTOTYPE_COMPUTED_VARIABLE_IS_TYPE_FUNCTION(variable_type) \
+{ \
+	int return_code; \
+\
+	ENTER(Computed_variable_is_type_ ## variable_type); \
+	return_code=0; \
+	/* check argument */ \
+	if (variable) \
+	{ \
+		if (computed_variable_ ## variable_type ## _type_string== \
+			Computed_variable_get_type_id_string(variable)) \
+		{ \
+			return_code=1; \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE,"Computed_variable_is_type_" #variable_type \
+			".  " "Missing variable"); \
+	} \
+	LEAVE; \
+\
+	return (return_code); \
+} /* Computed_variable_is_type_ ## variable_type */
+
 #define COMPUTED_VARIABLE_ESTABLISH_METHODS( variable, variable_type ) \
 /***************************************************************************** \
 LAST MODIFIED : 10 February 2003 \

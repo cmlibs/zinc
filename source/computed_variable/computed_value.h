@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_value.h
 
-LAST MODIFIED : 17 February 2003
+LAST MODIFIED : 23 March 2003
 
 DESCRIPTION :
 A module intended to replace general/value .  Testing and developing in
@@ -85,6 +85,16 @@ DESCRIPTION :
 Frees memory/deaccess objects for Computed_value at <*value_address>.
 ==============================================================================*/
 
+int Computed_value_copy(struct Computed_value *destination,
+	struct Computed_value *source);
+/*******************************************************************************
+LAST MODIFIED : 23 March 2003
+
+DESCRIPTION :
+Copies the type and contents from <source> to <destination>.
+==============================================================================*/
+
+#if defined (OLD_CODE)
 struct Computed_value *Computed_value_duplicate(struct Computed_value *value);
 /*******************************************************************************
 LAST MODIFIED : 19 February 2003
@@ -92,6 +102,7 @@ LAST MODIFIED : 19 February 2003
 DESCRIPTION :
 Returns a copy of the <value>.
 ==============================================================================*/
+#endif /* defined (OLD_CODE) */
 
 int Computed_value_same_sub_type(struct Computed_value *value_1,
 	struct Computed_value *value_2);

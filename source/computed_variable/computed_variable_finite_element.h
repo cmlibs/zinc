@@ -60,13 +60,7 @@ computed variables if NULL), <element> (all elements if NULL), <grid_point> (all
 grid points if NULL), <version> (all versions if 0).
 ==============================================================================*/
 
-int Computed_variable_is_type_element_value(struct Computed_variable *variable);
-/*******************************************************************************
-LAST MODIFIED : 23 January 2003
-
-DESCRIPTION :
-Returns non-zero if <variable> is a element_value Computed_variable.
-==============================================================================*/
+PROTOTYPE_COMPUTED_VARIABLE_IS_TYPE_FUNCTION(element_value);
 
 int Computed_variable_get_type_element_value(
 	struct Computed_variable *variable,
@@ -90,13 +84,7 @@ LAST MODIFIED : 19 February 2003
 DESCRIPTION :
 ==============================================================================*/
 
-int Computed_variable_is_type_element_xi(struct Computed_variable *variable);
-/*******************************************************************************
-LAST MODIFIED : 23 January 2003
-
-DESCRIPTION :
-Returns non-zero if <variable> is a element_xi Computed_variable.
-==============================================================================*/
+PROTOTYPE_COMPUTED_VARIABLE_IS_TYPE_FUNCTION(element_xi);
 
 #if defined (OLD_CODE)
 int Computed_variable_get_type_element_xi(
@@ -121,13 +109,7 @@ Converts the <variable> into a FE_time Computed_variable for the specified
 computed variables if NULL).
 ==============================================================================*/
 
-int Computed_variable_is_type_FE_time(struct Computed_variable *variable);
-/*******************************************************************************
-LAST MODIFIED : 23 January 2003
-
-DESCRIPTION :
-Returns non-zero if <variable> is a FE_time Computed_variable.
-==============================================================================*/
+PROTOTYPE_COMPUTED_VARIABLE_IS_TYPE_FUNCTION(FE_time);
 
 int Computed_variable_get_type_FE_time(struct Computed_variable *variable,
 	struct Computed_variable **fe_variable_address,FE_value *fe_time_address);
@@ -156,14 +138,7 @@ Computed_variable_finite_element_not_in_use.
 	manager)
 ==============================================================================*/
 
-int Computed_variable_is_type_finite_element(
-	struct Computed_variable *variable);
-/*******************************************************************************
-LAST MODIFIED : 23 January 2003
-
-DESCRIPTION :
-Returns non-zero if <variable> is a finite_element Computed_variable.
-==============================================================================*/
+PROTOTYPE_COMPUTED_VARIABLE_IS_TYPE_FUNCTION(finite_element);
 
 int Computed_variable_get_type_finite_element(
 	struct Computed_variable *variable,struct FE_field **fe_field_address,
@@ -189,13 +164,7 @@ computed variables if NULL), <node> (all nodes if NULL), <value_type> (all types
 if FE_NODAL_UNKNOWN), <version> (all versions if 0).
 ==============================================================================*/
 
-int Computed_variable_is_type_nodal_value(struct Computed_variable *variable);
-/*******************************************************************************
-LAST MODIFIED : 23 January 2003
-
-DESCRIPTION :
-Returns non-zero if <variable> is a nodal_value Computed_variable.
-==============================================================================*/
+PROTOTYPE_COMPUTED_VARIABLE_IS_TYPE_FUNCTION(nodal_value);
 
 int Computed_variable_get_type_nodal_value(struct Computed_variable *variable,
 	struct Computed_variable **fe_variable_address,struct FE_node **node_address,
@@ -222,13 +191,7 @@ computed variables if NULL), <element> (all elements if NULL),
 FE_NODAL_UNKNOWN), <version> (all versions if 0).
 ==============================================================================*/
 
-int Computed_variable_is_type_scale_factor(struct Computed_variable *variable);
-/*******************************************************************************
-LAST MODIFIED : 23 January 2003
-
-DESCRIPTION :
-Returns non-zero if <variable> is a scale_factor Computed_variable.
-==============================================================================*/
+PROTOTYPE_COMPUTED_VARIABLE_IS_TYPE_FUNCTION(scale_factor);
 
 int Computed_variable_get_type_scale_factor(struct Computed_variable *variable,
 	struct Computed_variable **fe_variable_address,

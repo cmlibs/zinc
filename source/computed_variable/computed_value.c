@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_value.c
 
-LAST MODIFIED : 6 March 2003
+LAST MODIFIED : 23 March 2003
 
 DESCRIPTION :
 A module intended to replace general/value .  Testing and developing in
@@ -819,6 +819,55 @@ Frees memory/deaccess objects for Computed_value at <*value_address>.
 	return (return_code);
 } /* DESTROY(Computed_value) */
 
+int Computed_value_copy(struct Computed_value *destination,
+	struct Computed_value *source)
+/*******************************************************************************
+LAST MODIFIED : 23 March 2003
+
+DESCRIPTION :
+Copies the type and contents from <source> to <destination>.
+
+???DB.  What if the access_count>0?  Put in Computed_value_clear_type?
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Computed_value_copy);
+	return_code=0;
+	/* check arguments */
+	if (destination&&source)
+	{
+		/* clear destination */
+		if (Computed_value_clear_type(destination))
+		{
+			/* initialise data */
+			destination->type_string=source->type_string;
+			if (source->computed_value_duplicate_data_type_specific_function)
+			{
+				destination->type_specific_data=
+					(source->computed_value_duplicate_data_type_specific_function)(
+					source);
+			}
+			/* initialise methods */
+			Computed_value_establish_methods(destination,
+				source->computed_value_clear_type_specific_function,
+				source->computed_value_duplicate_data_type_specific_function,
+				source->computed_value_multiply_and_accumulate_type_specific_function,
+				source->computed_value_same_sub_type_type_specific_function);
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Computed_value_copy.  "
+			"Invalid argument(s).  %p %p",destination,source);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_value_copy */
+
+#if defined (OLD_CODE)
 struct Computed_value *Computed_value_duplicate(struct Computed_value *value)
 /*******************************************************************************
 LAST MODIFIED : 19 February 2003
@@ -863,6 +912,7 @@ Returns a copy of the <value>.
 
 	return (duplicate);
 } /* Computed_value_duplicate */
+#endif /* defined (OLD_CODE) */
 
 int Computed_value_same_sub_type(struct Computed_value *value_1,
 	struct Computed_value *value_2)

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable.h
 
-LAST MODIFIED : 21 March 2003
+LAST MODIFIED : 24 March 2003
 
 DESCRIPTION :
 Computed_variable's are expressions that are constructed for:
@@ -76,6 +76,20 @@ NOTES :
 #include "general/manager.h"
 #include "general/object.h"
 #include "computed_variable/computed_value.h"
+
+/*
+Global macros
+-------------
+*/
+#define PROTOTYPE_COMPUTED_VARIABLE_IS_TYPE_FUNCTION( variable_type ) \
+int Computed_variable_is_type_ ## variable_type ( \
+	struct Computed_variable *variable) \
+/***************************************************************************** \
+LAST MODIFIED : 24 March 2003 \
+\
+DESCRIPTION : \
+Returns a non-zero if <variable> is a #variable_type and zero otherwise. \
+==============================================================================*/
 
 /*
 Global types
@@ -201,6 +215,16 @@ DESCRIPTION :
 Frees memory/deaccess objects for Computed_variable at <*variable_address>.
 ==============================================================================*/
 
+int Computed_variable_copy(struct Computed_variable *destination,
+	struct Computed_variable *source);
+/*******************************************************************************
+LAST MODIFIED : 23 March 2003
+
+DESCRIPTION :
+Copies the type and contents from <source> to <destination>.
+==============================================================================*/
+
+#if defined (OLD_CODE)
 struct Computed_variable *Computed_variable_duplicate(
 	struct Computed_variable *variable);
 /*******************************************************************************
@@ -209,6 +233,7 @@ LAST MODIFIED : 6 March 2003
 DESCRIPTION :
 Returns a copy of the <variable>.
 ==============================================================================*/
+#endif /* defined (OLD_CODE) */
 
 PROTOTYPE_OBJECT_FUNCTIONS(Computed_variable);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Computed_variable);
