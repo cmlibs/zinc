@@ -1153,6 +1153,7 @@ Changes the currently chosen settings.
 	struct Spectrum_settings *settings;
 	struct Spectrum_editor_settings *spectrum_editor_settings;
 	Widget *child_list;
+	XtPointer pointer_var;
 
 	ENTER(spectrum_editor_settings_set_settings);
 	/* check arguments */
@@ -1198,7 +1199,8 @@ Changes the currently chosen settings.
 								return_code=0;
 								for (i=0;(!return_code)&&(i<num_children);i++)
 								{
-									XtVaGetValues(child_list[i],XmNuserData,&button_colour_mapping,NULL);
+									XtVaGetValues(child_list[i],XmNuserData,&pointer_var,NULL);
+									button_colour_mapping = (enum Spectrum_settings_colour_mapping)pointer_var;
 									if (button_colour_mapping==colour_mapping)
 									{
 										XtVaSetValues(spectrum_editor_settings->colour_option_widget,
@@ -1231,7 +1233,8 @@ Changes the currently chosen settings.
 								return_code=0;
 								for (i=0;(!return_code)&&(i<num_children);i++)
 								{
-									XtVaGetValues(child_list[i],XmNuserData,&button_type,NULL);
+									XtVaGetValues(child_list[i],XmNuserData,&pointer_var,NULL);
+									button_type = (enum Spectrum_settings_render_type)pointer_var;
 									if (button_type==render_type)
 									{
 										XtVaSetValues(spectrum_editor_settings->render_option_widget,
