@@ -490,8 +490,7 @@ class Variable_input_composite_evaluate_derivative_functor
 			int composite_independent_variable_factor,
 				composite_independent_variable_step;
 			std::list<Matrix>::iterator derivative_iterator,result_iterator;
-			std::list<Variable_input_handle>::iterator independent_variables_iterator,
-				result_input_iterator;
+			std::list<Variable_input_handle>::iterator result_input_iterator;
 			unsigned i,j,matrix_number,number_of_matrices,number_of_rows;
 			Variable_derivative_matrix_handle derivative;
 			Variable_handle derivative_uncast;
