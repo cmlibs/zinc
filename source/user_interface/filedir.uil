@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : filedir.uil
 !
-!LAST MODIFIED : 23 December 1996
+!LAST MODIFIED : 9 June 2003
 !
 !DESCRIPTION :
 !The widgets/gadgets used for specifying files to open.
@@ -13,7 +13,7 @@ procedure
 	identify_file_selection_label;
 	identify_file_selection_text;
 	file_selection_write;
-	close_file_selection;
+	cancel_file_selection;
 
 identifier
 	widget_spacing;
@@ -211,7 +211,7 @@ object
 			{
 			XmNactivateCallback = procedures
 				{
-				close_file_selection(file_open_data);
+				cancel_file_selection(file_open_data);
 				};
 			};
 		};

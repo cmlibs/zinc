@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : filedir.c
 
-LAST MODIFIED : 22 July 2002
+LAST MODIFIED : 9 June 2002
 
 DESCRIPTION :
 Routines for opening files using Motif widgets.
@@ -16,6 +16,7 @@ the default button.
 #include <X11/Intrinsic.h>
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>
+#include <Xm/Protocols.h>
 #include <Xm/DialogS.h>
 #include <Xm/FileSB.h>
 /* temp */
@@ -110,6 +111,7 @@ Finds the id of a file selection text.
 } /* identify_file_selection_text */
 #endif /* defined (MOTIF) */
 
+#if defined (OLD_CODE)
 #if defined (MOTIF)
 static void destroy_file_selection(Widget widget,XtPointer client_data,
 	XtPointer call_data)
@@ -148,12 +150,13 @@ Tidys up when the user destroys the file selection shell.
 	LEAVE;
 } /* destroy_file_selection */
 #endif /* defined (MOTIF) */
+#endif /* defined (OLD_CODE) */
 
 #if defined (MOTIF)
 static void close_file_selection(Widget widget,XtPointer client_data,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 9 June 2003
 
 DESCRIPTION :
 Closes the windows associated with the file selection shell.
@@ -194,6 +197,37 @@ Closes the windows associated with the file selection shell.
 	}
 	LEAVE;
 } /* close_file_selection */
+#endif /* defined (MOTIF) */
+
+#if defined (MOTIF)
+static void cancel_file_selection(Widget widget,XtPointer client_data,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 9 June 2003
+
+DESCRIPTION :
+Called in response to pressing the cancel button.
+==============================================================================*/
+{
+	struct File_open_data *file_open_data;
+
+	ENTER(cancel_file_selection);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if (file_open_data=(struct File_open_data *)client_data)
+	{
+		if (file_open_data->cancel_operation)
+		{
+			(file_open_data->cancel_operation)(file_open_data->cancel_arguments);
+		}
+		close_file_selection(widget,client_data,call_data);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"cancel_file_selection.  No client_data");
+	}
+	LEAVE;
+} /* cancel_file_selection */
 #endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
@@ -388,6 +422,7 @@ except the warning shell.
 } /* busy_cursor_off_warning_shell */
 #endif /* defined (MOTIF) */
 
+#if defined (OLD_CODE)
 #if defined (MOTIF)
 static void busy_cursor_off_selection_shell(Widget widget,
 	XtPointer file_open_data_void,XtPointer call_data)
@@ -418,6 +453,7 @@ except the selection shell.
 	LEAVE;
 } /* busy_cursor_off_selection_shell */
 #endif /* defined (MOTIF) */
+#endif /* defined (OLD_CODE) */
 
 #if defined (MOTIF)
 static void busy_cursor_on_selection_shell(Widget widget,
@@ -813,7 +849,7 @@ void open_file_and_read(
 #endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 24 July 2002
+LAST MODIFIED : 9 June 2003
 
 DESCRIPTION :
 Expects a pointer to a File_open_data structure as the <client_data>.  Displays
@@ -822,6 +858,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 ==============================================================================*/
 {
 #if defined (MOTIF)
+	Atom WM_DELETE_WINDOW;
 	char *shell_title,*temp_string;
 	MrmType selection_class;
 	struct File_open_data *file_open_data;
@@ -881,9 +918,11 @@ name the <file_operation> is performed on the file with the <arguments>.
 				if (file_open_data->selection_shell=XtVaCreatePopupShell(
 					"file_selection_shell",
 					xmDialogShellWidgetClass,parent,
+					XmNdeleteResponse,XmDO_NOTHING,
 					XmNtitle,shell_title,
 					NULL))
 				{
+#if defined (OLD_CODE)
 					XtAddCallback(file_open_data->selection_shell,XmNdestroyCallback,
 						busy_cursor_off_selection_shell,(XtPointer)file_open_data);
 					XtAddCallback(file_open_data->selection_shell,XmNdestroyCallback,
@@ -891,6 +930,16 @@ name the <file_operation> is performed on the file with the <arguments>.
 						selection_shell),file_open_data->user_interface));
 					XtAddCallback(file_open_data->selection_shell,XmNdestroyCallback,
 						destroy_file_selection,client_data);
+#endif /* defined (OLD_CODE) */
+					/* Register the shell with the busy signal list */
+					create_Shell_list_item(&(file_open_data->selection_shell),
+						file_open_data->user_interface);
+					/* Set up window manager callback for close window message */
+					WM_DELETE_WINDOW=XmInternAtom(
+						XtDisplay(file_open_data->selection_shell),
+						"WM_DELETE_WINDOW",False);
+					XmAddWMProtocolCallback(file_open_data->selection_shell,
+						WM_DELETE_WINDOW,close_file_selection,client_data);
 					/* create the file selection box */
 					if (MrmSUCCESS==MrmFetchWidget(filedir_hierarchy,"file_selection_box",
 						file_open_data->selection_shell,&(file_open_data->selection),
@@ -937,7 +986,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 						XtUnmanageChild(file_selection_child);
 						/* add cancel callback */
 						XtAddCallback(file_open_data->selection,XmNcancelCallback,
-							close_file_selection,client_data);
+							cancel_file_selection,client_data);
 						/* add the OK callback */
 						XtAddCallback(file_open_data->selection,XmNokCallback,
 							file_selection_read,client_data);
@@ -1061,7 +1110,7 @@ void open_file_and_write(
 #endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 24 July 2002
+LAST MODIFIED : 9 June 2003
 
 DESCRIPTION :
 Expects a pointer to a File_open_data structure as the <client_data> (MOTIF).
@@ -1071,6 +1120,7 @@ specified file.
 ==============================================================================*/
 {
 #if defined (MOTIF)
+	Atom WM_DELETE_WINDOW;
 #if defined (OLD_CODE)
 	char first;
 #endif /* defined (OLD_CODE) */
@@ -1088,7 +1138,7 @@ specified file.
 		{"identify_file_selection_label",(XtPointer)identify_file_selection_label},
 		{"identify_file_selection_text",(XtPointer)identify_file_selection_text},
 		{"file_selection_write",(XtPointer)file_selection_write},
-		{"close_file_selection",(XtPointer)close_file_selection}};
+		{"cancel_file_selection",(XtPointer)cancel_file_selection}};
 #if defined (OLD_CODE)
 	static MrmRegisterArg identifier_list[]=
 	{
@@ -1173,7 +1223,8 @@ specified file.
 					file_open_data->activation=widget;
 					if (!(parent=widget)||(True!=XtIsWidget(parent)))
 					{
-						parent=User_interface_get_application_shell(file_open_data->user_interface);
+						parent=User_interface_get_application_shell(
+							file_open_data->user_interface);
 					}
 					/* assign the shell title */
 					switch (file_open_data->type)
@@ -1195,9 +1246,11 @@ specified file.
 					if (file_open_data->selection_shell=XtVaCreatePopupShell(
 						"file_selection_shell",
 						xmDialogShellWidgetClass,parent,
+						XmNdeleteResponse,XmDO_NOTHING,
 						XmNtitle,shell_title,
 						NULL))
 					{
+#if defined (OLD_CODE)
 						XtAddCallback(file_open_data->selection_shell,XmNdestroyCallback,
 							destroy_file_selection,client_data);
 						XtAddCallback(file_open_data->selection_shell,XmNdestroyCallback,
@@ -1205,6 +1258,16 @@ specified file.
 						XtAddCallback(file_open_data->selection_shell,XmNdestroyCallback,
 							destroy_window_shell,create_Shell_list_item(&(file_open_data->
 							selection_shell), file_open_data->user_interface));
+#endif /* defined (OLD_CODE) */
+						/* Register the shell with the busy signal list */
+						create_Shell_list_item(&(file_open_data->selection_shell),
+							file_open_data->user_interface);
+						/* Set up window manager callback for close window message */
+						WM_DELETE_WINDOW=XmInternAtom(
+							XtDisplay(file_open_data->selection_shell),
+							"WM_DELETE_WINDOW",False);
+						XmAddWMProtocolCallback(file_open_data->selection_shell,
+							WM_DELETE_WINDOW,close_file_selection,client_data);
 						/* register the callbacks */
 						if (MrmSUCCESS==MrmRegisterNamesInHierarchy(filedir_hierarchy,
 							callback_list,XtNumber(callback_list)))
@@ -1247,7 +1310,7 @@ specified file.
 								XtUnmanageChild(file_selection_child);
 								/* add cancel callback */
 								XtAddCallback(file_open_data->selection,XmNcancelCallback,
-									close_file_selection,client_data);
+									cancel_file_selection,client_data);
 								/* add the OK callback */
 								XtAddCallback(file_open_data->selection,XmNokCallback,
 									file_selection_write,client_data);
