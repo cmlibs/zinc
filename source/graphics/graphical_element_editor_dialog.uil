@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : graphical_element_editor_dialog.uil
 !
-! LAST MODIFIED : 16 May 2000
+! LAST MODIFIED : 31 October 2000
 !
 ! DESCRIPTION :
 ! The widgets for the graphical element group editor dialog widget.
@@ -11,7 +11,6 @@ module g_elem_editor_dialog
 
 procedure
 ! ---------|---------|---------|- 31 characters max
-	gelem_ed_d_destroy_CB;
 	gelem_ed_d_id_visibility_btn;
 	gelem_ed_d_id_autoapply_btn;
 	gelem_ed_d_id_egroup_form;
@@ -73,10 +72,6 @@ object
 			XmForm gelem_ed_d_global_buttons_form;
 			XmForm gelem_ed_d_editor_form;
 			XmRowColumn gelem_ed_d_control;
-			};
-		callbacks
-			{
-			XmNdestroyCallback = procedure gelem_ed_d_destroy_CB();
 			};
 		};
 	gelem_ed_d_heading_rowcol: XmRowColumn
@@ -255,13 +250,12 @@ object
 		arguments
 			{
 			XmNlabelString = compound_string("OK");
-			XmNuserData = gelem_ed_d_structure;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedure
 				gelem_ed_d_id_ok_btn(gelem_ed_d_structure);
-			XmNactivateCallback = procedure gelem_ed_d_ok_CB();
+			XmNactivateCallback = procedure gelem_ed_d_ok_CB(gelem_ed_d_structure);
 			};
 		};
 	gelem_ed_d_control_apply: XmPushButtonGadget
@@ -269,13 +263,13 @@ object
 		arguments
 			{
 			XmNlabelString = compound_string("Apply");
-			XmNuserData = gelem_ed_d_structure;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedure
 				gelem_ed_d_id_apply_btn(gelem_ed_d_structure);
-			XmNactivateCallback = procedure gelem_ed_d_apply_CB();
+			XmNactivateCallback = procedure
+				gelem_ed_d_apply_CB(gelem_ed_d_structure);
 			};
 		};
 	gelem_ed_d_control_revert: XmPushButtonGadget
@@ -283,13 +277,13 @@ object
 		arguments
 			{
 			XmNlabelString = compound_string("Revert");
-			XmNuserData = gelem_ed_d_structure;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedure
 				gelem_ed_d_id_revert_btn(gelem_ed_d_structure);
-			XmNactivateCallback = procedure gelem_ed_d_revert_CB();
+			XmNactivateCallback = procedure
+				gelem_ed_d_revert_CB(gelem_ed_d_structure);
 			};
 		};
 	gelem_ed_d_control_cancel: XmPushButtonGadget
@@ -297,13 +291,13 @@ object
 		arguments
 			{
 			XmNlabelString = compound_string("Cancel");
-			XmNuserData = gelem_ed_d_structure;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedure
 				gelem_ed_d_id_cancel_btn(gelem_ed_d_structure);
-			XmNactivateCallback = procedure gelem_ed_d_cancel_CB();
+			XmNactivateCallback = procedure
+				gelem_ed_d_cancel_CB(gelem_ed_d_structure);
 			};
 		};
 end module;

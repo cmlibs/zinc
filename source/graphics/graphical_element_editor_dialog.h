@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element_editor_dialog.h
 
-LAST MODIFIED : 31 August 1999
+LAST MODIFIED : 31 October 2000
 
 DESCRIPTION :
 Routines for creating an element group editor dialog shell and standard buttons.
@@ -20,35 +20,23 @@ Global Types
 ------------
 */
 
+struct Graphical_element_editor_dialog;
+/*******************************************************************************
+LAST MODIFIED : 31 October 2000
+
+DESCRIPTION :
+The contents of this structure are private.
+==============================================================================*/
+
 /*
 Global Functions
 ----------------
 */
 
-int graphical_element_editor_dialog_get_element_group_and_scene(
-	Widget graphical_element_editor_dialog,
-	struct GROUP(FE_element) **element_group,struct Scene **scene);
-/*******************************************************************************
-LAST MODIFIED : 31 August 1999
-
-DESCRIPTION :
-Returns which element_group and scene are looked at with the
-graphical_element_editor_dialog widget.
-==============================================================================*/
-
-int graphical_element_editor_dialog_set_element_group_and_scene(
-	Widget graphical_element_editor_dialog,
-	struct GROUP(FE_element) *element_group,struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 8 December 1997
-
-DESCRIPTION :
-Sets which element_group and scene are looked at with the
-graphical_element_editor_dialog widget.
-==============================================================================*/
-
-int bring_up_graphical_element_editor_dialog(
-	Widget *graphical_element_editor_dialog_address,Widget parent,
+struct Graphical_element_editor_dialog *CREATE(Graphical_element_editor_dialog)(
+	struct Graphical_element_editor_dialog
+	  **graphical_element_editor_dialog_address,
+	Widget parent,
 	struct Computed_field_package *computed_field_package,
 	struct MANAGER(FE_element) *element_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
@@ -64,11 +52,51 @@ int bring_up_graphical_element_editor_dialog(
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 16 February 1999
+LAST MODIFIED : 31 October 2000
 
 DESCRIPTION :
-If there is a graphical_element_editor_dialog in existence, then bring it to
-the front with the new element_group and scene, ptherwise create a new one.
+Note on successful return the dialog is already put at
+<*graphical_element_editor_dialog_address>.
+==============================================================================*/
+
+int DESTROY(Graphical_element_editor_dialog)(
+	struct Graphical_element_editor_dialog
+	  **graphical_element_editor_dialog_address);
+/*******************************************************************************
+LAST MODIFIED : 31 October 2000
+
+DESCRIPTION :
+==============================================================================*/
+
+int Graphical_element_editor_dialog_bring_to_front(
+	struct Graphical_element_editor_dialog *gelem_editor_dialog);
+/*******************************************************************************
+LAST MODIFIED : 31 October 2000
+
+DESCRIPTION :
+De-iconifies and brings the graphical element editor to the front.
+==============================================================================*/
+
+int Graphical_element_editor_dialog_get_element_group_and_scene(
+	struct Graphical_element_editor_dialog *gelem_editor_dialog,
+	struct GROUP(FE_element) **element_group,struct Scene **scene);
+/*******************************************************************************
+LAST MODIFIED : 31 October 2000
+
+DESCRIPTION :
+Returns which element_group and scene are looked at with the
+graphical_element_editor_dialog widget.
+==============================================================================*/
+
+int Graphical_element_editor_dialog_set_element_group_and_scene(
+	struct Graphical_element_editor_dialog *gelem_editor_dialog,
+	struct GROUP(FE_element) *element_group,struct Scene *scene);
+/*******************************************************************************
+LAST MODIFIED : 31 October 2000
+
+DESCRIPTION :
+Sets which element_group and scene are looked at with the
+graphical_element_editor_dialog widget.
 ==============================================================================*/
 
 #endif /* !defined (GRAPHICAL_ELEMENT_EDITOR_DIALOG_H) */
