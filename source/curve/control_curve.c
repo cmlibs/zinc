@@ -5235,6 +5235,7 @@ appropriateness to curve usage.
 	FILE *element_file,*node_file;
 	struct Control_curve *curve;
 	struct FE_element_field *element_field;
+	struct FE_time *fe_time;
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager;
 	struct MANAGER(GROUP(FE_element)) *element_group_manager;
 
@@ -5248,17 +5249,17 @@ appropriateness to curve usage.
 			data_group_manager=CREATE(MANAGER(GROUP(FE_node)))();
 			element_group_manager=CREATE(MANAGER(GROUP(FE_element)))();
 			node_group_manager=CREATE(MANAGER(GROUP(FE_node)))();
+			fe_time=ACCESS(FE_time)(CREATE(FE_time)());
 			ALLOCATE(file_name,char,strlen(file_name_stem)+14);
 			if (data_group_manager&&element_group_manager&&node_group_manager&&
-				file_name)
+				file_name&&fe_time)
 			{
 				return_code=1;
 				sprintf(file_name,"%s.curve.exnode",file_name_stem);
 				if (node_file=fopen(file_name,"r"))
 				{
-					if (!read_FE_node_group(node_file,curve->fe_field_manager,
-						(struct FE_time *)NULL,curve->node_manager,
-						curve->element_manager,node_group_manager,
+					if (!read_FE_node_group(node_file,curve->fe_field_manager,fe_time,
+						curve->node_manager,curve->element_manager,node_group_manager,
 						data_group_manager,element_group_manager))
 					{
 						return_code=0;
@@ -5273,9 +5274,9 @@ appropriateness to curve usage.
 				if (element_file=fopen(file_name,"r"))
 				{
 					if (!read_FE_element_group(element_file,curve->element_manager,
-						element_group_manager,curve->fe_field_manager,
-						(struct FE_time *)NULL,curve->node_manager,
-						node_group_manager,data_group_manager,curve->basis_manager))
+						element_group_manager,curve->fe_field_manager,fe_time,
+						curve->node_manager,node_group_manager,data_group_manager,
+						curve->basis_manager))
 					{
 						return_code=0;
 					}
@@ -5370,6 +5371,7 @@ appropriateness to curve usage.
 				DESTROY(Control_curve)(&curve);
 			}
 			DEALLOCATE(file_name);
+			DEACCESS(FE_time)(&fe_time);
 			DESTROY(MANAGER(GROUP(FE_node)))(&data_group_manager);
 			DESTROY(MANAGER(GROUP(FE_element)))(&element_group_manager);
 			DESTROY(MANAGER(GROUP(FE_node)))(&node_group_manager);
