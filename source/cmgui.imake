@@ -322,7 +322,7 @@ INTERPRETER_PATH = $(CMISS_ROOT)/perl_interpreter
 #else /* defined (CMISS_ROOT_DEFINED) */
 INTERPRETER_PATH = $(CMGUI_DEV_ROOT)/perl_interpreter
 #endif /* defined (CMISS_ROOT_DEFINED) */
-INTERPRETER_INC = 
+INTERPRETER_INC = -I$(INTERPRETER_PATH)/source/
 INTERPRETER_SWITCH = -DPERL_INTERPRETER
 INTERPRETER_SRCS =
 #if defined (IRIX) /* switch OperatingSystem */
