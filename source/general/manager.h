@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : manager.h
 
-LAST MODIFIED : 18 January 2001
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 Managers oversee the creation, deletion and modification of global objects -
@@ -505,6 +505,46 @@ Calls <iterator> for each object  being managed by the <manager>. \
 ==============================================================================*/
 
 #if defined (FULL_NAMES)
+#define MANAGER_BEGIN_CHANGE_( object_type )  manager_begin_change_ ## object_type
+#else
+#define MANAGER_BEGIN_CHANGE_( object_type )  mbc ## object_type
+#endif
+#define MANAGER_BEGIN_CHANGE( object_type )  MANAGER_BEGIN_CHANGE_(object_type)
+
+#define PROTOTYPE_MANAGER_BEGIN_CHANGE_FUNCTION( object_type ) \
+void MANAGER_BEGIN_CHANGE(object_type)(struct MANAGER(object_type) *manager, \
+	enum MANAGER_CHANGE(object_type) change, struct object_type *object) \
+/***************************************************************************** \
+LAST MODIFIED : 5 March 2002 \
+\
+DESCRIPTION :
+Tells the <manager> you will make a <change> to <object>. \
+After making the change, call companion function MANAGER_END_CHANGE. \
+Note that you can make several calls to this function for different objects \
+followed by a single call to MANAGER_END_CHANGE. This acts like a temporary \
+cache, used eg. in REMOVE_ALL_OBJECTS_FROM_MANAGER. \
+==============================================================================*/
+
+#if defined (FULL_NAMES)
+#define MANAGER_END_CHANGE_( object_type )  manager_end_change_ ## object_type
+#else
+#define MANAGER_END_CHANGE_( object_type )  mec ## object_type
+#endif
+#define MANAGER_END_CHANGE( object_type )  MANAGER_END_CHANGE_(object_type)
+
+#define PROTOTYPE_MANAGER_END_CHANGE_FUNCTION( object_type ) \
+void MANAGER_END_CHANGE(object_type)(struct MANAGER(object_type) *manager) \
+/***************************************************************************** \
+LAST MODIFIED : 5 March 2002 \
+\
+DESCRIPTION : \
+This function should be called after modifying an object, adding or removing \
+an object in the manager; the action should be preceded by partner function \
+MANAGER_BEGIN_CHANGE. If caching is off, calls MANAGER_UPDATE immediately to \
+inform clients of the change. Does nothing if caching is on. \
+==============================================================================*/
+
+#if defined (FULL_NAMES)
 #define MANAGER_BEGIN_CACHE_( object_type )  manager_begin_cache_ ## object_type
 	#else
 #define MANAGER_BEGIN_CACHE_( object_type )  vm ## object_type
@@ -621,6 +661,8 @@ PROTOTYPE_IS_MANAGED_FUNCTION(object_type); \
 PROTOTYPE_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(object_type); \
 PROTOTYPE_FIRST_OBJECT_IN_MANAGER_THAT_FUNCTION(object_type); \
 PROTOTYPE_FOR_EACH_OBJECT_IN_MANAGER_FUNCTION(object_type); \
+PROTOTYPE_MANAGER_BEGIN_CHANGE_FUNCTION(object_type); \
+PROTOTYPE_MANAGER_END_CHANGE_FUNCTION(object_type); \
 PROTOTYPE_MANAGER_BEGIN_CACHE_FUNCTION(object_type); \
 PROTOTYPE_MANAGER_END_CACHE_FUNCTION(object_type)
 

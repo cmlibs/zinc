@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : manager_private.h
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
 Managers oversee the creation, deletion and modification of global objects -
@@ -152,90 +152,6 @@ inter-object dependencies. \
 	} \
 	LEAVE; \
 } /* MANAGER_UPDATE(object_type) */
-
-#if defined (FULL_NAMES)
-#define MANAGER_BEGIN_CHANGE( object_type )  manager_begin_change_ ## object_type
-#else
-#define MANAGER_BEGIN_CHANGE( object_type )  mbc ## object_type
-#endif
-
-#define DECLARE_MANAGER_BEGIN_CHANGE_FUNCTION( object_type ) \
-static void MANAGER_BEGIN_CHANGE(object_type)( \
-	struct MANAGER(object_type) *manager, \
-	enum MANAGER_CHANGE(object_type) change, \
-	struct object_type *object) \
-/***************************************************************************** \
-LAST MODIFIED : 18 January 2002 \
-\
-DESCRIPTION :
-Tells the <manager> you will make a <change> to <object>. \
-After making the change, call companion function MANAGER_END_CHANGE. \
-Note that you can make several calls to this function for different objects \
-followed by a single call to MANAGER_END_CHANGE. This acts like a temporary \
-cache, used eg. in REMOVE_ALL_OBJECTS_FROM_MANAGER. \
-============================================================================*/ \
-{ \
-	ENTER(MANAGER_BEGIN_CHANGE(object_type)); \
-	if (manager && (MANAGER_CHANGE_NONE(object_type) != change) && object) \
-	{ \
-		if ((MANAGER_CHANGE_NONE(object_type) != manager->message->change) && \
-			(change != manager->message->change)) \
-		{ \
-			/* new type of change; inform clients of changes to date */ \
-			MANAGER_UPDATE(object_type)(manager); \
-		} \
-		manager->message->change = change; \
-		/* ensure object is in changed_object_list for future messages */ \
-		if (!IS_OBJECT_IN_LIST(object_type)(object, \
-			manager->message->changed_object_list)) \
-		{ \
-			ADD_OBJECT_TO_LIST(object_type)(object, \
-				manager->message->changed_object_list); \
-		} \
-	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"MANAGER_BEGIN_CHANGE(" #object_type ").  Invalid argument(s)"); \
-	} \
-	LEAVE; \
-} /* MANAGER_BEGIN_CHANGE(object_type) */
-
-#if defined (FULL_NAMES)
-#define MANAGER_END_CHANGE( object_type )  manager_end_change_ ## object_type
-#else
-#define MANAGER_END_CHANGE( object_type )  mec ## object_type
-#endif
-
-#define DECLARE_MANAGER_END_CHANGE_FUNCTION( object_type ) \
-static void MANAGER_END_CHANGE(object_type)( \
-	struct MANAGER(object_type) *manager) \
-/***************************************************************************** \
-LAST MODIFIED : 11 June 2001 \
-\
-DESCRIPTION : \
-This function should be called after modifying an object, adding or removing \
-an object in the manager; the action should be preceded by partner function \
-MANAGER_BEGIN_CHANGE. If caching is off, calls MANAGER_UPDATE immediately to \
-inform clients of the change. Does nothing if caching is on. \
-============================================================================*/ \
-{ \
-	ENTER(MANAGER_END_CHANGE(object_type)); \
-	if (manager) \
-	{ \
-		if (!manager->cache) \
-		{ \
-			/* inform clients of changes to date */ \
-			MANAGER_UPDATE(object_type)(manager); \
-		} \
-	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"MANAGER_END_CHANGE(" #object_type ").  Invalid argument(s)"); \
-	} \
-	LEAVE; \
-} /* MANAGER_END_CHANGE(object_type) */
 
 #if defined (FULL_NAMES)
 #define MANAGER_FIND_CLIENT( object_type )  manager_find_client ## object_type
@@ -1379,6 +1295,55 @@ PROTOTYPE_FOR_EACH_OBJECT_IN_MANAGER_FUNCTION(object_type) \
 	return (return_code); \
 } /* FOR_EACH_OBJECT_IN_MANAGER(object_type) */
 
+#define DECLARE_MANAGER_BEGIN_CHANGE_FUNCTION( object_type ) \
+PROTOTYPE_MANAGER_BEGIN_CHANGE_FUNCTION(object_type) \
+{ \
+	ENTER(MANAGER_BEGIN_CHANGE(object_type)); \
+	if (manager && (MANAGER_CHANGE_NONE(object_type) != change) && object) \
+	{ \
+		if ((MANAGER_CHANGE_NONE(object_type) != manager->message->change) && \
+			(change != manager->message->change)) \
+		{ \
+			/* new type of change; inform clients of changes to date */ \
+			MANAGER_UPDATE(object_type)(manager); \
+		} \
+		manager->message->change = change; \
+		/* ensure object is in changed_object_list for future messages */ \
+		if (!IS_OBJECT_IN_LIST(object_type)(object, \
+			manager->message->changed_object_list)) \
+		{ \
+			ADD_OBJECT_TO_LIST(object_type)(object, \
+				manager->message->changed_object_list); \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"MANAGER_BEGIN_CHANGE(" #object_type ").  Invalid argument(s)"); \
+	} \
+	LEAVE; \
+} /* MANAGER_BEGIN_CHANGE(object_type) */
+
+#define DECLARE_MANAGER_END_CHANGE_FUNCTION( object_type ) \
+PROTOTYPE_MANAGER_END_CHANGE_FUNCTION(object_type) \
+{ \
+	ENTER(MANAGER_END_CHANGE(object_type)); \
+	if (manager) \
+	{ \
+		if (!manager->cache) \
+		{ \
+			/* inform clients of changes to date */ \
+			MANAGER_UPDATE(object_type)(manager); \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE, \
+			"MANAGER_END_CHANGE(" #object_type ").  Invalid argument(s)"); \
+	} \
+	LEAVE; \
+} /* MANAGER_END_CHANGE(object_type) */
+
 #define DECLARE_MANAGER_BEGIN_CACHE_FUNCTION( object_type ) \
 PROTOTYPE_MANAGER_BEGIN_CACHE_FUNCTION(object_type) \
 { \
@@ -1548,8 +1513,6 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(GROUP(object_type),name) \
 
 #define DECLARE_LOCAL_MANAGER_FUNCTIONS(object_type) \
 DECLARE_MANAGER_UPDATE_FUNCTION(object_type) \
-DECLARE_MANAGER_BEGIN_CHANGE_FUNCTION(object_type) \
-DECLARE_MANAGER_END_CHANGE_FUNCTION(object_type) \
 DECLARE_MANAGER_FIND_CLIENT_FUNCTION(object_type) \
 DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION(object_type)
 
@@ -1564,6 +1527,8 @@ DECLARE_MANAGER_DEREGISTER_FUNCTION(object_type) \
 DECLARE_IS_MANAGED_FUNCTION(object_type) \
 DECLARE_FIRST_OBJECT_IN_MANAGER_THAT_FUNCTION(object_type) \
 DECLARE_FOR_EACH_OBJECT_IN_MANAGER_FUNCTION(object_type) \
+DECLARE_MANAGER_BEGIN_CHANGE_FUNCTION(object_type) \
+DECLARE_MANAGER_END_CHANGE_FUNCTION(object_type) \
 DECLARE_MANAGER_BEGIN_CACHE_FUNCTION(object_type) \
 DECLARE_MANAGER_END_CACHE_FUNCTION(object_type)
 
@@ -1591,6 +1556,8 @@ DECLARE_MANAGER_DEREGISTER_FUNCTION(object_type) \
 DECLARE_IS_MANAGED_FUNCTION(object_type) \
 DECLARE_FIRST_OBJECT_IN_MANAGER_THAT_FUNCTION(object_type) \
 DECLARE_FOR_EACH_OBJECT_IN_MANAGER_FUNCTION(object_type) \
+DECLARE_MANAGER_BEGIN_CHANGE_FUNCTION(object_type) \
+DECLARE_MANAGER_END_CHANGE_FUNCTION(object_type) \
 DECLARE_MANAGER_BEGIN_CACHE_FUNCTION(object_type) \
 DECLARE_MANAGER_END_CACHE_FUNCTION(object_type)
 
