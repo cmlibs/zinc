@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : manager_private.h
 
-LAST MODIFIED : 27 May 1999
+LAST MODIFIED : 1 December 1999
 
 DESCRIPTION :
 Managers oversee the creation, deletion and modification of global objects -
@@ -417,7 +417,7 @@ PROTOTYPE_REMOVE_ALL_OBJECTS_FROM_MANAGER_FUNCTION(object_type) \
 /*???RC Must remove from list before sending manager delete message. */
 /* But! That would entail passing around the address of a freed object, which */
 /* is a no-no. Solution: ACCESS and DEACCESS the deleted object locally so */
-/* that it is not freed until after the message */
+/* that it is not freed until after the message. */
 #define DECLARE_REMOVE_OBJECT_FROM_MANAGER_FUNCTION( object_type ) \
 PROTOTYPE_REMOVE_OBJECT_FROM_MANAGER_FUNCTION(object_type) \
 { \
@@ -744,7 +744,7 @@ PROTOTYPE_NUMBER_IN_MANAGER_FUNCTION(object_type) \
 PROTOTYPE_MANAGER_MODIFY_FUNCTION(object_type) \
 { \
 	int return_code; \
-	struct object_type *new_object; \
+	struct object_type *tmp_object; \
 	struct MANAGER_MESSAGE(object_type) *message; \
 \
 	ENTER(MANAGER_MODIFY(object_type)); \
@@ -755,14 +755,15 @@ PROTOTYPE_MANAGER_MODIFY_FUNCTION(object_type) \
 		{ \
 			if (IS_OBJECT_IN_LIST(object_type)(object,manager->object_list)) \
 			{ \
-				new_object= \
+				tmp_object= \
 					FIND_BY_IDENTIFIER_IN_LIST(object_type,identifier_field_name)( \
 					new_data->identifier_field_name,manager->object_list); \
-				if ((!new_object)||(object==new_object)) \
+				if ((!tmp_object)||(object==tmp_object)) \
 				{ \
 					/* remove and re-add object to list so ordering is correct */ \
 					/* must use ACCESS/DEACCESS so that object is not DESTROYed! */ \
-					ACCESS(object_type)(object); \
+					/* Note: DEACCESS clears pointer so keep tmp_object as copy */ \
+					tmp_object=ACCESS(object_type)(object); \
 					if (REMOVE_OBJECT_FROM_LIST(object_type)(object, \
 						manager->object_list)) \
 					{ \
@@ -772,7 +773,6 @@ PROTOTYPE_MANAGER_MODIFY_FUNCTION(object_type) \
 							if (ADD_OBJECT_TO_LIST(object_type)(object, \
 								manager->object_list)) \
 							{ \
-								DEACCESS(object_type)(&object); \
 								if (!(manager->cache)) \
 								{ \
 									if (ALLOCATE(message,struct MANAGER_MESSAGE(object_type),1)) \
@@ -792,7 +792,6 @@ PROTOTYPE_MANAGER_MODIFY_FUNCTION(object_type) \
 							} \
 							else  \
 							{ \
-								DEACCESS(object_type)(&object); \
 								display_message(ERROR_MESSAGE, \
 									"MANAGER_MODIFY(" #object_type ").  Could not add object"); \
 								return_code=0; \
@@ -801,7 +800,6 @@ PROTOTYPE_MANAGER_MODIFY_FUNCTION(object_type) \
 						else  \
 						{ \
 							ADD_OBJECT_TO_LIST(object_type)(object,manager->object_list); \
-							DEACCESS(object_type)(&object); \
 							display_message(ERROR_MESSAGE, \
 								"MANAGER_MODIFY(" #object_type ").  Could not copy object"); \
 							return_code=0; \
@@ -809,11 +807,11 @@ PROTOTYPE_MANAGER_MODIFY_FUNCTION(object_type) \
 					} \
 					else  \
 					{ \
-						DEACCESS(object_type)(&object); \
 						display_message(ERROR_MESSAGE, \
 							"MANAGER_MODIFY(" #object_type ").  Could not remove object"); \
 						return_code=0; \
 					} \
+					DEACCESS(object_type)(&tmp_object); \
 				} \
 				else \
 				{ \
@@ -923,7 +921,7 @@ PROTOTYPE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(object_type, \
 { \
 	int return_code; \
 	struct MANAGER_MESSAGE(object_type) *message; \
-	struct object_type *new_object; \
+	struct object_type *tmp_object; \
 \
 	ENTER(MANAGER_MODIFY_IDENTIFIER(object_type,identifier_field_name)); \
 	/* check the arguments */ \
@@ -933,14 +931,15 @@ PROTOTYPE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(object_type, \
 		{ \
 			if (IS_OBJECT_IN_LIST(object_type)(object,manager->object_list)) \
 			{ \
-				new_object= \
+				tmp_object= \
 					FIND_BY_IDENTIFIER_IN_LIST(object_type,identifier_field_name)( \
 					new_identifier,manager->object_list); \
-				if ((!new_object)||(object==new_object)) \
+				if ((!tmp_object)||(object==tmp_object)) \
 				{ \
 					/* remove and re-add object to list so ordering is correct */ \
 					/* must use ACCESS/DEACCESS so that object is not DESTROYed! */ \
-					ACCESS(object_type)(object); \
+					/* Note: DEACCESS clears pointer so keep tmp_object as copy */ \
+					tmp_object=ACCESS(object_type)(object); \
 					if (REMOVE_OBJECT_FROM_LIST(object_type)(object, \
 						manager->object_list)) \
 					{ \
@@ -950,7 +949,6 @@ PROTOTYPE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(object_type, \
 							if (ADD_OBJECT_TO_LIST(object_type)(object, \
 								manager->object_list)) \
 							{ \
-								DEACCESS(object_type)(&object); \
 								if (!(manager->cache)) \
 								{ \
 									if (ALLOCATE(message,struct MANAGER_MESSAGE(object_type),1)) \
@@ -970,7 +968,6 @@ PROTOTYPE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(object_type, \
 							} \
 							else  \
 							{ \
-								DEACCESS(object_type)(&object); \
 								display_message(ERROR_MESSAGE, \
 "MANAGER_MODIFY_IDENTIFIER(" #object_type "," #identifier_field_name ").  Could not add object"); \
 								return_code=0; \
@@ -979,7 +976,6 @@ PROTOTYPE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(object_type, \
 						else  \
 						{ \
 							ADD_OBJECT_TO_LIST(object_type)(object,manager->object_list); \
-							DEACCESS(object_type)(&object); \
 							display_message(ERROR_MESSAGE, \
 "MANAGER_MODIFY_IDENTIFIER(" #object_type "," #identifier_field_name ").  Could not copy identifier"); \
 							return_code=0; \
@@ -987,11 +983,11 @@ PROTOTYPE_MANAGER_MODIFY_IDENTIFIER_FUNCTION(object_type, \
 					} \
 					else  \
 					{ \
-						DEACCESS(object_type)(&object); \
 						display_message(ERROR_MESSAGE, \
 "MANAGER_MODIFY_IDENTIFIER(" #object_type "," #identifier_field_name ").  Could not remove object"); \
 						return_code=0; \
 					} \
+					DEACCESS(object_type)(&tmp_object); \
 				} \
 				else \
 				{ \
