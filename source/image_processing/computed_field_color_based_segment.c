@@ -684,7 +684,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 	ENTER(Computed_field_color_based_segment_get_command_string);
 	command_string = (char *)NULL;
-	if (field)
+	if (field && (field->type_string==computed_field_color_based_segment_type_string)
+		&& (data = (struct Computed_field_color_based_segment_type_specific_data *)
+		field->type_specific_data) )
 	{
 		error = 0;
 		append_string(&command_string,
@@ -705,7 +707,7 @@ Returns allocated command string for reproducing field. Includes type.
 		}
 		sprintf(temp_string1, " dimension %d", data->image->dimension);
 		append_string(&command_string, temp_string1, &error);
-		
+
 		sprintf(temp_string2, " sizes %d %d ",
 		                    data->image->sizes[0],data->image->sizes[1]);
 		append_string(&command_string, temp_string2, &error);
