@@ -1780,4 +1780,3 @@ Returns the <Render_type> described by <render_type_string>.
 	return (render_type);
 } /* Render_type_from_string */
 
-
