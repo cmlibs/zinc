@@ -6967,12 +6967,12 @@ will belong.
 	int return_code;
 
 	ENTER(Computed_field_find_element_xi);
-	if (field&&values&&(number_of_values==field->number_of_components)&&element&&xi&&
-		search_element_group)
+	if (field&&values&&(number_of_values==field->number_of_components)
+		&&element&&xi&&search_element_group)
 	{
 		if (COMPUTED_FIELD_NEW_TYPES == field->type)
 		{
-			if (field->computed_field_set_values_in_element_function)
+			if (field->computed_field_find_element_xi_function)
 			{
 				return_code = 
 					field->computed_field_find_element_xi_function(
@@ -6982,8 +6982,7 @@ will belong.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Computed_field_find_element_xi_function.  "
-					"No function defined.");
+					"Computed_field_find_element_xi.  No function defined.");
 				return_code = 0;
 			}
 		}
