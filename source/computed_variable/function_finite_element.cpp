@@ -1695,7 +1695,7 @@ Function_variable_iterator_representation_atomic_nodal_values::
 									{
 										// Check all the values are in the total sequence
 										if (number_of_times = FE_time_sequence_get_number_of_times(
-											time_sequence))
+											variable->time_sequence))
 										{
 											int i, index;
 
@@ -2360,7 +2360,7 @@ void Function_variable_iterator_representation_atomic_nodal_values::decrement()
 										{
 											// Check all the values are in the total sequence
 											if (number_of_times = FE_time_sequence_get_number_of_times(
-												time_sequence))
+												variable->time_sequence))
 											{
 												int i, index;
 
