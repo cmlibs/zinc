@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : optical_signals.c
 
-LAST MODIFIED : 7 June 2000
+LAST MODIFIED : 19 June 2000
 
 DESCRIPTION :
 Read in a signal file and a list of pairs of electrodes and write out a signal
@@ -12,6 +12,7 @@ file containing the differences of the rms scaled pairs.
 #include <stdarg.h>
 #include <string.h>
 #include <math.h>
+#include <ctype.h>
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "unemap/rig.h"
@@ -24,7 +25,7 @@ Main program
 */
 int main(int argc,char *argv[])
 /*******************************************************************************
-LAST MODIFIED : 7 June 2000
+LAST MODIFIED : 19 June 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -34,7 +35,8 @@ DESCRIPTION :
 	float denominator_mean,denominator_rms,*denominator_value,*denominator_values,
 		numerator_mean,numerator_rms,*numerator_value,*numerator_values,scale,
 		*value;
-	int i,index,number_of_pairs,number_of_samples,number_of_signals,return_code,
+	fpos_t location;
+	int c,i,index,number_of_pairs,number_of_samples,number_of_signals,return_code,
 		*time;
 	struct Device **device,**numerator,**denominator;
 	struct Rig *ratio_rig,*signal_rig;
@@ -53,11 +55,110 @@ DESCRIPTION :
 			/* open the ratio pairs file */
 			if (ratio_file=fopen(argv[2],"r"))
 			{
-				/* count the number of pairs and check the devices exist */
+				/* count the number of pairs/singles and check the device(s) exist */
 				number_of_pairs=0;
 				return_code=1;
 				numerator_name=(char *)NULL;
 				denominator_name=(char *)NULL;
+				while (return_code&&!feof(ratio_file))
+				{
+					if (read_string(ratio_file,"s",&numerator_name))
+					{
+						i=signal_rig->number_of_devices;
+						numerator=signal_rig->devices;
+						while ((i>0)&&(*numerator)&&((*numerator)->description)&&
+							strcmp(numerator_name,(*numerator)->description->name))
+						{
+							numerator++;
+							i--;
+						}
+						if ((i>0)&&(*numerator)&&((*numerator)->description)&&
+							!strcmp(numerator_name,(*numerator)->description->name))
+						{
+							/* check if there is a denominator */
+							fgetpos(ratio_file,&location);
+							do
+							{
+								c=fgetc(ratio_file);
+							} while (isspace(c)&&('\n'!=c)&&(EOF!=c));
+							fsetpos(ratio_file,&location);
+							if (('\n'!=c)&&(EOF!=c))
+							{
+								/* denominator */
+								if (read_string(ratio_file,"s",&denominator_name))
+								{
+									i=signal_rig->number_of_devices;
+									denominator=signal_rig->devices;
+									while ((i>0)&&(*denominator)&&((*denominator)->description)&&
+										strcmp(denominator_name,(*denominator)->description->name))
+									{
+										denominator++;
+										i--;
+									}
+									if ((i>0)&&(*denominator)&&((*denominator)->description)&&
+										!strcmp(denominator_name,(*denominator)->description->name))
+									{
+										/* check if there is a scale */
+										fgetpos(ratio_file,&location);
+										do
+										{
+											c=fgetc(ratio_file);
+										} while (isspace(c)&&('\n'!=c)&&(EOF!=c));
+										fsetpos(ratio_file,&location);
+										if (('\n'!=c)&&(EOF!=c))
+										{
+											/* read scale */
+											if (1==fscanf(ratio_file,"%f",&scale))
+											{
+												number_of_pairs++;
+											}
+											else
+											{
+												printf("ERROR.  Reading scale\n");
+												return_code=0;
+											}
+										}
+										else
+										{
+											/* no scale */
+											number_of_pairs++;
+										}
+									}
+									else
+									{
+										printf("ERROR.  Unknown denominator.  %s\n",
+											denominator_name);
+										return_code=0;
+									}
+									DEALLOCATE(denominator_name);
+								}
+								else
+								{
+									printf("ERROR.  Reading denominator\n");
+									return_code=0;
+								}
+							}
+							else
+							{
+								/* single */
+								number_of_pairs++;
+							}
+						}
+						else
+						{
+							printf("ERROR.  Unknown numerator.  %s\n",numerator_name);
+							return_code=0;
+						}
+						DEALLOCATE(numerator_name);
+					}
+					else
+					{
+						printf("ERROR.  Reading numerator\n");
+						return_code=0;
+					}
+					fscanf(ratio_file," ");
+				}
+#if defined (OLD_CODE)
 				while (return_code&&read_string(ratio_file,"s",&numerator_name)&&
 					read_string(ratio_file,"s",&denominator_name)&&!feof(ratio_file))
 				{
@@ -101,6 +202,7 @@ DESCRIPTION :
 				}
 				DEALLOCATE(numerator_name);
 				DEALLOCATE(denominator_name);
+#endif /* defined (OLD_CODE) */
 				if (return_code&&(0<number_of_pairs))
 				{
 					/* create ratios signal buffer */
@@ -128,6 +230,226 @@ DESCRIPTION :
 							denominator_name=(char *)NULL;
 							device=ratio_rig->devices;
 							index=0;
+							numerator_name=(char *)NULL;
+							denominator_name=(char *)NULL;
+							while (return_code&&!feof(ratio_file))
+							{
+								read_string(ratio_file,"s",&numerator_name);
+								i=signal_rig->number_of_devices;
+								numerator=signal_rig->devices;
+								while ((i>0)&&(*numerator)&&((*numerator)->description)&&
+									strcmp(numerator_name,(*numerator)->description->name))
+								{
+									numerator++;
+									i--;
+								}
+								/* check if there is a denominator */
+								fgetpos(ratio_file,&location);
+								do
+								{
+									c=fgetc(ratio_file);
+								} while (isspace(c)&&('\n'!=c)&&(EOF!=c));
+								fsetpos(ratio_file,&location);
+								if (('\n'!=c)&&(EOF!=c))
+								{
+									/* denominator */
+									read_string(ratio_file,"s",&denominator_name);
+									i=signal_rig->number_of_devices;
+									denominator=signal_rig->devices;
+									while ((i>0)&&(*denominator)&&
+										((*denominator)->description)&&strcmp(denominator_name,
+										(*denominator)->description->name))
+									{
+										denominator++;
+										i--;
+									}
+									/* change name */
+									if (REALLOCATE(name,(*device)->description->name,char,
+										strlen(numerator_name)+strlen(denominator_name)+2))
+									{
+										(*device)->description->name=name;
+										strcpy(name,numerator_name);
+										strcat(name,"/");
+										strcat(name,denominator_name);
+										/* create the signal */
+										if ((*device)->signal=create_Signal(index,signal_buffer,
+											UNDECIDED,0))
+										{
+											/* fill in the values */
+											numerator_values=(float *)NULL;
+											denominator_values=(float *)NULL;
+											if (extract_signal_information((struct FE_node *)NULL,
+												(struct Draw_package *)NULL,*numerator,1,1,0,
+												(int *)NULL,(int *)NULL,(float **)NULL,
+												&numerator_values,(enum Event_signal_status **)NULL,
+												(char **)NULL,(int *)NULL,(float *)NULL,
+												(float *)NULL)&&
+												extract_signal_information((struct FE_node *)NULL,
+												(struct Draw_package *)NULL,*denominator,1,1,0,
+												(int *)NULL,(int *)NULL,(float **)NULL,
+												&denominator_values,
+												(enum Event_signal_status **)NULL,(char **)NULL,
+												(int *)NULL,(float *)NULL,(float *)NULL))
+											{
+												/* check if there is a denominator */
+												fgetpos(ratio_file,&location);
+												do
+												{
+													c=fgetc(ratio_file);
+												} while (isspace(c)&&('\n'!=c)&&(EOF!=c));
+												fsetpos(ratio_file,&location);
+												if (('\n'!=c)&&(EOF!=c))
+												{
+													/* read scale */
+													fscanf(ratio_file," %f",&scale);
+													/*???debug */
+													printf("%s %s %g\n",numerator_name,denominator_name,
+														scale);
+												}
+												else
+												{
+													/* calculate mean */
+													numerator_value=numerator_values;
+													denominator_value=denominator_values;
+													numerator_mean=0;
+													denominator_mean=0;
+													for (i=number_of_samples;i>0;i--)
+													{
+														numerator_mean += *numerator_value;
+														denominator_mean += *denominator_value;
+														numerator_value++;
+														denominator_value++;
+													}
+													numerator_mean /= (float)number_of_samples;
+													denominator_mean /= (float)number_of_samples;
+													/* calculate rms */
+													numerator_value=numerator_values;
+													denominator_value=denominator_values;
+													numerator_rms=0;
+													denominator_rms=0;
+													for (i=number_of_samples;i>0;i--)
+													{
+														numerator_rms +=
+															(*numerator_value-numerator_mean)*
+															(*numerator_value-numerator_mean);
+														denominator_rms +=
+															(*denominator_value-denominator_mean)*
+															(*denominator_value-denominator_mean);
+														numerator_value++;
+														denominator_value++;
+													}
+													numerator_rms /= (float)number_of_samples;
+													denominator_rms /= (float)number_of_samples;
+													numerator_rms=(float)sqrt((double)numerator_rms);
+													denominator_rms=(float)sqrt((double)denominator_rms);
+													if (0==denominator_rms)
+													{
+														scale=numerator_rms;
+													}
+													else
+													{
+														scale=numerator_rms/denominator_rms;
+													}
+													/*???debug */
+													printf("%s %g, %s %g\n",numerator_name,
+														numerator_rms,denominator_name,denominator_rms);
+												}
+												/* calculate difference */
+												numerator_value=numerator_values;
+												denominator_value=denominator_values;
+												value=(signal_buffer->signals).float_values+index;
+												for (i=number_of_samples;i>0;i--)
+												{
+													*value=(*numerator_value)-
+														scale*(*denominator_value);
+													value += number_of_signals;
+													numerator_value++;
+													denominator_value++;
+												}
+												number_of_pairs++;
+												device++;
+											}
+											else
+											{
+												printf(
+						"ERROR.  Could not extract numerator and denominator values\n");
+												return_code=0;
+											}
+											DEALLOCATE(numerator_values);
+											DEALLOCATE(denominator_values);
+										}
+										else
+										{
+											printf("ERROR.  Could not create signal\n");
+											return_code=0;
+										}
+									}
+									else
+									{
+										printf("ERROR.  Could not reallocate device name\n");
+										return_code=0;
+									}
+									DEALLOCATE(denominator_name);
+								}
+								else
+								{
+									/* single */
+									/* change name */
+									if (REALLOCATE(name,(*device)->description->name,char,
+										strlen(numerator_name)+1))
+									{
+										(*device)->description->name=name;
+										strcpy(name,numerator_name);
+										/* create the signal */
+										if ((*device)->signal=create_Signal(index,signal_buffer,
+											UNDECIDED,0))
+										{
+											/* fill in the values */
+											numerator_values=(float *)NULL;
+											if (extract_signal_information((struct FE_node *)NULL,
+												(struct Draw_package *)NULL,*numerator,1,1,0,
+												(int *)NULL,(int *)NULL,(float **)NULL,
+												&numerator_values,(enum Event_signal_status **)NULL,
+												(char **)NULL,(int *)NULL,(float *)NULL,
+												(float *)NULL))
+											{
+												/* fill in values */
+												numerator_value=numerator_values;
+												value=(signal_buffer->signals).float_values+index;
+												for (i=number_of_samples;i>0;i--)
+												{
+													*value= *numerator_value;
+													value += number_of_signals;
+													numerator_value++;
+												}
+												number_of_pairs++;
+												device++;
+											}
+											else
+											{
+												printf(
+						"ERROR.  Could not extract numerator values\n");
+												return_code=0;
+											}
+											DEALLOCATE(numerator_values);
+										}
+										else
+										{
+											printf("ERROR.  Could not create signal\n");
+											return_code=0;
+										}
+									}
+									else
+									{
+										printf("ERROR.  Could not reallocate device name\n");
+										return_code=0;
+									}
+								}
+								fscanf(ratio_file," ");
+								DEALLOCATE(numerator_name);
+								index++;
+							}
+#if defined (OLD_CODE)
 							while (return_code&&
 								read_string(ratio_file,"s",&numerator_name)&&
 								read_string(ratio_file,"s",&denominator_name)&&
@@ -284,6 +606,7 @@ DESCRIPTION :
 							}
 							DEALLOCATE(numerator_name);
 							DEALLOCATE(denominator_name);
+#endif /* defined (OLD_CODE) */
 							if (return_code)
 							{
 								if (signal_file=fopen(argv[3],"wb"))
