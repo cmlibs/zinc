@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element_editor_dialog.c
 
-LAST MODIFIED : 7 April 2000
+LAST MODIFIED : 16 May 2000
 
 DESCRIPTION :
 Routines for creating an element group editor dialog shell and standard buttons.
@@ -574,7 +574,7 @@ static Widget create_graphical_element_editor_dialog(
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 7 April 2000
+LAST MODIFIED : 16 May 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -639,7 +639,7 @@ DESCRIPTION :
 				struct Graphical_element_editor_dialog,1))
 			{
 				/* initialise the structure */
-				gelem_editor_dialog->autoapply=0;
+				gelem_editor_dialog->autoapply=1;
 				gelem_editor_dialog->graphical_element_changed=0;
 				gelem_editor_dialog->dialog_parent=parent;
 				gelem_editor_dialog->dialog_address=
@@ -705,7 +705,8 @@ DESCRIPTION :
 									gelem_editor_dialog->egroup_form,
 									(struct GROUP(FE_element) *)NULL,
 									gelem_editor_dialog->element_group_manager,
-									(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_element)) *)NULL)))
+									(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_element)) *)NULL,
+									(void *)NULL)))
 								{
 									init_widgets=0;
 								}
@@ -714,7 +715,7 @@ DESCRIPTION :
 									gelem_editor_dialog->scene_form,
 									(struct Scene *)NULL,
 									gelem_editor_dialog->scene_manager,
-									(MANAGER_CONDITIONAL_FUNCTION(Scene) *)NULL)))
+									(MANAGER_CONDITIONAL_FUNCTION(Scene) *)NULL,(void *)NULL)))
 								{
 									init_widgets=0;
 								}
@@ -731,6 +732,16 @@ DESCRIPTION :
 								}
 								if (init_widgets)
 								{
+									/* make autoapply flag match the widget */
+									if (XmToggleButtonGetState(
+										gelem_editor_dialog->autoapply_button))
+									{
+										gelem_editor_dialog->autoapply = 1;
+									}
+									else
+									{
+										gelem_editor_dialog->autoapply = 0;
+									}
 									graphical_element_editor_dialog_set_element_group_and_scene(
 										gelem_editor_dialog->dialog,element_group,scene);
 									/* turn on subwidget callbacks */
@@ -948,8 +959,6 @@ graphical_element_editor_dialog widget.
 					XmToggleButtonSetState(gelem_editor_dialog->visibility_button,
 						g_VISIBLE==Scene_get_element_group_visibility(scene,element_group),
 						False);
-					XmToggleButtonSetState(gelem_editor_dialog->autoapply_button,
-						gelem_editor_dialog->autoapply,False);
 				}
 				XtSetSensitive(gelem_editor_dialog->visibility_button,
 					(struct GT_element_group *)NULL != gt_element_group);

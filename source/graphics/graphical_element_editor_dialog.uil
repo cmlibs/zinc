@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : graphical_element_editor_dialog.uil
 !
-! LAST MODIFIED : 21 March 2000
+! LAST MODIFIED : 16 May 2000
 !
 ! DESCRIPTION :
 ! The widgets for the graphical element group editor dialog widget.
@@ -151,6 +151,8 @@ object
 			XmNrightAttachment = XmATTACH_NONE;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNbottomAttachment = XmATTACH_NONE;
+! If I set following here it cannot be overridden in Cmgui file! Hence avoid
+!			XmNset = true;
 			};
 		callbacks
 			{
