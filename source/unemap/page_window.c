@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 28 March 2002
+LAST MODIFIED : 9 May 2002
 
 DESCRIPTION :
 
@@ -18,6 +18,57 @@ WINDOWS - win32 acquisition only version
 	If the point is not NULL then it is displayed/brought to the front/opened
 	(assumes that the parent is a shell).  Otherwise a tool and a shell are
 	created and it displayed/brought to the front/opened.
+
+TO DO:
+???DB.  6 May 2002.  Adding "background" and "ratio" operations for optrodes
+1 How do raw signals get transformed currently
+1.1 Offset and gain.  gain*(raw-offset)
+1.2 Linear combination.  Calculated each time required from raw signals.  Used
+		in:
+1.2.1 extract_signal_information in rig_node
+1.2.2 add_scrolling_device in page_window.c
+1.2.3 start_experiment in page_window.c
+1.2.4 page_auto_range in page_window.c
+1.2.5 page_full_range in page_window.c
+1.2.6 create_Page_window in page_window.c
+1.2.7 create_processed_rig in analysis_work_area.c
+1.2.8 create_Device_description in rig.c
+1.2.9 destroy_Device_description in rig.c
+1.2.10 read_configuration in rig.c
+1.2.11 write_configuration in rig.c
+2 Theory
+2.1 Measure at two frequencies of light
+2.2 Assume that the form of the intensities is
+		I1(t)=(a1*Vm(t)+b1)*Decay(t)
+		I2(t)=(a2*Vm(t)+b2)*Decay(t)
+		Where Vm is the membrane voltage and Decay is related to bleaching of the
+		dye etc
+2.3 Assume that a1<<b1 and a2<<b2 then
+		ratio(t)=I1(t)/I2(t)=(b1/b2)*(1+(a1/b1)*Vm(t))/(1+(a2/b2)*Vm(t))
+			~=(b1/b2)*(1+(a1/b1)*Vm(t))*(1-(a2/b2)*Vm(t))
+			~=(b1/b2)*(1+(a1/b1-a2/b2)*Vm(t))
+3 Background
+3.1 Method
+3.1.1 Acquire an interval
+3.1.2 Calculate the average value for each channel
+3.2 Implementation
+4 Ratio
+4.1 Method
+4.1.1 Calculate the average of the laser monitor signal
+4.1.2 Calculate
+			(channel signal)-(laser monitor signal)*(background average for channel)/
+				(average for laser monitor signal)
+4.1.2.1 The subtraction should remove the laser noise and get the signal in the
+				form of 2.2 (get the aymptote to 0).  So it should be
+				(channel signal)-background average for channel-
+					noise_factor*(laser monitor signal)
+				where is the noise_factor is
+					rms((channel signal)-moving_average(channel signal))/
+						rms(laser monitor signal)
+				but, the signals aren't decaying to the background value.  Fit an
+				exponential?
+4.1.3 Calculate ratios of channel signals
+4.2 Implementation
 ==============================================================================*/
 
 #define BACKGROUND_SAVING
