@@ -2453,14 +2453,14 @@ DESCRIPTION :
 		USE_PARAMETER(minimum_depth_buffer_depth);
 		USE_PARAMETER(minimum_accumulation_buffer_depth);
 #endif /* defined (MOTIF) */
-#if defined (DEBUG)
 		if (buffer->type == GRAPHICS_BUFFER_INVALID_TYPE)
 		{
+#if defined (DEBUG)
 			display_message(ERROR_MESSAGE,"create_Graphics_buffer_offscreen.  "
 				"Unable to create offscreen graphics buffer.");				
-			buffer = (struct Graphics_buffer *)NULL;
-		}
 #endif /* defined (DEBUG) */
+			DESTROY(Graphics_buffer)(&buffer);
+		}
 	}
 	else
 	{
@@ -2510,14 +2510,14 @@ DESCRIPTION :
 		USE_PARAMETER(minimum_depth_buffer_depth);
 		USE_PARAMETER(minimum_accumulation_buffer_depth);
 #endif /* defined (MOTIF) */
-#if defined (DEBUG)
 		if (buffer->type == GRAPHICS_BUFFER_INVALID_TYPE)
 		{
+#if defined (DEBUG)
 			display_message(ERROR_MESSAGE,"create_Graphics_buffer_offscreen.  "
 				"Unable to create offscreen graphics buffer.");				
-			buffer = (struct Graphics_buffer *)NULL;
-		}
 #endif /* defined (DEBUG) */
+			DESTROY(Graphics_buffer)(&buffer);
+		}
 	}
 	else
 	{
@@ -2558,14 +2558,15 @@ DESCRIPTION :
 		USE_PARAMETER(height);
 		USE_PARAMETER(buffer_to_match);
 #endif /* defined (MOTIF) */
-#if defined (DEBUG)
 		if (buffer->type == GRAPHICS_BUFFER_INVALID_TYPE)
 		{
+#if defined (DEBUG)
 			display_message(ERROR_MESSAGE,"create_Graphics_buffer_offscreen_from_buffer.  "
 				"Unable to create offscreen_from_buffer graphics buffer.");				
 			buffer = (struct Graphics_buffer *)NULL;
-		}
 #endif /* defined (DEBUG) */
+			DESTROY(Graphics_buffer)(&buffer);
+		}
 	}
 	else
 	{
@@ -2605,14 +2606,14 @@ DESCRIPTION :
 			minimum_depth_buffer_depth, /*minimum_alpha_buffer_depth*/0,
 			minimum_accumulation_buffer_depth,
 			/*buffer_to_match*/(struct Graphics_buffer *)NULL);
-#if defined (DEBUG)
 		if (buffer->type != GRAPHICS_BUFFER_GLX_X3D_TYPE)
 		{
+#if defined (DEBUG)
 			display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d.  "
 				"Unable to create X3d graphics buffer.");				
-			buffer = (struct Graphics_buffer *)NULL;
-		}
 #endif /* defined (DEBUG) */
+			DESTROY(Graphics_buffer)(&buffer);
+		}
 	}
 	else
 	{
@@ -2648,14 +2649,14 @@ DESCRIPTION :
 			/*minimum_colour_buffer_depth*/0, /*minimum_depth_buffer_depth */0,
 			/*minimum_alpha_buffer_depth*/0, /*minimum_accumulation_buffer_depth*/0,
 			buffer_to_match);
-#if defined (DEBUG)
 		if (buffer->type == GRAPHICS_BUFFER_INVALID_TYPE)
 		{
+#if defined (DEBUG)
 			display_message(ERROR_MESSAGE,"create_Graphics_buffer_X3d_from_buffer.  "
 				"Unable to create X3d graphics buffer.");				
-			buffer = (struct Graphics_buffer *)NULL;
-		}
 #endif /* defined (DEBUG) */
+			DESTROY(Graphics_buffer)(&buffer);
+		}
 	}
 	else
 	{
