@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : import_finite_element.c
 
-LAST MODIFIED : 30 August 2001
+LAST MODIFIED : 3 September 2001
 
 DESCRIPTION :
 The function for importing finite element data, from a file or CMISS (via a
@@ -12,6 +12,7 @@ socket) into the graphical interface to CMISS.
 #include "finite_element/finite_element.h"
 #include "finite_element/import_finite_element.h"
 #include "general/debug.h"
+#include "general/multi_range.h"
 #include "general/myio.h"
 #include "general/mystring.h"
 #include "general/object.h"
@@ -3468,7 +3469,7 @@ int read_FE_node_group_with_order(FILE *input_file,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager,
 	struct FE_node_order_info *node_order_info)
 /*******************************************************************************
-LAST MODIFIED : 6 March 2000
+LAST MODIFIED : 3 September 2001
 
 DESCRIPTION :
 Reads node groups from an <input_file> or the socket (if <input_file> is NULL).
@@ -3485,6 +3486,7 @@ in the order of the file.
 	struct GROUP(FE_element) *same_name_element_group;
 	struct GROUP(FE_node) *existing_group,*nodes_in_file,*same_name_data_group;
 	struct FE_field_order_info *field_order_info;
+	struct Multi_range *new_cmiss_numbers;
 
 	ENTER(read_FE_node_group_with_order);
 	field_order_info = (struct FE_field_order_info *)NULL;
@@ -3492,6 +3494,8 @@ in the order of the file.
 	template_node=(struct FE_node *)NULL;
 	existing_group=(struct GROUP(FE_node) *)NULL;
 	nodes_in_file=(struct GROUP(FE_node) *)NULL;
+	/* use Multi_range to store cmiss numbers of nodes added to existing group */
+	new_cmiss_numbers = CREATE(Multi_range)();
 	return_code=1;
 	input_result=1;
 	/* don't need to cache all node groups, since the groups themselves are
@@ -3531,20 +3535,26 @@ in the order of the file.
 					{
 						if (existing_group)
 						{
-							if (NUMBER_IN_GROUP(FE_node)(existing_group)!=
+							if (!existing_group_empty &&
+								(0 < Multi_range_get_number_of_ranges(new_cmiss_numbers)))
+							{
+								/* report node/data numbers added to existing group */
+								temp_string = (char *)NULL;
+								GET_NAME(GROUP(FE_node))(existing_group, &temp_string);
+								display_message(WARNING_MESSAGE, "The following nodes/data "
+									"were added to group %s during read:", temp_string);
+								DEALLOCATE(temp_string);
+								Multi_range_display_ranges(new_cmiss_numbers);
+								Multi_range_clear(new_cmiss_numbers);
+							}
+							if (NUMBER_IN_GROUP(FE_node)(existing_group) !=
 								NUMBER_IN_GROUP(FE_node)(nodes_in_file))
 							{
-								if (GET_NAME(GROUP(FE_node))(existing_group,&temp_string))
-								{
-									display_message(WARNING_MESSAGE,
-										"File does not contain all nodes in group %s",temp_string);
-									DEALLOCATE(temp_string);
-								}
-								else
-								{
-									display_message(WARNING_MESSAGE,
-										"File does not contain all nodes in group");
-								}
+								temp_string = (char *)NULL;
+								GET_NAME(GROUP(FE_node))(existing_group, &temp_string);
+								display_message(WARNING_MESSAGE,
+									"File does not contain all nodes in group %s", temp_string);
+								DEALLOCATE(temp_string);
 							}
 							MANAGED_GROUP_END_CACHE(FE_node)(existing_group);
 							DESTROY_GROUP(FE_node)(&nodes_in_file);
@@ -3693,33 +3703,18 @@ in the order of the file.
 									if (existing_group)
 									{
 										/* check that node is in the existing group */
-										if (existing_group_empty||
+										if (existing_group_empty ||
 											(!FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)
 												(cm_node_identifier,existing_group)))
 										{
-											/* do not print warnings if adding to empty group */
-											/*???RC.  Not sure we should have these warnings at all */
-											if (!existing_group_empty)
-											{
-												if (GET_NAME(GROUP(FE_node))(existing_group,
-													&temp_string))
-												{
-													display_message(WARNING_MESSAGE,
-														"Node %d not in existing group %s.  Adding",
-														cm_node_identifier,temp_string);
-													DEALLOCATE(temp_string);
-												}
-												else
-												{
-													display_message(WARNING_MESSAGE,
-														"Node %d not in existing group.  Adding",
-														cm_node_identifier);
-												}
-											}
+											/* collate cmiss numbers of nodes added to group */
+											Multi_range_add_range(new_cmiss_numbers,
+												cm_node_identifier, cm_node_identifier);
 											if (!ADD_OBJECT_TO_GROUP(FE_node)(node,existing_group))
 											{
 												display_message(ERROR_MESSAGE,
-													"read_FE_node_group_with_order.  Could not add node to existing_group");
+													"read_FE_node_group_with_order.  "
+													"Could not add node to existing_group");
 												REMOVE_OBJECT_FROM_GROUP(FE_node)(node,nodes_in_file);
 												REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
 												node=(struct FE_node *)NULL;
@@ -3731,7 +3726,8 @@ in the order of the file.
 								else
 								{
 									display_message(ERROR_MESSAGE,
-										"read_FE_node_group_with_order.  Could not add node to nodes_in_file");
+										"read_FE_node_group_with_order.  "
+										"Could not add node to nodes_in_file");
 									REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
 									node=(struct FE_node *)NULL;
 									return_code=0;
@@ -3798,6 +3794,7 @@ in the order of the file.
 	{
 		DEACCESS(FE_node)(&template_node);
 	}
+	DESTROY(Multi_range)(&new_cmiss_numbers);
 	MANAGER_END_CACHE(FE_node)(node_manager);
 #if defined (OLD_CODE)
 	MANAGER_END_CACHE(GROUP(FE_node))(node_group_manager);
@@ -3930,6 +3927,8 @@ node groups are updated to contain nodes used by elements in associated group.
 	struct LIST(FE_node) *nodes_to_add;
 	struct LIST(FE_element) *temp_element_list;
 	struct FE_field_order_info *field_order_info;
+	enum CM_element_type last_cm_element_type;
+	struct Multi_range *new_cmiss_numbers;
 
 	ENTER(read_FE_element_group);
 	field_order_info = (struct FE_field_order_info *)NULL;
@@ -3938,6 +3937,9 @@ node groups are updated to contain nodes used by elements in associated group.
 	existing_group=(struct GROUP(FE_element) *)NULL;
 	elements_in_file=(struct GROUP(FE_element) *)NULL;
 	element_shape=(struct FE_element_shape *)NULL;
+	/* use Multi_range to store cmiss numbers of elements added to existing group */
+	last_cm_element_type = CM_ELEMENT_TYPE_INVALID;
+	new_cmiss_numbers = CREATE(Multi_range)();
 	return_code=1;
 	input_result=1;
 	/* don't need to cache all element groups since each individual group read
@@ -4029,6 +4031,20 @@ node groups are updated to contain nodes used by elements in associated group.
 							{
 								display_message(WARNING_MESSAGE,"read_FE_element_group.  "
 									"No node group of same name as element group %s",group_name);
+							}
+							if (!existing_group_empty &&
+								(0 < Multi_range_get_number_of_ranges(new_cmiss_numbers)))
+							{
+								/* report element numbers added to non-empty existing group */
+								temp_string = (char *)NULL;
+								GET_NAME(GROUP(FE_element))(existing_group, &temp_string);
+								display_message(WARNING_MESSAGE,
+									"The following %s(s) were added to group %s during read:",
+									CM_element_type_string(last_cm_element_type), temp_string);
+								DEALLOCATE(temp_string);
+								Multi_range_display_ranges(new_cmiss_numbers);
+								Multi_range_clear(new_cmiss_numbers);
+								last_cm_element_type = CM_ELEMENT_TYPE_INVALID;
 							}
 							if (NUMBER_IN_GROUP(FE_element)(existing_group)!=
 								NUMBER_IN_GROUP(FE_element)(elements_in_file))
@@ -4226,24 +4242,28 @@ node groups are updated to contain nodes used by elements in associated group.
 											(!FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(
 												element->identifier,existing_group)))
 										{
-											/* do not print warnings if adding to empty group */
-											/*???RC.  Not sure we should have these warnings at all */
 											if (!existing_group_empty)
 											{
-												if (GET_NAME(GROUP(FE_element))(existing_group,
-													&temp_string))
+												/* report on elements of different type added thus far */
+												if ((0 <
+													Multi_range_get_number_of_ranges(new_cmiss_numbers)) &&
+													(element->identifier->type != last_cm_element_type))
 												{
-													display_message(WARNING_MESSAGE,
-														"Element (%d) not in existing group %s.  Adding",
-														(element->cm).number,temp_string);
+													/* report element numbers added to existing group */
+													temp_string = (char *)NULL;
+													GET_NAME(GROUP(FE_element))(existing_group, &temp_string);
+													display_message(WARNING_MESSAGE, "The following %s(s) "
+														"were added to group %s during read:",
+														CM_element_type_string(last_cm_element_type),
+														temp_string);
 													DEALLOCATE(temp_string);
+													Multi_range_display_ranges(new_cmiss_numbers);
+													Multi_range_clear(new_cmiss_numbers);
 												}
-												else
-												{
-													display_message(WARNING_MESSAGE,
-														"Element (%d) not in existing group.  Adding",
-														(element->cm).number);
-												}
+												/* collate cmiss numbers of elements added to group */
+												Multi_range_add_range(new_cmiss_numbers,
+													element->identifier->number, element->identifier->number);
+												last_cm_element_type = element->identifier->type;
 											}
 											if (!ADD_OBJECT_TO_GROUP(FE_element)(element,
 												existing_group))
@@ -4330,6 +4350,7 @@ node groups are updated to contain nodes used by elements in associated group.
 	{
 		DEACCESS(FE_element)(&template_element);
 	}
+	DESTROY(Multi_range)(&new_cmiss_numbers);
 	if (!return_code)
 	{
 		if (existing_group)
