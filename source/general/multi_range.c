@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : multi_range.c
 
-LAST MODIFIED : 21 September 2000
+LAST MODIFIED : 3 October 2000
 
 DESCRIPTION :
 Structure for storing and manipulating multiple, non-overlapping ranges of
@@ -539,7 +539,7 @@ Returns true if <value> is in any range in <multi_range>.
 int Multi_range_intersect(struct Multi_range *multi_range,
 	struct Multi_range *other_multi_range)
 /*******************************************************************************
-LAST MODIFIED : 28 March 2000
+LAST MODIFIED : 3 October 2000
 
 DESCRIPTION :
 Modifies <multi_range> so it contains only ranges or part ranges in both it and
@@ -555,12 +555,13 @@ Modifies <multi_range> so it contains only ranges or part ranges in both it and
 		if (0<multi_range->number_of_ranges)
 		{
 			start=multi_range->range[0].start;
+			stop=start-1;
 			if (Multi_range_is_value_in_range(other_multi_range,start))
 			{
-				Multi_range_get_next_stop_value(other_multi_range,start,&start);
+				Multi_range_get_next_stop_value(other_multi_range,stop,&start);
+				stop=start;
 				start++;
 			}
-			stop=start-1;
 			last_stop=multi_range->range[multi_range->number_of_ranges-1].stop;
 			while ((stop<last_stop)&&return_code)
 			{
@@ -575,6 +576,7 @@ Modifies <multi_range> so it contains only ranges or part ranges in both it and
 				if (return_code=Multi_range_remove_range(multi_range,start,stop))
 				{
 					Multi_range_get_next_stop_value(other_multi_range,stop,&start);
+					stop=start;
 					start++;
 				}
 			}
