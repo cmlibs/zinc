@@ -1,7 +1,7 @@
 /******************************************************************
   FILE: computed_field_throw_away_weakest.c
 
-  LAST MODIFIED: 17 March 2004
+  LAST MODIFIED: 14 May 2004
 
   DESCRIPTION:Implement throw away operation.
 ==================================================================*/
@@ -352,59 +352,64 @@ No special criteria.
 ==============================================================================*/
 
 
-FE_value Percent_under(FE_value *data_index, int w, int h, FE_value amount)
+FE_value Percent_under(FE_value *data_index, int *s, int dim, FE_value amount)
 /********************************************************************
  LAST MODIFIED: 19 March 2004
  DESCRIPTION: Returns the percentage of coefficients under <amount>
  =====================================================================*/
 {
-	int num_thrown = 0, x, y;
+	int num_thrown = 0, i, data_size;
         ENTER(Percent_under);
-	for (y = 0; y < h; y++)
+
+	data_size = 1;
+	for (i = 0; i < dim; i++)
 	{
-	        for (x = 0; x < w; x++)
+	        data_size *= s[i];
+	}
+	for (i = 0; i < data_size; i++)
+	{
+	        if (fabs(data_index[i]) <= amount)
 		{
-		        if (fabs(data_index[y * w + x]) <= amount)
-			{
-			        num_thrown++;
-			}
+		        num_thrown++;
 		}
 	}
 
-	return ((FE_value)(num_thrown) / (FE_value)(w * h));
+	return ((FE_value)(num_thrown) / (FE_value)(data_size));
 }/* Percent_under */
 
 
 #define MAX_ITER 250
 
-int Throw_away(FE_value *data_index, int w, int h, double percentage)
+int Throw_away(FE_value *data_index, int *s, int dim, double percentage)
 /****************************************************************
  LAST MODIFIED: 19 March 2004
  DESCRIPTION: Throw away weakest <percentage>% of data values
  ================================================================*/
 {
 	FE_value low, high, thresh, loss;
-	int i,j;
+	int i,j, data_size;
 	int return_code;
 	ENTER(Throw_away);
         return_code = 1;
 	/* find max */
 	low = high = 0.0;
-	for (j=0; j<h; j++)
+	data_size = 1;
+	for (i = 0; i < dim; i++)
 	{
-	        for (i=0; i<w; i++)
+	        data_size *= s[i];
+	}
+	for (j = 0; j < data_size; j++)
+	{
+	        if (fabs(data_index[j]) > high)
 		{
-		        if (fabs(data_index[j * w + i]) > high)
-			{
-			       high = fabs(data_index[j * w + i]);
-			}
+		        high = fabs(data_index[j]);
 		}
 	}
 	/* binary search */
 	for (i = 0; i < MAX_ITER; i++)
 	{
 		thresh = (low + high)/2.0;
-		loss = Percent_under(data_index, w, h, thresh);
+		loss = Percent_under(data_index, s, dim, thresh);
 
 		if (loss < percentage)
 		{
@@ -420,11 +425,11 @@ int Throw_away(FE_value *data_index, int w, int h, double percentage)
 	}
 
 	/* zero out anything too low */
-	for (j=0; j<h; j++)
+	for (j = 0; j < data_size; j++)
 	{
-	        for (i=0; i<w; i++)
+	        if (fabs(data_index[j]) < thresh)
 		{
-		        if (fabs(data_index[j * w + i]) < thresh) data_index[j * w + i] = 0.0;
+		        data_index[j] = 0.0;
 		}
 	}
 	LEAVE;
@@ -440,7 +445,7 @@ int Image_cache_throw_away_weakest(struct Image_cache *image, double percentage)
 {
         FE_value  *buf, *data_index, *result_index;
 	char *storage;
-        int i, pass, width, height,  storage_size;
+        int i, pass, *s, storage_size, buf_size;
 	int return_code;
 
 	ENTER(Image_cache_throw_away_weakest);
@@ -449,19 +454,23 @@ int Image_cache_throw_away_weakest(struct Image_cache *image, double percentage)
 	        return_code = 1;
 
 		/* allocate storage */
-		width = image->sizes[0];
-		height = image->sizes[1];
 		storage_size = image->depth;
+		buf_size = 1;
 		for (i = 0 ; i < image->dimension ; i++)
 		{
 			storage_size *= image->sizes[i];
+			buf_size *= image->sizes[i];
 		}
 
-		if (ALLOCATE(buf, FE_value, width * height) &&
+		if (ALLOCATE(buf, FE_value, buf_size) &&
+		            ALLOCATE(s, int, image->dimension) &&
 		            ALLOCATE(storage, char, storage_size * sizeof(FE_value)))
 		{
 		        return_code = 1;
-
+			for (i = 0; i < image->dimension; i++)
+			{
+			        s[i] = image->sizes[i];
+			}
 			result_index = (FE_value *)storage;
 			for (i = 0 ; i < storage_size ; i++)
 			{
@@ -478,7 +487,7 @@ int Image_cache_throw_away_weakest(struct Image_cache *image, double percentage)
 				{
 				        *(buf + i) = *(data_index + i * image->depth + pass);
 				}
-				Throw_away(buf, width, height, percentage);
+				Throw_away(buf, s, image->dimension, percentage);
 				for (i = (storage_size/image->depth) -1; i >= 0; i--)
 				{
 				        *(result_index + i * image->depth + pass) = *(buf + i);
@@ -496,6 +505,7 @@ int Image_cache_throw_away_weakest(struct Image_cache *image, double percentage)
                                 DEALLOCATE(storage);
 			}
 			DEALLOCATE(buf);
+			DEALLOCATE(s);
                 }
                 else
                 {
