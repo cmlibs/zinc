@@ -3783,7 +3783,18 @@ will produce the range of all the graphics objects.
 						surface= *surface_ptr;
 						while (surface)
 						{
-							number_of_positions=(surface->n_pts1)*(surface->n_pts2);
+							switch(surface->polygon)
+							{
+								case g_QUADRILATERAL:
+								{
+									number_of_positions=(surface->n_pts1)*(surface->n_pts2);
+								} break;
+								case g_TRIANGLE:
+								{
+									number_of_positions=(surface->n_pts1)*
+										(surface->n_pts1+1)/2;
+								} break;
+							}
 							if ((position=surface->pointlist)&&(0<number_of_positions))
 							{
 								if (*first)
