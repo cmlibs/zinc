@@ -79,6 +79,7 @@ TO DO :
 
 #include "service.h"
 #include "general/debug.h"
+#include "general/myio.h"
 #if defined (USE_UNEMAP_HARDWARE)
 #include "unemap/unemap_hardware.h"
 #endif /* defined (USE_UNEMAP_HARDWARE) */
@@ -528,7 +529,7 @@ required.
 	return_code=0;
 	if (destination&&(0<number_of_bytes)&&source)
 	{
-#if defined (__BYTE_ORDER) && (1234==__BYTE_ORDER)
+#if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
 		if (big_endian)
 		{
 			source_byte=source;
@@ -551,7 +552,7 @@ required.
 				source_byte++;
 			}
 		}
-#else /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#else /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 		if (big_endian)
 		{
 			source_byte=source;
@@ -574,7 +575,7 @@ required.
 				destination_byte++;
 			}
 		}
-#endif /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 	}
 
 	return (return_code);
@@ -928,11 +929,11 @@ Sends samples down the acquired socket.
 			retval=socket_send(acquired_socket,out_buffer,out_buffer_size,0);
 			out_buffer_size=number_of_samples*number_of_channels*sizeof(short);
 			/* in-line for speed */
-#if defined (__BYTE_ORDER) && (1234==__BYTE_ORDER)
+#if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
 			if (!big_endian)
-#else /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#else /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 			if (big_endian)
-#endif /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 			{
 				out_buffer_entry=out_buffer;
 				for (i=number_of_samples*number_of_channels;i>0;i--)
@@ -1125,11 +1126,11 @@ back.
 		socket_send_samples_acquired_data_void))
 	{
 		/* in-line for speed */
-#if defined (__BYTE_ORDER) && (1234==__BYTE_ORDER)
+#if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
 		if (!(socket_send_samples_acquired_data->big_endian))
-#else /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#else /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 		if (socket_send_samples_acquired_data->big_endian)
-#endif /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 		{
 			sample=(unsigned char *)samples;
 			number_left=number_of_samples;
@@ -1946,7 +1947,7 @@ DESCRIPTION :
 								if (return_code)
 								{
 									/* in-line for speed */
-#if defined (__BYTE_ORDER) && (1234==__BYTE_ORDER)
+#if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
 									if (!big_endian)
 									{
 										out_buffer_entry=out_buffer;
@@ -1958,7 +1959,7 @@ DESCRIPTION :
 											out_buffer_entry += 2;
 										}
 									}
-#else /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#else /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 									if (!big_endian)
 									{
 										out_buffer_entry=out_buffer;
@@ -1970,7 +1971,7 @@ DESCRIPTION :
 											out_buffer_entry +=2;
 										}
 									}
-#endif /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 									*out_buffer_address=out_buffer;
 									*out_buffer_size_address=size;
 								}

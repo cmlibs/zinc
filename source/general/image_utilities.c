@@ -13,14 +13,11 @@ Utilities for handling images.
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#if defined (BYTE_ORDER_CODE)
-#include <ctype.h> /*???DB.  Contains definition of __BYTE_ORDER for Linux */
-#endif /* defined (BYTE_ORDER_CODE) */
-
 #include "general/debug.h"
 #include "general/enumerator_private.h"
 #include "general/image_utilities.h"
 #include "general/indexed_list_private.h"
+#include "general/myio.h"
 #include "general/mystring.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -28,12 +25,6 @@ Utilities for handling images.
 /* image magick interfaces */
 #include "magick/api.h"
 #endif /* defined (IMAGEMAGICK) */
-
-#if defined (BYTE_ORDER_CODE)
-#if defined SGI
-#define __BYTE_ORDER 4321 
-#endif /* defined SGI */
-#endif /* defined (BYTE_ORDER_CODE) */
 
 /* #define DEBUG 1 */
 
@@ -248,10 +239,10 @@ To take care of little/big endian.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (__BYTE_ORDER)
+#if defined (BYTE_ORDER)
 	int i,j;
 	unsigned char *bottom_byte,byte,*element,*top_byte;
-#endif /* defined (__BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) */
 
 	ENTER(byte_swap);
 	USE_PARAMETER(byte_array);
@@ -259,12 +250,12 @@ To take care of little/big endian.
 	USE_PARAMETER(number_of_values);
 	USE_PARAMETER(least_to_most);
 	return_code=1;
-#if defined (__BYTE_ORDER)
-#if (1234==__BYTE_ORDER)
+#if defined (BYTE_ORDER)
+#if (1234==BYTE_ORDER)
 	if (!least_to_most)
-#else /* (1234==__BYTE_ORDER) */
+#else /* (1234==BYTE_ORDER) */
 	if (least_to_most)
-#endif /* (1234==__BYTE_ORDER) */
+#endif /* (1234==BYTE_ORDER) */
 	{
 		element=byte_array;
 		for (j=number_of_values;j>0;j--)
@@ -282,7 +273,7 @@ To take care of little/big endian.
 			element += value_size;
 		}
 	}
-#endif /* defined (__BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) */
 	LEAVE;
 
 	return (return_code);
@@ -300,19 +291,19 @@ the original values are not modified.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (__BYTE_ORDER)
+#if defined (BYTE_ORDER)
 	int i,j;
 	unsigned char *bottom_byte,byte,*element,*temp_byte_array,*top_byte;
-#endif /* defined (__BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) */
 
 	ENTER(byte_swap_and_write);
 	return_code=0;
-#if defined (__BYTE_ORDER)
-#if (1234==__BYTE_ORDER)
+#if defined (BYTE_ORDER)
+#if (1234==BYTE_ORDER)
 	if (!least_to_most)
-#else /* (1234==__BYTE_ORDER) */
+#else /* (1234==BYTE_ORDER) */
 	if (least_to_most)
-#endif /* (1234==__BYTE_ORDER) */
+#endif /* (1234==BYTE_ORDER) */
 	{
 		/* we must copy the bytes before reordering so as not to mess up the 
 			original data */
@@ -349,10 +340,10 @@ the original values are not modified.
 	{
 		return_code=fwrite(byte_array,value_size,number_of_values,output_file);
 	}
-#else /* defined (__BYTE_ORDER) */
+#else /* defined (BYTE_ORDER) */
 	USE_PARAMETER(least_to_most);
 	return_code=fwrite(byte_array,value_size,number_of_values,output_file);
-#endif /* defined (__BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) */
 	LEAVE;
 
 	return (return_code);
@@ -369,19 +360,19 @@ Performs the read and byte.
 ==============================================================================*/
 {
 	int return_code;
-#if defined (__BYTE_ORDER)
+#if defined (BYTE_ORDER)
 	int i,j;
 	unsigned char *bottom_byte,byte,*element,*top_byte;
-#endif /* defined (__BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) */
 
 	ENTER(read_and_byte_swap);
 	return_code=0;
-#if defined (__BYTE_ORDER)
-#if (1234==__BYTE_ORDER)
+#if defined (BYTE_ORDER)
+#if (1234==BYTE_ORDER)
 	if (!least_to_most)
-#else /* (1234==__BYTE_ORDER) */
+#else /* (1234==BYTE_ORDER) */
 	if (least_to_most)
-#endif /* (1234==__BYTE_ORDER) */
+#endif /* (1234==BYTE_ORDER) */
 	{
 		if (number_of_values==(return_code=fread(byte_array,value_size,
 			number_of_values,input_file)))
@@ -407,10 +398,10 @@ Performs the read and byte.
 	{
 		return_code=fread(byte_array,value_size,number_of_values,input_file);
 	}
-#else /* defined (__BYTE_ORDER) */
+#else /* defined (BYTE_ORDER) */
 	USE_PARAMETER(least_to_most);
 	return_code=fread(byte_array,value_size,number_of_values,input_file);
-#endif /* defined (__BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) */
 	LEAVE;
 
 	return (return_code);
@@ -425,7 +416,7 @@ Performs the read and byte.
 #define UNSIGNED_LONG_INT_FROM_4_BYTES(byte_array) *((unsigned long int *)(byte_array))
 #define UNSIGNED_SHORT_INT_FROM_2_BYTES(byte_array) *((unsigned short int *)(byte_array))
 
-/* following clashes with the __BYTE_ORDER #define which assumes casting will
+/* following clashes with the BYTE_ORDER #define which assumes casting will
 	 be done. Casting fails on the 64-bit version */
 /*
 #define UNSIGNED_LONG_INT_FROM_4_BYTES(byte_array) \
@@ -1925,9 +1916,9 @@ For writing a field in an image file directory.
 	fwrite(&tag,sizeof(unsigned short),1,tiff_file);
 	fwrite(&type,sizeof(unsigned short),1,tiff_file);
 	fwrite(&count,sizeof(unsigned long),1,tiff_file);
-#if defined (__BYTE_ORDER) && (1234==__BYTE_ORDER)
+#if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
 	value_offset_temp=value_offset;
-#else /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#else /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 	if (1==count)
 	{
 		switch (type)
@@ -1953,7 +1944,7 @@ For writing a field in an image file directory.
 	{
 		value_offset_temp=value_offset;
 	}
-#endif /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 	fwrite(&value_offset_temp,sizeof(unsigned long),1,tiff_file);
 	LEAVE;
 
@@ -2269,11 +2260,11 @@ Not working for 64 bit as assumes a long is 4 bytes!
 				if (output_file=fopen(file_name,"wb"))
 				{
 					/* write the image file header */
-#if defined (__BYTE_ORDER) && (1234==__BYTE_ORDER)
+#if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
 					byte_order=TIFF_LO_HI;
-#else /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#else /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 					byte_order=TIFF_HI_LO;
-#endif /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 					image_file_directory_offset=sizeof(unsigned short);
 					fwrite(&byte_order,sizeof(unsigned short),1,output_file);
 					version=42;
@@ -2746,11 +2737,11 @@ Writes an image in TIFF file format.
 		if (output_file=fopen(file_name,"wb"))
 		{
 			/* write the tiff file header */
-#if defined (__BYTE_ORDER) && (1234==__BYTE_ORDER)
+#if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
 			byte_order=TIFF_LO_HI;
-#else /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#else /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 			byte_order=TIFF_HI_LO;
-#endif /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 			image_function_definition_offset=sizeof(unsigned short);
 			fwrite(&byte_order,sizeof(unsigned short),1,output_file);
 			version=42;
@@ -2768,35 +2759,35 @@ Writes an image in TIFF file format.
 			image_function_definitions.image_width.tag=256;
 			image_function_definitions.image_width.type=TIFF_SHORT_FIELD;
 			image_function_definitions.image_width.length=1;
-#if defined (__BYTE_ORDER) && (1234==__BYTE_ORDER)
+#if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
 			image_function_definitions.image_width.value_offset=number_of_columns;
-#else /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#else /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 			image_function_definitions.image_width.value_offset=number_of_columns<<16;
-#endif /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 			image_function_definitions.image_length.tag=257;
 			image_function_definitions.image_length.type=TIFF_SHORT_FIELD;
 			image_function_definitions.image_length.length=1;
-#if defined (__BYTE_ORDER) && (1234==__BYTE_ORDER)
+#if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
 			image_function_definitions.image_length.value_offset=number_of_rows;
-#else /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#else /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 			image_function_definitions.image_length.value_offset=number_of_rows<<16;
-#endif /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 			image_function_definitions.bits_per_sample.tag=258;
 			image_function_definitions.bits_per_sample.type=TIFF_SHORT_FIELD;
 			image_function_definitions.bits_per_sample.length=1;
-#if defined (__BYTE_ORDER) && (1234==__BYTE_ORDER)
+#if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
 			image_function_definitions.bits_per_sample.value_offset=8;
-#else /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#else /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 			image_function_definitions.bits_per_sample.value_offset=8<<16;
-#endif /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 			image_function_definitions.photometric_int.tag=262;
 			image_function_definitions.photometric_int.type=TIFF_SHORT_FIELD;
 			image_function_definitions.photometric_int.length=1;
-#if defined (__BYTE_ORDER) && (1234==__BYTE_ORDER)
+#if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
 			image_function_definitions.photometric_int.value_offset=TIFF_RGB;
-#else /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#else /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 			image_function_definitions.photometric_int.value_offset=TIFF_RGB<<16;
-#endif /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 			image_function_definitions.strip_offsets.tag=273;
 			image_function_definitions.strip_offsets.type=TIFF_LONG_FIELD;
 			image_function_definitions.strip_offsets.length=1;
@@ -2806,11 +2797,11 @@ Writes an image in TIFF file format.
 			image_function_definitions.samples_per_pixel.tag=277;
 			image_function_definitions.samples_per_pixel.type=TIFF_SHORT_FIELD;
 			image_function_definitions.samples_per_pixel.length=1;
-#if defined (__BYTE_ORDER) && (1234==__BYTE_ORDER)
+#if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
 			image_function_definitions.samples_per_pixel.value_offset=3;
-#else /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#else /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 			image_function_definitions.samples_per_pixel.value_offset=3<<16;
-#endif /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 			image_function_definitions.rows_per_strip.tag=278;
 			image_function_definitions.rows_per_strip.type=TIFF_LONG_FIELD;
 			image_function_definitions.rows_per_strip.length=1;
@@ -6398,11 +6389,11 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 								{
 									for (i = 0; i < number_of_components; i++)
 									{
-#if (1234==__BYTE_ORDER)
+#if (1234==BYTE_ORDER)
 										short_value[i] = (((unsigned short)(*(p + 1))) << 8) - (*p);
-#else /* (1234==__BYTE_ORDER) */
+#else /* (1234==BYTE_ORDER) */
 										short_value[i] = (((unsigned short)(*p)) << 8) - (*(p + 1));
-#endif /* (1234==__BYTE_ORDER) */
+#endif /* (1234==BYTE_ORDER) */
 										p += 2;
 									}
 									q->red = short_value[0];
@@ -6687,13 +6678,13 @@ equal to the number_of_components.
 					{
 						if (2 == cmgui_image->number_of_bytes_per_component)
 						{
-#if (1234==__BYTE_ORDER)
+#if (1234==BYTE_ORDER)
 							short_value = 0xFFFF -
 								(((unsigned short)(*(temp_dest + 1))) << 8) - (*temp_dest);
-#else /* (1234==__BYTE_ORDER) */
+#else /* (1234==BYTE_ORDER) */
 							short_value = 0xFFFF -
 								(((unsigned short)(*temp_dest)) << 8) - (*(temp_dest + 1));
-#endif /* (1234==__BYTE_ORDER) */
+#endif /* (1234==BYTE_ORDER) */
 							*temp_dest = *short_source;
 							*(temp_dest + 1) = *(short_source + 1);
 						}

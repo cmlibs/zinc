@@ -185,6 +185,7 @@ Here is a sample of the format of the output file:
 #include <string.h>
 /*???DB.  Needed for isdigit, etc */
 #include <ctype.h>
+#include "general/myio.h"
 
 /******************************************************************************
 
@@ -1432,7 +1433,7 @@ printf("number_of_400=%d\n",number_of_400);
 						if (((unsigned char)(record[1])<4)&&(sync_byte==record[0])&&
 							check_sum((unsigned char *)record))
 						{
-#if !defined (__BYTE_ORDER) || (1234!=__BYTE_ORDER)
+#if !defined (BYTE_ORDER) || (1234!=BYTE_ORDER)
 							/* convert from big to little endian */
 							temp_char=record[2];
 							record[2]=record[5];
@@ -1440,7 +1441,7 @@ printf("number_of_400=%d\n",number_of_400);
 							temp_char=record[3];
 							record[3]=record[4];
 							record[4]=temp_char;
-#endif /* !defined (__BYTE_ORDER) || (1234!=__BYTE_ORDER) */
+#endif /* !defined (BYTE_ORDER) || (1234!=BYTE_ORDER) */
 							memcpy((char *)&time,record+2,sizeof(unsigned long));
 							if (found)
 							{
@@ -1685,7 +1686,7 @@ for (i=0;i<16;i++)
 										check_sum((unsigned char *)record))
 									{
 										/* extract the time */
-#if !defined (__BYTE_ORDER) || (1234!=__BYTE_ORDER)
+#if !defined (BYTE_ORDER) || (1234!=BYTE_ORDER)
 										/* convert from big to little endian */
 										temp_char=record[2];
 										record[2]=record[5];
@@ -1693,7 +1694,7 @@ for (i=0;i<16;i++)
 										temp_char=record[3];
 										record[3]=record[4];
 										record[4]=temp_char;
-#endif /* !defined (__BYTE_ORDER) || (1234!=__BYTE_ORDER) */
+#endif /* !defined (BYTE_ORDER) || (1234!=BYTE_ORDER) */
 										memcpy((char *)&time,record+2,sizeof(unsigned long));
 										/* unpack the 12-bit signal data */
 										packed=(unsigned char *)(record+7);

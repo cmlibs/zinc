@@ -23,6 +23,7 @@ Functions for opening and closing the user interface.
 #include <Mrm/MrmPublic.h>
 #endif /* defined (MOTIF) */
 #include "general/debug.h"
+#include "general/myio.h"
 #if !defined (WINDOWS_DEV_FLAG)
 #if defined (EXT_INPUT)
 #include "io_devices/input_module.h"
@@ -2113,8 +2114,8 @@ success and 0 for failure.
 				j=0;
 				for (i=0;i<string_length-1;i+=6)
 				{
-#if defined (__BYTE_ORDER)
-#if (1234==__BYTE_ORDER)
+#if defined (BYTE_ORDER)
+#if (1234==BYTE_ORDER)
 				  char tmp_string[6];
 				  tmp_string[0]=base64_string[i + 5];
 				  tmp_string[1]=base64_string[i + 4];
@@ -2123,12 +2124,12 @@ success and 0 for failure.
 				  tmp_string[4]=base64_string[i + 1];
 				  tmp_string[5]=base64_string[i];
 					uid_long_data=a64l(tmp_string);
-#else /* (1234==__BYTE_ORDER) */
+#else /* (1234==BYTE_ORDER) */
 					uid_long_data=a64l(base64_string + i);
-#endif /* (1234==__BYTE_ORDER) */
-#else /* defined (__BYTE_ORDER) */
+#endif /* (1234==BYTE_ORDER) */
+#else /* defined (BYTE_ORDER) */
 					uid_long_data=a64l(base64_string + i);
-#endif /* defined (__BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) */
 					total_uid[j]=(char)(255 & uid_long_data);
 					j++;
 					total_uid[j]=(char)(255 & (uid_long_data >> 8));
@@ -2243,8 +2244,8 @@ success and 0 for failure.
 								length=strlen(base64_strings[k]);
 								for (i=0;i<length-1;i+=6)
 								{
-#if defined (__BYTE_ORDER)
-#if (1234==__BYTE_ORDER)
+#if defined (BYTE_ORDER)
+#if (1234==BYTE_ORDER)
 									char tmp_string[6];
 									tmp_string[0]=base64_strings[k][i + 5];
 									tmp_string[1]=base64_strings[k][i + 4];
@@ -2253,12 +2254,12 @@ success and 0 for failure.
 									tmp_string[4]=base64_strings[k][i + 1];
 									tmp_string[5]=base64_strings[k][i];
 									uid_long_data=a64l(tmp_string);
-#else /* (1234==__BYTE_ORDER) */
+#else /* (1234==BYTE_ORDER) */
 									uid_long_data=a64l(base64_strings[k] + i);
-#endif /* (1234==__BYTE_ORDER) */
-#else /* defined (__BYTE_ORDER) */
+#endif /* (1234==BYTE_ORDER) */
+#else /* defined (BYTE_ORDER) */
 									uid_long_data=a64l(base64_strings[k] + i);
-#endif /* defined (__BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) */
 									total_uid[j]=(char)(255 & uid_long_data);
 									j++;
 									total_uid[j]=(char)(255 & (uid_long_data >> 8));

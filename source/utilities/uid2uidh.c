@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <ctype.h> /*???DB.  Contains definition of __BYTE_ORDER for Linux */
+#include <ctype.h> /*???DB.  Contains definition of BYTE_ORDER for Linux */
 #include <libgen.h>
 
 /* These functions are not ANSI so don't get included in stdlib.h */
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 								       char_data[1], char_data[2], char_data[3],
 								       char_data[4], char_data[5]);
 #endif /* defined (DEBUG) */
-#if (defined (__BYTE_ORDER)) && (1234==__BYTE_ORDER)
+#if (defined (BYTE_ORDER)) && (1234==BYTE_ORDER)
 								for(i = 0 ; i < 6 ; i++)
 								{
 									if(char_data[i])
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 										}
 									}
 								}							
-#else /* (defined (__BYTE_ORDER)) && (1234==__BYTE_ORDER) */
+#else /* (defined (BYTE_ORDER)) && (1234==BYTE_ORDER) */
 								for( i = 0 ; i < 6 ; i++)
 								{
 									if(char_data[i])
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
 										}
 									}
 								}
-#endif /* (defined (__BYTE_ORDER)) && (1234==__BYTE_ORDER) */
+#endif /* (defined (BYTE_ORDER)) && (1234==BYTE_ORDER) */
 							}
 					
 							fwrite(out_data, sizeof(char), 6, outfile);

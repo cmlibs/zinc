@@ -670,9 +670,9 @@ Reads a .rdt signal file produced by ART's CardioMapp program.
 ???DB.  Could read the header field by field (BINARY_FILE_READ)
 ==============================================================================*/
 {
-#if !defined (__BYTE_ORDER) || (1234!=__BYTE_ORDER)
+#if !defined (BYTE_ORDER) || (1234!=BYTE_ORDER)
 	char *swap,temp_char;
-#endif /* !defined (__BYTE_ORDER) || (1234!=__BYTE_ORDER) */
+#endif /* !defined (BYTE_ORDER) || (1234!=BYTE_ORDER) */
 	char header_buffer[1446];
 	float sampling_frequency;
 	FILE *cardiomapp_file;
@@ -691,30 +691,30 @@ Reads a .rdt signal file produced by ART's CardioMapp program.
 			/* read the file header */
 			if (1446==fread(header_buffer,sizeof(char),1446,cardiomapp_file))
 			{
-#if !defined (__BYTE_ORDER) || (1234!=__BYTE_ORDER)
+#if !defined (BYTE_ORDER) || (1234!=BYTE_ORDER)
 				/* convert from big to little endian */
 				swap=header_buffer+1380;
 				temp_char=swap[0];
 				swap[0]=swap[1];
 				swap[1]=temp_char;
-#endif /* !defined (__BYTE_ORDER) || (1234!=__BYTE_ORDER) */
+#endif /* !defined (BYTE_ORDER) || (1234!=BYTE_ORDER) */
 				number_of_signals=(int)(*((short *)(header_buffer+1380)));
-#if !defined (__BYTE_ORDER) || (1234!=__BYTE_ORDER)
+#if !defined (BYTE_ORDER) || (1234!=BYTE_ORDER)
 				/* convert from big to little endian */
 				swap=header_buffer+256;
 				temp_char=swap[0];
 				swap[0]=swap[1];
 				swap[1]=temp_char;
-#endif /* !defined (__BYTE_ORDER) || (1234!=__BYTE_ORDER) */
+#endif /* !defined (BYTE_ORDER) || (1234!=BYTE_ORDER) */
 				number_of_samples=(int)(*((short *)(header_buffer+256)))*
 					(int)DMA_TRANSFER_WORDS;
-#if !defined (__BYTE_ORDER) || (1234!=__BYTE_ORDER)
+#if !defined (BYTE_ORDER) || (1234!=BYTE_ORDER)
 				/* convert from big to little endian */
 				swap=header_buffer+1378;
 				temp_char=swap[0];
 				swap[0]=swap[1];
 				swap[1]=temp_char;
-#endif /* !defined (__BYTE_ORDER) || (1234!=__BYTE_ORDER) */
+#endif /* !defined (BYTE_ORDER) || (1234!=BYTE_ORDER) */
 				sampling_frequency=(float)(*((short *)(header_buffer+1378)));
 				if ((0<number_of_signals)&&(0==number_of_samples%number_of_signals)&&
 					(0<(number_of_samples /= number_of_signals))&&
@@ -736,13 +736,13 @@ Reads a .rdt signal file produced by ART's CardioMapp program.
 							value=signal_buffer->signals.short_int_values;
 							for (i=number_of_signals*number_of_samples;i>0;i--)
 							{
-#if !defined (__BYTE_ORDER) || (1234!=__BYTE_ORDER)
+#if !defined (BYTE_ORDER) || (1234!=BYTE_ORDER)
 								/* convert from big to little endian */
 								swap=(char *)value;
 								temp_char=swap[0];
 								swap[0]=swap[1];
 								swap[1]=temp_char;
-#endif /* !defined (__BYTE_ORDER) || (1234!=__BYTE_ORDER) */
+#endif /* !defined (BYTE_ORDER) || (1234!=BYTE_ORDER) */
 								*value &= 0x0fff;
 								*value -= 2048;
 								value++;
@@ -910,7 +910,7 @@ int main()
 		if (1==fread((char *)&rdt_parameters,sizeof(struct Rdt_parameters),1,
 			cardiomapp_file))
 		{
-#if !defined (__BYTE_ORDER) || (1234!=__BYTE_ORDER)
+#if !defined (BYTE_ORDER) || (1234!=BYTE_ORDER)
 			/* convert from big to little endian */
 			swap=(char *)&(rdt_parameters.id_stamp);
 			temp_char=swap[0];
@@ -919,9 +919,9 @@ int main()
 			temp_char=swap[1];
 			swap[1]=swap[2];
 			swap[2]=temp_char;
-#endif /* !defined (__BYTE_ORDER) || (1234!=__BYTE_ORDER) */
+#endif /* !defined (BYTE_ORDER) || (1234!=BYTE_ORDER) */
 			printf("%d\n",rdt_parameters.id_stamp);
-#if !defined (__BYTE_ORDER) || (1234!=__BYTE_ORDER)
+#if !defined (BYTE_ORDER) || (1234!=BYTE_ORDER)
 			/* convert from big to little endian */
 			swap=(char *)&(rdt_parameters.modify_stamp);
 			temp_char=swap[0];
@@ -930,9 +930,9 @@ int main()
 			temp_char=swap[1];
 			swap[1]=swap[2];
 			swap[2]=temp_char;
-#endif /* !defined (__BYTE_ORDER) || (1234!=__BYTE_ORDER) */
+#endif /* !defined (BYTE_ORDER) || (1234!=BYTE_ORDER) */
 			printf("%d\n",rdt_parameters.modify_stamp);
-#if !defined (__BYTE_ORDER) || (1234!=__BYTE_ORDER)
+#if !defined (BYTE_ORDER) || (1234!=BYTE_ORDER)
 			/* convert from big to little endian */
 			swap=(char *)&(rdt_parameters.check_sum);
 			temp_char=swap[0];
@@ -941,7 +941,7 @@ int main()
 			temp_char=swap[1];
 			swap[1]=swap[2];
 			swap[2]=temp_char;
-#endif /* !defined (__BYTE_ORDER) || (1234!=__BYTE_ORDER) */
+#endif /* !defined (BYTE_ORDER) || (1234!=BYTE_ORDER) */
 			printf("%d\n",rdt_parameters.check_sum);
 			printf("%40s\n",rdt_parameters.version);
 			printf("%40s\n",rdt_parameters.description);

@@ -63,6 +63,7 @@ extern int errno;
 #include <pthread.h>
 #endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 #include "general/debug.h"
+#include "general/myio.h"
 #include "general/mystring.h"
 #include "user_interface/event_dispatcher.h"
 #include "user_interface/message.h"
@@ -80,18 +81,18 @@ Module constants
 
 #if defined (WIN32)
 /*???DB.  Assume that running on Intel machine */
-#define __BYTE_ORDER 1234
+#define BYTE_ORDER 1234
 #endif /* defined (WIN32) */
 #if defined (UNIX)
 #define INVALID_SOCKET (-1)
 #define SOCKET_ERROR (-1)
 #endif /* defined (UNIX) */
 
-#if defined (__BYTE_ORDER) && (1234==__BYTE_ORDER)
+#if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
 #define BIG_ENDIAN_CODE (unsigned char)0x01
-#else /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#else /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 #define BIG_ENDIAN_CODE (unsigned char)0x00
-#endif /* defined (__BYTE_ORDER) && (1234==__BYTE_ORDER) */
+#endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 
 /*???DB.  Temporary ? */
 #define DEFAULT_PORT 5001
