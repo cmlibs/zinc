@@ -498,6 +498,136 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 	return (return_code);
 } /* Contour_lines_add_lines_in_square */
 
+int Contour_lines_add_lines_in_triangle(struct Contour_lines *contour_lines,
+	FE_value iso_value,
+	Triple corner1,FE_value scalar1,FE_value *data1,
+	Triple corner2,FE_value scalar2,FE_value *data2,
+	Triple corner3,FE_value scalar3,FE_value *data3)
+/*******************************************************************************
+LAST MODIFIED : 1 February 2000
+
+DESCRIPTION :
+Converts the polylines in <contour_lines> to GT_polylines and adds them to
+<graphics_object> at <time>.
+==============================================================================*/
+{
+	FE_value r,q;
+	int i,number_of_intersections,return_code;
+	Triple *point,points[3];
+	GTDATA *data,*datum;
+
+	ENTER(Contour_lines_add_lines_in_triangle);
+	if (contour_lines&&corner1&&corner2&&corner3&&
+		((0==contour_lines->number_of_data_components)||
+			(data1&&data2&&data3)))
+	{
+		return_code=1;
+		number_of_intersections=0;
+		data=(GTDATA *)NULL;
+		if ((0==contour_lines->number_of_data_components)||
+			ALLOCATE(data,GTDATA,3*contour_lines->number_of_data_components))
+		{
+			datum=data;
+			/* intersection on 1-2 line */
+			if (((scalar1 > iso_value)&&(scalar2 <= iso_value))||
+				((scalar2 > iso_value)&&(scalar1 <= iso_value)))
+			{
+				r = (iso_value - scalar1)/(scalar2-scalar1);
+				point = &(points[number_of_intersections]);
+				q = 1.0 - r;
+				for (i=0;i<3;i++)
+				{
+					(*point)[i] = q*corner1[i] + r*corner2[i];
+				}
+				if (data)
+				{
+					for (i=0;i<contour_lines->number_of_data_components;i++)
+					{
+						*datum = q*data1[i] + r*data2[i];
+						datum++;
+					}
+				}
+				number_of_intersections++;
+			}
+
+			/* intersection on 2-3 line */
+			if (((scalar2 > iso_value)&&(scalar3 <= iso_value))||
+				((scalar3 > iso_value)&&(scalar2 <= iso_value)))
+			{
+				r = (iso_value - scalar2)/(scalar3-scalar2);
+				point = &(points[number_of_intersections]);
+				q = 1.0 - r;
+				for (i=0;i<3;i++)
+				{
+					(*point)[i] = q*corner2[i] + r*corner3[i];
+				}
+				if (data)
+				{
+					for (i=0;i<contour_lines->number_of_data_components;i++)
+					{
+						*datum = q*data2[i] + r*data3[i];
+						datum++;
+					}
+				}
+				number_of_intersections++;
+			}
+
+			/* intersection on 1-3 line */
+			if (((scalar1 > iso_value)&&(scalar3 <= iso_value))||
+				((scalar3 > iso_value)&&(scalar1 <= iso_value)))
+			{
+				r = (iso_value - scalar1)/(scalar3-scalar1);
+				point = &(points[number_of_intersections]);
+				q = 1.0 - r;
+				for (i=0;i<3;i++)
+				{
+					(*point)[i] = q*corner1[i] + r*corner3[i];
+				}
+				if (data)
+				{
+					for (i=0;i<contour_lines->number_of_data_components;i++)
+					{
+						*datum = q*data1[i] + r*data3[i];
+						datum++;
+					}
+				}
+				number_of_intersections++;
+			}
+
+			if (2 == number_of_intersections)
+			{
+				return_code=Contour_lines_add_segment(contour_lines,points[0],data,
+					points[1],data+contour_lines->number_of_data_components);
+			}
+			else if (0 != number_of_intersections)
+			{
+				display_message(ERROR_MESSAGE,
+					"Contour_lines_add_lines_in_triangle.  Invalid intersections");
+				return_code=0;
+			}
+			if (data)
+			{
+				DEALLOCATE(data);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Contour_lines_add_lines_in_triangle.  Not enough memory");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Contour_lines_add_lines_in_triangle.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Contour_lines_add_lines_in_triangle */
+
 int points_and_data_match(Triple point1,Triple point2,
 	int number_of_data_components,GTDATA *data1,GTDATA *data2)
 /*******************************************************************************
@@ -738,7 +868,7 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 	int number_of_segments_in_xi2_requested,struct FE_element *top_level_element,
 	struct GT_object *graphics_object,float time)
 /*******************************************************************************
-LAST MODIFIED : 28 January 2000
+LAST MODIFIED : 7 April 2000
 
 DESCRIPTION :
 Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
@@ -749,9 +879,9 @@ Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
 	FE_value coordinates[3],*data,*datum,distance1,distance2,*scalar,*scalars,
 		xi[2];
 	gtPolygonType polygon_type;
-	int collapsed_nodes,n_data_components,i,j,number_of_points,
-		number_of_points_in_xi1,number_of_points_in_xi2,number_of_polygon_vertices,
-		polygon_xi2_zero,return_code;
+	int adjusted_number_of_points_in_xi2,collapsed_nodes,n_data_components,i,j,
+		number_of_points,number_of_points_in_xi1,number_of_points_in_xi2,
+		number_of_polygon_vertices,polygon_xi2_zero,simplex_element,return_code;
 	struct Contour_lines *contour_lines;
 	Triple *point,*points;
 
@@ -763,6 +893,7 @@ Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
 		scalar_field&&(1==Computed_field_get_number_of_components(scalar_field))&&
 		graphics_object&&(g_POLYLINE==graphics_object->object_type))
 	{
+		simplex_element=(SIMPLEX_SHAPE== *(element->shape->type));
 		return_code=1;
 		if (data_field)
 		{
@@ -798,7 +929,15 @@ Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
 			for (i=0;(i<number_of_points_in_xi1)&&return_code;i++)
 			{
 				xi[0]=(FE_value)i / distance1;
-				for (j=0;(j<number_of_points_in_xi2)&&return_code;j++)
+				if (simplex_element)
+				{
+					adjusted_number_of_points_in_xi2=number_of_points_in_xi2-i;
+				}
+				else
+				{
+					adjusted_number_of_points_in_xi2=number_of_points_in_xi2;
+				}
+				for (j=0;(j<adjusted_number_of_points_in_xi2)&&return_code;j++)
 				{
 					xi[1]=(FE_value)j / distance2;
 					/* evaluate the fields */
@@ -837,21 +976,43 @@ Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
 			datum=data;
 			for (i=0;(i<(number_of_points_in_xi1-1))&&return_code;i++)
 			{
-				for (j=0;(j<(number_of_points_in_xi2-1))&&return_code;j++)
+				if (simplex_element)
 				{
-					if (!Contour_lines_add_lines_in_square(contour_lines,iso_value,
-						*point,*scalar,datum,
-						*(point+number_of_points_in_xi2),
-						*(scalar+number_of_points_in_xi2),
-						datum+number_of_points_in_xi2*n_data_components,
-						*(point+1),*(scalar+1),datum+n_data_components,
-						*(point+number_of_points_in_xi2+1),
-						*(scalar+number_of_points_in_xi2+1),
-						datum+(number_of_points_in_xi2+1)*n_data_components))
+					adjusted_number_of_points_in_xi2=number_of_points_in_xi2-i;
+				}
+				else
+				{
+					adjusted_number_of_points_in_xi2=number_of_points_in_xi2;
+				}
+				for (j=0;(j<(adjusted_number_of_points_in_xi2-1))&&return_code;j++)
+				{
+					if (simplex_element&&(j==(adjusted_number_of_points_in_xi2-2)))
+					{
+						return_code=Contour_lines_add_lines_in_triangle(contour_lines,
+							iso_value,
+							*point,*scalar,datum,
+							*(point+adjusted_number_of_points_in_xi2),
+							*(scalar+adjusted_number_of_points_in_xi2),
+							datum+adjusted_number_of_points_in_xi2*n_data_components,
+							*(point+1),*(scalar+1),datum+n_data_components);
+					}
+					else
+					{
+						return_code=Contour_lines_add_lines_in_square(contour_lines,
+							iso_value,
+							*point,*scalar,datum,
+							*(point+adjusted_number_of_points_in_xi2),
+							*(scalar+adjusted_number_of_points_in_xi2),
+							datum+adjusted_number_of_points_in_xi2*n_data_components,
+							*(point+1),*(scalar+1),datum+n_data_components,
+							*(point+adjusted_number_of_points_in_xi2+1),
+							*(scalar+adjusted_number_of_points_in_xi2+1),
+							datum+(adjusted_number_of_points_in_xi2+1)*n_data_components);
+					}
+					if (!return_code)
 					{
 						display_message(ERROR_MESSAGE,
 							"create_iso_lines_from_FE_element.  Error getting contours");
-						return_code=0;
 					}
 					point++;
 					scalar++;
