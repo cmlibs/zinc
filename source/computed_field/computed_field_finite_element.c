@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_finite_element.c
 
-LAST MODIFIED : 28 June 2001
+LAST MODIFIED : 17 December 2001
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -11,6 +11,7 @@ Implements a number of basic component wise operations on computed fields.
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_private.h"
+#include "computed_field/computed_field_set.h"
 #include "finite_element/finite_element_time.h"
 #include "general/debug.h"
 #include "general/mystring.h"

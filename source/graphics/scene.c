@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 4 December 2001
+LAST MODIFIED : 17 December 2001
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -30,6 +30,7 @@ November 1997. Created from Scene description part of Drawing.
 #include "command/parser.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "computed_field/computed_field_set.h"
 #include "finite_element/finite_element.h"
 #include "general/callback_private.h"
 #include "general/compare.h"

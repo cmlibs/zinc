@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_integration.c
 
-LAST MODIFIED : 14 December 2001
+LAST MODIFIED : 17 December 2001
 
 DESCRIPTION :
 Implements a computed field which integrates along elements, including travelling
@@ -13,6 +13,7 @@ for 1D elements.
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_private.h"
+#include "computed_field/computed_field_set.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_adjacent_elements.h"
 #include "general/compare.h"

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_derivatives.c
 
-LAST MODIFIED : 12 December 2000
+LAST MODIFIED : 17 December 2001
 
 DESCRIPTION :
 Implements computed_fields for calculating various derivative quantities such
@@ -10,6 +10,7 @@ as derivatives w.r.t. Xi, gradient, curl, divergence etc.
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.h"
 #include "computed_field/computed_field_coordinate.h"
+#include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "user_interface/message.h"

@@ -82,37 +82,6 @@ struct Computed_field_package is private.
 ???RC Make macro PACKAGE(Computed_field) etc.?
 ==============================================================================*/
 
-struct Set_Computed_field_conditional_data
-/*******************************************************************************
-LAST MODIFIED : 3 February 1999
-
-DESCRIPTION :
-User data structure passed to set_Computed_field_conditional, containing the
-computed_field_package and the optional conditional_function (and
-conditional_function_user_data) for selecting a field out of a subset of the
-fields in the manager.
-==============================================================================*/
-{
-	MANAGER_CONDITIONAL_FUNCTION(Computed_field) *conditional_function;
-	void *conditional_function_user_data;
-	struct MANAGER(Computed_field) *computed_field_manager;
-}; /* struct Set_Computed_field_conditional_data */
-
-struct Set_Computed_field_array_data
-/*******************************************************************************
-LAST MODIFIED : 9 March 1999
-
-DESCRIPTION :
-User data structure passed to set_Computed_field_array, containing the number of
-fields in the array, and a pointer to a Set_Computed_field_conditional_data
-structure for passing to set_Computed_field_conditional - this is done for each
-element in the array.
-==============================================================================*/
-{
-	int number_of_fields;
-	struct Set_Computed_field_conditional_data *conditional_data;
-}; /* struct Set_Computed_field_array_data */
-
 struct List_Computed_field_commands_data
 {
 	char *command_prefix;
@@ -804,34 +773,6 @@ DESCRIPTION :
 If a COMPONENT wrapper for <field> <component_no> exists in the
 <computed_field_manager>, it is returned, otherwise a new one is made in the
 manager and returned.
-==============================================================================*/
-
-int set_Computed_field_conditional(struct Parse_state *state,
-	void *field_address_void,void *set_field_data_void);
-/*******************************************************************************
-LAST MODIFIED : 3 February 1999
-
-DESCRIPTION :
-Modifier function to set the field from a command. <set_field_data_void> should
-point to a struct Set_Computed_field_conditional_data containing the
-computed_field_package and an optional conditional function for narrowing the
-range of fields available for selection. If the conditional_function is NULL,
-this function works just like set_Computed_field.
-==============================================================================*/
-
-int set_Computed_field_array(struct Parse_state *state,
-	void *field_array_void,void *set_field_array_data_void);
-/*******************************************************************************
-LAST MODIFIED : 9 March 1999
-
-DESCRIPTION :
-Modifier function to set an array of field from a command.
-<set_field_array_data_void> should point to a struct
-Set_Computed_field_array_conditional_data containing the number_of_fields in the
-array, the computed_field_package and an optional conditional function for
-narrowing the range of fields available for selection.
-Works by repeatedly calling set_Computed_field_conditional.
-???RC Make this globally available for calling any modifier function?
 ==============================================================================*/
 
 int list_Computed_field(struct Computed_field *field,void *dummy_void);

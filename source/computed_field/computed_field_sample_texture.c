@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_sample_texture.c
 
-LAST MODIFIED : 6 July 2000
+LAST MODIFIED : 17 December 2001
 
 DESCRIPTION :
 Implements a computed_field which maintains a graphics transformation 
@@ -9,6 +9,7 @@ equivalent to the scene_viewer assigned to it.
 ==============================================================================*/
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.h"
+#include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "graphics/texture.h"
 #include "graphics/scene_viewer.h"

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_component_operations.c
 
-LAST MODIFIED : 13 December 2001
+LAST MODIFIED : 17 December 2001
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -9,6 +9,7 @@ Implements a number of basic component wise operations on computed fields.
 #include <math.h>
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.h"
+#include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "user_interface/message.h"
 #include "computed_field/computed_field_component_operations.h"

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_window_projection.c
 
-LAST MODIFIED : 27 February 2001
+LAST MODIFIED : 17 December 2001
 
 DESCRIPTION :
 Implements a computed_field which maintains a graphics transformation 
@@ -9,6 +9,7 @@ equivalent to the scene_viewer assigned to it.
 ==============================================================================*/
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.h"
+#include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "graphics/graphics_window.h"

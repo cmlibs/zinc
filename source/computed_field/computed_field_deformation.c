@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_deformation.c
 
-LAST MODIFIED : 13 October 2000
+LAST MODIFIED : 17 December 2001
 
 DESCRIPTION :
 Implements a number of basic continuum mechanics deformation operations on
@@ -11,6 +11,7 @@ computed fields.
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_deformation.h"
 #include "computed_field/computed_field_private.h"
+#include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "user_interface/message.h"
 

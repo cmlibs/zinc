@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_vector_operations.c
 
-LAST MODIFIED : 21 November 2000
+LAST MODIFIED : 17 December 2001
 
 DESCRIPTION :
 Implements a number of basic vector operations on computed fields.
@@ -9,6 +9,7 @@ Implements a number of basic vector operations on computed fields.
 #include <math.h>
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.h"
+#include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "user_interface/message.h"

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_control_curve.c
 
-LAST MODIFIED : 31 May 2001
+LAST MODIFIED : 17 December 2001
 
 DESCRIPTION :
 Implements a computed_field which maintains a graphics transformation 
@@ -9,6 +9,7 @@ equivalent to the scene_viewer assigned to it.
 ==============================================================================*/
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.h"
+#include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "user_interface/message.h"
 #include "computed_field/computed_field_control_curve.h"

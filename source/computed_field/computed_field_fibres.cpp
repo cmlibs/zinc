@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_fibres.c
 
-LAST MODIFIED : 30 January 2001
+LAST MODIFIED : 17 December 2001
 
 DESCRIPTION :
 Implements a number of basic continuum mechanics fibres operations on
@@ -12,6 +12,7 @@ computed fields.
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_fibres.h"
 #include "computed_field/computed_field_private.h"
+#include "computed_field/computed_field_set.h"
 #include "general/debug.h"
 #include "user_interface/message.h"
 

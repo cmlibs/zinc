@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_coordinate.c
 
-LAST MODIFIED : 8 November 2001
+LAST MODIFIED : 17 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -13,6 +13,7 @@ DESCRIPTION :
 #include "computed_field/computed_field_private.h"
 #include "computed_field/computed_field_coordinate.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "user_interface/message.h"
 
