@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 3 January 2000
+XCOMM LAST MODIFIED : 19 January 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -604,6 +604,7 @@ CHOOSE_SRCS = \
 	choose/choose_scene.c \
 	choose/choose_spectrum.c \
 	choose/choose_volume_texture.c \
+	choose/chooser.c \
 	choose/text_choose_fe_element.c \
 	choose/text_choose_fe_node.c
 COLOUR_SRCS = \

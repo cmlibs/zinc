@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : settings_editor.c
 
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 20 January 2000
 
 DESCRIPTION :
 Provides the widgets to manipulate element group settings.
@@ -47,7 +47,7 @@ static MrmHierarchy settings_editor_hierarchy;
 
 struct Settings_editor
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 20 January 2000
 
 DESCRIPTION :
 Contains all the information carried by the graphical element editor widget.
@@ -66,9 +66,12 @@ Contains all the information carried by the graphical element editor widget.
 	/* main dialog widgets */
 	Widget *widget_address,widget,widget_parent;
 	/* geometry widgets */
-	Widget glyph_edit_mode_entry,glyph_edit_mode_form,glyph_edit_mode_widget,
+	struct CHOOSE_OBJECT_LIST_STRUCT(GT_object) *choose_glyph;
+	struct Choose_enumerator *choose_glyph_edit_mode,*choose_use_element_type,
+		*choose_xi_discretization_mode,*choose_streamline_type;
+	Widget glyph_edit_mode_entry,glyph_edit_mode_form,
 		coordinate_button,coordinate_field_form,coordinate_field_widget,
-		use_element_type_entry,use_element_type_form,use_element_type_widget,
+		use_element_type_entry,use_element_type_form,
 		discretization_entry,discretization_text,
 		exterior_face_entry,exterior_button,face_button,face_option,face_menu,
 		radius_entry,constant_radius_text,radius_scalar_field_button,
@@ -79,24 +82,24 @@ Contains all the information carried by the graphical element editor widget.
 		native_discretization_entry,
 		native_discretization_button,native_discretization_field_form,
 		native_discretization_field_widget,xi_discretization_mode_entry,
-		xi_discretization_mode_form,xi_discretization_mode_widget,
-		glyph_group_entry,glyph_form,glyph_widget,glyph_size_text,glyph_centre_text,
+		xi_discretization_mode_form,
+		glyph_group_entry,glyph_form,glyph_size_text,glyph_centre_text,
 		glyph_orientation_scale_button,glyph_orientation_scale_field_form,
 		glyph_orientation_scale_field_widget,
 		glyph_scale_factors_entry,glyph_scale_factors_text,
 		volume_texture_entry,volume_texture_form,
 		volume_texture_widget,seed_element_entry,seed_element_button,
 		seed_element_form,seed_element_widget,seed_xi_entry,seed_xi_text,
-		streamline_entry,streamline_type_form,streamline_type_widget,
+		streamline_entry,streamline_type_form,
 		streamline_length_text,streamline_width_text,stream_vector_field_form,
-		stream_vector_field_widget,streamline_reverse_button,
-		streamline_data_type_entry,streamline_data_type_form,
-		streamline_data_type_widget;
+		stream_vector_field_widget,streamline_reverse_button;
 	/* appearance widgets */
+	struct Choose_enumerator *choose_streamline_data_type;
 	Widget material_form,material_widget,texture_coord_field_entry,
-		texture_coord_field_form,texture_coord_field_widget,texture_coord_field_button,
-		data_field_button,data_field_form,
-		data_field_widget,spectrum_entry,spectrum_form,spectrum_widget;
+		texture_coord_field_form,texture_coord_field_widget,
+		texture_coord_field_button,data_field_button,data_field_form,
+		data_field_widget,spectrum_entry,spectrum_form,spectrum_widget,
+		streamline_data_type_entry,streamline_data_type_form;
 }; /* struct Settings_editor */
 
 /*
@@ -1429,7 +1432,7 @@ Called when entry is made into the glyph_scale_factors text field.
 static void settings_editor_update_glyph_edit_mode(Widget widget,
 	void *settings_editor_void,void *glyph_edit_mode_string_void)
 /*******************************************************************************
-LAST MODIFIED : 18 July 1999
+LAST MODIFIED : 20 January 2000
 
 DESCRIPTION :
 Callback for change of glyph_edit_mode.
@@ -1441,16 +1444,12 @@ Callback for change of glyph_edit_mode.
 	USE_PARAMETER(widget);
 	if (settings_editor=(struct Settings_editor *)settings_editor_void)
 	{
-		/* skip messages from chooser if grayed out */
-		if (XtIsSensitive(settings_editor->glyph_edit_mode_widget))
+		if (GT_element_settings_set_glyph_edit_mode(
+			settings_editor->current_settings,
+			Glyph_edit_mode_from_string((char *)glyph_edit_mode_string_void)))
 		{
-			if (GT_element_settings_set_glyph_edit_mode(
-				settings_editor->current_settings,
-				Glyph_edit_mode_from_string((char *)glyph_edit_mode_string_void)))
-			{
-				/* inform the client of the change */
-				settings_editor_update(settings_editor);
-			}
+			/* inform the client of the change */
+			settings_editor_update(settings_editor);
 		}
 	}
 	else
@@ -1999,7 +1998,7 @@ Callback for change of streamline_data_type.
 				{
 					/* update the choose_enumerator for streamline_data_type */
 					choose_enumerator_set_string(
-						settings_editor->streamline_data_type_widget,
+						settings_editor->choose_streamline_data_type,
 						Streamline_data_type_string(streamline_data_type));
 				}
 				/* set grayed status of data_field/spectrum widgets */
@@ -2322,7 +2321,7 @@ Widget create_settings_editor_widget(Widget *settings_editor_widget,
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 20 January 2000
 
 DESCRIPTION :
 Creates a settings_editor widget.
@@ -2543,7 +2542,8 @@ Creates a settings_editor widget.
 				settings_editor->coordinate_field_widget=(Widget)NULL;
 				settings_editor->use_element_type_entry=(Widget)NULL;
 				settings_editor->use_element_type_form=(Widget)NULL;
-				settings_editor->use_element_type_widget=(Widget)NULL;
+				settings_editor->choose_use_element_type=
+					(struct Choose_enumerator *)NULL;
 				settings_editor->exterior_face_entry=(Widget)NULL;
 				settings_editor->exterior_button=(Widget)NULL;
 				settings_editor->face_button=(Widget)NULL;
@@ -2568,10 +2568,12 @@ Creates a settings_editor widget.
 				settings_editor->native_discretization_field_widget=(Widget)NULL;
 				settings_editor->xi_discretization_mode_entry=(Widget)NULL;
 				settings_editor->xi_discretization_mode_form=(Widget)NULL;
-				settings_editor->xi_discretization_mode_widget=(Widget)NULL;
+				settings_editor->choose_xi_discretization_mode=
+					(struct Choose_enumerator *)NULL;
 				settings_editor->glyph_group_entry=(Widget)NULL;
 				settings_editor->glyph_form=(Widget)NULL;
-				settings_editor->glyph_widget=(Widget)NULL;
+				settings_editor->choose_glyph=
+					(struct CHOOSE_OBJECT_LIST_STRUCT(GT_object) *)NULL;
 				settings_editor->glyph_size_text=(Widget)NULL;
 				settings_editor->glyph_centre_text=(Widget)NULL;
 				settings_editor->glyph_orientation_scale_button=(Widget)NULL;
@@ -2581,7 +2583,8 @@ Creates a settings_editor widget.
 				settings_editor->glyph_scale_factors_text=(Widget)NULL;
 				settings_editor->glyph_edit_mode_entry=(Widget)NULL;
 				settings_editor->glyph_edit_mode_form=(Widget)NULL;
-				settings_editor->glyph_edit_mode_widget=(Widget)NULL;
+				settings_editor->choose_glyph_edit_mode=
+					(struct Choose_enumerator *)NULL;
 				settings_editor->label_field_entry=(Widget)NULL;
 				settings_editor->label_field_button=(Widget)NULL;
 				settings_editor->label_field_form=(Widget)NULL;
@@ -2597,7 +2600,8 @@ Creates a settings_editor widget.
 				settings_editor->seed_xi_text=(Widget)NULL;
 				settings_editor->streamline_entry=(Widget)NULL;
 				settings_editor->streamline_type_form=(Widget)NULL;
-				settings_editor->streamline_type_widget=(Widget)NULL;
+				settings_editor->choose_streamline_type=
+					(struct Choose_enumerator *)NULL;
 				settings_editor->streamline_length_text=(Widget)NULL;
 				settings_editor->streamline_width_text=(Widget)NULL;
 				settings_editor->stream_vector_field_form=(Widget)NULL;
@@ -2612,7 +2616,8 @@ Creates a settings_editor widget.
 				settings_editor->texture_coord_field_widget=(Widget)NULL;
 				settings_editor->streamline_data_type_entry=(Widget)NULL;
 				settings_editor->streamline_data_type_form=(Widget)NULL;
-				settings_editor->streamline_data_type_widget=(Widget)NULL;
+				settings_editor->choose_streamline_data_type=
+					(struct Choose_enumerator *)NULL;
 				settings_editor->data_field_button=(Widget)NULL;
 				settings_editor->data_field_form=(Widget)NULL;
 				settings_editor->data_field_widget=(Widget)NULL;
@@ -2641,10 +2646,10 @@ Creates a settings_editor widget.
 							/* create the subwidgets with default values */
 							valid_strings=
 								Use_element_type_get_valid_strings(&number_of_valid_strings);
-							if (!(settings_editor->use_element_type_widget=
-								create_choose_enumerator_widget(
+							if (!(settings_editor->choose_use_element_type=
+								CREATE(Choose_enumerator)(
 								settings_editor->use_element_type_form,
-								valid_strings,number_of_valid_strings,
+								number_of_valid_strings,valid_strings,
 								Use_element_type_string(USE_ELEMENTS))))
 							{
 								init_widgets=0;
@@ -2652,10 +2657,10 @@ Creates a settings_editor widget.
 							DEALLOCATE(valid_strings);
 							valid_strings=Glyph_edit_mode_get_valid_strings(
 								&number_of_valid_strings);
-							if (!(settings_editor->glyph_edit_mode_widget=
-								create_choose_enumerator_widget(
+							if (!(settings_editor->choose_glyph_edit_mode=
+								CREATE(Choose_enumerator)(
 								settings_editor->glyph_edit_mode_form,
-								valid_strings,number_of_valid_strings,
+								number_of_valid_strings,valid_strings,
 								Glyph_edit_mode_string(GLYPH_EDIT_OFF))))
 							{
 								init_widgets=0;
@@ -2685,7 +2690,7 @@ Creates a settings_editor widget.
 							{
 								init_widgets=0;
 							}
-							if (!(settings_editor->glyph_widget=
+							if (!(settings_editor->choose_glyph=
 								CREATE_CHOOSE_OBJECT_LIST_WIDGET(GT_object)(
 								settings_editor->glyph_form,
 								(struct GT_object *)NULL,settings_editor->glyph_list,
@@ -2719,10 +2724,10 @@ Creates a settings_editor widget.
 							}
 							valid_strings=Xi_discretization_mode_get_valid_strings(
 								&number_of_valid_strings);
-							if (!(settings_editor->xi_discretization_mode_widget=
-								create_choose_enumerator_widget(
+							if (!(settings_editor->choose_xi_discretization_mode=
+								CREATE(Choose_enumerator)(
 								settings_editor->xi_discretization_mode_form,
-								valid_strings,number_of_valid_strings,
+								number_of_valid_strings,valid_strings,
 								Xi_discretization_mode_string(XI_DISCRETIZATION_CELL_CENTRES))))
 							{
 								init_widgets=0;
@@ -2747,10 +2752,10 @@ Creates a settings_editor widget.
 							}
 							valid_strings=Streamline_type_get_valid_strings(
 								&number_of_valid_strings);
-							if (!(settings_editor->streamline_type_widget=
-								create_choose_enumerator_widget(
+							if (!(settings_editor->choose_streamline_type=
+								CREATE(Choose_enumerator)(
 								settings_editor->streamline_type_form,
-								valid_strings,number_of_valid_strings,
+								number_of_valid_strings,valid_strings,
 								Streamline_type_string(STREAM_LINE))))
 							{
 								init_widgets=0;
@@ -2766,10 +2771,10 @@ Creates a settings_editor widget.
 							}
 							valid_strings=Streamline_data_type_get_valid_strings(
 								&number_of_valid_strings);
-							if (!(settings_editor->streamline_data_type_widget=
-								create_choose_enumerator_widget(
+							if (!(settings_editor->choose_streamline_data_type=
+								CREATE(Choose_enumerator)(
 								settings_editor->streamline_data_type_form,
-								valid_strings,number_of_valid_strings,
+								number_of_valid_strings,valid_strings,
 								Streamline_data_type_string(STREAM_FIELD_SCALAR))))
 							{
 								init_widgets=0;
@@ -2997,7 +3002,7 @@ Returns the currently chosen settings.
 int settings_editor_set_settings(Widget settings_editor_widget,
 	struct GT_element_settings *new_settings)
 /*******************************************************************************
-LAST MODIFIED : 22 December 1999
+LAST MODIFIED : 20 January 2000
 
 DESCRIPTION :
 Changes the currently chosen settings.
@@ -3159,7 +3164,7 @@ Changes the currently chosen settings.
 									glyph_scale_factors))
 							{
 								CHOOSE_OBJECT_LIST_SET_OBJECT(GT_object)(
-									settings_editor->glyph_widget,glyph);
+									settings_editor->choose_glyph,glyph);
 								sprintf(temp_string,"%g*%g*%g",
 									glyph_size[0],glyph_size[1],glyph_size[2]);
 								XtVaSetValues(settings_editor->glyph_size_text,XmNvalue,
@@ -3190,14 +3195,14 @@ Changes the currently chosen settings.
 								GT_element_settings_get_glyph_edit_mode(new_settings,
 									&glyph_edit_mode);
 								choose_enumerator_set_string(
-									settings_editor->glyph_edit_mode_widget,
+									settings_editor->choose_glyph_edit_mode,
 									Glyph_edit_mode_string(glyph_edit_mode));
 								XtManageChild(settings_editor->glyph_edit_mode_entry);
 								/* turn on callbacks */
 								callback.data=(void *)settings_editor;
 								callback.procedure=settings_editor_update_glyph;
 								CHOOSE_OBJECT_LIST_SET_CALLBACK(GT_object)(
-									settings_editor->glyph_widget,&callback);
+									settings_editor->choose_glyph,&callback);
 								callback.data=(void *)settings_editor;
 								callback.procedure=
 									settings_editor_update_glyph_orientation_scale_field;
@@ -3206,7 +3211,7 @@ Changes the currently chosen settings.
 									&callback);
 								callback.procedure=settings_editor_update_glyph_edit_mode;
 								choose_enumerator_set_callback(
-									settings_editor->glyph_edit_mode_widget,&callback);
+									settings_editor->choose_glyph_edit_mode,&callback);
 								XtManageChild(settings_editor->glyph_group_entry);
 							}
 							else
@@ -3215,12 +3220,12 @@ Changes the currently chosen settings.
 								callback.procedure=(Callback_procedure *)NULL;
 								callback.data=(void *)NULL;
 								CHOOSE_OBJECT_LIST_SET_CALLBACK(GT_object)(
-									settings_editor->glyph_widget,&callback);
+									settings_editor->choose_glyph,&callback);
 								CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
 									settings_editor->glyph_orientation_scale_field_widget,
 									&callback);
 								choose_enumerator_set_callback(
-									settings_editor->glyph_edit_mode_widget,&callback);
+									settings_editor->choose_glyph_edit_mode,&callback);
 								XtUnmanageChild(settings_editor->glyph_group_entry);
 							}
 
@@ -3260,7 +3265,7 @@ Changes the currently chosen settings.
 							if (GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings_type)
 							{
 								choose_enumerator_set_string(
-									settings_editor->use_element_type_widget,
+									settings_editor->choose_use_element_type,
 									Use_element_type_string(
 										GT_element_settings_get_use_element_type(new_settings)));
 								XtManageChild(settings_editor->use_element_type_entry);
@@ -3291,7 +3296,7 @@ Changes the currently chosen settings.
 									native_discretization_field_widget,field_set);
 								XtManageChild(settings_editor->native_discretization_entry);
 								choose_enumerator_set_string(
-									settings_editor->xi_discretization_mode_widget,
+									settings_editor->choose_xi_discretization_mode,
 									Xi_discretization_mode_string(
 										GT_element_settings_get_xi_discretization_mode(
 											new_settings)));
@@ -3300,7 +3305,7 @@ Changes the currently chosen settings.
 								callback.data=(void *)settings_editor;
 								callback.procedure=settings_editor_update_use_element_type;
 								choose_enumerator_set_callback(
-									settings_editor->use_element_type_widget,&callback);
+									settings_editor->choose_use_element_type,&callback);
 								callback.procedure=
 									settings_editor_update_native_discretization_field;
 								CHOOSE_OBJECT_SET_CALLBACK(FE_field)(
@@ -3309,7 +3314,7 @@ Changes the currently chosen settings.
 								callback.procedure=
 									settings_editor_update_xi_discretization_mode;
 								choose_enumerator_set_callback(
-									settings_editor->xi_discretization_mode_widget,&callback);
+									settings_editor->choose_xi_discretization_mode,&callback);
 							}
 							else
 							{
@@ -3321,12 +3326,12 @@ Changes the currently chosen settings.
 								callback.procedure=(Callback_procedure *)NULL;
 								callback.data=(void *)NULL;
 								choose_enumerator_set_callback(
-									settings_editor->use_element_type_widget,&callback);
+									settings_editor->choose_use_element_type,&callback);
 								CHOOSE_OBJECT_SET_CALLBACK(FE_field)(
 									settings_editor->native_discretization_field_widget,
 									&callback);
 								choose_enumerator_set_callback(
-									settings_editor->xi_discretization_mode_widget,&callback);
+									settings_editor->choose_xi_discretization_mode,&callback);
 							}
 
 							/* volume texture */
@@ -3404,7 +3409,7 @@ Changes the currently chosen settings.
 									&streamline_type,&stream_vector_field,&reverse_track,
 									&streamline_length,&streamline_width);
 								choose_enumerator_set_string(
-									settings_editor->streamline_type_widget,
+									settings_editor->choose_streamline_type,
 									Streamline_type_string(streamline_type));
 								sprintf(temp_string,"%g",streamline_length);
 								XtVaSetValues(settings_editor->streamline_length_text,XmNvalue,
@@ -3423,7 +3428,7 @@ Changes the currently chosen settings.
 								callback.procedure=
 									settings_editor_update_streamline_type;
 								choose_enumerator_set_callback(
-									settings_editor->streamline_type_widget,&callback);
+									settings_editor->choose_streamline_type,&callback);
 								callback.procedure=
 									settings_editor_update_stream_vector_field;
 								CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
@@ -3436,7 +3441,7 @@ Changes the currently chosen settings.
 								callback.procedure=(Callback_procedure *)NULL;
 								callback.data=(void *)NULL;
 								choose_enumerator_set_callback(
-									settings_editor->streamline_type_widget,&callback);
+									settings_editor->choose_streamline_type,&callback);
 								CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
 									settings_editor->stream_vector_field_widget,&callback);
 							}
@@ -3457,7 +3462,7 @@ Changes the currently chosen settings.
 									settings_editor->current_settings,&streamline_data_type,
 									&data_field,&spectrum);
 								choose_enumerator_set_string(
-									settings_editor->streamline_data_type_widget,
+									settings_editor->choose_streamline_data_type,
 									Streamline_data_type_string(streamline_data_type));
 								XtManageChild(settings_editor->streamline_data_type_entry);
 								field_set=((struct Computed_field *)NULL != data_field);
@@ -3470,7 +3475,7 @@ Changes the currently chosen settings.
 								callback.procedure=
 									settings_editor_update_streamline_data_type;
 								choose_enumerator_set_callback(
-									settings_editor->streamline_data_type_widget,&callback);
+									settings_editor->choose_streamline_data_type,&callback);
 							}
 							else
 							{
@@ -3497,7 +3502,7 @@ Changes the currently chosen settings.
 								callback.procedure=(Callback_procedure *)NULL;
 								callback.data=(void *)NULL;
 								choose_enumerator_set_callback(
-									settings_editor->streamline_data_type_widget,&callback);
+									settings_editor->choose_streamline_data_type,&callback);
 							}
 
 							/* turn on callbacks */
@@ -3570,7 +3575,7 @@ Changes the currently chosen settings.
 					CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
 						settings_editor->iso_scalar_field_widget,&callback);
 					CHOOSE_OBJECT_LIST_SET_CALLBACK(GT_object)(
-						settings_editor->glyph_widget,&callback);
+						settings_editor->choose_glyph,&callback);
 					CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
 						settings_editor->glyph_orientation_scale_field_widget,&callback);
 					CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
