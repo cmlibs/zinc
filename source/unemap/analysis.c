@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 23 August 2001
+LAST MODIFIED : 30 September 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -61,14 +61,10 @@ and the <max_tick_mark>.
 	LEAVE;
 } /* calculate_divisions */
 
-/*
-Global functions
-----------------
-*/
 static int calculate_moving_average(float *objective_values,
 	int number_of_objective_values,int objective_values_step,int average_width)
 /*******************************************************************************
-LAST MODIFIED : 25 April 2000
+LAST MODIFIED : 30 September 2001
 
 DESCRIPTION :
 Calculates the moving average of the <objective_values>.
@@ -76,100 +72,106 @@ Calculates the moving average of the <objective_values>.
 {
 	float average_after,*average_after_value,average_before,first_value,
 		last_value,*objective_value,*save_value,*save_values,temp_value;
-	int i,return_code;
+	int average_width_after,average_width_before,i,return_code;
 
 	ENTER(calculate_moving_average);
 	return_code=0;
 	if (objective_values&&(0<number_of_objective_values)&&
 		(0<objective_values_step)&&(0<average_width))
 	{
-		if (ALLOCATE(save_values,float,average_width))
+		if (average_width>1)
 		{
-			objective_value=objective_values;
-			first_value=objective_values[0];
-			last_value=
-				objective_values[(number_of_objective_values-1)*objective_values_step];
-			save_value=save_values;
-			for (i=average_width;i>0;i--)
+			average_width_before=average_width/2;
+			average_width_after=average_width-1-average_width_before;
+			if (ALLOCATE(save_values,float,average_width_before))
 			{
-				*save_value=first_value;
-				save_value++;
-			}
-			save_value=save_values;
-			average_before=first_value*(float)average_width;
-			average_after=0;
-			if (average_width<number_of_objective_values)
-			{
-				for (i=average_width;i>0;i--)
+				objective_value=objective_values;
+				first_value=objective_values[0];
+				last_value=objective_values[(number_of_objective_values-1)*
+					objective_values_step];
+				save_value=save_values;
+				for (i=average_width_before;i>0;i--)
 				{
-					objective_value += objective_values_step;
-					average_after += *objective_value;
+					*save_value=first_value;
+					save_value++;
+				}
+				save_value=save_values;
+				average_before=first_value*(float)average_width_before;
+				average_after=0;
+				if (average_width_after<number_of_objective_values)
+				{
+					for (i=average_width_after;i>0;i--)
+					{
+						objective_value += objective_values_step;
+						average_after += *objective_value;
+					}
+					objective_value=objective_values;
+					average_after_value=objective_value+
+						(average_width_after*objective_values_step);
+					for (i=number_of_objective_values-average_width_after-1;i>0;i--)
+					{
+						temp_value=average_after+(*objective_value)+average_before;
+						average_before += (*objective_value)-(*save_value);
+						*save_value= *objective_value;
+						save_value++;
+						if (save_value-save_values>=average_width_before)
+						{
+							save_value=save_values;
+						}
+						*objective_value=temp_value;
+						objective_value += objective_values_step;
+						average_after_value += objective_values_step;
+						average_after += (*average_after_value)-(*objective_value);
+					}
+					for (i=average_width_after+1;i>0;i--)
+					{
+						temp_value=average_after+(*objective_value)+average_before;
+						average_before += (*objective_value)-(*save_value);
+						*save_value= *objective_value;
+						save_value++;
+						if (save_value-save_values>=average_width_before)
+						{
+							save_value=save_values;
+						}
+						*objective_value=temp_value;
+						objective_value += objective_values_step;
+						average_after += last_value-(*objective_value);
+					}
+				}
+				else
+				{
+					for (i=number_of_objective_values-1;i>0;i--)
+					{
+						objective_value += objective_values_step;
+						average_after += *objective_value;
+					}
+					average_after += last_value*
+						(float)(average_width_after-(number_of_objective_values-1));
+					objective_value=objective_values;
+					for (i=number_of_objective_values;i>0;i--)
+					{
+						temp_value=average_after+(*objective_value)+average_before;
+						average_before += (*objective_value)-first_value;
+						*objective_value=temp_value;
+						objective_value += objective_values_step;
+						average_after += last_value-(*objective_value);
+					}
 				}
 				objective_value=objective_values;
-				average_after_value=objective_value+
-					(average_width*objective_values_step);
-				for (i=number_of_objective_values-average_width-1;i>0;i--)
+				temp_value=(float)average_width;
+				for (i=number_of_objective_values;i>0;i--)
 				{
-					temp_value=average_after+(*objective_value)+average_before;
-					average_before += (*objective_value)-(*save_value);
-					*save_value= *objective_value;
-					save_value++;
-					if (save_value-save_values>=average_width)
-					{
-						save_value=save_values;
-					}
-					*objective_value=temp_value;
+					*objective_value /= temp_value;
 					objective_value += objective_values_step;
-					average_after_value += objective_values_step;
-					average_after += (*average_after_value)-(*objective_value);
 				}
-				for (i=average_width+1;i>0;i--)
-				{
-					temp_value=average_after+(*objective_value)+average_before;
-					average_before += (*objective_value)-(*save_value);
-					*save_value= *objective_value;
-					save_value++;
-					if (save_value-save_values>=average_width)
-					{
-						save_value=save_values;
-					}
-					*objective_value=temp_value;
-					objective_value += objective_values_step;
-					average_after += last_value-(*objective_value);
-				}
+				DEALLOCATE(save_values);
 			}
 			else
 			{
-				for (i=number_of_objective_values-1;i>0;i--)
-				{
-					objective_value += objective_values_step;
-					average_after += *objective_value;
-				}
-				average_after +=
-					last_value*(float)(average_width-(number_of_objective_values-1));
-				objective_value=objective_values;
-				for (i=number_of_objective_values;i>0;i--)
-				{
-					temp_value=average_after+(*objective_value)+average_before;
-					average_before += (*objective_value)-first_value;
-					*objective_value=temp_value;
-					objective_value += objective_values_step;
-					average_after += last_value-(*objective_value);
-				}
+				display_message(ERROR_MESSAGE,
+					"calculate_moving_average.  Could not allocate save_values");
+				return_code=0;
 			}
-			objective_value=objective_values;
-			temp_value=(float)(2*average_width+1);
-			for (i=number_of_objective_values;i>0;i--)
-			{
-				*objective_value /= temp_value;
-				objective_value += objective_values_step;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"calculate_moving_average.  Could not allocate save_values");
-			return_code=0;
 		}
 	}
 	else
@@ -183,12 +185,16 @@ Calculates the moving average of the <objective_values>.
 	return (return_code);
 } /* calculate_moving_average */
 
+/*
+Global functions
+----------------
+*/
 int calculate_device_objective(struct Device *device,
 	enum Event_detection_algorithm detection,
 	enum Event_detection_objective objective,float *objective_values,
 	int number_of_objective_values,int objective_values_step,int average_width)
 /*******************************************************************************
-LAST MODIFIED : 1 April 2001
+LAST MODIFIED : 30 September 2001
 
 DESCRIPTION :
 Calculates the specified <objective>/<detection> function for the <device>.
@@ -275,9 +281,6 @@ Storing the values in the array (<objective_values> every
 					if ((ABSOLUTE_VALUE==objective)||(POSITIVE_VALUE==objective)||
 						(NEGATIVE_VALUE==objective))
 					{
-						/* take moving average */
-						return_code=calculate_moving_average(objective_values,
-							number_of_samples,objective_values_step,average_width);
 						switch (objective)
 						{
 							case ABSOLUTE_VALUE:
@@ -302,6 +305,9 @@ Storing the values in the array (<objective_values> every
 								}
 							} break;
 						}
+						/* take moving average */
+						return_code=calculate_moving_average(objective_values,
+							number_of_samples,objective_values_step,average_width);
 					}
 					else
 					{
@@ -542,7 +548,7 @@ int calculate_device_event_markers(struct Device *device,
 LAST MODIFIED : 12 September 2000
 
 DESCRIPTION :
-Calculate the positions of the event markers for a signal/<device>/<device_node> 
+Calculate the positions of the event markers for a signal/<device>/<device_node>
 based upon the the start and end times, the number of events, the <detection> 
 algorithm and the <objective_values>.
 ==============================================================================*/
