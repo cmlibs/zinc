@@ -1326,7 +1326,10 @@ static void process_keyboard(
 							db_per_decade=(float)100;
 							tol_db1=(float)0.2;
 							tol_db2=(float)0.15; /* proportion */
+#if defined (OLD_CODE)
 							tol_gain=(float)0.005; /* proportion */
+#endif /* defined (OLD_CODE) */
+							tol_gain=(float)0.01; /* proportion */
 							tol_calibrate_gain=(float)0.05; /* proportion */
 							if (hardware_directory=getenv("UNEMAP_HARDWARE"))
 							{
