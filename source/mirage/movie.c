@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : movie.c
 
-LAST MODIFIED : 30 May 2001
+LAST MODIFIED : 30 July 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -3287,24 +3287,6 @@ while a point is not placed fully in 3-D.
 	return (return_code);
 } /* Mirage_movie_add_node_to_group */
 
-static int FE_node_not_in_group(struct FE_node *node,void *node_group_void)
-/*******************************************************************************
-LAST MODIFIED : 24 February 1998
-
-DESCRIPTION :
-Returns 1 if node is not in node_group.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_node_not_in_group);
-	return_code=!IS_OBJECT_IN_GROUP(FE_node)(node,
-		(struct GROUP(FE_node) *)node_group_void);
-	LEAVE;
-
-	return (return_code);
-} /* FE_node_not_in_group */
-
 struct add_completed_FE_element_to_group_data
 {
 	int max_dimension;
@@ -3315,7 +3297,7 @@ struct add_completed_FE_element_to_group_data
 static int add_completed_FE_element_to_group(
 	struct FE_element *element,void *add_element_data_void)
 /*******************************************************************************
-LAST MODIFIED : 6 September 2000
+LAST MODIFIED : 30 July 2001
 
 DESCRIPTION :
 If the dimension of the element is less than or equal to max_dimension, and
@@ -3325,9 +3307,9 @@ is added to the passed element group.
 of calling for this to be most efficient - this is the case in element lists.
 ==============================================================================*/
 {
-	int return_code;
+	int i,number_of_nodes,return_code;
 	struct add_completed_FE_element_to_group_data *add_element_data;
-	struct LIST(FE_node) *node_list;
+	struct FE_node **nodes_in_element;
 
 	ENTER(add_completed_FE_element_to_group);
 	if (element&&(element->shape)&&(add_element_data=
@@ -3339,25 +3321,33 @@ of calling for this to be most efficient - this is the case in element lists.
 		if ((element->shape->dimension <= add_element_data->max_dimension)&&
 			!IS_OBJECT_IN_GROUP(FE_element)(element,add_element_data->element_group))
 		{
-			node_list=CREATE(LIST(FE_node))();
-			/* get list of nodes in element to compare with = SLOW */
+			/* get array of nodes in element to compare with = SLOW */
 			if (calculate_FE_element_field_nodes(element,(struct FE_field *)NULL,
-				node_list))
+				&number_of_nodes,&nodes_in_element))
 			{
-				if (!FIRST_OBJECT_IN_LIST_THAT(FE_node)(FE_node_not_in_group,
-					(void *)(add_element_data->node_group),node_list))
+				i=0;
+				while ((i<number_of_nodes)&&IS_OBJECT_IN_GROUP(FE_node)(
+					nodes_in_element[i],add_element_data->node_group))
+				{
+					i++;
+				}
+				if (i>=number_of_nodes)
 				{
 					return_code=add_FE_element_and_faces_to_group(element,
 						add_element_data->element_group);
 				}
+				for (i=0;i<number_of_nodes;i++)
+				{
+					DEACCESS(FE_node)(nodes_in_element+i);
+				}
+				DEALLOCATE(nodes_in_element);
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"add_completed_FE_element_to_group.  Could not make node list");
+					"add_completed_FE_element_to_group.  Could not make node array");
 				return_code=0;
 			}
-			DESTROY(LIST(FE_node))(&node_list);
 		}
 	}
 	else
@@ -3602,8 +3592,9 @@ LAST MODIFIED : 15 February 1999
 DESCRIPTION :
 ==============================================================================*/
 {
-	int return_code;
+	int i,number_of_nodes,return_code;
 	struct Add_elements_with_node_data *add_data;
+	struct FE_node **nodes_in_element;
 	struct LIST(FE_node) *node_list;
 
 	ENTER(add_elements_with_node_to_group);
@@ -3622,22 +3613,30 @@ DESCRIPTION :
 					element->identifier,add_data->element_group))
 				{
 					/* compare against complete list of nodes in element = SLOW */
-					if ((node_list=CREATE(LIST(FE_node))())&&
-						calculate_FE_element_field_nodes(element,(struct FE_field *)NULL,
-						node_list))
+					if (calculate_FE_element_field_nodes(element,(struct FE_field *)NULL,
+						&number_of_nodes,&nodes_in_element))
 					{
-						if (!FIRST_OBJECT_IN_LIST_THAT(FE_node)(FE_node_not_in_group,
-							(void *)(add_data->node_group),node_list))
+						i=0;
+						while ((i<number_of_nodes)&&IS_OBJECT_IN_GROUP(FE_node)(
+							nodes_in_element[i],add_data->node_group))
+						{
+							i++;
+						}
+						if (i>=number_of_nodes)
 						{
 							return_code=ADD_OBJECT_TO_GROUP(FE_element)(element,
 								add_data->element_group);
 						}
+						for (i=0;i<number_of_nodes;i++)
+						{
+							DEACCESS(FE_node)(nodes_in_element+i);
+						}
+						DEALLOCATE(nodes_in_element);
 					}
 					else
 					{
 						return_code=0;
 					}
-					DESTROY(LIST(FE_node))(&node_list);
 				}
 			}
 			else
@@ -3666,13 +3665,13 @@ DESCRIPTION :
 int remove_elements_with_node_from_group(struct FE_element *element,
 	void *rem_data_void)
 /*******************************************************************************
-LAST MODIFIED : 15 February 1999
+LAST MODIFIED : 30 July 2001
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	int return_code;
-	struct LIST(FE_node) *node_list;
+	int i,number_of_nodes,return_code;
+	struct FE_node **nodes_in_element;
 	struct Remove_elements_with_node_data *rem_data;
 
 	ENTER(remove_elements_with_node_from_group);
@@ -3686,21 +3685,29 @@ DESCRIPTION :
 			element->identifier,rem_data->element_group))
 		{
 			/* compare against complete list of nodes in element = SLOW */
-			if ((node_list=CREATE(LIST(FE_node))())&&
-				calculate_FE_element_field_nodes(element,(struct FE_field *)NULL,
-				node_list))
+			if (calculate_FE_element_field_nodes(element,(struct FE_field *)NULL,
+				&number_of_nodes,&nodes_in_element))
 			{
-				if (IS_OBJECT_IN_LIST(FE_node)(rem_data->node,node_list))
+				i=0;
+				while ((i<number_of_nodes)&&(rem_data->node!=nodes_in_element[i]))
+				{
+					i++;
+				}
+				if (i<number_of_nodes)
 				{
 					return_code=REMOVE_OBJECT_FROM_GROUP(FE_element)(element,
 						rem_data->element_group);
 				}
+				for (i=0;i<number_of_nodes;i++)
+				{
+					DEACCESS(FE_node)(nodes_in_element+i);
+				}
+				DEALLOCATE(nodes_in_element);
 			}
 			else
 			{
 				return_code=0;
 			}
-			DESTROY(LIST(FE_node))(&node_list);
 		}
 	}
 	else
