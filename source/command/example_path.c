@@ -188,21 +188,6 @@ be DEALLOCATED by the calling function.
 								 }
 							  }
 						   }
-						   if (ALLOCATE(new_string, char,
-							  strlen(return_string) + strlen(example_path) + 5))
-						   {
-							  sprintf(new_string, "%s/%s/", example_path,
-								 return_string);
-							  DEALLOCATE(return_string);
-							  return_string = new_string;
-						   }
-						   else
-						   {
-							  DEALLOCATE(return_string);
-							  display_message(ERROR_MESSAGE,"resolve_example_path."
-								 "  Unable to make final reallocate of string");
-							  return_string = (char *)NULL;
-						   }
 						   if (comfile_name)
 						   {
 							  if (comfile_offset && ALLOCATE(*comfile_name, char,
@@ -226,6 +211,21 @@ be DEALLOCATED by the calling function.
 							  {
 								 *requirements = (char *)NULL;
 							  }
+						   }
+						   if (ALLOCATE(new_string, char,
+							  strlen(return_string) + strlen(example_path) + 5))
+						   {
+							  sprintf(new_string, "%s/%s/", example_path,
+								 return_string);
+							  DEALLOCATE(return_string);
+							  return_string = new_string;
+						   }
+						   else
+						   {
+							  DEALLOCATE(return_string);
+							  display_message(ERROR_MESSAGE,"resolve_example_path."
+								 "  Unable to make final reallocate of string");
+							  return_string = (char *)NULL;
 						   }
 						}
 					}
