@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 22 August 2003
+LAST MODIFIED : 1 June 2004
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -33824,10 +33824,10 @@ then the field component modify function, if present, is not called.
 } /* FE_element_field_values_set_no_modify */
 
 int FE_element_field_values_get_component_values(
-	struct FE_element_field_values *element_field_values, int component_number,
-	int *number_of_component_values_address, FE_value **component_values_address)
+	struct FE_element_field_values *element_field_values,int component_number,
+	int *number_of_component_values_address,FE_value **component_values_address)
 /*******************************************************************************
-LAST MODIFIED : 4 March 2003
+LAST MODIFIED : 1 June 2004
 
 DESCRIPTION :
 Allocates and returns to <component_values_address> the component values for
@@ -33839,24 +33839,24 @@ It is up to the calling function to deallocate any returned component values.
 	int return_code;
 
 	ENTER(FE_element_field_values_get_component_values);
-	return_code = 0;
-	if (element_field_values && element_field_values->element &&
-		(0 <= component_number) &&
-		(component_number <  element_field_values->number_of_components) &&
-		number_of_component_values_address && component_values_address)
+	return_code=0;
+	if (element_field_values&&(element_field_values->element)&&
+		(0<=component_number)&&
+		(component_number<element_field_values->number_of_components)&&
+		number_of_component_values_address&&component_values_address)
 	{
-		if (element_field_values->component_number_of_values &&
-			(0 < (*number_of_component_values_address =
-				element_field_values->component_number_of_values[component_number])) &&
-			element_field_values->component_values &&
-			element_field_values->component_values[component_number] &&
-			ALLOCATE(*component_values_address, FE_value,
+		if ((element_field_values->component_number_of_values)&&
+			(0<(*number_of_component_values_address=
+			element_field_values->component_number_of_values[component_number]))&&
+			(element_field_values->component_values)&&
+			element_field_values->component_values[component_number]&&
+			ALLOCATE(*component_values_address,FE_value,
 				*number_of_component_values_address))
 		{
 			memcpy(*component_values_address,
 				element_field_values->component_values[component_number],
 				(*number_of_component_values_address)*sizeof(FE_value));
-			return_code = 1;
+			return_code=1;
 		}
 		else
 		{
@@ -33867,8 +33867,23 @@ It is up to the calling function to deallocate any returned component values.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_values_get_component_values.  Invalid argument(s)");
+		if (element_field_values)
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_element_field_values_get_component_values.  "
+				"Invalid argument(s).  %p %p %d %d %p %p",element_field_values,
+				element_field_values->element,component_number,
+				element_field_values->number_of_components,
+				number_of_component_values_address,component_values_address);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_element_field_values_get_component_values.  "
+				"Invalid argument(s).  %p %d %p %p",element_field_values,
+				component_number,number_of_component_values_address,
+				component_values_address);
+		}
 	}
 	LEAVE;
 
@@ -33876,10 +33891,10 @@ It is up to the calling function to deallocate any returned component values.
 } /* FE_element_field_values_get_component_values */
 
 int FE_element_field_values_get_monomial_component_info(
-	struct FE_element_field_values *element_field_values, int component_number,
+	struct FE_element_field_values *element_field_values,int component_number,
 	int *monomial_info)
 /*******************************************************************************
-LAST MODIFIED : 28 April 2003
+LAST MODIFIED : 21 May 2004
 
 DESCRIPTION :
 If <component_number> in the <element_field_values> is monomial, integer values
@@ -33893,25 +33908,25 @@ the following numbers are the order of the monomial in each direction, where
 	int i, return_code, *source_monomial_info;
 
 	ENTER(FE_element_field_values_get_monomial_component_info);
-	return_code = 0;
-	if (element_field_values && element_field_values->element &&
-		(0 <= component_number) &&
-		(component_number <  element_field_values->number_of_components) &&
+	return_code=0;
+	if (element_field_values&&element_field_values->element&&
+		(0<=component_number)&&
+		(component_number<element_field_values->number_of_components)&&
 		monomial_info)
 	{
-		if (element_field_values->component_standard_basis_function_arguments &&
-			(source_monomial_info = ((int **)(element_field_values->
-				component_standard_basis_function_arguments))[component_number]) &&
+		if ((element_field_values->component_standard_basis_function_arguments)&&
+			(source_monomial_info=((int **)(element_field_values->
+			component_standard_basis_function_arguments))[component_number])&&
 			standard_basis_function_is_monomial(element_field_values->
-				component_standard_basis_functions[component_number],
-				(void *)source_monomial_info))
+			component_standard_basis_functions[component_number],
+			(void *)source_monomial_info))
 		{
-			*monomial_info = *source_monomial_info;
-			for (i = 1; i <= *monomial_info; i++)
+			*monomial_info= *source_monomial_info;
+			for (i=1;i<= *monomial_info;i++)
 			{
-				monomial_info[i] = source_monomial_info[i];
+				monomial_info[i]=source_monomial_info[i];
 			}
-			return_code = 1;
+			return_code=1;
 		}
 		else
 		{
@@ -33922,9 +33937,21 @@ the following numbers are the order of the monomial in each direction, where
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_values_get_monomial_component_info.  "
-			"Invalid argument(s)");
+		if (element_field_values)
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_element_field_values_get_monomial_component_info.  "
+				"Invalid argument(s).  %p %p %d %d %p",element_field_values,
+				element_field_values->element,component_number,
+				element_field_values->number_of_components,monomial_info);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_element_field_values_get_monomial_component_info.  "
+				"Invalid argument(s).  %p %d %p",element_field_values,component_number,
+				monomial_info);
+		}
 	}
 	LEAVE;
 
