@@ -1646,7 +1646,6 @@ Executes a GFX CREATE CYLINDERS command.
 	struct Computed_field *coordinate_field,*data_field,*radius_field;
 	struct Graphical_material *material;
 	struct GROUP(FE_element) *element_group;
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_data_field_data,set_radius_field_data;
@@ -1656,9 +1655,7 @@ Executes a GFX CREATE CYLINDERS command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if ((command_data=(struct Cmiss_command_data *)command_data_void)&&
-			(computed_field_manager=Computed_field_package_get_computed_field_manager(
-				command_data->computed_field_package)))
+		if (command_data = (struct Cmiss_command_data *)command_data_void)
 		{
 			/* initialise defaults */
 			graphics_object_name = duplicate_string("cylinders");
@@ -1973,7 +1970,6 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 	struct GROUP(FE_element) *element_group;
 	struct Graphical_material *material;
 	struct GT_object *glyph,*graphics_object;
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Spectrum *spectrum;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
@@ -1983,10 +1979,7 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 
 	ENTER(gfx_create_element_points);
 	USE_PARAMETER(dummy_to_be_modified);
-	if (state &&
-		(command_data=(struct Cmiss_command_data *)command_data_void)&&
-		(computed_field_manager=Computed_field_package_get_computed_field_manager(
-			command_data->computed_field_package)))
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		/* initialise defaults */
 		graphics_object_name = duplicate_string("element_points");
@@ -2758,7 +2751,6 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 	struct Computed_field *coordinate_field,*stream_vector_field;
 	struct GROUP(FE_element) *element_group;
 	struct Graphical_material *material;
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Spectrum *spectrum;
 	Triple *particle_positions,*final_particle_positions;
 	static struct Modifier_entry option_table[]=
@@ -2781,9 +2773,7 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if ((command_data=(struct Cmiss_command_data *)command_data_void)&&
-			(computed_field_manager=Computed_field_package_get_computed_field_manager(
-				command_data->computed_field_package)))
+		if (command_data = (struct Cmiss_command_data *)command_data_void)
 		{
 			/* initialise defaults */
 			graphics_object_name = duplicate_string("particles");
@@ -3015,7 +3005,6 @@ Executes a GFX CREATE MORE_FLOW_PARTICLES command.
 	struct Computed_field *coordinate_field,*stream_vector_field;
 	struct GROUP(FE_element) *element_group;
 	struct Graphical_material *material;
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Spectrum *spectrum;
 	Triple *new_particle_positions,*particle_positions,
 		*final_particle_positions;
@@ -3039,9 +3028,7 @@ Executes a GFX CREATE MORE_FLOW_PARTICLES command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if ((command_data=(struct Cmiss_command_data *)command_data_void)&&
-			(computed_field_manager=Computed_field_package_get_computed_field_manager(
-				command_data->computed_field_package)))
+		if (command_data = (struct Cmiss_command_data *)command_data_void)
 		{
 			/* initialise defaults */
 			graphics_object_name = duplicate_string("particles");
@@ -3242,7 +3229,6 @@ Executes a GFX MODIFY FLOW_PARTICLES command.
 	float stepsize,time;
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *coordinate_field,*stream_vector_field;
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_stream_vector_field_data;
@@ -3251,9 +3237,7 @@ Executes a GFX MODIFY FLOW_PARTICLES command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if ((command_data=(struct Cmiss_command_data *)command_data_void)&&
-			(computed_field_manager=Computed_field_package_get_computed_field_manager(
-				command_data->computed_field_package)))
+		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
 			coordinate_field=(struct Computed_field *)NULL;
 			stream_vector_field=(struct Computed_field *)NULL;
@@ -4445,7 +4429,6 @@ Executes a GFX CREATE LINES command.
 	struct Computed_field *coordinate_field,*data_field;
 	struct Graphical_material *material;
 	struct GROUP(FE_element) *element_group;
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_data_field_data;
@@ -4455,9 +4438,7 @@ Executes a GFX CREATE LINES command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if ((command_data=(struct Cmiss_command_data *)command_data_void)&&
-			(computed_field_manager=Computed_field_package_get_computed_field_manager(
-				command_data->computed_field_package)))
+		if (command_data = (struct Cmiss_command_data *)command_data_void)
 		{
 			/* initialise defaults */
 			graphics_object_name = duplicate_string("lines");
@@ -5202,7 +5183,6 @@ If <use_data> is set, creating data points, otherwise creating node points.
 	struct Graphical_material *material;
 	struct GT_glyph_set *glyph_set;
 	struct GT_object *glyph,*graphics_object;
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct MANAGER(FE_node) *node_manager;
 	struct MANAGER(GROUP(FE_node)) *node_group_manager;
 	struct Option_table *option_table;
@@ -5213,10 +5193,7 @@ If <use_data> is set, creating data points, otherwise creating node points.
 	Triple glyph_centre,glyph_scale_factors,glyph_size;
 
 	ENTER(gfx_create_node_points);
-	if (state &&
-		(command_data=(struct Cmiss_command_data *)command_data_void) &&
-		(computed_field_manager = Computed_field_package_get_computed_field_manager(
-			command_data->computed_field_package)))
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		if (use_data)
 		{
@@ -6490,7 +6467,6 @@ Executes a GFX CREATE STREAMLINES command.
 	struct GROUP(FE_node) *seed_data_group;
 	struct Graphical_material *material;
 	struct GT_object *graphics_object;
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Node_to_streamline_data node_to_streamline_data;
 	struct Spectrum *spectrum;
 	struct Option_table *option_table;
@@ -6502,9 +6478,7 @@ Executes a GFX CREATE STREAMLINES command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if ((command_data=(struct Cmiss_command_data *)command_data_void)&&
-			(computed_field_manager=Computed_field_package_get_computed_field_manager(
-				command_data->computed_field_package)))
+		if (command_data = (struct Cmiss_command_data *)command_data_void)
 		{
 			/* initialise defaults */
 			graphics_object_name = duplicate_string("streamlines");
@@ -7289,7 +7263,6 @@ Executes a GFX CREATE SURFACES command.
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *coordinate_field,*data_field,*texture_coordinate_field;
 	struct Element_discretization discretization;
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Element_to_surface_data element_to_surface_data;
 	struct Graphical_material *material;
 	struct GROUP(FE_element) *element_group;
@@ -7302,9 +7275,7 @@ Executes a GFX CREATE SURFACES command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if ((command_data=(struct Cmiss_command_data *)command_data_void)&&
-			(computed_field_manager=Computed_field_package_get_computed_field_manager(
-				command_data->computed_field_package)))
+		if (command_data = (struct Cmiss_command_data *)command_data_void)
 		{
 			/* initialise defaults */
 			graphics_object_name = duplicate_string("surfaces");
@@ -9046,7 +9017,6 @@ Executes a GFX CREATE VOLUMES command.
 	struct Computed_field *coordinate_field, *data_field,
 		*displacement_map_field, *surface_data_coordinate_field,
 		*surface_data_density_field, *blur_field;
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Element_to_volume_data element_to_volume_data;
 	struct FE_element *seed_element;
 	struct FE_node *data_to_destroy;
@@ -9066,9 +9036,7 @@ Executes a GFX CREATE VOLUMES command.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if ((command_data=(struct Cmiss_command_data *)command_data_void)&&
-			(computed_field_manager=Computed_field_package_get_computed_field_manager(
-				command_data->computed_field_package)))
+		if (command_data = (struct Cmiss_command_data *)command_data_void)
 		{
 			/* initialise defaults */
 			graphics_object_name = duplicate_string("volumes");
