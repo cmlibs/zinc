@@ -217,8 +217,8 @@ DESCRIPTION :
 													}
 													numerator_rms /= (float)number_of_samples;
 													denominator_rms /= (float)number_of_samples;
-													numerator_rms=fsqrt(numerator_rms);
-													denominator_rms=fsqrt(denominator_rms);
+													numerator_rms=(float)sqrt((double)numerator_rms);
+													denominator_rms=(float)sqrt((double)denominator_rms);
 													if (0==denominator_rms)
 													{
 														scale=numerator_rms;
