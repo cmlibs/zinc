@@ -75,6 +75,12 @@ struct List_Computed_field_commands_data
 	struct MANAGER(Computed_field) *computed_field_manager;
 }; /* struct List_Computed_field_commands_data */
 
+struct Computed_field_conditional_data
+{
+	struct Computed_field *conditional_field;
+	FE_value time;
+}; /* struct Computed_field_conditional_data */
+
 /*
 Global functions
 ----------------
@@ -138,6 +144,25 @@ DESCRIPTION :
 Manager conditional function version of Computed_field_is_defined_in_element.
 ==============================================================================*/
 
+int Computed_field_is_true_in_element(struct Computed_field *field,
+	struct FE_element *element,FE_value time);
+/*******************************************************************************
+LAST MODIFIED : 3 December 2002
+
+DESCRIPTION :
+Returns true if <field> is determined to be "true" at the centre of <element>.
+This is currently that the field is defined and any of the components are non zero.
+==============================================================================*/
+
+int FE_element_Computed_field_is_not_true_iterator(struct FE_element *element,
+	void *computed_field_conditional_data_void);
+/*******************************************************************************
+LAST MODIFIED : 5 December 2002
+
+DESCRIPTION :
+Iterator version of NOT Computed_field_is_true_in_element.
+==============================================================================*/
+
 int Computed_field_is_defined_at_node(struct Computed_field *field,
 	struct FE_node *node);
 /*******************************************************************************
@@ -156,6 +181,25 @@ LAST MODIFIED : 28 June 2000
 DESCRIPTION :
 Computed_field conditional function version of
 Computed_field_is_defined_at_node.
+==============================================================================*/
+
+int Computed_field_is_true_at_node(struct Computed_field *field,
+	struct FE_node *node, FE_value time);
+/*******************************************************************************
+LAST MODIFIED : 3 December 2002
+
+DESCRIPTION :
+Returns true if <field> is determined to be "true" at <node>.  This is currently
+that the field is defined and any of the components are non zero.
+==============================================================================*/
+
+int FE_node_Computed_field_is_not_true_iterator(struct FE_node *node,
+	void *fe_node_computed_field_conditional_data_void);
+/*******************************************************************************
+LAST MODIFIED : 3 December 2002
+
+DESCRIPTION :
+Iterator version of NOT Computed_field_is_true_at_node.
 ==============================================================================*/
 
 int FE_node_has_Computed_field_defined(struct FE_node *node,void *field_void);

@@ -132,6 +132,7 @@ like the number of components.
 #include "computed_field/computed_field_private.h"
 #include "computed_field/computed_field_set.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_discretization.h"
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/geometry.h"
@@ -1363,6 +1364,118 @@ Manager conditional function version of Computed_field_is_defined_in_element.
 	return (return_code);
 } /* Computed_field_is_defined_in_element_conditional */
 
+int Computed_field_is_true_in_element(struct Computed_field *field,
+	struct FE_element *element,FE_value time)
+/*******************************************************************************
+LAST MODIFIED : 3 December 2002
+
+DESCRIPTION :
+Returns true if <field> is determined to be "true" at the centre of <element>.
+This is currently that the field is defined and any of the components are non zero.
+==============================================================================*/
+{
+	FE_value zero_tolerance = 1e-6;
+	int i, number_of_xi_points, number_in_xi, return_code;
+	struct FE_element_shape *shape;
+	Triple *xi_points;
+
+	ENTER(Computed_field_is_true_in_element);
+	return_code=0;
+	if (field&&element)
+	{	
+		if (field->computed_field_evaluate_cache_in_element_function)
+		{
+			if (field->computed_field_is_defined_in_element_function)
+			{
+				if (field->computed_field_is_defined_in_element_function(field, element))
+				{
+					number_in_xi = 1;
+					get_FE_element_shape(element, &shape);
+					if (FE_element_shape_get_xi_points_cell_centres(shape, &number_in_xi,
+						&number_of_xi_points, &xi_points) && (number_of_xi_points > 0))
+					{
+						if (Computed_field_evaluate_cache_in_element(field, element, xi_points[0], 
+							time, /*top_level_element*/(struct FE_element *)NULL,
+							/*calculate_derivatives*/0))
+						{
+							return_code = 0;
+							for (i = 0 ; (return_code == 0) && 
+								(i < field->number_of_components) ; i++)
+							{
+								if ((field->values[i] < -zero_tolerance) ||
+									(field->values[i] > zero_tolerance))
+								{
+									return_code = 1;
+								}
+							}
+						}
+						else
+						{
+							return_code = 0;
+						}
+						DEALLOCATE(xi_points);
+					}
+					else
+					{
+						return_code = 0;
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_is_true_at_node.  "
+					"Is_defined_in_node_function for field %s is not defined.",
+					field->name);
+				return_code=0;
+			}
+		}
+		else
+		{
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_true_at_node.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_true_at_node */
+
+int FE_element_Computed_field_is_not_true_iterator(struct FE_element *element,
+	void *computed_field_conditional_data_void)
+/*******************************************************************************
+LAST MODIFIED : 5 December 2002
+
+DESCRIPTION :
+Iterator version of NOT Computed_field_is_true_in_element.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_conditional_data *data;
+
+	ENTER(FE_element_Computed_field_is_not_true_iterator);
+	if (element && (data = (struct Computed_field_conditional_data *)
+		computed_field_conditional_data_void) && data->conditional_field)
+	{	
+		return_code = !Computed_field_is_true_in_element(data->conditional_field,
+			element, data->time);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_Computed_field_is_not_true_iterator.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_Computed_field_is_not_true_iterator */
+
 int Computed_field_is_defined_at_node(struct Computed_field *field,
 	struct FE_node *node)
 /*******************************************************************************
@@ -1430,6 +1543,103 @@ Computed_field_is_defined_at_node.
 
 	return (return_code);
 } /* Computed_field_is_defined_at_node_conditional */
+
+int Computed_field_is_true_at_node(struct Computed_field *field,
+	struct FE_node *node, FE_value time)
+/*******************************************************************************
+LAST MODIFIED : 3 December 2002
+
+DESCRIPTION :
+Returns true if <field> is determined to be "true" at <node>.  This is currently
+that the field is defined and any of the components are non zero.
+==============================================================================*/
+{
+	FE_value zero_tolerance = 1e-6;
+	int i, return_code;
+
+	ENTER(Computed_field_is_true_at_node);
+	return_code=0;
+	if (field&&node)
+	{	
+		if (field->computed_field_evaluate_cache_at_node_function)
+		{
+			if (field->computed_field_is_defined_at_node_function)
+			{
+				if (field->computed_field_is_defined_at_node_function(field, node))
+				{
+					if (Computed_field_evaluate_cache_at_node(field, node, time))
+					{
+						return_code = 0;
+						for (i = 0 ; (return_code == 0) && 
+							(i < field->number_of_components) ; i++)
+						{
+							if ((field->values[i] < -zero_tolerance) ||
+								(field->values[i] > zero_tolerance))
+							{
+								return_code = 1;
+							}
+						}
+					}
+					else
+					{
+						return_code = 0;
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_is_true_at_node.  "
+					"Is_defined_in_node_function for field %s is not defined.",
+					field->name);
+				return_code=0;
+			}
+		}
+		else
+		{
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_is_true_at_node.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_is_true_at_node */
+
+int FE_node_Computed_field_is_not_true_iterator(struct FE_node *node,
+	void *computed_field_conditional_data_void)
+/*******************************************************************************
+LAST MODIFIED : 5 December 2002
+
+DESCRIPTION :
+Iterator version of NOT Computed_field_is_true_at_node.
+==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_conditional_data *data;
+
+	ENTER(FE_node_Computed_field_is_not_true_iterator);
+	if (node && (data = (struct Computed_field_conditional_data *)
+		computed_field_conditional_data_void) && data->conditional_field)
+	{	
+		return_code = !Computed_field_is_true_at_node(data->conditional_field,
+			node, data->time);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_Computed_field_is_not_true_iterator.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_Computed_field_is_not_true_iterator */
 
 int Computed_field_default_is_defined_at_node(struct Computed_field *field,
 	struct FE_node *node)
