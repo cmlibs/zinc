@@ -651,7 +651,7 @@ Sets the nodes according to all the values of the sliders
 				manager message to the Scene Manager and then calling that. */
 			if (graphics_window=FIRST_OBJECT_IN_MANAGER_THAT(Graphics_window)(
 				(MANAGER_CONDITIONAL_FUNCTION(Graphics_window) *)NULL,
-				(void *)NULL,emoter_dialog->shared->graphics_window_manager))
+				(void *)NULL,shared->graphics_window_manager))
 			{
 				Graphics_window_update_now(graphics_window);
 			}
