@@ -13,6 +13,9 @@ This provides an object which interfaces between a event_dispatcher and Cmgui
 #if defined (USE_XTAPP_CONTEXT)
 #include <Xm/Xm.h>
 #endif /* defined (USE_XTAPP_CONTEXT) */
+#if defined (WIN32_USER_INTERFACE)
+#include <windows.h>
+#endif /* defined (WIN32_USER_INTERFACE) */
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/list.h"
@@ -1213,7 +1216,17 @@ DESCRIPTION :
 
 	if (event_dispatcher)
 	{
-#if defined (USE_XTAPP_CONTEXT)
+#if defined (WIN32_USER_INTERFACE)
+		{
+			MSG message;
+			if (TRUE==GetMessage(&message,NULL,0,0))
+			{
+				TranslateMessage(&message);
+				DispatchMessage(&message);
+			}
+			return_code=1;
+		}
+#elif defined (USE_XTAPP_CONTEXT)
 		XtAppProcessEvent(event_dispatcher->application_context, XtIMAll);
 		return_code = 1;
 #else /* defined (USE_XTAPP_CONTEXT) */

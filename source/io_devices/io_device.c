@@ -61,7 +61,7 @@ Module functions
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Io_device,name,char *,strcmp)
 
 #if defined (SELECT_DESCRIPTORS)
-static int Io_device_descriptor_callback(int filehandle, XtPointer device_void)
+static int Io_device_descriptor_callback(int filehandle, void *device_void)
 /*******************************************************************************
 LAST MODIFIED : 16 May 2001
 

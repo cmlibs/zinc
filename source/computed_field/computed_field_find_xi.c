@@ -9,6 +9,7 @@ lookup of the element.
 ==============================================================================*/
 #include <stdio.h>
 #include <math.h>
+#include <GL/gl.h>
 
 #include "general/debug.h"
 #include "general/image_utilities.h"
@@ -16,7 +17,9 @@ lookup of the element.
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "graphics/texture.h"
+#if defined (DM_BUFFERS)
 #include "three_d_drawing/dm_interface.h"
+#endif /* defined (DM_BUFFERS) */
 #include "user_interface/message.h"
 
 struct Render_element_data
@@ -30,10 +33,14 @@ struct Render_element_data
 
 struct Computed_field_find_element_xi_special_cache
 {
+#if defined (DM_BUFFERS)
 	int bit_shift;
 	int minimum_element_number;
 	int maximum_element_number;
 	struct Dm_buffer *dmbuffer;
+#else /* defined (DM_BUFFERS) */
+	int dummy;
+#endif /* defined (DM_BUFFERS) */
 };
 
 #if defined (OLD_CODE)
@@ -470,6 +477,7 @@ Returns true if a valid element xi is found.
 
 #undef MAX_FIND_XI_ITERATIONS
 
+#if defined (DM_BUFFERS)
 static int Expand_element_range(struct FE_element *element, void *data_void)
 /*******************************************************************************
 LAST MODIFIED : 26 June 2000
@@ -594,6 +602,7 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 	
 	return (return_code);
 } /* Render_element_as_texture */
+#endif /* defined (DM_BUFFERS) */
 
 int Computed_field_find_element_xi_special(struct Computed_field *field, 
 	struct Computed_field_find_element_xi_special_cache **cache_ptr,
@@ -621,6 +630,8 @@ The return code indicates if the algorithm should be relied on or whether a
 sequential element_xi lookup should now be performed.
 ==============================================================================*/
 {
+	int return_code;
+#if defined (DM_BUFFERS)
 #define BLOCK_SIZE (20)
 #if defined (DEBUG)
 	int dummy[1024 * 1024];
@@ -633,11 +644,28 @@ sequential element_xi lookup should now be performed.
 	struct Computed_field_iterative_find_element_xi_data find_element_xi_data;
 	struct FE_element *first_element;
 	struct Render_element_data data;
-	int gl_list, i, nx, ny, px, py, return_code, scaled_number;
+	int gl_list, i, nx, ny, px, py, scaled_number;
+#endif /* defined (DM_BUFFERS) */
 
 	ENTER(Computed_field_find_element_xi_special);
 	USE_PARAMETER(number_of_values);
+#if !defined (DM_BUFFERS)
+	USE_PARAMETER(field);
+	USE_PARAMETER(cache_ptr);
+	USE_PARAMETER(values);
+	USE_PARAMETER(element);
+	USE_PARAMETER(xi);
+	USE_PARAMETER(search_element_group);
+	USE_PARAMETER(user_interface);
+	USE_PARAMETER(hint_minimums);
+	USE_PARAMETER(hint_maximums);
+	USE_PARAMETER(hint_resolution);
+#endif /* !defined (DM_BUFFERS) */
+
 	return_code = 0;
+#if defined (DM_BUFFERS)
+	/* The Dm_buffers are not available with other widget systems at the
+		moment */
 	/* If the number of elements in the group is small then there probably isn't
 		any benefit to using this method */
 	/* This method is adversely affected when displaying on a remote machine as every
@@ -959,6 +987,7 @@ sequential element_xi lookup should now be performed.
 			return_code = 0;
 		}
 	}
+#endif /* defined (DM_BUFFERS) */
 	LEAVE;
 
 	return (return_code);
@@ -979,7 +1008,9 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 	
 	if (ALLOCATE(cache,struct Computed_field_find_element_xi_special_cache,1))
 	{
+#if defined (DM_BUFFERS)
 	  cache->dmbuffer = (struct Dm_buffer *)NULL;
+#endif /* defined (DM_BUFFERS) */
 	}
 	else
 	{
@@ -1006,7 +1037,12 @@ Frees memory/deaccess cache at <*cache_address>.
 	ENTER(DESTROY(Computed_field_find_element_xi_special_cache));
 	if (cache_address&&*cache_address)
 	{
-		DESTROY(Dm_buffer)(&(*cache_address)->dmbuffer);
+#if defined (DM_BUFFERS)
+		if ((*cache_address)->dmbuffer)
+		{
+			DESTROY(Dm_buffer)(&(*cache_address)->dmbuffer);
+		}
+#endif /* defined (DM_BUFFERS) */
 		DEALLOCATE(*cache_address);
 	}
 	else
@@ -1019,5 +1055,3 @@ Frees memory/deaccess cache at <*cache_address>.
 
 	return (return_code);
 } /* DESTROY(Computed_field_find_element_xi_special_cache) */
-
-

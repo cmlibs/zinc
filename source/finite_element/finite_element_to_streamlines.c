@@ -18,7 +18,6 @@ Functions for calculating streamlines in finite elements.
 #include "general/matrix_vector.h"
 #include "general/random.h"
 #include "graphics/graphics_object.h"
-#include "graphics/graphics_window.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 

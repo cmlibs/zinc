@@ -6,13 +6,11 @@ LAST MODIFIED : 9 July 1999
 DESCRIPTION :
 Routines for waiting for user input.
 ==============================================================================*/
-#if defined (WIN32)
-#include <direct.h>
-#else /* defined (WIN32) */
+#if defined (UNIX)
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#endif /* defined (WIN32) */
+#endif /* defined (UNIX) */
 #include <stdio.h>
 #include <string.h>
 #if defined (MOTIF)
@@ -155,6 +153,11 @@ button is clicked.
 #endif /* defined (MOTIF) */
 
 	ENTER(confirmation);
+#if !defined (MOTIF)
+	USE_PARAMETER(type);
+	USE_PARAMETER(title);
+	USE_PARAMETER(prompt);
+#endif /* !defined (MOTIF) */
 	return_code=0;
 	if (user_interface)
 	{
@@ -244,7 +247,7 @@ button is clicked.
 		XmStringFree(message_string);
 		return_code=confirmation.response;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		switch (type)
 		{
 			case ERROR_OK:
@@ -313,7 +316,7 @@ button is clicked.
 				}
 			} break;
 		}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	}
 	LEAVE;
 
@@ -436,9 +439,9 @@ This routine supplies a file selection dialog window
 #if defined (MOTIF)
 						(Widget)NULL,(XtPointer)file_open_data,(XtPointer)NULL
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 						file_open_data
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 						);
 				} break;
 				case CONFIRM_CHANGE_DIRECTORY:
@@ -448,16 +451,16 @@ This routine supplies a file selection dialog window
 #if defined (MOTIF)
 						(Widget)NULL,(XtPointer)file_open_data,(XtPointer)NULL
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 						file_open_data
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 						);
 				} break;
 			}
-#if defined (WINDOWS)
-			/*???DB.  For WINDOWS the event loop is inside open_file_and_*.  Should
+#if defined (WIN32_USER_INTERFACE)
+			/*???DB.  For WIN32_USER_INTERFACE the event loop is inside open_file_and_*.  Should
 				probably be moved here ? */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #if defined (MOTIF)
 			while (confirmation.dialog_active&&(file_open_data->selection))
 			{
@@ -478,9 +481,9 @@ This routine supplies a file selection dialog window
 						if (confirmation.filename)
 						{
 							mkdir(confirmation.filename
-#if !defined (WIN32)
+#if defined (UNIX)
 								,S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH
-#endif /* !defined (WIN32) */
+#endif /* defined (UNIX) */
 								);
 							if (0==chdir(confirmation.filename))
 							{

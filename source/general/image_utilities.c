@@ -746,7 +746,7 @@ functions, ie. at the start of the program.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Open_image_environment.  Missing user_interface");
+			"Open_image_environment.  Missing program name.");
 		return_code = 0;
 	}
 	LEAVE;
@@ -6326,22 +6326,22 @@ right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
 					case 1:
 					{
 						magick_image->colorspace = GRAYColorspace;
-						magick_image->matte = False;
+						magick_image->matte = 0;
 					} break;
 					case 2:
 					{
 						magick_image->colorspace = GRAYColorspace;
-						magick_image->matte = True;
+						magick_image->matte = 1;
 					} break;
 					case 3:
 					{
 						magick_image->colorspace = RGBColorspace;
-						magick_image->matte = False;
+						magick_image->matte = 0;
 					} break;
 					case 4:
 					{
 						magick_image->colorspace = RGBColorspace;
-						magick_image->matte = True;
+						magick_image->matte = 1;
 					} break;
 					default:
 					{

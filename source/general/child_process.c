@@ -9,10 +9,12 @@ This provides an object which interfaces between a child_process and Cmgui
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#if defined (UNIX)
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <fcntl.h>
+#endif /* defined (UNIX) */
 #include "general/debug.h"
 #include "general/object.h"
 #include "user_interface/message.h"
@@ -21,9 +23,11 @@ This provides an object which interfaces between a child_process and Cmgui
 struct Child_process
 {
 	char *name;
+#if defined (UNIX)
 	pid_t process_id;
 	int stdin_filedes;
 	int stdout_filedes;
+#endif /* defined (UNIX) */
 
 	int access_count;
 };
@@ -38,14 +42,17 @@ LAST MODIFIED : 26 August 1999
 DESCRIPTION :
 ==============================================================================*/
 {
+#if defined (UNIX)
 	int stdin_filedes[2], stdout_filedes[2];
 	pid_t process_id;
+#endif /* defined (UNIX) */
 	struct Child_process *child_process;
 
 	ENTER(CREATE(Child_process));
 
 	if(filename)
 	{
+#if defined (UNIX)
 		if (ALLOCATE(child_process, struct Child_process, 1) &&
 			ALLOCATE(child_process->name, char, strlen(filename) + 1))
 		{
@@ -96,6 +103,11 @@ DESCRIPTION :
 			display_message(ERROR_MESSAGE,"CREATE(Child_process). Unable to allocate structure");
 			child_process = (struct Child_process *)NULL;
 		}
+#else /* defined (UNIX) */
+		display_message(ERROR_MESSAGE,"CREATE(Child_process).  "
+			"Not implemented outside UNIX yet.");
+		child_process = (struct Child_process *)NULL;
+#endif /* defined (UNIX) */
 	}
 	else
 	{
@@ -121,13 +133,20 @@ Sends a string to the stdin pipe of a Child_process.
 	ENTER(Child_process_send_string_to_stdin);
 	if (child_process)
 	{
+#if defined (UNIX)
 		length = strlen(string);
 		write(child_process->stdin_filedes, (void *)string, length);
 		return_code=1;
+#else /* defined (UNIX) */
+		display_message(ERROR_MESSAGE,"Child_process_send_string_to_stdin.  "
+			"Not implemented outside UNIX yet.");
+		return_code=0;
+#endif /* defined (UNIX) */
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Child_process_send_string_to_stdin.  Missing scene");
+		display_message(ERROR_MESSAGE,"Child_process_send_string_to_stdin.  "
+			"Missing child process");
 		return_code=0;
 	}
 	LEAVE;
@@ -146,16 +165,20 @@ received and returns the character string for that line.  If the end_of_line
 isn't recieved in the <timeout> limit then the function returns NULL.
 ==============================================================================*/
 {
+	char *return_string;
+#if defined (UNIX)
 #define BLOCKSIZE (100)
-	char last_char, *new_string, *return_string;
+	char last_char, *new_string;
 	fd_set readfds;
 	int flags, index, string_size;
 	ssize_t number_read;
 	struct timeval timeout_struct;
+#endif /* defined (UNIX) */
  
 	ENTER(Child_process_get_line_from_stdout);
 	if (child_process)
 	{
+#if defined (UNIX)
 		FD_ZERO(&readfds);
 		FD_SET(child_process->stdout_filedes, &readfds);
 		string_size = 2 * BLOCKSIZE;
@@ -219,11 +242,16 @@ isn't recieved in the <timeout> limit then the function returns NULL.
 				"  Unable to allocate string");
 			return_string = (char *)NULL;
 		}
+#else /* defined (UNIX) */
+		display_message(ERROR_MESSAGE,"Child_process_get_line_from_stdout.  "
+			"Not implemented outside UNIX yet.");
+		return_string = (char *)NULL;
+#endif /* defined (UNIX) */
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Child_process_get_line_from_stdouts."
-			"  Missing child_process");
+		display_message(ERROR_MESSAGE,"Child_process_get_line_from_stdout.  "
+			"Missing child_process");
 		return_string = (char *)NULL;
 	}
 	LEAVE;

@@ -605,11 +605,11 @@ IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/liblinux/libMagick.a $(IMAGEMAGICK_PATH)/l
 #if defined (IRIX) /* switch OperatingSystem */
 #if defined (O64)
 XCOMM for OpenGL without SGI movie (64bit doesnt have libraries as of Jan99)
-GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
+GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API -DDM_BUFFERS 
 GRAPHICS_LIB = -lGL -lGLU
 #else /* defined (O64) */
 XCOMM  for OpenGL with SGI movie
-GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API -DSGI_MOVIE_FILE -DSGI_DIGITAL_MEDIA
+GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API -DDM_BUFFERS -DSGI_MOVIE_FILE -DSGI_DIGITAL_MEDIA
 GRAPHICS_LIB = -delay_load -lmoviefile -delay_load -ldmedia -lGL -lGLU
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
@@ -830,6 +830,7 @@ POSITION_SRCS = \
 	io_devices/input_module.c \
 	io_devices/matrix.c
 NODE_SRCS = \
+	node/node_operations.c \
 	node/node_tool.c
 SELECTION_SRCS = \
 	selection/element_point_ranges_selection.c \

@@ -54,9 +54,9 @@ used to keep track of the widgets involved.
 	Widget activation,file_list,selection_shell,selection,selection_label,
 		selection_text,warning_box,warning_shell;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	OPENFILENAME open_file_name;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	/* file name is used for passing into callbacks */
 	char *file_name;
 }; /* struct File_open_data */
@@ -90,9 +90,9 @@ void open_file_and_read(
 #if defined (MOTIF)
 	Widget widget,XtPointer client_data,XtPointer call_data
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	struct File_open_data *file_open_data
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	);
 /*******************************************************************************
 LAST MODIFIED : 20 April 1997
@@ -108,9 +108,9 @@ void open_file_and_write(
 #if defined (MOTIF)
 	Widget widget,XtPointer client_data,XtPointer call_data
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	struct File_open_data *file_open_data
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	);
 /*******************************************************************************
 LAST MODIFIED : 21 April 1997

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : time_keeper.c
 
-LAST MODIFIED : 27 November 2001
+LAST MODIFIED : 26 June 2002
 
 DESCRIPTION :
 This object defines a relationship between a bunch of time objects, keeps them
@@ -10,10 +10,10 @@ This is intended to be multithreaded......
 ******************************************************************************/
 #include <math.h>
 #include <stdio.h>
-#include <sys/time.h>
 #include "general/debug.h"
 #include "general/list_private.h"
 #include "general/object.h"
+#include "general/time.h"
 #include "user_interface/event_dispatcher.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -31,11 +31,13 @@ enum Time_keeper_play_mode
 	TIME_KEEPER_PLAY_SWING
 };
 
+#if defined (MOTIF)
 struct Time_keeper_defaults
 {
 	Boolean play_every_frame;
 	float speed;
 };
+#endif /* defined (MOTIF) */
 
 struct Time_keeper_callback_data
 {
@@ -234,6 +236,7 @@ LAST MODIFIED : 15 March 2002
 DESCRIPTION :
 ==============================================================================*/
 {
+#if defined (MOTIF)
 #define XmNtimePlaySpeed "timePlaySpeed"
 #define XmCtimePlaySpeed "TimePlaySpeed"
 #define XmNtimePlayEveryFrame "timePlayEveryFrame"
@@ -260,15 +263,19 @@ DESCRIPTION :
 			"false"
 		}
 	};
+#endif /* defined (MOTIF) */
 	struct Time_keeper *time_keeper;
 
 	ENTER(CREATE(Time_keeper));
-
+#if !defined (MOTIF)
+	USE_PARAMETER(user_interface);
+#endif /* defined (MOTIF) */
 	if(name)
 	{
 		if (ALLOCATE(time_keeper, struct Time_keeper, 1) &&
 			ALLOCATE(time_keeper->name, char, strlen(name) + 1))
 		{
+#if defined (MOTIF)
 			time_keeper_defaults.speed = 1.0;
 			time_keeper_defaults.play_every_frame = False;
 			if (user_interface)
@@ -276,6 +283,19 @@ DESCRIPTION :
 				XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 					&time_keeper_defaults,resources,XtNumber(resources),NULL);
 			}
+			time_keeper->speed = time_keeper_defaults.speed;
+			if(time_keeper_defaults.play_every_frame)
+			{
+				time_keeper->play_every_frame = 1;
+			}
+			else
+			{
+				time_keeper->play_every_frame = 0;
+			}
+#else /* defined (MOTIF) */
+			time_keeper->speed = 1.0;
+			time_keeper->play_every_frame = 0;
+#endif /* defined (MOTIF) */
 			strcpy(time_keeper->name, name);
 			time_keeper->time_object_info_list = (struct Time_object_info *)NULL;
 			time_keeper->time = 0.0;
@@ -286,15 +306,6 @@ DESCRIPTION :
 			time_keeper->minimum = 0.0;
 			time_keeper->real_time = 0.0;
 			time_keeper->step = 0.0;
-			time_keeper->speed = time_keeper_defaults.speed;
-			if(time_keeper_defaults.play_every_frame)
-			{
-				time_keeper->play_every_frame = 1;
-			}
-			else
-			{
-				time_keeper->play_every_frame = 0;
-			}
 			time_keeper->play_direction = TIME_KEEPER_PLAY_FORWARD;
 			time_keeper->play_start_seconds = 0;
 			time_keeper->play_start_microseconds = 0;

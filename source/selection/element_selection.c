@@ -17,7 +17,7 @@ Module types
 ------------
 */
 
-FULL_DECLARE_CALLBACK_TYPES(FE_element_selection_change, \
+FULL_DECLARE_CMISS_CALLBACK_TYPES(FE_element_selection_change, \
 	struct FE_element_selection *,struct FE_element_selection_changes *);
 
 struct FE_element_selection
@@ -39,16 +39,16 @@ Global store of selected elements for group actions and highlighting.
 		 already selected; excludes those subsequently selected */
 	struct LIST(FE_element) *newly_unselected_element_list;
 	/* list of callbacks requested by other objects when selction changes */
-	struct LIST(CALLBACK_ITEM(FE_element_selection_change)) *change_callback_list;
+	struct LIST(CMISS_CALLBACK_ITEM(FE_element_selection_change)) *change_callback_list;
 }; /* struct FE_element_selection */
 
 /*
 Module functions
 ----------------
 */
-DEFINE_CALLBACK_MODULE_FUNCTIONS(FE_element_selection_change)
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(FE_element_selection_change)
 
-DEFINE_CALLBACK_FUNCTIONS(FE_element_selection_change, \
+DEFINE_CMISS_CALLBACK_FUNCTIONS(FE_element_selection_change, \
 	struct FE_element_selection *,struct FE_element_selection_changes *)
 
 static int FE_element_selection_update(
@@ -82,7 +82,7 @@ on or if no such changes have occurred.
 				changes.newly_unselected_element_list=
 					element_selection->newly_unselected_element_list;
 				/* send the callbacks */
-				CALLBACK_LIST_CALL(FE_element_selection_change)(
+				CMISS_CALLBACK_LIST_CALL(FE_element_selection_change)(
 					element_selection->change_callback_list,element_selection,&changes);
 				/* clear the newly selected and unselected lists */
 				REMOVE_ALL_OBJECTS_FROM_LIST(FE_element)(
@@ -128,7 +128,7 @@ highlighting.
 		element_selection->newly_selected_element_list=CREATE(LIST(FE_element))();
 		element_selection->newly_unselected_element_list=CREATE(LIST(FE_element))();
 		element_selection->change_callback_list=
-			CREATE(LIST(CALLBACK_ITEM(FE_element_selection_change)))();
+			CREATE(LIST(CMISS_CALLBACK_ITEM(FE_element_selection_change)))();
 		if (!(element_selection->element_list&&
 			element_selection->newly_selected_element_list&&
 			element_selection->newly_unselected_element_list&&
@@ -170,7 +170,7 @@ Destroys the FE_element_selection.
 			&(element_selection->newly_selected_element_list));
 		DESTROY(LIST(FE_element))(
 			&(element_selection->newly_unselected_element_list));
-		DESTROY(LIST(CALLBACK_ITEM(FE_element_selection_change)))(
+		DESTROY(LIST(CMISS_CALLBACK_ITEM(FE_element_selection_change)))(
 			&(element_selection->change_callback_list));
 		DEALLOCATE(*element_selection_address);
 		return_code=1;
@@ -188,7 +188,7 @@ Destroys the FE_element_selection.
 
 int FE_element_selection_add_callback(
 	struct FE_element_selection *element_selection,
-	CALLBACK_FUNCTION(FE_element_selection_change) *function,void *user_data)
+	CMISS_CALLBACK_FUNCTION(FE_element_selection_change) *function,void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 22 March 2000
 
@@ -204,7 +204,7 @@ void *user_data.
 	ENTER(FE_element_selection_add_callback);
 	if (element_selection&&function)
 	{
-		if (CALLBACK_LIST_ADD_CALLBACK(FE_element_selection_change)(
+		if (CMISS_CALLBACK_LIST_ADD_CALLBACK(FE_element_selection_change)(
 			element_selection->change_callback_list,function,user_data))
 		{
 			return_code=1;
@@ -229,7 +229,7 @@ void *user_data.
 
 int FE_element_selection_remove_callback(
 	struct FE_element_selection *element_selection,
-	CALLBACK_FUNCTION(FE_element_selection_change) *function,void *user_data)
+	CMISS_CALLBACK_FUNCTION(FE_element_selection_change) *function,void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 22 March 2000
 
@@ -243,7 +243,7 @@ Removes the callback calling <function> with <user_data> from
 	ENTER(FE_element_selection_remove_callback);
 	if (element_selection&&function)
 	{
-		if (CALLBACK_LIST_REMOVE_CALLBACK(FE_element_selection_change)(
+		if (CMISS_CALLBACK_LIST_REMOVE_CALLBACK(FE_element_selection_change)(
 			element_selection->change_callback_list,function,user_data))
 		{
 			return_code=1;

@@ -44,7 +44,7 @@ changes.
 	struct LIST(FE_element) *newly_unselected_element_list;
 }; /* struct FE_element_selection_changes */
 
-DECLARE_CALLBACK_TYPES(FE_element_selection_change, \
+DECLARE_CMISS_CALLBACK_TYPES(FE_element_selection_change, \
 	struct FE_element_selection *,struct FE_element_selection_changes *);
 
 /*
@@ -71,7 +71,7 @@ Destroys the FE_element_selection.
 
 int FE_element_selection_add_callback(
 	struct FE_element_selection *element_selection,
-	CALLBACK_FUNCTION(FE_element_selection_change) *function,void *user_data);
+	CMISS_CALLBACK_FUNCTION(FE_element_selection_change) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 22 March 2000
 
@@ -84,7 +84,7 @@ void *user_data.
 
 int FE_element_selection_remove_callback(
 	struct FE_element_selection *element_selection,
-	CALLBACK_FUNCTION(FE_element_selection_change) *function,void *user_data);
+	CMISS_CALLBACK_FUNCTION(FE_element_selection_change) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 22 March 2000
 

@@ -102,14 +102,6 @@ brackets.
 Up to the calling routine to deallocate the returned string.
 ==============================================================================*/
 
-int execute_comfile(char *file_name,struct Execute_command *execute_command);
-/******************************************************************************
-LAST MODIFIED : 16 June 1996
-
-DESCRIPTION :
-Opens, executes and then closes a com file.  No window is created.
-=============================================================================*/
-
 int open_comfile(struct Parse_state *state,void *dummy_to_be_modified,
 	void *open_comfile_data_void);
 /*******************************************************************************

@@ -35,8 +35,7 @@ Functions for manipulating finite element structures.
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include "command/command_window.h"
-	/*???DB.  required for set_FE_element_group .  Should it be here ? */
+#include "command/parser.h"
 #include "finite_element/finite_element.h"
 #include "general/compare.h"
 #include "general/debug.h"

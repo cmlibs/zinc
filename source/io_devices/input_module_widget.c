@@ -34,21 +34,21 @@ Module types
 ------------
 */
 
-FULL_DECLARE_CALLBACK_TYPES(Input_module_device_change,Widget, \
+FULL_DECLARE_CMISS_CALLBACK_TYPES(Input_module_device_change,Widget, \
 	struct Input_module_widget_data *);
-FULL_DECLARE_CALLBACK_TYPES(Input_module_polhemus_change,Widget, \
+FULL_DECLARE_CMISS_CALLBACK_TYPES(Input_module_polhemus_change,Widget, \
 	int/*button_num*/);
 
 /*
 Module functions
 ----------------
 */
-DEFINE_CALLBACK_MODULE_FUNCTIONS(Input_module_device_change)
-DEFINE_CALLBACK_MODULE_FUNCTIONS(Input_module_polhemus_change)
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Input_module_device_change)
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Input_module_polhemus_change)
 
-DEFINE_CALLBACK_FUNCTIONS(Input_module_device_change,Widget, \
+DEFINE_CMISS_CALLBACK_FUNCTIONS(Input_module_device_change,Widget, \
 	struct Input_module_widget_data *)
-DEFINE_CALLBACK_FUNCTIONS(Input_module_polhemus_change,Widget,int/*button_num*/)
+DEFINE_CMISS_CALLBACK_FUNCTIONS(Input_module_polhemus_change,Widget,int/*button_num*/)
 
 #if defined (EXT_INPUT)
 static void input_module_identify_button(Widget w,int button_type,
@@ -127,9 +127,9 @@ Callback for the input_module widget - tidies up all details - mem etc
 	if (temp_input_module)
 	{
 		*(temp_input_module->widget_address) = (Widget)NULL;
-		DESTROY(LIST(CALLBACK_ITEM(Input_module_device_change)))(
+		DESTROY(LIST(CMISS_CALLBACK_ITEM(Input_module_device_change)))(
 			&(temp_input_module->device_change_callback_list));
-		DESTROY(LIST(CALLBACK_ITEM(Input_module_polhemus_change)))(
+		DESTROY(LIST(CMISS_CALLBACK_ITEM(Input_module_polhemus_change)))(
 			&(temp_input_module->polhemus_change_callback_list));
 		DEALLOCATE(temp_input_module);
 	}
@@ -165,7 +165,7 @@ or unselected.
 		temp_input_module->input_device[device_num] = reason->set;
 		temp_data.device = (enum Input_module_device)device_num;
 		temp_data.status = reason->set;
-		CALLBACK_LIST_CALL(Input_module_device_change)(
+		CMISS_CALLBACK_LIST_CALL(Input_module_device_change)(
 			temp_input_module->device_change_callback_list,
 			temp_input_module->widget,&temp_data);
 	}
@@ -192,7 +192,7 @@ Polhemus.
 	XtVaGetValues(XtParent(w),XmNuserData,&temp_input_module,NULL);
 	XtVaGetValues(w,XmNuserData,&button_num,NULL);
 #if defined (POLHEMUS)
-	CALLBACK_LIST_CALL(Input_module_polhemus_change)(
+	CMISS_CALLBACK_LIST_CALL(Input_module_polhemus_change)(
 		temp_input_module->polhemus_change_callback_list,
 		temp_input_module->widget,button_num);
 #endif
@@ -345,9 +345,9 @@ certain client.
 			};
 #endif
 			temp_input_module->device_change_callback_list=
-				CREATE(LIST(CALLBACK_ITEM(Input_module_device_change)))();
+				CREATE(LIST(CMISS_CALLBACK_ITEM(Input_module_device_change)))();
 			temp_input_module->polhemus_change_callback_list=
-				CREATE(LIST(CALLBACK_ITEM(Input_module_polhemus_change)))();
+				CREATE(LIST(CMISS_CALLBACK_ITEM(Input_module_polhemus_change)))();
 			/* register the callbacks */
 			if (MrmSUCCESS==MrmRegisterNamesInHierarchy(input_module_widget_hierarchy,
 				callback_list,XtNumber(callback_list)))
@@ -411,7 +411,7 @@ certain client.
 } /* create_input_module_widget */
 
 int Input_module_add_device_change_callback(Widget input_module_widget,
-	CALLBACK_FUNCTION(Input_module_device_change) *function,void *user_data)
+	CMISS_CALLBACK_FUNCTION(Input_module_device_change) *function,void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 20 March 2000
 
@@ -431,7 +431,7 @@ occur in the <input_module_widget>.
 		/* Get the pointer to the data for the input_module dialog */
 		XtVaGetValues(input_module_widget,XmNuserData,&temp_input_module,NULL);
 		if (temp_input_module&&
-			CALLBACK_LIST_ADD_CALLBACK(Input_module_device_change)(
+			CMISS_CALLBACK_LIST_ADD_CALLBACK(Input_module_device_change)(
 				temp_input_module->device_change_callback_list,function,user_data))
 		{
 			return_code=1;
@@ -461,7 +461,7 @@ occur in the <input_module_widget>.
 } /* Input_module_add_device_change_callback */
 
 int Input_module_remove_device_change_callback(Widget input_module_widget,
-	CALLBACK_FUNCTION(Input_module_device_change) *function,void *user_data)
+	CMISS_CALLBACK_FUNCTION(Input_module_device_change) *function,void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 20 March 2000
 
@@ -481,7 +481,7 @@ occur in the <input_module_widget>.
 		/* Get the pointer to the data for the input_module dialog */
 		XtVaGetValues(input_module_widget,XmNuserData,&temp_input_module,NULL);
 		if (temp_input_module&&
-			CALLBACK_LIST_REMOVE_CALLBACK(Input_module_device_change)(
+			CMISS_CALLBACK_LIST_REMOVE_CALLBACK(Input_module_device_change)(
 				temp_input_module->device_change_callback_list,function,user_data))
 		{
 			return_code=1;
@@ -512,7 +512,7 @@ occur in the <input_module_widget>.
 } /* Input_module_remove_device_change_callback */
 
 int Input_module_add_polhemus_change_callback(Widget input_module_widget,
-	CALLBACK_FUNCTION(Input_module_polhemus_change) *function,void *user_data)
+	CMISS_CALLBACK_FUNCTION(Input_module_polhemus_change) *function,void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 20 March 2000
 
@@ -532,7 +532,7 @@ occur in the <input_module_widget>.
 		/* Get the pointer to the data for the input_module dialog */
 		XtVaGetValues(input_module_widget,XmNuserData,&temp_input_module,NULL);
 		if (temp_input_module&&
-			CALLBACK_LIST_ADD_CALLBACK(Input_module_polhemus_change)(
+			CMISS_CALLBACK_LIST_ADD_CALLBACK(Input_module_polhemus_change)(
 				temp_input_module->polhemus_change_callback_list,function,user_data))
 		{
 			return_code=1;
@@ -562,7 +562,7 @@ occur in the <input_module_widget>.
 } /* Input_module_add_polhemus_change_callback */
 
 int Input_module_remove_polhemus_change_callback(Widget input_module_widget,
-	CALLBACK_FUNCTION(Input_module_polhemus_change) *function,void *user_data)
+	CMISS_CALLBACK_FUNCTION(Input_module_polhemus_change) *function,void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 20 March 2000
 
@@ -582,7 +582,7 @@ events occur in the <input_module_widget>.
 		/* Get the pointer to the data for the input_module dialog */
 		XtVaGetValues(input_module_widget,XmNuserData,&temp_input_module,NULL);
 		if (temp_input_module&&
-			CALLBACK_LIST_REMOVE_CALLBACK(Input_module_polhemus_change)(
+			CMISS_CALLBACK_LIST_REMOVE_CALLBACK(Input_module_polhemus_change)(
 				temp_input_module->polhemus_change_callback_list,function,user_data))
 		{
 			return_code=1;

@@ -40,9 +40,9 @@ device has changed.
 	int status;
 }; /* Input_module_widget_data */
 
-DECLARE_CALLBACK_TYPES(Input_module_device_change,Widget, \
+DECLARE_CMISS_CALLBACK_TYPES(Input_module_device_change,Widget, \
 	struct Input_module_widget_data *);
-DECLARE_CALLBACK_TYPES(Input_module_polhemus_change,Widget,int/*button_num*/);
+DECLARE_CMISS_CALLBACK_TYPES(Input_module_polhemus_change,Widget,int/*button_num*/);
 
 struct Input_module_widget_struct
 /*******************************************************************************
@@ -53,9 +53,9 @@ Contains all the information carried by the menu.
 ==============================================================================*/
 {
 	int input_device[INPUT_MODULE_NUM_DEVICES];
-	struct LIST(CALLBACK_ITEM(Input_module_device_change))
+	struct LIST(CMISS_CALLBACK_ITEM(Input_module_device_change))
 		*device_change_callback_list;
-	struct LIST(CALLBACK_ITEM(Input_module_polhemus_change))
+	struct LIST(CMISS_CALLBACK_ITEM(Input_module_polhemus_change))
 		*polhemus_change_callback_list;
 	Widget input[INPUT_MODULE_NUM_DEVICES];
 #if defined (POLHEMUS)
@@ -79,7 +79,7 @@ other widgets.
 ==============================================================================*/
 
 int Input_module_add_device_change_callback(Widget input_module_widget,
-	CALLBACK_FUNCTION(Input_module_device_change) *function,void *user_data);
+	CMISS_CALLBACK_FUNCTION(Input_module_device_change) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 20 March 2000
 
@@ -89,7 +89,7 @@ occur in the <input_module_widget>.
 ==============================================================================*/
 
 int Input_module_remove_device_change_callback(Widget input_module_widget,
-	CALLBACK_FUNCTION(Input_module_device_change) *function,void *user_data);
+	CMISS_CALLBACK_FUNCTION(Input_module_device_change) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 20 March 2000
 
@@ -99,7 +99,7 @@ occur in the <input_module_widget>.
 ==============================================================================*/
 
 int Input_module_add_polhemus_change_callback(Widget input_module_widget,
-	CALLBACK_FUNCTION(Input_module_polhemus_change) *function,void *user_data);
+	CMISS_CALLBACK_FUNCTION(Input_module_polhemus_change) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 20 March 2000
 
@@ -109,7 +109,7 @@ occur in the <input_module_widget>.
 ==============================================================================*/
 
 int Input_module_remove_polhemus_change_callback(Widget input_module_widget,
-	CALLBACK_FUNCTION(Input_module_polhemus_change) *function,void *user_data);
+	CMISS_CALLBACK_FUNCTION(Input_module_polhemus_change) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 20 March 2000
 

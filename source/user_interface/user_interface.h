@@ -17,11 +17,11 @@ Function definitions for the user interface.
 #include <Xm/Xm.h>
 #include <Mrm/MrmPublic.h>
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 #include <windows.h>
 #include <windowsx.h>
 	/*???DB.  Contains lots of convenience macros */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 #include "general/machine.h"
 
 /*
@@ -146,11 +146,17 @@ Switchs from the busy cursor to the default cursor for all shells except the
 ???DB.  Move in with windowing macros ?
 ==============================================================================*/
 
+#if defined (UNIX) /* switch (OPERATING_SYSTEM) */
 struct User_interface *CREATE(User_interface)(int *argc_address, char **argv, 
 	struct Event_dispatcher *event_dispatcher, char *class_name, 
 	char *application_name);
+#elif defined (WIN32_USER_INTERFACE) /* switch (OPERATING_SYSTEM) */
+struct User_interface *CREATE(User_interface)(HINSTANCE current_instance,
+	HINSTANCE previous_instance, LPSTR command_line,int initial_main_window_state,
+	struct Event_dispatcher *event_dispatcher);
+#endif /* switch (OPERATING_SYSTEM) */
 /*******************************************************************************
-LAST MODIFIED : 11 March 2002
+LAST MODIFIED : 20 June 2002
 
 DESCRIPTION :
 Open the <user_interface>.
@@ -281,6 +287,16 @@ Returns a pixmap to avoid large gaps on the right of cascade buttons (option men
 ==============================================================================*/
 #endif /* defined (MOTIF) */
 
+#if defined (WIN32_USER_INTERFACE)
+HINSTANCE User_interface_get_instance(struct User_interface *user_interface);
+/*******************************************************************************
+LAST MODIFIED : 20 June 2002
+
+DESCRIPTION :
+Returns the application shell widget
+==============================================================================*/
+#endif /* defined (WIN32_USER_INTERFACE) */
+
 int User_interface_get_local_machine_name(struct User_interface *user_interface,
 	char **name);
 /*******************************************************************************
@@ -310,9 +326,9 @@ for a response from a modal dialog).
 ==============================================================================*/
 
 int
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	WINAPI
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	application_main_loop(struct User_interface *user_interface);
 /*******************************************************************************
 LAST MODIFIED : 30 May 1996

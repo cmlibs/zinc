@@ -113,10 +113,10 @@ DESCRIPTION :
 Members of the Scene_viewer structure are private.
 ==============================================================================*/
 
-DECLARE_CALLBACK_TYPES(Scene_viewer_transform, \
+DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_transform, \
 	struct Scene_viewer *, void *);
 
-DECLARE_CALLBACK_TYPES(Scene_viewer_destroy, \
+DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_destroy, \
 	struct Scene_viewer *, void *);
 
 /*
@@ -612,7 +612,7 @@ Negative values reverse the effects of mouse movement.
 ==============================================================================*/
 
 int Scene_viewer_add_sync_callback(struct Scene_viewer *scene_viewer,
-	CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data);
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 5 July 2000
 
@@ -620,7 +620,7 @@ DESCRIPTION :
 ==============================================================================*/
 
 int Scene_viewer_remove_sync_callback(struct Scene_viewer *scene_viewer,
-	CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data);
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 5 July 2000
 
@@ -630,7 +630,7 @@ Removes the callback calling <function> with <user_data> from
 ==============================================================================*/
 
 int Scene_viewer_add_transform_callback(struct Scene_viewer *scene_viewer,
-	CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data);
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 5 July 2000
 
@@ -638,7 +638,7 @@ DESCRIPTION :
 ==============================================================================*/
 
 int Scene_viewer_remove_transform_callback(struct Scene_viewer *scene_viewer,
-	CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data);
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 5 July 2000
 
@@ -648,7 +648,7 @@ Removes the callback calling <function> with <user_data> from
 ==============================================================================*/
 
 int Scene_viewer_add_destroy_callback(struct Scene_viewer *scene_viewer,
-	CALLBACK_FUNCTION(Scene_viewer_destroy) *function,void *user_data);
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_destroy) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 19 February 2002
 
@@ -658,7 +658,7 @@ viewer is destroyed.
 ==============================================================================*/
 
 int Scene_viewer_remove_destroy_callback(struct Scene_viewer *scene_viewer,
-	CALLBACK_FUNCTION(Scene_viewer_destroy) *function,void *user_data);
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_destroy) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 19 February 2002
 

@@ -186,12 +186,13 @@ the defaults of 6 and 64. This is bad - should be able to read defaults without
 any x application - incl. for compatibility with win32.
 ==============================================================================*/
 {
+	int return_code;
+#if defined (MOTIF)
 #define XmNdefaultCircleDiscretization "defaultCircleDiscretization"
 #define XmCDefaultCircleDiscretization "DefaultCircleDiscretization"
 #define XmNmaximumCircleDiscretization "maximumCircleDiscretization"
 #define XmCMaximumCircleDiscretization "MaximumCircleDiscretization"
 	static int resources_read=0; /* flag so resources only read once */
-	int return_code;
 	static struct Discretization
 	{
 		int default_value;
@@ -218,10 +219,15 @@ any x application - incl. for compatibility with win32.
 			"64"
 		}
 	};
+#endif /* defined (MOTIF) */
 
 	ENTER(read_circle_discretization_defaults);
+#if !defined (MOTIF)
+	USE_PARAMETER(user_interface);
+#endif /* !defined (MOTIF) */
 	if (default_value&&maximum_value)
 	{
+#if defined (MOTIF)
 		if (!resources_read)
 		{
 			if (user_interface)
@@ -239,6 +245,10 @@ any x application - incl. for compatibility with win32.
 		}
 		*default_value=discretization.default_value;
 		*maximum_value=discretization.maximum_value;
+#else /* defined (MOTIF) */
+		*default_value=6;
+		*maximum_value=64;
+#endif /* defined (MOTIF) */
 		return_code=1;
 	}
 	else
@@ -402,12 +412,13 @@ the defaults of 4 and 50. This is bad - should be able to read defaults without
 any x application - incl. for compatibility with win32.
 ==============================================================================*/
 {
+	int return_code;
+#if defined (MOTIF)
 #define XmNdefaultElementDiscretization "defaultElementDiscretization"
 #define XmCDefaultElementDiscretization "DefaultElementDiscretization"
 #define XmNmaximumElementDiscretization "maximumElementDiscretization"
 #define XmCMaximumElementDiscretization "MaximumElementDiscretization"
 	static int resources_read=0; /* flag so resources only read once */
-	int return_code;
 	static struct Discretization
 	{
 		int default_value;
@@ -434,10 +445,15 @@ any x application - incl. for compatibility with win32.
 			"50"
 		}
 	};
+#endif /* defined (MOTIF) */
 
 	ENTER(read_element_discretization_defaults);
+#if !defined (MOTIF)
+	USE_PARAMETER(user_interface);
+#endif /* !defined (MOTIF) */
 	if (default_value&&maximum_value)
 	{
+#if defined (MOTIF)
 		if (!resources_read)
 		{
 			/* Some functions call this without the user_interface, 
@@ -457,6 +473,10 @@ any x application - incl. for compatibility with win32.
 		}
 		*default_value=discretization.default_value;
 		*maximum_value=discretization.maximum_value;
+#else /* defined (MOTIF) */
+		*default_value=4;
+		*maximum_value=50;
+#endif /* defined (MOTIF) */
 		return_code=1;
 	}
 	else

@@ -9,7 +9,7 @@ DESCRIPTION :
 #include <stdio.h>
 #include <stdlib.h>
 #include "computed_field/computed_field.h"
-#include "element/element_tool.h"
+#include "element/element_operations.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/import_finite_element.h"
 #include "finite_element/export_finite_element.h"
@@ -24,7 +24,7 @@ DESCRIPTION :
 #include "graphics/texture.h"
 #include "mirage/movie.h"
 #include "mirage/mirage_node_editor.h"
-#include "node/node_tool.h"
+#include "node/node_operations.h"
 #include "user_interface/message.h"
 
 #define MIRAGE_POINT_SIZE 2.0

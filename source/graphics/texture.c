@@ -34,12 +34,14 @@ return to direct rendering, as described with these routines.
 #include "general/myio.h"
 #include "general/mystring.h"
 #include "general/object.h"
+#if defined (DM_BUFFERS)
+#include "three_d_drawing/ThreeDDraw.h"
 #include "three_d_drawing/dm_interface.h"
+#endif /* defined (DM_BUFFERS) */
 #include "graphics/light.h"
 #include "graphics/graphics_library.h"
 #include "graphics/scene.h"
 #include "graphics/texture.h"
-#include "three_d_drawing/ThreeDDraw.h"
 #include "three_d_drawing/movie_extensions.h"
 #include "user_interface/message.h"
 
@@ -107,7 +109,9 @@ The properties of a graphical texture.
 	enum Texture_resize_filter_mode resize_filter_mode;
 
 	struct X3d_movie *movie;
+#if defined (DM_BUFFERS)
 	struct Dm_buffer *dmbuffer;
+#endif /* defined (DM_BUFFERS) */
 
 	struct MANAGER(Texture) *texture_manager;
 
@@ -292,6 +296,7 @@ GL_EXT_texture_object extension.
 	return_code=0;
 	if (texture)
 	{
+		return_code=1;
 #if defined (OPENGL_API)
 		if (texture->width)
 		{
@@ -385,10 +390,16 @@ GL_EXT_texture_object extension.
 			} break;
 			case 3:
 			{
+#if defined (GL_VERSION_1_3)
 				glEnable(GL_TEXTURE_3D);
+#else /* defined (GL_VERSION_1_3) */
+				display_message(ERROR_MESSAGE,
+					"direct_render_Texture_environment.  "
+					"3D textures not supported in this version.");
+				return_code=0;
+#endif /* defined (GL_VERSION_1_3) */
 			} break;
 		}
-		return_code=1;
 #endif /* defined (OPENGL_API) */
 	}
 	else
@@ -472,6 +483,7 @@ The reduction factor applies equally in all texture dimensions.
 			} break;
 			case 3:
 			{
+#if defined (GL_VERSION_1_3)
 				do
 				{
 					glTexImage3D(GL_PROXY_TEXTURE_3D, (GLint)0, number_of_components,
@@ -490,6 +502,12 @@ The reduction factor applies equally in all texture dimensions.
 					}
 				}
 				while ((test_width == 0) && return_code);
+#else /* defined (GL_VERSION_1_3) */
+				display_message(ERROR_MESSAGE,
+					"Texture_get_hardware_reduction.  "
+					"3D textures not supported in this version.");
+				return_code=0;
+#endif /* defined (GL_VERSION_1_3) */
 			} break;
 			default:
 			{
@@ -780,7 +798,14 @@ Directly outputs the commands setting up the <texture>.
 			} break;
 			case 3:
 			{
+#if defined (GL_VERSION_1_3)
 				texture_target = GL_TEXTURE_3D;
+#else /* defined (GL_VERSION_1_3) */
+				display_message(ERROR_MESSAGE,
+					"direct_render_texture.  "
+					"3D textures not supported in this version.");
+				return_code=0;
+#endif /* defined (GL_VERSION_1_3) */
 			} break;
 		}
 		switch(texture->storage)
@@ -973,6 +998,7 @@ Directly outputs the commands setting up the <texture>.
 							} break;
 							case 3:
 							{
+#if defined (GL_VERSION_1_3)
 								if (reduced_image)
 								{
 									glTexImage3D(GL_TEXTURE_3D, (GLint)0,
@@ -991,6 +1017,11 @@ Directly outputs the commands setting up the <texture>.
 										(GLint)(texture->depth_texels), (GLint)0,
 										format, type, (GLvoid *)(texture->image));
 								}
+#else /* defined (GL_VERSION_1_3) */
+								display_message(ERROR_MESSAGE,"direct_render_Texture.  "
+								  "Not compiled with 3D texture support.");
+								return_code=0;								
+#endif /* defined (GL_VERSION_1_3) */
 							} break;
 						}
 					}
@@ -1544,7 +1575,9 @@ of all textures.
 			texture->combine_alpha=0.;
 			texture->texture_manager = (struct MANAGER(Texture) *)NULL;
 			texture->movie = (struct X3d_movie *)NULL;
+#if defined (DM_BUFFERS)
 			texture->dmbuffer = (struct Dm_buffer *)NULL;
+#endif /* defined (DM_BUFFERS) */
 #if defined (OPENGL_API)
 			texture->display_list=0;
 			texture->texture_id = 0;
@@ -1614,15 +1647,13 @@ Frees the memory for the texture and sets <*texture_address> to NULL.
 					return_code=0;
 #endif /* defined (SGI_MOVIE_FILE) */
 				}
+#if defined (DM_BUFFERS)
 				if(texture->dmbuffer)
 				{
-#if defined (SGI_DIGITAL_MEDIA)
 					DEACCESS(Dm_buffer)(&(texture->dmbuffer));
-#else /* defined (SGI_DIGITAL_MEDIA) */
-					display_message(ERROR_MESSAGE,"DESTROY(Texture).  Digital Media unavailable but dm_buffer pointer found");
 					return_code=0;
-#endif /* defined (SGI_DIGITAL_MEDIA) */
 				}
+#endif /* defined (DM_BUFFERS) */
 #if defined (OPENGL_API)
 				if (texture->display_list)
 				{
@@ -4047,7 +4078,14 @@ execute_Texture should just call direct_render_Texture.
 				} break;
 				case 3:
 				{
+#if defined (GL_VERSION_1_3)
 					texture_target = GL_TEXTURE_3D;
+#else /* defined (GL_VERSION_1_3) */
+					display_message(ERROR_MESSAGE,
+						"compile_Texture.  "
+						"3D textures not supported in this version.");
+					return_code=0;
+#endif /* defined (GL_VERSION_1_3) */
 				} break;
 			}
 			if (texture->display_list||(texture->display_list=glGenLists(1)))
@@ -4184,6 +4222,7 @@ execute_Texture should just call direct_render_Texture.
 						glDeleteTextures(1, &(old_texture_id));
 					}
 					glBindTexture(texture_target, texture->texture_id);
+#if defined (DM_BUFFERS)
 					if(texture->storage==TEXTURE_DMBUFFER || 
 						texture->storage==TEXTURE_PBUFFER)
 					{
@@ -4193,8 +4232,11 @@ execute_Texture should just call direct_render_Texture.
 					}
 					else
 					{
+#endif /* defined (DM_BUFFERS) */
 						direct_render_Texture(texture);
+#if defined (DM_BUFFERS)
 					}
+#endif /* defined (DM_BUFFERS) */
 					glNewList(texture->display_list,GL_COMPILE);
 					glBindTexture(texture_target, texture->texture_id);
 					/* As we have bound the texture we only need the 
@@ -4263,6 +4305,7 @@ direct_render_Texture.
 			glAreTexturesResident(1, &texture->texture_id, &resident);
 			if (GL_TRUE != resident)
 			{
+#if defined (DM_BUFFERS)
 				/* Reload the texture */
 				if(texture->storage==TEXTURE_DMBUFFER || 
 					texture->storage==TEXTURE_PBUFFER)
@@ -4272,6 +4315,7 @@ direct_render_Texture.
 					X3dThreeDDrawingRemakeCurrent();
 				}
 				else
+#endif /* defined (DM_BUFFERS) */
 				{
 					direct_render_Texture(texture);
 				}
@@ -4295,7 +4339,9 @@ direct_render_Texture.
 #if defined (OPENGL_API)
 		glDisable(GL_TEXTURE_1D);
 		glDisable(GL_TEXTURE_2D);
+#if defined (GL_VERSION_1_3)
 		glDisable(GL_TEXTURE_3D);
+#endif /* defined (GL_VERSION_1_3) */
 #endif /* defined (OPENGL_API) */
 		return_code=1;
 	}

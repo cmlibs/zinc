@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : command_window.c
 
-LAST MODIFIED : 26 November 2001
+LAST MODIFIED : 26 June 2002
 
 DESCRIPTION :
 Management routines for the main command window.
@@ -21,15 +21,17 @@ Management routines for the main command window.
 #endif /* defined (MOTIF) */
 #include "general/debug.h"
 #include "command/command_window.h"
+#if defined (MOTIF)
 #include "command/command_window.uidh"
+#endif /* defined (MOTIF) */
+#if defined (WIN32_USER_INTERFACE)
+#include "command/command_window.rc"
+#endif /* defined (WIN32_USER_INTERFACE) */
 #include "command/command.h"
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 #include "help/help_interface.h"
-#if defined (OLD_CODE)
-#include "socket/socket.h"
-#endif /* defined (OLD_CODE) */
 #include "user_interface/filedir.h"
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
@@ -37,7 +39,7 @@ Management routines for the main command window.
 Module types
 ------------
 */
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 struct Menu_bar
 /*******************************************************************************
 LAST MODIFIED : 11 May 2000
@@ -82,7 +84,7 @@ The menu bar at the top of the command window
 	} graphics_menu;
 	Widget help_button;
 }; /* struct Menu_bar */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
 enum Command_window_outfile_mode
 /*******************************************************************************
@@ -106,7 +108,7 @@ LAST MODIFIED : 9 November 1998
 DESCRIPTION :
 ==============================================================================*/
 {
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF) /* switch (USER_INTERFACE) */
 	struct Menu_bar main_menu;
 	Widget command_box;
 	Widget command_history;
@@ -116,9 +118,13 @@ DESCRIPTION :
 	Widget output_pane;
 	Widget window;
 	Widget shell;
-#else /* !defined (WINDOWS_DEV_FLAG) */
+#elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
+	char *command_prompt;
 	HWND dialog;
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+	HWND command_history;
+	HWND command_entry;
+	HWND command_output_pane;
+#endif  /* switch (USER_INTERFACE) */
 	/* the information written to the command window can also be directed to a
 		file */
 	FILE *out_file;
@@ -147,7 +153,7 @@ static Atom XA_CMGUI_RESPONSE=0;
 Module functions
 ----------------
 */
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static void identify_command_box(Widget widget,XtPointer client_data,
 	XtPointer call_data)
 /*******************************************************************************
@@ -168,7 +174,7 @@ Stores the id of the command areas.
 			XmDIALOG_HISTORY_LIST);
 		command_window->command_entry=XmCommandGetChild(widget,
 			XmDIALOG_COMMAND_TEXT);
-		set_command_prompt((char *)NULL,command_window);
+		Command_window_set_command_prompt(command_window, (char *)NULL);
 	}
 	else
 	{
@@ -796,19 +802,12 @@ Called when the Close function is selected from the window manager menu.
 	if (command_window=(struct Command_window *)command_window_structure)
 	{
 		Execute_command_execute_string(command_window->execute_command, "QUIT");
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 		/*???DB.  To allow restarting of back end */
 #if !defined (NO_HELP)
 		destroy_help();
 #endif /* !defined (NO_HELP) */
-#if defined (OLD_CODE)
-		close_socket();
-#endif /* defined (OLD_CODE) */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-#if defined (OLD_CODE)
-		/* this is done in cmgui.c now */
-		close_user_interface(command_window->user_interface);
-#endif /* defined (OLD_CODE) */
+#endif /* defined (MOTIF) */
 	}
 	else
 	{
@@ -843,9 +842,71 @@ Destroy the command_window structure and remove the window
 	}
 	LEAVE;
 } /* destroy_Command_window_callback */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
+WNDPROC old_command_edit_wndproc;
+
+static LRESULT CALLBACK Command_window_command_edit_pick_up_enter(HWND window,
+	UINT message_identifier,WPARAM first_message,LPARAM second_message)
+/*******************************************************************************
+LAST MODIFIED : 25 June 2002
+
+DESCRIPTION :
+???DB.  Should return 0 if it processes the message.
+==============================================================================*/
+{
+	LRESULT return_code;
+
+	ENTER(electrode_edit_pick_up_enter);
+	switch (message_identifier)
+	{
+		case WM_KEYDOWN:
+		{
+			switch ((UINT)first_message)
+			{
+				case VK_RETURN:
+				{
+					char command[1000];
+					int length;
+					struct Command_window *command_window;
+					
+					command_window = (struct Command_window *)GetWindowLong(window,
+						GWL_USERDATA);
+					length = (WORD) SendMessage(window, 
+                        EM_LINELENGTH, 
+                        (WPARAM) 0, 
+                        (LPARAM) 0); 
+					*((LPWORD)command) = 999;
+					length = SendMessage(window, 
+						EM_GETLINE, 
+						(WPARAM) 0,
+						(LPARAM) command); 
+					command[length] = 0;
+					Execute_command_execute_string(command_window->execute_command,
+						command);
+					SendMessage(window, 
+						WM_SETTEXT, 
+						(WPARAM) 0,
+						(LPARAM) command_window->command_prompt); 
+					length = strlen(command_window->command_prompt);
+					SendMessage(window, 
+					   EM_SETSEL, 
+						(WPARAM) length,
+						(LPARAM) length);
+				} break;
+			}
+		} break;
+	}
+	return_code=CallWindowProc(old_command_edit_wndproc,window,
+		message_identifier,first_message,second_message);
+	LEAVE;
+
+	return (return_code);
+} /* Command_window_command_edit_pick_up_enter */
+#endif /* defined (WIN32_USER_INTERFACE) */
+
+#if defined (WIN32_USER_INTERFACE)
 static LRESULT CALLBACK Command_window_class_proc(HWND window,
 	UINT message_identifier,WPARAM first_message,LPARAM second_message)
 /*******************************************************************************
@@ -854,7 +915,9 @@ LAST MODIFIED : 25 October 1996
 DESCRIPTION:
 ==============================================================================*/
 {
+	HWND command_edit;
 	LRESULT return_code;
+	struct Command_window *command_window;
 
 	ENTER(Command_window_class_proc);
 	return_code=FALSE;
@@ -863,6 +926,19 @@ DESCRIPTION:
 		case WM_DESTROY:
 		{
 			PostQuitMessage(0);
+		} break;
+		case WM_INITDIALOG:
+		{
+			if (command_window = (struct Command_window *)second_message)
+			{
+				command_edit = GetDlgItem(window, IDC_COMMAND_ENTRY);
+				/* replace the window procedure so that enters can be picked up */
+				old_command_edit_wndproc=(WNDPROC)SetWindowLong(
+					command_edit, GWL_WNDPROC,
+					(DWORD)Command_window_command_edit_pick_up_enter);
+				SetWindowLong(command_edit,GWL_USERDATA,
+					(LONG)command_window);
+			}
 		} break;
 		default:
 		{
@@ -874,9 +950,9 @@ DESCRIPTION:
 
 	return (return_code);
 } /* Command_window_class_proc */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 static void Command_window_WM_COMMAND_handler(HWND window,
 	int item_control_accelerator_id,HWND control_window,UINT notify_code)
 /*******************************************************************************
@@ -891,6 +967,43 @@ DESCRIPTION:
 		case IDCANCEL:
 		{
 			DestroyWindow(window);
+		} break;
+	   case IDC_COMMAND_ENTRY:
+		{
+			switch (notify_code)
+			{
+				case EN_KILLFOCUS:
+				{
+					if (0x1000 & GetKeyState(VK_RETURN))
+					{
+						SendMessage(window, 
+							IDOK, 
+							(WPARAM) 0,       // line 0 
+							(LPARAM) 0); 						
+					}
+				}
+				/*				case EN_CHANGE:
+				{
+					char buffer[1000];
+					int length;
+					
+					length = (WORD) SendMessage(control_window, 
+                        EM_LINELENGTH, 
+                        (WPARAM) 0, 
+                        (LPARAM) 0); 
+					*((LPWORD)buffer) = 999;
+					SendMessage(control_window, 
+						EM_GETLINE, 
+						(WPARAM) 0,       // line 0 
+						(LPARAM) buffer); 
+					buffer[length] = 0;
+					MessageBox(window, 
+                        buffer, 
+                        "Did it work?", 
+                        MB_OK); 
+
+								} break;*/
+			}
 		} break;
 	}
 	LEAVE;
@@ -920,7 +1033,7 @@ DESCRIPTION:
 
 	return (return_code);
 } /* Command_window_dialog_proc */
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 #if defined (MOTIF)
 static int command_window_property_notify_callback(XPropertyEvent *event,
@@ -1271,11 +1384,9 @@ DESCRIPTION:
 Create the structures and retrieve the command window from the uil file.
 ==============================================================================*/
 {
-#if defined (MOTIF)
+	struct Command_window *command_window;
+#if defined (MOTIF) /* switch (USER_INTERFACE) */
 	Atom WM_DELETE_WINDOW;
-#if defined (OLD_CODE)								
-	long event_mask;
-#endif /* defined (OLD_CODE) */
 	MrmType command_window_class;
 	static MrmRegisterArg callback_list[]={
 		{"command_changed",(XtPointer)command_changed},
@@ -1322,33 +1433,26 @@ Create the structures and retrieve the command window from the uil file.
 		{"command_window_close",(XtPointer)command_window_close}
 	};
 	static MrmRegisterArg identifier_list[2];
-#if defined (OLD_CODE)								
-	XWindowAttributes window_attributes;
-#endif /* defined (OLD_CODE) */
-#endif /* defined (MOTIF) */
-	struct Command_window *command_window;
-#if defined (WINDOWS)
+#elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
 	BOOL win32_return_code;
 	static char *class_name="Command_window";
 	WNDCLASSEX class_information;
-#endif /* defined (WINDOWS) */
+#endif /* switch (USER_INTERFACE) */
 
 	ENTER(CREATE(Command_window));
 	/* check arguments */
 	if (execute_command&&user_interface)
 	{
-#if defined (MOTIF)
-		if (MrmOpenHierarchy_base64_string(command_window_uidh,
-			&command_window_hierarchy,&command_window_hierarchy_open))
+		if (ALLOCATE(command_window,struct Command_window,1))
 		{
-#endif /* defined (MOTIF) */
-			if (ALLOCATE(command_window,struct Command_window,1))
+			command_window->user_interface=user_interface;
+			command_window->execute_command=execute_command;
+			command_window->out_file=(FILE *)NULL;
+			command_window->out_file_mode=OUTFILE_INVALID;
+#if defined (MOTIF) /* switch (USER_INTERFACE) */
+			if (MrmOpenHierarchy_base64_string(command_window_uidh,
+				&command_window_hierarchy,&command_window_hierarchy_open))
 			{
-				command_window->user_interface=user_interface;
-				command_window->execute_command=execute_command;
-				command_window->out_file=(FILE *)NULL;
-				command_window->out_file_mode=OUTFILE_INVALID;
-#if defined (MOTIF)
 
 				/* file menu */
 				command_window->main_menu.file_menu.open_menu.open_comfile_button=
@@ -1443,7 +1547,7 @@ Create the structures and retrieve the command window from the uil file.
 								&(command_window->window),&command_window_class))
 							{
 								/*???DB.  Get rid of image processing and unemap if not being
-									used ? */
+								  used ? */
 								XtManageChild(command_window->window);
 								XtRealizeWidget(command_window->shell);
 								/* set up for communication with other applications */
@@ -1472,10 +1576,10 @@ Create the structures and retrieve the command window from the uil file.
 									(void *)command_window, command_window->shell);
 								XtPopup(command_window->shell,XtGrabNone);
 								/*???DB.  If I don't have this call to XmuClientWindow, then
-									sometimes cmgui doesn't pick up any of the properties set by
-									Netscape.  It is some sort of timing problem.  XmuClientWindow
-									finds a window at or below the specified one which has the
-									WM_STATE property set */
+								  sometimes cmgui doesn't pick up any of the properties set by
+								  Netscape.  It is some sort of timing problem.  XmuClientWindow
+								  finds a window at or below the specified one which has the
+								  WM_STATE property set */
 #if defined (OLD_CODE)								
 								XmuClientWindow(User_interface_get_display(user_interface),
 									XtWindow(command_window->shell));
@@ -1508,10 +1612,23 @@ Create the structures and retrieve the command window from the uil file.
 						"CREATE(Command_window).  Could not create shell");
 					DEALLOCATE(command_window);
 				}
-#endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"CREATE(Command_window).  Could not open hierarchy");
+				command_window=(struct Command_window *)NULL;
+			}
+#elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
+			command_window->command_history = (HWND)NULL;
+			command_window->command_entry = (HWND)NULL;
+			command_window->command_output_pane = (HWND)NULL;
+			if (ALLOCATE(command_window->command_prompt, char , 1))
+			{
+				*command_window->command_prompt = 0;
 				/* check if the class is registered */
-				if (TRUE!=(win32_return_code=GetClassInfoEx(user_interface->instance,
+				if (TRUE!=(win32_return_code=GetClassInfoEx(
+					User_interface_get_instance(user_interface),
 					class_name,&class_information)))
 				{
 					class_information.cbClsExtra=0;
@@ -1519,8 +1636,11 @@ Create the structures and retrieve the command window from the uil file.
 						DLGWINDOWEXTRA+sizeof(struct Command_window *);
 					class_information.hbrBackground=(HBRUSH)(COLOR_WINDOW+1);
 					class_information.hCursor=LoadCursor(NULL,IDC_ARROW);
-					class_information.hIcon=LoadIcon(user_interface->instance,class_name);
-					class_information.hInstance=user_interface->instance;
+					class_information.hIcon=LoadIcon(
+						User_interface_get_instance(user_interface),
+						"Command_window_icon");
+					class_information.hInstance=User_interface_get_instance(
+						user_interface);
 					class_information.lpfnWndProc=Command_window_class_proc;
 					class_information.lpszClassName=class_name;
 					class_information.style=CS_HREDRAW|CS_VREDRAW;
@@ -1528,8 +1648,8 @@ Create the structures and retrieve the command window from the uil file.
 					class_information.lpszMenuName=NULL;
 					/*???DB.  Extra in WNDCLASSEX over WNDCLASS */
 					class_information.cbSize=sizeof(WNDCLASSEX);
-					class_information.hIconSm=LoadIcon(user_interface->instance,
-						"Command_window" "_small");
+					class_information.hIconSm=LoadIcon(User_interface_get_instance
+						(user_interface),"Command_window_icon_small");
 					if (RegisterClassEx(&class_information))
 					{
 						win32_return_code=TRUE;
@@ -1538,10 +1658,17 @@ Create the structures and retrieve the command window from the uil file.
 				/* create the window */
 				if (TRUE==win32_return_code)
 				{
-					if (command_window->dialog=CreateDialogParam(user_interface->instance,
+					if (command_window->dialog=CreateDialogParam(
+						User_interface_get_instance(user_interface),
 						"Command_window",(HWND)NULL,Command_window_dialog_proc,
-						(LPARAM)NULL))
+						(LPARAM)command_window))
 					{
+						command_window->command_history = GetDlgItem(command_window->dialog,
+							IDC_COMMAND_HISTORY); 
+						command_window->command_entry = GetDlgItem(command_window->dialog,
+							IDC_COMMAND_ENTRY); 
+						command_window->command_output_pane = GetDlgItem(command_window->dialog,
+							IDC_COMMAND_OUTPUT_PANE); 
 						ShowWindow(command_window->dialog,SW_SHOW);
 					}
 					else
@@ -1557,22 +1684,19 @@ Create the structures and retrieve the command window from the uil file.
 						"CREATE(Command_window).  Unable to register class information");
 					DEALLOCATE(command_window);
 				}
-#endif /* defined (WINDOWS) */
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"CREATE(Command_window).  Insufficient memory for command_window");
+					"CREATE(Command_window).  Insufficient memory for command_window prompt");
 			}
-#if defined (MOTIF)
+#endif /* switch (USER_INTERFACE) */
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"CREATE(Command_window).  Could not open hierarchy");
-			command_window=(struct Command_window *)NULL;
+				"CREATE(Command_window).  Insufficient memory for command_window");
 		}
-#endif /* defined (MOTIF) */
 	}
 	else
 	{
@@ -1601,10 +1725,12 @@ DESCRIPTION:
 		{
 			fclose(command_window->out_file);
 		}
+#if defined (MOTIF)
 		set_property_notify_callback(command_window->user_interface,
 			(Property_notify_callback)NULL, (void *)NULL, (Widget)NULL);
 		destroy_Shell_list_item_from_shell(&(command_window->shell),
 			command_window->user_interface);
+#endif /* defined (MOTIF) */
 		DEALLOCATE(*command_window_pointer);
 		return_code = 1;
 	}
@@ -1618,7 +1744,6 @@ DESCRIPTION:
 	return (return_code);
 } /* DESTROY(Command_window) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 int add_to_command_list(char *command,struct Command_window *command_window)
 /*******************************************************************************
 LAST MODIFIED : 16 June 1996
@@ -1627,15 +1752,18 @@ DESCRIPTION :
 Adds the <command> to the bottom of the list for the <command_window>.
 ==============================================================================*/
 {
-	int max_commands,num_commands,return_code;
+	int return_code;
+#if defined (MOTIF)
+	int max_commands,num_commands;
 	XmString new_command;
+#endif /* defined (MOTIF) */
 
 	ENTER(add_to_command_list);
 /*???debug */
 /*printf("enter add_to_command_list\n  %s\n",command);*/
 	if (command_window)
 	{
-#if defined (MOTIF)
+#if defined (MOTIF) /* switch (USER_INTERFACE) */
 		/* create XmString of the command */
 		new_command=XmStringCreateSimple(command);
 		/* get the number of items and the maximum number to make sure that we don't
@@ -1654,7 +1782,10 @@ Adds the <command> to the bottom of the list for the <command_window>.
 		XmStringFree(new_command);
 		/* show last command */
 		XmListSetBottomPos(command_window->command_history,0);
-#endif /* defined (MOTIF) */
+#elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
+		SendMessage(command_window->command_history, LB_ADDSTRING, 0, 
+			(LPARAM)command);
+#endif /* switch (USER_INTERFACE) */
 		return_code=1;
 	}
 	else
@@ -1670,9 +1801,10 @@ Adds the <command> to the bottom of the list for the <command_window>.
 	return (return_code);
 } /* add_to_command_list */
 
-int set_command_prompt(char *prompt,struct Command_window *command_window)
+int Command_window_set_command_prompt(struct Command_window *command_window,
+	char *prompt)
 /*******************************************************************************
-LAST MODIFIED : 2 August 1998
+LAST MODIFIED : 26 June 2002
 
 DESCRIPTION :
 Sets the value of the <prompt> for the <command_window>.
@@ -1684,6 +1816,7 @@ Sets the value of the <prompt> for the <command_window>.
 	ENTER(set_command_prompt);
 	if (command_window)
 	{
+#if defined (MOTIF) /* switch (USER_INTERFACE) */
 		if (command_window->command_prompt)
 		{
 			XmStringFree(command_window->command_prompt);
@@ -1706,6 +1839,36 @@ Sets the value of the <prompt> for the <command_window>.
 		{
 			command_window->command_prompt=XmStringCreateSimple("");
 		}
+#elif defined (WIN32_USER_INTERFACE)  /* switch (USER_INTERFACE) */
+		if (command_window->command_prompt)
+		{
+			DEALLOCATE(command_window->command_prompt);
+		}
+		if (prompt&&(*prompt))
+		{
+			if (ALLOCATE(command_window->command_prompt,char,strlen(prompt)+2))
+			{
+				sprintf(command_window->command_prompt,"%s ",prompt);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"set_command_prompt.  Could not allocate prompt string");
+			}
+		}
+		else
+		{
+			if (ALLOCATE(command_window->command_prompt,char,2))
+			{
+				sprintf(command_window->command_prompt,"");
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"set_command_prompt.  Could not allocate prompt string");
+			}
+		}
+#endif /* switch (USER_INTERFACE) */
 		return_code=1;
 	}
 	else
@@ -1783,8 +1946,10 @@ Does not override the command prompt.
 	ENTER(Command_window_set_command_string);
 	if (command_window&&command_string)
 	{
+#if defined (MOTIF)
 		XtVaSetValues(command_window->command_entry,
 			XmNvalue,(XtPointer)command_string,NULL);
+#endif /* defined (MOTIF) */
 		return_code=1;
 	}
 	else
@@ -1798,6 +1963,7 @@ Does not override the command prompt.
 	return (return_code);
 } /* Command_window_set_command_string */
 
+#if defined (MOTIF)
 Widget Command_window_get_message_pane(struct Command_window *command_window)
 /*******************************************************************************
 LAST MODIFIED : 28 February 2002
@@ -1823,6 +1989,7 @@ Returns the message pane widget.
 
 	return (return_widget);
 } /* Command_window_get_message_pane */
+#endif /* defined (MOTIF) */
 
 int write_command_window(char *message,struct Command_window *command_window)
 /*******************************************************************************
@@ -1833,23 +2000,49 @@ Writes the <message> to the <command_window>.
 ==============================================================================*/
 {
 	int return_code;
+#if defined (MOTIF) /* switch (USER_INTERFACE) */
 	Widget output_pane;
 	XmTextPosition text_pos;
-
+#elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
+#define MAX_OUTPUT (10000)
+	int new_length, position;
+#endif /* switch (USER_INTERFACE) */
+	
 	ENTER(write_command_window);
 	return_code=0;
 	if (command_window)
 	{
+#if defined (MOTIF) /* switch (USER_INTERFACE) */
 		if (output_pane=command_window->output_pane)
 		{
-#if defined (MOTIF)
 			text_pos=XmTextGetLastPosition(output_pane);
 			XmTextInsert(output_pane,text_pos,message);
 			text_pos=XmTextGetLastPosition(output_pane);
 			XmTextShowPosition(output_pane,text_pos);
 			return_code=1;
-#endif /* defined (MOTIF) */
 		}
+#elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
+		new_length = SendMessage(command_window->command_output_pane,
+			WM_GETTEXTLENGTH, (WPARAM)0, (LPARAM)0);
+		new_length += strlen (message);
+		if (new_length > MAX_OUTPUT)
+		{
+			/* Remove entire lines to under MAX_OUTPUT characters */
+			position = SendMessage(command_window->command_output_pane,
+				EM_LINEFROMCHAR, (WPARAM)(new_length - MAX_OUTPUT), (LPARAM)0);
+			/* Add a few extra lines so that we don't do this every time */
+			position = SendMessage(command_window->command_output_pane,
+				EM_LINEINDEX, (WPARAM)(position + 10), (LPARAM)0);
+			SendMessage(command_window->command_output_pane, EM_SETSEL,
+				(WPARAM)0, (LPARAM)(position-1));
+			SendMessage(command_window->command_output_pane, WM_CLEAR,
+				(WPARAM)0, (LPARAM)0);
+		}
+		SendMessage(command_window->command_output_pane, EM_SETSEL,
+			(WPARAM)-1, (LPARAM)-1);
+		SendMessage(command_window->command_output_pane, EM_REPLACESEL,
+			(WPARAM)FALSE, (LPARAM)message);
+#endif /* switch (USER_INTERFACE) */
 		if (command_window->out_file &&
 			(command_window->out_file_mode & OUTFILE_OUTPUT))
 		{
@@ -1867,12 +2060,12 @@ Writes the <message> to the <command_window>.
 
 	return (return_code);
 } /* write_command_window */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 int modify_Command_window(struct Parse_state *state,void *dummy,
 	void *command_window_void)
 /*******************************************************************************
-LAST MODIFIED : 11 November 1998
+LAST MODIFIED : 11 November 1998-1516
+
 
 DESCRIPTION :
 Modifys the <command_window_void> according to the command in the <state>.

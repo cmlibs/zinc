@@ -39,9 +39,9 @@ algorithm described in Kenwright. (arrays are shifted by -1)
 #include "general/matrix_vector.h"
 #include "graphics/volume_texture.h"
 #include "graphics/mcubes.h"
-#include "graphics/texture_line.h"
 #include "graphics/complex.h"
 #include "graphics/laguer.h"
+#include "graphics/texture_line.h"
 #include "user_interface/message.h"
 
 /* module data */

@@ -11,9 +11,9 @@ Some additions/modifications to stdio.
 
 #include <stdio.h>
 
-#if defined (GENERIC_PC)
+#if defined (UNIX) && defined (GENERIC_PC)
 #include <endian.h>
-#endif /* defined (WINDOWS) */
+#endif /* defined (UNIX) && defined (GENERIC_PC) */
 #if defined (SGI)
 #include <sys/endian.h>
 #endif /* defined (SGI) */

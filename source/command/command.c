@@ -9,8 +9,10 @@ Functions associated with commands.
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include "command/command.h"
 #include "general/debug.h"
+#include "general/mystring.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
@@ -213,3 +215,55 @@ DESCRIPTION :
 
 	return (return_code);
 } /* DESTROY(Execute_command) */
+
+int execute_comfile(char *file_name,struct Execute_command *execute_command)
+/******************************************************************************
+LAST MODIFIED : 5 November 1997
+
+DESCRIPTION :
+Opens, executes and then closes a com file.  No window is created.
+=============================================================================*/
+{
+	char *command_string;
+	FILE *comfile;
+	int return_code;
+
+	ENTER(execute_comfile);
+	if (file_name)
+	{
+		if (execute_command)
+		{
+			if (comfile=fopen(file_name,"r"))
+			{
+				fscanf(comfile," ");
+				while (!feof(comfile)&&(read_string(comfile,"[^\n]",&command_string)))
+				{
+					Execute_command_execute_string(execute_command, command_string);
+					DEALLOCATE(command_string);
+					fscanf(comfile," ");
+				}
+				fclose(comfile);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"Could not open: %s",file_name);
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"execute_comfile.  "
+				"Invalid execute command");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"execute_comfile.  Missing file name");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_comfile */
+

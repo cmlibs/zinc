@@ -8,23 +8,21 @@ The function for importing finite element data, from a file or CMISS (via a
 socket) into the graphical interface to CMISS.
 ???DB.  Not accessing and deaccessing FE_basis's properly.
 ==============================================================================*/
+#if defined (UNIX)
 #include <ctype.h>
+#endif /* defined (UNIX) */
 #include <math.h>
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_time.h"
 #include "finite_element/import_finite_element.h"
 #include "general/debug.h"
+#include "general/math.h"
 #include "general/multi_range.h"
 #include "general/myio.h"
 #include "general/mystring.h"
 #include "general/object.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
-#if defined (SGI)
-/* For finite so that we can check for Nans which some compilers seem
-	to accept as valid in an fscanf */
-#include <ieeefp.h>
-#endif /* defined (SGI) */
 
 /*
 Module types

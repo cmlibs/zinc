@@ -13,7 +13,9 @@ Function definitions for some general purpose string functions.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined (UNIX)
 #include <ctype.h>
+#endif /* defined (UNIX) */
 #include "general/debug.h"
 #include "general/mystring.h"
 /*???DB.  Would like to move memory management out of Greg's debug.h */

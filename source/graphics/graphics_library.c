@@ -9,10 +9,12 @@ Functions for interfacing with the graphics library.
 #if defined (OPENGL_API)
 #include <math.h>
 #include <string.h>
+#if defined (MOTIF)
 #include <X11/Xlib.h>
 #include <GL/glu.h>
 #include <GL/glx.h>
-#endif
+#endif /* defined (MOTIF) */
+#endif /* defined (OPENGL_API) */
 #include "general/debug.h"
 #include "graphics/graphics_library.h"
 #include "user_interface/message.h"
@@ -20,7 +22,9 @@ Functions for interfacing with the graphics library.
 
 static struct Text_defaults
 {
+#if defined (MOTIF)
   XFontStruct *graphics_font;
+#endif /* defined (MOTIF) */
   int offsetX, offsetY;
 } text_defaults;
 
@@ -343,8 +347,8 @@ DESCRIPTION :
 	LEAVE;
 } /* wrapperMultiplyCurrentMatrix */
 
-void wrapperWindow(float left,float right,float bottom,float top,float near,
-	float far)
+void wrapperWindow(float window_left, float window_right, float window_bottom,
+  float window_top, float window_near, float window_far)
 /*******************************************************************************
 LAST MODIFIED : 13 February 1995
 
@@ -357,7 +361,8 @@ DESCRIPTION :
 	glGetIntegerv(GL_MATRIX_MODE,&currentMatrixMode);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glFrustum(left,right,bottom,top,near,far);
+	glFrustum(window_left,window_right,window_bottom,window_top,
+	  window_near,window_far);
 	glMatrixMode(currentMatrixMode);
 	LEAVE;
 } /* wrapperWindow */
@@ -436,14 +441,14 @@ void wrapperPrintText(char *theText)
 LAST MODIFIED : 13 February 1995
 
 DESCRIPTION :
-???Edouard.  Taken from the OpenGL programming guide, page 236
-???DB.  Check list numbers
 ==============================================================================*/
 {
 	ENTER(wrapperPrintText);
 	/* push all the state for list operations onto the "attribute stack" */
 	glPushAttrib(GL_LIST_BIT);
+#if defined (MOTIF)
 	glBitmap(0, 0, 0, 0, text_defaults.offsetX, text_defaults.offsetY, NULL);
+#endif /* defined (MOTIF) */
 	/* set the list base (i.e. the number that is added to each and every list
 		call made from now on) */
 	glListBase(fontOffset);
@@ -469,6 +474,7 @@ DESCRIPTION :
 Graphics font name now read in from Cmgui XDefaults file.
 ==============================================================================*/
 {
+#if defined (MOTIF)
 #define XmNgraphicsFont "graphicsFont"
 #define XmCGraphicsFont "GraphicsFont"
 #define XmNgraphicsTextOffsetX "graphicsTextOffsetX"
@@ -505,16 +511,21 @@ Graphics font name now read in from Cmgui XDefaults file.
 			"0"
 		}
 	};
+#endif /* defined (MOTIF) */
 
 	ENTER(wrapperInitText);
 	if (user_interface)
 	{
+#if defined (MOTIF)
 		text_defaults.graphics_font=(XFontStruct *)NULL;
+#endif /* defined (MOTIF) */
 		text_defaults.offsetX = 0;
 		text_defaults.offsetY = 0;
+#if defined (MOTIF)
 		XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 			&text_defaults,resources,XtNumber(resources),NULL);
 		glXUseXFont(text_defaults.graphics_font->fid,0,256,fontOffset);
+#endif /* defined (MOTIF) */
 	}
 	else
 	{
@@ -870,3 +881,53 @@ A Motif-style create routine.
 } /* GlXCreateMDraw */
 #endif
 #endif
+
+#if defined (OPENGL_API)
+int query_gl_extension(char *extName)
+/*******************************************************************************
+LAST MODIFIED : 9 September 1998
+
+DESCRIPTION :
+Search for extName in the GL extensions string. Use of strstr() is not sufficient
+because extension names can be prefixes of other extension names. Could use
+strtok() but the constant string returned by glGetString might be in read-only
+memory.
+???SAB.  Taken directly from the insight book on OpenGL Extensions
+==============================================================================*/
+{
+	char *end,*p;
+	int extNameLen, n;
+	int return_code;
+
+	/* check arguments */
+	if (extName)
+	{
+		extNameLen=strlen(extName);
+		p=(char *)glGetString(GL_EXTENSIONS);
+		if (NULL==p)
+		{
+			return_code=0;
+		}
+		else
+		{
+			end=p+strlen(p);
+			return_code = 0;
+			while (p<end)
+			{
+				n=strcspn(p," ");
+				if ((extNameLen==n)&&(strncmp(extName,p,n)==0)) 
+				{
+					return_code=1;
+				}
+				p += (n+1);
+			}
+		}
+	}
+	else
+	{
+		return_code=0;
+	}
+
+	return (return_code);
+} /* query_extension */
+#endif /* defined (OPENGL_API) */

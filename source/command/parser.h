@@ -10,6 +10,9 @@ it is nothing but a strings container, and some comparison functions)
 #if !defined (PARSER_H)
 #define PARSER_H
 
+#if defined (UNIX)
+#include <ctype.h>
+#endif /* defined (UNIX) */
 #include "general/object.h"
 #include "general/value.h"
 

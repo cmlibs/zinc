@@ -14,6 +14,7 @@ content of the global selections and objects with text input.
 #if !defined (INTERACTIVE_TOOL_H)
 #define INTERACTIVE_TOOL_H
 
+#include <Xm/Xm.h>
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"

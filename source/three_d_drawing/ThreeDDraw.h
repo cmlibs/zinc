@@ -146,19 +146,7 @@ Routine for cleaning up any dynamic module variables created with the
 Three_D_Drawing, eg. OpenGL shareable_context.
 ==============================================================================*/
 
-#if defined (OPENGL_API)
-int query_gl_extension(char *extName);
-/*******************************************************************************
-LAST MODIFIED : 9 September 1998
-
-DESCRIPTION :
-Search for extName in the GL extensions string. Use of strstr() is not sufficient
-because extension names can be prefixes of other extension names. Could use
-strtok() but the constant string returned by glGetString might be in read-only
-memory.
-???SAB.  Taken directly from the insight book on OpenGL Extensions
-==============================================================================*/
-
+#if defined (OPENGL_API) && defined (MOTIF)
 int query_glx_extension(char *extName, Display *display, int screen);
 /*******************************************************************************
 LAST MODIFIED : 14 September 1998

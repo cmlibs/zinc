@@ -26,25 +26,27 @@ LAST MODIFIED : 17 May 2002
 DESCRIPTION :
 ==============================================================================*/
 {
-#if !defined (WINDOWS_DEV_FLAG)
 	char *cm_examples_directory,*cm_parameters_file_name,*example_directory,
 		*examples_directory,*example_comfile,*help_directory,*help_url;
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 #if defined (CELL)
 	struct Cell_interface *cell_interface;
 #endif /* defined (CELL) */
+	struct Console *command_console;
 	struct Command_window *command_window;
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 	struct Colour background_colour,foreground_colour;
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 	struct Execute_command *execute_command,*set_command;
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 	struct Element_point_tool *element_point_tool;
 	struct Element_tool *element_tool;
+#endif /* defined (MOTIF) */
 	struct Event_dispatcher *event_dispatcher;
+#if defined (MOTIF)
 	struct Node_tool *data_tool,*node_tool;
 	struct Select_tool *select_tool;
 	struct Interactive_tool *transform_tool;
+#endif /* defined (MOTIF) */
 #if defined (SELECT_DESCRIPTORS)
 	struct LIST(Io_device) *device_list;
 #endif /* defined (SELECT_DESCRIPTORS) */
@@ -53,7 +55,9 @@ DESCRIPTION :
 	/* list of glyphs = simple graphics objects with only geometry */
 	struct LIST(GT_object) *glyph_list;
 	struct FE_time *fe_time;
+#if defined (MOTIF)
 	struct MANAGER(Comfile_window) *comfile_window_manager;
+#endif /* defined (MOTIF) */
 	struct Computed_field_package *computed_field_package;
 	struct MANAGER(Environment_map) *environment_map_manager;
 	struct MANAGER(FE_basis) *basis_manager;
@@ -62,7 +66,9 @@ DESCRIPTION :
 	struct MANAGER(FE_node) *data_manager,*node_manager;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct Graphical_material *default_graphical_material;
+#if defined (MOTIF)
 	struct MANAGER(Graphics_window) *graphics_window_manager;
+#endif /* defined (MOTIF) */
 	struct MANAGER(GROUP(FE_element)) *element_group_manager;
 		/*???DB.  Also manages faces and lines */
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager;
@@ -81,35 +87,34 @@ DESCRIPTION :
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct MANAGER(VT_volume_texture) *volume_texture_manager;
 	struct Modifier_entry *set_file_name_option_table;
+#if defined (MOTIF)
 	struct Prompt_window *prompt_window;
 	struct Projection_window *projection_window;
+#endif /* defined (MOTIF) */
 	/* global list of selected objects */
 	struct Any_object_selection *any_object_selection;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
 	struct FE_node_selection *data_selection,*node_selection;
+#if defined (MOTIF)
 	struct Socket *command_socket;
 	XtInputId command_socket_input_id;
+#endif /* defined (MOTIF) */
 	struct Spectrum *default_spectrum;
 	struct Streampoint *streampoint_list;
 		/*???SAB.  This definitely doesn't belong in here... but where? */
 #if defined (UNEMAP)
 	struct System_window *unemap_system_window;
 #endif /* defined (UNEMAP) */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 	struct Time_keeper *default_time_keeper;
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 #if defined (MIRAGE)
-#if defined (OLD_CODE)
-	struct MANAGER(Digitiser_window) *digitiser_window_manager;
-	struct Mirage_movie *mirage_movie;
-#endif /* defined (OLD_CODE) */
 	struct Tracking_editor_dialog *tracking_editor_dialog;
 		/*???DB.  Should this be a widget like the other tools ? */
 #endif /* defined (MIRAGE) */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 	struct User_interface *user_interface;
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 	Widget control_curve_editor_dialog,data_grabber_dialog,
 		emoter_slider_dialog,grid_field_calculator_dialog,input_module_dialog,
 		interactive_data_editor_dialog,interactive_node_editor_dialog,
@@ -120,7 +125,7 @@ DESCRIPTION :
 	struct Element_point_viewer *element_point_viewer;
 	struct Element_creator *element_creator;
 	struct Scene_editor *scene_editor;
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 	struct Unemap_package *unemap_package;
 	
 }; /* struct Cmiss_command_data */

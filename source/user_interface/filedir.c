@@ -648,9 +648,9 @@ successful and NULL if unsuccessful.
 ==============================================================================*/
 {
 	struct File_open_data *file_open_data;
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	char *temp_filter_extension;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 	ENTER(create_File_open_data);
 	/* check arguments */
@@ -693,7 +693,7 @@ successful and NULL if unsuccessful.
 			file_open_data->warning_box=(Widget)NULL;
 			file_open_data->warning_shell=(Widget)NULL;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 			(file_open_data->open_file_name).lStructSize=sizeof(OPENFILENAME);
 			(file_open_data->open_file_name).hwndOwner=(HWND)NULL;
 			(file_open_data->open_file_name).hInstance=(HINSTANCE)NULL;
@@ -757,7 +757,7 @@ successful and NULL if unsuccessful.
 				display_message(ERROR_MESSAGE,
 					"create_File_open_data.  Could not allocate memory for lpstrFile");
 			}
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		}
 		else
 		{
@@ -808,9 +808,9 @@ void open_file_and_read(
 #if defined (MOTIF)
 	Widget widget,XtPointer client_data,XtPointer call_data
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	struct File_open_data *file_open_data
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
 LAST MODIFIED : 25 November 1999
@@ -821,19 +821,21 @@ a list of the file names matching the <filter>.  After the user selects a file
 name the <file_operation> is performed on the file with the <arguments>.
 ==============================================================================*/
 {
+	struct File_open_data *file_open_data;
 #if defined (MOTIF)
 	char *shell_title,*temp_string;
 	MrmType selection_class;
-	struct File_open_data *file_open_data;
 	Widget file_selection_child,parent;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	char *temp_str;
 	int length,retry;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 	ENTER(open_file_and_read);
+#if defined (MOTIF)
 	USE_PARAMETER(call_data);
+#endif /* defined (MOTIF) */
 	if (file_open_data
 #if defined (MOTIF)
 		=(struct File_open_data *)client_data
@@ -996,7 +998,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 			XtManageChild(file_open_data->selection);
 		}
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		retry=0;
 		do
 		{
@@ -1039,7 +1041,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 				retry=0;
 			}
 		} while (retry);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	}
 	else
 	{
@@ -1052,9 +1054,9 @@ void open_file_and_write(
 #if defined (MOTIF)
 	Widget widget,XtPointer client_data,XtPointer call_data
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	struct File_open_data *file_open_data
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
 LAST MODIFIED : 25 November 1999
@@ -1066,6 +1068,7 @@ The <file_operation> with the <user_arguments> and the output directed to the
 specified file.
 ==============================================================================*/
 {
+	struct File_open_data *file_open_data;
 #if defined (MOTIF)
 #if defined (OLD_CODE)
 	char first;
@@ -1090,7 +1093,6 @@ specified file.
 		{"file_open_data",(XtPointer)NULL}
 	};
 #endif /* defined (OLD_CODE) */
-	struct File_open_data *file_open_data;
 	Widget file_selection_child,parent;
 #define XmNprinterCommand "printerCommand"
 #define XmCPrinterCommand "PrinterCommand"
@@ -1107,13 +1109,15 @@ specified file.
 		}
 	};
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	char *temp_str;
 	int length,retry;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 	ENTER(open_file_and_write);
+#if defined (MOTIF)
 	USE_PARAMETER(call_data);
+#endif /* defined (MOTIF) */
 	if (file_open_data
 #if defined (MOTIF)
 		=(struct File_open_data *)client_data
@@ -1369,7 +1373,7 @@ specified file.
 			}
 		}
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		retry=0;
 		do
 		{
@@ -1412,7 +1416,7 @@ specified file.
 				retry=0;
 			}
 		} while (retry);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	}
 	else
 	{

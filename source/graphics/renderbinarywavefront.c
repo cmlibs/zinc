@@ -13,7 +13,6 @@ Renders gtObjects to Wavefront OBJ file
 #include <time.h>
 #include "general/debug.h"
 #include "graphics/graphics_object.h"
-#include "graphics/graphics_window.h"
 #include "graphics/material.h"
 #include "graphics/renderwavefront.h"
 #include "graphics/renderbinarywavefront.h"

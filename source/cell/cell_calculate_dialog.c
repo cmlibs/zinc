@@ -14,10 +14,12 @@ Routines for the model calculation dialog
 #include <Xm/MwmUtil.h>
 #include <Xm/Protocols.h>
 #include <Xm/TextF.h>
+#include <Mrm/MrmPublic.h>
 
 #include "cell/cell_calculate_dialog.h"
 #include "cell/cell_calculate_dialog.uidh"
 #include "user_interface/gui_dialog_macros.h"
+#include "user_interface/user_interface.h"
 
 /*
 Module objects

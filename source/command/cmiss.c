@@ -18,20 +18,20 @@ Functions for executing cmiss commands.
 #if defined (MOTIF)
 #include <Xm/List.h>
 #endif /* defined (MOTIF) */
-#if !defined (WINDOWS_DEV_FLAG)
 #if defined (CELL)
 #include "cell/cell_interface.h"
 #include "cell/cell_window.h"
 #endif /* defined (CELL) */
+#if defined (MOTIF)
 #include "comfile/comfile_window.h"
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 #include "command/cmiss.h"
-#if !defined (WINDOWS_DEV_FLAG)
+#include "command/console.h"
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
 #include "command/command_window.h"
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
 #include "command/example_path.h"
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 #include "command/parser.h"
-#if !defined (WINDOWS_DEV_FLAG)
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "computed_field/computed_field_finite_element.h"
@@ -39,59 +39,76 @@ Functions for executing cmiss commands.
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_update.h"
 #include "computed_field/computed_field_wrappers.h"
+#if defined (MOTIF)
 #include "data/data_grabber_dialog.h"
+#endif /* defined (MOTIF) */
 #include "data/node_transform.h"
+#if defined (MOTIF)
 #include "data/sync_2d_3d.h"
 #include "element/element_creator.h"
+#endif /* defined (MOTIF) */
+#include "element/element_operations.h"
+#if defined (MOTIF)
 #include "element/element_point_viewer.h"
 #include "element/element_tool.h"
+#endif /* defined (MOTIF) */
 #include "finite_element/export_finite_element.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "finite_element/finite_element_to_iso_lines.h"
 #include "finite_element/finite_element_to_streamlines.h"
+#if defined (MOTIF)
 #include "finite_element/grid_field_calculator.h"
+#endif /* defined (MOTIF) */
 #include "finite_element/import_finite_element.h"
 #include "finite_element/snake.h"
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 #include "general/debug.h"
-#if !defined (WINDOWS_DEV_FLAG)
 #include "general/image_utilities.h"
 #include "general/matrix_vector.h"
 #include "general/multi_range.h"
 #include "general/mystring.h"
 #include "graphics/auxiliary_graphics_types.h"
+#include "graphics/defined_graphics_objects.h"
 #include "graphics/environment_map.h"
 #include "graphics/graphical_element.h"
 #include "graphics/graphics_object.h"
+#if defined (MOTIF)
 #include "graphics/graphics_window.h"
+#endif /* defined (MOTIF) */
 #include "graphics/import_graphics_object.h"
-#if defined (OLD_CODE)
-#include "graphics/interactive_streamlines_dialog.h"
-#endif /* defined (OLD_CODE) */
 #include "graphics/iso_field_calculation.h"
 #include "graphics/light.h"
 #include "graphics/light_model.h"
 #include "graphics/material.h"
+#if defined (MOTIF)
 #include "graphics/movie_graphics.h"
 #if defined (NEW_ALIAS)
 #include "graphics/renderalias.h"
 #endif /* defined (NEW_ALIAS) */
+#endif /* defined (MOTIF) */
 #include "graphics/renderbinarywavefront.h"
 #include "graphics/rendervrml.h"
 #include "graphics/renderwavefront.h"
 #include "graphics/scene.h"
+#if defined (MOTIF)
 #include "graphics/scene_editor.h"
+#endif /* defined (MOTIF) */
 #include "graphics/spectrum.h"
+#if defined (MOTIF)
 #include "graphics/spectrum_editor.h"
 #include "graphics/spectrum_editor_dialog.h"
+#endif /* defined (MOTIF) */
 #include "graphics/spectrum_settings.h"
 #include "graphics/texture.h"
+#if defined (MOTIF)
 #include "graphics/texturemap.h"
 #include "graphics/transform_tool.h"
+#endif /* defined (MOTIF) */
 #include "graphics/userdef_objects.h"
 #include "graphics/volume_texture.h"
+#if defined (MOTIF)
 #include "graphics/volume_texture_editor.h"
+#endif /* defined (MOTIF) */
 #include "help/help_interface.h"
 #if defined (SELECT_DESCRIPTORS)
 #include "io_devices/io_device.h"
@@ -99,10 +116,13 @@ Functions for executing cmiss commands.
 #if defined (HAPTIC)
 #include "io_devices/haptic_input_module.h"
 #endif /* defined (HAPTIC) */
+#if defined (MOTIF)
 #include "io_devices/input_module_dialog.h"
+#endif /* defined (MOTIF) */
 #if defined (LINK_CMISS)
 #include "link/cmiss.h"
 #endif /* defined (LINK_CMISS) */
+#if defined (MOTIF)
 #include "material/material_editor_dialog.h"
 #include "menu/menu_window.h"
 #if defined (MIRAGE)
@@ -110,6 +130,9 @@ Functions for executing cmiss commands.
 #include "mirage/tracking_editor_dialog.h"
 #endif /* defined (MIRAGE) */
 #include "node/interactive_node_editor_dialog.h"
+#endif /* defined (MOTIF) */
+#include "node/node_operations.h"
+#if defined (MOTIF)
 #include "node/node_tool.h"
 #include "node/node_viewer.h"
 #include "projection/projection_window.h"
@@ -118,22 +141,22 @@ Functions for executing cmiss commands.
 #include "three_d_drawing/movie_extensions.h"
 #include "three_d_drawing/ThreeDDraw.h"
 #include "time/time_editor_dialog.h"
+#endif /* defined (MOTIF) */
 #include "time/time_keeper.h"
 #if defined (UNEMAP)
 #include "unemap/system_window.h"
 #include "unemap/unemap_package.h"
 #endif /* defined (UNEMAP) */
 #include "user_interface/filedir.h"
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 #include "user_interface/confirmation.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 #include "curve/control_curve.h"
+#if defined (MOTIF)
 #include "curve/control_curve_editor_dialog.h"
-#if !defined (WINDOWS_DEV_FLAG)
 #include "view/coord_trans.h"
 #include "xvg/include/xvg_interface.h"
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 #if defined (F90_INTERPRETER)
 #include "command/f90_interpreter.h"
 #else /* defined (F90_INTERPRETER) */
@@ -156,6 +179,43 @@ struct CMISS_connection *CMISS = (struct CMISS_connection *)NULL;
 Module functions
 ----------------
 */
+
+static int set_command_prompt(char *prompt, struct Cmiss_command_data *command_data)
+/*******************************************************************************
+LAST MODIFIED : 26 June 2002
+
+DESCRIPTION :
+Changes the command prompt provided to the user.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_command_prompt);
+	if (prompt && command_data)
+	{
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+		if (command_data->command_window)
+		{
+			return_code = Command_window_set_command_prompt(command_data->command_window,
+				prompt);
+		}
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
+		if (command_data->command_console)
+		{
+			return_code = Console_set_command_prompt(command_data->command_console,
+				prompt);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_command_prompt.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_command_prompt */
 
 struct Add_FE_element_to_list_if_in_range_data
 /*******************************************************************************
@@ -1475,7 +1535,6 @@ a single point in 3-D space with an axes glyph.
 	return (return_code);
 } /* gfx_create_axes */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_colour_bar(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -1628,9 +1687,7 @@ with tick marks and labels for showing the scale of a spectrum.
 
 	return (return_code);
 } /* gfx_create_colour_bar */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_cylinders(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -1880,8 +1937,8 @@ Executes a GFX CREATE CYLINDERS command.
 
 	return (return_code);
 } /* gfx_create_cylinders */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
+#if defined (MOTIF)
 static int gfx_create_element_creator(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -1957,6 +2014,7 @@ Executes a GFX CREATE ELEMENT_CREATOR command.
 
 	return (return_code);
 } /* gfx_create_element_creator */
+#endif /* defined (MOTIF) */
 
 static int gfx_create_element_points(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -2360,7 +2418,6 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 	return (return_code);
 } /* gfx_create_element_points */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_element_group(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -2543,9 +2600,8 @@ Executes a GFX CREATE EGROUP command.
 
 	return (return_code);
 } /* gfx_create_element_group */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_create_environment_map(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -2643,10 +2699,10 @@ Executes a GFX CREATE ENVIRONMENT_MAP command.
 
 	return (return_code);
 } /* gfx_create_environment_map */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
 #if defined (OLD_CODE)
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int set_intersect(struct Parse_state *state,
 	void *intersect_mu_theta_void,void *dummy_user_data)
 /*******************************************************************************
@@ -2744,10 +2800,9 @@ for intersect - look at how fibre angle varies through the heart wall.
 
 	return (return_code);
 } /* set_intersect */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 #endif /* defined (OLD_CODE) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_flow_particles(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -3008,9 +3063,7 @@ Executes a GFX CREATE FLOW_PARTICLES command.
 
 	return (return_code);
 } /* gfx_create_flow_particles */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_more_flow_particles(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -3246,9 +3299,7 @@ Executes a GFX CREATE MORE_FLOW_PARTICLES command.
 
 	return (return_code);
 } /* gfx_create_more_flow_particles */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_modify_flow_particles(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -3337,8 +3388,8 @@ Executes a GFX MODIFY FLOW_PARTICLES command.
 
 	return (return_code);
 } /* gfx_modify_flow_particles */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
+#if defined (MOTIF)
 static int gfx_create_graphical_material_editor(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -3402,7 +3453,9 @@ editor at a time.  This implementation may be changed later.
 
 	return (return_code);
 } /* gfx_create_graphical_material_editor */
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 static int gfx_create_grid_field_calculator(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -3462,8 +3515,9 @@ Invokes the grid field calculator dialog.
 
 	return (return_code);
 } /* gfx_create_grid_field_calculator */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_create_input_module_control(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -3529,9 +3583,9 @@ Executes a GFX CREATE IM_CONTROL command.
 
 	return (return_code);
 } /* gfx_create_input_module_control */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_create_interactive_data_editor(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -3591,9 +3645,9 @@ Executes a GFX CREATE INTERACTIVE_DATA_EDITOR command.
 
 	return (return_code);
 } /* gfx_create_interactive_data_editor */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_create_interactive_node_editor(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -3653,7 +3707,7 @@ Executes a GFX CREATE INTERACTIVE_NODE_EDITOR command.
 
 	return (return_code);
 } /* gfx_create_interactive_node_editor */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
 #if defined (OLD_CODE)
 static int set_iso_field_with_floats(struct Parse_state *state,
@@ -4251,7 +4305,6 @@ Executes a GFX CREATE ISO_SURFACES command.
 	return (return_code);
 } /* gfx_create_iso_surfaces */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_light(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -4346,9 +4399,7 @@ Executes a GFX CREATE LIGHT command.
 
 	return (return_code);
 } /* gfx_create_light */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_light_model(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -4448,7 +4499,6 @@ Executes a GFX CREATE LMODEL command.
 
 	return (return_code);
 } /* gfx_create_light_model */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 static int gfx_create_lines(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -4671,7 +4721,6 @@ Executes a GFX CREATE LINES command.
 	return (return_code);
 } /* gfx_create_lines */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_material(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -4783,7 +4832,6 @@ If the material already exists, then behaves like gfx modify material.
 
 	return (return_code);
 } /* gfx_create_material */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 static int gfx_create_morph(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -4887,7 +4935,7 @@ graphics objects, and produces a new object
 } /* gfx_create_morph */
 
 #if defined (OLD_CODE)
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_create_node_group_slider(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -4933,9 +4981,10 @@ new slider.
 
 	return (return_code);
 } /* gfx_create_node_group_slider */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 #endif /* defined (OLD_CODE) */
 
+#if defined (MOTIF)
 static int gfx_create_node_viewer(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -5026,8 +5075,9 @@ Executes a GFX CREATE NODE_VIEWER command.
 
 	return (return_code);
 } /* gfx_create_node_viewer */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_create_data_viewer(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -5118,8 +5168,9 @@ Executes a GFX CREATE DATA_VIEWER command.
 
 	return (return_code);
 } /* gfx_create_data_viewer */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 static int gfx_create_element_point_viewer(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -5209,6 +5260,7 @@ Executes a GFX CREATE ELEMENT_POINT_VIEWER command.
 
 	return (return_code);
 } /* gfx_create_element_point_viewer */
+#endif /* defined (MOTIF) */
 
 static int gfx_create_node_points(struct Parse_state *state,
 	void *use_data,void *command_data_void)
@@ -5527,7 +5579,6 @@ If <use_data> is set, creating data points, otherwise creating node points.
 	return (return_code);
 } /* gfx_create_node_points */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_data_group(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -5702,9 +5753,7 @@ Executes a GFX CREATE DGROUP command.
 
 	return (return_code);
 } /* gfx_create_data_group */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_node_group(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -5879,7 +5928,6 @@ Executes a GFX CREATE NGROUP command.
 
 	return (return_code);
 } /* gfx_create_node_group */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 static int gfx_create_scene(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -6400,7 +6448,6 @@ static and referred to by gfx_create_Spectrum
 	return (return_code);
 } /* gfx_modify_Spectrum */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_spectrum(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -6496,7 +6543,6 @@ Executes a GFX CREATE SPECTRUM command.
 
 	return (return_code);
 } /* gfx_create_spectrum */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 static int gfx_create_streamlines(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -8806,7 +8852,7 @@ Executes a GFX CREATE TEXTURE command.
 	return (return_code);
 } /* gfx_create_texture */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_create_texture_map(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -8945,9 +8991,9 @@ Executes a GFX CREATE TEXMAP command.
 
 	return (return_code);
 } /* gfx_create_texture_map */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_create_time_editor(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -9010,9 +9056,9 @@ editor at a time.  This implementation may be changed later.
 
 	return (return_code);
 } /* gfx_create_graphical_time_editor */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_create_control_curve_editor(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -9076,9 +9122,9 @@ editor at a time.  This implementation may be changed later.
 
 	return (return_code);
 } /* gfx_create_control_curve_editor */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_create_tracking_editor(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -9177,9 +9223,9 @@ Executes a GFX CREATE TRACKING_EDITOR command.
 
 	return (return_code);
 } /* gfx_create_tracking_editor */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_create_robot_7dof(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -9283,9 +9329,9 @@ Executes a GFX CREATE OBJECT HEART_ROBOT command.
 
 	return (return_code);
 } /* gfx_create_robot_7dof */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_create_userdef(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -9316,7 +9362,7 @@ Executes a GFX CREATE OBJECT command.
 		{
 			if (command_data=(struct Cmiss_command_data *)command_data_void)
 			{
-				set_command_prompt("gfx create object",command_data->command_window);
+				set_command_prompt("gfx create object",command_data);
 				return_code=1;
 			}
 			else
@@ -9336,9 +9382,9 @@ Executes a GFX CREATE OBJECT command.
 
 	return (return_code);
 } /* gfx_create_userdef */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_create_volume_editor(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -9398,7 +9444,7 @@ Executes a GFX CREATE VOLUME_EDITOR command.
 
 	return (return_code);
 } /* gfx_create_volume_editor */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
 static int gfx_create_volumes(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -9798,7 +9844,6 @@ Executes a GFX CREATE VOLUMES command.
 	return (return_code);
 } /* gfx_create_volumes */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_volume_texture(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -9913,9 +9958,8 @@ Executes a GFX CREATE VTEXTURE command.
 
 	return (return_code);
 } /* gfx_create_volume_texture */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_create_window(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -10053,7 +10097,7 @@ Executes a GFX CREATE WINDOW command.
 
 	return (return_code);
 } /* gfx_create_window */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
 #if defined (HAPTIC)
 static int gfx_create_haptic(struct Parse_state *state,
@@ -10134,7 +10178,7 @@ Executes a GFX CREATE HAPTIC command.
 } /* gfx_create_haptic */
 #endif /* defined (HAPTIC) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_create_3d_digitizer(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -10198,9 +10242,8 @@ a time.  This implementation may be changed later.
 
 	return (return_code);
 } /* gfx_create_3d_digitizer */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_cmiss(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -10216,9 +10259,9 @@ Executes a GFX CREATE CMISS_CONNECTION command.
 	int connection_number,return_code;
 	struct Cmiss_command_data *command_data;
 	struct Option_table *option_table;
+#if defined (MOTIF)
 /*???DB.  Not sure if this is quite the right place */
 	double wormhole_timeout;
-#if defined (MOTIF)
 #define XmNwormholeTimeoutSeconds "wormholeTimeoutSeconds"
 #define XmCWormholeTimeoutSeconds "WormholeTimeoutSeconds"
 	static XtResource resources[]=
@@ -10284,8 +10327,8 @@ Executes a GFX CREATE CMISS_CONNECTION command.
 			host_type=MACHINE_UNKNOWN;
 			mycm_flag=0;
 			asynchronous_commands=0;
-			wormhole_timeout=300;
 #if defined (MOTIF)
+			wormhole_timeout=300;
 			if (command_data->user_interface)
 			{
 				XtVaGetApplicationResources(User_interface_get_application_shell(
@@ -10382,7 +10425,6 @@ Executes a GFX CREATE CMISS_CONNECTION command.
 
 	return (return_code);
 } /* gfx_create_cmiss */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if defined (SELECT_DESCRIPTORS)
 static int execute_command_attach(struct Parse_state *state,
@@ -10621,7 +10663,9 @@ Executes a GFX CREATE command.
 #if defined (MIRAGE)
 	struct Create_emoter_slider_data create_emoter_slider_data;
 #endif /* defined (MIRAGE) */
+#if defined (MOTIF)
 	struct Create_node_group_slider_data create_node_group_slider_data;
+#endif /* defined (MOTIF) */
 	struct Option_table *option_table;
 
 	ENTER(execute_command_gfx_create);
@@ -10632,6 +10676,7 @@ Executes a GFX CREATE command.
 		{
 			if (state->current_token)
 			{
+#if defined (MOTIF)
 				create_node_group_slider_data.execute_command=
 					command_data->execute_command;
 				create_node_group_slider_data.fe_field_manager=
@@ -10655,35 +10700,45 @@ Executes a GFX CREATE command.
 				{
 					create_node_group_slider_data.parent=(Widget)NULL;
 				}
+#endif /* defined (MOTIF) */
 
 				option_table=CREATE(Option_table)();
 				Option_table_add_entry(option_table,"annotation",NULL,
 					command_data_void,gfx_create_annotation);
 				Option_table_add_entry(option_table,"axes",NULL,
 					command_data_void,gfx_create_axes);
+#if defined (MOTIF)
 				Option_table_add_entry(option_table,"cmiss_connection",NULL,
 					command_data_void,gfx_create_cmiss);
+#endif /* defined (MOTIF) */
 				Option_table_add_entry(option_table,"colour_bar",NULL,
 					command_data_void,gfx_create_colour_bar);
+#if defined (MOTIF)
 				Option_table_add_entry(option_table,"curve_editor",NULL,
 					command_data_void,gfx_create_control_curve_editor);
+#endif /* defined (MOTIF) */
 				Option_table_add_entry(option_table,"cylinders",NULL,
 					command_data_void,gfx_create_cylinders);
+#if defined (MOTIF)
 				Option_table_add_entry(option_table,"data_viewer",NULL,
 					command_data_void,gfx_create_data_viewer);
+#endif /* defined (MOTIF) */
 				Option_table_add_entry(option_table,"data_points",/*use_data*/(void *)1,
 					command_data_void,gfx_create_node_points);
 				Option_table_add_entry(option_table,"dgroup",NULL,
 					command_data_void,gfx_create_data_group);
 				Option_table_add_entry(option_table,"egroup",NULL,
 					command_data_void,gfx_create_element_group);
+#if defined (MOTIF)
 				Option_table_add_entry(option_table,"element_creator",NULL,
 					command_data_void,gfx_create_element_creator);
 				Option_table_add_entry(option_table,"element_point_viewer",NULL,
 					command_data_void,gfx_create_element_point_viewer);
+#endif /* defined (MOTIF) */
 				Option_table_add_entry(option_table,"element_points",NULL,
 					command_data_void,gfx_create_element_points);
 #if defined (MIRAGE)
+#if defined (MOTIF)
 				create_emoter_slider_data.execute_command=command_data->execute_command;
 				create_emoter_slider_data.fe_field_manager=
 					command_data->fe_field_manager;
@@ -10728,11 +10783,15 @@ Executes a GFX CREATE command.
 					(void *)&create_emoter_slider_data,gfx_create_emoter);
 				Option_table_add_entry(option_table,"em_sliders",NULL,
 					(void *)&create_node_group_slider_data,create_em_sliders);
+#endif /* defined (MOTIF) */
 #endif /* defined (MIRAGE) */
+#if defined (MOTIF)
 				Option_table_add_entry(option_table,"environment_map",NULL,
 					command_data_void,gfx_create_environment_map);
+#endif /* defined (MOTIF) */
 				Option_table_add_entry(option_table,"flow_particles",NULL,
 					command_data_void,gfx_create_flow_particles);
+#if defined (MOTIF)
 				Option_table_add_entry(option_table,"graphical_material_editor",NULL,
 					command_data_void,gfx_create_graphical_material_editor);
 				Option_table_add_entry(option_table,"grid_field_calculator",NULL,
@@ -10747,6 +10806,7 @@ Executes a GFX CREATE command.
 					command_data_void,gfx_create_interactive_data_editor);
 				Option_table_add_entry(option_table,"interactive_node_editor",NULL,
 					command_data_void,gfx_create_interactive_node_editor);
+#endif /* defined (MOTIF) */
 				Option_table_add_entry(option_table,"iso_surfaces",NULL,
 					command_data_void,gfx_create_iso_surfaces);
 				Option_table_add_entry(option_table,"light",NULL,
@@ -10761,18 +10821,22 @@ Executes a GFX CREATE command.
 					command_data_void,gfx_create_more_flow_particles);
 				Option_table_add_entry(option_table,"morph",NULL,
 					command_data_void,gfx_create_morph);
+#if defined (MOTIF)
 				Option_table_add_entry(option_table,"muscle_slider",NULL,
 					(void *)&create_node_group_slider_data,create_muscle_slider);
+#endif /* defined (MOTIF) */
 				Option_table_add_entry(option_table,"ngroup",NULL,
 					command_data_void,gfx_create_node_group);
 				Option_table_add_entry(option_table,"node_points",/*use_data*/(void *)0,
 					command_data_void,gfx_create_node_points);
+#if defined (MOTIF)
 				Option_table_add_entry(option_table,"node_viewer",NULL,
 					command_data_void,gfx_create_node_viewer);
 				Option_table_add_entry(option_table,"object",NULL,
 					command_data_void,gfx_create_userdef);
 				Option_table_add_entry(option_table,"pivot_slider",NULL,
 					(void *)&create_node_group_slider_data,create_pivot_slider);
+#endif /* defined (MOTIF) */
 				Option_table_add_entry(option_table,"scene",NULL,
 					command_data_void,gfx_create_scene);
 				Option_table_add_entry(option_table, "snake", NULL,
@@ -10787,30 +10851,38 @@ Executes a GFX CREATE command.
 #endif /* defined (OLD_CODE) */
 				Option_table_add_entry(option_table,"surfaces",NULL,
 					command_data_void,gfx_create_surfaces);
+#if defined (MOTIF)
 				Option_table_add_entry(option_table,"texmap",NULL,
 					command_data_void,gfx_create_texture_map);
+#endif /* defined (MOTIF) */
 				Option_table_add_entry(option_table,"texture",NULL,
 					command_data_void,gfx_create_texture);
+#if defined (MOTIF)
 				Option_table_add_entry(option_table,"time_editor",NULL,
 					command_data_void,gfx_create_time_editor);
 				Option_table_add_entry(option_table,"tracking_editor",NULL,
 					command_data_void,gfx_create_tracking_editor);
+#endif /* defined (MOTIF) */
 				Option_table_add_entry(option_table,"volumes",NULL,
 					command_data_void,gfx_create_volumes);
+#if defined (MOTIF)
 				Option_table_add_entry(option_table,"vt_editor",NULL,
 					command_data_void,gfx_create_volume_editor);
+#endif /* defined (MOTIF) */
 				Option_table_add_entry(option_table,"vtexture",NULL,
 					command_data_void,gfx_create_volume_texture);
+#if defined (MOTIF)
 				Option_table_add_entry(option_table,"window",NULL,
 					command_data_void,gfx_create_window);
 				Option_table_add_entry(option_table,"3d_digitizer",NULL,
 					command_data_void,gfx_create_3d_digitizer);
+#endif /* defined (MOTIF) */
 				return_code=Option_table_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
 			}
 			else
 			{
-				set_command_prompt("gfx create",command_data->command_window);
+				set_command_prompt("gfx create",command_data);
 				return_code=1;
 			}
 		}
@@ -10976,7 +11048,7 @@ Executes a GFX DEFINE command.
 			}
 			else
 			{
-				set_command_prompt("gfx define",command_data->command_window);
+				set_command_prompt("gfx define",command_data);
 				return_code=1;
 			}
 		}
@@ -10997,7 +11069,7 @@ Executes a GFX DEFINE command.
 	return (return_code);
 } /* execute_command_gfx_define */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_destroy_cmiss(struct Parse_state *state,
 	void *dummy_to_be_modified,void *dummy_user_data)
 /*******************************************************************************
@@ -11048,9 +11120,8 @@ Executes a GFX DESTROY CMISS_CONNECTION command.
 
 	return (return_code);
 } /* gfx_destroy_cmiss */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_destroy_data_group(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -11131,9 +11202,7 @@ Executes a GFX DESTROY DGROUP command.
 
 	return (return_code);
 } /* gfx_destroy_data_group */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_destroy_element_group(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -11216,7 +11285,6 @@ element groups are destroyed together.
 
 	return (return_code);
 } /* gfx_destroy_element_group */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 static struct LIST(FE_element) *
 	FE_element_list_from_all_selected_group_ranges(
@@ -12224,6 +12292,7 @@ Executes a GFX DESTROY VTEXTURES command.
 	return (return_code);
 } /* gfx_destroy_vtextures */
 
+#if defined (MOTIF)
 static int gfx_destroy_Graphics_window(struct Parse_state *state,
 	void *dummy_to_be_modified, void *graphics_window_manager_void)
 /*******************************************************************************
@@ -12294,6 +12363,7 @@ Executes a GFX DESTROY WINDOW command.
 
 	return (return_code);
 } /* gfx_destroy_Graphics_window */
+#endif /* defined (MOTIF) */
 
 static int execute_command_gfx_destroy(struct Parse_state *state,
 	void *dummy_to_be_modified, void *command_data_void)
@@ -12317,9 +12387,11 @@ Executes a GFX DESTROY command.
 			if (state->current_token)
 			{
 				option_table = CREATE(Option_table)();
+#if defined (MOTIF)
 				/* cmiss_connection */
 				Option_table_add_entry(option_table, "cmiss_connection", NULL,
 					command_data_void, gfx_destroy_cmiss);
+#endif /* defined (MOTIF) */
 				/* curve */
 				Option_table_add_entry(option_table, "curve", NULL,
 					command_data->control_curve_manager, gfx_destroy_Control_curve);
@@ -12368,15 +12440,17 @@ Executes a GFX DESTROY command.
 				/* vtextures */
 				Option_table_add_entry(option_table, "vtextures", NULL,
 					command_data->volume_texture_manager, gfx_destroy_vtextures);
+#if defined (MOTIF)
 				/* window */
 				Option_table_add_entry(option_table, "window", NULL,
 					command_data->graphics_window_manager, gfx_destroy_Graphics_window);
+#endif /* defined (MOTIF) */
 				return_code = Option_table_parse(option_table, state);
 				DESTROY(Option_table)(&option_table);
 			}
 			else
 			{
-				set_command_prompt("gfx destroy",command_data->command_window);
+				set_command_prompt("gfx destroy",command_data);
 				return_code = 1;
 			}
 		}
@@ -12603,6 +12677,7 @@ Executes a GFX DRAW command.
 	return (return_code);
 } /* execute_command_gfx_draw */
 
+#if defined (MOTIF)
 struct Apply_transformation_data
 {
 	gtMatrix *transformation;
@@ -12692,7 +12767,9 @@ transformation in the transformation data.
 
 	return (return_code);
 }
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 static int gfx_edit_graphics_object(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -12830,7 +12907,9 @@ Executes a GFX EDIT GRAPHICS_OBJECT command.
 
 	return (return_code);
 } /* gfx_edit_graphics_object */
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 static int gfx_edit_scene(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -12932,7 +13011,9 @@ Executes a GFX EDIT_SCENE command.  Brings up the Scene_editor.
 
 	return (return_code);
 } /* gfx_edit_scene */
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 static int gfx_edit_spectrum(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -12991,6 +13072,7 @@ Invokes the graphical spectrum group editor.
 
 	return (return_code);
 } /* gfx_edit_spectrum */
+#endif /* defined (MOTIF) */
 
 static int execute_command_gfx_edit(struct Parse_state *state,
 	void *dummy_to_be_modified, void *command_data_void)
@@ -13012,18 +13094,20 @@ Executes a GFX EDIT command.
 		if (state->current_token)
 		{
 			option_table = CREATE(Option_table)();
+#if defined (MOTIF)
 			Option_table_add_entry(option_table, "graphics_object", NULL,
 				command_data_void, gfx_edit_graphics_object);
 			Option_table_add_entry(option_table, "scene", NULL,
 				command_data_void, gfx_edit_scene);
 			Option_table_add_entry(option_table, "spectrum", NULL,
 				command_data_void, gfx_edit_spectrum);
+#endif /* defined (MOTIF) */
 			return_code = Option_table_parse(option_table, state);
 			DESTROY(Option_table)(&option_table);
 		}
 		else
 		{
-			set_command_prompt("gfx edit", command_data->command_window);
+			set_command_prompt("gfx edit", command_data);
 			return_code = 1;
 		}
 	}
@@ -13038,6 +13122,7 @@ Executes a GFX EDIT command.
 	return (return_code);
 } /* execute_command_gfx_edit */
 
+#if defined (MOTIF)
 static int execute_command_gfx_element_creator(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -13144,7 +13229,9 @@ Executes a GFX ELEMENT_CREATOR command.
 
 	return (return_code);
 } /* execute_command_gfx_element_creator */
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 static int execute_command_gfx_element_tool(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -13232,6 +13319,7 @@ Executes a GFX ELEMENT_TOOL command.
 
 	return (return_code);
 } /* execute_command_gfx_element_tool */
+#endif /* defined (MOTIF) */
 
 static int execute_command_gfx_erase(struct Parse_state *state,
 	void *dummy_to_be_modified, void *command_data_void)
@@ -13321,7 +13409,6 @@ Executes a GFX ERASE command.
 	return (return_code);
 } /* execute_command_gfx_erase */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_export_alias(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -13434,9 +13521,7 @@ Executes a GFX EXPORT ALIAS command.
 
 	return (return_code);
 } /* gfx_export_alias */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 struct IGES_entity_info
 /******************************************************************************
 LAST MODIFIED : 7 June 2002
@@ -14526,9 +14611,7 @@ Write bicubic elements to an IGES file.
 
 	return (return_code);
 } /* export_to_iges */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_export_iges(struct Parse_state *state,void *dummy_to_be_modified,
 	void *command_data_void)
 /*******************************************************************************
@@ -14601,7 +14684,6 @@ Executes a GFX EXPORT IGES command.
 
 	return (return_code);
 } /* gfx_export_iges */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 int gfx_export_node(struct Parse_state *state,void *dummy_to_be_modified,
 	void *command_data_void)
@@ -14659,7 +14741,6 @@ data.
 	return (return_code);
 } /* gfx_export_node */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_export_vrml(struct Parse_state *state,void *dummy_to_be_modified,
 	void *command_data_void)
 /*******************************************************************************
@@ -14728,9 +14809,7 @@ Executes a GFX EXPORT VRML command.
 
 	return (return_code);
 } /* gfx_export_vrml */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_export_wavefront(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -14888,9 +14967,7 @@ Executes a GFX EXPORT WAVEFRONT command.
 
 	return (return_code);
 } /* gfx_export_wavefront */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_gfx_export(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -14940,9 +15017,7 @@ Executes a GFX EXPORT command.
 
 	return (return_code);
 } /* execute_command_gfx_export */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 int gfx_evaluate(struct Parse_state *state, void *dummy_to_be_modified,
 	void *command_data_void)
 /*******************************************************************************
@@ -15102,9 +15177,7 @@ DESCRIPTION :
 
 	return (return_code);
 } /* gfx_evaluate */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_gfx_filter(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -15148,9 +15221,7 @@ Executes a GFX FILTER command.
 
 	return (return_code);
 } /* execute_command_gfx_filter */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_list_environment_map(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -15218,9 +15289,7 @@ Executes a GFX LIST ENVIRONMENT_MAP.
 
 	return (return_code);
 } /* gfx_list_environment_map */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_list_Computed_field(struct Parse_state *state,
 	void *dummy_to_be_modified,void *computed_field_package_void)
 /*******************************************************************************
@@ -15344,7 +15413,6 @@ Executes a GFX LIST FIELD.
 
 	return (return_code);
 } /* gfx_list_Computed_field */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 static int gfx_list_FE_element(struct Parse_state *state,
 	void *cm_element_type_void,void *command_data_void)
@@ -15741,7 +15809,6 @@ Executes a GFX LIST MATERIAL.
 	return (return_code);
 } /* gfx_list_graphical_material */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_list_group_FE_element(struct Parse_state *state,
 	void *dummy_to_be_modified,void *element_group_manager_void)
 /*******************************************************************************
@@ -15819,9 +15886,7 @@ Executes a GFX LIST EGROUP.
 
 	return (return_code);
 } /* gfx_list_group_FE_element */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_list_g_element(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -15934,9 +15999,7 @@ Executes a GFX LIST G_ELEMENT.
 
 	return (return_code);
 } /* gfx_list_g_element */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_list_graphics_object(struct Parse_state *state,
 	void *dummy_to_be_modified,void *object_list_void)
 /*******************************************************************************
@@ -16005,7 +16068,6 @@ Executes a GFX LIST GLYPH/GRAPHICS_OBJECT command.
 
 	return (return_code);
 } /* gfx_list_graphics_object */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 static int gfx_list_grid_points(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -16903,6 +16965,7 @@ Executes a GFX LIST MOVIE.
 } /* gfx_list_movie_graphics */
 #endif /* defined (SGI_MOVIE_FILE) */
 
+#if defined (MOTIF)
 static int gfx_list_graphics_window(struct Parse_state *state,
 	void *dummy_to_be_modified,void *graphics_window_manager_void)
 /*******************************************************************************
@@ -16990,6 +17053,7 @@ Executes a GFX LIST WINDOW.
 
 	return (return_code);
 } /* gfx_list_graphics_window */
+#endif /* defined (MOTIF) */
 
 static int execute_command_gfx_list(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -17070,9 +17134,11 @@ Executes a GFX LIST command.
 			/* nodes */
 			Option_table_add_entry(option_table, "nodes", /*use_data*/(void *)0,
 				command_data_void, gfx_list_FE_node);
+#if defined (MOTIF)
 			/* slider */
 			Option_table_add_entry(option_table, "slider", NULL,
 				command_data->node_group_slider_dialog, list_node_group_slider);
+#endif /* defined (MOTIF) */
 			/* scene */
 			Option_table_add_entry(option_table, "scene", NULL,
 				command_data->scene_manager, gfx_list_scene);
@@ -17088,15 +17154,17 @@ Executes a GFX LIST command.
 			/* volume texture */
 			Option_table_add_entry(option_table, "vtexture", NULL,
 				command_data->volume_texture_manager, gfx_list_volume_texture);
+#if defined (MOTIF)
 			/* graphics window */
 			Option_table_add_entry(option_table, "window", NULL,
 				command_data->graphics_window_manager, gfx_list_graphics_window);
+#endif /* defined (MOTIF) */
 			return_code = Option_table_parse(option_table, state);
 			DESTROY(Option_table)(&option_table);
 		}
 		else
 		{
-			set_command_prompt("gfx list", command_data->command_window);
+			set_command_prompt("gfx list", command_data);
 			return_code = 1;
 		}
 	}
@@ -17384,7 +17452,6 @@ DESCRIPTION :
 	return (return_code);
 } /* iterator_modify_g_element */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_modify_g_element(struct Parse_state *state,
 	void *help_mode,void *command_data_void)
 /*******************************************************************************
@@ -17563,9 +17630,7 @@ Parameter <help_mode> should be NULL when calling this function.
 
 	return (return_code);
 } /* gfx_modify_g_element */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_modify_graphics_object(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -17665,7 +17730,6 @@ Executes a GFX MODIFY GRAPHICS_OBJECT command.
 
 	return (return_code);
 } /* gfx_modify_graphics_object */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 static int gfx_modify_node_group(struct Parse_state *state,
 	void *use_data, void *command_data_void)
@@ -18465,7 +18529,9 @@ Executes a GFX MODIFY command.
 	struct Cmiss_command_data *command_data;
 	struct Modify_environment_map_data modify_environment_map_data;
 	struct Modify_graphical_material_data modify_graphical_material_data;
+#if defined (MOTIF)
 	struct Modify_graphics_window_data modify_graphics_window_data;
+#endif /* defined (MOTIF) */
 	struct Modify_light_data modify_light_data;
 	struct Modify_light_model_data modify_light_model_data;
 	struct Modify_scene_data modify_scene_data;
@@ -18581,6 +18647,7 @@ Executes a GFX MODIFY command.
 					command_data->set_file_name_option_table;
 				Option_table_add_entry(option_table,"vtexture",NULL, 
 					(void *)(&modify_VT_volume_texture_data), modify_VT_volume_texture);
+#if defined (MOTIF)
 				/* window */
 				modify_graphics_window_data.graphics_window_manager=
 					command_data->graphics_window_manager;
@@ -18594,13 +18661,14 @@ Executes a GFX MODIFY command.
 					command_data->texture_manager;
 				Option_table_add_entry(option_table,"window",NULL, 
 					(void *)(&modify_graphics_window_data), modify_Graphics_window);
+#endif /* defined (MOTIF) */
 
 				return_code=Option_table_parse(option_table,state);
 				DESTROY(Option_table)(&option_table);
 			}
 			else
 			{
-				set_command_prompt("gfx modify",command_data->command_window);
+				set_command_prompt("gfx modify",command_data);
 				return_code=1;
 			}
 		}
@@ -18621,7 +18689,7 @@ Executes a GFX MODIFY command.
 	return (return_code);
 } /* execute_command_gfx_modify */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 int gfx_movie(struct Parse_state *state,void *dummy_to_be_modified,
 	void *command_data_void)
 /*******************************************************************************
@@ -19007,8 +19075,9 @@ movie is being created.
 
 	return (return_code);
 } /* gfx_movie */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 static int execute_command_gfx_node_tool(struct Parse_state *state,
 	void *data_tool_flag,void *command_data_void)
 /*******************************************************************************
@@ -19159,7 +19228,9 @@ Which tool that is being modified is passed in <node_tool_void>.
 
 	return (return_code);
 } /* execute_command_gfx_node_tool */
+#endif /* defined (MOTIF) */
 
+#if defined (MOTIF)
 static int execute_command_gfx_print(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -19305,6 +19376,7 @@ Executes a GFX PRINT command.
 
 	return (return_code);
 } /* execute_command_gfx_print */
+#endif /* defined (MOTIF) */
 
 static int gfx_read_Control_curve(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -19834,7 +19906,6 @@ otherwise the wavefront obj file is read.
 	return (return_code);
 } /* gfx_read_wavefront_obj */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_gfx_read(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -19850,16 +19921,10 @@ Executes a GFX READ command.
 	{
 		{"curve",NULL,NULL,gfx_read_Control_curve},
 		{"data",NULL,NULL,gfx_read_data},
-#if !defined (WINDOWS_DEV_FLAG)
 		{"elements",NULL,NULL,gfx_read_elements},
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 		{"nodes",NULL,NULL,gfx_read_nodes},
-#if !defined (WINDOWS_DEV_FLAG)
 		{"objects",NULL,NULL,gfx_read_objects},
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-#if !defined (WINDOWS_DEV_FLAG)
 		{"wavefront_obj",NULL,NULL,gfx_read_wavefront_obj},
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 		{NULL,NULL,NULL,NULL}
 	};
 
@@ -19874,25 +19939,19 @@ Executes a GFX READ command.
 			i++;
 			(option_table[i]).user_data=command_data_void;
 			i++;
-#if !defined (WINDOWS_DEV_FLAG)
 			(option_table[i]).user_data=command_data_void;
 			i++;
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 			(option_table[i]).user_data=command_data_void;
 			i++;
-#if !defined (WINDOWS_DEV_FLAG)
 			(option_table[i]).user_data=command_data_void;
 			i++;
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-#if !defined (WINDOWS_DEV_FLAG)
 			(option_table[i]).user_data=command_data_void;
 			i++;
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 			return_code=process_option(state,option_table);
 		}
 		else
 		{
-			set_command_prompt("gfx read",command_data->command_window);
+			set_command_prompt("gfx read",command_data);
 			return_code=1;
 		}
 	}
@@ -19906,7 +19965,6 @@ Executes a GFX READ command.
 
 	return (return_code);
 } /* execute_command_gfx_read */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 static int execute_command_gfx_select(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -20317,7 +20375,7 @@ Executes a GFX SELECT command.
 		}
 		else
 		{
-			set_command_prompt("gfx select",command_data->command_window);
+			set_command_prompt("gfx select",command_data);
 			return_code=1;
 		}
 	}
@@ -20762,7 +20820,7 @@ Executes a GFX UNSELECT command.
 		}
 		else
 		{
-			set_command_prompt("gfx unselect",command_data->command_window);
+			set_command_prompt("gfx unselect",command_data);
 			return_code=1;
 		}
 	}
@@ -20777,7 +20835,7 @@ Executes a GFX UNSELECT command.
 	return (return_code);
 } /* execute_command_gfx_unselect */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_set_background(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -20917,9 +20975,9 @@ Sets the background colour and/or texture from the command line.
 
 	return (return_code);
 } /* gfx_set_background */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_set_far_clipping_plane(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -21011,9 +21069,9 @@ Sets the distance to the far clipping plane from the command line.
 
 	return (return_code);
 } /* gfx_set_far_clipping_plane */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 int set_graphics_window_resolution(struct Parse_state *state,
 	void *dummy_to_be_modified,void *graphics_window_manager_void)
 /*******************************************************************************
@@ -21101,9 +21159,9 @@ Modifier function to set the resolution of a graphics window from a command.
 
 	return (return_code);
 } /* set_graphics_window_resolution */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_set_interest_point(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -21225,9 +21283,9 @@ remains the same. The up-vector therefore does not change.
 
 	return (return_code);
 } /* gfx_set_interest_point */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_set_near_clipping_plane(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -21319,7 +21377,7 @@ Sets the distance to the near clipping plane from the command line.
 
 	return (return_code);
 } /* gfx_set_near_clipping_plane */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
 int gfx_set_FE_nodal_value(struct Parse_state *state,void *dummy_to_be_modified,
 	void *command_data_void)
@@ -21454,7 +21512,7 @@ Sets nodal field values from a command.
 	return (return_code);
 } /* gfx_set_FE_nodal_value */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_set_scene_order(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -21538,9 +21596,9 @@ Sets the ordering of graphics objects on scene(s) from the command line.
 
 	return (return_code);
 } /* gfx_set_scene_order */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_set_time(struct Parse_state *state,void *dummy_to_be_modified,
 	void *command_data_void)
 /*******************************************************************************
@@ -21608,9 +21666,9 @@ Sets the time from the command line.
 
 	return (return_code);
 } /* gfx_set_time */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int set_transformation_matrix(struct Parse_state *state,
 	void *transformation_matrix_void,void *dummy_user_data)
 /*******************************************************************************
@@ -21705,9 +21763,9 @@ Sets a transformation matrix from the command line.
 
 	return (return_code);
 } /* set_transformation_matrix */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_set_transformation(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -21807,9 +21865,9 @@ Sets the transformation for a graphics object from the command line.
 
 	return (return_code);
 } /* gfx_set_transformation */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_set_up_vector(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -21948,9 +22006,9 @@ Sets the current view point from the command line.
 
 	return (return_code);
 } /* gfx_set_up_vector */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static void update_callback(struct MANAGER_MESSAGE(FE_node) *message,
 	void *command_data_void)
 /*******************************************************************************
@@ -21975,9 +22033,9 @@ Executes "open comfile update execute"
 			"update_callback.  Missing command_data_void");
 	}
 } /* update_callback */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_set_update_callback(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -22049,9 +22107,9 @@ is issued whenever a node is changed.
 
 	return (return_code);
 } /* gfx_set_update_callback */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_set_view_angle(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -22127,9 +22185,9 @@ Sets the view angle from the command line.
 
 	return (return_code);
 } /* gfx_set_view_angle */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_set_view_point(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -22284,9 +22342,9 @@ Sets the current view point from the command line.
 
 	return (return_code);
 } /* gfx_set_view_point */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_set_visibility(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -22415,7 +22473,7 @@ Toggles the visibility of graphics objects on scenes from the command line.
 
 	return (return_code);
 } /* gfx_set_visibility */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
 static int execute_command_gfx_set(struct Parse_state *state,
 	void *dummy_to_be_modified, void *command_data_void)
@@ -22437,6 +22495,7 @@ Executes a GFX SET command.
 		if (state->current_token)
 		{
 			option_table=CREATE(Option_table)();
+#if defined (MOTIF)
 			Option_table_add_entry(option_table, "background", NULL,
 				command_data_void, gfx_set_background);
 			Option_table_add_entry(option_table, "far_clipping_plane", NULL,
@@ -22447,8 +22506,10 @@ Executes a GFX SET command.
 				NULL, set_float_positive);
 			Option_table_add_entry(option_table, "near_clipping_plane", NULL,
 				command_data_void, gfx_set_near_clipping_plane);
+#endif /* defined (MOTIF) */
 			Option_table_add_entry(option_table, "node_value", NULL,
 				command_data_void, gfx_set_FE_nodal_value);
+#if defined (MOTIF)
 			Option_table_add_entry(option_table, "order", NULL,
 				command_data_void, gfx_set_scene_order);
 			Option_table_add_entry(option_table, "point_size", &global_point_size,
@@ -22471,12 +22532,13 @@ Executes a GFX SET command.
 				command_data_void, gfx_set_view_point);
 			Option_table_add_entry(option_table, "visibility", NULL,
 				command_data_void, gfx_set_visibility);
+#endif /* defined (MOTIF) */
 			return_code = Option_table_parse(option_table, state);
 			DESTROY(Option_table)(&option_table);
 		}
 		else
 		{
-			set_command_prompt("gfx set", command_data->command_window);
+			set_command_prompt("gfx set", command_data);
 			return_code = 1;
 		}
 	}
@@ -22835,6 +22897,7 @@ DESCRIPTION :
 	return (return_code);
 } /* gfx_timekeeper */
 
+#if defined (MOTIF)
 static int gfx_transform_tool(struct Parse_state *state,
 	void *dummy_user_data,void *command_data_void)
 /*******************************************************************************
@@ -22876,8 +22939,9 @@ Executes a GFX TRANSFORM_TOOL command.
 
 	return (return_code);
 } /* execute_command_gfx_transform_tool */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int execute_command_gfx_update(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -22942,9 +23006,9 @@ Executes a GFX UPDATE command.
 
 	return (return_code);
 } /* execute_command_gfx_update */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_warp_node(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -23073,9 +23137,9 @@ the derivatives).
 
 	return (return_code);
 } /* gfx_warp_node */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int gfx_warp_voltex(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -23232,9 +23296,9 @@ gtvoltex according to calculated
 
 	return (return_code);
 } /* gfx_warp_voltex */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int execute_command_gfx_warp(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -23268,7 +23332,7 @@ Executes a GFX command.
 			}
 			else
 			{
-				set_command_prompt("gfx warp",command_data->command_window);
+				set_command_prompt("gfx warp",command_data);
 				return_code=1;
 			}
 		}
@@ -23288,7 +23352,7 @@ Executes a GFX command.
 
 	return (return_code);
 } /* execute_command_gfx */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
 static int gfx_write_Control_curve(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -23929,7 +23993,7 @@ Executes a GFX WRITE command.
 		}
 		else
 		{
-			set_command_prompt("gfx write", command_data->command_window);
+			set_command_prompt("gfx write", command_data);
 			return_code = 1;
 		}
 	}
@@ -23954,7 +24018,9 @@ Executes a GFX command.
 ==============================================================================*/
 {
 	int return_code;
+#if defined (MOTIF)
 	struct Open_projection_window_data open_projection_window_data;
+#endif /* defined (MOTIF) */
 	struct Option_table *option_table;
 	struct Cmiss_command_data *command_data;
 
@@ -23969,8 +24035,10 @@ Executes a GFX command.
 				command_data_void, gfx_change_identifier);
 			Option_table_add_entry(option_table, "create", NULL,
 				command_data_void, execute_command_gfx_create);
+#if defined (MOTIF)
 			Option_table_add_entry(option_table, "data_tool", /*data_tool*/(void *)1,
 				command_data_void, execute_command_gfx_node_tool);
+#endif /* defined (MOTIF) */
 			Option_table_add_entry(option_table, "define", NULL,
 				command_data_void, execute_command_gfx_define);
 			Option_table_add_entry(option_table, "destroy", NULL,
@@ -23979,10 +24047,12 @@ Executes a GFX command.
 				command_data_void, execute_command_gfx_draw);
 			Option_table_add_entry(option_table, "edit", NULL,
 				command_data_void, execute_command_gfx_edit);
+#if defined (MOTIF)
 			Option_table_add_entry(option_table, "element_creator", NULL,
 				command_data_void, execute_command_gfx_element_creator);
 			Option_table_add_entry(option_table, "element_tool", NULL,
 				command_data_void, execute_command_gfx_element_tool);
+#endif /* defined (MOTIF) */
 			Option_table_add_entry(option_table, "erase", NULL,
 				command_data_void, execute_command_gfx_erase);
 			Option_table_add_entry(option_table, "evaluate", NULL,
@@ -23999,6 +24069,7 @@ Executes a GFX command.
 			Option_table_add_entry(option_table, "movie", NULL,
 				command_data_void, gfx_movie);
 #endif /* defined (SGI_MOVIE_FILE) */
+#if defined (MOTIF)
 			Option_table_add_entry(option_table, "node_tool", /*data_tool*/(void *)0,
 				command_data_void, execute_command_gfx_node_tool);
 			Option_table_add_entry(option_table, "print", NULL,
@@ -24018,6 +24089,7 @@ Executes a GFX command.
 			Option_table_add_entry(option_table, "project",
 				&(command_data->projection_window),
 				&(open_projection_window_data), open_projection_window);
+#endif /* defined (MOTIF) */
 			Option_table_add_entry(option_table, "read", NULL,
 				command_data_void, execute_command_gfx_read);
 			Option_table_add_entry(option_table, "select", NULL,
@@ -24028,14 +24100,18 @@ Executes a GFX command.
 				command_data_void, execute_command_gfx_smooth);
 			Option_table_add_entry(option_table, "timekeeper", NULL,
 				command_data_void, gfx_timekeeper);
+#if defined (MOTIF)
 			Option_table_add_entry(option_table, "transform_tool", NULL,
 				command_data_void, gfx_transform_tool);
+#endif /* defined (MOTIF) */
 			Option_table_add_entry(option_table, "unselect", NULL,
 				command_data_void, execute_command_gfx_unselect);
+#if defined (MOTIF)
 			Option_table_add_entry(option_table, "update", NULL,
 				command_data_void, execute_command_gfx_update);
 			Option_table_add_entry(option_table, "warp", NULL,
 				command_data_void, execute_command_gfx_warp);
+#endif /* defined (MOTIF) */
 			Option_table_add_entry(option_table, "write", NULL,
 				command_data_void, execute_command_gfx_write);
 			return_code = Option_table_parse(option_table, state);
@@ -24043,7 +24119,7 @@ Executes a GFX command.
 		}
 		else
 		{
-			set_command_prompt("gfx",command_data->command_window);
+			set_command_prompt("gfx",command_data);
 			return_code = 1;
 		}
 	}
@@ -24057,7 +24133,6 @@ Executes a GFX command.
 	return (return_code);
 } /* execute_command_gfx */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_cm(struct Parse_state *state,
 	void *prompt_void,void *command_data_void)
 /*******************************************************************************
@@ -24102,6 +24177,7 @@ Executes a cm (back end) command.
 					}
 				}
 #else /* defined (LINK_CMISS) */
+				USE_PARAMETER(current_token);
 				display_message(ERROR_MESSAGE,"execute_command_cm.	Define LINK_CMISS");
 				return_code=0;
 #endif /* defined (LINK_CMISS) */
@@ -24111,9 +24187,9 @@ Executes a cm (back end) command.
 					command_data->element_group_manager,command_data->node_group_manager,
 					&(command_data->prompt_window),command_data->user_interface))
 				{
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 					write_socket(state->command_string,CONN_ID1);
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 					return_code=1;
 				}
 				else
@@ -24126,7 +24202,7 @@ Executes a cm (back end) command.
 			{
 				if (prompt=(char *)prompt_void)
 				{
-					set_command_prompt(prompt,command_data->command_window);
+					set_command_prompt(prompt,command_data);
 				}
 				return_code=1;
 			}
@@ -24147,93 +24223,8 @@ Executes a cm (back end) command.
 
 	return (return_code);
 } /* execute_command_cm */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if defined (OLD_CODE)
-#if !defined (WINDOWS_DEV_FLAG)
-static int execute_command_connection(struct Parse_state *state,
-	void *dummy_to_be_modified,void *dummy_user_data)
-/*******************************************************************************
-LAST MODIFIED : 3 October 1996
-
-DESCRIPTION :
-Executes a CONNECTION command.
-???RC Obsolete.
-==============================================================================*/
-{
-	char *current_token,*host_name;
-	int port_number,return_code;
-
-	ENTER(execute_command_connection);
-	USE_PARAMETER(dummy_to_be_modified);
-	USE_PARAMETER(dummy_user_data);
-	/* check argument */
-	if (state)
-	{
-		if (current_token=state->current_token)
-		{
-			if (strcmp(PARSER_HELP_STRING,current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
-			{
-				set_host(current_token);
-				shift_Parse_state(state,1);
-				if (current_token=state->current_token)
-				{
-					set_port(atoi(current_token));
-				}
-				return_code=1;
-			}
-			else
-			{
-				if (get_host(&host_name))
-				{
-					display_message(INFORMATION_MESSAGE," HOSTNAME[%s]",host_name);
-					DEALLOCATE(host_name);
-				}
-				else
-				{
-					display_message(INFORMATION_MESSAGE," HOSTNAME[none]");
-				}
-				if (get_port(&port_number))
-				{
-					display_message(INFORMATION_MESSAGE," PORT_ADDRESS[%d]",port_number);
-				}
-				else
-				{
-					display_message(INFORMATION_MESSAGE," PORT_ADDRESS[none]");
-				}
-				return_code=1;
-			}
-		}
-		else
-		{
-			if (get_port(&port_number)&&get_host(&host_name))
-			{
-				display_message(INFORMATION_MESSAGE,"host name : %s\n",host_name);
-				display_message(INFORMATION_MESSAGE,"port address : %d\n",port_number);
-				DEALLOCATE(host_name);
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"Could not get connection information");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"execute_command_cm.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* execute_command_connection */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-#endif /* defined (OLD_CODE) */
-
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 #if defined (UNEMAP)
 static int execute_command_unemap_open(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -24546,9 +24537,8 @@ Executes a UNEMAP OPEN command.
 	return (return_code);
 } /* execute_command_unemap_open */
 #endif /* defined (UNEMAP) */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_unemap(struct Parse_state *state,
 	void *prompt_void,void *command_data_void)
 /*******************************************************************************
@@ -24590,7 +24580,6 @@ Executes a UNEMAP command.
 
 	return (return_code);
 } /* execute_command_unemap */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if defined (CELL)
 static int execute_command_cell_open(struct Parse_state *state,
@@ -26251,79 +26240,6 @@ Executes a CELL command.
 } /* execute_command_cell */
 #endif /* defined (CELL) */
 
-#if !defined (WINDOWS_DEV_FLAG)
-static int execute_command_assign(struct Parse_state *state,
-	void *prompt_void,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 
-
-DESCRIPTION :
-Executes an ASSIGN command.
-First implementation of a small subset of the assign command which exists 
-in the "new interpreter".
-==============================================================================*/
-{
-	int return_code;
-	struct Cmiss_command_data *command_data;
-
-	ENTER(execute_command_assign);
-	USE_PARAMETER(prompt_void);
-	if (state)
-	{
-		if (state->current_token)
-		{
-			if (strcmp(PARSER_HELP_STRING,state->current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
-			{
-				if (fuzzy_string_compare(state->current_token, "variable"))
-				{
-					shift_Parse_state(state,1);
-					return_code=execute_assign_variable(state,(void *)NULL,
-						(void *)NULL);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"execute_command_assign:  Only \"assign variable VARIABLE_NAME value\" implemented currently");
-					return_code=0;
-				}
-			}
-			else
-			{
-				display_message(INFORMATION_MESSAGE,
-					"\n      variable");
-				/* By not shifting the parse state the rest of the help should come out */
-				return_code=execute_assign_variable(state,(void *)NULL,
-					(void *)NULL);
-			}
-		}
-		else
-		{
-			if (command_data=(struct Cmiss_command_data *)command_data_void)
-			{
-				set_command_prompt("assign",command_data->command_window);
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"execute_command_assign.  Missing command_data");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"execute_command_assign.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* execute_command_assign */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
-#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_create(struct Parse_state *state,
 	void *prompt_void,void *command_data_void)
 /*******************************************************************************
@@ -26334,20 +26250,21 @@ Executes a CREATE command.
 ==============================================================================*/
 {
 	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"cm",NULL,NULL,gfx_create_cmiss},
-		{NULL,NULL,NULL,execute_command_cm}
-	};
+	struct Option_table *option_table;
 
 	ENTER(execute_command_create);
 	/* check argument */
 	if (state)
 	{
-		(option_table[0]).user_data=command_data_void;
-		(option_table[1]).user_data=command_data_void;
-		(option_table[1]).to_be_modified=prompt_void;
-		return_code=process_option(state,option_table);
+		option_table = CREATE(Option_table)();
+		/* fem */
+		Option_table_add_entry(option_table, "cm", NULL,
+			command_data_void, gfx_create_cmiss);
+		/* default */
+		Option_table_add_entry(option_table, "", prompt_void, command_data_void,
+			execute_command_cm);
+		return_code=Option_table_parse(option_table,state);
+		DESTROY(Option_table)(&option_table);
 	}
 	else
 	{
@@ -26358,7 +26275,6 @@ Executes a CREATE command.
 
 	return (return_code);
 } /* execute_command_create */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (NO_HELP)
 static int execute_command_help(struct Parse_state *state,
@@ -26387,15 +26303,17 @@ Executes a HELP command.
 					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
 				{
 #if !defined (HYPERTEXT_HELP) && !defined (NETSCAPE_HELP)
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 					do_help(current_token);
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 #else
 					strcpy(global_temp_string,command_data->help_url);
 					strcat(global_temp_string,current_token);
 					strcat(global_temp_string,"/");
+#if defined (MOTIF)
 					do_help(global_temp_string,command_data->examples_directory,
 						command_data->execute_command,command_data->user_interface);
+#endif /* defined (MOTIF) */
 #endif
 				}
 				else
@@ -26407,12 +26325,14 @@ Executes a HELP command.
 			else
 			{
 #if !defined (HYPERTEXT_HELP) && !defined (NETSCAPE_HELP)
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 				do_help(" ",command_data->execute_command,command_data->user_interface);
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 #else
+#if defined (MOTIF)
 				do_help(command_data->help_url,command_data->examples_directory,
 					command_data->execute_command,command_data->user_interface);
+#endif /* defined (MOTIF) */
 #endif
 			}
 			return_code=1;
@@ -26434,198 +26354,6 @@ Executes a HELP command.
 	return (return_code);
 } /* execute_command_help */
 #endif /* !defined (NO_HELP) */
-
-#if !defined (WINDOWS_DEV_FLAG)
-#if defined (INCLUDE_XVG)
-static int execute_command_imp_draw_number(struct Parse_state *state,
-	void *dummy_to_be_modified,void *dummy_user_data)
-/*******************************************************************************
-LAST MODIFIED : 15 January 1997
-
-DESCRIPTION :
-Executes a IMP DRAW_NUMBER command.
-???DB.  Should be set_char_flag ?
-???RC.  Is this used?
-==============================================================================*/
-{
-	char *current_token;
-	int return_code;
-
-	ENTER(execute_command_imp_draw_number);
-	USE_PARAMETER(dummy_to_be_modified);
-	USE_PARAMETER(dummy_user_data);
-	if (state)
-	{
-		if (!((current_token=state->current_token)&&
-			!(strcmp(PARSER_HELP_STRING,current_token)&&
-			strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
-		{
-			if (data_draw_number)
-			{
-				data_draw_number=0;
-			}
-			else
-			{
-				data_draw_number=1;
-			}
-			return_code=1;
-		}
-		else
-		{
-			/* no help */
-			return_code=1;
-		}
-	}
-	else
-	{
-		return_code=1;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* execute_command_imp_draw_number */
-
-static int execute_command_imp_load(struct Parse_state *state,
-	void *dummy_to_be_modified,void *dummy_user_data)
-/*******************************************************************************
-LAST MODIFIED : 16 June 1999
-
-DESCRIPTION :
-Executes a IMP LOAD command.
-???RC.  Is this used?
-==============================================================================*/
-{
-	char *current_token;
-	int return_code;
-
-	ENTER(execute_command_imp_load);
-	USE_PARAMETER(dummy_to_be_modified);
-	USE_PARAMETER(dummy_user_data);
-	if (state)
-	{
-		if (!((current_token=state->current_token)&&
-			!(strcmp(PARSER_HELP_STRING,current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
-		{
-			return_code=LoadFile(current_token);
-		}
-		else
-		{
-			/* no help */
-			return_code=1;
-		}
-	}
-	else
-	{
-		return_code=1;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* execute_command_imp_load */
-
-static int execute_command_imp_open(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 2 February 1999
-
-DESCRIPTION :
-Executes a IMP OPEN command.
-==============================================================================*/
-{
-	char *current_token;
-	int return_code;
-	struct Cmiss_command_data *command_data;
-
-	ENTER(execute_command_imp_open);
-	USE_PARAMETER(dummy_to_be_modified);
-	/* check argument */
-	if (state)
-	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
-		{
-			if (!((current_token=state->current_token)&&
-				!(strcmp(PARSER_HELP_STRING,current_token)&&
-				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
-			{
-				/*???DB.  Does this have a return code */
-				xvg_popup_interface(command_data->fe_field_manager,
-					command_data->data_manager,command_data->data_group_manager,
-					command_data->user_interface);
-				return_code=1;
-			}
-			else
-			{
-				/* no help */
-				return_code=1;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"execute_command_imp_open.  Missing command_data");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"execute_command_imp_open.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* execute_command_imp_open */
-#endif /* defined (INCLUDE_XVG) */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
-#if !defined (WINDOWS_DEV_FLAG)
-static int execute_command_imp(struct Parse_state *state,
-	void *prompt_void,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 16 June 1999
-
-DESCRIPTION :
-Executes a IMP command.
-==============================================================================*/
-{
-	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-#if defined (INCLUDE_XVG)
-		{"draw_number",NULL,NULL,execute_command_imp_draw_number},
-		{"load",NULL,NULL,execute_command_imp_load},
-		{"open",NULL,NULL,execute_command_imp_open},
-#endif /* defined (INCLUDE_XVG) */
-		{NULL,NULL,NULL,execute_command_cm}
-	};
-
-	ENTER(execute_command_imp);
-	/* check argument */
-	if (state)
-	{
-#if defined (INCLUDE_XVG)
-		(option_table[0]).user_data=NULL;
-		(option_table[1]).user_data=NULL;
-		(option_table[2]).user_data=command_data_void;
-		(option_table[3]).user_data=command_data_void;
-		(option_table[3]).to_be_modified=prompt_void;
-#else
-		(option_table[0]).user_data=command_data_void;
-		(option_table[0]).to_be_modified=prompt_void;
-#endif /* defined (INCLUDE_XVG) */
-		return_code=process_option(state,option_table);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"execute_command_imp.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* execute_command_imp */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 static int execute_command_list_memory(struct Parse_state *state,
 	void *dummy_to_be_modified,void *dummy_user_data)
@@ -26688,7 +26416,7 @@ Executes a LIST_MEMORY command.
 	return (return_code);
 } /* execute_command_list_memory */
 
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int execute_command_open_menu(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -26726,9 +26454,8 @@ Executes a OPEN MENU command.
 
 	return (return_code);
 } /* execute_command_open_menu */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_read(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -26739,13 +26466,11 @@ Executes a READ command.
 ==============================================================================*/
 {
 	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"comfile",NULL,NULL,open_comfile},
-		{NULL,NULL,NULL,NULL}
-	};
 	struct Cmiss_command_data *command_data;
+#if defined (MOTIF)
 	struct Open_comfile_data open_comfile_data;
+#endif /* defined (MOTIF) */
+	struct Option_table *option_table;
 
 	ENTER(execute_command_read);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -26756,6 +26481,9 @@ Executes a READ command.
 		{
 			if (state->current_token)
 			{
+				option_table = CREATE(Option_table)();
+#if defined (MOTIF)
+				/* comfile */
 				open_comfile_data.file_name=(char *)NULL;
 				open_comfile_data.example_flag=0;
 				open_comfile_data.execute_count=1;
@@ -26764,13 +26492,18 @@ Executes a READ command.
 				open_comfile_data.execute_command=command_data->execute_command;
 				open_comfile_data.set_command=command_data->set_command;
 				open_comfile_data.file_extension=".com";
+				open_comfile_data.comfile_window_manager =
+					command_data->comfile_window_manager;
 				open_comfile_data.user_interface=command_data->user_interface;
-				(option_table[0]).user_data=(void *)&open_comfile_data;
-				return_code=process_option(state,option_table);
+				Option_table_add_entry(option_table, "comfile", NULL,
+					(void *)&open_comfile_data, open_comfile);
+#endif /* defined (MOTIF) */
+				return_code=Option_table_parse(option_table, state);
+				DESTROY(Option_table)(&option_table);
 			}
 			else
 			{
-				set_command_prompt("read",command_data->command_window);
+				set_command_prompt("read",command_data);
 				return_code=1;
 			}
 		}
@@ -26790,9 +26523,7 @@ Executes a READ command.
 
 	return (return_code);
 } /* execute_command_read */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_open(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -26803,14 +26534,11 @@ Executes a OPEN command.
 ==============================================================================*/
 {
 	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"comfile",NULL,NULL,open_comfile},
-		{"menu",NULL,NULL,execute_command_open_menu},
-		{NULL,NULL,NULL,NULL}
-	};
 	struct Cmiss_command_data *command_data;
+#if defined (MOTIF)
 	struct Open_comfile_data open_comfile_data;
+#endif /* defined (MOTIF) */
+	struct Option_table *option_table;
 
 	ENTER(execute_command_open);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -26821,6 +26549,9 @@ Executes a OPEN command.
 		{
 			if (state->current_token)
 			{
+				option_table = CREATE(Option_table)();
+#if defined (MOTIF)
+				/* comfile */
 				open_comfile_data.file_name=(char *)NULL;
 				open_comfile_data.example_flag=0;
 				open_comfile_data.execute_count=0;
@@ -26832,13 +26563,17 @@ Executes a OPEN command.
 				open_comfile_data.comfile_window_manager =
 					command_data->comfile_window_manager;
 				open_comfile_data.user_interface=command_data->user_interface;
-				(option_table[0]).user_data=(void *)&open_comfile_data;
-				(option_table[1]).user_data=command_data_void;
-				return_code=process_option(state,option_table);
+				Option_table_add_entry(option_table, "comfile", NULL,
+					(void *)&open_comfile_data, open_comfile);
+				Option_table_add_entry(option_table, "menu", NULL,
+					command_data_void, execute_command_open_menu);
+#endif /* defined (MOTIF) */
+				return_code=Option_table_parse(option_table, state);
+				DESTROY(Option_table)(&option_table);
 			}
 			else
 			{
-				set_command_prompt("open",command_data->command_window);
+				set_command_prompt("open",command_data);
 				return_code=1;
 			}
 		}
@@ -26858,9 +26593,7 @@ Executes a OPEN command.
 
 	return (return_code);
 } /* execute_command_open */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_quit(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -26910,10 +26643,9 @@ Executes a QUIT command.
 
 	return (return_code);
 } /* execute_command_quit */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if defined (OLD_CODE)
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 static int execute_command_set_dir_example(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -27039,10 +26771,9 @@ Executes a SET DIR #CMGUI_EXAMPLE_DIRECTORY_SYMBOL command.
 
 	return (return_code);
 } /* execute_command_set_dir_example */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 #endif /* defined (OLD_CODE) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int set_dir(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -27120,6 +26851,8 @@ Executes a SET DIR command.
 									return_code=execute_command_cm(state,(void *)NULL,
 										command_data_void);
 								}
+#else /* defined (LINK_CMISS) */
+								USE_PARAMETER(token);
 #endif /* defined (LINK_CMISS) */
 							}
 							else
@@ -27231,7 +26964,7 @@ Executes a SET DIR command.
 			}
 			else
 			{
-				set_command_prompt("set dir",command_data->command_window);
+				set_command_prompt("set dir",command_data);
 				return_code=1;
 			}
 		}
@@ -27251,9 +26984,7 @@ Executes a SET DIR command.
 
 	return (return_code);
 } /* set_dir */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_set(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -27265,11 +26996,7 @@ Executes a SET command.
 {
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	static struct Modifier_entry option_table[]=
-	{
-		{"directory","dir",NULL,set_dir},
-		{NULL,NULL,NULL,execute_command_cm}
-	};
+	struct Option_table *option_table;
 
 	ENTER(execute_command_set);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -27280,13 +27007,19 @@ Executes a SET command.
 		{
 			if (state->current_token)
 			{
-				(option_table[0]).user_data=command_data_void;
-				(option_table[1]).user_data=command_data_void;
-				return_code=process_option(state,option_table);
+				option_table = CREATE(Option_table)();
+				/* directory */
+				Option_table_add_entry(option_table, "directory", NULL,
+					command_data_void, set_dir);
+				/* default */
+				Option_table_add_entry(option_table, "", NULL, command_data_void, 
+					execute_command_cm);
+				return_code=Option_table_parse(option_table, state);
+				DESTROY(Option_table)(&option_table);
 			}
 			else
 			{
-				set_command_prompt("set",command_data->command_window);
+				set_command_prompt("set",command_data);
 				return_code=1;
 			}
 		}
@@ -27306,9 +27039,7 @@ Executes a SET command.
 
 	return (return_code);
 } /* execute_command_set */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_system(struct Parse_state *state,
 	void *dummy_to_be_modified,void *dummy_user_data)
 /*******************************************************************************
@@ -27372,56 +27103,6 @@ Executes a SET DIR #CMGUI_EXAMPLE_DIRECTORY_SYMBOL command.
 
 	return (return_code);
 } /* execute_command_system */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
-#if !defined (WINDOWS_DEV_FLAG)
-static int execute_command_variable(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 29 June 1996
-
-DESCRIPTION :
-Executes a VARIABLE command.
-==============================================================================*/
-{
-	int return_code;
-	struct Cmiss_command_data *command_data;
-
-	ENTER(execute_command_variable);
-	USE_PARAMETER(dummy_to_be_modified);
-	/* check argument */
-	if (state)
-	{
-		if (state->current_token)
-		{
-			return_code=execute_variable_command(state,(void *)NULL,
-				(void *)NULL);
-		}
-		else
-		{
-			if (command_data=(struct Cmiss_command_data *)command_data_void)
-			{
-				set_command_prompt("var",command_data->command_window);
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"execute_command_variable.  Missing command_data");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"execute_command_variable.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* execute_command_variable */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 /*
 Global functions
@@ -27436,51 +27117,16 @@ LAST MODIFIED : 28 March 2001
 DESCRIPTION:
 ==============================================================================*/
 {
-#if !defined (WINDOWS_DEV_FLAG)
 	char **token;
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 	int i,return_code;
 	struct Cmiss_command_data *command_data;
-#if !defined (WINDOWS_DEV_FLAG)
-	static struct Modifier_entry option_table[]=
-	{
-		{"assign","assign",NULL,execute_command_assign},
-#if defined (SELECT_DESCRIPTORS)
-		{"attach",NULL,NULL,execute_command_attach},
-#endif /* !defined (SELECT_DESCRIPTORS) */
-#if defined (CELL)
-		{"cell","cell",NULL,execute_command_cell},
-#endif /* defined (CELL) */
-		{"command_window","command_window",NULL,modify_Command_window},
-		{"create","create",NULL,execute_command_create},
-#if defined (SELECT_DESCRIPTORS)
-		{"detach",NULL,NULL,execute_command_detach},
-#endif /* !defined (SELECT_DESCRIPTORS) */
-		{"fem","fem",NULL,execute_command_cm},
-		{"gen","gen",NULL,execute_command_cm},
-		{"gfx",NULL,NULL,execute_command_gfx},
-#if !defined (NO_HELP)
-		{"help",NULL,NULL,execute_command_help},
-#endif /* !defined (NO_HELP) */
-		{"imp","imp",NULL,execute_command_imp},
-		{"open",NULL,NULL,execute_command_open},
-		{"quit",NULL,NULL,execute_command_quit},
-		{"list_memory",NULL,NULL,execute_command_list_memory},
-		{"read",NULL,NULL,execute_command_read},
-		{"set","set",NULL,execute_command_set},
-		{"system","system",NULL,execute_command_system},
-		{"unemap","unemap",NULL,execute_command_unemap},
-		{"var","var",NULL,execute_command_variable},
-		{NULL,NULL,NULL,execute_command_cm}
-	};
+	struct Option_table *option_table;
 	struct Parse_state *state;
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 	ENTER(execute_command);
 	USE_PARAMETER(quit);
 	if (command_data=(struct Cmiss_command_data *)command_data_void)
 	{
-#if !defined (WINDOWS_DEV_FLAG)
 		if (state=create_Parse_state(command_string))
 			/*???DB.  create_Parse_state has to be extended */
 		{
@@ -27505,85 +27151,82 @@ DESCRIPTION:
 				if (i>0)
 				{
 					/* return to tree root */
-					return_code=set_command_prompt("",command_data->command_window);
+					return_code=set_command_prompt("",command_data);
 				}
 				else
 				{
-					/* assign */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					option_table = CREATE(Option_table)();
 #if defined (SELECT_DESCRIPTORS)
 					/* attach */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "attach", NULL, command_data_void,
+						execute_command_attach);
 #endif /* !defined (SELECT_DESCRIPTORS) */
 #if defined (CELL)
 					/* cell */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "cell", NULL, command_data_void,
+						execute_command_cell);
 #endif /* defined (CELL) */
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
 					/* command_window */
-					(option_table[i]).user_data=command_data->command_window;
-					i++;
+					Option_table_add_entry(option_table, "command_window", NULL, command_data->command_window,
+						modify_Command_window);
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
 					/* create */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "create", NULL, command_data_void,
+						execute_command_create);
 #if defined (SELECT_DESCRIPTORS)
 					/* detach */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "detach", NULL, command_data_void,
+						execute_command_detach);
 #endif /* !defined (SELECT_DESCRIPTORS) */
 					/* fem */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "fem", NULL, command_data_void,
+						execute_command_cm);
 					/* gen */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "gen", NULL, command_data_void,
+						execute_command_cm);
 					/* gfx */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "gfx", NULL, command_data_void,
+						execute_command_gfx);
 #if !defined (NO_HELP)
 					/* help */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "help", NULL, command_data_void,
+						execute_command_help);
 #endif /* !defined (NO_HELP) */
-					/* imp */
-					(option_table[i]).user_data=command_data_void;
-					i++;
 					/* open */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "open", NULL, command_data_void,
+						execute_command_open);
 					/* quit */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "quit", NULL, command_data_void,
+						execute_command_quit);
 					/* list_memory */
-					(option_table[i]).user_data=NULL;
-					i++;
+					Option_table_add_entry(option_table, "list_memory", NULL, NULL,
+						execute_command_list_memory);
 					/* read */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "read", NULL, command_data_void,
+						execute_command_read);
 					/* set */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "set", NULL, command_data_void,
+						execute_command_set);
 					/* system */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "system", NULL, command_data_void,
+						execute_command_system);
 					/* unemap */
-					(option_table[i]).user_data=command_data_void;
-					i++;
-					/* var */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "unemap", NULL, command_data_void,
+						execute_command_unemap);
 					/* default */
-					(option_table[i]).user_data=command_data_void;
-					i++;
-					return_code=process_option(state,option_table);
+					Option_table_add_entry(option_table, "", NULL, command_data_void,
+						execute_command_cm);
+					return_code=Option_table_parse(option_table, state);
+					DESTROY(Option_table)(&option_table);
 				}
 			}
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
 			if (command_data->command_window)
 			{
 				reset_command_box(command_data->command_window);
 			}
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
 			destroy_Parse_state(&state);
 		}
 		else
@@ -27592,9 +27235,6 @@ DESCRIPTION:
 				"cmiss_execute_command.  Could not create parse state");
 			return_code=0;
 		}
-#else
-		return_code=1;
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 	}
 	else
 	{
@@ -27624,10 +27264,12 @@ and then executes the returned strings
 	ENTER(cmiss_execute_command);
 	if (command_data=(struct Cmiss_command_data *)command_data_void)
 	{
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
 		if (command_data->command_window)
 		{
 			add_to_command_list(command_string,command_data->command_window);
 		}
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
 		quit = 0;
 
 		interpret_command(command_string, (void *)command_data, 
@@ -27658,42 +27300,15 @@ DESCRIPTION:
 Execute a <command_string>. If there is a command
 ==============================================================================*/
 {
-#if !defined (WINDOWS_DEV_FLAG)
 	char **token;
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 	int i,return_code;
 	struct Cmiss_command_data *command_data;
-#if !defined (WINDOWS_DEV_FLAG)
-	static struct Modifier_entry option_table[]=
-	{
-		{"assign","assign",NULL,execute_command_assign},
-		{"cell","cell",NULL,execute_command_cell},
-		{"command_window","command_window",NULL,modify_Command_window},
-		{"create","create",NULL,execute_command_create},
-		{"fem","fem",NULL,execute_command_cm},
-		{"gen","gen",NULL,execute_command_cm},
-		{"gfx",NULL,NULL,execute_command_gfx},
-#if !defined (NO_HELP)
-		{"help",NULL,NULL,execute_command_help},
-#endif /* !defined (NO_HELP) */
-		{"imp","imp",NULL,execute_command_imp},
-		{"open",NULL,NULL,execute_command_open},
-		{"quit",NULL,NULL,execute_command_quit},
-		{"list_memory",NULL,NULL,execute_command_list_memory},
-		{"read",NULL,NULL,execute_command_read},
-		{"set","set",NULL,execute_command_set},
-		{"system","system",NULL,execute_command_system},
-		{"unemap","unemap",NULL,execute_command_unemap},
-		{"var","var",NULL,execute_command_variable},
-		{NULL,NULL,NULL,execute_command_cm}
-	};
+	struct Option_table *option_table;
 	struct Parse_state *state;
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 	ENTER(cmiss_execute_command);
 	if (command_data=(struct Cmiss_command_data *)command_data_void)
 	{
-#if !defined (WINDOWS_DEV_FLAG)
 		if (state=create_Parse_state(command_string))
 			/*???DB.  create_Parse_state has to be extended */
 		{
@@ -27722,63 +27337,58 @@ Execute a <command_string>. If there is a command
 				}
 				else
 				{
-					/* assign */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					option_table = CREATE(Option_table)();
+#if defined (CELL)
 					/* cell */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "cell", NULL, command_data_void,
+						execute_command_cell);
+#endif /* defined (CELL) */
 					/* command_window */
-					(option_table[i]).user_data=command_data->command_window;
-					i++;
+					Option_table_add_entry(option_table, "command_window", NULL, command_data->command_window,
+						modify_Command_window);
 					/* create */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "create", NULL, command_data_void,
+						execute_command_create);
 					/* fem */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "fem", NULL, command_data_void,
+						execute_command_cm);
 					/* gen */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "gem", NULL, command_data_void,
+						execute_command_cm);
 					/* gfx */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "gfx", NULL, command_data_void,
+						execute_command_gfx);
 #if !defined (NO_HELP)
 					/* help */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "help", NULL, command_data_void,
+						execute_command_help);
 #endif /* !defined (NO_HELP) */
-					/* imp */
-					(option_table[i]).user_data=command_data_void;
-					i++;
 					/* open */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+ 					Option_table_add_entry(option_table, "open", NULL, command_data_void,
+						execute_command_open);
 					/* quit */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "quit", NULL, command_data_void,
+						execute_command_quit);
 					/* list_memory */
-					(option_table[i]).user_data=NULL;
-					i++;
+					Option_table_add_entry(option_table, "list_memory", NULL, NULL,
+						execute_command_list_memory);
 					/* read */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "read", NULL, command_data_void,
+						execute_command_read);
 					/* set */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "set", NULL, command_data_void,
+						execute_command_set);
 					/* system */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "system", NULL, command_data_void,
+						execute_command_system);
 					/* unemap */
-					(option_table[i]).user_data=command_data_void;
-					i++;
-					/* var */
-					(option_table[i]).user_data=command_data_void;
-					i++;
+					Option_table_add_entry(option_table, "unemap", NULL, command_data_void,
+						execute_command_unemap);
 					/* default */
-					(option_table[i]).user_data=command_data_void;
-					i++;
-					return_code=process_option(state,option_table);
+					Option_table_add_entry(option_table, "", NULL, command_data_void,
+						execute_command_cm);
+					return_code=Option_table_parse(option_table, state);
+					DESTROY(Option_table)(&option_table);
 				}
 			}
 			if (command_data->command_window)
@@ -27793,9 +27403,6 @@ Execute a <command_string>. If there is a command
 				"cmiss_execute_command.  Could not create parse state");
 			return_code=0;
 		}
-#else
-		return_code=1;
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 	}
 	else
 	{
@@ -27825,11 +27432,15 @@ for editing and entering. If there is no command_window, does nothing.
 	if (command_string&&
 		(command_data=(struct Cmiss_command_data *)command_data_void))
 	{
+#if defined (MOTIF)
 		if (command_data->command_window)
 		{
 			return_code=Command_window_set_command_string(
 				command_data->command_window,command_string);
 		}
+#else /* defined (MOTIF) */
+		USE_PARAMETER(command_data);
+#endif /* defined (MOTIF) */
 		return_code=1;
 	}
 	else

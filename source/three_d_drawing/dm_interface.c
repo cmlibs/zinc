@@ -37,10 +37,12 @@ typedef struct USTMSCpair
 #undef GLX_SGIX_dm_pbuffer
 #endif /* !defined (SGI_DIGITAL_MEDIA) */
 #include <stdio.h>
+#if defined (MOTIF)
 #include <X11/Xatom.h>
 #include <X11/IntrinsicP.h>
 #include <X11/StringDefs.h>
 #include <X11/Xresource.h>
+#endif /* defined (MOTIF) */
 #include "three_d_drawing/ThreeDDraP.h"
 #include "user_interface/user_interface.h"
 #include "general/debug.h"
@@ -66,6 +68,7 @@ typedef struct USTMSCpair
 struct Dm_buffer
 {
 	struct User_interface *user_interface;
+#if defined (MOTIF)
 #if defined (GLX_SGIX_dm_pbuffer)
 	DMbuffer dmbuffer;
 	DMbufferpool dmpool;
@@ -88,6 +91,7 @@ struct Dm_buffer
 	XVisualInfo *visual_info;
 	Pixmap pixmap;
 	GLXPixmap glx_pixmap;
+#endif /* defined (MOTIF) */
 
 	int access_count;
 };
@@ -107,6 +111,7 @@ share display_lists with the main_display or not.  If not then a pixel buffer
 supported on displays other than SGI will do.
 ==============================================================================*/
 {
+#if defined (MOTIF)
 	struct Dm_buffer *buffer;
 #if defined (GLX_SGIX_dm_pbuffer)
 	int count = 1;
@@ -541,9 +546,13 @@ supported on displays other than SGI will do.
 		display_message(ERROR_MESSAGE,"CREATE(Dm_buffer).  Cannot create graphics buffer without a display.");
 		buffer = (struct Dm_buffer *)NULL;
 	}
+#else /* defined (MOTIF) */
+	display_message(ERROR_MESSAGE,"CREATE(Dm_buffer).  "
+	  "Dmbuffers not implemented for this Graphics and OS.");
+	buffer = (struct Dm_buffer *)NULL;
+#endif /* defined (MOTIF) */
 
 	LEAVE;
-
 	return (buffer);
 } /* CREATE(Dm_buffer) */
 
@@ -556,6 +565,7 @@ DESCRIPTION :
 	int return_code;
 
 	ENTER(Dm_buffer_glx_make_current);
+#if defined (MOTIF)
 	if (buffer && buffer->context)
 	{
 #if defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) || (GLX_pbuffer)
@@ -606,6 +616,11 @@ DESCRIPTION :
 			"Dm_buffer_glx_make_current.  Invalid buffer");
 		return_code=0;
 	}
+#else /* defined (MOTIF) */
+	display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). "
+	  "Dmbuffers not implemented for this Graphics and OS.");
+	return_code = 0;
+#endif /* defined (MOTIF) */
 	LEAVE;
 
 	return (return_code);

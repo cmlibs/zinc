@@ -46,7 +46,7 @@ the changes.
 	struct LIST(Element_point_ranges) *newly_unselected_element_point_ranges_list;
 }; /* struct Element_point_ranges_selection_changes */
 
-DECLARE_CALLBACK_TYPES(Element_point_ranges_selection_change, \
+DECLARE_CMISS_CALLBACK_TYPES(Element_point_ranges_selection_change, \
 	struct Element_point_ranges_selection *, \
 	struct Element_point_ranges_selection_changes *);
 
@@ -89,7 +89,7 @@ Destroys the Element_point_ranges_selection.
 
 int Element_point_ranges_selection_add_callback(
 	struct Element_point_ranges_selection *element_point_ranges_selection,
-	CALLBACK_FUNCTION(Element_point_ranges_selection_change) *function,
+	CMISS_CALLBACK_FUNCTION(Element_point_ranges_selection_change) *function,
 	void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 27 March 2000
@@ -103,7 +103,7 @@ struct Element_point_ranges_selection_changes and the void *user_data.
 
 int Element_point_ranges_selection_remove_callback(
 	struct Element_point_ranges_selection *element_point_ranges_selection,
-	CALLBACK_FUNCTION(Element_point_ranges_selection_change) *function,
+	CMISS_CALLBACK_FUNCTION(Element_point_ranges_selection_change) *function,
 	void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 27 March 2000

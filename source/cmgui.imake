@@ -30,7 +30,6 @@ XCOMM ==========================================================================
 
 SHELL=/bin/sh
 
-#define PERL_INTERPRETER
 #if defined (aix)
 #define aix aix
 #endif
@@ -53,30 +52,71 @@ PRODUCT_PATH=.
 #endif /* defined (OLD_CODE) */
 
 #if defined (IRIX) /* switch OperatingSystem */
-#if ! defined (LITEWEIGHT)
+#if !defined (CONSOLE)
 #define MIRAGE
 #define UNEMAP
 #define CELL
-#endif /* ! defined (LITEWEIGHT) */
+#endif /* !defined (CONSOLE) */
 #define IMAGEMAGICK
+#define PERL_INTERPRETER
+#if !defined (CONSOLE)
+/* Currently need motif to link cmiss for prompt window */
+#define LINK_CMISS
+#define MOTIF
+#endif /* !defined (CONSOLE) */
+#elif defined (LINUX) /* switch OperatingSystem */
+#if !defined (CONSOLE)
+#define MIRAGE
+#define UNEMAP
+#define CELL
+#endif /* !defined (CONSOLE) */
+#define IMAGEMAGICK
+#define PERL_INTERPRETER
+#if !defined (CONSOLE)
+/* Currently need motif to link cmiss for prompt window */
+#define LINK_CMISS
+#define MOTIF
+#endif /* !defined (CONSOLE) */
+#elif defined (AIX) /* switch OperatingSystem */
+#define MIRAGE
+#define UNEMAP
+/*#define CELL*/
+#define IMAGEMAGICK
+#define PERL_INTERPRETER
+#define LINK_CMISS
+#if !defined (CONSOLE)
+#define MOTIF
+#endif /* !defined (CONSOLE) */
+#elif defined (WIN32) /* switch OperatingSystem */
+/*#define MIRAGE*/
+/*#define UNEMAP*/
+/*#define CELL*/
+/*#define IMAGEMAGICK*/
+/*#define PERL_INTERPRETER*/
+/*#define LINK_CMISS*/
+#if !defined (CONSOLE)
+#define WIN32_USER_INTERFACE
+#endif /* !defined (CONSOLE) */
+#endif /* switch OperatingSystem */
 
+#if defined (IRIX) /* switch OperatingSystem */
 #define SharedObjectVersion 1.0
 
 #if !defined (O64)
 #define UidPath uid
-#if defined (LITEWEIGHT)
-#define Target cmgui_lite
+#if defined (CONSOLE)
+#define Target cmgui_console
 #define SpacesToTabsTarget spaces_to_tabs
 #define TabsToSpacesTarget tabs_to_spaces
 #define Uid2uidhTarget uid2uidh
-#define Makefile cmgui_sgilite.make
-#define DependMake cmgui_sgilite.depend
+#define Makefile cmgui_sgiconsole.make
+#define DependMake cmgui_sgiconsole.depend
 #define ObjSuffix o
-OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/n32_lite
-PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32_lite
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/n32_console
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32_console
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/n32
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
-#else /* defined (LITEWEIGHT) */
+#else /* defined (CONSOLE) */
 #if !defined (OPTIMISED)
 /* The normal debug and memory check versions keep the same extension
 	as they only differ in one file */
@@ -119,7 +159,7 @@ PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32_optimised
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/n32
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #endif /* !defined (OPTIMISED) */
-#endif /* defined (LITEWEIGHT) */
+#endif /* defined (CONSOLE) */
 #else /* !defined (O64) */
 /* The O64 version can be either OPTIMISED or not but only one
 	version is kept at the moment */
@@ -138,10 +178,19 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/64
 #endif /* !defined (O64) */
 
 #elif defined (LINUX) /* switch OperatingSystem */
-#define MIRAGE
-#define UNEMAP
-#define CELL
-#define IMAGEMAGICK
+#if defined (CONSOLE)
+#define Target cmgui_linux_console
+#define SpacesToTabsTarget spaces_to_tabs_linux
+#define TabsToSpacesTarget tabs_to_spaces_linux
+#define Uid2uidhTarget uid2uidh_linux
+#define Makefile cmgui_linux_console.make
+#define DependMake cmgui_linux_console.depend
+#define ObjSuffix o
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/linux_console
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/linux_console
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/linux_console
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux_console
+#else /* defined (CONSOLE) */
 #if defined (OPTIMISED)
 #if defined (DYNAMIC_GL_LINUX)
 #define Target cmgui_linux_optimised_dynamic
@@ -199,11 +248,8 @@ PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/linux_g
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/linux_g
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux_g
 #endif /* defined (OPTIMISED) */
+#endif /* defined (CONSOLE) */
 #elif defined (AIX) /* switch OperatingSystem */
-#define MIRAGE
-#define UNEMAP
-/*#define CELL*/
-#define IMAGEMAGICK
 #if defined (O64)
 #if defined (OPTIMISED)
 #define Target cmgui_aix64_optimised
@@ -268,6 +314,43 @@ UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/aix_g
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/aix_g
 #endif /* defined (OPTIMISED) */
 #endif /* defined (O64) */
+#elif defined (WIN32) /* switch OperatingSystem */
+#if defined (OPTIMISED)
+#define Target cmgui_win32_optimised
+#define SpacesToTabsTarget spaces_to_tabs_win32
+#define TabsToSpacesTarget tabs_to_spaces_win32
+#define Uid2uidhTarget uid2uidh_win32
+#define Makefile cmgui_win32_optimised.make
+#define DependMake cmgui_win32_optimised.depend
+#define ObjSuffix o
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/win32_optimised
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/win32_optimised
+UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/win32_optimised
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/win32_optimised
+#else /* defined (OPTIMISED) */
+#if defined (MEMORY_CHECK)
+#define Target cmgui_win32_memorycheck
+#define SpacesToTabsTarget spaces_to_tabs_win32
+#define TabsToSpacesTarget tabs_to_spaces_win32
+#define Uid2uidhTarget uid2uidh_win32
+#define Makefile cmgui_win32_memorycheck.make
+#define DependMake cmgui_win32_memorycheck.depend
+#define ObjSuffix o
+#else /* defined (MEMORY_CHECK) */
+#define Target cmgui_win32
+#define SpacesToTabsTarget spaces_to_tabs_win32
+#define TabsToSpacesTarget tabs_to_spaces_win32
+#define Uid2uidhTarget uid2uidh_win32
+#define Makefile cmgui_win32.make
+#define DependMake cmgui_win32.depend
+#define ObjSuffix o
+#endif /* defined (MEMORY_CHECK) */
+/* Can't use win32 on its own as this is defined! */
+OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/win32_g
+PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/win32_g
+UIDH_PATH=$(CMGUI_DEV_ROOT)/res/cmgui/win32_g
+PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/res/cmgui/win32_g
+#endif /* defined (OPTIMISED) */
 #endif /* switch OperatingSystem */
 
 #if defined (CMISS_ROOT_DEFINED)
@@ -282,31 +365,27 @@ VPATH=$(BIN_PATH):$(UTILITIES_PATH):$(OBJECT_PATH):$(UIDH_PATH)
 SOURCE_DIRECTORY_INC = -I$(SOURCE_PATH) -I$(PRODUCT_SOURCE_PATH)
 
 #if defined (IRIX) /* switch OperatingSystem */
-PLATFORM_SWITCH = -DSGI -Dmips -DCMGUI 
+  PLATFORM_SWITCH = -DSGI -Dmips -DCMGUI 
+  OPERATING_SYSTEM = -DUNIX
 #elif defined(LINUX) /* switch OperatingSystem */
-PLATFORM_SWITCH = -DGENERIC_PC -DCMGUI 
+  PLATFORM_SWITCH = -DGENERIC_PC -DCMGUI 
+  OPERATING_SYSTEM = -DUNIX
 #elif defined(AIX) /* switch OperatingSystem */
-PLATFORM_SWITCH = -DAIX -DCMGUI 
+  PLATFORM_SWITCH = -DAIX -DCMGUI 
+  OPERATING_SYSTEM = -DUNIX
+#elif defined(WIN32) /* switch OperatingSystem */
+  PLATFORM_SWITCH = -DGENERIC_PC -DCMGUI 
+  OPERATING_SYSTEM = -DWIN32_SYSTEM
 #endif /* switch OperatingSystem */
 
-#if defined (OLD_CODE)
-PLATFORM_SWITCH = -DIBM
-PLATFORM_SWITCH = -DSGI
-PLATFORM_SWITCH = -DVAX
-PLATFORM_SWITCH = -DALPHA
-#endif /* (OLD_CODE) */
+#if defined (MOTIF) /* switch (USER_INTERFACE) */
+  USER_INTERFACE = -DMOTIF
+#elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
+  USER_INTERFACE = -DWIN32_USER_INTERFACE
+#elif 1 /* SGI imake doesn't do else correctly *//* switch (USER_INTERFACE) */
+  USER_INTERFACE = -DCONSOLE_USER_INTERFACE
+#endif /* switch (USER_INTERFACE) */
 
-OPERATING_SYSTEM = -DUNIX
-#if defined (OLD_CODE)
-OPERATING_SYSTEM = -DWIN32
-???DB.  Win32 is an API not an operating system
-OPERATING_SYSTEM = -DVMS
-#endif /* (OLD_CODE) */
-
-WINDOWING_SYSTEM = -DMOTIF
-#if defined (OLD_CODE)
-WINDOWING_SYSTEM = -DWINDOWS
-#endif /* (OLD_CODE) */
 
 #if defined (OLD_CODE)
  for GL
@@ -316,15 +395,24 @@ GRAPHICS_LIB = -lgl
 #if defined (IRIX) /* switch OperatingSystem */
 #if defined (O64)
 XCOMM for OpenGL without SGI movie (64bit doesnt have libraries as of Jun2000)
-GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
+GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API -DDM_BUFFERS
 GRAPHICS_LIB = -lGL -lGLU
 #else /* defined (O64) */
 XCOMM  for OpenGL with SGI movie
-GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API -DSGI_MOVIE_FILE -DSGI_DIGITAL_MEDIA
+#if defined (MOTIF)
+GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API -DDM_BUFFERS -DSGI_MOVIE_FILE -DSGI_DIGITAL_MEDIA
 GRAPHICS_LIB = -delay_load -lmoviefile -delay_load -ldmedia -lGL -lGLU
+#else /* defined (MOTIF) */
+GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
+GRAPHICS_LIB = -lGL -lGLU
+#endif /* defined (MOTIF) */
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
+#if defined (MOTIF)
+GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API -DDM_BUFFERS
+#else /* defined (CONSOLE) */
 GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
+#endif /* defined (CONSOLE) */
 #if defined (DYNAMIC_GL_LINUX)
 GRAPHICS_LIB = -L/usr/X11R6/lib -lGL -lGLU 
 #else /* defined (DYNAMIC_GL_LINUX) */
@@ -333,8 +421,11 @@ GRAPHICS_LIB = -L/usr/local/lib -lGL -lGLU
 /*GRAPHICS_LIB = -L/home/nickerso/cmiss/cmgui -lMesaGL -lMesaGLU*/
 #endif /* defined (DYNAMIC_GL_LINUX) */
 #elif defined(AIX) /* switch OperatingSystem */
-GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
+GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API -DDM_BUFFERS
 GRAPHICS_LIB = -lGL -lGLU
+#elif defined(WIN32) /* switch OperatingSystem */
+GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
+GRAPHICS_LIB = -L/usr/X11R6/lib -lopengl32 -lglu32
 #endif /* switch OperatingSystem */
 #if defined (OLD_CODE)
 XCOMM GRAPHICS_LIB = -delay_load -lmoviefile -delay_load -lmovieplay -lGL -lGLU -delay_load -ldmedia
@@ -351,12 +442,15 @@ THREE_D_DRAWING_DEFINES =
 THREE_D_DRAWING_DEFINES = -DINSTALL_COLOURMAP -DUSING_MESA
 #elif defined(AIX) /* switch OperatingSystem */
 THREE_D_DRAWING_DEFINES = 
+#elif defined(WIN32) /* switch OperatingSystem */
+THREE_D_DRAWING_DEFINES = 
 #endif /* switch OperatingSystem */
 
+#if !defined (LINK_CMISS)
+CONNECTIVITY_DEFINES =
+#else /* !defined (LINK_CMISS) */
 CONNECTIVITY_DEFINES = -DLINK_CMISS
-#if defined (OLD_CODE)
-XCOMM CONNECTIVITY_DEFINES =
-#endif /* (OLD_CODE) */
+#endif /* !defined (LINK_CMISS) */ 
 
 #if !defined (FACE_APPLICATION)
 FACE_APPLICATION_SWITCH =
@@ -445,6 +539,8 @@ INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/aix-64/libperlinterpreter-opt.a
 #else /* defined (O64) */
 INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/aix-32/libperlinterpreter-opt.a
 #endif /* defined (O64) */
+#elif defined(WIN32) /* switch OperatingSystem */
+INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/win32/libperlinterpreter-opt.a
 #endif /* switch OperatingSystem */
 #endif /* !defined (PERL_INTERPRETER) */
 
@@ -458,8 +554,7 @@ ROBO_APPLICATION_SRCS = graphics/robo_window.c
 
 #if !defined (UNEMAP)
 UNEMAP_SWITCH =
-UNEMAP_SRCS = \
-	unemap/drawing_2d.c
+UNEMAP_SRCS =
 #else /* !defined (UNEMAP) */
 #if defined (OLD_CODE)
 XCOMM for all nodal stuff UNEMAP_SWITCH = -DUNEMAP -DSPECTRAL_TOOLS -DUNEMAP_USE_NODES 
@@ -497,75 +592,6 @@ UNEMAP_SRCS = \
 	unemap/unemap_hardware_client.c \
 	unemap/unemap_package.c 
 #endif /* !defined (UNEMAP) */
-
-#if !defined (XVG)
-XVG_SWITCH =
-XVG_OPTION_DEFINES = 
-XVG_INC = -I$(PRODUCT_SOURCE_PATH)/xvg/include
-XVG_SRCS =
-#else /* !defined (XVG) */
-XVG_SWITCH = -DINCLUDE_XVG
-XVG_OPTION_DEFINES = -DXT_CODE -DUIL_CODE -DNO_XVGMAIN
-#if defined (OLD_CODE)
-XCOMM XVG_OPTION_DEFINES = -DXT_CODE -D_XOPEN_SOURCE -D_ANSI_C_SOURCE \
-	-DUIL_CODE -DCMGUI -DNO_XVGMAIN
-#endif /* defined (OLD_CODE) */
-XVG_INC = -I$(SOURCE_PATH)/xvg/include -I$(SOURCE_PATH)/xvg/cmgui -I$(SOURCE_PATH)/xvg -I$(PRODUCT_SOURCE_PATH)/xvg/include -I$(PRODUCT_SOURCE_PATH)/xvg/cmgui -I$(PRODUCT_SOURCE_PATH)/xvg
-/* SAB This hack is to escape the replacement of sgi
-	but not affect its definition, if anyone knows a better way
-   to stop the token replacement, be my guest */
-#if defined (sgi)
-#define KeepSgiDef sgi
-#undef sgi
-#endif /* defined (sgi) */
-XVG_SRCS = \
-	xvg/cmgui/GLShell.c \
-	xvg/cmgui/HistogramShell.c \
-	xvg/cmgui/IPOperationsShell.c \
-	xvg/cmgui/InfoDialog.c \
-	xvg/cmgui/InputDialog.c \
-	xvg/cmgui/LUTShell.c \
-	xvg/cmgui/MovieControlsShell.c \
-	xvg/cmgui/ProcessedImageShell.c \
-	xvg/cmgui/RawImageShell.c \
-	xvg/cmgui/ScrolledWindowDialog.c \
-	xvg/cmgui/XvgShell.c \
-	xvg/cmgui/fileSelectionBoxDialog.c \
-	xvg/cmgui/promptDialog.c \
-	xvg/cmgui/xvg.c \
-	xvg/custom/GLUtils.c \
-	xvg/custom/NRC_SVD.c \
-	xvg/custom/SGIGrabIPOPs.c \
-	xvg/custom/UxDummies.c \
-	xvg/custom/UxMethod.c \
-	xvg/custom/UxXt.c \
-	xvg/custom/XWDUtils.c \
-	xvg/custom/XvgMemoryManager.c \
-	xvg/custom/XvgRegisterIPOps.c \
-	xvg/custom/XvgSystem.c \
-	xvg/custom/binaryIPOPs.c \
-	xvg/custom/e04uef_calls.c \
-	xvg/custom/feIPOPs.c \
-	xvg/custom/fftIPOPs.c \
-	xvg/custom/fileIPOPs.c \
-	xvg/custom/fileio.c \
-	xvg/custom/fitIPOPs.c \
-	xvg/custom/grab.c \
-	xvg/custom/grabIPOPs.c \
-	xvg/custom/imgproc.c \
-	xvg/custom/matlab.c \
-	xvg/custom/morphoIPOPs.c \
-	xvg/custom/nag.c \
-	xvg/custom/sgi.c \
-	xvg/custom/spacedomIPOPs.c \
-	xvg/custom/stereoIPOPs.c \
-	xvg/custom/unima.c \
-	xvg/custom/utils.c \
-	xvg/custom/wrappingIPOPs.c
-#if defined (KeepSgiDef)
-#define sgi KeepSgiDef
-#endif /* defined (KeepSgiDef) */
-#endif /* !defined (XVG) */
 
 #if !defined (CELL)
 CELL_SWITCH =
@@ -654,6 +680,9 @@ WORMHOLE_INC = -I${WORMHOLE_PATH}/source
 WORMHOLE_LIB = -L${WORMHOLE_PATH}/lib -lwormhole_aix
 WORMHOLE_INC = -I${WORMHOLE_PATH}/source
 #endif /* defined (O64) */
+#elif defined(WIN32) /* switch OperatingSystem */
+WORMHOLE_LIB =
+WORMHOLE_INC =
 #endif /* switch OperatingSystem */
 
 
@@ -764,7 +793,7 @@ VIDEO_SRCS =
 HELP_DEFINES = -DNETSCAPE_HELP
 HELP_INCLUDE =
 HELP_LIB =
-HELP_SRCS = \
+HELP_INTERFACE_SRCS = \
 	help/help_interface.c
 
 #if defined (OLD_CODE)
@@ -785,24 +814,42 @@ LIB = -lMrm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm
 #endif /* defined (OLD_CODE) */
 #if defined (IRIX) /* switch OperatingSystem */
 #if defined (MEMORY_CHECK)
-LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm -lmalloc_ss -lfpe -lC -lCio -lpthread 
+MEMORY_CHECK_LIB = -lmalloc_ss -lfpe 
 #else /* defined (MEMORY_CHECK) */
-LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm -lC -lCio -lpthread 
+MEMORY_CHECK_LIB = 
 #endif /* defined (MEMORY_CHECK) */
-/* LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm -lpthread */
+#if defined (MOTIF)
+MOTIF_LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu
+#else /* defined (MOTIF) */
+MOTIF_LIB =
+#endif /* defined (MOTIF) */
+LIB = $(MOTIF_LIB) $(MEMORY_CHECK_LIB) -lPW -lftn -lm -lC -lCio -lpthread 
 #elif defined(LINUX) /* switch OperatingSystem */
 #if defined (DYNAMIC_GL_LINUX)
 X_LIB = /usr/X11R6/lib
-LIB = $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXext.a $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a -lg2c -lm -ldl -lc /usr/lib/libpthread.a /usr/lib/libcrypt.a /usr/lib/libstdc++-2-libc6.1-1-2.9.0.a
+#if defined (MOTIF)
+MOTIF_LIB = $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXext.a $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a
+#else /* defined (MOTIF) */
+MOTIF_LIB =
+#endif /* defined (MOTIF) */
+LIB = $(MOTIF_LIB) -lg2c -lm -ldl -lc /usr/lib/libpthread.a /usr/lib/libcrypt.a /usr/lib/libstdc++-libc6.2-2.a.3
 #else /* defined (DYNAMIC_GL_LINUX) */
-LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXext -lg2c -lm -ldl -lXp -lSM -lICE -lpthread -lcrypt -lstdc++
+#if defined (MOTIF)
+MOTIF_LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXext
+#else /* defined (MOTIF) */
+MOTIF_LIB =
+#endif /* defined (MOTIF) */
+LIB = $(MOTIF_LIB) -lg2c -lm -ldl-lpthread -lcrypt -lstdc++
 #endif /* defined (DYNAMIC_GL_LINUX) */
 #elif defined(AIX) /* switch OperatingSystem */
-#if defined (O64)
-LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXext -lm -pg -ldl -lSM -lICE -lpthread -lcrypt -lbsd -lld -lC128
-#else */ defined (O64) */
-LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXext -lm -ldl -lSM -lICE -lpthread -lcrypt -lbsd -lld -lC128
-#endif /* defined (O64) */
+#if defined (MOTIF)
+MOTIF_LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXext
+#else /* defined (MOTIF) */
+MOTIF_LIB =
+#endif /* defined (MOTIF) */
+LIB = $(MOTIF_LIB) -lm -ldl -lSM -lICE -lpthread -lcrypt -lbsd -lld -lC128
+#elif defined(WIN32) /* switch OperatingSystem */
+LIB = -lcomdlg32 -lwinmm
 #endif /* switch OperatingSystem */
 
 #if defined (LINUX)
@@ -819,9 +866,9 @@ END_ALL_INCLUDES =
 
 ALL_DEFINES = $(START_ALL_DEFINES) \
 	$(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
-	$(PLATFORM_SWITCH) $(OPERATING_SYSTEM) $(WINDOWING_SYSTEM) \
+	$(PLATFORM_SWITCH) $(OPERATING_SYSTEM) $(USER_INTERFACE) \
 	$(STEREO_DISPLAY_SWITCH) $(CONNECTIVITY_DEFINES) \
-	$(EXTERNAL_INPUT_DEFINES) $(XVG_SWITCH) $(XVG_OPTION_DEFINES) \
+	$(EXTERNAL_INPUT_DEFINES) \
 	$(ROBO_APPLICATION_SWITCH) $(FACE_APPLICATION_SWITCH) \
 	$(GRAPHICS_LIBRARY_SWITCH) $(VIDEO_SWITCH) $(HELP_DEFINES) \
 	$(POSTSCRIPT_DEFINES) $(NAME_DEFINES) $(TEMPORARY_DEVELOPMENT_FLAGS) \
@@ -830,7 +877,7 @@ ALL_DEFINES = $(START_ALL_DEFINES) \
 	$(IMAGEMAGICK_SWITCH) $(END_ALL_DEFINES)
 
 ALL_INCLUDES = $(START_ALL_INCLUDES) \
-	$(SOURCE_DIRECTORY_INC) $(HAPTIC_INC) $(XVG_INC) $(WORMHOLE_INC) $(XML_INC) \
+	$(SOURCE_DIRECTORY_INC) $(HAPTIC_INC) $(WORMHOLE_INC) $(XML_INC) \
 	$(UIDH_INC) $(X11_INC) $(INTERPRETER_INC) $(IMAGEMAGICK_INC) $(END_ALL_INCLUDES)
 
 ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
@@ -841,7 +888,7 @@ ALL_LIB = $(GRAPHICS_LIB) $(HAPTIC_LIB) $(WORMHOLE_LIB) \
 		$(VIDEO_LIB) $(EXTERNAL_INPUT_LIB) $(HELP_LIB) \
 	  $(MOVIE_FILE_LIB) $(XML_LIB) $(LIB)
 
-CHOOSE_SRCS = \
+CHOOSE_INTERFACE_SRCS = \
 	choose/choose_computed_field.c \
 	choose/choose_control_curve.c \
 	choose/choose_element_group.c \
@@ -858,17 +905,19 @@ CHOOSE_SRCS = \
 	choose/chooser.c \
 	choose/text_choose_fe_element.c \
 	choose/text_choose_fe_node.c
-COLOUR_SRCS = \
+COLOUR_INTERFACE_SRCS = \
 	colour/colour_editor.c \
 	colour/edit_var.c 
-COMFILE_SRCS = \
+COMFILE_INTERFACE_SRCS = \
 	comfile/comfile_window.c 
 COMMAND_SRCS = \
 	command/cmiss.c \
 	command/command.c \
-	command/command_window.c \
+	command/console.c \
 	command/example_path.c \
 	command/parser.c 
+COMMAND_INTERFACE_SRCS = \
+	command/command_window.c
 COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field.c \
 	computed_field/computed_field_component_operations.c \
@@ -878,7 +927,7 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_coordinate.c \
 	computed_field/computed_field_deformation.c \
 	computed_field/computed_field_derivatives.c \
-   computed_field/computed_field_external.c \
+	computed_field/computed_field_external.c \
 	computed_field/computed_field_fibres.c \
 	computed_field/computed_field_find_xi.c \
 	computed_field/computed_field_finite_element.c \
@@ -889,21 +938,26 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_update.c \
 	computed_field/computed_field_value_index_ranges.c \
 	computed_field/computed_field_vector_operations.c \
-	computed_field/computed_field_window_projection.c \
 	computed_field/computed_field_wrappers.c
+COMPUTED_FIELD_INTERFACE_SRCS = \
+	computed_field/computed_field_window_projection.c
 CURVE_SRCS = \
-	curve/control_curve.c \
+	curve/control_curve.c
+CURVE_INTERFACE_SRCS = \
 	curve/control_curve_editor.c \
 	curve/control_curve_editor_dialog.c
 DATA_SRCS = \
-	data/data_grabber.c \
-	data/data_grabber_dialog.c \
 	data/node_transform.c
-DOF3_SRCS = \
+DATA_INTERFACE_SRCS = \
+	data/data_grabber.c \
+	data/data_grabber_dialog.c
+DOF3_INTERFACE_SRCS = \
 	dof3/dof3.c \
 	dof3/dof3_control.c \
-	dof3/dof3_input.c 
+	dof3/dof3_input.c
 ELEMENT_SRCS = \
+   element/element_operations.c
+ELEMENT_INTERFACE_SRCS = \
 	element/element_creator.c \
 	element/element_point_field_viewer_widget.c \
 	element/element_point_viewer.c \
@@ -919,9 +973,10 @@ FINITE_ELEMENT_SRCS = \
 	finite_element/finite_element_to_graphics_object.c \
 	finite_element/finite_element_to_iso_lines.c \
 	finite_element/finite_element_to_streamlines.c \
-	finite_element/grid_field_calculator.c \
 	finite_element/import_finite_element.c \
 	finite_element/snake.c
+FINITE_ELEMENT_INTERFACE_SRCS = \
+	finite_element/grid_field_calculator.c
 GENERAL_SRCS = \
 	general/any_object.c \
 	general/callback.c \
@@ -939,22 +994,23 @@ GENERAL_SRCS = \
 	general/myio.c \
 	general/mystring.c \
 	general/photogrammetry.c \
-	general/postscript.c \
 	general/statistics.c \
+	general/time.c \
 	general/value.c 
+GENERAL_INTERFACE_SRCS = \
+	general/postscript.c
 GRAPHICS_SRCS = \
 	graphics/auxiliary_graphics_types.c \
 	graphics/colour.c \
 	graphics/complex.c \
+	graphics/defined_graphics_objects.c \
 	graphics/element_group_settings.c \
 	graphics/element_point_ranges.c \
 	graphics/environment_map.c \
 	graphics/glyph.c \
 	graphics/graphical_element.c \
-	graphics/graphical_element_editor.c \
 	graphics/graphics_library.c \
 	graphics/graphics_object.c \
-	graphics/graphics_window.c \
 	graphics/import_graphics_object.c \
 	graphics/iso_field_calculation.c \
 	graphics/laguer.c \
@@ -963,66 +1019,73 @@ GRAPHICS_SRCS = \
 	graphics/material.c \
 	graphics/makegtobj.c \
 	graphics/mcubes.c \
-	graphics/movie_graphics.c \
 	graphics/renderbinarywavefront.c \
 	graphics/rendergl.c \
 	graphics/rendervrml.c \
 	graphics/renderwavefront.c \
 	graphics/scene.c \
+	graphics/selected_graphic.c \
+	graphics/spectrum.c \
+	graphics/spectrum_settings.c \
+	graphics/texture.c \
+	graphics/texture_line.c \
+	graphics/userdef_objects.c \
+	graphics/volume_texture.c
+GRAPHICS_INTERFACE_SRCS = \
+	graphics/graphical_element_editor.c \
+	graphics/graphics_window.c \
+	graphics/movie_graphics.c \
 	graphics/scene_editor.c \
 	graphics/scene_viewer.c \
-	graphics/selected_graphic.c \
 	graphics/settings_editor.c \
-	graphics/spectrum.c \
 	graphics/spectrum_editor.c \
 	graphics/spectrum_editor_dialog.c \
 	graphics/spectrum_editor_settings.c \
-	graphics/spectrum_settings.c \
-	graphics/texture.c \
 	graphics/texture_graphics.c \
-	graphics/texture_line.c \
 	graphics/texturemap.c \
 	graphics/transform_tool.c \
-	graphics/userdef_objects.c \
-	graphics/volume_texture.c \
 	graphics/volume_texture_editor.c \
 	graphics/volume_texture_editor_dialog.c
 INTERACTION_SRCS = \
 	interaction/interaction_graphics.c \
 	interaction/interaction_volume.c \
+	interaction/interactive_event.c
+INTERACTION_INTERFACE_SRCS = \
 	interaction/interactive_tool.c \
 	interaction/interactive_toolbar_widget.c \
-	interaction/interactive_event.c \
 	interaction/select_tool.c
 IO_DEVICES_SRCS = \
 	io_devices/conversion.c \
+	io_devices/io_device.c \
+	io_devices/matrix.c 
+IO_DEVICES_INTERFACE_SRCS = \
 	io_devices/haptic_input_module.cpp \
 	io_devices/input_module.c \
 	io_devices/input_module_dialog.c \
-	io_devices/input_module_widget.c \
-	io_devices/io_device.c \
-	io_devices/matrix.c 
-LINK_SRCS = \
+	io_devices/input_module_widget.c
+LINK_INTERFACE_SRCS =  \
 	link/cmiss.c
-MATERIAL_SRCS = \
+MATERIAL_INTERFACE_SRCS =  \
 	material/material_editor.c \
 	material/material_editor_dialog.c
-MENU_SRCS = \
+MENU_INTERFACE_SRCS =  \
 	menu/menu_window.c
 NODE_SRCS = \
+	node/node_operations.c
+NODE_INTERFACE_SRCS = \
 	node/interactive_node_editor.c \
 	node/interactive_node_editor_dialog.c \
 	node/node_field_viewer_widget.c \
 	node/node_tool.c \
 	node/node_viewer.c \
 	node/node_viewer_widget.c
-PROJECTION_SRCS = \
+PROJECTION_INTERFACE_SRCS = \
 	projection/projection.c \
 	projection/projection_dialog.c \
 	projection/projection_window.c
-PROMPT_SRCS = \
-	prompt/prompt_window.c 
-SELECT_SRCS = \
+PROMPT_INTERFACE_SRCS =\
+	prompt/prompt_window.c
+SELECT_INTERFACE_SRCS = \
 	select/select_control_curve.c \
 	select/select_environment_map.c \
 	select/select_finite_element.c \
@@ -1034,28 +1097,30 @@ SELECTION_SRCS = \
 	selection/element_point_ranges_selection.c \
 	selection/element_selection.c \
 	selection/node_selection.c
-SLIDER_SRCS = \
+SLIDER_INTERFACE_SRCS = \
 	slider/node_group_slider_dialog.c
-THREE_D_DRAWING_SRCS = \
+THREE_D_DRAWING_INTERFACE_SRCS = \
 	three_d_drawing/dm_interface.c \
 	three_d_drawing/movie_extensions.c \
 	three_d_drawing/ThreeDDraw.c
-TRANSFORMATION_SRCS = \
-	transformation/transformation_editor.c
 TIME_SRCS = \
 	time/time.c \
-	time/time_keeper.c \
+	time/time_keeper.c
+TIME_INTERFACE_SRCS = \
 	time/time_editor.c \
 	time/time_editor_dialog.c
+TRANSFORMATION_INTERFACE_SRCS = \
+	transformation/transformation_editor.c
 USER_INTERFACE_SRCS = \
-	user_interface/call_work_procedures.c \
 	user_interface/confirmation.c \
 	user_interface/event_dispatcher.c \
 	user_interface/filedir.c \
 	user_interface/message.c \
-	user_interface/printer.c \
 	user_interface/user_interface.c
-VIEW_SRCS = \
+USER_INTERFACE_INTERFACE_SRCS = \
+	user_interface/call_work_procedures.c \
+	user_interface/printer.c
+VIEW_INTERFACE_SRCS = \
 	view/camera.c \
 	view/coord.c \
 	view/coord_trans.c \
@@ -1066,43 +1131,62 @@ VIEW_SRCS = \
 
 XCOMM DB.  makedepend has problems if too many files
 SRCS_1 = \
-	$(CELL_SRCS) \
-	$(CHOOSE_SRCS) \
-	$(COLOUR_SRCS) \
-	$(COMFILE_SRCS) \
 	$(COMMAND_SRCS) \
 	$(COMPUTED_FIELD_SRCS) \
 	$(CURVE_SRCS) \
 	$(DATA_SRCS) \
-	$(DOF3_SRCS) \
 	$(ELEMENT_SRCS) \
 	$(FINITE_ELEMENT_SRCS) \
 	$(GENERAL_SRCS) \
 	$(GRAPHICS_SRCS) \
-	$(HELP_SRCS) \
 	$(INTERACTION_SRCS) \
 	$(IO_DEVICES_SRCS) \
-	$(LINK_SRCS) \
-	$(MATERIAL_SRCS) \
-	$(MENU_SRCS) \
 	$(MIRAGE_SRCS) \
 	$(NODE_SRCS) \
-	$(PROJECTION_SRCS) \
-	$(PROMPT_SRCS) \
-	$(SELECT_SRCS) \
 	$(SELECTION_SRCS) \
-	$(SLIDER_SRCS) \
-	$(THREE_D_DRAWING_SRCS)
-
-SRCS_2 = \
 	$(INTERPRETER_SRCS) \
 	$(TIME_SRCS) \
-	$(TRANSFORMATION_SRCS) \
-	$(USER_INTERFACE_SRCS) \
-	$(XVG_SRCS) \
-	$(VIDEO_SRCS) \
+	$(USER_INTERFACE_SRCS)
+
+#if defined (MOTIF) /* switch (USER_INTERFACE) */
+SRCS_2 = \
+	$(CELL_SRCS) \
+	$(CHOOSE_INTERFACE_SRCS) \
+	$(COLOUR_INTERFACE_SRCS) \
+	$(COMFILE_INTERFACE_SRCS) \
+	$(COMMAND_INTERFACE_SRCS) \
+	$(COMPUTED_FIELD_INTERFACE_SRCS) \
+	$(CURVE_INTERFACE_SRCS) \
+	$(DATA_INTERFACE_SRCS) \
+	$(DOF3_INTERFACE_SRCS) \
+	$(ELEMENT_INTERFACE_SRCS) \
+	$(FINITE_ELEMENT_INTERFACE_SRCS) \
+	$(GENERAL_INTERFACE_SRCS) \
+	$(GRAPHICS_INTERFACE_SRCS) \
+	$(HELP_INTERFACE_SRCS) \
+	$(INTERACTION_INTERFACE_SRCS) \
+	$(IO_DEVICES_INTERFACE_SRCS) \
+	$(LINK_INTERFACE_SRCS) \
+	$(MATERIAL_INTERFACE_SRCS) \
+	$(MENU_INTERFACE_SRCS) \
+	$(NODE_INTERFACE_SRCS) \
+	$(PROJECTION_INTERFACE_SRCS) \
+	$(PROMPT_INTERFACE_SRCS) \
+	$(SELECT_INTERFACE_SRCS) \
+	$(SLIDER_INTERFACE_SRCS) \
+	$(THREE_D_DRAWING_INTERFACE_SRCS) \
+	$(TIME_INTERFACE_SRCS) \
+	$(TRANSFORMATION_INTERFACE_SRCS) \
 	$(UNEMAP_SRCS) \
-	$(VIEW_SRCS)
+	$(USER_INTERFACE_INTERFACE_SRCS) \
+	$(VIDEO_SRCS) \
+	$(VIEW_INTERFACE_SRCS)
+#elif defined (WIN32_USER_INTERFACE)  /* switch (USER_INTERFACE) */
+SRCS_2 = \
+	$(COMMAND_INTERFACE_SRCS)
+#elif 1 /* SGI imake doesn't do else correctly *//* switch (USER_INTERFACE) */
+SRCS_2 =
+#endif  /* switch (USER_INTERFACE) */
 
 SRCS = $(SRCS_1) $(SRCS_2)
 
@@ -1346,7 +1430,14 @@ $(OBJECT_PATH)/$(EXPORTS_FILE) :
 #endif /* defined (DYNAMIC_GL_LINUX) */
 #endif /* switch OperatingSystem */
 
-Target : $(OBJS) cmgui.ObjSuffix $(OBJECT_PATH)/$(EXPORTS_FILE)
+#if defined (WIN32)
+RESOURCE_FILES = command/command_window.rc
+COMPILED_RESOURCE_FILES = $(RESOURCE_FILES:.rc=.res)
+#else /* defined (WIN32) */
+COMPILED_RESOURCE_FILES = 
+#endif /* defined (WIN32) */
+
+Target : $(OBJS) $(COMPILED_RESOURCE_FILES) cmgui.ObjSuffix $(OBJECT_PATH)/$(EXPORTS_FILE)
 	if [ ! -d $(BIN_PATH) ]; then \
 		mkdir -p $(BIN_PATH); \
 	fi
@@ -1356,11 +1447,14 @@ Target : $(OBJS) cmgui.ObjSuffix $(OBJECT_PATH)/$(EXPORTS_FILE)
 	cd $(OBJECT_PATH) ; (ls $(OBJS) cmgui.ObjSuffix 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
 #elif defined(AIX) /* switch OperatingSystem */
 	cd $(OBJECT_PATH) ; (ls $(OBJS) cmgui.ObjSuffix 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
+#elif defined(WIN32) /* switch OperatingSystem */
+	cd $(OBJECT_PATH) ; (ls $(OBJS) cmgui.ObjSuffix 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
 #endif /* switch OperatingSystem */
 	cd $(OBJECT_PATH) ; \
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
-	$(LINK) -o $(BIN_PATH)/Target $(ALL_FLAGS) `cat object.list` $(ALL_LIB) $(EXPORTS_LINK_FLAGS)
+	$(LINK) -o /tmp/Target $(ALL_FLAGS) `cat object.list` $(ALL_LIB) $(EXPORTS_LINK_FLAGS) $(COMPILED_RESOURCE_FILES) ; \
+	cp /tmp/Target $(BIN_PATH)/Target
 
 CmguiFiltLibrary : $(LIB_FILT_OBJS) $(FILT_OBJ) Makefile libCmguiFiltExports
 	cd $(OBJECT_PATH)

@@ -62,10 +62,10 @@ Module types
 ------------
 */
 
-FULL_DECLARE_CALLBACK_TYPES(Scene_viewer_transform, \
+FULL_DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_transform, \
 	struct Scene_viewer *, void *);
 
-FULL_DECLARE_CALLBACK_TYPES(Scene_viewer_destroy, \
+FULL_DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_destroy, \
 	struct Scene_viewer *, void *);
 
 enum Scene_viewer_drag_mode
@@ -155,10 +155,10 @@ DESCRIPTION :
 	int bk_texture_undistort_on;
 	struct Callback_data input_callback;
 	/* list of callbacks requested by other objects when view changes */
-	struct LIST(CALLBACK_ITEM(Scene_viewer_transform)) *sync_callback_list;
-	struct LIST(CALLBACK_ITEM(Scene_viewer_transform)) *transform_callback_list;
+	struct LIST(CMISS_CALLBACK_ITEM(Scene_viewer_transform)) *sync_callback_list;
+	struct LIST(CMISS_CALLBACK_ITEM(Scene_viewer_transform)) *transform_callback_list;
 	/* list of callbacks requested by other objects when scene viewer destroyed */
-	struct LIST(CALLBACK_ITEM(Scene_viewer_destroy)) *destroy_callback_list;
+	struct LIST(CMISS_CALLBACK_ITEM(Scene_viewer_destroy)) *destroy_callback_list;
 	/* the scene_viewer must always have a light model */
 	struct Light_model *light_model;
 	/* lights in this list are oriented relative to the viewer */
@@ -225,14 +225,14 @@ static int Scene_viewer_automatic_tumble_callback(void *scene_viewer_void);
 Module functions
 ----------------
 */
-DEFINE_CALLBACK_MODULE_FUNCTIONS(Scene_viewer_transform)
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Scene_viewer_transform)
 
-DEFINE_CALLBACK_FUNCTIONS(Scene_viewer_transform, \
+DEFINE_CMISS_CALLBACK_FUNCTIONS(Scene_viewer_transform, \
 	struct Scene_viewer *,void *)
 
-DEFINE_CALLBACK_MODULE_FUNCTIONS(Scene_viewer_destroy)
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Scene_viewer_destroy)
 
-DEFINE_CALLBACK_FUNCTIONS(Scene_viewer_destroy, \
+DEFINE_CMISS_CALLBACK_FUNCTIONS(Scene_viewer_destroy, \
 	struct Scene_viewer *,void *)
 
 static int Scene_viewer_render_background_texture(
@@ -820,7 +820,7 @@ access this function.
 						/* Send the transform callback if the flag is set */
 						if (scene_viewer->transform_flag)
 						{
-							CALLBACK_LIST_CALL(Scene_viewer_transform)(
+							CMISS_CALLBACK_LIST_CALL(Scene_viewer_transform)(
 								scene_viewer->transform_callback_list,scene_viewer,NULL);
 							scene_viewer->transform_flag = 0;
 						}
@@ -1596,7 +1596,7 @@ removed from WorkProc queue.
 				scene_viewer->tumble_angle);
 			scene_viewer->fast_changing = 0;
 			Scene_viewer_redraw_in_idle_time(scene_viewer);
-			CALLBACK_LIST_CALL(Scene_viewer_transform)(
+			CMISS_CALLBACK_LIST_CALL(Scene_viewer_transform)(
 				scene_viewer->sync_callback_list,scene_viewer,NULL);
 
 			if (scene_viewer->interactive_tool)
@@ -2460,7 +2460,7 @@ Converts mouse button-press and motion events into viewing transformations in
 					{
 						Scene_viewer_redraw_now(scene_viewer);
 						/* send the callbacks */
-						CALLBACK_LIST_CALL(Scene_viewer_transform)(
+						CMISS_CALLBACK_LIST_CALL(Scene_viewer_transform)(
 							scene_viewer->sync_callback_list,scene_viewer,NULL);
 						scene_viewer->transform_flag = 1;
 					}
@@ -3251,11 +3251,11 @@ performed in idle time so that multiple redraws are avoided.
 						scene_viewer->input_callback.procedure=(Callback_procedure *)NULL;
 						scene_viewer->input_callback.data=NULL;
 						scene_viewer->sync_callback_list=
-							CREATE(LIST(CALLBACK_ITEM(Scene_viewer_transform)))();
+							CREATE(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_transform)))();
 						scene_viewer->transform_callback_list=
-							CREATE(LIST(CALLBACK_ITEM(Scene_viewer_transform)))();
+							CREATE(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_transform)))();
 						scene_viewer->destroy_callback_list=
-							CREATE(LIST(CALLBACK_ITEM(Scene_viewer_destroy)))();
+							CREATE(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_destroy)))();
 						scene_viewer->pixel_width=0;
 						scene_viewer->pixel_height=0;
 						scene_viewer->update_pixel_image=0;
@@ -3335,9 +3335,9 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		/* send the destroy callbacks */
 		if (scene_viewer->destroy_callback_list)
 		{
-			CALLBACK_LIST_CALL(Scene_viewer_destroy)(
+			CMISS_CALLBACK_LIST_CALL(Scene_viewer_destroy)(
 				scene_viewer->destroy_callback_list,scene_viewer,NULL);
-			DESTROY(LIST(CALLBACK_ITEM(Scene_viewer_destroy)))(
+			DESTROY(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_destroy)))(
 				&scene_viewer->destroy_callback_list);
 		}
 		/* dispose of our data structure */
@@ -3354,12 +3354,12 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		DESTROY(LIST(Light))(&(scene_viewer->list_of_lights));
 		if (scene_viewer->sync_callback_list)
 		{
-			DESTROY(LIST(CALLBACK_ITEM(Scene_viewer_transform)))(
+			DESTROY(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_transform)))(
 				&scene_viewer->sync_callback_list);
 		}
 		if (scene_viewer->transform_callback_list)
 		{
-			DESTROY(LIST(CALLBACK_ITEM(Scene_viewer_transform)))(
+			DESTROY(LIST(CMISS_CALLBACK_ITEM(Scene_viewer_transform)))(
 				&scene_viewer->transform_callback_list);
 		}
 		/* Remove Tumble callback */
@@ -6195,7 +6195,7 @@ scene_viewer.
 } /* Scene_viewer_set_input_callback */
 
 int Scene_viewer_add_sync_callback(struct Scene_viewer *scene_viewer,
-	CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data)
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 5 July 2000
 
@@ -6207,7 +6207,7 @@ DESCRIPTION :
 	ENTER(Scene_viewer_add_sync_callback);
 	if (scene_viewer&&function)
 	{
-		if (CALLBACK_LIST_ADD_CALLBACK(Scene_viewer_transform)(
+		if (CMISS_CALLBACK_LIST_ADD_CALLBACK(Scene_viewer_transform)(
 			scene_viewer->sync_callback_list,function,user_data))
 		{
 			return_code=1;
@@ -6231,7 +6231,7 @@ DESCRIPTION :
 } /* Scene_viewer_add_sync_callback */
 
 int Scene_viewer_remove_sync_callback(struct Scene_viewer *scene_viewer,
-	CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data)
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 5 July 2000
 
@@ -6245,7 +6245,7 @@ Removes the callback calling <function> with <user_data> from
 	ENTER(Scene_viewer_remove_sync_callback);
 	if (scene_viewer&&function)
 	{
-		if (CALLBACK_LIST_REMOVE_CALLBACK(Scene_viewer_transform)(
+		if (CMISS_CALLBACK_LIST_REMOVE_CALLBACK(Scene_viewer_transform)(
 			scene_viewer->sync_callback_list,function,user_data))
 		{
 			return_code=1;
@@ -6269,7 +6269,7 @@ Removes the callback calling <function> with <user_data> from
 } /* Scene_viewer_remove_sync_callback */
 
 int Scene_viewer_add_transform_callback(struct Scene_viewer *scene_viewer,
-	CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data)
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 5 July 2000
 
@@ -6281,7 +6281,7 @@ DESCRIPTION :
 	ENTER(Scene_viewer_add_transform_callback);
 	if (scene_viewer&&function)
 	{
-		if (CALLBACK_LIST_ADD_CALLBACK(Scene_viewer_transform)(
+		if (CMISS_CALLBACK_LIST_ADD_CALLBACK(Scene_viewer_transform)(
 			scene_viewer->transform_callback_list,function,user_data))
 		{
 			return_code=1;
@@ -6305,7 +6305,7 @@ DESCRIPTION :
 } /* Scene_viewer_add_transform_callback */
 
 int Scene_viewer_remove_transform_callback(struct Scene_viewer *scene_viewer,
-	CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data)
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 5 July 2000
 
@@ -6319,7 +6319,7 @@ Removes the callback calling <function> with <user_data> from
 	ENTER(Scene_viewer_transform_remove_callback);
 	if (scene_viewer&&function)
 	{
-		if (CALLBACK_LIST_REMOVE_CALLBACK(Scene_viewer_transform)(
+		if (CMISS_CALLBACK_LIST_REMOVE_CALLBACK(Scene_viewer_transform)(
 			scene_viewer->transform_callback_list,function,user_data))
 		{
 			return_code=1;
@@ -6343,7 +6343,7 @@ Removes the callback calling <function> with <user_data> from
 } /* Scene_viewer_remove_transform_callback */
 
 int Scene_viewer_add_destroy_callback(struct Scene_viewer *scene_viewer,
-	CALLBACK_FUNCTION(Scene_viewer_destroy) *function,void *user_data)
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_destroy) *function,void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 19 February 2002
 
@@ -6357,7 +6357,7 @@ viewer is destroyed.
 	ENTER(Scene_viewer_add_destroy_callback);
 	if (scene_viewer&&function)
 	{
-		if (CALLBACK_LIST_ADD_CALLBACK(Scene_viewer_destroy)(
+		if (CMISS_CALLBACK_LIST_ADD_CALLBACK(Scene_viewer_destroy)(
 			scene_viewer->destroy_callback_list,function,user_data))
 		{
 			return_code=1;
@@ -6381,7 +6381,7 @@ viewer is destroyed.
 } /* Scene_viewer_add_destroy_callback */
 
 int Scene_viewer_remove_destroy_callback(struct Scene_viewer *scene_viewer,
-	CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data)
+	CMISS_CALLBACK_FUNCTION(Scene_viewer_transform) *function,void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 19 February 2002
 
@@ -6395,7 +6395,7 @@ Removes the callback calling <function> with <user_data> from
 	ENTER(Scene_viewer_remove_destroy_callback);
 	if (scene_viewer&&function)
 	{
-		if (CALLBACK_LIST_REMOVE_CALLBACK(Scene_viewer_destroy)(
+		if (CMISS_CALLBACK_LIST_REMOVE_CALLBACK(Scene_viewer_destroy)(
 			scene_viewer->destroy_callback_list,function,user_data))
 		{
 			return_code=1;

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : random.h
 
-LAST MODIFIED : 4 May 2001
+LAST MODIFIED : 26 June 2002
 
 DESCRIPTION :
 Standard macros for returning random numbers.
@@ -9,6 +9,7 @@ Standard macros for returning random numbers.
 #if !defined (RANDOM_H)
 #define RANDOM_H
 
+#if defined (UNIX) /* switch (OPERATING_SYSTEM) */
 /* Must #include <stdlib.h> in calling module to use: */
 /* Returns a random number of the given <type> in the range [0.0, 1.0]
 	 ie. INCLUDING 0.0 and 1.0 in the possible results */
@@ -21,4 +22,19 @@ Standard macros for returning random numbers.
 /* partner random number seed function for CMGUI_RANDOM */
 #define CMGUI_SEED_RANDOM(seed) srandom(seed)
 
+#elif defined (WIN32_SYSTEM) /* switch (OPERATING_SYSTEM) */
+
+/* Must #include <stdlib.h> in calling module to use: */
+/* Returns a random number of the given <type> in the range [0.0, 1.0]
+	 ie. INCLUDING 0.0 and 1.0 in the possible results */
+#define CMGUI_RANDOM(type) ((type)rand() / (type)RAND_MAX)
+
+/* Returns a random number of the given <type> in the range (0.0, 1.0)
+	 ie. NOT INCLUDING 0.0 and 1.0 in the possible results */
+#define CMGUI_RANDOM_NON_INCLUSIVE(type) (((type)rand() + 1.0) / ((type)RAND_MAX + 2.0))
+
+/* partner random number seed function for CMGUI_RANDOM */
+#define CMGUI_SEED_RANDOM(seed) srand(seed)
+
+#endif /* switch (OPERATING_SYSTEM) */
 #endif /* !defined (RANDOM_H) */

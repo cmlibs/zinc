@@ -5473,3 +5473,351 @@ DESCRIPTION :
 	}
 	LEAVE;
 } /* adjust_material_sb */
+
+void select_curve(struct Texture_window *tw,int next)
+/*******************************************************************************
+LAST MODIFIED : 30 August 1996
+
+DESCRIPTION :
+If next = 0, this just updates the appropriate point, otherwise it stores it and
+if index = 3 the line is complete and it is stored in the list. The points are
+p1,p2 and the slope control points p3,p4.
+==============================================================================*/
+{
+	int i;
+	struct VT_texture_curve *new_curve;
+
+	ENTER(select_curve);
+	/* checking arguments */
+	if (tw)
+	{
+		tw->edit_curve.type=2;
+		switch ((tw->edit_curve).index)
+		{
+			case 0:
+			{
+				/* new curve to edit */
+				/* first point */
+				if (next)
+				{
+					(tw->edit_curve).index=1;
+				}
+				(tw->edit_curve).scalar_value[0]=tw->select_value;
+				for (i=0;i<3;i++)
+				{
+					(tw->edit_curve).point1[i]=tw->xival[i];
+					/* put in temporary values for bezier points */
+					(tw->edit_curve).point3[i]=tw->xival[i];
+				}
+			} break;
+			case 1:
+			{
+				/* second point */
+				if (next)
+				{
+					(tw->edit_curve).index=2;
+				}
+				(tw->edit_curve).scalar_value[1]=tw->select_value;
+				for (i=0;i<3;i++)
+				{
+					(tw->edit_curve).point2[i]=tw->xival[i];
+					/* put in temporary values for bezier points */
+					(tw->edit_curve).point4[i]=tw->xival[i];
+				}
+			} break;
+			case 2:
+			{
+				/* bezier slope adjuster for first point */
+				if (next)
+				{
+					(tw->edit_curve).index=3;
+				}
+				for (i=0;i<3;i++)
+				{
+					(tw->edit_curve).point3[i]=tw->xival[i];
+				}
+			} break;
+			case 3:
+			{
+				/* curve completed */
+				/* bezier slope adjuster for second point */
+				for (i=0;i<3;i++)
+				{
+					(tw->edit_curve).point4[i]=tw->xival[i];
+				}
+				if (next)
+				{
+					(tw->edit_curve).index=0;
+					/* store curve in volume_texture data structure */
+					ALLOCATE(new_curve,struct VT_texture_curve,1);
+					new_curve->type=2;
+					for (i=0;i<3;i++)
+					{
+						new_curve->point1[i]=(tw->edit_curve).point1[i];
+						new_curve->point2[i]=(tw->edit_curve).point2[i];
+						new_curve->point3[i]=(tw->edit_curve).point3[i];
+						new_curve->point4[i]=(tw->edit_curve).point4[i];
+					}
+					new_curve->scalar_value[0]=(tw->edit_curve).scalar_value[0];
+					new_curve->scalar_value[1]=(tw->edit_curve).scalar_value[1];
+					add_curve_to_list(tw->current_texture->texture_curve_list,new_curve);
+/*???debug */
+printf("new curve : scalar values %lf,%lf\n",new_curve->
+						scalar_value[0],new_curve->scalar_value[1]);
+				}
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"select_curve.  Invalid argument");
+	}
+	LEAVE;
+} /* select_curve */
+
+void select_line(struct Texture_window *tw)
+/*******************************************************************************
+LAST MODIFIED : 30 August 1996
+
+DESCRIPTION :
+Here the 1D line texture structure is invoked - if no line is currently being
+edited (edit_line.index = 0) the first point is selected, and a line is drawn to
+the current node cursor position. If a line is being edited then the second
+point is recorded, the curve is complete and stored in the volume_texturedata
+structure. edit_curve.index is reset to zero.
+==============================================================================*/
+{
+	int i;
+	struct VT_texture_curve *new_curve;
+
+	ENTER(select_line);
+	/* checking argument */
+	if (tw)
+	{
+		(tw->edit_curve).type=1;
+		if (0==(tw->edit_curve).index)
+		{
+			/* new curve to edit */
+			(tw->edit_curve).index=1;
+			(tw->edit_curve).scalar_value[0]=tw->select_value;
+			for (i=0;i<3;i++)
+			{
+				(tw->edit_curve).point1[i]=tw->xival[i];
+			}
+		}
+		else
+		{
+			/* curve completed */
+			(tw->edit_curve).index=0;
+			(tw->edit_curve).scalar_value[1]=tw->select_value;
+			for (i=0;i<3;i++)
+			{
+				(tw->edit_curve).point2[i]=tw->xival[i];
+			}
+			/* store curve in volume_texture data structure */
+			ALLOCATE(new_curve,struct VT_texture_curve,1);
+			new_curve->type=1;
+			for (i=0;i<3;i++)
+			{
+				new_curve->point1[i]=(tw->edit_curve).point1[i];
+				new_curve->point2[i]=(tw->edit_curve).point2[i];
+				new_curve->point3[i]=0;
+				new_curve->point4[i]=0;
+			}
+			new_curve->scalar_value[0]=(tw->edit_curve).scalar_value[0];
+			new_curve->scalar_value[1]=(tw->edit_curve).scalar_value[1];
+			add_curve_to_list(tw->current_texture->texture_curve_list,new_curve);
+/*??? debug */
+printf("new curve : scalar values %lf,%lf\n",new_curve->scalar_value[0],
+	new_curve->scalar_value[1]);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"select_line.  Invalid argument");
+	}
+	LEAVE;
+
+} /* select_line */
+
+void select_blob(struct Texture_window *tw)
+/*******************************************************************************
+LAST MODIFIED : 30 August 1996
+
+DESCRIPTION :
+Here the 1D blob texture structure is invoked - if no line is currently being
+edited (edit_line.index = 0) the first point is selected, and a line is drawn to
+the current node cursor position. If a line is being edited then the second
+point is recorded, the curve is complete and stored in the volume_texture data
+structure. edit_curve.index is reset to zero.
+==============================================================================*/
+{
+	int i;
+	struct VT_texture_curve *new_curve;
+
+	ENTER(select_blob);
+	/* checking argument */
+	if (tw)
+	{
+		(tw->edit_curve).type=0;
+		if (0==(tw->edit_curve).index)
+		{
+			/* new curve to edit */
+			(tw->edit_curve).index=1;
+			(tw->edit_curve).scalar_value[0]=tw->select_value;
+			for (i=0;i<3;i++)
+			{
+				(tw->edit_curve).point1[i]=tw->xival[i];
+			}
+		}
+		else
+		{
+			/* curve completed */
+			(tw->edit_curve).index=0;
+			(tw->edit_curve).scalar_value[1]=tw->select_value;
+			for (i=0;i<3;i++)
+			{
+				(tw->edit_curve).point2[i]=tw->xival[i];
+			}
+			/* store curve in volume_texture data structure */
+			ALLOCATE(new_curve,struct VT_texture_curve,1);
+			new_curve->type=0;
+			for (i=0;i<3;i++)
+			{
+				new_curve->point1[i]=(tw->edit_curve).point1[i];
+				new_curve->point2[i]=(tw->edit_curve).point2[i];
+				new_curve->point3[i]=0;
+				new_curve->point4[i]=0;
+			}
+			new_curve->scalar_value[0]=(tw->edit_curve).scalar_value[0];
+			new_curve->scalar_value[1]=(tw->edit_curve).scalar_value[1];
+			add_curve_to_list(tw->current_texture->texture_curve_list,new_curve);
+/*???debug */
+printf("new blob : scalar values %lf,%lf\n",new_curve->scalar_value[0],
+	new_curve->scalar_value[1]);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"select_blob.  Invalid argument");
+	}
+	LEAVE;
+} /* select_blob */
+
+void select_soft(struct Texture_window *tw)
+/*******************************************************************************
+LAST MODIFIED : 30 August 1996
+
+DESCRIPTION :
+Here the 1D soft texture structure is invoked - if no line is currently being
+edited (edit_line.index = 0) the first point is selected, and a line is drawn to
+the current node cursor position. If a line is being edited then the second
+point is recorded, the curve is complete and stored in the volume_texture data
+structure. edit_curve.index is reset to zero.
+==============================================================================*/
+{
+	int i;
+	struct VT_texture_curve *new_curve;
+
+	ENTER(select_soft);
+	/* checking argument */
+	if (tw)
+	{
+		(tw->edit_curve).type=3;
+		if (0==(tw->edit_curve).index)
+		{
+			/* new curve to edit */
+			(tw->edit_curve).index=0;
+			(tw->edit_curve).scalar_value[0]=tw->select_value;
+			(tw->edit_curve).scalar_value[1]=tw->select_value2;
+			for (i=0;i<3;i++)
+			{
+				(tw->edit_curve).point1[i]=tw->xival[i];
+			}
+
+			/* store curve in volume_texture data structure */
+			ALLOCATE(new_curve,struct VT_texture_curve,1);
+			new_curve->type=3;
+			for (i=0;i<3;i++)
+			{
+				new_curve->point1[i]=(tw->edit_curve).point1[i];
+				new_curve->point2[i]=0;
+				new_curve->point3[i]=0;
+				new_curve->point4[i]=0;
+			}
+			new_curve->scalar_value[0]=(tw->edit_curve).scalar_value[0];
+			new_curve->scalar_value[1]=(tw->edit_curve).scalar_value[1];
+			add_curve_to_list(tw->current_texture->texture_curve_list,new_curve);
+/*???debug */
+printf("new soft object: scalar value %lf\n",new_curve->scalar_value[0]);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"select_soft.  Invalid argument");
+	}
+	LEAVE;
+} /* select_soft */
+
+void deselect_curve(struct Texture_window *tw)
+/*******************************************************************************
+LAST MODIFIED : 30 August 1996
+
+DESCRIPTION :
+Two points are selected and the coordinates stored in edit_line.  After two
+deselect operations have been performed, the list is searched for the line
+segment and it is removed.
+==============================================================================*/
+{
+	int i;
+	struct VT_texture_curve *curve;
+
+	ENTER(deselect_curve);
+	/* checking arguments */
+	if (tw)
+	{
+	     if (tw->soft_mode_on)
+	     {
+		curve=get_curve_from_list(tw->current_texture->texture_curve_list,
+				&tw->edit_curve);
+		if (curve)
+			{
+			remove_curve_from_list(tw->current_texture->texture_curve_list,curve);
+			}
+	     }
+	     else
+	     {
+		
+		if ((tw->edit_curve).index == 0)
+		{
+			/* new curve to edit */
+			(tw->edit_curve).index=1;
+			for (i=0;i<3;i++)
+			{
+				(tw->edit_curve).point1[i]=tw->xival[i];
+			}
+		}
+		else
+		{
+			/* curve completed */
+			(tw->edit_curve).index=0;
+			for (i=0;i<3;i++)
+			{
+				(tw->edit_curve).point2[i]=tw->xival[i];
+			}
+			curve=get_curve_from_list(tw->current_texture->texture_curve_list,
+				&tw->edit_curve);
+			if (curve)
+			{
+			remove_curve_from_list(tw->current_texture->texture_curve_list,curve);
+			}
+		}
+	    }
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"deselect_curve.  Invalid argument");
+	}
+	LEAVE;
+} /* deselect_curve */
+

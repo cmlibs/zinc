@@ -17,7 +17,7 @@ Module types
 ------------
 */
 
-FULL_DECLARE_CALLBACK_TYPES(FE_node_selection_change, \
+FULL_DECLARE_CMISS_CALLBACK_TYPES(FE_node_selection_change, \
 	struct FE_node_selection *,struct FE_node_selection_changes *);
 
 struct FE_node_selection
@@ -39,16 +39,16 @@ Global store of selected nodes for group actions and highlighting.
 		 already selected; excludes those subsequently selected */
 	struct LIST(FE_node) *newly_unselected_node_list;
 	/* list of callbacks requested by other objects when selction changes */
-	struct LIST(CALLBACK_ITEM(FE_node_selection_change)) *change_callback_list;
+	struct LIST(CMISS_CALLBACK_ITEM(FE_node_selection_change)) *change_callback_list;
 }; /* struct FE_node_selection */
 
 /*
 Module functions
 ----------------
 */
-DEFINE_CALLBACK_MODULE_FUNCTIONS(FE_node_selection_change)
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(FE_node_selection_change)
 
-DEFINE_CALLBACK_FUNCTIONS(FE_node_selection_change, \
+DEFINE_CMISS_CALLBACK_FUNCTIONS(FE_node_selection_change, \
 	struct FE_node_selection *,struct FE_node_selection_changes *)
 
 static int FE_node_selection_update(struct FE_node_selection *node_selection)
@@ -80,7 +80,7 @@ on or if no such changes have occurred.
 				changes.newly_unselected_node_list=
 					node_selection->newly_unselected_node_list;
 				/* send the callbacks */
-				CALLBACK_LIST_CALL(FE_node_selection_change)(
+				CMISS_CALLBACK_LIST_CALL(FE_node_selection_change)(
 					node_selection->change_callback_list,node_selection,&changes);
 				/* clear the newly selected and unselected lists */
 				REMOVE_ALL_OBJECTS_FROM_LIST(FE_node)(
@@ -125,7 +125,7 @@ Creates the global store of selected nodes for group actions and highlighting.
 		node_selection->newly_selected_node_list=CREATE(LIST(FE_node))();
 		node_selection->newly_unselected_node_list=CREATE(LIST(FE_node))();
 		node_selection->change_callback_list=
-			CREATE(LIST(CALLBACK_ITEM(FE_node_selection_change)))();
+			CREATE(LIST(CMISS_CALLBACK_ITEM(FE_node_selection_change)))();
 		if (!(node_selection->node_list&&node_selection->newly_selected_node_list&&
 			node_selection->newly_unselected_node_list&&
 			node_selection->change_callback_list))
@@ -163,7 +163,7 @@ Destroys the FE_node_selection.
 		DESTROY(LIST(FE_node))(&(node_selection->node_list));
 		DESTROY(LIST(FE_node))(&(node_selection->newly_selected_node_list));
 		DESTROY(LIST(FE_node))(&(node_selection->newly_unselected_node_list));
-		DESTROY(LIST(CALLBACK_ITEM(FE_node_selection_change)))(
+		DESTROY(LIST(CMISS_CALLBACK_ITEM(FE_node_selection_change)))(
 			&(node_selection->change_callback_list));
 		DEALLOCATE(*node_selection_address);
 		return_code=1;
@@ -180,7 +180,7 @@ Destroys the FE_node_selection.
 } /* DESTROY(FE_node_selection) */
 
 int FE_node_selection_add_callback(struct FE_node_selection *node_selection,
-	CALLBACK_FUNCTION(FE_node_selection_change) *function,void *user_data)
+	CMISS_CALLBACK_FUNCTION(FE_node_selection_change) *function,void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 20 March 2000
 
@@ -195,7 +195,7 @@ a struct FE_node_selection_changes and the void *user_data.
 	ENTER(FE_node_selection_add_callback);
 	if (node_selection&&function)
 	{
-		if (CALLBACK_LIST_ADD_CALLBACK(FE_node_selection_change)(
+		if (CMISS_CALLBACK_LIST_ADD_CALLBACK(FE_node_selection_change)(
 			node_selection->change_callback_list,function,user_data))
 		{
 			return_code=1;
@@ -219,7 +219,7 @@ a struct FE_node_selection_changes and the void *user_data.
 } /* FE_node_selection_add_callback */
 
 int FE_node_selection_remove_callback(struct FE_node_selection *node_selection,
-	CALLBACK_FUNCTION(FE_node_selection_change) *function,void *user_data)
+	CMISS_CALLBACK_FUNCTION(FE_node_selection_change) *function,void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 20 March 2000
 
@@ -232,7 +232,7 @@ Removes the callback calling <function> with <user_data> from <node_selection>.
 	ENTER(FE_node_selection_remove_callback);
 	if (node_selection&&function)
 	{
-		if (CALLBACK_LIST_REMOVE_CALLBACK(FE_node_selection_change)(
+		if (CMISS_CALLBACK_LIST_REMOVE_CALLBACK(FE_node_selection_change)(
 			node_selection->change_callback_list,function,user_data))
 		{
 			return_code=1;

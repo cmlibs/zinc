@@ -13,7 +13,6 @@ equivalent to the scene_viewer assigned to it.
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "graphics/texture.h"
-#include "graphics/scene_viewer.h"
 #include "user_interface/message.h"
 #include "computed_field/computed_field_sample_texture.h"
 

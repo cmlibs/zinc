@@ -43,7 +43,7 @@ Data broadcast with callbacks from <FE_node_selection> describing the changes.
 	struct LIST(FE_node) *newly_unselected_node_list;
 }; /* struct FE_node_selection_changes */
 
-DECLARE_CALLBACK_TYPES(FE_node_selection_change,struct FE_node_selection *, \
+DECLARE_CMISS_CALLBACK_TYPES(FE_node_selection_change,struct FE_node_selection *, \
 	struct FE_node_selection_changes *);
 
 /*
@@ -68,7 +68,7 @@ Destroys the FE_node_selection.
 ==============================================================================*/
 
 int FE_node_selection_add_callback(struct FE_node_selection *node_selection,
-	CALLBACK_FUNCTION(FE_node_selection_change) *function,void *user_data);
+	CMISS_CALLBACK_FUNCTION(FE_node_selection_change) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 20 March 2000
 
@@ -79,7 +79,7 @@ a struct FE_node_selection_changes and the void *user_data.
 ==============================================================================*/
 
 int FE_node_selection_remove_callback(struct FE_node_selection *node_selection,
-	CALLBACK_FUNCTION(FE_node_selection_change) *function,void *user_data);
+	CMISS_CALLBACK_FUNCTION(FE_node_selection_change) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 20 March 2000
 

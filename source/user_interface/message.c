@@ -11,6 +11,9 @@ Declaration of functions for displaying messages.
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#if defined (WINDOWS)
+#include <windows.h>
+#endif /* defined (WINDOWS) */
 #include "general/debug.h"
 #include "user_interface/message.h"
 
@@ -123,7 +126,20 @@ form of arguments is used.
 			}
 			else
 			{
+#if defined (WINDOWS)
+				{ 
+					CHAR szBuf[80]; 
+					DWORD dw = GetLastError(); 
+					
+					sprintf(szBuf, "ERROR: %s: GetLastError returned %u\n", 
+						message_string, dw); 
+					
+					MessageBox(NULL, szBuf, "Error", MB_OK); 
+				} 
+				return_code = 1;
+#else /* defined (WINDOWS) */
 				return_code=printf("ERROR: %s\n",message_string);
+#endif /* defined (WINDOWS) */
 			}
 		} break;
 		case INFORMATION_MESSAGE:
@@ -136,7 +152,20 @@ form of arguments is used.
 			else
 			{
 				/* make sure we don't interpret % characters by printing the string */
+#if defined (WINDOWS)
+				{ 
+					CHAR szBuf[80]; 
+					DWORD dw = GetLastError(); 
+					
+					sprintf(szBuf, "%s\n", 
+						message_string, dw); 
+					
+					MessageBox(NULL, szBuf, "Information", MB_OK); 
+				} 
+				return_code = 1;
+#else /* defined (WINDOWS) */
 				return_code=printf("%s",message_string);
+#endif /* defined (WINDOWS) */
 			}
 		} break;
 		case WARNING_MESSAGE:
@@ -148,12 +177,38 @@ form of arguments is used.
 			}
 			else
 			{
+#if defined (WINDOWS)
+				{ 
+					CHAR szBuf[80]; 
+					DWORD dw = GetLastError(); 
+					
+					sprintf(szBuf, "WARNING: %s: GetLastError returned %u\n", 
+						message_string, dw); 
+					
+					MessageBox(NULL, szBuf, "Warning", MB_OK); 
+				} 
+				return_code = 1;
+#else /* defined (WINDOWS) */
 				return_code=printf("WARNING: %s\n",message_string);
+#endif /* defined (WINDOWS) */
 			}
 		} break;
 		default:
 		{
+#if defined (WINDOWS)
+				{ 
+					CHAR szBuf[80]; 
+					DWORD dw = GetLastError(); 
+					
+					sprintf(szBuf, "UNKNOWN: %s: GetLastError returned %u\n", 
+						message_string, dw); 
+					
+					MessageBox(NULL, szBuf, "Error", MB_OK); 
+				} 
+				return_code = 1;
+#else /* defined (WINDOWS) */
 			return_code=printf("UNKNOWN: %s\n",message_string);
+#endif /* defined (WINDOWS) */
 		} break;
 	}
 	va_end(ap);

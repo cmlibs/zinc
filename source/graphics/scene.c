@@ -52,7 +52,6 @@ November 1997. Created from Scene description part of Drawing.
 #include "graphics/makegtobj.h"
 #include "graphics/scene.h"
 #include "graphics/texture.h"
-#include "three_d_drawing/ThreeDDraw.h"
 #include "time/time.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -78,7 +77,7 @@ Module types
 ------------
 */
 
-FULL_DECLARE_CALLBACK_TYPES(Scene_object_transformation, \
+FULL_DECLARE_CMISS_CALLBACK_TYPES(Scene_object_transformation, \
 	struct Scene_object *, gtMatrix *);
 
 struct Scene_object
@@ -113,7 +112,7 @@ graphics object may have different visibility on different scenes.
 		 the scene itself is destroyed. */
 	struct Scene *scene;
 	/* callback list for transformation changes */
-	struct LIST(CALLBACK_ITEM(Scene_object_transformation)) *transformation_callback_list;
+	struct LIST(CMISS_CALLBACK_ITEM(Scene_object_transformation)) *transformation_callback_list;
 	/* the optional global object which this Scene_object represents */
 	struct Any_object *represented_object;
 	int access_count;
@@ -230,9 +229,9 @@ DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Scene_object,position,int,compare_int)
 
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Scene)
 
-DEFINE_CALLBACK_MODULE_FUNCTIONS(Scene_object_transformation)
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Scene_object_transformation)
 
-DEFINE_CALLBACK_FUNCTIONS(Scene_object_transformation, \
+DEFINE_CMISS_CALLBACK_FUNCTIONS(Scene_object_transformation, \
 	struct Scene_object *, gtMatrix *)
 
 static int execute_child_Scene(struct Scene *scene)
@@ -1015,7 +1014,7 @@ and is visible.
 		if (ALLOCATE(scene_object,struct Scene_object,1) &&
 			(scene_object->name=duplicate_string(name)) &&
 			(scene_object->transformation_callback_list =
-				CREATE(LIST(CALLBACK_ITEM(Scene_object_transformation)))()))
+				CREATE(LIST(CMISS_CALLBACK_ITEM(Scene_object_transformation)))()))
 		{
 			scene_object->position=0;
 			scene_object->type = SCENE_OBJECT_TYPE_INVALID;
@@ -1192,7 +1191,7 @@ DEACCESSes the member GT_object and removes any other dynamic fields.
 			{
 				if (scene_object->transformation_callback_list)
 				{
-					DESTROY(LIST(CALLBACK_ITEM(Scene_object_transformation)))(
+					DESTROY(LIST(CMISS_CALLBACK_ITEM(Scene_object_transformation)))(
 						&(scene_object->transformation_callback_list));
 				}
 				if (scene_object->transformation)
@@ -3034,7 +3033,7 @@ Sets the visibility of <scene_object>.
 } /* Scene_object_set_visibility */
 
 int Scene_object_add_transformation_callback(struct Scene_object *scene_object,
-	CALLBACK_FUNCTION(Scene_object_transformation) *function, void *user_data)
+	CMISS_CALLBACK_FUNCTION(Scene_object_transformation) *function, void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 4 December 2001
 
@@ -3049,7 +3048,7 @@ given void *user_data.
 	ENTER(Scene_object_add_transformation_callback);
 	if (scene_object && function)
 	{
-		if (CALLBACK_LIST_ADD_CALLBACK(Scene_object_transformation)(
+		if (CMISS_CALLBACK_LIST_ADD_CALLBACK(Scene_object_transformation)(
 			scene_object->transformation_callback_list, function, user_data))
 		{
 			return_code = 1;
@@ -3074,7 +3073,7 @@ given void *user_data.
 
 int Scene_object_remove_transformation_callback(
 	struct Scene_object *scene_object,
-	CALLBACK_FUNCTION(Scene_object_transformation) *function, void *user_data)
+	CMISS_CALLBACK_FUNCTION(Scene_object_transformation) *function, void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 4 December 2001
 
@@ -3088,7 +3087,7 @@ Removes the transformation callback calling <function> with <user_data> from
 	ENTER(Scene_object_remove_transformation_callback);
 	if (scene_object && function)
 	{
-		if (CALLBACK_LIST_REMOVE_CALLBACK(Scene_object_transformation)(
+		if (CMISS_CALLBACK_LIST_REMOVE_CALLBACK(Scene_object_transformation)(
 			scene_object->transformation_callback_list, function,user_data))
 		{
 			return_code = 1;
@@ -3244,7 +3243,7 @@ Sets the transformation of <scene_object>.
 				"Unable to allocate transformation");
 			return_code = 0;				
 		}
-		CALLBACK_LIST_CALL(Scene_object_transformation)(
+		CMISS_CALLBACK_LIST_CALL(Scene_object_transformation)(
 			scene_object->transformation_callback_list, scene_object,
 			scene_object->transformation);
 		Scene_object_changed_external(scene_object);
@@ -6450,8 +6449,7 @@ understood for the type of <interaction_volume> passed.
 		{
 			/* need to build and compile scene as graphics object may not exist yet
 				 for picking */
-			if (X3dThreeDDrawingGetCurrent() &&
-				build_Scene(scene) && compile_Scene(scene))
+			if (build_Scene(scene) && compile_Scene(scene))
 			{
 				select_buffer=(GLuint *)NULL;
 				num_hits=-1;

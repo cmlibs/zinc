@@ -7,7 +7,7 @@ DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
 	It is imagined that this will include - cmgui, emap and dfn.  Started as
 	general/cmgui.c .
-???DB.  Can all the #if defined (MOTIF) and #if defined (WINDOWS) be hidden in
+???DB.  Can all the #if defined (MOTIF) and #if defined (WIN32_USER_INTERFACE) be hidden in
 	macros defined in user_interface.h ?
 ???DB.  global_database.h has been removed.  It was specific to cmgui, and
 	couldn't be extended to a mix and match use of tools.  I see two possibilities
@@ -21,16 +21,24 @@ DESCRIPTION :
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#if defined (WIN32_USER_INTERFACE)
+#include <windows.h>
+#endif /* defined (WIN32_USER_INTERFACE) */
 /*SAB I have concatenated the correct version file for each version
   externally in the shell with cat #include "version.h"*/
 #include "comfile/comfile_window.h"
 #include "command/cmiss.h"
+#include "command/command.h"
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
 #include "command/command_window.h"
-#if !defined (WINDOWS_DEV_FLAG)
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
+#include "command/console.h"
+#if defined (MOTIF)
 #include "element/element_creator.h"
 #include "element/element_point_tool.h"
 #include "element/element_point_viewer.h"
 #include "element/element_tool.h"
+#endif /* defined (MOTIF) */
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_component_operations.h"
 #include "computed_field/computed_field_compose.h"
@@ -46,56 +54,66 @@ DESCRIPTION :
 #include "computed_field/computed_field_matrix_operations.h"
 #include "computed_field/computed_field_sample_texture.h"
 #include "computed_field/computed_field_vector_operations.h"
+#if defined (MOTIF)
 #include "computed_field/computed_field_window_projection.h"
+#endif /* defined (MOTIF) */
 #include "finite_element/finite_element.h"
+#if defined (MOTIF)
 #include "finite_element/grid_field_calculator.h"
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 #include "general/debug.h"
 #include "general/error_handler.h"
 #include "general/image_utilities.h"
-#if !defined (WINDOWS_DEV_FLAG)
 #include "graphics/environment_map.h"
 #include "graphics/glyph.h"
+#if defined (MOTIF)
 #include "graphics/graphics_window.h"
+#endif /* defined (MOTIF) */
 #include "graphics/light.h"
 #include "graphics/light_model.h"
 #include "graphics/material.h"
+#if defined (MOTIF)
 #include "graphics/movie_graphics.h"
+#endif /* defined (MOTIF) */
 #include "graphics/scene.h"
+#if defined (MOTIF)
 #include "graphics/scene_editor.h"
+#endif /* defined (MOTIF) */
 #include "graphics/spectrum.h"
+#if defined (MOTIF)
 #include "graphics/transform_tool.h"
+#endif /* defined (MOTIF) */
 #include "graphics/volume_texture.h"
+#if defined (MOTIF)
 #include "interaction/interactive_tool.h"
 #include "interaction/select_tool.h"
+#endif /* defined (MOTIF) */
 #include "io_devices/conversion.h"
+#if defined (SELECT_DESCRIPTORS)
 #include "io_devices/io_device.h"
+#endif /* defined (SELECT_DESCRIPTORS) */
+#if defined (MOTIF)
 #include "node/node_tool.h"
 #include "node/node_viewer.h"
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 #include "selection/any_object_selection.h"
 #include "selection/element_point_ranges_selection.h"
 #include "selection/element_selection.h"
 #include "selection/node_selection.h"
-#if defined (OLD_CODE)
-#if defined (MOTIF)
-#include "socket/socket.h"
-#endif /* defined (MOTIF) */
-#endif /* defined (OLD_CODE) */
 #if defined (SGI_MOVIE_FILE)
 #include "three_d_drawing/movie_extensions.h"
 #endif /* defined (SGI_MOVIE_FILE) */
 #include "time/time_keeper.h"
 #include "user_interface/event_dispatcher.h"
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 #include "user_interface/filedir.h"
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 #include "curve/control_curve.h"
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 #include "view/coord.h"
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 #include "unemap/unemap_package.h"
 #if defined (CELL)
 #include "cell/cell_interface.h"
@@ -112,12 +130,6 @@ DESCRIPTION :
 Global variables
 ----------------
 */
-#if defined (OLD_CODE)
-#if defined (MOTIF)
-User_settings user_settings;
-	/*???DB.  Temp ? */
-#endif /* defined (MOTIF) */
-#endif /* defined (OLD_CODE) */
 
 /*
 Module types
@@ -140,19 +152,12 @@ DESCRIPTION :
 Module variables
 ----------------
 */
-#if defined (OLD_CODE)
-#if !defined (WINDOWS_DEV_FLAG)
-/*???DB.  The plan is that these will all be passed */
-/* environment maps */
-static struct Environment_map
-	*default_Environment_map=(struct Environment_map *)NULL;
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-#endif /* defined (OLD_CODE) */
 
 /*
 Module functions
 ----------------
 */
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
 static int display_error_message(char *message,void *command_window_void)
 /*******************************************************************************
 LAST MODIFIED : 25 July 1999
@@ -164,7 +169,6 @@ Display a cmgui error message.
 	int return_code;
 
 	ENTER(display_error_message);
-#if !defined (WINDOWS_DEV_FLAG)
 	if (command_window_void)
 	{
 		write_command_window("ERROR: ",
@@ -174,7 +178,6 @@ Display a cmgui error message.
 		write_command_window("\n",(struct Command_window *)command_window_void);
 	}
 	else
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 	{
 		printf("ERROR: %s\n",message);
 	}
@@ -182,7 +185,9 @@ Display a cmgui error message.
 
 	return (return_code);
 } /* display_error_message */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
 
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
 static int display_information_message(char *message,void *command_window_void)
 /*******************************************************************************
 LAST MODIFIED : 25 July 1999
@@ -194,14 +199,12 @@ Display a cmgui information message.
 	int return_code;
 
 	ENTER(display_error_message);
-#if !defined (WINDOWS_DEV_FLAG)
 	if (command_window_void)
 	{
 		return_code=write_command_window(message,
 			(struct Command_window *)command_window_void);
 	}
 	else
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 	{
 		printf(message);
 	}
@@ -209,7 +212,9 @@ Display a cmgui information message.
 
 	return (return_code);
 } /* display_information_message */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
 
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
 static int display_warning_message(char *message,void *command_window_void)
 /*******************************************************************************
 LAST MODIFIED : 25 July 1999
@@ -222,7 +227,6 @@ Display a cmgui warning message.
 	int return_code;
 
 	ENTER(display_warning_message);
-#if !defined (WINDOWS_DEV_FLAG)
 	if (command_window_void)
 	{
 		write_command_window("WARNING: ",
@@ -232,7 +236,6 @@ Display a cmgui warning message.
 		write_command_window("\n",(struct Command_window *)command_window_void);
 	}
 	else
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 	{
 		printf("WARNING: %s\n",message);
 	}
@@ -240,6 +243,7 @@ Display a cmgui warning message.
 
 	return (return_code);
 } /* display_warning_message */
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
 
 static int cmgui_execute_comfile(char *comfile_name,char *example_id,
 	char *examples_directory,char *example_symbol,char **example_comfile_name,
@@ -251,10 +255,6 @@ DESCRIPTION :
 Executes the comfile specified on the command line.
 ==============================================================================*/
 {
-#if defined (OLD_CODE)
-	char *command_string,*temp_char,*temp_char_2;
-	int count,i;
-#endif /* defined (OLD_CODE) */
 	int return_code;
 
 	ENTER(cmgui_execute_comfile);
@@ -292,83 +292,6 @@ Executes the comfile specified on the command line.
 				strcat(global_temp_string,example_symbol);
 				strcat(global_temp_string," execute");
 				return_code=Execute_command_execute_string(execute_command,global_temp_string);
-#if defined (OLD_CODE)
-				/* strip the path */
-				temp_char_2=comfile_name;
-#if defined (UNIX)
-				while (temp_char=strchr(temp_char_2,'/'))
-				{
-					temp_char_2=temp_char+1;
-				}
-#endif /* defined (UNIX) */
-#if defined (VMS)
-				if (temp_char=strchr(temp_char_2,']'))
-				{
-					temp_char_2=temp_char+1;
-				}
-#endif /* defined (VMS) */
-				if (temp_char=strchr(temp_char_2,'_'))
-				{
-					temp_char++;
-				}
-				else
-				{
-					temp_char=temp_char_2;
-				}
-				count=0;
-				while ((*(temp_char+count))&&('?'!= *(temp_char+count)))
-				{
-					count++;
-				}
-				if (count>0)
-				{
-					if (ALLOCATE(command_string,char,strlen(examples_directory)+
-						strlen(example_symbol)+13+(count*(count+5))/2))
-					{
-						/* set the examples directory (back end) */
-						strcpy(command_string,"set dir ");
-						strcat(command_string,example_symbol);
-						strcat(command_string,"=");
-						temp_char_2=command_string+strlen(command_string);
-						for (i=1;i<=count;i++)
-						{
-							strncpy(temp_char_2,temp_char,i);
-							temp_char_2 += i;
-							if (i<count)
-							{
-								*temp_char_2='/';
-								temp_char_2++;
-							}
-						}
-						*temp_char_2='\0';
-						temp_char_2[count]='\0';
-						Execute_command_execute_string(execute_command, command_string);
-						/* open the comfile */
-						temp_char_2=command_string;
-						strcpy(temp_char_2,"example_");
-						temp_char_2 += 8;
-						strncpy(temp_char_2,temp_char,count);
-						temp_char_2[count]='\0';
-						sprintf(global_temp_string,"open comfile ");
-						strcat(global_temp_string,command_string);
-						strcat(global_temp_string,";");
-						strcat(global_temp_string,example_symbol);
-						strcat(global_temp_string," execute");
-						Execute_command_execute_string(execute_command, global_temp_string);
-						DEALLOCATE(command_string);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"cmgui_execute_comfile.  Insufficient memory");
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"cmgui_execute_comfile.  Invalid example name");
-				}
-#endif /* defined (OLD_CODE) */
 			}
 			else
 			{
@@ -399,10 +322,9 @@ Executes the comfile specified on the command line.
 Main program
 ------------
 */
-#if defined (MOTIF)
+#if !defined (WIN32_USER_INTERFACE)
 int main(int argc,char *argv[])
-#endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#else /* !defined (WIN32_USER_INTERFACE) */
 int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	LPSTR command_line,int initial_main_window_state)
 	/* using WinMain as the entry point tells Windows that it is a gui and to use
@@ -411,9 +333,9 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 		loop.  Other application interfaces may expect something else.  Should this
 		failure code be #define'd ? */
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
-#endif /* defined (WINDOWS) */
+#endif /* !defined (WIN32_USER_INTERFACE) */
 /*******************************************************************************
-LAST MODIFIED : 5 March 2002
+LAST MODIFIED : 26 June 2002
 
 DESCRIPTION :
 Main program for the CMISS Graphical User Interface
@@ -424,11 +346,11 @@ Main program for the CMISS Graphical User Interface
 		version_id_string[100],*version_ptr,version_temp[20];
 	float default_light_direction[3]={0.0,-0.5,-1.0};
 	int
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		WINAPI
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 		return_code;
-	int batch_mode, command_list,no_display,non_random,start_cm,start_mycm;
+	int batch_mode, console_mode, command_list,no_display,non_random,start_cm,start_mycm;
 #if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
 	int status;
 #endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
@@ -505,100 +427,6 @@ Main program for the CMISS Graphical User Interface
 			"http://www.esc.auckland.ac.nz/Groups/Bioengineering/CMISS/help/index_user.html"
 		},
 	};
-#if defined (OLD_CODE)
-/*???DB.  User settings should be divided among tools */
-#define XmNprinterForegroundColour "printerForegroundColour"
-#define XmCPrinterForegroundColour "PrinterForegroundColour"
-#define XmNprinterBackgroundColour "printerBackgroundColour"
-#define XmCPrinterBackgroundColour "PrinterBackgroundColour"
-#define XmNprinterPageBottomMarginMm "printerPageBottomMarginMm"
-#define XmCPrinterPageBottomMarginMm "PrinterPageBottomMarginMm"
-#define XmNprinterPageHeightMm "printerPageHeightMm"
-#define XmCPrinterPageHeightMm "PrinterPageHeightMm"
-#define XmNprinterPageLeftMarginMm "printerPageLeftMarginMm"
-#define XmCPrinterPageLeftMarginMm "PrinterPageLeftMarginMm"
-#define XmNprinterPageRightMarginMm "printerPageRightMarginMm"
-#define XmCPrinterPageRightMarginMm "PrinterPageRightMarginMm"
-#define XmNprinterPageTopMarginMm "printerPageTopMarginMm"
-#define XmCPrinterPageTopMarginMm "PrinterPageTopMarginMm"
-#define XmNprinterPageWidthMm "printerPageWidthMm"
-#define XmCPrinterPageWidthMm "PrinterPageWidthMm"
-	static XtResource resources[]=
-	{
-		{
-			XmNprinterForegroundColour,
-			XmCPrinterForegroundColour,
-			XmRPixel,
-			sizeof(Pixel),
-			XtOffsetOf(User_settings,foreground_printer_colour),
-			XmRString,
-			"black"
-		},
-		{
-			XmNprinterBackgroundColour,
-			XmCPrinterBackgroundColour,
-			XmRPixel,
-			sizeof(Pixel),
-			XtOffsetOf(User_settings,background_printer_colour),
-			XmRString,
-			"white"
-		},
-		{
-			XmNprinterPageBottomMarginMm,
-			XmCPrinterPageBottomMarginMm,
-			XmRInt,
-			sizeof(int),
-			XtOffsetOf(User_settings,printer_page_bottom_margin_mm),
-			XmRString,
-			"25"
-		},
-		{
-			XmNprinterPageHeightMm,
-			XmCPrinterPageHeightMm,
-			XmRInt,
-			sizeof(int),
-			XtOffsetOf(User_settings,printer_page_height_mm),
-			XmRString,
-			"297"
-		},
-		{
-			XmNprinterPageLeftMarginMm,
-			XmCPrinterPageLeftMarginMm,
-			XmRInt,
-			sizeof(int),
-			XtOffsetOf(User_settings,printer_page_left_margin_mm),
-			XmRString,
-			"10"
-		},
-		{
-			XmNprinterPageRightMarginMm,
-			XmCPrinterPageRightMarginMm,
-			XmRInt,
-			sizeof(int),
-			XtOffsetOf(User_settings,printer_page_right_margin_mm),
-			XmRString,
-			"10"
-		},
-		{
-			XmNprinterPageTopMarginMm,
-			XmCPrinterPageTopMarginMm,
-			XmRInt,
-			sizeof(int),
-			XtOffsetOf(User_settings,printer_page_top_margin_mm),
-			XmRString,
-			"25"
-		},
-		{
-			XmNprinterPageWidthMm,
-			XmCPrinterPageWidthMm,
-			XmRInt,
-			sizeof(int),
-			XtOffsetOf(User_settings,printer_page_width_mm),
-			XmRString,
-			"210"
-		},
-	};
-#endif /* defined (OLD_CODE) */
 #endif /* defined (MOTIF) */
 #if defined (MOTIF)
 /*???DB.  Need a setup routine for file I/O ? */
@@ -608,19 +436,6 @@ Main program for the CMISS Graphical User Interface
 		{"open_file_and_read",(XtPointer)open_file_and_read},
 		{"open_file_and_write",(XtPointer)open_file_and_write}
 	};
-#if defined (OLD_CODE)
-	static MrmRegisterArg identifiers[]=
-	{
-		{"widget_spacing",(XtPointer)NULL},
-		{"menu_font",(XtPointer)NULL},
-		{"heading_font",(XtPointer)NULL},
-		{"normal_font",(XtPointer)NULL},
-		{"normal_non_proportional_font",(XtPointer)NULL},
-		{"button_font",(XtPointer)NULL},
-		{"list_font",(XtPointer)NULL},
-		{"small_font",(XtPointer)NULL}
-	};
-#endif /* defined (OLD_CODE) */
 #endif /* defined (MOTIF) */
 	struct Cmiss_command_data command_data;
 	struct Colour ambient_colour,default_colour;
@@ -634,13 +449,11 @@ Main program for the CMISS Graphical User Interface
 	struct Graphical_material *default_selected_material;
 	struct GT_object *glyph, *mirror_glyph;
 	struct MANAGER(Computed_field) *computed_field_manager;
-#if !defined (WINDOWS_DEV_FLAG)
 	struct Modifier_entry set_file_name_option_table[]=
 	{
 		{CMGUI_EXAMPLE_DIRECTORY_SYMBOL,NULL,NULL,set_file_name},
 		{NULL,NULL,NULL,set_file_name}
 	};
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 	User_settings user_settings;
 
 #if defined (MOTIF)
@@ -650,9 +463,9 @@ Main program for the CMISS Graphical User Interface
 #if defined (MOTIF)
 	ENTER(main);
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	ENTER(WinMain);
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	return_code=1;
 
 	/* initialize application specific global variables */
@@ -663,7 +476,7 @@ Main program for the CMISS Graphical User Interface
 		(void *)(&command_data));
 	command_data.set_command= set_command;
 	command_data.user_interface= (struct User_interface *)NULL;
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 	command_data.control_curve_editor_dialog=(Widget)NULL;
 	command_data.data_grabber_dialog=(Widget)NULL;
 	command_data.sync_2d_3d_dialog=(Widget)NULL;
@@ -684,6 +497,8 @@ Main program for the CMISS Graphical User Interface
 	command_data.spectrum_editor_dialog=(Widget)NULL;
 	command_data.time_editor_dialog=(struct Time_editor_dialog *)NULL;
 	/*???RC.  Temporary - should allow more than one */
+#endif /* defined (MOTIF) */
+	command_data.command_console = (struct Console *)NULL;
 #if defined (UNEMAP)
 	command_data.unemap_system_window=(struct System_window *)NULL;
 #endif /* defined (UNEMAP) */
@@ -692,18 +507,15 @@ Main program for the CMISS Graphical User Interface
 #endif /* defined (CELL) */
 #if defined (MIRAGE)
 	command_data.tracking_editor_dialog=(struct Tracking_editor_dialog *)NULL;
-#if defined (OLD_CODE)
-	command_data.mirage_movie=(struct Mirage_movie *)NULL;
-	command_data.digitiser_window_manager=
-		(struct MANAGER(Digitiser_window) *)NULL;
-#endif /* defined (OLD_CODE) */
 #endif /* defined (MIRAGE) */
 	command_data.example_directory=(char *)NULL;
 	(set_file_name_option_table[0]).user_data=
 		&(command_data.example_directory);
 	command_data.set_file_name_option_table=set_file_name_option_table;
 
+#if defined (MOTIF)
 	command_data.comfile_window_manager=(struct MANAGER(Comfile_window) *)NULL;
+#endif /* defined (MOTIF) */
 	command_data.default_light=(struct Light *)NULL;
 	command_data.light_manager=(struct MANAGER(Light) *)NULL;
 	command_data.default_light_model=(struct Light_model *)NULL;
@@ -715,7 +527,9 @@ Main program for the CMISS Graphical User Interface
 	command_data.graphical_material_manager=(struct MANAGER(Graphical_material) *)NULL;
 	command_data.default_spectrum=(struct Spectrum *)NULL;
 	command_data.spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
+#if defined (MOTIF)
 	command_data.graphics_window_manager=(struct MANAGER(Graphics_window) *)NULL;
+#endif /* defined (MOTIF) */
 	command_data.control_curve_manager=(struct MANAGER(Control_curve) *)NULL;
 	command_data.basis_manager=(struct MANAGER(FE_basis) *)NULL;
 	command_data.element_manager=(struct MANAGER(FE_element) *)NULL;
@@ -745,6 +559,7 @@ Main program for the CMISS Graphical User Interface
 #if defined (SGI_MOVIE_FILE)
 	command_data.movie_graphics_manager=(struct MANAGER(Movie_graphics) *)NULL;
 #endif /* defined (SGI_MOVIE_FILE) */
+#if defined (MOTIF)
 	command_data.transform_tool=(struct Interactive_tool *)NULL;
 	command_data.node_tool=(struct Node_tool *)NULL;
 	command_data.element_tool=(struct Element_tool *)NULL;
@@ -753,17 +568,20 @@ Main program for the CMISS Graphical User Interface
 	command_data.select_tool=(struct Select_tool *)NULL;
 
 	command_data.element_creator=(struct Element_creator *)NULL;
+#endif /* defined (MOTIF) */
 	command_data.examples_directory=(char *)NULL;
 	command_data.example_comfile=(char *)NULL;
 	command_data.cm_examples_directory=(char *)NULL;
 	command_data.cm_parameters_file_name=(char *)NULL;
 	command_data.default_time_keeper = (struct Time_keeper *)NULL;
+#if defined (MOTIF)
 	command_data.background_colour.red=(float)0;
 	command_data.background_colour.green=(float)0;
 	command_data.background_colour.blue=(float)0;
 	command_data.foreground_colour.red=(float)1;
 	command_data.foreground_colour.green=(float)1;
 	command_data.foreground_colour.blue=(float)1;
+#endif /* defined (MOTIF) */
 	command_data.examples_directory=(char *)NULL;
 	command_data.help_directory=(char *)NULL;
 	command_data.help_url=(char *)NULL;
@@ -775,7 +593,9 @@ Main program for the CMISS Graphical User Interface
 		command_list) */
 	command_list=0;
 	batch_mode = 0;
+	console_mode = 0;
 	no_display = 0;
+#if defined (MOTIF)
 	i=1;
 	while ((i<argc)&&strcmp("-command_list",argv[i]))
 	{
@@ -786,15 +606,6 @@ Main program for the CMISS Graphical User Interface
 		command_list=1;
 	}
 	i=1;
-	while ((i<argc)&&strncmp("-batch",argv[i],3))
-	{
-		i++;
-	}
-	if (i<argc)
-	{
-		batch_mode = 1;
-	}
-	i=1;
 	while ((i<argc)&&strncmp("-no_display",argv[i],4))
 	{
 		i++;
@@ -803,11 +614,14 @@ Main program for the CMISS Graphical User Interface
 	{
 		no_display = 1;
 	}
+#endif /* defined (MOTIF) */
 
 	/* create the managers */
 
+#if defined (MOTIF)
 	/* comfile window manager */
 	command_data.comfile_window_manager = CREATE(MANAGER(Comfile_window))();
+#endif /* defined (MOTIF) */
 
 	/* light manager */
 	if (command_data.light_manager=CREATE(MANAGER(Light))())
@@ -910,8 +724,10 @@ Main program for the CMISS Graphical User Interface
 			}
 		}
 	}
+#if defined (MOTIF)
 	/* graphics window manager.  Note there is no default window. */
 	command_data.graphics_window_manager=CREATE(MANAGER(Graphics_window))();
+#endif /* defined (MOTIF) */
 	/* FE_element_field_info manager */
 		/*???DB.  To be done */
 	all_FE_element_field_info=CREATE(LIST(FE_element_field_info))();
@@ -920,15 +736,7 @@ Main program for the CMISS Graphical User Interface
 	all_FE_element_shape=CREATE(LIST(FE_element_shape))();
 	/* FE_field manager */
 	command_data.fe_field_manager=CREATE(MANAGER(FE_field))();
-#if defined (OLD_CODE)
-	/*???RC.  all_FE_field is gone, replaced by above manager */
-	all_FE_field=CREATE(LIST(FE_field))();
-#endif /* defined (OLD_CODE) */
 	/* FE_element manager */
-#if defined (OLD_CODE)
-		/*???DB.  In transition */
-	all_FE_element=CREATE(LIST(FE_element))();
-#endif /* defined (OLD_CODE) */
 	rect_coord_system.type = RECTANGULAR_CARTESIAN;
 
 	command_data.fe_time = ACCESS(FE_time)(CREATE(FE_time)());
@@ -1053,8 +861,10 @@ Main program for the CMISS Graphical User Interface
 	command_data.data_selection=CREATE(FE_node_selection)();
 	command_data.node_selection=CREATE(FE_node_selection)();
 
+#if defined (MOTIF)
 	/* interactive_tool manager */
 	command_data.interactive_tool_manager=CREATE(MANAGER(Interactive_tool))();
+#endif /* defined (MOTIF) */
 
 	/* computed field manager and default computed fields zero, xi,
 		 default_coordinate, etc. */
@@ -1098,12 +908,14 @@ Main program for the CMISS Graphical User Interface
 			command_data.computed_field_package);
 		Computed_field_register_types_vector_operations(
 			command_data.computed_field_package);
+#if defined (MOTIF)
 		if (command_data.graphics_window_manager)
 		{
 			Computed_field_register_type_window_projection(
 				command_data.computed_field_package, 
 				command_data.graphics_window_manager);
 		}
+#endif /* defined (MOTIF) */
 		if (command_data.texture_manager)
 		{
 			Computed_field_register_type_sample_texture(
@@ -1205,10 +1017,11 @@ Main program for the CMISS Graphical User Interface
 	/* now set up the conversion routines */
 		/*???DB.  Can this be put elsewhere ? */
 	conversion_init();
+#if defined (MOTIF)
 	/* initialize the coordinate widget manager */
 		/*???DB.  Still needs to be turned into a manager */
 	coord_widget_init();
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 #if defined (SGI_MOVIE_FILE)
 	command_data.movie_graphics_manager=CREATE(MANAGER(Movie_graphics))();
 #endif /* defined (SGI_MOVIE_FILE) */
@@ -1245,6 +1058,7 @@ Main program for the CMISS Graphical User Interface
 			}
 			else
 			{
+#if defined (UNIX) /* switch (Operating_System) */
 				if (command_data.user_interface = CREATE(User_interface)
 					(&argc, argv, command_data.event_dispatcher, "Cmgui",
 					"cmgui"))
@@ -1256,6 +1070,19 @@ Main program for the CMISS Graphical User Interface
 					display_message(ERROR_MESSAGE,"Could not create User interface");
 					return_code=0;
 				}
+#elif defined (WIN32_USER_INTERFACE) /* switch (Operating_System) */
+				if (command_data.user_interface = CREATE(User_interface)
+					(current_instance, previous_instance, command_line,
+					 initial_main_window_state, command_data.event_dispatcher))
+				{
+					return_code = 1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"Could not create User interface");
+					return_code=0;
+				}
+#endif  /* switch (Operating_System) */
 			}
 		}
 		else
@@ -1275,7 +1102,7 @@ Main program for the CMISS Graphical User Interface
 			command_data.cm_examples_directory=(char *)NULL;
 			command_data.cm_parameters_file_name=(char *)NULL;
 #endif /* defined (MOTIF) */
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 #if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
 			create_interpreter(argc, argv, comfile_name, &status);
 #endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
@@ -1283,15 +1110,11 @@ Main program for the CMISS Graphical User Interface
 #if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
 			destroy_interpreter(&status);
 #endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 		}
 		else
 		{
 #if defined (MOTIF)
-#if defined (OLD_CODE)
-			/*???DB.  Not needed ? */
-			program_name=remove_before_first(remove_after_last(argv[0], '.'), ']');
-#endif /* defined (OLD_CODE)*/
 			i=1;
 			while (return_code&&(i<argc))
 			{
@@ -1306,8 +1129,21 @@ Main program for the CMISS Graphical User Interface
 							{
 								case 'o':
 								{
-									/* write a list of the commands */
-									command_list=1;
+									switch (arg[3])
+									{
+										case 'm':
+										{
+											/* command_list has already been set */
+										} break;
+										case 'n':
+										{
+											console_mode = 1;
+										} break;
+										default:
+										{
+											return_code=0;
+										} break;
+									}
 								} break;
 								case 'm':
 								{
@@ -1496,39 +1332,6 @@ Main program for the CMISS Graphical User Interface
 								} break;
 							}
 						} break;
-#if defined (OLD_CODE)
-						case 'h':
-						{
-							if ('o'==arg[2])
-							{
-								i++;
-								if (i<argc)
-								{
-									set_host(argv[i]);
-								}
-								else
-								{
-									return_code=0;
-								}
-							}
-							else
-							{
-								return_code=0;
-							}
-						} break;
-						case 'p':
-						{
-							i++;
-							if (i<argc)
-							{
-								set_port(atoi(argv[i]));
-							}
-							else
-							{
-								return_code=0;
-							}
-						} break;
-#endif /* defined (OLD_CODE) */
 						case 'm':
 						{
 							start_mycm=1;
@@ -1559,8 +1362,12 @@ Main program for the CMISS Graphical User Interface
 							}
 						} break;
 						case 'b':
+						{
+							batch_mode=1;
+						} break;
 						case 'n':
 						{
+							/* no_display has already been set */
 						} break;
 						default:
 						{
@@ -1594,7 +1401,14 @@ Main program for the CMISS Graphical User Interface
 #endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 
 			/* set up image library */
+#if defined (UNIX) /* switch (Operating_System) */
 			Open_image_environment(*argv);
+#elif defined (WIN32_USER_INTERFACE) /* switch (Operating_System) */
+			/* SAB Passing a string to this function so that it
+				starts up, should get the correct thing from
+				the windows system */
+			Open_image_environment("cmgui");
+#endif /* switch (Operating_System) */
 
 			command_data.default_time_keeper=ACCESS(Time_keeper)(
 				CREATE(Time_keeper)("default", command_data.event_dispatcher,
@@ -1604,6 +1418,7 @@ Main program for the CMISS Graphical User Interface
 				Scene_enable_time_behaviour(command_data.default_scene,
 					command_data.default_time_keeper);
 			}
+#if defined (MOTIF)
 			if (command_data.user_interface)
 			{
 				command_data.transform_tool=create_Interactive_tool_transform(
@@ -1647,6 +1462,7 @@ Main program for the CMISS Graphical User Interface
 					command_data.any_object_selection,
 					command_data.default_graphical_material);
 			}
+#endif /* defined (MOTIF) */
 
 			if (return_code)
 			{
@@ -1665,12 +1481,14 @@ Main program for the CMISS Graphical User Interface
 				user_settings.startup_comfile = (char *)NULL;
 				if (no_display)
 				{
+#if defined (MOTIF)
 					command_data.background_colour.red=0.0;
 					command_data.background_colour.green=0.0;
 					command_data.background_colour.blue=0.0;
 					command_data.foreground_colour.red=1.0;
 					command_data.foreground_colour.green=1.0;
 					command_data.foreground_colour.blue=1.0;
+#endif /* defined (MOTIF) */
 				}
 				else
 				{
@@ -1750,70 +1568,63 @@ Main program for the CMISS Graphical User Interface
 					/* register the callbacks in the global name table */
 					if (MrmSUCCESS==MrmRegisterNames(callbacks,XtNumber(callbacks)))
 					{
-#if defined (OLD_CODE)
-						identifiers[0].value=(XtPointer)5;
-						identifiers[1].value=(XtPointer)XmFontListCreate(
-							user_settings.menu_font,XmSTRING_DEFAULT_CHARSET);
-						identifiers[2].value=(XtPointer)XmFontListCreate(
-							user_settings.heading_font,XmSTRING_DEFAULT_CHARSET);
-						identifiers[3].value=(XtPointer)XmFontListCreate(
-							user_settings.normal_font,XmSTRING_DEFAULT_CHARSET);
-						identifiers[4].value=(XtPointer)XmFontListCreate(
-							user_settings.normal_non_proportional_font,
-							XmSTRING_DEFAULT_CHARSET);
-						identifiers[5].value=(XtPointer)XmFontListCreate(
-							user_settings.button_font,XmSTRING_DEFAULT_CHARSET);
-						identifiers[6].value=(XtPointer)XmFontListCreate(
-							user_settings.list_font,XmSTRING_DEFAULT_CHARSET);
-						identifiers[7].value=(XtPointer)XmFontListCreate(
-							user_settings.small_font,XmSTRING_DEFAULT_CHARSET);
-						/* register the identifiers in the global name table*/
-						if (MrmSUCCESS==MrmRegisterNames(identifiers,XtNumber(identifiers)))
-						{
-#endif /* defined (OLD_CODE) */
 #endif /* defined (MOTIF) */
-							/* create the main window */
-							/* construct the version ID string which is exported in the command
-								windows version atom */
-							strcpy(version_id_string,"cmiss*");
-							/* version number */
-							if (version_ptr=strstr(VERSION,"version "))
+						/* create the main window */
+						/* construct the version ID string which is exported in the command
+							windows version atom */
+						strcpy(version_id_string,"cmiss*");
+						/* version number */
+						if (version_ptr=strstr(VERSION,"version "))
+						{
+							strncpy(version_temp,version_ptr+8,11);
+							version_temp[11] = 0;
+							strcat(version_id_string,version_temp);
+						}
+						strcat(version_id_string,"*");
+						/* id from runtime */
+						if (version_command_id)
+						{
+							strcat(version_id_string,version_command_id);
+						}
+						strcat(version_id_string,"*");
+						/* link and runtime options */
+						if ( start_mycm )
+						{
+							strcat(version_id_string, "mycm ");
+						}
+						else 
+						{
+							if (start_cm)
 							{
-								strncpy(version_temp,version_ptr+8,11);
-								version_temp[11] = 0;
-								strcat(version_id_string,version_temp);
+								strcat(version_id_string, "cm ");
 							}
-							strcat(version_id_string,"*");
-							/* id from runtime */
-							if (version_command_id)
-							{
-								strcat(version_id_string,version_command_id);
-							}
-							strcat(version_id_string,"*");
-							/* link and runtime options */
-							if ( start_mycm )
-							{
-								strcat(version_id_string, "mycm ");
-							}
-							else 
-							{
-								if (start_cm)
-								{
-									strcat(version_id_string, "cm ");
-								}
-							}
+						}
 #if defined (UNEMAP)
-							strcat(version_id_string,"unemap ");
+						strcat(version_id_string,"unemap ");
 #endif /* defined (UNEMAP) */
 #if defined (MIRAGE)
-							strcat(version_id_string,"mirage ");
+						strcat(version_id_string,"mirage ");
 #endif /* defined (MIRAGE) */
 #if defined (INCLUDE_XVG)
-							strcat(version_id_string,"xvg ");
+						strcat(version_id_string,"xvg ");
 #endif /* defined (INCLUDE_XVG) */
 
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+						if (console_mode)
+						{
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
+							if (!(command_data.command_console = CREATE(Console)(command_data.execute_command,
+								command_data.event_dispatcher, fileno(stdin))))
+							{
+								display_message(ERROR_MESSAGE,"main.  "
+									"Unable to create console.");
+							}
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+						}
+						else
+						{
 							if (command_window=CREATE(Command_window)(execute_command,
-								command_data.user_interface,version_id_string))
+									 command_data.user_interface,version_id_string))
 							{
 								command_data.command_window=command_window;
 								if (!batch_mode)
@@ -1830,7 +1641,9 @@ Main program for the CMISS Graphical User Interface
 #endif /* defined (PERL_INTERPRETER) */
 								}
 
+#if defined (MOTIF)
 								XSetErrorHandler(x_error_handler);
+#endif /* defined (MOTIF) */
 								return_code = 1;
 							}
 							else
@@ -1838,15 +1651,9 @@ Main program for the CMISS Graphical User Interface
 								display_message(ERROR_MESSAGE,"Unable to create command window");
 								return_code=0;
 							}
+						}
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
 #if defined (MOTIF)
-#if defined (OLD_CODE)
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,"Unable to register identifiers");
-							return_code=0;
-						}
-#endif /* defined (OLD_CODE) */
 					}
 					else
 					{
@@ -1855,10 +1662,9 @@ Main program for the CMISS Graphical User Interface
 					}
 #endif /* defined (MOTIF) */
 				}
-#if !defined (WINDOWS_DEV_FLAG)
 				if(return_code)
 				{
-
+#if defined (MOTIF)
 					if (start_cm||start_mycm)
 					{
 						sprintf(global_temp_string,"create cm");
@@ -1900,18 +1706,18 @@ Main program for the CMISS Graphical User Interface
 						DEALLOCATE(comfile_name);
 						DEALLOCATE(example_id);
 					}
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 					/*							START_ERROR_HANDLING;*/
 					switch (signal_code)
 					{
-#if !defined (WINDOWS)
+#if defined (MOTIF)
 						/*???DB.  SIGBUS is not POSIX */
 						case SIGBUS:
 						{
 							printf("Bus error occurred\n");
 							display_message(ERROR_MESSAGE,"Bus error occurred");
 						} break;
-#endif /* !defined (WINDOWS) */
+#endif /* defined (MOTIF) */
 						case SIGFPE:
 						{
 							printf("Floating point exception occurred\n");
@@ -1957,6 +1763,7 @@ Main program for the CMISS Graphical User Interface
 				DESTROY(Unemap_package)(&command_data.unemap_package); 
 #endif /* defined (UNEMAP) */
 
+#if defined (MOTIF)
 				/* viewers */
 				if (command_data.data_viewer)
 				{
@@ -1977,6 +1784,7 @@ Main program for the CMISS Graphical User Interface
 
 				DESTROY(MANAGER(Graphics_window))(
 					&command_data.graphics_window_manager);
+#endif /* defined (MOTIF) */
 
 				if (computed_field_finite_element_package)
 				{
@@ -1984,6 +1792,7 @@ Main program for the CMISS Graphical User Interface
 						computed_field_finite_element_package);
 				}
 
+#if defined (MOTIF)
 				if (command_data.element_creator)
 				{
 					DESTROY(Element_creator)(&command_data.element_creator);
@@ -2011,13 +1820,28 @@ Main program for the CMISS Graphical User Interface
 				}
 				DESTROY(MANAGER(Interactive_tool))(
 					&(command_data.interactive_tool_manager));
+#endif /* defined (MOTIF) */
 
 				DEACCESS(Scene)(&(command_data.default_scene));
 				DESTROY(MANAGER(Scene))(&command_data.scene_manager);
 
 				if(!no_display)
 				{
-					DESTROY(Command_window)(&command_data.command_window);
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+					if (console_mode)
+					{
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
+						if (command_data.command_console)
+						{
+							DESTROY(Console)(&command_data.command_console);
+						}
+#if defined (MOTIF) || defined (WIN32_USER_INTERFACE)
+					}
+					else
+					{
+						DESTROY(Command_window)(&command_data.command_window);
+					}
+#endif /* defined (MOTIF) || defined (WIN32_USER_INTERFACE) */
 					/* reset up messages */
 					set_display_message_function(ERROR_MESSAGE,
 					  (Display_message_function *)NULL, NULL);
@@ -2097,7 +1921,9 @@ Main program for the CMISS Graphical User Interface
 				DESTROY(MANAGER(Light_model))(&command_data.light_model_manager);
 				DEACCESS(Light)(&(command_data.default_light));
 				DESTROY(MANAGER(Light))(&command_data.light_manager);
+#if defined (MOTIF)
 				DESTROY(MANAGER(Comfile_window))(&command_data.comfile_window_manager);
+#endif /* defined (MOTIF) */
 
 				DEACCESS(FE_time)(&(command_data.fe_time));
 
@@ -2117,9 +1943,6 @@ Main program for the CMISS Graphical User Interface
 				{
 					DEALLOCATE(execute_string);
 				}
-
-				coord_widget_finish();
-				destroy_assign_variable_list();
 
 				DESTROY(Execute_command)(&execute_command);
 				DESTROY(Execute_command)(&set_command);
@@ -2154,6 +1977,8 @@ Main program for the CMISS Graphical User Interface
 		display_message(INFORMATION_MESSAGE,
 			"    <-cm_parameters PARAMETER_FILE_NAME>    parameters for cm\n");
 		display_message(INFORMATION_MESSAGE,
+			"    <-console>                              run using the console instead of command window\n");
+		display_message(INFORMATION_MESSAGE,
 			"    <-command_list>                         write a list of the commands\n");
 		display_message(INFORMATION_MESSAGE,
 			"    <-display HOST:0>                       override host to display on\n");
@@ -2163,12 +1988,6 @@ Main program for the CMISS Graphical User Interface
 			"    <-example EXAMPLE_ID>                   command file is an example\n");
 		display_message(INFORMATION_MESSAGE,
 			"    <-execute EXECUTE_STRING>               string executed by cmiss before comfiles\n");
-#if defined (OLD_CODE)
-		display_message(INFORMATION_MESSAGE,
-			"    <-host HOSTNAME>                        host that Cmiss is running on\n");
-		display_message(INFORMATION_MESSAGE,
-			"    <-port NUMBER>                          socket port number to use\n");
-#endif /* defined (OLD_CODE) */
 		display_message(INFORMATION_MESSAGE,
 			"    <-h>                                    display this usage\n");
 		display_message(INFORMATION_MESSAGE,

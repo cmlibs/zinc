@@ -36,7 +36,6 @@ Used to be gtypes.h
 #if !defined (GRAPHICS_OBJECT_H)
 #define GRAPHICS_OBJECT_H
 
-#include <Xm/Xm.h>
 #include "general/geometry.h"
 #include "general/list.h"
 #include "graphics/auxiliary_graphics_types.h"

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : command_window.h
 
-LAST MODIFIED : 27 April 1999
+LAST MODIFIED : 27 June 2002
 
 DESCRIPTION :
 Definitions for command window structure, and associated functions
@@ -49,7 +49,6 @@ LAST MODIFIED : 28 February 2000
 DESCRIPTION:
 ==============================================================================*/
 
-#if !defined (WINDOWS_DEV_FLAG)
 int add_to_command_list(char *command,struct Command_window *command_window);
 /*******************************************************************************
 LAST MODIFIED : 16 June 1996
@@ -58,9 +57,10 @@ DESCRIPTION :
 Adds the <command> to the bottom of the list for the <command_window>.
 ==============================================================================*/
 
-int set_command_prompt(char *prompt,struct Command_window *command_window);
+int Command_window_set_command_prompt(struct Command_window *command_window,
+	char *prompt);
 /*******************************************************************************
-LAST MODIFIED : 16 June 1996
+LAST MODIFIED : 27 June 2002
 
 DESCRIPTION :
 Sets the value of the <prompt> for the <command_window>.
@@ -86,6 +86,7 @@ responce to a single mouse click on it.
 Does not override the command prompt.
 ==============================================================================*/
 
+#if !defined (WINDOWS)
 Widget Command_window_get_message_pane(struct Command_window *command_window);
 /*******************************************************************************
 LAST MODIFIED : 28 February 2002
@@ -93,6 +94,7 @@ LAST MODIFIED : 28 February 2002
 DESCRIPTION :
 Returns the message pane widget.
 ==============================================================================*/
+#endif /* !defined (WINDOWS) */
 
 int write_command_window(char *message,struct Command_window *command_window);
 /*******************************************************************************
@@ -101,7 +103,6 @@ LAST MODIFIED : 16 June 1996
 DESCRIPTION :
 Writes the <message> to the <command_window>.
 ==============================================================================*/
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 int modify_Command_window(struct Parse_state *parse_state,void *dummy,
 	void *command_window_void);

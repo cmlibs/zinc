@@ -17,7 +17,6 @@ A module for supporting command parsing.
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include <ctype.h>
 #include "command/parser.h"
 #include "general/debug.h"
 #include "general/mystring.h"

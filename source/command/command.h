@@ -75,4 +75,12 @@ LAST MODIFIED : 8 December 1999
 
 DESCRIPTION :
 ==============================================================================*/
+
+int execute_comfile(char *file_name,struct Execute_command *execute_command);
+/******************************************************************************
+LAST MODIFIED : 16 June 1996
+
+DESCRIPTION :
+Opens, executes and then closes a com file.  No window is created.
+=============================================================================*/
 #endif /* !defined (COMMAND_H) */

@@ -18,7 +18,7 @@ Module types
 ------------
 */
 
-FULL_DECLARE_CALLBACK_TYPES(Element_point_ranges_selection_change, \
+FULL_DECLARE_CMISS_CALLBACK_TYPES(Element_point_ranges_selection_change, \
 	struct Element_point_ranges_selection *, \
 	struct Element_point_ranges_selection_changes *);
 
@@ -44,7 +44,7 @@ highlighting.
 	struct LIST(Element_point_ranges)
 		*newly_unselected_element_point_ranges_list;
 	/* list of callbacks requested by other objects when selction changes */
-	struct LIST(CALLBACK_ITEM(Element_point_ranges_selection_change))
+	struct LIST(CMISS_CALLBACK_ITEM(Element_point_ranges_selection_change))
 		*change_callback_list;
 }; /* struct Element_point_ranges_selection */
 
@@ -52,9 +52,9 @@ highlighting.
 Module functions
 ----------------
 */
-DEFINE_CALLBACK_MODULE_FUNCTIONS(Element_point_ranges_selection_change)
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Element_point_ranges_selection_change)
 
-DEFINE_CALLBACK_FUNCTIONS(Element_point_ranges_selection_change, \
+DEFINE_CMISS_CALLBACK_FUNCTIONS(Element_point_ranges_selection_change, \
 	struct Element_point_ranges_selection *, \
 	struct Element_point_ranges_selection_changes *)
 
@@ -93,7 +93,7 @@ message if caching is on or if no such changes have occurred.
 					element_point_ranges_selection->
 					newly_unselected_element_point_ranges_list;
 				/* send the callbacks */
-				CALLBACK_LIST_CALL(Element_point_ranges_selection_change)(
+				CMISS_CALLBACK_LIST_CALL(Element_point_ranges_selection_change)(
 					element_point_ranges_selection->change_callback_list,
 					element_point_ranges_selection,&changes);
 				/* clear the newly selected and unselected lists */
@@ -147,7 +147,7 @@ highlighting.
 		element_point_ranges_selection->newly_unselected_element_point_ranges_list=
 			CREATE(LIST(Element_point_ranges))();
 		element_point_ranges_selection->change_callback_list=
-			CREATE(LIST(CALLBACK_ITEM(Element_point_ranges_selection_change)))();
+			CREATE(LIST(CMISS_CALLBACK_ITEM(Element_point_ranges_selection_change)))();
 		if (!(element_point_ranges_selection->element_point_ranges_list&&
 			element_point_ranges_selection->newly_selected_element_point_ranges_list&&
 			element_point_ranges_selection->
@@ -195,7 +195,7 @@ Destroys the Element_point_ranges_selection.
 		DESTROY(LIST(Element_point_ranges))(
 			&(element_point_ranges_selection->
 				newly_unselected_element_point_ranges_list));
-		DESTROY(LIST(CALLBACK_ITEM(Element_point_ranges_selection_change)))(
+		DESTROY(LIST(CMISS_CALLBACK_ITEM(Element_point_ranges_selection_change)))(
 			&(element_point_ranges_selection->change_callback_list));
 		DEALLOCATE(*element_point_ranges_selection_address);
 		return_code=1;
@@ -213,7 +213,7 @@ Destroys the Element_point_ranges_selection.
 
 int Element_point_ranges_selection_add_callback(
 	struct Element_point_ranges_selection *element_point_ranges_selection,
-	CALLBACK_FUNCTION(Element_point_ranges_selection_change) *function,
+	CMISS_CALLBACK_FUNCTION(Element_point_ranges_selection_change) *function,
 	void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 27 March 2000
@@ -230,7 +230,7 @@ struct Element_point_ranges_selection_changes and the void *user_data.
 	ENTER(Element_point_ranges_selection_add_callback);
 	if (element_point_ranges_selection&&function)
 	{
-		if (CALLBACK_LIST_ADD_CALLBACK(Element_point_ranges_selection_change)(
+		if (CMISS_CALLBACK_LIST_ADD_CALLBACK(Element_point_ranges_selection_change)(
 			element_point_ranges_selection->change_callback_list,function,user_data))
 		{
 			return_code=1;
@@ -257,7 +257,7 @@ struct Element_point_ranges_selection_changes and the void *user_data.
 
 int Element_point_ranges_selection_remove_callback(
 	struct Element_point_ranges_selection *element_point_ranges_selection,
-	CALLBACK_FUNCTION(Element_point_ranges_selection_change) *function,
+	CMISS_CALLBACK_FUNCTION(Element_point_ranges_selection_change) *function,
 	void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 27 March 2000
@@ -272,7 +272,7 @@ Removes the callback calling <function> with <user_data> from
 	ENTER(Element_point_ranges_selection_remove_callback);
 	if (element_point_ranges_selection&&function)
 	{
-		if (CALLBACK_LIST_REMOVE_CALLBACK(Element_point_ranges_selection_change)(
+		if (CMISS_CALLBACK_LIST_REMOVE_CALLBACK(Element_point_ranges_selection_change)(
 			element_point_ranges_selection->change_callback_list,function,user_data))
 		{
 			return_code=1;

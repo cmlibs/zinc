@@ -237,4 +237,60 @@ LAST MODIFIED : 28 December 1995
 DESCRIPTION :
 ???DB.  Is this needed ?
 ==============================================================================*/
+
+void select_line(struct Texture_window *tw);
+/*******************************************************************************
+LAST MODIFIED : 30 August 1996
+
+DESCRIPTION :
+Here the 1D line texture structure is invoked - if no line is currently being
+edited (edit_line.index = 0) the first point is selected, and a line is drawn to
+the current node cursor position. If a line is being edited then the second
+point is recorded, the curve is complete and stored in the volume_texturedata
+structure. edit_curve.index is reset to zero.
+==============================================================================*/
+
+void select_blob(struct Texture_window *tw);
+/*******************************************************************************
+LAST MODIFIED : 30 August 1996
+
+DESCRIPTION :
+Here the 1D blob texture structure is invoked - if no line is currently being
+edited (edit_line.index = 0) the first point is selected, and a line is drawn to
+the current node cursor position. If a line is being edited then the second
+point is recorded, the curve is complete and stored in the volume_texture data
+structure. edit_curve.index is reset to zero.
+==============================================================================*/
+
+void select_curve(struct Texture_window *tw,int next);
+/*******************************************************************************
+LAST MODIFIED : 30 August 1996
+
+DESCRIPTION :
+If next = 0, this just updates the appropriate point, otherwise it stores it and
+if index = 3 the line is complete and it is stored in the list. The points are
+p1,p2 and the slope control points p3,p4.
+==============================================================================*/
+
+void deselect_curve(struct Texture_window *tw);
+/*******************************************************************************
+LAST MODIFIED : 30 August 1996
+
+DESCRIPTION :
+Two points are selected and the coordinates stored in edit_line.  After two
+deselect operations have been performed, the list is searched for the line
+segment and it is removed.
+==============================================================================*/
+
+void select_soft(struct Texture_window *tw);
+/*******************************************************************************
+LAST MODIFIED : 30 August 1996
+
+DESCRIPTION :
+Here the 1D soft texture structure is invoked - if no line is currently being
+edited (edit_line.index = 0) the first point is selected, and a line is drawn to
+the current node cursor position. If a line is being edited then the second
+point is recorded, the curve is complete and stored in the volume_texture data
+structure. edit_curve.index is reset to zero.
+==============================================================================*/
 #endif /* !defined (VOLUME_TEXTURE_EDITOR_H) */

@@ -16,7 +16,9 @@ Management routines for the comfile window.
 #endif /* defined (MOTIF) */
 #include "general/debug.h"
 #include "comfile/comfile_window.h"
+#if defined (MOTIF)
 #include "comfile/comfile_window.uidh"
+#endif /* defined (MOTIF) */
 #include "command/command.h"
 #include "general/indexed_list_private.h"
 #include "general/manager_private.h"
@@ -875,59 +877,6 @@ Up to the calling routine to deallocate the returned string.
 
 	return (return_name);
 } /* Comfile_window_manager_make_unique_name */
-
-#if defined (MOTIF)
-int execute_comfile(char *file_name,struct Execute_command *execute_command)
-/******************************************************************************
-LAST MODIFIED : 5 November 1997
-
-DESCRIPTION :
-Opens, executes and then closes a com file.  No window is created.
-=============================================================================*/
-{
-	char *command_string;
-	FILE *comfile;
-	int return_code;
-
-	ENTER(execute_comfile);
-	if (file_name)
-	{
-		if (execute_command)
-		{
-			if (comfile=fopen(file_name,"r"))
-			{
-				fscanf(comfile," ");
-				while (!feof(comfile)&&(read_string(comfile,"[^\n]",&command_string)))
-				{
-					Execute_command_execute_string(execute_command, command_string);
-					DEALLOCATE(command_string);
-					fscanf(comfile," ");
-				}
-				fclose(comfile);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"Could not open: %s",file_name);
-				return_code=1;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"execute_comfile.  "
-				"Invalid execute command");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"execute_comfile.  Missing file name");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* execute_comfile */
-#endif /* defined (MOTIF) */
 
 #if defined (MOTIF)
 int open_comfile(struct Parse_state *state,void *dummy_to_be_modified,

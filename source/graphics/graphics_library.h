@@ -35,7 +35,7 @@ Functions and structures for interfacing with the graphics library.
 Global types
 ------------
 */
-/*???DB.  I don't think that this should be here */
+
 typedef float gtMatrix[4][4];
 
 /*
@@ -269,4 +269,18 @@ Set the window to which rendering will appear.
 ==============================================================================*/
 #endif
 #endif
+
+#if defined (OPENGL_API)
+int query_gl_extension(char *extName);
+/*******************************************************************************
+LAST MODIFIED : 9 September 1998
+
+DESCRIPTION :
+Search for extName in the GL extensions string. Use of strstr() is not sufficient
+because extension names can be prefixes of other extension names. Could use
+strtok() but the constant string returned by glGetString might be in read-only
+memory.
+???SAB.  Taken directly from the insight book on OpenGL Extensions
+==============================================================================*/
+#endif /* defined (OPENGL_API) */
 #endif

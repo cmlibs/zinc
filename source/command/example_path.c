@@ -53,6 +53,7 @@ returns a string for it.  This too must be DEALLOCATED by the calling function.
 
 	if (example_path && directory_name)
 	{
+#if defined (UNIX)
 		if (ALLOCATE(filename, char, strlen(example_path) + 
 			strlen(directory_name) +50))
 		{
@@ -197,7 +198,11 @@ returns a string for it.  This too must be DEALLOCATED by the calling function.
 			display_message(ERROR_MESSAGE,"resolve_example_path. Unable to allocate program string");
 			return_string = (char *)NULL;
 		}
-		
+#else /* defined (UNIX) */
+		display_message(ERROR_MESSAGE,"resolve_example_path.  "
+			"Not implemented yet.");
+		return_string = (char *)NULL;		
+#endif /* defined (UNIX) */
 	}
 	else
 	{

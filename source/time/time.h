@@ -6,8 +6,8 @@ LAST MODIFIED : 28 December 1999
 DESCRIPTION :
 This provides an object which supplies a concept of time to Cmgui
 ==============================================================================*/
-#if !defined (TIME_H)
-#define TIME_H
+#if !defined (TIME_TIME_H) /* Distinguish general/time.h and time/time.h */
+#define TIME_TIME_H
 
 #include "general/object.h"
 #include "time/time_keeper.h"
@@ -129,4 +129,4 @@ LAST MODIFIED : 29 September 1998
 DESCRIPTION :
 Destroys a Time_object object
 ==============================================================================*/
-#endif /* !defined (TIME_H) */
+#endif /* !defined (TIME_TIME_H) */

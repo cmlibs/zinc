@@ -1989,57 +1989,7 @@ playing in here
 } /* X3dThreeDDrawingGetGLXContex */
 #endif /* defined (OPENGL_API) */
 
-#if defined (OPENGL_API)
-int query_gl_extension(char *extName)
-/*******************************************************************************
-LAST MODIFIED : 9 September 1998
-
-DESCRIPTION :
-Search for extName in the GL extensions string. Use of strstr() is not sufficient
-because extension names can be prefixes of other extension names. Could use
-strtok() but the constant string returned by glGetString might be in read-only
-memory.
-???SAB.  Taken directly from the insight book on OpenGL Extensions
-==============================================================================*/
-{
-	char *end,*p;
-	int extNameLen, n;
-	int return_code;
-
-	/* check arguments */
-	if (extName)
-	{
-		extNameLen=strlen(extName);
-		p=(char *)glGetString(GL_EXTENSIONS);
-		if (NULL==p)
-		{
-			return_code=0;
-		}
-		else
-		{
-			end=p+strlen(p);
-			return_code = 0;
-			while (p<end)
-			{
-				n=strcspn(p," ");
-				if ((extNameLen==n)&&(strncmp(extName,p,n)==0)) 
-				{
-					return_code=1;
-				}
-				p += (n+1);
-			}
-		}
-	}
-	else
-	{
-		return_code=0;
-	}
-
-	return (return_code);
-} /* query_extension */
-#endif /* defined (OPENGL_API) */
-
-#if defined (OPENGL_API)
+#if defined (OPENGL_API) && defined (MOTIF)
 int query_glx_extension(char *extName, Display *display, int screen)
 /*******************************************************************************
 LAST MODIFIED : 14 September 1998
@@ -2086,7 +2036,5 @@ memory.
 	}
 
 	return (return_code);
-} /* query_extension */
-#endif /* defined (OPENGL_API) */
-
-
+} /* query_glx_extension */
+#endif /* defined (OPENGL_API) && defined (MOTIF) */

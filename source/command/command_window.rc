@@ -1,22 +1,39 @@
-//???DB.  #include "command\comman~1.h"
-#include "windows.h"
-//???DB.  #include "ver.h"
+#include <windows.h>
 
+#define IDC_COMMAND_HISTORY       10000
+#define IDC_COMMAND_ENTRY         10001
+#define IDC_COMMAND_OUTPUT_PANE  10002
 
+#define IDM_NEW                   50000
+#define IDM_OPEN                  50001
+#define IDM_SAVE                  50002
+#define IDM_SAVEAS                50003
+#define IDM_PRINT                 50004
+#define IDM_PRINTSETUP            50005
+#define IDM_EXIT                  50006
+#define IDM_UNDO                  50007
+#define IDM_CUT                   50008
+#define IDM_COPY                  50009
+#define IDM_PASTE                 50010
+#define IDM_LINK                  50011
+#define IDM_LINKS                 50012
+#define IDM_HELPTOPICS            50013
+#define IDM_ABOUT                 50014
+
+#if defined RC_INVOKED
 /////////////////////////////////////////////////////////////////////////////
 //
 // Icon
 //
 
-//???DB.  Command_window ICON "../cmgui.ico"
-//???DB.  Command_window_small ICON "../cmgui_s.ico"
+Command_window_icon ICON "command/icon1.ico"
+Command_window_icon_small ICON "command/icon1.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // Menu
 //
 
-/*???DB.
 Command_window_menu MENU 
 {
  POPUP "&File"
@@ -52,14 +69,11 @@ Command_window_menu MENU
  }
 
 }
-*/
-
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // Accelerator
 //
-
 
 
 
@@ -75,19 +89,16 @@ Command_window_menu MENU
 // Data
 //
 
-Command_window DIALOG 19, 33, 218, 229
+Command_window DIALOG 19, 33, 250, 235
 STYLE WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX
-CLASS "Command_window"
+CLASS Command_window
 CAPTION "Command Window"
-/*???DB.
 MENU Command_window_menu
-FONT 8, "MS Sans Serif"
+FONT 12, "MS Sans Serif"
 {
- EDITTEXT IDC_command_entry, 0, 100, 218, 12, WS_BORDER | WS_TABSTOP
- LISTBOX IDC_command_history, 0, 0, 218, 100, LBS_NOTIFY | WS_BORDER | LBS_NOINTEGRALHEIGHT | WS_BORDER | WS_VSCROLL | WS_HSCROLL | WS_TABSTOP
- EDITTEXT IDC_output_pane, 0, 112, 218, 117, ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | NOT WS_TABSTOP | WS_BORDER | WS_VSCROLL | WS_HSCROLL
+ LISTBOX  IDC_COMMAND_HISTORY, 0, 0, 250, 100, LBS_NOTIFY | WS_BORDER | LBS_NOINTEGRALHEIGHT | WS_BORDER | WS_VSCROLL | WS_HSCROLL
+ EDITTEXT IDC_COMMAND_ENTRY, 0, 100, 250, 18, WS_BORDER 
+ EDITTEXT IDC_COMMAND_OUTPUT_PANE, 0, 118, 250, 117, ES_MULTILINE | ES_AUTOVSCROLL | NOT WS_TABSTOP | WS_BORDER | WS_VSCROLL | WS_HSCROLL
 }
-*/
-{
- PUSHBUTTON "Close",1,50,50,50,50
-}
+#endif /* defined RC_INVOKED */
+

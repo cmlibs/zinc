@@ -11,6 +11,9 @@ Functions for opening and closing the user interface.
 /*???debug */
 #include <stdio.h>
 #include <ctype.h>
+#if defined (CONSOLE_USER_INTERFACE)
+#include <unistd.h>
+#endif /* defined (CONSOLE_USER_INTERFACE) */
 #if defined (MOTIF)
 #include <X11/Intrinsic.h>
 #include <X11/Shell.h>
@@ -24,17 +27,19 @@ Functions for opening and closing the user interface.
 #endif /* defined (MOTIF) */
 #include "general/debug.h"
 #include "general/myio.h"
-#if !defined (WINDOWS_DEV_FLAG)
+#if defined (MOTIF)
 #if defined (EXT_INPUT)
 #include "io_devices/input_module.h"
 #endif /* defined (EXT_INPUT) */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (MOTIF) */
 #if defined (LINK_CMISS)
 #include "link/cmiss.h"
 #endif /* defined (LINK_CMISS) */
-#if ! defined (USE_XTAPP_CONTEXT)
+#if defined (MOTIF)
+#if !defined (USE_XTAPP_CONTEXT)
 #include "user_interface/call_work_procedures.h"
-#endif /* ! defined (USE_XTAPP_CONTEXT) */
+#endif /* !defined (USE_XTAPP_CONTEXT) */
+#endif /* defined (MOTIF) */
 #include "user_interface/event_dispatcher.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -58,7 +63,7 @@ DESCRIPTION :
 	/* If non-zero forces OpenGL to select a particular visual ID */
 	int specified_visual_id;
 #endif /* defined (OPENGL_API) */
-#if defined (MOTIF)
+#if defined (MOTIF) /* switch (USER_INTERFACE) */
 	char *application_name,**argv,*class_name;
 	Cursor busy_cursor;
 	Display *display;
@@ -80,13 +85,15 @@ DESCRIPTION :
 	struct Event_dispatcher_idle_callback *special_idle_x_callback;
 	struct Event_dispatcher_timeout_callback *timeout_x_callback;
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
-#endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
 	HINSTANCE instance;
 	HWND main_window;
 	int main_window_state,widget_spacing;
 	LPSTR command_line;
-#endif /* defined (WINDOWS) */
+#elif defined (CONSOLE_USER_INTERFACE) /* switch (USER_INTERFACE) */
+	char *application_name,**argv,*class_name;
+	int *argc_address;
+#endif /* switch (USER_INTERFACE) */
 	struct Event_dispatcher *event_dispatcher;
 	struct Machine_information *local_machine_info;
 	struct Shell_list_item *shell_list;
@@ -789,6 +796,9 @@ Switchs from the default cursor to the busy cursor for all shells except the
 #endif /* defined (MOTIF) */
 
 	ENTER(busy_cursor_on);
+#if !defined (MOTIF)
+	USE_PARAMETER(user_interface);
+#endif /* !defined (MOTIF) */
 #if defined (MOTIF)
 	if (user_interface&&(user_interface->busy_cursor))
 	{
@@ -845,9 +855,9 @@ Switchs from the default cursor to the busy cursor for all shells except the
 		return_code=0;
 	}
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	return_code=0;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	LEAVE;
 
 	return (return_code);
@@ -879,6 +889,9 @@ Switchs from the busy cursor to the default cursor for all shells except the
 #endif /* defined (MOTIF) */
 
 	ENTER(busy_cursor_off);
+#if !defined (MOTIF)
+	USE_PARAMETER(user_interface);
+#endif /* !defined (MOTIF) */
 #if defined (MOTIF)
 	if (user_interface&&(user_interface->busy_cursor))
 	{
@@ -970,9 +983,9 @@ Switchs from the busy cursor to the default cursor for all shells except the
 		return_code=0;
 	}
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	return_code=0;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	LEAVE;
 
 	return (return_code);
@@ -987,9 +1000,15 @@ Visual *default_visual;
 #endif /* defined (TEST_TRUE_COLOUR_VISUAL) */
 #endif /* defined (MOTIF) */
 
+#if !defined (WIN32_USER_INTERFACE)
 struct User_interface *CREATE(User_interface)(int *argc_address, char **argv, 
 	struct Event_dispatcher *event_dispatcher, char *class_name, 
 	char *application_name)
+#else /* !defined (WIN32_USER_INTERFACE) */
+struct User_interface *CREATE(User_interface)(HINSTANCE current_instance,
+	HINSTANCE previous_instance, LPSTR command_line,int initial_main_window_state,
+	struct Event_dispatcher *event_dispatcher)
+#endif /* !defined (WIN32_USER_INTERFACE) */
 /*******************************************************************************
 LAST MODIFIED : 28 March 2002
 
@@ -1127,7 +1146,7 @@ Open the <user_interface>.
 	/* check arguments */
 	if (ALLOCATE(user_interface, struct User_interface, 1))
 	{
-#if defined (MOTIF)
+#if defined (MOTIF) /* switch (USER_INTERFACE) */
 		user_interface->application_context=(XtAppContext)NULL;
 		user_interface->application_name=application_name;
 		user_interface->application_shell=(Widget)NULL;
@@ -1145,13 +1164,18 @@ Open the <user_interface>.
 		user_interface->timeout_x_callback = 
 			(struct Event_dispatcher_timeout_callback *)NULL;
 #endif /* ! defined (USE_XTAPP_CONTEXT) */
-#endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#elif defined (WIN32_USER_INTERFACE) /* switch (USER_INTERFACE) */
 		user_interface->instance=current_instance;
 		user_interface->main_window=(HWND)NULL;
 		user_interface->main_window_state=initial_main_window_state;
 		user_interface->command_line=command_line;
-#endif /* defined (WINDOWS) */
+#elif defined (CONSOLE_USER_INTERFACE) /* switch (USER_INTERFACE) */
+		user_interface->argc_address= argc_address;
+		user_interface->argv=argv;
+		user_interface->application_name=application_name;
+		user_interface->class_name=class_name;
+#endif /* switch (USER_INTERFACE) */
+
 #if defined (OPENGL_API)
 		user_interface->specified_visual_id = 0;
 #endif /* defined (OPENGL_API) */
@@ -1383,9 +1407,9 @@ Open the <user_interface>.
 			user_interface = (struct User_interface *)NULL;
 		}
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		user_interface->widget_spacing=5;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	}
 	else
 	{
@@ -1417,6 +1441,7 @@ DESCRIPTION :
 			DESTROY(CMISS_connection)(&CMISS);
 		}
 #endif /* defined (LINK_CMISS) */
+#if defined (MOTIF)
 		if (user_interface->property_notify_callback && user_interface->property_notify_widget)
 		{
 			set_property_notify_callback(user_interface, (Property_notify_callback)NULL,
@@ -1426,7 +1451,6 @@ DESCRIPTION :
 		{
 			DESTROY(Machine_information)(&(user_interface->local_machine_info));
 		}
-#if defined (MOTIF)
 		if (user_interface->normal_fontlist)
 		{
 			XmFontListFree(user_interface->normal_fontlist);
@@ -1737,6 +1761,34 @@ Returns the application shell widget
 } /* User_interface_get_widget_spacing */
 #endif /* defined (MOTIF) */
 
+#if defined (WIN32_USER_INTERFACE)
+HINSTANCE User_interface_get_instance(struct User_interface *user_interface)
+/*******************************************************************************
+LAST MODIFIED : 20 June 2002
+
+DESCRIPTION :
+Returns the application shell widget
+==============================================================================*/
+{
+	HINSTANCE instance;
+
+	ENTER(User_interface_get_instance);
+	if (user_interface)
+	{
+		instance = user_interface->instance;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"User_interface_get_instance.  "
+			"Invalid argument");
+		instance = 0;
+	}
+	LEAVE;
+
+	return (instance);
+} /* User_interface_get_instance */
+#endif /* defined (MOTIF) */
+
 #if defined (OPENGL_API)
 int User_interface_set_specified_visual_id(struct User_interface *user_interface,
 	int specified_visual_id)
@@ -1845,7 +1897,6 @@ name.
 	return (return_code);
 } /* User_interface_get_local_machine_name */
 
-#if defined (MOTIF)
 struct Event_dispatcher *User_interface_get_event_dispatcher(
 	struct User_interface *user_interface)
 /*******************************************************************************
@@ -1872,7 +1923,6 @@ Returns the application shell widget
 
 	return (event_dispatcher);
 } /* User_interface_get_event_dispatcher */
-#endif /* defined (MOTIF) */
 
 int application_main_step(struct User_interface *user_interface)
 /*******************************************************************************
@@ -1921,9 +1971,9 @@ for a response from a modal dialog).
 } /* application_main_step */
 
 int
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	WINAPI
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	application_main_loop(struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 23 January 2002
@@ -1934,9 +1984,9 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 	MSG message;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 	ENTER(application_main_loop);
 	/* check arguments */
@@ -1945,7 +1995,7 @@ DESCRIPTION :
 #if defined (MOTIF)
 		return_code=1;
 #endif /* defined (MOTIF) */
-#if defined (WINDOWS)
+#if defined (WIN32_USER_INTERFACE)
 		while (TRUE==GetMessage(&message,NULL,0,0))
 		{
 #if defined (OLD_CODE)
@@ -1974,7 +2024,7 @@ DESCRIPTION :
 #endif /* defined (OLD_CODE) */
 		}
 		return_code=message.wParam;
-#endif /* defined (WINDOWS) */
+#endif /* defined (WIN32_USER_INTERFACE) */
 	}
 	else
 	{

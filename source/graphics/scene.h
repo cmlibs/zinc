@@ -200,7 +200,7 @@ Contains all information necessary for an input callback from the scene.
 	void *data;
 }; /* struct Scene_input_callback */
 
-DECLARE_CALLBACK_TYPES(Scene_object_transformation, struct Scene_object *, \
+DECLARE_CMISS_CALLBACK_TYPES(Scene_object_transformation, struct Scene_object *, \
 	gtMatrix *);
 
 struct Scene_get_data_range_for_spectrum_data
@@ -267,7 +267,7 @@ Sets the visibility of <scene_object>.
 ==============================================================================*/
 
 int Scene_object_add_transformation_callback(struct Scene_object *scene_object,
-	CALLBACK_FUNCTION(Scene_object_transformation) *function, void *user_data);
+	CMISS_CALLBACK_FUNCTION(Scene_object_transformation) *function, void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 4 December 2001
 
@@ -279,7 +279,7 @@ given void *user_data.
 
 int Scene_object_remove_transformation_callback(
 	struct Scene_object *scene_object,
-	CALLBACK_FUNCTION(Scene_object_transformation) *function, void *user_data);
+	CMISS_CALLBACK_FUNCTION(Scene_object_transformation) *function, void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 4 December 2001
 
