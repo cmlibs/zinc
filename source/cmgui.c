@@ -1416,6 +1416,7 @@ Main program for the CMISS Graphical User Interface
 									switch (arg[3])
 									{
 										case 'a':
+										case '\0':
 										{
 											/* example id */
 											i++;
@@ -1441,7 +1442,6 @@ Main program for the CMISS Graphical User Interface
 												return_code=0;
 											}
 										} break;
-										case '\0':
 										case 'e':
 										{
 											/* execute */
@@ -1468,32 +1468,6 @@ Main program for the CMISS Graphical User Interface
 												return_code=0;
 											}
 										} break;
-									}
-								} break;
-								case '\0':
-								{
-									/* e goes to execute */
-									i++;
-									if (i<argc)
-									{
-										if (execute_string)
-										{
-											DEALLOCATE(execute_string);
-										}
-										if (ALLOCATE(execute_string,char,strlen(argv[i])+1))
-										{
-											strcpy(execute_string,argv[i]);
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"main.  Insufficient memory for example_id");
-											return_code=0;
-										}
-									}
-									else
-									{
-										return_code=0;
 									}
 								} break;
 							}
