@@ -1798,7 +1798,7 @@ Main program for the CMISS Graphical User Interface
 						"    <COMMAND_FILE_NAME>                     execute the command file\n");
 					return_code=0;
 				}
-				if(!batch_mode)
+				if(!no_display)
 				{
 					/* close the user interface */
 					close_user_interface(&user_interface);
