@@ -1095,10 +1095,7 @@ $(OBJECT_PATH)/version.o.h : $(OBJS) cmgui.Makefile
 	fi	
 	echo '/* This is a generated file.  Do not edit.  Edit cmgui.c or cmgui.imake instead */' > $(OBJECT_PATH)/version.o.h;	  
 	date > date.h
-	sed 's/"//;s/./#define VERSION "CMISS(cmgui) version 001.001.018  &/;s/.$$/&\\nCopyright 1996-2004, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.o.h
-#	sed 's/"//;s/./#define VERSION "CMISS(cmgui) version 001.001.018  &/;s/.$$/&\\nCopyright 1996-2002, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.o.h
-#	sed 's/"//;s/./"CMISS(cmgui) version 001.001.018  &/;s/.$$/&\\nCopyright 1996-1998, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.o.h
-# 	sed 's/./#define VERSION "CMISS(cmgui) version 001.001.018  &/;s/.$$/&\\nCopyright 1996-1998, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.o.h
+	sed 's/"//;s/./#define VERSION "CMISS(cmgui) version 001.002.000  &/;s/.$$/&\\nCopyright 1996-2004, Auckland UniServices Ltd."/' < date.h >> $(OBJECT_PATH)/version.o.h
 
 $(MAIN_OBJ) : $(MAIN_SRC) $(OBJECT_PATH)/version.o.h $(INTERPRETER_LIB)
 	@if [ -f $*.c ]; then \
