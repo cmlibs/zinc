@@ -74,6 +74,13 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_throw_away_weakest.h"
 #include "image_processing/computed_field_wavelet_decomp.h"
 #include "image_processing/computed_field_wavelet_reconstruct.h"
+#include "image_processing/computed_field_wiener_filter.h"
+#include "image_processing/computed_field_binomial_filter.h"
+#include "image_processing/computed_field_heat_equation.h"
+#include "image_processing/computed_field_local_thresholding.h"
+#include "image_processing/computed_field_shock_filter.h"
+#include "image_processing/computed_field_image_tv_restoration.h"
+
 
 #include "computed_field/computed_field_integration.h"
 #include "computed_field/computed_field_lookup.h"
@@ -24280,6 +24287,24 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_wavelet_reconstruct(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->graphics_buffer_package);
+				Computed_field_register_types_wiener_filter(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->graphics_buffer_package);
+				Computed_field_register_types_heat_equation(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->graphics_buffer_package);
+				Computed_field_register_types_image_tv_restoration(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->graphics_buffer_package);
+				Computed_field_register_types_shock_filter(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->graphics_buffer_package);
+				Computed_field_register_types_binomial_filter(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->graphics_buffer_package);
+				Computed_field_register_types_local_thresholding(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 			}

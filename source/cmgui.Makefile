@@ -859,6 +859,12 @@ IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_throw_away_weakest.c \
 	image_processing/computed_field_wavelet_decomp.c \
 	image_processing/computed_field_wavelet_reconstruct.c \
+	image_processing/computed_field_wiener_filter.c \
+	image_processing/computed_field_shock_filter.c \
+	image_processing/computed_field_local_thresholding.c \
+	image_processing/computed_field_image_tv_restoration.c \
+	image_processing/computed_field_binomial_filter.c \
+	image_processing/computed_field_heat_equation.c \
 	image_processing/image_cache.c
 INTERACTION_SRCS = \
 	interaction/interaction_graphics.c \
