@@ -75,6 +75,7 @@ The mapping window object.
 ==============================================================================*/
 {
 #if defined (MOTIF)
+	struct Scene_viewer *scene_viewer;
 	Widget activation,window;
 	Widget menu;
 	Widget map_button;
@@ -90,7 +91,12 @@ The mapping window object.
 	Widget page_button;
 	Widget file_button;
 	struct Mapping_file_menu file_menu;
-	Widget projection_choice;
+	Widget projection_choice; /* the menu*/
+	Widget projection_cylinder; /* choice in the above menu */	
+	Widget projection_hammer; /* choice in the above menu */	
+	Widget projection_polar; /* choice in the above menu */	
+	Widget projection_patch; /* choice in the above menu */	
+	Widget projection_3d; /* choice in the above menu */
 	Widget region_choice;
 	Widget region_pull_down_menu;
 #endif /* defined (MOTIF) */
@@ -104,7 +110,9 @@ The mapping window object.
 #endif /* defined (MOTIF) */
 	struct Map *map;
 #if defined (MOTIF)
-	Widget map_drawing_area;
+	Widget map_drawing_area_2d;
+	Widget mapping_area;
+	Widget mapping_area_2d,mapping_area_3d;
 #endif /* defined (MOTIF) */
 	struct Drawing_2d *map_drawing;
 #if defined (MOTIF)
@@ -211,12 +219,11 @@ properties.  Then the mapping window is opened.
 
 int update_mapping_drawing_area(struct Mapping_window *mapping,int recalculate);
 /*******************************************************************************
-LAST MODIFIED : 24 May 1997
+LAST MODIFIED : 30 May 2000
 
 DESCRIPTION :
-This function for redrawing the <mapping> drawing area.  If <recalculate> is >0
-then the colours for the pixels are recalculated.  If <recalculate> is >1 then
-the interpolation functions are also recalculated.
+Calls draw_map_3d or update_mapping_drawing_area_2d depending upon
+<mapping> ->map->projection_type
 ==============================================================================*/
 
 int update_mapping_colour_or_auxili(struct Mapping_window *mapping);

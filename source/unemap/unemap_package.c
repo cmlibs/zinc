@@ -406,7 +406,7 @@ DESCRIPTION:
 Create a Unemap package, and fill in the managers.
 The fields are filed in with set_unemap_package_fields()
 ==============================================================================*/
-{
+{	
 	struct Unemap_package *package;
 
 	ENTER(CREATE(Unemap_package));
@@ -460,12 +460,43 @@ The fields are filed in with set_unemap_package_fields()
 			package->background_colour=create_Colour(0,0,0);
 			package->light=(struct Light *)NULL;			
 			package->light_model=(struct Light_model *)NULL;			
-			package->scene=(struct Scene *)NULL;		
+			package->scene=(struct Scene *)NULL;
+			package->scene_viewer=(struct Scene_viewer *)NULL;			
 			package->user_interface=(struct User_interface *)NULL;		
 			package->computed_field_package=(struct Computed_field_package *)NULL;
 			package->time_keeper = (struct Time_keeper *)NULL;	
-			package->map_graphical_material=(struct Graphical_material *)NULL;
-			package->electrode_graphical_material=(struct Graphical_material *)NULL;
+			package->map_graphical_material=(struct Graphical_material *)NULL;								
+			/* create an electrode material*/
+			if (package->electrode_graphical_material=CREATE(Graphical_material)(
+				"electrode"))
+			{									
+				if(package->electrode_colour =create_Colour(1,0,0))
+				{
+					Graphical_material_set_ambient(package->electrode_graphical_material,
+						package->electrode_colour);
+					Graphical_material_set_diffuse(package->electrode_graphical_material,
+						package->electrode_colour);				
+					ACCESS(Graphical_material)(package->electrode_graphical_material);
+					if (!ADD_OBJECT_TO_MANAGER(Graphical_material)(package->electrode_graphical_material,
+						graphical_material_manager))
+					{
+						DEACCESS(Graphical_material)(&package->electrode_graphical_material);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"CREATE(Unemap_package).  failed to create electrode_colour");
+					package->electrode_graphical_material=(struct Graphical_material *)NULL;
+					package->electrode_colour=(struct Colour *)NULL;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"CREATE(Unemap_package).  failed to createelectrode_graphical_material");
+				package->electrode_graphical_material=(struct Graphical_material *)NULL;
+			}
 			package->graphics_window_manager=graphics_window_manager;
 			package->light_manager=light_manager;
 			package->texture_manager=texture_manager;
@@ -518,8 +549,9 @@ to NULL.
 		for(count=0;count<package->number_of_map_electrode_position_fields;count++)
 		{
 			DEACCESS(FE_field)(&(package->map_electrode_position_fields[count]));		
-		}
-		destroy_Colour(&package->background_colour);
+		}	
+		destroy_Colour(&package->background_colour);		
+		destroy_Colour(&package->electrode_colour);		
 		package->number_of_electrode_position_fields=0;	
 		package->number_of_map_electrode_position_fields=0;
 		DEACCESS(FE_field)(&(package->device_name_field));
@@ -547,8 +579,10 @@ to NULL.
 		package->number_of_maps=0;
 		DEACCESS(Graphics_window )(&package->window);		
 		DEACCESS(Light)(&package->light);
-		DEACCESS(Light_model)(&package->light_model);		
-		DEACCESS(Scene)(&package->scene);		
+		DEACCESS(Light_model)(&package->light_model);	
+		/* creation/destruction handled elsewhere. No access count to access*/
+		package->scene_viewer=(struct Scene_viewer *)NULL;
+		DEACCESS(Scene)(&package->scene);				
 		DEACCESS(Graphical_material)(&package->map_graphical_material);	
 		DEACCESS(Graphical_material)(&package->electrode_graphical_material);	
 		DEACCESS(Time_keeper)(&package->time_keeper);	
@@ -590,20 +624,31 @@ gets the viewed_scene flag of the unemap package.
 	return(viewed_scene);
 }/* get_unemap_package_viewed_scene */
 
-int set_unemap_package_viewed_scene(struct Unemap_package *package)
+int set_unemap_package_viewed_scene(struct Unemap_package *package,
+	int scene_viewed)
 /*******************************************************************************
-LAST MODIFIED : 16 September 1999
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
-sets the viewed_scene flag of the unemap package to 1.
+sets the viewed_scene flag of the unemap <package> to 1 if <scene_viewed> >0,
+0 if <scene_viewed> = 0.
 ==============================================================================*/
 {
 	int return_code;
 
 	ENTER(set_unemap_package_viewed_scene)
-	if(package)
+	if(package&&(scene_viewed>-1))
 	{
-		package->viewed_scene=1;
+		if(scene_viewed)
+		{
+			/* scene has been viewed */
+			package->viewed_scene=1;
+		}
+		else
+		{
+			/* scene hasn't been viewed */
+			package->viewed_scene=0;
+		}
 	}
 	else
 	{
@@ -3587,6 +3632,58 @@ Sets the Scene of the unemap package.
 	return (return_code);
 } /* set_unemap_package_scene */
 
+struct Scene_viewer *get_unemap_package_scene_viewer(
+	struct Unemap_package *package)
+/*******************************************************************************
+LAST MODIFIED :  30 May 2000
+
+DESCRIPTION :
+gets the Scene_viewer of the unemap package.
+==============================================================================*/
+{
+	struct Scene_viewer *scene_viewer;
+	ENTER(get_unemap_package_scene_viewer);
+	if(package)
+	{
+		scene_viewer=package->scene_viewer;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_unemap_package_scene_viewer."
+				" invalid arguments");
+		scene_viewer = (struct Scene_viewer *)NULL;
+	}
+	LEAVE;
+	return (scene_viewer);
+} /* get_unemap_package_scene_viewer */
+
+int set_unemap_package_scene_viewer(struct Unemap_package *package,
+	struct Scene_viewer *scene_viewer)
+/*******************************************************************************
+LAST MODIFIED : 30 May 2000
+
+DESCRIPTION :
+Sets the Scene_viewer of the unemap package.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_unemap_package_scene_viewer);
+	if(package)
+	{
+		return_code =1;	
+		package->scene_viewer=scene_viewer;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_unemap_package_scene_viewer."
+				" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_unemap_package_scene_viewer */
+
 struct User_interface *get_unemap_package_user_interface(
 	struct Unemap_package *package)
 /*******************************************************************************
@@ -3716,34 +3813,6 @@ gets the electrode_graphical_material of the unemap package.
 	LEAVE;
 	return (electrode_graphical_material);
 } /* get_unemap_package_electrode_graphical_material */
-
-int set_unemap_package_electrode_graphical_material(struct Unemap_package *package,
-	struct Graphical_material *electrode_graphical_material)
-/*******************************************************************************
-LAST MODIFIED : 26 May 2000
-
-DESCRIPTION :
-Sets the electrode_graphical_material of the unemap package.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(set_unemap_package_electrode_graphical_material);
-	if(package)
-	{
-		return_code =1;		
-		REACCESS(Graphical_material)(&(package->electrode_graphical_material),
-			electrode_graphical_material);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_unemap_package_electrode_graphical_material."
-				" invalid arguments");
-		return_code =0;
-	}
-	LEAVE;
-	return (return_code);
-} /* set_unemap_package_electrode_graphical_material */
 
 struct Computed_field_package *get_unemap_package_computed_field_package(
 	struct Unemap_package *package)
@@ -3916,15 +3985,21 @@ Creates the unemap_package scene, if isn't already present.
 				/* ACCESS so can never be destroyed */
 				/*???RC.  Should be able to change: eg. gfx set default scene NAME */
 
-				ACCESS(Scene)(map_scene);
-				if (!ADD_OBJECT_TO_MANAGER(Scene)(map_scene,
+
+				if (ADD_OBJECT_TO_MANAGER(Scene)(map_scene,
 					package->scene_manager))
 				{
-					DEACCESS(Scene)(&(map_scene));
+					Scene_enable_time_behaviour(map_scene,package->time_keeper);
+					set_unemap_package_scene(package,map_scene);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"unemap_package_make_map_spectrum_and_scene."
+						" couldn't add map to scene");
+					return_code =0;
 				}
 			}			
-			Scene_enable_time_behaviour(map_scene,package->time_keeper);
-			set_unemap_package_scene(package,map_scene);
+		
 		}
 	}
 	else

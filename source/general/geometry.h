@@ -60,7 +60,7 @@ DESCRIPTION :
 
 enum Projection_type
 /*******************************************************************************
-LAST MODIFIED : 25 October 1995
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 ???DB.  There will be different types of CYLINDRICAL, depending on where the
@@ -69,7 +69,8 @@ cut is and if the projection should overlap (3/2 times round).
 {
 	CYLINDRICAL_PROJECTION,
 	HAMMER_PROJECTION,
-	POLAR_PROJECTION
+	POLAR_PROJECTION,
+	THREED_PROJECTION
 }; /* enum Projection_type */
 
 typedef struct

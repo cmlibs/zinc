@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.h
 
-LAST MODIFIED : 25 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -335,7 +335,23 @@ Updates the colour map being used for map.
 
 int draw_map(struct Map *map,int recalculate,struct Drawing_2d *drawing);
 /*******************************************************************************
-LAST MODIFIED : 7 October 1997
+LAST MODIFIED : 31 May 2000
+
+DESCRIPTION:
+Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
+==============================================================================*/
+
+int draw_map_3d(struct Map *map);
+/*******************************************************************************
+LAST MODIFIED : 15 May 2000
+
+DESCRIPTION :
+This function draws the <map> in as a 3D CMGUI scene.
+==============================================================================*/
+
+int draw_map_2d(struct Map *map,int recalculate,struct Drawing_2d *drawing);
+/*******************************************************************************
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 This function draws the <map> in the <drawing>.  If <recalculate> is >0 then the

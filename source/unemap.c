@@ -280,11 +280,9 @@ Main program for unemap
 	struct FE_node_selection *node_selection=(struct FE_node_selection *)NULL;
 	struct FE_node_selection *data_selection=(struct FE_node_selection *)NULL;
 	struct Graphical_material *default_graphical_material=(struct Graphical_material *)NULL;
-	struct Graphical_material *default_selected_material=(struct Graphical_material *)NULL;
-	struct Graphical_material *electrode_material=(struct Graphical_material *)NULL;
+	struct Graphical_material *default_selected_material=(struct Graphical_material *)NULL;	
 	struct GT_object *glyph=(struct GT_object *)NULL;
 	struct Light *default_light=(struct Light *)NULL;
-
 	struct Light_model *default_light_model=(struct Light_model *)NULL;
 	struct LIST(GT_object) *glyph_list=(struct LIST(GT_object) *)NULL;
 	struct MANAGER(Control_curve) *control_curve_manager=
@@ -712,25 +710,7 @@ Main program for unemap
 				{
 					DEACCESS(Graphical_material)(&default_selected_material);
 				}
-			}	
-			/* create an electrode material*/
-			if (electrode_material=CREATE(Graphical_material)(
-				"electrode"))
-			{						
-				colour.red=1.0;
-				colour.green=0.0;
-				colour.blue=0.0;
-
-				Graphical_material_set_ambient(electrode_material,&colour);
-				Graphical_material_set_diffuse(electrode_material,&colour);
-				/* ACCESS so can never be destroyed */
-				ACCESS(Graphical_material)(electrode_material);
-				if (!ADD_OBJECT_TO_MANAGER(Graphical_material)(electrode_material,
-					graphical_material_manager))
-				{
-					DEACCESS(Graphical_material)(&electrode_material);
-				}
-			}						
+			}				
 		}
 		data_manager=CREATE_MANAGER(FE_node)();
 		if ((computed_field_package=CREATE(Computed_field_package)(
@@ -834,7 +814,6 @@ Main program for unemap
 		/* interactive_tools */
 		node_tool=CREATE(Node_tool)(interactive_tool_manager,node_manager,
 			/*data_manager*/0,node_selection,computed_field_package);
-
 		unemap_package=CREATE(Unemap_package)(fe_field_manager,
 			element_group_manager,node_manager,data_group_manager,node_group_manager,
 			fe_basis_manager,element_manager,element_point_ranges_selection,
@@ -843,9 +822,7 @@ Main program for unemap
 			scene_manager,light_model_manager,light_manager,
 			spectrum_manager,graphical_material_manager,data_manager,
 			glyph_list,&no_interpolation_colour);
-		set_unemap_package_map_graphical_material(unemap_package,default_graphical_material);
-		set_unemap_package_electrode_graphical_material(unemap_package,
-			electrode_material);
+		set_unemap_package_map_graphical_material(unemap_package,default_graphical_material);		
 		set_unemap_package_computed_field_package(unemap_package,computed_field_package);
 		set_unemap_package_time_keeper(unemap_package,time_keeper);
 		set_unemap_package_light(unemap_package,default_light);

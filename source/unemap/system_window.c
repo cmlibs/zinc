@@ -698,7 +698,7 @@ Opens the windows associated with the analysis work area.
 			if (system->analysis.window_shell)
 			{
 				/* pop up the analysis window shell */
-				XtPopup(system->analysis.window_shell,XtGrabNone);
+				XtPopup(system->analysis.window_shell,XtGrabNone);			
 				/* ghost the analysis activation button */
 				XtSetSensitive(system->analysis.activation,False);
 				if (system->analysis.trace)
@@ -1271,7 +1271,7 @@ pointer to the created structure if successful and NULL if unsuccessful.
 	/* check arguments */
 	if (user_interface
 #if defined (UNEMAP_USE_NODES)
-		&&unemap_package
+		&&unemap_package		
 #endif /* defined (UNEMAP_USE_NODES) */
 		)
 	{
@@ -1280,12 +1280,12 @@ pointer to the created structure if successful and NULL if unsuccessful.
 		{
 			/* allocate memory */
 			if (ALLOCATE(system,struct System_window,1))
-			{
+			{			
 #if defined (UNEMAP_USE_NODES)
 				system->unemap_package = unemap_package;			
-#else
+#else				
 				system->unemap_package = (struct Unemap_package *)NULL;				
-#endif
+#endif				
 				system->window_shell=shell;
 				system->user_interface=user_interface;
 				system->map_drawing_information=

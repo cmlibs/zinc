@@ -231,7 +231,6 @@ unsuccessful.
 	ENTER(create_Shell_list_item);
 #if defined (DEBUG)
 #if defined (MOTIF)
-/*???debug */
 printf("enter create_Shell_list_item.  shell_address=%p, user_interface=%p, shell=%p\n",
 	shell_address,user_interface,*shell_address);
 #endif /* defined (MOTIF) */
@@ -290,7 +289,6 @@ for the <list_item>.  <*list_item> is set to NULL.
 	ENTER(destroy_Shell_list_item);
 #if defined (DEBUG)
 #if defined (MOTIF)
-/*???debug */
 printf("enter destroy_Shell_list_item.  shell_address=%p, user_interface=%p\n",
 	(*list_item)->shell_address,(*list_item)->user_interface);
 #endif /* defined (MOTIF) */
@@ -342,7 +340,6 @@ and frees the memory for the <list_item>.
 
 	ENTER(destroy_Shell_list_item_from_shell);
 #if defined (DEBUG)
-/*???debug */
 printf("enter destroy_Shell_list_item_from_shell.  shell_address=%p, user_interface=%p\n",
 	shell_address,user_interface);
 #endif /* defined (DEBUG) */
@@ -408,12 +405,6 @@ for the <list_item> and sets <*(list_item->address)> to NULL.
 	ENTER(destroy_window_shell);
 	USE_PARAMETER(widget);
 	USE_PARAMETER(call_data);
-#if defined (DEBUG)
-/*???debug */
-printf("enter destroy_window_shell.  shell_address=%p, user_interface=%p\n",
-	((struct Shell_list_item *)list_item)->shell_address,
-	((struct Shell_list_item *)list_item)->user_interface);
-#endif /* defined (DEBUG) */
 	if ((item=(struct Shell_list_item *)list_item)&&
 		(user_interface=item->user_interface))
 	{
@@ -453,7 +444,6 @@ printf("enter destroy_window_shell.  shell_address=%p, user_interface=%p\n",
 				"destroy_window_shell.  Unable to get item");
 		}
 	}
-
 	LEAVE;
 } /* destroy_window_shell */
 #endif /* defined (MOTIF) */
@@ -1722,36 +1712,40 @@ accelerators in any subwidgets of <top_widget> in every appropriate subwidget of
 	ENTER(install_accelerators);
 	if (widget)
 	{
-		valid=1;
-		widget_class=XtClass(widget);
-		if (widget_class==xmRowColumnWidgetClass)
+		/*don't do for gadgets, as can't have accelerators for them */
+		if(True==XtIsWidget(widget))
 		{
-			XtVaGetValues(widget,
-				XmNrowColumnType, &row_column_type,
-				NULL);
-			if ((XmWORK_AREA!=row_column_type)&&(XmMENU_OPTION!=row_column_type))
+			valid=1;
+			widget_class=XtClass(widget);
+			if (widget_class==xmRowColumnWidgetClass)
+			{
+				XtVaGetValues(widget,
+					XmNrowColumnType, &row_column_type,
+					NULL);
+				if ((XmWORK_AREA!=row_column_type)&&(XmMENU_OPTION!=row_column_type))
+				{
+					valid=0;
+				}
+			}
+			if ((xmTextWidgetClass==widget_class)||
+				(xmTextFieldWidgetClass==widget_class))
 			{
 				valid=0;
 			}
-		}
-		if ((xmTextWidgetClass==widget_class)||
-			(xmTextFieldWidgetClass==widget_class))
-		{
-			valid=0;
-		}
-		if (valid)
-		{
-			XtInstallAllAccelerators(widget, top_widget);
-			if (XtIsComposite(widget))
+			if (valid)
 			{
-				XtVaGetValues(widget,
-					XmNchildren,&child_list,
-					XmNnumChildren,&num_children,
-					NULL);
-				for (i=0;i<num_children;i++)
+				XtInstallAllAccelerators(widget, top_widget);				
+				if (XtIsComposite(widget))
 				{
-					install_accelerators(child_list[i], top_widget);
-				}
+					XtVaGetValues(widget,
+						XmNchildren,&child_list,
+						XmNnumChildren,&num_children,
+						NULL);
+					for (i=0;i<num_children;i++)
+					{				
+						install_accelerators(child_list[i], top_widget);	
+					}
+				}			
 			}
 		}
 		return_code=1;

@@ -6134,7 +6134,7 @@ drawing area.
 						if (GrabSuccess==XtGrabPointer(interval->drawing_area,owner_events,
 							ButtonMotionMask|ButtonPressMask|ButtonReleaseMask,
 							pointer_mode,keyboard_mode,confine_to,cursor,CurrentTime))
-						{
+						{					
 							box_range=right_box-left_box;
 							minimum_box_range=2*pointer_sensitivity+1;
 							working_window=XtWindow(interval->drawing_area);
@@ -6768,7 +6768,7 @@ drawing area.
 								}
 							}
 							/* release the pointer */
-							XtUngrabPointer(interval->drawing_area,CurrentTime);
+							XtUngrabPointer(interval->drawing_area,CurrentTime);					
 						}
 						XFreeCursor(display,cursor);
 					}
@@ -12525,9 +12525,7 @@ Responds to update callbacks from the time object.
 {
 	Colormap colour_map;
 	Display *display;
-#if !defined (UNEMAP_USE_NODES)
 	enum Interpolation_type interpolation;
-#endif
 	float contour_maximum,contour_minimum, frequency, maximum_value,minimum_value,
 		map_potential_time, number_of_spectrum_colours;
 	int cell_number, datum, frame_number, i, number_of_contours,
@@ -12637,40 +12635,48 @@ Responds to update callbacks from the time object.
 									/* ??JW fix the range when playing the movie? IF so need */
 									/* to update map dialog as well as map->fixed_range=1 */
 #if defined (UNEMAP_USE_NODES)
-									/* 3d map */
-									map->frame_start_time=map_potential_time;
-									map->frame_end_time=map_potential_time;
-									map->frame_number=0;
-									/* recalculate not used for 3d maps */
-									update_mapping_drawing_area(mapping,1/*recalculate*/);
-									update_mapping_colour_or_auxili(mapping);
-#else /* defined (UNEMAP_USE_NODES) */
-									/* 2d map */
-									if (map->frame_end_time>map->frame_start_time)
+									/* 3d map */	
+									if (map->projection_type==THREED_PROJECTION)
 									{
-										frame_number=(int)((float)(map->number_of_frames-1)*
-											((map_potential_time-map->frame_start_time)/
-											(map->frame_end_time-map->frame_start_time)));
-										if ((frame_number>=0)&&(frame_number<map->number_of_frames))
+										map->frame_start_time=map_potential_time;
+										map->frame_end_time=map_potential_time;
+										map->frame_number=0;
+										/* recalculate not used for 3d maps */
+										update_mapping_drawing_area(mapping,1/*recalculate*/);
+										update_mapping_colour_or_auxili(mapping);
+									}
+									/*2d map */
+									else
+									{	
+#endif /* defined (UNEMAP_USE_NODES) */
+										/* 2d map */
+										if (map->frame_end_time>map->frame_start_time)
 										{
-											map->frame_number=frame_number;
-											update_mapping_drawing_area(mapping,0);
-											update_mapping_colour_or_auxili(mapping);
+											frame_number=(int)((float)(map->number_of_frames-1)*
+												((map_potential_time-map->frame_start_time)/
+													(map->frame_end_time-map->frame_start_time)));
+											if ((frame_number>=0)&&(frame_number<map->number_of_frames))
+											{
+												map->frame_number=frame_number;
+												update_mapping_drawing_area(mapping,0);
+												update_mapping_colour_or_auxili(mapping);
+											}
+											else
+											{
+												display_message(ERROR_MESSAGE,
+													"analysis_potential_time_update_callback.  "
+													"Wrong time for an animated_sequence");
+											}
+											return_code=1;
 										}
 										else
 										{
 											display_message(ERROR_MESSAGE,
 												"analysis_potential_time_update_callback.  "
-												"Wrong time for an animated_sequence");
+												"End time greater or equal to start time");
+											return_code=0;
 										}
-										return_code=1;
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"analysis_potential_time_update_callback.  "
-											"End time greater or equal to start time");
-										return_code=0;
+#if defined (UNEMAP_USE_NODES)
 									}
 #endif /* defined (UNEMAP_USE_NODES) */
 								}
@@ -12695,21 +12701,30 @@ Responds to update callbacks from the time object.
 									}
 									else
 									{
-#if defined (UNEMAP_USE_NODES)
-										/* 3d map */
-										map->frame_start_time=map_potential_time;
-										map->frame_end_time=map_potential_time;
-										map->frame_number=0;
-										/* recalculate not used for 3d maps */
-										update_mapping_drawing_area(mapping,1/*recalculate*/);
-										update_mapping_colour_or_auxili(mapping);
-#else /* defined (UNEMAP_USE_NODES) */
+#if defined (UNEMAP_USE_NODES)	
+										/* 3d map */	
+										if (map->projection_type==THREED_PROJECTION)
+										{
+											/* 3d map */
+											map->frame_start_time=map_potential_time;
+											map->frame_end_time=map_potential_time;
+											map->frame_number=0;
+											/* recalculate not used for 3d maps */
+											update_mapping_drawing_area(mapping,1/*recalculate*/);
+											update_mapping_colour_or_auxili(mapping);
+										}
+										else
 										/* 2d map */
-										interpolation=map->interpolation_type;
-										map->interpolation_type=NO_INTERPOLATION;
-										update_mapping_drawing_area(mapping,1);
-										update_mapping_colour_or_auxili(mapping);
-										map->interpolation_type=interpolation;
+										{
+#endif /* defined (UNEMAP_USE_NODES) */
+											/* 2d map */
+											interpolation=map->interpolation_type;
+											map->interpolation_type=NO_INTERPOLATION;
+											update_mapping_drawing_area(mapping,1);
+											update_mapping_colour_or_auxili(mapping);
+											map->interpolation_type=interpolation;
+#if defined (UNEMAP_USE_NODES) 
+										}
 #endif /* defined (UNEMAP_USE_NODES) */
 									}
 								}
@@ -12717,11 +12732,15 @@ Responds to update callbacks from the time object.
 							else
 							{
 #if defined (UNEMAP_USE_NODES)
-								/* for 3d map, with NO_INTERPOLATION need the frame_start_time
-									to get the signal min,max */
-								map->frame_start_time=map_potential_time;
-								map->frame_end_time=map_potential_time;
-								map->frame_number=0;
+								/* 3d map */	
+								if (map->projection_type==THREED_PROJECTION)
+								{
+									/* for 3d map, with NO_INTERPOLATION need the frame_start_time
+										 to get the signal min,max */
+									map->frame_start_time=map_potential_time;
+									map->frame_end_time=map_potential_time;
+									map->frame_number=0;
+								}
 #endif /* defined (UNEMAP_USE_NODES) */
 								update_mapping_drawing_area(mapping,1);
 								update_mapping_colour_or_auxili(mapping);
@@ -14191,8 +14210,8 @@ Creates the windows associated with the analysis work area.
 	ENTER(create_analysis_work_area);
 	return_code=1;
 	if (analysis&&user_interface
-#if defined (UNEMAP_USE_NODES)
-		&&package
+#if defined (UNEMAP_USE_NODES)		
+		&&package		
 #endif /* defined (UNEMAP_USE_NODES) */
 		)
 	{
@@ -14415,7 +14434,7 @@ Closes the windows associated with the analysis work area.
 				XtPopdown(analysis->trace->shell);
 			}
 			/* close the analysis shell */
-			XtPopdown(analysis->window_shell);
+			XtPopdown(analysis->window_shell);	
 			/* unghost the analysis activation button */
 			XtSetSensitive(analysis->activation,True);
 		}

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 9 May 2000
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -65,8 +65,6 @@ struct Fibre_node
 	float mu,theta,fibre_angle;
 }; /* struct Fibre_node */
 
-#if defined (UNEMAP_USE_NODES)
-#else
 static struct Fibre_node 
 	global_fibre_nodes[(NUMBER_OF_FIBRE_ROWS+1)*NUMBER_OF_FIBRE_COLUMNS]=
 	{
@@ -581,7 +579,6 @@ static float landmark_points[3*NUMBER_OF_LANDMARK_POINTS]=
 		-0.139E+02, 0.474E+02, 0.282E+01,
 		-0.147E+02, 0.472E+02, 0.513E+01
 	};
-#endif /* if defined (OLD_CODE) */
 
 /*
 Global functions
@@ -3491,6 +3488,7 @@ interpolation_function_to_node_group and make_fit_elements
  
 #endif /* #if defined (UNEMAP_USE_NODES) */
 
+#if defined(OLD_COLD)
 #if defined (UNEMAP_USE_NODES)
 static int map_3d_window(struct Unemap_package *unemap_package)
 /*******************************************************************************
@@ -3560,6 +3558,7 @@ been embedded in the mapping Xwindow.
 	return(return_code);
 }/* map_3d_window */
 #endif /* #if defined (UNEMAP_USE_NODES) */
+#endif /* defined(OLD_COLD) */
 
 #if defined (OLD_CODE)
 #if defined (UNEMAP_USE_NODES)
@@ -4711,8 +4710,8 @@ removes the maps elecrodes, if they've changed.
 #endif /* UNEMAP_USE_NODES */
 
 #if defined (UNEMAP_USE_NODES)
-static int map_draw_map_electrodes(struct Unemap_package *unemap_package,struct Map *map,
-	int number_of_regions,FE_value time)
+static int map_draw_map_electrodes(struct Unemap_package *unemap_package,
+	struct Map *map,int number_of_regions,FE_value time)
 /*******************************************************************************
 LAST MODIFIED : 24 May 2000
 
@@ -4746,7 +4745,7 @@ Removes the map electrodes if they've changed, then redraws them.
 #endif /* UNEMAP_USE_NODES */
 
 #if defined (UNEMAP_USE_NODES)
-int new_draw_map(struct Map *map)
+int draw_map_3d(struct Map *map)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2000
 
@@ -4767,13 +4766,12 @@ This function draws the <map> in as a 3D CMGUI scene.
 	struct Interpolation_function *function=(struct Interpolation_function *)NULL;
 	struct Unemap_package *unemap_package=(struct Unemap_package *)NULL;
 	struct Scene *scene=(struct Scene *)NULL;
-	struct Graphics_window *window=(struct Graphics_window *)NULL;
 	struct Spectrum *spectrum=(struct Spectrum *)NULL;
 	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
 	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 	struct GROUP(FE_element) *element_group=(struct GROUP(FE_element) *)NULL;
 
-	ENTER(new_draw_map);	
+	ENTER(draw_map_3d);	
 	if(map)
 	{	
 		range_set=0;
@@ -4788,8 +4786,6 @@ This function draws the <map> in as a 3D CMGUI scene.
 		}
 		spectrum=map->drawing_information->spectrum;
 		spectrum_manager=get_unemap_package_spectrum_manager(unemap_package);
-		unemap_package_make_map_scene(unemap_package,spectrum);
-		map_3d_window(unemap_package);	
 		if (map->rig_pointer)
 		{		
 			if (rig= *(map->rig_pointer))
@@ -4809,7 +4805,6 @@ This function draws the <map> in as a 3D CMGUI scene.
 				if (map_type!=NO_MAP_FIELD)
 				{									
 					scene=get_unemap_package_scene(unemap_package);
-					window=get_unemap_package_window(unemap_package);
 					region_item=rig->region_list;	
 					for (region_number=0;region_number<number_of_regions;region_number++)
 					{
@@ -4939,14 +4934,14 @@ This function draws the <map> in as a 3D CMGUI scene.
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"new_draw_map.  Could not create spectrum copy.");
+									"draw_map_3d.  Could not create spectrum copy.");
 								return_code=0;
 							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"new_draw_map.  Spectrum is not in manager!");
+								"draw_map_3d.  Spectrum is not in manager!");
 							return_code=0;
 						}				
 					}	
@@ -4955,12 +4950,15 @@ This function draws the <map> in as a 3D CMGUI scene.
 						number_of_regions);
 					/* First time the scene's viewed  do "view_all"*/
 					if(!get_unemap_package_viewed_scene(unemap_package))
-					{	
-						if (Graphics_window_view_all(window))
+					{
+						if(Scene_viewer_view_all(get_unemap_package_scene_viewer
+							(unemap_package))) 						
 						{
-							Graphics_window_update(window);
-							set_unemap_package_viewed_scene(unemap_package);
-						}	
+							/* perturb the lines(for the contours) */
+							Scene_viewer_set_line_draw_mode(get_unemap_package_scene_viewer
+								(unemap_package),1);
+							set_unemap_package_viewed_scene(unemap_package,1);
+						}
 					}
 				}/* if (map_type!=NO_MAP_FIELD) */				
 			}/* if (rig= *(map->rig_pointer)) */		
@@ -4968,17 +4966,58 @@ This function draws the <map> in as a 3D CMGUI scene.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"new_draw_map.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE,"draw_map_3d.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 	return (return_code);
-} /* new_draw_map */
+} /* draw_map_3d */
 #endif /* #if defined (UNEMAP_USE_NODES) */
 
 int draw_map(struct Map *map,int recalculate,struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED : 23 July 1998
+LAST MODIFIED : 31 May 2000
+
+DESCRIPTION:
+Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(draw_map);
+	if(map)
+	{
+#if defined (UNEMAP_USE_NODES) 
+		/* 3d map for 3d projection */
+		if(map->projection_type==THREED_PROJECTION)
+		{			
+			return_code=draw_map_3d(map);	
+			/* update_colour_map_unemap() necessary for old style colur strip at top of*/
+			/* mapping window. Will become obselete when only cmgui methods used */						
+			update_colour_map_unemap(map,drawing);		
+		}
+		else
+		{					
+			return_code=draw_map_2d(map,recalculate,drawing);		
+		}	
+#else
+		/* old, 2d map*/
+		return_code=draw_map_2d(map,recalculate,drawing);
+#endif /*defined( UNEMAP_USE_NODES) */	
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"draw_map invalid arguments");
+		return_code=0;
+	}	
+	LEAVE;
+	return(return_code);
+}/*draw_map  */
+
+int draw_map_2d(struct Map *map,int recalculate,struct Drawing_2d *drawing)
+/*******************************************************************************
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
 This function draws the <map> in the <drawing>.  If <recalculate> is >0 then the
@@ -4991,27 +5030,6 @@ to the drawing or writes to a postscript file.
 ???DB.  Use XDrawSegments for contours ?
 ==============================================================================*/
 {
-#if defined (UNEMAP_USE_NODES)
-	int return_code;
-
-	ENTER(draw_map);
-	USE_PARAMETER(recalculate);
-	USE_PARAMETER(drawing);
-	if(map)
-	{
-		return_code=new_draw_map(map);	
-		/* update_colour_map_unemap() necessary for old style colur strip at top of*/
-		/* mapping window. Will become obselete when only cmgui methods used */						
-		update_colour_map_unemap(map,drawing);		
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"draw_map. Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-	return(return_code);
-#else
 	char draw_boundary,draw_contours,draw_contour_value,undecided_accepted,
 		valid_mu_and_theta,valid_u_and_v,value_string[11];
 	char *background_map_boundary=(char *)NULL;
@@ -5119,7 +5137,7 @@ to the drawing or writes to a postscript file.
 	XFontStruct *font=(XFontStruct *)NULL;
 	XImage *frame_image=(XImage *)NULL;
 
-	ENTER(draw_map);
+	ENTER(draw_map_2d);
 	return_code=1;
 	/* check arguments */
 	if (map&&drawing&&(drawing_information=map->drawing_information)&&
@@ -5158,7 +5176,7 @@ to the drawing or writes to a postscript file.
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,"draw_map.  Missing event_number");
+					display_message(ERROR_MESSAGE,"draw_map_2d.  Missing event_number");
 				}
 				if (map->datum)
 				{
@@ -5166,7 +5184,7 @@ to the drawing or writes to a postscript file.
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,"draw_map.  Missing datum");
+					display_message(ERROR_MESSAGE,"draw_map_2d.  Missing datum");
 				}
 			} break;
 			case MULTIPLE_ACTIVATION:
@@ -5178,7 +5196,7 @@ to the drawing or writes to a postscript file.
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,"draw_map.  Missing datum");
+					display_message(ERROR_MESSAGE,"draw_map_2d.  Missing datum");
 				}
 			} break;
 			case INTEGRAL:
@@ -5191,7 +5209,7 @@ to the drawing or writes to a postscript file.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"draw_map.  Missing start_search_interval");
+						"draw_map_2d.  Missing start_search_interval");
 				}
 				if (map->end_search_interval)
 				{
@@ -5200,7 +5218,7 @@ to the drawing or writes to a postscript file.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"draw_map.  Missing end_search_interval");
+						"draw_map_2d.  Missing end_search_interval");
 				}
 			} break;
 			case POTENTIAL:
@@ -5213,7 +5231,7 @@ to the drawing or writes to a postscript file.
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,"draw_map.  Missing potential_time");
+					display_message(ERROR_MESSAGE,"draw_map_2d.  Missing potential_time");
 				}
 #endif /* defined (OLD_CODE) */
 			} break;
@@ -6086,7 +6104,7 @@ to the drawing or writes to a postscript file.
 														DEALLOCATE(frame->contour_y);
 														DEALLOCATE(frame->pixel_values);
 														display_message(ERROR_MESSAGE,
-															"draw_map.  Insufficient memory for frame image");
+															"draw_map_2d.  Insufficient memory for frame image");
 														return_code=0;
 													}
 												}
@@ -6106,7 +6124,7 @@ to the drawing or writes to a postscript file.
 														DEALLOCATE(frame->pixel_values);
 													}
 													display_message(ERROR_MESSAGE,
-											"draw_map.  Insufficient memory for frame pixel values");
+											"draw_map_2d.  Insufficient memory for frame pixel values");
 													return_code=0;
 												}
 											}
@@ -6134,7 +6152,7 @@ to the drawing or writes to a postscript file.
 													DEALLOCATE(frame->contour_y);
 												}
 												display_message(ERROR_MESSAGE,
-										"draw_map.  Insufficient memory for frame contour values");
+										"draw_map_2d.  Insufficient memory for frame contour values");
 												return_code=0;
 											}
 										}
@@ -6538,7 +6556,7 @@ to the drawing or writes to a postscript file.
 															(boundary_pixel_value<=max_f))
 														{
 															display_message(ERROR_MESSAGE,
-																"draw_map.  Problems with background/boundary");
+																"draw_map_2d.  Problems with background/boundary");
 														}
 													}
 													background_map_boundary=background_map_boundary_base;
@@ -6610,7 +6628,7 @@ to the drawing or writes to a postscript file.
 											else
 											{
 												display_message(ERROR_MESSAGE,
-						"draw_map.  Insufficient memory for background_map_boundary_base");
+						"draw_map_2d.  Insufficient memory for background_map_boundary_base");
 											}
 										}
 										/* fill in the image */
@@ -7104,7 +7122,7 @@ to the drawing or writes to a postscript file.
 								}
 								else
 								{
-									display_message(ERROR_MESSAGE,"draw_map.  Missing image");
+									display_message(ERROR_MESSAGE,"draw_map_2d.  Missing image");
 								}
 							}
 							else
@@ -7370,7 +7388,7 @@ to the drawing or writes to a postscript file.
 							}
 							else
 							{
-								display_message(ERROR_MESSAGE,"draw_map.  Invalid frames");
+								display_message(ERROR_MESSAGE,"draw_map_2d.  Invalid frames");
 							}
 						}
 						/* draw the fibres */
@@ -8053,7 +8071,7 @@ printf("dxdmu=%g, dxdtheta=%g, dydmu=%g, dydtheta=%g\n",dxdmu,dxdtheta,dydmu,
 							}
 							else
 							{
-								display_message(ERROR_MESSAGE,"draw_map.  Invalid frames");
+								display_message(ERROR_MESSAGE,"draw_map_2d.  Invalid frames");
 							}
 						}
 
@@ -8360,7 +8378,7 @@ printf("dxdmu=%g, dxdtheta=%g, dydmu=%g, dydtheta=%g\n",dxdmu,dxdtheta,dydmu,
 						DEALLOCATE(electrode_drawn);
 						DEALLOCATE(first);
 						display_message(ERROR_MESSAGE,
-							"draw_map.  Could not allocate x and/or y and/or electrodes");
+							"draw_map_2d.  Could not allocate x and/or y and/or electrodes");
 						return_code=0;
 					}
 					DEALLOCATE(x);
@@ -8380,14 +8398,13 @@ printf("dxdmu=%g, dxdtheta=%g, dydmu=%g, dydtheta=%g\n",dxdmu,dxdtheta,dydmu,
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"draw_map.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE,"draw_map_2d.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-#endif /* #if defined (UNEMAP_USE_NODES) */
-} /* draw_map */
+} /* draw_map_2d */
 
 int draw_colour_or_auxiliary_area(struct Map *map,struct Drawing_2d *drawing)
 /*******************************************************************************
@@ -8911,8 +8928,8 @@ DESCRIPTION :
 	ENTER(create_Map_drawing_information);
 	/* check arguments */
 	if ((user_interface)
-#if defined (UNEMAP_USE_NODES)
-      &&(unemap_package)
+#if defined (UNEMAP_USE_NODES)		 
+      &&(unemap_package)		 
 #endif /* defined (UNEMAP_USE_NODES) */
      )
 	{

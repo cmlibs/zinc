@@ -3473,7 +3473,6 @@ returned.
 	struct Analysis_window *analysis;
 	Widget child_widget;
 	XmString dialog_title;
-
 	ENTER(create_Analysis_window);
 	if (signal_drawing_information&&user_interface)
 	{
@@ -3624,6 +3623,7 @@ returned.
 							XtVaSetValues(analysis->signals.drawing_area,XmNbackground,
 								signal_drawing_information->background_drawing_colour,NULL);
 							/* adjust the order choice */
+
 							child_widget=XmOptionLabelGadget(analysis->order_choice);
 							XtVaSetValues(child_widget,
 								XmNmarginLeft,0,
@@ -3767,7 +3767,7 @@ returned.
 								XmNmarginRight,0,
 								XmNmarginWidth,0,
 								NULL);
-							update_analysis_window_menu(analysis);
+							update_analysis_window_menu(analysis);							
 							install_accelerators(parent, parent);
 							/*??? more to do ? */
 							if (address)

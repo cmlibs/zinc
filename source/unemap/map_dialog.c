@@ -19,6 +19,7 @@ DESCRIPTION :
 #include <Xm/DrawingA.h>
 #include <Xm/RowColumn.h>
 #include <Xm/PushBG.h>
+#include <Xm/Protocols.h>
 #include <Xm/ToggleBG.h>
 #include <Mrm/MrmPublic.h>
 #include <Mrm/MrmDecls.h>
@@ -1634,6 +1635,7 @@ Allocates the memory for a map dialog.  Retrieves the necessary widgets and
 initializes the appropriate fields.
 ==============================================================================*/
 {
+	Atom WM_DELETE_WINDOW;
 	MrmType map_dialog_class;
 	static MrmRegisterArg callback_list[]={
 		{"identify_map_dialog_range_type",
@@ -1836,6 +1838,7 @@ initializes the appropriate fields.
 				if (map_dialog->shell=XtVaCreatePopupShell(
 					"mapping_map_dialog_shell",
 					xmDialogShellWidgetClass,parent,
+					XmNdeleteResponse,XmDO_NOTHING,
 /*					XmNmwmDecorations,MWM_DECOR_ALL&(~MWM_DECOR_RESIZEH),
 					XmNmwmFunctions,MWM_FUNC_MOVE&MWM_FUNC_CLOSE,*/
 					XmNmwmDecorations,MWM_DECOR_ALL|MWM_DECOR_RESIZEH,
@@ -1845,6 +1848,11 @@ initializes the appropriate fields.
 				{
 					map_dialog->shell_list_item=
 						create_Shell_list_item(&(map_dialog->shell),user_interface);
+					/* Set up window manager callback for close window message */
+					WM_DELETE_WINDOW=XmInternAtom(
+						XtDisplay(map_dialog->shell),"WM_DELETE_WINDOW",False);
+					XmAddWMProtocolCallback(map_dialog->shell,
+						WM_DELETE_WINDOW,close_map_dialog,map_dialog);
 					/* add the destroy callback */
 					XtAddCallback(map_dialog->shell,XmNdestroyCallback,
 						destroy_map_dialog,(XtPointer)map_dialog);

@@ -4465,6 +4465,7 @@ Finds the x, y and z ranges from the scene and sets the view parameters so
 that everything can be seen, and with window's std_view_angle. Also adjusts
 near and far clipping planes; if specific values are required, should follow
 with commands for setting these.
+??RC should combine with Scene_viewer_view_all
 ==============================================================================*/
 {
 	double axis_radius,centre_x,centre_y,centre_z,clip_factor,max_x,max_y,max_z,
@@ -4477,6 +4478,7 @@ with commands for setting these.
 	if (window)
 	{
 		return_code=1;
+
 		/* get range of visible graphics_objects in scene */
 		/*???RC Scene should really be doing this for us... */
 		graphics_object_range.first=1;

@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : mapping_window.uil
 !
-!LAST MODIFIED : 23 July 1998
+!LAST MODIFIED : 2 June 2000
 !
 !DESCRIPTION :
 !The widgets/gadgets for the mapping window in the mapping work area.
@@ -28,8 +28,16 @@ procedure
 	identify_mapping_file_default_b;
 	set_default_configuration_file;
 	identify_mapping_projection_cho;
+	identify_mapping_projection_cyl;
+	identify_mapping_projection_ham;
+	identify_mapping_projection_pol;
+	identify_mapping_projection_pat;
+	identify_mapping_projection_3d;
 	set_projection_Hammer;
 	set_projection_polar;
+	set_projection_patch;
+	set_projection_3d;
+	set_projection_cylinder;
 	identify_mapping_region_choice;
 	identify_mapping_region_pull_do;
 	identify_mapping_region_place_h;
@@ -41,9 +49,12 @@ procedure
 	id_mapping_print_animation_tiff;
 	identify_mapping_close_button;
 	close_mapping_work_area;
-	identify_mapping_drawing_area;
-	expose_mapping_drawing_area;
-	resize_mapping_drawing_area;
+	identify_mapping_area;
+	identify_mapping_area_2d;
+	identify_mapping_area_3d;
+	identify_map_drawing_area_2d;
+	expose_map_drawing_area_2d;
+	resize_map_drawing_area_2d;
 	identify_mapping_colour_or_auxi;
 	expose_mapping_colour_or_auxili;
 	resize_mapping_colour_or_auxili;
@@ -316,6 +327,10 @@ object
 								{
 								set_projection_Hammer(mapping_window_structure);
 								};
+							MrmNcreateCallback = procedures
+								{
+								identify_mapping_projection_ham(mapping_window_structure);
+								};
 							};
 						};
 					XmPushButtonGadget
@@ -332,7 +347,71 @@ object
 								{
 								set_projection_polar(mapping_window_structure);
 								};
+							MrmNcreateCallback = procedures
+								{
+								identify_mapping_projection_pol(mapping_window_structure);
+								};
 							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString = 
+							compound_string("Patch");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							XmNactivateCallback = procedures
+								{
+								set_projection_patch(mapping_window_structure);
+								};
+							MrmNcreateCallback = procedures
+								{
+								identify_mapping_projection_pat(mapping_window_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString = 
+							compound_string("3D");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							XmNactivateCallback = procedures
+								{
+								set_projection_3d(mapping_window_structure);
+								};
+							MrmNcreateCallback = procedures
+								{
+								identify_mapping_projection_3d(mapping_window_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString = 
+							compound_string("Cylinder");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							XmNactivateCallback = procedures
+								{
+								set_projection_cylinder(mapping_window_structure);
+								};
+							MrmNcreateCallback = procedures
+								{
+								identify_mapping_projection_cyl(mapping_window_structure);
+								};
+							};							
 						};
 					};
 				};
@@ -932,10 +1011,66 @@ object
 			};
 		controls
 			{
-			XmDrawingArea mapping_drawing_area;
+			XmForm mapping_area_2d;
+			XmForm mapping_area_3d;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_area(mapping_window_structure);
+				};
 			};
 		};
-	mapping_drawing_area: XmDrawingArea 
+	mapping_area_2d: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbackground = identifying_colour;
+			};
+		controls
+			{
+			XmDrawingArea map_drawing_area_2d;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_area_2d(mapping_window_structure);
+				};
+			};
+		};
+	mapping_area_3d: XmForm
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNleftOffset = widget_spacing;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNrightOffset = widget_spacing;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = widget_spacing;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbackground = identifying_colour;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_area_3d(mapping_window_structure);
+				};
+			};
+		};
+	map_drawing_area_2d: XmDrawingArea 
 		{
 		arguments
 			{
@@ -953,15 +1088,15 @@ object
 			{
 			MrmNcreateCallback = procedures
 				{
-				identify_mapping_drawing_area(mapping_window_structure);
+				identify_map_drawing_area_2d(mapping_window_structure);
 				};
 			XmNexposeCallback = procedures
 				{
-				expose_mapping_drawing_area(mapping_window_structure);
+				expose_map_drawing_area_2d(mapping_window_structure);
 				};
 			XmNresizeCallback = procedures
 				{
-				resize_mapping_drawing_area(mapping_window_structure);
+				resize_map_drawing_area_2d(mapping_window_structure);
 				};
 			};
 		};

@@ -591,7 +591,7 @@ Main program for the CMISS Graphical User Interface
 	struct Computed_field *computed_field;
 	struct Command_window *command_window;
 	struct Execute_command *execute_command, *set_command;
-	struct Graphical_material *default_selected_material,*electrode_material;
+	struct Graphical_material *default_selected_material;
 	struct GT_object *glyph;
 	struct MANAGER(Computed_field) *computed_field_manager;
 #if !defined (WINDOWS_DEV_FLAG)
@@ -805,24 +805,7 @@ Main program for the CMISS Graphical User Interface
 			{
 				DEACCESS(Graphical_material)(&default_selected_material);
 			}
-		}
-		/* create an electrode material*/
-		if (electrode_material=CREATE(Graphical_material)(
-				"electrode"))
-		{	
-			colour.red=1.0;
-			colour.green=0.0;
-			colour.blue=1.0;		
-			Graphical_material_set_ambient(electrode_material,&colour);
-			Graphical_material_set_diffuse(electrode_material,&colour);
-			/* ACCESS so can never be destroyed */
-			ACCESS(Graphical_material)(electrode_material);
-			if (!ADD_OBJECT_TO_MANAGER(Graphical_material)(electrode_material,
-				command_data.graphical_material_manager))
-			{
-				DEACCESS(Graphical_material)(&electrode_material);
-			}
-		}		
+		}	
 	}
 	/* spectrum manager */
 	command_data.default_spectrum=(struct Spectrum *)NULL;
@@ -1056,9 +1039,7 @@ Main program for the CMISS Graphical User Interface
 	set_unemap_package_user_interface(command_data.unemap_package,
 		command_data.user_interface);
 	set_unemap_package_map_graphical_material(command_data.unemap_package,
-		command_data.default_graphical_material);
-	set_unemap_package_electrode_graphical_material(command_data.unemap_package,
-		electrode_material);
+		command_data.default_graphical_material);	
 	set_unemap_package_computed_field_package(command_data.unemap_package,
 		command_data.computed_field_package);
 #endif /* defined (UNEMAP) */
@@ -1841,8 +1822,7 @@ Main program for the CMISS Graphical User Interface
 				DEACCESS(Spectrum)(&(command_data.default_spectrum));
 				DESTROY(MANAGER(Spectrum))(&command_data.spectrum_manager);
 				DEACCESS(Graphical_material)(&(command_data.default_graphical_material));			
-				DEACCESS(Graphical_material)(&(default_selected_material));
-				DEACCESS(Graphical_material)(&(electrode_material));
+				DEACCESS(Graphical_material)(&(default_selected_material));			
 				DESTROY(MANAGER(Graphical_material))(&command_data.graphical_material_manager);
 
 				DESTROY(MANAGER(VT_volume_texture))(&command_data.volume_texture_manager);

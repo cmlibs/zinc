@@ -92,12 +92,14 @@ eg light model, and managers. Split into along these lines??JW
 	int viewed_scene; 
 	/* should this and below be be in struct Map ?*/
 	/*or Map_drawing_information?  */
-	struct Colour *no_interpolation_colour; 
-	struct Graphics_window *window;
 	struct Colour *background_colour;
+	struct Colour *electrode_colour;
+	struct Colour *no_interpolation_colour; 
+	struct Graphics_window *window;	
 	struct Light *light;	
 	struct Light_model *light_model;	
 	struct Scene *scene;	
+	struct Scene_viewer *scene_viewer;	
 	struct User_interface *user_interface;
 	struct Graphical_material *map_graphical_material;
 	struct Graphical_material *electrode_graphical_material;
@@ -176,12 +178,14 @@ DESCRIPTION :
 gets the viewed_scene flag of the unemap package.
 ==============================================================================*/
 
-int set_unemap_package_viewed_scene(struct Unemap_package *package);
+int set_unemap_package_viewed_scene(struct Unemap_package *package,
+	int scene_viewed);
 /*******************************************************************************
-LAST MODIFIED : 16 September 1999
+LAST MODIFIED : 31 May 2000
 
 DESCRIPTION :
-sets the viewed_scene flag of the unemap package to 1.
+sets the viewed_scene flag of the unemap <package> to 1 if <scene_viewed> >0,
+0 if <scene_viewed> = 0.
 ==============================================================================*/
 
 struct FE_field *get_unemap_package_electrode_position_field(
@@ -889,6 +893,24 @@ DESCRIPTION :
 Sets the Light_model of the unemap package.
 ==============================================================================*/
 
+struct Scene_viewer *get_unemap_package_scene_viewer(
+	struct Unemap_package *package);
+/*******************************************************************************
+LAST MODIFIED :  30 May 2000
+
+DESCRIPTION :
+gets the Scene_viewer of the unemap package.
+==============================================================================*/
+
+int set_unemap_package_scene_viewer(struct Unemap_package *package,
+	struct Scene_viewer *scene_viewer);
+/*******************************************************************************
+LAST MODIFIED : 30 May 2000
+
+DESCRIPTION :
+Sets the Scene_viewer of the unemap package.
+==============================================================================*/
+
 struct Scene *get_unemap_package_scene(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -950,15 +972,6 @@ LAST MODIFIED :  26 May 2000
 
 DESCRIPTION :
 gets the electrode_graphical_material of the unemap package.
-==============================================================================*/
-
-int set_unemap_package_electrode_graphical_material(struct Unemap_package *package,
-	struct Graphical_material *electrode_graphical_material);
-/*******************************************************************************
-LAST MODIFIED : 26 May 2000
-
-DESCRIPTION :
-Sets the electrode_graphical_material of the unemap package.
 ==============================================================================*/
 
 struct Computed_field_package *get_unemap_package_computed_field_package(

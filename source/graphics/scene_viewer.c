@@ -2647,7 +2647,7 @@ performed in idle time so that multiple redraws are avoided.
 					(scene_viewer->background_colour).blue=background_colour->blue;
 					scene_viewer->background_texture=(struct Texture *)NULL;
 					scene_viewer->drawing_widget=drawing_widget;
-					/* set viewing transformation eye pos, lookat point and up-vector */
+					/* set viewing transformation eye pos, look at point and up-vector */
 					/* initially view the x,y plane */
 					scene_viewer->eyex=0.0;
 					scene_viewer->eyey=0.0;
@@ -2868,7 +2868,7 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		DEACCESS(Light_model)(&(scene_viewer->light_model));
 		DESTROY(LIST(Light))(&(scene_viewer->list_of_lights));
 		/* must destroy the widget */
-		XtDestroyWidget(scene_viewer->drawing_widget);
+		XtDestroyWidget(scene_viewer->drawing_widget);				
 		if (SCENE_VIEWER_PIXEL_BUFFER==scene_viewer->buffer_mode)
 		{
 			DEALLOCATE(scene_viewer->pixel_data);

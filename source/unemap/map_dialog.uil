@@ -280,7 +280,7 @@ object
 					};
 				};
 			XmForm map_dialog_ok_apply_cancel;
-			};
+			};		
 		};
 	map_dialog_range: XmRowColumn
 		{

@@ -1249,6 +1249,106 @@ Opens the dialog box associated with the map button in the mapping window.
 	LEAVE;
 } /* configure_map */
 
+static void identify_mapping_area(Widget *widget_id,
+	XtPointer mapping_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 29 May 2000
+
+DESCRIPTION :
+Finds the id of the mapping area
+==============================================================================*/
+{
+	struct Mapping_window *mapping;
+
+	ENTER(identify_mapping_area);
+	USE_PARAMETER(call_data);
+	if (mapping=(struct Mapping_window *)mapping_window)
+	{
+		mapping->mapping_area= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_mapping_area.  Missing mapping_window");
+	}
+	LEAVE;
+} /* identify_mapping_area */
+
+static void identify_mapping_area_2d(Widget *widget_id,
+	XtPointer mapping_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 29 May 2000
+
+DESCRIPTION :
+Finds the id of the mapping area_2d
+==============================================================================*/
+{
+	struct Mapping_window *mapping;
+
+	ENTER(identify_mapping_area_2d);
+	USE_PARAMETER(call_data);
+	if (mapping=(struct Mapping_window *)mapping_window)
+	{
+		mapping->mapping_area_2d= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_mapping_area_2d.  Missing mapping_window");
+	}
+	LEAVE;
+} /* identify_mapping_area_2d */
+
+static void identify_mapping_area_3d(Widget *widget_id,
+	XtPointer mapping_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 29 May 2000
+
+DESCRIPTION :
+Finds the id of the mapping area_3d
+==============================================================================*/
+{
+	struct Mapping_window *mapping;
+
+	ENTER(identify_mapping_area_3d);
+	USE_PARAMETER(call_data);
+	if (mapping=(struct Mapping_window *)mapping_window)
+	{
+		mapping->mapping_area_3d= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_mapping_area_3d.  Missing mapping_window");
+	}
+	LEAVE;
+} /* identify_mapping_area_3d */
+
+static void identify_mapping_drawing_area_2d(Widget *widget_id,
+	XtPointer mapping_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 29 May 2000
+
+DESCRIPTION :
+Finds the id of the mapping area
+==============================================================================*/
+{
+	struct Mapping_window *mapping;
+
+	ENTER(identify_mapping_drawing_area_2d);
+	USE_PARAMETER(call_data);
+	if (mapping=(struct Mapping_window *)mapping_window)
+	{
+		mapping->map_drawing_area_2d= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_mapping_drawing_area_2d.  Missing mapping_window");
+	}
+	LEAVE;
+} /* identify_mapping_drawing_area_2d */
+
 static void identify_mapping_animate_button(Widget *widget_id,
 	XtPointer mapping_window,XtPointer call_data)
 /*******************************************************************************
@@ -1750,6 +1850,90 @@ Opens the dialog box associated with the setup button in the mapping window.
 	LEAVE;
 } /* setup_simple_rig */
 
+
+static int Mapping_window_make_drawing_area_2d(
+	struct Mapping_window *mapping_window)
+/*******************************************************************************
+LAST MODIFIED : 29 May 2000
+
+DESCRIPTION :
+Removes the Scene_viewer, if any, and replaces it with a 2-D XmDrawingArea in
+the mapping_area of the <mapping_window>.
+==============================================================================*/
+{
+	int return_code;
+	ENTER(Mapping_window_make_drawing_area_2d);
+	if (mapping_window&&mapping_window->mapping_area)
+	{
+#if defined (UNEMAP_USE_NODES)			
+		XtUnmanageChild(mapping_window->mapping_area_3d);
+#endif /* defined (UNEMAP_USE_NODES) */			
+		XtManageChild(mapping_window->mapping_area_2d);		
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Mapping_window_make_drawing_area_2d.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Mapping_window_make_drawing_area_2d */
+
+#if defined (UNEMAP_USE_NODES)
+static int Mapping_window_make_drawing_area_3d(struct Mapping_window *mapping_window)
+/*******************************************************************************
+LAST MODIFIED : 29 May 2000
+
+DESCRIPTION :
+Removes the Scene_viewer, if any, and replaces it with a 2-D XmDrawingArea in
+the mapping_area of the <mapping_window>.
+==============================================================================*/
+{
+	int return_code;
+	struct Unemap_package *unemap_package;
+
+	ENTER(Mapping_window_make_drawing_area_3d);
+	if (mapping_window&&mapping_window->mapping_area&&
+		(unemap_package=mapping_window->map->unemap_package))
+	{	 
+		XtUnmanageChild(mapping_window->mapping_area_2d);				
+		unemap_package_make_map_scene(unemap_package,
+			mapping_window->map->drawing_information->spectrum);	
+		if (!mapping_window->scene_viewer)
+		{
+			mapping_window->scene_viewer=
+				CREATE(Scene_viewer)(mapping_window->mapping_area_3d,
+					get_unemap_package_background_colour(unemap_package),
+					SCENE_VIEWER_DOUBLE_BUFFER,
+					get_unemap_package_Light_manager(unemap_package),
+					get_unemap_package_light(unemap_package),
+					get_unemap_package_Light_model_manager(unemap_package),
+					get_unemap_package_light_model(unemap_package),
+					get_unemap_package_Scene_manager(unemap_package),
+					get_unemap_package_scene(unemap_package),
+					get_unemap_package_Texture_manager(unemap_package),
+					get_unemap_package_user_interface(unemap_package));
+			set_unemap_package_scene_viewer(unemap_package,mapping_window->scene_viewer);
+		}
+		set_unemap_package_viewed_scene(unemap_package,0);
+		XtManageChild(mapping_window->mapping_area_3d);
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Mapping_window_make_drawing_area_3d.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Mapping_window_make_drawing_area_3d */
+#endif /* defined (UNEMAP_USE_NODES) */
+
 static void identify_mapping_modify_button(Widget *widget_id,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
@@ -2214,6 +2398,136 @@ Finds the id of the mapping projection choice button.
 	LEAVE;
 } /* identify_mapping_projection_cho */
 
+static void identify_mapping_projection_cyl(Widget *widget_id,
+	XtPointer mapping_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 2 June 2000
+
+DESCRIPTION :
+Finds the id of the mapping projection cylinder button.
+This is a member of the mapping projection choice menu
+==============================================================================*/
+{
+	struct Mapping_window *mapping;
+
+	ENTER(identify_mapping_projection_cyl);
+	USE_PARAMETER(call_data);
+	if (mapping=(struct Mapping_window *)mapping_window)
+	{
+		mapping->projection_cylinder= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_mapping_projection_cyl.  mapping_window missing");
+	}
+	LEAVE;
+} /* identify_mapping_projection_cyl */
+
+static void identify_mapping_projection_ham(Widget *widget_id,
+	XtPointer mapping_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED :  2 June 2000 
+
+DESCRIPTION :
+Finds the id of the mapping projection hammer button.
+This is a member of the mapping projection choice menu
+==============================================================================*/
+{
+	struct Mapping_window *mapping;
+
+	ENTER(identify_mapping_projection_ham);
+	USE_PARAMETER(call_data);
+	if (mapping=(struct Mapping_window *)mapping_window)
+	{
+		mapping->projection_hammer= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_mapping_projection_ham.  mapping_window missing");
+	}
+	LEAVE;
+} /* identify_mapping_projection_ham */
+
+static void identify_mapping_projection_pol(Widget *widget_id,
+	XtPointer mapping_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 2 June 2000 
+
+DESCRIPTION :
+Finds the id of the mapping projection polar button.
+This is a member of the mapping projection choice menu
+==============================================================================*/
+{
+	struct Mapping_window *mapping;
+
+	ENTER(identify_mapping_projection_pol);
+	USE_PARAMETER(call_data);
+	if (mapping=(struct Mapping_window *)mapping_window)
+	{
+		mapping->projection_polar= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_mapping_projection_pol.  mapping_window missing");
+	}
+	LEAVE;
+} /* identify_mapping_projection_pol */
+
+static void identify_mapping_projection_pat(Widget *widget_id,
+	XtPointer mapping_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 2 June 2000 
+
+DESCRIPTION :
+Finds the id of the mapping projection patch button.
+This is a member of the mapping projection choice menu
+==============================================================================*/
+{
+	struct Mapping_window *mapping;
+
+	ENTER(identify_mapping_projection_pat);
+	USE_PARAMETER(call_data);
+	if (mapping=(struct Mapping_window *)mapping_window)
+	{
+		mapping->projection_patch= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_mapping_projection_pat.  mapping_window missing");
+	}
+	LEAVE;
+} /* identify_mapping_projection_pat */
+
+static void identify_mapping_projection_3d(Widget *widget_id,
+	XtPointer mapping_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 2 June 2000
+
+DESCRIPTION :
+Finds the id of the mapping projection 3d button.
+This is a member of the mapping projection choice menu
+==============================================================================*/
+{
+	struct Mapping_window *mapping;
+
+	ENTER(identify_mapping_projection_3d);
+	USE_PARAMETER(call_data);
+	if (mapping=(struct Mapping_window *)mapping_window)
+	{
+		mapping->projection_3d= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_mapping_projection_3d.  mapping_window missing");
+	}
+	LEAVE;
+} /* identify_mapping_projection_3d */
+
 static void identify_mapping_region_choice(Widget *widget_id,
 	XtPointer mapping_window,XtPointer call_data)
 /*******************************************************************************
@@ -2325,32 +2639,6 @@ Finds the id of the mapping close button.
 	}
 	LEAVE;
 } /* identify_mapping_close_button */
-
-static void identify_mapping_drawing_area(Widget *widget_id,
-	XtPointer client_data,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 28 December 1996
-
-DESCRIPTION :
-Finds the id of the mapping_drawing_area.
-==============================================================================*/
-{
-	struct Mapping_window *mapping;
-
-	ENTER(identify_mapping_drawing_area);
-	USE_PARAMETER(call_data);
-	if (mapping=(struct Mapping_window *)client_data)
-	{
-		mapping->map_drawing_area= *widget_id;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"identify_mapping_drawing_area.  client_data missing");
-	}
-	LEAVE;
-} /* identify_mapping_drawing_area */
-
 
 static void expose_mapping_colour_or_auxili(Widget widget,
 	XtPointer mapping_window,XtPointer call_data)
@@ -2471,7 +2759,7 @@ area.
 	LEAVE;
 } /* expose_mapping_colour_or_auxili */
 
-static void expose_mapping_drawing_area(Widget widget,XtPointer mapping_window,
+static void expose_mapping_drawing_area_2d(Widget widget,XtPointer mapping_window,
 	XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 7 October 1997
@@ -2487,7 +2775,7 @@ The callback for redrawing part of a mapping drawing area.
 	XExposeEvent *event;
 	XWindowAttributes attributes;
 
-	ENTER(expose_mapping_drawing_area);
+	ENTER(expose_mapping_drawing_area_2d);
 	USE_PARAMETER(widget);
 	if ((mapping=(struct Mapping_window *)mapping_window)&&
 		(mapping->user_interface))
@@ -2502,16 +2790,16 @@ The callback for redrawing part of a mapping drawing area.
 					{
 						display=mapping->user_interface->display;
 						event= &(callback->event->xexpose);
-						if (mapping->map_drawing_area)
+						if (mapping->map_drawing_area_2d)
 						{
 							if (!(mapping->map_drawing))
 							{
 								/* determine the size of the drawing area */
 								XGetWindowAttributes(display,
-									XtWindow(mapping->map_drawing_area),&attributes);
+									XtWindow(mapping->map_drawing_area_2d),&attributes);
 								/* create a pixel map */
 								if (drawing=
-									create_Drawing_2d(mapping->map_drawing_area,attributes.width,
+									create_Drawing_2d(mapping->map_drawing_area_2d,attributes.width,
 									attributes.height,NO_DRAWING_IMAGE,mapping->user_interface))
 								{
 									mapping->map_drawing=drawing;
@@ -2527,7 +2815,7 @@ The callback for redrawing part of a mapping drawing area.
 								else
 								{
 									display_message(ERROR_MESSAGE,
-										"expose_mapping_drawing_area.  Could not create drawing");
+										"expose_mapping_drawing_area_2d.  Could not create drawing");
 								}
 							}
 							/* redisplay the specified part of the pixmap */
@@ -2536,7 +2824,7 @@ The callback for redrawing part of a mapping drawing area.
 								if ((mapping->map)&&(mapping->map->drawing_information))
 								{
 									XCopyArea(display,mapping->map_drawing->pixel_map,
-										XtWindow(mapping->map_drawing_area),
+										XtWindow(mapping->map_drawing_area_2d),
 										(mapping->map->drawing_information->graphics_context).copy,
 										event->x,event->y,event->width,event->height,event->x,
 										event->y);
@@ -2544,49 +2832,49 @@ The callback for redrawing part of a mapping drawing area.
 								else
 								{
 									display_message(ERROR_MESSAGE,
-										"expose_mapping_drawing_area.  Missing copy GC");
+										"expose_mapping_drawing_area_2d.  Missing copy GC");
 								}
 							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"expose_mapping_drawing_area.  Missing drawing area");
+								"expose_mapping_drawing_area_2d.  Missing drawing area");
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"expose_mapping_drawing_area.  Incorrect event reason");
+							"expose_mapping_drawing_area_2d.  Incorrect event reason");
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"expose_mapping_drawing_area.  event missing");
+						"expose_mapping_drawing_area_2d.  event missing");
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"expose_mapping_drawing_area.  Incorrect reason");
+					"expose_mapping_drawing_area_2d.  Incorrect reason");
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"expose_mapping_drawing_area.  call_data missing");
+				"expose_mapping_drawing_area_2d.  call_data missing");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"expose_mapping_drawing_area.  mapping window missing");
+			"expose_mapping_drawing_area_2d.  mapping window missing");
 	}
 	LEAVE;
-} /* expose_mapping_drawing_area */
+} /* expose_mapping_drawing_area_2d */
 
-static void resize_mapping_drawing_area(Widget widget,XtPointer mapping_window,
+static void resize_mapping_drawing_area_2d(Widget widget,XtPointer mapping_window,
 	XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 7 October 1997
@@ -2602,7 +2890,7 @@ The callback for resizing a mapping drawing area.
 	XmDrawingAreaCallbackStruct *callback;
 	XWindowAttributes attributes;
 
-	ENTER(resize_mapping_drawing_area);
+	ENTER(resize_mapping_drawing_area_2d);
 	USE_PARAMETER(widget);
 	if ((mapping=(struct Mapping_window *)mapping_window)&&
 		(mapping->user_interface))
@@ -2614,7 +2902,7 @@ The callback for resizing a mapping drawing area.
 				/*??? during creation there are resize callbacks without windows */
 				if (callback->window)
 				{
-					if (mapping->map_drawing_area)
+					if (mapping->map_drawing_area_2d)
 					{
 						display=mapping->user_interface->display;
 						/* find the size of the old rectangle */
@@ -2634,7 +2922,7 @@ The callback for resizing a mapping drawing area.
 						XGetWindowAttributes(display,callback->window,&attributes);
 						/* create a new pixmap */
 						if (drawing=create_Drawing_2d(
-							mapping->map_drawing_area,attributes.width,attributes.height,
+							mapping->map_drawing_area_2d,attributes.width,attributes.height,
 							NO_DRAWING_IMAGE,mapping->user_interface))
 						{
 							mapping->map_drawing=drawing;
@@ -2657,43 +2945,43 @@ The callback for resizing a mapping drawing area.
 							if ((mapping->map)&&(mapping->map->drawing_information))
 							{
 								XCopyArea(display,drawing->pixel_map,
-									XtWindow(mapping->map_drawing_area),
+									XtWindow(mapping->map_drawing_area_2d),
 									(mapping->map->drawing_information->graphics_context).copy,
 									0,0,width,height,0,0);
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"resize_mapping_drawing_area.  Missing copy GC");
+									"resize_mapping_drawing_area_2d.  Missing copy GC");
 							}
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"resize_mapping_drawing_area.  Missing drawing area");
+							"resize_mapping_drawing_area_2d.  Missing drawing area");
 					}
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"resize_mapping_drawing_area.  Incorrect reason");
+					"resize_mapping_drawing_area_2d.  Incorrect reason");
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"resize_mapping_drawing_area.  call_data missing");
+				"resize_mapping_drawing_area_2d.  call_data missing");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"resize_mapping_drawing_area.  mapping window missing");
+			"resize_mapping_drawing_area_2d.  mapping window missing");
 	}
 	LEAVE;
-} /* resize_mapping_drawing_area */
+} /* resize_mapping_drawing_area_2d */
 
 static void set_projection_Hammer(Widget *widget_id,XtPointer client_data,
 	XtPointer call_data)
@@ -2716,7 +3004,8 @@ Sets the projection to be the Hammer projection.
 		{
 			if (mapping->map->projection_type!=HAMMER_PROJECTION)
 			{
-				mapping->map->projection_type=HAMMER_PROJECTION;
+				mapping->map->projection_type=HAMMER_PROJECTION;	
+				Mapping_window_make_drawing_area_2d(mapping);
 				update_mapping_drawing_area(mapping,2);
 			}
 		}
@@ -2754,7 +3043,8 @@ Sets the projection to be the polar projection.
 		{
 			if (mapping->map->projection_type!=POLAR_PROJECTION)
 			{
-				mapping->map->projection_type=POLAR_PROJECTION;
+				mapping->map->projection_type=POLAR_PROJECTION;				
+				Mapping_window_make_drawing_area_2d(mapping);
 				update_mapping_drawing_area(mapping,2);
 			}
 		}
@@ -2769,6 +3059,128 @@ Sets the projection to be the polar projection.
 	}
 	LEAVE;
 } /* set_projection_polar */
+
+
+static void set_projection_patch(Widget *widget_id,XtPointer client_data,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 2 June 2000
+
+DESCRIPTION :
+There isn't actually a patch projection type, this is the X callback to do the 
+drawing
+???DB.  MIXED ?
+==============================================================================*/
+{
+	struct Mapping_window *mapping;
+
+	ENTER(set_projection_patch);
+	USE_PARAMETER(widget_id);
+	USE_PARAMETER(call_data);
+	if (mapping=(struct Mapping_window *)client_data)
+	{
+		if (mapping->map)
+		{		
+			/*must set the rojection_type to something*/
+			mapping->map->projection_type=CYLINDRICAL_PROJECTION;
+			Mapping_window_make_drawing_area_2d(mapping);
+			update_mapping_drawing_area(mapping,2);		
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"set_projection_patch.  map missing");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_projection_patch.  client_data missing");
+	}
+	LEAVE;
+} /* set_projection_patch */
+
+static void set_projection_cylinder(Widget *widget_id,XtPointer client_data,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 24 May 1997
+
+DESCRIPTION :
+Sets the projection to be the cylinder projection.
+???DB.  MIXED ?
+==============================================================================*/
+{
+	struct Mapping_window *mapping;
+
+	ENTER(set_projection_cylinder);
+	USE_PARAMETER(widget_id);
+	USE_PARAMETER(call_data);
+	if (mapping=(struct Mapping_window *)client_data)
+	{
+		if (mapping->map)
+		{
+			if (mapping->map->projection_type!=CYLINDRICAL_PROJECTION)
+			{
+				mapping->map->projection_type=CYLINDRICAL_PROJECTION;				
+				Mapping_window_make_drawing_area_2d(mapping);
+				update_mapping_drawing_area(mapping,2);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"set_projection_cylinder.  map missing");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_projection_cylinder.  client_data missing");
+	}
+	LEAVE;
+} /* set_projection_cylinder */
+
+static void set_projection_3d(Widget *widget_id,XtPointer client_data,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 31 May 2000
+
+DESCRIPTION :
+Sets the projection to be the 3D projection.
+???DB.  MIXED ?
+==============================================================================*/
+{
+#if defined (UNEMAP_USE_NODES)
+	struct Mapping_window *mapping;
+
+	ENTER(set_projection_3d);
+	USE_PARAMETER(widget_id);
+	USE_PARAMETER(call_data);
+	if (mapping=(struct Mapping_window *)client_data)
+	{
+		if (mapping->map)
+		{
+			if (mapping->map->projection_type!=THREED_PROJECTION)
+			{
+				mapping->map->projection_type=THREED_PROJECTION;			
+				Mapping_window_make_drawing_area_3d(mapping);
+				update_mapping_drawing_area(mapping,2);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"set_projection_3d.  map missing");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_projection_3d.  client_data missing");
+	}
+	LEAVE;
+#else
+	ENTER(set_projection_3d);
+	USE_PARAMETER(widget_id);
+	USE_PARAMETER(call_data);
+	USE_PARAMETER(client_data);
+	LEAVE;
+#endif /* defined (UNEMAP_USE_NODES) */
+} /* set_projection_3d */
 
 static void identify_mapping_colour_or_auxi(Widget *widget_id,
 	XtPointer mapping_window,XtPointer call_data)
@@ -2951,6 +3363,12 @@ and frees the memory for the mapping window.
 	USE_PARAMETER(call_data);
 	if (mapping=(struct Mapping_window *)client_data)
 	{
+#if defined (UNEMAP_USE_NODES)
+		if(mapping->scene_viewer)
+		{
+			DESTROY(Scene_viewer)(&(mapping->scene_viewer));
+		}
+#endif /*defined (UNEMAP_USE_NODES)*/
 		if (mapping->potential_time_object)
 		{
 			DEACCESS(Time_object)(&(mapping->potential_time_object));
@@ -3015,7 +3433,7 @@ mapping_window.
 		if (open_printer(&printer,mapping->user_interface))
 		{
 			if (XGetWindowAttributes(mapping->user_interface->display,
-				XtWindow(mapping->map_drawing_area),&window_attributes))
+				XtWindow(mapping->map_drawing_area_2d),&window_attributes))
 			{
 				/* open the postscript file */
 				if (open_postscript(file_name,PORTRAIT,window_attributes.colormap,
@@ -3555,6 +3973,7 @@ the mapping_window.
 	return (return_code);
 } /* write_map_animation_tiff_file */
 
+
 static struct Mapping_window *create_Mapping_window(
 	struct Mapping_window **address,char *open,
 	struct Mapping_window **current_address,Widget activation,Widget parent,
@@ -3564,7 +3983,7 @@ static struct Mapping_window *create_Mapping_window(
 	struct Map_drawing_information *map_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 1 February 2000
+LAST MODIFIED : 29 May 2000
 
 DESCRIPTION :
 This function allocates the memory for a mapping_window and sets the fields to
@@ -3626,15 +4045,30 @@ the created mapping window.  If unsuccessful, NULL is returned.
 			{"identify_mapping_region_place_h",
 				(XtPointer)identify_mapping_region_place_h},
 			{"identify_mapping_projection_cho",
-				(XtPointer)identify_mapping_projection_cho},
+				(XtPointer)identify_mapping_projection_cho},	
+			{"identify_mapping_projection_cyl",
+				(XtPointer)identify_mapping_projection_cyl},
+			{"identify_mapping_projection_ham",
+				(XtPointer)identify_mapping_projection_ham},
+			{"identify_mapping_projection_pol",
+				(XtPointer)identify_mapping_projection_pol},
+			{"identify_mapping_projection_pat",
+				(XtPointer)identify_mapping_projection_pat},
+			{"identify_mapping_projection_3d",
+				(XtPointer)identify_mapping_projection_3d},
 			{"set_projection_Hammer",(XtPointer)set_projection_Hammer},
 			{"set_projection_polar",(XtPointer)set_projection_polar},
+			{"set_projection_patch",(XtPointer)set_projection_patch},
+			{"set_projection_3d",(XtPointer)set_projection_3d},
+			{"set_projection_cylinder",(XtPointer)set_projection_cylinder},
 			{"identify_mapping_close_button",
 				(XtPointer)identify_mapping_close_button},
-			{"identify_mapping_drawing_area",
-				(XtPointer)identify_mapping_drawing_area},
-			{"expose_mapping_drawing_area",(XtPointer)expose_mapping_drawing_area},
-			{"resize_mapping_drawing_area",(XtPointer)resize_mapping_drawing_area},
+			{"identify_mapping_area",(XtPointer)identify_mapping_area},
+			{"identify_mapping_area_2d",(XtPointer)identify_mapping_area_2d},
+			{"identify_mapping_area_3d",(XtPointer)identify_mapping_area_3d},
+			{"identify_map_drawing_area_2d",(XtPointer)identify_mapping_drawing_area_2d},
+			{"expose_map_drawing_area_2d",(XtPointer)expose_mapping_drawing_area_2d},
+			{"resize_map_drawing_area_2d",(XtPointer)resize_mapping_drawing_area_2d},
 			{"identify_mapping_colour_or_auxi",
 				(XtPointer)identify_mapping_colour_or_auxi},
 			{"expose_mapping_colour_or_auxili",
@@ -3696,6 +4130,11 @@ the created mapping window.  If unsuccessful, NULL is returned.
 				mapping->file_menu.read_bard_electrode_button=(Widget)NULL;
 				mapping->file_menu.set_default_configuration_button=(Widget)NULL;
 				mapping->projection_choice=(Widget)NULL;
+				mapping->projection_cylinder=(Widget)NULL;
+				mapping->projection_hammer=(Widget)NULL;
+				mapping->projection_polar=(Widget)NULL;
+				mapping->projection_patch=(Widget)NULL;
+				mapping->projection_3d=(Widget)NULL;
 				mapping->region_choice=(Widget)NULL;
 				mapping->region_pull_down_menu=(Widget)NULL;
 				mapping->number_of_regions=0;
@@ -3709,7 +4148,11 @@ the created mapping window.  If unsuccessful, NULL is returned.
 				(mapping->print_menu).animate_rgb_button=(Widget)NULL;
 				(mapping->print_menu).animate_tiff_button=(Widget)NULL;
 				mapping->close_button=(Widget)NULL;
-				mapping->map_drawing_area=(Widget)NULL;
+				mapping->mapping_area=(Widget)NULL;
+				mapping->mapping_area_2d=(Widget)NULL;
+				mapping->mapping_area_3d=(Widget)NULL;
+				mapping->map_drawing_area_2d=(Widget)NULL;
+				mapping->scene_viewer=(struct Scene_viewer *)NULL;
 				mapping->map_drawing=(struct Drawing_2d *)NULL;
 				mapping->colour_or_auxiliary_drawing_area=(Widget)NULL;
 				mapping->colour_or_auxiliary_drawing=(struct Drawing_2d *)NULL;
@@ -3753,6 +4196,7 @@ the created mapping window.  If unsuccessful, NULL is returned.
 						if (MrmSUCCESS==MrmFetchWidget(mapping_window_hierarchy,
 							"mapping_window",parent,&(mapping->window),&mapping_window_class))
 						{
+							/* other Xt stuff set up in */						
 							widget_spacing=user_interface->widget_spacing;
 							/* set the height and background colour of the interval drawing
 								area */
@@ -3760,7 +4204,7 @@ the created mapping window.  If unsuccessful, NULL is returned.
 								XmNheight,screen_height/16,XmNbackground,
 								map_drawing_information->background_drawing_colour,NULL);
 							/* set the background colour of the map drawing area */
-							XtVaSetValues(mapping->map_drawing_area,XmNbackground,
+							XtVaSetValues(mapping->map_drawing_area_2d,XmNbackground,
 								map_drawing_information->background_drawing_colour,NULL);
 							/* adjust the projection choice */
 							child_widget=XmOptionLabelGadget(mapping->projection_choice);
@@ -4034,8 +4478,7 @@ properties.  Then the mapping window is opened.
 					print_spectrum,projection_type,contour_thickness,rig_address,
 					event_number_address,potential_time_address,datum_address,
 					start_search_interval,end_search_interval,map_drawing_information,
-					user_interface,
-						unemap_package),
+					user_interface,unemap_package),
 					rig_address,identifying_colour,screen_height,
 					configuration_file_extension,postscript_file_extension,
 					map_drawing_information,user_interface))
@@ -4080,7 +4523,7 @@ properties.  Then the mapping window is opened.
 						case ANALYSIS_ASSOCIATE:
 						{
 							/*??? will eventually be for both analysis and acquisition */
-							XtAddCallback(mapping->map_drawing_area,XmNinputCallback,
+							XtAddCallback(mapping->map_drawing_area_2d,XmNinputCallback,
 								(XtCallbackProc)select_map_drawing_area,work_area);
 							XtAddCallback(mapping->colour_or_auxiliary_drawing_area,
 								XmNinputCallback,
@@ -4170,7 +4613,7 @@ properties.  Then the mapping window is opened.
 	return (return_code);
 } /* open_mapping_window */
 
-int update_mapping_drawing_area(struct Mapping_window *mapping,int recalculate)
+static int update_mapping_drawing_area_2d(struct Mapping_window *mapping,int recalculate)
 /*******************************************************************************
 LAST MODIFIED : 30 April 1999
 
@@ -4185,8 +4628,9 @@ the interpolation functions are also recalculated.
 	struct Map_drawing_information *drawing_information;
 
 	ENTER(update_mapping_drawing_area);
-	if (mapping&&(drawing=mapping->map_drawing)&&
-		(mapping->map_drawing_area)&&
+	if (mapping&&
+		(drawing=mapping->map_drawing)&&
+		(mapping->map_drawing_area_2d)&&
 		(drawing_information=mapping->map->drawing_information)&&
 		(drawing_information->user_interface))
 	{
@@ -4197,7 +4641,7 @@ the interpolation functions are also recalculated.
 		/* draw the map */
 		draw_map(mapping->map,recalculate,drawing);
 		XCopyArea(drawing_information->user_interface->display,
-			drawing->pixel_map,XtWindow(mapping->map_drawing_area),
+			drawing->pixel_map,XtWindow(mapping->map_drawing_area_2d),
 			(drawing_information->graphics_context).copy,0,0,
 			drawing->width,drawing->height,0,0);
 		return_code=1;
@@ -4207,9 +4651,45 @@ the interpolation functions are also recalculated.
 		return_code=0;
 	}
 	LEAVE;
-
 	return (return_code);
-} /* update_mapping_drawing_area */
+} /* update_mapping_drawing_area_2d */
+
+int update_mapping_drawing_area(struct Mapping_window *mapping,int recalculate)
+/*******************************************************************************
+LAST MODIFIED : 30 May 2000
+
+DESCRIPTION :
+Calls draw_map_3d or update_mapping_drawing_area_2d depending upon
+<mapping> ->map->projection_type
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(update_mapping_drawing_area);
+	if(mapping)
+	{
+#if defined (UNEMAP_USE_NODES) 
+		/* 3d map for 3d projection */
+		if(mapping->map->projection_type==THREED_PROJECTION)
+		{			
+			return_code=draw_map(mapping->map,recalculate,mapping->map_drawing);
+		}
+		else
+		{
+			return_code=update_mapping_drawing_area_2d(mapping,recalculate);
+		}	
+#else
+		/* old, 2d map*/
+		update_mapping_drawing_area_2d(mapping,recalculate);
+#endif /*defined( UNEMAP_USE_NODES) */	
+	}
+	else
+	{		
+		return_code=0;
+	}	
+	LEAVE;
+	return(return_code);
+}/* update_mapping_drawing_area */
 
 int update_mapping_colour_or_auxili(struct Mapping_window *mapping)
 /*******************************************************************************
@@ -4261,7 +4741,7 @@ DESCRIPTION :
 Updates the mapping region pull down menu to be consistent with the current rig.
 ==============================================================================*/
 {
-	Widget current_region;
+	Widget current_projection,current_region;
 	WidgetList regions;
 	int number_of_regions,return_code;
 #define NUMBER_OF_ATTRIBUTES 2
@@ -4361,6 +4841,8 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 					}
 					if (return_code)
 					{
+
+#if defined (OLD_CODE)
 						/* update projection choice */
 						if ((rig->current_region)&&(SOCK==rig->current_region->type))
 						{
@@ -4375,7 +4857,127 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 							XtVaSetValues(mapping->region_choice,
 								XmNleftWidget,mapping->print_button,
 								NULL);
-						}
+						}					
+#endif /* defined (OLD_CODE)	*/
+#if defined (UNEMAP_USE_NODES)						
+						XtManageChild(mapping->projection_choice);
+						XtVaSetValues(mapping->region_choice,
+							XmNleftWidget,mapping->projection_choice,
+							NULL);
+						/* now need to hide the inappropriate choices */
+						/*all off*/
+						XtSetSensitive(mapping->projection_cylinder,False);
+						XtSetSensitive(mapping->projection_hammer,False);
+						XtSetSensitive(mapping->projection_polar,False);
+						XtSetSensitive(mapping->projection_3d,False);
+						XtSetSensitive(mapping->projection_patch,False);
+						switch(rig->current_region->type)
+						{
+							case SOCK:
+							{
+								XtSetSensitive(mapping->projection_hammer,True);
+								XtSetSensitive(mapping->projection_polar,True);
+								XtSetSensitive(mapping->projection_3d,True);
+								/* set the projection choic */
+								XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
+									&current_projection,NULL);
+								if ((current_projection!=mapping->projection_hammer)&&
+									(current_projection!=mapping->projection_polar)
+									&&(current_projection!=mapping->projection_3d))
+								{
+									XtVaSetValues(mapping->projection_choice,
+										XmNmenuHistory,mapping->projection_hammer,
+										NULL);
+								}
+							}break;
+							case TORSO:
+							{
+								XtSetSensitive(mapping->projection_cylinder,True);
+								XtSetSensitive(mapping->projection_3d,True);	
+								/* set the projection choice */
+								XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
+									&current_projection,NULL);
+								if ((current_projection!=mapping->projection_cylinder)									
+									&&(current_projection!=mapping->projection_3d))
+								{
+									XtVaSetValues(mapping->projection_choice,
+										XmNmenuHistory,mapping->projection_cylinder,
+										NULL);
+								}
+							}break;
+							case PATCH:
+							{									
+								XtSetSensitive(mapping->projection_patch,True);
+								XtSetSensitive(mapping->projection_3d,True);
+								/* set the projection choice */
+								XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
+									&current_projection,NULL);
+								if ((current_projection!=mapping->projection_patch)									
+									&&(current_projection!=mapping->projection_3d))
+								{
+									XtVaSetValues(mapping->projection_choice,
+										XmNmenuHistory,mapping->projection_patch,
+										NULL);
+								}
+							}break;
+						}/* switch(rig->current_region->type) */	
+#else 
+							XtManageChild(mapping->projection_choice);
+						XtVaSetValues(mapping->region_choice,
+							XmNleftWidget,mapping->projection_choice,
+							NULL);
+						/* now need to hide the inappropriate choices */
+						/*all off*/
+						XtSetSensitive(mapping->projection_cylinder,False);
+						XtSetSensitive(mapping->projection_hammer,False);
+						XtSetSensitive(mapping->projection_polar,False);
+						XtSetSensitive(mapping->projection_3d,False);
+						XtSetSensitive(mapping->projection_patch,False);
+						switch(rig->current_region->type)
+						{
+							case SOCK:
+							{
+								XtSetSensitive(mapping->projection_hammer,True);
+								XtSetSensitive(mapping->projection_polar,True);							
+								/* set the projection choic */
+								XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
+									&current_projection,NULL);
+								if ((current_projection!=mapping->projection_hammer)&&
+									(current_projection!=mapping->projection_polar))
+								{
+									XtVaSetValues(mapping->projection_choice,
+										XmNmenuHistory,mapping->projection_hammer,
+										NULL);
+								}
+							}break;
+							case TORSO:
+							{
+								XtSetSensitive(mapping->projection_cylinder,True);								
+								/* set the projection choice */
+								XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
+									&current_projection,NULL);
+								if ((current_projection!=mapping->projection_cylinder))
+								{
+									XtVaSetValues(mapping->projection_choice,
+										XmNmenuHistory,mapping->projection_cylinder,
+										NULL);
+								}
+							}break;
+							case PATCH:
+							{									
+								XtSetSensitive(mapping->projection_patch,True);							
+								/* set the projection choice */
+								XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
+									&current_projection,NULL);
+								if ((current_projection!=mapping->projection_patch))
+								{
+									XtVaSetValues(mapping->projection_choice,
+										XmNmenuHistory,mapping->projection_patch,
+										NULL);
+								}
+							}break;
+						}/* switch(rig->current_region->type) */																
+#endif /* defined (UNEMAP_USE_NODES) */
 						XtVaSetValues(mapping->region_choice,
 							XmNmenuHistory,current_region,
 							NULL);
@@ -4486,7 +5088,7 @@ window.
 		if (map&&(map->electrodes_option!=HIDE_ELECTRODES)&&
 			(electrode_number>=0)&&(map->electrode_drawn)&&
 			((map->electrode_drawn)[electrode_number])&&mapping&&
-			(mapping->map_drawing_area)&&(mapping->map_drawing))
+			(mapping->map_drawing_area_2d)&&(mapping->map_drawing))
 		{
 #if defined (OLD_CODE)
 			event_number= *(map->event_number);
@@ -4832,7 +5434,7 @@ window.
 					}
 				}
 				XCopyArea(display,mapping->map_drawing->pixel_map,
-					XtWindow(mapping->map_drawing_area),
+					XtWindow(mapping->map_drawing_area_2d),
 					(drawing_information->graphics_context).copy,xmin,ymin,xmax-xmin+1,
 					ymax-ymin+1,xmin,ymin);
 				return_code=1;
