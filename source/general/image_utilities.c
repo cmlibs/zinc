@@ -1013,11 +1013,12 @@ Writes an image in SGI rgb file format.
 {
 	char bytes_per_component,dummy[404],image_name[80],storage;
 	FILE *output_file;
-	int i,k,l,least_to_most,return_code;
+	int bytes_per_pixel,i,k,l,least_to_most,return_code;
 	long colour_map,maximum_pixel_value,minimum_pixel_value,
 	   row_size,row_sizes,row_start,row_starts;
 	short magic_number;
-	unsigned char last_pixel,*pixel,run[0x7f],run_length;
+	unsigned char last_pixel,maximum_pixel_value_char[4],minimum_pixel_value_char[4],
+	   *pixel,run[0x7f],run_length,row_size_char[4],row_start_char[4];
 	unsigned short components,dimension,height,width;
 
 	ENTER(write_rgb_image_file);
@@ -1038,6 +1039,7 @@ Writes an image in SGI rgb file format.
 				/* use run length encoding */
 				storage=1;
 				bytes_per_component=1;
+				bytes_per_pixel = 4;
 				dimension=3;
 				width=number_of_columns;
 				height=number_of_rows;
@@ -1055,6 +1057,14 @@ Writes an image in SGI rgb file format.
 				/* normal interpretation (B/W for 1 component, RGB for 3 components
 					and RGBA for 4 components) of image file */
 				colour_map=0;
+				minimum_pixel_value_char[0] = (unsigned char)(((0xff000000 & minimum_pixel_value)) >> 24);
+				minimum_pixel_value_char[1] = (unsigned char)(((0x00ff0000 & minimum_pixel_value)) >> 16);
+				minimum_pixel_value_char[2] = (unsigned char)(((0x0000ff00 & minimum_pixel_value)) >> 8);
+				minimum_pixel_value_char[3] = (unsigned char)(((0x000000ff & minimum_pixel_value)));
+				maximum_pixel_value_char[0] = (unsigned char)(((0xff000000 & maximum_pixel_value)) >> 24);
+				maximum_pixel_value_char[1] = (unsigned char)(((0x00ff0000 & maximum_pixel_value)) >> 16);
+				maximum_pixel_value_char[2] = (unsigned char)(((0x0000ff00 & maximum_pixel_value)) >> 8);
+				maximum_pixel_value_char[3] = (unsigned char)(((0x000000ff & maximum_pixel_value)));
 				if ((1==byte_swap_and_write((unsigned char *)&magic_number,2,1,
 					least_to_most,output_file))&&
 					(1==byte_swap_and_write((unsigned char *)&storage,1,1,least_to_most,
@@ -1069,10 +1079,10 @@ Writes an image in SGI rgb file format.
 					output_file))&&
 					(1==byte_swap_and_write((unsigned char *)&components,2,1,
 					least_to_most,output_file))&&
-					(1==byte_swap_and_write((unsigned char *)&minimum_pixel_value,4,1,
-					least_to_most,output_file))&&
-					(1==byte_swap_and_write((unsigned char *)&maximum_pixel_value,4,1,
-					least_to_most,output_file))&&
+					(1==byte_swap_and_write(minimum_pixel_value_char,4,1,
+						least_to_most,output_file))&&
+					(1==byte_swap_and_write(maximum_pixel_value_char,4,1,
+						least_to_most,output_file))&&
 					(1==byte_swap_and_write((unsigned char *)dummy,4,1,least_to_most,
 					output_file))&&
 					(1==byte_swap_and_write((unsigned char *)image_name,80,1,
@@ -1083,25 +1093,29 @@ Writes an image in SGI rgb file format.
 					output_file)))
 				{
 					/* write the image header */
-					row_starts=(long)(512+number_of_rows*sizeof(unsigned long));
+				   /* I want to avoid platform dependencies such as sizeof (long) */
+					row_starts=(long)(512+number_of_rows*bytes_per_pixel);
 					row_sizes=(long)(512+(number_of_components+1)*number_of_rows*
-						sizeof(unsigned long));
+										  bytes_per_pixel);
 					row_start=(long)(512+2*number_of_components*number_of_rows*
-						sizeof(unsigned long));
+										  bytes_per_pixel);
 					for (i=number_of_rows-1;i>=0;i--)
 					{
-						row_sizes -= sizeof(unsigned long);
-						row_starts -= sizeof(unsigned long);
+						row_sizes -= bytes_per_pixel;
+						row_starts -= bytes_per_pixel;
 						for (l=0;l<number_of_components;l++)
 						{
 							fseek(output_file,row_starts+(long)(l*number_of_rows*
-								sizeof(unsigned long)),SEEK_SET);
-							byte_swap_and_write((unsigned char *)&row_start,
-								sizeof(unsigned long),1,least_to_most,output_file);
+								bytes_per_pixel),SEEK_SET);
+							row_start_char[0] = (unsigned char)(((0xff000000 & row_start)) >> 24);
+							row_start_char[1] = (unsigned char)(((0x00ff0000 & row_start)) >> 16);
+							row_start_char[2] = (unsigned char)(((0x0000ff00 & row_start)) >> 8);
+							row_start_char[3] = (unsigned char)(((0x000000ff & row_start)));
+							byte_swap_and_write(row_start_char,4,1,least_to_most,output_file);
 							fseek(output_file,row_start,SEEK_SET);
 							row_size=0;
 							pixel=((unsigned char *)image)+number_of_components*
-							i*(number_of_columns+row_padding)+l;
+							   i*(number_of_columns+row_padding)+l;
 							k=number_of_columns;
 							while (k>0)
 							{
@@ -1161,9 +1175,12 @@ Writes an image in SGI rgb file format.
 								sizeof(unsigned char),1,least_to_most,output_file);
 							row_size++;
 							fseek(output_file,row_sizes+(long)(l*number_of_rows*
-								sizeof(unsigned long)),SEEK_SET);
-							byte_swap_and_write((unsigned char *)&row_size,
-								sizeof(unsigned long),1,least_to_most,output_file);
+								bytes_per_pixel),SEEK_SET);
+							row_size_char[0] = (unsigned char)(((0xff000000 & row_size)) >> 24);
+							row_size_char[1] = (unsigned char)(((0x00ff0000 & row_size)) >> 16);
+							row_size_char[2] = (unsigned char)(((0x0000ff00 & row_size)) >> 8);
+							row_size_char[3] = (unsigned char)(((0x000000ff & row_size)));
+							byte_swap_and_write(row_size_char,4,1,least_to_most,output_file);
 							row_start += row_size;
 						}
 					}
