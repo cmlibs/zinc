@@ -1193,7 +1193,7 @@ ifeq ($(SYSNAME:IRIX%=),)
    ALL_SO_LINK_FLAGS = -no_unresolved
 endif # SYSNAME == IRIX%=
 ifeq ($(SYSNAME),Linux)
-   ALL_SO_LINK_FLAGS = -Wl,--no-undefined 
+   ALL_SO_LINK_FLAGS = -lgcc_s -Wl,--no-undefined 
 #   ALL_SO_LINK_FLAGS =
 endif # SYSNAME == Linux
 
@@ -1241,7 +1241,16 @@ LIB_COMPUTED_VARIABLE_SRCS = \
 	api/cmiss_variable_new.cpp \
 	api/cmiss_variable_new_basic.cpp \
 	$(filter-out %finite_element.c,$(COMPUTED_VARIABLE_SRCS)) \
-	$(MATRIX_SRCS)
+	$(MATRIX_SRCS) \
+	api/cmiss_value_derivative_matrix.c \
+	api/cmiss_value_fe_value.c \
+	api/cmiss_value_matrix.c \
+	api/cmiss_variable.c \
+	api/cmiss_variable_composite.c \
+	api/cmiss_variable_composition.c \
+	api/cmiss_variable_coordinates.c \
+	api/cmiss_variable_derivative.c \
+	api/cmiss_variable_identity.c	
 LIB_COMPUTED_VARIABLE_OBJS = $(addsuffix .o,$(basename $(LIB_COMPUTED_VARIABLE_SRCS)))
 $(SO_LIB_COMPUTED_VARIABLE_TARGET) : $(LIB_COMPUTED_VARIABLE_OBJS) $(SO_LIB_GENERAL_TARGET) cmgui.Makefile
 	$(call BuildSharedLibraryTarget,$(SO_LIB_COMPUTED_VARIABLE_TARGET),$(BIN_PATH),$(LIB_COMPUTED_VARIABLE_OBJS),$(ALL_SO_LINK_FLAGS) $(BIN_PATH)/$(SO_LIB_GENERAL_TARGET) $(MATRIX_LIB) $(LIB),$(SO_LIB_COMPUTED_VARIABLE_SONAME))
@@ -1250,7 +1259,9 @@ SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT = cmgui_computed_variable_finite_element
 SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET = lib$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT)$(TARGET_SUFFIX)$(SO_LIB_SUFFIX)
 SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SONAME = lib$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT)$(SO_LIB_SUFFIX)
 LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SRCS = \
-	$(filter %finite_element.c,$(COMPUTED_VARIABLE_SRCS))
+	$(filter %finite_element.c,$(COMPUTED_VARIABLE_SRCS)) \
+	api/cmiss_value_element_xi.c \
+	api/cmiss_variable_finite_element.c
 LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_OBJS = $(addsuffix .o,$(basename $(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SRCS)))
 $(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET) : $(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_OBJS) $(SO_LIB_COMPUTED_VARIABLE_TARGET) $(SO_LIB_FINITE_ELEMENT_TARGET) $(SO_LIB_GENERAL_TARGET) cmgui.Makefile
 	$(call BuildSharedLibraryTarget,$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET),$(BIN_PATH),$(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_OBJS),$(ALL_SO_LINK_FLAGS) $(BIN_PATH)/$(SO_LIB_COMPUTED_VARIABLE_TARGET) $(BIN_PATH)/$(SO_LIB_FINITE_ELEMENT_TARGET) $(BIN_PATH)/$(SO_LIB_GENERAL_TARGET),$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SONAME))
