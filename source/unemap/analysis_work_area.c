@@ -2191,14 +2191,61 @@ Called when the "Save interval" button is clicked.
 	LEAVE;
 } /* analysis_write_interval */
 
+static int set_up_time_keeper_after_read(struct Analysis_work_area *analysis)
+/*******************************************************************************
+LAST MODIFIED : 28 November 2001
+
+DESCRIPTION :
+After a signal (or EDF or similar) file is loaded, sets up the timekeeper
+to be consistant with it.
+==============================================================================*/
+{
+	int potential_time,return_code,*times;
+	float frequency;
+	struct Signal_buffer *buffer;
+	struct Rig *rig;
+
+	ENTER(set_up_time_keeper_after_read);
+	buffer=(struct Signal_buffer *)NULL;
+	rig=(struct Rig *)NULL;
+	times=(int *)NULL;
+	if((analysis)&&(rig=analysis->rig)&&(rig->devices)&&(*(rig->devices))&&
+		(buffer=get_Device_signal_buffer(*(rig->devices))))
+	{		
+		return_code=1;
+		/*set the time keeper to the new current time. Important to keep any */
+		/*movie player in sync */
+		frequency=buffer->frequency;
+		times=buffer->times;
+		potential_time=analysis->potential_time;
+		Time_keeper_request_new_time(Time_object_get_time_keeper(
+			analysis->potential_time_object),((double)times[potential_time]*1000.0/
+				frequency));
+		Time_keeper_set_minimum(Time_object_get_time_keeper(
+			analysis->potential_time_object),
+			(float)buffer->times[analysis->start_search_interval]*1000.0/frequency);
+		Time_keeper_set_maximum(Time_object_get_time_keeper(
+			analysis->potential_time_object),
+			(float)buffer->times[analysis->end_search_interval]*1000.0/frequency);
+	}	
+	else
+	{
+		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"analysis_write_interval .Invalid arguments");
+	}
+	LEAVE;
+	return(return_code);
+}/* set_up_time_keeper_after_read */
+
 static int analysis_read_signal_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 11 September 2001
+LAST MODIFIED : 28 November 2001
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a set of signals.
 ==============================================================================*/
-{
+{	
 	char calculate_events,*temp_string,value_string[10];
 	enum Datum_type datum_type;
 	enum Edit_order edit_order;
@@ -3045,7 +3092,8 @@ Sets up the analysis work area for analysing a set of signals.
 			/*trigger the selction callback*/
 			FE_node_selection_select_node(node_selection,rig_node);
 		}
-#endif /* defined (UNEMAP_USE_3D) */
+#endif /* defined (UNEMAP_USE_3D) */		
+		set_up_time_keeper_after_read(analysis);
 	}
 	else
 	{
@@ -3059,7 +3107,7 @@ Sets up the analysis work area for analysing a set of signals.
 
 static int read_event_times_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 26 October 2001
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a previously analysed set of
@@ -4134,8 +4182,10 @@ signals.
 					}
 				}
 #endif /* defined (UNEMAP_USE_3D) */
+					/*set the time keeper to the new current time. Important to keep any */
+					/*movie player in sync */
 				update_analysis_window_menu(analysis->window);
-				update_mapping_window_menu(analysis->mapping_window);
+				update_mapping_window_menu(analysis->mapping_window);		 
 				/* update the drawing areas */
 				update_mapping_drawing_area(analysis->mapping_window,2);
 				update_mapping_colour_or_auxili(analysis->mapping_window);
@@ -4144,6 +4194,9 @@ signals.
 				trace_change_signal(analysis->trace);
 				/* free the old analysis window title */
 				XmStringFree(old_dialog_title);
+				/*set the time keeper to the new current time. Important to keep any */
+				/*movie player in sync */				
+				set_up_time_keeper_after_read(analysis);
 			}
 			else
 			{
@@ -4542,7 +4595,7 @@ for analysing the signals.
 static void analysis_read_edf_file(Widget widget,XtPointer analysis_work_area,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 4 October 2001
+LAST MODIFIED : 28 November 2001
 
 DESCRIPTION :
 Reads in the signals from the edf file and sets up the analysis work area
@@ -4874,7 +4927,10 @@ for analysing the signals.
 				FE_node_selection_select_node(node_selection,rig_node);
 			}
 #endif /* defined (UNEMAP_USE_3D) */
-		}
+			/*set the time keeper to the new current time. Important to keep any */
+			/*movie player in sync */
+			set_up_time_keeper_after_read(analysis);		
+		}/* if(success) */
 	}
 	else
 	{
@@ -7569,7 +7625,7 @@ event.
 						/*if we have a map, update it */
 						if(mapping&&mapping->map)
 						{
-							update_map_from_maunal_time_update(mapping);						
+							update_map_from_manual_time_update(mapping);						
 						}				 
 					}break;
 					case ButtonPress:
@@ -7781,7 +7837,7 @@ Electrical_imaging_event.
 						/*if we have a map, update it */
 						if(mapping&&mapping->map)
 						{
-							update_map_from_maunal_time_update(mapping);						
+							update_map_from_manual_time_update(mapping);						
 						}	
 						/* if the deleted event was the current one, and there's an event*/
 						/* remaining, make it the current event*/
@@ -7821,7 +7877,7 @@ Electrical_imaging_event.
 						/*if we have a map, update it */
 						if(mapping&&mapping->map)
 						{
-							update_map_from_maunal_time_update(mapping);						
+							update_map_from_manual_time_update(mapping);						
 						}	
 					}/*if(working_button==Button3)*/
 				}/* if(found) */
@@ -14438,7 +14494,7 @@ Responds to update callbacks from the time object.
 												{													
 #endif /* defined (UNEMAP_USE_3D) */
 													/* 2d map */
-													update_map_from_maunal_time_update(mapping);													
+													update_map_from_manual_time_update(mapping);													
 													map->start_time=map_potential_time;
 													map->end_time=map->start_time;
 #if defined (UNEMAP_USE_3D)
@@ -14456,7 +14512,7 @@ Responds to update callbacks from the time object.
 										} 
 										else
 										{ 
-											update_map_from_maunal_time_update(mapping);
+											update_map_from_manual_time_update(mapping);
 										}
 									}break;
 									case NO_INTERPOLATION:
@@ -14483,7 +14539,7 @@ Responds to update callbacks from the time object.
 #endif /* defined (DEBUG) */
 								if ((0<=map->activation_front)&&
 									(map->activation_front<number_of_spectrum_colours))
-								{
+								{								
 									if (drawing_information->read_only_colour_map)
 									{
 										update_mapping_drawing_area(mapping,0);
@@ -14552,7 +14608,7 @@ Responds to update callbacks from the time object.
 								{
 									if (Time_keeper_is_playing(
 										Time_object_get_time_keeper(analysis->potential_time_object)))
-									{
+									{										
 										display_message(ERROR_MESSAGE,
 											"analysis_potential_time_update_callback.  "
 											"Time outside range of single activation");
