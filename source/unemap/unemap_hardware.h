@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.h
 
-LAST MODIFIED : 12 November 2000
+LAST MODIFIED : 16 November 2001
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -49,12 +49,19 @@ DESCRIPTION :
 typedef void (Unemap_hardware_callback)(int,int *,int,short *,void *);
 
 /* see unemap_calibrate for a description of the arguments */
-typedef void (Calibration_end_callback)(const int,const int *,const float *, \
-	const float *,void *);
+typedef void (Unemap_calibration_end_callback)(const int,const int *, \
+	const float *,const float *,void *);
 
 /* see unemap_get_samples_acquired_background for a description of the
 	arguments */
-typedef void (Acquired_data_callback)(const int,const int,const short *,void *);
+typedef void (Unemap_acquired_data_callback)(const int,const int, \
+	const short *,void *);
+
+/* see unemap_tranfer_samples_acquired for a description of the arguments */
+typedef int (Unemap_transfer_samples_function)(short int *,int,void *);
+
+/* see unemap_load_voltage_stimulating for a description of the arguments */
+typedef int (Unemap_stimulation_end_callback)(void *);
 
 /*
 Global functions
@@ -193,7 +200,7 @@ Stops scrolling messages/callbacks.  Also need to be sampling to get messages/
 callbacks.  Allows sampling without scrolling.
 ==============================================================================*/
 
-int unemap_calibrate(Calibration_end_callback *calibration_end_callback,
+int unemap_calibrate(Unemap_calibration_end_callback *calibration_end_callback,
 	void *calibration_end_callback_data);
 /*******************************************************************************
 LAST MODIFIED : 12 February 1999
@@ -373,6 +380,26 @@ The number of samples acquired per channel since <unemap_start_sampling> is
 assigned to <*number_of_samples>.
 ==============================================================================*/
 
+int unemap_transfer_samples_acquired(int channel_number,
+	Unemap_transfer_samples_function *transfer_samples_function,
+	void *transfer_samples_function_data,int *number_of_samples_transferred);
+/*******************************************************************************
+LAST MODIFIED : 12 November 2001
+
+DESCRIPTION :
+The function fails if the hardware is not configured.
+
+If <channel_number> is valid (between 1 and the total number of channels
+inclusive, then the <samples> for that channel are transferred.  If
+<channel_number> is 0 then the <samples> for all channels are transferred.
+Otherwise the function fails.
+
+The <transfer_samples_function> is used to transfer the samples.  It is called
+with samples (short int *), number_of_samples (int) and
+<transfer_samples_function_data>.  It should return the number of samples
+transferred.
+==============================================================================*/
+
 int unemap_write_samples_acquired(int channel_number,FILE *file);
 /*******************************************************************************
 LAST MODIFIED : 3 July 2000
@@ -400,7 +427,7 @@ Otherwise the function fails.
 ==============================================================================*/
 
 int unemap_get_samples_acquired_background(int channel_number,
-	Acquired_data_callback *callback,void *user_data);
+	Unemap_acquired_data_callback *callback,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 21 July 2000
 
@@ -480,9 +507,11 @@ The <*pre_filter_gain> and <*post_filter_gain> for the group are assigned.
 
 int unemap_load_voltage_stimulating(int number_of_channels,int *channel_numbers,
 	int number_of_voltages,float voltages_per_second,float *voltages,
-	unsigned int number_of_cycles);
+	unsigned int number_of_cycles,
+	Unemap_stimulation_end_callback *stimulation_end_callback,
+	void *stimulation_end_callback_data);
 /*******************************************************************************
-LAST MODIFIED : 12 November 2000
+LAST MODIFIED : 16 November 2001
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -507,15 +536,20 @@ If <number_of_cycles> is zero then the waveform is repeated until
 <unemap_stop_stimulating>, otherwise the waveform is repeated the
 <number_of_cycles> times or until <unemap_stop_stimulating>.
 
+The <stimulation_end_callback> is called with <stimulation_end_callback_data>
+when the stimulation ends.
+
 Use unemap_set_channel_stimulating to make a channel into a stimulating channel.
 Use <unemap_start_stimulating> to start the stimulating.
 ==============================================================================*/
 
 int unemap_load_current_stimulating(int number_of_channels,int *channel_numbers,
 	int number_of_currents,float currents_per_second,float *currents,
-	unsigned int number_of_cycles);
+	unsigned int number_of_cycles,
+	Unemap_stimulation_end_callback *stimulation_end_callback,
+	void *stimulation_end_callback_data);
 /*******************************************************************************
-LAST MODIFIED : 12 November 2000
+LAST MODIFIED : 16 November 2001
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -540,6 +574,9 @@ used.
 If <number_of_cycles> is zero then the waveform is repeated until
 <unemap_stop_stimulating>, otherwise the waveform is repeated the
 <number_of_cycles> times or until <unemap_stop_stimulating>.
+
+The <stimulation_end_callback> is called with <stimulation_end_callback_data>
+when the stimulation ends.
 
 Use unemap_set_channel_stimulating to make a channel into a stimulating channel.
 Use <unemap_start_stimulating> to start the stimulating.
