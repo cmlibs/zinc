@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.h
 
-LAST MODIFIED : 1 April 2001
+LAST MODIFIED : 18 April 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -132,26 +132,29 @@ The order in which the signals are drawn and edited.
 
 struct Signal_drawing_information
 /*******************************************************************************
-LAST MODIFIED : 29 November 1999
+LAST MODIFIED : 12 April 2001
 
 DESCRIPTION :
 Information needed for drawing a signal.  Windowing system dependent
 ==============================================================================*/
 {
 	int number_of_signal_overlay_colours;
-	Pixel accepted_colour,axis_colour,background_drawing_colour,datum_colour,
+	Pixel accepted_colour,axis_colour,background_drawing_colour,
+		cardiac_interval_colour,datum_colour,
 		device_name_colour,highlighted_colour,interval_box_colour,
-		potential_time_colour,rejected_colour,scaling_signal_colour,
-		signal_accepted_colour,*signal_overlay_colours,signal_rejected_colour,
-		signal_undecided_colour,undecided_colour,unhighlighted_colour;
+		potential_time_colour,pwave_colour,qrswave_colour,rejected_colour,
+		scaling_signal_colour,signal_accepted_colour,*signal_overlay_colours,
+		signal_rejected_colour,signal_undecided_colour,twave_colour,undecided_colour,
+		unhighlighted_colour;
 	struct
 	{
-		GC accepted_colour,axis_colour,background_drawing_colour,copy,datum_colour,
+		GC accepted_colour,axis_colour,background_drawing_colour,cardiac_interval_colour,
+			copy,datum_colour,
 			device_name_colour,highlighted_box_colour,highlighted_colour,
-			interval_box_colour,potential_time_colour,rejected_colour,
-			scaling_signal_colour,signal_accepted_colour,signal_overlay_colour,
-			signal_rejected_colour,signal_undecided_colour,spectrum,undecided_colour,
-			unhighlighted_colour;
+			interval_box_colour,potential_time_colour,pwave_colour,qrswave_colour,
+			rejected_colour,scaling_signal_colour,signal_accepted_colour,
+			signal_overlay_colour,signal_rejected_colour,signal_undecided_colour,spectrum,
+			undecided_colour,twave_colour,unhighlighted_colour;
 		/*???DB.  When using an RS/6000 model with the Color Graphics Display
 			Adapter (#2770), GCs stop writing text to the pixel map after they've
 			been used for drawing lines to the window.  So I duplicate them */
@@ -239,7 +242,7 @@ int draw_datum_marker(int datum,enum Signal_detail detail,int first_data,
 /*******************************************************************************
 LAST MODIFIED : 22 December 1996
 
-DESCRIPTION :
+DESCRIPTION : draws the datum marker
 ==============================================================================*/
 
 int draw_potential_time_marker(int time,struct Signal_buffer *buffer,
@@ -251,7 +254,7 @@ int draw_potential_time_marker(int time,struct Signal_buffer *buffer,
 /*******************************************************************************
 LAST MODIFIED : 22 December 1996
 
-DESCRIPTION :
+DESCRIPTION :draws the potential time_marker
 ==============================================================================*/
 
 int draw_event_marker(struct Event *event,int current_event_number,
@@ -263,7 +266,7 @@ int draw_event_marker(struct Event *event,int current_event_number,
 /*******************************************************************************
 LAST MODIFIED : 22 December 1996
 
-DESCRIPTION :
+DESCRIPTION : draws the event_marker
 ==============================================================================*/
 
 int draw_device_markers(struct Device *device,int first_data,int last_data,
@@ -275,7 +278,7 @@ int draw_device_markers(struct Device *device,int first_data,int last_data,
 /*******************************************************************************
 LAST MODIFIED : 22 December 1996
 
-DESCRIPTION :
+DESCRIPTION : draws the device_markers
 ==============================================================================*/
 
 struct Signal_drawing_information *create_Signal_drawing_information(
@@ -283,7 +286,7 @@ struct Signal_drawing_information *create_Signal_drawing_information(
 /*******************************************************************************
 LAST MODIFIED : 26 December 1996
 
-DESCRIPTION :
+DESCRIPTION : creates the Signal_drawing_information
 ==============================================================================*/
 
 int destroy_Signal_drawing_information(
@@ -291,7 +294,7 @@ int destroy_Signal_drawing_information(
 /*******************************************************************************
 LAST MODIFIED : 26 December 1996
 
-DESCRIPTION :
+DESCRIPTION : destroys  the Signal_drawing_information
 ==============================================================================*/
 
 int analysis_write_signal_file(char *file_name,struct Rig *rig,int datum,

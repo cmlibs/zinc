@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.h
 
-LAST MODIFIED : 1 April 2001
+LAST MODIFIED : 18 April 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -23,7 +23,7 @@ DESCRIPTION :
 Global types
 ------------
 */
-enum Signal_analysis_mode
+enum Signal_analysis_mode 
 /*******************************************************************************
 LAST MODIFIED : 9 February 2001
 
@@ -539,6 +539,19 @@ The drawing area 3 in the trace window.
 	int axes_height,axes_left,axes_top,axes_width;
 }; /* struct Trace_window_area_3 */
 
+struct Cardiac_interval
+/*******************************************************************************
+LAST MODIFIED : 22 March 2001
+
+DESCRIPTION :
+the Cardiac interval on the electrical imaging pane. P, T QRS, etc
+==============================================================================*/
+{
+	GC graphics_context; /*colour*/
+	int peak_or_trough_time,start_time,end_time;		
+	struct Cardiac_interval *next,*previous;
+}; /* struct Event */
+
 struct Trace_window
 /*******************************************************************************
 LAST MODIFIED : 15 August 1999
@@ -551,6 +564,7 @@ The trace window object.
 	struct Trace_window **address;
 	Widget activation,shell,window,paned_window;
 	enum Calculate_signal_mode calculate_signal_mode;
+	struct Cardiac_interval *first_interval;
 	enum Inverse_wave_mode inverse_wave_mode;
 	enum Inverse_electrodes_mode inverse_electrodes_mode;
 	enum Inverse_potential_activation_mode inverse_pot_act_mode;
@@ -617,7 +631,7 @@ int draw_search_box(int left,int top,int width,int height,
 /*******************************************************************************
 LAST MODIFIED : 4 January 2000
 
-DESCRIPTION :
+DESCRIPTION : draws the search box
 ==============================================================================*/
 
 int open_trace_window(struct Trace_window **trace_address,Widget parent,
@@ -781,4 +795,15 @@ DESCRIPTION :
 Sets both the cross correlation devices to the highlight device.  Should be
 called when the analysis rig is changed.
 ==============================================================================*/
+
+int move_cardiac_interval(XmDrawingAreaCallbackStruct *callback,
+	struct Device *highlight_device,struct Trace_window *trace,
+	struct Signal_drawing_information *signal_drawing_information,
+	struct User_interface *user_interface,int pointer_sensitivity);
+/*******************************************************************************
+LAST MODIFIED :  28 March 2001
+
+DESCRIPTION : Moves the cardiac interval in time.
+==============================================================================*/
+
 #endif /* !defined (TRACE_WINDOW_H) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 1 April 2001
+LAST MODIFIED : 18 April 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1633,7 +1633,7 @@ int draw_datum_marker(int datum,enum Signal_detail detail,int first_data,
 /*******************************************************************************
 LAST MODIFIED : 22 December 1996
 
-DESCRIPTION :
+DESCRIPTION : draws the datum_marker
 ==============================================================================*/
 {
 	int return_code,x_marker;
@@ -1838,7 +1838,7 @@ int draw_event_marker(struct Event *event,int current_event_number,
 /*******************************************************************************
 LAST MODIFIED : 1 January 1997
 
-DESCRIPTION :
+DESCRIPTION : draws the event_marker
 ==============================================================================*/
 {
 	char number_string[20];
@@ -1999,18 +1999,22 @@ int draw_device_markers(struct Device *device,int first_data,int last_data,
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 4 August 1999
+LAST MODIFIED : 26 March 2001
 
-DESCRIPTION :
+DESCRIPTION : Draws the markers for the device
 ==============================================================================*/
 {
 	int return_code,signal_index,*times;
 	float frequency;
-	struct Event *event;
+	struct Event *event;	
 	struct Signal *signal;
 	struct Signal_buffer *buffer;
 
 	ENTER(draw_device_markers);
+	times=(int *)NULL;
+	event=(struct Event *)NULL;	
+	signal=(struct Signal *)NULL;
+	buffer=(struct Signal_buffer *)NULL;
 	return_code=0;
 	if (device&&(buffer=get_Device_signal_buffer(device))&&(times=buffer->times))
 	{
@@ -2073,9 +2077,9 @@ DESCRIPTION :
 struct Signal_drawing_information *create_Signal_drawing_information(
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 14 December 1999
+LAST MODIFIED : 12 April 2001
 
-DESCRIPTION :
+DESCRIPTION : creates the Signal_drawing_information
 ==============================================================================*/
 {
 	char *overlay_colours_string,temp_char,*temp_string_1,*temp_string_2;
@@ -2088,6 +2092,8 @@ DESCRIPTION :
 #define XmCAcceptedColour "AcceptedColour"
 #define XmNaxisColour "axisColour"
 #define XmCAxisColour "AxisColour"
+#define XmNcardiacIntervalColour "cardiacIntervalColour"
+#define XmCCardiacIntervalColour "CardiacIntervalColour"
 #define XmNdatumColour "datumColour"
 #define XmCDatumColour "DatumColour"
 #define XmNdeviceNameColour "deviceNameColour"
@@ -2102,6 +2108,10 @@ DESCRIPTION :
 #define XmCOverlaySignalColours "OverlaySignalColours"
 #define XmNpotentialTimeColour "potentialTimeColour"
 #define XmCPotentialTimeColour "PotentialTimeColour"
+#define XmNpWaveColour "pWaveColour"
+#define XmCPWaveColour "PWaveColour"
+#define XmNqrsWaveColour "qrsWaveColour"
+#define XmCQRSWaveColour "QRSWaveColour"
 #define XmNrejectedColour "rejectedColour"
 #define XmCRejectedColour "RejectedColour"
 #define XmNscalingSignalColour "scalingSignalColour"
@@ -2112,10 +2122,13 @@ DESCRIPTION :
 #define XmCSignalRejectedColour "SignalRejectedColour"
 #define XmNsignalUndecidedColour "signalUndecidedColour"
 #define XmCSignalUndecidedColour "SignalUndecidedColour"
+#define XmNtWaveColour "tWaveColour"
+#define XmCTWaveColour "TWaveColour"
 #define XmNundecidedColour "undecidedColour"
 #define XmCUndecidedColour "UndecidedColour"
 #define XmNunhighlightedColour "unhighlightedColour"
 #define XmCUnhighlightedColour "UnhighlightedColour"
+
 	static XtResource resources[]=
 	{
 		{
@@ -2135,6 +2148,15 @@ DESCRIPTION :
 			XtOffsetOf(Signal_drawing_information_settings,axis_colour),
 			XmRString,
 			"blue"
+		},
+		{
+			XmNcardiacIntervalColour,
+			XmCCardiacIntervalColour,		
+			XmRPixel,
+			sizeof(Pixel),
+			XtOffsetOf(Signal_drawing_information_settings,cardiac_interval_colour),
+			XmRString,
+			"red"
 		},
 		{
 			XmNdatumColour,
@@ -2191,6 +2213,24 @@ DESCRIPTION :
 			"red"
 		},
 		{
+			XmNpWaveColour,
+			XmCPWaveColour,
+			XmRPixel,
+			sizeof(Pixel),
+			XtOffsetOf(Signal_drawing_information_settings,pwave_colour),
+			XmRString,
+			"white"
+		},
+		{
+			XmNqrsWaveColour,
+			XmCQRSWaveColour,
+			XmRPixel,
+			sizeof(Pixel),
+			XtOffsetOf(Signal_drawing_information_settings,qrswave_colour),
+			XmRString,
+			"cyan"
+		},
+		{
 			XmNrejectedColour,
 			XmCRejectedColour,
 			XmRPixel,
@@ -2236,6 +2276,15 @@ DESCRIPTION :
 			"green"
 		},
 		{
+			XmNtWaveColour,
+			XmCTWaveColour,
+			XmRPixel,
+			sizeof(Pixel),
+			XtOffsetOf(Signal_drawing_information_settings,twave_colour),
+			XmRString,
+			"green"
+		},
+		{
 			XmNundecidedColour,
 			XmCUndecidedColour,
 			XmRPixel,
@@ -2252,7 +2301,7 @@ DESCRIPTION :
 			XtOffsetOf(Signal_drawing_information_settings,unhighlighted_colour),
 			XmRString,
 			"red"
-		},
+		}
 	};
 	static XtResource overlay_resources[]=
 	{
@@ -2426,6 +2475,26 @@ DESCRIPTION :
 			values.function=GXxor;
 			(signal_drawing_information->graphics_context).datum_colour=
 				XCreateGC(display,depth_screen_drawable,mask,&values);
+			values.foreground=signal_drawing_information->pwave_colour^
+				signal_drawing_information->background_drawing_colour;
+			values.function=GXxor;
+			(signal_drawing_information->graphics_context).pwave_colour=
+				XCreateGC(display,depth_screen_drawable,mask,&values);
+			values.foreground=signal_drawing_information->qrswave_colour^
+				signal_drawing_information->background_drawing_colour;
+			values.function=GXxor;
+			(signal_drawing_information->graphics_context).qrswave_colour=
+				XCreateGC(display,depth_screen_drawable,mask,&values);
+			values.foreground=signal_drawing_information->twave_colour^
+				signal_drawing_information->background_drawing_colour;
+			values.function=GXxor;
+			(signal_drawing_information->graphics_context).twave_colour=
+				XCreateGC(display,depth_screen_drawable,mask,&values);
+			values.foreground=signal_drawing_information->cardiac_interval_colour^
+				signal_drawing_information->background_drawing_colour;
+			values.function=GXxor;
+			(signal_drawing_information->graphics_context).cardiac_interval_colour=
+				XCreateGC(display,depth_screen_drawable,mask,&values);
 			values.foreground=signal_drawing_information->background_drawing_colour;
 			values.function=GXcopy;
 			(signal_drawing_information->graphics_context).background_drawing_colour=
@@ -2474,9 +2543,9 @@ DESCRIPTION :
 int destroy_Signal_drawing_information(
 	struct Signal_drawing_information **signal_drawing_information_address)
 /*******************************************************************************
-LAST MODIFIED : 29 November 1999
+LAST MODIFIED : 12 April 2001
 
-DESCRIPTION :
+DESCRIPTION : destroys the Signal_drawing_information
 ==============================================================================*/
 {
 	Display *display;
@@ -2500,6 +2569,14 @@ DESCRIPTION :
 		XFreeGC(display,(signal_drawing_information->graphics_context).copy);
 		XFreeGC(display,(signal_drawing_information->graphics_context).
 			datum_colour);
+		XFreeGC(display,(signal_drawing_information->graphics_context).
+			pwave_colour);
+		XFreeGC(display,(signal_drawing_information->graphics_context).
+			qrswave_colour);
+		XFreeGC(display,(signal_drawing_information->graphics_context).
+			twave_colour);
+		XFreeGC(display,(signal_drawing_information->graphics_context).
+			cardiac_interval_colour);
 		XFreeGC(display,(signal_drawing_information->graphics_context).
 			device_name_colour);
 		XFreeGC(display,(signal_drawing_information->graphics_context).

@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : trace_window.uil
 !
-!LAST MODIFIED : 1 April 2001
+!LAST MODIFIED : 18 April 2001
 !
 !DESCRIPTION :
 !The widgets/gadgets for the trace window in the analysis work area.
@@ -972,7 +972,7 @@ object
 				};
 			XmNactivateCallback = procedures
 				{
-				calculate_calculate(analysis_work_area_structure);
+				calculate_calculate(trace_window_structure);
 				};
 			};
 		};
@@ -1183,13 +1183,13 @@ object
 					};
 				controls
 					{
+					XmPushButtonGadget pqrst_wave_button;
 					XmPushButtonGadget p_wave_button;	
 					XmPushButtonGadget qrs_wave_button;
 					XmPushButtonGadget t_wave_button;
 					XmPushButtonGadget pqrs_wave_button;
 					XmPushButtonGadget pt_wave_button;
 					XmPushButtonGadget qrst_wave_button;
-					XmPushButtonGadget pqrst_wave_button;
 					};
 				};
 			};
@@ -1198,6 +1198,26 @@ object
 			MrmNcreateCallback = procedures
 				{
 				identify_trace_waves_ch(trace_window_structure);
+				};
+			};
+		};
+	pqrst_wave_button: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString =
+			compound_string("PQRST wave");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_pqrst_wave_button(trace_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				set_inverse_pqrst_wave(trace_window_structure);
 				};
 			};
 		};
@@ -1318,26 +1338,6 @@ object
 			XmNactivateCallback = procedures
 				{
 				set_inverse_qrst_wave(trace_window_structure);
-				};
-			};
-		};
-	pqrst_wave_button: XmPushButtonGadget
-		{
-		arguments
-			{
-			XmNlabelString =
-			compound_string("PQRST wave");
-			XmNfontList = button_font;
-			};
-		callbacks
-			{
-			MrmNcreateCallback = procedures
-				{
-				identify_pqrst_wave_button(trace_window_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				set_inverse_pqrst_wave(trace_window_structure);
 				};
 			};
 		};

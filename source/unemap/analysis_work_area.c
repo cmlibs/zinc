@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 1 April 2001
+LAST MODIFIED : 18 April 2001
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -967,7 +967,7 @@ static int draw_all_markers(char draw_datum,char draw_potential_time,
 /*******************************************************************************
 LAST MODIFIED : 4 August 1999
 
-DESCRIPTION :
+DESCRIPTION : draws all_markers
 ==============================================================================*/
 {
 	int axes_left,axes_height,axes_top,axes_width,datum,drawing_height,
@@ -5024,7 +5024,7 @@ static void analysis_accept_event(Widget widget,
 /*******************************************************************************
 LAST MODIFIED : 19 June 1998
 
-DESCRIPTION :
+DESCRIPTION : accepts the analysis event
 ==============================================================================*/
 {
 	float frequency;
@@ -5134,7 +5134,7 @@ static void analysis_previous_event(Widget widget,
 /*******************************************************************************
 LAST MODIFIED : 17 August 2000
 
-DESCRIPTION :
+DESCRIPTION : moves to the previous analysis event
 ==============================================================================*/
 {
 	int event_number,i;
@@ -5265,7 +5265,7 @@ static void analysis_next_event(Widget widget,
 /*******************************************************************************
 LAST MODIFIED : 29 November 1993
 
-DESCRIPTION :
+DESCRIPTION : moves to the next analysis event
 ==============================================================================*/
 {
 	int event_number,i;
@@ -6179,6 +6179,9 @@ enum Moving_status
 	MOVING_NONE,
 	MOVING_POTENTIAL_TIME_MARKER,
 	MOVING_RIGHT,
+	MOVING_CARDIAC_END_TIME,
+	MOVING_CARDIAC_PT_TIME,
+	MOVING_CARDIAC_START_TIME,
 	SCALING_Y_AXIS_NEGATIVE,
 	SCALING_Y_AXIS_POSITIVE
 };
@@ -7022,7 +7025,7 @@ trace window.
 static void select_trace_1_drawing_area(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 4 January 2000
+LAST MODIFIED : 5 April 2001
 
 DESCRIPTION :
 ???DB.  Update comment ?
@@ -7063,9 +7066,6 @@ should be done as a callback from the trace_window.
 	Window confine_to,working_window;
 	XButtonEvent *button_event;
 	XEvent xevent;
-#if defined(OLD_CODE)
-	XFontStruct *font;
-#endif
 	XmDrawingAreaCallbackStruct *callback;
 
 	ENTER(select_trace_1_drawing_area);
@@ -7083,14 +7083,17 @@ should be done as a callback from the trace_window.
 			{
 				switch (analysis->trace->analysis_mode)
 				{
+					case ELECTRICAL_IMAGING:
+					{
+						move_cardiac_interval(callback,highlight_device,analysis->trace,
+							analysis->signal_drawing_information,
+							analysis->user_interface,analysis->pointer_sensitivity);
+					}break;
 					case EVENT_DETECTION: case BEAT_AVERAGING:
 					{
 						if ((callback->event)&&(ButtonPress==callback->event->type))
 						{
 							display=user_interface->display;
-#if defined(OLD_CODE)
-							font=signal_drawing_information->font;
-#endif
 							pointer_sensitivity=analysis->pointer_sensitivity;
 							detection=analysis->detection;
 							button_event= &(callback->event->xbutton);
@@ -7115,7 +7118,7 @@ should be done as a callback from the trace_window.
 								start_analysis_interval=buffer->start;
 								end_analysis_interval=buffer->end;
 								x_scale=SCALE_FACTOR(end_analysis_interval-
-									start_analysis_interval,axes_right-axes_left);
+									start_analysis_interval,axes_right-axes_left);								
 								frequency=buffer->frequency;
 								/* determine if datum has been selected */
 								initial_marker=SCALE_X(datum,start_analysis_interval,axes_left,
@@ -7251,7 +7254,6 @@ should be done as a callback from the trace_window.
 																XDrawLine(display,working_window,
 																	marker_graphics_context,marker,axes_top,
 																	marker,axes_bottom);
-
 																/* update time objects */
 																switch (moving)
 																{
@@ -7279,87 +7281,6 @@ should be done as a callback from the trace_window.
 																			(double)datum);
 																	} break;
 																}
-#if defined (OLD_CODE)
-																/* draw the new markers */
-																switch (moving)
-																{
-																	case MOVING_DATUM_MARKER:
-																	{
-																		draw_device_markers(highlight_device,
-																			start_analysis_interval,
-																			end_analysis_interval,datum,0,
-																			potential_time,0,ENLARGE_AREA_DETAIL,
-																			event_number,trace_area_1->axes_left,
-																			trace_area_1->axes_top,
-																			trace_area_1->axes_width,
-																			trace_area_1->axes_height,
-																			XtWindow(trace_area_1->drawing_area),
-																			trace_area_1->drawing->pixel_map,
-																			signal_drawing_information,
-																			user_interface);
-																	} break;
-																}
-																trace_area_3= &(analysis->trace->area_3);
-																switch (moving)
-																{
-																	case MOVING_DATUM_MARKER:
-																	{
-																		draw_datum_marker(datum,EDIT_AREA_DETAIL,
-																			trace_area_3->edit.first_data,
-																			trace_area_3->edit.last_data,
-																			trace_area_3->axes_left,
-																			trace_area_3->axes_top,
-																			trace_area_3->axes_width,
-																			trace_area_3->axes_height,
-																			XtWindow(trace_area_3->drawing_area),
-																			trace_area_3->drawing->pixel_map,
-																			signal_drawing_information,
-																			user_interface);
-																		/* write delay time */
-																		if (event)
-																		{
-																			/* draw the new delay time */
-																			sprintf(delay_time_string,"%d",
-																				(int)((float)(times[event->time]-
-																				times[datum])*1000./frequency));
-																			length=strlen(delay_time_string);
-																			XTextExtents(font,delay_time_string,
-																				length,&direction,&ascent,&descent,
-																				&bounds);
-																			x_string=SCALE_X(event->time,
-																				trace_area_3->edit.first_data,
-																				trace_area_3->axes_left,
-																				SCALE_FACTOR(trace_area_3->edit.
-																				last_data-trace_area_3->edit.first_data,
-																				(trace_area_3->axes_width)-1))+
-																				(bounds.lbearing-bounds.rbearing+1)/2;
-																			if (x_string+bounds.rbearing>=
-																				trace_area_3->axes_left+
-																				trace_area_3->axes_width)
-																			{
-																				x_string=trace_area_3->axes_left+
-																					trace_area_3->axes_width-
-																					bounds.rbearing;
-																			}
-																			if (x_string-bounds.lbearing<
-																				trace_area_3->axes_left)
-																			{
-																				x_string=trace_area_3->axes_left+
-																					bounds.lbearing;
-																			}
-																			y_string=trace_area_3->axes_top-descent;
-																			XDrawString(display,
-																				trace_area_3->drawing->pixel_map,
-																				event_graphics_context_text,x_string,
-																				y_string,delay_time_string,length);
-																			XDrawString(display,
-																				XtWindow(trace_area_3->drawing_area),
-																				event_graphics_context,x_string,
-																				y_string,delay_time_string,length);
-																		}
-																	} break;
-																}
-#endif /* defined (OLD_CODE) */
 															}
 														}
 														else
@@ -7744,17 +7665,6 @@ should be done as a callback from the trace_window.
 																		trace_area_1->drawing_area,
 																		trace_area_1->drawing,
 																		signal_drawing_information);
-#if defined (OLD_CODE)
-																	draw_highlight_event_box(
-																		previous_left_box+((event_number-1)*width)/
-																		number_of_events,axes_top,
-																		(event_number*width)/number_of_events-
-																		((event_number-1)*width)/number_of_events,
-																		trace_area_1->axes_height,detection,
-																		trace_area_1->drawing_area,
-																		trace_area_1->drawing,
-																		signal_drawing_information);
-#endif /* defined (OLD_CODE) */
 																	/* draw the new box */
 																	width=right_box-left_box;
 																	draw_search_box(left_box,axes_top,width,
@@ -7769,17 +7679,6 @@ should be done as a callback from the trace_window.
 																		trace_area_1->drawing_area,
 																		trace_area_1->drawing,
 																		signal_drawing_information);
-#if defined (OLD_CODE)
-																	draw_highlight_event_box(
-																		left_box+((event_number-1)*width)/
-																		number_of_events,axes_top,
-																		(event_number*width)/number_of_events-
-																		((event_number-1)*width)/number_of_events,
-																		trace_area_1->axes_height,detection,
-																		trace_area_1->drawing_area,
-																		trace_area_1->drawing,
-																		signal_drawing_information);
-#endif /* defined (OLD_CODE) */
 																}
 																else
 																{
@@ -8082,18 +7981,6 @@ should be done as a callback from the trace_window.
 																				trace_area_1->drawing_area,
 																				trace_area_1->drawing,
 																				signal_drawing_information);
-#if defined (OLD_CODE)
-																			draw_highlight_event_box(
-																				left_box+((event_number-1)*width)/
-																				number_of_events,axes_top,
-																				(event_number*width)/number_of_events-
-																				((event_number-1)*width)/
-																				number_of_events,
-																				trace_area_1->axes_height,detection,
-																				trace_area_1->drawing_area,
-																				trace_area_1->drawing,
-																				signal_drawing_information);
-#endif /* defined (OLD_CODE) */
 																		}
 																		/* draw the old box */
 																		draw_search_box(
@@ -11758,7 +11645,7 @@ static void analysis_accept_signal(Widget widget,
 /*******************************************************************************
 LAST MODIFIED : 6 December 2000
 
-DESCRIPTION :
+DESCRIPTION : accept the analysis signal.
 ==============================================================================*/
 {
 	char *value_string;
@@ -12035,7 +11922,7 @@ static void analysis_reject_signal(Widget widget,
 /*******************************************************************************
 LAST MODIFIED : 6 December 2000
 
-DESCRIPTION :
+DESCRIPTION : reject the analysis signal
 ==============================================================================*/
 {
 	int device_number,i,xpos,ypos;
@@ -12229,7 +12116,7 @@ static void analysis_previous_signal(Widget widget,
 /*******************************************************************************
 LAST MODIFIED : 5 October 1992
 
-DESCRIPTION :
+DESCRIPTION : move to the previous analysis signal
 ==============================================================================*/
 {
 	struct Analysis_work_area *analysis;
@@ -12322,7 +12209,7 @@ static void analysis_next_signal(Widget widget,
 /*******************************************************************************
 LAST MODIFIED : 17 August 2000
 
-DESCRIPTION :
+DESCRIPTION : move to the next analysis signal
 ==============================================================================*/
 {
 	struct Analysis_work_area *analysis;
@@ -13944,7 +13831,7 @@ static int analysis_time_keeper_callback(struct Time_keeper *time_keeper,
 /*******************************************************************************
 LAST MODIFIED : 28 December 1999
 
-DESCRIPTION :
+DESCRIPTION : time keeper callback for analysis
 ==============================================================================*/
 {
 	int return_code;
@@ -14053,7 +13940,7 @@ static int iterative_set_highlight_field(struct FE_node *node,
 /*******************************************************************************
 LAST MODIFIED :
 
-DESCRIPTION :
+DESCRIPTION : iteratively set the highlight_field of the node
 ==============================================================================*/
 {
 	int return_code;

@@ -54,6 +54,7 @@ DESCRIPTION :
 Global macros
 -------------
 */
+
 #define SCALE_FACTOR(unscaled_range,scaled_range) \
 	((float)(scaled_range)/(float)(unscaled_range))
 

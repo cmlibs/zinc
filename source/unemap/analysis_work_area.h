@@ -28,7 +28,7 @@ Global types
 */
 struct Analysis_work_area
 /*******************************************************************************
-LAST MODIFIED : 11 February 2000
+LAST MODIFIED : 18 April 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -220,4 +220,5 @@ LAST MODIFIED : 21 June 1997
 DESCRIPTION :
 Closes the windows associated with the analysis work area.
 ==============================================================================*/
+
 #endif
