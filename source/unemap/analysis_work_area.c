@@ -10271,11 +10271,11 @@ Duplicates the raw rig, except that
 	{
 		if (rig=create_Rig(raw_rig->name,raw_rig->monitoring,raw_rig->experiment,0,
 			(struct Device **)NULL,(struct Page_list_item *)NULL,0,
-			(struct Region_list_item *)NULL,(struct Region *)NULL)
+			(struct Region_list_item *)NULL,(struct Region *)NULL
 #if defined (UNEMAP_USE_NODES)
 			,get_Rig_unemap_package(raw_rig)
 #endif /* defined (UNEMAP_USE_NODES) */
-				)
+				))
 		{
 			if (raw_rig->signal_file_name)
 			{
@@ -10344,11 +10344,11 @@ Duplicates the raw rig, except that
 					if (raw_region=raw_region_item->region)
 					{
 						if ((*region_item_address=create_Region_list_item(create_Region(
-							raw_region->name,raw_region->type,raw_region->number,0),
+							raw_region->name,raw_region->type,raw_region->number,0
 #if defined (UNEMAP_USE_NODES)
 							,get_Rig_unemap_package(raw_rig)
 #endif /* defined (UNEMAP_USE_NODES) */
-							(struct Region_list_item *)NULL))&&
+							),(struct Region_list_item *)NULL))&&
 							((*region_item_address)->region))
 						{
 							switch (raw_region->type)
