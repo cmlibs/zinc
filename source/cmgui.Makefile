@@ -889,6 +889,7 @@ IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_median_filter.c \
 	image_processing/computed_field_power_spectrum.c \
 	image_processing/computed_field_region_maximum.c \
+	image_processing/computed_field_second_order_hermite.c \
 	image_processing/computed_field_shock_filter.c \
 	image_processing/computed_field_sobel_filter.c \
 	image_processing/computed_field_spatial_skeleton.c \

@@ -88,6 +88,7 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_median_filter.h"
 #include "image_processing/computed_field_power_spectrum.h"
 #include "image_processing/computed_field_region_maximum.h"
+#include "image_processing/computed_field_second_order_hermite.h"
 #include "image_processing/computed_field_shock_filter.h"
 #include "image_processing/computed_field_sobel_filter.h"
 #include "image_processing/computed_field_spatial_skeleton.h"
@@ -24462,7 +24463,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 				Computed_field_register_types_region_maximum(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
-
+				Computed_field_register_types_second_order_hermite(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_shock_filter(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
