@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : settings_editor.c
 
-LAST MODIFIED : 7 June 2000
+LAST MODIFIED : 24 November 2000
 
 DESCRIPTION :
 Provides the widgets to manipulate element group settings.
@@ -47,7 +47,7 @@ static MrmHierarchy settings_editor_hierarchy;
 
 struct Settings_editor
 /*******************************************************************************
-LAST MODIFIED : 21 January 2000
+LAST MODIFIED : 17 November 2000
 
 DESCRIPTION :
 Contains all the information carried by the graphical element editor widget.
@@ -79,10 +79,15 @@ Contains all the information carried by the graphical element editor widget.
 		native_discretization_button,native_discretization_field_form,
 		native_discretization_field_widget,xi_discretization_mode_entry,
 		xi_discretization_mode_form,xi_discretization_mode_widget,
-		glyph_group_entry,glyph_form,glyph_widget,glyph_size_text,glyph_centre_text,
+		glyph_group_entry,glyph_form,glyph_widget,
+		glyph_scaling_mode_entry, glyph_scaling_mode_form,
+		glyph_scaling_mode_widget,
+		glyph_size_text,glyph_centre_text,
 		glyph_orientation_scale_button,glyph_orientation_scale_field_form,
 		glyph_orientation_scale_field_widget,
 		glyph_scale_factors_entry,glyph_scale_factors_text,
+		glyph_variable_scale_entry, glyph_variable_scale_button,
+		glyph_variable_scale_field_form, glyph_variable_scale_field_widget,
 		volume_texture_entry,volume_texture_form,
 		volume_texture_widget,seed_element_entry,seed_element_button,
 		seed_element_form,seed_element_widget,seed_xi_entry,seed_xi_text,
@@ -193,7 +198,7 @@ Sets the current face_number on the option menu and button.
 static int settings_editor_display_dimension_specific(
 	struct Settings_editor *settings_editor)
 /*******************************************************************************
-LAST MODIFIED : 9 June 2000
+LAST MODIFIED : 15 November 2000
 
 DESCRIPTION :
 Sets and manages the dimension buttons (0-D/1-D/2-D/3-D) and sets and manages
@@ -232,12 +237,13 @@ both widget entries are unmanaged.
 		{
 			XtUnmanageChild(settings_editor->exterior_face_entry);
 		}
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"settings_editor_get_settings.  Missing widget");
-		return_code=0.0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -300,9 +306,13 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,glyph_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
-	Settings_editor,glyph_size_text)
-DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,glyph_centre_text)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
+	Settings_editor,glyph_scaling_mode_entry)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
+	Settings_editor,glyph_scaling_mode_form)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
+	Settings_editor,glyph_size_text)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,glyph_orientation_scale_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
@@ -311,6 +321,12 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,glyph_scale_factors_entry)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,glyph_scale_factors_text)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
+	Settings_editor,glyph_variable_scale_entry)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
+	Settings_editor,glyph_variable_scale_button)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
+	Settings_editor,glyph_variable_scale_field_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,label_field_entry)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
@@ -1120,16 +1136,108 @@ Callback for change of xi_discretization_mode.
 	LEAVE;
 } /* settings_editor_update_xi_discretization_mode */
 
+static int settings_editor_display_glyph_specific(
+	struct Settings_editor *settings_editor)
+/*******************************************************************************
+LAST MODIFIED : 24 November 2000
+
+DESCRIPTION :
+Ensures all the glyph widgets display the appropriate values for the current
+settings. Does nothing if current settings type does not use glyphs.
+==============================================================================*/
+{
+	char temp_string[50];
+	enum Glyph_scaling_mode glyph_scaling_mode;
+	enum GT_element_settings_type settings_type;
+	int field_set1, field_set2, return_code;
+	struct Computed_field *orientation_scale_field, *variable_scale_field;
+	struct GT_element_settings *settings;
+	struct GT_object *glyph;
+	Triple glyph_centre, glyph_scale_factors, glyph_size;
+
+	ENTER(settings_editor_display_glyph_specific);
+	if (settings_editor && (settings = settings_editor->current_settings))
+	{
+		if (settings = settings_editor->current_settings)
+		{
+			settings_type = GT_element_settings_get_settings_type(settings);
+			if (((GT_ELEMENT_SETTINGS_NODE_POINTS == settings_type) ||
+				(GT_ELEMENT_SETTINGS_DATA_POINTS == settings_type) ||
+				(GT_ELEMENT_SETTINGS_ELEMENT_POINTS == settings_type)) &&
+				GT_element_settings_get_glyph_parameters(settings,
+					&glyph, &glyph_scaling_mode, glyph_centre, glyph_size,
+					&orientation_scale_field, glyph_scale_factors,
+					&variable_scale_field))
+			{
+				CHOOSE_OBJECT_LIST_SET_OBJECT(GT_object)(
+					settings_editor->glyph_widget,glyph);
+				choose_enumerator_set_string(settings_editor->glyph_scaling_mode_widget,
+					Glyph_scaling_mode_string(glyph_scaling_mode));
+				sprintf(temp_string,"%g*%g*%g",
+					glyph_size[0],glyph_size[1],glyph_size[2]);
+				XtVaSetValues(settings_editor->glyph_size_text,XmNvalue,
+					temp_string,NULL);
+				sprintf(temp_string,"%g,%g,%g",
+					glyph_centre[0],glyph_centre[1],glyph_centre[2]);
+				XtVaSetValues(settings_editor->glyph_centre_text,XmNvalue,
+					temp_string,NULL);
+
+				if (field_set1 =
+					((struct Computed_field *)NULL != orientation_scale_field))
+				{
+					CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
+						settings_editor->glyph_orientation_scale_field_widget,
+						orientation_scale_field);
+				}
+				XtVaSetValues(settings_editor->glyph_orientation_scale_button,
+					XmNset, (XtPointer)field_set1, NULL);
+				XtSetSensitive(settings_editor->glyph_orientation_scale_field_widget,
+					field_set1);
+
+				if (field_set2 =
+					((struct Computed_field *)NULL != variable_scale_field))
+				{
+					CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
+						settings_editor->glyph_variable_scale_field_widget,
+						variable_scale_field);
+				}
+				XtVaSetValues(settings_editor->glyph_variable_scale_button,
+					XmNset, (XtPointer)field_set2, NULL);
+				XtSetSensitive(settings_editor->glyph_variable_scale_field_widget,
+					field_set2);
+
+				sprintf(temp_string,"%g*%g*%g",glyph_scale_factors[0],
+					glyph_scale_factors[1],glyph_scale_factors[2]);
+				XtVaSetValues(settings_editor->
+					glyph_scale_factors_text,XmNvalue,temp_string,NULL);
+				XtSetSensitive(settings_editor->glyph_scale_factors_entry,
+					field_set1 || field_set2);
+			}
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"settings_editor_display_glyph_specific.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* settings_editor_display_glyph_specific */
+
 static void settings_editor_update_glyph(Widget widget,
 	void *settings_editor_void,void *glyph_void)
 /*******************************************************************************
-LAST MODIFIED : 16 February 1999
+LAST MODIFIED : 10 November 2000
 
 DESCRIPTION :
 Callback for change of glyph.
 ==============================================================================*/
 {
-	struct Computed_field *orientation_scale_field;
+	enum Glyph_scaling_mode glyph_scaling_mode;
+	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_object *glyph,*old_glyph;
 	struct Settings_editor *settings_editor;
 	Triple glyph_centre,glyph_scale_factors,glyph_size;
@@ -1140,11 +1248,13 @@ Callback for change of glyph.
 		&&(glyph=(struct GT_object *)glyph_void))
 	{
 		if (GT_element_settings_get_glyph_parameters(
-			settings_editor->current_settings,&old_glyph,glyph_centre,
-			glyph_size,&orientation_scale_field,glyph_scale_factors)&&
+			settings_editor->current_settings, &old_glyph, &glyph_scaling_mode,
+			glyph_centre, glyph_size, &orientation_scale_field, glyph_scale_factors,
+			&variable_scale_field)&&
 			GT_element_settings_set_glyph_parameters(
-				settings_editor->current_settings,glyph,glyph_centre,glyph_size,
-				orientation_scale_field,glyph_scale_factors))
+				settings_editor->current_settings, glyph, glyph_scaling_mode, glyph_centre,
+				glyph_size,	orientation_scale_field, glyph_scale_factors,
+				variable_scale_field))
 		{
 			/* inform the client of the change */
 			settings_editor_update(settings_editor);
@@ -1158,17 +1268,63 @@ Callback for change of glyph.
 	LEAVE;
 } /* settings_editor_update_glyph */
 
+static void settings_editor_update_glyph_scaling_mode(Widget widget,
+	void *settings_editor_void,void *glyph_scaling_mode_string_void)
+/*******************************************************************************
+LAST MODIFIED : 15 November 2000
+
+DESCRIPTION :
+Callback for change of glyph.
+==============================================================================*/
+{
+	enum Glyph_scaling_mode glyph_scaling_mode;
+	struct Computed_field *orientation_scale_field, *variable_scale_field;
+	struct GT_object *glyph;
+	struct Settings_editor *settings_editor;
+	Triple glyph_centre,glyph_scale_factors,glyph_size;
+
+	ENTER(settings_editor_update_glyph_scaling_mode);
+	USE_PARAMETER(widget);
+	if (settings_editor=(struct Settings_editor *)settings_editor_void)
+	{
+		if (GT_element_settings_get_glyph_parameters(
+			settings_editor->current_settings, &glyph, &glyph_scaling_mode,
+			glyph_centre, glyph_size, &orientation_scale_field, glyph_scale_factors,
+			&variable_scale_field))
+		{
+			if (GLYPH_SCALING_MODE_INVALID != (glyph_scaling_mode =
+				Glyph_scaling_mode_from_string((char *)glyph_scaling_mode_string_void)))
+			{
+				GT_element_settings_set_glyph_parameters(
+					settings_editor->current_settings, glyph, glyph_scaling_mode,
+					glyph_centre,	glyph_size,	orientation_scale_field,
+					glyph_scale_factors, variable_scale_field);
+			}
+			settings_editor_display_glyph_specific(settings_editor);
+			/* inform the client of the change */
+			settings_editor_update(settings_editor);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"settings_editor_update_glyph_scaling_mode.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* settings_editor_update_glyph_scaling_mode */
+
 static void settings_editor_glyph_size_text_CB(Widget widget,
 	XtPointer client_data,unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 16 February 1999
+LAST MODIFIED : 15 November 2000
 
 DESCRIPTION :
 Called when entry is made into the glyph_size text field.
 ==============================================================================*/
 {
-	char *text_entry,temp_string[50];
-	struct Computed_field *orientation_scale_field;
+	char *text_entry;
+	enum Glyph_scaling_mode glyph_scaling_mode;
+	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_object *glyph;
 	struct Parse_state *temp_state;
 	struct Settings_editor *settings_editor;
@@ -1179,8 +1335,9 @@ Called when entry is made into the glyph_size text field.
 	if (widget&&(settings_editor=(struct Settings_editor *)client_data))
 	{
 		if (GT_element_settings_get_glyph_parameters(
-			settings_editor->current_settings,&glyph,glyph_centre,
-			glyph_size,&orientation_scale_field,glyph_scale_factors))
+			settings_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
+			glyph_size, &orientation_scale_field, glyph_scale_factors,
+			&variable_scale_field))
 		{
 			/* Get the text string */
 			XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
@@ -1191,8 +1348,9 @@ Called when entry is made into the glyph_size text field.
 				{
 					set_special_float3(temp_state,glyph_size,"*");
 					GT_element_settings_set_glyph_parameters(
-						settings_editor->current_settings,glyph,glyph_centre,
-						glyph_size,orientation_scale_field,glyph_scale_factors);
+						settings_editor->current_settings, glyph, glyph_scaling_mode,
+						glyph_centre, glyph_size, orientation_scale_field,
+						glyph_scale_factors, variable_scale_field);
 					/* inform the client of the change */
 					settings_editor_update(settings_editor);
 					destroy_Parse_state(&temp_state);
@@ -1204,10 +1362,7 @@ Called when entry is made into the glyph_size text field.
 				display_message(ERROR_MESSAGE,
 					"settings_editor_glyph_size_text_CB.  Missing text");
 			}
-			/* always re-display the values actually set */
-			sprintf(temp_string,"%g*%g*%g",glyph_size[0],glyph_size[1],glyph_size[2]);
-			XtVaSetValues(settings_editor->glyph_size_text,XmNvalue,
-				temp_string,NULL);
+			settings_editor_display_glyph_specific(settings_editor);
 		}
 	}
 	else
@@ -1221,27 +1376,29 @@ Called when entry is made into the glyph_size text field.
 static void settings_editor_glyph_centre_text_CB(Widget widget,
 	XtPointer client_data,unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 16 February 1999
+LAST MODIFIED : 15 November 2000
 
 DESCRIPTION :
 Called when entry is made into the glyph_centre text field.
 ==============================================================================*/
 {
-	char *text_entry,temp_string[50];
+	char *text_entry;
+	enum Glyph_scaling_mode glyph_scaling_mode;
 	static int number_of_components=3;
-	struct Computed_field *orientation_scale_field;
+	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_object *glyph;
 	struct Parse_state *temp_state;
 	struct Settings_editor *settings_editor;
-	Triple glyph_centre,glyph_scale_factors,glyph_size;
+	Triple glyph_centre, glyph_scale_factors, glyph_size;
 
 	ENTER(settings_editor_glyph_centre_text_CB);
 	USE_PARAMETER(reason);
 	if (widget&&(settings_editor=(struct Settings_editor *)client_data))
 	{
 		if (GT_element_settings_get_glyph_parameters(
-			settings_editor->current_settings,&glyph,glyph_centre,
-			glyph_size,&orientation_scale_field,glyph_scale_factors))
+			settings_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
+			glyph_size, &orientation_scale_field, glyph_scale_factors,
+			&variable_scale_field))
 		{
 			/* Get the text string */
 			XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
@@ -1253,8 +1410,9 @@ Called when entry is made into the glyph_centre text field.
 					set_float_vector(temp_state,glyph_centre,
 						(void *)&number_of_components);
 					GT_element_settings_set_glyph_parameters(
-						settings_editor->current_settings,glyph,glyph_centre,
-						glyph_size,orientation_scale_field,glyph_scale_factors);
+						settings_editor->current_settings, glyph, glyph_scaling_mode,
+						glyph_centre, glyph_size, orientation_scale_field,
+						glyph_scale_factors, variable_scale_field);
 					/* inform the client of the change */
 					settings_editor_update(settings_editor);
 					destroy_Parse_state(&temp_state);
@@ -1266,11 +1424,7 @@ Called when entry is made into the glyph_centre text field.
 				display_message(ERROR_MESSAGE,
 					"settings_editor_glyph_centre_text_CB.  Missing text");
 			}
-			/* always re-display the values actually set */
-			sprintf(temp_string,"%g,%g,%g",
-				glyph_centre[0],glyph_centre[1],glyph_centre[2]);
-			XtVaSetValues(settings_editor->glyph_centre_text,XmNvalue,
-				temp_string,NULL);
+			settings_editor_display_glyph_specific(settings_editor);
 		}
 	}
 	else
@@ -1282,16 +1436,16 @@ Called when entry is made into the glyph_centre text field.
 } /* settings_editor_glyph_centre_text_CB */
 
 static void settings_editor_glyph_orientation_scale_button_CB(Widget widget,
-	XtPointer client_data,unsigned long *reason)
+	XtPointer client_data, unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 16 February 1999
+LAST MODIFIED : 15 November 2000
 
 DESCRIPTION :
 Called when the glyph_orientation_scale toggle button value changes.
 ==============================================================================*/
 {
-	int field_set;
-	struct Computed_field *orientation_scale_field;
+	enum Glyph_scaling_mode glyph_scaling_mode;
+	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_object *glyph;
 	struct Settings_editor *settings_editor;
 	Triple glyph_centre,glyph_scale_factors,glyph_size;
@@ -1301,8 +1455,9 @@ Called when the glyph_orientation_scale toggle button value changes.
 	if (widget&&(settings_editor=(struct Settings_editor *)client_data))
 	{
 		GT_element_settings_get_glyph_parameters(
-			settings_editor->current_settings,&glyph,glyph_centre,
-			glyph_size,&orientation_scale_field,glyph_scale_factors);
+			settings_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
+			glyph_size, &orientation_scale_field, glyph_scale_factors,
+			&variable_scale_field);
 		if (orientation_scale_field)
 		{
 			orientation_scale_field=(struct Computed_field *)NULL;
@@ -1314,18 +1469,10 @@ Called when the glyph_orientation_scale toggle button value changes.
 				settings_editor->glyph_orientation_scale_field_widget);
 		}
 		GT_element_settings_set_glyph_parameters(
-			settings_editor->current_settings,glyph,glyph_centre,glyph_size,
-			orientation_scale_field,glyph_scale_factors);
-		GT_element_settings_get_glyph_parameters(
-			settings_editor->current_settings,&glyph,glyph_centre,
-			glyph_size,&orientation_scale_field,glyph_scale_factors);
-		/* set (un)grayed status of orientation_scale widgets */
-		field_set=((struct Computed_field *)NULL != orientation_scale_field);
-		XtVaSetValues(settings_editor->glyph_orientation_scale_button,
-			XmNset,(XtPointer)field_set,NULL);
-		XtSetSensitive(
-			settings_editor->glyph_orientation_scale_field_widget,field_set);
-		XtSetSensitive(settings_editor->glyph_scale_factors_entry,field_set);
+			settings_editor->current_settings, glyph, glyph_scaling_mode,
+			glyph_centre, glyph_size, orientation_scale_field,
+			glyph_scale_factors, variable_scale_field);
+		settings_editor_display_glyph_specific(settings_editor);
 		/* inform the client of the change */
 		settings_editor_update(settings_editor);
 	}
@@ -1341,16 +1488,17 @@ Called when the glyph_orientation_scale toggle button value changes.
 static void settings_editor_update_glyph_orientation_scale_field(Widget widget,
 	void *settings_editor_void,void *orientation_scale_field_void)
 /*******************************************************************************
-LAST MODIFIED : 10 March 1999
+LAST MODIFIED : 15 November 2000
 
 DESCRIPTION :
 Callback for change of orientation_scale_field.
 ==============================================================================*/
 {
-	struct Computed_field *orientation_scale_field;
+	enum Glyph_scaling_mode glyph_scaling_mode;
+	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_object *glyph;
 	struct Settings_editor *settings_editor;
-	Triple glyph_centre,glyph_scale_factors,glyph_size;
+	Triple glyph_centre, glyph_scale_factors, glyph_size;
 
 	ENTER(settings_editor_update_glyph_orientation_scale_field);
 	USE_PARAMETER(widget);
@@ -1361,17 +1509,20 @@ Callback for change of orientation_scale_field.
 		if (XtIsSensitive(settings_editor->glyph_orientation_scale_field_widget))
 		{
 			GT_element_settings_get_glyph_parameters(
-				settings_editor->current_settings,&glyph,glyph_centre,
-				glyph_size,&orientation_scale_field,glyph_scale_factors);
+				settings_editor->current_settings, &glyph, &glyph_scaling_mode,
+				glyph_centre, glyph_size, &orientation_scale_field, glyph_scale_factors,
+				&variable_scale_field);
 			orientation_scale_field=
 				(struct Computed_field *)orientation_scale_field_void;
 			if (GT_element_settings_set_glyph_parameters(
-				settings_editor->current_settings,glyph,glyph_centre,glyph_size,
-				orientation_scale_field,glyph_scale_factors))
+				settings_editor->current_settings, glyph, glyph_scaling_mode,
+				glyph_centre, glyph_size, orientation_scale_field,
+				glyph_scale_factors, variable_scale_field))
 			{
 				/* inform the client of the change */
 				settings_editor_update(settings_editor);
 			}
+			settings_editor_display_glyph_specific(settings_editor);
 		}
 	}
 	else
@@ -1386,14 +1537,15 @@ Callback for change of orientation_scale_field.
 static void settings_editor_glyph_scale_factors_text_CB(Widget widget,
 	XtPointer client_data,unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 16 February 1999
+LAST MODIFIED : 15 November 2000
 
 DESCRIPTION :
 Called when entry is made into the glyph_scale_factors text field.
 ==============================================================================*/
 {
-	char *text_entry,temp_string[50];
-	struct Computed_field *orientation_scale_field;
+	char *text_entry;
+	enum Glyph_scaling_mode glyph_scaling_mode;
+	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_object *glyph;
 	struct Parse_state *temp_state;
 	struct Settings_editor *settings_editor;
@@ -1404,8 +1556,9 @@ Called when entry is made into the glyph_scale_factors text field.
 	if (widget&&(settings_editor=(struct Settings_editor *)client_data))
 	{
 		if (GT_element_settings_get_glyph_parameters(
-			settings_editor->current_settings,&glyph,glyph_centre,
-			glyph_size,&orientation_scale_field,glyph_scale_factors))
+			settings_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
+			glyph_size, &orientation_scale_field, glyph_scale_factors,
+			&variable_scale_field))
 		{
 			/* Get the text string */
 			XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
@@ -1416,8 +1569,9 @@ Called when entry is made into the glyph_scale_factors text field.
 				{
 					set_special_float3(temp_state,glyph_scale_factors,"*");
 					GT_element_settings_set_glyph_parameters(
-						settings_editor->current_settings,glyph,glyph_centre,
-						glyph_size,orientation_scale_field,glyph_scale_factors);
+						settings_editor->current_settings, glyph, glyph_scaling_mode,
+						glyph_centre, glyph_size, orientation_scale_field,
+						glyph_scale_factors, variable_scale_field);
 					/* inform the client of the change */
 					settings_editor_update(settings_editor);
 					destroy_Parse_state(&temp_state);
@@ -1429,11 +1583,7 @@ Called when entry is made into the glyph_scale_factors text field.
 				display_message(ERROR_MESSAGE,
 					"settings_editor_glyph_scale_factors_text_CB.  Missing text");
 			}
-			/* always re-display the values actually set */
-			sprintf(temp_string,"%g*%g*%g",glyph_scale_factors[0],
-				glyph_scale_factors[1],glyph_scale_factors[2]);
-			XtVaSetValues(settings_editor->glyph_scale_factors_text,XmNvalue,
-				temp_string,NULL);
+			settings_editor_display_glyph_specific(settings_editor);
 		}
 	}
 	else
@@ -1443,6 +1593,104 @@ Called when entry is made into the glyph_scale_factors text field.
 	}
 	LEAVE;
 } /* settings_editor_glyph_scale_factors_text_CB */
+
+static void settings_editor_glyph_variable_scale_button_CB(Widget widget,
+	XtPointer client_data, unsigned long *reason)
+/*******************************************************************************
+LAST MODIFIED : 15 November 2000
+
+DESCRIPTION :
+Called when the glyph_variable_scale toggle button value changes.
+==============================================================================*/
+{
+	enum Glyph_scaling_mode glyph_scaling_mode;
+	struct Computed_field *orientation_scale_field, *variable_scale_field;
+	struct GT_object *glyph;
+	struct Settings_editor *settings_editor;
+	Triple glyph_centre,glyph_scale_factors,glyph_size;
+
+	ENTER(settings_editor_glyph_variable_scale_button_CB);
+	USE_PARAMETER(reason);
+	if (widget&&(settings_editor=(struct Settings_editor *)client_data))
+	{
+		GT_element_settings_get_glyph_parameters(
+			settings_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
+			glyph_size, &orientation_scale_field, glyph_scale_factors,
+			&variable_scale_field);
+		if (variable_scale_field)
+		{
+			variable_scale_field=(struct Computed_field *)NULL;
+		}
+		else
+		{
+			/* get variable_scale_field from widget */
+			variable_scale_field=CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
+				settings_editor->glyph_variable_scale_field_widget);
+		}
+		GT_element_settings_set_glyph_parameters(
+			settings_editor->current_settings, glyph, glyph_scaling_mode,
+			glyph_centre, glyph_size, orientation_scale_field,
+			glyph_scale_factors, variable_scale_field);
+		settings_editor_display_glyph_specific(settings_editor);
+		/* inform the client of the change */
+		settings_editor_update(settings_editor);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"settings_editor_glyph_variable_scale_button_CB.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+} /* settings_editor_glyph_variable_scale_button_CB */
+
+static void settings_editor_update_glyph_variable_scale_field(Widget widget,
+	void *settings_editor_void,void *variable_scale_field_void)
+/*******************************************************************************
+LAST MODIFIED : 15 November 2000
+
+DESCRIPTION :
+Callback for change of variable_scale_field.
+==============================================================================*/
+{
+	enum Glyph_scaling_mode glyph_scaling_mode;
+	struct Computed_field *orientation_scale_field, *variable_scale_field;
+	struct GT_object *glyph;
+	struct Settings_editor *settings_editor;
+	Triple glyph_centre, glyph_scale_factors, glyph_size;
+
+	ENTER(settings_editor_update_glyph_variable_scale_field);
+	USE_PARAMETER(widget);
+	if ((settings_editor = (struct Settings_editor *)settings_editor_void) &&
+		variable_scale_field_void)
+	{
+		/* skip messages from chooser if grayed out */
+		if (XtIsSensitive(settings_editor->glyph_variable_scale_field_widget))
+		{
+			GT_element_settings_get_glyph_parameters(
+				settings_editor->current_settings, &glyph, &glyph_scaling_mode,
+				glyph_centre, glyph_size, &orientation_scale_field, glyph_scale_factors,
+				&variable_scale_field);
+			variable_scale_field = (struct Computed_field *)variable_scale_field_void;
+			if (GT_element_settings_set_glyph_parameters(
+				settings_editor->current_settings, glyph, glyph_scaling_mode,
+				glyph_centre, glyph_size, orientation_scale_field,
+				glyph_scale_factors, variable_scale_field))
+			{
+				/* inform the client of the change */
+				settings_editor_update(settings_editor);
+			}
+			settings_editor_display_glyph_specific(settings_editor);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"settings_editor_update_glyph_variable_scale_field.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+} /* settings_editor_update_glyph_variable_scale_field */
 
 static void settings_editor_label_button_CB(Widget widget,
 	XtPointer settings_editor_void,unsigned long *reason)
@@ -2395,7 +2643,7 @@ Widget create_settings_editor_widget(Widget *settings_editor_widget,
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 9 June 2000
+LAST MODIFIED : 17 November 2000
 
 DESCRIPTION :
 Creates a settings_editor widget.
@@ -2464,10 +2712,14 @@ Creates a settings_editor widget.
 			DIALOG_IDENTIFY(settings_editor,glyph_group_entry)},
 		{"seted_id_glyph_form",(XtPointer)
 			DIALOG_IDENTIFY(settings_editor,glyph_form)},
-		{"seted_id_glyph_size_text",(XtPointer)
-			DIALOG_IDENTIFY(settings_editor,glyph_size_text)},
 		{"seted_id_glyph_centre_text",(XtPointer)
 			DIALOG_IDENTIFY(settings_editor,glyph_centre_text)},
+		{"seted_id_glyph_scaling_entry",(XtPointer)
+			DIALOG_IDENTIFY(settings_editor,glyph_scaling_mode_entry)},
+		{"seted_id_glyph_scaling_form",(XtPointer)
+			DIALOG_IDENTIFY(settings_editor,glyph_scaling_mode_form)},
+		{"seted_id_glyph_size_text",(XtPointer)
+			DIALOG_IDENTIFY(settings_editor,glyph_size_text)},
 		{"seted_id_glyph_orient_btn",(XtPointer)
 			DIALOG_IDENTIFY(settings_editor,glyph_orientation_scale_button)},
 		{"seted_id_glyph_orient_form",(XtPointer)
@@ -2476,6 +2728,12 @@ Creates a settings_editor widget.
 			DIALOG_IDENTIFY(settings_editor,glyph_scale_factors_entry)},
 		{"seted_id_glyph_sfactors_text",(XtPointer)
 			DIALOG_IDENTIFY(settings_editor,glyph_scale_factors_text)},
+		{"seted_id_glyph_variable_entry",(XtPointer)
+			DIALOG_IDENTIFY(settings_editor,glyph_variable_scale_entry)},
+		{"seted_id_glyph_variable_btn",(XtPointer)
+			DIALOG_IDENTIFY(settings_editor,glyph_variable_scale_button)},
+		{"seted_id_glyph_variable_form",(XtPointer)
+			DIALOG_IDENTIFY(settings_editor,glyph_variable_scale_field_form)},
 		{"seted_id_label_field_entry",(XtPointer)
 			DIALOG_IDENTIFY(settings_editor,label_field_entry)},
 		{"seted_id_label_field_btn",(XtPointer)
@@ -2564,6 +2822,8 @@ Creates a settings_editor widget.
 			settings_editor_glyph_orientation_scale_button_CB},
 		{"seted_glyph_sfactors_text_CB",(XtPointer)
 			settings_editor_glyph_scale_factors_text_CB},
+		{"seted_glyph_variable_btn_CB",(XtPointer)
+			settings_editor_glyph_variable_scale_button_CB},
 		{"seted_label_field_btn_CB",(XtPointer)
 			settings_editor_label_button_CB},
 		{"seted_seed_element_btn_CB",(XtPointer)
@@ -2649,13 +2909,20 @@ Creates a settings_editor widget.
 				settings_editor->glyph_group_entry=(Widget)NULL;
 				settings_editor->glyph_form=(Widget)NULL;
 				settings_editor->glyph_widget=(Widget)NULL;
-				settings_editor->glyph_size_text=(Widget)NULL;
 				settings_editor->glyph_centre_text=(Widget)NULL;
+				settings_editor->glyph_scaling_mode_entry = (Widget)NULL;
+				settings_editor->glyph_scaling_mode_form = (Widget)NULL;
+				settings_editor->glyph_scaling_mode_widget = (Widget)NULL;
+				settings_editor->glyph_size_text=(Widget)NULL;
 				settings_editor->glyph_orientation_scale_button=(Widget)NULL;
 				settings_editor->glyph_orientation_scale_field_form=(Widget)NULL;
 				settings_editor->glyph_orientation_scale_field_widget=(Widget)NULL;
 				settings_editor->glyph_scale_factors_entry=(Widget)NULL;
 				settings_editor->glyph_scale_factors_text=(Widget)NULL;
+				settings_editor->glyph_variable_scale_entry = (Widget)NULL;
+				settings_editor->glyph_variable_scale_button = (Widget)NULL;
+				settings_editor->glyph_variable_scale_field_form = (Widget)NULL;
+				settings_editor->glyph_variable_scale_field_widget = (Widget)NULL;
 				settings_editor->label_field_entry=(Widget)NULL;
 				settings_editor->label_field_button=(Widget)NULL;
 				settings_editor->label_field_form=(Widget)NULL;
@@ -2761,11 +3028,31 @@ Creates a settings_editor widget.
 							{
 								init_widgets=0;
 							}
+							valid_strings =
+								Glyph_scaling_mode_get_valid_strings(&number_of_valid_strings);
+							if (!(settings_editor->glyph_scaling_mode_widget=
+								create_choose_enumerator_widget(
+									settings_editor->glyph_scaling_mode_form,
+									number_of_valid_strings,valid_strings,
+									Glyph_scaling_mode_string(GLYPH_SCALING_GENERAL))))
+							{
+								init_widgets=0;
+							}
+							DEALLOCATE(valid_strings);
 							if (!(settings_editor->glyph_orientation_scale_field_widget=
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								settings_editor->glyph_orientation_scale_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
 								Computed_field_is_orientation_scale_capable,(void *)NULL)))
+							{
+								init_widgets=0;
+							}
+							if (!(settings_editor->glyph_variable_scale_field_widget=
+								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
+									settings_editor->glyph_variable_scale_field_form,
+									(struct Computed_field *)NULL, computed_field_manager,
+									Computed_field_has_up_to_3_numerical_components,
+									(void *)NULL)))
 							{
 								init_widgets=0;
 							}
@@ -2914,10 +3201,11 @@ Creates a settings_editor widget.
 							DEALLOCATE(valid_strings);
 							if (init_widgets)
 							{
+								XtUnmanageChild(settings_editor->glyph_scaling_mode_entry);
 								if (settings)
 								{
 									settings_editor_set_settings(
-										settings_editor->widget,settings);
+										settings_editor->widget, settings);
 								}
 								return_widget=settings_editor->widget;
 							}
@@ -3101,7 +3389,7 @@ Returns the currently chosen settings.
 int settings_editor_set_settings(Widget settings_editor_widget,
 	struct GT_element_settings *new_settings)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2000
+LAST MODIFIED : 15 November 2000
 
 DESCRIPTION :
 Changes the currently chosen settings.
@@ -3118,16 +3406,15 @@ Changes the currently chosen settings.
 		streamline_width;
 	int field_set,return_code,reverse_track;
 	struct Callback_data callback;
-	struct Computed_field *coordinate_field,*data_field,*iso_scalar_field,
-		*label_field,*orientation_scale_field,*radius_scalar_field,
-		*stream_vector_field,*texture_coord_field;
+	struct Computed_field *coordinate_field, *data_field, *iso_scalar_field,
+		*label_field, *radius_scalar_field, *stream_vector_field,
+		*texture_coord_field;
 	struct Element_discretization discretization;
 	struct FE_element *seed_element;
 	struct FE_field *native_discretization_field;
-	struct GT_object *glyph;
 	struct Settings_editor *settings_editor;
 	struct Spectrum *spectrum;
-	Triple glyph_centre,glyph_size,glyph_scale_factors,seed_xi;
+	Triple seed_xi;
 
 	ENTER(settings_editor_set_settings);
 	if (settings_editor_widget)
@@ -3256,52 +3543,31 @@ Changes the currently chosen settings.
 
 							/* node_points, data_points, element_points */
 							/* glyphs */
-							if (((GT_ELEMENT_SETTINGS_NODE_POINTS==settings_type)||
-								(GT_ELEMENT_SETTINGS_DATA_POINTS==settings_type)||
-								(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings_type))&&
-								GT_element_settings_get_glyph_parameters(new_settings,
-									&glyph,glyph_centre,glyph_size,&orientation_scale_field,
-									glyph_scale_factors))
+							if (((GT_ELEMENT_SETTINGS_NODE_POINTS == settings_type) ||
+								(GT_ELEMENT_SETTINGS_DATA_POINTS == settings_type) ||
+								(GT_ELEMENT_SETTINGS_ELEMENT_POINTS == settings_type)) &&
+								settings_editor_display_glyph_specific(settings_editor))
 							{
-								CHOOSE_OBJECT_LIST_SET_OBJECT(GT_object)(
-									settings_editor->glyph_widget,glyph);
-								sprintf(temp_string,"%g*%g*%g",
-									glyph_size[0],glyph_size[1],glyph_size[2]);
-								XtVaSetValues(settings_editor->glyph_size_text,XmNvalue,
-									temp_string,NULL);
-								sprintf(temp_string,"%g,%g,%g",
-									glyph_centre[0],glyph_centre[1],glyph_centre[2]);
-								XtVaSetValues(settings_editor->glyph_centre_text,XmNvalue,
-									temp_string,NULL);
-								if (field_set=
-									((struct Computed_field *)NULL != orientation_scale_field))
-								{
-									CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
-										settings_editor->glyph_orientation_scale_field_widget,
-										orientation_scale_field);
-								}
-								XtVaSetValues(
-									settings_editor->glyph_orientation_scale_button,
-									XmNset,(XtPointer)field_set,NULL);
-								sprintf(temp_string,"%g*%g*%g",glyph_scale_factors[0],
-									glyph_scale_factors[1],glyph_scale_factors[2]);
-								XtVaSetValues(settings_editor->
-									glyph_scale_factors_text,XmNvalue,temp_string,NULL);
-								XtSetSensitive(
-									settings_editor->glyph_orientation_scale_field_widget,
-									field_set);
-								XtSetSensitive(settings_editor->glyph_scale_factors_entry,
-									field_set);
 								/* turn on callbacks */
 								callback.data=(void *)settings_editor;
 								callback.procedure=settings_editor_update_glyph;
 								CHOOSE_OBJECT_LIST_SET_CALLBACK(GT_object)(
 									settings_editor->glyph_widget,&callback);
+								callback.data = (void *)settings_editor;
+								callback.procedure = settings_editor_update_glyph_scaling_mode;
+								choose_enumerator_set_callback(
+									settings_editor->glyph_scaling_mode_widget, &callback);
 								callback.data=(void *)settings_editor;
 								callback.procedure=
 									settings_editor_update_glyph_orientation_scale_field;
 								CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
 									settings_editor->glyph_orientation_scale_field_widget,
+									&callback);
+								callback.data=(void *)settings_editor;
+								callback.procedure=
+									settings_editor_update_glyph_variable_scale_field;
+								CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
+									settings_editor->glyph_variable_scale_field_widget,
 									&callback);
 								XtManageChild(settings_editor->glyph_group_entry);
 							}
@@ -3312,8 +3578,13 @@ Changes the currently chosen settings.
 								callback.data=(void *)NULL;
 								CHOOSE_OBJECT_LIST_SET_CALLBACK(GT_object)(
 									settings_editor->glyph_widget,&callback);
+								choose_enumerator_set_callback(
+									settings_editor->glyph_scaling_mode_widget, &callback);
 								CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
 									settings_editor->glyph_orientation_scale_field_widget,
+									&callback);
+								CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
+									settings_editor->glyph_variable_scale_field_widget,
 									&callback);
 								XtUnmanageChild(settings_editor->glyph_group_entry);
 							}

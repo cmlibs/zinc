@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : settings_editor.uil
 !
-! LAST MODIFIED : 7 June 2000
+! LAST MODIFIED : 24 November 2000
 !
 ! DESCRIPTION :
 ! The widgets for the settings editor widget.
@@ -43,12 +43,17 @@ procedure
 
 	seted_id_glyph_group_entry;
 	seted_id_glyph_form;
+	seted_id_glyph_scaling_entry;
+	seted_id_glyph_scaling_form;
 	seted_id_glyph_size_text;
 	seted_id_glyph_centre_text;
 	seted_id_glyph_orient_btn;
 	seted_id_glyph_orient_form;
 	seted_id_glyph_sfactors_entry;
 	seted_id_glyph_sfactors_text;
+	seted_id_glyph_variable_entry;
+	seted_id_glyph_variable_btn;
+	seted_id_glyph_variable_form;
 	seted_id_label_field_entry;
   seted_id_label_field_btn;
   seted_id_label_field_form;
@@ -108,6 +113,7 @@ procedure
 	seted_glyph_centre_text_CB;
 	seted_glyph_orient_btn_CB;
 	seted_glyph_sfactors_text_CB;
+	seted_glyph_variable_btn_CB;
   seted_label_field_btn_CB;
 
 	seted_seed_element_btn_CB;
@@ -244,7 +250,7 @@ object
       XmForm seted_discretization_entry;
       XmRowColumn seted_native_disc_entry;
       XmRowColumn seted_seed_xi_entry;
-      XmRowColumn seted_glyph_group_entry;
+      XmFrame seted_glyph_group_entry;
       XmRowColumn seted_label_field_entry;
       XmRowColumn seted_select_mode_entry;
       };
@@ -456,19 +462,29 @@ object
         seted_id_xi_disc_mode_entry(seted_structure);
       };
     };
-  seted_glyph_group_entry: XmRowColumn
+  seted_glyph_group_entry: XmFrame
     {
     controls
       {
-      XmForm seted_glyph_entry;
-      XmForm seted_glyph_size_centre_entry;
-      XmForm seted_glyph_orient_entry;
-      XmForm seted_glyph_sfactors_entry;
+      XmRowColumn seted_glyph_group_form;
       };
     callbacks
       {
       MrmNcreateCallback = procedure
         seted_id_glyph_group_entry(seted_structure);
+      };
+    };
+  seted_glyph_group_form: XmRowColumn
+    {
+    controls
+      {
+      XmForm seted_glyph_entry;
+			XmSeparatorGadget{ };
+      XmForm seted_glyph_scaling_entry;
+      XmForm seted_glyph_base_size_entry;
+      XmForm seted_glyph_orient_entry;
+      XmForm seted_glyph_sfactors_entry;
+      XmForm seted_glyph_variable_entry;
       };
     };
   seted_volume_texture_entry: XmForm
@@ -1057,16 +1073,29 @@ object
       {
       XmLabelGadget seted_glyph_label;
       XmForm seted_glyph_form;
+      XmLabelGadget seted_glyph_centre_label;
+      XmTextField seted_glyph_centre_text;
       };
     };
-  seted_glyph_size_centre_entry: XmForm
+  seted_glyph_scaling_entry: XmForm
+    {
+    controls
+      {
+      XmLabelGadget seted_glyph_scaling_label;
+      XmForm seted_glyph_scaling_form;
+      };
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+        seted_id_glyph_scaling_entry(seted_structure);
+      };
+     };
+  seted_glyph_base_size_entry: XmForm
     {
     controls
       {
       XmLabelGadget seted_glyph_size_label;
       XmTextField seted_glyph_size_text;
-      XmLabelGadget seted_glyph_centre_label;
-      XmTextField seted_glyph_centre_text;
       };
     };
   seted_glyph_orient_entry: XmForm
@@ -1088,6 +1117,19 @@ object
       {
       MrmNcreateCallback = procedure
         seted_id_glyph_sfactors_entry(seted_structure);
+      };
+    };
+  seted_glyph_variable_entry: XmForm
+    {
+    controls
+      {
+      XmToggleButtonGadget seted_glyph_variable_btn;
+  		XmForm seted_glyph_variable_form;
+      };
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+        seted_id_glyph_variable_entry(seted_structure);
       };
     };
 !*******************************************************************************
@@ -1119,12 +1161,81 @@ object
       MrmNcreateCallback = procedure seted_id_glyph_form(seted_structure);
       };
     };
+  seted_glyph_centre_label: XmLabelGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Centre:");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      XmNleftAttachment = XmATTACH_WIDGET;
+      XmNleftWidget = seted_glyph_form;
+      XmNleftOffset = 10;
+      XmNrightAttachment = XmATTACH_NONE;
+      XmNtopAttachment = XmATTACH_FORM;
+      XmNbottomAttachment = XmATTACH_FORM;
+      };
+    };
+  seted_glyph_centre_text: XmTextField
+    {
+    arguments
+      {
+      XmNvalue = "";
+!      XmNwidth = 80;
+      XmNcolumns = 12;
+      XmNfontList = normal_font;
+      XmNleftAttachment = XmATTACH_WIDGET;
+      XmNleftWidget = seted_glyph_centre_label;
+      XmNrightAttachment = XmATTACH_NONE;
+      XmNtopAttachment = XmATTACH_FORM;
+      XmNbottomAttachment = XmATTACH_FORM;
+      };
+    callbacks
+      {
+      MrmNcreateCallback =
+				procedure seted_id_glyph_centre_text(seted_structure);
+      XmNactivateCallback =
+				procedure seted_glyph_centre_text_CB(seted_structure);
+      XmNlosingFocusCallback =
+				procedure seted_glyph_centre_text_CB(seted_structure);
+      };
+    };
+!*******************************************************************************
+  seted_glyph_scaling_label: XmLabelGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Scaling mode:");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      XmNleftAttachment = XmATTACH_FORM;
+      XmNrightAttachment = XmATTACH_NONE;
+      XmNtopAttachment = XmATTACH_FORM;
+      XmNbottomAttachment = XmATTACH_FORM;
+      };
+    };
+  seted_glyph_scaling_form: XmForm
+    {
+    arguments
+      {
+      XmNleftAttachment = XmATTACH_WIDGET;
+      XmNleftWidget = seted_glyph_scaling_label;
+      XmNrightAttachment = XmATTACH_NONE;
+      XmNtopAttachment = XmATTACH_FORM;
+      XmNbottomAttachment = XmATTACH_FORM;
+      };
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+				seted_id_glyph_scaling_form(seted_structure);
+      };
+    };
 !*******************************************************************************
   seted_glyph_size_label: XmLabelGadget
     {
     arguments
       {
-      XmNlabelString = compound_string("Glyph size:");
+      XmNlabelString = compound_string("Base glyph size:");
       XmNalignment = XmALIGNMENT_BEGINNING;
       XmNfontList = button_font;
       XmNleftAttachment = XmATTACH_FORM;
@@ -1153,44 +1264,6 @@ object
       XmNactivateCallback = procedure seted_glyph_size_text_CB(seted_structure);
       XmNlosingFocusCallback =
 				procedure seted_glyph_size_text_CB(seted_structure);
-      };
-    };
-  seted_glyph_centre_label: XmLabelGadget
-    {
-    arguments
-      {
-      XmNlabelString = compound_string("Centre:");
-      XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
-      XmNleftAttachment = XmATTACH_WIDGET;
-      XmNleftWidget = seted_glyph_size_text;
-      XmNrightAttachment = XmATTACH_NONE;
-      XmNtopAttachment = XmATTACH_FORM;
-      XmNbottomAttachment = XmATTACH_FORM;
-      };
-    };
-  seted_glyph_centre_text: XmTextField
-    {
-    arguments
-      {
-      XmNvalue = "";
-!      XmNwidth = 80;
-      XmNcolumns = 12;
-      XmNfontList = normal_font;
-      XmNleftAttachment = XmATTACH_WIDGET;
-      XmNleftWidget = seted_glyph_centre_label;
-      XmNrightAttachment = XmATTACH_NONE;
-      XmNtopAttachment = XmATTACH_FORM;
-      XmNbottomAttachment = XmATTACH_FORM;
-      };
-    callbacks
-      {
-      MrmNcreateCallback =
-				procedure seted_id_glyph_centre_text(seted_structure);
-      XmNactivateCallback =
-				procedure seted_glyph_centre_text_CB(seted_structure);
-      XmNlosingFocusCallback =
-				procedure seted_glyph_centre_text_CB(seted_structure);
       };
     };
 !*******************************************************************************
@@ -1265,6 +1338,43 @@ object
 				procedure seted_glyph_sfactors_text_CB(seted_structure);
       XmNlosingFocusCallback =
 				procedure seted_glyph_sfactors_text_CB(seted_structure);
+      };
+    };
+!*******************************************************************************
+  seted_glyph_variable_btn: XmToggleButtonGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Variable Scale:");
+      XmNfontList = button_font;
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNleftAttachment = XmATTACH_FORM;
+      XmNrightAttachment = XmATTACH_NONE;
+      XmNtopAttachment = XmATTACH_FORM;
+      XmNbottomAttachment = XmATTACH_FORM;
+      };
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+				seted_id_glyph_variable_btn(seted_structure);
+      XmNvalueChangedCallback = procedure
+        seted_glyph_variable_btn_CB(seted_structure);
+      };
+    };
+  seted_glyph_variable_form: XmForm
+    {
+    arguments
+      {
+      XmNleftAttachment = XmATTACH_WIDGET;
+      XmNleftWidget = seted_glyph_variable_btn;
+      XmNrightAttachment = XmATTACH_NONE;
+      XmNtopAttachment = XmATTACH_FORM;
+      XmNbottomAttachment = XmATTACH_FORM;
+      };
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+        seted_id_glyph_variable_form(seted_structure);
       };
     };
 !*******************************************************************************
