@@ -10,8 +10,16 @@ use ExtUtils::MakeMaker;
 #   make install
 # To find local
 #   setenv PERLLIB /dosD/cmiss/cmgui/perl/lib/perl5/site_perl/5.8.0/i686-linux/
+# To rebuild cmgui libraries
+#   make -f cmgui.make TARGET=so_lib
+#   cp bin/i686-linux/libcmgui-debug.so ${HOME}/lib/libcmgui.so
+#   cp bin/i686-linux/libcmgui_computed_variable-debug.so ${HOME}/lib/libcmgui_computed_variable.so
+#   cp bin/i686-linux/libcmgui_computed_variable_finite_element-debug.so ${HOME}/lib/libcmgui_computed_variable_finite_element.so
+#   cp bin/i686-linux/libcmgui_general-debug.so ${HOME}/lib/libcmgui_general.so
+#   cp bin/i686-linux/libcmgui_finite_element-debug.so ${HOME}/lib/libcmgui_finite_element.so
 # To test without installing
-#   perl -Mblib -MCmiss::Value -e 'Cmiss::Value::create'
+#   setenv LD_LIBRARY_PATH ${HOME}/lib
+#   make test
 
 #Recursively look up from here for typemap files.
 my $typemap_file = "typemap";
