@@ -72,6 +72,33 @@ initialized to zero.
 	return (result);
 }
 
+Scalar Cmiss_function_matrix_value(Cmiss_function_id function_matrix,
+	unsigned int row,unsigned int column)
+/*******************************************************************************
+LAST MODIFIED : 3 February 2005
+
+DESCRIPTION :
+Returns the scalar value at the specified <row> and <column>.
+==============================================================================*/
+{
+	Scalar result;
+	Function_matrix_handle *function_matrix_handle_address;
+
+	if ((function_matrix_handle_address=
+		reinterpret_cast<Function_matrix_handle *>(function_matrix))&&
+		(*function_matrix_handle_address))
+	{
+		result=(**function_matrix_handle_address)(
+			row,column);
+	}
+	else
+	{
+		result=0;
+	}
+
+	return (result);
+}
+
 Cmiss_function_variable_id Cmiss_function_matrix_entry(
 	Cmiss_function_id function_matrix,unsigned int row,unsigned int column)
 /*******************************************************************************

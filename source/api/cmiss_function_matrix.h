@@ -26,6 +26,15 @@ Creates a Cmiss_function matrix with the specified <number_of_rows>,
 initialized to zero.
 ==============================================================================*/
 
+Scalar Cmiss_function_matrix_value(Cmiss_function_id function_matrix,
+	unsigned int row,unsigned int column);
+/*******************************************************************************
+LAST MODIFIED : 3 February 2005
+
+DESCRIPTION :
+Returns the scalar value at the specified <row> and <column>.
+==============================================================================*/
+
 Cmiss_function_variable_id Cmiss_function_matrix_entry(
 	Cmiss_function_id function_matrix,unsigned int row,unsigned int column);
 /*******************************************************************************
