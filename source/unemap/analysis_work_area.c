@@ -915,6 +915,12 @@ analysis work area.
 					update_signals_drawing_area(analysis_window);
 					/* update the mapping_window_menu */
 					update_mapping_window_menu(mapping);
+					/* to recalculate RMS_signal. Perhaps should do trace_change_signal for all modes */
+					if(analysis->trace->analysis_mode==ELECTRICAL_IMAGING)
+					{	
+						analysis->trace->calculate_rms=1;				
+						trace_change_signal(analysis->trace);
+					}
 #if defined (UNEMAP_USE_3D)
 					/* must do this after analysis window has been updated */
 					if ((number_of_devices>0)&&(analysis->highlight)&&(*(analysis->highlight)))
@@ -10389,7 +10395,8 @@ value at the potential time.
 			}
 			/* update the display */
 			update_signals_drawing_area(analysis->window);
-			update_interval_drawing_area(analysis->window);
+			update_interval_drawing_area(analysis->window);	
+			analysis->trace->calculate_rms=1;		 
 			trace_change_signal(analysis->trace);
 			/* update the mapping window */
 			if ((NO_MAP_FIELD==analysis->map_type)&&
@@ -11757,6 +11764,12 @@ DESCRIPTION :
 				update_interval_drawing_area(analysis->window);
 				trace_change_signal_status(analysis->trace);
 				mapping=analysis->mapping_window;
+				/* to recalculate RMS_signal. Perhaps should do trace_change_signal for all modes */
+				if(analysis->trace->analysis_mode==ELECTRICAL_IMAGING)
+				{	
+					analysis->trace->calculate_rms=1;				
+					trace_change_signal(analysis->trace);
+				}
 #if defined(UNEMAP_USE_3D)
 				/* ??JW reject the corresponding node (until have a complete nodal version */ 
 				/* of analysis_accpet_signal) */
@@ -11943,7 +11956,13 @@ DESCRIPTION :
 					highlighted */
 				update_interval_drawing_area(analysis->window);
 				trace_change_signal_status(analysis->trace);
-				mapping=analysis->mapping_window;
+				mapping=analysis->mapping_window;	
+				/* to recalculate RMS_signal. Perhaps should do trace_change_signal for all modes */
+				if(analysis->trace->analysis_mode==ELECTRICAL_IMAGING)
+				{	
+					analysis->trace->calculate_rms=1;				
+					trace_change_signal(analysis->trace);
+				}
 #if defined(UNEMAP_USE_3D)
 				/* ??JW reject the corresponding node (until have a complete nodal version */ 
 				/* of analysis_reject_signal) */
@@ -14342,8 +14361,8 @@ else
 						{
 							update_interval_drawing_area(analysis->window);
 						}
-						/* update the trace window */
-						trace_change_signal(analysis->trace);
+						/* update the trace window */					
+						trace_change_signal(analysis->trace);						
 					}
 				}
 				/* if it is not the only highlighted device */
@@ -14384,8 +14403,8 @@ else
 				{
 					update_interval_drawing_area(analysis->window);
 				}
-				/* update the trace window */
-				trace_change_signal(analysis->trace);
+				/* update the trace window */						
+				trace_change_signal(analysis->trace);				
 				highlight_electrode_or_auxiliar(*new_highlight,
 #if defined (UNEMAP_USE_NODES)
 					(struct FE_node *)NULL,
@@ -14479,8 +14498,8 @@ else
 				{
 					update_interval_drawing_area(analysis->window);
 				}
-				/* update the trace window */
-				trace_change_signal(analysis->trace);
+				/* update the trace window */			
+				trace_change_signal(analysis->trace);				
 				highlight_electrode_or_auxiliar(*new_highlight,
 #if defined (UNEMAP_USE_NODES)
 					(struct FE_node *)NULL,
@@ -14685,8 +14704,8 @@ the rig_node group. If are highlights them.
 		if(num_selected) 
 		{
 			/* update the  windows*/	
-			update_interval_drawing_area(analysis->window);
-			trace_change_signal(analysis->trace);		
+			update_interval_drawing_area(analysis->window);							
+			trace_change_signal(analysis->trace);		 
 		}
 	}
 	else

@@ -1056,9 +1056,9 @@ object
 					XmNborderWidth = 1;
 					};
 				controls
-					{
-					XmPushButtonGadget electrodes_accepted_button;
+					{	
 					XmPushButtonGadget electrodes_unrejected_button;
+					XmPushButtonGadget electrodes_accepted_button;				
 					XmPushButtonGadget electrodes_all_button;				
 					};
 				};

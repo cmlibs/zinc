@@ -1033,6 +1033,7 @@ Sets the analysis mode to electrical imaging.
 			redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)trace,
 				(XtPointer)NULL);						
 			trace_update_signal_controls(trace);
+			trace->calculate_rms=1;
 			trace_change_signal(trace);			
 		}
 	}
@@ -1536,7 +1537,7 @@ Saves the id of the electrodes choice  menu.
 	if (trace=(struct Trace_window *)trace_window)
 	{
 		trace->area_1.inverse.electrodes_choice_mode= *widget_id;
-		trace->inverse_electrodes_mode=ELECTRODES_ACCEPTED; /* to match first entry in uil*/
+		trace->inverse_electrodes_mode=ELECTRODES_UNREJECTED; /* to match first entry in uil*/
 	}
 	else
 	{
@@ -1694,6 +1695,8 @@ Sets the inverse electrodes to accepted
 		if (ELECTRODES_ACCEPTED!=trace->inverse_electrodes_mode)
 		{
 			trace->inverse_electrodes_mode=ELECTRODES_ACCEPTED;
+			trace->calculate_rms=1;
+			trace_change_signal(trace);	
 		}
 	}
 	else
@@ -1724,6 +1727,8 @@ Sets the inverse electrodes to unrejected
 		if (ELECTRODES_UNREJECTED!=trace->inverse_electrodes_mode)
 		{
 			trace->inverse_electrodes_mode=ELECTRODES_UNREJECTED;
+			trace->calculate_rms=1;
+			trace_change_signal(trace);
 		}
 	}
 	else
@@ -1754,6 +1759,8 @@ Sets the inverse electrodes to all
 		if (ELECTRODES_ALL!=trace->inverse_electrodes_mode)
 		{
 			trace->inverse_electrodes_mode=ELECTRODES_ALL;
+			trace->calculate_rms=1;
+			trace_change_signal(trace);
 		}
 	}
 	else
@@ -4538,6 +4545,7 @@ Calculate rms signal for inverse
 	{
 		trace->calculate_signal_mode=RMS_SIGNAL;
 		trace_update_signal_controls(trace);
+		trace->calculate_rms=1;
 		trace_change_signal(trace);
 	}
 	else
@@ -6942,6 +6950,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 			{
 				widget_spacing=user_interface->widget_spacing;
 				/* assign fields */
+				trace->calculate_rms=0;
 				trace->open=0;
 				trace->address=address;
 				trace->activation=activation;
@@ -8312,13 +8321,163 @@ and location.
 	return (shell);
 } /* create_trace_window_shell */
 
+static int process_eimaging(struct Trace_window *trace)
+/*******************************************************************************
+LAST MODIFIED : 13 March 2001
+
+DESCRIPTION :
+Calculates the processed device for electrical imaging.
+Set the trace->calculate_rms flag to 1 before calling this function if you 
+want the RMS of all the signals to be calculated. This flag is cleared 
+before this function is exited.
+==============================================================================*/
+{
+	char *name;
+	enum Event_signal_status **status_ptr,*status;
+	enum Inverse_electrodes_mode electrodes_mode;
+	float processed_frequency,*processed_value,*source_value,*time_float,*times,
+		*values;
+	int buffer_offset,i,j,number_of_devices,num_valid_devices,number_of_samples,
+		*processed_time,return_code;
+	struct Device *device,*processed_device,**the_device;
+	struct Device_description *description;
+	struct Rig *rig;
+	struct Region *current_region;
+	struct Signal_buffer *processed_buffer;
+
+	ENTER(process_eimaging);
+	values=(float *)NULL;
+	times=(float *)NULL;
+	rig=(struct Rig *)NULL;
+	current_region=(struct Region *)NULL;
+	description=(struct Device_description *)NULL;
+	return_code=0;	
+	if(trace)
+	{		
+		electrodes_mode=trace->inverse_electrodes_mode;
+		if((trace->calculate_signal_mode==RMS_SIGNAL)&&(trace->calculate_rms))
+		/* nothing to do for CURRENT_SIGNAL case */
+		{
+			/* get info from the highlighted signal */	
+			if ((trace->highlight)&&(*(trace->highlight))&&
+				(device= **(trace->highlight))
+				&&extract_signal_information((struct FE_node *)NULL,
+					(struct Signal_drawing_package *)NULL,device,1,
+					1,0,(int *)NULL,&number_of_samples,&times,&values,
+					(enum Event_signal_status **)NULL,&name,(int *)NULL,
+					(float *)NULL,(float *)NULL)&&(0<number_of_samples)&&
+				(processed_device=trace->processed_device)&&
+				(processed_device->signal)&&(processed_device->channel)&&
+				(processed_buffer=processed_device->signal->buffer))
+			{			
+				if (processed_device->signal->next)
+				{
+					destroy_Signal(&(processed_device->signal->next));
+				}				
+				/* realloc Signal_buffer for processed_device */
+				processed_frequency=(float)number_of_samples/
+					(times[number_of_samples-1]-times[0]);
+				if (processed_buffer=reallocate_Signal_buffer(processed_buffer,
+					FLOAT_VALUE,1,number_of_samples,processed_frequency))
+				{	
+					/* zero all the processed values, and copy the processed times*/				
+					time_float=times;				
+					processed_time=processed_buffer->times;
+					processed_value=((processed_buffer->signals).float_values)+
+						(trace->processed_device->signal->index);
+					buffer_offset=processed_buffer->number_of_signals;
+					processed_device->channel->offset=0;
+					processed_device->channel->gain=1;
+					processed_device->signal_display_maximum=0;
+					processed_device->signal_display_minimum=1;
+					for (j=number_of_samples;j>0;j--)
+					{
+						*processed_value= 0;
+						processed_value += buffer_offset;				
+						*processed_time=(int)((*time_float)*processed_frequency+0.5);
+						processed_time++;
+						time_float++;
+					}				
+					/* find all the relevant devices, to get RMS of them */
+					rig=*(trace->rig);
+					current_region=get_Rig_current_region(rig);
+					number_of_devices=rig->number_of_devices;
+					the_device=rig->devices;
+					num_valid_devices=0;
+					status_ptr=&status;	
+					/* might have no relevant signals */
+					trace->valid_processing=1;				
+					return_code=1;		
+					/* now need to get RMS and shove in processed signal*/
+					/* sum the square of the sample values */
+					for(i=0;i<number_of_devices;i++)
+					{
+						description=(*the_device)->description;
+						if((!current_region||(current_region==description->region))&&
+							(extract_signal_information((struct FE_node *)NULL,
+								(struct Signal_drawing_package *)NULL,*the_device,1,
+								1,0,(int *)NULL,&number_of_samples,&times,&values,							
+								status_ptr,&name,(int *)NULL,(float *)NULL,(float *)NULL)))					
+						{							
+							if(((*status==ACCEPTED)&&(electrodes_mode==ELECTRODES_ACCEPTED))||
+								(electrodes_mode==ELECTRODES_ALL)||
+								((*status!=REJECTED)&&(electrodes_mode==ELECTRODES_UNREJECTED)))
+							{	
+								processed_value=((processed_buffer->signals).float_values)+
+									(trace->processed_device->signal->index);						
+								source_value=values;
+								for (j=number_of_samples;j>0;j--)
+								{
+									*processed_value+= (*source_value)*(*source_value);
+									processed_value += buffer_offset;				
+									source_value++;	
+								}
+								num_valid_devices++;								
+							}
+						}					
+						the_device++;
+					}					
+					if(num_valid_devices)
+					{
+						/* get mean and  square root of the sample values */
+						processed_value=((processed_buffer->signals).float_values)+
+							(trace->processed_device->signal->index);										
+						for (j=number_of_samples;j>0;j--)
+						{
+							*processed_value/=num_valid_devices;
+							*processed_value=sqrt(*processed_value);
+							processed_value += buffer_offset;					
+						}				
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+					"process_eimaging. reallocate_Signal_buffer failed");
+					return_code=0;
+				}				
+			} /* if ((trace->highlight)&&( */		
+		}/* if(trace->calculate_signal_mode==RMS_SIGNAL) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"process_eimaging. Invalid arguments");
+		return_code=0;
+	}	
+	trace->calculate_rms=0; /*clear flag*/
+	LEAVE;
+	return(return_code);
+}/* process_eimaging */
+
 /*
 Global functions
 ----------------
 */
+
 int trace_process_device(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 19 March 2000
+LAST MODIFIED : 9 March 2001
 
 DESCRIPTION :
 Calculates the processed device.
@@ -8333,8 +8492,9 @@ Calculates the processed device.
 		switch (trace->analysis_mode)
 		{
 			case ELECTRICAL_IMAGING:
-			{
-				/*??JW do stuff */ 
+			{						
+				return_code=process_eimaging(trace);
+
 			} break;
 			case EVENT_DETECTION:
 			{
@@ -9420,7 +9580,8 @@ The callback for redrawing part of the drawing area in trace area 1.
 	Display *display;
 	float x_scale;
 	int analysis_range,axes_left,axes_height,axes_top,axes_width,
-		end_analysis_interval,height,i,redraw,start_analysis_interval,width;
+		end_analysis_interval,height,i,redraw,start_analysis_interval,
+		valid_processing,width;
 	struct Device *device;
 	struct Signal_buffer *buffer;
 	struct Signal_drawing_information *signal_drawing_information;
@@ -9742,29 +9903,33 @@ The callback for redrawing part of the drawing area in trace area 1.
 							{									
 								if(trace->calculate_signal_mode==CURRENT_SIGNAL)								
 								{
-									if((device= **(trace->highlight))&&
-										(buffer=get_Device_signal_buffer(device)))	
-									{							
-										start_analysis_interval=buffer->start;
-										end_analysis_interval=buffer->end;
-										/* draw the active signal */
-										draw_signal((struct FE_node *)NULL,
-											(struct Signal_drawing_package *)NULL,device,EDIT_AREA_DETAIL,1,0,
-											&start_analysis_interval,&end_analysis_interval,0,0,
-											trace_area_1->drawing->width,trace_area_1->drawing->height,
-											trace_area_1->drawing->pixel_map,&axes_left,&axes_top,
-											&axes_width,&axes_height,signal_drawing_information,
-											user_interface);
-										trace_area_1->axes_left=axes_left;
-										trace_area_1->axes_top=axes_top;
-										trace_area_1->axes_width=axes_width;
-										trace_area_1->axes_height=axes_height;
-									}								
-								}	
-								else
-								/* RMS_SIGNAL  */
-								{
+									device= **(trace->highlight);
+									valid_processing=1;
 								}
+								else
+									/* RMS_SIGNAL  */
+								{
+									device=trace->processed_device;
+									valid_processing=trace->valid_processing;
+								}
+								buffer=get_Device_signal_buffer(device);
+								if(device&&buffer&&valid_processing)	
+								{							
+									start_analysis_interval=buffer->start;
+									end_analysis_interval=buffer->end;
+									/* draw the active signal */
+									draw_signal((struct FE_node *)NULL,
+										(struct Signal_drawing_package *)NULL,device,EDIT_AREA_DETAIL,1,0,
+										&start_analysis_interval,&end_analysis_interval,0,0,
+										trace_area_1->drawing->width,trace_area_1->drawing->height,
+										trace_area_1->drawing->pixel_map,&axes_left,&axes_top,
+										&axes_width,&axes_height,signal_drawing_information,
+										user_interface);
+									trace_area_1->axes_left=axes_left;
+									trace_area_1->axes_top=axes_top;
+									trace_area_1->axes_width=axes_width;
+									trace_area_1->axes_height=axes_height;
+								}																															
 							} break;							
 						}
 					}

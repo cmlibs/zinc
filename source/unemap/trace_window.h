@@ -561,7 +561,8 @@ The trace window object.
 	struct Correlation correlation;
 	struct Filtering filtering;
 	struct Device *imaginary_device_1,*imaginary_device_2,*processed_device,
-		*real_device_1,*real_device_2;
+		*real_device_1,*real_device_2;	
+	int calculate_rms; /* a flag don't always want to calculate rms of signals*/
 	int valid_processing;
 	struct Device ***highlight;
 #if defined (UNEMAP_USE_NODES)
