@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 12 November 2002
+LAST MODIFIED : 13 November 2002
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -682,7 +682,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* !defined (WIN32_USER_INTERFACE) */
 /*******************************************************************************
-LAST MODIFIED : 12 November 2002
+LAST MODIFIED : 13 November 2002
 
 DESCRIPTION :
 Main program for the CMISS Graphical User Interface
@@ -1196,10 +1196,7 @@ Main program for the CMISS Graphical User Interface
 	command_data.texture_manager=CREATE(MANAGER(Texture))();
 	/* volume texture manager */
 	command_data.volume_texture_manager=CREATE(MANAGER(VT_volume_texture))();
-	/* graphical material manager */
-	command_data.graphical_material_manager =
-		CREATE(MANAGER(Graphical_material))();
-	/* establish the CMGUI default materials */
+	/* establish the graphical material manager and CMGUI default materials */
 	if (command_data.graphical_material_manager=
 		CREATE(MANAGER(Graphical_material))())
 	{
