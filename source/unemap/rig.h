@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.h
 
-LAST MODIFIED : 16 August 2002
+LAST MODIFIED : 5 September 2002
 
 DESCRIPTION :
 Contains data and function descriptions for measurement rigs.
@@ -23,8 +23,8 @@ different parameter choices can be compared in dfn.
 #include "finite_element/finite_element.h"
 #include "general/geometry.h"
 
-/*???testing */
-/*#define DEVICE_EXPRESSIONS*/
+/* Now using */
+#define DEVICE_EXPRESSIONS
 
 /*
 Global types
@@ -657,16 +657,16 @@ Destroys a device expression.
 ==============================================================================*/
 
 int calculate_device_channels(struct Device *device,
-	int *number_of_channels_address,struct Channel ***channels_address);
+	int *number_of_channels_address,struct Device ***channel_devices_address);
 /*******************************************************************************
-LAST MODIFIED : 16 August 2002
+LAST MODIFIED : 3 September 2002
 
 DESCRIPTION :
-From the <device>, calculate the channels whose values are needed in order to
-evaluate the <device>.  <*number_of_channels_address> and <*channels_address>
-are "incremented" to include these channels.  The values passed to
-<evaluate_device> need to be in the same order as the channels calculated by
-this routine.
+From the <device>, calculate the single channel devices whose values are needed
+in order to evaluate the <device>.  <*number_of_channels_address> and
+<*channel_devices_address> are "incremented" to include these devices.  The
+values passed to <evaluate_device> need to be in the same order as the single
+channel devices calculated by this routine.
 ==============================================================================*/
 
 int evaluate_device(struct Device *device,float **channel_values_address,
@@ -679,6 +679,15 @@ Evaluates the <device> using the <*channel_values_address>.  The values
 should be for and in the order of the channels returned by
 <calculate_device_channels>.  Increments <*channel_values_address> as it steps
 through.
+==============================================================================*/
+
+int evaluate_device_extrema(struct Device *device,float *minimum,
+	float *maximum);
+/*******************************************************************************
+LAST MODIFIED : 5 September 2002
+
+DESCRIPTION :
+Evaluates the <device>'s <minimum> and <maximum>.
 ==============================================================================*/
 
 struct Signal *get_Device_signal(struct Device *device);
@@ -703,6 +712,81 @@ LAST MODIFIED : 4 August 1999
 
 DESCRIPTION :
 Returns the signal buffer used by the <device>.
+==============================================================================*/
+
+int extract_Device_signal_information(struct Device *device,
+	int signal_number,int first_data,int last_data,float **times_address,
+	float **values_address,enum Event_signal_status **status_address,
+	int *number_of_signals_address,int *number_of_signal_values_address,
+	char **name_address,int *highlight_address,float *signal_minimum_address,
+	float *signal_maximum_address);
+/*******************************************************************************
+LAST MODIFIED : 6 September 2002
+
+DESCRIPTION :
+Extracts the specified signal information.  The specification arguments are:
+- the <device> where the information is stored.
+- <signal_number> specifies which signal (zero indicates all)	
+- <first_data> and <last_data> specify the part of the signal required.  If
+	<first_data> is greater than <last_data> then return the whole signal
+If the return_code is nonzero, the extraction arguments are:
+- if <times_address> not NULL then
+	- if <*times_address> not NULL then
+		- <number_of_signal_values_address> should be non NULL
+		- on entry, <*number_of_signal_values_address> is the maximum number of
+			times that can be extracted into <*times_address>
+		else
+		- <*times_address> will be allocated for the number of signal values/times
+			(either <last_data>-<first_data>+1 or the whole signal) and the times
+			extracted
+	else
+	- no times are extracted
+- if <values_address> not NULL then
+	- for the extracted values, signal varies fastest ie the values for all
+		signals at a particular time are sequential
+	- if <*values_address> not NULL then
+		- <number_of_signal_values_address> and <number_of_signals_address> should
+			both be non NULL
+		- on entry, <*number_of_signal_values_address> is the maximum number of
+			values that can be extracted for each signal and
+			<*number_of_signals_address> is the maximum number of signals that can be
+			extracted
+		- the stride between values for a particular signal is the entry value of
+			<*number_of_signals_address>
+		else
+		- <*values_address> will be allocated for the number of signals and the
+			number of values per signal and the values extracted
+	else
+	- no values are extracted
+- <status_address> if not NULL then
+	- if <*status_address> not NULL then
+		- <number_of_signals_address> should be non NULL
+		- on entry, <*number_of_signals_address> is the maximum number of signals
+			that can be extracted
+		else
+		- an array with number of signals entries is allocated, filled in with the
+			signal statuses and assigned to <*status_address>
+	else
+	- no statuses are extracted
+- if <number_of_signals_address> not NULL then
+	- if <values_address> or <status_address> are not NULL then
+		- <*number_of_signals_address> is the number of signals extracted
+		else
+		- <*number_of_signals_address> is the number of signals available
+- if <number_of_signal_values_address> not NULL then
+	- if <times_address> or <values_address> are not NULL then
+		- <*number_of_signal_values_address> is the number of values per signal
+			extracted
+		else
+		- <*number_of_signal_values_address> is the number of values per signal
+- <name_address> if not NULL, a copy of the name is made and assigned to
+	<*name_address>
+- <highlight_address> if not NULL <*highlight_address> is set to zero if the
+	signals are not highlighted and a non-zero if they are highlighted
+- <signal_minimum_address> if not NULL <*signal_minimum_address> is set to
+	the minimum value to be displayed (not necessarily the minimum of the values)
+- <signal_maximum_address> if not NULL <*signal_maximum_address> is set to
+	the maximum value to be displayed (not necessarily the maximum of the values)
 ==============================================================================*/
 
 struct Device_list_item *create_Device_list_item(struct Device *device,
