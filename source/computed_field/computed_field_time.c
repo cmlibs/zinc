@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_time.c
 
-LAST MODIFIED : 29 September 2003
+LAST MODIFIED : 01 October 2003
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -980,8 +980,10 @@ already) and allows its contents to be modified.
 		(struct Computed_field_time_package *)
 		computed_field_time_package_void))
 	{
-		if (strcmp(PARSER_HELP_STRING,state->current_token)&&
-			strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))
+    if (((state->current_token) &&
+          (strcmp(PARSER_HELP_STRING,state->current_token)&&
+            strcmp(PARSER_RECURSIVE_HELP_STRING,state->current_token))) ||
+      (!(state->current_token)))
 		{
 			return_code = Computed_field_set_type_time_value(field,
 				computed_field_time_package->time_keeper);
