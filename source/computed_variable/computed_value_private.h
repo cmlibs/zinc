@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_value_private.h
 
-LAST MODIFIED : 27 January 2003
+LAST MODIFIED : 2 February 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -11,135 +11,59 @@ DESCRIPTION :
 #include "computed_variable/computed_value.h"
 
 /*
-Friend types
+Method types
 ------------
 */
-struct Computed_value;
-/*******************************************************************************
-LAST MODIFIED : 22 January 2003
+typedef int (*Computed_value_clear_type_specific_function)(
+	struct Computed_value *value);
+typedef int (*Computed_value_same_type_specific_function)(
+	struct Computed_value *value_1,struct Computed_value *value_2);
 
-DESCRIPTION :
-A value that knows what type it is.
-
-???DB.  An update of Value_type (general/value).  Want to be able to add new
-	value types (in the same way that Computed_field types can be added).  Will
-	need a package?  Will replace Value_type?
-???DB.  At present just extend?
-==============================================================================*/
+/*
+Friend macros
+-------------
+*/
+#define COMPUTED_VALUE_ESTABLISH_METHODS( value, value_type ) \
+/***************************************************************************** \
+LAST MODIFIED : 2 February 2003 \
+\
+DESCRIPTION : \
+Each Computed_value_set_type function should call this macro to establish the \
+virtual functions that give the value its particular behaviour.  Each function \
+must therefore be defined for each value type, even if it is set to NULL or \
+some default function. \
+============================================================================*/ \
+Computed_value_establish_methods(value, \
+	Computed_value_ ## value_type ## _clear_type_specific, \
+	Computed_value_ ## value_type ## _same_type_specific)
 
 /*
 Friend functions
 ----------------
 */
-struct Computed_value *CREATE(Computed_value)(void);
+int Computed_value_establish_methods(struct Computed_value *value,
+	Computed_value_clear_type_specific_function
+	computed_value_clear_type_specific_function,
+	Computed_value_same_type_specific_function
+	computed_value_same_type_specific_function);
 /*******************************************************************************
-LAST MODIFIED : 22 January 2003
+LAST MODIFIED : 2 February 2003
 
 DESCRIPTION :
-Creates an empty value with no type.  Each type of value has its own "set_type"
-function.
+Sets the methods for the <value>.
 ==============================================================================*/
 
-int DESTROY(Computed_value)(struct Computed_value **value_address);
+int Computed_value_clear_type(struct Computed_value *value);
 /*******************************************************************************
-LAST MODIFIED : 22 January 2003
+LAST MODIFIED : 2 February 2003
 
 DESCRIPTION :
-Frees memory/deaccess objects for Computed_value at <*value_address>.
-==============================================================================*/
-
-char *Computed_value_get_type(struct Computed_value *value);
-/*******************************************************************************
-LAST MODIFIED : 22 January 2003
-
-DESCRIPTION :
-Returns the string which identifies the type.  The calling function must not
-DEALLOCATE the returned string.
-==============================================================================*/
-
-int Computed_value_set_type_FE_value(struct Computed_value *value,
-	FE_value fe_value);
-/*******************************************************************************
-LAST MODIFIED : 22 January 2003
-
-DESCRIPTION :
-Makes <value> of type FE_value and sets its <fe_value>.
-==============================================================================*/
-
-int Computed_value_is_type_FE_value(struct Computed_value *value);
-/*******************************************************************************
-LAST MODIFIED : 22 January 2003
-
-DESCRIPTION :
-Returns a non-zero if <value> is a FE_value and zero otherwise.
-==============================================================================*/
-
-int Computed_value_get_type_FE_value(struct Computed_value *value,
-	FE_value *fe_value_address);
-/*******************************************************************************
-LAST MODIFIED : 23 January 2003
-
-DESCRIPTION :
-If <value> is of type FE_value, gets its <*fe_value_address>.
-==============================================================================*/
-
-int Computed_value_set_type_FE_value_array(struct Computed_value *value,
-	int number_of_fe_values,FE_value *fe_value_array);
-/*******************************************************************************
-LAST MODIFIED : 22 January 2003
-
-DESCRIPTION :
-Makes <value> of type FE_value_array and sets its <number_of_fe_values> and
-<fe_value_array>.  After success, the <value> is responsible for DEALLOCATEing
-<fe_value_array>.
-==============================================================================*/
-
-int Computed_value_is_type_FE_value_array(struct Computed_value *value);
-/*******************************************************************************
-LAST MODIFIED : 22 January 2003
-
-DESCRIPTION :
-Returns a non-zero if <value> is a FE_value_array and zero otherwise.
-==============================================================================*/
-
-int Computed_value_get_type_FE_value_array(struct Computed_value *value,
-	int *number_of_fe_values_address,FE_value **fe_value_array_address);
-/*******************************************************************************
-LAST MODIFIED : 23 January 2003
-
-DESCRIPTION :
-If <value> is of type FE_value_array, gets its <*number_of_fe_values_address>
-and <*fe_value_array_address>.
-
-The calling program must not DEALLOCATE the returned <*fe_value_array_address>.
-==============================================================================*/
-
-int Computed_value_set_type_string(struct Computed_value *value,
-	char *string);
-/*******************************************************************************
-LAST MODIFIED : 22 January 2003
-
-DESCRIPTION :
-Makes <value> of type string and sets its <string>.  After success, the <value>
-is responsible for DEALLOCATEing <string>.
-==============================================================================*/
-
-int Computed_value_is_type_string(struct Computed_value *value);
-/*******************************************************************************
-LAST MODIFIED : 22 January 2003
-
-DESCRIPTION :
-Returns a non-zero if <value> is a string and zero otherwise.
-==============================================================================*/
-
-int Computed_value_get_type_string(struct Computed_value *value,
-	char **string_address);
-/*******************************************************************************
-LAST MODIFIED : 23 January 2003
-
-DESCRIPTION :
-If <value> is of type string, gets its <*string_address>.
-
-The calling program must not DEALLOCATE the returned <*string_address>.
+Used internally by DESTROY and Computed_value_set_type_*() functions to
+deallocate or deaccess data specific to any Computed_value_type.  Functions
+changing the type of the Computed_value should
+- allocate any dynamic data needed for the type
+- call this function to clear what is currently in the value
+- then set values
+to ensure that the value is not left in an invalid state.
 ==============================================================================*/
 #endif /* !defined (COMPUTED_VALUE_PRIVATE_H) */

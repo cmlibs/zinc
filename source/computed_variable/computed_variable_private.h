@@ -1,9 +1,11 @@
 /*******************************************************************************
 FILE : computed_variable_private.h
 
-LAST MODIFIED : 27 January 2003
+LAST MODIFIED : 31 January 2003
 
 DESCRIPTION :
+???DB.  Move structure into .c .  Means that have to change macro into a
+function.
 ==============================================================================*/
 #if !defined (COMPUTED_VARIABLE_PRIVATE_H)
 #define COMPUTED_VARIABLE_PRIVATE_H
@@ -12,20 +14,23 @@ DESCRIPTION :
 Method types
 ------------
 */
-/* to add a new method need
-	- a function type declaration here
-	- a field in struct Computed_variable
-	- an assigment in COMPUTED_VARIABLE_ESTABLISH_METHODS
-	- a NULL initialization in Computed_variable_clear_type
-	- a NULL initialization in CREATE(Computed_variable)
-	- an assignment in MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_variable,name) */
 typedef int (*Computed_variable_clear_type_specific_function)(
 	struct Computed_variable *variable);
 typedef void* (*Computed_variable_copy_type_specific_function)(
 	struct Computed_variable *source_variable,
 	struct Computed_variable *destination_variable);
+typedef int (*Computed_variable_get_value_type_type_specific_function)(
+	struct Computed_variable *variable,struct Computed_value *type);
+typedef int
+	(*Computed_variable_is_independent_variable_of_type_specific_function)(
+	struct Computed_variable *dependent_variable,
+	struct Computed_variable *independent_variable);
 typedef int (*Computed_variable_not_in_use_function)(
 	struct Computed_variable *variable);
+typedef int (*Computed_variable_overlap_type_specific_function)(
+	struct Computed_variable *variable_1,struct Computed_variable *variable_2);
+typedef int (*Computed_variable_same_variable_type_specific_function)(
+	struct Computed_variable *variable_1,struct Computed_variable *variable_2);
 
 #if defined (OLD_CODE)
 typedef int (*Computed_variable_clear_type_specific_function)(
@@ -36,7 +41,8 @@ typedef void* (*Computed_variable_copy_type_specific_function)(
 typedef int (*Computed_variable_clear_cache_type_specific_function)(
 	struct Computed_variable *variable);
 typedef int (*Computed_variable_type_specific_contents_match_function)(
-	struct Computed_variable *variable, struct Computed_variable *other_computed_variable);
+	struct Computed_variable *variable,
+	struct Computed_variable *other_computed_variable);
 typedef int (*Computed_variable_is_defined_in_element_function)(
 	struct Computed_variable *variable,struct FE_element *element);
 typedef int (*Computed_variable_is_defined_at_node_function)(
@@ -63,169 +69,48 @@ typedef int (*Computed_variable_set_values_in_element_function)(
 	struct Computed_variable *variable,struct FE_element *element,
 	int *number_in_xi,FE_value *values);
 typedef int (*Computed_variable_get_native_discretization_in_element_function)(
-	struct Computed_variable *variable,struct FE_element *element,int *number_in_xi);
+	struct Computed_variable *variable,struct FE_element *element,
+	int *number_in_xi);
 typedef int (*Computed_variable_find_element_xi_function)(
 	struct Computed_variable *variable, FE_value *values, int number_of_values,
 	struct FE_element **element, FE_value *xi,
 	struct GROUP(FE_element) *search_element_group);
-typedef int (*List_Computed_variable_function)(struct Computed_variable *variable);
+typedef int (*List_Computed_variable_function)(
+	struct Computed_variable *variable);
 typedef char* (*Computed_variable_get_command_string_function)(
 	struct Computed_variable *variable);
-typedef int (*Computed_variable_has_multiple_times_function)(struct Computed_variable *variable);
+typedef int (*Computed_variable_has_multiple_times_function)(
+	struct Computed_variable *variable);
 
 /* Used by the register_type_function, Computed_variable_type_data and
-	Computed_variable_add_type_to_option_table*/
+	Computed_variable_add_type_to_option_table */
 typedef int (*Define_Computed_variable_type_function)(
-	struct Parse_state *state,void *variable_void,void *computed_variable_package_void);
+	struct Parse_state *state,void *variable_void,
+	void *computed_variable_package_void);
 #endif /* defined (OLD_CODE) */
-
-/*
-Friend types
-------------
-*/
-struct Computed_variable
-/*******************************************************************************
-LAST MODIFIED : 27 January 2003
-
-DESCRIPTION :
-==============================================================================*/
-{
-	/* the name/identifier of the Computed_variable */
-	char *name;
-	/* the type string identifies the variable's type.  It points to a string that
-		is shared by all variables of the same type and should not be copied */
-	char *type_string;
-	/* information that is specific to the type */
-	void *type_specific_data;
-	/* methods */
-	Computed_variable_clear_type_specific_function
-		computed_variable_clear_type_specific_function;
-	Computed_variable_copy_type_specific_function
-		computed_variable_copy_type_specific_function;
-	Computed_variable_not_in_use_function
-		computed_variable_not_in_use_function;
-
-	int access_count;
-
-#if defined (OLD_CODE)
-	/* the name/identifier of the Computed_variable */
-	char *name;
-	int number_of_components;
-	/* This is set for variables where the components have names other than
-		the defaults of 1,2...number_of_components */
-	char **component_names;
-
-	/* if the following flag is set, the variable may not be modified or destroyed
-		by the user. See Computed_variable_set_read_only function */
-	int read_only;
-	struct Coordinate_system coordinate_system;
-
-	/* Value cache: */
-	/* For all Computed_variable_types: computed values/derivatives.
-		When the variable is computed its values and derivatives are first placed
-		in these arrays. If the variable is then recomputed at element:xi, the values
-		are returned immediately. The <values> array is allocated when the variable is
-		evaluated and deallocated when the number_of_components is [re]established
-		or the variable is copied over. The values array is made large enough to store
-		the values of the variable while the derivatives fit those of the variable in an
-		element of dimension MAXIMUM_ELEMENT_XI_DIMENSIONS. */
-	/* ???RC note: separation of cache and variable probably necessary if computed
-		variables are to be efficient under multiprocessing */
-	FE_value *values,*derivatives,xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	/* flag saying whether derivatives were calculated */
-	int derivatives_valid;
-	/* Only one of element/node should be accessed at a time - if there is an
-		element accessed, then values are guaranteed to be valid and derivatives
-		are valid if the derivatives_valid flag is set - both at the above xi only.
-		If node is accessed, then the values are valid at that node. Either modes
-		of caching must be cleared by a call to Computed_variable_clear_cache once
-		the variable is no longer of immediate use. */
-	/* last element in which values/derivatives calculated - ACCESSed by variable */
-	struct FE_element *element;
-	/* last node at which values calculated - ACCESSed by variable */
-	struct FE_node *node;
-	/* last time at which values were calculated */
-	FE_value time;
-
-	/* cache used when doing find_xi calculations */
-	struct Computed_variable_find_element_xi_cache *find_element_xi_cache;
-
-	Computed_variable_clear_type_specific_function
-		computed_variable_clear_type_specific_function;
-	Computed_variable_copy_type_specific_function
-		computed_variable_copy_type_specific_function;
-	Computed_variable_clear_cache_type_specific_function
-		computed_variable_clear_cache_type_specific_function;
-	Computed_variable_type_specific_contents_match_function
-		computed_variable_type_specific_contents_match_function;
-	Computed_variable_is_defined_in_element_function
-		computed_variable_is_defined_in_element_function;
-	Computed_variable_is_defined_at_node_function
-		computed_variable_is_defined_at_node_function;
-	Computed_variable_has_numerical_components_function
-		computed_variable_has_numerical_components_function;
-	Computed_variable_not_in_use_function
-		computed_variable_not_in_use_function;
-	Computed_variable_evaluate_cache_at_node_function
-		computed_variable_evaluate_cache_at_node_function;
-	Computed_variable_evaluate_cache_in_element_function
-		computed_variable_evaluate_cache_in_element_function;
-	Computed_variable_evaluate_as_string_at_node_function
-		computed_variable_evaluate_as_string_at_node_function;
-	Computed_variable_evaluate_as_string_in_element_function
-		computed_variable_evaluate_as_string_in_element_function;
-	Computed_variable_set_values_at_node_function
-		computed_variable_set_values_at_node_function;
-	Computed_variable_set_values_in_element_function
-		computed_variable_set_values_in_element_function;
-	Computed_variable_get_native_discretization_in_element_function
-		computed_variable_get_native_discretization_in_element_function;
-	Computed_variable_find_element_xi_function
-		computed_variable_find_element_xi_function;
-	List_Computed_variable_function list_Computed_variable_function;
-	Computed_variable_get_command_string_function
-		computed_variable_get_command_string_function;
-	Computed_variable_has_multiple_times_function
-		computed_variable_has_multiple_times_function;
-
-	void *type_specific_data;
-	/* The type string identifies the type, it should not be copied but
-		point to the common type string for that type */
-	char *type_string;
-
-	/* for all Computed_variable_types calculated from others */
-
-	/* array of computed variables this variable is calculated from */
-	int number_of_source_variables;
-	struct Computed_variable **source_variables;
-	/* array of constant values this variable is calculated from */
-	int number_of_source_values;
-	FE_value *source_values;
-
-	int access_count;
-#endif /* defined (OLD_CODE) */
-}; /* struct Computed_variable */
 
 /*
 Friend macros
 -------------
 */
-#define COMPUTED_VARIABLE_ESTABLISH_METHODS( variable_type ) \
+#define COMPUTED_VARIABLE_ESTABLISH_METHODS( variable, variable_type ) \
 /***************************************************************************** \
-LAST MODIFIED : 27 January 2003 \
+LAST MODIFIED : 31 January 2003 \
 \
 DESCRIPTION : \
 Each Computed_variable_set_type function should call this macro to establish \
 the virtual functions that give the variable its particular behaviour.  Each \
-function must therefore be defined for each variable type, even if it is set to \
-NULL or some default function. \
+function must therefore be defined for each variable type, even if it is set \
+to NULL or some default function. \
 ============================================================================*/ \
-variable->computed_variable_clear_type_specific_function = \
-	Computed_variable_ ## variable_type ## _clear_type_specific; \
-variable->computed_variable_copy_type_specific_function = \
-	Computed_variable_ ## variable_type ## _copy_type_specific; \
-variable->computed_variable_not_in_use_function = \
-	Computed_variable_ ## variable_type ## _not_in_use;
+Computed_variable_establish_methods(variable, \
+	Computed_variable_ ## variable_type ## _clear_type_specific, \
+	Computed_variable_ ## variable_type ## _copy_type_specific, \
+	Computed_variable_ ## variable_type ## _get_value_type_type_specific, \
+	Computed_variable_ ## variable_type ## _is_independent_variable_of_type_specific, \
+	Computed_variable_ ## variable_type ## _not_in_use, \
+	Computed_variable_ ## variable_type ## _overlap_type_specific, \
+	Computed_variable_ ## variable_type ## _same_variable_type_specific)
 
 #if defined (OLD_CODE)
 variable->computed_variable_clear_type_specific_function = \
@@ -272,6 +157,28 @@ variable->computed_variable_has_multiple_times_function =  \
 Friend functions
 ----------------
 */
+int Computed_variable_establish_methods(struct Computed_variable *variable,
+	Computed_variable_clear_type_specific_function
+	computed_variable_clear_type_specific_function,
+	Computed_variable_copy_type_specific_function
+	computed_variable_copy_type_specific_function,
+	Computed_variable_get_value_type_type_specific_function
+	computed_variable_get_value_type_type_specific_function,
+	Computed_variable_is_independent_variable_of_type_specific_function
+	computed_variable_is_independent_variable_of_type_specific_function,
+	Computed_variable_not_in_use_function
+	computed_variable_not_in_use_function,
+	Computed_variable_overlap_type_specific_function
+	computed_variable_overlap_type_specific_function,
+	Computed_variable_same_variable_type_specific_function
+	computed_variable_same_variable_type_specific_function);
+/*******************************************************************************
+LAST MODIFIED : 31 January 2003
+
+DESCRIPTION :
+Sets the methods for the <variable>.
+==============================================================================*/
+
 int Computed_variable_clear_type(struct Computed_variable *variable);
 /*******************************************************************************
 LAST MODIFIED : 27 January 2003

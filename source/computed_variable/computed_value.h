@@ -62,6 +62,16 @@ DESCRIPTION :
 Frees memory/deaccess objects for Computed_value at <*value_address>.
 ==============================================================================*/
 
+int Computed_value_same_type(struct Computed_value *value_1,
+	struct Computed_value *value_2);
+/*******************************************************************************
+LAST MODIFIED : 31 January 2003
+
+DESCRIPTION :
+Returns nonzero if <value_1> and <value_2> have the same type and zero
+otherwise.
+==============================================================================*/
+
 char *Computed_value_get_type(struct Computed_value *value);
 /*******************************************************************************
 LAST MODIFIED : 22 January 2003

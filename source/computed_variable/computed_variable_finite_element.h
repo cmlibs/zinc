@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable_finite_element.h
 
-LAST MODIFIED : 23 January 2003
+LAST MODIFIED : 29 January 2003
 
 DESCRIPTION :
 Implements computed variables which interface to finite element fields:
@@ -17,6 +17,8 @@ Implements computed variables which interface to finite element fields:
 	xi_coordinates of the node - depends on element
 
 NOTES :
+
+???DB.  Add an integral variable type?
 
 ???DB.  Is a computed_variable_finite_element_utilities module needed?
 ???DB.  Consistency for is_type functions.  Currently some are iterator/

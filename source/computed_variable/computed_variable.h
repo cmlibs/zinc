@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable.h
 
-LAST MODIFIED : 27 January 2003
+LAST MODIFIED : 31 January 2003
 
 DESCRIPTION :
 Computed_variable's are expressions that are constructed for:
@@ -181,6 +181,37 @@ PROTOTYPE_MANAGER_COPY_FUNCTIONS(Computed_variable,name,char *);
 PROTOTYPE_MANAGER_FUNCTIONS(Computed_variable);
 PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Computed_variable,name,char *);
 
+int Computed_variable_same_variable(struct Computed_variable *variable_1,
+	struct Computed_variable *variable_2);
+/*******************************************************************************
+LAST MODIFIED : 31 January 2003
+
+DESCRIPTION :
+Returns nonzero if <variable_1> and <variable_2> are the same variable (eg. the
+value at node 10 for the finite element field bob) and zero otherwise.
+==============================================================================*/
+
+int Computed_variable_overlap(struct Computed_variable *variable_1,
+	struct Computed_variable *variable_2);
+/*******************************************************************************
+LAST MODIFIED : 31 January 2003
+
+DESCRIPTION :
+Returns nonzero if <variable_1> and <variable_2> overlap (eg d/ds1 and all
+values) and zero otherwise.
+==============================================================================*/
+
+int Computed_variable_is_independent_variable_of(
+	struct Computed_variable *dependent_variable,
+	struct Computed_variable *independent_variable);
+/*******************************************************************************
+LAST MODIFIED : 31 January 2003
+
+DESCRIPTION :
+Returns nonzero if <independent_variable> is an independent variable of
+<dependent_variable> and zero otherwise.
+==============================================================================*/
+
 char *Computed_variable_get_type(struct Computed_variable *variable);
 /*******************************************************************************
 LAST MODIFIED : 27 January 2003
@@ -190,24 +221,47 @@ Returns the string which identifies the type.  The calling function must not
 DEALLOCATE the returned string.
 ==============================================================================*/
 
-int Computed_variable_set_source(struct Computed_variable *variable,
-	struct Computed_variable *source);
+int Computed_variable_get_value_type(struct Computed_variable *variable,
+	struct Computed_value *type);
 /*******************************************************************************
-LAST MODIFIED : 22 January 2003
+LAST MODIFIED : 29 January 2003
 
 DESCRIPTION :
-Sets the values for <variable> to come from the <source>.  The types of the
-values for <variable> and <source> must match.
+Sets the <type> to be the same as the type of the results of <variable>, but
+does not set/calculate the actual value.
+==============================================================================*/
+
+int Computed_variable_same_value_type(struct Computed_variable *variable_1,
+	struct Computed_variable *variable_2);
+/*******************************************************************************
+LAST MODIFIED : 31 January 2003
+
+DESCRIPTION :
+Returns nonzero if <variable_1> and <variable_2> have the same value type and
+zero otherwise.
+==============================================================================*/
+
+int Computed_variable_set_independent_variable_source_variable(
+	struct Computed_variable *variable,
+	struct Computed_variable *independent_variable,
+	struct Computed_variable *source_variable);
+/*******************************************************************************
+LAST MODIFIED : 29 January 2003
+
+DESCRIPTION :
+Sets the values for <independent_variable> to come from the <source>.  The types
+of the values for <independent_variable> and <source> must match.  If
+<source_variable> is NULL then a previous setting for <independent_variable> is
+cleared.
 ==============================================================================*/
 
 int Computed_variable_set_value(struct Computed_variable *variable,
 	struct Computed_value *value);
 /*******************************************************************************
-LAST MODIFIED : 23 January 2003
+LAST MODIFIED : 29 January 2003
 
 DESCRIPTION :
-Sets the <value> for the <variable>.  If the <variable> was previously coming
-from a source variable then the source is disconnected.
+Sets the <value> for the <variable>.
 ==============================================================================*/
 
 int Computed_variable_get_value(struct Computed_variable *variable,
@@ -219,6 +273,18 @@ DESCRIPTION :
 Gets the <value> of the <variable>.  If the <value> has no type, then the
 default type for the variable is used otherwise a representation in <value>'s
 type is attempted.
+==============================================================================*/
+
+int Computed_variable_set_type_derivative(
+	struct Computed_variable *derivative,
+	struct Computed_variable *variable,
+	struct LIST(Computed_variable) *independent_variables);
+/*******************************************************************************
+LAST MODIFIED : 29 January 2003
+
+DESCRIPTION :
+Sets <derivative> to be the derivative of the <variable> with respect to the
+<independent_variables>.
 ==============================================================================*/
 
 int Computed_variable_set_type_divergence(
@@ -244,18 +310,6 @@ DESCRIPTION :
 Sets <inverse_variable> to be the inverse of the <variable>.  Its independent
 variables are the dependent variables of the <variable> and its
 <dependent_variables> are independent variables of the <variable>.
-==============================================================================*/
-
-int Computed_variable_set_type_jacobian(
-	struct Computed_variable *jacobian,
-	struct Computed_variable *variable,
-	struct LIST(Computed_variable) *independent_variables);
-/*******************************************************************************
-LAST MODIFIED : 24 January 2003
-
-DESCRIPTION :
-Sets <jacobian> to be the derivative of the <variable> with respect to the
-<independent_variables>.
 ==============================================================================*/
 
 int Computed_variable_depends_on_Computed_variable(
