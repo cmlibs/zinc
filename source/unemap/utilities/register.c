@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : register.c
 
-LAST MODIFIED : 12 November 2000
+LAST MODIFIED : 14 June 2001
 
 DESCRIPTION :
 For setting and checking registers on second version of the signal conditioning
@@ -654,7 +654,8 @@ static void print_menu(int channel_number,unsigned long number_of_channels)
 	printf("(e) Calibrate DA            \n");
 	printf("(f) Set power up filter f   ");
 	printf("(g) Set NI gain             \n");
-	printf("(h) Shutdown SCU PC         \n");
+	printf("(h) Shutdown SCU PC         ");
+	printf("(i) Test electrodes         \n");
 	printf("?\n");
 } /* print_menu */
 
@@ -673,8 +674,9 @@ static void process_keyboard(
 	double two_pi;
 	FILE *report,*settings;
 	float a,b,calibrate_amplitude_1,calibrate_amplitude_2,
-		calibrate_voltage_1[5000],calibrate_voltage_2[5000],db_per_decade,
-		db_reduction,decay_constant,filter_frequency,gain,maximum_voltage,
+		calibrate_voltage_1[5000],calibrate_voltage_2[5000],correlated_proportion,
+		db_per_decade,db_reduction,decay_constant,filter_frequency,gain,
+		maximum_voltage,
 		mean[MAXIMUM_NUMBER_OF_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD],mean_x,
 		mean_y,minimum_voltage,post_filter_gain,pre_filter_gain,r,rms,
 		rms_save[MAXIMUM_NUMBER_OF_NI_CARDS*NUMBER_OF_CHANNELS_ON_NI_CARD],
@@ -5514,6 +5516,352 @@ static void process_keyboard(
 					unemap_set_power(0);
 					unemap_deconfigure();
 					unemap_shutdown();
+				} break;
+				case 'i':
+				{
+					/* test electrodes */
+					unemap_set_power(1);
+					unemap_stop_stimulating(0);
+					unemap_set_channel_stimulating(0,0);
+					unemap_set_gain(0,(float)1,(float)1);
+					unemap_set_antialiasing_filter_frequency(0,(float)10000);
+					unemap_set_isolate_record_mode(0,0);
+#if defined (CALIBRATE_SQUARE_WAVE)
+					number_of_waveform_points=2;
+#else /* defined (CALIBRATE_SQUARE_WAVE) */
+					number_of_waveform_points=500;
+#endif /* defined (CALIBRATE_SQUARE_WAVE) */
+					pause_for_error_option='y';
+					number_of_test_cards=
+						(int)number_of_channels/NUMBER_OF_CHANNELS_ON_NI_CARD;
+					if (number_of_test_cards>MAXIMUM_NUMBER_OF_NI_CARDS)
+					{
+						number_of_test_cards=MAXIMUM_NUMBER_OF_NI_CARDS;
+					}
+					if (number_of_test_cards>=1)
+					{
+						for (i=0;i<number_of_test_cards;i++)
+						{
+							tested_cards[i]=0;
+						}
+						printf("Number of cards to be tested (1-%d) ? ",
+							number_of_test_cards);
+						scanf("%d",&tested_card);
+						if (tested_card<1)
+						{
+							number_of_test_cards=1;
+						}
+						else
+						{
+							if (tested_card<number_of_test_cards)
+							{
+								number_of_test_cards=tested_card;
+							}
+						}
+						for (i=0;i<number_of_test_cards;i++)
+						{
+							tested_cards[i]=1;
+						}
+						max_channels=number_of_test_cards*NUMBER_OF_CHANNELS_ON_NI_CARD;
+						if (report=fopen("report.txt","w"))
+						{
+							fprintf(report,"Number of cards to be tested = %d\n",
+								number_of_test_cards);
+							fprintf(report,"\n");
+							fprintf(report,"number_of_samples = %lu\n",number_of_samples);
+							fprintf(report,"sampling_frequency = %g\n",sampling_frequency);
+							fprintf(report,"\n");
+/*							max_settling=20;*/
+							max_settling=5;
+							tol_settling=(float)1;
+							tol_offset=(float)20;
+							tol_offset_spread=(float)15;
+							tol_rms=(float)1.4;
+							/* there is a small signal for isolation (coming through WCT?)
+								whose size is dependent on the size of the test signal and on
+								the phase difference between the signals on the even and odd
+								channels.  Needs to be bigger now because the test signal is
+								bigger and the even and odd signals are in phase */
+							tol_isolation=(float)2.1*CALIBRATE_AMPLITUDE_FACTOR;
+							tol_signal_value=(float)0.02; /* proportion */
+							tol_signal_form=(float)10;
+							switching_time=(float)0.0003; /* seconds */
+							/* 330k resistor, 10u capacitor gives a decay constant of
+								1/RC=0.3030, but don't get this */
+							decay_constant=(float)-0.27;
+							tol_decay_constant=(float)0.04;
+							tol_correlation_coefficient=(float)0.01;
+							db_per_decade=(float)100;
+							tol_db1=(float)0.2;
+							tol_db2=(float)0.15; /* proportion */
+#if defined (OLD_CODE)
+							tol_gain=(float)0.005; /* proportion */
+#endif /* defined (OLD_CODE) */
+							tol_gain=(float)0.01; /* proportion */
+							tol_calibrate_gain=(float)0.05; /* proportion */
+							if (hardware_directory=getenv("UNEMAP_HARDWARE"))
+							{
+								if (ALLOCATE(file_name,char,strlen(hardware_directory)+
+									strlen("settings.txt")+2))
+								{
+									strcpy(file_name,hardware_directory);
+									if ('/'!=file_name[strlen(file_name)-1])
+									{
+										strcat(file_name,"/");
+									}
+								}
+								else
+								{
+									printf(">>>Could not allocate file_name\n");
+								}
+							}
+							else
+							{
+								printf("Using current directory for settings.txt\n");
+								if (ALLOCATE(file_name,char,strlen("settings.txt")+1))
+								{
+									file_name[0]='\0';
+								}
+								else
+								{
+									printf(">>>Could not allocate file_name\n");
+								}
+							}
+							if (file_name)
+							{
+								strcat(file_name,"settings.txt");
+								if (settings=fopen(file_name,"r"))
+								{
+									fscanf(settings," max_settling = %d ",&max_settling);
+									fscanf(settings," tol_settling = %f ",&tol_settling);
+									fscanf(settings," tol_offset = %f ",&tol_offset);
+									fscanf(settings," tol_offset_spread = %f ",
+										&tol_offset_spread);
+									fscanf(settings," tol_rms = %f ",&tol_rms);
+									fscanf(settings," tol_signal_value = %f ",
+										&tol_signal_value);
+									fscanf(settings," tol_signal_form = %f ",&tol_signal_form);
+									fscanf(settings," switching_time = %f ",&switching_time);
+									fscanf(settings," decay_constant = %f ",&decay_constant);
+									fscanf(settings," tol_decay_constant = %f ",
+										&tol_decay_constant);
+									fscanf(settings," tol_correlation_coefficient = %f ",
+										&tol_correlation_coefficient);
+									fscanf(settings," db_per_decade = %f ",&db_per_decade);
+									fscanf(settings," tol_db1 = %f ",&tol_db1);
+									fscanf(settings," tol_db2 = %f ",&tol_db2);
+									fscanf(settings," tol_gain = %f ",&tol_gain);
+									fscanf(settings," tol_calibrate_gain = %f ",
+										&tol_calibrate_gain);
+									fscanf(settings," tol_isolation = %f ",&tol_isolation);
+									fclose(settings);
+									fprintf(report,"From %s\n",file_name);
+								}
+								else
+								{
+									fprintf(report,"No %s\n",file_name);
+								}
+								DEALLOCATE(file_name);
+							}
+							fprintf(report,"max_settling=%d\n",max_settling);
+							fprintf(report,"tol_settling=%g\n",tol_settling);
+							fprintf(report,"tol_offset=%g\n",tol_offset);
+							fprintf(report,"tol_offset_spread=%g\n",tol_offset_spread);
+							fprintf(report,"tol_rms=%g\n",tol_rms);
+							fprintf(report,"tol_signal_value=%g\n",tol_signal_value);
+							fprintf(report,"tol_signal_form=%g\n",tol_signal_form);
+							fprintf(report,"switching_time=%g\n",switching_time);
+							fprintf(report,"decay_constant=%g\n",decay_constant);
+							fprintf(report,"tol_decay_constant=%g\n",tol_decay_constant);
+							fprintf(report,"tol_correlation_coefficient=%g\n",
+								tol_correlation_coefficient);
+							fprintf(report,"db_per_decade=%g\n",db_per_decade);
+							fprintf(report,"tol_db1=%g\n",tol_db1);
+							fprintf(report,"tol_db2=%g\n",tol_db2);
+							fprintf(report,"tol_gain=%g\n",tol_gain);
+							fprintf(report,"tol_calibrate_gain=%g\n",tol_calibrate_gain);
+							fprintf(report,"tol_isolation=%g\n",tol_isolation);
+							fprintf(report,"\n");
+							total_checks=0;
+							unemap_set_power(1);
+							unemap_set_isolate_record_mode(0,0);
+							printf("Stimulate down channel (1-%d) (0 for all) ? ",
+								max_channels);
+							scanf("%d",&test_channel);
+							if (test_channel<1)
+							{
+								test_channel=0;
+							}
+							else
+							{
+								if (test_channel>max_channels)
+								{
+									test_channel=0;
+								}
+							}
+							fprintf(report,"Testing channel %d\n",test_channel);
+							printf("Correlated proportion (0-1) ? ");
+							scanf("%f",&correlated_proportion);
+							if (correlated_proportion<0)
+							{
+								correlated_proportion=0;
+							}
+							else
+							{
+								if (correlated_proportion>1)
+								{
+									correlated_proportion=1;
+								}
+							}
+							fprintf(report,"Correlated proportion %g\n",
+								correlated_proportion);
+							if (0==test_channel)
+							{
+								for (i=0;i<max_channels;i++)
+								{
+									channel_check[i]=0;
+								}
+							}
+							else
+							{
+								for (i=0;i<max_channels;i++)
+								{
+									channel_check[i]= -1;
+								}
+								channel_check[test_channel-1]=0;
+							}
+							pause_for_error_option='n';
+							phase0_flag=0x1;
+							phase_flag=phase0_flag<<1;
+							unemap_set_channel_stimulating(0,0);
+							/* set low pass filter as high as possible */
+							unemap_set_antialiasing_filter_frequency(0,(float)10000);
+							unemap_get_sample_range(&minimum_sample_value,
+								&maximum_sample_value);
+							unemap_get_voltage_range(1,&minimum_voltage,&maximum_voltage);
+							gain=(maximum_voltage-minimum_voltage)/
+								(float)(maximum_sample_value-minimum_sample_value);
+							for (test_channel=1;test_channel<=max_channels;test_channel++)
+							{
+								if (0==channel_check[test_channel-1])
+								{
+									unemap_set_channel_stimulating(test_channel,1);
+									/* use half of maximum */
+									calibrate_amplitude_1=
+										CALIBRATE_AMPLITUDE_FACTOR*maximum_voltage;
+#if defined (CALIBRATE_SQUARE_WAVE)
+									calibrate_voltage_1[0]=calibrate_amplitude_1;
+									calibrate_voltage_1[1]= -calibrate_amplitude_1;
+#else /* defined (CALIBRATE_SQUARE_WAVE) */
+									/* calculate cosine wave */
+									two_pi=(double)8*atan((double)1);
+									for (i=0;i<number_of_waveform_points;i++)
+									{
+										calibrate_voltage_1[i]=
+											calibrate_amplitude_1*(float)cos(two_pi*
+											(double)i/(double)number_of_waveform_points);
+									}
+#endif /* defined (CALIBRATE_SQUARE_WAVE) */
+									if (unemap_load_voltage_stimulating(1,&test_channel,
+										number_of_waveform_points,
+										/*points/s*/(float)number_of_waveform_points*
+										CALIBRATE_WAVEFORM_FREQUENCY,calibrate_voltage_1,0)&&
+										unemap_start_stimulating())
+									{
+										calibrate_amplitude_1=calibrate_voltage_1[0];
+										/* wait for the high-pass (DC removal) to settle */
+										allow_to_settle(0,tested_cards,temp_channel_check,
+											phase_flag,report,&number_of_settled_channels,
+											sampling_delay,samples,mean,number_of_samples,
+											number_of_channels,tol_settling,max_settling);
+										unemap_stop_stimulating(0);
+										/* work out correlations */
+										two_pi=(double)8*atan((double)1);
+										printf("%d is correlated with:",test_channel);
+										fprintf(report,"%d is correlated with:",test_channel);
+										for (i=0;i<max_channels;i++)
+										{
+											if (i!=test_channel-1)
+											{
+												/* calculate the component at the test frequency */
+												a=(float)0;
+												b=(float)0;
+												sample=samples+i;
+												for (j=0;j<(int)number_of_samples;j++)
+												{
+													temp=(float)(*sample)-mean[i];
+													a += temp*(float)sin(two_pi*
+														(double)CALIBRATE_WAVEFORM_FREQUENCY*
+														(double)j/(double)number_of_samples);
+													b += temp*(float)cos(two_pi*
+														(double)CALIBRATE_WAVEFORM_FREQUENCY*
+														(double)j/(double)number_of_samples);
+													sample += number_of_channels;
+												}
+												a *= (float)2/(float)number_of_samples;
+												b *= (float)2/(float)number_of_samples;
+												rms=a*a+b*b;
+												rms=(float)sqrt((double)rms);
+												if (gain*rms>
+													correlated_proportion*calibrate_amplitude_1)
+												{
+													printf(" %d",i+1);
+													fprintf(report," %d",i+1);
+													channel_check[test_channel-1]=test_channel;
+													channel_check[i]=test_channel;
+												}
+#if defined (OLD_CODE)
+												fprintf(report,"%3d " FLOAT_FORMAT "\n",i+1,rms);
+												printf("%3d " FLOAT_FORMAT "\n",i+1,rms);
+#endif /* defined (OLD_CODE) */
+											}
+										}
+										printf("\n");
+										fprintf(report,"\n");
+#if defined (OLD_CODE)
+										/* write the signals file */
+										register_write_signal_file("electrodes.sig",test_channel);
+#endif /* defined (OLD_CODE) */
+									}
+									else
+									{
+										printf(
+							"Test electrodes.  Could not start stimulation for channel %d\n",
+											test_channel);
+										fprintf(report,
+"Test electrodes.  Could not start stimulation for channel %d <<< CHECK >>>\n",
+											test_channel);
+									}
+									/* turn off stimulation */
+									unemap_stop_stimulating(0);
+									unemap_set_channel_stimulating(0,0);
+								}
+							}
+							for (i=0;i<max_channels;i++)
+							{
+								if (i+1==channel_check[i])
+								{
+									printf("%d",i+1);
+									fprintf(report,"%d",i+1);
+									for (j=i+1;j<max_channels;j++)
+									{
+										if (i+1==channel_check[j])
+										{
+											printf(" %d",j+1);
+											fprintf(report," %d",j+1);
+										}
+									}
+									printf(" are connected\n");
+									fprintf(report," are connected\n");
+								}
+							}
+							fclose(report);
+						}
+					}
+					unemap_stop_stimulating(0);
+					unemap_set_channel_stimulating(0,0);
+					unemap_set_isolate_record_mode(0,1);
+					unemap_set_power(0);
 				} break;
 				default:
 				{
