@@ -488,7 +488,7 @@ Destroys the Unemap_command_data at <unemap_command_data_address>.
 int execute_command_unemap(struct Parse_state *state,
 	void *prompt_void, void *unemap_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2002
+LAST MODIFIED : 2 August 2002
 
 DESCRIPTION :
 Executes a UNEMAP command.
@@ -511,6 +511,7 @@ to allow the command prompt to remain.
 			Option_table_add_entry(option_table, "open", NULL,
 				unemap_command_data_void, execute_command_unemap_open);
 			return_code = Option_table_parse(option_table, state);
+			DESTROY(Option_table)(&option_table);
 		}
 		else
 		{
