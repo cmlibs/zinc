@@ -1551,6 +1551,9 @@ Updates the colour map being used for map.
 		{
 			XStoreColors(display,colour_map,spectrum_rgb,number_of_spectrum_colours);
 		}
+		/*Ensure spectrum is set correctly */
+		Spectrum_set_minimum_and_maximum(map->drawing_information->spectrum,map->minimum_value,
+			map->maximum_value);
 	}
 	else
 	{
@@ -4366,11 +4369,12 @@ to the drawing or writes to a postscript file.
 	USE_PARAMETER(drawing);
 	if(map)
 	{
-		/* update_colour_map_unemap() necessary for old style spectrums*/
-		/* will become obselete when cmgui methods used */
-		update_colour_map_unemap(map,drawing); 
-		return_code=new_draw_map(map);
+		
 
+		return_code=new_draw_map(map);	
+		/* update_colour_map_unemap() necessary for old style colur strip at top of*/
+		/* mapping window. Will become obselete when only cmgui methods used */		
+		update_colour_map_unemap(map,drawing);		
 	}
 	else
 	{
