@@ -2800,7 +2800,7 @@ which is assumed to be allocated large enough for 3*<number_of_markers> floats
 								{
 									for (j = 0 ; j < number_of_markers ; j++)
 									{
-										if (marker_indices[j] = -i)
+										if (marker_indices[j] == -i)
 										{
 											marker_fitted_3d_positions[3 * j] = marker_x;
 											marker_fitted_3d_positions[3 * j + 1] = marker_y;
@@ -3420,7 +3420,7 @@ is filled in based on the current model.
 #if defined (BACKWARD_PROJECTION)
 		/* This is the original precise texture calculation */
 		fprintf(texture_comfile, "gfx modify texture face_mapped width 1 height 1 evaluate_image field mapped_texture spectrum rgba_spectrum width $width height $height texture_coord texture element_group objface format rgba\n");
-		fprintf(texture_comfile, "gfx write texture face_mapped file %s/standin.rgb rgb\n",
+		fprintf(texture_comfile, "gfx write texture face_mapped file %s/standinA.rgb rgb\n",
 			pf_job->remote_working_path);
 #else /* defined (BACKWARD_PROJECTION) */
 		/* This is the projection just involving drawing the image in texture space which is 
@@ -3448,13 +3448,13 @@ is filled in based on the current model.
 		fprintf(texture_comfile, "gfx modify window texture_projection layout 2d ortho_axes z -y width $width height $height\n");
 		fprintf(texture_comfile, "gfx modify window texture_projection image scene texture_projection\n");
 		fprintf(texture_comfile, "gfx modify window texture_projection view parallel eye_point 0.5 0.5 3 interest_point 0.5 0.5 0 up_vector 0.0 1.0 0.0 view_angle 26.525435202 near_clipping_plane 0.0288485 far_clipping_plane 10.3095 relative_viewport ndc_placement -1 -1 2 2 viewport_coordinates -1 -1 400 400\n");
-		fprintf(texture_comfile, "gfx print window texture_projection rgb file %s/standin.rgb width $width height $height\n",
-			pf_job->remote_working_path);
-		fprintf(texture_comfile, "gfx modify texture face_mapped image %s/standinA.rgb\n",
+		fprintf(texture_comfile, "gfx print window texture_projection rgb file %s/standinA.rgb width $width height $height\n",
 			pf_job->remote_working_path);
 #endif /* defined (BACKWARD_PROJECTION) */
 		fprintf(texture_comfile, "open comfile %scmiss/pf_make_standin_texture.com exec\n",
 			photoface_remote_path);
+		fprintf(texture_comfile, "gfx modify texture face_mapped image %s/standin.rgb\n",
+			pf_job->remote_working_path);
 		fprintf(texture_comfile, "gfx modify material skin texture face_mapped\n");
 		fprintf(texture_comfile, "gfx modify g_element objface surfaces select_on material skin texture_coord texture\n");
 		fprintf(texture_comfile, "gfx mod win 1 back texture none\n");
