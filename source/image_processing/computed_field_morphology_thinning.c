@@ -1,9 +1,9 @@
 /******************************************************************
   FILE: computed_field_morphology_thinning.c
 
-  LAST MODIFIED: 26 October 2004
+  LAST MODIFIED: 27 October 2004
 
-  DESCRIPTION:Implement medial axis extraction of 3d image
+  DESCRIPTION:Implement image morphological thinning
 ==================================================================*/
 #include <math.h>
 #include "computed_field/computed_field.h"
@@ -17,13 +17,14 @@
 #include "user_interface/message.h"
 #include "image_processing/computed_field_morphology_thinning.h"
 
+
 #define my_Min(x,y) ((x) <= (y) ? (x) : (y))
 #define my_Max(x,y) ((x) <= (y) ? (y) : (x))
 
 
 struct Computed_field_morphology_thinning_package
 /*******************************************************************************
-LAST MODIFIED : 17 March 2004
+LAST MODIFIED : 17 February 2004
 
 DESCRIPTION :
 A container for objects required to define fields in this module.
@@ -37,8 +38,8 @@ A container for objects required to define fields in this module.
 
 struct Computed_field_morphology_thinning_type_specific_data
 {
-	/* The std of Gaussian function */
-	
+	int iteration_times;
+
 	float cached_time;
 	int element_dimension;
 	struct Cmiss_region *region;
@@ -52,13 +53,12 @@ static char computed_field_morphology_thinning_type_string[] = "morphology_thinn
 
 int Computed_field_is_type_morphology_thinning(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-
 
 	ENTER(Computed_field_is_type_morphology_thinning);
 	if (field)
@@ -130,7 +130,7 @@ we know to invalidate the image cache.
 static int Computed_field_morphology_thinning_clear_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Clear the type specific data used by this type.
@@ -176,7 +176,7 @@ Clear the type specific data used by this type.
 static void *Computed_field_morphology_thinning_copy_type_specific(
 	struct Computed_field *source_field, struct Computed_field *destination_field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Copy the type specific data used by this type.
@@ -193,6 +193,7 @@ Copy the type specific data used by this type.
 		if (ALLOCATE(destination,
 			struct Computed_field_morphology_thinning_type_specific_data, 1))
 		{
+			destination->iteration_times = source->iteration_times;
 			destination->cached_time = source->cached_time;
 			destination->region = ACCESS(Cmiss_region)(source->region);
 			destination->element_dimension = source->element_dimension;
@@ -238,7 +239,7 @@ Copy the type specific data used by this type.
 int Computed_field_morphology_thinning_clear_cache_type_specific
    (struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 ==============================================================================*/
@@ -272,7 +273,7 @@ DESCRIPTION :
 static int Computed_field_morphology_thinning_type_specific_contents_match(
 	struct Computed_field *field, struct Computed_field *other_computed_field)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Compare the type specific data
@@ -289,7 +290,8 @@ Compare the type specific data
 		(struct Computed_field_morphology_thinning_type_specific_data *)
 		other_computed_field->type_specific_data))
 	{
-		if (data->image && other_data->image &&
+		if ((data->iteration_times == other_data->iteration_times) &&
+			data->image && other_data->image &&
 			(data->image->dimension == other_data->image->dimension) &&
 			(data->image->depth == other_data->image->depth))
 		{
@@ -313,7 +315,7 @@ Compare the type specific data
 #define Computed_field_morphology_thinning_is_defined_in_element \
 	Computed_field_default_is_defined_in_element
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -322,7 +324,7 @@ Check the source fields using the default.
 #define Computed_field_morphology_thinning_is_defined_at_node \
 	Computed_field_default_is_defined_at_node
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Check the source fields using the default.
@@ -331,7 +333,7 @@ Check the source fields using the default.
 #define Computed_field_morphology_thinning_has_numerical_components \
 	Computed_field_default_has_numerical_components
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Window projection does have numerical components.
@@ -340,23 +342,55 @@ Window projection does have numerical components.
 #define Computed_field_morphology_thinning_not_in_use \
 	(Computed_field_not_in_use_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 No special criteria.
 ==============================================================================*/
 
+int residual(FE_value *E_index, FE_value *E1_index, FE_value *E2_index, FE_value *X_index, FE_value *G_index, int *sizes)
+{
+        int x, y, z, current;
+	int return_code;
+	FE_value residual;
+	ENTER(residual);
+	return_code = 1;
+	for (z = 0 ; z < sizes[2] ; z++)
+	{
+		for (y = 0; y < sizes[1]; y++)
+		{
+			for (x = 0; x < sizes[0]; x++)
+			{
+				current = (z*sizes[1] + y)*sizes[0] + x; 
+				if (X_index[current] == 1.0 && my_Max(E_index[current],E1_index[current])== 0.0)
+				{
+					residual = 1.0;   
+				}
+				else
+				{
+					residual = 0.0;
+				}
+				E2_index[current] = my_Max(my_Max(E2_index[current],residual),G_index[current]);
+				X_index[current] = my_Max(E_index[current],E2_index[current]);
+			}
+		}
+	}
+	LEAVE;
+	return (return_code);
+	
+}/*residual*/
 
-static int Image_cache_morphology_thinning(struct Image_cache *image)
+static int Image_cache_morphology_thinning(struct Image_cache *image, int iteration_times)
 /*******************************************************************************
-LAST MODIFIED : 17 March 2004
+LAST MOErFIED : 27 October 2004
 
-DESCRIPTION : Implement image thinning extracting.
-        
+DESCRIPTION :
+Perform a morphology thinning operation on the image cache.
 ==============================================================================*/
 {
 	char *storage;
-	FE_value *data_index, *result_index, *a_index, *x_index, *e_index,*e1_index, *e2_index, *e3_index, *g_index;
+	FE_value *data_index, *result_index, *a_index, *x_index, *e_index,*e1_index, *e2_index,*g_index;
+	
 	int i, k, return_code, storage_size;
 	int n, stop, x, y, z, current, neighbor;
 	int n1,n2;
@@ -377,7 +411,6 @@ DESCRIPTION : Implement image thinning extracting.
 			ALLOCATE(x_index, FE_value, storage_size/image->depth) &&
 			ALLOCATE(e_index, FE_value, storage_size/image->depth) &&
 			ALLOCATE(e2_index, FE_value, storage_size/image->depth) &&
-			ALLOCATE(e3_index, FE_value, storage_size/image->depth) &&
 			ALLOCATE(g_index, FE_value, storage_size/image->depth) &&
 			ALLOCATE(e1_index, FE_value, storage_size/image->depth))
 		{
@@ -393,18 +426,17 @@ DESCRIPTION : Implement image thinning extracting.
 				x_index[i] = *data_index;
 				e_index[i] = 0.0;
 				e1_index[i] = 0.0;
-				e2_index[i] = 0.0;
 				a_index[i] = 0.0;
 				data_index += image->depth;
 			}
 			result_index = (FE_value *)storage;
-			for (n = 0; n < 300; n++)
+			for (n = 0; n < iteration_times; n++)
 			{
 			        
-				stop = 1.0;
+				stop = 0.0;
 				for (i = 0 ; i < storage_size / image->depth ; i++)
 				{
-				        stop *= x_index[i];
+				        stop += x_index[i];
 				}
 				if (stop == 0.0)
 				{
@@ -414,10 +446,10 @@ DESCRIPTION : Implement image thinning extracting.
 				{
 				        for (i = 0; i < storage_size/image->depth; i++)
 			        	{
-				        	e3_index[i] = 0.0;
+				        	e2_index[i] = 0.0;
 			        	}
 				        /* y - direction*/
-				        for (z = 0 ; z < image->sizes[2] ; z++)
+				        for (z = 0 ; z < image->sizes[2] ; z++)/*determining gaps*/
 					{
 					        for (y = 0; y < image->sizes[1]; y++)
 						{
@@ -542,39 +574,8 @@ DESCRIPTION : Implement image thinning extracting.
 							}
 						}
 					}
-					for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x; 
-							        if (x_index[current] == 1.0 && my_Max(e_index[current],e1_index[current])== 0.0)
-								{
-								        e2_index[current] = 1.0;   
-								}
-								else
-								{
-								        e2_index[current] = 0.0;
-								}
-								e3_index[current] = my_Max(my_Max(e3_index[current],e2_index[current]),g_index[current]);
-								x_index[current] = my_Max(e_index[current],e3_index[current]);
-							}
-						}
-					}
-					/*for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								a_index[current] = my_Max(a_index[current],e2_index[current]);
-								x_index[current] = e_index[current];
-							}
-						}
-					}*/
-				
+					
+					return_code = residual(e_index, e1_index, e2_index, x_index, g_index, image->sizes);
 				        /* -z - direction*/
 				        for (z = 0 ; z < image->sizes[2] ; z++)
 					{
@@ -648,7 +649,7 @@ DESCRIPTION : Implement image thinning extracting.
 								
 							}
 						}
-					}/*g_index*/
+					}/*g_index, determining gaps*/
 				        
 					
 					for (z = 0 ; z < image->sizes[2] ; z++) /*-z-direction*/
@@ -703,38 +704,7 @@ DESCRIPTION : Implement image thinning extracting.
 							}
 						}
 					}
-					for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x; 
-							        if (x_index[current] == 1.0 && my_Max(e_index[current],e1_index[current])== 0.0)
-								{
-								        e2_index[current] = 1.0;   
-								}
-								else
-								{
-								        e2_index[current] = 0.0;
-								}
-								e3_index[current] = my_Max(my_Max(e3_index[current],e2_index[current]),g_index[current]);
-								x_index[current] = my_Max(e_index[current],e3_index[current]);
-							}
-						}
-					}
-					/*for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								a_index[current] = my_Max(a_index[current],e2_index[current]);
-								x_index[current] = e_index[current];
-							}
-						}
-					}*/
+					residual(e_index, e1_index, e2_index, x_index, g_index, image->sizes);
 				        
 					/*-y-direction*/
 				        for (z = 0 ; z < image->sizes[2] ; z++)
@@ -862,39 +832,8 @@ DESCRIPTION : Implement image thinning extracting.
 							}
 						}
 					}
-					for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x; 
-							        if (x_index[current] == 1.0 && my_Max(e_index[current],e1_index[current])== 0.0)
-								{
-								        e2_index[current] = 1.0;   
-								}
-								else
-								{
-								        e2_index[current] = 0.0;
-								}
-								e3_index[current] = my_Max(my_Max(e3_index[current],e2_index[current]),g_index[current]);
-								x_index[current] = my_Max(e_index[current],e3_index[current]);
-							}
-						}
-					}
-					/*for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								a_index[current] = my_Max(a_index[current],e2_index[current]);
-								x_index[current] = e_index[current];
-							}
-						}
-					}*/
-				   
+					residual(e_index, e1_index, e2_index, x_index, g_index, image->sizes);
+					
 					/* z - direction*/
 				        for (z = 0 ; z < image->sizes[2] ; z++)
 					{
@@ -1021,38 +960,7 @@ DESCRIPTION : Implement image thinning extracting.
 							}
 						}
 					}
-					for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x; 
-							        if (x_index[current] == 1.0 && my_Max(e_index[current],e1_index[current])== 0.0)
-								{
-								        e2_index[current] = 1.0;   
-								}
-								else
-								{
-								        e2_index[current] = 0.0;
-								}
-								e3_index[current] = my_Max(my_Max(e3_index[current],e2_index[current]),g_index[current]);
-								x_index[current] = my_Max(e_index[current],e3_index[current]);
-							}
-						}
-					}
-					/*for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								a_index[current] = my_Max(a_index[current],e2_index[current]);
-								x_index[current] = e_index[current];
-							}
-						}
-					}*/
+					residual(e_index, e1_index, e2_index, x_index, g_index, image->sizes);
 				
 				        /* -x - direction*/
 				        for (z = 0 ; z < image->sizes[2] ; z++)
@@ -1181,38 +1089,7 @@ DESCRIPTION : Implement image thinning extracting.
 							}
 						}
 					}
-					for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x; 
-							        if (x_index[current] == 1.0 && my_Max(e_index[current],e1_index[current])== 0.0)
-								{
-								        e2_index[current] = 1.0;   
-								}
-								else
-								{
-								        e2_index[current] = 0.0;
-								}
-								e3_index[current] = my_Max(my_Max(e3_index[current],e2_index[current]),g_index[current]);
-								x_index[current] = my_Max(e_index[current],e3_index[current]);
-							}
-						}
-					}
-					/*for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								a_index[current] = my_Max(a_index[current],e2_index[current]);
-								x_index[current] = e_index[current];
-							}
-						}
-					}*/
+					residual(e_index, e1_index, e2_index, x_index, g_index, image->sizes);
 				 
 					/* x - direction*/
 				        for (z = 0 ; z < image->sizes[2] ; z++)
@@ -1340,47 +1217,18 @@ DESCRIPTION : Implement image thinning extracting.
 							}
 						}
 					}
+					residual(e_index, e1_index, e2_index, x_index, g_index, image->sizes);
+					
 					for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x; 
-							        if (x_index[current] == 1.0 && my_Max(e_index[current],e1_index[current])== 0.0)
-								{
-								        e2_index[current] = 1.0;   
-								}
-								else
-								{
-								        e2_index[current] = 0.0;
-								}
-								e3_index[current] = my_Max(my_Max(e3_index[current],e2_index[current]),g_index[current]);
-								x_index[current] = my_Max(e_index[current],e3_index[current]);
-							}
-						}
-					}
-					/*for (z = 0 ; z < image->sizes[2] ; z++)
 					{
 					        for (y = 0; y < image->sizes[1]; y++)
 						{
 						        for (x = 0; x < image->sizes[0]; x++)
 							{
 							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								a_index[current] = my_Max(a_index[current],e2_index[current]);
-								x_index[current] = e_index[current];
-							}
-						}
-					}*/
-					for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x; 
-								x_index[current] = my_Min(x_index[current],(1.0-e3_index[current]));
-								a_index[current] = my_Max(a_index[current], e3_index[current]);
+								/*e4_index[current] = my_Min((1.0-e4_index[current]),e3_index[current]);*/ 
+								x_index[current] = my_Min(x_index[current],(1.0-e2_index[current]));
+								a_index[current] = my_Max(a_index[current], e2_index[current]);
 							}
 						}
 					}
@@ -1410,7 +1258,6 @@ DESCRIPTION : Implement image thinning extracting.
 			DEALLOCATE(x_index);
 			DEALLOCATE(e_index);
 			DEALLOCATE(e1_index);
-			DEALLOCATE(e3_index);
 			DEALLOCATE(g_index);
 			DEALLOCATE(e2_index);
 		}
@@ -1435,7 +1282,7 @@ DESCRIPTION : Implement image thinning extracting.
 static int Computed_field_morphology_thinning_evaluate_cache_at_node(
 	struct Computed_field *field, struct FE_node *node, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
@@ -1456,7 +1303,7 @@ Evaluate the fields cache at the node.
 				field->source_fields[1], data->element_dimension, data->region,
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
-			return_code = Image_cache_morphology_thinning(data->image);
+			return_code = Image_cache_morphology_thinning(data->image, data->iteration_times);
 		}
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_at_node(field->source_fields[1],
@@ -1480,7 +1327,7 @@ static int Computed_field_morphology_thinning_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
 	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
@@ -1504,13 +1351,13 @@ Evaluate the fields cache at the node.
 				field->source_fields[1], data->element_dimension, data->region,
 				data->graphics_buffer_package);
 			/* 2. Perform image processing operation */
-			return_code = Image_cache_morphology_thinning(data->image);
+			return_code = Image_cache_morphology_thinning(data->image, data->iteration_times);
 		}
 		/* 3. Evaluate texture coordinates and copy image to field */
 		Computed_field_evaluate_cache_in_element(field->source_fields[1],
 			element, xi, time, top_level_element, /*calculate_derivatives*/0);
 		Image_cache_evaluate_field(data->image,field);
-
+		
 	}
 	else
 	{
@@ -1527,7 +1374,7 @@ Evaluate the fields cache at the node.
 #define Computed_field_morphology_thinning_evaluate_as_string_at_node \
 	Computed_field_default_evaluate_as_string_at_node
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Print the values calculated in the cache.
@@ -1536,7 +1383,7 @@ Print the values calculated in the cache.
 #define Computed_field_morphology_thinning_evaluate_as_string_in_element \
 	Computed_field_default_evaluate_as_string_in_element
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Print the values calculated in the cache.
@@ -1545,7 +1392,7 @@ Print the values calculated in the cache.
 #define Computed_field_morphology_thinning_set_values_at_node \
    (Computed_field_set_values_at_node_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Not implemented yet.
@@ -1554,7 +1401,7 @@ Not implemented yet.
 #define Computed_field_morphology_thinning_set_values_in_element \
    (Computed_field_set_values_in_element_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Not implemented yet.
@@ -1563,7 +1410,7 @@ Not implemented yet.
 #define Computed_field_morphology_thinning_get_native_discretization_in_element \
 	Computed_field_default_get_native_discretization_in_element
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Inherit result from first source field.
@@ -1572,7 +1419,7 @@ Inherit result from first source field.
 #define Computed_field_morphology_thinning_find_element_xi \
    (Computed_field_find_element_xi_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 6 January 2004
+LAST MODIFIED : 10 December 2003
 
 DESCRIPTION :
 Not implemented yet.
@@ -1587,15 +1434,19 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	/* struct Computed_field_morphology_thinning_type_specific_data *data;*/
+	struct Computed_field_morphology_thinning_type_specific_data *data;
 
 	ENTER(List_Computed_field_morphology_thinning);
-	if (field && (field->type_string==computed_field_morphology_thinning_type_string))
+	if (field && (field->type_string==computed_field_morphology_thinning_type_string)
+		&& (data = (struct Computed_field_morphology_thinning_type_specific_data *)
+		field->type_specific_data))
 	{
 		display_message(INFORMATION_MESSAGE,
 			"    source field : %s\n",field->source_fields[0]->name);
 		display_message(INFORMATION_MESSAGE,
 			"    texture coordinate field : %s\n",field->source_fields[1]->name);
+		display_message(INFORMATION_MESSAGE,
+			"    filter iteration_times : %d\n", data->iteration_times);
 		return_code = 1;
 	}
 	else
@@ -1648,6 +1499,9 @@ Returns allocated command string for reproducing field. Includes type.
 		sprintf(temp_string, " dimension %d", data->image->dimension);
 		append_string(&command_string, temp_string, &error);
 
+		sprintf(temp_string, " iteration_times %d", data->iteration_times);
+		append_string(&command_string, temp_string, &error);
+
 		sprintf(temp_string, " sizes %d %d",
 		                    data->image->sizes[0],data->image->sizes[1]);
 		append_string(&command_string, temp_string, &error);
@@ -1659,7 +1513,6 @@ Returns allocated command string for reproducing field. Includes type.
 		sprintf(temp_string, " maximums %f %f",
 		                    data->image->maximums[0], data->image->maximums[1]);
 		append_string(&command_string, temp_string, &error);
-
 	}
 	else
 	{
@@ -1683,15 +1536,17 @@ Works out whether time influences the field.
 int Computed_field_set_type_morphology_thinning(struct Computed_field *field,
 	struct Computed_field *source_field,
 	struct Computed_field *texture_coordinate_field,
+	int iteration_times,
 	int dimension, int *sizes, FE_value *minimums, FE_value *maximums,
 	int element_dimension, struct MANAGER(Computed_field) *computed_field_manager,
 	struct Cmiss_region *region, struct Graphics_buffer_package *graphics_buffer_package)
 /*******************************************************************************
-LAST MODIFIED : Mar 18 2004
+LAST MODIFIED : 17 December 2003
 
 DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_morphology_thinning with the supplied
-fields, <source_field> and <texture_coordinate_field>.  The <dimension> is the
+fields, <source_field> and <texture_coordinate_field>.  The <iteration_times> specifies
+half the width and height of the filter window.  The <dimension> is the
 size of the <sizes>, <minimums> and <maximums> vectors and should be less than
 or equal to the number of components in the <texture_coordinate_field>.
 If function fails, field is guaranteed to be unchanged from its original state,
@@ -1704,7 +1559,7 @@ although its cache may be lost.
 
 	ENTER(Computed_field_set_type_morphology_thinning);
 	if (field && source_field && texture_coordinate_field &&
-		(depth = source_field->number_of_components) &&
+		(iteration_times > 0) && (depth = source_field->number_of_components) &&
 		(dimension <= texture_coordinate_field->number_of_components) &&
 		region && graphics_buffer_package)
 	{
@@ -1728,6 +1583,7 @@ although its cache may be lost.
 			source_fields[1]=ACCESS(Computed_field)(texture_coordinate_field);
 			field->source_fields=source_fields;
 			field->number_of_source_fields=number_of_source_fields;
+			data->iteration_times = iteration_times;
 			data->element_dimension = element_dimension;
 			data->region = ACCESS(Cmiss_region)(region);
 			data->graphics_buffer_package = graphics_buffer_package;
@@ -1770,7 +1626,7 @@ although its cache may be lost.
 int Computed_field_get_type_morphology_thinning(struct Computed_field *field,
 	struct Computed_field **source_field,
 	struct Computed_field **texture_coordinate_field,
-	int *dimension, int **sizes, FE_value **minimums,
+	int *iteration_times, int *dimension, int **sizes, FE_value **minimums,
 	FE_value **maximums, int *element_dimension)
 /*******************************************************************************
 LAST MODIFIED : 17 December 2003
@@ -1795,6 +1651,7 @@ parameters defining it are returned.
 		{
 			*source_field = field->source_fields[0];
 			*texture_coordinate_field = field->source_fields[1];
+			*iteration_times = data->iteration_times;
 			for (i = 0 ; i < *dimension ; i++)
 			{
 				(*sizes)[i] = data->image->sizes[i];
@@ -1834,7 +1691,7 @@ already) and allows its contents to be modified.
 {
 	char *current_token;
 	FE_value *minimums, *maximums;
-	int dimension, element_dimension, return_code, *sizes;
+	int dimension, element_dimension, iteration_times, return_code, *sizes;
 	struct Computed_field *field, *source_field, *texture_coordinate_field;
 	struct Computed_field_morphology_thinning_package
 		*computed_field_morphology_thinning_package;
@@ -1856,6 +1713,7 @@ already) and allows its contents to be modified.
 		minimums = (FE_value *)NULL;
 		maximums = (FE_value *)NULL;
 		element_dimension = 0;
+		iteration_times = 1;
 		/* field */
 		set_source_field_data.computed_field_manager =
 			computed_field_morphology_thinning_package->computed_field_manager;
@@ -1873,7 +1731,7 @@ already) and allows its contents to be modified.
 			Computed_field_get_type_string(field))
 		{
 			return_code = Computed_field_get_type_morphology_thinning(field,
-				&source_field, &texture_coordinate_field, 
+				&source_field, &texture_coordinate_field, &iteration_times,
 				&dimension, &sizes, &minimums, &maximums, &element_dimension);
 		}
 		if (return_code)
@@ -1908,6 +1766,9 @@ already) and allows its contents to be modified.
 				/* minimums */
 				Option_table_add_FE_value_vector_entry(option_table,
 					"minimums", minimums, &dimension);
+				/* iteration_times */
+				Option_table_add_int_positive_entry(option_table,
+					"iteration_times", &iteration_times);
 				/* sizes */
 				Option_table_add_int_vector_entry(option_table,
 					"sizes", sizes, &dimension);
@@ -1962,6 +1823,9 @@ already) and allows its contents to be modified.
 				/* minimums */
 				Option_table_add_FE_value_vector_entry(option_table,
 					"minimums", minimums, &dimension);
+				/* iteration_times */
+				Option_table_add_int_positive_entry(option_table,
+					"iteration_times", &iteration_times);
 				/* sizes */
 				Option_table_add_int_vector_entry(option_table,
 					"sizes", sizes, &dimension);
@@ -1976,7 +1840,7 @@ already) and allows its contents to be modified.
 			if (return_code)
 			{
 				return_code = Computed_field_set_type_morphology_thinning(field,
-					source_field, texture_coordinate_field,dimension,
+					source_field, texture_coordinate_field, iteration_times, dimension,
 					sizes, minimums, maximums, element_dimension,
 					computed_field_morphology_thinning_package->computed_field_manager,
 					computed_field_morphology_thinning_package->root_region,
