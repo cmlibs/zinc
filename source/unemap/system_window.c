@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : system_window.c
 
-LAST MODIFIED : 10 May 2002
+LAST MODIFIED : 18 July 2002
 
 DESCRIPTION :
 ???DB.  Have to have a proper destroy callback for the system window
@@ -34,6 +34,7 @@ UNIMA_ACQUISITION refers to the acquisition window used with the UNIMA/EMAP
 #if defined (MOTIF)
 #include "unemap/system_window.uidh"
 #endif /* defined (MOTIF) */
+#include "unemap/unemap_package.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
@@ -41,6 +42,37 @@ UNIMA_ACQUISITION refers to the acquisition window used with the UNIMA/EMAP
 Module types
 ------------
 */
+
+struct System_window
+/*******************************************************************************
+LAST MODIFIED : 17 July 2002
+
+DESCRIPTION :
+Unemap system window object.
+==============================================================================*/
+{
+	Widget window,window_shell;
+	Widget acquisition_button;
+	struct Acquisition_work_area acquisition;
+	Widget analysis_button;
+	struct Analysis_work_area analysis;
+	Widget mapping_button;
+	struct Mapping_work_area mapping;
+	Widget close_button;
+	struct User_interface *user_interface;
+	struct Map_drawing_information *map_drawing_information;
+	/* user settings */
+	char *configuration_directory,*configuration_file_extension,
+		*postscript_file_extension,*signal_file_extension_read,
+		*signal_file_extension_write;
+	int pointer_sensitivity;
+	Pixel acquisition_colour,analysis_colour;
+	struct Time_keeper *time_keeper;
+	struct Unemap_package *unemap_package;	
+	Unemap_system_window_close_callback_procedure *close_callback;
+	void *close_callback_data;
+}; /* struct System_window */
+
 typedef struct System_window System_window_settings;
 
 /*
@@ -1049,17 +1081,13 @@ Finds the id of the system close button.
 	LEAVE;
 } /* identify_system_close_button */
 
-/*
-Global functions
-----------------
-*/
-void close_emap(Widget widget,XtPointer system_window,XtPointer call_data)
+static void System_window_close_callback(Widget widget, XtPointer system_window,
+	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 18 July 2002
 
 DESCRIPTION :
-Close emap environment.
-???DB.  close_system_window ?
+Calls the prescribed system_window's close_callback.
 ==============================================================================*/
 {
 	struct System_window *system;
@@ -1067,56 +1095,41 @@ Close emap environment.
 	ENTER(close_emap);
 	USE_PARAMETER(widget);
 	USE_PARAMETER(call_data);
-	if (system=(struct System_window *)system_window)
+	if ((system = (struct System_window *)system_window) &&
+		system->close_callback)
 	{
-		if (system->time_keeper)
-		{
-			DEACCESS(Time_keeper)(&(system->time_keeper));
-		}
-		/* close acquisition */
-		if ((system->acquisition).window_shell)
-		{
-			close_acquisition_work_area((Widget)NULL,
-				(XtPointer)&(system->acquisition),(XtPointer)NULL);
-		}
-#if defined (UNIMA)
-		if (((system->acquisition).window)&&
-			(((system->acquisition).window)->experiment_toggle)&&
-			(True==XmToggleButtonGetState(((system->acquisition).window)->
-			experiment_toggle)))
-		{
-			/* reset the Unima system */
-			U00SysReset();
-			/* reset the Unima adapter */
-			UAReset();
-			UASetAdapter(DISABLE);
-		}
-#endif
-		/* close analysis */
-		if ((system->analysis).window_shell)
-		{
-			close_analysis_work_area((Widget)NULL,(XtPointer)&(system->analysis),
-				(XtPointer)NULL);
-		}
-		/* close mapping */
-		if ((system->mapping).window_shell)
-		{
-			close_mapping_work_area((Widget)NULL,system_window,(XtPointer)NULL);
-		}
-		/* close system */
-		XtPopdown(system->window_shell);
+		(system->close_callback)(system, system->close_callback_data);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"System_window_close_callback.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* close_emap */
+} /* System_window_close_callback */
 
-struct System_window *create_System_window(Widget shell,
-	XtCallbackProc close_button_callback,struct Time_keeper *time_keeper,
-	struct User_interface *user_interface,struct Unemap_package *unemap_package
+/*
+Global functions
+----------------
+*/
+
+struct System_window *CREATE(System_window)(Widget shell,
+	Unemap_system_window_close_callback_procedure *close_callback,
+	void *close_callback_data,
 #if defined (UNEMAP_USE_3D)
-	,struct Element_point_ranges_selection *element_point_ranges_selection,
+	struct Element_point_ranges_selection *element_point_ranges_selection,
 	struct FE_element_selection *element_selection,
+	struct MANAGER(FE_field) *fe_field_manager,
 	struct FE_node_selection *node_selection,
 	struct FE_node_selection *data_selection,
+	struct FE_time *fe_time,
+	struct MANAGER(FE_basis) *fe_basis_manager,
+	struct MANAGER(FE_element) *element_manager,
+	struct MANAGER(FE_node) *data_manager,
+	struct MANAGER(FE_node) *node_manager,
+	struct MANAGER(GROUP(FE_element)) *element_group_manager,
+	struct MANAGER(GROUP(FE_node)) *data_group_manager,
+	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(Texture) *texture_manager,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct MANAGER(Scene) *scene_manager,
@@ -1124,31 +1137,36 @@ struct System_window *create_System_window(Widget shell,
 	struct MANAGER(Light) *light_manager,
 	struct MANAGER(Spectrum) *spectrum_manager,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
-	struct MANAGER(FE_node) *data_manager,
 	struct LIST(GT_object) *glyph_list,
 	struct Graphical_material *graphical_material,
 	struct Computed_field_package *computed_field_package,
 	struct Light *light,
-	struct Light_model *light_model
+	struct Light_model *light_model,
 #endif /* defined (UNEMAP_USE_3D) */
-	)
+	struct Time_keeper *time_keeper,
+	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 1 April 2001
+LAST MODIFIED : 18 July 2002
 
 DESCRIPTION :
 This function allocates the memory for a system window structure.  It then
 retrieves a system window widget with the specified parent/<shell> and assigns
 the widget ids to the appropriate fields of the structure.  It returns a
 pointer to the created structure if successful and NULL if unsuccessful.
-???DB.  Retrieve user settings
+Note the system window is automatically popped-up in this function.
+The <close_callback> and associated <close_callback_data> are called when the
+user closes the system window. These must be supplied, and are responsible for
+the handling the differences in cleaning up Unemap when it is run in Cmgui and
+as a standalone application.
 ==============================================================================*/
 {
 	char *temp_string;
+	Dimension window_width = 0, window_height = 0;
 	MrmType system_window_class;
 	static MrmRegisterArg
 		callback_list[]=
 		{
-			{"close_emap",(XtPointer)NULL},
+			{"close_emap",(XtPointer)System_window_close_callback},
 			{"identify_system_acquisition_but",
 				(XtPointer)identify_system_acquisition_but},
 			{"open_acquisition_work_area",(XtPointer)open_acquisition_work_area},
@@ -1331,46 +1349,86 @@ pointer to the created structure if successful and NULL if unsuccessful.
 			"absolute slope"
 		},
 	};
-	struct System_window *system;
-
-	ENTER(create_System_window);
-#if !defined (UNEMAP_USE_3D)
-	USE_PARAMETER(unemap_package);
-#endif /* !defined (UNEMAP_USE_3D) */
-	/* check arguments */
-	if (user_interface
 #if defined (UNEMAP_USE_3D)
-		&&unemap_package&&element_point_ranges_selection&&element_selection&&
-		node_selection&&data_selection&&texture_manager&&
-			interactive_tool_manager&&scene_manager&&light_model_manager&&
-			light_manager&&spectrum_manager&&graphical_material_manager&&
-			data_manager&&glyph_list&&graphical_material&&
-			computed_field_package&&light&&light_model
+	struct Standard_torso_defaults
+	{
+		char *standard_torso_file;
+	};
+#define XmNstandardTorso "standardTorso"
+#define XmCStandardTorso "StandardTorso"
+	struct FE_field *map_fit_field;
+	struct Standard_torso_defaults standard_torso_defaults;
+	static XtResource standard_torso_resources[]=
+	{
+		XmNstandardTorso,
+		XmCStandardTorso,
+		XmRString,
+		sizeof(char *),
+		XtOffsetOf(struct Standard_torso_defaults,standard_torso_file),
+		XmRString,
+		""
+	};
 #endif /* defined (UNEMAP_USE_3D) */
-		)
+	struct System_window *system;
+	struct System_window_data
+	{
+		Position x;
+		Position y;
+	} system_window_data;
+	static XtResource System_window_resources[]=
+	{
+		{
+			XmNx,
+			XmCPosition,
+			XmRPosition,
+			sizeof(Position),
+			XtOffsetOf(struct System_window_data,x),
+			XmRImmediate,
+			(XtPointer) -1
+		},
+		{
+			XmNy,
+			XmCPosition,
+			XmRPosition,
+			sizeof(Position),
+			XtOffsetOf(struct System_window_data,y),
+			XmRImmediate,
+			(XtPointer) -1
+		}
+	};
+
+	ENTER(CREATE(System_window));
+	if (user_interface && close_callback && close_callback_data &&
+#if defined (UNEMAP_USE_3D)
+		element_point_ranges_selection && element_selection &&
+		node_selection && data_selection && texture_manager &&
+		interactive_tool_manager && scene_manager && light_model_manager &&
+		light_manager && spectrum_manager && graphical_material_manager &&
+		data_manager && glyph_list && graphical_material &&
+		computed_field_package && light && light_model &&
+#endif /* defined (UNEMAP_USE_3D) */
+		time_keeper && user_interface)
 	{
 		if (MrmOpenHierarchy_base64_string(system_window_uidh,
-			&system_window_hierarchy,&system_window_hierarchy_open))
+			&system_window_hierarchy, &system_window_hierarchy_open))
 		{
 			/* allocate memory */
-			if (ALLOCATE(system,struct System_window,1))
+			if (ALLOCATE(system, struct System_window, 1))
 			{
-#if defined (UNEMAP_USE_3D)
-				system->unemap_package=unemap_package;
-#else
-				system->unemap_package=(struct Unemap_package *)NULL;
-#endif
-				system->window_shell=shell;
-				system->user_interface=user_interface;
-				system->map_drawing_information=
+				system->close_callback = close_callback;
+				system->close_callback_data = close_callback_data;
+				system->unemap_package = (struct Unemap_package *)NULL;
+				system->window_shell = shell;
+				system->user_interface = user_interface;
+				system->map_drawing_information =
 					create_Map_drawing_information(user_interface
 #if defined (UNEMAP_USE_3D)
-						,element_point_ranges_selection,element_selection,
-						node_selection,data_selection,texture_manager,
-						interactive_tool_manager,scene_manager,light_model_manager,
-						light_manager,spectrum_manager,graphical_material_manager,
-						data_manager,glyph_list,graphical_material,
-						computed_field_package,light,light_model
+						, element_point_ranges_selection, element_selection,
+						node_selection, data_selection, texture_manager,
+						interactive_tool_manager, scene_manager, light_model_manager,
+						light_manager, spectrum_manager, graphical_material_manager,
+						data_manager, glyph_list, graphical_material,
+						computed_field_package, light, light_model
 #endif /* defined (UNEMAP_USE_3D) */
 						);
 #if defined (UNEMAP_USE_3D)
@@ -1579,7 +1637,6 @@ pointer to the created structure if successful and NULL if unsuccessful.
 				}
 				/*???DB.  Retrieve settings */
 				/* register the callbacks */
-				(callback_list[0]).value=(XtPointer)close_button_callback;
 				if ((MrmSUCCESS==MrmRegisterNamesInHierarchy(system_window_hierarchy,
 					callback_list,XtNumber(callback_list)))&&(MrmSUCCESS==
 					MrmRegisterNames(global_callback_list,
@@ -1597,49 +1654,227 @@ pointer to the created structure if successful and NULL if unsuccessful.
 							"system_window",system->window_shell,&(system->window),
 							&system_window_class))
 						{
-							/*??? more to do ? */
+							create_Shell_list_item(&(system->window_shell), user_interface);
+							/*!!!!*/
+#if defined (UNEMAP_USE_3D)
+							if (system->unemap_package = CREATE(Unemap_package)(
+								fe_field_manager, fe_time, element_group_manager, node_manager,
+								data_manager, data_group_manager, node_group_manager,
+								fe_basis_manager, element_manager,
+								Computed_field_package_get_computed_field_manager(
+									computed_field_package),
+								interactive_tool_manager, node_selection))
+							{
+								/* create and store the map fit field  */
+								map_fit_field = create_mapping_type_fe_field("fit",
+									fe_field_manager, fe_time);
+								set_unemap_package_map_fit_field(
+									system->unemap_package, map_fit_field);
+#if defined (MOTIF)		
+								/* get the location of the default_torso file from XResources */
+								standard_torso_defaults.standard_torso_file = "";			
+								XtVaGetApplicationResources(system->window_shell,
+									&standard_torso_defaults, standard_torso_resources,
+									XtNumber(standard_torso_resources), NULL);
+								/* do nothing if no default torso file specified */
+								if (strcmp(standard_torso_defaults.standard_torso_file, ""))
+								{
+									unemap_package_read_torso_file(system->unemap_package,
+										standard_torso_defaults.standard_torso_file);
+								}
+#endif /* defined (MOTIF)	*/
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"CREATE(System_window).  Could not create unemap package");
+							}
+#endif /* defined (UNEMAP_USE_3D) */
+#if defined (MOTIF)		
+							/* determine placement */
+							XtVaGetValues(system->window_shell,
+								XmNwidth,&window_width,
+								XmNheight,&window_height,
+								NULL);
+							/* do this to allow backward compatibility but still allow the
+								 resources to be set */
+							/* these defaults match with the default resources above */
+							system_window_data.x = -1;
+							system_window_data.y = -1;
+							XtVaGetApplicationResources(system->window_shell,
+								&system_window_data, System_window_resources,
+								XtNumber(System_window_resources),NULL);
+							if (-1 == system_window_data.x)
+							{
+								system_window_data.x =
+									((User_interface_get_screen_width(user_interface))
+										-window_width)/2;
+							}
+							if (-1 == system_window_data.y)
+							{
+								system_window_data.y =
+									((User_interface_get_screen_height(user_interface))
+										-window_height)/2;
+							}
+							XtVaSetValues(system->window_shell,
+								XmNx, system_window_data.x,
+								XmNy, system_window_data.y,
+								XmNmappedWhenManaged, True,
+								NULL);
+#endif /* defined (MOTIF) */
+							/* manage the system window */
+							XtManageChild(system->window);
+							/* realize the system window shell */
+							XtRealizeWidget(system->window_shell);
+							/* pop up the system window shell */
+							XtPopup(system->window_shell, XtGrabNone);
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"create_System_window.  Could not fetch system window");
+								"CREATE(System_window).  Could not fetch system window");
 							DEALLOCATE(system);
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"create_System_window.  Could not register identifiers");
+							"CREATE(System_window).  Could not register identifiers");
 						DEALLOCATE(system);
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"create_System_window.  Could not register callbacks");
+						"CREATE(System_window).  Could not register callbacks");
 					DEALLOCATE(system);
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"create_System_window.  Could not allocate system window structure");
+					"CREATE(System_window).  Could not allocate system window structure");
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"create_System_window.  Could not open hierarchy");
+				"CREATE(System_window).  Could not open hierarchy");
 			system=(struct System_window *)NULL;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"create_System_window. Invalid arguments");
+			"CREATE(System_window). Invalid arguments");
 		system=(struct System_window *)NULL;
 	}
 	LEAVE;
 
 	return (system);
-} /* create_System_window */
+} /* CREATE(System_window) */
+
+int DESTROY(System_window)(struct System_window **system_window_address)
+/*******************************************************************************
+LAST MODIFIED : 18 July 2002
+
+DESCRIPTION :
+Destroys the Unemap system window and all its dependent windows.
+==============================================================================*/
+{
+	int return_code;
+	struct System_window *system;
+
+	ENTER(DESTROY(System_window));
+	if (system_window_address && (system = *system_window_address))
+	{
+		if (system->time_keeper)
+		{
+			DEACCESS(Time_keeper)(&(system->time_keeper));
+		}
+		/* close acquisition */
+		if ((system->acquisition).window_shell)
+		{
+			close_acquisition_work_area((Widget)NULL,
+				(XtPointer)&(system->acquisition),(XtPointer)NULL);
+		}
+#if defined (UNIMA)
+		if (((system->acquisition).window)&&
+			(((system->acquisition).window)->experiment_toggle)&&
+			(True==XmToggleButtonGetState(((system->acquisition).window)->
+			experiment_toggle)))
+		{
+			/* reset the Unima system */
+			U00SysReset();
+			/* reset the Unima adapter */
+			UAReset();
+			UASetAdapter(DISABLE);
+		}
+#endif
+		/* destroy acquisition */
+		if ((system->acquisition).window)
+		{
+			destroy_Page_window(&((system->acquisition).window));
+		}
+
+		/* close analysis */
+		if ((system->analysis).window_shell)
+		{
+			close_analysis_work_area((Widget)NULL, (XtPointer)&(system->analysis),
+				(XtPointer)NULL);
+		}
+		/* close mapping */
+		if ((system->mapping).window_shell)
+		{
+			close_mapping_work_area((Widget)NULL, (XtPointer)system, (XtPointer)NULL);
+		}
+		/* close system */
+		if (system->window_shell !=
+			User_interface_get_application_shell(system->user_interface))
+		{
+			/*???RC Used to just popdown */
+			/*XtPopdown(system->window_shell);*/
+			XtDestroyWidget(system->window_shell);
+		}
+		*system_window_address = (struct System_window *)NULL;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(System_window).  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(System_window) */
+
+int System_window_pop_up(struct System_window *system_window)
+/*******************************************************************************
+LAST MODIFIED : 17 July 2002
+
+DESCRIPTION :
+De-iconifies and brings the unemap system window to the front.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(System_window_pop_up);
+	if (system_window)
+	{
+		XtPopup(system_window->window_shell,XtGrabNone);
+		/* make sure it is not iconic */
+		XtVaSetValues(system_window->window_shell, XmNiconic, False, NULL);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"System_window_pop_up.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* System_window_pop_up */
