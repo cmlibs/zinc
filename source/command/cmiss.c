@@ -22774,11 +22774,6 @@ Executes a GFX command.
 				/* change_identifier */
 				(option_table[i]).user_data=command_data_void;
 				i++;
-#if defined (SELECT_DESCRIPTORS)
-				/* connect */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-#endif /* defined (SELECT_DESCRIPTORS) */
 				/* create */
 				(option_table[i]).user_data=command_data_void;
 				i++;
