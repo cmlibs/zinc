@@ -4,6 +4,9 @@ PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source
 TEST_PATH=$(CMISS_ROOT)/cmgui/test_examples
 BIN_PATH=bin
 SOURCE_PATH=source
+#By overriding the TARGET on the command line you can specify
+#a sub object to be compiled i.e. make cmgui_linux TARGET=command/cmiss.o
+TARGET= 
 
 VPATH=$(PRODUCT_PATH)
 
@@ -39,9 +42,9 @@ COMMON_MAKE_RULE= \
 unemap32 : $(SOURCE_PATH)/unemap_sgi.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_sgi.make ]; then \
-		$(MAKE) -f unemap_sgi.make ; \
+		$(MAKE) -f unemap_sgi.make $(TARGET) ; \
 	else \
-		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_sgi.make ; \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_sgi.make $(TARGET) ; \
 	fi
 
 $(SOURCE_PATH)/unemap_sgi.make : $(SOURCE_PATH)/unemap.imake $(SOURCE_PATH)/common.imake unemap.make
@@ -52,9 +55,9 @@ $(SOURCE_PATH)/unemap_sgi.make : $(SOURCE_PATH)/unemap.imake $(SOURCE_PATH)/comm
 unemap_nodes : $(SOURCE_PATH)/unemap_sginodes.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_sginodes.make ]; then \
-		$(MAKE) -f unemap_sginodes.make ; \
+		$(MAKE) -f unemap_sginodes.make $(TARGET) ; \
 	else \
-		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_sginodes.make ; \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_sginodes.make $(TARGET) ; \
 	fi
 
 $(SOURCE_PATH)/unemap_sginodes.make : $(SOURCE_PATH)/unemap.imake unemap.make
@@ -65,9 +68,9 @@ $(SOURCE_PATH)/unemap_sginodes.make : $(SOURCE_PATH)/unemap.imake unemap.make
 unemap_optimised : $(SOURCE_PATH)/unemap_sgioptimised.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_sgioptimised.make ]; then \
-		$(MAKE) -f unemap_sgioptimised.make ; \
+		$(MAKE) -f unemap_sgioptimised.make $(TARGET) ; \
 	else \
-		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_sgioptimised.make ; \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_sgioptimised.make $(TARGET) ; \
 	fi	
 
 $(SOURCE_PATH)/unemap_sgioptimised.make : $(SOURCE_PATH)/unemap.imake unemap.make
@@ -78,9 +81,9 @@ $(SOURCE_PATH)/unemap_sgioptimised.make : $(SOURCE_PATH)/unemap.imake unemap.mak
 unemap_memorycheck : $(SOURCE_PATH)/unemap_sgi_memorycheck.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_sgi_memorycheck.make ]; then \
-		$(MAKE) -f unemap_sgi_memorycheck.make ; \
+		$(MAKE) -f unemap_sgi_memorycheck.make $(TARGET) ; \
 	else \
-		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_sgi_memorycheck.make ; \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_sgi_memorycheck.make $(TARGET) ; \
 	fi
 
 $(SOURCE_PATH)/unemap_sgi_memorycheck.make : $(SOURCE_PATH)/unemap.imake $(SOURCE_PATH)/common.imake unemap.make
@@ -91,9 +94,9 @@ $(SOURCE_PATH)/unemap_sgi_memorycheck.make : $(SOURCE_PATH)/unemap.imake $(SOURC
 unemap_64 : force $(SOURCE_PATH)/unemap_sgi64.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_sgi64.make ]; then \
-		$(MAKE) -f unemap_sgi64.make ; \
+		$(MAKE) -f unemap_sgi64.make $(TARGET) ; \
 	else \
-		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_sgi64.make ; \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_sgi64.make $(TARGET) ; \
 	fi	
 
 $(SOURCE_PATH)/unemap_sgi64.make : $(SOURCE_PATH)/unemap.imake unemap.make
@@ -104,9 +107,9 @@ $(SOURCE_PATH)/unemap_sgi64.make : $(SOURCE_PATH)/unemap.imake unemap.make
 unemap_linux : force $(SOURCE_PATH)/unemap_linux.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_linux.make ]; then \
-		$(MAKE) -f unemap_linux.make ; \
+		$(MAKE) -f unemap_linux.make $(TARGET) ; \
 	else \
-		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_linux.make ; \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_linux.make $(TARGET) ; \
 	fi
 
 $(SOURCE_PATH)/unemap_linux.make : $(SOURCE_PATH)/unemap.imake unemap.make
