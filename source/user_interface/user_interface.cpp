@@ -1734,14 +1734,14 @@ Returns the application shell widget
 } /* User_interface_get_widget_spacing */
 #endif /* defined (MOTIF) */
 
-#if defined (MOTIF)
+#if defined (OPENGL_API)
 int User_interface_set_specified_visual_id(struct User_interface *user_interface,
 	int specified_visual_id)
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
-Returns the application shell widget
+Sets a particular Open GL visual to be used by the graphics.
 ==============================================================================*/
 {
 	int return_code;
@@ -1762,15 +1762,15 @@ Returns the application shell widget
 
 	return (return_code);
 } /* User_interface_set_specified_visual_id */
-#endif /* defined (MOTIF) */
+#endif /* defined (OPENGL_API) */
 
-#if defined (MOTIF)
+#if defined (OPENGL_API)
 int User_interface_get_specified_visual_id(struct User_interface *user_interface)
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
 
 DESCRIPTION :
-Returns the application shell widget
+Returns the particular Open GL visual if set to be used by the graphics.
 ==============================================================================*/
 {
 	int specified_visual_id;
@@ -1790,7 +1790,7 @@ Returns the application shell widget
 
 	return (specified_visual_id);
 } /* User_interface_get_specified_visual_id */
-#endif /* defined (MOTIF) */
+#endif /* defined (OPENGL_API) */
 
 int User_interface_get_local_machine_name(struct User_interface *user_interface,
 	char **name_ptr)
