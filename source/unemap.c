@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap.c
 
-LAST MODIFIED : 7 December 1999
+LAST MODIFIED : 24 March 2000
 
 DESCRIPTION :
 Main program for unemap.  Based on cmgui.
@@ -26,6 +26,8 @@ Main program for unemap.  Based on cmgui.
 #include "graphics/material.h"
 #include "graphics/scene.h"
 #include "graphics/spectrum.h"
+#include "selection/element_selection.h"
+#include "selection/node_selection.h"
 #endif /* defined (UNEMAP_USE_NODES) */
 #include "finite_element/finite_element.h"
 #include "time/time_keeper.h"
@@ -244,7 +246,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* defined (WINDOWS) */
 /*******************************************************************************
-LAST MODIFIED : 7 December 1999
+LAST MODIFIED : 24 March 2000
 
 DESCRIPTION :
 Main program for unemap
@@ -262,6 +264,8 @@ Main program for unemap
 #if defined (NOT_ACQUISITION_ONLY)
 	struct Unemap_package *unemap_package;
 #if defined (UNEMAP_USE_NODES)
+	struct FE_element_selection *element_selection;
+	struct FE_node_selection *node_selection;
 	struct MANAGER(Control_curve) *control_curve_manager;
 	struct MANAGER(FE_field) *fe_field_manager;
 	struct MANAGER(GROUP(FE_element)) *element_group_manager;
@@ -579,6 +583,11 @@ Main program for unemap
 		data_group_manager=CREATE_MANAGER(GROUP(FE_node))();
 		fe_basis_manager=CREATE_MANAGER(FE_basis)(); 
 		graphics_window_manager=CREATE_MANAGER(Graphics_window)();
+
+		/* global list of selected objects */
+		element_selection=CREATE(FE_element_selection)();
+		node_selection=CREATE(FE_node_selection)();
+
 		scene_manager=CREATE_MANAGER(Scene)();
 		light_model_manager=CREATE_MANAGER(Light_model)();
 		light_manager=CREATE_MANAGER(Light)();
@@ -593,7 +602,8 @@ Main program for unemap
 		glyph_list=CREATE(LIST(GT_object))();
 		unemap_package=CREATE(Unemap_package)(fe_field_manager,
 			element_group_manager,node_manager,data_group_manager,node_group_manager,
-			fe_basis_manager,element_manager,computed_field_manager,
+			fe_basis_manager,element_manager,element_selection,node_selection,
+			computed_field_manager,
 			graphics_window_manager,texture_manager,scene_manager,light_model_manager,
 			light_manager,spectrum_manager,graphical_material_manager,data_manager,
 			glyph_list);
