@@ -29,6 +29,8 @@ return code - zero is success, non-zero is failure.
 #define PF_LOCK_DIRNAME "pflock"
 #define PF_STRUCTURE_FILENAME "pf_job.struct"
 
+#define WITH_OMNISECURE
+
 /* SAB Debug used to debug file creation problems in Boston
 #define PHOTOFACE_WIN_DEBUG 1 */
 
@@ -1808,6 +1810,13 @@ This routine cleans up the working directory and destroys the specified job.
 				if ((pf_cmiss_keep_working_dir=getenv("PF_CMISS_KEEP_WORKING_DIRECTORY")) &&
 					*pf_cmiss_keep_working_dir)
 				{
+#if defined (WITH_OMNISECURE)
+					/* Release the omnisecure lock */
+					sprintf(working_path, "%sworking/job%06d/%s/.vpdlock", photoface_local_path,
+						pf_job_id, PF_LOCK_DIRNAME);
+					unlink(working_path);
+#endif /* defined (WITH_OMNISECURE) */
+
 					sprintf(working_path, "%sworking/job%06d/%s", photoface_local_path,
 						pf_job_id, PF_LOCK_DIRNAME);
 	 				/* Unlock the directory so it can be reused */
@@ -2054,7 +2063,13 @@ the memory associated with it and unlocks the access to that job.
 						"Unable to open structure data.");
 #endif /* defined (MANUAL_CMISS) */
 					return_code= PF_OPEN_FILE_FAILURE_RC;
-				}					
+				}
+#if defined (WITH_OMNISECURE)
+				/* Release the omnisecure lock */
+				sprintf(working_path, "%s/%s/.vpdlock", pf_job->working_path,
+					PF_LOCK_DIRNAME);
+				unlink(working_path);
+#endif /* defined (WITH_OMNISECURE) */
 
 				/* Set the lock filename now before we deallocate everything */
 				sprintf(working_path, "%s/%s", pf_job->working_path, PF_LOCK_DIRNAME);
