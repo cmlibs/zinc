@@ -20523,6 +20523,7 @@ If <use_data> is set, writing data, otherwise writing nodes.
 				{
 					return_code = 0;
 				}
+				USE_PARAMETER(node_group);
 				DEALLOCATE(group_name);
 			}
 			if (return_code)
