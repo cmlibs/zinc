@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 5 December 2001
+LAST MODIFIED : 12 December 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -10823,7 +10823,7 @@ static struct LIST(FE_element) *
 LAST MODIFIED : 15 June 2001
 
 DESCRIPTION :
-Creates and returns a element group that is the intersection of:
+Creates and returns an element group that is the intersection of:
 - all elements in the <element_manager> if <all_flag> is set;
 - all elements in the <element_selection> if <selected_flag> is set;
 - all elements in the <element_group>, if supplied;
@@ -15384,188 +15384,187 @@ Executes a GFX LIST command.
 	return (return_code);
 } /* execute_command_gfx_list */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_modify_element_group(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
+	void *dummy_to_be_modified, void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 21 April 1999
+LAST MODIFIED : 12 December 2001
 
 DESCRIPTION :
-Executes a GFX MODIFY EGROUP command.
+Modifies the membership of a group.  Only one of <add> or <remove> can
+be specified at once.
 ==============================================================================*/
 {
-	char *group_name;
+	char add_flag, all_flag, *group_name, remove_flag, selected_flag;
 	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"add_ranges",NULL,NULL,set_Multi_range},
-		{"from",NULL,NULL,set_FE_element_group},
-		{"remove_ranges",NULL,NULL,set_Multi_range},
-		{NULL,NULL,NULL,NULL}
-	};
-	struct Add_FE_element_to_list_if_in_range_data add_element_data,
-		remove_element_data;
 	struct Cmiss_command_data *command_data;
-	struct GROUP(FE_element) *element_group,*from_element_group;
+	struct GROUP(FE_element) *modify_element_group, *from_element_group;
 	struct GROUP(FE_node) *node_group;
-	struct LIST(FE_node) *add_node_list,*remove_node_list;
+	struct LIST(FE_element) *element_list;
+	struct LIST(FE_node) *node_list;
+	struct Multi_range *element_ranges;
+	struct Option_table *option_table;
 
 	ENTER(gfx_modify_element_group);
 	USE_PARAMETER(dummy_to_be_modified);
-	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
-		element_group=(struct GROUP(FE_element) *)NULL;
-		if (set_FE_element_group(state,(void *)&element_group,
+		modify_element_group = (struct GROUP(FE_element) *)NULL;
+		if (set_FE_element_group(state, (void *)&modify_element_group,
 			(void *)command_data->element_group_manager))
 		{
 			/* initialise defaults */
-			from_element_group=(struct GROUP(FE_element) *)NULL;
-			add_element_data.element_ranges=CREATE(Multi_range)();
-			add_element_data.element_list=CREATE(LIST(FE_element))();
-			remove_element_data.element_ranges=CREATE(Multi_range)();
-			remove_element_data.element_list=CREATE(LIST(FE_element))();
-			(option_table[0]).to_be_modified=add_element_data.element_ranges;
-			(option_table[1]).to_be_modified= &from_element_group;
-			(option_table[1]).user_data=command_data->element_group_manager;
-			(option_table[2]).to_be_modified=remove_element_data.element_ranges;
-			return_code=process_multiple_options(state,option_table);
+			add_flag = 0;
+			remove_flag = 0;
+			all_flag = 0;
+			selected_flag = 0;
+			element_ranges = CREATE(Multi_range)();
+			from_element_group = (struct GROUP(FE_element) *)NULL;
+
+			option_table=CREATE(Option_table)();
+			/* add */
+			Option_table_add_entry(option_table, "add", &add_flag,
+				NULL, set_char_flag);
+			/* all */
+			Option_table_add_entry(option_table, "all", &all_flag,
+				NULL, set_char_flag);
+			/* group */
+			Option_table_add_entry(option_table, "group", &from_element_group,
+				command_data->element_group_manager, set_FE_element_group);
+			/* remove */
+			Option_table_add_entry(option_table, "remove", &remove_flag,
+				NULL, set_char_flag);
+			/* selected */
+			Option_table_add_entry(option_table, "selected", &selected_flag,
+				NULL, set_char_flag);
+			/* default option: element number ranges */
+			Option_table_add_entry(option_table, (char *)NULL, (void *)element_ranges,
+				NULL, set_Multi_range);
+			if (return_code = Option_table_multi_parse(option_table, state))
+			{
+				if (add_flag && remove_flag)
+				{
+					display_message(ERROR_MESSAGE, "gfx modify egroup:  "
+						"Only specify one of add or remove at a time.");
+					return_code = 0;
+				}
+				if ((!add_flag) && (!remove_flag))
+				{
+					display_message(ERROR_MESSAGE, "gfx modify egroup:  "
+						"Must specify an operation, either add or remove.");				
+					return_code = 0;
+				}
+			}
 			/* no errors, not asking for help */
 			if (return_code)
 			{
-				if (element_group&&
-					GET_NAME(GROUP(FE_element))(element_group,&group_name))
+				/* make list of elements to add/remove from modify_element_group */
+				if (element_list = FE_element_list_from_all_selected_group_ranges(
+					CM_ELEMENT, command_data->element_manager, all_flag,
+					command_data->element_selection, selected_flag,
+					from_element_group, element_ranges))
 				{
-					if ((0<Multi_range_get_number_of_ranges(
-						add_element_data.element_ranges))||
-						(0<Multi_range_get_number_of_ranges(
-							remove_element_data.element_ranges)))
+					if (0 < NUMBER_IN_LIST(FE_element)(element_list))
 					{
-						if (!Multi_ranges_overlap(add_element_data.element_ranges,
-							remove_element_data.element_ranges))
+						MANAGED_GROUP_BEGIN_CACHE(FE_element)(modify_element_group);
+						if (add_flag)
 						{
-							/* get node group of the same name to synchronize nodes from
-								 elements added and removed */
-							if (node_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)(
-								group_name,command_data->node_group_manager))
+							return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
+								ensure_FE_element_and_faces_are_in_group,
+								(void *)modify_element_group, element_list);
+						}
+						else /* remove_flag */
+						{
+							return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
+								ensure_FE_element_and_faces_are_not_in_group,
+								(void *)modify_element_group, element_list);
+						}
+						/* make changes to node group of same name */
+						if (GET_NAME(GROUP(FE_element))(modify_element_group, &group_name))
+						{
+							if (node_group = FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),
+								name)(group_name, command_data->node_group_manager))
 							{
-								if (0<Multi_range_get_number_of_ranges(
-									add_element_data.element_ranges))
+								node_list = CREATE(LIST(FE_node))();
+								MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
+								if (add_flag)
 								{
-									if (from_element_group)
-									{
-										return_code=FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-											add_FE_element_to_list_if_in_range,
-											(void *)&add_element_data,from_element_group);
-									}
-									else
-									{
-										return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-											add_FE_element_to_list_if_in_range,
-											(void *)&add_element_data,command_data->element_manager);
-									}
+									/* ensure all nodes used by added elements are in the node
+										 group of the same name */
+									FOR_EACH_OBJECT_IN_LIST(FE_element)(
+										ensure_top_level_FE_element_nodes_are_in_list,
+										(void *)node_list, element_list);
+									FOR_EACH_OBJECT_IN_LIST(FE_node)(
+										ensure_FE_node_is_in_group, (void *)node_group, node_list);
 								}
-								if (0<Multi_range_get_number_of_ranges(
-									remove_element_data.element_ranges))
+								else /* remove_flag */
 								{
-									return_code=FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-										add_FE_element_to_list_if_in_range,
-										(void *)&remove_element_data,element_group);
+									/* ensure nodes used only by the elements being removed are
+										 removed from the node group of the same name */
+									FOR_EACH_OBJECT_IN_LIST(FE_element)(
+										ensure_top_level_FE_element_nodes_are_in_list,
+										(void *)node_list, element_list);
+									FOR_EACH_OBJECT_IN_GROUP(FE_element)(
+										ensure_top_level_FE_element_nodes_are_not_in_list,
+										(void *)node_list, modify_element_group);
+									FOR_EACH_OBJECT_IN_LIST(FE_node)(
+										ensure_FE_node_is_not_in_group, (void *)node_group,
+										node_list);
 								}
-								if (return_code)
-								{
-									/* make sure we add any nodes referred to by new elements to
-										 the node group of the same name, and that nodes only
-										 referred to by elements we are removing are removed */
-									add_node_list=CREATE(LIST(FE_node))();
-									remove_node_list=CREATE(LIST(FE_node))();
-									MANAGED_GROUP_BEGIN_CACHE(FE_element)(element_group);
-									MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
-									return_code=
-										FOR_EACH_OBJECT_IN_LIST(FE_element)(
-											ensure_FE_element_and_faces_are_in_group,
-											(void *)element_group,add_element_data.element_list)&&
-										FOR_EACH_OBJECT_IN_LIST(FE_element)(
-											ensure_FE_element_and_faces_are_not_in_group,
-											(void *)element_group,remove_element_data.element_list)&&
-										FOR_EACH_OBJECT_IN_LIST(FE_element)(
-											ensure_top_level_FE_element_nodes_are_in_list,
-											(void *)add_node_list,add_element_data.element_list)&&
-										FOR_EACH_OBJECT_IN_LIST(FE_element)(
-											ensure_top_level_FE_element_nodes_are_in_list,
-											(void *)remove_node_list,
-											remove_element_data.element_list)&&
-										FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-											ensure_top_level_FE_element_nodes_are_not_in_list,
-											(void *)remove_node_list,element_group)&&
-										FOR_EACH_OBJECT_IN_LIST(FE_node)(
-											ensure_FE_node_is_in_group,(void *)node_group,
-											add_node_list)&&
-										FOR_EACH_OBJECT_IN_LIST(FE_node)(
-											ensure_FE_node_is_not_in_group,(void *)node_group,
-											remove_node_list);
-									MANAGED_GROUP_END_CACHE(FE_node)(node_group);
-									MANAGED_GROUP_END_CACHE(FE_element)(element_group);
-									DESTROY(LIST(FE_node))(&add_node_list);
-									DESTROY(LIST(FE_node))(&remove_node_list);
-								}
-								if (!return_code)
-								{
-									display_message(ERROR_MESSAGE,"gfx modify ngroup. Failed");
-								}
+								MANAGED_GROUP_END_CACHE(FE_node)(node_group);
+								DESTROY(LIST(FE_node))(&node_list);
 							}
 							else
 							{
-								display_message(ERROR_MESSAGE,"gfx_modify_element_group.  "
-									"Could not find node group %s",group_name);
-								return_code=0;
+								display_message(ERROR_MESSAGE, "gfx_modify_element_group.  "
+									"Could not find node group %s", group_name);
+								return_code = 0;
 							}
+							DEALLOCATE(group_name);
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"gfx modify egroup.  Add and remove ranges overlap");
-							return_code=0;
+								"gfx_modify_element_group.  Could not get group name");
+							return_code = 0;
 						}
+						MANAGED_GROUP_END_CACHE(FE_element)(modify_element_group);
 					}
 					else
 					{
 						display_message(WARNING_MESSAGE,
-							"gfx modify egroup.  No modifications requested");
+							"gfx modify egroup:  No elements specified");
 					}
-					DEALLOCATE(group_name);
+					DESTROY(LIST(FE_element))(&element_list);
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"gfx modify egroup.  Missing group name");
-					return_code=0;
+						"gfx_modify_element_group.  Could not make element_list");
+					return_code = 0;
 				}
 			}
-			DESTROY(LIST(FE_element))(&add_element_data.element_list);
-			DESTROY(Multi_range)(&add_element_data.element_ranges);
-			DESTROY(Multi_range)(&remove_element_data.element_ranges);
-			DESTROY(LIST(FE_element))(&remove_element_data.element_list);
+			DESTROY(Option_table)(&option_table);
 			if (from_element_group)
 			{
 				DEACCESS(GROUP(FE_element))(&from_element_group);
 			}
+			DESTROY(Multi_range)(&element_ranges);
 		}
-		if (element_group)
+		if (modify_element_group)
 		{
-			DEACCESS(GROUP(FE_element))(&element_group);
+			DEACCESS(GROUP(FE_element))(&modify_element_group);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"gfx_modify_element_group.  Missing command_data");
-		return_code=0;
+			"gfx_modify_element_group.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* gfx_modify_element_group */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 int iterator_modify_g_element(struct GROUP(FE_element) *element_group,
 	void *modify_g_element_data_void)
@@ -15945,7 +15944,7 @@ Executes a GFX MODIFY GRAPHICS_OBJECT command.
 static int gfx_modify_node_group(struct Parse_state *state,
 	void *use_data, void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 26 March 2001
+LAST MODIFIED : 12 December 2001
 
 DESCRIPTION :
 Modifies the membership of a group.  Only one of <add> or <remove> can
@@ -16080,6 +16079,7 @@ use node_manager and node_selection.
 								"gfx modify ngroup:  No nodes specified");
 						}
 					}
+					DESTROY(LIST(FE_node))(&node_list);
 				}
 				else
 				{
