@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.h
 
-LAST MODIFIED : 13 November 2002
+LAST MODIFIED : 20 July 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -84,15 +84,16 @@ Storing the values in the array (<objective_values> every
 int calculate_device_event_markers(struct Device *device,
 	int start_search,int end_search,enum Event_detection_algorithm detection,
 	float *objective_values,int number_of_objective_values,
-	int objective_values_step,int number_of_events,int threshold_percentage,
-	int minimum_separation_milliseconds,float level);
+	int objective_values_step,int number_of_events,int *search_interval_divisions,
+	int threshold_percentage,int minimum_separation_milliseconds,float level);
 /*******************************************************************************
-LAST MODIFIED : 12 September 2000
+LAST MODIFIED : 20 July 2004
 
 DESCRIPTION :
 Calculate the positions of the event markers for a signal/<device>/<device_node>
-based upon the the start and end times, the number of events, the <detection>
-algorithm and the <objective_values>.
+based upon the the start and end times, the number of events, the interval
+divisions (if missing then equally spaced), the <detection> algorithm and the
+<objective_values>.
 ==============================================================================*/
 
 int analysis_write_signal_file(char *file_name,struct Rig *rig,int datum,

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.c
 
-LAST MODIFIED : 15 June 2004
+LAST MODIFIED : 22 July 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1091,7 +1091,7 @@ Finds the id of the analysis file save times button.
 static int write_times_undecided_accepted(char *file_name,
 	void *analysis_window)
 /*******************************************************************************
-LAST MODIFIED : 11 February 2000
+LAST MODIFIED : 22 July 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1160,6 +1160,21 @@ DESCRIPTION :
 								(float)times[*(analysis->start_search_interval)]*1000./
 								frequency,(float)times[*(analysis->end_search_interval)]*1000./
 								frequency,*(analysis->number_of_events));
+							if ((1< *(analysis->number_of_events))&&
+								(analysis->search_interval_divisions)&&
+								(*(analysis->search_interval_divisions)))
+							{
+								fprintf(output_file,"search interval divisions : %.0f",
+									(float)times[(*(analysis->search_interval_divisions))[0]]*
+									1000./frequency);
+								for (i=1;i< *(analysis->number_of_events)-1;i++)
+								{
+									fprintf(output_file,", %.0f",
+										(float)times[(*(analysis->search_interval_divisions))[i]]*
+										1000./frequency);
+								}
+								fprintf(output_file,"\n");
+							}
 						} break;
 						case EDA_LEVEL:
 						{
@@ -1318,7 +1333,7 @@ DESCRIPTION :
 static int write_times_undecided_rejected(char *file_name,
 	void *analysis_window)
 /*******************************************************************************
-LAST MODIFIED : 11 February 2000
+LAST MODIFIED : 22 July 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1388,6 +1403,21 @@ DESCRIPTION :
 								(float)times[*(analysis->start_search_interval)]*1000./
 								frequency,(float)times[*(analysis->end_search_interval)]*1000./
 								frequency,*(analysis->number_of_events));
+							if ((1< *(analysis->number_of_events))&&
+								(analysis->search_interval_divisions)&&
+								(*(analysis->search_interval_divisions)))
+							{
+								fprintf(output_file,"search interval divisions : %.0f",
+									(float)times[(*(analysis->search_interval_divisions))[0]]*
+									1000./frequency);
+								for (i=1;i< *(analysis->number_of_events)-1;i++)
+								{
+									fprintf(output_file,", %.0f",
+										(float)times[(*(analysis->search_interval_divisions))[i]]*
+										1000./frequency);
+								}
+								fprintf(output_file,"\n");
+							}
 						} break;
 						case EDA_LEVEL:
 						{
@@ -1739,7 +1769,8 @@ continuation.  Write the file.
 				{
 					if ((!(parent=widget))||(True!=XtIsWidget(parent)))
 					{
-						parent=User_interface_get_application_shell(analysis->user_interface);
+						parent=User_interface_get_application_shell(
+							analysis->user_interface);
 					}
 					if (warning_box_shell=XtVaCreatePopupShell(
 						"write_event_times_warning_shell",

@@ -1,12 +1,13 @@
 /*******************************************************************************
 FILE : analysis_calculate.c
 
-LAST MODIFIED : 10 May 2002
+LAST MODIFIED : 22 July 2004
 
 DESCRIPTION :
 The routines for calculating event times.  Separated out and without structures
 so that cm can use them
 ==============================================================================*/
+
 #include <stddef.h>
 #include "general/debug.h"
 #include "unemap/analysis_calculate.h"
@@ -442,11 +443,11 @@ Split from function calculate_device_objective on 19 February 2002
 int calculate_time_series_event_markers(int start_search,int end_search,
 	enum Event_detection_algorithm detection,float *objective_values,
 	int number_of_objective_values,int objective_values_step,
-	int number_of_interval_events,int threshold_percentage,
-	int minimum_separation_milliseconds,float level,float frequency,
-	int *number_of_events_address,int **events_address)
+	int number_of_interval_events,int *interval_divisions,
+	int threshold_percentage,int minimum_separation_milliseconds,float level,
+	float frequency,int *number_of_events_address,int **events_address)
 /*******************************************************************************
-LAST MODIFIED : 27 March 2002
+LAST MODIFIED : 22 July 2004
 
 DESCRIPTION :
 Calculate the event times for a signal (<objective_values>) based upon the the
@@ -454,6 +455,9 @@ Calculate the event times for a signal (<objective_values>) based upon the the
 <objective_values> is assumed to have storage for at least
 <number_of_objective_values>*<objective_values_step> values.  Allocates storage
 for <*event_address>.
+
+<interval_divisions> are the <number_of_interval_events>-1 divisions between the
+sub-intervals.  If missing then sub-intervals are all the same length.
 
 Split from the function calculate_device_event_markers on 19 February 2002
 ==============================================================================*/
@@ -488,8 +492,26 @@ Split from the function calculate_device_event_markers on 19 February 2002
 				{
 					maximum_objective= *objective_value;
 					maximum=present;
-					interval_end=SCALE_X(event_number,0,start_search,
-						SCALE_FACTOR(number_of_interval_events,end_search-start_search));
+					if (interval_divisions)
+					{
+						if (event_number<number_of_interval_events)
+						{
+							interval_end=interval_divisions[event_number-1];
+							if (interval_end>end_search)
+							{
+								interval_end=end_search;
+							}
+						}
+						else
+						{
+							interval_end=end_search;
+						}
+					}
+					else
+					{
+						interval_end=SCALE_X(event_number,0,start_search,
+							SCALE_FACTOR(number_of_interval_events,end_search-start_search));
+					}
 					while (present<interval_end)
 					{
 						present++;

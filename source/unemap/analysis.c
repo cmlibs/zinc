@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 26 November 2003
+LAST MODIFIED : 20 July 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -156,15 +156,16 @@ Storing the values in the array (<objective_values> every
 int calculate_device_event_markers(struct Device *device,
 	int start_search,int end_search,enum Event_detection_algorithm detection,
 	float *objective_values,int number_of_objective_values,
-	int objective_values_step,int number_of_events,int threshold_percentage,
-	int minimum_separation_milliseconds,float level)
+	int objective_values_step,int number_of_events,int *search_interval_divisions,
+	int threshold_percentage,int minimum_separation_milliseconds,float level)
 /*******************************************************************************
-LAST MODIFIED : 6 March 2002
+LAST MODIFIED : 20 July 2004
 
 DESCRIPTION :
 Calculate the positions of the event markers for a signal/<device>/<device_node>
-based upon the the start and end times, the number of events, the <detection>
-algorithm and the <objective_values>.
+based upon the the start and end times, the number of events, the interval
+divisions (if missing then equally spaced), the <detection> algorithm and the
+<objective_values>.
 ==============================================================================*/
 {
 	int *events,i,number_of_calculated_events,return_code;
@@ -183,9 +184,9 @@ algorithm and the <objective_values>.
 		number_of_calculated_events=0;
 		if (return_code=calculate_time_series_event_markers(start_search,end_search,
 			detection,objective_values,number_of_objective_values,
-			objective_values_step,number_of_events,threshold_percentage,
-			minimum_separation_milliseconds,level,buffer->frequency,
-			&number_of_calculated_events,&events))
+			objective_values_step,number_of_events,search_interval_divisions,
+			threshold_percentage,minimum_separation_milliseconds,level,
+			buffer->frequency,&number_of_calculated_events,&events))
 		{
 			/* free the previous events */
 			destroy_Event_list(&(signal->first_event));

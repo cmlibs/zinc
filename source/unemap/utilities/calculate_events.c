@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : calculate_events.c
 
-LAST MODIFIED : 7 December 2001
+LAST MODIFIED : 20 July 2004
 
 DESCRIPTION :
 Reads in a signal file, calculates events and writes out the signal file with
@@ -152,7 +152,8 @@ int main(int argc,char *argv[])
 							calculate_device_event_markers(*device,start_search_interval,
 								number_of_objective_values-1,detection,objective_values,
 								number_of_objective_values,objective_values_step,
-								number_of_events,threshold,minimum_separation,level);
+								number_of_events,(int *)NULL,threshold,minimum_separation,
+								level);
 							DEALLOCATE(objective_values);
 						}
 					}

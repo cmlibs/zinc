@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 6 July 2004
+LAST MODIFIED : 23 July 2004
 
 DESCRIPTION :
 ???DB.  Everything or nothing should be using the datum_time_object.  Currently
@@ -3047,7 +3047,7 @@ Sets up the analysis work area for analysing a set of signals.
 
 static int read_event_times_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 6 July 2004
+LAST MODIFIED : 23 July 2004
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a previously analysed set of
@@ -3057,10 +3057,11 @@ signals.
 	char *detection_name,*device_line,*device_line_position,*device_name_end,
 		end_of_line,*signal_file_name,*temp_string,*trimmed_string,value_string[10];
 	FILE *input_file,*signal_input_file;
-	float end_search_float,frequency,level,start_search_float,temp_float;
+	float end_search_float,frequency,level,search_interval_division,
+		*search_interval_divisions,start_search_float,temp_float;
 	int analysis_number_of_events,average_width,bisect_left,bisect_right,datum,
 		comma_separated_table,device_line_length,device_name_length,
-		end_search_interval,event_number,event_time,i,minimum_separation,
+		end_search_interval,event_number,event_time,i,j,minimum_separation,
 		next_accepted_event_number,next_accepted_event_time,number_of_devices,
 		number_of_events,previous_accepted_event_number,
 		previous_accepted_event_time,return_code,signal_read_cancelled,
@@ -3081,6 +3082,7 @@ signals.
 
 	ENTER(read_event_times_file);
 	return_code=0;
+	search_interval_divisions=(float *)NULL;
 	signal_read_cancelled=0;
 #if defined (UNEMAP_USE_3D)
 	node_selection=(struct FE_node_selection *)NULL;
@@ -3360,8 +3362,40 @@ signals.
 											analysis_number_of_events= -1;
 											fscanf(input_file,"\n");
 										}
+										/* read the search interval division */
+										if ((1<analysis_number_of_events)&&
+											(1==fscanf(input_file,"search interval divisions : %f",
+											&search_interval_division)))
+										{
+											if (ALLOCATE(search_interval_divisions,float,
+												analysis_number_of_events-1))
+											{
+												search_interval_divisions[0]=search_interval_division;
+												i=1;
+												while ((i<analysis_number_of_events-1)&&
+													(1==fscanf(input_file," , %f",
+													search_interval_divisions+i)))
+												{
+													i++;
+												}
+												if (i<analysis_number_of_events-1)
+												{
+													DEALLOCATE(search_interval_divisions);
+												}
+											}
+											else
+											{
+												i=1;
+												while ((i<analysis_number_of_events-1)&&
+													(1==fscanf(input_file," , %f",
+													&search_interval_division)))
+												{
+													i++;
+												}
+											}
+										}
 										/* read the number of activations being input */
-										if (1==fscanf(input_file,"number of events : %d\n\n",
+										if (1==fscanf(input_file," number of events : %d\n\n",
 											&number_of_events))
 										{
 											/* set the number of events */
@@ -3502,6 +3536,59 @@ signals.
 								analysis->end_search_interval=buffer->end;
 							}
 							DEALLOCATE(analysis->search_interval_divisions);
+							if (analysis->trace)
+							{
+								DEALLOCATE(analysis->trace->area_1.enlarge.divisions);
+							}
+							/* determine the search interval divisions */
+							if ((1<analysis_number_of_events)&&search_interval_divisions)
+							{
+								if (ALLOCATE(analysis->search_interval_divisions,int,
+									analysis_number_of_events-1)&&(!(analysis->trace)||ALLOCATE(
+									analysis->trace->area_1.enlarge.divisions,int,
+									analysis_number_of_events-1)))
+								{
+									for (j=0;j<analysis_number_of_events-1;j++)
+									{
+										analysis->search_interval_divisions[j]=
+											(int)(search_interval_divisions[j]*frequency/1000.);
+										if (0==j)
+										{
+											bisect_left=buffer->start;
+										}
+										else
+										{
+											bisect_left=(analysis->search_interval_divisions)[j-1];
+										}
+										bisect_right=buffer->end;
+										while (bisect_left+1<bisect_right)
+										{
+											i=(bisect_left+bisect_right)/2;
+											if (times[i]<(analysis->search_interval_divisions)[j])
+											{
+												bisect_left=i;
+											}
+											else
+											{
+												bisect_right=i;
+											}
+										}
+										if (times[bisect_left]<
+											(analysis->search_interval_divisions)[j])
+										{
+											analysis->search_interval_divisions[j]=bisect_right;
+										}
+										else
+										{
+											analysis->search_interval_divisions[j]=bisect_left;
+										}
+									}
+								}
+								else
+								{
+									DEALLOCATE(analysis->search_interval_divisions);
+								}
+							}
 							/* read the heading line */
 							read_string(input_file,"[^\n]",&device_line);
 							DEALLOCATE(device_line);
@@ -3893,6 +3980,10 @@ signals.
 							analysis->start_search_interval=buffer->start;
 							analysis->end_search_interval=buffer->end;
 							DEALLOCATE(analysis->search_interval_divisions);
+							if (analysis->trace)
+							{
+								DEALLOCATE(analysis->trace->area_1.enlarge.divisions);
+							}
 							/* initialize the datum */
 							analysis->datum=2*(analysis->potential_time);
 						}
@@ -3980,7 +4071,8 @@ signals.
 					if (!signal_read_cancelled)
 					{
 						display_message(ERROR_MESSAGE,
-							"read_event_times_file.  Invalid signal file: %s",signal_file_name);
+							"read_event_times_file.  Invalid signal file: %s",
+							signal_file_name);
 					}
 					DEALLOCATE(signal_file_name);
 					/* set the analysis window title */
@@ -4121,6 +4213,7 @@ signals.
 			"read_event_times_file.  Missing argument(s)");
 		return_code=0;
 	}
+	DEALLOCATE(search_interval_divisions);
 	LEAVE;
 
 	return (return_code);
@@ -4234,9 +4327,9 @@ analysing the signals.
 			trace_change_rig(analysis->trace);
 			/* open the trace window */
 			if (!open_trace_window(&(analysis->trace),analysis->window_shell,
-				analysis->identifying_colour,&(analysis->analysis_mode),&(analysis->detection),
-				&(analysis->objective),&(analysis->datum_type),&(analysis->edit_order),
-				&(analysis->highlight),
+				analysis->identifying_colour,&(analysis->analysis_mode),
+				&(analysis->detection),&(analysis->objective),&(analysis->datum_type),
+				&(analysis->edit_order),&(analysis->highlight),
 #if defined (UNEMAP_USE_NODES)
 				&(analysis->highlight_rig_node),
 #endif /* defined (UNEMAP_USE_NODES) */
@@ -4440,9 +4533,9 @@ for analysing the signals.
 			trace_change_rig(analysis->trace);
 			/* open the trace window */
 			if (!open_trace_window(&(analysis->trace),analysis->window_shell,
-				analysis->identifying_colour,&(analysis->analysis_mode),&(analysis->detection),
-				&(analysis->objective),&(analysis->datum_type),&(analysis->edit_order),
-				&(analysis->highlight),
+				analysis->identifying_colour,&(analysis->analysis_mode),
+				&(analysis->detection),&(analysis->objective),&(analysis->datum_type),
+				&(analysis->edit_order),&(analysis->highlight),
 #if defined (UNEMAP_USE_NODES)
 				&(analysis->highlight_rig_node),
 #endif /* defined (UNEMAP_USE_NODES) */
@@ -4972,9 +5065,9 @@ for analysing the signals.
 			trace_change_rig(analysis->trace);
 			/* open the trace window */
 			if (!open_trace_window(&(analysis->trace),analysis->window_shell,
-				analysis->identifying_colour,&(analysis->analysis_mode),&(analysis->detection),
-				&(analysis->objective),&(analysis->datum_type),&(analysis->edit_order),
-				&(analysis->highlight),
+				analysis->identifying_colour,&(analysis->analysis_mode),
+				&(analysis->detection),&(analysis->objective),&(analysis->datum_type),
+				&(analysis->edit_order),&(analysis->highlight),
 #if defined (UNEMAP_USE_NODES)
 				&(analysis->highlight_rig_node),
 #endif /* defined (UNEMAP_USE_NODES) */
@@ -5183,9 +5276,9 @@ for analysing the signals.
 			trace_change_rig(analysis->trace);
 			/* open the trace window */
 			if (!open_trace_window(&(analysis->trace),analysis->window_shell,
-				analysis->identifying_colour,&(analysis->analysis_mode),&(analysis->detection),
-				&(analysis->objective),&(analysis->datum_type),&(analysis->edit_order),
-				&(analysis->highlight),
+				analysis->identifying_colour,&(analysis->analysis_mode),
+				&(analysis->detection),&(analysis->objective),&(analysis->datum_type),
+				&(analysis->edit_order),&(analysis->highlight),
 #if defined (UNEMAP_USE_NODES)
 				&(analysis->highlight_rig_node),
 #endif /* defined (UNEMAP_USE_NODES) */
@@ -6074,7 +6167,7 @@ Adds the hot key handler to the widget.
 static void calculate_all_event_markers(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 24 November 2003
+LAST MODIFIED : 20 July 2004
 
 DESCRIPTION :
 Calculate the positions of all event markers, recalculate the datum if this is
@@ -6251,7 +6344,8 @@ set to automatic and reorder the devices if this is required.
 								analysis->start_search_interval,analysis->end_search_interval,
 								analysis->detection,objective_values,number_of_objective_values,
 								objective_values_step,analysis->number_of_events,
-								threshold_percentage,minimum_separation,level);
+								analysis->search_interval_divisions,threshold_percentage,
+								minimum_separation,level);
 						}
 						device++;
 						number_of_devices--;
@@ -6373,7 +6467,8 @@ set to automatic and reorder the devices if this is required.
 							analysis->start_search_interval,analysis->end_search_interval,
 							analysis->detection,objective_values,number_of_objective_values,
 							objective_values_step,analysis->number_of_events,
-							threshold_percentage,minimum_separation,level);
+							analysis->search_interval_divisions,threshold_percentage,
+							minimum_separation,level);
 						draw_device_markers(highlight_device,buffer->start,buffer->end,
 							analysis->datum,0,analysis->potential_time,0,SIGNAL_AREA_DETAIL,0,
 							xpos,ypos,signals_area->axes_width,signals_area->axes_height,
@@ -6575,6 +6670,7 @@ enum Moving_status
 {
 	MOVING_BOX,
 	MOVING_DATUM_MARKER,
+	MOVING_DIVISION,
 	MOVING_EVENT_MARKER,
 	MOVING_LEFT,
 	MOVING_NONE,
@@ -8301,7 +8397,7 @@ update_map_from_manual_time_update
 static void select_trace_1_drawing_area(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2003
+LAST MODIFIED : 22 July 2004
 
 DESCRIPTION :
 ???DB.  Update comment ?
@@ -8311,20 +8407,20 @@ area.
 should be done as a callback from the trace_window.
 ==============================================================================*/
 {
-	char edit_box;
+	char edit_box,search_change;
 	Cursor cursor;
 	Display *display;
 	enum Event_detection_algorithm detection;
 	enum Moving_status moving;
 	float frequency,x_scale;
-	int axes_bottom,axes_left,axes_right,axes_top,axes_width,box_range,
-		datum,*divisions,end_analysis_interval,event_number,i,initial_marker,
-		left_box,left_edit_box,marker,minimum_box_range,
-		number_of_events,pointer_sensitivity,pointer_x,pointer_y,
-		potential_time,*previous_divisions,previous_left_box,previous_left_edit_box,
-		previous_marker,previous_pointer_x,previous_right_box,
-		previous_right_edit_box,right_box,right_edit_box,start_analysis_interval,
-		temp,*temp_divisions,temp_2,*times,width;
+	int axes_bottom,axes_left,axes_right,axes_top,axes_width,box_division_left,
+		box_division_right,box_range,datum,division_number,*divisions,
+		end_analysis_interval,event_number,i,initial_marker,left_box,left_edit_box,
+		marker,minimum_box_range,number_of_events,pointer_sensitivity,pointer_x,
+		pointer_y,potential_time,*previous_divisions,previous_left_box,
+		previous_left_edit_box,previous_marker,previous_pointer_x,
+		previous_right_box,previous_right_edit_box,right_box,right_edit_box,
+		start_analysis_interval,temp,*temp_divisions,temp_2,*times,width;
 	GC marker_graphics_context;
 	/*???Needed because of problem with X driver for the Color Graphics Display
 		Adapter (#2770) */
@@ -8426,10 +8522,10 @@ should be done as a callback from the trace_window.
 								if ((MOVING_DATUM_MARKER==moving)||
 									(MOVING_POTENTIAL_TIME_MARKER==moving))
 								{
-
 									cursor=XCreateFontCursor(display,XC_sb_h_double_arrow);
 									/* change the cursor */
-									XDefineCursor(display,XtWindow(trace_area_1->drawing_area),cursor);
+									XDefineCursor(display,XtWindow(trace_area_1->drawing_area),
+										cursor);
 									XmUpdateDisplay(trace_area_1->drawing_area);
 									XWarpPointer(display,None,None,0,0,0,0,
 										initial_marker-pointer_x,0);
@@ -8492,7 +8588,8 @@ should be done as a callback from the trace_window.
 												if (xevent.xbutton.button==working_button)
 												{
 													display_message(ERROR_MESSAGE,
-														"select_trace_1_drawing_area.  Unexpected button press");
+														"select_trace_1_drawing_area.  "
+														"Unexpected button press");
 													moving=MOVING_NONE;
 												}
 											} break;
@@ -8558,14 +8655,14 @@ should be done as a callback from the trace_window.
 													{
 														if (marker!=initial_marker)
 														{
-																/* clear the old marker */
+															/* clear the old marker */
 															XDrawLine(display,pixel_map,
 																marker_graphics_context,marker,axes_top,
 																marker,axes_bottom);
 															XDrawLine(display,working_window,
 																marker_graphics_context,marker,axes_top,
 																marker,axes_bottom);
-																/* draw the new marker */
+															/* draw the new marker */
 															XDrawLine(display,pixel_map,
 																marker_graphics_context,initial_marker,
 																axes_top,initial_marker,axes_bottom);
@@ -8585,7 +8682,7 @@ should be done as a callback from the trace_window.
 									}
 									XUndefineCursor(display,XtWindow(trace_area_1->drawing_area));
 									XFreeCursor(display,cursor);
-								}/* if ((MOVING_DATUM_MARKER==moving)||(MOVING_POTENTIAL_TIME_MARKER==moving))*/
+								}
 								else
 								{
 									left_box=trace_area_1->enlarge.left_box;
@@ -8593,16 +8690,24 @@ should be done as a callback from the trace_window.
 									left_edit_box=trace_area_1->enlarge.left_edit_box;
 									right_edit_box=trace_area_1->enlarge.right_edit_box;
 									number_of_events=analysis->number_of_events;
-									if (trace_area_1->enlarge.divisions)
+									divisions=(int *)NULL;
+									previous_divisions=(int *)NULL;
+									if (1<number_of_events)
 									{
-										divisions=(int *)NULL;
-										previous_divisions=(int *)NULL;
 										if (ALLOCATE(divisions,int,number_of_events-1)&&
 											ALLOCATE(previous_divisions,int,number_of_events-1))
 										{
 											for (i=number_of_events-2;i>=0;i--)
 											{
-												divisions[i]=(trace_area_1->enlarge.divisions)[i];
+												if (trace_area_1->enlarge.divisions)
+												{
+													divisions[i]=(trace_area_1->enlarge.divisions)[i];
+												}
+												else
+												{
+													divisions[i]=left_box+((i+1)*(right_box-left_box))/
+														number_of_events;
+												}
 												previous_divisions[i]=divisions[i];
 											}
 										}
@@ -8614,59 +8719,118 @@ should be done as a callback from the trace_window.
 									}
 									box_range=right_box-left_box;
 									edit_box=0;
-									if ((pointer_x>=left_box-pointer_sensitivity)&&
-										(pointer_x<=right_box+pointer_sensitivity))
+									if (pointer_x<=left_box+pointer_sensitivity)
 									{
-										if (pointer_x<=left_box+pointer_sensitivity)
+										moving=MOVING_LEFT;
+										XWarpPointer(display,None,None,0,0,0,0,left_box-pointer_x,
+											0);
+										pointer_x=left_box;
+										cursor=XCreateFontCursor(display,XC_left_side);
+									}
+									else if (pointer_x>=right_box-pointer_sensitivity)
+									{
+										moving=MOVING_RIGHT;
+										XWarpPointer(display,None,None,0,0,0,0,
+											right_box-pointer_x,0);
+										pointer_x=right_box;
+										cursor=XCreateFontCursor(display,XC_right_side);
+									}
+									else if ((pointer_y<=axes_top+pointer_sensitivity)||
+										(pointer_y>=axes_bottom-pointer_sensitivity))
+									{
+										moving=MOVING_BOX;
+										cursor=XCreateFontCursor(display,XC_dotbox);
+									}
+									else if ((EDA_INTERVAL==detection)||
+										(BEAT_AVERAGING==
+										*(analysis->trace->analysis_mode)))
+									{
+#if defined (OLD_CODE)
+										temp=pointer_x-left_box;
+										event_number=
+											((temp*number_of_events)/box_range)+1;
+										if ((temp<=(((event_number-1)*box_range)/
+											number_of_events)+pointer_sensitivity)||(temp>=
+											((event_number*box_range)/number_of_events)-
+											pointer_sensitivity))
 										{
-											moving=MOVING_LEFT;
-											XWarpPointer(display,None,None,0,0,0,0,left_box-pointer_x,
-												0);
-											pointer_x=left_box;
-											cursor=XCreateFontCursor(display,XC_left_side);
+											moving=MOVING_NONE;
 										}
 										else
 										{
-											if (pointer_x>=right_box-pointer_sensitivity)
+											moving=MOVING_EVENT_MARKER;
+											analysis->event_number=event_number;
+											trace_change_event(analysis->trace);
+										}
+#endif /* defined (OLD_CODE) */
+										event_number=1;
+										do
+										{
+											if (1==event_number)
 											{
-												moving=MOVING_RIGHT;
-												XWarpPointer(display,None,None,0,0,0,0,
-													right_box-pointer_x,0);
-												pointer_x=right_box;
-												cursor=XCreateFontCursor(display,XC_right_side);
+												box_division_left=left_box;
 											}
 											else
 											{
-												if ((pointer_y<=axes_top+pointer_sensitivity)||
-													(pointer_y>=axes_bottom-pointer_sensitivity))
+												box_division_left=divisions[event_number-2];
+											}
+											if (event_number<number_of_events)
+											{
+												box_division_right=divisions[event_number-1];
+											}
+											else
+											{
+												box_division_right=right_box;
+											}
+											if (pointer_x>box_division_right)
+											{
+												event_number++;
+											}
+										} while ((event_number<=number_of_events)&&
+											(pointer_x>box_division_right));
+										if (event_number<=number_of_events)
+										{
+											if ((pointer_x<=box_division_left+pointer_sensitivity)&&
+												(1<event_number))
+											{
+												moving=MOVING_DIVISION;
+												division_number=event_number-2;
+												if (0==division_number)
 												{
-													moving=MOVING_BOX;
-													cursor=XCreateFontCursor(display,XC_dotbox);
+													box_division_left=left_box;
 												}
 												else
 												{
-													if ((EDA_INTERVAL==detection)||
-														(BEAT_AVERAGING==*(analysis->trace->analysis_mode)))
-													{
-														temp=pointer_x-left_box;
-														event_number=
-															((temp*number_of_events)/box_range)+1;
-														if ((temp<=(((event_number-1)*box_range)/
-															number_of_events)+pointer_sensitivity)||(temp>=
-																((event_number*box_range)/number_of_events)-
-																pointer_sensitivity))
-														{
-															moving=MOVING_NONE;
-														}
-														else
-														{
-															moving=MOVING_EVENT_MARKER;
-															analysis->event_number=event_number;
-															trace_change_event(analysis->trace);
-														}
-													}
+													box_division_left=divisions[division_number-1];
 												}
+												cursor=XCreateFontCursor(display,XC_sb_h_double_arrow);
 											}
+											else if (
+												(pointer_x>=box_division_right-pointer_sensitivity)&&
+												(event_number<number_of_events))
+											{
+												moving=MOVING_DIVISION;
+												division_number=event_number-1;
+												if (number_of_events-2==division_number)
+												{
+													box_division_right=right_box;
+												}
+												else
+												{
+													box_division_right=divisions[division_number+1];
+												}
+												cursor=XCreateFontCursor(display,XC_sb_h_double_arrow);
+											}
+											else
+											{
+												moving=MOVING_EVENT_MARKER;
+												analysis->event_number=event_number;
+												trace_change_event(analysis->trace);
+											}
+										}
+										else
+										{
+											moving=MOVING_NONE;
 										}
 									}
 									else
@@ -8686,7 +8850,7 @@ should be done as a callback from the trace_window.
 										}
 										while (event&&(pointer_x>(initial_marker=
 											SCALE_X(event->time,start_analysis_interval,
-												axes_left,x_scale))+pointer_sensitivity))
+											axes_left,x_scale))+pointer_sensitivity))
 										{
 											event=event->next;
 										}
@@ -8733,7 +8897,7 @@ should be done as a callback from the trace_window.
 										}
 									}
 									if ((MOVING_LEFT==moving)||(MOVING_RIGHT==moving)||
-										(MOVING_BOX==moving))
+										(MOVING_DIVISION==moving)||(MOVING_BOX==moving))
 									{
 										event_number=analysis->event_number;
 										number_of_events=analysis->number_of_events;
@@ -8748,7 +8912,7 @@ should be done as a callback from the trace_window.
 												Time_keeper_stop(time_keeper);
 											}
 										}
-										/*change the cursor*/
+										/* change the cursor */
 										XDefineCursor(display,XtWindow(trace_area_1->drawing_area),
 											cursor);
 										XmUpdateDisplay(trace_area_1->drawing_area);
@@ -8886,13 +9050,35 @@ should be done as a callback from the trace_window.
 																	for (i=number_of_events-2;i>=0;i--)
 																	{
 																		divisions[i]=previous_divisions[i]-
-																			left_box-previous_left_box;
+																			(left_box-previous_left_box);
+																	}
+																}
+															} break;
+															case MOVING_DIVISION:
+															{
+																if (pointer_x<box_division_left)
+																{
+																	divisions[division_number]=box_division_left;
+																}
+																else
+																{
+																	if (pointer_x>box_division_right)
+																	{
+																		divisions[division_number]=
+																			box_division_right;
+																	}
+																	else
+																	{
+																		divisions[division_number]=pointer_x;
 																	}
 																}
 															} break;
 														}
 														if ((left_box!=previous_left_box)||
-															(right_box!=previous_right_box))
+															(right_box!=previous_right_box)||
+															((MOVING_DIVISION==moving)&&
+															(divisions[division_number]!=
+															previous_divisions[division_number])))
 														{
 															if (divisions)
 															{
@@ -8925,12 +9111,12 @@ should be done as a callback from the trace_window.
 															{
 																/* clear the old box */
 																width=previous_right_box-previous_left_box,
-																	draw_search_box(previous_left_box,axes_top,
-																		width,trace_area_1->axes_height,detection,
-																		number_of_events,previous_divisions,
-																		trace_area_1->drawing_area,
-																		trace_area_1->drawing,
-																		signal_drawing_information);
+																draw_search_box(previous_left_box,axes_top,
+																	width,trace_area_1->axes_height,detection,
+																	number_of_events,previous_divisions,
+																	trace_area_1->drawing_area,
+																	trace_area_1->drawing,
+																	signal_drawing_information);
 																draw_highlight_event_box(
 																	previous_left_edit_box,axes_top,
 																	previous_right_edit_box-
@@ -9002,7 +9188,8 @@ should be done as a callback from the trace_window.
 													if (xevent.xbutton.button==working_button)
 													{
 														display_message(ERROR_MESSAGE,
-															"select_trace_1_drawing_area.  Unexpected button press");
+															"select_trace_1_drawing_area.  "
+															"Unexpected button press");
 														moving=MOVING_NONE;
 													}
 												} break;
@@ -9014,12 +9201,13 @@ should be done as a callback from the trace_window.
 														{
 															if ((EDA_INTERVAL==detection)||!edit_box)
 															{
+																search_change=0;
 																if ((left_box!=trace_area_1->enlarge.
 																	left_box)||(right_box!=trace_area_1->
-																		enlarge.right_box))
+																	enlarge.right_box))
 																{
-																	if (left_box!=trace_area_1->enlarge.
-																		left_box)
+																	search_change=1;
+																	if (left_box!=trace_area_1->enlarge.left_box)
 																	{
 																		temp=SCALE_X(left_box,axes_left,
 																			start_analysis_interval,1/x_scale);
@@ -9029,8 +9217,7 @@ should be done as a callback from the trace_window.
 																			{
 																				temp_2=temp-
 																					analysis->start_search_interval;
-																				for (i=number_of_events-2;
-																						i>=0;i--)
+																				for (i=number_of_events-2;i>=0;i--)
 																				{
 																					(analysis->
 																						search_interval_divisions)[i] +=
@@ -9043,7 +9230,7 @@ should be done as a callback from the trace_window.
 																				i=0;
 																				while ((i<number_of_events-1)&&
 																					((analysis->
-																						search_interval_divisions)[i]<temp))
+																					search_interval_divisions)[i]<temp))
 																				{
 																					(analysis->
 																						search_interval_divisions)[i]=
@@ -9102,10 +9289,10 @@ should be done as a callback from the trace_window.
 																				trace_area_1->enlarge.left_edit_box=
 																					(trace_area_1->enlarge.left_box)+
 																					(((analysis->
-																						search_interval_divisions)[
-																							event_number-2]-temp)*
-																						((trace_area_1->enlarge.right_box)-
-																							(trace_area_1->enlarge.left_box)))/
+																					search_interval_divisions)[
+																					event_number-2]-temp)*
+																					((trace_area_1->enlarge.right_box)-
+																					(trace_area_1->enlarge.left_box)))/
 																					temp_2;
 																			}
 																			else
@@ -9118,10 +9305,10 @@ should be done as a callback from the trace_window.
 																				trace_area_1->enlarge.right_edit_box=
 																					(trace_area_1->enlarge.left_box)+
 																					(((analysis->
-																						search_interval_divisions)[
-																							event_number-1]-temp)*
-																						((trace_area_1->enlarge.right_box)-
-																							(trace_area_1->enlarge.left_box)))/
+																					search_interval_divisions)[
+																					event_number-1]-temp)*
+																					((trace_area_1->enlarge.right_box)-
+																					(trace_area_1->enlarge.left_box)))/
 																					temp_2;
 																			}
 																			else
@@ -9146,6 +9333,62 @@ should be done as a callback from the trace_window.
 																				number_of_events;
 																		}
 																	}
+																}
+																else
+																{
+																	if (MOVING_DIVISION==moving)
+																	{
+																		if (divisions[division_number]!=
+																			left_box+((i+1)*(right_box-left_box))/
+																			number_of_events)
+																		{
+																			if (analysis->search_interval_divisions)
+																			{
+																				(analysis->search_interval_divisions)[
+																					division_number]=SCALE_X(
+																					divisions[division_number],axes_left,
+																					start_analysis_interval,1/x_scale);
+																				search_change=1;
+																			}
+																			else
+																			{
+																				if ((1<number_of_events)&&ALLOCATE(
+																					analysis->search_interval_divisions,
+																					int,number_of_events-1)&&ALLOCATE(
+																					trace_area_1->enlarge.divisions,int,
+																					number_of_events-1))
+																				{
+																					for (i=number_of_events-2;i>=0;i--)
+																					{
+																						if (i==division_number)
+																						{
+																							(analysis->
+																								search_interval_divisions)[i]=
+																								SCALE_X(divisions[i],axes_left,
+																								start_analysis_interval,
+																								1/x_scale);
+																						}
+																						else
+																						{
+																							(analysis->
+																								search_interval_divisions)[i]=
+																								SCALE_X(i+1,0,
+																								start_analysis_interval,
+																								SCALE_FACTOR(number_of_events,
+																								end_analysis_interval-
+																								start_analysis_interval));
+																						}
+																						(trace_area_1->enlarge.divisions)[
+																							i]=divisions[i];
+																					}
+																					search_change=1;
+																				}
+																			}
+																		}
+																	}
+																}
+																if (search_change)
+																{
 #if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
 																	if (EDA_INTERVAL==detection)
 																	{
@@ -9240,7 +9483,7 @@ should be done as a callback from the trace_window.
 															{
 																if ((left_box!=trace_area_1->enlarge.
 																	left_box)||(right_box!=trace_area_1->
-																		enlarge.right_box))
+																	enlarge.right_box)||(MOVING_DIVISION==moving))
 																{
 																	/* clear the new box */
 																	width=right_box-left_box;
@@ -9286,10 +9529,10 @@ should be done as a callback from the trace_window.
 															}
 															else
 															{
-																if ((left_box!=
-																	trace_area_1->enlarge.left_edit_box)||
-																	(right_box!=
-																		trace_area_1->enlarge.right_edit_box))
+																if ((left_box!=trace_area_1->enlarge.
+																	left_edit_box)||(right_box!=trace_area_1->
+																	enlarge.right_edit_box)||
+																	(MOVING_DIVISION==moving))
 																{
 																	/* clear the new box */
 																	draw_highlight_event_box(left_box,axes_top,
@@ -13368,7 +13611,7 @@ else
 static int accept_signal(struct Analysis_work_area *analysis,
 	struct Device **signal_device)
 /*******************************************************************************
-LAST MODIFIED : 16 May 2003
+LAST MODIFIED : 20 July 2004
 
 DESCRIPTION : accept the analysis signal.
 ==============================================================================*/
@@ -13487,7 +13730,8 @@ DESCRIPTION : accept the analysis signal.
 							analysis->start_search_interval,analysis->end_search_interval,
 							analysis->detection,objective_values,number_of_objective_values,
 							objective_values_step,analysis->number_of_events,
-							threshold_percentage,minimum_separation,level);
+							analysis->search_interval_divisions,threshold_percentage,
+							minimum_separation,level);
 					}
 					else
 					{
@@ -17933,8 +18177,9 @@ Creates the windows associated with the analysis work area.
 		analysis->write_signal_file_data=(struct File_open_data *)NULL;
 		analysis->overlay_signal_file_data=(struct File_open_data *)NULL;
 		/* retrieve the settings */
-		XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),analysis,
-			resources,XtNumber(resources),NULL);
+		XtVaGetApplicationResources(
+			User_interface_get_application_shell(user_interface),analysis,resources,
+			XtNumber(resources),NULL);
 		if (analysis->events_file_extension)
 		{
 			if (0<strlen(analysis->events_file_extension))
@@ -18040,7 +18285,8 @@ Creates the windows associated with the analysis work area.
 							analysis->identifying_colour,analysis->signal_order,
 							SEPARATE_LAYOUT,&(analysis->start_search_interval),
 							&(analysis->search_interval_divisions),
-							&(analysis->end_search_interval),User_interface_get_screen_height(user_interface),
+							&(analysis->end_search_interval),
+							User_interface_get_screen_height(user_interface),
 							postscript_file_extension,analysis->events_file_extension,
 							analysis->signal_drawing_information,user_interface,
 							&(analysis->signal_order)))

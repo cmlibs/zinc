@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_calculate.h
 
-LAST MODIFIED : 6 March 2002
+LAST MODIFIED : 20 July 2004
 
 DESCRIPTION :
 The routines for calculating event times.  Separated out and without structures
@@ -76,11 +76,11 @@ Split from function calculate_device_objective on 19 February 2002
 int calculate_time_series_event_markers(int start_search,int end_search,
   enum Event_detection_algorithm detection,float *objective_values,
 	int number_of_objective_values,int objective_values_step,
-	int number_of_interval_events,int threshold_percentage,
-	int minimum_separation_milliseconds,float level,float frequency,
-	int *number_of_events_address,int **events_address);
+	int number_of_interval_events,int *interval_divisions,
+	int threshold_percentage,int minimum_separation_milliseconds,float level,
+	float frequency,int *number_of_events_address,int **events_address);
 /*******************************************************************************
-LAST MODIFIED : 6 March 2002
+LAST MODIFIED : 20 July 2004
 
 DESCRIPTION :
 Calculate the event times for a signal (<objective_values>) based upon the the
@@ -88,6 +88,9 @@ Calculate the event times for a signal (<objective_values>) based upon the the
 <objective_values> is assumed to have storage for at least
 <number_of_objective_values>*<objective_values_step> values.  Allocates storage
 for <*event_address>.
+
+<interval_divisions> are the <number_of_interval_events>-1 divisions between the
+sub-intervals.  If missing then sub-intervals are all the same length.
 
 Split from the function calculate_device_event_markers on 19 February 2002
 ==============================================================================*/

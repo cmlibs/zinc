@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.c
 
-LAST MODIFIED : 22 April 2004
+LAST MODIFIED : 23 July 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -7994,8 +7994,8 @@ beat averaging.
 						draw_search_box(enlarge->left_box,trace->area_1.axes_top,
 							enlarge->right_box-enlarge->left_box,trace->area_1.axes_height,
 							*(trace->event_detection.detection),number_of_events,
-							enlarge->divisions,trace->area_1.drawing_area,trace->area_1.drawing,
-							signal_drawing_information);
+							enlarge->divisions,trace->area_1.drawing_area,
+							trace->area_1.drawing,signal_drawing_information);
 						draw_highlight_event_box(enlarge->left_edit_box,
 							trace->area_1.axes_top,
 							enlarge->right_edit_box-enlarge->left_edit_box,
@@ -8104,7 +8104,7 @@ static struct Trace_window *create_Trace_window(
 	struct User_interface *user_interface,
 	struct Electrical_imaging_event **eimaging_events)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2001
+LAST MODIFIED : 23 July 2004
 
 DESCRIPTION :
 This function allocates the memory for an trace window and sets the fields to
@@ -8462,21 +8462,21 @@ the created trace window.  If unsuccessful, NULL is returned.
 		{"identify_trace_3_drawing_area",(XtPointer)identify_trace_3_drawing_area},
 		{"expose_trace_3_drawing_area",(XtPointer)redraw_trace_3_drawing_area},
 		{"resize_trace_3_drawing_area",(XtPointer)redraw_trace_3_drawing_area}
-		};
+	};
 	static MrmRegisterArg identifier_list[]=
 	{
 		{"trace_window_structure",(XtPointer)NULL},
 		{"identifying_colour",(XtPointer)NULL}
 	};
-	struct Channel *cardiac_interval_channel,*imaginary_channel_1,*imaginary_channel_2,
-		*processed_channel,*real_channel_1,*real_channel_2;
+	struct Channel *cardiac_interval_channel,*imaginary_channel_1,
+		*imaginary_channel_2,*processed_channel,*real_channel_1,*real_channel_2;
 	struct Device **device,*cardiac_interval_device,*imaginary_device_1,
 		*imaginary_device_2,*processed_device,*real_device_1,*real_device_2;
-	struct Device_description *cardiac_interval_description,*imaginary_description_1,
-		*imaginary_description_2,*processed_description,*real_description_1,
-		*real_description_2;
-	struct Signal *cardiac_interval_signal,*imaginary_signal_1,*imaginary_signal_2,
-		*processed_signal,*real_signal_1,*real_signal_2;
+	struct Device_description *cardiac_interval_description,
+		*imaginary_description_1,*imaginary_description_2,*processed_description,
+		*real_description_1,*real_description_2;
+	struct Signal *cardiac_interval_signal,*imaginary_signal_1,
+		*imaginary_signal_2,*processed_signal,*real_signal_1,*real_signal_2;
 	struct Signal_buffer *cardiac_interval_buffer,*frequency_domain_buffer_1,
 		*frequency_domain_buffer_2,*processed_buffer;
 	struct Region *current_region;
@@ -8626,7 +8626,8 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->area_3.edit.order.device_button=(Widget)NULL;
 				trace->area_3.edit.order.beat_button=(Widget)NULL;
 				trace->area_3.edit.objective_toggle=(Widget)NULL;
-				trace->area_3.eimaging_time_dialog=(struct Electrical_imaging_time_dialog *)NULL;
+				trace->area_3.eimaging_time_dialog=
+					(struct Electrical_imaging_time_dialog *)NULL;
 				trace->area_3.frequency_domain.menu=(Widget)NULL;
 				trace->area_3.frequency_domain.display_mode_choice=(Widget)NULL;
 				trace->area_3.frequency_domain.display_mode.amplitude_phase_button=
@@ -8690,6 +8691,11 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->event_detection.start_search_interval=start_search_interval;
 				trace->event_detection.search_interval_divisions=
 					search_interval_divisions;
+				if (search_interval_divisions&&(*search_interval_divisions)&&
+					number_of_events&&(1< *number_of_events))
+				{
+					ALLOCATE(trace->area_1.enlarge.divisions,int,(*number_of_events)-1);
+				}
 				trace->event_detection.end_search_interval=end_search_interval;
 				trace->frequency_domain.display_mode=AMPLITUDE_PHASE;
 				trace->valid_processing=0;
@@ -11162,7 +11168,8 @@ DESCRIPTION :
 		signal_drawing_information&&
 		(signal_drawing_information->user_interface==drawing->user_interface))
 	{
-		display=User_interface_get_display(signal_drawing_information->user_interface);
+		display=
+			User_interface_get_display(signal_drawing_information->user_interface);
 		graphics_context=(signal_drawing_information->graphics_context).
 			interval_box_colour;
 		XDrawRectangle(display,XtWindow(drawing_area),graphics_context,left,top,
