@@ -8094,6 +8094,33 @@ components - useful for selecting vector/coordinate fields.
 	return (return_code);
 } /* Computed_field_has_4_components */
 
+int Computed_field_has_n_components(struct Computed_field *field,
+	void *components_ptr_void)
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Iterator/conditional function returning true if <field> has the same number of
+components as that specified by <components_ptr_void>.
+==============================================================================*/
+{
+	int *components, return_code;
+
+	ENTER(Computed_field_has_n_components);
+	if (field && (components = (int *)components_ptr_void))
+	{
+		return_code=(*components == field->number_of_components);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_has_n_components.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_has_n_components */
+
 int Computed_field_is_of_type(struct Computed_field *field,
 	void *computed_field_type_void)
 /*******************************************************************************

@@ -681,6 +681,26 @@ DESCRIPTION :
 Conditional function returning true if <field> has exactly four components.
 ==============================================================================*/
 
+int Computed_field_has_up_to_4_numerical_components(
+	struct Computed_field *field,void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 23 May 2000
+
+DESCRIPTION :
+Conditional function returning true if <field> has up to 4 components and they
+are numerical - useful for selecting vector/coordinate fields.
+==============================================================================*/
+
+int Computed_field_has_n_components(struct Computed_field *field,
+	void *components_ptr_void);
+/*******************************************************************************
+LAST MODIFIED : 11 July 2000
+
+DESCRIPTION :
+Iterator/conditional function returning true if <field> has the same number of
+components as that specified by <components_ptr_void>.
+==============================================================================*/
+
 int Computed_field_has_at_least_2_components(struct Computed_field *field,
 	void *dummy_void);
 /*******************************************************************************

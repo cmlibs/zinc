@@ -714,3 +714,75 @@ Calculates and returns in <result> the matrix product of 3x3 FE_value matrices
 
 	return (return_code);
 } /* multiply_FE_value_matrix3 */
+
+int cross_product_FE_value_vector3(FE_value *a,FE_value *b,FE_value *result)
+/*******************************************************************************
+LAST MODIFIED : 12 July 2000
+
+DESCRIPTION :
+Calculates and returns in <result> the vector cross product of 2 3-component
+FE_value vectors <a> and <b>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(cross_product_FE_value_vector3);
+	if (a&&b&&result)
+	{
+		result[0] = a[1]*b[2] - a[2]*b[1];
+		result[1] = a[2]*b[0] - a[0]*b[2];
+		result[2] = a[0]*b[1] - a[1]*b[0];
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"cross_product_FE_value_vector3.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* cross_product_FE_value_vector3 */
+
+int cross_product_FE_value_vector4(FE_value *a,FE_value *b,FE_value *c,
+  FE_value *result)
+/*******************************************************************************
+LAST MODIFIED : 12 July 2000
+
+DESCRIPTION :
+Calculates and returns in <result> the vector cross product of 3 4-component
+FE_value vectors <a>, <b> and <c>.
+==============================================================================*/
+{
+	double  A, B, C, D, E, F;       /* Intermediate Values */
+ 	int return_code;
+
+	ENTER(cross_product_FE_value_vector4);
+	if (a&&b&&result)
+	{
+		/* Calculate intermediate values. */
+		A = (b[0] * c[1]) - (b[1] * c[0]);
+		B = (b[0] * c[2]) - (b[2] * c[0]);
+		C = (b[0] * c[3]) - (b[3] * c[0]);
+		D = (b[1] * c[2]) - (b[2] * c[1]);
+		E = (b[1] * c[3]) - (b[3] * c[1]);
+		F = (b[2] * c[3]) - (b[3] * c[2]);
+
+		/* Calculate the result-vector components. */
+		result[0] =   (a[1] * F) - (a[2] * E) + (a[3] * D);
+		result[1] = - (a[0] * F) + (a[2] * C) - (a[3] * B);
+		result[2] =   (a[0] * E) - (a[1] * C) + (a[3] * A);
+		result[3] = - (a[0] * D) + (a[1] * B) - (a[2] * A);
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"cross_product_FE_value_vector3.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* cross_product_FE_value_vector3 */

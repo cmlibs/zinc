@@ -31,7 +31,9 @@ DESCRIPTION :
 #include "element/element_point_viewer.h"
 #include "element/element_tool.h"
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_derivatives.h"
 #include "computed_field/computed_field_sample_texture.h"
+#include "computed_field/computed_field_vector_operations.h"
 #include "computed_field/computed_field_window_projection.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_streamlines.h"
@@ -1056,6 +1058,10 @@ Main program for the CMISS Graphical User Interface
 	/* Add Computed_fields to the Computed_field_package */
 	if (command_data.computed_field_package)
 	{
+		Computed_field_register_types_derivatives(
+			command_data.computed_field_package);
+		Computed_field_register_types_vector_operations(
+			command_data.computed_field_package);
 		if (command_data.graphics_window_manager)
 		{
 			Computed_field_register_type_window_projection(

@@ -468,6 +468,7 @@ Clear the type specific data used by this type.
 			DEACCESS(Graphics_window)(&(data->graphics_window));
 		}
 		DEALLOCATE(field->type_specific_data);
+		return_code = 1;
 	}
 	else
 	{
