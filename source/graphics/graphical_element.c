@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element.c
 
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 6 June 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1607,7 +1607,7 @@ int GT_element_group_build_graphics_objects(
 	struct GT_element_group *gt_element_group,struct FE_element *changed_element,
 	struct FE_node *changed_node)
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 6 June 2000
 
 DESCRIPTION :
 Adds or edits a graphics object for each settings in <gt_element_group> without
@@ -1654,9 +1654,15 @@ a graphics object or affected by <changed_element> or <changed_node>.
 				FE_node_selection_get_node_list(gt_element_group->data_selection);
 			settings_to_object_data.selected_node_list=
 				FE_node_selection_get_node_list(gt_element_group->node_selection);
+			/* create list for storing removed_primative names in edit mode */
+			settings_to_object_data.removed_primitives=
+				CREATE(LIST(Selected_graphic))();
 			return_code=FOR_EACH_OBJECT_IN_LIST(GT_element_settings)(
 				GT_element_settings_to_graphics_object,(void *)&settings_to_object_data,
 				gt_element_group->list_of_settings);
+			/* destroy list created above */
+			DESTROY(LIST(Selected_graphic))(
+				&(settings_to_object_data.removed_primitives));
 			GT_element_group_changed(gt_element_group);
 			Computed_field_end_wrap(
 				&settings_to_object_data.default_rc_coordinate_field);
