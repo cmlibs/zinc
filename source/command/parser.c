@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : parser.c
 
-LAST MODIFIED : 22 July 2002
+LAST MODIFIED : 31 July 2002
 
 DESCRIPTION :
 A module for supporting command parsing.
@@ -1899,6 +1899,79 @@ NB
 	return (state);
 } /* create_Parse_state */
 
+struct Parse_state *create_Parse_state_from_tokens(
+	int number_of_tokens, char **tokens)
+/*******************************************************************************
+LAST MODIFIED : 31 July 2002
+
+DESCRIPTION :
+Creates a Parse_state structure which contains all <number_of_tokens> <tokens>.
+Does not perform any parsing.
+==============================================================================*/
+{
+	int i, return_code;
+	struct Parse_state *state;
+
+	ENTER(create_Parse_state_from_tokens);
+	if ((0 < number_of_tokens) && tokens)
+	{
+		if (ALLOCATE(state, struct Parse_state, 1))
+		{
+			state->tokens = (char **)NULL;
+			state->number_of_tokens = 0;
+			state->current_index = 0;
+			state->current_token = (char *)NULL;
+			state->command_string = (char *)NULL;
+			return_code = 1;
+			if (ALLOCATE(state->tokens, char *, number_of_tokens))
+			{
+				for (i = 0; i < number_of_tokens; i++)
+				{
+					state->tokens[i] = (char *)NULL;
+				}
+				for (i = 0; i < number_of_tokens; i++)
+				{
+					if (!(tokens[i] &&
+						(state->tokens[i] = duplicate_string(tokens[i]))))
+					{
+						return_code = 0;
+					}
+				}
+			}
+			else
+			{
+				return_code = 0;
+			}
+			if (return_code)
+			{
+				state->number_of_tokens = number_of_tokens;
+				state->current_token = tokens[0];
+			}
+			else
+			{
+				destroy_Parse_state(&state);
+				state = (struct Parse_state *)NULL;
+				display_message(ERROR_MESSAGE,
+					"create_Parse_state_from_tokens.  Error filling parse state");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"create_Parse_state_from_tokens.  Insufficient memory for parse state");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"create_Parse_state_from_tokens.  Missing tokens");
+		state = (struct Parse_state *)NULL;
+	}
+	LEAVE;
+
+	return (state);
+} /* create_Parse_state_from_tokens */
+
 int destroy_Parse_state(struct Parse_state **state_address)
 /*******************************************************************************
 LAST MODIFIED : 12 June 1996
@@ -2736,6 +2809,78 @@ or pointing to allocated strings.
 	return (return_code);
 } /* set_names */
 
+int set_string(struct Parse_state *state,void *string_address_void,
+	void *string_description_void)
+/*******************************************************************************
+LAST MODIFIED : 1 August 2002
+
+DESCRIPTION :
+Parses a string from the parse <state> into <*string_address>. Outputs the
+<string_description> text in help mode.
+==============================================================================*/
+{
+	char *current_token, **string_address;
+	int return_code;
+
+	ENTER(set_string);
+	if (state && string_description_void)
+	{
+		if (current_token = state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING, current_token) &&
+				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
+			{
+				if (string_address = (char **)string_address_void)
+				{
+					if (*string_address)
+					{
+						DEALLOCATE(*string_address);
+					}
+					if (*string_address = duplicate_string(current_token))
+					{
+						return_code = shift_Parse_state(state,1);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"set_string.  Could not allocate memory for string");
+						return_code = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"set_string.  Missing string_address");
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE, (char *)string_description_void);
+				if ((string_address = (char **)string_address_void) &&
+					(*string_address))
+				{
+					display_message(INFORMATION_MESSAGE, "[%s]", *string_address);
+				}
+				return_code = 1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Missing string");
+			display_parse_state_location(state);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "set_string.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_string */
+
 int set_int(struct Parse_state *state,void *value_address_void,
 	void *dummy_user_data)
 /*******************************************************************************
@@ -2804,6 +2949,73 @@ A modifier function for setting a int.
 
 	return (return_code);
 } /* set_int */
+
+int set_int_with_description(struct Parse_state *state,void *value_address_void,
+	void *description_string_void)
+/*******************************************************************************
+LAST MODIFIED : 1 August 2002
+
+DESCRIPTION :
+A modifier function for setting a int.
+In help mode writes the <description_string>.
+==============================================================================*/
+{
+	char *current_token;
+	int return_code, value, *value_address;
+
+	ENTER(set_int_with_description);
+	if (state && description_string_void)
+	{
+		if (current_token = state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+			{
+				if (value_address = (int *)value_address_void)
+				{
+					if (1 == sscanf(current_token, " %d ", &value))
+					{
+						*value_address = value;
+						return_code = shift_Parse_state(state, 1);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "Invalid integer: %s",
+							current_token);
+						display_parse_state_location(state);
+						return_code = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"set_int_with_description.  Missing value_address");
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE, (char *)description_string_void);
+				return_code = 1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Missing integer");
+			display_parse_state_location(state);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_int_with_description.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_int_with_description */
 
 int set_int_optional(struct Parse_state *state,void *value_address_void,
 	void *dummy_user_data)

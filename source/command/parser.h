@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : parser.h
 
-LAST MODIFIED : 6 November 2001
+LAST MODIFIED : 1 August 2002
 
 DESCRIPTION :
 Public interface for the beginnings of a simple parser (although at the moment
@@ -252,6 +252,16 @@ NB
 2 Variables are converted into values
 ==============================================================================*/
 
+struct Parse_state *create_Parse_state_from_tokens(
+	int number_of_tokens, char **tokens);
+/*******************************************************************************
+LAST MODIFIED : 31 July 2002
+
+DESCRIPTION :
+Creates a Parse_state structure which contains all <number_of_tokens> <tokens>.
+Does not perform any parsing.
+==============================================================================*/
+
 int destroy_Parse_state(struct Parse_state **state_address);
 /*******************************************************************************
 LAST MODIFIED : 18 November 1994
@@ -352,6 +362,16 @@ store the number_of_names pointers. The names in this array must either be NULL
 or pointing to allocated strings.
 ==============================================================================*/
 
+int set_string(struct Parse_state *state,void *string_address_void,
+	void *string_description_void);
+/*******************************************************************************
+LAST MODIFIED : 1 August 2002
+
+DESCRIPTION :
+Parses a string from the parse <state> into <*string_address>. Outputs the
+<string_description> text in help mode.
+==============================================================================*/
+
 int set_int(struct Parse_state *state,void *value_address_void,
 	void *dummy_user_data);
 /*******************************************************************************
@@ -359,6 +379,16 @@ LAST MODIFIED : 18 June 1996
 
 DESCRIPTION :
 A modifier function for setting a int.
+==============================================================================*/
+
+int set_int_with_description(struct Parse_state *state,void *value_address_void,
+	void *description_string_void);
+/*******************************************************************************
+LAST MODIFIED : 1 August 2002
+
+DESCRIPTION :
+A modifier function for setting a int.
+In help mode writes the <description_string>.
 ==============================================================================*/
 
 int set_int_optional(struct Parse_state *state,void *value_address_void,
