@@ -280,8 +280,7 @@ data, and then changes the correct value in the array structure.
 									fe_field,component_number,&int_values))
 								{
 									/* change the value for this component */
-									int_values[component_number*number_of_grid_values+
-										element_point_number]=int_value;
+									int_values[element_point_number]=int_value;
 									return_code=set_FE_element_field_component_grid_int_values(
 										element,fe_field,component_number,int_values);
 									DEALLOCATE(int_values);
@@ -416,7 +415,7 @@ is supplied.
 static int element_point_field_viewer_widget_setup_components(
 	struct Element_point_field_viewer_widget_struct *element_point_field_viewer)
 /*******************************************************************************
-LAST MODIFIED : 15 June 2000
+LAST MODIFIED : 20 June 2000
 
 DESCRIPTION :
 Creates the array of cells containing field component names and values.
@@ -424,11 +423,11 @@ Creates the array of cells containing field component names and values.
 {
 	Arg args[4];
 	char *component_name;
-	int comp_no,editable,number_of_components,
+	int comp_no,editable,i,num_children,number_of_components,
 		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],return_code;
 	struct Computed_field *field;
 	struct FE_element *element;
-	Widget widget;
+	Widget *child_list,widget;
 	XmString new_string;
 
 	ENTER(element_point_field_viewer_setup_components);
@@ -438,6 +437,22 @@ Creates the array of cells containing field component names and values.
 		element_point_field_viewer->number_of_components=-1;
 		if (element_point_field_viewer->component_rowcol)
 		{
+			/* remove losing focus callbacks for all child widgets to prevent them
+				 being called while widgets are being destroyed - this happens */
+			num_children=0;
+			child_list=(Widget *)NULL;
+			XtVaGetValues(element_point_field_viewer->component_rowcol,
+				XmNnumChildren,&num_children,XmNchildren,&child_list,NULL);
+			if (child_list)
+			{
+				for (i=0;i<num_children;i++)
+				{
+					if (1==(i%2))
+					{
+						XtRemoveAllCallbacks(child_list[i],XmNlosingFocusCallback);
+					}
+				}
+			}
 			/* unmanage component_rowcol to avoid geometry requests, then destroy */
 			XtUnmanageChild(element_point_field_viewer->component_rowcol);
 			XtDestroyWidget(element_point_field_viewer->component_rowcol);
@@ -571,7 +586,7 @@ should be a local copy of a global element; up to the parent dialog to make
 changes global.
 ==============================================================================*/
 {
-	Arg args[6];
+	Arg args[7];
 	Colormap cmap;
 	struct Element_point_field_viewer_widget_struct *element_point_field_viewer;
 	struct FE_element *initial_element;
@@ -616,8 +631,10 @@ changes global.
 			XtSetArg(args[3],XmNbottomAttachment,XmATTACH_FORM);
 			XtSetArg(args[4],XmNscrollingPolicy,XmAUTOMATIC);
 			XtSetArg(args[5],XmNuserData,element_point_field_viewer);
+			/*???RC yep, somewhat arbitrary height, but preferable to default */
+			XtSetArg(args[6],XmNheight,186);
 			if (element_point_field_viewer->widget=XmCreateScrolledWindow(parent,
-				"element_point_field_viewer_widget",args,6))
+				"element_point_field_viewer_widget",args,7))
 			{
 				/* get background colours for uneditable and modified text fields */
 				/* Following is from O'Reilly X window System Guide Volume Six:
