@@ -2026,15 +2026,10 @@ used to represent them. <element_manager> should be NULL if <use_data> is true.
 				node_tool->node_group=FIRST_OBJECT_IN_MANAGER_THAT(GROUP(FE_node))(
 					(MANAGER_CONDITIONAL_FUNCTION(GROUP(FE_node)) *)NULL,
 					(void *)NULL,node_group_manager);
-				if (!(node_tool->coordinate_field=
-					FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-						"default_coordinate",computed_field_manager)))
-				{
-					node_tool->coordinate_field=
-						FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-							Computed_field_has_up_to_3_numerical_components,(void *)NULL,
-							computed_field_manager);
-				}
+				node_tool->coordinate_field =
+					FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+						Computed_field_has_up_to_3_numerical_components, (void *)NULL,
+						computed_field_manager);
 				node_tool->template_node=(struct FE_node *)NULL;
 				/* interactive_tool */
 				if (use_data)
