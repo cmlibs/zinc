@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_object.c
 
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 gtObject/gtWindow management routines.
@@ -4631,7 +4631,7 @@ DECLARE_GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME_FUNCTION(GT_voltex, \
 enum Graphics_select_mode GT_object_get_select_mode(
 	struct GT_object *graphics_object)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Gets the default_select_mode of a GT_object.
@@ -4647,8 +4647,8 @@ Gets the default_select_mode of a GT_object.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"GT_object_set_select_mode.  Invalid argument(s)");
-		select_mode = GRAPHICS_SELECT_MODE_INVALID;
+			"GT_object_get_select_mode.  Invalid argument(s)");
+		select_mode = GRAPHICS_NO_SELECT;
 	}
 	LEAVE;
 

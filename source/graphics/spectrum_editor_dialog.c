@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : spectrum_editor_dialog.c
 
-LAST MODIFIED : 18 April 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 This module creates a spectrum_editor_dialog.
@@ -102,9 +102,9 @@ Tells CMGUI about the current values. Returns a pointer to the spectrum.
 } /* spectrum_editor_dialog_update */
 
 static void spectrum_editor_dialog_update_selection(Widget select_widget,
-	void *user_data,void *spec)
+	void *user_data,void *spectrum_void)
 /*******************************************************************************
-LAST MODIFIED : 10 March 1998
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Finds which spectrum is selected, and informs the editor widget.
@@ -115,10 +115,11 @@ Finds which spectrum is selected, and informs the editor widget.
 	struct Spectrum *spectrum;
 
 	ENTER(spectrum_editor_dialog_update_selection);
-	if ((spectrum_editor_dialog=(struct Spectrum_editor_dialog *)
-		user_data)&&(spectrum=(struct Spectrum *)spec))
+	USE_PARAMETER(select_widget);
+	if ((spectrum_editor_dialog = (struct Spectrum_editor_dialog *)user_data) &&
+		(spectrum = (struct Spectrum *)spectrum_void))
 	{
-		spectrum_editor_dialog->current_value=spectrum;
+		spectrum_editor_dialog->current_value = spectrum;
 		spectrum_editor_set_Spectrum(spectrum_editor_dialog->editor_widget,
 			spectrum_editor_dialog->current_value);
 	}
@@ -133,7 +134,7 @@ Finds which spectrum is selected, and informs the editor widget.
 static void spectrum_editor_dialog_identify_button(Widget w,int button_num,
 	unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 10 March 1998
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Finds the id of the buttons on the spectrum_editor_dialog widget.
@@ -142,6 +143,7 @@ Finds the id of the buttons on the spectrum_editor_dialog widget.
 	struct Spectrum_editor_dialog *spectrum_editor_dialog;
 
 	ENTER(spectrum_editor_dialog_identify_button);
+	USE_PARAMETER(reason);
 	/* find out which spectrum_editor_dialog widget we are in */
 	XtVaGetValues(w,XmNuserData,&spectrum_editor_dialog,NULL);
 	switch (button_num)
@@ -186,7 +188,7 @@ Finds the id of the buttons on the spectrum_editor_dialog widget.
 static void spectrum_editor_dialog_control_CB(Widget w,int button_num,
 	unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 10 March 1998
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Finds the id of the buttons on the spectrum_editor_dialog widget.
@@ -196,6 +198,7 @@ Finds the id of the buttons on the spectrum_editor_dialog widget.
 	struct Spectrum_editor_dialog *spectrum_editor_dialog;
 
 	ENTER(spectrum_editor_dialog_control_CB);
+	USE_PARAMETER(reason);
 	/* find out which spectrum_editor_dialog widget we are in */
 	XtVaGetValues(w,XmNuserData,&spectrum_editor_dialog,NULL);
 	if ((button_num==spectrum_editor_dialog_cancel_ID)||
@@ -233,7 +236,7 @@ Finds the id of the buttons on the spectrum_editor_dialog widget.
 static void spectrum_editor_dialog_autorange_button_CB(Widget widget, int *tag,
 	unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 22 July 1998
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Called when the autorange push button is activated.
@@ -244,7 +247,8 @@ Called when the autorange push button is activated.
 	struct Spectrum_editor_dialog *spectrum_editor_dialog;
 
 	ENTER(spectrum_editor_dialog_autorange_button_CB);
-	/* check arguments */
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	if (widget)
 	{
 		/* Get the pointer to the data for the widget */
@@ -281,7 +285,7 @@ Called when the autorange push button is activated.
 static void spectrum_editor_dialog_set_autorange_scene(
 	Widget widget, void *spectrum_editor_dialog_void, void *scene_void)
 /*******************************************************************************
-LAST MODIFIED : 22 July 1998
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Called when scene is changed.
@@ -290,6 +294,7 @@ Called when scene is changed.
 	struct Spectrum_editor_dialog *spectrum_editor_dialog;
 
 	ENTER(spectrum_editor_dialog_set_autorange_scene);
+	USE_PARAMETER(widget);
 	if (spectrum_editor_dialog = (struct Spectrum_editor_dialog *)spectrum_editor_dialog_void)
 	{
 		spectrum_editor_dialog->autorange_scene = (struct Scene *)scene_void;
@@ -305,7 +310,7 @@ Called when scene is changed.
 static void spectrum_editor_dialog_destroy_CB(Widget w,int *tag,
 	unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 10 March 1998
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Callback for the spectrum_editor_dialog dialog - tidies up all details - mem etc
@@ -314,6 +319,8 @@ Callback for the spectrum_editor_dialog dialog - tidies up all details - mem etc
 	struct Spectrum_editor_dialog *spectrum_editor_dialog;
 
 	ENTER(spectrum_editor_dialog_destroy_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	/* Get the pointer to the data for the spectrum_editor_dialog widget */
 	XtVaGetValues(w,XmNuserData,&spectrum_editor_dialog,NULL);
 	/* deaccess the spectrum_editor_dialog */
@@ -333,14 +340,14 @@ static Widget create_spectrum_editor_dialog(
 	struct MANAGER(Texture) *texture_manager,
 	struct MANAGER(Scene) *scene_manager)
 /*******************************************************************************
-LAST MODIFIED : 18 April 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Creates a dialog widget that allows the user to edit the properties of any of
 the spectrums contained in the global list.
 ==============================================================================*/
 {
-	int i,init_widgets;
+	int init_widgets;
 	struct Callback_data callback;
 	MrmType spectrum_editor_dialog_dialog_class;
 	struct Spectrum_editor_dialog *spectrum_editor_dialog=NULL;

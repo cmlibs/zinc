@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 15 March 2001
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -1789,7 +1789,7 @@ Executes a GFX CREATE ELEMENT_CREATOR command.
 static int gfx_create_element_points(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Executes a GFX CREATE ELEMENT_POINTS command.
@@ -1797,6 +1797,7 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 {
 	char exterior_flag, *graphics_object_name, *use_element_type_string,
 		**valid_strings, *xi_discretization_mode_string;
+	enum Xi_discretization_mode xi_discretization_mode;
 	float time;
 	int face_number,number_of_components,number_of_valid_strings,return_code;
 	static char default_name[]="element_points";
@@ -1875,10 +1876,13 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 		Option_table_add_entry(option_table,"as",&graphics_object_name,
 			(void *)1,set_name);
 		/* cell_centres/cell_corners/cell_random */ 
-		xi_discretization_mode_string=
-			Xi_discretization_mode_string(XI_DISCRETIZATION_CELL_CENTRES);
-		valid_strings=
-			Xi_discretization_mode_get_valid_strings(&number_of_valid_strings);
+		xi_discretization_mode = XI_DISCRETIZATION_CELL_CENTRES;
+		xi_discretization_mode_string =
+			ENUMERATOR_STRING(Xi_discretization_mode)(xi_discretization_mode);
+		valid_strings = ENUMERATOR_GET_VALID_STRINGS(Xi_discretization_mode)(
+			&number_of_valid_strings,
+			(ENUMERATOR_CONDITIONAL_FUNCTION(Xi_discretization_mode) *)NULL,
+			(void *)NULL);
 		Option_table_add_enumerator(option_table,number_of_valid_strings,
 			valid_strings,&xi_discretization_mode_string);
 		DEALLOCATE(valid_strings);
@@ -2019,8 +2023,10 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 			if (return_code)
 			{
 				element_to_glyph_set_data.time=time;
-				element_to_glyph_set_data.xi_discretization_mode=
-					Xi_discretization_mode_from_string(xi_discretization_mode_string);
+				STRING_TO_ENUMERATOR(Xi_discretization_mode)(
+					xi_discretization_mode_string, &xi_discretization_mode);
+				element_to_glyph_set_data.xi_discretization_mode =
+					xi_discretization_mode;
 				element_to_glyph_set_data.coordinate_field=
 					Computed_field_begin_wrap_coordinate_field(coordinate_field);
 				if (orientation_scale_field)
@@ -3732,7 +3738,7 @@ float parameters.
 static int gfx_create_iso_surfaces(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 4 December 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Executes a GFX CREATE ISO_SURFACES command.
@@ -3741,6 +3747,7 @@ Executes a GFX CREATE ISO_SURFACES command.
 	char exterior_flag,*graphics_object_name,*render_type_string,
 		*use_element_type_string, **valid_strings;
 	enum GT_object_type graphics_object_type;
+	enum Render_type render_type;
 	float time;
 	int face_number,number_of_valid_strings,return_code;
 	static char default_name[]="iso_surfaces";
@@ -3861,10 +3868,11 @@ Executes a GFX CREATE ISO_SURFACES command.
 				&native_discretization_field,command_data->fe_field_manager,
 				set_FE_field);
 			/* render_type */
-			render_type_string=
-				Render_type_string(RENDER_TYPE_SHADED);
-			valid_strings=Render_type_get_valid_strings(
-				&number_of_valid_strings);
+			render_type = RENDER_TYPE_SHADED;
+			render_type_string = ENUMERATOR_STRING(Render_type)(render_type);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Render_type)(
+				&number_of_valid_strings,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Render_type) *)NULL, (void *)NULL);
 			Option_table_add_enumerator(option_table,number_of_valid_strings,
 				valid_strings,&render_type_string);
 			DEALLOCATE(valid_strings);
@@ -4064,8 +4072,8 @@ Executes a GFX CREATE ISO_SURFACES command.
 						discretization.number_in_xi2;
 					element_to_iso_scalar_data.number_in_xi[2]=
 						discretization.number_in_xi3;
-					element_to_iso_scalar_data.render_type=
-						Render_type_from_string(render_type_string);
+					STRING_TO_ENUMERATOR(Render_type)(render_type_string, &render_type);
+					element_to_iso_scalar_data.render_type = render_type;
 					element_to_iso_scalar_data.element_group=element_group;
 					element_to_iso_scalar_data.exterior=exterior_flag;
 					element_to_iso_scalar_data.face_number=face_number;
@@ -6297,11 +6305,10 @@ Executes a GFX CREATE SPECTRUM command.
 } /* gfx_create_spectrum */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_streamlines(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 August 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Executes a GFX CREATE STREAMLINES command.
@@ -6402,8 +6409,12 @@ Executes a GFX CREATE STREAMLINES command.
 			Option_table_add_entry(option_table,"data",&data_field,
 				&set_data_field_data,set_Computed_field_conditional);
 			/* ellipse/line/rectangle/ribbon */
-			streamline_type_string=Streamline_type_string(STREAM_LINE);
-			valid_strings=Streamline_type_get_valid_strings(&number_of_valid_strings);
+			streamline_type = STREAM_LINE;
+			streamline_type_string =
+				ENUMERATOR_STRING(Streamline_type)(streamline_type);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Streamline_type)(
+				&number_of_valid_strings,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Streamline_type) *)NULL, (void *)NULL);
 			Option_table_add_enumerator(option_table,number_of_valid_strings,
 				valid_strings,&streamline_type_string);
 			DEALLOCATE(valid_strings);
@@ -6416,11 +6427,15 @@ Executes a GFX CREATE STREAMLINES command.
 			Option_table_add_entry(option_table,"material",&material,
 				command_data->graphical_material_manager,set_Graphical_material);
 			/* no_data/field_scalar/magnitude_scalar/travel_scalar */
-			streamline_data_type_string=Streamline_data_type_string(STREAM_NO_DATA);
-			valid_strings=
-				Streamline_data_type_get_valid_strings(&number_of_valid_strings);
-			Option_table_add_enumerator(option_table,number_of_valid_strings,
-				valid_strings,&streamline_data_type_string);
+			streamline_data_type = STREAM_NO_DATA;
+			streamline_data_type_string =
+				ENUMERATOR_STRING(Streamline_data_type)(streamline_data_type);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Streamline_data_type)(
+				&number_of_valid_strings,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Streamline_data_type) *)NULL,
+				(void *)NULL);
+			Option_table_add_enumerator(option_table, number_of_valid_strings,
+				valid_strings, &streamline_data_type_string);
 			DEALLOCATE(valid_strings);
 			/* reverse */
 			/*???RC use negative length to denote reverse track instead? */
@@ -6473,9 +6488,10 @@ Executes a GFX CREATE STREAMLINES command.
 					display_message(ERROR_MESSAGE,"Must specify a vector");
 					return_code=0;
 				}
-				streamline_type=Streamline_type_from_string(streamline_type_string);
-				streamline_data_type=
-					Streamline_data_type_from_string(streamline_data_type_string);
+				STRING_TO_ENUMERATOR(Streamline_type)(streamline_type_string,
+					&streamline_type);
+				STRING_TO_ENUMERATOR(Streamline_data_type)(streamline_data_type_string,
+					&streamline_data_type);
 				if (data_field)
 				{
 					if (STREAM_FIELD_SCALAR != streamline_data_type)
@@ -6724,13 +6740,11 @@ Executes a GFX CREATE STREAMLINES command.
 
 	return (return_code);
 } /* gfx_create_streamlines */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_interactive_streamline(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 January 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
@@ -6829,8 +6843,12 @@ Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
 			Option_table_add_entry(option_table,"data",&data_field,
 				&set_data_field_data,set_Computed_field_conditional);
 			/* ellipse/line/rectangle/ribbon */
-			streamline_type_string=Streamline_type_string(STREAM_LINE);
-			valid_strings=Streamline_type_get_valid_strings(&number_of_valid_strings);
+			streamline_type = STREAM_LINE;
+			streamline_type_string =
+				ENUMERATOR_STRING(Streamline_type)(streamline_type);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Streamline_type)(
+				&number_of_valid_strings,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Streamline_type) *)NULL, (void *)NULL);
 			Option_table_add_enumerator(option_table,number_of_valid_strings,
 				valid_strings,&streamline_type_string);
 			DEALLOCATE(valid_strings);
@@ -6846,11 +6864,15 @@ Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
 			Option_table_add_entry(option_table,"material",&material,
 				command_data->graphical_material_manager,set_Graphical_material);
 			/* no_data/field_scalar/magnitude_scalar/travel_scalar */
-			streamline_data_type_string=Streamline_data_type_string(STREAM_NO_DATA);
-			valid_strings=
-				Streamline_data_type_get_valid_strings(&number_of_valid_strings);
-			Option_table_add_enumerator(option_table,number_of_valid_strings,
-				valid_strings,&streamline_data_type_string);
+			streamline_data_type = STREAM_NO_DATA;
+			streamline_data_type_string =
+				ENUMERATOR_STRING(Streamline_data_type)(streamline_data_type);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Streamline_data_type)(
+				&number_of_valid_strings,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Streamline_data_type) *)NULL,
+				(void *)NULL);
+			Option_table_add_enumerator(option_table, number_of_valid_strings,
+				valid_strings, &streamline_data_type_string);
 			DEALLOCATE(valid_strings);
 			/* reverse */
 			/*???RC use negative length to denote reverse track instead? */
@@ -6896,9 +6918,10 @@ Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
 					display_message(ERROR_MESSAGE,"Must specify a vector");
 					return_code=0;
 				}
-				streamline_type=Streamline_type_from_string(streamline_type_string);
-				streamline_data_type=
-					Streamline_data_type_from_string(streamline_data_type_string);
+				STRING_TO_ENUMERATOR(Streamline_type)(streamline_type_string,
+					&streamline_type);
+				STRING_TO_ENUMERATOR(Streamline_data_type)(streamline_data_type_string,
+					&streamline_data_type);
 				if (data_field)
 				{
 					if (STREAM_FIELD_SCALAR != streamline_data_type)
@@ -7117,13 +7140,11 @@ Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
 
 	return (return_code);
 } /* gfx_create_interactive_streamline */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_surfaces(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 August 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Executes a GFX CREATE SURFACES command.
@@ -7132,6 +7153,7 @@ Executes a GFX CREATE SURFACES command.
 	char exterior_flag,*graphics_object_name,nurb,*render_type_string,
 		reverse_normals,**valid_strings;
 	enum GT_object_type object_type;
+	enum Render_type render_type;
 	float time;
 	gtObject *graphics_object;
 	int face_number,number_of_valid_strings,return_code;
@@ -7225,10 +7247,11 @@ Executes a GFX CREATE SURFACES command.
 			Option_table_add_entry(option_table,"reverse_normals",
 				&reverse_normals,NULL,set_char_flag);
 			/* render_type */
-			render_type_string=
-				Render_type_string(RENDER_TYPE_SHADED);
-			valid_strings=Render_type_get_valid_strings(
-				&number_of_valid_strings);
+			render_type = RENDER_TYPE_SHADED;
+			render_type_string = ENUMERATOR_STRING(Render_type)(render_type);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Render_type)(
+				&number_of_valid_strings,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Render_type) *)NULL, (void *)NULL);
 			Option_table_add_enumerator(option_table,number_of_valid_strings,
 				valid_strings,&render_type_string);
 			DEALLOCATE(valid_strings);
@@ -7314,8 +7337,8 @@ Executes a GFX CREATE SURFACES command.
 				element_to_surface_data.data_field=data_field;
 				element_to_surface_data.reverse_normals=reverse_normals;
 				element_to_surface_data.graphics_object=graphics_object;
-				element_to_surface_data.render_type=
-					Render_type_from_string(render_type_string);
+					STRING_TO_ENUMERATOR(Render_type)(render_type_string, &render_type);
+				element_to_surface_data.render_type = render_type;
 				element_to_surface_data.texture_coordinate_field=
 					texture_coordinate_field;
 				element_to_surface_data.time=time;
@@ -7406,7 +7429,6 @@ Executes a GFX CREATE SURFACES command.
 
 	return (return_code);
 } /* gfx_create_surfaces */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 static int set_Texture_image_from_field(struct Texture *texture, struct Computed_field *field,
 	struct Computed_field *texture_coordinate_field, struct Spectrum *spectrum,
@@ -8895,17 +8917,17 @@ Executes a GFX CREATE VOLUME_EDITOR command.
 } /* gfx_create_volume_editor */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_volumes(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED :  4 December 2000
+LAST MODIFIED :  19 March 2001
 
 DESCRIPTION :
 Executes a GFX CREATE VOLUMES command.
 ==============================================================================*/
 {
 	char *graphics_object_name,*render_type_string,**valid_strings;
+	enum Render_type render_type;
 	float time;
 	int displacement_map_xi_direction,number_of_valid_strings, return_code;
 	static char default_name[]="volumes";
@@ -9013,12 +9035,13 @@ Executes a GFX CREATE VOLUMES command.
 			Option_table_add_entry(option_table,"material",&material,
 				command_data->graphical_material_manager,set_Graphical_material);
 			/* render_type */
-			render_type_string=
-				Render_type_string(RENDER_TYPE_SHADED);
-			valid_strings=Render_type_get_valid_strings(
-				&number_of_valid_strings);
-			Option_table_add_enumerator(option_table,number_of_valid_strings,
-				valid_strings,&render_type_string);
+			render_type = RENDER_TYPE_SHADED;
+			render_type_string = ENUMERATOR_STRING(Render_type)(render_type);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Render_type)(
+				&number_of_valid_strings,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Render_type) *)NULL, (void *)NULL);
+			Option_table_add_enumerator(option_table, number_of_valid_strings,
+				valid_strings, &render_type_string);
 			DEALLOCATE(valid_strings);
 			/* seed_element */
 			Option_table_add_entry(option_table,"seed_element",
@@ -9152,8 +9175,8 @@ Executes a GFX CREATE VOLUMES command.
 					element_to_volume_data.data_field=data_field;
 					element_to_volume_data.graphics_object=graphics_object;
 					element_to_volume_data.time=time;
-					element_to_volume_data.render_type=
-						Render_type_from_string(render_type_string);
+					STRING_TO_ENUMERATOR(Render_type)(render_type_string, &render_type);
+					element_to_volume_data.render_type = render_type;
 					element_to_volume_data.volume_texture=volume_texture;
 					element_to_volume_data.displacement_map_field =
 						displacement_map_field;
@@ -9292,7 +9315,6 @@ Executes a GFX CREATE VOLUMES command.
 
 	return (return_code);
 } /* gfx_create_volumes */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_volume_texture(struct Parse_state *state,
@@ -17101,7 +17123,7 @@ otherwise the file of graphics objects is read.
 static int gfx_read_wavefront_obj(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 3 February 1999
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 If a file is not specified a file selection box is presented to the user,
@@ -17109,6 +17131,7 @@ otherwise the wavefront obj file is read.
 ==============================================================================*/
 {
 	char *file_name, *graphics_object_name,*render_type_string,**valid_strings;
+	enum Render_type render_type;
 	float time;
 	int number_of_valid_strings, return_code;
 	struct File_read_graphics_object_from_obj_data data;
@@ -17133,10 +17156,11 @@ otherwise the wavefront obj file is read.
 			Option_table_add_entry(option_table,"as",&graphics_object_name,
 				(void *)1,set_name);
 			/* render_type */
-			render_type_string=
-				Render_type_string(RENDER_TYPE_SHADED);
-			valid_strings=Render_type_get_valid_strings(
-				&number_of_valid_strings);
+			render_type = RENDER_TYPE_SHADED;
+			render_type_string = ENUMERATOR_STRING(Render_type)(render_type);
+			valid_strings = ENUMERATOR_GET_VALID_STRINGS(Render_type)(
+				&number_of_valid_strings,
+				(ENUMERATOR_CONDITIONAL_FUNCTION(Render_type) *)NULL, (void *)NULL);
 			Option_table_add_enumerator(option_table,number_of_valid_strings,
 				valid_strings,&render_type_string);
 			DEALLOCATE(valid_strings);
@@ -17153,7 +17177,8 @@ otherwise the wavefront obj file is read.
 				data.object_list=command_data->graphics_object_list;
 				data.graphical_material_manager=
 					command_data->graphical_material_manager;
-				data.render_type = Render_type_from_string(render_type_string);
+				STRING_TO_ENUMERATOR(Render_type)(render_type_string, &render_type);
+				data.render_type = render_type;
 				data.time = time;
 				if(graphics_object_name)
 				{

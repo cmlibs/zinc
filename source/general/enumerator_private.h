@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : enumerator_private.h
 
-LAST MODIFIED : 16 March 2001
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Definitions of macro functions for handling enumerators.
@@ -36,7 +36,7 @@ Global functions
 #define DEFINE_DEFAULT_ENUMERATOR_GET_VALID_STRINGS_FUNCTION( enumerator_type )\
 PROTOTYPE_ENUMERATOR_GET_VALID_STRINGS_FUNCTION(enumerator_type) \
 /***************************************************************************** \
-LAST MODIFIED : 16 March 2001 \
+LAST MODIFIED : 19 March 2001 \
 \
 DESCRIPTION : \
 Returns an allocated array containing the ENUMERATOR_STRINGs for all valid \
@@ -49,6 +49,7 @@ Default version assumes all valid enumerator values are sequential from 0. \
 { \
 	char *enumerator_string, **valid_strings; \
 	enum enumerator_type enumerator_value; \
+	int i; \
 \
 	ENTER(ENUMERATOR_GET_VALID_STRINGS(enumerator_type)); \
 	if (number_of_valid_strings) \
@@ -68,16 +69,16 @@ Default version assumes all valid enumerator values are sequential from 0. \
 		if ((0 == *number_of_valid_strings) || \
 			ALLOCATE(valid_strings, char *, *number_of_valid_strings)) \
 		{ \
-			for (enumerator_value = (enum enumerator_type)0; \
-				enumerator_string = \
-					ENUMERATOR_STRING(enumerator_type)(enumerator_value); \
-				enumerator_value++) \
+			enumerator_value = (enum enumerator_type)0; \
+			for (i = 0; enumerator_string = \
+				ENUMERATOR_STRING(enumerator_type)(enumerator_value); i++) \
 			{ \
 				if ((!conditional_function) || \
 					conditional_function(enumerator_value, user_data)) \
 				{ \
-					valid_strings[enumerator_value] = enumerator_string; \
+					valid_strings[i] = enumerator_string; \
 				} \
+				enumerator_value++; \
 			} \
 		} \
 		else \

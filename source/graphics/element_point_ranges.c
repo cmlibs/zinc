@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_ranges.c
 
-LAST MODIFIED : 2 March 2001
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -52,12 +52,12 @@ Global functions
 char **Xi_discretization_mode_get_valid_strings_for_Element_point_ranges(
 	int *number_of_valid_strings)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Returns an allocated array of pointers to all static strings for valid
 Xi_discretization_modes that can be used for Element_point_ranges, obtained
-from function Xi_discretization_mode_string.
+from function ENUMERATOR_STRING.
 Up to calling function to deallocate returned array - but not the strings in it!
 ==============================================================================*/
 {
@@ -69,12 +69,12 @@ Up to calling function to deallocate returned array - but not the strings in it!
 		*number_of_valid_strings=3;
 		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
 		{
-			valid_strings[0]=
-				Xi_discretization_mode_string(XI_DISCRETIZATION_CELL_CENTRES);
-			valid_strings[1]=
-				Xi_discretization_mode_string(XI_DISCRETIZATION_CELL_CORNERS);
-			valid_strings[2]=
-				Xi_discretization_mode_string(XI_DISCRETIZATION_EXACT_XI);
+			valid_strings[0] = ENUMERATOR_STRING(Xi_discretization_mode)(
+				XI_DISCRETIZATION_CELL_CENTRES);
+			valid_strings[1] = ENUMERATOR_STRING(Xi_discretization_mode)(
+				XI_DISCRETIZATION_CELL_CORNERS);
+			valid_strings[2] = ENUMERATOR_STRING(Xi_discretization_mode)(
+				XI_DISCRETIZATION_EXACT_XI);
 		}
 		else
 		{
@@ -269,7 +269,8 @@ Writes what is invalid about the identifier.
 					display_message(ERROR_MESSAGE,
 						"Element_point_ranges_identifier_is_valid.  "
 						"Invalid Xi_discretization_mode: %s",
-						Xi_discretization_mode_string(identifier->xi_discretization_mode));
+						ENUMERATOR_STRING(Xi_discretization_mode)(
+							identifier->xi_discretization_mode));
 					return_code=0;
 				} break;
 			}
@@ -983,7 +984,7 @@ faces or lines of other elements not being destroyed.
 int set_Element_point_ranges(struct Parse_state *state,
 	void *element_point_ranges_address_void,void *element_manager_void)
 /*******************************************************************************
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Modifier function to set an element_point_ranges. <element_point_ranges_address>
@@ -993,6 +994,7 @@ returned in this location, for the calling function to use or destroy.
 ==============================================================================*/
 {
 	char *current_token,**valid_strings,*xi_discretization_mode_string;
+	enum Xi_discretization_mode xi_discretization_mode;
 	float xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int dimension,i,number_of_xi_points,number_of_valid_strings,return_code,start,
 		stop;
@@ -1144,9 +1146,11 @@ returned in this location, for the calling function to use or destroy.
 				/* xi_discretization_mode */
 				if (return_code)
 				{
-					option_table=CREATE(Option_table)();
-					xi_discretization_mode_string=Xi_discretization_mode_string(
-						element_point_ranges_identifier.xi_discretization_mode);
+					option_table = CREATE(Option_table)();
+					xi_discretization_mode =
+						element_point_ranges_identifier.xi_discretization_mode;
+					xi_discretization_mode_string =
+						ENUMERATOR_STRING(Xi_discretization_mode)(xi_discretization_mode);
 					valid_strings=
 						Xi_discretization_mode_get_valid_strings_for_Element_point_ranges(
 							&number_of_valid_strings);
@@ -1155,8 +1159,10 @@ returned in this location, for the calling function to use or destroy.
 					DEALLOCATE(valid_strings);
 					if (return_code=Option_table_parse(option_table,state))
 					{
-						element_point_ranges_identifier.xi_discretization_mode=
-							Xi_discretization_mode_from_string(xi_discretization_mode_string);
+						STRING_TO_ENUMERATOR(Xi_discretization_mode)(
+							xi_discretization_mode_string, &xi_discretization_mode);
+						element_point_ranges_identifier.xi_discretization_mode =
+							xi_discretization_mode;
 					}
 					DESTROY(Option_table)(&option_table);
 				}

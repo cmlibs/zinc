@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 28 November 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -1536,7 +1536,7 @@ options for streamlines - eg. STREAM_TRAVEL_SCALAR.
 enum Render_type GT_element_settings_get_render_type(
 	struct GT_element_settings *settings)
 /*******************************************************************************
-LAST MODIFIED : 2 May 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Get the type for how the graphics will be rendered in GL.
@@ -1552,9 +1552,8 @@ Get the type for how the graphics will be rendered in GL.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"GT_element_settings_get_render_type.  "
-			"Invalid argument(s)");
-		render_type = RENDER_TYPE_INVALID;
+			"GT_element_settings_get_render_type.  Invalid argument(s)");
+		render_type = RENDER_TYPE_SHADED;
 	}
 	LEAVE;
 
@@ -1564,7 +1563,7 @@ Get the type for how the graphics will be rendered in GL.
 int GT_element_settings_set_render_type(
 	struct GT_element_settings *settings, enum Render_type render_type)
 /*******************************************************************************
-LAST MODIFIED : 2 May 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Set the type for how the graphics will be rendered in GL.
@@ -1573,17 +1572,16 @@ Set the type for how the graphics will be rendered in GL.
 	int return_code;
 
 	ENTER(GT_element_settings_set_render_type);
-	if (settings&&render_type)
+	if (settings)
 	{
-		return_code=1;
-		settings->render_type=render_type;
+		return_code = 1;
+		settings->render_type = render_type;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"GT_element_settings_set_render_type.  "
-			"Invalid argument(s)");
-		return_code=0;
+			"GT_element_settings_set_render_type.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -1855,7 +1853,7 @@ For 1-D and 2-D settings types only.
 enum Graphics_select_mode GT_element_settings_get_select_mode(
 	struct GT_element_settings *settings)
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Returns the enumerator determining whether names are output with the graphics
@@ -1874,7 +1872,7 @@ selection status.
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_element_settings_get_select_mode.  Invalid argument(s)");
-		select_mode=GRAPHICS_SELECT_MODE_INVALID;
+		select_mode = GRAPHICS_NO_SELECT;
 	}
 	LEAVE;
 
@@ -2797,7 +2795,7 @@ Returns the xi_discretization_mode controlling where glyphs are displayed for
 	{
 		display_message(ERROR_MESSAGE,
 			"GT_element_settings_get_xi_discretization_mode.  Invalid argument(s)");
-		xi_discretization_mode=XI_DISCRETIZATION_INVALID;
+		xi_discretization_mode = XI_DISCRETIZATION_CELL_CENTRES;
 	}
 	LEAVE;
 
@@ -3950,7 +3948,7 @@ any trivial differences are fixed up in the graphics_obejct.
 char *GT_element_settings_string(struct GT_element_settings *settings,
 	enum GT_element_settings_string_details settings_detail)
 /*******************************************************************************
-LAST MODIFIED : 10 November 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Returns a string describing the settings, suitable for entry into the command
@@ -4203,8 +4201,8 @@ if no coordinate field. Currently only write if we have a field.
 		if (GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)
 		{
 			append_string(&settings_string," ",&error);
-			append_string(&settings_string,
-				Xi_discretization_mode_string(settings->xi_discretization_mode),&error);
+			append_string(&settings_string, ENUMERATOR_STRING(Xi_discretization_mode)(
+				settings->xi_discretization_mode), &error);
 			if (XI_DISCRETIZATION_EXACT_XI != settings->xi_discretization_mode)
 			{
 				sprintf(temp_string,
@@ -4307,7 +4305,7 @@ if no coordinate field. Currently only write if we have a field.
 		{
 			append_string(&settings_string," ",&error);
 			append_string(&settings_string,
-				Streamline_type_string(settings->streamline_type),&error);
+				ENUMERATOR_STRING(Streamline_type)(settings->streamline_type),&error);
 			if (GET_NAME(Computed_field)(settings->stream_vector_field,&name))
 			{
 				/* put quotes around name if it contains special characters */
@@ -4329,11 +4327,11 @@ if no coordinate field. Currently only write if we have a field.
 				settings->streamline_length,settings->streamline_width);
 			append_string(&settings_string,temp_string,&error);
 			append_string(&settings_string,
-				Streamline_data_type_string(settings->streamline_data_type),&error);
+				ENUMERATOR_STRING(Streamline_data_type)(settings->streamline_data_type),&error);
 		}
 		append_string(&settings_string," ",&error);
 		append_string(&settings_string,
-			Graphics_select_mode_string(settings->select_mode),&error);
+			ENUMERATOR_STRING(Graphics_select_mode)(settings->select_mode),&error);
 
 		if ((SETTINGS_STRING_COMPLETE==settings_detail)||
 			(SETTINGS_STRING_COMPLETE_PLUS==settings_detail))
@@ -4410,7 +4408,7 @@ if no coordinate field. Currently only write if we have a field.
 			{
 				append_string(&settings_string," ",&error);
 				append_string(&settings_string,
-					Render_type_string(settings->render_type),&error);
+					ENUMERATOR_STRING(Render_type)(settings->render_type),&error);
 			}
 		}
 		if (error)
@@ -6193,7 +6191,7 @@ If there is a visible graphics_object in <settings>, expands the
 int gfx_modify_g_element_node_points(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 27 November 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT NODE_POINTS command.
@@ -6204,6 +6202,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	char *glyph_scaling_mode_string, invisible_flag, *select_mode_string,
 		**valid_strings;
 	enum Glyph_scaling_mode glyph_scaling_mode;
+	enum Graphics_select_mode select_mode;
 	int number_of_components,number_of_valid_strings,return_code;
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_element_settings *settings;
@@ -6327,10 +6326,13 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(modify_g_element_data->scene),
 						g_element_command_data->scene_manager,set_Scene);
 					/* select_mode */
-					select_mode_string=
-						Graphics_select_mode_string(settings->select_mode);
-					valid_strings=Graphics_select_mode_get_valid_strings(
-						&number_of_valid_strings);
+					select_mode = GT_element_settings_get_select_mode(settings);
+					select_mode_string =
+						ENUMERATOR_STRING(Graphics_select_mode)(select_mode);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphics_select_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Graphics_select_mode) *)NULL,
+						(void *)NULL);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&select_mode_string);
 					DEALLOCATE(valid_strings);
@@ -6384,8 +6386,9 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 								"No glyph specified for node_points");
 							return_code=0;
 						}
-						GT_element_settings_set_select_mode(settings,
-							Graphics_select_mode_from_string(select_mode_string));
+						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
+							&select_mode);
+						GT_element_settings_set_select_mode(settings, select_mode);
 					}
 					DESTROY(Option_table)(&option_table);
 					if (!return_code)
@@ -6441,7 +6444,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_data_points(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 27 November 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT DATA_POINTS command.
@@ -6452,6 +6455,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	char *glyph_scaling_mode_string, invisible_flag, *select_mode_string,
 		**valid_strings;
 	enum Glyph_scaling_mode glyph_scaling_mode;
+	enum Graphics_select_mode select_mode;
 	int number_of_components,number_of_valid_strings,return_code;
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_element_settings *settings;
@@ -6575,9 +6579,13 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(modify_g_element_data->scene),
 						g_element_command_data->scene_manager,set_Scene);
 					/* select_mode */
-					select_mode_string=Graphics_select_mode_string(settings->select_mode);
-					valid_strings=Graphics_select_mode_get_valid_strings(
-						&number_of_valid_strings);
+					select_mode = GT_element_settings_get_select_mode(settings);
+					select_mode_string =
+						ENUMERATOR_STRING(Graphics_select_mode)(select_mode);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphics_select_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Graphics_select_mode) *)NULL,
+						(void *)NULL);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&select_mode_string);
 					DEALLOCATE(valid_strings);
@@ -6631,8 +6639,9 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 								"No glyph specified for data_points");
 							return_code=0;
 						}
-						GT_element_settings_set_select_mode(settings,
-							Graphics_select_mode_from_string(select_mode_string));
+						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
+							&select_mode);
+						GT_element_settings_set_select_mode(settings, select_mode);
 					}
 					DESTROY(Option_table)(&option_table);
 					if (!return_code)
@@ -6688,7 +6697,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_lines(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT LINES command.
@@ -6697,6 +6706,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
 	char invisible_flag,*select_mode_string,**valid_strings;
+	enum Graphics_select_mode select_mode;
 	int number_of_valid_strings,return_code;
 	struct Modify_g_element_data *modify_g_element_data;
 	struct GT_element_settings *settings;
@@ -6773,10 +6783,13 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(modify_g_element_data->scene),
 						g_element_command_data->scene_manager,set_Scene);
 					/* select_mode */
-					select_mode_string=
-						Graphics_select_mode_string(settings->select_mode);
-					valid_strings=Graphics_select_mode_get_valid_strings(
-						&number_of_valid_strings);
+					select_mode = GT_element_settings_get_select_mode(settings);
+					select_mode_string =
+						ENUMERATOR_STRING(Graphics_select_mode)(select_mode);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphics_select_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Graphics_select_mode) *)NULL,
+						(void *)NULL);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&select_mode_string);
 					DEALLOCATE(valid_strings);
@@ -6808,8 +6821,9 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						{
 							settings->face=-1;
 						}
-						GT_element_settings_set_select_mode(settings,
-							Graphics_select_mode_from_string(select_mode_string));
+						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
+							&select_mode);
+						GT_element_settings_set_select_mode(settings, select_mode);
 					}
 					DESTROY(Option_table)(&option_table);
 					if (!return_code)
@@ -6852,7 +6866,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_cylinders(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT CYLINDERS command.
@@ -6861,6 +6875,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
 	char invisible_flag,*select_mode_string,**valid_strings;
+	enum Graphics_select_mode select_mode;
 	int number_of_valid_strings,return_code;
 	struct Modify_g_element_data *modify_g_element_data;
 	struct GT_element_settings *settings;
@@ -6953,10 +6968,13 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(modify_g_element_data->scene),
 						g_element_command_data->scene_manager,set_Scene);
 					/* select_mode */
-					select_mode_string=
-						Graphics_select_mode_string(settings->select_mode);
-					valid_strings=Graphics_select_mode_get_valid_strings(
-						&number_of_valid_strings);
+					select_mode = GT_element_settings_get_select_mode(settings);
+					select_mode_string =
+						ENUMERATOR_STRING(Graphics_select_mode)(select_mode);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphics_select_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Graphics_select_mode) *)NULL,
+						(void *)NULL);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&select_mode_string);
 					DEALLOCATE(valid_strings);
@@ -6988,8 +7006,9 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						{
 							settings->face=-1;
 						}
-						GT_element_settings_set_select_mode(settings,
-							Graphics_select_mode_from_string(select_mode_string));
+						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
+							&select_mode);
+						GT_element_settings_set_select_mode(settings, select_mode);
 					}
 					DESTROY(Option_table)(&option_table);
 					if (!return_code)
@@ -7033,7 +7052,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_surfaces(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT SURFACES command.
@@ -7042,6 +7061,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
 	char invisible_flag,*render_type_string,*select_mode_string,**valid_strings;
+	enum Graphics_select_mode select_mode;
+	enum Render_type render_type;
 	int number_of_valid_strings,return_code;
 	struct Modify_g_element_data *modify_g_element_data;
 	struct GT_element_settings *settings;
@@ -7114,10 +7135,11 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"position",
 						&(modify_g_element_data->position),NULL,set_int_non_negative);
 					/* render_type */
-					render_type_string=
-						Render_type_string(settings->render_type);
-					valid_strings=Render_type_get_valid_strings(
-						&number_of_valid_strings);
+					render_type = settings->render_type;
+					render_type_string = ENUMERATOR_STRING(Render_type)(render_type);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Render_type)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Render_type) *)NULL, (void *)NULL);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&render_type_string);
 					DEALLOCATE(valid_strings);
@@ -7126,10 +7148,13 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(modify_g_element_data->scene),
 						g_element_command_data->scene_manager,set_Scene);
 					/* select_mode */
-					select_mode_string=
-						Graphics_select_mode_string(settings->select_mode);
-					valid_strings=Graphics_select_mode_get_valid_strings(
-						&number_of_valid_strings);
+					select_mode = GT_element_settings_get_select_mode(settings);
+					select_mode_string =
+						ENUMERATOR_STRING(Graphics_select_mode)(select_mode);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphics_select_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Graphics_select_mode) *)NULL,
+						(void *)NULL);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&select_mode_string);
 					DEALLOCATE(valid_strings);
@@ -7171,10 +7196,11 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						{
 							settings->face=-1;
 						}
-						GT_element_settings_set_select_mode(settings,
-							Graphics_select_mode_from_string(select_mode_string));
-						GT_element_settings_set_render_type(settings,
-							Render_type_from_string(render_type_string));
+						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
+							&select_mode);
+						GT_element_settings_set_select_mode(settings, select_mode);
+						STRING_TO_ENUMERATOR(Render_type)(render_type_string, &render_type);
+						GT_element_settings_set_render_type(settings, render_type);
 					}
 					DESTROY(Option_table)(&option_table);
 					if (!return_code)
@@ -7218,7 +7244,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_iso_surfaces(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT ISO_SURFACES command.
@@ -7228,6 +7254,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 {
 	char invisible_flag,*render_type_string,*select_mode_string,
 		*use_element_type_string, **valid_strings;
+	enum Graphics_select_mode select_mode;
+	enum Render_type render_type;
 	int number_of_valid_strings,return_code;
 	struct Computed_field *scalar_field;
 	struct Modify_g_element_data *modify_g_element_data;
@@ -7322,10 +7350,11 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"position",
 						&(modify_g_element_data->position),NULL,set_int_non_negative);
 					/* render_type */
-					render_type_string=
-						Render_type_string(settings->render_type);
-					valid_strings=Render_type_get_valid_strings(
-						&number_of_valid_strings);
+					render_type = settings->render_type;
+					render_type_string = ENUMERATOR_STRING(Render_type)(render_type);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Render_type)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Render_type) *)NULL, (void *)NULL);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&render_type_string);
 					DEALLOCATE(valid_strings);
@@ -7334,10 +7363,13 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(modify_g_element_data->scene),
 						g_element_command_data->scene_manager,set_Scene);
 					/* select_mode */
-					select_mode_string=
-						Graphics_select_mode_string(settings->select_mode);
-					valid_strings=Graphics_select_mode_get_valid_strings(
-						&number_of_valid_strings);
+					select_mode = GT_element_settings_get_select_mode(settings);
+					select_mode_string =
+						ENUMERATOR_STRING(Graphics_select_mode)(select_mode);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphics_select_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Graphics_select_mode) *)NULL,
+						(void *)NULL);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&select_mode_string);
 					DEALLOCATE(valid_strings);
@@ -7385,10 +7417,11 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						{
 							settings->face=-1;
 						}
-						GT_element_settings_set_select_mode(settings,
-							Graphics_select_mode_from_string(select_mode_string));
-						GT_element_settings_set_render_type(settings,
-							Render_type_from_string(render_type_string));
+						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
+							&select_mode);
+						GT_element_settings_set_select_mode(settings, select_mode);
+						STRING_TO_ENUMERATOR(Render_type)(render_type_string, &render_type);
+						GT_element_settings_set_render_type(settings, render_type);
 					}
 					DESTROY(Option_table)(&option_table);
 					if (!return_code)
@@ -7432,7 +7465,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_element_points(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 27 November 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT ELEMENT_POINTS command.
@@ -7443,6 +7476,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	char *glyph_scaling_mode_string, invisible_flag, *select_mode_string,
 		*use_element_type_string,	**valid_strings, *xi_discretization_mode_string;
 	enum Glyph_scaling_mode glyph_scaling_mode;
+	enum Graphics_select_mode select_mode;
+	enum Xi_discretization_mode xi_discretization_mode;
 	int number_of_components,number_of_valid_strings,return_code;
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_element_settings *settings;
@@ -7497,10 +7532,14 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"as",&(settings->name),
 						(void *)1,set_name);
 					/* cell_centres/cell_corners */ 
-					xi_discretization_mode_string=
-						Xi_discretization_mode_string(settings->xi_discretization_mode);
-					valid_strings=
-						Xi_discretization_mode_get_valid_strings(&number_of_valid_strings);
+					xi_discretization_mode =
+						GT_element_settings_get_xi_discretization_mode(settings);
+					xi_discretization_mode_string =
+						ENUMERATOR_STRING(Xi_discretization_mode)(xi_discretization_mode);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Xi_discretization_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Xi_discretization_mode) *)NULL,
+						(void *)NULL);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&xi_discretization_mode_string);
 					DEALLOCATE(valid_strings);
@@ -7588,10 +7627,13 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(modify_g_element_data->scene),
 						g_element_command_data->scene_manager,set_Scene);
 					/* select_mode */
-					select_mode_string=
-						Graphics_select_mode_string(settings->select_mode);
-					valid_strings=Graphics_select_mode_get_valid_strings(
-						&number_of_valid_strings);
+					select_mode = GT_element_settings_get_select_mode(settings);
+					select_mode_string =
+						ENUMERATOR_STRING(Graphics_select_mode)(select_mode);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphics_select_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Graphics_select_mode) *)NULL,
+						(void *)NULL);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&select_mode_string);
 					DEALLOCATE(valid_strings);
@@ -7647,9 +7689,10 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						{
 							settings->face=-1;
 						}
+						STRING_TO_ENUMERATOR(Xi_discretization_mode)(
+							xi_discretization_mode_string, &xi_discretization_mode);
 						GT_element_settings_set_xi_discretization_mode(settings,
-							Xi_discretization_mode_from_string(
-								xi_discretization_mode_string));
+							xi_discretization_mode);
 						GT_element_settings_set_use_element_type(settings,
 							Use_element_type_from_string(use_element_type_string));
 						if (glyph)
@@ -7669,8 +7712,9 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 								"No glyph specified for element_points");
 							return_code=0;
 						}
-						GT_element_settings_set_select_mode(settings,
-							Graphics_select_mode_from_string(select_mode_string));
+						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
+							&select_mode);
+						GT_element_settings_set_select_mode(settings, select_mode);
 					}
 					DESTROY(Option_table)(&option_table);
 					if (!return_code)
@@ -7726,7 +7770,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_volumes(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT VOLUMES command.
@@ -7735,6 +7779,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
 	char invisible_flag,*select_mode_string,**valid_strings;
+	enum Graphics_select_mode select_mode;
 	int number_of_valid_strings,return_code;
 	struct Modify_g_element_data *modify_g_element_data;
 	struct GT_element_settings *settings;
@@ -7832,10 +7877,13 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(settings->seed_element),g_element_command_data->element_manager,
 						set_FE_element_dimension_3);
 					/* select_mode */
-					select_mode_string=
-						Graphics_select_mode_string(settings->select_mode);
-					valid_strings=Graphics_select_mode_get_valid_strings(
-						&number_of_valid_strings);
+					select_mode = GT_element_settings_get_select_mode(settings);
+					select_mode_string =
+						ENUMERATOR_STRING(Graphics_select_mode)(select_mode);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphics_select_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Graphics_select_mode) *)NULL,
+						(void *)NULL);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&select_mode_string);
 					DEALLOCATE(valid_strings);
@@ -7878,8 +7926,9 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 							display_message(WARNING_MESSAGE,"No volume texture specified");
 							return_code=0;
 						}
-						GT_element_settings_set_select_mode(settings,
-							Graphics_select_mode_from_string(select_mode_string));
+						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
+							&select_mode);
+						GT_element_settings_set_select_mode(settings, select_mode);
 					}
 					DESTROY(Option_table)(&option_table);
 					if (!return_code)
@@ -7923,7 +7972,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 int gfx_modify_g_element_streamlines(struct Parse_state *state,
 	void *modify_g_element_data_void,void *g_element_command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 24 March 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Executes a GFX MODIFY G_ELEMENT STREAMLINES command.
@@ -7933,6 +7982,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 {
 	char invisible_flag,reverse_track,*select_mode_string,
 		*streamline_data_type_string,*streamline_type_string,**valid_strings;
+	enum Graphics_select_mode select_mode;
 	enum Streamline_type streamline_type;
 	enum Streamline_data_type streamline_data_type;
 	float length, width;
@@ -8002,9 +8052,13 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"delete",
 						&(modify_g_element_data->delete_flag),NULL,set_char_flag);
 					/* ellipse/line/rectangle/ribbon */
-					streamline_type_string=Streamline_type_string(STREAM_LINE);
-					valid_strings=Streamline_type_get_valid_strings(
-						&number_of_valid_strings);
+					streamline_type = STREAM_LINE;
+					streamline_type_string =
+						ENUMERATOR_STRING(Streamline_type)(streamline_type);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Streamline_type)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Streamline_type) *)NULL,
+						(void *)NULL);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&streamline_type_string);
 					DEALLOCATE(valid_strings);
@@ -8019,12 +8073,15 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						g_element_command_data->graphical_material_manager,
 						set_Graphical_material);
 					/* no_data/field_scalar/magnitude_scalar/travel_scalar */
-					streamline_data_type_string=
-						Streamline_data_type_string(STREAM_NO_DATA);
-					valid_strings=Streamline_data_type_get_valid_strings(
-						&number_of_valid_strings);
-					Option_table_add_enumerator(option_table,number_of_valid_strings,
-						valid_strings,&streamline_data_type_string);
+					streamline_data_type = STREAM_NO_DATA;
+					streamline_data_type_string =
+						ENUMERATOR_STRING(Streamline_data_type)(streamline_data_type);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Streamline_data_type)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Streamline_data_type) *)NULL,
+						(void *)NULL);
+					Option_table_add_enumerator(option_table, number_of_valid_strings,
+						valid_strings, &streamline_data_type_string);
 					DEALLOCATE(valid_strings);
 					/* position */
 					Option_table_add_entry(option_table,"position",
@@ -8042,10 +8099,13 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 						&(settings->seed_element),g_element_command_data->element_manager,
 						set_FE_element_dimension_3);
 					/* select_mode */
-					select_mode_string=
-						Graphics_select_mode_string(settings->select_mode);
-					valid_strings=Graphics_select_mode_get_valid_strings(
-						&number_of_valid_strings);
+					select_mode = GT_element_settings_get_select_mode(settings);
+					select_mode_string =
+						ENUMERATOR_STRING(Graphics_select_mode)(select_mode);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(Graphics_select_mode)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(Graphics_select_mode) *)NULL,
+						(void *)NULL);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&select_mode_string);
 					DEALLOCATE(valid_strings);
@@ -8075,7 +8135,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					number_of_components = 3;
 					Option_table_add_entry(option_table,"xi",
 						settings->seed_xi,&number_of_components,set_float_vector);
-					if (return_code=Option_table_multi_parse(option_table,state))
+					if (return_code = Option_table_multi_parse(option_table,state))
 					{
 						if (invisible_flag)
 						{
@@ -8091,10 +8151,10 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 							GT_element_settings_get_streamline_parameters(settings,
 								&streamline_type,&stream_vector_field,&reverse_track_int,
 								&length,&width);
-							streamline_type=
-								Streamline_type_from_string(streamline_type_string);
-							streamline_data_type=
-								Streamline_data_type_from_string(streamline_data_type_string);
+							STRING_TO_ENUMERATOR(Streamline_type)(streamline_type_string,
+								&streamline_type);
+							STRING_TO_ENUMERATOR(Streamline_data_type)(
+								streamline_data_type_string, &streamline_data_type);
 							if (settings->data_field)
 							{
 								if (STREAM_FIELD_SCALAR != streamline_data_type)
@@ -8125,8 +8185,9 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 								settings,streamline_data_type,settings->data_field,
 								settings->spectrum);
 						}
-						GT_element_settings_set_select_mode(settings,
-							Graphics_select_mode_from_string(select_mode_string));
+						STRING_TO_ENUMERATOR(Graphics_select_mode)(select_mode_string,
+							&select_mode);
+						GT_element_settings_set_select_mode(settings, select_mode);
 					}
 					DESTROY(Option_table)(&option_table);
 					if (!return_code)

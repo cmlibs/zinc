@@ -1193,7 +1193,7 @@ DESCRIPTION :
 			DEALLOCATE(field_name);
 		}
 		display_message(INFORMATION_MESSAGE,"    CM field type : %s\n",
-			CM_field_type_string(get_FE_field_CM_field_type(data->fe_field)));
+			ENUMERATOR_STRING(CM_field_type)(get_FE_field_CM_field_type(data->fe_field)));
 		display_message(INFORMATION_MESSAGE,"    Value type : %s\n",
 			Value_type_string(get_FE_field_value_type(data->fe_field)));
 		return_code = 1;
@@ -1311,7 +1311,7 @@ FE_field being made and/or modified.
 			}
 			if (return_code)
 			{
-				cm_field_type_string=CM_field_type_string(cm_field_type);
+				cm_field_type_string = ENUMERATOR_STRING(CM_field_type)(cm_field_type);
 				value_type_string=Value_type_string(value_type);
 			}
 			if (ALLOCATE(component_names,char *,number_of_components))
@@ -1340,8 +1340,10 @@ FE_field being made and/or modified.
 				{
 					option_table=CREATE(Option_table)();
 					/* cm_field_type */
-					valid_strings=
-						CM_field_type_get_valid_strings(&number_of_valid_strings);
+					valid_strings = ENUMERATOR_GET_VALID_STRINGS(CM_field_type)(
+						&number_of_valid_strings,
+						(ENUMERATOR_CONDITIONAL_FUNCTION(CM_field_type) *)NULL,
+						(void *)NULL);
 					Option_table_add_enumerator(option_table,number_of_valid_strings,
 						valid_strings,&cm_field_type_string);
 					DEALLOCATE(valid_strings);
@@ -1410,8 +1412,10 @@ FE_field being made and/or modified.
 			{
 				option_table=CREATE(Option_table)();
 				/* cm_field_type */
-				valid_strings=
-					CM_field_type_get_valid_strings(&number_of_valid_strings);
+				valid_strings = ENUMERATOR_GET_VALID_STRINGS(CM_field_type)(
+					&number_of_valid_strings,
+					(ENUMERATOR_CONDITIONAL_FUNCTION(CM_field_type) *)NULL,
+					(void *)NULL);
 				Option_table_add_enumerator(option_table,number_of_valid_strings,
 					valid_strings,&cm_field_type_string);
 				DEALLOCATE(valid_strings);
@@ -1429,10 +1433,11 @@ FE_field being made and/or modified.
 			}
 			if (return_code)
 			{
-				value_type=Value_type_from_string(value_type_string);
-				cm_field_type=CM_field_type_from_string(cm_field_type_string);
+				value_type = Value_type_from_string(value_type_string);
+				STRING_TO_ENUMERATOR(CM_field_type)(cm_field_type_string,
+					&cm_field_type);
 				/* now make an FE_field to match the options entered */
-				if (fe_field=CREATE(FE_field)())
+				if (fe_field = CREATE(FE_field)())
 				{
 					/* get the name from the computed field */
 					return_code=set_FE_field_name(fe_field,field->name);

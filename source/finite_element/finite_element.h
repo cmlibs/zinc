@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 1 March 2001
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -13,6 +13,7 @@ interface to CMISS.
 #define FINITE_ELEMENT_H
 
 #include "command/parser.h"
+#include "general/enumerator.h"
 #include "general/geometry.h"
 #include "general/managed_group.h"
 #include "general/list.h"
@@ -730,22 +731,22 @@ passing to add_FE_element_and_faces_to_manager.
 
 enum CM_field_type
 /*******************************************************************************
-LAST MODIFIED : 10 May 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 CMISS field types.  Values specified to correspond to CMISS.
-Keep values in sync with CM_field_type_string, CM_field_type_from_string and
-CM_field_type_get_valid_strings.
+Must add new enumerators and keep values in sync with CM_field_type functions
+ENUMERATOR_STRING, ENUMERATOR_GET_VALID_STRINGS and STRING_TO_ENUMERATOR.
+Note these functions expect the first enumerator to be number 1, and all
+subsequent enumerators to be sequential, unlike the default behaviour which
+starts at 0.
 ==============================================================================*/
 {
-	CM_FIELD_TYPE_BEFORE_FIRST=0,
-	CM_ANATOMICAL_FIELD=1,
-	CM_COORDINATE_FIELD=2,
-	CM_FIELD=3,
-	CM_DEPENDENT_FIELD=4,
-	CM_UNKNOWN_FIELD=5,
-	CM_FIELD_TYPE_AFTER_LAST=6,
-	CM_FIELD_TYPE_INVALID=7
+	CM_ANATOMICAL_FIELD = 1,
+	CM_COORDINATE_FIELD = 2,
+	CM_FIELD = 3,
+	CM_DEPENDENT_FIELD = 4,
+	CM_UNKNOWN_FIELD = 5
 }; /* enum CM_field_type */
 
 struct CM_field_information
@@ -3106,35 +3107,7 @@ Modifies the already calculated <values>.
 ???RC.  Needs to be global to allow writing function in export_finite_element.
 ==============================================================================*/
 
-char *CM_field_type_string(enum CM_field_type cm_field_type);
-/*******************************************************************************
-LAST MODIFIED : 10 May 2000
-
-DESCRIPTION :
-Returns a pointer to a static string describing the <value_type>, eg.
-CM_ANATOMICAL_FIELD == "anatomical". This string should match the command used
-to create the edit object. The returned string must not be DEALLOCATEd!
-==============================================================================*/
-
-enum CM_field_type CM_field_type_from_string(char *cm_field_type_string);
-/*******************************************************************************
-LAST MODIFIED : 10 May 2000
-
-DESCRIPTION :
-Returns the cm_field_type from the string, eg "coordinate" =
-CM_COORDINATE_FIELD.
-Returns CM_UNKNOWN_FIELD without error if cm_field_type_string not recognized.
-==============================================================================*/
-
-char **CM_field_type_get_valid_strings(int *number_of_valid_strings);
-/*******************************************************************************
-LAST MODIFIED : 10 May 2000
-
-DESCRIPTION :
-Returns and allocated array of pointers to all static strings for valid
-CM_field_types - obtained from function CM_field_type_string.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
+PROTOTYPE_ENUMERATOR_FUNCTIONS(CM_field_type);
 
 struct FE_field *CREATE(FE_field)(void);
 /*******************************************************************************

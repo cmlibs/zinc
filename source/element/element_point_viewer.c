@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_viewer.c
 
-LAST MODIFIED : 6 December 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Dialog for selecting an element point, viewing and editing its fields and
@@ -369,7 +369,7 @@ Updates the element shown in the chooser to match that for the current point.
 static int Element_point_viewer_refresh_xi_discretization_mode(
 	struct Element_point_viewer *element_point_viewer)
 /*******************************************************************************
-LAST MODIFIED : 29 May 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Updates the Xi_discretization_mode shown in the chooser to match that for the
@@ -386,7 +386,7 @@ current point.
 		{
 			choose_enumerator_set_string(
 				element_point_viewer->xi_discretization_mode_widget,
-				Xi_discretization_mode_string(element_point_viewer->
+				ENUMERATOR_STRING(Xi_discretization_mode)(element_point_viewer->
 					element_point_identifier.xi_discretization_mode));
 			is_sensitive=True;
 		}
@@ -1029,7 +1029,7 @@ Callback for change of top_level_element.
 static void Element_point_viewer_update_xi_discretization_mode(Widget widget,
 	void *element_point_viewer_void,void *xi_discretization_mode_string_void)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Callback for change of xi_discretization_mode.
@@ -1048,36 +1048,38 @@ Callback for change of xi_discretization_mode.
 		/* store old identifier unless in case new one is invalid */
 		COPY(Element_point_ranges_identifier)(&temp_element_point_identifier,
 			&(element_point_viewer->element_point_identifier));
-		xi_discretization_mode=Xi_discretization_mode_from_string(
-			(char *)xi_discretization_mode_string_void);
-		element_point_viewer->element_point_identifier.xi_discretization_mode=
-			xi_discretization_mode;
-		if (XI_DISCRETIZATION_CELL_CORNERS==xi_discretization_mode)
+		if (STRING_TO_ENUMERATOR(Xi_discretization_mode)(
+			(char *)xi_discretization_mode_string_void, &xi_discretization_mode))
 		{
-			Element_point_viewer_get_grid(element_point_viewer);
-		}
-		else if (XI_DISCRETIZATION_EXACT_XI==xi_discretization_mode)
-		{
-			for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
+			element_point_viewer->element_point_identifier.xi_discretization_mode=
+				xi_discretization_mode;
+			if (XI_DISCRETIZATION_CELL_CORNERS==xi_discretization_mode)
 			{
-				element_point_viewer->element_point_identifier.number_in_xi[i]=1;
+				Element_point_viewer_get_grid(element_point_viewer);
 			}
-		}
-		element_point_viewer->element_point_number=0;
-		if (
-Element_point_ranges_identifier_is_valid(
-			&(element_point_viewer->element_point_identifier)))
-		{
-			Element_point_viewer_calculate_xi(element_point_viewer);
-			Element_point_viewer_select_current_point(element_point_viewer);
-		}
-		else
-		{
-			COPY(Element_point_ranges_identifier)(
-				&(element_point_viewer->element_point_identifier),
-				&temp_element_point_identifier);
-			/* always restore mode to actual value in use */
-			Element_point_viewer_refresh_xi_discretization_mode(element_point_viewer);
+			else if (XI_DISCRETIZATION_EXACT_XI==xi_discretization_mode)
+			{
+				for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
+				{
+					element_point_viewer->element_point_identifier.number_in_xi[i]=1;
+				}
+			}
+			element_point_viewer->element_point_number=0;
+			if (Element_point_ranges_identifier_is_valid(
+				&(element_point_viewer->element_point_identifier)))
+			{
+				Element_point_viewer_calculate_xi(element_point_viewer);
+				Element_point_viewer_select_current_point(element_point_viewer);
+			}
+			else
+			{
+				COPY(Element_point_ranges_identifier)(
+					&(element_point_viewer->element_point_identifier),
+					&temp_element_point_identifier);
+				/* always restore mode to actual value in use */
+				Element_point_viewer_refresh_xi_discretization_mode(
+					element_point_viewer);
+			}
 		}
 	}
 	else
@@ -2230,13 +2232,14 @@ fields.
 								{
 									init_widgets=0;
 								}
-								valid_strings=Xi_discretization_mode_get_valid_strings_for_Element_point_ranges(
+								valid_strings = Xi_discretization_mode_get_valid_strings_for_Element_point_ranges(
 									&number_of_valid_strings);
 								if (!(element_point_viewer->xi_discretization_mode_widget=
 									create_choose_enumerator_widget(
 										element_point_viewer->xi_discretization_mode_form,
 										number_of_valid_strings,valid_strings,
-										Xi_discretization_mode_string(element_point_viewer->
+										ENUMERATOR_STRING(Xi_discretization_mode)(
+											element_point_viewer->
 											element_point_identifier.xi_discretization_mode))))
 								{
 									init_widgets=0;

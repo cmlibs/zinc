@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : auxiliary_graphics_types.c
 
-LAST MODIFIED : 27 November 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Structures and enumerated types needed to produce graphics primitives but not
@@ -15,6 +15,7 @@ represent curvesin three xi-directions;
 #include <stdio.h>
 #include "command/parser.h"
 #include "general/debug.h"
+#include "general/enumerator_private.h"
 #include "general/random.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "user_interface/user_interface.h"
@@ -24,141 +25,41 @@ represent curvesin three xi-directions;
 Global functions
 ----------------
 */
-char *Graphics_select_mode_string(enum Graphics_select_mode select_mode)
-/*******************************************************************************
-LAST MODIFIED : 23 February 2000
 
-DESCRIPTION :
-Returns a pointer to a static string describing the select_mode, eg.
-GRAPHICS_NO_SELECT="no_select".This string should match the command
-used to enact the mode. The returned string must not be DEALLOCATEd!
-==============================================================================*/
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Graphics_select_mode)
 {
-	char *return_string;
+	char *enumerator_string;
 
-	ENTER(Graphics_select_mode_string);
-	switch (select_mode)
+	ENTER(ENUMERATOR_STRING(Graphics_select_mode));
+	switch (enumerator_value)
 	{
 		case GRAPHICS_SELECT_ON:
 		{
-			return_string="select_on";
+			enumerator_string = "select_on";
 		} break;
 		case GRAPHICS_NO_SELECT:
 		{
-			return_string="no_select";
+			enumerator_string = "no_select";
 		} break;
 		case GRAPHICS_DRAW_SELECTED:
 		{
-			return_string="draw_selected";
+			enumerator_string = "draw_selected";
 		} break;
 		case GRAPHICS_DRAW_UNSELECTED:
 		{
-			return_string="draw_unselected";
+			enumerator_string = "draw_unselected";
 		} break;
 		default:
 		{
-			display_message(ERROR_MESSAGE,
-				"Graphics_select_mode_string.  Unknown select_mode");
-			return_string=(char *)NULL;
+			enumerator_string = (char *)NULL;
 		} break;
 	}
 	LEAVE;
 
-	return (return_string);
-} /* Graphics_select_mode_string */
+	return (enumerator_string);
+} /* ENUMERATOR_STRING(Graphics_select_mode) */
 
-char **Graphics_select_mode_get_valid_strings(int *number_of_valid_strings)
-/*******************************************************************************
-LAST MODIFIED : 23 February 2000
-
-DESCRIPTION :
-Returns an allocated array of pointers to all static strings for valid
-Graphics_select_modes - obtained from function Graphics_select_mode_string.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-{
-	char **valid_strings;
-	enum Graphics_select_mode select_mode;
-	int i;
-
-	ENTER(Graphics_select_mode_get_valid_strings);
-	if (number_of_valid_strings)
-	{
-		*number_of_valid_strings=0;
-		select_mode=GRAPHICS_SELECT_MODE_BEFORE_FIRST;
-		select_mode++;
-		while (select_mode<GRAPHICS_SELECT_MODE_AFTER_LAST)
-		{
-			(*number_of_valid_strings)++;
-			select_mode++;
-		}
-		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
-		{
-			select_mode=GRAPHICS_SELECT_MODE_BEFORE_FIRST;
-			select_mode++;
-			i=0;
-			while (select_mode<GRAPHICS_SELECT_MODE_AFTER_LAST)
-			{
-				valid_strings[i]=Graphics_select_mode_string(select_mode);
-				i++;
-				select_mode++;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Graphics_select_mode_get_valid_strings.  Not enough memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphics_select_mode_get_valid_strings.  Invalid argument");
-		valid_strings=(char **)NULL;
-	}
-	LEAVE;
-
-	return (valid_strings);
-} /* Graphics_select_mode_get_valid_strings */
-
-enum Graphics_select_mode Graphics_select_mode_from_string(
-	char *select_mode_string)
-/*******************************************************************************
-LAST MODIFIED : 23 February 2000
-
-DESCRIPTION :
-Returns the <Graphics_select_mode> described by <select_mode_string>,
-or GRAPHICS_SELECT_MODE_INVALID if not recognized.
-==============================================================================*/
-{
-	enum Graphics_select_mode select_mode;
-
-	ENTER(Graphics_select_mode_from_string);
-	if (select_mode_string)
-	{
-		select_mode=GRAPHICS_SELECT_MODE_BEFORE_FIRST;
-		select_mode++;
-		while ((select_mode<GRAPHICS_SELECT_MODE_AFTER_LAST)&&
-			(!fuzzy_string_compare_same_length(select_mode_string,
-				Graphics_select_mode_string(select_mode))))
-		{
-			select_mode++;
-		}
-		if (GRAPHICS_SELECT_MODE_AFTER_LAST==select_mode)
-		{
-			select_mode=GRAPHICS_SELECT_MODE_INVALID;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Graphics_select_mode_from_string.  Invalid argument");
-		select_mode=GRAPHICS_SELECT_MODE_INVALID;
-	}
-	LEAVE;
-
-	return (select_mode);
-} /* Graphics_select_mode_from_string */
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Graphics_select_mode)
 
 int set_exterior(struct Parse_state *state,void *value_address_void,
 	void *dummy_user_data)
@@ -801,50 +702,137 @@ A modifier function for setting discretization in each element direction.
 	return (return_code);
 } /* set_Element_discretization */
 
-char *Xi_discretization_mode_string(
-	enum Xi_discretization_mode xi_discretization_mode)
-/*******************************************************************************
-LAST MODIFIED : 7 June 2000
-
-DESCRIPTION :
-Returns a pointer to a static string describing the <xi_discretization_mode>,
-eg. XI_DISCRETIZATION_MODE_CELL_CENTRES == "cell_centres". This string should
-match the command used to create that type of settings.
-The returned string must not be DEALLOCATEd!
-==============================================================================*/
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Streamline_type)
 {
-	char *return_string;
+	char *enumerator_string;
 
-	ENTER(Xi_discretization_mode_string);
-	switch (xi_discretization_mode)
+	ENTER(ENUMERATOR_STRING(Streamline_type));
+	switch (enumerator_value)
 	{
-		case XI_DISCRETIZATION_CELL_CENTRES:
+		case STREAM_EXTRUDED_ELLIPSE:
 		{
-			return_string="cell_centres";
+			enumerator_string = "ellipse";
 		} break;
-		case XI_DISCRETIZATION_CELL_CORNERS:
+		case STREAM_LINE:
 		{
-			return_string="cell_corners";
+			enumerator_string = "line";
 		} break;
-		case XI_DISCRETIZATION_CELL_RANDOM:
+		case STREAM_EXTRUDED_RECTANGLE:
 		{
-			return_string="cell_random";
+			enumerator_string = "rectangle";
 		} break;
-		case XI_DISCRETIZATION_EXACT_XI:
+		case STREAM_RIBBON:
 		{
-			return_string="exact_xi";
+			enumerator_string = "ribbon";
 		} break;
 		default:
 		{
-			display_message(ERROR_MESSAGE,
-				"Xi_discretization_mode_string.  Unknown xi_discretization_mode");
-			return_string=(char *)NULL;
+			enumerator_string = (char *)NULL;
 		} break;
 	}
 	LEAVE;
 
-	return (return_string);
-} /* Xi_discretization_mode_string */
+	return (enumerator_string);
+} /* ENUMERATOR_STRING(Streamline_type) */
+
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Streamline_type)
+
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Streamline_data_type)
+{
+	char *enumerator_string;
+
+	ENTER(ENUMERATOR_STRING(Streamline_data_type));
+	switch (enumerator_value)
+	{
+		case STREAM_NO_DATA:
+		{
+			enumerator_string = "no_data";
+		} break;
+		case STREAM_FIELD_SCALAR:
+		{
+			enumerator_string = "field_scalar";
+		} break;
+		case STREAM_MAGNITUDE_SCALAR:
+		{
+			enumerator_string = "magnitude_scalar";
+		} break;
+		case STREAM_TRAVEL_SCALAR:
+		{
+			enumerator_string = "travel_scalar";
+		} break;
+		default:
+		{
+			enumerator_string = (char *)NULL;
+		} break;
+	}
+	LEAVE;
+
+	return (enumerator_string);
+} /* ENUMERATOR_STRING(Streamline_data_type) */
+
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Streamline_data_type)
+
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Render_type)
+{
+	char *enumerator_string;
+
+	ENTER(ENUMERATOR_STRING(Render_type));
+	switch (enumerator_value)
+	{
+		case RENDER_TYPE_SHADED:
+		{
+			enumerator_string = "render_shaded";
+		} break;
+		case RENDER_TYPE_WIREFRAME:
+		{
+			enumerator_string = "render_wireframe";
+		} break;
+		default:
+		{
+			enumerator_string = (char *)NULL;
+		} break;
+	}
+	LEAVE;
+
+	return (enumerator_string);
+} /* ENUMERATOR_STRING(Render_type) */
+
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Render_type)
+
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Xi_discretization_mode)
+{
+	char *enumerator_string;
+
+	ENTER(ENUMERATOR_STRING(Xi_discretization_mode));
+	switch (enumerator_value)
+	{
+		case XI_DISCRETIZATION_CELL_CENTRES:
+		{
+			enumerator_string = "cell_centres";
+		} break;
+		case XI_DISCRETIZATION_CELL_CORNERS:
+		{
+			enumerator_string = "cell_corners";
+		} break;
+		case XI_DISCRETIZATION_CELL_RANDOM:
+		{
+			enumerator_string = "cell_random";
+		} break;
+		case XI_DISCRETIZATION_EXACT_XI:
+		{
+			enumerator_string = "exact_xi";
+		} break;
+		default:
+		{
+			enumerator_string = (char *)NULL;
+		} break;
+	}
+	LEAVE;
+
+	return (enumerator_string);
+} /* ENUMERATOR_STRING(Xi_discretization_mode) */
+
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Xi_discretization_mode)
 
 int Xi_discretization_mode_get_number_of_xi_points(
 	enum Xi_discretization_mode xi_discretization_mode,int dimension,
@@ -1290,494 +1278,3 @@ for a consistent interface.
 
 	return (return_code);
 } /* Xi_discretization_mode_get_element_point_xi */
-
-char **Xi_discretization_mode_get_valid_strings(int *number_of_valid_strings)
-/*******************************************************************************
-LAST MODIFIED : 30 May 2000
-
-DESCRIPTION :
-Returns an allocated array of pointers to all static strings for valid
-Xi_discretization_modes - obtained from function Xi_discretization_mode_string.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-{
-	char **valid_strings;
-	enum Xi_discretization_mode xi_discretization_mode;
-	int i;
-
-	ENTER(Xi_discretization_mode_get_valid_strings);
-	if (number_of_valid_strings)
-	{
-		*number_of_valid_strings=0;
-		xi_discretization_mode=XI_DISCRETIZATION_MODE_BEFORE_FIRST;
-		xi_discretization_mode++;
-		while (xi_discretization_mode<XI_DISCRETIZATION_MODE_AFTER_LAST)
-		{
-			(*number_of_valid_strings)++;
-			xi_discretization_mode++;
-		}
-		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
-		{
-			xi_discretization_mode=XI_DISCRETIZATION_MODE_BEFORE_FIRST;
-			xi_discretization_mode++;
-			i=0;
-			while (xi_discretization_mode<XI_DISCRETIZATION_MODE_AFTER_LAST)
-			{
-				valid_strings[i]=Xi_discretization_mode_string(xi_discretization_mode);
-				i++;
-				xi_discretization_mode++;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Xi_discretization_mode_get_valid_strings.  Not enough memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Xi_discretization_mode_get_valid_strings.  Invalid argument(s)");
-		valid_strings=(char **)NULL;
-	}
-	LEAVE;
-
-	return (valid_strings);
-} /* Xi_discretization_mode_get_valid_strings */
-
-enum Xi_discretization_mode Xi_discretization_mode_from_string(
-	char *xi_discretization_mode_string)
-/*******************************************************************************
-LAST MODIFIED : 22 March 1999
-
-DESCRIPTION :
-Returns the <Xi_discretization_mode> described by
-<xi_discretization_mode_string>.
-==============================================================================*/
-{
-	enum Xi_discretization_mode xi_discretization_mode;
-
-	ENTER(Xi_discretization_mode_from_string);
-	if (xi_discretization_mode_string)
-	{
-		xi_discretization_mode=XI_DISCRETIZATION_MODE_BEFORE_FIRST;
-		xi_discretization_mode++;
-		while ((xi_discretization_mode<XI_DISCRETIZATION_MODE_AFTER_LAST)&&
-			(!fuzzy_string_compare_same_length(xi_discretization_mode_string,
-				Xi_discretization_mode_string(xi_discretization_mode))))
-		{
-			xi_discretization_mode++;
-		}
-		if (XI_DISCRETIZATION_MODE_AFTER_LAST==xi_discretization_mode)
-		{
-			xi_discretization_mode=XI_DISCRETIZATION_INVALID;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Xi_discretization_mode_from_string.  Invalid argument");
-		xi_discretization_mode=XI_DISCRETIZATION_INVALID;
-	}
-	LEAVE;
-
-	return (xi_discretization_mode);
-} /* Xi_discretization_mode_from_string */
-
-char *Streamline_type_string(enum Streamline_type streamline_type)
-/*******************************************************************************
-LAST MODIFIED : 19 March 1999
-
-DESCRIPTION :
-Returns a pointer to a static string describing the streamline_type, eg.
-STREAM_LINE == "line". This string should match the command used
-to create that type of streamline. The returned string must not be DEALLOCATEd!
-==============================================================================*/
-{
-	char *return_string;
-
-	ENTER(Streamline_type_string);
-	switch (streamline_type)
-	{
-		case STREAM_EXTRUDED_ELLIPSE:
-		{
-			return_string="ellipse";
-		} break;
-		case STREAM_LINE:
-		{
-			return_string="line";
-		} break;
-		case STREAM_EXTRUDED_RECTANGLE:
-		{
-			return_string="rectangle";
-		} break;
-		case STREAM_RIBBON:
-		{
-			return_string="ribbon";
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE,
-				"Streamline_type_string.  Unknown streamline_type");
-			return_string=(char *)NULL;
-		} break;
-	}
-	LEAVE;
-
-	return (return_string);
-} /* Streamline_type_string */
-
-char **Streamline_type_get_valid_strings(int *number_of_valid_strings)
-/*******************************************************************************
-LAST MODIFIED : 22 March 1999
-
-DESCRIPTION :
-Returns and allocated array of pointers to all static strings for valid
-Streamline_types - obtained from function Streamline_type_string.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-{
-	char **valid_strings;
-	enum Streamline_type streamline_type;
-	int i;
-
-	ENTER(Streamline_type_get_valid_strings);
-	if (number_of_valid_strings)
-	{
-		*number_of_valid_strings=0;
-		streamline_type=STREAMLINE_TYPE_BEFORE_FIRST;
-		streamline_type++;
-		while (streamline_type<STREAMLINE_TYPE_AFTER_LAST)
-		{
-			(*number_of_valid_strings)++;
-			streamline_type++;
-		}
-		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
-		{
-			streamline_type=STREAMLINE_TYPE_BEFORE_FIRST;
-			streamline_type++;
-			i=0;
-			while (streamline_type<STREAMLINE_TYPE_AFTER_LAST)
-			{
-				valid_strings[i]=Streamline_type_string(streamline_type);
-				i++;
-				streamline_type++;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Streamline_type_get_valid_strings.  Not enough memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Streamline_type_get_valid_strings.  Invalid argument");
-		valid_strings=(char **)NULL;
-	}
-	LEAVE;
-
-	return (valid_strings);
-} /* Streamline_type_get_valid_strings */
-
-enum Streamline_type Streamline_type_from_string(char *streamline_type_string)
-/*******************************************************************************
-LAST MODIFIED : 22 March 1999
-
-DESCRIPTION :
-Returns the <Streamline_type> described by <streamline_type_string>.
-==============================================================================*/
-{
-	enum Streamline_type streamline_type;
-
-	ENTER(Streamline_type_from_string);
-	if (streamline_type_string)
-	{
-		streamline_type=STREAMLINE_TYPE_BEFORE_FIRST;
-		streamline_type++;
-		while ((streamline_type<STREAMLINE_TYPE_AFTER_LAST)&&
-			(!fuzzy_string_compare_same_length(streamline_type_string,
-				Streamline_type_string(streamline_type))))
-		{
-			streamline_type++;
-		}
-		if (STREAMLINE_TYPE_AFTER_LAST==streamline_type)
-		{
-			streamline_type=STREAMLINE_TYPE_INVALID;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Streamline_type_from_string.  Invalid argument");
-		streamline_type=STREAMLINE_TYPE_INVALID;
-	}
-	LEAVE;
-
-	return (streamline_type);
-} /* Streamline_type_from_string */
-
-char *Streamline_data_type_string(
-	enum Streamline_data_type streamline_data_type)
-/*******************************************************************************
-LAST MODIFIED : 24 March 1999
-
-DESCRIPTION :
-Returns a pointer to a static string describing the streamline_data_type, eg.
-STREAM_FIELD_SCALAR == "field_scalar". This string should match the command used
-to create that type of streamline. The returned string must not be DEALLOCATEd!
-==============================================================================*/
-{
-	char *return_string;
-
-	ENTER(Streamline_data_type_string);
-	switch (streamline_data_type)
-	{
-		case STREAM_NO_DATA:
-		{
-			return_string="no_data";
-		} break;
-		case STREAM_FIELD_SCALAR:
-		{
-			return_string="field_scalar";
-		} break;
-		case STREAM_MAGNITUDE_SCALAR:
-		{
-			return_string="magnitude_scalar";
-		} break;
-		case STREAM_TRAVEL_SCALAR:
-		{
-			return_string="travel_scalar";
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE,
-				"Streamline_data_type_string.  Unknown streamline_data_type");
-			return_string=(char *)NULL;
-		} break;
-	}
-	LEAVE;
-
-	return (return_string);
-} /* Streamline_data_type_string */
-
-char **Streamline_data_type_get_valid_strings(int *number_of_valid_strings)
-/*******************************************************************************
-LAST MODIFIED : 22 March 1999
-
-DESCRIPTION :
-Returns and allocated array of pointers to all static strings for valid
-Streamline_data_types - obtained from function Streamline_data_type_string.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-{
-	char **valid_strings;
-	enum Streamline_data_type streamline_data_type;
-	int i;
-
-	ENTER(Streamline_data_type_get_valid_strings);
-	if (number_of_valid_strings)
-	{
-		*number_of_valid_strings=0;
-		streamline_data_type=STREAMLINE_DATA_TYPE_BEFORE_FIRST;
-		streamline_data_type++;
-		while (streamline_data_type<STREAMLINE_DATA_TYPE_AFTER_LAST)
-		{
-			(*number_of_valid_strings)++;
-			streamline_data_type++;
-		}
-		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
-		{
-			streamline_data_type=STREAMLINE_DATA_TYPE_BEFORE_FIRST;
-			streamline_data_type++;
-			i=0;
-			while (streamline_data_type<STREAMLINE_DATA_TYPE_AFTER_LAST)
-			{
-				valid_strings[i]=Streamline_data_type_string(streamline_data_type);
-				i++;
-				streamline_data_type++;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Streamline_data_type_get_valid_strings.  Not enough memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Streamline_data_type_get_valid_strings.  Invalid argument");
-		valid_strings=(char **)NULL;
-	}
-	LEAVE;
-
-	return (valid_strings);
-} /* Streamline_data_type_get_valid_strings */
-
-enum Streamline_data_type Streamline_data_type_from_string(
-	char *streamline_data_type_string)
-/*******************************************************************************
-LAST MODIFIED : 13 July 1999
-
-DESCRIPTION :
-Returns the <Streamline_data_type> described by <streamline_data_type_string>,
-or NULL if not recognized.
-==============================================================================*/
-{
-	enum Streamline_data_type streamline_data_type;
-
-	ENTER(Streamline_data_type_from_string);
-	if (streamline_data_type_string)
-	{
-		streamline_data_type=STREAMLINE_DATA_TYPE_BEFORE_FIRST;
-		streamline_data_type++;
-		while ((streamline_data_type<STREAMLINE_DATA_TYPE_AFTER_LAST)&&
-			(!fuzzy_string_compare_same_length(streamline_data_type_string,
-				Streamline_data_type_string(streamline_data_type))))
-		{
-			streamline_data_type++;
-		}
-		if (STREAMLINE_DATA_TYPE_AFTER_LAST==streamline_data_type)
-		{
-			streamline_data_type=STREAMLINE_DATA_TYPE_INVALID;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Streamline_data_type_from_string.  Invalid argument");
-		streamline_data_type=STREAMLINE_DATA_TYPE_INVALID;
-	}
-	LEAVE;
-
-	return (streamline_data_type);
-} /* Streamline_data_type_from_string */
-
-char *Render_type_string(enum Render_type render_type)
-/*******************************************************************************
-LAST MODIFIED : 2 May 2000
-
-DESCRIPTION :
-Returns a pointer to a static string describing the render_type, eg.
-RENDER_TYPE_SHADED == "shaded". This string should match the command used
-to create that type of render. The returned string must not be DEALLOCATEd!
-==============================================================================*/
-{
-	char *return_string;
-
-	ENTER(Render_type_string);
-	switch (render_type)
-	{
-		case RENDER_TYPE_SHADED:
-		{
-			return_string="render_shaded";
-		} break;
-		case RENDER_TYPE_WIREFRAME:
-		{
-			return_string="render_wireframe";
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE,
-				"Render_type_string.  Unknown render_type");
-			return_string=(char *)NULL;
-		} break;
-	}
-	LEAVE;
-
-	return (return_string);
-} /* Render_type_string */
-
-char **Render_type_get_valid_strings(int *number_of_valid_strings)
-/*******************************************************************************
-LAST MODIFIED : 2 May 2000
-
-DESCRIPTION :
-Returns and allocated array of pointers to all static strings for valid
-Render_types - obtained from function Render_type_string.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-{
-	char **valid_strings;
-	enum Render_type render_type;
-	int i;
-
-	ENTER(Render_type_get_valid_strings);
-	if (number_of_valid_strings)
-	{
-		*number_of_valid_strings=0;
-		render_type=RENDER_TYPE_BEFORE_FIRST;
-		render_type++;
-		while (render_type<RENDER_TYPE_AFTER_LAST)
-		{
-			(*number_of_valid_strings)++;
-			render_type++;
-		}
-		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
-		{
-			render_type=RENDER_TYPE_BEFORE_FIRST;
-			render_type++;
-			i=0;
-			while (render_type<RENDER_TYPE_AFTER_LAST)
-			{
-				valid_strings[i]=Render_type_string(render_type);
-				i++;
-				render_type++;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Render_type_get_valid_strings.  Not enough memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Render_type_get_valid_strings.  Invalid argument");
-		valid_strings=(char **)NULL;
-	}
-	LEAVE;
-
-	return (valid_strings);
-} /* Render_type_get_valid_strings */
-
-enum Render_type Render_type_from_string(char *render_type_string)
-/*******************************************************************************
-LAST MODIFIED : 2 May 2000
-
-DESCRIPTION :
-Returns the <Render_type> described by <render_type_string>.
-==============================================================================*/
-{
-	enum Render_type render_type;
-
-	ENTER(Render_type_from_string);
-	if (render_type_string)
-	{
-		render_type=RENDER_TYPE_BEFORE_FIRST;
-		render_type++;
-		while ((render_type<RENDER_TYPE_AFTER_LAST)&&
-			(!fuzzy_string_compare_same_length(render_type_string,
-				Render_type_string(render_type))))
-		{
-			render_type++;
-		}
-		if (RENDER_TYPE_AFTER_LAST==render_type)
-		{
-			render_type=RENDER_TYPE_INVALID;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Render_type_from_string.  Invalid argument");
-		render_type=RENDER_TYPE_INVALID;
-	}
-	LEAVE;
-
-	return (render_type);
-} /* Render_type_from_string */
-

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : settings_editor.c
 
-LAST MODIFIED : 24 November 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Provides the widgets to manipulate element group settings.
@@ -1113,10 +1113,10 @@ Callback for change of xi_discretization_mode.
 	USE_PARAMETER(widget);
 	if (settings_editor=(struct Settings_editor *)settings_editor_void)
 	{
-		xi_discretization_mode=Xi_discretization_mode_from_string(
-			(char *)xi_discretization_mode_string_void);
-		if (GT_element_settings_set_xi_discretization_mode(
-			settings_editor->current_settings,xi_discretization_mode))
+		if (STRING_TO_ENUMERATOR(Xi_discretization_mode)(
+			(char *)xi_discretization_mode_string_void, &xi_discretization_mode) &&
+			GT_element_settings_set_xi_discretization_mode(
+				settings_editor->current_settings,xi_discretization_mode))
 		{
 			XtSetSensitive(settings_editor->discretization_entry,
 				XI_DISCRETIZATION_EXACT_XI != xi_discretization_mode);
@@ -1949,7 +1949,7 @@ Called when entry is made into the seed_xi text field.
 static void settings_editor_update_streamline_type(Widget widget,
 	void *settings_editor_void,void *streamline_type_string_void)
 /*******************************************************************************
-LAST MODIFIED : 24 March 1999
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Callback for change of streamline_type.
@@ -1966,13 +1966,13 @@ Callback for change of streamline_type.
 	if (settings_editor=(struct Settings_editor *)settings_editor_void)
 	{
 		if (GT_element_settings_get_streamline_parameters(
-			settings_editor->current_settings,&streamline_type,
-			&stream_vector_field,&reverse_track,&streamline_length,
-			&streamline_width)&&
+			settings_editor->current_settings, &streamline_type, &stream_vector_field,
+			&reverse_track, &streamline_length, &streamline_width) &&
+			STRING_TO_ENUMERATOR(Streamline_type)(
+				(char *)streamline_type_string_void, &streamline_type) &&
 			GT_element_settings_set_streamline_parameters(
-				settings_editor->current_settings,
-				Streamline_type_from_string((char *)streamline_type_string_void),
-				stream_vector_field,reverse_track,streamline_length,streamline_width))
+				settings_editor->current_settings, streamline_type, stream_vector_field,
+				reverse_track, streamline_length, streamline_width))
 		{
 			/* inform the client of the change */
 			settings_editor_update(settings_editor);
@@ -2094,23 +2094,25 @@ Called when entry is made into the radius_scale_factor_text field.
 } /* settings_editor_streamline_width_text_CB */
 
 static void settings_editor_update_render_type(Widget widget,
-	void *settings_editor_void,void *render_type_string_void)
+	void *settings_editor_void, void *render_type_string_void)
 /*******************************************************************************
-LAST MODIFIED : 3 May 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Callback for change of render_type.
 ==============================================================================*/
 {
+	enum Render_type render_type;
 	struct Settings_editor *settings_editor;
 
 	ENTER(settings_editor_update_render_type);
 	USE_PARAMETER(widget);
-	if (settings_editor=(struct Settings_editor *)settings_editor_void)
+	if (settings_editor = (struct Settings_editor *)settings_editor_void)
 	{
-		if (GT_element_settings_set_render_type(
-			settings_editor->current_settings,
-			Render_type_from_string((char *)render_type_string_void)))
+		if (STRING_TO_ENUMERATOR(Render_type)(
+			(char *)render_type_string_void, &render_type) &&
+			GT_element_settings_set_render_type(
+				settings_editor->current_settings, render_type))
 		{
 			/* inform the client of the change */
 			settings_editor_update(settings_editor);
@@ -2209,21 +2211,23 @@ Called when entry is made into the radius_scale_factor_text field.
 static void settings_editor_update_select_mode(Widget widget,
 	void *settings_editor_void,void *select_mode_string_void)
 /*******************************************************************************
-LAST MODIFIED : 20 January 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Callback for change of select_mode.
 ==============================================================================*/
 {
+	enum Graphics_select_mode select_mode;
 	struct Settings_editor *settings_editor;
 
 	ENTER(settings_editor_update_select_mode);
 	USE_PARAMETER(widget);
 	if (settings_editor=(struct Settings_editor *)settings_editor_void)
 	{
-		if (GT_element_settings_set_select_mode(
-			settings_editor->current_settings,
-			Graphics_select_mode_from_string((char *)select_mode_string_void)))
+		if (STRING_TO_ENUMERATOR(Graphics_select_mode)(
+			(char *)select_mode_string_void, &select_mode) &&
+			GT_element_settings_set_select_mode(
+				settings_editor->current_settings, select_mode))
 		{
 			/* inform the client of the change */
 			settings_editor_update(settings_editor);
@@ -2240,7 +2244,7 @@ Callback for change of select_mode.
 static void settings_editor_update_streamline_data_type(Widget widget,
 	void *settings_editor_void,void *streamline_data_type_string_void)
 /*******************************************************************************
-LAST MODIFIED : 24 March 1999
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Callback for change of streamline_data_type.
@@ -2258,10 +2262,10 @@ Callback for change of streamline_data_type.
 	{
 		if (GT_element_settings_get_data_spectrum_parameters_streamlines(
 			settings_editor->current_settings,&old_streamline_data_type,
-			&data_field,&spectrum))
+			&data_field,&spectrum) &&
+			STRING_TO_ENUMERATOR(Streamline_data_type)(
+				(char *)streamline_data_type_string_void, &streamline_data_type))
 		{
-			streamline_data_type=Streamline_data_type_from_string(
-				(char *)streamline_data_type_string_void);
 			if (streamline_data_type != old_streamline_data_type)
 			{
 				if (STREAM_FIELD_SCALAR==old_streamline_data_type)
@@ -2293,7 +2297,7 @@ Callback for change of streamline_data_type.
 					/* update the choose_enumerator for streamline_data_type */
 					choose_enumerator_set_string(
 						settings_editor->streamline_data_type_widget,
-						Streamline_data_type_string(streamline_data_type));
+						ENUMERATOR_STRING(Streamline_data_type)(streamline_data_type));
 				}
 				/* set grayed status of data_field/spectrum widgets */
 				field_set=((struct Computed_field *)NULL != data_field);
@@ -2643,7 +2647,7 @@ Widget create_settings_editor_widget(Widget *settings_editor_widget,
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 17 November 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Creates a settings_editor widget.
@@ -3073,13 +3077,16 @@ Creates a settings_editor widget.
 							{
 								init_widgets=0;
 							}
-							valid_strings=Xi_discretization_mode_get_valid_strings(
-								&number_of_valid_strings);
+							valid_strings =
+								ENUMERATOR_GET_VALID_STRINGS(Xi_discretization_mode)(
+									&number_of_valid_strings, (ENUMERATOR_CONDITIONAL_FUNCTION(
+										Xi_discretization_mode) *)NULL, (void *)NULL);
 							if (!(settings_editor->xi_discretization_mode_widget=
 								create_choose_enumerator_widget(
 								settings_editor->xi_discretization_mode_form,
 								number_of_valid_strings,valid_strings,
-								Xi_discretization_mode_string(XI_DISCRETIZATION_CELL_CENTRES))))
+								ENUMERATOR_STRING(Xi_discretization_mode)(
+									XI_DISCRETIZATION_CELL_CENTRES))))
 							{
 								init_widgets=0;
 							}
@@ -3103,13 +3110,15 @@ Creates a settings_editor widget.
 							{
 								init_widgets=0;
 							}
-							valid_strings=Streamline_type_get_valid_strings(
-								&number_of_valid_strings);
+							valid_strings = ENUMERATOR_GET_VALID_STRINGS(Streamline_type)(
+								&number_of_valid_strings,
+								(ENUMERATOR_CONDITIONAL_FUNCTION(Streamline_type) *)NULL,
+								(void *)NULL);
 							if (!(settings_editor->streamline_type_widget=
 								create_choose_enumerator_widget(
 								settings_editor->streamline_type_form,
 								number_of_valid_strings,valid_strings,
-								Streamline_type_string(STREAM_LINE))))
+								ENUMERATOR_STRING(Streamline_type)(STREAM_LINE))))
 							{
 								init_widgets=0;
 							}
@@ -3122,24 +3131,30 @@ Creates a settings_editor widget.
 							{
 								init_widgets=0;
 							}
-							valid_strings=Graphics_select_mode_get_valid_strings(
-								&number_of_valid_strings);
+							valid_strings =
+								ENUMERATOR_GET_VALID_STRINGS(Graphics_select_mode)(
+									&number_of_valid_strings,
+									(ENUMERATOR_CONDITIONAL_FUNCTION(Graphics_select_mode) *)NULL,
+									(void *)NULL);
 							if (!(settings_editor->select_mode_widget=
 								create_choose_enumerator_widget(
 									settings_editor->select_mode_form,
 									number_of_valid_strings,valid_strings,
-									Graphics_select_mode_string(GRAPHICS_NO_SELECT))))
+									ENUMERATOR_STRING(Graphics_select_mode)(GRAPHICS_NO_SELECT))))
 							{
 								init_widgets=0;
 							}
 							DEALLOCATE(valid_strings);
-							valid_strings=Streamline_data_type_get_valid_strings(
-								&number_of_valid_strings);
+							valid_strings =
+								ENUMERATOR_GET_VALID_STRINGS(Streamline_data_type)(
+									&number_of_valid_strings,
+									(ENUMERATOR_CONDITIONAL_FUNCTION(Streamline_data_type) *)NULL,
+									(void *)NULL);
 							if (!(settings_editor->streamline_data_type_widget=
 								create_choose_enumerator_widget(
 								settings_editor->streamline_data_type_form,
 								number_of_valid_strings,valid_strings,
-								Streamline_data_type_string(STREAM_FIELD_SCALAR))))
+								ENUMERATOR_STRING(Streamline_data_type)(STREAM_FIELD_SCALAR))))
 							{
 								init_widgets=0;
 							}
@@ -3188,15 +3203,17 @@ Creates a settings_editor widget.
 							{
 								init_widgets=0;
 							}
-							valid_strings=Render_type_get_valid_strings(
-								&number_of_valid_strings);
+							valid_strings = ENUMERATOR_GET_VALID_STRINGS(Render_type)(
+								&number_of_valid_strings,
+								(ENUMERATOR_CONDITIONAL_FUNCTION(Render_type) *)NULL,
+								(void *)NULL);
 							if (!(settings_editor->render_type_widget=
 								create_choose_enumerator_widget(
-								settings_editor->render_type_form,
-								number_of_valid_strings,valid_strings,
-								Render_type_string(RENDER_TYPE_SHADED))))
+									settings_editor->render_type_form,
+									number_of_valid_strings, valid_strings,
+									ENUMERATOR_STRING(Render_type)(RENDER_TYPE_SHADED))))
 							{
-								init_widgets=0;
+								init_widgets = 0;
 							}
 							DEALLOCATE(valid_strings);
 							if (init_widgets)
@@ -3389,7 +3406,7 @@ Returns the currently chosen settings.
 int settings_editor_set_settings(Widget settings_editor_widget,
 	struct GT_element_settings *new_settings)
 /*******************************************************************************
-LAST MODIFIED : 15 November 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Changes the currently chosen settings.
@@ -3653,7 +3670,8 @@ Changes the currently chosen settings.
 									GT_element_settings_get_xi_discretization_mode(new_settings);
 								choose_enumerator_set_string(
 									settings_editor->xi_discretization_mode_widget,
-									Xi_discretization_mode_string(xi_discretization_mode));
+									ENUMERATOR_STRING(Xi_discretization_mode)(
+										xi_discretization_mode));
 								XtManageChild(settings_editor->xi_discretization_mode_entry);
 
 								GT_element_settings_get_discretization(new_settings,
@@ -3800,7 +3818,7 @@ Changes the currently chosen settings.
 									&streamline_length,&streamline_width);
 								choose_enumerator_set_string(
 									settings_editor->streamline_type_widget,
-									Streamline_type_string(streamline_type));
+									ENUMERATOR_STRING(Streamline_type)(streamline_type));
 								sprintf(temp_string,"%g",streamline_length);
 								XtVaSetValues(settings_editor->streamline_length_text,XmNvalue,
 									temp_string,NULL);
@@ -3836,9 +3854,9 @@ Changes the currently chosen settings.
 									settings_editor->stream_vector_field_widget,&callback);
 							}
 
-							select_mode=GT_element_settings_get_select_mode(new_settings);
+							select_mode = GT_element_settings_get_select_mode(new_settings);
 							choose_enumerator_set_string(settings_editor->select_mode_widget,
-								Graphics_select_mode_string(select_mode));
+								ENUMERATOR_STRING(Graphics_select_mode)(select_mode));
 							callback.data=(void *)settings_editor;
 							callback.procedure=settings_editor_update_select_mode;
 							choose_enumerator_set_callback(
@@ -3861,7 +3879,8 @@ Changes the currently chosen settings.
 									&data_field,&spectrum);
 								choose_enumerator_set_string(
 									settings_editor->streamline_data_type_widget,
-									Streamline_data_type_string(streamline_data_type));
+									ENUMERATOR_STRING(Streamline_data_type)(
+										streamline_data_type));
 								XtManageChild(settings_editor->streamline_data_type_entry);
 								field_set=((struct Computed_field *)NULL != data_field);
 								XtSetSensitive(settings_editor->data_field_widget,field_set);
@@ -3953,7 +3972,7 @@ Changes the currently chosen settings.
 							{
 								choose_enumerator_set_string(
 									settings_editor->render_type_widget,
-									Render_type_string(
+									ENUMERATOR_STRING(Render_type)(
 										GT_element_settings_get_render_type(new_settings)));
 								XtManageChild(settings_editor->render_type_entry);
 								/* turn on callbacks */

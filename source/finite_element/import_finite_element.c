@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : import_finite_element.c
 
-LAST MODIFIED : 2 March 2001
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 The function for importing finite element data, from a file or CMISS (via a
@@ -436,10 +436,9 @@ not have any component names; these must be set by the calling function.
 			fscanf(input_file,", ");
 		}
 		/* read the CM_field_information */
-		if (return_code&&next_block)
+		if (return_code && next_block)
 		{
-			cm_field_type=CM_field_type_from_string(next_block);
-			if (CM_FIELD_TYPE_INVALID != cm_field_type)
+			if (STRING_TO_ENUMERATOR(CM_field_type)(next_block, &cm_field_type))
 			{
 				set_CM_field_information(&cm_field_information,cm_field_type,
 					(int *)NULL);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : export_finite_element.c
 
-LAST MODIFIED : 4 October 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 The function for exporting finite element data, to a file or to CMISS (via a
@@ -124,7 +124,7 @@ E<lement>/F<ace>/L<ine> ELEMENT_NUMBER DIMENSION xi1 xi2... xiDIMENSION
 static int write_FE_field_header(FILE *output_file,int field_number,
 	struct FE_field *field)
 /*******************************************************************************
-LAST MODIFIED : 10 May 2000
+LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Writes the part of the field header that is common to exnode and exelem files.
@@ -156,7 +156,7 @@ Examples:
 			fprintf(output_file,"unknown");
 		}
 		fprintf(output_file,", %s",
-			CM_field_type_string(get_FE_field_CM_field_type(field)));
+			ENUMERATOR_STRING(CM_field_type)(get_FE_field_CM_field_type(field)));
 		/* optional constant/indexed, Index_field=~, #Values=# */
 		fe_field_type=get_FE_field_FE_field_type(field);
 		switch (fe_field_type)
