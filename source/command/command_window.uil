@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : command_window.uil
 !
-! LAST MODIFIED : 30 November 1999
+! LAST MODIFIED : 11 May 2000
 !
 ! DESCRIPTION :
 ! The widgets/gadgets for the command window.
@@ -15,15 +15,16 @@ procedure
 	identify_command_box;
 	identify_output_pane;
 	identify_message_pane;
+	id_element_creator_create_butto;
 	id_three_d_window_create_button;
 	id_image_processing_create_butt;
 	id_volume_editor_create_button;
 	id_g_element_editor_create_butt;
 	id_material_editor_create_butto;
 	id_spectrum_editor_create_butto;
-	id_data_editor_create_button;
+	id_data_viewer_create_button;
 	id_interactive_data_editor_cbut;
-	id_node_editor_create_button;
+	id_node_viewer_create_button;
 	id_interactive_node_editor_cbut;
 	id_3d_digitizer_create_button;
 	id_im_control_create_button;
@@ -225,7 +226,7 @@ object
 		controls
 			{
 			XmCascadeButton file_button;
-			XmCascadeButton tools_button;
+			XmCascadeButton viewers_button;
 !			XmCascadeButton options_button;
 !			XmCascadeButton scroll_button;
 			};
@@ -486,33 +487,34 @@ object
 				};
 			};
 		};
-	tools_button: XmCascadeButton
+	viewers_button: XmCascadeButton
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("Tools");
-			XmNmnemonic = keysym("T");
+			XmNlabelString = compound_string("Viewers");
+			XmNmnemonic = keysym("V");
 			XmNsensitive = true;
 			};
 		controls
 			{
-			XmPulldownMenu tools_pulldown_menu;
+			XmPulldownMenu viewers_pulldown_menu;
 			};
 		};
-	tools_pulldown_menu: XmPulldownMenu
+	viewers_pulldown_menu: XmPulldownMenu
 		{
 		controls
 			{
 			XmPushButton cell_create_button;
 			XmPushButton curve_editor_create_btn;
-			XmPushButton data_editor_create_button;
+			XmPushButton data_viewer_create_button;
+			XmPushButton element_creator_create_button;
 			XmPushButton interactive_data_editor_cbutton;
 			XmPushButton g_element_editor_create_button;
 			XmPushButton material_editor_create_button;
 			XmPushButton grid_field_calculator_btn;
 			XmPushButton im_control_create_button;
 			XmPushButton image_processing_create_button;
-			XmPushButton node_editor_create_button;
+			XmPushButton node_viewer_create_button;
 			XmPushButton interactive_node_editor_cbutton;
 			XmPushButton spectrum_editor_create_button;
 			XmPushButton time_editor_create_button;
@@ -524,22 +526,41 @@ object
 			XmPushButton three_d_window_create_button;
 			};
 		};
-	data_editor_create_button: XmPushButton
+	data_viewer_create_button: XmPushButton
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("Data editor");
+			XmNlabelString = compound_string("Data viewer");
 			XmNuserData = execute_command_structure;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedures
 				{
-				id_data_editor_create_button(command_window_structure);
+				id_data_viewer_create_button(command_window_structure);
 				};
 			XmNactivateCallback = procedures
 				{
-				callback_command("GFX create data_editor");
+				callback_command("GFX create data_viewer");
+				};
+			};
+		};
+	element_creator_create_button: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = compound_string("Element creator");
+			XmNuserData = execute_command_structure;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_element_creator_create_butto(command_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				callback_command("GFX create element_creator");
 				};
 			};
 		};
@@ -687,22 +708,22 @@ object
 				};
 			};
 		};
-	node_editor_create_button: XmPushButton
+	node_viewer_create_button: XmPushButton
 		{
 		arguments
 			{
-			XmNlabelString = compound_string("Node editor");
+			XmNlabelString = compound_string("Node viewer");
 			XmNuserData = execute_command_structure;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedures
 				{
-				id_node_editor_create_button(command_window_structure);
+				id_node_viewer_create_button(command_window_structure);
 				};
 			XmNactivateCallback = procedures
 				{
-				callback_command("GFX create node_editor");
+				callback_command("GFX create node_viewer");
 				};
 			};
 		};

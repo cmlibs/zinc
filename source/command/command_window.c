@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : command_window.c
 
-LAST MODIFIED : 27 April 1999
+LAST MODIFIED : 11 May 2000
 
 DESCRIPTION :
 Management routines for the main command window.
@@ -40,7 +40,7 @@ Module types
 #if !defined (WINDOWS_DEV_FLAG)
 struct Menu_bar
 /*******************************************************************************
-LAST MODIFIED : 6 November 1998
+LAST MODIFIED : 11 May 2000
 
 DESCRIPTION :
 The menu bar at the top of the command window
@@ -58,15 +58,16 @@ The menu bar at the top of the command window
 	struct
 	{
 		Widget cell_create_button;
-		Widget data_editor_create_button;
+		Widget data_viewer_create_button;
 		Widget digitizer_3d_create_button;
+		Widget element_creator_create_button;
 		Widget g_element_editor_create_button;
 		Widget image_processing_create_button;
 		Widget im_control_create_button;
 		Widget interactive_data_editor_create_button;
 		Widget interactive_node_editor_create_button;
 		Widget material_editor_create_button;
-		Widget node_editor_create_button;
+		Widget node_viewer_create_button;
 		Widget spectrum_editor_create_button;
 		Widget three_d_window_create_button;
 		Widget time_editor_create_button;
@@ -380,6 +381,31 @@ DESCRIPTION:
 	LEAVE;
 } /* id_volume_editor_create_button */
 
+static void id_element_creator_create_butto(Widget widget,
+	XtPointer client_data,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 9 May 2000
+
+DESCRIPTION:
+==============================================================================*/
+{
+	struct Command_window *command_window;
+
+	ENTER(id_element_creator_create_butto);
+ 	USE_PARAMETER(call_data);
+	if (command_window=(struct Command_window *)client_data)
+	{
+		command_window->main_menu.windows_menu.element_creator_create_button
+			=widget;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_element_creator_create_butto.  Command window structure missing");
+	}
+	LEAVE;
+} /* id_element_creator_create_butto */
+
 static void id_g_element_editor_create_butt(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
@@ -479,7 +505,7 @@ DESCRIPTION:
 	LEAVE;
 } /* id_interactive_data_editor_cbut */
 
-static void id_node_editor_create_button(Widget widget,
+static void id_node_viewer_create_button(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 21 July 1996
@@ -489,21 +515,21 @@ DESCRIPTION:
 {
 	struct Command_window *command_window;
 
-	ENTER(id_node_editor_create_button);
+	ENTER(id_node_viewer_create_button);
  	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
-		command_window->main_menu.windows_menu.node_editor_create_button=widget;
+		command_window->main_menu.windows_menu.node_viewer_create_button=widget;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"id_node_editor_create_button.  Command window structure missing");
+			"id_node_viewer_create_button.  Command window structure missing");
 	}
 	LEAVE;
-} /* id_node_editor_create_button */
+} /* id_node_viewer_create_button */
 
-static void id_data_editor_create_button(Widget widget,
+static void id_data_viewer_create_button(Widget widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 18 February 1997
@@ -513,19 +539,19 @@ DESCRIPTION:
 {
 	struct Command_window *command_window;
 
-	ENTER(id_data_editor_create_button);
+	ENTER(id_data_viewer_create_button);
  	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)client_data)
 	{
-		command_window->main_menu.windows_menu.data_editor_create_button=widget;
+		command_window->main_menu.windows_menu.data_viewer_create_button=widget;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"id_data_editor_create_button.  Command window structure missing");
+			"id_data_viewer_create_button.  Command window structure missing");
 	}
 	LEAVE;
-} /* id_data_editor_create_button */
+} /* id_data_viewer_create_button */
 
 static void id_spectrum_editor_create_butto(Widget widget,
 	XtPointer client_data,XtPointer call_data)
@@ -814,7 +840,7 @@ DESCRIPTION:
 void change_scrolling(Widget widget,XtPointer command_window_structure,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 18 February 1997
+LAST MODIFIED : 9 May 2000
 
 DESCRIPTION :
 Change from scrolling to not and back.
@@ -827,6 +853,7 @@ Change from scrolling to not and back.
  	USE_PARAMETER(call_data);
 	if (command_window=(struct Command_window *)command_window_structure)
 	{
+		USE_PARAMETER(command_window);
 		display_message(WARNING_MESSAGE,"change_scrolling.	Not implemented");
 	}
 	else
@@ -1156,7 +1183,7 @@ struct Command_window *CREATE(Command_window)(
 	struct Execute_command *execute_command,struct User_interface *user_interface,
 	char *version_id_string)
 /*******************************************************************************
-LAST MODIFIED : 9 November 1998
+LAST MODIFIED : 9 May 2000
 
 DESCRIPTION:
 Create the structures and retrieve the command window from the uil file.
@@ -1178,6 +1205,8 @@ Create the structures and retrieve the command window from the uil file.
 			(XtPointer)id_image_processing_create_butt},
 		{"id_unemap_create_button",(XtPointer)id_unemap_create_button},
 		{"id_cell_create_button",(XtPointer)id_cell_create_button},
+		{"id_element_creator_create_butto",
+			(XtPointer)id_element_creator_create_butto},
 		{"id_time_editor_create_butto",
 			(XtPointer)id_time_editor_create_butto},
 		{"id_tracking_editor_create_butto",
@@ -1192,8 +1221,8 @@ Create the structures and retrieve the command window from the uil file.
 			(XtPointer)id_spectrum_editor_create_butto},
 		{"id_interactive_node_editor_cbut",
 			(XtPointer)id_interactive_node_editor_cbut},
-		{"id_node_editor_create_button",(XtPointer)id_node_editor_create_button},
-		{"id_data_editor_create_button",(XtPointer)id_data_editor_create_button},
+		{"id_node_viewer_create_button",(XtPointer)id_node_viewer_create_button},
+		{"id_data_viewer_create_button",(XtPointer)id_data_viewer_create_button},
 		{"id_interactive_data_editor_cbut",
 			(XtPointer)id_interactive_data_editor_cbut},
 		{"id_3d_digitizer_create_button",(XtPointer)id_3d_digitizer_create_button},
@@ -1238,9 +1267,11 @@ Create the structures and retrieve the command window from the uil file.
 				command_window->main_menu.file_menu.exit_button=(Widget)NULL;
 				command_window->main_menu.windows_menu.cell_create_button=
 					(Widget)NULL;
-				command_window->main_menu.windows_menu.data_editor_create_button=
+				command_window->main_menu.windows_menu.data_viewer_create_button=
 					(Widget)NULL;
 				command_window->main_menu.windows_menu.digitizer_3d_create_button=
+					(Widget)NULL;
+				command_window->main_menu.windows_menu.element_creator_create_button=
 					(Widget)NULL;
 				command_window->main_menu.windows_menu.g_element_editor_create_button=
 					(Widget)NULL;
@@ -1254,7 +1285,7 @@ Create the structures and retrieve the command window from the uil file.
 					interactive_node_editor_create_button=(Widget)NULL;
 				command_window->main_menu.windows_menu.material_editor_create_button=
 					(Widget)NULL;
-				command_window->main_menu.windows_menu.node_editor_create_button=
+				command_window->main_menu.windows_menu.node_viewer_create_button=
 					(Widget)NULL;
 				command_window->main_menu.windows_menu.spectrum_editor_create_button=
 					(Widget)NULL;
