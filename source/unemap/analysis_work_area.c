@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 15 January 2003
+LAST MODIFIED : 21 January 2003
 
 DESCRIPTION :
 ???DB.  Everything or nothing should be using the datum_time_object.  Currently
@@ -8992,7 +8992,7 @@ update_map_from_manual_time_update
 static void select_trace_1_drawing_area(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 27 March 2002
+LAST MODIFIED : 21 January 2003
 
 DESCRIPTION :
 ???DB.  Update comment ?
@@ -9026,6 +9026,7 @@ should be done as a callback from the trace_window.
 	struct Map *map;
 	struct Signal_buffer *buffer;
 	struct Signal_drawing_information *signal_drawing_information;
+	struct Time_keeper *time_keeper;
 	struct Trace_window_area_1 *trace_area_1;
 	struct User_interface *user_interface;
 	unsigned int working_button;
@@ -9427,8 +9428,20 @@ should be done as a callback from the trace_window.
 									{
 										event_number=analysis->event_number;
 										number_of_events=analysis->number_of_events;
+										/* stop the time keeper */
+										time_keeper=(struct Time_keeper *)NULL;
+										if ((analysis->potential_time_object)&&(time_keeper=
+											Time_object_get_time_keeper(analysis->
+											potential_time_object)))
+										{
+											if (Time_keeper_is_playing(time_keeper))
+											{
+												Time_keeper_stop(time_keeper);
+											}
+										}
 										/*change the cursor*/
-										XDefineCursor(display,XtWindow(trace_area_1->drawing_area),cursor);
+										XDefineCursor(display,XtWindow(trace_area_1->drawing_area),
+											cursor);
 										XmUpdateDisplay(trace_area_1->drawing_area);
 										minimum_box_range=2*pointer_sensitivity+1;
 										working_window=XtWindow(trace_area_1->drawing_area);
@@ -9994,8 +10007,14 @@ should be done as a callback from the trace_window.
 												}
 											}
 										}
-										XUndefineCursor(display,XtWindow(trace_area_1->drawing_area));
+										XUndefineCursor(display,
+											XtWindow(trace_area_1->drawing_area));
 										XFreeCursor(display,cursor);
+										if (time_keeper&&(analysis->mapping_window))
+										{
+											mapping_window_update_time_limits(
+												analysis->mapping_window);
+										}
 									}
 								}
 							}
