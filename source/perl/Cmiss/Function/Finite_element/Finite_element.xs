@@ -117,6 +117,17 @@ element_xs(Cmiss::Function::Finite_element finite_element)
 		RETVAL
 
 Cmiss::Function_variable
+time_xs(Cmiss::Function::Finite_element finite_element)
+	CODE:
+		RETVAL=Cmiss_function_finite_element_time(finite_element);
+		if (!RETVAL)
+		{
+			XSRETURN_UNDEF;
+		}
+	OUTPUT:
+		RETVAL
+
+Cmiss::Function_variable
 xi_xs(Cmiss::Function::Finite_element finite_element)
 	CODE:
 		RETVAL=Cmiss_function_finite_element_xi(finite_element);

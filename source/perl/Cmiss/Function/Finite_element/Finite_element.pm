@@ -189,6 +189,14 @@ sub element
 	$objref=element_xs($self);
 }
 
+sub time
+{
+	my ($self,@args)=@_;
+	my ($objref);
+
+	$objref=time_xs($self);
+}
+
 sub xi
 {
 	my ($self,%arg)=@_;
