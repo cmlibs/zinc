@@ -1381,7 +1381,7 @@ of all textures.
 	ENTER(CREATE(Texture));
 	/* allocate memory for structure */
 	if (ALLOCATE(texture,struct Texture,1)&&
-		ALLOCATE(texture->image,long unsigned,4))
+		ALLOCATE(texture->image,unsigned long,4))
 	{
 		if (name)
 		{
