@@ -415,6 +415,9 @@ GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_fragment_program);
 
 /* Extension function handles */
 #if defined (GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES)
+#if ! defined (PFNGLTEXIMAGE3DPROC)
+/* Just using this one function pointer type to check that we have
+	these definitions, could check for more of them */
 #if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
 /* Note that while to strictly satisfy the GL_EXT_texture3D 
 	this function would have the EXT delimiter the SGI
@@ -440,6 +443,14 @@ GRAPHICS_LIBRARY_EXTERN PFNGLPROGRAMSTRINGARBPROC GLHANDLE(glProgramStringARB);
 GRAPHICS_LIBRARY_EXTERN PFNGLDELETEPROGRAMSARBPROC GLHANDLE(glDeleteProgramsARB);
 #define glDeleteProgramsARB (GLHANDLE(glDeleteProgramsARB))
 #endif /* defined (GL_ARB_vertex_program) || defined (GL_ARB_fragment_program) */
+#else 
+/* We don't have types for the functions so we will not use any extensions */
+#undef GL_VERSION_1_2
+#undef GL_VERSION_1_3
+#undef GL_VERSION_1_4
+#undef GL_EXT_texture3D
+#undef GL_ARB_vertex_program
+#undef GL_ARB_fragment_program
 #endif /* defined GRAPHICS_LIBRARY_USE_EXTENSION_FUNCTION_HANDLES */
 
 #endif /* defined (OPENGL_API) */
