@@ -4573,11 +4573,11 @@ graphics window on screen.
 				}
 				for (pane = 0 ; pane < number_of_panes ; pane++)
 				{
-					pane_i = pane % panes_across;
-					pane_j = pane / panes_across;
-					scene_viewer = Graphics_window_get_Scene_viewer(window,pane);
 					if ((tiles_across > 1) || (tiles_down > 1))
 					{
+						pane_i = pane % panes_across;
+						pane_j = pane / panes_across;
+						scene_viewer = Graphics_window_get_Scene_viewer(window,pane);
 						Scene_viewer_get_viewing_volume(scene_viewer,
 							&original_left, &original_right, &original_bottom, &original_top,
 							&original_near_plane, &original_far_plane);
@@ -4593,20 +4593,24 @@ graphics window on screen.
 					}
 					for (j = 0 ; return_code && (j < tiles_down) ; j++)
 					{
-						bottom = original_bottom + (double)j * (original_top - original_bottom) / fraction_down;
-						top = original_bottom
-							+ (double)(j + 1) * (original_top - original_bottom) / fraction_down;
-						NDC_top = original_NDC_top + (double)j * original_NDC_height / fraction_down;
-						viewport_top = ((j + 1) * tile_height - pane_height) / viewport_pixels_per_y;
+						if ((tiles_across > 1) || (tiles_down > 1))
+						{
+							bottom = original_bottom + (double)j * (original_top - original_bottom) / fraction_down;
+							top = original_bottom
+								+ (double)(j + 1) * (original_top - original_bottom) / fraction_down;
+							NDC_top = original_NDC_top + (double)j * original_NDC_height / fraction_down;
+							viewport_top = ((j + 1) * tile_height - pane_height) / viewport_pixels_per_y;
+						}
 						for (i = 0 ; return_code && (i < tiles_across) ; i++)
 						{
-							left = original_left + (double)i * (original_right - original_left) / fraction_across;
-							right = original_left + 
-								(double)(i + 1) * (original_right - original_left) / fraction_across;
-							NDC_left = original_NDC_left + (double)i * original_NDC_width / fraction_across;
-							viewport_left = i * tile_width / viewport_pixels_per_x;
 							if ((tiles_across > 1) || (tiles_down > 1))
 							{
+								left = original_left + (double)i * (original_right - original_left) / fraction_across;
+								right = original_left + 
+									(double)(i + 1) * (original_right - original_left) / fraction_across;
+								NDC_left = original_NDC_left + (double)i * original_NDC_width / fraction_across;
+								viewport_left = i * tile_width / viewport_pixels_per_x;
+
 								Scene_viewer_set_viewing_volume(scene_viewer,
 									left, right, bottom, top,
 									original_near_plane, original_far_plane);
