@@ -15267,143 +15267,6 @@ Executes a GFX LIST command.
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
-static int gfx_modify_data_group(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 21 April 1999
-
-DESCRIPTION :
-Executes a GFX MODIFY DGROUP command.
-==============================================================================*/
-{
-	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"add_ranges",NULL,NULL,set_Multi_range},
-		{"from",NULL,NULL,set_FE_node_group},
-		{"remove_ranges",NULL,NULL,set_Multi_range},
-		{NULL,NULL,NULL,NULL}
-	};
-	struct Add_FE_node_to_list_if_in_range_data add_node_data,remove_node_data;
-	struct Cmiss_command_data *command_data;
-	struct GROUP(FE_node) *from_data_group,*data_group;
-
-	ENTER(gfx_modify_data_group);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
-	{
-		data_group=(struct GROUP(FE_node) *)NULL;
-		if (set_FE_node_group(state,(void *)&data_group,
-			(void *)command_data->data_group_manager))
-		{
-			/* initialise defaults */
-			from_data_group=(struct GROUP(FE_node) *)NULL;
-			add_node_data.node_ranges=CREATE(Multi_range)();
-			add_node_data.node_list=CREATE(LIST(FE_node))();
-			remove_node_data.node_ranges=CREATE(Multi_range)();
-			remove_node_data.node_list=CREATE(LIST(FE_node))();
-			(option_table[0]).to_be_modified=add_node_data.node_ranges;
-			(option_table[1]).to_be_modified= &from_data_group;
-			(option_table[1]).user_data=command_data->data_group_manager;
-			(option_table[2]).to_be_modified=remove_node_data.node_ranges;
-			return_code=process_multiple_options(state,option_table);
-			/* no errors, not asking for help */
-			if (return_code)
-			{
-				if (data_group)
-				{
-					if ((0<Multi_range_get_number_of_ranges(add_node_data.node_ranges))||
-						(0<Multi_range_get_number_of_ranges(remove_node_data.node_ranges)))
-					{
-						if (!Multi_ranges_overlap(add_node_data.node_ranges,
-							remove_node_data.node_ranges))
-						{
-							/* make list of data to add and remove from data group */
-							if (0<Multi_range_get_number_of_ranges(add_node_data.node_ranges))
-							{
-								if (from_data_group)
-								{
-									return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(
-										add_FE_node_to_list_if_in_range,(void *)&add_node_data,
-										from_data_group);
-								}
-								else
-								{
-									return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
-										add_FE_node_to_list_if_in_range,(void *)&add_node_data,
-										command_data->data_manager);
-								}
-							}
-							if (0<Multi_range_get_number_of_ranges(
-								remove_node_data.node_ranges))
-							{
-								return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(
-									add_FE_node_to_list_if_in_range,(void *)&remove_node_data,
-									data_group);
-							}
-							if (return_code)
-							{
-								MANAGED_GROUP_BEGIN_CACHE(FE_node)(data_group);
-								return_code=
-									FOR_EACH_OBJECT_IN_LIST(FE_node)(ensure_FE_node_is_in_group,
-										(void *)data_group,add_node_data.node_list)&&
-									FOR_EACH_OBJECT_IN_LIST(FE_node)(
-										ensure_FE_node_is_not_in_group,(void *)data_group,
-										remove_node_data.node_list);
-								MANAGED_GROUP_END_CACHE(FE_node)(data_group);
-							}
-							if (!return_code)
-							{
-								display_message(ERROR_MESSAGE,"gfx modify dgroup. Failed");
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"gfx modify dgroup.  Add and remove ranges overlap");
-							return_code=0;
-						}
-					}
-					else
-					{
-						display_message(WARNING_MESSAGE,
-							"gfx modify dgroup.  No modifications requested");
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx modify dgroup.  Missing group name");
-					return_code=0;
-				}
-			}
-			DESTROY(Multi_range)(&add_node_data.node_ranges);
-			DESTROY(LIST(FE_node))(&add_node_data.node_list);
-			DESTROY(Multi_range)(&remove_node_data.node_ranges);
-			DESTROY(LIST(FE_node))(&remove_node_data.node_list);
-			if (from_data_group)
-			{
-				DEACCESS(GROUP(FE_node))(&from_data_group);
-			}
-		}
-		if (data_group)
-		{
-			DEACCESS(GROUP(FE_node))(&data_group);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"gfx_modify_data_group.  Missing command_data");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_modify_data_group */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_modify_element_group(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -15966,155 +15829,196 @@ Executes a GFX MODIFY GRAPHICS_OBJECT command.
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int gfx_modify_node_group(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
+	void *use_data, void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 21 April 1999
+LAST MODIFIED : 2 October 2000
 
 DESCRIPTION :
-Executes a GFX MODIFY NGROUP command.
+Modifies the membership of a group.  Only one of <add> or <remove> can
+be specified at once.
+If <used_data_flag> is set, use data_manager and data_selection, otherwise
+use node_manager and node_selection.
 ==============================================================================*/
 {
-	char *group_name;
-	int number_to_remove,original_number_to_remove,return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{"add_ranges",NULL,NULL,set_Multi_range},
-		{"from",NULL,NULL,set_FE_node_group},
-		{"remove_ranges",NULL,NULL,set_Multi_range},
-		{NULL,NULL,NULL,NULL}
-	};
-	struct Add_FE_node_to_list_if_in_range_data add_node_data,remove_node_data;
+	char add_flag, all_flag, remove_flag, selected_flag;
+	int i,j,number_of_ranges,return_code,start,stop;
 	struct Cmiss_command_data *command_data;
-	struct GROUP(FE_element) *element_group;
+	struct FE_node *node;
+	struct FE_node_selection *node_selection;
 	struct GROUP(FE_node) *from_node_group,*node_group;
+	struct MANAGER(FE_node) *node_manager;
+	struct MANAGER(GROUP(FE_node)) *node_group_manager;
+	struct Multi_range *node_range, *selected_range;
+	struct Option_table *option_table;
 
 	ENTER(gfx_modify_node_group);
-	USE_PARAMETER(dummy_to_be_modified);
 	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
 	{
 		node_group=(struct GROUP(FE_node) *)NULL;
+		if (use_data)
+		{
+			node_manager=command_data->data_manager;
+			node_group_manager=command_data->data_group_manager;
+			node_selection=command_data->data_selection;
+		}
+		else
+		{
+			node_manager=command_data->node_manager;
+			node_group_manager=command_data->node_group_manager;
+			node_selection=command_data->node_selection;
+		}
 		if (set_FE_node_group(state,(void *)&node_group,
-			(void *)command_data->node_group_manager))
+			(void *)node_group_manager))
 		{
 			/* initialise defaults */
+			add_flag=0;
+			all_flag=0;
+			selected_flag=0;
+			node_range=CREATE(Multi_range)();
 			from_node_group=(struct GROUP(FE_node) *)NULL;
-			add_node_data.node_ranges=CREATE(Multi_range)();
-			add_node_data.node_list=CREATE(LIST(FE_node))();
-			remove_node_data.node_ranges=CREATE(Multi_range)();
-			remove_node_data.node_list=CREATE(LIST(FE_node))();
-			(option_table[0]).to_be_modified=add_node_data.node_ranges;
-			(option_table[1]).to_be_modified= &from_node_group;
-			(option_table[1]).user_data=command_data->node_group_manager;
-			(option_table[2]).to_be_modified=remove_node_data.node_ranges;
-			return_code=process_multiple_options(state,option_table);
-			/* no errors, not asking for help */
-			if (return_code)
+
+			option_table=CREATE(Option_table)();
+			/* add */
+			Option_table_add_entry(option_table,"add",&add_flag,NULL,set_char_flag);
+			/* all */
+			Option_table_add_entry(option_table,"all",&all_flag,NULL,set_char_flag);
+			/* from */
+			Option_table_add_entry(option_table,"from",&from_node_group,
+				node_group_manager, set_FE_node_group);
+			/* remove */
+			Option_table_add_entry(option_table,"remove",&remove_flag,NULL,
+				set_char_flag);
+			/* selected */
+			Option_table_add_entry(option_table,"selected",&selected_flag,
+				NULL,set_char_flag);
+			/* default option: node number ranges */
+			Option_table_add_entry(option_table,(char *)NULL,(void *)node_range,
+				NULL,set_Multi_range);
+			if (add_flag && remove_flag)
 			{
-				if (node_group&&GET_NAME(GROUP(FE_node))(node_group,&group_name))
+				if (use_data)
 				{
-					if ((0<Multi_range_get_number_of_ranges(add_node_data.node_ranges))||
-						(0<Multi_range_get_number_of_ranges(remove_node_data.node_ranges)))
+					display_message(ERROR_MESSAGE,"gfx modify dgroup:  "
+						"Only specify one of add or remove at a time.");
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"gfx modify ngroup:  "
+						"Only specify one of add or remove at a time.");
+				}
+				return_code = 0;
+			}
+			if ((!add_flag) && (!remove_flag))
+			{
+				if (use_data)
+				{
+					display_message(ERROR_MESSAGE,"gfx modify dgroup:  "
+						"Must specify an operation, either add or remove.");				
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"gfx modify ngroup:  "
+						"Must specify an operation, either add or remove.");				
+				}
+				return_code = 0;
+			}
+			/* no errors, not asking for help */
+			if (return_code=Option_table_multi_parse(option_table,state))
+			{
+				if (all_flag)
+				{
+					selected_range=CREATE(Multi_range)();
+					FOR_EACH_OBJECT_IN_MANAGER(FE_node)(add_FE_node_number_to_Multi_range,
+						selected_range, node_manager);
+					if (Multi_range_get_number_of_ranges(node_range))
 					{
-						if (!Multi_ranges_overlap(add_node_data.node_ranges,
-							remove_node_data.node_ranges))
+						Multi_range_intersect(node_range, selected_range);
+						DESTROY(Multi_range)(&selected_range);
+					}
+					else
+					{
+						DESTROY(Multi_range)(&node_range);
+						node_range = selected_range;
+						selected_range = (struct Multi_range *)NULL;
+					}						
+				}
+				if (selected_flag)
+				{
+					selected_range=CREATE(Multi_range)();
+					FOR_EACH_OBJECT_IN_LIST(FE_node)(add_FE_node_number_to_Multi_range,
+						selected_range, FE_node_selection_get_node_list(node_selection));
+					if (Multi_range_get_number_of_ranges(node_range))
+					{
+						Multi_range_intersect(node_range, selected_range);
+						DESTROY(Multi_range)(&selected_range);
+					}
+					else
+					{
+						DESTROY(Multi_range)(&node_range);
+						node_range = selected_range;
+						selected_range = (struct Multi_range *)NULL;
+					}
+				}
+				if (from_node_group)
+				{
+					selected_range=CREATE(Multi_range)();
+					FOR_EACH_OBJECT_IN_GROUP(FE_node)(add_FE_node_number_to_Multi_range,
+						selected_range, from_node_group);
+					if (Multi_range_get_number_of_ranges(node_range))
+					{
+						Multi_range_intersect(node_range, selected_range);
+						DESTROY(Multi_range)(&selected_range);
+					}
+					else
+					{
+						DESTROY(Multi_range)(&node_range);
+						node_range = selected_range;
+						selected_range = (struct Multi_range *)NULL;
+					}
+				}
+				if (Multi_range_get_number_of_ranges(node_range))
+				{
+					MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
+					number_of_ranges = Multi_range_get_number_of_ranges(node_range);
+					{
+						for (i=0;i<number_of_ranges;i++)
 						{
-							/* make list of nodes to add and remove from node group */
-							if (0<Multi_range_get_number_of_ranges(add_node_data.node_ranges))
+							Multi_range_get_range(node_range,i,&start,&stop);
+							for (j=start;j<=stop;j++)
 							{
-								if (from_node_group)
+								if (node=FIND_BY_IDENTIFIER_IN_MANAGER(FE_node,
+									cm_node_identifier)(j,node_manager))
 								{
-									return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(
-										add_FE_node_to_list_if_in_range,(void *)&add_node_data,
-										from_node_group);
-								}
-								else
-								{
-									return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_node)(
-										add_FE_node_to_list_if_in_range,(void *)&add_node_data,
-										command_data->node_manager);
-								}
-							}
-							original_number_to_remove=number_to_remove=0;
-							if (0<Multi_range_get_number_of_ranges(
-								remove_node_data.node_ranges))
-							{
-								if (element_group=
-									FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)(
-										group_name,command_data->element_group_manager))
-								{
-									if (return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(
-										add_FE_node_to_list_if_in_range,(void *)&remove_node_data,
-										node_group))
+									if (add_flag)
 									{
-										/* do not allow nodes to be removed if they are still used
-											 by elements in the element group of the same name */
-										original_number_to_remove=
-											NUMBER_IN_LIST(FE_node)(remove_node_data.node_list);
-										return_code=FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-											ensure_top_level_FE_element_nodes_are_not_in_list,
-											(void *)remove_node_data.node_list,element_group);
-										number_to_remove=
-											NUMBER_IN_LIST(FE_node)(remove_node_data.node_list);
+										ensure_FE_node_is_in_group(node, node_group);
+									}
+									else /* remove_flag */
+									{
+										ensure_FE_node_is_not_in_group(node, node_group);
 									}
 								}
-								else
-								{
-									display_message(ERROR_MESSAGE,"gfx_modify_node_group.  "
-										"Could not find element group %s",group_name);
-									return_code=0;
-								}
-							}
-							if (return_code)
-							{
-								MANAGED_GROUP_BEGIN_CACHE(FE_node)(node_group);
-								return_code=
-									FOR_EACH_OBJECT_IN_LIST(FE_node)(ensure_FE_node_is_in_group,
-										(void *)node_group,add_node_data.node_list)&&
-									FOR_EACH_OBJECT_IN_LIST(FE_node)(
-										ensure_FE_node_is_not_in_group,(void *)node_group,
-										remove_node_data.node_list);
-								MANAGED_GROUP_END_CACHE(FE_node)(node_group);
-							}
-							if (return_code)
-							{
-								if (number_to_remove<original_number_to_remove)
-								{
-									display_message(WARNING_MESSAGE,
-										"gfx modify ngroup.  %d nodes could not be removed because "
-										"they are still in use by element group %s",
-										original_number_to_remove-number_to_remove,group_name);
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,"gfx modify ngroup. Failed");
 							}
 						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"gfx modify ngroup.  Add and remove ranges overlap");
-							return_code=0;
-						}
+					}
+					MANAGED_GROUP_END_CACHE(FE_node)(node_group);
+				}
+				else
+				{
+					if (use_data)
+					{
+						display_message(WARNING_MESSAGE,
+							"gfx modify dgroup:  No data specified");
 					}
 					else
 					{
 						display_message(WARNING_MESSAGE,
-							"gfx modify ngroup.  No modifications requested");
+							"gfx modify ngroup:  No nodes specified");
 					}
-					DEALLOCATE(group_name);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"gfx modify ngroup.  Missing group name");
-					return_code=0;
 				}
 			}
-			DESTROY(LIST(FE_node))(&add_node_data.node_list);
-			DESTROY(Multi_range)(&add_node_data.node_ranges);
-			DESTROY(Multi_range)(&remove_node_data.node_ranges);
-			DESTROY(LIST(FE_node))(&remove_node_data.node_list);
+			DESTROY(Option_table)(&option_table);
+			DESTROY(Multi_range)(&node_range);
 			if (from_node_group)
 			{
 				DEACCESS(GROUP(FE_node))(&from_node_group);
@@ -16148,7 +16052,7 @@ Executes a GFX MODIFY command.
 ???DB.  Part of GFX EDIT ?
 ==============================================================================*/
 {
-	int i,return_code;
+	int return_code;
 	struct Cmiss_command_data *command_data;
 	struct Modify_environment_map_data modify_environment_map_data;
 	struct Modify_graphical_material_data modify_graphical_material_data;
@@ -16157,28 +16061,7 @@ Executes a GFX MODIFY command.
 	struct Modify_light_model_data modify_light_model_data;
 	struct Modify_scene_data modify_scene_data;
 	struct Modify_VT_volume_texture_data modify_VT_volume_texture_data;
-	static struct Modifier_entry option_table[]=
-	{
-		{"dgroup",NULL,NULL,gfx_modify_data_group},
-		{"egroup",NULL,NULL,gfx_modify_element_group},
-#if defined (MIRAGE)
-		{"emoter",NULL,NULL,gfx_modify_emoter},
-#endif /* defined (MIRAGE) */
-		{"environment_map",NULL,NULL,modify_Environment_map},
-		{"flow_particles",NULL,NULL,gfx_modify_flow_particles},
-		{"g_element",NULL,NULL,gfx_modify_g_element},
-		{"graphics_object",NULL,NULL,gfx_modify_graphics_object},
-		{"light",NULL,NULL,modify_Light},
-		{"lmodel",NULL,NULL,modify_Light_model},
-		{"material",NULL,NULL,modify_Graphical_material},
-		{"ngroup",NULL,NULL,gfx_modify_node_group},
-		{"scene",NULL,NULL,modify_Scene},
-		{"spectrum",NULL,NULL,gfx_modify_Spectrum},
-		{"texture",NULL,NULL,gfx_modify_Texture},
-		{"vtexture",NULL,NULL,modify_VT_volume_texture},
-		{"window",NULL,NULL,modify_Graphics_window},
-		{NULL,NULL,NULL,NULL}
-	};
+	struct Option_table *option_table;
 
 	ENTER(execute_command_gfx_modify);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -16189,46 +16072,47 @@ Executes a GFX MODIFY command.
 		{
 			if (state->current_token)
 			{
-				i=0;
+				option_table=CREATE(Option_table)();
 				/* dgroup */
-				(option_table[i]).user_data=command_data_void;
-				i++;
+				Option_table_add_entry(option_table,"dgroup",(void *)1/*data*/, 
+					(void *)command_data, gfx_modify_node_group);
 				/* egroup */
-				(option_table[i]).user_data=command_data_void;
-				i++;
+				Option_table_add_entry(option_table,"egroup",NULL, 
+					(void *)command_data, gfx_modify_element_group);
 #if defined (MIRAGE)
 				/* emoter */
-				(option_table[i]).user_data=command_data->emoter_slider_dialog;
-				i++;
+				Option_table_add_entry(option_table,"emoter",NULL, 
+					(void *)command_data->emoter_slider_dialog,
+					gfx_modify_emoter);
 #endif /* defined (MIRAGE) */
 				/* environment_map */
 				modify_environment_map_data.graphical_material_manager=
 					command_data->graphical_material_manager;
 				modify_environment_map_data.environment_map_manager=
 					command_data->environment_map_manager;
-				(option_table[i]).user_data=(void *)(&modify_environment_map_data);
-				i++;
+				Option_table_add_entry(option_table,"environment_map",NULL, 
+					(&modify_environment_map_data),modify_Environment_map);
 				/* flow_particles */
-				(option_table[i]).user_data=command_data_void;
-				i++;
+				Option_table_add_entry(option_table,"flow_particels",NULL, 
+					(void *)command_data, gfx_modify_flow_particles);
 				/* g_element */
-				(option_table[i]).user_data=command_data_void;
-				i++;
+				Option_table_add_entry(option_table,"g_element",NULL, 
+					(void *)command_data, gfx_modify_g_element);
 				/* graphics_object */
-				(option_table[i]).user_data=command_data_void;
-				i++;
+				Option_table_add_entry(option_table,"graphics_object",NULL, 
+					(void *)command_data, gfx_modify_graphics_object);
 				/* light */
 				modify_light_data.default_light=command_data->default_light;
 				modify_light_data.light_manager=command_data->light_manager;
-				(option_table[i]).user_data=(void *)(&modify_light_data);
-				i++;
+				Option_table_add_entry(option_table,"light",NULL, 
+					(void *)(&modify_light_data), modify_Light);
 				/* lmodel */
 				modify_light_model_data.default_light_model=
 					command_data->default_light_model;
 				modify_light_model_data.light_model_manager=
 					command_data->light_model_manager;
-				(option_table[i]).user_data=(void *)(&modify_light_model_data);
-				i++;
+				Option_table_add_entry(option_table,"lmodel",NULL, 
+					(void *)(&modify_light_model_data), modify_Light_model);
 				/* material */
 				modify_graphical_material_data.default_graphical_material=
 					command_data->default_graphical_material;
@@ -16236,11 +16120,11 @@ Executes a GFX MODIFY command.
 					command_data->graphical_material_manager;
 				modify_graphical_material_data.texture_manager=
 					command_data->texture_manager;
-				(option_table[i]).user_data=(void *)(&modify_graphical_material_data);
-				i++;
+				Option_table_add_entry(option_table,"material",NULL, 
+					(void *)(&modify_graphical_material_data), modify_Graphical_material);
 				/* ngroup */
-				(option_table[i]).user_data=command_data_void;
-				i++;
+				Option_table_add_entry(option_table,"ngroup",NULL, 
+					(void *)command_data, gfx_modify_node_group);
 				/* scene */
 				modify_scene_data.light_manager=command_data->light_manager;
 				modify_scene_data.scene_manager=command_data->scene_manager;
@@ -16263,14 +16147,14 @@ Executes a GFX MODIFY command.
 				modify_scene_data.node_selection=command_data->node_selection;
 				modify_scene_data.data_selection=command_data->data_selection;
 				modify_scene_data.user_interface=command_data->user_interface;
-				(option_table[i]).user_data=(void *)(&modify_scene_data);
-				i++;
+				Option_table_add_entry(option_table,"scene",NULL, 
+					(void *)(&modify_scene_data), modify_Scene);
 				/* spectrum */
-				(option_table[i]).user_data=command_data_void;
-				i++;
+				Option_table_add_entry(option_table,"spectrum",NULL, 
+					(void *)command_data, gfx_modify_Spectrum);
 				/* texture */
-				(option_table[i]).user_data=command_data_void;
-				i++;
+				Option_table_add_entry(option_table,"texture",NULL, 
+					(void *)command_data, gfx_modify_Texture);
 				/* vtexture */
 				modify_VT_volume_texture_data.graphical_material_manager=
 					command_data->graphical_material_manager;
@@ -16280,8 +16164,8 @@ Executes a GFX MODIFY command.
 					command_data->volume_texture_manager;
 				modify_VT_volume_texture_data.set_file_name_option_table=
 					command_data->set_file_name_option_table;
-				(option_table[i]).user_data=(void *)(&modify_VT_volume_texture_data);
-				i++;
+				Option_table_add_entry(option_table,"vtexture",NULL, 
+					(void *)(&modify_VT_volume_texture_data), modify_VT_volume_texture);
 				/* window */
 				modify_graphics_window_data.graphics_window_manager=
 					command_data->graphics_window_manager;
@@ -16293,9 +16177,11 @@ Executes a GFX MODIFY command.
 				modify_graphics_window_data.scene_manager=command_data->scene_manager;
 				modify_graphics_window_data.texture_manager=
 					command_data->texture_manager;
-				(option_table[i]).user_data=(void *)(&modify_graphics_window_data);
-				i++;
-				return_code=process_option(state,option_table);
+				Option_table_add_entry(option_table,"window",NULL, 
+					(void *)(&modify_graphics_window_data), modify_Graphics_window);
+
+				return_code=Option_table_parse(option_table,state);
+				DESTROY(Option_table)(&option_table);
 			}
 			else
 			{
@@ -21189,6 +21075,12 @@ gtvoltex according to calculated
 			extent.number_in_xi1=1;
 			extent.number_in_xi2=1;
 			extent.number_in_xi3=1;
+			(warp_values.value)[0] = 0.0;
+			(warp_values.value)[1] = 0.0;
+			(warp_values.value)[2] = 0.0;
+			(warp_values.value)[3] = 0.0;
+			(warp_values.value)[4] = 0.0;
+			(warp_values.value)[5] = 0.0;
 			xi_order=123;
 			(option_table[0]).to_be_modified= &extent;
 			(option_table[0]).user_data=command_data->user_interface;
@@ -24261,6 +24153,7 @@ DESCRIPTION:
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
 	ENTER(execute_command);
+	USE_PARAMETER(quit);
 	if (command_data=(struct Cmiss_command_data *)command_data_void)
 	{
 #if !defined (WINDOWS_DEV_FLAG)
