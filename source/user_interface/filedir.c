@@ -813,7 +813,7 @@ void open_file_and_read(
 #endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 22 July 2002
+LAST MODIFIED : 24 July 2002
 
 DESCRIPTION :
 Expects a pointer to a File_open_data structure as the <client_data>.  Displays
@@ -835,14 +835,8 @@ name the <file_operation> is performed on the file with the <arguments>.
 	ENTER(open_file_and_read);
 #if defined (MOTIF)
 	USE_PARAMETER(call_data);
-#endif /* defined (MOTIF) */
-	if (file_open_data
-#if defined (MOTIF)
-		=(struct File_open_data *)client_data
-#endif /* defined (MOTIF) */
-		)
+	if (file_open_data=(struct File_open_data *)client_data)
 	{
-#if defined (MOTIF)
 		if (!((file_open_data->activation==widget)&&
 			file_open_data->selection_shell&&file_open_data->selection))
 		{
@@ -852,7 +846,8 @@ name the <file_operation> is performed on the file with the <arguments>.
 				file_open_data->activation=widget;
 				if (!(parent=widget)||(True!=XtIsWidget(parent)))
 				{
-					parent=User_interface_get_application_shell(file_open_data->user_interface);
+					parent=User_interface_get_application_shell(file_open_data->
+						user_interface);
 				}
 				/* assign the shell title */
 				temp_string=(char *)NULL;
@@ -997,8 +992,15 @@ name the <file_operation> is performed on the file with the <arguments>.
 			/* manage the file selection box to pop it up */
 			XtManageChild(file_open_data->selection);
 		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"open_file_and_read.  No file_open_data");
+	}
 #endif /* defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
+	if (file_open_data)
+	{
 		retry=0;
 		do
 		{
@@ -1041,12 +1043,12 @@ name the <file_operation> is performed on the file with the <arguments>.
 				retry=0;
 			}
 		} while (retry);
-#endif /* defined (WIN32_USER_INTERFACE) */
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"open_file_and_read.  No file_open_data");
 	}
+#endif /* defined (WIN32_USER_INTERFACE) */
 	LEAVE;
 } /* open_file_and_read */
 
@@ -1059,7 +1061,7 @@ void open_file_and_write(
 #endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 22 July 2002
+LAST MODIFIED : 24 July 2002
 
 DESCRIPTION :
 Expects a pointer to a File_open_data structure as the <client_data> (MOTIF).
@@ -1117,14 +1119,8 @@ specified file.
 	ENTER(open_file_and_write);
 #if defined (MOTIF)
 	USE_PARAMETER(call_data);
-#endif /* defined (MOTIF) */
-	if (file_open_data
-#if defined (MOTIF)
-		=(struct File_open_data *)client_data
-#endif /* defined (MOTIF) */
-		)
+	if (file_open_data=(struct File_open_data *)client_data)
 	{
-#if defined (MOTIF)
 		/*???DB.  Do better ? */
 		if (!printer_command)
 		{
@@ -1372,8 +1368,15 @@ specified file.
 					file_selection_child);
 			}
 		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"open_file_and_write.  No file_open_data");
+	}
 #endif /* defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
+	if (file_open_data)
+	{
 		retry=0;
 		do
 		{
@@ -1416,12 +1419,12 @@ specified file.
 				retry=0;
 			}
 		} while (retry);
-#endif /* defined (WIN32_USER_INTERFACE) */
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"open_file_and_write.  No file_open_data");
 	}
+#endif /* defined (WIN32_USER_INTERFACE) */
 	LEAVE;
 } /* open_file_and_write */
 
