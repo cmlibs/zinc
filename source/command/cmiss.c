@@ -29744,4 +29744,3 @@ Clean up the command_data, deallocating all the associated memory and resources.
 	
 	return (return_code);
 } /* DESTROY(Cmiss_command_data) */
-
