@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : import_finite_element.c
 
-LAST MODIFIED : 27 March 2001
+LAST MODIFIED : 26 April 2001
 
 DESCRIPTION :
 The function for importing finite element data, from a file or CMISS (via a
@@ -1507,7 +1507,7 @@ Reads in a node from an <input_file>.
 
 static struct FE_element_shape *read_FE_element_shape(FILE *input_file)
 /*******************************************************************************
-LAST MODIFIED : 27 October 1997
+LAST MODIFIED : 26 April 2001
 
 DESCRIPTION :
 Reads element shape information from an <input_file> or the socket (if
@@ -1756,9 +1756,10 @@ Reads element shape information from an <input_file> or the socket (if
 											{
 												/* assign link to succeeding simplex coordinate */
 												previous_component=xi_number+1;
-												if ((1==sscanf(start_description,"(%d %n",&component,
-													&i))&&(previous_component<=component)&&
-													(component<=dimension))
+												if ((1 == sscanf(start_description, "(%d %n",
+													&component, &i)) &&
+													(previous_component <= component) &&
+													(component <= dimension))
 												{
 													*type_entry=SIMPLEX_SHAPE;
 													type_entry++;
@@ -1780,7 +1781,8 @@ Reads element shape information from an <input_file> or the socket (if
 														(component<=dimension));
 													if (')'==start_description[0])
 													{
-														while (previous_component<dimension)
+														/* fill rest of shape_type row with zeroes */
+														while (previous_component <= dimension)
 														{
 															*type_entry=0;
 															type_entry++;
@@ -1879,7 +1881,7 @@ static struct FE_basis *read_FE_basis(FILE *input_file,
 	int number_of_xi_coordinates,int *basis_type,
 	struct MANAGER(FE_basis) *basis_manager)
 /*******************************************************************************
-LAST MODIFIED : 27 October 1997
+LAST MODIFIED : 26 April 2001
 
 DESCRIPTION :
 Reads a basis description from an <input_file> or the socket (if <input_file> is
@@ -1999,7 +2001,8 @@ input file are
 										(component<=number_of_xi_coordinates));
 									if (')'==start_basis_name[0])
 									{
-										while (previous_component<number_of_xi_coordinates)
+										/* fill rest of basis_type row with NO_RELATION */
+										while (previous_component <= number_of_xi_coordinates)
 										{
 											*xi_basis_type=NO_RELATION;
 											xi_basis_type++;
