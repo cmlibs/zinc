@@ -23,6 +23,13 @@ ifndef NODENAME
   endif
 endif
 
+ifndef MACHNAME
+  MACHNAME := $(shell uname -m)
+  ifeq ($(MACHNAME),)
+    $(error error with shell command uname -m)
+  endif
+endif
+
 ifndef DEBUG
   ifndef OPT
     OPT = false
@@ -55,7 +62,7 @@ ifeq ($(SYSNAME:IRIX%=),)# SGI
     # Although mp versions are unlikely to need mips3 they are made this way
     # because it makes finding library locations easier.
     MIPS = 4
-    ifeq ($(NODENAME:esu%=),)
+    ifeq ($(filter-out esu%,$(NODENAME)),)
       ifeq ($(ABI),n32)
         ifneq ($(DEBUG),false)
           MIPS=3
@@ -70,7 +77,11 @@ ifeq ($(SYSNAME),Linux)
   ifndef STATIC
     STATIC = true
   endif
-  INSTRUCTION = i686
+  ifeq ($(filter-out i%86,$(MACHNAME)),)
+    INSTRUCTION = i686
+  else
+    INSTRUCTION := $(MACHNAME)
+  endif
   OPERATING_SYSTEM = linux
 endif
 ifeq ($(SYSNAME),win32)
@@ -159,9 +170,23 @@ ifeq ($(SYSNAME:IRIX%=),)
 endif # SYSNAME == IRIX%=
 ifeq ($(SYSNAME),Linux)
    UIL = uil
-   CC = gcc -c
-   CPP = g++ -c
-   FORTRAN = g77 -c -fno-second-underscore
+#    ifeq ($(MACHNAME),ia64)
+#       # Using Intel compilers
+#       CC = ecc -c
+#       CPP = $(CC)
+#       # turn on warnings,
+#       # suppress messages about non-standard fortran (including REAL*8,
+#       # more than 19 continuation lines),
+#       # suppress comment messages (including obsolescent alternate return),
+#       # auto arrays (as well as scalars), no aliasing,
+#       # no preprocessing, temporary arrays on stack if possible.
+#       FORTRAN = efc -c -W1 -w95 -cm -auto -fpp0 -stack_temps
+#    else
+      # gcc
+      CC = gcc -c
+      CPP = g++ -c
+      FORTRAN = g77 -c -fno-second-underscore
+#    endif
    MAKEDEPEND = gcc -MM -MG
    CPREPROCESS = gcc -E -P
    ifneq ($(STATIC_LINK),true)
@@ -190,6 +215,12 @@ ifeq ($(SYSNAME),Linux)
       TARGET_TYPE_FLAGS =
       TARGET_TYPE_DEFINES =
    endif # DEBUG != true
+   ifeq ($(MACHNAME),ia64)
+      TARGET_TYPE_DEFINES = -DO64
+      # To work around errors of the form:
+      # /home/hunter/gui/cmgui/source/api/cmiss_core.c:60: relocation truncated to fit: PCREL21B display_message
+      LINK += -Wl,-relax
+   endif
 endif # SYSNAME == Linux
 ifeq ($(SYSNAME),AIX)
    UIL = uil
