@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : light.c
 
-LAST MODIFIED : 22 June 1999
+LAST MODIFIED : 1 December 1999
 
 DESCRIPTION :
 The functions for manipulating lights.
@@ -1491,6 +1491,7 @@ Writes the properties of the <light> to the command window.
 	int return_code;
 
 	ENTER(list_Light);
+	USE_PARAMETER(dummy);
 	if (light)
 	{
 		display_message(INFORMATION_MESSAGE,"light : ");
@@ -1907,6 +1908,7 @@ problem.
 	int return_code;
 
 	ENTER(compile_Light);
+	USE_PARAMETER(dummy_void);
 	if (light)
 	{
 /*
@@ -1957,6 +1959,7 @@ Does not use display lists. See comments with compile_Light, above.
 	int return_code;
 
 	ENTER(execute_Light);
+	USE_PARAMETER(dummy_void);
 /*
 	if (light)
 	{
