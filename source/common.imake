@@ -252,7 +252,7 @@ Target: $(OBJS)                                                                 
 		mkdir -p $(OBJECT_PATH); \                                                     @@\
 	fi	                                                                               @@\
 	@if [ ! -d `dirname UTILITIES_PATH/Target` ]; then \                              @@\
-		mkdir -p `dirname UTILITIES_PATH/Target` }; \                                  @@\
+		mkdir -p `dirname UTILITIES_PATH/Target` ; \                                   @@\
 	fi                                                                                @@\
 	cd $(OBJECT_PATH) ; \                                                             @@\
 	rm -f product_object ; \                                                          @@\
@@ -270,7 +270,7 @@ Target: $(OBJS)                                                                 
 		mkdir -p $(OBJECT_PATH); \                                                     @@\
 	fi	                                                                               @@\
 	@if [ ! -d `dirname UTILITIES_PATH/Target` ]; then \                              @@\
-		mkdir -p `dirname UTILITIES_PATH/Target` }; \                                  @@\
+		mkdir -p `dirname UTILITIES_PATH/Target` ; \                                   @@\
 	fi                                                                                @@\
 	cd $(OBJECT_PATH) ; \                                                             @@\
 	rm -f product_object ; \                                                          @@\
