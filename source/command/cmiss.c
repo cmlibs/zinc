@@ -16249,7 +16249,7 @@ If <use_data> is set, writing data, otherwise writing nodes.
 		{
 			if (!file_name)
 			{
-				if (!(file_name = confirmation_get_write_filename(file_ext,
+				if (!(file_name = confirmation_get_read_filename(file_ext,
 					command_data->user_interface)))
 				{
 					return_code = 0;
