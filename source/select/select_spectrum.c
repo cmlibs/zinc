@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : select_spectrum.c
 
-LAST MODIFIED : 19 May 1998
+LAST MODIFIED : 20 April 2000
 
 DESCRIPTION :
 Declares select widget functions for spectrum objects.
@@ -21,8 +21,6 @@ FULL_DECLARE_SELECT_STRUCT_TYPE(Spectrum);
 Module functions
 ----------------
 */
-DECLARE_DEFAULT_SELECT_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(
-	Spectrum)
 DECLARE_DEFAULT_SELECT_MANAGER_MODIFY_IDENTIFIER_AS_NAME_FUNCTION(
 	Spectrum)
 DECLARE_DEFAULT_SELECT_FIND_BY_IDENTIFIER_AS_NAME_IN_MANAGER_FUNCTION(

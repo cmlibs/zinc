@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : select_control_curve.c
 
-LAST MODIFIED : 8 November 1999
+LAST MODIFIED : 20 April 2000
 
 DESCRIPTION :
 Declares select widget functions for Control_curve objects.
@@ -25,21 +25,19 @@ Module functions
 Module functions
 ----------------
 */
-DECLARE_DEFAULT_SELECT_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Control_curve)
 DECLARE_DEFAULT_SELECT_MANAGER_MODIFY_IDENTIFIER_AS_NAME_FUNCTION(Control_curve)
-DECLARE_DEFAULT_SELECT_FIND_BY_IDENTIFIER_AS_NAME_IN_MANAGER_FUNCTION(
+DECLARE_DEFAULT_SELECT_FIND_BY_IDENTIFIER_AS_NAME_IN_MANAGER_FUNCTION( \
 	Control_curve)
 
 PROTOTYPE_SELECT_MANAGER_CREATE_FUNCTION(Control_curve)
 /*******************************************************************************
-LAST MODIFIED : 8 November 1999
+LAST MODIFIED : 20 April 2000
 
 DESCRIPTION :
-Creates and returns a pointer to an empty struct object_type.
-The new object is given a unique identifier for the manager - and may base
-it on the current object. Returns NULL if a unique identifier cannot be
-found.
-???RC Should really be part of manager.h
+Creates a new struct Control_curve with a unique identifier in <object_manager>.
+It <template_object> is supplied, the new object will be a copy of it and its
+identifier may be derived from it.
+???RC Should be part of manager.h
 ==============================================================================*/
 {
 	char *new_curve_name, *temp_name;
@@ -49,9 +47,9 @@ found.
 
 	ENTER(SELECT_MANAGER_CREATE(Control_curve));
 	/* 1. Get a new, unique identifier for the curve */
-	if (current_object)
+	if (template_object)
 	{
-		GET_NAME(Control_curve)(current_object,&new_curve_name);
+		GET_NAME(Control_curve)(template_object,&new_curve_name);
 	}
 	else
 	{
@@ -89,6 +87,12 @@ found.
 	if (new_curve_name)
 	{
 		new_curve=CREATE(Control_curve)(new_curve_name,LINEAR_LAGRANGE,1);
+		/* copy template_object contents into new object */
+		if (template_object)
+		{
+			MANAGER_COPY_WITHOUT_IDENTIFIER(Control_curve,name)(
+				new_curve,template_object);
+		}
 		DEALLOCATE(new_curve_name);
 	}
 	else

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : select_environment_map.c
 
-LAST MODIFIED : 18 May 1998
+LAST MODIFIED : 20 April 2000
 
 DESCRIPTION :
 Declares select widget functions for Environment_map objects.
@@ -20,8 +20,6 @@ FULL_DECLARE_SELECT_STRUCT_TYPE(Environment_map);
 Module functions
 ----------------
 */
-DECLARE_DEFAULT_SELECT_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(
-	Environment_map)
 DECLARE_DEFAULT_SELECT_MANAGER_MODIFY_IDENTIFIER_AS_NAME_FUNCTION(
 	Environment_map)
 DECLARE_DEFAULT_SELECT_FIND_BY_IDENTIFIER_AS_NAME_IN_MANAGER_FUNCTION(

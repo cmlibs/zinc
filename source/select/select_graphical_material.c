@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : select_graphical_material.c
 
-LAST MODIFIED : 18 May 1998
+LAST MODIFIED : 20 April 2000
 
 DESCRIPTION :
 Declares select widget functions for Graphical_material objects.
@@ -21,8 +21,6 @@ FULL_DECLARE_SELECT_STRUCT_TYPE(Graphical_material);
 Module functions
 ----------------
 */
-DECLARE_DEFAULT_SELECT_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(
-	Graphical_material)
 DECLARE_DEFAULT_SELECT_MANAGER_MODIFY_IDENTIFIER_AS_NAME_FUNCTION(
 	Graphical_material)
 DECLARE_DEFAULT_SELECT_FIND_BY_IDENTIFIER_AS_NAME_IN_MANAGER_FUNCTION(

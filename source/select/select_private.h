@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : select_private.h
 
-LAST MODIFIED : 9 November 1999
+LAST MODIFIED : 20 April 2000
 
 DESCRIPTION :
 Creates a scrolled list of objects based upon their name.  Allows the user
@@ -14,10 +14,11 @@ New version using macros to handle different object types.
 
 #include <stddef.h>
 #include <math.h>
-#include <Xm/Xm.h>
-#include <X11/Xlib.h>
 #include <Mrm/MrmPublic.h>
+#include <X11/Xlib.h>
+#include <Xm/Xm.h>
 #include <Xm/ScrollBar.h>
+#include <Xm/TextF.h>
 #include "general/debug.h"
 #include "select/select.h"
 #include "select/select.uidh"
@@ -89,50 +90,6 @@ DESCRIPTION : \
 (re)registers UIL names for the select widget of the given object type. \
 Also ensures the select_structure has the correct address. \
 ============================================================================*/
-
-#if defined (FULL_NAMES)
-#define SELECT_MANAGER_COPY_WITHOUT_IDENTIFIER_( object_type ) \
-	select_manager_modify_not_identifier_ ## object_type
-#else
-#define SELECT_MANAGER_COPY_WITHOUT_IDENTIFIER_( object_type ) \
-	smmni ## object_type
-#endif
-#define SELECT_MANAGER_COPY_WITHOUT_IDENTIFIER( object_type ) \
-	SELECT_MANAGER_COPY_WITHOUT_IDENTIFIER_(object_type)
-
-#define PROTOTYPE_SELECT_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION( object_type ) \
-static int SELECT_MANAGER_COPY_WITHOUT_IDENTIFIER(object_type)( \
-	struct object_type *object,struct object_type *new_data, \
-	struct MANAGER(object_type) *object_manager) \
-/***************************************************************************** \
-LAST MODIFIED : 12 May 1997 \
-\
-DESCRIPTION : \
-Macro interface for MANAGER_COPY_WITHOUT_IDENTIFIER(object_type,identifier) \
-Default version assumes the identifier is a name member. \
-============================================================================*/
-
-#define DECLARE_DEFAULT_SELECT_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION( \
-	object_type ) \
-PROTOTYPE_SELECT_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(object_type) \
-/***************************************************************************** \
-LAST MODIFIED : 9 November 1999 \
-\
-DESCRIPTION : \
-Calls MANAGER_COPY_WITHOUT_IDENTIFIER function with a name member. \
-???RC Should this really know about object->name? \
-============================================================================*/ \
-{ \
-	int return_code; \
-\
-	ENTER(SELECT_MANAGER_COPY_WITHOUT_IDENTIFIER(object_type)); \
-	USE_PARAMETER(object_manager); \
-	return_code=MANAGER_COPY_WITHOUT_IDENTIFIER(object_type,name)(object, \
-		new_data); \
-	LEAVE; \
-\
-	return return_code; \
-} /* SELECT_MANAGER_COPY_WITHOUT_IDENTIFIER(object_type) */
 
 #if defined (FULL_NAMES)
 #define SELECT_MANAGER_MODIFY_IDENTIFIER_AS_NAME_( object_type ) \
@@ -239,33 +196,25 @@ FIND_BY_IDENTIFIER_IN_MANAGER function. \
 
 #define PROTOTYPE_SELECT_MANAGER_CREATE_FUNCTION( object_type ) \
 static struct object_type *SELECT_MANAGER_CREATE(object_type)( \
-	struct object_type *current_object, \
+	struct object_type *template_object, \
 	struct MANAGER(object_type) *object_manager) \
 /***************************************************************************** \
-LAST MODIFIED : 15 May 1997 \
+LAST MODIFIED : 20 April 2000 \
 \
 DESCRIPTION : \
-Creates and returns a pointer to an empty struct object_type. \
-The new object is given a unique identifier for the manager - and may base \
-it on the current object. Returns NULL if a unique identifier cannot be \
-found. \
+Creates a new struct object_type with a unique identifier in <object_manager>. \
+It <template_object> is supplied, the new object will be a copy of it and its \
+identifier may be derived from it. \
 ???RC Should be part of manager.h \
 ============================================================================*/
 
 #define DECLARE_DEFAULT_SELECT_MANAGER_CREATE_FUNCTION( object_type ) \
 	PROTOTYPE_SELECT_MANAGER_CREATE_FUNCTION(object_type) \
 /***************************************************************************** \
-LAST MODIFIED : 24 October 1997 \
+LAST MODIFIED : 20 April 2000 \
 \
 DESCRIPTION : \
-Creates and returns a pointer to an empty struct object_type. \
-The new object is given a unique identifier for the manager - and may base \
-it on the current object. Returns NULL if a unique identifier cannot be \
-found. \
-Default version assuming object has a name string identifier and can simply \
-call the object CREATE function with this single name parameter. \
-???RC Should be part of manager.h \
-???RC Should this also call ADD_OBJECT_TO_MANAGER? \
+Manager copy creator assuming it has a name identifier. \
 ============================================================================*/ \
 { \
 	char *new_object_name,*temp_name; \
@@ -276,8 +225,8 @@ call the object CREATE function with this single name parameter. \
 	if (object_manager) \
 	{ \
 		/* get a unique name for the new object */ \
-		if (!(current_object&& \
-			GET_NAME(object_type)(current_object,&new_object_name))) \
+		if (!(template_object&& \
+			GET_NAME(object_type)(template_object,&new_object_name))) \
 		{ \
 			if (ALLOCATE(new_object_name,char,strlen(default_name)+1)) \
 			{ \
@@ -304,12 +253,18 @@ call the object CREATE function with this single name parameter. \
 			{ \
 				DEALLOCATE(new_object_name);  \
 				display_message(ERROR_MESSAGE,"SELECT_MANAGER_CREATE(" #object_type \
-					").  Could not give object a unique name."); \
+					").  Could not give object a unique name"); \
 			} \
 		} \
 		if (new_object_name) \
 		{ \
 			new_object=CREATE(object_type)(new_object_name); \
+			/* copy template_object contents into new object */ \
+			if (template_object) \
+			{ \
+				MANAGER_COPY_WITHOUT_IDENTIFIER(object_type,name)( \
+					new_object,template_object); \
+			} \
 			DEALLOCATE(new_object_name); \
 		} \
 		else \
@@ -320,7 +275,7 @@ call the object CREATE function with this single name parameter. \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE,"SELECT_MANAGER_CREATE(" #object_type \
-			").  Missing object manager"); \
+			").  Missing object_manager"); \
 		new_object=(struct object_type *)NULL; \
 	} \
 	LEAVE; \
@@ -683,7 +638,7 @@ If selected object changes in this routine the client is informed. \
 				{ \
 					if (GET_NAME(object_type)(temp_select->current_object,&object_name)) \
 					{ \
-						XtVaSetValues(temp_select->text_text,XmNvalue,object_name,NULL); \
+						XmTextFieldSetString(temp_select->text_text,object_name); \
 						DEALLOCATE(object_name); \
 					} \
 				} \
@@ -721,7 +676,7 @@ If selected object changes in this routine the client is informed. \
 static void SELECT_CREATE_CB(object_type)(Widget w,int *tag, \
 	XmAnyCallbackStruct *reason) \
 /***************************************************************************** \
-LAST MODIFIED : 12 May 1997 \
+LAST MODIFIED : 20 April 2000 \
 \
 DESCRIPTION : \
 Creates a new object with a unique identifier and adds it to the manager. \
@@ -734,21 +689,11 @@ Creates a new object with a unique identifier and adds it to the manager. \
 	USE_PARAMETER(tag); \
 	USE_PARAMETER(reason); \
 	XtVaGetValues(w,XmNuserData,&temp_select,NULL); \
-	/* this means they dont want to keep any naming changes */ \
+	/* this means they do not want to keep any naming changes */ \
 	XtUnmanageChild(temp_select->edit_name); \
-	/*???RC Caching could now be within braces - unless SELECT_MANAGER_CREATE */ \
-	/* also adds object to manager - a possibility in future. */ \
-	/* MANAGER_BEGIN_CACHE(object_type)(temp_select->object_manager); */\
 	if (new_object=SELECT_MANAGER_CREATE(object_type)( \
 		temp_select->current_object,temp_select->object_manager)) \
 	{ \
-		if (temp_select->current_object) \
-		{ \
-			/* Copy contents of currently selected object into new object */ \
-			SELECT_MANAGER_COPY_WITHOUT_IDENTIFIER(object_type)( \
-				new_object,temp_select->current_object, \
-				temp_select->object_manager); \
-		} \
 		if (ADD_OBJECT_TO_MANAGER(object_type)( \
 			new_object,temp_select->object_manager)) \
 		{ \
@@ -787,7 +732,6 @@ Creates a new object with a unique identifier and adds it to the manager. \
 			"SELECT_CREATE_CB(" #object_type \
 			").  Could not create new " #object_type); \
 	} \
-	/* MANAGER_END_CACHE(object_type)(temp_select->object_manager); */\
 	LEAVE; \
 } /* SELECT_CREATE_CB(object_type) */
 
@@ -1440,7 +1384,7 @@ Changes the callback item of the input widget. \
 #define DECLARE_SELECT_SET_SELECT_ITEM_FUNCTION( object_type ) \
 PROTOTYPE_SELECT_SET_SELECT_ITEM_FUNCTION(object_type) \
 /***************************************************************************** \
-LAST MODIFIED : 25 May 1997 \
+LAST MODIFIED : 20 April 2000 \
 \
 DESCRIPTION : \
 Changes the selected object in the select widget. \
@@ -1457,6 +1401,7 @@ Changes the selected object in the select widget. \
 		XtVaGetValues(select_widget,XmNuserData,&temp_select,NULL); \
 		if (temp_select) \
 		{ \
+			temp_select->last_updated_object=selected_object; \
 			temp_select->current_object=selected_object; \
 			SELECT_SELECT_OBJECT(object_type)(temp_select); \
 			return_code=1; \

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : select_interactive_streamline.c
 
-LAST MODIFIED : 24 March 1999
+LAST MODIFIED : 20 April 2000
 
 DESCRIPTION :
 Declares select widget functions for interactive_streamline objects.
@@ -23,8 +23,6 @@ FULL_DECLARE_SELECT_STRUCT_TYPE(Interactive_streamline);
 Module functions
 ----------------
 */
-DECLARE_DEFAULT_SELECT_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(
-	Interactive_streamline)
 DECLARE_DEFAULT_SELECT_MANAGER_MODIFY_IDENTIFIER_AS_NAME_FUNCTION(
 	Interactive_streamline)
 DECLARE_DEFAULT_SELECT_FIND_BY_IDENTIFIER_AS_NAME_IN_MANAGER_FUNCTION(
@@ -32,10 +30,10 @@ DECLARE_DEFAULT_SELECT_FIND_BY_IDENTIFIER_AS_NAME_IN_MANAGER_FUNCTION(
 
 PROTOTYPE_SELECT_MANAGER_CREATE_FUNCTION(Interactive_streamline)
 /*****************************************************************************
-LAST MODIFIED : 16 May 1998
+LAST MODIFIED : 20 April 2000
 
 DESCRIPTION :
-Can only make a copy of the current object
+Can only make a copy of the template_object
 ============================================================================*/
 {
 	char *new_object_name,*temp_name;
@@ -46,10 +44,12 @@ Can only make a copy of the current object
 	if (object_manager)
 	{
 		/* get a unique name for the new object */
-		if (!(current_object&&
-			GET_NAME(Interactive_streamline)(current_object,&new_object_name)))
+		if (!(template_object&&
+			GET_NAME(Interactive_streamline)(template_object,&new_object_name)))
 		{
-			display_message(ERROR_MESSAGE,"SELECT_MANAGER_CREATE(Interactive_streamline).  Need to have an object to duplicate");
+			display_message(ERROR_MESSAGE,
+				"SELECT_MANAGER_CREATE(Interactive_streamline).  "
+				"Need to have an object to duplicate");
 			new_object_name = (char *)NULL;
 		}
 		/* Ensure the new identifier is not used by some object in the manager */
@@ -66,7 +66,9 @@ Can only make a copy of the current object
 			else
 			{
 				DEALLOCATE(new_object_name);
-				display_message(ERROR_MESSAGE,"SELECT_MANAGER_CREATE(Interactive_streamline).  Could not give object a unique name.");
+				display_message(ERROR_MESSAGE,
+					"SELECT_MANAGER_CREATE(Interactive_streamline).  "
+					"Could not give object a unique name.");
 			}
 		}
 		if (new_object_name)
@@ -79,8 +81,8 @@ Can only make a copy of the current object
 				(struct Computed_field *)NULL,/*reverse_track*/0,/*length*/0,/*width*/0,
 				STREAM_NO_DATA,(struct Computed_field *)NULL,
 				(struct GT_object *)NULL, (struct GT_object *)NULL);
-/*			MANAGER_COPY_WITHOUT_IDENTIFIER(Interactive_streamline,name)(
-				new_object, current_object);*/
+			MANAGER_COPY_WITHOUT_IDENTIFIER(Interactive_streamline,name)(
+				new_object,template_object);
 			DEALLOCATE(new_object_name);
 		}
 		else
@@ -90,7 +92,8 @@ Can only make a copy of the current object
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"SELECT_MANAGER_CREATE(Interactive_streamline).  Missing object manager");
+		display_message(ERROR_MESSAGE,
+			"SELECT_MANAGER_CREATE(Interactive_streamline).  Missing object manager");
 		new_object=(struct Interactive_streamline *)NULL;
 	}
 	LEAVE;
