@@ -2525,10 +2525,6 @@ Invokes the graphical element group editor.
 			{
 				ACCESS(GROUP(FE_element))(element_group);
 			}
-			if (scene)
-			{
-				ACCESS(Scene)(scene);
-			}
 			(option_table[0]).to_be_modified= &element_group;
 			(option_table[0]).user_data=command_data->element_group_manager;
 			(option_table[1]).to_be_modified= &scene;
