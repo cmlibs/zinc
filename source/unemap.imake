@@ -602,23 +602,24 @@ IMAGEMAGICK_LIB = $(IMAGEMAGICK_PATH)/liblinux/libMagick.a $(IMAGEMAGICK_PATH)/l
 #endif /* !defined (IMAGEMAGICK) */
 
 #if defined (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D)
+HELP_LIB = -lXmu
 #if defined (IRIX) /* switch OperatingSystem */
 #if defined (O64)
 XCOMM for OpenGL without SGI movie (64bit doesnt have libraries as of Jan99)
 GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API -DDM_BUFFERS 
 GRAPHICS_LIB = -lGL -lGLU
-HELP_LIB = -lXmu
 #else /* defined (O64) */
 XCOMM  for OpenGL with SGI movie
 GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API -DDM_BUFFERS -DSGI_MOVIE_FILE -DSGI_DIGITAL_MEDIA
 GRAPHICS_LIB = -delay_load -lmoviefile -delay_load -ldmedia -lGL -lGLU
-HELP_LIB =
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
 XCOMM for OpenGL without SGI movie
 GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
 GRAPHICS_LIB = -L/usr/local/lib -lGL -lGLU
 #endif /* switch OperatingSystem */
+#else /* (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D)*/
+HELP_LIB =
 #endif /* (USE_UNEMAP_NODES) || defined (USE_UNEMAP_3D)*/
 
 #if defined (USE_UNEMAP_NODES)
