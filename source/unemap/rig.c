@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.c
 
-LAST MODIFIED : 16 August 2002
+LAST MODIFIED : 17 September 2002
 
 DESCRIPTION :
 Contains function definitions for measurement rigs.
@@ -396,7 +396,7 @@ struct Device_expression *parse_device_expression_string(
 	char *device_expression_string,struct Device_list_item *device_list,
 	int number_of_devices,struct Device **devices)
 /*******************************************************************************
-LAST MODIFIED : 15 August 2002
+LAST MODIFIED : 17 September 2002
 
 DESCRIPTION :
 Parses the <device_expression_string> to create a device expression and returns
@@ -926,7 +926,7 @@ alternatives for specifying the list of devices to use.
 								} while ((second!=first)&&isspace(*second));
 								if (second!=first)
 								{
-									first_length=second-first;
+									first_length=second-first+1;
 									if (ALLOCATE(first_copy,char,first_length+1))
 									{
 										strncpy(first_copy,first,first_length);
@@ -1066,16 +1066,16 @@ Destroys a device expression.
 
 static int calculate_device_expression_channels(
 	struct Device_expression *expression,int *number_of_channels_address,
-	struct Channel ***channels_address)
+	struct Device ***channel_devices_address)
 /*******************************************************************************
-LAST MODIFIED : 16 August 2002
+LAST MODIFIED : 3 September 2002
 
 DESCRIPTION :
-From the device <expression>, calculate the channels whose values are needed in
-order to evaluate the <expression>.  <*number_of_channels_address> and
-<*channels_address> are "incremented" to include these channels.  The values
-passed to <evaluate_device> need to be in the same order as the channels
-calculated by this routine.
+From the device <expression>, calculate the single channel devices whose values
+are needed in order to evaluate the <expression>.  <*number_of_channels_address>
+and <*channel_devices_address> are "incremented" to include these devices.  The
+values passed to <evaluate_device> need to be in the same order as the single
+channel devices calculated by this routine.
 ==============================================================================*/
 {
 	int return_code;
@@ -1083,9 +1083,9 @@ calculated by this routine.
 	ENTER(calculate_device_expression_channels);
 	return_code=0;
 	/* check arguments */
-	if (number_of_channels_address&&channels_address&&
-		(((0== *number_of_channels_address)&&!(*channels_address))||
-		((0< *number_of_channels_address)&&(*channels_address))))
+	if (number_of_channels_address&&channel_devices_address&&
+		(((0== *number_of_channels_address)&&!(*channel_devices_address))||
+		((0< *number_of_channels_address)&&(*channel_devices_address))))
 	{
 		if (expression)
 		{
@@ -1094,7 +1094,7 @@ calculated by this routine.
 				case DEVICE_EXPRESSION_DEVICE:
 				{
 					return_code=calculate_device_channels((expression->expression).device,
-						number_of_channels_address,channels_address);
+						number_of_channels_address,channel_devices_address);
 				} break;
 				case DEVICE_EXPRESSION_EXPRESSION:
 				{
@@ -1102,11 +1102,11 @@ calculated by this routine.
 					{
 						if (return_code=calculate_device_expression_channels(
 							((expression->expression).binary)->first,
-							number_of_channels_address,channels_address))
+							number_of_channels_address,channel_devices_address))
 						{
 							return_code=calculate_device_expression_channels(
 								((expression->expression).binary)->second,
-								number_of_channels_address,channels_address);
+								number_of_channels_address,channel_devices_address);
 						}
 					}
 				} break;
@@ -1126,7 +1126,7 @@ calculated by this routine.
 	{
 		display_message(ERROR_MESSAGE,"calculate_device_expression_channels.  "
 			"Invalid argument(s).  %p %p",number_of_channels_address,
-			channels_address);
+			channel_devices_address);
 	}
 	LEAVE;
 
@@ -1134,28 +1134,27 @@ calculated by this routine.
 } /* calculate_device_expression_channels */
 
 int calculate_device_channels(struct Device *device,
-	int *number_of_channels_address,struct Channel ***channels_address)
+	int *number_of_channels_address,struct Device ***channel_devices_address)
 /*******************************************************************************
-LAST MODIFIED : 16 August 2002
+LAST MODIFIED : 3 September 2002
 
 DESCRIPTION :
-From the <device>, calculate the channels whose values are needed in order to 
-evaluate the <device>.  <*number_of_channels_address> and <*channels_address>
-are "incremented" to include these channels.  The values passed to 
-<evaluate_device> need to be in the same order as the channels calculated by 
-this routine.
+From the <device>, calculate the single channel devices whose values are needed
+in order to evaluate the <device>.  <*number_of_channels_address> and
+<*channel_devices_address> are "incremented" to include these devices.  The
+values passed to <evaluate_device> need to be in the same order as the single
+channel devices calculated by this routine.
 ==============================================================================*/
 {
 	int i,number_of_channels,return_code;
-	struct Channel **channels;
-	struct Device **device_address;
+	struct Device **channel_devices,**device_address;
 
 	ENTER(calculate_device_channels);
 	return_code=0;
 	/* check arguments */
-	if (number_of_channels_address&&channels_address&&
-		(((0== *number_of_channels_address)&&!(*channels_address))||
-		((0< *number_of_channels_address)&&(*channels_address))))
+	if (number_of_channels_address&&channel_devices_address&&
+		(((0== *number_of_channels_address)&&!(*channel_devices_address))||
+		((0< *number_of_channels_address)&&(*channel_devices_address))))
 	{
 		if (device)
 		{
@@ -1164,11 +1163,11 @@ this routine.
 				description->properties).auxiliary.type)))
 			{
 				number_of_channels= *number_of_channels_address;
-				if ((device->channel)&&REALLOCATE(channels,*channels_address,
-					struct Channel *,number_of_channels+1))
+				if ((device->channel)&&REALLOCATE(channel_devices,
+					*channel_devices_address,struct Device *,number_of_channels+1))
 				{
-					*channels_address=channels;
-					channels[number_of_channels]=device->channel;
+					*channel_devices_address=channel_devices;
+					channel_devices[number_of_channels]=device;
 					(*number_of_channels_address)++;
 					return_code=1;
 				}
@@ -1184,7 +1183,7 @@ this routine.
 							return_code=calculate_device_expression_channels(
 								(device->description->properties).auxiliary.combination.
 								expression.device_expression,number_of_channels_address,
-								channels_address);
+								channel_devices_address);
 						} break;
 						case AUXILIARY_DEVICE_SUM:
 						{
@@ -1208,7 +1207,7 @@ this routine.
 									{
 										return_code=calculate_device_channels(
 											*device_address,number_of_channels_address,
-											channels_address);
+											channel_devices_address);
 										device_address++;
 										i--;
 									}
@@ -1233,7 +1232,7 @@ this routine.
 	{
 		display_message(ERROR_MESSAGE,
 			"calculate_device_channels.  Invalid argument(s).  %p %p",
-			number_of_channels_address,channels_address);
+			number_of_channels_address,channel_devices_address);
 	}
 	LEAVE;
 
@@ -1340,7 +1339,7 @@ through.
 int evaluate_device(struct Device *device,float **channel_values_address,
 	float *result)
 /*******************************************************************************
-LAST MODIFIED : 25 July 2002
+LAST MODIFIED : 5 September 2002
 
 DESCRIPTION :
 Evaluates the <device> using the <*channel_values_address>.  The values
@@ -1400,10 +1399,13 @@ through.
 								{
 									return_code=evaluate_device(*device_address,
 										channel_values_address,&electrode_value);
-									sum += (*electrode_coefficient)*electrode_value;
-									electrode_coefficient++;
-									device_address++;
-									i--;
+									if (return_code)
+									{
+										sum += (*electrode_coefficient)*electrode_value;
+										electrode_coefficient++;
+										device_address++;
+										i--;
+									}
 								}
 								else
 								{
@@ -1430,6 +1432,273 @@ through.
 
 	return (return_code);
 } /* evaluate_device */
+
+static int evaluate_device_expression_extrema(
+	struct Device_expression *expression,float *minimum,float *maximum)
+/*******************************************************************************
+LAST MODIFIED : 5 September 2002
+
+DESCRIPTION :
+Evaluates the <expression>'s <minimum> and <maximum>
+==============================================================================*/
+{
+	float first_maximum,first_minimum,result,second_maximum,second_minimum;
+	int return_code;
+
+	ENTER(evaluate_device_expression_extrema);
+	return_code=0;
+	/* check arguments */
+	if (expression&&minimum&&maximum)
+	{
+		switch (expression->type)
+		{
+			case DEVICE_EXPRESSION_DEVICE:
+			{
+				return_code=evaluate_device_extrema((expression->expression).device,
+					minimum,maximum);
+			} break;
+			case DEVICE_EXPRESSION_EXPRESSION:
+			{
+				if ((expression->expression).binary)
+				{
+					if (evaluate_device_expression_extrema(
+						((expression->expression).binary)->first,&first_minimum,
+						&first_maximum)&&evaluate_device_expression_extrema(
+						((expression->expression).binary)->second,&second_minimum,
+						&second_maximum))
+					{
+						switch (((expression->expression).binary)->type)
+						{
+							case DEVICE_EXPRESSION_ADD_OPERATOR:
+							{
+								*minimum=first_minimum+second_minimum;
+								*maximum=first_maximum+second_maximum;
+								return_code=1;
+							} break;
+							case DEVICE_EXPRESSION_DIVIDE_OPERATOR:
+							{
+								if ((second_minimum<=0)&&(0<=second_maximum))
+								{
+									result=first_minimum/second_minimum;
+									*minimum=result;
+									*maximum=result;
+									result=first_minimum/second_maximum;
+									if (result< *minimum)
+									{
+										*minimum=result;
+									}
+									else
+									{
+										if (result> *maximum)
+										{
+											*maximum=result;
+										}
+									}
+									result=first_maximum/second_minimum;
+									if (result< *minimum)
+									{
+										*minimum=result;
+									}
+									else
+									{
+										if (result> *maximum)
+										{
+											*maximum=result;
+										}
+									}
+									result=first_maximum/second_maximum;
+									if (result< *minimum)
+									{
+										*minimum=result;
+									}
+									else
+									{
+										if (result> *maximum)
+										{
+											*maximum=result;
+										}
+									}
+								}
+								else
+								{
+									*minimum=0;
+									*maximum=0;
+								}
+								return_code=1;
+							} break;
+							case DEVICE_EXPRESSION_MULTIPLY_OPERATOR:
+							{
+								result=first_minimum*second_minimum;
+								*minimum=result;
+								*maximum=result;
+								result=first_minimum*second_maximum;
+								if (result< *minimum)
+								{
+									*minimum=result;
+								}
+								else
+								{
+									if (result> *maximum)
+									{
+										*maximum=result;
+									}
+								}
+								result=first_maximum*second_minimum;
+								if (result< *minimum)
+								{
+									*minimum=result;
+								}
+								else
+								{
+									if (result> *maximum)
+									{
+										*maximum=result;
+									}
+								}
+								result=first_maximum*second_maximum;
+								if (result< *minimum)
+								{
+									*minimum=result;
+								}
+								else
+								{
+									if (result> *maximum)
+									{
+										*maximum=result;
+									}
+								}
+								return_code=1;
+							} break;
+							case DEVICE_EXPRESSION_SUBTRACT_OPERATOR:
+							{
+								*minimum=first_minimum-second_maximum;
+								*maximum=first_maximum-second_minimum;
+								return_code=1;
+							} break;
+						}
+					}
+				}
+			} break;
+			case DEVICE_EXPRESSION_REAL:
+			{
+				*minimum=(expression->expression).coefficient;
+				*maximum=(expression->expression).coefficient;
+				return_code=1;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"evaluate_device_expression_extrema.  "
+			"Invalid argument(s).  %p %p %p",expression,minimum,maximum);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* evaluate_device_expression_extrema */
+
+int evaluate_device_extrema(struct Device *device,float *minimum,
+	float *maximum)
+/*******************************************************************************
+LAST MODIFIED : 5 September 2002
+
+DESCRIPTION :
+Evaluates the <device>'s <minimum> and <maximum>.
+==============================================================================*/
+{
+	float local_maximum,local_minimum,*sum_coefficient,sum_maximum,sum_minimum;
+	int i,return_code;
+	struct Device **sum_device_address;
+
+	ENTER(evaluate_device_extrema);
+	return_code=0;
+	/* check arguments */
+	if (minimum&&maximum&&device)
+	{
+		if ((ELECTRODE==device->description->type)||((AUXILIARY==device->
+			description->type)&&(AUXILIARY_DEVICE_CHANNEL==(device->
+			description->properties).auxiliary.type)))
+		{
+			*minimum=device->signal_display_minimum;
+			*maximum=device->signal_display_maximum;
+			return_code=1;
+		}
+		else
+		{
+			if (AUXILIARY==device->description->type)
+			{
+				switch ((device->description->properties).auxiliary.type)
+				{
+					case AUXILIARY_DEVICE_EXPRESSION:
+					{
+						return_code=evaluate_device_expression_extrema(
+							(device->description->properties).auxiliary.combination.
+							expression.device_expression,minimum,maximum);
+					} break;
+					case AUXILIARY_DEVICE_SUM:
+					{
+						if ((0==(device->description->properties).auxiliary.
+							combination.sum.number_of_electrodes)||
+							((0<(device->description->properties).auxiliary.
+							combination.sum.number_of_electrodes)&&
+							(sum_coefficient=(device->description->properties).
+							auxiliary.combination.sum.electrode_coefficients)&&
+							(sum_device_address=(device->description->properties).auxiliary.
+							combination.sum.electrodes)))
+						{
+							return_code=1;
+							i=(device->description->properties).auxiliary.
+								combination.sum.number_of_electrodes;
+							sum_minimum=(float)0;
+							sum_maximum=(float)0;
+							while (return_code&&(i>0))
+							{
+								if (*sum_device_address)
+								{
+									return_code=evaluate_device_extrema(*sum_device_address,
+										&local_minimum,&local_maximum);
+									if (return_code)
+									{
+										if (0< *sum_coefficient)
+										{
+											sum_minimum += (*sum_coefficient)*local_minimum;
+											sum_maximum += (*sum_coefficient)*local_maximum;
+										}
+										else
+										{
+											sum_minimum += (*sum_coefficient)*local_maximum;
+											sum_maximum += (*sum_coefficient)*local_minimum;
+										}
+										sum_coefficient++;
+										sum_device_address++;
+									i--;
+									}
+								}
+								else
+								{
+									return_code=0;
+								}
+							}
+							if (return_code)
+							{
+								*minimum=sum_minimum;
+								*maximum=sum_maximum;
+							}
+						}
+					} break;
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"evaluate_device_extrema.  "
+			"Invalid argument(s).  %p %p %p",device,minimum,maximum);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* evaluate_device_extrema */
 #endif /* defined (DEVICE_EXPRESSIONS) */
 
 struct Signal *get_Device_signal(struct Device *device)
@@ -1485,36 +1754,54 @@ Returns the Device_description used by the <device>.
 
 struct Signal_buffer *get_Device_signal_buffer(struct Device *device)
 /*******************************************************************************
-LAST MODIFIED : 25 July 2002
+LAST MODIFIED : 5 September 2002
 
 DESCRIPTION :
 Returns the signal buffer used by the <device>.
 ==============================================================================*/
 {
-	struct Device **electrodes;
+	struct Device **channel_devices;
 	struct Signal_buffer *buffer;
+#if defined (DEVICE_EXPRESSIONS)
+	int number_of_channel_devices;
+#endif /* defined (DEVICE_EXPRESSIONS) */
 
 	ENTER(get_Device_signal_buffer);
 	buffer=(struct Signal_buffer *)NULL;
 	if (device&&(device->description))
 	{
-		if ((AUXILIARY==device->description->type)&&
 #if defined (DEVICE_EXPRESSIONS)
-			(AUXILIARY_DEVICE_SUM==(device->description->properties).auxiliary.type)&&
-#endif /* defined (DEVICE_EXPRESSIONS) */
-			(0<(device->description->properties).auxiliary.
-#if defined (DEVICE_EXPRESSIONS)
-			combination.sum.
-#endif /* defined (DEVICE_EXPRESSIONS) */
-			number_of_electrodes))
+		if ((ELECTRODE==device->description->type)||
+			((AUXILIARY==device->description->type)&&(AUXILIARY_DEVICE_CHANNEL==
+			(device->description->properties).auxiliary.type)))
 		{
-			if ((electrodes=(device->description->properties).auxiliary.
-#if defined (DEVICE_EXPRESSIONS)
-				combination.sum.
-#endif /* defined (DEVICE_EXPRESSIONS) */
-				electrodes)&&(electrodes[0])&&(electrodes[0]->signal))
+			if (device->signal)
 			{
-				buffer=electrodes[0]->signal->buffer;
+				buffer=device->signal->buffer;
+			}
+		}
+		else
+		{
+			channel_devices=(struct Device **)NULL;
+			number_of_channel_devices=0;
+			if (calculate_device_channels(device,&number_of_channel_devices,
+				&channel_devices)&&(0<number_of_channel_devices))
+			{
+				if ((*channel_devices)->signal)
+				{
+					buffer=(*channel_devices)->signal->buffer;
+				}
+				DEALLOCATE(channel_devices);
+			}
+		}
+#else /* defined (DEVICE_EXPRESSIONS) */
+		if ((AUXILIARY==device->description->type)&&
+			(0<(device->description->properties).auxiliary.number_of_electrodes))
+		{
+			if ((channel_devices=(device->description->properties).auxiliary.
+				electrodes)&&(channel_devices[0])&&(channel_devices[0]->signal))
+			{
+				buffer=channel_devices[0]->signal->buffer;
 			}
 		}
 		else
@@ -1524,11 +1811,749 @@ Returns the signal buffer used by the <device>.
 				buffer=device->signal->buffer;
 			}
 		}
+#endif /* defined (DEVICE_EXPRESSIONS) */
 	}
 	LEAVE;
 
 	return (buffer);
 } /* get_Device_signal_buffer */
+
+int extract_Device_signal_information(struct Device *device,
+	int signal_number,int first_data,int last_data,float **times_address,
+	float **values_address,enum Event_signal_status **status_address,
+	int *number_of_signals_address,int *number_of_signal_values_address,
+	char **name_address,int *highlight_address,float *signal_minimum_address,
+	float *signal_maximum_address)
+/*******************************************************************************
+LAST MODIFIED : 11 September 2002
+
+DESCRIPTION :
+Extracts the specified signal information.  The specification arguments are:
+- the <device> where the information is stored.
+- <signal_number> specifies which signal (zero indicates all)	
+- <first_data> and <last_data> specify the part of the signal required.  If
+	<first_data> is greater than <last_data> then return the whole signal
+If the return_code is nonzero, the extraction arguments are:
+- if <times_address> not NULL then
+	- if <*times_address> not NULL then
+		- <number_of_signal_values_address> should be non NULL
+		- on entry, <*number_of_signal_values_address> is the maximum number of
+			times that can be extracted into <*times_address>
+		else
+		- <*times_address> will be allocated for the number of signal values/times
+			(either <last_data>-<first_data>+1 or the whole signal) and the times
+			extracted
+	else
+	- no times are extracted
+- if <values_address> not NULL then
+	- for the extracted values, signal varies fastest ie the values for all
+		signals at a particular time are sequential
+	- if <*values_address> not NULL then
+		- <number_of_signal_values_address> and <number_of_signals_address> should
+			both be non NULL
+		- on entry, <*number_of_signal_values_address> is the maximum number of
+			values that can be extracted for each signal and
+			<*number_of_signals_address> is the maximum number of signals that can be
+			extracted
+		- the stride between values for a particular signal is the entry value of
+			<*number_of_signals_address>
+		else
+		- <*values_address> will be allocated for the number of signals and the
+			number of values per signal and the values extracted
+	else
+	- no values are extracted
+- <status_address> if not NULL then
+	- if <*status_address> not NULL then
+		- <number_of_signals_address> should be non NULL
+		- on entry, <*number_of_signals_address> is the maximum number of signals
+			that can be extracted
+		else
+		- an array with number of signals entries is allocated, filled in with the
+			signal statuses and assigned to <*status_address>
+	else
+	- no statuses are extracted
+- if <number_of_signals_address> not NULL then
+	- if <values_address> or <status_address> are not NULL then
+		- <*number_of_signals_address> is the number of signals extracted
+		else
+		- <*number_of_signals_address> is the number of signals available
+- if <number_of_signal_values_address> not NULL then
+	- if <times_address> or <values_address> are not NULL then
+		- <*number_of_signal_values_address> is the number of values per signal
+			extracted
+		else
+		- <*number_of_signal_values_address> is the number of values per signal
+- <name_address> if not NULL, a copy of the name is made and assigned to
+	<*name_address>
+- <highlight_address> if not NULL <*highlight_address> is set to zero if the
+	signals are not highlighted and a non-zero if they are highlighted
+- <signal_minimum_address> if not NULL <*signal_minimum_address> is set to
+	the minimum value to be displayed (not necessarily the minimum of the values)
+- <signal_maximum_address> if not NULL <*signal_maximum_address> is set to
+	the maximum value to be displayed (not necessarily the maximum of the values)
+==============================================================================*/
+{
+	char *name=(char *)NULL;
+	enum Event_signal_status *signals_status;
+	float buffer_frequency,channel_offset,channel_gain,*data_value_float,
+		signal_minimum,signal_maximum,*signal_value,*signals_values,*times;
+	int buffer_offset,first_data_local,highlight,i,j,k,last_data_local,length,
+		number_of_signals,number_of_values,return_code,signals_values_step;
+	short int *data_value_short_int;
+	struct Signal *signal;
+	struct Signal_buffer *buffer;
+#if defined (DEVICE_EXPRESSIONS)
+	float *channel_value,*channel_values;
+	int number_of_channel_devices;
+	struct Device **channel_devices=(struct Device **)NULL;
+#else /* defined (DEVICE_EXPRESSIONS) */
+	float	*electrode_coefficients=(float *)NULL;
+	int linear_combination,number_of_electrodes;
+	struct Device **electrodes=(struct Device **)NULL;
+#endif /* defined (DEVICE_EXPRESSIONS) */
+
+	ENTER(extract_signal_information);
+	return_code=0;
+	if (device)
+	{
+		return_code=1;
+		/* determine the number of signals stored at the device */
+		buffer=(struct Signal_buffer *)NULL;
+#if defined (DEVICE_EXPRESSIONS)
+		number_of_channel_devices=0;
+		channel_devices=(struct Device **)NULL;
+		if (calculate_device_channels(device,&number_of_channel_devices,
+			&channel_devices)&&(0<number_of_channel_devices))
+		{
+			/* find the number of signals that are present at all single channel
+				devices and check that all signals are from the same buffer */
+			if ((signal=(*channel_devices)->signal)&&(buffer=signal->buffer))
+			{
+				number_of_signals=1;
+				while (buffer&&(signal=signal->next))
+				{
+					if (buffer==signal->buffer)
+					{
+						number_of_signals++;
+					}
+					else
+					{
+						buffer=(struct Signal_buffer *)NULL;
+					}
+				}
+				if (buffer)
+				{
+					i=1;
+					while (buffer&&(i<number_of_channel_devices))
+					{
+						if (signal=channel_devices[i]->signal)
+						{
+							j=1;
+							while (buffer&&(signal=signal->next))
+							{
+								if (buffer==signal->buffer)
+								{
+									j++;
+								}
+								else
+								{
+									buffer=(struct Signal_buffer *)NULL;
+								}
+							}
+							if (j<number_of_signals)
+							{
+								number_of_signals=j;
+							}
+						}
+						i++;
+					}
+					if (number_of_signals<=0)
+					{
+						buffer=(struct Signal_buffer *)NULL;
+					}
+				}
+			}
+		}
+#else /* defined (DEVICE_EXPRESSIONS) */
+		if ((signal=device->signal)&&(buffer=signal->buffer))
+		{
+			linear_combination=0;
+			number_of_signals=1;
+			while (buffer&&(signal=signal->next))
+			{
+				/* only handle devices with signals all in the same buffer */
+				if (buffer==signal->buffer)
+				{
+					number_of_signals++;
+				}
+				else
+				{
+					buffer=(struct Signal_buffer *)NULL;
+				}
+			}
+		}
+		else
+		{
+			if ((device->description)&&(AUXILIARY==device->description->type)&&
+				(0<(number_of_electrodes=(device->description->properties).auxiliary.
+				number_of_electrodes)))
+			{
+				/* auxiliary device that is a linear combination of electrodes */
+				linear_combination=1;
+				electrodes=(device->description->properties).auxiliary.electrodes;
+				electrode_coefficients=(device->description->properties).auxiliary.
+					electrode_coefficients;
+				/* check that electodes have same number of signals and that all
+					signals are from the same buffer */
+				if ((signal=(*electrodes)->signal)&&(buffer=signal->buffer))
+				{
+					number_of_signals=1;
+					while (buffer&&(signal=signal->next))
+					{
+						if (buffer==signal->buffer)
+						{
+							number_of_signals++;
+						}
+						else
+						{
+							buffer=(struct Signal_buffer *)NULL;
+						}
+					}
+					if (buffer)
+					{
+						i=1;
+						while (buffer&&(i<number_of_electrodes))
+						{
+							if (signal=electrodes[i]->signal)
+							{
+								j=1;
+								while (buffer&&(signal=signal->next))
+								{
+									if (buffer==signal->buffer)
+									{
+										j++;
+									}
+									else
+									{
+										buffer=(struct Signal_buffer *)NULL;
+									}
+								}
+								if (j<number_of_signals)
+								{
+									number_of_signals=j;
+								}
+							}
+							i++;
+						}
+						if (number_of_signals<=0)
+						{
+							buffer=(struct Signal_buffer *)NULL;
+						}
+					}
+				}
+			}
+		}
+#endif /* defined (DEVICE_EXPRESSIONS) */
+		times=(float *)times;
+		signals_values=(float *)NULL;
+		signals_status=(enum Event_signal_status *)NULL;
+		if (return_code&&buffer)
+		{
+			/* check arguments */
+			if (!((0<=signal_number)&&(signal_number<=number_of_signals)))
+			{
+				display_message(ERROR_MESSAGE,
+					"extract_Device_signal_information.  Invalid signal_number.  %d %d",
+					signal_number,number_of_signals);
+				return_code=0;
+			}
+			if ((values_address&&(*values_address))||
+				(status_address&&(*status_address)))
+			{
+				if (number_of_signals_address)
+				{
+					if (*number_of_signals_address<number_of_signals)
+					{
+						number_of_signals= *number_of_signals_address;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"extract_Device_signal_information.  "
+						"Missing number_of_signals_address");
+					return_code=0;
+				}
+			}
+			if (values_address||status_address)
+			{
+				if ((0<signal_number)&&(1<number_of_signals))
+				{
+					number_of_signals=1;
+				}
+				signals_values_step=number_of_signals;
+				if (((values_address&&(*values_address))||
+					(status_address&&(*status_address)))&&number_of_signals_address)
+				{
+					signals_values_step=(*number_of_signals_address);
+				}
+			}
+			if (first_data>last_data)
+			{
+				first_data_local=buffer->start;
+				last_data_local=buffer->end;
+			}
+			else
+			{
+				first_data_local=first_data;
+				last_data_local=last_data;
+			}
+			if (!((0<=first_data_local)&&(first_data_local<=last_data_local)&&
+				(last_data_local<buffer->number_of_samples)))
+			{
+				display_message(ERROR_MESSAGE,"extract_Device_signal_information.  "
+					"Invalid data range.  %d %d %d",first_data_local,last_data_local,
+					buffer->number_of_samples);
+				return_code=0;
+			}
+			number_of_values=last_data_local-first_data_local+1;	
+			if ((values_address&&(*values_address))||
+				(times_address&&(*times_address)))
+			{
+				if (number_of_signal_values_address)
+				{
+					if (*number_of_signal_values_address<number_of_values)
+					{
+						number_of_values= *number_of_signal_values_address;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"extract_Device_signal_information.  "
+						"Missing number_of_signal_values_address");
+					return_code=0;
+				}
+			}
+			if (return_code)
+			{
+				buffer_offset=buffer->number_of_signals;	
+				buffer_frequency=buffer->frequency;
+				if (times_address&&(0<number_of_values))
+				{
+					if (!(times= *times_address))
+					{
+						if (!ALLOCATE(times,float,number_of_values))
+						{
+							display_message(ERROR_MESSAGE,
+								"extract_Device_signal_information.  "
+								"Could not allocate times");
+							return_code=0;
+						}
+					}
+					if (return_code&&times)
+					{
+						/* fill in times */
+						for (i=0;i<number_of_values;i++)
+						{	
+							times[i]=(buffer->times[first_data_local+i])/buffer_frequency;
+						}
+					}
+				}
+				if (return_code)
+				{
+					if (values_address&&(0<number_of_values)&&(0<number_of_signals))
+					{
+						if (!(signals_values= *values_address))
+						{
+							if (!ALLOCATE(signals_values,float,
+								number_of_signals*number_of_values))
+							{
+								display_message(ERROR_MESSAGE,
+									"extract_signal_information.  Could not allocate values");
+								return_code=0;
+							}
+						}
+						if (return_code&&signals_values)
+						{
+							/* fill in signal values */
+#if defined (DEVICE_EXPRESSIONS)
+							if (ALLOCATE(channel_values,float,number_of_signals*
+								number_of_channel_devices))
+							{
+								signal_value=signals_values;
+								for (i=0;i<number_of_values;i++)
+								{
+									for (j=0;j<number_of_channel_devices;j++)
+									{
+										channel_offset=channel_devices[j]->channel->offset;
+										channel_gain=channel_devices[j]->channel->gain;
+										signal=channel_devices[j]->signal;
+										channel_value=channel_values+j;
+										k=0;
+										while (signal)
+										{
+											k++;
+											if (((0==signal_number)&&(k<=number_of_signals))||
+												(k==signal_number))
+											{
+												switch (buffer->value_type)
+												{													
+													case SHORT_INT_VALUE:
+													{
+														data_value_short_int=
+															(buffer->signals.short_int_values)+
+															((first_data_local+i)*buffer_offset+
+															(signal->index));
+														*channel_value=
+															channel_gain*((float)(*data_value_short_int)-
+															channel_offset);
+													} break;
+													case FLOAT_VALUE:
+													{
+														data_value_float=(buffer->signals.float_values)+
+															((first_data_local+i)*buffer_offset+
+															(signal->index));
+														*channel_value=
+															channel_gain*((float)(*data_value_float)-
+															channel_offset);
+													} break;
+												}
+												channel_value += number_of_channel_devices;
+											}
+											signal=signal->next;
+										}
+									}
+									channel_value=channel_values;
+									for (k=number_of_signals;k>0;k--)
+									{
+										evaluate_device(device,&channel_value,signal_value);
+										signal_value++;
+									}
+									signal_value += signals_values_step-number_of_signals;
+								}
+								DEALLOCATE(channel_values);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,"extract_signal_information.  "
+									"Could not allocate channel_values");
+								return_code=0;
+							}
+#else /* defined (DEVICE_EXPRESSIONS) */
+							if (linear_combination)
+							{
+								signal_value=signals_values;
+								for (i=number_of_signals*number_of_values;i>0;i--)
+								{
+									*signal_value=(float)0;
+									signal_value++;
+								}
+								for (i=0;i<number_of_electrodes;i++)
+								{
+									signal_value=signals_values;
+									signal=electrodes[i]->signal;
+									channel_offset=electrodes[i]->channel->offset;
+									channel_gain=electrodes[i]->channel->gain;
+									channel_gain *= electrode_coefficients[i];
+									switch (buffer->value_type)
+									{													
+										case SHORT_INT_VALUE:
+										{
+											k=0;
+											while (signal)
+											{
+												k++;
+												if (((0==signal_number)&&(k<=number_of_signals))||
+													(k==signal_number))
+												{
+													data_value_short_int=
+														(buffer->signals.short_int_values)+
+														(first_data_local*buffer_offset+signal->index);
+													for (j=number_of_values;j>0;j--)
+													{
+														*signal_value +=
+															channel_gain*((float)(*data_value_short_int)-
+															channel_offset);
+														data_value_short_int += buffer_offset;
+														signal_value += signals_values_step;
+													}
+													signal_value -=
+														number_of_values*signals_values_step-1;
+												}
+												signal=signal->next;
+											}
+										} break;
+										case FLOAT_VALUE:
+										{
+											k=0;
+											while (signal)
+											{
+												k++;
+												if (((0==signal_number)&&(k<=number_of_signals))||
+													(k==signal_number))
+												{
+													data_value_float=(buffer->signals.float_values)+
+														(first_data_local*buffer_offset+signal->index);
+													for (j=number_of_values;j>0;j--)
+													{
+														*signal_value +=
+															channel_gain*((float)(*data_value_float)-
+															channel_offset);
+														data_value_float += buffer_offset;
+														signal_value += signals_values_step;
+													}
+													signal_value -=
+														number_of_values*signals_values_step-1;
+												}
+												signal=signal->next;
+											}
+										} break;
+									}
+								}
+							}
+							else
+							{
+								signal_value=signals_values;
+								signal=device->signal;
+								channel_offset=device->channel->offset;
+								channel_gain=device->channel->gain;		
+								switch (buffer->value_type)
+								{													
+									case SHORT_INT_VALUE:
+									{
+										k=0;
+										while (signal)
+										{
+											k++;
+											if (((0==signal_number)&&(k<=number_of_signals))||
+												(k==signal_number))
+											{
+												data_value_short_int=
+													(buffer->signals.short_int_values)+
+													(first_data_local*buffer_offset+signal->index);
+												for (i=number_of_values;i>0;i--)
+												{
+													*signal_value=
+														channel_gain*((float)(*data_value_short_int)-
+														channel_offset);
+													data_value_short_int += buffer_offset;
+													signal_value += signals_values_step;
+												}
+												signal_value -= number_of_values*signals_values_step-1;
+											}											
+											signal=signal->next;
+										}
+									} break;
+									case FLOAT_VALUE:
+									{
+										k=0;
+										while (signal)
+										{
+											k++;
+											if (((0==signal_number)&&(k<=number_of_signals))||
+												(k==signal_number))
+											{
+												data_value_float=(buffer->signals.float_values)+
+													(first_data_local*buffer_offset+signal->index);
+												for (i=number_of_values;i>0;i--)
+												{
+													*signal_value=
+														channel_gain*((float)(*data_value_float)-
+														channel_offset);
+													data_value_float += buffer_offset;
+													signal_value += signals_values_step;
+												}
+												signal_value -= number_of_values*signals_values_step-1;
+											}
+											signal=signal->next;
+										}
+									} break;
+								}
+							}
+#endif /* defined (DEVICE_EXPRESSIONS) */
+						}
+					}
+					if (return_code)
+					{
+						if (status_address&&(0<number_of_signals))
+						{
+							if (!(signals_status= *status_address))
+							{
+								if (!ALLOCATE(signals_status,enum Event_signal_status,
+									number_of_signals))
+								{
+									display_message(ERROR_MESSAGE,
+										"extract_signal_information.  Could not allocate statuses");
+									return_code=0;
+								}
+							}
+							if (return_code&&signals_status)
+							{
+#if defined (DEVICE_EXPRESSIONS)
+								if (1<number_of_channel_devices)
+								{
+									for (i=0;i<number_of_signals;i++)
+									{
+										signals_status[i]=REJECTED;
+									}
+								}
+								else
+								{
+									signal=(*channel_devices)->signal;
+									i=0;
+									k=0;
+									while (signal)
+									{
+										k++;
+										if (((0==signal_number)&&(k<=number_of_signals))||
+											(k==signal_number))
+										{
+											signals_status[i]=signal->status;
+											i++;
+										}
+										signal=signal->next;
+									}
+								}
+#else /* defined (DEVICE_EXPRESSIONS) */
+								/* fill in statuses */
+								if (linear_combination)
+								{
+									for (i=0;i<number_of_signals;i++)
+									{
+										signals_status[i]=REJECTED;
+									}
+								}
+								else
+								{
+									signal=device->signal;
+									i=0;
+									k=0;
+									while (signal)
+									{
+										k++;
+										if (((0==signal_number)&&(k<=number_of_signals))||
+											(k==signal_number))
+										{
+											signals_status[i]=signal->status;
+											i++;
+										}
+										signal=signal->next;
+									}
+								}
+#endif /* defined (DEVICE_EXPRESSIONS) */
+							}
+							if (return_code)
+							{
+								if (name_address)
+								{
+									if ((device->description)&&(device->description->name))
+									{
+										length=strlen(device->description->name)+1;
+										if (ALLOCATE(name,char,length))
+										{
+											strcpy(name,device->description->name);
+										}
+										else
+										{	
+											display_message(WARNING_MESSAGE,
+												"extract_signal_information.  Could not allocate name");
+											return_code=0;
+										}
+									}
+									else
+									{
+										name=(char *)NULL;
+									}
+								}
+								else
+								{
+									name=(char *)NULL;
+								}
+								if (return_code)
+								{
+									highlight=device->highlight;
+									signal_minimum=device->signal_display_minimum;
+									signal_maximum=device->signal_display_maximum;					
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			return_code=0;
+		}
+#if defined (DEVICE_EXPRESSIONS)
+		DEALLOCATE(channel_devices);
+#endif /* defined (DEVICE_EXPRESSIONS) */
+		if (return_code)
+		{
+			if (number_of_signals_address)
+			{
+				*number_of_signals_address=number_of_signals;
+			}
+			if (number_of_signal_values_address)
+			{
+				*number_of_signal_values_address=number_of_values;
+			}
+			if (times_address)
+			{
+				*times_address=times;
+			}
+			if (values_address)
+			{
+				*values_address=signals_values;
+			}
+			if (status_address)
+			{
+				*status_address=signals_status;
+			}
+			if (name_address)
+			{
+				*name_address=name;
+			}
+			if (highlight_address)
+			{
+				*highlight_address=highlight;
+			}
+			if (signal_minimum_address)
+			{
+				*signal_minimum_address=signal_minimum;
+			}
+			if (signal_maximum_address)
+			{
+				*signal_maximum_address=signal_maximum;
+			}
+		}
+		else
+		{
+			if (!(times_address&&(*times_address)))
+			{
+				DEALLOCATE(times);
+			}
+			if (!(values_address&&(*values_address)))
+			{
+				DEALLOCATE(signals_values);
+			}
+			if (!(status_address&&(*status_address)))
+			{
+				DEALLOCATE(signals_status);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"extract_Device_signal_information.  Missing device");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* extract_Device_signal_information */
 
 struct Device_list_item *create_Device_list_item(struct Device *device,
 	struct Device_list_item *previous,struct Device_list_item *next)

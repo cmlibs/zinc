@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig_node.c
 
-LAST MODIFIED : 25 July 2002
+LAST MODIFIED : 6 September 2002
 
 DESCRIPTION :
 Essentially the same functionality as rig.c, but using nodes and fields to store
@@ -5306,7 +5306,7 @@ int extract_signal_information(struct FE_node *device_node,
 	int *highlight_address,float *signal_minimum_address,
 	float *signal_maximum_address)
 /*******************************************************************************
-LAST MODIFIED : 25 July 2002
+LAST MODIFIED : 6 September 2002
 
 DESCRIPTION :
 Extracts the specified signal information.  The specification arguments are:
@@ -5330,7 +5330,8 @@ The extraction arguments are:
 	allocated, filled in with the times and assigned to <*times_address>
 - <values_address> if not NULL, an array with (number of signals)*(number of
 	values) entries is allocated, filled in with the values and assigned to
-	<*values_address>
+	<*values_address>.  In the extracted <*values_address> array the signal varies
+	fastest ie the values for all signals at a particular time are sequential
 - <status_address> if not NULL, an array with number of signals entries is
 	allocated, filled in with the signal statuses and assigned to
 	<*status_address>
@@ -5349,12 +5350,10 @@ The extraction arguments are:
 	char *signal_status_str=(char *)NULL;
 #endif /* defined (UNEMAP_USE_NODES) */
 	enum Event_signal_status *signals_status=(enum Event_signal_status *)NULL;
-	float channel_offset,channel_gain,signal_minimum,signal_maximum;
-	float	*signal_value=(float *)NULL;
+	float signal_minimum,signal_maximum;
 	float	*signals_values=(float *)NULL;
 	float	*times=(float *)NULL;
-	int first_data_local,highlight,last_data_local,number_of_signals,
-		number_of_values,return_code;
+	int highlight,number_of_signals,number_of_values,return_code;
 
 	ENTER(extract_signal_information);
 	return_code=0;
@@ -5362,20 +5361,86 @@ The extraction arguments are:
 #if defined (UNEMAP_USE_NODES)
 		((device_node&&signal_drawing_package)&&(!device))||
 #endif /* defined (UNEMAP_USE_NODES) */
-		(device&&((!device_node)&&(!signal_drawing_package))))
+		(device&&(device->description)&&(!device_node)&&(!signal_drawing_package)))
 	{
 #if defined (UNEMAP_USE_NODES)
 		if (device)
 		{
 #endif /* defined (UNEMAP_USE_NODES) */
-			float buffer_frequency,*data_value_float;
-			float	*electrode_coefficients=(float *)NULL;
-			int buffer_offset,i,j,k,length,linear_combination,number_of_electrodes;
+#if defined (OLD_CODE)
+			float buffer_frequency,channel_offset,channel_gain,*data_value_float,
+				*signal_value;
+			int buffer_offset,first_data_local,i,j,k,length,last_data_local;
 			short int *data_value_short_int=(short int *)NULL;
-			struct Device **electrodes=(struct Device **)NULL;
 			struct Signal *signal=(struct Signal *)NULL;
 			struct Signal_buffer *buffer=(struct Signal_buffer *)NULL;
+#if defined (DEVICE_EXPRESSIONS)
+			float *channel_value,*channel_values;
+			int number_of_channel_devices;
+			struct Device **channel_devices=(struct Device **)NULL;
+#else /* defined (DEVICE_EXPRESSIONS) */
+			float	*electrode_coefficients=(float *)NULL;
+			int linear_combination,number_of_electrodes;
+			struct Device **electrodes=(struct Device **)NULL;
+#endif /* defined (DEVICE_EXPRESSIONS) */
 
+#if defined (DEVICE_EXPRESSIONS)
+			number_of_channel_devices=0;
+			channel_devices=(struct Device **)NULL;
+			if (calculate_device_channels(device,&number_of_channel_devices,
+				&channel_devices)&&(0<number_of_channel_devices))
+			{
+				/* check that electodes have same number of signals and that all
+					signals are from the same buffer */
+				if ((signal=(*channel_devices)->signal)&&(buffer=signal->buffer))
+				{
+					number_of_signals=1;
+					return_code=1;
+					while (return_code&&(signal=signal->next))
+					{
+						if (buffer==signal->buffer)
+						{
+							number_of_signals++;
+						}
+						else
+						{
+							return_code=0;
+						}
+					}
+					if (return_code)
+					{
+						i=1;
+						while (return_code&&(i<number_of_channel_devices))
+						{
+							if (signal=channel_devices[i]->signal)
+							{
+								j=1;
+								while (return_code&&(signal=signal->next))
+								{
+									if (buffer==signal->buffer)
+									{
+										j++;
+									}
+									else
+									{
+										return_code=0;
+									}
+								}
+								if (j<number_of_signals)
+								{
+									number_of_signals=j;
+								}
+							}
+							i++;
+						}
+						if (number_of_signals<=0)
+						{
+							return_code=0;
+						}
+					}
+				}
+			}
+#else /* defined (DEVICE_EXPRESSIONS) */
 			if ((signal=device->signal)&&(buffer=signal->buffer))
 			{
 				linear_combination=0;
@@ -5398,22 +5463,12 @@ The extraction arguments are:
 			{
 				if ((device->description)&&(AUXILIARY==device->description->type)&&
 					(0<(number_of_electrodes=(device->description->properties).auxiliary.
-#if defined (DEVICE_EXPRESSIONS)
-					combination.sum.
-#endif /* defined (DEVICE_EXPRESSIONS) */
 					number_of_electrodes)))
 				{
 					/* auxiliary device that is a linear combination of electrodes */
 					linear_combination=1;
-					electrodes=(device->description->properties).auxiliary.
-#if defined (DEVICE_EXPRESSIONS)
-						combination.sum.
-#endif /* defined (DEVICE_EXPRESSIONS) */
-						electrodes;
+					electrodes=(device->description->properties).auxiliary.electrodes;
 					electrode_coefficients=(device->description->properties).auxiliary.
-#if defined (DEVICE_EXPRESSIONS)
-						combination.sum.
-#endif /* defined (DEVICE_EXPRESSIONS) */
 						electrode_coefficients;
 					/* check that electodes have same number of signals and that all
 						signals are from the same buffer */
@@ -5462,6 +5517,7 @@ The extraction arguments are:
 					}
 				}
 			}
+#endif /* defined (DEVICE_EXPRESSIONS) */
 			if (return_code)
 			{
 				if (0!=signal_number)
@@ -5529,6 +5585,65 @@ The extraction arguments are:
 								number_of_signals*number_of_values))
 							{
 								/* fill in signal values */
+#if defined (DEVICE_EXPRESSIONS)
+								if (ALLOCATE(channel_values,float,number_of_signals*
+									number_of_channel_devices))
+								{
+									signal_value=signals_values;
+									for (i=0;i<number_of_values;i++)
+									{
+										for (j=0;j<number_of_channel_devices;j++)
+										{
+											channel_offset=channel_devices[j]->channel->offset;
+											channel_gain=channel_devices[j]->channel->gain;
+											signal=channel_devices[j]->signal;
+											channel_value=channel_values+j;
+											for (k=number_of_signals;k>0;k--)
+											{
+												switch (buffer->value_type)
+												{													
+													case SHORT_INT_VALUE:
+													{
+														data_value_short_int=
+															(buffer->signals.short_int_values)+
+															((first_data_local+i)*buffer_offset+
+															(signal->index));
+														*channel_value=
+															channel_gain*((float)(*data_value_short_int)-
+															channel_offset);
+													} break;
+													case FLOAT_VALUE:
+													{
+														data_value_float=(buffer->signals.float_values)+
+															((first_data_local+i)*buffer_offset+
+															(signal->index));
+														*channel_value=
+															channel_gain*((float)(*data_value_float)-
+															channel_offset);
+													} break;
+												}
+												signal=signal->next;
+												channel_value += number_of_channel_devices;
+											}
+										}
+										channel_value=channel_values;
+										data_value_float=signal_value;
+										for (k=number_of_signals;k>0;k--)
+										{
+											evaluate_device(device,&channel_value,data_value_float);
+											data_value_float += number_of_values;
+										}
+										signal_value++;
+									}
+									DEALLOCATE(channel_values);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,"extract_signal_information.  "
+										"Could not allocate channel_values");
+									return_code=0;
+								}
+#else /* defined (DEVICE_EXPRESSIONS) */
 								if (linear_combination)
 								{
 									signal_value=signals_values;
@@ -5649,6 +5764,7 @@ The extraction arguments are:
 										} break;
 									}
 								}
+#endif /* defined (DEVICE_EXPRESSIONS) */
 							}
 							else
 							{
@@ -5668,6 +5784,29 @@ The extraction arguments are:
 								if (ALLOCATE(signals_status,enum Event_signal_status,
 									number_of_signals))
 								{
+#if defined (DEVICE_EXPRESSIONS)
+									if (1<number_of_channel_devices)
+									{
+										for (i=0;i<number_of_signals;i++)
+										{
+											signals_status[i]=REJECTED;
+										}
+									}
+									else
+									{
+										signal=(*channel_devices)->signal;
+										i=0;
+										for (k=1;k<=number_of_signals;k++)
+										{
+											if ((0==signal_number)||(k==signal_number))
+											{
+												signals_status[i]=signal->status;
+												i++;
+											}
+											signal=signal->next;
+										}
+									}
+#else /* defined (DEVICE_EXPRESSIONS) */
 									/* fill in statuses */
 									if (linear_combination)
 									{
@@ -5692,6 +5831,7 @@ The extraction arguments are:
 											signal=signal->next;
 										}
 									}
+#endif /* defined (DEVICE_EXPRESSIONS) */
 								}
 								else
 								{
@@ -5763,14 +5903,33 @@ The extraction arguments are:
 					"extract_signal_information.  Missing signal(s) for device");
 				return_code=0;
  			}
+#if defined (DEVICE_EXPRESSIONS)
+			DEALLOCATE(channel_devices);
+#endif /* defined (DEVICE_EXPRESSIONS) */
+#endif /* defined (OLD_CODE) */
+			times=(float *)NULL;
+			signals_values=(float *)NULL;
+			signals_status=(enum Event_signal_status *)NULL;
+			number_of_signals=0;
+			number_of_values=0;
+			name=(char *)NULL;
+			highlight=0;
+			signal_minimum=0;
+			signal_maximum=0;
+			return_code=extract_Device_signal_information(device,signal_number,
+				first_data,last_data,&times,&signals_values,&signals_status,
+				&number_of_signals,&number_of_values,&name,&highlight,&signal_minimum,
+				&signal_maximum);
 #if defined (UNEMAP_USE_NODES)
 		}
 		else
 		{
 			enum Value_type value_type;
+			float channel_gain,channel_offset;
 			FE_value *FE_value_signal_data=(FE_value *)NULL;
 			FE_value 	end_time,start_time,time,time_high,time_low;
-			int end_array_index,i,index_high,index_low,number_of_nodal_values,start_array_index;
+			int end_array_index,first_data_local,i,index_high,index_low,
+				last_data_local,number_of_nodal_values,start_array_index;
 			short int *short_signal_data=(short int *)NULL;
 			struct FE_field_component component;						
 			struct FE_field *display_start_time_field=(struct FE_field *)NULL;
@@ -6154,7 +6313,8 @@ The extraction arguments are:
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"extract_signal_information.  Invalid arguments");
+			"extract_signal_information.  Invalid arguments %p %p %p",device,
+			device_node,signal_drawing_package);
 		return_code=0;
 	}
 	LEAVE;

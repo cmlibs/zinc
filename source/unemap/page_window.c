@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 1 September 2002
+LAST MODIFIED : 13 September 2002
 
 DESCRIPTION :
 
@@ -136,6 +136,8 @@ Module constants
 ----------------
 */
 #define ARROWS_WIDTH 12
+/* needs to agree with unemap/unemap_hardware.c */
+#define NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL 4
 
 /*
 Module types
@@ -155,7 +157,7 @@ DESCRIPTION :
 
 struct Page_window
 /*******************************************************************************
-LAST MODIFIED : 16 August 2002
+LAST MODIFIED : 4 September 2002
 
 DESCRIPTION :
 The page window object.
@@ -376,9 +378,11 @@ The page window object.
 	char *calibration_directory;
 	int unemap_hardware_version;
 	float initial_gain,sampling_frequency;
-#if !defined (DEVICE_EXPRESSIONS)
+#if defined (DEVICE_EXPRESSIONS)
+	float *real_signal_values;
+#else /* defined (DEVICE_EXPRESSIONS) */
 	float *scrolling_coefficients;
-#endif /* !defined (DEVICE_EXPRESSIONS) */
+#endif /* defined (DEVICE_EXPRESSIONS) */
 #if defined (OLD_CODE)
 	float display_maximum,display_minimum,signal_maximum,signal_minimum;
 #endif /* defined (OLD_CODE) */
@@ -1414,13 +1418,14 @@ Finds the id of the page test checkbox.
 static int fill_left,fill_width;
 static XPoint scroll_line[2],x_axis[2];
 #if !defined (NO_SCROLLING_HARDWARE_CALLBACK_BODY)
-static XPoint signal_line[5];
+static XPoint signal_line[NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL+1];
 #endif /* !defined (NO_SCROLLING_HARDWARE_CALLBACK_BODY) */
 #endif /* defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
 /*???DB.  Created in WM_CREATE of Page_window_scrolling_area_class_proc */
 /*???DB.  Created in WM_PAINT of Page_window_scrolling_area_class_proc */
-static POINT scroll_line[2],signal_line[5],x_axis[2];
+static POINT scroll_line[2],
+	signal_line[NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL+1],x_axis[2];
 static RECT fill_rectangle;
 #endif /* defined (WIN32_USER_INTERFACE) */
 
@@ -1623,23 +1628,28 @@ static void scrolling_hardware_callback(int number_of_channels,
 	int *channel_numbers,int number_of_values_per_channel,short *signal_values,
 	void *page_window_void)
 /*******************************************************************************
-LAST MODIFIED : 16 August 2002
+LAST MODIFIED : 4 September 2002
 
 DESCRIPTION :
 ???DB.  Used to be in WM_USER.
 ==============================================================================*/
 {
 #if !defined (NO_SCROLLING_HARDWARE_CALLBACK_BODY)
-	float device_maximum,device_minimum,signal_value,temp_float[4];
-	int i,k,height,number_of_scrolling_devices,width;
+	float device_maximum,device_minimum,gain,offset,post_filter_gain,
+		pre_filter_gain,signal_value,
+		temp_float[NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL];
+	int i,j,k,height,number_of_channels_device,number_of_scrolling_devices,width;
 	short int y_offset;
+	struct Channel **scrolling_channel;
 	struct Device **scrolling_device;
 	struct Page_window *page_window;
-#if !defined (DEVICE_EXPRESSIONS)
-	float gain,offset,post_filter_gain,pre_filter_gain,*scrolling_coefficient;
-	int j,j_start,number_of_channels_device;
-	struct Channel **scrolling_channel;
-#endif /* !defined (DEVICE_EXPRESSIONS) */
+#if defined (DEVICE_EXPRESSIONS)
+	float *real_signal_value,*real_signal_values;
+	short *raw_signal_value;
+#else /* defined (DEVICE_EXPRESSIONS) */
+	float *scrolling_coefficient;
+	int j_start;
+#endif /* defined (DEVICE_EXPRESSIONS) */
 #if defined (MOTIF)
 	Display *display;
 	Drawable drawable;
@@ -1657,7 +1667,8 @@ DESCRIPTION :
 	if ((page_window=(struct Page_window *)page_window_void)&&
 		(page_window->display_device)&&
 		(page_window->number_of_scrolling_channels==number_of_channels)&&
-		signal_values&&(4==number_of_values_per_channel))
+		signal_values&&
+		(NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL==number_of_values_per_channel))
 	{
 		/* set up */
 #if !defined (NO_SCROLLING_WINDOW_UPDATE)
@@ -1683,53 +1694,70 @@ DESCRIPTION :
 		height -= SCROLLING_BORDER_HEIGHT;
 		width -= SCROLLING_BORDER_WIDTH;
 #endif /* !defined (NO_SCROLLING_WINDOW_UPDATE) */
-		signal_line[4].x=x_axis[0].x;
-		signal_line[3].x=(x_axis[0].x)+1;
-		signal_line[2].x=(x_axis[0].x)+2;
-		signal_line[1].x=(x_axis[0].x)+3;
-		signal_line[0].x=(x_axis[0].x)+4;
+		for (i=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;i>=0;i--)
+		{
+			signal_line[i].x=x_axis[0].x+(NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL-i);
+		}
 #if !defined (NO_SCROLLING_WINDOW_UPDATE)
 #if defined (MOTIF)
 		XFillRectangle(display,drawable,
 			(page_window->graphics_context).background_drawing_colour,fill_left,0,
 			fill_width,height+1);
-#if defined (OLD_CODE)
-		XDrawLines(display,drawable,
-			(page_window->graphics_context).foreground_drawing_colour,x_axis,2,
-			CoordModeOrigin);
-#endif /* defined (OLD_CODE) */
-		fill_left += 4;
+		fill_left += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
 #endif /* defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
 		FillRect(device_context,&fill_rectangle,page_window->fill_brush);
-#if defined (OLD_CODE)
-		Polyline(device_context,x_axis,2);
-#endif /* defined (OLD_CODE) */
-		fill_rectangle.left += 4;
-		fill_rectangle.right += 4;
+		fill_rectangle.left += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
+		fill_rectangle.right += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
 #endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* !defined (NO_SCROLLING_WINDOW_UPDATE) */
 #if !defined (NO_SCROLLING_SIGNAL) && !defined (NO_SCROLLING_WINDOW_UPDATE)
 		number_of_scrolling_devices=page_window->number_of_scrolling_devices;
 		height /= number_of_scrolling_devices;
 		scrolling_device=page_window->scrolling_devices;
-#if !defined (DEVICE_EXPRESSIONS)
-		j_start=0;
 		scrolling_channel=page_window->scrolling_channels;
+#if defined (DEVICE_EXPRESSIONS)
+		real_signal_values=page_window->real_signal_values;
+		raw_signal_value=signal_values;
+#else /* defined (DEVICE_EXPRESSIONS) */
+		j_start=0;
 		scrolling_coefficient=page_window->scrolling_coefficients;
-#endif /* !defined (DEVICE_EXPRESSIONS) */
+#endif /* defined (DEVICE_EXPRESSIONS) */
 		for (k=0;k<number_of_scrolling_devices;k++)
 		{
 			device_minimum=(*scrolling_device)->signal_display_minimum;
 			device_maximum=(*scrolling_device)->signal_display_maximum;
 			y_offset=(short)((number_of_scrolling_devices-k-1)*height);
-			temp_float[0]=(float)0;
-			temp_float[1]=(float)0;
-			temp_float[2]=(float)0;
-			temp_float[3]=(float)0;
 #if defined (DEVICE_EXPRESSIONS)
-			/*???DB.  To be done */
+			number_of_channels_device=
+				(page_window->number_of_scrolling_channels_device)[k];
+			real_signal_value=real_signal_values;
+			for (i=0;i<number_of_channels_device;i++)
+			{
+				unemap_get_gain((*scrolling_channel)->number,&pre_filter_gain,
+					&post_filter_gain);
+				gain=((*scrolling_channel)->gain_correction)/
+					(pre_filter_gain*post_filter_gain);
+				offset=(*scrolling_channel)->offset;
+				for (j=0;j<NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;j++)
+				{
+					real_signal_value[j*number_of_channels_device]=
+						gain*((float)(*raw_signal_value)-offset);
+					raw_signal_value++;
+				}
+				real_signal_value++;
+				scrolling_channel++;
+			}
+			real_signal_value=real_signal_values;
+			for (i=0;i<NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;i++)
+			{
+				evaluate_device(*scrolling_device,&real_signal_value,temp_float+i);
+			}
 #else /* defined (DEVICE_EXPRESSIONS) */
+			for (i=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL-1;i>=0;i--)
+			{
+				temp_float[i]=(float)0;
+			}
 			number_of_channels_device=
 				(page_window->number_of_scrolling_channels_device)[k];
 			j=j_start;
@@ -1740,45 +1768,22 @@ DESCRIPTION :
 				gain=(*scrolling_coefficient)*((*scrolling_channel)->gain_correction)/
 					(pre_filter_gain*post_filter_gain);
 				offset=(*scrolling_channel)->offset;
-				temp_float[0] += gain*((float)signal_values[j]-offset);
-				j++;
-				temp_float[1] += gain*((float)signal_values[j]-offset);
-				j++;
-				temp_float[2] += gain*((float)signal_values[j]-offset);
-				j++;
-				temp_float[3] += gain*((float)signal_values[j]-offset);
-				j++;
+				for (i=0;i<NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;i++)
+				{
+					temp_float[i] += gain*((float)signal_values[j]-offset);
+					j++;
+				}
 				scrolling_channel++;
 				scrolling_coefficient++;
 			}
-			j_start += 4*number_of_channels_device;
+			j_start +=
+				NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL*number_of_channels_device;
 #endif /* defined (DEVICE_EXPRESSIONS) */
-			signal_line[4].y=(page_window->last_scrolling_value_device)[k];
-			for (i=0;i<4;i++)
+			signal_line[NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL].y=
+				(page_window->last_scrolling_value_device)[k];
+			for (i=0;i<NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;i++)
 			{
-				signal_value=temp_float[3-i];
-#if defined (OLD_CODE)
-				if (page_window->signal_display_maximum<
-					page_window->signal_display_minimum)
-				{
-					page_window->signal_display_maximum=signal_value;
-					page_window->signal_display_minimum=signal_value;
-				}
-				else
-				{
-					if (signal_value<page_window->signal_display_minimum)
-					{
-						page_window->signal_display_minimum=signal_value;
-					}
-					else
-					{
-						if (signal_value>page_window->signal_display_maximum)
-						{
-							page_window->signal_display_maximum=signal_value;
-						}
-					}
-				}
-#endif /* defined (OLD_CODE) */
+				signal_value=temp_float[NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL-1-i];
 				signal_line[i].y=y_offset+
 					(short)(((device_maximum-signal_value)*(float)height)/
 					(device_maximum-device_minimum));
@@ -1790,10 +1795,11 @@ DESCRIPTION :
 #if defined (MOTIF)
 				XDrawLines(display,drawable,
 					(page_window->graphics_context).foreground_drawing_colour,signal_line,
-					5,CoordModeOrigin);
+					NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL+1,CoordModeOrigin);
 #endif /* defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
-				Polyline(device_context,signal_line,5);
+				Polyline(device_context,signal_line,
+					NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL+1);
 #endif /* defined (WIN32_USER_INTERFACE) */
 			}
 			else
@@ -1801,18 +1807,19 @@ DESCRIPTION :
 #if defined (MOTIF)
 				XDrawLines(display,drawable,
 					(page_window->graphics_context).foreground_drawing_colour,signal_line,
-					4,CoordModeOrigin);
+					NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL,CoordModeOrigin);
 #endif /* defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
-				Polyline(device_context,signal_line,4);
+				Polyline(device_context,signal_line,
+					NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL);
 #endif /* defined (WIN32_USER_INTERFACE) */
 			}
 #endif /* !defined (NO_SCROLLING_WINDOW_UPDATE) */
 			scrolling_device++;
 		}
 #endif /* !defined (NO_SCROLLING_SIGNAL) && !defined (NO_SCROLLING_WINDOW_UPDATE) */
-		x_axis[0].x += 4;
-		x_axis[1].x += 4;
+		x_axis[0].x += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
+		x_axis[1].x += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
 		if (x_axis[1].x>width)
 		{
 #if defined (MOTIF)
@@ -1820,12 +1827,12 @@ DESCRIPTION :
 #endif /* defined (MOTIF) */
 #if defined (WIN32_USER_INTERFACE)
 			fill_rectangle.left=1;
-			fill_rectangle.right=5;
+			fill_rectangle.right=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL+1;
 #endif /* defined (WIN32_USER_INTERFACE) */
 			x_axis[0].x=0;
-			x_axis[1].x=4;
-			scroll_line[0].x=5;
-			scroll_line[1].x=5;
+			x_axis[1].x=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
+			scroll_line[0].x=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL+1;
+			scroll_line[1].x=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL+1;
 		}
 		else
 		{
@@ -1839,8 +1846,8 @@ DESCRIPTION :
 			Polyline(device_context,scroll_line,2);
 #endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* !defined (NO_SCROLLING_WINDOW_UPDATE) */
-			scroll_line[0].x += 4;
-			scroll_line[1].x += 4;
+			scroll_line[0].x += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
+			scroll_line[1].x += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
 		}
 	}
 #else /* !defined (NO_SCROLLING_HARDWARE_CALLBACK_BODY) */
@@ -1859,217 +1866,36 @@ DESCRIPTION :
 	LEAVE;
 } /* scrolling_hardware_callback */
 
-#if defined (OLD_CODE)
-static void scrolling_hardware_callback(int number_of_channels,
-	int *channel_numbers,int number_of_values_per_channel,short *signal_values,
-	void *page_window_void)
-/*******************************************************************************
-LAST MODIFIED : 5 November 2000
-
-DESCRIPTION :
-???DB.  Used to be in WM_USER.
-==============================================================================*/
-{
-	float gain,offset,post_filter_gain,pre_filter_gain,signal_value,temp_float[4];
-	int i,j,height,width;
-	struct Page_window *page_window;
-#if defined (MOTIF)
-	Display *display;
-	Drawable drawable;
-	XWindowAttributes attributes;
-#endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
-	HDC device_context;
-	HWND window;
-	RECT drawing_rectangle;
-#endif /* defined (WIN32_USER_INTERFACE) */
-
-	ENTER(scrolling_hardware_callback);
-	if ((page_window=(struct Page_window *)page_window_void)&&
-		(page_window->display_device)&&
-		(page_window->number_of_scrolling_channels==number_of_channels)&&
-		signal_values&&(4==number_of_values_per_channel))
-	{
-		/* set up */
-#if defined (MOTIF)
-		display=User_interface_get_display(page_window->user_interface);
-		drawable=XtWindow(page_window->scrolling_area);
-		XGetWindowAttributes(display,drawable,&attributes);
-		width=attributes.width;
-		height=attributes.height;
-#endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
-		window=page_window->scrolling_area;
-#if defined (GET_DC_ONCE)
-		device_context=page_window->scrolling_area_device_context;
-#else /* defined (GET_DC_ONCE) */
-		device_context=GetDC(window);
-#endif /* defined (GET_DC_ONCE) */
-		GetClientRect(window,&drawing_rectangle);
-			/*???DB.  Seems to return a nonzero on success (not TRUE) */
-		height=drawing_rectangle.bottom;
-		width=drawing_rectangle.right;
-#endif /* defined (WIN32_USER_INTERFACE) */
-		height -= 5;
-		signal_line[4].x=x_axis[0].x;
-		signal_line[3].x=(x_axis[0].x)+1;
-		signal_line[2].x=(x_axis[0].x)+2;
-		signal_line[1].x=(x_axis[0].x)+3;
-		signal_line[0].x=(x_axis[0].x)+4;
-		signal_line[4].y=signal_line[0].y;
-		temp_float[0]=(float)0;
-		temp_float[1]=(float)0;
-		temp_float[2]=(float)0;
-		temp_float[3]=(float)0;
-		j=0;
-		for (i=0;i<number_of_channels;i++)
-		{
-			unemap_get_gain(((page_window->scrolling_devices)[i])->channel->number,
-				&pre_filter_gain,&post_filter_gain);
-			gain=(page_window->scrolling_coefficients)[i]*
-				(((page_window->scrolling_devices)[i])->channel->gain_correction)/
-				(pre_filter_gain*post_filter_gain);
-#if defined (OLD_CODE)
-			gain=(page_window->scrolling_coefficients)[i]*
-				(((page_window->scrolling_devices)[i])->channel->gain)/
-				(pre_filter_gain*post_filter_gain);
-#endif /* defined (OLD_CODE) */
-			offset=((page_window->scrolling_devices)[i])->channel->offset;
-			temp_float[0] += gain*((float)signal_values[j]-offset);
-			j++;
-			temp_float[1] += gain*((float)signal_values[j]-offset);
-			j++;
-			temp_float[2] += gain*((float)signal_values[j]-offset);
-			j++;
-			temp_float[3] += gain*((float)signal_values[j]-offset);
-			j++;
-		}
-		for (i=0;i<4;i++)
-		{
-			signal_value=temp_float[3-i];
-			if (page_window->signal_display_maximum<page_window->signal_display_minimum)
-			{
-				page_window->signal_display_maximum=signal_value;
-				page_window->signal_display_minimum=signal_value;
-			}
-			else
-			{
-				if (signal_value<page_window->signal_display_minimum)
-				{
-					page_window->signal_display_minimum=signal_value;
-				}
-				else
-				{
-					if (signal_value>page_window->signal_display_maximum)
-					{
-						page_window->signal_display_maximum=signal_value;
-					}
-				}
-			}
-			signal_line[i].y=
-				(short)((((page_window->display_maximum)-signal_value)*(float)height)/
-				((page_window->display_maximum)-(page_window->display_minimum)));
-		}
-#if defined (MOTIF)
-		XFillRectangle(display,drawable,
-			(page_window->graphics_context).background_drawing_colour,fill_left,0,
-			fill_width,height+1);
-		XDrawLines(display,drawable,
-			(page_window->graphics_context).foreground_drawing_colour,x_axis,2,
-			CoordModeOrigin);
-		XDrawLines(display,drawable,
-			(page_window->graphics_context).foreground_drawing_colour,scroll_line,2,
-			CoordModeOrigin);
-		fill_left += 4;
-#endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
-		FillRect(device_context,&fill_rectangle,page_window->fill_brush);
-		Polyline(device_context,x_axis,2);
-		Polyline(device_context,scroll_line,2);
-		fill_rectangle.left += 4;
-		fill_rectangle.right += 4;
-#endif /* defined (WIN32_USER_INTERFACE) */
-		scroll_line[0].x += 4;
-		scroll_line[1].x += 4;
-		if (x_axis[0].x>0)
-		{
-#if defined (MOTIF)
-			XDrawLines(display,drawable,
-				(page_window->graphics_context).foreground_drawing_colour,signal_line,5,
-				CoordModeOrigin);
-#endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
-			Polyline(device_context,signal_line,5);
-#endif /* defined (WIN32_USER_INTERFACE) */
-		}
-		else
-		{
-#if defined (MOTIF)
-			XDrawLines(display,drawable,
-				(page_window->graphics_context).foreground_drawing_colour,signal_line,4,
-				CoordModeOrigin);
-#endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
-			Polyline(device_context,signal_line,4);
-#endif /* defined (WIN32_USER_INTERFACE) */
-		}
-		x_axis[0].x += 4;
-		x_axis[1].x += 4;
-		if (x_axis[1].x>width)
-		{
-			x_axis[0].x=0;
-			x_axis[1].x=4;
-			scroll_line[0].x=5;
-			scroll_line[1].x=5;
-#if defined (MOTIF)
-			fill_left=1;
-#endif /* defined (MOTIF) */
-#if defined (WIN32_USER_INTERFACE)
-			fill_rectangle.left=1;
-			fill_rectangle.right=5;
-#endif /* defined (WIN32_USER_INTERFACE) */
-		}
-	}
-	if (channel_numbers)
-	{
-		DEALLOCATE(channel_numbers);
-	}
-	if (signal_values)
-	{
-		DEALLOCATE(signal_values);
-	}
-	LEAVE;
-} /* scrolling_hardware_callback */
-#endif /* defined (OLD_CODE) */
-
 static int add_scrolling_device(struct Page_window *page_window,
 	struct Device *device)
 /*******************************************************************************
-LAST MODIFIED : 16 August 2002
+LAST MODIFIED : 4 September 2002
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	int i,*last_scrolling_value_device,number_of_scrolling_channels,
+	int i,j,*last_scrolling_value_device,number_of_scrolling_channels,
 		*number_of_scrolling_channels_device,return_code;
 	struct Channel **scrolling_channels;
 	struct Device **scrolling_devices;
-#if !defined (DEVICE_EXPRESSIONS)
+#if defined (DEVICE_EXPRESSIONS)
+	float *real_signal_values;
+	struct Device **scrolling_channel_devices;
+#else /* defined (DEVICE_EXPRESSIONS) */
 	float *scrolling_coefficients;
-	int j;
 	struct Auxiliary_properties *auxiliary_properties;
-#endif /* !defined (DEVICE_EXPRESSIONS) */
+#endif /* defined (DEVICE_EXPRESSIONS) */
 
 	ENTER(add_scrolling_device);
 	return_code=0;
 	if (page_window&&device)
 	{
 #if defined (DEVICE_EXPRESSIONS)
-		number_of_scrolling_channels=page_window->number_of_scrolling_channels;
-		return_code=calculate_device_channels(device,
-			&(page_window->number_of_scrolling_channels),
-			&(page_window->scrolling_channels));
-		if (return_code)
+		number_of_scrolling_channels=0;
+		scrolling_channel_devices=(struct Device **)NULL;
+		return_code=calculate_device_channels(device,&number_of_scrolling_channels,
+			&scrolling_channel_devices);
+		if (return_code&&(0<number_of_scrolling_channels))
 #else /* defined (DEVICE_EXPRESSIONS) */
 		number_of_scrolling_channels=1;
 		if ((device->channel)||
@@ -2096,15 +1922,20 @@ DESCRIPTION :
 			{
 				page_window->last_scrolling_value_device=last_scrolling_value_device;
 			}
-#if defined (DEVICE_EXPRESSIONS)
-			scrolling_channels=page_window->scrolling_channels;
-#else /* defined (DEVICE_EXPRESSIONS) */
 			if (REALLOCATE(scrolling_channels,page_window->scrolling_channels,
 				struct Channel *,(page_window->number_of_scrolling_channels)+
 				number_of_scrolling_channels))
 			{
 				page_window->scrolling_channels=scrolling_channels;
 			}
+#if defined (DEVICE_EXPRESSIONS)
+			if (REALLOCATE(real_signal_values,page_window->real_signal_values,
+				float,((page_window->number_of_scrolling_channels)+
+				number_of_scrolling_channels)*NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL))
+			{
+				page_window->real_signal_values=real_signal_values;
+			}
+#else /* defined (DEVICE_EXPRESSIONS) */
 			if (REALLOCATE(scrolling_coefficients,page_window->scrolling_coefficients,
 				float,(page_window->number_of_scrolling_channels)+
 				number_of_scrolling_channels))
@@ -2113,9 +1944,11 @@ DESCRIPTION :
 			}
 #endif /* defined (DEVICE_EXPRESSIONS) */
 			if (scrolling_channels&&scrolling_devices&&
-#if !defined (DEVICE_EXPRESSIONS)
+#if defined (DEVICE_EXPRESSIONS)
+				real_signal_values&&
+#else /* defined (DEVICE_EXPRESSIONS) */
 				scrolling_coefficients&&
-#endif /* !defined (DEVICE_EXPRESSIONS) */
+#endif /* defined (DEVICE_EXPRESSIONS) */
 				number_of_scrolling_channels_device&&last_scrolling_value_device)
 			{
 				scrolling_devices[page_window->number_of_scrolling_devices]=device;
@@ -2123,10 +1956,12 @@ DESCRIPTION :
 					number_of_scrolling_devices]=number_of_scrolling_channels;
 				last_scrolling_value_device[page_window->number_of_scrolling_devices]=0;
 #if defined (DEVICE_EXPRESSIONS)
-				for (i=number_of_scrolling_channels;
-					i<page_window->number_of_scrolling_channels;i++)
+				j=page_window->number_of_scrolling_channels;
+				for (i=0;i<number_of_scrolling_channels;i++)
 				{
-					unemap_set_scrolling_channel(scrolling_channels[i]->number);
+					scrolling_channels[j]=scrolling_channel_devices[i]->channel;
+					unemap_set_scrolling_channel(scrolling_channels[j]->number);
+					j++;
 				}
 #else /* defined (DEVICE_EXPRESSIONS) */
 				if (device->channel)
@@ -2151,13 +1986,16 @@ DESCRIPTION :
 						j++;
 					}
 				}
-				page_window->number_of_scrolling_channels +=
-					number_of_scrolling_channels;
 #endif /* defined (DEVICE_EXPRESSIONS) */
 				(page_window->number_of_scrolling_devices)++;
 				return_code=1;
+				page_window->number_of_scrolling_channels +=
+					number_of_scrolling_channels;
 			}
 		}
+#if defined (DEVICE_EXPRESSIONS)
+		DEALLOCATE(scrolling_channel_devices);
+#endif /* defined (DEVICE_EXPRESSIONS) */
 	}
 	LEAVE;
 
@@ -2167,7 +2005,7 @@ DESCRIPTION :
 static int remove_scrolling_device(struct Page_window *page_window,
 	struct Device *device)
 /*******************************************************************************
-LAST MODIFIED : 24 July 2002
+LAST MODIFIED : 4 September 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2185,19 +2023,8 @@ DESCRIPTION :
 		while ((i<page_window->number_of_scrolling_devices)&&
 			(device!=(scrolling_device=(page_window->scrolling_devices)[i])))
 		{
+			j += (page_window->number_of_scrolling_channels_device)[i];
 			i++;
-			if (scrolling_device->channel)
-			{
-				j++;
-			}
-			else
-			{
-				j += (scrolling_device->description->properties).auxiliary.
-#if defined (DEVICE_EXPRESSIONS)
-					combination.sum.
-#endif /* defined (DEVICE_EXPRESSIONS) */
-					number_of_electrodes;
-			}
 		}
 		if (i<page_window->number_of_scrolling_devices)
 		{
@@ -2211,18 +2038,7 @@ DESCRIPTION :
 				(page_window->last_scrolling_value_device)[k]=
 					(page_window->last_scrolling_value_device)[k+1];
 			}
-			if (device->channel)
-			{
-				k=1;
-			}
-			else
-			{
-				k=(device->description->properties).auxiliary.
-#if defined (DEVICE_EXPRESSIONS)
-					combination.sum.
-#endif /* defined (DEVICE_EXPRESSIONS) */
-					number_of_electrodes;
-			}
+			k=(page_window->number_of_scrolling_channels_device)[i];
 			page_window->number_of_scrolling_channels -= k;
 			for (i=j;i<page_window->number_of_scrolling_channels;i++)
 			{
@@ -3203,13 +3019,14 @@ DESCRIPTION :
 				{
 					averaging_length=10;
 					drawing_rectangle.bottom -= 5;
-					signal_line[4].x=x_axis[0].x;
-					signal_line[3].x=(x_axis[0].x)+1;
-					signal_line[2].x=(x_axis[0].x)+2;
-					signal_line[1].x=(x_axis[0].x)+3;
-					signal_line[0].x=(x_axis[0].x)+4;
-					signal_line[4].y=signal_line[0].y;
-					for (j=0;j<4;j++)
+					for (i=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;i>=0;i--)
+					{
+						signal_line[i]=x_axis[0].x+
+							(NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL-i);
+					}
+					signal_line[NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL].y=
+						signal_line[0].y;
+					for (j=0;j<NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;j++)
 					{
 						sum=0;
 						for (i=averaging_length;i>0;i--)
@@ -3224,27 +3041,6 @@ DESCRIPTION :
 								offset -= number_of_channels;
 							}
 						}
-#if defined (OLD_CODE)
-						if (page_window->signal_display_maximum<page_window->signal_display_minimum)
-						{
-							page_window->signal_display_maximum=signal_value;
-							page_window->signal_display_minimum=signal_value;
-						}
-						else
-						{
-							if (signal_value<page_window->signal_display_minimum)
-							{
-								page_window->signal_display_minimum=signal_value;
-							}
-							else
-							{
-								if (signal_value>page_window->signal_display_maximum)
-								{
-									page_window->signal_display_maximum=signal_value;
-								}
-							}
-						}
-#endif /* defined (OLD_CODE) */
 						signal_line[j].y=
 							(short)((((page_window->display_device->signal_display_maximum)-
 							(float)signal_value)*(float)drawing_rectangle.bottom)/
@@ -3254,28 +3050,30 @@ DESCRIPTION :
 					FillRect(device_context,&fill_rectangle,fill_brush);
 					Polyline(device_context,x_axis,2);
 					Polyline(device_context,scroll_line,2);
-					fill_rectangle.left += 4;
-					fill_rectangle.right += 4;
-					scroll_line[0].x += 4;
-					scroll_line[1].x += 4;
+					fill_rectangle.left += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
+					fill_rectangle.right += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
+					scroll_line[0].x += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
+					scroll_line[1].x += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
 					if (x_axis[0].x>0)
 					{
-						Polyline(device_context,signal_line,5);
+						Polyline(device_context,signal_line,
+							NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL+1);
 					}
 					else
 					{
-						Polyline(device_context,signal_line,4);
+						Polyline(device_context,signal_line,
+							NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL);
 					}
-					x_axis[0].x += 4;
-					x_axis[1].x += 4;
+					x_axis[0].x += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
+					x_axis[1].x += NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
 					if (x_axis[1].x>drawing_rectangle.right)
 					{
 						x_axis[0].x=0;
-						x_axis[1].x=4;
-						scroll_line[0].x=5;
-						scroll_line[1].x=5;
+						x_axis[1].x=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL;
+						scroll_line[0].x=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL+1;
+						scroll_line[1].x=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL+1;
 						fill_rectangle.left=1;
-						fill_rectangle.right=5;
+						fill_rectangle.right=NUMBER_OF_SCROLLING_VALUES_PER_CHANNEL+1;
 					}
 				}
 			}
@@ -3349,7 +3147,7 @@ Writes the gain for the current channel into the gain field.
 
 static int show_display_maximum(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 8 November 2000
+LAST MODIFIED : 3 September 2002
 
 DESCRIPTION :
 Writes the maximum for the current channel into the maximum field.
@@ -3377,7 +3175,8 @@ Writes the maximum for the current channel into the maximum field.
 			sprintf(number_string,"%g",
 				channel_gain*((float)(page_window->display_maximum)-channel_offset));
 #endif /* defined (OLD_CODE) */
-			sprintf(number_string,"%g",page_window->display_device->signal_display_maximum);
+			sprintf(number_string,"%g",
+				page_window->display_device->signal_display_maximum);
 #if defined (MOTIF)
 			XtVaSetValues((page_window->maximum).value,XmNvalue,number_string,NULL);
 #endif /* defined (MOTIF) */
@@ -3399,7 +3198,7 @@ Writes the maximum for the current channel into the maximum field.
 
 static int show_display_minimum(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 2 August 1999
+LAST MODIFIED : 3 September 2002
 
 DESCRIPTION :
 Writes the minimum for the current channel into the minimum field.
@@ -3427,7 +3226,8 @@ Writes the minimum for the current channel into the minimum field.
 			sprintf(number_string,"%g",
 				channel_gain*((float)(page_window->display_minimum)-channel_offset));
 #endif /* defined (OLD_CODE) */
-			sprintf(number_string,"%g",page_window->display_device->signal_display_minimum);
+			sprintf(number_string,"%g",
+				page_window->display_device->signal_display_minimum);
 #if defined (MOTIF)
 			XtVaSetValues((page_window->minimum).value,XmNvalue,number_string,NULL);
 #endif /* defined (MOTIF) */
@@ -3781,11 +3581,14 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 					}
 					display_minimum=(long int)temp;
 #endif /* defined (OLD_CODE) */
-					if (display_minimum!=page_window->display_device->signal_display_minimum)
+					if (display_minimum!=
+						page_window->display_device->signal_display_minimum)
 					{
-						if (display_minimum<page_window->display_device->signal_display_maximum)
+						if (display_minimum<
+							page_window->display_device->signal_display_maximum)
 						{
-							page_window->display_device->signal_display_minimum=display_minimum;
+							page_window->display_device->signal_display_minimum=
+								display_minimum;
 							draw_scrolling_background(page_window);
 							return_code=1;
 						}
@@ -4194,9 +3997,9 @@ DESCRIPTION :
 #if defined (DEBUG)
 	else
 	{
-		display_message(ERROR_MESSAGE,
-"change_display_device_number.  Invalid argument(s).  page_window=%p.  device_number=%d",
-			page_window,device_number);
+		display_message(ERROR_MESSAGE,"change_display_device_number.  "
+			"Invalid argument(s).  page_window=%p.  device_number=%d",page_window,
+			device_number);
 	}
 #endif /* defined (DEBUG) */
 	LEAVE;
@@ -6032,7 +5835,7 @@ Assumes that the calibration file is normalized.
 
 static int start_experiment(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 7 August 2002
+LAST MODIFIED : 5 September 2002
 
 DESCRIPTION :
 Called to start experiment on the <page_window>.
@@ -6044,22 +5847,23 @@ Called to start experiment on the <page_window>.
 ==============================================================================*/
 {
 	char *acquisition_rig_filename,*calibration_file_name;
-	float channel_gain,channel_offset,*electrode_coefficients,post_filter_gain,
-		pre_filter_gain;
-#if defined (OLD_CODE)
-	int stimulator_number;
-#endif /* defined (OLD_CODE) */
+	float channel_gain,channel_offset,post_filter_gain,pre_filter_gain;
 	int channel_number,device_number,*electrodes_in_row,i,index,j,
-		number_of_devices,number_of_electrodes,number_of_rows,return_code;
+		number_of_devices,number_of_rows,return_code;
 	long int maximum_signal_value,minimum_signal_value;
-	struct Auxiliary_properties *auxiliary_properties;
 	struct Channel *channel;
-	struct Device **device_address,*display_device,**electrodes;
+	struct Device **device_address,*display_device;
 	struct Signal_buffer *signal_buffer;
 #if !defined (MIRADA)
 	char working_string[21];
 	float filter_frequency;
 #endif /* !defined (MIRADA) */
+#if !defined (DEVICE_EXPRESSIONS)
+	float *electrode_coefficients;
+	int number_of_electrodes;
+	struct Auxiliary_properties *auxiliary_properties;
+	struct Device **electrodes;
+#endif /* !defined (DEVICE_EXPRESSIONS) */
 
 	ENTER(start_experiment);
 #if defined (DEBUG)
@@ -6459,6 +6263,14 @@ Called to start experiment on the <page_window>.
 								device_address=(*(page_window->rig_address))->devices;
 								for (i=0;i<number_of_devices;i++)
 								{
+#if defined (DEVICE_EXPRESSIONS)
+									if (*device_address)
+									{
+										evaluate_device_extrema(*device_address,
+											&((*device_address)->signal_display_minimum),
+											&((*device_address)->signal_display_maximum));
+									}
+#else /* defined (DEVICE_EXPRESSIONS) */
 									if ((*device_address)&&!((*device_address)->channel))
 									{
 										(*device_address)->signal_display_minimum=(float)0;
@@ -6466,25 +6278,10 @@ Called to start experiment on the <page_window>.
 										auxiliary_properties= &(((*device_address)->description->
 											properties).auxiliary);
 										number_of_electrodes=
-#if defined (DEVICE_EXPRESSIONS)
-											(auxiliary_properties->combination).sum.
-											number_of_electrodes;
-#else /* defined (DEVICE_EXPRESSIONS) */
 											auxiliary_properties->number_of_electrodes;
-#endif /* defined (DEVICE_EXPRESSIONS) */
-										electrodes=
-#if defined (DEVICE_EXPRESSIONS)
-											(auxiliary_properties->combination).sum.electrodes;
-#else /* defined (DEVICE_EXPRESSIONS) */
-											auxiliary_properties->electrodes;
-#endif /* defined (DEVICE_EXPRESSIONS) */
+										electrodes=auxiliary_properties->electrodes;
 										electrode_coefficients=
-#if defined (DEVICE_EXPRESSIONS)
-											(auxiliary_properties->combination).sum.
-											electrode_coefficients;
-#else /* defined (DEVICE_EXPRESSIONS) */
 											auxiliary_properties->electrode_coefficients;
-#endif /* defined (DEVICE_EXPRESSIONS) */
 										for (j=0;j<number_of_electrodes;j++)
 										{
 											if (0<electrode_coefficients[j])
@@ -6507,6 +6304,7 @@ Called to start experiment on the <page_window>.
 											}
 										}
 									}
+#endif /* defined (DEVICE_EXPRESSIONS) */
 									device_address++;
 								}
 							}
@@ -7535,23 +7333,33 @@ static void page_auto_range(
 #endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 24 July 2002
+LAST MODIFIED : 13 September 2002
 
 DESCRIPTION :
 Called when the auto range button is pressed.
 ==============================================================================*/
 {
-	float *card_maximum,*card_minimum,channel_gain,channel_offset,
-		*electrode_coefficients,pre_filter_gain,post_filter_gain,signal_maximum,
-		signal_minimum,temp;
-	int card_number,channel_number,i,j,number_of_channels,number_of_electrodes;
+	float *card_maximum,*card_minimum,channel_gain,channel_offset,pre_filter_gain,
+		post_filter_gain,sampling_frequency,signal_maximum,signal_minimum,temp;
+	int card_number,channel_number,i,j,number_of_channels;
 	short int maximum,minimum,*samples,*source;
-	struct Auxiliary_properties *auxiliary_properties;
 	struct Channel *channel;
-	struct Device **device,**electrodes;
+	struct Device **device;
 	struct Page_window *page_window;
 	struct Rig *rig;
 	unsigned long number_of_samples;
+#if defined (DEVICE_EXPRESSIONS)
+	float *channel_gains,*channel_offsets,*channel_values,*channel_values_temp,
+		value;
+	int *channel_numbers,k,number_of_channel_devices;
+	short int *sample;
+	struct Device **channel_devices;
+#else /* defined (DEVICE_EXPRESSIONS) */
+	float *electrode_coefficients;
+	int number_of_electrodes;
+	struct Auxiliary_properties *auxiliary_properties;
+	struct Device **electrodes;
+#endif /* defined (DEVICE_EXPRESSIONS) */
 
 	ENTER(page_auto_range);
 #if defined (MOTIF)
@@ -7565,180 +7373,281 @@ Called when the auto range button is pressed.
 		{
 			/* stop continuous sampling */
 			unemap_stop_sampling();
-			samples=(short int *)NULL;
-			card_maximum=(float *)NULL;
-			card_minimum=(float *)NULL;
-			/*???DB.  Making assumption about hardware (gain same for each block of
-				64) */
 			if (unemap_get_number_of_samples_acquired(&number_of_samples)&&
 				unemap_get_number_of_channels(&number_of_channels)&&
-				ALLOCATE(samples,short int,number_of_samples*number_of_channels)&&
-				ALLOCATE(card_maximum,float,number_of_channels/64)&&
-				ALLOCATE(card_minimum,float,number_of_channels/64)&&
-				unemap_get_samples_acquired(0,0,samples,(int *)NULL))
+				unemap_get_sampling_frequency(&sampling_frequency))
 			{
-				/* calculate ranges */
-				for (card_number=0;card_number<number_of_channels/64;card_number++)
+				if ((0<sampling_frequency)&&(0<(unsigned long)sampling_frequency)&&
+					((unsigned long)sampling_frequency<number_of_samples))
 				{
-					card_minimum[card_number]=(float)1;
-					card_maximum[card_number]=(float)0;
+					number_of_samples=(unsigned long)sampling_frequency;
 				}
-				i=rig->number_of_devices;
-				while (i>0)
+				/*???debug */
+				display_message(INFORMATION_MESSAGE,"number_of_samples=%lu\n",
+					number_of_samples);
+				samples=(short int *)NULL;
+				card_maximum=(float *)NULL;
+				card_minimum=(float *)NULL;
+				/*???DB.  Making assumption about hardware (gain same for each block of
+					64) */
+				if (ALLOCATE(samples,short int,number_of_samples*number_of_channels)&&
+					ALLOCATE(card_maximum,float,number_of_channels/64)&&
+					ALLOCATE(card_minimum,float,number_of_channels/64)&&
+					unemap_get_samples_acquired(0,number_of_samples,samples,(int *)NULL))
 				{
-					if ((*device)&&(channel=(*device)->channel))
+					/* calculate ranges */
+					for (card_number=0;card_number<number_of_channels/64;card_number++)
 					{
-						(*device)->signal_display_minimum=(float)-1;
-						(*device)->signal_display_maximum=(float)1;
-						channel_number=(channel->number)-1;
-						card_number=channel_number/64;
-						if ((0<=channel_number)&&(channel_number<number_of_channels))
+						card_minimum[card_number]=(float)1;
+						card_maximum[card_number]=(float)0;
+					}
+					i=rig->number_of_devices;
+					while (i>0)
+					{
+						if ((*device)&&
+#if defined (DEVICE_EXPRESSIONS)
+							((*device)->description)&&
+							((ELECTRODE==(*device)->description->type)||
+							((AUXILIARY==(*device)->description->type)&&
+							(AUXILIARY_DEVICE_CHANNEL==
+							(*device)->description->properties.auxiliary.type)))&&
+#endif /* defined (DEVICE_EXPRESSIONS) */
+							(channel=(*device)->channel))
 						{
-							source=samples+channel_number;
-							minimum= *source;
-							maximum=minimum;
-							for (j=(int)number_of_samples-1;j>0;j--)
+							(*device)->signal_display_minimum=(float)-1;
+							(*device)->signal_display_maximum=(float)1;
+							channel_number=(channel->number)-1;
+							card_number=channel_number/64;
+							if ((0<=channel_number)&&(channel_number<number_of_channels))
 							{
-								source += number_of_channels;
-								if (*source<minimum)
+								source=samples+channel_number;
+								minimum= *source;
+								maximum=minimum;
+								for (j=(int)number_of_samples-1;j>0;j--)
 								{
-									minimum= *source;
-								}
-								else
-								{
-									if (*source>maximum)
+									source += number_of_channels;
+									if (*source<minimum)
 									{
-										maximum= *source;
-									}
-								}
-							}
-							if (unemap_get_gain(channel_number+1,&pre_filter_gain,
-								&post_filter_gain))
-							{
-								channel_offset=channel->offset;
-								channel_gain=(channel->gain_correction)/
-									(pre_filter_gain*post_filter_gain);
-								signal_minimum=channel_gain*((float)minimum-channel_offset);
-								signal_maximum=channel_gain*((float)maximum-channel_offset);
-								/* increase range by 20% */
-								temp=(float)((2.2*signal_minimum-0.2*signal_maximum)/2);
-								signal_maximum=
-									(float)((-0.2*signal_minimum+2.2*signal_maximum)/2);
-								signal_minimum=temp;
-								(*device)->signal_display_minimum=signal_minimum;
-								(*device)->signal_display_maximum=signal_maximum;
-								if (card_maximum[card_number]<card_minimum[card_number])
-								{
-									card_minimum[card_number]=signal_minimum;
-									card_maximum[card_number]=signal_maximum;
-								}
-								else
-								{
-									if (signal_minimum<card_minimum[card_number])
-									{
-										card_minimum[card_number]=signal_minimum;
+										minimum= *source;
 									}
 									else
 									{
-										if (signal_maximum>card_maximum[card_number])
+										if (*source>maximum)
 										{
-											card_maximum[card_number]=signal_maximum;
+											maximum= *source;
+										}
+									}
+								}
+								if (unemap_get_gain(channel_number+1,&pre_filter_gain,
+									&post_filter_gain))
+								{
+									channel_offset=channel->offset;
+									channel_gain=(channel->gain_correction)/
+										(pre_filter_gain*post_filter_gain);
+									signal_minimum=channel_gain*((float)minimum-channel_offset);
+									signal_maximum=channel_gain*((float)maximum-channel_offset);
+									/* increase range by 20% */
+									temp=(float)((2.2*signal_minimum-0.2*signal_maximum)/2);
+									signal_maximum=
+										(float)((-0.2*signal_minimum+2.2*signal_maximum)/2);
+									signal_minimum=temp;
+									(*device)->signal_display_minimum=signal_minimum;
+									(*device)->signal_display_maximum=signal_maximum;
+									if (card_maximum[card_number]<card_minimum[card_number])
+									{
+										card_minimum[card_number]=signal_minimum;
+										card_maximum[card_number]=signal_maximum;
+									}
+									else
+									{
+										if (signal_minimum<card_minimum[card_number])
+										{
+											card_minimum[card_number]=signal_minimum;
+										}
+										else
+										{
+											if (signal_maximum>card_maximum[card_number])
+											{
+												card_maximum[card_number]=signal_maximum;
+											}
 										}
 									}
 								}
 							}
 						}
+						i--;
+						device++;
 					}
-					i--;
-					device++;
-				}
-				device=rig->devices;
-				for (i=rig->number_of_devices;i>0;i--)
-				{
-					if ((*device)&&!((*device)->channel))
+					device=rig->devices;
+					for (k=rig->number_of_devices;k>0;k--)
 					{
-						signal_minimum=(float)0;
-						signal_maximum=(float)0;
-						auxiliary_properties= &(((*device)->description->properties).
-							auxiliary);
-						number_of_electrodes=
 #if defined (DEVICE_EXPRESSIONS)
-							(auxiliary_properties->combination).sum.number_of_electrodes;
-#else /* defined (DEVICE_EXPRESSIONS) */
-							auxiliary_properties->number_of_electrodes;
-#endif /* defined (DEVICE_EXPRESSIONS) */
-						electrodes=
-#if defined (DEVICE_EXPRESSIONS)
-							(auxiliary_properties->combination).sum.electrodes;
-#else /* defined (DEVICE_EXPRESSIONS) */
-							auxiliary_properties->electrodes;
-#endif /* defined (DEVICE_EXPRESSIONS) */
-						electrode_coefficients=
-#if defined (DEVICE_EXPRESSIONS)
-							(auxiliary_properties->combination).sum.electrode_coefficients;
-#else /* defined (DEVICE_EXPRESSIONS) */
-							auxiliary_properties->electrode_coefficients;
-#endif /* defined (DEVICE_EXPRESSIONS) */
-						for (j=0;j<number_of_electrodes;j++)
+						if (*device)
 						{
-							if (0<electrode_coefficients[j])
+							channel_devices=(struct Device **)NULL;
+							number_of_channel_devices=0;
+							channel_values=(float *)NULL;
+							channel_gains=(float *)NULL;
+							channel_offsets=(float *)NULL;
+							if (calculate_device_channels(*device,&number_of_channel_devices,
+								&channel_devices)&&(0<number_of_channel_devices)&&
+								ALLOCATE(channel_values,float,number_of_channel_devices)&&
+								ALLOCATE(channel_numbers,int,number_of_channel_devices)&&
+								ALLOCATE(channel_gains,float,number_of_channel_devices)&&
+								ALLOCATE(channel_offsets,float,number_of_channel_devices))
 							{
-								signal_minimum += electrode_coefficients[j]*
-									(electrodes[j])->signal_display_minimum;
-								signal_maximum += electrode_coefficients[j]*
-									(electrodes[j])->signal_display_maximum;
+								for (j=0;j<number_of_channel_devices;j++)
+								{
+									channel_numbers[j]=(channel_devices[j]->channel->number)-1;
+									channel_offsets[j]=channel_devices[j]->channel->offset;
+									if (unemap_get_gain(channel_numbers[j]+1,&pre_filter_gain,
+										&post_filter_gain))
+									{
+										channel_gains[j]=
+											(channel_devices[j]->channel->gain_correction)/
+											(pre_filter_gain*post_filter_gain);
+									}
+									else
+									{
+										channel_gains[j]=(float)1;
+									}
+								}
+								signal_minimum=1;
+								signal_maximum=0;
+								sample=samples;
+								for (i=(int)number_of_samples;i>0;i--)
+								{
+									for (j=0;j<number_of_channel_devices;j++)
+									{
+										channel_values[j]=channel_gains[j]*
+											(*(sample+channel_numbers[j])-channel_offsets[j]);
+									}
+									channel_values_temp=channel_values;
+									evaluate_device(*device,&channel_values_temp,&value);
+									if (signal_maximum<signal_minimum)
+									{
+										signal_minimum=value;
+										signal_maximum=value;
+									}
+									else
+									{
+										if (value<signal_minimum)
+										{
+											signal_minimum=value;
+										}
+										else
+										{
+											if (value>signal_maximum)
+											{
+												signal_maximum=value;
+											}
+										}
+									}
+									sample += number_of_channels;
+								}
+								(*device)->signal_display_minimum=signal_minimum;
+								(*device)->signal_display_maximum=signal_maximum;
+								/*???debug */
+								display_message(INFORMATION_MESSAGE,"%s.  %g %g\n",
+									(*device)->description->name,
+									(*device)->signal_display_minimum,
+									(*device)->signal_display_maximum);
 							}
 							else
 							{
-								signal_minimum += electrode_coefficients[j]*
-									(electrodes[j])->signal_display_maximum;
-								signal_maximum += electrode_coefficients[j]*
-									(electrodes[j])->signal_display_minimum;
+								if (((*device)->description)&&((*device)->description->name))
+								{
+									display_message(ERROR_MESSAGE,
+										"page_auto_range.  Could not set up channel devices for %s",
+										(*device)->description->name);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"page_auto_range.  Could not set up channel devices");
+								}
 							}
+							DEALLOCATE(channel_devices);
+							DEALLOCATE(channel_values);
+							DEALLOCATE(channel_gains);
+							DEALLOCATE(channel_offsets);
+							DEALLOCATE(channel_numbers);
 						}
-						(*device)->signal_display_minimum=signal_minimum;
-						(*device)->signal_display_maximum=signal_maximum;
+#else /* defined (DEVICE_EXPRESSIONS) */
+						if ((*device)&&!((*device)->channel))
+						{
+							signal_minimum=(float)0;
+							signal_maximum=(float)0;
+							auxiliary_properties= &(((*device)->description->properties).
+								auxiliary);
+							number_of_electrodes=auxiliary_properties->number_of_electrodes;
+							electrodes=auxiliary_properties->electrodes;
+							electrode_coefficients=
+								auxiliary_properties->electrode_coefficients;
+							for (j=0;j<number_of_electrodes;j++)
+							{
+								if (0<electrode_coefficients[j])
+								{
+									signal_minimum += electrode_coefficients[j]*
+										(electrodes[j])->signal_display_minimum;
+									signal_maximum += electrode_coefficients[j]*
+										(electrodes[j])->signal_display_maximum;
+								}
+								else
+								{
+									signal_minimum += electrode_coefficients[j]*
+										(electrodes[j])->signal_display_maximum;
+									signal_maximum += electrode_coefficients[j]*
+										(electrodes[j])->signal_display_minimum;
+								}
+							}
+							(*device)->signal_display_minimum=signal_minimum;
+							(*device)->signal_display_maximum=signal_maximum;
+						}
+#endif /* defined (DEVICE_EXPRESSIONS) */
+						device++;
 					}
-					device++;
-				}
-				/* set card gains */
-				for (card_number=0;card_number<number_of_channels/64;card_number++)
-				{
-					/*???DB.  Making assumption about hardware (gain same for each block
-						of 64) */
-					i=card_number*64+1;
-					if ((card_minimum[card_number]<card_maximum[card_number])&&
-						unemap_get_voltage_range(i,&signal_minimum,&signal_maximum)&&
-						unemap_get_gain(i,&pre_filter_gain,&post_filter_gain))
+					/* set card gains */
+					for (card_number=0;card_number<number_of_channels/64;card_number++)
 					{
-						if (card_maximum[card_number]<0)
+						/*???DB.  Making assumption about hardware (gain same for each block
+							of 64) */
+						i=card_number*64+1;
+						if ((card_minimum[card_number]<card_maximum[card_number])&&
+							unemap_get_voltage_range(i,&signal_minimum,&signal_maximum)&&
+							unemap_get_gain(i,&pre_filter_gain,&post_filter_gain))
 						{
-							temp= -card_minimum[card_number];
-						}
-						else
-						{
-							temp=card_maximum[card_number];
-							if (temp< -card_minimum[card_number])
+							if (card_maximum[card_number]<0)
 							{
 								temp= -card_minimum[card_number];
 							}
+							else
+							{
+								temp=card_maximum[card_number];
+								if (temp< -card_minimum[card_number])
+								{
+									temp= -card_minimum[card_number];
+								}
+							}
+							/*???DB.  Assuming that signal_minimum= -signal_maximum */
+							page_window_set_gain(page_window,i,signal_maximum*pre_filter_gain*
+								post_filter_gain/temp);
 						}
-						/*???DB.  Assuming that signal_minimum= -signal_maximum */
-						page_window_set_gain(page_window,i,signal_maximum*pre_filter_gain*
-							post_filter_gain/temp);
 					}
+					show_display_maximum(page_window);
+					show_display_minimum(page_window);
+					draw_scrolling_background(page_window);
 				}
+				DEALLOCATE(samples);
+				DEALLOCATE(card_maximum);
+				DEALLOCATE(card_minimum);
 			}
-			DEALLOCATE(samples);
-			DEALLOCATE(card_maximum);
-			DEALLOCATE(card_minimum);
-			draw_scrolling_background(page_window);
 			/* start continuous sampling */
 			unemap_start_sampling();
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"page_save_data.  Invalid rig");
+			display_message(ERROR_MESSAGE,"page_auto_range.  Invalid rig");
 		}
 	}
 	else
@@ -7757,20 +7666,24 @@ static void page_full_range(
 #endif /* defined (WIN32_USER_INTERFACE) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 7 August 2002
+LAST MODIFIED : 5 September 2002
 
 DESCRIPTION :
 Called when the full range button is pressed.
 ==============================================================================*/
 {
-	float channel_gain,channel_offset,*electrode_coefficients,pre_filter_gain,
-		post_filter_gain;
-	int i,j,number_of_devices,number_of_electrodes;
+	float channel_gain,channel_offset,pre_filter_gain,post_filter_gain;
+	int i,number_of_devices;
 	long int maximum_signal_value,minimum_signal_value;
-	struct Auxiliary_properties *auxiliary_properties;
 	struct Channel *channel;
-	struct Device **device_address,**electrodes;
+	struct Device **device_address;
 	struct Page_window *page_window;
+#if !defined (DEVICE_EXPRESSIONS)
+	float *electrode_coefficients;
+	int j,number_of_electrodes;
+	struct Auxiliary_properties *auxiliary_properties;
+	struct Device **electrodes;
+#endif /* !defined (DEVICE_EXPRESSIONS) */
 
 	ENTER(page_full_range);
 #if defined (MOTIF)
@@ -7779,8 +7692,11 @@ Called when the full range button is pressed.
 #endif /* defined (MOTIF) */
 	if (page_window=(struct Page_window *)page_window_structure)
 	{
+#if defined (OLD_CODE)
+		/*???DB.  Full range for the current gain */
 		/* set gain on all channels as low as possible */
 		unemap_set_gain(0,(float)1,(float)1);
+#endif /* defined (OLD_CODE) */
 		/* set the signal minimums and maximums */
 		if ((page_window->rig_address)&&(*(page_window->rig_address))&&
 			(0<(number_of_devices=(*(page_window->rig_address))->
@@ -7814,30 +7730,23 @@ Called when the full range button is pressed.
 			device_address=(*(page_window->rig_address))->devices;
 			for (i=0;i<number_of_devices;i++)
 			{
+#if defined (DEVICE_EXPRESSIONS)
+				if (*device_address)
+				{
+					evaluate_device_extrema(*device_address,
+						&((*device_address)->signal_display_minimum),
+						&((*device_address)->signal_display_maximum));
+				}
+#else /* defined (DEVICE_EXPRESSIONS) */
 				if ((*device_address)&&!((*device_address)->channel))
 				{
 					(*device_address)->signal_display_minimum=(float)0;
 					(*device_address)->signal_display_maximum=(float)0;
 					auxiliary_properties= &(((*device_address)->description->
 						properties).auxiliary);
-					number_of_electrodes=
-#if defined (DEVICE_EXPRESSIONS)
-						(auxiliary_properties->combination).sum.number_of_electrodes;
-#else /* defined (DEVICE_EXPRESSIONS) */
-						auxiliary_properties->number_of_electrodes;
-#endif /* defined (DEVICE_EXPRESSIONS) */
-					electrodes=
-#if defined (DEVICE_EXPRESSIONS)
-						(auxiliary_properties->combination).sum.electrodes;
-#else /* defined (DEVICE_EXPRESSIONS) */
-						auxiliary_properties->electrodes;
-#endif /* defined (DEVICE_EXPRESSIONS) */
-					electrode_coefficients=
-#if defined (DEVICE_EXPRESSIONS)
-						(auxiliary_properties->combination).sum.electrode_coefficients;
-#else /* defined (DEVICE_EXPRESSIONS) */
-						auxiliary_properties->electrode_coefficients;
-#endif /* defined (DEVICE_EXPRESSIONS) */
+					number_of_electrodes=auxiliary_properties->number_of_electrodes;
+					electrodes=auxiliary_properties->electrodes;
+					electrode_coefficients=auxiliary_properties->electrode_coefficients;
 					for (j=0;j<number_of_electrodes;j++)
 					{
 						if (0<electrode_coefficients[j])
@@ -7860,8 +7769,11 @@ Called when the full range button is pressed.
 						}
 					}
 				}
+#endif /* defined (DEVICE_EXPRESSIONS) */
 				device_address++;
 			}
+			show_display_maximum(page_window);
+			show_display_minimum(page_window);
 			draw_scrolling_background(page_window);
 		}
 	}
@@ -10250,7 +10162,7 @@ Global functions
 */
 int destroy_Page_window(struct Page_window **page_window_address)
 /*******************************************************************************
-LAST MODIFIED : 10 October 2001
+LAST MODIFIED : 4 September 2002
 
 DESCRIPTION :
 If the <address> field of the page window is not NULL, <*address> is set to
@@ -10318,9 +10230,11 @@ if (INVALID_HANDLE_VALUE!=page_window->device_driver)
 		DEALLOCATE(page_window->scrolling_devices);
 		DEALLOCATE(page_window->number_of_scrolling_channels_device);
 		DEALLOCATE(page_window->last_scrolling_value_device);
-#if !defined (DEVICE_EXPRESSIONS)
+#if defined (DEVICE_EXPRESSIONS)
+		DEALLOCATE(page_window->real_signal_values);
+#else /* defined (DEVICE_EXPRESSIONS) */
 		DEALLOCATE(page_window->scrolling_coefficients);
-#endif /* !defined (DEVICE_EXPRESSIONS) */
+#endif /* defined (DEVICE_EXPRESSIONS) */
 		DEALLOCATE(page_window);
 		*page_window_address=(struct Page_window *)NULL;
 	}
@@ -10427,7 +10341,7 @@ struct Page_window *create_Page_window(struct Page_window **address,
 	struct Mapping_window **mapping_window_address,int pointer_sensitivity,
 	char *signal_file_extension_write,struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 5 September 2002
 
 DESCRIPTION :
 This function allocates the memory for a page window and sets the fields to the
@@ -10444,15 +10358,19 @@ as a standalone application.
 ==============================================================================*/
 {
 	char *hardware_directory;
-	float channel_gain,channel_offset,*electrode_coefficients,post_filter_gain,
-		pre_filter_gain;
-	int channel_number,device_number,i,j,number_of_devices,number_of_electrodes;
+	float channel_gain,channel_offset,post_filter_gain,pre_filter_gain;
+	int channel_number,device_number,i,j,number_of_devices;
 	long int maximum_signal_value,minimum_signal_value;
 	Page_window_settings settings;
-	struct Auxiliary_properties *auxiliary_properties;
 	struct Channel *channel;
-	struct Device **device_address,*display_device,**electrodes;
+	struct Device **device_address,*display_device;
 	struct Page_window *page_window;
+#if !defined (DEVICE_EXPRESSIONS)
+	float *electrode_coefficients;
+	int number_of_electrodes;
+	struct Auxiliary_properties *auxiliary_properties;
+	struct Device **electrodes;
+#endif /* !defined (DEVICE_EXPRESSIONS) */
 #if defined (MOTIF)
 	Display *display;
 	int depth;
@@ -10678,9 +10596,11 @@ as a standalone application.
 				page_window->scrolling_devices=(struct Device **)NULL;
 				page_window->number_of_scrolling_channels_device=(int *)NULL;
 				page_window->last_scrolling_value_device=(int *)NULL;
-#if !defined (DEVICE_EXPRESSIONS)
+#if defined (DEVICE_EXPRESSIONS)
+				page_window->real_signal_values=(float *)NULL;
+#else /* defined (DEVICE_EXPRESSIONS) */
 				page_window->scrolling_coefficients=(float *)NULL;
-#endif /* !defined (DEVICE_EXPRESSIONS) */
+#endif /* defined (DEVICE_EXPRESSIONS) */
 				page_window->number_of_stimulators=0;
 				unemap_get_number_of_stimulators(&(page_window->number_of_stimulators));
 				page_window->unemap_hardware_version=0;
@@ -11009,31 +10929,24 @@ as a standalone application.
 						device_address=(*(page_window->rig_address))->devices;
 						for (i=0;i<number_of_devices;i++)
 						{
+#if defined (DEVICE_EXPRESSIONS)
+							if (*device_address)
+							{
+								evaluate_device_extrema(*device_address,
+									&((*device_address)->signal_display_minimum),
+									&((*device_address)->signal_display_maximum));
+							}
+#else /* defined (DEVICE_EXPRESSIONS) */
 							if ((*device_address)&&!((*device_address)->channel))
 							{
 								(*device_address)->signal_display_minimum=(float)0;
 								(*device_address)->signal_display_maximum=(float)0;
 								auxiliary_properties= &(((*device_address)->description->
 									properties).auxiliary);
-								number_of_electrodes=
-#if defined (DEVICE_EXPRESSIONS)
-									(auxiliary_properties->combination).sum.number_of_electrodes;
-#else /* defined (DEVICE_EXPRESSIONS) */
-									auxiliary_properties->number_of_electrodes;
-#endif /* defined (DEVICE_EXPRESSIONS) */
-								electrodes=
-#if defined (DEVICE_EXPRESSIONS)
-									(auxiliary_properties->combination).sum.electrodes;
-#else /* defined (DEVICE_EXPRESSIONS) */
-									auxiliary_properties->electrodes;
-#endif /* defined (DEVICE_EXPRESSIONS) */
+								number_of_electrodes=auxiliary_properties->number_of_electrodes;
+								electrodes=auxiliary_properties->electrodes;
 								electrode_coefficients=
-#if defined (DEVICE_EXPRESSIONS)
-									(auxiliary_properties->combination).sum.
-									electrode_coefficients;
-#else /* defined (DEVICE_EXPRESSIONS) */
 									auxiliary_properties->electrode_coefficients;
-#endif /* defined (DEVICE_EXPRESSIONS) */
 								for (j=0;j<number_of_electrodes;j++)
 								{
 									if (0<electrode_coefficients[j])
@@ -11056,6 +10969,7 @@ as a standalone application.
 									}
 								}
 							}
+#endif /* defined (DEVICE_EXPRESSIONS) */
 							device_address++;
 						}
 					}

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.c
 
-LAST MODIFIED : 25 July 2002
+LAST MODIFIED : 5 September 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -5128,10 +5128,9 @@ DESCRIPTION : draws the markers on the trace window.
 	return (return_code);
 } /* draw_Electrical_imaging_event_markers */
 
-
 static int calculate_Cardiac_interval_device(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 25 July 2002
+LAST MODIFIED : 6 September 2002
 
 DESCRIPTION :
 Calculate the <trace's> cardiac_interval_device.
@@ -5152,9 +5151,14 @@ calculated, it contains the entire signal.
 	float *current_times,*current_values,frequency,*cardiac_interval_value,
 		maximum_value,minimum_value,*time_float,*value;
 	struct Cardiac_interval *interval;
-	struct Device *cardiac_interval_device,*device,**electrodes,*source_device;
+	struct Device *cardiac_interval_device,**electrodes,*source_device;
 	struct Signal_buffer *cardiac_interval_buffer;
 	struct Signal *signal_next,*signal_next_new;
+#if defined (DEVICE_EXPRESSIONS)
+	struct Signal_buffer *buffer;
+#else /* defined (DEVICE_EXPRESSIONS) */
+	struct Device *device;
+#endif /* defined (DEVICE_EXPRESSIONS) */
 
 	ENTER(calculate_Cardiac_interval_device);
 	return_code=0;
@@ -5205,12 +5209,21 @@ calculated, it contains the entire signal.
 				destroy_Signal(&(cardiac_interval_device->signal->next));
 			}
 			buffer_start=0;
+#if defined (DEVICE_EXPRESSIONS)
+			if (buffer=get_Device_signal_buffer(source_device))
+			{
+				buffer_end=(buffer->number_of_samples)-1;
+				frequency=buffer->frequency;
+			}
+			else
+			{
+				buffer_end=0;
+				frequency=1;
+			}
+#else /* defined (DEVICE_EXPRESSIONS) */
 			if (AUXILIARY==source_device->description->type)
 			{
 				electrodes=(source_device->description->properties).auxiliary.
-#if defined (DEVICE_EXPRESSIONS)
-					combination.sum.
-#endif /* defined (DEVICE_EXPRESSIONS) */
 					electrodes;
 				if (electrodes)
 				{
@@ -5227,6 +5240,7 @@ calculated, it contains the entire signal.
 			}
 			buffer_end=device->signal->buffer->number_of_samples-1;
 			frequency=device->signal->buffer->frequency;
+#endif /* defined (DEVICE_EXPRESSIONS) */
 			/* extract all the signals (signal and any signal->next)*/
 			signal_number=0;
 			if (extract_signal_information((struct FE_node *)NULL,
@@ -5236,8 +5250,9 @@ calculated, it contains the entire signal.
 				(char **)NULL,(int *)NULL,&minimum_value,&maximum_value))
 			{
 				/* realloc Signal_buffer for cardiac_interval_device */
-				if (cardiac_interval_buffer=reallocate_Signal_buffer(cardiac_interval_buffer,
-					FLOAT_VALUE,number_of_signals,number_of_samples,frequency))
+				if (cardiac_interval_buffer=reallocate_Signal_buffer(
+					cardiac_interval_buffer,FLOAT_VALUE,number_of_signals,
+					number_of_samples,frequency))
 				{
 					time_float=current_times;
 					cardiac_interval_time=cardiac_interval_buffer->times;
@@ -5263,20 +5278,35 @@ calculated, it contains the entire signal.
 					{
 						*cardiac_interval_value= *value;
 						cardiac_interval_value += buffer_offset;
+#if defined (OLD_CODE)
+						/*???DB.  Have reversed the order, signal number now varies
+							fastest */
 						value++;
+#endif /* defined (OLD_CODE) */
+						value += number_of_signals;
 					}
 					if (trace->calculate_signal_mode==RMS_AND_CURRENT_SIGNAL)
 					{
 						/* put rms signal in the cardiac_interval_device->signal->next */
+#if defined (OLD_CODE)
+						/*???DB.  Have reversed the order, signal number now varies
+							fastest */
 						value=current_values+number_of_samples;
+#endif /* defined (OLD_CODE) */
+						value=current_values+1;
 						cardiac_interval_value=
 							((cardiac_interval_buffer->signals).float_values)+
-						(cardiac_interval_device->signal->next->index);
+							(cardiac_interval_device->signal->next->index);
 						for (j=number_of_samples;j>0;j--)
 						{
 							*cardiac_interval_value= *value;
 							cardiac_interval_value += buffer_offset;
+#if defined (OLD_CODE)
+							/*???DB.  Have reversed the order, signal number now varies
+								fastest */
 							value++;
+#endif /* defined (OLD_CODE) */
+							value += number_of_signals;
 						}
 					}
 					/* ensure the range of rms is 0 to max; min to max looks confusing, as
@@ -5302,12 +5332,21 @@ calculated, it contains the entire signal.
 					}
 					else
 					{
+#if defined (DEVICE_EXPRESSIONS)
+						if (buffer=get_Device_signal_buffer(source_device))
+						{
+							cardiac_interval_buffer->start=buffer->start;
+							cardiac_interval_buffer->end=buffer->end;
+						}
+						else
+						{
+							cardiac_interval_buffer->start=0;
+							cardiac_interval_buffer->end=0;
+						}
+#else /* defined (DEVICE_EXPRESSIONS) */
 						if (AUXILIARY==source_device->description->type)
 						{
 							electrodes=(source_device->description->properties).auxiliary.
-#if defined (DEVICE_EXPRESSIONS)
-								combination.sum.
-#endif /* defined (DEVICE_EXPRESSIONS) */
 								electrodes;
 							if (electrodes)
 							{
@@ -5324,20 +5363,21 @@ calculated, it contains the entire signal.
 						}
 						cardiac_interval_buffer->start=device->signal->buffer->start;
 						cardiac_interval_buffer->end=device->signal->buffer->end;
+#endif /* defined (DEVICE_EXPRESSIONS) */
 					}
 					return_code=1;
 				} /* if (cardiac_interval_buffer=reallocate_Signal_buffer */
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"calculate_Cardiac_interval_device.reallocate_Signal_buffer failed");
+					display_message(ERROR_MESSAGE,"calculate_Cardiac_interval_device.  "
+						"reallocate_Signal_buffer failed");
 					return_code=0;
 				}
 			}	/* if (extract_signal_information*/
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"calculate_Cardiac_interval_device. extract_signal_information failed");
+				display_message(ERROR_MESSAGE,"calculate_Cardiac_interval_device.  "
+					"extract_signal_information failed");
 				return_code=0;
 			}
 			if (current_times)
@@ -9879,7 +9919,7 @@ and location.
 
 static int process_eimaging(struct Trace_window *trace)
 /*******************************************************************************
-LAST MODIFIED : 25 July 2002
+LAST MODIFIED : 5 September 2002
 
 DESCRIPTION :
 Calculates the processed device for electrical imaging.
@@ -9891,23 +9931,31 @@ before this function is exited.
 	enum Calculate_signal_mode calculate_signal_mode;
 	enum Event_signal_status **status_ptr,*status;
 	enum Inverse_electrodes_mode electrodes_mode;
-	float *current_times,*current_values,maximum_value,minimum_value,processed_frequency,
-		*processed_value,*source_value,*start_value,*time_float,*value,*values;
+	float *current_times,*current_values,maximum_value,minimum_value,
+		processed_frequency,*processed_value,*source_value,*start_value,*time_float,
+		*value,*values;
 	int buffer_offset,end,i,j,number_of_devices,num_valid_devices,
 		number_of_samples,number_of_signals,*processed_time,return_code,start;
-	struct Device *a_device,*device,**electrodes,*processed_device,**the_device;
+	struct Device *device,**electrodes,*processed_device,**the_device;
 	struct Device_description *description;
 	struct Rig *rig;
 	struct Region *current_region;
 	struct Signal_buffer *processed_buffer;
 	struct Signal *signal_next,*signal_next_new;
+#if defined (DEVICE_EXPRESSIONS)
+	struct Signal_buffer *buffer;
+#else /* defined (DEVICE_EXPRESSIONS) */
+	struct Device *a_device;
+#endif /* defined (DEVICE_EXPRESSIONS) */
 
 	ENTER(process_eimaging);
 	device=(struct Device *)NULL;
 	processed_device=(struct Device *)NULL;
 	the_device=(struct Device **)NULL;
 	electrodes=(struct Device **)NULL;
+#if !defined (DEVICE_EXPRESSIONS)
 	a_device=(struct Device *)NULL;
+#endif /* !defined (DEVICE_EXPRESSIONS) */
 	values=(float *)NULL;
 	current_values=(float *)NULL;
 	current_times=(float *)NULL;
@@ -9957,13 +10005,19 @@ before this function is exited.
 					signal_next->buffer=processed_buffer;
 				}
 				start=0;
+#if defined (DEVICE_EXPRESSIONS)
+				if (buffer=get_Device_signal_buffer(device))
+				{
+					end=(buffer->number_of_samples)-1;
+				}
+				else
+				{
+					end=0;
+				}
+#else /* defined (DEVICE_EXPRESSIONS) */
 				if (AUXILIARY==device->description->type)
 				{
-					electrodes=(device->description->properties).auxiliary.
-#if defined (DEVICE_EXPRESSIONS)
-						combination.sum.
-#endif /* defined (DEVICE_EXPRESSIONS) */
-						electrodes;
+					electrodes=(device->description->properties).auxiliary.electrodes;
 					if (electrodes)
 					{
 						a_device=(*electrodes);
@@ -9978,13 +10032,14 @@ before this function is exited.
 					a_device=device;
 				}
 				end=a_device->signal->buffer->number_of_samples-1;
+#endif /* defined (DEVICE_EXPRESSIONS) */
 				/* get info from the highlighted signal */
 				if (((signal_next)||(calculate_signal_mode==RMS_SIGNAL))&&
 					extract_signal_information((struct FE_node *)NULL,
 					(struct Signal_drawing_package *)NULL,device,1,
-					start,end,(int *)NULL,&number_of_samples,&current_times,&current_values,
-						(enum Event_signal_status **)NULL,(char **)NULL,(int *)NULL,
-					(float *)NULL,(float *)NULL)&&(0<number_of_samples))
+					start,end,(int *)NULL,&number_of_samples,&current_times,
+					&current_values,(enum Event_signal_status **)NULL,(char **)NULL,
+					(int *)NULL,(float *)NULL,(float *)NULL)&&(0<number_of_samples))
 				{
 					if (calculate_signal_mode==RMS_AND_CURRENT_SIGNAL)
 					{
@@ -10122,13 +10177,21 @@ before this function is exited.
 							processed_device->signal_display_maximum=0;
 							processed_device->signal_display_minimum=1;
 						}
+#if defined (DEVICE_EXPRESSIONS)
+						if (buffer=get_Device_signal_buffer(device))
+						{
+							processed_buffer->start=buffer->start;
+							processed_buffer->end=buffer->end;
+						}
+						else
+						{
+							processed_buffer->start=0;
+							processed_buffer->end=0;
+						}
+#else /* defined (DEVICE_EXPRESSIONS) */
 						if (AUXILIARY==device->description->type)
 						{
-							electrodes=(device->description->properties).auxiliary.
-#if defined (DEVICE_EXPRESSIONS)
-								combination.sum.
-#endif /* defined (DEVICE_EXPRESSIONS) */
-								electrodes;
+							electrodes=(device->description->properties).auxiliary.electrodes;
 							if (electrodes)
 							{
 								a_device=(*electrodes);
@@ -10145,6 +10208,7 @@ before this function is exited.
 						}
 						processed_buffer->start=a_device->signal->buffer->start;
 						processed_buffer->end=a_device->signal->buffer->end;
+#endif /* defined (DEVICE_EXPRESSIONS) */
 					}
 					else
 					{
