@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.c
 
-LAST MODIFIED : 17 September 2002
+LAST MODIFIED : 14 October 2002
 
 DESCRIPTION :
 Contains function definitions for measurement rigs.
@@ -4090,7 +4090,7 @@ struct Rig *read_configuration(FILE *input_file,enum Rig_file_type file_type,
 #endif /* defined (UNEMAP_USE_3D)*/
 	)
 /*******************************************************************************
-LAST MODIFIED : 15 August 2002
+LAST MODIFIED : 14 October 2002
 
 DESCRIPTION :
 Assumes that the <input_file> has been opened, the <file_type> (binary or text)
@@ -4251,7 +4251,7 @@ pointer to the rig if successful and NULL if unsuccessful.
 											{
 												/* create the device */
 												if (last_device_item->device=create_Device(
-													region_number_of_devices,
+													number_of_devices+region_number_of_devices,
 													(struct Device_description *)NULL,
 													(struct Channel *)NULL,(struct Signal *)NULL))
 												{
@@ -4504,6 +4504,7 @@ pointer to the rig if successful and NULL if unsuccessful.
 																					destroy_Rig(&rig);
 																				}
 																			} while (rig&&('\n'!=separator));
+																			fscanf(input_file," ");
 																		}
 																		else
 																		{
@@ -4569,6 +4570,7 @@ pointer to the rig if successful and NULL if unsuccessful.
 																					destroy_Device_list(&device_list,1);
 																					destroy_Rig(&rig);
 																				}
+																				fscanf(input_file," ");
 																			}
 																			else
 																			{
