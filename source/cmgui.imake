@@ -305,8 +305,8 @@ INTERPRETER_LIB =
 PERL_PATH=/usr/local/perl5/lib/5.00503
 INTERPRETER_INC = -I$(PERL_PATH)/irix-n32/CORE
 INTERPRETER_SWITCH = -DPERL_INTERPRETER
-INTERPRETER_SRCS = command/perl_interpreter.c
-INTERPRETER_LIB = $(PERL_PATH)/irix-n32/auto/DynaLoader/DynaLoader.a /usr/people/blackett/cmgui/source/command/Perl_cmiss/blib/arch/auto/Perl_cmiss/Perl_cmiss.a -L$(PERL_PATH)/irix-n32/CORE -lperl
+INTERPRETER_SRCS =
+INTERPRETER_LIB = /usr/people/blackett/perl_interpreter/generated/mips3-n32-debug/libperlinterpreter.a
 #endif /* !defined (PERL_INTERPRETER) */
 #else /* !defined (F90_INTERPRETER) */
 #if defined (CMISS_ROOT_DEFINED)
@@ -952,7 +952,7 @@ depend :
 	sed "s%$(UIDH_PATH)/%%g" DependMake > DependMake.tmp2
 	mv DependMake.tmp2 DependMake
 #if defined (IRIX) /* switch OperatingSystem */
-	(ls $(SRCS) 2>&1 | sed "s%Cannot access %%;s%: No such file or directory%%;s%.*%&: &%;s%\.[^.]*:%.o:%" >> DependMake)
+	(ls $(SRCS) 2>&1 | sed "s%Cannot access %%;s%: No such file or directory%%;s%.*%&: &%;s%\.[^.]*:%.o:%;s%UX:ls: ERROR: %%" >> DependMake)
 #elif defined(LINUX) /* switch OperatingSystem */
 	(ls $(SRCS) 2>&1 | sed "s%ls: %%;s%: No such file or directory%%;s%.*%&: &%;s%\.[^.]*:%.o:%" >> DependMake)
 #endif /* switch OperatingSystem */

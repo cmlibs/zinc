@@ -36,10 +36,11 @@ DESCRIPTION :
 Data needed by file_read_voltex_graphics_object_from_obj.
 ==============================================================================*/
 {
+	char *graphics_object_name;
+	enum Render_type render_type;
+	float time;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct LIST(GT_object) *object_list;
-	char *graphics_object_name;
-	float time;
 }; /* File_read_graphics_object_from_obj_data */
 
 /*

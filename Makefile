@@ -102,7 +102,7 @@ cmgui_perl : force $(SOURCE_PATH)/cmgui_sgiperl.make
 
 $(SOURCE_PATH)/cmgui_sgiperl.make : $(SOURCE_PATH)/cmgui.imake $(SOURCE_PATH)/common.imake cmgui.make
 	$(COMMON_IMAKE_RULE) \
-	imake -DIRIX -DOPTIMISED -DPERL_INTERPRETER $${CMISS_ROOT_DEF} -s cmgui_sgiperl.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
+	imake -DIRIX -DPERL_INTERPRETER $${CMISS_ROOT_DEF} -s cmgui_sgiperl.make $${CMGUI_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 #SGI debug memory check version
 cmgui_memorycheck : force $(SOURCE_PATH)/cmgui_sgi_memorycheck.make

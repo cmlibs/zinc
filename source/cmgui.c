@@ -396,7 +396,7 @@ Main program for the CMISS Graphical User Interface
 		WINAPI
 #endif /* defined (WINDOWS) */
 		return_code;
-	int batch_mode, command_list,non_random,start_cm,start_mycm;
+	int batch_mode, command_list,non_random,start_cm,start_mycm, status;
 #if defined (MOTIF)
 	char *arg;
 	int i;
@@ -645,7 +645,7 @@ Main program for the CMISS Graphical User Interface
 	}
 
 #if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
-	initialise_interpreter(argc, argv);
+	create_interpreter(&status);
 #endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 
 	/* initialize application specific global variables */
@@ -1854,7 +1854,7 @@ Main program for the CMISS Graphical User Interface
 				DESTROY(Execute_command)(&set_command);
 
 #if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
-				destroy_interpreter();
+				destroy_interpreter(&status);
 #endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 
 		

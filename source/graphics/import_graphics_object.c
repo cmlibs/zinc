@@ -1020,11 +1020,33 @@ DESCRIPTION :
 						}
 						if (return_code)
 						{
-							if(voltex = CREATE(GT_voltex)(n_triangles, n_vertices,
-								triangle_list, vertex_list, iso_poly_material,
-								iso_env_map, iso_poly_cop, texturemap_coord, texturemap_index,
-								/*n_rep*/1, /*n_data_components*/0, (GTDATA *)NULL, g_VOLTEX_SHADED_TEXMAP))
+							switch (file_read_graphics_object_data->render_type)
 							{
+								case RENDER_TYPE_SHADED:
+								{
+									voltex = CREATE(GT_voltex)(n_triangles, n_vertices,
+										triangle_list, vertex_list, iso_poly_material,
+										iso_env_map, iso_poly_cop, texturemap_coord, texturemap_index,
+										/*n_rep*/1, /*n_data_components*/0, (GTDATA *)NULL, g_VOLTEX_SHADED_TEXMAP);
+								} break;
+								case RENDER_TYPE_WIREFRAME:
+								{
+									voltex = CREATE(GT_voltex)(n_triangles, n_vertices,
+										triangle_list, vertex_list, iso_poly_material,
+										iso_env_map, iso_poly_cop, texturemap_coord, texturemap_index,
+										/*n_rep*/1, /*n_data_components*/0, (GTDATA *)NULL, 
+										g_VOLTEX_WIREFRAME_SHADED_TEXMAP);
+								} break;
+								default:
+								{
+									display_message(ERROR_MESSAGE,
+										"file_read_voltex_graphics_object_from_obj.  Unknown Render_type.");
+									return_code=0;
+									voltex = (struct GT_voltex *)NULL;
+								}
+							}
+							if (voltex)
+								{
 								acc_triangle_index=0;
 								for (i=0;i<n_iso_polys;i++)
 								{

@@ -359,6 +359,433 @@ DESCRIPTION :
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
+static int gfx_apply_projection(struct Parse_state *state,
+  void *dummy_to_be_modified, void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 9 May 2000
+
+DESCRIPTION :
+Implements GFX APPLY PROJECTION
+==============================================================================*/
+{
+	char *projection_field_name, *projection_type;
+	Dimension viewport_width, viewport_height;
+	double modelview_matrix[16], window_projection_matrix[16],
+		texture_projection_matrix[16], total_projection_matrix[16], viewport_matrix[16],
+		viewport_left, viewport_top, 
+		viewport_pixels_per_unit_x, viewport_pixels_per_unit_y,
+		bk_texture_left, bk_texture_top, bk_texture_width, bk_texture_height,
+		bk_texture_max_pixels_per_polygon;
+	float distortion_centre_x, distortion_centre_y, distortion_factor_k1,
+		texture_width, texture_height;
+	int bk_texture_undistort_on, i, j, k, pane_number, return_code;
+	static char *projection_type_strings[] =
+	{
+	  "ndc_projection",
+	  "texture_projection",
+	  "viewport_projection"
+	};
+	struct Cmiss_command_data *command_data;
+	struct Computed_field *projection_field, *projection_field_copy, *source_field;
+	struct Graphics_window *graphics_window;
+	struct MANAGER(Computed_field) *computed_field_manager;
+	struct Option_table *option_table;
+	struct Set_Computed_field_conditional_data set_source_field_data;
+	struct Scene_viewer *scene_viewer;
+	struct Texture *texture;
+
+	ENTER(gfx_apply_projection);
+	USE_PARAMETER(dummy_to_be_modified);
+	if (state)
+	{
+		if ((command_data = (struct Cmiss_command_data *)command_data_void)&&
+			(computed_field_manager=Computed_field_package_get_computed_field_manager(
+				command_data->computed_field_package)))
+		{
+			pane_number = 1;
+			projection_field=(struct Computed_field *)NULL;
+			projection_field_name = (char *)NULL;
+			graphics_window=(struct Graphics_window *)NULL;
+			source_field=(struct Computed_field *)NULL;
+
+			option_table=CREATE(Option_table)();
+			/* ndc_projection, texture_projection, user_viewport_projection */
+			projection_type=projection_type_strings[1];
+			Option_table_add_enumerator(option_table,
+			  sizeof(projection_type_strings)/sizeof(char *),
+			  projection_type_strings,&projection_type);
+			/* pane_number */
+			Option_table_add_entry(option_table,"pane_number",&pane_number,
+				NULL,set_int_positive);
+			/* projection_field_name */
+			Option_table_add_entry(option_table,"projection_field",&projection_field_name,
+				(void *)1, set_name);
+			/* source_field */
+			set_source_field_data.computed_field_package=
+				command_data->computed_field_package;
+			set_source_field_data.conditional_function=Computed_field_has_3_components;
+			set_source_field_data.conditional_function_user_data=(void *)NULL;
+			Option_table_add_entry(option_table,"source_field",&source_field,
+				&set_source_field_data,set_Computed_field_conditional);
+			/* window */
+			Option_table_add_entry(option_table,"window",&graphics_window,
+				command_data->graphics_window_manager,set_Graphics_window);
+			
+			return_code=Option_table_multi_parse(option_table,state);
+			if (return_code)
+			{
+				if (projection_field=
+					FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(projection_field_name,
+						computed_field_manager))
+				{
+					if (Computed_field_is_read_only(projection_field))
+					{
+						display_message(ERROR_MESSAGE,
+							"Not allowed to modify read-only field");
+						return_code=0;
+					}
+					else
+					{
+						if (projection_field_copy=CREATE(Computed_field)("copy"))
+						{
+							MANAGER_COPY_WITHOUT_IDENTIFIER(Computed_field,name)(
+								projection_field_copy,projection_field);
+							ACCESS(Computed_field)(projection_field_copy);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"gfx_apply_projection.  Could not create projection field copy");
+							return_code=0;
+						}
+					}
+				}
+				else
+				{
+					/* create a new field with the supplied name */
+					if (projection_field_copy=
+						CREATE(Computed_field)(projection_field_name))
+					{
+						ACCESS(Computed_field)(projection_field_copy);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"gfx_apply_projection.  Could not create projection field");
+						return_code=0;
+					}
+				}
+				if (!source_field)
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_apply_projection.  Must specify a source_field");
+					return_code=0;
+				}
+				if (graphics_window)
+				{
+					if (!(scene_viewer = Graphics_window_get_Scene_viewer(
+						graphics_window,pane_number - 1)))
+					{
+						display_message(ERROR_MESSAGE,
+							"gfx_apply_projection.  Invalid pane for specified window");
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_apply_projection.  Must specify a window");
+					return_code=0;
+				}
+			}
+			if (return_code)
+			{
+				if (Scene_viewer_get_modelview_matrix(scene_viewer,modelview_matrix)&&
+					Scene_viewer_get_window_projection_matrix(scene_viewer,
+						window_projection_matrix))
+				{
+					/* Multiply these matrices */
+					for (i=0;i<4;i++)
+					{
+						for (j=0;j<4;j++)
+						{
+							total_projection_matrix[i * 4 + j] = 0.0;
+							for (k=0;k<4;k++)
+							{
+								total_projection_matrix[i * 4 + j] += 
+									window_projection_matrix[i * 4 + k]	*
+									modelview_matrix[k * 4 + j];
+							}
+						}
+					}
+					if (projection_type == projection_type_strings[0])
+					{
+						/* ndc_projection */
+						return_code = Computed_field_set_type_projection(
+							projection_field_copy, source_field, /*number_of_components*/3, 
+							total_projection_matrix);
+					}
+					else
+					{
+						/* Get the viewport transformation too */
+						Scene_viewer_get_viewport_info(scene_viewer,
+							&viewport_left, &viewport_top, 
+							&viewport_pixels_per_unit_x, &viewport_pixels_per_unit_y);
+						Scene_viewer_get_viewport_size(scene_viewer,
+							&viewport_width, &viewport_height);
+						/* Multiply total_projection by viewport matrices */
+						for (i=0;i<4;i++)
+						{
+							for (j=0;j<4;j++)
+							{
+								viewport_matrix[i * 4 + j] = 0.0;
+								for (k=0;k<4;k++)
+								{
+									if ((i == 0) && (k == 0))
+									{
+										viewport_matrix[i * 4 + j] += 
+											viewport_width * viewport_pixels_per_unit_x * 0.5 *
+											total_projection_matrix[k * 4 + j];
+									}
+									else if((i == 1) && (k == 1))
+									{
+										viewport_matrix[i * 4 + j] += 
+											viewport_height * viewport_pixels_per_unit_y * 0.5 *
+											total_projection_matrix[k * 4 + j];
+									}
+									else if((i == 0) && (k == 3))
+									{
+										viewport_matrix[i * 4 + j] += 
+											(viewport_width * viewport_pixels_per_unit_x * 0.5 
+											+ viewport_left) *
+											total_projection_matrix[k * 4 + j];
+									}
+									else if((i == 1) && (k == 3))
+									{
+										viewport_matrix[i * 4 + j] += 
+											(viewport_height * viewport_pixels_per_unit_y * 0.5
+											+ viewport_top + viewport_height) *
+											total_projection_matrix[k * 4 + j];
+									}
+									else if((i == 2) && (k == 2))
+									{
+										viewport_matrix[i * 4 + j] += 
+											total_projection_matrix[k * 4 + j];
+									}
+									else if((i == 3) && (k == 3))
+									{
+										viewport_matrix[i * 4 + j] += 
+											total_projection_matrix[k * 4 + j];
+									}
+									else
+									{
+										viewport_matrix[i * 4 + j] += 0.0;
+									}
+								}
+							}
+						}
+						if (projection_type == projection_type_strings[2])
+						{
+							/* viewport_projection */
+							return_code = Computed_field_set_type_projection(
+								projection_field_copy, source_field, /*number_of_components*/3, 
+								viewport_matrix);
+						}
+						else
+						{
+							/* texture_projection */
+							Scene_viewer_get_background_texture_info(scene_viewer,
+								&bk_texture_left, &bk_texture_top, &bk_texture_width, &bk_texture_height,
+								&bk_texture_undistort_on, &bk_texture_max_pixels_per_polygon);
+							texture = Scene_viewer_get_background_texture(scene_viewer);
+							Texture_get_distortion_info(texture, &distortion_centre_x, 
+								&distortion_centre_y, &distortion_factor_k1);
+							Texture_get_physical_size(texture, &texture_width, 
+								&texture_height);
+								
+							if (bk_texture_undistort_on && distortion_factor_k1)
+							{
+								display_message(ERROR_MESSAGE,
+									"gfx_apply_projection.  Distortion corrected textures are not supported yet");
+								return_code=0;
+							}
+							else
+							{
+								/* Multiply viewport_matrix by background texture */
+								for (i=0;i<4;i++)
+								{
+									for (j=0;j<4;j++)
+									{
+										texture_projection_matrix[i * 4 + j] = 0.0;
+										for (k=0;k<4;k++)
+										{
+											if ((i == 0) && (k == 0))
+											{
+												texture_projection_matrix[i * 4 + j] += 
+													(texture_width / bk_texture_width) *
+													viewport_matrix[k * 4 + j];
+											}
+											else if((i == 1) && (k == 1))
+											{
+												texture_projection_matrix[i * 4 + j] += 
+													(texture_height / bk_texture_height) *
+													viewport_matrix[k * 4 + j];
+											}
+											else if((i == 0) && (k == 3))
+											{
+												texture_projection_matrix[i * 4 + j] += 
+													((1.0 - bk_texture_left) *
+													(texture_width / bk_texture_width)) *
+													viewport_matrix[k * 4 + j];
+											}
+											else if((i == 1) && (k == 3))
+											{
+												texture_projection_matrix[i * 4 + j] += 
+													((1.0 - bk_texture_top) * 
+													(texture_height / bk_texture_height)
+													 + texture_height) *
+													viewport_matrix[k * 4 + j];
+											}
+											else if((i == 2) && (k == 2))
+											{
+												texture_projection_matrix[i * 4 + j] += 
+													viewport_matrix[k * 4 + j];
+											}
+											else if((i == 3) && (k == 3))
+											{
+												texture_projection_matrix[i * 4 + j] += 
+													viewport_matrix[k * 4 + j];
+											}
+											else
+											{
+												texture_projection_matrix[i * 4 + j] += 0.0;
+											}
+										}
+									}
+								}
+								return_code = Computed_field_set_type_projection(
+									projection_field_copy, source_field, /*number_of_components*/3, 
+									texture_projection_matrix);
+							}
+						}
+					}
+					/* Apply this to the field copy */
+					if (return_code)
+					{
+						if (projection_field)
+						{
+							/* copy modifications to projection_field */
+							return_code=MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name)(
+								projection_field,projection_field_copy,
+								computed_field_manager);
+						}
+						else
+						{
+							/* add the new field to the manager */
+							if (!ADD_OBJECT_TO_MANAGER(Computed_field)(
+								projection_field_copy,
+								computed_field_manager))
+							{
+								display_message(ERROR_MESSAGE,
+									"define_Computed_field.  Unable to add field to manager");
+							}
+						}
+					}
+					DEACCESS(Computed_field)(&projection_field_copy);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"gfx_apply_projection.  Must specify a window");
+					return_code=0;
+				}
+			
+			}
+			DESTROY(Option_table)(&option_table);
+			if (projection_field_name)
+			{
+				DEALLOCATE(projection_field_name);
+			}
+			if (source_field)
+			{
+				DEACCESS(Computed_field)(&source_field);
+			}
+			if (graphics_window)
+			{
+				DEACCESS(Graphics_window)(&graphics_window);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"gfx_apply_projection.  Missing command data");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"gfx_apply_projection.  Missing state");
+		return_code=0;
+	}
+
+	LEAVE;
+
+	return (return_code);
+} /* gfx_apply_projection */
+#endif /* !defined (WINDOWS_DEV_FLAG) */
+
+#if !defined (WINDOWS_DEV_FLAG)
+static int gfx_apply(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 9 May 2000
+
+DESCRIPTION :
+Executes a GFX APPLY command.
+==============================================================================*/
+{
+	int i,return_code;
+	static struct Modifier_entry option_table[]=
+	{
+		{"projection",NULL,NULL,gfx_apply_projection},
+		{NULL,NULL,NULL,NULL}
+	};
+
+	ENTER(gfx_apply);
+	USE_PARAMETER(dummy_to_be_modified);
+	/* check argument */
+	if (state)
+	{
+		if (command_data_void)
+		{
+			if (state->current_token)
+			{
+				i=0;
+				/* projection */
+				(option_table[i]).user_data=command_data_void;
+				i++;
+				return_code=process_option(state,option_table);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"gfx_apply.  Missing command_data");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"gfx_apply.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_apply */
+#endif /* !defined (WINDOWS_DEV_FLAG) */
+
+#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_change_identifier(struct Parse_state *state,void *dummy_to_be_modified,
 	void *command_data_void)
 /*******************************************************************************
@@ -11262,8 +11689,22 @@ Executes a GFX ELEMENT_CREATOR command.
 							}
 							DEALLOCATE(group_name);
 						}
+						Element_creator_set_element_dimension(element_creator,
+							element_dimension);
+						Element_creator_set_groups(element_creator,
+							element_group,node_group);
 					}
-					Element_creator_set_groups(element_creator,element_group,node_group);
+					else
+					{
+						display_message(WARNING_MESSAGE,
+							"Please specify an element group for the element_creator");
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Must create element_creator before modifying it");
+					return_code=0;
 				}
 			}
 			else
@@ -16359,18 +16800,12 @@ If a file is not specified a file selection box is presented to the user,
 otherwise the wavefront obj file is read.
 ==============================================================================*/
 {
-	char *file_name, *graphics_object_name;
+	char *file_name, *graphics_object_name,*render_type_string,**valid_strings;
 	float time;
-	int return_code;
+	int number_of_valid_strings, return_code;
 	struct File_read_graphics_object_from_obj_data data;
 	struct Cmiss_command_data *command_data;
-	struct Modifier_entry option_table[]=
-	{
-		{CMGUI_EXAMPLE_DIRECTORY_SYMBOL,NULL,NULL,set_file_name},
-		{"as",NULL,(void *)1,set_name},
-		{"time",NULL,NULL,set_float},
-		{NULL,NULL,NULL,set_file_name}
-	};
+	struct Option_table *option_table;
 
 	ENTER(gfx_read_wavefront_obj);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -16381,15 +16816,36 @@ otherwise the wavefront obj file is read.
 			graphics_object_name=0;
 			time = 0;
 			file_name=(char *)NULL;
-			(option_table[0]).to_be_modified= &file_name;
-			(option_table[1]).to_be_modified= &graphics_object_name;
-			(option_table[2]).to_be_modified= &time;
-			(option_table[3]).to_be_modified= &file_name;
-			if (return_code=process_multiple_options(state,option_table))
+
+
+			option_table=CREATE(Option_table)();
+			/* example */
+			Option_table_add_entry(option_table,CMGUI_EXAMPLE_DIRECTORY_SYMBOL,
+			  &file_name, NULL,set_file_name);
+			/* as */
+			Option_table_add_entry(option_table,"as",&graphics_object_name,
+				(void *)1,set_name);
+			/* render_type */
+			render_type_string=
+				Render_type_string(RENDER_TYPE_SHADED);
+			valid_strings=Render_type_get_valid_strings(
+				&number_of_valid_strings);
+			Option_table_add_enumerator(option_table,number_of_valid_strings,
+				valid_strings,&render_type_string);
+			DEALLOCATE(valid_strings);
+			/* time */
+			Option_table_add_entry(option_table,"time",&time,NULL,set_float);
+			/* default */
+			Option_table_add_entry(option_table,NULL,&file_name,
+				NULL,set_file_name);
+
+			return_code=Option_table_multi_parse(option_table,state);
+			if (return_code)
 			{
 				data.object_list=command_data->graphics_object_list;
 				data.graphical_material_manager=
 					command_data->graphical_material_manager;
+				data.render_type = Render_type_from_string(render_type_string);
 				data.time = time;
 				if(graphics_object_name)
 				{
@@ -21007,6 +21463,7 @@ Executes a GFX command.
 	int i,return_code;
 	static struct Modifier_entry option_table[]=
 	{
+		{"apply",NULL,NULL,gfx_apply},
 		{"change_identifier",NULL,NULL,gfx_change_identifier},
 		{"create",NULL,NULL,execute_command_gfx_create},
 #if !defined (WINDOWS_DEV_FLAG)
@@ -21055,6 +21512,9 @@ Executes a GFX command.
 			if (state->current_token)
 			{
 				i=0;
+				/* apply */
+				(option_table[i]).user_data=command_data_void;
+				i++;
 				/* change_identifier */
 				(option_table[i]).user_data=command_data_void;
 				i++;
@@ -22933,7 +23393,8 @@ Global functions
 ----------------
 */
 #if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
-int cmiss_actually_execute_command(char *command_string,void *command_data_void)
+void execute_command(char *command_string,void *command_data_void, int *quit,
+  int *error)
 /*******************************************************************************
 LAST MODIFIED : 28 March 2000
 
@@ -22972,7 +23433,7 @@ DESCRIPTION:
 	struct Parse_state *state;
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
-	ENTER(cmiss_execute_command);
+	ENTER(execute_command);
 	if (command_data=(struct Cmiss_command_data *)command_data_void)
 	{
 #if !defined (WINDOWS_DEV_FLAG)
@@ -22983,10 +23444,12 @@ DESCRIPTION:
 			/* check for comment */
 			if (i>0)
 			{
-				/* add command to command history */
+#if defined (OLD_CODE)
+				/* add command to command history */			  
 				/*???RC put out processed tokens instead? */
 				display_message(INFORMATION_MESSAGE,
 					"%s\n", command_string);
+#endif /* defined (OLD_CODE) */
 				/* check for a "<" as one of the of the tokens */
 					/*???DB.  Include for backward compatability.  Remove ? */
 				token=state->tokens;
@@ -23083,10 +23546,12 @@ DESCRIPTION:
 			"cmiss_execute_command.  Missing command_data");
 		return_code=0;
 	}
+
+	*error = return_code;
+
 	LEAVE;
 
-	return (return_code);
-} /* cmiss_execute_command */
+} /* execute_command */
 
 int cmiss_execute_command(char *command_string,void *command_data_void)
 /*******************************************************************************
@@ -23097,7 +23562,7 @@ Takes a <command_string>, processes this through the F90 interpreter
 and then executes the returned strings
 ==============================================================================*/
 {
-	int i,return_code;
+	int i,quit,return_code;
 	struct Cmiss_command_data *command_data;
 
 	ENTER(cmiss_execute_command);
@@ -23107,7 +23572,14 @@ and then executes the returned strings
 		{
 			add_to_command_list(command_string,command_data->command_window);
 		}
-		cmiss_interpreter_execute_command(command_string, command_data);
+		quit = 0;
+		interpret_command(command_string, (void *)command_data, 
+		  &quit, &execute_command, &return_code);
+		if (quit)
+		{
+			display_message(ERROR_MESSAGE,
+				"cmiss_execute_command.  Proper quit for cmgui not implemented yet");
+		}
 	}
 	else
 	{
