@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_client.c
 
-LAST MODIFIED : 7 May 2002
+LAST MODIFIED : 13 June 2002
 
 DESCRIPTION :
 Code for talking to the unemap hardware service (running under NT).  This is an
@@ -8036,7 +8036,7 @@ Returns the unemap <service_version> for the <crate>.
 
 static int crate_initialize_connection(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 27 February 2002
+LAST MODIFIED : 13 June 2002
 
 DESCRIPTION :
 Sets up the connection with the unemap hardware service for the <crate>.
@@ -8046,7 +8046,9 @@ Sets up the connection with the unemap hardware service for the <crate>.
 	int return_code,socket_type;
 	struct hostent *internet_host_data;
 	struct sockaddr_in server_socket;
+#if defined (OLD_CODE)
 	unsigned long internet_address;
+#endif /* defined (OLD_CODE) */
 #if defined (UNIX)
 	int error_code;
 #endif /* defined (UNIX) */
@@ -8189,6 +8191,7 @@ Sets up the connection with the unemap hardware service for the <crate>.
 			if (return_code)
 			{
 				return_code=0;
+#if defined (OLD_CODE)
 				if (isalpha((crate->server_name)[0]))
 				{
 					/* server address is a name */
@@ -8201,6 +8204,8 @@ Sets up the connection with the unemap hardware service for the <crate>.
 					internet_host_data=gethostbyaddr((char *)&internet_address,
 						sizeof(internet_address),AF_INET);
 				}
+#endif /* defined (OLD_CODE) */
+				internet_host_data=gethostbyname(crate->server_name);
 				if (internet_host_data)
 				{
 					/* create the acquired socket.  Do this before the command
