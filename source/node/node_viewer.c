@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_viewer.c
 
-LAST MODIFIED : 24 May 2000
+LAST MODIFIED : 16 June 2000
 
 DESCRIPTION :
 Dialog for selecting nodes and viewing and/or editing field values. Works with
@@ -266,11 +266,11 @@ Makes the node change global.
 static void Node_viewer_ok_CB(Widget widget,void *node_viewer_void,
 	void *call_data)
 /*******************************************************************************
-LAST MODIFIED : 24 May 2000
+LAST MODIFIED : 16 June 2000
 
 DESCRIPTION :
-Callback for change of selected node from select widget; sets node in the
-node_viewer_widget.
+Callback for OK button. Applies changes to the node in the editor, and if this
+is successful, closes the dialog.
 ==============================================================================*/
 {
 	struct Node_viewer *node_viewer;
@@ -296,11 +296,10 @@ node_viewer_widget.
 static void Node_viewer_apply_CB(Widget widget,void *node_viewer_void,
 	void *call_data)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 16 June 2000
 
 DESCRIPTION :
-Callback for change of selected node from select widget; sets node in the
-node_viewer_widget.
+Callback for Apply button. Applies changes to the node in the editor.
 ==============================================================================*/
 {
 	struct Node_viewer *node_viewer;
@@ -323,11 +322,11 @@ node_viewer_widget.
 static void Node_viewer_revert_CB(Widget widget,void *node_viewer_void,
 	void *call_data)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 16 June 2000
 
 DESCRIPTION :
-Callback for change of selected node from select widget; sets node in the
-node_viewer_widget.
+Callback for Revert button. Sends global node values back to the
+editor widget, undoing any modifications.
 ==============================================================================*/
 {
 	struct Node_viewer *node_viewer;
