@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_object.h
 
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 12 March 2002
 
 DESCRIPTION :
 Graphical object data structures.
@@ -430,7 +430,7 @@ User defined graphics object primitive type. Contains three parameters:
 
 struct GT_voltex
 /*******************************************************************************
-LAST MODIFIED : 16 April 1999
+LAST MODIFIED : 8 March 2002
 
 DESCRIPTION :
 ???MS.  Initial simple structure - only deal with a fixed isosurface
@@ -446,8 +446,11 @@ DESCRIPTION :
 	int *triangle_list;
 	/* deformed vertex list */
 	struct VT_iso_vertex *vertex_list;
+	/* non-repeating list of per-vertex materials with access_count */
+	int number_of_per_vertex_materials;
+	struct Graphical_material **per_vertex_materials;
 	/* materials assigned to vertices */
-	struct Graphical_material **iso_poly_material;
+	int *iso_poly_material_index;
 	struct Environment_map **iso_env_map;
 	/* cop for cells */
 	double *iso_poly_cop;
@@ -523,8 +526,8 @@ Graphical object data structure.
 #if defined (OPENGL_API)
 	GLuint display_list;
 #endif /* defined (OPENGL_API) */
-	/* flag indicates whether the graphics display list is up to date */
-	int display_list_current;
+	/* enumeration indicates whether the graphics display list is up to date */
+	enum Graphics_compile_status compile_status;
 	/*???temporary*/
 	int glyph_mirror_mode;
 	int access_count;
@@ -934,9 +937,18 @@ DESCRIPTION :
 Frees the memory for <**userdef> and its fields and sets <*userdef> to NULL.
 ==============================================================================*/
 
+int GT_voltex_set_vertex_material(struct GT_voltex *voltex,
+	int vertex_number, struct Graphical_material *material);
+/*******************************************************************************
+LAST MODIFIED : 8 March 2002
+
+DESCRIPTION :
+Sets the material used for vertex <vertex_number> in <voltex> to <material>.
+Handles conversion to an indexed look-up into a non-repeating material array.
+==============================================================================*/
+
 struct GT_voltex *CREATE(GT_voltex)(int n_iso_polys,int n_vertices,
 	int *triangle_list,struct VT_iso_vertex *vertex_list,
-	struct Graphical_material **iso_poly_material,
 	struct Environment_map **iso_env_map, double *iso_poly_cop,
 	float *texturemap_coord,int *texturemap_index,int n_rep,int n_data_components,
 	GTDATA *data, enum GT_voltex_type voltex_type);
@@ -954,18 +966,6 @@ LAST MODIFIED : 19 June 1998
 DESCRIPTION :
 Frees the memory for <**voltex> and sets <*voltex> to NULL.
 ???DB.  Free memory for fields ?
-==============================================================================*/
-
-int update_GT_voltex_materials_to_default(struct GT_object *graphics_object);
-/*******************************************************************************
-LAST MODIFIED : 17 June 1998
-
-DESCRIPTION :
-Voltexes differ from other graphics objects in that their materials are
-specified for each polygon inside the primitive. Since they most often have the
-same material throughout, this function is provided to copy the default_material
-from <graphics_object> to the iso_poly_material array in the voltex. Of course,
-<graphics_object> must be of type g_VOLTEX.
 ==============================================================================*/
 
 struct GT_object *CREATE(GT_object)(char *name,enum GT_object_type object_type,
@@ -1009,7 +1009,7 @@ graphics object, starting at zero for the first
 
 int GT_object_changed(struct GT_object *graphics_object);
 /*******************************************************************************
-LAST MODIFIED : 13 October 1998
+LAST MODIFIED : 12 March 2002
 
 DESCRIPTION :
 External modules that change a GT_object should call this routine so that
@@ -1019,25 +1019,30 @@ objects interested in this GT_object will be notified that is has changed.
 int GT_object_Graphical_material_change(struct GT_object *graphics_object,
 	struct LIST(Graphical_material) *changed_material_list);
 /*******************************************************************************
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 12 March 2002
 
 DESCRIPTION :
-Parent uses this function to tell <graphics_object> about the
-<changed_material_list>.
-If materials in use have changed, informs clients of the need to redraw.
-If a spectrum is in use, also clears display_list_current.
+Tells the <graphics_object> that the materials in the <changed_material_list>
+have changed. If any of these materials are used in any graphics object,
+changes the compile_status to CHILD_GRAPHICS_NOT_COMPILED and
+informs clients of the need to recompile and redraw. Note that if a spectrum is
+in use the more expensive GRAPHICS_NOT_COMPILED status is necessarily set.
+Note: Passing a NULL <changed_material_list> indicates the equivalent of a
+change to any material in use in the linked graphics objects.
 ==============================================================================*/
 
 int GT_object_Spectrum_change(struct GT_object *graphics_object,
 	struct LIST(Spectrum) *changed_spectrum_list);
 /*******************************************************************************
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 12 March 2002
 
 DESCRIPTION :
-Parent uses this function to tell <graphics_object> about the
-<changed_material_list>.
-If materials in use have changed, informs clients of the need to redraw.
-If a spectrum is in use, also clears display_list_current.
+Tells the <graphics_object> that the spectrums in the <changed_spectrum_list>
+have changed. If any of these spectrums are used in any graphics object,
+changes the compile_status to GRAPHICS_NOT_COMPILED and
+informs clients of the need to recompile and redraw.
+Note: Passing a NULL <changed_spectrum_list> indicates the equivalent of a
+change to any spectrum in use in the linked graphics objects.
 ==============================================================================*/
 
 int GT_object_add_callback(struct GT_object *graphics_object, 

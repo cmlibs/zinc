@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphics_object.c
 
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 12 March 2002
 
 DESCRIPTION :
 gtObject/gtWindow management routines.
@@ -2638,14 +2638,88 @@ Frees the memory for <**userdef> and its fields and sets <*userdef> to NULL.
 	return (return_code);
 } /* DESTROY(GT_userdef) */
 
+int GT_voltex_set_vertex_material(struct GT_voltex *voltex,
+	int vertex_number, struct Graphical_material *material)
+/*******************************************************************************
+LAST MODIFIED : 8 March 2002
+
+DESCRIPTION :
+Sets the material used for vertex <vertex_number> in <voltex> to <material>.
+Handles conversion to an indexed look-up into a non-repeating material array.
+==============================================================================*/
+{
+	int i, j, number_of_vertices, return_code;
+	struct Graphical_material **temp_materials;
+
+	ENTER(GT_voltex_set_vertex_material);
+	return_code = 1;
+	if (voltex && (0 <= vertex_number) &&
+		(vertex_number < (number_of_vertices = voltex->n_iso_polys*3)) && material)
+	{
+		/* find or make space for material in per_vertex_materials */
+		j = 0;
+		while ((j < voltex->number_of_per_vertex_materials) &&
+			(material != voltex->per_vertex_materials[j]))
+		{
+			j++;
+		}
+		if (j == voltex->number_of_per_vertex_materials)
+		{
+			if (REALLOCATE(temp_materials, voltex->per_vertex_materials,
+				struct Graphical_material *, j + 1))
+			{
+				temp_materials[j] = ACCESS(Graphical_material)(material);
+				voltex->per_vertex_materials = temp_materials;
+				voltex->number_of_per_vertex_materials = j + 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "GT_voltex_set_vertex_material.  "
+					"Could not reallocate per-vertex materials");
+				return_code = 0;
+			}
+		}
+		if ((int *)NULL == voltex->iso_poly_material_index)
+		{
+			if (ALLOCATE(voltex->iso_poly_material_index, int, number_of_vertices))
+			{
+				/* clear indices to 0 = default material */
+				for (i = 0; i < number_of_vertices; i++)
+				{
+					voltex->iso_poly_material_index[i] = 0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "GT_voltex_set_vertex_material.  "
+					"Could not allocate material indices");
+				return_code = 0;
+			}
+		}
+		if (return_code)
+		{
+			/* index 0 is used for the default material, hence start at 1 */
+			voltex->iso_poly_material_index[vertex_number] = j + 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_voltex_set_vertex_material.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_voltex_set_vertex_material */
+
 struct GT_voltex *CREATE(GT_voltex)(int n_iso_polys,int n_vertices,
 	int *triangle_list,struct VT_iso_vertex *vertex_list,
-	struct Graphical_material **iso_poly_material,
 	struct Environment_map **iso_env_map, double *iso_poly_cop,
 	float *texturemap_coord,int *texturemap_index,int n_rep,
 	int n_data_components, GTDATA *data,enum GT_voltex_type voltex_type)
 /*******************************************************************************
-LAST MODIFIED : 4 June 1999
+LAST MODIFIED : 8 March 2002
 
 DESCRIPTION :
 Allocates memory and assigns fields for a graphics volume texture.
@@ -2661,7 +2735,7 @@ Allocates memory and assigns fields for a graphics volume texture.
 #endif /* defined (DEBUG) */
 #if defined (OLD_CODE)
 	/*???MS.  Allow creation of empty voltexs in volume_texture_editor.c */
-  if ((n_iso_polys>0)&&triangle_list&&iso_poly_material&&iso_env_map&&
+  if ((n_iso_polys>0)&&triangle_list&&iso_env_map&&
 		vertex_list&&iso_poly_cop&&texturemap_coord&&texturemap_index)
 	{
 #endif /* defined (OLD_CODE) */
@@ -2672,7 +2746,9 @@ Allocates memory and assigns fields for a graphics volume texture.
 			voltex->n_rep=n_rep;
 			voltex->triangle_list=triangle_list;
 			voltex->vertex_list=vertex_list;
-			voltex->iso_poly_material=iso_poly_material;
+			voltex->number_of_per_vertex_materials = 0;
+			voltex->per_vertex_materials = (struct Graphical_material **)NULL;
+			voltex->iso_poly_material_index = (int *)NULL;
 			voltex->iso_env_map=iso_env_map;
 			voltex->iso_poly_cop=iso_poly_cop;
 			voltex->texturemap_coord=texturemap_coord;
@@ -2685,14 +2761,14 @@ Allocates memory and assigns fields for a graphics volume texture.
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"CREATE(GT_voltex).  Insufficient memory");
+			display_message(ERROR_MESSAGE, "CREATE(GT_voltex).  Insufficient memory");
 		}
 #if defined (OLD_CODE)
 	}
   else
 	{
-		display_message(ERROR_MESSAGE,"CREATE(GT_voltex).  Invalid argument(s)");
-		voltex=(struct GT_voltex *)NULL;
+		display_message(ERROR_MESSAGE, "CREATE(GT_voltex).  Invalid argument(s)");
+		voltex = (struct GT_voltex *)NULL;
 	}
 #endif /* defined (OLD_CODE) */
 	LEAVE;
@@ -2702,25 +2778,36 @@ Allocates memory and assigns fields for a graphics volume texture.
 
 int DESTROY(GT_voltex)(struct GT_voltex **voltex)
 /*******************************************************************************
-LAST MODIFIED : 20 April 1999
+LAST MODIFIED : 8 March 2002
 
 DESCRIPTION :
 Frees the memory for <**voltex> and sets <*voltex> to NULL.
 ???DB.  Free memory for fields ?
 ==============================================================================*/
 {
-	int return_code;
+	int i, number, return_code;
 
 	ENTER(DESTROY(GT_voltex));
 	if (voltex)
 	{
 		if (*voltex)
 		{
+			if (0 < (number = (*voltex)->number_of_per_vertex_materials))
+			{
+				for (i = 0; i < number; i++)
+				{
+					if ((*voltex)->per_vertex_materials[i])
+					{
+						DEACCESS(Graphical_material)(&((*voltex)->per_vertex_materials[i]));
+					}
+				}
+				DEALLOCATE((*voltex)->per_vertex_materials);
+			}
 			DEALLOCATE((*voltex)->triangle_list);
 			DEALLOCATE((*voltex)->vertex_list);
 			DEALLOCATE((*voltex)->texturemap_coord);
 			DEALLOCATE((*voltex)->texturemap_index);
-			DEALLOCATE((*voltex)->iso_poly_material);
+			DEALLOCATE((*voltex)->iso_poly_material_index);
 			/*???DB.  Problem with memory leak ? */
 			DEALLOCATE((*voltex)->iso_poly_cop);
 			DEALLOCATE((*voltex)->iso_env_map);
@@ -2742,6 +2829,7 @@ Frees the memory for <**voltex> and sets <*voltex> to NULL.
 	return (return_code);
 } /* DESTROY(GT_voltex) */
 
+#if defined (OLD_CODE)
 int update_GT_voltex_materials_to_default(struct GT_object *graphics_object)
 /*******************************************************************************
 LAST MODIFIED : 1 February 2000
@@ -2793,6 +2881,7 @@ from <graphics_object> to the iso_poly_material array in the voltex. Of course,
 
 	return (return_code);
 } /* update_GT_voltex_materials_to_default */
+#endif /* defined (OLD_CODE) */
 
 struct GT_object *CREATE(GT_object)(char *name,enum GT_object_type object_type,
 	struct Graphical_material *default_material)
@@ -2864,7 +2953,7 @@ Allocates memory and assigns fields for a graphics object.
 #if defined (OPENGL_API)
 				object->display_list = 0;
 #endif /* defined (OPENGL_API) */
-				object->display_list_current = 0;
+				object->compile_status = GRAPHICS_NOT_COMPILED;
 				object->object_type=object_type;
 				if (default_material)
 				{
@@ -2992,9 +3081,51 @@ and sets <*object> to NULL.
 	return (return_code);
 } /* DESTROY(GT_object) */
 
+int compile_GT_voltex_materials(struct GT_object *graphics_object)
+/*******************************************************************************
+LAST MODIFIED : 11 March 2002
+
+DESCRIPTION :
+Compiles display list of any Graphical_materials used by the voltexes in
+<graphics_object>.
+==============================================================================*/
+{
+	int i, j, return_code;
+	struct GT_voltex *voltex;
+
+	ENTER(compile_GT_voltex_materials);
+	if (graphics_object && (g_VOLTEX == graphics_object->object_type) &&
+		(graphics_object->gu.gt_voltex))
+	{
+		for (j = 0; j < graphics_object->number_of_times; j++)
+		{
+			voltex = graphics_object->gu.gt_voltex[j];
+			while (voltex)
+			{
+				for (i = 0; i < voltex->number_of_per_vertex_materials; i++)
+				{
+					compile_Graphical_material(voltex->per_vertex_materials[i],
+						(void *)NULL);
+				}
+				voltex = voltex->ptrnext;
+			}
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"compile_GT_voltex_materials.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* compile_GT_voltex_materials */
+
 int compile_GT_object(struct GT_object *graphics_object_list,void *time_void)
 /*******************************************************************************
-LAST MODIFIED : 30 May 2000
+LAST MODIFIED : 12 March 2002
 
 DESCRIPTION :
 Rebuilds the display list for each uncreated or morphing graphics object in the
@@ -3009,67 +3140,88 @@ pointed to by <time_void>.
 	ENTER(compile_GT_object);
 	if (graphics_object_list&&(time = (float *)time_void))
 	{
-		return_code=1;
+		return_code = 1;
 		for (graphics_object=graphics_object_list;graphics_object != NULL;
 			graphics_object=graphics_object->nextobject)
 		{
-			if (!(graphics_object->display_list_current))
+			if (GRAPHICS_COMPILED != graphics_object->compile_status)
 			{
-				if (graphics_object->display_list ||
-					(graphics_object->display_list=glGenLists(1)))
+				/* compile components of graphics objects first */
+				if (graphics_object->default_material)
 				{
-					/* Some objects need to compile components first */
-					switch (graphics_object->object_type)
-					{
-						case g_GLYPH_SET:
-						{
-							struct GT_glyph_set *glyph_set;
-
-							/* Use first time to compile glyph object */
-							if (glyph_set=(graphics_object->gu.gt_glyph_set)[0])
-							{
-								compile_GT_object(glyph_set->glyph, time_void);
-							}
-						}
-					}
-					glNewList(graphics_object->display_list,GL_COMPILE);
-					if ((GRAPHICS_SELECT_ON == graphics_object->select_mode) ||
-						(GRAPHICS_DRAW_SELECTED == graphics_object->select_mode))
-					{
-						if (graphics_object->selected_material)
-						{
-							if (FIRST_OBJECT_IN_LIST_THAT(Selected_graphic)(
-								(LIST_CONDITIONAL_FUNCTION(Selected_graphic) *)NULL,
-								(void *)NULL,graphics_object->selected_graphic_list))
-							{
-								execute_Graphical_material(graphics_object->selected_material);
-								makegtobject(graphics_object,*time,/*draw_selected*/1);
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,"compile_GT_object.  "
-								"Graphics object %s has no selected material",
-								graphics_object->name);
-						}
-					}
-					if (GRAPHICS_DRAW_SELECTED != graphics_object->select_mode)
-					{
-						if (graphics_object->default_material)
-						{
-							execute_Graphical_material(graphics_object->default_material);
-						}
-						makegtobject(graphics_object,*time,/*draw_selected*/0);
-					}
-					execute_Graphical_material((struct Graphical_material *)NULL);
-					glEndList();
-					graphics_object->display_list_current = 1;
+					compile_Graphical_material(graphics_object->default_material,
+						(void *)NULL);
 				}
-				else
+				if (graphics_object->selected_material)
 				{
-					display_message(ERROR_MESSAGE,
-						"compile_GT_object.  Unable to get display list");
-					return_code=0;
+					compile_Graphical_material(graphics_object->selected_material,
+						(void *)NULL);
+				}
+				switch (graphics_object->object_type)
+				{
+					case g_GLYPH_SET:
+					{
+						struct GT_glyph_set *glyph_set;
+
+						/* Use first time to compile glyph object */
+						if (glyph_set = (graphics_object->gu.gt_glyph_set)[0])
+						{
+							compile_GT_object(glyph_set->glyph, time_void);
+						}
+					} break;
+					case g_VOLTEX:
+					{
+						compile_GT_voltex_materials(graphics_object);
+					} break;
+				}
+				if (GRAPHICS_NOT_COMPILED == graphics_object->compile_status)
+				{
+					if (graphics_object->display_list ||
+						(graphics_object->display_list=glGenLists(1)))
+					{
+						glNewList(graphics_object->display_list,GL_COMPILE);
+						if ((GRAPHICS_SELECT_ON == graphics_object->select_mode) ||
+							(GRAPHICS_DRAW_SELECTED == graphics_object->select_mode))
+						{
+							if (graphics_object->selected_material)
+							{
+								if (FIRST_OBJECT_IN_LIST_THAT(Selected_graphic)(
+									(LIST_CONDITIONAL_FUNCTION(Selected_graphic) *)NULL,
+									(void *)NULL,graphics_object->selected_graphic_list))
+								{
+									execute_Graphical_material(
+										graphics_object->selected_material);
+									makegtobject(graphics_object,*time,/*draw_selected*/1);
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,"compile_GT_object.  "
+									"Graphics object %s has no selected material",
+									graphics_object->name);
+							}
+						}
+						if (GRAPHICS_DRAW_SELECTED != graphics_object->select_mode)
+						{
+							if (graphics_object->default_material)
+							{
+								execute_Graphical_material(graphics_object->default_material);
+							}
+							makegtobject(graphics_object,*time,/*draw_selected*/0);
+						}
+						execute_Graphical_material((struct Graphical_material *)NULL);
+						glEndList();
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"compile_GT_object.  Unable to get display list");
+						return_code = 0;
+					}
+				}
+				if (return_code)
+				{
+					graphics_object->compile_status = GRAPHICS_COMPILED;
 				}
 			}
 		}
@@ -3077,7 +3229,7 @@ pointed to by <time_void>.
 	else
 	{
 		display_message(ERROR_MESSAGE,"compile_GT_object.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -3115,7 +3267,7 @@ graphics object, starting at zero for the first
 				glLoadName((GLuint)graphics_object_no);
 			}
 			graphics_object_no++;
-			if (graphics_object->display_list_current)
+			if (GRAPHICS_COMPILED == graphics_object->compile_status)
 			{
 				/* construct object */
 				glCallList(graphics_object->display_list);
@@ -3123,7 +3275,7 @@ graphics object, starting at zero for the first
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"execute_GT_object.  Display list not current");
+					"execute_GT_object.  Graphics object not compiled");
 				return_code=0;
 			}
 		}
@@ -3178,7 +3330,7 @@ Sends a callback to all registered clients indicating the GT_object_has changed.
 
 int GT_object_changed(struct GT_object *graphics_object)
 /*******************************************************************************
-LAST MODIFIED : 8 June 2001
+LAST MODIFIED : 12 March 2002
 
 DESCRIPTION :
 External modules that change a GT_object should call this routine so that
@@ -3191,7 +3343,7 @@ objects interested in this GT_object will be notified that is has changed.
 
 	if (graphics_object)
 	{
-		graphics_object->display_list_current = 0;
+		graphics_object->compile_status = GRAPHICS_NOT_COMPILED;
 		return_code = GT_object_inform_clients(graphics_object);
 	}
 	else
@@ -3208,33 +3360,40 @@ objects interested in this GT_object will be notified that is has changed.
 int GT_object_Graphical_material_change(struct GT_object *graphics_object,
 	struct LIST(Graphical_material) *changed_material_list)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 12 March 2002
 
 DESCRIPTION :
-Parent uses this function to tell <graphics_object> about the
-<changed_material_list>.
-If materials in use have changed, informs clients of the need to redraw.
-If a spectrum is in use, also clears display_list_current.
+Tells the <graphics_object> that the materials in the <changed_material_list>
+have changed. If any of these materials are used in any graphics object,
+changes the compile_status to CHILD_GRAPHICS_NOT_COMPILED and
+informs clients of the need to recompile and redraw. Note that if a spectrum is
+in use the more expensive GRAPHICS_NOT_COMPILED status is necessarily set.
+Note: Passing a NULL <changed_material_list> indicates the equivalent of a
+change to any material in use in the linked graphics objects.
 ==============================================================================*/
 {
 	int return_code;
 
 	ENTER(GT_object_Graphical_material_change);
-	if (graphics_object && changed_material_list)
+	if (graphics_object)
 	{
 		while (graphics_object)
 		{
 			if ((graphics_object->default_material &&
-				IS_OBJECT_IN_LIST(Graphical_material)(
-					graphics_object->default_material, changed_material_list)) ||
+				((!changed_material_list) || IS_OBJECT_IN_LIST(Graphical_material)(
+					graphics_object->default_material, changed_material_list))) ||
 				(graphics_object->selected_material &&
-					IS_OBJECT_IN_LIST(Graphical_material)(
-						graphics_object->selected_material, changed_material_list)))
+					((!changed_material_list) || IS_OBJECT_IN_LIST(Graphical_material)(
+						graphics_object->selected_material, changed_material_list))))
 			{
 				if (graphics_object->spectrum)
 				{
 					/* need to rebuild display list when spectrum in use */
-					graphics_object->display_list_current = 0;
+					graphics_object->compile_status = GRAPHICS_NOT_COMPILED;
+				}
+				else
+				{
+					graphics_object->compile_status = CHILD_GRAPHICS_NOT_COMPILED;
 				}
 				GT_object_inform_clients(graphics_object);
 			}
@@ -3245,7 +3404,7 @@ If a spectrum is in use, also clears display_list_current.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"GT_object_Graphical_material_change. Invalid graphics object");
+			"GT_object_Graphical_material_change.  Invalid graphics object");
 		return_code = 0;
 	}
 	LEAVE;
@@ -3256,26 +3415,31 @@ If a spectrum is in use, also clears display_list_current.
 int GT_object_Spectrum_change(struct GT_object *graphics_object,
 	struct LIST(Spectrum) *changed_spectrum_list)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 12 March 2002
 
 DESCRIPTION :
-Parent uses this function to tell <graphics_object> about the
-<changed_material_list>.
-If materials in use have changed, informs clients of the need to redraw.
-If a spectrum is in use, also clears display_list_current.
+Tells the <graphics_object> that the spectrums in the <changed_spectrum_list>
+have changed. If any of these spectrums are used in any graphics object,
+changes the compile_status to GRAPHICS_NOT_COMPILED and
+informs clients of the need to recompile and redraw.
+Note: Passing a NULL <changed_spectrum_list> indicates the equivalent of a
+change to any spectrum in use in the linked graphics objects.
 ==============================================================================*/
 {
 	int return_code;
 
 	ENTER(GT_object_Spectrum_change);
-	if (graphics_object && changed_spectrum_list)
+	if (graphics_object)
 	{
 		while (graphics_object)
 		{
-			if (graphics_object->spectrum && IS_OBJECT_IN_LIST(Spectrum)(
-				graphics_object->spectrum, changed_spectrum_list))
+			if (graphics_object->spectrum &&
+				((!changed_spectrum_list) || IS_OBJECT_IN_LIST(Spectrum)(
+					graphics_object->spectrum, changed_spectrum_list)))
 			{
-				GT_object_changed(graphics_object);
+				/* need to rebuild display list when spectrum in use */
+				graphics_object->compile_status = GRAPHICS_NOT_COMPILED;
+				GT_object_inform_clients(graphics_object);
 			}
 			graphics_object = graphics_object->nextobject;
 		}
@@ -3284,7 +3448,7 @@ If a spectrum is in use, also clears display_list_current.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"GT_object_Spectrum_change. Invalid graphics object");
+			"GT_object_Spectrum_change.  Invalid graphics object");
 		return_code = 0;
 	}
 	LEAVE;
