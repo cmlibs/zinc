@@ -378,6 +378,7 @@ Evaluate the fields cache at the node.
 				{
 					field->values[i]=0.5;
 				}
+				field->derivatives_valid = 0;
 			}
 		}
 	}

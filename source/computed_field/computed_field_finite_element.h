@@ -204,29 +204,6 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 
-int Computed_field_is_type_node_array_value_at_time(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-
-int Computed_field_set_type_node_array_value_at_time(struct Computed_field *field,
-	struct FE_field *fe_field,enum FE_nodal_value_type nodal_value_type,
-	int version_number,struct Computed_field *time_field);
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME, returning the values for the
-given <nodal_value_type> and <version_number> of <fe_field> at a node.
-Makes the number of components the same as in the <fe_field>.
-Field automatically takes the coordinate system of the source fe_field. See note
-at start of this file about changing use of coordinate systems.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-
 int destroy_computed_field_given_fe_field(
 	struct MANAGER(Computed_field) *computed_field_manager,
 	struct MANAGER(FE_field) *fe_field_manager,
@@ -236,23 +213,6 @@ LAST MODIFIED : 17 May 2000
 
 DESCRIPTION :
 Given <fe_field>, destroys the associated computed field, and fe_field
-==============================================================================*/
-
-int Computed_field_set_type_node_array_value_at_time(
-	struct Computed_field *field,struct FE_field *fe_field,
-	enum FE_nodal_value_type nodal_value_type,int version_number,
-	struct Computed_field *time_field);
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_NODE_ARRAY_VALUE_AT_TIME, returning the
-values for the given <nodal_value_type> and <version_number> of <fe_field> at a
-node.  Makes the number of components the same as in the <fe_field>.  Field
-automatically takes the coordinate system of the source fe_field. See note at
-start of this file about changing use of coordinate systems.  If function fails,
-field is guaranteed to be unchanged from its original state, although its cache
-may be lost.
 ==============================================================================*/
 
 int Computed_field_is_type_xi_coordinates(struct Computed_field *field,

@@ -23381,9 +23381,9 @@ is required with the field_element in the <element_field_values>.
 	if (element_field_values&&element)
 	{
 		return_code=(element_field_values->element==element)&&
-			((!field_element)||(element_field_values->field_element==field_element)
+			((!field_element)||(element_field_values->field_element==field_element))
 			&&((!element_field_values->time_dependent)||
-		   (element_field_values->time==time)));
+		   (element_field_values->time==time));
 	}
 	else
 	{

@@ -109,9 +109,8 @@ DESCRIPTION :
 	/* last time at which values were calculated */
 	FE_value time;
 
-	/* cache used by external routine Computed_field_find_element_xi_special,
-	 contains all sorts of things we don't want to include in computed_field */
-	struct Computed_field_find_element_xi_special_cache *find_element_xi_cache;
+	/* cache used when doing find_xi calculations */
+	struct Computed_field_find_element_xi_cache *find_element_xi_cache;
 
 	Computed_field_clear_type_specific_function
 	   computed_field_clear_type_specific_function;

@@ -7685,7 +7685,7 @@ Currently limited to 1 byte per component.
 	unsigned long field_evaluate_error_count, find_element_xi_error_count,
 		spectrum_render_error_count, total_number_of_pixels;
 	struct Colour result;
-	struct Computed_field_find_element_xi_special_cache *cache;
+	struct Computed_field_find_element_xi_cache *cache;
 	struct Element_group_dimension_data group_dimension_data;
 	struct FE_element *element;
 	struct Graphical_material *material;
@@ -7721,7 +7721,7 @@ Currently limited to 1 byte per component.
 		if (Texture_allocate_image(texture, image_width, image_height,
 			image_depth, storage, number_of_bytes_per_component, field_name))
 		{
-			cache = (struct Computed_field_find_element_xi_special_cache *)NULL;
+			cache = (struct Computed_field_find_element_xi_cache *)NULL;
 			number_of_data_components =
 				Computed_field_get_number_of_components(field);
 			Texture_get_physical_size(texture, &texture_width, &texture_height,
@@ -7939,7 +7939,7 @@ Currently limited to 1 byte per component.
 			DEALLOCATE(image_plane);
 			if (cache)
 			{
-				DESTROY(Computed_field_find_element_xi_special_cache)(&cache);
+				DESTROY(Computed_field_find_element_xi_cache)(&cache);
 			}
 		}
 		else

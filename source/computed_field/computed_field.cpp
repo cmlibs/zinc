@@ -493,7 +493,7 @@ COMPUTED_FIELD_INVALID with no components.
 			field->node = (struct FE_node *)NULL;
 			field->time = 0;
 
-			field->find_element_xi_cache = (struct Computed_field_find_element_xi_special_cache *)NULL;
+			field->find_element_xi_cache = (struct Computed_field_find_element_xi_cache *)NULL;
 
 			field->computed_field_clear_type_specific_function = 
 				(Computed_field_clear_type_specific_function)NULL;
@@ -1229,7 +1229,7 @@ are possibly not going to be called again for some time.
 		}
 		if (field->find_element_xi_cache)
 		{
-			DESTROY(Computed_field_find_element_xi_special_cache)
+			DESTROY(Computed_field_find_element_xi_cache)
 				(&field->find_element_xi_cache);
 		}
 		if (field->node)
@@ -3777,9 +3777,7 @@ Note a copy of the <values> array is immediately made so it will be possible to
 pass in pointers to field cache values.
 ==============================================================================*/
 {
-	FE_value *temp_values;
-	struct Computed_field_iterative_find_element_xi_data find_element_xi_data;
-	int i, number_of_xi, return_code;
+	int return_code;
 
 	ENTER(Computed_field_find_element_xi);
 	if (field && values && (number_of_values == field->number_of_components) &&
@@ -3792,46 +3790,8 @@ pass in pointers to field cache values.
 		}
 		else
 		{
-			/* allocate space to store both a copy of the passed in <values>,
-				 and space for working evaluations of the target <field> */
-			if (ALLOCATE(temp_values, FE_value, 2*number_of_values))
-			{
-				find_element_xi_data.values = temp_values;
-				find_element_xi_data.found_values = temp_values + number_of_values;
-				/* copy the source values */
-				for (i = 0; i < number_of_values; i++)
-				{
-					find_element_xi_data.values[i] = values[i];
-				}
-				find_element_xi_data.field = field;
-				find_element_xi_data.number_of_values = number_of_values;
-				find_element_xi_data.found_number_of_xi = 0;
-				find_element_xi_data.found_derivatives = (FE_value *)NULL;
-				find_element_xi_data.tolerance = 1e-06;
-				if (*element = FIRST_OBJECT_IN_GROUP_THAT(FE_element)
-					(Computed_field_iterative_element_conditional,
-						&find_element_xi_data, search_element_group))
-				{
-					number_of_xi = get_FE_element_dimension(*element);
-					for (i = 0 ; i < number_of_xi ; i++)
-					{
-						xi[i] = find_element_xi_data.xi[i];
-					}
-				}
-				/* The search is valid even if the element wasn't found */
-				return_code = 1;
-				if (find_element_xi_data.found_derivatives)
-				{
-					DEALLOCATE(find_element_xi_data.found_derivatives);
-				}
-				DEALLOCATE(temp_values);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_find_element_xi.  Unable to allocate value memory.");
-				return_code = 0;
-			}
+			return_code = Computed_field_perform_find_element_xi(field,
+				values, number_of_values, element, xi, search_element_group);
 		}
 	}
 	else

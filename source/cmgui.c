@@ -58,6 +58,7 @@ DESCRIPTION :
 #include "computed_field/computed_field_integration.h"
 #include "computed_field/computed_field_matrix_operations.h"
 #include "computed_field/computed_field_sample_texture.h"
+#include "computed_field/computed_field_time.h"
 #include "computed_field/computed_field_vector_operations.h"
 #if defined (MOTIF)
 #include "computed_field/computed_field_window_projection.h"
@@ -1367,6 +1368,8 @@ Main program for the CMISS Graphical User Interface
 		Computed_field_register_types_fibres(
 			command_data.computed_field_package);
 		Computed_field_register_types_matrix_operations(
+			command_data.computed_field_package);
+		Computed_field_register_types_time(
 			command_data.computed_field_package);
 		Computed_field_register_types_vector_operations(
 			command_data.computed_field_package);

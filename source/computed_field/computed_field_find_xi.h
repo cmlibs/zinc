@@ -12,51 +12,30 @@ lookup of the element.
 
 #include "user_interface/user_interface.h"
 
-struct Computed_field_iterative_find_element_xi_data
-/*******************************************************************************
-LAST MODIFIED: 21 August 2002
-
-DESCRIPTION:
-Data for passing to Computed_field_iterative_element_conditional
-Important note:
-The <values> passed in this structure must not be a pointer to values
-inside a field cache otherwise they may be overwritten if that field
-matches the <field> in this structure or one of its source fields.
-==============================================================================*/
-{
-	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	struct Computed_field *field;
-	int number_of_values;
-	FE_value *values;
-	int found_number_of_xi;
-	FE_value *found_values;
-	FE_value *found_derivatives;
-	float tolerance;
-}; /* Computed_field_iterative_find_element_xi_data */
-
-struct Computed_field_find_element_xi_special_cache;
+struct Computed_field_find_element_xi_cache;
 /*******************************************************************************
 LAST MODIFIED : 4 July 2000
 
 DESCRIPTION :
-struct Computed_field_find_element_xi_special_cache is private.
+struct Computed_field_find_element_xi_cache is private.
 ==============================================================================*/
 
-int Computed_field_iterative_element_conditional(
-	struct FE_element *element, void *data_void);
+int Computed_field_perform_find_element_xi(struct Computed_field *field,
+	FE_value *values, int number_of_values, struct FE_element **element, 
+	FE_value *xi, struct GROUP(FE_element) *search_element_group);
 /*******************************************************************************
-LAST MODIFIED: 21 August 2002
+LAST MODIFIED : 17 December 2002
 
-DESCRIPTION:
-Returns true if a valid element xi is found.
-Important note:
-The <values> passed in the <data> structure must not be a pointer to values
-inside a field cache otherwise they may be overwritten if the field is the same
-as the <data> field or any of its source fields.
+DESCRIPTION :
+This function actually seacrches through the elements in the 
+<search_element_group> trying to find an <xi> location which returns the correct
+<values>.  This routine is either called directly by Computed_field_find_element_xi
+or if that field is propogating it's values backwards, it is called by the 
+ultimate parent finite_element field.
 ==============================================================================*/
 
 int Computed_field_find_element_xi_special(struct Computed_field *field, 
-	struct Computed_field_find_element_xi_special_cache **cache_ptr, 
+	struct Computed_field_find_element_xi_cache **cache_ptr, 
 	FE_value *values,int number_of_values, struct FE_element **element, 
 	FE_value *xi, struct GROUP(FE_element) *search_element_group,
 	struct User_interface *user_inteface,
@@ -72,18 +51,18 @@ This implementation of find_element_xi has been separated out as it uses OpenGL
 to accelerate the element xi lookup.
 ==============================================================================*/
 
-struct Computed_field_find_element_xi_special_cache 
-*CREATE(Computed_field_find_element_xi_special_cache)
+struct Computed_field_find_element_xi_cache 
+*CREATE(Computed_field_find_element_xi_cache)
 	  (void);
 /*******************************************************************************
 LAST MODIFIED : 20 June 2000
 
 DESCRIPTION :
-Stores cache data for the Computed_field_find_element_xi_special routine.
+Stores cache data for the Computed_field_find_element_xi routine.
 ==============================================================================*/
 
-int DESTROY(Computed_field_find_element_xi_special_cache)
-	  (struct Computed_field_find_element_xi_special_cache **cache_address);
+int DESTROY(Computed_field_find_element_xi_cache)
+	  (struct Computed_field_find_element_xi_cache **cache_address);
 /*******************************************************************************
 LAST MODIFIED : 20 June 2000
 

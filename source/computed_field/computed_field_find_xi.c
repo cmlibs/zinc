@@ -15,6 +15,7 @@ lookup of the element.
 #include "general/image_utilities.h"
 #include "general/matrix_vector.h"
 #include "computed_field/computed_field.h"
+#include "computed_field/computed_field_private.h"
 #include "computed_field/computed_field_find_xi.h"
 #include "graphics/texture.h"
 #if defined (DM_BUFFERS)
@@ -31,17 +32,43 @@ struct Render_element_data
 	FE_value values[3];
 };
 
-struct Computed_field_find_element_xi_special_cache
+struct Computed_field_find_element_xi_cache
 {
 #if defined (DM_BUFFERS)
 	int bit_shift;
 	int minimum_element_number;
 	int maximum_element_number;
 	struct Dm_buffer *dmbuffer;
-#else /* defined (DM_BUFFERS) */
-	int dummy;
 #endif /* defined (DM_BUFFERS) */
+	int valid_values;
+	struct FE_element *element;
+	int number_of_values;
+	FE_value *values;
+	FE_value *working_values;
+	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 };
+
+struct Computed_field_iterative_find_element_xi_data
+/*******************************************************************************
+LAST MODIFIED: 21 August 2002
+
+DESCRIPTION:
+Data for passing to Computed_field_iterative_element_conditional
+Important note:
+The <values> passed in this structure must not be a pointer to values
+inside a field cache otherwise they may be overwritten if that field
+matches the <field> in this structure or one of its source fields.
+==============================================================================*/
+{
+	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	struct Computed_field *field;
+	int number_of_values;
+	FE_value *values;
+	int found_number_of_xi;
+	FE_value *found_values;
+	FE_value *found_derivatives;
+	float tolerance;
+}; /* Computed_field_iterative_find_element_xi_data */
 
 #if defined (OLD_CODE)
 int Computed_field_iterative_element_conditional(
@@ -206,7 +233,7 @@ Returns true if a valid element xi is found.
 
 #define MAX_FIND_XI_ITERATIONS 10
 
-int Computed_field_iterative_element_conditional(
+static int Computed_field_iterative_element_conditional(
 	struct FE_element *element, void *data_void)
 /*******************************************************************************
 LAST MODIFIED : 21 August 2002
@@ -481,6 +508,180 @@ as the <data> field or any of its source fields.
 
 #undef MAX_FIND_XI_ITERATIONS
 
+int Computed_field_perform_find_element_xi(struct Computed_field *field,
+	FE_value *values, int number_of_values, struct FE_element **element, 
+	FE_value *xi, struct GROUP(FE_element) *search_element_group)
+/*******************************************************************************
+LAST MODIFIED : 17 December 2002
+
+DESCRIPTION :
+This function actually seacrches through the elements in the 
+<search_element_group> trying to find an <xi> location which returns the correct
+<values>.  This routine is either called directly by Computed_field_find_element_xi
+or if that field is propogating it's values backwards, it is called by the 
+ultimate parent finite_element field.
+==============================================================================*/
+{
+	struct Computed_field_find_element_xi_cache *cache;
+	struct Computed_field_iterative_find_element_xi_data find_element_xi_data;
+	int i, number_of_xi, return_code;
+
+	ENTER(Computed_field_perform_find_element_xi);
+	if (field && values && (number_of_values == field->number_of_components) &&
+		element && xi && search_element_group)
+	{
+		return_code = 1;
+		if (field->find_element_xi_cache)
+		{
+			cache = field->find_element_xi_cache;
+			if (cache->number_of_values != number_of_values)
+			{
+				cache->valid_values = 0;
+				DEALLOCATE(cache->values);
+				DEALLOCATE(cache->working_values);
+			}
+			if (cache->valid_values &&
+				((!cache->element) || IS_OBJECT_IN_GROUP(FE_element)(
+				cache->element, search_element_group)))
+			{
+				for (i = 0; i < number_of_values; i++)
+				{
+					if (cache->values[i] != values[i])
+					{
+						cache->valid_values = 0;
+					}
+				}
+			}
+			else
+			{
+				cache->valid_values = 0;
+			}
+		}
+		else
+		{
+			if (field->find_element_xi_cache =
+				CREATE(Computed_field_find_element_xi_cache)())
+			{
+				cache = field->find_element_xi_cache;
+			}
+			else
+			{
+				return_code = 0;
+			}
+		}
+		if (return_code && !cache->values)
+		{
+			cache->number_of_values = number_of_values;
+			if (!ALLOCATE(cache->values, FE_value,
+					 number_of_values))
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_perform_find_element_xi.  "
+					"Unable to allocate value memory.");
+				return_code = 0;
+			}
+		}
+		if (return_code && !cache->working_values)
+		{
+			if (!ALLOCATE(cache->working_values, FE_value,
+					 number_of_values))
+			{
+				display_message(ERROR_MESSAGE,
+					"Computed_field_perform_find_element_xi.  "
+					"Unable to allocate working value memory.");
+				return_code = 0;
+			}
+		}
+		if (return_code)
+		{
+			if (cache->valid_values)
+			{
+				/* This could even be valid if *element is NULL */
+				*element = cache->element;
+
+				if (*element)
+				{
+					number_of_xi = get_FE_element_dimension(*element);
+					for (i = 0 ; i < number_of_xi ; i++)
+					{
+						xi[i] = cache->xi[i];
+					}
+				}
+			}
+			else
+			{
+				find_element_xi_data.values = cache->values;
+				find_element_xi_data.found_values = 
+					cache->working_values;
+				/* copy the source values */
+				for (i = 0; i < number_of_values; i++)
+				{
+					find_element_xi_data.values[i] = values[i];
+				}
+				find_element_xi_data.field = field;
+				find_element_xi_data.number_of_values = number_of_values;
+				find_element_xi_data.found_number_of_xi = 0;
+				find_element_xi_data.found_derivatives = (FE_value *)NULL;
+				find_element_xi_data.tolerance = 1e-06;
+				*element = (struct FE_element *)NULL;
+
+				/* Try the cached element first if it is in the group */
+				if (field->element && IS_OBJECT_IN_GROUP(FE_element)
+					(field->element, search_element_group) &&
+					Computed_field_iterative_element_conditional(
+						field->element, (void *)&find_element_xi_data))
+				{
+					*element = field->element;
+				}
+				/* Now try every element */
+				if (!*element)
+				{
+					*element = FIRST_OBJECT_IN_GROUP_THAT(FE_element)
+						(Computed_field_iterative_element_conditional,
+							&find_element_xi_data, search_element_group);
+				}
+				if (*element)
+				{
+					number_of_xi = get_FE_element_dimension(*element);
+					for (i = 0 ; i < number_of_xi ; i++)
+					{
+						xi[i] = find_element_xi_data.xi[i];
+					}
+				}
+				/* The search is valid even if the element wasn't found */
+				return_code = 1;
+				if (find_element_xi_data.found_derivatives)
+				{
+					DEALLOCATE(find_element_xi_data.found_derivatives);
+				}
+				/* Copy the results into the cache */
+				cache->element = *element;
+				for (i = 0 ; i < number_of_xi ; i++)
+				{
+					cache->xi[i] = find_element_xi_data.xi[i];
+				}
+				cache->valid_values = 1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_perform_find_element_xi.  "
+				"Unable to allocate value memory.");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_perform_find_element_xi.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_perform_find_element_xi */
+
 #if defined (DM_BUFFERS)
 static int Expand_element_range(struct FE_element *element, void *data_void)
 /*******************************************************************************
@@ -491,11 +692,11 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field_find_element_xi_special_cache *data;
+	struct Computed_field_find_element_xi_cache *data;
 	
 	ENTER(Expand_element_range);
 	
-	if (data = (struct Computed_field_find_element_xi_special_cache *)data_void)
+	if (data = (struct Computed_field_find_element_xi_cache *)data_void)
 	{
 		/* Expand the element number range */
 		if ((element->cm.type == CM_ELEMENT) && (2 == get_FE_element_dimension(element)))
@@ -514,7 +715,7 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Expand_element_range.  Missing Computed_field_find_element_xi_special_cache data.");
+			"Expand_element_range.  Missing Computed_field_find_element_xi_cache data.");
 		return_code = 0;
 	}
 	LEAVE;
@@ -599,7 +800,7 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Render_element_as_texture.  Missing Computed_field_find_element_xi_special_cache data.");
+			"Render_element_as_texture.  Missing Computed_field_find_element_xi_cache data.");
 		return_code = 0;
 	}
 	LEAVE;
@@ -609,7 +810,7 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 #endif /* defined (DM_BUFFERS) */
 
 int Computed_field_find_element_xi_special(struct Computed_field *field, 
-	struct Computed_field_find_element_xi_special_cache **cache_ptr,
+	struct Computed_field_find_element_xi_cache **cache_ptr,
 	FE_value *values, int number_of_values, struct FE_element **element, 
 	FE_value *xi, struct GROUP(FE_element) *search_element_group,
 	struct User_interface *user_interface,
@@ -644,7 +845,7 @@ sequential element_xi lookup should now be performed.
 		*next_colour;
 	float ditherx, dithery;
 	struct CM_element_information cm;
-	struct Computed_field_find_element_xi_special_cache *cache;
+	struct Computed_field_find_element_xi_cache *cache;
 	struct Computed_field_iterative_find_element_xi_data find_element_xi_data;
 	struct FE_element *first_element;
 	struct Render_element_data data;
@@ -700,7 +901,7 @@ sequential element_xi lookup should now be performed.
 				if (first_element = FIRST_OBJECT_IN_GROUP_THAT(FE_element)
 					((GROUP_CONDITIONAL_FUNCTION(FE_element) *)NULL, NULL, search_element_group))
 				{				
-					*cache_ptr = CREATE(Computed_field_find_element_xi_special_cache)();
+					*cache_ptr = CREATE(Computed_field_find_element_xi_cache)();
 					cache = *cache_ptr;
 
 					cache->maximum_element_number = first_element->cm.number;
@@ -997,38 +1198,42 @@ sequential element_xi lookup should now be performed.
 	return (return_code);
 } /* Computed_field_find_element_xi_special */
 
-struct Computed_field_find_element_xi_special_cache 
-*CREATE(Computed_field_find_element_xi_special_cache)(void)
+struct Computed_field_find_element_xi_cache 
+*CREATE(Computed_field_find_element_xi_cache)(void)
 /*******************************************************************************
-LAST MODIFIED : 20 June 2000
+LAST MODIFIED : 17 December 2002
 
 DESCRIPTION :
-Stores cache data for the Computed_field_find_element_xi_special routine.
+Stores cache data for the find_xi routines.
 ==============================================================================*/
 {
-	struct Computed_field_find_element_xi_special_cache *cache;
+	struct Computed_field_find_element_xi_cache *cache;
 
-	ENTER(CREATE(Computed_field_find_element_xi_special_cache));
+	ENTER(CREATE(Computed_field_find_element_xi_cache));
 	
-	if (ALLOCATE(cache,struct Computed_field_find_element_xi_special_cache,1))
+	if (ALLOCATE(cache,struct Computed_field_find_element_xi_cache,1))
 	{
 #if defined (DM_BUFFERS)
 	  cache->dmbuffer = (struct Dm_buffer *)NULL;
 #endif /* defined (DM_BUFFERS) */
+	  cache->valid_values = 0;
+	  cache->number_of_values = 0;
+	  cache->values = (FE_value *)NULL;
+	  cache->working_values = (FE_value *)NULL;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"CREATE(Computed_field_find_element_xi_special_cache).  Not enough memory");
-		cache = (struct Computed_field_find_element_xi_special_cache *)NULL;
+			"CREATE(Computed_field_find_element_xi_cache).  Not enough memory");
+		cache = (struct Computed_field_find_element_xi_cache *)NULL;
 	}
 	LEAVE;
 
 	return (cache);
-} /* CREATE(Computed_field_find_element_xi_special_cache) */
+} /* CREATE(Computed_field_find_element_xi_cache) */
 
-int DESTROY(Computed_field_find_element_xi_special_cache)
-	(struct Computed_field_find_element_xi_special_cache **cache_address)
+int DESTROY(Computed_field_find_element_xi_cache)
+	(struct Computed_field_find_element_xi_cache **cache_address)
 /*******************************************************************************
 LAST MODIFIED : 20 June 2000
 
@@ -1038,7 +1243,7 @@ Frees memory/deaccess cache at <*cache_address>.
 {
 	int return_code;
 
-	ENTER(DESTROY(Computed_field_find_element_xi_special_cache));
+	ENTER(DESTROY(Computed_field_find_element_xi_cache));
 	if (cache_address&&*cache_address)
 	{
 #if defined (DM_BUFFERS)
@@ -1047,15 +1252,23 @@ Frees memory/deaccess cache at <*cache_address>.
 			DESTROY(Dm_buffer)(&(*cache_address)->dmbuffer);
 		}
 #endif /* defined (DM_BUFFERS) */
+		if ((*cache_address)->values)
+		{
+			DEALLOCATE((*cache_address)->values);
+		}
+		if ((*cache_address)->working_values)
+		{
+			DEALLOCATE((*cache_address)->working_values);
+		}
 		DEALLOCATE(*cache_address);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"DESTROY(Computed_field_find_element_xi_special_cache).  Missing cache");
+			"DESTROY(Computed_field_find_element_xi_cache).  Missing cache");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* DESTROY(Computed_field_find_element_xi_special_cache) */
+} /* DESTROY(Computed_field_find_element_xi_cache) */
