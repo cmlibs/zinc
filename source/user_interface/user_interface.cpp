@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : user_interface.c
 
-LAST MODIFIED : 23 January 2002
+LAST MODIFIED : 28 March 2002
 
 DESCRIPTION :
 Functions for opening and closing the user interface.
@@ -671,7 +671,7 @@ Visual *default_visual;
 
 int open_user_interface(struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 27 December 1999
+LAST MODIFIED : 28 March 2002
 
 DESCRIPTION :
 Open the <user_interface>.
@@ -811,6 +811,9 @@ Open the <user_interface>.
 		user_interface->continue_interface = 1;
 		user_interface->shell_list=(struct Shell_list_item *)NULL;
 		user_interface->active_shell_stack=(struct Shell_stack_item *)NULL;
+#if defined (OPENGL_API)
+		user_interface->specified_visual_id=0;
+#endif /* defined (OPENGL_API) */
 #if defined (MOTIF)
 		user_interface->no_cascade_pixmap=XmUNSPECIFIED_PIXMAP;
 		/* initialize the Motif resource manager */

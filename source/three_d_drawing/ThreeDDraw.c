@@ -851,7 +851,8 @@ because the initialize method is downward chained.
 								{
 									printf("Selecting visual, id %d\n",
 										valid_visual_info_list[i]->visualid);
-									glXGetConfig(display,valid_visual_info_list[i],GLX_RGBA,&value);
+									glXGetConfig(display,valid_visual_info_list[i],GLX_RGBA,
+										&value);
 									printf("RGB %d\n", value);
 									glXGetConfig(display,valid_visual_info_list[i],
 										GLX_BUFFER_SIZE,&value);
