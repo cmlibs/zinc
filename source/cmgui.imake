@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 10 July 2000
+XCOMM LAST MODIFIED : 25 July 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -978,7 +978,7 @@ depend :
 
 transfer :
 	tar -cvf - \
-	../*.make readme.* *.make *.imake *.c version.ObjSuffix.h Cmgui \
+	../WildMake readme.* *.make *.imake *.c version.ObjSuffix.h Cmgui \
 	$(UTILITIES_PATH)/uid2uidh $(UTILITIES_PATH)/uid2uidh_linux \
 	*.mms *.sed *.com *.opt *.ico \
 	application/WildC application/WildH application/WildUil \

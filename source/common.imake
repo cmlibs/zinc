@@ -29,6 +29,7 @@ all : oscheck
 /* Can't put / by * or it thinks there is a comment so I have put the *
 	into the variable and used that instead */
 #define WildObj *.ObjSuffix
+#define WildMake *.make
 #define WildUil *.uil
 #define WildUid *.uid
 #define WildCpp *.cpp
