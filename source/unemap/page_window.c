@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 7 October 1999
+LAST MODIFIED : 10 April 2000
 
 DESCRIPTION :
 
@@ -2315,7 +2315,7 @@ Motif wrapper for update_display_minimum.
 
 static int update_display_device(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 21 July 1999
+LAST MODIFIED : 10 April 2000
 
 DESCRIPTION :
 Reads the string in the channel field of the <page_window> and updates the
@@ -2385,11 +2385,9 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 						update_display_maximum(page_window);
 						update_display_minimum(page_window);
 						show_display_gain(page_window);
-#if defined (OLD_CODE)
-/*???DB.  Don't want range reset when change channel */
+						/* reset range when change channel */
 						page_window->signal_maximum=0;
 						page_window->signal_minimum=1;
-#endif /* defined (OLD_CODE) */
 						draw_scrolling_display_background(page_window);
 #if defined (OLD_CODE)
 #if defined (WINDOWS)
@@ -4744,7 +4742,7 @@ static void page_scale(
 #endif /* defined (WINDOWS) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 29 July 1999
+LAST MODIFIED : 7 April 2000
 
 DESCRIPTION :
 Called when the scale button is pressed.
@@ -4773,6 +4771,10 @@ Called when the scale button is pressed.
 					page_window->display_maximum=page_window->signal_maximum+1;
 					page_window->display_minimum=page_window->signal_minimum-1;
 				}
+				/* reset the scale */
+					/*???DB.  Makes the reset scale button superfluous */
+				page_window->signal_maximum=(float)0;
+				page_window->signal_minimum=(float)1;
 				show_display_maximum(page_window);
 				show_display_minimum(page_window);
 				draw_scrolling_display_background(page_window);
@@ -5206,7 +5208,7 @@ DESCRIPTION :
 static void change_display_device_number(struct Page_window *page_window,
 	int device_number)
 /*******************************************************************************
-LAST MODIFIED : 11 August 1999
+LAST MODIFIED : 10 April 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -5232,11 +5234,9 @@ DESCRIPTION :
 		update_display_maximum(page_window);
 		update_display_minimum(page_window);
 		show_display_gain(page_window);
-#if defined (OLD_CODE)
-/*???DB.  Don't want range reset when change channel */
+		/* reset range when change channel */
 		page_window->signal_maximum=0;
 		page_window->signal_minimum=1;
-#endif /* defined (OLD_CODE) */
 #if defined (MOTIF)
 		XtVaSetValues((page_window->electrode).value,XmNvalue,
 			device->description->name,NULL);
