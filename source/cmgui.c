@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 15 June 2000
+LAST MODIFIED : 21 June 2000
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -381,7 +381,7 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* defined (WINDOWS) */
 /*******************************************************************************
-LAST MODIFIED : 15 June 2000
+LAST MODIFIED : 21 June 2000
 
 DESCRIPTION :
 Main program for the CMISS Graphical User Interface
@@ -589,12 +589,15 @@ Main program for the CMISS Graphical User Interface
 	};
 #endif /* defined (OLD_CODE) */
 #endif /* defined (MOTIF) */
+	struct CM_field_information cm_field_information;
 	struct Cmiss_command_data command_data;
 	struct Colour ambient_colour,default_colour;
 	struct Colour no_interpolation_colour={0.65,0.65,0.65};
 	struct Computed_field *computed_field;
 	struct Command_window *command_window;
+	struct Coordinate_system rect_coord_system,temp_coordinate_system;
 	struct Execute_command *execute_command, *set_command;
+	struct FE_field *fe_field;
 	struct Graphical_material *default_selected_material;
 	struct GT_object *glyph;
 	struct MANAGER(Computed_field) *computed_field_manager;
@@ -607,8 +610,6 @@ Main program for the CMISS Graphical User Interface
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 	struct User_interface user_interface;
 	User_settings user_settings;
-
-	struct Coordinate_system rect_coord_system;
 
 #if defined (MOTIF)
 	XColor rgb;
@@ -856,10 +857,6 @@ Main program for the CMISS Graphical User Interface
 		/*???DB.  In transistion */
 	all_FE_element=CREATE(LIST(FE_element))();
 #endif /* defined (OLD_CODE) */
-	/* computed field manager and default computed fields zero, xi,
-		 default_coordinate, etc. */
-	/*???RC should the default computed fields be established in
-		CREATE(Computed_field_package)? */
 	rect_coord_system.type = RECTANGULAR_CARTESIAN;
 
 	command_data.control_curve_manager=CREATE(MANAGER(Control_curve))();
@@ -881,6 +878,10 @@ Main program for the CMISS Graphical User Interface
 		/*???RC.  Eventually want graphics object manager */
 	command_data.graphics_object_list=CREATE(LIST(GT_object))();
 
+	/* computed field manager and default computed fields zero, xi,
+		 default_coordinate, etc. */
+	/*???RC should the default computed fields be established in
+		CREATE(Computed_field_package)? */
 	if ((command_data.computed_field_package=CREATE(Computed_field_package)(
 		command_data.fe_field_manager,command_data.element_manager,
 		command_data.texture_manager,command_data.control_curve_manager))&&
@@ -919,7 +920,23 @@ Main program for the CMISS Graphical User Interface
 			DESTROY(Computed_field)(&computed_field);
 		}
 	}
-
+	/* create the grid_point_number field and add to FE_field_manager - 
+		 wrapper Computed_field will automatically be made for it. Created here
+		 as has special meaning for setting grid_points in Element_point_viewer */
+	temp_coordinate_system.type = NOT_APPLICABLE;
+	if (!((fe_field=CREATE(FE_field)())&&
+		set_FE_field_name(fe_field,"grid_point_number")&&
+		set_FE_field_value_type(fe_field,INT_VALUE)&&
+		set_FE_field_number_of_components(fe_field,1)&&
+		set_FE_field_type_general(fe_field)&&
+		set_CM_field_information(&cm_field_information,CM_FIELD,(int *)NULL)&&
+		set_FE_field_CM_field_information(fe_field,&cm_field_information)&&
+		set_FE_field_coordinate_system(fe_field,&temp_coordinate_system)&&
+		set_FE_field_component_name(fe_field,0,"grid_point_number")&&
+		ADD_OBJECT_TO_MANAGER(FE_field)(fe_field,command_data.fe_field_manager)))
+	{
+		DESTROY(FE_field)(&fe_field);
+	}
 	/* create glyph list */
 		/*???RC.  Eventually want glyph manager */
 	if (command_data.glyph_list=CREATE(LIST(GT_object))())
