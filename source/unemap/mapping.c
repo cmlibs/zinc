@@ -4201,8 +4201,9 @@ static int make_and_add_map_electrode_position_field(
 LAST MODIFIED : 4 July 2000
 
 DESCRIPTION :
-makes maps electrode position field, and adds to the nodes in the <rig_node_group>
-<electrode_position_field> used to match the created map_electode_position field
+if  necessaty makes maps electrode position field, and adds to the nodes in the 
+<rig_node_group> <electrode_position_field> used to match the created 
+map_electode_position field
 ==============================================================================*/
 {
 	enum FE_field_type field_type;
@@ -5252,7 +5253,7 @@ and do Scene_remove_graphics_object in the DESTROY Map_3d_package
 #if defined (UNEMAP_USE_3D)
 int draw_map_3d(struct Map *map)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 21 September 2000
 
 DESCRIPTION :
 This function draws the <map> in as a 3D CMGUI scene, for the current region(s).
@@ -5385,13 +5386,10 @@ Removes 3d drawing for non-current region(s).
 									get_map_drawing_information_Graphical_material_manager
 									(drawing_information),
 									spectrum,data_field,(struct Colour*)NULL);
-							}
-							if(!get_map_drawing_information_viewed_scene(drawing_information))
-							{														
-								/* make the map_electrode_position_field, add to the rig nodes*/
-								make_and_add_map_electrode_position_field(unemap_package,
-									rig_node_group,region);
-							}
+							}																	
+							/*(possibly)  make the map_electrode_position_field, add to the rig nodes*/
+							make_and_add_map_electrode_position_field(unemap_package,
+								rig_node_group,region);							
 						}/* if (function=calculate_interpolation_functio */
 						/*draw the arms  */				
 						if(region->type==TORSO)/*FOR AJP*/
@@ -11547,7 +11545,19 @@ Should be in Scene_viewer? RC doesn't think so.
 						middle_index=i;
 					}
 				}		
-#endif /*defined (NEW_CODE)	 */		
+#endif /*defined (NEW_CODE)	 */
+				/* to prevent colinearity of eye[] and up[] vectors*/
+				if(min_index==max_index)
+				{
+					if(min_index<2)
+					{
+						min_index++;
+					}
+					else
+					{
+						min_index--;
+					}
+				}
 				/*clear up vector */
 				for(i=0;i<3;i++)
 				{

@@ -14806,6 +14806,7 @@ analysis work area.
 						update_signals_drawing_area(analysis_window);
 					}
 					/* update the mapping window */
+					update_mapping_window_menu(mapping);
 					update_mapping_drawing_area(mapping,2);
 					update_mapping_colour_or_auxili(mapping);
 				}

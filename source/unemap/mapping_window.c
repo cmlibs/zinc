@@ -4885,12 +4885,14 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 	int number_of_regions,return_code;
 #define NUMBER_OF_ATTRIBUTES 2
 	Arg attributes[NUMBER_OF_ATTRIBUTES];
-	struct Region *region=(struct Region *)NULL;
+	struct Region *region,*the_current_region;
 	struct Region_list_item *region_item;
 	struct Rig *rig;
 	Window mapping_menu_window;
 
 	ENTER(update_mapping_window_menu);
+	the_current_region=(struct Region *)NULL;
+	region=(struct Region *)NULL;
 	if (mapping)
 	{
 		if (mapping_menu_window=XtWindow(mapping->menu))
@@ -4938,7 +4940,7 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 					{
 						XtSetArg(attributes[0],XmNlabelString,
 							(XtPointer)XmStringCreate("All regions",
-							XmSTRING_DEFAULT_CHARSET));
+								XmSTRING_DEFAULT_CHARSET));
 						if (*regions=XmCreatePushButtonGadget(
 							mapping->region_pull_down_menu,"All regions",attributes,
 							NUMBER_OF_ATTRIBUTES))
@@ -4961,7 +4963,7 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 						region=get_Region_list_item_region(region_item);
 						XtSetArg(attributes[0],XmNlabelString,
 							(XtPointer)XmStringCreate(
-							region->name,XmSTRING_DEFAULT_CHARSET));
+								region->name,XmSTRING_DEFAULT_CHARSET));
 						if (*regions=XmCreatePushButtonGadget(
 							mapping->region_pull_down_menu,region->name,
 							attributes,NUMBER_OF_ATTRIBUTES))
@@ -4981,26 +4983,7 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 						}
 					}
 					if (return_code)
-					{
-
-#if defined (OLD_CODE)
-						/* update projection choice */
-						if ((get_Rig_current_region(rig))&&(SOCK==rig->current_region->type))
-						{
-							XtManageChild(mapping->projection_choice);
-							XtVaSetValues(mapping->region_choice,
-								XmNleftWidget,mapping->projection_choice,
-								NULL);
-						}
-						else
-						{
-							XtUnmanageChild(mapping->projection_choice);
-							XtVaSetValues(mapping->region_choice,
-								XmNleftWidget,mapping->print_button,
-								NULL);
-						}					
-#endif /* defined (OLD_CODE)	*/
-#if defined (UNEMAP_USE_3D)						
+					{				
 						XtManageChild(mapping->projection_choice);
 						XtVaSetValues(mapping->region_choice,
 							XmNleftWidget,mapping->projection_choice,
@@ -5012,6 +4995,10 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 						XtSetSensitive(mapping->projection_polar,False);
 						XtSetSensitive(mapping->projection_3d,False);
 						XtSetSensitive(mapping->projection_patch,False);
+#if defined (UNEMAP_USE_3D)	
+						/*all use 3d*/
+						XtSetSensitive(mapping->projection_3d,True);
+#endif /*	defined (UNEMAP_USE_3D)	*/
 						if(rig->current_region)
 						{
 							switch(rig->current_region->type)
@@ -5019,14 +5006,15 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 								case SOCK:
 								{
 									XtSetSensitive(mapping->projection_hammer,True);
-									XtSetSensitive(mapping->projection_polar,True);
-									XtSetSensitive(mapping->projection_3d,True);
+									XtSetSensitive(mapping->projection_polar,True);								
 									/* set the projection choic */
 									XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
 										&current_projection,NULL);
 									if ((current_projection!=mapping->projection_hammer)&&
-										(current_projection!=mapping->projection_polar)
-										&&(current_projection!=mapping->projection_3d))
+#if defined (UNEMAP_USE_3D)	
+										(current_projection!=mapping->projection_3d)&&
+#endif /*	defined (UNEMAP_USE_3D)	*/
+										(current_projection!=mapping->projection_polar))
 									{
 										XtVaSetValues(mapping->projection_choice,
 											XmNmenuHistory,mapping->projection_hammer,
@@ -5035,13 +5023,15 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 								}break;
 								case TORSO:
 								{
-									XtSetSensitive(mapping->projection_cylinder,True);
-									XtSetSensitive(mapping->projection_3d,True);	
+									XtSetSensitive(mapping->projection_cylinder,True);									
 									/* set the projection choice */
 									XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
 										&current_projection,NULL);
 									if ((current_projection!=mapping->projection_cylinder)
-										&&(current_projection!=mapping->projection_3d))
+#if defined (UNEMAP_USE_3D)	
+										&&(current_projection!=mapping->projection_3d)
+#endif /*	defined (UNEMAP_USE_3D)	*/
+											)
 									{
 										XtVaSetValues(mapping->projection_choice,
 											XmNmenuHistory,mapping->projection_cylinder,
@@ -5050,13 +5040,15 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 								}break;
 								case PATCH:
 								{									
-									XtSetSensitive(mapping->projection_patch,True);
-									XtSetSensitive(mapping->projection_3d,True);
+									XtSetSensitive(mapping->projection_patch,True);								
 									/* set the projection choice */
 									XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
 										&current_projection,NULL);
-									if ((current_projection!=mapping->projection_patch)									
-										&&(current_projection!=mapping->projection_3d))
+									if ((current_projection!=mapping->projection_patch)
+#if defined (UNEMAP_USE_3D)
+										&&(current_projection!=mapping->projection_3d)
+#endif /*	defined (UNEMAP_USE_3D)	*/
+											)
 									{
 										XtVaSetValues(mapping->projection_choice,
 											XmNmenuHistory,mapping->projection_patch,
@@ -5068,96 +5060,69 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 						else
 						/*This is a mixed rig */
 						{
-							XtSetSensitive(mapping->projection_hammer,True);
-							XtSetSensitive(mapping->projection_polar,True);
-							XtSetSensitive(mapping->projection_3d,True);
-							/* set the projection choic */
-							XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
-								&current_projection,NULL);
-							if ((current_projection!=mapping->projection_hammer)&&
-								(current_projection!=mapping->projection_polar)
-								&&(current_projection!=mapping->projection_3d))
+							/*need to scan for all the region types */
+							region_item=get_Rig_region_list(rig);
+							while (region_item)
 							{
-								XtVaSetValues(mapping->projection_choice,
-									XmNmenuHistory,mapping->projection_hammer,
-									NULL);
-							}
-						}
-#else 
-						XtManageChild(mapping->projection_choice);
-						XtVaSetValues(mapping->region_choice,
-							XmNleftWidget,mapping->projection_choice,NULL);
-						/* now need to hide the inappropriate choices */
-						/*all off*/
-						XtSetSensitive(mapping->projection_cylinder,False);
-						XtSetSensitive(mapping->projection_hammer,False);
-						XtSetSensitive(mapping->projection_polar,False);
-						XtSetSensitive(mapping->projection_3d,False);
-						XtSetSensitive(mapping->projection_patch,False);
-						if(rig->current_region)
-						{
-							switch(rig->current_region->type)
-							{
-								case SOCK:
-								{
-									XtSetSensitive(mapping->projection_hammer,True);
-									XtSetSensitive(mapping->projection_polar,True);							
-									/* set the projection choic */
-									XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
-										&current_projection,NULL);
-									if ((current_projection!=mapping->projection_hammer)&&
-										(current_projection!=mapping->projection_polar))
+								the_current_region=get_Region_list_item_region(region_item);													
+								switch(the_current_region->type)
+								{	
+									case SOCK:
 									{
-										XtVaSetValues(mapping->projection_choice,
-											XmNmenuHistory,mapping->projection_hammer,
-											NULL);
-									}
-								}break;
-								case TORSO:
-								{
-									XtSetSensitive(mapping->projection_cylinder,True);								
-									/* set the projection choice */
-									XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
-										&current_projection,NULL);
-									if ((current_projection!=mapping->projection_cylinder))
+										XtSetSensitive(mapping->projection_hammer,True);
+										XtSetSensitive(mapping->projection_polar,True);											
+										/* set the projection choice */
+										XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
+											&current_projection,NULL);
+										if ((current_projection!=mapping->projection_hammer)&&
+#if defined (UNEMAP_USE_3D)
+											(current_projection!=mapping->projection_3d)&&
+#endif /*	defined (UNEMAP_USE_3D)	*/
+											(current_projection!=mapping->projection_polar))
+										{
+											XtVaSetValues(mapping->projection_choice,
+												XmNmenuHistory,mapping->projection_hammer,
+												NULL);
+										}										
+									}break;
+									case PATCH:
 									{
-										XtVaSetValues(mapping->projection_choice,
-											XmNmenuHistory,mapping->projection_cylinder,
-											NULL);
-									}
-								}break;
-								case PATCH:
-								{									
-									XtSetSensitive(mapping->projection_patch,True);							
-									/* set the projection choice */
-									XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
-										&current_projection,NULL);
-									if ((current_projection!=mapping->projection_patch))
+										XtSetSensitive(mapping->projection_patch,True);										
+										/* set the projection choice */
+										XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
+											&current_projection,NULL);
+										if ((current_projection!=mapping->projection_patch)
+#if defined (UNEMAP_USE_3D)
+											&&(current_projection!=mapping->projection_3d)
+#endif /*	defined (UNEMAP_USE_3D)	*/
+												)
+										{
+											XtVaSetValues(mapping->projection_choice,
+												XmNmenuHistory,mapping->projection_patch,
+												NULL);
+										}										
+									}break;
+									case TORSO:
 									{
-										XtVaSetValues(mapping->projection_choice,
-											XmNmenuHistory,mapping->projection_patch,
-											NULL);
-									}
-								}break;
-							}/* switch(rig->current_region->type) */
+										XtSetSensitive(mapping->projection_cylinder,True);											
+										/* set the projection choice */
+										XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
+											&current_projection,NULL);
+										if ((current_projection!=mapping->projection_cylinder)
+#if defined (UNEMAP_USE_3D)
+											&&(current_projection!=mapping->projection_3d)
+#endif /*	defined (UNEMAP_USE_3D)	*/
+												)
+										{
+											XtVaSetValues(mapping->projection_choice,
+												XmNmenuHistory,mapping->projection_cylinder,
+												NULL);
+										}																		
+									}break;																								
+								}	/* switch(type)	*/
+								region_item=get_Region_list_item_next(region_item);	
+							} /* while */
 						}
-						else
-						/*This is a mixed rig */
-						{
-							XtSetSensitive(mapping->projection_hammer,True);
-							XtSetSensitive(mapping->projection_polar,True);						
-							/* set the projection choic */
-							XtVaGetValues(mapping->projection_choice,XmNmenuHistory,
-								&current_projection,NULL);
-							if ((current_projection!=mapping->projection_hammer)&&
-								(current_projection!=mapping->projection_polar))
-							{
-								XtVaSetValues(mapping->projection_choice,
-									XmNmenuHistory,mapping->projection_hammer,
-									NULL);
-							}
-						}
-#endif /* defined (UNEMAP_USE_3D) */
 						XtVaSetValues(mapping->region_choice,
 							XmNmenuHistory,current_region,
 							NULL);
@@ -5167,7 +5132,7 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 					else
 					{
 						display_message(ERROR_MESSAGE,
-			"update_mapping_window_menu.  Could not create region PushButtonGadget");
+							"update_mapping_window_menu.  Could not create region PushButtonGadget");
 						/*???What about destroying PushButtons already created ? */
 						DEALLOCATE(mapping->regions);
 						mapping->number_of_regions=0;
