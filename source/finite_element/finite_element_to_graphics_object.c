@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.c
 
-LAST MODIFIED : 30 July 2001
+LAST MODIFIED : 13 August 2001
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
@@ -4664,7 +4664,7 @@ int get_surface_element_segmentation(struct FE_element *element,
 	gtPolygonType *polygon_type,enum Collapsed_element_type *collapsed_element,
 	char *modified_reverse_normals)
 /*******************************************************************************
-LAST MODIFIED : 30 July 2001
+LAST MODIFIED : 13 August 2001
 
 DESCRIPTION :
 Sorts out how standard, polygon and simplex elements are segmented, based on
@@ -4732,19 +4732,31 @@ numbers of segments requested for "square" elements.
 				{
 					if (!faces[0])
 					{
-						*collapsed_element=ELEMENT_COLLAPSED_XI1_0;
+						if (faces[1]&&faces[2]&&faces[3])
+						{
+							*collapsed_element=ELEMENT_COLLAPSED_XI1_0;
+						}
 					}
 					else if (!faces[1])
 					{
-						*collapsed_element=ELEMENT_COLLAPSED_XI1_1;
+						if (faces[0]&&faces[2]&&faces[3])
+						{
+							*collapsed_element=ELEMENT_COLLAPSED_XI1_1;
+						}
 					}
 					else if (!faces[2])
 					{
-						*collapsed_element=ELEMENT_COLLAPSED_XI2_0;
+						if (faces[0]&&faces[1]&&faces[3])
+						{
+							*collapsed_element=ELEMENT_COLLAPSED_XI2_0;
+						}
 					}
 					else if (!faces[3])
 					{
-						*collapsed_element=ELEMENT_COLLAPSED_XI2_1;
+						if (faces[0]&&faces[1]&&faces[2])
+						{
+							*collapsed_element=ELEMENT_COLLAPSED_XI2_1;
+						}
 					}
 				}
 				*number_of_points_in_xi2=number_of_segments_in_xi2_requested+1;
