@@ -616,7 +616,7 @@ int local_frequency_wiener2d(FE_value *data_index, FE_value *result_index, doubl
 {
         FE_value *re, *im, *kernel, *nothing;
 	int x,y,nx,ny,adr;
-	FE_value cx,cy;
+	/* FE_value cx,cy; */
 	int storage_size;
 	int return_code;
 	int i;
@@ -640,8 +640,9 @@ int local_frequency_wiener2d(FE_value *data_index, FE_value *result_index, doubl
 
 		local_frequency_gaussian(kernel, g, xsize, ysize, angle_from_u_axis, centre_frequency);
 
-		cx = M_PI*M_PI/(FE_value)(nx*nx);
+		/*cx = M_PI*M_PI/(FE_value)(nx*nx);
 		cy = M_PI*M_PI/(FE_value)(ny*ny);
+		*/
 		for (x=-nx/2;x<nx/2;x++)
 		{
 		        for (y=-ny/2;y<ny/2;y++)
