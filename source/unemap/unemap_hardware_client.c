@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_client.c
 
-LAST MODIFIED : 27 January 2002
+LAST MODIFIED : 29 April 2002
 
 DESCRIPTION :
 Code for talking to the unemap hardware service (running under NT).  This is an
@@ -125,7 +125,7 @@ functions.
 
 struct Unemap_crate
 /*******************************************************************************
-LAST MODIFIED : 27 January 2002
+LAST MODIFIED : 27 Janruary 2002
 
 DESCRIPTION :
 Information needed for each SCU crate/NI computer pair.
@@ -147,6 +147,7 @@ Information needed for each SCU crate/NI computer pair.
 	SOCKET scrolling_socket;
 	HANDLE scrolling_socket_thread_stop_event,
 		scrolling_socket_thread_stopped_event;
+	HANDLE close_connection_mutex;
 #endif /* defined (WIN32) */
 #if defined (UNIX)
 	int acquired_socket;
@@ -210,6 +211,14 @@ void *module_calibration_end_callback_data=(void *)NULL;
 int allow_open_connection=1;
 int module_number_of_channels=0,module_number_of_unemap_crates=0;
 struct Unemap_crate *module_unemap_crates=(struct Unemap_crate *)NULL;
+#if defined (WIN32)
+HANDLE connection_mutex=(HANDLE)NULL;
+#endif /* defined (WIN32) */
+#if defined (UNIX)
+pthread_mutex_t *connection_mutex=(pthread_mutex_t *)NULL,
+	connection_mutex_storage;
+#endif /* defined (UNIX) */
+
 
 #if defined (CACHE_CLIENT_INFORMATION)
 int module_force_connection=0,module_get_cache_information_failed=0,
@@ -319,11 +328,17 @@ Closes the connection with the unemap hardware service for the <crate>.
 {
 	int return_code;
 #if defined (WIN32)
+	DWORD status;
 	HANDLE hEvents[3];
 	int number_of_events;
 #endif /* defined (WIN32) */
 
 	ENTER(close_crate_connection);
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,
+		"enter close_crate_connection.  %p\n",crate);
+#endif /* defined (DEBUG) */
 	return_code=0;
 	if (crate)
 	{
@@ -342,6 +357,11 @@ Closes the connection with the unemap hardware service for the <crate>.
 		}
 #if defined (WIN32)
 		number_of_events=0;
+#if defined (DEBUG)
+		/*???debug */
+		display_message(INFORMATION_MESSAGE,
+			"scrolling thread %p\n",crate->scrolling_socket_thread_stop_event);
+#endif /* defined (DEBUG) */
 		if (crate->scrolling_socket_thread_stop_event)
 		{
 			hEvents[number_of_events]=crate->scrolling_socket_thread_stopped_event;
@@ -388,10 +408,20 @@ Closes the connection with the unemap hardware service for the <crate>.
 			}
 		}
 		/* wait for threads to end before deallocating crate memory */
+#if defined (DEBUG)
+		/*???debug */
+		display_message(INFORMATION_MESSAGE,
+			"before WaitForMultipleObjects.  %d\n",number_of_events);
+#endif /* defined (DEBUG) */
 		if (number_of_events>0)
 		{
-			WaitForMultipleObjects(number_of_events,hEvents,TRUE,INFINITE);
+			status=WaitForMultipleObjects(number_of_events,hEvents,TRUE,INFINITE);
 		}
+#if defined (DEBUG)
+		/*???debug */
+		display_message(INFORMATION_MESSAGE,
+			"after WaitForMultipleObjects.  %p %p\n",status,WAIT_FAILED);
+#endif /* defined (DEBUG) */
 		if (crate->scrolling_socket_thread_stopped_event)
 		{
 			CloseHandle(crate->scrolling_socket_thread_stopped_event);
@@ -466,6 +496,11 @@ Closes the connection with the unemap hardware service for the <crate>.
 		display_message(ERROR_MESSAGE,
 			"close_crate_connection.  Invalid argument %p",crate);
 	}
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,
+		"leave close_crate_connection\n");
+#endif /* defined (DEBUG) */
 	LEAVE;
 
 	return (return_code);
@@ -473,7 +508,7 @@ Closes the connection with the unemap hardware service for the <crate>.
 
 static int close_connection(void)
 /*******************************************************************************
-LAST MODIFIED : 27 January 2002
+LAST MODIFIED : 27 February 2002
 
 DESCRIPTION :
 Closes the connection with the unemap hardware service.
@@ -488,6 +523,15 @@ Closes the connection with the unemap hardware service.
 #endif /* defined (OLD_CODE) */
 
 	ENTER(close_connection);
+	if (connection_mutex)
+	{
+		lock_mutex(connection_mutex);
+	}
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,
+		"enter close_connection\n");
+#endif /* defined (DEBUG) */
 	return_code=1;
 	if (crate=module_unemap_crates)
 	{
@@ -528,6 +572,15 @@ Closes the connection with the unemap hardware service.
 		sleep(1);
 	}
 	allow_open_connection=1;
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,
+		"leave close_connection\n");
+#endif /* defined (DEBUG) */
+	if (connection_mutex)
+	{
+		unlock_mutex(connection_mutex);
+	}
 	LEAVE;
 
 	return (return_code);
@@ -987,6 +1040,7 @@ Thread to watch the acquired socket.
 						{
 							running=0;
 #if defined (DEBUG)
+							/*???debug */
 							display_message(INFORMATION_MESSAGE,
 								"acquired_thread_function.  Stop %d %d\n",dwWait,
 								WAIT_OBJECT_0+1);
@@ -1579,6 +1633,11 @@ Thread to watch the scrolling socket.
 	struct Unemap_crate *crate;
 
 	ENTER(scrolling_thread_function);
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,
+		"enter scrolling_thread_function.  %p\n",crate_void);
+#endif /* defined (DEBUG) */
 	if (crate=(struct Unemap_crate *)crate_void)
 	{
 		hEvents[0]=NULL;
@@ -1597,6 +1656,10 @@ Thread to watch the scrolling socket.
 			{
 				if (0==WSAEventSelect(crate->scrolling_socket,hEvents[1],FD_READ))
 				{
+#if defined (DEBUG)
+					/*???debug */
+					display_message(INFORMATION_MESSAGE,"running %p\n",hEvents[0]);
+#endif /* defined (DEBUG) */
 					running=1;
 					while (1==running)
 					{
@@ -1609,11 +1672,11 @@ Thread to watch the scrolling socket.
 						else
 						{
 							running=0;
-	#if defined (DEBUG)
 							display_message(INFORMATION_MESSAGE,
 								"scrolling_thread_function.  Stop %d %d\n",dwWait,
 								WAIT_OBJECT_0+1);
-	#endif /* defined (DEBUG) */
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
 						}
 					}
 				}
@@ -1653,6 +1716,11 @@ Thread to watch the scrolling socket.
 		/* indicate that thread has finished */
 		SetEvent(crate->scrolling_socket_thread_stopped_event);
 	}
+#if defined (DEBUG)
+	/*???debug */
+	display_message(INFORMATION_MESSAGE,
+		"leave scrolling_thread_function\n");
+#endif /* defined (DEBUG) */
 	LEAVE;
 
 	return (return_code);
@@ -4301,6 +4369,7 @@ For the <crate>.  The number of samples acquired per channel since
 						{
 							memcpy(number_of_samples,buffer,sizeof(long));
 #if defined (DEBUG)
+							/*???debug */
 							display_message(INFORMATION_MESSAGE," %ld",*number_of_samples);
 #endif /* defined (DEBUG) */
 							return_code=1;
@@ -6675,6 +6744,7 @@ stimulating and 0 otherwise.  Otherwise the function fails.
 						{
 							memcpy(stimulating,buffer,sizeof(int));
 #if defined (DEBUG)
+							/*???debug */
 							display_message(INFORMATION_MESSAGE," %d",*stimulating);
 #endif /* defined (DEBUG) */
 							return_code=1;
@@ -7161,6 +7231,7 @@ If the hardware power is on for the <crate> then <*on> is set to 1, otherwise
 						{
 							memcpy(on,buffer,sizeof(int));
 #if defined (DEBUG)
+							/*???debug */
 							display_message(INFORMATION_MESSAGE," %d",*on);
 #endif /* defined (DEBUG) */
 							return_code=1;
@@ -7953,7 +8024,7 @@ Returns the unemap <service_version> for the <crate>.
 
 static int crate_initialize_connection(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 27 January 2002
+LAST MODIFIED : 27 February 2002
 
 DESCRIPTION :
 Sets up the connection with the unemap hardware service for the <crate>.
@@ -8013,8 +8084,9 @@ Sets up the connection with the unemap hardware service for the <crate>.
 							}
 							else
 							{
-								display_message(ERROR_MESSAGE,
-	"initialize_connection.  CreateEvent failed for calibration_socket_thread_stopped_event.  Error code %d",
+								display_message(ERROR_MESSAGE,"crate_initialize_connection.  "
+									"CreateEvent failed for "
+									"calibration_socket_thread_stopped_event.  Error code %d",
 									WSAGetLastError());
 								CloseHandle(crate->acquired_socket_thread_stopped_event);
 								crate->acquired_socket_thread_stopped_event=NULL;
@@ -8028,9 +8100,9 @@ Sets up the connection with the unemap hardware service for the <crate>.
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,
-	"initialize_connection.  CreateEvent failed for acquired_socket_thread_stopped_event.  Error code %d",
-								WSAGetLastError());
+							display_message(ERROR_MESSAGE,"crate_initialize_connection.  "
+								"CreateEvent failed for acquired_socket_thread_stopped_event.  "
+								"Error code %d",WSAGetLastError());
 							CloseHandle(crate->scrolling_socket_thread_stopped_event);
 							crate->scrolling_socket_thread_stopped_event=NULL;
 							CloseHandle(crate->acquired_socket_mutex);
@@ -8041,9 +8113,9 @@ Sets up the connection with the unemap hardware service for the <crate>.
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,
-"initialize_connection.  CreateEvent failed for scrolling_socket_thread_stopped_event.  Error code %d",
-							WSAGetLastError());
+						display_message(ERROR_MESSAGE,"crate_initialize_connection.  "
+							"CreateEvent failed for scrolling_socket_thread_stopped_event.  "
+							"Error code %d",WSAGetLastError());
 						CloseHandle(crate->acquired_socket_mutex);
 						crate->acquired_socket_mutex=NULL;
 						CloseHandle(crate->command_socket_mutex);
@@ -8052,8 +8124,8 @@ Sets up the connection with the unemap hardware service for the <crate>.
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-"initialize_connection.  CreateMutex failed for acquired_socket_mutex.  Error code %d",
+					display_message(ERROR_MESSAGE,"crate_initialize_connection.  "
+						"CreateMutex failed for acquired_socket_mutex.  Error code %d",
 						WSAGetLastError());
 					CloseHandle(crate->command_socket_mutex);
 					crate->command_socket_mutex=NULL;
@@ -8061,8 +8133,8 @@ Sets up the connection with the unemap hardware service for the <crate>.
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-"initialize_connection.  CreateMutex failed for command_socket_mutex.  Error code %d",
+				display_message(ERROR_MESSAGE,"crate_initialize_connection.  "
+					"CreateMutex failed for command_socket_mutex.  Error code %d",
 					WSAGetLastError());
 			}
 #endif /* defined (WIN32) */
@@ -8084,9 +8156,9 @@ Sets up the connection with the unemap hardware service for the <crate>.
 				else
 				{
 					return_code=0;
-					display_message(ERROR_MESSAGE,
-	"initialize_connection.  pthread_mutex_init failed for acquired_socket_mutex.  Error code %d",
-						error_code);
+					display_message(ERROR_MESSAGE,"crate_initialize_connection.  "
+						"pthread_mutex_init failed for acquired_socket_mutex.  "
+						"Error code %d",error_code);
 					crate->acquired_socket_mutex=(pthread_mutex_t *)NULL;
 					pthread_mutex_destroy(crate->command_socket_mutex);
 					crate->command_socket_mutex=(pthread_mutex_t *)NULL;
@@ -8095,8 +8167,8 @@ Sets up the connection with the unemap hardware service for the <crate>.
 			else
 			{
 				return_code=0;
-				display_message(ERROR_MESSAGE,
-"initialize_connection.  pthread_mutex_init failed for command_socket_mutex.  Error code %d",
+				display_message(ERROR_MESSAGE,"crate_initialize_connection.  "
+					"pthread_mutex_init failed for command_socket_mutex.  Error code %d",
 					error_code);
 				crate->acquired_socket_mutex=(pthread_mutex_t *)NULL;
 				crate->command_socket_mutex=(pthread_mutex_t *)NULL;
@@ -8240,8 +8312,9 @@ Sets up the connection with the unemap hardware service for the <crate>.
 												else
 												{
 													display_message(ERROR_MESSAGE,
-"crate_initialize_connection.  Could not connect command_socket.  Port %hu. Error code %d",
-														crate->command_port,
+														"crate_initialize_connection.  "
+														"Could not connect command_socket.  "
+														"Port %hu.  Error code %d",crate->command_port,
 #if defined (WIN32)
 														WSAGetLastError()
 #endif /* defined (WIN32) */
@@ -8270,7 +8343,8 @@ Sets up the connection with the unemap hardware service for the <crate>.
 											else
 											{
 												display_message(ERROR_MESSAGE,
-"crate_initialize_connection.  Could not create command_socket.  Error code %d",
+													"crate_initialize_connection.  "
+													"Could not create command_socket.  Error code %d",
 #if defined (WIN32)
 													WSAGetLastError()
 #endif /* defined (WIN32) */
@@ -8296,8 +8370,9 @@ Sets up the connection with the unemap hardware service for the <crate>.
 										else
 										{
 											display_message(ERROR_MESSAGE,
-"crate_initialize_connection.  Could not connect scrolling_socket.  Port %hu.  Error code %d",
-												crate->scrolling_port,
+												"crate_initialize_connection.  "
+												"Could not connect scrolling_socket.  Port %hu.  "
+												"Error code %d",crate->scrolling_port,
 #if defined (WIN32)
 												WSAGetLastError()
 #endif /* defined (WIN32) */
@@ -8323,7 +8398,8 @@ Sets up the connection with the unemap hardware service for the <crate>.
 									else
 									{
 										display_message(ERROR_MESSAGE,
-"crate_initialize_connection.  Could not create scrolling_socket.  Error code %d",
+											"crate_initialize_connection.  "
+											"Could not create scrolling_socket.  Error code %d",
 #if defined (WIN32)
 											WSAGetLastError()
 #endif /* defined (WIN32) */
@@ -8345,9 +8421,9 @@ Sets up the connection with the unemap hardware service for the <crate>.
 								}
 								else
 								{
-									display_message(ERROR_MESSAGE,
-"crate_initialize_connection.  Could not connect calibration_socket.  Port %hu.  Error code %d",
-										crate->calibration_port,
+									display_message(ERROR_MESSAGE,"crate_initialize_connection.  "
+										"Could not connect calibration_socket.  Port %hu.  "
+										"Error code %d",crate->calibration_port,
 #if defined (WIN32)
 										WSAGetLastError()
 #endif /* defined (WIN32) */
@@ -8369,8 +8445,8 @@ Sets up the connection with the unemap hardware service for the <crate>.
 							}
 							else
 							{
-								display_message(ERROR_MESSAGE,
-"crate_initialize_connection.  Could not create calibration_socket.  Error code %d",
+								display_message(ERROR_MESSAGE,"crate_initialize_connection.  "
+									"Could not create calibration_socket.  Error code %d",
 #if defined (WIN32)
 									WSAGetLastError()
 #endif /* defined (WIN32) */
@@ -8389,8 +8465,8 @@ Sets up the connection with the unemap hardware service for the <crate>.
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,
-"crate_initialize_connection.  Could not connect acquired_socket.  Port %hu.  Error code %d",
+							display_message(ERROR_MESSAGE,"crate_initialize_connection.  "
+								"Could not connect acquired_socket.  Port %hu.  Error code %d",
 								crate->acquired_port,
 #if defined (WIN32)
 								WSAGetLastError()
@@ -8410,8 +8486,8 @@ Sets up the connection with the unemap hardware service for the <crate>.
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,
-"crate_initialize_connection.  Could not create acquired_socket.  Error code %d",
+						display_message(ERROR_MESSAGE,"crate_initialize_connection.  "
+							"Could not create acquired_socket.  Error code %d",
 #if defined (WIN32)
 							WSAGetLastError()
 #endif /* defined (WIN32) */
@@ -8424,7 +8500,7 @@ Sets up the connection with the unemap hardware service for the <crate>.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-					"crate_initialize_connection.  Could not resolve server name [%s]",
+						"crate_initialize_connection.  Could not resolve server name [%s]",
 						crate->server_name);
 				}
 			}
@@ -8474,7 +8550,7 @@ Sets up the connection with the unemap hardware service for the <crate>.
 
 static int initialize_connection(void)
 /*******************************************************************************
-LAST MODIFIED : 27 January 2002
+LAST MODIFIED : 27 February 2002
 
 DESCRIPTION :
 Sets up the connections with the unemap crates.
@@ -8490,16 +8566,52 @@ Sets up the connections with the unemap crates.
 	WORD wVersionRequested;
 	WSADATA wsaData;
 #endif /* defined (WIN32) */
+#if defined (UNIX)
+	int error_code;
+#endif /* defined (UNIX) */
 #endif /* defined (USE_SOCKETS) */
 
 	ENTER(initialize_connection);
 #if defined (DEBUG)
 	/*???debug */
-	printf("enter initialize_connection %p %d %d\n",module_unemap_crates,
+	display_message(INFORMATION_MESSAGE,
+		"enter initialize_connection %p %d %d\n",module_unemap_crates,
 		module_number_of_unemap_crates,allow_open_connection);
 #endif /* defined (DEBUG) */
 	return_code=0;
 #if defined (USE_SOCKETS)
+	if (!connection_mutex)
+	{
+		/*???DB.  How is connection_mutex destroyed? */
+#if defined (WIN32)
+		if (!(connection_mutex=CreateMutex(/*no security attributes*/NULL,
+			/*do not initially own*/FALSE,/*no name*/(LPCTSTR)NULL)))
+		{
+			display_message(ERROR_MESSAGE,"initialize_connection.  "
+				"CreateMutex failed for connection_mutex.  Error code %d",
+				WSAGetLastError());
+		}
+#endif /* defined (WIN32) */
+#if defined (UNIX)
+		if (0==(error_code=pthread_mutex_init(&connection_mutex_storage,
+			(pthread_mutexattr_t *)NULL)))
+		{
+			connection_mutex= &connection_mutex_storage;
+			return_code=1;
+		}
+		else
+		{
+			return_code=0;
+			display_message(ERROR_MESSAGE,"initialize_connection.  "
+				"pthread_mutex_init failed for connection_mutex.  Error code %d",
+				error_code);
+		}
+#endif /* defined (UNIX) */
+	}
+	if (connection_mutex)
+	{
+		lock_mutex(connection_mutex);
+	}
 	if (!module_unemap_crates)
 	{
 		/* only allow one attempt to open a closed connection */
@@ -8698,9 +8810,14 @@ Sets up the connections with the unemap crates.
 		allow_open_connection=1;
 	}
 #endif /* defined (USE_SOCKETS) */
+	if (connection_mutex)
+	{
+		unlock_mutex(connection_mutex);
+	}
 #if defined (DEBUG)
 	/*???debug */
-	printf("leave initialize_connection %p %d %d %d\n",module_unemap_crates,
+	display_message(INFORMATION_MESSAGE,
+		"leave initialize_connection %p %d %d %d\n",module_unemap_crates,
 		module_number_of_unemap_crates,allow_open_connection,return_code);
 #endif /* defined (DEBUG) */
 	LEAVE;
@@ -9081,7 +9198,7 @@ int unemap_configure(float sampling_frequency,int number_of_samples_in_buffer,
 	Unemap_hardware_callback *scrolling_callback,void *scrolling_callback_data,
 	float scrolling_refresh_frequency,int synchronization_card)
 /*******************************************************************************
-LAST MODIFIED : 16 December 2001
+LAST MODIFIED : 29 April 2002
 
 DESCRIPTION :
 Configures the hardware for sampling at the specified <sampling_frequency> and
@@ -9125,7 +9242,7 @@ attached SCU.  All other SCUs output the synchronization signal.
 ==============================================================================*/
 {
 	float crate_sampling_frequency,master_sampling_frequency;
-	int i,return_code;
+	int different_configurations,i,return_code,retry;
 	struct Unemap_crate *crate;
 	unsigned long crate_number_of_samples_in_buffer,
 		master_number_of_samples_in_buffer;
@@ -9139,26 +9256,20 @@ attached SCU.  All other SCUs output the synchronization signal.
 	/* check arguments */
 	if ((0<sampling_frequency)&&(0<number_of_samples_in_buffer))
 	{
-		if (initialize_connection()&&(crate=module_unemap_crates)&&
-			(0<(i=module_number_of_unemap_crates)))
+		if (initialize_connection()&&module_unemap_crates&&
+			(0<module_number_of_unemap_crates))
 		{
-			if (crate_configure_start(crate,0,sampling_frequency,
-				number_of_samples_in_buffer,
-#if defined (WINDOWS)
-				scrolling_window,scrolling_message,
-#endif /* defined (WINDOWS) */
-#if defined (MOTIF)
-				application_context,
-#endif /* defined (MOTIF) */
-				scrolling_callback,scrolling_callback_data,
-				scrolling_refresh_frequency,synchronization_card))
+			/* configure crates and if they end up with different sampling
+				frequencies or buffer sizes retry with the minima */
+			master_sampling_frequency=sampling_frequency;
+			master_number_of_samples_in_buffer=number_of_samples_in_buffer;
+			crate=module_unemap_crates;
+			i=module_number_of_unemap_crates;
+			retry=0;
+			do
 			{
-				do
-				{
-					crate++;
-					i--;
-				} while ((i>0)&&crate_configure_start(crate,1,sampling_frequency,
-					number_of_samples_in_buffer,
+				if (crate_configure_start(crate,0,master_sampling_frequency,
+					master_number_of_samples_in_buffer,
 #if defined (WINDOWS)
 					scrolling_window,scrolling_message,
 #endif /* defined (WINDOWS) */
@@ -9166,138 +9277,130 @@ attached SCU.  All other SCUs output the synchronization signal.
 					application_context,
 #endif /* defined (MOTIF) */
 					scrolling_callback,scrolling_callback_data,
-					scrolling_refresh_frequency,synchronization_card));
-			}
-#if defined (DEBUG)
-			/*???debug */
-			printf("  start completed %d\n",i);
-#endif /* defined (DEBUG) */
-			if (i>0)
-			{
-				while (i<=module_number_of_unemap_crates)
+					scrolling_refresh_frequency,synchronization_card))
 				{
-					crate_configure_end(crate);
-					crate_deconfigure(crate);
-					crate--;
-					i++;
-				}
-			}
-			else
-			{
-				i=module_number_of_unemap_crates;
-				crate=module_unemap_crates;
-				i--;
-				if (return_code=crate_configure_end(crate))
-				{
-					if (i>0)
+					do
 					{
-						if (crate_get_sampling_frequency(crate,&master_sampling_frequency)&&
-							crate_get_maximum_number_of_samples(crate,
-							&master_number_of_samples_in_buffer))
-						{
-							do
-							{
-								crate++;
-								i--;
-								if (!(crate_configure_end(crate)&&
-									crate_get_sampling_frequency(crate,
-									&crate_sampling_frequency)&&
-									(master_sampling_frequency==crate_sampling_frequency)&&
-									crate_get_maximum_number_of_samples(crate,
-									&crate_number_of_samples_in_buffer)&&
-									(master_number_of_samples_in_buffer==
-									crate_number_of_samples_in_buffer)))
-								{
-									return_code=0;
-								}
-							} while ((i>0)&&return_code);
-						}
-						else
-						{
-							return_code=0;
-						}
-					}
+						crate++;
+						i--;
+					} while ((i>0)&&crate_configure_start(crate,1,
+						master_sampling_frequency,master_number_of_samples_in_buffer,
+#if defined (WINDOWS)
+						scrolling_window,scrolling_message,
+#endif /* defined (WINDOWS) */
+#if defined (MOTIF)
+						application_context,
+#endif /* defined (MOTIF) */
+						scrolling_callback,scrolling_callback_data,
+						scrolling_refresh_frequency,synchronization_card));
 				}
 #if defined (DEBUG)
 				/*???debug */
-				printf("  end completed %d\n",i);
+				printf("  start completed %d\n",i);
 #endif /* defined (DEBUG) */
-				if (!return_code)
+				if (i>0)
 				{
+					while (i<=module_number_of_unemap_crates)
+					{
+						crate_configure_end(crate);
+						crate_deconfigure(crate);
+						crate--;
+						i++;
+					}
+				}
+				else
+				{
+					different_configurations=0;
+					i=module_number_of_unemap_crates;
+					crate=module_unemap_crates;
+					i--;
+					if (return_code=crate_configure_end(crate))
+					{
+						if (i>0)
+						{
+							if (crate_get_sampling_frequency(crate,
+								&master_sampling_frequency)&&
+								crate_get_maximum_number_of_samples(crate,
+								&master_number_of_samples_in_buffer))
+							{
+								do
+								{
+									crate++;
+									i--;
+									if (crate_configure_end(crate)&&
+										crate_get_sampling_frequency(crate,
+										&crate_sampling_frequency)&&
+										crate_get_maximum_number_of_samples(crate,
+										&crate_number_of_samples_in_buffer))
+									{
+										if ((master_sampling_frequency!=crate_sampling_frequency)||
+											(master_number_of_samples_in_buffer!=
+											crate_number_of_samples_in_buffer))
+										{
+											different_configurations=1;
+											if (retry)
+											{
+												return_code=0;
+											}
+											else
+											{
+												if (crate_sampling_frequency<master_sampling_frequency)
+												{
+													master_sampling_frequency=crate_sampling_frequency;
+												}
+												if (crate_number_of_samples_in_buffer<
+													master_number_of_samples_in_buffer)
+												{
+													master_number_of_samples_in_buffer=
+														crate_number_of_samples_in_buffer;
+												}
+											}
+										}
+									}
+									else
+									{
+										return_code=0;
+									}
+								} while ((i>0)&&return_code);
+								if (!retry&&different_configurations)
+								{
+									retry=1;
+								}
+							}
+							else
+							{
+								return_code=0;
+							}
+						}
+					}
+#if defined (DEBUG)
+					/*???debug */
+					printf("  end completed %d\n",i);
+#endif /* defined (DEBUG) */
 					while (i>0)
 					{
 						crate++;
 						i--;
 						crate_configure_end(crate);
 					}
-					crate=module_unemap_crates;
-					for (i=module_number_of_unemap_crates;i>0;i--)
+					if (!return_code||retry)
 					{
-						crate_deconfigure(crate);
-						crate++;
+						crate=module_unemap_crates;
+						for (i=module_number_of_unemap_crates;i>0;i--)
+						{
+							crate_deconfigure(crate);
+							crate++;
+						}
 					}
 				}
-				else
-				{
-					return_code=1;
-#if defined (CACHE_CLIENT_INFORMATION)
-					get_cache_information();
-#endif /* defined (CACHE_CLIENT_INFORMATION) */
-				}
-			}
-#if defined (OLD_CODE)
-			if (crate_configure(crate,0,sampling_frequency,
-				number_of_samples_in_buffer,
-#if defined (WINDOWS)
-				scrolling_window,scrolling_message,
-#endif /* defined (WINDOWS) */
-#if defined (MOTIF)
-				application_context,
-#endif /* defined (MOTIF) */
-				scrolling_callback,scrolling_callback_data,
-				scrolling_refresh_frequency)&&
-				crate_get_sampling_frequency(crate,&master_sampling_frequency)&&
-				crate_get_maximum_number_of_samples(crate,
-				&master_number_of_samples_in_buffer))
-			{
-				do
-				{
-					crate++;
-					i--;
-				} while ((i>0)&&crate_configure(crate,1,sampling_frequency,
-					number_of_samples_in_buffer,
-#if defined (WINDOWS)
-					scrolling_window,scrolling_message,
-#endif /* defined (WINDOWS) */
-#if defined (MOTIF)
-					application_context,
-#endif /* defined (MOTIF) */
-					scrolling_callback,scrolling_callback_data,
-					scrolling_refresh_frequency,synchronization_card)&&
-					crate_get_sampling_frequency(crate,&crate_sampling_frequency)&&
-					(master_sampling_frequency==crate_sampling_frequency)&&
-					crate_get_maximum_number_of_samples(crate,
-					&crate_number_of_samples_in_buffer)&&
-					(master_number_of_samples_in_buffer==
-					crate_number_of_samples_in_buffer));
-			}
-			if (i>0)
-			{
-				while (i<=module_number_of_unemap_crates)
-				{
-					crate_deconfigure(crate);
-					crate--;
-					i++;
-				}
-			}
-			else
+			} while (return_code&&retry);
+			if (return_code)
 			{
 				return_code=1;
 #if defined (CACHE_CLIENT_INFORMATION)
 				get_cache_information();
 #endif /* defined (CACHE_CLIENT_INFORMATION) */
 			}
-#endif /* defined (OLD_CODE) */
 		}
 #if defined (OLD_CODE)
 		else
@@ -9316,7 +9419,7 @@ attached SCU.  All other SCUs output the synchronization signal.
 	}
 #if defined (DEBUG)
 	/*???debug */
-	printf("leave unemap_configure\n");
+	printf("leave unemap_configure.  %d\n",return_code);
 #endif /* defined (DEBUG) */
 	LEAVE;
 
@@ -9382,7 +9485,7 @@ hardware.
 	ENTER(unemap_deconfigure);
 #if defined (DEBUG)
 	/*???debug */
-	printf("enter unemap_deconfigure\n");
+	display_message(INFORMATION_MESSAGE,"enter unemap_deconfigure\n");
 #endif /* defined (DEBUG) */
 	return_code=0;
 	/* unemap may have been started by another process, so can't just check that
@@ -9414,7 +9517,7 @@ hardware.
 #endif /* defined (CACHE_CLIENT_INFORMATION) */
 #if defined (DEBUG)
 	/*???debug */
-	printf("leave unemap_deconfigure\n");
+	display_message(INFORMATION_MESSAGE,"leave unemap_deconfigure\n");
 #endif /* defined (DEBUG) */
 	LEAVE;
 
