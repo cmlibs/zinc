@@ -246,13 +246,18 @@ static int process_keyboard(
 				} break;
 				case '4':
 				{
-					float sampling_frequency;
+					float sampling_frequency,scrolling_callback_frequency,
+						scrolling_frequency;
 					int number_of_samples,synchronization_card;
 
 					sampling_frequency=(float)1000;
 					number_of_samples=1000;
 					printf("sampling_frequency ? ");
 					scanf(" %f",&sampling_frequency);
+					printf("scrolling_frequency ? ");
+					scanf(" %f",&scrolling_frequency);
+					printf("scrolling_callback_frequency ? ");
+					scanf(" %f",&scrolling_callback_frequency);
 					printf("number_of_samples ? ");
 					scanf(" %d",&number_of_samples);
 					printf("synchronization_card ? ");
@@ -264,7 +269,8 @@ static int process_keyboard(
 #if defined (UNIX)
 						event_dispatcher,
 #endif /* defined (UNIX) */
-						scrolling_callback,(void *)NULL,(float)5,synchronization_card);
+						scrolling_callback,(void *)NULL,scrolling_frequency,
+						scrolling_callback_frequency,synchronization_card);
 					printf("return_code=%d\n",return_code);
 				} break;
 				case '5':

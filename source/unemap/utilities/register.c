@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : register.c
 
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 9 June 2002
 
 DESCRIPTION :
 For setting and checking registers on second version of the signal conditioning
@@ -6202,7 +6202,8 @@ static int process_keyboard(
 #if defined (UNIX)
 							event_dispatcher,
 #endif /* defined (UNIX) */
-							(Unemap_hardware_callback *)NULL,(void *)NULL,(float)0,1);
+							(Unemap_hardware_callback *)NULL,(void *)NULL,(float)0,(float)0,
+							1);
 						unemap_set_power(1);
 						unemap_stop_stimulating(0);
 						unemap_set_channel_stimulating(0,0);
@@ -6514,7 +6515,8 @@ static int process_keyboard(
 #if defined (UNIX)
 							event_dispatcher,
 #endif /* defined (UNIX) */
-							(Unemap_hardware_callback *)NULL,(void *)NULL,(float)0,1);
+							(Unemap_hardware_callback *)NULL,(void *)NULL,(float)0,(float)0,
+							1);
 					}
 				} break;
 				default:
@@ -6613,7 +6615,7 @@ int main(void)
 #if defined (UNIX)
 			event_dispatcher,
 #endif /* defined (UNIX) */
-			(Unemap_hardware_callback *)NULL,(void *)NULL,(float)0,1)&&
+			(Unemap_hardware_callback *)NULL,(void *)NULL,(float)0,(float)0,1)&&
 			unemap_get_sampling_frequency(&sampling_frequency)&&
 			unemap_get_maximum_number_of_samples(&number_of_samples)&&
 			unemap_get_number_of_channels(&number_of_channels))
