@@ -597,6 +597,7 @@ Evaluate the fields cache at the node.
 		&& (data = (struct Computed_field_xi_texture_coordinates_type_specific_data *)
 		field->type_specific_data))
 	{
+		return_code = 1;
 		/* 1. Get top_level_element for types that must be calculated on them */
 		element_dimension=get_FE_element_dimension(element);
 		if (CM_ELEMENT == element->cm.type)
