@@ -22022,8 +22022,8 @@ Executes a UNEMAP command.
 } /* execute_command_unemap */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 #if defined (CELL)
+#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_cell_open(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -22077,6 +22077,8 @@ Executes a CELL OPEN command.
 								command_data->data_group_manager,
 								command_data->default_graphical_material,
 								command_data->spectrum_manager,command_data->default_spectrum,
+                command_data->computed_field_package,
+                command_data->element_point_ranges_selection,
 								execute_command))
 #if defined (OLD_CODE)
 #if defined (CELL_CONTROL_CURVE)
@@ -22158,6 +22160,124 @@ Executes a CELL OPEN command.
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 #endif /* defined (CELL) */
 
+#if defined (CELL)
+#if !defined (WINDOWS_DEV_FLAG)
+static int execute_command_cell_read_model(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 08 June 2000
+
+DESCRIPTION :
+Executes a CELL READ MODEL command.
+==============================================================================*/
+{
+	char *current_token,*file_name;
+	int return_code;
+	struct Cell_window *cell_window;
+	struct Cmiss_command_data *command_data;
+	struct Modifier_entry *entry;
+  
+	ENTER(execute_command_cell_read_model);
+	USE_PARAMETER(dummy_to_be_modified);
+	/* check argument */
+	if (state)
+	{
+		if ((command_data=(struct Cmiss_command_data *)command_data_void)&&
+			(entry=command_data->set_file_name_option_table))
+		{
+			if (!((current_token=state->current_token)&&
+				!(strcmp(PARSER_HELP_STRING,current_token)&&
+				strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
+			{
+        file_name=(char *)NULL;
+        while (entry->option)
+        {
+          entry->to_be_modified= &file_name;
+          entry++;
+        }
+        entry->to_be_modified= &file_name;
+        if (return_code=process_multiple_options(state,
+          command_data->set_file_name_option_table))
+        {
+          if (cell_window=command_data->cell_window)
+          {
+            return_code = Cell_read_model(file_name,cell_window);
+          }
+          else
+          {
+            display_message(ERROR_MESSAGE,"execute_command_cell_read_model. "
+              "Missing Cell window");
+            return_code = 0;
+          }
+        }
+        DEALLOCATE(file_name);
+      }
+			else
+			{
+				/* no help */
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"execute_command_cell_read_model.  Missing command_data");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"execute_command_cell_read_model.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_command_cell_read_model */
+#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (CELL) */
+        
+#if defined (CELL)
+#if !defined (WINDOWS_DEV_FLAG)
+static int execute_command_cell_read(struct Parse_state *state,
+	void *prompt_void,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 08 June 2000
+
+DESCRIPTION :
+Executes a CELL READ command.
+==============================================================================*/
+{
+	int return_code;
+	static struct Modifier_entry option_table[]=
+	{
+		{"model",NULL,NULL,execute_command_cell_read_model},
+		{NULL,NULL,NULL,execute_command_cm}
+	};
+
+	ENTER(execute_command_cell_read);
+	/* check argument */
+	if (state)
+	{
+		(option_table[0]).user_data=command_data_void;
+		(option_table[1]).user_data=command_data_void;
+		(option_table[1]).to_be_modified=prompt_void;
+		return_code=process_option(state,option_table);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"execute_command_cell_read.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* execute_command_cell_read */
+#endif /* !defined (WINDOWS_DEV_FLAG) */
+#endif /* defined (CELL) */
+
+
 #if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_cell(struct Parse_state *state,
 	void *prompt_void,void *command_data_void)
@@ -22173,6 +22293,7 @@ Executes a CELL command.
 	{
 #if defined (CELL)
 		{"open",NULL,NULL,execute_command_cell_open},
+		{"read",NULL,NULL,execute_command_cell_read},
 #endif /* defined (CELL) */
 		{NULL,NULL,NULL,execute_command_cm}
 	};
@@ -22184,7 +22305,8 @@ Executes a CELL command.
 #if defined (CELL)
 		(option_table[0]).user_data=command_data_void;
 		(option_table[1]).user_data=command_data_void;
-		(option_table[1]).to_be_modified=prompt_void;
+		(option_table[2]).user_data=command_data_void;
+		(option_table[2]).to_be_modified=prompt_void;
 #else
 		(option_table[0]).user_data=command_data_void;
 		(option_table[0]).to_be_modified=prompt_void;
