@@ -222,7 +222,7 @@ DESCRIPTION :
 Returns the basis for the current transformed model in
 <vertex_3d_locations_or_offsets> which is a 1-D array of
 3*<number_of_modes>*<number_of_vertices> floats with x,y,z varying fastest and
-mode number fastest.
+mode number slowest.
 ==============================================================================*/
 
 CMISSDECLSPEC int pf_specify_image(int pf_job_id,int width,int height,

@@ -9,6 +9,7 @@ Tests the photoface interface.
 
 #include <stdio.h>
 #include "photoface_cmiss.h"
+#include "photoface_cmiss_utilities.h"
 
 struct Obj
 { 
@@ -71,10 +72,12 @@ Runs a job through the photoface interface.
 									"jaw_gnathon"},
 		image_array[3 * IMAGE_WIDTH * IMAGE_HEIGHT], *image_ptr,
 		texture_array[3 * TEXTURE_WIDTH * TEXTURE_HEIGHT];
-	float marker_2d_positions[] = {25, 20,
-											 45, 21,
-											 75, 22,
-											 67, 21,
+	char *eye_marker_names[] = {"eyeball_origin_left",
+										 "eyeball_origin_right"};
+	float marker_2d_positions[] = {25, 30,
+											 45, 31,
+											 75, 32,
+											 67, 31,
 											 55, 5,
 											 55, 45,
 											 55, 50,
@@ -90,6 +93,7 @@ Runs a job through the photoface interface.
 										1.0,
 										1.0},
 		marker_fitted_3d_positions[3 * 9],
+		eyeball_fitted_3d_positions[3 * 2],
 		error, eye_point[3], interest_point[3], up_vector[3], 
 		*vertex_3d_locations, view_angle;
 	int i, j, number_of_markers = 9, number_of_modes, number_of_vertices,
@@ -104,9 +108,10 @@ Runs a job through the photoface interface.
 
 	/* pf_specify_paths("/hosts/netapp/lifefx/data/photoface/", "/hosts/netapp/lifefx/data/photoface/"); */
 	/* pf_specify_paths("/hosts/netapp/home/shane/photoface/", "/hosts/netapp/home/shane/photoface/"); */
-	pf_specify_paths("/blackett/mirage/photoface/", "/blackett/mirage/photoface/");
+	/* pf_specify_paths("/blackett/mirage/photoface/", "/blackett/mirage/photoface/"); */
+	pf_specify_paths("/home/blackett/lifefx/photoface/", "/home/blackett/lifefx/photoface/");
 
-	pf_setup("rachel", "", &pf_job_id);
+	pf_setup("rachelv_r05m", "", &pf_job_id);
 	
 	printf("Completed pf_setup\n");
 
@@ -145,16 +150,30 @@ Runs a job through the photoface interface.
 	{
 		for (j = 0 ; j < IMAGE_WIDTH ; j++)
 		{
-			*image_ptr = 255 * j / IMAGE_WIDTH;
+			*image_ptr = 255.0 * (float)j / (float)IMAGE_WIDTH;
 			image_ptr++;
-			*image_ptr = 255 * i /  IMAGE_HEIGHT;
+			*image_ptr = 255.0 * (float)i /  (float)IMAGE_HEIGHT;
 			image_ptr++;
-			*image_ptr = 128;
+			*image_ptr = 128.0;
 			image_ptr++;
+			printf("%ud %ud %ud\n", *(image_ptr - 3), *(image_ptr - 2), 
+				*(image_ptr - 1)); 
 		}
 	}
 	
 	if (0 == pf_get_marker_fitted_positions(pf_job_id, number_of_markers, 
+		eye_marker_names, eyeball_fitted_3d_positions))
+	{
+		printf("Eyeball Fitted positions:\n");
+		for (i = 0 ; i < 2 ; i++)
+		{
+			printf("   %s:  %f %f %f\n", eye_marker_names[i],
+				eyeball_fitted_3d_positions[3 * i], eyeball_fitted_3d_positions[3 * i + 1], 
+				eyeball_fitted_3d_positions[3 * i + 2]);
+		}
+	}
+
+	if (0 == pf_get_marker_fitted_positions(pf_job_id, 2, 
 		marker_names, marker_fitted_3d_positions))
 	{
 		printf("Fitted positions:\n");
@@ -187,4 +206,20 @@ Runs a job through the photoface interface.
 
 	/* Free up the path memory */
 	pf_specify_paths(NULL, NULL);
+
+
+	/* Write out the files */
+	pf_write_head_model("test_photoface.obj", obj.number_of_vertices, obj.vertex_3d_locations,
+		obj.number_of_texture_vertices, obj.texture_vertex_3d_locations,
+		obj.number_of_triangles, obj.triangle_vertices,
+		obj.triangle_texture_vertices);
+	
+	pf_write_basis("test_photoface.basis" ,number_of_modes,
+		number_of_vertices, vertex_3d_locations);
+
+	pf_write_texture("test_photoface.jpg", TEXTURE_WIDTH, TEXTURE_HEIGHT, texture_array);
+
+	pf_write_scene_graph("test_photoface_scenegraph.txt",
+		eye_point, interest_point, up_vector, view_angle,
+		eyeball_fitted_3d_positions, eyeball_fitted_3d_positions + 3);
 }
