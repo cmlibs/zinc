@@ -2144,7 +2144,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	unsigned char pixels[3*1024];
-	int texels_in_band,texels_per_band,i,return_code;
+	int high_flag,low_flag,texel,texels_in_band,texels_per_band,i,return_code;
 	struct Spectrum_render_data *render_data;
 
 	ENTER(Spectrum_settings_enable);
@@ -2200,10 +2200,22 @@ DESCRIPTION :
 						i++;
 						while (i<3*1023)
 						{
-							if ((((i-3)/3+(texels_in_band/2))%texels_per_band)<texels_in_band)
+							texel = (i-3)/3+(texels_in_band/2);
+							if (settings->reverse)
+							{
+								low_flag = settings->extend_above;
+								high_flag = settings->extend_below;
+							}
+							else
+							{
+								low_flag = settings->extend_below;
+								high_flag = settings->extend_above;
+							}
+							if ((low_flag || texel>texels_in_band) && (high_flag || texel<1020) &&
+								((texel%texels_per_band)<texels_in_band))
 							{
 #if defined (DEBUG)
-								printf("  band pixel %d\n",i/3);
+								printf("  band pixel %d texel %d\n",i/3, texel);
 #endif /* defined (DEBUG) */
 								pixels[i]=0;
 								i++;
@@ -2387,8 +2399,11 @@ passed in render data.
 			(settings->component_number < render_data->number_of_data_components))
 		{
 			data_component = render_data->data[settings->component_number];
-			if (((data_component>=settings->minimum)||settings->extend_below)&&
-				((data_component<=settings->maximum)||settings->extend_above))
+			/* Always set a value for texture_coordinate based spectrums */
+			if ((SPECTRUM_BANDED==settings->colour_mapping)
+				|| (SPECTRUM_STEP==settings->colour_mapping)
+				|| (((data_component>=settings->minimum)||settings->extend_below)&&
+				((data_component<=settings->maximum)||settings->extend_above)))
 			{
 				/* first get value (normalised 0 to 1) from type */
 				if (settings->maximum != settings->minimum)
