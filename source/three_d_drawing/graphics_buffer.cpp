@@ -44,7 +44,8 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #include <stdio.h>
 #endif /* defined (DEBUG) */
 
-/* SAB 2 June 2004
+#if !defined (AIX)
+/* SAB 30 June 2004
 	These calls should be available in every system with GLX 1.3 or greater
 	but on the SGI the original code seems to work better with movies and
 	with grabbing frames off the screen.  This is done by trying the SGI versions
@@ -53,8 +54,8 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 	and then generates a bad alloc error when I try to make it current.
 	The code should still run on an older GLX even if it is compiled on a GLX 1.3 by
 	falling through to section 4.
-	On AIX pbuffers now appear to be working with the new GLX code so I have
-	enabled them. */
+	AIX is still having problems with rendering triangles badly and the fbconfig code
+	doesn't work well set displayed so it is back off again. */
 /*???DB.  The old version of GLX (glx.h 1999/12/11), has GLX_VERSION_1_3
 	defined, but doesn't define GLX_PBUFFER_WIDTH, GLX_PBUFFER_HEIGHT and
 	GLX_RGBA_BIT */
@@ -63,6 +64,7 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #define USE_GLX_PBUFFER 1
 #define USE_GLX_FBCONFIG 1
 #endif /* defined (GLX_VERSION_1_3) */
+#endif /* !defined (AIX) */
 #if ! defined (SGI)
 /* Despite being in the Mesa headers we do not want to use the SGI FB extensions on systems
    other than SGI, the GLX versions are preferable. */
