@@ -50,13 +50,15 @@ typedef struct USTMSCpair
 #include "three_d_drawing/dm_interface.h"
 #include "user_interface/message.h"
 
-#if ! defined (SGI)
+#if ! defined (SGI) && ! defined (AIX)
 /* SAB 9 December 2002
 	These calls should be available in every system with GLX 1.3 or greater
 	but on the SGI the original code seems to work better with movies and
 	with grabbing frames off the screen.  Hopefully this will settle down at
 	some point.
-	The code should still run on an older GLX even if it is compiled on a GLX 1.3.  */
+	The code should still run on an older GLX even if it is compiled on a GLX 1.3.
+        On hpc1 this code compiles but no valid pbuffers can be created for any FBConfigs
+        returned and so I have disablled it. */
 /*???DB.  The old version of GLX (glx.h 1999/12/11), has GLX_VERSION_1_3
 	defined, but doesn't define GLX_PBUFFER_WIDTH, GLX_PBUFFER_HEIGHT and
 	GLX_RGBA_BIT */
@@ -65,7 +67,7 @@ typedef struct USTMSCpair
 #define GLX_pbuffer 1
 #define GLX_fbconfig 1
 #endif /* defined (GLX_VERSION_1_3) */
-#endif /* ! defined (SGI) */
+#endif /* ! defined (SGI) && ! defined (AIX) */
 
 struct Dm_buffer
 {
@@ -227,9 +229,6 @@ supported on displays other than SGI will do.
 	Display *display;
 
 	ENTER(CREATE(Dm_buffer));
-#if defined (GLX_pbuffer)
-	USE_PARAMETER(shared_display_buffer);
-#endif /* defined (GLX_pbuffer) */
 
 	if(user_interface)
 	{
@@ -423,10 +422,8 @@ supported on displays other than SGI will do.
 					of GLX (>=1.3) but the NVIDIA card drivers are not reporting the correct version
 					and so I am assuming that if this extension is available then the GLX 1.3 stuff
 					is also in.  Hopefully this won't last long */
-				if ((ThreeDDrawing_get_glx_version(&glx_major_version, &glx_minor_version) && 
+				if (ThreeDDrawing_get_glx_version(&glx_major_version, &glx_minor_version) && 
 					((glx_major_version > 1) || (glx_minor_version > 2)))
-					|| query_glx_extension("GLX_SGIX_pbuffer", display,
-					DefaultScreen(display)))
 				{
 					if (!specified_visual_id)
 					{
@@ -434,12 +431,12 @@ supported on displays other than SGI will do.
 							DefaultScreen(display), fbvisattrs, &nelements))
 						{
 							config_index = 0;
-							while (config_index < nelements && 
+							while ((config_index < nelements) && 
 								(!(buffer->pbuffer = glXCreatePbuffer(display,
 								buffer->config_list[config_index], pbuffer_attribs))))
-							{
+							  {
 								config_index++;
-							}
+							  }
 						}
 						else
 						{
@@ -470,7 +467,7 @@ supported on displays other than SGI will do.
 							}
 						}
 					}
-					if (config_index < nelements)
+					if (buffer->config_list && (config_index < nelements))
 					{
 						buffer->config = buffer->config_list[config_index];
 					}
