@@ -1189,8 +1189,7 @@ Target : $(OBJS) cmgui.ObjSuffix
 	cd $(OBJECT_PATH) ; \
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
-	$(LINK) -o /tmp/Target $(ALL_FLAGS) `cat object.list` $(ALL_LIB)
-	cp /tmp/Target $(BIN_PATH)/Target
+	$(LINK) -o $(BIN_PATH)/Target $(ALL_FLAGS) `cat object.list` $(ALL_LIB)
 
 CmguiFiltLibrary : $(LIB_FILT_OBJS) $(FILT_OBJ) Makefile libCmguiFiltExports
 	cd $(OBJECT_PATH)
