@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : optical_signals.c
 
-LAST MODIFIED : 26 June 2000
+LAST MODIFIED : 23 July 2000
 
 DESCRIPTION :
 Read in a signal file and a list of pairs of electrodes and write out a signal
@@ -284,14 +284,14 @@ DESCRIPTION :
 												numerator_values=(float *)NULL;
 												denominator_values=(float *)NULL;
 												if (extract_signal_information((struct FE_node *)NULL,
-													(struct Draw_package *)NULL,*numerator,1,1,0,
-													(int *)NULL,(int *)NULL,(float **)NULL,
+													(struct Signal_drawing_package *)NULL,*numerator,1,1,
+													0,(int *)NULL,(int *)NULL,(float **)NULL,
 													&numerator_values,(enum Event_signal_status **)NULL,
 													(char **)NULL,(int *)NULL,(float *)NULL,
 													(float *)NULL)&&
 													extract_signal_information((struct FE_node *)NULL,
-													(struct Draw_package *)NULL,*denominator,1,1,0,
-													(int *)NULL,(int *)NULL,(float **)NULL,
+													(struct Signal_drawing_package *)NULL,*denominator,1,
+													1,0,(int *)NULL,(int *)NULL,(float **)NULL,
 													&denominator_values,
 													(enum Event_signal_status **)NULL,(char **)NULL,
 													(int *)NULL,(float *)NULL,(float *)NULL))
@@ -694,8 +694,8 @@ DESCRIPTION :
 												/* fill in the values */
 												numerator_values=(float *)NULL;
 												if (extract_signal_information((struct FE_node *)NULL,
-													(struct Draw_package *)NULL,*numerator,1,1,0,
-													(int *)NULL,(int *)NULL,(float **)NULL,
+													(struct Signal_drawing_package *)NULL,*numerator,1,1,
+													0,(int *)NULL,(int *)NULL,(float **)NULL,
 													&numerator_values,(enum Event_signal_status **)NULL,
 													(char **)NULL,(int *)NULL,(float *)NULL,
 													(float *)NULL))
