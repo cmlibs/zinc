@@ -1179,7 +1179,7 @@ access this function.
 						}
 						if (antialias)
 						{
-							glAccum(GL_RETURN,1.0f);
+							glAccum(GL_RETURN,1.001f);
 							glFlush();
 						}
 					}
