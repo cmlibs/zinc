@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rendervrml.c
 
-LAST MODIFIED : 21 June 2001
+LAST MODIFIED : 9 July 2001
 
 DESCRIPTION :
 Renders gtObjects to VRML file
@@ -1605,145 +1605,285 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 static int draw_surface_vrml(FILE *vrml_file,Triple *surfpts, Triple *normalpts,
 	Triple *texturepts, int number_of_data_components, GTDATA *data,
 	struct Graphical_material *material,struct Spectrum *spectrum,int npts1,
-	int npts2,enum GT_surface_type surface_type,
+	int npts2,enum GT_surface_type surface_type,gtPolygonType polygon_type,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 /*******************************************************************************
-LAST MODIFIED : 9 May 1999
+LAST MODIFIED : 9 July 1999
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	int i,j,return_code;
-	int index;
+	int index,index_1,index_2,number_of_points;
 	struct Texture *texture;
+	Triple *triple;
 
 	ENTER(draw_surface_vrml);
+	return_code=0;
 	if (surfpts&&(0<npts1)&&(1<npts2)&&
 		((g_NO_DATA==number_of_data_components)||(data&&material&&spectrum)))
 	{
-		fprintf(vrml_file,"Shape {\n");
-		fprintf(vrml_file,"  appearance\n");
-		fprintf(vrml_file,"Appearance {\n");
-		fprintf(vrml_file,"  material\n");
-		activate_material_vrml(vrml_file,material,
-			vrml_prototype_list,
-			/*no_define_material*/0,/*emissive_only*/0);
-		if (texture = Graphical_material_get_texture(material))
-		{
-			write_texture_vrml(vrml_file, texture);
-		}
-		fprintf(vrml_file,"}\n");
-		fprintf(vrml_file,"  geometry IndexedFaceSet {");
-		fprintf(vrml_file,"    solid FALSE\n");
-		fprintf(vrml_file,"    coord Coordinate {\n");
-		fprintf(vrml_file,"      point [\n");
-		for (i=0;i<npts1;i++)
-		{
-			for (j=0;j<npts2;j++)
-			{
-				fprintf(vrml_file,"        %f %f %f,\n",surfpts[i+npts1*j][0],
-					surfpts[i+npts1*j][1],surfpts[i+npts1*j][2]);
-			}
-		}
-		fprintf(vrml_file,"      ]\n");
-		fprintf(vrml_file,"    }\n");
-		if (normalpts)
-		{
-			fprintf(vrml_file,"    normal Normal {\n");
-			fprintf(vrml_file,"      vector [\n");
-			for (i=0;i<npts1;i++)
-			{
-				for (j=0;j<npts2;j++)
-				{
-					fprintf(vrml_file,"        %f %f %f,\n",
-						-normalpts[i+npts1*j][0],-normalpts[i+npts1*j][1],
-						-normalpts[i+npts1*j][2]);
-				}
-			}
-			fprintf(vrml_file,"      ]\n");
-			fprintf(vrml_file,"    }\n");
-		}
-		if (g_NO_DATA != number_of_data_components)
-		{
-			spectrum_start_rendervrml(vrml_file,spectrum,material);
-			for (i=0;i<npts1;i++)
-			{
-				for (j=0;j<npts2;j++)
-				{
-					spectrum_rendervrml_value(vrml_file,spectrum,material,
-						number_of_data_components,data+number_of_data_components*(i+npts1*j));
-				}
-			}
-			spectrum_end_rendervrml(vrml_file, spectrum);
-		}
-		/* texture coordinates */
-		if (texturepts)
-		{
-			fprintf(vrml_file,"    texCoord TextureCoordinate {\n");
-			fprintf(vrml_file,"      point [\n");
-			for (i=0;i<npts1;i++)
-			{
-				for (j=0;j<npts2;j++)
-				{
-					fprintf(vrml_file,"        %f %f,\n",
-						texturepts[i+npts1*j][0],texturepts[i+npts1*j][1]);
-				}
-			}
-			fprintf(vrml_file,"      ]\n");
-			fprintf(vrml_file,"    }\n");
-		}
-		/* polygon definitions */	
-		fprintf(vrml_file,"    coordIndex [\n");
 		switch (surface_type)
 		{
 			case g_SHADED:
 			case g_SHADED_TEXMAP:
+			case g_WIREFRAME_SHADED_TEXMAP:
 			{
-				index=0;
-				for (i=0;i<npts1-1;i++)
+				switch (polygon_type)
 				{
-					for (j=0;j<npts2-1;j++)
+					case g_QUADRILATERAL:
 					{
-						/* -1 finishes of the polygon vertex index list */
-						fprintf(vrml_file,"      %d,%d,%d,%d,-1\n",index,
-							index+1,index+npts2+1,index+npts2);
-						index++;
-					}
-					index++;
+						number_of_points=npts1*npts2;
+						return_code=1;
+					} break;
+					case g_TRIANGLE:
+					{
+						number_of_points=(npts1*(npts1+1))/2;
+						return_code=1;
+					} break;
 				}
-				return_code=1;
 			} break;
 			case g_SH_DISCONTINUOUS:
 			case g_SH_DISCONTINUOUS_TEXMAP:
 			{
-				index=0;
-				/* npts1 = number of polygons */
-				for (i=0;i<npts1;i++)
+				switch (polygon_type)
 				{
-					fprintf(vrml_file,"      ");
-					/* npts2 = number of vertices per polygon */
-					index += npts2;
-					for (j=0;j<npts2;j++)
+					case g_GENERAL_POLYGON:
+					case g_QUADRILATERAL:
+					case g_TRIANGLE:
 					{
-						index--;
-						fprintf(vrml_file,"%d,",index);
-					}
-					index += npts2;
-					/* -1 finishes of the polygon vertex index list */
-					fprintf(vrml_file,"-1\n");
+						number_of_points=npts1*npts2;
+						return_code=1;
+					} break;
 				}
-				return_code=1;
 			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"draw_surface_vrml.  Unsupported surface_type");
-				return_code=0;
-			}
 		}
-		fprintf(vrml_file,"    ]\n");
-		fprintf(vrml_file,"  } #IndexedFaceSet\n");
-		fprintf(vrml_file,"} #Shape\n");
+		if (return_code)
+		{
+			fprintf(vrml_file,"Shape {\n");
+			fprintf(vrml_file,"  appearance\n");
+			fprintf(vrml_file,"Appearance {\n");
+			fprintf(vrml_file,"  material\n");
+			activate_material_vrml(vrml_file,material,
+				vrml_prototype_list,
+				/*no_define_material*/0,/*emissive_only*/0);
+			if (texture = Graphical_material_get_texture(material))
+			{
+				write_texture_vrml(vrml_file, texture);
+			}
+			fprintf(vrml_file,"}\n");
+			if (g_WIREFRAME_SHADED_TEXMAP==surface_type)
+			{
+				fprintf(vrml_file,"  geometry IndexedLineSet {\n");
+			}
+			else
+			{
+				fprintf(vrml_file,"  geometry IndexedFaceSet {\n");
+				fprintf(vrml_file,"    solid FALSE\n");
+			}
+			fprintf(vrml_file,"    coord Coordinate {\n");
+			fprintf(vrml_file,"      point [\n");
+			triple=surfpts;
+			for (i=number_of_points;i>0;i--)
+			{
+				fprintf(vrml_file,"        %f %f %f,\n",(*triple)[0],(*triple)[1],
+					(*triple)[2]);
+				triple++;
+			}
+			fprintf(vrml_file,"      ]\n");
+			fprintf(vrml_file,"    }\n");
+			if (g_WIREFRAME_SHADED_TEXMAP!=surface_type)
+			{
+				if (triple=normalpts)
+				{
+					fprintf(vrml_file,"    normal Normal {\n");
+					fprintf(vrml_file,"      vector [\n");
+					for (i=number_of_points;i>0;i--)
+					{
+						fprintf(vrml_file,"        %f %f %f,\n",(*triple)[0],(*triple)[1],
+							(*triple)[2]);
+						triple++;
+					}
+					fprintf(vrml_file,"      ]\n");
+					fprintf(vrml_file,"    }\n");
+				}
+			}
+			if (g_NO_DATA!=number_of_data_components)
+			{
+				spectrum_start_rendervrml(vrml_file,spectrum,material);
+				for (i=0;i<number_of_points;i++)
+				{
+					spectrum_rendervrml_value(vrml_file,spectrum,material,
+						number_of_data_components,data+number_of_data_components*i);
+				}
+				spectrum_end_rendervrml(vrml_file, spectrum);
+			}
+			/* texture coordinates */
+			if (g_WIREFRAME_SHADED_TEXMAP!=surface_type)
+			{
+				if (triple=texturepts)
+				{
+					fprintf(vrml_file,"    texCoord TextureCoordinate {\n");
+					fprintf(vrml_file,"      point [\n");
+					for (i=number_of_points;i>0;i--)
+					{
+						fprintf(vrml_file,"        %f %f,\n",(*triple)[0],(*triple)[1]);
+						triple++;
+					}
+					fprintf(vrml_file,"      ]\n");
+					fprintf(vrml_file,"    }\n");
+				}
+			}
+			/* polygon definitions */	
+			fprintf(vrml_file,"    coordIndex [\n");
+			switch (surface_type)
+			{
+				case g_SHADED:
+				case g_SHADED_TEXMAP:
+				case g_WIREFRAME_SHADED_TEXMAP:
+				{
+					switch (polygon_type)
+					{
+						case g_QUADRILATERAL:
+						{
+							index=0;
+							if (g_WIREFRAME_SHADED_TEXMAP==surface_type)
+							{
+								for (j=0;j<npts2-1;j++)
+								{
+									for (i=0;i<npts1-1;i++)
+									{
+										/* -1 finishes of the polygon vertex index list */
+										fprintf(vrml_file,"      %d,%d,%d,%d,%d,-1\n",index,
+											index+1,index+npts1+1,index+npts1,index);
+										index++;
+									}
+									index++;
+								}
+							}
+							else
+							{
+								for (j=0;j<npts2-1;j++)
+								{
+									for (i=0;i<npts1-1;i++)
+									{
+										/* -1 finishes of the polygon vertex index list */
+										fprintf(vrml_file,"      %d,%d,%d,%d,-1\n",index,
+											index+1,index+npts1+1,index+npts1);
+										index++;
+									}
+									index++;
+								}
+							}
+						} break;
+						case g_TRIANGLE:
+						{
+							/* triangle strip */
+							index_1=0;
+							index_2=index_1+npts1;
+							if (g_WIREFRAME_SHADED_TEXMAP==surface_type)
+							{
+								for (i=npts1-1;i>0;i--)
+								{
+									/* -1 finishes of the polygon vertex index list */
+									fprintf(vrml_file,"      %d,%d,%d,%d,-1\n",index_1,index_2,
+										index_1+1,index_1);
+									index_1++;
+									for (j=i-1;j>0;j--)
+									{
+										/* -1 finishes of the polygon vertex index list */
+										fprintf(vrml_file,"      %d,%d,%d,%d,-1\n",index_1,index_2,
+											index_2+1,index_1);
+										index_2++;
+										fprintf(vrml_file,"      %d,%d,%d,%d,-1\n",index_1,index_2,
+											index_1+1,index_1);
+										index_1++;
+									}
+									index_1++;
+									index_2++;
+								}
+							}
+							else
+							{
+								for (i=npts1-1;i>0;i--)
+								{
+									/* -1 finishes of the polygon vertex index list */
+									fprintf(vrml_file,"      %d,%d,%d,-1\n",index_1,index_2,
+										index_1+1);
+									index_1++;
+									for (j=i-1;j>0;j--)
+									{
+										/* -1 finishes of the polygon vertex index list */
+										fprintf(vrml_file,"      %d,%d,%d,-1\n",index_1,index_2,
+											index_2+1);
+										index_2++;
+										fprintf(vrml_file,"      %d,%d,%d,-1\n",index_1,index_2,
+											index_1+1);
+										index_1++;
+									}
+									index_1++;
+									index_2++;
+								}
+							}
+						} break;
+					}
+				} break;
+				case g_SH_DISCONTINUOUS:
+				case g_SH_DISCONTINUOUS_TEXMAP:
+				{
+					if (g_WIREFRAME_SHADED_TEXMAP==surface_type)
+					{
+						/* npts1 = number of polygons */
+						for (i=0;i<npts1;i++)
+						{
+							fprintf(vrml_file,"      ");
+							/* npts2 = number of vertices per polygon */
+							index=i+npts2*npts1;
+							for (j=npts2;j>0;j--)
+							{
+								index -= npts1;
+								fprintf(vrml_file,"%d,",index);
+							}
+							/* -1 finishes of the polygon vertex index list */
+							fprintf(vrml_file,"%d,-1\n",i+(npts2-1)*npts1);
+						}
+					}
+					else
+					{
+						/* npts1 = number of polygons */
+						for (i=0;i<npts1;i++)
+						{
+							fprintf(vrml_file,"      ");
+							/* npts2 = number of vertices per polygon */
+							index=i+npts2*npts1;
+							for (j=npts2;j>0;j--)
+							{
+								index -= npts1;
+								fprintf(vrml_file,"%d,",index);
+							}
+							/* -1 finishes of the polygon vertex index list */
+							fprintf(vrml_file,"-1\n");
+						}
+					}
+				} break;
+			}
+			fprintf(vrml_file,"    ]\n");
+			if (g_WIREFRAME_SHADED_TEXMAP==surface_type)
+			{
+				fprintf(vrml_file,"  } #IndexedLineSet\n");
+			}
+			else
+			{
+				fprintf(vrml_file,"  } #IndexedFaceSet\n");
+			}
+			fprintf(vrml_file,"} #Shape\n");
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"draw_surface_vrml.  Unsupported surface_type");
+			return_code=0;
+		}
 	}
 	else
 	{
@@ -1929,7 +2069,7 @@ DESCRIPTION :
 int makevrml(FILE *vrml_file,gtObject *object,float time,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 /*******************************************************************************
-LAST MODIFIED : 9 May 1999
+LAST MODIFIED : 9 July 1999
 
 DESCRIPTION :
 Convert graphical object into API object.
@@ -2222,11 +2362,13 @@ Only writes the geometry field.
 									surface,surface_2))
 								{
 									draw_surface_vrml(vrml_file,interpolate_surface->pointlist,
-										interpolate_surface->normallist, interpolate_surface->texturelist,
-										interpolate_surface->n_data_components,interpolate_surface->data,
-										object->default_material,object->spectrum,
-										interpolate_surface->n_pts1,interpolate_surface->n_pts2,
-										surface->surface_type,vrml_prototype_list);
+										interpolate_surface->normallist,
+										interpolate_surface->texturelist,
+										interpolate_surface->n_data_components,
+										interpolate_surface->data,object->default_material,
+										object->spectrum,interpolate_surface->n_pts1,
+										interpolate_surface->n_pts2,surface->surface_type,
+										surface->polygon,vrml_prototype_list);
 									DESTROY(GT_surface)(&interpolate_surface);
 								}
 								surface=surface->ptrnext;
@@ -2240,9 +2382,9 @@ Only writes the geometry field.
 								draw_surface_vrml(vrml_file,surface->pointlist,
 									surface->normallist,surface->texturelist,
 									surface->n_data_components,surface->data,
-									object->default_material,object->spectrum,
-									surface->n_pts1,surface->n_pts2,
-									surface->surface_type,vrml_prototype_list);
+									object->default_material,object->spectrum,surface->n_pts1,
+									surface->n_pts2,surface->surface_type,surface->polygon,
+									vrml_prototype_list);
 								surface=surface->ptrnext;
 							}
 						}
