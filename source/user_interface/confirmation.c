@@ -389,7 +389,7 @@ DESCRIPTION :
 static char *confirmation_get_filename(enum Confirm_filetype type,
 	char *extension,struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 8 July 1999
+LAST MODIFIED : 8 September 2000
 
 DESCRIPTION :
 This routine supplies a file selection dialog window
@@ -401,8 +401,7 @@ This routine supplies a file selection dialog window
 
 	ENTER(confirmation_get_filename);
 	filename=(char *)NULL;
-	/* check arguments */
-	if (((CONFIRM_CHANGE_DIRECTORY==type)||extension)&&user_interface)
+	if (user_interface)
 	{
 		/* open a file selection box */
 		file_open_data=(struct File_open_data *)NULL;
