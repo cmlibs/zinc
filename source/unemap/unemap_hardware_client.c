@@ -122,11 +122,9 @@ Module constants
 #endif /* defined (UNIX) */
 
 #if defined (BYTE_ORDER) && (1234==BYTE_ORDER)
->>>big endian
 #define BIG_ENDIAN_CODE (unsigned char)0x01
 #else /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 #define BIG_ENDIAN_CODE (unsigned char)0x00
->>>little endian
 #endif /* defined (BYTE_ORDER) && (1234==BYTE_ORDER) */
 
 /*???DB.  Temporary ? */
@@ -2688,9 +2686,9 @@ See <unemap_configure> for more details.
 #endif /* defined (UNIX) */
 
 	ENTER(crate_configure_start);
-#if defined (DEBUG)
 	/*???debug */
 	display_message(INFORMATION_MESSAGE,"enter crate_configure_start %p\n",crate);
+#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	return_code=0;
 	/* check arguments */
@@ -2788,6 +2786,11 @@ See <unemap_configure> for more details.
 								buffer[0]=UNEMAP_CONFIGURE_CODE;
 								buffer[1]=BIG_ENDIAN_CODE;
 								buffer_size=2+sizeof(message_size);
+								/*???debug */
+								display_message(INFORMATION_MESSAGE,
+									"crate->software_version %d\n",crate->software_version);
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
 								if (4<=crate->software_version)
 								{
 									if (0==crate->number_of_configured_channels)
@@ -2892,6 +2895,19 @@ See <unemap_configure> for more details.
 									{
 										if (0<number_of_channels)
 										{
+											/*???debug */
+											{
+												int ii;
+
+												printf("configured channels:");
+												for (ii=0;ii<number_of_channels;ii++)
+												{
+													printf(" %d",(crate->configured_channels)[ii]);
+												}
+												printf("\n");
+											}
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
 											retval=socket_send(crate->command_socket,
 												(unsigned char *)(crate->configured_channels),
 												number_of_channels*sizeof(int),0);
@@ -3203,9 +3219,9 @@ See <unemap_configure> for more details.
 			);
 		return_code=0;
 	}
-#if defined (DEBUG)
 	/*???debug */
 	display_message(INFORMATION_MESSAGE,"leave crate_configure_start\n");
+#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	LEAVE;
 
