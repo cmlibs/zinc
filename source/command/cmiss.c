@@ -14248,7 +14248,7 @@ use node_manager and node_selection.
 					(modify_fe_region = Cmiss_region_get_FE_region(region)))
 				{
 					if ((from_region_path &&
-						Cmiss_region_get_region_from_path(command_data->root_region,
+						Cmiss_region_get_region_from_path(root_region,
 							from_region_path, &region) &&
 						(fe_region = Cmiss_region_get_FE_region(region))) ||
 						((!from_region_path) && FE_region_get_ultimate_master_FE_region(
