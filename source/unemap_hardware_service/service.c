@@ -65,13 +65,43 @@ FILE *fopen_UNEMAP_HARDWARE(char *file_name,char *type);
 
 VOID AddToMessageLog(LPTSTR lpszMsg)
 {
-	FILE *unemap_debug;
+/*	FILE *unemap_debug;
 
 	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
 	{
 		fprintf(unemap_debug,"%s\n",lpszMsg);
 		fclose(unemap_debug);
 	}
+	else*/
+	{
+	    TCHAR   szMsg[256];
+		HANDLE  hEventSource;
+		LPTSTR  lpszStrings[2];
+
+ /*      dwErr = GetLastError();*/
+
+        // Use event logging to log the error.
+        //
+        hEventSource = RegisterEventSource(NULL, TEXT(SZSERVICENAME));
+ 
+ /*       _stprintf(szMsg, TEXT("%s error: %d"), TEXT(SZSERVICENAME), dwErr);*/
+        lpszStrings[0] = /*szMsg;
+        lpszStrings[1] = */lpszMsg;
+
+        if (hEventSource != NULL) {
+            ReportEvent(hEventSource, // handle of event source
+                EVENTLOG_ERROR_TYPE,  // event type
+                0,                    // event category
+                0,                    // event ID
+                NULL,                 // current user's SID
+                1,                    // strings in lpszStrings
+                0,                    // no bytes of raw data
+                lpszStrings,          // array of error strings
+                NULL);                // no raw data
+
+            (VOID) DeregisterEventSource(hEventSource);
+        }
+    }
 } /* AddToMessageLog */
 /*???DB.  unemap hardware specific end */
 #if defined (UNEMAP_HARDWARE_SPECIFIC)
@@ -103,6 +133,7 @@ void _CRTAPI1 main(int argc, char **argv)
         { NULL, NULL }
     };
 
+#if defined (UNEMAP_HARDWARE_SPECIFIC)
 	/*???DB.  unemap hardware specific start */
 	/* clear the error log */
 	{
@@ -114,23 +145,36 @@ void _CRTAPI1 main(int argc, char **argv)
 		}
 	}
 	/*???DB.  unemap hardware specific end */
-#if defined (UNEMAP_HARDWARE_SPECIFIC)
 #endif /* defined (UNEMAP_HARDWARE_SPECIFIC) */
 #if defined (DEBUG)
+	/*???debug */
+	AddToMessageLog(TEXT("enter main"));
 #endif /* defined (DEBUG) */
     if ( (argc > 1) &&
          ((*argv[1] == '-') || (*argv[1] == '/')) )
     {
         if ( _stricmp( "install", argv[1]+1 ) == 0 )
         {
-            CmdInstallService();
+#if defined (DEBUG)
+ 	/*???debug */
+	AddToMessageLog(TEXT("install"));
+#endif /* defined (DEBUG) */
+           CmdInstallService();
         }
         else if ( _stricmp( "remove", argv[1]+1 ) == 0 )
         {
+#if defined (DEBUG)
+	/*???debug */
+	AddToMessageLog(TEXT("remove"));
+#endif /* defined (DEBUG) */
             CmdRemoveService();
         }
         else if ( _stricmp( "debug", argv[1]+1 ) == 0 )
         {
+#if defined (DEBUG)
+	/*???debug */
+	AddToMessageLog(TEXT("debug"));
+#endif /* defined (DEBUG) */
             bDebug = TRUE;
             CmdDebugService(argc, argv);
         }
@@ -145,6 +189,10 @@ void _CRTAPI1 main(int argc, char **argv)
     // the service control manager may be starting the service
     // so we must call StartServiceCtrlDispatcher
     dispatch:
+#if defined (DEBUG)
+	/*???debug */
+	AddToMessageLog(TEXT("dispatch"));
+#endif /* defined (DEBUG) */
         // this is just to be friendly
         printf( "%s -install          to install the service\n", SZAPPNAME );
         printf( "%s -remove           to remove the service\n", SZAPPNAME );
@@ -152,8 +200,16 @@ void _CRTAPI1 main(int argc, char **argv)
         printf( "\nStartServiceCtrlDispatcher being called.\n" );
         printf( "This may take several seconds.  Please wait.\n" );
 
+#if defined (DEBUG)
+	/*???debug */
+	AddToMessageLog(TEXT("StartServiceCtrlDispatcher"));
+#endif /* defined (DEBUG) */
         if (!StartServiceCtrlDispatcher(dispatchTable))
             AddToMessageLog(TEXT("StartServiceCtrlDispatcher failed."));
+#if defined (DEBUG)
+	/*???debug */
+	AddToMessageLog(TEXT("leave main"));
+#endif /* defined (DEBUG) */
 }
 
 
@@ -177,6 +233,11 @@ void _CRTAPI1 main(int argc, char **argv)
 //
 void WINAPI service_main(DWORD dwArgc, LPTSTR *lpszArgv)
 {
+
+#if defined (DEBUG)
+	/*???debug */
+	AddToMessageLog(TEXT("enter service_main"));
+#endif /* defined (DEBUG) */
 
     // register our service control handler:
     //
@@ -246,6 +307,10 @@ DWORD WINAPI service_ctrl(DWORD dwCtrlCode,DWORD dwEventType,LPVOID lpEventData,
 VOID WINAPI service_ctrl(DWORD dwCtrlCode)
 #endif /* defined (USE_ACPI) */
 {
+#if defined (DEBUG)
+	/*???debug */
+	AddToMessageLog(TEXT("enter service_ctrl"));
+#endif /* defined (DEBUG) */
     // Handle the requested control code.
     //
     switch(dwCtrlCode)
@@ -263,6 +328,10 @@ VOID WINAPI service_ctrl(DWORD dwCtrlCode)
 /*???DB.  unemap hardware specific end */
 #if defined (UNEMAP_HARDWARE_SPECIFIC)
 #endif /* defined (UNEMAP_HARDWARE_SPECIFIC) */
+#if defined (DEBUG)
+	/*???debug */
+	AddToMessageLog(TEXT("SERVICE_CONTROL_STOP|SERVICE_CONTROL_SHUTDOWN"));
+#endif /* defined (DEBUG) */
             ReportStatusToSCMgr(SERVICE_STOP_PENDING, NO_ERROR, 0);
             ServiceStop();
 #if defined (USE_ACPI)
@@ -274,17 +343,28 @@ VOID WINAPI service_ctrl(DWORD dwCtrlCode)
         // Update the service status.
         //
         case SERVICE_CONTROL_INTERROGATE:
+#if defined (DEBUG)
+	/*???debug */
+	AddToMessageLog(TEXT("SERVICE_CONTROL_INTERROGATE"));
+#endif /* defined (DEBUG) */
             break;
 
 #if defined (USE_ACPI)
 				case SERVICE_CONTROL_POWEREVENT:
-            AddToMessageLog(TEXT("SERVICE_CONTROL_POWEREVENT"));
+#if defined (DEBUG)
+	/*???debug */
+  AddToMessageLog(TEXT("SERVICE_CONTROL_POWEREVENT"));
+#endif /* defined (DEBUG) */
 						ReportStatusToSCMgr(ssStatus.dwCurrentState, NO_ERROR, 0);
 						return (ERROR_CONTINUE);
 #endif /* defined (USE_ACPI) */
         // invalid control code
         //
         default:
+#if defined (DEBUG)
+	/*???debug */
+  AddToMessageLog(TEXT("default"));
+#endif /* defined (DEBUG) */
             break;
 
     }

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_service.c
 
-LAST MODIFIED : 25 January 2002
+LAST MODIFIED : 8 March 2002
 
 DESCRIPTION :
 The unemap service which runs under NT and talks to unemap via sockets.
@@ -48,6 +48,9 @@ PROBLEMS :
 2.2.3 NO_ACQUIRED_THREAD
 			Thought that may be problems with locking memory between threads.  Doesn't
 			fix the problem
+2.2.4 USE_UNEMAP_HARDWARE
+			Problems with loading service at start up under W2K.  Trying not using
+			unemap (NI-DAQ DLL)
 
 TO DO :
 1 Clear unemap.deb
@@ -58,9 +61,11 @@ TO DO :
 
 #define USE_SOCKETS
 /*#define USE_WORMHOLES*/
+#define USE_UNEMAP_HARDWARE
 
 #include <stdio.h>
 #include <stdlib.h>
+#if defined (USE_UNEMAP_HARDWARE)
 #if defined (USE_SOCKETS)
 #include <winsock2.h>
 #include <process.h>
@@ -70,10 +75,13 @@ TO DO :
 #include <windows.h>
 #include "wormhole.h"
 #endif /* defined (USE_WORMHOLES) */
+#endif /* defined (USE_UNEMAP_HARDWARE) */
 
 #include "service.h"
 #include "general/debug.h"
+#if defined (USE_UNEMAP_HARDWARE)
 #include "unemap/unemap_hardware.h"
+#endif /* defined (USE_UNEMAP_HARDWARE) */
 #include "unemap_hardware_service/unemap_hardware_service.h"
 #include "user_interface/message.h"
 
@@ -81,13 +89,44 @@ TO DO :
 Module constants
 ----------------
 */
+#if defined (USE_UNEMAP_HARDWARE)
 /* Used so that the client can deal with old versions */
 #define SERVICE_VERSION 1
+#if defined (USE_SOCKETS)
+#define BUFFER_SIZE 128
+#define DEFAULT_PORT 5001
+#define MESSAGE_HEADER_SIZE 6
+#endif /* defined (USE_SOCKETS) */
+#if defined (USE_WORMHOLES)
+#define COMMAND_IN_CONNECTION_ID "sock:esp20:5001"
+#define COMMAND_OUT_CONNECTION_ID "sock:esp20:5002"
+#define SCROLLING_IN_CONNECTION_ID "sock:esp20:5003"
+#define SCROLLING_OUT_CONNECTION_ID "sock:esp20:5004"
+#endif /* defined (USE_WORMHOLES) */
+#endif /* defined (USE_UNEMAP_HARDWARE) */
 
 /*
-Module functions
+Module variables
 ----------------
 */
+/* for error messages */
+char error_string[501];
+/* this event is signalled when the service should end */
+HANDLE hServerStopEvent=NULL;
+#if defined (USE_UNEMAP_HARDWARE)
+#if defined (USE_SOCKETS)
+HANDLE acquired_socket_mutex=NULL;
+SOCKET acquired_socket=INVALID_SOCKET,calibration_socket=INVALID_SOCKET,
+	command_socket=INVALID_SOCKET,scrolling_socket=INVALID_SOCKET;
+#endif /* defined (USE_SOCKETS) */
+unsigned char acquired_big_endian,calibration_big_endian,scrolling_big_endian;
+#endif /* defined (USE_UNEMAP_HARDWARE) */
+
+/*
+Prototypes for unemap "hidden" functions
+----------------------------------------
+*/
+#if defined (USE_UNEMAP_HARDWARE)
 int unemap_get_card_state(int channel_number,int *battA_state,
 	int *battGood_state,float *filter_frequency,int *filter_taps,
 	unsigned char shift_registers[10],int *GA0_state,int *GA1_state,
@@ -117,37 +156,7 @@ Toggles the <shift_register> of the signal conditioning card containing the
 
 Intended for diagnostic use only.
 ==============================================================================*/
-
-/*
-Constants
----------
-*/
-#if defined (USE_SOCKETS)
-#define BUFFER_SIZE 128
-#define DEFAULT_PORT 5001
-#define MESSAGE_HEADER_SIZE 6
-#endif /* defined (USE_SOCKETS) */
-#if defined (USE_WORMHOLES)
-#define COMMAND_IN_CONNECTION_ID "sock:esp20:5001"
-#define COMMAND_OUT_CONNECTION_ID "sock:esp20:5002"
-#define SCROLLING_IN_CONNECTION_ID "sock:esp20:5003"
-#define SCROLLING_OUT_CONNECTION_ID "sock:esp20:5004"
-#endif /* defined (USE_WORMHOLES) */
-
-/*
-Module variables
-----------------
-*/
-/* for error messages */
-char error_string[501];
-/* this event is signalled when the service should end */
-HANDLE hServerStopEvent=NULL;
-#if defined (USE_SOCKETS)
-HANDLE acquired_socket_mutex=NULL;
-SOCKET acquired_socket=INVALID_SOCKET,calibration_socket=INVALID_SOCKET,
-	command_socket=INVALID_SOCKET,scrolling_socket=INVALID_SOCKET;
-#endif /* defined (USE_SOCKETS) */
-unsigned char acquired_big_endian,calibration_big_endian,scrolling_big_endian;
+#endif /* defined (USE_UNEMAP_HARDWARE) */
 
 /*
 Module functions
@@ -363,6 +372,7 @@ DESCRIPTION :
 	return (return_code);
 } /* display_warning_message */
 
+#if defined (USE_UNEMAP_HARDWARE)
 static int close_connection(void)
 /*******************************************************************************
 LAST MODIFIED : 2 July 2000
@@ -3988,7 +3998,12 @@ DESCRIPTION :
 	return (return_code);
 } /* process_message */
 #endif /* defined (USE_SOCKETS) */
+#endif /* defined (USE_UNEMAP_HARDWARE) */
 
+/*
+Global functions
+----------------
+*/
 VOID ServiceStart(DWORD dwArgc,LPTSTR *lpszArgv)
 /*******************************************************************************
 LAST MODIFIED : 27 July 2000
@@ -4001,22 +4016,27 @@ Actual code of the service that does the work.
 {
 	DWORD dwWait;
 	HANDLE hEvents[2]={NULL,NULL};
+#if defined (USE_UNEMAP_HARDWARE)
 	unsigned long number_of_channels;
+#endif /* defined (USE_UNEMAP_HARDWARE) */
 #if defined (USE_SOCKETS)
+	int running;
+	struct timeval timeout;
+#if defined (USE_UNEMAP_HARDWARE)
 #if defined (OLD_CODE)
 	fd_set readfds;
 #endif /* defined (OLD_CODE) */
-	int fromlen,last_error,return_code,retval,running,socket_type=SOCK_STREAM;
+	int fromlen,last_error,return_code,retval,socket_type=SOCK_STREAM;
 	long message_size,out_buffer_size;
 	SOCKET acquired_socket_listen,calibration_socket_listen,command_socket_listen,
 		scrolling_socket_listen;
 	struct sockaddr_in from,local;
-	struct timeval timeout;
 	unsigned char big_endian,buffer[BUFFER_SIZE],operation_code,*out_buffer;
 	unsigned short port=DEFAULT_PORT;
 	WORD wVersionRequested;
 	WSADATA wsaData;
 	WSANETWORKEVENTS network_events;
+#endif /* defined (USE_UNEMAP_HARDWARE) */
 #endif /* defined (USE_SOCKETS) */
 #if defined (USE_WORMHOLES)
 	Wh_input *command_in,*scrolling_in;
@@ -4035,6 +4055,7 @@ Actual code of the service that does the work.
 		(void *)NULL);
 	set_display_message_function(WARNING_MESSAGE,display_warning_message,
 		(void *)NULL);
+#if defined (USE_UNEMAP_HARDWARE)
 	/* when the NIDAQ DLL is loaded (when the service starts), the NI cards and
 		hence the unemap cards are in an unknown state.  This call to
 		unemap_get_number_of_channels forces a call to search_for_NI_cards which
@@ -4045,6 +4066,7 @@ Actual code of the service that does the work.
 	sprintf(error_string,"after unemap_get_number_of_channels");
 	AddToMessageLog(TEXT(error_string));
 #endif /* defined (DEBUG) */
+#endif /* defined (USE_UNEMAP_HARDWARE) */
 	/* service initialization */
 	hEvents[0]=NULL;
 	hEvents[1]=NULL;
@@ -4074,6 +4096,7 @@ Actual code of the service that does the work.
 						/*exit code*/NO_ERROR,/*wait hint*/3000))
 					{
 #if defined (USE_SOCKETS)
+#if defined (USE_UNEMAP_HARDWARE)
 						wVersionRequested=MAKEWORD(2,2);
 						if (SOCKET_ERROR!=WSAStartup(wVersionRequested,&wsaData))
 						{
@@ -4129,6 +4152,7 @@ Actual code of the service that does the work.
 														5))&&
 														(SOCKET_ERROR!=listen(acquired_socket_listen,5)))
 													{
+#endif /* defined (USE_UNEMAP_HARDWARE) */
 														/* report the status to the service control
 															manager */
 														if (ReportStatusToSCMgr(
@@ -4141,7 +4165,9 @@ Actual code of the service that does the work.
 															sprintf(error_string,"Starting main loop");
 															AddToMessageLog(TEXT(error_string));
 #endif /* defined (DEBUG) */
+#if defined (USE_UNEMAP_HARDWARE)
 															command_socket=INVALID_SOCKET;
+#endif /* defined (USE_UNEMAP_HARDWARE) */
 															timeout.tv_sec=0;
 															timeout.tv_usec=0;
 															while (1==running)
@@ -4161,6 +4187,7 @@ Actual code of the service that does the work.
 #endif /* defined (DEBUG) */
 																if (WAIT_OBJECT_0+1==dwWait)
 																{
+#if defined (USE_UNEMAP_HARDWARE)
 																	WSAEnumNetworkEvents(command_socket,
 																		NULL,&network_events);
 #if defined (DEBUG)
@@ -4403,6 +4430,7 @@ Actual code of the service that does the work.
 																	{
 																		ResetEvent(hEvents[1]);
 																	}
+#endif /* defined (USE_UNEMAP_HARDWARE) */
 																}
 																else
 																{
@@ -4416,6 +4444,7 @@ Actual code of the service that does the work.
 #endif /* defined (DEBUG) */
 															}
 														}
+#if defined (USE_UNEMAP_HARDWARE)
 													}
 													else
 													{
@@ -4497,6 +4526,7 @@ Actual code of the service that does the work.
 							AddToMessageLog(TEXT(error_string));
 						}
 						WSACleanup();
+#endif /* defined (USE_UNEMAP_HARDWARE) */
 #endif /* defined (USE_SOCKETS) */
 #if defined (USE_WORMHOLES)
 						if ((command_in=CREATE(Wh_input)(COMMAND_IN_CONNECTION_ID,

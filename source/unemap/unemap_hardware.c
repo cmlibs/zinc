@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.c
 
-LAST MODIFIED : 28 January 2002
+LAST MODIFIED : 18 March 2002
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -140,6 +140,46 @@ unemap.*.numberOfSamples: 100000
 				- SCAN_Start must start a separate thread/process - calls to
 					Config_DAQ_Event_Message before it change the events for the
 					acquistion and calls after don't
+1.2.17 Windows 2000
+			Installed Windows 2000 on the D: partition with NTFS
+1.2.17.1 Started with NT on C: and parallel port CD drive (PPCD) installed
+1.2.17.2 Set PP to ECP in BIOS (was EPP) - needed for w2k PPCD drivers
+1.2.17.3 Boot from Windows98 startup floppy disk (modified to have DOS PPCD
+				driver - dosepatc.exe from www.scmmicro.com).  Could use w2k startup
+				disks (pressing F6 to say have SCSI driver and using epatap2k driver
+				disk, from scmmicro, with the txtsetup.oem that I created) now that
+				PP set up right in BIOS)
+1.2.17.4 Put Windows 2000 CD in PPCD and run
+				F:\i386\winnt.exe
+				where F is the CD drive.  Format D: as NTFS, copy files, reboot and
+				finish installation
+1.2.17.5 Install epatap2k driver
+			- performs poorly because only 32MB (recommended minimum 64MB)
+			- still crashes (even with NiDaq 6.9.1)
+			- tried USE_ACPI, but still crashs/locks and doesn't get any messages
+1.2.18 Windows NT
+			Installed Windows NT on the D: partition with FAT
+???DB.  Give details
+1.2.18.1 NIDAQ 5.1
+				- doesn't support 6071E cards
+1.2.18.2 NIDAQ 6.1
+				- locks up with unemap_29jul00.exe (does not use a service, sampling at
+					1kHz, 5000 samples)
+				- locks up with unemap_ni_14mar02.exe (does not use service)
+				- locks up with unemap_14mar02.exe and
+					unemap_hardware_service_14mar02.exe
+1.2.18.3 NIDAQ 6.6.  Message during installation about missing ordinal.  I think
+				that it was "Ordinal 6453 could not be located in dynamic link library
+				mfc42.dll".  Similar problem described on ni.com with LabView 5.0
+				installation - mfc42.dll is used by InstallShield and is missing or the
+				wrong version (maybe I need service packs)
+				- locks up with unemap_29jul00.exe (does not use service)
+				- locks up with unemap_ni_14mar02.exe (does not use service)
+				- locks up with unemap_14mar02.exe and
+					unemap_hardware_service_14mar02.exe
+1.2.18.4 Install NT SP3
+
+NO_BATT_GOOD_WATCH - no thread watching BattGood
 
 ???To do
 1 Try moving pulse generation set up from unemap_start_sampling to
@@ -3582,11 +3622,13 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 
 	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
 	{
-		fprintf(unemap_debug,"enter load_NI_DA %d %p %d %g %p %u\n",
-			number_of_channels,channel_numbers,number_of_voltages,voltages_per_second,
-			voltages,number_of_cycles);
+		fprintf(unemap_debug,"enter load_NI_DA %d %d %p %d %g %p %u %p %p\n",
+			da_channel,number_of_channels,channel_numbers,number_of_voltages,
+			voltages_per_second,voltages,number_of_cycles,stimulation_end_callback,
+			stimulation_end_callback_data);
 		fclose(unemap_debug);
 	}
+#if defined (DEBUG)
 	if (unemap_debug=fopen_UNEMAP_HARDWARE("unemap.deb","a"))
 	{
 		if ((0<number_of_channels)&&channel_numbers)
@@ -3610,6 +3652,7 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 		}
 		fclose(unemap_debug);
 	}
+#endif /* defined (DEBUG) */
 }
 #endif /* defined (DEBUG) */
 	return_code=0;
@@ -6886,6 +6929,7 @@ stage 4 is calculating the offset
 #endif /* defined (OLD_CODE) */
 
 #if defined (WINDOWS)
+#if !defined (NO_BATT_GOOD_WATCH)
 DWORD WINAPI batt_good_thread_function(LPVOID stop_flag_address_void)
 /*******************************************************************************
 LAST MODIFIED : 13 November 2000
@@ -6924,6 +6968,7 @@ DESCRIPTION :
 
 	return (return_code);
 } /* batt_good_thread_function */
+#endif /* !defined (NO_BATT_GOOD_WATCH) */
 #endif /* defined (WINDOWS) */
 
 static int file_write_samples_acquired(short int *samples,int number_of_samples,
@@ -13246,10 +13291,12 @@ on.
 					if (stop_flag)
 					{
 						stop_flag=0;
+#if !defined (NO_BATT_GOOD_WATCH)
 						batt_good_thread=CreateThread(/*no security attributes*/NULL,
 							/*use default stack size*/0,batt_good_thread_function,
 							(LPVOID)&stop_flag,/*use default creation flags*/0,
 							&batt_good_thread_id);
+#endif /* !defined (NO_BATT_GOOD_WATCH) */
 					}
 #endif /* defined (WINDOWS) */
 				}

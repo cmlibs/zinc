@@ -52,6 +52,7 @@
 #ifndef _SERVICE_H
 #define _SERVICE_H
 
+#include <windows.h>
 
 #ifdef __cplusplus
 extern "C" {
