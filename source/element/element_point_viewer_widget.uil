@@ -1,0 +1,113 @@
+!*******************************************************************************
+! FILE : element_point_viewer_widget.uil
+!
+! LAST MODIFIED : 23 May 2000
+!
+! DESCRIPTION :
+! Widgets for choosing a field at an element point and viewing/editing its
+! values in an element_point_field_viewer_widget.
+!===============================================================================
+module elem_pt_vw_widget
+	version = 'v1.0'
+
+procedure
+	elem_pt_vw_id_choose_field_form;
+	elem_pt_vw_id_field_viewer_form;
+	elem_pt_vw_destroy_CB;
+
+value
+	shadow_size : 2;
+
+identifier
+	!The gap between widgets
+	widget_spacing;
+	!Pointer to data specific to this instance of the element_point_viewer widget
+	elem_pt_vw_structure;
+	!Fonts go here
+	button_font;
+	heading_font;
+	list_font;
+	menu_Font;
+	normal_font;
+	normal_non_proportional_font;
+	small_font;
+
+!*******************************************************************************
+! The element_point_viewer widget
+object
+	element_point_viewer_widget: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNuserData = elem_pt_vw_structure;
+			};
+		controls
+			{
+			XmRowColumn elem_pt_vw_choose_field_entry;
+			XmForm elem_pt_vw_field_viewer_form;
+			};
+		callbacks
+			{
+			XmNdestroyCallback = procedure elem_pt_vw_destroy_CB(elem_pt_vw_structure);
+			};
+		};
+  elem_pt_vw_choose_field_entry: XmRowColumn
+    {
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_NONE;
+			XmNmarginHeight = 0;
+			XmNmarginWidth = 0;
+			XmNspacing = 0;
+			XmNorientation = XmHORIZONTAL;
+			XmNpacking = XmPACK_TIGHT;
+			};
+    controls
+      {
+      XmLabelGadget elem_pt_vw_choose_field_label;
+      XmForm elem_pt_vw_choose_field_form;
+      };
+    };
+  elem_pt_vw_choose_field_label: XmLabelGadget
+    {
+    arguments
+      {
+      XmNlabelString = compound_string("Field:");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+    };
+	elem_pt_vw_choose_field_form: XmForm
+		{
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				elem_pt_vw_id_choose_field_form(elem_pt_vw_structure);
+			};
+		};
+	elem_pt_vw_field_viewer_form: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = elem_pt_vw_choose_field_entry;
+			XmNbottomAttachment = XmATTACH_FORM;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedure
+				elem_pt_vw_id_field_viewer_form(elem_pt_vw_structure);
+			};
+		};
+!*******************************************************************************
+end module;
+
