@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : interactive_toolbar_widget.c
 
-LAST MODIFIED : 28 August 2000
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Widget for choosing the Interactive_tool currently in-use in a dialog from a
@@ -214,45 +214,66 @@ Callback from interactive tool buttons - change of tool.
 	LEAVE;
 } /* interactive_toolbar_widget_entry_CB */
 
+int Interactive_tool_remove_from_interactive_toolbar_widget(
+	struct Interactive_tool *interactive_tool, void *interactive_toolbar_void)
+/*******************************************************************************
+LAST MODIFIED : 30 May 2001
+
+DESCRIPTION :
+Makes sure there is no widget for <interactive_tool> in the
+<interactive_toolbar>.
+==============================================================================*/
+{
+	int return_code;
+	struct Interactive_toolbar_widget_struct *interactive_toolbar;
+	Widget widget;
+
+	ENTER(Interactive_tool_remove_from_interactive_toolbar_widget);
+	if (interactive_tool && (interactive_toolbar =
+		(struct Interactive_toolbar_widget_struct *)interactive_toolbar_void))
+	{
+		if (widget = interactive_toolbar_get_widget_for_interactive_tool(
+			interactive_toolbar, interactive_tool))
+		{
+			XtDestroyWidget(widget);
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Interactive_tool_remove_from_interactive_toolbar_widget.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Interactive_tool_remove_from_interactive_toolbar_widget */
+
 static void interactive_toolbar_widget_interactive_tool_change(
 	struct MANAGER_MESSAGE(Interactive_tool) *message,
 	void *interactive_toolbar_void)
 /*******************************************************************************
-LAST MODIFIED : 8 May 2000
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 One or more of the interactive_tools have changed in the manager. Removes
-managed tools from the toolbar in response to MANAGER_CHANGE_DELETE messages.
-???RC Does not handle MANAGER_CHANGE_ALL messages appropriately, since cannot
-tell difference between newly unmanaged tools and never-managed tools. Do not
-think these will happen, though.
+managed tools from the toolbar in response to MANAGER_CHANGE_REMOVE messages.
 ???RC May want to respond to change object functions, eg. to swap icons as
 functions of tool changes.
 ==============================================================================*/
 {
-	struct Interactive_toolbar_widget_struct *interactive_toolbar;
-	Widget widget;
-
 	ENTER(interactive_toolbar_widget_interactive_tool_change);
-	if (message&&(interactive_toolbar=
-		(struct Interactive_toolbar_widget_struct *)interactive_toolbar_void))
+	if (message && interactive_toolbar_void)
 	{
 		switch (message->change)
 		{
-			case MANAGER_CHANGE_ALL(Interactive_tool):
+			case MANAGER_CHANGE_REMOVE(Interactive_tool):
 			{
-				/* cannot handle properly */
-				display_message(ERROR_MESSAGE,
-					"interactive_toolbar_widget_interactive_tool_change.  "
-					"MANAGER_CHANGE_ALL mesage not handled");
-			} break;
-			case MANAGER_CHANGE_DELETE(Interactive_tool):
-			{
-				if (widget=interactive_toolbar_get_widget_for_interactive_tool(
-					interactive_toolbar,message->object_changed))
-				{
-					XtDestroyWidget(widget);
-				}
+				FOR_EACH_OBJECT_IN_LIST(Interactive_tool)(
+					Interactive_tool_remove_from_interactive_toolbar_widget,
+					interactive_toolbar_void, message->changed_object_list);
 			} break;
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Interactive_tool):
 			case MANAGER_CHANGE_OBJECT(Interactive_tool):

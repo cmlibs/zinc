@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_viewer.h
 
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 6 June 2001
 
 DESCRIPTION :
 Dialog for selecting nodes and viewing and/or editing field values. Works with
@@ -37,16 +37,24 @@ Global Functions
 */
 
 struct Node_viewer *CREATE(Node_viewer)(
-	struct Node_viewer **node_viewer_address,char *dialog_title,
-	struct MANAGER(FE_node) *node_manager,struct FE_node *initial_node,
+	struct Node_viewer **node_viewer_address,
+	char *dialog_title,
+	struct FE_node *initial_node,
+	struct MANAGER(FE_node) *this_node_manager,
+	struct MANAGER(FE_node) *actual_node_manager,
+	struct MANAGER(FE_element) *actual_element_manager,
 	struct FE_node_selection *node_selection,
 	struct Computed_field_package *computed_field_package,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 6 June 2001
 
 DESCRIPTION :
 Creates a dialog for choosing nodes and displaying and editing their fields.
+Nodes, starting with <initial_node> may be chosen from <this_node_manager>.
+Pass <initial_data> and <data_manager> in these parameters for data viewer.
+Since both nodes and data can depend on embedded fields, the
+<actual_node_manager> and <actual_element_manager> also need to be passed.
 ==============================================================================*/
 
 int DESTROY(Node_viewer)(struct Node_viewer **node_viewer_address);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : interactive_node_editor.c
 
-LAST MODIFIED : 2 November 1998
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 This module creates a free interactive_node_editor input device, using two dof3,
@@ -229,7 +229,7 @@ Tells CMGUI about the current values.
 static void interactive_node_editor_global_object_change(
 	struct MANAGER_MESSAGE(FE_node) *message,void *data)
 /*******************************************************************************
-LAST MODIFIED : 16 February 1997
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Something has changed globally about the objects this widget uses, so refresh.
@@ -242,49 +242,42 @@ Something has changed globally about the objects this widget uses, so refresh.
 	{
 		switch (message->change)
 		{
-			case MANAGER_CHANGE_ALL(FE_node):
-			{
-				if (IS_MANAGED(FE_node)(temp_interactive_node_editor->global_value,
-					temp_interactive_node_editor->manager))
-				{
-					interactive_node_editor_set_data(temp_interactive_node_editor->widget,
-						INTERACTIVE_NODE_EDITOR_DATA,
-						temp_interactive_node_editor->global_value);
-				}
-				else
-				{
-					interactive_node_editor_set_data(temp_interactive_node_editor->widget,
-						INTERACTIVE_NODE_EDITOR_DATA,FIRST_OBJECT_IN_MANAGER_THAT(FE_node)(
-						(MANAGER_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
-						temp_interactive_node_editor->manager));
-				}
-			}; break;
-			case MANAGER_CHANGE_DELETE(FE_node):
-			{
-				if (message->object_changed==temp_interactive_node_editor->global_value)
-				{
-					interactive_node_editor_set_data(temp_interactive_node_editor->widget,
-						INTERACTIVE_NODE_EDITOR_DATA,FIRST_OBJECT_IN_MANAGER_THAT(FE_node)(
-						(MANAGER_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,
-						temp_interactive_node_editor->manager));
-				}
-			}; break;
 			case MANAGER_CHANGE_ADD(FE_node):
 			{
-				if (NULL==temp_interactive_node_editor->global_value)
+				if ((struct FE_node *)NULL ==
+					temp_interactive_node_editor->global_value)
 				{
+					/* grab the first node added */
 					interactive_node_editor_set_data(temp_interactive_node_editor->widget,
-						INTERACTIVE_NODE_EDITOR_DATA,message->object_changed);
+						INTERACTIVE_NODE_EDITOR_DATA, FIRST_OBJECT_IN_LIST_THAT(FE_node)(
+							(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL, (void *)NULL,
+							message->changed_object_list));
+				}
+			}; break;
+			case MANAGER_CHANGE_REMOVE(FE_node):
+			{
+				if (IS_OBJECT_IN_LIST(FE_node)(
+					temp_interactive_node_editor->global_value,
+					message->changed_object_list))
+				{
+					/* grab the first node left in the manager */
+					interactive_node_editor_set_data(temp_interactive_node_editor->widget,
+						INTERACTIVE_NODE_EDITOR_DATA, FIRST_OBJECT_IN_MANAGER_THAT(FE_node)(
+							(MANAGER_CONDITIONAL_FUNCTION(FE_node) *)NULL, (void *)NULL,
+							temp_interactive_node_editor->manager));
 				}
 			}; break;
 			case MANAGER_CHANGE_IDENTIFIER(FE_node):
 			case MANAGER_CHANGE_OBJECT(FE_node):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_node):
 			{
-				if (message->object_changed==temp_interactive_node_editor->global_value)
+				if (IS_OBJECT_IN_LIST(FE_node)(
+					temp_interactive_node_editor->global_value,
+					message->changed_object_list))
 				{
 					interactive_node_editor_set_data(temp_interactive_node_editor->widget,
-						INTERACTIVE_NODE_EDITOR_DATA,message->object_changed);
+						INTERACTIVE_NODE_EDITOR_DATA,
+						temp_interactive_node_editor->global_value);
 				}
 			} break;
 		}

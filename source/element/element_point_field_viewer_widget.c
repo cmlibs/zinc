@@ -219,7 +219,7 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 static void element_point_field_viewer_widget_value_CB(Widget widget,
 	void *element_point_field_viewer_void,void *call_data)
 /*******************************************************************************
-LAST MODIFIED : 15 June 2000
+LAST MODIFIED : 6 June 2001
 
 DESCRIPTION :
 Called when the user has changed the data in the text widget.  Processes the
@@ -352,7 +352,7 @@ data, and then changes the correct value in the array structure.
 				{
 					XmTextFieldSetString(widget,field_value_string);
 				}
-				DEALLOCATE(value_string);
+				DEALLOCATE(field_value_string);
 			}
 			else
 			{

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : choose_object.h
 
-LAST MODIFIED : 18 April 2000
+LAST MODIFIED : 18 May 2001
 
 DESCRIPTION :
 Macros for implementing an option menu dialog control for choosing an object

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_field_viewer_widget.c
 
-LAST MODIFIED : 27 March 2001
+LAST MODIFIED : 6 June 2001
 
 DESCRIPTION :
 Widget for displaying and editing component values of computed fields defined
@@ -18,6 +18,7 @@ Note the node passed to this widget should be a non-managed local copy.
 #include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element.h"
 #include "general/debug.h"
+#include "general/mystring.h"
 #include "node/node_field_viewer_widget.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -127,50 +128,51 @@ dynamic memory allocations and pointers.
 static void node_field_viewer_widget_update_values(
 	struct Node_field_viewer_widget_struct *node_field_viewer)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 6 June 2001
 
 DESCRIPTION :
 Updates all widgets in the rowcol to make sure they say the correct value.
 ==============================================================================*/
 {
-	char *temp_string,value_string[VALUE_STRING_SIZE];
+	char *cmiss_number_string, *new_value_string, *old_value_string,
+		temp_value_string[VALUE_STRING_SIZE];
 	FE_value *values;
-	int i,j,num_children,number_of_components;
+	int i, j, num_children, number_of_components;
 	struct Computed_field *field;
 	struct FE_field *fe_field;
 	struct FE_field_component fe_field_component;
 	struct FE_node *node;
 	struct Nodal_value_information *nodal_value_information;
-	Widget *child_list;
+	Widget *child_list, text_field_widget;
 
 	ENTER(node_field_viewer_widget_update_values);
 	if (node_field_viewer&&node_field_viewer->component_rowcol&&
 		(node=node_field_viewer->current_node)&&
 		(field=node_field_viewer->current_field))
 	{
-		number_of_components=Computed_field_get_number_of_components(field);
-		fe_field=(struct FE_field *)NULL;
-		temp_string=(char *)NULL;
-		values=(FE_value *)NULL;
+		number_of_components = Computed_field_get_number_of_components(field);
+		fe_field = (struct FE_field *)NULL;
+		cmiss_number_string = (char *)NULL;
+		values = (FE_value *)NULL;
 		/* get children of the rowcol */
 		XtVaGetValues(node_field_viewer->component_rowcol,XmNnumChildren,
 			&num_children,XmNchildren,&child_list,NULL);
 		if (Computed_field_is_type_finite_element(field))
 		{
-			Computed_field_get_type_finite_element(field,&fe_field);
+			Computed_field_get_type_finite_element(field, &fe_field);
 		}
 		else
 		{
 			if (Computed_field_is_type_cmiss_number(field))
 			{
-				temp_string=Computed_field_evaluate_as_string_at_node(field,
-					/*component_number*/-1,node);
+				cmiss_number_string = Computed_field_evaluate_as_string_at_node(field,
+					/*component_number*/-1, node);
 			}
 			else
 			{
-				if (ALLOCATE(values,FE_value,number_of_components))
+				if (ALLOCATE(values, FE_value, number_of_components))
 				{
-					if (!Computed_field_evaluate_at_node(field,node,values))
+					if (!Computed_field_evaluate_at_node(field, node, values))
 					{
 						DEALLOCATE(values);
 					}
@@ -178,109 +180,131 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 				}
 			}
 		}
-		if (fe_field||temp_string||values)
+		if (fe_field || cmiss_number_string || values)
 		{
-			for (i=0;i<num_children;i++)
+			for (i = 0; i < num_children; i++)
 			{
+				text_field_widget = child_list[i];
 				/* get the index */
-				XtVaGetValues(child_list[i],XmNuserData,&nodal_value_information,NULL);
+				XtVaGetValues(text_field_widget,
+					XmNuserData, &nodal_value_information,NULL);
 				if (nodal_value_information)
 				{
-					if (fe_field)
+					/* get the current string from the widget so we don't overwrite it
+						 when it is not changing - this allows cut & paste to work */
+					if (old_value_string = XmTextFieldGetString(text_field_widget))
 					{
-						fe_field_component.field=fe_field;
-						fe_field_component.number=
-							nodal_value_information->component_number;
-						switch (get_FE_field_value_type(fe_field))
+						new_value_string = (char *)NULL;
+						if (fe_field)
 						{
-							case ELEMENT_XI_VALUE:
+							fe_field_component.field = fe_field;
+							fe_field_component.number =
+								nodal_value_information->component_number;
+							switch (get_FE_field_value_type(fe_field))
 							{
-								char element_char,temp_string[30];
-								FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-								struct FE_element *element;
-
-								if (get_FE_nodal_element_xi_value(
-									node_field_viewer->current_node,fe_field,
-									nodal_value_information->component_number,
-									nodal_value_information->version,
-									nodal_value_information->type,&element,xi))
+								case ELEMENT_XI_VALUE:
 								{
-									switch (element->cm.type)
+									char element_char, xi_string[30];
+									FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+									struct FE_element *element;
+
+									if (get_FE_nodal_element_xi_value(
+										node_field_viewer->current_node, fe_field,
+										nodal_value_information->component_number,
+										nodal_value_information->version,
+										nodal_value_information->type, &element, xi))
 									{
-										case CM_FACE:
+										switch (element->cm.type)
 										{
-											element_char='F';
-										} break;
-										case CM_LINE:
+											case CM_FACE:
+											{
+												element_char = 'F';
+											} break;
+											case CM_LINE:
+											{
+												element_char = 'L';
+											} break;
+											default:
+											{
+												element_char = 'E';
+											} break;
+										}
+										sprintf(temp_value_string, " %c %d %d", element_char,
+											element->cm.number, element->shape->dimension);
+										for (j = 0; j < element->shape->dimension; j++)
 										{
-											element_char='L';
-										} break;
-										default:
-										{
-											element_char='E';
-										} break;
+											sprintf(xi_string," %g",xi[j]);
+											strcat(temp_value_string, xi_string);
+										}
+										new_value_string = duplicate_string(temp_value_string);
 									}
-									sprintf(value_string," %c %d %d",element_char,
-										element->cm.number,element->shape->dimension);
-									for (j=0;j<element->shape->dimension;j++)
-									{
-										sprintf(temp_string," %g",xi[j]);
-										strcat(value_string,temp_string);
-									}
-									XmTextFieldSetString(child_list[i],value_string);
-								}
-							} break;
-							case FE_VALUE_VALUE:
-							{
-								FE_value fe_value_value;
-
-								get_FE_nodal_FE_value_value(node_field_viewer->current_node,
-									&fe_field_component,nodal_value_information->version,
-									nodal_value_information->type,&fe_value_value);
-								sprintf(value_string,FE_VALUE_INPUT_STRING,fe_value_value);
-								XmTextFieldSetString(child_list[i],value_string);
-							} break;
-							case INT_VALUE:
-							{
-								int int_value;
-
-								get_FE_nodal_int_value(node_field_viewer->current_node,
-									&fe_field_component,nodal_value_information->version,
-									nodal_value_information->type,&int_value);
-								sprintf(value_string,"%d",int_value);
-								XmTextFieldSetString(child_list[i],value_string);
-							} break;
-							case STRING_VALUE:
-							{
-								char *string_value;
-
-								if (get_FE_nodal_string_value(node_field_viewer->current_node,
-									fe_field,nodal_value_information->component_number,
-									nodal_value_information->version,
-									nodal_value_information->type,&string_value))
+								} break;
+								case FE_VALUE_VALUE:
 								{
-									XmTextFieldSetString(child_list[i],string_value);
-									DEALLOCATE(string_value);
-								}
-							} break;
-							default:
-							{
-								display_message(ERROR_MESSAGE,
-									"node_field_viewer_widget_update_values.  "
-									"Unsupported value_type for FE_field");
-								XmTextFieldSetString(child_list[i],"ERROR");
-							} break;
+									FE_value fe_value_value;
+
+									get_FE_nodal_FE_value_value(node_field_viewer->current_node,
+										&fe_field_component,nodal_value_information->version,
+										nodal_value_information->type,&fe_value_value);
+									sprintf(temp_value_string, FE_VALUE_INPUT_STRING,
+										fe_value_value);
+									new_value_string = duplicate_string(temp_value_string);
+								} break;
+								case INT_VALUE:
+								{
+									int int_value;
+
+									get_FE_nodal_int_value(node_field_viewer->current_node,
+										&fe_field_component,nodal_value_information->version,
+										nodal_value_information->type,&int_value);
+									sprintf(temp_value_string, "%d", int_value);
+									new_value_string = duplicate_string(temp_value_string);
+								} break;
+								case STRING_VALUE:
+								{
+									get_FE_nodal_string_value(node_field_viewer->current_node,
+										fe_field,nodal_value_information->component_number,
+										nodal_value_information->version,
+										nodal_value_information->type, &new_value_string);
+								} break;
+								default:
+								{
+									display_message(ERROR_MESSAGE,
+										"node_field_viewer_widget_update_values.  "
+										"Unsupported value_type for FE_field");
+								} break;
+							}
 						}
+						else if (cmiss_number_string)
+						{
+							/* copy and clear cmiss_number_string to avoid allocate */
+							new_value_string = cmiss_number_string;
+							cmiss_number_string = (char *)NULL;
+						}
+						else /* all other types of computed field */
+						{
+							sprintf(temp_value_string, FE_VALUE_INPUT_STRING,
+								values[nodal_value_information->component_number]);
+							new_value_string = duplicate_string(temp_value_string);
+						}
+						/* only change text if different */
+						if (new_value_string)
+						{
+							if (strcmp(new_value_string, old_value_string))
+							{
+								XmTextFieldSetString(text_field_widget, new_value_string);
+							}
+							DEALLOCATE(new_value_string);
+						}
+						else
+						{
+							XmTextFieldSetString(text_field_widget, "ERROR");
+						}
+						XtFree(old_value_string);
 					}
-					else if (temp_string)
+					else
 					{
-						XmTextFieldSetString(child_list[i],temp_string);
-					}
-					else /* all other types of computed field */
-					{
-						sprintf(value_string,FE_VALUE_INPUT_STRING,
-							values[nodal_value_information->component_number]);
-						XmTextFieldSetString(child_list[i],value_string);
+						XmTextFieldSetString(text_field_widget, "ERROR");
 					}
 				}
 			}
@@ -290,9 +314,9 @@ Updates all widgets in the rowcol to make sure they say the correct value.
 			display_message(ERROR_MESSAGE,
 				"node_field_viewer_widget_update_values.  Failed");
 		}
-		if (temp_string)
+		if (cmiss_number_string)
 		{
-			DEALLOCATE(temp_string);
+			DEALLOCATE(cmiss_number_string);
 		}
 		if (values)
 		{

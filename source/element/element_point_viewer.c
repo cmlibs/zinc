@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_viewer.c
 
-LAST MODIFIED : 23 April 2001
+LAST MODIFIED : 23 May 2001
 
 DESCRIPTION :
 Dialog for selecting an element point, viewing and editing its fields and
@@ -1840,7 +1840,7 @@ static void Element_point_viewer_element_change(
 	struct MANAGER_MESSAGE(FE_element) *message,
 	void *element_point_viewer_void)
 /*******************************************************************************
-LAST MODIFIED : 20 June 2000
+LAST MODIFIED : 23 May 2001
 
 DESCRIPTION :
 Callback from the element manager for changes to elements. If the element
@@ -1858,12 +1858,12 @@ object cause updates.
 	{
 		switch (message->change)
 		{
-			case MANAGER_CHANGE_ALL(FE_element):
 			case MANAGER_CHANGE_OBJECT(FE_element):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_element):
 			{
-				if (!(message->object_changed) || (message->object_changed ==
-					element_point_viewer->element_point_identifier.element))
+				if (IS_OBJECT_IN_LIST(FE_element)(
+					element_point_viewer->element_point_identifier.element,
+					message->changed_object_list))
 				{
 					/* update grid_text in case number changed */
 					Element_point_viewer_refresh_grid_value_text(element_point_viewer);
@@ -1871,7 +1871,7 @@ object cause updates.
 				}
 			} break;
 			case MANAGER_CHANGE_ADD(FE_element):
-			case MANAGER_CHANGE_DELETE(FE_element):
+			case MANAGER_CHANGE_REMOVE(FE_element):
 			case MANAGER_CHANGE_IDENTIFIER(FE_element):
 			{
 				/* do nothing */
@@ -1887,17 +1887,19 @@ object cause updates.
 } /* Element_point_viewer_element_change */
 
 static void Element_point_viewer_node_change(
-	struct MANAGER_MESSAGE(FE_node) *message,
-	void *element_point_viewer_void)
+	struct MANAGER_MESSAGE(FE_node) *message, void *element_point_viewer_void)
 /*******************************************************************************
-LAST MODIFIED : 31 May 2000
+LAST MODIFIED : 23 May 2001
 
 DESCRIPTION :
 Callback from the node manager for changes to nodes. If the element
 currently being viewed is affected by the change, re-send to viewer.
 ==============================================================================*/
 {
+	int i, number_of_nodes, refresh, return_code;
 	struct Element_point_viewer *element_point_viewer;
+	struct FE_element *top_level_element;
+	struct FE_node *node;
 
 	ENTER(Element_point_viewer_node_change);
 	if (message&&(element_point_viewer=
@@ -1907,19 +1909,46 @@ currently being viewed is affected by the change, re-send to viewer.
 		{
 			switch (message->change)
 			{
-				case MANAGER_CHANGE_ALL(FE_node):
 				case MANAGER_CHANGE_OBJECT(FE_node):
 				case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_node):
 				{
-					if (!(message->object_changed)||FE_element_or_parent_contains_node(
-						element_point_viewer->element_point_identifier.element,
-						message->object_changed))
+					/* refresh editor if any node in the top_level_element has changed */
+					if ((top_level_element =
+						element_point_viewer->element_point_identifier.top_level_element) &&
+						top_level_element->information &&
+						(number_of_nodes = top_level_element->information->number_of_nodes))
 					{
-						Element_point_viewer_set_viewer_element_point(element_point_viewer);
+						return_code = 1;
+						refresh = 0;
+						for (i = 0; (i < number_of_nodes) && (!refresh) && return_code; i++)
+						{
+							if (get_FE_element_node(top_level_element, i, &node))
+							{
+								refresh = IS_OBJECT_IN_LIST(FE_node)(node,
+									message->changed_object_list);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"Element_point_viewer_node_change.  "
+									"Could not get element node");
+								return_code = 0;
+							}
+						}
+						if (refresh)
+						{
+							Element_point_viewer_set_viewer_element_point(
+								element_point_viewer);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Element_point_viewer_node_change.  Bad top_level_element");
 					}
 				} break;
 				case MANAGER_CHANGE_ADD(FE_node):
-				case MANAGER_CHANGE_DELETE(FE_node):
+				case MANAGER_CHANGE_REMOVE(FE_node):
 				case MANAGER_CHANGE_IDENTIFIER(FE_node):
 				{
 					/* do nothing */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : data_2d.c
 
-LAST MODIFIED : 1 September 1999
+LAST MODIFIED : 23 May 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -681,7 +681,7 @@ The user has selected data items in the data list
 static void d2_global_node_change(
 	struct MANAGER_MESSAGE(FE_node) *message,void *data)
 /*******************************************************************************
-LAST MODIFIED : 28 September 1995
+LAST MODIFIED : 23 May 2001
 
 DESCRIPTION :
 Nodes have either been added or deleted or modified etc, so refresh the widget.
@@ -692,25 +692,14 @@ Nodes have either been added or deleted or modified etc, so refresh the widget.
 	ENTER(d2_global_node_change);
 	switch (message->change)
 	{
-		case MANAGER_CHANGE_ALL(FE_node):
-		{
-			if (temp_data_2d->current_value)
-			{
-				d2_update_list(temp_data_2d);
-				/* update any clients */
-				d2_call_callback(temp_data_2d,DATA_2D_UPDATE_CB,
-					temp_data_2d->current_value);
-				d2_update_selected(temp_data_2d);
-			}
-		} break;
 		case MANAGER_CHANGE_IDENTIFIER(FE_node):
 		case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_node):
 		case MANAGER_CHANGE_OBJECT(FE_node):
 		{
 			if (temp_data_2d->current_value)
 			{
-				if (IS_OBJECT_IN_GROUP(FE_node)(message->object_changed,
-					temp_data_2d->current_value))
+				if (FIRST_OBJECT_IN_LIST_THAT(FE_node)(FE_node_is_in_group,
+					(void *)temp_data_2d->current_value, message->changed_object_list))
 				{
 					d2_update_list(temp_data_2d);
 					/* update any clients */
@@ -720,39 +709,13 @@ Nodes have either been added or deleted or modified etc, so refresh the widget.
 				}
 			}
 		} break;
-		/* these are picked up by group messages */
 #if defined (OLD_CODE)
 		case MANAGER_CHANGE_ADD(FE_node):
+		case MANAGER_CHANGE_REMOVE(FE_node):
 		{
-			if (temp_data_2d->current_value)
-			{
-				if (IS_OBJECT_IN_GROUP(FE_node)(message->object_changed,
-					temp_data_2d->current_value))
-				{
-					d2_add_data_item(message->object_changed,temp_data_2d);
-					/* update any clients */
-					d2_call_callback(temp_data_2d,DATA_2D_UPDATE_CB,
-						temp_data_2d->current_value);
-					d2_update_selected(temp_data_2d);
-				}
-			}
+			/* do nothing; these are picked up by group messages */
 		} break;
-		case MANAGER_CHANGE_DELETE(FE_node):
-		{
-			if (temp_data_2d->current_value)
-			{
-				if (IS_OBJECT_IN_GROUP(FE_node)(message->object_changed,
-					temp_data_2d->current_value))
-				{
-					d2_update_list(temp_data_2d);
-					/* update any clients */
-					d2_call_callback(temp_data_2d,DATA_2D_UPDATE_CB,
-						temp_data_2d->current_value);
-					d2_update_selected(temp_data_2d);
-				}
-			}
-		} break;
-#endif /* OLD_CODE */
+#endif /* defined (OLD_CODE) */
 	}
 	LEAVE;
 } /* d2_global_node_change */
@@ -760,7 +723,7 @@ Nodes have either been added or deleted or modified etc, so refresh the widget.
 static void d2_global_node_group_change(
 	struct MANAGER_MESSAGE(GROUP(FE_node)) *message,void *data)
 /*******************************************************************************
-LAST MODIFIED : 28 November 1996
+LAST MODIFIED : 23 May 2001
 
 DESCRIPTION :
 See if our node_group has been modified - if so, then refresh.  Note that if
@@ -773,21 +736,11 @@ selection widget.
 	ENTER(d2_global_node_group_change);
 	switch (message->change)
 	{
-		case MANAGER_CHANGE_ALL(GROUP(FE_node)):
-		{
-			if (temp_data_2d->current_value)
-			{
-				d2_update_list(temp_data_2d);
-				/* update any clients */
-				d2_call_callback(temp_data_2d,DATA_2D_UPDATE_CB,
-					temp_data_2d->current_value);
-				d2_update_selected(temp_data_2d);
-			}
-		} break;
 		case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(GROUP(FE_node)):
 		case MANAGER_CHANGE_OBJECT(GROUP(FE_node)):
 		{
-			if (temp_data_2d->current_value==message->object_changed)
+			if (IS_OBJECT_IN_LIST(GROUP(FE_node))(temp_data_2d->current_value,
+				message->changed_object_list))
 			{
 				d2_update_list(temp_data_2d);
 				/* update any clients */

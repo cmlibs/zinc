@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 5 March 2001
+LAST MODIFIED : 31 May 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -3273,7 +3273,7 @@ static int map_draw_constant_thickness_contours(struct Scene *scene,
 	int number_of_contours,FE_value contour_minimum,FE_value contour_maximum,
 	struct Region *region,int default_torso_loaded,int delauney_map)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 31 May 2001
 
 DESCRIPTION :
 Removes any existing contours, draw <number_of_contours> map contours, evenly 
@@ -3382,8 +3382,6 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 						GT_element_group_add_settings(gt_element_group,contour_settings[i],0);
 						contour_value+=contour_step;
 					}			
-					GT_element_group_build_graphics_objects(gt_element_group,
-						(struct FE_element *)NULL,(struct FE_node *)NULL);
 				}	
 				set_map_3d_package_contours(map_3d_package,number_of_contours,
 					contour_settings);
@@ -3505,7 +3503,7 @@ static int map_show_surface(struct Scene *scene,
 	struct Colour *no_interpolation_colour,
 	struct User_interface *user_interface,int direct_interpolation)
 /*******************************************************************************
-LAST MODIFIED : 15 May 2000
+LAST MODIFIED : 31 May 2001
 
 DESCRIPTION :
 Adds map's surfaces in the given <material> to the graphical finite element for
@@ -3587,8 +3585,6 @@ Also applies <number_of_contours> contours to surface.
 									spectrum);
 								GT_element_group_modify_settings(gt_element_group,settings,
 									new_settings);	
-								GT_element_group_build_graphics_objects(gt_element_group,
-									(struct FE_element *)NULL,(struct FE_node *)NULL);	
 							}
 							else
 							{
@@ -3619,8 +3615,6 @@ Also applies <number_of_contours> contours to surface.
 									default_selected_material);
 								GT_element_group_modify_settings(gt_element_group,settings,
 									new_settings);
-								GT_element_group_build_graphics_objects(gt_element_group,
-									(struct FE_element *)NULL,(struct FE_node *)NULL);
 							}
 							else
 							{
@@ -3660,9 +3654,6 @@ Also applies <number_of_contours> contours to surface.
 									spectrum);							
 								GT_element_group_modify_settings(gt_element_group,settings,
 									new_settings);	
-								GT_element_group_build_graphics_objects(gt_element_group,
-									(struct FE_element *)NULL,(struct FE_node *)NULL);
-								
 							}	/* if (MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name */
 							else
 							{	
@@ -3719,15 +3710,10 @@ Also applies <number_of_contours> contours to surface.
 					}	
 					GT_element_settings_set_selected_material(settings,default_selected_material);
 					GT_element_settings_set_material(settings,material);
-					if (GT_element_group_add_settings(gt_element_group,settings,0))
-					{
-						GT_element_group_build_graphics_objects(gt_element_group,
-							(struct FE_element *)NULL,(struct FE_node *)NULL);						
-					}
-					else
+					if (!GT_element_group_add_settings(gt_element_group, settings, 0))
 					{
 						DESTROY(GT_element_settings)(&settings);
-						return_code=0; 
+						return_code = 0; 
 					}
 				}
 				else
@@ -4210,7 +4196,7 @@ Sets the <time> of the time field.
 static int map_show_map_electrodes(struct Unemap_package *package,
 	struct GT_object *glyph,struct Map *map,FE_value time,struct Region *region)
 /*******************************************************************************
-LAST MODIFIED : 11 November 2000 
+LAST MODIFIED : 31 May 2001
 
 DESCRIPTION :
 Construct the settings and build the graphics objects for the glyphs.
@@ -4375,8 +4361,6 @@ Construct the settings and build the graphics objects for the glyphs.
             set_map_3d_package_electrodes_option(map_3d_package,map->electrodes_option);
             set_map_3d_package_colour_electrodes_with_signal(map_3d_package,
 							map->colour_electrodes_with_signal);
-						GT_element_group_build_graphics_objects(gt_element_group,
-							(struct FE_element *)NULL,(struct FE_node *)NULL);
 						return_code=1;
 					}/* if (GT_element_group_add_settings( */
 					else

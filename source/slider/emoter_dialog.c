@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : emoter_dialog.c
 
-LAST MODIFIED : 3 February 2000
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 This module creates a emoter_slider input device.  An emoter slider is
@@ -5267,67 +5267,123 @@ Handles input from the text widget which displays the current frame timecode
 	LEAVE;
 } /* emoter_play_max_text_CB */
 
-static void emoter_control_curve_manager_message(
-	struct MANAGER_MESSAGE(Control_curve) *message,void *data)
+static int Control_curve_update_emoter_sliders(
+	struct Control_curve *control_curve, void *emoter_dialog_void)
 /*******************************************************************************
-LAST MODIFIED : 15 April 1998
+LAST MODIFIED : 30 May 2001
+
+DESCRIPTION :
+Updates existing control curves combine sliders.
+==============================================================================*/
+{
+	enum Control_curve_type type;
+	int return_code;
+	struct Emoter_dialog *emoter_dialog;
+
+	ENTER(Control_curve_update_emoter_sliders);
+	if (control_curve &&
+		(emoter_dialog = (struct Emoter_dialog *)emoter_dialog_void))
+	{
+		Control_curve_get_type( control_curve, &type );
+		if (type == CONTROL_CURVE_TYPE_EMOTER_COMBINE)
+		{
+			/* Setting the time slider to the time it already has
+				 updates all the combine sliders */
+			emoter_update_combine_sliders( emoter_dialog->shared->active_slider );
+		}
+		else
+		{
+			emoter_update_face( emoter_dialog->shared );
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Control_curve_update_emoter_sliders.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Control_curve_update_emoter_sliders */
+
+static int Control_curve_add_emoter_sliders(
+	struct Control_curve *control_curve, void *emoter_dialog_void)
+/*******************************************************************************
+LAST MODIFIED : 30 May 2001
+
+DESCRIPTION :
+Adds new control curves combine sliders.
+==============================================================================*/
+{
+	char *name;
+	enum Control_curve_type type;
+	int return_code;
+	struct Emoter_dialog *emoter_dialog;
+	struct Shared_emoter_slider_data *shared;
+
+	ENTER(Control_curve_add_emoter_sliders);
+	if (control_curve &&
+		(emoter_dialog = (struct Emoter_dialog *)emoter_dialog_void))
+	{
+		shared = emoter_dialog->shared;
+
+		Control_curve_get_type( control_curve, &type );
+		if ( type == CONTROL_CURVE_TYPE_EMOTER_MODES )
+		{
+			if (GET_NAME(Control_curve)( control_curve, &name ))
+			{
+				create_emoter_slider((char *)NULL,
+					name, emoter_dialog->slider_form,
+					1.0, shared,
+					shared->number_of_sliders,
+					control_curve, emoter_dialog, /*no_confirm*/0);
+				DEALLOCATE( name );
+			}
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Control_curve_add_emoter_sliders.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Control_curve_add_emoter_sliders */
+
+static void emoter_control_curve_manager_message(
+	struct MANAGER_MESSAGE(Control_curve) *message, void *emoter_dialog_void)
+/*******************************************************************************
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Something has changed globally in the control curve manager.
 ==============================================================================*/
 {
-	char *name;
-	enum Control_curve_type type;
-	struct Emoter_dialog *emoter_dialog;
-	struct Shared_emoter_slider_data *shared;
-
 	ENTER(emoter_control_curve_manager_message);
-	/* checking arguments */
-	if (message&&(emoter_dialog=(struct Emoter_dialog *)data))
+	if (message && emoter_dialog_void)
 	{
-		shared = emoter_dialog->shared;
-
 		switch (message->change)
 		{
 			case MANAGER_CHANGE_OBJECT(Control_curve):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Control_curve):
 			{
-				/* If combine type update the combine sliders
-					by calling set play slider, otherwise just update
-					the face */
-				Control_curve_get_type( message->object_changed, &type );
-				if ( type == CONTROL_CURVE_TYPE_EMOTER_COMBINE )
-				{
-					/* Setting the time slider to the time it already has
-						updates all the combine sliders */
-					emoter_update_combine_sliders( emoter_dialog->shared->active_slider );
-				}
-				else
-				{
-					emoter_update_face( emoter_dialog->shared );
-				}
+				FOR_EACH_OBJECT_IN_LIST(Control_curve)(
+					Control_curve_update_emoter_sliders, emoter_dialog_void,
+					message->changed_object_list);
 			} break;
 			case MANAGER_CHANGE_ADD(Control_curve):
 			{
-				Control_curve_get_type( message->object_changed, &type );
-				if ( type == CONTROL_CURVE_TYPE_EMOTER_MODES )
-				{
-					if (GET_NAME(Control_curve)(message->object_changed,
-						&name ))
-					{
-						create_emoter_slider((char *)NULL,
-							name, emoter_dialog->slider_form,
-							1.0, shared,
-							shared->number_of_sliders,
-							message->object_changed, emoter_dialog, /*no_confirm*/0);
-						DEALLOCATE( name );
-					}
-				}
+				FOR_EACH_OBJECT_IN_LIST(Control_curve)(
+					Control_curve_add_emoter_sliders, emoter_dialog_void,
+					message->changed_object_list);
 			} break;
-			case MANAGER_CHANGE_ALL(Control_curve):
-				/* Change all is not implemented */
+			case MANAGER_CHANGE_REMOVE(Control_curve):
 			case MANAGER_CHANGE_IDENTIFIER(Control_curve):
-			case MANAGER_CHANGE_DELETE(Control_curve):
 			{
 				/* do nothing */
 			} break;
@@ -5336,8 +5392,7 @@ Something has changed globally in the control curve manager.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"emoter_control_curve_manager_message.  "
-			"Invalid argument(s)");
+			"emoter_control_curve_manager_message.  Invalid argument(s)");
 	}
 	LEAVE;
 } /* emoter_control_curve_manager_message */

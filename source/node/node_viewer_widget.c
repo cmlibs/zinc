@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_viewer_widget.c
 
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Widget for editing the contents of a node with multiple text fields, visible
@@ -158,7 +158,7 @@ Callback for change of iso_scalar field.
 static void node_viewer_widget_computed_field_change(
 	struct MANAGER_MESSAGE(Computed_field) *message,void *node_viewer_void)
 /*******************************************************************************
-LAST MODIFIED : 11 May 2000
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 One or more of the computed_fields have changed in the manager. If the
@@ -171,25 +171,25 @@ Note that delete/add messages are handled by the field chooser.
 	struct Node_viewer_widget_struct *node_viewer;
 
 	ENTER(node_viewer_widget_computed_field_change);
-	if (message&&
-		(node_viewer=(struct Node_viewer_widget_struct *)node_viewer_void))
+	if (message &&
+		(node_viewer = (struct Node_viewer_widget_struct *)node_viewer_void))
 	{
 		switch (message->change)
 		{
-			case MANAGER_CHANGE_ALL(Computed_field):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field):
 			case MANAGER_CHANGE_OBJECT(Computed_field):
 			{
-				field=CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
+				field = CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
 					node_viewer->choose_field_widget);
-				if ((!(message->object_changed))||(message->object_changed == field))
+				if (IS_OBJECT_IN_LIST(Computed_field)(field,
+					message->changed_object_list))
 				{
 					node_field_viewer_widget_set_node_field(
-						node_viewer->field_viewer_widget,node_viewer->current_node,field);
+						node_viewer->field_viewer_widget, node_viewer->current_node, field);
 				}
 			} break;
 			case MANAGER_CHANGE_ADD(Computed_field):
-			case MANAGER_CHANGE_DELETE(Computed_field):
+			case MANAGER_CHANGE_REMOVE(Computed_field):
 			case MANAGER_CHANGE_IDENTIFIER(Computed_field):
 			{
 				/* do nothing */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : control_curve_editor_dialog.c
 
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 23 May 2001
 
 DESCRIPTION :
 Routines for creating an element group editor dialog shell and standard buttons.
@@ -311,7 +311,7 @@ static void control_curve_editor_Control_curve_change(
 	struct MANAGER_MESSAGE(Control_curve) *message,
 	void *curve_editor_dialog_void)
 /*******************************************************************************
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 23 May 2001
 
 DESCRIPTION :
 Something has changed globally in the Control_curve manager. Passes on messages
@@ -322,35 +322,26 @@ COMPUTED_FIELD_CURVE_LOOKUP.
 	struct Control_curve_editor_dialog *curve_editor_dialog;
 
 	ENTER(control_curve_editor_Control_curve_change);
-	if (message&&(curve_editor_dialog=
+	if (message && (curve_editor_dialog =
 		(struct Control_curve_editor_dialog *)curve_editor_dialog_void))
 	{
 		if (!curve_editor_dialog->applying_now)
 		{
 			switch (message->change)
 			{
-				case MANAGER_CHANGE_ALL(Control_curve):
 				case MANAGER_CHANGE_OBJECT(Control_curve):
 				case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Control_curve):
 				{
-					if (!(message->object_changed)||
-						(message->object_changed == curve_editor_dialog->current_curve))
+					/* if current curve has changed global, reinstate it in the editor */
+					if (IS_OBJECT_IN_LIST(Control_curve)(
+						curve_editor_dialog->current_curve, message->changed_object_list))
 					{
-#if defined (OLD_CODE)
-						if (confirmation_question_yes_no("Curve Editor","Current curve has "
-							"been modified elsewhere. Would you like to revert to it?",
-							curve_editor_dialog->dialog,curve_editor_dialog->user_interface))
-						{
-#endif /* defined (OLD_CODE) */
-							control_curve_editor_set_curve(curve_editor_dialog->editor_widget,
-								curve_editor_dialog->current_curve);
-#if defined (OLD_CODE)
-						}
-#endif /* defined (OLD_CODE) */
+						control_curve_editor_set_curve(curve_editor_dialog->editor_widget,
+							curve_editor_dialog->current_curve);
 					}
 				} break;
 				case MANAGER_CHANGE_ADD(Control_curve):
-				case MANAGER_CHANGE_DELETE(Control_curve):
+				case MANAGER_CHANGE_REMOVE(Control_curve):
 				case MANAGER_CHANGE_IDENTIFIER(Control_curve):
 				{
 					/* do nothing */

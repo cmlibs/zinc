@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : tracking_editor_dialog.c
 
-LAST MODIFIED : 5 September 2000
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Source code for the tracking editor dialog box.
@@ -2367,7 +2367,7 @@ static void Tracking_editor_dialog_node_group_change(
 	struct MANAGER_MESSAGE(GROUP(FE_node)) *message,
 	void *tracking_editor_dialog_void)
 /*******************************************************************************
-LAST MODIFIED : 28 April 1998
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Node group manager change callback. Updates placed, pending and problem lists
@@ -2382,9 +2382,8 @@ to reflect members of the changed node group/s.
 	struct Tracking_editor_dialog *track_ed;
 
 	ENTER(Tracking_editor_dialog_node_group_change);
-	/* checking arguments */
-	if (message&&(track_ed=(struct Tracking_editor_dialog *)
-		tracking_editor_dialog_void)&&(movie=track_ed->mirage_movie)&&
+	if (message && (track_ed = (struct Tracking_editor_dialog *)
+		tracking_editor_dialog_void) && (movie=track_ed->mirage_movie) &&
 		(!(track_ed->processing)))
 	{
 		if (!locked)
@@ -2398,7 +2397,8 @@ to reflect members of the changed node group/s.
 					{
 						if (view=movie->views[view_no])
 						{
-							if (message->object_changed==view->placed_nodes)
+							if (IS_OBJECT_IN_LIST(GROUP(FE_node))(view->placed_nodes,
+								message->changed_object_list))
 							{
 								locked=1;
 								for (i=0;i<view->number_of_nodes;i++)
@@ -2455,9 +2455,8 @@ to reflect members of the changed node group/s.
 						}
 					}
 				} break;
-				case MANAGER_CHANGE_ALL(GROUP(FE_node)):
-				case MANAGER_CHANGE_DELETE(GROUP(FE_node)):
 				case MANAGER_CHANGE_ADD(GROUP(FE_node)):
+				case MANAGER_CHANGE_REMOVE(GROUP(FE_node)):
 				case MANAGER_CHANGE_IDENTIFIER(GROUP(FE_node)):
 				{
 					/* do nothing */
@@ -2474,153 +2473,196 @@ to reflect members of the changed node group/s.
 	LEAVE;
 } /* Tracking_editor_dialog_node_group_change */
 
-static void Tracking_editor_dialog_node_change(
-	struct MANAGER_MESSAGE(FE_node) *message,
-	void *tracking_editor_dialog_void)
+struct FE_node_select_in_tracking_editor_data
+{
+	int update_bar_chart;
+	struct Tracking_editor_dialog *track_ed;
+};
+
+static int FE_node_select_in_tracking_editor(struct FE_node *node,
+	void *node_select_data_void)
 /*******************************************************************************
-LAST MODIFIED : 4 September 2000
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Node manager change callback. Puts changed nodes in the pending list.
 ==============================================================================*/
 {
-	int use_left_range,use_right_range,return_code,placed,problem,pending,
-		node_no,frame_no;
-	struct Index_multi_range *placed_status,*pending_status,*problem_status;
-	struct FE_node *node;
+	int frame_no, node_no, pending, placed, problem, return_code,
+		use_left_range, use_right_range;
+	struct Index_multi_range *pending_status, *placed_status, *problem_status;
+	struct FE_node_select_in_tracking_editor_data *node_select_data;
 	struct Mirage_movie *movie;
 	struct Tracking_editor_dialog *track_ed;
 
-	ENTER(Tracking_editor_dialog_node_change);
-	/* checking arguments */
-	if (message&&(track_ed=(struct Tracking_editor_dialog *)
-		tracking_editor_dialog_void)&&(movie=track_ed->mirage_movie)&&
+	ENTER(FE_node_select_in_tracking_editor);
+	if (node && (node_select_data =
+		(struct FE_node_select_in_tracking_editor_data *)node_select_data_void) &&
+		(track_ed = node_select_data->track_ed) &&
+		(movie = track_ed->mirage_movie) &&
 		((!(track_ed->processing)) || (track_ed->control_mode == MAKE_GOOD_MODE) ||
-		(track_ed->control_mode == MAKE_BAD_MODE)))
+			(track_ed->control_mode == MAKE_BAD_MODE)))
+	{
+		return_code = 1;
+		/* select the node and set pending ranges from it */
+		/* have different use of left and right ranges depending on mode */
+		node_no = get_FE_node_cm_node_identifier(node);
+		frame_no = movie->exnode_frame_no;
+		/* get placed, pending and problem status of node_no at frame_no */
+		if (placed_status = FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,
+			index_number)(node_no, movie->placed_list))
+		{
+			placed = Index_multi_range_is_value_in_range(placed_status, frame_no);
+		}
+		else
+		{
+			return_code = 0;
+		}
+		if (pending_status = FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,
+			index_number)(node_no, movie->pending_list))
+		{
+			pending = Index_multi_range_is_value_in_range(pending_status, frame_no);
+		}
+		else
+		{
+			return_code = 0;
+		}
+		if (problem_status = FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,
+			index_number)(node_no, movie->problem_list))
+		{
+			problem = Index_multi_range_is_value_in_range(problem_status, frame_no);
+		}
+		else
+		{
+			return_code = 0;
+		}
+		if (return_code && placed)
+		{
+			use_left_range = 0;
+			use_right_range = 0;
+			switch (track_ed->control_mode)
+			{
+				case TRACK_MODE:
+				{
+					if (problem)
+					{
+						Index_multi_range_remove_range(problem_status,frame_no,frame_no);
+						tracking_editor_node_problem_change(track_ed,node_no);
+					}
+					use_right_range=1;
+				} break;
+				case BACKTRACK_MODE:
+				{
+					if (problem)
+					{
+						Index_multi_range_remove_range(problem_status,frame_no,frame_no);
+						tracking_editor_node_problem_change(track_ed,node_no);
+					}
+					use_left_range=1;
+				} break;
+				case INTERPOLATE_MODE:
+				{
+					use_left_range=1;
+					use_right_range=1;
+				} break;
+#if defined (OLD_CODE)
+				case SUBSTITUTE_MODE:
+				{
+				} break;
+#endif /* defined (OLD_CODE) */
+				case MAKE_BAD_MODE:
+				{
+					if (!problem)
+					{
+						Index_multi_range_add_range(problem_status,frame_no,frame_no);
+						tracking_editor_node_problem_change(track_ed,node_no);
+					}
+				} break;
+				case MAKE_GOOD_MODE:
+				{
+					if (problem)
+					{
+						Index_multi_range_remove_range(problem_status,frame_no,frame_no);
+						tracking_editor_node_problem_change(track_ed,node_no);
+					}
+				} break;
+				default:
+				{
+					/* do nothing */
+				} break;
+			}
+			if(movie->modifiers & MIRAGE_MOVIE_MODIFIERS_TOGGLE_SELECT)
+			{
+				if(pending)
+				{
+					tracking_editor_select_node_frame(track_ed,node_no,frame_no,
+						use_left_range,use_right_range,TRACK_ED_SELECT_UNMARK);
+				}
+				else
+				{
+					tracking_editor_select_node_frame(track_ed,node_no,frame_no,
+						use_left_range,use_right_range,TRACK_ED_SELECT_DEFAULT);
+				}
+			}
+			else
+			{
+				tracking_editor_select_node_frame(track_ed,node_no,frame_no,
+					use_left_range,use_right_range,TRACK_ED_SELECT_DEFAULT);
+			}
+			tracking_editor_node_pending_change(track_ed,node_no);
+			node_select_data->update_bar_chart = 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_select_in_tracking_editor.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_select_in_tracking_editor */
+
+static void Tracking_editor_dialog_node_change(
+	struct MANAGER_MESSAGE(FE_node) *message,
+	void *tracking_editor_dialog_void)
+/*******************************************************************************
+LAST MODIFIED : 30 May 2001
+
+DESCRIPTION :
+Node manager change callback. Puts changed nodes in the pending list.
+???RC This was written prior to FE_node_selection stuff, hence relies on a
+MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER to indicate a node was selected.
+==============================================================================*/
+{
+	struct Tracking_editor_dialog *track_ed;
+	struct FE_node_select_in_tracking_editor_data node_select_data;
+
+	ENTER(Tracking_editor_dialog_node_change);
+	if (message && (track_ed =
+		(struct Tracking_editor_dialog *)tracking_editor_dialog_void) &&
+		track_ed->mirage_movie &&
+		((!(track_ed->processing)) || (track_ed->control_mode == MAKE_GOOD_MODE) ||
+			(track_ed->control_mode == MAKE_BAD_MODE)))
 	{
 		switch (message->change)
 		{
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(FE_node):
 			{
-				if (node=message->object_changed)
+				node_select_data.track_ed = track_ed;
+				node_select_data.update_bar_chart = 0;
+				FOR_EACH_OBJECT_IN_LIST(FE_node)(FE_node_select_in_tracking_editor,
+					(void *)&node_select_data, message->changed_object_list);
+				if (node_select_data.update_bar_chart)
 				{
-					/* select the node and set pending ranges from it */
-					/* have different use of left and right ranges depending on mode */
-					return_code=1;
-					node_no=get_FE_node_cm_node_identifier(node);
-					frame_no=movie->exnode_frame_no;
-					/* get placed, pending and problem status of node_no at frame_no */
-					if (placed_status=FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
-						node_no,movie->placed_list))
-					{
-						placed=Index_multi_range_is_value_in_range(placed_status,frame_no);
-					}
-					else
-					{
-						return_code=0;
-					}
-					if (pending_status=FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
-						node_no,movie->pending_list))
-					{
-						pending=Index_multi_range_is_value_in_range(pending_status,frame_no);
-					}
-					else
-					{
-						return_code=0;
-					}
-					if (problem_status=FIND_BY_IDENTIFIER_IN_LIST(Index_multi_range,index_number)(
-						node_no,movie->problem_list))
-					{
-						problem=Index_multi_range_is_value_in_range(problem_status,frame_no);
-					}
-					else
-					{
-						return_code=0;
-					}
-
-					if (return_code&&placed)
-					{
-						use_left_range=0;
-						use_right_range=0;
-						switch (track_ed->control_mode)
-						{
-						case TRACK_MODE:
-							{
-								if (problem)
-								{
-									Index_multi_range_remove_range(problem_status,frame_no,frame_no);
-									tracking_editor_node_problem_change(track_ed,node_no);
-								}
-								use_right_range=1;
-							} break;
-						case BACKTRACK_MODE:
-							{
-								if (problem)
-								{
-									Index_multi_range_remove_range(problem_status,frame_no,frame_no);
-									tracking_editor_node_problem_change(track_ed,node_no);
-								}
-								use_left_range=1;
-							} break;
-						case INTERPOLATE_MODE:
-							{
-								use_left_range=1;
-								use_right_range=1;
-							} break;
-#if defined (OLD_CODE)
-						case SUBSTITUTE_MODE:
-							{
-							} break;
-#endif /* defined (OLD_CODE) */
-						case MAKE_BAD_MODE:
-							{
-								if (!problem)
-								{
-									Index_multi_range_add_range(problem_status,frame_no,frame_no);
-									tracking_editor_node_problem_change(track_ed,node_no);
-								}
-							} break;
-						case MAKE_GOOD_MODE:
-							{
-								if (problem)
-								{
-									Index_multi_range_remove_range(problem_status,frame_no,frame_no);
-									tracking_editor_node_problem_change(track_ed,node_no);
-								}
-							} break;
-						default:
-							{
-								/* do nothing */
-							} break;
-						}
-						if(movie->modifiers & MIRAGE_MOVIE_MODIFIERS_TOGGLE_SELECT)
-						{
-							if(pending)
-							{
-								tracking_editor_select_node_frame(track_ed,node_no,frame_no,
-									use_left_range,use_right_range,TRACK_ED_SELECT_UNMARK);
-							}
-							else
-							{
-								tracking_editor_select_node_frame(track_ed,node_no,frame_no,
-									use_left_range,use_right_range,TRACK_ED_SELECT_DEFAULT);
-							}
-						}
-						else
-						{
-							tracking_editor_select_node_frame(track_ed,node_no,frame_no,
-								use_left_range,use_right_range,TRACK_ED_SELECT_DEFAULT);
-						}
-						tracking_editor_node_pending_change(track_ed,node_no);
-						tracking_editor_update_bar_chart(track_ed);
-					}
+					tracking_editor_update_bar_chart(track_ed);
 				}
 			} break;
-			case MANAGER_CHANGE_ALL(FE_node):
-			case MANAGER_CHANGE_OBJECT(FE_node):
-			case MANAGER_CHANGE_DELETE(FE_node):
 			case MANAGER_CHANGE_ADD(FE_node):
+			case MANAGER_CHANGE_REMOVE(FE_node):
 			case MANAGER_CHANGE_IDENTIFIER(FE_node):
+			case MANAGER_CHANGE_OBJECT(FE_node):
 			{
 				/* do nothing */
 			} break;

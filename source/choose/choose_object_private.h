@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : choose_object_private.h
 
-LAST MODIFIED : 18 April 2000
+LAST MODIFIED : 18 May 2001
 
 DESCRIPTION :
 Macros for implementing an option menu dialog control for choosing an object
@@ -24,11 +24,10 @@ Module variables
 ----------------
 */
 #if defined (FULL_NAMES)
-#define CHOOSE_OBJECT_( object_type ) choose_object_type_ ## object_type
+#define CHOOSE_OBJECT( object_type ) choose_object_type_ ## object_type
 #else
-#define CHOOSE_OBJECT_( object_type ) cotype ## object_type
+#define CHOOSE_OBJECT( object_type ) cotype ## object_type
 #endif
-#define CHOOSE_OBJECT( object_type ) CHOOSE_OBJECT_(object_type)
 
 #define FULL_DECLARE_CHOOSE_OBJECT_TYPE( object_type ) \
 struct CHOOSE_OBJECT(object_type) \
@@ -57,13 +56,11 @@ Module functions
 */
 
 #if defined (FULL_NAMES)
-#define CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER_( object_type ) \
+#define CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER( object_type ) \
 	choose_object_is_in_chooser_ ## object_type
 #else
-#define CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER_( object_type ) coisc ## object_type
+#define CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER( object_type ) coisc ## object_type
 #endif
-#define CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER( object_type ) \
-	CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER_(object_type)
 
 #define DECLARE_CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER_FUNCTION( object_type ) \
 static int CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER(object_type)( \
@@ -102,13 +99,11 @@ Tells CMGUI about the current values. Sends a pointer to the current object. \
 } /* CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER(object_type) */
 
 #if defined (FULL_NAMES)
-#define CHOOSE_OBJECT_UPDATE_( object_type ) \
+#define CHOOSE_OBJECT_UPDATE( object_type ) \
 	choose_object_update_ ## object_type
 #else
-#define CHOOSE_OBJECT_UPDATE_( object_type ) cou ## object_type
+#define CHOOSE_OBJECT_UPDATE( object_type ) cou ## object_type
 #endif
-#define CHOOSE_OBJECT_UPDATE( object_type ) \
-	CHOOSE_OBJECT_UPDATE_(object_type)
 
 #define DECLARE_CHOOSE_OBJECT_UPDATE_FUNCTION( object_type ) \
 static int CHOOSE_OBJECT_UPDATE(object_type)( \
@@ -147,13 +142,11 @@ Tells CMGUI about the current values. Sends a pointer to the current object. \
 } /* CHOOSE_OBJECT_UPDATE(object_type) */
 
 #if defined (FULL_NAMES)
-#define CHOOSE_OBJECT_DESTROY_CB_( object_type ) \
+#define CHOOSE_OBJECT_DESTROY_CB( object_type ) \
 	choose_object_destroy_cb_ ## object_type
 #else
-#define CHOOSE_OBJECT_DESTROY_CB_( object_type ) codc ## object_type
+#define CHOOSE_OBJECT_DESTROY_CB( object_type ) codc ## object_type
 #endif
-#define CHOOSE_OBJECT_DESTROY_CB( object_type ) \
-	CHOOSE_OBJECT_DESTROY_CB_(object_type)
 
 #define DECLARE_CHOOSE_OBJECT_DESTROY_CB_FUNCTION( object_type ) \
 static void CHOOSE_OBJECT_DESTROY_CB(object_type)(Widget widget, \
@@ -203,13 +196,11 @@ Callback for the choose_object dialog - tidies up all memory allocation. \
 } /* CHOOSE_OBJECT_DESTROY_CB(object_type) */
 
 #if defined (FULL_NAMES)
-#define CHOOSE_OBJECT_UPDATE_CB_( object_type ) \
+#define CHOOSE_OBJECT_UPDATE_CB( object_type ) \
 	choose_object_update_cb_ ## object_type
 #else
-#define CHOOSE_OBJECT_UPDATE_CB_( object_type ) couc ## object_type
+#define CHOOSE_OBJECT_UPDATE_CB( object_type ) couc ## object_type
 #endif
-#define CHOOSE_OBJECT_UPDATE_CB( object_type ) \
-	CHOOSE_OBJECT_UPDATE_CB_(object_type)
 
 #define DECLARE_CHOOSE_OBJECT_UPDATE_CB_FUNCTION( object_type ) \
 static void CHOOSE_OBJECT_UPDATE_CB(object_type)(Widget widget, \
@@ -240,13 +231,11 @@ Callback for the choose_object dialog - tidies up all memory allocation. \
 } /* CHOOSE_OBJECT_UPDATE_CB(object_type) */
 
 #if defined (FULL_NAMES)
-#define CHOOSE_OBJECT_ADD_TO_LIST_DATA_( object_type ) \
+#define CHOOSE_OBJECT_ADD_TO_LIST_DATA( object_type ) \
 	choose_object_add_to_list_data_ ## object_type
 #else
-#define CHOOSE_OBJECT_ADD_TO_LIST_DATA_( object_type ) coatld ## object_type
+#define CHOOSE_OBJECT_ADD_TO_LIST_DATA( object_type ) coatld ## object_type
 #endif
-#define CHOOSE_OBJECT_ADD_TO_LIST_DATA( object_type ) \
-	CHOOSE_OBJECT_ADD_TO_LIST_DATA_(object_type)
 
 #define DECLARE_CHOOSE_OBJECT_ADD_TO_LIST_DATA( object_type ) \
 struct CHOOSE_OBJECT_ADD_TO_LIST_DATA(object_type) \
@@ -265,13 +254,11 @@ Data for adding objects to an allocated list. Handles conditional function. \
 } /* struct CHOOSE_OBJECT_ADD_TO_LIST_DATA(object_type) */
 
 #if defined (FULL_NAMES)
-#define CHOOSE_OBJECT_ADD_TO_LIST_( object_type ) \
+#define CHOOSE_OBJECT_ADD_TO_LIST( object_type ) \
 	choose_object_add_to_list_ ## object_type
 #else
-#define CHOOSE_OBJECT_ADD_TO_LIST_( object_type ) coatl ## object_type
+#define CHOOSE_OBJECT_ADD_TO_LIST( object_type ) coatl ## object_type
 #endif
-#define CHOOSE_OBJECT_ADD_TO_LIST( object_type ) \
-	CHOOSE_OBJECT_ADD_TO_LIST_(object_type)
 
 #define DECLARE_CHOOSE_OBJECT_ADD_TO_LIST_FUNCTION( object_type ) \
 static int CHOOSE_OBJECT_ADD_TO_LIST(object_type)( \
@@ -320,13 +307,11 @@ Puts the <object> at the array position pointed to by <list_position>. \
 } /* CHOOSE_OBJECT_ADD_TO_LIST(object_type) */
 
 #if defined (FULL_NAMES)
-#define CHOOSE_OBJECT_BUILD_ITEMS_( object_type ) \
+#define CHOOSE_OBJECT_BUILD_ITEMS( object_type ) \
 	choose_object_get_items_ ## object_type
 #else
-#define CHOOSE_OBJECT_BUILD_ITEMS_( object_type ) cogi ## object_type
+#define CHOOSE_OBJECT_BUILD_ITEMS( object_type ) cogi ## object_type
 #endif
-#define CHOOSE_OBJECT_BUILD_ITEMS( object_type ) \
-	CHOOSE_OBJECT_BUILD_ITEMS_(object_type)
 
 #define DECLARE_CHOOSE_OBJECT_BUILD_ITEMS_FUNCTION( object_type ) \
 static int CHOOSE_OBJECT_BUILD_ITEMS(object_type)( \
@@ -407,13 +392,63 @@ Updates the arrays of all the choosable objects and their names. \
 } /* CHOOSE_OBJECT_BUILD_ITEMS(object_type) */
 
 #if defined (FULL_NAMES)
-#define CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE_( object_type ) \
+#define CHOOSE_OBJECT_OBJECT_STATUS_CHANGED( object_type ) \
+	choose_object_object_status_changed_ ## object_type
+#else
+#define CHOOSE_OBJECT_OBJECT_STATUS_CHANGED( object_type ) coosc ## object_type
+#endif
+
+#define DECLARE_CHOOSE_OBJECT_OBJECT_STATUS_CHANGED_FUNCTION( object_type ) \
+static int CHOOSE_OBJECT_OBJECT_STATUS_CHANGED(object_type)( \
+	struct object_type *object, void *choose_object_void) \
+/***************************************************************************** \
+LAST MODIFIED : 18 May 2001 \
+\
+DESCRIPTION : \
+Returns true if <object> is in the chooser but should not be, or is not in the \
+chooser and should be. \
+============================================================================*/ \
+{ \
+	int object_is_in_chooser, object_should_be_in_chooser, return_code; \
+	struct CHOOSE_OBJECT(object_type) *choose_object; \
+ \
+	ENTER(CHOOSE_OBJECT_OBJECT_STATUS_CHANGED(object_type)); \
+	if (object && (choose_object = \
+		(struct CHOOSE_OBJECT(object_type) *)choose_object_void)) \
+	{ \
+		if (choose_object->conditional_function) \
+		{ \
+			object_is_in_chooser = CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER(object_type)( \
+				choose_object, object); \
+			object_should_be_in_chooser = \
+				(choose_object->conditional_function)(object, \
+					choose_object->conditional_function_user_data); \
+			return_code = \
+				(object_is_in_chooser && (!object_should_be_in_chooser)) || \
+				((!object_is_in_chooser) && object_should_be_in_chooser); \
+		} \
+		else \
+		{ \
+			return_code = 0; \
+		} \
+	} \
+	else \
+	{ \
+		display_message(ERROR_MESSAGE,"CHOOSE_OBJECT_OBJECT_STATUS_CHANGED(" \
+			#object_type ").  Invalid argument(s)"); \
+		return_code = 0; \
+	} \
+	LEAVE; \
+ \
+	return (return_code); \
+} /* CHOOSE_OBJECT_OBJECT_STATUS_CHANGED(object_type) */
+
+#if defined (FULL_NAMES)
+#define CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE( object_type ) \
 	choose_object_global_object_change_ ## object_type
 #else
-#define CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE_( object_type ) cogoc ## object_type
+#define CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE( object_type ) cogoc ## object_type
 #endif
-#define CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE( object_type ) \
-	CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE_(object_type)
 
 #define DECLARE_CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE_FUNCTION( object_type ) \
 static void CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE(object_type)( \
@@ -431,67 +466,48 @@ annoying flickering on the screen. \
 	struct CHOOSE_OBJECT(object_type) *choose_object; \
 \
 	ENTER(CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE(object_type)); \
-	if (message&&(choose_object= \
+	if (message && (choose_object= \
 		(struct CHOOSE_OBJECT(object_type) *)data)) \
 	{ \
-		update_menu=0; \
-		switch (message->change) \
+		update_menu = 0; \
+		if ((MANAGER_CHANGE_ADD(object_type) == message->change) || \
+			(MANAGER_CHANGE_REMOVE(object_type) == message->change) || \
+			(MANAGER_CHANGE_IDENTIFIER(object_type) == message->change) || \
+			(MANAGER_CHANGE_OBJECT(object_type) == message->change)) \
 		{ \
-			case MANAGER_CHANGE_ALL(object_type): \
-			case MANAGER_CHANGE_OBJECT(object_type): \
+			/* ensure menu updates if no conditional function, or  \
+				 conditional function satisfied for any of the changed objects */ \
+			if (!(choose_object->conditional_function) || \
+				((struct object_type *)NULL != \
+					FIRST_OBJECT_IN_LIST_THAT(object_type)( \
+						choose_object->conditional_function, \
+						choose_object->conditional_function_user_data, \
+						message->changed_object_list))) \
 			{ \
-				/* always update the menu - these seldom, if ever happen */ \
-				update_menu=1; \
-			}; break; \
-			case MANAGER_CHANGE_DELETE(object_type): \
-			case MANAGER_CHANGE_ADD(object_type): \
-			case MANAGER_CHANGE_IDENTIFIER(object_type): \
+					update_menu = 1; \
+			} \
+		} \
+		if ((MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type) == message->change) \
+			|| (MANAGER_CHANGE_OBJECT(object_type) == message->change)) \
+		{ \
+			/* ensure menu updates if there is no conditional function and the \
+				 status of an object in the chooser has changed */ \
+			if (choose_object->conditional_function && \
+				((struct object_type *)NULL != \
+					FIRST_OBJECT_IN_LIST_THAT(object_type)( \
+						CHOOSE_OBJECT_OBJECT_STATUS_CHANGED(object_type), \
+						(void *)choose_object, message->changed_object_list))) \
 			{ \
-				/* only update menu if no conditional function or included by it */ \
-				if (!(choose_object->conditional_function)|| \
-					(choose_object->conditional_function)(message->object_changed, \
-						choose_object->conditional_function_user_data)) \
-				{ \
-					update_menu=1; \
-				} \
-			}; break; \
-			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type): \
-			{ \
-				if (choose_object->conditional_function) \
-				{ \
-               if((choose_object->conditional_function)(message->object_changed, \
-						choose_object->conditional_function_user_data)) \
-               { \
-						if (!CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER(object_type)( \
-							choose_object, message->object_changed)) \
-						{ \
-							update_menu=1; \
-						} \
-	            } \
-               else \
-					{ \
-						if (CHOOSE_OBJECT_IS_ITEM_IN_CHOOSER(object_type)( \
-							choose_object, message->object_changed)) \
-						{ \
-							update_menu=1; \
-						} \
-					} \
-				} \
-			} break; \
+				update_menu = 1; \
+			} \
 		} \
 		if (update_menu) \
 		{ \
-		  if (CHOOSE_OBJECT_BUILD_ITEMS(object_type)(choose_object)) \
-			{ \
-				update_menu=Chooser_build_main_menu(choose_object->chooser, \
+		  if (!(CHOOSE_OBJECT_BUILD_ITEMS(object_type)(choose_object) && \
+				Chooser_build_main_menu(choose_object->chooser, \
 					choose_object->number_of_items,choose_object->items, \
-				   choose_object->item_names,Chooser_get_item(choose_object->chooser)); \
-			} \
-			else \
-			{ \
-				update_menu=0; \
-			} \
-			if (!update_menu) \
+					choose_object->item_names, \
+					Chooser_get_item(choose_object->chooser)))) \
 			{ \
 				display_message(ERROR_MESSAGE, \
 					"CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE(" #object_type \
@@ -841,6 +857,7 @@ DECLARE_CHOOSE_OBJECT_UPDATE_CB_FUNCTION(object_type) \
 DECLARE_CHOOSE_OBJECT_ADD_TO_LIST_DATA(object_type); \
 DECLARE_CHOOSE_OBJECT_ADD_TO_LIST_FUNCTION(object_type) \
 DECLARE_CHOOSE_OBJECT_BUILD_ITEMS_FUNCTION(object_type) \
+DECLARE_CHOOSE_OBJECT_OBJECT_STATUS_CHANGED_FUNCTION(object_type) \
 DECLARE_CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE_FUNCTION(object_type)
 
 #define DECLARE_CHOOSE_OBJECT_GLOBAL_FUNCTIONS( object_type ) \

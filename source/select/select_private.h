@@ -946,13 +946,14 @@ so may need to select a new object. \
 		XtUnmanageChild(temp_select->edit_name); \
 		switch (message->change) \
 		{ \
-			case MANAGER_CHANGE_DELETE(object_type): \
+			case MANAGER_CHANGE_REMOVE(object_type): \
 			{ \
 				switch (temp_select->appearance) \
 				{ \
 					case SELECT_LIST: \
 					{ \
-						if (temp_select->current_object==message->object_changed) \
+						if (IS_OBJECT_IN_LIST(object_type)(temp_select->current_object, \
+							message->changed_object_list)) \
 						{ \
 							/* find positionn of deleted item so next can be selected */ \
 							XtVaGetValues(temp_select->list_rowcol, \
@@ -971,38 +972,8 @@ so may need to select a new object. \
 					} break; \
 					case SELECT_TEXT: \
 					{ \
-						if (temp_select->current_object == message->object_changed) \
-						{ \
-							temp_select->current_object = (struct object_type *)NULL; \
-						} \
-					} break; \
-					default: \
-					{ \
-						display_message(ERROR_MESSAGE, \
-							"SELECT_GLOBAL_OBJECT_CHANGE(" #object_type \
-							").  Invalid appearance"); \
-					} break; \
-				} \
-				/* if current_object not in menu SELECT_SELECT_OBJECT */ \
-				/* will select the first item in it, and call an update */ \
-				SELECT_SELECT_OBJECT(object_type)(temp_select); \
-			} break; \
-			case MANAGER_CHANGE_ALL(object_type): \
-			{ \
-				switch (temp_select->appearance) \
-				{ \
-					case SELECT_LIST: \
-					{ \
-						/* list/names of objects may have changed: rebuild */ \
-						SELECT_UPDATE_LIST(object_type)(temp_select); \
-					} break; \
-					case SELECT_TEXT: \
-					{ \
-						/* check if current object was just deleted. Able to do this as \
-							 manager hangs on to it until end of messages */ \
-						if (temp_select->current_object && \
-							(!IS_MANAGED(object_type)(temp_select->current_object, \
-								temp_select->object_manager))) \
+						if (IS_OBJECT_IN_LIST(object_type)(temp_select->current_object, \
+							message->changed_object_list)) \
 						{ \
 							temp_select->current_object = (struct object_type *)NULL; \
 						} \

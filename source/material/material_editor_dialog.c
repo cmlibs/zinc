@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material_editor_dialog.c
 
-LAST MODIFIED : 1 December 1997
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 This module creates a free material_editor_dialog input device, using two dof3,
@@ -94,9 +94,9 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 } /* material_editor_dialog_update */
 
 static void material_editor_dialog_update_selection(Widget select_widget,
-	void *user_data,void *temp_mat)
+	void *user_data, void *temp_mat)
 /*******************************************************************************
-LAST MODIFIED : 26 September 1995
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Finds which material is selected, and informs the editor widget.
@@ -107,6 +107,7 @@ Finds which material is selected, and informs the editor widget.
 	struct Graphical_material *temp_material;
 
 	ENTER(material_editor_dialog_update_selection);
+	USE_PARAMETER(select_widget);
 	if ((temp_material_editor_dialog=(struct Material_editor_dialog_struct *)
 		user_data)&&(temp_material=(struct Graphical_material *)temp_mat))
 	{
@@ -125,7 +126,7 @@ Finds which material is selected, and informs the editor widget.
 static void material_editor_dialog_identify_button(Widget w,int button_num,
 	unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 26 September 1995
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Finds the id of the buttons on the material_editor_dialog widget.
@@ -134,6 +135,7 @@ Finds the id of the buttons on the material_editor_dialog widget.
 	struct Material_editor_dialog_struct *temp_material_editor_dialog;
 
 	ENTER(material_editor_dialog_identify_button);
+	USE_PARAMETER(reason);
 	/* find out which material_editor_dialog widget we are in */
 	XtVaGetValues(w,XmNuserData,&temp_material_editor_dialog,NULL);
 	switch (button_num)
@@ -174,7 +176,7 @@ Finds the id of the buttons on the material_editor_dialog widget.
 static void material_editor_dialog_control_CB(Widget w,int button_num,
 	unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 18 April 1994
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Finds the id of the buttons on the material_editor_dialog widget.
@@ -184,6 +186,7 @@ Finds the id of the buttons on the material_editor_dialog widget.
 	struct Material_editor_dialog_struct *temp_material_editor_dialog;
 
 	ENTER(material_editor_dialog_control_CB);
+	USE_PARAMETER(reason);
 	/* find out which material_editor_dialog widget we are in */
 	XtVaGetValues(w,XmNuserData,&temp_material_editor_dialog,NULL);
 	if ((button_num==material_editor_dialog_cancel_ID)||
@@ -218,7 +221,7 @@ Finds the id of the buttons on the material_editor_dialog widget.
 static void material_editor_dialog_destroy_CB(Widget w,int *tag,
 	unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 4 November 1995
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Callback for the material_editor_dialog dialog - tidies up all details - mem etc
@@ -227,6 +230,8 @@ Callback for the material_editor_dialog dialog - tidies up all details - mem etc
 	struct Material_editor_dialog_struct *temp_material_editor_dialog;
 
 	ENTER(material_editor_dialog_destroy_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	/* Get the pointer to the data for the material_editor_dialog widget */
 	XtVaGetValues(w,XmNuserData,&temp_material_editor_dialog,NULL);
 	/* deaccess the material_editor_dialog */
@@ -249,7 +254,7 @@ Creates a dialog widget that allows the user to edit the properties of any of
 the materials contained in the global list.
 ==============================================================================*/
 {
-	int i,init_widgets;
+	int init_widgets;
 	MrmType material_editor_dialog_dialog_class;
 	struct Callback_data callback;
 	struct Material_editor_dialog_struct *temp_material_editor_dialog=NULL;
@@ -278,7 +283,6 @@ the materials contained in the global list.
 
 	ENTER(create_material_editor_dialog);
 	return_widget=(Widget)NULL;
-	/* check arguments */
 	if (graphical_material_manager&&texture_manager&&user_interface)
 	{
 		if (MrmOpenHierarchy_base64_string(material_editor_dialog_uidh,

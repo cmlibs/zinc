@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : text_choose_object_private.h
 
-LAST MODIFIED : 9 June 2000
+LAST MODIFIED : 18 May 2001
 
 DESCRIPTION :
 Macros for implementing an option menu dialog control for choosing an object
@@ -305,7 +305,7 @@ Callback for the text field - change of object. \
 static void TEXT_CHOOSE_OBJECT_GLOBAL_OBJECT_CHANGE(object_type)( \
 	struct MANAGER_MESSAGE(object_type) *message,void *data) \
 /***************************************************************************** \
-LAST MODIFIED : 18 August 1998 \
+LAST MODIFIED : 18 May 2001 \
 \
 DESCRIPTION : \
 Updates the chosen object and text field in response to manager messages. \
@@ -319,25 +319,6 @@ Updates the chosen object and text field in response to manager messages. \
 	{ \
 		switch (message->change) \
 		{ \
-			case MANAGER_CHANGE_ALL(object_type): \
-			{ \
-				if ((text_choose_object->current_object)&&!IS_MANAGED(object_type)( \
-					text_choose_object->current_object, \
-					text_choose_object->object_manager)) \
-				{ \
-					text_choose_object->current_object=(struct object_type *)NULL; \
-				} \
-				TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type)(text_choose_object, \
-					text_choose_object->current_object); \
-			} break; \
-			case MANAGER_CHANGE_DELETE(object_type): \
-			{ \
-				if (message->object_changed==text_choose_object->current_object) \
-				{ \
-					TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type)(text_choose_object, \
-						(struct object_type *)NULL); \
-				} \
-			} break; \
 			case MANAGER_CHANGE_ADD(object_type): \
 			{ \
 				if (!text_choose_object->current_object) \
@@ -346,10 +327,20 @@ Updates the chosen object and text field in response to manager messages. \
 						(struct object_type *)NULL); \
 				} \
 			} break; \
+			case MANAGER_CHANGE_REMOVE(object_type): \
+			{ \
+				if (IS_OBJECT_IN_LIST(object_type)(text_choose_object->current_object, \
+					message->changed_object_list)) \
+				{ \
+					TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type)(text_choose_object, \
+						(struct object_type *)NULL); \
+				} \
+			} break; \
 			case MANAGER_CHANGE_IDENTIFIER(object_type): \
 			case MANAGER_CHANGE_OBJECT(object_type): \
 			{ \
-				if (message->object_changed==text_choose_object->current_object) \
+				if (IS_OBJECT_IN_LIST(object_type)(text_choose_object->current_object, \
+					message->changed_object_list)) \
 				{ \
 					TEXT_CHOOSE_OBJECT_SELECT_OBJECT(object_type)(text_choose_object, \
 						text_choose_object->current_object); \

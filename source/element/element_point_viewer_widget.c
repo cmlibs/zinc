@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_viewer_widget.c
 
-LAST MODIFIED : 15 June 2000
+LAST MODIFIED : 23 May 2001
 
 DESCRIPTION :
 Widget for editing field values stored at an element point with multiple text
@@ -173,13 +173,14 @@ static void element_point_viewer_widget_computed_field_change(
 	struct MANAGER_MESSAGE(Computed_field) *message,
 	void *element_point_viewer_void)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 28 May 2001
 
 DESCRIPTION :
 One or more of the computed_fields have changed in the manager. If the
 current_field in the <element_point_viewer> has changed, re-send it to the
 element_point_field_viewer to update widgets/values etc.
 Note that delete/add messages are handled by the field chooser.
+???RC Review Manager Messages Here
 ==============================================================================*/
 {
 	struct Computed_field *field;
@@ -191,15 +192,13 @@ Note that delete/add messages are handled by the field chooser.
 	{
 		switch (message->change)
 		{
-			case MANAGER_CHANGE_ALL(Computed_field):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field):
 			case MANAGER_CHANGE_OBJECT(Computed_field):
 			{
-				field=CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
+				field = CHOOSE_OBJECT_GET_OBJECT(Computed_field)(
 					element_point_viewer->choose_field_widget);
-				if ((!(message->object_changed))||
-					Computed_field_depends_on_Computed_field(field,
-						message->object_changed))
+				if (Computed_field_depends_on_Computed_field_in_list(
+					field, message->changed_object_list))
 				{
 					element_point_field_viewer_widget_set_element_point_field(
 						element_point_viewer->field_viewer_widget,
@@ -208,7 +207,7 @@ Note that delete/add messages are handled by the field chooser.
 				}
 			} break;
 			case MANAGER_CHANGE_ADD(Computed_field):
-			case MANAGER_CHANGE_DELETE(Computed_field):
+			case MANAGER_CHANGE_REMOVE(Computed_field):
 			case MANAGER_CHANGE_IDENTIFIER(Computed_field):
 			{
 				/* do nothing */
