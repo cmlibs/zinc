@@ -5,7 +5,6 @@ if (!defined $path)
 
 # testing Cmiss::Variable_new::Inverse
 
-use Cmiss::Cmgui_command_data;
 use Cmiss::Region;
 use Cmiss::Variable_new;
 use Cmiss::Variable_new::Composition;
@@ -21,13 +20,11 @@ use Cmiss::Variable_new_input;
 #use Cmiss::Variable_new_input::Composite;
 
 # set up regions
-$cmgui_command_data = new Cmiss::Cmgui_command_data();
-$cmgui_command_data->execute_command("gfx read nodes $path/heart");
-$cmgui_command_data->execute_command("gfx read elements $path/heart");
-$root=$cmgui_command_data->get_cmiss_root_region();
-$heart=$root->get_sub_region(name=>'heart');
+$heart=new Cmiss::Region();
+$heart->read_file(name=>"$path/heart.exnode");
+$heart->read_file(name=>"$path/heart.exelem");
 # check creating finite element variable
-$var_1=new Cmiss::Variable_new::Finite_element(fe_field=>$heart->get_field(name=>'coordinates'));
+$var_1=new Cmiss::Variable_new::Finite_element(region=>$heart,name=>'coordinates');
 # make variables to be used as an input when evaluating
 $var_2=new Cmiss::Variable_new::Element_xi(element=>$heart->get_element(name=>21),xi=>[0.5,0.5,0.5]);
 $var_3=$var_1->evaluate($var_1->input_element_xi(),$var_2);

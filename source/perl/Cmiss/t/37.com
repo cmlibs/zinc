@@ -5,7 +5,6 @@ if (!defined $path)
 
 # testing Cmiss::Function::Composition
 
-use Cmiss::Cmgui_command_data;
 use Cmiss::Region;
 use Cmiss::Function;
 use Cmiss::Function::Composite;
@@ -18,14 +17,12 @@ use Cmiss::Function::Prolate_spheroidal_to_rectangular_cartesian;
 use Cmiss::Function_variable::Composite;
 
 # set up regions
-$cmgui_command_data = new Cmiss::Cmgui_command_data();
-$cmgui_command_data->execute_command("gfx read nodes $path/heart");
-$cmgui_command_data->execute_command("gfx read elements $path/heart");
-$root=$cmgui_command_data->get_cmiss_root_region();
-$heart=$root->get_sub_region(name=>'heart');
+$heart=new Cmiss::Region();
+$heart->read_file(name=>"$path/heart.exnode");
+$heart->read_file(name=>"$path/heart.exelem");
 # check creating composition function
 $fun_1a=new Cmiss::Function::Prolate_spheroidal_to_rectangular_cartesian();
-$fun_1b=new Cmiss::Function::Finite_element(fe_field=>$heart->get_field(name=>'coordinates'));
+$fun_1b=new Cmiss::Function::Finite_element(region=>$heart,name=>'coordinates');
 $var_1b=$fun_1b->output();
 $fun_1c=new Cmiss::Function::Element_xi(element=>$heart->get_element(name=>21),xi=>[0.5,0.5,0.5]);
 $fun_1=new Cmiss::Function::Composition(output=>$fun_1a->output(),input=>$fun_1a->prolate(),value=>$var_1b);

@@ -5,7 +5,6 @@ if (!defined $path)
 
 # testing Cmiss::Function::Derivative
 
-use Cmiss::Cmgui_command_data;
 use Cmiss::Region;
 use Cmiss::Function;
 use Cmiss::Function::Composite;
@@ -17,13 +16,11 @@ use Cmiss::Function_variable;
 use Cmiss::Function_variable::Composite;
 
 # set up regions
-$cmgui_command_data = new Cmiss::Cmgui_command_data();
-$cmgui_command_data->execute_command("gfx read nodes $path/heart");
-$cmgui_command_data->execute_command("gfx read elements $path/heart");
-$root=$cmgui_command_data->get_cmiss_root_region();
-$heart=$root->get_sub_region(name=>'heart');
+$heart=new Cmiss::Region();
+$heart->read_file(name=>"$path/heart.exnode");
+$heart->read_file(name=>"$path/heart.exelem");
 # check creating derivative function
-$fun_1a=new Cmiss::Function::Finite_element(fe_field=>$heart->get_field(name=>'coordinates'));
+$fun_1a=new Cmiss::Function::Finite_element(region=>$heart,name=>'coordinates');
 $var_1a=$fun_1a->xi();
 $fun_1=new Cmiss::Function::Derivative(dependent=>$fun_1a->output(),independent=>[$var_1a]);
 print "$fun_1\n";
@@ -124,20 +121,62 @@ $fun_9=new Cmiss::Function::Derivative(dependent=>$fun_9a->output(),independent=
 $var_9=$fun_9->output();
 $fun_9d=$var_9->evaluate();
 # Node 28
-$sub_matrix=$fun_9d->sub_matrix(column_low=>514,column_high=>558);
-print "Node 28\n$sub_matrix\n";
+#$sub_matrix=$fun_9d->sub_matrix(column_low=>514,column_high=>558);
+#print "Node 28\n$sub_matrix\n";
+print "Node 28\n";
+$sub_matrix=$fun_9d->sub_matrix(row_low=>172,row_high=>186);
+print "$sub_matrix\n";
+$sub_matrix=$fun_9d->sub_matrix(row_low=>793,row_high=>807);
+print "$sub_matrix\n";
+$sub_matrix=$fun_9d->sub_matrix(row_low=>1414,row_high=>1428);
+print "$sub_matrix\n";
 # Node 24
-$sub_matrix=$fun_9d->sub_matrix(column_low=>442,column_high=>459);
-print "Node 24\n$sub_matrix\n";
+#$sub_matrix=$fun_9d->sub_matrix(column_low=>442,column_high=>459);
+#print "Node 24\n$sub_matrix\n";
+print "Node 24\n";
+$sub_matrix=$fun_9d->sub_matrix(row_low=>148,row_high=>153);
+print "$sub_matrix\n";
+$sub_matrix=$fun_9d->sub_matrix(row_low=>769,row_high=>774);
+print "$sub_matrix\n";
+$sub_matrix=$fun_9d->sub_matrix(row_low=>1390,row_high=>1395);
+print "$sub_matrix\n";
 # Node 81
-$sub_matrix=$fun_9d->sub_matrix(column_low=>1522,column_high=>1539);
-print "Node 81\n$sub_matrix\n";
+#$sub_matrix=$fun_9d->sub_matrix(column_low=>1522,column_high=>1539);
+#print "Node 81\n$sub_matrix\n";
+print "Node 81\n";
+$sub_matrix=$fun_9d->sub_matrix(row_low=>508,row_high=>513);
+print "$sub_matrix\n";
+$sub_matrix=$fun_9d->sub_matrix(row_low=>1129,row_high=>1134);
+print "$sub_matrix\n";
+$sub_matrix=$fun_9d->sub_matrix(row_low=>1750,row_high=>1755);
+print "$sub_matrix\n";
 # Node 13
-$sub_matrix=$fun_9d->sub_matrix(column_low=>217,column_high=>261);
-print "Node 13\n$sub_matrix\n";
+#$sub_matrix=$fun_9d->sub_matrix(column_low=>217,column_high=>261);
+#print "Node 13\n$sub_matrix\n";
+print "Node 13\n";
+$sub_matrix=$fun_9d->sub_matrix(row_low=>73,row_high=>87);
+print "$sub_matrix\n";
+$sub_matrix=$fun_9d->sub_matrix(row_low=>694,row_high=>708);
+print "$sub_matrix\n";
+$sub_matrix=$fun_9d->sub_matrix(row_low=>1315,row_high=>1329);
+print "$sub_matrix\n";
 # Node 9
-$sub_matrix=$fun_9d->sub_matrix(column_low=>145,column_high=>162);
-print "Node 9\n$sub_matrix\n";
+#$sub_matrix=$fun_9d->sub_matrix(column_low=>145,column_high=>162);
+#print "Node 9\n$sub_matrix\n";
+print "Node 9\n";
+$sub_matrix=$fun_9d->sub_matrix(row_low=>49,row_high=>54);
+print "$sub_matrix\n";
+$sub_matrix=$fun_9d->sub_matrix(row_low=>670,row_high=>675);
+print "$sub_matrix\n";
+$sub_matrix=$fun_9d->sub_matrix(row_low=>1291,row_high=>1296);
+print "$sub_matrix\n";
 # Node 51
-$sub_matrix=$fun_9d->sub_matrix(column_low=>982,column_high=>999);
-print "Node 51\n$sub_matrix\n";
+#$sub_matrix=$fun_9d->sub_matrix(column_low=>982,column_high=>999);
+#print "Node 51\n$sub_matrix\n";
+print "Node 51\n";
+$sub_matrix=$fun_9d->sub_matrix(row_low=>328,row_high=>333);
+print "$sub_matrix\n";
+$sub_matrix=$fun_9d->sub_matrix(row_low=>949,row_high=>954);
+print "$sub_matrix\n";
+$sub_matrix=$fun_9d->sub_matrix(row_low=>1570,row_high=>1575);
+print "$sub_matrix\n";

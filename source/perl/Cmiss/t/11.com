@@ -10,7 +10,7 @@ use Cmiss::Region;
 $heart=new Cmiss::Region();
 $heart->read_file(name=>"$path/heart.exnode");
 $heart->read_file(name=>"$path/heart.exelem");
-$coordinates=new Cmiss::Variable::Finite_element(fe_field=>$heart->get_field(name=>'coordinates'));
+$coordinates=new Cmiss::Variable::Finite_element(region=>$heart,name=>'coordinates');
 $element_xi=new Cmiss::Value::Element_xi(element=>$heart->get_element(name=>21),xi=>[0.5,0.5,0.5]);
 $element_xi_var=new Cmiss::Variable::Element_xi(name=>'element_xi_var');
 $result=$coordinates->evaluate($element_xi_var,$element_xi);

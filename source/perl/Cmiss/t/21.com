@@ -5,7 +5,6 @@ if (!defined $path)
 
 # testing Cmiss::Variable_new::Finite_element
 
-use Cmiss::Cmgui_command_data;
 use Cmiss::Region;
 use Cmiss::Variable_new;
 use Cmiss::Variable_new::Finite_element;
@@ -17,13 +16,11 @@ use Cmiss::Variable_new_input;
 use Cmiss::Variable_new_input::Composite;
 
 # set up regions
-$cmgui_command_data = new Cmiss::Cmgui_command_data();
-$cmgui_command_data->execute_command("gfx read nodes $path/heart");
-$cmgui_command_data->execute_command("gfx read elements $path/heart");
-$root=$cmgui_command_data->get_cmiss_root_region();
-$heart=$root->get_sub_region(name=>'heart');
+$heart=new Cmiss::Region();
+$heart->read_file(name=>"$path/heart.exnode");
+$heart->read_file(name=>"$path/heart.exelem");
 # check creating finite element variable
-$var_1=new Cmiss::Variable_new::Finite_element(fe_field=>$heart->get_field(name=>'coordinates'));
+$var_1=new Cmiss::Variable_new::Finite_element(region=>$heart,name=>'coordinates');
 print "$var_1\n";
 # check evaluating with no arguments
 $var_2=$var_1->evaluate();
@@ -46,7 +43,7 @@ print "\n";
 #   being evaluated.  Also checks that the variable which was created by
 #   evaluating has the correct type (Scalar, input_value is only defined for
 #   Scalar)
-$var_5a=new Cmiss::Variable_new::Finite_element(fe_field=>$heart->get_field(name=>'coordinates'));
+$var_5a=new Cmiss::Variable_new::Finite_element(region=>$heart,name=>'coordinates');
 $var_5=$var_1->evaluate($var_5a->input_xi(),new Cmiss::Variable_new::Vector(0,0,1));
 print "$var_1, $var_5\n";
 # check evaluating first derivative

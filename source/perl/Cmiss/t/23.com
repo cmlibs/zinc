@@ -5,7 +5,6 @@ if (!defined $path)
 
 # testing Cmiss::Variable_new::Composite
 
-use Cmiss::Cmgui_command_data;
 use Cmiss::Region;
 use Cmiss::Variable_new;
 use Cmiss::Variable_new::Composite;
@@ -17,14 +16,12 @@ use Cmiss::Variable_new_input;
 use Cmiss::Variable_new_input::Composite;
 
 # set up regions
-$cmgui_command_data = new Cmiss::Cmgui_command_data();
-$cmgui_command_data->execute_command("gfx read nodes $path/heart");
-$cmgui_command_data->execute_command("gfx read elements $path/heart");
-$root=$cmgui_command_data->get_cmiss_root_region();
-$heart=$root->get_sub_region(name=>'heart');
+$heart=new Cmiss::Region();
+$heart->read_file(name=>"$path/heart.exnode");
+$heart->read_file(name=>"$path/heart.exelem");
 # check creating composite variable
 $var_1a=new Cmiss::Variable_new::Vector(1,5,-3,8);
-$var_1b=new Cmiss::Variable_new::Finite_element(fe_field=>$heart->get_field(name=>'coordinates'));
+$var_1b=new Cmiss::Variable_new::Finite_element(region=>$heart,name=>'coordinates');
 $var_1c=new Cmiss::Variable_new::Element_xi(element=>$heart->get_element(name=>21),xi=>[0.5,0.5,0.5]);
 $var_1=new Cmiss::Variable_new::Composite(variables=>[$var_1a,$var_1b,$var_1c]);
 print "$var_1\n";

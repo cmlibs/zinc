@@ -26,7 +26,7 @@ $focus=new Cmiss::Value::FE_value(value=>35.25);
 $element_xi=new Cmiss::Value::Element_xi(element=>$heart->get_element(name=>21),xi=>[0.5,0.5,0.5]);
 $element_xi_var=new Cmiss::Variable::Element_xi(name=>'element_xi_var',dimension=>3);
 
-$prolate_spheroidal_var=new Cmiss::Variable::Finite_element(fe_field=>$heart->get_field(name=>'coordinates'));
+$prolate_spheroidal_var=new Cmiss::Variable::Finite_element(region=>$heart,name=>'coordinates');
 $result=$prolate_spheroidal_var->evaluate($element_xi_var,$element_xi);
 if ($result)
 {

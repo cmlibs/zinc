@@ -5,7 +5,6 @@ if (!defined $path)
 
 # testing Cmiss::Function::Finite_element
 
-use Cmiss::Cmgui_command_data;
 use Cmiss::Region;
 use Cmiss::Function;
 use Cmiss::Function::Composite;
@@ -16,13 +15,11 @@ use Cmiss::Function_variable;
 use Cmiss::Function_variable::Composite;
 
 # set up regions
-$cmgui_command_data = new Cmiss::Cmgui_command_data();
-$cmgui_command_data->execute_command("gfx read nodes $path/heart");
-$cmgui_command_data->execute_command("gfx read elements $path/heart");
-$root=$cmgui_command_data->get_cmiss_root_region();
-$heart=$root->get_sub_region(name=>'heart');
+$heart=new Cmiss::Region();
+$heart->read_file(name=>"$path/heart.exnode");
+$heart->read_file(name=>"$path/heart.exelem");
 # check creating finite element variable
-$fun_1=new Cmiss::Function::Finite_element(fe_field=>$heart->get_field(name=>'coordinates'));
+$fun_1=new Cmiss::Function::Finite_element(region=>$heart,name=>'coordinates');
 print "$fun_1\n";
 print "\n";
 
@@ -54,7 +51,7 @@ print "\n";
 # check evaluating with arguments with the arguments not being for the variable
 #   being evaluated.  Also checks that the variable which was created by
 #   evaluating has the correct type (Scalar, value is only defined for Scalar)
-$fun_5a=new Cmiss::Function::Finite_element(fe_field=>$heart->get_field(name=>'coordinates'));
+$fun_5a=new Cmiss::Function::Finite_element(region=>$heart,name=>'coordinates');
 $fun_5=$var_1->evaluate(input=>$fun_5a->xi(),value=>new Cmiss::Function::Matrix(n_columns=>1,values=>[0,0,1]));
 print "$fun_1 $fun_5\n";
 print "\n";

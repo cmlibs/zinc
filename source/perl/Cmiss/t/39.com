@@ -5,7 +5,6 @@ if (!defined $path)
 
 # testing Cmiss::Function::Gradient
 
-use Cmiss::Cmgui_command_data;
 use Cmiss::Region;
 use Cmiss::Function;
 use Cmiss::Function::Composite;
@@ -17,13 +16,11 @@ use Cmiss::Function_variable;
 use Cmiss::Function_variable::Composite;
 
 # set up regions
-$cmgui_command_data = new Cmiss::Cmgui_command_data();
-$cmgui_command_data->execute_command("gfx read nodes $path/heart");
-$cmgui_command_data->execute_command("gfx read elements $path/heart");
-$root=$cmgui_command_data->get_cmiss_root_region();
-$heart=$root->get_sub_region(name=>'heart');
+$heart=new Cmiss::Region();
+$heart->read_file(name=>"$path/heart.exnode");
+$heart->read_file(name=>"$path/heart.exelem");
 # check creating derivative function
-$fun_1a=new Cmiss::Function::Finite_element(fe_field=>$heart->get_field(name=>'coordinates'));
+$fun_1a=new Cmiss::Function::Finite_element(region=>$heart,name=>'coordinates');
 $var_1a=$fun_1a->xi();
 $fun_1=new Cmiss::Function::Gradient(dependent=>$fun_1a->output(),independent=>$var_1a);
 print "$fun_1\n";

@@ -5,7 +5,6 @@ if (!defined $path)
 
 # testing Cmiss::Function::Element
 
-use Cmiss::Cmgui_command_data;
 use Cmiss::Region;
 use Cmiss::Function;
 use Cmiss::Function::Composite;
@@ -13,11 +12,9 @@ use Cmiss::Function::Element;
 use Cmiss::Function_variable;
 
 # set up regions
-$cmgui_command_data = new Cmiss::Cmgui_command_data();
-$cmgui_command_data->execute_command("gfx read nodes $path/heart");
-$cmgui_command_data->execute_command("gfx read elements $path/heart");
-$root=$cmgui_command_data->get_cmiss_root_region();
-$heart=$root->get_sub_region(name=>'heart');
+$heart=new Cmiss::Region();
+$heart->read_file(name=>"$path/heart.exnode");
+$heart->read_file(name=>"$path/heart.exelem");
 
 # check creating element/xi function
 $function_1=new Cmiss::Function::Element(element=>$heart->get_element(name=>21));
