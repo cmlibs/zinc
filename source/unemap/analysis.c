@@ -1,11 +1,10 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 25 April 2000
+LAST MODIFIED : 22 June 2000
 
 DESCRIPTION :
 ==============================================================================*/
-
 #include <stddef.h>
 #include <limits.h>
 #include <math.h>
@@ -13,6 +12,7 @@ DESCRIPTION :
 #include "general/debug.h"
 #include "general/postscript.h"
 #include "general/mystring.h"
+#include "general/value.h"
 #include "unemap/analysis.h"
 #include "unemap/drawing_2d.h"
 #include "user_interface/message.h"
@@ -2576,7 +2576,7 @@ int draw_signal(struct FE_node *device_node,
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 11 January 2000
+LAST MODIFIED : 22 June 2000
 
 DESCRIPTION :
 Draws the <device> signal in the <pixel_map> at the specified position
@@ -3142,6 +3142,7 @@ NB.  0<=current_data_interval<number_of_data_intervals
 				/* use full resolution for printer */
 				if (PRINTER_DETAIL==detail)
 				{
+#if defined (OLD_CODE)
 					x_scale=SCALE_FACTOR(x_max-x_min,time_max-time_min);
 					time_scale=1;
 					y_scale=SCALE_FACTOR(y_max-y_min,signal_maximum-signal_minimum);
@@ -3171,6 +3172,38 @@ NB.  0<=current_data_interval<number_of_data_intervals
 					time_ref=0;
 					x_ref=0;
 					signal_ref=0;
+					y_ref=0;
+#endif /* defined (OLD_CODE) */
+					x_scale=1;
+					y_scale=1;
+					x_scale *= (float)MAXSHORT/(float)(x_max-x_min);
+					time_scale *= (float)MAXSHORT/(float)(x_max-x_min);
+					y_scale *= (float)MAXSHORT/(float)(y_max-y_min);
+					value_scale *= (float)MAXSHORT/(float)(y_max-y_min);
+					/* set the printer transformation */
+					if (get_postscript_display_transfor(&postscript_page_left,
+						&postscript_page_bottom,&postscript_page_width,
+						&postscript_page_height,&world_left,&world_top,&world_width,
+						&world_height))
+					{
+						set_postscript_display_transfor(postscript_page_left,
+							postscript_page_bottom,postscript_page_width,
+							postscript_page_height,(float)(x_pos-x_min)*x_scale,
+							(float)(y_pos-y_min)*y_scale,x_scale*(float)width,
+							y_scale*(float)height);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"draw_signal.  Could not get_postscript_page_size");
+					}
+					x_min=0;
+					x_max=MAXSHORT;
+					y_min=0;
+					y_max=MAXSHORT;
+					time_ref=time_min;
+					x_ref=0;
+					signal_ref=signal_maximum;
 					y_ref=0;
 				}
 				else
