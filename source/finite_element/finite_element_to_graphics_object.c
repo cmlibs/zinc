@@ -3130,6 +3130,7 @@ normals are used.
 					texture_coordinate_t=texture_coordinate;
 					(*texture_coordinate)[0]=0.;
 					(*texture_coordinate)[1]=0.;
+					(*texture_coordinate)[2]=0.;
 					if (SIMPLEX_SHAPE== *(element->shape->type))
 					{
 						for (j=number_of_points_in_xi1-1;j>0;j--)
