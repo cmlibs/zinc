@@ -2712,7 +2712,7 @@ Turns off surfaces for the placed elements in the 3-D view, updates scene.
 
 int Mirage_movie_read_frame_images(struct Mirage_movie *movie,int frame_no)
 /*******************************************************************************
-LAST MODIFIED : 4 September 2000
+LAST MODIFIED : 5 September 2000
 
 DESCRIPTION :
 Reads the images for frame <frame_no> in <movie>.
@@ -2727,11 +2727,11 @@ it is often useful for them to temporarily differ.
 	enum Texture_storage_type texture_storage;
 	int crop_bottom_margin,crop_height,crop_left_margin,crop_width,
 		number_of_bytes_per_component,number_of_components,return_code,
-		view_no,original_width_texels,original_height_texels;
+		view_no;
 	long int image_width,image_height;
 	struct Mirage_view *view;
 	struct Texture *temp_texture;
-	unsigned long *image,*cropped_image;
+	unsigned long *image;
 
 	ENTER(Mirage_movie_read_frame_images);
 	if (movie && (frame_no >= movie->start_frame_no) &&
@@ -2786,9 +2786,6 @@ it is often useful for them to temporarily differ.
 					}
 					if (image && return_code)
 					{
-						original_width_texels=image_width;
-						original_height_texels=image_height;
-						cropped_image=(unsigned long *)NULL;
 						/*???DB.  Guessing at texture storage for 4.  Should
 							read_image_file return.  Is something like this already
 							defined for images ? */
@@ -2815,16 +2812,11 @@ it is often useful for them to temporarily differ.
 								texture_storage=TEXTURE_UNDEFINED_STORAGE;
 							} break;
 						}
-						if ((cropped_image=copy_image(image,number_of_components,
-							image_width,image_height))&&
-							crop_image(&cropped_image,number_of_components,
-								number_of_bytes_per_component,
-								&original_width_texels,&original_height_texels,
-								crop_left_margin,crop_bottom_margin,crop_width,crop_height)&&
-							Texture_set_image(temp_texture,cropped_image,
-								texture_storage,number_of_bytes_per_component,
-								original_width_texels,original_height_texels,image_file_name,
-								crop_left_margin,crop_bottom_margin,crop_width,crop_height))
+						if (Texture_set_image(temp_texture,image,
+							texture_storage,number_of_bytes_per_component,
+							image_width,image_height,image_file_name,
+							crop_left_margin,crop_bottom_margin,crop_width,crop_height,
+							/*perform_crop*/1))
 						{
 							/* the texture stores the distortion centre and factor k1.
 								 Since the centre jiggles between even and odd frames with
@@ -2857,10 +2849,6 @@ it is often useful for them to temporarily differ.
 						else
 						{
 							return_code=0;
-						}
-						if (cropped_image)
-						{
-							DEALLOCATE(cropped_image);
 						}
 					}
 					DEALLOCATE(image_file_name);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture.h
 
-LAST MODIFIED : 3 February 2000
+LAST MODIFIED : 5 September 2000
 
 DESCRIPTION :
 The data structures used for representing textures.
@@ -238,16 +238,17 @@ int Texture_set_image(struct Texture *texture,unsigned long *image,
 	enum Texture_storage_type storage,int number_of_bytes_per_component,
 	int image_width,int image_height,
 	char *image_file_name,int	crop_left_margin,int crop_bottom_margin,
-	int crop_width,int crop_height);
+	int crop_width,int crop_height,int perform_crop);
 /*******************************************************************************
-LAST MODIFIED : 25 August 1999
+LAST MODIFIED : 5 September 2000
 
 DESCRIPTION :
 Puts the <image> in the texture. The image is left unchanged by this function.
 The <image_file_name> is specified purely so that it may be recorded with the
 texture, and must be given a value. Similarly, the four crop parameters should
 be set to record any cropping already done on the image so that it may be
-recorded with the texture.
+recorded with the texture - not however that if perform_crop is true then the
+crop is performed as the image is put into the texture.
 ==============================================================================*/
 
 int Texture_set_image_file(struct Texture *texture,char *image_file_name,

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 4 September 2000
+LAST MODIFIED : 5 September 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -7454,7 +7454,7 @@ static int set_Texture_image_from_field(struct Texture *texture, struct Computed
 	char *image_file_name,int crop_left_margin,int crop_bottom_margin,
 	int crop_width,int crop_height, struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 16 June 2000
+LAST MODIFIED : 5 September 2000
 
 DESCRIPTION :
 Creates the image in the format given by sampling the <field> according to the
@@ -7619,7 +7619,7 @@ field are converted to "colours" by applying the <spectrum>
 				storage, /* number_of_bytes_per_component */ 1,
 				image_width, image_height,
 				image_file_name, crop_left_margin, crop_bottom_margin,
-				crop_width, crop_height);
+				crop_width, crop_height,/*perform_crop*/0);
 			Computed_field_clear_cache(field);
 			Computed_field_clear_cache(texture_coordinate_field);
 			DEALLOCATE(data_values);

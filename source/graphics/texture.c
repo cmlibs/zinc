@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture.c
 
-LAST MODIFIED : 22 June 2000
+LAST MODIFIED : 5 September 2000 2000
 
 DESCRIPTION :
 The functions for manipulating graphical textures.
@@ -2315,21 +2315,23 @@ int Texture_set_image(struct Texture *texture,unsigned long *image,
 	enum Texture_storage_type storage,int number_of_bytes_per_component,
 	int image_width,int image_height,
 	char *image_file_name,int	crop_left_margin,int crop_bottom_margin,
-	int crop_width,int crop_height)
+	int crop_width,int crop_height,int perform_crop)
 /*******************************************************************************
-LAST MODIFIED : 18 May 1998
+LAST MODIFIED : 5 September 2000
 
 DESCRIPTION :
 Puts the <image> in the texture. The image is left unchanged by this function.
 The <image_file_name> is specified purely so that it may be recorded with the
 texture, and must be given a value. Similarly, the four crop parameters should
 be set to record any cropping already done on the image so that it may be
-recorded with the texture.
+recorded with the texture - not however that if perform_crop is true then the
+crop is performed as the image is put into the texture.
 ==============================================================================*/
 {
 	char *temp_file_name;
-	int i,j,number_of_bytes,source_row_width_bytes,
-		destination_row_width_bytes,return_code;
+	int copy_row_width_bytes,destination_row_width_bytes,final_bottom_margin,
+		final_height,final_left_margin,final_width,i,j,number_of_bytes,
+		source_row_width_bytes,return_code;
 	long int texture_height,texture_width;
 	long unsigned *texture_image;
 	unsigned char *source,*destination,*destination_white_space;
@@ -2337,106 +2339,140 @@ recorded with the texture.
 	ENTER(Texture_set_image);
 	if (texture&&image&&image_file_name)
 	{
-		number_of_bytes = Texture_get_number_of_components_from_storage_type(storage)
-			* number_of_bytes_per_component;
-		/* width and height must be powers of 2 */
-		i=image_width;
-		texture_width=1;
-		while (i>1)
+		return_code=1;
+
+		number_of_bytes = number_of_bytes_per_component *
+			Texture_get_number_of_components_from_storage_type(storage);
+
+		if (perform_crop)
 		{
-			texture_width *= 2;
-			i /= 2;
-		}
-		if (texture_width<image_width)
-		{
-			texture_width *= 2;
-		}
-		i=image_height;
-		texture_height=1;
-		while (i>1)
-		{
-			texture_height *= 2;
-			i /= 2;
-		}
-		if (texture_height<image_height)
-		{
-			texture_height *= 2;
-		}
-		if ((image_width != texture_width)||(image_height != texture_height))
-		{
-			display_message(WARNING_MESSAGE,
-				"image width and/or height not powers of 2.  "
-				"Extending (%d,%d) to (%d,%d)",image_width,image_height,texture_width,
-				texture_height);
-		}
-		/* ensure texture images are unsigned long row aligned */
-		destination_row_width_bytes=
-			4*((int)((texture_width*number_of_bytes+3)/4));
-		source_row_width_bytes=image_width*number_of_bytes;
-		/*???RC was allocating long ints as if they were bytes! */
-		if (ALLOCATE(texture_image,unsigned long,
-			texture_height*destination_row_width_bytes/4))
-		{
-			/* transform image into texturing format */
-			destination=(unsigned char *)texture_image;
-			destination_white_space=
-				((unsigned char *)texture_image) + source_row_width_bytes;
-			source=(unsigned char *)image;
-			for (j=0;j<image_height;j++)
+			if ((0<=crop_left_margin)&&(0<=crop_bottom_margin)&&
+				(0<crop_width)&&(0<crop_height)&&
+				(crop_left_margin+crop_width<=image_width)&&
+				(crop_bottom_margin+crop_height<=image_height))
 			{
-				memcpy((void *)destination,(void *)source,source_row_width_bytes);
-				destination += destination_row_width_bytes;
-				source += source_row_width_bytes;
-				/* fill the space on the right with white pixels */
-				memset((void *)destination_white_space,0xff,
-					destination_row_width_bytes-source_row_width_bytes);
-				destination_white_space += destination_row_width_bytes;
-			}
-			/* fill the space on the top with white pixels */
-			for (j=image_height;j<texture_height;j++)
-			{
-				memset((void *)destination,0xff,destination_row_width_bytes);
-				destination += destination_row_width_bytes;
-			}
-			if (ALLOCATE(temp_file_name,char,strlen(image_file_name)+1))
-			{
-				strcpy(temp_file_name,image_file_name);
-				/* assign values */
-				texture->storage=storage;
-				texture->number_of_bytes_per_component = number_of_bytes_per_component;
-				/* original size is intended to specify useful part of texture */
-				texture->original_width_texels=image_width;
-				texture->original_height_texels=image_height;
-				texture->height_texels=texture_height;
-				texture->width_texels=texture_width;
-				DEALLOCATE(texture->image);
-				texture->image=texture_image;
-				if (texture->image_file_name)
-				{
-					DEALLOCATE(texture->image_file_name);
-				}
-				texture->image_file_name=temp_file_name;
-				texture->crop_left_margin=crop_left_margin;
-				texture->crop_bottom_margin=crop_bottom_margin;
-				texture->crop_width=crop_width;
-				texture->crop_height=crop_height;
-				/* display list needs to be compiled again */
-				texture->display_list_current=0;
-				return_code=1;
+				final_width = crop_width;
+				final_height = crop_height;
+				final_left_margin = crop_left_margin;
+				final_bottom_margin = crop_bottom_margin;
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Texture_set_image.  Could not allocate image_file_name");
-				DEALLOCATE(texture_image);
+					"Texture_set_image.  Invalid cropping parameters");
 				return_code=0;
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Texture_set_image.  Could not allocate texture image");
-			return_code=0;
+			final_width = image_width;
+			final_height = image_height;
+			final_left_margin = 0;
+			final_bottom_margin = 0;
+		}
+		if (return_code)
+		{
+			/* width and height must be powers of 2 */
+			i=final_width;
+			texture_width=1;
+			while (i>1)
+			{
+				texture_width *= 2;
+				i /= 2;
+			}
+			if (texture_width<final_width)
+			{
+				texture_width *= 2;
+			}
+			i=final_height;
+			texture_height=1;
+			while (i>1)
+			{
+				texture_height *= 2;
+				i /= 2;
+			}
+			if (texture_height<final_height)
+			{
+				texture_height *= 2;
+			}
+			if ((final_width != texture_width)||(final_height != texture_height))
+			{
+				display_message(WARNING_MESSAGE,
+					"image width and/or height not powers of 2.  "
+					"Extending (%d,%d) to (%d,%d)",final_width,final_height,texture_width,
+					texture_height);
+			}
+			/* ensure texture images are unsigned long row aligned */
+			destination_row_width_bytes=
+				4*((int)((texture_width*number_of_bytes+3)/4));
+			source_row_width_bytes=image_width*number_of_bytes;
+			copy_row_width_bytes=final_width*number_of_bytes;
+			/*???RC was allocating long ints as if they were bytes! */
+			if (ALLOCATE(texture_image,unsigned long,
+				texture_height*destination_row_width_bytes/4))
+			{
+				/* transform image into texturing format */
+				destination=(unsigned char *)texture_image;
+				destination_white_space=
+					(unsigned char *)texture_image + source_row_width_bytes;
+				source = (unsigned char *)image +
+					(final_bottom_margin*image_width+final_left_margin)*number_of_bytes;
+				for (j=0;j<final_height;j++)
+				{
+					memcpy((void *)destination,(void *)source,copy_row_width_bytes);
+					destination += destination_row_width_bytes;
+					source += source_row_width_bytes;
+					/* fill the space on the right with white pixels */
+					memset((void *)destination_white_space,0xff,
+						destination_row_width_bytes-copy_row_width_bytes);
+					destination_white_space += destination_row_width_bytes;
+				}
+				/* fill the space on the top with white pixels */
+				for (j=final_height;j<texture_height;j++)
+				{
+					memset((void *)destination,0xff,destination_row_width_bytes);
+					destination += destination_row_width_bytes;
+				}
+				if (ALLOCATE(temp_file_name,char,strlen(image_file_name)+1))
+				{
+					strcpy(temp_file_name,image_file_name);
+					/* assign values */
+					texture->storage=storage;
+					texture->number_of_bytes_per_component=number_of_bytes_per_component;
+					/* original size is intended to specify useful part of texture */
+					texture->original_width_texels=final_width;
+					texture->original_height_texels=final_height;
+					texture->height_texels=texture_height;
+					texture->width_texels=texture_width;
+					DEALLOCATE(texture->image);
+					texture->image=texture_image;
+					if (texture->image_file_name)
+					{
+						DEALLOCATE(texture->image_file_name);
+					}
+					texture->image_file_name=temp_file_name;
+					texture->crop_left_margin=crop_left_margin;
+					texture->crop_bottom_margin=crop_bottom_margin;
+					texture->crop_width=crop_width;
+					texture->crop_height=crop_height;
+					/* display list needs to be compiled again */
+					texture->display_list_current=0;
+					return_code=1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Texture_set_image.  Could not allocate image_file_name");
+					DEALLOCATE(texture_image);
+					return_code=0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Texture_set_image.  Could not allocate texture image");
+				return_code=0;
+			}
 		}
 	}
 	else
@@ -2455,7 +2491,7 @@ int Texture_set_image_file(struct Texture *texture,char *image_file_name,
 	int crop_height,double radial_distortion_centre_x,
 	double radial_distortion_centre_y,double radial_distortion_factor_k1)
 /*******************************************************************************
-LAST MODIFIED : 18 May 1998
+LAST MODIFIED : 5 September 2000
 
 DESCRIPTION :
 Reads the image for <texture> from file <image_file_name> and then crops it
@@ -2467,7 +2503,7 @@ performed.
 ==============================================================================*/
 {
 	enum Texture_storage_type storage;
-	int return_code,original_width_texels,original_height_texels;
+	int original_height_texels,original_width_texels,perform_crop,return_code;
 	int number_of_components,number_of_bytes_per_component;
 	long image_width,image_height;
 	long unsigned *image;
@@ -2478,6 +2514,7 @@ performed.
 		if (read_image_file(image_file_name,&number_of_components,
 			&number_of_bytes_per_component,&image_height,&image_width,&image))
 		{
+			return_code=1;
 			switch(number_of_components)
 			{
 				case 1:
@@ -2520,28 +2557,24 @@ performed.
 			}
 			if (image)
 			{
-				if (!crop_image(&image, number_of_components,
-					number_of_bytes_per_component,
-					&original_width_texels,	&original_height_texels,
-					crop_left_margin,crop_bottom_margin,
-					crop_width,crop_height))
-				{
-					display_message(ERROR_MESSAGE,
-						"Texture_set_image_file.  Could not crop image");
-					DEALLOCATE(image);
-				}
-			}
-			if (image)
-			{
-				return_code=Texture_set_image(texture,image,storage,
+				perform_crop=(0<crop_width)&&(0<crop_height);
+				if (!Texture_set_image(texture,image,storage,
 					number_of_bytes_per_component,
 					original_width_texels,original_height_texels,image_file_name,
-					crop_left_margin,crop_bottom_margin,crop_width,crop_height);
+					crop_left_margin,crop_bottom_margin,crop_width,crop_height,
+					perform_crop))
+				{
+					return_code=0;
+				}
 				DEALLOCATE(image);
 			}
 			else
 			{
 				return_code=0;
+			}
+			if (!return_code)
+			{
+				display_message(ERROR_MESSAGE,"Texture_set_image_file.  Failed");
 			}
 		}
 		else
