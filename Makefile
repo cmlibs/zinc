@@ -5,9 +5,9 @@ TEST_PATH=$(CMISS_ROOT)/cmgui/test_examples
 MAILFILE_PATH=mailfiles
 
 #Build defaults
-USER_INTERFACE=USER_INTERFACE=MOTIF_USER_INTERFACE
-DYNAMIC_GL_LINUX=DYNAMIC_GL_LINUX=false
-DEBUG=DEBUG=true
+USER_INTERFACE=MOTIF_USER_INTERFACE
+DYNAMIC_GL_LINUX=false
+DEBUG=true
 ABI=
 MEMORYCHECK=
 
@@ -29,17 +29,27 @@ endif # CMISS_ROOT_DEFINED
 #Developers default
 cmgui-debug :
 
-cmgui cmgui-debug cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug : USER_INTERFACE_OPTION=USER_INTERFACE=MOTIF_USER_INTERFACE
-cmgui-dynamicgl cmgui-dynamicgl-debug : DYNAMIC_GL_LINUX_OPTION=DYNAMIC_GL_LINUX=true
-cmgui cmgui-dynamicgl cmgui64 cmgui-console cmgui-gtk : DEBUG_OPTION=DEBUG=false
-cmgui-debug cmgui-debug-memorycheck cmgui-dynamicgl-debug cmgui64-debug : DEBUG_OPTION=DEBUG=true
-cmgui64 cmgui64-debug : ABI_OPTION=ABI=64
-cmgui-debug-memorycheck : MEMORYCHECK_OPTION=MEMORYCHECK=true
-cmgui-console : USER_INTERFACE_OPTION=USER_INTERFACE=CONSOLE_USER_INTERFACE
-cmgui-gtk : USER_INTERFACE_OPTION=USER_INTERFACE=GTK_USER_INTERFACE
+#Separating these rules allow the command line options to propogate and
+#variables that are not defined not to propogate.
+cmgui cmgui-debug cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug : USER_INTERFACE_OPTION=$(USER_INTERFACE)
+cmgui cmgui-debug cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug : USER_INTERFACE=MOTIF_USER_INTERFACE
+cmgui-dynamicgl cmgui-dynamicgl-debug : DYNAMIC_GL_LINUX_OPTION=$(DYNAMIC_GL_LINUX)
+cmgui-dynamicgl cmgui-dynamicgl-debug : DYNAMIC_GL_LINUX=true
+cmgui cmgui-dynamicgl cmgui64 cmgui-console cmgui-gtk : DEBUG_OPTION=$(DEBUG)
+cmgui cmgui-dynamicgl cmgui64 cmgui-console cmgui-gtk : DEBUG=false
+cmgui-debug cmgui-debug-memorycheck cmgui-dynamicgl-debug cmgui64-debug : DEBUG_OPTION=$(DEBUG)
+cmgui-debug cmgui-debug-memorycheck cmgui-dynamicgl-debug cmgui64-debug : DEBUG=true
+cmgui64 cmgui64-debug utilities64 : ABI_OPTION=$(ABI)
+cmgui64 cmgui64-debug utilities64 : ABI=64
+cmgui-debug-memorycheck : MEMORYCHECK_OPTION=$(MEMORYCHECK)
+cmgui-debug-memorycheck : MEMORYCHECK=true
+cmgui-console : USER_INTERFACE_OPTION=$(USER_INTERFACE)
+cmgui-console : USER_INTERFACE=CONSOLE_USER_INTERFACE
+cmgui-gtk : USER_INTERFACE_OPTION=$(USER_INTERFACE)
+cmgui-gtk : USER_INTERFACE=GTK_USER_INTERFACE
 
-utilities: TARGET_OPTION=utilities
-utilities: force
+utilities utilities64 : TARGET_OPTION=utilities
+utilities utilities64 : force
 
 ifdef TARGET
    TARGET_OPTION = $(TARGET)

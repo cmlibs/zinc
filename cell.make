@@ -28,14 +28,19 @@ endif # CMISS_ROOT_DEFINED
 #Developers default
 cell-debug :
 
-cell cell-debug cell-debug-memorycheck cell64 cell64-debug : USER_INTERFACE_OPTION=USER_INTERFACE=MOTIF_USER_INTERFACE
-cell cell64 : DEBUG_OPTION=DEBUG=false
-cell-debug cell-debug-memorycheck cell64-debug : DEBUG_OPTION=DEBUG=true
-cell64 cell64-debug : ABI_OPTION=ABI=64
-cell-debug-memorycheck : MEMORYCHECK_OPTION=MEMORYCHECK=true
+cell cell-debug cell-debug-memorycheck cell64 cell64-debug : USER_INTERFACE_OPTION=$(USER_INTERFACE)
+cell cell-debug cell-debug-memorycheck cell64 cell64-debug : USER_INTERFACE=MOTIF_USER_INTERFACE
+cell cell64 : DEBUG_OPTION=$(DEBUG)
+cell cell64 : DEBUG=false
+cell-debug cell-debug-memorycheck cell64-debug : DEBUG_OPTION=$(DEBUG)
+cell-debug cell-debug-memorycheck cell64-debug : DEBUG=true
+cell64 cell64-debug  utilities64 : ABI_OPTION=$(ABI)
+cell64 cell64-debug  utilities64 : ABI=64
+cell-debug-memorycheck : MEMORYCHECK_OPTION=$(MEMORYCHECK)
+cell-debug-memorycheck : MEMORYCHECK=true
 
-utilities: TARGET_OPTION=utilities
-utilities: force
+utilities utilities64 : TARGET_OPTION=utilities
+utilities utilities64 : force
 
 ifdef TARGET
    TARGET_OPTION = $(TARGET)

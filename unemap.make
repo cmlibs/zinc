@@ -30,16 +30,25 @@ endif # CMISS_ROOT_DEFINED
 #Developers default
 unemap-debug :
 
-unemap unemap-debug unemap-debug-memorycheck unemap-nodes unemap-3d unemap-3d-debug unemap64 unemap64-debug : USER_INTERFACE_OPTION=USER_INTERFACE=MOTIF_USER_INTERFACE
-unemap unemap-nodes unemap-3d unemap64 : DEBUG_OPTION=DEBUG=false
-unemap-debug unemap-debug-memorycheck unemap-3d-debug unemap64-debug : DEBUG_OPTION=DEBUG=true
-unemap64 unemap64-debug : ABI_OPTION=ABI=64
-unemap-debug-memorycheck : MEMORYCHECK_OPTION=MEMORYCHECK=true
-unemap-nodes : USE_UNEMAP_NODES_OPTION=USE_UNEMAP_NODES=true
-unemap-nodes unemap-3d : USE_UNEMAP_3D_OPTION=USE_UNEMAP_3D=true
+#Separating these rules allow the command line options to propogate and
+#variables that are not defined not to propogate.
+unemap unemap-debug unemap-debug-memorycheck unemap-nodes unemap-3d unemap-3d-debug unemap64 unemap64-debug : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
+unemap unemap-debug unemap-debug-memorycheck unemap-nodes unemap-3d unemap-3d-debug unemap64 unemap64-debug : USER_INTERFACE=MOTIF_USER_INTERFACE
+unemap unemap-nodes unemap-3d unemap64 : DEBUG_OPTION=DEBUG=$(DEBUG)
+unemap unemap-nodes unemap-3d unemap64 : DEBUG=false
+unemap-debug unemap-debug-memorycheck unemap-3d-debug unemap64-debug : DEBUG_OPTION=DEBUG=$(DEBUG)
+unemap-debug unemap-debug-memorycheck unemap-3d-debug unemap64-debug : DEBUG=true
+unemap64 unemap64-debug utilities64 : ABI_OPTION=ABI=$(ABI)
+unemap64 unemap64-debug utilities64 : ABI=64
+unemap-debug-memorycheck : MEMORYCHECK_OPTION=$(MEMORYCHECK)
+unemap-debug-memorycheck : MEMORYCHECK=true
+unemap-nodes : USE_UNEMAP_NODES_OPTION=$(USE_UNEMAP_NODES)
+unemap-nodes : USE_UNEMAP_NODES=true
+unemap-nodes unemap-3d : USE_UNEMAP_3D_OPTION=$(USE_UNEMAP_3D)
+unemap-nodes unemap-3d : USE_UNEMAP_3D=true
 
-utilities: TARGET_OPTION=utilities
-utilities: force
+utilities utilities64 : TARGET_OPTION=utilities
+utilities utilities64 : force
 
 ifdef TARGET
    TARGET_OPTION = $(TARGET)
@@ -71,7 +80,7 @@ unemap unemap-debug unemap-debug-memorycheck unemap-nodes unemap-3d unemap-3d-de
 	cd source ; \
 	$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
 
-ESU_BUILD_LIST = unemap unemap-debug unemap-debug-memorycheck unemap64 unemap-nodes unemap-3d unemap-3d-debug utilities
+ESU_BUILD_LIST = unemap unemap-debug unemap-debug-memorycheck unemap64 unemap-nodes unemap-3d unemap-3d-debug utilities utilities64
 ESU_BUILD_PATH = '$${CMISS_ROOT}/cmgui'
 ESU_BUILD_MACHINE = 130.216.208.35 #esu35
 ESP_BUILD_LIST = unemap unemap-debug unemap-debug-memorycheck unemap-3d unemap-3d-debug utilities
