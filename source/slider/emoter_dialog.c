@@ -3054,7 +3054,7 @@ Both or either of <sequence_filename> or <existing_mode_curve> can be NULL.
 							}
 							graphics_buffer = create_Graphics_buffer_X3d(
 								emoter_slider->animated_pixmap,
-								GRAPHICS_BUFFER_SINGLE_BUFFERING, GRAPHICS_BUFFER_MONO,
+								GRAPHICS_BUFFER_ANY_BUFFERING_MODE, GRAPHICS_BUFFER_MONO,
  								/*minimum_colour_buffer_depth*/0,
  								/*minimum_depth_buffer_depth*/0,
 								/*minimum_accumulation_buffer_depth*/0,
