@@ -62,6 +62,7 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_erode_filter.h"
 
 #include "image_processing/computed_field_first_order_statistics.h"
+#include "image_processing/computed_field_gabor_filter.h"
 #include "image_processing/computed_field_gaussian_filter.h"
 #include "image_processing/computed_field_haar_wavelet_decomp.h"
 #include "image_processing/computed_field_haar_wavelet_reconstruct.h"
@@ -24376,6 +24377,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 					command_data->root_region, command_data->graphics_buffer_package);
 
 				Computed_field_register_types_first_order_statistics(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->graphics_buffer_package);
+				Computed_field_register_types_gabor_filter(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_gaussian_filter(
