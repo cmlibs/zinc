@@ -1,20 +1,21 @@
-package Cmiss::Variable_new;
+package Cmiss::Variable_new::Matrix;
 
 use 5.006;
 use strict;
 use warnings;
 use Carp;
 
+require Cmiss::Variable_new;
 require Exporter;
 use AutoLoader;
 
-our @ISA = qw(Exporter);
+our @ISA = qw(Cmiss::Variable_new Exporter);
 
 # Items to export into callers namespace by default. Note: do not export
 # names by default without a very good reason. Use EXPORT_OK instead.
 # Do not simply export all your public functions/methods/constants.
 
-# This allows declaration	use Cmiss::Variable_new ':all';
+# This allows declaration	use Cmiss::Variable_new::Matrix ':all';
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
 our %EXPORT_TAGS = ( 'all' => [ qw(
@@ -36,7 +37,7 @@ sub AUTOLOAD {
     my $constname;
     our $AUTOLOAD;
     ($constname = $AUTOLOAD) =~ s/.*:://;
-    croak "&Cmiss::Variable_new::constant not defined" if $constname eq 'constant';
+    croak "&Cmiss::Variable_new::Matrix::constant not defined" if $constname eq 'constant';
     my ($error, $val) = constant($constname);
     if ($error) { croak $error; }
     {
@@ -55,47 +56,67 @@ sub AUTOLOAD {
 use Cmiss;
 Cmiss::require_library('cmgui_computed_variable');
 
-# Overload string conversion
-use overload '""' => \&string_convert, fallback => 1;
-
-sub string_convert
+sub new
 {
-	variable_get_string_representation(shift);
-}
+	my ($class, %arg) = @_;
+	my ($n_columns,$objref,$values);
 
-# evaluate is in xs
-
-sub evaluate_derivative
-{
-	my ($self, %args) = @_;
-	my ($independent,$values);
-
-	$independent=$args{independent};
-	if ($independent)
+	$values=$arg{values};
+	if ($values)
 	{
-		$values=$args{values};
-		#if no source then are clearing the setting
-		if ($values)
+		$n_columns=$arg{n_columns};
+		if ($n_columns)
 		{
-			evaluate_derivative_xs($self,$independent,$values);
+			$objref=new_xs($n_columns, $values);
 		}
 		else
 		{
-			evaluate_derivative_xs($self,$independent);
+			$objref=new_xs(1, $values);
+		}
+		if ($objref)
+		{
+			bless $objref,$class;
+		}
+		else
+		{
+			croak "Could not create $class";
 		}
 	}
 	else
 	{
-		croak "Missing independent";
+		croak "Missing values";
 	}
 }
 
-# get_input_value is in xs
+sub sub_matrix
+{
+	my ($self,%args)=@_;
+	my ($objref);
 
-# set_input_value is in xs
+	if (%args)
+	{
+		$objref=sub_matrix_xs($self,\%args);
+	}
+	else
+	{
+		$objref=sub_matrix_xs($self);
+	}
+}
+
+sub input_values
+{
+	my ($self, @indices) = @_;
+	my ($objref);
+
+	$objref=input_values_xs($self,\@indices);
+	if ($objref)
+	{
+		bless $objref,'Cmiss::Variable_new_input'
+	}
+}
 
 require XSLoader;
-XSLoader::load('Cmiss::Variable_new', $VERSION);
+XSLoader::load('Cmiss::Variable_new::Matrix', $VERSION);
 
 # Preloaded methods go here.
 
@@ -107,22 +128,22 @@ __END__
 
 =head1 NAME
 
-Cmiss::Variable_new - Perl extension for Cmiss variables
+Cmiss::Variable_new::Matrix - Perl extension for Cmiss matrix variables
 
 =head1 SYNOPSIS
 
-  use Cmiss::Variable_new;
+  use Cmiss::Variable_new::Matrix;
 
 =head1 ABSTRACT
 
-  This should be the abstract for Cmiss::Variable_new.
+  This should be the abstract for Cmiss::Variable_new::Matrix.
   The abstract is used when making PPD (Perl Package Description) files.
   If you don't want an ABSTRACT you should also edit Makefile.PL to
   remove the ABSTRACT_FROM option.
 
 =head1 DESCRIPTION
 
-Stub documentation for Cmiss::Variable_new, created by h2xs. It looks like the
+Stub documentation for Cmiss::Variable_new::Matrix, created by h2xs. It looks like the
 author of the extension was negligent enough to leave the stub
 unedited.
 

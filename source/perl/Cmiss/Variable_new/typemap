@@ -1,2 +1,3 @@
 Cmiss::Variable_new T_PTROBJ
+Cmiss::Variable_new_input T_PTROBJ
 Scalar T_FLOAT

@@ -1,20 +1,21 @@
-package Cmiss::Variable_new;
+package Cmiss::Variable_new::Composite;
 
 use 5.006;
 use strict;
 use warnings;
 use Carp;
 
+require Cmiss::Variable_new;
 require Exporter;
 use AutoLoader;
 
-our @ISA = qw(Exporter);
+our @ISA = qw(Cmiss::Variable_new Exporter);
 
 # Items to export into callers namespace by default. Note: do not export
 # names by default without a very good reason. Use EXPORT_OK instead.
 # Do not simply export all your public functions/methods/constants.
 
-# This allows declaration	use Cmiss::Variable_new ':all';
+# This allows declaration	use Cmiss::Variable_new::Composite ':all';
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
 our %EXPORT_TAGS = ( 'all' => [ qw(
@@ -36,7 +37,7 @@ sub AUTOLOAD {
     my $constname;
     our $AUTOLOAD;
     ($constname = $AUTOLOAD) =~ s/.*:://;
-    croak "&Cmiss::Variable_new::constant not defined" if $constname eq 'constant';
+    croak "&Cmiss::Variable_new::Composite::constant not defined" if $constname eq 'constant';
     my ($error, $val) = constant($constname);
     if ($error) { croak $error; }
     {
@@ -52,50 +53,47 @@ sub AUTOLOAD {
     goto &$AUTOLOAD;
 }
 
-use Cmiss;
-Cmiss::require_library('cmgui_computed_variable');
-
-# Overload string conversion
-use overload '""' => \&string_convert, fallback => 1;
-
-sub string_convert
+# Named argument
+sub new
 {
-	variable_get_string_representation(shift);
-}
+	my ($class, %arg) = @_;
+	my ($objref,$variables);
 
-# evaluate is in xs
-
-sub evaluate_derivative
-{
-	my ($self, %args) = @_;
-	my ($independent,$values);
-
-	$independent=$args{independent};
-	if ($independent)
+	$variables=$arg{variables};
+	if ($variables)
 	{
-		$values=$args{values};
-		#if no source then are clearing the setting
-		if ($values)
+		$objref=new_xs($variables);
+		if ($objref)
 		{
-			evaluate_derivative_xs($self,$independent,$values);
+			bless $objref,$class;
 		}
 		else
 		{
-			evaluate_derivative_xs($self,$independent);
+			croak "Could not create $class";
 		}
 	}
 	else
 	{
-		croak "Missing independent";
+		croak "Missing variables";
 	}
 }
 
-# get_input_value is in xs
-
-# set_input_value is in xs
+# Inherit string conversion
+## Overload string and numerical conversion
+#use overload '""' => \&string_convert, '0+' => \&numerical_convert, fallback => 1;
+#
+#sub numerical_convert
+#{
+#	get_type(shift);
+#}
+#
+#sub string_convert
+#{
+#	get_type(shift);
+#}
 
 require XSLoader;
-XSLoader::load('Cmiss::Variable_new', $VERSION);
+XSLoader::load('Cmiss::Variable_new::Composite', $VERSION);
 
 # Preloaded methods go here.
 
@@ -107,25 +105,24 @@ __END__
 
 =head1 NAME
 
-Cmiss::Variable_new - Perl extension for Cmiss variables
+Cmiss::Variable_new::Composite - Perl extension for Cmiss composite variables
 
 =head1 SYNOPSIS
 
-  use Cmiss::Variable_new;
+  use Cmiss::Variable_new::Composite;
 
 =head1 ABSTRACT
 
-  This should be the abstract for Cmiss::Variable_new.
+  This should be the abstract for Cmiss::Variable_new::Composite.
   The abstract is used when making PPD (Perl Package Description) files.
   If you don't want an ABSTRACT you should also edit Makefile.PL to
   remove the ABSTRACT_FROM option.
 
 =head1 DESCRIPTION
 
-Stub documentation for Cmiss::Variable_new, created by h2xs. It looks like the
-author of the extension was negligent enough to leave the stub
+Stub documentation for Cmiss::Variable_new::Composite, created by h2xs. It looks like
+the author of the extension was negligent enough to leave the stub
 unedited.
-
 
 =head2 EXPORT
 

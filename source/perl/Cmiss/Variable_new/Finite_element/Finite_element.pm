@@ -1,4 +1,4 @@
-package Cmiss::Variable_new::Scalar;
+package Cmiss::Variable_new::Finite_element;
 
 use 5.006;
 use strict;
@@ -15,7 +15,7 @@ our @ISA = qw(Cmiss::Variable_new Exporter);
 # names by default without a very good reason. Use EXPORT_OK instead.
 # Do not simply export all your public functions/methods/constants.
 
-# This allows declaration	use Cmiss::Variable_new::Scalar ':all';
+# This allows declaration	use Cmiss::Variable_new::Finite_element ':all';
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
 our %EXPORT_TAGS = ( 'all' => [ qw(
@@ -37,7 +37,7 @@ sub AUTOLOAD {
     my $constname;
     our $AUTOLOAD;
     ($constname = $AUTOLOAD) =~ s/.*:://;
-    croak "&Cmiss::Variable_new::Scalar::constant not defined" if $constname eq 'constant';
+    croak "&Cmiss::Variable_new::Finite_element::constant not defined" if $constname eq 'constant';
     my ($error, $val) = constant($constname);
     if ($error) { croak $error; }
     {
@@ -54,42 +54,95 @@ sub AUTOLOAD {
 }
 
 use Cmiss;
-Cmiss::require_library('cmgui_computed_variable');
+Cmiss::require_library('cmgui_computed_variable_finite_element');
 
+# Named argument
 sub new
 {
 	my ($class, %arg) = @_;
-	my ($objref,$value);
+	my ($component_name,$fe_field,$objref);
 
-	$value=$arg{value};
-	if ($value)
+	$fe_field=$arg{fe_field};
+	if ($fe_field)
 	{
-		$objref=create($value);
+		$component_name=$arg{component};
+		if ($component_name)
+		{
+			$objref=new_xs($fe_field, $component_name);
+		}
+		else
+		{
+			$objref=new_xs($fe_field);
+		}
 		if ($objref)
 		{
 			bless $objref,$class;
 		}
+		else
+		{
+			croak "Could not create $class";
+		}
 	}
 	else
 	{
-		croak "Missing value";
+		croak "Missing fe_field";
 	}
 }
 
-sub input_value
+sub input_element_xi
 {
-	my ($self, %arg) = @_;
+	my ($self,@args)=@_;
 	my ($objref);
 
-	$objref=input_value_xs($self);
+	$objref=input_element_xi_xs($self);
 	if ($objref)
 	{
 		bless $objref,'Cmiss::Variable_new_input'
 	}
 }
 
+sub input_xi
+{
+	my ($self,@indices)=@_;
+	my ($objref);
+
+	$objref=input_xi_xs($self,\@indices);
+	if ($objref)
+	{
+		bless $objref,'Cmiss::Variable_new_input'
+	}
+}
+
+sub input_nodal_values
+{
+	my ($self,%args)=@_;
+	my %defaults=(type=>"all",version=> -1);
+	my %args_with_defaults=(%defaults,%args);
+	my ($node,$node_null,$objref,$type,$version);
+
+	$node=$args_with_defaults{node};
+	if (!$node)
+	{
+		# make a NULL pointer
+		$node_null=0;
+		$node=\$node_null;
+		bless $node,"Cmiss::node";
+	}
+	$type=$args_with_defaults{type};
+	$version=$args_with_defaults{version};
+	$objref=input_nodal_values_xs($self,$node,$type,$version);
+	if ($objref)
+	{
+		bless $objref,'Cmiss::Variable_new_input'
+	}
+}
+
+# Inherit string conversion
+## Overload string and numerical conversion
+#use overload '""' => \&string_convert, '0+' => \&numerical_convert, fallback => 1;
+
 require XSLoader;
-XSLoader::load('Cmiss::Variable_new::Scalar', $VERSION);
+XSLoader::load('Cmiss::Variable_new::Finite_element', $VERSION);
 
 # Preloaded methods go here.
 
@@ -101,25 +154,24 @@ __END__
 
 =head1 NAME
 
-Cmiss::Variable_new::Scalar - Perl extension for Cmiss scalar variables
+Cmiss::Variable_new::Finite_element - Perl extension for Cmiss finite element variables
 
 =head1 SYNOPSIS
 
-  use Cmiss::Variable_new::Scalar;
+  use Cmiss::Variable_new::Finite_element;
 
 =head1 ABSTRACT
 
-  This should be the abstract for Cmiss::Variable_new::Scalar.
+  This should be the abstract for Cmiss::Variable_new::Finite_element.
   The abstract is used when making PPD (Perl Package Description) files.
   If you don't want an ABSTRACT you should also edit Makefile.PL to
   remove the ABSTRACT_FROM option.
 
 =head1 DESCRIPTION
 
-Stub documentation for Cmiss::Variable_new::Scalar, created by h2xs. It looks like the
-author of the extension was negligent enough to leave the stub
+Stub documentation for Cmiss::Variable_new::Finite_element, created by h2xs. It looks like
+the author of the extension was negligent enough to leave the stub
 unedited.
-
 
 =head2 EXPORT
 

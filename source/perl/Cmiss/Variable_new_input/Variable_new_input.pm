@@ -55,24 +55,24 @@ sub AUTOLOAD {
 use Cmiss;
 Cmiss::require_library('cmgui_computed_variable');
 
-sub new
-{
-	my ($class, %arg) = @_;
-	my ($objref,$specification);
-
-	if ($specification=$args{specification})
-	{
-		$objref=variable_new_input_create($specification);
-		if ($objref)
-		{
-			bless $objref,$class;
-		}
-	}
-	else
-	{
-		croak "Missing specification";
-	}
-}
+#sub new
+#{
+#	my ($class, %args) = @_;
+#	my ($objref,$specification);
+#
+#	if ($specification=$args{specification})
+#	{
+#		$objref=variable_new_input_create($specification);
+#		if ($objref)
+#		{
+#			bless $objref,$class;
+#		}
+#	}
+#	else
+#	{
+#		croak "Missing specification";
+#	}
+#}
 
 require XSLoader;
 XSLoader::load('Cmiss::Variable_new_input', $VERSION);

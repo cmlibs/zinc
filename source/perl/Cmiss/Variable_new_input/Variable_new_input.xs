@@ -11,16 +11,6 @@ MODULE = Cmiss::Variable_new_input		PACKAGE = Cmiss::Variable_new_input		PREFIX 
 
 PROTOTYPES: DISABLE
 
-Cmiss::Variable_new_input
-cmiss_variable_new_input_create(char *specification)
-	CODE:
-		if (RETVAL=Cmiss_variable_new_input_create(specification))
-		{
-			/*???DB.  ACCESSing? */
-		}
-	OUTPUT:
-		RETVAL
-
 int
 DESTROY(Cmiss::Variable_new_input input)
 	CODE:
