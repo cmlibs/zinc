@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : import_finite_element.c
 
-LAST MODIFIED : 10 May 2000
+LAST MODIFIED : 2 March 2001
 
 DESCRIPTION :
 The function for importing finite element data, from a file or CMISS (via a
@@ -3937,7 +3937,7 @@ int read_FE_element_group(FILE *input_file,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
 	struct MANAGER(FE_basis) *basis_manager)
 /*******************************************************************************
-LAST MODIFIED : 6 March 2000
+LAST MODIFIED : 2 March 2001
 
 DESCRIPTION :
 Reads an element group from an <input_file> or the socket (if <input_file> is
@@ -3951,6 +3951,7 @@ node groups are updated to contain nodes used by elements in associated group.
 	int existing_group_empty,input_result,return_code;
 	struct CM_element_information element_identifier;
 	struct FE_element *element,*template_element;
+	struct FE_element_list_CM_element_type_data element_list_type_data;
 	struct GROUP(FE_element) *elements_in_file,*existing_group;
 	struct FE_element_shape *element_shape;
 	struct GROUP(FE_node) *same_name_data_group,*same_name_node_group;
@@ -4007,11 +4008,13 @@ node groups are updated to contain nodes used by elements in associated group.
 					{
 						/* make sure faces and lines of elements are also in the group. Make
 							 a temporary list of top-level elements since group may change. */
-						if (temp_element_list=CREATE(LIST(FE_element))())
+						if (temp_element_list = CREATE(LIST(FE_element))())
 						{
+							element_list_type_data.cm_element_type = CM_ELEMENT;
+							element_list_type_data.element_list = temp_element_list;
 							FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-								ensure_top_level_FE_element_is_in_list,
-								(void *)temp_element_list,elements_in_file);
+								add_FE_element_of_CM_element_type_to_list,
+								(void *)&element_list_type_data, elements_in_file);
 							FOR_EACH_OBJECT_IN_LIST(FE_element)(
 								ensure_FE_element_and_faces_are_in_group,
 								(void *)elements_in_file,temp_element_list);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_ranges.h
 
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 2 March 2001
 
 DESCRIPTION :
 Structure for storing ranges of points in elements according to the various
@@ -289,14 +289,18 @@ DESCRIPTION :
 Toggles the <element_point_ranges> in <element_point_ranges_list>.
 ==============================================================================*/
 
-int Element_point_ranges_uses_top_level_element_in_list(
-	struct Element_point_ranges *element_point_ranges,void *element_list_void);
+int Element_point_ranges_is_wholly_within_element_list_tree(
+	struct Element_point_ranges *element_point_ranges, void *element_list_void);
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 2 March 2001
 
 DESCRIPTION :
-Returns true if the top_level_element in the <element_point_ranges> identifier
-is in <element_list>.
+Returns true if either the top_level_element in the <element_point_ranges>
+identifier is in <element_list>, or if the element is wholly within the list
+tree with FE_element_is_wholly_within_element_list_tree function. Used to check
+if element or top_level_element used by element_point_ranges will be destroyed,
+since faces and lines are destroyed with their parents if they are not also
+faces or lines of other elements not being destroyed.
 ==============================================================================*/
 
 int set_Element_point_ranges(struct Parse_state *state,

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 4 December 2000
+LAST MODIFIED : 2 March 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -10178,6 +10178,7 @@ Executes a GFX DEFINE FACES command.
 	int return_code;
 	struct Add_FE_element_and_faces_to_manager_data *add_element_data;
 	struct Cmiss_command_data *command_data;
+	struct FE_element_list_CM_element_type_data element_list_type_data;
 	struct GROUP(FE_element) *element_group;
 	struct LIST(FE_element) *element_list;
 	static struct Modifier_entry option_table[]=
@@ -10200,17 +10201,19 @@ Executes a GFX DEFINE FACES command.
 		{
 			if (element_list=CREATE(LIST(FE_element))())
 			{
+				element_list_type_data.cm_element_type = CM_ELEMENT;
+				element_list_type_data.element_list = element_list;
 				if (element_group)
 				{
-					return_code=FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-						ensure_top_level_FE_element_is_in_list,(void *)element_list,
-						element_group);
+					return_code = FOR_EACH_OBJECT_IN_GROUP(FE_element)(
+						add_FE_element_of_CM_element_type_to_list,
+						(void *)&element_list_type_data, element_group);
 				}
 				else
 				{
-					return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-						ensure_top_level_FE_element_is_in_list,(void *)element_list,
-						command_data->element_manager);
+					return_code = FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+						add_FE_element_of_CM_element_type_to_list,
+						(void *)&element_list_type_data, command_data->element_manager);
 				}
 				if (return_code)
 				{
@@ -10551,80 +10554,89 @@ element groups are destroyed together.
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
 static int gfx_destroy_elements(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
+	void *cm_element_type_void, void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 2 March 2000
 
 DESCRIPTION :
 Executes a GFX DESTROY ELEMENTS command.
 ==============================================================================*/
 {
 	char all_flag,ranges_flag,selected_flag;
+	enum CM_element_type cm_element_type;
+	struct CM_element_type_Multi_range_data element_type_ranges_data;
 	int return_code;
 	struct Cmiss_command_data *command_data;
+	struct FE_element_list_CM_element_type_data element_list_type_data;
 	struct FE_element_list_conditional_data list_conditional_data;
 	struct LIST(FE_element) *destroy_element_list;
 	struct Multi_range *element_ranges;
 	struct Option_table *option_table;
 
 	ENTER(gfx_destroy_elements);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
+	cm_element_type = (enum CM_element_type)cm_element_type_void;
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
 		/* initialise defaults */
-		all_flag=0;
-		selected_flag=0;
-		element_ranges=CREATE(Multi_range)();
+		all_flag = 0;
+		selected_flag = 0;
+		element_ranges = CREATE(Multi_range)();
 
-		option_table=CREATE(Option_table)();
+		option_table = CREATE(Option_table)();
 		/* all */
-		Option_table_add_entry(option_table,"all",&all_flag,NULL,set_char_flag);
+		Option_table_add_entry(option_table, "all", &all_flag, NULL, set_char_flag);
 		/* selected */
-		Option_table_add_entry(option_table,"selected",&selected_flag,
-			NULL,set_char_flag);
-		/* default option: top_level element number ranges */
-		Option_table_add_entry(option_table,(char *)NULL,(void *)element_ranges,
-			NULL,set_Multi_range);
-		if (return_code=Option_table_multi_parse(option_table,state))
+		Option_table_add_entry(option_table, "selected", &selected_flag, NULL,
+			set_char_flag);
+		/* default option: element number ranges */
+		Option_table_add_entry(option_table, (char *)NULL, (void *)element_ranges,
+			NULL, set_Multi_range);
+		if (return_code = Option_table_multi_parse(option_table,state))
 		{
-			if (destroy_element_list=CREATE(LIST(FE_element))())
+			if (destroy_element_list = CREATE(LIST(FE_element))())
 			{
-				ranges_flag=(0<Multi_range_get_number_of_ranges(element_ranges));
+				ranges_flag = (0<Multi_range_get_number_of_ranges(element_ranges));
+				element_list_type_data.cm_element_type = cm_element_type;
+				element_list_type_data.element_list = destroy_element_list;
+				element_type_ranges_data.cm_element_type = cm_element_type;
+				element_type_ranges_data.multi_range = element_ranges;
 				if (selected_flag)
 				{
-					/* add the selected top_level elements to destroy_element_list, and if
-						 element_ranges given, intersect with them */
-					return_code=FOR_EACH_OBJECT_IN_LIST(FE_element)(
-						ensure_top_level_FE_element_is_in_list,(void *)destroy_element_list,
+					/* add selected elements of cm_element_type to destroy_element_list
+						 and intersect with element_ranges, if any */
+					return_code = FOR_EACH_OBJECT_IN_LIST(FE_element)(
+						add_FE_element_of_CM_element_type_to_list,
+						(void *)&element_list_type_data,
 						FE_element_selection_get_element_list(
-							command_data->element_selection))&&
-						((!ranges_flag)||REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
-							FE_element_is_not_top_level_in_Multi_range,element_ranges,
-							destroy_element_list));
+							command_data->element_selection)) &&
+						((!ranges_flag) || REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
+							FE_element_of_CM_element_type_is_not_in_Multi_range,
+							(void *)&element_type_ranges_data, destroy_element_list));
 				}
 				else if (ranges_flag)
 				{
-					/* add top_level elements with numbers in element_ranges to
+					/* add elements of cm_element_type with numbers in element_ranges to
 						 destroy_element_list */
-					list_conditional_data.element_list=destroy_element_list;
-					list_conditional_data.function=FE_element_is_top_level_in_Multi_range;
-					list_conditional_data.user_data=element_ranges;
-					return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+					list_conditional_data.element_list = destroy_element_list;
+					list_conditional_data.function =
+						FE_element_of_CM_element_type_is_in_Multi_range;
+					list_conditional_data.user_data = (void *)&element_type_ranges_data;
+					return_code = FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
 						ensure_FE_element_is_in_list_conditional,
-						(void *)&list_conditional_data,command_data->element_manager);
+						(void *)&list_conditional_data, command_data->element_manager);
 				}
 				else if (all_flag)
 				{
-					/* add all top_level elements to destroy_element_list */
-					return_code=FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-						ensure_top_level_FE_element_is_in_list,(void *)destroy_element_list,
-						command_data->element_manager);
+					/* add all elements of cm_element_type to destroy_element_list */
+					return_code = FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
+						add_FE_element_of_CM_element_type_to_list,
+						(void *)&element_list_type_data, command_data->element_manager);
 				}
 				if (return_code)
 				{
-					if (0<NUMBER_IN_LIST(FE_element)(destroy_element_list))
+					if (0 < NUMBER_IN_LIST(FE_element)(destroy_element_list))
 					{
-						return_code=destroy_listed_elements(destroy_element_list,
+						return_code = destroy_listed_elements(destroy_element_list,
 							command_data->element_manager,
 							command_data->element_group_manager,
 							command_data->element_selection,
@@ -10632,9 +10644,9 @@ Executes a GFX DESTROY ELEMENTS command.
 					}
 					else
 					{
-						display_message(WARNING_MESSAGE,
-							"gfx destroy elements:  No elements specified");
-						return_code=0;
+						display_message(WARNING_MESSAGE,"gfx destroy %ss:  none specified",
+							CM_element_type_string(cm_element_type));
+						return_code = 0;
 					}
 				}
 				else
@@ -10648,7 +10660,7 @@ Executes a GFX DESTROY ELEMENTS command.
 			{
 				display_message(ERROR_MESSAGE,
 					"gfx_destroy_elements.  Could not make destroy_element_list");
-				return_code=0;
+				return_code = 0;
 			}
 		}
 		DESTROY(Option_table)(&option_table);
@@ -10657,7 +10669,7 @@ Executes a GFX DESTROY ELEMENTS command.
 	else
 	{
 		display_message(ERROR_MESSAGE,"gfx_destroy_elements.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -11246,109 +11258,96 @@ Executes a GFX DESTROY VTEXTURES command.
 #endif /* defined (OLD_CODE) */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_gfx_destroy(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
+	void *dummy_to_be_modified, void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 29 August 2000
+LAST MODIFIED : 1 March 2001
 
 DESCRIPTION :
 Executes a GFX DESTROY command.
 ==============================================================================*/
 {
-	int i,return_code;
+	int return_code;
 	struct Cmiss_command_data *command_data;
-	static struct Modifier_entry option_table[]=
-	{
-		{"cmiss_connection",NULL,NULL,gfx_destroy_cmiss},
-		{"curve",NULL,NULL,gfx_destroy_Control_curve},
-		{"data",NULL,NULL,gfx_destroy_nodes},
-		{"dgroup",NULL,NULL,gfx_destroy_data_group},
-		{"egroup",NULL,NULL,gfx_destroy_element_group},
-		{"elements",NULL,NULL,gfx_destroy_elements},
-		{"field",NULL,NULL,gfx_destroy_Computed_field},
-		{"graphics_object",NULL,NULL,gfx_destroy_graphics_object},
-		{"ngroup",NULL,NULL,gfx_destroy_node_group},
-		{"nodes",NULL,NULL,gfx_destroy_nodes},
-		{"spectrum",NULL,NULL,gfx_destroy_spectrum},
-		{"vtextures",NULL,NULL,gfx_destroy_vtextures},
-		{NULL,NULL,NULL,NULL}
-	};
+	struct Option_table *option_table;
 
 	ENTER(execute_command_gfx_destroy);
 	USE_PARAMETER(dummy_to_be_modified);
-	/* check argument */
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (command_data = (struct Cmiss_command_data *)command_data_void)
 		{
 			if (state->current_token)
 			{
-				i=0;
+				option_table = CREATE(Option_table)();
 				/* cmiss_connection */
-				(option_table[i]).user_data=command_data_void;
-				i++;
+				Option_table_add_entry(option_table, "cmiss_connection", NULL,
+					command_data_void, gfx_destroy_cmiss);
 				/* curve */
-				(option_table[i]).user_data=command_data->control_curve_manager;
-				i++;
+				Option_table_add_entry(option_table, "curve", NULL,
+					command_data->control_curve_manager, gfx_destroy_Control_curve);
 				/* data */
-				(option_table[i]).to_be_modified=(void *)1;
-				(option_table[i]).user_data=command_data_void;
-				i++;
+				Option_table_add_entry(option_table, "data", (void *)1,
+					command_data_void, gfx_destroy_nodes);
 				/* dgroup */
-				(option_table[i]).user_data=command_data_void;
-				i++;
+				Option_table_add_entry(option_table, "dgroup", NULL,
+					command_data_void, gfx_destroy_data_group);
 				/* egroup */
-				(option_table[i]).user_data=command_data_void;
-				i++;
+				Option_table_add_entry(option_table, "egroup", NULL,
+					command_data_void, gfx_destroy_element_group);
 				/* elements */
-				(option_table[i]).user_data=command_data_void;
-				i++;
+				Option_table_add_entry(option_table, "elements", (void *)CM_ELEMENT,
+					command_data_void, gfx_destroy_elements);
+				/* faces */
+				Option_table_add_entry(option_table, "faces", (void *)CM_FACE,
+					command_data_void, gfx_destroy_elements);
 				/* field */
-				(option_table[i]).user_data=command_data_void;
-				i++;
+				Option_table_add_entry(option_table, "field", NULL,
+					command_data_void, gfx_destroy_Computed_field);
 				/* graphics_object */
-				(option_table[i]).user_data=command_data_void;
-				i++;
+				Option_table_add_entry(option_table, "graphics_object", NULL,
+					command_data_void, gfx_destroy_graphics_object);
+				/* lines */
+				Option_table_add_entry(option_table, "lines", (void *)CM_LINE,
+					command_data_void, gfx_destroy_elements);
 				/* ngroup */
-				(option_table[i]).user_data=command_data_void;
-				i++;
+				Option_table_add_entry(option_table, "ngroup", NULL,
+					command_data_void, gfx_destroy_node_group);
 				/* nodes */
-				(option_table[i]).to_be_modified=(void *)0;
-				(option_table[i]).user_data=command_data_void;
-				i++;
+				Option_table_add_entry(option_table, "nodes", (void *)0,
+					command_data_void, gfx_destroy_nodes);
 				/* spectrum */
-				(option_table[i]).user_data=command_data->spectrum_manager;
-				i++;
+				Option_table_add_entry(option_table, "spectrum", NULL,
+					command_data->spectrum_manager, gfx_destroy_spectrum);
 				/* vtextures */
-				(option_table[i]).user_data=command_data->volume_texture_manager;
-				i++;
-				return_code=process_option(state,option_table);
+				Option_table_add_entry(option_table, "vtextures", NULL,
+					command_data->volume_texture_manager, gfx_destroy_vtextures);
+				return_code = Option_table_parse(option_table, state);
+				DESTROY(Option_table)(&option_table);
 			}
 			else
 			{
 				set_command_prompt("gfx destroy",command_data->command_window);
-				return_code=1;
+				return_code = 1;
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"execute_command_gfx_destroy.  Invalid argument(s)");
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"execute_command_gfx_destroy.  Missing state");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* execute_command_gfx_destroy */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 struct Scene_add_graphics_object_iterator_data
 {
@@ -13296,7 +13295,7 @@ Executes a GFX LIST FIELD.
 static int gfx_list_FE_element(struct Parse_state *state,
 	void *cm_element_type_void,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 4 December 2000
+LAST MODIFIED : 2 March 2001
 
 DESCRIPTION :
 Executes a GFX LIST ELEMENT.
@@ -13306,11 +13305,9 @@ Executes a GFX LIST ELEMENT.
 	enum CM_element_type cm_element_type;
 	int return_code;
 	struct Cmiss_command_data *command_data;
-	struct FE_element_CM_element_type_Multi_range_data element_type_range_data;
+	struct CM_element_type_Multi_range_data element_type_ranges_data;
 	struct FE_element_list_conditional_data element_list_conditional_data;
 	struct LIST(FE_element) *element_list;
-	LIST_CONDITIONAL_FUNCTION(FE_element)
-		*element_to_multi_range_conditional_function = NULL;
 	struct Multi_range *element_ranges;
 	struct Option_table *option_table;
 
@@ -13342,8 +13339,8 @@ Executes a GFX LIST ELEMENT.
 		{
 			if (element_list = CREATE(LIST(FE_element))())
 			{
-				element_type_range_data.cm_element_type = cm_element_type;
-				element_type_range_data.multi_range = element_ranges;
+				element_type_ranges_data.cm_element_type = cm_element_type;
+				element_type_ranges_data.multi_range = element_ranges;
 				ranges_flag = (0 < Multi_range_get_number_of_ranges(element_ranges));
 				if (selected_flag)
 				{
@@ -13362,8 +13359,8 @@ Executes a GFX LIST ELEMENT.
 						if (ranges_flag)
 						{
 							return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
-								FE_element_CM_element_type_is_not_in_Multi_range,
-								(void *)&element_type_range_data, element_list);
+								FE_element_of_CM_element_type_is_not_in_Multi_range,
+								(void *)&element_type_ranges_data, element_list);
 						}
 					}
 				}
@@ -13372,9 +13369,9 @@ Executes a GFX LIST ELEMENT.
 					/* add elements of given type in element_ranges to element_list */
 					element_list_conditional_data.element_list = element_list;
 					element_list_conditional_data.function =
-						FE_element_CM_element_type_is_in_Multi_range;
+						FE_element_of_CM_element_type_is_in_Multi_range;
 					element_list_conditional_data.user_data =
-						(void *)&element_type_range_data;
+						(void *)&element_type_ranges_data;
 					return_code = FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
 						ensure_FE_element_is_in_list_conditional,
 						(void *)&element_list_conditional_data,
@@ -13404,33 +13401,27 @@ Executes a GFX LIST ELEMENT.
 						}
 						else
 						{
-							/* write comma separated list of ranges - use existing
+							/* write comma separated list of ranges - clear and use existing
 								 element_ranges structure */
 							switch (cm_element_type)
 							{
 								case CM_ELEMENT:
 								{
 									display_message(INFORMATION_MESSAGE,"Elements:\n");
-									element_to_multi_range_conditional_function =
-										add_FE_element_element_number_to_Multi_range;
 								} break;
 								case CM_FACE:
 								{
 									display_message(INFORMATION_MESSAGE,"Faces:\n");
-									element_to_multi_range_conditional_function =
-										add_FE_element_face_number_to_Multi_range;
 								} break;
 								case CM_LINE:
 								{
 									display_message(INFORMATION_MESSAGE,"Lines:\n");
-									element_to_multi_range_conditional_function =
-										add_FE_element_line_number_to_Multi_range;
 								} break;
 							}
 							Multi_range_clear(element_ranges);
 							if (FOR_EACH_OBJECT_IN_LIST(FE_element)(
-								element_to_multi_range_conditional_function,
-								(void *)element_ranges, element_list))
+								FE_element_of_CM_element_type_add_number_to_Multi_range,
+								(void *)&element_type_ranges_data, element_list))
 							{
 								return_code = Multi_range_display_ranges(element_ranges);
 							}
@@ -17347,7 +17338,7 @@ Executes a GFX READ command.
 static int execute_command_gfx_select(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 26 May 2000
+LAST MODIFIED : 2 March 2001
 
 DESCRIPTION :
 Executes a GFX SELECT command.
@@ -17357,14 +17348,15 @@ Executes a GFX SELECT command.
 	int i,j,number_of_ranges,number_selected,return_code,start,stop,
 		total_number_in_ranges;
 	struct CM_element_information cm;
+	struct CM_element_type_Multi_range_data element_type_ranges_data;
 	struct Cmiss_command_data *command_data;
 	struct Element_point_ranges *element_point_ranges;
 	struct FE_element *element;
 	struct FE_element_grid_to_Element_point_ranges_list_data grid_to_list_data;
 	struct FE_field *grid_field;
 	struct FE_node *node;
-	struct Multi_range *data_ranges,*element_ranges,*face_ranges,
-		*grid_point_ranges,*line_ranges,*multi_range,*node_ranges;
+	struct Multi_range *data_ranges, *element_ranges, *face_ranges,
+		*grid_point_ranges, *line_ranges, *multi_range, *node_ranges;
 	struct Option_table *option_table;
 	struct Set_FE_field_conditional_data set_grid_field_data;
 
@@ -17413,7 +17405,7 @@ Executes a GFX SELECT command.
 				(void *)command_data->element_manager,set_Element_point_ranges);
 			if (return_code=Option_table_multi_parse(option_table,state))
 			{
-				/* nodes */
+				/* data */
 				if (0<(total_number_in_ranges=
 					Multi_range_get_total_number_in_ranges(data_ranges)))
 				{
@@ -17477,21 +17469,23 @@ Executes a GFX SELECT command.
 				{
 					number_selected=0;
 					ranges_string=(char *)NULL;
-					if (NUMBER_IN_MANAGER(FE_element)(command_data->element_manager)<
+					if (NUMBER_IN_MANAGER(FE_element)(command_data->element_manager) <
 						total_number_in_ranges)
 					{
 						/* get ranges_string for later warning since modifying ranges */
-						ranges_string=Multi_range_get_ranges_string(element_ranges);
+						ranges_string = Multi_range_get_ranges_string(element_ranges);
 						/* take numbers not in the manager away from element_ranges to avoid
 							 excess computation if, say, 1..1000000 entered */
-						multi_range=CREATE(Multi_range)();
+						element_type_ranges_data.cm_element_type = CM_ELEMENT;
+						element_type_ranges_data.multi_range = CREATE(Multi_range)();
 						if (FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-							add_FE_element_element_number_to_Multi_range,(void *)multi_range,
-							command_data->element_manager))
+							FE_element_of_CM_element_type_add_number_to_Multi_range,
+							(void *)&element_type_ranges_data, command_data->element_manager))
 						{
-							Multi_range_intersect(element_ranges,multi_range);
+							Multi_range_intersect(element_ranges,
+								element_type_ranges_data.multi_range);
 						}
-						DESTROY(Multi_range)(&multi_range);
+						DESTROY(Multi_range)(&(element_type_ranges_data.multi_range));
 					}
 					FE_element_selection_begin_cache(command_data->element_selection);
 					number_of_ranges=Multi_range_get_number_of_ranges(element_ranges);
@@ -17538,14 +17532,16 @@ Executes a GFX SELECT command.
 						ranges_string=Multi_range_get_ranges_string(face_ranges);
 						/* take numbers not in the manager away from face_ranges to avoid
 							 excess computation if, say, 1..1000000 entered */
-						multi_range=CREATE(Multi_range)();
+						element_type_ranges_data.cm_element_type = CM_FACE;
+						element_type_ranges_data.multi_range = CREATE(Multi_range)();
 						if (FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-							add_FE_element_face_number_to_Multi_range,(void *)multi_range,
-							command_data->element_manager))
+							FE_element_of_CM_element_type_add_number_to_Multi_range,
+							(void *)&element_type_ranges_data, command_data->element_manager))
 						{
-							Multi_range_intersect(face_ranges,multi_range);
+							Multi_range_intersect(face_ranges,
+								element_type_ranges_data.multi_range);
 						}
-						DESTROY(Multi_range)(&multi_range);
+						DESTROY(Multi_range)(&(element_type_ranges_data.multi_range));
 					}
 					FE_element_selection_begin_cache(command_data->element_selection);
 					number_of_ranges=Multi_range_get_number_of_ranges(face_ranges);
@@ -17634,14 +17630,16 @@ Executes a GFX SELECT command.
 						ranges_string=Multi_range_get_ranges_string(line_ranges);
 						/* take numbers not in the manager away from line_ranges to avoid
 							 excess computation if, say, 1..1000000 entered */
-						multi_range=CREATE(Multi_range)();
+						element_type_ranges_data.cm_element_type = CM_LINE;
+						element_type_ranges_data.multi_range = CREATE(Multi_range)();
 						if (FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-							add_FE_element_line_number_to_Multi_range,(void *)multi_range,
-							command_data->element_manager))
+							FE_element_of_CM_element_type_add_number_to_Multi_range,
+							(void *)&element_type_ranges_data, command_data->element_manager))
 						{
-							Multi_range_intersect(line_ranges,multi_range);
+							Multi_range_intersect(line_ranges,
+								element_type_ranges_data.multi_range);
 						}
-						DESTROY(Multi_range)(&multi_range);
+						DESTROY(Multi_range)(&(element_type_ranges_data.multi_range));
 					}
 					FE_element_selection_begin_cache(command_data->element_selection);
 					number_of_ranges=Multi_range_get_number_of_ranges(line_ranges);
@@ -17764,7 +17762,7 @@ Executes a GFX SELECT command.
 static int execute_command_gfx_unselect(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 26 May 2000
+LAST MODIFIED : 2 March 2001
 
 DESCRIPTION :
 Executes a GFX UNSELECT command.
@@ -17774,14 +17772,15 @@ Executes a GFX UNSELECT command.
 	int i,j,number_of_ranges,number_unselected,return_code,start,stop,
 		total_number_in_ranges;
 	struct CM_element_information cm;
+	struct CM_element_type_Multi_range_data element_type_ranges_data;
 	struct Cmiss_command_data *command_data;
 	struct Element_point_ranges *element_point_ranges;
 	struct FE_element *element;
 	struct FE_element_grid_to_Element_point_ranges_list_data grid_to_list_data;
 	struct FE_field *grid_field;
 	struct FE_node *node;
-	struct Multi_range *data_ranges,*element_ranges,*face_ranges,
-		*grid_point_ranges,*line_ranges,*multi_range,*node_ranges;
+	struct Multi_range *data_ranges, *element_ranges, *face_ranges,
+		*grid_point_ranges, *line_ranges, *multi_range, *node_ranges;
 	struct Option_table *option_table;
 	struct Set_FE_field_conditional_data set_grid_field_data;
 
@@ -17830,7 +17829,7 @@ Executes a GFX UNSELECT command.
 				(void *)command_data->element_manager,set_Element_point_ranges);
 			if (return_code=Option_table_multi_parse(option_table,state))
 			{
-				/* nodes */
+				/* data */
 				if (0<(total_number_in_ranges=
 					Multi_range_get_total_number_in_ranges(data_ranges)))
 				{
@@ -17906,14 +17905,16 @@ Executes a GFX UNSELECT command.
 						ranges_string=Multi_range_get_ranges_string(element_ranges);
 						/* take numbers not in the manager away from element_ranges to avoid
 							 excess computation if, say, 1..1000000 entered */
-						multi_range=CREATE(Multi_range)();
+						element_type_ranges_data.cm_element_type = CM_ELEMENT;
+						element_type_ranges_data.multi_range = CREATE(Multi_range)();
 						if (FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-							add_FE_element_element_number_to_Multi_range,(void *)multi_range,
-							command_data->element_manager))
+							FE_element_of_CM_element_type_add_number_to_Multi_range,
+							(void *)&element_type_ranges_data, command_data->element_manager))
 						{
-							Multi_range_intersect(element_ranges,multi_range);
+							Multi_range_intersect(element_ranges,
+								element_type_ranges_data.multi_range);
 						}
-						DESTROY(Multi_range)(&multi_range);
+						DESTROY(Multi_range)(&(element_type_ranges_data.multi_range));
 					}
 					FE_element_selection_begin_cache(command_data->element_selection);
 					number_of_ranges=Multi_range_get_number_of_ranges(element_ranges);
@@ -17964,14 +17965,16 @@ Executes a GFX UNSELECT command.
 						ranges_string=Multi_range_get_ranges_string(face_ranges);
 						/* take numbers not in the manager away from face_ranges to avoid
 							 excess computation if, say, 1..1000000 entered */
-						multi_range=CREATE(Multi_range)();
+						element_type_ranges_data.cm_element_type = CM_FACE;
+						element_type_ranges_data.multi_range = CREATE(Multi_range)();
 						if (FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-							add_FE_element_face_number_to_Multi_range,(void *)multi_range,
-							command_data->element_manager))
+							FE_element_of_CM_element_type_add_number_to_Multi_range,
+							(void *)&element_type_ranges_data, command_data->element_manager))
 						{
-							Multi_range_intersect(face_ranges,multi_range);
+							Multi_range_intersect(face_ranges,
+								element_type_ranges_data.multi_range);
 						}
-						DESTROY(Multi_range)(&multi_range);
+						DESTROY(Multi_range)(&(element_type_ranges_data.multi_range));
 					}
 					FE_element_selection_begin_cache(command_data->element_selection);
 					number_of_ranges=Multi_range_get_number_of_ranges(face_ranges);
@@ -18064,14 +18067,16 @@ Executes a GFX UNSELECT command.
 						ranges_string=Multi_range_get_ranges_string(line_ranges);
 						/* take numbers not in the manager away from line_ranges to avoid
 							 excess computation if, say, 1..1000000 entered */
-						multi_range=CREATE(Multi_range)();
+						element_type_ranges_data.cm_element_type = CM_LINE;
+						element_type_ranges_data.multi_range = CREATE(Multi_range)();
 						if (FOR_EACH_OBJECT_IN_MANAGER(FE_element)(
-							add_FE_element_line_number_to_Multi_range,(void *)multi_range,
-							command_data->element_manager))
+							FE_element_of_CM_element_type_add_number_to_Multi_range,
+							(void *)&element_type_ranges_data, command_data->element_manager))
 						{
-							Multi_range_intersect(line_ranges,multi_range);
+							Multi_range_intersect(line_ranges,
+								element_type_ranges_data.multi_range);
 						}
-						DESTROY(Multi_range)(&multi_range);
+						DESTROY(Multi_range)(&(element_type_ranges_data.multi_range));
 					}
 					FE_element_selection_begin_cache(command_data->element_selection);
 					number_of_ranges=Multi_range_get_number_of_ranges(line_ranges);

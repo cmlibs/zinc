@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : movie.c
 
-LAST MODIFIED : 24 November 2000
+LAST MODIFIED : 2 March 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -286,13 +286,14 @@ Allocates space for and initializes the Mirage_movie structure.
 
 int DESTROY(Mirage_movie)(struct Mirage_movie **mirage_movie_address)
 /*******************************************************************************
-LAST MODIFIED : 5 September 2000
+LAST MODIFIED : 2 March 2001
 
 DESCRIPTION :
 Cleans up space used by Mirage_movie structure.
 ==============================================================================*/
 {
 	int return_code,view_no;
+	struct FE_element_list_CM_element_type_data element_list_type_data;
 	struct GROUP(FE_element) *element_group;
 	struct GROUP(FE_node) *data_group,*node_group;
 	struct LIST(FE_element) *element_list;
@@ -409,11 +410,13 @@ Cleans up space used by Mirage_movie structure.
 		/* remove all elements */
 		if (movie->all_element_group)
 		{
-			/* make a list of all the elements in the all_element_group */
-			element_list=CREATE(LIST(FE_element))();
+			/* make a list of all the top-level elements in the all_element_group */
+			element_list = CREATE(LIST(FE_element))();
+			element_list_type_data.cm_element_type = CM_ELEMENT;
+			element_list_type_data.element_list = element_list;
 			FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-				ensure_top_level_FE_element_is_in_list,(void *)element_list,
-				movie->all_element_group);
+				add_FE_element_of_CM_element_type_to_list,
+				(void *)&element_list_type_data, movie->all_element_group);
 			/* destroy the all_element_group */
 			element_group=movie->all_element_group;
 			DEACCESS(GROUP(FE_element))(&(movie->all_element_group));

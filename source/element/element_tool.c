@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_tool.c
 
-LAST MODIFIED : 6 December 2000
+LAST MODIFIED : 2 March 2001
 
 DESCRIPTION :
 Interactive tool for selecting elements with mouse and other devices.
@@ -195,24 +195,30 @@ can be selected.
 static void Element_tool_destroy_selected_CB(Widget widget,
 	void *element_tool_void,void *call_data)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 2 March 2001
 
 DESCRIPTION :
-Attempts to destroy all the elements currently in the global selection.
+Attempts to destroy all the top-level elements currently in the global
+selection. ???RC could change to allow faces and lines to be destroyed, but
+need other safeguard controls before allowing this.
 ==============================================================================*/
 {
-	struct LIST(FE_element) *destroy_element_list;
 	struct Element_tool *element_tool;
+	struct FE_element_list_CM_element_type_data element_list_type_data;
+	struct LIST(FE_element) *destroy_element_list;
 
 	ENTER(Element_tool_destroy_selected_CB);
 	USE_PARAMETER(widget);
 	USE_PARAMETER(call_data);
-	if (element_tool=(struct Element_tool *)element_tool_void)
+	if (element_tool = (struct Element_tool *)element_tool_void)
 	{
-		if (destroy_element_list=CREATE(LIST(FE_element))())
+		if (destroy_element_list = CREATE(LIST(FE_element))())
 		{
+			element_list_type_data.cm_element_type = CM_ELEMENT;
+			element_list_type_data.element_list = destroy_element_list;
 			FOR_EACH_OBJECT_IN_LIST(FE_element)(
-				ensure_top_level_FE_element_is_in_list,(void *)destroy_element_list,
+				add_FE_element_of_CM_element_type_to_list,
+				(void *)&element_list_type_data,
 				FE_element_selection_get_element_list(element_tool->element_selection));
 			destroy_listed_elements(destroy_element_list,
 				element_tool->element_manager,element_tool->element_group_manager,
@@ -960,7 +966,7 @@ int destroy_listed_elements(struct LIST(FE_element) *element_list,
 	struct FE_element_selection *element_selection,
 	struct Element_point_ranges_selection *element_point_ranges_selection)
 /*******************************************************************************
-LAST MODIFIED : 6 December 2000
+LAST MODIFIED : 2 March 2001
 
 DESCRIPTION :
 Destroys all the elements in <element_list> that are not accessed outside
@@ -969,40 +975,41 @@ Destroys all the elements in <element_list> that are not accessed outside
 <element_group_manager>, <element_selection> and
 <element_point_ranges_selection> are optional. Upon return <element_list>
 contains all the elements that could not be destroyed.
-Note that <element_list> should only contain top-level-elements, at present.
 ???RC Should really be in its own module.
+Note: currently requires all elements in the <element_list> to be of the same
+CM_element_type, otherwise likely to fail. ???RC Fix this by filtering out
+elements with all parents also in the list?
 ==============================================================================*/
 {
-	int number_of_elements_destroyed,number_of_elements_not_destroyed,return_code;
+	int number_of_elements_destroyed, number_of_elements_not_destroyed,
+		return_code;
 	struct Element_point_ranges *element_point_ranges;
 	struct FE_element *element;
 	struct GROUP(FE_element) *element_group;
-	struct LIST(FE_element) *not_destroyed_element_list,*selected_element_list;
+	struct LIST(FE_element) *not_destroyed_element_list, *selected_element_list;
 	struct LIST(Element_point_ranges) *selected_element_point_ranges_list;
 
 	ENTER(destroy_listed_elements);
-	if (element_list&&element_manager&&((struct FE_element *)NULL ==
-		FIRST_OBJECT_IN_LIST_THAT(FE_element)(FE_element_is_not_top_level,
-			(void *)NULL,element_list)))
+	if (element_list && element_manager)
 	{
-		return_code=1;
-		/* build list of elements that could be destroyed */
-		not_destroyed_element_list=CREATE(LIST(FE_element))();
+		return_code = 1;
+		/* build list of elements that could not be destroyed */
+		not_destroyed_element_list = CREATE(LIST(FE_element))();
 		if (element_group_manager)
 		{
 			/* remove the elements - and their faces recursively - from all
 				 groups they are in */
-			while (return_code&&(element_group=
+			while (return_code && (element_group =
 				FIRST_OBJECT_IN_MANAGER_THAT(GROUP(FE_element))(
-					FE_element_group_intersects_list,(void *)element_list,
+					FE_element_group_intersects_list, (void *)element_list,
 					element_group_manager)))
 			{
 				MANAGED_GROUP_BEGIN_CACHE(FE_element)(element_group);
-				while (return_code&&(element=FIRST_OBJECT_IN_GROUP_THAT(FE_element)(
-					FE_element_is_in_list,(void *)element_list,element_group)))
+				while (return_code && (element = FIRST_OBJECT_IN_GROUP_THAT(FE_element)(
+					FE_element_is_in_list, (void *)element_list, element_group)))
 				{
-					return_code=remove_FE_element_and_faces_from_group(
-						element,element_group);
+					return_code = remove_FE_element_and_faces_from_group(element,
+						element_group, RECURSIVE_REMOVE_ELEMENT_AND_PARENTLESS_FACES);
 				}
 				MANAGED_GROUP_END_CACHE(FE_element)(element_group);
 			}
@@ -1012,14 +1019,14 @@ Note that <element_list> should only contain top-level-elements, at present.
 			/* remove elements - and their faces and lines - from the
 				 global element_selection */
 			FE_element_selection_begin_cache(element_selection);
-			selected_element_list=
+			selected_element_list =
 				FE_element_selection_get_element_list(element_selection);
-			while (return_code&&(element=FIRST_OBJECT_IN_LIST_THAT(FE_element)(
-				FE_element_has_all_top_level_parents_in_list,(void *)element_list,
+			while (return_code && (element = FIRST_OBJECT_IN_LIST_THAT(FE_element)(
+				FE_element_is_wholly_within_element_list_tree, (void *)element_list,
 				selected_element_list)))
 			{
-				return_code=
-					FE_element_selection_unselect_element(element_selection,element);
+				return_code =
+					FE_element_selection_unselect_element(element_selection, element);
 			}
 			FE_element_selection_end_cache(element_selection);
 		}
@@ -1034,29 +1041,29 @@ Note that <element_list> should only contain top-level-elements, at present.
 					element_point_ranges_selection);
 			while (return_code&&(element_point_ranges=
 				FIRST_OBJECT_IN_LIST_THAT(Element_point_ranges)(
-					Element_point_ranges_uses_top_level_element_in_list,
-					(void *)element_list,selected_element_point_ranges_list)))
+					Element_point_ranges_is_wholly_within_element_list_tree,
+					(void *)element_list, selected_element_point_ranges_list)))
 			{
-				return_code=
+				return_code =
 					Element_point_ranges_selection_unselect_element_point_ranges(
-						element_point_ranges_selection,element_point_ranges);
+						element_point_ranges_selection, element_point_ranges);
 			}
 			Element_point_ranges_selection_end_cache(element_point_ranges_selection);
 		}
 		/* now remove the elements from the manager */
 		MANAGER_BEGIN_CACHE(FE_element)(element_manager);
-		number_of_elements_destroyed=0;
-		while (return_code&&(element=FIRST_OBJECT_IN_LIST_THAT(FE_element)(
-			(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL,(void *)NULL,element_list)))
+		number_of_elements_destroyed = 0;
+		while (return_code && (element = FIRST_OBJECT_IN_LIST_THAT(FE_element)(
+			(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
+			element_list)))
 		{
 			/* element cannot be destroyed while it is in a list */
-			if (REMOVE_OBJECT_FROM_LIST(FE_element)(element,
-				element_list))
+			if (REMOVE_OBJECT_FROM_LIST(FE_element)(element, element_list))
 			{
 				if (FE_element_can_be_destroyed(element))
 				{
-					if (return_code=
-						remove_FE_element_and_faces_from_manager(element,element_manager))
+					if (return_code =
+						remove_FE_element_and_faces_from_manager(element, element_manager))
 					{
 						number_of_elements_destroyed++;
 					}
@@ -1064,32 +1071,32 @@ Note that <element_list> should only contain top-level-elements, at present.
 				else
 				{
 					/* add it to not_destroyed_element_list for reporting */
-					ADD_OBJECT_TO_LIST(FE_element)(element,not_destroyed_element_list);
+					ADD_OBJECT_TO_LIST(FE_element)(element, not_destroyed_element_list);
 				}
 			}
 			else
 			{
-				return_code=0;
+				return_code = 0;
 			}
 		}
 		MANAGER_END_CACHE(FE_element)(element_manager);
-		if (0<(number_of_elements_not_destroyed=
+		if (0 < (number_of_elements_not_destroyed =
 			NUMBER_IN_LIST(FE_element)(not_destroyed_element_list)))
 		{
-			display_message(WARNING_MESSAGE,"%d element(s) destroyed; "
+			display_message(WARNING_MESSAGE, "%d element(s) destroyed; "
 				"%d element(s) could not be destroyed because in use",
 				number_of_elements_destroyed,number_of_elements_not_destroyed);
-			return_code=0;
+			return_code = 0;
 		}
 		FOR_EACH_OBJECT_IN_LIST(FE_element)(ensure_FE_element_is_in_list,
-			(void *)element_list,not_destroyed_element_list);
+			(void *)element_list, not_destroyed_element_list);
 		DESTROY(LIST(FE_element))(&not_destroyed_element_list);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"destroy_listed_elements.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_tool.h
 
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 2 March 2001
 
 DESCRIPTION :
 Interactive tool for selecting elements with mouse and other devices.
@@ -112,7 +112,7 @@ int destroy_listed_elements(struct LIST(FE_element) *element_list,
 	struct FE_element_selection *element_selection,
 	struct Element_point_ranges_selection *element_point_ranges_selection);
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 2 March 2001
 
 DESCRIPTION :
 Destroys all the elements in <element_list> that are not accessed outside
@@ -121,8 +121,10 @@ Destroys all the elements in <element_list> that are not accessed outside
 <element_group_manager>, <element_selection> and
 <element_point_ranges_selection> are optional. Upon return <element_list>
 contains all the elements that could not be destroyed.
-Note that <element_list> should only contain top-level-elements, at present.
 ???RC Should really be in its own module.
+Note: currently requires all elements in the <element_list> to be of the same
+CM_element_type, otherwise likely to fail. ???RC Fix this by filtering out
+elements with all parents also in the list?
 ==============================================================================*/
 
 #endif /* !defined (ELEMENT_TOOL_H) */

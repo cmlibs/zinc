@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 23 February 2001
+LAST MODIFIED : 1 March 2001
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -23702,243 +23702,114 @@ it from its first parent if it has no node scale field information.
 	return (field);
 } /* get_FE_element_default_coordinate_field */
 
-int FE_element_CM_element_type_is_in_Multi_range(struct FE_element *element,
-	void *type_range_data_void)
+int FE_element_of_CM_element_type_is_in_Multi_range(struct FE_element *element,
+	void *element_type_ranges_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 November 2000
+LAST MODIFIED : 1 March 2001
 
 DESCRIPTION :
 Conditional function returning true if <element> is of the given
-<CM_element_type> and whose number is in the <multi_range>.
+<cm_element_type> and whose number is in the <multi_range>.
+Second argument is a struct CM_element_type_Multi_range_data.
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_element_CM_element_type_Multi_range_data *type_range_data;
+	struct CM_element_type_Multi_range_data *element_type_ranges_data;
 
-	ENTER(FE_element_CM_element_type_is_in_Multi_range);
-	if (element && (type_range_data =
-		(struct FE_element_CM_element_type_Multi_range_data *)type_range_data_void))
+	ENTER(FE_element_of_CM_element_type_is_in_Multi_range);
+	if (element && (element_type_ranges_data =
+		(struct CM_element_type_Multi_range_data *)element_type_ranges_data_void))
 	{
-		return_code = (type_range_data->cm_element_type == element->cm.type) &&
-			Multi_range_is_value_in_range(type_range_data->multi_range,
+		return_code =
+			(element_type_ranges_data->cm_element_type == element->cm.type) &&
+			Multi_range_is_value_in_range(element_type_ranges_data->multi_range,
 				element->cm.number);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_element_CM_element_type_is_in_Multi_range.  Invalid argument(s)");
+			"FE_element_of_CM_element_type_is_in_Multi_range.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 	
 	return (return_code);
-} /* FE_element_CM_element_type_is_in_Multi_range */
+} /* FE_element_of_CM_element_type_is_in_Multi_range */
 
-int FE_element_CM_element_type_is_not_in_Multi_range(struct FE_element *element,
-	void *type_range_data_void)
+int FE_element_of_CM_element_type_is_not_in_Multi_range(
+	struct FE_element *element, void *element_type_ranges_data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 November 2000
+LAST MODIFIED : 1 March 2001
 
 DESCRIPTION :
 Conditional function returning true if <element> is of the given
-<CM_element_type> and whose number is not in the <multi_range>.
+<cm_element_type> and whose number is not in the <multi_range>.
+Second argument is a struct CM_element_type_Multi_range_data.
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_element_CM_element_type_Multi_range_data *type_range_data;
+	struct CM_element_type_Multi_range_data *element_type_ranges_data;
 
-	ENTER(FE_element_CM_element_type_is_not_in_Multi_range);
-	if (element && (type_range_data =
-		(struct FE_element_CM_element_type_Multi_range_data *)type_range_data_void))
+	ENTER(FE_element_of_CM_element_type_is_not_in_Multi_range);
+	if (element && (element_type_ranges_data =
+		(struct CM_element_type_Multi_range_data *)element_type_ranges_data_void))
 	{
-		return_code = (type_range_data->cm_element_type == element->cm.type) &&
-			(!Multi_range_is_value_in_range(type_range_data->multi_range,
+		return_code =
+			(element_type_ranges_data->cm_element_type == element->cm.type) &&
+			(!Multi_range_is_value_in_range(element_type_ranges_data->multi_range,
 				element->cm.number));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_element_CM_element_type_is_not_in_Multi_range.  Invalid argument(s)");
+			"FE_element_of_CM_element_type_is_not_in_Multi_range.  "
+			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 	
 	return (return_code);
-} /* FE_element_CM_element_type_is_not_in_Multi_range */
+} /* FE_element_of_CM_element_type_is_not_in_Multi_range */
 
-int FE_element_is_top_level_in_Multi_range(struct FE_element *element,
-	void *multi_range_void)
+int FE_element_of_CM_element_type_add_number_to_Multi_range(
+	struct FE_element *element, void *element_type_ranges_data_void)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 1 March 2001
 
 DESCRIPTION :
-Conditional function returning true if <element> is a CM_ELEMENT whose number
-is in the <multi_range>.
+Iterator function which, if <element> is of the given <cm_element_type>, adds
+its CMISS number to <multi_range>.
+Second argument is a struct CM_element_type_Multi_range_data.
 ==============================================================================*/
 {
 	int return_code;
-	struct Multi_range *multi_range;
+	struct CM_element_type_Multi_range_data *element_type_ranges_data;
 
-	ENTER(FE_element_is_top_level_in_Multi_range);
-	if (element&&(multi_range=(struct Multi_range *)multi_range_void))
+	ENTER(FE_element_of_CM_element_type_add_number_to_Multi_range);
+	if (element && (element_type_ranges_data =
+		(struct CM_element_type_Multi_range_data *)element_type_ranges_data_void))
 	{
-		return_code = (CM_ELEMENT == element->cm.type) &&
-			Multi_range_is_value_in_range(multi_range,element->cm.number);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_is_top_level_in_Multi_range.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_is_top_level_in_Multi_range */
-
-int FE_element_is_not_top_level_in_Multi_range(struct FE_element *element,
-	void *multi_range_void)
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Conditional function returning true if <element> is either not a CM_ELEMENT
-or whose number is NOT in the <multi_range>.
-==============================================================================*/
-{
-	int return_code;
-	struct Multi_range *multi_range;
-
-	ENTER(FE_element_is_not_top_level_in_Multi_range);
-	if (element&&(multi_range=(struct Multi_range *)multi_range_void))
-	{
-		return_code = (CM_ELEMENT != element->cm.type) ||
-			(!Multi_range_is_value_in_range(multi_range,element->cm.number));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_is_not_top_level_in_Multi_range.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_is_not_top_level_in_Multi_range */
-
-int add_FE_element_line_number_to_Multi_range(struct FE_element *element,
-	void *multi_range_void)
-/*******************************************************************************
-LAST MODIFIED : 22 March 2000
-
-DESCRIPTION :
-Iterator function for adding the number of <element> to <multi_range> if it is
-a CM_LINE.
-==============================================================================*/
-{
-	int element_number,return_code;
-	struct Multi_range *multi_range;
-
-	ENTER(add_FE_element_line_number_to_Multi_range);
-	if (element&&(multi_range=(struct Multi_range *)multi_range_void))
-	{
-		if (CM_LINE==element->cm.type)
+		if (element->cm.type == element_type_ranges_data->cm_element_type)
 		{
-			element_number=element->cm.number;
-			return_code=Multi_range_add_range(multi_range,element_number,
-				element_number);
+			return_code = Multi_range_add_range(element_type_ranges_data->multi_range,
+				element->cm.number, element->cm.number);
 		}
 		else
 		{
-			return_code=1;
+			return_code = 1;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"add_FE_element_line_number_to_Multi_range.  Invalid argument(s)");
-		return_code=0;
+			"FE_element_of_CM_element_type_add_number_to_Multi_range.  "
+			"Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* add_FE_element_line_number_to_Multi_range */
-
-int add_FE_element_face_number_to_Multi_range(struct FE_element *element,
-	void *multi_range_void)
-/*******************************************************************************
-LAST MODIFIED : 22 March 2000
-
-DESCRIPTION :
-Iterator function for adding the number of <element> to <multi_range> if it is
-a CM_FACE.
-==============================================================================*/
-{
-	int element_number,return_code;
-	struct Multi_range *multi_range;
-
-	ENTER(add_FE_element_face_number_to_Multi_range);
-	if (element&&(multi_range=(struct Multi_range *)multi_range_void))
-	{
-		if (CM_FACE==element->cm.type)
-		{
-			element_number=element->cm.number;
-			return_code=Multi_range_add_range(multi_range,element_number,
-				element_number);
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"add_FE_element_face_number_to_Multi_range.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* add_FE_element_face_number_to_Multi_range */
-
-int add_FE_element_element_number_to_Multi_range(struct FE_element *element,
-	void *multi_range_void)
-/*******************************************************************************
-LAST MODIFIED : 22 March 2000
-
-DESCRIPTION :
-Iterator function for adding the number of <element> to <multi_range> if it is
-a CM_ELEMENT.
-==============================================================================*/
-{
-	int element_number,return_code;
-	struct Multi_range *multi_range;
-
-	ENTER(add_FE_element_element_number_to_Multi_range);
-	if (element&&(multi_range=(struct Multi_range *)multi_range_void))
-	{
-		if (CM_ELEMENT==element->cm.type)
-		{
-			element_number=element->cm.number;
-			return_code=Multi_range_add_range(multi_range,element_number,
-				element_number);
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"add_FE_element_element_number_to_Multi_range.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* add_FE_element_element_number_to_Multi_range */
+} /* FE_element_of_CM_element_type_add_number_to_Multi_range */
 
 int FE_element_is_in_group(struct FE_element *element,void *element_group_void)
 /*******************************************************************************
@@ -23995,78 +23866,71 @@ Returns true if <element> is in <element_list>.
 	return (return_code);
 } /* FE_element_is_in_list */
 
-static int FE_element_parent_has_top_level_parent_not_in_list(
-	struct FE_element_parent *element_parent,void *element_list_void)
+static int FE_element_parent_is_not_wholly_within_list_tree(
+	struct FE_element_parent *element_parent, void *element_list_void)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 1 March 2001
 
 DESCRIPTION :
 Returns true if the parent element referred to by the <element_parent> is
-top_level and NOT in the <element_list> or is not top_level and has a parent
-element that is not in the <element_list>.
+not wholly within the <element_list> tree.
 ==============================================================================*/
 {
 	int return_code;
 	struct LIST(FE_element) *element_list;
 
-	ENTER(FE_element_parent_has_top_level_parent_not_in_list);
-	if (element_parent&&element_parent->parent&&
-		(element_list=(struct LIST(FE_element) *)element_list_void))
+	ENTER(FE_element_parent_is_not_wholly_within_list_tree);
+	if (element_parent &&
+		(element_list = (struct LIST(FE_element) *)element_list_void))
 	{
-		return_code = !FE_element_has_all_top_level_parents_in_list(
-			element_parent->parent,element_list);
+		return_code = !FE_element_is_wholly_within_element_list_tree(
+			element_parent->parent, element_list);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_element_parent_has_top_level_parent_not_in_list.  "
+			"FE_element_parent_is_not_wholly_within_list_tree.  "
 			"Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 
 	return (return_code);
-} /* FE_element_parent_has_top_level_parent_not_in_list */
+} /* FE_element_parent_is_not_wholly_within_list_tree */
 
-int FE_element_has_all_top_level_parents_in_list(
-	struct FE_element *element,void *element_list_void)
+int FE_element_is_wholly_within_element_list_tree(
+	struct FE_element *element, void *element_list_void)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 1 March 2001
 
 DESCRIPTION :
-Returns true if <element> is a top_level_element in <element_list>, or all its
-top_level_parents are in the list.
+Returns true if <element> is either in <element_list> or has all its parents
+directly or indirectly in the <element_list> tree. Used to check if elements
+will be destroyed, since faces and lines are destroyed with their parents if
+they are not also faces or lines of other elements not being destroyed.
 ==============================================================================*/
 {
 	int return_code;
 	struct LIST(FE_element) *element_list;
 
-	ENTER(FE_element_has_all_top_level_parents_in_list);
-	if (element&&(element_list=(struct LIST(FE_element) *)element_list_void))
+	ENTER(FE_element_is_wholly_within_element_list_tree);
+	if (element && (element_list = (struct LIST(FE_element) *)element_list_void))
 	{
-		if (CM_ELEMENT==element->cm.type)
-		{
-			return_code=IS_OBJECT_IN_LIST(FE_element)(element,element_list);
-		}
-		else
-		{
-			/* satisfied if cannot find a single parent that does not match this
-				 criteria */
-			return_code = (struct FE_element_parent *)NULL ==
+		return_code = IS_OBJECT_IN_LIST(FE_element)(element, element_list) ||
+			((struct FE_element_parent *)NULL ==
 				FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-					FE_element_parent_has_top_level_parent_not_in_list,
-					(void *)element_list,element->parent_list);
-		}
+					FE_element_parent_is_not_wholly_within_list_tree,
+					(void *)element_list, element->parent_list));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_element_has_all_top_level_parents_in_list.  Invalid argument(s)");
-		return_code=0;
+			"FE_element_is_wholly_within_element_list_tree.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* FE_element_has_all_top_level_parents_in_list */
+} /* FE_element_is_wholly_within_element_list_tree */
 
 int add_FE_element_and_faces_to_group(struct FE_element *element,
 	struct GROUP(FE_element) *element_group)
@@ -24410,68 +24274,101 @@ against.
 } /* add_FE_element_and_faces_to_manager */
 
 int remove_FE_element_and_faces_from_group(struct FE_element *element,
-	struct GROUP(FE_element) *element_group)
+	struct GROUP(FE_element) *element_group,
+	enum Remove_element_mode remove_element_mode)
 /*******************************************************************************
-LAST MODIFIED : 15 April 1999
+LAST MODIFIED : 1 March 2001
 
 DESCRIPTION :
-Removes <element> and all its faces that are not shared with other elements in
-the group from <element_group>. Only top-level elements should be passed to this
-function.
-Notes:
-- function assumes the element and all its faces etc. are in the element_group,
-  so NUMEROUS errors will be reported if this is not the case. If in doubt, use
-  FIND_BY_IDENTIFIER_IN_GROUP on the top-level element before passing it to
-  this function. Note that partner function add_FE_element_and_faces_to_group
-	guarantees that all faces are added with the element to the group.
-- this function is recursive.
+Function for removing <element> and its faces from <element_group>.
+Behaviour is controlled by <remove_element_mode> - see definition of
+enum Remove_element_mode for mode description.
+Function returns without error if <element> is already not in <element_group>.
+Function is recursive for some <remove_element_mode>s.
 ==============================================================================*/
 {
-	int i,return_code;
-	struct FE_element **face,**temp_face;
+	enum Remove_element_mode face_remove_element_mode;
+	int i, remove_element, return_code;
+	struct FE_element **face, **temp_face;
 
 	ENTER(remove_FE_element_and_faces_from_group);
-	if (element&&element_group&&element->shape)
+	if (element && element_group && element->shape)
 	{
-		return_code=1;
-		/* remove element from group only if it has no parents still in the group */
-		if (!FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
-			FE_element_parent_is_in_group,(void *)element_group,element->parent_list))
+		return_code = 1;
+		if (IS_OBJECT_IN_GROUP(FE_element)(element, element_group))
 		{
-			/* access element in case it is only accessed by its faces */
-			ACCESS(FE_element)(element);
-			REMOVE_OBJECT_FROM_GROUP(FE_element)(element,element_group);
-			/* remove all the element's faces from group */
-			if (face=element->faces)
+			remove_element = 0;
+			face_remove_element_mode = NO_REMOVE_ELEMENT;
+			switch (remove_element_mode)
 			{
-				for (i=element->shape->number_of_faces;(0<i)&&return_code;i--)
+				case NO_REMOVE_ELEMENT:
 				{
-					if (*face)
+					/* do nothing */
+				} break;
+				case RECURSIVE_REMOVE_ELEMENT_AND_PARENTLESS_FACES:
+				{
+					remove_element = 1;
+					face_remove_element_mode =
+						RECURSIVE_REMOVE_PARENTLESS_ELEMENT_AND_PARENTLESS_FACES;
+				} break;
+				case RECURSIVE_REMOVE_PARENTLESS_ELEMENT_AND_PARENTLESS_FACES:
+				{
+					if ((struct FE_element_parent *)NULL ==
+						FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
+							FE_element_parent_is_in_group, (void *)element_group,
+							element->parent_list))
 					{
-						/* if a face is repeated in the faces array, the following avoids
-							 removing it again. This happens at the bottom of the heart */
-						temp_face=face;
-						do
-						{
-							temp_face--;
-						}
-						while ((temp_face > element->faces)&&(*face != *temp_face));
-						if (*face != *temp_face)
-						{
-							remove_FE_element_and_faces_from_group(*face,element_group);
-						}
+						remove_element = 1;
 					}
-					face++;
-				}
+					face_remove_element_mode =
+						RECURSIVE_REMOVE_PARENTLESS_ELEMENT_AND_PARENTLESS_FACES;
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"remove_FE_element_and_faces_from_group.  "
+						"Invalid remove_element_mode");
+					return_code = 0;
+				} break;
 			}
-			DEACCESS(FE_element)(&element);
+			if (remove_element)
+			{
+				/* access element in case it is only accessed by its faces */
+				ACCESS(FE_element)(element);
+				REMOVE_OBJECT_FROM_GROUP(FE_element)(element, element_group);
+				/* remove all the element's faces from group */
+				if (face = element->faces)
+				{
+					for (i = element->shape->number_of_faces; (0 < i) && return_code; i--)
+					{
+						if (*face)
+						{
+							/* if a face is repeated in the faces array, the following avoids
+								 removing it again. This happens at the bottom of the heart */
+							temp_face = face;
+							do
+							{
+								temp_face--;
+							}
+							while ((temp_face > element->faces) && (*face != *temp_face));
+							if (*face != *temp_face)
+							{
+								remove_FE_element_and_faces_from_group(*face, element_group,
+									face_remove_element_mode);
+							}
+						}
+						face++;
+					}
+				}
+				DEACCESS(FE_element)(&element);
+			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"remove_FE_element_and_faces_from_group.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -33372,7 +33269,7 @@ MANAGED_GROUP_BEGIN_CACHE/END_CACHE calls for efficient manager messages.
 int ensure_FE_element_and_faces_are_not_in_group(struct FE_element *element,
 	void *element_group_void)
 /*******************************************************************************
-LAST MODIFIED : 21 April 1999
+LAST MODIFIED : 2 March 2001
 
 DESCRIPTION :
 Iterator function which, if <element> is top-level (ie. cm.type is CM_ELEMENT),
@@ -33385,13 +33282,15 @@ MANAGED_GROUP_BEGIN_CACHE/END_CACHE calls for efficient manager messages.
 	struct GROUP(FE_element) *element_group;
 
 	ENTER(ensure_FE_element_and_faces_are_not_in_group);
-	if (element&&(element_group=(struct GROUP(FE_element) *)element_group_void))
+	if (element &&
+		(element_group = (struct GROUP(FE_element) *)element_group_void))
 	{
-		if ((CM_ELEMENT==element->cm.type)&&
+		if ((CM_ELEMENT == element->cm.type)&&
 			FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)(
 				element->identifier,element_group))
 		{
-			return_code=remove_FE_element_and_faces_from_group(element,element_group);
+			return_code = remove_FE_element_and_faces_from_group(element,
+				element_group, RECURSIVE_REMOVE_ELEMENT_AND_PARENTLESS_FACES);
 		}
 		else
 		{
@@ -33409,42 +33308,45 @@ MANAGED_GROUP_BEGIN_CACHE/END_CACHE calls for efficient manager messages.
 	return (return_code);
 } /* ensure_FE_element_and_faces_are_not_in_group */
 
-int ensure_top_level_FE_element_is_in_list(struct FE_element *element,
-	void *element_list_void)
+int add_FE_element_of_CM_element_type_to_list(struct FE_element *element,
+	void *element_list_type_data_void)
 /*******************************************************************************
-LAST MODIFIED : 15 September 2000
+LAST MODIFIED : 1 March 2001
 
 DESCRIPTION :
-Iterator function which, if <element> is top-level (ie. cm.type is CM_ELEMENT),
-adds it to the <element_list> if not currently in it.
+Iterator function which, if <element> is of the given CM_element_type, adds it
+to the element_list if not currently in it.
 ==============================================================================*/
 {
 	int return_code;
-	struct LIST(FE_element) *element_list;
+	struct FE_element_list_CM_element_type_data *element_list_type_data;
 
-	ENTER(ensure_top_level_FE_element_is_in_list);
-	if (element&&(element_list=(struct LIST(FE_element) *)element_list_void))
+	ENTER(add_FE_element_of_CM_element_type_to_list);
+	if (element && (element_list_type_data =
+		(struct FE_element_list_CM_element_type_data *)element_list_type_data_void))
 	{
-		if ((CM_ELEMENT==element->cm.type)&&
-			(!IS_OBJECT_IN_LIST(FE_element)(element,element_list)))
+		if ((element->cm.type == element_list_type_data->cm_element_type) &&
+			(!IS_OBJECT_IN_LIST(FE_element)(element,
+				element_list_type_data->element_list)))
 		{
-			return_code=ADD_OBJECT_TO_LIST(FE_element)(element,element_list);
+			return_code = ADD_OBJECT_TO_LIST(FE_element)(element,
+				element_list_type_data->element_list);
 		}
 		else
 		{
-			return_code=1;
+			return_code = 1;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"ensure_top_level_FE_element_is_in_list.  Invalid argument(s)");
-		return_code=0;
+			"add_FE_element_of_CM_element_type_to_list.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* ensure_top_level_FE_element_is_in_list */
+} /* add_FE_element_of_CM_element_type_to_list */
 
 int ensure_top_level_FE_element_nodes_are_in_list(struct FE_element *element,
 	void *node_list_void)

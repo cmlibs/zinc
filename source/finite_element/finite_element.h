@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 15 September 2000
+LAST MODIFIED : 1 March 2001
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -2753,87 +2753,50 @@ Returns the first coordinate field defined over <element>, recursively getting
 it from its first parent if it has no node scale field information.
 ==============================================================================*/
 
-struct FE_element_CM_element_type_Multi_range_data
+struct CM_element_type_Multi_range_data
 /*******************************************************************************
-LAST MODIFIED : 28 November 2000
+LAST MODIFIED : 1 March 2001
 
 DESCRIPTION :
-Data for passing to FE_element_CM_element_type_is_in_Multi_range and
-FE_element_CM_element_type_is_not_in_Multi_range.
+Iterator data for functions working with elements of a given CM_element_type
+and a Multi_range, eg. FE_element_of_CM_element_type_is_in_Multi_range.
 ==============================================================================*/
 {
 	enum CM_element_type cm_element_type;
 	struct Multi_range *multi_range;
-}; /* FE_element_CM_element_type_Multi_range_data */
+};
 
-int FE_element_CM_element_type_is_in_Multi_range(struct FE_element *element,
-	void *type_range_data_void);
+int FE_element_of_CM_element_type_is_in_Multi_range(struct FE_element *element,
+	void *element_type_ranges_data_void);
 /*******************************************************************************
-LAST MODIFIED : 28 November 2000
+LAST MODIFIED : 1 March 2001
 
 DESCRIPTION :
 Conditional function returning true if <element> is of the given
-<CM_element_type> and whose number is in the <multi_range>.
+<cm_element_type> and whose number is in the <multi_range>.
+Second argument is a struct CM_element_type_Multi_range_data.
 ==============================================================================*/
 
-int FE_element_CM_element_type_is_not_in_Multi_range(struct FE_element *element,
-	void *type_range_data_void);
+int FE_element_of_CM_element_type_is_not_in_Multi_range(
+	struct FE_element *element, void *element_type_ranges_data_void);
 /*******************************************************************************
-LAST MODIFIED : 28 November 2000
+LAST MODIFIED : 1 March 2001
 
 DESCRIPTION :
 Conditional function returning true if <element> is of the given
-<CM_element_type> and whose number is not in the <multi_range>.
+<cm_element_type> and whose number is not in the <multi_range>.
+Second argument is a struct CM_element_type_Multi_range_data.
 ==============================================================================*/
 
-int FE_element_is_top_level_in_Multi_range(struct FE_element *element,
-	void *multi_range_void);
+int FE_element_of_CM_element_type_add_number_to_Multi_range(
+	struct FE_element *element, void *element_type_ranges_data_void);
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 1 March 2001
 
 DESCRIPTION :
-Conditional function returning true if <element> is a CM_ELEMENT whose number
-is in the <multi_range>.
-==============================================================================*/
-
-int FE_element_is_not_top_level_in_Multi_range(struct FE_element *element,
-	void *multi_range_void);
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Conditional function returning true if <element> is either not a CM_ELEMENT
-or whose number is NOT in the <multi_range>.
-==============================================================================*/
-
-int add_FE_element_line_number_to_Multi_range(struct FE_element *element,
-	void *multi_range_void);
-/*******************************************************************************
-LAST MODIFIED : 22 March 2000
-
-DESCRIPTION :
-Iterator function for adding the number of <element> to <multi_range> if it is
-a CM_LINE.
-==============================================================================*/
-
-int add_FE_element_face_number_to_Multi_range(struct FE_element *element,
-	void *multi_range_void);
-/*******************************************************************************
-LAST MODIFIED : 22 March 2000
-
-DESCRIPTION :
-Iterator function for adding the number of <element> to <multi_range> if it is
-a CM_FACE.
-==============================================================================*/
-
-int add_FE_element_element_number_to_Multi_range(struct FE_element *element,
-	void *multi_range_void);
-/*******************************************************************************
-LAST MODIFIED : 22 March 2000
-
-DESCRIPTION :
-Iterator function for adding the number of <element> to <multi_range> if it is
-a CM_ELEMENT.
+Iterator function which, if <element> is of the given <cm_element_type>, adds
+its CMISS number to <multi_range>.
+Second argument is a struct CM_element_type_Multi_range_data.
 ==============================================================================*/
 
 int FE_element_is_in_group(struct FE_element *element,void *element_group_void);
@@ -2852,14 +2815,16 @@ DESCRIPTION :
 Returns true if <element> is in <element_list>.
 ==============================================================================*/
 
-int FE_element_has_all_top_level_parents_in_list(
-	struct FE_element *element,void *element_list_void);
+int FE_element_is_wholly_within_element_list_tree(
+	struct FE_element *element, void *element_list_void);
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 1 March 2001
 
 DESCRIPTION :
-Returns true if <element> is a top_level_element in <element_list>, or all its
-top_level_parents are in the list.
+Returns true if <element> is either in <element_list> or has all its parents
+directly or indirectly in the <element_list> tree. Used to check if elements
+will be destroyed, since faces and lines are destroyed with their parents if
+they are not also faces or lines of other elements not being destroyed.
 ==============================================================================*/
 
 int add_FE_element_and_faces_to_group(struct FE_element *element,
@@ -2918,22 +2883,39 @@ Notes:
 - This function is recursive.
 ==============================================================================*/
 
-int remove_FE_element_and_faces_from_group(struct FE_element *element,
-	struct GROUP(FE_element) *element_group);
+enum Remove_element_mode
 /*******************************************************************************
-LAST MODIFIED : 14 April 1999
+LAST MODIFIED : 1 March 2001
 
 DESCRIPTION :
-Removes <element> and all its faces that are not shared with other elements in
-the group from <element_group>. Only top-level elements should be passed to this
-function.
-Notes:
-- function assumes the element and all its faces etc. are in the element_group,
-  so NUMEROUS errors will be reported if this is not the case. If in doubt, use
-  FIND_BY_IDENTIFIER_IN_GROUP on the top-level element before passing it to
-  this function. Note that partner function add_FE_element_and_faces_to_group
-	guarantees that all faces are added with the element to the group.
-- this function is recursive.
+Controls the mode of element and recursive face removal in functions:
+remove_FE_element_and_faces_from_[group|list|manager].
+NOTE: these functions will have to be carefully modified when new modes added.
+==============================================================================*/
+{
+	/* nothing is removed */
+	NO_REMOVE_ELEMENT,
+	/* Element is removed unconditionally. Its faces, and their faces etc., are
+		 removed recursively if they are not faces of any other element in
+		 group/list/manager */
+	RECURSIVE_REMOVE_ELEMENT_AND_PARENTLESS_FACES,
+	/* Element and its faces, and their faces etc., are removed recursively if
+		 they are not faces of any other element in group/list/manager */
+	RECURSIVE_REMOVE_PARENTLESS_ELEMENT_AND_PARENTLESS_FACES
+};
+
+int remove_FE_element_and_faces_from_group(struct FE_element *element,
+	struct GROUP(FE_element) *element_group,
+	enum Remove_element_mode remove_element_mode);
+/*******************************************************************************
+LAST MODIFIED : 1 March 2001
+
+DESCRIPTION :
+Function for removing <element> and its faces from <element_group>.
+Behaviour is controlled by <remove_element_mode> - see definition of
+enum Remove_element_mode for mode description.
+Function returns without error if <element> is already not in <element_group>.
+Function is recursive for some <remove_element_mode>s.
 ==============================================================================*/
 
 int FE_element_can_be_destroyed(struct FE_element *element);
@@ -4052,14 +4034,27 @@ Note: If function is to be called several times on a group then surround by
 MANAGED_GROUP_BEGIN_CACHE/END_CACHE calls for efficient manager messages.
 ==============================================================================*/
 
-int ensure_top_level_FE_element_is_in_list(struct FE_element *element,
-	void *element_list_void);
+struct FE_element_list_CM_element_type_data
 /*******************************************************************************
-LAST MODIFIED : 28 April 1999
+LAST MODIFIED : 1 March 2001
 
 DESCRIPTION :
-Iterator function which, if <element> is top-level (ie. cm.type is CM_ELEMENT),
-adds it to the <element_list> if not currently in it.
+Iterator data for functions working with elements of a given CM_element_type
+in an element list, eg. add_FE_element_of_CM_element_type_to_list.
+==============================================================================*/
+{
+	enum CM_element_type cm_element_type;
+	struct LIST(FE_element) *element_list;
+};
+
+int add_FE_element_of_CM_element_type_to_list(struct FE_element *element,
+	void *element_list_type_data_void);
+/*******************************************************************************
+LAST MODIFIED : 1 March 2001
+
+DESCRIPTION :
+Iterator function which, if <element> is of the given CM_element_type, adds it
+to the element_list if not currently in it.
 ==============================================================================*/
 
 int ensure_top_level_FE_element_nodes_are_in_list(struct FE_element *element,
