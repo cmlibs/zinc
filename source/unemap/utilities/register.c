@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : register.c
 
-LAST MODIFIED : 24 March 2000
+LAST MODIFIED : 4 April 2000
 
 DESCRIPTION :
 For setting and checking registers on second version of the signal conditioning
@@ -1767,11 +1767,6 @@ static void process_keyboard(
 										}
 										else
 										{
-											if (tested_card)
-											{
-												register_write_signal_file("phase1.sig",
-													(tested_card-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1);
-											}
 											i=test_channel-1;
 											temp_c_number=0;
 											for (k=0;k<number_of_test_cards;k++)
@@ -1841,6 +1836,11 @@ static void process_keyboard(
 												}
 												temp_c_number += NUMBER_OF_CHANNELS_ON_NI_CARD;
 											}
+										}
+										if (tested_card)
+										{
+											register_write_signal_file("phase1.sig",
+												(tested_card-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1);
 										}
 										/* turn off stimulation */
 										unemap_stop_stimulating(0);
@@ -5038,11 +5038,6 @@ static void process_keyboard(
 										}
 										else
 										{
-											if (0!=tested_card)
-											{
-												register_write_signal_file("phase7.sig",
-													(tested_card-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1);
-											}
 											i=test_channel-1;
 											temp_c_number=0;
 											for (k=0;k<number_of_test_cards;k++)
@@ -5107,6 +5102,11 @@ static void process_keyboard(
 												}
 												temp_c_number += NUMBER_OF_CHANNELS_ON_NI_CARD;
 											}
+										}
+										if (0!=tested_card)
+										{
+											register_write_signal_file("phase7.sig",
+												(tested_card-1)*NUMBER_OF_CHANNELS_ON_NI_CARD+1);
 										}
 									}
 									else
