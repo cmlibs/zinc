@@ -13,9 +13,11 @@ Utilities for handling images.
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#if ! defined (IMAGEMAGICK)
 #if defined (BYTE_ORDER_CODE)
 #include <ctype.h> /*???DB.  Contains definition of __BYTE_ORDER for Linux */
 #endif /* defined (BYTE_ORDER_CODE) */
+#endif /* ! defined (IMAGEMAGICK) */
 
 #include "general/debug.h"
 #include "general/enumerator_private.h"
@@ -23,21 +25,24 @@ Utilities for handling images.
 #include "general/indexed_list_private.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
-#if defined (NEW_CODE)
+#if defined (IMAGEMAGICK)
 /* image magick interfaces */
-#include <magick/api.h>
-#endif /* defined (NEW_CODE) */
+#include "magick/api.h"
+#endif /* defined (IMAGEMAGICK) */
 
+#if ! defined (IMAGEMAGICK)
 /* #define DEBUG 1 */
 #if defined (BYTE_ORDER_CODE)
 #if defined SGI
 #define __BYTE_ORDER 4321 
 #endif /* defined SGI */
 #endif /* defined (BYTE_ORDER_CODE) */
+#endif /* ! defined (IMAGEMAGICK) */
 /*
 Module constants
 ----------------
 */
+#if ! defined (IMAGEMAGICK)
 /* field types */
 #define TIFF_BYTE_FIELD 1
 #define TIFF_ASCII_FIELD 2
@@ -68,11 +73,13 @@ Module constants
 /* planar configuration */
 #define TIFF_CHUNKY_PLANAR_CONFIGURATION 1
 #define TIFF_PLANAR_PLANAR_CONFIGURATION 2
+#endif /* ! defined (IMAGEMAGICK) */
 
 /*
 Module types
 ------------
 */
+#if ! defined (IMAGEMAGICK)
 struct Colour_map_entry
 /*******************************************************************************
 LAST MODIFIED : 20 May 1998
@@ -91,11 +98,13 @@ For creating a colour map and index image in write_tiff_image_file.
 DECLARE_LIST_TYPES(Colour_map_entry);
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Colour_map_entry);
+#endif /* ! defined (IMAGEMAGICK) */
 
 /*
 Module functions
 ----------------
 */
+#if ! defined (IMAGEMAGICK)
 DECLARE_DEFAULT_DESTROY_OBJECT_FUNCTION(Colour_map_entry)
 
 DECLARE_OBJECT_FUNCTIONS(Colour_map_entry)
@@ -657,14 +666,15 @@ For reading a field in an image file directory.
 
 	return (return_code);
 } /* read_tiff_field */
+#endif /* ! defined (IMAGEMAGICK) */
 
 /*
 Global functions
 ----------------
 */
 
-#if defined (NEW_CODE)
-int Open_image_environment(struct User_interface *user_interface)
+#if defined (IMAGEMAGICK)
+int Open_image_environment(char *program_name)
 /*******************************************************************************
 LAST MODIFIED : 10 April 2001
 
@@ -676,9 +686,9 @@ functions, ie. at the start of the program.
 	int return_code;
 
 	ENTER(Open_image_environment);
-	if (user_interface)
+	if (program_name)
 	{
-		MagickIncarnate(*(user_interface->argv));
+		MagickIncarnate(program_name);
 		return_code = 1;
 	}
 	else
@@ -691,8 +701,9 @@ functions, ie. at the start of the program.
 
 	return (return_code);
 } /* Open_image_environment */
-#endif /* defined (NEW_CODE) */
+#endif /* defined (IMAGEMAGICK) */
 
+#if ! defined (IMAGEMAGICK)
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Image_file_format)
 {
 	char *enumerator_string;
@@ -871,6 +882,7 @@ Returns the <Image_file_format> determined from the file_extension in
 
 	return (return_code);
 } /* Image_file_format_from_file_name */
+#endif /* ! defined (IMAGEMAGICK) */
 
 char *Raw_image_storage_string(enum Raw_image_storage raw_image_storage)
 /*******************************************************************************
@@ -986,6 +998,157 @@ Returns the <Raw_image_storage> described by <raw_image_storage_string>.
 	return (raw_image_storage);
 } /* Raw_image_storage_from_string */
 
+int write_image_file(char *file_name,int number_of_components,
+	int number_of_bytes_per_component,
+	int height,int width,int row_padding,
+	long unsigned *image)
+/*******************************************************************************
+LAST MODIFIED : 8 May 2001
+
+DESCRIPTION :
+<row_padding> indicates a number of bytes that is padding on each row of data 
+(textures are required to be in multiples of two).
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(write_image_file);
+
+	if (file_name&&(0<number_of_components)&&(0<width)&&
+		(0<height)&&image)
+	{
+#if defined (IMAGEMAGICK)
+		/* SAB.  Note that the data returned from this routine is
+			stored bottom to top and must be flipped to conform
+			with the top to bottom storage normally used by Cmgui */
+
+		char *magick_pixel_storage, RGBA[] = "RGBA", RGB[] = "RGB";
+		int i, row_size, source_size;
+		Image *magick_image;
+		ImageInfo *magick_image_info;
+		ExceptionInfo magick_exception;
+		StorageType magick_storage_type;
+		unsigned char *destination, *image_char, *image_data, *source;
+
+		return_code = 1;
+		GetExceptionInfo(&magick_exception);
+
+		/* We are double handling the data so that I can put it into
+			ImageMagick without modifying ImageMagick to understand our
+			row padding and I can reverse the top to bottom order */
+		if (ALLOCATE(image_data, unsigned char,
+			width * height * number_of_components *
+			number_of_bytes_per_component))
+		{
+			row_size = width * number_of_components *
+				number_of_bytes_per_component;
+			source_size = (width + row_padding) * number_of_components *
+				number_of_bytes_per_component;
+			source = (unsigned char *)image + (height - 1) * source_size;
+			destination = image_data;
+			for (i = 0 ; i < height ; i++)
+			{
+				memcpy((void *)destination,(void *)source,row_size);
+				destination += row_size;
+				source -= source_size;
+			}
+			switch (number_of_components)
+			{
+				case 3:
+				{
+					magick_pixel_storage = RGB;
+				} break;
+				case 4:
+				{
+					magick_pixel_storage = RGBA;
+					/* Invert the alpha channel */
+					image_char = (unsigned char *)image_data + 3;
+					for (i = 0 ; i < width * height ; i++)
+					{
+						*image_char = 0xff - *image_char;
+						image_char += 4;
+					}
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"write_image_file.  Unknown/unimplemented pixel storage");
+					return_code = 0;
+				} break;
+			}
+			switch (number_of_bytes_per_component)
+			{
+				case 1:
+				{
+					magick_storage_type = CharPixel;
+				} break;
+				case 2:
+				{
+					magick_storage_type = ShortPixel;
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"write_image_file.  Unknown/unimplemented bytes per pixel");
+					return_code = 0;
+				} break;
+			}
+			if (return_code)
+			{
+				if (magick_image_info=CloneImageInfo((ImageInfo *) NULL))
+				{
+					if(magick_image=ConstituteImage(width, height, magick_pixel_storage, 
+						magick_storage_type, image_data, &magick_exception))
+					{
+						strcpy(magick_image->filename,file_name);
+						if(WriteImage (magick_image_info, magick_image))
+						{
+							return_code = 1;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Could not write image \"%s\"\n", file_name);
+							return_code = 0;
+						}
+						DestroyImage(magick_image);					
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"write_image_file.  Unable to create magick image");
+						return_code = 0;
+					}
+					DestroyImageInfo(magick_image_info);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"read_image_file.  Could not create image information.");
+					return_code = 0;
+				}
+			}
+			DEALLOCATE(image_data);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"write_image_file.  Could not allocate memory for image data");
+			return_code = 0;
+		}
+#endif /* defined (IMAGEMAGICK) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"write_image_file.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* write_image_file */
+
+#if ! defined (IMAGEMAGICK)
 int write_rgb_image_file(char *file_name,int number_of_components,
 	int number_of_bytes_per_component,
 	int number_of_rows,int number_of_columns,int row_padding,
@@ -4834,7 +4997,187 @@ If just the width is specified, the height is computed from the file size.
 
 	return (return_code);
 } /* read_yuv_image_file */
+#endif /* ! defined (IMAGEMAGICK) */
 
+#if defined (IMAGEMAGICK)
+int read_image_file(char *filename,int *number_of_components,
+	int *number_of_bytes_per_component,long int *height,
+	long int *width, long unsigned **image)
+/*******************************************************************************
+LAST MODIFIED : 10 May 2001
+
+DESCRIPTION :
+Detects the image type from the file extension (rgb/tiff) and then reads it.
+For formats that do not have a header, eg. RAW and YUV, a width and height may
+be specified in the <width> and <height> arguments.
+==============================================================================*/
+{
+	char RGBA[] = "RGBA", RGB[] = "RGB", *pixel_storage;
+	int i, length, return_code;
+	Image *magick_image;
+	ImageInfo *magick_image_info;
+	ExceptionInfo magick_exception;
+	long int file_size;
+	struct stat buf;
+	unsigned char *image_char;
+	void *image_data;
+	
+	ENTER(read_image_file);
+	if (filename && number_of_components && height && width && image)
+	{
+		/* SAB.  Note that the data returned from this routine is
+			stored bottom to top and must be flipped to conform
+			with the top to bottom storage normally used by Cmgui */
+		GetExceptionInfo(&magick_exception);
+		if (magick_image_info=CloneImageInfo((ImageInfo *) NULL))
+		{
+			/* Copy it now but we may overwrite if a special case */
+			strcpy(magick_image_info->filename,filename);
+			if (!strchr(filename, ':'))
+			{
+				/* Only add prefixes if there isn't one already and we want to
+				 do something tricky */
+				length = strlen(filename);
+				/* Test to see if a file with suffix rgb is an sgi rgb file */
+				if ((length > 4) && 
+					fuzzy_string_compare_same_length((filename + length - 4), ".rgb"))
+				{
+					sprintf(magick_image_info->filename, "sgi:%s", filename);
+				}
+				/* Test to see if a file with suffix yuv is a standard size uyvy file */
+				else if (!*width && !*height && (((length > 4) &&
+					fuzzy_string_compare_same_length((filename + length - 4), ".yuv"))
+					|| ((length > 5) &&
+					fuzzy_string_compare_same_length((filename + length - 5), ".uyvy"))))
+				{
+					/* use stat to get size of file */
+					if ((0==stat(filename,&buf))&&(0<(file_size=(long int)(buf.st_size))))
+					{
+						/* compare the file size with some common video standards */
+						if ((1920*1080*2) == file_size)
+						{
+							/* North American HDTV standard, 2 interlaced fields; put fields
+								side by side in double wide image */
+							*width = 3840;
+							*height = 540;
+							sprintf(magick_image_info->filename, "uyvy:%s", filename);
+						}
+						else if ((1920*540*2) == file_size)
+						{
+							/* North American HDTV standard, single field */
+							*width = 1920;
+							*height = 540;
+							sprintf(magick_image_info->filename, "uyvy:%s", filename);
+						}
+						else if ((720*486*2) == file_size)
+						{
+							/* CCIR-601 NSTC format, 2 interlaced fields; put fields
+								side by side in double wide image */
+							*width = 1440;
+							*height = 243;
+							sprintf(magick_image_info->filename, "uyvy:%s", filename);
+						}
+						else if ((720*243*2) == file_size)
+						{
+							/* CCIR-601 NSTC format, single field */
+							*width = 720;
+							*height = 243;
+							sprintf(magick_image_info->filename, "uyvy:%s", filename);
+						}
+						else if ((720*576*2) == file_size)
+						{
+							/* CCIR-601 PAL format, 2 interlaced fields; put fields
+								side by side in double wide image */
+							*width = 1440;
+							*height = 288;
+							sprintf(magick_image_info->filename, "uyvy:%s", filename);
+						}
+						else if ((720*288*2) == file_size)
+						{
+							/* CCIR-601 PAL format, single field */
+							*width = 720;
+							*height = 288;
+							sprintf(magick_image_info->filename, "uyvy:%s", filename);
+						}
+					}					
+				}
+			}
+			if (*width && *height)
+			{
+				if(ALLOCATE(magick_image_info->size, char, 25))
+				{
+					sprintf(magick_image_info->size, "%ldx%ld", *width, *height);
+				}
+			}
+			magick_image=ReadImage(magick_image_info,&magick_exception);
+			if (magick_image)
+			{
+				if (magick_image->matte)
+				{
+					*number_of_components = 4;
+					pixel_storage = RGBA;
+				}
+				else
+				{
+					*number_of_components = 3;
+					pixel_storage = RGB;
+				}
+				*number_of_bytes_per_component = 1;
+				*width = magick_image->columns;
+				*height = magick_image->rows;
+				if (ALLOCATE(image_data, unsigned char,
+					*width * *height * *number_of_components *
+					*number_of_bytes_per_component))
+				{
+					DispatchImage(magick_image, 0, 0, *width, *height,
+						pixel_storage, CharPixel, image_data);
+					*image = (long unsigned *)image_data;
+					if (RGBA == pixel_storage)
+					{
+						/* Invert the alpha channel */
+						image_char = (unsigned char *)image_data + 3;
+						for (i = 0 ; i < *width * *height ; i++)
+						{
+							*image_char = 0xff - *image_char;
+							image_char += 4;
+						}
+					}
+					return_code = 1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"read_image_file.  Could not allocate memory for image data");
+					return_code = 0;
+				}
+				DestroyImage(magick_image);
+
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Could not read image %s.", filename);
+				return_code = 0;
+			}
+			DestroyImageInfo(magick_image_info);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"read_image_file.  Could not create image information.");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "read_image_file.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* read_image_file */
+#else /* defined (IMAGEMAGICK) */
 int read_image_file(char *file_name,int *number_of_components,
 	int *number_of_bytes_per_component,long int *height,long int *width,
 	enum Raw_image_storage raw_image_storage, long unsigned **image)
@@ -4909,6 +5252,7 @@ be specified in the <width> and <height> arguments. For the RAW format, the
 
 	return (return_code);
 } /* read_image_file */
+#endif /* defined (IMAGEMAGICK) */
 
 int get_radial_distortion_corrected_coordinates(double dist_x,double dist_y,
 	double dist_centre_x,double dist_centre_y,double dist_factor_k1,
@@ -5329,313 +5673,3 @@ performed and the original image is returned.
 	return (return_code);
 } /* crop_image */
 
-#if defined (OLD_CODE)
-/*******************************************************************************
-FILE : image_utilities.c
-
-LAST MODIFIED : 28 January 1995
-
-DESCRIPTION :
-Utilities for handling images.
-==============================================================================*/
-#include <stddef.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include "general/debug.h"
-#include "general/image_utilities.h"
-#include "general/system.h"
-#include "general/user_interface.h"
-#if defined (OLD_CODE)
-#if defined (SGI)
-#include "graphics/image.h"
-#endif
-#endif
-
-/*
-Global functions
-----------------
-*/
-int read_rgb_image_file(char *file_name,int *number_of_components,
-	long int *height,long int *width,
-	long unsigned **image_address)
-/*******************************************************************************
-LAST MODIFIED : 28 January 1995
-
-DESCRIPTION :
-Reads an image from a SGI rgb file.
-???DB.  At present always fills out to RGBA (4 components).  If allow fewer
-then will need to write a transformer for the texture images (rows are long
-word aligned.
-???DB.  Need to find out more about images.  See 4Dgifts/iristools.
-==============================================================================*/
-{
-#if defined (OLD_CODE)
-#if defined (SGI)
-	IMAGE *image_file;
-#endif
-#else
-	FILE *image_file;
-	int i,j,k,number_of_rows,run_length;
-	unsigned char fill_char[4],*image,*image_ptr,pixel,*row,*row_ptr;
-	unsigned long *row_size,*row_sizes,*row_start,*row_starts;
-	unsigned short dimension,height,image_file_type,magic_number,
-		number_of_components,width;
-#endif
-	int return_code;
-
-	ENTER(read_rgb_image_file);
-	/* check arguments */
-	if (file_name&&number_of_components&&height&&width&&
-		image_address)
-	{
-#if defined (OLD_CODE)
-#if defined (SGI)
-		if (image_file=iopen(file_name,"r"))
-		{
-			/*???DB.  Where is the number of components stored in the image
-				structure ? */
-			*number_of_components=4;
-			*width=image_file->xsize;
-			*height=image_file->ysize;
-			iclose(image_file);
-			if (*image_address=(long unsigned *)longimagedata(file_name))
-			{
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"read_rgb_image_file.  Could not retrieve image");
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"read_rgb_image_file.  Could not read image file");
-			return_code=0;
-		}
-#endif
-#else
-		if (image_file=fopen(file_name,"rb"))
-		{
-			if ((1==fread(&magic_number,2,1,image_file))&&
-				(1==fread(&image_file_type,2,1,image_file))&&
-				(1==fread(&dimension,2,1,image_file))&&
-				(1==fread(&width,2,1,image_file))&&
-				(1==fread(&height,2,1,image_file))&&
-				(1==fread(&number_of_components,2,1,image_file)))
-			{
-				if ((0<width)&&(0<height)&&(1<=number_of_components)&&
-					(number_of_components<=4))
-				{
-					number_of_rows=height*number_of_components;
-					return_code=1;
-					if (0x0100==(image_file_type&0xff00))
-					{
-						/* run length encoded */
-						row_starts=(unsigned long *)NULL;
-						row_sizes=(unsigned long *)NULL;
-						row=(unsigned char *)NULL;
-						if (ALLOCATE(row_starts,unsigned long,number_of_rows)&&
-							ALLOCATE(row_sizes,unsigned long,number_of_rows)&&
-							ALLOCATE(row,unsigned char,width*256)&&
-							ALLOCATE(image,unsigned char,width*height*4))
-/*              ALLOCATE(image,unsigned char,width*height*number_of_components))*/
-						{
-							if ((0==fseek(image_file,512,SEEK_SET))&&
-								(number_of_rows==fread(row_starts,sizeof(long),
-								number_of_rows,image_file))&&(number_of_rows==fread(row_sizes,
-								sizeof(long),number_of_rows,image_file)))
-							{
-								row_start=row_starts;
-								row_size=row_sizes;
-								image_ptr=image;
-								i=0;
-								while (return_code&&(i<number_of_components))
-								{
-									image_ptr=image+i;
-									j=height;
-									while (return_code&&(j>0))
-									{
-										if ((0==fseek(image_file,*row_start,SEEK_SET))&&
-											(*row_size==fread(row,1,*row_size,image_file)))
-										{
-											row_ptr=row;
-											pixel= *row_ptr;
-											run_length=(int)(pixel&0x7F);
-											while (run_length)
-											{
-												row_ptr++;
-												if (pixel&0x80)
-												{
-													while (run_length>0)
-													{
-														*image_ptr= *row_ptr;
-														image_ptr += 4;
-/*                            image_ptr += number_of_components;*/
-														row_ptr++;
-														run_length--;
-													}
-												}
-												else
-												{
-													pixel= *row_ptr;
-													row_ptr++;
-													while (run_length>0)
-													{
-														*image_ptr=pixel;
-														image_ptr += 4;
-/*                            image_ptr += number_of_components;*/
-														run_length--;
-													}
-												}
-												pixel= *row_ptr;
-												run_length=(int)(pixel&0x7F);
-											}
-											row_start++;
-											row_size++;
-											j--;
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"read_rgb_image_file.  Error reading row component");
-											return_code=0;
-										}
-									}
-									i++;
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"read_rgb_image_file.  Error reading row start/size");
-								return_code=0;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"read_rgb_image_file.  Could not allocate image arrays");
-							return_code=0;
-						}
-						DEALLOCATE(row_starts);
-						DEALLOCATE(row_sizes);
-						DEALLOCATE(row);
-					}
-					else
-					{
-						/* verbatim */
-						if (ALLOCATE(row,unsigned char,width*256)&&
-							ALLOCATE(image,unsigned char,width*height*4))
-/*              ALLOCATE(image,unsigned char,width*height*number_of_components))*/
-						{
-							if (0==fseek(image_file,512,SEEK_SET))
-							{
-								i=0;
-								while (return_code&&(i<number_of_components))
-								{
-									image_ptr=image+i;
-									j=height;
-									while (return_code&&(j>0))
-									{
-										if (width==fread(row,1,width,image_file))
-										{
-											row_ptr=row;
-											for (k=width;k>0;k--)
-											{
-												*image_ptr= *row_ptr;
-												row_ptr++;
-												image_ptr += 4;
-/*                        image_ptr += number_of_components;*/
-											}
-											j--;
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"read_rgb_image_file.  Error reading row component");
-											return_code=0;
-										}
-									}
-									i++;
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"read_rgb_image_file.  Error positioning file");
-								return_code=0;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"read_rgb_image_file.  Could not allocate image arrays");
-							return_code=0;
-						}
-						DEALLOCATE(row);
-					}
-					if (return_code)
-					{
-						*fill_char=0xff000000;
-						pixel=fill_char[0];
-						while (i<4)
-						{
-							image_ptr=image+i;
-							for (j=width;j>0;j--)
-							{
-								for (k=height;k>0;k--)
-								{
-									*image_ptr=pixel;
-									image_ptr += 4;
-								}
-							}
-							i++;
-						}
-						*width=width;
-						*height=height;
-						*number_of_components=4;
-/*            *number_of_components=
-							(unsigned long)number_of_components;*/
-						*image_address=(unsigned long *)image;
-					}
-					else
-					{
-						DEALLOCATE(image);
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"read_rgb_image_file.  Invalid image size");
-					return_code=0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"read_rgb_image_file.  Error reading file information");
-				return_code=0;
-			}
-			fclose(image_file);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"read_rgb_image_file.  Could not open image file");
-			return_code=0;
-		}
-#endif
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"read_rgb_image_file.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* read_rgb_image_file */
-#endif /* defined (OLD_CODE) */

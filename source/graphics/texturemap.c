@@ -75,8 +75,13 @@ Reads in background image to create textures from
 	unsigned long *image;
 
 	ENTER(read_texturemap_image);
+#if defined (IMAGEMAGICK)
+	if (read_image_file(infile,&number_of_components,&number_of_bytes_per_component,
+		&height,&width,&image))
+#else /* defined (IMAGEMAGICK) */
 	if (read_rgb_image_file(infile,&number_of_components,&number_of_bytes_per_component,
 		&height,&width,&image))
+#endif /* defined (IMAGEMAGICK) */
 	{
 		if (number_of_bytes_per_component == 1)
 		{
@@ -258,8 +263,8 @@ Writes generated texture image to file
 					component++;
 				}
 			}
-			write_rgb_image_file(outfile,number_of_components,/*bytes_per_component*/1,
-				height,width,0,image);
+			write_image_file(outfile,number_of_components,/*bytes_per_component*/1,
+			  height,width,/*padding*/0,image);
 			DEALLOCATE(image);
 		}
 		else

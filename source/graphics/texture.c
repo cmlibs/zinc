@@ -1990,7 +1990,7 @@ Sets the texture filter: linear or nearest.
 
 int Texture_set_image(struct Texture *texture,unsigned long *image,
 	enum Texture_storage_type storage,int number_of_bytes_per_component,
-	int image_width,int image_height,
+	int image_width,int image_height, enum Texture_row_order row_order,
 	char *image_file_name,int	crop_left_margin,int crop_bottom_margin,
 	int crop_width,int crop_height,int perform_crop)
 /*******************************************************************************
@@ -2001,7 +2001,7 @@ Puts the <image> in the texture. The image is left unchanged by this function.
 The <image_file_name> is specified purely so that it may be recorded with the
 texture, and must be given a value. Similarly, the four crop parameters should
 be set to record any cropping already done on the image so that it may be
-recorded with the texture - not however that if perform_crop is true then the
+recorded with the texture - note however that if perform_crop is true then the
 crop is performed as the image is put into the texture.
 ==============================================================================*/
 {
@@ -2092,8 +2092,18 @@ crop is performed as the image is put into the texture.
 				destination=(unsigned char *)texture_image;
 				destination_white_space=
 					(unsigned char *)texture_image + source_row_width_bytes;
-				source = (unsigned char *)image +
-					(final_bottom_margin*image_width+final_left_margin)*number_of_bytes;
+				if (TEXTURE_TOP_TO_BOTTOM == row_order)
+				{
+					source_row_width_bytes *= -1;
+					source = (unsigned char *)image +
+						((final_bottom_margin + image_height - 1)*image_width+
+						final_left_margin)*number_of_bytes;
+				}
+				else
+				{
+					source = (unsigned char *)image +
+						(final_bottom_margin*image_width+final_left_margin)*number_of_bytes;
+				}
 				for (j=0;j<final_height;j++)
 				{
 					memcpy((void *)destination,(void *)source,copy_row_width_bytes);
@@ -2164,7 +2174,7 @@ crop is performed as the image is put into the texture.
 } /* Texture_set_image */
 
 int Texture_set_image_file(struct Texture *texture,char *image_file_name,
-	int specify_width,int specify_height,enum Raw_image_storage raw_image_storage,
+	int specify_width,int specify_height, enum Raw_image_storage raw_image_storage,
 	int crop_left_margin,int crop_bottom_margin,int crop_width,
 	int crop_height,double radial_distortion_centre_x,
 	double radial_distortion_centre_y,double radial_distortion_factor_k1)
@@ -2193,9 +2203,15 @@ for formats that do not have a header, eg. RAW and YUV.
 	{
 		image_height = specify_height;
 		image_width = specify_width;
+#if defined (IMAGEMAGICK)
+		if (read_image_file(image_file_name,&number_of_components,
+			&number_of_bytes_per_component,&image_height,&image_width,
+			&image))
+#else /* defined (IMAGEMAGICK) */
 		if (read_image_file(image_file_name,&number_of_components,
 			&number_of_bytes_per_component,&image_height,&image_width,
 			raw_image_storage,&image))
+#endif /* defined (IMAGEMAGICK) */
 		{
 			return_code=1;
 			switch(number_of_components)
@@ -2243,7 +2259,8 @@ for formats that do not have a header, eg. RAW and YUV.
 				perform_crop=(0<crop_width)&&(0<crop_height);
 				if (!Texture_set_image(texture,image,storage,
 					number_of_bytes_per_component,
-					original_width_texels,original_height_texels,image_file_name,
+					original_width_texels,original_height_texels,
+					TEXTURE_TOP_TO_BOTTOM, image_file_name,
 					crop_left_margin,crop_bottom_margin,crop_width,crop_height,
 					perform_crop))
 				{
@@ -3125,29 +3142,37 @@ Sets how textures coordinates outside [0,1] are handled.
 	return (return_code);
 } /* Texture_set_wrap_mode */
 
-int Texture_write_to_file(struct Texture *texture,char *file_name,
-	enum Image_file_format file_format,enum Image_orientation orientation)
+#if defined (IMAGEMAGICK)
+int Texture_write_to_file(struct Texture *texture, char *file_name)
+#else /* defined (IMAGEMAGICK) */
+int Texture_write_to_file(struct Texture *texture, char *file_name,
+	enum Image_file_format file_format, enum Image_orientation orientation)
+#endif /* defined (IMAGEMAGICK) */
 /*******************************************************************************
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 10 may 2001
 
 DESCRIPTION :
 Writes the image stored in the texture to a file.
-???DB.  Implement orientation?
-???DB.  Implement postscript?
 ==============================================================================*/
 {
 	int return_code;
 
 	ENTER(Texture_write_to_file);
-	USE_PARAMETER(orientation);
 	if (texture&&file_name)
 	{
-		return_code=1;
+#if defined (IMAGEMAGICK)
+		return_code = write_image_file(file_name, 
+			Texture_get_number_of_components_from_storage_type(texture->storage),
+			texture->number_of_bytes_per_component,
+			texture->original_height_texels,texture->original_width_texels, 
+			(texture->width_texels)-(texture->original_width_texels),
+			texture->image);
+#else /* defined (IMAGEMAGICK) */
 		switch (file_format)
 		{
 			case RGB_FILE_FORMAT:
 			{
-				write_rgb_image_file(file_name, 
+				return_code = write_rgb_image_file(file_name, 
 					Texture_get_number_of_components_from_storage_type(texture->storage),
 					texture->number_of_bytes_per_component,
 					texture->original_height_texels,texture->original_width_texels, 
@@ -3156,7 +3181,7 @@ Writes the image stored in the texture to a file.
 			} break;
 			case TIFF_FILE_FORMAT:
 			{
-				write_tiff_image_file(file_name, 
+				return_code = write_tiff_image_file(file_name, 
 					Texture_get_number_of_components_from_storage_type(texture->storage),
 					texture->number_of_bytes_per_component,
 					texture->original_height_texels,texture->original_width_texels, 
@@ -3178,6 +3203,7 @@ Writes the image stored in the texture to a file.
 				return_code=0;
 			}
 		}
+#endif /* defined (IMAGEMAGICK) */
 	}
 	else
 	{

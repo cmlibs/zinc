@@ -7543,7 +7543,7 @@ field are converted to "colours" by applying the <spectrum>
 			}
 			Texture_set_image(texture, texture_image,
 				storage, /* number_of_bytes_per_component */ 1,
-				image_width, image_height,
+				image_width, image_height, TEXTURE_BOTTOM_TO_TOP,
 				image_file_name, crop_left_margin, crop_bottom_margin,
 				crop_width, crop_height,/*perform_crop*/0);
 			Computed_field_clear_cache(field);
@@ -16618,8 +16618,8 @@ movie is being created.
 	static char *default_movie_name="default";
 	char add_frame,avi,cinepak_avi,cinepak_quicktime,*create_file_name,end,
 		every_frame,force_onscreen,indeo_avi,indeo_quicktime,loop,*movie_name,
-		mvc1_sgi_movie3,once,*open_file_name,play,quicktime,rle24_sgi_movie3,
-		skip_frames,sgi_movie3,stop;
+		mvc1_sgi_movie3,once,*open_file_name,play,quicktime,rgba_rle24_sgi_movie3,
+		rle24_sgi_movie3,skip_frames,sgi_movie3,stop;
 	double speed;
 	int height, return_code, width;
 	struct Option_table *option_table;
@@ -16661,6 +16661,7 @@ movie is being created.
 			open_file_name=(char *)NULL;
 			play = 0;
 			quicktime = 0;
+			rgba_rle24_sgi_movie3 = 0;
 			rle24_sgi_movie3 = 0;
 			sgi_movie3 = 0;
 			skip_frames = 0;
@@ -16723,6 +16724,9 @@ movie is being created.
 				NULL,set_char_flag);
 			/* quicktime */
 			Option_table_add_entry(option_table,"quicktime",&quicktime,
+				NULL,set_char_flag);
+			/* rgba_rle24_sgi_movie3 */
+			Option_table_add_entry(option_table,"rgba_rle24_sgi_movie3",&rgba_rle24_sgi_movie3,
 				NULL,set_char_flag);
 			/* rle24_sgi_movie3 */
 			Option_table_add_entry(option_table,"rle24_sgi_movie3",&rle24_sgi_movie3,
@@ -16838,6 +16842,11 @@ movie is being created.
 								{
 									movie = CREATE(Movie_graphics)(movie_name,create_file_name,
 										X3D_MOVIE_CREATE_FILE_APPLE_ANIMATION_QUICKTIME);
+								}
+								else if(rgba_rle24_sgi_movie3)
+								{
+									movie = CREATE(Movie_graphics)(movie_name,create_file_name,
+										X3D_MOVIE_CREATE_FILE_RLE24_SGI_MOVIE3_RGBA);
 								}
 								else if(rle24_sgi_movie3)
 								{
@@ -17126,37 +17135,14 @@ DESCRIPTION :
 Executes a GFX PRINT command.
 ==============================================================================*/
 {
-	auto struct Modifier_entry
-		landscape_portrait_option_table[]=
-		{
-			{"landscape",NULL,NULL,set_char_flag},
-			{"portrait",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		},
-		option_table[]=
-		{
-			{"file",NULL,(void *)1,set_name},
-			{"force_onscreen",NULL,NULL,set_char_flag},
-			{"height",NULL,NULL,set_int_non_negative},
-			{NULL,NULL,NULL,NULL},
-			{NULL,NULL,NULL,NULL},
-			{"width",NULL,NULL,set_int_non_negative},
-			{"window",NULL,NULL,set_Graphics_window},
-			{NULL,NULL,NULL,NULL}
-		},
-		postscript_rgb_tiff_option_table[]=
-		{
-			{"postscript",NULL,NULL,set_char_flag},
-			{"rgb",NULL,NULL,set_char_flag},
-			{"tiff",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		};
-	char *file_name,force_onscreen_flag,landscape_flag,portrait_flag,
-		postscript_flag,rgb_flag,tiff_flag;
-	int return_code;
-	static struct File_open_data *file_open_data=(struct File_open_data *)NULL;
-	static struct Write_graphics_window_data write_graphics_window_data;
+	char *file_name,force_onscreen_flag,postscript_flag,rgb_flag,tiff_flag;
+#if ! defined (IMAGEMAGICK)
+	enum Image_file_format file_format;
+#endif /* ! defined (IMAGEMAGICK) */
+	int height, return_code, width;
 	struct Cmiss_command_data *command_data;
+	struct Graphics_window *window;
+	struct Option_table *format_option_table, *option_table;
 
 	ENTER(execute_command_gfx_print);
 	USE_PARAMETER(dummy_to_be_modified);
@@ -17167,141 +17153,138 @@ Executes a GFX PRINT command.
 		{
 			/* initialize defaults */
 			file_name=(char *)NULL;
-			write_graphics_window_data.height = 0;
+			height = 0;
 			force_onscreen_flag = 0;
-			landscape_flag=0;
-			portrait_flag=0;
-			write_graphics_window_data.width = 0;
+			width = 0;
 			/* default is postscript (see later) */
 			postscript_flag=0;
 			rgb_flag=0;
 			tiff_flag=0;
 			/* must have at least one graphics_window to print */
-			if (write_graphics_window_data.window=FIRST_OBJECT_IN_MANAGER_THAT(
+			if (window=FIRST_OBJECT_IN_MANAGER_THAT(
 				Graphics_window)((MANAGER_CONDITIONAL_FUNCTION(Graphics_window) *)NULL,
 					(void *)NULL,command_data->graphics_window_manager))
 			{
-				ACCESS(Graphics_window)(write_graphics_window_data.window);
+				ACCESS(Graphics_window)(window);
 			}
-			(option_table[0]).to_be_modified= &file_name;
-			(option_table[1]).to_be_modified= &force_onscreen_flag;
-			(option_table[2]).to_be_modified= &write_graphics_window_data.height;
-			(landscape_portrait_option_table[0]).to_be_modified= &landscape_flag;
-			(landscape_portrait_option_table[1]).to_be_modified= &portrait_flag;
-			(option_table[3]).user_data=landscape_portrait_option_table;
-			(postscript_rgb_tiff_option_table[0]).to_be_modified= &postscript_flag;
-			(postscript_rgb_tiff_option_table[1]).to_be_modified= &rgb_flag;
-			(postscript_rgb_tiff_option_table[2]).to_be_modified= &tiff_flag;
-			(option_table[4]).user_data=postscript_rgb_tiff_option_table;
-			(option_table[5]).to_be_modified= &write_graphics_window_data.width;
-			(option_table[6]).to_be_modified= &write_graphics_window_data.window;
-			(option_table[6]).user_data=command_data->graphics_window_manager;
-			return_code=process_multiple_options(state,option_table);
+
+			option_table = CREATE(Option_table)();
+			/* file */
+			Option_table_add_entry(option_table, "file", &file_name,
+				(void *)1, set_name);
+			/* force_onscreen */
+			Option_table_add_entry(option_table, "force_onscreen",
+				&force_onscreen_flag, NULL, set_char_flag);
+			/* height */
+			Option_table_add_entry(option_table, "height",
+				&height, NULL, set_int_non_negative);
+			/* postscript/rgb/tiff */
+			format_option_table=CREATE(Option_table)();
+			Option_table_add_entry(format_option_table,"postscript",
+				&postscript_flag,NULL,set_char_flag);
+			Option_table_add_entry(format_option_table,"rgb",
+				&rgb_flag,NULL,set_char_flag);
+			Option_table_add_entry(format_option_table,"tiff",
+				&tiff_flag,NULL,set_char_flag);
+			Option_table_add_suboption_table(option_table,format_option_table);
+			/* width */
+			Option_table_add_entry(option_table, "width",
+				&width, NULL, set_int_non_negative);
+			/* window */
+			Option_table_add_entry(option_table, "window",
+				&window, command_data->graphics_window_manager, set_Graphics_window);
+
+			return_code=Option_table_multi_parse(option_table,state);
+			DESTROY(Option_table)(&option_table);
 			/* no errors, not asking for help */
 			if (return_code)
 			{
-				write_graphics_window_data.force_onscreen = force_onscreen_flag;
-				if (write_graphics_window_data.window)
+				if (!file_name)
 				{
-					/*???DB.  Do better for postscript|rgb|tiff */
-					if (rgb_flag)
+					if (!(file_name = confirmation_get_write_filename(NULL,
+						command_data->user_interface)))
 					{
-						if (postscript_flag||tiff_flag)
-						{
-							return_code=0;
-						}
-						else
-						{
-							write_graphics_window_data.image_file_format=RGB_FILE_FORMAT;
-						}
-					}
-					else
-					{
-						if (tiff_flag)
-						{
-							if (postscript_flag)
-							{
-								return_code=0;
-							}
-							else
-							{
-								write_graphics_window_data.image_file_format=TIFF_FILE_FORMAT;
-							}
-						}
-						else
-						{
-							write_graphics_window_data.image_file_format=
-								POSTSCRIPT_FILE_FORMAT;
-						}
-					}
-					if (return_code)
-					{
-						if (landscape_flag)
-						{
-							if (portrait_flag)
-							{
-								return_code=0;
-								display_message(ERROR_MESSAGE,
-									"gfx print.  Only one of portrait|landscape");
-							}
-							else
-							{
-								write_graphics_window_data.image_orientation=
-									LANDSCAPE_ORIENTATION;
-							}
-						}
-						else
-						{
-							write_graphics_window_data.image_orientation=PORTRAIT_ORIENTATION;
-						}
-						if (return_code)
-						{
-							if (file_name)
-							{
-								write_Graphics_window_to_file(file_name,
-									&write_graphics_window_data);
-							}
-							else
-							{
-								if (!file_open_data)
-								{
-									file_open_data=create_File_open_data(".ps",REGULAR,
-										write_Graphics_window_to_file,
-										(void *)&write_graphics_window_data,0,
-										command_data->user_interface);
-								}
-								if (file_open_data)
-								{
-									open_file_and_write((Widget)NULL,(XtPointer)file_open_data,
-										(XtPointer)NULL);
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-								"execute_command_gfx_print.  Could not create file_open_data");
-									return_code=0;
-								}
-							}
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"Only one of postscript|rgb|tiff");
-					}
-					if (file_name)
-					{
-						DEALLOCATE(file_name);
-					}
+						return_code = 0;
+					}					
 				}
-				else
+				if (!window)
 				{
 					display_message(ERROR_MESSAGE,"No graphics windows to print");
 					return_code=0;
 				}
+				if (rgb_flag||postscript_flag||tiff_flag)
+				{
+					if (rgb_flag+postscript_flag+tiff_flag == 1)
+					{
+#if defined (IMAGEMAGICK)
+						/* For imagemagick each type of file format does not
+							have to be implemented as the format is automatically
+							determined from the file suffix or prefix */
+						char *extended_filename;
+						if ((!strchr(file_name, ':'))&&
+							(ALLOCATE(extended_filename, char, strlen(file_name) + 6)))
+						{
+							if (rgb_flag)
+							{
+								sprintf(extended_filename, "sgi:%s", file_name);
+							}
+							else if (postscript_flag)
+							{
+								sprintf(extended_filename, "ps:%s", file_name);
+							}
+							else
+							{
+								sprintf(extended_filename, "tiff:%s", file_name);
+							}
+							DEALLOCATE(file_name);
+							file_name = extended_filename;
+						}
+#else /* defined (IMAGEMAGICK) */
+							if (rgb_flag)
+							{
+								file_format = RGB_FILE_FORMAT;
+							}
+							else if (postscript_flag)
+							{
+								file_format = POSTSCRIPT_FILE_FORMAT;
+							}
+							else
+							{
+								file_format = TIFF_FILE_FORMAT;
+							}						
+#endif /* defined (IMAGEMAGICK) */
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"Specify only one of postscript|rgb|tiff.");
+						return_code=0;
+					}
+				}
+#if ! defined (IMAGEMAGICK)
+				else
+				{
+					display_message(ERROR_MESSAGE,"A file format type (postscript|rgb|tiff) is required.");
+					return_code=0;
+				}
+#endif /* ! defined (IMAGEMAGICK) */
+				if (return_code)
+				{
+#if defined (IMAGEMAGICK)
+					write_Graphics_window_to_file(file_name,
+						window, force_onscreen_flag, width, height);
+#else /* defined (IMAGEMAGICK) */
+					write_Graphics_window_to_file(file_name,
+						window, file_format, force_onscreen_flag, width, height);
+#endif /* defined (IMAGEMAGICK) */
+				}
 			} /* parse error, help */
-			if (write_graphics_window_data.window)
+			if (window)
 			{
-				DEACCESS(Graphics_window)(&write_graphics_window_data.window);
+				DEACCESS(Graphics_window)(&window);
+			}
+			if (file_name)
+			{
+				DEALLOCATE(file_name);
 			}
 		}
 		else
@@ -22091,6 +22074,168 @@ Executes a GFX WRITE_ELEMENT_LAYOUT command.
 	return (return_code);
 } /* execute_command_gfx_write_element_layout */
 
+#if defined (IMAGEMAGICK)
+static int gfx_write_texture(struct Parse_state *state,
+	void *dummy_to_be_modified,void *command_data_void)
+/*******************************************************************************
+LAST MODIFIED : 28 May 1999
+
+DESCRIPTION :
+Executes a GFX WRITE TEXTURE command.
+==============================================================================*/
+{
+	char *current_token,*extended_filename,*file_name,postscript_flag,
+		rgb_flag,tiff_flag;
+	int return_code;
+	struct Cmiss_command_data *command_data;
+	struct Option_table *format_option_table, *option_table;
+	struct Texture *texture;
+
+	ENTER(gfx_write_texture);
+	USE_PARAMETER(dummy_to_be_modified);
+	/* check argument */
+	if (state)
+	{
+		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		{
+			texture = (struct Texture *)NULL;
+			if (current_token=state->current_token)
+			{
+				if (strcmp(PARSER_HELP_STRING,current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+				{
+					if (command_data->texture_manager)
+					{
+						if (texture=FIND_BY_IDENTIFIER_IN_MANAGER(Texture,name)
+							(current_token,command_data->texture_manager))
+						{
+							return_code=shift_Parse_state(state,1);
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"gfx_write_texture.  Unknown texture : %s",
+								current_token);
+							display_parse_state_location(state);
+							return_code=0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"gfx_write_Texture.  Missing texture manager");
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(INFORMATION_MESSAGE,
+						" TEXTURE_NAME");
+					return_code = 1;
+					/* By not shifting the parse state the rest of the help should come out */
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"gfx_modify_Texture.  Missing texture name");
+				return_code=0;
+			}
+
+			if (return_code)
+			{
+				/* initialize defaults */
+				file_name=(char *)NULL;
+				postscript_flag=0;
+				rgb_flag=0;
+				tiff_flag=0;
+
+				option_table=CREATE(Option_table)();
+				/* file */
+				Option_table_add_entry(option_table, "file", &file_name,
+					(void *)1, set_name);
+				/* postscript/rgb/tiff */
+				format_option_table=CREATE(Option_table)();
+				Option_table_add_entry(format_option_table,"postscript",
+					&postscript_flag,NULL,set_char_flag);
+				Option_table_add_entry(format_option_table,"rgb",
+					&rgb_flag,NULL,set_char_flag);
+				Option_table_add_entry(format_option_table,"tiff",
+					&tiff_flag,NULL,set_char_flag);
+				Option_table_add_suboption_table(option_table,format_option_table);
+
+				return_code=Option_table_multi_parse(option_table,state);
+				DESTROY(Option_table)(&option_table);
+				/* no errors, not asking for help */
+				if (return_code)
+				{
+					if (postscript_flag + rgb_flag + tiff_flag > 1)
+					{
+						display_message(ERROR_MESSAGE,"gfx_write_texture.  Specify only one of postscript, rgb or tiff");
+						return_code = 0;
+					}
+					if(!texture)
+					{
+						display_message(ERROR_MESSAGE,"gfx_write_texture.  Specify texture to write");
+						return_code=0;
+					}
+				}
+				if (return_code)
+				{
+					if (!file_name)
+					{
+						if (!(file_name = confirmation_get_write_filename(NULL,
+							command_data->user_interface)))
+						{
+							return_code = 0;
+						}
+					}
+					if ((postscript_flag|rgb_flag|tiff_flag) &&
+						(!strchr(file_name, ':')) &&
+						ALLOCATE(extended_filename, char, strlen(file_name) + 6))
+					{
+						if (rgb_flag)
+						{
+							sprintf(extended_filename, "sgi:%s", file_name);
+						}
+						else if (postscript_flag)
+						{
+							sprintf(extended_filename, "ps:%s", file_name);
+						}
+						else
+						{
+							sprintf(extended_filename, "tiff:%s", file_name);
+						}
+						DEALLOCATE(file_name);
+						file_name = extended_filename;
+					}
+				}
+				if (return_code)
+				{
+					Texture_write_to_file(texture, file_name);
+				} /* parse error, help */
+				if (file_name)
+				{
+					DEALLOCATE(file_name);
+				}
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"gfx_write_texture.  Missing command_data");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"gfx_write_texture.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* gfx_write_texture */
+#else /* defined (IMAGEMAGICK) */
 static int gfx_write_texture(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -22185,7 +22330,6 @@ Executes a GFX WRITE TEXTURE command.
 				file_name=(char *)NULL;
 				landscape_flag=0;
 				portrait_flag=0;
-				/* default is postscript (see later) */
 				postscript_flag=0;
 				rgb_flag=0;
 				tiff_flag=0;
@@ -22308,6 +22452,7 @@ Executes a GFX WRITE TEXTURE command.
 
 	return (return_code);
 } /* gfx_write_texture */
+#endif /* defined (IMAGEMAGICK) */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_gfx_write(struct Parse_state *state,
@@ -26155,8 +26300,10 @@ and then executes the returned strings
 			add_to_command_list(command_string,command_data->command_window);
 		}
 		quit = 0;
+
 		interpret_command(command_string, (void *)command_data, 
 		  &quit, &execute_command, &return_code);
+
 		if (quit)
 		{
 			display_message(ERROR_MESSAGE,

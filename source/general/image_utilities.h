@@ -37,11 +37,13 @@ Must ensure the ENUMERATOR_STRING function returns a string for each value here.
 	YUV_FILE_FORMAT
 }; /* enum Image_file_format */
 
+#if ! defined (IMAGEMAGICK)
 enum Image_orientation
 {
 	LANDSCAPE_ORIENTATION,
 	PORTRAIT_ORIENTATION
 }; /* enum Image_orientation */
+#endif /* ! defined (IMAGEMAGICK) */
 
 enum Tiff_image_compression
 {
@@ -62,8 +64,8 @@ Global functions
 ----------------
 */
 
-#if defined (NEW_CODE)
-int Open_image_environment(struct User_interface *user_interface);
+#if defined (IMAGEMAGICK)
+int Open_image_environment(char *program_name);
 /*******************************************************************************
 LAST MODIFIED : 10 April 2001
 
@@ -71,8 +73,9 @@ DESCRIPTION :
 Sets up ImageMagick library. Must be called before using any image I/O
 functions, ie. at the start of the program.
 ==============================================================================*/
-#endif /* defined (NEW_CODE) */
+#endif /* defined (IMAGEMAGICK) */
 
+#if ! defined (IMAGEMAGICK)
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Image_file_format);
 
 char *Image_file_format_extension(enum Image_file_format image_file_format);
@@ -95,6 +98,7 @@ DESCRIPTION :
 Returns the <Image_file_format> determined from the file_extension in
 <file_name>, or UNKNOWN_IMAGE_FILE_FORMAT if none found or no match made.
 ==============================================================================*/
+#endif /* ! defined (IMAGEMAGICK) */
 
 /*PROTOTYPE_ENUMERATOR_FUNCTIONS(Raw_image_storage);*/
 
@@ -128,6 +132,19 @@ DESCRIPTION :
 Returns the <Raw_image_storage> described by <raw_image_storage_string>.
 ==============================================================================*/
 
+int write_image_file(char *file_name,int number_of_components,
+	int number_of_bytes_per_component,
+	int height,int width,int row_padding,
+	long unsigned *image);
+/*******************************************************************************
+LAST MODIFIED : 8 May 2001
+
+DESCRIPTION :
+<row_padding> indicates a number of bytes that is padding on each row of data 
+(textures are required to be in multiples of two).
+==============================================================================*/
+
+#if ! defined (IMAGEMAGICK)
 int write_rgb_image_file(char *file_name,int number_of_components,
 	int number_of_bytes_per_component,
 	int number_of_rows,int number_of_columns,int row_padding,
@@ -189,10 +206,17 @@ LAST MODIFIED : 26 August 1999
 DESCRIPTION :
 Reads an image from a TIFF file.
 ==============================================================================*/
+#endif /* ! defined (IMAGEMAGICK) */
 
+#if defined (IMAGEMAGICK)
+int read_image_file(char *file_name,int *number_of_components,
+	int *number_of_bytes_per_component,long int *height,long int *width,
+	long unsigned **image);
+#else /* defined (IMAGEMAGICK) */
 int read_image_file(char *file_name,int *number_of_components,
 	int *number_of_bytes_per_component,long int *height,long int *width,
 	enum Raw_image_storage raw_image_storage, long unsigned **image);
+#endif /* defined (IMAGEMAGICK) */
 /*******************************************************************************
 LAST MODIFIED : 12 October 2000
 

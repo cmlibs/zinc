@@ -2798,11 +2798,18 @@ it is often useful for them to temporarily differ.
 					{
 						/*???debug*/
 						printf("  Reading image: '%s'\n",image_file_name);
+#if defined (IMAGEMAGICK)
+						if (return_code=
+							read_image_file(image_file_name,&number_of_components,
+							&number_of_bytes_per_component,&image_height,&image_width,
+							&image) && (0<number_of_components))
+#else /* defined (IMAGEMAGICK) */
 						if (return_code=
 							read_image_file(image_file_name,&number_of_components,
 								&number_of_bytes_per_component,&image_height,&image_width,
 								/*raw_image_storage*/RAW_PLANAR_RGB,&image) &&
 							(0<number_of_components))
+#endif /* defined (IMAGEMAGICK) */
 						{
 							number_of_images_read++;
 						}
@@ -2837,7 +2844,7 @@ it is often useful for them to temporarily differ.
 						}
 						if (Texture_set_image(temp_texture,image,
 							texture_storage,number_of_bytes_per_component,
-							image_width,image_height,image_file_name,
+							image_width,image_height,TEXTURE_TOP_TO_BOTTOM,image_file_name,
 							crop_left_margin,crop_bottom_margin,crop_width,crop_height,
 							/*perform_crop*/1))
 						{

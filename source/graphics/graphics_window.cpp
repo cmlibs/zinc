@@ -882,10 +882,11 @@ ranges and sets the view parameters so that everything can be seen.
 	LEAVE;
 } /* Graphics_window_view_all_button_CB */
 
+#if defined (IMAGEMAGICK)
 static void Graphics_window_print_button_CB(Widget caller,
 	XtPointer *graphics_window_void,XmAnyCallbackStruct *caller_data)
 /*******************************************************************************
-LAST MODIFIED : 10 April 2001
+LAST MODIFIED : 10 May 2001
 
 DESCRIPTION :
 Callback for when the print_button is pressed.  Finds the x, y and z
@@ -893,8 +894,8 @@ ranges and sets the view parameters so that everything can be seen.
 ==============================================================================*/
 {
 	char *file_name;
+	int force_onscreen, height, width;
 	struct Graphics_window *graphics_window;
-	struct Write_graphics_window_data write_graphics_window_data;
 
 	ENTER(Graphics_window_print_button_CB);
 	USE_PARAMETER(caller);
@@ -904,15 +905,51 @@ ranges and sets the view parameters so that everything can be seen.
 		if (file_name = confirmation_get_write_filename((char *)NULL,
 			graphics_window->user_interface))
 		{
-			if (Image_file_format_from_file_name(file_name,
-				&write_graphics_window_data.image_file_format))
+			force_onscreen = 0;
+			width = 0;
+			height = 0;
+			write_Graphics_window_to_file(file_name, graphics_window, force_onscreen,
+				width, height);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Graphics_window_print_button_CB.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Graphics_window_print_button_CB */
+#else /* defined (IMAGEMAGICK) */
+static void Graphics_window_print_button_CB(Widget caller,
+	XtPointer *graphics_window_void,XmAnyCallbackStruct *caller_data)
+/*******************************************************************************
+LAST MODIFIED : 10 May 2001
+
+DESCRIPTION :
+Callback for when the print_button is pressed.  Finds the x, y and z
+ranges and sets the view parameters so that everything can be seen.
+==============================================================================*/
+{
+	char *file_name;
+	enum Image_file_format image_file_format;
+	int force_onscreen, height, width;
+	struct Graphics_window *graphics_window;
+
+	ENTER(Graphics_window_print_button_CB);
+	USE_PARAMETER(caller);
+	USE_PARAMETER(caller_data);
+	if (graphics_window = (struct Graphics_window *)graphics_window_void)
+	{
+		if (file_name = confirmation_get_write_filename((char *)NULL,
+			graphics_window->user_interface))
+		{
+			if (Image_file_format_from_file_name(file_name, &image_file_format))
 			{
-				write_graphics_window_data.image_orientation = PORTRAIT_ORIENTATION;
-				write_graphics_window_data.force_onscreen = 0;
-				write_graphics_window_data.width = 0;
-				write_graphics_window_data.height = 0;
-				write_graphics_window_data.window = graphics_window;
-				write_Graphics_window_to_file(file_name, &write_graphics_window_data);
+				force_onscreen = 0;
+				width = 0;
+				height = 0;
+				write_Graphics_window_to_file(file_name, graphics_window,
+					image_file_format, force_onscreen, width, height);
 			}
 			else
 			{
@@ -928,6 +965,7 @@ ranges and sets the view parameters so that everything can be seen.
 	}
 	LEAVE;
 } /* Graphics_window_print_button_CB */
+#endif /* defined (IMAGEMAGICK) */
 
 /*
 Manager Callback Module functions
@@ -5519,36 +5557,90 @@ function, and DEACCESS any returned window.
 	return (return_code);
 } /* set_Graphics_window */
 
+#if defined (IMAGEMAGICK)
 int write_Graphics_window_to_file(char *file_name,
-	void *write_graphics_window_data_void)
+	struct Graphics_window *window,
+	int force_onscreen, int preferred_width, int preferred_height)	  
 /*******************************************************************************
-LAST MODIFIED : 2 February 1999
+LAST MODIFIED : 10 May 2001
 
 DESCRIPTION :
 This writes the first scene viewer of the graphics window to a file.
+When using IMAGEMAGICK the file format is determined according to the file
+extension or a filename prefix, i.e. sgi:bob.rgb writes an sgi formatted file
+with name bob.rgb.
+If <force_onscreen> is set then the pixels are grabbed directly from the window
+display and the <preferred_width> and <preferred_height> are ignored.
 ==============================================================================*/
 {
 	char *frame_data;
-	float pixel_aspect_ratio;
 	int height, return_code, width;
-	Screen *screen;
-	struct Graphics_window *window;
-	struct Printer printer;
-	struct Write_graphics_window_data *write_graphics_window_data;
 
 	ENTER(write_Graphics_window_to_file);
 	return_code=0;
 	/* check arguments */
-	if (file_name&&(write_graphics_window_data=
-		(struct Write_graphics_window_data *)write_graphics_window_data_void)&&
-		(window=write_graphics_window_data->window)&&(window->scene_viewer))
+	if (file_name&&window&&(window->scene_viewer))
 	{
-		width = write_graphics_window_data->width;
-		height = write_graphics_window_data->height;
+		width = preferred_width;
+		height = preferred_height;
 		if (Graphics_window_get_frame_pixels(window, TEXTURE_RGBA,
-			&width, &height, &frame_data, write_graphics_window_data->force_onscreen))
+			&width, &height, &frame_data, force_onscreen))
 		{
-			switch (write_graphics_window_data->image_file_format)
+			return_code = write_image_file(file_name,/* number_of_components */4,
+				/* bytes_per_component */1, height, width, /*padding*/0, 
+				(unsigned long *)frame_data);
+			DEALLOCATE(frame_data);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"write_Graphics_window_to_file.  "
+				"Could not allocate array for frame_data");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"write_Graphics_window_to_file.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* write_Graphics_window_to_file */
+#else /* defined (IMAGEMAGICK) */
+int write_Graphics_window_to_file(char *file_name,
+	struct Graphics_window *window, 	enum Image_file_format image_file_format,
+	int force_onscreen, int preferred_width, int preferred_height)	  
+/*******************************************************************************
+LAST MODIFIED : 10 May 2001
+
+DESCRIPTION :
+This writes the first scene viewer of the graphics window to a file.
+When using IMAGEMAGICK the file format is determined according to the file
+extension or a filename prefix, i.e. sgi:bob.rgb writes an sgi formatted file
+with name bob.rgb.
+If <force_onscreen> is set then the pixels are grabbed directly from the window
+display and the <preferred_width> and <preferred_height> are ignored.
+==============================================================================*/
+{
+	char *frame_data;
+	enum Image_orientation image_orientation = PORTRAIT_ORIENTATION;
+	float pixel_aspect_ratio;
+	int height, return_code, width;
+	Screen *screen;
+	struct Printer printer;
+
+	ENTER(write_Graphics_window_to_file);
+	return_code=0;
+	/* check arguments */
+	if (file_name&&window&&(window->scene_viewer))
+	{
+		width = preferred_width;
+		height = preferred_height;
+		if (Graphics_window_get_frame_pixels(window, TEXTURE_RGBA,
+			&width, &height, &frame_data, force_onscreen))
+		{
+			switch (image_file_format)
 			{
 				case POSTSCRIPT_FILE_FORMAT:
 				{
@@ -5561,7 +5653,7 @@ This writes the first scene viewer of the graphics window to a file.
 						return_code=write_postscript_image_file(file_name,4,
 							/* bytes_per_component */1, height,width, 0,
 							pixel_aspect_ratio,(unsigned long *)frame_data,
-							write_graphics_window_data->image_orientation,&printer);
+							image_orientation,&printer);
 						close_printer(&printer);
 					}
 				} break;
@@ -5607,6 +5699,7 @@ This writes the first scene viewer of the graphics window to a file.
 
 	return (return_code);
 } /* write_Graphics_window_to_file */
+#endif /* defined (IMAGEMAGICK) */
 
 char *Graphics_window_layout_mode_string(
 	enum Graphics_window_layout_mode layout_mode)

@@ -78,6 +78,7 @@ Structure to pass to modify_Graphics_window.
 	struct MANAGER(Texture) *texture_manager;
 }; /* struct Modify_graphics_window_data */
 
+#if ! defined (IMAGEMAGICK)
 struct Write_graphics_window_data
 /*******************************************************************************
 LAST MODIFIED : 21 January 1998
@@ -94,6 +95,7 @@ Structure to pass to write_graphics_window_to_file.
 	int height; /* the window size used instead */
 	struct Graphics_window *window;
 }; /* struct Write_graphics_window_data */
+#endif /* ! defined (IMAGEMAGICK) */
 
 /*
 Global/Public functions
@@ -460,13 +462,25 @@ NOTE: Calling function must remember to ACCESS any window passed to this
 function, and DEACCESS any returned window.
 ==============================================================================*/
 
+#if defined (IMAGEMAGICK)
 int write_Graphics_window_to_file(char *file_name,
-	void *write_graphics_window_data_void);
+	struct Graphics_window *window,
+	int force_onscreen, int preferred_width, int preferred_height);
+#else /* defined (IMAGEMAGICK) */
+int write_Graphics_window_to_file(char *file_name,
+	struct Graphics_window *window, 	enum Image_file_format image_file_format,
+	int force_onscreen, int preferred_width, int preferred_height);
+#endif /* defined (IMAGEMAGICK) */
 /*******************************************************************************
-LAST MODIFIED : 13 October 1998
+LAST MODIFIED : 10 May 2001
 
 DESCRIPTION :
 This writes the first scene viewer of the graphics window to a file.
+When using IMAGEMAGICK the file format is determined according to the file
+extension or a filename prefix, i.e. sgi:bob.rgb writes an sgi formatted file
+with name bob.rgb.
+If <force_onscreen> is set then the pixels are grabbed directly from the window
+display and the <preferred_width> and <preferred_height> are ignored.
 ==============================================================================*/
 
 char *Graphics_window_layout_mode_string(

@@ -4958,6 +4958,1001 @@ Notes:
 							derivative_xi[5]*derivative_xi[0];
 						(*normal)[2]=derivative_xi[0]*derivative_xi[3]-
 							derivative_xi[1]*derivative_xi[2];
+						/* #define SHANES_HACK */
+#if defined (SHANES_HACK)
+						/* Smooth the normals of linear elements based on the adjacent elements */
+						{
+							FE_value boundary_xi[3], line_xi, new_coordinates[3], new_derivative_xi[6], new_xi[3];
+							int face_number, i, normal_count, number_of_neighbour_elements;
+							struct FE_element *keep_element, **neighbour_elements;
+
+							normal_count = 1;
+							keep_element = (struct FE_element *)NULL;
+							if ((xi[0] == 0.0) && (xi[1] == 0.0))
+							{
+								boundary_xi[0] = 0.0;
+								boundary_xi[1] = 0.5;
+								boundary_xi[2] = 0.5;
+								if (FE_element_shape_find_face_number_for_xi(element->shape, boundary_xi,
+									&face_number) && (adjacent_FE_element(element, face_number, 
+									&number_of_neighbour_elements, &neighbour_elements)))
+								{
+									if (face_number == 0)
+									{
+										line_xi = (xi[1] - element->shape->face_to_element[4 * 0 + 2])
+											/ element->shape->face_to_element[4 * 0 + 3];
+									}
+									else if (face_number == 1)
+									{
+										line_xi = (xi[1] - element->shape->face_to_element[4 * 1 + 2])
+											/ element->shape->face_to_element[4 * 1 + 3];
+									}
+									else if (face_number == 2)
+									{
+										line_xi = (xi[0] - element->shape->face_to_element[4 * 2 + 0])
+											/ element->shape->face_to_element[4 * 2 + 1];
+									}
+									else if (face_number == 3)
+									{
+										line_xi = (xi[0] - element->shape->face_to_element[4 * 3 + 0])
+											/ element->shape->face_to_element[4 * 3 + 1];
+									}
+									for (i = 0 ; i < number_of_neighbour_elements ; i++)
+									{
+										if (1 >= NUMBER_IN_LIST(FE_element_parent)(
+											(neighbour_elements[i])->parent_list))
+										{
+											/* Exterior */
+											new_xi[0] = 1.0;
+											new_xi[1] = 0.0;
+											new_xi[2] = 0.5;
+											if (element->faces[face_number] == neighbour_elements[i]->faces[0])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[1])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[2])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[3])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 3] * line_xi;
+											}
+											if(Computed_field_evaluate_in_element(coordinate_field,
+												neighbour_elements[i], new_xi,
+												(struct FE_element *)NULL,new_coordinates,new_derivative_xi))
+											{
+												(*normal)[0]+=new_derivative_xi[2]*new_derivative_xi[5]-
+													new_derivative_xi[3]*new_derivative_xi[4];
+												(*normal)[1]+=new_derivative_xi[4]*new_derivative_xi[1]-
+													new_derivative_xi[5]*new_derivative_xi[0];
+												(*normal)[2]+=new_derivative_xi[0]*new_derivative_xi[3]-
+													new_derivative_xi[1]*new_derivative_xi[2];
+												normal_count++;
+											}
+											keep_element = neighbour_elements[i];
+										}
+									}
+									DEALLOCATE(neighbour_elements);
+								}
+								if (keep_element)
+								{
+									boundary_xi[0] = 0.5;
+									boundary_xi[1] = 0.0;
+									boundary_xi[2] = 0.5;
+									if (FE_element_shape_find_face_number_for_xi(keep_element->shape, boundary_xi,
+										&face_number) && (adjacent_FE_element(keep_element, face_number, 
+											&number_of_neighbour_elements, &neighbour_elements)))
+									{
+									if (face_number == 0)
+									{
+										line_xi = (new_xi[1] - keep_element->shape->face_to_element[4 * 0 + 2])
+											/ keep_element->shape->face_to_element[4 * 0 + 3];
+									}
+									else if (face_number == 1)
+									{
+										line_xi = (new_xi[1] - keep_element->shape->face_to_element[4 * 1 + 2])
+											/ keep_element->shape->face_to_element[4 * 1 + 3];
+									}
+									else if (face_number == 2)
+									{
+										line_xi = (new_xi[0] - keep_element->shape->face_to_element[4 * 2 + 0])
+											/ keep_element->shape->face_to_element[4 * 2 + 1];
+									}
+									else if (face_number == 3)
+									{
+										line_xi = (new_xi[0] - keep_element->shape->face_to_element[4 * 3 + 0])
+											/ keep_element->shape->face_to_element[4 * 3 + 1];
+									}
+										for (i = 0 ; i < number_of_neighbour_elements ; i++)
+										{
+											if (1 >= NUMBER_IN_LIST(FE_element_parent)(
+												(neighbour_elements[i])->parent_list))
+											{
+												/* Exterior */
+												new_xi[0] = 1.0;
+												new_xi[1] = 1.0;
+												new_xi[2] = 0.5;
+											if (keep_element->faces[face_number] == neighbour_elements[i]->faces[0])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 3] * line_xi;
+											}
+											else if (keep_element->faces[face_number] == neighbour_elements[i]->faces[1])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 3] * line_xi;
+											}
+											else if (keep_element->faces[face_number] == neighbour_elements[i]->faces[2])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 3] * line_xi;
+											}
+											else if (keep_element->faces[face_number] == neighbour_elements[i]->faces[3])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 3] * line_xi;
+											}
+												if(Computed_field_evaluate_in_element(coordinate_field,
+													neighbour_elements[i], new_xi,
+													(struct FE_element *)NULL,new_coordinates,new_derivative_xi))
+												{
+													(*normal)[0]+=new_derivative_xi[2]*new_derivative_xi[5]-
+														new_derivative_xi[3]*new_derivative_xi[4];
+													(*normal)[1]+=new_derivative_xi[4]*new_derivative_xi[1]-
+														new_derivative_xi[5]*new_derivative_xi[0];
+													(*normal)[2]+=new_derivative_xi[0]*new_derivative_xi[3]-
+														new_derivative_xi[1]*new_derivative_xi[2];
+													normal_count++;
+												}
+											}
+										}
+									}
+								}
+								boundary_xi[0] = 0.5;
+								boundary_xi[1] = 0.0;
+								boundary_xi[2] = 0.5;
+								if (FE_element_shape_find_face_number_for_xi(element->shape, boundary_xi,
+									&face_number) && (adjacent_FE_element(element, face_number, 
+									&number_of_neighbour_elements, &neighbour_elements)))
+								{
+									if (face_number == 0)
+									{
+										line_xi = (xi[1] - element->shape->face_to_element[4 * 0 + 2])
+											/ element->shape->face_to_element[4 * 0 + 3];
+									}
+									else if (face_number == 1)
+									{
+										line_xi = (xi[1] - element->shape->face_to_element[4 * 1 + 2])
+											/ element->shape->face_to_element[4 * 1 + 3];
+									}
+									else if (face_number == 2)
+									{
+										line_xi = (xi[0] - element->shape->face_to_element[4 * 2 + 0])
+											/ element->shape->face_to_element[4 * 2 + 1];
+									}
+									else if (face_number == 3)
+									{
+										line_xi = (xi[0] - element->shape->face_to_element[4 * 3 + 0])
+											/ element->shape->face_to_element[4 * 3 + 1];
+									}
+									for (i = 0 ; i < number_of_neighbour_elements ; i++)
+									{
+										if (1 >= NUMBER_IN_LIST(FE_element_parent)(
+											(neighbour_elements[i])->parent_list))
+										{
+											/* Exterior */
+											new_xi[0] = 0.0;
+											new_xi[1] = 1.0;
+											new_xi[2] = 0.5;
+											if (element->faces[face_number] == neighbour_elements[i]->faces[0])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[1])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[2])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[3])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 3] * line_xi;
+											}
+											if(Computed_field_evaluate_in_element(coordinate_field,
+												neighbour_elements[i], new_xi,
+												(struct FE_element *)NULL,new_coordinates,new_derivative_xi))
+											{
+												(*normal)[0]+=new_derivative_xi[2]*new_derivative_xi[5]-
+													new_derivative_xi[3]*new_derivative_xi[4];
+												(*normal)[1]+=new_derivative_xi[4]*new_derivative_xi[1]-
+													new_derivative_xi[5]*new_derivative_xi[0];
+												(*normal)[2]+=new_derivative_xi[0]*new_derivative_xi[3]-
+													new_derivative_xi[1]*new_derivative_xi[2];
+												normal_count++;
+											}
+										}
+									}
+								}
+							}
+							if ((xi[0] == 0.0) && (xi[1] == 1.0))
+							{
+								boundary_xi[0] = 0.0;
+								boundary_xi[1] = 0.5;
+								boundary_xi[2] = 0.5;
+								if (FE_element_shape_find_face_number_for_xi(element->shape, boundary_xi,
+									&face_number) && (adjacent_FE_element(element, face_number, 
+									&number_of_neighbour_elements, &neighbour_elements)))
+								{
+									if (face_number == 0)
+									{
+										line_xi = (xi[1] - element->shape->face_to_element[4 * 0 + 2])
+											/ element->shape->face_to_element[4 * 0 + 3];
+									}
+									else if (face_number == 1)
+									{
+										line_xi = (xi[1] - element->shape->face_to_element[4 * 1 + 2])
+											/ element->shape->face_to_element[4 * 1 + 3];
+									}
+									else if (face_number == 2)
+									{
+										line_xi = (xi[0] - element->shape->face_to_element[4 * 2 + 0])
+											/ element->shape->face_to_element[4 * 2 + 1];
+									}
+									else if (face_number == 3)
+									{
+										line_xi = (xi[0] - element->shape->face_to_element[4 * 3 + 0])
+											/ element->shape->face_to_element[4 * 3 + 1];
+									}
+									for (i = 0 ; i < number_of_neighbour_elements ; i++)
+									{
+										if (1 >= NUMBER_IN_LIST(FE_element_parent)(
+											(neighbour_elements[i])->parent_list))
+										{
+											/* Exterior */
+											new_xi[0] = 1.0;
+											new_xi[1] = 1.0;
+											new_xi[2] = 0.5;
+											if (element->faces[face_number] == neighbour_elements[i]->faces[0])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[1])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[2])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[3])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 3] * line_xi;
+											}
+											if(Computed_field_evaluate_in_element(coordinate_field,
+												neighbour_elements[i], new_xi,
+												(struct FE_element *)NULL,new_coordinates,new_derivative_xi))
+											{
+												(*normal)[0]+=new_derivative_xi[2]*new_derivative_xi[5]-
+													new_derivative_xi[3]*new_derivative_xi[4];
+												(*normal)[1]+=new_derivative_xi[4]*new_derivative_xi[1]-
+													new_derivative_xi[5]*new_derivative_xi[0];
+												(*normal)[2]+=new_derivative_xi[0]*new_derivative_xi[3]-
+													new_derivative_xi[1]*new_derivative_xi[2];
+												normal_count++;
+											}
+											keep_element = neighbour_elements[i];
+										}
+									}
+									DEALLOCATE(neighbour_elements);
+								}
+								if (keep_element)
+								{
+								boundary_xi[0] = 0.5;
+								boundary_xi[1] = 1.0;
+								boundary_xi[2] = 0.5;
+								if (FE_element_shape_find_face_number_for_xi(keep_element->shape, boundary_xi,
+									&face_number) && (adjacent_FE_element(keep_element, face_number, 
+									&number_of_neighbour_elements, &neighbour_elements)))
+								{
+									if (face_number == 0)
+									{
+										line_xi = (new_xi[1] - keep_element->shape->face_to_element[4 * 0 + 2])
+											/ keep_element->shape->face_to_element[4 * 0 + 3];
+									}
+									else if (face_number == 1)
+									{
+										line_xi = (new_xi[1] - keep_element->shape->face_to_element[4 * 1 + 2])
+											/ keep_element->shape->face_to_element[4 * 1 + 3];
+									}
+									else if (face_number == 2)
+									{
+										line_xi = (new_xi[0] - keep_element->shape->face_to_element[4 * 2 + 0])
+											/ keep_element->shape->face_to_element[4 * 2 + 1];
+									}
+									else if (face_number == 3)
+									{
+										line_xi = (new_xi[0] - keep_element->shape->face_to_element[4 * 3 + 0])
+											/ keep_element->shape->face_to_element[4 * 3 + 1];
+									}
+									for (i = 0 ; i < number_of_neighbour_elements ; i++)
+									{
+										if (1 >= NUMBER_IN_LIST(FE_element_parent)(
+											(neighbour_elements[i])->parent_list))
+										{
+											/* Exterior */
+											new_xi[0] = 1.0;
+											new_xi[1] = 0.0;
+											new_xi[2] = 0.5;
+											if (keep_element->faces[face_number] == neighbour_elements[i]->faces[0])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 3] * line_xi;
+											}
+											else if (keep_element->faces[face_number] == neighbour_elements[i]->faces[1])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 3] * line_xi;
+											}
+											else if (keep_element->faces[face_number] == neighbour_elements[i]->faces[2])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 3] * line_xi;
+											}
+											else if (keep_element->faces[face_number] == neighbour_elements[i]->faces[3])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 3] * line_xi;
+											}
+											if(Computed_field_evaluate_in_element(coordinate_field,
+												neighbour_elements[i], new_xi,
+												(struct FE_element *)NULL,new_coordinates,new_derivative_xi))
+											{
+												(*normal)[0]+=new_derivative_xi[2]*new_derivative_xi[5]-
+													new_derivative_xi[3]*new_derivative_xi[4];
+												(*normal)[1]+=new_derivative_xi[4]*new_derivative_xi[1]-
+													new_derivative_xi[5]*new_derivative_xi[0];
+												(*normal)[2]+=new_derivative_xi[0]*new_derivative_xi[3]-
+													new_derivative_xi[1]*new_derivative_xi[2];
+												normal_count++;
+											}
+										}
+									}
+								}
+								}
+								boundary_xi[0] = 0.5;
+								boundary_xi[1] = 1.0;
+								boundary_xi[2] = 0.5;
+								if (FE_element_shape_find_face_number_for_xi(element->shape, boundary_xi,
+									&face_number) && (adjacent_FE_element(element, face_number, 
+									&number_of_neighbour_elements, &neighbour_elements)))
+								{
+									if (face_number == 0)
+									{
+										line_xi = (xi[1] - element->shape->face_to_element[4 * 0 + 2])
+											/ element->shape->face_to_element[4 * 0 + 3];
+									}
+									else if (face_number == 1)
+									{
+										line_xi = (xi[1] - element->shape->face_to_element[4 * 1 + 2])
+											/ element->shape->face_to_element[4 * 1 + 3];
+									}
+									else if (face_number == 2)
+									{
+										line_xi = (xi[0] - element->shape->face_to_element[4 * 2 + 0])
+											/ element->shape->face_to_element[4 * 2 + 1];
+									}
+									else if (face_number == 3)
+									{
+										line_xi = (xi[0] - element->shape->face_to_element[4 * 3 + 0])
+											/ element->shape->face_to_element[4 * 3 + 1];
+									}
+									for (i = 0 ; i < number_of_neighbour_elements ; i++)
+									{
+										if (1 >= NUMBER_IN_LIST(FE_element_parent)(
+											(neighbour_elements[i])->parent_list))
+										{
+											/* Exterior */
+											new_xi[0] = 0.0;
+											new_xi[1] = 0.0;
+											new_xi[2] = 0.5;
+											if (element->faces[face_number] == neighbour_elements[i]->faces[0])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[1])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[2])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[3])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 3] * line_xi;
+											}
+											if(Computed_field_evaluate_in_element(coordinate_field,
+												neighbour_elements[i], new_xi,
+												(struct FE_element *)NULL,new_coordinates,new_derivative_xi))
+											{
+												(*normal)[0]+=new_derivative_xi[2]*new_derivative_xi[5]-
+													new_derivative_xi[3]*new_derivative_xi[4];
+												(*normal)[1]+=new_derivative_xi[4]*new_derivative_xi[1]-
+													new_derivative_xi[5]*new_derivative_xi[0];
+												(*normal)[2]+=new_derivative_xi[0]*new_derivative_xi[3]-
+													new_derivative_xi[1]*new_derivative_xi[2];
+												normal_count++;
+											}
+										}
+									}
+								}
+							}
+							if ((xi[0] == 1.0) && (xi[1] == 0.0))
+							{
+								boundary_xi[0] = 1.0;
+								boundary_xi[1] = 0.5;
+								boundary_xi[2] = 0.5;
+								if (FE_element_shape_find_face_number_for_xi(element->shape, boundary_xi,
+									&face_number) && (adjacent_FE_element(element, face_number, 
+									&number_of_neighbour_elements, &neighbour_elements)))
+								{
+									if (face_number == 0)
+									{
+										line_xi = (xi[1] - element->shape->face_to_element[4 * 0 + 2])
+											/ element->shape->face_to_element[4 * 0 + 3];
+									}
+									else if (face_number == 1)
+									{
+										line_xi = (xi[1] - element->shape->face_to_element[4 * 1 + 2])
+											/ element->shape->face_to_element[4 * 1 + 3];
+									}
+									else if (face_number == 2)
+									{
+										line_xi = (xi[0] - element->shape->face_to_element[4 * 2 + 0])
+											/ element->shape->face_to_element[4 * 2 + 1];
+									}
+									else if (face_number == 3)
+									{
+										line_xi = (xi[0] - element->shape->face_to_element[4 * 3 + 0])
+											/ element->shape->face_to_element[4 * 3 + 1];
+									}
+									for (i = 0 ; i < number_of_neighbour_elements ; i++)
+									{
+										if (1 >= NUMBER_IN_LIST(FE_element_parent)(
+											(neighbour_elements[i])->parent_list))
+										{
+											/* Exterior */
+											new_xi[0] = 0.0;
+											new_xi[1] = 0.0;
+											new_xi[2] = 0.5;
+											if (element->faces[face_number] == neighbour_elements[i]->faces[0])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[1])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[2])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[3])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 3] * line_xi;
+											}
+											if(Computed_field_evaluate_in_element(coordinate_field,
+												neighbour_elements[i], new_xi,
+												(struct FE_element *)NULL,new_coordinates,new_derivative_xi))
+											{
+												(*normal)[0]+=new_derivative_xi[2]*new_derivative_xi[5]-
+													new_derivative_xi[3]*new_derivative_xi[4];
+												(*normal)[1]+=new_derivative_xi[4]*new_derivative_xi[1]-
+													new_derivative_xi[5]*new_derivative_xi[0];
+												(*normal)[2]+=new_derivative_xi[0]*new_derivative_xi[3]-
+													new_derivative_xi[1]*new_derivative_xi[2];
+												normal_count++;
+											}
+											keep_element = neighbour_elements[i];
+										}
+									}
+									DEALLOCATE(neighbour_elements);
+								}
+								if (keep_element)
+								{
+								boundary_xi[0] = 0.5;
+								boundary_xi[1] = 0.0;
+								boundary_xi[2] = 0.5;
+								if (FE_element_shape_find_face_number_for_xi(keep_element->shape, boundary_xi,
+									&face_number) && (adjacent_FE_element(keep_element, face_number, 
+									&number_of_neighbour_elements, &neighbour_elements)))
+								{
+									if (face_number == 0)
+									{
+										line_xi = (new_xi[1] - keep_element->shape->face_to_element[4 * 0 + 2])
+											/ keep_element->shape->face_to_element[4 * 0 + 3];
+									}
+									else if (face_number == 1)
+									{
+										line_xi = (new_xi[1] - keep_element->shape->face_to_element[4 * 1 + 2])
+											/ keep_element->shape->face_to_element[4 * 1 + 3];
+									}
+									else if (face_number == 2)
+									{
+										line_xi = (new_xi[0] - keep_element->shape->face_to_element[4 * 2 + 0])
+											/ keep_element->shape->face_to_element[4 * 2 + 1];
+									}
+									else if (face_number == 3)
+									{
+										line_xi = (new_xi[0] - keep_element->shape->face_to_element[4 * 3 + 0])
+											/ keep_element->shape->face_to_element[4 * 3 + 1];
+									}
+									for (i = 0 ; i < number_of_neighbour_elements ; i++)
+									{
+										if (1 >= NUMBER_IN_LIST(FE_element_parent)(
+											(neighbour_elements[i])->parent_list))
+										{
+											/* Exterior */
+											new_xi[0] = 0.0;
+											new_xi[1] = 1.0;
+											new_xi[2] = 0.5;
+											if (keep_element->faces[face_number] == neighbour_elements[i]->faces[0])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 3] * line_xi;
+											}
+											else if (keep_element->faces[face_number] == neighbour_elements[i]->faces[1])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 3] * line_xi;
+											}
+											else if (keep_element->faces[face_number] == neighbour_elements[i]->faces[2])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 3] * line_xi;
+											}
+											else if (keep_element->faces[face_number] == neighbour_elements[i]->faces[3])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 3] * line_xi;
+											}
+											if(Computed_field_evaluate_in_element(coordinate_field,
+												neighbour_elements[i], new_xi,
+												(struct FE_element *)NULL,new_coordinates,new_derivative_xi))
+											{
+												(*normal)[0]+=new_derivative_xi[2]*new_derivative_xi[5]-
+													new_derivative_xi[3]*new_derivative_xi[4];
+												(*normal)[1]+=new_derivative_xi[4]*new_derivative_xi[1]-
+													new_derivative_xi[5]*new_derivative_xi[0];
+												(*normal)[2]+=new_derivative_xi[0]*new_derivative_xi[3]-
+													new_derivative_xi[1]*new_derivative_xi[2];
+												normal_count++;
+											}
+										}
+									}
+								}
+								}
+								boundary_xi[0] = 0.5;
+								boundary_xi[1] = 0.0;
+								boundary_xi[2] = 0.5;
+								if (FE_element_shape_find_face_number_for_xi(element->shape, boundary_xi,
+									&face_number) && (adjacent_FE_element(element, face_number, 
+									&number_of_neighbour_elements, &neighbour_elements)))
+								{
+									if (face_number == 0)
+									{
+										line_xi = (xi[1] - element->shape->face_to_element[4 * 0 + 2])
+											/ element->shape->face_to_element[4 * 0 + 3];
+									}
+									else if (face_number == 1)
+									{
+										line_xi = (xi[1] - element->shape->face_to_element[4 * 1 + 2])
+											/ element->shape->face_to_element[4 * 1 + 3];
+									}
+									else if (face_number == 2)
+									{
+										line_xi = (xi[0] - element->shape->face_to_element[4 * 2 + 0])
+											/ element->shape->face_to_element[4 * 2 + 1];
+									}
+									else if (face_number == 3)
+									{
+										line_xi = (xi[0] - element->shape->face_to_element[4 * 3 + 0])
+											/ element->shape->face_to_element[4 * 3 + 1];
+									}
+									for (i = 0 ; i < number_of_neighbour_elements ; i++)
+									{
+										if (1 >= NUMBER_IN_LIST(FE_element_parent)(
+											(neighbour_elements[i])->parent_list))
+										{
+											/* Exterior */
+											new_xi[0] = 1.0;
+											new_xi[1] = 1.0;
+											new_xi[2] = 0.5;
+											if (element->faces[face_number] == neighbour_elements[i]->faces[0])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[1])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[2])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[3])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 3] * line_xi;
+											}
+											if(Computed_field_evaluate_in_element(coordinate_field,
+												neighbour_elements[i], new_xi,
+												(struct FE_element *)NULL,new_coordinates,new_derivative_xi))
+											{
+												(*normal)[0]+=new_derivative_xi[2]*new_derivative_xi[5]-
+													new_derivative_xi[3]*new_derivative_xi[4];
+												(*normal)[1]+=new_derivative_xi[4]*new_derivative_xi[1]-
+													new_derivative_xi[5]*new_derivative_xi[0];
+												(*normal)[2]+=new_derivative_xi[0]*new_derivative_xi[3]-
+													new_derivative_xi[1]*new_derivative_xi[2];
+												normal_count++;
+											}
+										}
+									}
+								}
+							}
+							if ((xi[0] == 1.0) && (xi[1] == 1.0))
+							{
+								boundary_xi[0] = 1.0;
+								boundary_xi[1] = 0.5;
+								boundary_xi[2] = 0.5;
+								if (FE_element_shape_find_face_number_for_xi(element->shape, boundary_xi,
+									&face_number) && (adjacent_FE_element(element, face_number, 
+									&number_of_neighbour_elements, &neighbour_elements)))
+								{
+									if (face_number == 0)
+									{
+										line_xi = (xi[1] - element->shape->face_to_element[4 * 0 + 2])
+											/ element->shape->face_to_element[4 * 0 + 3];
+									}
+									else if (face_number == 1)
+									{
+										line_xi = (xi[1] - element->shape->face_to_element[4 * 1 + 2])
+											/ element->shape->face_to_element[4 * 1 + 3];
+									}
+									else if (face_number == 2)
+									{
+										line_xi = (xi[0] - element->shape->face_to_element[4 * 2 + 0])
+											/ element->shape->face_to_element[4 * 2 + 1];
+									}
+									else if (face_number == 3)
+									{
+										line_xi = (xi[0] - element->shape->face_to_element[4 * 3 + 0])
+											/ element->shape->face_to_element[4 * 3 + 1];
+									}
+									for (i = 0 ; i < number_of_neighbour_elements ; i++)
+									{
+										if (1 >= NUMBER_IN_LIST(FE_element_parent)(
+											(neighbour_elements[i])->parent_list))
+										{
+											/* Exterior */
+											new_xi[0] = 0.0;
+											new_xi[1] = 1.0;
+											new_xi[2] = 0.5;
+											if (element->faces[face_number] == neighbour_elements[i]->faces[0])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[1])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[2])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[3])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 3] * line_xi;
+											}
+											if(Computed_field_evaluate_in_element(coordinate_field,
+												neighbour_elements[i], new_xi,
+												(struct FE_element *)NULL,new_coordinates,new_derivative_xi))
+											{
+												(*normal)[0]+=new_derivative_xi[2]*new_derivative_xi[5]-
+													new_derivative_xi[3]*new_derivative_xi[4];
+												(*normal)[1]+=new_derivative_xi[4]*new_derivative_xi[1]-
+													new_derivative_xi[5]*new_derivative_xi[0];
+												(*normal)[2]+=new_derivative_xi[0]*new_derivative_xi[3]-
+													new_derivative_xi[1]*new_derivative_xi[2];
+												normal_count++;
+											}
+											keep_element = neighbour_elements[i];
+										}
+									}
+									DEALLOCATE(neighbour_elements);
+								}
+								if (keep_element)
+								{
+								boundary_xi[0] = 0.5;
+								boundary_xi[1] = 1.0;
+								boundary_xi[2] = 0.5;
+								if (FE_element_shape_find_face_number_for_xi(keep_element->shape, boundary_xi,
+									&face_number) && (adjacent_FE_element(keep_element, face_number, 
+									&number_of_neighbour_elements, &neighbour_elements)))
+								{
+									if (face_number == 0)
+									{
+										line_xi = (new_xi[1] - keep_element->shape->face_to_element[4 * 0 + 2])
+											/ keep_element->shape->face_to_element[4 * 0 + 3];
+									}
+									else if (face_number == 1)
+									{
+										line_xi = (new_xi[1] - keep_element->shape->face_to_element[4 * 1 + 2])
+											/ keep_element->shape->face_to_element[4 * 1 + 3];
+									}
+									else if (face_number == 2)
+									{
+										line_xi = (new_xi[0] - keep_element->shape->face_to_element[4 * 2 + 0])
+											/ keep_element->shape->face_to_element[4 * 2 + 1];
+									}
+									else if (face_number == 3)
+									{
+										line_xi = (new_xi[0] - keep_element->shape->face_to_element[4 * 3 + 0])
+											/ keep_element->shape->face_to_element[4 * 3 + 1];
+									}
+									for (i = 0 ; i < number_of_neighbour_elements ; i++)
+									{
+										if (1 >= NUMBER_IN_LIST(FE_element_parent)(
+											(neighbour_elements[i])->parent_list))
+										{
+											/* Exterior */
+											new_xi[0] = 0.0;
+											new_xi[1] = 0.0;
+											new_xi[2] = 0.5;
+											if (keep_element->faces[face_number] == neighbour_elements[i]->faces[0])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 3] * line_xi;
+											}
+											else if (keep_element->faces[face_number] == neighbour_elements[i]->faces[1])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 3] * line_xi;
+											}
+											else if (keep_element->faces[face_number] == neighbour_elements[i]->faces[2])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 3] * line_xi;
+											}
+											else if (keep_element->faces[face_number] == neighbour_elements[i]->faces[3])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 3] * line_xi;
+											}
+											if(Computed_field_evaluate_in_element(coordinate_field,
+												neighbour_elements[i], new_xi,
+												(struct FE_element *)NULL,new_coordinates,new_derivative_xi))
+											{
+												(*normal)[0]+=new_derivative_xi[2]*new_derivative_xi[5]-
+													new_derivative_xi[3]*new_derivative_xi[4];
+												(*normal)[1]+=new_derivative_xi[4]*new_derivative_xi[1]-
+													new_derivative_xi[5]*new_derivative_xi[0];
+												(*normal)[2]+=new_derivative_xi[0]*new_derivative_xi[3]-
+													new_derivative_xi[1]*new_derivative_xi[2];
+												normal_count++;
+											}
+										}
+									}
+								}
+								}
+								boundary_xi[0] = 0.5;
+								boundary_xi[1] = 1.0;
+								boundary_xi[2] = 0.5;
+								if (FE_element_shape_find_face_number_for_xi(element->shape, boundary_xi,
+									&face_number) && (adjacent_FE_element(element, face_number, 
+									&number_of_neighbour_elements, &neighbour_elements)))
+								{
+									if (face_number == 0)
+									{
+										line_xi = (xi[1] - element->shape->face_to_element[4 * 0 + 2])
+											/ element->shape->face_to_element[4 * 0 + 3];
+									}
+									else if (face_number == 1)
+									{
+										line_xi = (xi[1] - element->shape->face_to_element[4 * 1 + 2])
+											/ element->shape->face_to_element[4 * 1 + 3];
+									}
+									else if (face_number == 2)
+									{
+										line_xi = (xi[0] - element->shape->face_to_element[4 * 2 + 0])
+											/ element->shape->face_to_element[4 * 2 + 1];
+									}
+									else if (face_number == 3)
+									{
+										line_xi = (xi[0] - element->shape->face_to_element[4 * 3 + 0])
+											/ element->shape->face_to_element[4 * 3 + 1];
+									}
+									for (i = 0 ; i < number_of_neighbour_elements ; i++)
+									{
+										if (1 >= NUMBER_IN_LIST(FE_element_parent)(
+											(neighbour_elements[i])->parent_list))
+										{
+											/* Exterior */
+											new_xi[0] = 1.0;
+											new_xi[1] = 0.0;
+											new_xi[2] = 0.5;
+											if (element->faces[face_number] == neighbour_elements[i]->faces[0])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 0 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 0 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[1])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 1 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 1 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[2])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 2 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 2 + 3] * line_xi;
+											}
+											else if (element->faces[face_number] == neighbour_elements[i]->faces[3])
+											{
+												new_xi[0] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 0] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 1] * line_xi;
+												new_xi[1] = neighbour_elements[i]->shape->face_to_element[4 * 3 + 2] +
+													neighbour_elements[i]->shape->face_to_element[4 * 3 + 3] * line_xi;
+											}
+											if(Computed_field_evaluate_in_element(coordinate_field,
+												neighbour_elements[i], new_xi,
+												(struct FE_element *)NULL,new_coordinates,new_derivative_xi))
+											{
+												(*normal)[0]+=new_derivative_xi[2]*new_derivative_xi[5]-
+													new_derivative_xi[3]*new_derivative_xi[4];
+												(*normal)[1]+=new_derivative_xi[4]*new_derivative_xi[1]-
+													new_derivative_xi[5]*new_derivative_xi[0];
+												(*normal)[2]+=new_derivative_xi[0]*new_derivative_xi[3]-
+													new_derivative_xi[1]*new_derivative_xi[2];
+												normal_count++;
+											}
+										}
+									}
+								}
+							}
+							(*normal)[0] /= (FE_value)normal_count;
+							(*normal)[1] /= (FE_value)normal_count;
+							(*normal)[2] /= (FE_value)normal_count;
+						}
+#endif /* defined (SHANES_HACK) */
 					}
 					normal++;
 					if (data_field)

@@ -83,6 +83,18 @@ What happens to a texture when the texture coordinates are outside [0,1].
 	TEXTURE_WRAP_MODE_INVALID
 }; /* enum Texture_wrap_mode */
 
+enum Texture_row_order 
+/*******************************************************************************
+LAST MODIFIED : 4 May 2001
+
+DESCRIPTION :
+==============================================================================*/
+{
+	TEXTURE_TOP_TO_BOTTOM,
+	TEXTURE_BOTTOM_TO_TOP,
+	TEXTURE_ROW_ORDER_INVALID
+}; /* enum Texture_row_order */
+
 struct Texture;
 /*******************************************************************************
 LAST MODIFIED : 12 February 1998
@@ -325,7 +337,7 @@ Sets the texture filter: linear or nearest.
 
 int Texture_set_image(struct Texture *texture,unsigned long *image,
 	enum Texture_storage_type storage,int number_of_bytes_per_component,
-	int image_width,int image_height,
+	int image_width,int image_height, enum Texture_row_order row_order,
 	char *image_file_name,int	crop_left_margin,int crop_bottom_margin,
 	int crop_width,int crop_height,int perform_crop);
 /*******************************************************************************
@@ -584,10 +596,14 @@ DESCRIPTION :
 Modifier function to set the texture from a command.
 ==============================================================================*/
 
+#if defined (IMAGEMAGICK)
+int Texture_write_to_file(struct Texture *texture, char *file_name);
+#else /* defined (IMAGEMAGICK) */
 int Texture_write_to_file(struct Texture *texture, char *file_name,
 	enum Image_file_format file_format, enum Image_orientation orientation);
+#endif /* defined (IMAGEMAGICK) */
 /*******************************************************************************
-LAST MODIFIED : 28 May 1999
+LAST MODIFIED : 10 may 2001
 
 DESCRIPTION :
 Writes the image stored in the texture to a file.

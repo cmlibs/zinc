@@ -3672,9 +3672,28 @@ mapping_window.
 		if (image=get_Drawing_2d_image(mapping->map_drawing))
 		{
 			/* write the file */
+#if defined (IMAGEMAGICK)
+			char *extended_filename;
+			if ((!strchr(file_name, ':'))&&
+				(ALLOCATE(extended_filename, char, strlen(file_name) + 6)))
+			{
+				sprintf(extended_filename, "sgi:%s", file_name);
+				return_code=write_image_file(extended_filename,/*components*/3,
+					/*bytes_per_component*/1,
+					mapping->map_drawing->height,mapping->map_drawing->width,0,image);
+				DEALLOCATE(extended_filename);
+			}
+			else
+			{
+				return_code=write_image_file(file_name,/*components*/3,
+					/*bytes_per_component*/1,
+					mapping->map_drawing->height,mapping->map_drawing->width,0,image);
+			}
+#else /* defined (IMAGEMAGICK) */
 			return_code=write_rgb_image_file(file_name,/*components*/3,
 				/*bytes_per_component*/1,
 				mapping->map_drawing->height,mapping->map_drawing->width,0,image);
+#endif /* defined (IMAGEMAGICK) */
 			DEALLOCATE(image);
 		}
 		else
@@ -3714,10 +3733,29 @@ mapping_window.
 		if (image=get_Drawing_2d_image(mapping->map_drawing))
 		{
 			/* write the file */
+#if defined (IMAGEMAGICK)
+			char *extended_filename;
+			if ((!strchr(file_name, ':'))&&
+				(ALLOCATE(extended_filename, char, strlen(file_name) + 6)))
+			{
+				sprintf(extended_filename, "tiff:%s", file_name);
+				return_code=write_image_file(extended_filename,/*components*/3,
+					/*bytes_per_component*/1,
+					mapping->map_drawing->height,mapping->map_drawing->width,0,image);
+				DEALLOCATE(extended_filename);
+			}
+			else
+			{
+				return_code=write_image_file(file_name,/*components*/3,
+					/*bytes_per_component*/1,
+					mapping->map_drawing->height,mapping->map_drawing->width,0,image);
+			}
+#else /* defined (IMAGEMAGICK) */
 			return_code=write_tiff_image_file(file_name,/*components*/3,
 				/*bytes_per_component*/1,
 				mapping->map_drawing->height,mapping->map_drawing->width,
 				0,TIFF_PACK_BITS_COMPRESSION,image);
+#endif /* defined (IMAGEMAGICK) */
 			DEALLOCATE(image);
 		}
 		else
