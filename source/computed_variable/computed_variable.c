@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_variable.c
 
-LAST MODIFIED : 16 February 2003
+LAST MODIFIED : 17 February 2003
 
 DESCRIPTION :
 Computed_variable's are expressions that are constructed for:
@@ -312,7 +312,7 @@ static START_COMPUTED_VARIABLE_GET_VALUE_TYPE_TYPE_SPECIFIC_FUNCTION(derivative)
 	{
 		if (type_1=CREATE(Computed_value)())
 		{
-			if (type_1=CREATE(Computed_value)())
+			if (type_2=CREATE(Computed_value)())
 			{
 				if (return_code=Computed_variable_get_value_type(data->variable,type_1))
 				{
@@ -391,7 +391,7 @@ static START_COMPUTED_VARIABLE_GET_VALUE_TYPE_TYPE_SPECIFIC_FUNCTION(derivative)
 			{
 				display_message(ERROR_MESSAGE,
 					"Computed_variable_derivative_get_value_type_type_specific.  "
-					"Could not create <type_1>");
+					"Could not create <type_2>");
 			}
 			DESTROY(Computed_value)(&type_1);
 		}
