@@ -12,6 +12,7 @@
 #include "computed_variable/function_matrix.hpp"
 #endif // defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
 
+#if defined (NOT_DEBUG)
 EXPORT template<>
 bool Function_matrix<Scalar>::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
@@ -50,3 +51,4 @@ bool Function_matrix<Scalar>::evaluate_derivative(Scalar& derivative,
 
 	return (result);
 }
+#endif // defined (NOT_DEBUG)
