@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : makegtobj.c
 
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Call graphics routines in the API.
@@ -22,7 +22,7 @@ Call graphics routines in the API.
 
 int makegtobject(gtObject *object,float time,int draw_selected)
 /*******************************************************************************
-LAST MODIFIED : 18 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Convert graphical object into API object.

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rendergl.c
 
-LAST MODIFIED : 20 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 GL rendering calls (API specific).
