@@ -1023,11 +1023,11 @@ because the initialize method is downward chained.
 						glXGetConfig(display,visual_info,GLX_STEREO, &stereo);
 						if (stereo)
 						{
-							(new->three_d_drawing).normal_buffer.stereo_mode=X3dSTEREO_BUFFERING;
+							(new->three_d_drawing).normal_buffer.stereo_buffering_mode=X3dSTEREO_BUFFERING;
 						}
 						else
 						{
-							(new->three_d_drawing).normal_buffer.stereo_mode=X3dMONO_BUFFERING;
+							(new->three_d_drawing).normal_buffer.stereo_buffering_mode=X3dMONO_BUFFERING;
 						}
 						glXGetConfig(display, visual_info, GLX_BUFFER_SIZE, &buffer_size);
 						(new->three_d_drawing).normal_buffer.colour_buffer_depth =
