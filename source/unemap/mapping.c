@@ -4188,22 +4188,18 @@ Sets the <time> of the time field.
 }/* map_set_electrode_colour_from_time */
 #endif /* (UNEMAP_USE_NODES) */
 
-#if defined (UNEMAP_USE_NODES)	
-#define SOCK_GLYPH_SIZE 5.0
-#define TORSO_GLYPH_SIZE 5.0
-#define PATCH_GLYPH_SIZE 0.2
+#if defined (UNEMAP_USE_NODES)
 int map_show_map_electrodes(struct Unemap_package *package,int map_number,
-	struct GT_object *glyph,FE_value time,struct Spectrum *spectrum)
+	struct GT_object *glyph,FE_value electrodes_marker_size,
+	FE_value time,struct Spectrum *spectrum)
 /*******************************************************************************
-LAST MODIFIED : l May 2000 
+LAST MODIFIED : 8 May 2000 
 
 DESCRIPTION :
 Construct the settings and build the graphics objects for the glyphs.
 ==============================================================================*/
 {
 	char *group_name;
-	enum Region_type region_type;	
-	float point_size;
 	int return_code,rig_node_group_number;
 	struct Computed_field *computed_coordinate_field,*label_field,
 		*orientation_scale_field;
@@ -4249,23 +4245,7 @@ Construct the settings and build the graphics objects for the glyphs.
 		(map_electrode_position_field=
 			get_unemap_package_map_electrode_position_field(package,map_number)))
 	{	
-		return_code=0;		
-		region_type=get_unemap_package_map_region_type(package,map_number);
-		switch(region_type)
-		{
-			case SOCK:
-			{	
-				point_size=SOCK_GLYPH_SIZE;
-			}break;
-			case TORSO:
-			{
-				point_size=TORSO_GLYPH_SIZE;
-			}break;
-			case PATCH:
-			{
-				point_size=PATCH_GLYPH_SIZE;
-			}break;				
-		}					
+		return_code=0;							
 		GET_NAME(GROUP(FE_node))(rig_node_group,&group_name);	 
 		rig_element_group=
 			FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
@@ -4292,9 +4272,9 @@ Construct the settings and build the graphics objects for the glyphs.
 					glyph_centre[0]=0.0;
 					glyph_centre[1]=0.0;
 					glyph_centre[2]=0.0;
-					glyph_size[0]=point_size;
-					glyph_size[1]=point_size;
-					glyph_size[2]=point_size;
+					glyph_size[0]=electrodes_marker_size;
+					glyph_size[1]=electrodes_marker_size;
+					glyph_size[2]=electrodes_marker_size;
 					orientation_scale_field=(struct Computed_field *)NULL;
 					glyph_scale_factors[0]=1.0;
 					glyph_scale_factors[1]=1.0;
@@ -4311,6 +4291,7 @@ Construct the settings and build the graphics objects for the glyphs.
 					/* add the settings to the group */
 					if (GT_element_group_add_settings(gt_element_group,settings,1))
 					{
+						set_unemap_package_map_electrode_size(package,electrodes_marker_size,map_number);
 						GT_element_group_build_graphics_objects(gt_element_group,
 							(struct FE_element *)NULL,(struct FE_node *)NULL);
 						return_code=1;
@@ -4336,8 +4317,7 @@ Construct the settings and build the graphics objects for the glyphs.
 	}
 	DEALLOCATE(group_name);	
 	LEAVE;
-	return (return_code
-);
+	return (return_code);
 } /* map_show_map_electrodes */
 #endif /* #if defined (UNEMAP_USE_NODES) */
 
@@ -4356,7 +4336,9 @@ referenced by <map_number>.
 	if(package&&(rig_node_group_number=
 		get_unemap_package_map_rig_node_group_number(package,map_number)))
 	{		
-		free_unemap_package_rig_node_group_glyphs(package,rig_node_group_number);
+		free_unemap_package_rig_node_group_glyphs(package,rig_node_group_number);	
+		set_unemap_package_map_electrode_glyph(package,(struct GT_object *)NULL,
+			map_number);/*!!jw*/
 	}
 	else
 	{
@@ -4371,56 +4353,34 @@ referenced by <map_number>.
 
 #if defined (UNEMAP_USE_NODES)
 static int map_draw_map_electrodes(struct Unemap_package *package,int map_number,
-	enum Electrodes_marker_type electrodes_marker_type,struct Spectrum *spectrum,
-	FE_value time)
+	enum Electrodes_marker_type electrodes_marker_type,FE_value electrodes_marker_size,
+	struct Spectrum *spectrum,FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 1 May 2000
+LAST MODIFIED : 9 May 2000
 
 DESCRIPTION :
 if necessary,create glyphs for the map electrodes, for each node in the 
 rig_node_group referenced by <map_number>. Glyph type taken from 
-<electrodes_marker_type> If <electrodes_marker_type> has changed, destroys 
-exisitng glyphs, and creates new ones.
+<electrodes_marker_type>
 ==============================================================================*/
 {
-	char *electrode_glyph_name;
 	int return_code;		
 	struct GT_object *electrode_glyph;	
 	
-	ENTER(map_draw_map_electrodes);	
- 	electrode_glyph=(struct GT_object *)NULL;	
-	electrode_glyph_name=(char *)NULL;
+	ENTER(map_draw_map_electrodes);	 
+	electrode_glyph=(struct GT_object *)NULL;
+	
 	if(package)
-	{		
-		if(electrode_glyph=get_unemap_package_map_electrode_glyph(package,map_number))
+	{	
+		/* get the glyph*/
+		if(!(electrode_glyph=get_unemap_package_map_electrode_glyph
+			(package,map_number)))
 		{
-			/* match the names to the marker types. Maybe store the marker types ??JW*/
-			/* see also map_show_map_electrodes */
-			GET_NAME(GT_object)(electrode_glyph,&electrode_glyph_name);			
-			if(((!strcmp(electrode_glyph_name,"cross"))&&
-				(electrodes_marker_type!=PLUS_ELECTRODE_MARKER))||
-				((!strcmp(electrode_glyph_name,"sphere"))&&
-					(electrodes_marker_type!=CIRCLE_ELECTRODE_MARKER))||
-				((!strcmp(electrode_glyph_name,"diamond"))&&
-					(electrodes_marker_type!=SQUARE_ELECTRODE_MARKER)))
-				/*Glyph type has changed */
-			{
-				/* remove old glyphs (and hence settings) */
-				map_remove_map_electrode_glyphs(package,map_number);
-				free_unemap_package_time_computed_fields(package);
-				/* get the new glyph*/
-				electrode_glyph=map_get_map_electrodes_glyph(package,map_number,
-					electrodes_marker_type);
-			}				
-		}
-		else
-		{	
-			/* get the new glyph*/
 			electrode_glyph=map_get_map_electrodes_glyph(package,map_number,
-					electrodes_marker_type);
+				electrodes_marker_type);	
 		}
-		map_show_map_electrodes(package,map_number,electrode_glyph,time,
-			spectrum);
+		map_show_map_electrodes(package,map_number,electrode_glyph,
+			electrodes_marker_size,time,spectrum);
 		map_update_electrode_colour_from_time(package,time);
 	}
 	else
@@ -4428,12 +4388,71 @@ exisitng glyphs, and creates new ones.
 		display_message(ERROR_MESSAGE,
 			"map_draw_map_electrodes.  Invalid argument(s)");
 		return_code=0;
-	}
-	DEALLOCATE(electrode_glyph_name);
+	}	
 	LEAVE;
 	return(return_code);
 }/* map_draw_map_electrodes */
 #endif /* #if defined (UNEMAP_USE_NODES) */
+
+#if defined (UNEMAP_USE_NODES)
+static int map_remove_map_electrodes_if_changed(struct Unemap_package *unemap_package,
+	int number_of_regions,enum Electrodes_marker_type electrodes_marker_type,
+	int electrodes_marker_size)
+/*******************************************************************************
+LAST MODIFIED : 9 May 2000
+
+DESCRIPTION :
+removes the maps elecrodes, if they've changed.
+==============================================================================*/
+{
+	char *electrode_glyph_name;
+	int region_number,return_code;
+	struct GT_object *electrode_glyph;
+
+	ENTER(map_draw_map_electrodes);	
+ 	electrode_glyph=(struct GT_object *)NULL;	
+	electrode_glyph_name=(char *)NULL;
+	if(unemap_package)
+	{
+		return_code=1;
+		/* must remove all maps electrodes at once, as they all us the same */
+		/* time computed field. Therefore detect if the first map's electrode*/
+		/* exists and has changed. If it has, change remove the lot.*/
+		region_number=0;
+		if(electrode_glyph=get_unemap_package_map_electrode_glyph
+			(unemap_package,region_number))
+		{			
+			/* match the names to the marker types. Maybe store the marker types ??JW*/		
+			GET_NAME(GT_object)(electrode_glyph,&electrode_glyph_name);	
+			/*Glyph type has changed */		
+			if((((!strcmp(electrode_glyph_name,"cross"))&&
+				(electrodes_marker_type!=PLUS_ELECTRODE_MARKER))||
+				((!strcmp(electrode_glyph_name,"sphere"))&&
+					(electrodes_marker_type!=CIRCLE_ELECTRODE_MARKER))||
+				((!strcmp(electrode_glyph_name,"diamond"))&&
+					(electrodes_marker_type!=SQUARE_ELECTRODE_MARKER)))||
+				/* electrode size changed*/
+				(electrodes_marker_size!=
+					get_unemap_package_map_electrode_size(unemap_package,region_number)))
+			{	
+				for (region_number=0;region_number<number_of_regions;region_number++)
+				{
+					map_remove_map_electrode_glyphs(unemap_package,region_number);
+				}
+				free_unemap_package_time_computed_fields(unemap_package);
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"map_remove_map_electrodes_if_changed.  Invalid argument(s)");
+		return_code=0;
+	} 	
+	LEAVE;
+	return(return_code);
+}/* map_remove_map_electrodes_if_changed */
+#endif /* UNEMAP_USE_NODES */
 
 #if defined (UNEMAP_USE_NODES)
 int new_draw_map(struct Map *map)
@@ -4593,8 +4612,9 @@ This function draws the <map> in as a 3D CMGUI scene.
 						/* BICUBIC map range comes from the fitted surface, but NOT the signals(electrodes) */
 						{		
 							/* remove the electrode glyphs, so only get range from surface(s)*/
-							/* electrodes added below. Also need to remove the time computed fields */
-							/* used by the glyphs*/
+							/* electrodes added below. Tjis is a little inefficient, as must then */
+							/* re-add electrodes. Also need to remove the time computed fields */
+							/* used by the glyphs */
 							for (region_number=0;region_number<number_of_regions;region_number++)
 							{
 								map_remove_map_electrode_glyphs(unemap_package,region_number);
@@ -4638,12 +4658,14 @@ This function draws the <map> in as a 3D CMGUI scene.
 							return_code=0;
 						}				
 					}				
+					map_remove_map_electrodes_if_changed(unemap_package,number_of_regions,
+						map->electrodes_marker_type,map->electrodes_marker_size);
 					/*re loop through regions and and draw electrodes, now we have the spectrum */
 					for (region_number=0;region_number<number_of_regions;region_number++)
 					{
 						map_draw_map_electrodes(unemap_package,region_number,
-							map->electrodes_marker_type,spectrum,time);
-					}										
+							map->electrodes_marker_type,map->electrodes_marker_size,spectrum,time);
+					}									
 					/* First time the scene's viewed  do "view_all"*/
 					if(!get_unemap_package_viewed_scene(unemap_package))
 					{	

@@ -11429,54 +11429,62 @@ range, but doesn't correspond exactly to an array element, interpolates to deter
 				/* rounding error. This avoids unnecessarily long search from end of array */
 				while(!done)
 				{	
-					get_FE_field_time_FE_value(field,array_index,&this_time);
-
-					if(this_time>=time)
-					{ 
-						index_high=array_index;
-						/* get adjacent array element*/
-						get_FE_field_time_FE_value(field,array_index-1,&time_low);
-						/* are we between elements?*/
-						if(time_low<time)
-						{			
-							index_low=array_index-1;
-							return_code=1;
-							done=1;
-						}	
-						else
-						{
-							time_low=0;
-						}
-					}
-					else /* (this_time<time) */
+					if(get_FE_field_time_FE_value(field,array_index,&this_time))
 					{
-						index_low=array_index;
-						get_FE_field_time_FE_value(field,array_index+1,&time_high);
-						if(time_high>time)
-						{		
-							index_high=array_index+1;
-							return_code=1;
-							done=1;
+						if(this_time>=time)
+						{ 
+							index_high=array_index;
+							/* get adjacent array element*/
+							get_FE_field_time_FE_value(field,array_index-1,&time_low);
+							/* are we between elements?*/
+							if(time_low<time)
+							{			
+								index_low=array_index-1;
+								return_code=1;
+								done=1;
+							}	
+							else
+							{
+								time_low=0;
+							}
+						}
+						else /* (this_time<time) */
+						{
+							index_low=array_index;
+							get_FE_field_time_FE_value(field,array_index+1,&time_high);
+							if(time_high>time)
+							{		
+								index_high=array_index+1;
+								return_code=1;
+								done=1;
+							}	
+							else
+							{
+								time_high=0;
+							}
 						}	
-						else
-						{
-							time_high=0;
-						}
-					}	
-					if(!done)
-					{	
-						step=(index_high-index_low)/2;	
-						/* No exact match, can't subdivide further, must do interpolation.*/
-						if(step==0)												
+						if(!done)
 						{	
-							done=1;	
-							return_code=1;														
-						}
-						else
-						{
-							array_index=index_low+step;
-						}
-					}/* if(!done)	*/
+							step=(index_high-index_low)/2;	
+							/* No exact match, can't subdivide further, must do interpolation.*/
+							if(step==0)												
+							{	
+								done=1;	
+								return_code=1;														
+							}
+							else
+							{
+								array_index=index_low+step;
+							}
+						
+						}/* if(!done)	*/
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"get_FE_nodal_FE_value_array_value_at_FE_value_time."
+							" time out of range");
+					}
 				}	/* while(!done)	*/
 				/* index_low and index_high should now be adjacent */
 				if(!time_low)
@@ -11568,56 +11576,63 @@ range, but doesn't correspond exactly to an array element, interpolates to deter
 				/* rounding error. This avoids unnecessarily long search from end of array */
 				while(!done)
 				{	
-					get_FE_field_time_FE_value(field,array_index,&this_time);
-
-					if(this_time>=time)
-					{ 
-						index_high=array_index;
-						/* get adjacent array element*/
-						get_FE_field_time_FE_value(field,array_index-1,&time_low);
-						/* are we between elements?*/
-						if(time_low<time)
-						{			
-							index_low=array_index-1;
-							return_code=1;
-							done=1;
-						}	
-						else
-						{
-							time_low=0;
-						}
-					}
-					else /* (this_time<time) */
+					if(get_FE_field_time_FE_value(field,array_index,&this_time))
 					{
-						index_low=array_index;
-						get_FE_field_time_FE_value(field,array_index+1,&time_high);
-						if(time_high>time)
-						{		
-							index_high=array_index+1;
-							return_code=1;
-							done=1;
+						if(this_time>=time)
+						{ 
+							index_high=array_index;
+							/* get adjacent array element*/
+							get_FE_field_time_FE_value(field,array_index-1,&time_low);
+							/* are we between elements?*/
+							if(time_low<time)
+							{			
+								index_low=array_index-1;
+								return_code=1;
+								done=1;
+							}	
+							else
+							{
+								time_low=0;
+							}
+						}
+						else /* (this_time<time) */
+						{
+							index_low=array_index;
+							get_FE_field_time_FE_value(field,array_index+1,&time_high);
+							if(time_high>time)
+							{		
+								index_high=array_index+1;
+								return_code=1;
+								done=1;
+							}	
+							else
+							{
+								time_high=0;
+							}
 						}	
-						else
-						{
-							time_high=0;
-						}
-					}	
-					if(!done)
-					{	
-						step=(index_high-index_low)/2;	
-						/* No exact match, can't subdivide further, must do interpolation.*/
-						if(step==0)												
+						if(!done)
 						{	
-							done=1;	
-							return_code=1;														
-						}
-						else
-						{
-							array_index=index_low+step;
-						}
-					}/* if(!done)	*/
+							step=(index_high-index_low)/2;	
+							/* No exact match, can't subdivide further, must do interpolation.*/
+							if(step==0)												
+							{	
+								done=1;	
+								return_code=1;														
+							}
+							else
+							{
+								array_index=index_low+step;
+							}
+						}/* if(!done)	*/
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"get_FE_nodal_short_array_value_at_FE_value_time."
+							" time out of range");
+					}
 				}	/* while(!done)	*/
-				/* index_loe and index_high should now be adjacent */
+				/* index_low and index_high should now be adjacent */
 				if(!time_low)
 				{
 					get_FE_field_time_FE_value(field,index_low,&time_low);

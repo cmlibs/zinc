@@ -232,6 +232,28 @@ Set (and get) with map_number 0,1,2... (an array), but package->number_of_maps
 is 1,2,3...
 ==============================================================================*/
 
+FE_value get_unemap_package_map_electrode_size(struct Unemap_package *package,
+	int map_number);
+/*******************************************************************************
+LAST MODIFIED : 8 May 2000
+
+DESCRIPTION :
+gets the map_electrode_size for map_info <map_number> in <package>.
+get (and set) with map_number 0,1,2... (an array), but package->number_of_maps
+is 1,2,3... i.e 
+==============================================================================*/
+
+int set_unemap_package_map_electrode_size(struct Unemap_package *package,
+	FE_value electrode_size,int map_number);
+/*******************************************************************************
+LAST MODIFIED : 8 May 2000
+
+DESCRIPTION :
+Sets the electrode_size  for map_info <map_number> in <package>.
+Set (and get) with map_number 0,1,2... (an array), but package->number_of_maps
+is 1,2,3...
+==============================================================================*/
+
 struct FE_field *get_unemap_package_device_name_field(
 	struct Unemap_package *package);
 /*******************************************************************************

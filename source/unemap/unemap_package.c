@@ -24,24 +24,24 @@ Contains function definitions for unemap package.
 struct Map_info	
 /* Info about the last map. Has it's own structure as we can have more than one */
 /* per unemap_package, i.e more than one per map_scene.*/
-{
-	int number_of_map_rows;
-	int number_of_map_columns;
-	int rig_node_group_number;/* the corresponding rig_node_group in unmap_package */
-	enum Region_type region_type;
+{	
 	char *fit_name;
-	struct FE_node_order_info *node_order_info;
-	struct FE_field *map_position_field,*map_fit_field;
-	struct GROUP(FE_node) *node_group;
+	enum Region_type region_type;	
+	FE_value electrode_size;
+	int access_count,number_of_map_columns,number_of_map_rows;	
+	int rig_node_group_number;/* the corresponding rig_node_group in unmap_package */
+	struct FE_field *map_position_field,*map_fit_field;	
+	struct FE_node_order_info *node_order_info;	
 	struct GROUP(FE_element) *element_group;
-	struct MANAGER(FE_field) *fe_field_manager;
-	struct MANAGER(GROUP(FE_element))	*element_group_manager;
-	struct MANAGER(FE_node) *node_manager;
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager; 
-	struct MANAGER(FE_element) *element_manager;
-	struct MANAGER(Computed_field) *computed_field_manager;
+	struct GROUP(FE_node) *node_group;		
 	struct GT_object *electrode_glyph;
-	int access_count;
+	struct MANAGER(Computed_field) *computed_field_manager;
+	struct MANAGER(FE_element) *element_manager;
+	struct MANAGER(FE_field) *fe_field_manager;
+	struct MANAGER(FE_node) *node_manager;
+	struct MANAGER(GROUP(FE_element))	*element_group_manager;	
+	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager;  
+
 };
 
 static struct Map_info *CREATE(Map_info)(	int number_of_map_rows,
@@ -94,7 +94,8 @@ Create and  and set it's components
 				map_info->element_manager=element_manager;
 				map_info->computed_field_manager=computed_field_manager;
 				map_info->electrode_glyph=(struct GT_object *)NULL;
-				map_info->access_count=0;
+				map_info->electrode_size=0;
+				map_info->access_count=0.0;
 			}
 			else
 			{
@@ -801,7 +802,7 @@ is 1,2,3... i.e
 int set_unemap_package_map_electrode_glyph(struct Unemap_package *package,
 	struct GT_object *electrode_glyph,int map_number)
 /*******************************************************************************
-LAST MODIFIED : October 21 1999
+LAST MODIFIED : 9 May 2000
 
 DESCRIPTION :
 Sets the electrode_glyph  for map_info <map_number> in <package>.
@@ -812,7 +813,7 @@ is 1,2,3...
 	int return_code;
 
 	ENTER(set_unemap_package_map_electrode_glyph);
-	if(package&&electrode_glyph&&(map_number>-1)&&
+	if(package&&(map_number>-1)&&
 		(map_number<package->number_of_maps))
 	{		
 		return_code =1;
@@ -829,6 +830,73 @@ is 1,2,3...
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_map_electrode_glyph */
+
+
+FE_value get_unemap_package_map_electrode_size(struct Unemap_package *package,
+	int map_number)
+/*******************************************************************************
+LAST MODIFIED : 8 May 2000
+
+DESCRIPTION :
+gets the map_electrode_size for map_info <map_number> in <package>.
+get (and set) with map_number 0,1,2... (an array), but package->number_of_maps
+is 1,2,3... i.e 
+==============================================================================*/
+{
+	FE_value electrode_size;
+
+	ENTER(get_unemap_package_map_electrode_size);
+	if((package)&&(map_number>-1)&&(map_number<=package->number_of_maps))	
+	{
+		if(package->number_of_maps==map_number)
+		{			
+			/* No map_info,map_electrode_size */	
+			electrode_size=0;		
+		}
+		else
+		{
+			electrode_size=package->maps_info[map_number]->electrode_size;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_unemap_package_map_electrode_size."
+			" invalid arguments");
+		electrode_size=0;
+	}
+	LEAVE;
+	return (electrode_size);	
+} /* get_unemap_package_map_electrode_size */
+
+int set_unemap_package_map_electrode_size(struct Unemap_package *package,
+	FE_value electrode_size,int map_number)
+/*******************************************************************************
+LAST MODIFIED : 8 May 2000
+
+DESCRIPTION :
+Sets the electrode_size  for map_info <map_number> in <package>.
+Set (and get) with map_number 0,1,2... (an array), but package->number_of_maps
+is 1,2,3...
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_unemap_package_map_electrode_size);
+	if(package&&electrode_size&&(map_number>-1)&&
+		(map_number<package->number_of_maps))
+	{		
+		return_code =1;
+		package->maps_info[map_number]->electrode_size=electrode_size;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_unemap_package_map_electrode_size ."
+			" invalid arguments");
+		return_code =0;
+	}
+	LEAVE;
+	return (return_code);
+} /* set_unemap_package_map_electrode_size */
 
 struct FE_field *get_unemap_package_device_name_field(
 	struct Unemap_package *package)
@@ -2581,12 +2649,18 @@ Frees up any glyphs used by the nodes in the rig_node_group
 					gt_element_group,GT_element_settings_type_matches,
 					(void *)GT_ELEMENT_SETTINGS_NODE_POINTS)))
 				{
-					return_code=GT_element_group_remove_settings(gt_element_group,settings);
-
+					if(!(return_code=GT_element_group_remove_settings(gt_element_group,settings)))
+					{
+						display_message(ERROR_MESSAGE,
+							"free_unemap_package_rig_node_group_glyphs. couldn't remove settings");
+					}
 				}
 			}
 			else
 			{
+				display_message(ERROR_MESSAGE,
+					"free_unemap_package_rig_node_group_glyphs. rig_element_group/gt_element_group"
+						"not found");
 				return_code=0;
 			}
 		}
