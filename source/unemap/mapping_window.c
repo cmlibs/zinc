@@ -1853,6 +1853,89 @@ the mapping_area of the <mapping_window>.
 } /* Mapping_window_make_drawing_area_2d */
 
 #if defined (UNEMAP_USE_3D)
+static int Mapping_window_set_interactive_tool(
+	struct Mapping_window *mapping_window,
+	struct Interactive_tool *interactive_tool)
+/*******************************************************************************
+LAST MODIFIED : 4 September 2000
+
+DESCRIPTION :
+Sets the <interactive_tool> in use in the <mapping_window>. Updates the
+toolbar to match the selection.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Mapping_window_set_interactive_tool);
+	if (mapping_window)
+	{
+		if (interactive_toolbar_widget_set_current_interactive_tool(
+			mapping_window->interactive_toolbar_widget,interactive_tool))
+		{
+			mapping_window->interactive_tool=interactive_tool;
+			if (interactive_tool == mapping_window->transform_tool)
+			{				
+				Scene_viewer_set_input_mode(mapping_window->scene_viewer,
+					SCENE_VIEWER_TRANSFORM);			
+				interactive_tool=mapping_window->transform_tool;
+			}
+			else
+			{
+				Scene_viewer_set_input_mode(mapping_window->scene_viewer,
+					SCENE_VIEWER_SELECT);			
+			}		
+			Scene_viewer_set_interactive_tool(mapping_window->scene_viewer,
+				interactive_tool);		
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Mapping_window_set_interactive_tool.  Could not update toolbar");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Mapping_window_set_interactive_tool.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Mapping_window_set_interactive_tool */
+#endif /*  defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+static void Mapping_window_update_interactive_tool(Widget widget,
+	void *mapping_window_void,void *interactive_tool_void)
+/*******************************************************************************
+LAST MODIFIED : 4 September 2000
+
+DESCRIPTION :
+Called when a new tool is chosen in the interactive_toolbar_widget.
+==============================================================================*/
+{
+	struct Mapping_window *mapping_window;
+
+	ENTER(Mapping_window_update_interactive_tool);
+	USE_PARAMETER(widget);
+	if (mapping_window=(struct Mapping_window *)mapping_window_void)
+	{
+		Mapping_window_set_interactive_tool(mapping_window,
+			(struct Interactive_tool *)interactive_tool_void);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Mapping_window_update_interactive_tool.  Invalid argument(s)");
+	}
+	LEAVE;
+} /* Mapping_window_update_interactive_tool */
+#endif /*  defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
 static int Mapping_window_make_drawing_area_3d(struct Mapping_window *mapping_window)
 /*******************************************************************************
 LAST MODIFIED : 17 July 2000
@@ -1891,6 +1974,8 @@ the mapping_area of the <mapping_window>.
 					get_map_drawing_information_user_interface(drawing_information));
 			set_map_drawing_information_scene_viewer(drawing_information,
 				mapping_window->scene_viewer);
+			Mapping_window_set_interactive_tool(mapping_window,
+				mapping_window->interactive_tool);
 		}
 		set_map_drawing_information_viewed_scene(drawing_information,0);
 		XtManageChild(mapping_window->mapping_area_3d);
@@ -3957,91 +4042,6 @@ the mapping_window.
 
 	return (return_code);
 } /* write_map_animation_tiff_file */
-
-#if defined (UNEMAP_USE_3D)
-static int Mapping_window_set_interactive_tool(
-	struct Mapping_window *mapping_window,
-	struct Interactive_tool *interactive_tool)
-/*******************************************************************************
-LAST MODIFIED : 4 September 2000
-
-DESCRIPTION :
-Sets the <interactive_tool> in use in the <mapping_window>. Updates the
-toolbar to match the selection.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Mapping_window_set_interactive_tool);
-	if (mapping_window)
-	{
-		if (interactive_toolbar_widget_set_current_interactive_tool(
-			mapping_window->interactive_toolbar_widget,interactive_tool))
-		{
-			mapping_window->interactive_tool=interactive_tool;
-			if (interactive_tool == mapping_window->transform_tool)
-			{				
-				Scene_viewer_set_input_mode(mapping_window->scene_viewer,
-					SCENE_VIEWER_TRANSFORM);
-				/* transform_tool is just a placeholder for transform mode so pass
-					 NULL to the scene_viewers */
-				interactive_tool=(struct Interactive_tool *)NULL;
-			}
-			else
-			{
-				Scene_viewer_set_input_mode(mapping_window->scene_viewer,
-					SCENE_VIEWER_SELECT);			
-			}		
-			Scene_viewer_set_interactive_tool(mapping_window->scene_viewer,
-				interactive_tool);		
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Mapping_window_set_interactive_tool.  Could not update toolbar");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Mapping_window_set_interactive_tool.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Mapping_window_set_interactive_tool */
-#endif /*  defined (UNEMAP_USE_3D) */
-
-#if defined (UNEMAP_USE_3D)
-static void Mapping_window_update_interactive_tool(Widget widget,
-	void *mapping_window_void,void *interactive_tool_void)
-/*******************************************************************************
-LAST MODIFIED : 4 September 2000
-
-DESCRIPTION :
-Called when a new tool is chosen in the interactive_toolbar_widget.
-==============================================================================*/
-{
-	struct Mapping_window *mapping_window;
-
-	ENTER(Mapping_window_update_interactive_tool);
-	USE_PARAMETER(widget);
-	if (mapping_window=(struct Mapping_window *)mapping_window_void)
-	{
-		Mapping_window_set_interactive_tool(mapping_window,
-			(struct Interactive_tool *)interactive_tool_void);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Mapping_window_update_interactive_tool.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Mapping_window_update_interactive_tool */
-#endif /*  defined (UNEMAP_USE_3D) */
 
 static struct Mapping_window *create_Mapping_window(
 	struct Mapping_window **address,char *open,
