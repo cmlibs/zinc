@@ -2962,8 +2962,22 @@ does not wait for cm commands to complete, otherwise it does.
 				{
 					DEALLOCATE(return_struct->name);
 					DEALLOCATE(return_struct);
-					display_message(ERROR_MESSAGE,"CREATE(CMISS_connection).  %s",
-						"Could not create wormholes");
+					if (mycm_flag)
+					{
+						display_message(ERROR_MESSAGE,"CREATE(CMISS_connection).  "
+							"  Could not connect.");
+						display_message(ERROR_MESSAGE,"Check that %s is a valid cm executable"
+							" or specify a different executable in your Cmgui file.",
+							mycm_executable);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"CREATE(CMISS_connection).  "
+							"  Could not connect.");
+						display_message(ERROR_MESSAGE,"Check that %s is a valid cm executable"
+							" or specify a different executable in your Cmgui file.",
+							cm_executable);
+					}
 				}
 				DEALLOCATE(local_machine_name);
 			}
