@@ -1549,6 +1549,7 @@ already) and allows its contents to be modified.
 				DEALLOCATE(maximums);
 			}
 		}
+		DEALLOCATE(results.tokens);
 	}
 	else
 	{
