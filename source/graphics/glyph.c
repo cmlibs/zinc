@@ -343,7 +343,7 @@ The length and width of the arrow heads are specified by the final parameters.
 	int j;
 	struct Colour colour;
 	struct Graphical_material *material;
-	struct GT_object *glyph,*arrow2,*arrow3,*labels_object;
+	struct GT_object *glyph,*arrow2,*arrow3,*labels_object,*last_object;
 	struct GT_pointset *pointset;
 	struct GT_polyline *polyline;
 	Triple *points,*vertex;
@@ -351,6 +351,7 @@ The length and width of the arrow heads are specified by the final parameters.
 	ENTER(make_glyph_axes);
 	if (name)
 	{
+		last_object = (struct GT_object *)NULL;
 		if (make_solid)
 		{
 			if (ALLOCATE(glyph_name, char, strlen(name) + 8))
@@ -364,6 +365,7 @@ The length and width of the arrow heads are specified by the final parameters.
 				colour.blue = 0;
 				Graphical_material_set_diffuse(material, &colour);
 				set_GT_object_default_material(glyph, material);
+				last_object = glyph;
 
 				sprintf(glyph_name, "%s_arrow2", name);
 				arrow2 = make_glyph_arrow_solid(glyph_name, /*primary_axis*/2,
@@ -375,7 +377,8 @@ The length and width of the arrow heads are specified by the final parameters.
 				colour.blue = 0;
 				Graphical_material_set_diffuse(material, &colour);
 				set_GT_object_default_material(arrow2, material);
-				glyph->nextobject=ACCESS(GT_object)(arrow2);
+				last_object->nextobject=ACCESS(GT_object)(arrow2);
+				last_object = arrow2;
 
 				sprintf(glyph_name, "%s_arrow3", name);
 				arrow3 = make_glyph_arrow_solid(glyph_name, /*primary_axis*/3,
@@ -387,7 +390,8 @@ The length and width of the arrow heads are specified by the final parameters.
 				colour.blue = 1;
 				Graphical_material_set_diffuse(material, &colour);
 				set_GT_object_default_material(arrow3, material);
-				arrow2->nextobject=ACCESS(GT_object)(arrow3);
+				last_object->nextobject=ACCESS(GT_object)(arrow3);
+				last_object = arrow3;
 				
 				DEALLOCATE(glyph_name);
 			}
@@ -455,6 +459,7 @@ The length and width of the arrow heads are specified by the final parameters.
 							(struct Graphical_material *)NULL))
 					{
 						GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline);
+						last_object = glyph;
 					}
 				}
 				else
@@ -493,7 +498,8 @@ The length and width of the arrow heads are specified by the final parameters.
 						(struct Graphical_material *)NULL))
 					{
 						GT_OBJECT_ADD(GT_pointset)(labels_object,/*time*/0.0,pointset);
-						glyph->nextobject=ACCESS(GT_object)(labels_object);
+						last_object->nextobject = ACCESS(GT_object)(labels_object);
+						last_object = labels_object;
 					}
 				}
 				else
