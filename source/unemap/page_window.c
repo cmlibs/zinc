@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 10 April 2000
+LAST MODIFIED : 16 May 2000
 
 DESCRIPTION :
 
@@ -70,7 +70,7 @@ Module types
 */
 struct Page_window
 /*******************************************************************************
-LAST MODIFIED : 27 September 1999
+LAST MODIFIED : 16 May 2000
 
 DESCRIPTION :
 The page window object.
@@ -184,7 +184,7 @@ The page window object.
 #endif /* defined (WINDOWS) */
 	char *calibration_directory;
 	enum UNEMAP_hardware_version unemap_hardware_version;
-	float display_maximum,display_minimum,sampling_frequency,
+	float display_maximum,display_minimum,initial_gain,sampling_frequency,
 		*scrolling_coefficients,signal_maximum,signal_minimum;
 	int data_saved,display_device_number,hardware_initialized,
 		number_of_scrolling_channels,number_of_stimulators,pointer_sensitivity,
@@ -201,7 +201,7 @@ The page window object.
 typedef struct
 {
 	char *calibration_directory;
-	float sampling_frequency;
+	float initial_gain,sampling_frequency;
 	int number_of_samples;
 #if defined (MOTIF)
 	Pixel background_colour,foreground_colour;
@@ -1954,9 +1954,57 @@ Writes the minimum for the current channel into the minimum field.
 	return (return_code);
 } /* show_display_minimum */
 
+static int page_window_set_gain(struct Page_window *page_window,
+	int channel_number,float gain)
+/*******************************************************************************
+LAST MODIFIED : 16 May 2000
+
+DESCRIPTION :
+A simplified/specialized version of unemap_set_gain.
+==============================================================================*/
+{
+	float post_filter_gain,pre_filter_gain;
+	int return_code;
+
+	ENTER(page_window_set_gain);
+	return_code=0;
+	if (page_window)
+	{
+		switch (page_window->unemap_hardware_version)
+		{
+			case UnEmap_1V2:
+			{
+				pre_filter_gain=(float)1;
+			} break;
+			case UnEmap_2V1:
+			case UnEmap_2V2:
+			{
+				/*???DB.  For UNEMAP_2V1 and UNEMAP_2V2 */
+				pre_filter_gain=gain/(float)11;
+				if (pre_filter_gain>(float)8)
+				{
+					pre_filter_gain=(float)8;
+				}
+			} break;
+		}
+		post_filter_gain=gain/pre_filter_gain;
+		return_code=unemap_set_gain(channel_number,pre_filter_gain,
+			post_filter_gain);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"page_window_set_gain.  Missing page_window");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* page_window_set_gain */
+
 static int update_display_gain(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 13 September 1999
+LAST MODIFIED : 16 May 2000
 
 DESCRIPTION :
 Reads the string in the gain field of the <page_window> and updates the
@@ -1994,26 +2042,7 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 #endif /* defined (WINDOWS) */
 				if (1==sscanf(working_string,"%f",&temp))
 				{
-					switch (page_window->unemap_hardware_version)
-					{
-						case UnEmap_1V2:
-						{
-							pre_filter_gain=(float)1;
-						} break;
-						case UnEmap_2V1:
-						case UnEmap_2V2:
-						{
-							/*???DB.  For UNEMAP_2V1 and UNEMAP_2V2 */
-							pre_filter_gain=temp/(float)11;
-							if (pre_filter_gain>(float)8)
-							{
-								pre_filter_gain=(float)8;
-							}
-						} break;
-					}
-					post_filter_gain=temp/pre_filter_gain;
-					unemap_set_gain(channel_number,pre_filter_gain,
-						post_filter_gain);
+					page_window_set_gain(page_window,channel_number,temp);
 					unemap_get_gain(channel_number,&pre_filter_gain,
 						&post_filter_gain);
 					if (gain!=pre_filter_gain*post_filter_gain)
@@ -3615,7 +3644,7 @@ Assumes that the calibration file is normalized.
 
 static int start_experiment(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 20 September 1999
+LAST MODIFIED : 16 May 2000
 
 DESCRIPTION :
 Called to start experiment on the <page_window>.
@@ -3847,6 +3876,7 @@ Called to start experiment on the <page_window>.
 				{
 					if (!(page_window->hardware_initialized))
 					{
+						page_window_set_gain(page_window,0,page_window->initial_gain);
 						/* initialize the hardware */
 #if defined (MIRADA)
 						/* start the interrupting */
@@ -6691,6 +6721,8 @@ the created page window.  If unsuccessful, NULL is returned.
 #define XmCCalibrationDirectory "CalibrationDirectory"
 #define XmNdrawingBackgroundColour "drawingBackgroundColour"
 #define XmCDrawingBackgroundColour "DrawingBackgroundColour"
+#define XmNinitialGain "initialGain"
+#define XmCInitialGain "InitialGain"
 #define XmNnumberOfSamples "numberOfSamples"
 #define XmCNumberOfSamples "NumberOfSamples"
 #define XmNsamplingFrequencyHz "samplingFrequencyHz"
@@ -6724,6 +6756,15 @@ the created page window.  If unsuccessful, NULL is returned.
 			XtOffsetOf(Page_window_settings,background_colour),
 			XmRString,
 			"lightgray"
+		},
+		{
+			XmNinitialGain,
+			XmCInitialGain,
+			XmRFloat,
+			sizeof(float),
+			XtOffsetOf(Page_window_settings,initial_gain),
+			XmRString,
+			"1"
 		},
 		{
 			XmNnumberOfSamples,
@@ -6926,6 +6967,7 @@ the created page window.  If unsuccessful, NULL is returned.
 					FILE_FLAG_DELETE_ON_CLOSE,0);
 				page_window->device_driver=device_driver;
 				settings.sampling_frequency=(float)1000.;
+				settings.initial_gain=(float)1.;
 				if (INVALID_HANDLE_VALUE!=device_driver)
 				{
 					if (PCI_SUCCESSFUL!=get_mirada_information(device_driver,
@@ -6962,6 +7004,7 @@ the created page window.  If unsuccessful, NULL is returned.
 #if defined (WINDOWS)
 				settings.number_of_samples=5000;
 				settings.sampling_frequency=(float)5000.;
+				settings.initial_gain=(float)1.;
 				if (hardware_directory=getenv("UNEMAP_HARDWARE"))
 				{
 					if (ALLOCATE(settings_file_name,char,strlen(hardware_directory)+13))
@@ -6998,6 +7041,10 @@ the created page window.  If unsuccessful, NULL is returned.
 							if (1==fscanf(settings_file," sampling_frequency = %f ",
 								&(settings.sampling_frequency)))
 							{
+								if (1==fscanf(settings_file," initial_gain = %f ",
+									&(settings.initial_gain)))
+								{
+								}
 							}
 						}
 						fclose(settings_file);
@@ -7013,6 +7060,7 @@ the created page window.  If unsuccessful, NULL is returned.
 #endif /* defined (MIRADA) */
 				page_window->number_of_samples=settings.number_of_samples;
 				page_window->sampling_frequency=settings.sampling_frequency;
+				page_window->initial_gain=settings.initial_gain;
 				page_window->display_maximum=(float)1;
 				page_window->display_minimum=(float)-1;
 				if (*rig_address)
