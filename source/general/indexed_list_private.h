@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : indexed_list_private.h
 
-LAST MODIFIED : 24 September 1999
+LAST MODIFIED : 29 August 2000
 
 DESCRIPTION :
 Macros for declaring indexed list types and declaring indexed list functions.
@@ -52,7 +52,7 @@ A node in the index set for the object_type list.  The maximum \
 ============================================================================*/ \
 { \
 	int number_of_indices; \
-	/* break point indices (accesed through objects) */ \
+	/* break point indices (accessed through objects) */ \
 	struct object_type **indices; \
 	/* the parent node */ \
 	struct INDEX_NODE(object_type) *parent; \
@@ -444,117 +444,6 @@ Removes an <object> from the <index>. \
 	return (return_code); \
 } /* REMOVE_OBJECT_FROM_INDEX(object_type) */
 
-#if defined (OLD_CODE)
-#define DECLARE_REMOVE_OBJECT_FROM_INDEX_FUNCTION( object_type , identifier, \
-	compare_function ) \
-static int REMOVE_OBJECT_FROM_INDEX(object_type)(struct object_type *object, \
-	struct INDEX_NODE(object_type) **index) \
-/***************************************************************************** \
-LAST MODIFIED : 21 July 1996 \
-\
-DESCRIPTION : \
-Removes an <object> from the <index>. \
-============================================================================*/ \
-{ \
-	int i,return_code; \
-	struct INDEX_NODE(object_type) **child,*node; \
-	struct object_type **node_index; \
-\
-	ENTER(REMOVE_OBJECT_FROM_INDEX(object_type)); \
-	/* find the leaf node that may contain the object */ \
-	node=FIND_LEAF_NODE_IN_INDEX(object_type)(object->identifier,*index); \
-	/* find the object within the node */ \
-	node_index=node->indices; \
-	i=node->number_of_indices; \
-	while ((i>0)&&(0<compare_function(object->identifier, \
-		(*node_index)->identifier))) \
-	{ \
-		i--; \
-		node_index++; \
-	} \
-	if ((i>0)&&(object== *node_index)) \
-	{ \
-		/* remove the object */ \
-		if (1==node->number_of_indices) \
-		{ \
-			if (node->parent) \
-			{ \
-				node=node->parent; \
-				while ((node->parent)&&(0==node->number_of_indices)) \
-				{ \
-					node=node->parent; \
-				} \
-				node_index=node->indices; \
-				i=node->number_of_indices; \
-				while ((i>0)&&(0<compare_function(object->identifier, \
-					(*node_index)->identifier))) \
-				{ \
-					i--; \
-					node_index++; \
-				} \
-			} \
-		} \
-		/* more than one object in list */ \
-		if (child=node->children) \
-		{ \
-			/* not a leaf node */ \
-			if (0==node->number_of_indices) \
-			{ \
-				/* last object in the list */ \
-				DESTROY_INDEX_NODE(object_type)(index); \
-			} \
-			else \
-			{ \
-				child += (node->number_of_indices)-i; \
-				(node->number_of_indices)--; \
-				i--; \
-				DESTROY_INDEX_NODE(object_type)(child); \
-				while (i>0) \
-				{ \
-					*node_index= *(node_index+1); \
-					node_index++; \
-					*child= *(child+1); \
-					child++; \
-					i--; \
-				} \
-				*child= *(child+1); \
-			} \
-		} \
-		else \
-		{ \
-			/* a leaf node */ \
-			if (1==node->number_of_indices) \
-			{ \
-				/* last object in the list */ \
-				DESTROY_INDEX_NODE(object_type)(index); \
-			} \
-			else \
-			{ \
-				DEACCESS(object_type)(node_index); \
-				(node->number_of_indices)--; \
-				i--; \
-				while (i>0) \
-				{ \
-					*node_index= *(node_index+1); \
-					node_index++; \
-					i--; \
-				} \
-			} \
-		} \
-		return_code=1; \
-	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"REMOVE_OBJECT_FROM_INDEX(" #object_type ").  Could not find object"); \
-		return_code=0; \
-	} \
-	LEAVE; \
-\
-	return (return_code); \
-} /* REMOVE_OBJECT_FROM_INDEX(object_type) */
-#endif /* defined (OLD_CODE) */
-
 #if defined (FULL_NAMES)
 #define REMOVE_OBJECTS_FROM_INDEX_THAT( object_type ) \
 	index_remove_objects_that_ ## object_type
@@ -567,14 +456,14 @@ int REMOVE_OBJECTS_FROM_INDEX_THAT(object_type)( \
 	LIST_CONDITIONAL_FUNCTION(object_type) *conditional,void *user_data, \
 	struct INDEX_NODE(object_type) **index_address) \
 /***************************************************************************** \
-LAST MODIFIED : 26 November 1996 \
+LAST MODIFIED : 29 August 2000 \
 \
 DESCRIPTION : \
 Removes each object that <iterator> returns true for. \
 ============================================================================*/ \
 { \
 	int i,j,count; \
-	struct INDEX_NODE(object_type) *index; \
+	struct INDEX_NODE(object_type) *child,*index; \
 \
 	ENTER(REMOVE_OBJECTS_FROM_INDEX_THAT(object_type)); \
 	count=0; \
@@ -615,6 +504,9 @@ Removes each object that <iterator> returns true for. \
 					if (0==index->number_of_indices) \
 					{ \
 						/* one child - chain from parent */ \
+						/* first give it its parents parent */ \
+						index->children[0]->parent=index->parent; \
+						/* now chain from parent */ \
 						*index_address=index->children[0]; \
 						/* ensure the destroy does not chain */ \
 						index->number_of_indices--; \
@@ -629,8 +521,14 @@ Removes each object that <iterator> returns true for. \
 						{ \
 							if ((conditional)(index->indices[i],user_data)) \
 							{ \
-								index->indices[i]=(((index->children)[i])->indices)[ \
-									(((index->children)[i])->number_of_indices)-1]; \
+								/* find the last object in the child */ \
+								child=(index->children)[i]; \
+								while (child->children) \
+								{ \
+									child=(child->children)[child->number_of_indices]; \
+								} \
+								index->indices[i]= \
+									(child->indices)[(child->number_of_indices)-1]; \
 							} \
 						} \
 					} \
