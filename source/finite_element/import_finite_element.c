@@ -328,7 +328,7 @@ is in the root_region itself. The REGION_PATH must end in
 			{
 				location = IO_stream_get_location_string(input_file);
 				display_message(ERROR_MESSAGE,
-					"Cmiss region does not contain a finite element region.  %s");
+					"Cmiss region does not contain a finite element region.  %s", location);
 				DEALLOCATE(location);
 				return_code = 0;
 			}
@@ -976,7 +976,7 @@ the <field_order_info>.
 										{
 											location = IO_stream_get_location_string(input_file);
 											display_message(ERROR_MESSAGE,
-												"read_FE_field_values.  Error setting string.  %s");
+												"read_FE_field_values.  Error setting string.  %s", location);
 											DEALLOCATE(location);
 											return_code = 0;
 										}
@@ -3226,7 +3226,7 @@ in a grid field.
 							{
 								location = IO_stream_get_location_string(input_file);
 								display_message(WARNING_MESSAGE, 
-									"Truncated read of required \" Nodes:\" token in element file.  %s");
+									"Truncated read of required \" Nodes:\" token in element file.  %s", location);
 								DEALLOCATE(location);
 							}
 							for (i = 0; (i < number_of_nodes) && return_code; i++)
