@@ -397,7 +397,7 @@ Perform a neigborhood averaging operation on the image cache.
 			}
 			for (k = 0; k <image->depth; k++)
 			{
-			        max_diff[k] = 0.00001;
+			        max_diff[k] = 0.0;
 			}
 			data_index = (FE_value *)image->data;
 			result_index = (FE_value *)storage;
@@ -441,8 +441,8 @@ Perform a neigborhood averaging operation on the image cache.
 					}
 					local_diff = sqrt(local_diff);
 					local_diff /= (FE_value)kernel_size;
-				         /* result_index[k] = local_diff; */
-					result_index[k] = local_mean * (1.0 - local_diff);
+				        result_index[k] = local_diff;
+					/* result_index[k] = local_mean * (1.0 - local_diff); */
 					/* max_diff[k] = my_Max(max_diff[k], local_diff); */
 					max_diff[k] = my_Max(max_diff[k], result_index[k]);
 				}
@@ -455,7 +455,14 @@ Perform a neigborhood averaging operation on the image cache.
 			        result_index -= image->depth;
 				for (k = 0; k < image->depth; k++)
 				{
-				        result_index[k] /= max_diff[k];
+				        if (max_diff[k] == 0.0)
+					{
+					        result_index[k] = 0.0;
+					}
+					else
+					{
+				                result_index[k] /= max_diff[k];
+					}
 				}
 			}
 			if (return_code)
