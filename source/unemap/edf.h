@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : edf.h
 
-LAST MODIFIED : 2 October 2001
+LAST MODIFIED : 11 December 2001
 
 DESCRIPTION :
 Functions for reading EDF (European Data Format) data files, as output by the
@@ -32,18 +32,20 @@ Biosemi rig.
 Global functions
 ----------------
 */
-int read_edf_file(char *file_name,struct Rig **rig_pointer,
+int read_bdf_or_edf_file(char *file_name,struct Rig **rig_pointer,
 	struct User_interface *user_interface
 #if defined (UNEMAP_USE_3D)
-	,struct Unemap_package *unemap_package
+			,struct Unemap_package *unemap_package
 #endif /* defined (UNEMAP_USE_NODES)*/
-);
+				,int bdf);
 /*******************************************************************************
-LAST MODIFIED : 18 March 2001
+LAST MODIFIED : 11 December 2001
 
 DESCRIPTION :
-Reads the signal data from an EDF file and creates a rig with a default
-configuration (electrode information is not available).
+Reads the signal data from a BDF or EDF file specified by <file_name> and 
+creates a rig with it in <rig_pointer>.
+Optionally reads in a config file, or create a defalut one.
+<bdf> is a flag, 0=edf, 1=bdf.
 ==============================================================================*/
 
 #endif /* #if !defined (EDF_H) */

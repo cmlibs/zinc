@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.h
 
-LAST MODIFIED : 2 October 2001
+LAST MODIFIED : 11 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -46,7 +46,7 @@ The menu associated with the map button.
 
 struct Analysis_file_menu
 /*******************************************************************************
-LAST MODIFIED : 2 October 2001
+LAST MODIFIED : 11 December 2001
 
 DESCRIPTION :
 The menu associated with the file button.
@@ -54,6 +54,7 @@ The menu associated with the file button.
 {
 	Widget read_signals_button;
 	Widget read_edf_button;
+	Widget read_bdf_button;
 	Widget overlay_signals_button;
 	Widget save_interval_button;
 	Widget save_interval_as_button;

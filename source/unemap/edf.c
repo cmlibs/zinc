@@ -1,11 +1,16 @@
 /*******************************************************************************
 FILE : edf.c
 
-LAST MODIFIED : 23 October 2001
+LAST MODIFIED :11 December 2001
 
 DESCRIPTION :
-Functions for reading EDF (European Data Format) data files, as output by the
-Biosemi rig.
+Functions for reading EDF (European Data Format) and BDF (Biosemi Data Format)
+data files, as output by the Biosemi rig.
+BDF files are similar EDF files, but with the following changes: 
+-The data is stored as 24 bit integers rather than as 16 bit integers as in EDFs.
+-The version information in the header record (the first 8 bytes) must contain
+255, then the string "BIOSEMI".
+
 ==============================================================================*/
 #include "unemap/edf.h"
 
@@ -258,6 +263,7 @@ Prints the passed struct EDF_header_record
 		printf("number_of_records: %d \n",edf_header_record->number_of_records); 
 		printf("sampling_duration: %f \n",edf_header_record->record_duration);
 		printf("number_of_signals: %d\n",edf_header_record->number_of_signals);
+		printf("\n\n");
 		for(i=0;i<edf_header_record->number_of_signals;i++)
 		{	
 			printf("Signal number: %d\n",i);
@@ -267,7 +273,7 @@ Prints the passed struct EDF_header_record
 			printf("\n"); 
 			printf("transducer type:");
 			string_ptr=edf_header_record->edf_device[i].transducer_type;
-			printf(string_ptr);
+			printf(string_ptr);		
 			printf("\n"); 
 			printf("physical dimension:"); 
 			string_ptr=edf_header_record->edf_device[i].physical_dim;
@@ -279,11 +285,13 @@ Prints the passed struct EDF_header_record
 			printf("digital maximum: %d\n",edf_header_record->edf_device[i].digital_max);
 			printf("prefiltering: "); 
 			string_ptr=edf_header_record->edf_device[i].prefiltering;
-			printf(string_ptr);
-			printf("\n");	
+			printf(string_ptr);	
+			printf("\n");		
 			printf("number_of_samples: %d\n",
 				edf_header_record->edf_device[i].number_of_samples);
+			printf("\n");	
 		}
+		printf("End of Header\n");	
 	}
 	else
 	{
@@ -734,20 +742,22 @@ CNFG file.
 	return(return_code);
 }/* make_default_edf_rig */
 
-static struct EDF_header_record *read_edf_header_record(FILE *edf_file)
+static struct EDF_header_record *read_bdf_or_edf_header_record(
+	FILE *bdf_or_edf_file,int bdf)
 /*******************************************************************************
-LAST MODIFIED : 11 October 2001
+LAST MODIFIED : 11 December 2001
 
 DESCRIPTION :
-creates an EDF_header_record and reads in the edf header record in <edf_file> 
-into it.
+creates an EDF_header_record and reads in the bdf or edf header record in 
+<bdf_or_edf_file> into it.
 When we return (if successful!) we'll be positioned at the beginning of the 
-data record in <edf_file>.
+data record in <bdf_or_edf_file>.
+<bdf> is a flag, 0=edf, 1=bdf.
 DOESN'T read in any of the data record!
 ==============================================================================*/
 {
 	
-	char string[9],string2[81],*string_ptr,version[9],local_patient_id[81],
+	char *biostr,string[9],string2[81],*string_ptr,version[9],local_patient_id[81],
 		local_recording_id[81],recording_start_time[9],recording_start_date[9];
 	int i,number_of_signals,success,bytes_in_header,number_of_records;
 	float record_duration;
@@ -755,15 +765,41 @@ DOESN'T read in any of the data record!
 
 	ENTER(read_edf_header_record);
 	string_ptr=(char *)NULL;
+	biostr=(char *)NULL;
 	edf_header_record=(struct EDF_header_record *)NULL;
-	if(edf_file)
+	if(bdf_or_edf_file)
 	{
 		success=1;		
 		/*Read in the header record*/
 		/*version*/
-		if(8==fread(version,sizeof(char),8,edf_file))
-		{
-			version[8]='\0';		
+		if(8==fread(version,sizeof(char),8,bdf_or_edf_file))
+		{			
+			version[8]='\0';
+			if(bdf)
+			{
+				/*must have 255 then "BIOSEMI"*/
+				if((unsigned char)(version[0])==255)
+				{					
+					biostr=&(version[1]);
+					if(!strcmp(biostr,"BIOSEMI"))
+					{
+						success=1;
+					}
+					else
+					{
+						success=0;
+					}				
+				}
+				else
+				{
+					success=0;
+				}
+			}
+			else
+			{
+				/*edf, contents of version[] unimportant*/
+				success=1;
+			}
 		}
 		else
 		{
@@ -772,7 +808,7 @@ DOESN'T read in any of the data record!
 		/*local patient id */
 		if(success)
 		{
-			if(80==fread(local_patient_id,sizeof(char),80,edf_file))
+			if(80==fread(local_patient_id,sizeof(char),80,bdf_or_edf_file))
 			{
 				local_patient_id[80]='\0';			
 			}
@@ -785,7 +821,7 @@ DOESN'T read in any of the data record!
 		/*local recording id */
 		if(success)
 		{
-			if(80==fread(local_recording_id,sizeof(char),80,edf_file))
+			if(80==fread(local_recording_id,sizeof(char),80,bdf_or_edf_file))
 			{
 				local_recording_id[80]='\0';					
 			}
@@ -797,7 +833,7 @@ DOESN'T read in any of the data record!
 		/*start date of recording*/
 		if(success)
 		{
-			if(8==fread(recording_start_date,sizeof(char),8,edf_file))
+			if(8==fread(recording_start_date,sizeof(char),8,bdf_or_edf_file))
 			{
 				recording_start_date[8]='\0';						
 			}
@@ -809,7 +845,7 @@ DOESN'T read in any of the data record!
 		/*start time of recording*/
 		if(success)
 		{
-			if(8==fread(recording_start_time,sizeof(char),8,edf_file))
+			if(8==fread(recording_start_time,sizeof(char),8,bdf_or_edf_file))
 			{
 				recording_start_time[8]='\0';					
 			}
@@ -821,7 +857,7 @@ DOESN'T read in any of the data record!
 		/*num bytes in header record */
 		if(success)
 		{
-			if(8==fread(string,sizeof(char),8,edf_file))
+			if(8==fread(string,sizeof(char),8,bdf_or_edf_file))
 			{
 				string[8]='\0';
 				sscanf(string,"%d",&bytes_in_header);						
@@ -834,7 +870,7 @@ DOESN'T read in any of the data record!
 		/*44 bytes reserved */
 		if(success)
 		{
-			if(44==fread(string2,sizeof(char),44,edf_file))
+			if(44==fread(string2,sizeof(char),44,bdf_or_edf_file))
 			{
 				;
 			}
@@ -846,7 +882,7 @@ DOESN'T read in any of the data record!
 		/*num data records */
 		if(success)
 		{
-			if(8==fread(string,sizeof(char),8,edf_file))
+			if(8==fread(string,sizeof(char),8,bdf_or_edf_file))
 			{
 				string[8]='\0';
 				sscanf(string,"%d",&number_of_records);			
@@ -859,7 +895,7 @@ DOESN'T read in any of the data record!
 		/*duration of data record, in seconds */	
 		if(success)
 		{
-			if(8==fread(string,sizeof(char),8,edf_file))
+			if(8==fread(string,sizeof(char),8,bdf_or_edf_file))
 			{
 				string[8]='\0';
 				sscanf(string,"%f",&record_duration); 				
@@ -872,7 +908,7 @@ DOESN'T read in any of the data record!
 		/*number of signals */
 		if(success)
 		{
-			if(4==fread(string,sizeof(char),4,edf_file))
+			if(4==fread(string,sizeof(char),4,bdf_or_edf_file))
 			{
 				string[4]='\0';			
 				sscanf(string,"%d",&number_of_signals);								
@@ -901,7 +937,7 @@ DOESN'T read in any of the data record!
 				while((i<number_of_signals)&&(success))
 				{									
 					string_ptr=edf_header_record->edf_device[i].label;				
-					if(16==fread(string_ptr,sizeof(char),16,edf_file))
+					if(16==fread(string_ptr,sizeof(char),16,bdf_or_edf_file))
 					{
 						string_ptr[16]='\0';					
 					}
@@ -916,7 +952,7 @@ DOESN'T read in any of the data record!
 				while((i<number_of_signals)&&(success))
 				{					
 					string_ptr=edf_header_record->edf_device[i].transducer_type;
-					if(80==fread(string_ptr,sizeof(char),80,edf_file))
+					if(80==fread(string_ptr,sizeof(char),80,bdf_or_edf_file))
 					{
 						string_ptr[80]='\0';						
 					}
@@ -931,7 +967,7 @@ DOESN'T read in any of the data record!
 				while((i<number_of_signals)&&(success))
 				{
 					string_ptr=edf_header_record->edf_device[i].physical_dim;
-					if(8==fread(string_ptr,sizeof(char),8,edf_file))
+					if(8==fread(string_ptr,sizeof(char),8,bdf_or_edf_file))
 					{
 						string_ptr[9]='\0';					
 					}
@@ -945,7 +981,7 @@ DOESN'T read in any of the data record!
 				i=0;			
 				while((i<number_of_signals)&&(success))
 				{
-					if(8==fread(string,sizeof(char),8,edf_file))
+					if(8==fread(string,sizeof(char),8,bdf_or_edf_file))
 					{
 						string[9]='\0';
 						sscanf(string,"%f",&edf_header_record->edf_device[i].physical_min);
@@ -960,7 +996,7 @@ DOESN'T read in any of the data record!
 				i=0;
 				while((i<number_of_signals)&&(success))
 				{
-					if(8==fread(string,sizeof(char),8,edf_file))
+					if(8==fread(string,sizeof(char),8,bdf_or_edf_file))
 					{
 						string[9]='\0';
 						sscanf(string,"%f",&edf_header_record->edf_device[i].physical_max);	
@@ -975,7 +1011,7 @@ DOESN'T read in any of the data record!
 				i=0;	
 				while((i<number_of_signals)&&(success))
 				{
-					if(8==fread(string,sizeof(char),8,edf_file))
+					if(8==fread(string,sizeof(char),8,bdf_or_edf_file))
 					{
 						string[9]='\0';
 						sscanf(string,"%d",&edf_header_record->edf_device[i].digital_min);
@@ -990,7 +1026,7 @@ DOESN'T read in any of the data record!
 				i=0;
 				while((i<number_of_signals)&&(success))
 				{
-					if(8==fread(string,sizeof(char),8,edf_file))
+					if(8==fread(string,sizeof(char),8,bdf_or_edf_file))
 					{
 						string[9]='\0';
 						sscanf(string,"%d",&edf_header_record->edf_device[i].digital_max);
@@ -1006,7 +1042,7 @@ DOESN'T read in any of the data record!
 				while((i<number_of_signals)&&(success))
 				{
 					string_ptr=edf_header_record->edf_device[i].prefiltering;
-					if(80==fread(string_ptr,sizeof(char),80,edf_file))
+					if(80==fread(string_ptr,sizeof(char),80,bdf_or_edf_file))
 					{
 						string_ptr[80]='\0';
 					}
@@ -1020,7 +1056,7 @@ DOESN'T read in any of the data record!
 				i=0;
 				while((i<number_of_signals)&&(success))
 				{				
-					if(8==fread(string,sizeof(char),8,edf_file))
+					if(8==fread(string,sizeof(char),8,bdf_or_edf_file))
 					{
 						string[9]='\0';
 						sscanf(string,"%d",&edf_header_record->edf_device[i].number_of_samples);
@@ -1035,7 +1071,7 @@ DOESN'T read in any of the data record!
 				i=0;
 				while((i<number_of_signals)&&(success))
 				{
-					if(32==fread(string2,sizeof(char),32,edf_file))
+					if(32==fread(string2,sizeof(char),32,bdf_or_edf_file))
 					{
 						;
 					}
@@ -1078,29 +1114,32 @@ DOESN'T read in any of the data record!
 Global functions
 ----------------
 */
-int read_edf_file(char *file_name,struct Rig **rig_pointer,
+int read_bdf_or_edf_file(char *file_name,struct Rig **rig_pointer,
 	struct User_interface *user_interface
 #if defined (UNEMAP_USE_3D)
 			,struct Unemap_package *unemap_package
 #endif /* defined (UNEMAP_USE_NODES)*/
-				)
+				,int bdf)
 /*******************************************************************************
-LAST MODIFIED : 11 October 2001
+LAST MODIFIED : 11 December 2001
 
 DESCRIPTION :
-Reads the signal data from an EDF file and creates a rig with a default
-configuration (electrode information is not available).
+Reads the signal data from a BDF or EDF file specified by <file_name> and 
+creates a rig with it in <rig_pointer>.
+Optionally reads in a config file, or create a defalut one.
+<bdf> is a flag, 0=edf, 1=bdf.
 ==============================================================================*/
 {
-	char *config_file_name,*edf_data,*source_base,*source;
+	char *config_file_name,*bdf_or_edf_data,*source_base,*source;
 	enum Signal_value_type signal_value_type;
-	FILE *edf_file;
-	float frequency,sampling_duration,prefix_multiplier;
-	float phys_min,phys_max,dig_min,dig_max,gain,offset;
-	int count,edf_data_size,failed,i,index,j,k,
+	FILE *bdf_or_edf_file;
+	float *float_dest,frequency,sampling_duration,prefix_multiplier,phys_min,phys_max,
+		dig_min,dig_max,gain,offset;
+	int count,data_32bit,bdf_or_edf_data_size,failed,i,index,j,k,
 		number_of_devices,number_of_samples,number_of_edf_signals,number_of_records,
-		return_code;
+		return_code,word_size;
 	short *dest;
+
 	struct Device **device;
 	struct EDF_to_rig_map *edf_to_rig_map;
 	struct EDF_header_record *edf_header_record;
@@ -1108,18 +1147,18 @@ configuration (electrode information is not available).
 	struct Region *current_region;
 	struct Region_list_item *region_item;
 	struct Signal_buffer *buffer;
-	unsigned char *twos_comp;
-
-	ENTER(read_edf_file);
+	unsigned char *data_24bit,*twos_comp;
+	ENTER(read_bdf_or_edf_file);
+	float_dest=(float *)NULL;
 	return_code=0;
 	region_item=(struct Region_list_item *)NULL;
 	current_region=(struct Region *)NULL;
 	edf_header_record=(struct EDF_header_record *)NULL;
 	config_file_name=(char *)NULL;
-	edf_data=(char *)NULL;
+	bdf_or_edf_data=(char *)NULL;
 	source_base=(char *)NULL;
 	source=(char *)NULL;
-	edf_file=(FILE *)NULL;
+	bdf_or_edf_file=(FILE *)NULL;
 	dest=(short *)NULL;
 	device=(struct Device **)NULL;
 	rig=(struct Rig *)NULL;
@@ -1132,10 +1171,10 @@ configuration (electrode information is not available).
 #endif
 			)
 	{ 	
-		if (edf_file=fopen(file_name,"ra"))
+		if (bdf_or_edf_file=fopen(file_name,"ra"))
 		{		
 			/* read the header information */
-			if(edf_header_record=read_edf_header_record(edf_file))
+			if(edf_header_record=read_bdf_or_edf_header_record(bdf_or_edf_file,bdf))
 			{
 				return_code=1;
 				number_of_edf_signals=edf_header_record->number_of_signals;	
@@ -1187,7 +1226,7 @@ configuration (electrode information is not available).
 							failed=1;	
 							return_code=0;
 							display_message(ERROR_MESSAGE,
-								"read_edf_file. EDF signals have different number of samples. Unemaps requires them to be the same");
+								"read_bdf_or_edf_file. EDF signals have different number of samples. Unemaps requires them to be the same");
 						}
 						i++;
 					}						
@@ -1200,15 +1239,33 @@ configuration (electrode information is not available).
 							return_code=destroy_unmatched_rig_devices(rig,edf_to_rig_map);
 						}	
 						/*read in all the data records*/
-						/* each item of edf data is 2 bytes*/
-						edf_data_size=2*number_of_records*number_of_edf_signals*number_of_samples;
+
+						if(bdf)
+						{							
+							/*bdf 24 bit = 3 bytes*/
+							word_size=3;
+						}
+						else
+						{
+							/* each item of edf data is 2 bytes*/
+							word_size=2;
+						}
+						bdf_or_edf_data_size=word_size*number_of_records*number_of_edf_signals*number_of_samples;
 					}									
-					if(return_code&&edf_data_size&&ALLOCATE(edf_data,char,edf_data_size))
+					if(return_code&&bdf_or_edf_data_size&&ALLOCATE(bdf_or_edf_data,char,bdf_or_edf_data_size))
 					{
-						if(edf_data_size=fread(edf_data,sizeof(char),edf_data_size,edf_file))
+						if(bdf_or_edf_data_size=fread(bdf_or_edf_data,sizeof(char),bdf_or_edf_data_size,bdf_or_edf_file))
 						{	
-							/*edf files are always short ints*/
-							signal_value_type=SHORT_INT_VALUE;
+							if(bdf)
+							{	
+								/*store bdf in floats*/
+								signal_value_type=FLOAT_VALUE;
+							}
+							else
+							{
+								/*edf files are always short ints*/
+								signal_value_type=SHORT_INT_VALUE;
+							}
 							frequency=((float)number_of_samples)/sampling_duration;
 							/* create the signal buffer */
 							if (buffer=create_Signal_buffer(signal_value_type,rig->number_of_devices,
@@ -1221,27 +1278,53 @@ configuration (electrode information is not available).
 								}
 								/*set signal values from the edf data*/ 
 								count=0;
-								dest=buffer->signals.short_int_values;	
+								if(bdf)
+								{
+									float_dest=buffer->signals.float_values;
+								}
+								else
+								{
+									/*edf*/
+									dest=buffer->signals.short_int_values;	
+								}
 								for(i=0;i<number_of_records;i++)
 								{	
-									source_base=edf_data+i*number_of_edf_signals*number_of_samples*2;				
+									source_base=bdf_or_edf_data+i*number_of_edf_signals*number_of_samples*word_size;				
 									for(j=0;j<number_of_samples;j++)
 									{					
 										for(k=0;k<rig->number_of_devices;k++)
 										{
 											/*get index of current edf signal*/
 											index=edf_to_rig_map->edf_to_rig_device_map[k].edf_device_index;
-											source=source_base+(index*number_of_samples+j)*2;									
-											twos_comp=(unsigned char *)source;
-											/*copy the 2 bytes*/
-											*dest= ((unsigned short)(*(twos_comp+1))<<8)+
-												(unsigned short)(*twos_comp);						
-											dest++; 
+											source=source_base+(index*number_of_samples+j)*word_size;									
+											if(bdf)
+											{
+												data_24bit=(unsigned char *)source;											
+												/*convert 24 bit to 32 bit*/
+												data_32bit=0;
+												data_32bit= 
+													((unsigned int)(*(data_24bit+2))<<24)+
+													((unsigned int)(*(data_24bit+1))<<16)+
+													((unsigned int)(*(data_24bit))<<8);
+												data_32bit/=256;
+												/*convert in to float*/
+												*float_dest=(float)(data_32bit);												
+												float_dest++; 
+											}
+											else
+											{	
+												/*edf*/
+												twos_comp=(unsigned char *)source;
+												/*copy the 2 bytes*/
+												*dest= ((unsigned short)(*(twos_comp+1))<<8)+
+													(unsigned short)(*twos_comp);						
+												dest++; 
+											}
 											count++;
 										}/* for(k=0;k<rig->number_of_devices;k++) */
 									}/* for(j=0;j<number_of_samples;j++) */
-								}/*	for(i=0;i<number_of_records;i++) */
-								DEALLOCATE(edf_data);	
+								}/*	for(i=0;i<number_of_records;i++) */								
+								DEALLOCATE(bdf_or_edf_data);	
 								/* set other signal information from the edf data */
 								number_of_devices=rig->number_of_devices;
 								device=rig->devices;
@@ -1306,7 +1389,7 @@ configuration (electrode information is not available).
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"read_edf_file.  Could not create signal buffer");
+									"read_bdf_or_edf_file.  Could not create signal buffer");
 								destroy_Rig(&rig);
 								return_code=0;
 							}		
@@ -1314,7 +1397,7 @@ configuration (electrode information is not available).
 						else
 						{	
 							display_message(ERROR_MESSAGE,
-								"read_edf_file.  failed to read edf data");
+								"read_bdf_or_edf_file.  failed to read edf data");
 							destroy_Rig(&rig);
 							return_code=0;
 							
@@ -1323,37 +1406,37 @@ configuration (electrode information is not available).
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"read_edf_file. failed to allocate edf_data"); 
+							"read_bdf_or_edf_file. failed to allocate bdf_or_edf_data"); 
 						return_code=0;
 					}
 				}				
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"read_edf_file. read_configuration_file failed");	
+						"read_bdf_or_edf_file. read_configuration_file failed");	
 					return_code=0;	
 				}	
 			}/*read_edf_header_file_record*/
-			fclose(edf_file);				
+			fclose(bdf_or_edf_file);				
 			destroy_EDF_to_rig_map(&edf_to_rig_map);	
 			destroy_EDF_header_record(&edf_header_record);			
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"read_edf_file.  Could not open file: %s",file_name);	
+				"read_bdf_or_edf_file.  Could not open file: %s",file_name);	
 			return_code=0;		
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"read_edf_file.  Missing argument(s)");
+			"read_bdf_or_edf_file.  Missing argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 	return (return_code);
-} /* read_edf_file */
+} /* read_bdf_or_edf_file */
 
 
 

@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : analysis_window.uil
 !
-! LAST MODIFIED : 2 October 2001
+! LAST MODIFIED : 11 December 2001
 !
 ! DESCRIPTION :
 ! The widgets/gadgets for the analysis window in the analysis work area.
@@ -33,6 +33,7 @@ procedure
 	analysis_set_highlight_min;
 	analysis_set_highlight_max;
 	analysis_read_edf_file;
+	analysis_read_bdf_file;
 !OLD_CODE
 !	identify_analysis_previous_acce;
 	analysis_previous_signal;
@@ -64,6 +65,7 @@ procedure
 	identify_analysis_file_button;
 	identify_analysis_file_read_sig;
 	identify_analysis_file_read_edf;
+	identify_analysis_file_read_bdf;
 	open_file_and_read;
 	identify_analysis_file_overlay;
 	identify_analysis_file_save_int;
@@ -1245,6 +1247,7 @@ object
 			XmPushButton analysis_file_read_cardiomapp_b;
 			XmPushButton analysis_file_read_neurosoft_bu;
 			XmPushButton analysis_file_read_edf_butt;
+			XmPushButton analysis_file_read_bdf_butt;
 			};
 		};
 	analysis_file_read_signals_butt: XmPushButton
@@ -1284,6 +1287,26 @@ object
 			XmNactivateCallback = procedures
 				{
 				analysis_read_edf_file(analysis_work_area_structure);
+				};
+			};
+		};	
+	analysis_file_read_bdf_butt: XmPushButton
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Read BDF signals");
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_analysis_file_read_edf(analysis_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				analysis_read_bdf_file(analysis_work_area_structure);
 				};
 			};
 		};

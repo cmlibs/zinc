@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 26 November 2001
+LAST MODIFIED : 11 December 2001
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -4543,19 +4543,19 @@ for analysing the signals.
 	return (return_code);
 } /* analysis_read_beekeeper_eeg_fil */
 
-static void analysis_read_edf_file(Widget widget,XtPointer analysis_work_area,
-	XtPointer call_data)
+static int analysis_read_bdf_or_edf_file(struct Analysis_work_area *analysis,
+	int bdf)
 /*******************************************************************************
-LAST MODIFIED : 28 November 2001
+LAST MODIFIED : 11 December 2001
 
 DESCRIPTION :
-Reads in the signals from the edf file and sets up the analysis work area
+Reads in the signals from the bdf or edf file and sets up the analysis work area
 for analysing the signals.
+ <bdf> > 0 reads bdf files, else reads edf files
 ==============================================================================*/
 {
-	char *file_name,*temp_string;
-	int buffer_end,buffer_start,success;
-	struct Analysis_work_area *analysis;
+	char *file_name,*temp_string,ext_str[4];
+	int buffer_end,buffer_start,return_code;
 	struct Rig *rig;
 	struct Signal_buffer *buffer;
 	XmString new_dialog_title,old_dialog_title;
@@ -4565,30 +4565,36 @@ for analysing the signals.
 	struct FE_node *rig_node;
 	struct GROUP(FE_node) *rig_node_group;
 #endif /* defined (UNEMAP_USE_3D) */
-	ENTER(analysis_read_edf_file);
+	ENTER(analysis_read_bdf_or_edf_file);
 #if defined (UNEMAP_USE_3D)
 	node_selection=(struct FE_node_selection *)NULL;	
 	device_name_field=(struct FE_field *)NULL;
 	rig_node=(struct FE_node *)NULL;	
 	rig_node_group=(struct GROUP(FE_node) *)NULL;
 #endif /* defined (UNEMAP_USE_3D) */
-	success=0;
-	ENTER(analysis_read_edf_file);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	if (analysis=(struct Analysis_work_area *)analysis_work_area)
+	return_code=0;
+	ENTER(analysis_read_bdf_or_edf_file);	
+	if (analysis)
 	{
-		/* read the edf file name */
-		if (file_name=confirmation_get_read_filename(".edf",analysis->user_interface))
+		if(bdf)
 		{
-			success=1;				
+			strcpy(ext_str,".bdf");
+		}
+		else
+		{
+			strcpy(ext_str,".edf");
+		}
+		/* read the edf or bdf file name */
+		if (file_name=confirmation_get_read_filename(ext_str,analysis->user_interface))
+		{
+			return_code=1;				
 		}
 		else
 		{
 			/*pressed cancel on confirmation_get_read_filename dialogue*/
-			success=0;
+			return_code=0;
 		}
-		if(success)
+		if(return_code)
 		{
 			clean_Analysis_work_area_before_load(analysis);	
 			/* initialize the new analysis */
@@ -4600,15 +4606,15 @@ for analysing the signals.
 				XmNdialogTitle,&old_dialog_title,
 				NULL);	
 			/* open the input file */
-			if (read_edf_file(file_name,&analysis->rig,analysis->user_interface
+			if (read_bdf_or_edf_file(file_name,&analysis->rig,analysis->user_interface
 #if defined (UNEMAP_USE_3D)
 				,analysis->unemap_package
 #endif /* defined (UNEMAP_USE_NODES)*/
-												)
+				,bdf)
 				&&(rig=analysis->rig)&&(rig->devices)&&(*(rig->devices))&&
 				(buffer=get_Device_signal_buffer(*(rig->devices))))
 			{
-				success=1;			
+				return_code=1;			
 				buffer_start=buffer->start;
 				buffer_end=buffer->end;								
 				if (analysis->window)
@@ -4630,9 +4636,9 @@ for analysing the signals.
 			}
 			else
 			{
-				success=0;
+				return_code=0;
 				display_message(ERROR_MESSAGE,
-					"analysis_read_edf_file.  Invalid edf file: %s or cnfg file ",file_name);		
+					"analysis_read_bdf_or_edf_file.  Invalid edf file: %s or cnfg file ",file_name);		
 			}
 #if defined (UNEMAP_USE_3D)
 			/* put the rig into nodes */
@@ -4645,10 +4651,10 @@ for analysing the signals.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"analysis_read_edf_file. convert_rig_to_nodes  failed ");
+					"analysis_read_bdf_or_edf_file. convert_rig_to_nodes  failed ");
 			}
 #endif /* defined (UNEMAP_USE_3D) */
-			if (success)
+			if (return_code)
 			{
 				/*highlight the first device*/
 				if (analysis->highlight=analysis->rig->devices)
@@ -4667,7 +4673,7 @@ for analysing the signals.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"analysis_read_edf_file.  Could not allocate memory for signal file name");
+						"analysis_read_bdf_or_edf_file.  Could not allocate memory for signal file name");
 				}
 				/* set the analysis window title */
 				if (ALLOCATE(temp_string,char,strlen(file_name)+12))
@@ -4681,7 +4687,7 @@ for analysing the signals.
 				{
 					new_dialog_title=XmStringCreateSimple("Analysis");
 					display_message(ERROR_MESSAGE,
-						"analysis_read_edf_file.  Could not allocate memory for window title");
+						"analysis_read_bdf_or_edf_file.  Could not allocate memory for window title");
 				}
 				XtVaSetValues(analysis->window->window,
 					XmNdialogTitle,new_dialog_title,
@@ -4733,7 +4739,7 @@ for analysing the signals.
 					&(analysis->first_eimaging_event)))
 				{
 					display_message(ERROR_MESSAGE,
-						"analysis_read_edf_file.  Could not open trace window");
+						"analysis_read_bdf_or_edf_file.  Could not open trace window");
 				}
 			}
 			else
@@ -4818,16 +4824,73 @@ for analysing the signals.
 			/*set the time keeper to the new current time. Important to keep any */
 			/*movie player in sync */
 			set_up_time_keeper_after_read(analysis);		
-		}/* if(success) */
+		}/* if(return_code) */
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"analysis_read_edf_file.  Missing analysis_work_area");
-		success=0;
+			"analysis_read_bdf_or_edf_file.  Missing analysis_work_area");
+		return_code=0;
+	}	
+	return(return_code);
+	LEAVE;
+} /* analysis_read_bdf_or_edf_file */
+
+static void analysis_read_edf_file(Widget widget,XtPointer analysis_work_area,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 11 December 2001
+
+DESCRIPTION :
+Reads in the signals from the edf file and sets up the analysis work area
+for analysing the signals.
+==============================================================================*/
+{
+	struct Analysis_work_area *analysis;
+
+	ENTER(analysis_read_edf_file);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	analysis=(struct Analysis_work_area *)NULL;
+	if (analysis=(struct Analysis_work_area *)analysis_work_area)
+	{
+		analysis_read_bdf_or_edf_file(analysis,0/*bdf*/);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"analysis_read_edf_file.  Missing analysis_work_area");	
 	}	
 	LEAVE;
 } /* analysis_read_edf_file */
+
+static void analysis_read_bdf_file(Widget widget,XtPointer analysis_work_area,
+	XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 11 December 2001
+
+DESCRIPTION :
+Reads in the signals from the bdf file and sets up the analysis work area
+for analysing the signals.
+==============================================================================*/
+{
+	struct Analysis_work_area *analysis;
+
+	ENTER(analysis_read_bdf_file);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	analysis=(struct Analysis_work_area *)NULL;
+	if (analysis=(struct Analysis_work_area *)analysis_work_area)
+	{
+		analysis_read_bdf_or_edf_file(analysis,1/*bdf*/);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"analysis_read_bdf_file.  Missing analysis_work_area");	
+	}	
+	LEAVE;
+} /* analysis_read_bdf_file */
 
 static int analysis_read_neurosoft_sig_fil(char *file_name,
 	void *analysis_work_area)
@@ -16995,6 +17058,7 @@ Creates the windows associated with the analysis work area.
 		{"anal_set_range_all_accep_undec",
 			(XtPointer)anal_set_range_all_accep_undec},
 		{"analysis_read_edf_file",(XtPointer)analysis_read_edf_file},
+		{"analysis_read_bdf_file",(XtPointer)analysis_read_bdf_file},
 		{"trace_analysis_mode_apply",(XtPointer)trace_analysis_mode_apply},
 		{"display_map_with_check",(XtPointer)display_map_with_check},
 		{"set_analysis_order_event",(XtPointer)set_analysis_order_event},

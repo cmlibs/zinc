@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_window.c
 
-LAST MODIFIED : 19 October 2001
+LAST MODIFIED : 11 December 2001
 
 DESCRIPTION :
 ===========================================================================*/
@@ -812,6 +812,31 @@ Finds the id of the analysis file read edf signals button.
 	}
 	LEAVE;
 } /*identify_analysis_file_read_edf  */
+
+static void identify_analysis_file_read_bdf(Widget *widget_id,
+	XtPointer client_data,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 11 December 2001
+
+DESCRIPTION :
+Finds the id of the analysis file read bdf signals button.
+==============================================================================*/
+{
+	struct Analysis_window *analysis;
+
+	ENTER(identify_analysis_file_read_bdf);
+	USE_PARAMETER(call_data);
+	if (analysis=(struct Analysis_window *)client_data)
+	{
+		analysis->file_menu.read_bdf_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_analysis_file_read_bdf.  client_data missing");
+	}
+	LEAVE;
+} /*identify_analysis_file_read_bdf  */
 
 static void identify_analysis_file_overlay(Widget *widget_id,
 	XtPointer client_data,XtPointer call_data)
@@ -4236,7 +4261,7 @@ struct Analysis_window *create_Analysis_window(
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface,enum Signal_order *signal_order)
 /*******************************************************************************
-LAST MODIFIED : 2 October 2001
+LAST MODIFIED :  11 December 2001
 
 DESCRIPTION :
 This function allocates the memory for an analysis window and sets the fields
@@ -4318,6 +4343,8 @@ returned.
 			(XtPointer)identify_analysis_file_read_sig},
 		{"identify_analysis_file_read_edf",
 			(XtPointer)identify_analysis_file_read_edf},
+		{"identify_analysis_file_read_bdf",
+			(XtPointer)identify_analysis_file_read_bdf},
 		{"open_file_and_read",(XtPointer)open_file_and_read},
 		{"identify_analysis_file_overlay",
 			(XtPointer)identify_analysis_file_overlay},
@@ -4488,6 +4515,7 @@ returned.
 				analysis->file_button=(Widget)NULL;
 				analysis->file_menu.read_signals_button=(Widget)NULL;
 				analysis->file_menu.read_edf_button=(Widget)NULL;
+				analysis->file_menu.read_bdf_button=(Widget)NULL;
 				analysis->file_menu.overlay_signals_button=(Widget)NULL;
 				analysis->file_menu.save_interval_button=(Widget)NULL;
 				analysis->file_menu.save_interval_as_button=(Widget)NULL;
