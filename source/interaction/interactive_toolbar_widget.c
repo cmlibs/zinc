@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : interactive_toolbar_widget.c
 
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Widget for choosing the Interactive_tool currently in-use in a dialog from a
@@ -278,9 +278,10 @@ Global functions
 */
 
 Widget create_interactive_toolbar_widget(Widget parent,
-	struct MANAGER(Interactive_tool) *interactive_tool_manager)
+	struct MANAGER(Interactive_tool) *interactive_tool_manager,
+	enum Interactive_toolbar_orientation orientation)
 /*******************************************************************************
-LAST MODIFIED : 9 May 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Creates a RowColumn widget for storing a set of radio buttons for selecting the
@@ -307,7 +308,14 @@ to the toolbar.
 			XtSetArg(args[1],XmNrightAttachment,XmATTACH_FORM);
 			XtSetArg(args[2],XmNtopAttachment,XmATTACH_FORM);
 			XtSetArg(args[3],XmNbottomAttachment,XmATTACH_FORM);
-			XtSetArg(args[4],XmNorientation,XmVERTICAL);
+			if (INTERACTIVE_TOOLBAR_HORIZONTAL == orientation)
+			{
+				XtSetArg(args[4],XmNorientation,XmHORIZONTAL);
+			}
+			else
+			{
+				XtSetArg(args[4],XmNorientation,XmVERTICAL);
+			}
 			XtSetArg(args[5],XmNpacking,XmPACK_TIGHT);
 			XtSetArg(args[6],XmNradioBehavior,True);
 			XtSetArg(args[7],XmNuserData,interactive_toolbar);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : interactive_toolbar_widget.h
 
-LAST MODIFIED : 9 June 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Widget for choosing the Interactive_tool currently in-use in a dialog from a
@@ -14,14 +14,26 @@ series of icons presented as radio buttons.
 #include "interaction/interactive_tool.h"
 
 /*
+Global Types
+------------
+*/
+
+enum Interactive_toolbar_orientation
+{
+	INTERACTIVE_TOOLBAR_HORIZONTAL,
+	INTERACTIVE_TOOLBAR_VERTICAL
+};
+
+/*
 Global Functions
 ----------------
 */
 
 Widget create_interactive_toolbar_widget(Widget parent,
-	struct MANAGER(Interactive_tool) *interactive_tool_manager);
+	struct MANAGER(Interactive_tool) *interactive_tool_manager,
+	enum Interactive_toolbar_orientation orientation);
 /*******************************************************************************
-LAST MODIFIED : 8 May 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Creates a RowColumn widget for storing a set of radio buttons for selecting the
