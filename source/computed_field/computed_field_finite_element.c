@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_finite_element.c
 
-LAST MODIFIED : 30 April 2003
+LAST MODIFIED : 3 June 2003
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -4613,7 +4613,7 @@ static void Computed_field_FE_region_change(struct FE_region *fe_region,
 	struct FE_region_changes *changes,
 	void *computed_field_finite_element_package_void)
 /*******************************************************************************
-LAST MODIFIED : 21 March 2003
+LAST MODIFIED : 3 June 2003
 
 DESCRIPTION :
 Updates definitions of Computed_field wrappers for changed FE_fields in the
@@ -4644,9 +4644,15 @@ that may result from this process.
 			(change_summary & CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field)) || 
 			(change_summary & CHANGE_LOG_OBJECT_ADDED(FE_field)))
 		{
+			/* have begin/end cache because more than one field may have been added
+				 or modified */
+			MANAGER_BEGIN_CACHE(Computed_field)(
+				computed_field_finite_element_package->computed_field_manager);
 			/* Ensure there is an updated Computed_field for each FE_field */
 			FE_region_for_each_FE_field(field_change_data.fe_region,
 				FE_field_to_Computed_field_change, (void *)&field_change_data);
+			MANAGER_END_CACHE(Computed_field)(
+				computed_field_finite_element_package->computed_field_manager);
 		}
 		if (change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_field))
 		{
