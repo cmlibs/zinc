@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 23 May 2000
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -1002,17 +1002,16 @@ int equivalent_FE_field_at_nodes(struct FE_field *field,struct FE_node *node_1,
 LAST MODIFIED : 30 October 1998
 
 DESCRIPTION :
-Returns non-zero if the <field> is defined in the same way at the two nodes.
+Returns true if the <field> is defined in the same way at the two nodes.
 ==============================================================================*/
 
 int equivalent_FE_fields_at_nodes(struct FE_node *node_1,
 	struct FE_node *node_2);
 /*******************************************************************************
-LAST MODIFIED : 30 October 1998
+LAST MODIFIED : 23 May 2000
 
 DESCRIPTION :
-Returns non-zero if the same fields are defined in the same ways at the two
-nodes.
+Returns true if all fields are defined in the same way at the two nodes.
 ==============================================================================*/
 
 struct FE_node *node_string_to_FE_node(char *name,
@@ -2314,6 +2313,15 @@ Frees the memory for the element, sets <*element_address> to NULL.
 PROTOTYPE_OBJECT_FUNCTIONS(FE_element);
 PROTOTYPE_COPY_OBJECT_FUNCTION(FE_element);
 
+int equivalent_FE_fields_at_elements(struct FE_element *element_1,
+	struct FE_element *element_2);
+/*******************************************************************************
+LAST MODIFIED : 23 May 2000
+
+DESCRIPTION :
+Returns true if all fields are defined in the same way at the two elements.
+==============================================================================*/
+
 int get_FE_element_dimension(struct FE_element *element);
 /*******************************************************************************
 LAST MODIFIED : 4 November 1999
@@ -3548,6 +3556,25 @@ LAST MODIFIED : 18 August 1998
 DESCRIPTION :
 Converts the <name> into an element number (face and line number zero), finds
 and returns the element in the <element_manager> with that cmiss identifier.
+==============================================================================*/
+
+int FE_element_to_any_element_string(struct FE_element *element,
+	char **name_ptr);
+/*******************************************************************************
+LAST MODIFIED : 24 May 2000
+
+DESCRIPTION :
+Writes the element as an allocated string containing TYPE NUMBER.
+==============================================================================*/
+
+struct FE_element *any_element_string_to_FE_element(char *name,
+	struct MANAGER(FE_element) *element_manager);
+/*******************************************************************************
+LAST MODIFIED : 24 May 2000
+
+DESCRIPTION :
+Converts name string of format "TYPE NUMBER" to a CM_element_information and
+returns the element in the <element_manager> with that CM_element_information.
 ==============================================================================*/
 
 int set_FE_element_dimension_3(struct Parse_state *state,

@@ -9098,11 +9098,10 @@ Returns non-zero if the <field> is defined in the same way at the two nodes.
 int equivalent_FE_fields_at_nodes(struct FE_node *node_1,
 	struct FE_node *node_2)
 /*******************************************************************************
-LAST MODIFIED : 6 November 1998
+LAST MODIFIED : 23 May 2000
 
 DESCRIPTION :
-Returns non-zero if the same fields are defined in the same ways at the two
-nodes.
+Returns true if all fields are defined in the same way at the two nodes.
 ==============================================================================*/
 {
 	int return_code;
@@ -21627,6 +21626,33 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(FE_element,identifier)
 	return (return_code);
 } /* MANAGER_COPY_WITHOUT_IDENTIFIER(FE_element,identifier) */
 
+int equivalent_FE_fields_at_elements(struct FE_element *element_1,
+	struct FE_element *element_2)
+/*******************************************************************************
+LAST MODIFIED : 23 May 2000
+
+DESCRIPTION :
+Returns true if all fields are defined in the same way at the two elements.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(equivalent_FE_fields_at_elements);
+	return_code=0;
+	if (element_1&&(element_1->information)&&element_2&&(element_2->information)&&
+		(element_1->information->fields==element_2->information->fields))
+	{
+		return_code=1;
+	}
+	else
+	{
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* equivalent_FE_fields_at_elements */
+
 int get_FE_element_dimension(struct FE_element *element)
 /*******************************************************************************
 LAST MODIFIED : 4 November 1999
@@ -31460,7 +31486,7 @@ Returns true if <element> is a top-level element - CM_ELEMENT/no parents.
 
 int FE_element_to_element_string(struct FE_element *element,char **name_ptr)
 /*******************************************************************************
-LAST MODIFIED : 15 February 1999
+LAST MODIFIED : 24 May 2000
 
 DESCRIPTION :
 Writes the cm.number of <element> into a newly allocated string and
@@ -31474,17 +31500,8 @@ points <*name_ptr> at it.
 	if (element&&name_ptr)
 	{
 		sprintf(temp_string,"%d",element->cm.number);
-		if (ALLOCATE(*name_ptr,char,strlen(temp_string)+1))
-		{
-			strcpy(*name_ptr,temp_string);
-      return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_element_to_element_string.  Not enough memory");
-      return_code=0;
-		}
+		*name_ptr=duplicate_string(temp_string);
+		return_code=1;
 	}
 	else
 	{
@@ -31529,6 +31546,99 @@ and returns the element in the <element_manager> with that CM_element_informatio
 
 	return (element);
 } /* element_string_to_FE_element */
+
+int FE_element_to_any_element_string(struct FE_element *element,
+	char **name_ptr)
+/*******************************************************************************
+LAST MODIFIED : 29 May 2000
+
+DESCRIPTION :
+Writes the element as an allocated string containing TYPE NUMBER. Now does not
+write element for CM_ELEMENT types.
+==============================================================================*/
+{
+	char temp_string[30];
+	int return_code;
+
+	ENTER(FE_element_to_any_element_string);
+	if (element&&name_ptr)
+	{
+		if (CM_ELEMENT==element->cm.type)
+		{
+			sprintf(temp_string,"%d",element->cm.number);
+		}
+		else
+		{
+			sprintf(temp_string,"%s %d",CM_element_type_string(element->cm.type),
+				element->cm.number);
+		}
+		*name_ptr=duplicate_string(temp_string);
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_to_any_element_string.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_to_any_element_string */
+
+struct FE_element *any_element_string_to_FE_element(char *name,
+	struct MANAGER(FE_element) *element_manager)
+/*******************************************************************************
+LAST MODIFIED : 26 May 2000
+
+DESCRIPTION :
+Converts name string of format "TYPE NUMBER" to a CM_element_information and
+returns the element in the <element_manager> with that CM_element_information.
+==============================================================================*/
+{
+	char *number_string,*type_string;
+	struct FE_element *element;
+	struct CM_element_information cm;
+
+	ENTER(any_element_string_to_FE_element);
+	element=(struct FE_element *)NULL;
+	if (name&&element_manager)
+	{
+		if (type_string=strpbrk(name,"eEfFlL"))
+		{
+			if (('l'== *type_string)||('L'== *type_string))
+			{
+				cm.type=CM_LINE;
+			}
+			else if (('f'== *type_string)||('F'== *type_string))
+			{
+				cm.type=CM_FACE;
+			}
+			else
+			{
+				cm.type=CM_ELEMENT;
+			}
+		}
+		else
+		{
+			cm.type=CM_ELEMENT;
+		}
+		if (number_string=strpbrk(name,"+-0123456789"))
+		{
+			cm.number=atoi(number_string);
+			element=FIND_BY_IDENTIFIER_IN_MANAGER(FE_element,identifier)(
+				&cm,element_manager);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"any_element_string_to_FE_element.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (element);
+} /* any_element_string_to_FE_element */
 
 int set_FE_element_dimension_3(struct Parse_state *state,
 	void *element_address_void,void *element_manager_void)
