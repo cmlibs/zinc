@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : manager_private.h
 
-LAST MODIFIED : 22 June 2000
+LAST MODIFIED : 30 June 2000
 
 DESCRIPTION :
 Managers oversee the creation, deletion and modification of global objects -
@@ -12,23 +12,16 @@ This file contains the details of the internal workings of the manager and
 should be included in the module that declares the manager for a particular
 object type.  This allows changes to the internal structure to be made without
 affecting other parts of the program.
-???DB.  Have a create_Manager ?
 ???DB.  Remove Manager_type and have a separate Manager_message and
 	Manager_callback_procedure for each object ?
 ???DB.  Name not general enough ?
 ???DB.  Use B-trees instead of lists ?
-???DB.  Message for destroy ?
-???DB.  Have to change to a List type rather than a List_item type.
-???DB.  Should there be a concept of order (get_first etc) ?
 ???DB.  Include manager in message ?
 ???DB.  Should there be another field, like access_count, that makes it so that
 	only the manager can delete/modify ?  (locked ?)
 ???GH.  The MANAGER_COPY_NOT_IDENTIFIER functions should be put in object.h,
 	and the 'MANAGER' bit removed from the name.
 ???GH.  The specialised group functions in this file should be in group.h
-???DB.  Problems with DELETEing objects.  Need to be able to take account of
-	objects that can cope with the object being destroyed (don't ACCESS) but need
-	to know before the object is destroyed
 ==============================================================================*/
 #if !defined (MANAGER_PRIVATE_H)
 #define MANAGER_PRIVATE_H
@@ -68,7 +61,7 @@ the objects being managed \
 \
 DECLARE_MANAGER_TYPE(object_type) \
 /***************************************************************************** \
-LAST MODIFIED : 22 June 2000 \
+LAST MODIFIED : 30 June 2000 \
 \
 DESCRIPTION : \
 The structure for the manager. \
@@ -77,10 +70,8 @@ The structure for the manager. \
 	struct LIST(object_type) *object_list; \
 	struct MANAGER_CALLBACK_ITEM(object_type) *callback_list; \
 	int locked; \
-	/* cache for multiple changes */ \
-	int cache; \
-	/* message stores changes made while cache is on */ \
-	struct MANAGER_MESSAGE(object_type) message; \
+	/* cache the changes to send one message when cache ends */ \
+	struct MANAGER_MESSAGE(object_type) *cache; \
 } /* struct MANAGER(object_type) */
 
 /*
@@ -95,31 +86,29 @@ Local functions
 #endif
 
 #define DECLARE_MANAGER_UPDATE_FUNCTION( object_type ) \
-static void MANAGER_UPDATE(object_type)(struct MANAGER(object_type) *manager) \
+static void MANAGER_UPDATE(object_type)(struct MANAGER(object_type) *manager, \
+	struct MANAGER_MESSAGE(object_type) *message) \
 /***************************************************************************** \
-LAST MODIFIED : 22 June 2000 \
+LAST MODIFIED : 30 June 2000 \
 \
 DESCRIPTION : \
-If the message indicates changes have been made in the <manager>, sends \
-callbacks to all the clients registered with it, then clear the message. \
+If <message> indicates changes have been made in the <manager>, sends \
+callbacks to all the clients registered with it. \
 ============================================================================*/ \
 { \
 	struct MANAGER_CALLBACK_ITEM(object_type) *item; \
 \
 	ENTER(MANAGER_UPDATE(object_type)); \
-	if (manager) \
+	if (manager&&message) \
 	{ \
-		if (MANAGER_CHANGE_NONE(object_type) != manager->message.change) \
+		if (MANAGER_CHANGE_NONE(object_type) != message->change) \
 		{ \
 			item=manager->callback_list; \
 			while (item) \
 			{ \
-				(item->callback)(&(manager->message),item->user_data); \
+				(item->callback)(message,item->user_data); \
 				item=item->next; \
 			} \
-			/* clear message */ \
-			manager->message.change=MANAGER_CHANGE_NONE(object_type); \
-			manager->message.object_changed=(struct object_type *)NULL; \
 		} \
 	} \
 	else \
@@ -141,51 +130,49 @@ static void MANAGER_NOTE_CHANGE(object_type)( \
 	enum MANAGER_CHANGE(object_type) change,struct object_type *object_changed, \
 	struct MANAGER(object_type) *manager) \
 /***************************************************************************** \
-LAST MODIFIED : 22 June 2000 \
+LAST MODIFIED : 30 June 2000 \
 \
 DESCRIPTION : \
-Combines <change> and <object_changed> with what is in the cached message. \
-If not caching changes, calls MANAGER_UPDATE to inform rest of program. \
+If the manager has a cache, combines <change> and <object_changed> with what \
+is in the cached message, otherwise creates a message for the change and sends \
+it to MANAGER_UPDATE to inform rest of program. \
 ============================================================================*/ \
 { \
+	struct MANAGER_MESSAGE(object_type) *message; \
+\
 	ENTER(MANAGER_NOTE_CHANGE(object_type)); \
-	if (manager&&object_changed) \
+	if (manager&&(MANAGER_CHANGE_NONE(object_type) != change)&& \
+		((MANAGER_CHANGE_ALL(object_type)==change)||object_changed)) \
 	{ \
-		/* for efficiency, avoid combining changes if already CHANGE_ALL */ \
-		if (MANAGER_CHANGE_ALL(object_type) != manager->message.change) \
+		/* make sure there is no object with CHANGE_ALL */ \
+		if (MANAGER_CHANGE_ALL(object_type)==change) \
 		{ \
-			switch (change) \
+			object_changed = (struct object_type *)NULL; \
+		} \
+		if (manager->cache) \
+		{ \
+			/* use CHANGE_ALL only if change or object_changed different */ \
+			if (MANAGER_CHANGE_NONE(object_type) == manager->cache->change) \
 			{ \
-				case MANAGER_CHANGE_ALL(object_type): \
-				{ \
-					/* note must ensure object_changed is NULL for CHANGE_ALL */ \
-					manager->message.change = MANAGER_CHANGE_ALL(object_type); \
-					manager->message.object_changed = (struct object_type *)NULL; \
-				} break; \
-				case MANAGER_CHANGE_NONE(object_type): \
-				{ \
-					/* do nothing */ \
-				} break; \
-				default: \
-				{ \
-					/* use CHANGE_ALL only if change or object_changed different */ \
-					if (MANAGER_CHANGE_NONE(object_type) == manager->message.change) \
-					{ \
-						manager->message.change = change; \
-						manager->message.object_changed = object_changed; \
-					} \
-					else if ((change != manager->message.change) || \
-						(object_changed != manager->message.object_changed)) \
-					{ \
-						manager->message.change = MANAGER_CHANGE_ALL(object_type); \
-						manager->message.object_changed = (struct object_type *)NULL; \
-					} \
-				} break; \
+				manager->cache->change = change; \
+				manager->cache->object_changed = object_changed; \
+			} \
+			else if ((change != manager->cache->change) || \
+				(object_changed != manager->cache->object_changed)) \
+			{ \
+				manager->cache->change = MANAGER_CHANGE_ALL(object_type); \
+				manager->cache->object_changed = (struct object_type *)NULL; \
 			} \
 		} \
-		if (!manager->cache) \
+		else \
 		{ \
-			MANAGER_UPDATE(object_type)(manager); \
+			if (ALLOCATE(message,struct MANAGER_MESSAGE(object_type),1)) \
+			{ \
+				message->change = change; \
+				message->object_changed = object_changed; \
+				MANAGER_UPDATE(object_type)(manager,message); \
+				DEALLOCATE(message); \
+			} \
 		} \
 	} \
 	else \
@@ -307,9 +294,7 @@ PROTOTYPE_CREATE_MANAGER_FUNCTION(object_type) \
 			manager->callback_list= \
 				(struct MANAGER_CALLBACK_ITEM(object_type) *)NULL; \
 			manager->locked=0; \
-			manager->cache=0; \
-			manager->message.change=MANAGER_CHANGE_NONE(object_type); \
-			manager->message.object_changed=(struct object_type *)NULL; \
+			manager->cache=(struct MANAGER_MESSAGE(object_type) *)NULL; \
 		} \
 		else \
 		{ \
@@ -338,6 +323,11 @@ PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
 	ENTER(DESTROY_MANAGER(object_type)); \
 	if (manager_address&&(manager= *manager_address)) \
 	{ \
+		/* destroy the cache */ \
+		if (manager->cache) \
+		{ \
+			DEALLOCATE(manager->cache); \
+		} \
 		/* destroy the object list */ \
 		DESTROY_LIST(object_type)(&(manager->object_list)); \
 		/* destroy the callback list */ \
@@ -348,7 +338,7 @@ PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
 			DEALLOCATE(current); \
 			current=next; \
 		} \
-      DEALLOCATE(manager); \
+    DEALLOCATE(manager); \
 		return_code=1; \
 	} \
 	else \
@@ -1094,11 +1084,19 @@ PROTOTYPE_MANAGER_BEGIN_CACHE_FUNCTION(object_type) \
 		} \
 		else \
 		{ \
-			manager->cache=1; \
-			/* clear message so can tell what has changed while cache is on */ \
-			manager->message.change=MANAGER_CHANGE_NONE(object_type); \
-			manager->message.object_changed=(struct object_type *)NULL; \
-			return_code=1; \
+			if (ALLOCATE(manager->cache,struct MANAGER_MESSAGE(object_type),1)) \
+			{ \
+				/* clear cache so can tell what has changed while cache is on */ \
+				manager->cache->change=MANAGER_CHANGE_NONE(object_type); \
+				manager->cache->object_changed=(struct object_type *)NULL; \
+				return_code=1; \
+			} \
+			else \
+			{ \
+				display_message(ERROR_MESSAGE, \
+					"MANAGER_BEGIN_CACHE(" #object_type ").  Could not create cache"); \
+				return_code=0; \
+			} \
 		} \
 	} \
 	else \
@@ -1123,8 +1121,8 @@ PROTOTYPE_MANAGER_END_CACHE_FUNCTION(object_type) \
 		if (manager->cache) \
 		{ \
 			/* inform clients off all changes to date */ \
-			MANAGER_UPDATE(object_type)(manager); \
-			manager->cache=0; \
+			MANAGER_UPDATE(object_type)(manager,manager->cache); \
+			DEALLOCATE(manager->cache); \
 			return_code=1; \
 		} \
 		else \
