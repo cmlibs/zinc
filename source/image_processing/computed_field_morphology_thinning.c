@@ -20,6 +20,7 @@
 
 #define my_Min(x,y) ((x) <= (y) ? (x) : (y))
 #define my_Max(x,y) ((x) <= (y) ? (y) : (x))
+#define n(x,y,z) ((z)*(image->sizes[1])*(image->sizes[0]) + (y) * (image->sizes[0]) + (x))
 
 
 struct Computed_field_morphology_thinning_package
@@ -347,8 +348,364 @@ LAST MODIFIED : 10 December 2003
 DESCRIPTION :
 No special criteria.
 ==============================================================================*/
+static int morphology_open(FE_value *X_index,FE_value *E_index, FE_value *E1_index, int *sizes, int direction)
+/*************************************************************************************************************
+LAST MODIFIED: 28 October 2004
+DESCRIPTION: 'direction' = 1, 2, 3,..., 6. 1-y+direction, 2-z-direction, 3-y-direction, 4-z+direction,
+              5-x-direction, 6-x+direction.
+=============================================================================================================*/
+{
+                int return_code;
+	int x, y, z, current, neighbor;
+	ENTER(morphology_open);
+	return_code = 1;
+	if (direction == 1)
+	{
+                for (z = 0 ; z < sizes[2] ; z++) /* erosion */
+		{
+			for (y = 0; y < sizes[1]; y++)
+			{
+				for (x = 0; x < sizes[0]; x++)
+				{
+					current = (z*sizes[1] + y)*sizes[0] + x;
+					if (X_index[current] == 1.0)
+					{
+						neighbor= (z*sizes[1] + y+1)*sizes[0] + x;   
+						if ((y+1) < sizes[1])
+						{
+							if (X_index[neighbor]==1.0)
+							{
+								E_index[current] = 1.0;
+							}
+							else
+							{
+								E_index[current] = 0.0;
+							}
+						}
+						else
+						{
+							E_index[current] = 0.0;
+						}
+					}
+					else
+					{
+					        E_index[current] = 0.0;
+					}
+				}
+			}
+		} /* erosion */
+		for (z = 0 ; z < sizes[2] ; z++)/* dilation */
+		{
+			for (y = 0; y < sizes[1]; y++)
+			{
+				for (x = 0; x < sizes[0]; x++)
+				{
+					current = (z*sizes[1] + y)*sizes[0] + x;
+					neighbor= (z*sizes[1] + y-1)*sizes[0] + x;   
+					if ((y-1) >= 0)
+					{
+						E1_index[current] = E_index[neighbor];
+					}
+					else
+					{
+						E1_index[current] = 0.0;
+					}
+				}
+			}
+		} /* dilation */
+	}
+	else if (direction == 2)
+	{
+	        for (z = 0 ; z < sizes[2] ; z++) /*-z-direction*/
+		{
+			for (y = 0; y < sizes[1]; y++)
+			{
+				for (x = 0; x < sizes[0]; x++)
+				{
+					current = (z*sizes[1] + y)*sizes[0] + x;
+					if (X_index[current] == 1.0)
+					{
+						neighbor= ((z-1)*sizes[1] + y)*sizes[0] + x;   
+						if ((z-1) >= 0)
+						{
+							if(X_index[neighbor]==1.0)
+							{
+							        E_index[current] = 1.0;
+							}
+							else
+							{
+								E_index[current] = 0.0;
+							}
+						}
+						else
+						{
+							E_index[current] = 0.0;
+						}
+					}
+					else
+					{
+						E_index[current] = 0.0;
+					}
+				}
+			}
+		}
+		for (z = 0 ; z < sizes[2] ; z++)
+		{
+			for (y = 0; y < sizes[1]; y++)
+			{
+				for (x = 0; x < sizes[0]; x++)
+				{
+					current = (z*sizes[1] + y)*sizes[0] + x;
+					neighbor= ((z+1)*sizes[1] + y)*sizes[0] + x;   
+					if ((z+1) < sizes[2])
+					{
+						E1_index[current] = E_index[neighbor];
+					}
+					else
+					{
+						E1_index[current] = 0.0;
+					}
+				}
+			}
+		}
+	}
+	else if (direction == 3)
+	{
+	        for (z = 0 ; z < sizes[2] ; z++) /* erosion */
+		{
+			for (y = 0; y < sizes[1]; y++)
+			{
+				for (x = 0; x < sizes[0]; x++)
+				{
+					current = (z*sizes[1] + y)*sizes[0] + x;
+					if (X_index[current] == 1.0)
+					{
+						neighbor= (z*sizes[1] + y-1)*sizes[0] + x;   
+						if ((y-1) >= 0)
+						{
+							if (X_index[neighbor]==1.0)
+							{
+								E_index[current] = 1.0;
+							}
+							else
+							{
+								E_index[current] = 0.0;
+							}
+						}
+						else
+						{
+							E_index[current] = 0.0;
+						}
+					}
+					else
+					{
+					        E_index[current] = 0.0;
+					}
+				}
+			}
+		} /* erosion */
+		for (z = 0 ; z < sizes[2] ; z++)/* dilation */
+		{
+			for (y = 0; y < sizes[1]; y++)
+			{
+				for (x = 0; x < sizes[0]; x++)
+				{
+					current = (z*sizes[1] + y)*sizes[0] + x;
+					neighbor= (z*sizes[1] + y+1)*sizes[0] + x;   
+					if ((y+1) < sizes[1])
+					{
+						E1_index[current] = E_index[neighbor];
+					}
+					else
+					{
+						E1_index[current] = 0.0;
+					}
+				}
+			}
+		} /* dilation */
+	}
+	else if (direction == 4)
+	{
+	        for (z = 0 ; z < sizes[2] ; z++) /*-z-direction*/
+		{
+			for (y = 0; y < sizes[1]; y++)
+			{
+				for (x = 0; x < sizes[0]; x++)
+				{
+					current = (z*sizes[1] + y)*sizes[0] + x;
+					if (X_index[current] == 1.0)
+					{
+						neighbor= ((z+1)*sizes[1] + y)*sizes[0] + x;   
+						if ((z+1) < sizes[2])
+						{
+							if(X_index[neighbor]==1.0)
+							{
+							        E_index[current] = 1.0;
+							}
+							else
+							{
+								E_index[current] = 0.0;
+							}
+						}
+						else
+						{
+							E_index[current] = 0.0;
+						}
+					}
+					else
+					{
+						E_index[current] = 0.0;
+					}
+				}
+			}
+		}
+		for (z = 0 ; z < sizes[2] ; z++)
+		{
+			for (y = 0; y < sizes[1]; y++)
+			{
+				for (x = 0; x < sizes[0]; x++)
+				{
+					current = (z*sizes[1] + y)*sizes[0] + x;
+					neighbor= ((z-1)*sizes[1] + y)*sizes[0] + x;   
+					if ((z-1) >= 0)
+					{
+						E1_index[current] = E_index[neighbor];
+					}
+					else
+					{
+						E1_index[current] = 0.0;
+					}
+				}
+			}
+		}
+	}
+	else if (direction == 5)
+	{
+	       for (z = 0 ; z < sizes[2] ; z++) /*-x-direction*/
+		{
+			for (y = 0; y < sizes[1]; y++)
+			{
+				for (x = 0; x < sizes[0]; x++)
+				{
+					current = (z*sizes[1] + y)*sizes[0] + x;
+					if (X_index[current] == 1.0)
+					{
+						neighbor= (z*sizes[1] + y)*sizes[0] + x-1;   
+						if ((x-1) >= 0)
+						{
+							if(X_index[neighbor]==1.0)
+							{
+							        E_index[current] = 1.0;
+							}
+							else
+							{
+								E_index[current] = 0.0;
+							}
+						}
+						else
+						{
+							E_index[current] = 0.0;
+						}
+					}
+					else
+					{
+						E_index[current] = 0.0;
+					}
+				}
+			}
+		}
+		for (z = 0 ; z < sizes[2] ; z++)
+		{
+			for (y = 0; y < sizes[1]; y++)
+			{
+				for (x = 0; x < sizes[0]; x++)
+				{
+					current = (z*sizes[1] + y)*sizes[0] + x;
+					neighbor= (z*sizes[1] + y)*sizes[0] + x+1;   
+					if ((x+1) < sizes[0])
+					{
+						E1_index[current] = E_index[neighbor];
+					}
+					else
+					{
+						E1_index[current] = 0.0;
+					}
+				}
+			}
+		}
+	}
+	else if (direction == 6)
+	{
+	        for (z = 0 ; z < sizes[2] ; z++) /*-x-direction*/
+		{
+			for (y = 0; y < sizes[1]; y++)
+			{
+				for (x = 0; x < sizes[0]; x++)
+				{
+					current = (z*sizes[1] + y)*sizes[0] + x;
+					if (X_index[current] == 1.0)
+					{
+						neighbor= (z*sizes[1] + y)*sizes[0] + x+1;   
+						if ((x+1) < sizes[0])
+						{
+							if(X_index[neighbor]==1.0)
+							{
+							        E_index[current] = 1.0;
+							}
+							else
+							{
+								E_index[current] = 0.0;
+							}
+						}
+						else
+						{
+							E_index[current] = 0.0;
+						}
+					}
+					else
+					{
+						E_index[current] = 0.0;
+					}
+				}
+			}
+		}
+		for (z = 0 ; z < sizes[2] ; z++)
+		{
+			for (y = 0; y < sizes[1]; y++)
+			{
+				for (x = 0; x < sizes[0]; x++)
+				{
+					current = (z*sizes[1] + y)*sizes[0] + x;
+					neighbor= (z*sizes[1] + y)*sizes[0] + x-1;   
+					if ((x-1) >= 0)
+					{
+						E1_index[current] = E_index[neighbor];
+					}
+					else
+					{
+						E1_index[current] = 0.0;
+					}
+				}
+			}
+		}    
+	}
+	else
+	{
+	        display_message(ERROR_MESSAGE,
+			"Computed_field_morphology_open.  "
+			"Invalid arguments.");
+		return_code = 0;
+	}
+	LEAVE;
+	return (return_code);
+}/* morphology_open XoB */
 
-int residual(FE_value *E_index, FE_value *E1_index, FE_value *E2_index, FE_value *X_index, FE_value *G_index, int *sizes)
+static int residual(FE_value *E_index, FE_value *E1_index, FE_value *E2_index, 
+           FE_value *X_index, FE_value *G_index, int *sizes)
+/*************************************************************************************************************
+LAST MODIFIED: 28 October 2004
+DESCRIPTION: residual = X\(XoB)
+=============================================================================================================*/
 {
         int x, y, z, current;
 	int return_code;
@@ -385,15 +742,15 @@ static int Image_cache_morphology_thinning(struct Image_cache *image, int iterat
 LAST MOErFIED : 27 October 2004
 
 DESCRIPTION :
-Perform a morphology thinning operation on the image cache.
+Perform a morphology thinning operation on the image cache in the basis of S = X\((X-B)+B).
 ==============================================================================*/
 {
 	char *storage;
 	FE_value *data_index, *result_index, *a_index, *x_index, *e_index,*e1_index, *e2_index,*g_index;
 	
 	int i, k, return_code, storage_size;
-	int n, stop, x, y, z, current, neighbor;
-	int n1,n2;
+	int n, stop, x, y, z, current, dir;
+	/* int n1,n2;*/
 
 	ENTER(Image_cache_morphology_thinning);
 	if (image && (image->dimension > 0) && (image->depth > 0))
@@ -448,7 +805,11 @@ Perform a morphology thinning operation on the image cache.
 			        	{
 				        	e2_index[i] = 0.0;
 			        	}
-				        /* y - direction*/
+				        dir = 1; /* y - direction*/
+					for (i = 0; i < storage_size/image->depth; i++)
+			        	{
+				        	g_index[i] = 0.0;
+			        	}
 				        for (z = 0 ; z < image->sizes[2] ; z++)/*determining gaps*/
 					{
 					        for (y = 0; y < image->sizes[1]; y++)
@@ -456,127 +817,58 @@ Perform a morphology thinning operation on the image cache.
 						        for (x = 0; x < image->sizes[0]; x++)
 							{
 							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								n1 = ((z-1)*image->sizes[1] + y-1)*image->sizes[0] + x;
-								n2 = ((z-1)*image->sizes[1] + y)*image->sizes[0] + x;
-								if ((y-1)>= 0 && (z-1)>= 0)
+								if ((y-1) >= 0)
 								{
-								        g_index[current] = my_Min(x_index[n1],(1.0-x_index[n2]));
+								        if ((z-1) >= 0)
+									{
+									        g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x,y-1,z-1)],(1.0-x_index[n(x,y,z-1)])));
+										if ((x+1) < image->sizes[0])
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x+1,y-1,z-1)],(1.0-x_index[n(x+1,y,z-1)])));
+										}
+										if ((x-1) >= 0)
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x-1,y-1,z-1)],(1.0-x_index[n(x-1,y,z-1)])));
+										}
+									}
+									if ((z+1) < image->sizes[2])
+									{
+									        g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x,y-1,z+1)],(1.0-x_index[n(x,y,z+1)])));
+										if ((x+1) < image->sizes[0])
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x+1,y-1,z+1)],(1.0-x_index[n(x+1,y,z+1)])));
+										}
+										if ((x-1) >= 0)
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x-1,y-1,z+1)],(1.0-x_index[n(x-1,y,z+1)])));
+										}
+									}
+									if ((x-1) >= 0)
+									{
+										g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x-1,y-1,z)],(1.0-x_index[n(x-1,y,z)])));
+										
+									}
+									if ((x+1) < image->sizes[0])
+									{
+										g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x+1,y-1,z)],(1.0-x_index[n(x+1,y,z)])));
+										
+									}
+									g_index[current] = my_Min(g_index[current],(1.0-x_index[n(x,y-1,z)]));
 								}
-								else
-								{
-								        g_index[current] = g_index[current];
-								}
-								n1 = ((z+1)*image->sizes[1] + y-1)*image->sizes[0] + x;
-								n2 = ((z+1)*image->sizes[1] + y)*image->sizes[0] + x;
-								if ((z+1) < image->sizes[2] && (y-1)>= 0)
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z-1)*image->sizes[1] + y-1)*image->sizes[0] + x+1;
-								n2 = ((z-1)*image->sizes[1] + y)*image->sizes[0] + x+1;
-								if ((z-1)>= 0 && (y-1)>= 0 && (x+1) < image->sizes[0])
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z+1)*image->sizes[1] + y-1)*image->sizes[0] + x+1;
-								n2 = ((z+1)*image->sizes[1] + y)*image->sizes[0] + x+1;
-								if ((z+1) < image->sizes[2] && (y-1)>=0 && (x+1) < image->sizes[0])
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z-1)*image->sizes[1] + y-1)*image->sizes[0] + x-1;
-								n2 = ((z-1)*image->sizes[1] + y)*image->sizes[0] + x-1;
-								if ((z-1)>= 0 && (y-1)>= 0 && (x-1) >= 0)
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z+1)*image->sizes[1] + y-1)*image->sizes[0] + x-1;
-								n2 = ((z+1)*image->sizes[1] + y)*image->sizes[0] + x-1;
-								if ((z+1) < image->sizes[2] && (y-1) >= 0 && (x-1) >= 0)
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = (z*image->sizes[1] + y-1)*image->sizes[0] + x-1;
-								n2 = (z*image->sizes[1] + y)*image->sizes[0] + x-1;
-								if ((y-1)>= 0 && (x-1) >= 0)
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = (z*image->sizes[1] + y-1)*image->sizes[0] + x+1;
-								n2 = (z*image->sizes[1] + y)*image->sizes[0] + x+1;
-								if ((y-1)>= 0 && (x+1) < image->sizes[0])
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = (z*image->sizes[1] + y-1)*image->sizes[0] + x;
-								if ((y-1)>= 0)
-								{
-								        g_index[current] = my_Min(g_index[current],(1.0-x_index[n1]));
-								}
-								else
-								{
-								        g_index[current] = my_Min(g_index[current],1.0);
-								}
+								
 								g_index[current] = my_Min(g_index[current],x_index[current]);
 								
 							}
 						}
-					}
-					for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								if (x_index[current] == 1.0)
-								{
-									neighbor= (z*image->sizes[1] + y+1)*image->sizes[0] + x;   
-							        	if ((y+1) < image->sizes[1])
-									{
-								        	if(x_index[neighbor]==1.0)
-										{
-									        	e_index[current] = 1.0;
-										}
-										else
-										{
-									        	e_index[current] = 0.0;
-										}
-									}
-									else
-									{
-								        	e_index[current] = 0.0;
-									}
-								}
-								else
-								{
-								        e_index[current] = 0.0;
-								}
-							}
-						}
-					}
-					for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								neighbor= (z*image->sizes[1] + y-1)*image->sizes[0] + x;   
-							        if ((y-1) >= 0)
-								{
-								        e1_index[current] = e_index[neighbor];
-								}
-								else
-								{
-								        e1_index[current] = 0.0;
-								}
-							}
-						}
-					}
+					} /*determining gaps*/
+					morphology_open(x_index,e_index, e1_index, image->sizes, dir);
 					
 					return_code = residual(e_index, e1_index, e2_index, x_index, g_index, image->sizes);
-				        /* -z - direction*/
+				        dir = 2; /* -z - direction*/
+					for (i = 0; i < storage_size/image->depth; i++)
+			        	{
+				        	g_index[i] = 0.0;
+			        	}
 				        for (z = 0 ; z < image->sizes[2] ; z++)
 					{
 					        for (y = 0; y < image->sizes[1]; y++)
@@ -584,66 +876,43 @@ Perform a morphology thinning operation on the image cache.
 						        for (x = 0; x < image->sizes[0]; x++)
 							{
 							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								n1 = ((z+1)*image->sizes[1] + y)*image->sizes[0] + x-1;
-								n2 = (z*image->sizes[1] + y)*image->sizes[0] + x-1;
-								if ((x-1) >= 0 && (z+1) < image->sizes[2])
-								{
-								        g_index[current] = my_Min(x_index[n1],(1.0-x_index[n2]));
-								}
-								else
-								{
-								        g_index[current] = g_index[current];
-								}
-								n1 = ((z+1)*image->sizes[1] + y)*image->sizes[0] + x+1;
-								n2 = (z*image->sizes[1] + y)*image->sizes[0] + x+1;
-								if ((z+1) < image->sizes[2] && (x+1) < image->sizes[0])
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z+1)*image->sizes[1] + y-1)*image->sizes[0] + x-1;
-								n2 = (z*image->sizes[1] + y-1)*image->sizes[0] + x-1;
-								if ((z+1) < image->sizes[2] && (y-1) >= 0 && (x-1) >= 0)
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z+1)*image->sizes[1] + y-1)*image->sizes[0] + x+1;
-								n2 = (z*image->sizes[1] + y-1)*image->sizes[0] + x+1;
-								if ((z+1) < image->sizes[2] && (y-1) >= 0 && (x+1) < image->sizes[0])
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z+1)*image->sizes[1] + y+1)*image->sizes[0] + x-1;
-								n2 = (z*image->sizes[1] + y+1)*image->sizes[0] + x-1;
-								if ((z+1)< image->sizes[2] && (y+1) < image->sizes[1] && (x-1) >= 0)
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z+1)*image->sizes[1] + y+1)*image->sizes[0] + x+1;
-								n2 = (z*image->sizes[1] + y+1)*image->sizes[0] + x+1;
-								if ((z+1) < image->sizes[2] && (y+1) < image->sizes[1] && (x+1) < image->sizes[0])
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z+1)*image->sizes[1] + y-1)*image->sizes[0] + x;
-								n2 = (z*image->sizes[1] + y-1)*image->sizes[0] + x;
-								if ((y-1)>= 0 && (z+1) <image->sizes[2])
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z+1)*image->sizes[1] + y+1)*image->sizes[0] + x;
-								n2 = (z*image->sizes[1] + y+1)*image->sizes[0] + x;
-								if ((y+1) < image->sizes[1] && (z+1) < image->sizes[2])
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z+1)*image->sizes[1] + y)*image->sizes[0] + x;
 								if ((z+1) < image->sizes[2])
 								{
-								        g_index[current] = my_Min(g_index[current],(1.0-x_index[n1]));
-								}
-								else
-								{
-								        g_index[current] = my_Min(g_index[current],1.0);
+								        if ((x-1) >= 0)
+									{
+									        g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x-1,y,z+1)],(1.0-x_index[n(x-1,y,z)])));
+										if ((y+1) < image->sizes[1])
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x-1,y+1,z+1)],(1.0-x_index[n(x-1,y+1,z)])));
+										}
+										if ((y-1) >= 0)
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x-1,y-1,z+1)],(1.0-x_index[n(x-1,y-1,z)])));
+										}
+									}
+									if ((x+1) < image->sizes[0])
+									{
+									        g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x+1,y,z+1)],(1.0-x_index[n(x+1,y,z)])));
+										if ((y+1) < image->sizes[1])
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x+1,y+1,z+1)],(1.0-x_index[n(x+1,y+1,z)])));
+										}
+										if ((y-1) >= 0)
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x+1,y-1,z+1)],(1.0-x_index[n(x+1,y-1,z)])));
+										}
+									}
+									if ((y-1) >= 0)
+									{
+										g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x,y-1,z+1)],(1.0-x_index[n(x,y-1,z)])));
+										
+									}
+									if ((y+1) < image->sizes[1])
+									{
+										g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x,y+1,z+1)],(1.0-x_index[n(x,y+1,z)])));
+										
+									}
+									g_index[current] = my_Min(g_index[current],(1.0-x_index[n(x,y,z+1)]));  
 								}
 								g_index[current] = my_Min(g_index[current],x_index[current]);
 								
@@ -651,318 +920,73 @@ Perform a morphology thinning operation on the image cache.
 						}
 					}/*g_index, determining gaps*/
 				        
-					
-					for (z = 0 ; z < image->sizes[2] ; z++) /*-z-direction*/
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								if (x_index[current] == 1.0)
-								{
-									neighbor= ((z-1)*image->sizes[1] + y)*image->sizes[0] + x;   
-							        	if ((z-1) >= 0)
-									{
-								        	if(x_index[neighbor]==1.0)
-										{
-									        	e_index[current] = 1.0;
-										}
-										else
-										{
-									        	e_index[current] = 0.0;
-										}
-									}
-									else
-									{
-								        	e_index[current] = 0.0;
-									}
-								}
-								else
-								{
-								        e_index[current] = 0.0;
-								}
-							}
-						}
-					}
-					for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								neighbor= ((z+1)*image->sizes[1] + y)*image->sizes[0] + x;   
-							        if ((z+1) < image->sizes[2])
-								{
-								        e1_index[current] = e_index[neighbor];
-								}
-								else
-								{
-								        e1_index[current] = 0.0;
-								}
-							}
-						}
-					}
+					morphology_open(x_index,e_index, e1_index, image->sizes, dir);
 					residual(e_index, e1_index, e2_index, x_index, g_index, image->sizes);
 				        
-					/*-y-direction*/
-				        for (z = 0 ; z < image->sizes[2] ; z++)
+					dir = 3; /*-y-direction*/
+					for (i = 0; i < storage_size/image->depth; i++)
+			        	{
+				        	g_index[i] = 0.0;
+			        	}
+					for (z = 0 ; z < image->sizes[2] ; z++)/*determining gaps*/
 					{
 					        for (y = 0; y < image->sizes[1]; y++)
 						{
 						        for (x = 0; x < image->sizes[0]; x++)
 							{
 							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								n1 = ((z-1)*image->sizes[1] + y+1)*image->sizes[0] + x;
-								n2 = ((z-1)*image->sizes[1] + y)*image->sizes[0] + x;
-								if ((y+1) < image->sizes[1] && (z-1)>= 0)
-								{
-								        g_index[current] = my_Min(x_index[n1],(1.0-x_index[n2]));
-								}
-								else
-								{
-								        g_index[current] = g_index[current];
-								}
-								n1 = ((z+1)*image->sizes[1] + y+1)*image->sizes[0] + x;
-								n2 = ((z+1)*image->sizes[1] + y)*image->sizes[0] + x;
-								if ((z+1) < image->sizes[2] && (y+1)< image->sizes[1])
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z-1)*image->sizes[1] + y+1)*image->sizes[0] + x+1;
-								n2 = ((z-1)*image->sizes[1] + y)*image->sizes[0] + x+1;
-								if ((z-1)>= 0 && (y+1) < image->sizes[1] && (x+1) < image->sizes[0])
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z+1)*image->sizes[1] + y+1)*image->sizes[0] + x+1;
-								n2 = ((z+1)*image->sizes[1] + y)*image->sizes[0] + x+1;
-								if ((z+1) < image->sizes[2] && (y+1) < image->sizes[1] && (x+1) < image->sizes[0])
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z-1)*image->sizes[1] + y+1)*image->sizes[0] + x-1;
-								n2 = ((z-1)*image->sizes[1] + y)*image->sizes[0] + x-1;
-								if ((z-1)>= 0 && (y+1) < image->sizes[1] && (x-1) >= 0)
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z+1)*image->sizes[1] + y+1)*image->sizes[0] + x-1;
-								n2 = ((z+1)*image->sizes[1] + y)*image->sizes[0] + x-1;
-								if ((z+1) < image->sizes[2] && (y+1) < image->sizes[1] && (x-1) >= 0)
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = (z*image->sizes[1] + y+1)*image->sizes[0] + x-1;
-								n2 = (z*image->sizes[1] + y)*image->sizes[0] + x-1;
-								if ((y+1) < image->sizes[1] && (x-1) >= 0)
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = (z*image->sizes[1] + y+1)*image->sizes[0] + x+1;
-								n2 = (z*image->sizes[1] + y)*image->sizes[0] + x+1;
-								if ((y+1) < image->sizes[1] && (x+1) < image->sizes[0])
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = (z*image->sizes[1] + y+1)*image->sizes[0] + x;
 								if ((y+1) < image->sizes[1])
 								{
-								        g_index[current] = my_Min(g_index[current],(1.0-x_index[n1]));
+								        if ((z-1) >= 0)
+									{
+									        g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x,y+1,z-1)],(1.0-x_index[n(x,y,z-1)])));
+										if ((x+1) < image->sizes[0])
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x+1,y+1,z-1)],(1.0-x_index[n(x+1,y,z-1)])));
+										}
+										if ((x-1) >= 0)
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x-1,y+1,z-1)],(1.0-x_index[n(x-1,y,z-1)])));
+										}
+									}
+									if ((z+1) < image->sizes[2])
+									{
+									        g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x,y+1,z+1)],(1.0-x_index[n(x,y,z+1)])));
+										if ((x+1) < image->sizes[0])
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x+1,y+1,z+1)],(1.0-x_index[n(x+1,y,z+1)])));
+										}
+										if ((x-1) >= 0)
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x-1,y+1,z+1)],(1.0-x_index[n(x-1,y,z+1)])));
+										}
+									}
+									if ((x-1) >= 0)
+									{
+										g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x-1,y+1,z)],(1.0-x_index[n(x-1,y,z)])));
+										
+									}
+									if ((x+1) < image->sizes[0])
+									{
+										g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x+1,y+1,z)],(1.0-x_index[n(x+1,y,z)])));
+										
+									}
+									g_index[current] = my_Min(g_index[current],(1.0-x_index[n(x,y+1,z)]));
 								}
-								else
-								{
-								        g_index[current] = my_Min(g_index[current],1.0);
-								}
-								g_index[current] = my_Min(g_index[current],x_index[current]);
 								
-							}
-						}
-					} /*g_index*/
-					for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								if (x_index[current] == 1.0)
-								{
-									neighbor= (z*image->sizes[1] + y-1)*image->sizes[0] + x;   
-							        	if ((y-1) >= 0)
-									{
-								        	if(x_index[neighbor]==1.0)
-										{
-									        	e_index[current] = 1.0;
-										}
-										else
-										{
-									        	e_index[current] = 0.0;
-										}
-									}
-									else
-									{
-								        	e_index[current] = 0.0;
-									}
-								}
-								else
-								{
-								        e_index[current] = 0.0;
-								}
-							}
-						}
-					}
-					for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								neighbor= (z*image->sizes[1] + y+1)*image->sizes[0] + x;   
-							        if ((y+1) < image->sizes[1])
-								{
-								        e1_index[current] = e_index[neighbor];
-								}
-								else
-								{
-								        e1_index[current] = 0.0;
-								}
-							}
-						}
-					}
-					residual(e_index, e1_index, e2_index, x_index, g_index, image->sizes);
-					
-					/* z - direction*/
-				        for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								n1 = ((z-1)*image->sizes[1] + y)*image->sizes[0] + x-1;
-								n2 = (z*image->sizes[1] + y)*image->sizes[0] + x-1;
-								if ((x-1) >= 0 && (z-1)>= 0)
-								{
-								        g_index[current] = my_Min(x_index[n1],(1.0-x_index[n2]));
-								}
-								else
-								{
-								        g_index[current] = g_index[current];
-								}
-								n1 = ((z-1)*image->sizes[1] + y)*image->sizes[0] + x+1;
-								n2 = (z*image->sizes[1] + y)*image->sizes[0] + x+1;
-								if ((z-1) >= 0 && (x+1) < image->sizes[0])
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z-1)*image->sizes[1] + y+1)*image->sizes[0] + x-1;
-								n2 = (z*image->sizes[1] + y+1)*image->sizes[0] + x-1;
-								if ((z-1)>= 0 && (y+1) < image->sizes[1] && (x-1) >= 0)
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z-1)*image->sizes[1] + y+1)*image->sizes[0] + x+1;
-								n2 = (z*image->sizes[1] + y+1)*image->sizes[0] + x+1;
-								if ((z-1) >= 0 && (y+1)< image->sizes[1] && (x+1) < image->sizes[0])
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z-1)*image->sizes[1] + y-1)*image->sizes[0] + x-1;
-								n2 = (z*image->sizes[1] + y-1)*image->sizes[0] + x-1;
-								if ((z-1)>= 0 && (y-1) >= 0 && (x-1) >= 0)
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z-1)*image->sizes[1] + y-1)*image->sizes[0] + x+1;
-								n2 = (z*image->sizes[1] + y-1)*image->sizes[0] + x+1;
-								if ((z-1) >=0 && (y-1) >= 0 && (x+1) < image->sizes[0])
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z-1)*image->sizes[1] + y-1)*image->sizes[0] + x;
-								n2 = (z*image->sizes[1] + y-1)*image->sizes[0] + x;
-								if ((y-1)>= 0 && (z-1) >= 0)
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z-1)*image->sizes[1] + y+1)*image->sizes[0] + x;
-								n2 = (z*image->sizes[1] + y+1)*image->sizes[0] + x;
-								if ((y+1) < image->sizes[1] && (z-1) >= 0)
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z-1)*image->sizes[1] + y)*image->sizes[0] + x;
-								if ((z-1) >= 0)
-								{
-								        g_index[current] = my_Min(g_index[current],(1.0-x_index[n1]));
-								}
-								else
-								{
-								        g_index[current] = my_Min(g_index[current],1.0);
-								}
 								g_index[current] = my_Min(g_index[current],x_index[current]);
 								
 							}
 						}
 					}/*g_index*/
-					for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								if (x_index[current] == 1.0)
-								{
-									neighbor= ((z+1)*image->sizes[1] + y)*image->sizes[0] + x;   
-							        	if ((z+1) < image->sizes[2])
-									{
-								        	if(x_index[neighbor]==1.0)
-										{
-									        	e_index[current] = 1.0;
-										}
-										else
-										{
-									        	e_index[current] = 0.0;
-										}
-									}
-									else
-									{
-								        	e_index[current] = 0.0;
-									}
-								}
-								else
-								{
-								        e_index[current] = 0.0;
-								}
-							}
-						}
-					}
-					for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								neighbor= ((z-1)*image->sizes[1] + y)*image->sizes[0] + x;   
-							        if ((z-1) >= 0)
-								{
-								        e1_index[current] = e_index[neighbor];
-								}
-								else
-								{
-								        e1_index[current] = 0.0;
-								}
-							}
-						}
-					}
+					morphology_open(x_index,e_index, e1_index, image->sizes, dir);
 					residual(e_index, e1_index, e2_index, x_index, g_index, image->sizes);
-				
-				        /* -x - direction*/
+					
+					dir = 4;/* z - direction*/
+					for (i = 0; i < storage_size/image->depth; i++)
+			        	{
+				        	g_index[i] = 0.0;
+			        	}
 				        for (z = 0 ; z < image->sizes[2] ; z++)
 					{
 					        for (y = 0; y < image->sizes[1]; y++)
@@ -970,253 +994,171 @@ Perform a morphology thinning operation on the image cache.
 						        for (x = 0; x < image->sizes[0]; x++)
 							{
 							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								n1 = ((z-1)*image->sizes[1] + y)*image->sizes[0] + x+1;
-								n2 = ((z-1)*image->sizes[1] + y)*image->sizes[0] + x;
-								if ((x+1) < image->sizes[0] && (z-1)>= 0)
+								if ((z-1) >= 0)
 								{
-								        g_index[current] = my_Min(x_index[n1],(1.0-x_index[n2]));
+								        if ((x-1) >= 0)
+									{
+									        g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x-1,y,z-1)],(1.0-x_index[n(x-1,y,z)])));
+										if ((y+1) < image->sizes[1])
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x-1,y+1,z-1)],(1.0-x_index[n(x-1,y+1,z)])));
+										}
+										if ((y-1) >= 0)
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x-1,y-1,z-1)],(1.0-x_index[n(x-1,y-1,z)])));
+										}
+									}
+									if ((x+1) < image->sizes[0])
+									{
+									        g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x+1,y,z-1)],(1.0-x_index[n(x+1,y,z)])));
+										if ((y+1) < image->sizes[1])
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x+1,y+1,z-1)],(1.0-x_index[n(x+1,y+1,z)])));
+										}
+										if ((y-1) >= 0)
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x+1,y-1,z-1)],(1.0-x_index[n(x+1,y-1,z)])));
+										}
+									}
+									if ((y-1) >= 0)
+									{
+										g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x,y-1,z-1)],(1.0-x_index[n(x,y-1,z)])));
+										
+									}
+									if ((y+1) < image->sizes[1])
+									{
+										g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x,y+1,z-1)],(1.0-x_index[n(x,y+1,z)])));
+										
+									}
+									g_index[current] = my_Min(g_index[current],(1.0-x_index[n(x,y,z-1)]));  
 								}
-								else
-								{
-								        g_index[current] = g_index[current];
-								}
-								n1 = ((z+1)*image->sizes[1] + y)*image->sizes[0] + x+1;
-								n2 = ((z+1)*image->sizes[1] + y)*image->sizes[0] + x;
-								if ((z+1) < image->sizes[2] && (x+1) < image->sizes[0])
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z-1)*image->sizes[1] + y+1)*image->sizes[0] + x+1;
-								n2 = ((z-1)*image->sizes[1] + y+1)*image->sizes[0] + x;
-								if ((z-1)>= 0 && (y+1) < image->sizes[1] && (x+1) <image->sizes[0])
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z+1)*image->sizes[1] + y+1)*image->sizes[0] + x+1;
-								n2 = ((z+1)*image->sizes[1] + y+1)*image->sizes[0] + x;
-								if ((z+1) < image->sizes[2] && (y+1)< image->sizes[1] && (x+1) < image->sizes[0])
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z-1)*image->sizes[1] + y-1)*image->sizes[0] + x+1;
-								n2 = ((z-1)*image->sizes[1] + y-1)*image->sizes[0] + x;
-								if ((z-1)>= 0 && (y-1) >= 0 && (x+1) < image->sizes[0])
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z+1)*image->sizes[1] + y-1)*image->sizes[0] + x+1;
-								n2 = ((z+1)*image->sizes[1] + y-1)*image->sizes[0] + x;
-								if ((z+1) < image->sizes[2] && (y+1) < image->sizes[1] && (x+1) < image->sizes[0])
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = (z*image->sizes[1] + y-1)*image->sizes[0] + x+1;
-								n2 = (z*image->sizes[1] + y-1)*image->sizes[0] + x;
-								if ((y-1)>= 0 && (x+1) < image->sizes[0])
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = (z*image->sizes[1] + y+1)*image->sizes[0] + x+1;
-								n2 = (z*image->sizes[1] + y+1)*image->sizes[0] + x;
-								if ((y+1) < image->sizes[1] && (x+1) < image->sizes[0])
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = (z*image->sizes[1] + y)*image->sizes[0] + x+1;
+								g_index[current] = my_Min(g_index[current],x_index[current]);
+								
+							}
+						}
+					}/*g_index, determining gaps*/
+				        
+					morphology_open(x_index,e_index, e1_index, image->sizes, dir);
+					residual(e_index, e1_index, e2_index, x_index, g_index, image->sizes);
+				
+				        dir = 5; /* -x - direction*/
+					for (i = 0; i < storage_size/image->depth; i++)
+			        	{
+				        	g_index[i] = 0.0;
+			        	}
+					for (z = 0 ; z < image->sizes[2] ; z++)/*determining gaps*/
+					{
+					        for (y = 0; y < image->sizes[1]; y++)
+						{
+						        for (x = 0; x < image->sizes[0]; x++)
+							{
+							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
 								if ((x+1) < image->sizes[0])
 								{
-								        g_index[current] = my_Min(g_index[current],(1.0-x_index[n1]));
+								        if ((z-1) >= 0)
+									{
+									        g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x+1,y,z-1)],(1.0-x_index[n(x,y,z-1)])));
+										if ((y+1) < image->sizes[1])
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x+1,y+1,z-1)],(1.0-x_index[n(x,y+1,z-1)])));
+										}
+										if ((y-1) >= 0)
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x+1,y-1,z-1)],(1.0-x_index[n(x,y-1,z-1)])));
+										}
+									}
+									if ((z+1) < image->sizes[2])
+									{
+									        g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x+1,y,z+1)],(1.0-x_index[n(x,y,z+1)])));
+										if ((y+1) < image->sizes[1])
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x+1,y+1,z+1)],(1.0-x_index[n(x,y+1,z+1)])));
+										}
+										if ((y-1) >= 0)
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x+1,y-1,z+1)],(1.0-x_index[n(x,y-1,z+1)])));
+										}
+									}
+									if ((y-1) >= 0)
+									{
+										g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x+1,y-1,z)],(1.0-x_index[n(x,y-1,z)])));
+										
+									}
+									if ((y+1) < image->sizes[1])
+									{
+										g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x+1,y+1,z)],(1.0-x_index[n(x,y+1,z)])));
+										
+									}
+									g_index[current] = my_Min(g_index[current],(1.0-x_index[n(x+1,y,z)]));
 								}
-								else
-								{
-								        g_index[current] = my_Min(g_index[current],1.0);
-								}
+								
 								g_index[current] = my_Min(g_index[current],x_index[current]);
 								
 							}
 						}
 					}/*g_index*/
 				        
-					for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								if (x_index[current] == 1.0)
-								{
-									neighbor= (z*image->sizes[1] + y)*image->sizes[0] + x-1;   
-							        	if ((x-1) >= 0)
-									{
-								        	if(x_index[neighbor]==1.0)
-										{
-									        	e_index[current] = 1.0;
-										}
-										else
-										{
-									        	e_index[current] = 0.0;
-										}
-									}
-									else
-									{
-								        	e_index[current] = 0.0;
-									}
-								}
-								else
-								{
-								        e_index[current] = 0.0;
-								}
-							}
-						}
-					}
-					for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								neighbor= (z*image->sizes[1] + y)*image->sizes[0] + x+1;   
-							        if ((x+1) < image->sizes[0])
-								{
-								        e1_index[current] = e_index[neighbor];
-								}
-								else
-								{
-								        e1_index[current] = 0.0;
-								}
-							}
-						}
-					}
+				        morphology_open(x_index,e_index, e1_index, image->sizes, dir);
 					residual(e_index, e1_index, e2_index, x_index, g_index, image->sizes);
 				 
-					/* x - direction*/
-				        for (z = 0 ; z < image->sizes[2] ; z++)
+					dir = 6;/* x - direction*/
+					for (i = 0; i < storage_size/image->depth; i++)
+			        	{
+				        	g_index[i] = 0.0;
+			        	}
+					for (z = 0 ; z < image->sizes[2] ; z++)/*determining gaps*/
 					{
 					        for (y = 0; y < image->sizes[1]; y++)
 						{
 						        for (x = 0; x < image->sizes[0]; x++)
 							{
 							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								n1 = ((z-1)*image->sizes[1] + y)*image->sizes[0] + x-1;
-								n2 = ((z-1)*image->sizes[1] + y)*image->sizes[0] + x;
-								if ((x-1)>= 0 && (z-1)>= 0)
+								if ((x-1) >= 0)
 								{
-								        g_index[current] = my_Min(x_index[n1],(1.0-x_index[n2]));
+								        if ((z-1) >= 0)
+									{
+									        g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x-1,y,z-1)],(1.0-x_index[n(x,y,z-1)])));
+										if ((y+1) < image->sizes[1])
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x-1,y+1,z-1)],(1.0-x_index[n(x,y+1,z-1)])));
+										}
+										if ((y-1) >= 0)
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x-1,y-1,z-1)],(1.0-x_index[n(x,y-1,z-1)])));
+										}
+									}
+									if ((z+1) < image->sizes[2])
+									{
+									        g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x-1,y,z+1)],(1.0-x_index[n(x,y,z+1)])));
+										if ((y+1) < image->sizes[1])
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x-1,y+1,z+1)],(1.0-x_index[n(x,y+1,z+1)])));
+										}
+										if ((y-1) >= 0)
+										{
+										         g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x-1,y-1,z+1)],(1.0-x_index[n(x,y-1,z+1)])));
+										}
+									}
+									if ((y-1) >= 0)
+									{
+										g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x-1,y-1,z)],(1.0-x_index[n(x,y-1,z)])));
+										
+									}
+									if ((y+1) < image->sizes[1])
+									{
+										g_index[current] = my_Max(g_index[current], my_Min(x_index[n(x-1,y+1,z)],(1.0-x_index[n(x,y+1,z)])));
+										
+									}
+									g_index[current] = my_Min(g_index[current],(1.0-x_index[n(x-1,y,z)]));
 								}
-								else
-								{
-								        g_index[current] = g_index[current];
-								}
-								n1 = ((z+1)*image->sizes[1] + y)*image->sizes[0] + x-1;
-								n2 = ((z+1)*image->sizes[1] + y)*image->sizes[0] + x;
-								if ((z+1) < image->sizes[2] && (x-1)>= 0)
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z-1)*image->sizes[1] + y-1)*image->sizes[0] + x-1;
-								n2 = ((z-1)*image->sizes[1] + y-1)*image->sizes[0] + x;
-								if ((z-1)>= 0 && (y-1)>= 0 && (x-1) >= 0)
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z+1)*image->sizes[1] + y-1)*image->sizes[0] + x-1;
-								n2 = ((z+1)*image->sizes[1] + y-1)*image->sizes[0] + x;
-								if ((z+1) < image->sizes[2] && (y-1)>=0 && (x-1) >= 0)
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z-1)*image->sizes[1] + y+1)*image->sizes[0] + x-1;
-								n2 = ((z-1)*image->sizes[1] + y+1)*image->sizes[0] + x;
-								if ((z-1)>= 0 && (y+1) < image->sizes[1] && (x-1) >= 0)
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = ((z+1)*image->sizes[1] + y+1)*image->sizes[0] + x-1;
-								n2 = ((z+1)*image->sizes[1] + y+1)*image->sizes[0] + x;
-								if ((z+1) < image->sizes[2] && (y+1) < image->sizes[1] && (x-1) >= 0)
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = (z*image->sizes[1] + y+1)*image->sizes[0] + x-1;
-								n2 = (z*image->sizes[1] + y+1)*image->sizes[0] + x;
-								if ((y-1)>= 0 && (x-1) >= 0)
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = (z*image->sizes[1] + y-1)*image->sizes[0] + x-1;
-								n2 = (z*image->sizes[1] + y-1)*image->sizes[0] + x;
-								if ((y-1)>= 0 && (x+1) < image->sizes[0])
-								{
-								        g_index[current] = my_Max(g_index[current],my_Min(x_index[n1],(1.0 -x_index[n2])));
-								}
-								n1 = (z*image->sizes[1] + y)*image->sizes[0] + x-1;
-								if ((x-1)>= 0)
-								{
-								        g_index[current] = my_Min(g_index[current],(1.0-x_index[n1]));
-								}
-								else
-								{
-								        g_index[current] = my_Min(g_index[current],1.0);
-								}
+								
 								g_index[current] = my_Min(g_index[current],x_index[current]);
 								
 							}
 						}
 					}/*g_index*/
-					for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								if (x_index[current] == 1.0)
-								{
-									neighbor= (z*image->sizes[1] + y)*image->sizes[0] + x+1;   
-							        	if ((x+1) < image->sizes[0])
-									{
-								        	if(x_index[neighbor]==1.0)
-										{
-									        	e_index[current] = 1.0;
-										}
-										else
-										{
-									        	e_index[current] = 0.0;
-										}
-									}
-									else
-									{
-								        	e_index[current] = 0.0;
-									}
-								}
-								else
-								{
-								        e_index[current] = 0.0;
-								}
-							}
-						}
-					}
-					for (z = 0 ; z < image->sizes[2] ; z++)
-					{
-					        for (y = 0; y < image->sizes[1]; y++)
-						{
-						        for (x = 0; x < image->sizes[0]; x++)
-							{
-							        current = (z*image->sizes[1] + y)*image->sizes[0] + x;
-								neighbor= (z*image->sizes[1] + y)*image->sizes[0] + x-1;   
-							        if ((x-1) >= 0)
-								{
-								        e1_index[current] = e_index[neighbor];
-								}
-								else
-								{
-								        e1_index[current] = 0.0;
-								}
-							}
-						}
-					}
+				        
+				        morphology_open(x_index,e_index, e1_index, image->sizes, dir);
 					residual(e_index, e1_index, e2_index, x_index, g_index, image->sizes);
 					
 					for (z = 0 ; z < image->sizes[2] ; z++)
