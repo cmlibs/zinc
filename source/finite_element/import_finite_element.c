@@ -1186,6 +1186,7 @@ from a previous call to this function.
 			if ((1==fscanf(input_file,"Fields=%d",&number_of_fields))&&
 				(0<=number_of_fields))
 			{
+				MANAGER_BEGIN_CACHE(FE_field)(fe_field_manager);
 				*field_order_info = CREATE(FE_field_order_info)();
 				/* read in the node fields */
 				for (i = 0; (i < number_of_fields) && return_code; i++)
@@ -1208,6 +1209,7 @@ from a previous call to this function.
 						return_code = 0;
 					}
 				}
+				MANAGER_END_CACHE(FE_field)(fe_field_manager);
 			}
 			else
 			{
@@ -3103,6 +3105,7 @@ from a previous call to this function.
 					}
 					if (return_code)
 					{
+						MANAGER_BEGIN_CACHE(FE_field)(fe_field_manager);
 						*field_order_info = CREATE(FE_field_order_info)();
 						/* read in the element fields */
 						for (i = 0; (i < number_of_fields) && return_code; i++)
@@ -3125,6 +3128,7 @@ from a previous call to this function.
 								return_code = 0;
 							}
 						}
+						MANAGER_END_CACHE(FE_field)(fe_field_manager);
 					}
 				}
 				else
