@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : image_utilities.c
 
-LAST MODIFIED : 23 May 2001
+LAST MODIFIED : 14 March 2002
 
 DESCRIPTION :
 Utilities for handling images.
@@ -13,16 +13,15 @@ Utilities for handling images.
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#if ! defined (IMAGEMAGICK)
 #if defined (BYTE_ORDER_CODE)
 #include <ctype.h> /*???DB.  Contains definition of __BYTE_ORDER for Linux */
 #endif /* defined (BYTE_ORDER_CODE) */
-#endif /* ! defined (IMAGEMAGICK) */
 
 #include "general/debug.h"
 #include "general/enumerator_private.h"
 #include "general/image_utilities.h"
 #include "general/indexed_list_private.h"
+#include "general/mystring.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 #if defined (IMAGEMAGICK)
@@ -30,19 +29,24 @@ Utilities for handling images.
 #include "magick/api.h"
 #endif /* defined (IMAGEMAGICK) */
 
-#if ! defined (IMAGEMAGICK)
-/* #define DEBUG 1 */
 #if defined (BYTE_ORDER_CODE)
 #if defined SGI
 #define __BYTE_ORDER 4321 
 #endif /* defined SGI */
 #endif /* defined (BYTE_ORDER_CODE) */
-#endif /* ! defined (IMAGEMAGICK) */
+
+/* #define DEBUG 1 */
+
 /*
 Module constants
 ----------------
 */
+
 #if ! defined (IMAGEMAGICK)
+
+#define TIFF_HI_LO 0x4D4D
+#define TIFF_LO_HI 0x4949
+
 /* field types */
 #define TIFF_BYTE_FIELD 1
 #define TIFF_ASCII_FIELD 2
@@ -79,6 +83,62 @@ Module constants
 Module types
 ------------
 */
+
+#if !defined (IMAGEMAGICK)
+enum Image_orientation
+{
+	LANDSCAPE_ORIENTATION,
+	PORTRAIT_ORIENTATION
+}; /* enum Image_orientation */
+#endif /* ! defined (IMAGEMAGICK) */
+
+struct Cmgui_image_information
+/*******************************************************************************
+LAST MODIFIED : 11 March 2002
+
+DESCRIPTION :
+Private structure for describing information needed to read or create a
+Cmgui_image. Note not all members are needed for each task; file names are
+needed for reading files, but only certain raw file types need width, height
+and other information to be specified before they can be read.
+If more than one file_name is included, they must have consistent width, height
+and other attributes.
+For creating a blank Cmgui_image, file names are ignored but most other
+parameters are used to set the image dimensions and colour depth.
+==============================================================================*/
+{
+	int valid; /* will be set to zero if not set up properly */
+	int number_of_file_names;
+	char **file_names;
+	/* following can be used to override format inferred from file extension */
+	enum Image_file_format image_file_format;
+	int height, number_of_bytes_per_component, number_of_components, width;
+	enum Raw_image_storage raw_image_storage;
+	int background_number_of_fill_bytes;
+	unsigned char *background_fill_bytes;
+};
+
+struct Cmgui_image
+/*******************************************************************************
+LAST MODIFIED : 26 February 2002
+
+DESCRIPTION :
+Private structure for storing 2-D images.
+==============================================================================*/
+{
+#if defined (IMAGEMAGICK)
+	/* Image magick images are stored in bottom-to-top format */
+	Image *magick_image;
+#else /* defined (IMAGEMAGICK) */
+	/* simple image_array storage is from top-to-bottom */
+	unsigned char **image_arrays;
+#endif /* defined (IMAGEMAGICK) */
+	int width, height;
+	int number_of_components;
+	int number_of_bytes_per_component;
+	int number_of_images;
+};
+
 #if ! defined (IMAGEMAGICK)
 struct Colour_map_entry
 /*******************************************************************************
@@ -281,7 +341,7 @@ the original values are not modified.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"byte_swap_and_write.  Unable to allocate memory for temp byte array.");
+				"byte_swap_and_write.  Unable to allocate memory for temp byte array");
 			return_code = 0;
 		}
 	}
@@ -673,13 +733,12 @@ Global functions
 ----------------
 */
 
-#if defined (IMAGEMAGICK)
 int Open_image_environment(char *program_name)
 /*******************************************************************************
-LAST MODIFIED : 10 April 2001
+LAST MODIFIED : 1 March 2002
 
 DESCRIPTION :
-Sets up ImageMagick library. Must be called before using any image I/O
+Sets up the image library. Must be called before using any image I/O
 functions, ie. at the start of the program.
 ==============================================================================*/
 {
@@ -688,7 +747,9 @@ functions, ie. at the start of the program.
 	ENTER(Open_image_environment);
 	if (program_name)
 	{
+#if defined (IMAGEMAGICK)
 		MagickIncarnate(program_name);
+#endif /* defined (IMAGEMAGICK) */
 		return_code = 1;
 	}
 	else
@@ -701,9 +762,7 @@ functions, ie. at the start of the program.
 
 	return (return_code);
 } /* Open_image_environment */
-#endif /* defined (IMAGEMAGICK) */
 
-#if ! defined (IMAGEMAGICK)
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Image_file_format)
 {
 	char *enumerator_string;
@@ -711,13 +770,25 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Image_file_format)
 	ENTER(ENUMERATOR_STRING(Image_file_format));
 	switch (enumerator_value)
 	{
+		case BMP_FILE_FORMAT:
+		{
+			enumerator_string = "bmp";
+		} break;
 		case JPG_FILE_FORMAT:
 		{
 			enumerator_string = "jpg";
 		} break;
+		case GIF_FILE_FORMAT:
+		{
+			enumerator_string = "gif";
+		} break;
 		case POSTSCRIPT_FILE_FORMAT:
 		{
 			enumerator_string = "postscript";
+		} break;
+		case RAW_FILE_FORMAT:
+		{
+			enumerator_string = "raw";
 		} break;
 		case RGB_FILE_FORMAT:
 		{
@@ -745,7 +816,7 @@ DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Image_file_format)
 
 char *Image_file_format_extension(enum Image_file_format image_file_format)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2001
+LAST MODIFIED : 1 March 2002
 
 DESCRIPTION :
 Returns the expected file extension stem for a given <image_file_format>. By
@@ -759,9 +830,17 @@ but extra characters may follow. This is especially true for .tif/.tiff and
 	ENTER(Image_file_format_extension);
 	switch (image_file_format)
 	{	
+		case BMP_FILE_FORMAT:
+		{
+			file_format_extension = "bmp";
+		} break;
 		case JPG_FILE_FORMAT:
 		{
 			file_format_extension = "jpg";
+		} break;
+		case GIF_FILE_FORMAT:
+		{
+			file_format_extension = "gif";
 		} break;
 		case POSTSCRIPT_FILE_FORMAT:
 		{
@@ -792,51 +871,6 @@ but extra characters may follow. This is especially true for .tif/.tiff and
 
 	return (file_format_extension);
 } /* Image_file_format_extension */
-
-int Image_file_format_can_be_read(enum Image_file_format image_file_format,
-	void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 10 April 2001
-
-DESCRIPTION :
-Returns true if CMGUI can read the specified <image_file_format>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Image_file_format_can_be_read);
-	USE_PARAMETER(dummy_void);
-	return_code =
-		(RAW_FILE_FORMAT == image_file_format) ||
-		(RGB_FILE_FORMAT == image_file_format) ||
-		(TIFF_FILE_FORMAT == image_file_format) ||
-		(YUV_FILE_FORMAT == image_file_format);
-	LEAVE;
-
-	return (return_code);
-} /* Image_file_format_can_be_read( */
-
-int Image_file_format_can_be_written(enum Image_file_format image_file_format,
-	void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 10 April 2001
-
-DESCRIPTION :
-Returns true if CMGUI can write the specified <image_file_format>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Image_file_format_can_be_written);
-	USE_PARAMETER(dummy_void);
-	return_code =
-		(POSTSCRIPT_FILE_FORMAT == image_file_format) ||
-		(RGB_FILE_FORMAT == image_file_format) ||
-		(TIFF_FILE_FORMAT == image_file_format);
-	LEAVE;
-
-	return (return_code);
-} /* Image_file_format_can_be_written */
 
 int Image_file_format_from_file_name(char *file_name,
 	enum Image_file_format *image_file_format_address)
@@ -890,128 +924,41 @@ Returns the <Image_file_format> determined from the file_extension in
 
 	return (return_code);
 } /* Image_file_format_from_file_name */
-#endif /* ! defined (IMAGEMAGICK) */
 
-char *Raw_image_storage_string(enum Raw_image_storage raw_image_storage)
-/*******************************************************************************
-LAST MODIFIED : 12 October 2000
-
-DESCRIPTION :
-Returns a pointer to a static string describing the raw_image_storage,
-eg. RAW_INTERLEAVED_RGB = "raw_interleaved_rgb". This string should match the
-command used to set the type. The returned string must not be DEALLOCATEd!
-==============================================================================*/
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Raw_image_storage)
 {
-	char *return_string;
+	char *enumerator_string;
 
-	ENTER(Raw_image_storage_string);
-	switch (raw_image_storage)
+	ENTER(ENUMERATOR_STRING(Raw_image_storage));
+	switch (enumerator_value)
 	{
 		case RAW_INTERLEAVED_RGB:
 		{
-			return_string="raw_interleaved_rgb";
+			enumerator_string = "raw_interleaved_rgb";
 		} break;
-		case 	RAW_PLANAR_RGB:
+		case RAW_PLANAR_RGB:
 		{
-			return_string="raw_planar_rgb";
+			enumerator_string = "raw_planar_rgb";
 		} break;
 		default:
 		{
-			display_message(ERROR_MESSAGE,
-				"Raw_image_storage_string.  Unknown raw_image_storage");
-			return_string=(char *)NULL;
+			enumerator_string = (char *)NULL;
 		} break;
 	}
 	LEAVE;
 
-	return (return_string);
-} /* Raw_image_storage_string */
+	return (enumerator_string);
+} /* ENUMERATOR_STRING(Raw_image_storage) */
 
-char **Raw_image_storage_get_valid_strings(int *number_of_valid_strings)
-/*******************************************************************************
-LAST MODIFIED : 12 October 2000
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Raw_image_storage)
 
-DESCRIPTION :
-Returns an allocated array of pointers to all static strings for valid
-Raw_image_storage values.
-Strings are obtained from function Raw_image_storage_string.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-{
-	char **valid_strings;
-
-	ENTER(Raw_image_storage_get_valid_strings);
-	if (number_of_valid_strings)
-	{
-		*number_of_valid_strings=2;
-		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
-		{
-			valid_strings[0]=Raw_image_storage_string(RAW_INTERLEAVED_RGB);
-			valid_strings[1]=Raw_image_storage_string(RAW_PLANAR_RGB);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Raw_image_storage_get_valid_strings.  Not enough memory");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Raw_image_storage_get_valid_strings.  Invalid argument(s)");
-		valid_strings=(char **)NULL;
-	}
-	LEAVE;
-
-	return (valid_strings);
-} /* Raw_image_storage_get_valid_strings */
-
-enum Raw_image_storage Raw_image_storage_from_string(
-	char *raw_image_storage_string)
-/*******************************************************************************
-LAST MODIFIED : 12 October 2000
-
-DESCRIPTION :
-Returns the <Raw_image_storage> described by <raw_image_storage_string>.
-==============================================================================*/
-{
-	enum Raw_image_storage raw_image_storage;
-
-	ENTER(Raw_image_storage_from_string);
-	if (raw_image_storage_string)
-	{
-		if (fuzzy_string_compare_same_length(raw_image_storage_string,
-			Raw_image_storage_string(RAW_INTERLEAVED_RGB)))
-		{
-			raw_image_storage = RAW_INTERLEAVED_RGB;
-		}
-		else if (fuzzy_string_compare_same_length(raw_image_storage_string,
-			Raw_image_storage_string(RAW_PLANAR_RGB)))
-		{
-			raw_image_storage = RAW_PLANAR_RGB;
-		}
-		else
-		{
-			raw_image_storage = RAW_IMAGE_STORAGE_INVALID;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Raw_image_storage_from_string.  Invalid argument");
-		raw_image_storage = RAW_IMAGE_STORAGE_INVALID;
-	}
-	LEAVE;
-
-	return (raw_image_storage);
-} /* Raw_image_storage_from_string */
-
-int write_image_file(char *file_name,int number_of_components,
-	int number_of_bytes_per_component,
-	int height,int width,int row_padding,
+#if defined (OLD_CODE)
+int write_image_file(char *file_name,
+	int number_of_components, int number_of_bytes_per_component,
+	int width, int height, int row_padding,
 	long unsigned *image)
 /*******************************************************************************
-LAST MODIFIED : 8 May 2001
+LAST MODIFIED : 4 March 2002
 
 DESCRIPTION :
 <row_padding> indicates a number of bytes that is padding on each row of data 
@@ -1132,7 +1079,7 @@ DESCRIPTION :
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"read_image_file.  Could not create image information.");
+						"write_image_file.  Could not create image information");
 					return_code = 0;
 				}
 			}
@@ -1158,14 +1105,87 @@ DESCRIPTION :
 
 	return (return_code);
 } /* write_image_file */
+#endif /* defined (OLD_CODE) */
+
+static int get_yuv_resolution_from_file_size(int file_size,
+	int *width, int *height)
+/*******************************************************************************
+LAST MODIFIED : 16 February 2002
+
+DESCRIPTION :
+Determines the <width> and <height> of a yuv image file of <file_size> if
+that file size is that of a common video standard.
+Returns 1 if a size is successfully determined, and zero without error if not.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(get_yuv_resolution_from_file_size);
+	if (width && height)
+	{
+		return_code = 1;
+		if ((1920*1080*2) == file_size)
+		{
+			/* North American HDTV standard, 2 interlaced fields; put fields
+				 side by side in double wide image */
+			*width = 3840;
+			*height = 540;
+		}
+		else if ((1920*540*2) == file_size)
+		{
+			/* North American HDTV standard, single field */
+			*width = 1920;
+			*height = 540;
+		}
+		else if ((720*486*2) == file_size)
+		{
+			/* CCIR-601 NSTC format, 2 interlaced fields; put fields
+				 side by side in double wide image */
+			*width = 1440;
+			*height = 243;
+		}
+		else if ((720*243*2) == file_size)
+		{
+			/* CCIR-601 NSTC format, single field */
+			*width = 720;
+			*height = 243;
+		}
+		else if ((720*576*2) == file_size)
+		{
+			/* CCIR-601 PAL format, 2 interlaced fields; put fields
+				 side by side in double wide image */
+			*width = 1440;
+			*height = 288;
+		}
+		else if ((720*288*2) == file_size)
+		{
+			/* CCIR-601 PAL format, single field */
+			*width = 720;
+			*height = 288;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_yuv_resolution_from_file_size.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_yuv_resolution_from_file_size */
 
 #if ! defined (IMAGEMAGICK)
-int write_rgb_image_file(char *file_name,int number_of_components,
-	int number_of_bytes_per_component,
-	int number_of_rows,int number_of_columns,int row_padding,
+int write_rgb_image_file(char *file_name,
+	int number_of_components, int number_of_bytes_per_component,
+	int number_of_columns, int number_of_rows, int row_padding,
 	long unsigned *image)
 /*******************************************************************************
-LAST MODIFIED : 16 April 2000
+LAST MODIFIED : 4 March 2002
 
 DESCRIPTION :
 Writes an image in SGI rgb file format.
@@ -1184,11 +1204,9 @@ Writes an image in SGI rgb file format.
 	unsigned short components,dimension,height,width;
 
 	ENTER(write_rgb_image_file);
-
 	least_to_most = 0;
-
-	if (file_name&&(0<number_of_components)&&(0<number_of_rows)&&
-		(0<number_of_columns)&&image)
+	if (file_name && (0 < number_of_components) && (0 < number_of_columns) &&
+		(0 < number_of_rows) && image)
 	{
 		if (number_of_bytes_per_component == 1)
 		{
@@ -1380,26 +1398,29 @@ Writes an image in SGI rgb file format.
 	return (return_code);
 } /* write_rgb_image_file */
 
-int write_postscript_image_file(char *file_name,int number_of_components,
-	int number_of_bytes_per_component,
-	int number_of_rows,int number_of_columns,int row_padding,
-	float pixel_aspect_ratio,long unsigned *image,
-	enum Image_orientation image_orientation,struct Printer *printer)
+int write_postscript_image_file(char *file_name,
+	int number_of_components, int number_of_bytes_per_component,
+	int number_of_columns, int number_of_rows, int row_padding,
+	float pixel_aspect_ratio,
+	enum Image_orientation image_orientation,
+	long unsigned *image)
 /*******************************************************************************
-LAST MODIFIED : 28 May 1999
+LAST MODIFIED : 4 March 2002
 
 DESCRIPTION :
 Writes an image in Postscript file format.
 ???DB.  Currently only outputs RGBA images
 <row_padding> indicates a number of bytes that is padding on each row of data 
-(textures are required to be in multiples of two).
+since textures are required to be in powers of two.
 ==============================================================================*/
 {
 	FILE *output_file;
 	float image_height,image_width,printer_page_height,printer_page_width,
 		scale_mm_to_default;
 	int bounding_box_bottom,bounding_box_left,bounding_box_right,bounding_box_top,
-		count,i,j,printer_page_height_mm,printer_page_width_mm,return_code;
+		count,i,j, page_bottom_margin_mm, page_height_mm, page_left_margin_mm,
+		page_right_margin_mm, page_top_margin_mm, page_width_mm,
+		printer_page_height_mm,printer_page_width_mm,return_code;
 	unsigned char *pixel;
 
 	ENTER(write_postscript_image_file);
@@ -1408,8 +1429,8 @@ Writes an image in Postscript file format.
 		number_of_components,number_of_rows,number_of_columns,image);
 	/* check arguments */
 	return_code=0;
-	if (file_name&&(4==number_of_components)&&(0<number_of_rows)&&
-		(0<number_of_columns)&&(0<pixel_aspect_ratio)&&image&&printer)
+	if (file_name && (4 == number_of_components) && (0 < number_of_columns) &&
+		(0 < number_of_rows) && (0 < pixel_aspect_ratio) && image)
 	{
 		if (number_of_bytes_per_component == 1)
 		{
@@ -1430,37 +1451,45 @@ Writes an image in Postscript file format.
 						image_width=(float)number_of_columns*pixel_aspect_ratio;
 					} break;
 				}
-				printer_page_height_mm=printer->page_height_mm-
-				printer->page_top_margin_mm-printer->page_bottom_margin_mm;
-				printer_page_width_mm=printer->page_width_mm-
-				printer->page_left_margin_mm-printer->page_right_margin_mm;
+				/* following six constants used to be read in from defaults in 
+					 user_interface/printer.c */
+				page_width_mm = 210;
+				page_height_mm = 297;
+				page_left_margin_mm = 10;
+				page_right_margin_mm = 10;
+				page_bottom_margin_mm = 25;
+				page_top_margin_mm = 25;
+
+				printer_page_height_mm = page_height_mm -
+					page_top_margin_mm - page_bottom_margin_mm;
+				printer_page_width_mm = page_width_mm -
+					page_left_margin_mm - page_right_margin_mm;
 				/* the default postscript unit is a 72nd of an inch */
-				scale_mm_to_default=72./25.4;
-				if (image_height*(float)printer_page_width_mm<image_width*
-					(float)printer_page_height_mm)
+				scale_mm_to_default = 72./25.4;
+				if (image_height*(float)printer_page_width_mm <
+					image_width*(float)printer_page_height_mm)
 				{
-					bounding_box_left=(int)(scale_mm_to_default*
-						(float)(printer->page_left_margin_mm));
-					bounding_box_right=(int)(scale_mm_to_default*
-						(float)(printer->page_width_mm-printer->page_right_margin_mm));
-					bounding_box_top=(int)(scale_mm_to_default*
-						(float)(printer->page_height_mm-printer->page_top_margin_mm));
-					bounding_box_bottom=(int)(scale_mm_to_default*
-						((float)(printer->page_height_mm-printer->page_top_margin_mm)-
+					bounding_box_left = (int)(scale_mm_to_default*
+						(float)(page_left_margin_mm));
+					bounding_box_right = (int)(scale_mm_to_default*
+						(float)(page_width_mm - page_right_margin_mm));
+					bounding_box_top = (int)(scale_mm_to_default*
+						(float)(page_height_mm - page_top_margin_mm));
+					bounding_box_bottom = (int)(scale_mm_to_default*
+						((float)(page_height_mm - page_top_margin_mm) -
 							printer_page_width_mm*image_height/image_width));
 				}
 				else
 				{
-					bounding_box_left=(int)(scale_mm_to_default*
-						(float)(printer->page_left_margin_mm));
-					bounding_box_right=(int)(scale_mm_to_default*
-						((float)(printer->page_left_margin_mm)+
+					bounding_box_left = (int)(scale_mm_to_default*
+						(float)(page_left_margin_mm));
+					bounding_box_right = (int)(scale_mm_to_default*
+						((float)(page_left_margin_mm) +
 							printer_page_height_mm*image_width/image_height));
-					bounding_box_top=(int)(scale_mm_to_default*
-						(float)(printer->page_height_mm-
-							printer->page_top_margin_mm));
-					bounding_box_bottom=(int)(scale_mm_to_default*
-						(float)(printer->page_bottom_margin_mm));
+					bounding_box_top = (int)(scale_mm_to_default*
+						(float)(page_height_mm - page_top_margin_mm));
+					bounding_box_bottom = (int)(scale_mm_to_default*
+						(float)(page_bottom_margin_mm));
 				}
 				/* output encapsulated postscript header */
 				(void)fprintf(output_file,"%%!PS-Adobe-3.0 EPSF-3.0\n");
@@ -1559,7 +1588,7 @@ Writes an image in Postscript file format.
 				for (i=number_of_rows-1;i>=0;i--)
 				{
 					pixel=((unsigned char *)image)+i*number_of_components*
-				   (number_of_columns+row_padding);
+					(number_of_columns+row_padding);
 					for (j=number_of_columns;j>0;j--)
 					{
 						(void)fprintf(output_file,"%02x%02x%02x",pixel[0],
@@ -2007,12 +2036,12 @@ Uses pack bits compression to compress a stream of bytes to a file.
 	return (return_code);
 } /* pack_bits_compress_to_file */
 
-int write_tiff_image_file(char *file_name,int number_of_components,
-	int number_of_bytes_per_component,
-	int number_of_rows,int number_of_columns, int row_padding,
-	enum Tiff_image_compression compression,long unsigned *image)
+int write_tiff_image_file(char *file_name,
+	int number_of_components, int number_of_bytes_per_component,
+	int number_of_columns, int number_of_rows, int row_padding,
+	enum Tiff_image_compression compression, long unsigned *image)
 /*******************************************************************************
-LAST MODIFIED : 26 August 1999
+LAST MODIFIED : 4 March 2002
 
 DESCRIPTION :
 Writes an <image> in TIFF file format using <compression>.
@@ -2044,8 +2073,8 @@ Not working for 64 bit as assumes a long is 4 bytes!
 #endif /* defined (DEBUG) */
 	/* check arguments */
 	return_code=0;
-	if (file_name&&(0<number_of_components)&&(0<number_of_rows)&&
-		(0<number_of_columns)&&image)
+	if (file_name && (0 < number_of_components) && (0 < number_of_columns) &&
+		(0 < number_of_rows) && image)
 	{
 		if (number_of_bytes_per_component == 1)
 		{
@@ -2681,10 +2710,10 @@ Not working for 64 bit as assumes a long is 4 bytes!
 } /* write_tiff_image_file */
 
 #if defined (OLD_CODE)
-int write_tiff_image_file(char *file_name,int number_of_components,
-	int number_of_rows,int number_of_columns,long unsigned *image)
+int write_tiff_image_file(char *file_name, int number_of_components,
+	int number_of_columns, int number_of_rows, long unsigned *image)
 /*******************************************************************************
-LAST MODIFIED : 29 July 1998
+LAST MODIFIED : 4 March 2002
 
 DESCRIPTION :
 Writes an image in TIFF file format.
@@ -2709,10 +2738,9 @@ Writes an image in TIFF file format.
 	unsigned short byte_order,image_function_definition_entry_count,version;
 
 	ENTER(write_tiff_image_file);
-	/* check arguments */
 	return_code=0;
-	if (file_name&&(0<number_of_components)&&(0<number_of_rows)&&
-		(0<number_of_columns)&&image)
+	if (file_name && (0 < number_of_components) && (0 < number_of_columns) &&
+		(0 < number_of_rows) && image)
 	{
 		/* open the output file */
 		if (output_file=fopen(file_name,"wb"))
@@ -2830,38 +2858,40 @@ Writes an image in TIFF file format.
 } /* write_tiff_image_file */
 #endif /* defined (OLD_CODE) */
 
-int read_raw_image_file(char *file_name,int *number_of_components_address,
-	int *number_of_bytes_per_component,
-	long int *height_address,long int *width_address,
-	enum Raw_image_storage raw_image_storage, unsigned long **image_address)
+int read_raw_image_file(char *file_name,
+	enum Raw_image_storage raw_image_storage,
+	int *width_address, int *height_address, int *number_of_components_address,
+	int *number_of_bytes_per_component_address, unsigned char **image_address)
 /*******************************************************************************
-LAST MODIFIED : 12 October 2000
+LAST MODIFIED : 14 February 2002
 
 DESCRIPTION :
 Reads an image from a RAW file, returning it as an RGB image. RAW images have
 no header, and hence the <raw_image_storage> and width at <*width_address> must
-be specified in order to read it. If a positive <height> is specified, an
+be specified in order to read it. If a positive height is specified, an
 image of that height will be returned, otherwise the height will be calculated
 from the file size. Note indexed RAW files are not supported.
 ==============================================================================*/
 {
-	unsigned char *byte_row,*image,*image_ptr;
+	unsigned char *byte_row, *image, *image_ptr;
 	FILE *image_file;
-	int aligned_row_size,bytes_read,comp,i,return_code,row,row_size;
-	long int file_size,height,width;
+	int aligned_row_size, bytes_read, comp, file_size, height, i, return_code,
+		row, row_size, width;
 	struct stat buf;
 
 	ENTER(read_raw_image_file);
-	if (file_name&&number_of_components_address&&height_address&&width_address&&
+	if (file_name && width_address && height_address &&
+		number_of_components_address && number_of_bytes_per_component_address &&
 		image_address)
 	{
-		if (0<(width = *width_address))
+		if (0 < (width = *width_address))
 		{
-			return_code=1;
-			if (image_file=fopen(file_name,"rb"))
+			return_code = 1;
+			if (image_file = fopen(file_name,"rb"))
 			{
 				/* use stat to get size of file to determine format from */
-				if ((0==stat(file_name,&buf))&&(0<(file_size=(long int)(buf.st_size))))
+				if ((0 == stat(file_name, &buf)) &&
+					(0 < (file_size = (int)(buf.st_size))))
 				{
 					if (0 >= (height = *height_address))
 					{
@@ -2869,9 +2899,9 @@ from the file size. Note indexed RAW files are not supported.
 						height = (file_size + width*3 - 1) / (width*3);
 					}
 					/* rows are 4-byte aligned */
-					row_size=width*3;
-					aligned_row_size=((width*3+3)/4)*4;
-					if (ALLOCATE(image,unsigned char,aligned_row_size*height))
+					row_size = width*3;
+					aligned_row_size = (int)(((width*3 + 3)/4)*4);
+					if (ALLOCATE(image, unsigned char, aligned_row_size*height))
 					{
 						switch (raw_image_storage)
 						{
@@ -2940,10 +2970,10 @@ from the file size. Note indexed RAW files are not supported.
 						if (return_code)
 						{
 							*number_of_components_address = 3;
-							*number_of_bytes_per_component = 1;
+							*number_of_bytes_per_component_address = 1;
 							*height_address = height;
 							*width_address = width;
-							*image_address = (unsigned long *)image;
+							*image_address = image;
 						}
 						else
 						{
@@ -2989,12 +3019,11 @@ from the file size. Note indexed RAW files are not supported.
 	return (return_code);
 } /* read_raw_image_file */
 
-int read_rgb_image_file(char *file_name,int *number_of_components_address,
-	int *number_of_bytes_per_component,
-	long int *height_address,long int *width_address,
-	long unsigned **image_address)
+int read_rgb_image_file(char *file_name,
+	int *width_address, int *height_address, int *number_of_components_address,
+	int *number_of_bytes_per_component_address, unsigned char **image_address)
 /*******************************************************************************
-LAST MODIFIED : 16 April 2000
+LAST MODIFIED : 14 February 2002
 
 DESCRIPTION :
 Reads an image from a SGI rgb file.
@@ -3006,7 +3035,8 @@ number_of_components=4, RGBA
 ==============================================================================*/
 {
 	FILE *image_file;
-	int i,j,k,least_to_most,max_row_size,number_of_bytes,number_of_rows,
+	int i, j, k, least_to_most, max_row_size, number_of_bytes,
+		number_of_bytes_per_component, number_of_rows,
 		return_code,run_length;
 	long row_size, row_start;
 	unsigned char *image,*image_ptr,pixel,*row,*row_ptr;
@@ -3015,11 +3045,9 @@ number_of_components=4, RGBA
 		number_of_components,pixel2,width;
 
 	ENTER(read_rgb_image_file);
-
 	least_to_most = 0;
-
-	/* check arguments */
-	if (file_name&&number_of_components_address&&height_address&&width_address&&
+	if (file_name && width_address && height_address &&
+		number_of_components_address && number_of_bytes_per_component_address &&
 		image_address)
 	{
 		if (image_file=fopen(file_name,"rb"))
@@ -3052,8 +3080,8 @@ number_of_components=4, RGBA
 					number_of_rows=height*number_of_components;
 					return_code=1;
 					image=(unsigned char *)NULL;
-					*number_of_bytes_per_component = (image_file_type&0x000000ff);
-					number_of_bytes = number_of_components * *number_of_bytes_per_component;
+					number_of_bytes_per_component = (image_file_type & 0x000000ff);
+					number_of_bytes = number_of_components*number_of_bytes_per_component;
 					if (0x00000100==(image_file_type&0x0000ff00))
 					{
 						/* run length encoded */
@@ -3094,7 +3122,7 @@ number_of_components=4, RGBA
 										max_row_size = row_size;
 									}
 								}
-								max_row_size *= *number_of_bytes_per_component;
+								max_row_size *= number_of_bytes_per_component;
 								if (ALLOCATE(row,unsigned char,max_row_size))
 								{
 									row_start_char=row_starts_char;
@@ -3103,7 +3131,7 @@ number_of_components=4, RGBA
 									i=0;
 									while (return_code&&(i<number_of_components))
 									{
-										image_ptr=image+i* *number_of_bytes_per_component;
+										image_ptr = image + i*number_of_bytes_per_component;
 										j=height;
 										while (return_code&&(j>0))
 										{
@@ -3115,7 +3143,7 @@ number_of_components=4, RGBA
 												(((long)row_size_char[2]) << 8) +
 												(((long)row_size_char[1]) << 16) +
 												(((long)row_size_char[0]) << 24);
-											switch( *number_of_bytes_per_component )
+											switch(number_of_bytes_per_component)
 											{
 												case 1:
 												{
@@ -3254,7 +3282,7 @@ number_of_components=4, RGBA
 					{
 						/* verbatim */
 						if (ALLOCATE(row,unsigned char,
-							width*(*number_of_bytes_per_component))&&
+							width*number_of_bytes_per_component)&&
 							ALLOCATE(image,unsigned char,width*height*number_of_bytes))
 						{
 							if (0==fseek(image_file,512,SEEK_SET))
@@ -3267,11 +3295,11 @@ number_of_components=4, RGBA
 									while (return_code&&(j>0))
 									{
 										if (width==read_and_byte_swap(row,
-											*number_of_bytes_per_component,width,least_to_most,
+											number_of_bytes_per_component,width,least_to_most,
 											image_file))
 										{
 											row_ptr=row;
-											switch( *number_of_bytes_per_component )
+											switch(number_of_bytes_per_component)
 											{
 												case 1:
 												{
@@ -3328,11 +3356,12 @@ number_of_components=4, RGBA
 					}
 					if (return_code)
 					{
-						*width_address=width;
-						*height_address=height;
-						*number_of_components_address=
-							(int)number_of_components;
-						*image_address=(unsigned long *)image;
+						*width_address = (int)width;
+						*height_address = (int)height;
+						*number_of_components_address = (int)number_of_components;
+						*number_of_bytes_per_component_address =
+							number_of_bytes_per_component;
+						*image_address = image;
 					}
 					else
 					{
@@ -3371,12 +3400,11 @@ number_of_components=4, RGBA
 	return (return_code);
 } /* read_rgb_image_file */
 
-int read_tiff_image_file(char *file_name,int *number_of_components_address,
-	int *number_of_bytes_per_component,
-	long int *height_address,long int *width_address,
-	long unsigned **image_address)
+int read_tiff_image_file(char *file_name,
+	int *width_address, int *height_address, int *number_of_components_address,
+	int *number_of_bytes_per_component_address, unsigned char **image_address)
 /*******************************************************************************
-LAST MODIFIED : 30 March 2001
+LAST MODIFIED : 14 February 2002
 
 DESCRIPTION :
 Reads an image from a TIFF file.
@@ -3471,11 +3499,11 @@ the second the denominator.
 	printf("enter read_tiff_image_file\n");
 #endif /* defined (DEBUG) */
 	return_code=0;
-	/* check arguments */
-	if (file_name&&number_of_components_address&&height_address&&width_address&&
+	if (file_name && width_address && height_address &&
+		number_of_components_address && number_of_bytes_per_component_address &&
 		image_address)
 	{
-		*number_of_bytes_per_component = 1;
+		*number_of_bytes_per_component_address = 1;
 		if (tiff_file=fopen(file_name,"rb"))
 		{
 			return_code=1;
@@ -4263,10 +4291,10 @@ the second the denominator.
 																	DEALLOCATE(strip);
 																	if (return_code)
 																	{
-																		*width_address=image_width;
-																		*height_address=image_length;
-																		*image_address=(unsigned long *)image;
-																		*number_of_components_address=1;
+																		*width_address = (int)image_width;
+																		*height_address = (int)image_length;
+																		*image_address = image;
+																		*number_of_components_address = 1;
 																	}
 																	else
 																	{
@@ -4374,9 +4402,9 @@ the second the denominator.
 																	}
 																	if (return_code)
 																	{
-																		*width_address=image_width;
-																		*height_address=image_length;
-																		*image_address=(unsigned long *)image;
+																		*width_address = (int)image_width;
+																		*height_address = (int)image_length;
+																		*image_address = image;
 																		/* reorder the rows */
 																		image_ptr=image+
 																			(image_width*(image_length-1));
@@ -4391,7 +4419,7 @@ the second the denominator.
 																			image_ptr -= image_width;
 																			image += image_width;
 																		}
-																		*number_of_components_address=1;
+																		*number_of_components_address = 1;
 																	}
 																	else
 																	{
@@ -4494,9 +4522,9 @@ present in some files */
 															}
 															if (return_code)
 															{
-																*width_address=image_width;
-																*height_address=image_length;
-																*image_address=(unsigned long *)image;
+																*width_address = (int)image_width;
+																*height_address = (int)image_length;
+																*image_address = image;
 																/* reorder the rows */
 																image_ptr=image+(image_width*samples_per_pixel*
 																	(image_length-1));
@@ -4523,7 +4551,8 @@ present in some files */
 												else
 												{
 													display_message(ERROR_MESSAGE,
-							"read_tiff_image_file.  Insufficient memory for image array");
+														"read_tiff_image_file.  "
+														"Insufficient memory for image array");
 													return_code=0;
 												}
 											}
@@ -4532,12 +4561,14 @@ present in some files */
 												if (TIFF_NO_COMPRESSION_VALUE==compression)
 												{
 													display_message(ERROR_MESSAGE,
-														"read_tiff_image_file.  Invalid field(s) for rgb image");
+														"read_tiff_image_file.  "
+														"Invalid field(s) for rgb image");
 												}
 												else
 												{
 													display_message(ERROR_MESSAGE,
-														"read_tiff_image_file.  Compression in tiff not supported for rgb image");
+														"read_tiff_image_file.  "
+														"Compression in tiff not supported for rgb image");
 												}
 												return_code=0;
 											}
@@ -4545,198 +4576,17 @@ present in some files */
 										case TIFF_PALETTE_COLOUR:
 										{
 											/* palette colour image */
-											display_message(ERROR_MESSAGE,
-				"read_tiff_image_file.  Palette colour images not currently supported");
+											display_message(ERROR_MESSAGE, "read_tiff_image_file.  "
+												"Palette colour images not currently supported");
 											return_code=0;
 										} break;
 										default:
 										{
-											display_message(ERROR_MESSAGE,
-									"read_tiff_image_file.  Unknown photometric interpretation");
+											display_message(ERROR_MESSAGE, "read_tiff_image_file.  "
+												"Unknown photometric interpretation");
 											return_code=0;
 										} break;
 									}
-#if defined (OLD_CODE)
-								if (1==samples_per_pixel)
-								{
-									if (1==bits_per_sample)
-									{
-										tiff_class=BI_LEVEL;
-									}
-									else
-									{
-										if (3==photometric_interpretation)
-										{
-											tiff_class=PALETTE;
-										}
-										else
-										{
-											tiff_class=GREY_SCALE;
-										}
-									}
-								}
-								else
-								{
-									tiff_class=RGB;
-								}
-								/* find out how many strips of image data contained in the file
-									per image */
-									strips_per_image = (rows_per_strip == INFINITY) ? 1 :
-									((*image_length) + rows_per_strip - 1) / rows_per_strip;
-									strips_per_image = (rows_per_strip == INFINITY) ? 1 :
-									((*image_length) + rows_per_strip - 1) / rows_per_strip;
-
-								/* calculate the number of bytes per row and number of strip
-									addresses */
-								if (planar_config == 1)
-									no_of_strip_offsets = strips_per_image;
-								else if (planar_config == 2)
-									no_of_strip_offsets = samples_per_pixel * strips_per_image;
-
-								/* main detailed output of image data */
-								fprintf(output,"\n\n    ************************************\n");
-								fprintf(output,"   *                                  *\n");
-								fprintf(output,"  *     I M A G E   D E T A I L S    *\n");
-								fprintf(output," *                                  *\n");
-								fprintf(output,"************************************\n\n");
-								fprintf(output,"TIFF CLASS: %ld\n", tiff_class);
-								fprintf(output,"where:  0 = Bi-level   1 = Grey Scale\n");
-								fprintf(output,"        2 = Palette    3 = RGB Colour\n\n");
-								fprintf(output,"Planar Configuration = %ld\n\n", planar_config);
-								fprintf(output,"IMAGE WIDTH = %ld\n",(*image_width));
-								fprintf(output,"IMAGE LENGTH = %ld\n\n",(*image_length));
-								fprintf(output,"Bits/Sample = %ld\n", bits_per_sample);
-								fprintf(output,"Samples/Pixel = %ld\n\n", samples_per_pixel);
-		/*PPP*/			if (x_resolution && y_resolution)
-		/*PPP*/				fprintf(output, "Resolution = %d by %d dots per inch (?)\n", x_resolution, y_resolution);
-								fprintf(output,"Image is stored in %ld  data strip%s.\n",
-									strips_per_image, (strips_per_image == 1) ? "" : "s");
-								fprintf(output,"Address of %s strip offset = %ld\n",
-									(strips_per_image == 1) ? "only" : "first", strip_offset_address);
-								*bits_per_pixel = bits_per_sample * samples_per_pixel;
-								if (strips_per_image > 1)
-									fprintf(output,"Address of Bytes/Strip Information = %ld\n",
-										bytes_per_strip_address);
-
-								/***********************************************************
-									Find, read and write image data to bit map file.
-									If data is one strip - find data length and write to file
-									as one block */
-								if (no_of_so_values == 1) {
-
-									/* calculate how many bytes will be read in */
-									image_data_length = (((float)bits_per_sample *
-										(float)samples_per_pixel) / 8) * (float)(*image_length) *
-										(float)(*image_width);
-									fprintf(output, "\nImage Data Length (in bytes): %ld\n\n", image_data_length );
-
-									/* memory allocation for original bit map and expanded bit map */
-									MYMALLOC(bit_map,unsigned char,image_data_length);
-									MYMALLOC(*big_bit_map,unsigned char,image_data_length*
-										8/(*bits_per_pixel));
-									if (bit_map && (*big_bit_map)) {
-										fseek(tiff_file, strip_offset_address, 0);
-										read_status = fread((void *)bit_map, (size_t)sizeof(char),
-											(size_t)image_data_length, tiff_file);
-										if (read_status) {
-											fprintf(output, "\n\n * Read in bit map.\n");
-											fprintf(output," * Now expanding to single bytes.\n");
-
-											/* expansion of pixel information (bits) into a whole byte */
-											/* NB tightened up beyond comprehension by PL 3/12/92 */
-				/* This is a mess. I'll see what I can do with it later -- Edouard */
-											sum = bit_count = 0;
-											temp1 = 8 / *bits_per_pixel;
-											for(r = 0; r < image_data_length; r++)
-												for (s = 7, bpp = 0, temp2 = *(bit_map + r); s >= 0; s--)
-													if (bit_count++ <= (*bits_per_pixel)) {
-														/* Compare bitmap[r] with 1000000,01000000,00100000, etc */
-														if (temp2 & (int) pow(2.0, s))
-															sum += pow(2, *bits_per_pixel - bit_count);
-														if (bit_count == (*bits_per_pixel)) {
-															*(*big_bit_map + (r * temp1) + bpp++) = sum;
-															sum = bit_count = 0;
-															} /* if (bit_count ==... */
-														} /* if (bit_count <=... */
-											} /* if (read_status) */
-
-										else {
-											printf(" *** ERROR: Cannot read bit map (image data) from TIFF file ***\n");
-											return_code = READ_ERROR;
-											} /* else */
-										MYFREE(bit_map);
-										} /* if (bit_map... */
-
-									else {
-										printf(" *** ERROR: Problem with memory allocation ***\n");
-										return_code = MEMORY_ERROR;
-										} /* else */
-									} /* if (no_of_so_values... */
-	#if defined (COMMENTED_OUT)
-								else /* for now... */
-									fprintf(output,"Data is in more than one strip - cannot convert");
-	#endif
-								else {
-		/* Multiple-strip TIFF images - P.L. - 3/12/92
-				Problem: How do you get to the NEXT strip? - get TIFF details off Dave
-
-				allocate memory for one strip of data, read in one strip, write one strip,
-				clear memory, repeat for each strip assuming when field length > 1, got
-				that amount. */
-									/* First of all we need a scrap file in which to construct the super map */
-									bit_map_file = fopen("cmg_bm_scrap", "w");
-
-									for (p = overall_length = 0; p < no_of_strip_offsets; p++) {
-
-					/* Original programmer's notes:
-									1) go to address of strip offset (strip_offset_address)
-									2) read in data_location
-									3) go to address of tells you no. of bytes
-										(using bytes_per_strip_address)
-									4) read in strip_length
-									5) allocate memory for bit_map
-									6) read in data
-									7) fwrite (appending to bit_map_file)
-									8) deallocate memory																						 */
-
-					/* 1) */	fseek(tiff_file, strip_offset_address, 0);
-					/* 2) */	read_status = fread((void *)byte_array, (size_t)sizeof(char), (size_t)2, tiff_file);
-										data_location =
-											bytes_to_int((unsigned char *)byte_array, 2, least_to_most);
-										strip_offset_address += 2;   /* set s_o_a to the next strip offset */
-										fprintf(output, "Address of next strip = %1d\n", data_location);
-					/* 3) */	fseek(tiff_file, bytes_per_strip_address, 0);
-					/* 4) */	read_status = fread((void *)byte_array, (size_t)sizeof(char), (size_t)2, tiff_file);
-										strip_length =
-											bytes_to_int((unsigned char *)byte_array, 2, least_to_most);
-										bytes_per_strip_address += 2;   /* see above */
-										fprintf(output, "Length of next strip = %1d\n", strip_length);
-					/* 5) */	MYMALLOC(bit_map,unsigned char,strip_length);
-					/* 6) */	fseek(tiff_file, data_location, 0);
-										overall_length += strip_length;
-										read_status = fread((void *)bit_map, (size_t)sizeof(char), (size_t)strip_length, tiff_file);
-					/* 7) */	write_status = fwrite((void *)bit_map, (size_t)sizeof(char), (size_t)strip_length, bit_map_file);
-											/***//* NB does fwrite advance the file pointer? */
-										fflush(bit_map_file);
-					/* 8) */	MYFREE(bit_map);
-										} /* for */
-
-									fclose(bit_map_file);
-
-									fprintf(output, "\nOverall image length = %1d\n", overall_length);
-									/* Now read the whole lot back into bit_map */
-									bit_map_file = fopen("cmg_bm_scrap", "rb");
-									MYMALLOC(bit_map,unsigned char,overall_length);
-									read_status = fread((void *)bit_map, (size_t)sizeof(char), (size_t)overall_length, bit_map_file);
-									fclose(bit_map_file);
-
-									MYMALLOC(*big_bit_map,unsigned char,overall_length*
-										8/(*bits_per_pixel));
-
-										/* copy bit_map -> *big_bit_map algorithm from single-strip case */
-
-									} /* else */
-#endif /* defined (OLD_CODE) */
 								}
 								if (strip_byte_counts)
 								{
@@ -4776,12 +4626,11 @@ present in some files */
 	return (return_code);
 } /* read_tiff_image_file */
 
-int read_yuv_image_file(char *file_name,int *number_of_components_address,
-	int *number_of_bytes_per_component,
-	long int *height_address,long int *width_address,
-	unsigned long **image_address)
+int read_yuv_image_file(char *file_name,
+	int *width_address, int *height_address, int *number_of_components_address,
+	int *number_of_bytes_per_component_address, unsigned char **image_address)
 /*******************************************************************************
-LAST MODIFIED : 12 October 2000
+LAST MODIFIED : 14 February 2002
 
 DESCRIPTION :
 Reads an image from a YUV file, returning it as an RGB image.
@@ -4801,13 +4650,14 @@ If just the width is specified, the height is computed from the file size.
 ((((x)>0xffffff)?0xff0000:(((x)<=0xffff)?0:(x)&0xff0000))>>16)
 	unsigned char *image,*image_ptr,*yuv;
 	FILE *image_file;
-	int b,bytes_read,g,j,num_yyuv,r,rest_of_line,return_code,row,row_size,
-		u,v,y1,y2;
-	long int file_size,height,width;
+	int b, bytes_read, g, height, j, num_yyuv, r, rest_of_line, return_code, row,
+		row_size, u, v,width, y1, y2;
+	long int file_size;
 	struct stat buf;
 
 	ENTER(read_yuv_image_file);
-	if (file_name&&number_of_components_address&&height_address&&width_address&&
+	if (file_name && width_address && height_address &&
+		number_of_components_address && number_of_bytes_per_component_address &&
 		image_address)
 	{
 		return_code=1;
@@ -4816,87 +4666,42 @@ If just the width is specified, the height is computed from the file size.
 			/* use stat to get size of file to determine format from */
 			if ((0==stat(file_name,&buf))&&(0<(file_size=(long int)(buf.st_size))))
 			{
-				if (0<(width = *width_address))
+				if (0 < (width = *width_address))
 				{
 					/* Limit width to multiple of 4 so that final RGB is 4 byte aligned
 						 and there are an even number of pixels for the u y1 v y2 quad */
-					if (0==(width % 4))
+					if (0 == (width % 4))
 					{
 						if (0 >= (height = *height_address))
 						{
 							/* set height to include all data, padding rest of last line */
-							height = (file_size + width*2 - 1) / (width*2);
+							height = (int)((file_size + width*2 - 1) / (width*2));
 						}
 					}
 					else
 					{
 						display_message(ERROR_MESSAGE,"read_yuv_image_file.  "
 							"Width must be a multiple of 4 pixels");
-						return_code=0;
+						return_code = 0;
 					}
 				}
-				else if (0<(height = *height_address))
+				else if (0 < (height = *height_address))
 				{
 					display_message(ERROR_MESSAGE,"read_yuv_image_file.  "
 						"Must specify width if height is to specified");
 					return_code=0;
 				}
-				else
+				else if (!get_yuv_resolution_from_file_size(file_size, &width, &height))
 				{
-					/* otherwise compare the file size with some common video standards */
-					if ((1920*1080*2) == file_size)
-					{
-						/* North American HDTV standard, 2 interlaced fields; put fields
-							 side by side in double wide image */
-						width = 3840;
-						height = 540;
-					}
-					else if ((1920*540*2) == file_size)
-					{
-						/* North American HDTV standard, single field */
-						width = 1920;
-						height = 540;
-					}
-					else if ((720*486*2) == file_size)
-					{
-						/* CCIR-601 NSTC format, 2 interlaced fields; put fields
-							 side by side in double wide image */
-						width = 1440;
-						height = 243;
-					}
-					else if ((720*243*2) == file_size)
-					{
-						/* CCIR-601 NSTC format, single field */
-						width = 720;
-						height = 243;
-					}
-					else if ((720*576*2) == file_size)
-					{
-						/* CCIR-601 PAL format, 2 interlaced fields; put fields
-							 side by side in double wide image */
-						width = 1440;
-						height = 288;
-					}
-					else if ((720*288*2) == file_size)
-					{
-						/* CCIR-601 PAL format, single field */
-						width = 720;
-						height = 288;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"read_yuv_image_file.  "
-							"Could not determine image dimension from size of '%s' "
-							"Specify horizontal resolution in .yuv#### file extension",
-							file_name,file_size);
-						return_code=0;
-					}
+					display_message(ERROR_MESSAGE, "read_yuv_image_file.  "
+						"Size of YUV/UYVY image %s needs to be user-specified", file_name);
+					return_code = 0;
 				}
 				if (return_code)
 				{
 					/* YUV format uses 2 bytes per pixel,
 						 final image will be 3 bytes per pixel RGB */
-					if (ALLOCATE(image,unsigned char,width*height*3))
+					if (ALLOCATE(image, unsigned char, width*height*3))
 					{
 						/* convert image from top-to-bottom to bottom-to-top for
 							 OpenGL image/texture storage */
@@ -4965,11 +4770,11 @@ If just the width is specified, the height is computed from the file size.
 						}
 						if (return_code)
 						{
-							*number_of_components_address = 3;
-							*number_of_bytes_per_component = 1;
-							*height_address = height;
 							*width_address = width;
-							*image_address = (unsigned long *)image;
+							*height_address = height;
+							*number_of_components_address = 3;
+							*number_of_bytes_per_component_address = 1;
+							*image_address = image;
 						}
 						else
 						{
@@ -5009,6 +4814,8 @@ If just the width is specified, the height is computed from the file size.
 	return (return_code);
 } /* read_yuv_image_file */
 #endif /* ! defined (IMAGEMAGICK) */
+
+#if defined (SAVE_CODE)
 
 #if defined (IMAGEMAGICK)
 int read_image_file(char *filename,int *number_of_components,
@@ -5061,55 +4868,12 @@ be specified in the <width> and <height> arguments.
 					|| ((length > 5) &&
 					fuzzy_string_compare_same_length((filename + length - 5), ".uyvy"))))
 				{
-					/* use stat to get size of file */
-					if ((0==stat(filename,&buf))&&(0<(file_size=(long int)(buf.st_size))))
+					/* try to get width and height from the file_size */
+					if ((0 == stat(filename, &buf)) &&
+						(0 < (file_size = (long int)(buf.st_size))) &&
+						get_yuv_resolution_from_file_size(file_size, width, height))
 					{
-						/* compare the file size with some common video standards */
-						if ((1920*1080*2) == file_size)
-						{
-							/* North American HDTV standard, 2 interlaced fields; put fields
-								side by side in double wide image */
-							*width = 3840;
-							*height = 540;
-							sprintf(magick_image_info->filename, "uyvy:%s", filename);
-						}
-						else if ((1920*540*2) == file_size)
-						{
-							/* North American HDTV standard, single field */
-							*width = 1920;
-							*height = 540;
-							sprintf(magick_image_info->filename, "uyvy:%s", filename);
-						}
-						else if ((720*486*2) == file_size)
-						{
-							/* CCIR-601 NSTC format, 2 interlaced fields; put fields
-								side by side in double wide image */
-							*width = 1440;
-							*height = 243;
-							sprintf(magick_image_info->filename, "uyvy:%s", filename);
-						}
-						else if ((720*243*2) == file_size)
-						{
-							/* CCIR-601 NSTC format, single field */
-							*width = 720;
-							*height = 243;
-							sprintf(magick_image_info->filename, "uyvy:%s", filename);
-						}
-						else if ((720*576*2) == file_size)
-						{
-							/* CCIR-601 PAL format, 2 interlaced fields; put fields
-								side by side in double wide image */
-							*width = 1440;
-							*height = 288;
-							sprintf(magick_image_info->filename, "uyvy:%s", filename);
-						}
-						else if ((720*288*2) == file_size)
-						{
-							/* CCIR-601 PAL format, single field */
-							*width = 720;
-							*height = 288;
-							sprintf(magick_image_info->filename, "uyvy:%s", filename);
-						}
+						sprintf(magick_image_info->filename, "uyvy:%s", filename);
 					}					
 				}
 			}
@@ -5143,8 +4907,8 @@ be specified in the <width> and <height> arguments.
 				*width = (long int)magick_image->columns;
 				*height = (long int)magick_image->rows;
 				if (ALLOCATE(image_data, unsigned char,
-					*width * *height * *number_of_components *
-					*number_of_bytes_per_component))
+					(*width) * (*height) * (*number_of_components) *
+					(*number_of_bytes_per_component)))
 				{
 					DispatchImage(magick_image, 0, 0, *width, *height,
 						pixel_storage, CharPixel, image_data);
@@ -5173,7 +4937,7 @@ be specified in the <width> and <height> arguments.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Could not read image %s.", filename);
+					"Could not read image %s", filename);
 				return_code = 0;
 			}
 			DestroyImageInfo(magick_image_info);
@@ -5181,7 +4945,7 @@ be specified in the <width> and <height> arguments.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"read_image_file.  Could not create image information.");
+				"read_image_file.  Could not create image information");
 			return_code = 0;
 		}
 	}
@@ -5270,113 +5034,6 @@ be specified in the <width> and <height> arguments. For the RAW format, the
 	return (return_code);
 } /* read_image_file */
 #endif /* defined (IMAGEMAGICK) */
-
-int get_radial_distortion_corrected_coordinates(double dist_x,double dist_y,
-	double dist_centre_x,double dist_centre_y,double dist_factor_k1,
-	double *corr_x,double *corr_y)
-/*******************************************************************************
-LAST MODIFIED : 30 April 1998
-
-DESCRIPTION :
-Returns the position point <dist_x,dist_y> would be at if there was no radial
-distortion in the lens used to record them.
-Distortion factor k1 works to correct distortion according to:
-corrected_x = distorted_x + k1*distorted_x*r*r
-where:
-1. Coordinates x (and similarly y) are measured from the centre of distortion.
-2. r*r = distorted_x*distorted_x + distorted_y*distorted_y
-==============================================================================*/
-{
-	int return_code;
-	double xd,yd,rr;
-
-	ENTER(get_radial_distortion_corrected_coordinates);
-	if (corr_x&&corr_y)
-	{
-		xd=dist_x-dist_centre_x;
-		yd=dist_y-dist_centre_y;
-		rr=xd*xd+yd*yd;
-		*corr_x = dist_centre_x + xd*(1+dist_factor_k1*rr);
-		*corr_y = dist_centre_y + yd*(1+dist_factor_k1*rr);
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_radial_distortion_corrected_coordinates.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_radial_distortion_corrected_coordinates */
-
-int get_radial_distortion_distorted_coordinates(double corr_x,double corr_y,
-	double dist_centre_x,double dist_centre_y,double dist_factor_k1,
-	double tolerance,double *dist_x,double *dist_y)
-/*******************************************************************************
-LAST MODIFIED : 16 October 1998
-
-DESCRIPTION :
-Returns the position point <corr_x,corr_y> would be at in the radial distorted
-lens system. Inverse of get_radial_distortion_corrected_coordinates.
-Iterative routine requires a tolerance to be set on how little the distorted
-radius shifts in an iteration to be an acceptable solution.
-Allows up to around 10% distortion to be corrected. (This is a large value!)
-==============================================================================*/
-{
-	int return_code,converged,iters;
-	double xc,yc,xd,yd,last_xd,last_yd,max_shift,rr,tol_tol;
-
-	ENTER(get_radial_distortion_distorted_coordinates);
-	if (dist_x&&dist_y&&(0<tolerance))
-	{
-		tol_tol=tolerance*tolerance;
-		last_xd=xd=xc=corr_x-dist_centre_x;
-		last_yd=yd=yc=corr_y-dist_centre_y;
-		rr=xd*xd+yd*yd;
-		max_shift=dist_factor_k1*rr;
-		if ((-0.1<max_shift)&&(1.0>max_shift))
-		{
-			converged=iters=0;
-			while (!converged)
-			{
-				iters++;
-				xd=xc/(1.0+dist_factor_k1*rr);
-				yd=yc/(1.0+dist_factor_k1*rr);
-				if (!(converged=((100==iters)||
-					(((xd-last_xd)*(xd-last_xd)+(yd-last_yd)*(yd-last_yd))<tol_tol))))
-				{
-					rr=xd*xd+yd*yd;
-					last_xd=xd;
-					last_yd=yd;
-				}
-			}
-			*dist_x=dist_centre_x+xd;
-			*dist_y=dist_centre_y+yd;
-			return_code=1;
-		}
-		else
-		{
-#if defined (OLD_CODE)
-			/* now up to calling function to report error, if necessary */
-			display_message(ERROR_MESSAGE,
-				"get_radial_distortion_distorted_coordinates.  "
-				"Maximum shift of %.1f is too great",max_shift);
-#endif /* defined (OLD_CODE) */
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_radial_distortion_distorted_coordinates.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_radial_distortion_distorted_coordinates */
 
 int undistort_image(unsigned long **image,
 	int number_of_components,int number_of_bytes_per_component,
@@ -5543,7 +5200,7 @@ corrected version.
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"undistort_image."
+			display_message(ERROR_MESSAGE,"undistort_image"
 				"  Not implemented for more than 1 byte per component");
 			return_code=0;
 		}
@@ -5638,28 +5295,6 @@ performed and the original image is returned.
 				source += source_row_width_bytes;
 				destination += destination_row_width_bytes;
 			}
-#if defined (OLD_CODE)
-			pixel=(unsigned char *)source_image;
-			texture_pixel=(unsigned char *)source_image;
-			/* crop top */
-			/*???RC should use memcpy for speed */
-			pixel += crop_bottom_margin*original_width*number_of_bytes;
-			for (i=crop_height;i>0;i--)
-			{
-				pixel += crop_left_margin*number_of_bytes;
-				for (j=crop_width;j>0;j--)
-				{
-					for (k=number_of_bytes;k>0;k--)
-					{
-						*texture_pixel= *pixel;
-						pixel++;
-						texture_pixel++;
-					}
-				}
-				pixel += (original_width_texels-width_texels-left_margin_texels)*
-					number_of_bytes;
-			}
-#endif /* defined OLD_CODE */
 			if (REALLOCATE(cropped_image,source_image,unsigned long,
 				(crop_width*crop_height*number_of_bytes+3)/4))
 			{
@@ -5690,3 +5325,2024 @@ performed and the original image is returned.
 	return (return_code);
 } /* crop_image */
 
+#endif /* defined (SAVE_CODE) */
+
+int get_radial_distortion_corrected_coordinates(double dist_x,double dist_y,
+	double dist_centre_x,double dist_centre_y,double dist_factor_k1,
+	double *corr_x,double *corr_y)
+/*******************************************************************************
+LAST MODIFIED : 30 April 1998
+
+DESCRIPTION :
+Returns the position point <dist_x,dist_y> would be at if there was no radial
+distortion in the lens used to record them.
+Distortion factor k1 works to correct distortion according to:
+corrected_x = distorted_x + k1*distorted_x*r*r
+where:
+1. Coordinates x (and similarly y) are measured from the centre of distortion.
+2. r*r = distorted_x*distorted_x + distorted_y*distorted_y
+==============================================================================*/
+{
+	int return_code;
+	double xd,yd,rr;
+
+	ENTER(get_radial_distortion_corrected_coordinates);
+	if (corr_x&&corr_y)
+	{
+		xd=dist_x-dist_centre_x;
+		yd=dist_y-dist_centre_y;
+		rr=xd*xd+yd*yd;
+		*corr_x = dist_centre_x + xd*(1+dist_factor_k1*rr);
+		*corr_y = dist_centre_y + yd*(1+dist_factor_k1*rr);
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_radial_distortion_corrected_coordinates.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_radial_distortion_corrected_coordinates */
+
+int get_radial_distortion_distorted_coordinates(double corr_x,double corr_y,
+	double dist_centre_x,double dist_centre_y,double dist_factor_k1,
+	double tolerance,double *dist_x,double *dist_y)
+/*******************************************************************************
+LAST MODIFIED : 16 October 1998
+
+DESCRIPTION :
+Returns the position point <corr_x,corr_y> would be at in the radial distorted
+lens system. Inverse of get_radial_distortion_corrected_coordinates.
+Iterative routine requires a tolerance to be set on how little the distorted
+radius shifts in an iteration to be an acceptable solution.
+Allows up to around 10% distortion to be corrected. (This is a large value!)
+==============================================================================*/
+{
+	int return_code,converged,iters;
+	double xc,yc,xd,yd,last_xd,last_yd,max_shift,rr,tol_tol;
+
+	ENTER(get_radial_distortion_distorted_coordinates);
+	if (dist_x&&dist_y&&(0<tolerance))
+	{
+		tol_tol=tolerance*tolerance;
+		last_xd=xd=xc=corr_x-dist_centre_x;
+		last_yd=yd=yc=corr_y-dist_centre_y;
+		rr=xd*xd+yd*yd;
+		max_shift=dist_factor_k1*rr;
+		if ((-0.1<max_shift)&&(1.0>max_shift))
+		{
+			converged=iters=0;
+			while (!converged)
+			{
+				iters++;
+				xd=xc/(1.0+dist_factor_k1*rr);
+				yd=yc/(1.0+dist_factor_k1*rr);
+				if (!(converged=((100==iters)||
+					(((xd-last_xd)*(xd-last_xd)+(yd-last_yd)*(yd-last_yd))<tol_tol))))
+				{
+					rr=xd*xd+yd*yd;
+					last_xd=xd;
+					last_yd=yd;
+				}
+			}
+			*dist_x=dist_centre_x+xd;
+			*dist_y=dist_centre_y+yd;
+			return_code=1;
+		}
+		else
+		{
+#if defined (OLD_CODE)
+			/* now up to calling function to report error, if necessary */
+			display_message(ERROR_MESSAGE,
+				"get_radial_distortion_distorted_coordinates.  "
+				"Maximum shift of %.1f is too great",max_shift);
+#endif /* defined (OLD_CODE) */
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_radial_distortion_distorted_coordinates.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_radial_distortion_distorted_coordinates */
+
+struct Cmgui_image_information *CREATE(Cmgui_image_information)(void)
+/*******************************************************************************
+LAST MODIFIED : 1 March 2002
+
+DESCRIPTION :
+Creates a blank Cmgui_image_information.
+To read in an image must set at least one file name in this structure; for raw
+or yuv image formats, width, height and raw_image_storage may need to be set.
+To create an image need to specify most dimension arguments.
+==============================================================================*/
+{
+	struct Cmgui_image_information *cmgui_image_information;
+
+	ENTER(CREATE(Cmgui_image_information));
+	if (ALLOCATE(cmgui_image_information, struct Cmgui_image_information, 1))
+	{
+		cmgui_image_information->valid = 1;
+		cmgui_image_information->number_of_file_names = 0;
+		cmgui_image_information->file_names = (char **)NULL;
+		cmgui_image_information->height = 0;
+		cmgui_image_information->image_file_format = UNKNOWN_IMAGE_FILE_FORMAT;
+		cmgui_image_information->number_of_bytes_per_component = 1;
+		cmgui_image_information->number_of_components = 3;
+		cmgui_image_information->width = 0;
+		cmgui_image_information->raw_image_storage = RAW_INTERLEAVED_RGB;
+		cmgui_image_information->background_number_of_fill_bytes = 0;
+		cmgui_image_information->background_fill_bytes = (unsigned char *)NULL;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"CREATE(Cmgui_image_information).  Could not allocate structure");
+	}
+	LEAVE;
+
+	return (cmgui_image_information);
+} /* CREATE(Cmgui_image_information) */
+
+int DESTROY(Cmgui_image_information)(
+	struct Cmgui_image_information **cmgui_image_information_address)
+/*******************************************************************************
+LAST MODIFIED : 26 February 2002
+
+DESCRIPTION :
+Frees the memory use by the Cmgui_image_information and sets
+<*cmgui_image_information_address> to NULL.
+==============================================================================*/
+{
+	int i, return_code;
+	struct Cmgui_image_information *cmgui_image_information;
+
+	ENTER(DESTROY(Cmgui_image_information));
+	if (cmgui_image_information_address &&
+		(cmgui_image_information = *cmgui_image_information_address))
+	{
+		if (cmgui_image_information->file_names)
+		{
+			for (i = 0; i < cmgui_image_information->number_of_file_names; i++)
+			{
+				DEALLOCATE(cmgui_image_information->file_names[i]);
+			}
+			DEALLOCATE(cmgui_image_information->file_names);
+		}
+		if (cmgui_image_information->background_fill_bytes)
+		{
+			DEALLOCATE(cmgui_image_information->background_fill_bytes);
+		}
+		DEALLOCATE(*cmgui_image_information_address);
+		*cmgui_image_information_address = (struct Cmgui_image_information *)NULL;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Cmgui_image_information).  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Cmgui_image_information) */
+
+int Cmgui_image_information_add_file_name(
+	struct Cmgui_image_information *cmgui_image_information, char *file_name)
+/*******************************************************************************
+LAST MODIFIED : 5 March 2002
+
+DESCRIPTION :
+Adds the <file_name> to the end of the list in <cmgui_image_information>.
+Clears 'valid' flag if fails.
+==============================================================================*/
+{
+	char *temp_file_name, **temp_file_names;
+	int return_code;
+
+	ENTER(Cmgui_image_information_add_file_name);
+	if (cmgui_image_information && file_name)
+	{
+		if (temp_file_name = duplicate_string(file_name))
+		{
+			if (REALLOCATE(temp_file_names, cmgui_image_information->file_names,
+				char *, cmgui_image_information->number_of_file_names + 1))
+			{
+				/* add another file_name */
+				temp_file_names[cmgui_image_information->number_of_file_names] =
+					temp_file_name;
+				cmgui_image_information->file_names = temp_file_names;
+				cmgui_image_information->number_of_file_names++;
+				return_code = 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmgui_image_information_add_file_name.  "
+					"Could not enlarge file_names list");
+				DEALLOCATE(temp_file_name);
+				cmgui_image_information->valid = 0;
+				return_code = 0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmgui_image_information_add_file_name.  Could not copy file_name");
+			cmgui_image_information->valid = 0;
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_information_add_file_name.  Invalid argument(s)");
+		if (cmgui_image_information)
+		{
+			cmgui_image_information->valid = 0;
+		}
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmgui_image_information_add_file_name */
+
+int Cmgui_image_information_add_file_name_series(
+	struct Cmgui_image_information *cmgui_image_information,
+	char *file_name_template, char *file_number_pattern, int start_file_number,
+	int stop_file_number, int file_number_increment)
+/*******************************************************************************
+LAST MODIFIED : 4 March 2002
+
+DESCRIPTION :
+Adds a series of file names based on the <file_name_template> to the
+<cmgui_image_information>. The numbers from <start_file_number> to
+<stop_file_number> with <file_number_increment> are substituted for the first
+instance of <file_number_pattern> in <file_name_template>.
+The number appears with leading zeros up to the length of <file_number_pattern>.
+Clears 'valid' flag if fails.
+==============================================================================*/
+{
+	char file_number, *file_number_string, format[20], *pattern_position, *prefix,
+		*temp_file_name, **temp_file_names, *suffix;
+	int error, i, new_number_of_file_names, old_number_of_file_names,
+		pattern_width, return_code;
+
+	ENTER(Cmgui_image_information_add_file_name_series);
+	if (cmgui_image_information && file_name_template && file_number_pattern &&
+		(0 < (pattern_width = strlen(file_number_pattern))) && (
+		((start_file_number <= stop_file_number) && (0 < file_number_increment) &&
+			(0 == (stop_file_number - start_file_number) % file_number_increment)) ||
+		((start_file_number >= stop_file_number) && (0 > file_number_increment) &&
+			(0 == (start_file_number - stop_file_number) % -file_number_increment)))
+		&& (pattern_position = strstr(file_name_template, file_number_pattern)))
+	{
+		old_number_of_file_names = cmgui_image_information->number_of_file_names;
+		new_number_of_file_names = old_number_of_file_names + 1 +
+			((stop_file_number - start_file_number) / file_number_increment);
+		if (ALLOCATE(temp_file_names, char *, new_number_of_file_names))
+		{
+			/* copy pointers to existing names, if any */
+			for (i = 0; i < old_number_of_file_names; i++)
+			{
+				temp_file_names[i] = cmgui_image_information->file_names[i];
+			}
+			sprintf(format, "%%0%dd", pattern_width);
+			prefix = file_name_template;
+			*pattern_position = '\0';
+			if ('\0' == *prefix)
+			{
+				prefix = (char *)NULL;
+			}
+			suffix = pattern_position + pattern_width;
+			if ('\0' == *suffix)
+			{
+				suffix = (char *)NULL;
+			}
+			error = 0;
+			if (ALLOCATE(file_number_string, char, 20 + pattern_width))
+			{
+				file_number = start_file_number;
+				for (i = old_number_of_file_names;
+						 (i < new_number_of_file_names) && !error; i++)
+				{
+					temp_file_name = (char *)NULL;
+					if (prefix)
+					{
+						append_string(&temp_file_name, prefix, &error);
+					}
+					sprintf(file_number_string, format, file_number);
+					append_string(&temp_file_name, file_number_string, &error);
+					if (suffix)
+					{
+						append_string(&temp_file_name, suffix, &error);
+					}
+					if (!error)
+					{
+						temp_file_names[i] = temp_file_name;
+					}
+					file_number += file_number_increment;
+				}
+				if (error)
+				{
+					for (i = i - 1; i >= old_number_of_file_names; i--)
+					{
+						DEALLOCATE(temp_file_names[i]);
+					}
+				}
+				DEALLOCATE(file_number_string);
+			}
+			else
+			{
+				error = 1;
+			}
+			if (error)
+			{
+				DEALLOCATE(temp_file_names);
+				display_message(ERROR_MESSAGE,
+					"Cmgui_image_information_add_file_name_series.  "
+					"Could not create file name series");
+				cmgui_image_information->valid = 0;
+				return_code = 0;
+			}
+			else
+			{
+				DEALLOCATE(cmgui_image_information->file_names);
+				cmgui_image_information->file_names = temp_file_names;
+				cmgui_image_information->number_of_file_names =
+					new_number_of_file_names;
+				return_code = 1;
+			}
+			/* leave file_number_template as it was */
+			*pattern_position = file_number_pattern[0];
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmgui_image_information_add_file_name_series.  "
+				"Could not enlarge file_names list");
+			cmgui_image_information->valid = 0;
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_information_add_file_name_series.  Invalid argument(s)");
+		if (cmgui_image_information)
+		{
+			cmgui_image_information->valid = 0;
+		}
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmgui_image_information_add_file_name_series */
+
+int Cmgui_image_information_set_file_name(
+	struct Cmgui_image_information *cmgui_image_information,
+	int file_name_number, char *file_name)
+/*******************************************************************************
+LAST MODIFIED : 18 February 2002
+
+DESCRIPTION :
+Sets the <file_name> for <file_name_number> of <cmgui_image_information>.
+Clears 'valid' flag if fails.
+==============================================================================*/
+{
+	char *temp_file_name;
+	int return_code;
+
+	ENTER(Cmgui_image_information_set_file_name);
+	if (cmgui_image_information && (0 <= file_name_number) &&
+		(file_name_number < cmgui_image_information->number_of_file_names) &&
+		file_name)
+	{
+		if (temp_file_name = duplicate_string(file_name))
+		{
+			/* change_existing file_name */
+			DEALLOCATE(cmgui_image_information->file_names[file_name_number]);
+			cmgui_image_information->file_names[file_name_number] = temp_file_name;
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmgui_image_information_set_file_name.  Could not copy file_name");
+			cmgui_image_information->valid = 0;
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_information_set_file_name.  Invalid argument(s)");
+		if (cmgui_image_information)
+		{
+			cmgui_image_information->valid = 0;
+		}
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmgui_image_information_set_file_name */
+
+int Cmgui_image_information_set_height(
+	struct Cmgui_image_information *cmgui_image_information, int height)
+/*******************************************************************************
+LAST MODIFIED : 26 February 2002
+
+DESCRIPTION :
+Sets the <height> recorded with the <cmgui_image_information>.
+Used to specify the height for raw file formats read with Cmgui_image_read.
+Clears 'valid' flag of cmgui_image_information if not correctly set.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmgui_image_information_set_height);
+	if (cmgui_image_information)
+	{
+		if (0 <= height)
+		{
+			cmgui_image_information->height = height;
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmgui_image_information_set_height.  Negative height");
+			cmgui_image_information->valid = 0;
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_information_set_height.  Missing information");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmgui_image_information_set_height */
+
+int Cmgui_image_information_set_image_file_format(
+	struct Cmgui_image_information *cmgui_image_information,
+	enum Image_file_format image_file_format)
+/*******************************************************************************
+LAST MODIFIED : 1 March 2002
+
+DESCRIPTION :
+Sets the <image_file_format> of <cmgui_image>.
+If set to UNKNOWN_IMAGE_FILE_FORMAT then the format is determined from the
+filename, otherwise it is forced from the format listed here.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmgui_image_information_set_image_file_format);
+	if (cmgui_image_information)
+	{
+		cmgui_image_information->image_file_format = image_file_format;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_information_set_image_file_format.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmgui_image_information_set_image_file_format */
+
+int Cmgui_image_information_set_number_of_bytes_per_component(
+	struct Cmgui_image_information *cmgui_image_information,
+	int number_of_bytes_per_component)
+/*******************************************************************************
+LAST MODIFIED : 11 March 2002
+
+DESCRIPTION :
+Sets the <number_of_bytes_per_component> recorded with the
+<cmgui_image_information>. Only valid values are 1 and 2.
+Applied in Cmgui_image_write.
+Clears 'valid' flag of cmgui_image_information if not correctly set.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmgui_image_information_set_number_of_bytes_per_component);
+	if (cmgui_image_information)
+	{
+		if ((1 == number_of_bytes_per_component) ||
+			(2 == number_of_bytes_per_component))
+		{
+			cmgui_image_information->number_of_bytes_per_component =
+				number_of_bytes_per_component;
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmgui_image_information_set_number_of_bytes_per_component.  "
+				"Number of bytes per component must be 1 or 2");
+			cmgui_image_information->valid = 0;
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_information_set_number_of_bytes_per_component.  "
+			"Missing information");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmgui_image_information_set_number_of_bytes_per_component */
+
+int Cmgui_image_information_set_number_of_components(
+	struct Cmgui_image_information *cmgui_image_information,
+	int number_of_components)
+/*******************************************************************************
+LAST MODIFIED : 11 March 2002
+
+DESCRIPTION :
+Sets the <number_of_components> recorded with the <cmgui_image_information>.
+Only valid values are 1=Intensity, 2=IntensityAlpha, 3=RGB, 4=RGBA.
+Currently ignored.
+Clears 'valid' flag of cmgui_image_information if not correctly set.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmgui_image_information_set_number_of_components);
+	if (cmgui_image_information)
+	{
+		if ((1 <= number_of_components) && (number_of_components <= 4))
+		{
+			cmgui_image_information->number_of_components = number_of_components;
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmgui_image_information_set_number_of_components.  "
+				"Number of components must be from 1 to 4");
+			cmgui_image_information->valid = 0;
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_information_set_number_of_components.  Missing information");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmgui_image_information_set_number_of_components */
+
+int Cmgui_image_information_set_raw_image_storage(
+	struct Cmgui_image_information *cmgui_image_information,
+	enum Raw_image_storage raw_image_storage)
+/*******************************************************************************
+LAST MODIFIED : 19 February 2002
+
+DESCRIPTION :
+Sets the <raw_image_storage> of <cmgui_image>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmgui_image_information_set_raw_image_storage);
+	if (cmgui_image_information)
+	{
+		cmgui_image_information->raw_image_storage = raw_image_storage;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_information_set_raw_image_storage.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmgui_image_information_set_raw_image_storage */
+
+int Cmgui_image_information_set_width(
+	struct Cmgui_image_information *cmgui_image_information, int width)
+/*******************************************************************************
+LAST MODIFIED : 26 February 2002
+
+DESCRIPTION :
+Sets the <width> recorded with the <cmgui_image_information>.
+Used to specify the width for raw file formats read with Cmgui_image_read.
+Clears 'valid' flag of cmgui_image_information if not correctly set.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Cmgui_image_information_set_width);
+	if (cmgui_image_information)
+	{
+		if (0 <= width)
+		{
+			cmgui_image_information->width = width;
+			return_code = 1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmgui_image_information_set_width.  Negative width");
+			cmgui_image_information->valid = 0;
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_information_set_width.  Missing information");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmgui_image_information_set_width */
+
+#if defined (IMAGEMAGICK)
+static int get_magick_image_parameters(Image *magick_image, int *width,
+	int *height, int *number_of_components, int *number_of_bytes_per_component)
+/*******************************************************************************
+LAST MODIFIED : 19 February 2002
+
+DESCRIPTION :
+Extracts parameters from <magick_image> that matter for a Cmgui_image
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(get_magick_image_parameters);
+	if (magick_image && width && height && number_of_components &&
+		number_of_bytes_per_component)
+	{
+		*width = magick_image->columns;
+		*height = magick_image->rows;
+		if (magick_image->matte)
+		{
+			if (magick_image->colorspace == GRAYColorspace)
+			{
+				/* monochrome intensity with alpha */
+				*number_of_components = 2;
+			}
+			else
+			{
+				/* RGBA */
+				*number_of_components = 4;
+			}
+		}
+		else
+		{
+			if (magick_image->colorspace == GRAYColorspace)
+			{
+				/* monochrome intensity only */
+				*number_of_components = 1;
+			}
+			else
+			{
+				/* RGB */
+				*number_of_components = 3;
+			}
+		}
+		if (16 == magick_image->depth)
+		{
+			*number_of_bytes_per_component = 2;
+		}
+		else
+		{
+			*number_of_bytes_per_component = 1;
+		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_magick_image_parameters.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* get_magick_image_parameters */
+#endif /* defined (IMAGEMAGICK) */
+
+#if defined (IMAGEMAGICK)
+static int get_magick_image_number_of_consistent_images(Image *magick_image)
+/*******************************************************************************
+LAST MODIFIED : 19 February 2002
+
+DESCRIPTION :
+If all images in <magick_image> have the same width, height,
+number_of_components and number_of_bytes_per_component, the number_of_images
+is returned, otherwise zero.
+Only these parameters matter to Cmgui_image for consistency.
+==============================================================================*/
+{
+	Image *temp_magick_image;
+	int number_of_images, return_code;
+	
+	ENTER(get_magick_image_number_of_consistent_images);
+	if (magick_image)
+	{
+		number_of_images = 1;
+		return_code = 1;
+		temp_magick_image = magick_image;
+		while (return_code && (temp_magick_image = temp_magick_image->next))
+		{
+			if ((temp_magick_image->columns == magick_image->columns) &&
+				(temp_magick_image->rows == magick_image->rows) &&
+				(temp_magick_image->matte == magick_image->matte) &&
+				(temp_magick_image->colorspace == magick_image->colorspace) &&
+				(temp_magick_image->depth == magick_image->depth))
+			{
+				number_of_images++;
+			}
+			else
+			{
+				return_code = 0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_magick_image_number_of_consistent_images.  Missing magick_image");
+		number_of_images = 0;
+	}
+	LEAVE;
+
+	return (number_of_images);
+} /* get_magick_image_number_of_consistent_images */
+#endif /* defined (IMAGEMAGICK) */
+
+static struct Cmgui_image *CREATE(Cmgui_image)(void)
+/*******************************************************************************
+LAST MODIFIED : 11 March 2002
+
+DESCRIPTION :
+Private constructor for Cmgui_image type.
+Must be called by specific constructor and left with valid entries.
+==============================================================================*/
+{
+	struct Cmgui_image *cmgui_image;
+
+	ENTER(CREATE(Cmgui_image));
+	if (ALLOCATE(cmgui_image, struct Cmgui_image, 1))
+	{
+#if defined (IMAGEMAGICK)
+		cmgui_image->magick_image = (Image *)NULL;
+#else /* defined (IMAGEMAGICK) */
+		cmgui_image->image_arrays = (unsigned char **)NULL;
+#endif /* defined (IMAGEMAGICK) */
+		cmgui_image->width = 0;
+		cmgui_image->height = 0;
+		cmgui_image->number_of_components = 0;
+		cmgui_image->number_of_bytes_per_component = 0;
+		cmgui_image->number_of_images = 0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"CREATE(Cmgui_image).  Could not allocate structure");
+	}
+	LEAVE;
+
+	return (cmgui_image);
+} /* CREATE(Cmgui_image) */
+
+int DESTROY(Cmgui_image)(struct Cmgui_image **cmgui_image_address)
+/*******************************************************************************
+LAST MODIFIED : 27 February 2002
+
+DESCRIPTION :
+Frees the memory use by the Cmgui_image and sets <*cmgui_image_address> to NULL.
+==============================================================================*/
+{
+	int return_code;
+	struct Cmgui_image *cmgui_image;
+#if defined (IMAGEMAGICK)
+#else /* defined (IMAGEMAGICK) */
+	int i;
+#endif /* defined (IMAGEMAGICK) */
+
+	ENTER(DESTROY(Cmgui_image));
+	if (cmgui_image_address && (cmgui_image = *cmgui_image_address))
+	{
+#if defined (IMAGEMAGICK)
+		if (cmgui_image->magick_image)
+		{
+			/* destroy linked-list of images */
+			DestroyImages(cmgui_image->magick_image);
+		}
+#else /* defined (IMAGEMAGICK) */
+		if (cmgui_image->image_arrays)
+		{
+			for (i = 0; i < cmgui_image->number_of_images; i++)
+			{
+				if (cmgui_image->image_arrays[i])
+				{
+					DEALLOCATE(cmgui_image->image_arrays[i]);
+				}
+			}
+			DEALLOCATE(cmgui_image->image_arrays);
+		}
+#endif /* defined (IMAGEMAGICK) */
+		DEALLOCATE(*cmgui_image_address);
+		*cmgui_image_address = NULL;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"DESTROY(Cmgui_image).  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Cmgui_image) */
+
+int Cmgui_image_append(struct Cmgui_image *cmgui_image,
+	struct Cmgui_image **second_cmgui_image_address)
+/*******************************************************************************
+LAST MODIFIED : 12 March 2002
+
+DESCRIPTION :
+Appends the Cmgui_image pointer to by <second_cmgui_image_address> on to the
+end of <cmgui_image>. Both images must be of the same size and colour depth.
+Whether this function succeeds or fails, <second_cmgui_image> will bedestroyed.
+==============================================================================*/
+{
+	int return_code;
+	struct Cmgui_image *second_cmgui_image;
+#if defined (IMAGEMAGICK)
+	Image *temp_magick_image;
+#else /* defined (IMAGEMAGICK) */
+	unsigned char **temp_image_arrays;
+	int i;
+#endif /* defined (IMAGEMAGICK) */
+
+	ENTER(Cmgui_image_append);
+	if (cmgui_image && second_cmgui_image_address &&
+		(second_cmgui_image = *second_cmgui_image_address))
+	{
+		if ((cmgui_image->width == second_cmgui_image->width) &&
+			(cmgui_image->height == second_cmgui_image->height) &&
+			(cmgui_image->number_of_components ==
+				second_cmgui_image->number_of_components) &&
+			(cmgui_image->number_of_bytes_per_component ==
+				second_cmgui_image->number_of_bytes_per_component))
+		{
+#if defined (IMAGEMAGICK)
+			/* add this image to the end of the linked-list of images */
+			temp_magick_image = cmgui_image->magick_image;
+			while (temp_magick_image->next)
+			{
+				temp_magick_image = temp_magick_image->next;
+			}
+			/* set next/previous pointers */
+			temp_magick_image->next = second_cmgui_image->magick_image;
+			second_cmgui_image->magick_image->previous = temp_magick_image;
+			/* remove the image from second_cmgui_image so not destroyed below */
+			second_cmgui_image->magick_image = (Image *)NULL;
+			/* increase the number of images */
+			cmgui_image->number_of_images += second_cmgui_image->number_of_images;
+			return_code = 1;
+#else /* defined (IMAGEMAGICK) */
+			if (REALLOCATE(temp_image_arrays, cmgui_image->image_arrays,
+				unsigned char *, cmgui_image->number_of_images +
+				second_cmgui_image->number_of_images))
+			{
+				for (i = 0; i < second_cmgui_image->number_of_images; i++)
+				{
+					temp_image_arrays[cmgui_image->number_of_images + i] =
+						second_cmgui_image->image_arrays[i];
+					/* clear pointer so not destroyed below */
+					second_cmgui_image->image_arrays[i] = (unsigned char *)NULL;
+				}
+				cmgui_image->image_arrays = temp_image_arrays;
+				cmgui_image->number_of_images += second_cmgui_image->number_of_images;
+				return_code = 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmgui_image_append.  Could not enlarge image arrays");
+				return_code = 0;
+			}
+#endif /* defined (IMAGEMAGICK) */
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmgui_image_append.  Images are of different size");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_append.  Invalid argument(s)");
+		return_code = 0;
+	}
+	if (second_cmgui_image_address)
+	{
+		DESTROY(Cmgui_image)(second_cmgui_image_address);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmgui_image_append */
+
+struct Cmgui_image *Cmgui_image_constitute(int width, int height,
+	int number_of_components, int number_of_bytes_per_component,
+	int source_width_bytes, unsigned char *source_pixels)
+/*******************************************************************************
+LAST MODIFIED : 11 March 2002
+
+DESCRIPTION :
+Creates a single Cmgui_image of the specified <width>, <height> with
+<number_of_components> where 1=luminance, 2=LuminanceA, 3=RGB, 4=RGBA, and
+<number_of_bytes_per_component> which may be 1 or 2.
+Data for the image is taken from <source_pixels> which has <source_width_bytes>
+of at least <width>*<number_of_components>*<number_of_bytes_per_component>.
+The source_pixels are stored in rows from the bottom to top and from left to
+right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
+==============================================================================*/
+{
+	int i, return_code, width_bytes;
+	struct Cmgui_image *cmgui_image;
+	unsigned char *destination, *image, *source;
+#if defined (IMAGEMAGICK)
+	char *magick_image_storage;
+	int bytes_per_pixel, number_of_pixels;
+	Image *magick_image;
+	ExceptionInfo magick_exception;
+	unsigned short short_value;
+	StorageType magick_storage_type;
+#else /* defined (IMAGEMAGICK) */
+#endif /* defined (IMAGEMAGICK) */
+
+	ENTER(Cmgui_image_constitute);
+	cmgui_image = (struct Cmgui_image *)NULL;
+	if ((0 < width) && (0 < height) &&
+		(1 <= number_of_components) && (number_of_components <= 4) &&
+		((1 == number_of_bytes_per_component) ||
+			(2 == number_of_bytes_per_component)) &&
+		(width*number_of_components*number_of_bytes_per_component <=
+			source_width_bytes) && source_pixels)
+	{
+		if (cmgui_image = CREATE(Cmgui_image)())
+		{
+			return_code = 1;
+			/* make image in our unsigned char format; ImageMagick version needs it
+				 for constitute function, although row order is then top-to-bottom */
+			width_bytes = width*number_of_components*number_of_bytes_per_component;
+			if (ALLOCATE(image, unsigned char, height*width_bytes))
+			{
+#if defined (IMAGEMAGICK)
+				/* fill the image from top to bottom */
+				source = source_pixels;
+				destination = image + height*width_bytes;
+				for (i = 0; i < height; i++)
+				{
+					destination -= width_bytes;
+					memcpy(destination, source, width_bytes);
+					source += source_width_bytes;
+				}
+				if ((2 == number_of_components) || (4 == number_of_components))
+				{
+					/* reverse alpha/opacity */
+					bytes_per_pixel = number_of_components*number_of_bytes_per_component;
+					destination = image +
+						(bytes_per_pixel - number_of_bytes_per_component);
+					number_of_pixels = width*height;
+					/* set source to point at short value for below */
+					source = (unsigned char *)(&short_value);
+					for (i = 0; i < number_of_pixels; i++)
+					{
+						if (2 == number_of_bytes_per_component)
+						{
+#if (1234==__BYTE_ORDER)
+							short_value = 0xFFFF -
+								(((unsigned short)(*(destination + 1))) << 8) - (*destination);
+#else /* (1234==__BYTE_ORDER) */
+							short_value = 0xFFFF -
+								(((unsigned short)(*destination)) << 8) - (*(destination + 1));
+#endif /* (1234==__BYTE_ORDER) */
+							*destination = *source;
+							*(destination + 1) = *(source + 1);
+						}
+						else
+						{
+							*destination = 0xFF - (*destination);
+						}
+						destination += bytes_per_pixel;
+					}
+				}
+				GetExceptionInfo(&magick_exception);
+				switch (number_of_components)
+				{
+					case 1:
+					{
+						magick_image_storage = "R";
+					} break;
+					case 2:
+					{
+						magick_image_storage = "RA";
+					} break;
+					case 3:
+					{
+						magick_image_storage = "RGB";
+					} break;
+					case 4:
+					{
+						magick_image_storage = "RGBA";
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"Cmgui_image_constitute.  Invalid number_of_components");
+						return_code = 0;
+					} break;
+				}
+				switch (number_of_bytes_per_component)
+				{
+					case 1:
+					{
+						magick_storage_type = CharPixel;
+					} break;
+					case 2:
+					{
+						magick_storage_type = ShortPixel;
+					} break;
+					default:
+					{
+						display_message(ERROR_MESSAGE,
+							"Cmgui_image_dispatch.  Invalid number_of_bytes_per_component");
+						return_code = 0;
+					} break;
+				}
+#if defined (DEBUG)
+				magick_image_info->verbose = 1;
+#endif /* defined (DEBUG) */
+				if (return_code)
+				{
+					magick_image = ConstituteImage(width, height, magick_image_storage, 
+						magick_storage_type, image, &magick_exception);
+					if (magick_image)
+					{
+						cmgui_image->magick_image = magick_image;
+						cmgui_image->width = width;
+						cmgui_image->height = height;
+						cmgui_image->number_of_components = number_of_components;
+						/* note; ImageMagick seems to store 16-bits internally so need to
+							 remember what was actually put in here */
+						cmgui_image->number_of_bytes_per_component =
+							number_of_bytes_per_component;
+						cmgui_image->number_of_images = 1;
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Cmgui_image_constitute.  Could not constitute image");
+						return_code = 0;
+					}
+				}
+				/* image is no longer need for ImageMagick */
+				DEALLOCATE(image);
+#else /* defined (IMAGEMAGICK) */
+				/* fill the image from bottom to top */
+				source = source_pixels;
+				destination = image;
+				for (i = 0; i < height; i++)
+				{
+					memcpy(destination, source, width_bytes);
+					source += source_width_bytes;
+					destination += width_bytes;
+				}
+				if (ALLOCATE(cmgui_image->image_arrays, unsigned char *, 1))
+				{
+					cmgui_image->image_arrays[0] = image;
+					cmgui_image->width = width;
+					cmgui_image->height = height;
+					cmgui_image->number_of_components = number_of_components;
+					cmgui_image->number_of_bytes_per_component =
+						number_of_bytes_per_component;
+					cmgui_image->number_of_images = 1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"Cmgui_image_constitute.  Could not allocate image arrays");
+					return_code = 0;
+				}
+#endif /* defined (IMAGEMAGICK) */
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmgui_image_constitute.  Could not allocate image");
+				return_code = 0;
+			}
+			if (!return_code)
+			{
+				DESTROY(Cmgui_image)(&cmgui_image);
+				cmgui_image = (struct Cmgui_image *)NULL;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_constitute.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (cmgui_image);
+} /* Cmgui_image_constitute */
+
+int Cmgui_image_dispatch(struct Cmgui_image *cmgui_image,
+	int image_number, int left, int bottom, int width, int height,
+	int padded_width_bytes, int number_of_fill_bytes, unsigned char *fill_bytes,
+	unsigned char *destination_pixels)
+/*******************************************************************************
+LAST MODIFIED : 12 March 2002
+
+DESCRIPTION :
+Fills <destination_pixels> with all or part of image <image_number> of
+<cmgui_image>, where 0 is the first image.
+The <left>, <bottom>, <width> and <height> specify the part of <cmgui_image>
+output and must be wholly within its bounds.
+Image data is ordered from the bottom row to the top, and within each row from
+the left to the right.
+All number_of_components components of the image are output at each pixel, and
+pixel values relate to number_of_components by:
+  1 -> I    = Intensity;
+  2 -> IA   = Intensity Alpha;
+  3 -> RGB  = Red Green Blue;
+  4 -> RGBA = Red Green Blue Alpha;
+
+If <padded_width_bytes> is zero, image data for subsequent rows follows exactly
+after the right-most pixel of the row below. If a positive number is specified,
+which must be greater than <width>*number_of_components*
+number_of_bytes_per_component in <cmgui_image>, each
+row of the output image will take up the specified number of bytes, with
+pixels beyond the extracted image <width> undefined.
+If <number_of_fill_bytes> is positive, the <fill_bytes> are repeatedly output
+to fill the padded row; the cycle of outputting <fill_bytes> starts at the
+left of the image to make a more consitent output if more than one colour is
+specified in them -- it makes no difference if <number_of_fill_bytes> is 1 or
+equal to the number_of_components.
+<destination_pixels> must be large enough to take the greater of
+<padded_width_bytes> or
+<width>*number_of_components*number_of_bytes_per_component in the image.
+
+???RC May wish to expand capabilities of this function in future to handle:
+- choosing a different output_number_of_bytes_per_component
+- different colour spaces output, currently fixed for the number_of_components;
+==============================================================================*/
+{
+	int bytes_per_pixel, fill_byte_number, i, padding_bytes, return_code,
+		width_bytes, y, y_limit;
+	unsigned char *destination;
+#if defined (IMAGEMAGICK)
+	char *magick_image_storage;
+	Image *magick_image;
+	int image_height_minus_1, reverse_alpha;
+	StorageType magick_storage_type;
+	unsigned char *short_source, *temp_dest;
+	unsigned short short_value;
+#else /* defined (IMAGEMAGICK) */
+	unsigned char *source;
+	int source_width_bytes;
+#endif /* defined (IMAGEMAGICK) */
+
+	ENTER(Cmgui_image_dispatch);
+	if (cmgui_image &&
+		(0 <= image_number) && (image_number < cmgui_image->number_of_images) &&
+		(0 <= left) && (0 < width) && (left + width <= cmgui_image->width) &&
+		(0 <= bottom) && (0 < height) && (bottom + height <= cmgui_image->height) &&
+		(bytes_per_pixel = cmgui_image->number_of_components *
+			cmgui_image->number_of_bytes_per_component) &&
+		(width_bytes = width * bytes_per_pixel) &&
+		((0 == padded_width_bytes) ||
+			((padded_width_bytes >= width_bytes) &&
+				((0 == number_of_fill_bytes) ||
+					((0 < number_of_fill_bytes) && fill_bytes)))) &&
+		destination_pixels)
+	{
+		return_code = 1;
+		destination = destination_pixels;
+		if (0 < padded_width_bytes)
+		{
+			padding_bytes = padded_width_bytes - width_bytes;
+		}
+		else
+		{
+			padding_bytes = 0;
+		}
+#if defined (IMAGEMAGICK)
+		/* get the magick_image for this <image_number> */
+		magick_image = cmgui_image->magick_image;
+		for (i = 0; (i < image_number) && magick_image; i++)
+		{
+			magick_image = magick_image->next;
+		}
+		if (!magick_image)
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmgui_image_dispatch.  No image at image number %d",image_number);
+			return_code = 0;
+		}
+		switch (cmgui_image->number_of_components)
+		{
+			case 1:
+			{
+				magick_image_storage = "R";
+				reverse_alpha = 0;
+			} break;
+			case 2:
+			{
+				magick_image_storage = "RA";
+				reverse_alpha = 1;
+			} break;
+			case 3:
+			{
+				magick_image_storage = "RGB";
+				reverse_alpha = 0;
+			} break;
+			case 4:
+			{
+				magick_image_storage = "RGBA";
+				reverse_alpha = 1;
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmgui_image_dispatch.  Invalid number_of_components");
+				return_code = 0;
+			} break;
+		}
+		switch (cmgui_image->number_of_bytes_per_component)
+		{
+			case 1:
+			{
+				magick_storage_type = CharPixel;
+			} break;
+			case 2:
+			{
+				magick_storage_type = ShortPixel;
+			} break;
+			default:
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmgui_image_dispatch.  Invalid number_of_bytes_per_component");
+				return_code = 0;
+			} break;
+		}
+		image_height_minus_1 = cmgui_image->height - 1;
+#else /* defined (IMAGEMAGICK) */
+		source_width_bytes = cmgui_image->width*bytes_per_pixel;
+		source = cmgui_image->image_arrays[image_number] +
+			bottom*source_width_bytes + left*bytes_per_pixel;
+#endif /* defined (IMAGEMAGICK) */
+		if (return_code)
+		{
+			y_limit = bottom + height;
+			for (y = bottom; y < y_limit; y++)
+			{
+#if defined (IMAGEMAGICK)
+				/* y is 0 in the top scanline of ImageMagick images, hence reverse */
+				DispatchImage(magick_image, left, image_height_minus_1 - y,
+					width, 1, magick_image_storage, magick_storage_type,
+					(void *)destination);
+				if (reverse_alpha)
+				{
+					temp_dest = destination +
+						bytes_per_pixel - cmgui_image->number_of_bytes_per_component;
+					short_source = (unsigned char *)(&short_value);
+					for (i = 0; i < width; i++)
+					{
+						if (2 == cmgui_image->number_of_bytes_per_component)
+						{
+#if (1234==__BYTE_ORDER)
+							short_value = 0xFFFF -
+								(((unsigned short)(*(temp_dest + 1))) << 8) - (*temp_dest);
+#else /* (1234==__BYTE_ORDER) */
+							short_value = 0xFFFF -
+								(((unsigned short)(*temp_dest)) << 8) - (*(temp_dest + 1));
+#endif /* (1234==__BYTE_ORDER) */
+							*temp_dest = *short_source;
+							*(temp_dest + 1) = *(short_source + 1);
+						}
+						else
+						{
+							*temp_dest = 0xFF - (*temp_dest);
+						}
+						temp_dest += bytes_per_pixel;
+					}
+				}
+#else /* defined (IMAGEMAGICK) */
+				memcpy(destination, source, width_bytes);
+				source += source_width_bytes;
+#endif /* defined (IMAGEMAGICK) */
+				destination += width_bytes;
+				if (0 < padding_bytes)
+				{
+					if (1 == number_of_fill_bytes)
+					{
+						memset(destination, *fill_bytes, padding_bytes);
+						destination += padding_bytes;
+					}
+					else if (1 < number_of_fill_bytes)
+					{
+						if (y == bottom)
+						{
+							fill_byte_number = width_bytes % number_of_fill_bytes;
+							for (i = 0; i < padding_bytes; i++)
+							{
+								*destination = fill_bytes[fill_byte_number];
+								fill_byte_number++;
+								if (fill_byte_number >= number_of_fill_bytes)
+								{
+									fill_byte_number = 0;
+								}
+								destination++;
+							}
+						}
+						else
+						{
+							/* copy the pattern made on the first row */
+							memcpy(destination, destination - padded_width_bytes,
+								padding_bytes);
+							destination += padding_bytes;
+						}
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_dispatch.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmgui_image_dispatch */
+
+int Cmgui_image_get_height(struct Cmgui_image *cmgui_image)
+/*******************************************************************************
+LAST MODIFIED : 27 February 2002
+
+DESCRIPTION :
+Returns the <height> of <cmgui_image>.
+==============================================================================*/
+{
+	int height;
+
+	ENTER(Cmgui_image_get_height);
+	if (cmgui_image)
+	{
+		height = cmgui_image->height;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_get_height.  Invalid argument(s)");
+		height = 0;
+	}
+	LEAVE;
+
+	return (height);
+} /* Cmgui_image_get_height */
+
+int Cmgui_image_get_number_of_bytes_per_component(
+	struct Cmgui_image *cmgui_image)
+/*******************************************************************************
+LAST MODIFIED : 20 February 2002
+
+DESCRIPTION :
+Returns the <number_of_bytes_per_component> of <cmgui_image>, currently either
+1 or 2.
+==============================================================================*/
+{
+	int number_of_bytes_per_component;
+
+	ENTER(Cmgui_image_get_number_of_bytes_per_component);
+	if (cmgui_image)
+	{
+		number_of_bytes_per_component = cmgui_image->number_of_bytes_per_component;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_get_number_of_bytes_per_component.  Invalid argument(s)");
+		number_of_bytes_per_component = 0;
+	}
+	LEAVE;
+
+	return (number_of_bytes_per_component);
+} /* Cmgui_image_get_number_of_bytes_per_component */
+
+int Cmgui_image_get_number_of_components(struct Cmgui_image *cmgui_image)
+/*******************************************************************************
+LAST MODIFIED : 16 February 2002
+
+DESCRIPTION :
+Returns the <number_of_components> - R, G, B, A, I etc. of <cmgui_image>.
+==============================================================================*/
+{
+	int number_of_components;
+
+	ENTER(Cmgui_image_get_number_of_components);
+	if (cmgui_image)
+	{
+		number_of_components = cmgui_image->number_of_components;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_get_number_of_components.  Invalid argument(s)");
+		number_of_components = 0;
+	}
+	LEAVE;
+
+	return (number_of_components);
+} /* Cmgui_image_get_number_of_components */
+
+int Cmgui_image_get_number_of_images(struct Cmgui_image *cmgui_image)
+/*******************************************************************************
+LAST MODIFIED : 19 February 2002
+
+DESCRIPTION :
+Returns the <number_of_images> stored <cmgui_image>.
+==============================================================================*/
+{
+	int number_of_images;
+
+	ENTER(Cmgui_image_get_number_of_images);
+	if (cmgui_image)
+	{
+		number_of_images = cmgui_image->number_of_images;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_get_number_of_images.  Invalid argument(s)");
+		number_of_images = 0;
+	}
+	LEAVE;
+
+	return (number_of_images);
+} /* Cmgui_image_get_number_of_images */
+
+int Cmgui_image_get_width(struct Cmgui_image *cmgui_image)
+/*******************************************************************************
+LAST MODIFIED : 27 February 2002
+
+DESCRIPTION :
+Returns the <width> <cmgui_image>.
+==============================================================================*/
+{
+	int width;
+
+	ENTER(Cmgui_image_get_width);
+	if (cmgui_image)
+	{
+		width = cmgui_image->width;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_get_width.  Invalid argument(s)");
+		width = 0;
+	}
+	LEAVE;
+
+	return (width);
+} /* Cmgui_image_get_width */
+
+struct Cmgui_image *Cmgui_image_read(
+	struct Cmgui_image_information *cmgui_image_information)
+/*******************************************************************************
+LAST MODIFIED : 12 March 2002
+
+DESCRIPTION :
+Creates a Cmgui_image containing the images from the files listed in the
+<cmgui_image_information>. If more than one file_name is listed, they are
+checked to be of the same size and assembled together; note that the images
+making up the series may not themselves have a third dimension, such as animated
+GIF or dicom files, unless only a single filename is given.
+The <cmgui_image_information> should be given appropriate width, height
+and other parameters for formats that require them.
+==============================================================================*/
+{
+	char *file_name;
+	int height, i, return_code, width;
+	struct Cmgui_image *cmgui_image;
+#if defined (IMAGEMAGICK)
+	char *file_name_prefix, *old_magick_size, magick_size[41];
+	int length;
+	Image *magick_image, *temp_magick_image;
+	ImageInfo *magick_image_info;
+	ExceptionInfo magick_exception;
+	long int file_size;
+	struct stat buf;
+#else /* defined (IMAGEMAGICK) */
+	enum Image_file_format image_file_format;
+	int number_of_bytes_per_component, number_of_components;
+#endif /* defined (IMAGEMAGICK) */
+
+	ENTER(Cmgui_image_read);
+	cmgui_image = (struct Cmgui_image *)NULL;
+	if (cmgui_image_information && cmgui_image_information->valid &&
+		cmgui_image_information->file_names)
+	{
+		if (cmgui_image = CREATE(Cmgui_image)())
+		{
+			return_code = 1;
+#if defined (IMAGEMAGICK)
+			GetExceptionInfo(&magick_exception);
+			if (magick_image_info = CloneImageInfo((ImageInfo *) NULL))
+			{
+				old_magick_size = magick_image_info->size;
+				magick_image_info->size = (char *)NULL;
+#if defined (DEBUG)
+				magick_image_info->verbose = 1;
+#endif /* defined (DEBUG) */
+				for (i = 0; (i < cmgui_image_information->number_of_file_names) &&
+					return_code; i++)
+				{
+					width = cmgui_image_information->width;
+					height = cmgui_image_information->height;
+					file_name = cmgui_image_information->file_names[i];
+					length = strlen(file_name);
+					file_name_prefix = "";
+					if (!strchr(file_name, ':'))
+					{
+						/* Only add prefixes if there isn't one already and we want to
+							 do something tricky */
+						/* test to see if a file with suffix rgb is an sgi rgb file */
+						if ((length > 4) &&  fuzzy_string_compare_same_length(
+							(file_name + length - 4), ".rgb"))
+						{
+							file_name_prefix = "sgi:";
+						}
+						/* if width and height are not specified and the file is of yuv or
+							 uyuv type, try to get standard video resolution from file size */
+						else if ((0 != width) && (0 != height) && (
+							((length > 4) && fuzzy_string_compare_same_length(
+								(file_name + length - 4), ".yuv")) ||
+							((length > 5) && fuzzy_string_compare_same_length(
+								(file_name + length - 5), ".uyvy"))))
+						{
+							file_name_prefix = "uyvy:";
+							/* try to get width and height from the file_size */
+							if ((0 == stat(file_name, &buf)) &&
+								(0 < (file_size = (long int)(buf.st_size))))
+							{
+								get_yuv_resolution_from_file_size(file_size, &width, &height);
+							}
+						}
+					}
+					sprintf(magick_image_info->filename, "%s%s",
+						file_name_prefix, file_name);
+					if ((0 < width) && (0 < height))
+					{
+						sprintf(magick_size, "%dx%d", width, height);
+						magick_image_info->size = magick_size;
+					}
+					if (2 == cmgui_image_information->number_of_bytes_per_component)
+					{
+						magick_image_info->depth = 16;
+					}
+					else
+					{
+						magick_image_info->depth = 8;
+					}
+					/* set interlace type for raw RGB files */
+					switch (cmgui_image_information->raw_image_storage)
+					{
+						case RAW_INTERLEAVED_RGB:
+						{
+							magick_image_info->interlace = NoInterlace;
+						} break;
+						case RAW_PLANAR_RGB:
+						{
+							magick_image_info->interlace = PlaneInterlace;
+						} break;
+					}
+					magick_image = ReadImage(magick_image_info, &magick_exception);
+					if (magick_image)
+					{
+						if (cmgui_image->magick_image)
+						{
+							/* add image to the end of the doubly linked-list of images */
+							temp_magick_image = cmgui_image->magick_image;
+							while (temp_magick_image->next)
+							{
+								temp_magick_image = temp_magick_image->next;
+							}
+							temp_magick_image->next = magick_image;
+							magick_image->previous = temp_magick_image;
+						}
+						else
+						{
+							cmgui_image->magick_image = magick_image;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Could not read image: %s", file_name);
+						return_code = 0;
+					}
+					magick_image_info->size = (char *)NULL;
+				}
+				/* restore original size for ImageMagick to clean up */
+				magick_image_info->size = old_magick_size;
+				if (return_code && cmgui_image->magick_image)
+				{
+					if (cmgui_image->number_of_images =
+						get_magick_image_number_of_consistent_images(
+							cmgui_image->magick_image))
+					{
+						get_magick_image_parameters(cmgui_image->magick_image,
+							&cmgui_image->width, &cmgui_image->height,
+							&cmgui_image->number_of_components,
+							&cmgui_image->number_of_bytes_per_component);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"Cmgui_image_read.  Image size not constant over series");
+						return_code = 0;
+					}
+				}
+				DestroyImageInfo(magick_image_info);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmgui_image_read.  Could not create image information");
+				return_code = 0;
+			}
+#else /* defined (IMAGEMAGICK) */
+			if (ALLOCATE(cmgui_image->image_arrays, unsigned char *,
+				cmgui_image_information->number_of_file_names))
+			{
+				/* clear image_arrays so destroy function can clean up if this fails */
+				for (i = 0; (i < cmgui_image_information->number_of_file_names); i++)
+				{
+					cmgui_image->image_arrays[i] = (unsigned char *)NULL;
+				}
+				for (i = 0; (i < cmgui_image_information->number_of_file_names) &&
+					return_code; i++)
+				{
+					file_name = cmgui_image_information->file_names[i];
+					width = cmgui_image_information->width;
+					height = cmgui_image_information->height;
+					if (Image_file_format_from_file_name(file_name, &image_file_format))
+					{
+						switch (image_file_format)
+						{
+							case POSTSCRIPT_FILE_FORMAT:
+							{
+								display_message(ERROR_MESSAGE,
+									"Cannot read postscript image file '%s'", file_name);
+								return_code = 0;
+							} break;
+							case RAW_FILE_FORMAT:
+							{
+								return_code = read_raw_image_file(file_name,
+									cmgui_image_information->raw_image_storage,
+									&width, &height, &number_of_components,
+									&number_of_bytes_per_component,
+									&(cmgui_image->image_arrays[i]));
+							} break;
+							case RGB_FILE_FORMAT:
+							{
+								return_code = read_rgb_image_file(file_name,
+									&width, &height, &number_of_components,
+									&number_of_bytes_per_component,
+									&(cmgui_image->image_arrays[i]));
+							} break;
+							case TIFF_FILE_FORMAT:
+							{
+								return_code = read_tiff_image_file(file_name,
+									&width, &height, &number_of_components,
+									&number_of_bytes_per_component,
+									&(cmgui_image->image_arrays[i]));
+							} break;
+							case YUV_FILE_FORMAT:
+							{
+								return_code = read_yuv_image_file(file_name,
+									&width, &height, &number_of_components,
+									&number_of_bytes_per_component,
+									&(cmgui_image->image_arrays[i]));
+							} break;
+							default:
+							{
+								display_message(ERROR_MESSAGE, "Cmgui_image_read.  "
+									"This version of CMGUI cannot read images of .%s format",
+									Image_file_format_extension(image_file_format));
+								return_code = 0;
+							} break;
+						}
+						if (return_code)
+						{
+							if (0 == i)
+							{
+								/* save size/format of first image */
+								cmgui_image->width = width;
+								cmgui_image->height = height;
+								cmgui_image->number_of_components = number_of_components;
+								cmgui_image->number_of_bytes_per_component =
+									number_of_bytes_per_component;
+								cmgui_image->number_of_images =
+									cmgui_image_information->number_of_file_names;
+							}
+							else
+							{
+								/* make sure following images are the same size/format */
+								if ((width != cmgui_image->width) ||
+									(height != cmgui_image->height) ||
+									(number_of_components != cmgui_image->number_of_components) ||
+									(number_of_bytes_per_component !=
+										cmgui_image->number_of_bytes_per_component))
+								{
+									display_message(ERROR_MESSAGE,
+										"Cmgui_image_read.  Image size not constant over series");
+									return_code = 0;
+								}
+							}
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "Cmgui_image_read.  "
+							"Could not determine image format of file '%s'", file_name);
+						return_code = 0;
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Cmgui_image_read.  Could not allocate image arrays");
+				return_code = 0;
+			}
+#endif /* defined (IMAGEMAGICK) */
+			if (!return_code)
+			{
+				DESTROY(Cmgui_image)(&cmgui_image);
+				cmgui_image = (struct Cmgui_image *)NULL;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_read.  Invalid image information");
+	}
+	LEAVE;
+
+	return (cmgui_image);
+} /* Cmgui_image_read */
+
+int Cmgui_image_write(struct Cmgui_image *cmgui_image,
+	struct Cmgui_image_information *cmgui_image_information)
+/*******************************************************************************
+LAST MODIFIED : 12 March 2002
+
+DESCRIPTION :
+Writes <cmgui_image> to the filename or filenames listed in the
+<cmgui_image_information>. If set, the image_file_format in the information
+overrides the file format determined from the extension.
+There must be as many filenames supplied as images in <cmgui_image> with the
+exception of certain formats which can support all images being written to a
+single file, eg. animated GIF, DICOM, in which case a single filename requests
+that the images be adjoined in the single file.
+==============================================================================*/
+{
+	char *file_name;
+	int i, number_of_file_names, return_code;
+#if defined (IMAGEMAGICK)
+	Image *magick_image, *temp_next, *temp_previous;
+	ImageInfo *magick_image_info;
+#else /* defined (IMAGEMAGICK) */
+	enum Image_file_format image_file_format;
+#endif /* defined (IMAGEMAGICK) */
+
+	ENTER(Cmgui_image_write);
+	if (cmgui_image && cmgui_image_information &&
+		cmgui_image_information->valid && cmgui_image_information->file_names &&
+		((0 < (number_of_file_names =
+			cmgui_image_information->number_of_file_names))) &&
+		((1 == number_of_file_names) ||
+			(number_of_file_names == cmgui_image->number_of_images)))
+	{
+		return_code = 1;
+#if defined (IMAGEMAGICK)
+		if (magick_image_info = CloneImageInfo((ImageInfo *) NULL))
+		{
+			magick_image = cmgui_image->magick_image;
+			for (i = 0; (i < number_of_file_names) && return_code; i++)
+			{
+				file_name = cmgui_image_information->file_names[i];
+				if ((!strchr(file_name, ':')) && (UNKNOWN_IMAGE_FILE_FORMAT !=
+					cmgui_image_information->image_file_format))
+				{
+					if (RGB_FILE_FORMAT == cmgui_image_information->image_file_format)
+					{
+						/* rgb is used in cmgui to denote the sgi rgb format */
+						sprintf(magick_image->filename, "sgi:%s", file_name);
+					}
+					else
+					{
+						sprintf(magick_image->filename, "%s:%s",
+							Image_file_format_extension(
+								cmgui_image_information->image_file_format), file_name);
+					}
+				}
+				else
+				{
+					strcpy(magick_image->filename, file_name);
+				}
+				/* image magick seems to use 16-bit components internally so assume
+					 we have to force output to be 8 bits if only 8-bits used */
+				if (2 == cmgui_image_information->number_of_bytes_per_component)
+				{
+					magick_image_info->depth = 16;
+				}
+				else
+				{
+					magick_image_info->depth = 8;
+				}
+				/* set interlace type for raw RGB files */
+				switch (cmgui_image_information->raw_image_storage)
+				{
+					case RAW_INTERLEAVED_RGB:
+					{
+						magick_image_info->interlace = NoInterlace;
+					} break;
+					case RAW_PLANAR_RGB:
+					{
+						magick_image_info->interlace = PlaneInterlace;
+					} break;
+				}
+#if defined (DEBUG)
+				magick_image_info->verbose = 1;
+#endif /* defined (DEBUG) */
+				if (number_of_file_names < cmgui_image->number_of_images)
+				{
+					/* ask ImageMagick to adjoin the images into one */
+					magick_image_info->adjoin = 1;
+					temp_previous = (Image *)NULL;
+					temp_next = (Image *)NULL;
+				}
+				else
+				{
+					/* stop ImageMagick from adjoining images */
+					magick_image_info->adjoin = 0;
+					temp_previous = magick_image->previous;
+					magick_image->previous = (Image *)NULL;
+					temp_next = magick_image->next;
+					magick_image->next = (Image *)NULL;
+				}
+				if (!WriteImage(magick_image_info, magick_image))
+				{
+					display_message(ERROR_MESSAGE,
+						"Could not write image \"%s\"", file_name);
+					return_code = 0;
+				}
+				if (temp_previous || temp_next)
+				{
+					/* restore place of image in linked list */
+					magick_image->previous = temp_previous;
+					magick_image->next = temp_next;
+				}
+				magick_image = magick_image->next;
+			}
+			DestroyImageInfo(magick_image_info);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Cmgui_image_write.  Could not create image information");
+			return_code = 0;
+		}
+#else /* defined (IMAGEMAGICK) */
+		/* must have same number of filenames as images */
+		if (number_of_file_names == cmgui_image->number_of_images)
+		{
+			for (i = 0; (i < number_of_file_names) && return_code; i++)
+			{
+				file_name = cmgui_image_information->file_names[i];
+				image_file_format = cmgui_image_information->image_file_format;
+				if ((UNKNOWN_IMAGE_FILE_FORMAT != image_file_format) ||
+					Image_file_format_from_file_name(file_name, &image_file_format))
+				{
+					switch (image_file_format)
+					{
+						case RGB_FILE_FORMAT:
+						{
+							return_code = write_rgb_image_file(file_name,
+								cmgui_image->number_of_components,
+								cmgui_image->number_of_bytes_per_component,
+								cmgui_image->width, 
+								cmgui_image->height,
+								/*row_padding*/0,
+								(unsigned long *)cmgui_image->image_arrays[i]);
+						} break;
+						case TIFF_FILE_FORMAT:
+						{
+							return_code = write_tiff_image_file(file_name, 
+								cmgui_image->number_of_components,
+								cmgui_image->number_of_bytes_per_component,
+								cmgui_image->width, 
+								cmgui_image->height,
+								/*row_padding*/0,
+								TIFF_PACK_BITS_COMPRESSION,
+								(unsigned long *)cmgui_image->image_arrays[i]);
+						} break;
+						case POSTSCRIPT_FILE_FORMAT:
+						{
+							return_code = write_postscript_image_file(file_name,
+								cmgui_image->number_of_components,
+								cmgui_image->number_of_bytes_per_component,
+								cmgui_image->width, 
+								cmgui_image->height,
+								/*row_padding*/0,
+								/*pixel_aspect_ratio*/1.0,
+								PORTRAIT_ORIENTATION,
+								(unsigned long *)cmgui_image->image_arrays[i]);
+						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE, "Cmgui_image_write.  "
+								"This version of CMGUI cannot write images of .%s format",
+								Image_file_format_extension(image_file_format));
+							return_code = 0;
+						}
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "Cmgui_image_write.  "
+						"Image file format of %s must be specified", file_name);
+					return_code = 0;
+				}
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Cmgui_image_write.  "
+				"%d filename(s) supplied for %d image(s)",
+				number_of_file_names, cmgui_image->number_of_images);
+			return_code = 0;
+		}
+#endif /* defined (IMAGEMAGICK) */
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Cmgui_image_write.  Invalid image information");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Cmgui_image_write */

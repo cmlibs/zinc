@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : image_utilities.h
 
-LAST MODIFIED : 2 May 2001
+LAST MODIFIED : 11 March 2002
 
 DESCRIPTION :
 Utilities for handling images.
@@ -9,19 +9,17 @@ Utilities for handling images.
 #if !defined (IMAGE_UTILITIES_H)
 #define IMAGE_UTILITIES_H
 #include "general/enumerator.h"
-#include "user_interface/printer.h"
+#include "general/object.h"
 #include "user_interface/user_interface.h"
-
-#define TIFF_HI_LO 0x4D4D
-#define TIFF_LO_HI 0x4949
 
 /*
 Global types
 ------------
 */
+
 enum Image_file_format
 /*******************************************************************************
-LAST MODIFIED : 2 May 2001
+LAST MODIFIED : 1 March 2002
 
 DESCRIPTION :
 Enumerator for specifying the image file format.
@@ -30,21 +28,17 @@ incremented by 1. This pattern is expected by the ENUMERATOR macros.
 Must ensure the ENUMERATOR_STRING function returns a string for each value here.
 ==============================================================================*/
 {
+	BMP_FILE_FORMAT,
 	JPG_FILE_FORMAT,
+	GIF_FILE_FORMAT,
 	POSTSCRIPT_FILE_FORMAT,
-	RAW_FILE_FORMAT,
-	RGB_FILE_FORMAT,
+	RAW_FILE_FORMAT,  /* otherwise known as the true RGB format */
+	RGB_FILE_FORMAT,  /* denotes the SGI RGB format */
 	TIFF_FILE_FORMAT,
-	YUV_FILE_FORMAT
+	YUV_FILE_FORMAT,
+	/* following used to indicate that the format has not been specified */
+	UNKNOWN_IMAGE_FILE_FORMAT
 }; /* enum Image_file_format */
-
-#if ! defined (IMAGEMAGICK)
-enum Image_orientation
-{
-	LANDSCAPE_ORIENTATION,
-	PORTRAIT_ORIENTATION
-}; /* enum Image_orientation */
-#endif /* ! defined (IMAGEMAGICK) */
 
 enum Tiff_image_compression
 {
@@ -55,28 +49,45 @@ enum Tiff_image_compression
 
 enum Raw_image_storage
 {
-	RAW_INTERLEAVED_RGB,
-	RAW_PLANAR_RGB,
-	RAW_IMAGE_STORAGE_INVALID
-}; /* enum Image_storage */
+	RAW_INTERLEAVED_RGB,  /* RGBRGBRGBRGBRGBRGBRGBRGB */
+	RAW_PLANAR_RGB        /* RRRRRR...GGGGGG...BBBBBB */
+}; /* enum Raw_image_storage */
+
+struct Cmgui_image_information;
+/*******************************************************************************
+LAST MODIFIED : 18 February 2002
+
+DESCRIPTION :
+Private structure for describing a Cmgui_image to read in.
+Lists one or more file names to be read in, with hints for width, height and
+interlace_type for raw rgb/yuv image formats.
+If more than one file_name is included, they must have consistent width, height
+and other attributes.
+Must be created and passed to Cmgui_image_read.
+==============================================================================*/
+
+struct Cmgui_image;
+/*******************************************************************************
+LAST MODIFIED : 13 February 2002
+
+DESCRIPTION :
+Private structure for storing 2-D images.
+==============================================================================*/
 
 /*
 Global functions
 ----------------
 */
 
-#if defined (IMAGEMAGICK)
 int Open_image_environment(char *program_name);
 /*******************************************************************************
-LAST MODIFIED : 10 April 2001
+LAST MODIFIED : 1 March 2002
 
 DESCRIPTION :
-Sets up ImageMagick library. Must be called before using any image I/O
+Sets up the image library. Must be called before using any image I/O
 functions, ie. at the start of the program.
 ==============================================================================*/
-#endif /* defined (IMAGEMAGICK) */
 
-#if ! defined (IMAGEMAGICK)
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Image_file_format);
 
 char *Image_file_format_extension(enum Image_file_format image_file_format);
@@ -99,134 +110,8 @@ DESCRIPTION :
 Returns the <Image_file_format> determined from the file_extension in
 <file_name>, or UNKNOWN_IMAGE_FILE_FORMAT if none found or no match made.
 ==============================================================================*/
-#endif /* ! defined (IMAGEMAGICK) */
 
-/*PROTOTYPE_ENUMERATOR_FUNCTIONS(Raw_image_storage);*/
-
-char *Raw_image_storage_string(enum Raw_image_storage raw_image_storage);
-/*******************************************************************************
-LAST MODIFIED : 12 October 2000
-
-DESCRIPTION :
-Returns a pointer to a static string describing the raw_image_storage,
-eg. RAW_INTERLEAVED_RGB = "raw_interleaved_rgb". This string should match the
-command used to set the type. The returned string must not be DEALLOCATEd!
-==============================================================================*/
-
-char **Raw_image_storage_get_valid_strings(int *number_of_valid_strings);
-/*******************************************************************************
-LAST MODIFIED : 12 October 2000
-
-DESCRIPTION :
-Returns an allocated array of pointers to all static strings for valid
-Raw_image_storage values.
-Strings are obtained from function Raw_image_storage_string.
-Up to calling function to deallocate returned array - but not the strings in it!
-==============================================================================*/
-
-enum Raw_image_storage Raw_image_storage_from_string(
-	char *raw_image_storage_string);
-/*******************************************************************************
-LAST MODIFIED : 12 October 2000
-
-DESCRIPTION :
-Returns the <Raw_image_storage> described by <raw_image_storage_string>.
-==============================================================================*/
-
-int write_image_file(char *file_name,int number_of_components,
-	int number_of_bytes_per_component,
-	int height,int width,int row_padding,
-	long unsigned *image);
-/*******************************************************************************
-LAST MODIFIED : 8 May 2001
-
-DESCRIPTION :
-<row_padding> indicates a number of bytes that is padding on each row of data 
-(textures are required to be in multiples of two).
-==============================================================================*/
-
-#if ! defined (IMAGEMAGICK)
-int write_rgb_image_file(char *file_name,int number_of_components,
-	int number_of_bytes_per_component,
-	int number_of_rows,int number_of_columns,int row_padding,
-	long unsigned *image);
-/*******************************************************************************
-LAST MODIFIED : 25 August 1999
-
-DESCRIPTION :
-Writes an image in SGI rgb file format.
-<row_padding> indicates a number of bytes that is padding on each row of data 
-(textures are required to be in multiples of two).
-==============================================================================*/
-
-int write_postscript_image_file(char *file_name,int number_of_components,
-	int number_of_bytes_per_component,
-	int number_of_rows,int number_of_columns,int row_padding,
-	float pixel_aspect_ratio,long unsigned *image,
-	enum Image_orientation image_orientation,struct Printer *printer);
-/*******************************************************************************
-LAST MODIFIED : 26 August 1999
-
-DESCRIPTION :
-Writes an image in Postscript file format.
-<row_padding> indicates a number of bytes that is padding on each row of data 
-(textures are required to be in multiples of two).
-==============================================================================*/
-
-int write_tiff_image_file(char *file_name,int number_of_components,
-	int number_of_bytes_per_component,
-	int number_of_rows,int number_of_columns, int row_padding,
-	enum Tiff_image_compression compression,long unsigned *image);
-/*******************************************************************************
-LAST MODIFIED : 26 August 1999
-
-DESCRIPTION :
-Writes an <image> in TIFF file format using <compression>.
-<row_padding> indicates a number of bytes that is padding on each row of data 
-(textures are required to be in multiples of two).
-==============================================================================*/
-
-int read_rgb_image_file(char *file_name,int *number_of_components,
-	int *number_of_bytes_per_component,
-	long int *height,long int *width, long unsigned **image);
-/*******************************************************************************
-LAST MODIFIED : 25 August 1999
-
-DESCRIPTION :
-Reads an image from a SGI rgb file.
-???DB.  Need to find out more about images.
-==============================================================================*/
-
-int read_tiff_image_file(char *file_name,int *number_of_components,
-	int *number_of_bytes_per_component,
-	long int *height,long int *width,
-	long unsigned **image);
-/*******************************************************************************
-LAST MODIFIED : 26 August 1999
-
-DESCRIPTION :
-Reads an image from a TIFF file.
-==============================================================================*/
-#endif /* ! defined (IMAGEMAGICK) */
-
-#if defined (IMAGEMAGICK)
-int read_image_file(char *file_name,int *number_of_components,
-	int *number_of_bytes_per_component,long int *height,long int *width,
-	long unsigned **image);
-#else /* defined (IMAGEMAGICK) */
-int read_image_file(char *file_name,int *number_of_components,
-	int *number_of_bytes_per_component,long int *height,long int *width,
-	enum Raw_image_storage raw_image_storage, long unsigned **image);
-#endif /* defined (IMAGEMAGICK) */
-/*******************************************************************************
-LAST MODIFIED : 12 October 2000
-
-DESCRIPTION :
-Detects the image type from the file extension (rgb/tiff) and then reads it.
-For formats that do not have a header, eg. RAW and YUV, a width and height may
-be specified in the <width> and <height> arguments. For the RAW format, the
-<raw_image_storage> is needed.
-==============================================================================*/
+PROTOTYPE_ENUMERATOR_FUNCTIONS(Raw_image_storage);
 
 int get_radial_distortion_corrected_coordinates(double dist_x,double dist_y,
 	double dist_centre_x,double dist_centre_y,double dist_factor_k1,
@@ -258,52 +143,280 @@ radius shifts in an iteration to be an acceptable solution.
 Allows up to around 10% distortion to be corrected. (This is a large value!)
 ==============================================================================*/
 
-int undistort_image(unsigned long **image,
-	int number_of_components,int number_of_bytes_per_component,
-	int height,int width,
-	double centre_x,double centre_y,double factor_k1);
+struct Cmgui_image_information *CREATE(Cmgui_image_information)(void);
 /*******************************************************************************
-LAST MODIFIED : 25 August 1999
+LAST MODIFIED : 26 February 2002
 
 DESCRIPTION :
-Removes radial distortion centred at <centre_x,centre_y> from the image.
-Distortion factor k1 works to correct distortion according to:
-x(corrected)=x(distorted) + k1*x(distorted)*r*r
-where:
-1. Coordinates x (and similarly y) are measured from the distortion centre
-2. r*r=x(distorted)*x(distorted)+y(distorted)*y(distorted)
-This routine performs an approximation for the inverse mapping of the above. It
-scans through the corrected coordinates building up a corrected copy of the
-original image. Each point on the corrected image is replaced by a blending of
-the four pixels on the original image at the equivalent distorted position.
-On successful return, the image at <image> is replaced by the
-corrected version.
+Creates a blank Cmgui_image_information.
+To read in an image must set at least one file name in this structure; for raw
+or yuv image formats, width, height and raw_image_storage may need to be set.
+To create an image need to specify most dimension arguments.
 ==============================================================================*/
 
-unsigned long *copy_image(unsigned long *image,int number_of_components,
-	int width,int height);
+int DESTROY(Cmgui_image_information)(
+	struct Cmgui_image_information **cmgui_image_information_address);
 /*******************************************************************************
-LAST MODIFIED : 27 April 1998
+LAST MODIFIED : 18 February 2002
 
 DESCRIPTION :
-Allocates and returns a copy of <image>.
+Frees the memory use by the Cmgui_image_information and sets
+<*cmgui_image_information_address> to NULL.
 ==============================================================================*/
 
-int crop_image(unsigned long **image,int number_of_components,
-	int number_of_bytes_per_component, int *width,int *height,
-	int crop_left_margin,int crop_bottom_margin,int crop_width,int crop_height);
+int Cmgui_image_information_add_file_name(
+	struct Cmgui_image_information *cmgui_image_information, char *file_name);
 /*******************************************************************************
-LAST MODIFIED : 25 August 1999
+LAST MODIFIED : 27 February 2002
 
 DESCRIPTION :
-Crops <image> (at *image) from its present <width>,<height> to be
-<crop_width>,<crop_height> in size offset from the bottom left of the image
-by <crop_left_margin>,<crop_bottom_margin>.
-The <image> is reallocated to its new size and its new dimensions are put in
-<*width>,<*height>.
-If <crop_width> and <crop_height> are not both positive or if
-<left_margin_texels> and <bottom_margin_texels> are not both non-negative or
-if the cropping region is not contained in the image then no cropping is
-performed and the original image is returned.
+Adds the <file_name> to the end of the list in <cmgui_image_information>.
+Clears 'valid' flag if fails.
 ==============================================================================*/
+
+int Cmgui_image_information_add_file_name_series(
+	struct Cmgui_image_information *cmgui_image_information,
+	char *file_name_template, char *file_number_pattern, int start_file_number,
+	int stop_file_number, int file_number_increment);
+/*******************************************************************************
+LAST MODIFIED : 18 February 2002
+
+DESCRIPTION :
+Adds a series of file names based on the <file_name_template> to the
+<cmgui_image_information>. The numbers from <start_file_number> to
+<stop_file_number> with <file_number_increment> are substituted for the first
+instance of <file_number_pattern> in <file_name_template>.
+The number appears with leading zeros up to the length of <file_number_pattern>.
+Clears 'valid' flag if fails.
+==============================================================================*/
+
+int Cmgui_image_information_set_file_name(
+	struct Cmgui_image_information *cmgui_image_information,
+	int file_name_number, char *file_name);
+/*******************************************************************************
+LAST MODIFIED : 18 February 2002
+
+DESCRIPTION :
+Sets the <file_name> for <file_name_number> of <cmgui_image_information>.
+Clears 'valid' flag if fails.
+==============================================================================*/
+
+int Cmgui_image_information_set_height(
+	struct Cmgui_image_information *cmgui_image_information, int height);
+/*******************************************************************************
+LAST MODIFIED : 26 February 2002
+
+DESCRIPTION :
+Sets the <height> recorded with the <cmgui_image_information>.
+Used to specify the height for raw file formats read with Cmgui_image_read.
+Clears 'valid' flag of cmgui_image_information if not correctly set.
+==============================================================================*/
+
+int Cmgui_image_information_set_image_file_format(
+	struct Cmgui_image_information *cmgui_image_information,
+	enum Image_file_format image_file_format);
+/*******************************************************************************
+LAST MODIFIED : 1 March 2002
+
+DESCRIPTION :
+Sets the <image_file_format> of <cmgui_image>.
+If set to UNKNOWN_IMAGE_FILE_FORMAT then the format is determined from the
+filename, otherwise it is forced from the format listed here.
+==============================================================================*/
+
+int Cmgui_image_information_set_number_of_bytes_per_component(
+	struct Cmgui_image_information *cmgui_image_information,
+	int number_of_bytes_per_component);
+/*******************************************************************************
+LAST MODIFIED : 26 February 2002
+
+DESCRIPTION :
+Sets the <number_of_bytes_per_component> recorded with the
+<cmgui_image_information>. Only valid values are 1 and 2.
+Applied in Cmgui_image_write. Ignored by Cmgui_image_read.
+Clears 'valid' flag of cmgui_image_information if not correctly set.
+==============================================================================*/
+
+int Cmgui_image_information_set_number_of_components(
+	struct Cmgui_image_information *cmgui_image_information,
+	int number_of_components);
+/*******************************************************************************
+LAST MODIFIED : 26 February 2002
+
+DESCRIPTION :
+Sets the <number_of_components> recorded with the <cmgui_image_information>.
+Only valid values are 1=Intensity, 2=IntensityAlpha, 3=RGB, 4=RGBA.
+Currently ignored.
+Clears 'valid' flag of cmgui_image_information if not correctly set.
+==============================================================================*/
+
+int Cmgui_image_information_set_raw_image_storage(
+	struct Cmgui_image_information *cmgui_image_information,
+	enum Raw_image_storage raw_image_storage);
+/*******************************************************************************
+LAST MODIFIED : 20 February 2002
+
+DESCRIPTION :
+Sets the <raw_image_storage> of <cmgui_image>.
+==============================================================================*/
+
+int Cmgui_image_information_set_width(
+	struct Cmgui_image_information *cmgui_image_information, int width);
+/*******************************************************************************
+LAST MODIFIED : 26 February 2002
+
+DESCRIPTION :
+Sets the <width> recorded with the <cmgui_image_information>.
+Used to specify the width for raw file formats read with Cmgui_image_read.
+Clears 'valid' flag of cmgui_image_information if not correctly set.
+==============================================================================*/
+
+int DESTROY(Cmgui_image)(struct Cmgui_image **cmgui_image_address);
+/*******************************************************************************
+LAST MODIFIED : 13 February 2002
+
+DESCRIPTION :
+Frees the memory use by the Cmgui_image and sets <*cmgui_image_address> to NULL.
+==============================================================================*/
+
+int Cmgui_image_append(struct Cmgui_image *cmgui_image,
+	struct Cmgui_image **second_cmgui_image_address);
+/*******************************************************************************
+LAST MODIFIED : 27 February 2002
+
+DESCRIPTION :
+Appends the Cmgui_image pointer to by <second_cmgui_image_address> on to the
+end of <cmgui_image>. Both images must be of the same size and colour depth.
+Whether this function succeeds or fails, <second_cmgui_image> will bedestroyed.
+==============================================================================*/
+
+struct Cmgui_image *Cmgui_image_constitute(int width, int height,
+	int number_of_components, int number_of_bytes_per_component,
+	int source_width_bytes, unsigned char *source_pixels);
+/*******************************************************************************
+LAST MODIFIED : 27 February 2002
+
+DESCRIPTION :
+Creates a single Cmgui_image of the specified <width>, <height> with
+<number_of_components> where 1=luminance, 2=LuminanceA, 3=RGB, 4=RGBA, and
+<number_of_bytes_per_component> which may be 1 or 2.
+Data for the image is taken from <source_pixels> which has <source_width_bytes>
+of at least <width>*<number_of_components>*<number_of_bytes_per_component>.
+The source_pixels are stored in rows from the bottom to top and from left to
+right in each row. Pixel colours are interleaved, eg. RGBARGBARGBA...
+==============================================================================*/
+
+int Cmgui_image_dispatch(struct Cmgui_image *cmgui_image,
+	int image_number, int left, int bottom, int width, int height,
+	int padded_width_bytes, int number_of_fill_bytes, unsigned char *fill_bytes,
+	unsigned char *destination_pixels);
+/*******************************************************************************
+LAST MODIFIED : 27 February 2002
+
+DESCRIPTION :
+Fills <destination_pixels> with all or part of image <image_number> of
+<cmgui_image>, where 0 is the first image.
+The <left>, <bottom>, <width> and <height> specify the part of <cmgui_image>
+output and must be wholly within its bounds.
+Image data is ordered from the bottom row to the top, and within each row from
+the left to the right.
+All number_of_components components of the image are output at each pixel, and
+pixel values relate to number_of_components by:
+  1 -> I    = Intensity;
+  2 -> IA   = Intensity Alpha;
+  3 -> RGB  = Red Green Blue;
+  4 -> RGBA = Red Green Blue Alpha;
+
+If <padded_width_bytes> is zero, image data for subsequent rows follows exactly
+after the right-most pixel of the row below. If a positive number is specified,
+which must be greater than <width>*number_of_components*
+number_of_bytes_per_component in <cmgui_image>, each
+row of the output image will take up the specified number of bytes, with
+pixels beyond the extracted image <width> undefined.
+If <number_of_fill_bytes> is positive, the <fill_bytes> are repeatedly output
+to fill the padded row; the cycle of outputting <fill_bytes> starts at the
+left of the image to make a more consitent output if more than one colour is
+specified in them -- it makes no difference if <number_of_fill_bytes> is 1 or
+equal to the number_of_components.
+<destination_pixels> must be large enough to take the greater of
+<padded_width_bytes> or
+<width>*number_of_components*number_of_bytes_per_component in the image.
+
+???RC May wish to expand capabilities of this function in future to handle:
+- choosing a different output_number_of_bytes_per_component
+- different colour spaces output, currently fixed for the number_of_components;
+==============================================================================*/
+
+int Cmgui_image_get_height(struct Cmgui_image *cmgui_image);
+/*******************************************************************************
+LAST MODIFIED : 20 February 2002
+
+DESCRIPTION :
+Returns the <height> of <cmgui_image>.
+==============================================================================*/
+
+int Cmgui_image_get_number_of_bytes_per_component(
+	struct Cmgui_image *cmgui_image);
+/*******************************************************************************
+LAST MODIFIED : 20 February 2002
+
+DESCRIPTION :
+Returns the <number_of_bytes_per_component> of <cmgui_image>, currently either
+1 or 2.
+==============================================================================*/
+
+int Cmgui_image_get_number_of_components(struct Cmgui_image *cmgui_image);
+/*******************************************************************************
+LAST MODIFIED : 15 February 2002
+
+DESCRIPTION :
+Returns the <number_of_components> - R, G, B, A, I etc. of <cmgui_image>.
+==============================================================================*/
+
+int Cmgui_image_get_number_of_images(struct Cmgui_image *cmgui_image);
+/*******************************************************************************
+LAST MODIFIED : 19 February 2002
+
+DESCRIPTION :
+Returns the <number_of_images> stored <cmgui_image>.
+==============================================================================*/
+
+int Cmgui_image_get_width(struct Cmgui_image *cmgui_image);
+/*******************************************************************************
+LAST MODIFIED : 20 February 2002
+
+DESCRIPTION :
+Returns the <width> <cmgui_image>.
+==============================================================================*/
+
+struct Cmgui_image *Cmgui_image_read(
+	struct Cmgui_image_information *cmgui_image_information);
+/*******************************************************************************
+LAST MODIFIED : 26 February 2002
+
+DESCRIPTION :
+Creates a Cmgui_image containing the images from the files listed in the
+<cmgui_image_information>. If more than one file_name is listed, they are
+checked to be of the same size and assembled together; note that the images
+making up the series may not themselves have a third dimension, such as animated
+GIF or dicom files, unless only a single filename is given.
+The <cmgui_image_information> should be given appropriate width, height
+and other parameters for formats that require them.
+==============================================================================*/
+
+int Cmgui_image_write(struct Cmgui_image *cmgui_image,
+	struct Cmgui_image_information *cmgui_image_information);
+/*******************************************************************************
+LAST MODIFIED : 4 March 2002
+
+DESCRIPTION :
+Writes <cmgui_image> to the filename or filenames listed in the
+<cmgui_image_information>. If set, the image_file_format in the information
+overrides the file format determined from the extension.
+There must be as many filenames supplied as images in <cmgui_image> with the
+exception of certain formats which can support all images being written to a
+single file, eg. animated GIF, DICOM, in which case a single filename requests
+that the images be adjoined in the single file.
+==============================================================================*/
+
 #endif /* !defined (IMAGE_UTILITIES_H) */
