@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 8 July 2003
+LAST MODIFIED : 30 July 2003
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -4761,6 +4761,15 @@ problems when crossing polygon sides, however if you place cubes with
 inconsistent xis on the faces this function will get the wrong <xi>.  Either
 it could return all the possible xi locations or it could use an FE_field and
 time to resolve which one is correct but that is really expensive.
+==============================================================================*/
+
+int FE_element_xi_increment(struct FE_element **element_address,FE_value *xi,
+	FE_value *increment);
+/*******************************************************************************
+LAST MODIFIED : 30 July 2003
+
+DESCRIPTION :
+Adds the <increment> to <xi> changing to another element if necessary.
 ==============================================================================*/
 
 #endif /* !defined (FINITE_ELEMENT_H) */

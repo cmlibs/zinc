@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 8 July 2003
+LAST MODIFIED : 1 August 2003
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -43,11 +43,16 @@ Functions for manipulating finite element structures.
 #include "general/indexed_list_private.h"
 #include "general/list_private.h"
 #include "general/manager_private.h"
+#include "general/matrix_vector.h"
 #include "general/multi_range.h"
 #include "general/mystring.h"
 #include "general/object.h"
 #include "general/value.h"
+#include "matrix/factor.h"
+#include "matrix/matrix.h"
+#if defined (OLD_CODE)
 #include "mirage/tracking_editor_data.h"
+#endif /* defined (OLD_CODE) */
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
@@ -702,7 +707,8 @@ coordinates from face coordinates.
 							0 0 1             0  1  0             0  0  0
 		face 15 : 0  1  0
 							0  0  1
-							1 -1 -1 */
+							1 -1 -1
+		The transformations are stored by row (ie. column number varying fastest) */
 	FE_value *face_to_element;
 	/* the number of structures that point to this shape.  The shape cannot be
 		destroyed while this is greater than 0 */
@@ -6219,8 +6225,8 @@ Note a NULL shape type means an unspecified shape of that dimension.
 	return (return_code);
 } /* match_FE_element_shape */
 
-static struct FE_element_shape *find_FE_element_shape_in_list(int dimension,int *type,
-	struct LIST(FE_element_shape) *list)
+static struct FE_element_shape *find_FE_element_shape_in_list(int dimension,
+	int *type,struct LIST(FE_element_shape) *list)
 /*******************************************************************************
 LAST MODIFIED : 18 November 2002
 
@@ -11470,6 +11476,298 @@ Returns non-zero if the <node> is on the axis for the <field>/
 
 	return (return_code);
 } /* node_on_axis */
+
+static int face_calculate_xi_normal(struct FE_element_shape *shape,
+	int face_number,FE_value *normal)
+/*******************************************************************************
+LAST MODIFIED : 3 August 2003
+
+DESCRIPTION :
+Calculates the <normal>, in xi space, of the specified face.
+
+Cannot guarantee that <normal> is inward.
+==============================================================================*/
+{
+	double determinant,*matrix_double,norm;
+	FE_value *face_to_element,sign;
+	int dimension,i,j,k,*pivot_index,return_code;
+
+	ENTER(face_calculate_xi_normal);
+	return_code=0;
+	/* check arguments */
+	if (shape&&get_FE_element_shape_dimension(shape,&dimension)&&(0<dimension)&&
+		(0<=face_number)&&(face_number<dimension)&&normal)
+	{
+		if (1==dimension)
+		{
+			normal[0]=(FE_value)1;
+		}
+		else
+		{
+			/* working storage */
+			ALLOCATE(matrix_double,double,(dimension-1)*(dimension-1));
+			ALLOCATE(pivot_index,int,dimension-1);
+			if (matrix_double&&pivot_index)
+			{
+				sign=(FE_value)1;
+				face_to_element=(shape->face_to_element)+
+					(face_number*dimension*dimension);
+				i=0;
+				while (return_code&&(i<dimension))
+				{
+					/* calculate the determinant of face_to_element excluding column 1 and
+						row i+1 */
+					for (j=0;j<i;j++)
+					{
+						for (k=1;k<dimension;k++)
+						{
+							matrix_double[j*dimension+(k-1)]=
+								(double)face_to_element[j*dimension+k];
+						}
+					}
+					for (j=i+1;j<dimension;j++)
+					{
+						for (k=1;k<dimension;k++)
+						{
+							matrix_double[(j-1)*dimension+(k-1)]=
+								(double)face_to_element[j*dimension+k];
+						}
+					}
+					if (return_code=LU_decompose(dimension-1,matrix_double,pivot_index,
+						&determinant))
+					{
+						for (j=0;j<dimension-1;j++)
+						{
+							determinant *= matrix_double[j*dimension+j];
+						}
+						normal[i]=sign*(FE_value)determinant;
+						sign= -sign;
+					}
+					i++;
+				}
+				if (return_code)
+				{
+					/* normalize face_normal */
+					norm=(double)0;
+					for (i=0;i<dimension;i++)
+					{
+						norm += (double)(normal[i])*(double)(normal[i]);
+					}
+					if (0<norm)
+					{
+						norm=sqrt(norm);
+						for (i=0;i<dimension;i++)
+						{
+							normal[i] /= (FE_value)norm;
+						}
+					}
+					else
+					{
+						return_code=0;
+					}
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"face_calculate_xi_normal.  "
+					"Could not allocate matrix_double (%p) or pivot_index (%p)",
+					matrix_double,pivot_index);
+				return_code=0;
+			}
+			DEALLOCATE(pivot_index);
+			DEALLOCATE(matrix_double);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"face_calculate_xi_normal.  "
+			"Invalid argument(s).  %p %d %d %p",shape,dimension,face_number,normal);
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* face_calculate_xi_normal */
+
+static int FE_element_shape_xi_increment(struct FE_element_shape *shape,
+	FE_value *xi,FE_value *increment,int *face_number_address)
+/*******************************************************************************
+LAST MODIFIED : 3 August 2003
+
+DESCRIPTION :
+If <xi>+<increment> is within <shape> then
+	<*face_number_address> is set to -1, <xi> is updated to <xi>+<increment>, and
+	<increment> is set to zero
+otherwise
+	<*face_number_address> is set to the number of the intersected face, <xi> is
+	set to be the intersect with the face in face coordinates and <increment> is
+	set to xi_initial+<increment>-xi_final in face+normal coordinates
+
+???DB.  Assumes that <xi> is inside
+???DB.  Needs reordering inside finite_element
+==============================================================================*/
+{
+	double dot_product;
+	FE_value *face_normal,*face_to_element,step_size,*xi_face;
+	int dimension,face_number,i,j,k,return_code;
+	struct Matrix *face_matrix,*face_rhs,*face_result;
+	Matrix_value matrix_value_temp,step_size_local;
+
+	ENTER(FE_element_shape_xi_increment);
+	return_code=0;
+	/* check arguments */
+	if (shape&&xi&&increment&&face_number_address&&
+		get_FE_element_shape_dimension(shape,&dimension)&&(0<dimension))
+	{
+		/* working space */
+		ALLOCATE(xi_face,FE_value,dimension);
+		face_matrix=CREATE(Matrix)("A",DENSE,dimension,dimension);
+		face_rhs=CREATE(Matrix)("b",DENSE,dimension,1);
+		face_result=CREATE(Matrix)("x",DENSE,dimension,1);
+		if (dimension>1)
+		{
+			ALLOCATE(face_normal,FE_value,dimension-1);
+		}
+		else
+		{
+			face_normal=(FE_value *)NULL;
+		}
+		if (xi_face&&face_matrix&&face_rhs&&face_result&&
+			((1==dimension)||(face_normal)))
+		{
+			/* check if it is in the shape */
+			face_number= -1;
+			step_size=(FE_value)1;
+			face_to_element=shape->face_to_element;
+			for (i=0;i<shape->number_of_faces;i++)
+			{
+				return_code=1;
+				j=1;
+				while (return_code&&(j<=dimension))
+				{
+					k=1;
+					if ((return_code=Matrix_set_value(face_matrix,j,k,
+						(Matrix_value)(-increment[j-1])))&&(return_code=Matrix_set_value(
+						face_rhs,j,k,(Matrix_value)(xi[j-1]-(*face_to_element)))))
+					{
+						face_to_element++;
+						k++;
+						while (return_code&&(k<=dimension))
+						{
+							return_code=Matrix_set_value(face_matrix,j,k,
+								(Matrix_value)(*face_to_element));
+							face_to_element++;
+							k++;
+						}
+					}
+					j++;
+				}
+				if (return_code)
+				{
+					if (Matrix_solve(face_matrix,face_rhs,face_result,LAPACK_LU,
+						(FILE *)NULL)&&Matrix_get_value(face_result,1,1,
+						&step_size_local)&&(0<=step_size_local)&&(step_size_local<=1))
+					{
+						if ((-1==face_number)||((FE_value)step_size_local<step_size))
+						{
+							j=2;
+							while ((j<=dimension)&&Matrix_get_value(face_result,j,1,
+								&matrix_value_temp))
+							{
+								xi_face[j-2]=(FE_value)matrix_value_temp;
+								j++;
+							}
+							if (j>dimension)
+							{
+								face_number=i;
+								step_size=(FE_value)step_size_local;
+							}
+						}
+					}
+				}
+				else
+				{
+					face_to_element += (dimension+1-j)*dimension+(dimension+1-k);
+				}
+			}
+			return_code=1;
+			if (-1==face_number)
+			{
+				/* inside */
+				*face_number_address=face_number;
+				for (i=0;i<dimension;i++)
+				{
+					xi[i] += increment[i];
+					increment[i]=(FE_value)0;
+				}
+			}
+			else
+			{
+				/* not inside */
+				*face_number_address=face_number;
+				if (1==dimension)
+				{
+					increment[0]=1.-step_size;
+				}
+				else
+				{
+					/* calculate face normal */
+					if (return_code=face_calculate_xi_normal(shape,face_number,
+						face_normal))
+					{
+						*face_number_address=face_number;
+						for (i=0;i<dimension-1;i++)
+						{
+							xi[i]=xi_face[i];
+							xi_face[i]=(1.-step_size)*increment[i];
+						}
+						xi_face[i]=(1.-step_size)*increment[i];
+						/* change increment (temporarily in xi_face) into face+normal
+							coordinates */
+						for (i=1;i<dimension;i++)
+						{
+							dot_product=(double)0;
+							for (j=0;j<dimension;j++)
+							{
+								dot_product += (double)(xi_face[j])*
+									(double)(face_to_element[j*dimension+i]);
+							}
+							increment[i-1]=(FE_value)dot_product;
+						}
+						dot_product=(double)0;
+						for (i=0;i<dimension;i++)
+						{
+							dot_product += (double)(xi_face[i])*(double)(face_normal[i]);
+						}
+						increment[dimension-1]=(FE_value)dot_product;
+					}
+				}
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"FE_element_shape_xi_increment.  "
+				"Could not allocate/create xi_face (%p), face_matrix (%p), "
+				"face_rhs (%p), face_result (%p), face_normal (%p)",xi_face,face_matrix,
+				face_rhs,face_result,face_normal);
+			return_code=0;
+		}
+		DESTROY(Matrix)(&face_result);
+		DESTROY(Matrix)(&face_rhs);
+		DESTROY(Matrix)(&face_matrix);
+		DEALLOCATE(xi_face);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"FE_element_shape_xi_increment.  "
+			"Invalid argument(s).  %p %p %p %p %d",shape,xi,increment,
+			face_number_address,dimension);
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_shape_xi_increment */
 
 /*
 Global functions
@@ -45033,7 +45331,7 @@ time to resolve which one is correct but that is really expensive.
 	int number_of_vertices;
 #endif /* defined (NEW_CODE) */
 
-	ENTER(change_element);
+	ENTER(FE_element_change_to_adjacent_element);
 	return_code=1;
 
 	/* check arguments */
@@ -45277,3 +45575,170 @@ time to resolve which one is correct but that is really expensive.
 	return (return_code);
 } /* FE_element_change_to_adjacent_element */
 
+int FE_element_xi_increment(struct FE_element **element_address,FE_value *xi,
+	FE_value *increment)
+/*******************************************************************************
+LAST MODIFIED : 3 August 2003
+
+DESCRIPTION :
+Adds the <increment> to <xi>.  If this moves <xi> outside of the element, then
+the step is limited to take <xi> to the boundary and if there is an adjacent
+element then <*element_address> and <xi> are changed to be on the boundary of
+the adjacent element.
+
+???DB.  Should be able to step into the adjacent element
+==============================================================================*/
+{
+	FE_value *face_to_element,*local_increment,*local_xi,*temp_xi;
+	int dimension,face_number,i,j,return_code;
+	struct FE_element *element,*face;
+	struct FE_element_parent *face_parent;
+#if defined (STEP_INTO_ADJACENT_ELEMENT)
+	FE_value *face_normal;
+#endif /* defined (STEP_INTO_ADJACENT_ELEMENT) */
+
+
+	ENTER(FE_element_xi_increment);
+	return_code=0;
+	/* check arguments */
+	if (element_address&&(element= *element_address)&&
+		(0<(dimension=get_FE_element_dimension(element)))&&xi&&increment)
+	{
+		ALLOCATE(local_xi,FE_value,dimension);
+		ALLOCATE(local_increment,FE_value,dimension);
+		ALLOCATE(temp_xi,FE_value,dimension);
+#if defined (STEP_INTO_ADJACENT_ELEMENT)
+		ALLOCATE(face_normal,FE_value,dimension);
+#endif /* defined (STEP_INTO_ADJACENT_ELEMENT) */
+		if (local_xi&&local_increment&&temp_xi
+#if defined (STEP_INTO_ADJACENT_ELEMENT)
+			&&face_normal
+#endif /* defined (STEP_INTO_ADJACENT_ELEMENT) */
+			)
+		{
+			for (i=0;i<dimension;i++)
+			{
+				local_xi[i]=xi[i];
+				local_increment[i]=increment[i];
+			}
+#if defined (STEP_INTO_ADJACENT_ELEMENT)
+			do
+			{
+#endif /* defined (STEP_INTO_ADJACENT_ELEMENT) */
+				if ((return_code=FE_element_shape_xi_increment(element->shape,
+					local_xi,local_increment,&face_number))&&(-1!=face_number))
+				{
+					face=(element->faces)[face_number];
+					if (face)
+					{
+						/* find the other parent */
+						face_parent=FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
+							FE_element_parent_not_equal_to_element,(void *)element,
+							face->parent_list);
+						if (face_parent)
+						{
+							element=face_parent->parent;
+							face_number=face_parent->face_number;
+						}
+					}
+					/* change local_xi and local_increment into element coordinates */
+					if (element&&(element->shape)&&(dimension==
+						get_FE_element_dimension(element))&&(0<=face_number)&&
+						(face_number<dimension))
+					{
+						for (i=0;i<dimension-1;i++)
+						{
+							temp_xi[i]=local_xi[i];
+						}
+						face_to_element=(element->shape->face_to_element)+
+							(face_number*dimension*dimension);
+						for (i=0;i<dimension;i++)
+						{
+							local_xi[i]= *face_to_element;
+							face_to_element++;
+							for (j=0;j<dimension-1;j++)
+							{
+								local_xi[i] += (*face_to_element)*temp_xi[j];
+								face_to_element++;
+							}
+						}
+#if defined (STEP_INTO_ADJACENT_ELEMENT)
+						/* calculate face normal */
+						if (return_code=face_calculate_xi_normal(element->shape,face_number,
+							face_normal))
+						{
+							for (i=0;i<dimension;i++)
+							{
+								temp_xi[i]=local_increment[i];
+							}
+							face_to_element=(element->shape->face_to_element)+
+								(face_number*dimension*dimension);
+							for (i=0;i<dimension;i++)
+							{
+								local_increment[i]=temp_xi[dimension-1]*face_normal[i];
+								face_to_element++;
+								for (j=0;j<dimension-1;j++)
+								{
+									local_increment[i] += (*face_to_element)*temp_xi[j];
+									face_to_element++;
+								}
+							}
+						}
+#endif /* defined (STEP_INTO_ADJACENT_ELEMENT) */
+					}
+					else
+					{
+						return_code=0;
+					}
+					if (!(face&&face_parent))
+					{
+						/* no adjacent element */
+						face_number= -1;
+					}
+				}
+#if defined (STEP_INTO_ADJACENT_ELEMENT)
+			} while (return_code&&!(-1!=face_number));
+#endif /* defined (STEP_INTO_ADJACENT_ELEMENT) */
+			if (return_code)
+			{
+				*element_address=element;
+				for (i=0;i<dimension;i++)
+				{
+					xi[i]=local_xi[i];
+				}
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"FE_element_xi_increment.  "
+				"Could not allocate <local_xi> (%p), <local_increment> (%p), "
+#if defined (STEP_INTO_ADJACENT_ELEMENT)
+				"<temp_xi> (%p) or <face_normal> (%p)",
+#else /* defined (STEP_INTO_ADJACENT_ELEMENT) */
+				"or <temp_xi> (%p)",
+#endif /* defined (STEP_INTO_ADJACENT_ELEMENT) */
+				local_xi,local_increment,temp_xi
+#if defined (STEP_INTO_ADJACENT_ELEMENT)
+				,face_normal
+#endif /* defined (STEP_INTO_ADJACENT_ELEMENT) */
+				);
+			return_code=0;
+		}
+#if defined (STEP_INTO_ADJACENT_ELEMENT)
+		DEALLOCATE(face_normal);
+#endif /* defined (STEP_INTO_ADJACENT_ELEMENT) */
+		DEALLOCATE(temp_xi);
+		DEALLOCATE(local_increment);
+		DEALLOCATE(local_xi);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"FE_element_xi_increment.  "
+			"Invalid argument(s).  %p %p %d %p %p",element_address,element,dimension,
+			xi,increment);
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_xi_increment */
