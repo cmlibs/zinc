@@ -450,7 +450,7 @@ Main program for the CMISS Graphical User Interface
 			sizeof(char *),
 			XtOffsetOf(User_settings,help_url),
 			XmRString,
-			"http://esu6.auckland.ac.nz/~cmiss/Help/"
+			"http://www.esc.auckland.ac.nz/Groups/Bioengineering/CMISS/help/index_user.html"
 		},
 	};
 #if defined (OLD_CODE)
@@ -1789,8 +1789,17 @@ Main program for the CMISS Graphical User Interface
 				DEACCESS(Light)(&(command_data.default_light));
 				DESTROY(MANAGER(Light))(&command_data.light_manager);
 
-				coord_widget_finish();
+				if (examples_directory)
+				{
+					DEALLOCATE(examples_directory);
+				}
+				if (command_data.example_directory)
+				{
+					DEALLOCATE(command_data.example_directory);
+				}
 
+				coord_widget_finish();
+				destroy_assign_variable_list();
 #if defined (UNEMAP)
 				DESTROY(Unemap_package)(&command_data.unemap_package); 
 #endif /* defined (UNEMAP) */
