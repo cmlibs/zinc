@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmgui.c
 
-LAST MODIFIED : 21 June 2000
+LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
 ???DB.  Prototype main program for an application that uses the "cmgui tools".
@@ -29,6 +29,7 @@ DESCRIPTION :
 #include "element/element_creator.h"
 #include "element/element_point_tool.h"
 #include "element/element_point_viewer.h"
+#include "element/element_tool.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_sample_texture.h"
 #include "computed_field/computed_field_window_projection.h"
@@ -1161,6 +1162,9 @@ Main program for the CMISS Graphical User Interface
 		command_data.node_manager,/*data_manager*/0,
 		command_data.node_selection,
 		command_data.computed_field_package);
+	command_data.element_tool=CREATE(Element_tool)(
+		command_data.interactive_tool_manager,
+		command_data.element_selection);
 	command_data.data_tool=CREATE(Node_tool)(
 		command_data.interactive_tool_manager,
 		command_data.data_manager,/*data_manager*/1,
@@ -1840,8 +1844,9 @@ Main program for the CMISS Graphical User Interface
 				/* destroy Interactive_tools and manager */
 				DESTROY(Transform_tool)(&command_data.transform_tool);
 				DESTROY(Element_point_tool)(&command_data.element_point_tool);
-				DESTROY(Node_tool)(&command_data.node_tool);
 				DESTROY(Node_tool)(&command_data.data_tool);
+				DESTROY(Element_tool)(&command_data.element_tool);
+				DESTROY(Node_tool)(&command_data.node_tool);
 				DESTROY(MANAGER(Interactive_tool))(
 					&(command_data.interactive_tool_manager));
 

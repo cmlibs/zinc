@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 15 June 2000
+XCOMM LAST MODIFIED : 7 July 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -712,7 +712,8 @@ ELEMENT_SRCS = \
 	element/element_point_field_viewer_widget.c \
 	element/element_point_viewer.c \
 	element/element_point_viewer_widget.c \
-	element/element_point_tool.c
+	element/element_point_tool.c \
+	element/element_tool.c
 FINITE_ELEMENT_SRCS = \
 	finite_element/export_finite_element.c \
 	finite_element/field_value_index_ranges.c \
