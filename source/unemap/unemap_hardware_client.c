@@ -26,7 +26,7 @@ TO DO :
 
 #define CACHE_CLIENT_INFORMATION
 
-#define BACKGROUND_SAVING
+/*#define BACKGROUND_SAVING*/
 
 #include <stddef.h>
 #include <stdlib.h>

@@ -20,7 +20,7 @@ WINDOWS - win32 acquisition only version
 	created and it displayed/brought to the front/opened.
 ==============================================================================*/
 
-#define BACKGROUND_SAVING
+/*#define BACKGROUND_SAVING*/
 
 #include <stddef.h>
 #include <stdlib.h>
