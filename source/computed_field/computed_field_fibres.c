@@ -78,13 +78,13 @@ Clear the type specific data used by this type.
 static void *Computed_field_fibre_axes_copy_type_specific(
 	struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 17 October 2000
+LAST MODIFIED : 11 December 2000
 
 DESCRIPTION :
 Copy the type specific data used by this type.
 ==============================================================================*/
 {
-	struct Computed_field_fibre_axes_type_specific_data *destination;
+	void *destination;
 
 	ENTER(Computed_field_fibre_axes_copy_type_specific);
 	if (field)
