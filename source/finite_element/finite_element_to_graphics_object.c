@@ -3361,7 +3361,7 @@ faces.
 
 	double *iso_poly_cop;
 	float *texturemap_coord;
-	int *texturemap_index, texturemap_counter, texturemap_index_counter;
+	int *texturemap_index;
 	int tex_x_i,tex_y_i,tex_width_texels,tex_height_texels,
 		tex_number_of_components;
 	double intensity1,intensity2,intensity3;
