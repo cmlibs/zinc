@@ -14130,7 +14130,7 @@ Executes a GFX EXPORT ALIAS command.
 			} /* parse error,help */
 			if (scene)
 			{
-				DEACCESS(Scene)(scene);
+				DEACCESS(Scene)(&scene);
 			}
 		}
 		else
@@ -22292,7 +22292,7 @@ Sets the ordering of graphics objects on scene(s) from the command line.
 			}
 			if (scene)
 			{
-				DEACCESS(scene);
+				DEACCESS(Scene)(&scene);
 			}
 		}
 		else
