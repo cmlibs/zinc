@@ -13278,21 +13278,17 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(FE_node,cm_node_identifier,int)
 	int return_code;
 
 	ENTER(MANAGER_COPY_IDENTIFIER(FE_node,cm_node_identifier));
-	USE_PARAMETER(destination);
-	USE_PARAMETER(cm_node_identifier);
 	/*???RC cannot rename nodes that are in use by any list outside the manager
 		since they must be removed and re-added to keep indexed list working. Hence,
 		disallow this for now */
-	display_message(ERROR_MESSAGE,
-		"MANAGER_COPY_IDENTIFIER(FE_node,cm_node_identifier).  "
-		"Nodes may not be renamed");
-	return_code=0;
-#if defined (SAVE_CODE)
-	/* check arguments */
 	if (destination)
 	{
+		/*???RC renaming nodes in use by any list outside the manager will cause
+			list to be corrupted. Allow identifier change under protest here so that
+			control_curve / editor work, but disallow name change in select object for
+			any object in use outside the manager. */
 		destination->cm_node_identifier=cm_node_identifier;
-		return_code=0;
+		return_code=1;
 	}
 	else
 	{
@@ -13301,7 +13297,6 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(FE_node,cm_node_identifier,int)
 			"Invalid argument(s)");
 		return_code=0;
 	}
-#endif /* defined (SAVE_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -24962,18 +24957,12 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(FE_element,identifier,
 	int return_code;
 
 	ENTER(MANAGER_COPY_IDENTIFIER(FE_element,identifier));
-	USE_PARAMETER(destination);
-	USE_PARAMETER(identifier);
-	/*???RC cannot rename elements that are in use by any list outside the manager
-		since they must be removed and re-added to keep indexed list working. Hence,
-		disallow this for now */
-	display_message(ERROR_MESSAGE,
-		"MANAGER_COPY_IDENTIFIER(FE_node,cm_node_identifier).  "
-		"Elements may not be renamed");
-	return_code=0;
-#if defined (SAVE_CODE)
 	if (identifier&&destination)
 	{
+		/*???RC renaming elements in use by any list outside the manager will cause
+			list to be corrupted. Allow identifier change under protest here so that
+			control_curve / editor work, but disallow name change in select object for
+			any object in use outside the manager. */
 		destination->cm.type=identifier->type;
 		destination->cm.number=identifier->number;
 		return_code=1;
@@ -24981,10 +24970,9 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(FE_element,identifier,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-	"MANAGER_COPY_IDENTIFIER(FE_element,identifier).  Invalid argument(s)");
+			"MANAGER_COPY_IDENTIFIER(FE_element,identifier).  Invalid argument(s)");
 		return_code=0;
 	}
-#endif /* defined (SAVE_CODE) */
 	LEAVE;
 
 	return (return_code);
