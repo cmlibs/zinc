@@ -36,7 +36,7 @@ of <width> by <height>.
 
 int order_independent_reshape(
 	struct Scene_viewer_order_independent_transparency_data *data,
-	int width, int height, int layers);
+	int width, int height, int layers, int using_stencil_overlay);
 /*******************************************************************************
 LAST MODIFIED : 14 April 2003
 

@@ -33,11 +33,13 @@ static char *required_extensions[] = {"GL_NV_register_combiners",
 												  "GL_NV_texture_shader",
 												  "GL_SGIX_depth_texture",
 												  "GL_SGIX_shadow"};
+#if ! defined (WIN32_SYSTEM)
 #if defined GL_NV_register_combiners && defined GL_NV_register_combiners2 \
    && defined GL_NV_texture_rectangle && defined GL_NV_texture_shader \
    && defined GL_SGIX_depth_texture && defined GL_SGIX_shadow
 #define ORDER_INDEPENDENT_CAPABLE
 #endif
+#endif /* ! defined (WIN32_SYSTEM) */
 
 #if defined (ORDER_INDEPENDENT_CAPABLE)
 struct Scene_viewer_order_independent_transparency_data
@@ -63,6 +65,8 @@ The private user data for this order independent transparency rendering pass.
 
 	int viewport_width;
 	int viewport_height;
+
+	int using_stencil_overlay;
 
 	int number_of_layers;
 	int maximum_number_of_layers;
@@ -219,7 +223,7 @@ Initialises the order independent transparency extension.
 {
 	int return_code;
 
-	ENTER(verify_shader_config);
+	ENTER(order_independent_init_opengl);
 
 	return_code = 1;
 	if (!data->ztex_texture_id)
@@ -291,7 +295,7 @@ Initialises the order independent transparency extension.
 		 nvparse(
 			 "!!RC1.0                                                      \n"
 			 "out.rgb = tex0;                                              \n"
-			 "out.a = 1.0;                                                 \n"
+			 "out.a = 0.0;                                                 \n"
 			 );
 		 nvparse_print_errors(stderr);
 #endif /* defined (OLD_CODE) */
@@ -314,7 +318,7 @@ Initialises the order independent transparency extension.
 		glFinalCombinerInputNV(GL_VARIABLE_D_NV, GL_TEXTURE0, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
 		glFinalCombinerInputNV(GL_VARIABLE_E_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
 		glFinalCombinerInputNV(GL_VARIABLE_F_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glFinalCombinerInputNV(GL_VARIABLE_G_NV, GL_ONE, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
+		glFinalCombinerInputNV(GL_VARIABLE_G_NV, GL_ZERO, GL_UNSIGNED_IDENTITY_NV, GL_ALPHA);
 		glEndList();
 	}
 
@@ -426,10 +430,10 @@ Initialises the order independent transparency extension.
 		glCombinerInputNV(GL_COMBINER1_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_CONSTANT_COLOR1_NV, GL_SIGNED_IDENTITY_NV, GL_BLUE);
 		glCombinerInputNV(GL_COMBINER1_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_PRIMARY_COLOR_NV, GL_SIGNED_IDENTITY_NV, GL_ALPHA);
 		glCombinerOutputNV(GL_COMBINER1_NV, GL_ALPHA, GL_DISCARD_NV, GL_DISCARD_NV, GL_PRIMARY_COLOR_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
+		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
+		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
+		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
+		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
 		glCombinerOutputNV(GL_COMBINER1_NV, GL_RGB, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glDisable(GL_PER_STAGE_CONSTANTS_NV);
 		glCombinerParameteriNV(GL_COLOR_SUM_CLAMP_NV, 0);
@@ -481,10 +485,10 @@ Initialises the order independent transparency extension.
 		glCombinerInputNV(GL_COMBINER1_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_CONSTANT_COLOR1_NV, GL_SIGNED_IDENTITY_NV, GL_BLUE);
 		glCombinerInputNV(GL_COMBINER1_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_PRIMARY_COLOR_NV, GL_SIGNED_IDENTITY_NV, GL_ALPHA);
 		glCombinerOutputNV(GL_COMBINER1_NV, GL_ALPHA, GL_DISCARD_NV, GL_DISCARD_NV, GL_PRIMARY_COLOR_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
-		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
+		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_A_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
+		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
+		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
+		glCombinerInputNV(GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
 		glCombinerOutputNV(GL_COMBINER1_NV, GL_RGB, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glCombinerInputNV(GL_COMBINER2_NV, GL_RGB, GL_VARIABLE_A_NV, GL_TEXTURE3, GL_UNSIGNED_INVERT_NV, GL_RGB);
 		glCombinerInputNV(GL_COMBINER2_NV, GL_RGB, GL_VARIABLE_B_NV, GL_PRIMARY_COLOR_NV, GL_SIGNED_IDENTITY_NV, GL_ALPHA);
@@ -496,8 +500,8 @@ Initialises the order independent transparency extension.
 		glCombinerInputNV(GL_COMBINER2_NV, GL_ALPHA, GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
 		glCombinerInputNV(GL_COMBINER2_NV, GL_ALPHA, GL_VARIABLE_D_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_BLUE);
 		glCombinerOutputNV(GL_COMBINER2_NV, GL_ALPHA, GL_DISCARD_NV, GL_DISCARD_NV, GL_DISCARD_NV, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glDisable(GL_PER_STAGE_CONSTANTS_NV);
-		glCombinerParameteriNV(GL_COLOR_SUM_CLAMP_NV, 0);
+		//glDisable(GL_PER_STAGE_CONSTANTS_NV);
+		//glCombinerParameteriNV(GL_COLOR_SUM_CLAMP_NV, 0);
 		glFinalCombinerInputNV(GL_VARIABLE_A_NV, GL_PRIMARY_COLOR_NV, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
 		glFinalCombinerInputNV(GL_VARIABLE_B_NV, GL_FALSE, GL_UNSIGNED_INVERT_NV, GL_RGB);
 		glFinalCombinerInputNV(GL_VARIABLE_C_NV, GL_FALSE, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
@@ -579,11 +583,9 @@ Draws one peeled layer of the scene.
 	glLoadIdentity();
 	glTranslatef(0, 0, .5f);
 	glScalef(0, 0, .5f);
-	glMultMatrixf(identity_matrix);
 	glMultMatrixd(projection_matrix);
 	glMatrixMode(GL_MODELVIEW);
 
-		
 	glActiveTexture(GL_TEXTURE2);
 	glTexEnvi(GL_TEXTURE_SHADER_NV, GL_SHADER_OPERATION_NV, GL_DOT_PRODUCT_DEPTH_REPLACE_NV);
 	glTexEnvi(GL_TEXTURE_SHADER_NV, GL_PREVIOUS_TEXTURE_INPUT_NV, GL_TEXTURE0);
@@ -631,7 +633,6 @@ Draws one peeled layer of the scene.
 	}	
 
 	verify_shader_config();
-
 
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
@@ -713,6 +714,11 @@ Draw a textured quad for each layer and blend them all together correctly.
 	glCallList(data->rc_composite_alphaone_display_list);
 
 	glEnable(GL_TEXTURE_RECTANGLE_NV);
+	if (data->using_stencil_overlay)
+	{
+		/* disable stencil buffer to get the overlay in the back plane */
+		glDisable(GL_STENCIL_TEST);
+	}
 
 	for(i = data->number_of_layers-1 ; i >= 0 ; i--)
 	{
@@ -721,6 +727,11 @@ Draw a textured quad for each layer and blend them all together correctly.
 			glCallList(data->rc_composite_display_list);
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			glEnable(GL_BLEND);
+			if (data->using_stencil_overlay)
+			{
+				/* disable stencil buffer to get the overlay back*/
+				glEnable(GL_STENCIL_TEST);
+			}
 		}
 
 		glBindTexture(GL_TEXTURE_RECTANGLE_NV, data->rgba_layer_texture_id[i]);
@@ -914,7 +925,7 @@ Initialises the order independent transparency extension.
 
 int order_independent_reshape(
 	struct Scene_viewer_order_independent_transparency_data *data,
-	int width, int height, int layers)
+	int width, int height, int layers, int using_stencil_overlay)
 /*******************************************************************************
 LAST MODIFIED : 14 April 2003
 
@@ -930,6 +941,7 @@ Initialises per rendering parts of this extension.
 	ENTER(order_independent_reshape);
 
 #if defined (ORDER_INDEPENDENT_CAPABLE)
+	data->using_stencil_overlay = using_stencil_overlay;
 	/* We need one more layer for the background */
 	layers++;
 	if (data->ztex_texture_id && data->zbuffer && (data->viewport_width == width)
@@ -1001,6 +1013,7 @@ Initialises per rendering parts of this extension.
 	USE_PARAMETER(width);
 	USE_PARAMETER(height);
 	USE_PARAMETER(layers);
+	USE_PARAMETER(using_stencil_overlay);
 	return_code = 0;
 #endif /* defined (ORDER_INDEPENDENT_CAPABLE) */
 

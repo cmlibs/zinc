@@ -2060,7 +2060,8 @@ and then again with only semi transparent objects not changing the depth buffer.
 		{
 			order_independent_reshape(scene_viewer->order_independent_transparency_data,
 				rendering_data->viewport_width, rendering_data->viewport_height,
-				rendering_data->override_transparency_layers);
+				rendering_data->override_transparency_layers,
+				(rendering_data->stencil_depth > 0));
 			return_code = 1;
 		}
 		else
