@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_client.c
 
-LAST MODIFIED : 7 January 2001
+LAST MODIFIED : 16 December 2001
 
 DESCRIPTION :
 Code for talking to the unemap hardware service (running under NT).  This is an
@@ -199,8 +199,8 @@ HWND module_scrolling_window=(HWND)NULL;
 #endif /* defined (WINDOWS) */
 
 /* calibration information set by unemap_calibrate */
-Calibration_end_callback
-	*module_calibration_end_callback=(Calibration_end_callback *)NULL;
+Unemap_calibration_end_callback
+	*module_calibration_end_callback=(Unemap_calibration_end_callback *)NULL;
 void *module_calibration_end_callback_data=(void *)NULL;
 
 int allow_open_connection=1;
@@ -213,7 +213,8 @@ int module_force_connection=0,module_get_cache_information_failed=0,
 #endif /* defined (CACHE_CLIENT_INFORMATION) */
 
 /* information set by unemap_get_samples_acquired_background */
-Acquired_data_callback *module_acquired_callback=(Acquired_data_callback *)NULL;
+Unemap_acquired_data_callback *module_acquired_callback=
+	(Unemap_acquired_data_callback *)NULL;
 int module_acquired_channel_number= -1;
 void *module_acquired_callback_data=(void *)NULL;
 
@@ -689,8 +690,8 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 #endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 	/*???debug */
 #if defined (BACKGROUND_SAVING) && defined (MOTIF)
-#if defined (DEBUG)
 	printf("enter acquired_socket_callback_process.  %p\n",crate_void);
+#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 #else /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 #if defined (DEBUG)
@@ -720,6 +721,10 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 						(unsigned char *)&number_of_channels,sizeof(number_of_channels),0))
 					{
 						message_size -= sizeof(number_of_channels);
+						/*???debug */
+						printf("number_of_channels.  %d\n",number_of_channels);
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
 						if ((int)sizeof(number_of_samples)<=message_size)
 						{
 							if (SOCKET_ERROR!=socket_recv(crate->acquired_socket,
@@ -727,6 +732,10 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 								0))
 							{
 								message_size -= sizeof(number_of_samples);
+								/*???debug */
+								printf("number_of_samples.  %ld\n",number_of_samples);
+#if defined (DEBUG)
+#endif /* defined (DEBUG) */
 								if (number_of_channels*(long)(number_of_samples*sizeof(short))==
 									message_size)
 								{
@@ -814,7 +823,7 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 						(int)number_of_samples,samples,module_acquired_callback_data);
 				}
 			}
-			module_acquired_callback=(Acquired_data_callback *)NULL;
+			module_acquired_callback=(Unemap_acquired_data_callback *)NULL;
 			module_acquired_callback_data=(void *)NULL;
 		}
 #if defined (BACKGROUND_SAVING) && defined (MOTIF)
@@ -827,8 +836,8 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 	}
 	/*???debug */
 #if defined (BACKGROUND_SAVING) && defined (MOTIF)
-#if defined (DEBUG)
 	printf("leave acquired_socket_callback_process\n");
+#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 #else /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 #if defined (DEBUG)
@@ -4271,6 +4280,7 @@ For the <crate>.  The number of samples acquired per channel since
 	return (return_code);
 } /* crate_get_number_of_samples_acquired */
 
+#if defined (OLD_CODE)
 static int crate_get_samples_acquired(struct Unemap_crate *crate,
 	int channel_number,short int *samples)
 /*******************************************************************************
@@ -4354,6 +4364,219 @@ Otherwise the function fails.
 								(unsigned char *)samples,buffer_size,0))
 							{
 								return_code=1;
+							}
+						}
+					}
+#if defined (DEBUG)
+					display_message(INFORMATION_MESSAGE,"\n");
+#endif /* defined (DEBUG) */
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"crate_get_samples_acquired.  socket_recv() failed");
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"crate_get_samples_acquired.  socket_send() failed");
+			}
+			unlock_mutex(crate->command_socket_mutex);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"crate_get_samples_acquired.  Invalid command_socket");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"crate_get_samples_acquired.  Missing crate (%p) or samples (%p)",crate,
+			samples);
+	}
+#if defined (DEBUG)
+	/*???debug */
+	printf("leave crate_get_samples_acquired %d\n",return_code);
+#endif /* defined (DEBUG) */
+	LEAVE;
+
+	return (return_code);
+} /* crate_get_samples_acquired */
+#endif /* defined (OLD_CODE) */
+
+static int crate_get_samples_acquired(struct Unemap_crate *crate,
+	int channel_number,short int *samples)
+/*******************************************************************************
+LAST MODIFIED : 16 December 2001
+
+DESCRIPTION :
+The function fails if the hardware is not configured.
+
+For the <crate>.  If <channel_number> is valid (between 1 and the total number
+of channels inclusive), then the <samples> for that channel are returned.  If
+<channel_number> is 0 then the <samples> for all channels are returned.
+Otherwise the function fails.
+==============================================================================*/
+{
+	int number_of_channels,return_code,retval;
+	long block_size,buffer_size,message_size;
+	short int *crate_samples;
+	unsigned char buffer[2+sizeof(long)+sizeof(int)+sizeof(unsigned long)];
+	unsigned long number_of_samples;
+
+	ENTER(crate_get_samples_acquired);
+#if defined (DEBUG)
+	/*???debug */
+	printf("enter crate_get_samples_acquired %p %d %p\n",crate,channel_number,
+		samples);
+#endif /* defined (DEBUG) */
+	return_code=0;
+	/* check arguments */
+	if (crate&&samples)
+	{
+		if (INVALID_SOCKET!=crate->command_socket)
+		{
+			lock_mutex(crate->command_socket_mutex);
+			buffer[0]=UNEMAP_GET_SAMPLES_ACQUIRED_CODE;
+			buffer[1]=BIG_ENDIAN_CODE;
+			buffer_size=2+sizeof(message_size);
+			memcpy(buffer+buffer_size,&channel_number,sizeof(channel_number));
+			buffer_size += sizeof(channel_number);
+			message_size=buffer_size-(2+(long)sizeof(message_size));
+			memcpy(buffer+2,&message_size,sizeof(message_size));
+			retval=socket_send(crate->command_socket,buffer,buffer_size,0);
+			if (SOCKET_ERROR!=retval)
+			{
+#if defined (DEBUG)
+				/*???debug */
+				printf("Sent data %x %x %ld\n",buffer[0],buffer[1],message_size);
+#endif /* defined (DEBUG) */
+				/* get the header/acknowledgement back */
+				retval=socket_recv(crate->command_socket,buffer,2+sizeof(long),0);
+				if (SOCKET_ERROR!=retval)
+				{
+					memcpy(&buffer_size,buffer+2,sizeof(buffer_size));
+#if defined (DEBUG)
+					/*???debug */
+					printf("Received %d bytes, data %x %x %ld\n",retval,buffer[0],
+						buffer[1],buffer_size);
+#endif /* defined (DEBUG) */
+					if ((2+sizeof(long)==retval)&&(0<=buffer_size)&&(buffer[0]))
+					{
+						if (0==buffer_size)
+						{
+							/* read back from acquired socket */
+							lock_mutex(crate->acquired_socket_mutex);
+							/* get the header back */
+							retval=socket_recv(crate->acquired_socket,buffer,2+sizeof(long)+
+								sizeof(number_of_channels)+sizeof(number_of_samples),0);
+							if (SOCKET_ERROR!=retval)
+							{
+								memcpy(&buffer_size,buffer+2,sizeof(buffer_size));
+#if defined (DEBUG)
+								/*???debug */
+								printf("Received acquired %d bytes, data %x %x %ld\n",retval,
+									buffer[0],buffer[1],buffer_size);
+#endif /* defined (DEBUG) */
+								memcpy(&number_of_channels,buffer+2+sizeof(buffer_size),
+									sizeof(number_of_channels));
+								memcpy(&number_of_samples,buffer+2+sizeof(buffer_size)+
+									sizeof(number_of_channels),sizeof(number_of_samples));
+#if defined (DEBUG)
+								/*???debug */
+								printf("number_of_channels=%d, number_of_samples=%ld.  %ld\n",
+									number_of_channels,number_of_samples,
+									sizeof(number_of_channels)+sizeof(number_of_samples)+
+									number_of_samples*number_of_channels*sizeof(short int));
+#endif /* defined (DEBUG) */
+								if ((2+sizeof(long)+sizeof(number_of_channels)+
+									sizeof(number_of_samples)==retval)&&
+									(sizeof(number_of_channels)+sizeof(number_of_samples)+
+									number_of_samples*number_of_channels*sizeof(short int)==
+									(unsigned)buffer_size)&&(buffer[0]))
+								{
+									buffer_size -=
+										sizeof(number_of_channels)+sizeof(number_of_samples);
+									if ((0==channel_number)&&(0<module_number_of_channels))
+									{
+										/* have to stagger to allow room for other crates */
+										crate_samples=samples;
+										block_size=
+											(crate->number_of_channels)*(long)sizeof(short int);
+										while ((buffer_size>0)&&(SOCKET_ERROR!=socket_recv(
+											crate->acquired_socket,(unsigned char *)crate_samples,
+											block_size,0)))
+										{
+											crate_samples += module_number_of_channels;
+											buffer_size -= block_size;
+										}
+										if (0==buffer_size)
+										{
+											return_code=1;
+										}
+									}
+									else
+									{
+										if (SOCKET_ERROR!=socket_recv(crate->acquired_socket,
+											(unsigned char *)samples,buffer_size,0))
+										{
+											return_code=1;
+										}
+									}
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"crate_get_samples_acquired.  socket_recv() 2 failed");
+							}
+							unlock_mutex(crate->acquired_socket_mutex);
+							/* get the header back */
+							retval=socket_recv(crate->command_socket,buffer,2+sizeof(long),0);
+							if (SOCKET_ERROR!=retval)
+							{
+								memcpy(&buffer_size,buffer+2,sizeof(buffer_size));
+								if (!((2+sizeof(long)==retval)&&(0==buffer_size)&&(buffer[0])))
+								{
+									return_code=0;
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"crate_get_samples_acquired.  socket_recv() 3 failed");
+							}
+						}
+						else
+						{
+							/* read back from command socket (kept for compatability with
+								older versions of the hardware service) */
+							if ((0==channel_number)&&(0<module_number_of_channels))
+							{
+								/* have to stagger to allow room for other crates */
+								crate_samples=samples;
+								block_size=(crate->number_of_channels)*(long)sizeof(short int);
+								while ((buffer_size>0)&&(SOCKET_ERROR!=socket_recv(
+									crate->command_socket,(unsigned char *)crate_samples,
+									block_size,0)))
+								{
+									crate_samples += module_number_of_channels;
+									buffer_size -= block_size;
+								}
+								if (0==buffer_size)
+								{
+									return_code=1;
+								}
+							}
+							else
+							{
+								if (SOCKET_ERROR!=socket_recv(crate->command_socket,
+									(unsigned char *)samples,buffer_size,0))
+								{
+									return_code=1;
+								}
 							}
 						}
 					}
@@ -8207,7 +8430,6 @@ Retrieves the unemap information that is cached with the client.
 			if (!(crate->unemap_cards))
 			{
 				module_force_connection=1;
-/*???DB.  Where I'm up to */
 				crate->unemap_cards=(struct Unemap_card *)NULL;
 				crate->stimulator_card_indices=(int *)NULL;
 				if ((0<(crate->number_of_unemap_cards=
@@ -8298,7 +8520,7 @@ int unemap_configure(float sampling_frequency,int number_of_samples_in_buffer,
 	Unemap_hardware_callback *scrolling_callback,void *scrolling_callback_data,
 	float scrolling_refresh_frequency,int synchronization_card)
 /*******************************************************************************
-LAST MODIFIED : 9 July 2000
+LAST MODIFIED : 16 December 2001
 
 DESCRIPTION :
 Configures the hardware for sampling at the specified <sampling_frequency> and
@@ -8403,28 +8625,43 @@ attached SCU.  All other SCUs output the synchronization signal.
 			{
 				i=module_number_of_unemap_crates;
 				crate=module_unemap_crates;
-				if (crate_configure_end(crate)&&
-					crate_get_sampling_frequency(crate,&master_sampling_frequency)&&
-					crate_get_maximum_number_of_samples(crate,
-					&master_number_of_samples_in_buffer))
+				i--;
+				if (return_code=crate_configure_end(crate))
 				{
-					do
+					if (i>0)
 					{
-						crate++;
-						i--;
-					} while ((i>0)&&crate_configure_end(crate)&&
-						crate_get_sampling_frequency(crate,&crate_sampling_frequency)&&
-						(master_sampling_frequency==crate_sampling_frequency)&&
-						crate_get_maximum_number_of_samples(crate,
-						&crate_number_of_samples_in_buffer)&&
-						(master_number_of_samples_in_buffer==
-						crate_number_of_samples_in_buffer));
+						if (crate_get_sampling_frequency(crate,&master_sampling_frequency)&&
+							crate_get_maximum_number_of_samples(crate,
+							&master_number_of_samples_in_buffer))
+						{
+							do
+							{
+								crate++;
+								i--;
+								if (!(crate_configure_end(crate)&&
+									crate_get_sampling_frequency(crate,
+									&crate_sampling_frequency)&&
+									(master_sampling_frequency==crate_sampling_frequency)&&
+									crate_get_maximum_number_of_samples(crate,
+									&crate_number_of_samples_in_buffer)&&
+									(master_number_of_samples_in_buffer==
+									crate_number_of_samples_in_buffer)))
+								{
+									return_code=0;
+								}
+							} while ((i>0)&&return_code);
+						}
+						else
+						{
+							return_code=0;
+						}
+					}
 				}
 #if defined (DEBUG)
 				/*???debug */
 				printf("  end completed %d\n",i);
 #endif /* defined (DEBUG) */
-				if (i>0)
+				if (!return_code)
 				{
 					while (i>0)
 					{
@@ -8436,7 +8673,7 @@ attached SCU.  All other SCUs output the synchronization signal.
 					for (i=module_number_of_unemap_crates;i>0;i--)
 					{
 						crate_deconfigure(crate);
-						crate--;
+						crate++;
 					}
 				}
 				else
@@ -8921,7 +9158,7 @@ callbacks.  Allows sampling without scrolling.
 	return (return_code);
 } /* unemap_stop_scrolling */
 
-int unemap_calibrate(Calibration_end_callback *calibration_end_callback,
+int unemap_calibrate(Unemap_calibration_end_callback *calibration_end_callback,
 	void *calibration_end_callback_data)
 /*******************************************************************************
 LAST MODIFIED : 9 March 2000
@@ -9943,6 +10180,114 @@ assigned to <*number_of_samples>.
 	return (return_code);
 } /* unemap_get_number_of_samples_acquired */
 
+int unemap_transfer_samples_acquired(int channel_number,
+	Unemap_transfer_samples_function *transfer_samples_function,
+	void *transfer_samples_function_data,int *number_of_samples_transferred)
+/*******************************************************************************
+LAST MODIFIED : 16 December 2001
+
+DESCRIPTION :
+The function fails if the hardware is not configured.
+
+If <channel_number> is valid (between 1 and the total number of channels
+inclusive, then the <samples> for that channel are transferred.  If
+<channel_number> is 0 then the <samples> for all channels are transferred.
+Otherwise the function fails.
+
+The <transfer_samples_function> is used to transfer the samples.  It is called
+with samples (short int *), number_of_samples (int) and
+<transfer_samples_function_data>.  It should return the number of samples
+transferred.
+
+???DB.  Should be able to get away without allocating a samples array, but this
+	requires interleaving the crates and the initial application for this function
+	is on the server side (unemap_hardware_service).  Once re-written, it can be
+	used in unemap_get_samples_acquired.
+==============================================================================*/
+{
+	int number_of_channels,number_transferred,return_code;
+	short *samples;
+	unsigned long number_of_samples;
+
+	ENTER(unemap_transfer_samples_acquired);
+	return_code=0;
+	number_transferred=0;
+	/* check arguments */
+	if (transfer_samples_function&&(0<=channel_number)&&
+		(channel_number<=module_number_of_channels))
+	{
+		if (unemap_get_number_of_samples_acquired(&number_of_samples))
+		{
+			if (0==channel_number)
+			{
+				if (unemap_get_number_of_channels(&number_of_channels))
+				{
+					return_code=1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,"unemap_transfer_samples_acquired.  "
+						"Could not get number_of_channels");
+				}
+			}
+			else
+			{
+				number_of_channels=1;
+				return_code=1;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"unemap_transfer_samples_acquired.  Could not get number_of_samples");
+		}
+		if (return_code)
+		{
+			if (ALLOCATE(samples,short,number_of_channels*number_of_samples))
+			{
+				if (unemap_get_samples_acquired(channel_number,samples))
+				{
+					number_transferred=(*transfer_samples_function)(samples,
+						number_of_channels*number_of_samples,
+						transfer_samples_function_data);
+					if (number_of_channels*(int)number_of_samples!=number_transferred)
+					{
+						display_message(ERROR_MESSAGE,
+							"unemap_transfer_samples_acquired.  Error transferring samples");
+						return_code=0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"unemap_transfer_samples_acquired.  Could not get samples");
+					return_code=0;
+				}
+				DEALLOCATE(samples);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"unemap_transfer_samples_acquired.  Could not allocate samples");
+				return_code=0;
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"unemap_transfer_samples_acquired.  Invalid argument(s).  %p %d",
+			transfer_samples_function,channel_number);
+	}
+	if (number_of_samples_transferred)
+	{
+		*number_of_samples_transferred=number_transferred;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* unemap_transfer_samples_acquired */
+
 int unemap_write_samples_acquired(int channel_number,FILE *file)
 /*******************************************************************************
 LAST MODIFIED : 3 July 2000
@@ -10109,7 +10454,7 @@ Otherwise the function fails.
 } /* unemap_get_samples_acquired */
 
 int unemap_get_samples_acquired_background(int channel_number,
-	Acquired_data_callback *callback,void *user_data)
+	Unemap_acquired_data_callback *callback,void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 21 July 2000
 
@@ -10249,7 +10594,7 @@ background in a client/server arrangement.
 
 #if defined (OLD_CODE)
 int unemap_get_samples_acquired_background(int channel_number,
-	Acquired_data_callback *callback,void *user_data)
+	Unemap_acquired_data_callback *callback,void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 2 July 2000
 
@@ -10707,9 +11052,11 @@ The <*pre_filter_gain> and <*post_filter_gain> for the group are assigned.
 
 int unemap_load_voltage_stimulating(int number_of_channels,int *channel_numbers,
 	int number_of_voltages,float voltages_per_second,float *voltages,
-	unsigned int number_of_cycles)
+	unsigned int number_of_cycles,
+	Unemap_stimulation_end_callback *stimulation_end_callback,
+	void *stimulation_end_callback_data)
 /*******************************************************************************
-LAST MODIFIED : 12 November 2000
+LAST MODIFIED : 16 December 2001
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -10734,6 +11081,9 @@ If <number_of_cycles> is zero then the waveform is repeated until
 <unemap_stop_stimulating>, otherwise the waveform is repeated the
 <number_of_cycles> times or until <unemap_stop_stimulating>.
 
+The <stimulation_end_callback> is called with <stimulation_end_callback_data>
+when the stimulation ends.
+
 Use unemap_set_channel_stimulating to make a channel into a stimulating channel.
 Use <unemap_start_stimulating> to start the stimulating.
 ==============================================================================*/
@@ -10743,6 +11093,9 @@ Use <unemap_start_stimulating> to start the stimulating.
 	struct Unemap_crate *crate;
 
 	ENTER(unemap_load_voltage_stimulating);
+	/*???DB.  Temp */
+	USE_PARAMETER(stimulation_end_callback);
+	USE_PARAMETER(stimulation_end_callback_data);
 #if defined (DEBUG)
 	/*???debug */
 	printf("enter unemap_load_voltage_stimulating\n");
@@ -10869,9 +11222,11 @@ Use <unemap_start_stimulating> to start the stimulating.
 
 int unemap_load_current_stimulating(int number_of_channels,int *channel_numbers,
 	int number_of_currents,float currents_per_second,float *currents,
-	unsigned int number_of_cycles)
+	unsigned int number_of_cycles,
+	Unemap_stimulation_end_callback *stimulation_end_callback,
+	void *stimulation_end_callback_data)
 /*******************************************************************************
-LAST MODIFIED : 12 November 2000
+LAST MODIFIED : 16 December 2001
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -10897,6 +11252,9 @@ If <number_of_cycles> is zero then the waveform is repeated until
 <unemap_stop_stimulating>, otherwise the waveform is repeated the
 <number_of_cycles> times or until <unemap_stop_stimulating>.
 
+The <stimulation_end_callback> is called with <stimulation_end_callback_data>
+when the stimulation ends.
+
 Use unemap_set_channel_stimulating to make a channel into a stimulating channel.
 Use <unemap_start_stimulating> to start the stimulating.
 ==============================================================================*/
@@ -10906,6 +11264,9 @@ Use <unemap_start_stimulating> to start the stimulating.
 	struct Unemap_crate *crate;
 
 	ENTER(unemap_load_current_stimulating);
+	/*???DB.  Temp */
+	USE_PARAMETER(stimulation_end_callback);
+	USE_PARAMETER(stimulation_end_callback_data);
 	return_code=0;
 	/* check arguments */
 	all_channels=0;
