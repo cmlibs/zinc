@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function.hpp
 //
-// LAST MODIFIED : 25 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // Functions are expressions that are constructed for:
@@ -22,7 +22,7 @@
 
 class Function
 //******************************************************************************
-// LAST MODIFIED : 25 June 2004
+// LAST MODIFIED : 13 August 2004
 //
 // DESCRIPTION :
 // A function maintains storage for all its inputs and the outputs that can be
@@ -38,6 +38,9 @@ class Function
 	friend class Function_derivative_matrix;
 	friend class Function_identity;
 	friend class Function_variable;
+	template<class Value_type_1,class Value_type_2>
+		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
+		boost::intrusive_ptr<Value_type_2> const &);
 	public:
 		// returns a string the represents the function
 		virtual string_handle get_string_representation()=0;
@@ -89,6 +92,8 @@ class Function
 	private:
 		// copy operations are private and undefined to prevent copying
 		void operator=(const Function&);
+		// equality operator.  To be used in equivalent
+		virtual bool operator==(const Function&) const=0;
 	private:
 		int reference_count;
 		friend void intrusive_ptr_add_ref(Function *);

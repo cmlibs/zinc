@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function.cpp
 //
-// LAST MODIFIED : 25 June 2004
+// LAST MODIFIED : 11 August 2004
 //
 // DESCRIPTION :
 // See function.hpp
