@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : pacing_window.uil
 !
-!LAST MODIFIED : 2 June 2003
+!LAST MODIFIED : 8 August 2003
 !
 !DESCRIPTION :
 !The widgets/gadgets for the pacing window in the acquisition work area.
@@ -111,32 +111,93 @@ object
 			{
 			XmNborderWidth = 0;
 			XmNdialogTitle = "Pacing";
-!			XmNbackground = identifying_colour;
 			};
 		controls
 			{
-			XmForm pacing_electrodes_form;
-			XmForm pacing_return_electrodes_form;
-			XmSeparator pacing_return_electrodes_separa;
-			XmForm pacing_control_voltage_form;
-			XmForm pacing_control_width_form;
-			XmSeparator pacing_control_separator;
-			XmForm pacing_basic_cycle_control_form;
-			XmSeparator pacing_basic_cycle_control_sepa;
-			XmForm pacing_settings_form;
-			XmSeparator pacing_settings_separator;
-			XmForm pacing_restitution_time_form;
-			XmSeparator pacing_restitution_time_separat;
-			XmForm pacing_restitution_curve_form;
-			};
-		callbacks
-			{
-			XmNdestroyCallback = procedures
+			XmScrolledWindow
 				{
-				destroy_Pacing_window_callback(pacing_window_structure);
+				arguments
+					{
+					XmNborderWidth = 0;
+					XmNscrollBarDisplayPolicy = XmAS_NEEDED;
+					XmNscrollingPolicy = XmAUTOMATIC;
+					XmNleftAttachment = XmATTACH_FORM;
+					XmNleftOffset = 0;
+					XmNrightAttachment = XmATTACH_FORM;
+					XmNrightOffset = 0;
+					XmNtopAttachment = XmATTACH_FORM;
+					XmNtopOffset = 0;
+					XmNbottomAttachment = XmATTACH_FORM;
+					XmNbottomOffset = 0;
+					};
+				controls
+					{
+					XmForm
+						{
+						arguments
+							{
+							XmNborderWidth = 0;
+							};
+						controls
+							{
+							XmForm pacing_electrodes_form;
+							XmForm pacing_return_electrodes_form;
+							XmSeparator pacing_return_electrodes_separa;
+							XmForm pacing_control_voltage_form;
+							XmForm pacing_control_width_form;
+							XmSeparator pacing_control_separator;
+							XmForm pacing_basic_cycle_control_form;
+							XmSeparator pacing_basic_cycle_control_sepa;
+							XmForm pacing_settings_form;
+							XmSeparator pacing_settings_separator;
+							XmForm pacing_restitution_time_form;
+							XmSeparator pacing_restitution_time_separat;
+							XmForm pacing_restitution_curve_form;
+							};
+						callbacks
+							{
+							XmNdestroyCallback = procedures
+								{
+								destroy_Pacing_window_callback(pacing_window_structure);
+								};
+							};
+						};
+					};
 				};
 			};
 		};
+!	pacing_window: XmForm
+!		{
+!		arguments
+!			{
+!			XmNborderWidth = 0;
+!			XmNdialogTitle = "Pacing";
+!!			XmNbackground = identifying_colour;
+!			};
+!		controls
+!			{
+!			XmForm pacing_electrodes_form;
+!			XmForm pacing_return_electrodes_form;
+!			XmSeparator pacing_return_electrodes_separa;
+!			XmForm pacing_control_voltage_form;
+!			XmForm pacing_control_width_form;
+!			XmSeparator pacing_control_separator;
+!			XmForm pacing_basic_cycle_control_form;
+!			XmSeparator pacing_basic_cycle_control_sepa;
+!			XmForm pacing_settings_form;
+!			XmSeparator pacing_settings_separator;
+!			XmForm pacing_restitution_time_form;
+!			XmSeparator pacing_restitution_time_separat;
+!			XmForm pacing_restitution_curve_form;
+!			};
+!		callbacks
+!			{
+!			XmNdestroyCallback = procedures
+!				{
+!				destroy_Pacing_window_callback(pacing_window_structure);
+!				};
+!			};
+!		};
 	pacing_electrodes_form: XmForm
 		{
 		arguments
