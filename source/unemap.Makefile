@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : unemap.Makefile
 #
-# LAST MODIFIED : 10 July 2003
+# LAST MODIFIED : 5 August 2003
 #
 # DESCRIPTION :
 #
@@ -391,6 +391,15 @@ ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
    endif # $(SYSNAME) != win32
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
 
+ifeq ($(SYSNAME),Linux)
+MATRIX_LIB = -L$(CMISS_ROOT)/linear_solvers/lib/linux86 -llapack-debug -lblas-debug
+endif # $(SYSNAME) == Linux
+ifeq ($(SYSNAME:IRIX%=),)
+MATRIX_LIB = -lscs
+endif # $(SYSNAME) == Linux
+ifeq ($(SYSNAME),win32)
+MATRIX_LIB = -L$(CMISS_ROOT)/linear_solvers/lib/win32 -llapack-debug -lblas-debug
+endif # $(SYSNAME) == win32
 
 ifeq ($(SYSNAME:IRIX%=),)
    LIB = -lPW -lftn -lm -lC -lCio -lpthread 
@@ -446,10 +455,12 @@ ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 
 ifdef USE_UNEMAP_3D
 ALL_LIB = $(GRAPHICS_LIB) $(USER_INTERFACE_LIB) \
-   $(IMAGEMAGICK_LIB) $(EXTERNAL_INPUT_LIB) $(HELP_LIB) $(LIB)
+	$(IMAGEMAGICK_LIB) $(EXTERNAL_INPUT_LIB) $(HELP_LIB) $(MATRIX_LIB) \
+	$(LIB)
 else # USE_UNEMAP_3D
 ALL_LIB = $(USER_INTERFACE_LIB) $(IMAGEMAGICK_LIB) $(EXTERNAL_INPUT_LIB) \
-	$(HELP_LIB) $(LIB)
+	$(HELP_LIB) $(MATRIX_LIB) \
+	$(LIB)
 endif # USE_UNEMAP_3D
 
 COMMAND_SRCS = \
@@ -545,14 +556,18 @@ INTERACTION_SRCS = \
 	interaction/interactive_tool.c \
 	interaction/interactive_toolbar_widget.c \
 	interaction/interactive_event.c
-POSITION_SRCS = \
-	io_devices/input_module.c \
-	io_devices/matrix.c
+MATRIX_SRCS =  \
+	matrix/factor.c \
+	matrix/matrix.c \
+	matrix/matrix_blas.c
 MOTIF_INTERFACE_SRCS =  \
 	motif/image_utilities.c
 NODE_SRCS = \
 	node/node_operations.c \
 	node/node_tool.c
+POSITION_SRCS = \
+	io_devices/input_module.c \
+	io_devices/matrix.c
 REGION_SRCS = \
    region/cmiss_region.c \
    region/cmiss_region_chooser.c \
@@ -694,6 +709,7 @@ SRCS = \
 	$(GRAPHICS_SRCS) \
 	$(HELP_INTERFACE_SRCS) \
 	$(INTERACTION_SRCS) \
+	$(MATRIX_SRCS) \
 	$(MOTIF_INTERFACE_SRCS) \
 	$(NODE_SRCS) \
 	$(POSITION_SRCS) \
