@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 26 December 2000
+LAST MODIFIED : 28 January 2001
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -19842,7 +19842,7 @@ int calculate_FE_element_anatomical(
 	FE_value *xi_coordinates,FE_value *x,FE_value *y,FE_value *z,FE_value a[3],
 	FE_value b[3],FE_value c[3],FE_value *dx_dxi)
 /*******************************************************************************
-LAST MODIFIED : 16 November 1998
+LAST MODIFIED : 28 January 2001
 
 DESCRIPTION :
 Calculates the cartesian coordinates (<x>, <y> and <z>), and the fibre (<a>),
@@ -20131,9 +20131,14 @@ nine values returned, regardless of the element dimension.
 						}
 						else
 						{
+#if defined (OLD_CODE)
 							/* default gamma is pi/2 */
 							sin_gamma=1;
 							cos_gamma=0;
+#endif /* defined (OLD_CODE) */
+							/* default gamma is 0 */
+							sin_gamma=0;
+							cos_gamma=1;
 						}
 					}
 					else
@@ -20141,9 +20146,14 @@ nine values returned, regardless of the element dimension.
 						/* default beta is 0 */
 						sin_beta=0;
 						cos_beta=1;
+#if defined (OLD_CODE)
 						/* default gamma is pi/2 */
 						sin_gamma=1;
 						cos_gamma=0;
+#endif /* defined (OLD_CODE) */
+						/* default gamma is 0 */
+						sin_gamma=0;
+						cos_gamma=1;
 					}
 					/* calculate the fibre vector */
 					a_x=cos_alpha*f11+sin_alpha*f21;
@@ -20158,21 +20168,42 @@ nine values returned, regardless of the element dimension.
 					f21=b_x;
 					f22=b_y;
 					f23=b_z;
+					/* as per KATs change 30Nov00 in back-end function ROT_COORDSYS,
+						rotate anticlockwise about axis2, not -axis2 */
+#if defined (OLD_CODE)
 					a_x=cos_beta*f11+sin_beta*f31;
 					a_y=cos_beta*f12+sin_beta*f32;
 					a_z=cos_beta*f13+sin_beta*f33;
 					c_x= -sin_beta*f11+cos_beta*f31;
 					c_y= -sin_beta*f12+cos_beta*f32;
 					c_z= -sin_beta*f13+cos_beta*f33;
+#endif /* defined (OLD_CODE) */
+					c_x=cos_beta*f31+sin_beta*f11;
+					c_y=cos_beta*f32+sin_beta*f12;
+					c_z=cos_beta*f33+sin_beta*f13;
+					a_x= -sin_beta*f31+cos_beta*f11;
+					a_y= -sin_beta*f32+cos_beta*f12;
+					a_z= -sin_beta*f33+cos_beta*f13;
 					f31=c_x;
 					f32=c_y;
 					f33=c_z;
+#if defined (OLD_CODE)
+					/* note rearrangement of sin/cos to give equivalent rotation of
+						gamma - PI/2.  Note we will probably remove the -PI/2 factor at some
+						stage */
 					b_x=sin_gamma*f21-cos_gamma*f31;
 					b_y=sin_gamma*f22-cos_gamma*f32;
 					b_z=sin_gamma*f23-cos_gamma*f33;
 					c_x=cos_gamma*f21+sin_gamma*f31;
 					c_y=cos_gamma*f22+sin_gamma*f32;
 					c_z=cos_gamma*f23+sin_gamma*f33;
+#endif /* defined (OLD_CODE) */
+					b_x=cos_gamma*f21+sin_gamma*f31;
+					b_y=cos_gamma*f22+sin_gamma*f32;
+					b_z=cos_gamma*f23+sin_gamma*f33;
+					c_x= -sin_gamma*f21+cos_gamma*f31;
+					c_y= -sin_gamma*f22+cos_gamma*f32;
+					c_z= -sin_gamma*f23+cos_gamma*f33;
 					a[0]=a_x;
 					a[1]=a_y;
 					a[2]=a_z;

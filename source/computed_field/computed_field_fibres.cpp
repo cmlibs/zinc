@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_fibres.c
 
-LAST MODIFIED : 1 December 2000
+LAST MODIFIED : 28 January 2001
 
 DESCRIPTION :
 Implements a number of basic continuum mechanics fibres operations on
@@ -225,7 +225,7 @@ static int Computed_field_fibre_axes_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
 	struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 1 December 2000
+LAST MODIFIED : 28 January 2001
 
 DESCRIPTION :
 Compute the three 3-component fibre axes in the order fibre, sheet, normal from
@@ -240,9 +240,10 @@ coordinates from the source_field values in an arbitrary
 Derivatives may not be computed for this type of Computed_field [yet].
 ==============================================================================*/
 {
-	FE_value a_x, a_y, a_z, alpha, b_x, b_y, b_z, beta, c_x, c_y, c_z, cos_alpha, cos_beta,
-		cos_gamma ,dx_dxi[9], f11, f12, f13, f21, f22, f23, f31, f32, f33, gamma, length,
-		sin_alpha, sin_beta, sin_gamma, top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], x[3];
+	FE_value a_x, a_y, a_z, alpha, b_x, b_y, b_z, beta, c_x, c_y, c_z, cos_alpha,
+		cos_beta, cos_gamma ,dx_dxi[9], f11, f12, f13, f21, f22, f23, f31, f32, f33,
+		gamma, length, sin_alpha, sin_beta, sin_gamma,
+		top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], x[3];
 	int element_dimension,return_code,top_level_element_dimension;
 	struct Computed_field *coordinate_field, *fibre_field;
 
@@ -259,8 +260,9 @@ Derivatives may not be computed for this type of Computed_field [yet].
 			fibre_field = field->source_fields[0];
 			coordinate_field = field->source_fields[1];
 			if (return_code =
-				Computed_field_get_top_level_element_and_xi(element,xi,element_dimension,
-					&top_level_element, top_level_xi, &top_level_element_dimension) &&
+				Computed_field_get_top_level_element_and_xi(element,xi,
+					element_dimension,&top_level_element,top_level_xi,
+					&top_level_element_dimension) &&
 				Computed_field_evaluate_cache_in_element(fibre_field,
 					element,xi,top_level_element,0) &&
 				Computed_field_evaluate_cache_in_element(coordinate_field,
@@ -322,9 +324,14 @@ Derivatives may not be computed for this type of Computed_field [yet].
 				}
 				else
 				{
+#if defined (OLD_CODE)
 					/* default gamma is pi/2 */
 					sin_gamma = 1;
 					cos_gamma = 0;
+#endif /* defined (OLD_CODE) */
+					/* default gamma is 0 */
+					sin_gamma = 0;
+					cos_gamma = 1;
 				}
 				/* calculate the fibre axes a=fibre, b=sheet, c=normal */
 				a_x =  cos_alpha*f11 + sin_alpha*f21;
@@ -340,7 +347,7 @@ Derivatives may not be computed for this type of Computed_field [yet].
 				f22 = b_y;
 				f23 = b_z;
 				/* as per KATs change 30Nov00 in back-end function ROT_COORDSYS,
-					 rotate anticlockwise about axis2, not -axis2 */
+					rotate anticlockwise about axis2, not -axis2 */
 #if defined (OLD_CODE)
 				a_x =  cos_beta*f11 + sin_beta*f31;
 				a_y =  cos_beta*f12 + sin_beta*f32;
@@ -358,8 +365,9 @@ Derivatives may not be computed for this type of Computed_field [yet].
 				f31 = c_x;
 				f32 = c_y;
 				f33 = c_z;
-				/* note rearrangement of sin/cos to give equivalent rotation of gamma - PI/2.
-					 Note we will probably remove the -PI/2 factor at some stage */
+				/* note rearrangement of sin/cos to give equivalent rotation of
+					gamma - PI/2.  Note we will probably remove the -PI/2 factor at some
+					stage */
 				b_x = sin_gamma*f21 - cos_gamma*f31;
 				b_y = sin_gamma*f22 - cos_gamma*f32;
 				b_z = sin_gamma*f23 - cos_gamma*f33;
