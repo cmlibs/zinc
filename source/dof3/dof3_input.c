@@ -457,6 +457,8 @@ printf("create_input_widget %p %p %p\n",temp_input,temp_input->widget,
 			"create_input_widget.  Could not open hierarchy");
 	}
 #else
+	USE_PARAMETER(parent);
+	USE_PARAMETER(bounding);
 	return_widget=(Widget)NULL;
 #endif
 	LEAVE;
@@ -555,6 +557,9 @@ printf("input_set_data %p %p\n",temp_input,temp_input->position_widget);
 		} break;
 	}
 #else
+	USE_PARAMETER(input_widget);
+	USE_PARAMETER(data_type);
+	USE_PARAMETER(data);
 	return_code=0;
 #endif
 	LEAVE;
