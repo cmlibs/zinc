@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rendervrml.c
 
-LAST MODIFIED : 1 November 1999
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Renders gtObjects to VRML file
@@ -515,12 +515,13 @@ b=(b1,b2,b3) and c=(c1,c2,c3) such that a = b (x) c.
 
 int draw_glyph_set_vrml(FILE *vrml_file, int number_of_points,
 	Triple *point_list,Triple *axis1_list,
-	Triple *axis2_list,Triple *axis3_list,struct GT_object *glyph,char **labels,
-	int number_of_data_components,GTDATA *data,struct Graphical_material *material,
-	struct Spectrum *spectrum,float time,
+	Triple *axis2_list,Triple *axis3_list,Triple *scale_list,
+	struct GT_object *glyph,char **labels,
+	int number_of_data_components, GTDATA *data,
+	struct Graphical_material *material, struct Spectrum *spectrum, float time,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 /*******************************************************************************
-LAST MODIFIED : 1 November 1999
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Defines an object for the <glyph> and then draws that at <number_of_points>
@@ -530,25 +531,39 @@ points  given by the positions in <point_list> and oriented and scaled by
 {
 	char **label;
 	float a1, a2, a3, a_angle, a_magnitude, ax1, ax2, ax3, b1, b2, b3, b_angle,
-		bx1, bx2, bx3, c1, c2, c3, cx1, cx2, cx3, dp, j1, j2, j3, c_magnitude, s1,
-		s2, s3, x, y, z;
-	int i,j,number_of_skew_glyph_axes,return_code,skewed_axes;
+		bx1, bx2, bx3, c1, c2, c3, cx1, cx2, cx3, dp, f, f0, f1, j1, j2, j3,
+		c_magnitude, s1, s2, s3, x, y, z;
+	int i, j, mirror_mode, number_of_glyphs, number_of_skew_glyph_axes,
+		return_code, skewed_axes;
 	struct Graphical_material *material_copy;
-	Triple *point,*axis1,*axis2,*axis3;
+	Triple *axis1, *axis2, *axis3, *point, *scale, temp_axis1, temp_axis2,
+		temp_axis3, temp_point;
 
 	ENTER(draw_glyph_set_vrml);
 	/* default return code */
 	return_code=0;
 	/* checking arguments */
-	if ((0<number_of_points)&&point_list&&axis1_list&&axis2_list&&axis3_list&&
-		glyph&&((g_NO_DATA==number_of_data_components)||(data&&material&&spectrum)))
+	if ((0 < number_of_points) && point_list && axis1_list && axis2_list &&
+		axis3_list && scale_list && glyph &&
+		((g_NO_DATA == number_of_data_components) ||
+			(data && material && spectrum)))
 	{
-		if (!data||(data&&spectrum))
+		mirror_mode = GT_object_get_glyph_mirror_mode(glyph);
+		if (mirror_mode)
 		{
-			point=point_list;
-			axis1=axis1_list;
-			axis2=axis2_list;
-			axis3=axis3_list;
+			f = -1.0;
+		}
+		else
+		{
+			f = 0.0;
+		}
+		if ((!data) || (data && spectrum))
+		{
+			point = point_list;
+			axis1 = axis1_list;
+			axis2 = axis2_list;
+			axis3 = axis3_list;
+			scale = scale_list;
 			/* try to draw points and lines faster */
 			if (0==strcmp(glyph->name,"point"))
 			{
@@ -591,8 +606,17 @@ points  given by the positions in <point_list> and oriented and scaled by
 				fprintf(vrml_file,"  } #Pointset\n");
 				fprintf(vrml_file,"} #Shape\n");
 			}
-			else if (0==strcmp(glyph->name,"line"))
+			else if ((0 == strcmp(glyph->name, "line")) ||
+				(0 == strcmp(glyph->name, "mirror_line")))
 			{
+				if (mirror_mode)
+				{
+					f = -1.0;
+				}
+				else
+				{
+					f = 0.0;
+				}
 				fprintf(vrml_file,"Shape {\n");
 				fprintf(vrml_file,"  appearance\n");
 				if (material)
@@ -613,13 +637,15 @@ points  given by the positions in <point_list> and oriented and scaled by
 				fprintf(vrml_file,"      point [\n");
 				for (i=0;i<number_of_points;i++)
 				{
-					x=(*point)[0];
-					y=(*point)[1];
-					z=(*point)[2];
+					f0 = f*(*scale)[0];
+					x = (*point)[0] + f0*(*axis1)[0];
+					y = (*point)[1] + f0*(*axis1)[1];
+					z = (*point)[2] + f0*(*axis1)[2];
 					fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
-					x+=(*axis1)[0];
-					y+=(*axis1)[1];
-					z+=(*axis1)[2];
+					f1 = (*scale)[0];
+					x = (*point)[0] + f1*(*axis1)[0];
+					y = (*point)[1] + f1*(*axis1)[1];
+					z = (*point)[2] + f1*(*axis1)[2];
 					fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
 					point++;
 					axis1++;
@@ -668,37 +694,41 @@ points  given by the positions in <point_list> and oriented and scaled by
 				fprintf(vrml_file,"      point [\n");
 				for (i=0;i<number_of_points;i++)
 				{
+					resolve_glyph_axes(*point, *axis1, *axis2, *axis3, *scale,
+						/*mirror*/0, /*reverse*/0,
+						temp_point, temp_axis1, temp_axis2, temp_axis3);
 					/* x-line */
-					x=(*point)[0]-0.5*(*axis1)[0];
-					y=(*point)[1]-0.5*(*axis1)[1];
-					z=(*point)[2]-0.5*(*axis1)[2];
+					x = temp_point[0] - 0.5*temp_axis1[0];
+					y = temp_point[1] - 0.5*temp_axis1[1];
+					z = temp_point[2] - 0.5*temp_axis1[2];
 					fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
-					x+=(*axis1)[0];
-					y+=(*axis1)[1];
-					z+=(*axis1)[2];
+					x += temp_axis1[0];
+					y += temp_axis1[1];
+					z += temp_axis1[2];
 					fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
 					/* y-line */
-					x=(*point)[0]-0.5*(*axis2)[0];
-					y=(*point)[1]-0.5*(*axis2)[1];
-					z=(*point)[2]-0.5*(*axis2)[2];
+					x = temp_point[0] - 0.5*temp_axis2[0];
+					y = temp_point[1] - 0.5*temp_axis2[1];
+					z = temp_point[2] - 0.5*temp_axis2[2];
 					fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
-					x+=(*axis2)[0];
-					y+=(*axis2)[1];
-					z+=(*axis2)[2];
+					x += temp_axis2[0];
+					y += temp_axis2[1];
+					z += temp_axis2[2];
 					fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
 					/* z-line */
-					x=(*point)[0]-0.5*(*axis3)[0];
-					y=(*point)[1]-0.5*(*axis3)[1];
-					z=(*point)[2]-0.5*(*axis3)[2];
+					x = temp_point[0] - 0.5*temp_axis3[0];
+					y = temp_point[1] - 0.5*temp_axis3[1];
+					z = temp_point[2] - 0.5*temp_axis3[2];
 					fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
-					x+=(*axis3)[0];
-					y+=(*axis3)[1];
-					z+=(*axis3)[2];
+					x += temp_axis3[0];
+					y += temp_axis3[1];
+					z += temp_axis3[2];
 					fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
 					point++;
 					axis1++;
 					axis2++;
 					axis3++;
+					scale++;
 				}
 				fprintf(vrml_file,"      ]\n");
 				fprintf(vrml_file,"    }\n");
@@ -737,239 +767,265 @@ points  given by the positions in <point_list> and oriented and scaled by
 					material_copy = (struct Graphical_material *)NULL;
 				}
 				number_of_skew_glyph_axes=0;
-				for (i=0;i<number_of_points;i++)
+				for (i = 0; i < number_of_points; i++)
 				{
-					/* get the glyph centre as x, y and z */
-					x = (*point)[0];
-					y = (*point)[1];
-					z = (*point)[2];
-					/* store 3 axes in ax, bx and cx */
-					ax1 = (*axis1)[0];
-					ax2 = (*axis1)[1];
-					ax3 = (*axis1)[2];
-					bx1 = (*axis2)[0];
-					bx2 = (*axis2)[1];
-					bx3 = (*axis2)[2];
-					cx1 = (*axis3)[0];
-					cx2 = (*axis3)[1];
-					cx3 = (*axis3)[2];
-					/* get magnitudes of the glyph axes and normalise ax, bx and cx */
-					if (0.0 < (s1 = sqrt(ax1*ax1 + ax2*ax2 + ax3*ax3)))
+					if (mirror_mode)
 					{
-						ax1 /= s1;
-						ax2 /= s1;
-						ax3 /= s1;
+						number_of_glyphs = 2;
 					}
-					if (0.0 < (s2 = sqrt(bx1*bx1 + bx2*bx2 + bx3*bx3)))
+					else
 					{
-						bx1 /= s2;
-						bx2 /= s2;
-						bx3 /= s2;
+						number_of_glyphs = 1;
 					}
-					if (0.0 < (s3 = sqrt(cx1*cx1 + cx2*cx2 + cx3*cx3)))
+					for (j = 0; j < number_of_glyphs; j++)
 					{
-						cx1 /= s3;
-						cx2 /= s3;
-						cx3 /= s3;
-					}
-					/* the three axes are either unit length or zero. Checks:
-						 If all three are non-zero, check that the axes are all mutually
+						resolve_glyph_axes(*point, *axis1, *axis2, *axis3, *scale,
+							/*mirror*/j, /*reverse*/mirror_mode,
+							temp_point, temp_axis1, temp_axis2, temp_axis3);
+						/* get the glyph centre as x, y and z */
+						x = temp_point[0];
+						y = temp_point[1];
+						z = temp_point[2];
+						/* store 3 axes in ax, bx and cx */
+						ax1 = temp_axis1[0];
+						ax2 = temp_axis1[1];
+						ax3 = temp_axis1[2];
+						bx1 = temp_axis2[0];
+						bx2 = temp_axis2[1];
+						bx3 = temp_axis2[2];
+						cx1 = temp_axis3[0];
+						cx2 = temp_axis3[1];
+						cx3 = temp_axis3[2];
+						/* get magnitudes of the glyph axes and normalise ax, bx and cx */
+						if (0.0 < (s1 = sqrt(ax1*ax1 + ax2*ax2 + ax3*ax3)))
+						{
+							ax1 /= s1;
+							ax2 /= s1;
+							ax3 /= s1;
+						}
+						if (0.0 < (s2 = sqrt(bx1*bx1 + bx2*bx2 + bx3*bx3)))
+						{
+							bx1 /= s2;
+							bx2 /= s2;
+							bx3 /= s2;
+						}
+						if (0.0 < (s3 = sqrt(cx1*cx1 + cx2*cx2 + cx3*cx3)))
+						{
+							cx1 /= s3;
+							cx2 /= s3;
+							cx3 /= s3;
+						}
+						/* the three axes are either unit length or zero. Checks:
+							 If all three are non-zero, check that the axes are all mutually
 						   orthogonal.
-						 If two are non-zero, make sure they are othogonal and get the
+							 If two are non-zero, make sure they are othogonal and get the
 						   third from the cross product.
-						 If only one is non-zero, choose any two axes orthogonal to the
+							 If only one is non-zero, choose any two axes orthogonal to the
 						   first as the remaining axes. */
-					skewed_axes=0;
-					if ((0.0<s1)&&(0.0<s2)&&(0.0<s3))
-					{
-						/* 3 non-zero axes: check dot product of axis1 (x) axis2 and
-							 axis2 (x) axis3 are both zero or thereabouts */
-						if ((0.00001 < fabs(ax1*bx1 + ax2*bx2 + ax3*bx3))||
-							(0.00001 < fabs(bx1*cx1 + bx2*cx2 + bx3*cx3)))
+						skewed_axes=0;
+						if ((0.0<s1)&&(0.0<s2)&&(0.0<s3))
 						{
-							skewed_axes=1;
-						}
-					}
-					else if (((0.0<s1)&&(0.0<s2)) ||
-						((0.0<s2)&&(0.0<s3)) || ((0.0<s3)&&(0.0<s1)))
-					{
-						/* 2 non-zero axes: check their dot product is zero or thereabouts,
-							 and get third axis as their cross product. */
-						if (0.0==s1)
-						{
-							if (0.00001 < fabs(bx1*cx1 + bx2*cx2 + bx3*cx3))
+							/* 3 non-zero axes: check dot product of axis1 (x) axis2 and
+								 axis2 (x) axis3 are both zero or thereabouts */
+							if ((0.00001 < fabs(ax1*bx1 + ax2*bx2 + ax3*bx3))||
+								(0.00001 < fabs(bx1*cx1 + bx2*cx2 + bx3*cx3)))
 							{
 								skewed_axes=1;
 							}
-							else
+						}
+						else if (((0.0<s1)&&(0.0<s2)) ||
+							((0.0<s2)&&(0.0<s3)) || ((0.0<s3)&&(0.0<s1)))
+						{
+							/* 2 non-zero axes: check their dot product is zero or
+								 thereabouts, and get third axis as their cross product. */
+							if (0.0==s1)
 							{
-								ax1 = bx2*cx3 - bx3*cx2;
-								ax2 = bx3*cx1 - bx1*cx3;
-								ax3 = bx1*cx2 - bx2*cx1;
+								if (0.00001 < fabs(bx1*cx1 + bx2*cx2 + bx3*cx3))
+								{
+									skewed_axes=1;
+								}
+								else
+								{
+									ax1 = bx2*cx3 - bx3*cx2;
+									ax2 = bx3*cx1 - bx1*cx3;
+									ax3 = bx1*cx2 - bx2*cx1;
+								}
+							}
+							else if (0.0==s2)
+							{
+								if (0.00001 < fabs(cx1*ax1 + cx2*ax2 + cx3*ax3))
+								{
+									skewed_axes=1;
+								}
+								else
+								{
+									bx1 = cx2*ax3 - cx3*ax2;
+									bx2 = cx3*ax1 - cx1*ax3;
+									bx3 = cx1*ax2 - cx2*ax1;
+								}
+							}
+							else /* if (0.0==s3) */
+							{
+								if (0.00001 < fabs(ax1*bx1 + ax2*bx2 + ax3*bx3))
+								{
+									skewed_axes=1;
+								}
+								else
+								{
+									cx1 = ax2*bx3 - ax3*bx2;
+									cx2 = ax3*bx1 - ax1*bx3;
+									cx3 = ax1*bx2 - ax2*bx1;
+								}
 							}
 						}
-						else if (0.0==s2)
+						else if ((0.0<s1)||(0.0<s2)||(0<s3))
 						{
-							if (0.00001 < fabs(cx1*ax1 + cx2*ax2 + cx3*ax3))
+							/* 1 non-zero axis: Get any two other orthogonal axes */
+							if (0.0<s1)
 							{
-								skewed_axes=1;
+								get_orthogonal_axes(ax1,ax2,ax3,&bx1,&bx2,&bx3,&cx1,&cx2,&cx3);
 							}
-							else
+							else if (0.0<s2)
 							{
-								bx1 = cx2*ax3 - cx3*ax2;
-								bx2 = cx3*ax1 - cx1*ax3;
-								bx3 = cx1*ax2 - cx2*ax1;
+								get_orthogonal_axes(bx1,bx2,bx3,&cx1,&cx2,&cx3,&ax1,&ax2,&ax3);
 							}
-						}
-						else /* if (0.0==s3) */
-						{
-							if (0.00001 < fabs(ax1*bx1 + ax2*bx2 + ax3*bx3))
+							else /* if (0.0<s2) */
 							{
-								skewed_axes=1;
+								get_orthogonal_axes(cx1,cx2,cx3,&ax1,&ax2,&ax3,&bx1,&bx2,&bx3);
 							}
-							else
-							{
-								cx1 = ax2*bx3 - ax3*bx2;
-								cx2 = ax3*bx1 - ax1*bx3;
-								cx3 = ax1*bx2 - ax2*bx1;
-							}
-						}
-					}
-					else if ((0.0<s1)||(0.0<s2)||(0<s3))
-					{
-						/* 1 non-zero axis: Get any two other orthogonal axes */
-						if (0.0<s1)
-						{
-							get_orthogonal_axes(ax1,ax2,ax3,&bx1,&bx2,&bx3,&cx1,&cx2,&cx3);
-						}
-						else if (0.0<s2)
-						{
-							get_orthogonal_axes(bx1,bx2,bx3,&cx1,&cx2,&cx3,&ax1,&ax2,&ax3);
-						}
-						else /* if (0.0<s2) */
-						{
-							get_orthogonal_axes(cx1,cx2,cx3,&ax1,&ax2,&ax3,&bx1,&bx2,&bx3);
-						}
-					}
-					else
-					{
-						/* All axes non-zero: Use default axes */
-						ax1 = 1.0;
-						bx2 = 1.0;
-						cx3 = 1.0;
-					}
-					if (skewed_axes)
-					{
-						/* refuse to output the glyph if axes are skew */
-						number_of_skew_glyph_axes++;
-					}
-					else
-					{
-						if (0.0 < (a_magnitude = sqrt(ax2*ax2 + ax3*ax3)))
-						{
-							a1 = 0.0;
-							a2 = -ax3 / a_magnitude;
-							a3 = ax2 / a_magnitude;
-							a_angle = acos(ax1);
 						}
 						else
 						{
-							a1 = 0.0;
-							a2 = 1.0;
-							a3 = 0.0;
-							if (0 > ax1)
+							/* All axes non-zero: Use default axes */
+							ax1 = 1.0;
+							bx2 = 1.0;
+							cx3 = 1.0;
+						}
+						if (skewed_axes)
+						{
+							/* refuse to output the glyph if axes are skew */
+							number_of_skew_glyph_axes++;
+						}
+						else
+						{
+							if (0.0 < (a_magnitude = sqrt(ax2*ax2 + ax3*ax3)))
 							{
-								a_angle = PI;
+								a1 = 0.0;
+								a2 = -ax3 / a_magnitude;
+								a3 = ax2 / a_magnitude;
+								a_angle = acos(ax1);
 							}
 							else
 							{
-								a_angle = 0.0;
+								a1 = 0.0;
+								a2 = 1.0;
+								a3 = 0.0;
+								if (0 > ax1)
+								{
+									a_angle = PI;
+								}
+								else
+								{
+									a_angle = 0.0;
+								}
 							}
-						}
 
-						b1 = ax1;
-						b2 = ax2;
-						b3 = ax3;
-						/* To get the b angle we get the direction of the now rotated
-							 j (y-axis) vector (fortunately a1 is zero) and dot product that
-							 with bx, the unit axis 2 vector */
-						j1 = -sin(a_angle) * a3;
-						j2 = (1.0 - cos(a_angle)) * a2 * a2 + cos(a_angle);
-						j3 = (1.0 - cos(a_angle)) * a2 * a3;
-						b_angle = acos(j1*bx1 + j2*bx2 + j3*bx3);
-						if (0.0 != b_angle)
-						{
-							/* get c = j1 (x) bx and normalise it */
-							c1 = j2*bx3 - j3*bx2;
-							c2 = j3*bx1 - j1*bx3;
-							c3 = j1*bx2 - j2*bx1;
-							c_magnitude = sqrt(c1*c1 + c2*c2 + c3*c3);
-							c1 /= c_magnitude;
-							c2 /= c_magnitude;
-							c3 /= c_magnitude;
-							dp = b1*c1 + b2*c2 + b3*c3;
-							if (dp < 0.0)
+							b1 = ax1;
+							b2 = ax2;
+							b3 = ax3;
+							/* To get the b angle we get the direction of the now rotated
+								 j (y-axis) vector (fortunately a1 is zero) and dot product that
+								 with bx, the unit axis 2 vector */
+							j1 = -sin(a_angle) * a3;
+							j2 = (1.0 - cos(a_angle)) * a2 * a2 + cos(a_angle);
+							j3 = (1.0 - cos(a_angle)) * a2 * a3;
+							b_angle = acos(j1*bx1 + j2*bx2 + j3*bx3);
+							if (0.0 != b_angle)
 							{
-								/* handle the case of b_angle not in 0..PI */
-								b_angle = -b_angle;
+								/* get c = j1 (x) bx and normalise it */
+								c1 = j2*bx3 - j3*bx2;
+								c2 = j3*bx1 - j1*bx3;
+								c3 = j1*bx2 - j2*bx1;
+								c_magnitude = sqrt(c1*c1 + c2*c2 + c3*c3);
+								c1 /= c_magnitude;
+								c2 /= c_magnitude;
+								c3 /= c_magnitude;
+								dp = b1*c1 + b2*c2 + b3*c3;
+								if (dp < 0.0)
+								{
+									/* handle the case of b_angle not in 0..PI */
+									b_angle = -b_angle;
+								}
 							}
-						}
 
-						axis1++;
-						axis2++;
-						axis3++;
-						point++;
+							fprintf(vrml_file,"Transform {\n");
+							fprintf(vrml_file,"  translation %f %f %f\n", x,y,z);
+							/* if possible, try to avoid having two Transform nodes */
+							if ((0.0 != a_angle)&&(0.0 != b_angle))
+							{
+								/* b-rotation must wrap a-rotation to occur after it */
+								fprintf(vrml_file,"  rotation %f %f %f %f\n",b1,b2,b3,b_angle);
+								fprintf(vrml_file,"  children [\n");
+								fprintf(vrml_file,"    Transform {\n");
+							}
+							if (0.0 != a_angle)
+							{
+								fprintf(vrml_file,"    rotation %f %f %f %f\n",a1,a2,a3,
+									a_angle);
+							}
+							else if (0.0 != b_angle)
+							{
+								fprintf(vrml_file,"    rotation %f %f %f %f\n",b1,b2,b3,
+									b_angle);
+							}
+							fprintf(vrml_file,"    scale   %f %f %f\n", s1,s2,s3);					
+							fprintf(vrml_file,"    children [\n");
 
-						fprintf(vrml_file,"Transform {\n");
-						fprintf(vrml_file,"  translation %f %f %f\n", x,y,z);
-						/* if possible, try to avoid having two Transform nodes */
-						if ((0.0 != a_angle)&&(0.0 != b_angle))
-						{
-							/* b-rotation must wrap a-rotation to occur after it */
-							fprintf(vrml_file,"  rotation %f %f %f %f\n",b1,b2,b3,b_angle);
-							fprintf(vrml_file,"  children [\n");
-							fprintf(vrml_file,"    Transform {\n");
+							/* set the spectrum for this datum, if any */
+							if (material_copy)
+							{
+								MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)
+									(material_copy, material);
+								spectrum_render_value_on_material(spectrum,material_copy,
+									number_of_data_components,data+i*number_of_data_components);
+								/*???RC temporary until we have a struct Glyph */
+								if (mirror_mode)
+								{
+									write_graphics_object_vrml(vrml_file,glyph->nextobject,time,
+										(struct LIST(VRML_prototype) *)NULL,/*object_is_glyph*/1,
+										material_copy,
+										/*gt_object_already_defined*/0);
+								}
+								else
+								{
+									write_graphics_object_vrml(vrml_file,glyph,time,
+										(struct LIST(VRML_prototype) *)NULL,/*object_is_glyph*/1,
+										material_copy,
+										/*gt_object_already_defined*/0);
+								}
+							}
+							else
+							{
+								write_graphics_object_vrml(vrml_file,glyph,time,
+									vrml_prototype_list,/*object_is_glyph*/1,
+									material,
+									/*gt_object_already_defined*/0<i);
+							}
+							fprintf(vrml_file,"    ]\n");
+							if ((0.0 != a_angle)&&(0.0 != b_angle))
+							{
+								fprintf(vrml_file,"    } #Transform\n");
+								fprintf(vrml_file,"  ]\n");
+							}
+							fprintf(vrml_file,"} #Transform\n");
 						}
-						if (0.0 != a_angle)
-						{
-							fprintf(vrml_file,"    rotation %f %f %f %f\n",a1,a2,a3,
-								a_angle);
-						}
-						else if (0.0 != b_angle)
-						{
-							fprintf(vrml_file,"    rotation %f %f %f %f\n",b1,b2,b3,
-								b_angle);
-						}
-						fprintf(vrml_file,"    scale   %f %f %f\n", s1,s2,s3);					
-						fprintf(vrml_file,"    children [\n");
 					}
 
-					/* set the spectrum for this datum, if any */
-					if (material_copy)
-					{
-						MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)
-							(material_copy, material);
-						spectrum_render_value_on_material(spectrum,material_copy,
-							number_of_data_components,data+i*number_of_data_components);
-						write_graphics_object_vrml(vrml_file,glyph,time,
-							(struct LIST(VRML_prototype) *)NULL,/*object_is_glyph*/1,
-							material_copy,
-							/*gt_object_already_defined*/0);
-					}
-					else
-					{
-						write_graphics_object_vrml(vrml_file,glyph,time,
-							vrml_prototype_list,/*object_is_glyph*/1,
-							material,
-							/*gt_object_already_defined*/0<i);
-					}
-					fprintf(vrml_file,"    ]\n");
-					if ((0.0 != a_angle)&&(0.0 != b_angle))
-					{
-						fprintf(vrml_file,"    } #Transform\n");
-						fprintf(vrml_file,"  ]\n");
-					}
-					fprintf(vrml_file,"} #Transform\n");
+					point++;
+					axis1++;
+					axis2++;
+					axis3++;
+					scale++;
 				}
 				if ((!vrml_prototype_list)&&(0<number_of_skew_glyph_axes))
 				{
@@ -982,7 +1038,7 @@ points  given by the positions in <point_list> and oriented and scaled by
 					DESTROY(Graphical_material)(&material_copy);
 				}
 			}
-			if (label=labels)
+			if (label = labels)
 			{
 				point=point_list;
 				if (number_of_data_components && data && material && spectrum)
@@ -1063,12 +1119,12 @@ points  given by the positions in <point_list> and oriented and scaled by
 	{
 		if (0 == number_of_points)
 		{
-			return_code=1;
+			return_code = 1;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,"draw_glyph_set_vrml. Invalid argument(s)");
-			return_code=0;
+			return_code = 0;
 		}
 	}
 	LEAVE;
@@ -1909,6 +1965,7 @@ Only writes the geometry field.
 										interpolate_glyph_set->axis1_list,
 										interpolate_glyph_set->axis2_list,
 										interpolate_glyph_set->axis3_list,
+										interpolate_glyph_set->scale_list,
 										interpolate_glyph_set->glyph,
 										interpolate_glyph_set->labels,
 										interpolate_glyph_set->n_data_components,
@@ -1917,8 +1974,8 @@ Only writes the geometry field.
 										time,vrml_prototype_list);
 									DESTROY(GT_glyph_set)(&interpolate_glyph_set);
 								}
-								glyph_set=glyph_set->ptrnext;
-								glyph_set_2=glyph_set_2->ptrnext;
+								glyph_set = glyph_set->ptrnext;
+								glyph_set_2 = glyph_set_2->ptrnext;
 							}
 						}
 						else
@@ -1927,12 +1984,14 @@ Only writes the geometry field.
 							{
 								draw_glyph_set_vrml(vrml_file,
 									glyph_set->number_of_points,
-									glyph_set->point_list,glyph_set->axis1_list,
-									glyph_set->axis2_list,glyph_set->axis3_list,glyph_set->glyph,
-									glyph_set->labels,glyph_set->n_data_components,
-									glyph_set->data,object->default_material,object->spectrum,
-									time,vrml_prototype_list);
-								glyph_set=glyph_set->ptrnext;
+									glyph_set->point_list, glyph_set->axis1_list,
+									glyph_set->axis2_list, glyph_set->axis3_list,
+									glyph_set->scale_list, glyph_set->glyph,
+									glyph_set->labels,
+									glyph_set->n_data_components, glyph_set->data,
+									object->default_material, object->spectrum,
+									time, vrml_prototype_list);
+								glyph_set = glyph_set->ptrnext;
 							}
 						}
 						if (group)

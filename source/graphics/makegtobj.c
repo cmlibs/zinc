@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : makegtobj.c
 
-LAST MODIFIED : 7 July 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Call graphics routines in the API.
@@ -22,7 +22,7 @@ Call graphics routines in the API.
 
 int makegtobject(gtObject *object,float time,int draw_selected)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2000
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Convert graphical object into API object.
@@ -148,6 +148,7 @@ un-selected graphics are drawn.
 										interpolate_glyph_set->axis1_list,
 										interpolate_glyph_set->axis2_list,
 										interpolate_glyph_set->axis3_list,
+										interpolate_glyph_set->scale_list,
 										interpolate_glyph_set->glyph,
 										interpolate_glyph_set->labels,
 										interpolate_glyph_set->n_data_components,
@@ -175,12 +176,13 @@ un-selected graphics are drawn.
 								name_selected=GT_object_is_graphic_selected(object,
 									glyph_set->object_name,&selected_name_ranges);
 								draw_glyphsetGL(glyph_set->number_of_points,
-									glyph_set->point_list,glyph_set->axis1_list,
-									glyph_set->axis2_list,glyph_set->axis3_list,glyph_set->glyph,
-									glyph_set->labels,glyph_set->n_data_components,
-									glyph_set->data,glyph_set->names,
-									material,spectrum,
-									draw_selected,name_selected,selected_name_ranges);
+									glyph_set->point_list, glyph_set->axis1_list,
+									glyph_set->axis2_list, glyph_set->axis3_list,
+									glyph_set->scale_list, glyph_set->glyph,
+									glyph_set->labels, glyph_set->n_data_components,
+									glyph_set->data, glyph_set->names,
+									material, spectrum,
+									draw_selected, name_selected, selected_name_ranges);
 								glyph_set=glyph_set->ptrnext;
 							}
 						}
