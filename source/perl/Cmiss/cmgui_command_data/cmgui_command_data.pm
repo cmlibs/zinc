@@ -53,8 +53,11 @@ sub AUTOLOAD {
 }
 
 use Cmiss;
-require Cmiss::Perl_cmiss;
-Cmiss::require_library('cmgui');
+if (!defined $Cmiss::cmgui_command_data)
+{
+   require Cmiss::Perl_cmiss;
+   Cmiss::require_library('cmgui');
+}
 
 package Cmiss::cmgui_command_data;
 
