@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : view_control.c
 
-LAST MODIFIED : 6 January 1998
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Interfaces the view widget to the 3-D graphics window.  At present it creates a
@@ -35,16 +35,16 @@ static Matrix idmat =
 Module functions
 ----------------
 */
-static void change_view(Widget widget,void *user_data,void *call_data)
+
+static void change_view(Widget widget, void *user_data, void *call_data)
 /*******************************************************************************
-LAST MODIFIED : 21 January 1995
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Receives an update from the view widget, and so changes the location and
 direction of the viewer.
 ==============================================================================*/
 {
-	struct View_control *view_control;
 	struct Camera_data *camera_data;
 	struct Dof3_data dof3_data;
 	int i;
@@ -56,22 +56,14 @@ direction of the viewer.
 #endif
 
 	ENTER(change_view);
-	/* check arguments */
-	if ((view_control=(struct View_control *)user_data)&&
-		(camera_data=(struct Camera_data *)call_data))
+	USE_PARAMETER(widget);
+	USE_PARAMETER(user_data);
+	if (camera_data=(struct Camera_data *)call_data)
 	{
 		/*???GH do we really need to keep the camera position in two coords? */
 		(*(conversion_position[CONV_RECTANGULAR_CARTESIAN][CONV_SPHERICAL_POLAR]))
 			(&(camera_data->position),&dof3_data);
 		/* calculate absolute position of viewer for reference if needed */
-#if defined (OLD_GFX_WINDOW)
-		view_control->graphics_window->drawing->eyex=camera_data->position.data[0];
-		view_control->graphics_window->drawing->eyey=camera_data->position.data[1];
-		view_control->graphics_window->drawing->eyez=camera_data->position.data[2];
-		view_control->graphics_window->drawing->r=dof3_data.data[0];
-		view_control->graphics_window->drawing->theta=dof3_data.data[1]*PI_180;
-		view_control->graphics_window->drawing->phi=dof3_data.data[2]*PI_180;
-#endif /* defined (OLD_GFX_WINDOW) */
 		for (i=0;i<3;i++)
 		{
 #if defined (GL_API)
@@ -86,7 +78,6 @@ direction of the viewer.
 #if defined (GL_API)
 		mmode(MVIEWING);
 		loadmatrix(idmat);
-		getmatrix(view_control->graphics_window->drawing->viewpos_matrix);
 		/* these commands are in the reverse order to the actual
 			multiplication due to GL pre-multiplying.  These take
 			euler angles and convert to viewing direction and
@@ -103,10 +94,6 @@ direction of the viewer.
 #if defined (OPENGL_API)
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
-#if defined (OLD_GFX_WINDOW)
-		wrapperReadMatrix(GL_MODELVIEW_MATRIX,
-			&(view_control->graphics_window->drawing->viewpos_matrix));
-#endif /* defined (OLD_GFX_WINDOW) */
 		/* these commands are in the reverse order to the actual
 			multiplication due to GL pre-multiplying.  These take
 			euler angles and convert to viewing direction and
@@ -120,17 +107,6 @@ direction of the viewer.
 		glTranslated(-(camera_data->position.data[0]),
 			-(camera_data->position.data[1]),-(camera_data->position.data[2]));
 #endif
-		/* now store this and update the view */
-#if defined (OLD_GFX_WINDOW)
-#if defined (GL_API)
-		getmatrix(view_control->graphics_window->drawing->viewing_matrix);
-#endif
-#if defined (OPENGL_API)
-		wrapperReadMatrix(GL_MODELVIEW_MATRIX,
-			&(view_control->graphics_window->drawing->viewing_matrix));
-#endif
-		drawing_changed(view_control->graphics_window->drawing);
-#endif /* defined (OLD_GFX_WINDOW) */
 	}
 	else
 	{

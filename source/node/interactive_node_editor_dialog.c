@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : interactive_node_editor_dialog.c
 
-LAST MODIFIED : 13 May 1997
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 This module creates a free interactive_node_editor_dialog input device, using
@@ -56,7 +56,7 @@ Tells CMGUI about the current values. Returns a pointer to the material.
 } /* in_editor_dialog_update */
 
 static void in_editor_dialog_update_selection(Widget select_widget,
-	void *user_data,void *temp_nod)
+	void *user_data,void *temp_node_void)
 /*******************************************************************************
 LAST MODIFIED : 26 September 1995
 
@@ -66,10 +66,12 @@ Finds which material is selected, and informs the editor widget.
 ???GMH. The new FE_node may be NULL.  Should really check userdata.
 ==============================================================================*/
 {
-	struct Interactive_node_editor_dialog_struct *temp_interactive_node_editor_dialog=user_data;
-	struct FE_node *temp_node=temp_nod;
+	struct Interactive_node_editor_dialog_struct
+		*temp_interactive_node_editor_dialog = user_data;
+	struct FE_node *temp_node = temp_node_void;
 
 	ENTER(in_editor_dialog_update_selection);
+	USE_PARAMETER(select_widget);
 	if(temp_interactive_node_editor_dialog)
 	{
 		temp_interactive_node_editor_dialog->current_value=temp_node;
@@ -85,7 +87,7 @@ Finds which material is selected, and informs the editor widget.
 } /* in_editor_dialog_update_selection */
 
 static void in_editor_dialog_update_object(Widget select_widget,
-	void *user_data,void *temp_nod)
+	void *user_data, void *temp_node_void)
 /*******************************************************************************
 LAST MODIFIED : 26 September 1995
 
@@ -93,14 +95,17 @@ DESCRIPTION :
 Executes a command when the node is changed.
 ==============================================================================*/
 {
-	struct Interactive_node_editor_dialog_struct *temp_interactive_node_editor_dialog=
-		user_data;
+	struct Interactive_node_editor_dialog_struct
+		*temp_interactive_node_editor_dialog = user_data;
 
 	ENTER(in_editor_dialog_update_object);
+	USE_PARAMETER(select_widget);
+	USE_PARAMETER(temp_node_void);
 	if(temp_interactive_node_editor_dialog)
 	{
 		/* no matter what, we have to do an update */
-		interactive_node_editor_modify_global(temp_interactive_node_editor_dialog->editor_widget);
+		interactive_node_editor_modify_global(
+			temp_interactive_node_editor_dialog->editor_widget);
 		if(temp_interactive_node_editor_dialog->command)
 		{
 		  Execute_command_execute_string(
@@ -129,6 +134,7 @@ Finds the id of the buttons on the interactive_node_editor_dialog widget.
 	struct Interactive_node_editor_dialog_struct *temp_interactive_node_editor_dialog;
 
 	ENTER(in_editor_dialog_identify_button);
+	USE_PARAMETER(reason);
 	/* find out which interactive_node_editor_dialog widget we are in */
 	XtVaGetValues(w,XmNuserData,&temp_interactive_node_editor_dialog,NULL);
 	switch (button_num)
@@ -170,6 +176,8 @@ Callback for the interactive_node_editor_dialog dialog - tidies up all details -
 	struct Interactive_node_editor_dialog_struct *temp_interactive_node_editor_dialog;
 
 	ENTER(in_editor_dialog_destroy_CB);
+	USE_PARAMETER(reason);
+	USE_PARAMETER(tag);
 	/* Get the pointer to the data for the interactive_node_editor_dialog widget */
 	XtVaGetValues(w,XmNuserData,&temp_interactive_node_editor_dialog,NULL);
 	/* deaccess the interactive_node_editor_dialog */
@@ -195,6 +203,8 @@ object.
 	struct Interactive_node_editor_dialog_struct *temp_interactive_node_editor_dialog;
 
 	ENTER(in_editor_dialog_comfile_text_CB);
+	USE_PARAMETER(reason);
+	USE_PARAMETER(button_num);
 	XtVaGetValues(w,XmNuserData,&temp_interactive_node_editor_dialog,XmNvalue,&new_name,NULL);
 	if (temp_interactive_node_editor_dialog)
 	{
@@ -538,7 +548,6 @@ If <in_editor_dialog_widget> is not NULL, then get the data item from
 	void *return_code;
 	struct Interactive_node_editor_dialog_struct *temp_interactive_node_editor_dialog;
 	static struct Callback_data dat_callback;
-	static Widget dat_widget;
 	Widget *child_list;
 
 	ENTER(in_editor_dialog_get_data);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : volume_texture_editor_dialog.c
 
-LAST MODIFIED : 29 April 1998
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Functions prototypes for the create finite elements dialog for the volume
@@ -32,7 +32,7 @@ static MrmHierarchy volume_texture_editor_dialog_hierarchy;
 Module functions
 ----------------
 */
-static void identify_coordinate_field_toggl(Widget *widget_id,
+static void identify_coordinate_field_toggl(Widget *widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 20 January 1998
@@ -44,10 +44,11 @@ Sets the id of the coordinate field toggle in the create finite elements dialog.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(identify_coordinate_field_toggl);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
-		dialog->coordinate_field_toggle= *widget_id;
+		dialog->coordinate_field_toggle= *widget;
 	}
 	else
 	{
@@ -57,7 +58,7 @@ Sets the id of the coordinate field toggle in the create finite elements dialog.
 	LEAVE;
 } /* identify_coordinate_field_toggl */
 
-static void identify_undeformed_field_toggl(Widget *widget_id,
+static void identify_undeformed_field_toggl(Widget *widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 20 January 1998
@@ -69,10 +70,11 @@ Sets the id of the undeformed field toggle in the create finite elements dialog.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(identify_undeformed_field_toggl);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
-		dialog->undeformed_field_toggle= *widget_id;
+		dialog->undeformed_field_toggle= *widget;
 	}
 	else
 	{
@@ -82,7 +84,7 @@ Sets the id of the undeformed field toggle in the create finite elements dialog.
 	LEAVE;
 } /* identify_undeformed_field_toggl */
 
-static void identify_fibre_field_toggle(Widget *widget_id,
+static void identify_fibre_field_toggle(Widget *widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 20 January 1998
@@ -94,10 +96,11 @@ Sets the id of the coordinate field toggle in the create finite elements dialog.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(identify_fibre_field_toggle);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
-		dialog->fibre_field_toggle= *widget_id;
+		dialog->fibre_field_toggle= *widget;
 	}
 	else
 	{
@@ -107,7 +110,7 @@ Sets the id of the coordinate field toggle in the create finite elements dialog.
 	LEAVE;
 } /* identify_fibre_field_toggle */
 
-static void identify_x_interpolation_option(Widget *widget_id,
+static void identify_x_interpolation_option(Widget *widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 27 November 1996
@@ -120,10 +123,11 @@ dialog.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(identify_x_interpolation_option);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
-		dialog->x_interpolation_option_menu= *widget_id;
+		dialog->x_interpolation_option_menu= *widget;
 	}
 	else
 	{
@@ -133,7 +137,7 @@ dialog.
 	LEAVE;
 } /* identify_x_interpolation_option */
 
-static void identify_x_int_linear_lagrange(Widget *widget_id,
+static void identify_x_int_linear_lagrange(Widget *widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 27 November 1996
@@ -146,10 +150,11 @@ create finite elements dialog.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(identify_x_int_linear_lagrange);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
-		(dialog->x_interpolation_option).linear_lagrange= *widget_id;
+		(dialog->x_interpolation_option).linear_lagrange= *widget;
 	}
 	else
 	{
@@ -159,7 +164,7 @@ create finite elements dialog.
 	LEAVE;
 } /* identify_x_int_linear_lagrange */
 
-static void identify_x_int_cubic_hermite(Widget *widget_id,
+static void identify_x_int_cubic_hermite(Widget *widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 27 November 1996
@@ -172,10 +177,11 @@ create finite elements dialog.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(identify_x_int_cubic_hermite);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
-		(dialog->x_interpolation_option).cubic_hermite= *widget_id;
+		(dialog->x_interpolation_option).cubic_hermite= *widget;
 	}
 	else
 	{
@@ -185,7 +191,7 @@ create finite elements dialog.
 	LEAVE;
 } /* identify_x_int_cubic_hermite */
 
-static void identify_y_interpolation_option(Widget *widget_id,
+static void identify_y_interpolation_option(Widget *widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 27 November 1996
@@ -198,10 +204,11 @@ dialog.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(identify_y_interpolation_option);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
-		dialog->y_interpolation_option_menu= *widget_id;
+		dialog->y_interpolation_option_menu= *widget;
 	}
 	else
 	{
@@ -211,7 +218,7 @@ dialog.
 	LEAVE;
 } /* identify_y_interpolation_option */
 
-static void identify_y_int_linear_lagrange(Widget *widget_id,
+static void identify_y_int_linear_lagrange(Widget *widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 27 November 1996
@@ -224,10 +231,11 @@ create finite elements dialog.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(identify_y_int_linear_lagrange);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
-		(dialog->y_interpolation_option).linear_lagrange= *widget_id;
+		(dialog->y_interpolation_option).linear_lagrange= *widget;
 	}
 	else
 	{
@@ -237,7 +245,7 @@ create finite elements dialog.
 	LEAVE;
 } /* identify_y_int_linear_lagrange */
 
-static void identify_y_int_cubic_hermite(Widget *widget_id,
+static void identify_y_int_cubic_hermite(Widget *widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 27 November 1996
@@ -250,10 +258,11 @@ create finite elements dialog.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(identify_y_int_cubic_hermite);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
-		(dialog->y_interpolation_option).cubic_hermite= *widget_id;
+		(dialog->y_interpolation_option).cubic_hermite= *widget;
 	}
 	else
 	{
@@ -263,7 +272,7 @@ create finite elements dialog.
 	LEAVE;
 } /* identify_y_int_cubic_hermite */
 
-static void identify_z_interpolation_option(Widget *widget_id,
+static void identify_z_interpolation_option(Widget *widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 27 November 1996
@@ -276,10 +285,11 @@ dialog.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(identify_z_interpolation_option);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
-		dialog->z_interpolation_option_menu= *widget_id;
+		dialog->z_interpolation_option_menu= *widget;
 	}
 	else
 	{
@@ -289,7 +299,7 @@ dialog.
 	LEAVE;
 } /* identify_z_interpolation_option */
 
-static void identify_z_int_linear_lagrange(Widget *widget_id,
+static void identify_z_int_linear_lagrange(Widget *widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 27 November 1996
@@ -302,10 +312,11 @@ create finite elements dialog.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(identify_z_int_linear_lagrange);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
-		(dialog->z_interpolation_option).linear_lagrange= *widget_id;
+		(dialog->z_interpolation_option).linear_lagrange= *widget;
 	}
 	else
 	{
@@ -315,7 +326,7 @@ create finite elements dialog.
 	LEAVE;
 } /* identify_z_int_linear_lagrange */
 
-static void identify_z_int_cubic_hermite(Widget *widget_id,
+static void identify_z_int_cubic_hermite(Widget *widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 27 November 1996
@@ -328,10 +339,11 @@ create finite elements dialog.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(identify_z_int_cubic_hermite);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
-		(dialog->z_interpolation_option).cubic_hermite= *widget_id;
+		(dialog->z_interpolation_option).cubic_hermite= *widget;
 	}
 	else
 	{
@@ -341,7 +353,7 @@ create finite elements dialog.
 	LEAVE;
 } /* identify_z_int_cubic_hermite */
 
-static void identify_starting_node_number(Widget *widget_id,
+static void identify_starting_node_number(Widget *widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 28 November 1996
@@ -354,10 +366,11 @@ dialog.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(identify_starting_node_number);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
-		dialog->starting_node_number_text_field= *widget_id;
+		dialog->starting_node_number_text_field= *widget;
 	}
 	else
 	{
@@ -367,7 +380,7 @@ dialog.
 	LEAVE;
 } /* identify_starting_node_number */
 
-static void identify_starting_line_number(Widget *widget_id,
+static void identify_starting_line_number(Widget *widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 25 November 1996
@@ -380,10 +393,11 @@ dialog.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(identify_starting_line_number);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
-		dialog->starting_line_number_text_field= *widget_id;
+		dialog->starting_line_number_text_field= *widget;
 	}
 	else
 	{
@@ -393,7 +407,7 @@ dialog.
 	LEAVE;
 } /* identify_starting_line_number */
 
-static void identify_starting_face_number(Widget *widget_id,
+static void identify_starting_face_number(Widget *widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 27 November 1996
@@ -406,10 +420,11 @@ dialog.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(identify_starting_face_number);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
-		dialog->starting_face_number_text_field= *widget_id;
+		dialog->starting_face_number_text_field= *widget;
 	}
 	else
 	{
@@ -419,7 +434,7 @@ dialog.
 	LEAVE;
 } /* identify_starting_face_number */
 
-static void identify_starting_element_numbe(Widget *widget_id,
+static void identify_starting_element_numbe(Widget *widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 27 November 1996
@@ -432,10 +447,11 @@ elements dialog.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(identify_starting_element_numbe);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
-		dialog->starting_element_number_text_field= *widget_id;
+		dialog->starting_element_number_text_field= *widget;
 	}
 	else
 	{
@@ -445,7 +461,7 @@ elements dialog.
 	LEAVE;
 } /* identify_starting_element_numbe */
 
-static void identify_file_group_name_text(Widget *widget_id,
+static void identify_file_group_name_text(Widget *widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 27 November 1996
@@ -458,10 +474,11 @@ dialog.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(identify_file_group_name_text);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
-		dialog->file_group_name_text_field= *widget_id;
+		dialog->file_group_name_text_field= *widget;
 	}
 	else
 	{
@@ -471,7 +488,7 @@ dialog.
 	LEAVE;
 } /* identify_file_group_name_text */
 
-static void identify_x_output_elements_text(Widget *widget_id,
+static void identify_x_output_elements_text(Widget *widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 28 April 1998
@@ -484,10 +501,11 @@ dialog.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(identify_x_output_elements_text);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
-		dialog->x_output_elements_text_field= *widget_id;
+		dialog->x_output_elements_text_field= *widget;
 	}
 	else
 	{
@@ -497,7 +515,7 @@ dialog.
 	LEAVE;
 } /* identify_x_output_elements_text */
 
-static void identify_y_output_elements_text(Widget *widget_id,
+static void identify_y_output_elements_text(Widget *widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 28 April 1998
@@ -510,10 +528,11 @@ dialog.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(identify_y_output_elements_text);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
-		dialog->y_output_elements_text_field= *widget_id;
+		dialog->y_output_elements_text_field= *widget;
 	}
 	else
 	{
@@ -523,7 +542,7 @@ dialog.
 	LEAVE;
 } /* identify_y_output_elements_text */
 
-static void identify_z_output_elements_text(Widget *widget_id,
+static void identify_z_output_elements_text(Widget *widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 28 April 1998
@@ -536,10 +555,11 @@ dialog.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(identify_z_output_elements_text);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
-		dialog->z_output_elements_text_field= *widget_id;
+		dialog->z_output_elements_text_field= *widget;
 	}
 	else
 	{
@@ -549,7 +569,7 @@ dialog.
 	LEAVE;
 } /* identify_z_output_elements_text */
 
-static void identify_ok_button(Widget *widget_id,
+static void identify_ok_button(Widget *widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 27 November 1996
@@ -561,10 +581,11 @@ Sets the id of the ok button in the create finite elements dialog.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(identify_ok_button);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
-		dialog->ok_button= *widget_id;
+		dialog->ok_button= *widget;
 	}
 	else
 	{
@@ -574,7 +595,7 @@ Sets the id of the ok button in the create finite elements dialog.
 	LEAVE;
 } /* identify_ok_button */
 
-static void identify_cancel_button(Widget *widget_id,
+static void identify_cancel_button(Widget *widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 27 November 1996
@@ -586,10 +607,11 @@ Sets the id of the cancel button in the create finite elements dialog.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(identify_cancel_button);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
-		dialog->cancel_button= *widget_id;
+		dialog->cancel_button= *widget;
 	}
 	else
 	{
@@ -611,6 +633,8 @@ Tidys up when the user destroys the map dialog box.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(destroy_create_finite_elements_dialog);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
@@ -628,7 +652,7 @@ Tidys up when the user destroys the map dialog box.
 	LEAVE;
 } /* destroy_create_finite_elements_dialog */
 
-static void close_create_finite_elements_di(Widget widget_id,
+static void close_create_finite_elements_di(Widget widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 27 November 1996
@@ -640,6 +664,8 @@ Closes the dialog window.
 	struct Create_finite_elements_dialog *dialog;
 
 	ENTER(close_create_finite_elements_di);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 	if (dialog=
 		(struct Create_finite_elements_dialog *)create_finite_elements_dialog)
 	{
@@ -653,7 +679,7 @@ Closes the dialog window.
 	LEAVE;
 } /* close_create_finite_elements_di */
 
-static void write_finite_elements(Widget widget_id,
+static void write_finite_elements(Widget widget,
 	XtPointer create_finite_elements_dialog,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 29 April 1998
@@ -668,7 +694,7 @@ Writes a finite element representation of the volume texture.
 		z_max,z_min;
 	enum FE_basis_type x_interpolation,y_interpolation,z_interpolation;
 	FILE *out_file;
-	int basis_name_length,derivative_value,element_dimension,face_offset,i,index,
+	int derivative_value,element_dimension,face_offset,i,index,
 		j,k,l,line_offset,m,number,number_in_x,number_in_y,number_in_z,
 		number_of_fields,number_of_values,starting_element_number,
 		starting_face_number,starting_line_number,starting_node_number,*table,
@@ -5178,7 +5204,7 @@ Writes a finite element representation of the volume texture.
 				"write_finite_elements.  Missing volume_texture");
 		}
 		/* close the dialog */
-		close_create_finite_elements_di(widget_id,create_finite_elements_dialog,
+		close_create_finite_elements_di(widget,create_finite_elements_dialog,
 			call_data);
 	}
 	else

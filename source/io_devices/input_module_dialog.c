@@ -1,14 +1,12 @@
 /*******************************************************************************
 FILE : input_module_dialog.c
 
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Brings up a window which holds a data_grabber.  Allows the user to change what
 data is accepted - pos,tangent,normal.
 ==============================================================================*/
-
-
 #include <Xm/List.h>
 #include <Xm/ToggleBG.h>
 #include <math.h>
@@ -743,6 +741,7 @@ Called when material is changed.
 	LEAVE;
 } /* input_module_dialog_update_material */
 
+#if defined (OLD_CODE)
 static void input_module_dialog_dof3_update(Widget dof3_widget,
 	void *user_data, void *new_dof3_data)
 /*******************************************************************************
@@ -774,6 +773,7 @@ Receives a pointer to a dof3_struct, and the new data for it.
 
 	LEAVE;
 } /* input_module_dialog_dof3_update */
+#endif /* defined (OLD_CODE) */
 
 static void input_module_dialog_dof3_update_position(Widget dof3_widget,
 	void *user_data, void *new_dof3_data)
@@ -1157,6 +1157,7 @@ Creates a new calibration dialog.  If one exists, bring it up to the front.
 	LEAVE;
 } /* input_module_bring_up_calib */
 
+#if defined (OLD_CODE)
 static void input_module_get_calib_data(struct Input_module_dialog_struct *input_module_dialog)
 /*******************************************************************************
 LAST MODIFIED : 27 February 1998
@@ -1179,6 +1180,7 @@ Initialises the calibration values.
 	input_module_dialog->normal.offset[0]=1.0;
 	LEAVE;
 } /* input_module_get_calib_data */
+#endif /* defined (OLD_CODE) */
 
 static double input_module_calib_get_error(
 	struct Input_module_dialog_struct *input_module_dialog, int component,

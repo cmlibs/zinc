@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : renderbinarywavefront.c
 
-LAST MODIFIED : 19 October 1998
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Renders gtObjects to Wavefront OBJ file
@@ -93,7 +93,7 @@ Writes Wavefront object file that defines the material
 	return (return_code);
 } /* activate_material_wavefront */
 
-
+#if defined (OLD_CODE)
 static int spectrum_start_renderwavefront(struct Binary_wavefront_data *data, struct Spectrum *spectrum, struct Graphical_material *material)
 /*******************************************************************************
 LAST MODIFIED : 1 October 1997
@@ -105,6 +105,8 @@ Sets WAVEFRONT file for rendering values on the current material.
 	int return_code;
 	ENTER(spectrum_start_renderwavefront);
 
+	USE_PARAMETER(data);
+	USE_PARAMETER(material);
 	if ( spectrum )
 	{
 		return_code = 1;
@@ -131,23 +133,25 @@ accordance with the spectrum.
 ==============================================================================*/
 {
 	int return_code;
-	float red, green, blue, alpha, minimum_alpha, maximum_alpha;
 
 	ENTER(spectrum_renderwavefront_value);
-
+	USE_PARAMETER(data);
+	USE_PARAMETER(data_value);
 	if ( spectrum && material )
 	{
+		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 				"spectrum_renderwavefront_value.  Invalid arguments given.");
-		return_code=0;
+		return_code = 0;
 	}
 
 	LEAVE;
 	return (return_code);
 } /* spectrum_renderwavefront_value */
+#endif /* defined (OLD_CODE) */
 
 #ifdef MERGE_TIMES
 static int spectrum_renderwavefront_merge(struct Binary_wavefront_data *data, struct Spectrum *spectrum,
@@ -204,6 +208,7 @@ in accordance with the spectrum.
 } /* spectrum_renderwavefront_merge */
 #endif
 
+#if defined (OLD_CODE)
 static int spectrum_end_renderwavefront(struct Binary_wavefront_data *data, struct Spectrum *spectrum)
 /*******************************************************************************
 LAST MODIFIED : 1 October 1997
@@ -213,8 +218,9 @@ Resets the graphics state after rendering values on current material.
 ==============================================================================*/
 {
 	int return_code;
-	ENTER(spectrum_end_renderGL);
 
+	ENTER(spectrum_end_renderGL);
+	USE_PARAMETER(data);
 	if ( spectrum )
 	{
 		return_code = 1;
@@ -229,6 +235,7 @@ Resets the graphics state after rendering values on current material.
 	LEAVE;
 	return (return_code);
 } /* spectrum_end_renderwavefront */
+#endif /* defined (OLD_CODE) */
 
 static int draw_surface_wavefront(struct Binary_wavefront_data *data, Triple *surfpts,
 	Triple *normalpts, Triple *texturepts,
@@ -239,13 +246,13 @@ LAST MODIFIED : 1 October 1997
 DESCRIPTION :
 ==============================================================================*/
 {
-	float blue,green,red,t, *u_texture_index, *v_texture_index;
+	float *u_texture_index, *v_texture_index;
 	int i,j,nptsij,return_code, *connection_index, *polygon_index, *texture_index;
 	int index;
 	struct vertex *point_index;
 
 	ENTER(draw_surface_texmapwavefront);
-	/* checking arguments */
+	USE_PARAMETER(normalpts);
 	if (surfpts&&(1<npts1)&&(1<npts2))
 	{
 		activate_material_wavefront( data, material );
@@ -361,15 +368,19 @@ LAST MODIFIED : 2 October 1997
 DESCRIPTION :
 ==============================================================================*/
 {
-	float blue,green,red,vt[3][3], *u_texture_index, *v_texture_index;
+	float vt[3][3], *u_texture_index, *v_texture_index;
 	int i,ii,j,k,return_code, *connection_index, *polygon_index, *texture_index;
-	struct Graphical_material *last_material,*next_material, *obj_material;
+	struct Graphical_material *last_material,*next_material;
 	struct vertex *point_index;
 
 	ENTER(draw_voltex_wavefront);
+	USE_PARAMETER(full_write);
+	USE_PARAMETER(iso_poly_cop);
+	USE_PARAMETER(n_data_components);
+	USE_PARAMETER(default_material);
+	USE_PARAMETER(spectrum);
 	/* default return code */
 	return_code=0;
-	/* checking arguments */
 	if (triangle_list&&vertex_list&&iso_poly_material&&iso_env_map&&
 		texturemap_coord&&texturemap_index&&(0<n_rep)&&(0<n_iso_polys))
 	{
@@ -403,7 +414,6 @@ DESCRIPTION :
 						if (last_material!=(next_material=iso_env_map[i*3]->
 							face_material[texturemap_index[i*3]]))
 						{
-							obj_material=next_material;
 							last_material=next_material;
 						}
 					}
@@ -412,7 +422,6 @@ DESCRIPTION :
 				{
 					if (last_material!=(next_material=iso_poly_material[i*3]))
 					{
-						obj_material=next_material;
 						last_material=next_material;
 					}
 				}
@@ -430,7 +439,6 @@ DESCRIPTION :
 						if (last_material!=(next_material=iso_env_map[i*3+2]->
 							face_material[texturemap_index[i*3+2]]))
 						{
-							obj_material=next_material;
 							last_material=next_material;
 						}
 					}
@@ -439,7 +447,6 @@ DESCRIPTION :
 				{
 					if (last_material!=(next_material=iso_poly_material[i*3+2]))
 					{
-						obj_material=next_material;
 						last_material=next_material;
 					}
 				}
@@ -457,7 +464,6 @@ DESCRIPTION :
 						if (last_material!=(next_material=iso_env_map[i*3+1]->
 							face_material[texturemap_index[i*3+1]]))
 						{
-							obj_material = next_material;
 							last_material=next_material;
 						}
 					}
@@ -466,7 +472,6 @@ DESCRIPTION :
 				{
 					if (last_material!=(next_material=iso_poly_material[i*3+1]))
 					{
-						obj_material=next_material;
 						last_material=next_material;
 					}
 				}
@@ -557,20 +562,19 @@ Convert graphical object into Wavefront object file.
 
 ==============================================================================*/
 {
-	float alpha,proportion,*times;
-	gtObject *next_object;
-	int i,itime,j,k,return_code;
-	struct GT_element_group *gt_element_group;
-	struct GT_nurbs *nurbs;
-	struct GT_point *point;
+	float proportion, *times;
+	int itime, return_code;
 	struct GT_pointset *interpolate_point_set,*point_set,*point_set_2;
 	struct GT_polyline *interpolate_line,*line,*line_2;
 	struct GT_surface *interpolate_surface,*surface,*surface_2;
-	struct GT_userdef *userdef;
 	struct GT_voltex *voltex;
-	ENTER(make_binary_wavefront);
+#if defined (OLD_CODE)
+	struct GT_point *point;
+	struct GT_nurbs *nurbs;
+	struct GT_userdef *userdef;
+#endif /* defined (OLD_CODE) */
 
-	/* check arguments */
+	ENTER(make_binary_wavefront);
 	return_code = 1;
 	if (object)
 	{
@@ -618,7 +622,7 @@ Convert graphical object into Wavefront object file.
 			{
 				case g_POINT:
 				{
-					if (point=(object->gu.gt_point)[itime])
+					if (/*point=*/(object->gu.gt_point)[itime])
 					{
 /* 						drawpointGL(point->position,point->text,point->marker_type, */
 /* 							point->marker_size,point->data_type,point->data); */
@@ -1039,7 +1043,7 @@ frame, otherwise the <frame_number> specifies that the frame that the current
 data is for (1 to number_of_frames), possibly overwriting old data.  
 ==============================================================================*/
 {
-	char *extension, buffer[100], *scene_object_name;
+	char buffer[100], *scene_object_name;
 	float object_time;
 	FILE *binary_wavefront_file;
 	int i, frame_one, name_length, number_of_files, number_of_vertices, return_code,

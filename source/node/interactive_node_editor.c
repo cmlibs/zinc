@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : interactive_node_editor.c
 
-LAST MODIFIED : 30 May 2001
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 This module creates a free interactive_node_editor input device, using two dof3,
@@ -306,6 +306,7 @@ Tells CMGUI about the current values.
 	struct Dof3_data new_dof3,node_position;
 
 	ENTER(interactive_node_editor_update_coord);
+	USE_PARAMETER(coord_widget);
 	temp_interactive_node_editor->current_coordinate = coordinate;
 	/* get the position of the node */
 	FE_node_get_position_cartesian(temp_interactive_node_editor->current_value,
@@ -322,8 +323,7 @@ Tells CMGUI about the current values.
 } /* interactive_node_editor_update_coord */
 
 static void interactive_node_editor_update_position(Widget position_widget,
-	void *user_data,
-	void *temp_dof3)
+	void *user_data, void *temp_dof3)
 /*******************************************************************************
 LAST MODIFIED : 2 November 1998
 
@@ -335,6 +335,7 @@ Receives an update from the dof3 position widget.
 	struct Dof3_data *temp_position = temp_dof3,node_position;
 
 	ENTER(interactive_node_editor_update_position);
+	USE_PARAMETER(position_widget);
 	/* put the information into the current position */
 	get_global_position(temp_position,
 		temp_interactive_node_editor->current_coordinate,
@@ -346,7 +347,8 @@ Receives an update from the dof3 position widget.
 	LEAVE;
 } /* interactive_node_editor_update_position */
 
-static void interactive_node_editor_identify_button(Widget w,int button_num,unsigned long *reason)
+static void interactive_node_editor_identify_button(Widget w, int button_num,
+	unsigned long *reason)
 /*******************************************************************************
 LAST MODIFIED : 4 November 1995
 
@@ -357,6 +359,7 @@ Finds the id of the buttons on the interactive_node_editor widget.
 	struct Interactive_node_editor_struct *temp_interactive_node_editor;
 
 	ENTER(interactive_node_editor_identify_button);
+	USE_PARAMETER(reason);
 	/* find out which interactive_node_editor widget we are in */
 	XtVaGetValues(w,XmNuserData,&temp_interactive_node_editor,NULL);
 	switch (button_num)
@@ -394,6 +397,8 @@ Callback for the interactive_node_editorment dialog - tidies up all details - me
 	struct Interactive_node_editor_struct *temp_interactive_node_editor;
 
 	ENTER(interactive_node_editor_destroy_CB);
+	USE_PARAMETER(tag);
+	USE_PARAMETER(reason);
 	if (widget)
 	{
 		/* Get the pointer to the data for the interactive_node_editor widget */
@@ -769,7 +774,6 @@ Changes a data item of the interactive_node_editor widget.
 	void *return_code;
 	struct Interactive_node_editor_struct *temp_interactive_node_editor;
 	static struct Callback_data dat_callback;
-	static Widget dat_widget;
 
 	ENTER(interactive_node_editor_get_data);
 	/* Get the pointer to the data for the interactive_node_editor dialog */

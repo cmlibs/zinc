@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 11 November 2001
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 
@@ -7669,13 +7669,12 @@ static void open_Pacing_window_callback(
 #endif /* defined (WINDOWS) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 15 October 2001
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Called when the pacing button is pressed.
 ==============================================================================*/
 {
-	struct Pacing_window *pacing_window;
 	struct Page_window *page_window;
 
 	ENTER(open_Pacing_window_callback);

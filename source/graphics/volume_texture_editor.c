@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : volume_texture_editor.c
 
-LAST MODIFIED : 27 July 1998
+LAST MODIFIED : 23 November 2001
 
 DISCRIPTION :
 Creation & Callback code for Motif texture window
@@ -99,7 +99,6 @@ LAST MODIFIED : 14 January 1998
 DESCRIPTION :
 ==============================================================================*/
 {
-	char name2[100];
 	int i,return_code;
 	struct VT_node_group *group, **node_groups;
 	struct VT_volume_texture *texture;
@@ -203,7 +202,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int count,found,i,remove_index,return_code;
-	struct VT_node_group *group, **node_groups;
+	struct VT_node_group **node_groups;
 	struct VT_volume_texture *texture;
 
 	ENTER(remove_vt_node_group);
@@ -301,7 +300,6 @@ DESCRIPTION :
 	int nx, ny, nz;
 	static double division[100][3];
 	static int start_input, n[3];
-	int index;
 
 	ENTER(process_prompt);
 	if (create_vt_node_group_flag)
@@ -518,6 +516,9 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	struct Texture_window *texture_window;
+
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	printf("Regular mesh called\n");
 	if (texture_window=(struct Texture_window *)client_data)
 	{
@@ -525,8 +526,6 @@ DESCRIPTION :
 			texture_window->current_texture->grid_spacing = (double *) NULL;
 	}
 }
-
-
 
 static void irregular_mesh(Widget w,XtPointer client_data,
 	XmAnyCallbackStruct *cbs)
@@ -538,6 +537,8 @@ DESCRIPTION :
 	struct Texture_window *texture_window;
 	char string[100];
 
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	printf("Irregular mesh called\n");
 	if (texture_window=(struct Texture_window *)client_data)
 	{
@@ -564,7 +565,7 @@ DESCRIPTION :
 	char string[100];
 
 	ENTER(group_cb);
-	/* checking arguments */
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		XtVaGetValues(w,XmNuserData,&index,NULL);
@@ -616,6 +617,7 @@ DESCRIPTION :
 	struct Texture_window *texture_window;
 
 	ENTER(slit_cb);
+	USE_PARAMETER(cbs);
 	/* checking arguments */
 	if (texture_window=(struct Texture_window *)client_data)
 	{
@@ -853,7 +855,6 @@ DESCRIPTION :
 Uses gl to draw a sphere with a lighting source.
 ==============================================================================*/
 {
-	struct Graphical_material *current_material;
 	struct Texture_window *texture_window=
 		(struct Texture_window *)tag;
 #if defined(OPENGL_API)
@@ -864,7 +865,8 @@ Uses gl to draw a sphere with a lighting source.
 #endif /* defined (GL_API) */
 
 	ENTER(select_3d_draw);
-	current_material=texture_window->current_material;
+	USE_PARAMETER(w);
+	USE_PARAMETER(reason);
 	pick_index=0;
 	env_map_pick_index=0;
 #if defined (OPENGL_API)
@@ -937,11 +939,15 @@ printf("after for each\n");
 	else
 	{
 #if defined (DEBUG)
-		if (current_material=
-		(struct Graphical_material *)material_editor_dialog_get_data(
-		(Widget)NULL,MATERIAL_EDITOR_DIALOG_DATA))
 		{
-			execute_Graphical_material(current_material);
+			struct Graphical_material *current_material;
+
+			if (current_material=
+				(struct Graphical_material *)material_editor_dialog_get_data(
+					(Widget)NULL,MATERIAL_EDITOR_DIALOG_DATA))
+			{
+				execute_Graphical_material(current_material);
+			}
 		}
 #endif /* defined (DEBUG) */
 		FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(display_material_sphere_3d,
@@ -953,20 +959,24 @@ printf("after for each\n");
 static void select_3d_init_CB(Widget widget,XtPointer tag,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 26 April 1997
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
 {
+#if defined (USEMANAGER)
 	static char *vt_ed_light_model_properties="infinite ambient 0.5 0.5 0.5";
 	static char *vt_ed_light_properties=
 		"colour 1.0 1.0 1.0 direction 0.0 -0.5 -1.0 on infinite";
 	struct Modify_light_data modify_light_data;
 	struct Modify_light_model_data modify_light_model_data;
 	struct Parse_state *parse_state;
+#endif /* defined (USEMANAGER) */
 	struct Texture_window *texture_window=(struct Texture_window *)tag;
 
 	ENTER(select_3d_init_CB);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 /*???debug */
 printf("***** create light ******\n");
 	X3dThreeDDrawingMakeCurrent(texture_window->select_3d_widget);
@@ -1134,6 +1144,7 @@ DESCRIPTION :
 	X3dThreeDDrawCallbackStruct *callback;
 
 	ENTER(select_3d_input);
+	USE_PARAMETER(w);
 	if (texture_window=(struct Texture_window *)user_data)
 	{
 		if (callback=(X3dThreeDDrawCallbackStruct *)call_data)
@@ -1144,7 +1155,7 @@ DESCRIPTION :
 			XGetGeometry(texture_window->user_interface->display,
 				callback->window,&win,&x,&y,&width,&height,&border_width,&depth);
 /*??? debug */
-printf("window size = %d, %d\n",width,height);
+printf("window size = %u, %u\n",width,height);
 				if ((callback->event)&&((ButtonPress==callback->event->type)||
 					(ButtonRelease==callback->event->type)))
 				{
@@ -1199,7 +1210,8 @@ temp for debug
 	struct Texture_window *texture_window;
 
 	ENTER(load_2d_texture);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		printVT(texture_window->current_texture);
@@ -1224,7 +1236,8 @@ texture.
 	struct Texture_window *window;
 
 	ENTER(save_as_finite_elements);
-	/* check arguments */
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 	if (window=(struct Texture_window *)texture_window)
 	{
 		open_create_finite_elements_dialog(&(window->create_finite_elements_dialog),
@@ -1249,6 +1262,7 @@ DESCRIPTION :
 	struct Texture_window *texture_window;
 
 	ENTER(vt_select_mat_create);
+	USE_PARAMETER(cbs);
 /*???debug */
 printf("vt_select_mat_create called\n");
 	/* checking arguments */
@@ -1279,7 +1293,7 @@ Called when the transformation changes.
 	struct Texture_window *texture_window;
 
 	ENTER(transformation_editor_callback);
-	/* check arguments */
+	USE_PARAMETER(w);
 	if ((texture_window=(struct Texture_window *)user_data)&&
 		(new_coord=(struct Cmgui_coordinate *)call_data))
 	{
@@ -1376,6 +1390,8 @@ DESCRIPTION :
 	struct Texture_window *window;
 
 	ENTER(open_transformation_editor);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 	if (window=(struct Texture_window *)texture_window)
 	{
 		bring_up_transformation_editor_dialog(window->transformation_editor_address,
@@ -1396,6 +1412,7 @@ DESCRIPTION :
 	LEAVE;
 } /* open_transformation_editor */
 
+#if defined (OLD_CODE)
 static void open_material_editor(Widget widget,XtPointer texture_window,
 	XtPointer call_data)
 /*******************************************************************************
@@ -1407,6 +1424,8 @@ DESCRIPTION :
 	struct Texture_window *window;
 
 	ENTER(open_material_editor);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 	if (window=(struct Texture_window *)texture_window)
 	{
 		bring_up_material_editor_dialog(window->material_editor_address,
@@ -1421,6 +1440,7 @@ DESCRIPTION :
 	}
 	LEAVE;
 } /* open_material_editor */
+#endif /* defined (OLD_CODE) */
 
 #if defined (OLD_CODE)
 /*???DB.  all_graphical_materials no longer exists */
@@ -1679,7 +1699,7 @@ DESCRIPTION :
 	struct Texture_window *texture_window;
 
 	ENTER(group_list_create_cb);
-	/* checking arguments */
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->node_group_list=w;
@@ -1703,7 +1723,7 @@ DESCRIPTION :
 	struct Texture_window *texture_window;
 
 	ENTER(group_list_select_cb);
-	/* checking arguments */
+	USE_PARAMETER(w);
 /*???debug */
 printf("Group list selected\n");
 	if (texture_window=(struct Texture_window *)client_data)
@@ -1738,7 +1758,7 @@ Identifies text fields
 	struct Texture_window *texture_window;
 
 	ENTER(identify_tf);
-	/* checking arguments */
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		XtVaGetValues(w,XmNuserData,&index,NULL);
@@ -1864,7 +1884,7 @@ Identifies scroll bars
 	struct Texture_window *texture_window;
 
 	ENTER(identify_sb);
-	/* checking arguments */
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		XtVaGetValues(w,XmNuserData,&index,NULL);
@@ -2899,9 +2919,6 @@ printf("remesh1\n");
 	LEAVE;
 } /* remesh_texture */
 
-
-
-
 static void identify_tb(Widget w,XtPointer client_data,XmAnyCallbackStruct *cbs)
 /*******************************************************************************
 LAST MODIFIED : 31 August 1996
@@ -2914,7 +2931,7 @@ Identifies toggle buttons
 	struct Texture_window *texture_window;
 
 	ENTER(identify_tb);
-	/* checking arguments */
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		XtVaGetValues(w,XmNuserData,&index,NULL);
@@ -2935,10 +2952,9 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	ENTER(adjustdisplacement);
+	USE_PARAMETER(texture_window);
 	LEAVE;
 } /* adjustdisplacement */
-
-
 
 static void tf_activated(Widget w,XtPointer client_data,
 	XmAnyCallbackStruct *cbs)
@@ -2954,7 +2970,7 @@ Updates data when text field activated
 	struct Texture_window *texture_window;
 
 	ENTER(tf_activated);
-	/* checking arguments */
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		XtVaGetValues(w,XmNuserData,&index,NULL);
@@ -3309,7 +3325,7 @@ Updates data when scrollbar activated
 	struct Texture_window *texture_window;
 
 	ENTER(sb_activated);
-	/* checking arguments */
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		XtVaGetValues(w,XmNuserData,&index,NULL);
@@ -3619,7 +3635,8 @@ pops down & destroys window , frees memory.
 	struct Texture_window *texture_window;
 
 	ENTER(exit_window);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		XtPopdown(texture_window->texture_window_shell);
@@ -3652,7 +3669,8 @@ full range values can be obtained.
 	struct Texture_window *texture_window;
 
 	ENTER(toggle_node_cell);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->cell_mode= !(texture_window->cell_mode);
@@ -3691,7 +3709,8 @@ Choosing paint mode automatically turns delete mode off
 	struct Texture_window *texture_window;
 
 	ENTER(toggle_paint_mode);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->paint_mode=!texture_window->paint_mode;
@@ -3732,7 +3751,8 @@ Choosing paint mode automatically turns delete mode off
 	struct Texture_window *texture_window;
 
 	ENTER(toggle_fill_mode);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->fill_mode= !texture_window->fill_mode;
@@ -3778,7 +3798,8 @@ toggles detail
 	struct Texture_window *texture_window;
 
 	ENTER(toggle_fill_mode);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->detail_mode=!texture_window->detail_mode;
@@ -3813,7 +3834,8 @@ This is independent of delete_paint mode
 	struct Texture_window *texture_window;
 
 	ENTER(toggle_delete_mode);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->delete_mode=!texture_window->delete_mode;
@@ -3862,7 +3884,8 @@ This is indepenedent of delete [fill] mode
 	struct Texture_window *texture_window;
 
 	ENTER(toggle_delete_paint_mode);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->delete_paint_mode=!texture_window->delete_paint_mode;
@@ -3901,7 +3924,8 @@ toggles whether automatic recalculation of isosurface/cubes is on.
 	struct Texture_window *texture_window;
 
 	ENTER(toggle_auto);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->auto_on= !texture_window->auto_on;
@@ -3933,7 +3957,8 @@ toggles picking mode
 	struct Texture_window *texture_window;
 
 	ENTER(toggle_pick);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->pick_mode= !texture_window->pick_mode;
@@ -3965,7 +3990,8 @@ toggles whether grid mesh is on.
 	struct Texture_window *texture_window;
 
 	ENTER(toggle_grid);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->grid_on= !texture_window->grid_on;
@@ -3998,7 +4024,8 @@ toggles whether cubes are displayed.
 	struct Texture_window *texture_window;
 
 	ENTER(toggle_cubes);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->cubes_on= !texture_window->cubes_on;
@@ -4032,7 +4059,8 @@ toggles whether isosurface is displayed.
 	struct Texture_window *texture_window;
 
 	ENTER(toggle_isosurface);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->isosurface_on= !texture_window->isosurface_on;
@@ -4063,10 +4091,11 @@ toggles whether closed surface generated.
 ==============================================================================*/
 {
 	struct Texture_window *texture_window;
-
 	struct MC_iso_surface *mc_iso_surface;
+
 	ENTER(toggle_closed_surface);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->closed_surface= !texture_window->closed_surface;
@@ -4114,7 +4143,8 @@ toggles whether all paint area cubes are displayed.
 	struct Texture_window *texture_window;
 
 	ENTER(toggle_see_paint);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->see_paint_on=!texture_window->see_paint_on;
@@ -4147,7 +4177,8 @@ toggles whether shaded surface generated.
 	struct Texture_window *texture_window;
 
 	ENTER(toggle_shaded_surfaces);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->shaded_surfaces= !texture_window->shaded_surfaces;
@@ -4181,7 +4212,8 @@ toggles whether triangle decimation used
 	struct Texture_window *texture_window;
 
 	ENTER(toggle_decimation);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->decimation= !texture_window->decimation;
@@ -4215,7 +4247,8 @@ toggles whether normals drawn.
 	struct Texture_window *texture_window;
 
 	ENTER(toggle_normals);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->normals= !texture_window->normals;
@@ -4248,7 +4281,8 @@ toggles whether wireframe surface generated.
 	struct Texture_window *texture_window;
 
 	ENTER(toggle_wireframe);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->wireframe= !texture_window->wireframe;
@@ -4281,7 +4315,8 @@ toggles whether clipping plane on.
 	struct Texture_window *texture_window;
 
 	ENTER(toggle_cutting_plane);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->cutting_plane_on= !texture_window->cutting_plane_on;
@@ -4322,7 +4357,8 @@ puts line segment editing mode on.
 	struct Texture_window *texture_window;
 
 	ENTER(toggle_line_mode);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->line_mode_on= !texture_window->line_mode_on;
@@ -4355,7 +4391,8 @@ puts curve segment editing mode on.
 	struct Texture_window *texture_window;
 
 	ENTER(toggle_curve_mode);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->curve_mode_on= !texture_window->curve_mode_on;
@@ -4388,7 +4425,8 @@ puts blob segment editing mode on.
 	struct Texture_window *texture_window;
 
 	ENTER(toggle_blob_mode);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->blob_mode_on= !texture_window->blob_mode_on;
@@ -4420,8 +4458,10 @@ puts blob segment editing mode on.
 {
 	struct Texture_window *texture_window;
 	char string[100];
+
 	ENTER(toggle_soft_mode);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->soft_mode_on= !texture_window->soft_mode_on;
@@ -4458,7 +4498,8 @@ DESCRIPTION :
 	struct Texture_window *texture_window;
 
 	ENTER(toggle_hollow);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->hollow_mode_on= !texture_window->hollow_mode_on;
@@ -4497,7 +4538,8 @@ General select operation
 	struct Texture_window *texture_window;
 
 	ENTER(select_cb);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 /*???debug */
@@ -4558,15 +4600,13 @@ LAST MODIFIED : 21 December 1995
 DESCRIPTION :
 ==============================================================================*/
 {
-	float norm_x,norm_y;
-	int index;
 	struct Graphical_material *material;
 	struct Texture_window *texture_window;
 
+	ENTER(select_material);
+	USE_PARAMETER(w);
 	texture_window = (struct Texture_window *)data;
 	material = (struct Graphical_material *)temp_mat;
-	ENTER(select_material);
-	/* checking arguments */
 	if (texture_window)
 	{
 		texture_window->current_material=material;
@@ -4589,15 +4629,13 @@ LAST MODIFIED : 21 December 1995
 DESCRIPTION :
 ==============================================================================*/
 {
-	float norm_x,norm_y;
-	int index;
 	struct Environment_map *envmap;
 	struct Texture_window *texture_window;
 
 	ENTER(select_environment_map_cb);
+	USE_PARAMETER(w);
 	texture_window = (struct Texture_window *)data;
 	envmap = (struct Environment_map *)temp_envmap;
-	/* checking arguments */
 	if (texture_window)
 	{
 	texture_window->current_env_map=envmap;
@@ -4615,7 +4653,6 @@ DESCRIPTION :
 	LEAVE;
 }
 
-
 static void select_gm_cb(Widget w,XtPointer client_data,XmAnyCallbackStruct *cbs)
 /*******************************************************************************
 LAST MODIFIED : 19 February 1997
@@ -4626,10 +4663,11 @@ General deselect operation
 {
 	struct Texture_window *window;
 	struct Callback_data callback;
-	Widget temp,temp_form,select_widget;
+	Widget select_widget;
 
 	ENTER(select_gm_cb);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (window=(struct Texture_window *)client_data)
 	{
 		if (!(window->graphical_material_palette_shell))
@@ -4680,9 +4718,11 @@ General deselect operation
 {
 	struct Texture_window *window;
 	struct Callback_data callback;
-	Widget temp,temp_form,select_widget;
+	Widget select_widget;
 
 	ENTER(select_gm_cb);
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 printf("Creating Environment map palette\n");
 	/* checking arguments */
 	if (window=(struct Texture_window *)client_data)
@@ -4736,7 +4776,8 @@ General deselect operation
 	struct Texture_window *texture_window;
 
 	ENTER(deselect_cb);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 /*???debug */
@@ -4779,7 +4820,8 @@ DESCRIPTION :
 	struct Texture_window *texture_window;
 
 	ENTER(toggle_cop);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->cop_mode_on= !texture_window->cop_mode_on;
@@ -4815,7 +4857,8 @@ Toggles whether environments or materials selected
 	struct Texture_window *texture_window;
 
 	ENTER(toggle_env);
-	/* checking arguments */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 	if (texture_window=(struct Texture_window *)client_data)
 	{
 		texture_window->env_mode_on=!texture_window->env_mode_on;

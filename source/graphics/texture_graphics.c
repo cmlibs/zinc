@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture_graphics.c
 
-LAST MODIFIED : 27 July 1998
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Routines for GL texture display window
@@ -63,7 +63,7 @@ Module variables
 int pick_index,env_map_pick_index;
 
 /* size of material selection viewport */
-static float ortho_left,ortho_right,ortho_bottom,ortho_top;
+static float /*ortho_left,*/ortho_right,/*ortho_bottom,*/ortho_top;
 
 /* last node picked - for rubberbanding selection */
 static int last_pick[3];
@@ -146,7 +146,7 @@ Processes picking
 ==============================================================================*/
 {
 	double m[3],M[3],r[3],xivali,xivalj,xivalk;
-	double x, y, z, obj1, obj2, obj3, min_x, min_y, min_z;
+	double x, y, z, obj1, obj2, obj3, min_z;
 	int i,j,k,R[3], ii, jj, kk;
 	int min_index[3];
 	double min_xival[3];
@@ -203,8 +203,6 @@ Processes picking
 					min_xival[0] = 	xivali;
 					min_xival[1] = 	xivalj;
 					min_xival[2] = 	xivalk;
-					min_x = x;
-					min_y = y;
 					min_z = z;
 				}
 			}
@@ -611,19 +609,17 @@ printf("Setting node (%d %d %d) Type = %d, Indices = %d:%d:%d:%d:%d:%d:%d:%d\n",
 
 static void draw_current_group(struct Texture_window *texture_window)
 /*******************************************************************************
-LAST MODIFIED : 14 January 1998
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	double xistep[3];
-	int i,int_xival[3],int_cop[3],nx,ny,nz;
-	struct Environment_map *env_map;
+	int i, int_xival[3], nx, ny, nz;
 	double *grid_spacing,sx,sy,sz,tx,ty,tz;
 	struct VT_node_group *node_group;
-	struct VT_nodes *nodes;
 	int found=0, node_type;
-	int n, ii, jj, kk, node_index, step;
+	int n, ii, jj, kk, node_index;
 
 	ENTER(draw_current_group);
 
@@ -773,6 +769,7 @@ else
 	LEAVE;
 } /* draw_current_cell */
 
+#if defined (OLD_CODE)
 static int display_material_sphere(struct Graphical_material *material,
 	void *user_data)
 /*******************************************************************************
@@ -838,7 +835,9 @@ Draws a sphere with the specified <material>.
 
 	return (return_code);
 } /* display_material_sphere */
+#endif /* defined (OLD_CODE) */
 
+#if defined (OLD_CODE)
 static int display_env_map(struct Environment_map *env_map,
 	void *void_texture_window)
 /*******************************************************************************
@@ -910,6 +909,7 @@ Draws a sphere with the specified <material>.
 
 	return (return_code);
 } /* display_env_map */
+#endif /* defined (OLD_CODE) */
 
 /*
 Global functions
@@ -1101,7 +1101,7 @@ printf("Calculating texture projections...\n");
 #endif /* defined (UNIX) */
 		/* make isosurface object */
 #if defined (OPENGL_API)
-		printf("Compiling isosurface display list #%d ....\n",texture_window->tw_isosurface);
+		printf("Compiling isosurface display list #%u ....\n",texture_window->tw_isosurface);
 
 		glNewList(texture_window->tw_isosurface,GL_COMPILE);
 		/*printf("Done.\n");*/
@@ -1397,16 +1397,18 @@ cpu_time6=((double)buffer.tms_utime)/100.0;
 
 void create_texture_graphics(struct Texture_window *texture_window)
 /*******************************************************************************
-LAST MODIFIED : 25 September 1996
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
 {
+#if defined (OLD_CODE)
 #if defined (OPENGL_API)
 	Font raster_font_id;
 	unsigned int raster_font_first_character,raster_font_last_character;
 	XFontStruct *raster_font_info;
 #endif /* defined (OPENGL_API) */
+#endif /* defined (OLD_CODE) */
 
 	ENTER(create_texture_graphics);
 /*???debug */
@@ -1519,7 +1521,6 @@ LAST MODIFIED : 19 January 1998
 DESCRIPTION :
 ==============================================================================*/
 {
-	static int left_on,middle_on,right_on;
 	struct Texture_window *texture_window;
 
 	ENTER(graphics_loop);
@@ -1782,6 +1783,37 @@ DESCRIPTION :
 	}
 	LEAVE;
 } /* close_texture_graphics */
+
+void makewiresphere(void)
+/*******************************************************************************
+LAST MODIFIED : 25 September 1996
+
+DESCRIPTION :
+==============================================================================*/
+{
+	double a;
+
+#if defined (OPENGL_API)
+	glBegin(GL_LINE_LOOP);
+	for (a=0;a<2*PI;a+=2*PI/18)
+	{
+			glVertex3f(cos(a), sin(a), 0);
+	}
+	glEnd();
+	glBegin(GL_LINE_LOOP);
+	for (a=0;a<2*PI;a+=2*PI/18)
+	{
+			glVertex3f(0, cos(a), sin(a));
+	}
+	glEnd();
+	glBegin(GL_LINE_LOOP);
+	for (a=0;a<2*PI;a+=2*PI/18)
+	{
+			glVertex3f(cos(a),0,sin(a));
+	}
+	glEnd();
+#endif /* defined (OPENGL_API) */
+} /* makesphere */
 
 void make_objects(struct Texture_window *texture_window)
 /*******************************************************************************
@@ -2319,17 +2351,17 @@ DESCRIPTION :
 
 void update_grid(struct Texture_window *texture_window)
 /*******************************************************************************
-LAST MODIFIED : 13 January 1998
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	/* draw grid lines */
-	double m[3],M[3],r[3],xivali,xivalj, xivalk;
+	double m[3],M[3],r[3],xivali, xivalj;
 	int i,j,k, R[3], dim[3];
 	struct VT_texture_node *node;
 	double xistep[3];
-	int int_xival[3],nx,ny,nz;
+	int nx,ny;
 	double *grid_spacing,sx,sy,sz,tx,ty,tz;
 
 	ENTER(update_grid);
@@ -2436,7 +2468,9 @@ DESCRIPTION :
 		{
 			nx = texture_window->current_texture->dimension[0]+1;
 			ny = texture_window->current_texture->dimension[1]+1;
+#if defined (OLD_CODE)
 			nz = texture_window->current_texture->dimension[2]+1;
+#endif /* defined (OLD_CODE) */
 			grid_spacing = texture_window->current_texture->grid_spacing;
 			sx = (texture_window->ximax[0]-texture_window->ximin[0]);
 			sy = (texture_window->ximax[1]-texture_window->ximin[1]);
@@ -2465,14 +2499,13 @@ DESCRIPTION :
 				if (node->node_type > 0)
 				{
 					glPushMatrix();
-					xivali=(double)i*(M[0]-m[0])/r[0]+m[0];
-					xivalj=(double)j*(M[1]-m[1])/r[1]+m[1];
-					xivalk=(double)k*(M[2]-m[2])/r[2]+m[2];
 					if (texture_window->current_texture->grid_spacing)
 					{
 						xivali = texture_window->current_texture->grid_spacing[i]*(M[0]-m[0])+m[0];
 						xivalj = texture_window->current_texture->grid_spacing[R[0]+1+j]*(M[1]-m[1])+m[1];
+#if defined (OLD_CODE)
 						xivalk = texture_window->current_texture->grid_spacing[R[0]+R[1]+2+k]*(M[2]-m[2])+m[2];
+#endif /* defined (OLD_CODE) */
 
 						glTranslatef(grid_spacing[i]*sx+tx,
 							grid_spacing[nx+j]*sy+ty,
@@ -2484,6 +2517,11 @@ DESCRIPTION :
 					}
 					else
 					{
+						xivali = (double)i*(M[0]-m[0])/r[0]+m[0];
+						xivalj = (double)j*(M[1]-m[1])/r[1]+m[1];
+#if defined (OLD_CODE)
+						xivalk = (double)k*(M[2]-m[2])/r[2]+m[2];
+#endif /* defined (OLD_CODE) */
 						glTranslatef(texture_window->ximin[0] + i * xistep[0],
 							texture_window->ximin[1] + j * xistep[1],
 							texture_window->ximin[2] + k * xistep[2]);
@@ -2567,7 +2605,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	double xistep[3];
-	int i,int_xival[3],int_cop[3],nx,ny,nz;
+	int i, int_xival[3], int_cop[3], nx, ny;
 	struct Environment_map *env_map;
 	double *grid_spacing,sx,sy,sz,tx,ty,tz;
 	GLfloat no_mat[] = {0, 0, 0, 1.0};
@@ -2583,7 +2621,9 @@ DESCRIPTION :
 		{
 			nx = texture_window->current_texture->dimension[0]+1;
 			ny = texture_window->current_texture->dimension[1]+1;
+#if defined (OLD_CODE)
 			nz = texture_window->current_texture->dimension[2]+1;
+#endif /* defined (OLD_CODE) */
 			grid_spacing = texture_window->current_texture->grid_spacing;
 			sx = (texture_window->ximax[0]-texture_window->ximin[0]);
 			sy = (texture_window->ximax[1]-texture_window->ximin[1]);
@@ -3016,37 +3056,6 @@ DESCRIPTION :
 	LEAVE;
 } /* makesphere */
 
-void makewiresphere()
-/*******************************************************************************
-LAST MODIFIED : 25 September 1996
-
-DESCRIPTION :
-==============================================================================*/
-{
-	double a;
-
-#if defined (OPENGL_API)
-	glBegin(GL_LINE_LOOP);
-	for (a=0;a<2*PI;a+=2*PI/18)
-	{
-			glVertex3f(cos(a), sin(a), 0);
-	}
-	glEnd();
-	glBegin(GL_LINE_LOOP);
-	for (a=0;a<2*PI;a+=2*PI/18)
-	{
-			glVertex3f(0, cos(a), sin(a));
-	}
-	glEnd();
-	glBegin(GL_LINE_LOOP);
-	for (a=0;a<2*PI;a+=2*PI/18)
-	{
-			glVertex3f(cos(a),0,sin(a));
-	}
-	glEnd();
-#endif /* defined (OPENGL_API) */
-} /* makesphere */
-
 void select_material(struct Texture_window *texture_window,double x,double y)
 /*******************************************************************************
 LAST MODIFIED : 14 January 1998
@@ -3108,7 +3117,7 @@ printf("current_material = %s \n",Graphical_material_name(texture_window->
 
 void draw_texture_cells(struct Texture_window *texture_window)
 /*******************************************************************************
-LAST MODIFIED : 15 January 1998
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Scans through the volume texture and on finding non empty cells draws a cube of
@@ -3117,14 +3126,10 @@ the appropriate material.
 ==============================================================================*/
 {
 	double xistep[3],ximin[3];
-	int dim[3],i,j,k,nx,ny,nz;
+	int dim[3],i,j,k,nx,ny;
 	struct VT_volume_texture *current_texture;
 	struct VT_texture_cell *cell;
 	double *grid_spacing,sx,sy,sz,tx,ty,tz;
-	GLfloat no_mat[] = {0, 0, 0, 1.0};
-	GLfloat mat_diffuse[] = {0, 1.0, 1.0, 1.0};
-	GLfloat mat_specular[] = {1.0, 0, 1.0, 1.0};
-	GLfloat mat_shininess[] = {50.0};
 
 	ENTER(draw_texture_cells);
 	/* checking arguments */
@@ -3134,7 +3139,9 @@ the appropriate material.
 		{
 			nx = texture_window->current_texture->dimension[0]+1;
 			ny = texture_window->current_texture->dimension[0]+1;
+#if defined (OLD_CODE)
 			nz = texture_window->current_texture->dimension[0]+1;
+#endif /* defined (OLD_CODE) */
 			grid_spacing = texture_window->current_texture->grid_spacing;
 			sx = (texture_window->ximax[0]-texture_window->ximin[0]);
 			sy = (texture_window->ximax[1]-texture_window->ximin[1]);
@@ -3356,7 +3363,7 @@ printf("leaving draw texture cells\n");
 
 void draw_texture_nodes(struct Texture_window *texture_window)
 /*******************************************************************************
-LAST MODIFIED : 14 January 1998
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Scans through the volume texture and on finding non empty cells draws a cube of
@@ -3365,7 +3372,7 @@ the appropriate material
 ==============================================================================*/
 {
 	double ximin[3],xistep[3];
-	int dim[3],i,j,k,nx,ny,nz;
+	int dim[3], i, j, k, nx, ny;
 	struct VT_texture_node *node;
 	struct VT_volume_texture *current_texture;
 	double *grid_spacing,sx,sy,sz,tx,ty,tz;
@@ -3376,9 +3383,11 @@ the appropriate material
 	{
 		if (texture_window->current_texture->grid_spacing)
 		{
-			nx = texture_window->current_texture->dimension[0]+1;
-			ny = texture_window->current_texture->dimension[0]+1;
-			nz = texture_window->current_texture->dimension[0]+1;
+			nx = texture_window->current_texture->dimension[0] + 1;
+			ny = texture_window->current_texture->dimension[0] + 1;
+#if defined (OLD_CODE)
+			nz = texture_window->current_texture->dimension[0] + 1;
+#endif /* defined (OLD_CODE) */
 			grid_spacing = texture_window->current_texture->grid_spacing;
 			sx = (texture_window->ximax[0]-texture_window->ximin[0]);
 			sy = (texture_window->ximax[1]-texture_window->ximin[1]);
@@ -3470,14 +3479,14 @@ the appropriate material
 
 void draw_texture_lines(struct Texture_window *texture_window)
 /*******************************************************************************
-LAST MODIFIED : 25 September 1996
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Traverses volume_textures line lists and draws the segments
 ==============================================================================*/
 {
-	double ximin[3],xistep[3];
-	int dim[3],i;
+	double ximin[3];
+	int i;
 	struct VT_volume_texture *current_texture;
 	struct VT_texture_curve *p;
 
@@ -3487,10 +3496,12 @@ Traverses volume_textures line lists and draws the segments
 	{
 		for (i=0;i<3;i++)
 		{
-			dim[i]=current_texture->dimension[i]+1;
 			ximin[i]=texture_window->ximin[i];
+#if defined (OLD_CODE)
+			dim[i]=current_texture->dimension[i]+1;
 			xistep[i]=(texture_window->ximax[i]-texture_window->ximin[i])/
 				(texture_window->xires[i]);
+#endif /* defined (OLD_CODE) */
 		}
 #if defined (OPENGL_API)
 		glNewList(texture_window->tw_lines,GL_COMPILE);
@@ -3547,14 +3558,14 @@ Traverses volume_textures line lists and draws the segments
 
 void draw_texture_blobs(struct Texture_window *texture_window)
 /*******************************************************************************
-LAST MODIFIED : 19 November 1996
+LAST MODIFIED : 23 November 2001
 
 DECSRIPTION :
 Traverses volume_textures line lists and draws the segments
 ==============================================================================*/
 {
-	double ximin[3],xistep[3];
-	int dim[3],i;
+	double ximin[3];
+	int i;
 	struct VT_texture_curve *p;
 	struct VT_volume_texture *current_texture;
 
@@ -3564,10 +3575,12 @@ Traverses volume_textures line lists and draws the segments
 	{
 		for (i=0;i<3;i++)
 		{
-			dim[i]=current_texture->dimension[i]+1;
 			ximin[i]=texture_window->ximin[i];
+#if defined (OLD_CODE)
+			dim[i]=current_texture->dimension[i]+1;
 			xistep[i]=(texture_window->ximax[i]-texture_window->ximin[i])/
 				(texture_window->xires[i]);
+#endif /* defined (OLD_CODE) */
 		}
 #if defined (OPENGL_API)
 		glNewList(texture_window->tw_blobs,GL_COMPILE);
@@ -3624,14 +3637,14 @@ Traverses volume_textures line lists and draws the segments
 
 void draw_texture_softs(struct Texture_window *texture_window)
 /*******************************************************************************
-LAST MODIFIED : 19 November 1996
+LAST MODIFIED : 23 November 2001
 
 DECSRIPTION :
 Traverses volume_textures line lists and draws the segments
 ==============================================================================*/
 {
-	double ximin[3],xistep[3];
-	int dim[3],i;
+	double ximin[3];
+	int i;
 	struct VT_texture_curve *p;
 	struct VT_volume_texture *current_texture;
 
@@ -3641,10 +3654,12 @@ Traverses volume_textures line lists and draws the segments
 	{
 		for (i=0;i<3;i++)
 		{
-			dim[i]=current_texture->dimension[i]+1;
 			ximin[i]=texture_window->ximin[i];
+#if defined (OLD_CODE)
+			dim[i]=current_texture->dimension[i]+1;
 			xistep[i]=(texture_window->ximax[i]-texture_window->ximin[i])/
 				(texture_window->xires[i]);
+#endif /* defined (OLD_CODE) */
 		}
 #if defined (OPENGL_API)
 		glNewList(texture_window->tw_softs,GL_COMPILE);
@@ -3682,14 +3697,14 @@ Traverses volume_textures line lists and draws the segments
 
 void draw_texture_curves(struct Texture_window *texture_window)
 /*******************************************************************************
-LAST MODIFIED : 25 September 1996
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Traverses volume_textures curve lists and draws the segments
 ==============================================================================*/
 {
-	double a,b,c,d,t,ximin[3],xistep[3];
-	int dim[3],i;
+	double a,b,c,d,t,ximin[3];
+	int i;
 	struct VT_texture_curve *cp;
 	struct VT_volume_texture *current_texture;
 
@@ -3704,10 +3719,12 @@ Traverses volume_textures curve lists and draws the segments
 		}
 		for (i=0;i<3;i++)
 		{
-			dim[i]=current_texture->dimension[i]+1;
 			ximin[i]=texture_window->ximin[i];
+#if defined (OLD_CODE)
+			dim[i]=current_texture->dimension[i]+1;
 			xistep[i]=(texture_window->ximax[i]-texture_window->ximin[i])/
 				(texture_window->xires[i]);
+#endif /* defined (OLD_CODE) */
 		}
 #if defined (OPENGL_API)
 		glNewList(texture_window->tw_curves,GL_COMPILE);
@@ -4001,7 +4018,6 @@ Sets absolute node scalar value
 	double dim[3];
 	int i,index[3],j,k,return_code;
 	struct MC_iso_surface *mc_iso_surface;
-	struct VT_texture_node *node;
 
 	ENTER(fill_node);
 	/* checking arguments */
@@ -4089,9 +4105,7 @@ prints node scalar value
 ==============================================================================*/
 {
 	double dim[3];
-	int i,index[3],j,k,return_code;
-	struct MC_iso_surface *mc_iso_surface;
-	struct VT_texture_node *node;
+	int i, index[3], return_code;
 
 	ENTER(value_node);
 	/* checking arguments */
@@ -4140,7 +4154,6 @@ deletes absolute node scalar value
 	double dim[3];
 	int i,index[3],j,k,return_code;
 	struct MC_iso_surface *mc_iso_surface;
-	struct VT_texture_node *node;
 
 	ENTER(fill_cell);
 	/* checking arguments */
@@ -4436,10 +4449,12 @@ LAST MODIFIED : 25 September 1996
 DESCRIPTION :
 ==============================================================================*/
 {
-	int i,j;
+	int i;
 	struct Texture_window *texture_window;
 
 	ENTER(texture_graphics_initialize_callback);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 	if (texture_window=(struct Texture_window *)user_data)
 	{
 /*???debug */
@@ -4549,6 +4564,8 @@ DESCRIPTION :
 	struct Texture_window *texture_window;
 
 	ENTER(texture_graphics_expose_callback);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 	texture_window=(struct Texture_window *)user_data;
 /*???debug */
 printf("In texture_graphics_expose_callback\n");
@@ -4689,7 +4706,7 @@ function in the <drawing_structure> with the <drawing_widget>, the data from the
 <drawing_structure> and the input event as arguments.
 ==============================================================================*/
 {
-	static int motion = 0,current_button = 0;
+	static int current_button = 0;
 	static double cursor_x,cursor_y,motion_x,motion_y,old_motion_x,old_motion_y;
 	struct Texture_window  *texture_window;
 	X3dThreeDDrawCallbackStruct *select_callback_data;
@@ -4730,11 +4747,10 @@ function in the <drawing_structure> with the <drawing_widget>, the data from the
 						printf("Shift_key depressed\n");
 					}
 					current_button = button_event->button;
-					motion = 0;
 					cursor_x = (double) button_event->x/(double) width;
 					cursor_y = (double) (height-button_event->y)/ (double) height;
 
-					printf("button %d press at %d %d [%.3lf %.3lf]\n",button_event->button,
+					printf("button %u press at %d %d [%.3lf %.3lf]\n",button_event->button,
 						button_event->x,button_event->y,cursor_x,height-cursor_y);
 					if (texture_window->pick_mode)
 					{
@@ -4747,7 +4763,7 @@ function in the <drawing_structure> with the <drawing_widget>, the data from the
 				else
 				{
 					current_button = 0;
-					printf("button %d release at %d %d\n",button_event->button,
+					printf("button %u release at %d %d\n",button_event->button,
 						button_event->x,button_event->y);
 
 				}
@@ -4757,18 +4773,17 @@ function in the <drawing_structure> with the <drawing_widget>, the data from the
 				key_event= &(event->xkey);
 				if (KeyPress==event_type)
 				{
-					printf("key %d press at %d %d\n",key_event->keycode,key_event->x,
+					printf("key %u press at %d %d\n",key_event->keycode,key_event->x,
 						key_event->y);
 				}
 				else
 				{
-					printf("key %d release at %d %d\n",key_event->keycode,key_event->x,
+					printf("key %u release at %d %d\n",key_event->keycode,key_event->x,
 						key_event->y);
 				}
 			} break;
 			case MotionNotify:
 			{
-				motion = 1;
 				motion_event= &(event->xmotion);
 				motion_x =  (double) motion_event->x/(double) width;
 				motion_y =  (double) (height-motion_event->y)/ (double) height;

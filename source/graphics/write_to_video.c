@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : write_to_video.c
 
-LAST MODIFIED : 6 October 1998
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Functions for writing images through a socket to another process which will in
@@ -63,6 +63,8 @@ struct Graphics_window *video_graphics_window=(struct Graphics_window *)NULL;
 Module functions
 ----------------
 */
+
+#if defined (OLD_CODE)
 static int open_video_socket(int *width,int *height)
 /*******************************************************************************
 LAST MODIFIED : 14 November 1994
@@ -173,13 +175,17 @@ printf("could not write start message\n");
 		return_code=0;
 	}
 #else
+	USE_PARAMETER(width);
+	USE_PARAMETER(height);
 	return_code=1;
 #endif
 	LEAVE;
 
 	return (return_code);
 } /* open_video_socket */
+#endif /* defined (OLD_CODE) */
 
+#if defined (OLD_CODE)
 static int close_video_socket(void)
 /*******************************************************************************
 LAST MODIFIED : 14 March 1994
@@ -230,6 +236,7 @@ Closes the video socket.
 
 	return (return_code);
 } /* close_video_socket */
+#endif /* defined (OLD_CODE) */
 
 static int write_frame_to_video(int number_of_frames,int x1,int x2,int y1,
 	int y2)
@@ -531,6 +538,11 @@ printf("frame size NOT ok\n");
 		return_code=0;
 	}
 #else
+	USE_PARAMETER(number_of_frames);
+	USE_PARAMETER(x1);
+	USE_PARAMETER(x2);
+	USE_PARAMETER(y1);
+	USE_PARAMETER(y2);
 	return_code=1;
 #endif
 	LEAVE;
@@ -542,6 +554,7 @@ printf("frame size NOT ok\n");
 Global functions
 ----------------
 */
+
 int set_video_on_off(struct Graphics_window *graphics)
 /*******************************************************************************
 LAST MODIFIED : 4 November 1995
@@ -550,12 +563,16 @@ DESCRIPTION :
 Toggles writing to video on and off.
 ==============================================================================*/
 {
+#if defined (OLD_GFX_WINDOW)
 	Dimension Width,Height,width,width_1,width_2,height,height_1,height_2;
-	int return_code,video_height,video_width;
+	int video_height,video_width;
 	Position x1,y1,X1,Y1;
 	Widget widget;
+#endif /* defined (OLD_GFX_WINDOW) */
+	int return_code;
 
 	ENTER(set_video_on_off);
+	USE_PARAMETER(graphics);
 	display_message(INFORMATION_MESSAGE,
 		"set_video_on_off temporarily disabled\n");
 #if defined (OLD_GFX_WINDOW)

@@ -58,7 +58,8 @@ static MrmHierarchy projection_window_hierarchy;
 Module functions
 ----------------
 */
-static void identify_projection_configure_b(Widget *widget_id,
+
+static void identify_projection_configure_b(Widget *widget,
 	XtPointer projection_window,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 1 November 1995
@@ -70,9 +71,10 @@ Finds the id of the projection configure button.
 	struct Projection_window *window;
 
 	ENTER(identify_projection_configure_b);
+	USE_PARAMETER(call_data);
 	if (window=(struct Projection_window *)projection_window)
 	{
-		window->configure_button= *widget_id;
+		window->configure_button= *widget;
 	}
 	else
 	{
@@ -100,6 +102,8 @@ window.
 		};
 
 	ENTER(configure_projection);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 	if ((window=(struct Projection_window *)projection_window)&&
 		window->projection)
 	{
@@ -132,7 +136,7 @@ window.
 	LEAVE;
 } /* configure_projection */
 
-static void identify_projection_animate_but(Widget *widget_id,
+static void identify_projection_animate_but(Widget *widget,
 	XtPointer projection_window,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 23 June 1995
@@ -144,9 +148,10 @@ Finds the id of the projection animate button.
 	struct Projection_window *window;
 
 	ENTER(identify_projection_animate_but);
+	USE_PARAMETER(call_data);
 	if (window=(struct Projection_window *)projection_window)
 	{
-		window->animate_button= *widget_id;
+		window->animate_button= *widget;
 	}
 	else
 	{
@@ -174,6 +179,7 @@ Draws a frame in the projection animation.
 	XColor colour,spectrum_rgb[MAX_SPECTRUM_COLOURS];
 
 	ENTER(draw_animation_frame);
+	USE_PARAMETER(timer_id);
 	if ((window=(struct Projection_window *)projection_window)&&
 		(projection=window->projection))
 	{
@@ -263,6 +269,8 @@ Starts the projection animation.
 	struct Projection_window *window;
 
 	ENTER(animate_projection);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 	if ((window=(struct Projection_window *)projection_window)&&
 		(window->projection))
 	{
@@ -281,7 +289,7 @@ Starts the projection animation.
 	LEAVE;
 } /* animate_projection */
 
-static void identify_projection_print_butto(Widget *widget_id,
+static void identify_projection_print_butto(Widget *widget,
 	XtPointer projection_window,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 1 November 1995
@@ -293,9 +301,10 @@ Finds the id of the projection print button.
 	struct Projection_window *window;
 
 	ENTER(identify_projection_print_butto);
+	USE_PARAMETER(call_data);
 	if (window=(struct Projection_window *)projection_window)
 	{
-		window->print_button= *widget_id;
+		window->print_button= *widget;
 	}
 	else
 	{
@@ -305,7 +314,7 @@ Finds the id of the projection print button.
 	LEAVE;
 } /* identify_projection_print_butto */
 
-static void identify_projection_print_posts(Widget *widget_id,
+static void identify_projection_print_posts(Widget *widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 24 May 1997
@@ -317,9 +326,10 @@ Finds the id of the projection print postscript button.
 	struct Projection_window *projection;
 
 	ENTER(identify_projection_print_posts);
+	USE_PARAMETER(call_data);
 	if (projection=(struct Projection_window *)client_data)
 	{
-		projection->print_menu.postscript_button= *widget_id;
+		projection->print_menu.postscript_button= *widget;
 	}
 	else
 	{
@@ -329,7 +339,7 @@ Finds the id of the projection print postscript button.
 	LEAVE;
 } /* identify_projection_print_posts */
 
-static void identify_projection_print_rgb_b(Widget *widget_id,
+static void identify_projection_print_rgb_b(Widget *widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 24 May 1997
@@ -341,9 +351,10 @@ Finds the id of the projection print rgb button.
 	struct Projection_window *projection;
 
 	ENTER(identify_projection_print_rgb_b);
+	USE_PARAMETER(call_data);
 	if (projection=(struct Projection_window *)client_data)
 	{
-		projection->print_menu.rgb_button= *widget_id;
+		projection->print_menu.rgb_button= *widget;
 	}
 	else
 	{
@@ -353,7 +364,7 @@ Finds the id of the projection print rgb button.
 	LEAVE;
 } /* identify_projection_print_rgb_b */
 
-static void identify_projection_print_tiff(Widget *widget_id,
+static void identify_projection_print_tiff(Widget *widget,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 23 July 1998
@@ -365,9 +376,10 @@ Finds the id of the projection print tiff button.
 	struct Projection_window *projection;
 
 	ENTER(identify_projection_print_tiff);
+	USE_PARAMETER(call_data);
 	if (projection=(struct Projection_window *)client_data)
 	{
-		projection->print_menu.tiff_button= *widget_id;
+		projection->print_menu.tiff_button= *widget;
 	}
 	else
 	{
@@ -377,7 +389,7 @@ Finds the id of the projection print tiff button.
 	LEAVE;
 } /* identify_projection_print_tiff */
 
-static void identify_projection_close_butto(Widget *widget_id,
+static void identify_projection_close_butto(Widget *widget,
 	XtPointer projection_window,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 1 November 1995
@@ -389,9 +401,10 @@ Finds the id of the projection close button.
 	struct Projection_window *window;
 
 	ENTER(identify_projection_close_butto);
+	USE_PARAMETER(call_data);
 	if (window=(struct Projection_window *)projection_window)
 	{
-		window->close_button= *widget_id;
+		window->close_button= *widget;
 	}
 	else
 	{
@@ -401,7 +414,7 @@ Finds the id of the projection close button.
 	LEAVE;
 } /* identify_projection_close_butto */
 
-static void identify_projection_drawing_are(Widget *widget_id,
+static void identify_projection_drawing_are(Widget *widget,
 	XtPointer projection_window,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 4 November 1995
@@ -413,9 +426,10 @@ Finds the id of the projection drawing area.
 	struct Projection_window *window;
 
 	ENTER(identify_projection_drawing_are);
+	USE_PARAMETER(call_data);
 	if (window=(struct Projection_window *)projection_window)
 	{
-		window->projection_drawing_area= *widget_id;
+		window->projection_drawing_area= *widget;
 	}
 	else
 	{
@@ -428,26 +442,24 @@ Finds the id of the projection drawing area.
 static void expose_projection_drawing_area(Widget widget,
 	XtPointer projection_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 24 May 1997
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 The callback for redrawing part of a projection drawing area.
 ==============================================================================*/
 {
 	Display *display;
-	int i,number_of_colour_map_windows;
 #if defined (DEBUG)
 	static int first_call=1;
 #endif
 	struct Projection_window *window;
-	unsigned int number_of_children;
-	Window *children,*colour_map_windows,drawing_window,*new_colour_map_windows,
-		parent_window,root_window,top_level_window;
 	XmDrawingAreaCallbackStruct *callback;
 	XExposeEvent *event;
 	XWindowAttributes attributes;
 
 	ENTER(expose_projection_drawing_area);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 	if (window=(struct Projection_window *)projection_window)
 	{
 		if (callback=(XmDrawingAreaCallbackStruct *)call_data)
@@ -615,6 +627,7 @@ The callback for resizing a projection drawing area.
 	XWindowAttributes attributes;
 
 	ENTER(resize_projection_drawing_area);
+	USE_PARAMETER(widget);
 	if (window=(struct Projection_window *)projection_window)
 	{
 		if (callback=(XmDrawingAreaCallbackStruct *)call_data)
@@ -702,7 +715,7 @@ The callback for resizing a projection drawing area.
 	LEAVE;
 } /* resize_projection_drawing_area */
 
-static void identify_projection_spectrum_ar(Widget *widget_id,
+static void identify_projection_spectrum_ar(Widget *widget,
 	XtPointer projection_window,XtPointer call_data)
 /*******************************************************************************
 LAST MODIFIED : 4 November 1995
@@ -714,9 +727,10 @@ Finds the id of the spectrum_drawing_area.
 	struct Projection_window *window;
 
 	ENTER(identify_projection_spectrum_ar);
+	USE_PARAMETER(call_data);
 	if (window=(struct Projection_window *)projection_window)
 	{
-		window->spectrum_drawing_area= *widget_id;
+		window->spectrum_drawing_area= *widget;
 	}
 	else
 	{
@@ -745,6 +759,7 @@ The callback for redrawing part of spectrum drawing area.
 	XWindowAttributes attributes;
 
 	ENTER(expose_projection_spectrum_area);
+	USE_PARAMETER(widget);
 	if (window=(struct Projection_window *)projection_window)
 	{
 		if (callback=(XmDrawingAreaCallbackStruct *)call_data)
@@ -856,6 +871,7 @@ The callback for resizing a spectrum drawing area.
 	int width,height;
 
 	ENTER(resize_projection_spectrum_area);
+	USE_PARAMETER(widget);
 	if (window=(struct Projection_window *)projection_window)
 	{
 		if (callback=(XmDrawingAreaCallbackStruct *)call_data)
@@ -959,6 +975,8 @@ and frees the memory for the mapping window.
 	struct Projection_window *window;
 
 	ENTER(destroy_Projection_window);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 	if (window=(struct Projection_window *)projection_window)
 	{
 		/* set the pointer to the projection window to NULL */
@@ -1163,7 +1181,7 @@ the projection_window.
 
 static int write_projection_rgb_file(char *file_name,void *projection_window)
 /*******************************************************************************
-LAST MODIFIED : 10 August 1998
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 This function writes the rgb for drawing the projection associated with the
@@ -1171,19 +1189,19 @@ projection_window.
 ==============================================================================*/
 {
 	int return_code;
-	struct Projection *projection;
 	struct Projection_window *window;
 	unsigned long *image;
 
 	ENTER(write_projection_rgb_file);
-	if ((window=(struct Projection_window *)projection_window)&&
-		(projection=window->projection))
+	if ((window = (struct Projection_window *)projection_window) &&
+		 window->projection)
 	{
 		if (image=get_Drawing_2d_image(window->projection_drawing))
 		{
 			/* write the file */
 #if defined (IMAGEMAGICK)
 			char *extended_filename;
+
 			if ((!strchr(file_name, ':'))&&
 				(ALLOCATE(extended_filename, char, strlen(file_name) + 6)))
 			{
@@ -1226,7 +1244,7 @@ projection_window.
 
 static int write_projection_tiff_file(char *file_name,void *projection_window)
 /*******************************************************************************
-LAST MODIFIED : 10 August 1998
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 This function writes the tiff for drawing the projection associated with the
@@ -1234,19 +1252,19 @@ projection_window.
 ==============================================================================*/
 {
 	int return_code;
-	struct Projection *projection;
 	struct Projection_window *window;
 	unsigned long *image;
 
 	ENTER(write_projection_tiff_file);
-	if ((window=(struct Projection_window *)projection_window)&&
-		(projection=window->projection))
+	if ((window = (struct Projection_window *)projection_window) &&
+		window->projection)
 	{
 		if (image=get_Drawing_2d_image(window->projection_drawing))
 		{
 			/* write the file */
 #if defined (IMAGEMAGICK)
 			char *extended_filename;
+
 			if ((!strchr(file_name, ':'))&&
 				(ALLOCATE(extended_filename, char, strlen(file_name) + 6)))
 			{
@@ -1468,6 +1486,7 @@ Sets the projection type to cylindrical.
 	int return_code;
 
 	ENTER(set_Projection_type_cylindrical);
+	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
 		if (!(current_token=state->current_token)||
@@ -1516,6 +1535,7 @@ Sets the projection type to hammer.
 	int return_code;
 
 	ENTER(set_Projection_type_hammer);
+	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
 		if (!(current_token=state->current_token)||
@@ -1564,6 +1584,7 @@ Sets the projection type to polar.
 	int return_code;
 
 	ENTER(set_Projection_type_polar);
+	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
 		if (!(current_token=state->current_token)||
@@ -1622,7 +1643,7 @@ type.
 	struct Modifier_entry *entry;
 
 	ENTER(set_Projection_type);
-	/* check the arguments */
+	USE_PARAMETER(dummy_user_data);
 	if (state)
 	{
 		if (current_token=state->current_token)

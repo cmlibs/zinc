@@ -1,12 +1,11 @@
 /*******************************************************************************
 FILE : tracking_editor_dialog.c
 
-LAST MODIFIED : 30 May 2001
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Source code for the tracking editor dialog box.
 ==============================================================================*/
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -4266,7 +4265,7 @@ Sets tracking or other process running if in one of these modes.
 								else
 								{
 									ip_address = ntohl(socketDescriptor.sin_addr.s_addr);
-									sprintf(track_ed->remote_host,"%d.%d.%d.%d",
+									sprintf(track_ed->remote_host,"%lu.%lu.%lu.%lu",
 										(ip_address & 0xff000000) >> 24,
 										(ip_address & 0x00ff0000) >> 16,
 										(ip_address & 0x0000ff00) >> 8,
@@ -5248,7 +5247,7 @@ DESCRIPTION :
 				case KeyPress:
 				{
 					key_event= &(event->xkey);
-					printf("Track_ed_bc key %d press at %d %d\n",key_event->keycode,
+					printf("Track_ed_bc key %u press at %d %d\n",key_event->keycode,
 						key_event->x,key_event->y);
 #if defined (OLD_CODE)
 					charcount=XLookupString(key_event,buffer,bufsize,&keysym,&compose);
@@ -5264,7 +5263,7 @@ DESCRIPTION :
 				case KeyRelease:
 				{
 					key_event= &(event->xkey);
-					printf("Track_ed_bc key %d release at %d %d\n",key_event->keycode,
+					printf("Track_ed_bc key %u release at %d %d\n",key_event->keycode,
 						key_event->x,key_event->y);
 				} break;
 				default:

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture.c
 
-LAST MODIFIED : 30 May 2001
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 The functions for manipulating graphical textures.
@@ -2181,7 +2181,7 @@ int Texture_set_image_file(struct Texture *texture,char *image_file_name,
 	int crop_height,double radial_distortion_centre_x,
 	double radial_distortion_centre_y,double radial_distortion_factor_k1)
 /*******************************************************************************
-LAST MODIFIED : 12 October 2000
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Reads the image for <texture> from file <image_file_name> and then crops it
@@ -2206,6 +2206,8 @@ for formats that do not have a header, eg. RAW and YUV.
 		image_height = specify_height;
 		image_width = specify_width;
 #if defined (IMAGEMAGICK)
+		/*???RC Remove <raw_image_storage> once non-ImageMagick code removed */
+		USE_PARAMETER(raw_image_storage);
 		if (read_image_file(image_file_name,&number_of_components,
 			&number_of_bytes_per_component,&image_height,&image_width,
 			&image))

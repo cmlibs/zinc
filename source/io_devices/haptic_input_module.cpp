@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : haptic_input_module.cpp
 
-LAST MODIFIED : 19 October 1998
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Contains all the code needed to handle input from the haptic device.  Sets up
@@ -170,6 +170,7 @@ Closes the haptic device.
 	int return_code;
 
 	ENTER(input_module_haptic_close);
+	USE_PARAMETER(user_interface);
 #if ! defined PHANTOM_HAPTIC
 #if defined (HAPTIC) && defined (EXT_INPUT)
 	delete phantom;
@@ -238,6 +239,7 @@ Gets the position of the haptic device.
 		message->data[5]=0;
 		return_code=1;
 #else /* defined (HAPTIC) && defined (EXT_INPUT) */
+		USE_PARAMETER(message);
 		display_message(ERROR_MESSAGE,"Haptic device support is not present");
 		return_code=0;
 #endif /* defined (HAPTIC) && defined (EXT_INPUT) */
@@ -1394,6 +1396,7 @@ Creates the haptic class objects representing the given window scene
 			"haptic_create_scene.  Missing scene");
 	}
 #else /* HAPTIC */
+	USE_PARAMETER(scene);
 	return_code = 0;
 	display_message(ERROR_MESSAGE,
 		"haptic_create_scene.  Haptic support was not enabled when compiled");
@@ -1403,7 +1406,6 @@ Creates the haptic class objects representing the given window scene
 
 	return ( return_code );
 } /* haptic_create_scene */
-
 
 int haptic_set_surface_defaults( float dynamic_friction, float static_friction,
 	float damping, float spring_k )
@@ -1417,7 +1419,6 @@ Sets the default force response of surfaces in the model
 	int return_code;
 
 	ENTER (haptic_set_surface_defaults);
-
 #ifdef HAPTIC
 		gstShape::setDefaultSurfaceFdynamic( dynamic_friction );
 	gstShape::setDefaultSurfaceFstatic( static_friction );
@@ -1425,12 +1426,16 @@ Sets the default force response of surfaces in the model
 	gstShape::setDefaultSurfaceKspring( spring_k );
 	return_code = 1;
 #else /* HAPTIC */
+	USE_PARAMETER(dynamic_friction);
+	USE_PARAMETER(static_friction);
+	USE_PARAMETER(damping);
+	USE_PARAMETER(spring_k);
 	return_code = 0;
-	display_message(ERROR_MESSAGE,
-		"haptic_set_surface_defaults.  Haptic support was not enabled when compiled");
+	display_message(ERROR_MESSAGE, "haptic_set_surface_defaults.  "
+		"Haptic support was not enabled when compiled");
 #endif /* HAPTIC */
-
 	LEAVE;
+
 	return ( return_code );
 } /* haptic_set_surface_defaults */
 
@@ -1445,7 +1450,8 @@ Sets the absolute values of the scale of the haptic environment
 	int return_code;
 
 	ENTER (haptic_set_scale);
-
+	USE_PARAMETER(y);
+	USE_PARAMETER(z);
 #ifdef HAPTIC
 	if ( model )
 	{
@@ -1461,11 +1467,12 @@ Sets the absolute values of the scale of the haptic environment
 	}
 
 #else /* HAPTIC */
+	USE_PARAMETER(x);
 	return_code = 0;
 	display_message(ERROR_MESSAGE,
 		"haptic_set_scale.  Haptic support was not enabled when compiled");
 #endif /* HAPTIC */
-
 	LEAVE;
+
 	return ( return_code );
 } /* haptic_set_scale */

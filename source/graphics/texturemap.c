@@ -66,10 +66,8 @@ DESCRIPTION :
 Reads in background image to create textures from
 ==============================================================================*/
 {
-	char newname[80];
-	int number_of_bytes_per_component,number_of_components,x,y,z;
+	int number_of_bytes_per_component,number_of_components,x,y;
 	int long height,width;
-	short **rbuf,**gbuf,**bbuf,**abuf;
 	struct Image_buffer *in_image;
 	unsigned char *pixel;
 	unsigned long *image;
@@ -87,11 +85,11 @@ Reads in background image to create textures from
 		{
 			/*???debug.  Print a little info about the image */
 			printf("Image x and y size in pixels: %ld %ld\n",width,height);
-			printf("Image zsize in channels: %ld\n",number_of_components);
+			printf("Image zsize in channels: %d\n",number_of_components);
 			if (ALLOCATE(in_image,struct Image_buffer,1))
 			{
-				in_image->xsize=width;
-				in_image->ysize=height;
+				in_image->xsize=(short)width;
+				in_image->ysize=(short)height;
 				in_image->zsize=4;
 				in_image->rbuf=(short **)NULL;
 				in_image->gbuf=(short **)NULL;
@@ -236,7 +234,7 @@ DESCRIPTION :
 Writes generated texture image to file
 ==============================================================================*/
 {
-	int height,number_of_components,width,x,y,z;
+	int height,number_of_components,width,x,y;
 	unsigned char *component;
 	unsigned long *image;
 
@@ -301,8 +299,8 @@ image space
 	double temp_matrix[16],*vector,xsized,ysized;
 	GLdouble model_matrix[16],projection_matrix[16],windowx,windowy,windowz;
 	GLint default_viewport[4]={0,0,1,1};
-	int i,j,k,return_code,x,xpixel,xsize,y,ypixel,ysize,z,zsize;
-	short *rbuf, *gbuf, *bbuf, *abuf, *inbuf, *outbuf;
+	int i,j,return_code,xpixel,xsize,y,ypixel,ysize,zsize;
+	short *inbuf, *outbuf;
 	struct Image_buffer *in_image,*out_image;
 	struct Scene_viewer *scene_viewer;
 	struct VT_vector_field vector_field,*warped_field;

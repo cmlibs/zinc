@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : animation_window.c
 
-LAST MODIFIED : 13 December 1996
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Management routines for the animation command window.
@@ -491,7 +491,7 @@ Create the structures and retrieve the command window from the uil file.
 
 void animation_close(Widget w,XtPointer client_data,XmAnyCallbackStruct *cbs)
 /*******************************************************************************
-LAST MODIFIED : 6 October 1993
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Closes and destroys the window pointed to by the window.  After this the window
@@ -500,28 +500,29 @@ dispose of the window description structure and call the destroy function (if
 necessary).
 ==============================================================================*/
 {
-struct Animation_window *animation_window;
-struct Animation_Point_List_Item *ptr,*freeptr;
-ENTER(animation_close);
+	struct Animation_window *animation_window;
+	struct Animation_Point_List_Item *ptr,*freeptr;
 
-animation_window = (struct Animation_window *) client_data;
-printf("in close_animation_window\n");
-XtPopdown(animation_window->window_shell);
-XtDestroyWidget(animation_window->window_shell);
+	ENTER(animation_close);
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
+	animation_window = (struct Animation_window *) client_data;
+	printf("in close_animation_window\n");
+	XtPopdown(animation_window->window_shell);
+	XtDestroyWidget(animation_window->window_shell);
 #if defined (OLD_GFX_WINDOW)
-((struct Graphics_window *)animation_window->owner)->animation_window = NULL;
+	((struct Graphics_window *)animation_window->owner)->animation_window = NULL;
 #endif /* defined (OLD_GFX_WINDOW) */
 
-ptr = animation_window->animation_point_list;
-while (ptr!=NULL)
+	ptr = animation_window->animation_point_list;
+	while (ptr!=NULL)
 	{
-	freeptr = ptr;
-	ptr = ptr->next;
-	DEALLOCATE(freeptr);
+		freeptr = ptr;
+		ptr = ptr->next;
+		DEALLOCATE(freeptr);
 	}
-DEALLOCATE(animation_window);
-
-LEAVE;
+	DEALLOCATE(animation_window);
+	LEAVE;
 } /* animation_close */
 
 
@@ -539,7 +540,8 @@ if necessary and disposes of the window description structure.
 ==============================================================================*/
 {
 	ENTER(destroy_animation_window_callback);
-
+	USE_PARAMETER(caller);
+	USE_PARAMETER(caller_data);
 	printf("destroying seat_window\n");
 	DEALLOCATE(the_window);
 
@@ -556,51 +558,53 @@ DESCRIPTION :
 Decrements current point index (steps back one list item)
 ==============================================================================*/
 {
-struct Animation_window *animation_window;
-int i;
-char string_number[10];
-struct Animation_Point_List_Item *ptr,*ptrlast;
+	struct Animation_window *animation_window;
+	int i;
+	char string_number[10];
+	struct Animation_Point_List_Item *ptr,*ptrlast;
 
-animation_window = (struct Animation_window *)client_data;
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
 
-ptrlast = ptr = animation_window->animation_point_list;
-while(ptr != NULL)
+	animation_window = (struct Animation_window *)client_data;
+
+	ptrlast = ptr = animation_window->animation_point_list;
+	while(ptr != NULL)
 	{
 
-	if (ptr->point_number >= animation_window->point_index)
+		if (ptr->point_number >= animation_window->point_index)
 		{
-		animation_window->point_index = ptrlast->point_number;
-		break;
+			animation_window->point_index = ptrlast->point_number;
+			break;
 		}
-	else
+		else
 		{
-		ptrlast = ptr;
-		ptr = ptr->next;
+			ptrlast = ptr;
+			ptr = ptr->next;
 		}
 	}
-if (ptrlast != NULL)
+	if (ptrlast != NULL)
 	{
-	for (i=0;i<3;i++)
+		for (i=0;i<3;i++)
 		{
-		sprintf(string_number,"%.3f",ptrlast->eye[i]);
-		XtVaSetValues(animation_window->animation_text_fields[i],XmNvalue,string_number,NULL);
-		sprintf(string_number,"%.3f",ptrlast->poi[i]);
-		XtVaSetValues(animation_window->animation_text_fields[i+3],XmNvalue,string_number,NULL);
-		sprintf(string_number,"%.3f",ptrlast->time);
-		XtVaSetValues(animation_window->animation_text_fields[8],XmNvalue,string_number,NULL);
+			sprintf(string_number,"%.3f",ptrlast->eye[i]);
+			XtVaSetValues(animation_window->animation_text_fields[i],XmNvalue,string_number,NULL);
+			sprintf(string_number,"%.3f",ptrlast->poi[i]);
+			XtVaSetValues(animation_window->animation_text_fields[i+3],XmNvalue,string_number,NULL);
+			sprintf(string_number,"%.3f",ptrlast->time);
+			XtVaSetValues(animation_window->animation_text_fields[8],XmNvalue,string_number,NULL);
 		}
-	sprintf(string_number,"%.3f",ptrlast->fov);
-	XtVaSetValues(animation_window->animation_text_fields[7],XmNvalue,string_number,NULL);
+		sprintf(string_number,"%.3f",ptrlast->fov);
+		XtVaSetValues(animation_window->animation_text_fields[7],XmNvalue,string_number,NULL);
 	}
-sprintf(string_number,"%.2f",animation_window->point_index);
-XtVaSetValues(animation_window->animation_text_fields[6],XmNvalue,string_number,NULL);
+	sprintf(string_number,"%.2f",animation_window->point_index);
+	XtVaSetValues(animation_window->animation_text_fields[6],XmNvalue,string_number,NULL);
 
-printf("point_index = %f\n",animation_window->point_index);
+	printf("point_index = %f\n",animation_window->point_index);
 #if defined (OLD_GFX_WINDOW)
-drawing_changed((struct Drawing *) ((struct Graphics_window *)animation_window->owner)->drawing);
+	drawing_changed((struct Drawing *) ((struct Graphics_window *)animation_window->owner)->drawing);
 #endif /* defined (OLD_GFX_WINDOW) */
 }
-
 
 void animation_inc_point(Widget w,XtPointer client_data,
 	XmAnyCallbackStruct *cbs)
@@ -611,43 +615,45 @@ DESCRIPTION :
 Increments current point index (steps forward one list item)
 ==============================================================================*/
 {
-char string_number[10];
-struct Animation_Point_List_Item *ptr;
-int i;
-struct Animation_window *animation_window;
+	char string_number[10];
+	struct Animation_Point_List_Item *ptr;
+	int i;
+	struct Animation_window *animation_window;
 
-animation_window = (struct Animation_window *)client_data;
-ptr = animation_window->animation_point_list;
-while(ptr != NULL)
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
+	animation_window = (struct Animation_window *)client_data;
+	ptr = animation_window->animation_point_list;
+	while(ptr != NULL)
 	{
-	if (ptr->point_number > animation_window->point_index)
+		if (ptr->point_number > animation_window->point_index)
 		{
-		animation_window->point_index = ptr->point_number;
-		break;
+			animation_window->point_index = ptr->point_number;
+			break;
 		}
-	ptr = ptr->next;
+		ptr = ptr->next;
 	}
-if (ptr != NULL)
+	if (ptr != NULL)
 	{
-	/* update text fields */
-	for (i=0;i<3;i++)
+		/* update text fields */
+		for (i=0;i<3;i++)
 		{
-		sprintf(string_number,"%.3f",ptr->eye[i]);
-		XtVaSetValues(animation_window->animation_text_fields[i],XmNvalue,string_number,NULL);
-		sprintf(string_number,"%.3f",ptr->poi[i]);
-		XtVaSetValues(animation_window->animation_text_fields[i+3],XmNvalue,string_number,NULL);
+			sprintf(string_number,"%.3f",ptr->eye[i]);
+			XtVaSetValues(animation_window->animation_text_fields[i],XmNvalue,string_number,NULL);
+			sprintf(string_number,"%.3f",ptr->poi[i]);
+			XtVaSetValues(animation_window->animation_text_fields[i+3],XmNvalue,string_number,NULL);
 		}
-	sprintf(string_number,"%.3f",ptr->fov);
-	XtVaSetValues(animation_window->animation_text_fields[7],XmNvalue,string_number,NULL);
-	sprintf(string_number,"%.3f",ptr->time);
-	XtVaSetValues(animation_window->animation_text_fields[8],XmNvalue,string_number,NULL);
+		sprintf(string_number,"%.3f",ptr->fov);
+		XtVaSetValues(animation_window->animation_text_fields[7],XmNvalue,string_number,NULL);
+		sprintf(string_number,"%.3f",ptr->time);
+		XtVaSetValues(animation_window->animation_text_fields[8],XmNvalue,string_number,NULL);
 
-	sprintf(string_number,"%.2f",animation_window->point_index);
-	XtVaSetValues(animation_window->animation_text_fields[6],XmNvalue,string_number,NULL);
+		sprintf(string_number,"%.2f",animation_window->point_index);
+		XtVaSetValues(animation_window->animation_text_fields[6],XmNvalue,string_number,NULL);
 	}
-printf("point_index = %f\n",animation_window->point_index);
+	printf("point_index = %f\n",animation_window->point_index);
 #if defined (OLD_GFX_WINDOW)
-drawing_changed((struct Drawing *) ((struct Graphics_window *)animation_window->owner)->drawing);
+	drawing_changed((struct Drawing *) ((struct Graphics_window *)animation_window->owner)->drawing);
 #endif /* defined (OLD_GFX_WINDOW) */
 }
 
@@ -661,14 +667,16 @@ DESCRIPTION :
 Identifies text fields
 ==============================================================================*/
 {
-char string_number[10];
-struct Animation_window *animation_window;
-int index;
-animation_window = (struct Animation_window *)client_data;
-XtVaGetValues(w,XmNuserData,&index,NULL);
-animation_window->animation_text_fields[index] = w;
-sprintf(string_number,"%d",0);
-XtVaSetValues(w,XmNvalue,string_number,NULL);
+	char string_number[10];
+	struct Animation_window *animation_window;
+	int index;
+
+	USE_PARAMETER(cbs);
+	animation_window = (struct Animation_window *)client_data;
+	XtVaGetValues(w,XmNuserData,&index,NULL);
+	animation_window->animation_text_fields[index] = w;
+	sprintf(string_number,"%d",0);
+	XtVaSetValues(w,XmNvalue,string_number,NULL);
 
 }
 
@@ -681,51 +689,54 @@ DESCRIPTION :
 Updates field data for point
 ==============================================================================*/
 {
-struct Animation_window *animation_window;
-int index,i;
-float point_index;
-char *string_ptr,string_number[10];
-struct Animation_Point_List_Item *ptr,*found_ptr = NULL;
-animation_window = (struct Animation_window *)client_data;
-XtVaGetValues(w,XmNuserData,&index,NULL);
+	struct Animation_window *animation_window;
+	int index,i;
+	float point_index;
+	char *string_ptr,string_number[10];
+	struct Animation_Point_List_Item *ptr,*found_ptr = NULL;
 
-XtVaGetValues(w,XmNvalue,&string_ptr,NULL);
-printf("field(%d) = %f\n",index,atof(string_ptr));
+	USE_PARAMETER(cbs);
 
-ptr = animation_window->animation_point_list;
-if (index == 6)
+	animation_window = (struct Animation_window *)client_data;
+	XtVaGetValues(w,XmNuserData,&index,NULL);
+
+	XtVaGetValues(w,XmNvalue,&string_ptr,NULL);
+	printf("field(%d) = %f\n",index,atof(string_ptr));
+
+	ptr = animation_window->animation_point_list;
+	if (index == 6)
 	{
-	/* specific point index entered */
-	point_index = atof(string_ptr);
-	animation_window->point_index = point_index;
-	while (ptr != NULL)
+		/* specific point index entered */
+		point_index = atof(string_ptr);
+		animation_window->point_index = point_index;
+		while (ptr != NULL)
 		{
-		if (ptr->point_number == point_index)
+			if (ptr->point_number == point_index)
 			{
-			found_ptr = ptr;
-			break;
+				found_ptr = ptr;
+				break;
 			}
-		ptr = ptr->next;
+			ptr = ptr->next;
 		}
 
-	if (found_ptr != NULL)
+		if (found_ptr != NULL)
 		{
-		for (i=0;i<3;i++)
+			for (i=0;i<3;i++)
 			{
-			sprintf(string_number,"%.3f",found_ptr->eye[i]);
-			XtVaSetValues(animation_window->animation_text_fields[i],XmNvalue,string_number,NULL);
-			sprintf(string_number,"%.3f",found_ptr->poi[i]);
-			XtVaSetValues(animation_window->animation_text_fields[i+3],XmNvalue,string_number,NULL);
+				sprintf(string_number,"%.3f",found_ptr->eye[i]);
+				XtVaSetValues(animation_window->animation_text_fields[i],XmNvalue,string_number,NULL);
+				sprintf(string_number,"%.3f",found_ptr->poi[i]);
+				XtVaSetValues(animation_window->animation_text_fields[i+3],XmNvalue,string_number,NULL);
 			}
-		sprintf(string_number,"%.3f",found_ptr->fov);
-		XtVaSetValues(animation_window->animation_text_fields[7],XmNvalue,string_number,NULL);
-		sprintf(string_number,"%.3f",found_ptr->time);
-		XtVaSetValues(animation_window->animation_text_fields[8],XmNvalue,string_number,NULL);
+			sprintf(string_number,"%.3f",found_ptr->fov);
+			XtVaSetValues(animation_window->animation_text_fields[7],XmNvalue,string_number,NULL);
+			sprintf(string_number,"%.3f",found_ptr->time);
+			XtVaSetValues(animation_window->animation_text_fields[8],XmNvalue,string_number,NULL);
 
 		}
 	}
 #if defined (OLD_GFX_WINDOW)
-drawing_changed((struct Drawing *) ((struct Graphics_window *)animation_window->owner)->drawing);
+	drawing_changed((struct Drawing *) ((struct Graphics_window *)animation_window->owner)->drawing);
 #endif /* defined (OLD_GFX_WINDOW) */
 }
 
@@ -737,12 +748,15 @@ DESCRIPTION :
 Accepts current point into list
 ==============================================================================*/
 {
-struct Animation_window *animation_window;
-animation_window = (struct Animation_window *)client_data;
-printf("accept called\n");
-animation_add_point_to_list(animation_window);
+	struct Animation_window *animation_window;
+
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
+	animation_window = (struct Animation_window *)client_data;
+	printf("accept called\n");
+	animation_add_point_to_list(animation_window);
 #if defined (OLD_GFX_WINDOW)
-drawing_changed((struct Drawing *) ((struct Graphics_window *)animation_window->owner)->drawing);
+	drawing_changed((struct Drawing *) ((struct Graphics_window *)animation_window->owner)->drawing);
 #endif /* defined (OLD_GFX_WINDOW) */
 
 }
@@ -755,14 +769,16 @@ DESCRIPTION :
 Removes current point
 ==============================================================================*/
 {
-struct Animation_window *animation_window;
+	struct Animation_window *animation_window;
 
-animation_window = (struct Animation_window *)client_data;
-/* remove point and set index back one */
-animation_remove_point_from_list(animation_window);
-printf("clear called\n");
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
+	animation_window = (struct Animation_window *)client_data;
+	/* remove point and set index back one */
+	animation_remove_point_from_list(animation_window);
+	printf("clear called\n");
 #if defined (OLD_GFX_WINDOW)
-drawing_changed((struct Drawing *) ((struct Graphics_window *)animation_window->owner)->drawing);
+	drawing_changed((struct Drawing *) ((struct Graphics_window *)animation_window->owner)->drawing);
 #endif /* defined (OLD_GFX_WINDOW) */
 }
 
@@ -774,83 +790,86 @@ DESCRIPTION :
 Writes animation file
 ==============================================================================*/
 {
-struct Animation_window *animation_window;
-struct Animation_Point_List_Item *ptr;
-int i,cnt=0;
-FILE *fp,*fq;
-double maxtime=0;
-animation_window = (struct Animation_window *)client_data;
+	struct Animation_window *animation_window;
+	struct Animation_Point_List_Item *ptr;
+	int i,cnt=0;
+	FILE *fp,*fq;
+	double maxtime=0;
 
-printf("create called\n");
-fq = fopen("animation.points","w");
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
+	animation_window = (struct Animation_window *)client_data;
 
-ptr = animation_window->animation_point_list;
-while (ptr !=0)
+	printf("create called\n");
+	fq = fopen("animation.points","w");
+
+	ptr = animation_window->animation_point_list;
+	while (ptr !=0)
 	{
-	cnt++;
-	if (ptr->time > maxtime)
-		maxtime = ptr->time;
-	printf("1: ptr->point_number = %f, eye_point = %f,%f,%f poi = %f,%f,%f, time = %f\n",
-		ptr->point_number,ptr->eye[0],ptr->eye[1],ptr->eye[2],
-				ptr->poi[0],ptr->poi[1],ptr->poi[2],ptr->time);
-	fprintf(fq,"%lf\n%lf %lf %lf %lf %lf %lf\n%lf %lf\n",ptr->point_number,
-		ptr->eye[0],ptr->eye[1],ptr->eye[2],ptr->poi[0],ptr->poi[1],ptr->poi[2],
-		ptr->fov,ptr->time);
-	ptr=ptr->next;
+		cnt++;
+		if (ptr->time > maxtime)
+			maxtime = ptr->time;
+		printf("1: ptr->point_number = %f, eye_point = %f,%f,%f poi = %f,%f,%f, time = %f\n",
+			ptr->point_number,ptr->eye[0],ptr->eye[1],ptr->eye[2],
+			ptr->poi[0],ptr->poi[1],ptr->poi[2],ptr->time);
+		fprintf(fq,"%lf\n%lf %lf %lf %lf %lf %lf\n%lf %lf\n",ptr->point_number,
+			ptr->eye[0],ptr->eye[1],ptr->eye[2],ptr->poi[0],ptr->poi[1],ptr->poi[2],
+			ptr->fov,ptr->time);
+		ptr=ptr->next;
 	}
 
-fclose(fq);
+	fclose(fq);
 
-/* work out number of frames each 1/25 of a second to fit the whole time  */
-animation_window->n_frames = (int) (maxtime * 25.0);
-printf("# of frames to be generated: %d frames for %f seconds\n",animation_window->n_frames,maxtime);
+	/* work out number of frames each 1/25 of a second to fit the whole time  */
+	animation_window->n_frames = (int) (maxtime * 25.0);
+	printf("# of frames to be generated: %d frames for %f seconds\n",animation_window->n_frames,maxtime);
 
-fp = fopen("animation.com","w");
-fprintf(fp,"gfx set video\n");
+	fp = fopen("animation.com","w");
+	fprintf(fp,"gfx set video\n");
 
-animation_list_points(animation_window);
-if (cnt > 1)
+	animation_list_points(animation_window);
+	if (cnt > 1)
 	{
-	animation_produce_spline_path(animation_window);
+		animation_produce_spline_path(animation_window);
 
-	for (i=0;i<=animation_window->n_frames;i++)
+		for (i=0;i<=animation_window->n_frames;i++)
 		{
-		printf("spline pt[%d] : eye(%.2f,%.2f,%.2f)  poi(%.2f,%.2f,%.2f) fov(%f)\n",i,
-		animation_window->eye_spline_x[i],animation_window->eye_spline_y[i],animation_window->eye_spline_z[i],
-		animation_window->poi_spline_x[i],animation_window->poi_spline_y[i],animation_window->poi_spline_z[i],
-		animation_window->fov_spline[i]);
-		fprintf(fp,"gfx set view_point %lf %lf %lf\n",
-			animation_window->eye_spline_x[i],
-			animation_window->eye_spline_y[i],
-			animation_window->eye_spline_z[i]);
-		fprintf(fp,"gfx set interest_point %lf %lf %lf\n",
-			animation_window->poi_spline_x[i],
-			animation_window->poi_spline_y[i],
-			animation_window->poi_spline_z[i]);
-		fprintf(fp,"gfx set view_angle %lf\n",animation_window->fov_spline[i]);
-		fprintf(fp,"gfx grab_frame\n");
+			printf("spline pt[%d] : eye(%.2f,%.2f,%.2f)  poi(%.2f,%.2f,%.2f) fov(%f)\n",i,
+				animation_window->eye_spline_x[i],animation_window->eye_spline_y[i],animation_window->eye_spline_z[i],
+				animation_window->poi_spline_x[i],animation_window->poi_spline_y[i],animation_window->poi_spline_z[i],
+				animation_window->fov_spline[i]);
+			fprintf(fp,"gfx set view_point %lf %lf %lf\n",
+				animation_window->eye_spline_x[i],
+				animation_window->eye_spline_y[i],
+				animation_window->eye_spline_z[i]);
+			fprintf(fp,"gfx set interest_point %lf %lf %lf\n",
+				animation_window->poi_spline_x[i],
+				animation_window->poi_spline_y[i],
+				animation_window->poi_spline_z[i]);
+			fprintf(fp,"gfx set view_angle %lf\n",animation_window->fov_spline[i]);
+			fprintf(fp,"gfx grab_frame\n");
 		}
 	}
-else
+	else
 	{
-	animation_window->n_spline_points = 0;
+		animation_window->n_spline_points = 0;
 	}
 
-fprintf(fp,"gfx set video\n");
-fclose(fp);
+	fprintf(fp,"gfx set video\n");
+	fclose(fp);
 
-ptr = animation_window->animation_point_list;
-while (ptr !=0)
+	ptr = animation_window->animation_point_list;
+	while (ptr !=0)
 	{
 
-	printf("2: ptr->point_number = %f, eye_point = %f,%f,%f poi = %f,%f,%f, time = %f\n",
-		ptr->point_number,ptr->eye[0],ptr->eye[1],ptr->eye[2],
-				ptr->poi[0],ptr->poi[1],ptr->poi[2],ptr->time);
-	ptr=ptr->next;
+		printf("2: ptr->point_number = %f, eye_point = %f,%f,%f poi = %f,%f,%f, time = %f\n",
+			ptr->point_number,ptr->eye[0],ptr->eye[1],ptr->eye[2],
+			ptr->poi[0],ptr->poi[1],ptr->poi[2],ptr->time);
+		ptr=ptr->next;
 	}
 
 #if defined (OLD_GFX_WINDOW)
-drawing_changed((struct Drawing *) ((struct Graphics_window *)animation_window->owner)->drawing);
+	drawing_changed((struct Drawing *) ((struct Graphics_window *)animation_window->owner)->drawing);
 #endif /* defined (OLD_GFX_WINDOW) */
 }
 
@@ -862,80 +881,83 @@ DESCRIPTION :
 Loads animation.points file
 ==============================================================================*/
 {
-struct Animation_window *animation_window;
-struct Animation_Point_List_Item *ptr;
-double number,end;
-char string_number[10];
-FILE *fp;
-animation_window = (struct Animation_window *)client_data;
+	struct Animation_window *animation_window;
+	struct Animation_Point_List_Item *ptr;
+	double number,end;
+	char string_number[10];
+	FILE *fp;
 
-printf("loading file animation.points\n");
-/* clear existing data */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
+	animation_window = (struct Animation_window *)client_data;
 
-ptr = animation_window->animation_point_list;
-while (ptr != NULL)
+	printf("loading file animation.points\n");
+	/* clear existing data */
+
+	ptr = animation_window->animation_point_list;
+	while (ptr != NULL)
 	{
-	end = ptr->point_number;
-	ptr = ptr->next;
+		end = ptr->point_number;
+		ptr = ptr->next;
 	}
-animation_window->point_index = end;
-while (animation_window->animation_point_list)
+	animation_window->point_index = end;
+	while (animation_window->animation_point_list)
 	{
-	animation_remove_point_from_list(animation_window);
+		animation_remove_point_from_list(animation_window);
 	}
 
-if (fp = fopen("animation.points","r"))
+	if (fp = fopen("animation.points","r"))
 	{
-	animation_window->point_index = 0;
-	while (fscanf(fp,"%lf",&number) != EOF)
+		animation_window->point_index = 0;
+		while (fscanf(fp,"%lf",&number) != EOF)
 		{
-		sprintf(string_number,"%.3f",number);
-		XtVaSetValues(animation_window->animation_text_fields[6],XmNvalue,string_number,NULL);
-		printf("adding point %f to list\n",number);
+			sprintf(string_number,"%.3f",number);
+			XtVaSetValues(animation_window->animation_text_fields[6],XmNvalue,string_number,NULL);
+			printf("adding point %f to list\n",number);
 
-		fscanf(fp,"%lf",&number);
-		sprintf(string_number,"%.3f",number);
-		XtVaSetValues(animation_window->animation_text_fields[0],XmNvalue,string_number,NULL);
+			fscanf(fp,"%lf",&number);
+			sprintf(string_number,"%.3f",number);
+			XtVaSetValues(animation_window->animation_text_fields[0],XmNvalue,string_number,NULL);
 
-		fscanf(fp,"%lf",&number);
-		sprintf(string_number,"%.3f",number);
-		XtVaSetValues(animation_window->animation_text_fields[1],XmNvalue,string_number,NULL);
+			fscanf(fp,"%lf",&number);
+			sprintf(string_number,"%.3f",number);
+			XtVaSetValues(animation_window->animation_text_fields[1],XmNvalue,string_number,NULL);
 
-		fscanf(fp,"%lf",&number);
-		sprintf(string_number,"%.3f",number);
-		XtVaSetValues(animation_window->animation_text_fields[2],XmNvalue,string_number,NULL);
+			fscanf(fp,"%lf",&number);
+			sprintf(string_number,"%.3f",number);
+			XtVaSetValues(animation_window->animation_text_fields[2],XmNvalue,string_number,NULL);
 
-		fscanf(fp,"%lf",&number);
-		sprintf(string_number,"%.3f",number);
-		XtVaSetValues(animation_window->animation_text_fields[3],XmNvalue,string_number,NULL);
+			fscanf(fp,"%lf",&number);
+			sprintf(string_number,"%.3f",number);
+			XtVaSetValues(animation_window->animation_text_fields[3],XmNvalue,string_number,NULL);
 
-		fscanf(fp,"%lf",&number);
-		sprintf(string_number,"%.3f",number);
-		XtVaSetValues(animation_window->animation_text_fields[4],XmNvalue,string_number,NULL);
+			fscanf(fp,"%lf",&number);
+			sprintf(string_number,"%.3f",number);
+			XtVaSetValues(animation_window->animation_text_fields[4],XmNvalue,string_number,NULL);
 
-		fscanf(fp,"%lf",&number);
-		sprintf(string_number,"%.3f",number);
-		XtVaSetValues(animation_window->animation_text_fields[5],XmNvalue,string_number,NULL);
+			fscanf(fp,"%lf",&number);
+			sprintf(string_number,"%.3f",number);
+			XtVaSetValues(animation_window->animation_text_fields[5],XmNvalue,string_number,NULL);
 
-		fscanf(fp,"%lf",&number);
-		sprintf(string_number,"%.3f",number);
-		XtVaSetValues(animation_window->animation_text_fields[7],XmNvalue,string_number,NULL);
+			fscanf(fp,"%lf",&number);
+			sprintf(string_number,"%.3f",number);
+			XtVaSetValues(animation_window->animation_text_fields[7],XmNvalue,string_number,NULL);
 
-		fscanf(fp,"%lf",&number);
-		sprintf(string_number,"%.3f",number);
-		XtVaSetValues(animation_window->animation_text_fields[8],XmNvalue,string_number,NULL);
+			fscanf(fp,"%lf",&number);
+			sprintf(string_number,"%.3f",number);
+			XtVaSetValues(animation_window->animation_text_fields[8],XmNvalue,string_number,NULL);
 
-		animation_add_point_to_list(animation_window);
+			animation_add_point_to_list(animation_window);
 
 		}
 
 	}
-else
+	else
 	{
-	printf("ERROR : Couldn't open animation.points\n");
+		printf("ERROR : Couldn't open animation.points\n");
 	}
-fclose(fp);
+	fclose(fp);
 #if defined (OLD_GFX_WINDOW)
-drawing_changed((struct Drawing *) ((struct Graphics_window *)animation_window->owner)->drawing);
+	drawing_changed((struct Drawing *) ((struct Graphics_window *)animation_window->owner)->drawing);
 #endif /* defined (OLD_GFX_WINDOW) */
 }

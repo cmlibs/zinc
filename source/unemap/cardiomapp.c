@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cardiomapp.c
 
-LAST MODIFIED : 30 May 1998
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Functions for reading CardioMapp (ART) data files.  The format was given in
@@ -201,12 +201,12 @@ NOTE:  NEW IN CARDIOMAPP 2.0:
 	The A/D converters are 12 bits.  You should strip off the 
 	most significant nibble before using the data.  
 
-	example: Sample value = data value & 0xFFF.  (See rdt_ext.c)
+	example: Sample value = data value & 0xFFF  .  (See rdt_ext.c)
 
 =======================================================================
 
-NOTE:  	DATA VALUES ARE FROM 0x0-0xFFF.  This means that 0 volts is
-	represented by the value 0x800.  You should subtract this value
+NOTE:  	DATA VALUES ARE FROM 0x0 - 0xFFF  .  This means that 0 volts is
+	represented by the value 0x800  .  You should subtract this value
 	from each sample as part of the conversion to voltage.
 
 	Value 0     = -10 V

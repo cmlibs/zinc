@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : movie_data.c
 
-LAST MODIFIED : 10 February 1998
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Manipulate the movie data structure using the stuff in Richards movie.c
@@ -82,17 +82,17 @@ from file.
 
 void tracking_editor_limit_values(int *start,int *stop,int *view,int *node)
 /*******************************************************************************
-LAST MODIFIED : 10 February 1998
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Check that the start,stop,view,node values agree with the movie data structure.
-??? SEN node number isn't checked.
+??? SEN node number isn't checked. ???RC Remove USE_PARAMETER(node) once fixed.
 ==============================================================================*/
 {
 	int frame0,frame1;
 
 	ENTER(tracking_editor_limit_values);
-
+	USE_PARAMETER(node);
 	if (our_movie != NULL)
 	{
 		frame0 = our_movie->start_frame_no;

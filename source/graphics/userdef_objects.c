@@ -246,7 +246,9 @@ Render a hair.
 	float eyelashx[3],eyelashy[3],eyelashz[3];
 	double t,tt,tstep,ttstep,bend,bend2;
 	float hairx,hairy,hairz,browx,browy,browz,hairxprev,hairyprev,hairzprev;
+#if defined (GL_API)
 	float dummynorm[3] = {0,1,0};
+#endif
 	float vec1[3],vec2[3],vec3[3];
 #endif
 
@@ -738,7 +740,9 @@ Render a hair.
 	return (return_code);
 } /* render_hair */
 
+#if defined (OLD_CODE)
 static int robot_7dof;
+#endif /* defined (OLD_CODE) */
 
 static int render_robot_7dof(void *dummy)
 /*******************************************************************************
@@ -751,6 +755,7 @@ Render a 7 dof heart surgery robot.
 	int return_code;
 
 	ENTER(render_robot_7dof);
+	USE_PARAMETER(dummy);
 #if defined (GL_API)
 	callobj(robot_7dof);
 	return_code=1;
@@ -1210,7 +1215,7 @@ newly created object is put at <*userdef_address>.
 ==============================================================================*/
 {
 	enum Userdef_type type;
-	int i,j,k,l,return_code;
+	int i,j,k,return_code;
 	struct GT_userdef **userdef_address;
 	struct Userdef_hair *hair;
 	void *userdef_data;

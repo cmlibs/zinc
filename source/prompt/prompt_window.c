@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : prompt_window.c
 
-LAST MODIFIED : 4 March 1997
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Management routines for the prompt window.
@@ -165,6 +165,8 @@ Destroy the prompt_window structure and remove the window
 	struct Prompt_window *prompt_window;
 
 	ENTER(destroy_Prompt_window);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
 	if (prompt_window = (struct Prompt_window *)client_data)
 	{
 		if (prompt_window->address)
@@ -216,6 +218,7 @@ prompt widget.
 	struct Prompt_window *prompt_window;
 
 	ENTER(get_reply);
+	USE_PARAMETER(call_data);
 	if (prompt_window=(struct Prompt_window *)prompt_window_structure)
 	{
 #if defined (OLD_CODE)
@@ -267,7 +270,7 @@ DESCRIPTION:
 	struct Prompt_window *prompt_window;
 
 	ENTER(identify_prompt_history);
-
+	USE_PARAMETER(call_data);
 	if (prompt_window = (struct Prompt_window *)client_data)
 	{
 		prompt_window->prompt_history = widget;
@@ -290,6 +293,7 @@ DESCRIPTION:
 	struct Prompt_window *prompt_window;
 
 	ENTER(identify_prompt_reply);
+	USE_PARAMETER(call_data);
 	if (prompt_window = (struct Prompt_window *)client_data)
 	{
 		prompt_window->prompt_reply = widget;

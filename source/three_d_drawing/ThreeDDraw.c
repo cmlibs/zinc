@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : ThreeDDraw.c
 
-LAST MODIFIED : 26 April 2000
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Code for the 3-D drawing widget (including methods and actions).
@@ -84,6 +84,7 @@ Use an X font:
 #include <PEXlibprotos.h>
 #endif
 #endif
+#include "general/debug.h"
 
 /*
 Module variables
@@ -579,7 +580,7 @@ XrmQuark X3dDOUBLE_BUFFERING_quark,X3dSINGLE_BUFFERING_quark;
 static Boolean X3dCvtStringToBufferingMode(Display *display,XrmValue *args,
 	Cardinal *num_args,XrmValue *from,XrmValue *to,XtPointer *converter_data)
 /*******************************************************************************
-LAST MODIFIED : 31 December 1994
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Converts a string to a buffering mode.
@@ -590,7 +591,8 @@ Converts a string to a buffering mode.
 	XrmQuark string_quark;
 	static X3dBufferingMode buffering_mode;
 
-	/* check arguments */
+	USE_PARAMETER(args);
+	USE_PARAMETER(converter_data);
 	if (display&&num_args&&(0== *num_args)&&from&&to)
 	{
 		if (string_quark=XrmStringToQuark((char *)(from->addr)))
@@ -634,7 +636,7 @@ XrmQuark X3dCOLOUR_INDEX_MODE_quark,X3dCOLOUR_RGB_MODE_quark;
 static Boolean X3dCvtStringToBufferColourMode(Display *display,XrmValuePtr args,
 	Cardinal *num_args,XrmValuePtr from,XrmValuePtr to,XtPointer *converter_data)
 /*******************************************************************************
-LAST MODIFIED : 31 December 1994
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Converts a string to a buffer colour mode.
@@ -645,7 +647,8 @@ Converts a string to a buffer colour mode.
 	XrmQuark string_quark;
 	static X3dBufferColourMode buffer_colour_mode;
 
-	/* check arguments */
+	USE_PARAMETER(args);
+	USE_PARAMETER(converter_data);
 	if (display&&num_args&&(0== *num_args)&&from&&to)
 	{
 		if (string_quark=XrmStringToQuark((char *)(from->addr)))
@@ -706,7 +709,7 @@ The class initialize method.
 static void ThreeDDrawingInitialize(Widget request_widget,Widget new_widget,
 	ArgList args,Cardinal *num_args)
 /*******************************************************************************
-LAST MODIFIED : 28 January 1998
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 The initialize method.
@@ -753,6 +756,8 @@ because the initialize method is downward chained.
 #endif
 #endif
 
+	USE_PARAMETER(args);
+	USE_PARAMETER(num_args);
 	if ((request=(ThreeDDrawingWidget)request_widget)&&
 		(new=(ThreeDDrawingWidget)new_widget))
 	{
@@ -903,7 +908,7 @@ because the initialize method is downward chained.
 							/* only want to print this once, unless using different visuals */
 							if (!shareable_context)
 							{
-								printf("openGL visual id = %d\n",(new->three_d_drawing)
+								printf("openGL visual id = %lu\n",(new->three_d_drawing)
 									.normal_buffer.visual_information->visualid);
 							}
 							/* create the OpenGL rendering context */
@@ -1334,7 +1339,7 @@ printf("GL visual id = %d\n",
 
 static void ThreeDDrawingExpose(Widget widget,XEvent *event,Region region)
 /*******************************************************************************
-LAST MODIFIED : 30 April 1995
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 The expose method.
@@ -1349,6 +1354,7 @@ present.
 	Dimension height,width;
 #endif
 
+	USE_PARAMETER(region);
 	if (window=XtWindow(widget))
 	{
 #if defined (GL_API)
@@ -1412,7 +1418,7 @@ present.
 static Boolean ThreeDDrawingSetValues(Widget old,Widget current,Widget request,
 	ArgList arguments,Cardinal *number_of_arguments)
 /*******************************************************************************
-LAST MODIFIED : 30 December 1994
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 The expose method.
@@ -1422,6 +1428,11 @@ present.
 {
 	Boolean success;
 
+	USE_PARAMETER(old);
+	USE_PARAMETER(current);
+	USE_PARAMETER(request);
+	USE_PARAMETER(arguments);
+	USE_PARAMETER(number_of_arguments);
 	success=True;
 
 	return (success);
@@ -1562,15 +1573,16 @@ The destroy method.
 static void threeDDrawingInput(Widget widget,XEvent *event,String *parameters,
 	Cardinal *number_of_parameters)
 /*******************************************************************************
-LAST MODIFIED : 30 April 1997
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Called in response to input.
 ==============================================================================*/
 {
-	Window window;
 	X3dThreeDDrawCallbackStruct call_data;
 
+	USE_PARAMETER(parameters);
+	USE_PARAMETER(number_of_parameters);
 	call_data.reason=X3dCR_INPUT;
 	call_data.event=event;
 	call_data.window=XtWindow(widget);

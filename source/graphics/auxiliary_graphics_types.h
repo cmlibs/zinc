@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : auxiliary_graphics_types.h
 
-LAST MODIFIED : 1 May 2001
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 Structures and enumerated types needed to produce graphics primitives but not
@@ -23,9 +23,11 @@ Global types
 
 struct Element_discretization
 /*******************************************************************************
-LAST MODIFIED : 22 September 1997
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
+Stores the number of segment used in drawing each side of an element.
+Controls quality of curve rendition.
 ==============================================================================*/
 {
 	int number_in_xi1,number_in_xi2,number_in_xi3;

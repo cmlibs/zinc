@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 30 September 2001
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1842,7 +1842,7 @@ int draw_event_marker(struct Event *event,int current_event_number,
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 23 August 2001
+LAST MODIFIED : 23 November 2001
 
 DESCRIPTION : draws the event_marker
 ==============================================================================*/
@@ -1860,6 +1860,8 @@ DESCRIPTION : draws the event_marker
 #endif /* defined (NO_ALIGNMENT) */
 
 	ENTER(draw_event_marker);
+	USE_PARAMETER(signal_min);
+	USE_PARAMETER(signal_max);
 	/*???undecided accepted ? */
 	if (event&&times&&((PRINTER_DETAIL!=detail)||(event->status==ACCEPTED)||
 		(event->status==UNDECIDED))&&user_interface&&signal_drawing_information)

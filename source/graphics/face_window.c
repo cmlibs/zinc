@@ -190,7 +190,8 @@ DESCRIPTION:
 ================================================================================*/
 {
 	ENTER(destroy_face_window_callback);
-
+	USE_PARAMETER(caller);
+	USE_PARAMETER(caller_data);
 	printf("destroying face_window\n");
 	DEALLOCATE(the_window);
 
@@ -200,59 +201,49 @@ DESCRIPTION:
 
 void close_faceCB(Widget w,XtPointer client_data,XmAnyCallbackStruct *cbs)
 {
-printf("close_faceCB called\n");
-close_face_window((struct Face_window *) client_data);
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
+	printf("close_faceCB called\n");
+	close_face_window((struct Face_window *) client_data);
 }
 
 void facebtn1CB(Widget w,XtPointer client_data,XmAnyCallbackStruct *cbs)
 {
-printf("btn1CB called\n");
+	USE_PARAMETER(w);
+	USE_PARAMETER(client_data);
+	USE_PARAMETER(cbs);
+	printf("btn1CB called\n");
 }
 
 void faceslider1CB(Widget w,XtPointer client_data,XmScrollBarCallbackStruct *cbs)
 {
-struct Face_window *face_window;
-struct Graphics_window *graphics_window;
+	struct Face_window *face_window;
 
-printf("faceslider1CB called\n");
-face_window = (struct Face_window *) client_data;
-graphics_window = (struct Graphics_window *) face_window->owner;
-#if defined (OLD_GFX_WINDOW)
-graphics_window->drawing->t
-	= ((double) cbs->value)/100.0;
-update_window_contents((struct Drawing *)graphics_window->drawing);
-drawing_changed((struct Drawing *)graphics_window->drawing);
-#endif /* defined (OLD_GFX_WINDOW) */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
+	printf("faceslider1CB called\n");
+	face_window = (struct Face_window *) client_data;
+	USE_PARAMETER(face_window);
 }
 
 void faceslider2CB(Widget w,XtPointer client_data,XmScrollBarCallbackStruct *cbs)
 {
-struct Face_window *face_window;
-struct Graphics_window *graphics_window;
+	struct Face_window *face_window;
 
-printf("faceslider2CB called\n");
-face_window = (struct Face_window *) client_data;
-graphics_window = (struct Graphics_window *) face_window->owner;
-#if defined (OLD_GFX_WINDOW)
-graphics_window->drawing->s
-	= (((double) cbs->value) - 50.0)/100.0;
-remakescene((struct Drawing *)graphics_window->drawing);
-drawing_changed((struct Drawing *)graphics_window->drawing);
-#endif /* defined (OLD_GFX_WINDOW) */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
+	printf("faceslider2CB called\n");
+	face_window = (struct Face_window *) client_data;
+	USE_PARAMETER(face_window);
 }
 
 void faceslider3CB(Widget w,XtPointer client_data,XmScrollBarCallbackStruct *cbs)
 {
-struct Face_window *face_window;
-struct Graphics_window *graphics_window;
+	struct Face_window *face_window;
 
-printf("faceslider3CB called\n");
-face_window = (struct Face_window *) client_data;
-graphics_window = (struct Graphics_window *) face_window->owner;
-#if defined (OLD_GFX_WINDOW)
-graphics_window->drawing->u
-	= ((double) cbs->value)/100.0;
-update_window_contents((struct Drawing *)graphics_window->drawing);
-drawing_changed((struct Drawing *)graphics_window->drawing);
-#endif /* defined (OLD_GFX_WINDOW) */
+	USE_PARAMETER(w);
+	USE_PARAMETER(cbs);
+	printf("faceslider3CB called\n");
+	face_window = (struct Face_window *) client_data;
+	USE_PARAMETER(face_window);
 }
