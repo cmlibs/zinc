@@ -5057,7 +5057,7 @@ Creates a pair of arm labels, and adds to the scene.
 					if (GT_OBJECT_ADD(GT_glyph_set)(graphics_object,/*time*/0.0,glyph_set))
 					{										
 						Scene_add_graphics_object(get_unemap_package_scene(package),
-							graphics_object,0,graphics_object->name);
+							graphics_object,0,graphics_object->name,/*fast_changing*/0);
 						set_unemap_package_map_torso_arm_labels(package,graphics_object,map_number);	
 					}
 					else
