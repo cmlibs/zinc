@@ -21,7 +21,7 @@ Management routines for the main command window.
 #endif /* defined (MOTIF) */
 #include "general/debug.h"
 #include "command/command_window.h"
-#include "command/command_window.uid64"
+#include "command/command_window.uidh"
 #include "command/command.h"
 #if !defined (WINDOWS_DEV_FLAG)
 #include "help/help_interface.h"
@@ -1202,7 +1202,7 @@ Create the structures and retrieve the command window from the uil file.
 	if (execute_command&&(execute_command->function)&&user_interface)
 	{
 #if defined (MOTIF)
-		if (MrmOpenHierarchy_base64_string(command_window_uid64,
+		if (MrmOpenHierarchy_base64_string(command_window_uidh,
 			&command_window_hierarchy,&command_window_hierarchy_open))
 		{
 #endif /* defined (MOTIF) */

@@ -39,7 +39,7 @@ DESCRIPTION :
 #include "unemap/map_dialog.h"
 #include "unemap/mapping.h"
 #include "unemap/mapping_window.h"
-#include "unemap/mapping_window.uid64"
+#include "unemap/mapping_window.uidh"
 #include "unemap/rig.h"
 #if defined (UNEMAP_USE_NODES)
 #include "unemap/rig_node.h"
@@ -3885,7 +3885,7 @@ properties.  Then the mapping window is opened.
 				if (create_mapping_window_shell(shell,parent,screen_width,
 					screen_height,user_interface))
 				{
-					if (MrmOpenHierarchy_base64_string(mapping_window_uid64,
+					if (MrmOpenHierarchy_base64_string(mapping_window_uidh,
 						&mapping_window_hierarchy,
 						&mapping_window_hierarchy_open))
 							/*???DB.  Should this be in create_mapping_window_shell ? */

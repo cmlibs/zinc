@@ -27,7 +27,7 @@ DESCRIPTION :
 #include "graphics/spectrum.h"
 #include "projection/projection.h"
 #include "projection/projection_dialog.h"
-#include "projection/projection_dialog.uid64"
+#include "projection/projection_dialog.uidh"
 #include "projection/projection_window.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -1810,7 +1810,7 @@ and initializes the appropriate fields.
 	/* check arguments */
 	if (user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(projection_dialog_uid64,
+		if (MrmOpenHierarchy_base64_string(projection_dialog_uidh,
 			&projection_dialog_hierarchy,&projection_dialog_hierarchy_open))
 		{
 			if (ALLOCATE(projection_dialog,struct Projection_dialog,1))

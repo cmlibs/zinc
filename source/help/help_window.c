@@ -23,7 +23,7 @@ Code for opening and closing and working a CMISS help window.
 
 #include "general/debug.h"
 #include "help/help_window.h"
-#include "help/help_window.uid64"
+#include "help/help_window.uidh"
 #include "general/mystring.h"
 #include "help/help_work.h"
 #include "user_interface/message.h"
@@ -314,7 +314,7 @@ window is destroyed, that location will be cleared.
 	};
 
 	ENTER(create_help_window);
-	if (MrmOpenHierarchy_base64_string(help_window_uid64,
+	if (MrmOpenHierarchy_base64_string(help_window_uidh,
 		&help_window_hierarchy, &help_window_hierarchy_open))
 	{
 		/* try to allocate space for the help window */

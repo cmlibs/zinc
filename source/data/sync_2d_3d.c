@@ -7,7 +7,7 @@ DESCRIPTION :
 ==============================================================================*/
 #include <stdlib.h>
 #include "data/sync_2d_3d.h"
-#include "data/sync_2d_3d.uid64"
+#include "data/sync_2d_3d.uidh"
 #include "general/debug.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -551,7 +551,7 @@ upon its name.
 
 	return_struct=(struct DIALOG_STRUCT(dialog_name) *)NULL;
 	ENTER(DIALOG_CREATE(dialog_name));
-	if (MrmOpenHierarchy_base64_string(sync_2d_3d_uid64,
+	if (MrmOpenHierarchy_base64_string(sync_2d_3d_uidh,
 		&sync_2d_3d_hierarchy,&sync_2d_3d_hierarchy_open))
 	{
 		/* allocate memory for the structure */

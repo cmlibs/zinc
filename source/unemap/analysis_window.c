@@ -25,7 +25,7 @@ DESCRIPTION :
 #include "general/postscript.h"
 #include "unemap/analysis.h"
 #include "unemap/analysis_window.h"
-#include "unemap/analysis_window.uid64"
+#include "unemap/analysis_window.uidh"
 #include "unemap/rig.h"
 #if defined (UNEMAP_USE_NODES)
 #include "unemap/rig_node.h"
@@ -3473,7 +3473,7 @@ returned.
 	ENTER(create_Analysis_window);
 	if (signal_drawing_information&&user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(analysis_window_uid64,
+		if (MrmOpenHierarchy_base64_string(analysis_window_uidh,
 			&analysis_window_hierarchy,&analysis_window_hierarchy_open))
 		{
 			/* allocate memory */

@@ -14,7 +14,7 @@ ranges between 0-1.
 #include <Xm/Text.h>
 #endif /* defined (MOTIF) */
 #include "colour/colour_editor.h"
-#include "colour/colour_editor.uid64"
+#include "colour/colour_editor.uidh"
 #include "general/debug.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -789,7 +789,7 @@ until a non-NULL colour is passed to it. See: colour_editor_set_colour.
 	/* check arguments */
 	if (user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(colour_editor_uid64,
+		if (MrmOpenHierarchy_base64_string(colour_editor_uidh,
 			&colour_editor_hierarchy,&colour_editor_hierarchy_open))
 		{
 			/* allocate memory */

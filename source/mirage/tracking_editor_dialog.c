@@ -50,7 +50,7 @@ Source code for the tracking editor dialog box.
 #include "mirage/photogrammetry.h"
 #include "mirage/tracking_editor_data.h"
 #include "mirage/tracking_editor_dialog.h"
-#include "mirage/tracking_editor_dialog.uid64"
+#include "mirage/tracking_editor_dialog.uidh"
 #include "three_d_drawing/ThreeDDraw.h"
 #include "user_interface/confirmation.h"
 #include "user_interface/filedir.h"
@@ -5008,7 +5008,7 @@ DESCRIPTION :
 		if (!(track_ed = *address))
 		{
 			/* create the dialog */
-			if (MrmOpenHierarchy_base64_string(tracking_editor_dialog_uid64,
+			if (MrmOpenHierarchy_base64_string(tracking_editor_dialog_uidh,
 				&tracking_editor_dialog_hierarchy,
 				&tracking_editor_dialog_hierarchy_open))
 			{

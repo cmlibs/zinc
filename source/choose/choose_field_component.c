@@ -15,7 +15,7 @@ be selected from an option menu.
 #endif /* defined (MOTIF) */
 #include "general/debug.h"
 #include "choose/choose_field_component.h"
-#include "choose/choose_object.uid64"
+#include "choose/choose_object.uidh"
 #include "finite_element/finite_element.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
@@ -357,7 +357,7 @@ Creates an option menu from which a component of the field may be chosen.
 	/* check arguments */
 	if (parent)
 	{
-		if (MrmOpenHierarchy_base64_string(choose_object_uid64,
+		if (MrmOpenHierarchy_base64_string(choose_object_uidh,
 			&choose_field_component_hierarchy,&choose_field_component_hierarchy_open))
 		{
 			/* allocate memory */

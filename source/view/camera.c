@@ -17,7 +17,7 @@ and the returned value is a global one.
 #endif
 #include "general/debug.h"
 #include "view/camera.h"
-#include "view/camera.uid64"
+#include "view/camera.uidh"
 #include "view/coord.h"
 #include "view/coord_trans.h"
 #include "user_interface/message.h"
@@ -223,7 +223,7 @@ Creates a camera widget that gets a position and orientation from the user.
 
 	ENTER(create_camera_widget);
 	return_widget=(Widget)NULL;
-	if (MrmOpenHierarchy_base64_string(camera_uid64,
+	if (MrmOpenHierarchy_base64_string(camera_uidh,
 		&camera_hierarchy,&camera_hierarchy_open))
 	{
 		/* allocate memory */

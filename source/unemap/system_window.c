@@ -32,7 +32,7 @@ UNIMA_ACQUISITION refers to the acquisition window used with the UNIMA/EMAP
 #include "unemap/mapping_window.h"
 #include "unemap/system_window.h"
 #if defined (MOTIF)
-#include "unemap/system_window.uid64"
+#include "unemap/system_window.uidh"
 #endif /* defined (MOTIF) */
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -1057,7 +1057,7 @@ pointer to the created structure if successful and NULL if unsuccessful.
 #endif /* defined (UNEMAP_USE_NODES) */
 		)
 	{
-		if (MrmOpenHierarchy_base64_string(system_window_uid64,
+		if (MrmOpenHierarchy_base64_string(system_window_uidh,
 			&system_window_hierarchy,&system_window_hierarchy_open))
 		{
 			/* allocate memory */

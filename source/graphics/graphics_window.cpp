@@ -32,7 +32,7 @@ interest and set scene_viewer values directly.
 #include "general/object.h"
 #include "graphics/colour.h"
 #include "graphics/graphics_window.h"
-#include "graphics/graphics_window.uid64"
+#include "graphics/graphics_window.uidh"
 #include "graphics/light.h"
 #include "graphics/light_model.h"
 #include "graphics/scene.h"
@@ -2542,7 +2542,7 @@ will be printed on the windows title bar.
 		light_manager&&light_model_manager&&default_light_model&&
 		scene_manager&&scene&&texture_manager&&user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(graphics_window_uid64,
+		if (MrmOpenHierarchy_base64_string(graphics_window_uidh,
 			&graphics_window_hierarchy,&graphics_window_hierarchy_open))
 		{
 			/* Try to allocate space for the window structure */

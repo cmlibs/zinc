@@ -19,7 +19,7 @@ DESCRIPTION :
 #include "time/time.h"
 #include "time/time_keeper.h"
 #include "time/time_editor.h"
-#include "time/time_editor.uid64"
+#include "time/time_editor.uidh"
 #include "user_interface/confirmation.h"
 #include "user_interface/message.h"
 
@@ -542,7 +542,7 @@ Creates a time_editor widget.
 	return_widget=(Widget)NULL;
 	if (time_editor_widget && parent && user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(time_editor_uid64,
+		if (MrmOpenHierarchy_base64_string(time_editor_uidh,
 			&time_editor_hierarchy,&time_editor_hierarchy_open))
 		{
 			/* allocate memory */

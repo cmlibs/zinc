@@ -29,7 +29,7 @@ group of nodes
 #include "mirage/em_cmgui.h"
 	/*???DB.  For EM analysis - move out of mirage ? */
 #include "slider/emoter_dialog.h"
-#include "slider/emoter_dialog.uid64"
+#include "slider/emoter_dialog.uidh"
 #include "three_d_drawing/movie_extensions.h"
 #include "user_interface/confirmation.h"
 #include "user_interface/message.h"
@@ -5337,7 +5337,7 @@ Create emoter controls.
 	ENTER(create_emoter_dialog);
 
 	return_widget = (Widget)NULL;
-	if (MrmOpenHierarchy_base64_string(emoter_dialog_uid64,
+	if (MrmOpenHierarchy_base64_string(emoter_dialog_uidh,
 		&emoter_dialog_hierarchy,&emoter_dialog_hierarchy_open))
 	{
 		/* allocate memory */

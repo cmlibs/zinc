@@ -15,7 +15,7 @@ Management routines for the comfile window.
 #endif /* defined (MOTIF) */
 #include "general/debug.h"
 #include "comfile/comfile_window.h"
-#include "comfile/comfile_window.uid64"
+#include "comfile/comfile_window.uidh"
 #include "command/command.h"
 #include "general/mystring.h"
 #include "user_interface/filedir.h"
@@ -495,7 +495,7 @@ resource manager hierarchy.
 		user_interface)
 	{
 		fclose(comfile);
-		if (MrmOpenHierarchy_base64_string(comfile_window_uid64,
+		if (MrmOpenHierarchy_base64_string(comfile_window_uidh,
 			&comfile_window_hierarchy,&comfile_window_hierarchy_open))
 		{
 			/* create the structure */

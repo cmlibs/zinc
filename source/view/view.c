@@ -54,7 +54,7 @@ endif
 #include "view/coord.h"
 #include "view/coord_trans.h"
 #include "view/view.h"
-#include "view/view.uid64"
+#include "view/view.uidh"
 
 /*
 Module variables
@@ -431,7 +431,7 @@ return a global position and orientation of the camera.
 
 	ENTER(create_view_widget);
 	return_widget = (Widget)NULL;
-	if (MrmOpenHierarchy_base64_string(view_uid64,
+	if (MrmOpenHierarchy_base64_string(view_uidh,
 		&view_hierarchy,&view_hierarchy_open))
 	{
 		/* allocate memory */

@@ -18,7 +18,7 @@ This module creates a spectrum_editor_dialog.
 #include "graphics/spectrum.h"
 #include "graphics/spectrum_editor.h"
 #include "graphics/spectrum_editor_dialog.h"
-#include "graphics/spectrum_editor_dialog.uid64"
+#include "graphics/spectrum_editor_dialog.uidh"
 #include "select/select_spectrum.h"
 #include "user_interface/message.h"
 
@@ -375,7 +375,7 @@ the spectrums contained in the global list.
 	/* check arguments */
 	if (spectrum_manager&&user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(spectrum_editor_dialog_uid64,
+		if (MrmOpenHierarchy_base64_string(spectrum_editor_dialog_uidh,
 			&spectrum_editor_dialog_hierarchy,&spectrum_editor_dialog_hierarchy_open))
 		{
 			/* allocate memory */

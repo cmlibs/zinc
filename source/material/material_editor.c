@@ -18,7 +18,7 @@ DESCRIPTION :
 #include "graphics/graphics_library.h"
 #include "graphics/material.h"
 #include "material/material_editor.h"
-#include "material/material_editor.uid64"
+#include "material/material_editor.uidh"
 #include "three_d_drawing/ThreeDDraw.h"
 #include "user_interface/message.h"
 
@@ -1051,7 +1051,7 @@ Creates a material_editor widget.
 	/* check arguments */
 	if (material_editor_widget&&parent&&texture_manager&&user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(material_editor_uid64,
+		if (MrmOpenHierarchy_base64_string(material_editor_uidh,
 			&material_editor_hierarchy,&material_editor_hierarchy_open))
 		{
 			/* allocate memory */

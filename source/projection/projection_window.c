@@ -31,7 +31,7 @@ DESCRIPTION :
 #include "projection/projection.h"
 #include "projection/projection_dialog.h"
 #include "projection/projection_window.h"
-#include "projection/projection_window.uid64"
+#include "projection/projection_window.uidh"
 #include "user_interface/filedir.h"
 #include "user_interface/message.h"
 #include "user_interface/printer.h"
@@ -1309,7 +1309,7 @@ point to the created projection window.  If unsuccessful, NULL is returned.
 	/* check arguments */
 	if (user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(projection_window_uid64,
+		if (MrmOpenHierarchy_base64_string(projection_window_uidh,
 			&projection_window_hierarchy,&projection_window_hierarchy_open))
 		{
 			/* allocate memory */

@@ -14,7 +14,7 @@ Widgets for editing a FE_field_scalar object = scalar function of a field.
 #endif /* defined (MOTIF) */
 #include "general/debug.h"
 #include "choose/choose_enumerator.h"
-#include "choose/choose_object.uid64"
+#include "choose/choose_object.uidh"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -297,7 +297,7 @@ The chooser makes its own copy of the <valid_strings> array.
 	return_widget=(Widget)NULL;
 	if (parent&&valid_strings&&(0<number_of_valid_strings)&&enumerator_string)
 	{
-		if (MrmOpenHierarchy_base64_string(choose_object_uid64,
+		if (MrmOpenHierarchy_base64_string(choose_object_uidh,
 			&choose_enumerator_hierarchy,&choose_enumerator_hierarchy_open))
 		{
 			/* allocate memory, incl. copy of valid_strings */

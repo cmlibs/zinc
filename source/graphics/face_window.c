@@ -14,7 +14,7 @@ Management routines for the main command window.
 #include <Xm/Protocols.h>
 #include "general/debug.h"
 #include "graphics/face_window.h"
-#include "graphics/face_window.uid64"
+#include "graphics/face_window.uidh"
 #include "graphics/graphics_library.h"
 #include "graphics/graphics_window.h"
 #include "graphics/scene.h"
@@ -62,7 +62,7 @@ Create the structures and retrieve the command window from the uil file.
 	/* check arguments */
 	if (user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(face_window_uid64,
+		if (MrmOpenHierarchy_base64_string(face_window_uidh,
 			&face_window_hierarchy,&face_window_hierarchy_open))
 		{
 			if (ALLOCATE(face_window, struct Face_window, 1))

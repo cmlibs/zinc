@@ -22,7 +22,7 @@ Functions and structures for using the parameter dialog boxes.
 #include "user_interface/user_interface.h"
 #include "general/debug.h"
 #include "cell/parameter_dialog.h"
-#include "cell/parameter_dialog.uid64"
+#include "cell/parameter_dialog.uidh"
 #include "cell/cell_component.h"
 #include "cell/cell_window.h"
 #include "cell/input.h"
@@ -1056,7 +1056,7 @@ Create a new parameter dialog for the cell <component>
       parameter_dialog_destroy_callback((Widget)NULL,(XtPointer)component,
         (XtPointer)NULL);
     }
-    if (MrmOpenHierarchy_base64_string(parameter_dialog_uid64,
+    if (MrmOpenHierarchy_base64_string(parameter_dialog_uidh,
       &parameter_dialog_hierarchy,&parameter_dialog_hierarchy_open))
     {
       if (ALLOCATE(component->dialog,struct Parameter_dialog,1))

@@ -16,7 +16,7 @@ coordinate system, and the returned value is a global one.
 #include "finite_element/finite_element_to_streamlines.h"
 #include "general/debug.h"
 #include "graphics/interactive_streamlines_dialog.h"
-#include "graphics/interactive_streamlines_dialog.uid64"
+#include "graphics/interactive_streamlines_dialog.uidh"
 #include "graphics/scene.h"
 #include "io_devices/input_module.h"
 #include "io_devices/input_module_widget.h"
@@ -348,7 +348,7 @@ the interactive streamlines.
 	/* check arguments */
 	if (interactive_streamline_manager&&user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(interactive_streamlines_dialog_uid64,
+		if (MrmOpenHierarchy_base64_string(interactive_streamlines_dialog_uidh,
 			&interactive_streamline_dialog_hierarchy,&interactive_streamline_dialog_hierarchy_open))
 		{
 			/* allocate memory */

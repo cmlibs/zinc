@@ -20,7 +20,7 @@ New version using macros to handle different object types.
 #include <Xm/ScrollBar.h>
 #include "general/debug.h"
 #include "select/select.h"
-#include "select/select.uid64"
+#include "select/select.uidh"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -1280,7 +1280,7 @@ upon its name. \
 \
 	ENTER(CREATE_SELECT_WIDGET(object_type)); \
 	return_widget=(Widget)NULL; \
-	if (MrmOpenHierarchy_base64_string(select_uid64, \
+	if (MrmOpenHierarchy_base64_string(select_uidh, \
 		&select_hierarchy,&select_hierarchy_open)) \
 	{ \
 		/* allocate memory */ \

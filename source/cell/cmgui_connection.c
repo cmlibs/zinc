@@ -20,7 +20,7 @@ Functions for talking between Cell and Cmgui.
 #include "cell/parameter_dialog.h"
 #include "cell/output.h"
 #include "cell/input.h"
-#include "cell/export_dialog.uid64"
+#include "cell/export_dialog.uidh"
 #include "choose/choose_element_group.h"
 #include "finite_element/import_finite_element.h"
 #include "user_interface/filedir.h"
@@ -436,7 +436,7 @@ Create a new export dialog.
       export_dialog_destroy_callback((Widget)NULL,(XtPointer)cell,
         (XtPointer)NULL);
     }
-    if (MrmOpenHierarchy_base64_string(export_dialog_uid64,
+    if (MrmOpenHierarchy_base64_string(export_dialog_uidh,
       &export_dialog_hierarchy,&export_dialog_hierarchy_open))
     {
       if (ALLOCATE(cell->export_dialog,struct Export_dialog,1))

@@ -17,7 +17,7 @@ changed.
 #include "finite_element/finite_element.h"
 #include "general/debug.h"
 #include "node/node_field_editor.h"
-#include "node/node_field_editor.uid64"
+#include "node/node_field_editor.uidh"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
@@ -728,7 +728,7 @@ user.
 	{
 		/* need some serious checking on init_data */
 		return_widget=(Widget)NULL;
-		if (MrmOpenHierarchy_base64_string(node_field_editor_uid64,
+		if (MrmOpenHierarchy_base64_string(node_field_editor_uidh,
 			&node_field_editor_hierarchy,&node_field_editor_hierarchy_open))
 		{
 			/* allocate memory */

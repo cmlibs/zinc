@@ -12,7 +12,7 @@ coordinate system, and the returned value is a global one.
 #include "general/debug.h"
 #include "node/node_editor.h"
 #include "node/node_editor_dialog.h"
-#include "node/node_editor_dialog.uid64"
+#include "node/node_editor_dialog.uidh"
 #include "select/select_finite_element.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -226,7 +226,7 @@ the materials contained in the global list.
 	/* check arguments */
 	if (manager)
 	{
-		if (MrmOpenHierarchy_base64_string(node_editor_dialog_uid64,
+		if (MrmOpenHierarchy_base64_string(node_editor_dialog_uidh,
 			&node_editor_dialog_hierarchy,&node_editor_dialog_hierarchy_open))
 		{
 			/* allocate memory */

@@ -17,7 +17,7 @@ in the node.
 #include "general/debug.h"
 #include "node/node_field_editor.h"
 #include "node/node_editor.h"
-#include "node/node_editor.uid64"
+#include "node/node_editor.uidh"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
@@ -486,7 +486,7 @@ user.
 	return_widget=(Widget)NULL;
 	if (manager&&node_editor_widget&&parent)
 	{
-		if (MrmOpenHierarchy_base64_string(node_editor_uid64,
+		if (MrmOpenHierarchy_base64_string(node_editor_uidh,
 			&node_editor_hierarchy,&node_editor_hierarchy_open))
 		{
 			/* allocate memory */

@@ -26,7 +26,7 @@ DESCRIPTION :
 #endif /* defined (MOTIF) */
 #include "unemap/setup_dialog.h"
 #if defined (MOTIF)
-#include "unemap/setup_dialog.uid64"
+#include "unemap/setup_dialog.uidh"
 #endif /* defined (MOTIF) */
 #include "general/debug.h"
 #include "user_interface/message.h"
@@ -1220,7 +1220,7 @@ initializes the appropriate fields.
 	/* check arguments */
 	if (user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(setup_dialog_uid64,
+		if (MrmOpenHierarchy_base64_string(setup_dialog_uidh,
 			&setup_dialog_hierarchy,&setup_dialog_hierarchy_open))
 		{
 			if (ALLOCATE(setup_dialog,struct Setup_dialog,1))

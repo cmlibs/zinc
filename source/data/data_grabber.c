@@ -21,7 +21,7 @@ stage, this should be changed to OOP, using this as a base class.
 #include <Xm/ScrollBar.h>
 #include <Xm/List.h>
 #include "data/data_grabber.h"
-#include "data/data_grabber.uid64"
+#include "data/data_grabber.uidh"
 #include "general/debug.h"
 #include "general/compare.h"
 #include "general/list_private.h"
@@ -1599,7 +1599,7 @@ upon its name.
 
 	ENTER(create_data_grabber_widget);
 	return_widget=(Widget)NULL;
-	if (MrmOpenHierarchy_base64_string(data_grabber_uid64,
+	if (MrmOpenHierarchy_base64_string(data_grabber_uidh,
 		&data_grabber_hierarchy,&data_grabber_hierarchy_open))
 	{
 		/* allocate memory */

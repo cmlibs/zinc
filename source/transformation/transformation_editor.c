@@ -16,7 +16,7 @@ two control and one input widget.
 #endif
 #include "general/debug.h"
 #include "transformation/transformation_editor.h"
-#include "transformation/transformation_editor.uid64"
+#include "transformation/transformation_editor.uidh"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 #include "view/coord.h"
@@ -241,7 +241,7 @@ from the user.
 
 	ENTER(create_transformation_editor_widget);
 	return_widget = (Widget)NULL;
-	if (MrmOpenHierarchy_base64_string(transformation_editor_uid64,
+	if (MrmOpenHierarchy_base64_string(transformation_editor_uidh,
 		&transformation_editor_hierarchy,&transformation_editor_hierarchy_open))
 	{
 		/* allocate memory */

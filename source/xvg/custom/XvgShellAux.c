@@ -1963,32 +1963,32 @@ void InitHierarchy(void)
     "GLShell.uid"
   };
 #else
-#include "xvg/cmgui/XvgShell.uid64"
-#include "xvg/cmgui/fileSelectionBoxDialog.uid64"
-#include "xvg/cmgui/RawImageShell.uid64"
-#include "xvg/cmgui/HistogramShell.uid64"
-#include "xvg/cmgui/InfoDialog.uid64"
-#include "xvg/cmgui/ProcessedImageShell.uid64"
-#include "xvg/cmgui/IPOperationsShell.uid64"
-#include "xvg/cmgui/LUTShell.uid64"
-#include "xvg/cmgui/promptDialog.uid64"
-#include "xvg/cmgui/MovieControlsShell.uid64"
-#include "xvg/cmgui/InputDialog.uid64"
-#include "xvg/cmgui/ScrolledWindowDialog.uid64"
+#include "xvg/cmgui/XvgShell.uidh"
+#include "xvg/cmgui/fileSelectionBoxDialog.uidh"
+#include "xvg/cmgui/RawImageShell.uidh"
+#include "xvg/cmgui/HistogramShell.uidh"
+#include "xvg/cmgui/InfoDialog.uidh"
+#include "xvg/cmgui/ProcessedImageShell.uidh"
+#include "xvg/cmgui/IPOperationsShell.uidh"
+#include "xvg/cmgui/LUTShell.uidh"
+#include "xvg/cmgui/promptDialog.uidh"
+#include "xvg/cmgui/MovieControlsShell.uidh"
+#include "xvg/cmgui/InputDialog.uidh"
+#include "xvg/cmgui/ScrolledWindowDialog.uidh"
 #if defined (CMGUI)
   static char *uid_strings[] = {
-    XvgShell_uid64,
-    fileSelectionBoxDialog_uid64,
-    RawImageShell_uid64,
-    HistogramShell_uid64,
-    InfoDialog_uid64,
-    ProcessedImageShell_uid64,
-    IPOperationsShell_uid64,
-    LUTShell_uid64,
-    promptDialog_uid64,
-    MovieControlsShell_uid64,
-    InputDialog_uid64,
-    ScrolledWindowDialog_uid64
+    XvgShell_uidh,
+    fileSelectionBoxDialog_uidh,
+    RawImageShell_uidh,
+    HistogramShell_uidh,
+    InfoDialog_uidh,
+    ProcessedImageShell_uidh,
+    IPOperationsShell_uidh,
+    LUTShell_uidh,
+    promptDialog_uidh,
+    MovieControlsShell_uidh,
+    InputDialog_uidh,
+    ScrolledWindowDialog_uidh
   };
 #else /* defined (CMGUI) */
   static char *uid_filenames[] = {

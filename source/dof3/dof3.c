@@ -57,7 +57,7 @@ The update callback for the dof3 widget returns -
 #include <Xm/ToggleB.h>
 #include <Xm/ToggleBG.h>
 #include "dof3/dof3.h"
-#include "dof3/dof3.uid64"
+#include "dof3/dof3.uidh"
 #include "dof3/dof3_control.h"
 #include "dof3/dof3_input.h"
 #include "general/debug.h"
@@ -897,7 +897,7 @@ freedom.  This may either be in position form or direction form.
 
 	ENTER(create_dof3_widget);
 	return_widget=(Widget)NULL;
-	if (MrmOpenHierarchy_base64_string(dof3_uid64,
+	if (MrmOpenHierarchy_base64_string(dof3_uidh,
 		&dof3_hierarchy,&dof3_hierarchy_open))
 	{
 		/* allocate memory */

@@ -12,7 +12,7 @@ some coordinate system, and the returned value is a global one.
 #include "general/debug.h"
 #include "node/interactive_node_editor.h"
 #include "node/interactive_node_editor_dialog.h"
-#include "node/interactive_node_editor_dialog.uid64"
+#include "node/interactive_node_editor_dialog.uidh"
 #include "select/select_finite_element.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -270,7 +270,7 @@ the materials contained in the global list.
 	if (in_editor_dialog_widget&&parent&&manager&&execute_command&&
 		(execute_command->function))
 	{
-		if (MrmOpenHierarchy_base64_string(interactive_node_editor_dialog_uid64,
+		if (MrmOpenHierarchy_base64_string(interactive_node_editor_dialog_uidh,
 			&in_editor_dialog_hierarchy,
 			&in_editor_dialog_hierarchy_open))
 		{

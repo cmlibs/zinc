@@ -23,7 +23,7 @@ data is accepted - pos,tangent,normal.
 #include "graphics/graphics_object.h"
 #include "graphics/scene.h"
 #include "io_devices/input_module_dialog.h"
-#include "io_devices/input_module_dialog.uid64"
+#include "io_devices/input_module_dialog.uidh"
 #include "io_devices/input_module_widget.h"
 #include "io_devices/input_module.h"
 #include "io_devices/matrix.h"
@@ -1891,7 +1891,7 @@ Allows the user to control the input_module.
 
 	ENTER(create_input_module_dialog);
 	return_widget = (Widget)NULL;
-	if (MrmOpenHierarchy_base64_string(input_module_dialog_uid64,
+	if (MrmOpenHierarchy_base64_string(input_module_dialog_uidh,
 		&input_module_dialog_hierarchy,&input_module_dialog_hierarchy_open))
 	{
 		/* allocate memory */

@@ -18,7 +18,7 @@ Functions and structures for using the model dialog box.
 #include "user_interface/user_interface.h"
 #include "user_interface/filedir.h"
 #include "cell/model_dialog.h"
-#include "cell/model_dialog.uid64"
+#include "cell/model_dialog.uidh"
 #include "cell/cell_window.h"
 
 /*
@@ -1055,7 +1055,7 @@ Create a new model dialog.
       model_dialog_destroy_callback((Widget)NULL,(XtPointer)cell,
         (XtPointer)NULL);
     }
-    if (MrmOpenHierarchy_base64_string(model_dialog_uid64,
+    if (MrmOpenHierarchy_base64_string(model_dialog_uidh,
       &model_dialog_hierarchy,&model_dialog_hierarchy_open))
     {
       if (ALLOCATE(cell->model_dialog,struct Model_dialog,1))

@@ -17,7 +17,7 @@ coordinate system, and the returned value is a global one.
 #endif
 #include "general/debug.h"
 #include "node/interactive_node_editor.h"
-#include "node/interactive_node_editor.uid64"
+#include "node/interactive_node_editor.uidh"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 #include "view/coord.h"
@@ -475,7 +475,7 @@ Creates a interactive_node_editor widget that gets a position from the user.
 	return_widget = (Widget)NULL;
 	if (manager&&interactive_node_editor_widget&&parent)
 	{
-	if (MrmOpenHierarchy_base64_string(interactive_node_editor_uid64,
+	if (MrmOpenHierarchy_base64_string(interactive_node_editor_uidh,
 		&interactive_node_editor_hierarchy,
 		&interactive_node_editor_hierarchy_open))
 	{

@@ -19,7 +19,7 @@ Functions and structures for using the variables dialog box.
 #include "general/debug.h"
 #include "cell/cell_variable.h"
 #include "cell/variables_dialog.h"
-#include "cell/variables_dialog.uid64"
+#include "cell/variables_dialog.uidh"
 #include "cell/cell_window.h"
 
 /*
@@ -322,7 +322,7 @@ Create a new variables dialog.
       variables_dialog_destroy_callback((Widget)NULL,(XtPointer)cell,
         (XtPointer)NULL);
     }
-    if (MrmOpenHierarchy_base64_string(variables_dialog_uid64,
+    if (MrmOpenHierarchy_base64_string(variables_dialog_uidh,
       &variables_dialog_hierarchy,&variables_dialog_hierarchy_open))
     {
       if (ALLOCATE(cell->variables_dialog,struct Variables_dialog,1))

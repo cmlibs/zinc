@@ -12,7 +12,7 @@ Management routines for the prompt window.
 #include <Xm/Text.h>
 #include "general/debug.h"
 #include "prompt/prompt_window.h"
-#include "prompt/prompt_window.uid64"
+#include "prompt/prompt_window.uidh"
 #if defined (OLD_CODE)
 #include "socket/socket.h"
 #endif /* defined (OLD_CODE) */
@@ -62,7 +62,7 @@ Create the structures and retrieve the prompt window from the uil file.
 	/* check argument */
 	if (parent)
 	{
-		if (MrmOpenHierarchy_base64_string(prompt_window_uid64,
+		if (MrmOpenHierarchy_base64_string(prompt_window_uidh,
 			&prompt_window_hierarchy,&prompt_window_hierarchy_open))
 		{
 			if (ALLOCATE(prompt_window,struct Prompt_window,1))

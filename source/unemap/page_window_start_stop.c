@@ -36,7 +36,7 @@ DESCRIPTION :
 #include "general/debug.h"
 #include "unemap/page_window.h"
 #if defined (MOTIF)
-#include "unemap/page_window.uid64"
+#include "unemap/page_window.uidh"
 #endif /* defined (MOTIF) */
 #if defined (WINDOWS)
 #include "unemap/page_window.rc"
@@ -2593,7 +2593,7 @@ the created page window.  If unsuccessful, NULL is returned.
 	if (rig_address&&user_interface)
 	{
 #if defined (MOTIF)
-		if (MrmOpenHierarchy_base64_string(page_window_uid64,
+		if (MrmOpenHierarchy_base64_string(page_window_uidh,
 			&page_window_hierarchy,&page_window_hierarchy_open))
 		{
 #endif /* defined (MOTIF) */

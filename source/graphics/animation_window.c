@@ -17,7 +17,7 @@ Management routines for the animation command window.
 
 #include "general/debug.h"
 #include "graphics/animation_window.h"
-#include "graphics/animation_window.uid64"
+#include "graphics/animation_window.uidh"
 #include "graphics/graphics_window.h"
 #include "graphics/graphics_library.h"
 #include "graphics/scene.h"
@@ -384,7 +384,7 @@ Create the structures and retrieve the command window from the uil file.
 	/* check arguments */
 	if (user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(animation_window_uid64,
+		if (MrmOpenHierarchy_base64_string(animation_window_uidh,
 			&animation_window_hierarchy,&animation_window_hierarchy_open))
 		{
 			if (ALLOCATE(animation_window, struct Animation_window, 1))

@@ -20,7 +20,7 @@ Functions for using the Cell_window structure.
 #include "cell/model_dialog.h"
 #include "cell/calculate.h"
 #include "cell/cell_window.h"
-#include "cell/cell_window.uid64"
+#include "cell/cell_window.uidh"
 #include "cell/cell_component.h"
 #include "cell/input.h"
 #include "cell/parameter_dialog.h"
@@ -1698,7 +1698,7 @@ specifies a file to print messages to, if non-NULL.
   if (user_interface)
   {
 #if defined (MOTIF)
-    if (MrmOpenHierarchy_base64_string(cell_window_uid64,&cell_window_hierarchy,
+    if (MrmOpenHierarchy_base64_string(cell_window_uidh,&cell_window_hierarchy,
 			&cell_window_hierarchy_open))
     {
 #endif /* defined (MOTIF) */

@@ -21,7 +21,7 @@ DESCRIPTION :
 #include "general/debug.h"
 #include "unemap/acquisition.h"
 #include "unemap/acquisition_window.h"
-#include "unemap/acquisition_window.uid64"
+#include "unemap/acquisition_window.uidh"
 #include "unemap/drawing_2d.h"
 #include "unemap/mapping_window.h"
 #include "user_interface/filedir.h"
@@ -1560,7 +1560,7 @@ unsuccessful, NULL is returned.
 	if (user_interface)
 	{
 #if defined (MOTIF)
-		if (MrmOpenHierarchy_base64_string(acquisition_window_uid64,
+		if (MrmOpenHierarchy_base64_string(acquisition_window_uidh,
 			&acquisition_window_hierarchy,&acquisition_window_hierarchy_open))
 		{
 #endif /* defined (MOTIF) */

@@ -14,7 +14,7 @@ devices are displayed on the menu.
 #include "general/callback.h"
 #include "general/debug.h"
 #include "io_devices/input_module_widget.h"
-#include "io_devices/input_module_widget.uid64"
+#include "io_devices/input_module_widget.uidh"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
@@ -283,7 +283,7 @@ certain client.
 	ENTER(create_input_module_widget);
 	return_widget = (Widget)NULL;
 #if defined (EXT_INPUT)
-	if (MrmOpenHierarchy_base64_string(input_module_widget_uid64,
+	if (MrmOpenHierarchy_base64_string(input_module_widget_uidh,
 		&input_module_widget_hierarchy,&input_module_widget_hierarchy_open))
 	{
 		/* allocate memory */

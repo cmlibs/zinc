@@ -34,7 +34,7 @@ align the 3-D view with the texture image it is digitised from.
 #include "general/object.h"
 #include "graphics/colour.h"
 #include "mirage/digitiser_window.h"
-#include "mirage/digitiser_window.uid64"
+#include "mirage/digitiser_window.uidh"
 #include "graphics/light.h"
 #include "graphics/light_model.h"
 #include "graphics/scene.h"
@@ -727,7 +727,7 @@ will be printed on the windows title bar.
 		light_manager&&light_model_manager&&default_light_model&&
 		scene_manager&&texture_manager&&user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(digitiser_window_uid64,
+		if (MrmOpenHierarchy_base64_string(digitiser_window_uidh,
 			&digitiser_window_hierarchy,&digitiser_window_hierarchy_open))
 		{
 			/* Try to allocate space for the window structure */

@@ -13,7 +13,7 @@ coordinate system, and the returned value is a global one.
 #include <stdio.h>
 #include "data/data_2d.h"
 #include "data/data_2d_dialog.h"
-#include "data/data_2d_dialog.uid64"
+#include "data/data_2d_dialog.uidh"
 #include "general/debug.h"
 #include "select/select_finite_element.h"
 #include "user_interface/message.h"
@@ -280,7 +280,7 @@ the materials contained in the global list.
 
 	ENTER(create_data_2d_dialog);
 	return_widget=(Widget)NULL;
-	if (MrmOpenHierarchy_base64_string(data_2d_dialog_uid64,
+	if (MrmOpenHierarchy_base64_string(data_2d_dialog_uidh,
 		&data_2d_dialog_hierarchy,&data_2d_dialog_hierarchy_open))
 	{
 		/* check arguments */

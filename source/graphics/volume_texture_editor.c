@@ -31,7 +31,7 @@ Creation & Callback code for Motif texture window
 #include "graphics/mcubes.h"
 #include "graphics/volume_texture.h"
 #include "graphics/volume_texture_editor.h"
-#include "graphics/volume_texture_editor.uid64"
+#include "graphics/volume_texture_editor.uidh"
 #include "graphics/volume_texture_editor_dialog.h"
 #include "material/material_editor_dialog.h"
 #include "graphics/light.h"
@@ -5133,7 +5133,7 @@ Create the structures and retrieve the texture window from the uil file.
 		texture_manager&&material_editor_address&&transformation_editor_address&&
 		default_graphical_material)
 	{
-		if (MrmOpenHierarchy_base64_string(volume_texture_editor_uid64,
+		if (MrmOpenHierarchy_base64_string(volume_texture_editor_uidh,
 			&volume_texture_editor_hierarchy,&volume_texture_editor_hierarchy_open))
 		{
 			if (ALLOCATE(texture_window,struct Texture_window,1))

@@ -12,7 +12,7 @@ This module creates a free transformation_editor_dialog input device.
 #include "io_devices/input_module.h"
 #include "transformation/transformation_editor.h"
 #include "transformation/transformation_editor_dialog.h"
-#include "transformation/transformation_editor_dialog.uid64"
+#include "transformation/transformation_editor_dialog.uidh"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
@@ -166,7 +166,7 @@ graphics object.
 	/* check arguments */
 	if (user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(transformation_editor_dialog_uid64,
+		if (MrmOpenHierarchy_base64_string(transformation_editor_dialog_uidh,
 			&transformation_editor_dialog_hierarchy,
 			&transformation_editor_dialog_hierarchy_open))
 		{

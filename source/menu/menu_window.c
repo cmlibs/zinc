@@ -15,7 +15,7 @@ Management routines for the menu window.
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "menu/menu_window.h"
-#include "menu/menu_window.uid64"
+#include "menu/menu_window.uidh"
 #include "user_interface/filedir.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -283,7 +283,7 @@ Create the structures and retrieve the menu window from the uil file.
 	/* check arguments */
 	if (file_name&&user_interface&&execute_command&&(execute_command->function))
 	{
-		if (MrmOpenHierarchy_base64_string(menu_window_uid64,
+		if (MrmOpenHierarchy_base64_string(menu_window_uidh,
 			&menu_window_hierarchy,&menu_window_hierarchy_open))
 		{
 			if (menu_handle=fopen(file_name,"r"))

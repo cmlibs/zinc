@@ -16,7 +16,7 @@ Form set aside for the actual element group editor.
 #include "graphics/graphical_element.h"
 #include "graphics/graphical_element_editor.h"
 #include "graphics/graphical_element_editor_dialog.h"
-#include "graphics/graphical_element_editor_dialog.uid64"
+#include "graphics/graphical_element_editor_dialog.uidh"
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
@@ -552,7 +552,7 @@ DESCRIPTION :
 	if (graphical_element_editor_dialog_address&&parent&&element_group_manager&&
 		scene_manager&&scene&&user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(graphical_element_editor_dialog_uid64,
+		if (MrmOpenHierarchy_base64_string(graphical_element_editor_dialog_uidh,
 			&graphical_element_editor_dialog_hierarchy,
 			&graphical_element_editor_dialog_hierarchy_open))
 		{

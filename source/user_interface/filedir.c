@@ -38,7 +38,7 @@ the default button.
 #include "general/debug.h"
 #include "user_interface/filedir.h"
 #if defined (MOTIF)
-#include "user_interface/filedir.uid64"
+#include "user_interface/filedir.uidh"
 #endif /* defined (MOTIF) */
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -844,7 +844,7 @@ name the <file_operation> is performed on the file with the <arguments>.
 		if (!((file_open_data->activation==widget)&&
 			file_open_data->selection_shell&&file_open_data->selection))
 		{
-			if (MrmOpenHierarchy_base64_string(filedir_uid64,
+			if (MrmOpenHierarchy_base64_string(filedir_uidh,
 				&filedir_hierarchy,&filedir_hierarchy_open))
 			{
 				file_open_data->activation=widget;
@@ -1163,7 +1163,7 @@ specified file.
 			if (!((file_open_data->activation==widget)&&
 				file_open_data->selection_shell&&file_open_data->selection))
 			{
-				if (MrmOpenHierarchy_base64_string(filedir_uid64,
+				if (MrmOpenHierarchy_base64_string(filedir_uidh,
 					&filedir_hierarchy,&filedir_hierarchy_open))
 				{
 #if defined (OLD_CODE)

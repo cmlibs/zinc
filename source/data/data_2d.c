@@ -15,7 +15,7 @@ DESCRIPTION :
 #include <Xm/ScrollBar.h>
 #include <Xm/List.h>
 #include "data/data_2d.h"
-#include "data/data_2d.uid64"
+#include "data/data_2d.uidh"
 #include "finite_element/finite_element.h"
 #include "general/debug.h"
 #include "general/compare.h"
@@ -841,7 +841,7 @@ upon its name.
 
 	ENTER(create_data_2d_widget);
 	return_widget=(Widget)NULL;
-	if (MrmOpenHierarchy_base64_string(data_2d_uid64,
+	if (MrmOpenHierarchy_base64_string(data_2d_uidh,
 		&data_2d_hierarchy,&data_2d_hierarchy_open))
 	{
 		if (fe_field_manager&&node_manager&&group_manager)

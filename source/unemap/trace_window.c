@@ -28,7 +28,7 @@ DESCRIPTION :
 #include "unemap/spectral_methods.h"
 #include "unemap/trace_window.h"
 #if defined (MOTIF)
-#include "unemap/trace_window.uid64"
+#include "unemap/trace_window.uidh"
 #endif /* defined (MOTIF) */
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -4486,7 +4486,7 @@ the created trace window.  If unsuccessful, NULL is returned.
 	/* check arguments */
 	if (signal_drawing_information&&user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(trace_window_uid64,
+		if (MrmOpenHierarchy_base64_string(trace_window_uidh,
 			&trace_window_hierarchy,&trace_window_hierarchy_open))
 		{
 			/* allocate memory */

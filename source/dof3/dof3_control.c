@@ -50,7 +50,7 @@ widgets are terminated, and so the whole structure does not need to be destroyed
 #include <Xm/ToggleB.h>
 #include <Xm/ToggleBG.h>
 #include "dof3/dof3_control.h"
-#include "dof3/dof3_control.uid64"
+#include "dof3/dof3_control.uidh"
 #include "dof3/dof3_input.h"
 #include "general/debug.h"
 #include "user_interface/message.h"
@@ -463,7 +463,7 @@ item.
 
 	ENTER(create_control_widget);
 	return_widget=(Widget)NULL;
-	if (MrmOpenHierarchy_base64_string(dof3_control_uid64,
+	if (MrmOpenHierarchy_base64_string(dof3_control_uidh,
 		&dof3_control_hierarchy,&dof3_control_hierarchy_open))
 	{
 		/* allocate memory */

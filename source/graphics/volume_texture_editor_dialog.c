@@ -17,7 +17,7 @@ texture editor.
 #include "graphics/mcubes.h"
 #endif /* !defined (EXAMPLE) */
 #include "graphics/volume_texture_editor_dialog.h"
-#include "graphics/volume_texture_editor_dialog.uid64"
+#include "graphics/volume_texture_editor_dialog.uidh"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 
@@ -5261,7 +5261,7 @@ DESCRIPTION :
 			if (!address||!(create_finite_elements_dialog= *address))
 			{
 				/* create the dialog */
-				if (MrmOpenHierarchy_base64_string(volume_texture_editor_dialog_uid64,
+				if (MrmOpenHierarchy_base64_string(volume_texture_editor_dialog_uidh,
 					&volume_texture_editor_dialog_hierarchy,
 					&volume_texture_editor_dialog_hierarchy_open))
 				{

@@ -20,7 +20,7 @@ Calls the client-specified callback routine if a different object is chosen.
 #endif /* defined (MOTIF) */
 #include "general/debug.h"
 #include "choose/choose_object_list.h"
-#include "choose/choose_object.uid64"
+#include "choose/choose_object.uidh"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -552,7 +552,7 @@ Creates an option menu from which an object from the list may be chosen. \
 	/* check arguments */ \
 	if (list_of_objects&&parent) \
 	{ \
-		if (MrmOpenHierarchy_base64_string(choose_object_uid64, \
+		if (MrmOpenHierarchy_base64_string(choose_object_uidh, \
 			&choose_object_list_hierarchy,&choose_object_list_hierarchy_open)) \
 		{ \
 			/* allocate memory */ \

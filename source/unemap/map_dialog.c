@@ -25,7 +25,7 @@ DESCRIPTION :
 #endif /* defined (MOTIF) */
 #include "general/debug.h"
 #include "unemap/map_dialog.h"
-#include "unemap/map_dialog.uid64"
+#include "unemap/map_dialog.uidh"
 #include "unemap/mapping.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -1680,7 +1680,7 @@ initializes the appropriate fields.
 	/* check arguments */
 	if (user_interface)
 	{
-		if (MrmOpenHierarchy_base64_string(map_dialog_uid64,
+		if (MrmOpenHierarchy_base64_string(map_dialog_uidh,
 			&map_dialog_hierarchy,&map_dialog_hierarchy_open))
 		{
 			if (ALLOCATE(map_dialog,struct Map_dialog,1))

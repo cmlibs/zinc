@@ -11,7 +11,7 @@ data is accepted - pos,tangent,normal.
 #include <math.h>
 #include "choose/choose_node_group.h"
 #include "data/data_grabber_dialog.h"
-#include "data/data_grabber_dialog.uid64"
+#include "data/data_grabber_dialog.uidh"
 #include "data/data_grabber.h"
 #include "finite_element/finite_element.h"
 #include "general/debug.h"
@@ -798,7 +798,7 @@ points.
 	if (data_grabber_dialog_widget&&parent&&execute_command&&
 		(execute_command->function))
 	{
-		if (MrmOpenHierarchy_base64_string(data_grabber_dialog_uid64,
+		if (MrmOpenHierarchy_base64_string(data_grabber_dialog_uidh,
 			&data_grabber_hierarchy,&data_grabber_hierarchy_open))
 		{
 			/* allocate memory */

@@ -19,7 +19,7 @@ and the returned value is a global one.
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
 #include "view/coord.h"
-#include "view/coord.uid64"
+#include "view/coord.uidh"
 
 /*
 Global variables
@@ -452,7 +452,7 @@ Creates a coord widget that gets a position and orientation from the user.
 
 	ENTER(create_coord_widget);
 	return_widget=(Widget)NULL;
-	if (MrmOpenHierarchy_base64_string(coord_uid64,
+	if (MrmOpenHierarchy_base64_string(coord_uidh,
 		&coord_hierarchy,&coord_hierarchy_open))
 	{
 		/* allocate memory */

@@ -18,7 +18,7 @@ NOTE :
 #include <Mrm/MrmPublic.h>
 #endif /* defined (MOTIF) */
 #include "colour/edit_var.h"
-#include "colour/edit_var.uid64"
+#include "colour/edit_var.uidh"
 #include "general/debug.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
@@ -282,7 +282,7 @@ and high_limit.
 
 	ENTER(create_edit_var_widget);
 	return_widget=(Widget)NULL;
-	if (MrmOpenHierarchy_base64_string(edit_var_uid64,
+	if (MrmOpenHierarchy_base64_string(edit_var_uidh,
 		&edit_var_hierarchy,&edit_var_hierarchy_open))
 	{
 		/* allocate memory */
