@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_fibres.c
 
-LAST MODIFIED : 30 October 2000
+LAST MODIFIED : 1 December 2000
 
 DESCRIPTION :
 Implements a number of basic continuum mechanics fibres operations on
@@ -225,7 +225,7 @@ static int Computed_field_fibre_axes_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
 	struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 30 October 2000
+LAST MODIFIED : 1 December 2000
 
 DESCRIPTION :
 Compute the three 3-component fibre axes in the order fibre, sheet, normal from
@@ -240,30 +240,32 @@ coordinates from the source_field values in an arbitrary
 Derivatives may not be computed for this type of Computed_field [yet].
 ==============================================================================*/
 {
-	FE_value a_x,a_y,a_z,b_x,b_y,b_z,c_x,c_y,c_z,cos_alpha,cos_beta,
-		cos_gamma,dx_dxi[9],f11,f12,f13,f21,f22,f23,f31,f32,f33,*fibre_angle,length,
-		sin_alpha,sin_beta,sin_gamma,top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
-		x[3];
+	FE_value a_x, a_y, a_z, alpha, b_x, b_y, b_z, beta, c_x, c_y, c_z, cos_alpha, cos_beta,
+		cos_gamma ,dx_dxi[9], f11, f12, f13, f21, f22, f23, f31, f32, f33, gamma, length,
+		sin_alpha, sin_beta, sin_gamma, top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], x[3];
 	int element_dimension,return_code,top_level_element_dimension;
+	struct Computed_field *coordinate_field, *fibre_field;
 
 	ENTER(Computed_field_fibre_axes_evaluate_cache_in_element);
 	if (field && element && xi)
 	{
-		if (0==calculate_derivatives)
+		if (0 == calculate_derivatives)
 		{
 			field->derivatives_valid = 0;
-			element_dimension=get_FE_element_dimension(element);
+			element_dimension = get_FE_element_dimension(element);
 			/* 1. Precalculate any source fields that this field depends on.
 				 Always need derivatives of coordinate field and further, it must be
 				 calculated on the top_level_element */
-			if (return_code=
+			fibre_field = field->source_fields[0];
+			coordinate_field = field->source_fields[1];
+			if (return_code =
 				Computed_field_get_top_level_element_and_xi(element,xi,element_dimension,
 					&top_level_element, top_level_xi, &top_level_element_dimension) &&
-				Computed_field_evaluate_cache_in_element(field->source_fields[0],
-					element,xi,top_level_element,0)&&
-				Computed_field_evaluate_cache_in_element(field->source_fields[1],
-					top_level_element,top_level_xi,top_level_element,1)&&
-				Computed_field_extract_rc(field->source_fields[1],
+				Computed_field_evaluate_cache_in_element(fibre_field,
+					element,xi,top_level_element,0) &&
+				Computed_field_evaluate_cache_in_element(coordinate_field,
+					top_level_element,top_level_xi,top_level_element,1) &&
+				Computed_field_extract_rc(coordinate_field,
 					top_level_element_dimension,x,dx_dxi))
 			{
 				/* 2. Calculate the field */
@@ -297,59 +299,73 @@ Derivatives may not be computed for this type of Computed_field [yet].
 				f22=f33*f11-f31*f13;
 				f23=f31*f12-f32*f11;
 				/* get sin/cos of fibre angles alpha, beta and gamma */
-				fibre_angle=field->source_fields[0]->values;
-				sin_alpha=sin(fibre_angle[0]);
-				cos_alpha=cos(fibre_angle[0]);
-				if (1<field->source_fields[0]->number_of_components)
+				alpha = fibre_field->values[0];
+				sin_alpha = sin(alpha);
+				cos_alpha = cos(alpha);
+				if (1 < fibre_field->number_of_components)
 				{
-					sin_beta=sin(fibre_angle[1]);
-					cos_beta=cos(fibre_angle[1]);
+					beta = fibre_field->values[1];
+					sin_beta = sin(beta);
+					cos_beta = cos(beta);
 				}
 				else
 				{
 					/* default beta is 0 */
-					sin_beta=0;
-					cos_beta=1;
+					sin_beta = 0;
+					cos_beta = 1;
 				}
-				if (2<field->source_fields[0]->number_of_components)
+				if (2 < fibre_field->number_of_components)
 				{
-					sin_gamma=sin(fibre_angle[2]);
-					cos_gamma=cos(fibre_angle[2]);
+					gamma = fibre_field->values[2];
+					sin_gamma = sin(gamma);
+					cos_gamma = cos(gamma);
 				}
 				else
 				{
 					/* default gamma is pi/2 */
-					sin_gamma=1;
-					cos_gamma=0;
+					sin_gamma = 1;
+					cos_gamma = 0;
 				}
 				/* calculate the fibre axes a=fibre, b=sheet, c=normal */
-				a_x=cos_alpha*f11+sin_alpha*f21;
-				a_y=cos_alpha*f12+sin_alpha*f22;
-				a_z=cos_alpha*f13+sin_alpha*f23;
-				b_x= -sin_alpha*f11+cos_alpha*f21;
-				b_y= -sin_alpha*f12+cos_alpha*f22;
-				b_z= -sin_alpha*f13+cos_alpha*f23;
-				f11=a_x;
-				f12=a_y;
-				f13=a_z;
-				f21=b_x;
-				f22=b_y;
-				f23=b_z;
-				a_x=cos_beta*f11+sin_beta*f31;
-				a_y=cos_beta*f12+sin_beta*f32;
-				a_z=cos_beta*f13+sin_beta*f33;
-				c_x= -sin_beta*f11+cos_beta*f31;
-				c_y= -sin_beta*f12+cos_beta*f32;
-				c_z= -sin_beta*f13+cos_beta*f33;
-				f31=c_x;
-				f32=c_y;
-				f33=c_z;
-				b_x=sin_gamma*f21-cos_gamma*f31;
-				b_y=sin_gamma*f22-cos_gamma*f32;
-				b_z=sin_gamma*f23-cos_gamma*f33;
-				c_x=cos_gamma*f21+sin_gamma*f31;
-				c_y=cos_gamma*f22+sin_gamma*f32;
-				c_z=cos_gamma*f23+sin_gamma*f33;
+				a_x =  cos_alpha*f11 + sin_alpha*f21;
+				a_y =  cos_alpha*f12 + sin_alpha*f22;
+				a_z =  cos_alpha*f13 + sin_alpha*f23;
+				b_x = -sin_alpha*f11 + cos_alpha*f21;
+				b_y = -sin_alpha*f12 + cos_alpha*f22;
+				b_z = -sin_alpha*f13 + cos_alpha*f23;
+				f11 = a_x;
+				f12 = a_y;
+				f13 = a_z;
+				f21 = b_x;
+				f22 = b_y;
+				f23 = b_z;
+				/* as per KATs change 30Nov00 in back-end function ROT_COORDSYS,
+					 rotate anticlockwise about axis2, not -axis2 */
+#if defined (OLD_CODE)
+				a_x =  cos_beta*f11 + sin_beta*f31;
+				a_y =  cos_beta*f12 + sin_beta*f32;
+				a_z =  cos_beta*f13 + sin_beta*f33;
+				c_x = -sin_beta*f11 + cos_beta*f31;
+				c_y = -sin_beta*f12 + cos_beta*f32;
+				c_z = -sin_beta*f13 + cos_beta*f33;
+#endif /* defined (OLD_CODE) */
+				c_x =  cos_beta*f31 + sin_beta*f11;
+				c_y =  cos_beta*f32 + sin_beta*f12;
+				c_z =  cos_beta*f33 + sin_beta*f13;
+				a_x = -sin_beta*f31 + cos_beta*f11;
+				a_y = -sin_beta*f32 + cos_beta*f12;
+				a_z = -sin_beta*f33 + cos_beta*f13;
+				f31 = c_x;
+				f32 = c_y;
+				f33 = c_z;
+				/* note rearrangement of sin/cos to give equivalent rotation of gamma - PI/2.
+					 Note we will probably remove the -PI/2 factor at some stage */
+				b_x = sin_gamma*f21 - cos_gamma*f31;
+				b_y = sin_gamma*f22 - cos_gamma*f32;
+				b_z = sin_gamma*f23 - cos_gamma*f33;
+				c_x = cos_gamma*f21 + sin_gamma*f31;
+				c_y = cos_gamma*f22 + sin_gamma*f32;
+				c_z = cos_gamma*f23 + sin_gamma*f33;
 				/* put fibre, sheet then normal in field values */
 				field->values[0]=a_x;
 				field->values[1]=a_y;
