@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : settings_editor.c
 
-LAST MODIFIED : 1 May 2001
+LAST MODIFIED : 12 November 2001
 
 DESCRIPTION :
 Provides the widgets to manipulate element group settings.
@@ -47,7 +47,7 @@ static MrmHierarchy settings_editor_hierarchy;
 
 struct Settings_editor
 /*******************************************************************************
-LAST MODIFIED : 1 May 2001
+LAST MODIFIED : 12 November 2001
 
 DESCRIPTION :
 Contains all the information carried by the graphical element editor widget.
@@ -66,6 +66,7 @@ Contains all the information carried by the graphical element editor widget.
 	/* main dialog widgets */
 	Widget *widget_address,widget,widget_parent;
 	/* geometry widgets */
+	Widget main_scroll, main_form;
 	Widget coordinate_button,coordinate_field_form,coordinate_field_widget,
 		use_element_type_entry,use_element_type_form,use_element_type_widget,
 		discretization_entry,discretization_text,
@@ -253,6 +254,10 @@ both widget entries are unmanaged.
 } /* settings_editor_display_dimension_specific */
 
 /* identify geometry settings widgets */
+DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
+	Settings_editor,main_scroll)
+DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
+	Settings_editor,main_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
 	Settings_editor,coordinate_button)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(settings_editor, \
@@ -672,7 +677,7 @@ Callback for change of use_element_type.
 static void settings_editor_constant_radius_text_CB(
 	Widget widget,XtPointer client_data,unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 16 February 1999
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Called when entry is made into the constant_radius text field.
@@ -687,29 +692,34 @@ Called when entry is made into the constant_radius text field.
 	USE_PARAMETER(reason);
 	if (widget&&(settings_editor=(struct Settings_editor *)client_data))
 	{
-		GT_element_settings_get_radius_parameters(
-			settings_editor->current_settings,&constant_radius,
-			&scale_factor,&radius_scalar_field);
-		/* Get the text string */
-		XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
-		if (text_entry)
+		/* must check if have current settings since we can get losingFocus
+			 callback after it is cleared */
+		if (settings_editor->current_settings)
 		{
-			sscanf(text_entry,"%g",&constant_radius);
-			GT_element_settings_set_radius_parameters(
-				settings_editor->current_settings,constant_radius,
-				scale_factor,radius_scalar_field);
-			/* inform the client of the change */
-			settings_editor_update(settings_editor);
-			XtFree(text_entry);
+			GT_element_settings_get_radius_parameters(
+				settings_editor->current_settings,&constant_radius,
+				&scale_factor,&radius_scalar_field);
+			/* Get the text string */
+			XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
+			if (text_entry)
+			{
+				sscanf(text_entry,"%g",&constant_radius);
+				GT_element_settings_set_radius_parameters(
+					settings_editor->current_settings,constant_radius,
+					scale_factor,radius_scalar_field);
+				/* inform the client of the change */
+				settings_editor_update(settings_editor);
+				XtFree(text_entry);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"settings_editor_constant_radius_text_CB.  Missing text");
+			}
+			/* always restore constant_radius to actual value in use */
+			sprintf(temp_string,"%g",constant_radius);
+			XtVaSetValues(widget,XmNvalue,temp_string,NULL);
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"settings_editor_constant_radius_text_CB.  Missing text");
-		}
-		/* always restore constant_radius to actual value in use */
-		sprintf(temp_string,"%g",constant_radius);
-		XtVaSetValues(widget,XmNvalue,temp_string,NULL);
 	}
 	else
 	{
@@ -822,7 +832,7 @@ Callback for change of radius_scalar.
 static void settings_editor_radius_scale_factor_text_CB(
 	Widget widget,XtPointer client_data,unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 16 February 1999
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Called when entry is made into the radius_scale_factor_text field.
@@ -837,29 +847,34 @@ Called when entry is made into the radius_scale_factor_text field.
 	USE_PARAMETER(reason);
 	if (widget&&(settings_editor=(struct Settings_editor *)client_data))
 	{
-		GT_element_settings_get_radius_parameters(
-			settings_editor->current_settings,&constant_radius,
-			&scale_factor,&radius_scalar_field);
-		/* Get the text string */
-		XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
-		if (text_entry)
+		/* must check if have current settings since we can get losingFocus
+			 callback after it is cleared */
+		if (settings_editor->current_settings)
 		{
-			sscanf(text_entry,"%g",&scale_factor);
-			GT_element_settings_set_radius_parameters(
-				settings_editor->current_settings,constant_radius,
-				scale_factor,radius_scalar_field);
-			/* inform the client of the change */
-			settings_editor_update(settings_editor);
-			XtFree(text_entry);
+			GT_element_settings_get_radius_parameters(
+				settings_editor->current_settings,&constant_radius,
+				&scale_factor,&radius_scalar_field);
+			/* Get the text string */
+			XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
+			if (text_entry)
+			{
+				sscanf(text_entry,"%g",&scale_factor);
+				GT_element_settings_set_radius_parameters(
+					settings_editor->current_settings,constant_radius,
+					scale_factor,radius_scalar_field);
+				/* inform the client of the change */
+				settings_editor_update(settings_editor);
+				XtFree(text_entry);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"settings_editor_radius_scale_factor_text_CB.  Missing text");
+			}
+			/* always restore scale_factor to actual value in use */
+			sprintf(temp_string,"%g",scale_factor);
+			XtVaSetValues(widget,XmNvalue,temp_string,NULL);
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"settings_editor_radius_scale_factor_text_CB.  Missing text");
-		}
-		/* always restore scale_factor to actual value in use */
-		sprintf(temp_string,"%g",scale_factor);
-		XtVaSetValues(widget,XmNvalue,temp_string,NULL);
 	}
 	else
 	{
@@ -908,7 +923,7 @@ Callback for change of iso_scalar field.
 static void settings_editor_iso_value_text_CB(Widget widget,
 	XtPointer client_data,unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 16 February 1999
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Called when entry is made into the iso_value text field.
@@ -923,27 +938,32 @@ Called when entry is made into the iso_value text field.
 	USE_PARAMETER(reason);	
 	if (widget&&(settings_editor=(struct Settings_editor *)client_data))
 	{
-		GT_element_settings_get_iso_surface_parameters(
-			settings_editor->current_settings,&scalar_field,&iso_value);
-		/* Get the text string */
-		XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
-		if (text_entry)
+		/* must check if have current settings since we can get losingFocus
+			 callback after it is cleared */
+		if (settings_editor->current_settings)
 		{
-			sscanf(text_entry,"%lg",&iso_value);
-			XtFree(text_entry);
-			GT_element_settings_set_iso_surface_parameters(
-				settings_editor->current_settings,scalar_field,iso_value);
-			/* inform the client of the change */
-			settings_editor_update(settings_editor);
+			GT_element_settings_get_iso_surface_parameters(
+				settings_editor->current_settings,&scalar_field,&iso_value);
+			/* Get the text string */
+			XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
+			if (text_entry)
+			{
+				sscanf(text_entry,"%lg",&iso_value);
+				XtFree(text_entry);
+				GT_element_settings_set_iso_surface_parameters(
+					settings_editor->current_settings,scalar_field,iso_value);
+				/* inform the client of the change */
+				settings_editor_update(settings_editor);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"settings_editor_constant_iso_value_text_CB.  Missing text");
+			}
+			/* always restore constant_radius to actual value in use */
+			sprintf(temp_string,"%g",iso_value);
+			XtVaSetValues(widget,XmNvalue,temp_string,NULL);
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"settings_editor_constant_iso_value_text_CB.  Missing text");
-		}
-		/* always restore constant_radius to actual value in use */
-		sprintf(temp_string,"%g",iso_value);
-		XtVaSetValues(widget,XmNvalue,temp_string,NULL);
 	}
 	else
 	{
@@ -956,7 +976,7 @@ Called when entry is made into the iso_value text field.
 static void settings_editor_discretization_text_CB(Widget widget,
 	XtPointer client_data,unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 15 July 1998
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Called when entry is made into the discretization text field.
@@ -971,43 +991,48 @@ Called when entry is made into the discretization text field.
 	USE_PARAMETER(reason);	
 	if (widget&&(settings_editor=(struct Settings_editor *)client_data))
 	{
-		/* Get the text string */
-		XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
-		if (text_entry)
+		/* must check if have current settings since we can get losingFocus
+			 callback after it is cleared */
+		if (settings_editor->current_settings)
 		{
-			if (temp_state=create_Parse_state(text_entry))
+			/* Get the text string */
+			XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
+			if (text_entry)
 			{
-				if (set_Element_discretization(temp_state,(void *)&discretization,
-					(void *)settings_editor->user_interface)&&
-					GT_element_settings_set_discretization(
-						settings_editor->current_settings,&discretization,
-						settings_editor->user_interface))
+				if (temp_state=create_Parse_state(text_entry))
 				{
-					/* inform the client of the change */
-					settings_editor_update(settings_editor);
+					if (set_Element_discretization(temp_state,(void *)&discretization,
+						(void *)settings_editor->user_interface)&&
+						GT_element_settings_set_discretization(
+							settings_editor->current_settings,&discretization,
+							settings_editor->user_interface))
+					{
+						/* inform the client of the change */
+						settings_editor_update(settings_editor);
+					}
+					destroy_Parse_state(&temp_state);
 				}
-				destroy_Parse_state(&temp_state);
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"settings_editor_discretization_text_CB.  "
+						"Could not create parse state");
+				}
+				XtFree(text_entry);
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"settings_editor_discretization_text_CB.  "
-					"Could not create parse state");
+					"settings_editor_discretization_text_CB.  Missing text");
 			}
-			XtFree(text_entry);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"settings_editor_discretization_text_CB.  Missing text");
-		}
-		if (GT_element_settings_get_discretization(
-			settings_editor->current_settings,&discretization))
-		{
-			/* always restore constant_radius to actual value in use */
-			sprintf(temp_string,"%d*%d*%d",discretization.number_in_xi1,
-				discretization.number_in_xi2,discretization.number_in_xi3);
-			XtVaSetValues(widget,XmNvalue,temp_string,NULL);
+			if (GT_element_settings_get_discretization(
+				settings_editor->current_settings,&discretization))
+			{
+				/* always restore constant_radius to actual value in use */
+				sprintf(temp_string,"%d*%d*%d",discretization.number_in_xi1,
+					discretization.number_in_xi2,discretization.number_in_xi3);
+				XtVaSetValues(widget,XmNvalue,temp_string,NULL);
+			}
 		}
 	}
 	else
@@ -1401,7 +1426,7 @@ Callback for change of glyph.
 static void settings_editor_glyph_size_text_CB(Widget widget,
 	XtPointer client_data,unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 15 November 2000
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Called when entry is made into the glyph_size text field.
@@ -1419,35 +1444,40 @@ Called when entry is made into the glyph_size text field.
 	USE_PARAMETER(reason);
 	if (widget&&(settings_editor=(struct Settings_editor *)client_data))
 	{
-		if (GT_element_settings_get_glyph_parameters(
-			settings_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
-			glyph_size, &orientation_scale_field, glyph_scale_factors,
-			&variable_scale_field))
+		/* must check if have current settings since we can get losingFocus
+			 callback after it is cleared */
+		if (settings_editor->current_settings)
 		{
-			/* Get the text string */
-			XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
-			if (text_entry)
+			if (GT_element_settings_get_glyph_parameters(
+				settings_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
+				glyph_size, &orientation_scale_field, glyph_scale_factors,
+				&variable_scale_field))
 			{
-				/* clean up spaces? */
-				if (temp_state=create_Parse_state(text_entry))
+				/* Get the text string */
+				XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
+				if (text_entry)
 				{
-					set_special_float3(temp_state,glyph_size,"*");
-					GT_element_settings_set_glyph_parameters(
-						settings_editor->current_settings, glyph, glyph_scaling_mode,
-						glyph_centre, glyph_size, orientation_scale_field,
-						glyph_scale_factors, variable_scale_field);
-					/* inform the client of the change */
-					settings_editor_update(settings_editor);
-					destroy_Parse_state(&temp_state);
+					/* clean up spaces? */
+					if (temp_state=create_Parse_state(text_entry))
+					{
+						set_special_float3(temp_state,glyph_size,"*");
+						GT_element_settings_set_glyph_parameters(
+							settings_editor->current_settings, glyph, glyph_scaling_mode,
+							glyph_centre, glyph_size, orientation_scale_field,
+							glyph_scale_factors, variable_scale_field);
+						/* inform the client of the change */
+						settings_editor_update(settings_editor);
+						destroy_Parse_state(&temp_state);
+					}
+					XtFree(text_entry);
 				}
-				XtFree(text_entry);
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"settings_editor_glyph_size_text_CB.  Missing text");
+				}
+				settings_editor_display_glyph_specific(settings_editor);
 			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"settings_editor_glyph_size_text_CB.  Missing text");
-			}
-			settings_editor_display_glyph_specific(settings_editor);
 		}
 	}
 	else
@@ -1461,7 +1491,7 @@ Called when entry is made into the glyph_size text field.
 static void settings_editor_glyph_centre_text_CB(Widget widget,
 	XtPointer client_data,unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 15 November 2000
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Called when entry is made into the glyph_centre text field.
@@ -1480,36 +1510,41 @@ Called when entry is made into the glyph_centre text field.
 	USE_PARAMETER(reason);
 	if (widget&&(settings_editor=(struct Settings_editor *)client_data))
 	{
-		if (GT_element_settings_get_glyph_parameters(
-			settings_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
-			glyph_size, &orientation_scale_field, glyph_scale_factors,
-			&variable_scale_field))
+		/* must check if have current settings since we can get losingFocus
+			 callback after it is cleared */
+		if (settings_editor->current_settings)
 		{
-			/* Get the text string */
-			XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
-			if (text_entry)
+			if (GT_element_settings_get_glyph_parameters(
+				settings_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
+				glyph_size, &orientation_scale_field, glyph_scale_factors,
+				&variable_scale_field))
 			{
-				/* clean up spaces? */
-				if (temp_state=create_Parse_state(text_entry))
+				/* Get the text string */
+				XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
+				if (text_entry)
 				{
-					set_float_vector(temp_state,glyph_centre,
-						(void *)&number_of_components);
-					GT_element_settings_set_glyph_parameters(
-						settings_editor->current_settings, glyph, glyph_scaling_mode,
-						glyph_centre, glyph_size, orientation_scale_field,
-						glyph_scale_factors, variable_scale_field);
-					/* inform the client of the change */
-					settings_editor_update(settings_editor);
-					destroy_Parse_state(&temp_state);
+					/* clean up spaces? */
+					if (temp_state=create_Parse_state(text_entry))
+					{
+						set_float_vector(temp_state,glyph_centre,
+							(void *)&number_of_components);
+						GT_element_settings_set_glyph_parameters(
+							settings_editor->current_settings, glyph, glyph_scaling_mode,
+							glyph_centre, glyph_size, orientation_scale_field,
+							glyph_scale_factors, variable_scale_field);
+						/* inform the client of the change */
+						settings_editor_update(settings_editor);
+						destroy_Parse_state(&temp_state);
+					}
+					XtFree(text_entry);
 				}
-				XtFree(text_entry);
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"settings_editor_glyph_centre_text_CB.  Missing text");
+				}
+				settings_editor_display_glyph_specific(settings_editor);
 			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"settings_editor_glyph_centre_text_CB.  Missing text");
-			}
-			settings_editor_display_glyph_specific(settings_editor);
 		}
 	}
 	else
@@ -1622,7 +1657,7 @@ Callback for change of orientation_scale_field.
 static void settings_editor_glyph_scale_factors_text_CB(Widget widget,
 	XtPointer client_data,unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 15 November 2000
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Called when entry is made into the glyph_scale_factors text field.
@@ -1640,35 +1675,40 @@ Called when entry is made into the glyph_scale_factors text field.
 	USE_PARAMETER(reason);
 	if (widget&&(settings_editor=(struct Settings_editor *)client_data))
 	{
-		if (GT_element_settings_get_glyph_parameters(
-			settings_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
-			glyph_size, &orientation_scale_field, glyph_scale_factors,
-			&variable_scale_field))
+		/* must check if have current settings since we can get losingFocus
+			 callback after it is cleared */
+		if (settings_editor->current_settings)
 		{
-			/* Get the text string */
-			XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
-			if (text_entry)
+			if (GT_element_settings_get_glyph_parameters(
+				settings_editor->current_settings, &glyph, &glyph_scaling_mode, glyph_centre,
+				glyph_size, &orientation_scale_field, glyph_scale_factors,
+				&variable_scale_field))
 			{
-				/* clean up spaces? */
-				if (temp_state=create_Parse_state(text_entry))
+				/* Get the text string */
+				XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
+				if (text_entry)
 				{
-					set_special_float3(temp_state,glyph_scale_factors,"*");
-					GT_element_settings_set_glyph_parameters(
-						settings_editor->current_settings, glyph, glyph_scaling_mode,
-						glyph_centre, glyph_size, orientation_scale_field,
-						glyph_scale_factors, variable_scale_field);
-					/* inform the client of the change */
-					settings_editor_update(settings_editor);
-					destroy_Parse_state(&temp_state);
+					/* clean up spaces? */
+					if (temp_state=create_Parse_state(text_entry))
+					{
+						set_special_float3(temp_state,glyph_scale_factors,"*");
+						GT_element_settings_set_glyph_parameters(
+							settings_editor->current_settings, glyph, glyph_scaling_mode,
+							glyph_centre, glyph_size, orientation_scale_field,
+							glyph_scale_factors, variable_scale_field);
+						/* inform the client of the change */
+						settings_editor_update(settings_editor);
+						destroy_Parse_state(&temp_state);
+					}
+					XtFree(text_entry);
 				}
-				XtFree(text_entry);
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"settings_editor_glyph_scale_factors_text_CB.  Missing text");
+				}
+				settings_editor_display_glyph_specific(settings_editor);
 			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"settings_editor_glyph_scale_factors_text_CB.  Missing text");
-			}
-			settings_editor_display_glyph_specific(settings_editor);
 		}
 	}
 	else
@@ -1976,7 +2016,7 @@ Callback for change of seed element.
 static void settings_editor_seed_xi_text_CB(Widget widget,
 	XtPointer client_data,unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 23 March 1999
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Called when entry is made into the seed_xi text field.
@@ -1992,35 +2032,40 @@ Called when entry is made into the seed_xi text field.
 	USE_PARAMETER(reason);
 	if (widget&&(settings_editor=(struct Settings_editor *)client_data))
 	{
-		if (GT_element_settings_get_seed_xi(
-			settings_editor->current_settings,seed_xi))
+		/* must check if have current settings since we can get losingFocus
+			 callback after it is cleared */
+		if (settings_editor->current_settings)
 		{
-			/* Get the text string */
-			XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
-			if (text_entry)
+			if (GT_element_settings_get_seed_xi(
+				settings_editor->current_settings,seed_xi))
 			{
-				/* clean up spaces? */
-				if (temp_state=create_Parse_state(text_entry))
+				/* Get the text string */
+				XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
+				if (text_entry)
 				{
-					set_float_vector(temp_state,seed_xi,
-						(void *)&number_of_components);
-					GT_element_settings_set_seed_xi(
-						settings_editor->current_settings,seed_xi);
-					/* inform the client of the change */
-					settings_editor_update(settings_editor);
-					destroy_Parse_state(&temp_state);
+					/* clean up spaces? */
+					if (temp_state=create_Parse_state(text_entry))
+					{
+						set_float_vector(temp_state,seed_xi,
+							(void *)&number_of_components);
+						GT_element_settings_set_seed_xi(
+							settings_editor->current_settings,seed_xi);
+						/* inform the client of the change */
+						settings_editor_update(settings_editor);
+						destroy_Parse_state(&temp_state);
+					}
+					XtFree(text_entry);
 				}
-				XtFree(text_entry);
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"settings_editor_seed_xi_text_CB.  Missing text");
+				}
+				/* always re-display the values actually set */
+				sprintf(temp_string,"%g,%g,%g",seed_xi[0],seed_xi[1],seed_xi[2]);
+				XtVaSetValues(settings_editor->seed_xi_text,XmNvalue,
+					temp_string,NULL);
 			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"settings_editor_seed_xi_text_CB.  Missing text");
-			}
-			/* always re-display the values actually set */
-			sprintf(temp_string,"%g,%g,%g",seed_xi[0],seed_xi[1],seed_xi[2]);
-			XtVaSetValues(settings_editor->seed_xi_text,XmNvalue,
-				temp_string,NULL);
 		}
 	}
 	else
@@ -2074,7 +2119,7 @@ Callback for change of streamline_type.
 static void settings_editor_streamline_length_text_CB(
 	Widget widget,XtPointer client_data,unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 24 March 1999
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Called when entry is made into the radius_scale_factor_text field.
@@ -2091,31 +2136,36 @@ Called when entry is made into the radius_scale_factor_text field.
 	USE_PARAMETER(reason);
 	if (widget&&(settings_editor=(struct Settings_editor *)client_data))
 	{
-		GT_element_settings_get_streamline_parameters(
-			settings_editor->current_settings,&streamline_type,
-			&stream_vector_field,&reverse_track,&streamline_length,
-			&streamline_width);
-		/* Get the text string */
-		XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
-		if (text_entry)
+		/* must check if have current settings since we can get losingFocus
+			 callback after it is cleared */
+		if (settings_editor->current_settings)
 		{
-			sscanf(text_entry,"%g",&streamline_length);
-			GT_element_settings_set_streamline_parameters(
-				settings_editor->current_settings,streamline_type,
-				stream_vector_field,reverse_track,streamline_length,
-				streamline_width);
-			/* inform the client of the change */
-			settings_editor_update(settings_editor);
-			XtFree(text_entry);
+			GT_element_settings_get_streamline_parameters(
+				settings_editor->current_settings,&streamline_type,
+				&stream_vector_field,&reverse_track,&streamline_length,
+				&streamline_width);
+			/* Get the text string */
+			XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
+			if (text_entry)
+			{
+				sscanf(text_entry,"%g",&streamline_length);
+				GT_element_settings_set_streamline_parameters(
+					settings_editor->current_settings,streamline_type,
+					stream_vector_field,reverse_track,streamline_length,
+					streamline_width);
+				/* inform the client of the change */
+				settings_editor_update(settings_editor);
+				XtFree(text_entry);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"settings_editor_streamline_length_text_CB.  Missing text");
+			}
+			/* always restore streamline_length to actual value in use */
+			sprintf(temp_string,"%g",streamline_length);
+			XtVaSetValues(widget,XmNvalue,temp_string,NULL);
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"settings_editor_streamline_length_text_CB.  Missing text");
-		}
-		/* always restore streamline_length to actual value in use */
-		sprintf(temp_string,"%g",streamline_length);
-		XtVaSetValues(widget,XmNvalue,temp_string,NULL);
 	}
 	else
 	{
@@ -2128,7 +2178,7 @@ Called when entry is made into the radius_scale_factor_text field.
 static void settings_editor_streamline_width_text_CB(
 	Widget widget,XtPointer client_data,unsigned long *reason)
 /*******************************************************************************
-LAST MODIFIED : 24 March 1999
+LAST MODIFIED : 22 November 2001
 
 DESCRIPTION :
 Called when entry is made into the radius_scale_factor_text field.
@@ -2145,30 +2195,35 @@ Called when entry is made into the radius_scale_factor_text field.
 	USE_PARAMETER(reason);
 	if (widget&&(settings_editor=(struct Settings_editor *)client_data))
 	{
-		GT_element_settings_get_streamline_parameters(
-			settings_editor->current_settings,&streamline_type,
-			&stream_vector_field,&reverse_track,&streamline_length,
-			&streamline_width);
-		/* Get the text string */
-		XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
-		if (text_entry)
+		/* must check if have current settings since we can get losingFocus
+			 callback after it is cleared */
+		if (settings_editor->current_settings)
 		{
-			sscanf(text_entry,"%g",&streamline_width);
-			GT_element_settings_set_streamline_parameters(
-				settings_editor->current_settings,streamline_type,
-				stream_vector_field,reverse_track,streamline_length,streamline_width);
-			/* inform the client of the change */
-			settings_editor_update(settings_editor);
-			XtFree(text_entry);
+			GT_element_settings_get_streamline_parameters(
+				settings_editor->current_settings,&streamline_type,
+				&stream_vector_field,&reverse_track,&streamline_length,
+				&streamline_width);
+			/* Get the text string */
+			XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
+			if (text_entry)
+			{
+				sscanf(text_entry,"%g",&streamline_width);
+				GT_element_settings_set_streamline_parameters(
+					settings_editor->current_settings,streamline_type,
+					stream_vector_field,reverse_track,streamline_length,streamline_width);
+				/* inform the client of the change */
+				settings_editor_update(settings_editor);
+				XtFree(text_entry);
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"settings_editor_streamline_width_text_CB.  Missing text");
+			}
+			/* always restore streamline_width to actual value in use */
+			sprintf(temp_string,"%g",streamline_width);
+			XtVaSetValues(widget,XmNvalue,temp_string,NULL);
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"settings_editor_streamline_width_text_CB.  Missing text");
-		}
-		/* always restore streamline_width to actual value in use */
-		sprintf(temp_string,"%g",streamline_width);
-		XtVaSetValues(widget,XmNvalue,temp_string,NULL);
 	}
 	else
 	{
@@ -2732,7 +2787,7 @@ Widget create_settings_editor_widget(Widget *settings_editor_widget,
 	struct MANAGER(VT_volume_texture) *volume_texture_manager,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 1 May 2001
+LAST MODIFIED : 12 November 2001
 
 DESCRIPTION :
 Creates a settings_editor widget.
@@ -2747,6 +2802,10 @@ Creates a settings_editor widget.
 	{
 		{"seted_destroy_CB",(XtPointer)
 			settings_editor_destroy_CB},
+		{"seted_id_main_scroll",(XtPointer)
+			DIALOG_IDENTIFY(settings_editor,main_scroll)},
+		{"seted_id_main_form",(XtPointer)
+			DIALOG_IDENTIFY(settings_editor,main_form)},
 		{"seted_id_coordinate_btn",(XtPointer)
 			DIALOG_IDENTIFY(settings_editor,coordinate_button)},
 		{"seted_id_coordinate_form",(XtPointer)
@@ -2970,6 +3029,8 @@ Creates a settings_editor widget.
 				settings_editor->widget_address=settings_editor_widget;
 				settings_editor->widget=(Widget)NULL;
 				/* clear geometry settings widgets */
+				settings_editor->main_scroll=(Widget)NULL;
+				settings_editor->main_form=(Widget)NULL;
 				settings_editor->coordinate_button=(Widget)NULL;
 				settings_editor->coordinate_field_form=(Widget)NULL;
 				settings_editor->coordinate_field_widget=(Widget)NULL;
@@ -3092,7 +3153,8 @@ Creates a settings_editor widget.
 								create_choose_enumerator_widget(
 								settings_editor->use_element_type_form,
 								number_of_valid_strings,valid_strings,
-								ENUMERATOR_STRING(Use_element_type)(USE_ELEMENTS))))
+								ENUMERATOR_STRING(Use_element_type)(USE_ELEMENTS),
+								user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -3101,7 +3163,8 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								settings_editor->coordinate_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
-								Computed_field_has_up_to_3_numerical_components,(void *)NULL)))
+								Computed_field_has_up_to_3_numerical_components,(void *)NULL,
+								user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -3109,7 +3172,7 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								settings_editor->radius_scalar_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
-								Computed_field_is_scalar,(void *)NULL)))
+								Computed_field_is_scalar, (void *)NULL, user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -3117,7 +3180,7 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								settings_editor->iso_scalar_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
-								Computed_field_is_scalar,(void *)NULL)))
+								Computed_field_is_scalar, (void *)NULL, user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -3125,7 +3188,7 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_LIST_WIDGET(GT_object)(
 								settings_editor->glyph_form,
 								(struct GT_object *)NULL,settings_editor->glyph_list,
-								(LIST_CONDITIONAL_FUNCTION(GT_object) *)NULL)))
+								(LIST_CONDITIONAL_FUNCTION(GT_object) *)NULL, user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -3138,7 +3201,7 @@ Creates a settings_editor widget.
 									settings_editor->glyph_scaling_mode_form,
 									number_of_valid_strings,valid_strings,
 									ENUMERATOR_STRING(Glyph_scaling_mode)(
-										GLYPH_SCALING_GENERAL))))
+										GLYPH_SCALING_GENERAL), user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -3147,7 +3210,8 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								settings_editor->glyph_orientation_scale_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
-								Computed_field_is_orientation_scale_capable,(void *)NULL)))
+								Computed_field_is_orientation_scale_capable, (void *)NULL,
+								user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -3156,7 +3220,7 @@ Creates a settings_editor widget.
 									settings_editor->glyph_variable_scale_field_form,
 									(struct Computed_field *)NULL, computed_field_manager,
 									Computed_field_has_up_to_3_numerical_components,
-									(void *)NULL)))
+									(void *)NULL, user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -3165,7 +3229,7 @@ Creates a settings_editor widget.
 								settings_editor->label_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
 								(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL,
-								(void *)NULL)))
+								(void *)NULL, user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -3173,7 +3237,8 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(FE_field)(
 								settings_editor->native_discretization_field_form,
 								(struct FE_field *)NULL,fe_field_manager,
-								(MANAGER_CONDITIONAL_FUNCTION(FE_field) *)NULL,(void *)NULL)))
+								(MANAGER_CONDITIONAL_FUNCTION(FE_field) *)NULL, (void *)NULL,
+								user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -3181,7 +3246,7 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								settings_editor->xi_point_density_field_form,
 								(struct Computed_field *)NULL, computed_field_manager,
-								Computed_field_is_scalar, (void *)NULL)))
+								Computed_field_is_scalar, (void *)NULL, user_interface)))
 							{
 								init_widgets = 0;
 							}
@@ -3194,7 +3259,7 @@ Creates a settings_editor widget.
 								settings_editor->xi_discretization_mode_form,
 								number_of_valid_strings,valid_strings,
 								ENUMERATOR_STRING(Xi_discretization_mode)(
-									XI_DISCRETIZATION_CELL_CENTRES))))
+									XI_DISCRETIZATION_CELL_CENTRES), user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -3204,7 +3269,7 @@ Creates a settings_editor widget.
 								settings_editor->volume_texture_form,
 								(struct VT_volume_texture *)NULL,volume_texture_manager,
 								(MANAGER_CONDITIONAL_FUNCTION(VT_volume_texture) *)NULL,
-								(void *)NULL)))
+								(void *)NULL, user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -3226,7 +3291,8 @@ Creates a settings_editor widget.
 								create_choose_enumerator_widget(
 								settings_editor->streamline_type_form,
 								number_of_valid_strings,valid_strings,
-								ENUMERATOR_STRING(Streamline_type)(STREAM_LINE))))
+								ENUMERATOR_STRING(Streamline_type)(STREAM_LINE),
+								user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -3235,7 +3301,8 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								settings_editor->stream_vector_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
-								Computed_field_is_stream_vector_capable,(void *)NULL)))
+								Computed_field_is_stream_vector_capable, (void *)NULL,
+								user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -3248,7 +3315,8 @@ Creates a settings_editor widget.
 								create_choose_enumerator_widget(
 									settings_editor->select_mode_form,
 									number_of_valid_strings,valid_strings,
-									ENUMERATOR_STRING(Graphics_select_mode)(GRAPHICS_NO_SELECT))))
+									ENUMERATOR_STRING(Graphics_select_mode)(GRAPHICS_NO_SELECT),
+									user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -3262,7 +3330,8 @@ Creates a settings_editor widget.
 								create_choose_enumerator_widget(
 								settings_editor->streamline_data_type_form,
 								number_of_valid_strings,valid_strings,
-								ENUMERATOR_STRING(Streamline_data_type)(STREAM_FIELD_SCALAR))))
+								ENUMERATOR_STRING(Streamline_data_type)(STREAM_FIELD_SCALAR),
+								user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -3273,7 +3342,7 @@ Creates a settings_editor widget.
 								(struct Graphical_material *)NULL,
 								settings_editor->graphical_material_manager,
 								(MANAGER_CONDITIONAL_FUNCTION(Graphical_material) *)NULL,
-								(void *)NULL)))
+								(void *)NULL, user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -3281,7 +3350,8 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								settings_editor->texture_coord_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
-								Computed_field_has_up_to_3_numerical_components,(void *)NULL)))
+								Computed_field_has_up_to_3_numerical_components, (void *)NULL,
+								user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -3289,7 +3359,8 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								settings_editor->data_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
-								Computed_field_has_numerical_components,(void *)NULL)))
+								Computed_field_has_numerical_components, (void *)NULL,
+								user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -3297,7 +3368,8 @@ Creates a settings_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Spectrum)(
 								settings_editor->spectrum_form,
 								(struct Spectrum *)NULL,spectrum_manager,
-								(MANAGER_CONDITIONAL_FUNCTION(Spectrum) *)NULL,(void *)NULL)))
+								(MANAGER_CONDITIONAL_FUNCTION(Spectrum) *)NULL, (void *)NULL,
+								user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -3307,7 +3379,7 @@ Creates a settings_editor widget.
 								(struct Graphical_material *)NULL,
 								settings_editor->graphical_material_manager,
 								(MANAGER_CONDITIONAL_FUNCTION(Graphical_material) *)NULL,
-								(void *)NULL)))
+								(void *)NULL, user_interface)))
 							{
 								init_widgets=0;
 							}
@@ -3319,13 +3391,24 @@ Creates a settings_editor widget.
 								create_choose_enumerator_widget(
 									settings_editor->render_type_form,
 									number_of_valid_strings, valid_strings,
-									ENUMERATOR_STRING(Render_type)(RENDER_TYPE_SHADED))))
+									ENUMERATOR_STRING(Render_type)(RENDER_TYPE_SHADED),
+									user_interface)))
 							{
 								init_widgets = 0;
 							}
 							DEALLOCATE(valid_strings);
 							if (init_widgets)
 							{
+								Pixel pixel;
+								Widget clip_window = (Widget)NULL;
+
+								/* copy background from main_form into main_scroll */
+								XtVaGetValues(settings_editor->main_form,
+									XmNbackground, &pixel, NULL);
+								XtVaGetValues(settings_editor->main_scroll,
+									XmNclipWindow, &clip_window, NULL);
+								XtVaSetValues(clip_window, XmNbackground, pixel, NULL);
+
 								XtUnmanageChild(settings_editor->glyph_scaling_mode_entry);
 								if (settings)
 								{

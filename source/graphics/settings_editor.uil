@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : settings_editor.uil
 !
-! LAST MODIFIED : 1 May 2001
+! LAST MODIFIED : 20 November 2001
 !
 ! DESCRIPTION :
 ! The widgets for the settings editor widget.
@@ -13,6 +13,9 @@ procedure
 ! ---------|---------|---------|- 31 characters max
   seted_destroy_CB;
 !Identify geometry widgets:
+  seted_id_main_scroll;
+  seted_id_main_form;
+
   seted_id_coordinate_btn;
   seted_id_coordinate_form;
   seted_id_use_elem_type_entry;
@@ -133,10 +136,6 @@ procedure
 
 value
   shadow_size           :   2;
-  seted_font       : font_table(font('-*-HELVETICA-MEDIUM-R-*--*-80-*-*-*-*-ISO8859-1'));
-  seted_font_large : font_table(font('-*-HELVETICA-BOLD-R-*--*-100-*-*-*-*-ISO8859-1'));
-  seted_font_bold  : font_table(font('-*-HELVETICA-BOLD-R-*--*-80-*-*-*-*-ISO8859-1'));
-!XtDefaultForeground
 
 identifier
   !The gap between widgets
@@ -144,33 +143,9 @@ identifier
   !Pointer to data specific to this instance of the seted widget
   seted_structure;
   !fonts here
-  button_font;
   normal_font;
-	heading_font;
 
 object
-/*
-  settings_editor_widget: XmFrame
-    {
-    arguments
-      {
-      XmNleftAttachment = XmATTACH_FORM;
-      XmNrightAttachment = XmATTACH_FORM;
-      XmNtopAttachment = XmATTACH_FORM;
-      XmNbottomAttachment = XmATTACH_FORM;
-!Need userData to get structure from settings_editor_widget
-      XmNuserData = seted_structure;
-      };
-    controls
-      {
-      XmForm seted_main_form;
-      };
-    callbacks
-      {
-      XmNdestroyCallback = procedure seted_destroy_CB(seted_structure);
-      };
-    };
-*/
 	settings_editor_widget: XmScrolledWindow
 		{
     arguments
@@ -179,21 +154,6 @@ object
 			XmNshadowThickness = 0;
 			XmNheight = 256;
 			XmNscrollingPolicy = XmAUTOMATIC;
-!			XmNspacing = 4;
-!			XmNscrolledWindowMarginHeight = 2;
-!			XmNscrolledWindowMarginWidth = 4;
-!temp
-!			XmNvisualPolicy = XmVARIABLE;
-!			XmNscrollBarDisplayPolicy = XmSTATIC;
-!			XmNborderWidth = 10;
-!			XmNborderColor = color('yellow');
-!			XmNbackground = color('black');
-!			XmNforeground = color('red');
-!			XmNhighlightColor = color('white');
-!			XmNtopShadowColor = color('green');
-!			XmNbottomShadowColor = color('blue');
-!temp
-!     XmNworkWindow = seted_main_form;
       XmNleftAttachment = XmATTACH_FORM;
       XmNrightAttachment = XmATTACH_FORM;
       XmNtopAttachment = XmATTACH_FORM;
@@ -207,25 +167,21 @@ object
       };
 		callbacks
       {
+      MrmNcreateCallback = procedure seted_id_main_scroll(seted_structure);
       XmNdestroyCallback = procedure seted_destroy_CB(seted_structure);
       };
     };
   seted_main_form: XmForm
     {
-!    arguments
-!      {
-!			XmNborderWidth = 10;
-!			XmNborderColor = color('orange');
-!			XmNbackground = color('blue');
-!			XmNforeground = color('red');
-!			XmNhighlightColor = color('white');
-!      XmNuserData = seted_structure;
-!      };
     controls
       {
       XmRowColumn seted_geometry_rc;
       XmSeparatorGadget seted_separator;
       XmRowColumn seted_appearance_rc;
+      };
+		callbacks
+      {
+      MrmNcreateCallback = procedure seted_id_main_form(seted_structure);
       };
     };
   seted_geometry_rc: XmRowColumn
@@ -239,7 +195,6 @@ object
       };
     controls
       {
-!      XmLabelGadget seted_geometry_label;
       XmRowColumn seted_coordinate_field_entry;
       XmRowColumn seted_use_elem_type_entry;
       XmForm seted_exterior_face_entry;
@@ -281,7 +236,6 @@ object
       };
     controls
       {
-!      XmLabelGadget seted_appearance_label;
       XmRowColumn seted_material_entry;
       XmRowColumn seted_render_type_entry;
 			XmRowColumn seted_texture_coord_entry;
@@ -291,23 +245,6 @@ object
       };
     };
 !*******************************************************************************
-  seted_geometry_label: XmLabelGadget
-    {
-    arguments
-      {
-      XmNlabelString = compound_string("Geometry:");
-!      XmNfontList = seted_font_large;
-      XmNfontList = heading_font;
-      XmNalignment = XmALIGNMENT_BEGINNING;
-!      XmNshadowThickness = shadow_size;
-!      XmNhighlightThickness = 0;
-!      XmNleftAttachment = XmATTACH_FORM;
-!      XmNrightAttachment = XmATTACH_NONE;
-!      XmNtopAttachment = XmATTACH_FORM;
-!      XmNbottomAttachment = XmATTACH_NONE;
-      XmNuserData = seted_structure;
-      };
-    };
   seted_coordinate_field_entry: XmRowColumn
     {
 		arguments
@@ -597,7 +534,7 @@ object
       {
       XmNlabelString = compound_string("Coordinate field:");
       XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       };
     callbacks
       {
@@ -620,7 +557,7 @@ object
       {
       XmNlabelString = compound_string("Use element type:");
       XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       };
     };
   seted_use_elem_type_form: XmForm
@@ -638,7 +575,7 @@ object
       {
       XmNlabelString = compound_string("Exterior");
       XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       XmNleftAttachment = XmATTACH_FORM;
       XmNrightAttachment = XmATTACH_NONE;
       XmNtopAttachment = XmATTACH_FORM;
@@ -680,7 +617,7 @@ object
       {
       XmNlabelString = compound_string("Face:");
       XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
 !      XmNleftAttachment = XmATTACH_FORM;
  	    XmNleftAttachment = XmATTACH_WIDGET;
 			XmNleftOffset = 50;
@@ -729,7 +666,7 @@ object
     arguments
       {
 !      XmNborderWidth = 1;
-      XmNbuttonFontList = button_font;
+      XmNbuttonFontList = normal_font;
       XmNuserData = seted_structure;
       };
     callbacks
@@ -746,7 +683,7 @@ object
         arguments
           {
           XmNlabelString = compound_string("xi1=0");
-          XmNfontList = button_font;
+          XmNfontList = normal_font;
           XmNuserData = 0;
           };
         };
@@ -755,7 +692,7 @@ object
         arguments
           {
           XmNlabelString = compound_string("xi1=1");
-          XmNfontList = button_font;
+          XmNfontList = normal_font;
           XmNuserData = 1;
           };
         };
@@ -764,7 +701,7 @@ object
         arguments
           {
           XmNlabelString = compound_string("xi2=0");
-          XmNfontList = button_font;
+          XmNfontList = normal_font;
           XmNuserData = 2;
           };
         };
@@ -773,7 +710,7 @@ object
         arguments
           {
           XmNlabelString = compound_string("xi2=1");
-          XmNfontList = button_font;
+          XmNfontList = normal_font;
           XmNuserData = 3;
           };
         };
@@ -782,7 +719,7 @@ object
         arguments
           {
           XmNlabelString = compound_string("xi3=0");
-          XmNfontList = button_font;
+          XmNfontList = normal_font;
           XmNuserData = 4;
           };
         };
@@ -791,7 +728,7 @@ object
         arguments
           {
           XmNlabelString = compound_string("xi3=1");
-          XmNfontList = button_font;
+          XmNfontList = normal_font;
           XmNuserData = 5;
           };
         };
@@ -821,7 +758,7 @@ object
       {
       XmNlabelString = compound_string("Constant radius:");
       XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       };
     };
   seted_constant_radius_text: XmTextField
@@ -829,7 +766,6 @@ object
     arguments
       {
       XmNvalue = "";
-!      XmNwidth = 80;
       XmNcolumns = 12;
       XmNfontList = normal_font;
       };
@@ -865,7 +801,7 @@ object
     arguments
       {
       XmNlabelString = compound_string("Scalar radius:");
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       XmNalignment = XmALIGNMENT_BEGINNING;
       };
     callbacks
@@ -912,7 +848,7 @@ object
     arguments
       {
       XmNlabelString = compound_string("   Scale factor:");
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       XmNalignment = XmALIGNMENT_BEGINNING;
       };
     };
@@ -921,7 +857,6 @@ object
     arguments
       {
       XmNvalue = "";
-!      XmNwidth = 80;
       XmNcolumns = 12;
       XmNfontList = normal_font;
       };
@@ -959,7 +894,7 @@ object
       {
       XmNlabelString = compound_string("Iso-scalar:");
       XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       };
     };
   seted_iso_scalar_form: XmForm
@@ -992,7 +927,7 @@ object
       {
       XmNlabelString = compound_string("   = Iso-value:");
       XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       };
     };
   seted_iso_value_text: XmTextField
@@ -1000,7 +935,6 @@ object
     arguments
       {
       XmNvalue = "";
-!      XmNwidth = 80;
       XmNcolumns = 12;
       XmNfontList = normal_font;
       };
@@ -1019,7 +953,7 @@ object
       {
       XmNlabelString = compound_string("Discretization:");
       XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       XmNleftAttachment = XmATTACH_FORM;
       XmNrightAttachment = XmATTACH_NONE;
       XmNtopAttachment = XmATTACH_FORM;
@@ -1031,7 +965,6 @@ object
     arguments
       {
       XmNvalue = "";
-!      XmNwidth = 80;
       XmNcolumns = 8;
       XmNfontList = normal_font;
       XmNleftAttachment = XmATTACH_WIDGET;
@@ -1057,7 +990,7 @@ object
       {
       XmNlabelString = compound_string("Native discretization field:");
       XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       };
     callbacks
       {
@@ -1080,7 +1013,7 @@ object
       {
       XmNlabelString = compound_string("Density field:");
       XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       };
     };
   seted_density_field_form: XmForm
@@ -1098,7 +1031,7 @@ object
       {
       XmNlabelString = compound_string("Xi discretization mode:");
       XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       };
     };
 	seted_xi_disc_mode_form: XmForm
@@ -1182,7 +1115,7 @@ object
       {
       XmNlabelString = compound_string("Glyph:");
       XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       XmNleftAttachment = XmATTACH_FORM;
       XmNrightAttachment = XmATTACH_NONE;
       XmNtopAttachment = XmATTACH_FORM;
@@ -1210,7 +1143,7 @@ object
       {
       XmNlabelString = compound_string("Centre:");
       XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       XmNleftAttachment = XmATTACH_WIDGET;
       XmNleftWidget = seted_glyph_form;
       XmNleftOffset = 10;
@@ -1224,7 +1157,6 @@ object
     arguments
       {
       XmNvalue = "";
-!      XmNwidth = 80;
       XmNcolumns = 12;
       XmNfontList = normal_font;
       XmNleftAttachment = XmATTACH_WIDGET;
@@ -1250,7 +1182,7 @@ object
       {
       XmNlabelString = compound_string("Scaling mode:");
       XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       XmNleftAttachment = XmATTACH_FORM;
       XmNrightAttachment = XmATTACH_NONE;
       XmNtopAttachment = XmATTACH_FORM;
@@ -1280,7 +1212,7 @@ object
       {
       XmNlabelString = compound_string("Base glyph size:");
       XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       XmNleftAttachment = XmATTACH_FORM;
       XmNrightAttachment = XmATTACH_NONE;
       XmNtopAttachment = XmATTACH_FORM;
@@ -1292,7 +1224,6 @@ object
     arguments
       {
       XmNvalue = "";
-!      XmNwidth = 80;
       XmNcolumns = 12;
       XmNfontList = normal_font;
       XmNleftAttachment = XmATTACH_WIDGET;
@@ -1315,7 +1246,7 @@ object
     arguments
       {
       XmNlabelString = compound_string("Orientation/Scale:");
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       XmNalignment = XmALIGNMENT_BEGINNING;
       XmNleftAttachment = XmATTACH_FORM;
       XmNrightAttachment = XmATTACH_NONE;
@@ -1351,7 +1282,7 @@ object
     arguments
       {
       XmNlabelString = compound_string("   Scale factors:");
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       XmNalignment = XmALIGNMENT_BEGINNING;
       XmNleftAttachment = XmATTACH_FORM;
       XmNrightAttachment = XmATTACH_NONE;
@@ -1364,7 +1295,6 @@ object
     arguments
       {
       XmNvalue = "";
-!      XmNwidth = 80;
       XmNcolumns = 12;
       XmNfontList = normal_font;
       XmNleftAttachment = XmATTACH_WIDGET;
@@ -1389,7 +1319,7 @@ object
     arguments
       {
       XmNlabelString = compound_string("Variable Scale:");
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       XmNalignment = XmALIGNMENT_BEGINNING;
       XmNleftAttachment = XmATTACH_FORM;
       XmNrightAttachment = XmATTACH_NONE;
@@ -1448,7 +1378,7 @@ object
     arguments
       {
       XmNlabelString = compound_string("Label:");
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       XmNalignment = XmALIGNMENT_BEGINNING;
       };
     callbacks
@@ -1473,7 +1403,7 @@ object
     arguments
       {
       XmNlabelString = compound_string("Volume texture:");
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       XmNalignment = XmALIGNMENT_BEGINNING;
       XmNleftAttachment = XmATTACH_FORM;
 !      XmNleftOffset = 2;
@@ -1509,7 +1439,7 @@ object
     arguments
       {
       XmNlabelString = compound_string("Seed element:");
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       XmNalignment = XmALIGNMENT_BEGINNING;
       XmNleftAttachment = XmATTACH_FORM;
       XmNrightAttachment = XmATTACH_NONE;
@@ -1547,7 +1477,7 @@ object
       {
       XmNlabelString = compound_string("Xi:");
       XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       };
     };
   seted_seed_xi_text: XmTextField
@@ -1555,7 +1485,6 @@ object
     arguments
       {
       XmNvalue = "";
-!      XmNwidth = 80;
       XmNcolumns = 12;
       XmNfontList = normal_font;
       };
@@ -1589,7 +1518,7 @@ object
       {
       XmNlabelString = compound_string("Streamline type:");
       XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       };
     };
   seted_strline_type_form: XmForm
@@ -1625,7 +1554,7 @@ object
       {
       XmNlabelString = compound_string("Length:");
       XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       };
     };
   seted_strline_length_text: XmTextField
@@ -1633,7 +1562,6 @@ object
     arguments
       {
       XmNvalue = "";
-!      XmNwidth = 80;
       XmNcolumns = 12;
       XmNfontList = normal_font;
       };
@@ -1653,7 +1581,7 @@ object
       {
       XmNlabelString = compound_string("Width:");
       XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       };
     };
   seted_strline_width_text: XmTextField
@@ -1661,7 +1589,6 @@ object
     arguments
       {
       XmNvalue = "";
-!      XmNwidth = 80;
       XmNcolumns = 12;
       XmNfontList = normal_font;
       };
@@ -1699,7 +1626,7 @@ object
       {
       XmNlabelString = compound_string("Stream vector:");
       XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       };
     };
   seted_strline_vector_form: XmForm
@@ -1715,7 +1642,7 @@ object
     arguments
       {
       XmNlabelString = compound_string("Reverse");
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       XmNalignment = XmALIGNMENT_BEGINNING;
       };
     callbacks
@@ -1733,7 +1660,7 @@ object
       {
       XmNlabelString = compound_string("Select mode:");
       XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       };
     };
   seted_select_mode_form: XmForm
@@ -1772,7 +1699,7 @@ object
       {
       XmNlabelString = compound_string("Streamline data type:");
       XmNalignment = XmALIGNMENT_BEGINNING;
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       };
     };
   seted_strline_datatype_form: XmForm
@@ -1784,15 +1711,6 @@ object
       };
     };
 !*******************************************************************************
-  seted_appearance_label: XmLabelGadget
-    {
-    arguments
-      {
-      XmNlabelString = compound_string("Appearance:");
-!      XmNfontList = seted_font_large;
-      XmNalignment = XmALIGNMENT_BEGINNING;
-      };
-    };
   seted_material_entry: XmRowColumn
     {
 		arguments
@@ -1900,7 +1818,7 @@ object
     arguments
       {
       XmNlabelString = compound_string("Render type:");
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       XmNalignment = XmALIGNMENT_BEGINNING;
       };
     };
@@ -1918,7 +1836,7 @@ object
     arguments
       {
       XmNlabelString = compound_string("Material:");
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       XmNalignment = XmALIGNMENT_BEGINNING;
       };
     };
@@ -1936,7 +1854,7 @@ object
     arguments
       {
       XmNlabelString = compound_string("Texture coordinates:");
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       XmNalignment = XmALIGNMENT_BEGINNING;
       };
     callbacks
@@ -1978,7 +1896,7 @@ object
     arguments
       {
       XmNlabelString = compound_string("Data:");
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       XmNalignment = XmALIGNMENT_BEGINNING;
       };
     callbacks
@@ -2024,7 +1942,7 @@ object
     arguments
       {
       XmNlabelString = compound_string("   Spectrum:");
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       XmNalignment = XmALIGNMENT_BEGINNING;
       };
     };
@@ -2042,7 +1960,7 @@ object
     arguments
       {
       XmNlabelString = compound_string("Selected material:");
-      XmNfontList = button_font;
+      XmNfontList = normal_font;
       XmNalignment = XmALIGNMENT_BEGINNING;
       };
     };
