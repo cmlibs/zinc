@@ -77,7 +77,8 @@ finite element group rendition.
 	struct Computed_field *radius_scalar_field;
 	/* for iso_surfaces only */
 	struct Computed_field *iso_scalar_field;
-	double iso_value;
+	int number_of_iso_values;
+	double *iso_values;
 	/* SAB Surface data on iso_surfaces added for text access only */
 	struct Computed_field *surface_data_density_field;
 	struct Computed_field *surface_data_coordinate_field;
@@ -648,7 +649,8 @@ Allocates memory and assigns fields for a struct GT_element_settings.
 			settings->radius_scalar_field=(struct Computed_field *)NULL;
 			/* for iso_surfaces only */
 			settings->iso_scalar_field=(struct Computed_field *)NULL;
-			settings->iso_value=0.0;
+			settings->number_of_iso_values=0;
+			settings->iso_values=(double *)NULL;
 			settings->surface_data_density_field = (struct Computed_field *)NULL;
 			settings->surface_data_coordinate_field = (struct Computed_field *)NULL;
 			settings->surface_data_region_path = (char *)NULL;
@@ -779,6 +781,10 @@ Frees the memory for the fields of <**settings_ptr>, frees the memory for
 			if (settings->iso_scalar_field)
 			{
 				DEACCESS(Computed_field)(&(settings->iso_scalar_field));
+			}
+			if (settings->iso_values)
+			{
+				DEALLOCATE(settings->iso_values);
 			}
 			if (settings->surface_data_density_field)
 			{
@@ -941,7 +947,8 @@ graphics_object is NOT copied; destination->graphics_object is cleared.
 		if (GT_ELEMENT_SETTINGS_ISO_SURFACES==source->settings_type)
 		{
 			GT_element_settings_set_iso_surface_parameters(destination,
-				source->iso_scalar_field,source->iso_value);
+				source->iso_scalar_field,source->number_of_iso_values,
+				source->iso_values);
 			REACCESS(Computed_field)(&(destination->surface_data_coordinate_field),
 				source->surface_data_coordinate_field);
 			REACCESS(Computed_field)(&(destination->surface_data_density_field),
@@ -2066,24 +2073,47 @@ finite_element/finite_element_to_graphics object for explanation of how the
 
 int GT_element_settings_get_iso_surface_parameters(
 	struct GT_element_settings *settings,struct Computed_field **iso_scalar_field,
-	double *iso_value)
+	int *number_of_iso_values, double **iso_values)
 /*******************************************************************************
-LAST MODIFIED : 15 February 1999
+LAST MODIFIED : 18 February 2005
 
 DESCRIPTION :
 Returns parameters for the iso_surface: iso_scalar_field = iso_value.
 For settings_type GT_ELEMENT_SETTINGS_ISO_SURFACES only.
 ==============================================================================*/
 {
-	int return_code;
+	int i, return_code;
 
 	ENTER(GT_element_settings_get_iso_surface_parameters);
-	if (settings&&iso_scalar_field&&iso_value&&
+	if (settings&&iso_scalar_field&&number_of_iso_values&&iso_values&&
 		(GT_ELEMENT_SETTINGS_ISO_SURFACES==settings->settings_type))
 	{
 		*iso_scalar_field=settings->iso_scalar_field;
-		*iso_value=settings->iso_value;
-		return_code=1;
+		if (0 < settings->number_of_iso_values)
+		{
+			if (ALLOCATE(*iso_values, double, settings->number_of_iso_values))
+			{
+				for (i = 0 ; i < settings->number_of_iso_values ; i++)
+				{
+					(*iso_values)[i] = settings->iso_values[i];
+				}
+				*number_of_iso_values = settings->number_of_iso_values;
+				return_code = 1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"GT_element_settings_get_iso_surface_parameters.  "
+					"Could not allocate memory/");
+				return_code=0;
+			}
+		}
+		else
+		{
+			*number_of_iso_values=settings->number_of_iso_values;
+			*iso_values=(double *)NULL;
+			return_code=1;
+		}
 	}
 	else
 	{
@@ -2098,9 +2128,9 @@ For settings_type GT_ELEMENT_SETTINGS_ISO_SURFACES only.
 
 int GT_element_settings_set_iso_surface_parameters(
 	struct GT_element_settings *settings,struct Computed_field *iso_scalar_field,
-	double iso_value)
+	int number_of_iso_values, double *iso_values)
 /*******************************************************************************
-LAST MODIFIED : 19 March 1999
+LAST MODIFIED : 18 February 2005
 
 DESCRIPTION :
 Sets parameters for the iso_surface: iso_scalar_field = iso_value.
@@ -2108,7 +2138,7 @@ For settings_type GT_ELEMENT_SETTINGS_ISO_SURFACES only - must call this after
 CREATE to define a valid iso_surface.
 ==============================================================================*/
 {
-	int return_code;
+	int i, return_code;
 
 	ENTER(GT_element_settings_set_iso_surface_parameters);
 	if (settings&&iso_scalar_field&&
@@ -2117,7 +2147,34 @@ CREATE to define a valid iso_surface.
 	{
 		return_code=1;
 		REACCESS(Computed_field)(&(settings->iso_scalar_field),iso_scalar_field);
-		settings->iso_value=iso_value;
+		if (0 < number_of_iso_values)
+		{
+			if (REALLOCATE(settings->iso_values, settings->iso_values, double,
+					number_of_iso_values))
+			{
+				settings->number_of_iso_values = number_of_iso_values;
+				for (i = 0 ; i < number_of_iso_values ; i++)
+				{
+					settings->iso_values[i] = iso_values[i];
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"GT_element_settings_set_iso_surface_parameters.  "
+					"Could not allocate memory.");
+				return_code=0;
+			}
+		}
+		else
+		{
+			if (settings->iso_values)
+			{
+				DEALLOCATE(settings->iso_values);
+				settings->iso_values = (double *)NULL;
+			}
+			settings->number_of_iso_values = 0;
+		}
 	}
 	else
 	{
@@ -4081,7 +4138,7 @@ GT_element_settings list conditional function returning 1 iff the two
 settings describe EXACTLY the same geometry.
 ==============================================================================*/
 {
-	int dimension,return_code;
+	int dimension,i,return_code;
 	struct GT_element_settings *second_settings;
 
 	ENTER(GT_element_settings_same_geometry);
@@ -4124,7 +4181,8 @@ settings describe EXACTLY the same geometry.
 		if (return_code&&
 			(GT_ELEMENT_SETTINGS_ISO_SURFACES==settings->settings_type))
 		{
-			return_code=(settings->iso_value==second_settings->iso_value)&&
+			return_code=(settings->number_of_iso_values==
+				second_settings->number_of_iso_values)&&
 				(settings->iso_scalar_field==second_settings->iso_scalar_field)&&
 				(settings->surface_data_coordinate_field
 					==second_settings->surface_data_coordinate_field)&&
@@ -4132,6 +4190,15 @@ settings describe EXACTLY the same geometry.
 					==second_settings->surface_data_density_field)&&
 				(settings->surface_data_fe_region
 					==second_settings->surface_data_fe_region);
+			i = 0;
+			while (return_code && (i < settings->number_of_iso_values))
+			{
+				if (settings->iso_values[i] != second_settings->iso_values[i])
+				{
+					return_code = 0;
+				}
+				i++;
+			}
 		}
 		/* for node_points, data_points and element_points only */
 		if (return_code&&
@@ -4476,7 +4543,7 @@ if no coordinate field. Currently only write if we have a field.
 ==============================================================================*/
 {
 	char *settings_string,temp_string[100],*name;
-	int dimension,error;
+	int dimension,error,i;
 
 	ENTER(GT_element_settings_string);
 	settings_string=(char *)NULL;
@@ -4629,8 +4696,13 @@ if no coordinate field. Currently only write if we have a field.
 				DEALLOCATE(settings_string);
 				error=1;
 			}
-			sprintf(temp_string," iso_value %g",settings->iso_value);
+			sprintf(temp_string," iso_values");
 			append_string(&settings_string,temp_string,&error);
+			for (i = 0 ; i < settings->number_of_iso_values ; i++)
+			{
+				sprintf(temp_string, " %g", settings->iso_values[i]);
+				append_string(&settings_string,temp_string,&error);				
+			}
  			if (settings->surface_data_coordinate_field)
 			{
 				if (GET_NAME(Computed_field)(settings->surface_data_coordinate_field,
@@ -5380,18 +5452,21 @@ Converts a finite element into a graphics object with the supplied settings.
 										}
 										else
 										{
-											return_code = create_iso_surfaces_from_FE_element(element,
-												settings->iso_value,
-												settings_to_object_data->time,
-												(struct Clipping *)NULL,
-												settings_to_object_data->rc_coordinate_field,
-												settings->data_field, settings->iso_scalar_field,
-												settings->surface_data_density_field,
-												settings->surface_data_coordinate_field,
-												settings->texture_coordinate_field,
-												number_in_xi,
-												settings->graphics_object, settings->render_type,
-												settings->surface_data_fe_region);
+											for (i = 0 ; i < settings->number_of_iso_values ; i++)
+											{
+												return_code = create_iso_surfaces_from_FE_element(element,
+													settings->iso_values[i],
+													settings_to_object_data->time,
+													(struct Clipping *)NULL,
+													settings_to_object_data->rc_coordinate_field,
+													settings->data_field, settings->iso_scalar_field,
+													settings->surface_data_density_field,
+													settings->surface_data_coordinate_field,
+													settings->texture_coordinate_field,
+													number_in_xi,
+													settings->graphics_object, settings->render_type,
+													settings->surface_data_fe_region);
+											}
 										}
 									}
 									else
@@ -5436,13 +5511,16 @@ Converts a finite element into a graphics object with the supplied settings.
 										}
 										else
 										{
-											return_code = create_iso_lines_from_FE_element(element,
-												settings_to_object_data->rc_coordinate_field,
-												settings->iso_scalar_field, settings->iso_value,
-												settings_to_object_data->time,
-												settings->data_field, number_in_xi[0], number_in_xi[1],
-												top_level_element, settings->graphics_object, 
-												/*graphics_object_time*/0.0);
+											for (i = 0 ; i < settings->number_of_iso_values ; i++)
+											{
+												return_code = create_iso_lines_from_FE_element(element,
+													settings_to_object_data->rc_coordinate_field,
+													settings->iso_scalar_field, settings->iso_values[i],
+													settings_to_object_data->time,
+													settings->data_field, number_in_xi[0], number_in_xi[1],
+													top_level_element, settings->graphics_object, 
+													/*graphics_object_time*/0.0);
+											}
 										}
 									}
 									else
@@ -7814,11 +7892,11 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 {
 	char *render_type_string,*select_mode_string,
 		*surface_data_region_path,*use_element_type_string, **valid_strings;
-	double iso_value;
+	double iso_value_default, *iso_values;
 	enum Graphics_select_mode select_mode;
 	enum Render_type render_type;
 	enum Use_element_type use_element_type;
-	int number_of_valid_strings,return_code, visibility;
+	int number_of_iso_values,number_of_valid_strings,return_code, visibility;
 	struct Computed_field *scalar_field;
 	struct Cmiss_region *surface_data_region;
 	struct Modify_g_element_data *modify_g_element_data;
@@ -7882,14 +7960,15 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					}
 					/* must start with valid iso_scalar_field: */
 					GT_element_settings_get_iso_surface_parameters(settings,
-						&scalar_field, &iso_value);
+						&scalar_field, &number_of_iso_values, &iso_values);
 					if (!scalar_field)
 					{
 						if (scalar_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 							Computed_field_is_scalar,(void *)NULL,computed_field_manager))
 						{
+							iso_value_default = 0.0;
 							GT_element_settings_set_iso_surface_parameters(settings,
-								scalar_field,0.0);
+								scalar_field,/*number_of_iso_values*/1, &iso_value_default);
 						}
 					}
 					visibility = settings->visibility;
@@ -7932,9 +8011,9 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					Option_table_add_entry(option_table,"iso_scalar",
 						&(settings->iso_scalar_field),&set_iso_scalar_field_data,
 						set_Computed_field_conditional);
-					/* iso_value */
-					Option_table_add_entry(option_table,"iso_value",
-						&(settings->iso_value),NULL,set_double);
+					/* iso_values */
+					Option_table_add_variable_length_double_vector_entry(option_table,
+						"iso_values", &(settings->number_of_iso_values), &(settings->iso_values));
 					/* material */
 					Option_table_add_entry(option_table,"material",&(settings->material),
 						g_element_command_data->graphical_material_manager,

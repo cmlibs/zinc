@@ -25,6 +25,7 @@ Provides the widgets to manipulate element group settings.
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "general/debug.h"
+#include "general/mystring.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/element_group_settings.h"
 #include "graphics/graphics_object.h"
@@ -953,7 +954,8 @@ DESCRIPTION :
 Callback for change of iso_scalar field.
 ==============================================================================*/
 {
-	double iso_value;
+	double *iso_values;
+	int number_of_iso_values;
 	struct Computed_field *scalar_field;
 	struct Settings_editor *settings_editor;
 
@@ -963,14 +965,15 @@ Callback for change of iso_scalar field.
 		&&scalar_field_void)
 	{
 		GT_element_settings_get_iso_surface_parameters(
-			settings_editor->current_settings,&scalar_field,&iso_value);
+			settings_editor->current_settings,&scalar_field,&number_of_iso_values,&iso_values);
 		scalar_field=(struct Computed_field *)scalar_field_void;
 		if (GT_element_settings_set_iso_surface_parameters(
-			settings_editor->current_settings,scalar_field,iso_value))
+			settings_editor->current_settings,scalar_field,number_of_iso_values,iso_values))
 		{
 			/* inform the client of the change */
 			settings_editor_update(settings_editor);
 		}
+		DEALLOCATE(iso_values);
 	}
 	else
 	{
@@ -989,10 +992,13 @@ DESCRIPTION :
 Called when entry is made into the iso_value text field.
 ==============================================================================*/
 {
-	char *text_entry, temp_string[50];
-	double current_iso_value, iso_value;
+	char *text_entry, temp_string[50], *vector_temp_string;
+	double *current_iso_values, *iso_values;
+	int allocated_length, changed_value, error, i, length, number_of_iso_values,
+		offset, valid_value;
 	struct Computed_field *scalar_field;
 	struct Settings_editor *settings_editor;
+#define VARIABLE_LENGTH_ALLOCATION_STEP (10)
 
 	ENTER(settings_editor_constant_iso_value_text_CB);
 	USE_PARAMETER(reason);	
@@ -1003,17 +1009,47 @@ Called when entry is made into the iso_value text field.
 		if (settings_editor->current_settings)
 		{
 			GT_element_settings_get_iso_surface_parameters(
-				settings_editor->current_settings,&scalar_field,&current_iso_value);
+				settings_editor->current_settings,&scalar_field,&number_of_iso_values,
+				&current_iso_values);
 			/* Get the text string */
 			XtVaGetValues(widget,XmNvalue,&text_entry,NULL);
 			if (text_entry)
 			{
-				sscanf(text_entry,"%lg",&iso_value);
-				XtFree(text_entry);
-				if (iso_value != current_iso_value)
+				i = 0;
+				valid_value = 1;
+				changed_value = 0;
+				offset = 0;
+				iso_values = (double *)NULL;
+				allocated_length = 0;
+				while (valid_value)
 				{
+					if (i >= allocated_length)
+					{
+						REALLOCATE(iso_values, iso_values, double, 
+							allocated_length += VARIABLE_LENGTH_ALLOCATION_STEP);
+						allocated_length += VARIABLE_LENGTH_ALLOCATION_STEP;
+					}
+					if (0 < sscanf(text_entry+offset,"%lg%n",&iso_values[i], &length))
+					{
+						offset += length;
+						if ((i >= number_of_iso_values) || (iso_values[i] != current_iso_values[i]))
+						{
+							changed_value = 1;
+						}
+						i++;
+					}
+					else
+					{
+						valid_value = 0;
+					}
+				}
+				XtFree(text_entry);
+				if (changed_value)
+				{
+					number_of_iso_values = i;
 					GT_element_settings_set_iso_surface_parameters(
-						settings_editor->current_settings,scalar_field,iso_value);
+						settings_editor->current_settings,scalar_field,
+						number_of_iso_values, iso_values);
 					/* inform the client of the change */
 					settings_editor_update(settings_editor);
 				}
@@ -1023,9 +1059,25 @@ Called when entry is made into the iso_value text field.
 				display_message(ERROR_MESSAGE,
 					"settings_editor_constant_iso_value_text_CB.  Missing text");
 			}
-			/* always restore constant_radius to actual value in use */
-			sprintf(temp_string,"%g",iso_value);
-			XtVaSetValues(widget,XmNvalue,temp_string,NULL);
+			DEALLOCATE(current_iso_values);
+
+			vector_temp_string = (char *)NULL;
+			error = 0;
+			for (i = 0 ; !error && (i < number_of_iso_values) ; i++)
+			{
+				sprintf(temp_string,"%g ",iso_values[i]);
+				append_string(&vector_temp_string, temp_string, &error);
+			}
+			if (vector_temp_string)
+			{
+				XtVaSetValues(settings_editor->iso_value_text,XmNvalue,
+					vector_temp_string,NULL);
+				DEALLOCATE(vector_temp_string);
+			}
+			if (iso_values)
+			{
+				DEALLOCATE(iso_values);
+			}
 		}
 	}
 	else
@@ -3738,8 +3790,8 @@ DESCRIPTION :
 Changes the currently chosen settings.
 ==============================================================================*/
 {
-	char *name, temp_string[50];
-	double iso_value;
+	char *name, temp_string[50], *vector_temp_string;
+	double *iso_values;
 	enum Graphics_select_mode select_mode;
 	enum GT_element_settings_type settings_type;
 	enum Streamline_type streamline_type;
@@ -3747,7 +3799,7 @@ Changes the currently chosen settings.
 	enum Xi_discretization_mode xi_discretization_mode;
 	float constant_radius,scale_factor,streamline_length,
 		streamline_width;
-	int field_set,line_width,return_code,reverse_track;
+	int error,field_set,i,line_width,number_of_iso_values,return_code,reverse_track;
 	struct Callback_data callback;
 	struct Computed_field *coordinate_field, *data_field, *iso_scalar_field,
 		*label_field, *radius_scalar_field, *stream_vector_field,
@@ -3864,20 +3916,31 @@ Changes the currently chosen settings.
 							/* iso_surfaces */
 							if ((GT_ELEMENT_SETTINGS_ISO_SURFACES==settings_type)&&
 								GT_element_settings_get_iso_surface_parameters(new_settings,
-									&iso_scalar_field,&iso_value)&&iso_scalar_field)
+									&iso_scalar_field,&number_of_iso_values,&iso_values)&&iso_scalar_field)
 							{
 								CHOOSE_OBJECT_SET_OBJECT(Computed_field)(
 									settings_editor->iso_scalar_field_widget,
 									iso_scalar_field);
-								sprintf(temp_string,"%g",iso_value);
-								XtVaSetValues(settings_editor->iso_value_text,XmNvalue,
-									temp_string,NULL);
+								vector_temp_string = (char *)NULL;
+								error = 0;
+								for (i = 0 ; !error && (i < number_of_iso_values) ; i++)
+								{
+									sprintf(temp_string,"%g ",iso_values[i]);
+									append_string(&vector_temp_string, temp_string, &error);
+								}
+								if (vector_temp_string)
+								{
+									XtVaSetValues(settings_editor->iso_value_text,XmNvalue,
+										vector_temp_string,NULL);
+									DEALLOCATE(vector_temp_string);
+								}
 								/* turn on callbacks */
 								callback.data=(void *)settings_editor;
 								callback.procedure=settings_editor_update_iso_scalar_field;
 								CHOOSE_OBJECT_SET_CALLBACK(Computed_field)(
 									settings_editor->iso_scalar_field_widget,&callback);
 								XtManageChild(settings_editor->iso_surface_entry);
+								DEALLOCATE(iso_values);
 							}
 							else
 							{

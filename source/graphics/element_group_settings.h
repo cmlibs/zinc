@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.h
 
-LAST MODIFIED : 30 April 2003
+LAST MODIFIED : 18 February 2005
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -623,23 +623,24 @@ finite_element/finite_element_to_graphics object for explanation of how the
 
 int GT_element_settings_get_iso_surface_parameters(
 	struct GT_element_settings *settings,struct Computed_field **iso_scalar_field,
-	double *iso_value);
+	int *number_of_iso_values, double **iso_values);
 /*******************************************************************************
-LAST MODIFIED : 15 February 1999
+LAST MODIFIED : 18 February 2005
 
 DESCRIPTION :
-Returns parameters for the iso_surface: iso_scalar_field = iso_value.
+Returns parameters for a set of iso_surfaces: iso_scalar_field = iso_values.
+It is up to the calling function to DEALLOCATE the returned array of iso_values.
 For settings_type GT_ELEMENT_SETTINGS_ISO_SURFACES only.
 ==============================================================================*/
 
 int GT_element_settings_set_iso_surface_parameters(
 	struct GT_element_settings *settings,struct Computed_field *iso_scalar_field,
-	double iso_value);
+	int number_of_iso_values, double *iso_values);
 /*******************************************************************************
-LAST MODIFIED : 15 February 1999
+LAST MODIFIED : 18 February 2005
 
 DESCRIPTION :
-Sets parameters for the iso_surface: iso_scalar_field = iso_value.
+Sets parameters for a set of iso_surfaces: iso_scalar_field = iso_values.
 For settings_type GT_ELEMENT_SETTINGS_ISO_SURFACES only - must call this after
 CREATE to define a valid iso_surface.
 ==============================================================================*/

@@ -3423,6 +3423,7 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 =0, simply removes any existing contours.
 ==============================================================================*/
 {
+	double contour_value, *contour_values;
 	int i,old_number_of_contours,return_code;
 	struct Cmiss_region *cmiss_region;
 	struct Colour colour;
@@ -3430,13 +3431,13 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct FE_region *group;
 	struct GT_element_group *gt_element_group;
-	struct GT_element_settings **contour_settings,**old_contour_settings;
+	struct GT_element_settings *contour_settings,*old_contour_settings;
 	struct Map_3d_package *map_3d_package=(struct Map_3d_package *)NULL;
-	FE_value contour_step,contour_value;
+	FE_value contour_step;
 
 	ENTER(map_make_surfaces);
-	contour_settings=(struct GT_element_settings **)NULL;
-	old_contour_settings=(struct GT_element_settings **)NULL;
+	contour_settings=(struct GT_element_settings *)NULL;
+	old_contour_settings=(struct GT_element_settings *)NULL;
 	gt_element_group=(struct GT_element_group *)NULL;
 	contour_material=(struct Graphical_material *)NULL;
 	default_selected_material=(struct Graphical_material *)NULL;
@@ -3477,8 +3478,7 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 				default_selected_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
 					("default_selected",graphical_material_manager);
 				/* do nothing if the number of contours is the same */
-				get_map_3d_package_contours(map_3d_package,&old_number_of_contours,
-					&old_contour_settings);
+				get_map_3d_package_contours(map_3d_package,&old_contour_settings);
 				/* create material for the contour, so can colour it black, indep of the  */
 				/* map surface (default) material*/
 				MANAGER_BEGIN_CACHE(Graphical_material)(graphical_material_manager);
@@ -3501,11 +3501,8 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 				/* remove the old contour settings from the gt_element_group */
 				if (old_number_of_contours)
 				{
-					for(i=0;i<old_number_of_contours;i++)
-					{
-						GT_element_group_remove_settings(gt_element_group,
-							old_contour_settings[i]);
-					}
+					GT_element_group_remove_settings(gt_element_group,
+						old_contour_settings);
 				}
 				free_map_3d_package_map_contours(map_3d_package);
 				if (1<number_of_contours)
@@ -3514,25 +3511,25 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 					contour_value=contour_minimum;
 					contour_step=(contour_maximum-contour_minimum)/(number_of_contours-1);
 					/* allocate, define and set the contours */
-					ALLOCATE(contour_settings,struct GT_element_settings *,
-						number_of_contours);
+					ALLOCATE(contour_values,double,number_of_contours);
+					contour_settings=CREATE(GT_element_settings)
+						(GT_ELEMENT_SETTINGS_ISO_SURFACES);
+					GT_element_settings_set_material(contour_settings,
+						contour_material);
+					GT_element_settings_set_selected_material(contour_settings,
+						default_selected_material);
 					for(i=0;i<number_of_contours;i++)
 					{
-						contour_settings[i]=CREATE(GT_element_settings)
-							(GT_ELEMENT_SETTINGS_ISO_SURFACES);
-						GT_element_settings_set_material(contour_settings[i],
-							contour_material);
-						GT_element_settings_set_selected_material(contour_settings[i],
-							default_selected_material);
-						GT_element_settings_set_iso_surface_parameters(contour_settings[i],
-							data_field,contour_value);
-						GT_element_group_add_settings(gt_element_group,contour_settings[i],
-							0);
+						contour_values[i] = contour_value;
 						contour_value += contour_step;
 					}
+					GT_element_settings_set_iso_surface_parameters(contour_settings,
+						data_field,number_of_contours,contour_values);
+					GT_element_group_add_settings(gt_element_group,contour_settings,
+						0);
+					DEALLOCATE(contour_values);
 				}
-				set_map_3d_package_contours(map_3d_package,number_of_contours,
-					contour_settings);
+				set_map_3d_package_contours(map_3d_package,contour_settings);
 			}
 		}
 	}
@@ -16186,8 +16183,7 @@ Create and  and set it's components
 			map_3d_package->node_order_info=(struct FE_node_order_info *)NULL;
 			map_3d_package->map_position_field=(struct FE_field *)NULL;
 			map_3d_package->map_fit_field=(struct FE_field *)NULL;
-			map_3d_package->number_of_contours=0;
-			map_3d_package->contour_settings=(struct GT_element_settings **)NULL;
+			map_3d_package->contour_settings=(struct GT_element_settings *)NULL;
 			map_3d_package->root_cmiss_region =
 				ACCESS(Cmiss_region)(root_cmiss_region);
 			map_3d_package->data_root_cmiss_region =
@@ -16228,22 +16224,14 @@ Frees the array of map contour GT_element_settings stored in the
 <map_3d_package>
 ==============================================================================*/
 {
-	int i,number_of_contours,return_code;
+	int return_code;
 
 	ENTER(free_map_3d_package_map_contours);
 	if (map_3d_package)
 	{
 		return_code=1;
-		number_of_contours=map_3d_package->number_of_contours;
-		if (0<number_of_contours)
-		{
-			for(i=0;i<number_of_contours;i++)
-			{
-				DEACCESS(GT_element_settings)(&(map_3d_package->contour_settings[i]));
-			}
-			DEALLOCATE(map_3d_package->contour_settings);
-			map_3d_package->contour_settings=(struct GT_element_settings **)NULL;
-		}
+		DEACCESS(GT_element_settings)(&map_3d_package->contour_settings);
+		map_3d_package->contour_settings=(struct GT_element_settings *)NULL;
 	}
 	else
 	{
@@ -16788,9 +16776,9 @@ sets the number_of_map_columns for map_3d_package
 } /* set_map_3d_package_number_of_map_columns */
 
 int get_map_3d_package_contours(struct Map_3d_package *map_3d_package,
-	int *number_of_contours,struct GT_element_settings ***contour_settings)
+	struct GT_element_settings **contour_settings)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 18 February 2005
 
 DESCRIPTION :
 Gets the <number_of_contours> and <contour_settings> for map_3d_package.
@@ -16802,7 +16790,6 @@ Gets the <number_of_contours> and <contour_settings> for map_3d_package.
 	return_code=1;
 	if (map_3d_package)
 	{
-		*number_of_contours=map_3d_package->number_of_contours;
 		*contour_settings=map_3d_package->contour_settings;
 	}
 	else
@@ -16810,8 +16797,7 @@ Gets the <number_of_contours> and <contour_settings> for map_3d_package.
 		display_message(ERROR_MESSAGE,"get_map_3d_package_contours."
 			" invalid arguments");
 		return_code=0; /* No map_3d_package */
-		*number_of_contours=0;
-		*contour_settings=(struct GT_element_settings **)NULL;
+		*contour_settings=(struct GT_element_settings *)NULL;
 	}
 	LEAVE;
 	
@@ -16819,29 +16805,22 @@ Gets the <number_of_contours> and <contour_settings> for map_3d_package.
 } /* get_map_3d_package_contours */
 
 int set_map_3d_package_contours(struct Map_3d_package *map_3d_package,
-	int number_of_contours,struct GT_element_settings **contour_settings)
+	struct GT_element_settings *contour_settings)
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 18 February 2005
 
 DESCRIPTION :
 Sets the <number_of_contours> and <contour_settings> for map_3d_package.
 ==============================================================================*/
 {
-	int i,return_code;
+	int return_code;
 
 	ENTER(set_map_3d_package_contours)
 	return_code=0;
 	if (map_3d_package)
 	{
-
-		return_code=1;
-		map_3d_package->number_of_contours=number_of_contours;
-		map_3d_package->contour_settings=contour_settings;
-		for(i=0;i<number_of_contours;i++)
-		{
-			map_3d_package->contour_settings[i]=
-				ACCESS(GT_element_settings)(contour_settings[i]);
-		}
+		return_code=REACCESS(GT_element_settings)(&map_3d_package->contour_settings,
+			contour_settings);
 	}
 	else
 	{

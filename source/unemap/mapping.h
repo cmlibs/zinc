@@ -174,8 +174,8 @@ map_drawing_information.
 	FE_value electrode_size,electrodes_max_z,electrodes_min_z;
 	/* a flag  */
 	int colour_electrodes_with_signal;
-	int access_count,number_of_contours,number_of_map_columns,number_of_map_rows;
-	struct GT_element_settings **contour_settings;	
+	int access_count,number_of_map_columns,number_of_map_rows;
+	struct GT_element_settings *contour_settings;	
 	struct FE_field *map_position_field,*map_fit_field;	
 	struct FE_node_order_info *node_order_info;
 	/* 'group' on the cylinder (or prolate spheroid or patch) surface */
@@ -723,18 +723,18 @@ sets the number_of_map_columns for map_3d_package
 ==============================================================================*/
 
 int get_map_3d_package_contours(struct Map_3d_package *map_3d_package,
-	int *number_of_contours,struct GT_element_settings ***contour_settings);
+	struct GT_element_settings **contour_settings);
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 18 February 2005
 
 DESCRIPTION :
 gets the <number_of_contours> and <contour_settings> for map_3d_package 
 ==============================================================================*/
 
 int set_map_3d_package_contours(struct Map_3d_package *map_3d_package,
-	int number_of_contours,struct GT_element_settings **contour_settings);
+	struct GT_element_settings *contour_settings);
 /*******************************************************************************
-LAST MODIFIED : 5 July 2000
+LAST MODIFIED : 18 February 2005
 
 DESCRIPTION :
 sets the <number_of_contours> and <contour_settings> for map_3d_package 

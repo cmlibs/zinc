@@ -1353,6 +1353,7 @@ DESCRIPTION :
 Add button press: create new settings of the current type.
 ==============================================================================*/
 {
+	double iso_value_default;
 	enum Glyph_scaling_mode glyph_scaling_mode;
 	enum Streamline_type streamline_type;
 	float streamline_length,streamline_width;
@@ -1431,8 +1432,9 @@ Add button press: create new settings of the current type.
 					if (iso_scalar_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 						Computed_field_is_scalar,(void *)NULL,computed_field_manager))
 					{
-						if (!GT_element_settings_set_iso_surface_parameters(
-							settings,iso_scalar_field,0.0))
+						iso_value_default = 0;
+						if (!GT_element_settings_set_iso_surface_parameters(settings,
+							iso_scalar_field,/*number_of_iso_values*/1,&iso_value_default))
 						{
 							return_code=0;
 						}
