@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_implementation.cpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 22 August 2004
 //
 // DESCRIPTION :
 //???DB.  Should be linear transformation (with Function_variable_matrix as an
@@ -372,6 +372,13 @@ bool Function_matrix<Value_type>::evaluate_derivative(Scalar&,
 {
 	return (false);
 }
+
+#if defined (__GNUC__)
+template<>
+bool Function_matrix<Scalar>::evaluate_derivative(Scalar& derivative,
+	Function_variable_handle atomic_variable,
+	std::list<Function_variable_handle>& atomic_independent_variables);
+#endif // defined (__GNUC__)
 
 EXPORT template<typename Value_type>
 bool Function_matrix<Value_type>::set_value(

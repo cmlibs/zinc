@@ -73,11 +73,6 @@ class Function_matrix : public Function
 		ublas::matrix<Value_type,ublas::column_major> values;
 };
 
-template<>
-bool Function_matrix<Scalar>::evaluate_derivative(Scalar& derivative,
-	Function_variable_handle atomic_variable,
-	std::list<Function_variable_handle>& atomic_independent_variables);
-
 #if !defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
 #include "computed_variable/function_matrix_implementation.cpp"
 #endif // !defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
