@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_ranges.c
 
-LAST MODIFIED : 30 May 2000
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -39,77 +39,6 @@ Module functions
 ----------------
 */
 
-static int compare_Element_point_ranges_identifier(
-	struct Element_point_ranges_identifier *identifier1,
-	struct Element_point_ranges_identifier *identifier2)
-/*******************************************************************************
-LAST MODIFIED : 28 February 2000
-
-DESCRIPTION :
-Returns -1 (identifier1 less), 0 (equal) or +1 (identifier1 greater) for
-indexing lists of Element_point_ranges.
-First the element is compared, then the Xi_discretization_mode, then the
-identifying values depending on this mode.
-==============================================================================*/
-{
-	int dimension,i,return_code;
-
-	ENTER(compare_Element_point_ranges_identifier);
-	if (identifier1&&identifier2)
-	{
-		if (identifier1->element < identifier2->element)
-		{
-			return_code = -1;
-		}
-		else if (identifier1->element > identifier2->element)
-		{
-			return_code = 1;
-		}
-		else
-		{
-			/* same element; now compare xi_discretization_mode */
-			if (identifier1->xi_discretization_mode <
-				identifier2->xi_discretization_mode)
-			{
-				return_code = -1;
-			}
-			else if (identifier1->xi_discretization_mode >
-				identifier2->xi_discretization_mode)
-			{
-				return_code = 1;
-			}
-			else
-			{
-				return_code=0;
-				/* same xi_discretization mode; now compare identifying values
-					 depending on this mode */
-				dimension=get_FE_element_dimension(identifier1->element);
-				for (i=0;!return_code&&(i<dimension);i++)
-				{
-					if (identifier1->number_in_xi[i] < identifier2->number_in_xi[i])
-					{
-						return_code = -1;
-					}
-					else if (identifier1->number_in_xi[i] > identifier2->number_in_xi[i])
-					{
-						return_code = 1;
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"compare_Element_point_ranges_identifier.  Invalid argument(s)");
-		/* error defaults to the same? */
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* compare_Element_point_ranges_identifier */
-
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Element_point_ranges,identifier, \
 	struct Element_point_ranges_identifier *, \
 	compare_Element_point_ranges_identifier)
@@ -122,7 +51,7 @@ Global functions
 char **Xi_discretization_mode_get_valid_strings_for_Element_point_ranges(
 	int *number_of_valid_strings)
 /*******************************************************************************
-LAST MODIFIED : 30 May 2000
+LAST MODIFIED : 7 June 2000
 
 DESCRIPTION :
 Returns an allocated array of pointers to all static strings for valid
@@ -136,13 +65,15 @@ Up to calling function to deallocate returned array - but not the strings in it!
 	ENTER(Xi_discretization_mode_get_valid_strings_for_Element_point_ranges);
 	if (number_of_valid_strings)
 	{
-		*number_of_valid_strings=2;
+		*number_of_valid_strings=3;
 		if (ALLOCATE(valid_strings,char *,*number_of_valid_strings))
 		{
 			valid_strings[0]=
 				Xi_discretization_mode_string(XI_DISCRETIZATION_CELL_CENTRES);
 			valid_strings[1]=
 				Xi_discretization_mode_string(XI_DISCRETIZATION_CELL_CORNERS);
+			valid_strings[2]=
+				Xi_discretization_mode_string(XI_DISCRETIZATION_EXACT_XI);
 		}
 		else
 		{
@@ -163,10 +94,124 @@ Up to calling function to deallocate returned array - but not the strings in it!
 	return (valid_strings);
 } /* Xi_discretization_mode_get_valid_strings_for_Element_point_ranges */
 
+int compare_Element_point_ranges_identifier(
+	struct Element_point_ranges_identifier *identifier1,
+	struct Element_point_ranges_identifier *identifier2)
+/*******************************************************************************
+LAST MODIFIED : 8 June 2000
+
+DESCRIPTION :
+Returns -1 (identifier1 less), 0 (equal) or +1 (identifier1 greater) for
+indexing lists of Element_point_ranges.
+First the elements are compared, then the Xi_discretization_mode, then the
+identifying values depending on this mode.
+==============================================================================*/
+{
+	int dimension,i,return_code;
+
+	ENTER(compare_Element_point_ranges_identifier);
+	if (identifier1&&identifier2)
+	{
+		if (identifier1->element < identifier2->element)
+		{
+			return_code = -1;
+		}
+		else if (identifier1->element > identifier2->element)
+		{
+			return_code = 1;
+		}
+		else
+		{
+			/* same element; now compare top_level_element */
+			if (identifier1->top_level_element < identifier2->top_level_element)
+			{
+				return_code = -1;
+			}
+			else if (identifier1->top_level_element > identifier2->top_level_element)
+			{
+				return_code = 1;
+			}
+			else
+			{
+				/* same elements; now compare xi_discretization_mode */
+				if (identifier1->xi_discretization_mode <
+					identifier2->xi_discretization_mode)
+				{
+					return_code = -1;
+				}
+				else if (identifier1->xi_discretization_mode >
+					identifier2->xi_discretization_mode)
+				{
+					return_code = 1;
+				}
+				else
+				{
+					/* same xi_discretization mode; now compare identifying values
+						 depending on this mode */
+					dimension=get_FE_element_dimension(identifier1->element);
+					switch (identifier1->xi_discretization_mode)
+					{
+						case XI_DISCRETIZATION_CELL_CENTRES:
+						case XI_DISCRETIZATION_CELL_CORNERS:
+						{
+							return_code=0;
+							for (i=0;!return_code&&(i<dimension);i++)
+							{
+								if (identifier1->number_in_xi[i] < identifier2->number_in_xi[i])
+								{
+									return_code = -1;
+								}
+								else if (identifier1->number_in_xi[i] >
+									identifier2->number_in_xi[i])
+								{
+									return_code = 1;
+								}
+							}
+						} break;
+						case XI_DISCRETIZATION_EXACT_XI:
+						{
+							return_code=0;
+							for (i=0;!return_code&&(i<dimension);i++)
+							{
+								if (identifier1->exact_xi[i] < identifier2->exact_xi[i])
+								{
+									return_code = -1;
+								}
+								else if (identifier1->exact_xi[i] > identifier2->exact_xi[i])
+								{
+									return_code = 1;
+								}
+							}
+						} break;
+						default:
+						{
+							display_message(ERROR_MESSAGE,
+								"compare_Element_point_ranges_identifier.  "
+								"Invalid Xi_discretization_mode");
+							/* error defaults to the same? */
+							return_code=0;
+						} break;
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"compare_Element_point_ranges_identifier.  Invalid argument(s)");
+		/* error defaults to the same? */
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* compare_Element_point_ranges_identifier */
+
 int Element_point_ranges_identifier_is_valid(
 	struct Element_point_ranges_identifier *identifier)
 /*******************************************************************************
-LAST MODIFIED : 25 May 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 Returns true if <identifier> has a valid element, Xi_discretization_mode and
@@ -179,36 +224,59 @@ Writes what is invalid about the identifier.
 	ENTER(Element_point_ranges_identifier_is_valid);
 	if (identifier)
 	{
-		if (identifier->element)
+		if (identifier->element&&identifier->top_level_element&&
+			FE_element_has_top_level_element(identifier->element,
+				(void *)identifier->top_level_element))
 		{
-			if ((XI_DISCRETIZATION_CELL_CENTRES==identifier->xi_discretization_mode)||
-				(XI_DISCRETIZATION_CELL_CORNERS==identifier->xi_discretization_mode))
+			return_code=1;
+			dimension=get_FE_element_dimension(identifier->element);
+			switch (identifier->xi_discretization_mode)
 			{
-				return_code=1;
-				dimension=get_FE_element_dimension(identifier->element);
-				for (i=0;i<dimension;i++)
+				case XI_DISCRETIZATION_CELL_CENTRES:
+				case XI_DISCRETIZATION_CELL_CORNERS:
 				{
-					if (1 > identifier->number_in_xi[i])
+					for (i=0;i<dimension;i++)
 					{
-						display_message(ERROR_MESSAGE,
-							"Element_point_ranges_identifier_is_valid.  "
-							"Invalid number_in_xi[%d] of %d",i,identifier->number_in_xi[i]);
-						return_code=0;
+						/* number_in_xi must be <= 1 in each direction */
+						if (1 > identifier->number_in_xi[i])
+						{
+							display_message(ERROR_MESSAGE,
+								"Element_point_ranges_identifier_is_valid.  "
+								"Invalid number_in_xi[%d] of %d",i,
+								identifier->number_in_xi[i]);
+							return_code=0;
+						}
 					}
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Element_point_ranges_identifier_is_valid.  "
-					"Invalid Xi_discretization_mode: %p",
-					Xi_discretization_mode_string(identifier->xi_discretization_mode));
-				return_code=0;
+				} break;
+				case XI_DISCRETIZATION_EXACT_XI:
+				{
+					for (i=0;i<dimension;i++)
+					{
+						/* number_in_xi must be 1 in each direction */
+						if (1 != identifier->number_in_xi[i])
+						{
+							display_message(ERROR_MESSAGE,
+								"Element_point_ranges_identifier_is_valid.  "
+								"Invalid EXACT_XI number_in_xi[%d] of %d; should be 1",i,
+								identifier->number_in_xi[i]);
+							return_code=0;
+						}
+					}
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"Element_point_ranges_identifier_is_valid.  "
+						"Invalid Xi_discretization_mode: %s",
+						Xi_discretization_mode_string(identifier->xi_discretization_mode));
+					return_code=0;
+				} break;
 			}
 		}
 		else
 		{
-			printf("Element_point_ranges_identifier_is_valid.  Missing element");
+			display_message(ERROR_MESSAGE,
+				"Element_point_ranges_identifier_is_valid.  Invalid element(s)");
 			return_code=0;
 		}
 	}
@@ -259,7 +327,7 @@ Element_point_ranges_identifier_is_valid.
 
 PROTOTYPE_COPY_OBJECT_FUNCTION(Element_point_ranges_identifier)
 /*******************************************************************************
-LAST MODIFIED : 31 May 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 syntax: COPY(Element_point_ranges_identifier)(destination,source)
@@ -274,10 +342,12 @@ purely a copy. [DE]ACCESSing must be handled by calling function if required.
 	if (destination&&source&&(destination!=source))
 	{
 		destination->element=source->element;
+		destination->top_level_element=source->top_level_element;
 		destination->xi_discretization_mode=source->xi_discretization_mode;
 		for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
 		{
 			destination->number_in_xi[i]=source->number_in_xi[i];
+			destination->exact_xi[i]=source->exact_xi[i];
 		}
 		return_code=1;
 	}
@@ -285,7 +355,6 @@ purely a copy. [DE]ACCESSing must be handled by calling function if required.
 	{
 		display_message(ERROR_MESSAGE,
 			"COPY(Element_point_ranges_identifier).  Invalid argument(s)");
-		/* error defaults to the same? */
 		return_code=0;
 	}
 	LEAVE;
@@ -293,10 +362,89 @@ purely a copy. [DE]ACCESSing must be handled by calling function if required.
 	return (return_code);
 } /* COPY(Element_point_ranges_identifier) */
 
+int Element_point_make_top_level(
+	struct Element_point_ranges_identifier *identifier,int *element_point_number)
+/*******************************************************************************
+LAST MODIFIED : 8 June 2000
+
+DESCRIPTION :
+If <identifier> does not already refer to a top_level_element - ie. element
+and top_level_element are not the same, converts it to an EXACT_XI point that is
+top_level. Assumes <identifier> has been validated.
+==============================================================================*/
+{
+	FE_value element_to_top_level[9],exact_xi,
+		face_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],*source;
+	int dimension,i,j,return_code,top_level_dimension;
+	struct FE_element *top_level_element;
+
+	ENTER(Element_point_make_top_level);
+	if (identifier&&element_point_number)
+	{
+		if (identifier->element != identifier->top_level_element)
+		{
+			if ((top_level_element=FE_element_get_top_level_element_conversion(
+				identifier->element,identifier->top_level_element,
+				(struct GROUP(FE_element) *)NULL,/*face_number*/-1,
+				element_to_top_level))&&
+				(top_level_element==identifier->top_level_element)&&
+				(dimension=get_FE_element_dimension(identifier->element))&&
+				Xi_discretization_mode_get_element_point_xi(
+					identifier->xi_discretization_mode,dimension,
+					identifier->number_in_xi,identifier->exact_xi,*element_point_number,
+					face_xi)&&
+				(top_level_dimension=
+					get_FE_element_dimension(identifier->top_level_element)))
+			{
+				identifier->element=top_level_element;
+				identifier->xi_discretization_mode=XI_DISCRETIZATION_EXACT_XI;
+				for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
+				{
+					identifier->number_in_xi[i]=1;
+				}
+				source=element_to_top_level;
+				for (i=0;i<top_level_dimension;i++)
+				{
+					exact_xi = *source;
+					source++;
+					for (j=0;j<dimension;j++)
+					{
+						exact_xi += (*source) * face_xi[j];
+						source++;
+					}
+					identifier->exact_xi[i]=exact_xi;
+				}
+				*element_point_number = 0;
+				return_code=1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Element_point_make_top_level.  Could not convert point");
+				return_code=0;
+			}
+		}
+		else
+		{
+			/* already top_level */
+			return_code=1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Element_point_make_top_level.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return(return_code);
+} /* Element_point_make_top_level */
+
 struct Element_point_ranges *CREATE(Element_point_ranges)(
 	struct Element_point_ranges_identifier *identifier)
 /*******************************************************************************
-LAST MODIFIED : 31 May 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 Creates an Element_point_ranges object that can store ranges of points in the
@@ -316,8 +464,9 @@ element:Xi_discretization_mode of the <identifier>.
 			element_point_ranges->identifier = &(element_point_ranges->id);
 			COPY(Element_point_ranges_identifier)(
 				element_point_ranges->identifier,identifier);
-			/* struct Element_point_ranges ACCESSes the element in the identifier */
-			ACCESS(FE_element)(element_point_ranges->identifier->element);
+			/* struct Element_point_ranges ACCESSes the elements in the identifier */
+			ACCESS(FE_element)(element_point_ranges->id.element);
+			ACCESS(FE_element)(element_point_ranges->id.top_level_element);
 			element_point_ranges->access_count=0;
 		}
 		else
@@ -340,7 +489,7 @@ element:Xi_discretization_mode of the <identifier>.
 int DESTROY(Element_point_ranges)(
 	struct Element_point_ranges **element_point_ranges_address)
 /*******************************************************************************
-LAST MODIFIED : 28 February 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 Destroys the Element_point_ranges.
@@ -356,6 +505,7 @@ Destroys the Element_point_ranges.
 		if (0==element_point_ranges->access_count)
 		{
 			DEACCESS(FE_element)(&(element_point_ranges->id.element));
+			DEACCESS(FE_element)(&(element_point_ranges->id.top_level_element));
 			DESTROY(Multi_range)(&(element_point_ranges->ranges));
 			DEALLOCATE(*element_point_ranges_address);
 			return_code=1;
@@ -389,27 +539,20 @@ int Element_point_ranges_get_identifier(
 	struct Element_point_ranges *element_point_ranges,
 	struct Element_point_ranges_identifier *identifier)
 /*******************************************************************************
-LAST MODIFIED : 28 February 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 Puts the contents of the identifier for <element_point_ranges> in the
 caller-supplied <identifier>.
 ==============================================================================*/
 {
-	int dimension,i,return_code;
+	int return_code;
 
 	ENTER(Element_point_ranges_get_identifier);
 	if (element_point_ranges&&identifier)
 	{
-		identifier->element=element_point_ranges->id.element;
-		identifier->xi_discretization_mode=
-			element_point_ranges->id.xi_discretization_mode;
-		dimension=get_FE_element_dimension(element_point_ranges->id.element);
-		for (i=0;i<dimension;i++)
-		{
-			identifier->number_in_xi[i]=element_point_ranges->id.number_in_xi[i];
-		}
-		return_code=1;
+		return_code=COPY(Element_point_ranges_identifier)(
+			identifier,element_point_ranges->identifier);
 	}
 	else
 	{
@@ -425,18 +568,34 @@ caller-supplied <identifier>.
 int Element_point_ranges_add_range(
 	struct Element_point_ranges *element_point_ranges,int start,int stop)
 /*******************************************************************************
-LAST MODIFIED : 29 February 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 Adds the range from <start> to <stop> to the ranges in <element_point_ranges>.
 ==============================================================================*/
 {
-	int return_code;
+	int maximum_element_point_number,return_code;
 
 	ENTER(Element_point_ranges_add_range);
 	if (element_point_ranges)
 	{
-		return_code=Multi_range_add_range(element_point_ranges->ranges,start,stop);
+		/* check start/stop are within allowed ranges for identifier */
+		maximum_element_point_number=Xi_discretization_mode_get_number_of_xi_points(
+			element_point_ranges->id.xi_discretization_mode,
+			get_FE_element_dimension(element_point_ranges->id.element),
+			element_point_ranges->id.number_in_xi);
+		if ((0<=start)&&(start<maximum_element_point_number)&&
+			(0<=stop)&&(stop<maximum_element_point_number))
+		{
+			return_code=
+				Multi_range_add_range(element_point_ranges->ranges,start,stop);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Element_point_ranges_add_range.  Invalid range");
+			return_code=0;
+		}
 	}
 	else
 	{
@@ -944,7 +1103,7 @@ struct Element_point_ranges *Element_point_ranges_from_grid_field_ranges(
 	struct FE_element *element,struct FE_field *grid_field,
 	struct Multi_range *ranges)
 /*******************************************************************************
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 If <grid_field> is a single component grid-based field in <element>, creates and
@@ -961,7 +1120,7 @@ No Element_point_ranges object is returned without error if:
 
 	ENTER(Element_point_ranges_from_grid_field_ranges);
 	element_point_ranges=(struct Element_point_ranges *)NULL;
-	if (element&&grid_field&&ranges&&
+	if (element&&(CM_ELEMENT == element->cm.type)&&grid_field&&ranges&&
 		(1==get_FE_field_number_of_components(grid_field)&&
 		(INT_VALUE==get_FE_field_value_type(grid_field))))
 	{
@@ -981,9 +1140,15 @@ No Element_point_ranges object is returned without error if:
 				if (grid_value_in_range)
 				{
 					identifier.element=element;
+					identifier.top_level_element=element;
 					identifier.xi_discretization_mode=XI_DISCRETIZATION_CELL_CORNERS;
 					get_FE_element_field_grid_map_number_in_xi(element,grid_field,
 						identifier.number_in_xi);
+					/* set exact_xi to something reasonable, just in case it is used */
+					for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
+					{
+						identifier.exact_xi[i]=0.5;
+					}
 					if (element_point_ranges=CREATE(Element_point_ranges)(&identifier))
 					{
 						for (i=0;i<number_of_grid_values;i++)

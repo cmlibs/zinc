@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_ranges.h
 
-LAST MODIFIED : 31 May 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 Structure for storing ranges of points in elements according to the various
@@ -18,7 +18,7 @@ Xi_discretization_modes.
 
 struct Element_point_ranges_identifier
 /*******************************************************************************
-LAST MODIFIED : 25 February 2000
+LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 Identifier created to allow LIST(Element_point_ranges) to be indexed for quick
@@ -28,10 +28,11 @@ Xi_discretization_mode.
 See also compare_Element_point_ranges_identifier function.
 ==============================================================================*/
 {
-	struct FE_element *element;
+	struct FE_element *element,*top_level_element;
 	enum Xi_discretization_mode xi_discretization_mode;
 	/* following could/should be in a union */
 	int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	FE_value exact_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 }; /* Element_point_ranges_identifier */
 
 struct Element_point_ranges;
@@ -78,6 +79,19 @@ from function Xi_discretization_mode_string.
 Up to calling function to deallocate returned array - but not the strings in it!
 ==============================================================================*/
 
+int compare_Element_point_ranges_identifier(
+	struct Element_point_ranges_identifier *identifier1,
+	struct Element_point_ranges_identifier *identifier2);
+/*******************************************************************************
+LAST MODIFIED : 7 June 2000
+
+DESCRIPTION :
+Returns -1 (identifier1 less), 0 (equal) or +1 (identifier1 greater) for
+indexing lists of Element_point_ranges.
+First the element is compared, then the Xi_discretization_mode, then the
+identifying values depending on this mode.
+==============================================================================*/
+
 int Element_point_ranges_identifier_is_valid(
 	struct Element_point_ranges_identifier *identifier);
 /*******************************************************************************
@@ -100,6 +114,17 @@ Element_point_ranges_identifier_is_valid.
 ==============================================================================*/
 
 PROTOTYPE_COPY_OBJECT_FUNCTION(Element_point_ranges_identifier);
+
+int Element_point_make_top_level(
+	struct Element_point_ranges_identifier *identifier,int *element_point_number);
+/*******************************************************************************
+LAST MODIFIED : 8 June 2000
+
+DESCRIPTION :
+If <identifier> does not already refer to a top_level_element - ie. element
+and top_level_element are ont the same, converts it to an EXACT_XI point that is
+top_level. Assumes <identifier> has been validated.
+==============================================================================*/
 
 struct Element_point_ranges *CREATE(Element_point_ranges)(
 	struct Element_point_ranges_identifier *identifier);
