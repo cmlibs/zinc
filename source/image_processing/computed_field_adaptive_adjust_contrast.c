@@ -359,6 +359,7 @@ Perform a automatic thresholding operation on the image cache.
 	int return_code, kernel_size, storage_size;
 	int *offsets;
 	int radius;
+	int rate;
 	int image_step, kernel_step;
 
 	ENTER(Image_cache_adaptive_adjust_contrast);
@@ -464,11 +465,13 @@ Perform a automatic thresholding operation on the image cache.
 					Lstd /= (FE_value)kernel_size;
 					if (Lstd == 0.0)
 					{
-					        result_index[k] = 1.0/(1.0 + exp(20.0 * (Lmean - *(data_index + k))));
+					        rate = 20;
+					        result_index[k] = 1.0/(1.0 + exp((FE_value)rate * (Lmean - *(data_index + k))));
 					}
 					else
 					{
-						result_index[k] = 1.0/(1.0 + exp(Gstd[k] * (Lmean - *(data_index + k)) / Lstd));
+					        rate = (int)(Gstd[k] / Lstd);
+						result_index[k] = 1.0/(1.0 + exp((FE_value)rate * (Lmean - *(data_index + k))));
 					}
 				}
 				data_index += image->depth;
