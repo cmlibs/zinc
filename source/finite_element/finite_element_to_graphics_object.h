@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.h
 
-LAST MODIFIED : 8 May 2001
+LAST MODIFIED : 30 July 2001
 
 DESCRIPTION :
 The function prototypes for creating graphical objects from finite elements.
@@ -20,7 +20,6 @@ The function prototypes for creating graphical objects from finite elements.
 Global types
 ------------
 */
-
 enum Use_element_type
 /*******************************************************************************
 LAST MODIFIED : 20 March 2001
@@ -242,11 +241,26 @@ If the dimension is less than 3, <exterior> and <face_number> may be used.
 	Triple exact_xi;
 }; /* struct Element_to_glyph_set_data */
 
+enum Collapsed_element_type
+/*******************************************************************************
+LAST MODIFIED : 25 July 2001
+
+DESCRIPTION :
+How an element is collapsed.
+???DB.  Currently only 2D
+==============================================================================*/
+{
+	ELEMENT_NOT_COLLAPSED,
+	ELEMENT_COLLAPSED_XI1_0,
+	ELEMENT_COLLAPSED_XI1_1,
+	ELEMENT_COLLAPSED_XI2_0,
+	ELEMENT_COLLAPSED_XI2_1
+}; /* enum Collapsed_element_type */
+
 /*
 Global functions
 ----------------
 */
-
 int make_glyph_orientation_scale_axes(
 	int number_of_orientation_scale_values, FE_value *orientation_scale_values,
 	FE_value *axis1,FE_value *axis2, FE_value *axis3, FE_value *size);
@@ -581,14 +595,14 @@ to say which parent element they should be evaluated on as necessary.
 ==============================================================================*/
 
 int get_surface_element_segmentation(struct FE_element *element,
-			int number_of_segments_in_xi1_requested,
-			int number_of_segments_in_xi2_requested,int reverse_normals,
-			int *number_of_points_in_xi1,int *number_of_points_in_xi2,
-			int *number_of_points,int *number_of_polygon_vertices,
-			int *polygon_xi2_zero,gtPolygonType *polygon_type,
-			int *collapsed_nodes,char *modified_reverse_normals);
+	int number_of_segments_in_xi1_requested,
+	int number_of_segments_in_xi2_requested,int reverse_normals,
+	int *number_of_points_in_xi1,int *number_of_points_in_xi2,
+	int *number_of_points,int *number_of_polygon_vertices,
+	gtPolygonType *polygon_type,enum Collapsed_element_type *collapsed_element,
+	char *modified_reverse_normals);
 /*******************************************************************************
-LAST MODIFIED : 27 January 2000
+LAST MODIFIED : 30 July 2001
 
 DESCRIPTION :
 Sorts out how standard, polygon and simplex elements are segmented, based on

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_iso_lines.c
 
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 30 July 2001
 
 DESCRIPTION :
 Functions for computing, sorting and storing polylines of constant scalar field
@@ -868,7 +868,7 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 	int number_of_segments_in_xi2_requested,struct FE_element *top_level_element,
 	struct GT_object *graphics_object,float time)
 /*******************************************************************************
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 30 July 2001
 
 DESCRIPTION :
 Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
@@ -876,12 +876,13 @@ Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
 ==============================================================================*/
 {
 	char modified_reverse_normals,reverse_normals=0;
+	enum Collapsed_element_type collapsed_element;
 	FE_value coordinates[3],*data,*datum,distance1,distance2,*scalar,*scalars,
 		xi[2];
 	gtPolygonType polygon_type;
-	int adjusted_number_of_points_in_xi2,collapsed_nodes,n_data_components,i,j,
-		number_of_points,number_of_points_in_xi1,number_of_points_in_xi2,
-		number_of_polygon_vertices,polygon_xi2_zero,simplex_element,return_code;
+	int adjusted_number_of_points_in_xi2,n_data_components,i,j,number_of_points,
+		number_of_points_in_xi1,number_of_points_in_xi2,number_of_polygon_vertices,
+		simplex_element,return_code;
 	struct Contour_lines *contour_lines;
 	Triple *point,*points;
 
@@ -910,8 +911,8 @@ Fills <graphics_object> (of type g_POLYLINE) with polyline contours of
 		get_surface_element_segmentation(element,
 			number_of_segments_in_xi1_requested,number_of_segments_in_xi2_requested,
 			reverse_normals,&number_of_points_in_xi1,&number_of_points_in_xi2,
-			&number_of_points,&number_of_polygon_vertices,&polygon_xi2_zero,
-			&polygon_type,&collapsed_nodes,&modified_reverse_normals);
+			&number_of_points,&number_of_polygon_vertices,&polygon_type,
+			&collapsed_element,&modified_reverse_normals);
 		points=(Triple *)NULL;
 		scalars=(FE_value *)NULL;
 		data=(FE_value *)NULL;
