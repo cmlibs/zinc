@@ -3424,7 +3424,7 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 ==============================================================================*/
 {
 	double contour_value, *contour_values;
-	int i,old_number_of_contours,return_code;
+	int i,return_code;
 	struct Cmiss_region *cmiss_region;
 	struct Colour colour;
 	struct Graphical_material *contour_material,*default_selected_material;
@@ -3499,7 +3499,7 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 				}
 				MANAGER_END_CACHE(Graphical_material)(graphical_material_manager);
 				/* remove the old contour settings from the gt_element_group */
-				if (old_number_of_contours)
+				if (old_contour_settings)
 				{
 					GT_element_group_remove_settings(gt_element_group,
 						old_contour_settings);
