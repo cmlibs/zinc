@@ -364,15 +364,17 @@ DESCRIPTION :
 Directly outputs the commands setting up the <texture>.
 ==============================================================================*/
 {
-	int return_code;
+	int destination_row_width_bytes, i, j, k, number_of_bytes, scale, 
+		source_row_width_bytes, total_size, return_code;
+	unsigned char *image, *resized_image;
 #if defined (OPENGL_API)
 	GLenum format,type;
-	GLfloat values[4];
+	GLfloat values[4], actual_width;
 	GLint number_of_components;
 #endif /* defined (OPENGL_API) */
 
 	ENTER(direct_render_Texture);
-	return_code=0;
+	return_code=1;
 	if (texture)
 	{
 #if defined (OPENGL_API)
@@ -444,12 +446,91 @@ Directly outputs the commands setting up the <texture>.
 				number_of_components = Texture_get_number_of_components_from_storage_type(texture->storage);
 				Texture_get_type_and_format_from_storage_type(texture->storage,
 					texture->number_of_bytes_per_component, &type, &format);
-				/* specify the image */
-				glTexImage2D(GL_TEXTURE_2D,(GLint)0,
+				/* check to see if we can display an image of this size */
+				glTexImage2D(GL_PROXY_TEXTURE_2D,(GLint)0,
 					number_of_components,
 					(GLint)(texture->width_texels),
 					(GLint)(texture->height_texels),(GLint)0,
 					format,type,(GLvoid *)(texture->image));
+				glGetTexLevelParameterfv(GL_PROXY_TEXTURE_2D,(GLint)0,
+					GL_TEXTURE_WIDTH,&actual_width);
+				resized_image = (unsigned char *)NULL;
+				scale = 1;
+				while (return_code && (actual_width == 0))
+				{
+					scale *= 2;
+					if ((scale < texture->width_texels) && 
+						(scale < texture->height_texels))
+					{
+						glTexImage2D(GL_PROXY_TEXTURE_2D,(GLint)0,
+							number_of_components,
+							(GLint)(texture->width_texels/scale),
+							(GLint)(texture->height_texels/scale),(GLint)0,
+							format,type,(GLvoid *)(texture->image));
+						glGetTexLevelParameterfv(GL_PROXY_TEXTURE_2D,(GLint)0,
+							GL_TEXTURE_WIDTH,&actual_width);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"direct_render_Texture."
+							"  Error trying to scale texture.");
+						return_code=0;
+					}
+				}
+				if (scale == 1)
+				{
+					glTexImage2D(GL_TEXTURE_2D,(GLint)0,
+						number_of_components,
+						(GLint)(texture->width_texels),
+						(GLint)(texture->height_texels),(GLint)0,
+						format,type,(GLvoid *)(texture->image));
+				}
+				else
+				{
+					display_message(WARNING_MESSAGE,
+						"Image %s is too large for this display."
+						"Reducing (%d,%d) to (%d,%d) for display only", texture->name,
+						texture->width_texels, texture->height_texels, 
+						texture->width_texels / scale, texture->height_texels / scale); 
+					/* Make the appropriate image and load that */
+					number_of_bytes = texture->number_of_bytes_per_component *
+						number_of_components;
+					/* ensure texture images are unsigned long row aligned */
+					destination_row_width_bytes=
+						4*((int)(((texture->width_texels/scale)*number_of_bytes+3)/4));
+					source_row_width_bytes=
+						4*((int)(((texture->width_texels)*number_of_bytes+3)/4));
+					total_size = (texture->height_texels/scale)*destination_row_width_bytes*4;
+					image = (unsigned char *)texture->image;
+					if (ALLOCATE(resized_image, unsigned char, total_size))
+					{
+						for (i = 0 ; i < texture->height_texels/scale ; i++)
+						{
+							for (j = 0 ; j < texture->width_texels/scale ; j++)
+							{
+								for (k = 0 ; k < number_of_bytes ; k++)
+								{
+									resized_image[i * destination_row_width_bytes + j *
+										number_of_bytes + k] = 
+										image[i * scale * source_row_width_bytes +
+											j * scale * number_of_bytes + k];
+								}
+							}
+						}
+
+						glTexImage2D(GL_TEXTURE_2D,(GLint)0,
+							number_of_components,
+							(GLint)(texture->width_texels/scale),
+							(GLint)(texture->height_texels/scale),(GLint)0,
+							format,type,(GLvoid *)(resized_image));
+						DEALLOCATE(resized_image);
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"direct_render_Texture."
+							"  Unable to Allocate replacement memory space");
+					}
+				}
 			} break;
 		}
 		switch (texture->wrap)
@@ -2369,7 +2450,7 @@ texture, and must be given a value.
 		}
 		if((texture->dmbuffer = ACCESS(Dm_buffer)(
 			CREATE(Dm_buffer)(texture_width, texture_height, /*depth_buffer_flag*/0,
-				user_interface)))
+			  /*shared_display_buffer*/1, user_interface)))
 			&& (DM_BUFFER_INVALID_TYPE != (dm_buffer_type = 
 			Dm_buffer_get_type(texture->dmbuffer))))
 		{
