@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : cmgui.Makefile
 #
-# LAST MODIFIED : 20 October 2004
+# LAST MODIFIED : 5 November 2004
 #
 # DESCRIPTION :
 #
@@ -599,6 +599,7 @@ API_SRCS = \
 	api/cmiss_function_derivative.cpp \
 	api/cmiss_function_finite_element.cpp \
 	api/cmiss_function_gradient.cpp \
+	api/cmiss_function_integral.cpp \
 	api/cmiss_function_inverse.cpp \
 	api/cmiss_function_matrix.cpp \
 	api/cmiss_function_matrix_determinant.cpp \
@@ -719,8 +720,8 @@ COMPUTED_VARIABLE_SRCS = \
 	computed_variable/function_derivative_matrix.cpp \
 	computed_variable/function_finite_element.cpp \
 	computed_variable/function_function_size_type.cpp \
-	computed_variable/function_gradient.cpp \
 	computed_variable/function_identity.cpp \
+	computed_variable/function_integral.cpp \
 	computed_variable/function_inverse.cpp \
 	computed_variable/function_matrix.cpp \
 	computed_variable/function_matrix_determinant.cpp \
@@ -1382,10 +1383,11 @@ LIB_FINITE_ELEMENT_SRCS = \
 	finite_element/import_finite_element.c \
 	finite_element/read_fieldml.c \
 	finite_element/write_fieldml.c \
+	general/io_stream.c \
 	$(REGION_SRCS)
 LIB_FINITE_ELEMENT_OBJS = $(addsuffix .o,$(basename $(LIB_FINITE_ELEMENT_SRCS)))
 $(SO_LIB_FINITE_ELEMENT_TARGET) : $(LIB_FINITE_ELEMENT_OBJS) $(SO_LIB_GENERAL_TARGET) cmgui.Makefile
-	$(call BuildSharedLibraryTarget,$(SO_LIB_FINITE_ELEMENT_TARGET),$(BIN_PATH),$(LIB_FINITE_ELEMENT_OBJS),$(ALL_SO_LINK_FLAGS) $(BIN_PATH)/$(SO_LIB_GENERAL_TARGET) $(XML2_LIB) $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a $(LIB),$(SO_LIB_FINITE_ELEMENT_SONAME))
+	$(call BuildSharedLibraryTarget,$(SO_LIB_FINITE_ELEMENT_TARGET),$(BIN_PATH),$(LIB_FINITE_ELEMENT_OBJS),$(ALL_SO_LINK_FLAGS) $(BIN_PATH)/$(SO_LIB_GENERAL_TARGET) $(XML2_LIB) $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libz.a $(IMAGEMAGICK_PATH)/lib/$(LIB_ARCH_DIR)/libbz2.a $(LIB),$(SO_LIB_FINITE_ELEMENT_SONAME))
 #	$(call BuildSharedLibraryTarget,$(SO_LIB_FINITE_ELEMENT_TARGET),$(BIN_PATH),$(LIB_FINITE_ELEMENT_OBJS),$(ALL_SO_LINK_FLAGS) $(BIN_PATH)/$(SO_LIB_GENERAL_TARGET) $(XML2_LIB) $(LIB),$(SO_LIB_FINITE_ELEMENT_SONAME))
 
 SO_LIB_COMPUTED_VARIABLE = cmgui_computed_variable
@@ -1424,7 +1426,7 @@ LIB_COMPUTED_VARIABLE_SRCS = \
 	api/cmiss_variable_new_matrix.cpp \
 	api/cmiss_variable_new_scalar.cpp \
 	api/cmiss_variable_new_vector.cpp \
-	$(filter-out %element_xi.cpp,$(filter-out %finite_element.cpp,$(filter-out %finite_element.c,$(COMPUTED_VARIABLE_SRCS)))) \
+	$(filter-out %function_integral.cpp,$(filter-out %element_xi.cpp,$(filter-out %finite_element.cpp,$(filter-out %finite_element.c,$(COMPUTED_VARIABLE_SRCS))))) \
 	$(MATRIX_SRCS) \
 	api/cmiss_value_derivative_matrix.c \
 	api/cmiss_value_fe_value.c \
@@ -1447,9 +1449,12 @@ LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SRCS = \
 	$(filter %finite_element.cpp,$(COMPUTED_VARIABLE_SRCS)) \
 	$(filter %element_xi.cpp,$(COMPUTED_VARIABLE_SRCS)) \
 	api/cmiss_function_finite_element.cpp \
+	api/cmiss_function_integral.cpp \
+	api/cmiss_region.c \
 	api/cmiss_value_element_xi.c \
 	api/cmiss_variable_finite_element.c \
-	api/cmiss_variable_new_finite_element.cpp
+	api/cmiss_variable_new_finite_element.cpp \
+	computed_variable/function_integral.cpp
 LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_OBJS = $(addsuffix .o,$(basename $(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SRCS)))
 $(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET) : $(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_OBJS) $(SO_LIB_COMPUTED_VARIABLE_TARGET) $(SO_LIB_FINITE_ELEMENT_TARGET) $(SO_LIB_GENERAL_TARGET) cmgui.Makefile
 	$(call BuildSharedLibraryTarget,$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_TARGET),$(BIN_PATH),$(LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_OBJS),$(ALL_SO_LINK_FLAGS) $(BIN_PATH)/$(SO_LIB_COMPUTED_VARIABLE_TARGET) $(BIN_PATH)/$(SO_LIB_FINITE_ELEMENT_TARGET) $(BIN_PATH)/$(SO_LIB_GENERAL_TARGET) -lstdc++,$(SO_LIB_COMPUTED_VARIABLE_FINITE_ELEMENT_SONAME))
