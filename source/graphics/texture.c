@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture.c
 
-LAST MODIFIED : 15 March 2002
+LAST MODIFIED : 22 March 2002
 
 DESCRIPTION :
 The functions for manipulating graphical textures.
@@ -21,7 +21,9 @@ easier, compile_Texture is a list/manager iterator function.
 execute function can take over compiling as well. Furthermore, it is easy to
 return to direct rendering, as described with these routines.
 ==============================================================================*/
+#if defined (BYTE_ORDER_CODE)
 #include <ctype.h> /*???DB.  Contains definition of __BYTE_ORDER for Linux */
+#endif /* defined (BYTE_ORDER_CODE) */
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,6 +44,12 @@ return to direct rendering, as described with these routines.
 #include "three_d_drawing/ThreeDDraw.h"
 #include "three_d_drawing/movie_extensions.h"
 #include "user_interface/message.h"
+
+#if defined (BYTE_ORDER_CODE)
+#if defined SGI
+#define __BYTE_ORDER 4321 
+#endif /* defined SGI */
+#endif /* defined (BYTE_ORDER_CODE) */
 
 /*
 Module types
@@ -2955,13 +2963,13 @@ texture, and must be given a value.
 	return (return_code);
 } /* Texture_set_movie */
 
-int Texture_get_raw_pixel_values(struct Texture *texture,int x,int y,
+int Texture_get_raw_pixel_values(struct Texture *texture,int x,int y,int z,
 	unsigned char *values)
 /*******************************************************************************
-LAST MODIFIED : 13 April 1999
+LAST MODIFIED : 21 March 2002
 
 DESCRIPTION :
-Returns the byte values in the texture at x,y.
+Returns the byte values in the texture at x,y,z.
 ==============================================================================*/
 {
 	int i,number_of_bytes, return_code,row_width_bytes;
@@ -2969,14 +2977,15 @@ Returns the byte values in the texture at x,y.
 
 	ENTER(Texture_get_raw_pixel_values);
 	if (texture&&(0<=x)&&(x<texture->original_width_texels)&&
-		(0<=y)&&(y<texture->original_height_texels)&&values)
+		(0<=y)&&(y<texture->original_height_texels)&&
+		(0<=z)&&(z<texture->original_depth_texels)&&values)
 	{
 		number_of_bytes = Texture_storage_type_get_number_of_components(texture->storage)
 			* texture->number_of_bytes_per_component;
 		row_width_bytes=
 			((int)(texture->width_texels*number_of_bytes+3)/4)*4;
 		pixel_ptr=(unsigned char *)(texture->image);
-		pixel_ptr += (y*row_width_bytes+x*number_of_bytes);
+		pixel_ptr += ((z*texture->height_texels + y)*row_width_bytes+x*number_of_bytes);
 		for (i=0;i<number_of_bytes;i++)
 		{
 			values[i]=pixel_ptr[i];
@@ -2995,9 +3004,9 @@ Returns the byte values in the texture at x,y.
 } /* Texture_get_raw_pixel_values */
 
 int Texture_get_pixel_values(struct Texture *texture,
-	double x, double y, double *values)
+	double x, double y, double z, double *values)
 /*******************************************************************************
-LAST MODIFIED : 13 April 1999
+LAST MODIFIED : 22 March 2002
 
 DESCRIPTION :
 Returns the byte values in the texture using the texture coordinates relative
@@ -3007,199 +3016,292 @@ interpolated or not.  When closer than half a texel to a boundary the colour
 is constant from the half texel location to the edge. 
 ==============================================================================*/
 {
-	double max_x, max_y, local_xi1, local_xi2, weight;
-	int bytes_per_component,i,j,number_of_bytes,number_of_components,return_code,
-		row_width_bytes,x_i, y_i, pixela, pixelb, pixelc, pixeld;
+	double local_xi[3], max_v, pos[3], weight, weight_i, weight_j, weight_k, v;
+	int bytes_per_pixel, component_max, dimension, high_offset[3], i, j, k,
+		low_offset[3], max_i, max_j, max_k, n, number_of_bytes_per_component,
+		number_of_components, offset, offset_i, offset_j, offset_k, return_code,
+		row_width_bytes, size[3], v_i, x_i, y_i, z_i;
 	unsigned char *pixel_ptr;
+	unsigned short short_value;
 
 	ENTER(Texture_get_pixel_values);
 	if (texture && values)
 	{
-		number_of_components = Texture_storage_type_get_number_of_components(texture->storage);
-		bytes_per_component = texture->number_of_bytes_per_component;
-		number_of_bytes = number_of_components * bytes_per_component;
+		return_code = 1;
+		number_of_components =
+			Texture_storage_type_get_number_of_components(texture->storage);
+		number_of_bytes_per_component = texture->number_of_bytes_per_component;
+		bytes_per_pixel = number_of_components*number_of_bytes_per_component;
 		row_width_bytes=
-			((int)(texture->width_texels*number_of_bytes+3)/4)*4;
+			((int)(texture->width_texels*bytes_per_pixel+3)/4)*4;
 
-		x /= texture->width;
-		y /= texture->height;
-
-		switch(texture->wrap_mode)
+		/* make x, y and z range from 0.0 to 1.0 over full texture size */
+		x *= ((double)texture->original_width_texels /
+			(double)texture->width_texels) / texture->width;
+		y *= ((double)texture->original_height_texels /
+			(double)texture->height_texels) / texture->height;
+		z *= ((double)texture->original_depth_texels /
+			(double)texture->depth_texels) / texture->depth;
+		switch (texture->wrap_mode)
 		{
 			case TEXTURE_CLAMP_WRAP:
 			{
-				if(x < 0.0)
+				if (x < 0.0)
 				{
 					x = 0.0;
 				}
-				if(x > 1.0)
+				else if (x > 1.0)
 				{
 					x = 1.0;
 				}
-				if(y < 0.0)
+				if (y < 0.0)
 				{
 					y = 0.0;
 				}
-				if(y > 1.0)
+				else if (y > 1.0)
 				{
 					y = 1.0;
+				}
+				if (z < 0.0)
+				{
+					z = 0.0;
+				}
+				else if (z > 1.0)
+				{
+					z = 1.0;
 				}
 			} break;
 			case TEXTURE_REPEAT_WRAP:
 			{
 				x -= floor(x);
 				y -= floor(y);
+				z -= floor(z);
 			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
 					"Texture_get_pixel_values.  Unknown wrap type");
-				return_code=0;
-			}
+				return_code = 0;
+			} break;
 		}
-
-		x *= (double)(texture->original_width_texels);
-		y *= (double)(texture->original_height_texels);
-		max_x = (double)texture->original_width_texels - 0.5;
-		max_y = (double)texture->original_width_texels - 0.5;
-
+		if (2 == number_of_bytes_per_component)
+		{
+			component_max = 65535;
+		}
+		else
+		{
+			component_max = 255;
+		}
+		x *= (double)(texture->width_texels);
+		y *= (double)(texture->height_texels);
+		z *= (double)(texture->depth_texels);
 		switch (texture->filter_mode)
 		{
 			case TEXTURE_LINEAR_FILTER:
 			{
-				if ((x > 0.5) && (x < max_x))
+				dimension = texture->dimension;
+				pos[0] = x;
+				pos[1] = y;
+				pos[2] = z;
+				size[0] = texture->width_texels;
+				size[1] = texture->height_texels;
+				size[2] = texture->depth_texels;
+				offset = bytes_per_pixel;
+				for (i = 0; i < dimension; i++)
 				{
-					x_i = (int)(x-0.5);
-					local_xi1 = x - 0.5 - (double)x_i;
-					
-					pixela = x_i*number_of_bytes;
-					pixelb = pixela + number_of_bytes;
-				}
-				else
-				{
-					if (x < 0.5)
+					max_v = (double)size[i] - 0.5;
+					v = pos[i];
+					if ((0.5 < v) && (v < max_v))
 					{
-						local_xi1 = 0;
-						pixela = 0;
-						pixelb = 0;
+						v_i = (int)(v - 0.5);
+						local_xi[i] = v - 0.5 - (double)v_i;
+						low_offset[i] = v_i*offset;
+						high_offset[i] = (v_i + 1)*offset;
 					}
 					else
 					{
-						local_xi1 = 0;
-						pixela = (texture->original_width_texels-1)
-							*number_of_bytes;
-						pixelb = pixela;
+						/* result depends on the wrap mode */
+						low_offset[i] = (size[i] - 1)*offset;
+						high_offset[i] = 0;
+						switch (texture->wrap_mode)
+						{
+							case TEXTURE_CLAMP_WRAP:
+							{
+								if (v < 0.5)
+								{
+									local_xi[i] = 1.0;
+								}
+								else
+								{
+									local_xi[i] = 0.0;
+								}
+							} break;
+							case TEXTURE_REPEAT_WRAP:
+							{
+								if (v < 0.5)
+								{
+									local_xi[i] = 0.5 + v;
+								}
+								else
+								{
+									v_i = (int)(v - 0.5);
+									local_xi[i] = v - 0.5 - (double)v_i;
+								}
+							} break;
+						}
 					}
+					offset *= size[i];
 				}
-				if ((y > 0.5) && (y < max_y))
-				{
-					y_i = (int)(y-0.5);
-					local_xi2 = y - 0.5 - (double)y_i;
 
-					pixela += y_i*row_width_bytes;
-					pixelb += y_i*row_width_bytes;
-					pixelc = pixela + row_width_bytes;
-					pixeld = pixelb + row_width_bytes;
+				max_i = 2;
+				if (1 < dimension)
+				{
+					max_j = 2;
 				}
 				else
 				{
-					if (y < 0.5)
+					max_j = 1;
+				}
+				if (2 < dimension)
+				{
+					max_k = 2;
+				}
+				else
+				{
+					max_k = 1;
+				}
+
+				for (i = 0; i < number_of_components; i++)
+				{
+					values[i] = 0.0;
+				}
+
+				for (k = 0; k < max_k; k++)
+				{
+					if (2 < dimension)
 					{
-						local_xi2 = 0;
-						pixelc = pixela;
-						pixeld = pixelb;
+						if (0 == k)
+						{
+							weight_k = (1.0 - local_xi[2]);
+							offset_k = low_offset[2];
+						}
+						else
+						{
+							weight_k = local_xi[2];
+							offset_k = high_offset[2];
+						}
 					}
 					else
 					{
-						local_xi2 = 0;
-						pixela += (texture->original_height_texels-1)
-							* row_width_bytes;
-						pixelb += (texture->original_height_texels-1)
-							* row_width_bytes;
-						pixelc = pixela;
-						pixeld = pixelb;
+						weight_k = 1.0;
+						offset_k = 0;
 					}
-				}
-
-				for (i=0;i<number_of_components;i++)
-				{
-					values[i]=0.0;
-				}
-
-				pixel_ptr=(unsigned char *)(texture->image) + pixela;
-				weight = (1.0 - local_xi1)*(1.0 - local_xi2) / 255.0;
-				for (j=0;j<bytes_per_component;j++)
-				{
-					for (i=0;i<number_of_components;i++)
+					for (j = 0; j < max_j; j++)
 					{
-						values[i]+=(double)pixel_ptr[i*bytes_per_component+j] * weight;
+						if (1 < dimension)
+						{
+							if (0 == j)
+							{
+								weight_j = weight_k*(1.0 - local_xi[1]);
+								offset_j = offset_k + low_offset[1];
+							}
+							else
+							{
+								weight_j = weight_k*local_xi[1];
+								offset_j = offset_k + high_offset[1];
+							}
+						}
+						else
+						{
+							weight_j = 1.0;
+							offset_j = 0;
+						}
+						for (i = 0; i < max_i; i++)
+						{
+							if (0 == i)
+							{
+								weight_i = weight_j*(1.0 - local_xi[1]);
+								offset_i = offset_j + low_offset[0];
+							}
+							else
+							{
+								weight_i = weight_j*local_xi[1];
+								offset_i = offset_j + high_offset[0];
+							}
+							pixel_ptr = texture->image + offset_i;
+							weight = weight_i / component_max;
+							for (n = 0; n < number_of_components; n++)
+							{
+								if (2 == number_of_bytes_per_component)
+								{
+#if (1234==__BYTE_ORDER)
+									short_value =
+										(((unsigned short)(*(pixel_ptr + 1))) << 8) - (*pixel_ptr);
+#else /* (1234==__BYTE_ORDER) */
+									short_value = 
+										(((unsigned short)(*pixel_ptr)) << 8) - (*(pixel_ptr + 1));
+#endif /* (1234==__BYTE_ORDER) */
+									values[n] += (double)short_value * weight;
+								}
+								else
+								{
+									values[n] += (double)(*pixel_ptr) * weight;
+								}
+								pixel_ptr += number_of_bytes_per_component;
+							}
+						}
 					}
-					weight /= 255.0;
 				}
-
-				pixel_ptr=(unsigned char *)(texture->image) + pixelb;
-				weight = local_xi1*(1.0 - local_xi2) / 255.0;
-				for (j=0;j<bytes_per_component;j++)
-				{
-					for (i=0;i<number_of_components;i++)
-					{
-						values[i]+=(double)pixel_ptr[i*bytes_per_component+j] * weight;
-					}
-					weight /= 255.0;
-				}
-
-				pixel_ptr=(unsigned char *)(texture->image) + pixelc;
-				weight = (1.0 - local_xi1)*local_xi2 / 255.0;
-				for (j=0;j<bytes_per_component;j++)
-				{
-					for (i=0;i<number_of_components;i++)
-					{
-						values[i]+=(double)pixel_ptr[i*bytes_per_component+j] * weight;
-					}
-					weight /= 255.0;
-				}
-
-				pixel_ptr=(unsigned char *)(texture->image) + pixeld;
-				weight = local_xi1*local_xi2 / 255.0;
-				for (j=0;j<bytes_per_component;j++)
-				{
-					for (i=0;i<number_of_components;i++)
-					{
-						values[i]+=(double)pixel_ptr[i*bytes_per_component+j] * weight;
-					}
-					weight /= 255.0;
-				}
-		
-				return_code=1;
 			} break;
 			case TEXTURE_NEAREST_FILTER:
 			{
 				x_i = (int)x;
 				y_i = (int)y;
-
-				pixela = x_i * number_of_bytes + y_i * row_width_bytes;
-
-				pixel_ptr=(unsigned char *)(texture->image) + pixela;
-				for (i=0;i<number_of_components;i++)
+				z_i = (int)z;
+				if (TEXTURE_CLAMP_WRAP == texture->wrap_mode)
 				{
-					values[i]=(double)pixel_ptr[i*bytes_per_component] / 255.0;
-				}
-				weight = 255.0;
-				for (j=1;j<bytes_per_component;j++)
-				{
-					weight *= 255.0;
-					for (i=0;i<number_of_components;i++)
+					/* fix problem of value being exactly on boundary */
+					if (x_i == texture->width_texels)
 					{
-						values[i]+=(double)pixel_ptr[i*bytes_per_component+j] / weight;
+						x_i--;
+					}
+					if (y_i == texture->height_texels)
+					{
+						y_i--;
+					}
+					if (z_i == texture->depth_texels)
+					{
+						z_i--;
 					}
 				}
-				return_code=1;
+				offset = (z_i*texture->height_texels + y_i)*row_width_bytes +
+					x_i*bytes_per_pixel;
+				pixel_ptr = texture->image + offset;
+				for (n = 0; n < number_of_components; n++)
+				{
+					if (2 == number_of_bytes_per_component)
+					{
+#if (1234==__BYTE_ORDER)
+						short_value =
+							(((unsigned short)(*(pixel_ptr + 1))) << 8) - (*pixel_ptr);
+#else /* (1234==__BYTE_ORDER) */
+						short_value = 
+							(((unsigned short)(*pixel_ptr)) << 8) - (*(pixel_ptr + 1));
+#endif /* (1234==__BYTE_ORDER) */
+						values[n] = (double)short_value / component_max;
+					}
+					else
+					{
+						values[n] = (double)(*pixel_ptr) / component_max;
+					}
+					pixel_ptr += number_of_bytes_per_component;
+				}
 			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
 					"Texture_get_pixel_values.  Unknown filter type");
-				return_code=0;
+				return_code = 0;
 			}
 		}
 	}
@@ -3207,7 +3309,7 @@ is constant from the half texel location to the edge.
 	{
 		display_message(ERROR_MESSAGE,
 			"Texture_get_pixel_values.  Invalid arguments");
-		return_code=0;
+		return_code = 0;
 	}
 	LEAVE;
 

@@ -48,7 +48,7 @@ Module functions
 int Texture_get_centre_of_mass(struct Texture *texture,int mx,int my,int radius,
 	int colour_index,double threshold,double *cmx,double *cmy)
 /*******************************************************************************
-LAST MODIFIED : 11 February 2002
+LAST MODIFIED : 21 March 2002
 
 DESCRIPTION :
 Returns the byte values in the texture at x,y.
@@ -71,7 +71,7 @@ size in physical space.
 	float aspect_x, aspect_y, texture_depth, texture_height, texture_width;
 	int return_code, *buffer, width_texels, height_texels, depth_texels, x, y, i,
 		k,swap, number_of_components,v,w,median_intensity,cutoff_intensity,radius_x,
-		radius_y;
+		radius_y, z;
 	unsigned char values[4];
 
 	ENTER(Texture_get_centre_of_mass);
@@ -97,6 +97,7 @@ size in physical space.
 			{
 				radius_y = radius*aspect_x/aspect_y;
 			}
+			z = 0.5*texture_depth;
 			if ((0<mx)&&(mx<width_texels)&&(0<my)&&(my<height_texels))
 			{
 				if (radius <= 0)
@@ -118,7 +119,7 @@ size in physical space.
 							{
 								if ((0 <= x)&&(x<width_texels)&&(0 <= y)&&(y<height_texels))
 								{
-									if (Texture_get_raw_pixel_values(texture,x,y,values))
+									if (Texture_get_raw_pixel_values(texture,x,y,z,values))
 									{
 										if (number_of_components<3)
 										{
@@ -187,7 +188,7 @@ size in physical space.
 							{
 								if ((0 <= x)&&(x<width_texels)&&(0 <= y)&&(y<height_texels))
 								{
-									if (Texture_get_raw_pixel_values(texture,x,y,values))
+									if (Texture_get_raw_pixel_values(texture,x,y,z,values))
 									{
 										if (number_of_components<3)
 										{

@@ -223,13 +223,14 @@ No special criteria.
 static int Computed_field_sample_texture_evaluate_cache_at_node(
 	struct Computed_field *field, struct FE_node *node, FE_value time)
 /*******************************************************************************
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 21 March 2002
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
 ==============================================================================*/
 {
 	double texture_values[4];
+	FE_value texture_coordinate[3];
 	int i, number_of_components, return_code;
 	struct Computed_field_sample_texture_type_specific_data *data;
 
@@ -243,10 +244,16 @@ Evaluate the fields cache at the node.
 			Computed_field_evaluate_source_fields_cache_at_node(field, node, time))
 		{
 			/* 2. Calculate the field */
-			/* Could generalise to 1D and 3D textures */
+			texture_coordinate[0] = 0.0;
+			texture_coordinate[1] = 0.0;
+			texture_coordinate[2] = 0.0;
+			for (i = 0; i < field->source_fields[0]->number_of_components; i++)
+			{
+				texture_coordinate[i] = field->source_fields[0]->values[i];				
+			}
 			Texture_get_pixel_values(data->texture,
-				field->source_fields[0]->values[0],
-				field->source_fields[0]->values[1], texture_values);
+				texture_coordinate[0], texture_coordinate[1], texture_coordinate[2],
+				texture_values);
 			number_of_components = field->number_of_components;
 			if (data->minimum == 0.0)
 			{
@@ -292,13 +299,14 @@ static int Computed_field_sample_texture_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
 	FE_value time, struct FE_element *top_level_element,int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 3 December 2001
+LAST MODIFIED : 21 March 2002
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
 ==============================================================================*/
 {
 	double texture_values[4];
+	FE_value texture_coordinate[3];
 	int i, number_of_components, return_code;
 	struct Computed_field_sample_texture_type_specific_data *data;
 
@@ -313,10 +321,16 @@ Evaluate the fields cache at the node.
 				xi, time, top_level_element, calculate_derivatives))
 		{
 			/* 2. Calculate the field */
-			/* Could generalise to 1D and 3D textures */
+			texture_coordinate[0] = 0.0;
+			texture_coordinate[1] = 0.0;
+			texture_coordinate[2] = 0.0;
+			for (i = 0; i < field->source_fields[0]->number_of_components; i++)
+			{
+				texture_coordinate[i] = field->source_fields[0]->values[i];				
+			}
 			Texture_get_pixel_values(data->texture,
-				field->source_fields[0]->values[0],
-				field->source_fields[0]->values[1], texture_values);
+				texture_coordinate[0], texture_coordinate[1], texture_coordinate[2],
+				texture_values);
 			number_of_components = field->number_of_components;
 			if (data->minimum == 0.0)
 			{

@@ -355,19 +355,19 @@ DESCRIPTION :
 A modifier function to set the texture storage type.
 ==============================================================================*/
 
-int Texture_get_raw_pixel_values(struct Texture *texture,int x,int y,
+int Texture_get_raw_pixel_values(struct Texture *texture,int x,int y,int z,
 	unsigned char *values);
 /*******************************************************************************
-LAST MODIFIED : 13 April 1999
+LAST MODIFIED : 21 March 2002
 
 DESCRIPTION :
-Returns the byte values in the texture at x,y.
+Returns the byte values in the texture at x,y,z.
 ==============================================================================*/
 
 int Texture_get_pixel_values(struct Texture *texture,
-	double x, double y, double *values);
+	double x, double y, double z, double *values);
 /*******************************************************************************
-LAST MODIFIED : 13 April 1999
+LAST MODIFIED : 21 March 2002
 
 DESCRIPTION :
 Returns the byte values in the texture using the texture coordinates relative
