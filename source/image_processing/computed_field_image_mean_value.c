@@ -593,7 +593,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 	ENTER(Computed_field_image_mean_value_get_command_string);
 	command_string = (char *)NULL;
-	if (field)
+	if (field && (field->type_string==computed_field_image_mean_value_type_string)
+		&& (data = (struct Computed_field_image_mean_value_type_specific_data *)
+		field->type_specific_data))
 	{
 		error = 0;
 		append_string(&command_string,
