@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 24 February 2000
+XCOMM LAST MODIFIED : 1 March 2000
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap
@@ -441,6 +441,7 @@ GRAPHICS_SRCS = \
 	graphics/graphical_element.c \
 	graphics/auxiliary_graphics_types.c \
 	graphics/element_group_settings.c \
+	graphics/element_point_ranges.c \
 	graphics/volume_texture.c \
 	graphics/material.c \
 	graphics/rendergl.c \
