@@ -633,7 +633,8 @@ DESCRIPTION :
 						if (copy_size)
 						{
 							memcpy(stream->buffer + stream->buffer_valid_index,
-								stream->memory_block->memory_ptr + stream->memory_block_index,
+								((char *)stream->memory_block->memory_ptr) 
+								+ stream->memory_block_index,
 								copy_size);
 						}
 						read_characters = copy_size;

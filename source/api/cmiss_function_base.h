@@ -8,8 +8,8 @@ DESCRIPTION :
 #ifndef __API_CMISS_FUNCTION_BASE_H__
 #define __API_CMISS_FUNCTION_BASE_H__
 
-// needs to be the same as typedef in computed_variable/function_base.hpp, but
-//   will not compile if differ
+/* needs to be the same as typedef in computed_variable/function_base.hpp, but
+   will not compile if differ */
 typedef double Scalar;
 
 /*
