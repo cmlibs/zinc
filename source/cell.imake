@@ -199,7 +199,7 @@ GRAPHICS_LIB = -lGL -lGLU
 #elif defined(LINUX) /* switch OperatingSystem */
 GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
 #if defined (DYNAMIC_GL_LINUX)
-GRAPHICS_LIB = -lGLU -lGLXX
+GRAPHICS_LIB = -L/usr/X11R6/lib -lGLU -lGLXX
 #else /* defined (DYNAMIC_GL_LINUX) */
 GRAPHICS_LIB = -L/usr/local/lib -lMesaGL -lMesaGLU
 /*GRAPHICS_LIB = -L/home/nickerso/cmiss/cmgui -lMesaGL -lMesaGLU*/
@@ -397,10 +397,10 @@ DSO_LIB = -lftn -lm
 #elif defined(LINUX) /* switch OperatingSystem */
 #if defined (DYNAMIC_GL_LINUX)
 X_LIB = /usr/X11R6/lib
-LIB = $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXpm.a -lXext $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a -lm -ldl -lc /usr/lib/libpthread.a /usr/lib/libcrypt.a
+LIB = $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXpm.a $(X_LIB)/libXext.a $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a -lm -ldl -lc /usr/lib/libpthread.a /usr/lib/libcrypt.a /usr/lib/libstdc++-2-libc6.1-1-2.9.0.a
 DSO_LIB = -lg2c -lm
 #else /* defined (DYNAMIC_GL_LINUX) */
-LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXpm -lXext -lg2c -lm -ldl -lc -lXp -lSM -lICE -lpthread -lcrypt
+LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXpm -lXext -lg2c -lm -ldl -lc -lXp -lSM -lICE -lpthread -lcrypt -lstdc++
 DSO_LIB = -lg2c -lm
 #endif /* defined (DYNAMIC_GL_LINUX) */
 #endif /* switch OperatingSystem */
