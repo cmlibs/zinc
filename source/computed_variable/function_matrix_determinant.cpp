@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_determinant.cpp
 //
-// LAST MODIFIED : 6 October 2004
+// LAST MODIFIED : 18 October 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -20,7 +20,7 @@ Function_handle Function_variable_matrix_determinant<Scalar>::
 	evaluate_derivative(
 	std::list<Function_variable_handle>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 6 October 2004
+// LAST MODIFIED : 18 October 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -34,8 +34,7 @@ Function_handle Function_variable_matrix_determinant<Scalar>::
 		Function_matrix_determinant<Scalar>,Function>(function()))&&
 		(0<(order=independent_variables.size())))
 	{
-		Function_size_type number_of_dependent_values,number_of_independent_values,
-			number_of_rows;
+		Function_size_type number_of_dependent_values,number_of_rows;
 		boost::intrusive_ptr< Function_matrix<Scalar> > derivative,matrix;
 
 		if ((matrix=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
@@ -46,7 +45,7 @@ Function_handle Function_variable_matrix_determinant<Scalar>::
 			evaluate_derivative(independent_variables)))&&
 			(number_of_rows*number_of_rows==
 			(number_of_dependent_values=derivative->number_of_rows()))&&
-			(0<(number_of_independent_values=derivative->number_of_columns())))
+			(0<derivative->number_of_columns()))
 		{
 			bool valid;
 			Function_size_type i,j,k,l,number_of_columns;
