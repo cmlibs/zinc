@@ -4475,7 +4475,7 @@ Returns true if <graphics_object> has primitives stored exactly at <time>.
 				/*???RC Note exact real number comparison; could be problematic */
 				if (graphics_object->times[time_number - 1] == time)
 				{
-					primitive_list = graphics_object->primitive_lists + time_number;
+					primitive_list = graphics_object->primitive_lists + time_number - 1;
 					switch (graphics_object->object_type)
 					{
 						case g_GLYPH_SET:
