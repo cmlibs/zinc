@@ -28,7 +28,8 @@ Utilities for handling images.
 #endif /* defined (IMAGEMAGICK) */
 
 /* #define DEBUG 1 */
-
+#define MagickFalse False
+#define MagickTrue True
 /*
 Module constants
 ----------------
