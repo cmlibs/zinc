@@ -1052,7 +1052,13 @@ necessary.
 			}
 		}
 		if (map_settings_changed)
-		{
+		{	
+			/* there's more than one map, so we'll need to recalculate them */
+			if(*map->first_eimaging_event&&
+					(ELECTRICAL_IMAGING==*map->analysis_mode))
+			{
+				recalculate=2;
+			}
 			update_mapping_drawing_area(mapping,recalculate);
 			update_mapping_colour_or_auxili(mapping);
 			mapping_window_update_time_limits(mapping);
@@ -4757,9 +4763,11 @@ int open_mapping_window(struct Mapping_window **mapping_address,
 	int screen_width,int screen_height,
 	char *configuration_file_extension,char *postscript_file_extension,
 	struct Map_drawing_information *map_drawing_information,
-	struct User_interface *user_interface,struct Unemap_package *unemap_package)
+	struct User_interface *user_interface,struct Unemap_package *unemap_package,
+	struct Electrical_imaging_event **first_eimaging_event,
+	enum Signal_analysis_mode *analysis_mode)
 /*******************************************************************************
-LAST MODIFIED : 1 February 2000
+LAST MODIFIED : 5 July 2001
 
 DESCRIPTION :
 If the mapping window does not exist then it is created with the specified
@@ -4835,7 +4843,7 @@ properties.  Then the mapping window is opened.
 					print_spectrum,projection_type,contour_thickness,rig_address,
 					event_number_address,potential_time_address,datum_address,
 					start_search_interval,end_search_interval,map_drawing_information,
-					user_interface,unemap_package),
+					user_interface,unemap_package,first_eimaging_event,analysis_mode),
 					rig_address,identifying_colour,screen_height,
 					configuration_file_extension,postscript_file_extension,
 					map_drawing_information,user_interface
@@ -5416,7 +5424,7 @@ int highlight_electrode_or_auxiliar(struct Device *device,
 	int electrode_number,	int auxiliary_number,struct Map *map,
 	struct Mapping_window *mapping)
 /*******************************************************************************
-LAST MODIFIED : 5 September 2000
+LAST MODIFIED : 10 July 2001
 
 DESCRIPTION :
 Highlights/dehighlights an electrode or an auxiliary device in the <mapping>
@@ -5592,8 +5600,7 @@ window.
 							unhighlighted_colour;
 					}
 				}
-			}
-			
+			}			
 			if (electrode_drawn)
 			{
 				/* draw marker */

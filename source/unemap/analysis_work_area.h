@@ -28,13 +28,14 @@ Global types
 */
 struct Analysis_work_area
 /*******************************************************************************
-LAST MODIFIED : 18 June 2001
+LAST MODIFIED : 5 July 2001
 
 DESCRIPTION :
 ==============================================================================*/
 {
 	Widget activation;
 	struct Analysis_window *window;
+	struct Electrical_imaging_event *first_eimaging_event;
 	Widget window_shell;
 	struct Trace_window *trace;
 	struct Mapping_work_area *mapping_work_area;
@@ -55,6 +56,7 @@ DESCRIPTION :
 	int potential_time;
 	int minimum_separation,threshold;
 	float level;
+	enum Signal_analysis_mode analysis_mode;
 	enum Datum_type datum_type;
 	enum Edit_order edit_order;
 	enum Signal_order signal_order;

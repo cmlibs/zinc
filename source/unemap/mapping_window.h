@@ -191,9 +191,11 @@ int open_mapping_window(struct Mapping_window **mapping_address,
 	int screen_width,int screen_height,
 	char *configuration_file_extension,char *postscript_file_extension,
 	struct Map_drawing_information *map_drawing_information,
-	struct User_interface *user_interface,struct Unemap_package *unemap_package);
+	struct User_interface *user_interface,struct Unemap_package *unemap_package,
+	struct Electrical_imaging_event **first_eimaging_event,
+	enum Signal_analysis_mode *analysis_mode);
 /*******************************************************************************
-LAST MODIFIED : 1 February 2000
+LAST MODIFIED : 4 July 2001
 
 DESCRIPTION :
 If the mapping window does not exist then it is created with the specified

@@ -65,6 +65,24 @@ DESCRIPTION :
 	MONITORING_OFF
 }; /* enum Monitoring_status */
 
+enum Signal_analysis_mode 
+/*******************************************************************************
+LAST MODIFIED : 9 February 2001
+
+DESCRIPTION :
+The type of signal analysis being performed.
+==============================================================================*/
+{
+	ELECTRICAL_IMAGING,
+	EVENT_DETECTION,
+	FREQUENCY_DOMAIN,
+	POWER_SPECTRA,
+	CROSS_CORRELATION,
+	AUTO_CORRELATION,
+	FILTERING,
+	BEAT_AVERAGING
+}; /* enum Signal_analysis_mode */
+
 enum Rig_file_type
 /*******************************************************************************
 LAST MODIFIED : 24 November 1993
@@ -441,6 +459,20 @@ DESCRIPTION :
 	char *calibration_directory;
 #endif /* defined (OLD_CODE) */
 }; /* struct Rig */
+
+struct Electrical_imaging_event
+/*******************************************************************************
+LAST MODIFIED : 31 May 2001
+
+DESCRIPTION :
+Events (times) on the cardiac_intervals_device signal.
+Used to generate maps. Merge with Struct Event ??JW
+==============================================================================*/
+{
+	/* time an array index,is_current_event a flag  */
+	int time,device_time,is_current_event; 
+	struct Electrical_imaging_event *next,*previous;
+}; /* Electrical_imaging_event */
 
 /*
 Global functions
@@ -1094,4 +1126,72 @@ LAST MODIFIED : 22 June 1992
 
 DESCRIPTION :
 ==============================================================================*/
+
+struct Electrical_imaging_event *create_Electrical_imaging_event(int time);
+/*******************************************************************************
+LAST MODIFIED : 31 May 2001
+
+DESCRIPTION : create a Electrical_imaging_event at <time>
+==============================================================================*/
+
+int print_Electrical_imaging_event_list(
+	struct Electrical_imaging_event *first_list_event);
+/*******************************************************************************
+LAST MODIFIED :  31 May 2001
+
+DESCRIPTION : Debugging function.
+==============================================================================*/
+
+int count_Electrical_imaging_events(
+	struct Electrical_imaging_event *first_list_event);
+/*******************************************************************************
+LAST MODIFIED :  4 July 2001
+
+DESCRIPTION : Count and return the number of evens in the list beginning at 
+<first_list_event>
+==============================================================================*/
+
+int add_Electrical_imaging_event_to_sorted_list(
+	struct Electrical_imaging_event **first_list_event,
+	struct Electrical_imaging_event *new_event);
+/*******************************************************************************
+LAST MODIFIED :  31 May 2001
+
+DESCRIPTION : adds <new_event> to the event list <first_list_event>,
+inserting it so that the list is in order of event->time.
+If 2 events have the same time, they will both exist in the list, stored 
+consecutively. 
+==============================================================================*/
+
+int remove_Electrical_imaging_event_from_list(
+	struct Electrical_imaging_event **first_list_event,
+	struct Electrical_imaging_event *event_to_remove);
+/*******************************************************************************
+LAST MODIFIED :  14 June 2001
+
+DESCRIPTION : remove the <event_to_remove> from the list of events whose first 
+event is <first_list_event>.
+==============================================================================*/
+
+int add_Electrical_imaging_event_to_unsorted_list(
+	struct Electrical_imaging_event **first_list_event,
+	struct Electrical_imaging_event *new_event);
+/*******************************************************************************
+LAST MODIFIED : 31 May 2001
+
+DESCRIPTION :adds <new_event> to the end of the event list 
+<first_list_event>. See also add_Electrical_imaging_event_to_sorted_list
+==============================================================================*/
+
+int destroy_Electrical_imaging_event_list(
+	struct Electrical_imaging_event **first_event);
+/*******************************************************************************
+LAST MODIFIED : 31 May 2001
+
+DESCRIPTION :
+This function frees the memory associated with the event list starting at
+<**first_event> and sets <*first_event> to NULL.
+==============================================================================*/
+
+
 #endif /* !defined (RIG_H) */

@@ -283,7 +283,8 @@ DESCRIPTION :
 			user_interface->screen_width,user_interface->screen_height,
 			analysis->configuration_file_extension,
 			analysis->postscript_file_extension,analysis->map_drawing_information,
-			analysis->user_interface,analysis->unemap_package))
+			analysis->user_interface,analysis->unemap_package,
+			&(analysis->first_eimaging_event),&(analysis->analysis_mode)))
 		{
 			mapping=analysis->mapping_window;
 			map=mapping->map;
@@ -920,7 +921,7 @@ analysis work area.
 					/* update the mapping_window_menu */
 					update_mapping_window_menu(mapping);
 					/* to recalculate RMS_signal. Perhaps should do trace_change_signal for all modes */
-					if(analysis->trace->analysis_mode==ELECTRICAL_IMAGING)
+					if(*analysis->trace->analysis_mode==ELECTRICAL_IMAGING)
 					{	
 						analysis->trace->calculate_rms=1;				
 						trace_change_signal(analysis->trace);
@@ -2303,7 +2304,7 @@ Sets up the analysis work area for analysing a set of signals.
 			}
 #endif /* defined (UNEMAP_USE_NODES)*/
 #if defined (UNEMAP_USE_3D)
-			free_unemap_package_time_computed_fields(analysis->unemap_package);
+			free_unemap_package_time_computed_fields(analysis->unemap_package);	
 			free_unemap_package_rig_fields(analysis->unemap_package);			
 #endif /* defined (UNEMAP_USE_NODES)*/
 		}
@@ -2944,7 +2945,7 @@ Sets up the analysis work area for analysing a set of signals.
 			trace_change_rig(analysis->trace);
 			/* open the trace window */
 			if (!open_trace_window(&(analysis->trace),analysis->window_shell,
-				analysis->identifying_colour,EVENT_DETECTION,&(analysis->detection),
+				analysis->identifying_colour,&(analysis->analysis_mode),&(analysis->detection),
 				&(analysis->objective),&(analysis->datum_type),&(analysis->edit_order),
 				&(analysis->highlight),
 #if defined (UNEMAP_USE_NODES)
@@ -2958,7 +2959,8 @@ Sets up the analysis work area for analysing a set of signals.
 				&(analysis->search_interval_divisions),&(analysis->end_search_interval),
 				analysis->user_interface->screen_width,
 				analysis->user_interface->screen_height,
-				analysis->signal_drawing_information,analysis->user_interface))
+				analysis->signal_drawing_information,analysis->user_interface,
+				&(analysis->first_eimaging_event)))
 			{
 				display_message(ERROR_MESSAGE,
 					"analysis_read_signal_file.  Could not open trace window");
@@ -3986,7 +3988,7 @@ signals.
 						XtSetSensitive(analysis->window->print_menu.all_button,True);
 						/* open the trace window */
 						if (!open_trace_window(&(analysis->trace),analysis->window_shell,
-							analysis->identifying_colour,EVENT_DETECTION,
+							analysis->identifying_colour,&(analysis->analysis_mode),
 							&(analysis->detection),&(analysis->objective),
 							&(analysis->datum_type),&(analysis->edit_order),
 							&(analysis->highlight),
@@ -4003,7 +4005,8 @@ signals.
 							&(analysis->end_search_interval),
 							analysis->user_interface->screen_width,
 							analysis->user_interface->screen_height,
-							analysis->signal_drawing_information,analysis->user_interface))
+							analysis->signal_drawing_information,analysis->user_interface,
+							&(analysis->first_eimaging_event)))
 						{
 							display_message(ERROR_MESSAGE,
 								"read_event_times_file.  Could not open trace window");
@@ -4274,7 +4277,7 @@ analysing the signals.
 			trace_change_rig(analysis->trace);
 			/* open the trace window */
 			if (!open_trace_window(&(analysis->trace),analysis->window_shell,
-				analysis->identifying_colour,EVENT_DETECTION,&(analysis->detection),
+				analysis->identifying_colour,&(analysis->analysis_mode),&(analysis->detection),
 				&(analysis->objective),&(analysis->datum_type),&(analysis->edit_order),
 				&(analysis->highlight),
 #if defined (UNEMAP_USE_NODES)
@@ -4288,7 +4291,8 @@ analysing the signals.
 				&(analysis->search_interval_divisions),&(analysis->end_search_interval),
 				analysis->user_interface->screen_width,
 				analysis->user_interface->screen_height,
-				analysis->signal_drawing_information,analysis->user_interface))
+				analysis->signal_drawing_information,analysis->user_interface,
+				&(analysis->first_eimaging_event)))
 			{
 				display_message(ERROR_MESSAGE,
 					"analysis_read_bard_signal_file.  Could not open trace window");
@@ -4485,7 +4489,7 @@ for analysing the signals.
 			trace_change_rig(analysis->trace);
 			/* open the trace window */
 			if (!open_trace_window(&(analysis->trace),analysis->window_shell,
-				analysis->identifying_colour,EVENT_DETECTION,&(analysis->detection),
+				analysis->identifying_colour,&(analysis->analysis_mode),&(analysis->detection),
 				&(analysis->objective),&(analysis->datum_type),&(analysis->edit_order),
 				&(analysis->highlight),
 #if defined (UNEMAP_USE_NODES)
@@ -4499,7 +4503,8 @@ for analysing the signals.
 				&(analysis->search_interval_divisions),&(analysis->end_search_interval),
 				analysis->user_interface->screen_width,
 				analysis->user_interface->screen_height,
-				analysis->signal_drawing_information,analysis->user_interface))
+				analysis->signal_drawing_information,analysis->user_interface,
+				&(analysis->first_eimaging_event)))
 			{
 				display_message(ERROR_MESSAGE,
 					"analysis_read_beekeeper_eeg_fil.  Could not open trace window");
@@ -4641,7 +4646,7 @@ for analysing the signals.
 			trace_change_rig(analysis->trace);
 			/* open the trace window */
 			if (!open_trace_window(&(analysis->trace),analysis->window_shell,
-				analysis->identifying_colour,EVENT_DETECTION,&(analysis->detection),
+				analysis->identifying_colour,&(analysis->analysis_mode),&(analysis->detection),
 				&(analysis->objective),&(analysis->datum_type),&(analysis->edit_order),
 				&(analysis->highlight),
 #if defined (UNEMAP_USE_NODES)
@@ -4655,7 +4660,8 @@ for analysing the signals.
 				&(analysis->search_interval_divisions),&(analysis->end_search_interval),
 				analysis->user_interface->screen_width,
 				analysis->user_interface->screen_height,
-				analysis->signal_drawing_information,analysis->user_interface))
+				analysis->signal_drawing_information,analysis->user_interface,
+				&(analysis->first_eimaging_event)))
 			{
 				display_message(ERROR_MESSAGE,
 					"analysis_read_neurosoft_sig_fil.  Could not open trace window");
@@ -4857,7 +4863,7 @@ for analysing the signals.
 			trace_change_rig(analysis->trace);
 			/* open the trace window */
 			if (!open_trace_window(&(analysis->trace),analysis->window_shell,
-				analysis->identifying_colour,EVENT_DETECTION,&(analysis->detection),
+				analysis->identifying_colour,&(analysis->analysis_mode),&(analysis->detection),
 				&(analysis->objective),&(analysis->datum_type),&(analysis->edit_order),
 				&(analysis->highlight),
 #if defined (UNEMAP_USE_NODES)
@@ -4871,7 +4877,8 @@ for analysing the signals.
 				&(analysis->search_interval_divisions),&(analysis->end_search_interval),
 				analysis->user_interface->screen_width,
 				analysis->user_interface->screen_height,
-				analysis->signal_drawing_information,analysis->user_interface))
+				analysis->signal_drawing_information,analysis->user_interface,
+				&(analysis->first_eimaging_event)))
 			{
 				display_message(ERROR_MESSAGE,
 					"analysis_read_cardiomapp_sig_fi.  Could not open trace window");
@@ -5043,9 +5050,9 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 									(struct Device **)NULL,&signal_number,(int *)NULL,
 									(int *)NULL,analysis);
 #endif /*  defined (UNEMAP_USE_NODES) */
-								/* make sure that the trace window is open */
+								/* make sure that the trace window is open */								
 								open_trace_window(&(analysis->trace),analysis->window_shell,
-									analysis->identifying_colour,EVENT_DETECTION,
+									analysis->identifying_colour,&(analysis->analysis_mode),
 									&(analysis->detection),&(analysis->objective),
 									&(analysis->datum_type),&(analysis->edit_order),
 									&(analysis->highlight),
@@ -5063,7 +5070,7 @@ area, mapping drawing area, colour bar or auxiliary devices drawing area).
 									analysis->user_interface->screen_width,
 									analysis->user_interface->screen_height,
 									analysis->signal_drawing_information,
-									analysis->user_interface);
+									analysis->user_interface,&(analysis->first_eimaging_event));
 							}
 						}
 					}
@@ -5641,7 +5648,7 @@ The hot key handler for the <widget>.
 		analysis_work_area_structure)->user_interface))
 	{
 		display=user_interface->display;
-		if (EVENT_DETECTION==trace_window->analysis_mode)
+		if (EVENT_DETECTION==*trace_window->analysis_mode)
 		{
 			if (!((key_press->state)&(~(ShiftMask|LockMask))))
 			{
@@ -6948,7 +6955,7 @@ trace window.
 			/* go back to constant width divisions */
 			DEALLOCATE(*(trace->event_detection.search_interval_divisions));
 			DEALLOCATE(trace->area_1.enlarge.divisions);
-			if (BEAT_AVERAGING==trace->analysis_mode)
+			if (BEAT_AVERAGING==*trace->analysis_mode)
 			{
 				trace_process_device(trace);
 			}
@@ -7045,7 +7052,7 @@ trace window.
 			/* go back to constant width divisions */
 			DEALLOCATE(*(trace->event_detection.search_interval_divisions));
 			DEALLOCATE(trace->area_1.enlarge.divisions);
-			if (BEAT_AVERAGING==trace->analysis_mode)
+			if (BEAT_AVERAGING==*trace->analysis_mode)
 			{
 				trace_process_device(trace);
 			}
@@ -7148,7 +7155,7 @@ should be done as a callback from the trace_window.
 		{
 			if (XmCR_INPUT==callback->reason)
 			{
-				switch (analysis->trace->analysis_mode)
+				switch (*(analysis->trace->analysis_mode))
 				{
 					case ELECTRICAL_IMAGING:
 					{
@@ -7444,7 +7451,7 @@ should be done as a callback from the trace_window.
 												else
 												{
 													if ((EDA_INTERVAL==detection)||
-														(BEAT_AVERAGING==analysis->trace->analysis_mode))
+														(BEAT_AVERAGING==*(analysis->trace->analysis_mode)))
 													{
 														temp=pointer_x-left_box;
 														event_number=
@@ -8220,7 +8227,7 @@ should be done as a callback from the trace_window.
 		{
 			if (XmCR_INPUT==callback->reason)
 			{
-				switch (analysis->trace->analysis_mode)
+				switch (*(analysis->trace->analysis_mode))
 				{
 					case ELECTRICAL_IMAGING:
 					{						
@@ -8240,7 +8247,7 @@ should be done as a callback from the trace_window.
 						{
 							highlight_device_node=(struct FE_node *)NULL;
 						}
-						if ((BEAT_AVERAGING==analysis->trace->analysis_mode)&&
+						if ((BEAT_AVERAGING==*analysis->trace->analysis_mode)&&
 							(analysis->trace->valid_processing))
 						{
 							trace_area_3_device_node=(struct FE_node *)NULL;
@@ -8260,7 +8267,7 @@ should be done as a callback from the trace_window.
 						{
 							highlight_device=(struct Device *)NULL;
 						}
-						if ((BEAT_AVERAGING==analysis->trace->analysis_mode)&&
+						if ((BEAT_AVERAGING==*(analysis->trace->analysis_mode))&&
 							(analysis->trace->valid_processing))
 						{
 							trace_area_3_device=analysis->trace->processed_device;
@@ -11895,7 +11902,7 @@ DESCRIPTION : accept the analysis signal.
 				trace_change_signal_status(analysis->trace);
 				mapping=analysis->mapping_window;
 				/* to recalculate RMS_signal. Perhaps should do trace_change_signal for all modes */
-				if(analysis->trace->analysis_mode==ELECTRICAL_IMAGING)
+				if(*analysis->trace->analysis_mode==ELECTRICAL_IMAGING)
 				{	
 					analysis->trace->calculate_rms=1;				
 					trace_change_signal(analysis->trace);
@@ -12088,7 +12095,7 @@ DESCRIPTION : reject the analysis signal
 				trace_change_signal_status(analysis->trace);
 				mapping=analysis->mapping_window;	
 				/* to recalculate RMS_signal. Perhaps should do trace_change_signal for all modes */
-				if(analysis->trace->analysis_mode==ELECTRICAL_IMAGING)
+				if(*analysis->trace->analysis_mode==ELECTRICAL_IMAGING)
 				{	
 					analysis->trace->calculate_rms=1;				
 					trace_change_signal(analysis->trace);
@@ -12403,7 +12410,7 @@ Applies the current analysis mode settings to all signals.
 	{
 		busy_cursor_on((Widget)NULL,analysis->user_interface);
 		average_width=analysis->average_width;
-		switch (trace->analysis_mode)
+		switch (*trace->analysis_mode)
 		{
 			case BEAT_AVERAGING:
 			{
@@ -16505,6 +16512,8 @@ Creates the windows associated with the analysis work area.
       }
     }
 #endif /* defined (UNEMAP_USE_3D) */
+		analysis->first_eimaging_event=(struct Electrical_imaging_event *)NULL;
+		analysis->analysis_mode=EVENT_DETECTION;
 		analysis->activation=activation;
 		analysis->map_type=NO_MAP_FIELD;
 		analysis->map_type_changed=0;

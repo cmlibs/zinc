@@ -214,7 +214,8 @@ Associate the mapping window with the acquisition work area
 				user_interface->screen_width,user_interface->screen_height,
 				system->configuration_file_extension,system->postscript_file_extension,
 				system->map_drawing_information,user_interface,
-				system->unemap_package);
+				system->unemap_package,&((system->analysis).first_eimaging_event),
+				&((system->analysis).analysis_mode));
 		}
 		else
 		{
@@ -654,8 +655,9 @@ Associate the mapping window with the analysis work area
 				(XtPointer)&(system->analysis),user_interface->screen_width,
 				user_interface->screen_height,system->configuration_file_extension,
 				system->postscript_file_extension,system->map_drawing_information,
-				user_interface,
-				system->unemap_package);
+				user_interface,system->unemap_package,
+				&((system->analysis).first_eimaging_event),
+				&((system->analysis).analysis_mode));
 		}
 		else
 		{
@@ -890,8 +892,9 @@ Opens the windows associated with the mapping work area.
 							user_interface->screen_width,user_interface->screen_height,
 							system->configuration_file_extension,
 							system->postscript_file_extension,system->map_drawing_information,
-							user_interface,
-							system->unemap_package);
+							user_interface,system->unemap_package,
+							&((system->analysis).first_eimaging_event),
+							&((system->analysis).analysis_mode));
 					} break;
 					case ANALYSIS_ASSOCIATE:
 					{
@@ -994,8 +997,9 @@ Opens the windows associated with the mapping work area.
 							user_interface->screen_height,
 							system->configuration_file_extension,
 							system->postscript_file_extension,system->map_drawing_information,
-							user_interface,
-							system->unemap_package);
+							user_interface,system->unemap_package,
+							&((system->analysis).first_eimaging_event),
+							&((system->analysis).analysis_mode));
 					} break;
 				}
 			}

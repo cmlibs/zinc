@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.h
 
-LAST MODIFIED : 31 May 2000
+LAST MODIFIED : 5 July 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -27,6 +27,7 @@ DESCRIPTION :
 #include "selection/node_selection.h"
 #endif
 #include "unemap/drawing_2d.h"
+#include "unemap/rig.h"
 #include "user_interface/user_interface.h"
 
 /*
@@ -176,7 +177,7 @@ struct Map_3d_package
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
 
-DESCRIPTION : Information specific to each individual 3d map.
+DESCRIPTION : Information specific to each individual 3d map (and managers).
 ??JW possibly scene and scene_viewer should be moved here from 
 map_drawing_information.
 ==============================================================================*/
@@ -215,7 +216,7 @@ LAST MODIFIED : 17 July 2000
 DESCRIPTION :
 Information needed for drawing a map.  Windowing system dependent
 This information is common to all maps.
-??JW possibly scene and scene_viewer should be moved to map_drawing_information
+??JW possibly scene and scene_viewer should be moved to Map_3d_package	
 from here.
 ==============================================================================*/
 {
@@ -223,6 +224,10 @@ from here.
 	Boolean maintain_aspect_ratio;
 	Colormap colour_map;
 	int read_only_colour_map;
+	/*for 1 map, map_width,map_height will be the same as Drawing_2d->width,height*/
+	/* and x_offset,y_offset will be 0. These must be set up before draw_map_2d */
+	/*is called, see draw_map */
+	int map_width,map_height,x_offset,y_offset;/*!!jw*/
 #endif /* defined (MOTIF) */
 	int number_of_spectrum_colours,pixels_between_contour_values;
 #if defined (MOTIF)
@@ -304,7 +309,7 @@ DESCRIPTION :
 
 struct Map
 /*******************************************************************************
-LAST MODIFIED : 22 June 1998
+LAST MODIFIED : 4 July 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -312,6 +317,8 @@ DESCRIPTION :
 	enum Map_type *type;
 	int *event_number;
 	int *potential_time;
+	struct Electrical_imaging_event **first_eimaging_event;
+	enum Signal_analysis_mode *analysis_mode;
 	int *datum;
 	/* for integral maps */
 	/* a flag 1 = use signal  value to get colour */
@@ -381,9 +388,11 @@ struct Map *create_Map(enum Map_type *map_type,enum Colour_option colour_option,
 	int *event_number_address,int *potential_time_address,int *datum_address,
 	int *start_search_interval_address,int *end_search_interval_address,
 	struct Map_drawing_information *map_drawing_information,
-	struct User_interface *user_interface,struct Unemap_package *package);
+	struct User_interface *user_interface,struct Unemap_package *package,
+	struct Electrical_imaging_event **eimaging_event_list,
+	enum Signal_analysis_mode *analysis_mode);
 /*******************************************************************************
-LAST MODIFIED : 27 April 1999
+LAST MODIFIED : 5 July 2001
 
 DESCRIPTION :
 This function allocates memory for a map and initializes the fields to the
@@ -439,6 +448,17 @@ DESCRIPTION :
 This function draws the <map> in as a 3D CMGUI scene.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_NODES)*/
+
+int get_number_of_maps_x_step_y_step_rows_cols(struct Map *map,
+	struct Drawing_2d *drawing,int *number_of_maps,int *x_step, int *y_step, 
+	int *map_rows, int *map_cols);
+/*******************************************************************************
+LAST MODIFIED : 10 July 2001
+
+DESCRIPTION: Given <map>,<drawing> returns the number_of_maps (based upon the
+number of Electrical_imaging_events) and the x_step and y_step, (offsets in the 
+drawing) and map_rows, map_cols, the number of map rows and columns.
+==============================================================================*/
 
 int draw_map_2d(struct Map *map,int recalculate,struct Drawing_2d *drawing);
 /*******************************************************************************

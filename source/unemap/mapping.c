@@ -6080,9 +6080,11 @@ struct Map *create_Map(enum Map_type *map_type,enum Colour_option colour_option,
 	int *event_number_address,int *potential_time_address,int *datum_address,
 	int *start_search_interval_address,int *end_search_interval_address,
 	struct Map_drawing_information *map_drawing_information,
-	struct User_interface *user_interface,struct Unemap_package *unemap_package)
+	struct User_interface *user_interface,struct Unemap_package *unemap_package,
+	struct Electrical_imaging_event **eimaging_event_list,
+	enum Signal_analysis_mode *analysis_mode)
 /*******************************************************************************
-LAST MODIFIED : 31 August 2000
+LAST MODIFIED :4 July 2001
 
 DESCRIPTION :
 This function allocates memory for a map and initializes the fields to the
@@ -6248,6 +6250,8 @@ NULL if not successful.
 		if (ALLOCATE(map,struct Map,1)&&ALLOCATE(map->frames,struct Map_frame,1))
 		{
 			/* assign fields */
+			map->analysis_mode=analysis_mode;
+			map->first_eimaging_event=eimaging_event_list;
 			map->type=map_type;
 			map->event_number=event_number_address;
 			map->potential_time=potential_time_address;
@@ -7304,17 +7308,61 @@ Removes 3d drawing for non-current region(s).
 } /* draw_map_3d */
 #endif /* #if defined (UNEMAP_USE_3D) */
 
+int get_number_of_maps_x_step_y_step_rows_cols(struct Map *map,
+	struct Drawing_2d *drawing,int *number_of_maps,int *x_step, int *y_step, 
+	int *map_rows, int *map_cols)
+/*******************************************************************************
+LAST MODIFIED : 10 July 2001
+
+DESCRIPTION: Given <map>,<drawing> returns the number_of_maps (based upon the
+number of Electrical_imaging_events) and the x_step and y_step, (offsets in the 
+drawing) and map_rows, map_cols, the number of map rows and columns.
+==============================================================================*/
+{	
+	float k;
+	int return_code;
+
+	ENTER(get_number_of_maps_x_step_y_step_rows_cols);
+	if(map&&drawing)
+	{
+		return_code=1;
+		if(*map->first_eimaging_event)
+		{
+			*number_of_maps=count_Electrical_imaging_events(*map->first_eimaging_event);
+		}
+		else
+		{
+			*number_of_maps=1;
+		}
+		k=sqrt(*number_of_maps);
+		*map_rows=ceil(k);
+		*map_cols=ceil((float)(*number_of_maps)/(*map_rows));					
+		*x_step=drawing->width/(*map_rows);
+		*y_step=drawing->height/(*map_cols);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_number_of_maps_x_step_y_step_rows_cols.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+} /* get_number_of_maps_x_step_y_step_rows_cols */
+
 int draw_map(struct Map *map,int recalculate,struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED : 31 May 2000
+LAST MODIFIED : 12 July 2001
 
 DESCRIPTION:
 Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 ==============================================================================*/
 {
 	int return_code;
+	struct Map_drawing_information *drawing_information;
 
 	ENTER(draw_map);
+	drawing_information=(struct Map_drawing_information *)NULL;
 	if (map)
 	{
 #if defined (UNEMAP_USE_3D) 
@@ -7324,15 +7372,98 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 			return_code=draw_map_3d(map);	
 			/*???JW.  update_colour_map_unemap() necessary for old style colour strip
 				at top of mapping window. Will become obselete when only cmgui methods
-				used */						
+				used (ha ha) */						
 			update_colour_map_unemap(map,drawing);		
 		}
 		else
-		{					
+		{	
+			/* 2d map for 2d projection */		
+			drawing_information=map->drawing_information;
+			drawing_information->map_width=drawing->width;
+			drawing_information->map_height=drawing->height;				
+			drawing_information->x_offset=0;
+			drawing_information->y_offset=0;
 			return_code=draw_map_2d(map,recalculate,drawing);		
-		}	
+#if defined (NEW_CODE)
+			/*works, but needs tidying,extending before ready for the big time*/
+			{
+				float old_map_frame_start_time;
+				int num_maps,rows,cols,count,x_step,y_step,i,j;				
+				struct Electrical_imaging_event *event;
+				struct Map_drawing_information *drawing_information;
+				struct Signal *signal;
+				struct Signal_buffer *buffer;
+				int *times,*old_map_potential_time;
+				struct Rig *rig;
+				struct Device *device;			
+
+				drawing_information=map->drawing_information;
+				if((event=*map->first_eimaging_event)&&
+					(ELECTRICAL_IMAGING==*map->analysis_mode)&&(*(map->type)==POTENTIAL))
+				{					
+					rig= *(map->rig_pointer);
+					device=*(rig->devices);
+					signal=(device)->signal;
+					buffer=signal->buffer;
+					times=buffer->times;
+					get_number_of_maps_x_step_y_step_rows_cols(map,drawing,&num_maps,
+						&x_step,&y_step,&rows,&cols);	 
+					drawing_information->map_width=drawing->width/rows;
+					drawing_information->map_height=drawing->height/cols;				
+					drawing_information->x_offset=0;
+					drawing_information->y_offset=0;
+					count=0;
+					i=1;
+					j=1;
+					/*cache map->potential_time, map->frame_start_time as we're altering */
+					/*these from Electrical imaging events */
+					old_map_potential_time=map->potential_time;
+					old_map_frame_start_time=map->frame_start_time;
+					while(count<num_maps)
+					{																		
+						map->potential_time=&event->time;					
+						map->frame_start_time=(int)((float)((times)[event->time])
+								*1000./buffer->frequency+0.5);
+						return_code=draw_map_2d(map,recalculate,drawing);
+						/* remove offset on the electrodes */
+						for(i=0;i<map->number_of_electrodes;i++)
+						{
+							map->electrode_x[i]-=drawing_information->x_offset;
+							map->electrode_y[i]-=drawing_information->y_offset;
+						}						
+						drawing_information->x_offset+=x_step;						
+						count++;
+						j++;
+						if(j>rows)
+						{
+							j=1;
+							drawing_information->x_offset=0;
+							drawing_information->y_offset+=y_step;
+						}	
+						event=event->next;					
+					}	
+					/*restore  map->potential_time, map->frame_start_time */
+					map->potential_time=old_map_potential_time;
+					map->frame_start_time=old_map_frame_start_time;
+				}
+				else
+				{	
+					drawing_information->map_width=drawing->width;
+					drawing_information->map_height=drawing->height;				
+					drawing_information->x_offset=0;
+					drawing_information->y_offset=0;
+					return_code=draw_map_2d(map,recalculate,drawing);		
+				}
+			}
+#endif /* NEW_CODE*/
+		}	/*defined( UNEMAP_USE_3D) */
 #else
-		/* old, 2d map */
+		/* 2d map */
+		drawing_information=map->drawing_information;
+		drawing_information->map_width=drawing->width;
+		drawing_information->map_height=drawing->height;				
+		drawing_information->x_offset=0;
+		drawing_information->y_offset=0;
 		return_code=draw_map_2d(map,recalculate,drawing);
 #endif /*defined( UNEMAP_USE_3D) */	
 	}
@@ -7355,7 +7486,7 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 
 int draw_map_2d(struct Map *map,int recalculate,struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED : 5 March 2001
+LAST MODIFIED : 12 July 2001
 
 DESCRIPTION :
 This function draws the <map> in the <drawing>.  If <recalculate> is >0 then the
@@ -7380,6 +7511,7 @@ comparison with 3D maps.
 	char *first=(char *)NULL;
 	char *name=(char *)NULL;
 	char *temp_char=(char *)NULL;
+	char title[12];
 	double integral;
 	Display *display=(Display *)NULL;
 	enum Map_type map_type;
@@ -7394,8 +7526,9 @@ comparison with 3D maps.
 		f_value,height,h01_u,h01_v,h02_u,h02_v,h11_u,h11_v,h12_u,h12_v,lambda,
 		max_f,maximum_value,min_f,minimum_value,mu,mu_1,mu_2,mu_3,mu_4,pi,
 		pi_over_2,pixel_aspect_ratio,proportion,r,range_f,sin_mu_hat,sin_theta_hat,
-		theta,theta_1,theta_2,theta_3,theta_4,two_pi,u,v,width,xi_1,xi_2,x_screen,
-		x_screen_left,x_screen_step,y_screen,y_screen_top,y_screen_step;
+		theta,theta_1,theta_2,theta_3,theta_4,title_x,title_y,two_pi,u,v,width,
+		xi_1,xi_2,x_screen,x_screen_left,x_screen_step,y_screen,y_screen_top,
+		y_screen_step;
 	float *d2fdxdy=(float *)NULL;
 	float *dfdx=(float *)NULL;
 	float *dfdy=(float *)NULL;
@@ -7439,7 +7572,7 @@ comparison with 3D maps.
 #if defined (NO_ALIGNMENT)
 		,y_string
 #endif /* defined (NO_ALIGNMENT) */
-		;
+		,x_off,y_off;
 	int *screen_x=(int *)NULL;
 	int *screen_y=(int *)NULL;
 	int *start_x=(int *)NULL;
@@ -7512,6 +7645,13 @@ comparison with 3D maps.
 		number_of_contours=map->number_of_contours;
 		drawing_width=drawing->width;
 		drawing_height=drawing->height;
+
+		/*!!jw*/ 		
+		drawing_width=drawing_information->map_width;
+		drawing_height=drawing_information->map_height;		
+		x_off=drawing_information->x_offset;
+		y_off=drawing_information->y_offset;									
+																					
 		background_pixel=drawing_information->background_drawing_colour;
 		spectrum_pixels=drawing_information->spectrum_colours;
 		boundary_pixel=drawing_information->boundary_colour;
@@ -9135,10 +9275,10 @@ comparison with 3D maps.
 										(pixel_value=frame->pixel_values))
 									{
 										if (SHOW_COLOUR==map->colour_option)
-										{
+										{																				
 											XPSPutImage(display,drawing->pixel_map,
 												(drawing_information->graphics_context).copy,
-												frame_image,0,0,0,0,drawing_width,drawing_height);
+												frame_image,0,0,x_off,y_off,drawing_width,drawing_height);
 											draw_boundary=0;
 										}
 										else
@@ -9148,10 +9288,10 @@ comparison with 3D maps.
 												draw_boundary=1;
 											}
 											else
-											{
+											{									
 												XPSPutImage(display,drawing->pixel_map,
 													(drawing_information->graphics_context).copy,
-													frame_image,0,0,0,0,drawing_width,drawing_height);
+													frame_image,0,0,x_off,y_off,drawing_width,drawing_height);
 												draw_boundary=0;
 											}
 										}
@@ -9176,7 +9316,7 @@ comparison with 3D maps.
 												contour_colour;
 											background_pixel_value=frame->minimum;
 											boundary_pixel_value=frame->maximum;
-											for (j=1;j<drawing_height;j++)
+											for (j=1+y_off;j<drawing_height+y_off;j++)
 											{
 												f_i_jm1= *pixel_value;
 												if ((background_pixel_value<=f_i_jm1)&&
@@ -9199,7 +9339,7 @@ comparison with 3D maps.
 													valid_i_j=0;
 												}
 												pixel_value++;
-												for (i=1;i<drawing_width;i++)
+												for (i=1+x_off;i<drawing_width+x_off;i++)
 												{
 													valid_im1_jm1=valid_i_jm1;
 													f_im1_jm1=f_i_jm1;
@@ -9317,18 +9457,12 @@ comparison with 3D maps.
 																						(f_im1_jm1-f_i_jm1),(float)(j-1),
 																						(float)(i-1),(float)j-(a-f_im1_j)/
 																						(f_im1_jm1-f_im1_j));
-																					/*																						i-(int)((a-f_i_jm1)/
-																																												(f_im1_jm1-f_i_jm1)+0.5),j-1,
-																																												i-1,j-(int)((a-f_im1_j)/
-																																												(f_im1_jm1-f_im1_j)+0.5));*/
 																					XPSDrawLineFloat(display,
 																						drawing->pixel_map,graphics_context,
 																						(float)i-(a-f_i_j)/(f_im1_j-f_i_j),
-																						(float)j,(float)i,
+																						(float)j,
+																						(float)i,
 																						(float)j-(a-f_i_j)/(f_i_jm1-f_i_j));
-																					/*																						i-(int)((a-f_i_j)/(f_im1_j-f_i_j)+
-																																												0.5),j,i,j-(int)((a-f_i_j)/
-																																												(f_i_jm1-f_i_j)+0.5));*/
 																				}
 																				else
 																				{
@@ -9341,10 +9475,6 @@ comparison with 3D maps.
 																							(f_im1_jm1-f_i_jm1),(float)(j-1),
 																							(float)i,(float)j-(a-f_i_j)/
 																							(f_i_jm1-f_i_j));
-																						/*																							i-(int)((a-f_i_jm1)/
-																																														(f_im1_jm1-f_i_jm1)+0.5),j-1,
-																																														i,j-(int)((a-f_i_j)/
-																																														(f_i_jm1-f_i_j)+0.5));*/
 																						XPSDrawLineFloat(display,
 																							drawing->pixel_map,
 																							graphics_context,
@@ -9352,10 +9482,6 @@ comparison with 3D maps.
 																							(f_im1_j-f_i_j),
 																							(float)j,(float)(i-1),(float)j-
 																							(a-f_im1_j)/(f_im1_jm1-f_im1_j));
-																						/*																							i-(int)((a-f_i_j)/(f_im1_j-f_i_j)+
-																																														0.5),j,i-1,j-
-																																														(int)((a-f_im1_j)/
-																																														(f_im1_jm1-f_im1_j)+0.5));*/
 																					}
 																					else
 																					{
@@ -9365,11 +9491,7 @@ comparison with 3D maps.
 																							(float)(i-1),(float)j-(a-f_im1_j)/
 																							(f_im1_jm1-f_im1_j),(float)i,
 																							(float)j-(a-f_i_j)/
-																							(f_i_jm1-f_i_j));
-																						/*																							i-1,j-(int)((a-f_im1_j)/
-																																														(f_im1_jm1-f_im1_j)+0.5),i,j-
-																																														(int)((a-f_i_j)/(f_i_jm1-f_i_j)+
-																																														0.5));*/
+																							(f_i_jm1-f_i_j));																
 																						XPSDrawLineFloat(display,
 																							drawing->pixel_map,
 																							graphics_context,
@@ -9377,10 +9499,6 @@ comparison with 3D maps.
 																							(f_im1_jm1-f_i_jm1),(float)(j-1),
 																							(float)i-(a-f_i_j)/
 																							(f_im1_j-f_i_j),(float)j);
-																						/*																							i-(int)((a-f_i_jm1)/
-																																														(f_im1_jm1-f_i_jm1)+0.5),j-1,
-																																														i-(int)((a-f_i_j)/(f_im1_j-f_i_j)+
-																																														0.5),j);*/
 																					}
 																				}
 																			}
@@ -9392,10 +9510,6 @@ comparison with 3D maps.
 																					(f_im1_jm1-f_i_jm1),(float)(j-1),
 																					(float)(i-1),(float)j-(a-f_im1_j)/
 																					(f_im1_jm1-f_im1_j));
-																				/*																					i-(int)((a-f_i_jm1)/
-																																										(f_im1_jm1-f_i_jm1)+0.5),j-1,i-1,j-
-																																										(int)((a-f_im1_j)/(f_im1_jm1-f_im1_j)+
-																																										0.5));*/
 																			}
 																		}
 																		else
@@ -9409,9 +9523,6 @@ comparison with 3D maps.
 																					(f_im1_jm1-f_i_jm1),(float)(j-1),
 																					(float)i,
 																					(float)j-(a-f_i_j)/(f_i_jm1-f_i_j));
-																				/*																					i-(int)((a-f_i_jm1)/(f_im1_jm1-f_i_jm1)+
-																																										0.5),j-1,i,j-
-																																										(int)((a-f_i_j)/(f_i_jm1-f_i_j)+0.5));*/
 																			}
 																			else
 																			{
@@ -9424,10 +9535,6 @@ comparison with 3D maps.
 																						(f_im1_jm1-f_i_jm1),(float)(j-1),
 																						(float)i-(a-f_i_j)/
 																						(f_im1_j-f_i_j),(float)j);
-																					/*																						i-(int)((a-f_i_jm1)/
-																																												(f_im1_jm1-f_i_jm1)+0.5),j-1,
-																																												i-(int)((a-f_i_j)/(f_im1_j-f_i_j)+
-																																												0.5),j);*/
 																				}
 																			}
 																		}
@@ -9445,9 +9552,6 @@ comparison with 3D maps.
 																					(float)(i-1),(float)j-(a-f_im1_j)/
 																					(f_im1_jm1-f_im1_j),(float)i,
 																					(float)j-(a-f_i_j)/(f_i_jm1-f_i_j));
-																				/*																					i-1,j-(int)((a-f_im1_j)/
-																																										(f_im1_jm1-f_im1_j)+0.5),i,j-
-																																										(int)((a-f_i_j)/(f_i_jm1-f_i_j)+0.5));*/
 																			}
 																			else
 																			{
@@ -9459,10 +9563,6 @@ comparison with 3D maps.
 																						(float)(i-1),(float)j-(a-f_im1_j)/
 																						(f_im1_jm1-f_im1_j),(float)i-
 																						(a-f_i_j)/(f_im1_j-f_i_j),(float)j);
-																					/*																						i-1,j-(int)((a-f_im1_j)/
-																																												(f_im1_jm1-f_im1_j)+0.5),i-
-																																												(int)((a-f_i_j)/(f_im1_j-f_i_j)+
-																																												0.5),j);*/
 																				}
 																			}
 																		}
@@ -9478,9 +9578,6 @@ comparison with 3D maps.
 																					graphics_context,(float)i-(a-f_i_j)/
 																					(f_im1_j-f_i_j),(float)j,(float)i,
 																					(float)j-(a-f_i_j)/(f_i_jm1-f_i_j));
-																				/*																					i-(int)((a-f_i_j)/(f_im1_j-f_i_j)+
-																																										0.5),j,i,j-(int)((a-f_i_j)/
-																																										(f_i_jm1-f_i_j)+0.5));*/
 																			}
 																		}
 																	}
@@ -9532,10 +9629,10 @@ comparison with 3D maps.
 										}
 									}
 									else
-									{
-										XPSPutImage(display,drawing->pixel_map,
-											(drawing_information->graphics_context).copy,
-											frame_image,0,0,0,0,drawing_width,drawing_height);
+									{										
+											XPSPutImage(display,drawing->pixel_map,
+												(drawing_information->graphics_context).copy,
+												frame_image,0,0,x_off,y_off,drawing_width,drawing_height);
 									}
 								}
 								else
@@ -9791,7 +9888,7 @@ comparison with 3D maps.
 												if (draw_contour_value)
 												{
 													XPSDrawString(display,drawing->pixel_map,
-														graphics_context,x_pixel+x_offset,y_pixel+y_offset,
+														graphics_context,x_pixel+x_offset+x_off,y_pixel+y_offset+y_off,
 														value_string,string_length);
 												}
 											}
@@ -10146,39 +10243,6 @@ comparison with 3D maps.
 													}
 													if ((0<=xi_1)&&(xi_1<=1)&&(0<=xi_2)&&(xi_2<=1))
 													{
-														/*???debug */
-														/*printf("k=%d, l=%d\n",k,l);
-															printf("xi_1=%g, xi_2=%g\n",xi_1,xi_2);
-															printf("mu_1=%g, mu_2=%g, mu_3=%g, mu_4=%g\n",
-																local_fibre_node_1->mu,local_fibre_node_2->mu,
-																local_fibre_node_3->mu,local_fibre_node_4->mu);
-															printf("mu_1=%g, mu_2=%g, mu_3=%g, mu_4=%g\n",
-																mu_1,mu_2,mu_3,mu_4);
-															printf(
-																"theta_1=%g, theta_2=%g, theta_3=%g, theta_4=%g\n",
-																local_fibre_node_1->theta,
-																local_fibre_node_2->theta,
-																local_fibre_node_3->theta,
-																local_fibre_node_4->theta);
-															printf(
-																"theta_1=%g, theta_2=%g, theta_3=%g, theta_4=%g\n",
-																theta_1,theta_2,theta_3,theta_4);
-															printf("x_pixel=%d, y_pixel=%d\n",x_pixel,
-																y_pixel);
-															printf("mu=%g, theta=%g\n",mu,theta);
-															printf(
-																"dxdmu=%g, dxdtheta=%g, dydmu=%g, dydtheta=%g\n",
-																dxdmu,dxdtheta,dydmu,dydtheta);*/
-#if defined (OLD_CODE)
-														dmudxi1=mu_2+mu_4*xi_2;
-														dmudxi2=mu_3+mu_4*xi_1;
-														dthetadxi1=theta_2+theta_4*xi_2;
-														dthetadxi2=theta_3+theta_4*xi_1;
-														/*???debug */
-														/*printf(
-															"dmudxi1=%g, dmudxi2=%g, dthetadxi1=%g, dthetadxi2=%g\n",
-															dmudxi1,dmudxi2,dthetadxi1,dthetadxi2);*/
-#endif /* defined (OLD_CODE) */
 														/* calculate the fibre angle */
 														fibre_angle_1=local_fibre_node_1->fibre_angle;
 														fibre_angle_2=local_fibre_node_2->fibre_angle;
@@ -10191,16 +10255,6 @@ comparison with 3D maps.
 																	fibre_angle_3)*xi_1)*xi_2;
 														/* calculate the fibre vector in element
 															coordinates*/
-#if defined (OLD_CODE)
-														a=cos(fibre_angle);
-														b=sin(fibre_angle);
-														/*???debug */
-														/*printf("fibre angle=%g, a=%g, b=%g\n",fibre_angle,
-															a,b);*/
-														/* transform to prolate */
-														c=dmudxi1*a+dmudxi2*b;
-														a=dthetadxi1*a+dthetadxi2*b;
-#endif /* defined (OLD_CODE) */
 														a=cos(fibre_angle);
 														c=sin(fibre_angle);
 														/* perform projection and screen scaling */
@@ -10218,8 +10272,10 @@ comparison with 3D maps.
 															fibre_y *= fibre_length;
 															XPSDrawLine(display,drawing->pixel_map,
 																graphics_context,
-																x_pixel-(short)fibre_x,y_pixel-(short)fibre_y,
-																x_pixel+(short)fibre_x,y_pixel+(short)fibre_y);
+																(x_pixel-(short)fibre_x)+x_off,
+																(y_pixel-(short)fibre_y)+y_off,
+																(x_pixel+(short)fibre_x)+x_off,
+																(y_pixel+(short)fibre_y)+y_off);
 														}
 														/*???debug */
 														/*printf("fibre_x=%g, fibre_y=%g\n\n",fibre_x,
@@ -10283,13 +10339,17 @@ comparison with 3D maps.
 														stretch_y[region_number]);
 												/* draw asterisk */
 												XPSDrawLine(display,drawing->pixel_map,graphics_context,
-													x_pixel-2,y_pixel,x_pixel+2,y_pixel);
+													x_pixel-2+x_off,y_pixel+y_off,
+													x_pixel+2+x_off,y_pixel+y_off);
 												XPSDrawLine(display,drawing->pixel_map,graphics_context,
-													x_pixel,y_pixel-2,x_pixel,y_pixel+2);
+													x_pixel+x_off,y_pixel-2+y_off,
+													x_pixel+x_off,y_pixel+2+y_off);
 												XPSDrawLine(display,drawing->pixel_map,graphics_context,
-													x_pixel-2,y_pixel-2,x_pixel+2,y_pixel+2);
+													x_pixel-2+x_off,y_pixel-2+y_off,
+													x_pixel+x_off+2,y_pixel+2+y_off);
 												XPSDrawLine(display,drawing->pixel_map,graphics_context,
-													x_pixel+2,y_pixel+2,x_pixel-2,y_pixel-2);
+													x_pixel+2+x_off,y_pixel+2+y_off,
+													x_pixel+x_off-2,y_pixel-2+y_off);
 												landmark_point += 3;
 											}
 										} break;
@@ -10300,28 +10360,35 @@ comparison with 3D maps.
 												(int)((max_x[region_number]-min_x[region_number])*0.5*
 												stretch_x[region_number]);
 											XPSDrawLine(display,drawing->pixel_map,graphics_context,
-												x_pixel,start_y[region_number],x_pixel,
+												x_pixel+x_off,
+												start_y[region_number]+y_off,
+												x_pixel+x_off,
 												start_y[region_number]-(int)((max_y[region_number]-
-												min_y[region_number])*stretch_y[region_number]));
+												min_y[region_number])*stretch_y[region_number])+y_off);
 											x_pixel=start_x[region_number];
 											XPSDrawLine(display,drawing->pixel_map,graphics_context,
-												x_pixel,start_y[region_number],x_pixel,
+												x_pixel+x_off,
+												start_y[region_number]+y_off,
+												x_pixel+x_off,
 												start_y[region_number]-(int)((max_y[region_number]-
-												min_y[region_number])*stretch_y[region_number]));
+												min_y[region_number])*stretch_y[region_number])+y_off);
 											/* draw shoulders */
 											y_pixel=start_y[region_number]-
 												(int)((max_y[region_number]-min_y[region_number])*
 												stretch_y[region_number]);
 											XPSDrawLine(display,drawing->pixel_map,graphics_context,
-												start_x[region_number],y_pixel,start_x[region_number]+
-												(int)((max_x[region_number]-min_x[region_number])*
-												0.1875*stretch_x[region_number]),y_pixel-5);
+												start_x[region_number]+x_off,
+												y_pixel+y_off,
+												start_x[region_number]+(int)((max_x[region_number]-
+													min_x[region_number])*0.1875*stretch_x[region_number])+x_off,
+												y_pixel-5+y_off);
 											XPSDrawLine(display,drawing->pixel_map,graphics_context,
 												start_x[region_number]+(int)((max_x[region_number]-
-												min_x[region_number])*0.5*stretch_x[region_number]),
-												y_pixel,start_x[region_number]+
-												(int)((max_x[region_number]-min_x[region_number])*
-												0.3125*stretch_x[region_number]),y_pixel-5);
+												min_x[region_number])*0.5*stretch_x[region_number])+x_off,
+												y_pixel+y_off,
+												start_x[region_number]+(int)((max_x[region_number]-
+													min_x[region_number])*0.3125*stretch_x[region_number])+x_off,
+												y_pixel-5+y_off);
 										} break;
 									}
 								}
@@ -10353,10 +10420,12 @@ comparison with 3D maps.
 										{
 											/* draw plus */
 											XPSFillRectangle(display,drawing->pixel_map,
-												graphics_context,frame->maximum_x-5,frame->maximum_y-1,
+												graphics_context,(frame->maximum_x-5)+x_off,
+												(frame->maximum_y-1)+y_off,
 												11,3);
 											XPSFillRectangle(display,drawing->pixel_map,
-												graphics_context,frame->maximum_x-1,frame->maximum_y-5,
+												graphics_context,(frame->maximum_x-1)+x_off,
+												(frame->maximum_y-5)+y_off,
 												3,11);
 											/* if not animation */
 											if (map->activation_front<0)
@@ -10369,13 +10438,13 @@ comparison with 3D maps.
 #if defined (NO_ALIGNMENT)
 												XTextExtents(font,name,name_length,&direction,&ascent,
 													&descent,&bounds);
-												x_string += (bounds.lbearing-bounds.rbearing+1)/2;
+												x_string += (bounds.lbearing-bounds.rbearing+1)/2+x_off;
 #else /* defined (NO_ALIGNMENT) */
 												SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
 #endif /* defined (NO_ALIGNMENT) */
-												if (frame->maximum_y>drawing_height/2)
+												if ((frame->maximum_y+y_off)>(drawing_height/2 +y_off))
 												{
-													y_string=frame->maximum_y-6;
+													y_string=frame->maximum_y-6 +y_off;
 #if defined (NO_ALIGNMENT)
 													y_string -= descent+1;
 #else /* defined (NO_ALIGNMENT) */
@@ -10384,7 +10453,7 @@ comparison with 3D maps.
 												}
 												else
 												{
-													y_string=frame->maximum_y+6;
+													y_string=frame->maximum_y+6 +y_off;
 #if defined (NO_ALIGNMENT)
 													y_string += ascent+1;
 #else /* defined (NO_ALIGNMENT) */
@@ -10394,26 +10463,26 @@ comparison with 3D maps.
 #if defined (NO_ALIGNMENT)
 												/* make sure that the string doesn't extend outside the
 													 window */
-												if (x_string-bounds.lbearing<0)
+												if (x_string-bounds.lbearing<(0+x_off))
 												{
-													x_string=bounds.lbearing;
+													x_string=bounds.lbearing+x_off;
 												}
 												else
 												{
-													if (x_string+bounds.rbearing>drawing_width)
+													if (x_string+bounds.rbearing>(drawing_width+x_off))
 													{
-														x_string=drawing_width-bounds.rbearing;
+														x_string=(drawing_width+x_off)-bounds.rbearing;
 													}
 												}
-												if (y_string-ascent<0)
+												if (y_string-ascent<(0+y_off))
 												{
-													y_string=ascent;
+													y_string=ascent+y_off;
 												}
 												else
 												{
-													if (y_string+descent>drawing_height)
+													if (y_string+descent>(drawing_height+y_off))
 													{
-														y_string=drawing_height-descent;
+														y_string=(drawing_height+y_off)-descent;
 													}
 												}
 #endif /* defined (NO_ALIGNMENT) */
@@ -10426,7 +10495,8 @@ comparison with 3D maps.
 											/* draw minus */
 											XPSFillRectangle(display,drawing->pixel_map,
 												graphics_context,
-												frame->minimum_x-5,frame->minimum_y-1,11,3);
+												(frame->minimum_x-5)+x_off,
+												(frame->minimum_y-1)+y_off,11,3);
 											/* if not animation */
 											if (map->activation_front<0)
 											{
@@ -10438,13 +10508,13 @@ comparison with 3D maps.
 #if defined (NO_ALIGNMENT)
 												XTextExtents(font,name,name_length,&direction,&ascent,
 													&descent,&bounds);
-												x_string += (bounds.lbearing-bounds.rbearing+1)/2;
+												x_string += (bounds.lbearing-bounds.rbearing+1)/2+x_off;
 #else /* defined (NO_ALIGNMENT) */
 												SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
 #endif /* defined (NO_ALIGNMENT) */
-												if (frame->minimum_y>drawing_height/2)
+												if (frame->minimum_y+y_off>drawing_height/2+y_off)
 												{
-													y_string=frame->minimum_y-6;
+													y_string=frame->minimum_y-6 +y_off;
 #if defined (NO_ALIGNMENT)
 													y_string -= descent+1;
 #else /* defined (NO_ALIGNMENT) */
@@ -10453,7 +10523,7 @@ comparison with 3D maps.
 												}
 												else
 												{
-													y_string=frame->minimum_y+6;
+													y_string=frame->minimum_y+6 +y_off;
 #if defined (NO_ALIGNMENT)
 													y_string += ascent+1;
 #else /* defined (NO_ALIGNMENT) */
@@ -10463,26 +10533,26 @@ comparison with 3D maps.
 #if defined (NO_ALIGNMENT)
 												/* make sure that the string doesn't extend outside the
 													 window */
-												if (x_string-bounds.lbearing<0)
+												if (x_string-bounds.lbearing<(0+x_off))
 												{
-													x_string=bounds.lbearing;
+													x_string=bounds.lbearing+x_off;
 												}
 												else
 												{
-													if (x_string+bounds.rbearing>drawing_width)
+													if (x_string+bounds.rbearing>(drawing_width+x_off))
 													{
-														x_string=drawing_width-bounds.rbearing;
+														x_string=(drawing_width+x_off)-bounds.rbearing;
 													}
 												}
-												if (y_string-ascent<0)
+												if (y_string-ascent<(0+y_off))
 												{
-													y_string=ascent;
+													y_string=ascent+y_off;
 												}
 												else
 												{
-													if (y_string+descent>drawing_height)
+													if (y_string+descent>(drawing_height+y_off))
 													{
-														y_string=drawing_height-descent;
+														y_string=(drawing_height+y_off)-descent;
 													}
 												}
 #endif /* defined (NO_ALIGNMENT) */
@@ -10498,7 +10568,49 @@ comparison with 3D maps.
 							{
 								display_message(ERROR_MESSAGE,"draw_map_2d.  Invalid frames");
 							}
-						}
+						}									
+						if(map_type==POTENTIAL)
+						{
+							/* write the title,using the frame start time */							
+							title_x=drawing_width/2+x_off;
+							title_y=0;
+							sprintf(title,"%.4g",map->frame_start_time);
+							name_length=strlen(title);
+							XTextExtents(font,title,name_length,&direction,&ascent,&descent,
+								&bounds);
+							x_string= (title_x)+(bounds.lbearing-bounds.rbearing+1)/2;
+							y_string= (title_y)-descent-1;
+							if (x_string-bounds.lbearing<(0+x_off))
+							{
+								x_string=bounds.lbearing+x_off;
+							}
+							else
+							{
+								if (x_string+bounds.rbearing>(drawing_width+x_off))
+								{
+									x_string=(drawing_width+x_off)-bounds.rbearing;
+								}
+							}
+							if (y_string-ascent<(0+y_off))
+							{
+								y_string=ascent+y_off;
+							}
+							else
+							{
+								if (y_string+descent>(drawing_height+y_off))
+								{
+									y_string=(drawing_height+y_off)-descent;
+								}
+							}
+							XPSDrawString(display,drawing->pixel_map,
+								(drawing_information->graphics_context).
+								highlighted_colour,
+#if defined (NO_ALIGNMENT)
+								x_string,y_string,title,name_length);
+#else
+							(title_x),(title_y),name,name_length);
+#endif								
+					  }
 						/* for each electrode draw a 'plus' at its position and its name
 							 above */
 #if !defined (NO_ALIGNMENT)
@@ -10688,7 +10800,9 @@ comparison with 3D maps.
 								}
 							}
 							if (*electrode_drawn)
-							{								
+							{									
+								*screen_x+=x_off;
+								*screen_y+=y_off;
 								marker_size=map->electrodes_marker_size;
 								if (marker_size<1)
 								{
@@ -10737,29 +10851,30 @@ comparison with 3D maps.
 									y_string= (*screen_y)-descent-1;
 									/* make sure that the string doesn't extend outside the
 										 window */
-									if (x_string-bounds.lbearing<0)
+									if (x_string-bounds.lbearing<(0+x_off))
 									{
-										x_string=bounds.lbearing;
+										x_string=bounds.lbearing+x_off;
 									}
 									else
 									{
-										if (x_string+bounds.rbearing>drawing_width)
+										if (x_string+bounds.rbearing>(drawing_width+x_off))
 										{
-											x_string=drawing_width-bounds.rbearing;
+											x_string=(drawing_width+x_off)-bounds.rbearing;
 										}
 									}
-									if (y_string-ascent<0)
+									if (y_string-ascent<(0+y_off))
 									{
-										y_string=ascent;
+										y_string=ascent+y_off;
 									}
 									else
 									{
-										if (y_string+descent>drawing_height)
+										if (y_string+descent>(drawing_height+y_off))
 										{
-											y_string=drawing_height-descent;
+											y_string=(drawing_height+y_off)-descent;
 										}
 									}
 #endif
+
 									if ((*electrode)->highlight)
 									{
 										XPSDrawString(display,drawing->pixel_map,
@@ -11395,6 +11510,12 @@ DESCRIPTION :
 	{
 		if (ALLOCATE(map_drawing_information,struct Map_drawing_information,1))
 		{
+    /*!!jw these will be set up just before draw_map_2d is called */
+     map_drawing_information->map_width=0;
+     map_drawing_information->map_height=0;
+     map_drawing_information->x_offset=0;
+     map_drawing_information->y_offset=0;
+
 			display=user_interface->display;
 			screen_number=XDefaultScreen(display);
 			/* the drawable has to have the correct depth and screen */

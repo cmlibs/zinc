@@ -120,9 +120,9 @@ The fields are filed in with set_unemap_package_fields()
 #if defined (UNEMAP_USE_NODES)
 			package->display_end_time_field=(struct FE_field *)NULL;
 			package->display_start_time_field=(struct FE_field *)NULL;
-			package->highlight_field=(struct FE_field *)NULL;
+			package->highlight_field=(struct FE_field *)NULL;		
+#endif /* defined (UNEMAP_USE_NODES)*/	
 			package->default_torso_name=(char *)NULL;
-#endif /* defined (UNEMAP_USE_NODES)*/
 			package->channel_number_field=(struct FE_field *)NULL;
 			package->read_order_field=(struct FE_field *)NULL;
 			package->map_fit_field=(struct FE_field *)NULL;			

@@ -869,7 +869,7 @@ the devices in the device list.
 		unemap_package=the_region->unemap_package;
 		if(the_region&&unemap_package)
 		{			
-			DEACCESS(Map_3d_package)(&((*region)->map_3d_package)); 		
+			DEACCESS(Map_3d_package)(&((*region)->map_3d_package)); 
 			if(the_region->rig_node_group)
 			{
 				free_unemap_package_rig_node_group(unemap_package,&(the_region->rig_node_group));
@@ -877,7 +877,8 @@ the devices in the device list.
 			/* following will deaccess the rig_node_group */	
 			if(the_region->unrejected_node_group)
 			{
-				free_unemap_package_rig_node_group(unemap_package,&(the_region->unrejected_node_group));
+				free_unemap_package_rig_node_group(unemap_package,
+					&(the_region->unrejected_node_group));
 			}			
 			computed_field_manager=get_unemap_package_Computed_field_manager(unemap_package);
 			fe_field_manager=get_unemap_package_FE_field_manager(unemap_package);
@@ -5995,3 +5996,340 @@ DESCRIPTION :
 	return (return_code);
 } /* destroy_all_events */
 
+struct Electrical_imaging_event *create_Electrical_imaging_event(int time) 
+/*******************************************************************************
+LAST MODIFIED : 31 May 2001
+
+DESCRIPTION : create a Electrical_imaging_event at <time>
+==============================================================================*/
+{
+	struct Electrical_imaging_event *event;
+
+	ENTER(create_Electrical_imaging_event);
+	if (ALLOCATE(event,struct Electrical_imaging_event,1))
+	{	
+		event->time=time;
+		event->is_current_event=0;
+		event->previous=(struct Electrical_imaging_event *)NULL;
+		event->next=(struct Electrical_imaging_event *)NULL;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"create_Electrical_imaging_event.  Could not allocate memory");
+	}
+	LEAVE;
+	return (event);
+} /* create_Electrical_imaging_event */
+
+int print_Electrical_imaging_event_list(
+	struct Electrical_imaging_event *first_list_event)
+/*******************************************************************************
+LAST MODIFIED :  31 May 2001
+
+DESCRIPTION : Debugging function.
+==============================================================================*/
+{
+	int return_code;
+	struct Electrical_imaging_event *event;
+
+	ENTER(print_Electrical_imaging_event_list);
+	event=(struct Electrical_imaging_event *)NULL;
+	if(event=first_list_event)
+	{
+		return_code=1;	
+		while(event)
+		{
+			printf("Electrical_imaging_event time = %d\n",
+				event->time);
+			event=event->next;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"print_Electrical_imaging_event_list. no list");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* print_Electrical_imaging_event_list */
+
+int count_Electrical_imaging_events(
+	struct Electrical_imaging_event *first_list_event)
+/*******************************************************************************
+LAST MODIFIED :  4 July 2001
+
+DESCRIPTION : Count and return the number of evens in the list beginning at 
+<first_list_event>
+==============================================================================*/
+{
+	int num_events;
+	struct Electrical_imaging_event *event;
+
+	ENTER(count_Electrical_imaging_events);
+	event=(struct Electrical_imaging_event *)NULL;
+	if(event=first_list_event)
+	{
+		num_events=0;	
+		while(event)
+		{
+			num_events++;
+			event=event->next;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"count_Electrical_imaging_events. no list");
+		num_events=0;
+	}
+	LEAVE;
+	return(num_events);
+}/* count_Electrical_imaging_events */
+
+int add_Electrical_imaging_event_to_sorted_list(
+	struct Electrical_imaging_event **first_list_event,
+	struct Electrical_imaging_event *new_event)
+/*******************************************************************************
+LAST MODIFIED :  31 May 2001
+
+DESCRIPTION : adds <new_event> to the event list <first_list_event>,
+inserting it so that the list is in order of event->time.
+If 2 events have the same time, they will both exist in the list, stored 
+consecutively. 
+==============================================================================*/
+{
+	int placed,return_code;
+	struct Electrical_imaging_event *event,*next_event;
+
+	ENTER(add_Electrical_imaging_event_to_sorted_list);
+	event=(struct Electrical_imaging_event *)NULL;
+	next_event=(struct Electrical_imaging_event *)NULL;
+	if(new_event)
+	{
+		return_code=1;
+		placed=0;
+		if(event=*first_list_event)
+		{	
+			/* find place to insert event */
+			/*at beginning of list?*/
+			if(new_event->time<
+				event->time)
+			{	
+				new_event->previous=(struct Electrical_imaging_event *)NULL;
+				new_event->next=event;
+				event->previous=new_event;
+				*first_list_event=new_event;
+				placed=1;
+			}
+			else
+			{
+				/*in middle or at end of list?*/
+				do
+				{
+					if(new_event->time>=
+						event->time)
+					{				
+						if(!event->next)
+						{
+							/* add the new one on the end of list */		
+							event->next=new_event;
+							new_event->previous=event;
+							new_event->next=(struct Electrical_imaging_event *)NULL;
+							placed=1;
+						}
+						else
+						{
+							next_event=event->next;
+							if(new_event->time<next_event->time)
+							{
+								/* insert in the middle of list */								
+								event->next=new_event;
+								new_event->previous=event;
+								new_event->next=next_event;
+								next_event->previous=new_event;
+								placed=1;
+							}
+						}
+					}				
+				}while((event=event->next)&&(!placed));
+			}
+		}
+		else
+		{	
+			/* first entry in the list */
+			*first_list_event=new_event;
+			new_event->previous=(struct Electrical_imaging_event *)NULL;
+			new_event->next=(struct Electrical_imaging_event *)NULL;
+			placed=1;
+		}
+	}
+	else
+	{
+		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"add_Electrical_imaging_event_to_sorted_list. invalid arguments");
+	}
+	if(!placed)
+	{
+		return_code=0;
+		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"add_Electrical_imaging_event_to_sorted_list. error adding to list");
+	}
+	LEAVE;
+	return(return_code);
+} /* add_Electrical_imaging_event_to_sorted_list */
+
+int remove_Electrical_imaging_event_from_list(
+	struct Electrical_imaging_event **first_list_event,
+	struct Electrical_imaging_event *event_to_remove)
+/*******************************************************************************
+LAST MODIFIED :  14 June 2001
+
+DESCRIPTION : remove the <event_to_remove> from the list of events whose first 
+event is <first_list_event>.
+==============================================================================*/
+{
+	int return_code,found;
+	struct Electrical_imaging_event *event,*next_event,*prev_event;
+
+	ENTER(remove_Electrical_imaging_event_from_list);
+	event=(struct Electrical_imaging_event *)NULL;
+	next_event=(struct Electrical_imaging_event *)NULL;
+	prev_event=(struct Electrical_imaging_event *)NULL;
+	if(event_to_remove&&(first_list_event)&&(event=*first_list_event))
+	{
+		return_code=0;	
+		found=0;
+		/*find event in list*/
+		while(event&&(!found))
+		{
+			if(event_to_remove==event)
+			{
+				found=1;
+			}
+			event=event->next;
+		}
+		if(!found)
+		{
+			/* should this be an error? I think so.*/
+			return_code=0;
+			display_message(ERROR_MESSAGE,
+				"remove_Electrical_imaging_event_from_list. event not in list ");
+		}
+		else
+		{
+			return_code=1;
+			
+			/* remove event from list */
+			prev_event=event_to_remove->previous;
+			next_event=event_to_remove->next;
+			if(prev_event==NULL)
+			{
+				/* first event in list*/
+				if(next_event)
+				{
+					next_event->previous=(struct Electrical_imaging_event *)NULL;
+				}
+				*first_list_event=next_event;
+			}
+			else if(next_event==NULL)
+			{
+				/* last event in list*/
+				prev_event->next=(struct Electrical_imaging_event *)NULL;
+			}
+			else
+			{
+				/* in the middle of the list */
+				prev_event->next=next_event;
+				next_event->previous=prev_event;
+			}
+			DEALLOCATE(event_to_remove);
+		}	
+	}
+	else
+	{
+		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"remove_Electrical_imaging_event_from_list. invalid arguments");
+	}
+	LEAVE;
+	return(return_code);
+} /* remove_Electrical_imaging_event_from_list */
+
+int add_Electrical_imaging_event_to_unsorted_list(
+	struct Electrical_imaging_event **first_list_event,
+	struct Electrical_imaging_event *new_event)
+/*******************************************************************************
+LAST MODIFIED : 31 May 2001
+
+DESCRIPTION :adds <new_event> to the end of the event list 
+<first_list_event>. See also add_Electrical_imaging_event_to_sorted_list
+==============================================================================*/
+{
+	int return_code;
+	struct Electrical_imaging_event *event;
+
+	ENTER(add_Electrical_imaging_event_to_unsorted_list);
+	event=(struct Electrical_imaging_event *)NULL;
+	if(new_event)
+	{
+		return_code=1;
+		if(event=*first_list_event)
+		{
+			/* find last event*/
+			while(event->next)
+			{
+				event=event->next;
+			}							
+			/* add the new one on the end */		
+			event->next=new_event;
+			new_event->previous=event;
+		}
+		else
+		{	
+			/* first entry in the list */
+			*first_list_event=new_event;
+		}
+	}
+	else
+	{
+		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"add_Electrical_imaging_event_to_unsorted_list. invalid arguments");
+	}
+	LEAVE;
+	return(return_code);
+} /* add_Electrical_imaging_event_to_unsorted_list */
+
+int destroy_Electrical_imaging_event_list(
+	struct Electrical_imaging_event **first_event)
+/*******************************************************************************
+LAST MODIFIED : 31 May 2001
+
+DESCRIPTION :
+This function frees the memory associated with the event list starting at
+<**first_event> and sets <*first_event> to NULL.
+==============================================================================*/
+{
+	int return_code;
+	struct Electrical_imaging_event *event,*next_event;
+
+	ENTER(destroy_Electrical_imaging_event_list);
+	return_code=1;
+	if (first_event&&(event= *first_event))
+	{
+		while(event)
+		{
+			next_event=event->next;
+			DEALLOCATE(event);
+			event=next_event;
+		} 
+		*first_event=(struct Electrical_imaging_event *)NULL;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* destroy_Electrical_imaging_event_list */

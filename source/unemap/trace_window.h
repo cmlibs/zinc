@@ -24,23 +24,6 @@ DESCRIPTION :
 Global types
 ------------
 */
-enum Signal_analysis_mode 
-/*******************************************************************************
-LAST MODIFIED : 9 February 2001
-
-DESCRIPTION :
-The type of signal analysis being performed.
-==============================================================================*/
-{
-	ELECTRICAL_IMAGING,
-	EVENT_DETECTION,
-	FREQUENCY_DOMAIN,
-	POWER_SPECTRA,
-	CROSS_CORRELATION,
-	AUTO_CORRELATION,
-	FILTERING,
-	BEAT_AVERAGING
-}; /* enum Signal_analysis_mode */
 
 enum Inverse_electrodes_mode
 /*******************************************************************************
@@ -571,23 +554,9 @@ the Cardiac interval on the electrical imaging pane. P, T QRS, etc
 	struct Cardiac_interval *next,*previous;
 }; /* struct Cardiac_interval */
 
-struct Electrical_imaging_event
-/*******************************************************************************
-LAST MODIFIED : 31 May 2001
-
-DESCRIPTION :
-Events (times) on the cardiac_intervals_device signal.
-Used to generate maps.
-==============================================================================*/
-{
-	GC graphics_context; /*colour*/
-	int time,is_current_event; /* time an array index,is_current_event a flag  */
-	struct Electrical_imaging_event *next,*previous;
-}; /* Electrical_imaging_event */
-
 struct Trace_window
 /*******************************************************************************
-LAST MODIFIED : 31 May 2001
+LAST MODIFIED : 4 July 2001
 
 DESCRIPTION :
 The trace window object.
@@ -598,11 +567,11 @@ The trace window object.
 	Widget activation,shell,window,paned_window;
 	enum Calculate_signal_mode calculate_signal_mode;
 	struct Cardiac_interval *first_interval;
-	struct Electrical_imaging_event *first_eimaging_event; 
+	struct Electrical_imaging_event **first_eimaging_event; 
 	enum Inverse_wave_mode inverse_wave_mode;
 	enum Inverse_electrodes_mode inverse_electrodes_mode;
 	enum Inverse_potential_activation_mode inverse_pot_act_mode;
-	enum Signal_analysis_mode analysis_mode;
+	enum Signal_analysis_mode *analysis_mode;
 	struct Trace_window_menu menu;
 	struct Trace_window_area_1 area_1;
 	struct Trace_window_area_2 area_2;
@@ -669,7 +638,7 @@ DESCRIPTION : draws the search box
 ==============================================================================*/
 
 int open_trace_window(struct Trace_window **trace_address,Widget parent,
-	Pixel identifying_colour,enum Signal_analysis_mode analysis_mode,
+	Pixel identifying_colour,enum Signal_analysis_mode *analysis_mode,
 	enum Event_detection_algorithm *detection,
 	enum Event_detection_objective *objective,enum Datum_type *datum_type,
 	enum Edit_order *edit_order,struct Device ***highlight,
@@ -682,9 +651,10 @@ int open_trace_window(struct Trace_window **trace_address,Widget parent,
 	int *start_search_interval,int **search_interval_divisions,
 	int *end_search_interval,int screen_width,int screen_height,
 	struct Signal_drawing_information *signal_drawing_information,
-	struct User_interface *user_interface);
+	struct User_interface *user_interface,
+	struct Electrical_imaging_event **first_eimaging_event);
 /*******************************************************************************
-LAST MODIFIED : 3 January 2000
+LAST MODIFIED : 4 July 2001
 
 DESCRIPTION :
 If <*trace_address> is NULL, a trace window with the specified <parent> and 
