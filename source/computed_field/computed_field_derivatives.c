@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_derivatives.c
 
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 26 October 2000
 
 DESCRIPTION :
 Implements a computed_field which maintains a graphics transformation 
@@ -964,7 +964,7 @@ static int Computed_field_curl_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
 	struct FE_element *top_level_element, int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 26 October 2000
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
@@ -981,7 +981,7 @@ Evaluate the fields cache at the node.
 		/* 1. Precalculate any source fields that this field depends on,
 			we always want the derivatives and want to use the top_level element */
 		Computed_field_get_top_level_element_and_xi(element, xi, element_dimension,
-			top_level_element, top_level_xi, &top_level_element_dimension);
+			&top_level_element, top_level_xi, &top_level_element_dimension);
 		if (return_code = 
 			Computed_field_evaluate_source_fields_cache_in_element(field, top_level_element,
 				top_level_xi, top_level_element, /*calculate_derivatives*/1))
@@ -1659,7 +1659,7 @@ static int Computed_field_divergence_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
 	struct FE_element *top_level_element, int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 26 October 2000
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
@@ -1676,7 +1676,7 @@ Evaluate the fields cache at the node.
 		/* 1. Precalculate any source fields that this field depends on,
 			we always want the derivatives and want to use the top_level element */
 		Computed_field_get_top_level_element_and_xi(element, xi, element_dimension,
-			top_level_element, top_level_xi, &top_level_element_dimension);
+			&top_level_element, top_level_xi, &top_level_element_dimension);
 		if (return_code = 
 			Computed_field_evaluate_source_fields_cache_in_element(field, top_level_element,
 				top_level_xi, top_level_element, /*calculate_derivatives*/1))
@@ -2353,7 +2353,7 @@ static int Computed_field_gradient_evaluate_cache_in_element(
 	struct Computed_field *field, struct FE_element *element, FE_value *xi,
 	struct FE_element *top_level_element, int calculate_derivatives)
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 26 October 2000
 
 DESCRIPTION :
 Evaluate the fields cache at the node.
@@ -2370,7 +2370,7 @@ Evaluate the fields cache at the node.
 		/* 1. Precalculate any source fields that this field depends on,
 			we always want the derivatives and want to use the top_level element */
 		Computed_field_get_top_level_element_and_xi(element, xi, element_dimension,
-			top_level_element, top_level_xi, &top_level_element_dimension);
+			&top_level_element, top_level_xi, &top_level_element_dimension);
 		if (return_code = 
 			Computed_field_evaluate_source_fields_cache_in_element(field, top_level_element,
 				top_level_xi, top_level_element, /*calculate_derivatives*/1))

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_private.h
 
-LAST MODIFIED : 4 July 2000
+LAST MODIFIED : 26 October 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -401,10 +401,10 @@ Note the order of derivatives:
 ==============================================================================*/
 
 int Computed_field_get_top_level_element_and_xi(struct FE_element *element, 
-	FE_value *xi, int element_dimension, struct FE_element *top_level_element,
+	FE_value *xi, int element_dimension, struct FE_element **top_level_element,
 	FE_value *top_level_xi, int *top_level_element_dimension);
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 26 October 2000
 
 DESCRIPTION :
 Finds the <top_level_element>, <top_level_xi> and <top_level_element_dimension>
