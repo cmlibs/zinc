@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : interpolate.c
 
-LAST MODIFIED : 26 June 2003
+LAST MODIFIED : 12 May 2004
 
 DESCRIPTION :
 Functions for calculating a finite element interpolation to data for a special
@@ -5995,985 +5995,384 @@ Global functions
 ----------------
 */
 struct Interpolation_function *calculate_interpolation_functio(
-	enum Map_type map_type,struct Rig *rig,struct Region *region,
-	int *event_number_address,float potential_time,int *datum_address,
-	int *start_search_interval_address,int *end_search_interval_address,
-	float half_peak_to_peak_interval_width,char undecided_accepted,
+	enum Region_type region_type,int number_of_data,float *x_data_base,
+	float *y_data_base,float *value_data_base,float *weight_data_base,
 	int finite_element_mesh_rows,int finite_element_mesh_columns,
 	float membrane_smoothing,float plate_bending_smoothing)
 /*******************************************************************************
-LAST MODIFIED : 26 June 2003
+LAST MODIFIED : 12 May 2004
 
 DESCRIPTION :
-There are three groups of arguments for this function
-???Put into structures ?
-Input
-1. data - <number_of_data>, <x>, <y>, <value> and <weight>
-2. finite element mesh - <number_of_rows>, <x_mesh>, <number_of_columns> and
-   <y_mesh>
-Output
-3. interpolation function - <f>, <dfdx>, <dfdy> and <d2fdxdy>
-???I'm not sure if memory should be assigned inside this function for these or
-if they should be 1-D or 2-D arrays ?
+Creates an interpolation function from
+1. data - <region_type>, <number_of_data>, <x_data_base>, <y_data_base>,
+	<value_data_base> and <weight_data_base>
+2. mesh - <finite_element_mesh_rows> and <finite_element_mesh_columns>
+3. fitting - <membrane_smoothing> and <plate_bending_smoothing>
 ==============================================================================*/
 {
-	double integral;
+#if defined (DOUBLE_MATRIX)
+	double *matrix_and_right_hand_side=(double *)NULL;
+#else
+	float *matrix_and_right_hand_side=(float *)NULL;
+#endif /* defined (DOUBLE_MATRIX) */		
 #if defined (FIX_APEX)
 #if defined (DOUBLE_MATRIX)
 	double *cosine_apex=(double *)NULL;
 	double *sine_apex=(double *)NULL;
 #else
 	float *cosine_apex=(float *)NULL;
-	float *sine_apex=(float *)NULL;,
-#endif /* defined (DOUBLE_MATRIX) */	  
+	float *sine_apex=(float *)NULL;
+#endif /* defined (DOUBLE_MATRIX) */
 #endif /* defined (FIX_APEX) */
-#if defined (DOUBLE_MATRIX)
-		double *matrix_and_right_hand_side=(double *)NULL;
-#else
-		float *matrix_and_right_hand_side=(float *)NULL;
-#endif /* defined (DOUBLE_MATRIX) */		
-		int after,before,column,datum,end_search_interval,event_number,found,
-			half_peak_to_peak_interval_width_samples,i,i_j,i_jm1,im1_j,im1_jm1,j,
-			middle,number_of_columns,number_of_data,number_of_devices,
-			number_of_equations,number_of_nodes,number_of_rows,number_of_signals,
-			number_of_valid_data,row,start_search_interval;
-		int *times=(int *)NULL;
-		float absolute_error,average_absolute_error,dfdx_i_j,dfdx_i_jm1,
-			dfdx_im1_j,dfdx_im1_jm1,dfdy_i_j,dfdy_i_jm1,dfdy_im1_j,dfdy_im1_jm1,
-			d2fdxdy_i_j,d2fdxdy_i_jm1,d2fdxdy_im1_j,d2fdxdy_im1_jm1,
-			f_approx,f_i_j,f_i_jm1,f_im1_j,f_im1_jm1,f_max,f_min,focus,
-			frequency,height,h01_u,h01_v,h02_u,h02_v,h11_u,h11_v,h12_u,h12_v,lambda,
-			max_data_x,max_data_y,maximum_absolute_error,min_data_x,min_data_y,
-			peak_max_float,peak_min_float,peak_val_float,potential_time_freq,
-			proportion,r,step_x,step_y,u,v,width,x,y,z;
-		float *dfdx=(float *)NULL;
-		float *dfdy=(float *)NULL;
-		float *d2fdxdy=(float *)NULL;
-		float *f=(float *)NULL;
-		float *float_value=(float *)NULL;
-		float *value=(float *)NULL;
-		float *value_base=(float *)NULL;
-		float *weight=(float *)NULL;
-		float *weight_base=(float *)NULL;
-		float *x_data=(float *)NULL;
-		float *x_data_base=(float *)NULL;
-		float *x_mesh=(float *)NULL;
-		float *y_data=(float *)NULL;
-		float *y_data_base=(float *)NULL;
-		float *y_mesh=(float *)NULL;
-		Linear_transformation *linear_trans=(Linear_transformation *)NULL;
-		short int peak_max_short,peak_min_short,peak_val_short,
-			*short_int_value=(short int *)NULL;
-		struct Interpolation_function
-			*function=(struct Interpolation_function *)NULL;
-		struct Device **device=(struct Device **)NULL;
-		struct Position *position=(struct Position *)NULL;
-		struct Device_description *description=(struct Device_description *)NULL;
-		struct Event *event=(struct Event *)NULL;
-		struct Signal *signal=(struct Signal *)NULL;
-		struct Signal_buffer *buffer=(struct Signal_buffer *)NULL;
+	float absolute_error,average_absolute_error,*dfdx,dfdx_i_j,dfdx_i_jm1,
+		dfdx_im1_j,dfdx_im1_jm1,*dfdy,dfdy_i_j,dfdy_i_jm1,dfdy_im1_j,dfdy_im1_jm1,
+		*d2fdxdy,d2fdxdy_i_j,d2fdxdy_i_jm1,d2fdxdy_im1_j,d2fdxdy_im1_jm1,*f,
+		f_approx,f_i_j,f_i_jm1,f_im1_j,f_im1_jm1,f_max,f_min,height,h01_u,h01_v,
+		h02_u,h02_v,h11_u,h11_v,h12_u,h12_v,max_data_x,max_data_y,
+		maximum_absolute_error,min_data_x,min_data_y,step_x,step_y,u,v,width,
+		*x_data,*x_mesh,*y_data,*y_mesh;
+	int column,i,i_j,i_jm1,im1_j,im1_jm1,number_of_columns,number_of_equations,
+		number_of_nodes,number_of_rows,number_of_valid_data,row;
+	struct Interpolation_function *function;
 
-		ENTER(calculate_interpolation_functio);
-		if (rig&&region&&(
-			((map_type==SINGLE_ACTIVATION)&&
-			((event_number= *event_number_address)>=1)&&
-			((datum= *datum_address)>=0))||
-			((map_type==ACTIVATION_POTENTIAL)&&
-			((event_number= *event_number_address)>=1))||
-			((map_type==MULTIPLE_ACTIVATION)&&((datum= *datum_address)>=0))||
-			(map_type==POTENTIAL)||
-			(((map_type==INTEGRAL)&&
-			((start_search_interval= *start_search_interval_address)>=0)&&
-			((end_search_interval= *end_search_interval_address)>=
-			start_search_interval)))
-			))
-		{	
-	
-			/* count the number of data points */
-			number_of_devices=rig->number_of_devices;
-			device=rig->devices;
-			number_of_data=0;
-			switch (map_type)
+	ENTER(calculate_interpolation_functio);
+	function=(struct Interpolation_function *)NULL;
+	if ((0<number_of_data)&&x_data_base&&y_data_base&&value_data_base&&
+		weight_data_base)
+	{
+		/* calculate spatial range of data */
+		x_data=x_data_base;
+		y_data=y_data_base;
+		min_data_x= *x_data;
+		max_data_x= min_data_x;
+		min_data_y= *y_data;
+		max_data_y= min_data_y;
+		for (i=number_of_data-1;i>0;i--)
+		{
+			x_data++;
+			y_data++;
+			if (*x_data<min_data_x)
 			{
-				case SINGLE_ACTIVATION:
-				case ACTIVATION_POTENTIAL:
-				{
-					for (i=number_of_devices;i>0;i--)
-					{
-						if (((description=(*device)->description)->type==ELECTRODE)&&
-							(description->region==region)&&(signal=(*device)->signal)&&
-							(buffer=signal->buffer)&&(times=buffer->times)&&
-							(event=signal->first_event))
-						{
-							while (event&&(event->number<event_number))
-							{
-								event=event->next;
-							}
-							if (event&&(event->number==event_number)&&
-								((event->status==ACCEPTED)||(undecided_accepted&&
-								(event->status==UNDECIDED)))&&(0<=event->time)&&
-								(event->time<buffer->number_of_samples))
-							{
-								number_of_data++;
-							}
-						}
-						device++;
-					}
-				} break;
-				case MULTIPLE_ACTIVATION:
-				{
-					for (i=number_of_devices;i>0;i--)
-					{
-						if (((description=(*device)->description)->type==ELECTRODE)&&
-							(description->region==region)&&
-							(event=(*device)->signal->first_event))
-						{
-							while (event&&
-								!((event->status==ACCEPTED)||(undecided_accepted&&
-									(event->status==UNDECIDED))))
-							{
-								event=event->next;
-							}
-							if (event)
-							{
-								number_of_data++;
-							}
-						}
-						device++;
-					}
-				} break;
-				case POTENTIAL:
-				{
-					for (i=number_of_devices;i>0;i--)
-					{
-						if (((description=(*device)->description)->type==ELECTRODE)&&
-							(description->region==region)&&(signal=(*device)->signal)&&
-							((signal->status==ACCEPTED)||
-							(undecided_accepted&&(signal->status==UNDECIDED)))&&
-							(buffer=signal->buffer)&&(times=buffer->times)&&
-							((float)(times[0])*1000/(buffer->frequency)<=potential_time)&&
-							(potential_time<=(float)(times[(buffer->number_of_samples)-1])*
-							1000/(buffer->frequency)))
-						{
-							number_of_data++;
-						}
-						device++;
-					}
-				} break;
-				case INTEGRAL:
-				{
-					for (i=number_of_devices;i>0;i--)
-					{
-						if (((description=(*device)->description)->type==ELECTRODE)&&
-							(description->region==region)&&(signal=(*device)->signal)&&
-							(0<=start_search_interval)&&
-							(start_search_interval<signal->buffer->number_of_samples)&&
-							((signal->status==ACCEPTED)||
-							(undecided_accepted&&(signal->status==UNDECIDED))))
-						{
-							number_of_data++;
-						}
-						device++;
-					}
-				} break;
+				min_data_x= *x_data;
 			}
-			if (number_of_data>0)
+			else
 			{
-				/* allocate memory for storing the data */
-				if ((ALLOCATE(x_data_base,float,number_of_data))&&
-					(ALLOCATE(y_data_base,float,number_of_data))&&
-					(ALLOCATE(value_base,float,number_of_data))&&
-					(ALLOCATE(weight_base,float,number_of_data)))
+				if (*x_data>max_data_x)
 				{
-					/* assign data */
-					x_data=x_data_base;
-					y_data=y_data_base;
-					value=value_base;
-					weight=weight_base;
-					device=rig->devices;
-					frequency=(*device)->signal->buffer->frequency;
-					times=(*device)->signal->buffer->times;
-					if (region->type==SOCK)
+					max_data_x= *x_data;
+				}
+			}
+			if (*y_data<min_data_y)
+			{
+				min_data_y= *y_data;
+			}
+			else
+			{
+				if (*y_data>max_data_y)
+				{
+					max_data_y= *y_data;
+				}
+			}
+		}
+		/*??? adjust range for sock ? */
+		switch (region_type)
+		{
+			case SOCK:
+			{
+				min_data_x=(float)0;
+				/* set max_data_x to 2*pi */
+				max_data_x=(float)(8*atan(1));
+				min_data_y=(float)0;
+			} break;
+			case TORSO:
+			{
+				max_data_x=(float)(4*atan(1));
+				min_data_x= -max_data_x;
+			} break;
+		}
+		if (ALLOCATE(function,struct Interpolation_function,1))
+		{
+			function->region_type=region_type;
+			function->x_mesh=(float *)NULL;
+			function->y_mesh=(float *)NULL;
+			function->f=(float *)NULL;
+			function->dfdx=(float *)NULL;
+			function->dfdy=(float *)NULL;
+			function->d2fdxdy=(float *)NULL;
+			/* create mesh description */
+			number_of_rows=function->number_of_rows=finite_element_mesh_rows;
+			number_of_columns=function->number_of_columns=
+				finite_element_mesh_columns;
+			if ((ALLOCATE(y_mesh,float,number_of_rows+1))&&
+				(ALLOCATE(x_mesh,float,number_of_columns+1)))
+			{
+				function->x_mesh=x_mesh;
+				function->y_mesh=y_mesh;
+				step_x=(max_data_x-min_data_x)/(float)(number_of_columns);
+				step_y=(max_data_y-min_data_y)/(float)(number_of_rows);
+				y_mesh[0]=min_data_y;
+				for (i=1;i<number_of_rows;i++)
+				{
+					y_mesh[i]=y_mesh[i-1]+step_y;
+				}
+				y_mesh[i]=max_data_y;
+				x_mesh[0]=min_data_x;
+				for (i=1;i<number_of_columns;i++)
+				{
+					x_mesh[i]=x_mesh[i-1]+step_x;
+				}
+				x_mesh[i]=max_data_x;
+				number_of_nodes=(number_of_rows+1)*(number_of_columns+1);
+				switch (region_type)
+				{
+					case PATCH:
 					{
-						focus=region->properties.sock.focus;
-						linear_trans=region->properties.sock.linear_transformation;
-					}
-					if (half_peak_to_peak_interval_width>0)
+						number_of_equations=4*number_of_nodes;
+					} break;
+					case SOCK:
 					{
-						half_peak_to_peak_interval_width_samples=(int)(frequency*
-							half_peak_to_peak_interval_width/(float)1000.+0.5);
-					}
-					else
-					{
-						half_peak_to_peak_interval_width_samples=0;
-					}
-					i=number_of_data;
-					switch (map_type)
-					{
-						case SINGLE_ACTIVATION:
-						case ACTIVATION_POTENTIAL:
-						{
-							while (i>0)
-							{
-								if (((description=(*device)->description)->type==ELECTRODE)&&
-									(description->region==region)&&(signal=(*device)->signal)&&
-									(buffer=signal->buffer)&&(times=buffer->times)&&
-									(event=signal->first_event))
-								{
-									while (event&&(event->number<event_number))
-									{
-										event=event->next;
-									}
-									if (event&&(event->number==event_number)&&
-										((event->status==ACCEPTED)||(undecided_accepted&&
-										(event->status==UNDECIDED)))&&(0<=event->time)&&
-										(event->time<buffer->number_of_samples))
-									{
-										/* perform projection */
-										position= &(description->properties.electrode.position);
-										switch (region->type)
-										{
-											case SOCK:
-											{
-												linear_transformation(linear_trans,position->x,
-													position->y,position->z,&x,&y,&z);
-												cartesian_to_prolate_spheroidal(x,y,z,focus,&lambda,
-													y_data,x_data,(float *)NULL);
-											} break;
-											case PATCH:
-											{
-												*x_data=position->x;
-												*y_data=position->y;
-											} break;
-											case TORSO:
-											{
-												cartesian_to_cylindrical_polar(position->x,position->y,
-													position->z,&r,x_data,y_data,(float *)NULL);
-											} break;
-										}
-										switch (map_type)
-										{
-											case SINGLE_ACTIVATION:
-											{
-												/* calculate activation time */
-												*value=(float)(times[event->time]-times[datum])*
-													(float)1000./frequency;
-											} break;
-											case ACTIVATION_POTENTIAL:
-											{
-#if defined (OLD_CODE)
-												switch (signal->buffer->value_type)
-												{
-													case SHORT_INT_VALUE:
-													{
-														*value=(float)(signal->buffer->signals.
-															short_int_values)[(event->time)*
-															(signal->buffer->number_of_signals)+
-															(signal->index)];
-													} break;
-													case FLOAT_VALUE:
-													{
-														*value=(signal->buffer->signals.float_values)[
-															(event->time)*(signal->buffer->number_of_signals)+
-															(signal->index)];
-													} break;
-												}
-												*value=((*value)-((*device)->channel->offset))*
-													((*device)->channel->gain);
-#endif /* defined (OLD_CODE) */
-												/* calculate peak to peak voltage for an interval
-													centred on the activation time */
-												start_search_interval=(event->time)-
-													half_peak_to_peak_interval_width_samples;
-												if (start_search_interval<0)
-												{
-													start_search_interval=0;
-												}
-												end_search_interval=(event->time)+
-													half_peak_to_peak_interval_width_samples;
-												if (end_search_interval>
-													signal->buffer->number_of_samples)
-												{
-													end_search_interval=
-														signal->buffer->number_of_samples;
-												}
-												number_of_signals=signal->buffer->number_of_signals;
-												switch (signal->buffer->value_type)
-												{
-													case SHORT_INT_VALUE:
-													{
-														short_int_value=
-															(signal->buffer->signals.short_int_values)+
-															(start_search_interval*number_of_signals+
-															(signal->index));
-														peak_min_short= *short_int_value;
-														peak_max_short=peak_min_short;
-														for (j=end_search_interval-start_search_interval;
-															j>0;j--)
-														{
-															short_int_value += number_of_signals;
-															peak_val_short= *short_int_value;
-															if (peak_val_short<peak_min_short)
-															{
-																peak_min_short=peak_val_short;
-															}
-															else
-															{
-																if (peak_val_short>peak_max_short)
-																{
-																	peak_max_short=peak_val_short;
-																}
-															}
-														}
-														*value=(float)(peak_max_short-peak_min_short);
-													} break;
-													case FLOAT_VALUE:
-													{
-														float_value=
-															(signal->buffer->signals.float_values)+
-															(start_search_interval*number_of_signals+
-															(signal->index));
-														peak_min_float= *float_value;
-														peak_max_float=peak_min_float;
-														for (j=end_search_interval-start_search_interval;
-															j>0;j--)
-														{
-															float_value += number_of_signals;
-															peak_val_float= *float_value;
-															if (peak_val_float<peak_min_float)
-															{
-																peak_min_float=peak_val_float;
-															}
-															else
-															{
-																if (peak_val_float>peak_max_float)
-																{
-																	peak_max_float=peak_val_float;
-																}
-															}
-														}
-														*value=peak_max_float-peak_min_float;
-													} break;
-												}
-												*value *= (*device)->channel->gain;
-											} break;
-										}
-										x_data++;
-										y_data++;
-										value++;
-										/* assign weight */
-										*weight=(float)1;
-										weight++;
-										i--;
-									}
-								}
-								device++;
-							}
-						} break;
-						case MULTIPLE_ACTIVATION:
-						{
-							while (i>0)
-							{
-								if (((description=(*device)->description)->type==ELECTRODE)&&
-									(description->region==region)&&
-									(event=(*device)->signal->first_event))
-								{
-									found=0;
-									while (event)
-									{
-										if ((event->status==ACCEPTED)||(undecided_accepted&&
-											(event->status==UNDECIDED)))
-										{
-											u=(float)(times[datum]-times[event->time])*(float)1000./
-												frequency;
-											if (found)
-											{
-												if (((v<0)&&(v<u))||((v>=0)&&(0<=u)&&(u<v)))
-												{
-													v=u;
-												}
-											}
-											else
-											{
-												v=u;
-												found=1;
-											}
-										}
-										event=event->next;
-									}
-									if (found)
-									{
-										/* perform projection */
-										position= &(description->properties.electrode.position);
-										switch (region->type)
-										{
-											case SOCK:
-											{
-												linear_transformation(linear_trans,position->x,
-													position->y,position->z,&x,&y,&z);
-												cartesian_to_prolate_spheroidal(x,y,z,focus,&lambda,
-													y_data,x_data,(float *)NULL);
-											} break;
-											case PATCH:
-											{
-												*x_data=position->x;
-												*y_data=position->y;
-											} break;
-											case TORSO:
-											{
-												cartesian_to_cylindrical_polar(position->x,position->y,
-													position->z,&r,x_data,y_data,(float *)NULL);
-											} break;
-										}
-										/* calculate activation time */
-										*value=v;
-										x_data++;
-										y_data++;
-										value++;
-										/* assign weight */
-										*weight=(float)1;
-										weight++;
-										i--;
-									}
-								}
-								device++;
-							}
-						} break;
-						case POTENTIAL:
-						{
-							while (i>0)
-							{
-								if (((description=(*device)->description)->type==ELECTRODE)&&
-									(description->region==region)&&(signal=(*device)->signal)&&
-									((signal->status==ACCEPTED)||
-									(undecided_accepted&&(signal->status==UNDECIDED)))&&
-									(buffer=signal->buffer)&&(times=buffer->times)&&
-									((float)(times[0])*1000/(buffer->frequency)<=potential_time)&&
-									(potential_time<=
-									(float)(times[(buffer->number_of_samples)-1])*1000/
-									(buffer->frequency)))
-								{
-									/* perform projection */
-									position= &(description->properties.electrode.position);
-									switch (region->type)
-									{
-										case SOCK:
-										{
-											linear_transformation(linear_trans,position->x,
-												position->y,position->z,&x,&y,&z);
-											cartesian_to_prolate_spheroidal(x,y,z,focus,&lambda,
-												y_data,x_data,(float *)NULL);
-										} break;
-										case PATCH:
-										{
-											*x_data=position->x;
-											*y_data=position->y;
-										} break;
-										case TORSO:
-										{
-											cartesian_to_cylindrical_polar(position->x,position->y,
-												position->z,&r,x_data,y_data,(float *)NULL);
-										} break;
-									}
-									/* calculate potential */
-									before=0;
-									after=(buffer->number_of_samples)-1;
-									potential_time_freq=potential_time*(buffer->frequency)/1000;
-									while (before+1<after)
-									{
-										middle=(before+after)/2;
-										if (potential_time_freq<times[middle])
-										{
-											after=middle;
-										}
-										else
-										{
-											before=middle;
-										}
-									}
-									if (before==after)
-									{
-										proportion=0.5;
-									}
-									else
-									{
-										proportion=((float)(times[after])-potential_time_freq)/
-											(float)(times[after]-times[before]);
-									}
-									switch (signal->buffer->value_type)
-									{
-										case SHORT_INT_VALUE:
-										{
-											*value=(proportion*
-												(float)((signal->buffer->signals.short_int_values)[
-												before*
-												(signal->buffer->number_of_signals)+(signal->index)])+
-												(1-proportion)*
-												(float)((signal->buffer->signals.short_int_values)[
-												after*
-												(signal->buffer->number_of_signals)+(signal->index)])-
-												((*device)->channel->offset))*
-												((*device)->channel->gain);
-										} break;
-										case FLOAT_VALUE:
-										{
-											*value=(proportion*
-												(signal->buffer->signals.float_values)[before*
-												(signal->buffer->number_of_signals)+(signal->index)]+
-												(1-proportion)*
-												(signal->buffer->signals.float_values)[after*
-												(signal->buffer->number_of_signals)+(signal->index)]-
-												((*device)->channel->offset))*
-												((*device)->channel->gain);
-										} break;
-									}
-									x_data++;
-									y_data++;
-									value++;
-									/* assign weight */
-									*weight=(float)1;
-									weight++;
-									i--;
-								}
-								device++;
-							}
-						} break;
-						case INTEGRAL:
-						{
-							while (i>0)
-							{
-								if (((description=(*device)->description)->type==ELECTRODE)&&
-									(description->region==region)&&(signal=(*device)->signal)&&
-									(0<=start_search_interval)&&
-									(end_search_interval<signal->buffer->number_of_samples)&&
-									((signal->status==ACCEPTED)||
-									(undecided_accepted&&(signal->status==UNDECIDED))))
-								{
-									/* perform projection */
-									position= &(description->properties.electrode.position);
-									switch (region->type)
-									{
-										case SOCK:
-										{
-											linear_transformation(linear_trans,position->x,
-												position->y,position->z,&x,&y,&z);
-											cartesian_to_prolate_spheroidal(x,y,z,focus,&lambda,
-												y_data,x_data,(float *)NULL);
-										} break;
-										case PATCH:
-										{
-											*x_data=position->x;
-											*y_data=position->y;
-										} break;
-										case TORSO:
-										{
-											cartesian_to_cylindrical_polar(position->x,position->y,
-												position->z,&r,x_data,y_data,(float *)NULL);
-										} break;
-									}
-									/* calculate integral */
-									integral= -(double)((*device)->channel->offset)*
-										(double)(end_search_interval-start_search_interval+1);
-									number_of_signals=signal->buffer->number_of_signals;
-									switch (signal->buffer->value_type)
-									{
-										case SHORT_INT_VALUE:
-										{
-											short_int_value=
-												(signal->buffer->signals.short_int_values)+
-												(start_search_interval*number_of_signals+
-												(signal->index));
-											for (j=end_search_interval-start_search_interval;j>=0;j--)
-											{
-												integral += (double)(*short_int_value);
-												short_int_value += number_of_signals;
-											}
-										} break;
-										case FLOAT_VALUE:
-										{
-											float_value=(signal->buffer->signals.float_values)+
-												(start_search_interval*number_of_signals+
-												(signal->index));
-											for (j=end_search_interval-start_search_interval;j>=0;j--)
-											{
-												integral += (double)(*float_value);
-												float_value += number_of_signals;
-											}
-										} break;
-									}
-									integral *= (double)((*device)->channel->gain)/
-										(double)(signal->buffer->frequency);
-									*value=(float)integral;
-									x_data++;
-									y_data++;
-									value++;
-									/* assign weight */
-									*weight=1;
-									weight++;
-									i--;
-								}
-								device++;
-							}
-						} break;
-					}
-					/* calculate spatial range of data */
-					x_data=x_data_base;
-					y_data=y_data_base;
-					min_data_x= *x_data;
-					max_data_x= min_data_x;
-					min_data_y= *y_data;
-					max_data_y= min_data_y;
-					for (i=number_of_data-1;i>0;i--)
-					{
-						x_data++;
-						y_data++;
-						if (*x_data<min_data_x)
-						{
-							min_data_x= *x_data;
-						}
-						else
-						{
-							if (*x_data>max_data_x)
-							{
-								max_data_x= *x_data;
-							}
-						}
-						if (*y_data<min_data_y)
-						{
-							min_data_y= *y_data;
-						}
-						else
-						{
-							if (*y_data>max_data_y)
-							{
-								max_data_y= *y_data;
-							}
-						}
-					}
-					/*??? adjust range for sock ? */
-					switch (region->type)
-					{
-						case SOCK:
-						{
-							min_data_x=(float)0;
-							/* set max_data_x to 2*pi */
-							max_data_x=(float)(8*atan(1));
-							min_data_y=(float)0;
-						} break;
-						case TORSO:
-						{
-							max_data_x=(float)(4*atan(1));
-							min_data_x= -max_data_x;
-						} break;
-					}
-					if (ALLOCATE(function,struct Interpolation_function,1))
-					{
-						function->region_type=region->type;
-						function->x_mesh=(float *)NULL;
-						function->y_mesh=(float *)NULL;
-						function->f=(float *)NULL;
-						function->dfdx=(float *)NULL;
-						function->dfdy=(float *)NULL;
-						function->d2fdxdy=(float *)NULL;
-						/* create mesh description */
-						number_of_rows=function->number_of_rows=finite_element_mesh_rows;
-						number_of_columns=function->number_of_columns=
-							finite_element_mesh_columns;
-						if ((ALLOCATE(y_mesh,float,number_of_rows+1))&&
-							(ALLOCATE(x_mesh,float,number_of_columns+1)))
-						{
-							function->x_mesh=x_mesh;
-							function->y_mesh=y_mesh;
-							step_x=(max_data_x-min_data_x)/(float)(number_of_columns);
-							step_y=(max_data_y-min_data_y)/(float)(number_of_rows);
-							y_mesh[0]=min_data_y;
-							for (i=1;i<number_of_rows;i++)
-							{
-								y_mesh[i]=y_mesh[i-1]+step_y;
-							}
-							y_mesh[i]=max_data_y;
-							x_mesh[0]=min_data_x;
-							for (i=1;i<number_of_columns;i++)
-							{
-								x_mesh[i]=x_mesh[i-1]+step_x;
-							}
-							x_mesh[i]=max_data_x;
-							number_of_nodes=(number_of_rows+1)*(number_of_columns+1);
-							switch (region->type)
-							{
-								case PATCH:
-								{
-									number_of_equations=4*number_of_nodes;
-								} break;
-								case SOCK:
-								{
 #if defined (FIX_APEX)
-									number_of_equations=4*number_of_rows*number_of_columns+3;
+						number_of_equations=4*number_of_rows*number_of_columns+3;
 #else
-									number_of_equations=4*(number_of_rows*number_of_columns+1);
+						number_of_equations=4*(number_of_rows*number_of_columns+1);
 #endif /* defined (FIX_APEX) */
-								} break;
-								case TORSO:
-								{
-									number_of_equations=4*(number_of_rows+1)*number_of_columns;
-								} break;
-							}
-							function->number_of_nodes=number_of_nodes;
-							if (
+					} break;
+					case TORSO:
+					{
+						number_of_equations=4*(number_of_rows+1)*number_of_columns;
+					} break;
+				}
+				function->number_of_nodes=number_of_nodes;
+				if (
 #if defined (DOUBLE_MATRIX)
-								(ALLOCATE(matrix_and_right_hand_side,double,
-									number_of_equations*(number_of_equations+1)))
+					(ALLOCATE(matrix_and_right_hand_side,double,
+						number_of_equations*(number_of_equations+1)))
 #if defined (FIX_APEX)
-								&&(ALLOCATE(cosine_apex,double,number_of_columns+1))&&
-								(ALLOCATE(sine_apex,double,number_of_columns+1))
+					&&(ALLOCATE(cosine_apex,double,number_of_columns+1))&&
+					(ALLOCATE(sine_apex,double,number_of_columns+1))
 #endif /* defined (FIX_APEX) */
 #else
-								(ALLOCATE(matrix_and_right_hand_side,float,
-									number_of_equations*(number_of_equations+1)))
+					(ALLOCATE(matrix_and_right_hand_side,float,
+						number_of_equations*(number_of_equations+1)))
 #if defined (FIX_APEX)
-								&&(ALLOCATE(cosine_apex,float,number_of_columns+1))&&
-								(ALLOCATE(sine_apex,float,number_of_columns+1))
+					&&(ALLOCATE(cosine_apex,float,number_of_columns+1))&&
+					(ALLOCATE(sine_apex,float,number_of_columns+1))
 #endif /* defined (FIX_APEX) */
 #endif /* defined (DOUBLE_MATRIX) */
-								)
+					)
+				{
+					if (assemble_linear_equations(region_type,number_of_data,x_data_base,
+						y_data_base,value_data_base,weight_data_base,number_of_rows,
+						y_mesh,number_of_columns,x_mesh,number_of_equations,
+#if defined (FIX_APEX)
+						cosine_apex,sine_apex,
+#endif /* defined (FIX_APEX) */
+						matrix_and_right_hand_side,membrane_smoothing,
+						plate_bending_smoothing))
+					{
+						if (solve_linear_equations(number_of_equations,
+							matrix_and_right_hand_side,region_type,number_of_nodes,
+							number_of_rows,number_of_columns,
+#if defined (FIX_APEX)
+							cosine_apex,sine_apex,
+#endif /* defined (FIX_APEX) */
+							&(function->f),&(function->dfdx),&(function->dfdy),
+							&(function->d2fdxdy)))
+						{
+							/* calculate the range of values (used for drawing colour map)
+								 and calculate error */
+							/* loop over nodes */
+							f=function->f;
+							f_min=f_max= *f;
+							for (i=1;i<number_of_nodes;i++)
 							{
-								if (assemble_linear_equations(region->type,number_of_data,
-									x_data_base,y_data_base,value_base,weight_base,number_of_rows,
-									y_mesh,number_of_columns,x_mesh,number_of_equations,
-#if defined (FIX_APEX)
-									cosine_apex,sine_apex,
-#endif /* defined (FIX_APEX) */
-									matrix_and_right_hand_side,membrane_smoothing,
-									plate_bending_smoothing))
+								f++;
+								if (*f>f_max)
 								{
-									if (solve_linear_equations(number_of_equations,
-										matrix_and_right_hand_side,region->type,number_of_nodes,
-										number_of_rows,number_of_columns,
-#if defined (FIX_APEX)
-										cosine_apex,sine_apex,
-#endif /* defined (FIX_APEX) */
-										&(function->f),&(function->dfdx),&(function->dfdy),
-										&(function->d2fdxdy)))
-									{
-										/* calculate the range of values (used for drawing colour map)
-											 and calculate error */
-										/* loop over nodes */
-										f=function->f;
-										f_min=f_max= *f;
-										for (i=1;i<number_of_nodes;i++)
-										{
-											f++;
-											if (*f>f_max)
-											{
-												f_max= *f;
-											}
-											else
-											{
-												if (*f<f_min)
-												{
-													f_min= *f;
-												}
-											}
-										}
-										/* loop over the data points */
-										f=function->f;
-										dfdx=function->dfdx;
-										dfdy=function->dfdy;
-										d2fdxdy=function->d2fdxdy;
-										number_of_valid_data=0;
-										average_absolute_error=(float)0;
-										maximum_absolute_error=(float)0;
-										for (i=0;i<number_of_data;i++)
-										{
-											/* determine which element the data point is in */
-											u=x_data_base[i];
-											column=0;
-											while ((column<number_of_columns)&&(u>=x_mesh[column]))
-											{
-												column++;
-											}
-											if ((column>0)&&(u<=x_mesh[column]))
-											{
-												v=y_data_base[i];
-												row=0;
-												while ((row<number_of_rows)&&(v>=y_mesh[row]))
-												{
-													row++;
-												}
-												if ((row>0)&&(v<=y_mesh[row]))
-												{
-													number_of_valid_data++;
-													/* calculate basis function values */
-													width=x_mesh[column]-x_mesh[column-1];
-													h11_u=h12_u=u-x_mesh[column-1];
-													u=h11_u/width;
-													h01_u=(2*u-3)*u*u+1;
-													h11_u *= (u-1)*(u-1);
-													h02_u=u*u*(3-2*u);
-													h12_u *= u*(u-1);
-													height=y_mesh[row]-y_mesh[row-1];
-													h11_v=h12_v=v-y_mesh[row-1];
-													v=h11_v/height;
-													h01_v=(2*v-3)*v*v+1;
-													h11_v *= (v-1)*(v-1);
-													h02_v=v*v*(3-2*v);
-													h12_v *= v*(v-1);
-													/* calculate the interpolation function coefficients */
-													f_im1_jm1=h01_u*h01_v;
-													f_im1_j=h02_u*h01_v;
-													f_i_j=h02_u*h02_v;
-													f_i_jm1=h01_u*h02_v;
-													dfdx_im1_jm1=h11_u*h01_v;
-													dfdx_im1_j=h12_u*h01_v;
-													dfdx_i_j=h12_u*h02_v;
-													dfdx_i_jm1=h11_u*h02_v;
-													dfdy_im1_jm1=h01_u*h11_v;
-													dfdy_im1_j=h02_u*h11_v;
-													dfdy_i_j=h02_u*h12_v;
-													dfdy_i_jm1=h01_u*h12_v;
-													d2fdxdy_im1_jm1=h11_u*h11_v;
-													d2fdxdy_im1_j=h12_u*h11_v;
-													d2fdxdy_i_j=h12_u*h12_v;
-													d2fdxdy_i_jm1=h11_u*h12_v;
-													/* calculate node numbers
-														 NB the local coordinates have the top right corner of
-														 the element as the origin.  This means that
-														 (i-1,j-1) is the bottom left corner
-														 (i,j-1) is the top left corner
-														 (i,j) is the top right corner
-														 (i-1,j) is the bottom right corner */
-													/* (i-1,j-1) node (bottom left corner) */
-													im1_jm1=(row-1)*(number_of_columns+1)+column-1;
-													/* (i,j-1) node (top left corner) */
-													i_jm1=row*(number_of_columns+1)+column-1;
-													/* (i,j) node (top right corner) */
-													i_j=row*(number_of_columns+1)+column;
-													/* (i-1,j) node (bottom right corner) */
-													im1_j=(row-1)*(number_of_columns+1)+column;
-													f_approx=
-														f[im1_jm1]*f_im1_jm1+
-														f[i_jm1]*f_i_jm1+
-														f[i_j]*f_i_j+
-														f[im1_j]*f_im1_j+
-														dfdx[im1_jm1]*dfdx_im1_jm1+
-														dfdx[i_jm1]*dfdx_i_jm1+
-														dfdx[i_j]*dfdx_i_j+
-														dfdx[im1_j]*dfdx_im1_j+
-														dfdy[im1_jm1]*dfdy_im1_jm1+
-														dfdy[i_jm1]*dfdy_i_jm1+
-														dfdy[i_j]*dfdy_i_j+
-														dfdy[im1_j]*dfdy_im1_j+
-														d2fdxdy[im1_jm1]*d2fdxdy_im1_jm1+
-														d2fdxdy[i_jm1]*d2fdxdy_i_jm1+
-														d2fdxdy[i_j]*d2fdxdy_i_j+
-														d2fdxdy[im1_j]*d2fdxdy_im1_j;
-													if (f_approx>f_max)
-													{
-														f_max=f_approx;
-													}
-													else
-													{
-														if (f_approx<f_min)
-														{
-															f_min=f_approx;
-														}
-													}
-													absolute_error=f_approx-value_base[i];
-													if (absolute_error<0)
-													{
-														absolute_error= -absolute_error;
-													}
-													average_absolute_error += absolute_error;
-													if (absolute_error>maximum_absolute_error)
-													{
-														maximum_absolute_error=absolute_error;
-													}
-												}
-											}
-										}
-										if (number_of_valid_data>0)
-										{
-											average_absolute_error /= number_of_valid_data;
-											if (POTENTIAL==map_type)
-											{
-												display_message(INFORMATION_MESSAGE,"frame time = %g, ",
-													potential_time);										
-											}
-											display_message(INFORMATION_MESSAGE,
-												"average absolute error = %.4g, maximum absolute error = %.4g\n",
-												average_absolute_error,maximum_absolute_error);
-										}
-										function->f_min=f_min;
-										function->f_max=f_max;
-									}
-									else
-									{
-										destroy_Interpolation_function(&function);
-									}
+									f_max= *f;
 								}
 								else
 								{
-									destroy_Interpolation_function(&function);
+									if (*f<f_min)
+									{
+										f_min= *f;
+									}
 								}
-								/* free working storage */
-#if defined (FIX_APEX)
-								DEALLOCATE(cosine_apex);
-								DEALLOCATE(sine_apex);
-#endif /* defined (FIX_APEX) */
-								DEALLOCATE(matrix_and_right_hand_side);
 							}
-							else
+							/* loop over the data points */
+							f=function->f;
+							dfdx=function->dfdx;
+							dfdy=function->dfdy;
+							d2fdxdy=function->d2fdxdy;
+							number_of_valid_data=0;
+							average_absolute_error=(float)0;
+							maximum_absolute_error=(float)0;
+							for (i=0;i<number_of_data;i++)
 							{
-								display_message(ERROR_MESSAGE,
-									"calculate_interpolation_functio.  Could not assign %s",
-									"memory for linear equations");
-								destroy_Interpolation_function(&function);
+								/* determine which element the data point is in */
+								u=x_data_base[i];
+								column=0;
+								while ((column<number_of_columns)&&(u>=x_mesh[column]))
+								{
+									column++;
+								}
+								if ((column>0)&&(u<=x_mesh[column]))
+								{
+									v=y_data_base[i];
+									row=0;
+									while ((row<number_of_rows)&&(v>=y_mesh[row]))
+									{
+										row++;
+									}
+									if ((row>0)&&(v<=y_mesh[row]))
+									{
+										number_of_valid_data++;
+										/* calculate basis function values */
+										width=x_mesh[column]-x_mesh[column-1];
+										h11_u=h12_u=u-x_mesh[column-1];
+										u=h11_u/width;
+										h01_u=(2*u-3)*u*u+1;
+										h11_u *= (u-1)*(u-1);
+										h02_u=u*u*(3-2*u);
+										h12_u *= u*(u-1);
+										height=y_mesh[row]-y_mesh[row-1];
+										h11_v=h12_v=v-y_mesh[row-1];
+										v=h11_v/height;
+										h01_v=(2*v-3)*v*v+1;
+										h11_v *= (v-1)*(v-1);
+										h02_v=v*v*(3-2*v);
+										h12_v *= v*(v-1);
+										/* calculate the interpolation function coefficients */
+										f_im1_jm1=h01_u*h01_v;
+										f_im1_j=h02_u*h01_v;
+										f_i_j=h02_u*h02_v;
+										f_i_jm1=h01_u*h02_v;
+										dfdx_im1_jm1=h11_u*h01_v;
+										dfdx_im1_j=h12_u*h01_v;
+										dfdx_i_j=h12_u*h02_v;
+										dfdx_i_jm1=h11_u*h02_v;
+										dfdy_im1_jm1=h01_u*h11_v;
+										dfdy_im1_j=h02_u*h11_v;
+										dfdy_i_j=h02_u*h12_v;
+										dfdy_i_jm1=h01_u*h12_v;
+										d2fdxdy_im1_jm1=h11_u*h11_v;
+										d2fdxdy_im1_j=h12_u*h11_v;
+										d2fdxdy_i_j=h12_u*h12_v;
+										d2fdxdy_i_jm1=h11_u*h12_v;
+										/* calculate node numbers
+											 NB the local coordinates have the top right corner of
+											 the element as the origin.  This means that
+											 (i-1,j-1) is the bottom left corner
+											 (i,j-1) is the top left corner
+											 (i,j) is the top right corner
+											 (i-1,j) is the bottom right corner */
+										/* (i-1,j-1) node (bottom left corner) */
+										im1_jm1=(row-1)*(number_of_columns+1)+column-1;
+										/* (i,j-1) node (top left corner) */
+										i_jm1=row*(number_of_columns+1)+column-1;
+										/* (i,j) node (top right corner) */
+										i_j=row*(number_of_columns+1)+column;
+										/* (i-1,j) node (bottom right corner) */
+										im1_j=(row-1)*(number_of_columns+1)+column;
+										f_approx=
+											f[im1_jm1]*f_im1_jm1+
+											f[i_jm1]*f_i_jm1+
+											f[i_j]*f_i_j+
+											f[im1_j]*f_im1_j+
+											dfdx[im1_jm1]*dfdx_im1_jm1+
+											dfdx[i_jm1]*dfdx_i_jm1+
+											dfdx[i_j]*dfdx_i_j+
+											dfdx[im1_j]*dfdx_im1_j+
+											dfdy[im1_jm1]*dfdy_im1_jm1+
+											dfdy[i_jm1]*dfdy_i_jm1+
+											dfdy[i_j]*dfdy_i_j+
+											dfdy[im1_j]*dfdy_im1_j+
+											d2fdxdy[im1_jm1]*d2fdxdy_im1_jm1+
+											d2fdxdy[i_jm1]*d2fdxdy_i_jm1+
+											d2fdxdy[i_j]*d2fdxdy_i_j+
+											d2fdxdy[im1_j]*d2fdxdy_im1_j;
+										if (f_approx>f_max)
+										{
+											f_max=f_approx;
+										}
+										else
+										{
+											if (f_approx<f_min)
+											{
+												f_min=f_approx;
+											}
+										}
+										absolute_error=f_approx-value_data_base[i];
+										if (absolute_error<0)
+										{
+											absolute_error= -absolute_error;
+										}
+										average_absolute_error += absolute_error;
+										if (absolute_error>maximum_absolute_error)
+										{
+											maximum_absolute_error=absolute_error;
+										}
+									}
+								}
 							}
+							if (number_of_valid_data>0)
+							{
+								average_absolute_error /= number_of_valid_data;
+								display_message(INFORMATION_MESSAGE,
+									"average absolute error = %.4g, "
+									"maximum absolute error = %.4g\n",
+									average_absolute_error,maximum_absolute_error);
+							}
+							function->f_min=f_min;
+							function->f_max=f_max;
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,
-								"calculate_interpolation_functio.  %s",
-								"Could not allocate memory for mesh description");
-							DEALLOCATE(x_mesh);
 							destroy_Interpolation_function(&function);
 						}
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"calculate_interpolation_functio.  %s",
-							"Could not allocate memory for function");
+						destroy_Interpolation_function(&function);
 					}
-					/* free data arrays */
-					DEALLOCATE(x_data_base);
-					DEALLOCATE(y_data_base);
-					DEALLOCATE(value_base);
-					DEALLOCATE(weight_base);
+					/* free working storage */
+#if defined (FIX_APEX)
+					DEALLOCATE(cosine_apex);
+					DEALLOCATE(sine_apex);
+#endif /* defined (FIX_APEX) */
+					DEALLOCATE(matrix_and_right_hand_side);
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"calculate_interpolation_functio.  Could not allocate memory for data");
-					DEALLOCATE(y_data_base);
-					DEALLOCATE(value_base);
-					DEALLOCATE(weight_base);
+						"calculate_interpolation_functio.  Could not assign %s",
+						"memory for linear equations");
+					destroy_Interpolation_function(&function);
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"calculate_interpolation_functio.  No data to map for %s",
-					region->name);
+					"calculate_interpolation_functio.  %s",
+					"Could not allocate memory for mesh description");
+				DEALLOCATE(x_mesh);
+				destroy_Interpolation_function(&function);
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"calculate_interpolation_functio.  Invalid arguments");
+			display_message(ERROR_MESSAGE,"calculate_interpolation_functio.  %s",
+				"Could not allocate memory for function");
 		}
-		LEAVE;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"calculate_interpolation_functio.  Invalid arguments");
+	}
+	LEAVE;
 
-		return (function);
+	return (function);
 } /* calculate_interpolation_functio */
 
 int destroy_Interpolation_function(struct Interpolation_function **function)

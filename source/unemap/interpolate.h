@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : interpolate.h
 
-LAST MODIFIED : 26 June 2003
+LAST MODIFIED : 12 May 2004
 
 DESCRIPTION :
 Function prototypes for calculating a finite element interpolation to data for a
@@ -19,26 +19,19 @@ Global functions
 ----------------
 */
 struct Interpolation_function *calculate_interpolation_functio(
-	enum Map_type map_type,struct Rig *rig,struct Region *region,
-	int *event_number_address,float potential_time,int *datum_address,
-	int *start_search_interval_address,int *end_search_interval_address,
-	float half_peak_to_peak_interval_width,char undecided_accepted,
+	enum Region_type region_type,int number_of_data,float *x_data_base,
+	float *y_data_base,float *value_data_base,float *weight_data_base,
 	int finite_element_mesh_rows,int finite_element_mesh_columns,
 	float membrane_smoothing,float plate_bending_smoothing);
 /*******************************************************************************
-LAST MODIFIED : 26 June 2003
+LAST MODIFIED : 12 May 2004
 
 DESCRIPTION :
-There are three groups of arguments for this function
-???Put into structures ?
-Input
-1. data - <number_of_data>, <x>, <y>, <value> and <weight>
-2. finite element mesh - <x_left>, <y_bottom>, <number_of_rows>, <row_height>,
-   <number_of_columns> and <column_width>
-Output
-3. interpolation function - <f>, <dfdx>, <dfdy> and <d2fdxdy>
-???I'm not sure if memory should be assigned inside this function for these or
-if they should be 1-D or 2-D arrays ?
+Creates an interpolation function from
+1. data - <region_type>, <number_of_data>, <x_data_base>, <y_data_base>,
+	<value_data_base> and <weight_data_base>
+2. mesh - <finite_element_mesh_rows> and <finite_element_mesh_columns>
+3. fitting - <membrane_smoothing> and <plate_bending_smoothing>
 ==============================================================================*/
 
 int destroy_Interpolation_function(struct Interpolation_function **function);
