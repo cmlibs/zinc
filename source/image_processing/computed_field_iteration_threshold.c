@@ -459,9 +459,6 @@ Perform a automatic thresholding operation on the image cache.
 				 counter2 = 2;
 				 if ((T-T0) <= 0.0001 && (T-T0) >= -0.0001) break;
 			}
-#if defined (DEBUG)
-			printf("Threshold T: %f", T);
-#endif /* defined (DEBUG) */
 			for (i = (counter - 1); i >= 0; i--)
 			{
 			         data_index -= image->depth;
