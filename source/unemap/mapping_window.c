@@ -472,7 +472,8 @@ necessary.
 							{
 								Spectrum_set_simple_type(spectrum_to_be_modified_copy,
 									BLUE_TO_RED_SPECTRUM);
-								map_settings_changed = 1;						
+								map_settings_changed = 1;	
+								recalculate=2;
 							}
 						}
 						else if (option_widget==map_dialog->spectrum.type_option.blue_white_red)
@@ -483,6 +484,7 @@ necessary.
 								Spectrum_set_simple_type(spectrum_to_be_modified_copy,
 									BLUE_WHITE_RED_SPECTRUM);
 								map_settings_changed = 1;
+								recalculate=2;
 							}
 						}
 						else if (option_widget==map_dialog->spectrum.type_option.log_blue_red)
@@ -492,7 +494,8 @@ necessary.
 							{
 								Spectrum_set_simple_type(spectrum_to_be_modified_copy,
 									LOG_BLUE_TO_RED_SPECTRUM);
-								map_settings_changed = 1;					
+								map_settings_changed = 1;
+								recalculate=2;
 							}
 						}
 						else if (option_widget==map_dialog->spectrum.type_option.log_red_blue)
@@ -502,7 +505,8 @@ necessary.
 							{
 								Spectrum_set_simple_type(spectrum_to_be_modified_copy,
 									LOG_RED_TO_BLUE_SPECTRUM);
-								map_settings_changed = 1;						
+								map_settings_changed = 1;
+								recalculate=2;
 							}
 						}
 						else
@@ -512,7 +516,8 @@ necessary.
 							{
 								Spectrum_set_simple_type(spectrum_to_be_modified_copy,
 									RED_TO_BLUE_SPECTRUM);
-								map_settings_changed = 1;					
+								map_settings_changed = 1;
+								recalculate=2;					
 							}
 						}
 
