@@ -62,6 +62,7 @@ NOTE: Must keep this up to date with functions
 FE_basis_type_string
 ==============================================================================*/
 {
+	FE_BASIS_TYPE_INVALID=-1,
 	NO_RELATION=0,
 		/*???DB.  Used on the off-diagonals of the type matrix */
 	BSPLINE,
