@@ -211,7 +211,8 @@ Returns the current transformed generic head as
 <triangle_vertices> a 1-D array of 3*<number_of_triangles> ints giving the
   vertex numbers for each triangle
 <triangle_texture_vertices> a 1-D array of 3*<number_of_triangles> ints giving
-  the texture vertex numbers for each triangle
+  the texture vertex numbers for each triangle.
+The returned arrays should be freed when no longer required.
 ==============================================================================*/
 
 CMISSDECLSPEC int pf_get_basis(int pf_job_id,int *number_of_modes,int *number_of_vertices,
@@ -224,6 +225,7 @@ Returns the basis for the current transformed model in
 <vertex_3d_locations_or_offsets> which is a 1-D array of
 3*<number_of_modes>*<number_of_vertices> floats with x,y,z varying fastest and
 mode number fastest.
+The returned arrays should be freed when no longer required.
 ==============================================================================*/
 
 CMISSDECLSPEC int pf_specify_image(int pf_job_id,int width,int height,
@@ -263,6 +265,7 @@ Returns the current transformed generic head as
   vertex numbers for each triangle
 <triangle_texture_vertices> a 1-D array of 3*<number_of_triangles> ints giving
   the texture vertex numbers for each triangle
+The returned arrays should be freed when no longer required.
 ==============================================================================*/
 
 CMISSDECLSPEC int pf_specify_hair_mask(int pf_job_id,int width,int height,
@@ -296,5 +299,27 @@ is filled in based on the current model.
 #if defined (__cplusplus)
 }
 #endif /* defined (__cplusplus) */
+
+/*
+Macros
+------
+*/
+#if defined (MEMORY_CHECKING)
+#include "general/debug.h"
+#else /* defined (MEMORY_CHECKING) */
+#define ALLOCATE( result , type , number ) \
+( result = ( type *) malloc( ( number ) * sizeof( type ) ) )
+
+#define DEALLOCATE( ptr ) \
+{ free((char *) ptr ); ( ptr )=NULL;}
+
+#define ENTER( function_name )
+
+#define LEAVE
+
+#define REALLOCATE( final , initial , type , number ) \
+( final = ( type *) realloc( (void *)( initial ) , \
+	( number ) * sizeof( type ) ) )
+#endif /* defined (MEMORY_CHECKING) */
 
 #endif /* !defined (PHOTOFACE_CMISS_H) */

@@ -38,23 +38,6 @@ return code - zero is success, non-zero is failure.
 static FILE *debuglog_file = NULL;
 #endif
 
-/*
-Macros
-------
-*/
-#define ALLOCATE( result , type , number ) \
-( result = ( type *) malloc( ( number ) * sizeof( type ) ) )
-
-#define DEALLOCATE( ptr ) \
-{ free((char *) ptr ); ( ptr )=NULL;}
-
-#define ENTER( function_name )
-
-#define LEAVE
-
-#define REALLOCATE( final , initial , type , number ) \
-( final = ( type *) realloc( (void *)( initial ) , \
-	( number ) * sizeof( type ) ) )
 
 /*
 Module types
@@ -916,6 +899,10 @@ DESCRIPTION :
 			display_message(PF_ERROR_MESSAGE, "Unable to open objfile %s",filename);
 		}
 #endif /* defined (MANUAL_CMISS) */
+		DEALLOCATE(v);
+		DEALLOCATE(vn);
+		DEALLOCATE(vt);
+		DEALLOCATE(t);
 	}
 #if defined (MANUAL_CMISS)
 	else
@@ -1714,6 +1701,7 @@ successful.
 				return_code= PF_OPEN_FILE_FAILURE_RC;
 			}
 		}
+		DEALLOCATE(working_path);
 	}
 	else
 	{
@@ -1861,6 +1849,8 @@ This routine cleans up the working directory and destroys the specified job.
 #endif /* defined (MANUAL_CMISS) */
 			return_code= PF_FIND_FILE_FAILURE_RC;
 		}
+		DEALLOCATE(working_path);
+		DEALLOCATE(working_path2);
 	}
 	else
 	{
@@ -1989,6 +1979,7 @@ giving this process exclusive access.
 #endif /* defined (MANUAL_CMISS) */
 			return_code= PF_FIND_FILE_FAILURE_RC;
 		}
+		DEALLOCATE(working_path);
 	}
 	else
 	{
@@ -2267,6 +2258,7 @@ adjustment of the generic head.  On success, the <pf_job_id> is set.
 #endif /* defined (WIN32) */
 
 	ENTER(pf_setup);
+
 	return_code=PF_GENERAL_FAILURE_RC;
 	/* Start a new job and lock it */
 	if (PF_SUCCESS_RC == (return_code = create_Pf_job(pf_job_id)) &&
@@ -2450,10 +2442,8 @@ Closes the cmiss library.  Freeing any internal memory and stopping any
 internal processes.
 ==============================================================================*/
 {
-#if defined (OLD_CODE)
 	char **name_address;
 	int i;
-#endif /* defined (OLD_CODE) */
 	int return_code;
 	struct Pf_job *pf_job;
 
@@ -2466,6 +2456,8 @@ internal processes.
 	DEALLOCATE(photoface_local_path);
 	DEALLOCATE(photoface_remote_path);
 #endif /* defined (LINUX_CMISS) */
+#endif /* defined (OLD_CODE) */
+
 	/* free markers */
 	if (markers)
 	{
@@ -2479,8 +2471,8 @@ internal processes.
 		DEALLOCATE(markers->marker_indices);
 		DEALLOCATE(markers->marker_positions);
 		DEALLOCATE(markers);
+		markers = (struct Marker_struct *)NULL;
 	}
-#endif /* defined (OLD_CODE) */
 
 	if(PF_SUCCESS_RC == (return_code = 
 		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
@@ -2903,7 +2895,7 @@ which is assumed to be allocated large enough for 3*<number_of_markers> floats
 	if(PF_SUCCESS_RC == (return_code = 
 		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
 	{
-		if (ALLOCATE(filename,char,strlen(photoface_local_path)+50))
+		if (ALLOCATE(filename,char,strlen(photoface_local_path)+100))
 		{
 			call_cmiss = 0;
 			load_eyeballs = 0;
@@ -3099,6 +3091,7 @@ which is assumed to be allocated large enough for 3*<number_of_markers> floats
 #endif /* defined (MANUAL_CMISS) */
 				return_code = PF_READ_FILE_FAILURE_RC;
 			}
+			DEALLOCATE(filename);
 		}
 		else
 		{
@@ -3647,6 +3640,7 @@ is filled in based on the current model.
 #endif /* defined (MANUAL_CMISS) */
 				return_code=PF_GENERAL_FAILURE_RC;
 			}
+			DEALLOCATE(image);
 		}
 		else
 		{
@@ -3892,6 +3886,7 @@ is filled in based on the current model.
 #endif /* defined (MANUAL_CMISS) */
 				return_code=PF_GENERAL_FAILURE_RC;
 			}
+			DEALLOCATE(image);
 		}
 		else
 		{
@@ -3994,6 +3989,7 @@ is filled in based on the current model.
 #endif /* defined (MANUAL_CMISS) */
 				return_code=PF_GENERAL_FAILURE_RC;
 			}
+			DEALLOCATE(image);
 		}
 		else
 		{

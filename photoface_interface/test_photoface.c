@@ -811,11 +811,25 @@ Runs a job through the photoface interface.
 		eyeball_fitted_3d_positions, eyeball_fitted_3d_positions + 3);
 	/* Now we could use these files to generate a head */
 
+	/* Free up stuff we no longer need */
+	DEALLOCATE(obj.vertex_3d_locations);
+	DEALLOCATE(obj.texture_vertex_3d_locations);
+	DEALLOCATE(obj.triangle_vertices);
+	DEALLOCATE(obj.triangle_texture_vertices);
+	DEALLOCATE(hair_obj.vertex_3d_locations);
+	DEALLOCATE(hair_obj.texture_vertex_3d_locations);
+	DEALLOCATE(hair_obj.triangle_vertices);
+	DEALLOCATE(hair_obj.triangle_texture_vertices);
+	DEALLOCATE(vertex_3d_locations);
 
 	/* End this job */
-	/* pf_close(pf_job_id); */
-
+	pf_close(pf_job_id);
 
 	/* Free up the path memory */
 	pf_specify_paths(NULL, NULL);
+
+#if defined (MEMORY_CHECKING)
+	list_memory(/*count*/0, /*show_pointers*/1, /*increment_counter*/1, 
+	  /*show_structures*/1);
+#endif /* defined (MEMORY_CHECKING) */
 }
