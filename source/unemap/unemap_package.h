@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_package.h
 
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 19 June 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -246,25 +246,25 @@ Set (and get) with map_number 0,1,2... (an array), but package->number_of_maps
 is 1,2,3...
 ==============================================================================*/
 
-struct GT_object *get_unemap_package_map_torso_arms(
+struct GT_object *get_unemap_package_map_torso_arm_labels(
 	struct Unemap_package *package,int map_number);
 /*******************************************************************************
 LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
-gets the map_torso_arms for map_info <map_number> in <package>.
+gets the map_torso_arm_labels for map_info <map_number> in <package>.
 get (and set) with map_number 0,1,2... (an array), but package->number_of_maps
 is 1,2,3... i.e 
 ??JW perhaps should maintain a list of GT_objects, cf CMGUI
 ==============================================================================*/
 
-int set_unemap_package_map_torso_arms(struct Unemap_package *package,
-	struct GT_object *torso_arms,int map_number);
+int set_unemap_package_map_torso_arm_labels(struct Unemap_package *package,
+	struct GT_object *torso_arm_labels,int map_number);
 /*******************************************************************************
 LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
-Sets the torso_arms  for map_info <map_number> in <package>.
+Sets the torso_arm_labels  for map_info <map_number> in <package>.
 Set (and get) with map_number 0,1,2... (an array), but package->number_of_maps
 is 1,2,3...
 ??JW perhaps should maintain a list of GT_objects, cf CMGUI
@@ -1137,6 +1137,21 @@ LAST MODIFIED : 3 May 2000
 
 DESCRIPTION :
 Sets the field of the unemap package.
+==============================================================================*/
+
+int unemap_package_align_scene(struct Unemap_package *package);
+/*******************************************************************************
+LAST MODIFIED : 19 Jun 2000
+
+DESCRIPTION : Aligns the <package> scene so that the largest dimension of the 
+scene is the scene viewer's up vector component (ie it is at the top of the screen). 
+Does this by:
+Finding the largest dimension component of the scene, setting the 
+corresponding up vector component to 1 (others are set to zero) and swapping the 
+corresponding eye components to ensure we're still looking at the scene viewer 
+lookat point, and the up and lookat->eye vectors are orthogonal.
+
+Should be in Scene_viewer? RC doesn't think so.
 ==============================================================================*/
 
 #endif /* #if defined(UNEMAP_USE_NODES) */

@@ -5171,50 +5171,31 @@ near and far clipping planes; if specific values are required, should follow
 with commands for setting these.
 ==============================================================================*/
 {
-	double centre_x,centre_y,centre_z,max_x,max_y,max_z,min_x,min_y,min_z,radius;
+	double centre_x,centre_y,centre_z,clip_factor,radius,
+		size_x,size_y,size_z,width_factor;
 	int return_code;
-	struct Graphics_object_range_struct graphics_object_range;
 
 	ENTER(Scene_viewer_view_all);
 	if (scene_viewer)
-	{
-		/* get range of visible graphics_objects in scene */
-		/*???RC Scene should really be doing this for us... */
-		graphics_object_range.first=1;
-		for_each_Scene_object_in_Scene(Scene_viewer_get_scene(scene_viewer),
-			Scene_object_get_range,(void *)&graphics_object_range);
-		if (!graphics_object_range.first)
-		{
-			/* get centre and radius of smallest sphere enclosing visible scene */
-			max_x=(double)graphics_object_range.maximum[0];
-			max_y=(double)graphics_object_range.maximum[1];
-			max_z=(double)graphics_object_range.maximum[2];
-			min_x=(double)graphics_object_range.minimum[0];
-			min_y=(double)graphics_object_range.minimum[1];
-			min_z=(double)graphics_object_range.minimum[2];
-			centre_x=0.5*(max_x+min_x);
-			centre_y=0.5*(max_y+min_y);
-			centre_z=0.5*(max_z+min_z);
-			/*???RC enlargement factor 1.1 should be read in from defaults file */
-			/* can only proceed if positive radius */
-			if (0.0<(radius=0.6*0.5*sqrt((max_x-min_x)*(max_x-min_x)+
-				(max_y-min_y)*(max_y-min_y)+(max_z-min_z)*(max_z-min_z))))
-			{
-				return_code=Scene_viewer_set_view_simple(scene_viewer,
-					centre_x,centre_y,centre_z,radius,50,10.0*radius);
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Scene_viewer_view_all.  Scene range is a point");
-				return_code=0;
-			}
+	{	
+		if (Scene_get_graphics_range(Scene_viewer_get_scene(scene_viewer),
+			&centre_x,&centre_y,&centre_z,&size_x,&size_y,&size_z)&&			
+			(radius=0.5*sqrt(size_x*size_x + size_y*size_y + size_z*size_z)))
+		{		
+			/* enlarge radius to keep image within edge of window */
+			/*???RC width_factor should be read in from defaults file */
+			width_factor=1.05;
+			radius *= width_factor;
+			/*???RC clip_factor should be read in from defaults file: */
+			clip_factor = 10.0;		
+			return_code=Scene_viewer_set_view_simple(scene_viewer
+				,centre_x,centre_y,centre_z,
+				radius,40,clip_factor*radius);		
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Scene_viewer_view_all.  No range obtained from scene");
+				"Scene_viewer_view_all.  No valid range obtained from scene");
 			return_code=0;
 		}
 	}

@@ -2453,7 +2453,7 @@ i.e sock is a hemisphere, torso is a cylinder.
 								node_number = get_next_FE_node_number(node_manager,last_node_number);						
 								theta=function->x_mesh[j];
 								z=function->y_mesh[i];
-#if defined (ROUND_TORSO)/*FOR AJP*/
+#if defined (ROUND_TORSO) /*FOR AJP*/
 								r_value_and_derivatives[0]= torso_major_r;
 #else																
 								t=function->x_mesh[j];
@@ -4960,7 +4960,7 @@ Removes the map electrodes if they've changed, then redraws them.
 #endif /* UNEMAP_USE_NODES */
 
 #if defined (UNEMAP_USE_NODES)
-int draw_torso_arms(struct Unemap_package *package,int map_number)/*FOR AJP*/
+int draw_torso_arm_labels(struct Unemap_package *package,int map_number)/*FOR AJP*/
 /*******************************************************************************
 LAST MODIFIED : 15 June 2000
 
@@ -4972,7 +4972,7 @@ Creates a pair of arms, and adds to the scene. Or removes if not required.
 	char **labels;
 	char *left ="Left";
 	char *right ="Right";
-	FE_value arm_length,arm_width,min_x,max_x,min_y,max_y,min_z,max_z;
+	FE_value min_x,max_x,min_y,max_y,min_z,max_z,x_offset,y_offset,z_offset;
 	struct Graphical_material *graphical_material=(struct Graphical_material *)NULL;
 	struct GT_glyph_set *glyph_set=(struct GT_glyph_set *)NULL;
 	struct GT_object *glyph=(struct GT_object *)NULL;
@@ -4983,60 +4983,57 @@ Creates a pair of arms, and adds to the scene. Or removes if not required.
 	Triple *axis3_list=(Triple *)NULL;
 	Triple *point_list=(Triple *)NULL;
 
-	ENTER(draw_torso_arms);
+	ENTER(draw_torso_arm_labels);
 	if(package)
 	{				
 		return_code=1;
 		/*??JW should probably maintain a list of graphics_objects, and*/
 		/*search in this list, as CMGUI does*/
-		if((!(graphics_object=get_unemap_package_map_torso_arms(package,map_number)))&&
+		if((!(graphics_object=get_unemap_package_map_torso_arm_labels(package,map_number)))&&
 			 (rig_node_group_number=get_unemap_package_map_rig_node_group_number
 				 (package,map_number))&&get_rig_node_group_map_electrode_position_min_max(
 				get_unemap_package_rig_node_group(package,rig_node_group_number),
 				get_unemap_package_map_electrode_position_field(package,map_number),
 				&min_x,&max_x,&min_y,&max_y,&min_z,&max_z))
-		{						
+		{				
 			if ((graphical_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
 				("default",get_unemap_package_Graphical_material_manager(package)))&&
 				(glyph_list=get_unemap_package_glyph_list(package))&&
-				(glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("cylinder",glyph_list))&&
+				(glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",glyph_list))&&
 				ALLOCATE(point_list,Triple,2)&&ALLOCATE(axis1_list,Triple,2)&&
 				ALLOCATE(axis2_list,Triple,2)&&ALLOCATE(axis3_list,Triple,2)&&
 				ALLOCATE(labels,char *,2))
 			{
-#if defined (OLD_CODE)				
-				arm_width=FIT_TORSO_MAJOR_R/5;
-				arm_length=FIT_TORSO_MAJOR_R*3/2;
-#endif				
-				arm_length=max_x*3/2;
-				arm_width=arm_length/10;
+				x_offset=max_x*1.4;	
+				y_offset=0;
+				z_offset=max_z*1.05;			
 				labels[0]=left;
 				labels[1]=right; 
-				(*point_list)[0]=arm_length;
-				(*point_list)[1]=0.0;
-				(*point_list)[2]=max_z;
-				(*axis1_list)[0]=-arm_length;
+				(*point_list)[0]=x_offset;
+				(*point_list)[1]=y_offset;
+				(*point_list)[2]=z_offset;
+				(*axis1_list)[0]=1;
 				(*axis1_list)[1]=0.0;
 				(*axis1_list)[2]=0.0;
 				(*axis2_list)[0]=0.0;
-				(*axis2_list)[1]=arm_width;
+				(*axis2_list)[1]=1;
 				(*axis2_list)[2]=0.0;
 				(*axis3_list)[0]=0.0;
 				(*axis3_list)[1]=0.0;
-				(*axis3_list)[2]=-arm_width;	
+				(*axis3_list)[2]=1;
 
-				(*(point_list+1))[0]=-arm_length;
-				(*(point_list+1))[1]=0.0;
-				(*(point_list+1))[2]=max_z;
-				(*(axis1_list+1))[0]=arm_length;
+				(*(point_list+1))[0]=-x_offset;
+				(*(point_list+1))[1]=y_offset;
+				(*(point_list+1))[2]=z_offset;
+				(*(axis1_list+1))[0]=1;
 				(*(axis1_list+1))[1]=0.0;
 				(*(axis1_list+1))[2]=0.0;
 				(*(axis2_list+1))[0]=0.0;
-				(*(axis2_list+1))[1]=arm_width;
+				(*(axis2_list+1))[1]=1;
 				(*(axis2_list+1))[2]=0.0;
 				(*(axis3_list+1))[0]=0.0;
 				(*(axis3_list+1))[1]=0.0;
-				(*(axis3_list+1))[2]=arm_width;
+				(*(axis3_list+1))[2]=1;
 				if (!(glyph_set=CREATE(GT_glyph_set)(2,point_list,axis1_list,axis2_list,
 					axis3_list,glyph,labels,g_NO_DATA,(GTDATA *)NULL,
 					/*object_name*/0,/*names*/(int *)NULL)))
@@ -5050,19 +5047,19 @@ Creates a pair of arms, and adds to the scene. Or removes if not required.
 			}
 			if (glyph_set)
 			{
-				if (graphics_object=CREATE(GT_object)("arms",g_GLYPH_SET,
+				if (graphics_object=CREATE(GT_object)("arm_labels",g_GLYPH_SET,
 					graphical_material))
 				{
 					if (GT_OBJECT_ADD(GT_glyph_set)(graphics_object,/*time*/0.0,glyph_set))
 					{										
 						Scene_add_graphics_object(get_unemap_package_scene(package),
 							graphics_object,0,graphics_object->name);
-						set_unemap_package_map_torso_arms(package,graphics_object,map_number);	
+						set_unemap_package_map_torso_arm_labels(package,graphics_object,map_number);	
 					}
 					else
 					{	
 						display_message(ERROR_MESSAGE,
-							"draw_torso_arms.  Could not add graphics object");
+							"draw_torso_arm_labels.  Could not add graphics object");
 						DESTROY(GT_object)(&graphics_object);
 						DESTROY(GT_glyph_set)(&glyph_set);
 						return_code=0;
@@ -5072,7 +5069,7 @@ Creates a pair of arms, and adds to the scene. Or removes if not required.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"draw_torso_arms.  Could not create glyph_set");
+					"draw_torso_arm_labels.  Could not create glyph_set");
 				graphics_object=(struct GT_object *)NULL;
 				return_code=0;
 			}
@@ -5081,11 +5078,11 @@ Creates a pair of arms, and adds to the scene. Or removes if not required.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"draw_torso_arms.  Invalid argument(s)");	
+			"draw_torso_arm_labels.  Invalid argument(s)");	
 	}
 	LEAVE;
 	return(return_code);
-}/* draw_torso_arms */
+}/* draw_torso_arm_labels */
 #endif /* UNEMAP_USE_NODES */
 
 #if defined (UNEMAP_USE_NODES)
@@ -5212,11 +5209,11 @@ This function draws the <map> in as a 3D CMGUI scene.
 									make_and_add_map_electrode_position_field(region_number,
 										current_region->type,unemap_package);
 								}
-							}/* if (function=calculate_interpolation_functio */	
+							}/* if (function=calculate_interpolation_functio */
 							/*draw the arms  */				
 							if(current_region->type==TORSO)/*FOR AJP*/
 							{
-								draw_torso_arms(unemap_package,region_number);
+								draw_torso_arm_labels(unemap_package,region_number);
 							}
 						}/* if(unemap_package_rig_node_group_has_electrodes */					
 						region_item=region_item->next;
@@ -5307,17 +5304,17 @@ This function draws the <map> in as a 3D CMGUI scene.
 					}	
 					map_draw_map_electrodes(unemap_package,map,number_of_regions,time);
 					map_draw_contours(map,spectrum,unemap_package,data_field,
-						number_of_regions);
+						number_of_regions);				
 					/* First time the scene's viewed  do "view_all"*/
 					if(!get_unemap_package_viewed_scene(unemap_package))
-					{
-						if(Scene_viewer_view_all(get_unemap_package_scene_viewer
-							(unemap_package))) 						
-						{
+					{						
+						/* unemap_package_align_scene does Scene_viewer_view_all */
+						if(unemap_package_align_scene(unemap_package))
+						{																			
 							/* perturb the lines(for the contours) */
 							Scene_viewer_set_perturb_lines(get_unemap_package_scene_viewer
 								(unemap_package),1);
-							set_unemap_package_viewed_scene(unemap_package,1);					
+							set_unemap_package_viewed_scene(unemap_package,1);
 						}
 					}
 				}/* if (map_type!=NO_MAP_FIELD) */				

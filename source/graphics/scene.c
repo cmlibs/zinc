@@ -6958,6 +6958,84 @@ Sets the visibility of the axes - iff graphics are enabled.
 	return (return_code);
 } /* Scene_set_axis_visibility */
 
+int Scene_get_graphics_range(struct Scene *scene,
+	double *centre_x,double *centre_y,double *centre_z,
+	double *size_x,double *size_y,double *size_z)
+/*******************************************************************************
+LAST MODIFIED : 19 June 2000
+
+DESCRIPTION :
+Finds the range of all visible graphics objects in scene. If there is nothing
+visible, finds the axis origin. If the scene range is a point, adds the axis
+lengths.
+==============================================================================*/
+{
+	double max_x,max_y,max_z,min_x,min_y,min_z;
+	int return_code;
+	struct Graphics_object_range_struct graphics_object_range;
+	Triple axis_lengths,axis_origin;
+
+	ENTER(Scene_get_graphics_range);
+	if (scene&&centre_x&&centre_y&&centre_z&&size_x&&size_y&&size_z)
+	{
+		/* get range of visible graphics_objects in scene */
+		graphics_object_range.first=1;
+		return_code=for_each_Scene_object_in_Scene(scene,
+			Scene_object_get_range,(void *)&graphics_object_range);
+		if (graphics_object_range.first)
+		{
+			/* nothing in the scene: get axis origin as centre */
+			if (Scene_get_axis_origin(scene,axis_origin))
+			{
+				*centre_x = axis_origin[0];
+				*centre_y = axis_origin[1];
+				*centre_z = axis_origin[2];
+				*size_x = *size_y = *size_z =0.0;
+			}
+			else
+			{
+				return_code=0;
+			}
+		}
+		else
+		{
+			/* get centre and radius of smallest sphere enclosing visible scene */
+			max_x=(double)graphics_object_range.maximum[0];
+			max_y=(double)graphics_object_range.maximum[1];
+			max_z=(double)graphics_object_range.maximum[2];
+			min_x=(double)graphics_object_range.minimum[0];
+			min_y=(double)graphics_object_range.minimum[1];
+			min_z=(double)graphics_object_range.minimum[2];
+			*centre_x = 0.5*(max_x+min_x);
+			*centre_y = 0.5*(max_y+min_y);
+			*centre_z = 0.5*(max_z+min_z);
+			*size_x = max_x-min_x;
+			*size_y = max_y-min_y;
+			*size_z = max_z-min_z;
+		}
+		if (return_code)
+		{
+			if ((0.0==(*size_x)) && (0.0==(*size_y)) && (0.0==(*size_z)))
+			{
+				/* get size from axis lengths */
+				Scene_get_axis_lengths(scene,axis_lengths);
+				*size_x = (double)axis_lengths[0];
+				*size_y = (double)axis_lengths[0];
+				*size_z = (double)axis_lengths[0];
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_get_graphics_range.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_get_graphics_range */
+
 int Scene_get_element_group_position(struct Scene *scene,
 	struct GROUP(FE_element) *element_group)
 /*******************************************************************************

@@ -4409,80 +4409,39 @@ graphics window on screen.
 
 int Graphics_window_view_all(struct Graphics_window *window)
 /*******************************************************************************
-LAST MODIFIED : 9 May 1999
+LAST MODIFIED : 19 June 2000
 
 DESCRIPTION :
 Finds the x, y and z ranges from the scene and sets the view parameters so
 that everything can be seen, and with window's std_view_angle. Also adjusts
 near and far clipping planes; if specific values are required, should follow
 with commands for setting these.
-??RC should combine with Scene_viewer_view_all
 ==============================================================================*/
 {
-	double axis_radius,centre_x,centre_y,centre_z,clip_factor,max_x,max_y,max_z,
-		min_x,min_y,min_z,radius,width_factor;
+	double centre_x,centre_y,centre_z,clip_factor,radius,
+		size_x,size_y,size_z,width_factor;
 	int pane_no,return_code;
-	struct Graphics_object_range_struct graphics_object_range;
-	Triple axis_lengths,axis_origin;
 
 	ENTER(Graphics_window_view_all);
 	if (window)
 	{
-		return_code=1;
-
-		/* get range of visible graphics_objects in scene */
-		/*???RC Scene should really be doing this for us... */
-		graphics_object_range.first=1;
-		for_each_Scene_object_in_Scene(window->scene,
-			Scene_object_get_range,(void *)&graphics_object_range);
-		if (graphics_object_range.first)
+		if (Scene_get_graphics_range(window->scene,
+			&centre_x,&centre_y,&centre_z,&size_x,&size_y,&size_z)&&			
+			(radius=0.5*sqrt(size_x*size_x + size_y*size_y + size_z*size_z)))
 		{
-			/* nothing in the scene: get axis origin as centre */
-			if (Scene_get_axis_origin(window->scene,axis_origin))
-			{
-				centre_x=axis_origin[0];
-				centre_y=axis_origin[1];
-				centre_z=axis_origin[2];
-				radius=0.0;
-			}
-			else
-			{
-				return_code=0;
-			}
-		}
-		else
-		{
-			/* get centre and radius of smallest sphere enclosing visible scene */
-			max_x=(double)graphics_object_range.maximum[0];
-			max_y=(double)graphics_object_range.maximum[1];
-			max_z=(double)graphics_object_range.maximum[2];
-			min_x=(double)graphics_object_range.minimum[0];
-			min_y=(double)graphics_object_range.minimum[1];
-			min_z=(double)graphics_object_range.minimum[2];
-			centre_x=0.5*(max_x+min_x);
-			centre_y=0.5*(max_y+min_y);
-			centre_z=0.5*(max_z+min_z);
-			radius= 0.5*sqrt((max_x-min_x)*(max_x-min_x)+(max_y-min_y)*(max_y-min_y)+
-				(max_z-min_z)*(max_z-min_z));
-		}
-		/* can only proceed if valid centre and positive radius */
-		Scene_get_axis_lengths(window->scene,axis_lengths);
-		axis_radius=sqrt(axis_lengths[0]*axis_lengths[0]+
-			axis_lengths[1]*axis_lengths[1]+axis_lengths[2]*axis_lengths[2]);
-		if (return_code&&((0.0<radius)||(0.0<(radius=axis_radius))))
-		{
+			return_code=1;
 			/* enlarge radius to keep image within edge of window */
 			/*???RC width_factor should be read in from defaults file */
 			width_factor=1.05;
 			radius *= width_factor;
-			for (pane_no=0;return_code&&
-				(pane_no<GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES);pane_no++)
+			/*???RC clip_factor should be read in from defaults file: */
+			clip_factor = 10.0;
+			for (pane_no=0;(pane_no<GRAPHICS_WINDOW_MAX_NUMBER_OF_PANES)&&
+				return_code;pane_no++)
 			{
-				/*???RC clip_factor should be read in from defaults file: */
-				clip_factor = 10.0;
 				return_code=Scene_viewer_set_view_simple(
 					window->scene_viewer[pane_no],centre_x,centre_y,centre_z,
-					radius,window->std_view_angle,clip_factor*radius);
+						radius,window->std_view_angle,clip_factor*radius);
 			}
 		}
 		else

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_package.c
 
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 19 June 2000
 
 DESCRIPTION :
 Contains function definitions for unemap package.
@@ -39,7 +39,7 @@ struct Map_info
 	struct GROUP(FE_element) *element_group;
 	struct GROUP(FE_node) *node_group;		
 	struct GT_object *electrode_glyph;	
-	struct GT_object *torso_arms;/*FOR AJP*/
+	struct GT_object *torso_arm_labels;/*FOR AJP*/
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct MANAGER(FE_element) *element_manager;
 	struct MANAGER(FE_field) *fe_field_manager;
@@ -101,7 +101,7 @@ Create and  and set it's components
 				map_info->element_manager=element_manager;
 				map_info->computed_field_manager=computed_field_manager;
 				map_info->electrode_glyph=(struct GT_object *)NULL;
-				map_info->torso_arms=(struct GT_object *)NULL;/*FOR AJP*/
+				map_info->torso_arm_labels=(struct GT_object *)NULL;/*FOR AJP*/
 				map_info->electrode_size=0;
 				map_info->electrodes_option=HIDE_ELECTRODES;
 				map_info->colour_electrodes_with_signal=1;
@@ -199,8 +199,8 @@ to NULL.
 		return_code=1;
 		/* electrode_glyph*/
 		DEACCESS(GT_object)(&(map_info->electrode_glyph));
-		/* torso_arms*/
-		DEACCESS(GT_object)(&(map_info->torso_arms));/*FOR AJP*/
+		/* torso_arm_labels*/
+		DEACCESS(GT_object)(&(map_info->torso_arm_labels));/*FOR AJP*/			
 		/* node_order_info */
 		DEACCESS(FE_node_order_info)(&(map_info->node_order_info));
 		/*element_group */
@@ -902,50 +902,50 @@ is 1,2,3...
 	return (return_code);
 } /* set_unemap_package_map_electrode_glyph */
 
-struct GT_object *get_unemap_package_map_torso_arms(
+struct GT_object *get_unemap_package_map_torso_arm_labels(
 	struct Unemap_package *package,int map_number)/*FOR AJP*/
 /*******************************************************************************
 LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
-gets the map_torso_arms for map_info <map_number> in <package>.
+gets the map_torso_arm_labels for map_info <map_number> in <package>.
 get (and set) with map_number 0,1,2... (an array), but package->number_of_maps
 is 1,2,3... i.e 
 ??JW perhaps should maintain a list of GT_objects, cf CMGUI
 ==============================================================================*/
 {
-	struct GT_object *torso_arms;
+	struct GT_object *torso_arm_labels;
 
-	ENTER(get_unemap_package_map_torso_arms);
+	ENTER(get_unemap_package_map_torso_arm_labels);
 	if((package)&&(map_number>-1)&&(map_number<=package->number_of_maps))	
 	{
 		if(package->number_of_maps==map_number)
 		{			
-			/* No map_info,map_torso_arms =NULL */	
-			torso_arms=(struct GT_object *)NULL;		
+			/* No map_info,map_torso_arm_labels =NULL */	
+			torso_arm_labels=(struct GT_object *)NULL;		
 		}
 		else
 		{
-			torso_arms=package->maps_info[map_number]->torso_arms;
+			torso_arm_labels=package->maps_info[map_number]->torso_arm_labels;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"get_unemap_package_map_torso_arms."
+		display_message(ERROR_MESSAGE,"get_unemap_package_map_torso_arm_labels."
 			" invalid arguments");
-		torso_arms=(struct GT_object *)NULL;
+		torso_arm_labels=(struct GT_object *)NULL;
 	}
 	LEAVE;
-	return (torso_arms);	
-} /* get_unemap_package_map_torso_arms */
+	return (torso_arm_labels);	
+} /* get_unemap_package_map_torso_arm_labels */
 
-int set_unemap_package_map_torso_arms(struct Unemap_package *package,
-	struct GT_object *torso_arms,int map_number)/*FOR AJP*/
+int set_unemap_package_map_torso_arm_labels(struct Unemap_package *package,
+	struct GT_object *torso_arm_labels,int map_number)/*FOR AJP*/
 /*******************************************************************************
 LAST MODIFIED : 15 June 2000
 
 DESCRIPTION :
-Sets the torso_arms  for map_info <map_number> in <package>.
+Sets the torso_arm_labels  for map_info <map_number> in <package>.
 Set (and get) with map_number 0,1,2... (an array), but package->number_of_maps
 is 1,2,3...
 ??JW perhaps should maintain a list of GT_objects, cf CMGUI
@@ -953,24 +953,24 @@ is 1,2,3...
 {
 	int return_code;
 
-	ENTER(set_unemap_package_map_torso_arms);
+	ENTER(set_unemap_package_map_torso_arm_labels);
 	if(package&&(map_number>-1)&&
 		(map_number<package->number_of_maps))
 	{		
 		return_code =1;
 		REACCESS(GT_object)
-			(&(package->maps_info[map_number]->torso_arms),
-				torso_arms);
+			(&(package->maps_info[map_number]->torso_arm_labels),
+				torso_arm_labels);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"set_unemap_package_map_torso_arms ."
+		display_message(ERROR_MESSAGE,"set_unemap_package_map_torso_arm_labels ."
 			" invalid arguments");
 		return_code =0;
 	}
 	LEAVE;
 	return (return_code);
-} /* set_unemap_package_map_torso_arms */
+} /* set_unemap_package_map_torso_arm_labels */
 
 FE_value get_unemap_package_map_electrode_size(struct Unemap_package *package,
 	int map_number)
@@ -4194,15 +4194,16 @@ cf free_unemap_package_map_info
 	if(package)
 	{
 		return_code=1;
+		set_unemap_package_viewed_scene(package,0);
 		for(count=0;count<package->number_of_maps;count++)
 		{	/*remove the torso arms from the scene */
 			/*??JW probably a bad place to do this. perhaps should maintain */
 			/*a list of GT_objects cf CMGUI. Arms show be temporary anyway*//*FOR AJP*/
 			if((package->maps_info)&&(package->maps_info[count])
-				&&(package->maps_info[count]->torso_arms)&&(package->scene))
+				&&(package->maps_info[count]->torso_arm_labels)&&(package->scene))
 			{
 				Scene_remove_graphics_object(package->scene,
-					package->maps_info[count]->torso_arms);
+					package->maps_info[count]->torso_arm_labels);
 			}	
 			if((package->maps_info)&&(package->maps_info[count]))
 			{
@@ -4212,6 +4213,14 @@ cf free_unemap_package_map_info
 		DEALLOCATE(package->maps_info);
 		package->number_of_maps=0;	
 		package->viewed_scene=0; 
+
+		if(package->scene_viewer)/*FOR AJP*/	
+		/*reset lookat info so aligned with cardianal axis  */
+		/*??JW possible to just destory scene?*/
+		{
+			Scene_viewer_set_lookat_parameters(package->scene_viewer,
+				0,0,1, 0,0,0, 0,1,0);
+		}
 	}
 	else
 	{
@@ -4243,10 +4252,10 @@ cf free_unemap_package_maps
 		/*??JW probably a bad place to do this. perhaps should maintain */
 		/*a list of GT_objects cf CMGUI. Arms show be temporary anyway*//*FOR AJP*/
 		if((package->maps_info)&&(package->maps_info[map_number])
-			&&(package->maps_info[map_number]->torso_arms)&&(package->scene))
+			&&(package->maps_info[map_number]->torso_arm_labels)&&(package->scene))
 		{
 			Scene_remove_graphics_object(package->scene,
-				package->maps_info[map_number]->torso_arms);
+				package->maps_info[map_number]->torso_arm_labels);
 		}
 		if((package->maps_info)&&(package->maps_info[map_number]))
 		{
@@ -4375,5 +4384,93 @@ gets the spectrum_manager of the unemap package.
 	LEAVE;
 	return (spectrum_manager);
 } /* get_unemap_package_ spectrum_manager*/
+
+int unemap_package_align_scene(struct Unemap_package *package) /*FOR AJP*/
+/*******************************************************************************
+LAST MODIFIED : 19 Jun 2000
+
+DESCRIPTION : Aligns the <package> scene so that the largest dimension of the 
+scene is the scene viewer's up vector component (ie it is at the top of the screen). 
+Does this by:
+Finding the largest dimension component of the scene, setting the 
+corresponding up vector component to 1 (others are set to zero) and swapping the 
+corresponding eye components to ensure we're still looking at the scene viewer 
+lookat point, and the up and lookat->eye vectors are orthogonal.
+??JW Assumes that scene,eye[],lookat,up[] are aligned with cardinal axis!
+To do properly use cross products, etc.
+
+Should be in Scene_viewer? RC doesn't think so.
+==============================================================================*/
+{
+	FE_value dum;
+	double centre_x,centre_y,centre_z,eye[3],size[3],lookatx,lookaty,lookatz,max,
+		size_x,size_y,size_z,up[3];
+	int i,j,k,return_code;
+	struct Scene_viewer *scene_viewer=(struct Scene_viewer *)NULL;
+
+	ENTER(unemap_package_align_scene);
+	if (package&&(scene_viewer=get_unemap_package_scene_viewer(package)))
+	{		
+		/*do Scene_viewer_view_all to set up eye, lookat, up*/
+		Scene_viewer_view_all(scene_viewer);
+		if(Scene_get_graphics_range(Scene_viewer_get_scene(scene_viewer),
+			&centre_x,&centre_y,&centre_z,&size_x,&size_y,&size_z)&&
+			(Scene_viewer_get_lookat_parameters(scene_viewer,
+				&eye[0],&eye[1],&eye[2],&lookatx,&lookaty,&lookatz,&up[0],&up[1],&up[2])))
+		{
+			/*get set up eye, lookat, up*/
+			return_code=1;			
+			size[0]=size_x;
+			size[1]=size_y;
+			size[2]=size_z;	
+			max=size[0];
+			/*for x,y,z components*/
+			for(i=0;i<3;i++)
+			{
+				/*if this is the largest dimension */
+				if(size[i] > max)
+				{
+					/*for x,y,z comps of the old up vector*/
+					for(j=0;j<3;j++)
+					{
+						/*remember the previous non-zero up[] component */
+						if(up[j]>0)
+						{
+							k=j;
+						}				
+						/*zero all up[] components*/
+						up[j]=0;					
+					}
+					/*set the new max*/
+					max=size[i];
+					/*this is now the up direction*/
+					up[i]=1;
+					/* swap the current eye component with the prev eye component that */
+					/* corresponds to the previous non-zero up[] component*/
+					dum =eye[i];				
+					eye[i]=eye[k];	
+					eye[k]=-dum;
+				}
+			}					
+			Scene_viewer_set_lookat_parameters(scene_viewer,
+				eye[0],eye[1],eye[2],lookatx,lookaty,lookatz,up[0],up[1],up[2]);		
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"unemap_package_align_scene. could not get graphics range");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"unemap_package_align_scene.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /*unemap_package_align_scene  */
 
 #endif /* #if defined (UNEMAP_USE_NODES) */

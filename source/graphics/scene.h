@@ -1147,6 +1147,18 @@ DESCRIPTION :
 Sets the visibility of the axes - iff graphics are enabled.
 ==============================================================================*/
 
+int Scene_get_graphics_range(struct Scene *scene,
+	double *centre_x,double *centre_y,double *centre_z,
+	double *size_x,double *size_y,double *size_z);
+/*******************************************************************************
+LAST MODIFIED : 19 June 2000
+
+DESCRIPTION :
+Finds the range of all visible graphics objects in scene. If there is nothing
+visible, finds the axis origin. If the scene range is a point, adds the axis
+lengths.
+==============================================================================*/
+
 int Scene_get_element_group_position(struct Scene *scene,
 	struct GROUP(FE_element) *element_group);
 /*******************************************************************************
