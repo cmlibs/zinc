@@ -146,8 +146,7 @@ to the neighbouring element from <element> across the <face_index>. Need the
 coordinate_field for resolving problems when crossing polygon sides.
 ==============================================================================*/
 {
-	FE_value *face_to_element,facexi[2],pointA[3],pointB[3],rhs[2],tolerance=1e-5,
-		upper[3];
+	FE_value *face_to_element,facexi[2],pointA[3],pointB[3];
 	int number_of_vertices,return_code;
 	struct FE_element *face;
 	struct FE_element_parent *parent_struct;
@@ -156,10 +155,8 @@ coordinate_field for resolving problems when crossing polygon sides.
 	return_code=1;
 
 	/* check arguments */
-	if (element&&(*element)&&(*element)->shape&&(face_index>=0)&&
-		 (face_index<(*element)->shape->number_of_faces))
+	if (element&&(*element)&&(*element)->shape)
 	{
-	  
 		face=((*element)->faces)[face_index];
 		if (face)
 		{
@@ -174,131 +171,49 @@ coordinate_field for resolving problems when crossing polygon sides.
 				xi[0] -= face_to_element[0];
 				xi[1] -= face_to_element[3];
 				xi[2] -= face_to_element[6];
-				/* find the non zero entries in the second part */
-				if ((!(face_to_element[1] && face_to_element[2])) &&
-					 (!(face_to_element[4] && face_to_element[5])) &&
-					 (!(face_to_element[7] && face_to_element[8])))
+				/* find the non zero entries in the second part, assuming one to one
+					mapping */
+				if (face_to_element[1])
 				{
-					/* One to one mapping so can do fast path */
-					if (face_to_element[1])
-					{
-						facexi[0]=xi[0]/face_to_element[1];
-					}
-					else
-					{
-						if (face_to_element[4])
-						{
-							facexi[0]=xi[1]/face_to_element[4];
-						}
-						else
-						{
-							if (face_to_element[7])
-							{
-								facexi[0]=xi[2]/face_to_element[7];
-							}
-							else
-							{
-								facexi[0]=0.0;
-							}
-						}
-					}
-					if (face_to_element[2])
-					{
-						facexi[1]=xi[0]/face_to_element[2];
-					}
-					else
-					{
-						if (face_to_element[5])
-						{
-							facexi[1]=xi[1]/face_to_element[5];
-						}
-						else
-						{
-							if (face_to_element[8])
-							{
-								facexi[1]=xi[2]/face_to_element[8];
-							}
-							else
-							{
-								facexi[1]=0.0;
-							}
-						}
-					}
+					facexi[0]=xi[0]/face_to_element[1];
 				}
 				else
 				{
-					/* Find a valid pivot row */
-					if (face_to_element[1])
+					if (face_to_element[4])
 					{
-						upper[0] = face_to_element[1];
-						upper[1] = face_to_element[2];
-						rhs[0] = xi[0];
+						facexi[0]=xi[1]/face_to_element[4];
 					}
 					else
 					{
-						if (face_to_element[4])
+						if (face_to_element[7])
 						{
-							upper[0] = face_to_element[4];
-							upper[1] = face_to_element[5];
-							rhs[0] = xi[1];
+							facexi[0]=xi[2]/face_to_element[7];
 						}
 						else
 						{
-							if (face_to_element[7])
-							{
-								upper[0] = face_to_element[7];
-								upper[1] = face_to_element[8];
-								rhs[0] = xi[2];
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"change_element.  Unable to find a pivot row");
-								return_code = 0;
-							}
+							facexi[0]=0.0;
 						}
 					}
-					if (return_code)
+				}
+				if (face_to_element[2])
+				{
+					facexi[1]=xi[0]/face_to_element[2];
+				}
+				else
+				{
+					if (face_to_element[5])
 					{
-						/* Find a second row, slightly inefficient cause it reevaluates
-							the pivot row but this code isn't run a lot */
-						upper[2] = (face_to_element[2] - (upper[1] * face_to_element[1])
-							/ upper[0]);
-						if ((upper[2] > tolerance) || (upper[2] < -tolerance))
-						{		
-							rhs[1] = xi[0] - (rhs[0] * face_to_element[1])
-									/ upper[0];
+						facexi[1]=xi[1]/face_to_element[5];
+					}
+					else
+					{
+						if (face_to_element[8])
+						{
+							facexi[1]=xi[2]/face_to_element[8];
 						}
 						else
 						{
-							upper[2] = (face_to_element[5] - (upper[1] * face_to_element[4])
-								/ upper[0]);
-							if ((upper[2] > tolerance) || (upper[2] < -tolerance))
-							{
-								rhs[1] = xi[1] - (rhs[0] * face_to_element[4])
-									/ upper[0];
-							}
-							else
-							{
-								upper[2] = (face_to_element[8] - (upper[1] * face_to_element[7])
-									/ upper[0]);
-								if ((upper[2] > tolerance) || (upper[2] < -tolerance))
-								{
-									rhs[1] = xi[2] - (rhs[0] * face_to_element[7])
-									/ upper[0];
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"change_element.  Unable to find a second row");
-									return_code = 0;								
-								}
-							}
-						}
-						if (return_code)
-						{
-							facexi[1] = rhs[1] / upper[2];
-							facexi[0] = (rhs[0] - facexi[1] * upper[1]) / upper[0];
+							facexi[1]=0.0;
 						}
 					}
 				}
@@ -466,7 +381,7 @@ coordinate_field for resolving problems when crossing polygon sides.
 	return (return_code);
 } /* change_element */
 
-static int check_xi_limits(int face_index, struct FE_element **element,
+static int check_xi_limits(int change_xi, struct FE_element **element,
 	FE_value *xi,struct Computed_field *coordinate_field)
 /*******************************************************************************
 LAST MODIFIED : 16 March 1999
@@ -477,15 +392,10 @@ boundary the element is changed and therefore this function should only be
 called if the integration has indicated that the direction changes element.
 ==============================================================================*/
 {
-	int return_code;
+	int face_index,return_code;
 
 	ENTER(check_xi_limits);
 	return_code=1;
-	
-	/* This version doesn't support polygons but should support simplex */
-	return_code=change_element(element,xi,face_index,coordinate_field);		
-
-#if defined (OLD_CODE)
 	if ((1==change_xi)&&(xi[0]<=0.0))
 	{
 		if (POLYGON_SHAPE==((*element)->shape->type)[0])
@@ -493,7 +403,7 @@ called if the integration has indicated that the direction changes element.
 			/* Polygon */
 			xi[0]=xi[0]+1;
 		}
- 		else
+		else
 		{
 			/* Line */
 			/*???SAB.  Could be improved to check shape->faces for the face */
@@ -680,8 +590,6 @@ called if the integration has indicated that the direction changes element.
 			}
 		}
 	}
-
-#endif /* defined (OLD_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -730,89 +638,11 @@ calculating the inverse of the Jacobian matrix <dxdxi> and multiplying.
 	return (return_code);
 } /* calculate_delta_xi */
 
-static int find_valid_portion( FE_value *xiA, FE_value *xiB, 
-	struct FE_element_shape *shape, FE_value *proportion)
-/*******************************************************************************
-LAST MODIFIED : 22 March 2001
-
-DESCRIPTION :
-From FE_element_shape_find_face_number_for_xi.
-Returns 1 if there is a restricted portion found and so the element needs changing,
-otherwise the whole step is valid
-SAB Doesn't work for polygons at the moment.
-==============================================================================*/
-{
-	FE_value new_proportion;
-	int bit, i, j, return_code;
-	float sumA, sumB;
-
-	ENTER(find_valid_portion);
-
-	if (xiA&&xiB&&shape&&proportion)
-	{
-		*proportion = 1.0;
-		return_code = -1;
-		for (i = 0 ; (i < shape->number_of_faces) ; i++)
-		{
-			sumA = 0.0;
-			sumB = 0.0;
-			bit = 2;
-			for (j = 0 ; j < shape->dimension ; j++)
-			{
-				if (shape->faces[i] & bit)
-				{
-					sumA += xiA[j];
-					sumB += xiB[j];
-				}
-				bit *= 2;
-			}
-			if (shape->faces[i] & 1)
-			{
-				if (sumB >= 1.0)
-				{
-					new_proportion = (1.0 - sumA) / (sumB - sumA);
-					if (new_proportion < *proportion)
-					{
-						*proportion = new_proportion;
-						return_code = i;
-					}
-				}
-			}
-			else
-			{
-				if (sumB <= 0.0)
-				{
-					new_proportion = (0.0 - sumA) / (sumB - sumA);
-					if (new_proportion < *proportion)
-					{
-						*proportion = new_proportion;
-						return_code = i;
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"find_valid_portion.  Invalid argument(s)");
-		return_code = -1;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* find_valid_portion */
-
-#if defined (OLD_CODE)
-static FE_value find_valid_portion( FE_value *xiA, FE_value *xiB, 
-	struct FE_element_shape *shape, int *change_element )
+static FE_value find_valid_portion( FE_value *xiA, FE_value *xiB, int *change_element )
 {
 	FE_value new_proportion, proportion;
-	int i;
 
 	*change_element = 0;
-
-	if (
-	}
 
 	proportion = 1.0;
 	if ( xiB[0] < 0.0 )
@@ -866,7 +696,6 @@ static FE_value find_valid_portion( FE_value *xiA, FE_value *xiB,
 
 	return( proportion );
 } /* find_valid_portion */
-#endif /* defined (OLD_CODE) */
 
 static int update_adaptive_imp_euler(struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
@@ -886,7 +715,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 	int return_code;
 	FE_value deltaxi[3],deltaxiA[3],
 		deltaxiC[3], deltaxiD[3], deltaxiE[3], dxdxi[9], error,
-		proportion, proportion2, tolerance, vector[9], xiA[3], xiB[3], xiC[3],
+		proportion, tolerance, vector[9], xiA[3], xiB[3], xiC[3],
 		xiD[3], xiE[3], xiF[3];
 
 	ENTER(update_adaptive_imp_euler);
@@ -1023,35 +852,76 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 	if (return_code)
 	{
 		/* is the whole integration within the element ? */
-		if (-1 != (*change_element = find_valid_portion(xiD,xiF,element->shape,
-			&proportion)))
+		if ((xiF[0]<0.0)||(xiF[0]>1.0)||(xiF[1]<0.0)||(xiF[1]>1.0)||(xiF[2]<0.0)||
+			(xiF[2]>1.0))
 		{
 			/* was the first part of the double step all inside the element... */
-			if (-1 != (*change_element = find_valid_portion(xi,xiD,element->shape,
-				&proportion2)))
+			if ((xiD[0]<0.0)||(xiD[0]>1.0)||(xiD[1]<0.0)||(xiD[1]>1.0)||
+				(xiD[2]<0.0)||(xiD[2]>1.0))
 			{
 				/* else interpolate the first part */
-				*total_stepped += (*step_size)*0.5*proportion2;
-				xi[0]=xi[0]+proportion2*(*step_size)*(deltaxi[0]+deltaxiC[0])/4.0;
-				xi[1]=xi[1]+proportion2*(*step_size)*(deltaxi[1]+deltaxiC[1])/4.0;
-				xi[2]=xi[2]+proportion2*(*step_size)*(deltaxi[2]+deltaxiC[2])/4.0;
+				proportion=find_valid_portion(xi,xiD,change_element);
+				*total_stepped += (*step_size)*0.5*proportion;
+				xi[0]=xi[0]+proportion*(*step_size)*(deltaxi[0]+deltaxiC[0])/4.0;
+				xi[1]=xi[1]+proportion*(*step_size)*(deltaxi[1]+deltaxiC[1])/4.0;
+				xi[2]=xi[2]+proportion*(*step_size)*(deltaxi[2]+deltaxiC[2])/4.0;
 			}
 			else
 			{
 				/* then interpolate the second part */
+				proportion=find_valid_portion(xiD,xiF,change_element);
 				*total_stepped += (*step_size)*0.5*(1.0+proportion);
 				xi[0]=xiD[0]+proportion*(*step_size)*(deltaxiD[0]+deltaxiE[0])/4.0;
 				xi[1]=xiD[1]+proportion*(*step_size)*(deltaxiD[1]+deltaxiE[1])/4.0;
 				xi[2]=xiD[2]+proportion*(*step_size)*(deltaxiD[2]+deltaxiE[2])/4.0;
 			}
-			/* SAB Removed some code from Richard that ensured we made a boundary
-				when a change_element is detected as this relied upon square elements,
-				an alternative would be to increase the size of proportion by a little
-				bit */
+			/*???RC the proportion returned by find_valid_portion, when plugged into
+				the above formulae can leave xi slightly inside the element, even when
+				change element is indicated. Hence make sure calculation leaves xi
+				exactly on the boundary. */
+			switch (*change_element)
+			{
+				case 1:
+				{
+					/* xi[0] outside 0 to 1 range */
+					if (xi[0]>0.5)
+					{
+						xi[0]=1.0;
+					}
+					else
+					{
+						xi[0]=0.0;
+					}
+				} break;
+				case 2:
+				{
+					/* xi[1] outside 0 to 1 range */
+					if (xi[1]>0.5)
+					{
+						xi[1]=1.0;
+					}
+					else
+					{
+						xi[1]=0.0;
+					}
+				} break;
+				case 3:
+				{
+					/* xi[2] outside 0 to 1 range */
+					if (xi[2]>0.5)
+					{
+						xi[2]=1.0;
+					}
+					else
+					{
+						xi[2]=0.0;
+					}
+				} break;
+			}
 		}
 		else
 		{
-			*change_element=-1;
+			*change_element=0;
 			*total_stepped += *step_size;
 			if (error<tolerance/10.0)
 			{
@@ -1118,22 +988,23 @@ accurate if small), also ensuring that the element is updated.
 					xiA[0]=xi[0]+deltaxi[0];
 					xiA[1]=xi[1]+deltaxi[1];
 					xiA[2]=xi[2]+deltaxi[2];
-					if (-1 != (change_element = find_valid_portion(xi,xiA,
-						(*element)->shape,&proportion)))
+					if ((xiA[0]<0.0)||(xiA[0]>1.0)||(xiA[1]<0.0)||(xiA[1]>1.0)||
+						(xiA[2]<0.0)||(xiA[2]>1.0))
 					{
-						
+						proportion=find_valid_portion(xi,xiA,&change_element);
 						xi[0] += proportion*deltaxi[0];
 						xi[1] += proportion*deltaxi[1];
 						xi[2] += proportion*deltaxi[2];
 					}
 					else
 					{
+						change_element=0;
 						xi[0]=xiA[0];
 						xi[1]=xiA[1];
 						xi[2]=xiA[2];
 						return_code=1;
 					}
-					if (-1 != change_element)
+					if (change_element)
 					{
 						if (check_xi_limits(change_element,element,xi,coordinate_field))
 						{
@@ -1435,8 +1306,8 @@ following way:
 		vector_magnitude;
 	GTDATA *stream_datum,*tmp_stream_data;
 	int allocated_number_of_points,change_element,
-		i,keep_tracking,number_of_stream_vector_components,return_code;
-	struct FE_element *previous_elementA, *previous_elementB;
+		i,keep_tracking,previous_change_element,
+		number_of_stream_vector_components,return_code;
 	struct FE_element_shape *shape;
 	Triple *stream_point,*stream_vector,*stream_normal,*tmp_triples;
 
@@ -1479,8 +1350,7 @@ following way:
 			stream_normal= *stream_normals;
 			stream_datum= *stream_data;
 			i=0;
-			previous_elementA=(struct FE_element *)NULL;
-			previous_elementB=(struct FE_element *)NULL;
+			previous_change_element=0;
 			keep_tracking=1;
 			while (keep_tracking)
 			{
@@ -1817,11 +1687,9 @@ following way:
 							keep_tracking=update_adaptive_imp_euler(coordinate_field,
 								stream_vector_field,reverse_track,*element,xi,coordinates,
 								&step_size,&total_stepped,&change_element);
-							if (keep_tracking&&(-1!=change_element))
+							if (keep_tracking&&change_element)
 							{
-								keep_tracking=check_xi_limits(change_element,element,xi,
-									coordinate_field);
-								if (previous_elementB==*element)
+								if (previous_change_element==change_element)
 								{
 									/* trapped between two elements with opposing directions */
 									/*???debug*/
@@ -1829,9 +1697,13 @@ following way:
 										"trapped between two elements with opposing directions\n");
 									keep_tracking = 0;
 								}
+								else
+								{
+									keep_tracking=check_xi_limits(change_element,element,xi,
+										coordinate_field);
+								}
 							}
-							previous_elementB=previous_elementA;
-							previous_elementA=*element;
+							previous_change_element=change_element;
 						}
 						else
 						{
@@ -3116,7 +2988,7 @@ created with the given timestamp.
 			(*((point->pointlist)[point->index]))[0]=coordinates[0];
 			(*((point->pointlist)[point->index]))[1]=coordinates[1];
 			(*((point->pointlist)[point->index]))[2]=coordinates[2];
-			if (return_code&&(-1!=change_element))
+			if (return_code&&change_element)
 			{
 				if (change_element==previous_change_element)
 				{
