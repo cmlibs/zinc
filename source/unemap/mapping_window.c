@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.c
 
-LAST MODIFIED : 6 June 2001
+LAST MODIFIED : 24 July 2001
 
 DESCRIPTION :
 ???DB.  Missing settings ?
@@ -2306,6 +2306,111 @@ Writes the current mapping rig to the default configuration file.
 	LEAVE;
 } /* set_default_configuration_file */
 
+static void identify_mapping_file_save_elec(Widget *widget_id,
+	XtPointer client_data,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 23 July 2001
+
+DESCRIPTION :
+Finds the id of the mapping file save electrode values button.
+==============================================================================*/
+{
+	struct Mapping_window *mapping;
+
+	ENTER(identify_mapping_file_save_elec);
+	USE_PARAMETER(call_data);
+	if (mapping=(struct Mapping_window *)client_data)
+	{
+		mapping->file_menu.save_electrode_values_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_mapping_file_save_elec.  client_data missing");
+	}
+	LEAVE;
+} /* identify_mapping_file_save_elec */
+
+static int write_electrode_values_file(char *file_name,void *mapping_window)
+/*******************************************************************************
+LAST MODIFIED : 23 July 2001
+
+DESCRIPTION :
+Write the electrode values for the current map to a file.
+==============================================================================*/
+{
+	FILE *output_file;
+	float *value;
+	int i,number_of_electrodes,return_code;
+	struct Device **electrode;
+	struct Map *map;
+	struct Mapping_window *mapping;	
+
+	ENTER(write_electrode_values_file);
+	return_code=0;
+	if ((mapping=(struct Mapping_window *)mapping_window)&&(map=mapping->map)&&
+		(map->type)&&file_name)
+	{
+		if ((0<(number_of_electrodes=map->number_of_electrodes))&&
+			(electrode=map->electrodes)&&(value=map->electrode_value)&&
+			(NO_MAP_FIELD!= *(map->type)))
+		{
+			if (output_file=fopen(file_name,"wt"))
+			{
+				/* write the table format */
+				fprintf(output_file,"table format : comma separated\n");
+				fprintf(output_file,"Electrode");
+				/* write the column headings */
+				switch (*(map->type))
+				{
+					case SINGLE_ACTIVATION:
+					case MULTIPLE_ACTIVATION:
+					{
+						fprintf(output_file,",Event_time\n");
+					} break;
+					case INTEGRAL:
+					{
+						fprintf(output_file,",Integral\n");
+					} break;
+					case POTENTIAL:
+					{
+						fprintf(output_file,",Potential\n");
+					} break;
+					default:
+					{
+						fprintf(output_file,",Unknown\n");
+					} break;
+				}
+				/* write the electrode names and values */
+				for (i=number_of_electrodes;i>0;i--)
+				{
+					fprintf(output_file,"%s,%g\n",(*electrode)->description->name,*value);
+					electrode++;
+					value++;
+				}
+				fclose(output_file);
+				return_code=1;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"Could not open: %s",file_name);
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"No electrode values to write");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"write_electrode_values_file.  "
+			"Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* write_electrode_values_file */
+
 static void identify_mapping_print_button(Widget *widget_id,
 	XtPointer client_data,XtPointer call_data)
 /*******************************************************************************
@@ -2893,10 +2998,42 @@ area.
 	LEAVE;
 } /* expose_mapping_colour_or_auxili */
 
-static void expose_mapping_drawing_area_2d(Widget widget,XtPointer mapping_window,
-	XtPointer call_data)
+static int update_mapping_window_file_menu(struct Mapping_window *mapping)
 /*******************************************************************************
-LAST MODIFIED : 7 October 1997
+LAST MODIFIED : 24 July 2001
+
+DESCRIPTION :
+Updates the sensitivity of the "Save electrode values" button in the mapping
+window file menu.
+==============================================================================*/
+{
+	int return_code;
+	struct Map *map;
+
+	ENTER(update_mapping_window_file_menu);
+	return_code=0;
+	if (mapping)
+	{
+		return_code=1;
+		if ((map=mapping->map)&&(map->type)&&(0<map->number_of_electrodes)&&
+			(map->electrodes)&&(map->electrode_value)&&(NO_MAP_FIELD!= *(map->type)))
+		{
+			XtSetSensitive(mapping->file_menu.save_electrode_values_button,True);
+		}
+		else
+		{
+			XtSetSensitive(mapping->file_menu.save_electrode_values_button,False);
+		}
+	}
+	LEAVE;
+
+	return (return_code);
+} /* update_mapping_window_file_menu */
+
+static void expose_mapping_drawing_area_2d(Widget widget,
+	XtPointer mapping_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 24 July 2001
 
 DESCRIPTION :
 The callback for redrawing part of a mapping drawing area.
@@ -2945,6 +3082,8 @@ The callback for redrawing part of a mapping drawing area.
 									/* draw the map */
 									draw_map(mapping->map,3,drawing);
 									update_mapping_colour_or_auxili(mapping);
+									/* set the sensitivity of the save electrode values button */
+									update_mapping_window_file_menu(mapping);
 								}
 								else
 								{
@@ -3008,10 +3147,10 @@ The callback for redrawing part of a mapping drawing area.
 	LEAVE;
 } /* expose_mapping_drawing_area_2d */
 
-static void resize_mapping_drawing_area_2d(Widget widget,XtPointer mapping_window,
-	XtPointer call_data)
+static void resize_mapping_drawing_area_2d(Widget widget,
+	XtPointer mapping_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 7 October 1997
+LAST MODIFIED : 24 July 2001
 
 DESCRIPTION :
 The callback for resizing a mapping drawing area.
@@ -3066,6 +3205,8 @@ The callback for resizing a mapping drawing area.
 								background_drawing_colour,0,0,drawing->width,drawing->height);
 							/* redraw the map */
 							draw_map(mapping->map,3,drawing);
+							/* set the sensitivity of the save electrode values button */
+							update_mapping_window_file_menu(mapping);
 							/* display the intersection of the old rectangle and the new
 								rectangle */
 							if (attributes.width<width)
@@ -4271,7 +4412,7 @@ static struct Mapping_window *create_Mapping_window(
 #endif /*  defined (UNEMAP_USE_3D) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 4 September 2000
+LAST MODIFIED : 23 July 2001
 
 DESCRIPTION :
 This function allocates the memory for a mapping_window and sets the fields to
@@ -4312,6 +4453,8 @@ the created mapping window.  If unsuccessful, NULL is returned.
 				(XtPointer)identify_mapping_file_bard_elec},
 			{"identify_mapping_file_default_b",
 				(XtPointer)identify_mapping_file_default_b},
+			{"identify_mapping_file_save_elec",
+				(XtPointer)identify_mapping_file_save_elec},
 			{"set_default_configuration_file",
 				(XtPointer)set_default_configuration_file},
 			{"identify_mapping_print_button",
@@ -4386,6 +4529,7 @@ the created mapping window.  If unsuccessful, NULL is returned.
 			{"read_configuration_file_data",(XtPointer)NULL},
 			{"read_bard_electrode_file_data",(XtPointer)NULL},
 			{"write_configuration_file_data",(XtPointer)NULL},
+			{"write_electrode_values_data",(XtPointer)NULL},
 			{"write_map_postscript_file_data",(XtPointer)NULL},
 			{"write_map_rgb_file_data",(XtPointer)NULL},
 			{"write_map_tiff_file_data",(XtPointer)NULL},
@@ -4453,6 +4597,7 @@ the created mapping window.  If unsuccessful, NULL is returned.
 				mapping->file_menu.read_configuration_button=(Widget)NULL;
 				mapping->file_menu.read_bard_electrode_button=(Widget)NULL;
 				mapping->file_menu.set_default_configuration_button=(Widget)NULL;
+				mapping->file_menu.save_electrode_values_button=(Widget)NULL;
 				mapping->projection_choice=(Widget)NULL;
 				mapping->projection_cylinder=(Widget)NULL;
 				mapping->projection_hammer=(Widget)NULL;
@@ -4505,26 +4650,29 @@ the created mapping window.  If unsuccessful, NULL is returned.
 					identifier_list[3].value=(XtPointer)create_File_open_data(
 						configuration_file_extension,REGULAR,write_configuration_file,
 						(void *)rig_pointer,0,user_interface);
-					identifier_list[4].value=(XtPointer)create_File_open_data(
+					identifier_list[4].value=(XtPointer)create_File_open_data(".val",
+						REGULAR,write_electrode_values_file,(void *)mapping,0,
+						user_interface);
+					identifier_list[5].value=(XtPointer)create_File_open_data(
 						postscript_file_extension,REGULAR,write_map_postscript_file,
 						(void *)mapping,1,user_interface);
-					identifier_list[5].value=(XtPointer)create_File_open_data(".rgb",
+					identifier_list[6].value=(XtPointer)create_File_open_data(".rgb",
 						REGULAR,write_map_rgb_file,(void *)mapping,1,user_interface);
-					identifier_list[6].value=(XtPointer)create_File_open_data(".tif",
+					identifier_list[7].value=(XtPointer)create_File_open_data(".tif",
 						REGULAR,write_map_tiff_file,(void *)mapping,1,user_interface);
-					identifier_list[7].value=(XtPointer)create_File_open_data(".jpg",
+					identifier_list[8].value=(XtPointer)create_File_open_data(".jpg",
 						REGULAR,write_map_jpg_file,(void *)mapping,1,user_interface);
-					identifier_list[8].value=(XtPointer)create_File_open_data(".rgb",
+					identifier_list[9].value=(XtPointer)create_File_open_data(".rgb",
 						REGULAR,write_map_animation_rgb_file,(void *)mapping,1,
 						user_interface);
-					identifier_list[9].value=(XtPointer)create_File_open_data(".tif",
+					identifier_list[10].value=(XtPointer)create_File_open_data(".tif",
 						REGULAR,write_map_animation_tiff_file,(void *)mapping,1,
 						user_interface);
-					identifier_list[10].value=(XtPointer)create_File_open_data(".jpg",
+					identifier_list[11].value=(XtPointer)create_File_open_data(".jpg",
 						REGULAR,write_map_animation_jpg_file,(void *)mapping,1,
 						user_interface);
-					identifier_list[11].value=(XtPointer)rig_pointer;
-					identifier_list[12].value=(XtPointer)identifying_colour;
+					identifier_list[12].value=(XtPointer)rig_pointer;
+					identifier_list[13].value=(XtPointer)identifying_colour;
 					if (MrmSUCCESS==MrmRegisterNamesInHierarchy(mapping_window_hierarchy,
 						identifier_list,XtNumber(identifier_list)))
 					{
@@ -5027,7 +5175,7 @@ the interpolation functions are also recalculated.
 
 int update_mapping_drawing_area(struct Mapping_window *mapping,int recalculate)
 /*******************************************************************************
-LAST MODIFIED : 30 May 2000
+LAST MODIFIED : 24 July 2001
 
 DESCRIPTION :
 Calls draw_map_3d or update_mapping_drawing_area_2d depending upon
@@ -5035,13 +5183,14 @@ Calls draw_map_3d or update_mapping_drawing_area_2d depending upon
 ==============================================================================*/
 {
 	int return_code;
+	struct Map *map;
 
 	ENTER(update_mapping_drawing_area);
-	if(mapping)
+	if (mapping)
 	{
 #if defined (UNEMAP_USE_3D) 
 		/* 3d map for 3d projection */
-		if(mapping->map->projection_type==THREED_PROJECTION)
+		if ((mapping->map)&&(THREED_PROJECTION==mapping->map->projection_type))
 		{			
 			return_code=draw_map(mapping->map,recalculate,mapping->map_drawing);
 		}
@@ -5049,18 +5198,21 @@ Calls draw_map_3d or update_mapping_drawing_area_2d depending upon
 		{
 			return_code=update_mapping_drawing_area_2d(mapping,recalculate);
 		}	
-#else
-		/* old, 2d map*/
+#else /* defined (UNEMAP_USE_3D) */
+		/* old, 2d map */
 		update_mapping_drawing_area_2d(mapping,recalculate);
-#endif /*defined( UNEMAP_USE_3D) */	
+#endif /* defined (UNEMAP_USE_3D) */	
+		/* set the sensitivity of the save electrode values button */
+		update_mapping_window_file_menu(mapping);
 	}
 	else
 	{		
 		return_code=0;
-	}	
+	}
 	LEAVE;
-	return(return_code);
-}/* update_mapping_drawing_area */
+	
+	return (return_code);
+} /* update_mapping_drawing_area */
 
 int update_mapping_colour_or_auxili(struct Mapping_window *mapping)
 /*******************************************************************************

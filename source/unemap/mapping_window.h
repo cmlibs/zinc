@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.h
 
-LAST MODIFIED : 1 February 2000
+LAST MODIFIED : 23 July 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -36,7 +36,7 @@ The work area that the mapping window is currently associated with.
 #if defined (MOTIF)
 struct Mapping_file_menu
 /*******************************************************************************
-LAST MODIFIED : 25 March 1997
+LAST MODIFIED : 23 July 2001
 
 DESCRIPTION :
 The menu associated with the file button.
@@ -46,6 +46,7 @@ The menu associated with the file button.
 	Widget read_configuration_button;
 	Widget read_bard_electrode_button;
 	Widget set_default_configuration_button;
+	Widget save_electrode_values_button;
 }; /* struct Mapping_file_menu */
 #endif /* defined (MOTIF) */
 

@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : mapping_window.uil
 !
-!LAST MODIFIED : 23 May 2001
+!LAST MODIFIED : 23 July 2001
 !
 !DESCRIPTION :
 !The widgets/gadgets for the mapping window in the mapping work area.
@@ -27,6 +27,7 @@ procedure
 	identify_mapping_file_bard_elec;
 	identify_mapping_file_default_b;
 	set_default_configuration_file;
+	identify_mapping_file_save_elec;
 	identify_mapping_projection_cho;
 	identify_mapping_projection_cyl;
 	identify_mapping_projection_ham;
@@ -71,6 +72,7 @@ identifier
 	write_configuration_file_data;
 	read_configuration_file_data;
 	read_bard_electrode_file_data;
+	write_electrode_values_data;
 	write_map_postscript_file_data;
 	write_map_rgb_file_data;
 	write_map_tiff_file_data;
@@ -715,6 +717,7 @@ object
 			XmPushButton mapping_file_read_button;
 			XmPushButton mapping_file_bard_electrode_but;
 			XmPushButtonGadget mapping_file_default_button;
+			XmPushButtonGadget mapping_file_save_electrode_val;
 			};
 		};
 	mapping_file_save_button: XmPushButton
@@ -782,7 +785,7 @@ object
 		arguments
 			{
 			XmNlabelString = 
-			compound_string("Set default");
+			compound_string("Set default configuration");
 			XmNfontList = button_font;
 			};
 		callbacks
@@ -794,6 +797,27 @@ object
 			XmNactivateCallback = procedures
 				{
 				set_default_configuration_file(mapping_rig);
+				};
+			};
+		};
+	mapping_file_save_electrode_val: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNlabelString = 
+			compound_string("Save electrode values");
+			XmNfontList = button_font;
+			XmNsensitive = false;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				identify_mapping_file_save_elec(mapping_window_structure);
+				};
+			XmNactivateCallback = procedures
+				{
+				open_file_and_write(write_electrode_values_data);
 				};
 			};
 		};
