@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene_editor.h
 
-LAST MODIFIED : 12 November 2001
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
 Widgets for editing scene, esp. changing visibility of members.
@@ -11,6 +11,13 @@ Widgets for editing scene, esp. changing visibility of members.
 
 #include "graphics/scene.h"
 #include "user_interface/user_interface.h"
+
+/*
+Global types
+------------
+*/
+
+struct Scene_editor;
 
 /*
 Global functions

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : spectrum_editor.c
 
-LAST MODIFIED : 4 September 2000
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
 Initially pillaged from graphics/graphical_element_editor.c
@@ -37,7 +37,7 @@ static MrmHierarchy spectrum_editor_hierarchy;
 
 struct Spectrum_editor
 /*******************************************************************************
-LAST MODIFIED : 10 March 1998
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
 Contains all the information carried by the graphical element editor widget.
@@ -45,7 +45,7 @@ Contains all the information carried by the graphical element editor widget.
 {
 	/* This editor_material is used when displaying the spectrum in the 
 		3d widget */
-	struct Graphical_material *editor_material;
+	struct Graphical_material *editor_material, *tick_material;
 	struct Spectrum_settings *current_settings;
 	struct Spectrum *edit_spectrum;
 	struct MANAGER(Spectrum) *spectrum_manager;
@@ -56,7 +56,7 @@ Contains all the information carried by the graphical element editor widget.
 	Widget settings_scroll,settings_rowcol,add_button,
 		delete_button,up_button,down_button,settings_form,settings_widget,
 		viewer_form, opaque_button;
-	Widget *widget_address,widget,widget_parent;
+	Widget widget,widget_parent;
 	struct Scene *spectrum_editor_scene;
 	struct Scene_viewer *spectrum_editor_scene_viewer;
 	struct GT_object *graphics_object, *tick_lines_graphics_object,
@@ -353,7 +353,6 @@ DESCRIPTION :
 				number_of_points = 2;
 			} break;
 		}
-		compile_Graphical_material(spectrum_editor->editor_material, NULL);
 		if ( tick_label_count != number_of_points 
 			|| tick_line_count != number_of_points )
 		{
@@ -570,66 +569,6 @@ DECLARE_DIALOG_IDENTIFY_FUNCTION(spectrum_editor, \
 	Spectrum_editor,viewer_form)
 DECLARE_DIALOG_IDENTIFY_FUNCTION(spectrum_editor, \
 	Spectrum_editor,opaque_button)
-
-static void spectrum_editor_destroy_CB(Widget widget,int *tag,
-	unsigned long *reason)
-/*******************************************************************************
-LAST MODIFIED : 5 July 1999
-
-DESCRIPTION :
-Callback for the spectrum_editor dialog - tidies up all details - mem etc
-==============================================================================*/
-{
-	struct Spectrum_editor *spectrum_editor;
-	struct GT_pointset *tick_labels;
-
-	ENTER(spectrum_editor_destroy_CB);
-	USE_PARAMETER(tag);
-	USE_PARAMETER(reason);
-	if (widget)
-	{
-		/* Get the pointer to the data for the widget */
-		XtVaGetValues(widget,XmNuserData,&spectrum_editor,NULL);
-		if (spectrum_editor)
-		{
-			DEACCESS(Graphical_material)(&spectrum_editor->editor_material);
-			/* The strings in the labels graphics object are stored in two 
-				ALLOCATED blocks instead of ALLOCATING each string individually.
-				So I will manually DEALLOCATE the strings and set them to NULL */
-			tick_labels = GT_OBJECT_GET(GT_pointset)(spectrum_editor->tick_labels_graphics_object, 0);
-			if ( tick_labels->text )
-			{
-				DEALLOCATE(tick_labels->text[0]);
-				DEALLOCATE(tick_labels->text);
-				tick_labels->text = (char **)NULL;
-			}
-			/* The DEACCESS for the first graphics object automatically works
-				down the linked list chain */
-			DEACCESS(GT_object)(&spectrum_editor->graphics_object);
-			DESTROY(Scene_viewer)(&spectrum_editor->spectrum_editor_scene_viewer);
-			/* destroy edit_spectrum */
-			if (spectrum_editor->edit_spectrum)
-			{
-				DEACCESS(Spectrum)(
-					&(spectrum_editor->edit_spectrum));
-			}
-			*(spectrum_editor->widget_address)=(Widget)NULL;
-			DEALLOCATE(spectrum_editor);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"spectrum_editor_destroy_CB.  "
-				"Missing spectrum_editor struct");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"spectrum_editor_destroy_CB.  Missing widget");
-	}
-	LEAVE;
-} /* spectrum_editor_destroy_CB */
 
 static void spectrum_editor_settings_visibility_CB(Widget widget,
 	XtPointer client_data,XtPointer call_data)
@@ -956,8 +895,8 @@ Global functions
 ----------------
 */
 
-Widget create_spectrum_editor_widget(Widget *spectrum_editor_widget,
-	Widget parent,struct Spectrum *spectrum,
+struct Spectrum_editor *CREATE(Spectrum_editor)(
+	Widget parent, struct Spectrum *spectrum,
 	struct User_interface *user_interface,
 	struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
@@ -965,20 +904,18 @@ Widget create_spectrum_editor_widget(Widget *spectrum_editor_widget,
 	struct MANAGER(Spectrum) *spectrum_manager,
 	struct MANAGER(Texture) *texture_manager)
 /*******************************************************************************
-LAST MODIFIED : 5 July 1999
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
 Creates a spectrum_editor widget.
-???RC Currently not using the scene_manager; hence left warning on.
 ==============================================================================*/
 {
 	int i,j,return_code,surface_discretise_xi1=24,surface_discretise_xi2=108;
 	GTDATA *data;
 	MrmType spectrum_editor_dialog_class;
-	struct Spectrum_editor *spectrum_editor=NULL;
+	struct Spectrum_editor *spectrum_editor;
 	static MrmRegisterArg callback_list[]=
 	{
-		{"spec_ed_destroy_CB",(XtPointer)spectrum_editor_destroy_CB},
 		{"spec_ed_identify_settings_scr",(XtPointer)
 			DIALOG_IDENTIFY(spectrum_editor,settings_scroll)},
 		{"spec_ed_identify_settings_rc",(XtPointer)
@@ -1016,7 +953,6 @@ Creates a spectrum_editor widget.
 	struct Graphics_buffer *graphics_buffer;
 	struct Light *viewer_light;
 	struct Light_model *viewer_light_model;
-	Widget return_widget;
 	Triple *points, *normalpoints;
 	float value_xi1, value_xi2, light_direction[3] = {0, -0.2, -1.0};
 	struct GT_surface *cylinder_surface;
@@ -1026,10 +962,9 @@ Creates a spectrum_editor widget.
 	char **strings, *string_data;
 	struct Spectrum *default_scene_spectrum;
 
-	ENTER(create_spectrum_editor_widget);
-	return_widget=(Widget)NULL;
-	/* check arguments */
-	if (spectrum_editor_widget&&parent&&user_interface)
+	ENTER(CREATE(Spectrum_editor));
+	spectrum_editor = (struct Spectrum_editor *)NULL;
+	if (parent && user_interface)
 	{
 		if (MrmOpenHierarchy_base64_string(spectrum_editor_uidh,
 			&spectrum_editor_hierarchy,&spectrum_editor_hierarchy_open))
@@ -1044,7 +979,6 @@ Creates a spectrum_editor widget.
 				spectrum_editor->material_manager_callback_id=(void *)NULL;
 				spectrum_editor->spectrum_manager_callback_id=(void *)NULL;
 				spectrum_editor->widget_parent=parent;
-				spectrum_editor->widget_address=spectrum_editor_widget;
 				spectrum_editor->widget=(Widget)NULL;
 				spectrum_editor->settings_scroll=(Widget)NULL;
 				spectrum_editor->settings_rowcol=(Widget)NULL;
@@ -1059,6 +993,7 @@ Creates a spectrum_editor widget.
 				spectrum_editor->update_callback.procedure=(Callback_procedure *)NULL;
 				spectrum_editor->update_callback.data=(void *)NULL;
 				spectrum_editor->editor_material = (struct Graphical_material *)NULL;
+				spectrum_editor->tick_material = (struct Graphical_material *)NULL;
 				spectrum_editor->graphics_object = (struct GT_object *)NULL;
 				spectrum_editor->tick_lines_graphics_object = (struct GT_object *)NULL;
 				spectrum_editor->tick_labels_graphics_object = (struct GT_object *)NULL;
@@ -1090,7 +1025,7 @@ Creates a spectrum_editor widget.
 								spectrum_editor->settings_form,(struct Spectrum_settings *)NULL)))
 							{
 								display_message(ERROR_MESSAGE,
-									"create_spectrum_editor_widget.  "
+									"CREATE(Spectrum_editor).  "
 									"Could not create spectrum editor settings widget");
 								return_code=0;
 							}
@@ -1103,12 +1038,12 @@ Creates a spectrum_editor widget.
 									Graphical_material_set_ambient(spectrum_editor->editor_material, &black );
 									Graphical_material_set_diffuse(spectrum_editor->editor_material, &black );
 									Graphical_material_set_shininess(spectrum_editor->editor_material, 0.8 );
-									compile_Graphical_material(spectrum_editor->editor_material, NULL);
 									tick_material = CREATE(Graphical_material)("editor_material");
+									spectrum_editor->tick_material = ACCESS(Graphical_material)(
+										tick_material);
 									Graphical_material_set_ambient(tick_material, &off_white );
 									Graphical_material_set_diffuse(tick_material, &off_white );
 									Graphical_material_set_shininess(tick_material, 0.8 );
-									compile_Graphical_material(tick_material, NULL);
 									if ( ALLOCATE( points, Triple, surface_discretise_xi1 *
 										surface_discretise_xi2) &&
 										ALLOCATE( normalpoints, Triple, surface_discretise_xi1 *
@@ -1156,7 +1091,7 @@ Creates a spectrum_editor widget.
 												DEALLOCATE( data );
 												return_code = 0;
 												display_message(ERROR_MESSAGE,
-													"create_spectrum_editor_widget. Unable to create surface");
+													"CREATE(Spectrum_editor). Unable to create surface");
 											}
 										}
 										else
@@ -1165,7 +1100,7 @@ Creates a spectrum_editor widget.
 											DEALLOCATE( data );
 											return_code = 0;
 											display_message(ERROR_MESSAGE,
-												"create_spectrum_editor_widget. Unable to create graphics_object");
+												"CREATE(Spectrum_editor). Unable to create graphics_object");
 										}
 									}
 									if ( return_code )
@@ -1189,14 +1124,14 @@ Creates a spectrum_editor widget.
 											{
 												return_code = 0;
 												display_message(ERROR_MESSAGE,
-													"create_spectrum_editor_widget. Unable to create lines");
+													"CREATE(Spectrum_editor). Unable to create lines");
 											}
 										}
 										else
 										{
 											return_code = 0;
 											display_message(ERROR_MESSAGE,
-												"create_spectrum_editor_widget. Unable to create tick line graphics_object");
+												"CREATE(Spectrum_editor). Unable to create tick line graphics_object");
 										}
 									}
 									if ( return_code
@@ -1227,14 +1162,14 @@ Creates a spectrum_editor widget.
 											{
 												return_code = 0;
 												display_message(ERROR_MESSAGE,
-													"create_spectrum_editor_widget. Unable to create tick label pointset");
+													"CREATE(Spectrum_editor). Unable to create tick label pointset");
 											}
 										}
 										else
 										{
 											return_code = 0;
 											display_message(ERROR_MESSAGE,
-												"create_spectrum_editor_widget. Unable to create tick label graphics_object");
+												"CREATE(Spectrum_editor). Unable to create tick label graphics_object");
 										}
 									}
 									if ( return_code )
@@ -1292,10 +1227,8 @@ Creates a spectrum_editor widget.
 								}
 								if (spectrum)
 								{
-									spectrum_editor_set_Spectrum(
-										spectrum_editor->widget,spectrum);
+									spectrum_editor_set_spectrum(spectrum_editor, spectrum);
 								}
-								return_widget=spectrum_editor->widget;
 							}
 							else
 							{
@@ -1306,7 +1239,7 @@ Creates a spectrum_editor widget.
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"create_spectrum_editor_widget.  "
+								"CREATE(Spectrum_editor).  "
 								"Could not fetch spectrum_editor widget");
 							DEALLOCATE(spectrum_editor);
 						}
@@ -1314,7 +1247,7 @@ Creates a spectrum_editor widget.
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"create_spectrum_editor_widget.  "
+							"CREATE(Spectrum_editor).  "
 							"Could not register identifiers");
 						DEALLOCATE(spectrum_editor);
 					}
@@ -1322,7 +1255,7 @@ Creates a spectrum_editor widget.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"create_spectrum_editor_widget.  "
+						"CREATE(Spectrum_editor).  "
 						"Could not register callbacks");
 					DEALLOCATE(spectrum_editor);
 				}
@@ -1330,106 +1263,137 @@ Creates a spectrum_editor widget.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"create_spectrum_editor_widget.  "
+					"CREATE(Spectrum_editor).  "
 					"Could not allocate spectrum_editor widget structure");
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"create_spectrum_editor_widget.  Could not open hierarchy");
-		}
-		*spectrum_editor_widget=return_widget;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"create_spectrum_editor_widget.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_widget);
-} /* create_spectrum_editor_widget */
-
-struct Callback_data *spectrum_editor_get_callback(
-	Widget spectrum_editor_widget)
-/*******************************************************************************
-LAST MODIFIED : 10 March 1998
-
-DESCRIPTION :
-Returns a pointer to the update_callback item of the
-spectrum_editor_widget.
-==============================================================================*/
-{
-	struct Callback_data *return_address;
-	struct Spectrum_editor *spectrum_editor;
-
-	ENTER(spectrum_editor_get_callback);
-	/* check arguments */
-	if (spectrum_editor_widget)
-	{
-		/* Get the pointer to the data for the dialog */
-		XtVaGetValues(spectrum_editor_widget,XmNuserData,
-			&spectrum_editor,NULL);
-		if (spectrum_editor)
-		{
-			return_address=&(spectrum_editor->update_callback);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"spectrum_editor_get_callback.  Missing widget data");
-			return_address=(struct Callback_data *)NULL;
+				"CREATE(Spectrum_editor).  Could not open hierarchy");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"spectrum_editor_get_callback.  Missing widget");
-		return_address=(struct Callback_data *)NULL;
+			"CREATE(Spectrum_editor).  Invalid argument(s)");
 	}
 	LEAVE;
 
-	return (return_address);
-} /* spectrum_editor_get_callback */
+	return (spectrum_editor);
+} /* CREATE(Spectrum_editor) */
 
-int spectrum_editor_set_callback(
-	Widget spectrum_editor_widget,struct Callback_data *new_callback)
+int DESTROY(Spectrum_editor)(struct Spectrum_editor **spectrum_editor_address)
 /*******************************************************************************
-LAST MODIFIED : 10 March 1998
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
-Changes the callback function for the spectrum_editor_widget, which
-will be called when the spectrum changes in any way.
+Destroys the <*spectrum_editor_address> and sets
+<*spectrum_editor_address> to NULL.
 ==============================================================================*/
 {
 	int return_code;
+	struct GT_pointset *tick_labels;
 	struct Spectrum_editor *spectrum_editor;
 
-	ENTER(spectrum_editor_set_callback);
-	/* check arguments */
-	if (spectrum_editor_widget&&new_callback)
+	ENTER(DESTROY(Spectrum_editor));
+	if (spectrum_editor_address &&
+		(spectrum_editor = *spectrum_editor_address))
 	{
-		/* Get the pointer to the data for the choose_settings dialog */
-		XtVaGetValues(spectrum_editor_widget,XmNuserData,
-			&spectrum_editor,NULL);
-		if (spectrum_editor)
+		return_code = 1;
+		DEACCESS(Graphical_material)(&spectrum_editor->editor_material);
+		DEACCESS(Graphical_material)(&spectrum_editor->tick_material);
+		/* The strings in the labels graphics object are stored in two 
+			 ALLOCATED blocks instead of ALLOCATING each string individually.
+			 So I will manually DEALLOCATE the strings and set them to NULL */
+		tick_labels = GT_OBJECT_GET(GT_pointset)(
+			spectrum_editor->tick_labels_graphics_object, 0);
+		if ( tick_labels->text )
 		{
-			spectrum_editor->update_callback.procedure=new_callback->procedure;
-			spectrum_editor->update_callback.data=new_callback->data;
-			return_code=1;
+			DEALLOCATE(tick_labels->text[0]);
+			DEALLOCATE(tick_labels->text);
+			tick_labels->text = (char **)NULL;
 		}
-		else
+		/* The DEACCESS for the first graphics object automatically works
+			 down the linked list chain */
+		DEACCESS(GT_object)(&spectrum_editor->graphics_object);
+		DESTROY(Scene_viewer)(&spectrum_editor->spectrum_editor_scene_viewer);
+		XtDestroyWidget(spectrum_editor->widget);
+		/* destroy edit_spectrum */
+		if (spectrum_editor->edit_spectrum)
 		{
-			display_message(ERROR_MESSAGE,
-				"spectrum_editor_set_callback.  Missing widget data");
-			return_code=0;
+			DEACCESS(Spectrum)(
+				&(spectrum_editor->edit_spectrum));
 		}
+		DEALLOCATE(*spectrum_editor_address);
+		*spectrum_editor_address = (struct Spectrum_editor *)NULL;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"spectrum_editor_set_callback.  Missing widget");
+			"DESTROY(Spectrum_editor).  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(Spectrum_editor) */
+
+int spectrum_editor_get_callback(
+	struct Spectrum_editor *spectrum_editor,struct Callback_data *callback)
+/*******************************************************************************
+LAST MODIFIED : 12 August 2002
+
+DESCRIPTION :
+Get the update <callback> information for the <spectrum_editor>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(spectrum_editor_get_callback);
+	return_code=0;
+	/* check arguments */
+	if (spectrum_editor&&callback)
+	{
+		callback->procedure=spectrum_editor->update_callback.procedure;
+		callback->data=spectrum_editor->update_callback.data;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"spectrum_editor_get_callback.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* spectrum_editor_get_callback */
+
+int spectrum_editor_set_callback(
+	struct Spectrum_editor *spectrum_editor,struct Callback_data *callback)
+/*******************************************************************************
+LAST MODIFIED : 12 August 2002
+
+DESCRIPTION :
+Set the update <callback> information for the <spectrum_editor>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(spectrum_editor_set_callback);
+	return_code=0;
+	/* check arguments */
+	if (spectrum_editor&&callback)
+	{
+		spectrum_editor->update_callback.procedure=callback->procedure;
+		spectrum_editor->update_callback.data=callback->data;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"spectrum_editor_set_callback.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
@@ -1437,133 +1401,103 @@ will be called when the spectrum changes in any way.
 	return (return_code);
 } /* spectrum_editor_set_callback */
 
-int spectrum_editor_set_Spectrum(
-	Widget spectrum_editor_widget,
-	struct Spectrum *spectrum)
+struct Spectrum *spectrum_editor_get_spectrum(
+	struct Spectrum_editor *spectrum_editor)
 /*******************************************************************************
-LAST MODIFIED : 5 July 1999
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
-Sets the spectrum to be edited by the spectrum_editor widget.
+Returns the spectrum edited by the <spectrum_editor>.
+==============================================================================*/
+{
+	struct Spectrum *spectrum;
+
+	ENTER(spectrum_editor_get_spectrum);
+	if (spectrum_editor)
+	{
+		spectrum = spectrum_editor->edit_spectrum;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"spectrum_editor_get_spectrum.  Invalid argument(s)");
+		spectrum = (struct Spectrum *)NULL;
+	}
+	LEAVE;
+
+	return (spectrum);
+} /* spectrum_editor_get_spectrum */
+
+int spectrum_editor_set_spectrum(
+	struct Spectrum_editor *spectrum_editor, struct Spectrum *spectrum)
+/*******************************************************************************
+LAST MODIFIED : 12 August 2002
+
+DESCRIPTION :
+Set the <spectrum> to be edited by the <spectrum_editor>.
 ==============================================================================*/
 {
 	int return_code;
 	struct Callback_data callback;
-	struct Spectrum_editor *spectrum_editor;
 
-	ENTER(spectrum_editor_set_Spectrum);
-	/* check arguments */
-	if (spectrum_editor_widget)
+	ENTER(spectrum_editor_set_spectrum);
+	if (spectrum_editor)
 	{
-		/* Get the pointer to the data for the spectrum_editor_widget */
-		XtVaGetValues(spectrum_editor_widget,XmNuserData,&spectrum_editor,
-			NULL);
-		if (spectrum_editor)
+		if (spectrum)
 		{
-			if (spectrum)
+			if (make_edit_spectrum(spectrum_editor,spectrum))
 			{
-				if (make_edit_spectrum(spectrum_editor,spectrum))
-				{
-					/* continue with the current_settings_type */
-					spectrum_editor_make_settings_list(spectrum_editor);
-
-					XtManageChild(spectrum_editor->widget);
-					/* select the first settings item in the list (if any) */
-					spectrum_editor->current_settings=(struct Spectrum_settings *)NULL;
-					spectrum_editor_select_settings_item(spectrum_editor);
-					/* turn on callbacks from settings editor */
-					callback.procedure=spectrum_editor_update_settings;
-					callback.data=(void *)spectrum_editor;
-					spectrum_editor_settings_set_callback(
-						spectrum_editor->settings_widget,&callback);
-				}
-				else
-				{
-					spectrum=(struct Spectrum *)NULL;
-				}
-			}
-			if (!spectrum)
-			{
-				/* turn off settings editor by passing NULL settings */
+				/* continue with the current_settings_type */
+				spectrum_editor_make_settings_list(spectrum_editor);
+				
+				XtManageChild(spectrum_editor->widget);
+				/* select the first settings item in the list (if any) */
 				spectrum_editor->current_settings=(struct Spectrum_settings *)NULL;
-				spectrum_editor_settings_set_settings(spectrum_editor->settings_widget,
-					spectrum_editor->current_settings);
-				XtUnmanageChild(spectrum_editor->widget);
-				/* turn off callbacks from settings editors */
-				callback.procedure=(Callback_procedure *)NULL;
-				callback.data=(void *)NULL;
-				spectrum_editor_settings_set_callback(spectrum_editor->settings_widget,&callback);
-				if (spectrum_editor->edit_spectrum)
-				{
-					DESTROY(Spectrum)(&(spectrum_editor->edit_spectrum));
-				}
+				spectrum_editor_select_settings_item(spectrum_editor);
+				/* turn on callbacks from settings editor */
+				callback.procedure=spectrum_editor_update_settings;
+				callback.data=(void *)spectrum_editor;
+				spectrum_editor_settings_set_callback(
+					spectrum_editor->settings_widget, &callback);
 			}
-			spectrum_editor_update_scene_viewer(spectrum_editor);
-			return_code=1;
+			else
+			{
+				spectrum=(struct Spectrum *)NULL;
+			}
 		}
-		else
+		if (!spectrum)
 		{
-			display_message(ERROR_MESSAGE,
-				"spectrum_editor_set_Spectrum.  "
-				"Missing spectrum_editor struct");
-			return_code=0;
+			/* turn off settings editor by passing NULL settings */
+			spectrum_editor->current_settings=(struct Spectrum_settings *)NULL;
+			spectrum_editor_settings_set_settings(spectrum_editor->settings_widget,
+				spectrum_editor->current_settings);
+			XtUnmanageChild(spectrum_editor->widget);
+			/* turn off callbacks from settings editors */
+			callback.procedure=(Callback_procedure *)NULL;
+			callback.data=(void *)NULL;
+			spectrum_editor_settings_set_callback(spectrum_editor->settings_widget,&callback);
+			if (spectrum_editor->edit_spectrum)
+			{
+				DESTROY(Spectrum)(&(spectrum_editor->edit_spectrum));
+			}
 		}
+		spectrum_editor_update_scene_viewer(spectrum_editor);
+		return_code=1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"spectrum_editor_set_Spectrum.  Invalid argument(s)");
-		return_code=0;
+			"spectrum_editor_set_spectrum.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* spectrum_editor_set_Spectrum */
+} /* spectrum_editor_set_spectrum */
 
-struct Spectrum *spectrum_editor_get_Spectrum(
-	Widget spectrum_editor_widget)
+int spectrum_editor_refresh(struct Spectrum_editor *spectrum_editor)
 /*******************************************************************************
-LAST MODIFIED : 10 March 1998
-
-DESCRIPTION :
-Returns the spectrum currently being edited.
-==============================================================================*/
-{
-	struct Spectrum *return_address;
-	struct Spectrum_editor *spectrum_editor;
-
-	ENTER(spectrum_editor_get_spectrum);
-	/* check arguments */
-	if (spectrum_editor_widget)
-	{
-		/* Get the pointer to the data for the dialog */
-		XtVaGetValues(spectrum_editor_widget,XmNuserData,
-			&spectrum_editor,NULL);
-		if (spectrum_editor)
-		{
-			return_address=spectrum_editor->edit_spectrum;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"spectrum_editor_get_spectrum.  Missing widget data");
-			return_address=(struct Spectrum *)NULL;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"spectrum_editor_get_spectrum.  Missing widget");
-		return_address=(struct Spectrum *)NULL;
-	}
-	LEAVE;
-
-	return (return_address);
-} /* spectrum_editor_get_spectrums */
-
-int spectrum_editor_refresh(Widget spectrum_editor_widget)
-/*******************************************************************************
-LAST MODIFIED : 10 March 1998
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
 Clears all the settings_changed flags globally (later) and in the list of
@@ -1571,16 +1505,11 @@ settings.
 ==============================================================================*/
 {
 	int return_code;
-	struct Spectrum_editor *spectrum_editor;
 
 	ENTER(spectrum_editor_refresh);
-	/* check arguments */
-	if (spectrum_editor_widget)
+	if (spectrum_editor)
 	{
-		/* Get the pointer to the data for the choose_settings dialog */
-		XtVaGetValues(spectrum_editor_widget,XmNuserData,
-			&spectrum_editor,NULL);
-		if (spectrum_editor&&spectrum_editor->edit_spectrum)
+		if (spectrum_editor->edit_spectrum)
 		{
 			FOR_EACH_OBJECT_IN_LIST(Spectrum_settings)(
 				Spectrum_settings_clear_settings_changed,(void *)NULL,
@@ -1591,61 +1520,56 @@ settings.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"spectrum_editor_refresh.  Missing widget data");
-			return_code=0;
+				"spectrum_editor_refresh.  Missing edit_spectrum");
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"spectrum_editor_refresh.  Missing widget");
-		return_code=0;
+			"spectrum_editor_refresh.  Missing spectrum_editor");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* spectrum_editor_refresh */
 
-int spectrum_editor_update_changes(Widget spectrum_editor_widget)
+int spectrum_editor_update_changes(struct Spectrum_editor *spectrum_editor)
 /*******************************************************************************
-LAST MODIFIED : 23 July 1998
+LAST MODIFIED : 12 August 2002
+
 DESCRIPTION :
-This function is called to update the editor when other
-things (such as the autorange button) have changed the
-edit spectrum.
+This function is called to update the editor when other things, such as the
+autorange button, have changed the edit spectrum.
 ==============================================================================*/
 {
 	int return_code;
-	struct Spectrum_editor *spectrum_editor;
 
 	ENTER(spectrum_editor_update_changes);
-	/* check arguments */
-	if (spectrum_editor_widget)
+	if (spectrum_editor)
 	{
-		XtVaGetValues(spectrum_editor_widget,XmNuserData,
-			&spectrum_editor,NULL);
-		if (spectrum_editor&&spectrum_editor->edit_spectrum)
+		if (spectrum_editor->edit_spectrum)
 		{
 			spectrum_editor_settings_set_settings(
 				spectrum_editor->settings_widget,
 				spectrum_editor->current_settings );
 			spectrum_editor_make_settings_list(spectrum_editor);
-			spectrum_editor_update_scene_viewer(
-				spectrum_editor );
-			return_code=1;
+			spectrum_editor_update_scene_viewer(spectrum_editor);
+			return_code = 1;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"spectrum_editor_update_changes.  Missing widget data");
-			return_code=0;
+				"spectrum_editor_update_changes.  Missing edit_spectrum");
+			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"spectrum_editor_update_changes.  Missing widget");
-		return_code=0;
+			"spectrum_editor_update_changes.  Missing spectrum_editor");
+		return_code = 0;
 	}
 	LEAVE;
 

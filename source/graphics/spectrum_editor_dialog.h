@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : spectrum_editor_dialog.h
 
-LAST MODIFIED : 6 November 2001
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
 Header description for spectrum_editor_dialog widget.
@@ -13,51 +13,20 @@ Header description for spectrum_editor_dialog widget.
 #include "user_interface/user_interface.h"
 
 /*
+Global Types
+------------
+*/
+
+struct Spectrum_editor_dialog;
+
+/*
 Global Functions
 ----------------
 */
-int spectrum_editor_dialog_get_callback(Widget spectrum_editor_dialog_widget,
-	struct Callback_data *callback);
-/*******************************************************************************
-LAST MODIFIED : 10 March 1998
 
-DESCRIPTION :
-Returns the update_callback for the spectrum editor_dialog widget.
-==============================================================================*/
-
-int spectrum_editor_dialog_set_callback(Widget spectrum_editor_dialog_widget,
-	struct Callback_data *callback);
-/*******************************************************************************
-LAST MODIFIED : 10 March 1998
-
-DESCRIPTION :
-Changes the update_callback for the spectrum editor_dialog widget.
-==============================================================================*/
-
-struct Spectrum *spectrum_editor_dialog_get_spectrum(
-	Widget spectrum_editor_dialog_widget);
-/*******************************************************************************
-LAST MODIFIED : 10 March 1998
-
-DESCRIPTION :
-If <spectrum_editor_dialog_widget> is not NULL, then get the data item from
-<spectrum_editor_dialog widget>.  Otherwise, get the data item from
-<spectrum_editor_dialog>.
-==============================================================================*/
-
-int spectrum_editor_dialog_set_spectrum(Widget spectrum_editor_dialog_widget,
-	struct Spectrum *spectrum);
-/*******************************************************************************
-LAST MODIFIED : 10 March 1998
-
-DESCRIPTION :
-If <spectrum_editor_dialog_widget> is not NULL, then change the data item on
-<spectrum_editor_dialog widget>.  Otherwise, change the data item on
-<spectrum_editor_dialog>.
-==============================================================================*/
-
-int bring_up_spectrum_editor_dialog(Widget *spectrum_editor_dialog_address,
-	Widget parent,struct MANAGER(Spectrum) *spectrum_manager,
+int bring_up_spectrum_editor_dialog(
+	struct Spectrum_editor_dialog **spectrum_editor_dialog_address,
+	Widget parent, struct MANAGER(Spectrum) *spectrum_manager,
 	struct Spectrum *spectrum, struct User_interface *user_interface,
 	struct LIST(GT_object) *glyph_list,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
@@ -65,11 +34,40 @@ int bring_up_spectrum_editor_dialog(Widget *spectrum_editor_dialog_address,
 	struct MANAGER(Texture) *texture_manager,
 	struct MANAGER(Scene) *scene_manager);
 /*******************************************************************************
-LAST MODIFIED : 6 November 2001
+LAST MODIFIED : 12 August 2002
 
 DESCRIPTION :
 If there is a spectrum_editor dialog in existence, then de-iconify it and
 bring it to the front, otherwise create a new one.
+==============================================================================*/
+
+int DESTROY(Spectrum_editor_dialog)(
+	struct Spectrum_editor_dialog **spectrum_editor_dialog_address);
+/*******************************************************************************
+LAST MODIFIED : 12 August 2002
+
+DESCRIPTION :
+Destroy the <*spectrum_editor_dialog_address> and sets
+<*spectrum_editor_dialog_address> to NULL.
+==============================================================================*/
+
+struct Spectrum *spectrum_editor_dialog_get_spectrum(
+	struct Spectrum_editor_dialog *spectrum_editor_dialog);
+/*******************************************************************************
+LAST MODIFIED : 12 August 2002
+
+DESCRIPTION :
+Returns the spectrum edited by the <spectrum_editor_dialog>.
+==============================================================================*/
+
+int spectrum_editor_dialog_set_spectrum(
+	struct Spectrum_editor_dialog *spectrum_editor_dialog,
+	struct Spectrum *spectrum);
+/*******************************************************************************
+LAST MODIFIED : 12 August 2002
+
+DESCRIPTION :
+Set the <spectrum> for the <spectrum_editor_dialog>.
 ==============================================================================*/
 
 #endif

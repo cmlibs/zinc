@@ -11,7 +11,6 @@ module spectrum_editor_dialog
 
 procedure
 	spec_editor_d_identify_button    (integer);
-	spec_editor_d_destroy_CB          ();
 	spec_editor_d_control_CB          (integer);
 	spec_ed_d_autorange_btn_CB;
 	
@@ -64,10 +63,6 @@ object
 			XmForm spec_ed_d_control_form;
 			XmForm spec_editor_d_editor;
 			XmRowColumn spec_editor_d_control;
-			};
-		callbacks
-			{
-			XmNdestroyCallback = procedure spec_editor_d_destroy_CB();
 			};
 		};
 	spec_editor_d_select: XmForm

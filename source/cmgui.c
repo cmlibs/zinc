@@ -81,6 +81,9 @@ DESCRIPTION :
 #include "graphics/scene_editor.h"
 #endif /* defined (MOTIF) */
 #include "graphics/spectrum.h"
+#if defined (MOTIF)
+#include "graphics/spectrum_editor_dialog.h"
+#endif /* defined (MOTIF) */
 #include "graphics/transform_tool.h"
 #include "graphics/volume_texture.h"
 #if defined (MOTIF)
@@ -102,6 +105,9 @@ DESCRIPTION :
 #if defined (SGI_MOVIE_FILE)
 #include "three_d_drawing/movie_extensions.h"
 #endif /* defined (SGI_MOVIE_FILE) */
+#if defined (MOTIF)
+#include "time/time_editor_dialog.h"
+#endif /* defined (MOTIF) */
 #include "time/time_keeper.h"
 #include "user_interface/event_dispatcher.h"
 #if defined (MOTIF)
@@ -725,8 +731,8 @@ Main program for the CMISS Graphical User Interface
 	command_data.projection_window=(struct Projection_window *)NULL;
 	command_data.scene_editor = (struct Scene_editor *)NULL;
 	/*???RC.  Temporary - should allow more than one */
-	command_data.spectrum_editor_dialog=(Widget)NULL;
-	command_data.time_editor_dialog=(struct Time_editor_dialog *)NULL;
+	command_data.spectrum_editor_dialog = (struct Spectrum_editor_dialog *)NULL;
+	command_data.time_editor_dialog = (struct Time_editor_dialog *)NULL;
 	/*???RC.  Temporary - should allow more than one */
 #endif /* defined (MOTIF) */
 	command_data.command_console = (struct Console *)NULL;
@@ -1712,6 +1718,14 @@ Main program for the CMISS Graphical User Interface
 	if (command_data.element_point_viewer)
 	{
 		DESTROY(Element_point_viewer)(&(command_data.element_point_viewer));
+	}
+	if (command_data.time_editor_dialog)
+	{
+		DESTROY(Time_editor_dialog)(&(command_data.time_editor_dialog));
+	}
+	if (command_data.spectrum_editor_dialog)
+	{
+		DESTROY(Spectrum_editor_dialog)(&(command_data.spectrum_editor_dialog));
 	}
 	if (command_data.scene_editor)
 	{

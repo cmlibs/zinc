@@ -1,7 +1,7 @@
 !*******************************************************************************
 ! FILE : spectrum_editor.uil
 !
-! LAST MODIFIED : 9 May 1999
+! LAST MODIFIED : 12 August 2002
 !
 ! DESCRIPTION :
 ! The widgets for the spectrum editor widget.
@@ -11,7 +11,6 @@ module spec_ed
 
 procedure
 ! ---------|---------|---------|- 31 characters max
-	spec_ed_destroy_CB;
 	spec_ed_identify_general_btn;
 	spec_ed_identify_general_form;
 	spec_ed_identify_disc_text;
@@ -84,10 +83,6 @@ object
 		controls
 			{
 			XmForm spec_ed_main_form;
-			};
-		callbacks
-			{
-			XmNdestroyCallback = procedure spec_ed_destroy_CB();
 			};
 		};
 	spec_ed_main_form: XmForm
