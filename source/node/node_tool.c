@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.c
 
-LAST MODIFIED : 29 April 2003
+LAST MODIFIED : 17 May 2003
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
@@ -33,8 +33,9 @@ Scene input.
 #if defined (MOTIF)
 #include "node/node_tool.uidh"
 #include "motif/image_utilities.h"
-#endif /* defined (MOTIF) */
 #include "region/cmiss_region_chooser.h"
+#endif /* defined (MOTIF) */
+#include "region/cmiss_region.h"
 #include "user_interface/gui_dialog_macros.h"
 #include "user_interface/message.h"
 
