@@ -145,7 +145,6 @@ Writes the <path> into the text widget in the <chooser>.
 	return (return_code);
 } /* Cmiss_region_chooser_update_path */
 
-#if defined (OLD_CODE)
 static void Cmiss_region_chooser_callback(Widget widget,
 	XtPointer client_data, XtPointer call_data)
 /*******************************************************************************
@@ -176,7 +175,6 @@ Callback for the text field - region path entered.
 	}
 	LEAVE;
 } /* Cmiss_region_chooser_callback */
-#endif /* defined (OLD_CODE) */
 
 static void Cmiss_region_chooser_Cmiss_region_change(
 	struct Cmiss_region *region, struct Cmiss_region_changes *changes,
@@ -277,13 +275,10 @@ Creates a dialog from which a region may be chosen.
 				/* add callbacks for chooser widget */
 				XtAddCallback(chooser->widget, XmNdestroyCallback,
 					Cmiss_region_chooser_destroy_callback, (XtPointer)chooser);
-#if defined (OLD_CODE)
-				/* There is no activate or losingFocus callback on a TextField */
 				XtAddCallback(chooser->widget, XmNlosingFocusCallback,
 					Cmiss_region_chooser_callback, (XtPointer)chooser);
 				XtAddCallback(chooser->widget, XmNactivateCallback,
 					Cmiss_region_chooser_callback, (XtPointer)chooser);
-#endif /* defined (OLD_CODE) */
 				Cmiss_region_chooser_set_path(chooser, initial_path);
 				XtManageChild(chooser->widget);
 			}
