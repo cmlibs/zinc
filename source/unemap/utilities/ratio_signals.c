@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : ratio_signals.c
 
-LAST MODIFIED : 25 May 2000
+LAST MODIFIED : 28 May 2000
 
 DESCRIPTION :
 Read in a signal file and a list of pairs of electrodes and write out a signal
@@ -23,7 +23,7 @@ Main program
 */
 int main(int argc,char *argv[])
 /*******************************************************************************
-LAST MODIFIED : 25 May 2000
+LAST MODIFIED : 28 May 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -32,7 +32,8 @@ DESCRIPTION :
 	FILE *ratio_file,*signal_file;
 	float *denominator_value,*denominator_values,*numerator_value,
 		*numerator_values,signal_offset,*value;
-	int i,number_of_pairs,number_of_samples,number_of_signals,return_code,*time;
+	int i,index,number_of_pairs,number_of_samples,number_of_signals,return_code,
+		*time;
 	struct Device **device,**numerator,**denominator;
 	struct Rig *ratio_rig,*signal_rig;
 	struct Signal_buffer *signal_buffer;
@@ -127,6 +128,7 @@ DESCRIPTION :
 								numerator_name=(char *)NULL;
 								denominator_name=(char *)NULL;
 								device=ratio_rig->devices;
+								index=0;
 								while (return_code&&
 									read_string(ratio_file,"s",&numerator_name)&&
 									read_string(ratio_file,"s",&denominator_name)&&
@@ -165,8 +167,8 @@ DESCRIPTION :
 												strcat(name,"/");
 												strcat(name,denominator_name);
 												/* create the signal */
-												if ((*device)->signal=create_Signal(
-													(*device)->channel->number,signal_buffer,UNDECIDED,0))
+												if ((*device)->signal=create_Signal(index,signal_buffer,
+													UNDECIDED,0))
 												{
 													/* fill in the values */
 													numerator_values=(float *)NULL;
@@ -186,8 +188,7 @@ DESCRIPTION :
 													{
 														numerator_value=numerator_values;
 														denominator_value=denominator_values;
-														value=(signal_buffer->signals).float_values+
-															((*device)->channel->number);
+														value=(signal_buffer->signals).float_values+index;
 														for (i=number_of_samples;i>0;i--)
 														{
 															if (0!=(*denominator_value)+signal_offset)
@@ -241,6 +242,7 @@ DESCRIPTION :
 									}
 									DEALLOCATE(numerator_name);
 									DEALLOCATE(denominator_name);
+									index++;
 								}
 								DEALLOCATE(numerator_name);
 								DEALLOCATE(denominator_name);
