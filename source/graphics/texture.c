@@ -2981,47 +2981,47 @@ is constant from the half texel location to the edge.
 				}
 
 				pixel_ptr=(unsigned char *)(texture->image) + pixela;
-				weight = (1.0 - local_xi1)*(1.0 - local_xi2) / 256.0;
+				weight = (1.0 - local_xi1)*(1.0 - local_xi2) / 255.0;
 				for (j=0;j<bytes_per_component;j++)
 				{
 					for (i=0;i<number_of_components;i++)
 					{
 						values[i]+=(double)pixel_ptr[i*bytes_per_component+j] * weight;
 					}
-					weight /= 256.0;
+					weight /= 255.0;
 				}
 
 				pixel_ptr=(unsigned char *)(texture->image) + pixelb;
-				weight = local_xi1*(1.0 - local_xi2) / 256.0;
+				weight = local_xi1*(1.0 - local_xi2) / 255.0;
 				for (j=0;j<bytes_per_component;j++)
 				{
 					for (i=0;i<number_of_components;i++)
 					{
 						values[i]+=(double)pixel_ptr[i*bytes_per_component+j] * weight;
 					}
-					weight /= 256.0;
+					weight /= 255.0;
 				}
 
 				pixel_ptr=(unsigned char *)(texture->image) + pixelc;
-				weight = (1.0 - local_xi1)*local_xi2 / 256.0;
+				weight = (1.0 - local_xi1)*local_xi2 / 255.0;
 				for (j=0;j<bytes_per_component;j++)
 				{
 					for (i=0;i<number_of_components;i++)
 					{
 						values[i]+=(double)pixel_ptr[i*bytes_per_component+j] * weight;
 					}
-					weight /= 256.0;
+					weight /= 255.0;
 				}
 
 				pixel_ptr=(unsigned char *)(texture->image) + pixeld;
-				weight = local_xi1*local_xi2 / 256.0;
+				weight = local_xi1*local_xi2 / 255.0;
 				for (j=0;j<bytes_per_component;j++)
 				{
 					for (i=0;i<number_of_components;i++)
 					{
 						values[i]+=(double)pixel_ptr[i*bytes_per_component+j] * weight;
 					}
-					weight /= 256.0;
+					weight /= 255.0;
 				}
 		
 				return_code=1;
@@ -3036,12 +3036,12 @@ is constant from the half texel location to the edge.
 				pixel_ptr=(unsigned char *)(texture->image) + pixela;
 				for (i=0;i<number_of_components;i++)
 				{
-					values[i]=(double)pixel_ptr[i*bytes_per_component] / 256.0;
+					values[i]=(double)pixel_ptr[i*bytes_per_component] / 255.0;
 				}
-				weight = 256.0;
+				weight = 255.0;
 				for (j=1;j<bytes_per_component;j++)
 				{
-					weight *= 256.0;
+					weight *= 255.0;
 					for (i=0;i<number_of_components;i++)
 					{
 						values[i]+=(double)pixel_ptr[i*bytes_per_component+j] / weight;
