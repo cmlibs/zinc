@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 26 March 2001
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -32,6 +32,11 @@ LAST MODIFIED : 27 January 1998
 
 DESCRIPTION :
 The type of a nodal value.
+Must add new enumerators and keep values in sync with functions
+ENUMERATOR_STRING, ENUMERATOR_GET_VALID_STRINGS and STRING_TO_ENUMERATOR.
+Note these functions expect the first enumerator to be number 1, and all
+subsequent enumerators to be sequential, unlike the default behaviour which
+starts at 0.
 ==============================================================================*/
 {
 	FE_NODAL_VALUE,
@@ -1319,6 +1324,14 @@ DESCRIPTION :
 Returns true if <node> is in <node_group>.
 ==============================================================================*/
 
+int FE_node_is_not_in_group(struct FE_node *node, void *node_group_void);
+/*******************************************************************************
+LAST MODIFIED : 26 March 2001
+
+DESCRIPTION :
+Returns true if <node> is not in <node_group>.
+==============================================================================*/
+
 int ensure_FE_node_is_in_group(struct FE_node *node,void *node_group_void);
 /*******************************************************************************
 LAST MODIFIED : 20 April 1999
@@ -1458,14 +1471,7 @@ DESCRIPTION :
 Returns true if <node> is not in <node_list>.
 ==============================================================================*/
 
-char *get_FE_nodal_value_type_string(enum FE_nodal_value_type nodal_value_type);
-/*******************************************************************************
-LAST MODIFIED : 21 June 1999
-
-DESCRIPTION :
-Returns a pointer to a static string token for the given <nodal_value_type>.
-The calling function must not deallocate the returned string.
-==============================================================================*/
+PROTOTYPE_ENUMERATOR_FUNCTIONS(FE_nodal_value_type);
 
 #if defined (OLD_CODE) 
 /* superceded by  get_FE_nodal_value_type,get_FE_nodal_array_number_of_elements */

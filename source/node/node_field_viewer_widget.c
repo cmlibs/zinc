@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_field_viewer_widget.c
 
-LAST MODIFIED : 22 May 2000
+LAST MODIFIED : 27 March 2001
 
 DESCRIPTION :
 Widget for displaying and editing component values of computed fields defined
@@ -669,7 +669,7 @@ and their labels.
 								if (0 < col)
 								{
 									new_string=XmStringCreateSimple(
-										get_FE_nodal_value_type_string(nodal_value_type));
+										ENUMERATOR_STRING(FE_nodal_value_type)(nodal_value_type));
 								}
 							}
 							else

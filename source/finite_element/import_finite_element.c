@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : import_finite_element.c
 
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 27 March 2001
 
 DESCRIPTION :
 The function for importing finite element data, from a file or CMISS (via a
@@ -800,20 +800,20 @@ static int read_FE_node_field(FILE *input_file,
 	struct MANAGER(FE_field) *fe_field_manager,struct FE_node *node, 
 	struct FE_field **field)
 /*******************************************************************************
-LAST MODIFIED : 17 October 1999
+LAST MODIFIED : 27 March 2001
 
 DESCRIPTION :
 Reads a node field from an <input_file>, adding it to the fields defined at
 <node>. <field> is returned.
 ==============================================================================*/
 {
-	char *component_name,*derivative_type_name,*field_name,*rest_of_line,
-		temp_char;
+	char *component_name, *derivative_type_name, *field_name,
+		*nodal_value_type_string, *rest_of_line;
 	enum FE_field_type fe_field_type;
-	enum FE_nodal_value_type **components_nodal_value_types,*derivative_type;	
-	int component_number,*components_number_of_derivatives,
-		*components_number_of_versions,i,j,number_of_components,
-		return_code,temp_int;
+	enum FE_nodal_value_type **components_nodal_value_types, *derivative_type;	
+	int component_number, *components_number_of_derivatives,
+		*components_number_of_versions, end_of_names, end_of_string, i,
+		number_of_components,	return_code, temp_int;
 	struct FE_field *the_field; 
 	
 	ENTER(read_FE_node_field);
@@ -887,116 +887,92 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 									/* first number is the value */
 									(components_nodal_value_types[component_number])[0]=
 										FE_NODAL_VALUE;
-									if (read_string(input_file,"[^\n]",&rest_of_line))
+									/* clear derivative value types to FE_NODAL_UNKNOWN */
+									for (i = 1; i <=
+										components_number_of_derivatives[component_number]; i++)
 									{
-										derivative_type_name=rest_of_line;
-										derivative_type=
-											(components_nodal_value_types[component_number]);
+										(components_nodal_value_types[component_number])[i] =
+											FE_NODAL_UNKNOWN;
+									}
+									if (read_string(input_file, "[^\n]", &rest_of_line))
+									{
+										derivative_type_name = rest_of_line;
+										derivative_type =
+											components_nodal_value_types[component_number];
+										derivative_type++;
+										/* skip leading spaces */
 										while (' '== *derivative_type_name)
 										{
 											derivative_type_name++;
 										}
-										if (0<(i=components_number_of_derivatives[
-											component_number]))
+										if (0 < (i =
+											components_number_of_derivatives[component_number]))
 										{
-											if ('('== *derivative_type_name)
+											/* optional derivative names will be in brackets */
+											if ('(' == *derivative_type_name)
 											{
 												derivative_type_name++;
-												while (i>0)
+												/* skip leading spaces */
+												while (' ' == *derivative_type_name)
 												{
-													derivative_type++;
-													if (0==strncmp(derivative_type_name,"d/ds1",5))
+													derivative_type_name++;
+												}
+												end_of_names = (')' == *derivative_type_name);
+												end_of_string = ('\0' == *derivative_type_name);
+												while (0 < i)
+												{
+													if (!(end_of_names || end_of_string))
 													{
-														*derivative_type=FE_NODAL_D_DS1;
-														derivative_type_name += 5;
-													}
-													else if (0==strncmp(derivative_type_name,"d/ds2",5))
-													{
-														*derivative_type=FE_NODAL_D_DS2;
-														derivative_type_name += 5;
-													}
-													else if (0==strncmp(derivative_type_name,"d/ds3",5))
-													{
-														*derivative_type=FE_NODAL_D_DS3;
-														derivative_type_name += 5;
-													}
-													else if (0==strncmp(derivative_type_name,"d2/ds1ds2",9))
-													{
-														*derivative_type=FE_NODAL_D2_DS1DS2;
-														derivative_type_name += 9;
-													}
-													else if (0==strncmp(derivative_type_name,"d2/ds1ds3",9))
-													{
-														*derivative_type=FE_NODAL_D2_DS1DS3;
-														derivative_type_name += 9;
-													}
-													else if (0==strncmp(derivative_type_name,"d2/ds2ds3",9))
-													{
-														*derivative_type=FE_NODAL_D2_DS2DS3;
-														derivative_type_name += 9;
-													}
-													else if (0==strncmp(derivative_type_name,"d3/ds1ds2ds3",
-														12))
-													{
-														*derivative_type=FE_NODAL_D3_DS1DS2DS3;
-														derivative_type_name += 12;
-													}
-													else
-													{
-														*derivative_type=FE_NODAL_UNKNOWN;
-														j=0;
-														while (('\0'!= derivative_type_name[j])&&
-															(','!= derivative_type_name[j])&&
-															(')'!= derivative_type_name[j]))
-														{
-															j++;
-														}
-														temp_char=derivative_type_name[j];
-														derivative_type_name[j]='\0';
-														display_message(WARNING_MESSAGE,
-															"Unknown derivative type /%s/ for field component %s.%s",
-															derivative_type_name,field_name,component_name);
-														derivative_type_name += j;
-														*derivative_type_name=temp_char;
-													}
-													while (' '== *derivative_type_name)
-													{
-														derivative_type_name++;
-													}
-													if (','== *derivative_type_name)
-													{
-														derivative_type_name++;
-														while (' '== *derivative_type_name)
+														nodal_value_type_string = derivative_type_name;
+														while (('\0' != *derivative_type_name) &&
+															(',' != *derivative_type_name) &&
+															(' ' != *derivative_type_name) &&
+															(')' != *derivative_type_name))
 														{
 															derivative_type_name++;
 														}
+														end_of_names = (')' == *derivative_type_name);
+														end_of_string = ('\0' == *derivative_type_name);
+														*derivative_type_name = '\0';
+														if (!(end_of_names || end_of_string))
+														{
+															derivative_type_name++;
+															while ((',' == *derivative_type_name) ||
+																(' ' == *derivative_type_name))
+															{
+																derivative_type_name++;
+															}
+															end_of_names = (')' == *derivative_type_name);
+															end_of_string = ('\0' == *derivative_type_name);
+														}
+														if (!STRING_TO_ENUMERATOR(FE_nodal_value_type)(
+															nodal_value_type_string, derivative_type))
+														{
+															display_message(WARNING_MESSAGE,
+																"Unknown derivative type '%s' for field "
+																"component %s.%s", nodal_value_type_string,
+																field_name, component_name);
+														}
 													}
+													else
+													{
+														display_message(WARNING_MESSAGE,
+															"Missing derivative type for field component "
+															"%s.%s", field_name, component_name);
+													}
+													derivative_type++;
 													i--;
 												}
-												while (' '== *derivative_type_name)
+												if (end_of_names)
 												{
 													derivative_type_name++;
-												}
-												if (')'== *derivative_type_name)
-												{
-													derivative_type_name++;
-													while (' '== *derivative_type_name)
-													{
-														derivative_type_name++;
-													}
 												}
 											}
 											else
 											{
-												while (i>0)
-												{
-													derivative_type++;
-													*derivative_type=FE_NODAL_UNKNOWN;
-													i--;
-												}
 												display_message(WARNING_MESSAGE,
 													"Derivative types missing for field component %s.%s",
-													field_name,component_name);
+													field_name, component_name);
 											}
 										}
 										/* read in the number of versions (if present) */

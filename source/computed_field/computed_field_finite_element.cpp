@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_finite_element.c
 
-LAST MODIFIED : 7 November 2000
+LAST MODIFIED : 27 March 2001
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -4295,7 +4295,7 @@ DESCRIPTION :
 		{
 			display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);
 			display_message(INFORMATION_MESSAGE,"    nodal value type : %s\n",
-				get_FE_nodal_value_type_string(data->nodal_value_type));
+				ENUMERATOR_STRING(FE_nodal_value_type)(data->nodal_value_type));
 			display_message(INFORMATION_MESSAGE,"    version : %d\n",
 				data->version_number+1);
 			DEALLOCATE(field_name);
@@ -4334,7 +4334,7 @@ DESCRIPTION :
 		{
 			display_message(INFORMATION_MESSAGE," fe_field %s %s version %d",
 				field_name,
-				get_FE_nodal_value_type_string(data->nodal_value_type),
+				ENUMERATOR_STRING(FE_nodal_value_type)(data->nodal_value_type),
 				data->version_number+1);
 			DEALLOCATE(field_name);
 		}
@@ -5174,7 +5174,7 @@ DESCRIPTION :
 		{
 			display_message(INFORMATION_MESSAGE,"    fe_field : %s\n",field_name);
 			display_message(INFORMATION_MESSAGE,"    nodal value type : %s\n",
-				get_FE_nodal_value_type_string(data->nodal_value_type));
+				ENUMERATOR_STRING(FE_nodal_value_type)(data->nodal_value_type));
 			display_message(INFORMATION_MESSAGE,
 				"    time field : %s\n",field->source_fields[0]->name);
 			display_message(INFORMATION_MESSAGE,"    version : %d\n",
@@ -5215,7 +5215,7 @@ DESCRIPTION :
 		{
 			display_message(INFORMATION_MESSAGE," fe_field %s %s time %s version %d",
 				field_name,
-				get_FE_nodal_value_type_string(data->nodal_value_type),
+				ENUMERATOR_STRING(FE_nodal_value_type)(data->nodal_value_type),
 				field->source_fields[0]->name,data->version_number+1);
 			DEALLOCATE(field_name);
 		}

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 19 March 2001
+LAST MODIFIED : 27 March 2001
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -28,6 +28,7 @@ Functions for manipulating finite element structures.
 #include "finite_element/finite_element.h"
 #include "general/compare.h"
 #include "general/debug.h"
+#include "general/enumerator_private.h"
 #include "general/managed_group_private.h"
 #include "general/heapsort.h"
 #if defined (FINITE_ELEMENT_USE_SAFE_LIST)
@@ -5811,7 +5812,7 @@ Outputs the information contained by the node field.
 						while (return_code&&(k>0))
 						{
 							display_message(INFORMATION_MESSAGE,"%s=",
-								get_FE_nodal_value_type_string(*type));
+								ENUMERATOR_STRING(FE_nodal_value_type)(*type));
 #if defined (NEW_CODE) /* not sure how we're going to display these yet */
 							/* display field time information*/
 							if(field->number_of_times)
@@ -10626,6 +10627,40 @@ Returns true if <node> is in <node_group>.
 	return (return_code);
 } /* FE_node_is_in_group */
 
+int FE_node_is_not_in_group(struct FE_node *node, void *node_group_void)
+/*******************************************************************************
+LAST MODIFIED : 26 March 2001
+
+DESCRIPTION :
+Returns true if <node> is not in <node_group>.
+==============================================================================*/
+{
+	int return_code;
+	struct GROUP(FE_node) *node_group;
+
+	ENTER(FE_node_is_not_in_group);
+	if (node && (node_group = (struct GROUP(FE_node) *)node_group_void))
+	{
+		if (IS_OBJECT_IN_GROUP(FE_node)(node,node_group))
+		{
+			return_code = 0;
+		}
+		else
+		{
+			return_code = 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_is_not_in_group.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_is_not_in_group */
+
 int ensure_FE_node_is_in_group(struct FE_node *node,void *node_group_void)
 /*******************************************************************************
 LAST MODIFIED : 4 July 2000
@@ -11062,67 +11097,60 @@ Returns true if <node> is not in <node_list>.
 	return (return_code);
 } /* FE_node_is_not_in_list */
 
-char *get_FE_nodal_value_type_string(enum FE_nodal_value_type nodal_value_type)
-/*******************************************************************************
-LAST MODIFIED : 23 June 1999
-
-DESCRIPTION :
-Returns a pointer to a static string token for the given <nodal_value_type>.
-The calling function must not deallocate the returned string.
-==============================================================================*/
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(FE_nodal_value_type)
 {
-	char *nodal_value_type_string;
+	char *enumerator_string;
 
-	ENTER(get_FE_nodal_value_type_string);
-	switch (nodal_value_type)
+	ENTER(ENUMERATOR_STRING(FE_nodal_value_type));
+	switch (enumerator_value)
 	{
 		case FE_NODAL_VALUE:
 		{
-			nodal_value_type_string="value";
+			enumerator_string = "value";
 		} break;
 		case FE_NODAL_D_DS1:
 		{
-			nodal_value_type_string="d/ds1";
+			enumerator_string = "d/ds1";
 		} break;
 		case FE_NODAL_D_DS2:
 		{
-			nodal_value_type_string="d/ds2";
+			enumerator_string = "d/ds2";
 		} break;
 		case FE_NODAL_D_DS3:
 		{
-			nodal_value_type_string="d/ds3";
+			enumerator_string = "d/ds3";
 		} break;
 		case FE_NODAL_D2_DS1DS2:
 		{
-			nodal_value_type_string="d2/ds1ds2";
+			enumerator_string = "d2/ds1ds2";
 		} break;
 		case FE_NODAL_D2_DS1DS3:
 		{
-			nodal_value_type_string="d2/ds1ds3";
+			enumerator_string = "d2/ds1ds3";
 		} break;
 		case FE_NODAL_D2_DS2DS3:
 		{
-			nodal_value_type_string="d2/ds2ds3";
+			enumerator_string = "d2/ds2ds3";
 		} break;
 		case FE_NODAL_D3_DS1DS2DS3:
 		{
-			nodal_value_type_string="d3/ds1ds2ds3";
+			enumerator_string = "d3/ds1ds2ds3";
 		} break;
 		case FE_NODAL_UNKNOWN:
 		{
-			nodal_value_type_string="unknown";
+			enumerator_string = "unknown";
 		} break;
 		default:
 		{
-			display_message(ERROR_MESSAGE,
-				"get_FE_nodal_value_type_string.  Invalid nodal_value_type");
-			nodal_value_type_string="ERROR - unknown";
+			enumerator_string = (char *)NULL;
 		} break;
 	}
 	LEAVE;
 
-	return (nodal_value_type_string);
-} /* get_FE_nodal_value_type_string */
+	return (enumerator_string);
+} /* ENUMERATOR_STRING(FE_nodal_value_type) */
+
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(FE_nodal_value_type)
 
 #if defined (OLD_CODE) 
 /* superceded by  get_FE_nodal_value_type,get_FE_nodal_array_number_of_elements */
