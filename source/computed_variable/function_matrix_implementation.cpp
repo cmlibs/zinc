@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_implementation.cpp
 //
-// LAST MODIFIED : 22 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //???DB.  Should be linear transformation (with Function_variable_matrix as an
@@ -22,86 +22,6 @@ namespace lapack = boost::numeric::bindings::lapack;
 #include "computed_variable/function_variable.hpp"
 #include "computed_variable/function_variable_matrix.hpp"
 #include "computed_variable/function_variable_value_specific.hpp"
-
-
-// module classes
-// ==============
-
-// class Function_variable_matrix_coefficients
-// -------------------------------------------
-
-EXPORT template<typename Value_type>
-class Function_variable_matrix_coefficients :
-	public Function_variable_matrix<Value_type>
-//******************************************************************************
-// LAST MODIFIED : 6 August 2004
-//
-// DESCRIPTION :
-//==============================================================================
-{
-	friend class Function_matrix<Value_type>;
-	public:
-		// constructor
-		Function_variable_matrix_coefficients(
-			const boost::intrusive_ptr< Function_matrix<Value_type> >
-			function_matrix):Function_variable_matrix<Value_type>(function_matrix){};
-		Function_variable_matrix_coefficients(
-			const boost::intrusive_ptr< Function_matrix<Value_type> > function_matrix,
-			const Function_size_type row,const Function_size_type column):
-			Function_variable_matrix<Value_type>(function_matrix,row,column){};
-		~Function_variable_matrix_coefficients(){}
-	public:
-		Function_variable_handle clone() const
-		{
-			return (Function_variable_handle(
-				new Function_variable_matrix_coefficients<Value_type>(*this)));
-		};
-		boost::intrusive_ptr< Function_variable_matrix<Value_type> > operator()(
-			Function_size_type row,Function_size_type column) const
-		{
-			boost::intrusive_ptr< Function_variable_matrix<Value_type> > result(0);
-
-			if ((row<=number_of_rows())&&(column<=number_of_columns()))
-			{
-				result=boost::intrusive_ptr< Function_variable_matrix<Value_type> >(
-					new Function_variable_matrix_coefficients<Value_type>(
-					boost::dynamic_pointer_cast<Function_matrix<Value_type>,Function>(
-					function_private),row,column));
-			}
-
-			return (result);
-		};
-		Function_size_type number_of_rows() const
-		{
-			return ((boost::dynamic_pointer_cast<Function_matrix<Value_type>,
-				Function>(function_private))->number_of_rows());
-		};
-		Function_size_type number_of_columns() const
-		{
-			return ((boost::dynamic_pointer_cast<Function_matrix<Value_type>,
-				Function>(function_private))->number_of_columns());
-		};
-		bool get_entry(Value_type& value) const
-		{
-			bool result;
-
-			result=false;
-			if ((0<row)&&(row<=number_of_rows())&&
-				(0<column)&&(column<=number_of_columns()))
-			{
-				result=true;
-				value=(*(boost::dynamic_pointer_cast<Function_matrix<Value_type>,
-					Function>(function_private)))(row-1,column-1);
-			}
-
-			return (result);
-		};
-	private:
-		// copy constructor
-		Function_variable_matrix_coefficients(
-			const Function_variable_matrix_coefficients<Value_type>& variable):
-			Function_variable_matrix<Value_type>(variable){};
-};
 
 
 // global classes
@@ -156,26 +76,24 @@ string_handle Function_matrix<Value_type>::get_string_representation()
 EXPORT template<typename Value_type>
 Function_variable_handle Function_matrix<Value_type>::input()
 //******************************************************************************
-// LAST MODIFIED : 6 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	return (Function_variable_handle(
-		new Function_variable_matrix_coefficients<Value_type>(
+	return (Function_variable_handle(new Function_variable_matrix<Value_type>(
 		boost::intrusive_ptr< Function_matrix<Value_type> >(this))));
 }
 
 EXPORT template<typename Value_type>
 Function_variable_handle Function_matrix<Value_type>::output()
 //******************************************************************************
-// LAST MODIFIED : 6 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	return (Function_variable_handle(
-		new Function_variable_matrix_coefficients<Value_type>(
+	return (Function_variable_handle(new Function_variable_matrix<Value_type>(
 		boost::intrusive_ptr< Function_matrix<Value_type> >(this))));
 }
 
@@ -229,13 +147,12 @@ EXPORT template<typename Value_type>
 Function_variable_handle Function_matrix<Value_type>::entry(
 	Function_size_type row,Function_size_type column)
 //******************************************************************************
-// LAST MODIFIED : 6 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	return (Function_variable_handle(
-		new Function_variable_matrix_coefficients<Value_type>(
+	return (Function_variable_handle(new Function_variable_matrix<Value_type>(
 		boost::intrusive_ptr< Function_matrix<Value_type> >(this),row,column)));
 }
 
@@ -243,12 +160,12 @@ EXPORT template<typename Value_type>
 Value_type& Function_matrix<Value_type>::operator()(Function_size_type row,
 	Function_size_type column)
 //******************************************************************************
-// LAST MODIFIED : 6 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
-	return (values(row,column));
+	return (values(row-1,column-1));
 }
 
 EXPORT template<typename Value_type>
@@ -373,40 +290,37 @@ bool Function_matrix<Value_type>::evaluate_derivative(Scalar&,
 	return (false);
 }
 
-#if !defined (AIX)
 template<>
 bool Function_matrix<Scalar>::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
 	std::list<Function_variable_handle>& atomic_independent_variables);
-#endif // !defined (AIX)
 
 EXPORT template<typename Value_type>
 bool Function_matrix<Value_type>::set_value(
 	Function_variable_handle atomic_variable,
 	Function_variable_handle atomic_value)
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	bool result;
-	boost::intrusive_ptr< Function_variable_matrix_coefficients<Value_type> >
+	boost::intrusive_ptr< Function_variable_matrix<Value_type> >
 		atomic_matrix_variable;
 	boost::intrusive_ptr< Function_variable_value_specific<Value_type> >
 		value_type;
 
 	result=false;
 	if ((atomic_matrix_variable=boost::dynamic_pointer_cast<
-		Function_variable_matrix_coefficients<Value_type>,Function_variable>(
-		atomic_variable))&&
+		Function_variable_matrix<Value_type>,Function_variable>(atomic_variable))&&
 		equivalent(Function_handle(this),atomic_matrix_variable->function())&&
 		atomic_value&&(atomic_value->value())&&(value_type=
 		boost::dynamic_pointer_cast<Function_variable_value_specific<Value_type>,
 		Function_variable_value>(atomic_value->value())))
 	{
-		result=value_type->set(values((atomic_matrix_variable->row)-1,
-			(atomic_matrix_variable->column)-1),atomic_value);
+		result=value_type->set(values((atomic_matrix_variable->row())-1,
+			(atomic_matrix_variable->column())-1),atomic_value);
 	}
 
 	return (result);
@@ -416,22 +330,22 @@ EXPORT template<typename Value_type>
 Function_handle Function_matrix<Value_type>::get_value(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	Function_handle result(0);
-	boost::intrusive_ptr< Function_variable_matrix_coefficients<Value_type> >
-		atomic_variable_matrix_coefficients;
+	boost::intrusive_ptr< Function_variable_matrix<Value_type> >
+		atomic_variable_matrix;
 	ublas::matrix<Value_type,ublas::column_major> result_matrix(1,1);
 
 	if (atomic_variable&&
 		equivalent(Function_handle(this),(atomic_variable->function)())&&
-		(atomic_variable_matrix_coefficients=boost::dynamic_pointer_cast<
-		Function_variable_matrix_coefficients<Value_type>,Function_variable>(
+		(atomic_variable_matrix=boost::dynamic_pointer_cast<
+		Function_variable_matrix<Value_type>,Function_variable>(
 		atomic_variable))&&
-		(atomic_variable_matrix_coefficients->get_entry)(result_matrix(0,0)))
+		(atomic_variable_matrix->get_entry)(result_matrix(0,0)))
 	{
 		result=Function_handle(new Function_matrix<Value_type>(result_matrix));
 	}
