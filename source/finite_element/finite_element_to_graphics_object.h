@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.h
 
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 25 February 2000
 
 DESCRIPTION :
 The function prototypes for creating graphical objects from finite elements.
@@ -299,7 +299,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct Computed_field *data_field,struct Computed_field *label_field,
 	enum Graphics_select_mode select_mode);
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 25 February 2000
 
 DESCRIPTION :
 Converts a finite element into a set of glyphs displaying information
@@ -316,7 +316,7 @@ the glyph_set, for later colouration by a spectrum.
 The optional <label_field> is written beside each glyph in string form.
 The optional <top_level_element> may be provided as a clue to Computed_fields
 to say which parent element they should be evaluated on as necessary.
-<select_mode> is not used yet and should be set to GRAPHICS_NO_SELECT.
+<select_mode> is not used yet.
 Note:
 - the coordinate and orientation fields are assumed to be rectangular cartesian.
 ==============================================================================*/

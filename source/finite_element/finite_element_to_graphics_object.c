@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_graphics_object.c
 
-LAST MODIFIED : 28 January 2000
+LAST MODIFIED : 25 February 2000
 
 DESCRIPTION :
 The functions for creating graphical objects from finite elements.
@@ -2881,7 +2881,7 @@ struct GT_nurbs *create_GT_nurb_from_FE_element(struct FE_element *element,
 	struct Computed_field *texture_coordinate_field,
 	struct FE_element *top_level_element)
 /*******************************************************************************
-LAST MODIFIED : 6 July 1999
+LAST MODIFIED : 25 February 2000
 
 DESCRIPTION :
 The optional <top_level_element> may be provided as a clue to Computed_fields
@@ -2983,6 +2983,8 @@ to say which parent element they should be evaluated on as necessary.
 		{
 			if (nurbs=CREATE(GT_nurbs)())
 			{
+				/* for selective editing of GT_object primitives, record element no. */
+				nurbs->object_name=element->cm.number;
 				if (GT_nurbs_set_surface(nurbs, sorder, torder,
 					sknotcount, tknotcount, sknots, tknots, 
 					scontrolcount, tcontrolcount, control_points))
@@ -7210,7 +7212,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct Computed_field *data_field,struct Computed_field *label_field,
 	enum Graphics_select_mode select_mode)
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 25 February 2000
 
 DESCRIPTION :
 Converts a finite element into a set of glyphs displaying information
@@ -7227,7 +7229,7 @@ the glyph_set, for later colouration by a spectrum.
 The optional <label_field> is written beside each glyph in string form.
 The optional <top_level_element> may be provided as a clue to Computed_fields
 to say which parent element they should be evaluated on as necessary.
-<select_mode> is not used yet and should be set to GRAPHICS_NO_SELECT.
+<select_mode> is not used yet.
 Note:
 - the coordinate and orientation fields are assumed to be rectangular cartesian.
 ==============================================================================*/
@@ -7251,8 +7253,7 @@ Note:
 		((!orientation_scale_field)||((9>=(number_of_orientation_scale_components=
 			Computed_field_get_number_of_components(orientation_scale_field)))&&
 			Computed_field_is_orientation_scale_capable(orientation_scale_field,
-				(void *)NULL)))&&
-		(GRAPHICS_NO_SELECT==select_mode))
+				(void *)NULL))))
 	{
 		/* clear coordinates in case coordinate field is not 3 component */
 		coordinates[0]=0.0;
