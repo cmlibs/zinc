@@ -1,13 +1,34 @@
 !*******************************************************************************
 ! FILE : element_tool.uil
 !
-! LAST MODIFIED : 5 July 2000
+! LAST MODIFIED : 20 July 2000
 !
 ! DESCRIPTION :
-! Interactive tool icons.
+! Element tool icon with dialog widgets for controlling settings.
 !===============================================================================
-module element_tool
+module element_tool_module
 	version = 'v1.0'
+
+procedure
+	elem_tool_id_select_elems_btn;
+	elem_tool_id_select_faces_btn;
+	elem_tool_id_select_lines_btn;
+
+	elem_tool_select_lines_btn_CB;
+	elem_tool_select_faces_btn_CB;
+	elem_tool_select_elems_btn_CB;
+	elem_tool_destroy_selected_CB;
+
+identifier
+	!Pointer to data specific to this instance of the elem_tool widget
+	elem_tool_structure;
+	!The gap between widgets
+	widget_spacing;
+	!fonts here
+	normal_font;
+	button_font;
+	list_font;
+	heading_font;
 
 value
 	black  : color('black',  foreground);
@@ -30,7 +51,7 @@ value
 		foreground color='.',
 		background color=' ');
 
-	element_tool_icon: icon(color_table=interactive_tool_colour_table,
+	elem_tool_icon: icon(color_table=interactive_tool_colour_table,
 			'              ...               ',
 			'              ...               ',
 			'            . ... .             ',
@@ -65,14 +86,130 @@ value
 			'                                ');
 
 
-!*******************************************************************************
 object
+!******************************************************************************
+	element_tool: XmForm
+	{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_FORM;
+			};
+		controls
+			{
+  		XmToggleButtonGadget elem_tool_select_elems_btn;
+  		XmToggleButtonGadget elem_tool_select_faces_btn;
+  		XmToggleButtonGadget elem_tool_select_lines_btn;
+			XmSeparatorGadget elem_tool_separator1;
+			XmPushButtonGadget elem_tool_destroy_selected_btn;
+			};
+		};
+!*******************************************************************************
+  elem_tool_select_elems_btn: XmToggleButtonGadget
+    {
+    arguments
+      {
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNbottomAttachment = XmATTACH_NONE;
+      XmNlabelString = compound_string("Select elements");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+				elem_tool_id_select_elems_btn(elem_tool_structure);
+      XmNvalueChangedCallback = procedure
+				elem_tool_select_elems_btn_CB(elem_tool_structure);
+      };
+    };
+!*******************************************************************************
+  elem_tool_select_faces_btn: XmToggleButtonGadget
+    {
+    arguments
+      {
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = elem_tool_select_elems_btn;
+			XmNbottomAttachment = XmATTACH_NONE;
+      XmNlabelString = compound_string("Select face elements");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+				elem_tool_id_select_faces_btn(elem_tool_structure);
+      XmNvalueChangedCallback = procedure
+				elem_tool_select_faces_btn_CB(elem_tool_structure);
+      };
+    };
+!*******************************************************************************
+  elem_tool_select_lines_btn: XmToggleButtonGadget
+    {
+    arguments
+      {
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = elem_tool_select_faces_btn;
+			XmNbottomAttachment = XmATTACH_NONE;
+      XmNlabelString = compound_string("Select line elements");
+      XmNalignment = XmALIGNMENT_BEGINNING;
+      XmNfontList = button_font;
+      };
+    callbacks
+      {
+      MrmNcreateCallback = procedure
+				elem_tool_id_select_lines_btn(elem_tool_structure);
+      XmNvalueChangedCallback = procedure
+				elem_tool_select_lines_btn_CB(elem_tool_structure);
+      };
+    };
+!*******************************************************************************
+	elem_tool_separator1: XmSeparatorGadget
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_FORM;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = elem_tool_select_lines_btn;
+			XmNbottomAttachment = XmATTACH_NONE;
+			};
+		};
+!*******************************************************************************
+	elem_tool_destroy_selected_btn: XmPushButtonGadget
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_FORM;
+			XmNrightAttachment = XmATTACH_NONE;
+			XmNtopAttachment = XmATTACH_WIDGET;
+			XmNtopWidget = elem_tool_separator1;
+			XmNbottomAttachment = XmATTACH_NONE;
+      XmNfontList = button_font;
+      XmNlabelString = compound_string("Destroy selected");
+      XmNalignment = XmALIGNMENT_CENTER;
+			};
+    callbacks
+      {
+			XmNactivateCallback = procedure
+				elem_tool_destroy_selected_CB(elem_tool_structure);
+			};
+		};
+!*******************************************************************************
 	element_tool_button: XmToggleButton
 		{
 		arguments
 			{
 			XmNlabelType = XmPIXMAP;
-			XmNlabelPixmap = element_tool_icon;
+			XmNlabelPixmap = elem_tool_icon;
 			XmNindicatorOn = false;
 			XmNhighlightThickness = 0;
 			XmNset = false;
@@ -80,6 +217,6 @@ object
 			XmNshadowThickness = 2;
 			};
 		};
-end module;
 !*******************************************************************************
+end module;
 
