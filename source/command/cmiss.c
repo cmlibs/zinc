@@ -13495,7 +13495,6 @@ DESCRIPTION :
 		source_field = (struct Computed_field *)NULL;
 
 		option_table = CREATE(Option_table)();
-
 		/* destination */
 		set_destination_field_data.conditional_function =
 			(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
@@ -13581,6 +13580,7 @@ DESCRIPTION :
 				return_code = 0;
 			}
 		}
+		DESTROY(Option_table)(&option_table);
 		if (data_group)
 		{
 			DEACCESS(GROUP(FE_node))(&data_group);
