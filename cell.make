@@ -92,7 +92,7 @@ $(SOURCE_PATH)/cell_sgi64.make : $(SOURCE_PATH)/cell.imake $(SOURCE_PATH)/common
 	$(COMMON_IMAKE_RULE) \
 	imake -DIRIX -DO64 -DOPTIMISED $${CMISS_ROOT_DEF} -s cell_sgi64.make $${CELL_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
-#Linux version
+#Linux debug version
 cell_linux : force $(SOURCE_PATH)/cell_linux.make
 	$(COMMON_MAKE_RULE) \
 	if [ -f cell_linux.make ]; then \
@@ -104,6 +104,19 @@ cell_linux : force $(SOURCE_PATH)/cell_linux.make
 $(SOURCE_PATH)/cell_linux.make : $(SOURCE_PATH)/cell.imake $(SOURCE_PATH)/common.imake cell.make
 	$(COMMON_IMAKE_RULE) \
 	imake -DLINUX $${CMISS_ROOT_DEF} -s cell_linux.make $${CELL_IMAKE_FILE} $${COMMON_IMAKE_FILE};
+
+#Linux optimised version
+cell_linux_optimised : force $(SOURCE_PATH)/cell_linux_optimised.make
+	$(COMMON_MAKE_RULE) \
+	if [ -f cell_linux_optimised.make ]; then \
+		$(MAKE) -f cell_linux_optimised.make $(TARGET) ; \
+	else \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/cell_linux_optimised.make $(TARGET) ; \
+	fi
+
+$(SOURCE_PATH)/cell_linux_optimised.make : $(SOURCE_PATH)/cell.imake $(SOURCE_PATH)/common.imake cell.make
+	$(COMMON_IMAKE_RULE) \
+	imake -DLINUX -DOPTIMISED $${CMISS_ROOT_DEF} -s cell_linux_optimised.make $${CELL_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 update :
 	if ( [ "$(PWD)" -ef "$(PRODUCT_PATH)" ] && [ "$(USER)" = "cmiss" ] ); then \
