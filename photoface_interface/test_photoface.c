@@ -602,6 +602,7 @@ Runs a job through the photoface interface.
 		pf_get_error_message(&error_message);
 		fprintf(stderr, "ERROR: pf_setup failed: %s\n", error_message);
 		DEALLOCATE(error_message);
+		return(-1);
 	}
 
 	if (PF_SUCCESS_RC == pf_specify_markers(pf_job_id, number_of_markers, marker_names,

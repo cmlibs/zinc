@@ -31,6 +31,8 @@ return code - zero is success, non-zero is failure.
 
 #define WITH_OMNISECURE
 
+#define MAX_ATTEMPTS_AT_FIRST_CMISS_CONTROL (50)
+
 /*
 Module types
 ------------
@@ -185,13 +187,19 @@ used.
 #endif /* ! defined (WIN32) */
 
 #if defined (DEBUG)
-		printf (command_string);
-		printf ("\n");
+	printf (command_string);
+	printf ("\n");
 #endif /* defined (DEBUG) */
 
-	if (-1!=system(command_string))
+	return_code = system(command_string);
+	/* Translate this into a internal return code */
+	if (0==return_code)
 	{
-		return_code=1;
+		return_code = 1;
+	}
+	else
+	{
+		return_code = 0;
 	}
 
 	va_end(ap);
@@ -1585,6 +1593,7 @@ successful.
 
 	ENTER(create_Pf_job);
 
+	*pf_job_id_address = 0;
 	return_code = PF_SUCCESS_RC;
 	if (ALLOCATE(working_path, char, strlen(photoface_local_path) + 100))
 	{
@@ -1609,7 +1618,8 @@ successful.
 			pf_job_id = rand();
 			sprintf(working_path, "%sworking/job%06d/", photoface_local_path,
 				pf_job_id);
-			while (!CreateDirectory(working_path, NULL))
+			while ((return_code == PF_SUCCESS_RC) &&
+				(!CreateDirectory(working_path, NULL)))
 			{
 				if (ERROR_ALREADY_EXISTS == GetLastError())
 				{
@@ -1622,7 +1632,8 @@ successful.
 				{
 #if defined (ERROR_MESSAGE)
 					set_error_message(PF_ERROR_MESSAGE, "create_Pf_job: "
-						"Unable to create working directory \"%s\".", working_path);
+						"Unable to create working directory \"%s\".  "
+						"Check that working directory exists and that you have permission to write into it.", working_path);
 #endif /* defined (ERROR_MESSAGE) */
 					return_code = PF_OPEN_FILE_FAILURE_RC;
 				}
@@ -1631,7 +1642,8 @@ successful.
 			pf_job_id = random() / 2386;
 			sprintf(working_path, "%sworking/job%06d/", photoface_local_path,
 				pf_job_id);
-			while (0 != mkdir(working_path, S_IRWXU))
+			while ((return_code == PF_SUCCESS_RC) &&
+				(0 != mkdir(working_path, S_IRWXU)))
 			{
 				if (EEXIST == errno)
 				{
@@ -1644,7 +1656,8 @@ successful.
 				{
 #if defined (ERROR_MESSAGE)
 					set_error_message(PF_ERROR_MESSAGE, "create_PF_job: "
-						"Unable to create working directory \"%s\".", working_path);
+						"Unable to create working directory \"%s\".  "
+						"Check that working directory exists and that you have permission to write into it.", working_path);
 #endif /* defined (ERROR_MESSAGE) */
 					return_code = PF_OPEN_FILE_FAILURE_RC;
 				}
@@ -1668,7 +1681,7 @@ successful.
 			{
 #if defined (ERROR_MESSAGE)
 				set_error_message(PF_ERROR_MESSAGE, "create_Pf_job:"
-					"Unable to open structure data file \"%s\".", working_path);
+					"Unable to open structure data file for writing \"%s\".", working_path);
 #endif /* defined (ERROR_MESSAGE) */
 				return_code= PF_OPEN_FILE_FAILURE_RC;
 			}
@@ -2167,13 +2180,15 @@ If either path is NULL the internal storage for that path is free'd.
 } /* pf_specify_paths */
 
 #if defined (WIN32)
-DWORD WINAPI start_cmgui_thread_function(LPVOID dummy)
+DWORD WINAPI start_cmgui_thread_function(LPVOID pf_job_id_ptr)
 {
 	DWORD return_code;
+	int pf_job_id;
 
 	ENTER(start_cmgui_thread_function);
 	return_code=0;
-	linux_execute("%sbin/cmgui_bg",photoface_remote_path);
+	pf_job_id = *((int *)pf_job_id_ptr);
+	linux_execute("%sbin/cmgui_bg -id %06d",photoface_remote_path,pf_job_id);
 	LEAVE;
 
 	return (return_code);
@@ -2194,7 +2209,7 @@ adjustment of the generic head.  On success, the <pf_job_id> is set.
 	char *pf_cmiss_wait_delay, *model_path, *working_path;
 	char *force_model_name = "sifit_mode0";
 	FILE *setup_comfile;
-	int delay, length, return_code;
+	int attempts, delay, length, return_code;
 	struct Pf_job *pf_job;
 	struct stat stat_buffer;
 #if defined (WIN32)
@@ -2277,7 +2292,7 @@ adjustment of the generic head.  On success, the <pf_job_id> is set.
 									}
 									else
 									{
-										delay = 10;
+										delay = 2;
 									}
 
 									/* Start cmgui in a forked thread and load this model */
@@ -2287,26 +2302,43 @@ adjustment of the generic head.  On success, the <pf_job_id> is set.
 										(LPVOID)NULL,/*use default creation flags*/0,
 										&start_cmgui_thread_id);
 									/* Main process comes here */
-									Sleep((DWORD)(delay * 1000));
 #else /* defined (WIN32) */
 									if (!(pid = fork()))
 									{
-										if (linux_execute("%sbin/cmgui_bg", 
-											photoface_remote_path))
+										if (linux_execute("%sbin/cmgui_bg -id %06d", 
+											photoface_remote_path, *pf_job_id))
 										{
 											return_code=PF_SUCCESS_RC;
 										}
 										exit(0);
 									}
 									/* Main process comes here */
-									sleep(delay);
 #endif /* defined (WIN32) */
-									if (linux_execute("%sbin/cmgui_control 'open comfile %s/pf_setup_main.com exec'",
-										photoface_remote_path, pf_job->remote_working_path))
+									return_code = PF_GENERAL_FAILURE_RC;
+									attempts = 0;
+									while ((return_code != PF_SUCCESS_RC) &&
+										(attempts < MAX_ATTEMPTS_AT_FIRST_CMISS_CONTROL))
 									{
-										return_code=PF_SUCCESS_RC;
+#if defined (WIN32)
+										Sleep((DWORD)(delay * 1000));
+#else /* defined (WIN32) */
+										sleep(delay);
+#endif /* defined (WIN32) */										
+										attempts++;
+										if (linux_execute("%sbin/cmgui_control -id %06d 'open comfile %s/pf_setup_main.com exec'",
+												 photoface_remote_path, *pf_job_id, pf_job->remote_working_path))
+										{
+											return_code=PF_SUCCESS_RC;
+										}
 									}
-
+#if defined (ERROR_MESSAGE)
+									if (return_code != PF_SUCCESS_RC)
+									{
+										set_error_message(PF_ERROR_MESSAGE,"Unable to connect to cmiss after %d attempts.",
+											"  Check that your rsh connection is enabled, that your "
+											"offscreen display is valid and your window manager suitable.");
+									}
+#endif /* defined (ERROR_MESSAGE) */
 								}
 								else
 								{
@@ -2417,7 +2449,7 @@ internal processes.
 		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
 	{
 		/* close cmgui */
-		if (linux_execute("%sbin/cmgui_control 'quit'", photoface_remote_path))
+		if (linux_execute("%sbin/cmgui_control -id %06d  'quit'", photoface_remote_path, pf_job_id))
 		{
 			return_code=PF_SUCCESS_RC;
 		}
@@ -2713,8 +2745,8 @@ Specify <number_of_markers> using
 								{
 									/* Define these fields and nodes */
 									if (linux_execute(
-										"%sbin/cmgui_control 'open comfile %scmiss/pf_specify_markers.com exec'",
-										photoface_remote_path, photoface_remote_path))
+										"%sbin/cmgui_control -id %06d  'open comfile %scmiss/pf_specify_markers.com exec'",
+										photoface_remote_path, pf_job_id, photoface_remote_path))
 									{
 										return_code=PF_SUCCESS_RC;
 									}
@@ -2928,8 +2960,8 @@ which is assumed to be allocated large enough for 3*<number_of_markers> floats
 						{
 							/* Define these fields and nodes */
 							if (linux_execute(
-									 "%sbin/cmgui_control 'open comfile %scmiss/pf_get_marker_fitted_positions.com exec'",
-									 photoface_remote_path, photoface_remote_path))
+									 "%sbin/cmgui_control -id %06d  'open comfile %scmiss/pf_get_marker_fitted_positions.com exec'",
+									 photoface_remote_path, pf_job_id, photoface_remote_path))
 							{
 								return_code=PF_SUCCESS_RC;
 							}
@@ -3050,8 +3082,8 @@ an <error_measure>.
 		/* For now this is all done by the comfile, until we have more direct control
 			over cmgui */
 		if (linux_execute(
-			"%sbin/cmgui_control 'open comfile %scmiss/pf_view_align.com exec'",
-			photoface_remote_path, photoface_remote_path))
+			"%sbin/cmgui_control -id %06d  'open comfile %scmiss/pf_view_align.com exec'",
+			photoface_remote_path, pf_job_id, photoface_remote_path))
 		{
 			return_code=PF_SUCCESS_RC;
 		}
@@ -3090,8 +3122,8 @@ Returns the current view as an <eye_point> (3 component vector), an
 		/* Get the current viewing parameters from cmgui */
 		/* Export the window projection from cmgui to a file */
 		if (linux_execute(
-			"%sbin/cmgui_control 'open comfile %scmiss/pf_get_view.com exec'",
-			photoface_remote_path, photoface_remote_path))
+			"%sbin/cmgui_control -id %06d  'open comfile %scmiss/pf_get_view.com exec'",
+			photoface_remote_path, pf_job_id, photoface_remote_path))
 		{
 			return_code=PF_SUCCESS_RC;
 		}
@@ -3161,9 +3193,9 @@ Sets the current view as an <eye_point> (3 component vector), an
 		view_angle = (float)(2.0 * 180.0 / 3.141592654 * atan(tan(view_angle 
 			* 3.141592654 / (180.0 * 2.0)) * 1.414213562));
 		if (linux_execute(
-			"%sbin/cmgui_control 'gfx modify window 1 view eye %f %f %f "
+			"%sbin/cmgui_control -id %06d  'gfx modify window 1 view eye %f %f %f "
 			"interest %f %f %f up %f %f %f view_angle %f'",
-			photoface_remote_path, eye_point[0], eye_point[1], eye_point[2],
+			photoface_remote_path, pf_job_id, eye_point[0], eye_point[1], eye_point[2],
 			interest_point[0], interest_point[1], interest_point[2],
 			up_vector[0], up_vector[1], up_vector[2], view_angle))
 		{
@@ -3196,8 +3228,8 @@ matrix, and returns an <error_measure>.
 		/* For now this is all done by the comfile, until we have more direct
 			control over cmgui */
 		if (linux_execute(
-			"%sbin/cmgui_control 'open comfile %scmiss/pf_fit.com exec'",
-			photoface_remote_path, photoface_remote_path))
+			"%sbin/cmgui_control -id %06d  'open comfile %scmiss/pf_fit.com exec'",
+			photoface_remote_path, pf_job_id, photoface_remote_path))
 		{
 			return_code=PF_SUCCESS_RC;
 		}
@@ -3301,8 +3333,8 @@ mode number slowest.
 		/* Calculate the basis based on the current host mesh transformation
 			??? (or do this as a separate step, or as part of doing the fit) */
 		if (linux_execute(
-			"%sbin/cmgui_control 'open comfile %scmiss/pf_get_basis.com exec'",
-			photoface_remote_path, photoface_remote_path))
+			"%sbin/cmgui_control -id %06d  'open comfile %scmiss/pf_get_basis.com exec'",
+			photoface_remote_path, pf_job_id, photoface_remote_path))
 		{
 			return_code=PF_SUCCESS_RC;
 		}
@@ -3405,8 +3437,8 @@ Used to specify the image to be texture mapped onto the model.
 #endif /* defined (WIN32) */
 
 				if (linux_execute(
-					"%sbin/cmgui_control 'open comfile %s/pf_specify_image.com exec'",
-					photoface_remote_path, pf_job->remote_working_path))
+					"%sbin/cmgui_control -id %06d  'open comfile %s/pf_specify_image.com exec'",
+					photoface_remote_path, pf_job_id, pf_job->remote_working_path))
 				{
 					return_code=PF_SUCCESS_RC;
 				}
@@ -3458,8 +3490,8 @@ is filled in based on the current model.
 		return_code=PF_GENERAL_FAILURE_RC;
 		/* Use cmgui to calculate the texture based on the specified image */
 		if (linux_execute(
-				 "%sbin/cmgui_control '$width=%d;$height=%d;cmiss(qq(open comfile %scmiss/pf_get_texture.com exec))'",
-				 photoface_remote_path, width, height, photoface_remote_path))
+				 "%sbin/cmgui_control -id %06d  '$width=%d;$height=%d;cmiss(qq(open comfile %scmiss/pf_get_texture.com exec))'",
+				 photoface_remote_path, pf_job_id, width, height, photoface_remote_path))
 		{
 			return_code=PF_SUCCESS_RC;
 		}
@@ -3647,8 +3679,8 @@ Used to specify the image to be texture mapped onto the model.
 				* pf_job->ndc_texture_scaling - 1.0f - temp_texture_ndc_y;
 
 			if (linux_execute(
-				"%sbin/cmgui_control '$hair_width=%d;$hair_height=%d;cmiss(qq(open comfile %scmiss/pf_specify_hair_mask.com exec))'",
-				photoface_remote_path, width, height, photoface_remote_path))
+				"%sbin/cmgui_control -id %06d  '$hair_width=%d;$hair_height=%d;cmiss(qq(open comfile %scmiss/pf_specify_hair_mask.com exec))'",
+				photoface_remote_path, pf_job_id, width, height, photoface_remote_path))
 			{
 				return_code=PF_SUCCESS_RC;
 			}
@@ -3691,8 +3723,8 @@ is filled in based on the current model.
 		return_code=PF_GENERAL_FAILURE_RC;
 		/* Use cmgui to calculate the texture based on the specified image */
 		if (linux_execute(
-				 "%sbin/cmgui_control '$width=%d;$height=%d;cmiss(qq(open comfile %scmiss/pf_get_hair_texture.com exec))'",
-				 photoface_remote_path, width, height, photoface_remote_path))
+				 "%sbin/cmgui_control -id %06d  '$width=%d;$height=%d;cmiss(qq(open comfile %scmiss/pf_get_hair_texture.com exec))'",
+				 photoface_remote_path, pf_job_id, width, height, photoface_remote_path))
 		{
 			return_code=PF_SUCCESS_RC;
 		}
@@ -3787,8 +3819,8 @@ is filled in based on the current model.
 		return_code=PF_GENERAL_FAILURE_RC;
 		/* Use image magick to distort the background image */
 		if (linux_execute(
-				 "%sbin/cmgui_control '$width=%d;$height=%d;cmiss(qq(open comfile %scmiss/pf_get_distorted_background.com exec))'",
-				 photoface_remote_path, width, height, photoface_remote_path))
+				 "%sbin/cmgui_control -id %06d '$width=%d;$height=%d;cmiss(qq(open comfile %scmiss/pf_get_distorted_background.com exec))'",
+				 photoface_remote_path, pf_job_id, width, height, photoface_remote_path))
 		{
 			return_code=PF_SUCCESS_RC;
 		}
