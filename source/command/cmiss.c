@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -1539,7 +1539,7 @@ Executes a GFX CREATE CYLINDERS command.
 static int gfx_create_element_creator(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 26 June 2000
 
 DESCRIPTION :
 Executes a GFX CREATE ELEMENT_CREATOR command.
@@ -1579,8 +1579,10 @@ Executes a GFX CREATE ELEMENT_CREATOR command.
 				else
 				{
 					if (CREATE(Element_creator)(&(command_data->element_creator),
-						command_data->basis_manager,command_data->element_manager,
-						command_data->fe_field_manager,command_data->node_manager,
+						command_data->basis_manager,
+						command_data->element_manager,command_data->element_group_manager,
+						command_data->fe_field_manager,
+						command_data->node_manager,command_data->node_group_manager,
 						command_data->element_selection,command_data->node_selection,
 						command_data->user_interface))
 					{
@@ -11763,19 +11765,17 @@ Executes a GFX EDIT command.
 static int execute_command_gfx_element_creator(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 May 2000
+LAST MODIFIED : 27 June 2000
 
 DESCRIPTION :
 Executes a GFX ELEMENT_CREATOR command.
 ==============================================================================*/
 {
-	char *group_name;
-	int element_dimension,return_code;
+	int create_enabled,element_dimension,return_code;
 	struct Cmiss_command_data *command_data;
 	struct Element_creator *element_creator;
 	struct FE_field *coordinate_field;
-	struct GROUP(FE_element) *element_group,*old_element_group;
-	struct GROUP(FE_node) *node_group,*old_node_group;
+	struct GROUP(FE_element) *element_group;
 	struct Option_table *option_table;
 	struct Set_FE_field_conditional_data set_coordinate_field_data;
 
@@ -11784,18 +11784,19 @@ Executes a GFX ELEMENT_CREATOR command.
 	if (state&&(command_data=(struct Cmiss_command_data *)command_data_void))
 	{
 		/* initialize defaults */
-		element_group=(struct GROUP(FE_element) *)NULL;
-		node_group=(struct GROUP(FE_node) *)NULL;
 		if (element_creator=command_data->element_creator)
 		{
-			coordinate_field=Element_creator_get_coordinate_field(element_creator);
+			create_enabled=Element_creator_get_create_enabled(element_creator);
+			element_group=Element_creator_get_element_group(element_creator);
 			element_dimension=Element_creator_get_element_dimension(element_creator);
-			Element_creator_get_groups(element_creator,&element_group,&node_group);
+			coordinate_field=Element_creator_get_coordinate_field(element_creator);
 		}
 		else
 		{
-			coordinate_field=(struct FE_field *)NULL;
+			create_enabled=0;
+			element_group=(struct GROUP(FE_element) *)NULL;
 			element_dimension=2;
+			coordinate_field=(struct FE_field *)NULL;
 		}
 		if (coordinate_field)
 		{
@@ -11805,8 +11806,6 @@ Executes a GFX ELEMENT_CREATOR command.
 		{
 			ACCESS(GROUP(FE_element))(element_group);
 		}
-		old_element_group=element_group;
-		old_node_group=node_group;
 
 		option_table=CREATE(Option_table)();
 		/* coordinate_field */
@@ -11815,6 +11814,8 @@ Executes a GFX ELEMENT_CREATOR command.
 		set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 		Option_table_add_entry(option_table,"coordinate_field",
 			&coordinate_field,&set_coordinate_field_data,set_FE_field_conditional);
+		/* create/no_create */
+		Option_table_add_switch(option_table,"create","no_create",&create_enabled);
 		/* dimension */
 		Option_table_add_entry(option_table,"dimension",
 			&element_dimension,NULL,set_int_non_negative);
@@ -11825,37 +11826,18 @@ Executes a GFX ELEMENT_CREATOR command.
 		{
 			if (element_creator)
 			{
+				Element_creator_set_create_enabled(element_creator,create_enabled);
 				Element_creator_set_coordinate_field(element_creator,coordinate_field);
 				Element_creator_set_element_dimension(element_creator,
 					element_dimension);
 				if (element_group)
 				{
-					if (element_group != old_element_group)
-					{
-						if (GET_NAME(GROUP(FE_element))(element_group,&group_name))
-						{
-							if (!(node_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),
-								name)(group_name,command_data->node_group_manager)))
-							{
-								node_group=old_node_group;
-							}
-							DEALLOCATE(group_name);
-						}
-						Element_creator_set_element_dimension(element_creator,
-							element_dimension);
-						Element_creator_set_groups(element_creator,
-							element_group,node_group);
-					}
-					else
-					{
-						display_message(WARNING_MESSAGE,
-							"Please specify an element group for the element_creator");
-					}
+					Element_creator_set_element_group(element_creator,element_group);
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"Must create element_creator before modifying it");
+					display_message(WARNING_MESSAGE,
+						"Please specify an element group for the element_creator");
 					return_code=0;
 				}
 			}
