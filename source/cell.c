@@ -313,7 +313,7 @@ Main program for cell
     ADD_OBJECT_TO_MANAGER(Interactive_tool)(transform_tool,
       interactive_tool_manager);
 		select_tool = CREATE(Select_tool)(interactive_tool_manager,
-			any_object_selection,default_graphical_material);
+			any_object_selection,default_graphical_material,user_interface);
     time_keeper=ACCESS(Time_keeper)(CREATE(Time_keeper)("default",
       event_dispatcher, user_interface));
     
