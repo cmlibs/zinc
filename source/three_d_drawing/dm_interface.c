@@ -133,6 +133,7 @@ supported on displays other than SGI will do.
 	};
 #endif /* defined (GLX_SGIX_dm_pbuffer) */
 #if defined (GLX_pbuffer)
+	int visual_id, specified_visual_id;
 	int pbuffer_attribs [] = 
 	{
 		GLX_PBUFFER_WIDTH, 0, /* Note that these 0 values are explictly overwritten below */
@@ -233,6 +234,10 @@ supported on displays other than SGI will do.
 	if(user_interface)
 	{
 		display = User_interface_get_display(user_interface);
+#if defined (GLX_pbuffer)
+		specified_visual_id = User_interface_get_specified_visual_id(
+			user_interface);
+#endif /* defined (GLX_pbuffer) */
 		if (depth_buffer)
 		{
 			visattrs = visattrsRGB_with_depth;
@@ -423,47 +428,72 @@ supported on displays other than SGI will do.
 					|| query_glx_extension("GLX_SGIX_pbuffer", display,
 					DefaultScreen(display)))
 				{
-					if (buffer->config_list = glXChooseFBConfig(display, 
-						DefaultScreen(display), fbvisattrs, &nelements))
+					if (!specified_visual_id)
 					{
-						config_index = 0;
-						while ((config_index < nelements) &&
-							(!(buffer->pbuffer = glXCreatePbuffer(display,
-						   buffer->config_list[config_index], pbuffer_attribs))))
+						if (buffer->config_list = glXChooseFBConfig(display, 
+							DefaultScreen(display), fbvisattrs, &nelements))
 						{
-							config_index++;
-						}
-						if (config_index < nelements)
-						{
-							buffer->config = buffer->config_list[config_index];
-						}
-						if (buffer->config && (buffer->visual_info = 
-							glXGetVisualFromFBConfig(display, buffer->config)))
-						{
-							if (buffer->context = glXCreateNewContext(
-								display, buffer->config, GLX_RGBA_TYPE, 
-								ThreeDDrawing_get_shareable_context(), GL_TRUE))
+							config_index = 0;
+							while (config_index < nelements && 
+								(!(buffer->pbuffer = glXCreatePbuffer(display,
+								buffer->config_list[config_index], pbuffer_attribs))))
 							{
-								/* Finished I think, hooray! */
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Cannot get GLX context");
-								DEALLOCATE(buffer);
-								buffer = (struct Dm_buffer *)NULL;
+								config_index++;
 							}
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,"CREATE(Dm_buffer).  "
-								"Cannot create pbuffer for any possible frame buffers");
+							display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Cannot get list of Frame Buffer Configurations");
 							DEALLOCATE(buffer);
 							buffer = (struct Dm_buffer *)NULL;
 						}
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Cannot get list of Frame Buffer Configurations");
+						/* Get all the configs and look for the specified visual */
+						if (buffer->config_list = glXGetFBConfigs(display, 
+							DefaultScreen(display), &nelements))
+						{
+							config_index = 0;
+							while ((config_index < nelements) && !(buffer->pbuffer))
+							{
+								visual_id = 0;
+								glXGetFBConfigAttrib(display,
+									buffer->config_list[config_index],
+									GLX_VISUAL_ID, &visual_id);
+								if ((specified_visual_id != visual_id) || 
+									(!(buffer->pbuffer = glXCreatePbuffer(display,
+									buffer->config_list[config_index], pbuffer_attribs))))
+								{
+									config_index++;
+								}
+							}
+						}
+					}
+					if (config_index < nelements)
+					{
+						buffer->config = buffer->config_list[config_index];
+					}
+					if (buffer->config && (buffer->visual_info = 
+							 glXGetVisualFromFBConfig(display, buffer->config)))
+					{
+						if (buffer->context = glXCreateNewContext(
+								 display, buffer->config, GLX_RGBA_TYPE, 
+								 ThreeDDrawing_get_shareable_context(), GL_TRUE))
+						{
+							/* Finished I think, hooray! */
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Cannot get GLX context");
+							DEALLOCATE(buffer);
+							buffer = (struct Dm_buffer *)NULL;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"CREATE(Dm_buffer).  "
+							"Cannot create pbuffer for any possible frame buffers");
 						DEALLOCATE(buffer);
 						buffer = (struct Dm_buffer *)NULL;
 					}
@@ -777,6 +807,7 @@ DESCRIPTION :
 		if (1 == buffer->double_buffered)
 		{
 #if defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer) || (GLX_pbuffer)
+			Dm_buffer_glx_make_current(buffer);
 			if (buffer->pbuffer)
 			{
 				glXSwapBuffers(User_interface_get_display(buffer->user_interface),
