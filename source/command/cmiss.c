@@ -20441,6 +20441,12 @@ the derivatives).
 			extent.number_in_xi3=1;
 			xi_order=123;
 			node_group=(struct GROUP(FE_node) *)NULL;
+			warp_values.value[0] = 0.0;
+			warp_values.value[1] = 0.0;
+			warp_values.value[2] = 0.0;
+			warp_values.value[3] = 0.0;
+			warp_values.value[4] = 0.0;
+			warp_values.value[5] = 0.0;
 			(option_table[0]).to_be_modified= &coordinate_field;
 			(option_table[0]).user_data=command_data->fe_field_manager;
 			(option_table[1]).to_be_modified= &extent;
