@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 13 August 2002
+LAST MODIFIED : 29 August 2002
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -7643,7 +7643,7 @@ static int set_Texture_image_from_field(struct Texture *texture,
 	int image_width, int image_height, int image_depth,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 22 April 2002
+LAST MODIFIED : 29 August 2002
 
 DESCRIPTION :
 Creates the image in the format given by sampling the <field> according to the
@@ -7679,8 +7679,6 @@ Currently limited to 1 byte per component.
 			Texture_storage_type_get_number_of_components(storage))) &&
 		(3 >= (tex_number_of_components =
 			Computed_field_get_number_of_components(texture_coordinate_field))) &&
-		Computed_field_is_find_element_xi_capable(texture_coordinate_field,
-			/*dummy*/NULL) &&
 		(0 < image_width) && (0 < image_height) && (0 < image_depth))
 	{
 		if ((0 < element_dimension) &&
@@ -7730,7 +7728,7 @@ Currently limited to 1 byte per component.
 				hint_maximums[2] = texture_depth;
 				for (i = 0; (i < image_depth) && return_code; i++)
 				{
-					/*???debug*/
+					/*???debug -- leave in so user knows something is happening! */
 					if (1 < image_depth)
 					{
 						printf("Evaluating image plane %d of %d\n", i+1, image_depth);
@@ -7739,15 +7737,17 @@ Currently limited to 1 byte per component.
 					values[2] = texture_depth * ((float)i + 0.5) / (float)image_depth;
 					for (j = 0; (j < image_height) && return_code; j++)
 					{
-						/*???debug*/
-						if (1 < image_depth)
-						{
-							printf("  row %d of %d\n", j+1, image_height);
-						}
 						values[1] = texture_height * ((float)j + 0.5) / (float)image_height;
 						for (k = 0; (k < image_width) && return_code; k++)
 						{
 							values[0] = texture_width * ((float)k + 0.5) / (float)image_width;
+#if defined (DEBUG)
+							/*???debug*/
+							if ((1 < image_depth) && ((0 == j) || (image_height - 1 == j)) && ((0 == k) || (image_width - 1 == k)))
+							{
+								printf("  field pos = %10g %10g %10g\n", values[0], values[1], values[2]);
+							}
+#endif /* defined (DEBUG) */
 							/* Computed_field_find_element_xi_special returns true if it has
 								 performed a valid calculation even if the element isn't found
 								 to stop the slow Computed_field_find_element_xi being called */
@@ -7762,6 +7762,13 @@ Currently limited to 1 byte per component.
 							{
 								if (element)
 								{
+#if defined (DEBUG)
+									/*???debug*/
+									if ((1 < image_depth) && ((0 == j) || (image_height - 1 == j)) && ((0 == k) || (image_width - 1 == k)))
+									{
+										printf("  xi = %10g %10g %10g\n", xi[0], xi[1], xi[2]);
+									}
+#endif /* defined (DEBUG) */
 									if (Computed_field_evaluate_in_element(field,
 										element, xi,/*time*/0,(struct FE_element *)NULL,
 										data_values, (FE_value *)NULL))
@@ -7811,6 +7818,13 @@ Currently limited to 1 byte per component.
 								alpha = 0.0;
 								find_element_xi_error_count++;
 							}
+#if defined (DEBUG)
+							/*???debug*/
+							if ((1 < image_depth) && ((0 == j) || (image_height - 1 == j)) && ((0 == k) || (image_width - 1 == k)))
+							{
+								printf("  RGBA = %10g %10g %10g %10g\n", red, green, blue, alpha);
+							}
+#endif /* defined (DEBUG) */
 							switch (storage)
 							{
 								case TEXTURE_LUMINANCE:
@@ -8032,7 +8046,7 @@ MAXIMUM_ELEMENT_XI_DIMENSIONS to be set.
 static int gfx_modify_Texture_evaluate_image(struct Parse_state *state,
 	void *data_void, void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 22 April 2002
+LAST MODIFIED : 27 August 2002
 
 DESCRIPTION :
 Modifies the properties of a texture.
@@ -8093,7 +8107,7 @@ Modifies the properties of a texture.
 					Computed_field_package_get_computed_field_manager(
 					command_data->computed_field_package);
 				set_texture_coordinates_field_data.conditional_function=
-					Computed_field_is_find_element_xi_capable;
+					(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
 				set_texture_coordinates_field_data.conditional_function_user_data=
 					(void *)NULL;
 				Option_table_add_entry(option_table, "texture_coordinates",
