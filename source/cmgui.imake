@@ -978,13 +978,14 @@ depend :
 
 transfer :
 	tar -cvf - \
-	readme.* *.make *.imake *.c version.ObjSuffix.h Cmgui \
+	../*.make readme.* *.make *.imake *.c version.ObjSuffix.h Cmgui \
 	$(UTILITIES_PATH)/uid2uidh $(UTILITIES_PATH)/uid2uidh_linux \
 	*.mms *.sed *.com *.opt *.ico \
 	application/WildC application/WildH application/WildUil \
 	choose/WildC choose/WildH choose/WildUil \
 	colour/WildC colour/WildH colour/WildUil \
 	comfile/WildC comfile/WildH comfile/WildRc comfile/WildUil \
+	computed_field/WildC computed_field/WildH computed_field/WildRc computed_field/WildUil \
 	curve/WildC curve/WildH curve/WildUil \
 	data/WildC data/WildH data/WildUil \
 	database/WildC database/WildH database/WildUil \
@@ -992,6 +993,7 @@ transfer :
 	element/WildC element/WildH element/WildUil \
 	general/WildC general/WildH general/WildUil \
 	help/WildC help/WildH help/WildUil \
+	interaction/WildC interaction/WildCpp interaction/WildH interaction/WildUil \
 	io_devices/WildC io_devices/WildCpp io_devices/WildH io_devices/WildUil \
 	link/WildC link/WildH link/WildUil \
 	material/WildC material/WildH material/WildUil \
@@ -1000,6 +1002,7 @@ transfer :
 	projection/WildC projection/WildH projection/WildUil \
 	prompt/WildC prompt/WildH prompt/WildUil \
 	select/WildC select/WildH select/WildUil \
+	selection/WildC selection/WildH selection/WildUil \
 	slider/WildC slider/WildH slider/WildUil \
 	three_d_drawing/Makefile three_d_drawing/WildC three_d_drawing/WildH \
 	time/WildC time/WildH time/WildUil \
