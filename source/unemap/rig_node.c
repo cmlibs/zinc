@@ -2378,7 +2378,7 @@ Doesn't load in auxilliary devices that are linear combinations of other channel
 									/* Do node stuff here */
 									if(return_code)
 									{								
-										period = 1/frequency;
+										period = 1/frequency;									
 										/* allocate memory for times, and fill in */
 										if(ALLOCATE(times,FE_value,number_of_samples))
 										{								

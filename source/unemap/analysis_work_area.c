@@ -12512,7 +12512,9 @@ Responds to update callbacks from the time object.
 {
 	Colormap colour_map;
 	Display *display;
+#if !defined (UNEMAP_USE_NODES)
 	enum Interpolation_type interpolation;
+#endif
 	float contour_maximum,contour_minimum, frequency, maximum_value,minimum_value,
 		map_potential_time, number_of_spectrum_colours;
 	int cell_number, datum, frame_number, i, number_of_contours,

@@ -4126,14 +4126,13 @@ Sets the <time> of the time field.
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *signal_value_at_time_field,*time_field,*time_field_copy;		
+	struct Computed_field *signal_value_at_time_field,*time_field;		
 	struct FE_field *signal_field;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	
 	ENTER(map_set_electrode_colour_from_time);	
 	signal_value_at_time_field=(struct Computed_field *)NULL;
-	time_field=(struct Computed_field *)NULL;
-	time_field_copy=(struct Computed_field *)NULL;
+	time_field=(struct Computed_field *)NULL;	
 	signal_field=(struct FE_field *)NULL;
 	computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
 	if(package&&spectrum&&settings&&(computed_field_manager=
@@ -4567,7 +4566,7 @@ This function draws the <map> in as a 3D CMGUI scene.
 						region_item=region_item->next;
 					} /* for (region_number=0; */							
 					/* Alter the spectrum */
-					time=map->frame_start_time/1000;/* ms to s*/	
+					time=map->frame_start_time/1000;/* ms to s*/						
 					/* spectrum range changed and fixed */
 					if(map->fixed_range)
 					{		

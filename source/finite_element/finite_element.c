@@ -11061,6 +11061,76 @@ at the <node>.
 	return (value);
 } /* get_FE_nodal_FE_value_array_element */
 
+FE_value get_FE_nodal_FE_value_array_interpolated_value(struct FE_node *node,
+	struct FE_field_component *component,int version,
+	enum FE_nodal_value_type type,int element_number,FE_value proportion)
+/*******************************************************************************
+LAST MODIFIED : 8 May 2000
+
+DESCRIPTION :
+returns the interpolated value between the array (*element_number= value_low) 
+and *(element_number+1)=value_high, according to 
+value=<proportion>*value_low+(1-<proportion>)*value_high;
+==============================================================================*/
+{
+	int the_array_number_of_values;
+	Value_storage *values_storage = NULL;
+
+	FE_value *the_array,**array_address,value,value_low,value_high;
+
+	ENTER(get_FE_nodal_FE_value_array_interpolated_value);
+	value=0.0;
+	value_low=0.0;
+	value_high=0.0;
+	/* check arguments */
+	if (node&&component&&(component->field)&&(0<=component->number)&&
+		(component->number<component->field->number_of_components)&&(0<=version)&&
+		(element_number>-1))
+	{
+		if(find_FE_nodal_values_storage_dest(node,component,version,type,FE_VALUE_ARRAY_VALUE,
+			&values_storage))
+		{					
+			the_array_number_of_values = *((int *)values_storage);
+			if(element_number<the_array_number_of_values)
+			{
+				/* get the address to copy from*/		
+				array_address = (FE_value **)(values_storage+sizeof(int));
+				the_array = *array_address;
+				/* interpolate between adjacent values */
+				value_low=the_array[element_number];
+				/* can't go off the end of the array */
+				if(element_number==(the_array_number_of_values-1))
+				{
+					value=value_low;
+				}
+				else
+				{
+					value_high=the_array[element_number+1];
+					value=proportion*value_low+(1-proportion)*value_high;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+				"get_FE_nodal_FE_value_array_interpolated_value. element_number_out_of_range");	
+			}
+		}
+		else
+		{	
+			display_message(ERROR_MESSAGE,
+				"get_FE_nodal_FE_value_array_interpolated_value. find_FE_nodal_values_storage_dest failed");			
+		}	
+	}		
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_nodal_FE_value_array_interpolated_value.Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (value);
+} /* get_FE_nodal_FE_value_array_interpolated_value */
+
 int set_FE_nodal_FE_value_array_element(struct FE_node *node,
 	struct FE_field_component *component,int version,
 	enum FE_nodal_value_type type,int element_number,FE_value value)
@@ -11178,6 +11248,76 @@ at the <node>.
 	return (value);
 } /* get_FE_nodal_short_array_element */
 
+short get_FE_nodal_short_array_interpolated_value(struct FE_node *node,
+	struct FE_field_component *component,int version,
+	enum FE_nodal_value_type type,int element_number,FE_value proportion)
+/*******************************************************************************
+LAST MODIFIED : 8 May 2000
+
+DESCRIPTION :
+returns the interpolated value between the array (*element_number= value_low) 
+and *(element_number+1)=value_high, according to 
+value=<proportion>*value_low+(1-<proportion>)*value_high;
+==============================================================================*/
+{
+	int the_array_number_of_values;
+	Value_storage *values_storage = NULL;
+
+	short *the_array,**array_address,value,value_low,value_high;
+
+	ENTER(get_FE_nodal_short_array_interpolated_value);
+	value=0.0;
+	value_low=0.0;
+	value_high=0.0;
+	/* check arguments */
+	if (node&&component&&(component->field)&&(0<=component->number)&&
+		(component->number<component->field->number_of_components)&&(0<=version)&&
+		(element_number>-1))
+	{
+		if(find_FE_nodal_values_storage_dest(node,component,version,type,SHORT_ARRAY_VALUE,
+			&values_storage))
+		{					
+			the_array_number_of_values = *((int *)values_storage);
+			if(element_number<the_array_number_of_values)
+			{
+				/* get the address to copy from*/		
+				array_address = (short **)(values_storage+sizeof(int));
+				the_array = *array_address;
+				/* interpolate between adjacent values */
+				value_low=the_array[element_number];
+				/* can't go off the end of the array */
+				if(element_number==(the_array_number_of_values-1))
+				{
+					value=value_low;
+				}
+				else
+				{
+					value_high=the_array[element_number+1];
+					value=proportion*value_low+(1-proportion)*value_high;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+				"get_FE_nodal_short_array_interpolated_value. element_number_out_of_range");	
+			}
+		}
+		else
+		{	
+			display_message(ERROR_MESSAGE,
+				"get_FE_nodal_short_array_interpolated_value. find_FE_nodal_values_storage_dest failed");			
+		}	
+	}		
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_nodal_short_array_interpolated_value.Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (value);
+} /* get_FE_nodal_short_array_interpolated_value */
+
 int set_FE_nodal_short_array_element(struct FE_node *node,
 	struct FE_field_component *component,int version,
 	enum FE_nodal_value_type type,int element_number,short value)
@@ -11241,7 +11381,7 @@ int get_FE_nodal_FE_value_array_value_at_FE_value_time(struct FE_node *node,
 	struct FE_field_component *component,int version,
 	enum FE_nodal_value_type type,FE_value time,FE_value *value)
 /*******************************************************************************
-LAST MODIFIED : 4 October 1999
+LAST MODIFIED : 8 May 2000
 
 DESCRIPTION :
 Gets the FE_value <value> from the node's FE_value array at the given
@@ -11249,15 +11389,15 @@ Gets the FE_value <value> from the node's FE_value array at the given
 The field must have time defined for it, and the number of times must match
 the number of array elements. If <time> is within the node field's time array's 
 range, but doesn't correspond exactly to an array element, interpolates to determine 
-<value>.
+<value>.	
+ 	
 ==============================================================================*/
 {
-	int array_number_of_values,array_index,done,index_high,index_low,number_of_times,
-	  return_code,step;
-	FE_value first_time,last_time,prop,this_time,fe_value_index,time_high,time_low,
-		value_high,value_low;
+	int array_number_of_values,array_index,done,index_high,index_low,
+		number_of_times,return_code,step;	
+	FE_value first_time,last_time,this_time,fe_value_index,time_high,time_low,prop;
 	struct FE_field *field;
-
+	
 	ENTER(get_FE_nodal_FE_value_array_value_at_FE_value_time);
 	return_code=0;
 	/* check arguments */
@@ -11274,62 +11414,89 @@ range, but doesn't correspond exactly to an array element, interpolates to deter
 				/* field has the right time values, and is defined at node. We're OK*/
 				get_FE_field_time_FE_value(field,0,&first_time);
 				get_FE_field_time_FE_value(field,number_of_times-1,&last_time);
-				/*Initial est. of the array index, assuming times evenly spaced, no gaps */		
-				/*This assumption and hence estimate is true from most signal files. */				
+				/*Initial est. of the array index, assuming times evenly spaced, no gaps */	
+				/*This assumption and hence estimate is true from most signal files. */
 				fe_value_index=((time-first_time)/(last_time-first_time))*(number_of_times-1);
 				fe_value_index+=0.5;/*round float to nearest int */
 				array_index=floor(fe_value_index);
+				time_low=0;
+				time_high=0;
 				done=0;
 				index_low=0;
-				index_high=number_of_times-1;				
-				/* do binary search for <time>'s array index, then look up value at this time */
-				/* This search will move from the extremes in to <time> , so if the <this_time> */
-				/* is only slightly off <time>, will take several iterations to converge.*/
-				/* Search outwards if this becomes a problem.*/
+				index_high=number_of_times-1;
+				/* do binary search for <time>'s array index. Also look at time of */
+				/* adjacent array element, as index estimate may be slightly off due to*/
+				/* rounding error. This avoids unnecessarily long search from end of array */
 				while(!done)
 				{	
-					get_FE_field_time_FE_value(field,array_index,&this_time);				
-					if(this_time==time) /* exact match*/
-					{
-						return_code=1;
-						done=1;
-						*value=get_FE_nodal_FE_value_array_element(node,component,version,type,
-							array_index);
+					get_FE_field_time_FE_value(field,array_index,&this_time);
+
+					if(this_time>=time)
+					{ 
+						index_high=array_index;
+						/* get adjacent array element*/
+						get_FE_field_time_FE_value(field,array_index-1,&time_low);
+						/* are we between elements?*/
+						if(time_low<time)
+						{			
+							index_low=array_index-1;
+							return_code=1;
+							done=1;
+						}	
+						else
+						{
+							time_low=0;
+						}
 					}
-					else if(this_time<time)
+					else /* (this_time<time) */
 					{
 						index_low=array_index;
+						get_FE_field_time_FE_value(field,array_index+1,&time_high);
+						if(time_high>time)
+						{		
+							index_high=array_index+1;
+							return_code=1;
+							done=1;
+						}	
+						else
+						{
+							time_high=0;
+						}
 					}	
-					else /*this_time>time */
-					{
-						index_high=array_index;
-					}			
-					step=(index_high-index_low)/2;
-					/* No exact match, can't subdivide further, must do interpolation. Spliting the */
-					/* difference evenly would be quicker, but less accurate */
-					if(step==0)												
-					{		
-						get_FE_field_time_FE_value(field,index_low,&time_low);
-						get_FE_field_time_FE_value(field,index_high,&time_high);
-						prop=(time_high-time)/(time_high-time_low);
-						value_high=get_FE_nodal_FE_value_array_element(node,component,version,
-							type,index_high);
-						value_low=get_FE_nodal_FE_value_array_element(node,component,version,
-							type,index_low);
-						*value=prop*value_low+(1-prop)*value_high;
-						done=1;	
-						return_code=1;
-					}	
-					array_index=index_low+step;
-				}	/* while(!done)	*/				
+					if(!done)
+					{	
+						step=(index_high-index_low)/2;	
+						/* No exact match, can't subdivide further, must do interpolation.*/
+						if(step==0)												
+						{	
+							done=1;	
+							return_code=1;														
+						}
+						else
+						{
+							array_index=index_low+step;
+						}
+					}/* if(!done)	*/
+				}	/* while(!done)	*/
+				/* index_low and index_high should now be adjacent */
+				if(!time_low)
+				{
+					get_FE_field_time_FE_value(field,index_low,&time_low);
+				}
+				if(!time_high)
+				{
+					get_FE_field_time_FE_value(field,index_high,&time_high);
+				}
+				prop=(time_high-time)/(time_high-time_low);	 
+				*value=get_FE_nodal_FE_value_array_interpolated_value(node,component,version,
+					type,index_low,prop);					
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"get_FE_nodal_FE_value_array_value_at_FE_value_time."
 					" number_of_times!=array_number_of_values");
-			}			
-		
+			}					
 		}
 		else
 		{	
@@ -11353,7 +11520,7 @@ int get_FE_nodal_short_array_value_at_FE_value_time(struct FE_node *node,
 	struct FE_field_component *component,int version,
 	enum FE_nodal_value_type type,FE_value time,short *value)
 /*******************************************************************************
-LAST MODIFIED : 4 October 1999
+LAST MODIFIED : 8 May 2000
 
 DESCRIPTION :
 Gets the short <value> from the node's short array at the given
@@ -11365,12 +11532,11 @@ range, but doesn't correspond exactly to an array element, interpolates to deter
  	
 ==============================================================================*/
 {
-	int array_number_of_values,array_index,done,index_high,index_low,number_of_times,
-	  return_code,step;
-	short value_high,value_low;
+	int array_number_of_values,array_index,done,index_high,index_low,
+		number_of_times,return_code,step;	
 	FE_value first_time,last_time,this_time,fe_value_index,time_high,time_low,prop;
 	struct FE_field *field;
-
+	
 	ENTER(get_FE_nodal_short_array_value_at_FE_value_time);
 	return_code=0;
 	/* check arguments */
@@ -11392,57 +11558,84 @@ range, but doesn't correspond exactly to an array element, interpolates to deter
 				fe_value_index=((time-first_time)/(last_time-first_time))*(number_of_times-1);
 				fe_value_index+=0.5;/*round float to nearest int */
 				array_index=floor(fe_value_index);
+				time_low=0;
+				time_high=0;
 				done=0;
 				index_low=0;
 				index_high=number_of_times-1;
-				/* do binary search for <time>'s array index, then look up value at this time */
-				/* This search will move from the extremes in to <time> , so if the <this_time> */
-				/* is only slightly off <time>, will take several iterations to converge.*/
-				/* Search outwards if this becomes a problem.*/
+				/* do binary search for <time>'s array index. Also look at time of */
+				/* adjacent array element, as index estimate may be slightly off due to*/
+				/* rounding error. This avoids unnecessarily long search from end of array */
 				while(!done)
 				{	
-					get_FE_field_time_FE_value(field,array_index,&this_time);				
-					if(this_time==time) /* exact match*/
-					{
-						return_code=1;
-						done=1;
-						*value=get_FE_nodal_short_array_element(node,component,version,type,
-							array_index);
+					get_FE_field_time_FE_value(field,array_index,&this_time);
+
+					if(this_time>=time)
+					{ 
+						index_high=array_index;
+						/* get adjacent array element*/
+						get_FE_field_time_FE_value(field,array_index-1,&time_low);
+						/* are we between elements?*/
+						if(time_low<time)
+						{			
+							index_low=array_index-1;
+							return_code=1;
+							done=1;
+						}	
+						else
+						{
+							time_low=0;
+						}
 					}
-					else if(this_time<time)
+					else /* (this_time<time) */
 					{
 						index_low=array_index;
+						get_FE_field_time_FE_value(field,array_index+1,&time_high);
+						if(time_high>time)
+						{		
+							index_high=array_index+1;
+							return_code=1;
+							done=1;
+						}	
+						else
+						{
+							time_high=0;
+						}
 					}	
-					else /*this_time>time */
-					{
-						index_high=array_index;
-					}			
-					step=(index_high-index_low)/2;
-					/* No exact match, can't subdivide further, must do interpolation. Spliting the */ 
-					/* difference evenly would be quicker, but less accurate */
-					if(step==0)												
-					{		
-						get_FE_field_time_FE_value(field,index_low,&time_low);
-						get_FE_field_time_FE_value(field,index_high,&time_high);
-						prop=(time_high-time)/(time_high-time_low);
-						value_high=get_FE_nodal_short_array_element(node,component,version,
-							type,index_high);
-						value_low=get_FE_nodal_short_array_element(node,component,version,
-							type,index_low);
-						*value=prop*value_low+(1-prop)*value_high;
-						done=1;	
-						return_code=1;		
-					}	
-					array_index=index_low+step;
-				}	/* while(!done)	*/				
+					if(!done)
+					{	
+						step=(index_high-index_low)/2;	
+						/* No exact match, can't subdivide further, must do interpolation.*/
+						if(step==0)												
+						{	
+							done=1;	
+							return_code=1;														
+						}
+						else
+						{
+							array_index=index_low+step;
+						}
+					}/* if(!done)	*/
+				}	/* while(!done)	*/
+				/* index_loe and index_high should now be adjacent */
+				if(!time_low)
+				{
+					get_FE_field_time_FE_value(field,index_low,&time_low);
+				}
+				if(!time_high)
+				{
+					get_FE_field_time_FE_value(field,index_high,&time_high);
+				}
+				prop=(time_high-time)/(time_high-time_low);	 
+				*value=get_FE_nodal_short_array_interpolated_value(node,component,version,
+					type,index_low,prop);					
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"get_FE_nodal_short_array_value_at_FE_value_time."
 					" number_of_times!=array_number_of_values");
-			}			
-		
+			}					
 		}
 		else
 		{	

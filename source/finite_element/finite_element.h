@@ -1456,6 +1456,18 @@ at the <node>.
 
 ==============================================================================*/
 
+FE_value get_FE_nodal_FE_value_array_interpolated_value(struct FE_node *node,
+	struct FE_field_component *component,int version,
+	enum FE_nodal_value_type type,int element_number,FE_value proportion);
+/*******************************************************************************
+LAST MODIFIED : 8 May 2000
+
+DESCRIPTION :
+returns the interpolated value between the array (*element_number= value_low) 
+and *(element_number+1)=value_high, according to 
+value=<proportion>*value_low+(1-<proportion>)*value_high;
+==============================================================================*/
+
 int set_FE_nodal_FE_value_array_element(struct FE_node *node,
 	struct FE_field_component *component,int version,
 	enum FE_nodal_value_type type,int element_number,FE_value value);
@@ -1480,6 +1492,18 @@ Gets a particular short_array_value element for the array
 (<version>, <type>) for the field <component> 
 at the <node>. 
 
+===============================================================================*/
+
+short get_FE_nodal_short_array_interpolated_value(struct FE_node *node,
+	struct FE_field_component *component,int version,
+	enum FE_nodal_value_type type,int element_number,FE_value proportion);
+/*******************************************************************************
+LAST MODIFIED : 8 May 2000
+
+DESCRIPTION :
+returns the interpolated value between the array (*element_number= value_low) 
+and *(element_number+1)=value_high, according to 
+value=<proportion>*value_low+(1-<proportion>)*value_high;
 ==============================================================================*/
 
 int set_FE_nodal_short_array_element(struct FE_node *node,
