@@ -24,6 +24,9 @@ Functions for reading graphics object data from a file.
 Module functions
 ----------------
 */
+#define FE_VALUE_ZERO_TOLERANCE (1e-8)
+#define FLOAT_ZERO_TOLERANCE (1e-8)
+
 static int normalize(float vector[3])
 /*******************************************************************************
 LAST MODIFIED : 27 December 1995
@@ -42,9 +45,12 @@ Normalizes the given <vector>.
 		if ((norm=vector[0]*vector[0]+vector[1]*vector[1]+vector[2]*vector[2])>0)
 		{
 			norm=(float)sqrt((double)norm);
-			vector[0] /= norm;
-			vector[1] /= norm;
-			vector[2] /= norm;
+			if (norm > FE_VALUE_ZERO_TOLERANCE)
+			{
+				vector[0] /= norm;
+				vector[1] /= norm;
+				vector[2] /= norm;
+			}
 		}
 		return_code=1;
 	}
@@ -1026,6 +1032,11 @@ DESCRIPTION :
 									/* now set normal as the average & normalize */
 									rmag=sqrt((double)(vectorsum[0]*vectorsum[0]+
 										vectorsum[1]*vectorsum[1]+vectorsum[2]*vectorsum[2]));
+									if (rmag < FE_VALUE_ZERO_TOLERANCE)
+									{
+										/* If the magnitude is zero then just copy the normal values */
+										rmag = 1.0;
+									}
 									for (k=0;k<3;k++)
 									{
 										vertex_list[i].normal[k]=-vectorsum[k]/rmag;
