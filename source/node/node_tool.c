@@ -1294,8 +1294,8 @@ release.
 				case INTERACTIVE_EVENT_BUTTON_RELEASE:
 				{
 					if (node_tool->last_interaction_volume&&
-						(INTERACTIVE_EVENT_MOTION_NOTIFY==event_type) ||
-						(1==Interactive_event_get_button_number(event)))
+						((INTERACTIVE_EVENT_MOTION_NOTIFY==event_type) ||
+							(1==Interactive_event_get_button_number(event))))
 					{
 						if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
 						{
@@ -1410,8 +1410,8 @@ release.
 											}
 											else
 											{
-												display_message(ERROR_MESSAGE,
-													"Cannot edit vector: invalid orientation_scale field");
+												display_message(ERROR_MESSAGE,"Cannot edit vector: "
+													"invalid orientation_scale field");
 												return_code=0;
 											}
 										}
@@ -1443,10 +1443,11 @@ release.
 						}
 						else if (node_tool->motion_detected)
 						{
-							/* rubber band select - make bounding box out of initial and current
-								 interaction_volumes */
-							if (temp_interaction_volume=create_Interaction_volume_bounding_box(
-								node_tool->last_interaction_volume,interaction_volume))
+							/* rubber band select - make bounding box out of initial and
+								 current interaction_volumes */
+							if (temp_interaction_volume=
+								create_Interaction_volume_bounding_box(
+									node_tool->last_interaction_volume,interaction_volume))
 							{
 								if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
 								{

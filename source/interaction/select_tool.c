@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : select_tool.c
 
-LAST MODIFIED : 24 August 2000
+LAST MODIFIED : 7 September 2000
 
 DESCRIPTION :
 Interactive tool for selecting Any_objects associated with Scene_objects with
@@ -60,7 +60,7 @@ Module functions
 static void Select_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *select_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 24 August 2000
+LAST MODIFIED : 7 September 2000
 
 DESCRIPTION :
 Input handler for input from devices. <device_id> is a unique address enabling
@@ -93,121 +93,132 @@ release.
 			{
 				case INTERACTIVE_EVENT_BUTTON_PRESS:
 				{
-					if (scene_picked_object_list=
-						Scene_pick_objects(scene,interaction_volume))
+					/* interaction only works with first mouse button */
+					if (1==Interactive_event_get_button_number(event))
 					{
-						select_tool->picked_any_object_was_unselected=0;
-						if (picked_any_object=
-							Scene_picked_object_list_get_nearest_any_object(
-								scene_picked_object_list,(struct Scene_picked_object **)NULL))
+						if (scene_picked_object_list=
+							Scene_pick_objects(scene,interaction_volume))
 						{
-							if (!Any_object_selection_is_any_object_selected(
-								select_tool->any_object_selection,picked_any_object))
+							select_tool->picked_any_object_was_unselected=0;
+							if (picked_any_object=
+								Scene_picked_object_list_get_nearest_any_object(
+									scene_picked_object_list,(struct Scene_picked_object **)NULL))
 							{
-								select_tool->picked_any_object_was_unselected=1;
+								if (!Any_object_selection_is_any_object_selected(
+									select_tool->any_object_selection,picked_any_object))
+								{
+									select_tool->picked_any_object_was_unselected=1;
+								}
 							}
+							REACCESS(Any_object)(
+								&(select_tool->last_picked_any_object),picked_any_object);
+							if (clear_selection=((!shift_pressed)&&((!picked_any_object)||
+								(select_tool->picked_any_object_was_unselected))))
+							{
+								Any_object_selection_begin_cache(
+									select_tool->any_object_selection);
+								Any_object_selection_clear(select_tool->any_object_selection);
+							}
+							if (picked_any_object)
+							{
+								Any_object_selection_select_any_object(
+									select_tool->any_object_selection,picked_any_object);
+							}
+							if (clear_selection)
+							{
+								Any_object_selection_end_cache(
+									select_tool->any_object_selection);
+							}
+							DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
 						}
-						REACCESS(Any_object)(
-							&(select_tool->last_picked_any_object),picked_any_object);
-						if (clear_selection=((!shift_pressed)&&((!picked_any_object)||
-							(select_tool->picked_any_object_was_unselected))))
-						{
-							Any_object_selection_begin_cache(
-								select_tool->any_object_selection);
-							Any_object_selection_clear(select_tool->any_object_selection);
-						}
-						if (picked_any_object)
-						{
-							Any_object_selection_select_any_object(
-								select_tool->any_object_selection,picked_any_object);
-						}
-						if (clear_selection)
-						{
-							Any_object_selection_end_cache(select_tool->any_object_selection);
-						}
-						DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
+						select_tool->motion_detected=0;
+						REACCESS(Interaction_volume)(
+							&(select_tool->last_interaction_volume),interaction_volume);
 					}
-					select_tool->motion_detected=0;
-					REACCESS(Interaction_volume)(
-						&(select_tool->last_interaction_volume),interaction_volume);
 				} break;
 				case INTERACTIVE_EVENT_MOTION_NOTIFY:
 				case INTERACTIVE_EVENT_BUTTON_RELEASE:
 				{
-					if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
+					if (select_tool->last_interaction_volume&&
+						((INTERACTIVE_EVENT_MOTION_NOTIFY==event_type) ||
+						(1==Interactive_event_get_button_number(event))))
 					{
-						select_tool->motion_detected=1;
-					}
-					if (select_tool->last_picked_any_object)
-					{
-						/* unselect last_picked_any_object if not just added */
-						if ((INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)&&
-							shift_pressed&&(!(select_tool->picked_any_object_was_unselected)))
+						if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
 						{
-							Any_object_selection_unselect_any_object(
-								select_tool->any_object_selection,
-								select_tool->last_picked_any_object);
+							select_tool->motion_detected=1;
 						}
-					}
-					else if (select_tool->motion_detected)
-					{
-						/* rubber band select */
-						if (temp_interaction_volume=create_Interaction_volume_bounding_box(
-							select_tool->last_interaction_volume,interaction_volume))
+						if (select_tool->last_picked_any_object)
 						{
-							if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
+							/* unselect last_picked_any_object if not just added */
+							if ((INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)&&
+								shift_pressed&&!(select_tool->picked_any_object_was_unselected))
 							{
-								if (!select_tool->rubber_band)
-								{
-									/* create rubber_band object and put in scene */
-									select_tool->rubber_band=CREATE(GT_object)(
-										"select_tool_rubber_band",g_POLYLINE,
-										select_tool->rubber_band_material);
-									ACCESS(GT_object)(select_tool->rubber_band);
-									Scene_add_graphics_object(scene,
-										select_tool->rubber_band,/*position*/0,
-										"select_tool_rubber_band",/*fast_changing*/1);
-								}
-								Interaction_volume_make_polyline_extents(
-									temp_interaction_volume,select_tool->rubber_band);
+								Any_object_selection_unselect_any_object(
+									select_tool->any_object_selection,
+									select_tool->last_picked_any_object);
 							}
-							else
+						}
+						else if (select_tool->motion_detected)
+						{
+							/* rubber band select */
+							if (temp_interaction_volume=
+								create_Interaction_volume_bounding_box(
+									select_tool->last_interaction_volume,interaction_volume))
 							{
-								Scene_remove_graphics_object(scene,select_tool->rubber_band);
-								DEACCESS(GT_object)(&(select_tool->rubber_band));
-							}
-							if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
-							{
-								if (scene_picked_object_list=
-									Scene_pick_objects(scene,temp_interaction_volume))
+								if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
 								{
-									if (any_object_list=
-										Scene_picked_object_list_get_picked_any_objects(
-											scene_picked_object_list))
+									if (!select_tool->rubber_band)
 									{
-										Any_object_selection_begin_cache(
-											select_tool->any_object_selection);
-										FOR_EACH_OBJECT_IN_LIST(Any_object)(
-											Any_object_select_in_Any_object_selection,(void *)
-											select_tool->any_object_selection,any_object_list);
-										Any_object_selection_end_cache(
-											select_tool->any_object_selection);
-										DESTROY(LIST(Any_object))(&any_object_list);
+										/* create rubber_band object and put in scene */
+										select_tool->rubber_band=CREATE(GT_object)(
+											"select_tool_rubber_band",g_POLYLINE,
+											select_tool->rubber_band_material);
+										ACCESS(GT_object)(select_tool->rubber_band);
+										Scene_add_graphics_object(scene,
+											select_tool->rubber_band,/*position*/0,
+											"select_tool_rubber_band",/*fast_changing*/1);
 									}
-									DESTROY(LIST(Scene_picked_object))(
-										&(scene_picked_object_list));
+									Interaction_volume_make_polyline_extents(
+										temp_interaction_volume,select_tool->rubber_band);
 								}
+								else
+								{
+									Scene_remove_graphics_object(scene,select_tool->rubber_band);
+									DEACCESS(GT_object)(&(select_tool->rubber_band));
+								}
+								if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
+								{
+									if (scene_picked_object_list=
+										Scene_pick_objects(scene,temp_interaction_volume))
+									{
+										if (any_object_list=
+											Scene_picked_object_list_get_picked_any_objects(
+												scene_picked_object_list))
+										{
+											Any_object_selection_begin_cache(
+												select_tool->any_object_selection);
+											FOR_EACH_OBJECT_IN_LIST(Any_object)(
+												Any_object_select_in_Any_object_selection,(void *)
+												select_tool->any_object_selection,any_object_list);
+											Any_object_selection_end_cache(
+												select_tool->any_object_selection);
+											DESTROY(LIST(Any_object))(&any_object_list);
+										}
+										DESTROY(LIST(Scene_picked_object))(
+											&(scene_picked_object_list));
+									}
+								}
+								DESTROY(Interaction_volume)(&temp_interaction_volume);
 							}
-							DESTROY(Interaction_volume)(&temp_interaction_volume);
 						}
-					}
-					if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
-					{
-						REACCESS(Any_object)(&(select_tool->last_picked_any_object),
-							(struct Any_object *)NULL);
-						REACCESS(Interaction_volume)(
-							&(select_tool->last_interaction_volume),
-							(struct Interaction_volume *)NULL);
+						if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
+						{
+							REACCESS(Any_object)(&(select_tool->last_picked_any_object),
+								(struct Any_object *)NULL);
+							REACCESS(Interaction_volume)(
+								&(select_tool->last_interaction_volume),
+								(struct Interaction_volume *)NULL);
+						}
 					}
 				} break;
 				default:

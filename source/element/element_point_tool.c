@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_tool.c
 
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 7 September 2000
 
 DESCRIPTION :
 Interactive tool for selecting element/grid points with mouse and other devices.
@@ -59,7 +59,7 @@ Module functions
 static void Element_point_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *element_point_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 14 July 2000
+LAST MODIFIED : 7 September 2000
 
 DESCRIPTION :
 Input handler for input from devices. <device_id> is a unique address enabling
@@ -92,133 +92,146 @@ release.
 			{
 				case INTERACTIVE_EVENT_BUTTON_PRESS:
 				{
-					if (scene_picked_object_list=
-						Scene_pick_objects(scene,interaction_volume))
+					/* interaction only works with first mouse button */
+					if (1==Interactive_event_get_button_number(event))
 					{
-						element_point_tool->picked_element_point_was_unselected=0;
-						if (picked_element_point=
-							Scene_picked_object_list_get_nearest_element_point(
-								scene_picked_object_list,(struct GROUP(FE_element) *)NULL,
-								(struct Scene_picked_object **)NULL,
-								(struct GT_element_group **)NULL,
-								(struct GT_element_settings **)NULL))
+						if (scene_picked_object_list=
+							Scene_pick_objects(scene,interaction_volume))
 						{
-							if (!Element_point_ranges_selection_is_element_point_ranges_selected(
-								element_point_tool->element_point_ranges_selection,
-								picked_element_point))
+							element_point_tool->picked_element_point_was_unselected=0;
+							if (picked_element_point=
+								Scene_picked_object_list_get_nearest_element_point(
+									scene_picked_object_list,(struct GROUP(FE_element) *)NULL,
+									(struct Scene_picked_object **)NULL,
+									(struct GT_element_group **)NULL,
+									(struct GT_element_settings **)NULL))
 							{
-								element_point_tool->picked_element_point_was_unselected=1;
+								if (!Element_point_ranges_selection_is_element_point_ranges_selected(
+									element_point_tool->element_point_ranges_selection,
+									picked_element_point))
+								{
+									element_point_tool->picked_element_point_was_unselected=1;
+								}
 							}
-						}
-						REACCESS(Element_point_ranges)(
-							&(element_point_tool->last_picked_element_point),picked_element_point);
-						if (clear_selection=((!shift_pressed)&&((!picked_element_point)||
-							(element_point_tool->picked_element_point_was_unselected))))
-						{
-							Element_point_ranges_selection_begin_cache(
-								element_point_tool->element_point_ranges_selection);
-							Element_point_ranges_selection_clear(
-								element_point_tool->element_point_ranges_selection);
-						}
-						if (picked_element_point)
-						{
-							Element_point_ranges_selection_select_element_point_ranges(
-								element_point_tool->element_point_ranges_selection,
+							REACCESS(Element_point_ranges)(
+								&(element_point_tool->last_picked_element_point),
 								picked_element_point);
+							if (clear_selection=((!shift_pressed)&&((!picked_element_point)||
+								(element_point_tool->picked_element_point_was_unselected))))
+							{
+								Element_point_ranges_selection_begin_cache(
+									element_point_tool->element_point_ranges_selection);
+								Element_point_ranges_selection_clear(
+									element_point_tool->element_point_ranges_selection);
+							}
+							if (picked_element_point)
+							{
+								Element_point_ranges_selection_select_element_point_ranges(
+									element_point_tool->element_point_ranges_selection,
+									picked_element_point);
+							}
+							if (clear_selection)
+							{
+								Element_point_ranges_selection_end_cache(
+									element_point_tool->element_point_ranges_selection);
+							}
+							DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
 						}
-						if (clear_selection)
-						{
-							Element_point_ranges_selection_end_cache(
-								element_point_tool->element_point_ranges_selection);
-						}
-						DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
+						element_point_tool->motion_detected=0;
+						REACCESS(Interaction_volume)(
+							&(element_point_tool->last_interaction_volume),
+							interaction_volume);
 					}
-					element_point_tool->motion_detected=0;
-					REACCESS(Interaction_volume)(
-						&(element_point_tool->last_interaction_volume),interaction_volume);
 				} break;
 				case INTERACTIVE_EVENT_MOTION_NOTIFY:
 				case INTERACTIVE_EVENT_BUTTON_RELEASE:
 				{
-					if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
+					if (element_point_tool->last_interaction_volume&&
+						((INTERACTIVE_EVENT_MOTION_NOTIFY==event_type) ||
+							(1==Interactive_event_get_button_number(event))))
 					{
-						element_point_tool->motion_detected=1;
-					}
-					if (element_point_tool->last_picked_element_point)
-					{
-						/* unselect last_picked_element_point if not just added */
-						if ((INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)&&
-							shift_pressed&&
-							(!(element_point_tool->picked_element_point_was_unselected)))
+						if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
 						{
-							Element_point_ranges_selection_unselect_element_point_ranges(
-								element_point_tool->element_point_ranges_selection,
-								element_point_tool->last_picked_element_point);
+							element_point_tool->motion_detected=1;
 						}
-					}
-					else if (element_point_tool->motion_detected)
-					{
-						/* rubber band select */
-						if (temp_interaction_volume=create_Interaction_volume_bounding_box(
-							element_point_tool->last_interaction_volume,interaction_volume))
+						if (element_point_tool->last_picked_element_point)
 						{
-							if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
+							/* unselect last_picked_element_point if not just added */
+							if ((INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)&&
+								shift_pressed&&
+								(!(element_point_tool->picked_element_point_was_unselected)))
 							{
-								if (!element_point_tool->rubber_band)
-								{
-									/* create rubber_band object and put in scene */
-									element_point_tool->rubber_band=CREATE(GT_object)(
-										"element_point_tool_rubber_band",g_POLYLINE,
-										element_point_tool->rubber_band_material);
-									ACCESS(GT_object)(element_point_tool->rubber_band);
-									Scene_add_graphics_object(scene,
-										element_point_tool->rubber_band,/*position*/0,
-										"element_point_tool_rubber_band",/*fast_changing*/1);
-								}
-								Interaction_volume_make_polyline_extents(
-									temp_interaction_volume,element_point_tool->rubber_band);
+								Element_point_ranges_selection_unselect_element_point_ranges(
+									element_point_tool->element_point_ranges_selection,
+									element_point_tool->last_picked_element_point);
 							}
-							else
+						}
+						else if (element_point_tool->motion_detected)
+						{
+							/* rubber band select */
+							if (temp_interaction_volume=
+								create_Interaction_volume_bounding_box(
+									element_point_tool->last_interaction_volume,
+									interaction_volume))
 							{
-								Scene_remove_graphics_object(scene,
-									element_point_tool->rubber_band);
-								DEACCESS(GT_object)(&(element_point_tool->rubber_band));
-							}
-							if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
-							{
-								if (scene_picked_object_list=
-									Scene_pick_objects(scene,temp_interaction_volume))
+								if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
 								{
-									if (element_point_ranges_list=
-										Scene_picked_object_list_get_picked_element_points(
-											scene_picked_object_list))
+									if (!element_point_tool->rubber_band)
 									{
-										Element_point_ranges_selection_begin_cache(
-											element_point_tool->element_point_ranges_selection);
-										FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
-											Element_point_ranges_select,(void *)
-											element_point_tool->element_point_ranges_selection,
-											element_point_ranges_list);
-										Element_point_ranges_selection_end_cache(
-											element_point_tool->element_point_ranges_selection);
-										DESTROY(LIST(Element_point_ranges))(
-											&element_point_ranges_list);
+										/* create rubber_band object and put in scene */
+										element_point_tool->rubber_band=CREATE(GT_object)(
+											"element_point_tool_rubber_band",g_POLYLINE,
+											element_point_tool->rubber_band_material);
+										ACCESS(GT_object)(element_point_tool->rubber_band);
+										Scene_add_graphics_object(scene,
+											element_point_tool->rubber_band,/*position*/0,
+											"element_point_tool_rubber_band",/*fast_changing*/1);
 									}
-									DESTROY(LIST(Scene_picked_object))(
-										&(scene_picked_object_list));
+									Interaction_volume_make_polyline_extents(
+										temp_interaction_volume,element_point_tool->rubber_band);
 								}
+								else
+								{
+									Scene_remove_graphics_object(scene,
+										element_point_tool->rubber_band);
+									DEACCESS(GT_object)(&(element_point_tool->rubber_band));
+								}
+								if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
+								{
+									if (scene_picked_object_list=
+										Scene_pick_objects(scene,temp_interaction_volume))
+									{
+										if (element_point_ranges_list=
+											Scene_picked_object_list_get_picked_element_points(
+												scene_picked_object_list))
+										{
+											Element_point_ranges_selection_begin_cache(
+												element_point_tool->element_point_ranges_selection);
+											FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
+												Element_point_ranges_select,(void *)
+												element_point_tool->element_point_ranges_selection,
+												element_point_ranges_list);
+											Element_point_ranges_selection_end_cache(
+												element_point_tool->element_point_ranges_selection);
+											DESTROY(LIST(Element_point_ranges))(
+												&element_point_ranges_list);
+										}
+										DESTROY(LIST(Scene_picked_object))(
+											&(scene_picked_object_list));
+									}
+								}
+								DESTROY(Interaction_volume)(&temp_interaction_volume);
 							}
-							DESTROY(Interaction_volume)(&temp_interaction_volume);
 						}
-					}
-					if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
-					{
-						REACCESS(Element_point_ranges)(
-							&(element_point_tool->last_picked_element_point),
-							(struct Element_point_ranges *)NULL);
-						REACCESS(Interaction_volume)(
-							&(element_point_tool->last_interaction_volume),
-							(struct Interaction_volume *)NULL);
+						if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
+						{
+							REACCESS(Element_point_ranges)(
+								&(element_point_tool->last_picked_element_point),
+								(struct Element_point_ranges *)NULL);
+							REACCESS(Interaction_volume)(
+								&(element_point_tool->last_interaction_volume),
+								(struct Interaction_volume *)NULL);
+						}
 					}
 				} break;
 				default:

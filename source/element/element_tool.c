@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_tool.c
 
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 7 September 2000
 
 DESCRIPTION :
 Interactive tool for selecting elements with mouse and other devices.
@@ -230,7 +230,7 @@ Attempts to destroy all the elements currently in the global selection.
 static void Element_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *element_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 7 September 2000
 
 DESCRIPTION :
 Input handler for input from devices. <device_id> is a unique address enabling
@@ -263,127 +263,139 @@ release.
 			{
 				case INTERACTIVE_EVENT_BUTTON_PRESS:
 				{
-					if (scene_picked_object_list=
-						Scene_pick_objects(scene,interaction_volume))
+					/* interaction only works with first mouse button */
+					if (1==Interactive_event_get_button_number(event))
 					{
-						element_tool->picked_element_was_unselected=0;
-						if (picked_element=Scene_picked_object_list_get_nearest_element(
-							scene_picked_object_list,(struct GROUP(FE_element) *)NULL,
-							element_tool->select_elements_enabled,
-							element_tool->select_faces_enabled,
-							element_tool->select_lines_enabled,
-							(struct Scene_picked_object **)NULL,
-							(struct GT_element_group **)NULL,
-							(struct GT_element_settings **)NULL))
+						if (scene_picked_object_list=
+							Scene_pick_objects(scene,interaction_volume))
 						{
-							if (!FE_element_selection_is_element_selected(
-								element_tool->element_selection,picked_element))
+							element_tool->picked_element_was_unselected=0;
+							if (picked_element=Scene_picked_object_list_get_nearest_element(
+								scene_picked_object_list,(struct GROUP(FE_element) *)NULL,
+								element_tool->select_elements_enabled,
+								element_tool->select_faces_enabled,
+								element_tool->select_lines_enabled,
+								(struct Scene_picked_object **)NULL,
+								(struct GT_element_group **)NULL,
+								(struct GT_element_settings **)NULL))
 							{
-								element_tool->picked_element_was_unselected=1;
+								if (!FE_element_selection_is_element_selected(
+									element_tool->element_selection,picked_element))
+								{
+									element_tool->picked_element_was_unselected=1;
+								}
 							}
+							REACCESS(FE_element)(&(element_tool->last_picked_element),
+								picked_element);
+							if (clear_selection=((!shift_pressed)&&((!picked_element)||
+								(element_tool->picked_element_was_unselected))))
+							{
+								FE_element_selection_begin_cache(
+									element_tool->element_selection);
+								FE_element_selection_clear(element_tool->element_selection);
+							}
+							if (picked_element)
+							{
+								FE_element_selection_select_element(
+									element_tool->element_selection,picked_element);
+							}
+							if (clear_selection)
+							{
+								FE_element_selection_end_cache(element_tool->element_selection);
+							}
+							DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
 						}
-						REACCESS(FE_element)(&(element_tool->last_picked_element),
-							picked_element);
-						if (clear_selection=((!shift_pressed)&&((!picked_element)||
-							(element_tool->picked_element_was_unselected))))
-						{
-							FE_element_selection_begin_cache(element_tool->element_selection);
-							FE_element_selection_clear(element_tool->element_selection);
-						}
-						if (picked_element)
-						{
-							FE_element_selection_select_element(
-								element_tool->element_selection,picked_element);
-						}
-						if (clear_selection)
-						{
-							FE_element_selection_end_cache(element_tool->element_selection);
-						}
-						DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
+						element_tool->motion_detected=0;
+						REACCESS(Interaction_volume)(
+							&(element_tool->last_interaction_volume),interaction_volume);
 					}
-					element_tool->motion_detected=0;
-					REACCESS(Interaction_volume)(
-						&(element_tool->last_interaction_volume),interaction_volume);
 				} break;
 				case INTERACTIVE_EVENT_MOTION_NOTIFY:
 				case INTERACTIVE_EVENT_BUTTON_RELEASE:
 				{
-					if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
+					if (element_tool->last_interaction_volume&&
+						((INTERACTIVE_EVENT_MOTION_NOTIFY==event_type) ||
+						(1==Interactive_event_get_button_number(event))))
 					{
-						element_tool->motion_detected=1;
-					}
-					if (element_tool->last_picked_element)
-					{
-						/* unselect last_picked_element if not just added */
-						if ((INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)&&
-							shift_pressed&&(!(element_tool->picked_element_was_unselected)))
+						if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
 						{
-							FE_element_selection_unselect_element(
-								element_tool->element_selection,
-								element_tool->last_picked_element);
+							element_tool->motion_detected=1;
 						}
-					}
-					else if (element_tool->motion_detected)
-					{
-						/* rubber band select */
-						if (temp_interaction_volume=create_Interaction_volume_bounding_box(
-							element_tool->last_interaction_volume,interaction_volume))
+						if (element_tool->last_picked_element)
 						{
-							if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
+							/* unselect last_picked_element if not just added */
+							if ((INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)&&
+								shift_pressed&&(!(element_tool->picked_element_was_unselected)))
 							{
-								if (!element_tool->rubber_band)
-								{
-									/* create rubber_band object and put in scene */
-									element_tool->rubber_band=CREATE(GT_object)(
-										"element_tool_rubber_band",g_POLYLINE,
-										element_tool->rubber_band_material);
-									ACCESS(GT_object)(element_tool->rubber_band);
-									Scene_add_graphics_object(scene,element_tool->rubber_band,
-										/*position*/0,"element_tool_rubber_band",
-										/*fast_changing*/1);
-								}
-								Interaction_volume_make_polyline_extents(
-									temp_interaction_volume,element_tool->rubber_band);
+								FE_element_selection_unselect_element(
+									element_tool->element_selection,
+									element_tool->last_picked_element);
 							}
-							else
+						}
+						else if (element_tool->motion_detected)
+						{
+							/* rubber band select */
+							if (temp_interaction_volume=
+								create_Interaction_volume_bounding_box(
+								element_tool->last_interaction_volume,interaction_volume))
 							{
-								Scene_remove_graphics_object(scene,element_tool->rubber_band);
-								DEACCESS(GT_object)(&(element_tool->rubber_band));
-							}
-							if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
-							{
-								if (scene_picked_object_list=
-									Scene_pick_objects(scene,temp_interaction_volume))
+								if (INTERACTIVE_EVENT_MOTION_NOTIFY==event_type)
 								{
-									if (element_list=Scene_picked_object_list_get_picked_elements(
-										scene_picked_object_list,
-										element_tool->select_elements_enabled,
-										element_tool->select_faces_enabled,
-										element_tool->select_lines_enabled))
+									if (!element_tool->rubber_band)
 									{
-										FE_element_selection_begin_cache(
-											element_tool->element_selection);
-										FOR_EACH_OBJECT_IN_LIST(FE_element)(
-											FE_element_select_in_FE_element_selection,
-											(void *)element_tool->element_selection,element_list);
-										FE_element_selection_end_cache(
-											element_tool->element_selection);
-										DESTROY(LIST(FE_element))(&element_list);
+										/* create rubber_band object and put in scene */
+										element_tool->rubber_band=CREATE(GT_object)(
+											"element_tool_rubber_band",g_POLYLINE,
+											element_tool->rubber_band_material);
+										ACCESS(GT_object)(element_tool->rubber_band);
+										Scene_add_graphics_object(scene,element_tool->rubber_band,
+											/*position*/0,"element_tool_rubber_band",
+											/*fast_changing*/1);
 									}
-									DESTROY(LIST(Scene_picked_object))(
-										&(scene_picked_object_list));
+									Interaction_volume_make_polyline_extents(
+										temp_interaction_volume,element_tool->rubber_band);
 								}
+								else
+								{
+									Scene_remove_graphics_object(scene,element_tool->rubber_band);
+									DEACCESS(GT_object)(&(element_tool->rubber_band));
+								}
+								if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
+								{
+									if (scene_picked_object_list=
+										Scene_pick_objects(scene,temp_interaction_volume))
+									{
+										if (element_list=
+											Scene_picked_object_list_get_picked_elements(
+												scene_picked_object_list,
+												element_tool->select_elements_enabled,
+												element_tool->select_faces_enabled,
+												element_tool->select_lines_enabled))
+										{
+											FE_element_selection_begin_cache(
+												element_tool->element_selection);
+											FOR_EACH_OBJECT_IN_LIST(FE_element)(
+												FE_element_select_in_FE_element_selection,
+												(void *)element_tool->element_selection,element_list);
+											FE_element_selection_end_cache(
+												element_tool->element_selection);
+											DESTROY(LIST(FE_element))(&element_list);
+										}
+										DESTROY(LIST(Scene_picked_object))(
+											&(scene_picked_object_list));
+									}
+								}
+								DESTROY(Interaction_volume)(&temp_interaction_volume);
 							}
-							DESTROY(Interaction_volume)(&temp_interaction_volume);
 						}
-					}
-					if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
-					{
-						REACCESS(FE_element)(&(element_tool->last_picked_element),
-							(struct FE_element *)NULL);
-						REACCESS(Interaction_volume)(
-							&(element_tool->last_interaction_volume),
-							(struct Interaction_volume *)NULL);
+						if (INTERACTIVE_EVENT_BUTTON_RELEASE==event_type)
+						{
+							REACCESS(FE_element)(&(element_tool->last_picked_element),
+								(struct FE_element *)NULL);
+							REACCESS(Interaction_volume)(
+								&(element_tool->last_interaction_volume),
+								(struct Interaction_volume *)NULL);
+						}
 					}
 				} break;
 				default:
