@@ -1331,7 +1331,8 @@ message if not already in the middle of changes.
 		if (destroy_in_master)
 		{
 			/* get the ultimate master FE_region; only it has fe_field_list */
-			while (remove_from_fe_region->master_fe_region)
+			while (remove_from_fe_region->master_fe_region &&
+				!remove_from_fe_region->data_hack)
 			{
 				remove_from_fe_region = remove_from_fe_region->master_fe_region;
 			}
