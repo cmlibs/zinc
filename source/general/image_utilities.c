@@ -568,7 +568,7 @@ For reading a field in an image file directory.
 								file_offset = UNSIGNED_LONG_INT_FROM_4_BYTES(byte_array);
 								if (0 == fseek(tiff_file, (signed long int)file_offset, SEEK_SET))
 								{
-									if (number_of_bytes==fread(value,1,number_of_bytes,tiff_file))
+									if (number_of_bytes==(int)fread(value,1,number_of_bytes,tiff_file))
 									{
 										if (0!=fseek(tiff_file,current_file_position,SEEK_SET))
 										{
@@ -3070,9 +3070,9 @@ number_of_components=4, RGBA
 							/* No longer doing a byte_swap as the use of << to add the
 								bytes of the chars together will sort that out */
 							if ((0==fseek(image_file,512,SEEK_SET))&&
-							    (number_of_rows==fread(row_starts_char,4,
+							    (number_of_rows==(int)fread(row_starts_char,4,
 								 number_of_rows,image_file))&&
-								 (number_of_rows==fread(row_sizes_char,4,
+								 (number_of_rows==(int)fread(row_sizes_char,4,
 							  	 number_of_rows,image_file)))
 							{
 								/* find the maximum row size */
@@ -3120,7 +3120,7 @@ number_of_components=4, RGBA
 												case 1:
 												{
 													if ((0==fseek(image_file,row_start,SEEK_SET))&&
-														(row_size==fread(row,1,row_size,image_file)))
+														(row_size==(int)fread(row,1,row_size,image_file)))
 													{
 														row_ptr=row;
 														pixel= *row_ptr;
@@ -3166,7 +3166,7 @@ number_of_components=4, RGBA
 												case 2:
 												{
 													if ((0==fseek(image_file,row_start,SEEK_SET))&&
-														(row_size==fread(row,1,row_size,image_file)))
+														(row_size==(int)fread(row,1,row_size,image_file)))
 													{
 														row_ptr=row;
 														pixel2 = (((unsigned short)*row_ptr) << 8) +
