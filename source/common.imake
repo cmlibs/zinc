@@ -182,7 +182,7 @@ TARGET_TYPE_DEFINES =
 		mkdir -p $(UIDH_PATH)/$(*D); \
 	fi
 #if defined (CMISS_ROOT_DEFINED)
-	if [ -x $(UTILITIES_PATH)/$(UIDTOUIDH) ]; then \
+	@if [ -x $(UTILITIES_PATH)/$(UIDTOUIDH) ]; then \
       FOUND_UIDTOUIDH=$(UTILITIES_PATH)/$(UIDTOUIDH); \
    else \
       if [ -x $(PRODUCT_UTILITIES_PATH)/$(UIDTOUIDH) ]; then \
