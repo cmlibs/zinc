@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 14 June 2000
+LAST MODIFIED : 22 June 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -215,7 +215,7 @@ DECLARE_LOCAL_MANAGER_FUNCTIONS(Scene)
 
 static int Scene_refresh(struct Scene *scene)
 /*******************************************************************************
-LAST MODIFIED : 18 May 1998
+LAST MODIFIED : 22 June 2000
 
 DESCRIPTION :
 Tells the scene it has changed, forcing it to send the manager message
@@ -225,7 +225,6 @@ manager modify not identifier instead.
 ==============================================================================*/
 {
 	int return_code;
-	struct MANAGER_MESSAGE(Scene) *message;
 
 	ENTER(Scene_refresh);
 	if (scene)
@@ -233,20 +232,9 @@ manager modify not identifier instead.
 		/* display list is assumed to be current */
 		if (scene->scene_manager&&IS_MANAGED(Scene)(scene,scene->scene_manager))
 		{
-			if (ALLOCATE(message,struct MANAGER_MESSAGE(Scene),1))
-			{
-				message->change=MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Scene);
-				message->object_changed=scene;
-				MANAGER_UPDATE(Scene)(message,scene->scene_manager);
-				DEALLOCATE(message);
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Scene_refresh.  Could not allocate message");
-				return_code=0;
-			}
+			MANAGER_NOTE_CHANGE(Scene)(
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Scene),scene,scene->scene_manager);
+			return_code=1;
 		}
 		else
 		{

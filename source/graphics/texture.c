@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : texture.c
 
-LAST MODIFIED : 3 February 2000
+LAST MODIFIED : 22 June 2000
 
 DESCRIPTION :
 The functions for manipulating graphical textures.
@@ -1210,7 +1210,7 @@ A modifier function to set the texture combine type to modulate.
 #if defined (SGI_MOVIE_FILE)
 static int Texture_refresh(struct Texture *texture)
 /*******************************************************************************
-LAST MODIFIED : 25 November 1999
+LAST MODIFIED : 22 June 2000
 
 DESCRIPTION :
 Tells the texture it has changed, forcing it to send the manager message
@@ -1220,7 +1220,6 @@ playing movies.
 ==============================================================================*/
 {
 	int return_code;
-	struct MANAGER_MESSAGE(Texture) *message;
 
 	ENTER(Texture_refresh);
 	return_code=0;
@@ -1230,20 +1229,10 @@ playing movies.
 		if (texture->texture_manager&&IS_MANAGED(Texture)(texture,
 			texture->texture_manager))
 		{
-			if (ALLOCATE(message,struct MANAGER_MESSAGE(Texture),1))
-			{
-				message->change=MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Texture);
-				message->object_changed=texture;
-				MANAGER_UPDATE(Texture)(message,texture->texture_manager);
-				DEALLOCATE(message);
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Texture_refresh.  Could not allocate message");
-				return_code=0;
-			}
+			MANAGER_NOTE_CHANGE(Texture)(
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Texture),texture,
+				texture->texture_manager);
+			return_code=1;
 		}
 		else
 		{

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : managed_group_private.h
 
-LAST MODIFIED : 1 September 1999
+LAST MODIFIED : 22 June 2000
 
 DESCRIPTION :
 Special version of group_private.h for groups that are managed. These groups
@@ -87,7 +87,7 @@ Module functions
 static int MANAGED_GROUP_MODIFY_MESSAGE(object_type)( \
 	struct group_type *group) \
 /***************************************************************************** \
-LAST MODIFIED : 10 February 1998 \
+LAST MODIFIED : 22 June 2000 \
 \
 DESCRIPTION : \
 If the group is managed, sends a MANAGER_MODIFY message to inform clients of \
@@ -97,29 +97,16 @@ because GROUP(object_type) is not substituted as I would like. \
 ============================================================================*/ \
 { \
 	int return_code; \
-	struct MANAGER_MESSAGE(group_type) *message; \
 \
 	ENTER(MANAGED_GROUP_MODIFY_MESSAGE(object_type)); \
 	if (group) \
 	{ \
 		if (group->group_manager) \
 		{ \
-			if (ALLOCATE(message,struct MANAGER_MESSAGE(group_type),1)) \
-			{ \
-				message->change= \
-					MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(group_type); \
-				message->object_changed=group; \
-				MANAGER_UPDATE(group_type)(message,group->group_manager); \
-				DEALLOCATE(message); \
-				return_code=1; \
-			} \
-			else \
-			{ \
-				display_message(ERROR_MESSAGE, \
-					"MANAGED_GROUP_MODIFY_MESSAGE(" #object_type \
-					").  Could not allocate message"); \
-				return_code=0; \
-			} \
+			MANAGER_NOTE_CHANGE(group_type)( \
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(group_type),group, \
+				group->group_manager); \
+			return_code=1; \
 		} \
 		else  \
 		{ \
@@ -138,62 +125,6 @@ because GROUP(object_type) is not substituted as I would like. \
 \
 	return (return_code); \
 } /* MANAGED_GROUP_MODIFY_MESSAGE(object_type) */
-
-#if defined (OLD_CODE)
-#define DECLARE_MANAGED_GROUP_MODIFY_MESSAGE_FUNCTION( object_type ) \
-static int MANAGED_GROUP_MODIFY_MESSAGE(object_type)( \
-	struct GROUP(object_type) *group) \
-/***************************************************************************** \
-LAST MODIFIED : 10 February 1998 \
-\
-DESCRIPTION : \
-If the group is managed, sends a MANAGER_MODIFY message to inform clients of \
-its manager that the group has changed. \
-============================================================================*/ \
-{ \
-	int return_code; \
-	struct MANAGER_MESSAGE(GROUP(object_type)) *message; \
-\
-	ENTER(MANAGED_GROUP_MODIFY_MESSAGE(object_type)); \
-	if (group) \
-	{ \
-		if (group->group_manager) \
-		{ \
-			if (ALLOCATE(message,struct MANAGER_MESSAGE(GROUP(object_type)),1)) \
-			{ \
-				message->change= \
-					MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(GROUP(object_type)); \
-				message->object_changed=group; \
-				MANAGER_UPDATE(GROUP(object_type))(message,group->group_manager); \
-				DEALLOCATE(message); \
-				return_code=1; \
-			} \
-			else \
-			{ \
-				display_message(ERROR_MESSAGE, \
-					"MANAGED_GROUP_MODIFY_MESSAGE(" #object_type \
-					").  Could not allocate message"); \
-				return_code=0; \
-			} \
-		} \
-		else  \
-		{ \
-			display_message(ERROR_MESSAGE, \
-				"MANAGED_GROUP_MODIFY_MESSAGE(" #object_type ").  Group not managed"); \
-			return_code=0; \
-		} \
-	} \
-	else  \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"MANAGED_GROUP_MODIFY_MESSAGE(" #object_type ").  Missing group"); \
-		return_code=0; \
-	} \
-	LEAVE; \
-\
-	return (return_code); \
-} /* MANAGED_GROUP_MODIFY_MESSAGE(object_type) */
-#endif /* defined (OLD_CODE) */
 
 /*
 Global functions

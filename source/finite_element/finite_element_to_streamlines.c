@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_to_streamlines.c
 
-LAST MODIFIED : 24 March 2000
+LAST MODIFIED : 22 June 2000
 
 DESCRIPTION :
 Functions for calculating streamlines in finite elements.
@@ -2025,7 +2025,7 @@ int update_interactive_streamline(struct Interactive_streamline *streamline,
 	FE_value *new_point,
 	struct MANAGER(Interactive_streamline) *streamline_manager )
 /*******************************************************************************
-LAST MODIFIED : 17 March 1999
+LAST MODIFIED : 22 June 2000
 
 DESCRIPTION :
 Moves a streampoint to the new_point position.  This function works by an
@@ -2037,7 +2037,6 @@ xi coordinates.  To be accurate the change in position must be small.
 	int return_code; 
 	struct GT_polyline *polyline;
 	struct GT_surface *surface;
-	struct MANAGER_MESSAGE(Interactive_streamline) message;
 
 	ENTER(update_interactive_streamline);
 	if (streamline&&new_point)
@@ -2104,10 +2103,9 @@ xi coordinates.  To be accurate the change in position must be small.
 					return_code=0;
 				}
 			}
-			message.change=
-				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Interactive_streamline);
-			message.object_changed = streamline;
-			MANAGER_UPDATE(Interactive_streamline)(&message, streamline_manager);
+			MANAGER_NOTE_CHANGE(Interactive_streamline)(
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Interactive_streamline),
+				streamline,streamline_manager);
 			return_code=1;
 		}
 		else
