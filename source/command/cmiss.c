@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 26 November 2001
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -16,7 +16,6 @@ Functions for executing cmiss commands.
 #include <Xm/List.h>
 #endif /* defined (MOTIF) */
 #if !defined (WINDOWS_DEV_FLAG)
-#include "application/application.h"
 #if defined (CELL)
 #include "cell/cell_interface.h"
 #include "cell/cell_window.h"
@@ -89,7 +88,6 @@ Functions for executing cmiss commands.
 #include "graphics/userdef_objects.h"
 #include "graphics/volume_texture.h"
 #include "graphics/volume_texture_editor.h"
-#include "graphics/write_to_video.h"
 #include "help/help_interface.h"
 #if defined (SELECT_DESCRIPTORS)
 #include "io_devices/io_device.h"
@@ -13639,50 +13637,6 @@ Executes a GFX FILTER command.
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
-static int execute_command_gfx_grab_frame(struct Parse_state *state,
-	void *dummy_to_be_modified,void *dummy_user_data)
-/*******************************************************************************
-LAST MODIFIED : 16 June 1999
-
-DESCRIPTION :
-Executes a GFX GRAB_FRAME command.
-==============================================================================*/
-{
-	int number_of_frames,return_code;
-	static struct Modifier_entry option_table[]=
-	{
-		{NULL,NULL,NULL,set_int_positive}
-	};
-
-	ENTER(execute_command_gfx_grab_frame);
-	USE_PARAMETER(dummy_to_be_modified);
-	USE_PARAMETER(dummy_user_data);
-	/* check argument */
-	if (state)
-	{
-		/* initialize defaults */
-		number_of_frames=1;
-		(option_table[0]).to_be_modified= &number_of_frames;
-		return_code=process_multiple_options(state,option_table);
-		/* no errors, not asking for help */
-		if (return_code)
-		{
-			grab_frame(number_of_frames);
-		} /* parse error, help */
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"execute_command_gfx_grab_frame.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* execute_command_gfx_grab_frame */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_list_environment_map(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -20576,85 +20530,6 @@ is issued whenever a node is changed.
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
-static int gfx_set_video(struct Parse_state *state,void *dummy_to_be_modified,
-	void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 12 August 1998
-
-DESCRIPTION :
-Sets the video on/off for a window from the command line.
-==============================================================================*/
-{
-	int return_code;
-	struct Cmiss_command_data *command_data;
-	struct Graphics_window *window;
-	static struct Modifier_entry option_table[]=
-	{
-		{"window",NULL,NULL,set_Graphics_window},/*???DB. "on" ? */
-		{NULL,NULL,NULL,NULL} /*???DB.  set_name ? */
-	};
-
-	ENTER(gfx_set_video);
-	USE_PARAMETER(dummy_to_be_modified);
-	if (state)
-	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
-		{
-			/* initialise defaults */
-			/* must have at least one graphics_window to print */
-			if (window=FIRST_OBJECT_IN_MANAGER_THAT(Graphics_window)(
-				(MANAGER_CONDITIONAL_FUNCTION(Graphics_window) *)NULL,(void *)NULL,
-				command_data->graphics_window_manager))
-			{
-				ACCESS(Graphics_window)(window);
-			}
-			/* parse the command line */
-			(option_table[0]).to_be_modified= &window;
-			(option_table[0]).user_data=command_data->graphics_window_manager;
-			return_code=process_multiple_options(state,option_table);
-			/* no errors, not asking for help */
-			if (return_code)
-			{
-				if (window)
-				{
-					/*???debug */
-					display_message(INFORMATION_MESSAGE,
-						"gfx set video command temporarily disabled\n");
-					return_code=0;
-#if defined (OLD_GFX_WINDOW)
-					return_code=set_video_on_off(window);
-#endif /* defined (OLD_GFX_WINDOW) */
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"Must have a graphics window");
-					return_code=0;
-				}
-			} /* parse error, help */
-			if (window)
-			{
-				DEACCESS(Graphics_window)(&window);
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"gfx_set_video.  Missing command_data_void");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"gfx_set_video.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* gfx_set_video */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_set_view_angle(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -21021,132 +20896,79 @@ Toggles the visibility of graphics objects on scenes from the command line.
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
 static int execute_command_gfx_set(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
+	void *dummy_to_be_modified, void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 16 October 2001
+LAST MODIFIED : 27 November 2001
 
 DESCRIPTION :
 Executes a GFX SET command.
 ==============================================================================*/
 {
-	int i,return_code;
+	int return_code;
 	struct Cmiss_command_data *command_data;
-	static struct Modifier_entry option_table[]=
-	{
-		{"application_parameters",NULL,NULL,set_application_parameters},
-		{"background",NULL,NULL,gfx_set_background},
-		{"far_clipping_plane",NULL,NULL,gfx_set_far_clipping_plane},
-		{"interest_point",NULL,NULL,gfx_set_interest_point},
-		{"line_width",NULL,NULL,set_float_positive},
-		{"near_clipping_plane",NULL,NULL,gfx_set_near_clipping_plane},
-		{"node_value",NULL,NULL,gfx_set_FE_nodal_value},
-		{"order",NULL,NULL,gfx_set_scene_order},
-		{"point_size",NULL,NULL,set_float_positive},
-		{"resolution",NULL,NULL,set_graphics_window_resolution},
-		{"slider",NULL,NULL,set_node_group_slider_value},
-		{"transformation",NULL,NULL,gfx_set_transformation},
-		{"time",NULL,NULL,gfx_set_time},
-		{"up_vector",NULL,NULL,gfx_set_up_vector},
-		{"update_callback",NULL,NULL,gfx_set_update_callback},
-		{"video",NULL,NULL,gfx_set_video},
-		{"view_angle",NULL,NULL,gfx_set_view_angle},
-		{"view_point",NULL,NULL,gfx_set_view_point},
-		{"visibility",NULL,NULL,gfx_set_visibility},
-		{NULL,NULL,NULL,NULL}
-	};
+	struct Option_table *option_table;
 
 	ENTER(execute_command_gfx_set);
 	USE_PARAMETER(dummy_to_be_modified);
-	/* check argument */
-	if (state)
+	if (state && (command_data = (struct Cmiss_command_data *)command_data_void))
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if (state->current_token)
 		{
-			if (state->current_token)
-			{
-				i=0;
-				/* application_parameters */
-				i++;
-				/* background */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* far_clipping_plane */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* interest_point */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* line_width */
-				(option_table[i]).to_be_modified= &global_line_width;
-				i++;
-				/* near_clipping_plane */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* node_value */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* order */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* point_size */
-				(option_table[i]).to_be_modified= &global_point_size;
-				i++;
-				/* resolution */
-				(option_table[i]).user_data=command_data->graphics_window_manager;
-				i++;
-				/* slider */
-				(option_table[i]).user_data=command_data->node_group_slider_dialog;
-				i++;
-				/* transformation */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* time */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* up_vector */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* update_callback */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* video */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* view_angle */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* view_point */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				/* visibility */
-				(option_table[i]).user_data=command_data_void;
-				i++;
-				return_code=process_option(state,option_table);
-			}
-			else
-			{
-				set_command_prompt("gfx set",command_data->command_window);
-				return_code=1;
-			}
+			option_table=CREATE(Option_table)();
+			Option_table_add_entry(option_table, "background", NULL,
+				command_data_void, gfx_set_background);
+			Option_table_add_entry(option_table, "far_clipping_plane", NULL,
+				command_data_void, gfx_set_far_clipping_plane);
+			Option_table_add_entry(option_table, "interest_point", NULL,
+				command_data_void, gfx_set_interest_point);
+			Option_table_add_entry(option_table, "line_width", &global_line_width,
+				NULL, set_float_positive);
+			Option_table_add_entry(option_table, "near_clipping_plane", NULL,
+				command_data_void, gfx_set_near_clipping_plane);
+			Option_table_add_entry(option_table, "node_value", NULL,
+				command_data_void, gfx_set_FE_nodal_value);
+			Option_table_add_entry(option_table, "order", NULL,
+				command_data_void, gfx_set_scene_order);
+			Option_table_add_entry(option_table, "point_size", &global_point_size,
+				NULL, set_float_positive);
+			Option_table_add_entry(option_table, "resolution", NULL,
+				command_data->graphics_window_manager, set_graphics_window_resolution);
+			Option_table_add_entry(option_table, "slider", NULL,
+				command_data->node_group_slider_dialog, set_node_group_slider_value);
+			Option_table_add_entry(option_table, "transformation", NULL,
+				command_data_void, gfx_set_transformation);
+			Option_table_add_entry(option_table, "time", NULL,
+				command_data_void, gfx_set_time);
+			Option_table_add_entry(option_table, "up_vector", NULL,
+				command_data_void, gfx_set_up_vector);
+			Option_table_add_entry(option_table, "update_callback", NULL,
+				command_data_void, gfx_set_update_callback);
+			Option_table_add_entry(option_table, "view_angle", NULL,
+				command_data_void, gfx_set_view_angle);
+			Option_table_add_entry(option_table, "view_point", NULL,
+				command_data_void, gfx_set_view_point);
+			Option_table_add_entry(option_table, "visibility", NULL,
+				command_data_void, gfx_set_visibility);
+			return_code = Option_table_parse(option_table, state);
+			DESTROY(Option_table)(&option_table);
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"execute_command_gfx_set.  Missing command_data");
-			return_code=0;
+			set_command_prompt("gfx set", command_data->command_window);
+			return_code = 1;
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"execute_command_gfx_set.  Missing state");
-		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"execute_command_gfx_set.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* execute_command_gfx_set */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int execute_command_gfx_smooth(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
@@ -21275,7 +21097,6 @@ Executes a GFX SMOOTH command.
 
 	return (return_code);
 } /* execute_command_gfx_smooth */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 int gfx_timekeeper(struct Parse_state *state,void *dummy_to_be_modified,
 	void *command_data_void)
@@ -22787,8 +22608,6 @@ Executes a GFX command.
 				command_data_void, execute_command_gfx_export);
 			Option_table_add_entry(option_table, "filter", NULL,
 				command_data_void, execute_command_gfx_filter);
-			Option_table_add_entry(option_table, "grab_frame", NULL,
-				command_data_void, execute_command_gfx_grab_frame);
 			Option_table_add_entry(option_table, "list", NULL,
 				command_data_void, execute_command_gfx_list);
 			Option_table_add_entry(option_table, "modify", NULL,
