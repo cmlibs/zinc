@@ -42,6 +42,7 @@ struct Computed_field_find_element_xi_cache
 #endif /* defined (DM_BUFFERS) */
 	int valid_values;
 	struct FE_element *element;
+	struct GROUP(FE_element) *search_element_group;
 	int number_of_values;
 	FE_value *values;
 	FE_value *working_values;
@@ -541,6 +542,11 @@ ultimate parent finite_element field.
 				DEALLOCATE(cache->working_values);
 			}
 			if (cache->valid_values &&
+				(cache->search_element_group != search_element_group))
+			{
+				cache->valid_values = 0;
+			}
+			if (cache->valid_values &&
 				((!cache->element) || IS_OBJECT_IN_GROUP(FE_element)(
 				cache->element, search_element_group)))
 			{
@@ -670,6 +676,7 @@ ultimate parent finite_element field.
 						cache->xi[i] = 0.0;
 					}
 				}
+				cache->search_element_group = search_element_group;
 				cache->valid_values = 1;
 			}
 		}
