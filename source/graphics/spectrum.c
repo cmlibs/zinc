@@ -357,7 +357,7 @@ some predetermined simple types.
 				Spectrum_settings_set_range_minimum(second_settings, 0.0);
 				Spectrum_settings_set_range_maximum(second_settings, 0.5);
 				Spectrum_settings_set_extend_below_flag(second_settings, 1);			
-				Spectrum_settings_set_colour_mapping(second_settings, SPECTRUM_GREEN);						
+				Spectrum_settings_set_colour_mapping(second_settings, SPECTRUM_GREEN);
 				Spectrum_settings_set_colour_value_minimum(second_settings, 0);
 				Spectrum_settings_set_colour_value_maximum(second_settings, 1);
 
@@ -483,7 +483,8 @@ it returns UNKNOWN_SPECTRUM
 					colour_mapping = Spectrum_settings_get_colour_mapping(settings);
 					second_settings_type = Spectrum_settings_get_type(second_settings);
 					second_reverse = Spectrum_settings_get_reverse_flag(second_settings);
-					second_colour_mapping = Spectrum_settings_get_colour_mapping(second_settings);
+					second_colour_mapping = Spectrum_settings_get_colour_mapping
+						(second_settings);
 					
 					if((settings_type == SPECTRUM_LOG)
 						&& (second_settings_type == SPECTRUM_LOG))
@@ -525,7 +526,7 @@ it returns UNKNOWN_SPECTRUM
 				if (settings&&second_settings&&third_settings&&fourth_settings&&
 					fifth_settings&&sixth_settings)
 				{
-					/* Could do a more exhaustive check, I think but this is enough.*/
+					/* Could do a more exhaustive check, I think but this is sufficient.*/
 					 if((SPECTRUM_BLUE==Spectrum_settings_get_colour_mapping(settings))&&
 						 (SPECTRUM_GREEN==Spectrum_settings_get_colour_mapping(second_settings))&&
 						 (SPECTRUM_RED==Spectrum_settings_get_colour_mapping(third_settings))&&
@@ -550,6 +551,257 @@ it returns UNKNOWN_SPECTRUM
 	return (type);
 } /* Spectrum_get_simple_type */
 
+enum Spectrum_simple_type Spectrum_get_contoured_simple_type(struct Spectrum *spectrum)
+/*******************************************************************************
+LAST MODIFIED : 23 May 2000
+
+DESCRIPTION :
+A convienience routine that interrogates a spectrum to see if it is one of the
+simple types, or a simple type with a contour(colour_mapping==SPECTRUM_BANDED) 
+added as an extra, last, setting If it does not comform exactly to one of the 
+simple types (or a simple type with a contour) then it returns UNKNOWN_SPECTRUM. 
+See also Spectrum_get_simple_type.
+==============================================================================*/
+{	
+	enum Spectrum_settings_colour_mapping colour_mapping,second_colour_mapping;
+	enum Spectrum_settings_type settings_type, second_settings_type;
+	enum Spectrum_simple_type spectrum_simple_type;	
+	int number_of_settings,reverse,second_reverse;
+	struct LIST(Spectrum_settings) *spectrum_settings_list=
+		(struct LIST(Spectrum_settings) *)NULL;	
+	struct Spectrum_settings *settings,*second_settings,*third_settings,
+		*fourth_settings,*fifth_settings,*sixth_settings,*spectrum_settings;
+	
+	ENTER(Spectrum_get_contoured_simple_type);
+	settings=(struct Spectrum_settings *)NULL;
+	second_settings=(struct Spectrum_settings *)NULL;
+	third_settings=(struct Spectrum_settings *)NULL;
+	fourth_settings=(struct Spectrum_settings *)NULL;
+	fifth_settings=(struct Spectrum_settings *)NULL;
+	sixth_settings=(struct Spectrum_settings *)NULL;
+	spectrum_settings=(struct Spectrum_settings *)NULL;
+	spectrum_simple_type=UNKNOWN_SPECTRUM;
+	if(spectrum)
+	{	
+		/* if spectrum is a simple type, nothing else to do*/
+		spectrum_simple_type=Spectrum_get_simple_type(spectrum);
+		if(spectrum_simple_type==UNKNOWN_SPECTRUM)
+		{
+			/* is the last settings a contour? (SPECTRUM_BANDED)*/
+			spectrum_settings_list = get_Spectrum_settings_list(spectrum);
+			number_of_settings = NUMBER_IN_LIST(Spectrum_settings)(spectrum_settings_list);
+			spectrum_settings = FIND_BY_IDENTIFIER_IN_LIST(Spectrum_settings,position)
+				(number_of_settings, spectrum_settings_list);						
+			colour_mapping=	Spectrum_settings_get_colour_mapping(spectrum_settings);
+			/*if so, proceed as for Spectrum_get_simple_type */
+			if(colour_mapping==SPECTRUM_BANDED)
+			{			
+				switch( number_of_settings )
+				{
+					case 2:
+					{
+						settings = FIRST_OBJECT_IN_LIST_THAT(Spectrum_settings)
+							((LIST_CONDITIONAL_FUNCTION(Spectrum_settings) *)NULL, NULL,
+								spectrum_settings_list);
+						settings_type = Spectrum_settings_get_type(settings);
+						reverse = Spectrum_settings_get_reverse_flag(settings);
+						colour_mapping = Spectrum_settings_get_colour_mapping(settings);
+				
+						if ( settings_type == SPECTRUM_LINEAR )
+						{
+							if ( colour_mapping == SPECTRUM_RAINBOW )
+							{
+								if ( reverse )
+								{
+									spectrum_simple_type = BLUE_TO_RED_SPECTRUM;
+								}
+								else
+								{
+									spectrum_simple_type = RED_TO_BLUE_SPECTRUM;
+								}
+							}
+						}
+					} break;
+					case 3:
+					{
+						settings = FIND_BY_IDENTIFIER_IN_LIST(Spectrum_settings,position)
+							(1, spectrum_settings_list);
+						second_settings = FIND_BY_IDENTIFIER_IN_LIST(Spectrum_settings,position)
+							(2, spectrum_settings_list);
+						if ( settings && second_settings )
+						{
+							settings_type = Spectrum_settings_get_type(settings);
+							reverse = Spectrum_settings_get_reverse_flag(settings);
+							colour_mapping = Spectrum_settings_get_colour_mapping(settings);
+							second_settings_type = Spectrum_settings_get_type(second_settings);
+							second_reverse = Spectrum_settings_get_reverse_flag(second_settings);
+							second_colour_mapping = Spectrum_settings_get_colour_mapping
+								(second_settings);
+					
+							if((settings_type == SPECTRUM_LOG)
+								&& (second_settings_type == SPECTRUM_LOG))
+							{
+								if ((colour_mapping == SPECTRUM_RAINBOW)
+									&& (second_colour_mapping == SPECTRUM_RAINBOW))
+								{
+									if ( reverse && second_reverse )
+									{
+										spectrum_simple_type = LOG_BLUE_TO_RED_SPECTRUM;
+									}
+									else if (!(reverse || second_reverse))
+									{
+										spectrum_simple_type = LOG_RED_TO_BLUE_SPECTRUM;
+									}
+								}
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"Spectrum_set_simple_type.  Bad position numbers in settings");
+						}
+					}break;
+					case 7:
+					{	
+						settings = FIND_BY_IDENTIFIER_IN_LIST(Spectrum_settings,position)
+							(1, spectrum_settings_list);
+						second_settings = FIND_BY_IDENTIFIER_IN_LIST(Spectrum_settings,position)
+							(2, spectrum_settings_list);
+						third_settings = FIND_BY_IDENTIFIER_IN_LIST(Spectrum_settings,position)
+							(3, spectrum_settings_list);
+						fourth_settings = FIND_BY_IDENTIFIER_IN_LIST(Spectrum_settings,position)
+							(4, spectrum_settings_list);
+						fifth_settings = FIND_BY_IDENTIFIER_IN_LIST(Spectrum_settings,position)
+							(5, spectrum_settings_list);
+						sixth_settings = FIND_BY_IDENTIFIER_IN_LIST(Spectrum_settings,position)
+							(6, spectrum_settings_list);
+						if (settings&&second_settings&&third_settings&&fourth_settings&&
+							fifth_settings&&sixth_settings)
+						{
+							/* Could do a more exhaustive check, I think but this is sufficient.*/
+							if((SPECTRUM_BLUE==Spectrum_settings_get_colour_mapping(settings))&&
+								(SPECTRUM_GREEN==Spectrum_settings_get_colour_mapping(second_settings))&&
+								(SPECTRUM_RED==Spectrum_settings_get_colour_mapping(third_settings))&&
+								(SPECTRUM_RED==Spectrum_settings_get_colour_mapping(fourth_settings))&&
+								(SPECTRUM_GREEN==Spectrum_settings_get_colour_mapping(fifth_settings))&&
+								(SPECTRUM_BLUE==Spectrum_settings_get_colour_mapping(sixth_settings)))
+							{
+								spectrum_simple_type = BLUE_WHITE_RED_SPECTRUM;
+							}
+						}				
+					}break;
+				}/*switch( number_in_list ) */
+			}/* if(spectrum_settings_colour_mapping==SPECTRUM_BANDED) */
+			else
+			{
+				display_message(WARNING_MESSAGE,
+					"Spectrum_get_contoured_simple_type. Spectrum not simple type or\n"
+					" contoured simple type ");
+			}
+		}/* if(spectrum_simple_type==UNKNOWN_SPECTRUM) */
+	}/* if(spectrum) */
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Spectrum_get_contoured_simple_type. Invalid argument(s)");
+	}
+	LEAVE;
+	return(spectrum_simple_type);
+}/* Spectrum_get_contoured_simple_type */
+
+int Spectrum_overlay_contours(struct MANAGER(Spectrum) *spectrum_manager,
+	struct Spectrum *spectrum,int number_of_bands,int band_proportions)
+/*******************************************************************************
+LAST MODIFIED : 22 May 2000
+
+DESCRIPTION :
+Checks if the last spectrum setting is SPECTRUM_BANDED, removes it if it is,
+then adds a SPECTRUM_BANDED setting to the <spectrum> with <number_of_bands>,
+<band_proportions>. Setting is added at the end of the list.
+This function assumes the <spectum> is a simple with an added SPECTRUM_BANDED 
+settings holding for the contours.
+If <number_of_bands>==0, simply removes any existing contour band settings.
+==============================================================================*/
+{
+	int return_code;	
+	enum Spectrum_settings_colour_mapping spectrum_settings_colour_mapping;
+	FE_value min,max,number_of_settings;
+	struct LIST(Spectrum_settings) *spectrum_settings_list=
+					(struct LIST(Spectrum_settings) *)NULL;
+	struct Spectrum *spectrum_to_be_modified_copy=
+		(struct Spectrum *)NULL;
+	struct Spectrum_settings *spectrum_settings=
+					(struct Spectrum_settings *)NULL;
+
+	ENTER(Spectrum_overlay_contours);
+	if(spectrum_manager&&spectrum)
+	{
+		if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
+		{	
+			return_code=1;
+			/* get the last settings */
+			spectrum_settings_list = get_Spectrum_settings_list(spectrum);
+			number_of_settings=NUMBER_IN_LIST(Spectrum_settings)
+				(spectrum_settings_list);
+			spectrum_settings = FIND_BY_IDENTIFIER_IN_LIST(Spectrum_settings,position)
+				(number_of_settings, spectrum_settings_list);
+			/*if a contour, SPECTRUM_BANDED, remove */			
+			spectrum_settings_colour_mapping=
+				Spectrum_settings_get_colour_mapping(spectrum_settings);
+			if(spectrum_settings_colour_mapping==SPECTRUM_BANDED)
+			{
+				Spectrum_settings_remove(spectrum_settings,spectrum_settings_list);
+				spectrum_settings=(struct Spectrum_settings *)NULL;
+			}	
+			if (spectrum_to_be_modified_copy=CREATE(Spectrum)
+				("spectrum_modify_temp"))
+			{
+				/* if required,generate and set the contours setting */
+				if(number_of_bands)
+				{					
+					MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)
+						(spectrum_to_be_modified_copy,spectrum);				
+					spectrum_settings=CREATE(Spectrum_settings)();
+					max=get_Spectrum_maximum(spectrum);
+					min=get_Spectrum_minimum(spectrum);
+					Spectrum_settings_set_range_maximum(spectrum_settings,max);
+					Spectrum_settings_set_range_minimum(spectrum_settings,min);
+					Spectrum_settings_set_extend_below_flag(spectrum_settings,1);
+					Spectrum_settings_set_extend_above_flag(spectrum_settings,1);	
+					Spectrum_settings_set_type(spectrum_settings,SPECTRUM_LINEAR);
+					Spectrum_settings_set_number_of_bands(spectrum_settings,number_of_bands);
+					Spectrum_settings_set_black_band_proportion(spectrum_settings,
+						band_proportions);
+					Spectrum_settings_set_colour_mapping(spectrum_settings,SPECTRUM_BANDED);
+					Spectrum_add_settings(spectrum_to_be_modified_copy,spectrum_settings,0);
+					MANAGER_MODIFY_NOT_IDENTIFIER(Spectrum,name)(spectrum,
+						spectrum_to_be_modified_copy,spectrum_manager);
+					DESTROY(Spectrum)(&spectrum_to_be_modified_copy);
+				}			
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Spectrum_overlay_contours. Could not create spectrum copy.");
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Spectrum_overlay_contours. Spectrum is not in manager!");
+			return_code=0;
+		}								
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Spectrum_overlay_contours.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return (return_code);
+}/* Spectrum_overlay_contours() */
 int Spectrum_add_settings(struct Spectrum *spectrum,
 	struct Spectrum_settings *settings,int position)
 /*******************************************************************************

@@ -92,6 +92,7 @@ eg light model, and managers. Split into along these lines??JW
 	int viewed_scene; 
 	/* should this and below be be in struct Map ?*/
 	/*or Map_drawing_information?  */
+	struct Element_discretization map_element_discretization;
 	struct Colour *no_interpolation_colour; 
 	struct Graphics_window *window;
 	struct Colour *background_colour;
@@ -198,6 +199,16 @@ LAST MODIFIED : July 8 1999
 
 DESCRIPTION :
 Sets the field of the unemap package.
+==============================================================================*/
+
+struct Element_discretization *get_unemap_package_map_element_discretization(
+	struct Unemap_package *package);
+/*******************************************************************************
+LAST MODIFIED : 23 May 2000
+
+DESCRIPTION :
+Get the Element_discretization for <package>
+??JW may want to put this into the Map_info
 ==============================================================================*/
 
 struct FE_field *get_unemap_package_map_electrode_position_field(

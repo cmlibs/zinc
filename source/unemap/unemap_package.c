@@ -21,6 +21,8 @@ Contains function definitions for unemap package.
 
 #if defined (UNEMAP_USE_NODES)
 
+#define map_element_discretization_size 6
+
 struct Map_info	
 /* Info about the last map. Has it's own structure as we can have more than one */
 /* per unemap_package, i.e more than one per map_scene.*/
@@ -471,6 +473,9 @@ The fields are filed in with set_unemap_package_fields()
 			package->graphical_material_manager=graphical_material_manager;
 			package->data_manager=data_manager;
 			package->glyph_list=glyph_list; /* like a manager, so don't access*/
+			package->map_element_discretization.number_in_xi1=map_element_discretization_size;
+			package->map_element_discretization.number_in_xi2=map_element_discretization_size;
+			package->map_element_discretization.number_in_xi3=map_element_discretization_size;
 			package->access_count=0;
 		}
 		else
@@ -701,6 +706,32 @@ Sets the field of the unemap package.
 	LEAVE;
 	return (return_code);
 } /* set_unemap_package_electrode_position_field */
+
+struct Element_discretization *get_unemap_package_map_element_discretization(
+	struct Unemap_package *package)
+/*******************************************************************************
+LAST MODIFIED : 23 May 2000
+
+DESCRIPTION :
+Get the Element_discretization for <package>
+??JW may want to put this into the Map_info, &/or and read in from Cmgui file
+==============================================================================*/
+{
+	struct Element_discretization *map_element_discretization;
+	ENTER(get_unemap_package_map_element_discretization);
+	if(package)
+	{
+		map_element_discretization=&(package->map_element_discretization);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"get_unemap_package_map_element_discretization."
+				" invalid arguments");
+		map_element_discretization = (struct Element_discretization *)NULL;
+	}
+	LEAVE;
+	return (map_element_discretization);
+} /* get_unemap_package_map_element_discretization */
 
 struct FE_field *get_unemap_package_map_electrode_position_field(
 	struct Unemap_package *package,int map_number)
@@ -3760,7 +3791,6 @@ Creates the unemap_package scene, if isn't already present.
 	struct Scene *map_scene;
 
 	ENTER(unemap_package_make_map_scene);
-
 	map_scene=(struct Scene *)NULL;
 	if(package)
 	{
@@ -3775,7 +3805,7 @@ Creates the unemap_package scene, if isn't already present.
 					package->spectrum_manager,spectrum,
 					package->texture_manager);
 
-				Scene_set_graphical_element_mode(map_scene,GRAPHICAL_ELEMENT_LINES,
+				Scene_set_graphical_element_mode(map_scene,GRAPHICAL_ELEMENT_EMPTY,
 					package->computed_field_package,package->element_manager,
 					package->element_group_manager,package->fe_field_manager,
 					package->node_manager,package->node_group_manager,
@@ -3783,7 +3813,7 @@ Creates the unemap_package scene, if isn't already present.
 					package->element_point_ranges_selection,
 					package->element_selection,package->node_selection,
 					package->data_selection,package->user_interface);
-
+				
 				/*???RC.  May want to use functions to modify default_scene here */
 				/* eg. to add model lights, etc. */
 				/* ACCESS so can never be destroyed */
@@ -3797,7 +3827,7 @@ Creates the unemap_package scene, if isn't already present.
 				}
 			}			
 			Scene_enable_time_behaviour(map_scene,package->time_keeper);
-			set_unemap_package_scene(package,map_scene);			
+			set_unemap_package_scene(package,map_scene);
 		}
 	}
 	else

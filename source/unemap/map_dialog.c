@@ -1955,8 +1955,8 @@ Opens the <map_dialog>.
 			}
 #endif /* defined (OLD_CODE) */
 			if (map->colour_option==SHOW_COLOUR)
-			{
-				spectrum_type=Spectrum_get_simple_type(
+			{ 
+				spectrum_type=Spectrum_get_contoured_simple_type(
 					map->drawing_information->spectrum);
 				switch (spectrum_type)
 				{

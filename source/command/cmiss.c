@@ -5437,7 +5437,8 @@ static and referred to by gfx_create_Spectrum
 						{
 							option_table=CREATE(Option_table)();
 							Option_table_add_entry(option_table,"SPECTRUM_NAME",
-								(void *)spectrum_to_be_modified,command_data_void,gfx_modify_Spectrum);
+								(void *)spectrum_to_be_modified,command_data_void,
+								gfx_modify_Spectrum);
 							return_code=Option_table_parse(option_table,state);
 							DESTROY(Option_table)(&option_table);
 							DESTROY(Spectrum)(&spectrum_to_be_modified);
@@ -5461,6 +5462,7 @@ static and referred to by gfx_create_Spectrum
 					overlay_colour = 0;
 					overwrite_colour = 0;
 					red_to_blue = 0;
+					blue_white_red = 0;
 					modify_spectrum_data.position = 0;
 					modify_spectrum_data.settings = (struct Spectrum_settings *)NULL;
 					modify_spectrum_data.spectrum_minimum = get_Spectrum_minimum(

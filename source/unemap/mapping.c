@@ -583,7 +583,6 @@ static float landmark_points[3*NUMBER_OF_LANDMARK_POINTS]=
 	};
 #endif /* if defined (OLD_CODE) */
 
-
 /*
 Global functions
 ----------------
@@ -3561,6 +3560,7 @@ been embedded in the mapping Xwindow.
 }/* map_3d_window */
 #endif /* #if defined (UNEMAP_USE_NODES) */
 
+#if defined (OLD_CODE)
 #if defined (UNEMAP_USE_NODES)
 static int map_graphics_hide_lines(struct Scene *scene,
 	struct GROUP(FE_element) *element_group)
@@ -3605,11 +3605,13 @@ Removes all line settings from the graphical finite element for
 	return (return_code);
 } /* map_graphics_hide_lines */
 #endif /* #if defined (UNEMAP_USE_NODES) */
+#endif /* defined (OLD_CODE) */
 
 #if defined (UNEMAP_USE_NODES)
-static int map_draw_contours(struct Scene *scene,struct Unemap_package *package,	
-	struct Computed_field *data_field,int number_of_contours,FE_value contour_minimum,
-	FE_value contour_maximum,int map_number)
+static int map_draw_constant_thickness_contours(struct Scene *scene,
+	struct Unemap_package *package,struct Computed_field *data_field,
+	int number_of_contours,FE_value contour_minimum,FE_value contour_maximum,
+	int map_number)
 /*******************************************************************************
 LAST MODIFIED : 17 May 2000
 
@@ -3650,7 +3652,7 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 		if(number_of_contours!=old_number_of_contours)
 		{	
 			/* create material for the contour, so can colour it black, indep of the  */
-			/* map surface (default material)*/
+			/* map surface (default) material*/
 			if(!(contour_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
 				("contour",graphical_material_manager)))		
 				if (contour_material=CREATE(Graphical_material)(
@@ -3702,20 +3704,90 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 	else
 	{
 		display_message(ERROR_MESSAGE,
+			"map_draw_constant_thickness_contours. Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+	return(return_code);
+}/* map_draw_constant_thickness_contours */
+#endif /* #if defined (UNEMAP_USE_NODES) */
+	
+#if defined (UNEMAP_USE_NODES)
+/* proportion of the contour that is blacked. 1000=1, 100=0.1  */
+#define CONTOUR_PROPORTION 100
+static int map_draw_contours(struct Map *map,	struct Spectrum *spectrum,
+	struct Unemap_package *package,struct Computed_field *data_field,
+	int number_of_regions)
+/*******************************************************************************
+LAST MODIFIED : 22 May 2000
+
+DESCRIPTION :
+Draws (or erases) the map contours
+==============================================================================*/
+{
+	int number_of_constant_contours,number_of_variable_contours,region_number,
+		return_code;
+	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
+	struct Scene *scene=(struct Scene *)NULL;
+
+	ENTER(map_draw_contours); 
+	/*data_field can be NULL*/
+	if(map&&&package&&spectrum&&
+		(spectrum_manager=get_unemap_package_spectrum_manager(package))&&
+		(scene=get_unemap_package_scene(package)))
+	{
+		/* Show the contours */	
+		if((map->contours_option==SHOW_CONTOURS)&&
+			(map->interpolation_type!=NO_INTERPOLATION))
+		{
+			if(map->contour_thickness==CONSTANT_THICKNESS)
+			{
+				number_of_constant_contours=map->number_of_contours;
+				number_of_variable_contours=0;
+			}
+			else
+				/* map->contour_thickness==VARIABLE_THICKNESS */
+			{
+				number_of_constant_contours=0;
+				/*-1 as unemap treats number of contours differently from the cmgui spectrum */
+				/* it's a fencepost thing */
+				number_of_variable_contours=map->number_of_contours-1;
+			}						
+		}
+		else
+		{
+			number_of_variable_contours=0;
+			number_of_constant_contours=0;
+		}					
+		/* draw/remove VARIABLE_THICKNESS contours*/
+		Spectrum_overlay_contours(spectrum_manager,spectrum,
+			number_of_variable_contours,CONTOUR_PROPORTION);
+		for (region_number=0;region_number<number_of_regions;region_number++)
+		{	
+			/* draw/remove CONSTANT_THICKNESS contours */
+			map_draw_constant_thickness_contours(scene,package,data_field,
+				number_of_constant_contours,map->contour_minimum,
+				map->contour_maximum,region_number);											
+		}
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
 			"map_draw_contours. Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 	return(return_code);
 }/* map_draw_contours */
-#endif /* #if defined (UNEMAP_USE_NODES) */
+#endif /* defined (UNEMAP_USE_NODES) */
 
 #if defined (UNEMAP_USE_NODES)
 static int map_show_surfaces(struct Scene *scene,
 	struct GROUP(FE_element) *element_group,struct Graphical_material *material,
 	struct MANAGER(Graphical_material) *graphical_material_manager,
 	struct Spectrum *spectrum,struct Computed_field *data_field,
-	struct Colour *no_interpolation_colour)
+	struct Colour *no_interpolation_colour,struct User_interface *user_interface,
+	struct Element_discretization *map_element_discretization)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2000
 
@@ -3906,7 +3978,9 @@ Also applies <number_of_contours> contours to surface.
 								"map_show_surfaces. Couldn't copy material ");							
 							return_code=0;
 						}		
-					}				
+					}																							
+					GT_element_group_set_element_discretization(gt_element_group,
+						map_element_discretization,user_interface);							
 					GT_element_settings_set_selected_material(settings,default_selected_material);
 					GT_element_settings_set_material(settings,material);
 					if (GT_element_group_add_settings(gt_element_group,settings,0))
@@ -4366,8 +4440,10 @@ Construct the settings and build the graphics objects for the glyphs.
 		if (rig_element_group&&(gt_element_group=Scene_get_graphical_element_group(
 			scene,rig_element_group)))
 		{	
+#if defined (OLD_CODE)
 			/* get rid of the default lines*/
 			map_graphics_hide_lines(scene,rig_element_group);
+#endif /* defined (OLD_CODE) */
 			/* do nothing if already have settings in this group*/
 			if (!(settings=first_settings_in_GT_element_group_that(gt_element_group,
 				GT_element_settings_type_matches,(void *)GT_ELEMENT_SETTINGS_NODE_POINTS)))
@@ -4629,8 +4705,7 @@ This function draws the <map> in as a 3D CMGUI scene.
 	struct FE_field *fit_field=(struct FE_field *)NULL;
 	struct Computed_field *data_field=(struct Computed_field *)NULL;
 	float frame_time,minimum, maximum;
-	int number_of_contours,number_of_regions,range_set,region_number,
-		return_code,rig_node_group_number;
+	int number_of_regions,range_set,region_number,return_code,rig_node_group_number;
 	enum Map_type map_type;
 	char undecided_accepted;		
 	struct Rig *rig=(struct Rig *)NULL;
@@ -4644,7 +4719,7 @@ This function draws the <map> in as a 3D CMGUI scene.
 	struct Spectrum *spectrum_to_be_modified_copy=(struct Spectrum *)NULL;
 	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
 	struct GROUP(FE_element) *element_group=(struct GROUP(FE_element) *)NULL;
-	
+
 	ENTER(new_draw_map);	
 	if(map)
 	{	
@@ -4692,9 +4767,7 @@ This function draws the <map> in as a 3D CMGUI scene.
 						else
 						{
 							current_region=rig->current_region;
-						}		
-
-								
+						}										
 						if (function=calculate_interpolation_functio(map_type,rig,current_region,
 							map->event_number,frame_time,map->datum,map->start_search_interval,
 							map->end_search_interval,undecided_accepted,
@@ -4713,9 +4786,10 @@ This function draws the <map> in as a 3D CMGUI scene.
 							/* Show the map element surface */						
 							element_group=get_unemap_package_map_element_group
 								(unemap_package,region_number);
+#if defined (OLD_CODE)
 							map_graphics_hide_lines(get_unemap_package_scene(unemap_package),
 								element_group);
-
+#endif /* defined (OLD_CODE) */
 							/* if no interpolation, or no spectrum selected(HIDE_COLOUR) don't use them!*/
 							if((map->interpolation_type==NO_INTERPOLATION)||
 								(map->colour_option==HIDE_COLOUR))
@@ -4725,7 +4799,9 @@ This function draws the <map> in as a 3D CMGUI scene.
 									get_unemap_package_graphical_material(unemap_package),
 									get_unemap_package_Graphical_material_manager(unemap_package),
 									(struct Spectrum *)NULL,(struct Computed_field *)NULL,
-									get_unemap_package_no_interpolation_colour(unemap_package));
+									get_unemap_package_no_interpolation_colour(unemap_package),
+									get_unemap_package_user_interface(unemap_package),
+									get_unemap_package_map_element_discretization(unemap_package));
 							}
 							else /* BICUBIC interpolation  */
 							{
@@ -4738,7 +4814,9 @@ This function draws the <map> in as a 3D CMGUI scene.
 								map_show_surfaces(scene,element_group,
 									get_unemap_package_graphical_material(unemap_package),
 									get_unemap_package_Graphical_material_manager(unemap_package),
-									spectrum,data_field,(struct Colour*)NULL);
+									spectrum,data_field,(struct Colour*)NULL,
+									get_unemap_package_user_interface(unemap_package),
+									get_unemap_package_map_element_discretization(unemap_package));
 							}
 							if(!get_unemap_package_viewed_scene(unemap_package))
 							{														
@@ -4834,23 +4912,8 @@ This function draws the <map> in as a 3D CMGUI scene.
 							map->electrodes_marker_type,map->electrodes_option,
 							map->electrodes_marker_size,spectrum,time);
 					}		
-					/* Show the contours */	
-					if((map->contours_option==SHOW_CONTOURS)&&
-							(map->interpolation_type!=NO_INTERPOLATION))
-					{
-						number_of_contours=map->number_of_contours;
-					}
-					else
-					{
-						number_of_contours=0;
-					}
-					for (region_number=0;region_number<number_of_regions;region_number++)
-					{	
-						/* remove/draw contours */
-						map_draw_contours(scene,unemap_package,data_field,
-							number_of_contours,map->contour_minimum,
-							map->contour_maximum,region_number);											
-					}								
+					map_draw_contours(map,spectrum,unemap_package,data_field,
+						number_of_regions);
 					/* First time the scene's viewed  do "view_all"*/
 					if(!get_unemap_package_viewed_scene(unemap_package))
 					{	

@@ -97,6 +97,32 @@ simple types.  If it does not comform exactly to one of the simple types then
 it returns UNKNOWN_SPECTRUM
 ==============================================================================*/
 
+enum Spectrum_simple_type Spectrum_get_contoured_simple_type(struct Spectrum *spectrum);
+/*******************************************************************************
+LAST MODIFIED : 23 May 2000
+
+DESCRIPTION :
+A convienience routine that interrogates a spectrum to see if it is one of the
+simple types, or a simple type with a contour(colour_mapping==SPECTRUM_BANDED) 
+added as an extra, last, setting If it does not comform exactly to one of the 
+simple types (or a simple type with a contour) then it returns UNKNOWN_SPECTRUM. 
+See also Spectrum_get_simple_type.
+==============================================================================*/
+
+int Spectrum_overlay_contours(struct MANAGER(Spectrum) *spectrum_manager,
+	struct Spectrum *spectrum,int number_of_bands,int band_proportions);
+/*******************************************************************************
+LAST MODIFIED : 22 May 2000
+
+DESCRIPTION :
+Checks if the last spectrum setting is SPECTRUM_BANDED, removes it if it is,
+then adds a SPECTRUM_BANDED setting to the <spectrum> with <number_of_bands>,
+<band_proportions>. Setting is added at the end of the list.
+This function assumes the <spectum> is a simple with an added SPECTRUM_BANDED 
+settings holding for the contours.
+If <number_of_bands>==0, simply removes any existing contour band settings.
+==============================================================================*/
+
 int Spectrum_add_settings(struct Spectrum *spectrum,
 	struct Spectrum_settings *settings,int position);
 /*******************************************************************************
