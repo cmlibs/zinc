@@ -165,6 +165,15 @@ PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/linux_optimised
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/linux_optimised
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux_optimised
 #else /* defined (OPTIMISED) */
+#if defined (MEMORY_CHECK)
+#define Target cmgui_linux_memorycheck
+#define SpacesToTabsTarget spaces_to_tabs_linux
+#define TabsToSpacesTarget tabs_to_spaces_linux
+#define Uid2uidhTarget uid2uidh_linux
+#define Makefile cmgui_linux_memorycheck.make
+#define DependMake cmgui_linux_memorycheck.depend
+#define ObjSuffix o
+#else /* defined (MEMORY_CHECK) */
 #if defined (DYNAMIC_GL_LINUX)
 #define Target cmgui_linux_dynamic
 #define SpacesToTabsTarget spaces_to_tabs_linux
@@ -182,6 +191,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux_optimised
 #define DependMake cmgui_linux.depend
 #define ObjSuffix o
 #endif /* defined (DYNAMIC_GL_LINUX) */
+#endif /* defined (MEMORY_CHECK) */
 /* Can't use linux on its own as this is defined! */
 OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/linux_g
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/linux_g
@@ -247,6 +257,7 @@ GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
 GRAPHICS_LIB = -L/usr/X11R6/lib -lGL -lGLU 
 #else /* defined (DYNAMIC_GL_LINUX) */
 GRAPHICS_LIB = -L/usr/local/lib -lGL -lGLU
+/*GRAPHICS_LIB = -L/home/blackett/lib -lGL -lGLU*/
 /*GRAPHICS_LIB = -L/home/nickerso/cmiss/cmgui -lMesaGL -lMesaGLU*/
 #endif /* defined (DYNAMIC_GL_LINUX) */
 #endif /* switch OperatingSystem */
@@ -1178,7 +1189,8 @@ Target : $(OBJS) cmgui.ObjSuffix
 	cd $(OBJECT_PATH) ; \
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
-	$(LINK) -o $(BIN_PATH)/Target $(ALL_FLAGS) `cat object.list` $(ALL_LIB)
+	$(LINK) -o /tmp/Target $(ALL_FLAGS) `cat object.list` $(ALL_LIB)
+	cp /tmp/Target $(BIN_PATH)/Target
 
 CmguiFiltLibrary : $(LIB_FILT_OBJS) $(FILT_OBJ) Makefile libCmguiFiltExports
 	cd $(OBJECT_PATH)
