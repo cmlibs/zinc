@@ -2502,7 +2502,8 @@ Invokes the graphical element group editor.
 	USE_PARAMETER(dummy_to_be_modified);
 	if (state)
 	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
+		if ((command_data=(struct Cmiss_command_data *)command_data_void) &&
+		  command_data->user_interface)
 		{
 			/* initialize defaults */
 			element_group = (struct GROUP(FE_element) *)NULL;
@@ -2579,7 +2580,7 @@ Invokes the graphical element group editor.
 		else
 		{
 			display_message(ERROR_MESSAGE,"gfx_create_g_element_editor.  "
-				"Missing command_data");
+				"Missing command_data or user interface.");
 			return_code=0;
 		}
 	}
