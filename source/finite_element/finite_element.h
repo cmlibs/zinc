@@ -894,6 +894,20 @@ c.f.  FE_field_order_info. Also store a current node, so can iterate, etc
 	int access_count;
 }; /* FE_node_order_info */ 
 
+struct FE_element_order_info
+/*******************************************************************************
+LAST MODIFIED : 10 January 2000
+
+DESCRIPTION :
+Use to pass info about a element group's elements, their number, and their order.
+c.f.  FE_field_order_info. Also store a current element, so can iterate, etc
+==============================================================================*/
+{
+	int number_of_elements,current_element_number;
+	struct FE_element **elements;
+	int access_count;
+}; /* FE_element_order_info */ 
+
 struct FE_field_and_string_data
 /*******************************************************************************
 LAST MODIFIED : 26 September 2000
@@ -4564,6 +4578,213 @@ DESCRIPTION :
 As FE_node to previously created FE_node_order_info (passed in dummy)
 ==============================================================================*/
 
+int get_FE_node_order_info_number_of_nodes(
+	struct FE_node_order_info *node_order_info);
+/*******************************************************************************
+LAST MODIFIED : 13 July 1999
+
+DESCRIPTION : 
+Gets the <node_order_info> number_of_nodes
+==============================================================================*/
+
+struct FE_node *get_FE_node_order_info_node(
+	struct FE_node_order_info *node_order_info,int node_number);
+/*******************************************************************************
+LAST MODIFIED : 13 July 1999
+
+DESCRIPTION : 
+Gets the <node_order_info> node at the specified node_number
+==============================================================================*/
+
+int set_FE_node_order_info_node(
+	struct FE_node_order_info *node_order_info,int node_number,
+	struct FE_node *node);
+/*******************************************************************************
+LAST MODIFIED : 13 July 1999
+
+DESCRIPTION : 
+Sets the <node_order_info> node at the specified node_number
+==============================================================================*/
+
+int get_FE_node_order_info_current_node_number(
+	struct FE_node_order_info *node_order_info);
+/*******************************************************************************
+LAST MODIFIED : 17 August 2000
+
+DESCRIPTION : 
+gets the <node_order_info> <current_node_number>
+==============================================================================*/
+
+int set_FE_node_order_info_current_node_number(
+	struct FE_node_order_info *node_order_info,int current_node_number);
+/*******************************************************************************
+LAST MODIFIED : 17 August 2000
+
+DESCRIPTION : 
+Sets the <node_order_info> <current_node_number>
+==============================================================================*/
+
+struct FE_node *get_FE_node_order_info_current_node(
+	struct FE_node_order_info *node_order_info);
+/*******************************************************************************
+LAST MODIFIED : 17 August 2000
+
+DESCRIPTION : 
+Gets the <node_order_info> node at the current_node_number
+==============================================================================*/
+
+struct FE_node *get_FE_node_order_info_next_node(
+	struct FE_node_order_info *node_order_info);
+/*******************************************************************************
+LAST MODIFIED : 17 August 2000
+
+DESCRIPTION : 
+Gets the <node_order_info> next node by incrementing the current_node_number,
+and returning the new current node. If at the end of the array, return null.
+==============================================================================*/
+
+struct FE_node *get_FE_node_order_info_prev_node(
+	struct FE_node_order_info *node_order_info);
+/*******************************************************************************
+LAST MODIFIED : 17 August 2000
+
+DESCRIPTION : 
+Gets the <node_order_info> next node by incrementing the current_node_number,
+and returning the new current node. If at the start of the array, return null.
+==============================================================================*/
+
+int add_nodes_FE_node_order_info(int number_of_nodes_to_add,
+	struct FE_node_order_info *node_order_info);
+/*******************************************************************************
+LAST MODIFIED : 6 July 1999
+
+DESCRIPTION :
+As FE_node to previously created FE_node_order_info 
+==============================================================================*/
+
+int fill_FE_node_order_info(struct FE_node *node,void *dummy);
+/*******************************************************************************
+LAST MODIFIED : 6 July 1999
+
+DESCRIPTION :
+As FE_node to previously created FE_node_order_info (passed in dummy)
+==============================================================================*/
+
+
+struct FE_element_order_info *CREATE(FE_element_order_info)(
+	int number_of_elements);
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION :
+Allocate space for an array of pointers to elements of length number_of_elements, 
+set these to NULL, copy the number_of_elements. 
+==============================================================================*/
+
+int DESTROY(FE_element_order_info)(
+	struct FE_element_order_info **element_order_info_address);
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION : 
+Frees them memory used by element_order_info.
+==============================================================================*/
+
+PROTOTYPE_OBJECT_FUNCTIONS(FE_element_order_info);
+PROTOTYPE_COPY_OBJECT_FUNCTION(FE_element_order_info);
+
+int get_FE_element_order_info_number_of_elements(
+	struct FE_element_order_info *element_order_info);
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION : 
+Gets the <element_order_info> number_of_elements
+==============================================================================*/
+
+struct FE_element *get_FE_element_order_info_element(
+	struct FE_element_order_info *element_order_info,int element_number);
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION : 
+Gets the <element_order_info> element at the specified element_number
+==============================================================================*/
+
+int set_FE_element_order_info_element(
+	struct FE_element_order_info *element_order_info,int element_number,
+	struct FE_element *element);
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION : 
+Sets the <element_order_info> element at the specified element_number
+==============================================================================*/
+
+int get_FE_element_order_info_current_element_number(
+	struct FE_element_order_info *element_order_info);
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION : 
+gets the <element_order_info> <current_element_number>
+==============================================================================*/
+
+int set_FE_element_order_info_current_element_number(
+	struct FE_element_order_info *element_order_info,int current_element_number);
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION : 
+Sets the <element_order_info> <current_element_number>
+==============================================================================*/
+
+struct FE_element *get_FE_element_order_info_current_element(
+	struct FE_element_order_info *element_order_info);
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION : 
+Gets the <element_order_info> element at the current_element_number
+==============================================================================*/
+
+struct FE_element *get_FE_element_order_info_next_element(
+	struct FE_element_order_info *element_order_info);
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION : 
+Gets the <element_order_info> next element by incrementing the current_element_number,
+and returning the new current element. If at the end of the array, return null.
+==============================================================================*/
+
+struct FE_element *get_FE_element_order_info_prev_element(
+	struct FE_element_order_info *element_order_info);
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION : 
+Gets the <element_order_info> next element by incrementing the current_element_number,
+and returning the new current element. If at the start of the array, return null.
+==============================================================================*/
+
+int add_elements_FE_element_order_info(int number_of_elements_to_add,
+	struct FE_element_order_info *element_order_info);
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION :
+As FE_element to previously created FE_element_order_info 
+==============================================================================*/
+
+int fill_FE_element_order_info(struct FE_element *element,void *dummy);
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION :
+As FE_element to previously created FE_element_order_info (passed in dummy)
+==============================================================================*/
+
 int get_FE_node_group_access_count(struct GROUP(FE_node) *node_group);
 /*******************************************************************************
 LAST MODIFIED : 17 August 1999
@@ -4619,8 +4840,8 @@ Finds the node and element groups matching  <name>, and shifts the contained nod
 and elements  identifier numbers so that the groups identifiers end at 
 <last_identifier>. Eg if you wanted to shift the groups to the end of 
 the legal integer range, <last_identifier> would be INT_MAX.
-Currently, there must be NO other node and elemnt groups in the manager when
-this function is called.
+NOTE: You can't iteratively call MANAGER_MODIFY_IDENTIFIER, hence the use of
+FE_node_order_info, FE_element_order_info
 ==============================================================================*/
 
 int node_is_in_list(struct FE_node *node,

@@ -7846,6 +7846,11 @@ comparison with 3D maps.
 		else
 		{
 			map_type=NO_MAP_FIELD;
+		}		
+		if(map_type==NO_MAP_FIELD)
+		/* if we have no map, don't colour electrodes with the signal  */
+		{								
+			map->colour_electrodes_with_signal=0;
 		}
 		switch (map_type)
 		{
@@ -8146,6 +8151,11 @@ comparison with 3D maps.
 								*electrode_drawn=0;
 								switch (map_type)
 								{
+									case NO_MAP_FIELD:
+									/* always draw all the electrodes if have no map */
+									{
+										*electrode_drawn=1;								
+									}break;
 									case SINGLE_ACTIVATION:
 									{
 										if ((signal=(*electrode)->signal)&&
@@ -10830,10 +10840,12 @@ comparison with 3D maps.
 								}break;										
 								case SHOW_ELECTRODE_NAMES:
 								case SHOW_CHANNEL_NUMBERS:
-								{
-#if defined (OLD_CODE) /* they're not now always drawn */
+								{	
+									/* they're not now always drawn */
+#if defined (OLD_CODE)
+								
 									*electrode_drawn=1;
-#endif
+#endif 
 									if (SHOW_ELECTRODE_NAMES==map->electrodes_option)
 									{
 										name=(*electrode)->description->name;

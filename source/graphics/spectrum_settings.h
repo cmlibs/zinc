@@ -40,7 +40,9 @@ Map the value into a colour.
 	SPECTRUM_BLUE,
 	SPECTRUM_ALPHA,
 	SPECTRUM_BANDED,
-	SPECTRUM_STEP
+	SPECTRUM_STEP,
+	SPECTRUM_BLUE_TO_WHITE,
+	SPECTRUM_WHITE_TO_RED
 }; /* enum Spectrum_settings_colour_mapping */
 
 enum Spectrum_settings_render_type
@@ -483,6 +485,40 @@ LAST MODIFIED : 5 August 1998
 
 DESCRIPTION :
 Sets the extend_below flag of the Spectrum_settings <settings>.
+==============================================================================*/
+
+int Spectrum_settings_get_fix_minimum_flag(struct Spectrum_settings *settings);
+/*******************************************************************************
+LAST MODIFIED : 11 January 2001
+
+DESCRIPTION :
+Returns the fix_minimum flag of the Spectrum_settings <spectrum>.
+==============================================================================*/
+
+int Spectrum_settings_set_fix_minimum_flag(struct Spectrum_settings *settings,
+	int fix_minimum);
+/*******************************************************************************
+LAST MODIFIED : 11 January 2001
+
+DESCRIPTION :
+Sets the fix_minimum flag of the Spectrum_settings <settings>.
+==============================================================================*/
+
+int Spectrum_settings_get_fix_maximum_flag(struct Spectrum_settings *settings);
+/*******************************************************************************
+LAST MODIFIED : 11 January 2001
+
+DESCRIPTION :
+Returns the fix_maximum flag of the Spectrum_settings <spectrum>.
+==============================================================================*/
+
+int Spectrum_settings_set_fix_maximum_flag(struct Spectrum_settings *settings,
+	int fix_maximum);
+/*******************************************************************************
+LAST MODIFIED : 11 January 2001
+
+DESCRIPTION :
+Sets the fix_maximum flag of the Spectrum_settings <settings>.
 ==============================================================================*/
 
 float Spectrum_settings_get_colour_value_minimum(struct Spectrum_settings *settings);

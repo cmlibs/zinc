@@ -923,6 +923,10 @@ Creates a spectrum_editor_settings widget.
 			SPECTRUM_GREEN},
 		{"spec_ed_set_blue",(XtPointer)
 			SPECTRUM_BLUE},
+		{"spec_ed_set_blue_to_white",(XtPointer)
+			SPECTRUM_BLUE_TO_WHITE},
+		{"spec_ed_set_white_to_red",(XtPointer)
+			SPECTRUM_WHITE_TO_RED},
 		{"spec_ed_set_alpha",(XtPointer)
 			SPECTRUM_ALPHA},
 		{"spec_ed_set_id_render_menu",(XtPointer)

@@ -2082,6 +2082,27 @@ Opens the <map_dialog>.
 					False);
 			}
 #endif /* defined (OLD_CODE) */
+			if(map->colour_electrodes_with_signal)
+			/* colour_electrodes_with_signal can be changed in the code (draw_map_2d), as well  */
+			/* from the GUI, so ensure in synce here. cf update_map_from_dialog*/
+			{
+				XmToggleButtonGadgetSetState(map_dialog->electrodes.marker_colour_toggle
+					,True,False);
+			}
+			else
+			{	
+				XmToggleButtonGadgetSetState(map_dialog->electrodes.marker_colour_toggle
+					,False,False);
+			}
+			if(*(map->type)==NO_MAP_FIELD)
+			/* if we have no map field, can't colour electrodes with signal, so disable this option*/
+			{
+				XtSetSensitive(map_dialog->electrodes.marker_colour_toggle,False);
+			}
+			else
+			{
+				XtSetSensitive(map_dialog->electrodes.marker_colour_toggle,True);
+			}
 			if (map->colour_option==SHOW_COLOUR)
 			{ 
 				spectrum_type=Spectrum_get_contoured_simple_type(

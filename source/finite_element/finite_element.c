@@ -37025,6 +37025,494 @@ Called iteratively.
 	return (return_code);
 } /* fill_FE_node_order_info */
 
+struct FE_element_order_info *CREATE(FE_element_order_info)(
+	int number_of_elements)
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION : 
+Allocate space for an array of pointers to elements of length number_of_elements, 
+set these to NULL, copy the number_of_elements. 
+==============================================================================*/
+{
+	int i;
+	struct FE_element_order_info *element_order_info;
+
+	ENTER(CREATE(FE_element_order_info));				
+	if (ALLOCATE(element_order_info,struct FE_element_order_info,1))
+	{
+		if (number_of_elements>0)
+		{	
+			if (ALLOCATE(element_order_info->elements,struct FE_element *,
+				number_of_elements))
+			{
+				element_order_info->number_of_elements = number_of_elements; 
+				for (i=0;i<number_of_elements;i++)
+				{				
+					element_order_info->elements[i]=(struct FE_element *)NULL;
+				}	
+				element_order_info->access_count=0;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+"CREATE(FE_element_order_info).  Could not allocate memory for element_field_info->elements");
+				DEALLOCATE(element_order_info->elements);		
+				DEALLOCATE(element_order_info);
+			}
+		}
+		else
+		{	
+			element_order_info->number_of_elements=0;
+			element_order_info->elements=(struct FE_element **)NULL;	
+			element_order_info->access_count=0;
+		}
+		element_order_info->current_element_number=0;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+"CREATE(FE_element_order_info).  Could not allocate memory for element field info");	
+		DEALLOCATE(element_order_info);	
+	}
+	LEAVE;
+
+	return (element_order_info);
+} /* CREATE(FE_element_order_info) */
+
+int DESTROY(FE_element_order_info)(
+	struct FE_element_order_info **element_order_info_address)
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION : 
+Frees them memory used by element_order_info.
+==============================================================================*/
+{
+	int i,return_code;
+	struct FE_element_order_info *element_order_info;
+	struct FE_element *element;
+
+	ENTER(DESTROY(FE_element_order_info));
+	return_code=0;
+	if ((element_order_info_address)&&
+		(element_order_info= *element_order_info_address))
+	{					
+		/* free the components */		
+		for (i=0;i<element_order_info->number_of_elements;i++)
+		{				
+			element=element_order_info->elements[i];
+			DEACCESS(FE_element)(&element);
+		}			
+		DEALLOCATE(element_order_info->elements);	
+		DEALLOCATE(*element_order_info_address);	
+		return_code=1;
+	}
+	else
+	{
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* DESTROY(FE_element_order_info) */
+
+DECLARE_OBJECT_FUNCTIONS(FE_element_order_info)
+
+PROTOTYPE_COPY_OBJECT_FUNCTION(FE_element_order_info)
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION :
+Makes an exacy copy of the FE_element_order_info
+==============================================================================*/
+{
+	int return_code,i;
+	
+	ENTER(COPY(FE_element_order_info));
+	return_code=0;
+	/* check the arguments */
+	if (source&&destination)
+	{
+		/* free any existing the destination things */
+		if(destination->number_of_elements)
+		{
+			for (i=0;i<destination->number_of_elements;i++)
+			{				
+				DEACCESS(FE_element)(&(destination->elements[i]));
+			}		
+			DEALLOCATE(destination->elements);
+			destination->number_of_elements=0;
+		}
+		if (ALLOCATE(destination->elements,struct FE_element*,source->number_of_elements))
+		{
+			/* copy the new */
+			destination->number_of_elements=source->number_of_elements;
+			for (i=0;i<destination->number_of_elements;i++)
+			{				
+				destination->elements[i]=ACCESS(FE_element)(source->elements[i]);
+			}	
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"COPY(FE_element_order_info).  Out of memory");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"COPY(FE_element_order_info).  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* COPY(FE_element_order_info) */
+
+int get_FE_element_order_info_number_of_elements(
+	struct FE_element_order_info *element_order_info)
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION : 
+Gets the <element_order_info> number_of_elements
+==============================================================================*/
+{
+	int number_of_elements;
+
+	ENTER(get_FE_element_order_info_number_of_elements);
+	if (element_order_info)
+	{
+		number_of_elements=element_order_info->number_of_elements;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_element_order_info_number_of_elements.  Invalid argument");		
+		number_of_elements=0;
+	}
+	LEAVE;
+
+	return (number_of_elements);
+} /* get_FE_element_order_info_number_of_elements */
+
+struct FE_element *get_FE_element_order_info_element(
+	struct FE_element_order_info *element_order_info,int element_number)
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION : 
+Gets the <element_order_info> element at the specified element_number
+==============================================================================*/
+{
+	struct FE_element *element;
+
+	ENTER(get_FE_element_order_info_element);
+	if ((element_order_info)&&
+		(element_number<=element_order_info->number_of_elements))
+	{		
+		element=element_order_info->elements[element_number];
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_element_order_info_element.  Invalid argument");		
+		element=(struct FE_element *)NULL;
+	}
+	LEAVE;
+
+	return (element);
+} /* get_FE_element_order_info_element */
+
+int set_FE_element_order_info_element(
+	struct FE_element_order_info *element_order_info,int element_number,
+	struct FE_element *element)
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION : 
+Sets the <element_order_info> element at the specified element_number.
+Also sets the current_element_number to <the element_number>
+==============================================================================*/
+{
+	int return_code
+
+	ENTER(set_FE_element_order_info_element);
+	return_code=0;
+	if ((element_order_info)&&
+		(element_number<=element_order_info->number_of_elements)&&(element))
+	{	
+		REACCESS(FE_element)(&(element_order_info->elements[element_number]),element);
+		element_order_info->current_element_number=element_number;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_FE_element_order_info_element.  Invalid argument");		
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_FE_element_group_order_element */
+
+int get_FE_element_order_info_current_element_number(
+	struct FE_element_order_info *element_order_info)
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION : 
+gets the <element_order_info> <current_element_number>
+==============================================================================*/
+{
+	int current_element_number;
+
+	ENTER(get_FE_element_order_info_current_element_number);	
+	if (element_order_info&&(element_order_info->number_of_elements>0))
+	{			
+		current_element_number=element_order_info->current_element_number;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_FE_element_order_info_current_element_number.  Invalid argument");		
+		current_element_number=-1;
+	}
+	LEAVE;
+
+	return (current_element_number);
+} /* set_FE_element_order_info_current_element_number */
+
+int set_FE_element_order_info_current_element_number(
+	struct FE_element_order_info *element_order_info,int current_element_number)
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION : 
+Sets the <element_order_info> <current_element_number>
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(set_FE_element_order_info_current_element_number);
+	return_code=0;
+	if ((element_order_info)&&(current_element_number>-1)&&
+		(current_element_number<=element_order_info->number_of_elements))
+	{			
+		element_order_info->current_element_number=current_element_number;
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_FE_element_order_info_current_element_number.  Invalid argument");		
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_FE_element_order_info_current_element_number */
+
+struct FE_element *get_FE_element_order_info_current_element(
+	struct FE_element_order_info *element_order_info)
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION : 
+Gets the <element_order_info> element at the current_element_number
+==============================================================================*/
+{
+	struct FE_element *element;
+
+	ENTER(get_FE_element_order_info_current_element);
+	if (element_order_info)
+	{		
+		if(element_order_info->number_of_elements)
+		{
+			element=element_order_info->elements[element_order_info->current_element_number];
+		}
+		else
+		{
+			element=(struct FE_element *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_element_order_info_current_element.  Invalid argument");		
+		element=(struct FE_element *)NULL;
+	}
+	LEAVE;
+
+	return (element);
+} /*get_FE_element_order_info_current_element  */
+
+struct FE_element *get_FE_element_order_info_next_element(
+	struct FE_element_order_info *element_order_info)
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION : 
+Gets the <element_order_info> next element by incrementing the current_element_number,
+and returning the new current element. If at the end of the array, return null.
+==============================================================================*/
+{
+	struct FE_element *element;
+
+	ENTER(get_FE_element_order_info_next_element);
+	if (element_order_info)
+	{		
+		if((element_order_info->number_of_elements)&&
+			(element_order_info->current_element_number<(element_order_info->number_of_elements-1)))
+		{			
+			element_order_info->current_element_number++;
+			element=element_order_info->elements[element_order_info->current_element_number];		
+		}
+		else
+		{
+			element=(struct FE_element *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_element_order_info_next_element.  Invalid argument");		
+		element=(struct FE_element *)NULL;
+	}
+	LEAVE;
+
+	return (element);
+} /*get_FE_element_order_info_next_element  */
+
+struct FE_element *get_FE_element_order_info_prev_element(
+	struct FE_element_order_info *element_order_info)
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION : 
+Gets the <element_order_info> next element by incrementing the current_element_number,
+and returning the new current element. If at the start of the array, return null.
+==============================================================================*/
+{
+	struct FE_element *element;
+
+	ENTER(get_FE_element_order_info_prev_element);
+	if (element_order_info)
+	{		
+		if((element_order_info->number_of_elements)&&
+			(element_order_info->current_element_number>0))
+		{			
+			element_order_info->current_element_number--;
+			element=element_order_info->elements[element_order_info->current_element_number];		
+		}
+		else
+		{
+			element=(struct FE_element *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"get_FE_element_order_info_prev_element.  Invalid argument");		
+		element=(struct FE_element *)NULL;
+	}
+	LEAVE;
+
+	return (element);
+} /*get_FE_element_order_info_prev_element  */
+
+int add_elements_FE_element_order_info(int number_of_elements_to_add,
+	struct FE_element_order_info *element_order_info)
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION :
+Reallocates space for more  elements in a previously created
+FE_element_order_info.  Use set_FE_element_order_info to set up the elements.
+==============================================================================*/
+{
+	int i,return_code,old_number_of_elements;
+	struct FE_element **elements;
+
+	ENTER(add_elements_FE_element_order_info)
+	return_code=0;
+	if (element_order_info)
+	{		
+		old_number_of_elements=element_order_info->number_of_elements;
+		element_order_info->number_of_elements += number_of_elements_to_add;				
+		if (REALLOCATE(elements,element_order_info->elements,struct FE_element *,
+			element_order_info->number_of_elements))
+		{
+			element_order_info->elements=elements;
+			/*set the new elements to null*/
+			for(i=old_number_of_elements;i<element_order_info->number_of_elements;i++)
+			{
+				element_order_info->elements[i]=(struct FE_element *)NULL;
+			}
+			return_code=1;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_element_order_info_add_element.  Out of memory ");	
+			return_code=0;
+		}
+	}	
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"FE_element_order_info_add_element.  Invalid arguments");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_order_info_add_element */
+
+int fill_FE_element_order_info(struct FE_element *element,void *dummy)
+/*******************************************************************************
+LAST MODIFIED : 10 January 2001
+
+DESCRIPTION :
+Allocate space for and add an FE_element to previously created 
+FE_element_order_info (passed in dummy).
+Called iteratively.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_element **elements;
+	struct FE_element_order_info *element_order_info;
+
+	ENTER(fill_FE_element_order_info)
+	return_code=0;
+	if (element&&dummy)
+	{
+		element_order_info=(struct FE_element_order_info *)dummy;
+		element_order_info->number_of_elements++;
+		/* reallocate space for pointer to the element */
+		if (REALLOCATE(elements,element_order_info->elements,struct FE_element *,
+			element_order_info->number_of_elements))
+		{
+			element_order_info->elements=elements;
+			/* set the pointer to the element */
+			element_order_info->elements[element_order_info->number_of_elements-1]=
+				ACCESS(FE_element)(element);
+			element_order_info->current_element_number=element_order_info->number_of_elements-1;
+			return_code=1;	
+		}		
+	}
+	else
+	{	
+		display_message(ERROR_MESSAGE,
+			"fill_FE_element_order_info. Invalid arguments");
+		return_code=0;	
+	}
+	LEAVE;
+
+	return (return_code);
+} /* fill_FE_element_order_info */
+
 int get_FE_node_group_access_count(struct GROUP(FE_node) *node_group)
 /*******************************************************************************
 LAST MODIFIED : 17 August 1999
@@ -37398,25 +37886,33 @@ int offset_FE_node_and_element_identifiers_in_group(char *name,int last_identifi
 	struct MANAGER(GROUP(FE_node))*node_group_manager,
 	struct MANAGER(GROUP(FE_element)) *element_group_manager)
 /*******************************************************************************
-LAST MODIFIED :3 November 2000
+LAST MODIFIED :10 January 2001
 
 DESCRIPTION :
 Finds the node and element groups matching  <name>, and shifts the contained nodes 
 and elements  identifier numbers so that the groups identifiers end at 
 <last_identifier>. Eg if you wanted to shift the groups to the end of 
 the legal integer range, <last_identifier> would be INT_MAX.
-Currently, there must be NO other node and elemnt groups in the manager when
-this function is called.
+NOTE: You can't iteratively call MANAGER_MODIFY_IDENTIFIER, hence the use of
+FE_node_order_info, FE_element_order_info
 ==============================================================================*/
 {
-	int number_of_elements,number_of_nodes,offset,return_code;
-	struct Change_identifier_data data;
+	int i,number_of_elements,number_of_nodes,offset,return_code;
+	struct CM_element_information cm;
+	struct FE_element *element;
+	struct FE_element_order_info *element_order_info;
+	struct FE_node *node;	
+	struct FE_node_order_info *node_order_info;
 	struct GROUP(FE_element) *element_group;
 	struct GROUP(FE_node) *node_group;
 
 	ENTER(offset_FE_node_and_element_identifiers_in_group);	
 	node_group=(struct GROUP(FE_node) *)NULL;
 	element_group = (struct GROUP(FE_element) *) NULL;
+	node_order_info=(struct FE_node_order_info *)NULL;
+	node=(struct FE_node *)NULL;
+	element=(struct FE_element *)NULL;
+	element_order_info=(struct FE_element_order_info *)NULL;
 	if(name)
 	{
 		return_code=1;
@@ -37427,71 +37923,98 @@ this function is called.
 			(element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
 				(name,element_group_manager))&&
 			(number_of_elements=NUMBER_IN_GROUP(FE_element)(element_group)))
-		{	
-			/* for now, can only change identifiers of nodes/elements if there's only ONE*/	
-			/* node/element group */
-			if((1==NUMBER_IN_MANAGER(GROUP(FE_element))(element_group_manager))&&
-				(1==NUMBER_IN_MANAGER(GROUP(FE_node))(node_group_manager)))
-			{				
-				/* offset the nodes and elements to 
-					 last_identifier-max(number_of_nodes,number_of_elements)*/			
-				if(number_of_nodes>=number_of_elements)
-				{
-					offset=number_of_nodes;
-				}
-				else
-				{
-					offset=number_of_elements;
-				}
-				offset=last_identifier-offset;			
-				data.element_offset = offset;
-				data.face_offset = 0;
-				data.line_offset = 0;
-				data.node_offset = offset;
-				/* shift nodes */
-				if (node_group)
-				{
-					data.count = 0;
-					data.node_manager = node_manager;
-					MANAGER_BEGIN_CACHE(FE_node)(node_manager);
-					FOR_EACH_OBJECT_IN_GROUP(FE_node)(FE_node_change_identifier_sub,
-						(void *)&data, node_group);
-					MANAGER_END_CACHE(FE_node)(node_manager);
-					if (data.count != NUMBER_IN_GROUP(FE_node)(node_group))
-					{
-						return_code=0;
-						display_message(ERROR_MESSAGE,
-							"offset_FE_node_and_element_identifiers_in_group."
-							"  Only able to update node numbers for %d nodes out of %d\n",
-							data.count, NUMBER_IN_GROUP(FE_node)(node_group));
-					}
-				}	
-				/* shift elements */		
-				if (element_group)
-				{
-					data.count = 0;
-					data.element_manager = element_manager;
-					MANAGER_BEGIN_CACHE(FE_element)(element_manager);
-					FOR_EACH_OBJECT_IN_GROUP(FE_element)(
-						FE_element_change_identifier_sub,
-						(void *)&data, element_group);
-					MANAGER_END_CACHE(FE_element)(element_manager);
-					if (data.count != NUMBER_IN_GROUP(FE_element)(element_group))
-					{
-						return_code=0;
-						display_message(ERROR_MESSAGE,
-							"offset_FE_node_and_element_identifiers_in_group."
-							"  Only able to update element numbers for %d elements out of %d\n",
-							data.count, NUMBER_IN_GROUP(FE_element)(element_group));
-					}
-				}
+		{						
+			/* offset the nodes and elements to 
+				 last_identifier-max(number_of_nodes,number_of_elements)*/			
+			if(number_of_nodes>=number_of_elements)
+			{
+				offset=number_of_nodes;
 			}
 			else
 			{
-				return_code=0;
-				display_message(ERROR_MESSAGE,"offset_FE_node_and_element_identifiers_in_group."
-					" Must be NO pre exisitng node and element groups when call this function");
+				offset=number_of_elements;
 			}
+			offset=last_identifier-offset;			
+		
+			/* shift nodes */
+			if (node_group)
+			{
+				/*create an array of the nodes in FE_node_order_info */
+				if (node_order_info=CREATE(FE_node_order_info)(0))
+				{
+					/* fill in FE_node_order_info */
+					if (return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)
+						(fill_FE_node_order_info,(void *)node_order_info,node_group))
+					{	
+						/* offset each node */
+						MANAGER_BEGIN_CACHE(FE_node)(node_manager);
+						for (i = 0; (i < number_of_nodes) && return_code; i++)					
+						{
+							node=get_FE_node_order_info_node(node_order_info,i);
+							if (!MANAGER_MODIFY_IDENTIFIER(FE_node, cm_node_identifier)(
+								node, node->cm_node_identifier +offset, node_manager))
+							{
+								display_message(ERROR_MESSAGE,
+									"offset_FE_node_and_element_identifiers_in_group.  "
+									"Could not change node identifier");
+								return_code = 0;
+							}
+						} /* for (i = 0; (i < number_of_nodes) */
+						MANAGER_END_CACHE(FE_node)(node_manager);
+					}
+					DESTROY(FE_node_order_info)(&node_order_info);
+				}	/* if (node_order_info=CREATE(FE_node_order_info)(0)) */
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"offset_FE_node_and_element_identifiers_in_group. "
+						"CREATE(FE_node_order_info) failed");
+					return_code=0;
+				}
+			
+			}	/* if (node_group) */
+
+			/* shift elements */
+			if (element_group)
+			{
+				/*create an array of the elements in FE_element_order_info */
+				if (element_order_info=CREATE(FE_element_order_info)(0))
+				{
+					/* fill in FE_element_order_info */
+					if (return_code=FOR_EACH_OBJECT_IN_GROUP(FE_element)
+						(fill_FE_element_order_info,(void *)element_order_info,element_group))
+					{	
+						/* offset each element */
+						MANAGER_BEGIN_CACHE(FE_element)(element_manager);
+						for (i = 0; (i < number_of_elements) && return_code; i++)					
+						{
+							element=get_FE_element_order_info_element(element_order_info,i);
+							cm.type=element->cm.type;
+							cm.number=element->cm.number;
+							cm.number+=offset;
+							if (!MANAGER_MODIFY_IDENTIFIER(FE_element, identifier)(
+								element,&cm,element_manager))
+							{
+								display_message(ERROR_MESSAGE,
+									"offset_FE_node_and_element_identifiers_in_group.  "
+									"Could not change element identifier");
+								return_code = 0;
+							}
+						} /* for (i = 0; (i < number_of_elements) */
+						MANAGER_END_CACHE(FE_element)(element_manager);
+					}
+					DESTROY(FE_element_order_info)(&element_order_info);
+				}	/* if (element_order_info=CREATE(FE_element_order_info)(0)) */
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"offset_FE_node_and_element_identifiers_in_group. "
+						"CREATE(FE_element_order_info) failed");
+					return_code=0;
+				}
+			
+			}	/* if (element_group) */
+		
 		}
 		else
 		{
@@ -37510,92 +38033,3 @@ this function is called.
 	return(return_code);
 }/* offset_FE_node_and_element_identifiers_in_group*/
 
-#if !defined (WINDOWS_DEV_FLAG)
-int FE_element_change_identifier_sub(struct FE_element *element,
-	void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 7 October 1999
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	struct CM_element_information cm_id;
-	struct Change_identifier_data *data;
-
-	ENTER(FE_element_change_identifier_sub);
-	if (element && 
-		(data=(struct Change_identifier_data *)data_void)
-		&& data->element_manager)
-	{
-		return_code = 1;
-		cm_id.type = element->cm.type;
-		cm_id.number = element->cm.number;
-		switch( cm_id.type )
-		{
-			case CM_ELEMENT:
-			{
-				cm_id.number += data->element_offset;
-			} break;
-			case CM_FACE:
-			{
-				cm_id.number += data->element_offset;
-			} break;
-			case CM_LINE:
-			{
-				cm_id.number += data->element_offset;
-			} break;
-		}
-		if (MANAGER_MODIFY_IDENTIFIER(FE_element, identifier)(element,
-			&cm_id, data->element_manager))
-		{
-			data->count++;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_change_identifier_sub.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_change_identifier_sub */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
-
-#if !defined (WINDOWS_DEV_FLAG)
-int FE_node_change_identifier_sub(struct FE_node *node, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 7 October 1999
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-	struct Change_identifier_data *data;
-
-	ENTER(FE_node_change_identifier_sub);
-	if (node && 
-		(data=(struct Change_identifier_data *)data_void)
-		&& data->node_manager)
-	{
-		return_code = 1;
-		if (MANAGER_MODIFY_IDENTIFIER(FE_node, cm_node_identifier)(node,
-			get_FE_node_cm_node_identifier(node) + data->node_offset,
-			data->node_manager))
-		{
-			data->count++;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_change_identifier_sub.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_node_change_identifier_sub */
-#endif /* !defined (WINDOWS_DEV_FLAG) */

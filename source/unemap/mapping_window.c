@@ -2876,7 +2876,7 @@ The callback for redrawing part of a mapping drawing area.
 									XFillRectangle(display,drawing->pixel_map,(mapping->map->
 										drawing_information->graphics_context).
 										background_drawing_colour,0,0,drawing->width,
-										drawing->height);
+										drawing->height);							
 									/* draw the map */
 									draw_map(mapping->map,3,drawing);
 									update_mapping_colour_or_auxili(mapping);
@@ -4780,7 +4780,7 @@ the interpolation functions are also recalculated.
 		/* clear the map drawing area */
 		XFillRectangle(drawing_information->user_interface->display,
 			drawing->pixel_map,(drawing_information->graphics_context).
-			background_drawing_colour,0,0,drawing->width,drawing->height);
+			background_drawing_colour,0,0,drawing->width,drawing->height);		
 		/* draw the map */
 		draw_map(mapping->map,recalculate,drawing);
 		XCopyArea(drawing_information->user_interface->display,

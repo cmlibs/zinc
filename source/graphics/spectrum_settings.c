@@ -45,10 +45,11 @@ Stores one group of settings for a single part of a spectrum rendition.
 	int component_number; /* Which data component this settings uses (0 is first component)*/
 	int active; /* This corresponds to visiblity for graphical finite elements */
 	enum Spectrum_settings_type settings_type;
-	char settings_changed;
-
+	char settings_changed;	
 	/* These specify the range of values over which the settings operates */
 	float maximum, minimum;
+	/* These flags control whether the maximum, minumum values can be changed */
+	int fix_maximum,fix_minimum;
 	/* These flags control whether a settings is transparent (has no effect)
 		or is clamped at its extreme values outside it's minimum and maximum */
 	int extend_above, extend_below;
@@ -309,6 +310,8 @@ Allocates memory and assigns fields for a struct Spectrum_settings.
 		settings->settings_changed=1;
 		settings->minimum = 0;
 		settings->maximum = 1;
+		settings->fix_maximum=0;
+		settings->fix_minimum=0;
 		settings->extend_above = 0;
 		settings->extend_below = 0;
 		settings->min_value = 0;
@@ -419,7 +422,9 @@ Note: destination->access_count is not changed by COPY.
 		destination->position = source->position;
 		destination->active = source->active;
 		destination->minimum = source->minimum;
-		destination->maximum = source->maximum;
+		destination->maximum = source->maximum;	
+		destination->fix_maximum=source->fix_maximum;
+		destination->fix_minimum=source->fix_minimum;
 		destination->extend_above = source->extend_above;
 		destination->extend_below = source->extend_below;
 		destination->min_value = source->min_value;
@@ -914,6 +919,14 @@ included in the string. User must remember to DEALLOCATE the name afterwards.
 		{
 			settings_string_append(&settings_string," extend_below",&error);
 		}
+		if (settings->fix_maximum)
+		{
+			settings_string_append(&settings_string," fix_maximum",&error);
+		}
+		if (settings->fix_minimum)
+		{
+			settings_string_append(&settings_string," fix_minimum",&error);
+		}
 		if (settings->settings_type == SPECTRUM_LINEAR ||
 			settings->settings_type == SPECTRUM_LOG )
 		{
@@ -960,6 +973,18 @@ included in the string. User must remember to DEALLOCATE the name afterwards.
 				{
 					sprintf(temp_string," step_texture step_value %g",settings->step_value);
 					settings_string_append(&settings_string,temp_string,&error);
+				} break;	
+				case SPECTRUM_BLUE_TO_WHITE:
+				{
+					sprintf(temp_string," blue_to_white colour_range %g %g",
+						settings->min_value, settings->max_value);
+					settings_string_append(&settings_string,temp_string,&error);	
+				} break;	
+				case SPECTRUM_WHITE_TO_RED:
+				{
+					sprintf(temp_string," white_to_red colour_range %g %g",
+						settings->min_value, settings->max_value);
+					settings_string_append(&settings_string,temp_string,&error);	
 				} break;
 			}
 		}
@@ -1228,7 +1253,8 @@ Sets the reverse flag of the Spectrum_settings <settings>.
 	return (return_code);
 } /* Spectrum_settings_set_reverse_flag */
 
-enum Spectrum_settings_colour_mapping Spectrum_settings_get_colour_mapping(struct Spectrum_settings *settings)
+enum Spectrum_settings_colour_mapping Spectrum_settings_get_colour_mapping(
+	struct Spectrum_settings *settings)
 /*******************************************************************************
 LAST MODIFIED : 14 July 1998
 
@@ -1750,6 +1776,120 @@ Sets the extend_below flag of the Spectrum_settings <settings>.
 	return (return_code);
 } /* Spectrum_settings_set_extend_below_flag */
 
+int Spectrum_settings_get_fix_minimum_flag(struct Spectrum_settings *settings)
+/*******************************************************************************
+LAST MODIFIED : 11 January 2001
+
+DESCRIPTION :
+Returns the fix_minimum flag of the Spectrum_settings <spectrum>.
+==============================================================================*/
+{
+	int fix_minimum;
+
+	ENTER(Spectrum_settings_get_colour_mapping);
+
+	if (settings)
+	{
+		fix_minimum = settings->fix_minimum;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Spectrum_settings_get_fix_minimum_flag.  "
+			"Invalid argument(s)");
+		fix_minimum = 0;
+	}
+	LEAVE;
+
+	return (fix_minimum);
+} /* Spectrum_settings_get_fix_minimum_flag */
+
+int Spectrum_settings_set_fix_minimum_flag(struct Spectrum_settings *settings,
+	int fix_minimum)
+/*******************************************************************************
+LAST MODIFIED : 11 January 2001
+
+DESCRIPTION :
+Sets the fix_minimum flag of the Spectrum_settings <settings>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Spectrum_settings_set_fix_minimum_flag);
+
+	if (settings)
+	{
+		settings->fix_minimum = fix_minimum;
+		settings->settings_changed = 1;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Spectrum_settings_set_fix_minimum_flag.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Spectrum_settings_set_fix_minimum_flag */
+
+int Spectrum_settings_get_fix_maximum_flag(struct Spectrum_settings *settings)
+/*******************************************************************************
+LAST MODIFIED : 11 January 2001
+
+DESCRIPTION :
+Returns the fix_maximum flag of the Spectrum_settings <spectrum>.
+==============================================================================*/
+{
+	int fix_maximum;
+
+	ENTER(Spectrum_settings_get_colour_mapping);
+
+	if (settings)
+	{
+		fix_maximum = settings->fix_maximum;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Spectrum_settings_get_fix_maximum_flag.  "
+			"Invalid argument(s)");
+		fix_maximum = 0;
+	}
+	LEAVE;
+
+	return (fix_maximum);
+} /* Spectrum_settings_get_fix_maximum_flag */
+
+int Spectrum_settings_set_fix_maximum_flag(struct Spectrum_settings *settings,
+	int fix_maximum)
+/*******************************************************************************
+LAST MODIFIED : 11 January 2001
+
+DESCRIPTION :
+Sets the fix_maximum flag of the Spectrum_settings <settings>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Spectrum_settings_set_fix_maximum_flag);
+
+	if (settings)
+	{
+		settings->fix_maximum = fix_maximum;
+		settings->settings_changed = 1;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Spectrum_settings_set_fix_maximum_flag.  "
+			"Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Spectrum_settings_set_fix_maximum_flag */
+
 float Spectrum_settings_get_colour_value_minimum(struct Spectrum_settings *settings)
 /*******************************************************************************
 LAST MODIFIED : 30 July 1998
@@ -1979,7 +2119,9 @@ DESCRIPTION :
 				case SPECTRUM_RAINBOW:
 				case SPECTRUM_RED:
 				case SPECTRUM_GREEN:
-				case SPECTRUM_BLUE:
+				case SPECTRUM_BLUE:	
+				case SPECTRUM_BLUE_TO_WHITE:
+				case SPECTRUM_WHITE_TO_RED:
 				{
 					render_data->rendering_flags |= settings->render_type;
 				} break;
@@ -2317,7 +2459,9 @@ passed in render data.
 					case SPECTRUM_RAINBOW:
 					case SPECTRUM_RED:
 					case SPECTRUM_GREEN:
-					case SPECTRUM_BLUE:
+					case SPECTRUM_BLUE:	
+					case SPECTRUM_BLUE_TO_WHITE:
+					case SPECTRUM_WHITE_TO_RED:
 					{
 						number_of_colours=1;
 						/* get current colour */
@@ -2401,6 +2545,19 @@ passed in render data.
 								case SPECTRUM_BLUE:
 								{
 									colour->blue=value;
+								} break;
+							
+								case SPECTRUM_BLUE_TO_WHITE:
+								{
+									colour->blue=1.0;
+									colour->red=value;
+									colour->green=value;
+								} break;	
+								case SPECTRUM_WHITE_TO_RED:
+								{
+									colour->red=1;
+									colour->blue=(1-value);
+									colour->green=(1-value);
 								} break;
 							}
 						}
@@ -2494,6 +2651,8 @@ DESCRIPTION :
 				case SPECTRUM_GREEN:
 				case SPECTRUM_BLUE:
 				case SPECTRUM_ALPHA:
+				case SPECTRUM_BLUE_TO_WHITE:
+				case SPECTRUM_WHITE_TO_RED:
 				{
 					/* do nothing */
 				} break;
@@ -2594,7 +2753,7 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
 	char alpha,ambient,amb_diff,banded,blue,diffuse,emission,extend_above,
-		extend_below,green, rainbow,red,reverse,specular,step,
+		extend_below,green, rainbow,blue_to_white,white_to_red,red,reverse,specular,step,
 		transparent_above,transparent_below;
 	int black_band_int,component,number_of_bands,range_components,return_code;
 	float band_ratio,colour_range[2],step_value,range[2];
@@ -2605,11 +2764,13 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 	  {
 			{"alpha",NULL,NULL,set_char_flag},
 			{"banded",NULL,NULL,set_char_flag},
-			{"blue",NULL,NULL,set_char_flag},
+			{"blue",NULL,NULL,set_char_flag},			
 			{"green",NULL,NULL,set_char_flag},
 			{"rainbow",NULL,NULL,set_char_flag},
 			{"red",NULL,NULL,set_char_flag},			
-			{"step_texture",NULL,NULL,set_char_flag},		
+			{"step_texture",NULL,NULL,set_char_flag},
+			{"white_to_red",NULL,NULL,set_char_flag},
+			{"blue_to_white",NULL,NULL,set_char_flag},		
 			{NULL,NULL,NULL,NULL}			
 		},
 		render_option_table[]=
@@ -2669,6 +2830,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				green = 0;
 				number_of_bands = 10;
 				rainbow = 0;
+				blue_to_white = 0;
+				white_to_red = 0;
 				red = 0;
 				reverse = 0;
 				specular = 0;
@@ -2690,6 +2853,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				(colour_option_table[4]).to_be_modified = &rainbow;
 				(colour_option_table[5]).to_be_modified = &red;
 				(colour_option_table[6]).to_be_modified = &step;
+				(colour_option_table[7]).to_be_modified = &blue_to_white;
+				(colour_option_table[8]).to_be_modified = &white_to_red;
 				(render_option_table[0]).to_be_modified = &ambient;
 				(render_option_table[1]).to_be_modified = &amb_diff;
 				(render_option_table[2]).to_be_modified = &diffuse;
@@ -2718,11 +2883,12 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				}
 				if (return_code)
 				{
-					if (alpha + banded + blue + green + red + rainbow +
-						step > 1 )
+					if (alpha + banded + blue + green + red + rainbow + blue_to_white + white_to_red
+						+ step > 1 )
 					{
 						display_message(ERROR_MESSAGE,"gfx_modify_spectrum_settings_linear.  "
-							"only specify one of alpha, banded, blue, green, red, rainbow or step");
+							"only specify one of alpha, banded, blue, green, red, blue_to_white, "
+							" white_to_red rainbow or step");
 						return_code=0;							
 					}
 					else if (alpha)
@@ -2754,6 +2920,16 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					{
 						Spectrum_settings_set_colour_mapping(settings,
 							SPECTRUM_RAINBOW);	
+					}	
+					else if (blue_to_white)
+					{
+						Spectrum_settings_set_colour_mapping(settings,
+							SPECTRUM_BLUE_TO_WHITE);	
+					}	
+					else if (white_to_red)
+					{
+						Spectrum_settings_set_colour_mapping(settings,
+							SPECTRUM_WHITE_TO_RED);	
 					}
 					else if (step)
 					{
@@ -2888,8 +3064,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 ==============================================================================*/
 {
 	char alpha,ambient,amb_diff,banded,blue,diffuse,emission,extend_above,
-		extend_below,green,left,rainbow,red,reverse,right,specular,step,
-		transparent_above,transparent_below;
+		extend_below,green,left,rainbow,blue_to_white,white_to_red,red,reverse,
+		right,specular,step,transparent_above,transparent_below;
 	int black_band_int,component,number_of_bands,range_components,return_code;
 	float band_ratio,colour_range[2],exaggeration,step_value,range[2];
 	struct Modify_spectrum_data *modify_spectrum_data;
@@ -2904,6 +3080,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 			{"rainbow",NULL,NULL,set_char_flag},
 			{"red",NULL,NULL,set_char_flag},			
 			{"step",NULL,NULL,set_char_flag},			
+			{"blue_to_white",NULL,NULL,set_char_flag},
+			{"white_to_red",NULL,NULL,set_char_flag},		
 			{NULL,NULL,NULL,NULL}			
 		},
 		render_option_table[]=
@@ -2967,6 +3145,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				left = 0;
 				number_of_bands = 10;
 				rainbow = 0;
+				blue_to_white = 0;
+				white_to_red = 0;
 				red = 0;
 				reverse = 0;
 				right = 0;
@@ -2990,6 +3170,8 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				(colour_option_table[4]).to_be_modified = &rainbow;
 				(colour_option_table[5]).to_be_modified = &red;
 				(colour_option_table[6]).to_be_modified = &step;
+				(colour_option_table[7]).to_be_modified = &blue_to_white;
+				(colour_option_table[8]).to_be_modified = &white_to_red;
 				(render_option_table[0]).to_be_modified = &ambient;
 				(render_option_table[1]).to_be_modified = &amb_diff;
 				(render_option_table[2]).to_be_modified = &diffuse;
@@ -3021,11 +3203,12 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 				}
 				if (return_code)
 				{
-					if (alpha + banded + blue + green + red + rainbow +
-						step > 1 )
+					if (alpha + banded + blue + green + red + rainbow + blue_to_white + white_to_red
+						+ step > 1 )
 					{
 						display_message(ERROR_MESSAGE,"gfx_modify_spectrum_settings_log.  "
-							"only specify one of alpha, banded, blue, green, red, rainbow or step");
+							"only specify one of alpha, banded, blue, green, red, rainbow,  "
+							"blue_to_white white_to_red or step");
 						return_code=0;							
 					}
 					else if (alpha)
@@ -3057,6 +3240,16 @@ parsed settings. Note that the settings are ACCESSed once on valid return.
 					{
 						Spectrum_settings_set_colour_mapping(settings,
 							SPECTRUM_RAINBOW);	
+					}
+					else if (blue_to_white)
+					{
+						Spectrum_settings_set_colour_mapping(settings,
+							SPECTRUM_BLUE_TO_WHITE);	
+					}	
+					else if (white_to_red)
+					{
+						Spectrum_settings_set_colour_mapping(settings,
+							SPECTRUM_WHITE_TO_RED);	
 					}
 					else if (step)
 					{

@@ -36,6 +36,8 @@ procedure
 	spec_ed_set_id_range_max_text;
 	spec_ed_set_id_extend_above_btn;
 	spec_ed_set_id_extend_below_btn;
+	spec_ed_set_id_fix_max_btn;
+	spec_ed_set_id_fix_min_btn;
 	spec_ed_set_range_CB;
 	spec_ed_set_id_value_min_text;
 	spec_ed_set_id_value_max_text;
@@ -68,6 +70,8 @@ identifier
 	spec_ed_set_red;
 	spec_ed_set_green;
 	spec_ed_set_blue;
+	spec_ed_set_blue_to_white;
+	spec_ed_set_white_to_red;
 	spec_ed_set_alpha;
 	spec_ed_set_bands;
 	spec_ed_set_step;
@@ -304,12 +308,21 @@ object
 	spec_ed_set_range_entry: XmForm
 		{
 		controls
-			{
-			XmToggleButtonGadget spec_ed_set_extend_below;
+			{			
+			XmForm spec_ed_set_range_bot;
 			XmTextField spec_ed_set_range_min_text;
 			XmLabelGadget spec_ed_set_range_label;
-			XmTextField spec_ed_set_range_max_text;
-			XmToggleButtonGadget spec_ed_set_extend_above;
+			XmTextField spec_ed_set_range_max_text;			
+			XmForm spec_ed_set_range_top;
+			};
+		};
+
+	spec_ed_set_range_bot: XmForm
+		{
+		controls
+			{
+				XmToggleButtonGadget spec_ed_set_extend_below;
+!				put the spec_ed_set_fix_min_here
 			};
 		};
 
@@ -340,12 +353,12 @@ object
     	arguments
       	{
       	XmNvalue = "";
-!        XmNwidth = 60;
+!       XmNwidth = 60;
       	XmNcolumns = 8;
       	XmNfontList = normal_font;
       	XmNleftAttachment = XmATTACH_WIDGET;
       	XmNleftOffset = 0;
-      	XmNleftWidget = spec_ed_set_extend_below;
+				XmNleftWidget = spec_ed_set_range_bot;
       	XmNtopAttachment = XmATTACH_FORM;
       	XmNtopOffset = 0;
       	XmNbottomAttachment = XmATTACH_FORM;
@@ -404,14 +417,32 @@ object
       	};
     	};
 
+	spec_ed_set_range_top: XmForm
+		{
+		arguments
+			{
+			XmNleftAttachment = XmATTACH_WIDGET;
+			XmNleftOffset = 0;
+			XmNleftWidget = spec_ed_set_range_max_text;
+			XmNtopAttachment = XmATTACH_FORM;
+			XmNtopOffset = 0;
+			XmNbottomAttachment = XmATTACH_FORM;
+			XmNbottomOffset = 0;
+			};
+		controls
+			{
+				XmToggleButtonGadget spec_ed_set_extend_above;
+!				put the spec_ed_set_fix_max_here
+			};
+		};
+
 	spec_ed_set_extend_above: XmToggleButtonGadget
 		{
 		arguments
 			{
 			XmNlabelString = compound_string("Extend above");
-      	XmNleftAttachment = XmATTACH_WIDGET;
-      	XmNleftOffset = 0;
-      	XmNleftWidget = spec_ed_set_range_max_text;
+			XmNleftAttachment = XmATTACH_FORM;
+      XmNleftOffset = 0;
 			XmNtopAttachment = XmATTACH_FORM;
 			XmNtopOffset = 0;
 			XmNbottomAttachment = XmATTACH_FORM;
@@ -664,6 +695,24 @@ object
 					XmNlabelString = compound_string("Blue");
 					XmNfontList = button_font;
 					XmNuserData = spec_ed_set_blue;
+					};
+				};
+			XmPushButtonGadget
+				{
+				arguments
+					{
+					XmNlabelString = compound_string("Blue_to_white");
+					XmNfontList = button_font;
+					XmNuserData = spec_ed_set_blue_to_white;
+					};
+				};
+			XmPushButtonGadget
+				{
+				arguments
+					{
+					XmNlabelString = compound_string("White_to_red");
+					XmNfontList = button_font;
+					XmNuserData = spec_ed_set_white_to_red;
 					};
 				};
 			XmPushButtonGadget

@@ -339,7 +339,7 @@ DESCRIPTION :
 			}
 			map->colour_option=SHOW_COLOUR;
 			map->contours_option=HIDE_CONTOURS;
-			map->electrodes_option=SHOW_ELECTRODE_VALUES;
+			map->electrodes_option=SHOW_ELECTRODE_VALUES;			
 			if (analysis->time_keeper && Time_keeper_is_playing(analysis->time_keeper))
 			{
 				map->activation_front = 0;
