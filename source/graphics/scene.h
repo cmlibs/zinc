@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.h
 
-LAST MODIFIED : 1 March 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -27,6 +27,8 @@ December 1997. Created MANAGER(Scene).
 #include "graphics/light.h"
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
+#include "selection/element_selection.h"
+#include "selection/node_selection.h"
 #include "time/time_keeper.h"
 /* #include "graphics/texture.h" */
 
@@ -114,7 +116,7 @@ DECLARE_MANAGER_TYPES(Scene);
 
 struct Modify_scene_data
 /*******************************************************************************
-LAST MODIFIED : 16 February 1999
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Structure to pass to modify_Scene.
@@ -132,6 +134,8 @@ Structure to pass to modify_Scene.
 	struct MANAGER(GROUP(FE_node)) *node_group_manager;
 	struct MANAGER(FE_node) *data_manager;
 	struct MANAGER(GROUP(FE_node)) *data_group_manager;
+	struct FE_element_selection *element_selection;
+	struct FE_node_selection *node_selection;
 	struct User_interface *user_interface;
 }; /* struct Modify_scene_data */
 
@@ -469,33 +473,6 @@ Iterator function for writing the transformation in effect for <scene_object>
 as a command, using the given <command_prefix>.
 ==============================================================================*/
 
-int Scene_object_clear_selected(struct Scene_object *scene_object,void *dummy);
-/*******************************************************************************
-LAST MODIFIED : 10 February 2000
-
-DESCRIPTION :
-Clears the selected flag of the <scene_object>, and unselects any selected
-objects it contains.
-???RC Later only allow change if current input_client passed to authorise it.
-==============================================================================*/
-
-int Scene_object_is_selected(struct Scene_object *scene_object,void *dummy);
-/*******************************************************************************
-LAST MODIFIED : 10 February 2000
-
-DESCRIPTION :
-Returns true if the selected flag of the <scene_object> is set.
-==============================================================================*/
-
-int Scene_object_set_selected(struct Scene_object *scene_object);
-/*******************************************************************************
-LAST MODIFIED : 10 February 2000
-
-DESCRIPTION :
-Sets the <selected> flag of the <scene_object>.
-???RC Later only allow change if current input_client passed to authorise it.
-==============================================================================*/
-
 struct Scene *CREATE(Scene)(char *name);
 /*******************************************************************************
 LAST MODIFIED : 8 February 1998
@@ -512,15 +489,6 @@ int DESTROY(Scene)(struct Scene **scene);
 LAST MODIFIED : 19 November 1997
 
 DESCRIPTION :
-==============================================================================*/
-
-int Scene_clear_selected(struct Scene *scene);
-/*******************************************************************************
-LAST MODIFIED : 11 February 2000
-
-DESCRIPTION :
-Unselects all objects in <scene>.
-???RC Later only allow change if current input_client passed to authorise it.
 ==============================================================================*/
 
 int Scene_enable_graphics(struct Scene *scene,
@@ -595,7 +563,8 @@ LAST MODIFIED : 8 February 1998
 DESCRIPTION :
 ==============================================================================*/
 
-enum Scene_graphical_element_mode Scene_get_graphical_element_mode(struct Scene *scene);
+enum Scene_graphical_element_mode Scene_get_graphical_element_mode(
+	struct Scene *scene);
 /*******************************************************************************
 LAST MODIFIED : 4 February 2000
 
@@ -614,9 +583,11 @@ int Scene_set_graphical_element_mode(struct Scene *scene,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(FE_node) *data_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
+	struct FE_element_selection *element_selection,
+	struct FE_node_selection *node_selection,
 	struct User_interface *user_interface);
 /*******************************************************************************
-LAST MODIFIED : 4 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Sets the mode controlling how graphical element groups are displayed in the

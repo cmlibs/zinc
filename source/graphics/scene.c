@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 1 March 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -89,8 +89,6 @@ graphics object may have different visibility on different scenes.
 	struct MANAGER(Scene) *scene_manager;
 	/* this is the scene to which the scene_object belongs */
 	struct Scene *scene;
-	/* flag indicating if this scene_object is selected */
-	int selected;
 	int access_count;
 }; /* struct Scene_object */
 
@@ -98,7 +96,7 @@ FULL_DECLARE_INDEXED_LIST_TYPE(Scene_object);
 
 struct Scene
 /*******************************************************************************
-LAST MODIFIED : 4 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Stores the collections of objects that make up a 3-D graphical model.
@@ -133,6 +131,11 @@ Stores the collections of objects that make up a 3-D graphical model.
 	void *data_manager_callback_id;
 	struct MANAGER(GROUP(FE_node)) *data_group_manager;
 	void *data_group_manager_callback_id;
+
+	/* global stores of selected objects */
+	struct FE_element_selection *element_selection;
+	struct FE_node_selection *node_selection;
+
 	/* graphics object representing axes */
 	struct GT_object *axis_object;
 
@@ -676,7 +679,6 @@ and is visible.
 			scene_object->scene = scene;
 			scene_object->scene_manager = (struct MANAGER(Scene) *)NULL;
 			scene_object->scene_manager_callback_id = NULL;
-			scene_object->selected=0;
 			scene_object->access_count=0;
 		}
 		else
@@ -1002,7 +1004,6 @@ Copies the scene_object and adds it to the list.
 		{
 			scene_object_copy->type = scene_object->type;
 			scene_object_copy->visibility=scene_object->visibility;
-			scene_object_copy->selected=scene_object->selected;
 			if(scene_object->transformation)
 			{
 				if(ALLOCATE(scene_object_copy->transformation, gtMatrix, 1))
@@ -1326,7 +1327,8 @@ Adds a graphical <element_group> to the <scene> with some default settings.
 				if (node_group&&data_group)
 				{
 					if (gt_element_group=CREATE(GT_element_group)(element_group,
-						node_group,data_group))
+						node_group,data_group,scene->element_selection,
+						scene->node_selection))
 					{
 						if (!(scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
 							Scene_object_has_name, (void *)element_group_name,
@@ -4335,116 +4337,9 @@ as a command, using the given <command_prefix>.
 	return (return_code);
 } /* list_Scene_object_transformation_commands */
 
-int Scene_object_clear_selected(struct Scene_object *scene_object,void *dummy)
-/*******************************************************************************
-LAST MODIFIED : 10 February 2000
-
-DESCRIPTION :
-Clears the selected flag of the <scene_object>, and unselects any selected
-objects it contains.
-???RC Later only allow change if current input_client passed to authorise it.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_object_clear_selected);
-	USE_PARAMETER(dummy);
-	if (scene_object)
-	{
-		scene_object->selected=0;
-		switch(scene_object->type)
-		{
-			case SCENE_OBJECT_GRAPHICAL_ELEMENT_GROUP:
-			{
-				return_code=
-					GT_element_group_clear_selected(scene_object->gt_element_group);
-			} break;
-			case SCENE_OBJECT_GRAPHICS_OBJECT:
-			{
-				/* nothing to do */
-				return_code=1;
-			} break;
-			case SCENE_OBJECT_SCENE:
-			{
-				return_code=Scene_clear_selected(scene_object->child_scene);
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"Scene_object_clear_selected.  Unknown scene object type");
-				return_code=0;
-			} break;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_clear_selected.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_clear_selected */
-
-int Scene_object_is_selected(struct Scene_object *scene_object,void *dummy)
-/*******************************************************************************
-LAST MODIFIED : 10 February 2000
-
-DESCRIPTION :
-Returns true if the selected flag of the <scene_object> is set.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_object_is_selected);
-	USE_PARAMETER(dummy);
-	if (scene_object)
-	{
-		return_code=scene_object->selected;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_is_selected.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_is_selected */
-
-int Scene_object_set_selected(struct Scene_object *scene_object)
-/*******************************************************************************
-LAST MODIFIED : 10 February 2000
-
-DESCRIPTION :
-Sets the <selected> flag of the <scene_object>.
-???RC Later only allow change if current input_client passed to authorise it.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_object_set_selected);
-	if (scene_object)
-	{
-		scene_object->selected=1;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_object_set_selected.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_object_set_selected */
-
 struct Scene *CREATE(Scene)(char *name)
 /*******************************************************************************
-LAST MODIFIED : 4 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Scene now has pointer to its scene_manager, and it uses manager modify
@@ -4486,6 +4381,9 @@ from the default versions of these functions.
 			scene->data_group_manager_callback_id=(void *)NULL;
 			/* defaults to not adding GFEs - besides, need managers anyway */
 			scene->graphical_element_mode=GRAPHICAL_ELEMENT_NONE;
+			/* global stores of selected objects */
+			scene->element_selection=(struct FE_element_selection *)NULL;
+			scene->node_selection=(struct FE_node_selection *)NULL;
 			/* axes created once graphics enabled */
 			scene->axis_object=(struct GT_object *)NULL;
 			/* attributes: */
@@ -4541,7 +4439,7 @@ from the default versions of these functions.
 
 int DESTROY(Scene)(struct Scene **scene_address)
 /*******************************************************************************
-LAST MODIFIED : 21 July 1998
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Closes the scene and disposes of the scene data structure.
@@ -4567,6 +4465,8 @@ Closes the scene and disposes of the scene data structure.
 				(struct MANAGER(GROUP(FE_node)) *)NULL,
 				(struct MANAGER(FE_node) *)NULL,
 				(struct MANAGER(GROUP(FE_node)) *)NULL,
+				(struct FE_element_selection *)NULL,
+				(struct FE_node_selection *)NULL,
 				(struct User_interface *)NULL);
 			Scene_disable_graphics(scene);
 			DEALLOCATE(scene->name);
@@ -4595,34 +4495,6 @@ Closes the scene and disposes of the scene data structure.
 
 	return (return_code);
 } /* DESTROY(Scene) */
-
-int Scene_clear_selected(struct Scene *scene)
-/*******************************************************************************
-LAST MODIFIED : 14 February 2000
-
-DESCRIPTION :
-Unselects all objects in <scene>.
-???RC Later only allow change if current input_client passed to authorise it.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_clear_selected);
-	if (scene)
-	{
-		return_code=FOR_EACH_OBJECT_IN_LIST(Scene_object)(
-			Scene_object_clear_selected,(void *)NULL,scene->scene_object_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_clear_selected.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_clear_selected */
 
 int Scene_enable_graphics(struct Scene *scene,
 	struct LIST(GT_object) *glyph_list,
@@ -4929,7 +4801,8 @@ DESCRIPTION :
 	return (return_code);
 } /* Scene_disable_interactive_streamlines */
 
-enum Scene_graphical_element_mode Scene_get_graphical_element_mode(struct Scene *scene)
+enum Scene_graphical_element_mode Scene_get_graphical_element_mode(
+	struct Scene *scene)
 /*******************************************************************************
 LAST MODIFIED : 4 February 2000
 
@@ -4966,9 +4839,11 @@ int Scene_set_graphical_element_mode(struct Scene *scene,
 	struct MANAGER(GROUP(FE_node)) *node_group_manager,
 	struct MANAGER(FE_node) *data_manager,
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,
+	struct FE_element_selection *element_selection,
+	struct FE_node_selection *node_selection,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 4 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Sets the mode controlling how graphical element groups are displayed in the
@@ -4984,7 +4859,7 @@ material and spectrum.
 	if (scene&&((GRAPHICAL_ELEMENT_NONE == graphical_element_mode)||(
 		computed_field_package&&element_manager&&element_group_manager&&
 		fe_field_manager&&node_manager&&node_group_manager&&data_manager&&
-		data_group_manager)))
+		data_group_manager&&element_selection&&node_selection)))
 	{
 		return_code=1;
 		if (GRAPHICAL_ELEMENT_NONE == graphical_element_mode)
@@ -5048,6 +4923,8 @@ material and spectrum.
 			scene->node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
 			scene->data_manager=(struct MANAGER(FE_node) *)NULL;
 			scene->data_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
+			scene->element_selection=(struct FE_element_selection *)NULL;
+			scene->node_selection=(struct FE_node_selection *)NULL;
 			scene->user_interface=(struct User_interface *)NULL;
 		}
 		else
@@ -5077,6 +4954,8 @@ material and spectrum.
 						scene->node_group_manager=node_group_manager;
 						scene->data_manager=data_manager;
 						scene->data_group_manager=data_group_manager;
+						scene->element_selection=element_selection;
+						scene->node_selection=node_selection;
 						scene->user_interface=user_interface;
 						/* add all current element_groups to new scene */
 						FOR_EACH_OBJECT_IN_MANAGER(GROUP(FE_element))(
@@ -5243,7 +5122,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Scene,name)
 			source->element_group_manager,source->fe_field_manager,
 			source->node_manager,source->node_group_manager,
 			source->data_manager,source->data_group_manager,
-			source->user_interface);
+			source->element_selection,source->node_selection,source->user_interface);
 		/* copy list of lights to destination */
 		/* duplicate each scene_object in source and put in destination list */
 		if ((temp_list_of_lights=CREATE(LIST(Light))())&&
@@ -8206,7 +8085,7 @@ work on these sub_elements.  These created scenes are not added to the manager.
 int modify_Scene(struct Parse_state *state,void *scene_void,
 	void *modify_scene_data_void)
 /*******************************************************************************
-LAST MODIFIED : 4 February 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Parser commands for modifying scenes - lighting, etc.
@@ -8273,6 +8152,8 @@ Parser commands for modifying scenes - lighting, etc.
 								modify_scene_data->node_group_manager,
 								modify_scene_data->data_manager,
 								modify_scene_data->data_group_manager,
+								modify_scene_data->element_selection,
+								modify_scene_data->node_selection,
 								modify_scene_data->user_interface);
 							scene_changed=1;
 						}
