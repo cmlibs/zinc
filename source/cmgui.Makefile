@@ -266,10 +266,12 @@ else # ! PERL_INTERPRETER
    INTERPRETER_INC = -I$(INTERPRETER_PATH)/source/
    INTERPRETER_DEFINES = -DPERL_INTERPRETER
    INTERPRETER_SRCS =
+   INTERPRETER_LIB = \
+	$(INTERPRETER_PATH)/lib/$(LIB_ARCH_DIR)/libperlinterpreter.a
    ifeq ($(SYSNAME),win32)
-      INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/$(LIB_ARCH_DIR)/libperlinterpreter-opt.a $(INTERPRETER_PATH)/lib/$(LIB_ARCH_DIR)/libPerl_cmiss.a $(INTERPRETER_PATH)/lib/$(LIB_ARCH_DIR)/libperl56.a
-   else # $(SYSNAME) == win32
-      INTERPRETER_LIB = $(INTERPRETER_PATH)/lib/$(LIB_ARCH_DIR)/libperlinterpreter.a
+      INTERPRETER_LIB += \
+	$(INTERPRETER_PATH)/lib/$(LIB_ARCH_DIR)/libPerl_cmiss.a \
+	$(INTERPRETER_PATH)/lib/$(LIB_ARCH_DIR)/libperl56.a
    endif # $(SYSNAME) == win32 
 endif # ! PERL_INTERPRETER
 
