@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_point_tool.c
 
-LAST MODIFIED : 16 May 2000
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
@@ -32,7 +32,7 @@ Module types
 
 struct Element_point_tool
 /*******************************************************************************
-LAST MODIFIED : 16 May 2000
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Object storing all the parameters for converting scene input messages into
@@ -45,6 +45,7 @@ changes in node position and derivatives etc.
 	/* information about picked element_point_ranges */
 	int picked_element_point_was_unselected;
 	struct Element_point_ranges *last_picked_element_point;
+	struct Interaction_volume *last_interaction_volume;
 }; /* struct Element_point_tool */
 
 /*
@@ -55,7 +56,7 @@ Module functions
 static void Element_point_tool_interactive_event_handler(void *device_id,
 	struct Interactive_event *event,void *element_point_tool_void)
 /*******************************************************************************
-LAST MODIFIED : 16 May 2000
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Input handler for input from devices. <device_id> is a unique address enabling
@@ -69,7 +70,8 @@ release.
 	int clear_selection,input_modifier,shift_pressed;
 	struct Element_point_ranges *picked_element_point;
 	struct Element_point_tool *element_point_tool;
-	struct Interaction_volume *interaction_volume;
+	struct Interaction_volume *interaction_volume,*temp_interaction_volume;
+	struct LIST(Element_point_ranges) *element_point_ranges_list;
 	struct LIST(Scene_picked_object) *scene_picked_object_list;
 	struct Scene *scene;
 
@@ -128,6 +130,8 @@ release.
 						}
 						DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
 					}
+					REACCESS(Interaction_volume)(
+						&(element_point_tool->last_interaction_volume),interaction_volume);
 				} break;
 				case INTERACTIVE_EVENT_MOTION_NOTIFY:
 				{
@@ -149,11 +153,39 @@ release.
 					}
 					else
 					{
-						/* group select */
+						/* rubber band select */
+						if (temp_interaction_volume=create_Interaction_volume_bounding_box(
+							element_point_tool->last_interaction_volume,interaction_volume))
+						{
+							if (scene_picked_object_list=
+								Scene_pick_objects(scene,temp_interaction_volume))
+							{
+								if (element_point_ranges_list=
+									Scene_picked_object_list_get_picked_element_points(
+										scene_picked_object_list))
+								{
+									Element_point_ranges_selection_begin_cache(
+										element_point_tool->element_point_ranges_selection);
+									FOR_EACH_OBJECT_IN_LIST(Element_point_ranges)(
+										Element_point_ranges_select_in_Element_point_ranges_selection,
+										(void *)element_point_tool->element_point_ranges_selection,
+										element_point_ranges_list);
+									Element_point_ranges_selection_end_cache(
+										element_point_tool->element_point_ranges_selection);
+									DESTROY(LIST(Element_point_ranges))(
+										&element_point_ranges_list);
+								}
+								DESTROY(LIST(Scene_picked_object))(&(scene_picked_object_list));
+							}
+							DESTROY(Interaction_volume)(&temp_interaction_volume);
+						}
 					}
 					REACCESS(Element_point_ranges)(
 						&(element_point_tool->last_picked_element_point),
 						(struct Element_point_ranges *)NULL);
+					REACCESS(Interaction_volume)(
+						&(element_point_tool->last_interaction_volume),
+						(struct Interaction_volume *)NULL);
 				} break;
 				default:
 				{
@@ -270,7 +302,7 @@ struct Element_point_tool *CREATE(Element_point_tool)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	struct Element_point_ranges_selection *element_point_ranges_selection)
 /*******************************************************************************
-LAST MODIFIED : 16 May 2000
+LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
 Creates an Element_point_tool with Interactive_tool in
@@ -299,6 +331,8 @@ Creates an Element_point_tool with Interactive_tool in
 				element_point_tool->interactive_tool_manager);
 			element_point_tool->last_picked_element_point=
 				(struct Element_point_ranges *)NULL;
+			element_point_tool->last_interaction_volume=
+				(struct Interaction_volume *)NULL;
 		}
 		else
 		{
@@ -340,6 +374,9 @@ structure itself.
 		REMOVE_OBJECT_FROM_MANAGER(Interactive_tool)(
 			element_point_tool->interactive_tool,
 			element_point_tool->interactive_tool_manager);
+		REACCESS(Interaction_volume)(
+			&(element_point_tool->last_interaction_volume),
+			(struct Interaction_volume *)NULL);
 		DEALLOCATE(*element_point_tool_address);
 		return_code=1;
 	}
