@@ -6142,7 +6142,7 @@ drawing area.
 						owner_events=True;
 						pointer_mode=GrabModeAsync;
 						keyboard_mode=GrabModeAsync;
-						confine_to=None;				
+						confine_to=None;
 						if (GrabSuccess==XtGrabPointer(interval->drawing_area,owner_events,
 							ButtonMotionMask|ButtonPressMask|ButtonReleaseMask,
 							pointer_mode,keyboard_mode,confine_to,cursor,CurrentTime))

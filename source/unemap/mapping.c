@@ -1207,12 +1207,12 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 #if defined (UNEMAP_USE_3D)
 static struct GROUP(FE_node) *interpolation_function_to_node_group(
 	struct FE_node_order_info **the_node_order_info,
-	struct FE_field_order_info **the_field_order_info,
+	struct FE_field_order_info *field_order_info,
 	struct Interpolation_function *function,struct Unemap_package *package,
-	char *name,FE_value sock_lambda,FE_value sock_focus,FE_value torso_major_r,
+	char *name,FE_value sock_lambda,FE_value torso_major_r,
 	FE_value torso_minor_r,FE_value patch_z,struct Region *region)
 /*******************************************************************************
-LAST MODIFIED : 28 June 2000
+LAST MODIFIED : 1 March 2001
 
 DESCRIPTION :
 Constructs a node group from the <function> and <package>
@@ -1241,9 +1241,8 @@ i.e sock is a hemisphere, torso is a cylinder.
 	enum Region_type region_type;
 	struct FE_field *map_position_field,*map_fit_field;
 	struct FE_node *template_node,*node;
-	struct FE_field_order_info *field_order_info;
 	struct FE_node_order_info *node_order_info;
-	FE_value dfdx,dfdy,d2fdxdy,f,focus,lambda,mu,r_value_and_derivatives[4],theta,x,y,z;
+	FE_value dfdx,dfdy,d2fdxdy,f,lambda,mu,r_value_and_derivatives[4],theta,x,y,z;
 	int count,f_index,i,j,last_node_number,node_number,number_of_columns,number_of_nodes,
 		number_of_rows;	
 	struct GROUP(FE_node) *interpolation_node_group;	
@@ -1263,7 +1262,6 @@ i.e sock is a hemisphere, torso is a cylinder.
 	node_order_info =(struct FE_node_order_info *)NULL;	
 	interpolation_node_group =(struct GROUP(FE_node) *)NULL;
 	template_node = (struct FE_node *)NULL;	
-	field_order_info = (struct FE_field_order_info *)NULL;
 	map_position_field= (struct FE_field *)NULL;
 	map_fit_field= (struct FE_field *)NULL;
 	map_3d_package=(struct Map_3d_package *)NULL;
@@ -1303,17 +1301,7 @@ i.e sock is a hemisphere, torso is a cylinder.
 		}					
 		if(node_order_info=CREATE(FE_node_order_info)(number_of_nodes))
 		{								
-			/* create the template node, based upon the region_type */
-			if(region_type==SOCK)
-			{
-				focus =sock_focus;
-			}
-			else
-			{
-				focus =0;
-			}	
-			/* create the fields */
-			field_order_info=create_mapping_fields(region_type,focus,package);
+			/* create the template node, based upon the region_type */			
 			switch(region_type)
 			{
 				case SOCK:
@@ -1674,7 +1662,6 @@ i.e sock is a hemisphere, torso is a cylinder.
 		interpolation_node_group =(struct GROUP(FE_node) *)NULL;
 	}
 	*the_node_order_info = node_order_info;
-	*the_field_order_info = field_order_info;
 	LEAVE;
 
 	return (interpolation_node_group);
@@ -3092,46 +3079,30 @@ set the nodal values of the fit field at the nodes of the elements in
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
-static int make_fit_node_and_element_groups(
-	struct Interpolation_function *function,struct Unemap_package *package,
-	char *name,FE_value sock_lambda,FE_value sock_focus,FE_value torso_major_r,
-	FE_value torso_minor_r,FE_value patch_z,struct Region *region,
-	int nodes_rejected_or_accepted)
+static char *make_fit_name(struct Region *region, char *name)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2000
+LAST MODIFIED :1 March 2001
 
 DESCRIPTION :
-Given the <function> and <package>, determines if  identical node and element 
-groups will already exist for the values in <function> and <package>.
-If the identical groups already exist, simply change the values stored at the nodes, with
-change_fit_node_group_values. 
-If the identical groups don't exist, create the groups and fill them in, with
-interpolation_function_to_node_group and make_fit_elements
-If <region>->type is TORSO, and we have a default torso loaded,
-do similar with the mapped torso node group
+Constructs the fit name from the region.
 *******************************************************************************/
-{
+{	
 	char *fit_name,*fit_str = "_fit",*patch_str="_patch",region_num_string[10],
 		*sock_str="_sock",
 		*torso_str="_torso",*type_str;
-	int return_code,string_length;
-	int string_error =0;
-	struct FE_node_order_info *node_order_info;
-	struct FE_field_order_info *field_order_info;		
-	struct Map_3d_package *map_3d_package;
+	int string_error,string_length;
 
-	ENTER(make_fit_node_and_element_groups);
-	node_order_info = (struct FE_node_order_info *)NULL;
-	field_order_info = (struct FE_field_order_info *)NULL;	
-	map_3d_package=(struct Map_3d_package *)NULL;	
-	if(function&&package&&name)
-	{	
-		return_code=1;
+	ENTER(make_fit_name);
+	fit_name=(char *)NULL;
+	type_str=(char *)NULL;
+	string_error=0;
+	if(name&&region)
+	{		
 		/* construct the fit node group's name, from the name and region type*/
 		string_length = strlen(name);
 		string_length += strlen(fit_str);
 		string_length++;
-		switch(function->region_type)
+		switch(region->type)
 		{
 			case PATCH:
 			{
@@ -3156,15 +3127,80 @@ do similar with the mapped torso node group
 			/*append the region number to the name, to ensure it's unique*/
 			sprintf(region_num_string,"%d",region->number);
 			append_string(&fit_name,region_num_string,&string_error);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"make_fit_name. Out of memory");
+			fit_name=(char *)NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"make_fit_name. Invalid argument(s)");
+	}
+	LEAVE;
+	return(fit_name);
+} /* make_fit_name */
+#endif /* defined (UNEMAP_USE_3D) */
+
+#if defined (UNEMAP_USE_3D)
+static int make_fit_node_and_element_groups(
+	struct FE_field_order_info *field_order_info,
+	struct Interpolation_function *function,struct Unemap_package *package,
+	char *name,FE_value sock_lambda,FE_value torso_major_r,
+	FE_value torso_minor_r,FE_value patch_z,struct Region *region,
+	int nodes_rejected_or_accepted)
+/*******************************************************************************
+LAST MODIFIED : 1 March 2001
+
+DESCRIPTION :
+Given the <function> and <package>, determines if  identical node and element 
+groups will already exist for the values in <function> and <package>.
+If the identical groups already exist, simply change the values stored at the nodes, with
+change_fit_node_group_values. 
+If the identical groups don't exist, create the groups and fill them in, with
+interpolation_function_to_node_group and make_fit_elements
+If <region>->type is TORSO, and we have a default torso loaded,
+do similar with the mapped torso node group
+*******************************************************************************/
+{
+	char *fit_name;
+	int return_code;
+	struct FE_node_order_info *node_order_info;
+	struct Map_3d_package *map_3d_package;
+	struct GROUP(FE_element) *element_group,*mapped_torso_element_group,
+		*delauney_torso_element_group;
+
+	ENTER(make_fit_node_and_element_groups);
+	fit_name=(char *)NULL;
+	node_order_info = (struct FE_node_order_info *)NULL;
+	map_3d_package=(struct Map_3d_package *)NULL;
+	element_group=(struct GROUP(FE_element) *)NULL;
+	mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;
+	delauney_torso_element_group=(struct GROUP(FE_element) *)NULL;
+	if(function&&package&&name)
+	{	
+		return_code=1;
+		if(fit_name=make_fit_name(region,name))
+		{
 			/* check if the function properties are the same as the last one, i.e */
 			/* identical node and element groups should already exist, and that no */
 			/* electrodes have recently been accpeted or rejected */
 			map_3d_package=get_Region_map_3d_package(region);
+			if(map_3d_package)
+			{
+				element_group=get_map_3d_package_element_group(map_3d_package);
+				mapped_torso_element_group=
+					get_map_3d_package_mapped_torso_element_group(map_3d_package);
+				delauney_torso_element_group=
+					get_map_3d_package_delauney_torso_element_group(map_3d_package);
+			}
 			if(map_3d_package&&(get_map_3d_package_number_of_map_rows(map_3d_package)
 				  ==function->number_of_rows)&&
 				 (get_map_3d_package_number_of_map_columns(map_3d_package)
 				  ==function->number_of_columns)&&(region->type
 				  ==function->region_type)&&(!nodes_rejected_or_accepted)&&
+				(element_group||mapped_torso_element_group||delauney_torso_element_group)&&
 				(!strcmp(get_map_3d_package_fit_name(map_3d_package),fit_name)))
 			{					
 				/* just have to alter the nodal values */
@@ -3188,9 +3224,8 @@ do similar with the mapped torso node group
 					set_Region_map_3d_package(region,(struct Map_3d_package *)NULL);
 				}
 				/* rebuild  map & node and element groups */	
-				interpolation_function_to_node_group(
-					&node_order_info,&field_order_info,
-					function,package,fit_name,sock_lambda,sock_focus,torso_major_r,
+				interpolation_function_to_node_group(&node_order_info,field_order_info,
+					function,package,fit_name,sock_lambda,torso_major_r,
 					torso_minor_r,patch_z,region);
 				make_fit_elements(fit_name,node_order_info,field_order_info,
 					get_unemap_package_element_group_manager(package),
@@ -3209,13 +3244,12 @@ do similar with the mapped torso node group
 					/* set it's fit field values */					
 					set_torso_fit_field_values(map_3d_package);																
 				}
-				DESTROY(FE_field_order_info)(&field_order_info);
 			}
 		}/* if(ALLOCATE( */
 		else
 		{
 			display_message(ERROR_MESSAGE,"make_fit_node_and_element_groups."
-			"Out of memory");
+			"make_fit_name failed");
 			return_code=0;
 		}		
 	}
@@ -3290,66 +3324,70 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 					element_group=get_map_3d_package_element_group(map_3d_package);
 				}
 			}
-			graphical_material_manager=
-				get_map_drawing_information_Graphical_material_manager(map_drawing_information);
-			gt_element_group=Scene_get_graphical_element_group(scene,element_group);
-			default_selected_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
-				("default_selected",graphical_material_manager);
-			/* do nothing if the number of contours is the same */		
-			get_map_3d_package_contours(map_3d_package,&old_number_of_contours,
-				&old_contour_settings);
-			/* create material for the contour, so can colour it black, indep of the  */
-			/* map surface (default) material*/
-			MANAGER_BEGIN_CACHE(Graphical_material)(graphical_material_manager);
-			if(!(contour_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
-				("contour",graphical_material_manager)))	
-			{	
-				if (contour_material=CREATE(Graphical_material)(
-					"contour"))
-				{
-					colour.red=0.0;
-					colour.green=0.0;
-					colour.blue=0.0;
-					Graphical_material_set_ambient(contour_material,&colour);
-					Graphical_material_set_diffuse(contour_material,&colour);			
-					ADD_OBJECT_TO_MANAGER(Graphical_material)(contour_material,
-						graphical_material_manager);
-				}
-			}
-			MANAGER_END_CACHE(Graphical_material)(graphical_material_manager);
-			/* remove the old contour settings from the gt_element_group */
-			if(old_number_of_contours)
-			{					
-				for(i=0;i<old_number_of_contours;i++)
-				{					
-					GT_element_group_remove_settings(gt_element_group,old_contour_settings[i]);
-				}		
-			}
-			free_map_3d_package_map_contours(map_3d_package);
-			if(number_of_contours)
+			/* not an error if no element group, this is case with NO_INTERPOLATION, ie no surface*/
+			if(element_group) 
 			{
-				/* calculate the contour intervals */
-				contour_value=contour_minimum;
-				contour_step=(contour_maximum-contour_minimum)/(number_of_contours-1);
-				/* allocate, define and set the contours */
-				ALLOCATE(contour_settings,struct GT_element_settings *,number_of_contours);
-				for(i=0;i<number_of_contours;i++)
+				graphical_material_manager=
+					get_map_drawing_information_Graphical_material_manager(map_drawing_information);
+				gt_element_group=Scene_get_graphical_element_group(scene,element_group);
+				default_selected_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
+					("default_selected",graphical_material_manager);
+				/* do nothing if the number of contours is the same */		
+				get_map_3d_package_contours(map_3d_package,&old_number_of_contours,
+					&old_contour_settings);
+				/* create material for the contour, so can colour it black, indep of the  */
+				/* map surface (default) material*/
+				MANAGER_BEGIN_CACHE(Graphical_material)(graphical_material_manager);
+				if(!(contour_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
+					("contour",graphical_material_manager)))	
+				{	
+					if (contour_material=CREATE(Graphical_material)(
+						"contour"))
+					{
+						colour.red=0.0;
+						colour.green=0.0;
+						colour.blue=0.0;
+						Graphical_material_set_ambient(contour_material,&colour);
+						Graphical_material_set_diffuse(contour_material,&colour);			
+						ADD_OBJECT_TO_MANAGER(Graphical_material)(contour_material,
+							graphical_material_manager);
+					}
+				}
+				MANAGER_END_CACHE(Graphical_material)(graphical_material_manager);
+				/* remove the old contour settings from the gt_element_group */
+				if(old_number_of_contours)
+				{					
+					for(i=0;i<old_number_of_contours;i++)
+					{					
+						GT_element_group_remove_settings(gt_element_group,old_contour_settings[i]);
+					}		
+				}
+				free_map_3d_package_map_contours(map_3d_package);
+				if(number_of_contours)
 				{
-					contour_settings[i]=CREATE(GT_element_settings)
-						(GT_ELEMENT_SETTINGS_ISO_SURFACES);
-					GT_element_settings_set_material(contour_settings[i],contour_material);
-					GT_element_settings_set_selected_material(contour_settings[i],
-						default_selected_material);
-					GT_element_settings_set_iso_surface_parameters(contour_settings[i],
-						data_field,contour_value);
-					GT_element_group_add_settings(gt_element_group,contour_settings[i],0);
-					contour_value+=contour_step;
-				}			
-				GT_element_group_build_graphics_objects(gt_element_group,
-					(struct FE_element *)NULL,(struct FE_node *)NULL);
-			}	
-			set_map_3d_package_contours(map_3d_package,number_of_contours,
-				contour_settings);
+					/* calculate the contour intervals */
+					contour_value=contour_minimum;
+					contour_step=(contour_maximum-contour_minimum)/(number_of_contours-1);
+					/* allocate, define and set the contours */
+					ALLOCATE(contour_settings,struct GT_element_settings *,number_of_contours);
+					for(i=0;i<number_of_contours;i++)
+					{
+						contour_settings[i]=CREATE(GT_element_settings)
+							(GT_ELEMENT_SETTINGS_ISO_SURFACES);
+						GT_element_settings_set_material(contour_settings[i],contour_material);
+						GT_element_settings_set_selected_material(contour_settings[i],
+							default_selected_material);
+						GT_element_settings_set_iso_surface_parameters(contour_settings[i],
+							data_field,contour_value);
+						GT_element_group_add_settings(gt_element_group,contour_settings[i],0);
+						contour_value+=contour_step;
+					}			
+					GT_element_group_build_graphics_objects(gt_element_group,
+						(struct FE_element *)NULL,(struct FE_node *)NULL);
+				}	
+				set_map_3d_package_contours(map_3d_package,number_of_contours,
+					contour_settings);
+			}
 		}				
 	}
 	else
@@ -6844,19 +6882,20 @@ and do Scene_remove_graphics_object in the DESTROY Map_3d_package
 #if defined (UNEMAP_USE_3D)
 int draw_map_3d(struct Map *map)
 /*******************************************************************************
-LAST MODIFIED : 8 December 2000
+LAST MODIFIED : 1 March 2001
 
 DESCRIPTION :
 This function draws the <map> in as a 3D CMGUI scene, for the current region(s).
 Removes 3d drawing for non-current region(s).
-
 ==============================================================================*/
 {	
+	char *fit_name;
 	/* up vector for the scene. */
 	double z_up[3]={0.0,0.0,1.0};
 	double *up_vector;
-	FE_value time;
-	struct FE_field *fit_field;
+	FE_value focus,time;
+	struct FE_field *fit_field,*map_position_field;
+	struct FE_field_order_info *field_order_info;
 	struct Computed_field *data_field;
 	float frame_time,minimum, maximum;
 	int default_torso_loaded,delauney_map,display_all_regions,nodes_rejected_or_accepted,
@@ -6873,10 +6912,13 @@ Removes 3d drawing for non-current region(s).
 	struct Spectrum *spectrum,*spectrum_to_be_modified_copy;
 	struct MANAGER(Spectrum) *spectrum_manager;
 	struct Map_3d_package *map_3d_package;
-	struct GROUP(FE_element) *element_group;
+	struct GROUP(FE_element) *element_group,*mapped_torso_element_group,
+		*delauney_torso_element_group;
 	struct GROUP(FE_node) *rig_node_group,*unrejected_node_group;
-
 	ENTER(draw_map_3d);
+	fit_name=(char *)NULL;
+	field_order_info=(struct FE_field_order_info *)NULL;	
+	map_position_field=(struct FE_field *)NULL;
 	fit_field=(struct FE_field *)NULL;
 	data_field=(struct Computed_field *)NULL;
 	drawing_information=(struct Map_drawing_information *)NULL;
@@ -6893,7 +6935,9 @@ Removes 3d drawing for non-current region(s).
 	map_3d_package=(struct Map_3d_package *)NULL;
 	element_group=(struct GROUP(FE_element) *)NULL;
 	rig_node_group=(struct GROUP(FE_node) *)NULL;
-	unrejected_node_group=(struct GROUP(FE_node) *)NULL;
+	unrejected_node_group=(struct GROUP(FE_node) *)NULL;		
+	mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;
+	delauney_torso_element_group=(struct GROUP(FE_element) *)NULL;
 	if(map&&(drawing_information=map->drawing_information))
 	{		
 		range_set=0;
@@ -6977,101 +7021,154 @@ Removes 3d drawing for non-current region(s).
 					else if(((region==current_region)||display_all_regions)&&
 						(unemap_package_rig_node_group_has_electrodes(unemap_package,
 							unrejected_node_group)))
-					{	
-						if(delauney_map)
+					{						
+						/* create the mapping fields */
+						if(region->type==SOCK)
 						{
-							make_and_set_delauney(region,unemap_package,time,
-								nodes_rejected_or_accepted);						
+							focus=FIT_SOCK_FOCUS;
 						}
 						else
 						{
-							if (function=calculate_interpolation_functio(map_type,
-								rig,region,	map->event_number,frame_time,map->datum,
-								map->start_search_interval,map->end_search_interval,undecided_accepted,
-								map->finite_element_mesh_rows,
-								map->finite_element_mesh_columns,map->membrane_smoothing,
-								map->plate_bending_smoothing))
-							{
-								/* Now we have the interpolation_function struct */
-								/* make the node and element groups from it.*/
-								/* 1st node_group is 'all_devices_node_group */							
-								make_fit_node_and_element_groups(function,unemap_package,rig->name,
-									FIT_SOCK_LAMBDA,FIT_SOCK_FOCUS,FIT_TORSO_MAJOR_R,FIT_TORSO_MINOR_R,
-									FIT_PATCH_Z,region,nodes_rejected_or_accepted);	
-								destroy_Interpolation_function(&function);
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"draw_map_3d. calculate_interpolation_functio failed  ");
-								return_code=0;
-
-							}
+							focus=0;
 						}
-						/* get map_3d_package again, it may have changed */
-						map_3d_package=get_Region_map_3d_package(region);
-						if(delauney_map)
-						{
-							/* do gouraund torso surface*/
-							element_group=
-								get_map_3d_package_delauney_torso_element_group(map_3d_package);
-						}
-						else
-						{
-							/* Show the map element surface */							
-							if((region->type==TORSO)&&default_torso_loaded)
-							{	
-								/* do smooth torso surface*/
-								element_group=
-									get_map_3d_package_mapped_torso_element_group(map_3d_package);
-							}													
-							else
+						field_order_info=create_mapping_fields(region->type,focus,unemap_package);
+						if(map->interpolation_type==NO_INTERPOLATION)						
+						{	
+							/* no surface, just electrodes */
+							map_3d_package=get_Region_map_3d_package(region);
+							if(map_3d_package)
 							{
-								/* do cylinder surface */
 								element_group=get_map_3d_package_element_group(map_3d_package);
+								mapped_torso_element_group=
+									get_map_3d_package_mapped_torso_element_group(map_3d_package);
+								delauney_torso_element_group=
+									get_map_3d_package_delauney_torso_element_group(map_3d_package);
 							}
-						}					
-						/* if no interpolation, or no spectrum selected(HIDE_COLOUR) don't use them!*/
-						if((map->interpolation_type==NO_INTERPOLATION)||
-							(map->colour_option==HIDE_COLOUR))
-						{
-							/* No Spectrum or computed field used.*/
-							map_show_surface(scene,element_group,
-								get_map_drawing_information_map_graphical_material
-								(drawing_information),
-								get_map_drawing_information_Graphical_material_manager
-								(drawing_information),
-								(struct Spectrum *)NULL,(struct Computed_field *)NULL,
-								get_map_drawing_information_no_interpolation_colour
-								(drawing_information),
-								get_map_drawing_information_user_interface(drawing_information),
-								delauney_map);
-						}
-						/* BICUBIC_INTERPOLATION or DIRECT_INTERPOLATION */
-						else 
-						{
-							/* Get the map "fit" field, to use for the surface */
-							if(map->interpolation_type==DIRECT_INTERPOLATION)
-							{		
-								fit_field=get_unemap_package_delauney_signal_field(unemap_package);
-							}	
-							/*BICUBIC_INTERPOLATION */ 
-							else							
+							/* if no map_3d_package or last one wasn't NO_INTERPOLATION, */
+							/* create a map_3d_package and destroy the any old one*/
+							if((!map_3d_package)||(map_3d_package&&(element_group||
+								mapped_torso_element_group||delauney_torso_element_group)))
 							{
-								fit_field=get_map_3d_package_fit_field(map_3d_package);
+								map_3d_package=CREATE(Map_3d_package)(				
+									get_unemap_package_FE_field_manager(unemap_package),
+									get_unemap_package_element_group_manager(unemap_package),
+									get_unemap_package_data_manager(unemap_package),
+									get_unemap_package_data_group_manager(unemap_package),
+									get_unemap_package_node_manager(unemap_package),
+									get_unemap_package_node_group_manager(unemap_package),
+									get_unemap_package_element_manager(unemap_package),
+									get_unemap_package_Computed_field_manager(unemap_package));
+								fit_name=make_fit_name(region,rig->name);
+								set_map_3d_package_fit_name(map_3d_package,fit_name);
+								set_map_3d_package_number_of_map_rows(map_3d_package,
+									map->finite_element_mesh_rows);
+								set_map_3d_package_number_of_map_columns(map_3d_package,
+									map->finite_element_mesh_columns);
+								map_position_field=get_FE_field_order_info_field(field_order_info,0);
+								set_map_3d_package_position_field(map_3d_package,map_position_field);
+								/* will deaccess the old map_3d_package*/
+								set_Region_map_3d_package(region,map_3d_package);
 							}
-							data_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-								Computed_field_is_read_only_with_fe_field,(void *)(fit_field),
-								get_unemap_package_Computed_field_manager(unemap_package));
-							map_show_surface(scene,element_group,
-								get_map_drawing_information_map_graphical_material
-								(drawing_information),
-								get_map_drawing_information_Graphical_material_manager
-								(drawing_information),
-								spectrum,data_field,(struct Colour*)NULL,
-								get_map_drawing_information_user_interface(drawing_information),
-								delauney_map);
-						}					
+						} /* if(map->interpolation_type==NO_INTERPOLATION)	*/
+						else
+						{
+							/* BICUBIC_INTERPOLATION or DIRECT_INTERPOLATION */
+							if(delauney_map)
+							{
+								make_and_set_delauney(region,unemap_package,time,
+									nodes_rejected_or_accepted);						
+							}
+							else
+							{
+								if (function=calculate_interpolation_functio(map_type,
+									rig,region,	map->event_number,frame_time,map->datum,
+									map->start_search_interval,map->end_search_interval,undecided_accepted,
+									map->finite_element_mesh_rows,
+									map->finite_element_mesh_columns,map->membrane_smoothing,
+									map->plate_bending_smoothing))
+								{
+									/* Now we have the interpolation_function struct */
+									/* make the node and element groups from it.*/
+									/* 1st node_group is 'all_devices_node_group */							
+									make_fit_node_and_element_groups(field_order_info,function,
+										unemap_package,rig->name,FIT_SOCK_LAMBDA,
+										FIT_TORSO_MAJOR_R,FIT_TORSO_MINOR_R,FIT_PATCH_Z,region,
+										nodes_rejected_or_accepted);	
+									destroy_Interpolation_function(&function);
+								}
+								else
+								{
+									display_message(ERROR_MESSAGE,
+										"draw_map_3d. calculate_interpolation_functio failed  ");
+									return_code=0;
+								}
+							}
+							/* get map_3d_package again, it may have changed */
+							map_3d_package=get_Region_map_3d_package(region);
+							if(delauney_map)
+							{
+								/* do gouraund torso surface*/
+								element_group=
+									get_map_3d_package_delauney_torso_element_group(map_3d_package);
+							}
+							else
+							{
+								/* Show the map element surface */							
+								if((region->type==TORSO)&&default_torso_loaded)
+								{	
+									/* do smooth torso surface*/
+									element_group=
+										get_map_3d_package_mapped_torso_element_group(map_3d_package);
+								}													
+								else
+								{
+									/* do cylinder surface */
+									element_group=get_map_3d_package_element_group(map_3d_package);
+								}
+							}					
+							/* if no interpolation, or no spectrum selected(HIDE_COLOUR) don't use them!*/
+							if((map->interpolation_type==NO_INTERPOLATION)||
+								(map->colour_option==HIDE_COLOUR))
+							{
+								/* No Spectrum or computed field used.*/
+								map_show_surface(scene,element_group,
+									get_map_drawing_information_map_graphical_material
+									(drawing_information),
+									get_map_drawing_information_Graphical_material_manager
+									(drawing_information),
+									(struct Spectrum *)NULL,(struct Computed_field *)NULL,
+									get_map_drawing_information_no_interpolation_colour
+									(drawing_information),
+									get_map_drawing_information_user_interface(drawing_information),
+									delauney_map);
+							}
+							/* BICUBIC_INTERPOLATION or DIRECT_INTERPOLATION */
+							else 
+							{
+								/* Get the map "fit" field, to use for the surface */
+								if(map->interpolation_type==DIRECT_INTERPOLATION)
+								{		
+									fit_field=get_unemap_package_delauney_signal_field(unemap_package);
+								}	
+								/*BICUBIC_INTERPOLATION */ 
+								else							
+								{
+									fit_field=get_map_3d_package_fit_field(map_3d_package);
+								}
+								data_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+									Computed_field_is_read_only_with_fe_field,(void *)(fit_field),
+									get_unemap_package_Computed_field_manager(unemap_package));
+								map_show_surface(scene,element_group,
+									get_map_drawing_information_map_graphical_material
+									(drawing_information),
+									get_map_drawing_information_Graphical_material_manager
+									(drawing_information),
+									spectrum,data_field,(struct Colour*)NULL,
+									get_map_drawing_information_user_interface(drawing_information),
+									delauney_map);
+							}					
+
+						} 
 						/* can't do electrodes on default_torso surface yet*/	
 						/*(possibly)  make the map_electrode_position_field, add to the rig nodes*/
 						if((region->type!=TORSO)||(!(default_torso_loaded&&(!delauney_map))))
@@ -7089,6 +7186,7 @@ Removes 3d drawing for non-current region(s).
 						{ 
 							map_remove_torso_arm_labels(drawing_information);
 						}
+						DESTROY(FE_field_order_info)(&field_order_info);
 					}/* if(unemap_package_rig_node_group_has_electrodes */					
 					region_item=get_Region_list_item_next(region_item);
 				} /* while */
