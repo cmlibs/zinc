@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 12 October 2001
+LAST MODIFIED : 14 November 2001
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -3822,6 +3822,45 @@ spectrum which can be changed in the graphics object to match the new settings .
 
 	return (return_code);
 } /* GT_element_settings_same_non_trivial_with_graphics_object */
+
+int GT_element_settings_match(struct GT_element_settings *settings1,
+	struct GT_element_settings *settings2)
+/*******************************************************************************
+LAST MODIFIED : 14 November 2001
+
+DESCRIPTION :
+Returns true if <settings1> and <settings2> would product identical graphics.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(GT_element_settings_match);
+	if (settings1 && settings2)
+	{
+		return_code=
+			GT_element_settings_same_geometry(settings1, (void *)settings2) &&
+			(settings1->visibility == settings2->visibility) &&
+			(settings1->material == settings2->material) &&
+			(settings1->selected_material == settings2->selected_material) &&
+			(settings1->data_field == settings2->data_field) &&
+			(settings1->spectrum == settings2->spectrum) &&
+			(settings1->render_type == settings2->render_type) &&
+			(settings1->texture_coordinate_field ==
+				settings2->texture_coordinate_field) &&
+			((GT_ELEMENT_SETTINGS_STREAMLINES != settings1->settings_type) ||
+				(settings1->streamline_data_type ==
+					settings2->streamline_data_type));
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"GT_element_settings_match.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* GT_element_settings_match */
 
 int GT_element_settings_extract_graphics_object_from_list(
 	struct GT_element_settings *settings,void *list_of_settings_void)

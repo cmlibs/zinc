@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.h
 
-LAST MODIFIED : 30 May 2001
+LAST MODIFIED : 14 November 2001
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -1073,6 +1073,15 @@ Same as GT_element_settings_same_non_trivial except <settings> must also have
 a graphics_object. Used for getting graphics objects from previous settings
 that are the same except for trivial differences such as the material and
 spectrum which can be changed in the graphics object to match the new settings .
+==============================================================================*/
+
+int GT_element_settings_match(struct GT_element_settings *settings1,
+	struct GT_element_settings *settings2);
+/*******************************************************************************
+LAST MODIFIED : 14 November 2001
+
+DESCRIPTION :
+Returns true if <settings1> and <settings2> would product identical graphics.
 ==============================================================================*/
 
 int GT_element_settings_extract_graphics_object_from_list(
