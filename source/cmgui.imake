@@ -148,7 +148,7 @@ UIDH_PATH=$(CMGUI_ROOT)/uidh/cmgui/linux
 
 #if defined (IRIX) /* switch OperatingSystem */
 #if defined (CMISS_ROOT_DEFINED)
-VPATH=$(BIN_PATH):$(OBJECT_PATH):$(UIDH_PATH)
+VPATH=$(BIN_PATH):$(OBJECT_PATH):$(UIDH_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH)
 #else /* defined (CMISS_ROOT) */
 VPATH=$(BIN_PATH):$(OBJECT_PATH):$(UIDH_PATH)
 #endif /* defined (CMISS_ROOT) */
