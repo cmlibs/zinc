@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_function_matrix.cpp
 
-LAST MODIFIED : 17 March 2004
+LAST MODIFIED : 6 August 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_function matrix object.
@@ -11,6 +11,11 @@ The public interface to the Cmiss_function matrix object.
 #include "api/cmiss_function_matrix.h"
 #include "computed_variable/function_matrix.hpp"
 
+// module typedefs
+// ===============
+
+typedef boost::intrusive_ptr< Function_matrix<Scalar> > Function_matrix_handle;
+
 /*
 Global functions
 ----------------
@@ -19,7 +24,7 @@ Global functions
 Cmiss_function_id Cmiss_function_matrix_create(unsigned int number_of_rows,
 	unsigned int number_of_columns,Scalar *values)
 /*******************************************************************************
-LAST MODIFIED : 24 February 2004
+LAST MODIFIED : 6 August 2004
 
 DESCRIPTION :
 Creates a Cmiss_function matrix with the specified <number_of_rows>,
@@ -58,7 +63,7 @@ initialized to zero.
 			}
 		}
 		result=reinterpret_cast<Cmiss_function_id>(new Function_handle(
-			new Function_matrix(values_matrix)));
+			new Function_matrix<Scalar>(values_matrix)));
 	}
 
 	return (result);
@@ -67,7 +72,7 @@ initialized to zero.
 Cmiss_function_variable_id Cmiss_function_matrix_entry(
 	Cmiss_function_id function_matrix,unsigned int row,unsigned int column)
 /*******************************************************************************
-LAST MODIFIED : 17 March 2004
+LAST MODIFIED : 6 August 2004
 
 DESCRIPTION :
 Returns a variable that refers to the entry at the specified <row> and <column>.
@@ -157,7 +162,7 @@ Returns a Cmiss_function matrix which is the specified sub-matrix of
 Cmiss_function_id Cmiss_function_matrix_solve(Cmiss_function_id function_matrix,
 	Cmiss_function_id function_rhs)
 /*******************************************************************************
-LAST MODIFIED : 24 February 2004
+LAST MODIFIED : 6 August 2004
 
 DESCRIPTION :
 Returns the solution of the linear system <function_matrix>*x=<function_rhs>.
@@ -174,7 +179,7 @@ Returns the solution of the linear system <function_matrix>*x=<function_rhs>.
 	if ((function_matrix_handle_address=
 		reinterpret_cast<Function_handle *>(function_matrix))&&
 		(*function_matrix_handle_address)&&
-		(function_matrix_handle=boost::dynamic_pointer_cast<Function_matrix,
+		(function_matrix_handle=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
 		Function>(*function_matrix_handle_address))&&
 		(function_rhs_handle_address=
 		reinterpret_cast<Function_handle *>(function_rhs))&&
@@ -183,8 +188,8 @@ Returns the solution of the linear system <function_matrix>*x=<function_rhs>.
 		Function_matrix_handle function_matrix_rhs_handle;
 
 		if (function_matrix_rhs_handle=
-			boost::dynamic_pointer_cast<Function_matrix,Function>(function_rhs_handle)
-			)
+			boost::dynamic_pointer_cast<Function_matrix<Scalar>,Function>(
+			function_rhs_handle))
 		{
 			result=reinterpret_cast<Cmiss_function_id>(new Function_handle(
 				function_matrix_handle->solve(function_matrix_rhs_handle)));
