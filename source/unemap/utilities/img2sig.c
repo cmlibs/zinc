@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : img2sig.c
 
-LAST MODIFIED : 14 October 1998
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 Converts a plt file (stdin) to a cnfg file (stdout)
@@ -17,7 +17,7 @@ Converts a plt file (stdin) to a cnfg file (stdout)
 
 int main(int argc,char *argv[])
 /*******************************************************************************
-LAST MODIFIED : 7 October 1998
+LAST MODIFIED : 7 December 2001 
 
 DESCRIPTION :
 ==============================================================================*/
@@ -25,8 +25,8 @@ DESCRIPTION :
 	char *device_name;
 	FILE *img_file,*signal_file;
 	float sampling_frequency=1/0.00375;
-	int column_number,columns=96,device_number,i,number_of_signals,
-		number_of_samples,return_code=0,row_number,rows=96,*time;
+	int column_number,columns=96,device_number,return_code=0,row_number,
+		rows=96,*time;
 	long int img_file_size;
 	struct Channel *channel;
 	struct Device **device,**devices;
@@ -36,6 +36,7 @@ DESCRIPTION :
 	struct Rig *rig;
 	struct Signal *signal;
 	struct Signal_buffer *signal_buffer;
+	unsigned int number_of_signals,number_of_samples,i;
 
 	/* check arguments */
 	if ((3==argc)||(6==argc))
@@ -239,8 +240,8 @@ DESCRIPTION :
 							else
 							{
 								printf("ERROR.  Could not create combined signal buffer\n");
-								printf("  number_of_signals=%d\n",number_of_signals);
-								printf("  number_of_samples=%d\n",number_of_samples);
+								printf("  number_of_signals=%u\n",number_of_signals);
+								printf("  number_of_samples=%u\n",number_of_samples);
 								return_code=0;
 							}
 						}

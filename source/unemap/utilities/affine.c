@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : affine.c
 
-LAST MODIFIED : 30 January 2000
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 Performs an affine transformation on each region of a signal file.  Does not use
@@ -12,14 +12,14 @@ X-windows.
 #include <stdarg.h>
 #include "unemap/rig.h"
 #include "user_interface/user_interface.h"
-
+#include "general/debug.h"
 /*
 Main program
 ------------
 */
 int main(int argc,char *argv[])
 /*******************************************************************************
-LAST MODIFIED : 30 January 2000
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -35,6 +35,8 @@ DESCRIPTION :
 	struct Region_list_item *region_list_item;
 	struct Rig *signal_rig;
 
+	USE_PARAMETER(argc);
+	USE_PARAMETER(argv);
 	return_code=0;
 	/* read the signal file */
 	printf("Signal file name ? ");

@@ -1,8 +1,7 @@
 /*******************************************************************************
 FILE : extract_signal.c
 
-LAST MODIFIED : 2 November 1999
-
+LAST MODIFIED : 7 December 2001
 DESCRIPTION :
 Extracts the signal for a specified device, as an ascii file, from a emap signal
 file.
@@ -17,6 +16,7 @@ cc extract_signal.c -o extract_signal -lm
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include "general/debug.h"
 #include "unemap/rig.h"
 #include "user_interface/message.h"
 
@@ -30,6 +30,8 @@ int main(int argc,char *argv[])
 	struct Rig *rig=(struct Rig *)NULL;
 	struct Signal_buffer *buffer;
 
+	USE_PARAMETER(argc);
+	USE_PARAMETER(argv);
 	return_code=0;
 	printf("Signal file name ? ");
 	if ((1==scanf("%80s",file_name))&&(signal_file=fopen(file_name,"rb"))&&

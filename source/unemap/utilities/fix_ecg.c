@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : fix_ecg.c
 
-LAST MODIFIED : 4 March 2001
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 Fixes signal files which were made by write_signal_file prior to fixing the
@@ -13,6 +13,7 @@ Does not use X.
 #include <stddef.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include "general/debug.h"
 #include "unemap/rig.h"
 
 /*
@@ -21,7 +22,7 @@ Main program
 */
 int main(int argc,char *argv[])
 /*******************************************************************************
-LAST MODIFIED : 4 March 2001
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -33,6 +34,8 @@ DESCRIPTION :
 	struct Rig *rig;
 	struct Signal *signal;
 
+	USE_PARAMETER(argc);
+	USE_PARAMETER(argv);
 	return_code=0;
 	rig=(struct Rig *)NULL;
 	/* read the signal file */

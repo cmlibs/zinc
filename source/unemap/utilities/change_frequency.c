@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : change_frequency.c
 
-LAST MODIFIED : 27 November 2001
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 Allow the user to change the frequency for a signal file.  Does not use
@@ -10,6 +10,7 @@ X-windows.
 #include <stddef.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include "general/debug.h"
 #include "unemap/rig.h"
 #include "user_interface/user_interface.h"
 
@@ -19,7 +20,7 @@ Main program
 */
 int main(int argc,char *argv[])
 /*******************************************************************************
-LAST MODIFIED : 27 November 2001
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -30,6 +31,8 @@ DESCRIPTION :
 	int return_code;
 	struct Rig *signal_rig;
 
+	USE_PARAMETER(argc);
+	USE_PARAMETER(argv);
 	/* zero is a successful return */
 	return_code = 0;
 	signal_rig=(struct Rig *)NULL;

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : tuff2sig.c
 
-LAST MODIFIED : 27 November 2001
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 Converts TUFF (Telefactor Universal File Format, Beehive 7) files to a unemap
@@ -76,6 +76,10 @@ Constants
 */
 #define BUFFER_LENGTH 4096
 
+/*linux defines BIG_ENDIAN differently in /usr/include/endian.h*/
+#if defined (BIG_ENDIAN)
+#undef BIG_ENDIAN
+#endif
 /* format for TUFF binary (assume PC) */
 #define BIG_ENDIAN (unsigned char)1
 
@@ -536,7 +540,7 @@ required.
 
 int main(int argc,char *argv[])
 /*******************************************************************************
-LAST MODIFIED : 27 November 2001
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -546,7 +550,9 @@ DESCRIPTION :
 	FILE *signal_file,*tuff_file;
 	float sampling_frequency;
 	InputDescriptorTable input_descriptor;
-	int ac_sampling_rate,bytes_per_sample,dc_sampling_rate,*electrodes_in_row,i,index,j,number_of_ac_channels,number_of_dc_channels,number_of_rows,number_of_samples,number_of_signals,offset,return_code=0,*time;
+	int ac_sampling_rate,dc_sampling_rate,*electrodes_in_row,i,
+		index,j,number_of_ac_channels,number_of_dc_channels,number_of_rows,
+		number_of_samples,number_of_signals,offset,return_code=0,*time;
 	long start_of_data_block;
 	OutputDescriptorTable output_descriptor;
 	short sample_offset,*value;
@@ -556,6 +562,7 @@ DESCRIPTION :
 	TelefactorFileHeaderBlock header_block;
 	unsigned char buffer[BUFFER_LENGTH+1];
 	unsigned short value_1,value_2;
+	unsigned int bytes_per_sample;
 
 	/* check arguments */
 	if (3==argc)

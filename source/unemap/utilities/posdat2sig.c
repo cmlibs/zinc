@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : posdat2sig.c
 
-LAST MODIFIED : 27 November 2001
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 Combines a .pos file and a .dat file (eeg mapping with Blake Johnson) into a
@@ -19,7 +19,7 @@ Combines a .pos file and a .dat file (eeg mapping with Blake Johnson) into a
 
 int main(int argc,char *argv[])
 /*******************************************************************************
-LAST MODIFIED : 27 November 2001
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -38,6 +38,8 @@ DESCRIPTION :
 	struct Signal *signal;
 	struct Signal_buffer *signal_buffer;
 
+	USE_PARAMETER(argc);
+	USE_PARAMETER(argv);
 	/* check arguments */
 	printf("Position file name ? ");
 	scanf("%s",file_name);

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : change_configuration.c
 
-LAST MODIFIED : 4 August 1999
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 Allow the user to change the configuration for a signal file.  Do not use
@@ -10,6 +10,7 @@ X-windows.
 #include <stddef.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include "general/debug.h"
 #include "unemap/rig.h"
 #include "user_interface/user_interface.h"
 
@@ -49,7 +50,7 @@ Main program
 */
 int main(int argc,char *argv[])
 /*******************************************************************************
-LAST MODIFIED : 4 August 1999
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -60,6 +61,8 @@ DESCRIPTION :
 	struct Device **configuration_device,**signal_device;
 	struct Rig *configuration_rig,*signal_rig;
 
+	USE_PARAMETER(argc);
+	USE_PARAMETER(argv);
 	return_code=0;
 #if defined (OLD_CODE)
 	assign_empty_string(&(user_settings.calibration_directory));

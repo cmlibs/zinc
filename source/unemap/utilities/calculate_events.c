@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : calculate_events.c
 
-LAST MODIFIED : 16 November 2001
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 Reads in a signal file, calculates events and writes out the signal file with

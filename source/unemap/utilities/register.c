@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : register.c
 
-LAST MODIFIED : 17 June 2001
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 For setting and checking registers on second version of the signal conditioning
@@ -40,7 +40,7 @@ int unemap_get_card_state(int channel_number,int *battA_state,
 	int *NI_gain,int *input_mode,int *polarity,float *tol_settling,
 	int *sampling_interval,int *settling_step_max);
 /*******************************************************************************
-LAST MODIFIED : 30 June 1999
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -5915,7 +5915,7 @@ static void process_keyboard(
 						while (1==sscanf(line+line_position,"%d%n",&channel_number,
 							&number_of_characters))
 						{
-							if ((0<channel_number)&&(channel_number<=number_of_channels))
+							if ((0<channel_number)&&(channel_number<=(int)number_of_channels))
 							{
 								number_of_pacing_channels++;
 							}
@@ -5934,7 +5934,7 @@ static void process_keyboard(
 								while (1==sscanf(line+line_position,"%d%n",&channel_number,
 									&number_of_characters))
 								{
-									if ((0<channel_number)&&(channel_number<=number_of_channels))
+									if ((0<channel_number)&&(channel_number<=(int)number_of_channels))
 									{
 										pacing_channels[number_of_pacing_channels]=channel_number;
 										number_of_pacing_channels++;
@@ -6239,10 +6239,10 @@ static void process_keyboard(
 Global functions
 ----------------
 */
-void main(void)
+int main(void)
 {
 	float sampling_frequency;
-	int channel_number,number_of_channels;
+	int channel_number,number_of_channels,return_code;
 	long maximum_sample_value,minimum_sample_value;
 	short int *samples;
 	unsigned long number_of_samples,sampling_delay;
@@ -6251,6 +6251,7 @@ void main(void)
 #endif /* defined (MOTIF) */
 
 	/* initialize */
+	return_code=1;
 	pause_for_error_option='y';
 	number_of_samples=(unsigned long)5000;
 	sampling_frequency=(float)5000;
@@ -6357,4 +6358,5 @@ void main(void)
 #if defined (MOTIF)
 	}
 #endif /* defined (MOTIF) */
+	return (return_code);
 } /* main */

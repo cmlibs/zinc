@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : change_calibration.c
 
-LAST MODIFIED : 27 November 2001
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 Allow the user to change the calibration for a signal file.  Do not use
@@ -11,6 +11,7 @@ X-windows.
 #include <stdio.h>
 #include <stdarg.h>
 #include <Mrm/MrmPublic.h>
+#include "general/debug.h"
 #include "unemap/rig.h"
 #include "user_interface/user_interface.h"
 
@@ -22,7 +23,7 @@ Global functions
 /* is in message.c, but not using X-windows */
 int print_message(int number_of_strings, ...)
 /*******************************************************************************
-LAST MODIFIED : 26 January 1996
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 Prints the <number_of_strings> to a message box.
@@ -51,7 +52,7 @@ Main program
 
 int main(int argc,char *argv[])
 /*******************************************************************************
-LAST MODIFIED : 27 November 2001
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -61,6 +62,8 @@ DESCRIPTION :
 	int return_code;
 	struct Rig *signal_rig;
 
+	USE_PARAMETER(argc);
+	USE_PARAMETER(argv);
 	/* zero is a successful return */
 	return_code = 0;
 	signal_rig=(struct Rig *)NULL;

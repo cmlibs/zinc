@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unique_channels.c
 
-LAST MODIFIED : 30 January 2000
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 Makes the channel numbers unique.  Does not use X-windows.
@@ -9,6 +9,7 @@ Makes the channel numbers unique.  Does not use X-windows.
 #include <stddef.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include "general/debug.h"
 #include "unemap/rig.h"
 #include "user_interface/user_interface.h"
 
@@ -18,7 +19,7 @@ Main program
 */
 int main(int argc,char *argv[])
 /*******************************************************************************
-LAST MODIFIED : 30 January 2000
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -29,6 +30,8 @@ DESCRIPTION :
 	struct Device **signal_device;
 	struct Rig *signal_rig;
 
+	USE_PARAMETER(argc);
+	USE_PARAMETER(argv);
 	return_code=0;
 	/* read the signal file */
 	printf("Signal file name ? ");

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : bmsi2sig.c
 
-LAST MODIFIED : 7 January 2000
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 Converts BMSI 5000 TAG and EEG files to a unemap signal file.
@@ -47,6 +47,11 @@ Constants (from BMSI file format descriptions document)
 
 #define BUFFER_LENGTH 256
 
+/*BIG_ENDIAN already defined as something else for linux, in /usr/include/endian.h*/
+/*so undefine it and define as our value*/
+#if defined (BIG_ENDIAN)
+#undef BIG_ENDIAN
+#endif
 /* format for .TAG and .EEG */
 #define BIG_ENDIAN (unsigned char)1
 
@@ -256,7 +261,7 @@ required.
 
 int main(int argc,char *argv[])
 /*******************************************************************************
-LAST MODIFIED : 19 October 1999
+LAST MODIFIED : 7 December 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -264,7 +269,7 @@ DESCRIPTION :
 	char *channel_names,*delta8,*delta8s,*device_name;
 	FILE *eeg_file,*signal_file,*tag_file;
 	float gain=1,sampling_frequency=1/0.00375;
-	int device_number,i,j,number_of_signals,number_of_samples,return_code=0,step,
+	int i,j,number_of_samples,return_code=0,step,
 		*time;
 	long int event_addr,eeg_file_size,event_time,minimum_event_addr,start_time;
 	short adc_range,bits_per_sample,data_format,eeg_gain,event_type,
@@ -278,6 +283,7 @@ DESCRIPTION :
 	struct Signal *signal;
 	struct Signal_buffer *signal_buffer;
 	unsigned char buffer[BUFFER_LENGTH+1];
+	unsigned int number_of_signals,device_number;
 	unsigned short tag_length;
 
 	/* check arguments */
@@ -617,7 +623,7 @@ DESCRIPTION :
 									}
 									else
 									{
-										printf("ERROR.  Error reading delta8s for step.  %d %d\n",
+										printf("ERROR.  Error reading delta8s for step.  %u %d\n",
 											number_of_signals,step);
 										return_code=0;
 									}
@@ -661,7 +667,7 @@ DESCRIPTION :
 											}
 											else
 											{
-												sprintf(device_name,"%d",device_number+1);
+												sprintf(device_name,"%u",device_number+1);
 											}
 											if ((description=create_Device_description(
 												device_name,ELECTRODE,region))&&(channel=
@@ -729,7 +735,7 @@ DESCRIPTION :
 						{
 							printf(
 								"ERROR.  Could not create combined signal buffer/delta8s\n");
-							printf("  number_of_signals=%d\n",number_of_signals);
+							printf("  number_of_signals=%u\n",number_of_signals);
 							printf("  number_of_samples=%d\n",number_of_samples);
 							printf("  step=%d\n",step);
 							if (0<number_of_samples)
