@@ -811,10 +811,16 @@ DESCRIPTION :
 	}
 	else
 	{
+#if defined (MOVING_AVERAGE)
 		printf("usage: optical_signals in_signal_file optical_pairs_file moving_average_width out_signal_file\n");
+#else /* defined (MOVING_AVERAGE) */
+		printf("usage: optical_signals in_signal_file optical_pairs_file out_signal_file\n");
+#endif /* defined (MOVING_AVERAGE) */
 		printf("  in_signal_file is the name of the signal file to be differenced\n");
 		printf("  optical_pairs_file is a list of space separated pairs electrodes to be differenced.  One pair to a line\n");
+#if defined (MOVING_AVERAGE)
 		printf("  moving_average_width is the width used for the moving average which is used to estimate the noise\n");
+#endif /* defined (MOVING_AVERAGE) */
 		printf("  out_signal_file is the name for the signal file that contains the differences\n");
 		return_code=0;
 	}
