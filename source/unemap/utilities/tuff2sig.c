@@ -809,7 +809,8 @@ DESCRIPTION :
 							/*???debug */
 							printf("data block header\n");
 							printf("offset=%d\n",offset);
-							printf("SyncWord=%d\n",data_block_header.SyncWord);
+							printf("SyncWord=%X (ref=%X, dif=%X)\n",
+								data_block_header.SyncWord,REF_BEG_SYNC,DIF_BEG_SYNC);
 							printf("ChangeFlag=%d\n",data_block_header.ChangeFlag);
 							printf("BlockHeaderLength=%d\n",
 								data_block_header.BlockHeaderLength);
@@ -899,7 +900,7 @@ DESCRIPTION :
 											offset += 6;
 											/*???debug */
 											buffer[offset]='\0';
-											printf("%d.  /%s/ %d %d %g %g\n",i+1,
+											printf("%d.  /%s/ %d %d %g %g",i+1,
 												(char *)buffer+offset-6,
 												input_descriptor.Selector,input_descriptor.SampleRate,
 												input_descriptor.CalFactor,input_descriptor.CalOffset);
@@ -953,12 +954,17 @@ DESCRIPTION :
 											}
 											(*device)->channel->gain=(input_descriptor.CalFactor)*
 												2000./(header_block.AmplifierSensitivity);
-											if (((*device)->channel->gain<0.8)||
+											/*???DB.  From D_TUFF.CPP (line 1077), but Lan says that
+												range is too small for channels 33-64 */
+/*											if (((*device)->channel->gain<0.8)||
 												(1.2<(*device)->channel->gain))
 											{
 												(*device)->channel->gain=1.;
-											}
+											}*/
 											(*device)->channel->offset=input_descriptor.CalOffset;
+											/*???debug */
+											printf("  %s.  %g %g\n",(*device)->description->name,
+												(*device)->channel->gain,(*device)->channel->offset);
 											device++;
 										}
 										else
@@ -969,6 +975,11 @@ DESCRIPTION :
 										i++;
 									}
 									/*???debug */
+									printf("\n");
+									printf("number_of_dc_channels=%d\n",number_of_dc_channels);
+									printf("number_of_ac_channels=%d\n",number_of_ac_channels);
+									printf("dc_sampling_rate=%d\n",dc_sampling_rate);
+									printf("ac_sampling_rate=%d\n",ac_sampling_rate);
 									printf("\n");
 									if (return_code)
 									{
@@ -1099,11 +1110,33 @@ DESCRIPTION :
 															{
 																sample_offset=2048;
 															}
+															/*???debug */
+															printf("sample_offset=%d\n",sample_offset);
 															while (return_code&&(i>0))
 															{
 																if (bytes_per_sample==fread(buffer,1,
 																	bytes_per_sample,tuff_file))
 																{
+																	/*???debug */
+																	{
+																		static int count=0;
+																		short temp_short_1,temp_short_2;
+
+																		if (count<20)
+																		{
+																			count++;
+																			copy_byte_swapped(
+																				(unsigned char *)&temp_short_1,2,
+																				buffer,BIG_ENDIAN);
+																			copy_byte_swapped(
+																				(unsigned char *)&temp_short_2,2,
+																				buffer+2,BIG_ENDIAN);
+																			printf(
+																				"%d.  sync=%d (%X).  alarm=%d (%X)\n",
+																				count,temp_short_1,temp_short_1,
+																				temp_short_2,temp_short_2);
+																		}
+																	}
 																	if (data_block_header.PackedData)
 																	{
 																		offset=(header_block.SyncLength)+
@@ -1114,14 +1147,14 @@ DESCRIPTION :
 																			offset++;
 																			value_2=(unsigned short)(buffer[offset]);
 																			offset++;
-																			value_1=sample_offset-(value_1<<4)-
+																			value_1=(value_1<<4)+
 																				(unsigned short)((buffer[offset])>>4);
-																			value_2=sample_offset-(value_2<<4)-
+																			value_2=(value_2<<4)+
 																				(unsigned short)((buffer[offset])&0xF);
 																			offset++;
-																			*value=value_1;
+																			*value=sample_offset-value_1;
 																			value++;
-																			*value=value_2;
+																			*value=sample_offset-value_2;
 																			value++;
 																		}
 																	}
@@ -1133,7 +1166,7 @@ DESCRIPTION :
 																		{
 																			copy_byte_swapped((unsigned char *)value,
 																				sizeof(short),buffer+offset,BIG_ENDIAN);
-																			*value -= sample_offset;
+																			*value=sample_offset-(*value);
 																			value++;
 																			offset += 2;
 																		}
@@ -1148,6 +1181,8 @@ DESCRIPTION :
 															}
 															if (return_code)
 															{
+																/*???debug */
+																printf("end of file? %d\n",ftell(tuff_file));
 																if (write_signal_file(signal_file,rig))
 																{
 																	printf("Created signal file: %s\n",argv[2]);
