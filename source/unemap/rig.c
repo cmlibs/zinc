@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.c
 
-LAST MODIFIED : 6 July 2004
+LAST MODIFIED : 21 July 2004
 
 DESCRIPTION :
 Contains function definitions for measurement rigs.
@@ -4082,14 +4082,14 @@ Sets  region_list of <rig> to <region>
 	return (return_code);
 }/* set_Rig_region_list*/
 
-struct Rig *read_configuration(FILE *input_file,enum Rig_file_type file_type,
-	enum Region_type rig_type
+struct Rig *read_configuration(FILE *input_file,
+	enum Rig_file_type file_type,enum Region_type rig_type
 #if defined (UNEMAP_USE_3D)
 	,struct Unemap_package *unemap_package
 #endif /* defined (UNEMAP_USE_3D)*/
 	)
 /*******************************************************************************
-LAST MODIFIED : 6 July 2004
+LAST MODIFIED : 21 July 2004
 
 DESCRIPTION :
 Assumes that the <input_file> has been opened, the <file_type> (binary or text)
@@ -4749,37 +4749,48 @@ pointer to the rig if successful and NULL if unsuccessful.
 						}
 						if (rig)
 						{
-							rig->number_of_regions=number_of_regions;
-							if (number_of_regions>1)
+							if (0<number_of_regions)
 							{
-								rig->current_region=(struct Region *)NULL;
-							}
-							else
-							{
-								rig->current_region=rig->region_list->region;
-							}
-							if (number_of_devices>0)
-							{
-								if (ALLOCATE(rig->devices,struct Device *,number_of_devices))
+								rig->number_of_regions=number_of_regions;
+								if (number_of_regions==1)
 								{
-									rig->number_of_devices=number_of_devices;
-									device=rig->devices;
-									device_item=device_list;
-									while (device_item)
-									{
-										*device=device_item->device;
-										device_item=device_item->next;
-										device++;
-									}
-									destroy_Device_list(&device_list,0);
+									rig->current_region=rig->region_list->region;
 								}
 								else
 								{
-									display_message(ERROR_MESSAGE,
-										"read_configuration.  Could not create device list");
-									destroy_Device_list(&device_list,1);
-									destroy_Rig(&rig);
+									rig->current_region=(struct Region *)NULL;
 								}
+								if (number_of_devices>0)
+								{
+									if (ALLOCATE(rig->devices,struct Device *,number_of_devices))
+									{
+										rig->number_of_devices=number_of_devices;
+										device=rig->devices;
+										device_item=device_list;
+										while (device_item)
+										{
+											*device=device_item->device;
+											device_item=device_item->next;
+											device++;
+										}
+										destroy_Device_list(&device_list,0);
+									}
+									else
+									{
+										display_message(ERROR_MESSAGE,
+											"read_configuration.  Could not create device list");
+										destroy_Device_list(&device_list,1);
+										destroy_Rig(&rig);
+									}
+								}
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,"read_configuration.  "
+									"No regions.  Stopped looking at line %d",
+									get_line_number(input_file));
+								destroy_Device_list(&device_list,1);
+								destroy_Rig(&rig);
 							}
 						}
 						if (rig&&!feof(input_file))
