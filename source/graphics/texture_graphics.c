@@ -3095,7 +3095,9 @@ printf("Material Index = %d",index);
 				adjust_material_sb(texture_window);
 #endif /* defined (OLD_CODE) */
 				/* also set current editing material */
-				material_editor_dialog_set_material((Widget)NULL,
+				/*???RC Yep, this was already passing a NULL pointer */
+				material_editor_dialog_set_material(
+					(struct Material_editor_dialog *)NULL,
 					texture_window->current_material);
 			}
 /*???debug */
