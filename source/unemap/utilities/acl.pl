@@ -2,7 +2,7 @@
 # ******************************************************************************
 # FILE : acl.pl
 #
-# LAST MODIFIED : 16 September 2001
+# LAST MODIFIED : 23 September 2001
 #
 # DESCRIPTION :
 # Calculates the mean and standard deviation of the activation cycle length
@@ -23,9 +23,11 @@ my @event_times;
 my $file_name;
 # the first electrode in the events file to calculate acls for
 my $first_electrode;
+my $valid_first_electrode;
 my $help;
 # the first electrode in the events file to calculate acls for
 my $last_electrode;
+my $valid_last_electrode;
 my $line;
 my $number_of_acls;
 my $sum_acl;
@@ -43,7 +45,7 @@ if (Getopt::Long::GetOptions(
 		printf("Usage: acl [options] events-file acl-file\n");
 		printf("  -f first_electrode  First electrode to calculate acls for\n");
 		printf("  -h  Display this help\n");
-		printf("  -f last_electrode  Last electrode to calculate acls for\n");
+		printf("  -l last_electrode  Last electrode to calculate acls for\n");
 	}
 	else
 	{
@@ -65,10 +67,22 @@ if (Getopt::Long::GetOptions(
 				if (defined $first_electrode)
 				{
 					$calculate=0;
+					$valid_first_electrode=0;
 				}
 				else
 				{
 					$calculate=1;
+					$valid_first_electrode=1;
+				}
+				if (defined $last_electrode)
+				{
+					$calculate=0;
+					$valid_last_electrode=0;
+				}
+				else
+				{
+					$calculate=1;
+					$valid_last_electrode=1;
 				}
 				while (($line=<EVENTS>) and ('Reference' ne substr($line,0,9)))
 				{
@@ -76,10 +90,14 @@ if (Getopt::Long::GetOptions(
 					chomp $line;
 					@event_times=split /,/,$line;
 					$electrode=shift @event_times;
-					if ((0==$calculate) and (defined $first_electrode) and
-						(defined $electrode) and ($electrode eq $first_electrode))
+					if ((defined $electrode) and (defined $first_electrode)
+						and ($electrode eq $first_electrode))
 					{
-						$calculate=1;
+						$valid_first_electrode=1;
+						if (0==$calculate)
+						{
+							$calculate=1;
+						}
 					}
 					if (0!=$calculate)
 					{
@@ -131,11 +149,25 @@ if (Getopt::Long::GetOptions(
 						}
 						printf(ACLS "\n");
 					}
-					if ((0!=$calculate) and (defined $last_electrode) and
-						(defined $electrode) and ($electrode eq $last_electrode))
+					if ((defined $electrode) and (defined $last_electrode) and
+						($electrode eq $last_electrode))
 					{
-						$calculate=0;
+						$valid_last_electrode=1;
+						if (0!=$calculate)
+						{
+							$calculate=0;
+						}
 					}
+				}
+				if (0==$valid_first_electrode)
+				{
+					printf("First electrode, %s, is not in the events file\n",
+						$first_electrode);
+				}
+				if (0==$valid_last_electrode)
+				{
+					printf("Last electrode, %s, is not in the events file\n",
+						$last_electrode);
 				}
 				close ACLS;
 			}
