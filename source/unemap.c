@@ -391,6 +391,8 @@ Main program for unemap
 		(struct Graphical_material *)NULL;	
 	struct Graphical_material *electrode_selected_material=
 		(struct Graphical_material *)NULL;
+	struct Graphics_buffer_package *graphics_buffer_package=
+		(struct Graphics_buffer_package *)NULL;
 	struct Light *default_light=(struct Light *)NULL;
 	struct Light_model *default_light_model=(struct Light_model *)NULL;
 	struct LIST(FE_element_shape) *element_shape_list = (struct LIST(FE_element_shape) *)NULL;
@@ -681,6 +683,7 @@ Main program for unemap
 		time_keeper=ACCESS(Time_keeper)(CREATE(Time_keeper)("default",
 			event_dispatcher,user_interface));
 #if defined (UNEMAP_USE_3D)
+		graphics_buffer_package = CREATE(Graphics_buffer_package)(user_interface);
 		texture_manager=CREATE_MANAGER(Texture)();	
 		fe_basis_manager=CREATE_MANAGER(FE_basis)();
 
@@ -851,7 +854,7 @@ Main program for unemap
 			light_model_manager,light_manager,spectrum_manager,
 			Material_package_get_material_manager(material_package),glyph_list,
 			default_graphical_material,computed_field_package,default_light,
-			default_light_model,
+			default_light_model, graphics_buffer_package,
 #endif /* defined (UNEMAP_USE_3D) */
 			time_keeper, user_interface))
 #else /* defined (NOT_ACQUISITION_ONLY) */
@@ -887,6 +890,7 @@ Main program for unemap
 				fe_basis_manager,
 				root_cmiss_region,
 				data_root_cmiss_region,
+				graphics_buffer_package,
 				Material_package_get_material_manager(material_package),
 				default_graphical_material,
 				interactive_tool_manager,
@@ -1011,6 +1015,7 @@ Main program for unemap
 		DESTROY(MANAGER(Light_model))(&light_model_manager);
 		DEACCESS(Light)(&default_light);
 		DESTROY(MANAGER(Light))(&light_manager);
+		DESTROY(Graphics_buffer_package)(&graphics_buffer_package);
 #endif /* defined (UNEMAP_USE_3D) */
 		DEACCESS(Time_keeper)(&time_keeper);
 #else /* defined (NOT_ACQUISITION_ONLY) */
