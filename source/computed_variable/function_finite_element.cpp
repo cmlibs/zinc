@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_finite_element.cpp
 //
-// LAST MODIFIED : 31 May 2004
+// LAST MODIFIED : 2 June 2004
 //
 // DESCRIPTION :
 // Finite element types - element/xi and finite element field.
@@ -5260,14 +5260,14 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
 	std::list<Function_variable_handle>& atomic_independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 31 May 2004
+// LAST MODIFIED : 2 June 2004
 //
 // DESCRIPTION :
 // ???DB.  Throw an exception for failure?
 //==============================================================================
 {
 	bool result;
-	Function_size_type local_number_of_components,local_number_of_xi;
+	Function_size_type local_number_of_xi;
 	Function_variable_element_xi_handle atomic_variable_element_xi;
 	Function_variable_finite_element_handle atomic_variable_finite_element;
 	Function_variable_nodal_values_handle atomic_variable_nodal_values;
@@ -5297,9 +5297,8 @@ bool Function_finite_element::evaluate_derivative(Scalar& derivative,
 		(Function_handle(this)==atomic_variable_finite_element->
 		function_finite_element)&&(0<atomic_variable_finite_element->
 		component_number)&&field_private&&
-		(atomic_variable_finite_element->component_number<=
-		(local_number_of_components=number_of_components()))&&!node_private&&
-		element_private&&(0<(local_number_of_xi=number_of_xi()))&&
+		(atomic_variable_finite_element->component_number<=number_of_components())&&
+		!node_private&&element_private&&(0<(local_number_of_xi=number_of_xi()))&&
 		((Function_size_type)local_number_of_xi==xi_private.size()))
 	{
 		bool zero_derivative;
