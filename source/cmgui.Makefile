@@ -448,26 +448,21 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
       USER_INTERFACE_INC += -I/usr/X11R6/include
       X_LIB = /usr/X11R6/lib
       USER_INTERFACE_LIB += -L$(X_LIB)
-      #On Linux I am statically linking many of the libraries always to
-      #reduce the version dependencies.
 
-      #Mandrake 8.2 static libs are incompatible, this works around it by
-      #comparing the size of the symbols and forcing Xmu to preload its
-      #version if they differ in size.  Older greps don't have -o option.
-      Xm_XeditRes = $(shell /usr/bin/objdump -t $(X_LIB)/libXm.a | /bin/grep '00000[0-f][0-f][1-f] _XEditResCheckMessages')
-      Xmu_XeditRes = $(shell /usr/bin/objdump -t $(X_LIB)/libXmu.a | /bin/grep '00000[0-f][0-f][1-f] _XEditResCheckMessages')
-      ifneq ($(Xm_XeditRes),)
-         ifneq ($(Xmu_XeditRes),)
-            ifneq ($(STATIC_LINK),true)
-               USER_INTERFACE_LIB += -u _XEditResCheckMessages $(X_LIB)/libXmu.a
-            else # STATIC_LINK != true
-               USER_INTERFACE_LIB += -u _XEditResCheckMessages -lXmu 
-            endif # STATIC_LINK != true
-         endif
-      endif
       ifneq ($(STATIC_LINK),true)
-         USER_INTERFACE_LIB += $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXext.a $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a
+         #I am statically linking Motif so that it does not have to be installed at runtime.
+         USER_INTERFACE_LIB += $(X_LIB)/libMrm.a $(X_LIB)/libXm.a -lXp -lXt -lX11
       else # STATIC_LINK != true
+         #Mandrake 8.2 static libs are incompatible, this works around it by
+         #comparing the size of the symbols and forcing Xmu to preload its
+         #version if they differ in size.  Older greps don't have -o option.
+         Xm_XeditRes = $(shell /usr/bin/objdump -t $(X_LIB)/libXm.a | /bin/grep '00000[0-f][0-f][1-f] _XEditResCheckMessages')
+         Xmu_XeditRes = $(shell /usr/bin/objdump -t $(X_LIB)/libXmu.a | /bin/grep '00000[0-f][0-f][1-f] _XEditResCheckMessages')
+         ifneq ($(Xm_XeditRes),)
+            ifneq ($(Xmu_XeditRes),)
+               USER_INTERFACE_LIB += -u _XEditResCheckMessages -lXmu 
+            endif
+         endif
          USER_INTERFACE_LIB += -lMrm -lXm -lXp -lXt -lX11 -lXmu -lXext -lSM -lICE
       endif # STATIC_LINK != true
    else # SYSNAME == Linux
