@@ -134,7 +134,9 @@ form of arguments is used.
 			}
 			else
 			{
-				return_code=printf(message_string);
+				/* Make sure we don't interpret % characters by printing
+					the string */
+				return_code=printf("%s",message_string);
 			}
 		} break;
 		case WARNING_MESSAGE:
