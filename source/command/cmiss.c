@@ -1294,7 +1294,7 @@ with tick marks and labels for showing the scale of a spectrum.
 static int gfx_create_cylinders(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 23 May 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Executes a GFX CREATE CYLINDERS command.
@@ -1484,8 +1484,14 @@ Executes a GFX CREATE CYLINDERS command.
 							element_to_cylinder,(void *)&element_to_cylinder_data,
 							command_data->element_manager);
 					}
-					if (return_code&&GT_object_has_time(graphics_object,time))
+					if (return_code)
 					{
+						if (!GT_object_has_time(graphics_object,time))
+						{
+							/* add a NULL surface to make an empty time */
+							GT_OBJECT_ADD(GT_surface)(graphics_object,time,
+								(struct GT_surface *)NULL);
+						}
 						if (data_field)
 						{
 							return_code=set_GT_object_Spectrum(graphics_object,spectrum);
@@ -1622,7 +1628,7 @@ Executes a GFX CREATE ELEMENT_CREATOR command.
 static int gfx_create_element_points(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Executes a GFX CREATE ELEMENT_POINTS command.
@@ -1903,8 +1909,14 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 							element_to_glyph_set,(void *)&element_to_glyph_set_data,
 							command_data->element_manager);
 					}
-					if (return_code&&GT_object_has_time(graphics_object,time))
+					if (return_code)
 					{
+						if (!GT_object_has_time(graphics_object,time))
+						{
+							/* add a NULL glyph_set to make an empty time */
+							GT_OBJECT_ADD(GT_glyph_set)(graphics_object,time,
+								(struct GT_glyph_set *)NULL);
+						}
 						if (data_field)
 						{
 							return_code=set_GT_object_Spectrum(graphics_object,spectrum);
@@ -3523,7 +3535,7 @@ float parameters.
 static int gfx_create_iso_surfaces(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 7 July 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Executes a GFX CREATE ISO_SURFACES command.
@@ -3584,7 +3596,11 @@ Executes a GFX CREATE ISO_SURFACES command.
 				command_data->default_graphical_material);
 			element_group=(struct GROUP(FE_element) *)NULL;
 			clipping=(struct Clipping *)NULL;
-			scalar_field=(struct Computed_field *)NULL;
+			if (scalar_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
+				Computed_field_is_scalar,(void *)NULL,computed_field_manager))
+			{
+				ACCESS(Computed_field)(scalar_field);
+			}
 			element_to_iso_scalar_data.iso_value=0;
 			native_discretization_field=(struct FE_field *)NULL;
 			spectrum=ACCESS(Spectrum)(command_data->default_spectrum);
@@ -3759,10 +3775,10 @@ Executes a GFX CREATE ISO_SURFACES command.
 						{
 							if (GT_object_has_time(graphics_object,time))
 							{
+								return_code=GT_object_delete_time(graphics_object,time);
 								display_message(WARNING_MESSAGE,
 									"Overwriting time %g in graphics object '%s'",time,
 									graphics_object_name);
-								return_code=GT_object_delete_time(graphics_object,time);
 							}
 						}
 						else
@@ -3853,8 +3869,26 @@ Executes a GFX CREATE ISO_SURFACES command.
 							element_to_iso_scalar,(void *)&element_to_iso_scalar_data,
 							command_data->element_manager);
 					}
-					if (return_code&&GT_object_has_time(graphics_object,time))
+					if (return_code)
 					{
+						if (!GT_object_has_time(graphics_object,time))
+						{
+							/* add a NULL primitive of the correct type to make an empty time
+								 so there are no gaps in any time animation */
+							switch (graphics_object_type)
+							{
+								case g_POLYLINE:
+								{
+									GT_OBJECT_ADD(GT_polyline)(graphics_object,time,
+										(struct GT_polyline *)NULL);
+								} break;
+								case g_VOLTEX:
+								{
+									GT_OBJECT_ADD(GT_voltex)(graphics_object,time,
+										(struct GT_voltex *)NULL);
+								} break;
+							}
+						}
 						if (data_field)
 						{
 							return_code=set_GT_object_Spectrum(
@@ -4134,7 +4168,7 @@ Executes a GFX CREATE LMODEL command.
 static int gfx_create_lines(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 17 January 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Executes a GFX CREATE LINES command.
@@ -4300,8 +4334,14 @@ Executes a GFX CREATE LINES command.
 							element_to_polyline,(void *)&element_to_polyline_data,
 							command_data->element_manager);
 					}
-					if (return_code&&GT_object_has_time(graphics_object,time))
+					if (return_code)
 					{
+						if (!GT_object_has_time(graphics_object,time))
+						{
+							/* add a NULL polyline to make an empty time */
+							GT_OBJECT_ADD(GT_polyline)(graphics_object,time,
+								(struct GT_polyline *)NULL);
+						}
 						if (data_field)
 						{
 							return_code=set_GT_object_Spectrum(graphics_object,spectrum);
@@ -4859,7 +4899,7 @@ Executes a GFX CREATE ELEMENT_POINT_VIEWER command.
 static int gfx_create_node_points(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 January 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Executes a GFX CREATE NODE_POINTS command.
@@ -5060,19 +5100,22 @@ Executes a GFX CREATE NODE_POINTS command.
 						if (!GT_OBJECT_ADD(GT_glyph_set)(graphics_object,time,glyph_set))
 						{
 							DESTROY(GT_glyph_set)(&glyph_set);
+							return_code=0;
 						}
-					}
-					else
-					{
-						return_code=0;
 					}
 					if (wrapper_orientation_scale_field)
 					{
 						Computed_field_end_wrap(&wrapper_orientation_scale_field);
 					}
 					Computed_field_end_wrap(&rc_coordinate_field);
-					if (return_code&&GT_object_has_time(graphics_object,time))
+					if (return_code)
 					{
+						if (!GT_object_has_time(graphics_object,time))
+						{
+							/* add a NULL glyph_set to make an empty time */
+							GT_OBJECT_ADD(GT_glyph_set)(graphics_object,time,
+								(struct GT_glyph_set *)NULL);
+						}
 						if (data_field)
 						{
 							return_code=set_GT_object_Spectrum(graphics_object,spectrum);
@@ -5136,7 +5179,7 @@ Executes a GFX CREATE NODE_POINTS command.
 static int gfx_create_data_points(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 23 February 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Executes a GFX CREATE DATA_POINTS command.
@@ -5337,19 +5380,22 @@ Executes a GFX CREATE DATA_POINTS command.
 						if (!GT_OBJECT_ADD(GT_glyph_set)(graphics_object,time,glyph_set))
 						{
 							DESTROY(GT_glyph_set)(&glyph_set);
+							return_code=0;
 						}
-					}
-					else
-					{
-						return_code=0;
 					}
 					if (wrapper_orientation_scale_field)
 					{
 						Computed_field_end_wrap(&wrapper_orientation_scale_field);
 					}
 					Computed_field_end_wrap(&rc_coordinate_field);
-					if (return_code&&GT_object_has_time(graphics_object,time))
+					if (return_code)
 					{
+						if (!GT_object_has_time(graphics_object,time))
+						{
+							/* add a NULL glyph_set to make an empty time */
+							GT_OBJECT_ADD(GT_glyph_set)(graphics_object,time,
+								(struct GT_glyph_set *)NULL);
+						}
 						if (data_field)
 						{
 							return_code=set_GT_object_Spectrum(graphics_object,spectrum);
@@ -6288,7 +6334,7 @@ Executes a GFX CREATE SPECTRUM command.
 static int gfx_create_streamlines(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 January 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Executes a GFX CREATE STREAMLINES command.
@@ -6297,6 +6343,7 @@ Executes a GFX CREATE STREAMLINES command.
 	static char default_name[]="streamlines";
 	char *graphics_object_name,reverse_track,*streamline_data_type_string,
 		*streamline_type_string,**valid_strings;
+	enum GT_object_type graphics_object_type;
 	enum Streamline_type streamline_type;
 	enum Streamline_data_type streamline_data_type;
 	FE_value seed_xi[3];
@@ -6494,13 +6541,18 @@ Executes a GFX CREATE STREAMLINES command.
 				}
 				if (return_code)
 				{
+					if (STREAM_LINE==streamline_type)
+					{
+						graphics_object_type=g_POLYLINE;
+					}
+					else
+					{
+						graphics_object_type=g_SURFACE;
+					}
 					if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
 						graphics_object_name,command_data->graphics_object_list))
 					{
-						if ((g_POLYLINE == graphics_object->object_type &&
-							(STREAM_LINE == streamline_type)) ||
-							(g_SURFACE == graphics_object->object_type &&
-							(STREAM_LINE != streamline_type)))
+						if (graphics_object_type == graphics_object->object_type)
 						{
 							if (GT_object_has_time(graphics_object,time))
 							{
@@ -6619,8 +6671,26 @@ Executes a GFX CREATE STREAMLINES command.
 							Computed_field_end_wrap(
 								&(element_to_streamline_data.coordinate_field));
 						}
-						if (return_code&&GT_object_has_time(graphics_object,time))
+						if (return_code)
 						{
+							if (!GT_object_has_time(graphics_object,time))
+							{
+								/* add a NULL primitive of the correct type to make an empty
+									 time so there are no gaps in any time animation */
+								switch (graphics_object_type)
+								{
+									case g_POLYLINE:
+									{
+										GT_OBJECT_ADD(GT_polyline)(graphics_object,time,
+											(struct GT_polyline *)NULL);
+									} break;
+									case g_SURFACE:
+									{
+										GT_OBJECT_ADD(GT_surface)(graphics_object,time,
+											(struct GT_surface *)NULL);
+									} break;
+								}
+							}
 							if (STREAM_NO_DATA != streamline_data_type)
 							{
 								return_code=set_GT_object_Spectrum(graphics_object,spectrum);
@@ -7086,7 +7156,7 @@ Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
 static int gfx_create_surfaces(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 January 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION :
 Executes a GFX CREATE SURFACES command.
@@ -7298,8 +7368,14 @@ Executes a GFX CREATE SURFACES command.
 						element_to_surface,(void *)&element_to_surface_data,
 						command_data->element_manager);
 				}
-				if (return_code&&GT_object_has_time(graphics_object,time))
+				if (return_code)
 				{
+					if (!GT_object_has_time(graphics_object,time))
+					{
+						/* add a NULL surface to make an empty time */
+						GT_OBJECT_ADD(GT_surface)(graphics_object,time,
+							(struct GT_surface *)NULL);
+					}
 					if (data_field)
 					{
 						return_code=set_GT_object_Spectrum(graphics_object,spectrum);
@@ -24168,14 +24244,14 @@ DESCRIPTION:
 
 int cmiss_execute_command(char *command_string,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 24 March 2000
+LAST MODIFIED : 28 August 2000
 
 DESCRIPTION:
 Takes a <command_string>, processes this through the F90 interpreter
 and then executes the returned strings
 ==============================================================================*/
 {
-	int i,quit,return_code;
+	int quit,return_code;
 	struct Cmiss_command_data *command_data;
 
 	ENTER(cmiss_execute_command);
