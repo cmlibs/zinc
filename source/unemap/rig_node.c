@@ -1309,7 +1309,7 @@ in rig.c
 			root_fe_region = Cmiss_region_get_FE_region(root_cmiss_region);
 			if (all_devices_node_group = Cmiss_region_get_or_create_child_FE_region(
 				root_cmiss_region, "all_devices", /*master_fe_region*/root_fe_region,
-				(struct MANAGER(FE_basis) *)NULL))
+				(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL))
 			{
 				FE_region_begin_change(all_devices_node_group);
 				FE_region_clear(all_devices_node_group, /*destroy_in_master*/1);
@@ -1370,7 +1370,7 @@ in rig.c
 										node_group = Cmiss_region_get_or_create_child_FE_region(
 											root_cmiss_region, region_name,
 											/*master_fe_region*/root_fe_region,
-											(struct MANAGER(FE_basis) *)NULL);
+											(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL);
 										FE_region_begin_change(node_group);
 										FE_region_clear(node_group, /*destroy_in_master*/1);
 										set_Region_electrode_position_field(region,electrode_position_field);
@@ -1393,7 +1393,7 @@ in rig.c
 										node_group = Cmiss_region_get_or_create_child_FE_region(
 											root_cmiss_region, region_name,
 											/*master_fe_region*/root_fe_region,
-											(struct MANAGER(FE_basis) *)NULL);
+											(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL);
 										FE_region_begin_change(node_group);
 										FE_region_clear(node_group, /*destroy_in_master*/1);
 										set_Region_electrode_position_field(region,electrode_position_field);
@@ -1416,7 +1416,7 @@ in rig.c
 										node_group = Cmiss_region_get_or_create_child_FE_region(
 											root_cmiss_region, region_name,
 											/*master_fe_region*/root_fe_region,
-											(struct MANAGER(FE_basis) *)NULL);
+											(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL);
 										FE_region_begin_change(node_group);
 										FE_region_clear(node_group, /*destroy_in_master*/1);
 										set_Region_electrode_position_field(region,electrode_position_field);
@@ -1434,7 +1434,7 @@ in rig.c
 								node_group = Cmiss_region_get_or_create_child_FE_region(
 									root_cmiss_region, region_name,
 									/*master_fe_region*/root_fe_region,
-									(struct MANAGER(FE_basis) *)NULL);
+									(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL);
 								FE_region_begin_change(node_group);
 								FE_region_clear(node_group, /*destroy_in_master*/1);
 								set_Region_rig_node_group(region,node_group);
@@ -1777,7 +1777,7 @@ files, and there are no text signal files.
 			root_fe_region = Cmiss_region_get_FE_region(root_cmiss_region);
 			if (all_devices_node_group = Cmiss_region_get_or_create_child_FE_region(
 				root_cmiss_region, "all_devices", /*master_fe_region*/root_fe_region,
-				(struct MANAGER(FE_basis) *)NULL))
+				(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL))
 			{
 				FE_region_begin_change(all_devices_node_group);
 				FE_region_clear(all_devices_node_group, /*destroy_in_master*/1);
@@ -1834,7 +1834,7 @@ files, and there are no text signal files.
 								&field_order_info,package,&electrode_position_field);
 							node_group = Cmiss_region_get_or_create_child_FE_region(
 								root_cmiss_region, rig_name, /*master_fe_region*/root_fe_region,
-								(struct MANAGER(FE_basis) *)NULL);
+								(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL);
 							FE_region_begin_change(node_group);
 							FE_region_clear(node_group, /*destroy_in_master*/1);
 							set_Region_electrode_position_field(region,electrode_position_field);
@@ -1875,7 +1875,7 @@ files, and there are no text signal files.
 								0,&field_order_info,package,&electrode_position_field);
 							node_group = Cmiss_region_get_or_create_child_FE_region(
 								root_cmiss_region, rig_name, /*master_fe_region*/root_fe_region,
-								(struct MANAGER(FE_basis) *)NULL);
+								(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL);
 							FE_region_begin_change(node_group);
 							FE_region_clear(node_group, /*destroy_in_master*/1);
 							set_Region_electrode_position_field(region,electrode_position_field);
@@ -1924,7 +1924,7 @@ files, and there are no text signal files.
 								&field_order_info,package,&electrode_position_field);
 							node_group = Cmiss_region_get_or_create_child_FE_region(
 								root_cmiss_region, rig_name, /*master_fe_region*/root_fe_region,
-								(struct MANAGER(FE_basis) *)NULL);
+								(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL);
 							FE_region_begin_change(node_group);
 							FE_region_clear(node_group, /*destroy_in_master*/1);
 							set_Region_electrode_position_field(region,electrode_position_field);
@@ -1951,7 +1951,7 @@ files, and there are no text signal files.
 							node_group = Cmiss_region_get_or_create_child_FE_region(
 								root_cmiss_region, region_name,
 								/*master_fe_region*/root_fe_region,
-								(struct MANAGER(FE_basis) *)NULL);
+								(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL);
 							FE_region_begin_change(node_group);
 							FE_region_clear(node_group, /*destroy_in_master*/1);
 							set_Region_rig_node_group(region,node_group);											
@@ -5253,7 +5253,7 @@ manager.
 			if (unrejected_node_group = Cmiss_region_get_or_create_child_FE_region(
 				root_cmiss_region, unrejected_name,
 				/*master_fe_region*/Cmiss_region_get_FE_region(root_cmiss_region),
-				(struct MANAGER(FE_basis) *)NULL))
+				(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL))
 			{
 				FE_region_begin_change(unrejected_node_group);
 				FE_region_clear(unrejected_node_group, /*destroy_in_master*/1);
@@ -7505,7 +7505,7 @@ cf read_binary_config_FE_node_group.
 		/*make all_devices_node_group */
 		if (all_devices_node_group = Cmiss_region_get_or_create_child_FE_region(
 			root_cmiss_region, "all_devices", /*master_fe_region*/root_fe_region,
-			(struct MANAGER(FE_basis) *)NULL))
+			(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL))
 		{
 			FE_region_begin_change(all_devices_node_group);
 			FE_region_clear(all_devices_node_group, /*destroy_in_master*/1);
@@ -7550,7 +7550,7 @@ cf read_binary_config_FE_node_group.
 						/* Get group */
 						node_group = Cmiss_region_get_or_create_child_FE_region(
 							root_cmiss_region, region_name, /*master_fe_region*/root_fe_region,
-							(struct MANAGER(FE_basis) *)NULL);
+							(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL);
 						FE_region_begin_change(node_group);
 						FE_region_clear(node_group, /*destroy_in_master*/1);
 						set_Region_rig_node_group(region,node_group);

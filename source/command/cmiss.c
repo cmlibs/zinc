@@ -237,6 +237,7 @@ DESCRIPTION :
 	   *computed_field_finite_element_package;
 	struct MANAGER(Environment_map) *environment_map_manager;
 	struct MANAGER(FE_basis) *basis_manager;
+	struct LIST(FE_element_shape) *element_shape_list;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct Graphical_material *default_graphical_material, *default_selected_material;
 #if defined (MOTIF) || defined (GTK_USER_INTERFACE)
@@ -1912,7 +1913,7 @@ Executes a GFX CREATE GROUP command.
 					ACCESS(Cmiss_region)(region);
 					fe_region = CREATE(FE_region)(/*master_fe_region*/
 						Cmiss_region_get_FE_region(root_region),
-						(struct MANAGER(FE_basis) *)NULL);
+						(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL);
 					ACCESS(FE_region)(fe_region);
 					if (0 < Multi_range_get_number_of_ranges(add_ranges))
 					{
@@ -15972,7 +15973,8 @@ user, otherwise the elements file is read.
 				if (input_file = fopen(file_name, "r"))
 				{
 					if (region = read_exregion_file(input_file,
-						command_data->basis_manager, (struct FE_import_time_index *)NULL))
+						command_data->basis_manager, command_data->element_shape_list,
+						(struct FE_import_time_index *)NULL))
 					{
 						ACCESS(Cmiss_region)(region);
 						if (Cmiss_regions_FE_regions_can_be_merged(
@@ -16110,7 +16112,8 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 						if (input_file = fopen(file_name,"r"))
 						{
 							if (region = read_exregion_file(input_file,
-								command_data->basis_manager, node_time_index))
+								command_data->basis_manager, command_data->element_shape_list,
+								node_time_index))
 							{
 								ACCESS(Cmiss_region)(region);
 								if (use_data)
@@ -24007,7 +24010,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 #endif /* defined (MOTIF) || defined (GTK_USER_INTERFACE) */
 		/* FE_element_shape manager */
 		/*???DB.  To be done */
-		all_FE_element_shape=CREATE(LIST(FE_element_shape))();
+		command_data->element_shape_list=CREATE(LIST(FE_element_shape))();
 
 		rect_coord_system.type = RECTANGULAR_CARTESIAN;
 
@@ -24018,7 +24021,7 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 		command_data->root_region = ACCESS(Cmiss_region)(CREATE(Cmiss_region)());
 		/* add FE_region to root_region */
 		if (root_fe_region = CREATE(FE_region)((struct FE_region *)NULL,
-			command_data->basis_manager))
+			command_data->basis_manager, command_data->element_shape_list))
 		{
 			Cmiss_region_attach_FE_region(command_data->root_region, root_fe_region);
 		}
@@ -24750,14 +24753,14 @@ Clean up the command_data, deallocating all the associated memory and resources.
 			them since this will cause memory addresses to be deallocated twice
 			as DEACCESS will also request the objects be removed from the list.
 			Do, however, send out an error message */
-		if (0 == NUMBER_IN_LIST(FE_element_shape)(all_FE_element_shape))
+		if (0 == NUMBER_IN_LIST(FE_element_shape)(command_data->element_shape_list))
 		{
-			DESTROY(LIST(FE_element_shape))(&all_FE_element_shape);
+			DESTROY(LIST(FE_element_shape))(&command_data->element_shape_list);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE, "%d element shape(s) still in use",
-				NUMBER_IN_LIST(FE_element_shape)(all_FE_element_shape));
+				NUMBER_IN_LIST(FE_element_shape)(command_data->element_shape_list));
 		}
 
 		DEACCESS(Spectrum)(&(command_data->default_spectrum));

@@ -315,7 +315,7 @@ Hermite basis over it.
 		return_code = 1;
 
 		/* make 1-d line shape */
-		element_shape = CREATE(FE_element_shape)(/*dimension*/1, shape_type);
+		element_shape = CREATE(FE_element_shape)(/*dimension*/1, shape_type, fe_region);
 		/* make 1-d cubic Hermite basis */
 		element_basis = make_FE_basis(basis_type, basis_manager);
 

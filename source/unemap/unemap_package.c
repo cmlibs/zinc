@@ -1902,9 +1902,13 @@ The group name is then stored in the unemap_package.
 			strcat(exelem_name_str, exelem_ext);
 			/* read the node and element files */
 			torso_root_cmiss_region = read_exregion_file_of_name(exnode_name_str,
-				basis_manager, (struct FE_import_time_index *)NULL);
+				basis_manager,
+				FE_region_get_FE_element_shape_list(Cmiss_region_get_FE_region(root_cmiss_region)),
+				(struct FE_import_time_index *)NULL);
 			element_root_cmiss_region = read_exregion_file_of_name(exelem_name_str,
-				basis_manager, (struct FE_import_time_index *)NULL);
+				basis_manager,
+				FE_region_get_FE_element_shape_list(Cmiss_region_get_FE_region(root_cmiss_region)),
+				(struct FE_import_time_index *)NULL);
 			/* check the elements merge into the nodes and get the first child name */
 			if (torso_root_cmiss_region && element_root_cmiss_region &&
 				Cmiss_regions_FE_regions_can_be_merged(torso_root_cmiss_region,

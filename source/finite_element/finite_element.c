@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 5 June 2003
+LAST MODIFIED : 8 July 2003
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -50,14 +50,6 @@ Functions for manipulating finite element structures.
 #include "mirage/tracking_editor_data.h"
 #include "user_interface/message.h"
 #include "user_interface/user_interface.h"
-
-/*
-Global variables
-----------------
-*/
-
-struct LIST(FE_element_shape) *all_FE_element_shape=
-	(struct LIST(FE_element_shape) *)NULL;
 
 /*
 Module Constants
@@ -6226,6 +6218,37 @@ Note a NULL shape type means an unspecified shape of that dimension.
 
 	return (return_code);
 } /* match_FE_element_shape */
+
+static struct FE_element_shape *find_FE_element_shape_in_list(int dimension,int *type,
+	struct LIST(FE_element_shape) *list)
+/*******************************************************************************
+LAST MODIFIED : 18 November 2002
+
+DESCRIPTION :
+Searchs the <list> for the element shape with the specified <dimension> and
+<type> and returns the address of the element_shape.
+A NULL <type> means an unspecified shape of <dimension>.
+==============================================================================*/
+{
+	struct Match_FE_element_shape_data match_data;
+	struct FE_element_shape *shape;
+
+	ENTER(find_FE_element_shape_in_list);
+	if ((dimension > 0) && list)
+	{
+		match_data.dimension = dimension;
+		match_data.type = type;
+		shape = FIRST_OBJECT_IN_LIST_THAT(FE_element_shape)(match_FE_element_shape,
+			(void *)(&match_data),list);
+	}
+	else
+	{
+		shape = (struct FE_element_shape *)NULL;
+	}
+	LEAVE;
+
+	return (shape);
+} /* find_FE_element_shape_in_list */
 
 static int compare_FE_element_parent_parent(struct FE_element *parent_1,
 	struct FE_element *parent_2)
@@ -28238,14 +28261,15 @@ field information structure.  Note that the arguments are duplicated.
 	return (node_scale_field_info);
 } /* create_FE_element_node_scale_field_info_from_contents */
 
-struct FE_element_shape *CREATE(FE_element_shape)(int dimension,int *type)
+struct FE_element_shape *CREATE(FE_element_shape)(int dimension,int *type,
+	struct FE_region *fe_region)
 /*******************************************************************************
-LAST MODIFIED : 2 April 2003
+LAST MODIFIED : 8 July 2003
 
 DESCRIPTION :
-Searchs the list of all shapes (all_FE_element_shape) for a shape with the
-specified <dimension> and <type>.  If one is not found, a shape is created (with
-<type> duplicated) and added to the list of all shapes.  The shape is returned.
+Searchs the <element_shape_list> for a shape with the specified <dimension> and 
+<type>.  If one is not found, a shape is created (with <type> duplicated) and 
+added to the list.  The shape is returned.
 <type> is analogous to the basis type array, except that the entries are 0 or 1.
 If <type> is omitted an "unspecified" shape of the given <dimension> is
 returned. An element with such a shape may not have fields defined on it until
@@ -28267,7 +28291,7 @@ it is given a proper shape.
 	{
 		/* check if the shape already exists */
 		if (!(shape = find_FE_element_shape_in_list(dimension, type,
-			all_FE_element_shape)))
+			FE_region_get_FE_element_shape_list(fe_region))))
 		{
 			if (ALLOCATE(shape, struct FE_element_shape, 1))
 			{
@@ -29306,7 +29330,8 @@ if (POLYGON_SHAPE== *type_entry) \
 			if (shape)
 			{
 				/* add the shape to the list of all shapes */
-				if (!ADD_OBJECT_TO_LIST(FE_element_shape)(shape,all_FE_element_shape))
+				if (!ADD_OBJECT_TO_LIST(FE_element_shape)(shape,
+					FE_region_get_FE_element_shape_list(fe_region)))
 				{
 					display_message(ERROR_MESSAGE, "CREATE(FE_element_shape).  "
 						"Could not add shape to the list of all shapes");
@@ -29350,8 +29375,6 @@ sets <*element_shape_address> to NULL.
 	/* check the arguments */
 	if ((element_shape_address)&&(shape= *element_shape_address))
 	{
-		/* <=1 is used (instead of <=0) because every shape is in
-			<all_FE_element_shape> */
 		if (0==shape->access_count)
 		{
 			DEALLOCATE(shape->type);
@@ -29362,16 +29385,7 @@ sets <*element_shape_address> to NULL.
 		}
 		else
 		{
-			if (1==shape->access_count)
-			{
-				/* remove the shape from the list of all shapes */
-				return_code=
-					REMOVE_OBJECT_FROM_LIST(FE_element_shape)(shape,all_FE_element_shape);
-			}
-			else
-			{
-				return_code=1;
-			}
+			return_code=1;
 			*element_shape_address=(struct FE_element_shape *)NULL;
 		}
 	}
@@ -29384,77 +29398,7 @@ sets <*element_shape_address> to NULL.
 	return (return_code);
 } /* DESTROY(FE_element_shape) */
 
-DECLARE_ACCESS_OBJECT_FUNCTION(FE_element_shape)
-
-PROTOTYPE_DEACCESS_OBJECT_FUNCTION(FE_element_shape)
-{ 
-	int return_code; 
-	struct FE_element_shape *object; 
-
-	ENTER(DEACCESS(FE_element_shape)); 
-	if (object_address&&(object= *object_address)) 
-	{ 
-		(object->access_count)--; 
-		/* <=1 is used (instead of <=0) because every element field information
-			 structure is in <all_FE_element_field_info> */
-		if (object->access_count<=1) 
-		{ 
-			return_code=DESTROY(FE_element_shape)(object_address); 
-		} 
-		else 
-		{ 
-			*object_address=(struct FE_element_shape *)NULL; 
-			return_code=1; 
-		} 
-	} 
-	else 
-	{ 
-		return_code=0; 
-	} 
-	LEAVE; 
-
-	return (return_code); 
-} /* DEACCESS(FE_element_shape) */
-
-PROTOTYPE_REACCESS_OBJECT_FUNCTION(FE_element_shape) 
-{ 
-	int return_code; 
-	struct FE_element_shape *current_object; 
-
-	ENTER(REACCESS(FE_element_shape)); 
-	if (object_address) 
-	{ 
-		return_code=1; 
-		if (new_object) 
-		{ 
-			/* access the new object */ 
-			(new_object->access_count)++; 
-		} 
-		if (current_object= *object_address) 
-		{ 
-			/* deaccess the current object */ 
-			(current_object->access_count)--; 
-			/* <=1 is used (instead of <=0) because every element field information
-				 structure is in <all_FE_element_field_info> */
-			if (current_object->access_count<=1) 
-			{ 
-				DESTROY(FE_element_shape)(object_address); 
-			} 
-		} 
-		/* point to the new object */ 
-		*object_address=new_object; 
-	} 
-	else 
-	{ 
-		display_message(ERROR_MESSAGE, 
-			"REACCESS( FE_element_shape ).  Invalid argument"); 
-		return_code=0; 
-	} 
-	LEAVE; 
-
-	return (return_code); 
-} /* REACCESS(FE_element_shape) */
-
+DECLARE_OBJECT_FUNCTIONS(FE_element_shape)
 DECLARE_LIST_FUNCTIONS(FE_element_shape)
 
 int FE_element_shape_is_unspecified(struct FE_element_shape *element_shape)
@@ -29521,41 +29465,10 @@ Returns true if the <element_shape> has only LINE_SHAPE in each dimension.
 	return (return_code);
 } /* FE_element_shape_is_line */
 
-struct FE_element_shape *find_FE_element_shape_in_list(int dimension,int *type,
-	struct LIST(FE_element_shape) *list)
-/*******************************************************************************
-LAST MODIFIED : 18 November 2002
-
-DESCRIPTION :
-Searchs the <list> for the element shape with the specified <dimension> and
-<type> and returns the address of the element_shape.
-A NULL <type> means an unspecified shape of <dimension>.
-==============================================================================*/
-{
-	struct Match_FE_element_shape_data match_data;
-	struct FE_element_shape *shape;
-
-	ENTER(find_FE_element_shape_in_list);
-	if ((dimension > 0) && list)
-	{
-		match_data.dimension = dimension;
-		match_data.type = type;
-		shape = FIRST_OBJECT_IN_LIST_THAT(FE_element_shape)(match_FE_element_shape,
-			(void *)(&match_data),list);
-	}
-	else
-	{
-		shape = (struct FE_element_shape *)NULL;
-	}
-	LEAVE;
-
-	return (shape);
-} /* find_FE_element_shape_in_list */
-
 struct FE_element_shape *get_FE_element_shape_of_face(
-	struct FE_element_shape *shape,int face_number)
+	struct FE_element_shape *shape,int face_number, struct FE_region *fe_region)
 /*******************************************************************************
-LAST MODIFIED : 15 April 2003
+LAST MODIFIED : 7 July 2003
 
 DESCRIPTION :
 From the parent <shape> returns the FE_element_shape for its face <face_number>.
@@ -29577,7 +29490,8 @@ The <shape> must be of dimension 2 or 3. Faces of 2-D elements are always lines.
 			{
 				/* faces of 2-D shapes are always lines */
 				face_type[0]=LINE_SHAPE;
-				face_shape=CREATE(FE_element_shape)(/*dimension*/1,face_type);
+				face_shape=CREATE(FE_element_shape)(/*dimension*/1,face_type,
+					fe_region);
 			} break;
 			case 3:
 			{
@@ -29587,7 +29501,8 @@ The <shape> must be of dimension 2 or 3. Faces of 2-D elements are always lines.
 				if (((shape->type)[0]==(shape->type)[3])&&
 					((shape->type)[0]==(shape->type)[5]))
 				{
-					face_shape=CREATE(FE_element_shape)(/*dimension*/2,shape->type+3);
+					face_shape=CREATE(FE_element_shape)(/*dimension*/2,shape->type+3,
+						fe_region);
 				}
 				else if ((POLYGON_SHAPE==(shape->type)[0])||
 					(POLYGON_SHAPE==(shape->type)[3])||
@@ -29646,7 +29561,8 @@ The <shape> must be of dimension 2 or 3. Faces of 2-D elements are always lines.
 						face_type[1]=0;
 						face_type[2]=LINE_SHAPE;
 					}
-					face_shape=CREATE(FE_element_shape)(/*dimension*/2,face_type);
+					face_shape=CREATE(FE_element_shape)(/*dimension*/2,face_type,
+						fe_region);
 				}
 				else if ((SIMPLEX_SHAPE==(shape->type)[0])||
 					(SIMPLEX_SHAPE==(shape->type)[3])||
@@ -29685,7 +29601,8 @@ The <shape> must be of dimension 2 or 3. Faces of 2-D elements are always lines.
 						face_type[1]=0;
 						face_type[2]=LINE_SHAPE;
 					}
-					face_shape=CREATE(FE_element_shape)(/*dimension*/2,face_type);
+					face_shape=CREATE(FE_element_shape)(/*dimension*/2,face_type,
+						fe_region);
 				}
 				else
 				{

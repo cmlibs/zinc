@@ -1481,7 +1481,7 @@ i.e sock is a hemisphere, torso is a cylinder.
 		if (interpolation_node_group = Cmiss_region_get_or_create_child_FE_region(
 			root_cmiss_region, name,
 			/*master_fe_region*/Cmiss_region_get_FE_region(root_cmiss_region),
-			(struct MANAGER(FE_basis) *)NULL))
+			(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL))
 		{
 			FE_region_begin_change(interpolation_node_group);
 			FE_region_clear(interpolation_node_group, /*destroy_in_master*/1);
@@ -1998,7 +1998,7 @@ Make the elements for the 3d map surface and merges them into <fe_region>.
 			return_code=0;
 		}
 		/* make the element shape */
-		if (shape=CREATE(FE_element_shape)(2,shape_type))
+		if (shape=CREATE(FE_element_shape)(2,shape_type,fe_region))
 		{
 			ACCESS(FE_element_shape)(shape);
 		}
@@ -2798,7 +2798,7 @@ nodes z values are defined by the electrodes.
 		if (mapped_torso_group = Cmiss_region_get_or_create_child_FE_region(
 			root_cmiss_region, mapped_torso_group_name,
 			/*master_fe_region*/Cmiss_region_get_FE_region(root_cmiss_region),
-			(struct MANAGER(FE_basis) *)NULL))
+			(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL))
 		{
 			FE_region_begin_change(mapped_torso_group);
 			FE_region_clear(mapped_torso_group, /*destroy_in_master*/1);
@@ -5082,7 +5082,7 @@ and merging the template element with the elements in <torso_group>.
 			FE_region_get_basis_manager(torso_group)))
 		{
 			ACCESS(FE_basis)(cubic_hermite_basis);
-			if (shape=CREATE(FE_element_shape)(2,shape_type))
+			if (shape=CREATE(FE_element_shape)(2,shape_type,torso_group))
 			{
 				ACCESS(FE_element_shape)(shape);
 				/* define component */
@@ -5420,7 +5420,7 @@ Therefore must deaccess the returned element outside this function
 		if (basis=make_FE_basis(basis_type,FE_region_get_basis_manager(fe_region)))
 		{
 			ACCESS(FE_basis)(basis);
-			if (shape=CREATE(FE_element_shape)(2,shape_type))
+			if (shape=CREATE(FE_element_shape)(2,shape_type,fe_region))
 			{
 				ACCESS(FE_element_shape)(shape);
 				data_coordinate_system=get_FE_field_coordinate_system(data_field);
@@ -5714,7 +5714,7 @@ Stores group in Region <map_3d_package>
 					if (delaunay_group = Cmiss_region_get_or_create_child_FE_region(
 						root_cmiss_region, delaunay_group_name,
 						/*master_fe_region*/root_fe_region,
-						(struct MANAGER(FE_basis) *)NULL))
+						(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL))
 					{
 						FE_region_begin_change(delaunay_group);
 						FE_region_clear(delaunay_group, /*destroy_in_master*/1);

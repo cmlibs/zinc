@@ -224,7 +224,8 @@ generating 2-D bilinear elements.
 							type_entry++;
 						}
 					}
-					if (element_shape=CREATE(FE_element_shape)(element_dimension,type))
+					if (element_shape=CREATE(FE_element_shape)(element_dimension,type,
+						element_creator->fe_region))
 					{
 						ACCESS(FE_element_shape)(element_shape);
 					}

@@ -1642,9 +1642,9 @@ Reads in a node from an <input_file>.
 } /* read_FE_node */
 
 static int read_FE_element_shape(FILE *input_file,
-	struct FE_element_shape **element_shape_address)
+	struct FE_element_shape **element_shape_address, struct FE_region *fe_region)
 /*******************************************************************************
-LAST MODIFIED : 17 September 2002
+LAST MODIFIED : 7 July 2003
 
 DESCRIPTION :
 Reads element shape information from <input_file>.
@@ -1976,7 +1976,7 @@ Note the returned shape will be NULL if the dimension is 0, denoting nodes.
 			}
 			if (return_code)
 			{
-				if (!(element_shape = CREATE(FE_element_shape)(dimension, type)))
+				if (!(element_shape = CREATE(FE_element_shape)(dimension, type, fe_region)))
 				{
 					display_message(ERROR_MESSAGE,
 						"read_FE_element_shape.  Error creating shape");
@@ -3588,9 +3588,10 @@ Global functions
 
 struct Cmiss_region *read_exregion_file(FILE *input_file,
 	struct MANAGER(FE_basis) *basis_manager,
+	struct LIST(FE_element_shape) *element_shape_list,
 	struct FE_import_time_index *time_index)
 /*******************************************************************************
-LAST MODIFIED : 27 March 2003
+LAST MODIFIED : 7 July 2003
 
 DESCRIPTION :
 Reads finite element groups in exnode/exelem format from <input_file>.
@@ -3627,7 +3628,7 @@ If objects are repeated in the file, they are merged correctly.
 		/* create the top-level region for reading groups into */
 		if ((root_region = CREATE(Cmiss_region)()) &&
 			(root_fe_region = CREATE(FE_region)((struct FE_region *)NULL,
-				basis_manager)) &&
+				basis_manager, element_shape_list)) &&
 			Cmiss_region_attach_FE_region(root_region, root_fe_region))
 		{
 			Cmiss_region_begin_change(root_region);
@@ -3723,7 +3724,8 @@ If objects are repeated in the file, they are merged correctly.
 								{
 									/*???RC Later allow separate namespace for group,
 										Use "Region name : NAME" token instead? */
-									fe_region = CREATE(FE_region)(root_fe_region, basis_manager);
+									fe_region = CREATE(FE_region)(root_fe_region, basis_manager,
+										element_shape_list);
 									if (!Cmiss_region_attach_FE_region(region, fe_region))
 									{
 										display_message(ERROR_MESSAGE, "read_exregion_file.  "
@@ -3790,7 +3792,7 @@ If objects are repeated in the file, they are merged correctly.
 								DEACCESS(FE_element)(&template_element);
 							}
 							/* read element shape information */
-							if (read_FE_element_shape(input_file, &element_shape))
+							if (read_FE_element_shape(input_file, &element_shape, fe_region))
 							{
 								/* nodes have 0 dimensions and thus no element_shape */
 								if (element_shape)
@@ -4059,9 +4061,10 @@ If objects are repeated in the file, they are merged correctly.
 
 struct Cmiss_region *read_exregion_file_of_name(char *file_name,
 	struct MANAGER(FE_basis) *basis_manager,
+	struct LIST(FE_element_shape) *element_shape_list,
 	struct FE_import_time_index *time_index)
 /*******************************************************************************
-LAST MODIFIED : 12 May 2003
+LAST MODIFIED : 7 July 2003
 
 DESCRIPTION :
 Version of read_exregion_file that opens and closes file <file_name>.
@@ -4077,7 +4080,7 @@ Up to the calling function to merge the returned cmiss_region.
 	{
 		if (input_file = fopen(file_name,"r"))
 		{
-			root_region = read_exregion_file(input_file, basis_manager, time_index);
+			root_region = read_exregion_file(input_file, basis_manager, element_shape_list, time_index);
 			fclose(input_file);
 		}
 		else

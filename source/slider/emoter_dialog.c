@@ -269,6 +269,7 @@ Updates the node locations for the <emoter_slider>
 					if (input_file = fopen(input_filename, "r"))
 					{
 						if (input_sequence=read_exregion_file(input_file,shared_data->basis_manager,
+							FE_region_get_FE_element_shape_list(fe_region),
 							(struct FE_import_time_index *)NULL))
 						{
 							ACCESS(Cmiss_region)(input_sequence);
@@ -4091,7 +4092,9 @@ DESCRIPTION :
 			{
 				if ((emoter_dialog->minimum_region = CREATE(Cmiss_region)())&&
 					(minimum_fe_region = CREATE(FE_region)(root_fe_region,
-					emoter_dialog->shared->basis_manager))&&
+					emoter_dialog->shared->basis_manager,
+					FE_region_get_FE_element_shape_list(Cmiss_region_get_FE_region(
+					emoter_dialog->shared->region))))&&
 					Cmiss_region_add_child_region(emoter_dialog->shared->region,
 					emoter_dialog->minimum_region, "minimum_set", /*position*/-1))
 				{

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_region.c
 
-LAST MODIFIED : 18 June 2003
+LAST MODIFIED : 7 July 2003
 
 DESCRIPTION :
 Object comprising a single finite element mesh including nodes, elements and
@@ -132,6 +132,7 @@ DESCRIPTION :
 	struct LIST(FE_node_field_info) *fe_node_field_info_list;
 	struct LIST(FE_element_field_info) *fe_element_field_info_list;
 	struct MANAGER(FE_basis) *basis_manager;
+	struct LIST(FE_element_shape) *element_shape_list;
 	/* lists of nodes and elements in this region */
 	struct LIST(FE_node) *fe_node_list;
 	struct LIST(FE_element) *fe_element_list;
@@ -1200,9 +1201,10 @@ Global functions
 */
 
 struct FE_region *CREATE(FE_region)(struct FE_region *master_fe_region,
-	struct MANAGER(FE_basis) *basis_manager)
+	struct MANAGER(FE_basis) *basis_manager,
+	struct LIST(FE_element_shape) *element_shape_list)
 /*******************************************************************************
-LAST MODIFIED : 5 June 2003
+LAST MODIFIED : 7 July 2003
 
 DESCRIPTION :
 Creates a struct FE_region.
@@ -1218,7 +1220,7 @@ elements and fields and the <basis_manager> must be supplied in this case.
 
 	ENTER(CREATE(FE_region));
 	fe_region = (struct FE_region *)NULL;
-	if (master_fe_region || basis_manager)
+	if (master_fe_region || (basis_manager && element_shape_list))
 	{
 		if (ALLOCATE(fe_region, struct FE_region, 1))
 		{
@@ -1226,6 +1228,7 @@ elements and fields and the <basis_manager> must be supplied in this case.
 			{
 				fe_region->master_fe_region = ACCESS(FE_region)(master_fe_region);
 				fe_region->basis_manager = (struct MANAGER(FE_basis) *)NULL;
+				fe_region->element_shape_list = (struct LIST(FE_element_shape) *)NULL;
 				fe_region->fe_time = (struct FE_time *)NULL;
 				fe_region->fe_field_list = (struct LIST(FE_field) *)NULL;
 				fe_region->fe_node_field_info_list =
@@ -1240,6 +1243,7 @@ elements and fields and the <basis_manager> must be supplied in this case.
 			{
 				fe_region->master_fe_region = (struct FE_region *)NULL;
 				fe_region->basis_manager = basis_manager;
+				fe_region->element_shape_list = element_shape_list;
 				fe_region->fe_time = CREATE(FE_time)();
 				fe_region->fe_field_list = CREATE(LIST(FE_field))();
 				fe_region->fe_node_field_info_list = CREATE(LIST(FE_node_field_info))();
@@ -1331,7 +1335,7 @@ fe_time, fe_field_list etc. are still around.
 		((struct FE_region *)NULL == data_hack_master_fe_region->master_fe_region))
 	{
 		if (fe_region = CREATE(FE_region)(data_hack_master_fe_region,
-			(struct MANAGER(FE_basis) *)NULL))
+			(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL))
 		{
 			fe_region->data_hack = 1;
 		}
@@ -3877,6 +3881,40 @@ Recursive if it has a master_fe_region.
 } /* FE_region_create_FE_element */
 #endif /* defined (OLD_CODE) */
 
+struct LIST(FE_element_shape) *FE_region_get_FE_element_shape_list(
+	struct FE_region *fe_region)
+/*******************************************************************************
+LAST MODIFIED : 7 July 2003
+
+DESCRIPTION :
+Returns the FE_basis_manager used for bases in this <fe_region>.
+==============================================================================*/
+{
+	struct LIST(FE_element_shape) *element_shape_list;
+
+	ENTER(FE_region_get_FE_element_shape_list);
+	if (fe_region)
+	{
+		if (fe_region->master_fe_region)
+		{
+			element_shape_list = FE_region_get_FE_element_shape_list(fe_region->master_fe_region);
+		}
+		else
+		{
+			element_shape_list = fe_region->element_shape_list;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_region_get_FE_element_shape_list.  Missing finite element region");
+		element_shape_list = (struct LIST(FE_element_shape) *)NULL;
+	}
+	LEAVE;
+
+	return (element_shape_list);
+} /* FE_region_get_FE_element_shape_list */
+
 int FE_region_change_FE_element_identifier(
 	struct FE_region *fe_region, struct FE_element *element,
 	struct CM_element_information *new_identifier)
@@ -4074,7 +4112,8 @@ than 'unspecified'.
 			{
 				/* create an element with an unspecified shape of <dimension> */
 				if (element_shape =
-					CREATE(FE_element_shape)(dimension, /*type*/(int *)NULL))
+					CREATE(FE_element_shape)(dimension, /*type*/(int *)NULL,
+					fe_region))
 				{
 					ACCESS(FE_element_shape)(element_shape);
 					element = CREATE(FE_element)(identifier, element_shape,
@@ -4774,7 +4813,7 @@ against.
 				(!face) && master_fe_region->element_type_node_sequence_list)
 			{
 				if (face_shape =
-					get_FE_element_shape_of_face(element_shape, face_number))
+					get_FE_element_shape_of_face(element_shape, face_number, fe_region))
 				{
 					ACCESS(FE_element_shape)(face_shape);
 					get_FE_element_shape_dimension(face_shape, &face_dimension);
@@ -6086,7 +6125,8 @@ Returns in <cmiss_region_address> either the owning <cmiss_region> for
 
 struct FE_region *Cmiss_region_get_or_create_child_FE_region(
 	struct Cmiss_region *parent_cmiss_region, char *child_name,
-	struct FE_region *master_fe_region, struct MANAGER(FE_basis) *basis_manager)
+	struct FE_region *master_fe_region, struct MANAGER(FE_basis) *basis_manager,
+	struct LIST(FE_element_shape) *element_shape_list)
 /*******************************************************************************
 LAST MODIFIED : 12 May 2003
 
@@ -6131,7 +6171,8 @@ This function is atomic.
 		}
 		if (return_code && (!child_fe_region))
 		{
-			if (child_fe_region = CREATE(FE_region)(master_fe_region, basis_manager))
+			if (child_fe_region = CREATE(FE_region)(master_fe_region, basis_manager,
+				element_shape_list))
 			{
 				temp_child_fe_region = ACCESS(FE_region)(child_fe_region);
 				if ((child_cmiss_region = existing_child_cmiss_region) ||
@@ -7588,7 +7629,7 @@ Assumes all master_fe_regions are in parents of the owning cmiss_region.
 								if (!global_fe_region)
 								{
 									global_fe_region = CREATE(FE_region)(global_master_fe_region,
-										(struct MANAGER(FE_basis) *)NULL);
+										(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL);
 									if (!Cmiss_region_attach_FE_region(global_region,
 										global_fe_region))
 									{
@@ -7879,7 +7920,7 @@ having children added or removed.
 							/* create and add a new child region with child_name to region2 */
 							if (!((child_region = CREATE(Cmiss_region)()) &&
 								(fe_region = CREATE(FE_region)(master_fe_region,
-									(struct MANAGER(FE_basis) *)NULL)) &&
+								(struct MANAGER(FE_basis) *)NULL, (struct LIST(FE_element_shape) *)NULL)) &&
 								Cmiss_region_attach_FE_region(child_region, fe_region) &&
 								Cmiss_region_add_child_region(region2, child_region, child_name,
 									/*child_position*/i)))

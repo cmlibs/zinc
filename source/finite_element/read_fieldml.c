@@ -3212,7 +3212,7 @@ DESCRIPTION :
 } /* fieldml_end_node */
 
 static struct FE_element_shape *fieldml_read_FE_element_shape(
-	char *shape_string)
+	char *shape_string, struct FE_region *fe_region)
 /*******************************************************************************
 LAST MODIFIED : 19 February 2003
 
@@ -3462,7 +3462,7 @@ DESCRIPTION :
 		}
 		if (return_code)
 		{
-			if (!(shape=CREATE(FE_element_shape)(dimension,type)))
+			if (!(shape=CREATE(FE_element_shape)(dimension,type, fe_region)))
 			{
 				display_message(ERROR_MESSAGE,
 					"fieldml_read_FE_element_shape.  Error creating shape");
@@ -3513,7 +3513,8 @@ DESCRIPTION :
 				}
 				if (!strcmp(attribute_name, "shape"))
 				{
-					shape = fieldml_read_FE_element_shape(attribute_value);
+					shape = fieldml_read_FE_element_shape(attribute_value,
+						fieldml_data->root_fe_region);
 				}
 				i += 2;
 			}
@@ -5454,9 +5455,10 @@ DESCRIPTION :
 } /* specialXmlSAXParseFile */
 
 struct Cmiss_region *parse_fieldml_file(char *filename,
-	struct MANAGER(FE_basis) *basis_manager)
+	struct MANAGER(FE_basis) *basis_manager,
+	struct LIST(FE_element_shape) *element_shape_list)
 /*******************************************************************************
-LAST MODIFIED : 15 May 2003
+LAST MODIFIED : 7 July 2003
 
 DESCRIPTION :
 Reads fieldml file <filename> and returns a Cmiss_region containing its
@@ -5480,7 +5482,7 @@ Cmiss_region.
 		fieldml_data.fieldml_subversion = -1; /* Not in fieldml yet */
 		fieldml_data.root_region = root_region;
 		fieldml_data.root_fe_region =
-			CREATE(FE_region)((struct FE_region *)NULL, basis_manager);
+			CREATE(FE_region)((struct FE_region *)NULL, basis_manager, element_shape_list);
 		Cmiss_region_attach_FE_region(fieldml_data.root_region,
 			fieldml_data.root_fe_region);
 		fieldml_data.label_templates = CREATE(LIST(Fieldml_label_name))();

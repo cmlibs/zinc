@@ -56,6 +56,7 @@ It is designed to be flexible rather than fast.
 
 	/* each Control_curve is like an FE_region with its own name space */
 	struct MANAGER(FE_basis) *basis_manager;
+	struct LIST(FE_element_shape) *element_shape_list;
 	struct FE_region *fe_region;
 	struct FE_field *parameter_field,*value_field;
 	struct FE_node *template_node;
@@ -374,6 +375,7 @@ Used for copy operations and as part of the DESTROY function.
 		DEACCESS(FE_field)(&curve->value_field);
 		DEACCESS(FE_region)(&curve->fe_region);
 		DESTROY(MANAGER(FE_basis))(&curve->basis_manager);
+		DESTROY(LIST(FE_element_shape))(&curve->element_shape_list);
 
 		DEALLOCATE(curve->min_value);
 		DEALLOCATE(curve->max_value);
@@ -421,8 +423,10 @@ but it is at least destroyable when returned from this function.
 			curve->value_derivatives_per_node=0;
 
 			curve->basis_manager=CREATE(MANAGER(FE_basis))();
+			curve->element_shape_list=CREATE(LIST(FE_element_shape))();
 			curve->fe_region=ACCESS(FE_region)(CREATE(FE_region)
-				(/*master_fe_region*/(struct FE_region *)NULL, curve->basis_manager));
+				(/*master_fe_region*/(struct FE_region *)NULL, curve->basis_manager,
+				curve->element_shape_list));
 			curve->parameter_field=(struct FE_field *)NULL;
 			curve->value_field=(struct FE_field *)NULL;
 			curve->template_node=(struct FE_node *)NULL;
@@ -438,10 +442,10 @@ but it is at least destroyable when returned from this function.
 
 			curve->access_count=0;
 
-			if (!(curve->name&&curve->basis_manager&&curve->fe_region))
+			if (!(curve->name&&curve->basis_manager&&curve->element_shape_list&&curve->fe_region))
 			{
 				display_message(ERROR_MESSAGE,
-					"cc_create_blank.  Could not create basis manager and region");
+					"cc_create_blank.  Could not create basis manager, element shape list and region");
 				DESTROY(Control_curve)(&curve);
 			}
 		}
@@ -924,6 +928,7 @@ Works even when <destination> and <source> are the same.
 				destination->value_derivatives_per_node=
 					temp_curve->value_derivatives_per_node;
 				destination->basis_manager=temp_curve->basis_manager;
+				destination->element_shape_list=temp_curve->element_shape_list;
 				destination->fe_region = temp_curve->fe_region;
 				destination->parameter_field=temp_curve->parameter_field;
 				destination->value_field=temp_curve->value_field;
@@ -1331,7 +1336,8 @@ value will be zero in its initial state.
 							shape_type[0]=LINE_SHAPE;
 							modify=(FE_element_field_component_modify)NULL;
 							element_shape=ACCESS(FE_element_shape)(
-								CREATE(FE_element_shape)(/*dimension*/1,shape_type));
+								CREATE(FE_element_shape)(/*dimension*/1,shape_type,
+								curve->fe_region));
 							/* create bases for parameter and value fields */
 							basis_type[0]=1;
 							basis_type[1]=(int)(LINEAR_LAGRANGE);

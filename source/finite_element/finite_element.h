@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 30 May 2003
+LAST MODIFIED : 8 July 2003
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -453,14 +453,6 @@ or conditional function, eg. add_FE_element_using_node_list_to_list.
 	struct LIST(FE_element) *element_list;
 	struct LIST(FE_node) *node_list;
 };
-
-/*
-Global variables
-----------------
-*/
-
-/*???RC Not sure why this is global */
-extern struct LIST(FE_element_shape) *all_FE_element_shape;
 
 /*
 Global functions
@@ -2152,14 +2144,15 @@ order dx/dxi1, dx/dxi2, dx/dxi3, dy/dxi1 etc. Note that there will always be
 nine values returned, regardless of the element dimension.
 ==============================================================================*/
 
-struct FE_element_shape *CREATE(FE_element_shape)(int dimension, int *type);
+struct FE_element_shape *CREATE(FE_element_shape)(int dimension, int *type,
+	struct FE_region *fe_region);
 /*******************************************************************************
-LAST MODIFIED : 18 November 2002
+LAST MODIFIED : 8 July 2003
 
 DESCRIPTION :
-Searchs the list of all shapes (all_FE_element_shape) for a shape with the
-specified <dimension> and <type>.  If one is not found, a shape is created (with
-<type> duplicated) and added to the list of all shapes.  The shape is returned.
+Requests from the <fe_region> for a shape with the specified <dimension> and 
+<type>.  If one is not found, a shape is created (with <type> duplicated) and 
+added to the region.  The shape is returned.
 <type> is analogous to the basis type array, except that the entries are 0 or 1.
 If <type> is omitted an "unspecified" shape of the given <dimension> is
 returned. An element with such a shape may not have fields defined on it until
@@ -2187,20 +2180,10 @@ DESCRIPTION :
 Returns true if the only thing know about <element_shape> is its dimension.
 ==============================================================================*/
 
-struct FE_element_shape *find_FE_element_shape_in_list(int dimension,int *type,
-	struct LIST(FE_element_shape) *list);
-/*******************************************************************************
-LAST MODIFIED : 24 September 1995
-
-DESCRIPTION :
-Searchs the <list> for the element shape with the specified <dimension> and
-<type> and returns the address of the element_shape.
-==============================================================================*/
-
 struct FE_element_shape *get_FE_element_shape_of_face(
-	struct FE_element_shape *shape,int face_number);
+	struct FE_element_shape *shape,int face_number, struct FE_region *fe_region);
 /*******************************************************************************
-LAST MODIFIED : 15 April 2003
+LAST MODIFIED : 7 July 2003
 
 DESCRIPTION :
 From the parent <shape> returns the FE_element_shape for its face <face_number>.

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_region.h
 
-LAST MODIFIED : 27 May 2003
+LAST MODIFIED : 7 July 2003
 
 DESCRIPTION :
 Object comprising a single finite element mesh including nodes, elements and
@@ -61,9 +61,10 @@ Global functions
 */
 
 struct FE_region *CREATE(FE_region)(struct FE_region *master_fe_region,
-	struct MANAGER(FE_basis) *basis_manager);
+	struct MANAGER(FE_basis) *basis_manager,
+	struct LIST(FE_element_shape) *element_shape_list);
 /*******************************************************************************
-LAST MODIFIED : 2 October 2002
+LAST MODIFIED : 7 July 2003
 
 DESCRIPTION :
 Creates a struct FE_region.
@@ -596,6 +597,15 @@ Returns the FE_region that the fields, nodes and elements of <fe_region>
 ultimately belong to. <fe_region> is returned if it has no immediate master.
 ==============================================================================*/
 
+struct LIST(FE_element_shape) *FE_region_get_FE_element_shape_list(
+	struct FE_region *fe_region);
+/*******************************************************************************
+LAST MODIFIED : 7 July 2003
+
+DESCRIPTION :
+Returns the LIST of FE_element_shapes used for elements in this <fe_region>.
+==============================================================================*/
+
 int FE_region_change_FE_element_identifier(
 	struct FE_region *fe_region, struct FE_element *element,
 	struct CM_element_information *new_identifier);
@@ -1003,9 +1013,10 @@ Returns in <cmiss_region_address> either the owning <cmiss_region> for
 
 struct FE_region *Cmiss_region_get_or_create_child_FE_region(
 	struct Cmiss_region *parent_cmiss_region, char *child_name,
-	struct FE_region *master_fe_region, struct MANAGER(FE_basis) *basis_manager);
+	struct FE_region *master_fe_region, struct MANAGER(FE_basis) *basis_manager,
+	struct LIST(FE_element_shape) *element_shape_list);
 /*******************************************************************************
-LAST MODIFIED : 9 May 2003
+LAST MODIFIED : 7 July 2003
 
 DESCRIPTION :
 Finds or creates a child of <parent_region> with the <child_region_name>.

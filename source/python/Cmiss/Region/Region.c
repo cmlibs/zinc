@@ -229,6 +229,7 @@ CmissRegion_read_file(PyObject* self, PyObject* args)
 	int return_code;
 	PyObject *return_object;
 	struct Cmiss_region *temp_region;
+	struct LIST(FE_element_shape) *element_shape_list;
 	struct MANAGER(FE_basis) *basis_manager;
 
 	if (!(PyArg_ParseTuple(args,"s:read_file", &file_name)))
@@ -243,10 +244,12 @@ CmissRegion_read_file(PyObject* self, PyObject* args)
 		cmiss_region = (CmissRegionObject *)self;
 		printf("CmissRegion_read_file %p\n", cmiss_region->region);
 		if (cmiss_region->region&&file_name&&
-			(basis_manager=FE_region_get_basis_manager(Cmiss_region_get_FE_region(cmiss_region->region))))
+			(basis_manager=FE_region_get_basis_manager(Cmiss_region_get_FE_region(cmiss_region->region)))&&
+			(element_shape_list=FE_region_get_FE_element_shape_list(Cmiss_region_get_FE_region(
+			cmiss_region->region))))
 		{
 			if (temp_region=read_exregion_file_of_name(file_name,basis_manager,
-				(struct FE_import_time_index *)NULL))
+				element_shape_list, (struct FE_import_time_index *)NULL))
 			{
 				ACCESS(Cmiss_region)(temp_region);
 				if (Cmiss_regions_FE_regions_can_be_merged(cmiss_region->region,temp_region))
@@ -286,6 +289,7 @@ CmissRegion_new(PyObject* self, PyObject* args)
 {
 	CmissRegionObject *cmiss_region;
 	struct FE_region *fe_region;
+	struct LIST(FE_element_shape) *element_shape_list;
 	struct MANAGER(FE_basis) *basis_manager;
 
 	if (!PyArg_ParseTuple(args,":new", NULL)) 
@@ -295,9 +299,11 @@ CmissRegion_new(PyObject* self, PyObject* args)
 	if (cmiss_region->region = CREATE(Cmiss_region)())
 	{
 		ACCESS(Cmiss_region)(cmiss_region->region);
-		if (basis_manager=CREATE_MANAGER(FE_basis)())
+		if ((basis_manager=CREATE_MANAGER(FE_basis)()) &&
+			(element_shape_list = CREATE(LIST(FE_element_shape))()))
 		{
-			if (fe_region=CREATE(FE_region)((struct FE_region *)NULL,basis_manager))
+			if (fe_region=CREATE(FE_region)((struct FE_region *)NULL,basis_manager,
+				element_shape_list))
 			{
 				if (!Cmiss_region_attach_FE_region(cmiss_region->region, fe_region))
 				{
