@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 21 January 2002
+LAST MODIFIED : 13 March 2002
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -6188,7 +6188,7 @@ we can sort out these dependencies before the manager message is sent out.
 int GT_element_settings_Graphical_material_change(
 	struct GT_element_settings *settings, void *material_change_data_void)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 13 March 2002
 
 DESCRIPTION :
 If <settings> has a graphics object that plots data, and it uses any material in
@@ -6214,9 +6214,10 @@ Second argument is a struct GT_element_settings_Graphical_material_change_data.
 			IS_OBJECT_IN_LIST(Graphical_material)(settings->selected_material,
 				material_change_data->changed_material_list))
 		{
-			if (settings->graphics_object && settings->spectrum)
+			if (settings->graphics_object)
 			{
-				GT_object_changed(settings->graphics_object);
+				GT_object_Graphical_material_change(settings->graphics_object,
+					(struct LIST(Graphical_material) *)NULL);
 			}
 			/* GT_element_group only changed if settings are visible */
 			if (settings->visibility)
@@ -6240,7 +6241,7 @@ Second argument is a struct GT_element_settings_Graphical_material_change_data.
 int GT_element_settings_Spectrum_change(
 	struct GT_element_settings *settings, void *spectrum_change_data_void)
 /*******************************************************************************
-LAST MODIFIED : 7 June 2001
+LAST MODIFIED : 12 March 2002
 
 DESCRIPTION :
 If <settings> has a graphics object that plots a scalar using a spectrum in the
@@ -6262,7 +6263,8 @@ Second argument is a struct GT_element_settings_Spectrum_change_data.
 		{
 			if (settings->graphics_object)
 			{
-				GT_object_changed(settings->graphics_object);
+				GT_object_Spectrum_change(settings->graphics_object,
+					(struct LIST(Spectrum) *)NULL);
 			}
 			/* GT_element_group only changed if settings are visible */
 			if (settings->visibility)
