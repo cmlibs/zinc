@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 13 September 2004
+LAST MODIFIED : 19 October 2004
 
 DESCRIPTION :
 
@@ -2128,7 +2128,7 @@ DWORD WINAPI save_write_signal_file_process(
 	LPVOID save_write_signal_file_background_data_void)
 #endif /* defined (WIN32_SYSTEM) */
 /*******************************************************************************
-LAST MODIFIED : 13 September 2004
+LAST MODIFIED : 19 October 2004
 
 DESCRIPTION :
 Called by unemap_get_samples_acquired_background to actually write the data.
@@ -2215,7 +2215,11 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 			}
 			return_code=write_signal_file(output_file,rig);
 			fclose(output_file);
-			if (0==return_code)
+			if (return_code)
+			{
+				page_window->data_saved=1;
+			}
+			else
 			{
 				remove(save_write_signal_file_background_data->file_name);
 			}
@@ -2250,9 +2254,9 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 			"Missing save_write_signal_file_background_data");
 		return_code=0;
 	}
+#if defined (DEBUG)
 	/*???debug */
 	printf("leave save_write_signal_file_process\n");
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	LEAVE;
 
