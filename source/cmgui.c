@@ -396,6 +396,54 @@ Used to avoid parsing possible command line switches.
 	return (return_code);
 } /* set_string_no_command_line_option */
 
+int ignore_entry_and_next_token(struct Parse_state *state,
+	void *dummy_void, void *entry_description_void)
+/*******************************************************************************
+LAST MODIFIED : 8 August 2002
+
+DESCRIPTION :
+Used to consume and write help for command line parameters handled outside
+of this parse state routine.
+==============================================================================*/
+{
+	char *current_token;
+	int return_code;
+
+	ENTER(ignore_entry_and_next_token);
+	if (state)
+	{
+		if (current_token = state->current_token)
+		{
+			if (strcmp(PARSER_HELP_STRING, current_token) &&
+				strcmp(PARSER_RECURSIVE_HELP_STRING, current_token))
+			{
+				return_code = shift_Parse_state(state,1);
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE, (char *)entry_description_void);
+				return_code = 1;
+			}
+
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Missing string");
+			display_parse_state_location(state);
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"ignore_entry_and_next_token.  Missing state");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* ignore_entry_and_next_token */
+
 static int read_cmgui_command_line_options(struct Parse_state *state,
 	void *dummy_to_be_modified, void *cmgui_command_line_options_void)
 /*******************************************************************************
@@ -415,6 +463,11 @@ Parses command line options from <state>.
 		(struct Cmgui_command_line_options *)cmgui_command_line_options_void))
 	{
 		option_table = CREATE(Option_table)();
+#if defined (MOTIF)
+		/* -background, handled by X11 */
+		Option_table_add_entry(option_table, "-background", NULL,
+			(void *)" X11_COLOUR_NAME", ignore_entry_and_next_token);
+#endif /* defined (MOTIF) */
 		/* -batch */
 		Option_table_add_entry(option_table, "-batch",
 			&(command_line_options->batch_mode_flag), NULL, set_char_flag);
@@ -435,6 +488,11 @@ Parses command line options from <state>.
 		/* -console */
 		Option_table_add_entry(option_table, "-console",
 			&(command_line_options->console_mode_flag), NULL, set_char_flag);
+#if defined (MOTIF)
+		/* -display, handled by X11 */
+		Option_table_add_entry(option_table, "-display", NULL,
+			(void *)" X11_DISPLAY_NUMBER", ignore_entry_and_next_token);
+#endif /* defined (MOTIF) */
 		/* -epath */
 		Option_table_add_entry(option_table, "-epath",
 			&(command_line_options->epath_directory_name),
@@ -447,6 +505,11 @@ Parses command line options from <state>.
 		Option_table_add_entry(option_table, "-execute",
 			&(command_line_options->execute_string),
 			(void *)" EXECUTE_STRING", set_string);
+#if defined (MOTIF)
+		/* -foreground, handled by X11 */
+		Option_table_add_entry(option_table, "-foreground", NULL,
+			(void *)" X11_COLOUR_NAME", ignore_entry_and_next_token);
+#endif /* defined (MOTIF) */
 		/* -help */
 		Option_table_add_entry(option_table, "-help",
 			&(command_line_options->write_help_flag), NULL, set_char_flag);
@@ -641,6 +704,7 @@ Main program for the CMISS Graphical User Interface
 	command_data.execute_command= execute_command;
 	set_command = CREATE(Execute_command)();
 	command_data.set_command= set_command;
+	command_data.event_dispatcher = (struct Event_dispatcher *)NULL;
 	command_data.user_interface= (struct User_interface *)NULL;
 #if defined (MOTIF)
 	command_data.control_curve_editor_dialog=(Widget)NULL;
