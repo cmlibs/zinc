@@ -534,7 +534,7 @@ Main program for unemap
 	{
 		/* set up messages */
 		set_display_message_function(ERROR_MESSAGE,display_error_message,
-			&user_interface);
+			user_interface);
 		/*if using nodes, print information and warning messages to stdout*/
 #if defined(UNEMAP_USE_3D)
 		set_display_message_function(INFORMATION_MESSAGE,
@@ -545,14 +545,14 @@ Main program for unemap
 		set_display_message_function(INFORMATION_MESSAGE,
 			display_information_message,(void *)NULL);
 		set_display_message_function(WARNING_MESSAGE,display_warning_message,
-			&user_interface);
+			user_interface);
 #endif /* defined(UNEMAP_USE_3D) */
 		/* used to output information and warnings to windows*/
 #if defined(OLD_CODE)
 		set_display_message_function(INFORMATION_MESSAGE,
-			display_information_message,&user_interface);
+			display_information_message,user_interface);
 		set_display_message_function(WARNING_MESSAGE,display_warning_message,
-			&user_interface);
+			user_interface);
 #endif
 		/* retrieve application specific constants */
 #if defined (MOTIF)
@@ -636,7 +636,7 @@ Main program for unemap
 #if defined (OLD_CODE)
 #if defined (OLD_CODE)
 		if (acquisition_rig_open_data=create_File_open_data(".cnfg",REGULAR,
-			read_configuration_file,(void *)&acquisition_rig,0,&user_interface))
+			read_configuration_file,(void *)&acquisition_rig,0,user_interface))
 		{
 			open_file_and_read(
 #if defined (MOTIF)
@@ -650,7 +650,7 @@ Main program for unemap
 		}
 #endif /* defined (OLD_CODE) */
 		if (acquisition_rig_filename=confirmation_get_read_filename(".cnfg",
-			&user_interface))
+			user_interface))
 		{
 			read_configuration_file(acquisition_rig_filename,
 				(void *)&acquisition_rig);
