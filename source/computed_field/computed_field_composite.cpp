@@ -1,12 +1,13 @@
 /*******************************************************************************
 FILE : computed_field_composite.c
 
-LAST MODIFIED : 25 October 2000
+LAST MODIFIED : 31 October 2000
 
 DESCRIPTION :
 Implements a "composite" computed_field which converts fields, field components
 and real values in any order into a single vector field.
 ==============================================================================*/
+#include <stdlib.h>
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_private.h"
@@ -1077,6 +1078,8 @@ static int set_Computed_field_composite_source_data(struct Parse_state *state,
 LAST MODIFIED : 25 October 2000
 
 DESCRIPTION :
+Note that fields are not ACCESSed by this function and should not be
+ACCESSed in the initial source_data.
 ==============================================================================*/
 {
 	char *current_token, *field_component_name, *source_string, *temp_name;
@@ -1349,7 +1352,7 @@ DESCRIPTION :
 static int define_Computed_field_type_composite(struct Parse_state *state,
 	void *field_void,void *computed_field_composite_package_void)
 /*******************************************************************************
-LAST MODIFIED : 25 October 2000
+LAST MODIFIED : 31 October 2000
 
 DESCRIPTION :
 Converts <field> into type COMPUTED_FIELD_COMPOSITE (if it is not 
@@ -1389,6 +1392,20 @@ already) and allows its contents to be modified.
 		}
 		if (return_code)
 		{
+			/*???RC begin temporary code */
+			/*???RC swallow up old "number_of_scalars # scalars" tokens so
+				Mark Sagar can continue to use old command format */
+			if (((state->current_index+2) < state->number_of_tokens) &&
+				(fuzzy_string_compare(state->tokens[state->current_index],
+					"number_of_scalars")) &&
+				(0<atoi(state->tokens[state->current_index+1])) &&
+				(fuzzy_string_compare(state->tokens[state->current_index+2],
+					"scalars")))
+			{
+				shift_Parse_state(state,3);
+			}
+			/*???RC end temporary code */
+
 			option_table = CREATE(Option_table)();
 			/* default option: composite field definition */
 			Option_table_add_entry(option_table, (char *)NULL, &source_data,
@@ -1402,6 +1419,23 @@ already) and allows its contents to be modified.
 				source_data.source_field_numbers,
 				source_data.source_value_numbers);
 			DESTROY(Option_table)(&option_table);
+		}
+		/* clean up the source data */
+		if (source_data.source_fields)
+		{
+			DEALLOCATE(source_data.source_fields);
+		}
+		if (source_data.source_values)
+		{
+			DEALLOCATE(source_data.source_values);
+		}
+		if (source_data.source_field_numbers)
+		{
+			DEALLOCATE(source_data.source_field_numbers);
+		}
+		if (source_data.source_value_numbers)
+		{
+			DEALLOCATE(source_data.source_value_numbers);
 		}
 	}
 	else
