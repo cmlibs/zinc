@@ -135,7 +135,7 @@ supported on displays other than SGI will do.
 		GLX_PRESERVED_CONTENTS, True,
 		(int) None
 	};
-	int glx_major_version, glx_minor_version, nelements;
+	int glx_major_version, glx_minor_version;
 #else /* defined (GLX_pbuffer) */
 #if defined (GLX_SGIX_dm_pbuffer) || (GLX_SGIX_pbuffer)
 	int pbuffer_attribs [] = 
@@ -147,6 +147,7 @@ supported on displays other than SGI will do.
 #endif /* defined (GLX_pbuffer) */
 #if defined (GLX_fbconfig)
 	GLXFBConfig *config_list;
+	int config_index, nelements;
 	static int fbvisattrsRGB_with_depth[] =
 	{
 		GLX_RED_SIZE, 5,
@@ -165,6 +166,29 @@ supported on displays other than SGI will do.
 		None
 	};
 	int *fbvisattrs;
+#else
+#if defined (GLX_SGIX_fbconfig)
+	GLXFBConfigSGIX *config_list;
+	int config_index, nelements;
+	static int fbvisattrsRGB_with_depth[] =
+	{
+		GLX_RED_SIZE, 5,
+		GLX_GREEN_SIZE, 5,
+		GLX_BLUE_SIZE, 5,
+		GLX_DEPTH_SIZE, 5,
+		GLX_DOUBLEBUFFER, GL_FALSE,
+		None
+	};
+	static int fbvisattrsRGB_no_depth[] =
+	{
+		GLX_RED_SIZE, 5,
+		GLX_GREEN_SIZE, 5,
+		GLX_BLUE_SIZE, 5,
+		GLX_DOUBLEBUFFER, GL_FALSE,
+		None
+	};
+	int *fbvisattrs;
+#endif /* defined (GLX_SGIX_fbconfig) */
 #endif /* defined (GLX_fbconfig) */
 	static int visattrsRGB_with_depth[] =
 	{
@@ -205,14 +229,14 @@ supported on displays other than SGI will do.
 		if (depth_buffer)
 		{
 			visattrs = visattrsRGB_with_depth;
-#if defined (GLX_fbconfig)
+#if defined (GLX_fbconfig) || defined (GLX_SGIX_fbconfig)
 			fbvisattrs = fbvisattrsRGB_with_depth;
 #endif /* defined (GLX_fbconfig) */
 		}
 		else
 		{
 			visattrs = visattrsRGB_no_depth;
-#if defined (GLX_fbconfig)
+#if defined (GLX_fbconfig) || defined (GLX_SGIX_fbconfig)
 			fbvisattrs = fbvisattrsRGB_no_depth;
 #endif /* defined (GLX_fbconfig) */
 		}
@@ -389,14 +413,22 @@ supported on displays other than SGI will do.
 					|| query_glx_extension("GLX_SGIX_pbuffer", display,
 					DefaultScreen(display)))
 				{
-					if ((config_list = glXChooseFBConfig(display, 
-						DefaultScreen(display), fbvisattrs, &nelements)) && 
-						(buffer->config = *config_list) &&
-						(buffer->visual_info = glXGetVisualFromFBConfig(
-						display, buffer->config)))
+					if (config_list = glXChooseFBConfig(display, 
+						DefaultScreen(display), fbvisattrs, &nelements))
 					{
-						if (buffer->pbuffer = glXCreatePbuffer(display,
-							buffer->config, pbuffer_attribs))
+						config_index = 0;
+						while ((config_index < nelements) &&
+							(!(buffer->pbuffer = glXCreatePbuffer(display,
+						   config_list[config_index], pbuffer_attribs))))
+						{
+							config_index++;
+						}
+						if (config_index < nelements)
+						{
+							buffer->config = config_list[config_index];
+						}
+						if (buffer->config && (buffer->visual_info = 
+							glXGetVisualFromFBConfig(display, buffer->config)))
 						{
 							if (buffer->context = glXCreateNewContext(
 								display, buffer->config, GLX_RGBA_TYPE, 
@@ -413,7 +445,8 @@ supported on displays other than SGI will do.
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Cannot create pbuffer");
+							display_message(ERROR_MESSAGE,"CREATE(Dm_buffer).  "
+								"Cannot create pbuffer for any possible frame buffers");
 							DEALLOCATE(buffer);
 							buffer = (struct Dm_buffer *)NULL;
 						}
@@ -437,37 +470,49 @@ supported on displays other than SGI will do.
 					/* This message causes many problems as people wonder if something is wrong. */
 					display_message(INFORMATION_MESSAGE,"CREATE(Dm_buffer). DM_PBuffer Unavailable, using plain Pbuffer\n");
 #endif /* defined (DEBUG) */
-					if((buffer->visual_info = glXChooseVisual(display,
-						DefaultScreen(display), visattrs))
-						&& (buffer->config = glXGetFBConfigFromVisualSGIX(
-							display, buffer->visual_info)))
+					if (config_list = glXChooseFBConfigSGIX(display, 
+						DefaultScreen(display), fbvisattrs, &nelements))
 					{
-						if ( buffer->pbuffer = glXCreateGLXPbufferSGIX(display,
-							buffer->config, width, height, pbuffer_attribs))
+						config_index = 0;
+						while ((config_index < nelements) &&
+							(!(buffer->pbuffer = glXCreateGLXPbufferSGIX(display,
+							config_list[config_index], width, height, pbuffer_attribs))))
 						{
-							if (buffer->context = glXCreateContextWithConfigSGIX(
-								display, buffer->config, GLX_RGBA_TYPE_SGIX, 
-								ThreeDDrawing_get_shareable_context(), GL_TRUE))
-							{
-								/* Finished I think, hooray! */
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Cannot get GLX context");
-								DEALLOCATE(buffer);
-								buffer = (struct Dm_buffer *)NULL;
-							}
+							config_index++;
 						}
-						else
+						if (config_index < nelements)
 						{
-							display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Cannot create pbuffer");
-							DEALLOCATE(buffer);
-							buffer = (struct Dm_buffer *)NULL;
+							buffer->config = config_list[config_index];
 						}
+					}
+					if (buffer->config && buffer->pbuffer)
+					{
+					   if (buffer->visual_info =
+						   glXGetVisualFromFBConfigSGIX(display, buffer->config))
+					   {
+						   if (buffer->context = glXCreateContextWithConfigSGIX(
+							   display, buffer->config, GLX_RGBA_TYPE_SGIX, 
+							   ThreeDDrawing_get_shareable_context(), GL_TRUE))
+						   {
+							 /* Finished I think, hooray! */
+						   }
+						   else
+						   {
+							   display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Cannot get GLX context");
+							  DEALLOCATE(buffer);
+							  buffer = (struct Dm_buffer *)NULL;
+						   }
+					    }
+					  else
+					  {
+						 display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Cannot get visual info");
+						 DEALLOCATE(buffer);
+						 buffer = (struct Dm_buffer *)NULL;
+					  }
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Cannot get Frame Buffer Configuration");
+						display_message(ERROR_MESSAGE,"CREATE(Dm_buffer). Cannot get a valid pbuffer from config list.");
 						DEALLOCATE(buffer);
 						buffer = (struct Dm_buffer *)NULL;
 					}
