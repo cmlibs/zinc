@@ -1073,6 +1073,15 @@ DESCRIPTION :
 			} break;
 			case SCENE_VIEWER_SLOW_TRANSPARENCY:
 			{
+				glEnable(GL_ALPHA_TEST);
+				/* render only fragments with alpha = 1.0, write depth */
+				glDepthMask(GL_TRUE);
+				glAlphaFunc(GL_EQUAL,1.0);
+				execute_Scene(scene_viewer->overlay_scene);
+				/* render fragments with alpha != 1.0; do not write into
+					depth buffer */
+				glDepthMask(GL_FALSE);
+				glAlphaFunc(GL_NOTEQUAL,1.0);
 				execute_Scene(scene_viewer->overlay_scene);
 				glDepthMask(GL_TRUE);
 				glDisable(GL_ALPHA_TEST);
