@@ -822,6 +822,9 @@ Main program for the CMISS Graphical User Interface
 		user_interface.main_window_state=initial_main_window_state;
 		user_interface.command_line=command_line;
 #endif /* defined (WINDOWS) */
+#if defined (OPENGL_API)
+		user_interface.specified_visual_id = 0;
+#endif /* defined (OPENGL_API) */
 		command_data.user_interface= &user_interface;
 	}
 
