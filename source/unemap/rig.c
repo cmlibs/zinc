@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.c
 
-LAST MODIFIED : 29 July 2000
+LAST MODIFIED : 28 September 2000
 
 DESCRIPTION :
 Contains function definitions for measurement rigs.
@@ -1891,7 +1891,7 @@ struct Rig *read_configuration(FILE *input_file,enum Rig_file_type file_type,
 #endif /* defined (UNEMAP_USE_3D)*/
        )
 /*******************************************************************************
-LAST MODIFIED : 13 July 2000
+LAST MODIFIED : 28 September 2000
 
 DESCRIPTION :
 Assumes that the <input_file> has been opened, the <file_type> (binary or text)
@@ -2162,8 +2162,13 @@ pointer to the rig if successful and NULL if unsuccessful.
 																								if ((device_item->device)&&
 																									(device_item->device->
 																									description)&&
+#if defined (OLD_CODE)
+/* relax to only requiring that it has an actual channel */
 																									(ELECTRODE==device_item->
 																									device->description->type)&&
+#endif /* defined (OLD_CODE) */
+																									(device_item->device->
+																									channel)&&
 																									(device_item->device->
 																									description->name)&&
 																									(0==strcmp(name,device_item->
@@ -2577,7 +2582,7 @@ pointer to the rig if successful and NULL if unsuccessful.
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"read_configuration.  Invalid device type");
+									"read_configuration.  Invalid device type %s",string);
 								destroy_Rig(&rig);
 							}
 						}
@@ -2987,8 +2992,12 @@ pointer to the rig if successful and NULL if unsuccessful.
 												if ((0<=device_number)&&
 													(device_number<number_of_devices)&&
 													device[device_number]&&(device[device_number]->
+#if defined (OLD_CODE)
+/* relax to only requiring that it has an actual channel */
 													description)&&(ELECTRODE==device[device_number]->
 													description->type))
+#endif /* defined (OLD_CODE) */
+													channel))
 												{
 													(auxiliary_properties->electrodes)[j]=
 														device[device_number];

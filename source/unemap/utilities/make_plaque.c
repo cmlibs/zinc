@@ -80,24 +80,30 @@ int main()
 				if ((electrode_number/64<ecg_module)&&
 					(ecg_module<=(electrode_number/64)+number_of_pcbs))
 				{
+					fprintf(cnfg_file,"auxiliary : ecg_%d\n",(ecg_module-1)*64+30);
+					fprintf(cnfg_file,"channel : %d\n",(ecg_module-1)*64+30);
+					fprintf(cnfg_file,"auxiliary : ecg_%d\n",(ecg_module-1)*64+31);
+					fprintf(cnfg_file,"channel : %d\n",(ecg_module-1)*64+31);
+					fprintf(cnfg_file,"auxiliary : ecg_%d\n",(ecg_module-1)*64+32);
+					fprintf(cnfg_file,"channel : %d\n",(ecg_module-1)*64+32);
 					fprintf(cnfg_file,"auxiliary : I\n");
-					fprintf(cnfg_file,"sum : %d-%d\n",(ecg_module-1)*64+30,
+					fprintf(cnfg_file,"sum : ecg_%d-ecg_%d\n",(ecg_module-1)*64+30,
 						(ecg_module-1)*64+31);
 					fprintf(cnfg_file,"auxiliary : II\n");
-					fprintf(cnfg_file,"sum : %d-%d\n",(ecg_module-1)*64+32,
+					fprintf(cnfg_file,"sum : ecg_%d-ecg_%d\n",(ecg_module-1)*64+32,
 						(ecg_module-1)*64+31);
 					fprintf(cnfg_file,"auxiliary : III\n");
-					fprintf(cnfg_file,"sum : %d-%d\n",(ecg_module-1)*64+32,
+					fprintf(cnfg_file,"sum : ecg_%d-ecg_%d\n",(ecg_module-1)*64+32,
 						(ecg_module-1)*64+30);
 					fprintf(cnfg_file,"auxiliary : aVR\n");
-					fprintf(cnfg_file,"sum : %d-0.5*%d-0.5*%d\n",(ecg_module-1)*64+31,
-						(ecg_module-1)*64+30,(ecg_module-1)*64+32);
+					fprintf(cnfg_file,"sum : ecg_%d-0.5*ecg_%d-0.5*ecg_%d\n",
+						(ecg_module-1)*64+31,(ecg_module-1)*64+30,(ecg_module-1)*64+32);
 					fprintf(cnfg_file,"auxiliary : aVL\n");
-					fprintf(cnfg_file,"sum : %d-0.5*%d-0.5*%d\n",(ecg_module-1)*64+30,
-						(ecg_module-1)*64+31,(ecg_module-1)*64+32);
+					fprintf(cnfg_file,"sum : ecg_%d-0.5*ecg_%d-0.5*ecg_%d\n",
+						(ecg_module-1)*64+30,(ecg_module-1)*64+31,(ecg_module-1)*64+32);
 					fprintf(cnfg_file,"auxiliary : aVF\n");
-					fprintf(cnfg_file,"sum : %d-0.5*%d-0.5*%d\n",(ecg_module-1)*64+32,
-						(ecg_module-1)*64+30,(ecg_module-1)*64+31);
+					fprintf(cnfg_file,"sum : ecg_%d-0.5*ecg_%d-0.5*ecg_%d\n",
+						(ecg_module-1)*64+32,(ecg_module-1)*64+30,(ecg_module-1)*64+31);
 				}
 				region_number++;
 				electrode_number += number_of_pcbs*64;
