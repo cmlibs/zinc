@@ -16068,12 +16068,9 @@ If the <use_data> flag is set, then read data, otherwise nodes.
 			/* example */
 			Option_table_add_entry(option_table,CMGUI_EXAMPLE_DIRECTORY_SYMBOL,
 				&file_name, &(command_data->example_directory), set_file_name);
-			if (!use_data)
-			{
-				/* time */
-				Option_table_add_entry(option_table,"time",
-					&time, &time_set_flag, set_float_and_char_flag);
-			}
+			/* time */
+			Option_table_add_entry(option_table,"time",
+				&time, &time_set_flag, set_float_and_char_flag);
 			/* default */
 			Option_table_add_entry(option_table, NULL, &file_name,
 				NULL, set_file_name);
