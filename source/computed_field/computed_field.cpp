@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.c
 
-LAST MODIFIED : 21 December 2000
+LAST MODIFIED : 27 March 2001
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -3851,7 +3851,7 @@ DESCRIPTION :
 int Computed_field_update_nodal_values_from_source_sub(
 	struct FE_node *node, void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 20 April 2000
+LAST MODIFIED : 27 March 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -3864,7 +3864,8 @@ DESCRIPTION :
 		(struct Computed_field_update_nodal_values_from_source_data *)data_void))
 	{
 		return_code = 1;
-		if (Computed_field_is_defined_at_node(data->source_field, node))
+		if (Computed_field_is_defined_at_node(data->source_field, node) &&
+			Computed_field_is_defined_at_node(data->destination_field, node))
 		{
 			if (Computed_field_evaluate_at_node(data->source_field, node,
 				data->values))
