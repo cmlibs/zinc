@@ -423,6 +423,8 @@ Perform image stretching operation on the image cache.
 			{
 				DEALLOCATE(storage);
 			}
+			DEALLOCATE(lowerc);
+			DEALLOCATE(upperd);
 		}
 		else
 		{
