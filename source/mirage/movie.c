@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : movie.c
 
-LAST MODIFIED : 15 March 2001
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1418,7 +1418,7 @@ static int Mirage_movie_graphics_show_points(struct Scene *scene,
 	struct GROUP(FE_element) *element_group,struct Graphical_material *material,
 	struct GT_object *glyph,float point_size,struct Computed_field *label_field)
 /*******************************************************************************
-LAST MODIFIED : 24 November 2000
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Adds points in the given <material>, possibly with node numbers on to the
@@ -1460,11 +1460,9 @@ Regenerates the GFE but does not update the scene.
 					glyph_scaling_mode, glyph_centre, glyph_size, orientation_scale_field,
 					glyph_scale_factors, variable_scale_field);
 				GT_element_settings_set_label_field(settings,label_field);
-				if (GT_element_group_add_settings(gt_element_group,settings,1))
+				if (GT_element_group_add_settings(gt_element_group, settings, 1))
 				{
-					GT_element_group_build_graphics_objects(gt_element_group,
-						(struct FE_element *)NULL,(struct FE_node *)NULL);
-					return_code=1;
+					return_code = 1;
 				}
 				else
 				{
@@ -1496,7 +1494,7 @@ Regenerates the GFE but does not update the scene.
 static int Mirage_movie_graphics_show_lines(struct Scene *scene,
 	struct GROUP(FE_element) *element_group,struct Graphical_material *material)
 /*******************************************************************************
-LAST MODIFIED : 16 June 1998
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Adds lines in the given <material> to the graphical finite element for
@@ -1517,11 +1515,9 @@ Adds lines in the given <material> to the graphical finite element for
 				GT_element_settings_set_material(settings,material);
 				/*???RC temporary */
 				GT_element_settings_set_selected_material(settings,material);
-				if (GT_element_group_add_settings(gt_element_group,settings,2))
+				if (GT_element_group_add_settings(gt_element_group, settings, 2))
 				{
-					GT_element_group_build_graphics_objects(gt_element_group,
-						(struct FE_element *)NULL,(struct FE_node *)NULL);
-					return_code=1;
+					return_code = 1;
 				}
 				else
 				{
@@ -1553,7 +1549,7 @@ Adds lines in the given <material> to the graphical finite element for
 static int Mirage_movie_graphics_show_surfaces(struct Scene *scene,
 	struct GROUP(FE_element) *element_group,struct Graphical_material *material)
 /*******************************************************************************
-LAST MODIFIED : 16 June 1998
+LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Adds surfaces in the given <material> to the graphical finite element for
@@ -1574,11 +1570,9 @@ Adds surfaces in the given <material> to the graphical finite element for
 				GT_element_settings_set_material(settings,material);
 				/*???RC temporary */
 				GT_element_settings_set_selected_material(settings,material);
-				if (GT_element_group_add_settings(gt_element_group,settings,0))
+				if (GT_element_group_add_settings(gt_element_group, settings, 0))
 				{
-					GT_element_group_build_graphics_objects(gt_element_group,
-						(struct FE_element *)NULL,(struct FE_node *)NULL);
-					return_code=1;
+					return_code = 1;
 				}
 				else
 				{
