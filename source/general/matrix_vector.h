@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : matrix_vector.h
 
-LAST MODIFIED : 15 October 2001
+LAST MODIFIED : 5 April 2002
 
 DESCRIPTION:
 Code for performing vector calculations - normalize, dot product etc. -, and
@@ -186,15 +186,26 @@ Adapted from "Numerical Recipes in C".
 
 int Jacobi_eigenanalysis(int n, double *a, double *d, double *v, int *nrot);
 /*******************************************************************************
-LAST MODIFIED : 6 November 2000
+LAST MODIFIED : 5 April 2002
 
 DESCRIPTION :
 Computes all eigenvalues and eigenvectors of real symmetric n x n matrix <a>.
 The eigenvalues of <a> are returned in <d>, the columns of v contain the
 normalised eigenvectors. <nrot> returns the number of jacobi rotations performed
-by the algorithm.
+by the algorithm. The returned eigenvalues/vectors are NOT sorted; use the
+eigensort function if required.
 The elements of <a> above the diagonal are destroyed by this function.
 Adapted from "Numerical Recipes in C".
+==============================================================================*/
+
+int eigensort(int n, double *d, double *v);
+/*******************************************************************************
+LAST MODIFIED : 5 April 2002
+
+DESCRIPTION :
+Sorts the n eigenvalues in <d> and corresponding eigenvectors in the columns of
+nxn matrix <v> from largest absolute value to smallest.
+Adapted from "Numerical Recipes".
 ==============================================================================*/
 
 int invert_FE_value_matrix3(FE_value *a,FE_value *a_inv);
