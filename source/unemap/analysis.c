@@ -1693,7 +1693,7 @@ Draws the <device> signal in the <pixel_map> at the specified position
 				signal_maximum += 1;
 				signal_minimum -= 1;
 			}
-			if(device)/* if have device */
+			if (device)
 			{
 				device->signal_maximum=signal_maximum;
 				device->signal_minimum=signal_minimum;

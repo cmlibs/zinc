@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.h
 
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 8 December 1999
 
 DESCRIPTION :
 ==============================================================================*/
@@ -69,7 +69,7 @@ The objective used when detecting an event.
 
 enum Event_detection_algorithm
 /*******************************************************************************
-LAST MODIFIED : 30 November 1999
+LAST MODIFIED : 8 December 1999
 
 DESCRIPTION :
 The algorithm used for detecting an event from a signal.
@@ -80,11 +80,13 @@ EDA_LEVEL = find the first time in the search interval at which the absolute
 EDA_THRESHOLD = select all times within the search interval whose objectives
 	exceed a user specified percentage of the maximum objective for the search
 	interval, subject to user specifed minimum event separation.
+NB.  New algorithms need to be added to the end because the detection algorithm
+	is written to the signals file (when saving analysis)
 ==============================================================================*/
 {
 	EDA_INTERVAL,
-	EDA_LEVEL,
-	EDA_THRESHOLD
+	EDA_THRESHOLD,
+	EDA_LEVEL
 }; /* enum Event_detection_algorithm */
 
 enum Datum_type

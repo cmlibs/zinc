@@ -1,24 +1,11 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 2 December 1999
+LAST MODIFIED : 9 December 1999
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
 	file
-
-???DB.  Temp.  Beat averaging considerations
-1 Beat averaging is done in trace_analysis_mode_apply and trace_change_signal
-	(trace_window.c)
-2 Greg's algorithm
-	- determine the times to average about (one for each beat), by picking a
-		stimulation signal (could be the current signal in unemap) and finding
-		"peaks" on the stimulation signal (could be the event times in unemap)
-	- specify start_offset - the start of the signal relative to the peak (same
-		for all beats
-	- for each signal, align [peak[0]-start_offset,peak[1]-start_offset),
-		[peak[1]-start_offset,peak[2]-start_offset), ... [peak[n-2]-start_offset,
-		peak[n-1]-start_offset) and average
 ==============================================================================*/
 #include <stddef.h>
 #include <stdlib.h>
@@ -1537,7 +1524,7 @@ Sets the objective for the detection algorithm to negative slope.
 
 static int analysis_write_signal_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 1 December 1999
+LAST MODIFIED : 9 December 1999
 
 DESCRIPTION :
 This function writes the rig configuration and interval of signal data to the
@@ -1546,6 +1533,7 @@ named file.
 {
 	char *temp_string;
 	FILE *output_file;
+	float signal_maximum,signal_minimum;
 	int buffer_end,buffer_start,event_number,event_time,i,new_datum,
 		new_end_search_interval,new_potential_time,new_start_search_interval,
 		number_of_events,return_code,temp_int;
@@ -1621,11 +1609,22 @@ named file.
 						while (return_code&&(i>0))
 						{
 							/* write the status and range */
+							/*???DB.  Originally the unscaled maximum and minimum were
+								stored.  This has to be maintained for backward compatability */
+							signal_minimum=(*device)->signal_minimum;
+							signal_maximum=(*device)->signal_maximum;
+							if (0!=((*device)->channel)->gain)
+							{
+								signal_minimum=(((*device)->channel)->offset)+
+									signal_minimum/(((*device)->channel)->gain);
+								signal_maximum=(((*device)->channel)->offset)+
+									signal_maximum/(((*device)->channel)->gain);
+							}
 							if ((1==BINARY_FILE_WRITE((char *)&((*device)->signal->status),
 								sizeof(enum Event_signal_status),1,output_file))&&
-								(1==BINARY_FILE_WRITE((char *)&((*device)->signal_minimum),
+								(1==BINARY_FILE_WRITE((char *)&signal_minimum,
 								sizeof(float),1,output_file))&&
-								(1==BINARY_FILE_WRITE((char *)&((*device)->signal_maximum),
+								(1==BINARY_FILE_WRITE((char *)&signal_maximum,
 								sizeof(float),1,output_file)))
 							{
 								/* write the events */
@@ -1792,7 +1791,7 @@ Called when the "Save interval" button is clicked.
 
 static int analysis_read_signal_file(char *file_name,void *analysis_work_area)
 /*******************************************************************************
-LAST MODIFIED : 1 December 1999
+LAST MODIFIED : 9 December 1999
 
 DESCRIPTION :
 Sets up the analysis work area for analysing a set of signals.
@@ -2189,6 +2188,12 @@ Sets up the analysis work area for analysing a set of signals.
 							sizeof(float),1,input_file))&&(1==BINARY_FILE_READ(
 							(char *)&((*device)->signal_maximum),sizeof(float),1,input_file)))
 						{
+							/*???DB.  Originally the unscaled maximum and minimum were
+								stored.  This has to be maintained for backward compatability */
+							(*device)->signal_minimum=(((*device)->channel)->gain)*
+								(((*device)->signal_minimum)-(((*device)->channel)->offset));
+							(*device)->signal_maximum=(((*device)->channel)->gain)*
+								(((*device)->signal_maximum)-(((*device)->channel)->offset));
 							/* read the events */
 							if (1==BINARY_FILE_READ((char *)&number_of_events,sizeof(int),1,
 								input_file))
