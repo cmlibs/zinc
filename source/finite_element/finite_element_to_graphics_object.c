@@ -3776,8 +3776,6 @@ faces.
 									vertex_list[i].blur=0;
 								}
 								data_index = 0;
-								texturemap_counter = 0;
-								texturemap_index_counter = 0;
 								/*???Mark.  THIS CODE NEEDS TO BE DOCTORED.  end */
 								/* calculate the points in the specified coordinate system */
 								v_count=0;
