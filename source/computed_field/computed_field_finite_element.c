@@ -1451,17 +1451,17 @@ FE_field being made and/or modified.
 
 				/* create FE_field */
 				coordinate_system = Computed_field_get_coordinate_system(field);
-				if (fe_field = FE_region_get_FE_field_with_properties(
+				/* Fetching the field finds the correct field in the manager,
+					creating it if it doesn't exist and merging it into the region
+					automatically */
+				fe_field = FE_region_get_FE_field_with_properties(
 					computed_field_finite_element_package->fe_region,
 					field->name, GENERAL_FE_FIELD,
 					/*indexer_field*/(struct FE_field *)NULL, /*number_of_indexed_values*/0,
 					cm_field_type, coordinate_system,
 					value_type, number_of_components, component_names,
 					/*number_of_times*/0, /*time_value_type*/UNKNOWN_VALUE,
-					/*external*/(struct FE_field_external_information *)NULL))
-				{
-					ACCESS(FE_field)(fe_field);
-				}
+					/*external*/(struct FE_field_external_information *)NULL);
 			}
 			/* clean up the component_names array */
 			if (component_names)
