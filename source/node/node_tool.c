@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : node_tool.c
 
-LAST MODIFIED : 20 November 2000
+LAST MODIFIED : 5 December 2000
 
 DESCRIPTION :
 Functions for mouse controlled node position and vector editing based on
@@ -2808,7 +2808,7 @@ int destroy_listed_nodes(struct LIST(FE_node) *node_list,
 	struct MANAGER(FE_element) *element_manager,
 	struct FE_node_selection *node_selection)
 /*******************************************************************************
-LAST MODIFIED : 18 July 2000
+LAST MODIFIED : 5 December 2000
 
 DESCRIPTION :
 Destroys all the nodes in <node_list> that are not accessed outside
@@ -2869,6 +2869,7 @@ Upon return <node_list> contains all the nodes that could not be destroyed.
 			FE_node_selection_end_cache(node_selection);
 		}
 		/* now remove the nodes from the manager */
+		MANAGER_BEGIN_CACHE(FE_node)(node_manager);
 		number_of_nodes_destroyed=0;
 		while (return_code&&(node=FIRST_OBJECT_IN_LIST_THAT(FE_node)(
 			(LIST_CONDITIONAL_FUNCTION(FE_node) *)NULL,(void *)NULL,node_list)))
@@ -2898,6 +2899,7 @@ Upon return <node_list> contains all the nodes that could not be destroyed.
 				return_code=0;
 			}
 		}
+		MANAGER_END_CACHE(FE_node)(node_manager);
 		if (0<(number_of_nodes_not_destroyed=
 			NUMBER_IN_LIST(FE_node)(not_destroyed_node_list)))
 		{
