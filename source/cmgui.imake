@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 21 March 2001
+XCOMM LAST MODIFIED : 26 March 2001
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM
@@ -652,7 +652,7 @@ LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm -lC -lCio -lpthread
 #elif defined(LINUX) /* switch OperatingSystem */
 #if defined (DYNAMIC_GL_LINUX)
 X_LIB = /usr/X11R6/lib
-LIB = $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXpm.a -lXext $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a -lm -ldl -lc /usr/lib/libpthread.a /usr/lib/libcrypt.a
+LIB = $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXpm.a -lXext $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a -lg2c -lm -ldl -lc /usr/lib/libpthread.a /usr/lib/libcrypt.a
 #else /* defined (DYNAMIC_GL_LINUX) */
 LIB = -lMrm -lXm -lXt -lX11 -lXmu -lXpm -lXext -lg2c -lm -ldl -lXp -lSM -lICE -lpthread -lcrypt
 #endif /* defined (DYNAMIC_GL_LINUX) */
