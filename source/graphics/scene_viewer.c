@@ -48,6 +48,12 @@ November 97 Created from rendering part of Drawing.
 #include "user_interface/user_interface.h"
 
 /*
+Module constants
+----------------
+*/
+#define SCENE_VIEWER_PICK_SIZE 7.0
+
+/*
 Module types
 ------------
 */
@@ -1307,7 +1313,7 @@ Converts mouse button-press and motion events into viewing transformations in
 						/*???RC Picking sensitivity should not be hardcoded - read from
 							defaults file and/or set from text command */
 						gluPickMatrix((GLdouble)pointer_x,(GLdouble)(viewport[3]-pointer_y),
-							11.0,11.0,viewport);
+							SCENE_VIEWER_PICK_SIZE,SCENE_VIEWER_PICK_SIZE,viewport);
 						Scene_viewer_render_scene_with_picking(scene_viewer);
 						glMatrixMode(GL_PROJECTION);
 						glPopMatrix();
