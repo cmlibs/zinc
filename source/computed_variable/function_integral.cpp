@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_integral.cpp
 //
-// LAST MODIFIED : 11 February 2005
+// LAST MODIFIED : 30 March 2005
 //
 // DESCRIPTION :
 //???DB.  Need more memory management for Integration_scheme
@@ -16,6 +16,7 @@ extern "C"
 #include "general/debug.h"
 }
 #include "computed_variable/function_matrix_determinant.hpp"
+#include "computed_variable/function_matrix_product.hpp"
 #include "computed_variable/function_composition.hpp"
 #include "computed_variable/function_derivative.hpp"
 #include "computed_variable/function_finite_element.hpp"
@@ -362,7 +363,7 @@ struct Integrate_over_element_data
 int integrate_over_element(struct FE_element *element,
 	void *integrate_over_element_data_void)
 //******************************************************************************
-// LAST MODIFIED : 11 February 2005
+// LAST MODIFIED : 22 March 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -704,7 +705,7 @@ int integrate_over_element(struct FE_element *element,
 						get_value())))
 #endif // defined (EVALUATE_RETURNS_VALUE)
 					{
-						multiplier=(*jacobian_determinant)(1,1);
+						temp_scalar=(*jacobian_determinant)(1,1);
 						if (temp_scalar<0)
 						{
 							temp_scalar= -temp_scalar;
@@ -926,7 +927,7 @@ int integrate_over_element(struct FE_element *element,
 
 class Function_variable_integral : public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 7 February 2005
+// LAST MODIFIED : 21 March 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -936,12 +937,20 @@ class Function_variable_integral : public Function_variable_matrix<Scalar>
 		// constructor
 		Function_variable_integral(
 			const boost::intrusive_ptr<Function_integral> function_integral):
-			Function_variable_matrix<Scalar>(function_integral){};
+			Function_variable_matrix<Scalar>(function_integral
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			,false
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			){};
 		Function_variable_integral(
 			const boost::intrusive_ptr<Function_integral>
 			function_integral,const Function_size_type row,
 			const Function_size_type column):Function_variable_matrix<Scalar>(
-			function_integral,row,column){};
+			function_integral,
+#if defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			false,
+#endif // defined (Function_variable_matrix_HAS_INPUT_ATTRIBUTE)
+			row,column){};
 		// destructor
 		~Function_variable_integral(){};
 	// inherited
@@ -1160,20 +1169,51 @@ class Function_variable_integral : public Function_variable_matrix<Scalar>
 		{
 			boost::intrusive_ptr<Function_integral> function_integral;
 			Function_handle integrand(0),result(0);
+			Function_variable_handle integrand_input(0);
 
-			if ((function_integral=boost::dynamic_pointer_cast<
-				Function_integral,Function>(function()))&&
-				(integrand=Function_handle(new Function_derivative(
-				function_integral->integrand_output_private,independent_variables))))
+			if (function_integral=boost::dynamic_pointer_cast<
+				Function_integral,Function>(function()))
+			{
+				Function_variable_handle independent_input,independent_output;
+
+				if ((independent_input=function_integral->independent_input_private)&&
+					(independent_output=function_integral->independent_output_private))
+				{
+					std::list<Function_variable_handle> jacobian_independent_variables(1,
+						independent_input);
+					Function_handle jacobian=Function_handle(new Function_derivative(
+						independent_output,jacobian_independent_variables)),
+						jacobian_determinant;
+
+					integrand=Function_handle(new Function_composition(
+						function_integral->integrand_output_private,
+						function_integral->integrand_input_private,independent_output));
+					if (integrand&&jacobian&&(jacobian_determinant=Function_handle(
+						new Function_matrix_determinant<Scalar>(jacobian->output())))&&
+						(integrand=new Function_matrix_product<Scalar>(
+						jacobian_determinant->output(),integrand->output())))
+					{
+						integrand=Function_handle(new Function_derivative(
+							integrand->output(),independent_variables));
+						integrand_input=independent_input;
+					}
+				}
+				else
+				{
+					integrand=Function_handle(new Function_derivative(
+						function_integral->integrand_output_private,independent_variables));
+					integrand_input=function_integral->integrand_input_private;
+				}
+			}
+			if (integrand&&integrand_input)
 			{
 				Matrix result_matrix;
 				struct Integrate_over_element_data integrate_over_element_data(
 					integrand->output(),0,0,
 //					function_integral->integrand_output_private,0,0,
-					function_integral->integrand_input_private,
-					function_integral->independent_output_private,
-					function_integral->independent_input_private,
-					function_integral->scheme_private,result_matrix);
+					integrand_input,Function_variable_handle(0),
+					Function_variable_handle(0),function_integral->scheme_private,
+					result_matrix);
 
 				if (FE_region_for_each_FE_element(function_integral->domain_private,
 					integrate_over_element,&integrate_over_element_data)&&
@@ -1399,7 +1439,7 @@ Function_handle Function_derivatnew_integral::evaluate(
 bool Function_derivatnew_integral::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 28 January 2005
+// LAST MODIFIED : 30 March 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1410,17 +1450,46 @@ bool Function_derivatnew_integral::evaluate(
 		!evaluated())
 	{
 		boost::intrusive_ptr<Function_integral> function_integral;
-		Function_handle integrand(0);
 		boost::intrusive_ptr<Function_variable_integral> variable_integral;
-		Function_variable_handle derivative_dependent_variable;
+		Function_handle integrand(0);
+		Function_variable_handle integrand_input(0);
 
 		result=false;
 		if ((variable_integral=boost::dynamic_pointer_cast<
 			Function_variable_integral,Function_variable>(dependent_variable))&&
 			(function_integral=boost::dynamic_pointer_cast<Function_integral,
-			Function>(dependent_variable->function()))&&
-			(integrand=function_integral->integrand_output_private->derivative(
-			independent_variables)))
+			Function>(dependent_variable->function())))
+		{
+			Function_variable_handle independent_input,independent_output;
+
+			if ((independent_input=function_integral->independent_input_private)&&
+				(independent_output=function_integral->independent_output_private))
+			{
+				std::list<Function_variable_handle> jacobian_independent_variables(1,
+					independent_input);
+				Function_handle jacobian=independent_output->derivative(
+					jacobian_independent_variables),jacobian_determinant;
+
+				integrand=Function_handle(new Function_composition(
+					function_integral->integrand_output_private,
+					function_integral->integrand_input_private,independent_output));
+				if (integrand&&jacobian&&(jacobian_determinant=Function_handle(
+					new Function_matrix_determinant<Scalar>(jacobian->output())))&&
+					(integrand=new Function_matrix_product<Scalar>(
+					jacobian_determinant->output(),integrand->output())))
+				{
+					integrand=integrand->output()->derivative(independent_variables);
+					integrand_input=independent_input;
+				}
+			}
+			else
+			{
+				integrand=function_integral->integrand_output_private->derivative(
+					independent_variables);
+				integrand_input=function_integral->integrand_input_private;
+			}
+		}
+		if (integrand&&integrand_input)
 		{
 			struct Integrate_over_element_data integrate_over_element_data(
 				function_integral->integrand_output_private,variable_integral->row(),
@@ -1434,6 +1503,7 @@ bool Function_derivatnew_integral::evaluate(
 				integrate_over_element,&integrate_over_element_data)&&
 				!(integrate_over_element_data.first()))
 			{
+				set_evaluated();
 				result=true;
 			}
 		}
