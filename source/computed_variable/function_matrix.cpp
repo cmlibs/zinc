@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix.cpp
 //
-// LAST MODIFIED : 15 May 2004
+// LAST MODIFIED : 3 June 2004
 //
 // DESCRIPTION :
 //???DB.  Should be template?
@@ -473,7 +473,7 @@ void Function_variable_iterator_representation_atomic_matrix::increment()
 
 void Function_variable_iterator_representation_atomic_matrix::decrement()
 //******************************************************************************
-// LAST MODIFIED : 2 March 2004
+// LAST MODIFIED : 3 June 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -538,6 +538,9 @@ void Function_variable_iterator_representation_atomic_matrix::decrement()
 					atomic_variable->column=
 						(variable->function_matrix->number_of_columns)();
 				}
+				atomic_variable->value_private=Function_variable_value_handle(
+					new Function_variable_value_scalar(
+					Function_variable_matrix_set_scalar_function));
 			}
 		}
 	}

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_finite_element.cpp
 //
-// LAST MODIFIED : 2 June 2004
+// LAST MODIFIED : 3 June 2004
 //
 // DESCRIPTION :
 // Finite element types - element/xi and finite element field.
@@ -24,82 +24,6 @@ extern "C"
 #include "computed_variable/function_variable_value_element.hpp"
 #include "computed_variable/function_variable_value_scalar.hpp"
 
-//???debug
-struct FE_element_field_values
-/*******************************************************************************
-LAST MODIFIED : 1 May 2003
-
-DESCRIPTION :
-The values need to calculate a field on an element.  These structures are
-calculated from the element field as required and are then destroyed.
-==============================================================================*/
-{
-	/* the field these values are for */
-	struct FE_field *field;
-	/* the element these values are for */
-	struct FE_element *element;
-	/* the element the field was inherited from */
-	struct FE_element *field_element;
-	/* whether or not these values depend on time */
-	int time_dependent;
-	/* if the values are time dependent, the time at which they were calculated */
-	FE_value time;
-	/* number of sub-elements in each xi-direction of element. If NULL then field
-		 is not	grid based.  Notes
-		1.  struct FE_element_field allows some components to be grid-based and
-			some not with different discretisations for the grid-based components.
-			This structure only supports - all grid-based components with the same
-			discretisation, or no grid-based components.  This restriction could be
-			removed by having a <number_in_xi> for each component
-		2.  the sub-elements are linear in each direction.  This means that
-			<component_number_of_values> is not used
-		3.  the grid-point values are not blended (to monomial) and so
-			<component_standard_basis_functions> and
-			<component_standard_basis_function_arguments> are not used
-		4.  for grid-based <destroy_standard_basis_arguments> is used to specify
-			if the <component_values> should be destroyed (element field has been
-			inherited) */
-	int *number_in_xi;
-	/* a flag to specify whether or not values have also been calculated for the
-		derivatives of the field with respect to the xi coordinates */
-	char derivatives_calculated;
-	/* a flag added to specify if the element field component modify function is
-		ignored */
-		/*???DB.  Added for calculating derivatives with respect to nodal values.
-			See FE_element_field_values_set_no_modify */
-	char no_modify;
-	/* specify whether the standard basis arguments should be destroyed (element
-		field has been inherited) or not be destroyed (element field is defined for
-		the element and the basis arguments are being used) */
-	char destroy_standard_basis_arguments;
-	/* the number of field components */
-	int number_of_components;
-	/* the number of values for each component */
-	int *component_number_of_values;
-	/* the values_storage for each component if grid-based */
-	Value_storage **component_grid_values_storage;
-	/* grid_offset_in_xi is allocated with 2^number_of_xi_coordinates integers
-		 giving the increment in index into the values stored with the top_level
-		 element for the grid. For top_level_elements the first value is 1, the
-		 second is (number_in_xi[0]+1), the third is
-		 (number_in_xi[0]+1)*(number_in_xi[1]+1) etc. The base_grid_offset is 0 for
-		 top_level_elements. For faces and lines these values are adjusted to get
-		 the correct index for the top_level_element */
-	int base_grid_offset,*grid_offset_in_xi;
-	/* following allocated with 2^number_of_xi for grid-based fields for use in
-		 calculate_FE_element_field */
-	int *element_value_offsets;
-	/* the values for each component */
-	FE_value **component_values;
-	/* the standard basis function for each component */
-	Standard_basis_function **component_standard_basis_functions;
-	/* the arguments for the standard basis function for each component */
-	void *component_standard_basis_function_arguments;
-	/* working space for evaluating basis */
-	FE_value *basis_function_values;
-}; /* struct FE_element_field_values */
-
-
 // module classes
 // ==============
 
@@ -107,7 +31,6 @@ calculated from the element field as required and are then destroyed.
 class Function_variable_finite_element;
 typedef boost::intrusive_ptr<Function_variable_finite_element>
 	Function_variable_finite_element_handle;
-
 
 // class Function_variable_iterator_representation_atomic_finite_element
 // ---------------------------------------------------------------------
@@ -2333,7 +2256,7 @@ Function_variable_iterator_representation_atomic_nodal_values::
 	fe_region(variable->function_finite_element->region()),
 	number_of_versions(0),atomic_variable(0),variable(variable)
 //******************************************************************************
-// LAST MODIFIED : 28 May 2004
+// LAST MODIFIED : 3 June 2004
 //
 // DESCRIPTION :
 // Constructor.  If <begin> then the constructed iterator points to the first
@@ -2431,9 +2354,14 @@ Function_variable_iterator_representation_atomic_nodal_values::
 						}
 						if (FE_NODAL_UNKNOWN!=value_type)
 						{
-							atomic_variable=Function_variable_nodal_values_handle(
+							if (atomic_variable=Function_variable_nodal_values_handle(
 								new Function_variable_nodal_values(function_finite_element,
-								component_number,node,value_type,version));
+								component_number,node,value_type,version)))
+							{
+								atomic_variable->value_private=Function_variable_value_handle(
+									new Function_variable_value_scalar(
+									Function_variable_nodal_values_set_scalar_function));
+							}
 						}
 					}
 				}
@@ -2666,7 +2594,7 @@ void Function_variable_iterator_representation_atomic_nodal_values::increment()
 
 void Function_variable_iterator_representation_atomic_nodal_values::decrement()
 //******************************************************************************
-// LAST MODIFIED : 28 May 2004
+// LAST MODIFIED : 2 June 2004
 //
 // DESCRIPTION :
 // Decrements the iterator to the next atomic variable.  The decrementing order
@@ -2974,9 +2902,15 @@ void Function_variable_iterator_representation_atomic_nodal_values::decrement()
 								}
 								if (FE_NODAL_UNKNOWN!=value_type)
 								{
-									atomic_variable=Function_variable_nodal_values_handle(
+									if (atomic_variable=Function_variable_nodal_values_handle(
 										new Function_variable_nodal_values(function_finite_element,
-										component_number,node,value_type,version));
+										component_number,node,value_type,version)))
+									{
+										atomic_variable->value_private=
+											Function_variable_value_handle(
+											new Function_variable_value_scalar(
+											Function_variable_nodal_values_set_scalar_function));
+									}
 								}
 							}
 						}
