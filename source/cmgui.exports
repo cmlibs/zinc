@@ -1498,3 +1498,8 @@ Cmiss_scene_viewer_view_all
 Cmiss_scene_viewer_redraw_now
 Cmiss_scene_viewer_write_image_to_file
 Cmiss_deallocate
+#if defined (GTK_USER_INTERFACE)
+gtk_cmiss_scene_viewer_get_type
+gtk_cmiss_scene_viewer_new
+gtk_cmiss_scene_viewer_get_cmiss_scene_viewer
+#endif /* defined (GTK_USER_INTERFACE) */
