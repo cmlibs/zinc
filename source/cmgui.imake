@@ -55,7 +55,7 @@ PRODUCT_PATH=.
 #define XVG
 /* ???DB.  Temporary.  Need xml libraries for other than n32 */
 #if !defined(O64) && !defined(OPTIMISED)
-/* #define CELL */
+#define CELL
 #endif /* !defined(O64) && !defined(OPTIMISED) */
 #endif /* ! defined (LITEWEIGHT) */
 
