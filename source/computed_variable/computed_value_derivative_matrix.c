@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_value_derivative_matrix.c
 
-LAST MODIFIED : 22 July 2003
+LAST MODIFIED : 24 July 2003
 
 DESCRIPTION :
 Implements the derivative matrix computed value.
@@ -206,7 +206,7 @@ static START_CMISS_VALUE_GET_REALS_TYPE_SPECIFIC_FUNCTION(derivative_matrix)
 		}
 		if (return_code)
 		{
-			if (!reals_address||ALLOCATE(destination_real,FE_value,number_of_reals))
+			if (!reals_address||ALLOCATE(destination_reals,FE_value,number_of_reals))
 			{
 				if (reals_address)
 				{
