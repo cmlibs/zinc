@@ -7593,7 +7593,7 @@ static int set_Texture_image_from_field(struct Texture *texture,
 	int image_width, int image_height, int image_depth,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 15 March 2002
+LAST MODIFIED : 16 April 2002
 
 DESCRIPTION :
 Creates the image in the format given by sampling the <field> according to the
@@ -7606,7 +7606,7 @@ Currently limited to 1 byte per component.
 	unsigned char *image_plane, *ptr;
 	FE_value *data_values, values[3], xi[3];
 	float hint_minimums[3] = {0.0, 0.0, 0.0};
-	float hint_maximums[3] = {1.0, 1.0, 1.0};
+	float hint_maximums[3];
 	float hint_resolution[3];
 	float	red, green, blue, alpha, texture_depth, texture_height, texture_width;
 	int bytes_per_pixel, i, image_width_bytes, j, k,
@@ -7659,6 +7659,9 @@ Currently limited to 1 byte per component.
 				find_element_xi_error_count = 0;
 				spectrum_render_error_count = 0;
 				total_number_of_pixels = image_width*image_height*image_depth;
+				hint_maximums[0] = texture_width;
+				hint_maximums[1] = texture_height;
+				hint_maximums[2] = texture_depth;
 				for (i = 0; (i < image_depth) && return_code; i++)
 				{
 					ptr = (unsigned char *)image_plane;
