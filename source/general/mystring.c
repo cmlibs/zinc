@@ -1,7 +1,7 @@
 /******************************************************************************
 FILE : mystring.c
 
-LAST MODIFIED : 21 September 1999
+LAST MODIFIED : 10 January 2001
 
 DESCRIPTION :
 Function definitions for some general purpose string functions.
@@ -732,7 +732,7 @@ in <match_string>. Whitespace characters (space,tab) are only allowed in
 
 int make_valid_token(char **token_address)
 /*******************************************************************************
-LAST MODIFIED : 2 December 1998
+LAST MODIFIED : 10 January 2001
 
 DESCRIPTION :
 If the string pointed to by <token_address> contains any special characters such
@@ -741,83 +741,80 @@ function reallocates and redefines the string so that it is surrounded by
 quotes. Any quotes in the original string are put back in pairs so they are read
 as one quote when parsed, as explained in function extract_token().
 Special characters include token separators (whitespace/,/;/=), comment
-characters (!/#) and the quote marks themselves ("/').
+characters (#) and characters that must be "escaped", ie. preceded by a
+backslash in perl, namely \, ", ', $.
 NOTE: the string pointed to by <token_address> must be non-static and allowed
 to be reallocated.
 ==============================================================================*/
 {
-	char *token,*letter;
-	int number_of_quotes,old_length,return_code,special_chars;
+	char *new_token, *letter;
+	int number_of_escapes, old_length, return_code, special_chars;
 
 	ENTER(make_valid_token);
-	if (token_address && (letter= *token_address))
+	if (token_address && (letter = *token_address))
 	{
-		return_code=1;
-		/* work out if the string contains any special characters */
-		special_chars=0;
-		while (*letter && !special_chars)
+		return_code = 1;
+		/* work out if string contains special characters */
+		special_chars = 0;
+		number_of_escapes = 0;
+		while (*letter)
 		{
-			if (isspace(*letter)||(',' == *letter)||
-				(';' == *letter)||('=' == *letter)||
-				('!' == *letter)||('#' == *letter)||
-				('\"' == *letter)||('\'' == *letter))
+			if (isspace(*letter) || (',' == *letter) ||
+				(';' == *letter) || ('=' == *letter) ||
+				('#' == *letter))
 			{
 				special_chars++;
+			}
+			else if (('\"' == *letter) || ('\'' == *letter) ||
+				('\\' == *letter) || ('$' == *letter))
+			{
+				special_chars++;
+				number_of_escapes++;
 			}
 			letter++;
 		}
 		if (special_chars)
 		{
-			/* count the number of double quotes to add to the string, starting with
-				 the two surrounding the string */
-			number_of_quotes=2;
-			letter= *token_address;
-			while (*letter)
+			old_length = strlen(*token_address);
+			if (REALLOCATE(new_token, *token_address, char,
+				old_length + number_of_escapes + 3))
 			{
-				if ('\"' == *letter)
-				{
-					number_of_quotes++;
-				}
-				letter++;
-			}
-			old_length=strlen(*token_address);
-			if (REALLOCATE(token,*token_address,char,old_length+number_of_quotes+1))
-			{
-				*token_address = token;
+				*token_address = new_token;
 				letter = *token_address + old_length - 1;
-				token = *token_address + old_length + number_of_quotes;
+				new_token = letter + number_of_escapes + 3;
 				/* zero at end of string */
-				*token = '\0';
-				token--;
+				*new_token = '\0';
+				new_token--;
 				/* final quote */
-				*token='\"';
-				token--;
+				*new_token = '\"';
+				new_token--;
 				while (letter >= *token_address)
 				{
-					*token = *letter;
-					token--;
-					if ('\"' == *letter)
+					*new_token = *letter;
+					new_token--;
+					if (('\"' == *letter) || ('\'' == *letter) ||
+						('\\' == *letter) || ('$' == *letter))
 					{
-						/* repeat quote mark */
-						*token='\"';
-						token--;
+						/* add escape character \ */
+						*new_token = '\\';
+						new_token--;
 					}
 					letter--;
 				}
 				/* opening quote */
-				*token='\"';
+				*new_token = '\"';
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"make_valid_token.  Not enough memory");
-				return_code=0;
+				display_message(ERROR_MESSAGE, "make_valid_token.  Not enough memory");
+				return_code = 0;
 			}
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"make_valid_token.  Invalid argument(s)");
-		return_code=0;
+		display_message(ERROR_MESSAGE, "make_valid_token.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
