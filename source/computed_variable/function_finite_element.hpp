@@ -193,13 +193,12 @@ class Function_finite_element : public Function
 		// return the number of derivatives for the component at the node
 		Function_size_type number_of_derivatives(
 			Function_size_type component_number,struct FE_node *node) const;
+	   // Return the time sequence at the node.
+	   struct FE_time_sequence *time_sequence(struct FE_node *node) const;
 		// return the (1+number_of_derivatives) nodal value types for the component
 		// at the node
 		// NB.  The calling program should DEALLOCATE the returned array when it is
 		//   no longer needed
-	   struct FE_time_sequence *Function_finite_element::time_sequence(
-		   struct FE_node *node) const;
-	   // Return the time sequence at the node.
 		enum FE_nodal_value_type *nodal_value_types(
 			Function_size_type component_number,struct FE_node *node) const;
 		// return true and get the value if exactly one nodal value is specified,
