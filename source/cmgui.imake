@@ -647,7 +647,11 @@ LIB = -lMrm -lXm -lXt -lX11 -lXmu -lPW -lm
 LIB = -lMrm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm
 #endif /* defined (OLD_CODE) */
 #if defined (IRIX) /* switch OperatingSystem */
+#if defined (MEMORY_CHECK)
+LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm -lmalloc_ss -lC -lCio -lpthread 
+#else /* defined (MEMORY_CHECK) */
 LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm -lC -lCio -lpthread 
+#endif /* defined (MEMORY_CHECK) */
 /* LIB = -lMrm -lSgm -lXm -lXt -lX11 -lXmu -lPW -lftn -lm -lpthread */
 #elif defined(LINUX) /* switch OperatingSystem */
 #if defined (DYNAMIC_GL_LINUX)
