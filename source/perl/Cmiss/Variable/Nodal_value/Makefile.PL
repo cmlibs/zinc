@@ -3,13 +3,13 @@ use ExtUtils::MakeMaker;
 # the contents of the Makefile that is written.
 #
 #???DB.  Notes:
-# setenv CMGUI_DEV_SOURCE /dosD/cmiss/cmgui-rc-region-1/source
+# setenv CMGUI_DEV_SOURCE /dosD/cmiss/cmgui/source
 # To install locally, use
-#   perl Makefile.PL PREFIX=/dosD/cmiss/cmgui-rc-region-1/perl
+#   perl Makefile.PL PREFIX=/dosD/cmiss/cmgui/perl
 #   make
 #   make install
 # To find local
-#   setenv PERLLIB /dosD/cmiss/cmgui-rc-region-1/perl/lib/perl5/site_perl/5.8.0/i686-linux/
+#   setenv PERLLIB /dosD/cmiss/cmgui/perl/lib/perl5/site_perl/5.8.0/i686-linux/
 # To test without installing
 #   perl -Mblib -MCmiss::Variable::Nodal_value -e '$bob=new Cmiss::Variable::Nodal_value'
 #
