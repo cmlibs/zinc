@@ -7807,7 +7807,7 @@ static int check_element_grid_map_values_storage(
 	struct FE_element_field *element_field,
 	void *check_element_grid_map_values_storage_data_void)
 /*******************************************************************************
-LAST MODIFIED : 18 October 1999
+LAST MODIFIED : 14 December 2000
 
 DESCRIPTION :
 If the <element_field> is grid based, check that the index range is within the
@@ -7845,6 +7845,8 @@ check_sum.
 					}
 					value_index=((*component)->map).element_grid_based.value_index;
 					values_storage_size = number_of_values*size;
+					/* make sure values storage is word aligned for machine */
+					ADJUST_VALUE_STORAGE_SIZE(values_storage_size);
 					if ((value_index<check_grid_data->values_storage_size)&&
 						(value_index+values_storage_size <=
 							check_grid_data->values_storage_size))
