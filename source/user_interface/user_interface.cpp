@@ -199,6 +199,8 @@ Module functions
 ----------------
 */
 
+#if defined (BYTE_ORDER)
+#if (1234==BYTE_ORDER)
 static int glibc_version_greater_than_2_2_4(void)
 /*******************************************************************************
 LAST MODIFIED : 26 November 2002
@@ -208,8 +210,10 @@ Need to read the glibc version so that we can determine if we need to
 swap the endianness of values going into a64l
 ==============================================================================*/
 {
+#if __GLIBC__ >= 2
 	char *version_string;
 	int major_version, minor_version, minor_sub_version;
+#endif /* __GLIBC__ >= 2 */
 	static int return_code = -1;
 
 	ENTER(get_glibc_version);
@@ -246,6 +250,8 @@ swap the endianness of values going into a64l
 	
 	return (return_code);
 } /* get_glibc_version */
+#endif /* defined (BYTE_ORDER) */
+#endif /* (1234==BYTE_ORDER) */
 
 #if defined (MOTIF)
 #if ! defined (USE_XTAPP_CONTEXT)
