@@ -1,12 +1,13 @@
 /*******************************************************************************
 FILE : example_path.c
 
-LAST MODIFIED : 17 April 2000
+LAST MODIFIED : 3 January 2002
 
 DESCRIPTION :
 ==============================================================================*/
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <signal.h>
