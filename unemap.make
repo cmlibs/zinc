@@ -99,18 +99,10 @@ update :
 	ssh cmiss@$(ESP_BUILD_MACHINE) 'cd $(ESP_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESP_BUILD_LIST)' && \
 	ssh cmiss@$(HPC1_BUILD_MACHINE) 'cd $(HPC1_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(HPC1_BUILD_LIST)' ;
 
-depend:
-	ssh cmiss@$(ESU_BUILD_MACHINE) 'cd $(ESU_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESU_BUILD_LIST) TARGET=depend' && \
-	ssh cmiss@$(ESP_BUILD_MACHINE) 'cd $(ESP_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(ESP_BUILD_LIST) TARGET=depend' && \
-	ssh cmiss@$(HPC1_BUILD_MACHINE) 'cd $(HPC1_BUILD_PATH) ; $(MAKE) -f $(MAKEFILE) $(HPC1_BUILD_LIST) TARGET=depend' ;
-
 cronjob: update_sources
 	if [ "$(USER)" = "cmiss" ]; then \
 		cd $(PRODUCT_PATH); \
 		echo -n > $(MAILFILE_PATH)/unemap_programmer.mail ; \
-		if ! $(MAKE) -f $(MAKEFILE) depend; then \
-			cat $(MAILFILE_PATH)/dependfail.mail >> $(MAILFILE_PATH)/unemap_programmer.mail ; \
-		fi ; \
 		if ! $(MAKE) -f $(MAKEFILE) update; then \
 			cat $(MAILFILE_PATH)/updatefail.mail >> $(MAILFILE_PATH)/unemap_programmer.mail ; \
 		fi ; \
