@@ -321,6 +321,7 @@ INTERPRETER_LIB = $(INTERPRETER_PATH)/generated/mips4-64-debug/libperlinterprete
 #elif defined(LINUX) /* switch OperatingSystem */
 INTERPRETER_LIB = $(INTERPRETER_PATH)/generated/linuxdebug/libperlinterpreter.a
 #endif /* switch OperatingSystem */
+#endif /* !defined (PERL_INTERPRETER) */
 
 #if !defined (ROBO_APPLICATION)
 ROBO_APPLICATION_SWITCH =
