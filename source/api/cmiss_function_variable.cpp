@@ -24,7 +24,6 @@ extern "C"
 Global functions
 ----------------
 */
-#if defined (NOT_DEBUG)
 int Cmiss_function_variable_destroy(
 	Cmiss_function_variable_id *variable_address)
 /*******************************************************************************
@@ -53,7 +52,7 @@ Destroys the variable.  Returns a non-zero if successful and zero otherwise.
 
 	return (return_code);
 }
-#else // defined (NOT_DEBUG)
+#if defined (NOT_DEBUG)
 int Cmiss_function_variable_destroy(
 	Cmiss_function_variable_id *)
 /*******************************************************************************
@@ -69,6 +68,7 @@ Destroys the variable.  Returns a non-zero if successful and zero otherwise.
 
 	return (return_code);
 }
+#else // defined (NOT_DEBUG)
 #endif // defined (NOT_DEBUG)
 
 #if defined (NOT_DEBUG)
