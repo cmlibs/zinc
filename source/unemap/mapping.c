@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 26 July 2000
+LAST MODIFIED : 31 August 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -597,7 +597,7 @@ struct Map *create_Map(enum Map_type *map_type,enum Colour_option colour_option,
 	struct Map_drawing_information *map_drawing_information,
 	struct User_interface *user_interface,struct Unemap_package *unemap_package)
 /*******************************************************************************
-LAST MODIFIED : 22 June 1999
+LAST MODIFIED : 31 August 2000
 
 DESCRIPTION :
 This function allocates memory for a map and initializes the fields to the
@@ -605,7 +605,8 @@ specified values.  It returns a pointer to the created map if successful and
 NULL if not successful.
 ==============================================================================*/
 {
-	char *electrodes_marker_type,*finite_element_interpolation;
+	char *electrodes_marker_type,*finite_element_interpolation,
+		*fixed_automatic_range;
 	int membrane_smoothing_ten_thous,plate_bending_smoothing_ten_tho;
 #define XmNfiniteElementInterpolation "finiteElementInterpolation"
 #define XmCFiniteElementInterpolation "FiniteElementInterpolation"
@@ -623,6 +624,12 @@ NULL if not successful.
 #define XmCElectrodeMarker "ElectrodeMarker"
 #define XmNelectrodeSize "electrodeSize"
 #define XmCElectrodeSize "ElectrodeSize"
+#define XmNmapRange "mapRange"
+#define XmCMapRange "MapRange"
+#define XmNmapRangeMinimum "mapRangeMinimum"
+#define XmCMapRangeMinimum "MapRangeMinimum"
+#define XmNmapRangeMaximum "mapRangeMaximum"
+#define XmCMapRangeMaximum "MapRangeMaximum"
 	static XtResource
 		resources_1[]=
 		{
@@ -704,6 +711,42 @@ NULL if not successful.
 				XmRString,
 				"2"
 			}
+		},
+		resources_7[]=
+		{
+			{
+				XmNmapRange,
+				XmCMapRange,
+				XmRString,
+				sizeof(char *),
+				0,
+				XmRString,
+				"automatic"
+			}
+		},
+		resources_8[]=
+		{
+			{
+				XmNmapRangeMinimum,
+				XmCMapRangeMinimum,
+				XmRFloat,
+				sizeof(float),
+				0,
+				XmRString,
+				"1"
+			}
+		},
+		resources_9[]=
+		{
+			{
+				XmNmapRangeMaximum,
+				XmCMapRangeMaximum,
+				XmRFloat,
+				sizeof(float),
+				0,
+				XmRString,
+				"0"
+			}
 		};
 	struct Map *map;
 
@@ -783,6 +826,24 @@ NULL if not successful.
 			{
 				map->electrodes_marker_size=1;
 			}
+			XtVaGetApplicationResources(user_interface->application_shell,
+				&fixed_automatic_range,resources_7,XtNumber(resources_7),
+				NULL);
+			if (fuzzy_string_compare(fixed_automatic_range,"automatic"))
+			{
+				map->fixed_range=0;
+			}
+			else
+			{
+				map->fixed_range=1;
+			}
+			map->range_changed=0;
+			XtVaGetApplicationResources(user_interface->application_shell,
+				&(map->minimum_value),resources_8,XtNumber(resources_8),
+				NULL);
+			XtVaGetApplicationResources(user_interface->application_shell,
+				&(map->maximum_value),resources_9,XtNumber(resources_9),
+				NULL);
 			map->colour_electrodes_with_signal=1;
 			/*??? calculate from rig ? */
 			map->number_of_electrodes=0;
@@ -795,12 +856,8 @@ NULL if not successful.
 			map->auxiliary=(struct Device **)NULL;
 			map->auxiliary_x=(int *)NULL;
 			map->auxiliary_y=(int *)NULL;
-			map->fixed_range=0;
-			map->range_changed=0;
-			map->minimum_value=1;
-			map->maximum_value=0;
-			map->contour_minimum=1;
-			map->contour_maximum=0;
+			map->contour_minimum=map->minimum_value;
+			map->contour_maximum=map->maximum_value;
 			map->number_of_contours=2;
 			map->activation_front= -1;
 			map->print=0;
@@ -4494,7 +4551,7 @@ Sets the <time> of the time field.
 static int map_show_map_electrodes(struct Unemap_package *package,
 	struct GT_object *glyph,struct Map *map,FE_value time,struct Region *region)
 /*******************************************************************************
-LAST MODIFIED : 1 September 2000 
+LAST MODIFIED : 8 May 2000 
 
 DESCRIPTION :
 Construct the settings and build the graphics objects for the glyphs.
@@ -4505,11 +4562,11 @@ Construct the settings and build the graphics objects for the glyphs.
 	struct Computed_field *computed_coordinate_field,*computed_field,*label_field,
 		*orientation_scale_field;
 	struct FE_field *map_electrode_position_field,*field;
-	struct Graphical_material *electrode_selected_material,*electrode_material;
+	struct Graphical_material *default_selected_material,*electrode_material;
 	struct GROUP(FE_element) *rig_element_group;
 	struct GROUP(FE_node) *rig_node_group;	
 	struct GT_element_group *gt_element_group;	
-	struct GT_element_settings *unselected_settings,*selected_settings;	
+	struct GT_element_settings *settings;	
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 	struct MANAGER(GROUP(FE_element))	*element_group_manager;
@@ -4525,15 +4582,14 @@ Construct the settings and build the graphics objects for the glyphs.
 	gt_element_group=(struct GT_element_group *)NULL;	
 	computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
 	electrode_material=(struct Graphical_material *)NULL;	
-	electrode_selected_material=(struct Graphical_material *)NULL;	
+	default_selected_material=(struct Graphical_material *)NULL;	
 	scene=(struct Scene *)NULL;	
 	rig_node_group=(struct GROUP(FE_node) *)NULL;
 	rig_element_group=(struct GROUP(FE_element) *)NULL;
 	group_name=(char *)NULL;
 	map_electrode_position_field=(struct FE_field *)NULL;
 	element_group_manager=(struct MANAGER(GROUP(FE_element)) *)NULL;
-	unselected_settings=(struct GT_element_settings *)NULL;
-	selected_settings=(struct GT_element_settings *)NULL;
+	settings=(struct GT_element_settings *)NULL;
 	graphical_material_manager=(struct MANAGER(Graphical_material) *)NULL;
 	field=(struct FE_field *)NULL;
 	computed_field=(struct Computed_field *)NULL;
@@ -4557,24 +4613,19 @@ Construct the settings and build the graphics objects for the glyphs.
 		if (rig_element_group&&(gt_element_group=Scene_get_graphical_element_group(
 			scene,rig_element_group)))
 		{	
-			/* do nothing if already have these settings in this group*/
-			if (!(unselected_settings=first_settings_in_GT_element_group_that(gt_element_group,
-				GT_element_settings_type_matches,(void *)GT_ELEMENT_SETTINGS_NODE_POINTS)))			
+			/* do nothing if already have settings in this group*/
+			if (!(settings=first_settings_in_GT_element_group_that(gt_element_group,
+				GT_element_settings_type_matches,(void *)GT_ELEMENT_SETTINGS_NODE_POINTS)))
 			{				
-				if ((unselected_settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_NODE_POINTS))&&
-						(selected_settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_NODE_POINTS)))
+				if (settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_NODE_POINTS))
 				{						
 					graphical_material_manager=
 						get_map_drawing_information_Graphical_material_manager(drawing_information);
-					electrode_selected_material=FIND_BY_IDENTIFIER_IN_MANAGER
-						(Graphical_material,name)("electrode_selected",graphical_material_manager);
-					GT_element_settings_set_selected_material(unselected_settings,electrode_selected_material);
-					GT_element_settings_set_selected_material(selected_settings,electrode_selected_material);
-					GT_element_settings_set_material(unselected_settings,electrode_material);				
-					GT_element_settings_set_material(selected_settings,electrode_material);
-					/* use selected settings when selected, unselected when unselected(!) */	
-					GT_element_settings_set_select_mode(unselected_settings,GRAPHICS_DRAW_UNSELECTED);
-					GT_element_settings_set_select_mode(selected_settings,GRAPHICS_DRAW_SELECTED);				
+					default_selected_material=FIND_BY_IDENTIFIER_IN_MANAGER
+						(Graphical_material,name)("default_selected",graphical_material_manager);
+					GT_element_settings_set_selected_material(settings,default_selected_material);
+						GT_element_settings_set_material(settings,electrode_material);					
+					GT_element_settings_set_select_mode(settings,GRAPHICS_SELECT_ON);					
 					glyph_centre[0]=0.0;
 					glyph_centre[1]=0.0;
 					glyph_centre[2]=0.0;
@@ -4589,17 +4640,14 @@ Construct the settings and build the graphics objects for the glyphs.
 					computed_coordinate_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 						Computed_field_is_read_only_with_fe_field,(void *)
 						(map_electrode_position_field),computed_field_manager);
-					GT_element_settings_set_coordinate_field(unselected_settings,computed_coordinate_field);
-					GT_element_settings_set_coordinate_field(selected_settings,computed_coordinate_field);
-					GT_element_settings_set_glyph_parameters(unselected_settings,glyph,
-						glyph_centre,glyph_size,orientation_scale_field,glyph_scale_factors);
-					GT_element_settings_set_glyph_parameters(selected_settings,glyph,
-						glyph_centre,glyph_size,orientation_scale_field,glyph_scale_factors);			 
+					GT_element_settings_set_coordinate_field(settings,computed_coordinate_field);				
+					GT_element_settings_set_glyph_parameters(settings,glyph,
+						glyph_centre,glyph_size,orientation_scale_field,glyph_scale_factors);				 
 					if(map->colour_electrodes_with_signal)
 					/* else electrode takes colour of electrode_material*/
 					{
 						map_set_electrode_colour_from_time(package,map->drawing_information->spectrum,
-							unselected_settings,time);
+							settings,time);
 					}				
 					switch(map->electrodes_option)
 					{
@@ -4640,11 +4688,9 @@ Construct the settings and build the graphics objects for the glyphs.
 							label_field=(struct Computed_field *)NULL;
 						}break;
 					}/* switch(electrodes_option) */
-					GT_element_settings_set_label_field(unselected_settings,label_field);
-					GT_element_settings_set_label_field(selected_settings,label_field);
+					GT_element_settings_set_label_field(settings,label_field);
 					/* add the settings to the group */
-					if ((GT_element_group_add_settings(gt_element_group,unselected_settings,1))&&
-							(GT_element_group_add_settings(gt_element_group,selected_settings,2)))
+					if (GT_element_group_add_settings(gt_element_group,settings,1))
 					{
             map_3d_package=get_Region_map_3d_package(region);
            set_map_3d_package_electrode_size(map_3d_package,map->electrodes_marker_size);
@@ -4657,8 +4703,7 @@ Construct the settings and build the graphics objects for the glyphs.
 					}/* if (GT_element_group_add_settings( */
 					else
 					{
-						DESTROY(GT_element_settings)(&unselected_settings);
-						DESTROY(GT_element_settings)(&selected_settings);
+						DESTROY(GT_element_settings)(&settings);													
 					}					
 				}/* if (settings=CREATE(GT_element_settings) */							
 			}/* if (!(settings=first_settings_in_GT_element_group_that */

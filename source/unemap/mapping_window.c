@@ -153,11 +153,21 @@ Sets the minimum and maximum of the timekeeper to relate to the current map
 					{
 						Time_keeper_set_minimum(Time_object_get_time_keeper(
 							mapping->potential_time_object),
+							(float)buffer->times[*(map->start_search_interval)]*1000.0/
+							(buffer->frequency));
+						Time_keeper_set_maximum(Time_object_get_time_keeper(
+							mapping->potential_time_object),
+							(float)buffer->times[*(map->end_search_interval)]*1000.0/
+							buffer->frequency);
+#if defined (OLD_CODE)
+						Time_keeper_set_minimum(Time_object_get_time_keeper(
+							mapping->potential_time_object),
 							(float)buffer->times[0] * 1000.0 / buffer->frequency);
 						Time_keeper_set_maximum(Time_object_get_time_keeper(
 							mapping->potential_time_object),
 							(float)buffer->times[buffer->number_of_samples - 1]
 							* 1000.0 / buffer->frequency);
+#endif /* defined (OLD_CODE) */
 					}
 				} break;
 				case SINGLE_ACTIVATION:
@@ -175,11 +185,21 @@ Sets the minimum and maximum of the timekeeper to relate to the current map
 				{
 					Time_keeper_set_minimum(Time_object_get_time_keeper(
 						mapping->potential_time_object),
+						(float)buffer->times[*(map->start_search_interval)]*1000.0/
+						(buffer->frequency));
+					Time_keeper_set_maximum(Time_object_get_time_keeper(
+						mapping->potential_time_object),
+						(float)buffer->times[*(map->end_search_interval)]*1000.0/
+						buffer->frequency);
+#if defined (OLD_CODE)
+					Time_keeper_set_minimum(Time_object_get_time_keeper(
+						mapping->potential_time_object),
 						(float)buffer->times[0] * 1000.0 / buffer->frequency);
 					Time_keeper_set_maximum(Time_object_get_time_keeper(
 						mapping->potential_time_object),
 						(float)buffer->times[buffer->number_of_samples - 1]
 						* 1000.0 / buffer->frequency);
+#endif /* defined (OLD_CODE) */
 				} break;
 			}
 		}

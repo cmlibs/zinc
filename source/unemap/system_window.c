@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : system_window.c
 
-LAST MODIFIED : 19 July 2000
+LAST MODIFIED : 3 September 2000
 
 DESCRIPTION :
 ???DB.  Have to have a proper destroy callback for the system window
@@ -1128,7 +1128,7 @@ struct System_window *create_System_window(Widget shell,
 #endif /* defined (UNEMAP_USE_NODES) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 19 July 2000
+LAST MODIFIED : 3 September 2000
 
 DESCRIPTION :
 This function allocates the memory for a system window structure.  It then
@@ -1171,6 +1171,10 @@ pointer to the created structure if successful and NULL if unsuccessful.
 #define XmCConfigurationDirectory "ConfigurationDirectory"
 #define XmNconfigurationFileExtension "configurationFileExtension"
 #define XmCConfigurationFileExtension "ConfigurationFileExtension"
+#define XmNeventDetectionAlgorithm "eventDetectionAlgorithm"
+#define XmCEventDetectionAlgorithm "EventDetectionAlgorithm"
+#define XmNeventDetectionObjective "eventDetectionObjective"
+#define XmCEventDetectionObjective "EventDetectionObjective"
 #define XmNgradientAverageWidth "gradientAverageWidth"
 #define XmCGradientAverageWidth "GradientAverageWidth"
 #define XmNlevelValue "levelValue"
@@ -1187,7 +1191,7 @@ pointer to the created structure if successful and NULL if unsuccessful.
 #define XmCThresholdMinimumSeparation "ThresholdMinimumSeparation"
 #define XmNthresholdThreshold "thresholdThreshold"
 #define XmCThresholdThreshold "ThresholdThreshold"
-	static XtResource resources[]=
+	static XtResource resources_1[]=
 	{
 		{
 			XmNacquisitionColour,
@@ -1296,6 +1300,30 @@ pointer to the created structure if successful and NULL if unsuccessful.
 			XtOffsetOf(System_window_settings,analysis.threshold),
 			XmRString,
 			"90"
+		},
+	};
+	static XtResource resources_2[]=
+	{
+		{
+			XmNeventDetectionAlgorithm,
+			XmCEventDetectionAlgorithm,
+			XmRString,
+			sizeof(char *),
+			0,
+			XmRString,
+			"interval"
+		},
+	};
+	static XtResource resources_3[]=
+	{
+		{
+			XmNeventDetectionObjective,
+			XmCEventDetectionObjective,
+			XmRString,
+			sizeof(char *),
+			0,
+			XmRString,
+			"absolute slope"
 		},
 	};
 	struct System_window *system;
@@ -1412,7 +1440,7 @@ pointer to the created structure if successful and NULL if unsuccessful.
 				system->close_button=(Widget)NULL;
 				/* retrieve the settings */
 				XtVaGetApplicationResources(user_interface->application_shell,
-					system,resources,XtNumber(resources),NULL);
+					system,resources_1,XtNumber(resources_1),NULL);
 				if (system->configuration_file_extension)
 				{
 					if (0<strlen(system->configuration_file_extension))
@@ -1479,6 +1507,47 @@ pointer to the created structure if successful and NULL if unsuccessful.
 					else
 					{
 						system->signal_file_extension_write=(char *)NULL;
+					}
+				}
+				XtVaGetApplicationResources(user_interface->application_shell,
+					&temp_string,resources_2,XtNumber(resources_2),NULL);
+				if (fuzzy_string_compare(temp_string,"threshold"))
+				{
+					system->analysis.detection=EDA_THRESHOLD;
+				}
+				else
+				{
+					if (fuzzy_string_compare(temp_string,"level"))
+					{
+						system->analysis.detection=EDA_LEVEL;
+					}
+					else
+					{
+						system->analysis.detection=EDA_INTERVAL;
+					}
+				}
+				XtVaGetApplicationResources(user_interface->application_shell,
+					&temp_string,resources_3,XtNumber(resources_3),NULL);
+				if (fuzzy_string_compare(temp_string,"negative slope"))
+				{
+					system->analysis.objective=NEGATIVE_SLOPE;
+				}
+				else
+				{
+					if (fuzzy_string_compare(temp_string,"positive slope"))
+					{
+						system->analysis.objective=POSITIVE_SLOPE;
+					}
+					else
+					{
+						if (fuzzy_string_compare(temp_string,"value"))
+						{
+							system->analysis.objective=VALUE_OBJECTIVE;
+						}
+						else
+						{
+							system->analysis.objective=ABSOLUTE_SLOPE;
+						}
 					}
 				}
 				/*???DB.  Retrieve settings */

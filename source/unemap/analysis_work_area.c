@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 29 June 2000
+LAST MODIFIED : 31 August 2000
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -3808,11 +3808,12 @@ signals.
 #if defined (UNEMAP_USE_NODES)
 							&(analysis->highlight_rig_node),
 #endif /* defined (UNEMAP_USE_NODES) */
-							&(analysis->rig),&(analysis->signal_drawing_package),&(analysis->datum),
-							&(analysis->potential_time),&(analysis->event_number),
-							&(analysis->number_of_events),&(analysis->threshold),
-							&(analysis->minimum_separation),&(analysis->level),
-							&(analysis->average_width),&(analysis->start_search_interval),
+							&(analysis->rig),&(analysis->signal_drawing_package),
+							&(analysis->datum),&(analysis->potential_time),
+							&(analysis->event_number),&(analysis->number_of_events),
+							&(analysis->threshold),&(analysis->minimum_separation),
+							&(analysis->level),&(analysis->average_width),
+							&(analysis->start_search_interval),
 							&(analysis->search_interval_divisions),
 							&(analysis->end_search_interval),
 							analysis->user_interface->screen_width,
@@ -13172,7 +13173,7 @@ Calculates the next desired update callback from the time object.
 static int analysis_potential_time_update_callback(
 	struct Time_object *time_object,double current_time,void *analysis_void)
 /*******************************************************************************
-LAST MODIFIED : 28 December 1999
+LAST MODIFIED : 31 August 2000
 
 DESCRIPTION :
 Responds to update callbacks from the time object.
@@ -13204,7 +13205,8 @@ Responds to update callbacks from the time object.
 	{
 		frequency=buffer->frequency;
 		previous_potential_time=analysis->potential_time;
-		potential_time=current_time*frequency/1000.0;
+		potential_time=(int)(current_time*frequency/1000.0)-
+			(buffer->times)[0];
 		if (potential_time<0)
 		{
 			potential_time=0;
@@ -13552,8 +13554,15 @@ Responds to update callbacks from the time object.
 						case MULTIPLE_ACTIVATION:
 						{
 							datum=analysis->datum;
+							analysis->datum=potential_time;
+#if defined (OLD_CODE)
 							analysis->datum=(float)potential_time-
 								(float)(analysis->start_search_interval);
+#endif /* defined (OLD_CODE) */
+#if defined (DEBUG)
+							printf("MULTIPLE_ACTIVATION.  datum %d (%d)\n",analysis->datum,
+								analysis->start_search_interval);
+#endif /* defined (DEBUG) */
 							update_mapping_drawing_area(mapping,2);
 							update_mapping_colour_or_auxili(mapping);
 							analysis->datum=datum;

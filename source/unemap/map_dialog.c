@@ -2145,6 +2145,17 @@ Opens the <map_dialog>.
 			XtVaSetValues(map_dialog->contours.type_option_menu,
 				XmNmenuHistory,option_widget,
 				NULL);
+			if (map->fixed_range)
+			{
+				option_widget=map_dialog->range.type_option.fixed;
+			}
+			else
+			{
+				option_widget=map_dialog->range.type_option.automatic;
+			}
+			XtVaSetValues(map_dialog->range.type_option_menu,
+				XmNmenuHistory,option_widget,
+				NULL);
 			sprintf(value_string,"%g",map->maximum_value);
 			sscanf(value_string,"%f",&(map_dialog->range_maximum));
 			XtVaSetValues(map_dialog->range.maximum_value,
