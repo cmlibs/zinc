@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : select_private.h
 
-LAST MODIFIED : 20 July 2000
+LAST MODIFIED : 5 December 2000
 
 DESCRIPTION :
 Creates a scrolled list of objects based upon their name.  Allows the user
@@ -294,39 +294,18 @@ Manager copy creator assuming it has a name identifier. \
 static void SELECT_UPDATE(object_type)( \
 	struct SELECT_STRUCT(object_type) *temp_select) \
 /***************************************************************************** \
-LAST MODIFIED : 1 October 1997 \
+LAST MODIFIED : 5 December 2000 \
 \
 DESCRIPTION : \
 Tells CMGUI about the current values. Returns a pointer to the currently \
 selected object. \
 ============================================================================*/ \
 { \
-/*	char *temp_name;*/ \
-\
 	ENTER(SELECT_UPDATE(object_type)); \
 	if (temp_select) \
 	{ \
 		if (temp_select->current_object != temp_select->last_updated_object) \
 		{ \
-/* \
-			printf("SELECT_UPDATE(" #object_type "): "); \
-			if (temp_select->current_object) \
-			{ \
-				if (GET_NAME(object_type)(temp_select->current_object,&temp_name)) \
-				{ \
-					printf("%s\n",temp_name); \
-					DEALLOCATE(temp_name); \
-				} \
-				else \
-				{ \
-					printf("ERROR\n"); \
-				} \
-			} \
-			else \
-			{ \
-				printf("NULL\n"); \
-			} \
-*/ \
 			if (temp_select->update_callback.procedure) \
 			{ \
 				(temp_select->update_callback.procedure)(temp_select->widget, \
@@ -542,7 +521,7 @@ Callback for the select dialog - tidies up all memory allocation. \
 static void SELECT_SELECT_OBJECT(object_type)( \
 	struct SELECT_STRUCT(object_type) *temp_select) \
 /***************************************************************************** \
-LAST MODIFIED : 1 October 1997 \
+LAST MODIFIED : 5 December 2000 \
 \
 DESCRIPTION : \
 Finds the current object in the list, then selects it. \
@@ -634,6 +613,14 @@ If selected object changes in this routine the client is informed. \
 			} break; \
 			case SELECT_TEXT: \
 			{ \
+				if (!temp_select->current_object) \
+				{ \
+					/* select first object in manager as current object */ \
+					temp_select->current_object = \
+						FIRST_OBJECT_IN_MANAGER_THAT(object_type)( \
+							(MANAGER_CONDITIONAL_FUNCTION(object_type) *)NULL, \
+							(void *)NULL, temp_select->object_manager); \
+				} \
 				if (temp_select->current_object) \
 				{ \
 					if (GET_NAME(object_type)(temp_select->current_object,&object_name)) \
@@ -644,8 +631,8 @@ If selected object changes in this routine the client is informed. \
 				} \
 				else \
 				{ \
-					/* zero the string */ \
-					XtVaSetValues(temp_select->text_text,XmNvalue,"",NULL); \
+					/* show default string for NULL object */ \
+					XmTextFieldSetString(temp_select->text_text,"<none>"); \
 				} \
 			} break; \
 			default: \
@@ -940,7 +927,7 @@ and then do an update. \
 static void SELECT_GLOBAL_OBJECT_CHANGE(object_type)( \
 	struct MANAGER_MESSAGE(object_type) *message,void *data) \
 /***************************************************************************** \
-LAST MODIFIED : 1 December 1997 \
+LAST MODIFIED : 5 December 2000 \
 \
 DESCRIPTION : \
 Something has changed globally about the objects this widget uses, \
@@ -984,6 +971,10 @@ so may need to select a new object. \
 					} break; \
 					case SELECT_TEXT: \
 					{ \
+						if (temp_select->current_object == message->object_changed) \
+						{ \
+							temp_select->current_object = (struct object_type *)NULL; \
+						} \
 					} break; \
 					default: \
 					{ \
@@ -997,6 +988,36 @@ so may need to select a new object. \
 				SELECT_SELECT_OBJECT(object_type)(temp_select); \
 			} break; \
 			case MANAGER_CHANGE_ALL(object_type): \
+			{ \
+				switch (temp_select->appearance) \
+				{ \
+					case SELECT_LIST: \
+					{ \
+						/* list/names of objects may have changed: rebuild */ \
+						SELECT_UPDATE_LIST(object_type)(temp_select); \
+					} break; \
+					case SELECT_TEXT: \
+					{ \
+						/* check if current object was just deleted. Able to do this as \
+							 manager hangs on to it until end of messages */ \
+						if (temp_select->current_object && \
+							(!IS_MANAGED(object_type)(temp_select->current_object, \
+								temp_select->object_manager))) \
+						{ \
+							temp_select->current_object = (struct object_type *)NULL; \
+						} \
+					} break; \
+					default: \
+					{ \
+						display_message(ERROR_MESSAGE, \
+							"SELECT_GLOBAL_OBJECT_CHANGE(" #object_type \
+							").  Invalid appearance"); \
+					} break; \
+				} \
+				/* if current_object not in menu SELECT_SELECT_OBJECT */ \
+				/* will select the first item in it, and call an update */ \
+				SELECT_SELECT_OBJECT(object_type)(temp_select); \
+			} break; \
 			case MANAGER_CHANGE_ADD(object_type): \
 			case MANAGER_CHANGE_IDENTIFIER(object_type): \
 			case MANAGER_CHANGE_OBJECT(object_type): \
