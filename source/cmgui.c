@@ -714,7 +714,9 @@ Main program for the CMISS Graphical User Interface
 	command_data.scene_manager=(struct MANAGER(Scene) *)NULL;
 	command_data.unemap_package=(struct Unemap_package *)NULL;
 	command_data.command_window=(struct Command_window *)NULL;
+#if defined (SGI_MOVIE_FILE)
 	command_data.movie_graphics_manager=(struct MANAGER(Movie_graphics) *)NULL;
+#endif /* defined (SGI_MOVIE_FILE) */
 	command_data.transform_tool=(struct Transform_tool *)NULL;
 	command_data.node_tool=(struct Node_tool *)NULL;
 	command_data.element_tool=(struct Element_tool *)NULL;
