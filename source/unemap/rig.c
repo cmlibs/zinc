@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.c
 
-LAST MODIFIED : 23 February 2001
+LAST MODIFIED : 4 March 2001
 
 DESCRIPTION :
 Contains function definitions for measurement rigs.
@@ -5047,6 +5047,8 @@ the <input_file>.
 											{
 												/* don't read anything for auxiliary devices that are a
 													linear combination */
+												/*???debug */
+												printf("device: %s",(*device)->description->name);
 												if ((*device)->channel)
 												{
 													if ((1==BINARY_FILE_READ((char *)&temp_int,
@@ -5066,6 +5068,8 @@ the <input_file>.
 														{
 															index=temp_int;
 														}
+														/*???debug */
+														printf(", %d",index);
 														if (0==(*device)->channel->gain)
 														{
 															(*device)->channel->gain=(float)1;
@@ -5112,6 +5116,8 @@ the <input_file>.
 																	{
 																		index=temp_int;
 																	}
+																	/*???debug */
+																	printf(", %d",index);
 																	if (ELECTRODE==(*device)->description->type)
 																	{
 																		if (signal->next=
@@ -5163,6 +5169,8 @@ the <input_file>.
 														return_code=0;
 													}
 												}
+												/*???debug */
+												printf("\n");
 												device++;
 												number_of_devices--;
 											}
@@ -5263,7 +5271,7 @@ the <input_file>.
 #if defined (SAVE_WHOLE_BUFFER)
 int write_signal_file(char *file_name,void *rig_pointer)
 /*******************************************************************************
-LAST MODIFIED : 4 August 1999
+LAST MODIFIED : 4 March 2001
 
 DESCRIPTION :
 This function writes the rig configuration and interval of signal data to the
@@ -5458,7 +5466,7 @@ named file.
 #else /* defined (SAVE_WHOLE_BUFFER) */
 int write_signal_file(FILE *output_file,struct Rig *rig)
 /*******************************************************************************
-LAST MODIFIED : 4 August 1999
+LAST MODIFIED : 4 March 2001
 
 DESCRIPTION :
 This function writes the <rig> configuration and interval of signal data to the
@@ -5828,17 +5836,21 @@ This function writes the <rig> configuration and interval of signal data to the
 									(1==BINARY_FILE_WRITE((char *)&((*device)->channel->gain),
 									sizeof(float),1,output_file)))
 								{
+									i++;
 									/* write multiple signals */
 									while (return_code&&signal)
 									{
-										i++;
 										index=i;
 										if (signal=signal->next)
 										{
 											index= -(index+1);
 										}
-										if (1!=BINARY_FILE_WRITE((char *)&index,sizeof(int),1,
+										if (1==BINARY_FILE_WRITE((char *)&index,sizeof(int),1,
 											output_file))
+										{
+											i++;
+										}
+										else
 										{
 											display_message(ERROR_MESSAGE,
 												"write_signal_file.  Error writing index");
@@ -5854,7 +5866,6 @@ This function writes the <rig> configuration and interval of signal data to the
 								}
 							}
 							device++;
-							i++;
 							j++;
 						}
 					}
