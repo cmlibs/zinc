@@ -6,7 +6,7 @@ MAILFILE_PATH=mailfiles
 
 #Build defaults
 USER_INTERFACE=MOTIF_USER_INTERFACE
-DYNAMIC_GL_LINUX=false
+STATIC_LINK=false
 DEBUG=true
 ABI=
 MEMORYCHECK=
@@ -31,14 +31,14 @@ cmgui-debug :
 
 #Separating these rules allow the command line options to propogate and
 #variables that are not defined not to propogate.
-cmgui cmgui-debug cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
-cmgui cmgui-debug cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug : USER_INTERFACE=MOTIF_USER_INTERFACE
-cmgui-dynamicgl cmgui-dynamicgl-debug : DYNAMIC_GL_LINUX_OPTION=DYNAMIC_GL_LINUX=$(DYNAMIC_GL_LINUX)
-cmgui-dynamicgl cmgui-dynamicgl-debug : DYNAMIC_GL_LINUX=true
-cmgui cmgui-dynamicgl cmgui64 cmgui-console cmgui-gtk : DEBUG_OPTION=DEBUG=$(DEBUG)
-cmgui cmgui-dynamicgl cmgui64 cmgui-console cmgui-gtk : DEBUG=false
-cmgui-debug cmgui-debug-memorycheck cmgui-dynamicgl-debug cmgui64-debug : DEBUG_OPTION=DEBUG=$(DEBUG)
-cmgui-debug cmgui-debug-memorycheck cmgui-dynamicgl-debug cmgui64-debug : DEBUG=true
+cmgui cmgui-debug cmgui-static cmgui-static-debug cmgui64 cmgui64-debug : USER_INTERFACE_OPTION=USER_INTERFACE=$(USER_INTERFACE)
+cmgui cmgui-debug cmgui-static cmgui-static-debug cmgui64 cmgui64-debug : USER_INTERFACE=MOTIF_USER_INTERFACE
+cmgui-static cmgui-static-debug : STATIC_LINK_OPTION=STATIC_LINK=$(STATIC_LINK)
+cmgui-static cmgui-static-debug : STATIC_LINK=true
+cmgui cmgui-static cmgui64 cmgui-console cmgui-gtk : DEBUG_OPTION=DEBUG=$(DEBUG)
+cmgui cmgui-static cmgui64 cmgui-console cmgui-gtk : DEBUG=false
+cmgui-debug cmgui-debug-memorycheck cmgui-static-debug cmgui64-debug : DEBUG_OPTION=DEBUG=$(DEBUG)
+cmgui-debug cmgui-debug-memorycheck cmgui-static-debug cmgui64-debug : DEBUG=true
 cmgui64 cmgui64-debug utilities64 : ABI_OPTION=ABI=$(ABI)
 cmgui64 cmgui64-debug utilities64 : ABI=64
 cmgui-debug-memorycheck : MEMORYCHECK_OPTION=MEMORYCHECK=$(MEMORYCHECK)
@@ -57,8 +57,8 @@ endif
 ifdef USER_INTERFACE
    USER_INTERFACE_OPTION = USER_INTERFACE=$(USER_INTERFACE)
 endif
-ifdef DYNAMIC_GL_LINUX
-   DYNAMIC_GL_OPTION = DYNAMIC_GL_LINUX=$(DYNAMIC_GL_LINUX)
+ifdef STATIC_LINK
+   STATIC_LINK_OPTION = STATIC_LINK=$(STATIC_LINK)
 endif
 ifdef DEBUG
    DEBUG_OPTION = DEBUG=$(DEBUG)
@@ -69,16 +69,16 @@ endif
 ifdef MEMORYCHECK
    MEMORYCHECK_OPTION = MEMORYCHECK=$(MEMORYCHECK)
 endif
-OPTIONS = $(TARGET_OPTION) $(USER_INTERFACE_OPTION) $(DYNAMIC_GL_LINUX_OPTION) $(DEBUG_OPTION) $(ABI_OPTION) $(MEMORYCHECK_OPTION)
+OPTIONS = $(TARGET_OPTION) $(USER_INTERFACE_OPTION) $(STATIC_LINK_OPTION) $(DEBUG_OPTION) $(ABI_OPTION) $(MEMORYCHECK_OPTION)
 
-cmgui cmgui-debug cmgui-debug-memorycheck cmgui-dynamicgl cmgui-dynamicgl-debug cmgui64 cmgui64-debug cmgui-console cmgui-gtk utilities :
+cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui64 cmgui64-debug cmgui-console cmgui-gtk utilities :
 	cd source ; \
 	$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
 
 ESU_BUILD_LIST = cmgui cmgui-debug cmgui64 cmgui-console cmgui-debug-memorycheck
 ESU_BUILD_PATH = '$${CMISS_ROOT}/cmgui'
 ESU_BUILD_MACHINE = 130.216.208.35 #esu35
-ESP_BUILD_LIST = cmgui cmgui-debug cmgui-debug-memorycheck cmgui-dynamicgl cmgui-dynamicgl-debug cmgui-console
+ESP_BUILD_LIST = cmgui cmgui-debug cmgui-debug-memorycheck cmgui-static cmgui-static-debug cmgui-console
 ESP_BUILD_PATH = '$${CMISS_ROOT}/cmgui'
 ESP_BUILD_MACHINE = 130.216.208.156 #esp56
 HPC1_BUILD_LIST = cmgui cmgui-debug cmgui64 cmgui64-debug

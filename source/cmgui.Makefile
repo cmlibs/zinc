@@ -76,11 +76,11 @@ ifeq ($(USER_INTERFACE), GTK_USER_INTERFACE)
    TARGET_USER_INTERFACE_SUFFIX := -gtk
 endif # $(USER_INTERFACE) == GTK_USER_INTERFACE
 
-ifneq ($(DYNAMIC_GL_LINUX),true)
-   TARGET_DYNAMIC_GL_SUFFIX =
-else # $(DYNAMIC_GL_LINUX) != true
-   TARGET_DYNAMIC_GL_SUFFIX = -dynamicgl
-endif # $(DYNAMIC_GL_LINUX) != true 
+ifneq ($(STATIC_LINK),true)
+   TARGET_STATIC_LINK_SUFFIX =
+else # $(STATIC_LINK) != true
+   TARGET_STATIC_LINK_SUFFIX = -static
+endif # $(STATIC_LINK) != true 
 
 ifneq ($(DEBUG),true)
    TARGET_DEBUG_SUFFIX =
@@ -102,7 +102,7 @@ endif # $(SYSNAME) != win32)
 
 BIN_PATH=$(CMGUI_DEV_ROOT)/bin/$(BIN_ARCH_DIR)
 
-BIN_TARGET = $(TARGET_EXECUTABLE_BASENAME)$(TARGET_ABI_SUFFIX)$(TARGET_USER_INTERFACE_SUFFIX)$(TARGET_DYNAMIC_GL_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_MEMORYCHECK_SUFFIX)$(TARGET_FILETYPE_SUFFIX)
+BIN_TARGET = $(TARGET_EXECUTABLE_BASENAME)$(TARGET_ABI_SUFFIX)$(TARGET_USER_INTERFACE_SUFFIX)$(TARGET_STATIC_LINK_SUFFIX)$(TARGET_DEBUG_SUFFIX)$(TARGET_MEMORYCHECK_SUFFIX)$(TARGET_FILETYPE_SUFFIX)
 OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)$(TARGET_USER_INTERFACE_SUFFIX)$(TARGET_DEBUG_SUFFIX)
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/$(LIB_ARCH_DIR)/$(TARGET_EXECUTABLE_BASENAME)$(TARGET_USER_INTERFACE_SUFFIX)$(TARGET_DEBUG_SUFFIX)
 ifeq ($(USER_INTERFACE), MOTIF_USER_INTERFACE)
@@ -427,68 +427,53 @@ endif # SYSNAME == IRIX%=
 USER_INTERFACE_INC = 
 USER_INTERFACE_LIB =
 ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
-   ifneq ($(DYNAMIC_GL_LINUX),true)
-      ifneq ($(SYSNAME:IRIX%=),)
-         ifneq ($(wildcard /usr/local/Mesa-5.0/include),)
-            USER_INTERFACE_INC += -I/usr/local/Mesa-5.0/include
-         endif
-         USER_INTERFACE_INC += -I/usr/X11R6/include
-      endif # SYSNAME != IRIX%=
-      ifeq ($(SYSNAME),Linux)
-         #Mandrake 8.2 static libs are incompatible, this works around it by
-         #comparing the size of the symbols and forcing Xmu to preload its
-         #version if they differ in size.  Older greps don't have -o option.
-         Xm_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXm.a | /bin/grep '000000[0-f][1-f] _XEditResCheckMessages')
-         Xmu_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXmu.a | /bin/grep '000000[0-f][1-f] _XEditResCheckMessages')
-         ifneq ($(Xm_XeditRes),)
-            ifneq ($(Xmu_XeditRes),)
-               ifneq ($(word 5, $(Xm_XeditRes)), $(word 5, $(Xmu_XeditRes)))
-                  USER_INTERFACE_LIB += -u _XEditResCheckMessages -lXmu 
-               endif
-            endif
-         endif
-         USER_INTERFACE_LIB += -lMrm -lXm -lXp -lXt -lX11 -lXmu -lXext -lSM -lICE
-      else # SYSNAME == Linux
-         USER_INTERFACE_LIB += -lMrm -lXm -lXt -lX11 -lXmu -lXext
-         ifeq ($(SYSNAME:IRIX%=),)
-            USER_INTERFACE_LIB += -lSgm
-         endif # SYSNAME == IRIX%=
-      endif # SYSNAME == Linux
-  else # $(DYNAMIC_GL_LINUX) != true
-      # Even though this is a dynamic executable I want to statically link as much
-      # as possible so that the executable is as portable as possible
-	   ifneq ($(wildcard /usr/local/Mesa-5.0/include),)
+   ifeq ($(SYSNAME),Linux)
+      ifneq ($(wildcard /usr/local/Mesa-5.0/include),)
          USER_INTERFACE_INC += -I/usr/local/Mesa-5.0/include
       endif
       USER_INTERFACE_INC += -I/usr/X11R6/include
+      #On Linux I am statically linking many of the libraries always to
+      #reduce the version dependencies.
+
+	   #Mandrake 8.2 static libs are incompatible, this works around it by
+      #comparing the size of the symbols and forcing Xmu to preload its
+      #version if they differ in size.  Older greps don't have -o option.
       X_LIB = /usr/X11R6/lib
-      ifeq ($(SYSNAME),Linux)
-         #Mandrake 8.2 static libs are incompatible, this works around it by
-         #comparing the size of the symbols and forcing Xmu to preload its
-         #version if they differ in size.  Older greps don't have -o option.
-         Xm_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXm.a | /bin/grep '000000[0-f][1-f] _XEditResCheckMessages')
-         Xmu_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXmu.a | /bin/grep '000000[0-f][1-f] _XEditResCheckMessages')
-         ifneq ($(Xm_XeditRes),)
-            ifneq ($(Xmu_XeditRes),)
-               ifneq ($(word 5, $(Xm_XeditRes)), $(word 5, $(Xmu_XeditRes)))
-                  USER_INTERFACE_LIB += -u _XEditResCheckMessages $(X_LIB)/libXmu.a 
-               endif
+      Xm_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXm.a | /bin/grep '000000[0-f][1-f] _XEditResCheckMessages')
+      Xmu_XeditRes = $(shell /usr/bin/objdump -t /usr/X11R6/lib/libXmu.a | /bin/grep '000000[0-f][1-f] _XEditResCheckMessages')
+      ifneq ($(Xm_XeditRes),)
+         ifneq ($(Xmu_XeditRes),)
+            ifneq ($(word 5, $(Xm_XeditRes)), $(word 5, $(Xmu_XeditRes)))
+               ifneq ($(STATIC_LINK),true)
+                  USER_INTERFACE_LIB += -u _XEditResCheckMessages $(X_LIB)/libXmu.a
+               else # STATIC_LINK != true
+                  USER_INTERFACE_LIB += -u _XEditResCheckMessages -lXmu 
+               endif # STATIC_LINK != true
             endif
          endif
-      endif # $(SYSNAME) == Linux
-      USER_INTERFACE_LIB += $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXext.a $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a
-   endif # $(DYNAMIC_GL_LINUX) != true
+      endif
+      ifneq ($(STATIC_LINK),true)
+         USER_INTERFACE_LIB += $(X_LIB)/libMrm.a $(X_LIB)/libXm.a $(X_LIB)/libXt.a $(X_LIB)/libX11.a $(X_LIB)/libXmu.a $(X_LIB)/libXext.a $(X_LIB)/libXp.a $(X_LIB)/libSM.a $(X_LIB)/libICE.a
+      else # STATIC_LINK != true
+         USER_INTERFACE_LIB += -lMrm -lXm -lXp -lXt -lX11 -lXmu -lXext -lSM -lICE
+      endif # STATIC_LINK != true
+   else # SYSNAME == Linux
+      USER_INTERFACE_LIB += -lMrm -lXm -lXt -lX11 -lXmu -lXext
+      ifeq ($(SYSNAME:IRIX%=),)
+         USER_INTERFACE_LIB += -lSgm
+      endif # SYSNAME == IRIX%=
+   endif # SYSNAME == Linux
 endif # $(USER_INTERFACE) == MOTIF_USER_INTERFACE
 ifeq ($(USER_INTERFACE),GTK_USER_INTERFACE)
    ifneq ($(SYSNAME),win32)
       #USE_GTK2 = true
       ifeq ($(USE_GTK2),true)
          USER_INTERFACE_INC += $(shell "/home/blackett/bin/pkg-config gtkgl-2.0 gtk+-2.0 --cflags")
-         ifneq ($(DYNAMIC_GL_LINUX),true)
+         ifneq ($(STATIC_LINK),true)
             USER_INTERFACE_LIB += $(shell "/home/blackett/bin/pkg-config gtkgl-2.0 gtk+-2.0 --libs")
-         else # $(DYNAMIC_GL_LINUX) != true
+         else # $(STATIC_LINK) != true
             USER_INTERFACE_LIB += -L/home/blackett/lib -lgtkgl-2.0 -lgtk-x11-2.0 -lgdk-x11-2.0 -latk-1.0 -lgdk_pixbuf-2.0 -lm -lpangox-1.0 -lpango-1.0 -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 -L/usr/local/Mesa-5.0/lib -lGLU -lGL
-         endif # $(DYNAMIC_GL_LINUX) != true
+         endif # $(STATIC_LINK) != true
       else # $(USE_GTK2) == true
          USER_INTERFACE_INC +=  -I/usr/include/gtk-1.2 -I/usr/include/glib-1.2 -I/usr/lib/glib/include/
          USER_INTERFACE_LIB +=  -lgtkgl -L/usr/local/Mesa-5.0/lib -lGLU -lGL -lgtk -lgdk -lgmodule -lglib -ldl -lXi -lXext -lX11
@@ -511,11 +496,13 @@ ifeq ($(SYSNAME:IRIX%=),)
    LIB = -lPW -lftn -lm -lC -lCio -lpthread 
 endif # SYSNAME == IRIX%=
 ifeq ($(SYSNAME),Linux)
-   ifneq ($(DYNAMIC_GL_LINUX),true)
-      LIB = -lg2c -lm -ldl -lpthread -lcrypt -lstdc++
-   else # $(DYNAMIC_GL_LINUX) != true
+   ifneq ($(STATIC_LINK),true)
+      #For the dynamic link we really need to statically link the c++ as this
+      #seems to be particularly variable between distributions.
       LIB = -lg2c -lm -ldl -lc -lpthread /usr/lib/libcrypt.a `ls -1 /usr/lib/libstdc++*.a | tail -1`
-   endif # $(DYNAMIC_GL_LINUX) != true
+   else # $(STATIC_LINK) != true
+      LIB = -lg2c -lm -ldl -lpthread -lcrypt -lstdc++
+   endif # $(STATIC_LINK) != true
 endif # SYSNAME == Linux
 ifeq ($(SYSNAME),AIX)
    LIB = -lm -ldl -lSM -lICE -lpthread -lcrypt -lbsd -lld -lC128
@@ -1047,7 +1034,7 @@ ifeq ($(SYSNAME:IRIX%=),)
    endif # $(EXPORT_EVERYTHING) != true
 endif # SYSNAME == IRIX%=
 ifeq ($(SYSNAME),Linux)
-   ifeq ($(DYNAMIC_GL_LINUX),true)
+   ifneq ($(STATIC_LINK),true)
       ifneq ($(EXPORT_EVERYTHING),true)
          ifdef NEW_BINUTILS
             # In Linux this requires an ld from binutils 2.12 or later 
@@ -1127,12 +1114,12 @@ ifeq ($(SYSNAME),Linux)
          $(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
 		   	touch $(OBJECT_PATH)/$(EXPORTS_FILE)
       endif # $(EXPORT_EVERYTHING) != true
-   else # DYNAMIC_GL_LINUX) == true 
+   else # STATIC_LINK) != true 
       EXPORTS_FILE = no.exports
       EXPORTS_LINK_FLAGS = 
       $(OBJECT_PATH)/$(EXPORTS_FILE) :	
 			touch $(OBJECT_PATH)/$(EXPORTS_FILE)
-   endif # DYNAMIC_GL_LINUX) == true
+   endif # STATIC_LINK) != true
 endif # SYSNAME == Linux
 
 RESOURCE_FILES = 

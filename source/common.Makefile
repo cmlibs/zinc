@@ -157,14 +157,14 @@ ifeq ($(SYSNAME),Linux)
    FORTRAN = g77 -c -fno-second-underscore
    MAKEDEPEND = gcc -MM -MG
    CPREPROCESS = gcc -E -P
-   ifeq ($(DYNAMIC_GL_LINUX),true)
+   ifneq ($(STATIC_LINK),true)
       LINK = gcc
       # LINK = egcs -shared -L/usr/X11R6/lib -v */
       # LINK = gcc -L/usr/X11R6/lib -v */
-   else # DYNAMIC_GL_LINUX) == true
+   else # STATIC_LINK) != true
       LINK = gcc -static -L/usr/X11R6/lib
       # LINK = g++ --no-demangle -rdynamic -L/usr/X11R6/lib*/
-   endif # DYNAMIC_GL_LINUX) == true
+   endif # STATIC_LINK) != true
    ifneq ($(DEBUG),true)
       OPTIMISATION_FLAGS = -O
       COMPILE_DEFINES = -DOPTIMISED
