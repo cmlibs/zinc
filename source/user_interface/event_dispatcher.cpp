@@ -1239,6 +1239,11 @@ DESCRIPTION :
 		{
 			if (0 < (select_code = select(100, &read_set, NULL, NULL, timeout_ptr)))
 			{
+				if (!idle_callback)
+				{
+					ADD_OBJECT_TO_LIST(Event_dispatcher_idle_callback)
+						(event_dispatcher->special_idle_callback, event_dispatcher->idle_list);
+				}
 				/* The select leaves only those descriptors that are pending in the read set */
 				FOR_EACH_OBJECT_IN_LIST(Event_dispatcher_file_descriptor_handler)
 					(Event_dispatcher_file_descriptor_handler_call_handler_if_in_read_set,
