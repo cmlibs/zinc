@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : test_unemap_hardware.c
 
-LAST MODIFIED : 16 November 2001
+LAST MODIFIED : 3 January 2002
 
 DESCRIPTION :
 For testing the unemap hardware software (client, server, standalone).
@@ -801,8 +801,11 @@ static void process_keyboard(
 Global functions
 ----------------
 */
-void main(void)
+int main(void)
 {
+	int return_code;
+
+	return_code=1;
 #if defined (MOTIF)
 	if (application_context=XtCreateApplicationContext())
 	{
@@ -821,4 +824,6 @@ void main(void)
 		process_keyboard();
 	}
 #endif /* defined (WINDOWS) */
+
+	return (return_code);
 } /* main */
