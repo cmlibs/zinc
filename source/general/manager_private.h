@@ -274,6 +274,7 @@ PROTOTYPE_DESTROY_MANAGER_FUNCTION(object_type) \
 			DEALLOCATE(current); \
 			current=next; \
 		} \
+      DEALLOCATE(manager); \
 		return_code=1; \
 	} \
 	else \
