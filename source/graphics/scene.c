@@ -669,8 +669,11 @@ and is visible.
 			scene_object->time_object = (struct Time_object *)NULL;
 			scene_object->transformation = (gtMatrix *)NULL;
 			scene_object->gt_element_group = (struct GT_element_group *)NULL;
-			scene_object->child_scene = (struct Scene *)NULL;
-			scene_object->scene = ACCESS(Scene)(scene);
+			scene_object->child_scene = (struct Scene *)NULL;	
+			/* The scene_object is not accessing the scene as the
+				scene owns these objects and destroys them all before
+				destroying itself */
+			scene_object->scene = scene;
 			scene_object->scene_manager = (struct MANAGER(Scene) *)NULL;
 			scene_object->scene_manager_callback_id = NULL;
 			scene_object->selected=0;
@@ -836,7 +839,10 @@ DEACCESSes the member GT_object and removes any other dynamic fields.
 				{
 					DEACCESS(Scene)(&(scene_object->child_scene));
 				}
-				DEACCESS(Scene)(&(scene_object->scene));
+				/* The scene_object is not accessing the scene as the
+					scene owns these objects and destroys them all before
+					destroying itself */
+				scene_object->scene = (struct Scene *)NULL;
 				if (scene_object->scene_manager_callback_id &&
 					scene_object->scene_manager)
 				{
@@ -861,6 +867,10 @@ DEACCESSes the member GT_object and removes any other dynamic fields.
 					Time_object_remove_callback(scene_object->time_object, 
 						Scene_object_time_update_callback, scene_object);
 					DEACCESS(Time_object)(&(scene_object->time_object));
+				}
+				if(scene_object->name)
+				{
+					DEALLOCATE(scene_object->name);
 				}
 				DEALLOCATE(*scene_object_ptr);
 			}
@@ -1043,7 +1053,6 @@ Creates a graphics object of type g_GLYPH_SET which contains a single reference
 to the "axes" glyph used for displaying axes with the scene.
 ==============================================================================*/
 {
-	char *graphics_object_name;
 	struct GT_glyph_set *glyph_set;
 	struct GT_object *glyph,*graphics_object;
 	Triple *axis1_list,*axis2_list,*axis3_list,*point_list;
@@ -1054,10 +1063,8 @@ to the "axes" glyph used for displaying axes with the scene.
 		glyph_set=(struct GT_glyph_set *)NULL;
 		if ((glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("axes",glyph_list))&&
 			ALLOCATE(point_list,Triple,1)&&ALLOCATE(axis1_list,Triple,1)&&
-			ALLOCATE(axis2_list,Triple,1)&&ALLOCATE(axis3_list,Triple,1)&&
-			ALLOCATE(graphics_object_name,char,5))
+			ALLOCATE(axis2_list,Triple,1)&&ALLOCATE(axis3_list,Triple,1))
 		{
-			strcpy(graphics_object_name,"axes");
 			(*point_list)[0]=0.0;
 			(*point_list)[1]=0.0;
 			(*point_list)[2]=0.0;
@@ -1078,12 +1085,11 @@ to the "axes" glyph used for displaying axes with the scene.
 				DEALLOCATE(axis1_list);
 				DEALLOCATE(axis2_list);
 				DEALLOCATE(axis3_list);
-				DEALLOCATE(graphics_object_name);
 			}
 		}
 		if (glyph_set)
 		{
-			if (graphics_object=CREATE(GT_object)(graphics_object_name,g_GLYPH_SET,
+			if (graphics_object=CREATE(GT_object)("axes",g_GLYPH_SET,
 				default_material))
 			{
 				if (!GT_OBJECT_ADD(GT_glyph_set)(graphics_object,/*time*/0.0,glyph_set))
