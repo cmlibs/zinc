@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : glyph.h
 
-LAST MODIFIED : 16 July 1999
+LAST MODIFIED : 20 November 2000
 
 DESCRIPTION :
 Glyphs are GT_objects which contain simple geometric shapes such as
@@ -83,6 +83,24 @@ from <0,-0.5,0> to <0,+0.5,0>
 from <0,0,-0.5> to <0,0,+0.5>
 ==============================================================================*/
 
+struct GT_object *make_glyph_cube_solid(char *name);
+/*******************************************************************************
+LAST MODIFIED : 20 November 2000
+
+DESCRIPTION :
+Creates a graphics object named <name> consisting of a unit-sized GT_surface
+cube centred at <0,0,0>.
+==============================================================================*/
+
+struct GT_object *make_glyph_cube_wireframe(char *name);
+/*******************************************************************************
+LAST MODIFIED : 20 November 2000
+
+DESCRIPTION :
+Creates a graphics object named <name> consisting of lines marking a unit-sized
+wireframe cube centred at <0,0,0>.
+==============================================================================*/
+
 struct GT_object *make_glyph_cylinder(char *name,int number_of_segments_around);
 /*******************************************************************************
 LAST MODIFIED : 16 July 1998
@@ -101,6 +119,15 @@ LAST MODIFIED : 16 September 1998
 DESCRIPTION :
 Creates a graphics object named <name> consisting of a line from <-0.5,0,0> to
 <0.5,0,0>.
+==============================================================================*/
+
+struct GT_object *make_glyph_mirror(char *name, struct GT_object *mirror_glyph);
+/*******************************************************************************
+LAST MODIFIED : 16 November 2000
+
+DESCRIPTION :
+Makes a glyph with the given <name> that automatically mirrors the given
+<mirror_glyph>.
 ==============================================================================*/
 
 struct GT_object *make_glyph_point(char *name,gtMarkerType marker_type,

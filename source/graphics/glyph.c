@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : glyph.c
 
-LAST MODIFIED : 3 August 1999
+LAST MODIFIED : 16 November 2000
 
 DESCRIPTION :
 Glyphs are GT_objects which contain simple geometric shapes such as
@@ -197,12 +197,14 @@ from the shaft.
 		}
 		if (!glyph)
 		{
-			display_message(ERROR_MESSAGE,"make_glyph_arrow_line.  Error creating glyph");
+			display_message(ERROR_MESSAGE,
+				"make_glyph_arrow_line.  Error creating glyph");
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"make_glyph_arrow_line.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE,
+			"make_glyph_arrow_line.  Invalid argument(s)");
 		glyph=(struct GT_object *)NULL;
 	}
 	LEAVE;
@@ -618,6 +620,216 @@ from <0,0,-0.5> to <0,0,+0.5>
 	return (glyph);
 } /* make_glyph_cross */
 
+struct GT_object *make_glyph_cube_solid(char *name)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2000
+
+DESCRIPTION :
+Creates a graphics object named <name> consisting of a unit-sized GT_surface
+cube centred at <0,0,0>.
+==============================================================================*/
+{
+	float factor;
+	int a, b, c, i;
+	struct GT_object *glyph;
+	struct GT_surface *surface;
+	Triple *point, *points, *normalpoint, *normalpoints;
+
+	ENTER(make_glyph_cube_solid);
+	if (name)
+	{
+		surface=(struct GT_surface *)NULL;
+		if (ALLOCATE(points,Triple,24)&&
+			ALLOCATE(normalpoints,Triple,24))
+		{
+			point = points;
+			normalpoint = normalpoints;
+			/* all coordinates are +0.5 or -0.5, so clear them all to former */
+			for (i = 0; i < 6; i++)
+			{
+				a = i / 2;
+				if ((2*a) == i)
+				{
+					factor = -1.0;
+				}
+				else
+				{
+					factor = 1.0;
+				}
+				b = (a + 1) % 3;
+				c = (a + 2) % 3;
+				/* vertices */
+				(*point)[a] = 0.5*factor;
+				(*point)[b] = 0.5*factor;
+				(*point)[c] = 0.5;
+				point++;
+				(*point)[a] = 0.5*factor;
+				(*point)[b] = -0.5*factor;
+				(*point)[c] = 0.5;
+				point++;
+				(*point)[a] = 0.5*factor;
+				(*point)[b] = -0.5*factor;
+				(*point)[c] = -0.5;
+				point++;
+				(*point)[a] = 0.5*factor;
+				(*point)[b] = 0.5*factor;
+				(*point)[c] = -0.5;
+				point++;
+				/* normals */
+				(*normalpoint)[a] = factor;
+				(*normalpoint)[b] = 0.0;
+				(*normalpoint)[c] = 0.0;
+				normalpoint++;
+				(*normalpoint)[a] = factor;
+				(*normalpoint)[b] = 0.0;
+				(*normalpoint)[c] = 0.0;
+				normalpoint++;
+				(*normalpoint)[a] = factor;
+				(*normalpoint)[b] = 0.0;
+				(*normalpoint)[c] = 0.0;
+				normalpoint++;
+				(*normalpoint)[a] = factor;
+				(*normalpoint)[b] = 0.0;
+				(*normalpoint)[c] = 0.0;
+				normalpoint++;
+			}
+			if (!(surface=CREATE(GT_surface)(g_SH_DISCONTINUOUS,g_QUADRILATERAL,6,
+				4,points,normalpoints,/*texturepoints*/(Triple *)NULL,g_NO_DATA,
+				(GTDATA *)NULL)))
+			{
+				DEALLOCATE(points);
+				DEALLOCATE(normalpoints);
+			}
+		}
+		if (surface)
+		{
+			if (glyph=CREATE(GT_object)(name,g_SURFACE,
+				(struct Graphical_material *)NULL))
+			{
+				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
+				{
+					DESTROY(GT_object)(&glyph);
+					DESTROY(GT_surface)(&surface);
+				}
+			}
+		}
+		else
+		{
+			glyph=(struct GT_object *)NULL;
+		}
+		if (!glyph)
+		{
+			display_message(ERROR_MESSAGE,
+				"make_glyph_cube_solid.  Error creating glyph");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"make_glyph_cube_solid.  Invalid argument(s)");
+		glyph=(struct GT_object *)NULL;
+	}
+	LEAVE;
+
+	return (glyph);
+} /* make_glyph_cube_solid */
+
+struct GT_object *make_glyph_cube_wireframe(char *name)
+/*******************************************************************************
+LAST MODIFIED : 20 November 2000
+
+DESCRIPTION :
+Creates a graphics object named <name> consisting of lines marking a unit-sized
+wireframe cube centred at <0,0,0>.
+==============================================================================*/
+{
+	int a, b, c, i;
+	struct GT_object *glyph;
+	struct GT_polyline *polyline;
+	Triple *points, *vertex;
+
+	ENTER(make_glyph_cube_wireframe);
+	if (name)
+	{
+		polyline = (struct GT_polyline *)NULL;
+		if (ALLOCATE(points, Triple, 24))
+		{
+			vertex=points;
+			/* all coordinates are +0.5 or -0.5, so clear them all to former */
+			for (a = 0; a < 3; a++)
+			{
+				b = (a + 1) % 3;
+				c = (a + 2) % 3;
+				for (i = 0; i < 8; i++)
+				{
+					if (0 == (i % 2))
+					{
+						(*vertex)[a] = -0.5;
+					}
+					else
+					{
+						(*vertex)[a] = 0.5;
+					}
+					if (2 > (i % 4))
+					{
+						(*vertex)[b] = -0.5;
+					}
+					else
+					{
+						(*vertex)[b] = 0.5;
+					}
+					if (4 > i)
+					{
+						(*vertex)[c] = -0.5;
+					}
+					else
+					{
+						(*vertex)[c] = 0.5;
+					}
+					vertex++;
+				}
+			}
+			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,12,points,
+				/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GTDATA *)NULL)))
+			{
+				DEALLOCATE(points);
+			}
+		}
+		if (polyline)
+		{
+			if (glyph=CREATE(GT_object)(name,g_POLYLINE,
+				(struct Graphical_material *)NULL))
+			{
+				if (!GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline))
+				{
+					DESTROY(GT_object)(&glyph);
+				}
+			}
+			if (!glyph)
+			{
+				DESTROY(GT_polyline)(&polyline);
+			}
+		}
+		else
+		{
+			glyph=(struct GT_object *)NULL;
+		}
+		if (!glyph)
+		{
+			display_message(ERROR_MESSAGE,
+				"make_glyph_cube_wireframe.  Error creating glyph");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"make_glyph_cube_wireframe.  Invalid argument(s)");
+		glyph=(struct GT_object *)NULL;
+	}
+	LEAVE;
+
+	return (glyph);
+} /* make_glyph_cube_wireframe */
+
 struct GT_object *make_glyph_cylinder(char *name,int number_of_segments_around)
 /*******************************************************************************
 LAST MODIFIED : 14 July 1999
@@ -746,6 +958,38 @@ Creates a graphics object named <name> consisting of a line from <0,0,0> to
 
 	return (glyph);
 } /* make_glyph_line */
+
+struct GT_object *make_glyph_mirror(char *name, struct GT_object *mirror_glyph)
+/*******************************************************************************
+LAST MODIFIED : 16 November 2000
+
+DESCRIPTION :
+Makes a glyph with the given <name> that automatically mirrors the given
+<mirror_glyph>.
+==============================================================================*/
+{
+	struct GT_object *glyph;
+
+	ENTER(make_glyph_mirror);
+	if (name && mirror_glyph)
+	{
+		/*???temporary. Use dummy GT_object until we have struct Glyph */
+		if (glyph = CREATE(GT_object)(name, g_SURFACE,
+			(struct Graphical_material *)NULL))
+		{
+			GT_object_set_glyph_mirror_mode(glyph, 1);
+			glyph->nextobject = ACCESS(GT_object)(mirror_glyph);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "make_glyph_mirror.  Invalid argument(s)");
+		glyph = (struct GT_object *)NULL;
+	}
+	LEAVE;
+
+	return (glyph);
+} /* make_glyph_mirror */
 
 struct GT_object *make_glyph_point(char *name,gtMarkerType marker_type,
 	float marker_size)
