@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : parser.c
 
-LAST MODIFIED : 23 December 1999
+LAST MODIFIED : 27 March 2000
 
 DESCRIPTION :
 A module for supporting command parsing.
@@ -2858,6 +2858,99 @@ A modifier function for setting a int to a positive value.
 
 	return (return_code);
 } /* set_int_positive */
+
+int set_int_vector(struct Parse_state *state,void *values_address_void,
+	void *number_of_components_address_void)
+/*******************************************************************************
+LAST MODIFIED : 27 March 2000
+
+DESCRIPTION :
+Modifier function for reading number_of_components (>0) ints from <state>.
+User data consists of a pointer to an integer containing number_of_components,
+while <values_address_void> should point to a large enough space to store the
+number_of_components ints.
+Now prints current contents of the vector with help.
+==============================================================================*/
+{
+	char *current_token;
+	int value,*values_address;
+	int comp_no,number_of_components,return_code;
+
+	ENTER(set_int_vector);
+	if (state)
+	{
+		if ((values_address=(int *)values_address_void)&&
+			number_of_components_address_void&&(0<(number_of_components=
+			*((int *)number_of_components_address_void))))
+		{
+			if (current_token=state->current_token)
+			{
+				return_code=1;
+				if (strcmp(PARSER_HELP_STRING,current_token)&&
+					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))
+				{
+					for (comp_no=0;return_code&&(comp_no<number_of_components);comp_no++)
+					{
+						if (current_token=state->current_token)
+						{
+							if (1==sscanf(current_token," %d ",&value))
+							{
+								values_address[comp_no]=value;
+								return_code=shift_Parse_state(state,1);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,"Invalid int: %s",current_token);
+								display_parse_state_location(state);
+								return_code=0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,"Missing int vector component(s)");
+							display_parse_state_location(state);
+							return_code=0;
+						}
+					}
+				}
+				else
+				{
+					/* write help text */
+					for (comp_no=0;comp_no<number_of_components;comp_no++)
+					{
+						display_message(INFORMATION_MESSAGE," #");
+					}
+					display_message(INFORMATION_MESSAGE,"[%d",values_address[0]);
+					for (comp_no=1;comp_no<number_of_components;comp_no++)
+					{
+						display_message(INFORMATION_MESSAGE," %d",values_address[comp_no]);
+					}
+					display_message(INFORMATION_MESSAGE,"]");
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"Missing %d component int vector",number_of_components);
+				display_parse_state_location(state);
+				return_code=0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"set_int_vector.  Invalid argument(s)");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"set_int_vector.  Missing state");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* set_int_vector */
 
 int set_float(struct Parse_state *state,void *value_address_void,
 	void *dummy_user_data)

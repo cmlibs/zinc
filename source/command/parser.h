@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : parser.h
 
-LAST MODIFIED : 10 March 2000
+LAST MODIFIED : 27 March 2000
 
 DESCRIPTION :
 Public interface for the beginnings of a simple parser (although at the moment
@@ -350,6 +350,19 @@ LAST MODIFIED : 18 June 1996
 
 DESCRIPTION :
 A modifier function for setting a int to a positive value.
+==============================================================================*/
+
+int set_int_vector(struct Parse_state *state,void *values_address_void,
+	void *number_of_components_address_void);
+/*******************************************************************************
+LAST MODIFIED : 27 March 2000
+
+DESCRIPTION :
+Modifier function for reading number_of_components (>0) ints from <state>.
+User data consists of a pointer to an integer containing number_of_components,
+while <values_address_void> should point to a large enough space to store the
+number_of_components ints.
+Now prints current contents of the vector with help.
 ==============================================================================*/
 
 int set_float(struct Parse_state *state,void *value_address_void,
