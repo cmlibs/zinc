@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 13 June 2000
+LAST MODIFIED : 21 June 2000
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -2863,12 +2863,12 @@ Up to calling function to deallocate returned array - but not the strings in it!
 
 struct FE_field *CREATE(FE_field)(void);
 /*******************************************************************************
-LAST MODIFIED : 28 January 1999
+LAST MODIFIED : 21 June 2000
 
 DESCRIPTION :
-Creates and returns a struct FE_field with the given <name> identifier. The
-new field defaults to 1 component, field_type FIELD, RECTANGULAR_CARTESIAN
-coordinate system, no field values and the single component is named "1".
+Creates and returns a struct FE_field. The new field defaults to 1 component, 
+field_type FIELD, NOT_APPLICABLE coordinate system, no field values, 
+no name, and the single component is named "1".
 ==============================================================================*/
 
 int DESTROY(FE_field)(struct FE_field **field_address);
@@ -3446,6 +3446,15 @@ LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 Returns true if <top_level_element> is indeed a top_level parent of <element>.
+==============================================================================*/
+
+int FE_element_or_parent_is_element(struct FE_element *element,
+	void *match_element_void);
+/*******************************************************************************
+LAST MODIFIED : 21 June 2000
+
+DESCRIPTION :
+Returns true if <element> or any of its parents matches <match_element>.
 ==============================================================================*/
 
 int FE_element_is_top_level_parent_of_element(
