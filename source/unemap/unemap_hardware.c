@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.c
 
-LAST MODIFIED : 2 January 2001
+LAST MODIFIED : 7 January 2001
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -3531,6 +3531,7 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 						(PXI6031E_AD_DA==(module_NI_CARDS[i]).type)||
 						(PXI6071E_AD_DA==(module_NI_CARDS[i]).type)))
 					{
+#if defined (OLD_CODE)
 						/* check if waveform generation is already underway */
 							/*???DB.  Just to try out stopping.  Might use for stimulation */
 						status=WFM_Check((module_NI_CARDS[i]).device_number,da_channel,
@@ -3551,6 +3552,7 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 #endif /* defined (DEBUG) */
 						if ((0==status)&&!stopped)
 						{
+#endif /* defined (OLD_CODE) */
 							/* make sure that waveform generation is stopped */
 								/*???DB.  Not sure if it is possible to have different signals
 									for AO0 and AO1 or if we need it */
@@ -3569,6 +3571,7 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 	}
 }
 #endif /* defined (DEBUG) */
+#if defined (OLD_CODE)
 #if !defined (SYNCHRONOUS_STIMULATION)
 #if defined (OLD_CODE)
 							/* set the output voltage to 0 */
@@ -3577,6 +3580,7 @@ otherwise the waveform is repeated the <number_of_cycles> times or until
 #endif /* defined (OLD_CODE) */
 #endif /* !defined (SYNCHRONOUS_STIMULATION) */
 						}
+#endif /* defined (OLD_CODE) */
 						/* configure the DA to bipolar +/-10 */
 						status=AO_Configure((module_NI_CARDS[i]).device_number,da_channel,
 							/*bipolar*/(i16)0,/*internal voltage reference*/(i16)0,
@@ -4275,11 +4279,13 @@ Stops the <da_channel> for the specified NI card(s).
 					(PXI6031E_AD_DA==(module_NI_CARDS[i]).type)||
 					(PXI6071E_AD_DA==(module_NI_CARDS[i]).type)))
 				{
+#if defined (OLD_CODE)
 					/* check if waveform generation is already underway */
 					status=WFM_Check((module_NI_CARDS[i]).device_number,da_channel,
 						&stopped,&iterations,&points);
 					if ((0==status)&&!stopped)
 					{
+#endif /* defined (OLD_CODE) */
 						/* stop waveform generation */
 						status=WFM_Group_Control((module_NI_CARDS[i]).device_number,
 							/*group*/1,/*Clear*/0);
@@ -4317,7 +4323,9 @@ Stops the <da_channel> for the specified NI card(s).
 						}
 						/* set the output voltage to 0 */
 						AO_Write((module_NI_CARDS[i]).device_number,da_channel,(i16)0);
+#if defined (OLD_CODE)
 					}
+#endif /* defined (OLD_CODE) */
 				}
 				i++;
 			}
@@ -11162,7 +11170,7 @@ int unemap_read_waveform_file(FILE *in_file,char *waveform_file_name,
 	int *number_of_values,float *values_per_second,float **values,
 	int *constant_voltage)
 /*******************************************************************************
-LAST MODIFIED : 12 November 2000
+LAST MODIFIED : 7 January 2001
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -11178,7 +11186,7 @@ proportions of the maximum current.
 	float *value;
 	int i;
 
-	ENTER(read_waveform_file);
+	ENTER(unemap_read_waveform_file);
 	return_code=0;
 	/* check arguments */
 	if (((in_file&&!waveform_file_name)||(!in_file&&waveform_file_name))&&
@@ -11255,7 +11263,7 @@ proportions of the maximum current.
 							else
 							{
 								display_message(ERROR_MESSAGE,
-								"read_waveform_file.  Could not allocate memory for values");
+						"unemap_read_waveform_file.  Could not allocate memory for values");
 							}
 						}
 						else
@@ -11295,12 +11303,13 @@ proportions of the maximum current.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"read_waveform_file.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE,
+			"unemap_read_waveform_file.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (return_code);
-} /* read_waveform_file */
+} /* unemap_read_waveform_file */
 
 int unemap_get_number_of_stimulators(int *number_of_stimulators)
 /*******************************************************************************

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 19 November 2000
+LAST MODIFIED : 7 January 2001
 
 DESCRIPTION :
 
@@ -74,9 +74,21 @@ Module constants
 Module types
 ------------
 */
+struct Stimulator
+/*******************************************************************************
+LAST MODIFIED : 7 January 2001
+
+DESCRIPTION :
+==============================================================================*/
+{
+	float end_values_per_second,*end_values;
+	int constant_voltage,end_number_of_values,number_of_channels,on,
+		*channel_numbers;
+}; /* struct Stimulator */
+
 struct Page_window
 /*******************************************************************************
-LAST MODIFIED : 5 November 2000
+LAST MODIFIED : 7 January 2001
 
 DESCRIPTION :
 The page window object.
@@ -291,8 +303,11 @@ The page window object.
 	int data_saved,display_device_number,hardware_initialized,
 		*last_scrolling_value_device,number_of_scrolling_channels,
 		*number_of_scrolling_channels_device,number_of_scrolling_devices,
-		*number_of_stimulating_channels,number_of_stimulators,pointer_sensitivity,
-		**stimulating_channel_numbers,*stimulator_on,
+		number_of_stimulators,pointer_sensitivity,
+#if defined (OLD_CODE)
+		*number_of_stimulating_channels,**stimulating_channel_numbers,
+		*stimulator_on,
+#endif /* defined (OLD_CODE) */
 #if defined (OLD_CODE)
 		*stimulate_device_numbers,stimulator_number,
 #endif /* defined (OLD_CODE) */
@@ -306,6 +321,7 @@ The page window object.
 	struct Page_window **address;
 	struct Mapping_window **mapping_window_address;
 	struct Rig **rig_address;
+	struct Stimulator *stimulators;
 	struct User_interface *user_interface;
 	unsigned long number_of_samples;
 #if defined (MIRADA)
@@ -3436,7 +3452,7 @@ Motif wrapper for update_display_minimum.
 
 static void update_stimulating_settings(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2000
+LAST MODIFIED : 7 January 2001
 
 DESCRIPTION :
 Updates the settings for the stimulating buttons.
@@ -3485,14 +3501,14 @@ Updates the settings for the stimulating buttons.
 			number_of_off_stimulating_channels=0;
 			for (i=0;i<page_window->number_of_stimulators;i++)
 			{
-				if ((page_window->stimulator_on)[i])
+				if (((page_window->stimulators)[i]).on)
 				{
 					number_of_on_stimulators++;
 				}
 				else
 				{
 					number_of_off_stimulating_channels +=
-						(page_window->number_of_stimulating_channels)[i];
+						((page_window->stimulators)[i]).number_of_channels;
 				}
 			}
 			if (0<number_of_on_stimulators)
@@ -3544,7 +3560,7 @@ Updates the settings for the stimulating buttons.
 				{
 					stimulator_number--;
 					if (0<
-						(page_window->number_of_stimulating_channels)[stimulator_number])
+						((page_window->stimulators)[stimulator_number]).number_of_channels)
 					{
 #if defined (MOTIF)
 						XtSetSensitive(page_window->stimulator_checkbox,True);
@@ -3562,7 +3578,7 @@ Updates the settings for the stimulating buttons.
 						EnableWindow(page_window->stimulator_checkbox,FALSE);
 #endif /* defined (WINDOWS) */
 					}
-					if ((page_window->stimulator_on)[stimulator_number])
+					if (((page_window->stimulators)[stimulator_number]).on)
 					{
 #if defined (MOTIF)
 						XmToggleButtonSetState(page_window->stimulator_checkbox,True,False);
@@ -3586,11 +3602,11 @@ Updates the settings for the stimulating buttons.
 						EnableWindow(page_window->stimulate_checkbox,TRUE);
 #endif /* defined (WINDOWS) */
 					}
-					if (0<(i=(page_window->number_of_stimulating_channels)[
-						stimulator_number]))
+					if (0<(i=((page_window->stimulators)[stimulator_number]).
+						number_of_channels))
 					{
 						stimulating_channel_numbers=
-							(page_window->stimulating_channel_numbers)[stimulator_number];
+							((page_window->stimulators)[stimulator_number]).channel_numbers;
 						do
 						{
 							i--;
@@ -4205,6 +4221,102 @@ Motif wrapper for update_filter_callback.
 } /* update_filter_callback */
 #endif /* defined (MOTIF) */
 
+static int read_waveform_file(char *waveform_file_name,int *constant_voltage,
+	int *start_number_of_values,float *start_values_per_second,
+	float **start_values,int *end_number_of_values,float *end_values_per_second,
+	float **end_values)
+/*******************************************************************************
+LAST MODIFIED : 7 January 2000
+
+DESCRIPTION :
+Extends unemap_read_waveform_file to allow a starting waveform and an ending
+waveform.
+==============================================================================*/
+{
+	char keyword[6];
+	FILE *waveform_file;
+	int end_constant_voltage,return_code;
+
+	ENTER(read_waveform_file);
+	return_code=0;
+	/* check arguments */
+	if (waveform_file_name&&constant_voltage&&start_number_of_values&&
+		start_values_per_second&&start_values&&end_number_of_values&&
+		end_values_per_second&&end_values)
+	{
+		if (waveform_file=fopen(waveform_file_name,"r"))
+		{
+			if ((1==fscanf(waveform_file,"%5s",keyword))&&
+				(('s'==keyword[0])||('S'==keyword[0]))&&
+				(('t'==keyword[1])||('T'==keyword[1]))&&
+				(('a'==keyword[2])||('A'==keyword[2]))&&
+				(('r'==keyword[3])||('R'==keyword[3]))&&
+				(('t'==keyword[4])||('T'==keyword[4])))
+			{
+				fscanf(waveform_file," ");
+				if (return_code=unemap_read_waveform_file(waveform_file,(char *)NULL,
+					start_number_of_values,start_values_per_second,start_values,
+					constant_voltage))
+				{
+					if ((1==fscanf(waveform_file,"%5s",keyword))&&
+						(('e'==keyword[0])||('E'==keyword[0]))&&
+						(('n'==keyword[1])||('N'==keyword[1]))&&
+						(('d'==keyword[2])||('D'==keyword[2])))
+					{
+						fscanf(waveform_file," ");
+						if (return_code=unemap_read_waveform_file(waveform_file,
+							(char *)NULL,end_number_of_values,end_values_per_second,
+							end_values,&end_constant_voltage))
+						{
+							if ((!end_constant_voltage&&(*constant_voltage))||
+								(!(*constant_voltage)&&end_constant_voltage))
+							{
+								display_message(ERROR_MESSAGE,
+"Cannot mix constant current and constant voltage for start and end waveforms");
+								return_code=0;
+								DEALLOCATE(*start_values);
+								DEALLOCATE(*end_values);
+							}
+						}
+					}
+					else
+					{
+						*end_number_of_values=0;
+						*end_values_per_second=(float)0;
+						*end_values=(float *)NULL;
+					}
+				}
+			}
+			else
+			{
+				rewind(waveform_file);
+				return_code=unemap_read_waveform_file(waveform_file,(char *)NULL,
+					start_number_of_values,start_values_per_second,start_values,
+					constant_voltage);
+				*end_number_of_values=0;
+				*end_values_per_second=(float)0;
+				*end_values=(float *)NULL;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"Could not open waveform file %s",
+				waveform_file_name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"read_waveform_file.  Invalid argument(s).  %p %p %p %p %p %p %p %p",
+			waveform_file_name,constant_voltage,start_number_of_values,
+			start_values_per_second,start_values,end_number_of_values,
+			end_values_per_second,end_values);
+	}
+	LEAVE;
+
+	return (return_code);
+} /* read_waveform_file */
+
 #if defined (OLD_CODE)
 static int start_stimulating(struct Page_window *page_window)
 /*******************************************************************************
@@ -4420,7 +4532,7 @@ Motif wrapper for start_stimulating and stop_stimulating.
 
 static int stop_all_stimulating(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2000
+LAST MODIFIED : 7 January 2001
 
 DESCRIPTION :
 Called to stop all stimulating on the <page_window>.
@@ -4436,7 +4548,7 @@ Called to stop all stimulating on the <page_window>.
 		unemap_set_channel_stimulating(0,0);
 		for (i=0;i<page_window->number_of_stimulators;i++)
 		{
-			(page_window->stimulator_on)[i]=0;
+			((page_window->stimulators)[i]).on=0;
 		}
 		update_stimulating_settings(page_window);
 	}
@@ -4447,7 +4559,7 @@ Called to stop all stimulating on the <page_window>.
 
 static int start_stimulator(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 10 November 2000
+LAST MODIFIED : 7 January 2001
 
 DESCRIPTION :
 Called to start a stimulator.
@@ -4457,6 +4569,7 @@ Called to start a stimulator.
 	float *values,values_per_second;
 	int channel_number,constant_voltage,i,number_of_values,return_code,
 		stimulator_number;
+	unsigned int number_of_cycles;
 
 	ENTER(start_stimulator);
 	return_code=0;
@@ -4472,8 +4585,8 @@ Called to start a stimulator.
 		}
 		stimulator_number--;
 		if ((stimulator_number>=0)&&
-			!((page_window->stimulator_on)[stimulator_number])&&
-			(0<(page_window->number_of_stimulating_channels)[stimulator_number]))
+			!(((page_window->stimulators)[stimulator_number]).on)&&
+			(0<((page_window->stimulators)[stimulator_number]).number_of_channels))
 		{
 			if (hardware_directory=getenv("UNEMAP_HARDWARE"))
 			{
@@ -4506,16 +4619,32 @@ Called to start a stimulator.
 			{
 				sprintf(waveform_file_name+strlen(waveform_file_name),
 					"stimulate%d.wfm",stimulator_number+1);
-				if (unemap_read_waveform_file((FILE *)NULL,waveform_file_name,
-					&number_of_values,&values_per_second,&values,&constant_voltage))
+				if (read_waveform_file(waveform_file_name,&constant_voltage,
+					&number_of_values,&values_per_second,&values,
+					&(((page_window->stimulators)[stimulator_number]).
+					end_number_of_values),
+					&(((page_window->stimulators)[stimulator_number]).
+					end_values_per_second),
+					&(((page_window->stimulators)[stimulator_number]).end_values)))
 				{
+					((page_window->stimulators)[stimulator_number]).constant_voltage=
+						constant_voltage;
+					if (0<((page_window->stimulators)[stimulator_number]).
+						end_number_of_values)
+					{
+						number_of_cycles=1;
+					}
+					else
+					{
+						number_of_cycles=0;
+					}
 					if (constant_voltage)
 					{
 						return_code=unemap_load_voltage_stimulating(
-							(page_window->number_of_stimulating_channels)[
-							stimulator_number],
-							(page_window->stimulating_channel_numbers)[stimulator_number],
-							number_of_values,values_per_second,values,0);
+							((page_window->stimulators)[stimulator_number]).
+							number_of_channels,
+							((page_window->stimulators)[stimulator_number]).channel_numbers,
+							number_of_values,values_per_second,values,number_of_cycles);
 					}
 					else
 					{
@@ -4527,10 +4656,10 @@ Called to start a stimulator.
 						else
 						{
 							return_code=unemap_load_current_stimulating(
-								(page_window->number_of_stimulating_channels)[
-								stimulator_number],(page_window->
-								stimulating_channel_numbers)[stimulator_number],
-								number_of_values,values_per_second,values,0);
+								((page_window->stimulators)[stimulator_number]).
+								number_of_channels,
+								((page_window->stimulators)[stimulator_number]).channel_numbers,
+								number_of_values,values_per_second,values,number_of_cycles);
 						}
 					}
 					DEALLOCATE(values);
@@ -4538,12 +4667,12 @@ Called to start a stimulator.
 				if (return_code)
 				{
 					/* set the channels to stimulating */
-					(page_window->stimulator_on)[stimulator_number]=1;
-					for (i=0;i<(page_window->number_of_stimulating_channels)[
-						stimulator_number];i++)
+					((page_window->stimulators)[stimulator_number]).on=1;
+					for (i=0;i<((page_window->stimulators)[stimulator_number]).
+						number_of_channels;i++)
 					{
-						unemap_set_channel_stimulating(((page_window->
-							stimulating_channel_numbers)[stimulator_number])[i],1);
+						unemap_set_channel_stimulating((((page_window->stimulators)[
+							stimulator_number]).channel_numbers)[i],1);
 					}
 					return_code=unemap_start_stimulating();
 				}
@@ -4559,7 +4688,7 @@ Called to start a stimulator.
 
 static int stop_stimulator(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 10 November 2000
+LAST MODIFIED : 7 January 2001
 
 DESCRIPTION :
 Called to stop a stimulator.
@@ -4581,16 +4710,62 @@ Called to stop a stimulator.
 		}
 		stimulator_number--;
 		if ((stimulator_number>=0)&&
-			((page_window->stimulator_on)[stimulator_number])&&
-			(0<(page_window->number_of_stimulating_channels)[stimulator_number]))
+			(((page_window->stimulators)[stimulator_number]).on)&&
+			(0<((page_window->stimulators)[stimulator_number]).number_of_channels))
 		{
-			return_code=unemap_stop_stimulating(channel_number);
-			(page_window->stimulator_on)[stimulator_number]=0;
-			for (i=0;i<(page_window->number_of_stimulating_channels)[
-				stimulator_number];i++)
+			if (0<((page_window->stimulators)[stimulator_number]).
+				end_number_of_values)
 			{
-				unemap_set_channel_stimulating(((page_window->
-					stimulating_channel_numbers)[stimulator_number])[i],0);
+				if (((page_window->stimulators)[stimulator_number]).constant_voltage)
+				{
+					return_code=unemap_load_voltage_stimulating(
+						((page_window->stimulators)[stimulator_number]).number_of_channels,
+						((page_window->stimulators)[stimulator_number]).channel_numbers,
+						((page_window->stimulators)[stimulator_number]).
+						end_number_of_values,
+						((page_window->stimulators)[stimulator_number]).
+						end_values_per_second,
+						((page_window->stimulators)[stimulator_number]).end_values,1);
+				}
+				else
+				{
+					if (UnEmap_1V2==page_window->unemap_hardware_version)
+					{
+						display_message(WARNING_MESSAGE,
+			"Constant current stimulation is not available for this hardware");
+						unemap_stop_stimulating(channel_number);
+						return_code=0;
+					}
+					else
+					{
+						return_code=unemap_load_current_stimulating(
+							((page_window->stimulators)[stimulator_number]).
+							number_of_channels,
+							((page_window->stimulators)[stimulator_number]).channel_numbers,
+							((page_window->stimulators)[stimulator_number]).
+							end_number_of_values,
+							((page_window->stimulators)[stimulator_number]).
+							end_values_per_second,
+							((page_window->stimulators)[stimulator_number]).end_values,1);
+					}
+				}
+				if (return_code)
+				{
+					unemap_start_stimulating();
+				}
+				DEALLOCATE(((page_window->stimulators)[stimulator_number]).end_values);
+				((page_window->stimulators)[stimulator_number]).end_number_of_values=0;
+			}
+			else
+			{
+				return_code=unemap_stop_stimulating(channel_number);
+			}
+			((page_window->stimulators)[stimulator_number]).on=0;
+			for (i=0;i<((page_window->stimulators)[stimulator_number]).
+				number_of_channels;i++)
+			{
+				unemap_set_channel_stimulating((((page_window->stimulators)[
+					stimulator_number]).channel_numbers)[i],0);
 			}
 		}
 		update_stimulating_settings(page_window);
@@ -5338,7 +5513,7 @@ Assumes that the calibration file is normalized.
 
 static int start_experiment(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 10 November 2000
+LAST MODIFIED : 7 January 2001
 
 DESCRIPTION :
 Called to start experiment on the <page_window>.
@@ -5516,9 +5691,9 @@ Called to start experiment on the <page_window>.
 							(page_window->stimulate_devices)[j]=(struct Device *)NULL;
 							(page_window->stimulate_device_numbers)[j]= -1;
 #endif /* defined (OLD_CODE) */
-							(page_window->stimulator_on)[j]=0;
-							DEALLOCATE((page_window->stimulating_channel_numbers)[j]);
-							(page_window->number_of_stimulating_channels)[j]=0;
+							((page_window->stimulators)[j]).on=0;
+							DEALLOCATE(((page_window->stimulators)[j]).channel_numbers);
+							((page_window->stimulators)[j]).number_of_channels=0;
 						}
 						if ((0<(number_of_devices=(*(page_window->rig_address))->
 							number_of_devices))&&(device_address=
@@ -6088,7 +6263,7 @@ Motif wrapper for start_experiment and stop_experiment.
 
 static int set_current_electrode_stimulate(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 19 November 2000
+LAST MODIFIED : 7 January 2001
 
 DESCRIPTION :
 Sets the current electrode to stimulate.
@@ -6113,8 +6288,8 @@ Sets the current electrode to stimulate.
 			{
 				i--;
 				stimulating_channel_numbers=
-					(page_window->stimulating_channel_numbers)[i];
-				j=(page_window->number_of_stimulating_channels)[i];
+					((page_window->stimulators)[i]).channel_numbers;
+				j=((page_window->stimulators)[i]).number_of_channels;
 				if (stimulating_channel_numbers&&(j>0))
 				{
 					do
@@ -6122,23 +6297,23 @@ Sets the current electrode to stimulate.
 						j--;
 					} while ((j>0)&&(channel_number<stimulating_channel_numbers[j]));
 				}
-				if (((page_window->number_of_stimulating_channels)[i]<=0)||
+				if ((((page_window->stimulators)[i]).number_of_channels<=0)||
 					(channel_number!=stimulating_channel_numbers[j]))
 				{
 					if (REALLOCATE(stimulating_channel_numbers,
-						(page_window->stimulating_channel_numbers)[i],int,
-						(page_window->number_of_stimulating_channels)[i]+1))
+						((page_window->stimulators)[i]).channel_numbers,int,
+						((page_window->stimulators)[i]).number_of_channels+1))
 					{
-						(page_window->stimulating_channel_numbers)[i]=
+						((page_window->stimulators)[i]).channel_numbers=
 							stimulating_channel_numbers;
-						k=(page_window->number_of_stimulating_channels)[i];
+						k=((page_window->stimulators)[i]).number_of_channels;
 						while (k>j)
 						{
 							stimulating_channel_numbers[k]=stimulating_channel_numbers[k-1];
 							k--;
 						}
 						stimulating_channel_numbers[j]=channel_number;
-						((page_window->number_of_stimulating_channels)[i])++;
+						(((page_window->stimulators)[i]).number_of_channels)++;
 						return_code=1;
 					}
 				}
@@ -6147,8 +6322,6 @@ Sets the current electrode to stimulate.
 					return_code=1;
 				}
 			}
-			/*???debug */
-			printf("set_current_electrode_stimulate %d\n",return_code);
 			update_stimulating_settings(page_window);
 		}
 	}
@@ -6159,7 +6332,7 @@ Sets the current electrode to stimulate.
 
 static int set_current_electrode_record(struct Page_window *page_window)
 /*******************************************************************************
-LAST MODIFIED : 10 November 2000
+LAST MODIFIED : 7 January 2001
 
 DESCRIPTION :
 Sets the current electrode to record.
@@ -6183,18 +6356,18 @@ Sets the current electrode to record.
 			if (i>0)
 			{
 				i--;
-				if (0<(j=(page_window->number_of_stimulating_channels)[i]))
+				if (0<(j=((page_window->stimulators)[i]).number_of_channels))
 				{
 					stimulating_channel_numbers=
-						(page_window->stimulating_channel_numbers)[i];
+						((page_window->stimulators)[i]).channel_numbers;
 					do
 					{
 						j--;
 					} while ((j>0)&&(channel_number<stimulating_channel_numbers[j]));
 					if (channel_number==stimulating_channel_numbers[j])
 					{
-						((page_window->number_of_stimulating_channels)[i])--;
-						while (j<(page_window->number_of_stimulating_channels)[i])
+						(((page_window->stimulators)[i]).number_of_channels)--;
+						while (j<((page_window->stimulators)[i]).number_of_channels)
 						{
 							stimulating_channel_numbers[j]=stimulating_channel_numbers[j+1];
 							j++;
@@ -7174,7 +7347,7 @@ static void page_start_all_stimulators(
 #endif /* defined (WINDOWS) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2000
+LAST MODIFIED : 7 January 2001
 
 DESCRIPTION :
 Called when the start all stimulators button is pressed.
@@ -7184,6 +7357,7 @@ Called when the start all stimulators button is pressed.
 	float *values,values_per_second;
 	int constant_voltage,i,length,number_of_values,return_code,stimulator_number;
 	struct Page_window *page_window;
+	unsigned int number_of_cycles;
 
 	ENTER(page_start_all_stimulators);
 #if defined (MOTIF)
@@ -7229,22 +7403,39 @@ Called when the start all stimulators button is pressed.
 				while (return_code&&(stimulator_number>0))
 				{
 					stimulator_number--;
-					if (!((page_window->stimulator_on)[stimulator_number])&&
-						(0<(page_window->number_of_stimulating_channels)[
-						stimulator_number]))
+					if (!(((page_window->stimulators)[stimulator_number]).on)&&
+						(0<((page_window->stimulators)[stimulator_number]).
+						number_of_channels))
 					{
 						sprintf(waveform_file_name+length,"stimulate%d.wfm",
 							stimulator_number+1);
-						if (unemap_read_waveform_file((FILE *)NULL,waveform_file_name,
-							&number_of_values,&values_per_second,&values,&constant_voltage))
+						if (read_waveform_file(waveform_file_name,&constant_voltage,
+							&number_of_values,&values_per_second,&values,
+							&(((page_window->stimulators)[stimulator_number]).
+							end_number_of_values),
+							&(((page_window->stimulators)[stimulator_number]).
+							end_values_per_second),
+							&(((page_window->stimulators)[stimulator_number]).end_values)))
 						{
+							((page_window->stimulators)[stimulator_number]).constant_voltage=
+								constant_voltage;
+							if (0<((page_window->stimulators)[stimulator_number]).
+								end_number_of_values)
+							{
+								number_of_cycles=1;
+							}
+							else
+							{
+								number_of_cycles=0;
+							}
 							if (constant_voltage)
 							{
 								return_code=unemap_load_voltage_stimulating(
-									(page_window->number_of_stimulating_channels)[
-									stimulator_number],
-									(page_window->stimulating_channel_numbers)[stimulator_number],
-									number_of_values,values_per_second,values,0);
+									((page_window->stimulators)[stimulator_number]).
+									number_of_channels,
+									((page_window->stimulators)[stimulator_number]).
+									channel_numbers,number_of_values,values_per_second,
+									values,number_of_cycles);
 							}
 							else
 							{
@@ -7257,10 +7448,11 @@ Called when the start all stimulators button is pressed.
 								else
 								{
 									return_code=unemap_load_current_stimulating(
-										(page_window->number_of_stimulating_channels)[
-										stimulator_number],(page_window->
-										stimulating_channel_numbers)[stimulator_number],
-										number_of_values,values_per_second,values,0);
+										((page_window->stimulators)[stimulator_number]).
+										number_of_channels,
+										((page_window->stimulators)[stimulator_number]).
+										channel_numbers,number_of_values,values_per_second,
+										values,number_of_cycles);
 								}
 							}
 							DEALLOCATE(values);
@@ -7273,16 +7465,16 @@ Called when the start all stimulators button is pressed.
 					for (stimulator_number=0;stimulator_number<page_window->
 						number_of_stimulators;stimulator_number++)
 					{
-						if (!((page_window->stimulator_on)[stimulator_number])&&
-							(0<(page_window->number_of_stimulating_channels)[
-							stimulator_number]))
+						if (!(((page_window->stimulators)[stimulator_number]).on)&&
+							(0<((page_window->stimulators)[stimulator_number]).
+							number_of_channels))
 						{
-							(page_window->stimulator_on)[stimulator_number]=1;
-							for (i=0;i<(page_window->number_of_stimulating_channels)[
-								stimulator_number];i++)
+							((page_window->stimulators)[stimulator_number]).on=1;
+							for (i=0;i<((page_window->stimulators)[stimulator_number]).
+								number_of_channels;i++)
 							{
-								unemap_set_channel_stimulating(((page_window->
-									stimulating_channel_numbers)[stimulator_number])[i],1);
+								unemap_set_channel_stimulating((((page_window->stimulators)[
+									stimulator_number]).channel_numbers)[i],1);
 							}
 						}
 					}
@@ -7333,18 +7525,80 @@ static void page_stop_all_stimulators(
 #endif /* defined (WINDOWS) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 9 November 2000
+LAST MODIFIED : 7 January 2001
 
 DESCRIPTION :
 Called when the stop all stimulators button is pressed.
 ==============================================================================*/
 {
+	float *values,values_per_second,zero;
+	int constant_voltage,i,number_of_values;
+	struct Page_window *page_window;
+
 	ENTER(page_stop_all_stimulators);
 #if defined (MOTIF)
 	USE_PARAMETER(widget);
 	USE_PARAMETER(call_data);
 #endif /* defined (MOTIF) */
-	stop_all_stimulating((struct Page_window *)page_window_structure);
+	zero=(float)0;
+	if (page_window=(struct Page_window *)page_window_structure)
+	{
+		for (i=0;i<page_window->number_of_stimulators;i++)
+		{
+			if (((page_window->stimulators)[i]).on)
+			{
+				if (0<(number_of_values=((page_window->stimulators)[i]).
+					end_number_of_values))
+				{
+					values=((page_window->stimulators)[i]).end_values;
+					constant_voltage=((page_window->stimulators)[i]).constant_voltage;
+					values_per_second=
+						((page_window->stimulators)[i]).end_values_per_second;
+				}
+				else
+				{
+					constant_voltage=1;
+					values= &zero;
+					number_of_values=1;
+					values_per_second=(float)1;
+				}
+				if (constant_voltage)
+				{
+					unemap_load_voltage_stimulating(
+						((page_window->stimulators)[i]).number_of_channels,
+						((page_window->stimulators)[i]).channel_numbers,number_of_values,
+						values_per_second,values,1);
+				}
+				else
+				{
+					if (UnEmap_1V2==page_window->unemap_hardware_version)
+					{
+						display_message(WARNING_MESSAGE,
+						"Constant current stimulation is not available for this hardware");
+					}
+					else
+					{
+						unemap_load_current_stimulating(
+							((page_window->stimulators)[i]).number_of_channels,
+							((page_window->stimulators)[i]).channel_numbers,number_of_values,
+							values_per_second,values,1);
+					}
+				}
+				if (0<(number_of_values=((page_window->stimulators)[i]).
+					end_number_of_values))
+				{
+					DEALLOCATE(((page_window->stimulators)[i]).end_values);
+				}
+			}
+		}
+		unemap_start_stimulating();
+		unemap_set_channel_stimulating(0,0);
+		for (i=0;i<page_window->number_of_stimulators;i++)
+		{
+			((page_window->stimulators)[i]).on=0;
+		}
+		update_stimulating_settings(page_window);
+	}
 	LEAVE;
 } /* page_stop_all_stimulators */
 
@@ -9214,7 +9468,7 @@ Global functions
 */
 int destroy_Page_window(struct Page_window **page_window_address)
 /*******************************************************************************
-LAST MODIFIED : 9 November 2000
+LAST MODIFIED : 7 January 2001
 
 DESCRIPTION :
 If the <address> field of the page window is not NULL, <*address> is set to
@@ -9264,13 +9518,12 @@ if (INVALID_HANDLE_VALUE!=page_window->device_driver)
 		DEALLOCATE(page_window->stimulate_devices);
 		DEALLOCATE(page_window->stimulate_device_numbers);
 #endif /* defined (OLD_CODE) */
-		DEALLOCATE(page_window->stimulator_on);
 		for (i=0;i<page_window->number_of_stimulators;i++)
 		{
-			DEALLOCATE((page_window->stimulating_channel_numbers)[i]);
+			DEALLOCATE(((page_window->stimulators)[i]).channel_numbers);
+			DEALLOCATE(((page_window->stimulators)[i]).end_values);
 		}
-		DEALLOCATE(page_window->stimulating_channel_numbers);
-		DEALLOCATE(page_window->number_of_stimulating_channels);
+		DEALLOCATE(page_window->stimulators);
 		DEALLOCATE(page_window->scrolling_channels);
 		DEALLOCATE(page_window->scrolling_devices);
 		DEALLOCATE(page_window->number_of_scrolling_channels_device);
@@ -9377,7 +9630,7 @@ struct Page_window *create_Page_window(struct Page_window **address,
 	struct Mapping_window **mapping_window_address,int pointer_sensitivity,
 	char *signal_file_extension_write,struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 10 November 2000
+LAST MODIFIED : 7 January 2001
 
 DESCRIPTION :
 This function allocates the memory for a page window and sets the fields to the
@@ -9609,12 +9862,21 @@ the created page window.  If unsuccessful, NULL is returned.
 				page_window->stimulate_devices=(struct Device **)NULL;
 				page_window->stimulate_device_numbers=(int *)NULL;
 #endif /* defined (OLD_CODE) */
-				page_window->stimulator_on=(int *)NULL;
-				page_window->number_of_stimulating_channels=(int *)NULL;
-				page_window->stimulating_channel_numbers=(int **)NULL;
+				page_window->stimulators=(struct Stimulator *)NULL;
 				page_window->data_saved=1;
 				if (0<page_window->number_of_stimulators)
 				{
+					if (ALLOCATE(page_window->stimulators,struct Stimulator,
+						page_window->number_of_stimulators))
+					{
+						for (i=0;i<page_window->number_of_stimulators;i++)
+						{
+							((page_window->stimulators)[i]).on=0;
+							((page_window->stimulators)[i]).number_of_channels=0;
+							((page_window->stimulators)[i]).channel_numbers=(int *)NULL;
+						}
+					}
+#if defined (OLD_CODE)
 #if defined (OLD_CODE)
 					ALLOCATE(page_window->stimulate_devices,struct Device *,
 						page_window->number_of_stimulators);
@@ -9661,6 +9923,7 @@ the created page window.  If unsuccessful, NULL is returned.
 						DEALLOCATE(page_window->number_of_stimulating_channels);
 						DEALLOCATE(page_window->stimulating_channel_numbers);
 					}
+#endif /* defined (OLD_CODE) */
 				}
 				page_window->rig_address=rig_address;
 				page_window->save_file_open_data=create_File_open_data(

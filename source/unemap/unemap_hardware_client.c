@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_client.c
 
-LAST MODIFIED : 12 November 2000
+LAST MODIFIED : 7 January 2001
 
 DESCRIPTION :
 Code for talking to the unemap hardware service (running under NT).  This is an
@@ -11751,7 +11751,7 @@ int unemap_read_waveform_file(FILE *in_file,char *waveform_file_name,
 	int *number_of_values,float *values_per_second,float **values,
 	int *constant_voltage)
 /*******************************************************************************
-LAST MODIFIED : 12 November 2000
+LAST MODIFIED : 7 January 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -11767,7 +11767,7 @@ proportions of the maximum current.
 	float *value;
 	int i;
 
-	ENTER(read_waveform_file);
+	ENTER(unemap_read_waveform_file);
 	return_code=0;
 	/* check arguments */
 	if (((in_file&&!waveform_file_name)||(!in_file&&waveform_file_name))&&
@@ -11844,7 +11844,7 @@ proportions of the maximum current.
 							else
 							{
 								display_message(ERROR_MESSAGE,
-								"read_waveform_file.  Could not allocate memory for values");
+						"unemap_read_waveform_file.  Could not allocate memory for values");
 							}
 						}
 						else
@@ -11884,12 +11884,13 @@ proportions of the maximum current.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"read_waveform_file.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE,
+			"unemap_read_waveform_file.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (return_code);
-} /* read_waveform_file */
+} /* unemap_read_waveform_file */
 
 int unemap_get_number_of_stimulators(int *number_of_stimulators)
 /*******************************************************************************
