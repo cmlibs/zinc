@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_matrix.hpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 // A variable that is a matrix.
@@ -19,7 +19,7 @@ EXPORT template<typename Value_type>
 EXPORT template<typename Value_type>
 class Function_variable_matrix : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 // An identifier for a matrix.
@@ -33,8 +33,13 @@ class Function_variable_matrix : public Function_variable
 	template<class Value_type_1,class Value_type_2>
 		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
 		boost::intrusive_ptr<Value_type_2> const &);
+	public:
+		Function_variable_matrix(const Function_handle function);
+		Function_variable_matrix(const Function_handle function,
+			const Function_size_type row,const Function_size_type column);
 	// inherited
 	public:
+		virtual Function_variable_handle clone() const;
 		virtual string_handle get_string_representation();
 		virtual Function_variable_iterator begin_atomic() const;
 		virtual Function_variable_iterator end_atomic() const;
@@ -49,31 +54,30 @@ class Function_variable_matrix : public Function_variable
 	public:
 		// get a matrix entry variable
 		virtual boost::intrusive_ptr< Function_variable_matrix<Value_type> >
-			operator()(Function_size_type row=1,Function_size_type column=1) const=0;
+			operator()(Function_size_type row=1,Function_size_type column=1) const;
 #if defined (TO_BE_DONE)
 		virtual boost::intrusive_ptr< Function_variable_matrix<Value_type> >
 			sub_matrix(Function_size_type row_low,Function_size_type row_high,
 			Function_size_type column_low,Function_size_type column_high) const=0;
 #endif // defined (TO_BE_DONE)
-		virtual Function_size_type number_of_rows() const=0;
-		virtual Function_size_type number_of_columns() const=0;
+		virtual Function_size_type number_of_rows() const;
+		virtual Function_size_type number_of_columns() const;
+		virtual Function_size_type row() const;
+		virtual Function_size_type column() const;
 		//???DB.  For Function_variable_matrix_set_scalar_function
 		//???DB.  How does this relate to get_value?
-		virtual bool get_entry(Value_type& value) const=0;
+		virtual bool get_entry(Value_type& value) const;
 	private:
 		virtual bool equality_atomic(const Function_variable_handle&) const;
 	protected:
 		// constructors.  Protected so that can't create "plain"
 		//   Function_variable_matrix's
-		Function_variable_matrix(const Function_handle function);
-		Function_variable_matrix(const Function_handle function,
-			const Function_size_type row,const Function_size_type column);
 		// copy constructor
 		Function_variable_matrix(const Function_variable_matrix&);
 		// destructor.  Virtual for proper destruction of derived classes
 		virtual ~Function_variable_matrix();
 	protected:
-		Function_size_type column,row;
+		Function_size_type column_private,row_private;
 };
 
 EXPORT template<typename Value_type>

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_matrix_implementation.cpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -23,7 +23,7 @@ EXPORT template<typename Value_type>
 class Function_variable_iterator_representation_atomic_matrix :
 	public Function_variable_iterator_representation
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -41,16 +41,16 @@ class Function_variable_iterator_representation_atomic_matrix :
 					Function_variable_matrix<Value_type>,Function_variable>(
 					variable->clone()))
 				{
-					if (0==atomic_variable->row)
+					if (0==atomic_variable->row_private)
 					{
-						atomic_variable->row=1;
+						atomic_variable->row_private=1;
 					}
-					if (0==atomic_variable->column)
+					if (0==atomic_variable->column_private)
 					{
-						atomic_variable->column=1;
+						atomic_variable->column_private=1;
 					}
-					if ((atomic_variable->row<=variable->number_of_rows())&&
-						(atomic_variable->column<=variable->number_of_columns()))
+					if ((atomic_variable->row_private<=variable->number_of_rows())&&
+						(atomic_variable->column_private<=variable->number_of_columns()))
 					{
 						atomic_variable->value_private=Function_variable_value_handle(
 							new Function_variable_value_specific<Value_type>(
@@ -86,16 +86,16 @@ class Function_variable_iterator_representation_atomic_matrix :
 		{
 			if (variable&&atomic_variable)
 			{
-				if (0==variable->column)
+				if (0==variable->column_private)
 				{
-					(atomic_variable->column)++;
-					if (atomic_variable->column>(variable->number_of_columns)())
+					(atomic_variable->column_private)++;
+					if (atomic_variable->column_private>(variable->number_of_columns)())
 					{
-						if (0==variable->row)
+						if (0==variable->row_private)
 						{
-							(atomic_variable->column)=1;
-							(atomic_variable->row)++;
-							if (atomic_variable->row>(variable->number_of_rows)())
+							(atomic_variable->column_private)=1;
+							(atomic_variable->row_private)++;
+							if (atomic_variable->row_private>(variable->number_of_rows)())
 							{
 								// end
 								atomic_variable=0;
@@ -110,10 +110,10 @@ class Function_variable_iterator_representation_atomic_matrix :
 				}
 				else
 				{
-					if (0==variable->row)
+					if (0==variable->row_private)
 					{
-						(atomic_variable->row)++;
-						if (atomic_variable->row>(variable->number_of_rows)())
+						(atomic_variable->row_private)++;
+						if (atomic_variable->row_private>(variable->number_of_rows)())
 						{
 							// end
 							atomic_variable=0;
@@ -134,16 +134,16 @@ class Function_variable_iterator_representation_atomic_matrix :
 			{
 				if (atomic_variable)
 				{
-					if (0==variable->column)
+					if (0==variable->column_private)
 					{
-						(atomic_variable->column)--;
-						if (atomic_variable->column<1)
+						(atomic_variable->column_private)--;
+						if (atomic_variable->column_private<1)
 						{
-							if (0==variable->row)
+							if (0==variable->row_private)
 							{
-								atomic_variable->column=(variable->number_of_columns)();
-								(atomic_variable->row)--;
-								if (atomic_variable->row<1)
+								atomic_variable->column_private=(variable->number_of_columns)();
+								(atomic_variable->row_private)--;
+								if (atomic_variable->row_private<1)
 								{
 									// end
 									atomic_variable=0;
@@ -158,10 +158,10 @@ class Function_variable_iterator_representation_atomic_matrix :
 					}
 					else
 					{
-						if (0==variable->row)
+						if (0==variable->row_private)
 						{
-							(atomic_variable->row)--;
-							if (atomic_variable->row<1)
+							(atomic_variable->row_private)--;
+							if (atomic_variable->row_private<1)
 							{
 								// end
 								atomic_variable=0;
@@ -184,16 +184,16 @@ class Function_variable_iterator_representation_atomic_matrix :
 
 						number_of_rows_local=(variable->number_of_rows)();
 						number_of_columns_local=(variable->number_of_columns)();
-						if (0==atomic_variable->row)
+						if (0==atomic_variable->row_private)
 						{
-							atomic_variable->row=number_of_rows_local;
+							atomic_variable->row_private=number_of_rows_local;
 						}
-						if (0==atomic_variable->column)
+						if (0==atomic_variable->column_private)
 						{
-							atomic_variable->column=number_of_columns_local;
+							atomic_variable->column_private=number_of_columns_local;
 						}
-						if ((atomic_variable->row<=number_of_rows_local)&&
-							(atomic_variable->column<=number_of_columns_local))
+						if ((atomic_variable->row_private<=number_of_rows_local)&&
+							(atomic_variable->column_private<=number_of_columns_local))
 						{
 							atomic_variable->value_private=Function_variable_value_handle(
 								new Function_variable_value_specific<Value_type>(
@@ -258,9 +258,63 @@ class Function_variable_iterator_representation_atomic_matrix :
 // ------------------------------
 
 EXPORT template<typename Value_type>
+Function_variable_matrix<Value_type>::Function_variable_matrix(
+	const Function_handle function):Function_variable(function),column_private(0),
+	row_private(0)
+//******************************************************************************
+// LAST MODIFIED : 1 September 2004
+//
+// DESCRIPTION :
+// Constructor.
+//==============================================================================
+{
+	// do nothing
+}
+
+EXPORT template<typename Value_type>
+Function_variable_matrix<Value_type>::Function_variable_matrix(
+	const Function_handle function,const Function_size_type row,
+	const Function_size_type column):Function_variable(function),
+	column_private(column),row_private(row)
+//******************************************************************************
+// LAST MODIFIED : 1 September 2004
+//
+// DESCRIPTION :
+// Constructor.
+//==============================================================================
+{
+	if (function)
+	{
+		if ((0!=this->row_private)&&(0!=this->column_private))
+		{
+			value_private=Function_variable_value_handle(
+				new Function_variable_value_specific<Value_type>(
+				Function_variable_matrix_set_value_function<Value_type>));
+		}
+	}
+	else
+	{
+		this->row_private=0;
+		this->column_private=0;
+	}
+}
+
+EXPORT template<typename Value_type>
+Function_variable_handle Function_variable_matrix<Value_type>::clone() const
+//******************************************************************************
+// LAST MODIFIED : 1 September 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	return (Function_variable_handle(
+		new Function_variable_matrix<Value_type>(*this)));
+}
+
+EXPORT template<typename Value_type>
 string_handle Function_variable_matrix<Value_type>::get_string_representation()
 //******************************************************************************
-// LAST MODIFIED : 13 July 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //???DB.  Should print values?  How to get?
@@ -273,22 +327,22 @@ string_handle Function_variable_matrix<Value_type>::get_string_representation()
 		std::ostringstream out;
 
 		out << "matrix[";
-		if (0==row)
+		if (0==row_private)
 		{
 			out << "1:" << number_of_rows();
 		}
 		else
 		{
-			out << row;
+			out << row_private;
 		}
 		out << ",";
-		if (0==column)
+		if (0==column_private)
 		{
 			out << "1:" << number_of_columns();
 		}
 		else
 		{
-			out << column;
+			out << column_private;
 		}
 		out << "]";
 		*return_string=out.str();
@@ -360,7 +414,7 @@ std::reverse_iterator<Function_variable_iterator>
 EXPORT template<typename Value_type>
 Function_size_type Function_variable_matrix<Value_type>::number_differentiable()
 //******************************************************************************
-// LAST MODIFIED : 13 July 2004
+// LAST MODIFIED : 1 September 2004
 //
 // DESCRIPTION :
 //==============================================================================
@@ -368,9 +422,9 @@ Function_size_type Function_variable_matrix<Value_type>::number_differentiable()
 	Function_size_type result;
 
 	result=0;
-	if (0==row)
+	if (0==row_private)
 	{
-		if (0==column)
+		if (0==column_private)
 		{
 			result=number_of_rows()*number_of_columns();
 		}
@@ -381,7 +435,7 @@ Function_size_type Function_variable_matrix<Value_type>::number_differentiable()
 	}
 	else
 	{
-		if (0==column)
+		if (0==column_private)
 		{
 			result=number_of_columns();
 		}
@@ -392,144 +446,6 @@ Function_size_type Function_variable_matrix<Value_type>::number_differentiable()
 	}
 
 	return (result);
-}
-
-EXPORT template<typename Value_type>
-bool Function_variable_matrix<Value_type>::equality_atomic(
-	const Function_variable_handle& variable) const
-//******************************************************************************
-// LAST MODIFIED : 13 August 2004
-//
-// DESCRIPTION :
-// Need typeid because want most derived class to be the same (some functions
-// use class Function_variable_matrix for more than one variable class)
-//==============================================================================
-{
-	bool result;
-	boost::intrusive_ptr< Function_variable_matrix<Value_type> > variable_matrix;
-
-	result=false;
-	if (variable_matrix=boost::dynamic_pointer_cast<
-		Function_variable_matrix<Value_type>,Function_variable>(variable))
-	{
-		result=equivalent(function_private,variable_matrix->function())&&
-			(row==variable_matrix->row)&&(column==variable_matrix->column)&&
-			(typeid(*this)==typeid(*variable_matrix));
-	}
-
-	return (result);
-}
-
-EXPORT template<typename Value_type>
-Function_variable_matrix<Value_type>::Function_variable_matrix(
-	const Function_handle function):Function_variable(function),column(0),row(0)
-//******************************************************************************
-// LAST MODIFIED : 13 July 2004
-//
-// DESCRIPTION :
-// Constructor.
-//==============================================================================
-{
-	// do nothing
-#if defined (OLD_CODE)
-	if (function)
-	{
-		if (1==number_of_rows())
-		{
-			row=1;
-		}
-		if (1==number_of_columns())
-		{
-			column=1;
-		}
-		if ((0!=row)&&(0!=column))
-		{
-			value_private=Function_variable_value_handle(
-				new Function_variable_value_specific<Value_type>(
-				Function_variable_matrix_set_value_function<Value_type>));
-		}
-	}
-#endif // defined (OLD_CODE)
-}
-
-EXPORT template<typename Value_type>
-Function_variable_matrix<Value_type>::Function_variable_matrix(
-	const Function_handle function,const Function_size_type row,
-	const Function_size_type column):Function_variable(function),column(column),
-	row(row)
-//******************************************************************************
-// LAST MODIFIED : 13 July 2004
-//
-// DESCRIPTION :
-// Constructor.
-//==============================================================================
-{
-	if (function)
-	{
-#if defined (OLD_CODE)
-		Function_size_type number_of_columns_local,number_of_rows_local;
-
-		if (1==(number_of_rows_local=number_of_rows()))
-		{
-			this->row=1;
-		}
-		else
-		{
-			if (this->row>number_of_rows_local)
-			{
-				this->row=0;
-			}
-		}
-		if (1==(number_of_columns_local=number_of_columns()))
-		{
-			this->column=1;
-		}
-		else
-		{
-			if (this->column>number_of_columns_local)
-			{
-				this->column=0;
-			}
-		}
-#endif // defined (OLD_CODE)
-		if ((0!=this->row)&&(0!=this->column))
-		{
-			value_private=Function_variable_value_handle(
-				new Function_variable_value_specific<Value_type>(
-				Function_variable_matrix_set_value_function<Value_type>));
-		}
-	}
-	else
-	{
-		this->row=0;
-		this->column=0;
-	}
-}
-
-EXPORT template<typename Value_type>
-Function_variable_matrix<Value_type>::Function_variable_matrix(
-	const Function_variable_matrix<Value_type>& variable):
-	Function_variable(variable),column(variable.column),row(variable.row)
-//******************************************************************************
-// LAST MODIFIED : 13 July 2004
-//
-// DESCRIPTION :
-// Copy constructor.
-//==============================================================================
-{
-	// do nothing
-}
-
-EXPORT template<typename Value_type>
-Function_variable_matrix<Value_type>::~Function_variable_matrix()
-//******************************************************************************
-// LAST MODIFIED : 13 July 2004
-//
-// DESCRIPTION :
-// Destructor.
-//==============================================================================
-{
-	// do nothing
 }
 
 EXPORT template<typename Value_type>
@@ -699,6 +615,173 @@ Function_variable_handle Function_variable_matrix<Value_type>::operator-(
 	}
 
 	return (result);
+}
+
+EXPORT template<typename Value_type>
+boost::intrusive_ptr< Function_variable_matrix<Value_type> >
+	Function_variable_matrix<Value_type>::operator()(Function_size_type row,
+	Function_size_type column) const
+//******************************************************************************
+// LAST MODIFIED : 1 September 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	boost::intrusive_ptr< Function_matrix<Value_type> > function_matrix;
+	boost::intrusive_ptr< Function_variable_matrix<Value_type> > result(0);
+
+	if ((function_matrix=boost::dynamic_pointer_cast<Function_matrix<Value_type>,
+		Function>(function_private))&&(row<=number_of_rows())&&
+		(column<=number_of_columns()))
+	{
+		result=boost::intrusive_ptr< Function_variable_matrix<Value_type> >(
+			new Function_variable_matrix<Value_type>(function_matrix,row,column));
+	}
+
+	return (result);
+}
+
+EXPORT template<typename Value_type>
+Function_size_type Function_variable_matrix<Value_type>::number_of_rows() const
+//******************************************************************************
+// LAST MODIFIED : 1 September 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	boost::intrusive_ptr< Function_matrix<Value_type> > function_matrix;
+	Function_size_type result;
+
+	result=0;
+	if (function_matrix=boost::dynamic_pointer_cast<Function_matrix<Value_type>,
+		Function>(function_private))
+	{
+		result=function_matrix->number_of_rows();
+	}
+
+	return (result);
+}
+
+EXPORT template<typename Value_type>
+Function_size_type Function_variable_matrix<Value_type>::number_of_columns()
+	const
+//******************************************************************************
+// LAST MODIFIED : 1 September 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	boost::intrusive_ptr< Function_matrix<Value_type> > function_matrix;
+	Function_size_type result;
+
+	result=0;
+	if (function_matrix=boost::dynamic_pointer_cast<Function_matrix<Value_type>,
+		Function>(function_private))
+	{
+		result=function_matrix->number_of_columns();
+	}
+
+	return (result);
+}
+
+EXPORT template<typename Value_type>
+Function_size_type Function_variable_matrix<Value_type>::row() const
+//******************************************************************************
+// LAST MODIFIED : 1 September 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	return (row_private);
+}
+
+EXPORT template<typename Value_type>
+Function_size_type Function_variable_matrix<Value_type>::column() const
+//******************************************************************************
+// LAST MODIFIED : 1 September 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	return (column_private);
+}
+
+EXPORT template<typename Value_type>
+bool Function_variable_matrix<Value_type>::get_entry(Value_type& value) const
+//******************************************************************************
+// LAST MODIFIED : 1 September 2004
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	bool result;
+	boost::intrusive_ptr< Function_matrix<Value_type> > function_matrix;
+
+	result=false;
+	if ((function_matrix=boost::dynamic_pointer_cast<Function_matrix<Value_type>,
+		Function>(function_private))&&(0<row_private)&&
+		(row_private<=number_of_rows())&&(0<column_private)&&
+		(column_private<=number_of_columns()))
+	{
+		result=true;
+		value=(*function_matrix)(row_private,column_private);
+	}
+
+	return (result);
+}
+
+EXPORT template<typename Value_type>
+bool Function_variable_matrix<Value_type>::equality_atomic(
+	const Function_variable_handle& variable) const
+//******************************************************************************
+// LAST MODIFIED : 1 September 2004
+//
+// DESCRIPTION :
+// Need typeid because want most derived class to be the same (some functions
+// use class Function_variable_matrix for more than one variable class)
+//==============================================================================
+{
+	bool result;
+	boost::intrusive_ptr< Function_variable_matrix<Value_type> > variable_matrix;
+
+	result=false;
+	if (variable_matrix=boost::dynamic_pointer_cast<
+		Function_variable_matrix<Value_type>,Function_variable>(variable))
+	{
+		result=equivalent(function_private,variable_matrix->function())&&
+			(row_private==variable_matrix->row_private)&&
+			(column_private==variable_matrix->column_private)&&
+			(typeid(*this)==typeid(*variable_matrix));
+	}
+
+	return (result);
+}
+
+EXPORT template<typename Value_type>
+Function_variable_matrix<Value_type>::Function_variable_matrix(
+	const Function_variable_matrix<Value_type>& variable):
+	Function_variable(variable),column_private(variable.column_private),
+	row_private(variable.row_private)
+//******************************************************************************
+// LAST MODIFIED : 1 September 2004
+//
+// DESCRIPTION :
+// Copy constructor.
+//==============================================================================
+{
+	// do nothing
+}
+
+EXPORT template<typename Value_type>
+Function_variable_matrix<Value_type>::~Function_variable_matrix()
+//******************************************************************************
+// LAST MODIFIED : 13 July 2004
+//
+// DESCRIPTION :
+// Destructor.
+//==============================================================================
+{
+	// do nothing
 }
 
 
