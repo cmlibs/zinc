@@ -360,7 +360,7 @@ Perform a threshold operation on the image cache.
 ==============================================================================*/
 {
 	char *storage;
-	FE_value *data_index, *result_index, T, T1, *gray_img;
+	FE_value *data_index, *result_index, T, *gray_img;
 	int i, k, return_code, storage_size, counter;
 
 
@@ -368,7 +368,7 @@ Perform a threshold operation on the image cache.
 	if (image && (image->dimension > 0) && (image->depth > 0))
 	{
 		return_code = 1;
-		T1 = threshold_value;
+		T = threshold_value;
 
 		/* Allocate a new storage block for our data */
 		storage_size = image->depth;
@@ -402,28 +402,24 @@ Perform a threshold operation on the image cache.
 			     data_index += image->depth;
 			     result_index += image->depth;
 			}
-
-			/*compute the intensity mean value*/
-                        for (i = 0; i < counter; i++)
-			{
-                                T += gray_img[i];
-			}
-			T /= (FE_value)counter;
-
 			for (i = (counter - 1); i >= 0; i--)
 			{
-			         data_index -= image->depth;
-				 result_index -= image->depth;
-                                 if (gray_img[i] < T1)
-				 {
-                                          for (k = 0; k < image->depth; k++)
-					           result_index[k] = (FE_value)object_label;
-				 }
-				 else
-				 {
-				          for (k = 0; k < image->depth; k++)
-						   result_index[k] = 1.0 - (FE_value)object_label;
-				 }
+			        data_index -= image->depth;
+				result_index -= image->depth;
+                                if (gray_img[i] < T)
+				{
+                                        for (k = 0; k < image->depth; k++)
+					{
+					        result_index[k] = (FE_value)object_label;
+					}
+				}
+				else
+				{
+				        for (k = 0; k < image->depth; k++)
+					{
+						result_index[k] = 1.0 - (FE_value)object_label;
+					}
+				}
 			}
 
 			if (return_code)
