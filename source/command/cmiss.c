@@ -15882,8 +15882,8 @@ use node_manager and node_selection.
 			Option_table_add_entry(option_table,"add",&add_flag,NULL,set_char_flag);
 			/* all */
 			Option_table_add_entry(option_table,"all",&all_flag,NULL,set_char_flag);
-			/* from */
-			Option_table_add_entry(option_table,"from",&from_node_group,
+			/* group */
+			Option_table_add_entry(option_table,"group",&from_node_group,
 				node_group_manager, set_FE_node_group);
 			/* remove */
 			Option_table_add_entry(option_table,"remove",&remove_flag,NULL,
@@ -15894,36 +15894,40 @@ use node_manager and node_selection.
 			/* default option: node number ranges */
 			Option_table_add_entry(option_table,(char *)NULL,(void *)node_range,
 				NULL,set_Multi_range);
-			if (add_flag && remove_flag)
+			return_code=Option_table_multi_parse(option_table,state);
+			if (return_code)
 			{
-				if (use_data)
+				if (add_flag && remove_flag)
 				{
-					display_message(ERROR_MESSAGE,"gfx modify dgroup:  "
-						"Only specify one of add or remove at a time.");
+					if (use_data)
+					{
+						display_message(ERROR_MESSAGE,"gfx modify dgroup:  "
+							"Only specify one of add or remove at a time.");
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"gfx modify ngroup:  "
+							"Only specify one of add or remove at a time.");
+					}
+					return_code = 0;
 				}
-				else
+				if ((!add_flag) && (!remove_flag))
 				{
-					display_message(ERROR_MESSAGE,"gfx modify ngroup:  "
-						"Only specify one of add or remove at a time.");
+					if (use_data)
+					{
+						display_message(ERROR_MESSAGE,"gfx modify dgroup:  "
+							"Must specify an operation, either add or remove.");				
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,"gfx modify ngroup:  "
+							"Must specify an operation, either add or remove.");				
+					}
+					return_code = 0;
 				}
-				return_code = 0;
-			}
-			if ((!add_flag) && (!remove_flag))
-			{
-				if (use_data)
-				{
-					display_message(ERROR_MESSAGE,"gfx modify dgroup:  "
-						"Must specify an operation, either add or remove.");				
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,"gfx modify ngroup:  "
-						"Must specify an operation, either add or remove.");				
-				}
-				return_code = 0;
 			}
 			/* no errors, not asking for help */
-			if (return_code=Option_table_multi_parse(option_table,state))
+			if (return_code)
 			{
 				if (all_flag)
 				{
@@ -16093,7 +16097,7 @@ Executes a GFX MODIFY command.
 				Option_table_add_entry(option_table,"environment_map",NULL, 
 					(&modify_environment_map_data),modify_Environment_map);
 				/* flow_particles */
-				Option_table_add_entry(option_table,"flow_particels",NULL, 
+				Option_table_add_entry(option_table,"flow_particles",NULL, 
 					(void *)command_data, gfx_modify_flow_particles);
 				/* g_element */
 				Option_table_add_entry(option_table,"g_element",NULL, 
