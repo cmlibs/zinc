@@ -6,6 +6,19 @@ LAST MODIFIED : 9 December 1999
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
 	file
+
+???DB.  Temp.  Beat averaging considerations
+1 Beat averaging is done in trace_analysis_mode_apply and trace_change_signal
+	(trace_window.c)
+2 Greg's algorithm
+	- determine the times to average about (one for each beat), by picking a
+		stimulation signal (could be the current signal in unemap) and finding
+		"peaks" on the stimulation signal (could be the event times in unemap)
+	- specify start_offset - the start of the signal relative to the peak (same
+		for all beats
+	- for each signal, align [peak[0]-start_offset,peak[1]-start_offset),
+		[peak[1]-start_offset,peak[2]-start_offset), ... [peak[n-2]-start_offset,
+		peak[n-1]-start_offset) and average
 ==============================================================================*/
 #include <stddef.h>
 #include <stdlib.h>
