@@ -71,7 +71,7 @@ XCOMM ???DB.  Temporary.  Need xml libraries for other than n32
 #define Uid2uidhTarget utilities/uid2uidh_lite
 #define CmguiMake cmgui_sgilite.make
 #define DependMake cmgui_sgilite.depend
-#define ObjSuffix olite
+#define ObjSuffix o
 OBJECT_PATH=$(CMGUI_ROOT)/object/cmgui/n32_lite
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32_lite
 UIDH_PATH=$(CMGUI_ROOT)/uidh/cmgui/n32
@@ -113,7 +113,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #define Uid2uidhTarget utilities/uid2uidh_optimised
 #define CmguiMake cmgui_sgioptimised.make
 #define DependMake cmgui_sgioptimised.depend
-#define ObjSuffix oopt
+#define ObjSuffix o
 OBJECT_PATH=$(CMGUI_ROOT)/object/cmgui/n32_optimised
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32_optimised
 UIDH_PATH=$(CMGUI_ROOT)/uidh/cmgui/n32
@@ -130,7 +130,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #define Uid2uidhTarget utilities/uid2uidh64
 #define CmguiMake cmgui_sgi64.make
 #define DependMake cmgui_sgi64.depend
-#define ObjSuffix o64
+#define ObjSuffix o
 OBJECT_PATH=$(CMGUI_ROOT)/object/cmgui/64
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/64
 UIDH_PATH=$(CMGUI_ROOT)/uidh/cmgui/64
@@ -150,7 +150,7 @@ XCOMM #define CELL
 #define Uid2uidhTarget utilities/uid2uidh_linux
 #define CmguiMake cmgui_linux.make
 #define DependMake cmgui_linux.depend
-#define ObjSuffix olinux
+#define ObjSuffix o
 OBJECT_PATH=$(CMGUI_ROOT)/object/cmgui/linux
 PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/linux
 UIDH_PATH=$(CMGUI_ROOT)/uidh/cmgui/linux
@@ -1040,11 +1040,20 @@ LIB_FILT_OBJS = $(LIB_FILT_OBJSB:.f=.ObjSuffix)
 #endif /* defined (MEMORY_CHECK) */
 
 all : oscheck
-	if [ -s $(PRODUCT_PATH)/source/DependMake ] ; then \
-		$(MAKE) -f CmguiMake CmguiTarget ; \
+	if [ -s $(PRODUCT_SOURCE_PATH)/DependMake ] ; then \
+	    	if [ -f CmguiMake ]; then \
+			$(MAKE) -f CmguiMake CmguiTarget ; \
+		else \
+			$(MAKE) -f $(PRODUCT_SOURCE_PATH)/CmguiMake CmguiTarget ; \
+		fi \
 	else \
-		$(MAKE) -f CmguiMake depend ; \
-		$(MAKE) -f CmguiMake CmguiTarget ; \
+	    	if [ -f CmguiMake ]; then \
+			$(MAKE) -f CmguiMake depend ; \
+			$(MAKE) -f CmguiMake CmguiTarget ; \
+		else \
+			$(MAKE) -f $(PRODUCT_SOURCE_PATH)/CmguiMake depend ; \
+			$(MAKE) -f $(PRODUCT_SOURCE_PATH)/CmguiMake CmguiTarget ; \
+		fi \
 	fi
 
 XCOMM Check that the makefile is being used on the correct system
