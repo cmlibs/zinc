@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_function.cpp
 
-LAST MODIFIED : 14 June 2004
+LAST MODIFIED : 6 August 2004
 
 DESCRIPTION :
 The public interface to the Cmiss_function object.
@@ -52,7 +52,7 @@ Destroys the function.  Returns a non-zero if successful and zero otherwise.
 
 const char *Cmiss_function_get_type_id_string(Cmiss_function_id function)
 /*******************************************************************************
-LAST MODIFIED : 10 March 2004
+LAST MODIFIED : 6 August 2004
 
 DESCRIPTION :
 Returns the string which identifies the type.  The calling function must not
@@ -75,6 +75,18 @@ DEALLOCATE the returned string.
 		while (isdigit(*result))
 		{
 			result++;
+		}
+		/* kludge because for a template class, the name seems to be mangled
+			eg. Function_matrix<Scalar> gives "15Function_matrixIdE" (note the extra
+			characters after the 15 for Function_matrix */
+		{
+			static char *static_Function_matrix_string="Function_matrix";
+
+			if (0==strncmp(static_Function_matrix_string,result,
+				strlen(static_Function_matrix_string)))
+			{
+				result=static_Function_matrix_string;
+			}
 		}
 	}
 	else
