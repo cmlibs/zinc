@@ -73,8 +73,12 @@ and the functions given their public names.
 #define Scene_viewer_get_freespin_tumble_axis Cmiss_scene_viewer_get_freespin_tumble_axis
 #define Scene_viewer_start_freespin Cmiss_scene_viewer_start_freespin
 #define Scene_viewer_stop_animations Cmiss_scene_viewer_stop_animations
-
-#include "graphics/scene_viewer.h"
+#define Scene_viewer_get_translation_rate Cmiss_scene_viewer_get_translation_rate
+#define Scene_viewer_set_translation_rate Cmiss_scene_viewer_set_translation_rate
+#define Scene_viewer_get_tumble_rate Cmiss_scene_viewer_get_tumble_rate
+#define Scene_viewer_set_tumble_rate Cmiss_scene_viewer_set_tumble_rate
+#define Scene_viewer_get_zoom_rate Cmiss_scene_viewer_get_zoom_rate
+#define Scene_viewer_set_zoom_rate Cmiss_scene_viewer_set_zoom_rate
 
 /*
 Global types
@@ -734,27 +738,58 @@ DESCRIPTION :
 Sets the Scene_viewer scene.
 ==============================================================================*/
 
-int Scene_viewer_get_transform_rate(struct Scene_viewer *scene_viewer,
-	double *translate_rate,double *tumble_rate,double *zoom_rate);
+int Scene_viewer_get_translation_rate(struct Scene_viewer *scene_viewer,
+	double *translation_rate);
 /*******************************************************************************
-LAST MODIFIED : 15 October 1998
+LAST MODIFIED : 14 February 2005
 
 DESCRIPTION :
-Returns the rate of translate, tumble and zoom transformations in
-relation to mouse movements. Values of around 1.0 could be considered normal.
-A value of zero turns off that transform capability.
+Gets the scene viewer translation rate.
 ==============================================================================*/
 
-int Scene_viewer_set_transform_rate(struct Scene_viewer *scene_viewer,
-	double translate_rate,double tumble_rate,double zoom_rate);
+int Scene_viewer_set_translation_rate(struct Scene_viewer *scene_viewer,
+	double translation_rate);
 /*******************************************************************************
-LAST MODIFIED : 15 October 1998
+LAST MODIFIED : 14 February 2005
 
 DESCRIPTION :
-Sets the rate of translate, tumble and zoom transformations in
-relation to mouse movements. Values of around 1.0 could be considered normal.
-A value of zero turns off that transform capability.
-Negative values reverse the effects of mouse movement.
+Sets the scene viewer translation rate.
+==============================================================================*/
+
+int Scene_viewer_get_tumble_rate(struct Scene_viewer *scene_viewer,
+	double *tumble_rate);
+/*******************************************************************************
+LAST MODIFIED : 14 February 2005
+
+DESCRIPTION :
+Gets the scene viewer tumble rate.
+==============================================================================*/
+
+int Scene_viewer_set_tumble_rate(struct Scene_viewer *scene_viewer,
+	double tumble_rate);
+/*******************************************************************************
+LAST MODIFIED : 14 February 2005
+
+DESCRIPTION :
+Sets the scene viewer tumble rate.
+==============================================================================*/
+
+int Scene_viewer_get_zoom_rate(struct Scene_viewer *scene_viewer,
+	double *zoom_rate);
+/*******************************************************************************
+LAST MODIFIED : 14 February 2005
+
+DESCRIPTION :
+Gets the scene viewer zoom rate.
+==============================================================================*/
+
+int Scene_viewer_set_zoom_rate(struct Scene_viewer *scene_viewer,
+	double zoom_rate);
+/*******************************************************************************
+LAST MODIFIED : 14 February 2005
+
+DESCRIPTION :
+Sets the scene viewer zoom rate.
 ==============================================================================*/
 
 int Scene_viewer_add_sync_callback(struct Scene_viewer *scene_viewer,

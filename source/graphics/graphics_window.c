@@ -2898,10 +2898,14 @@ it.
 													window->scene_viewer_array[pane_no],
 													Graphics_window_Scene_viewer_view_changed,
 													window);
-												Scene_viewer_set_transform_rate(
+												Scene_viewer_set_translation_rate(
 													window->scene_viewer_array[pane_no],
-													window->default_translate_rate,
-													window->default_tumble_rate,
+													window->default_translate_rate);
+												Scene_viewer_set_tumble_rate(
+													window->scene_viewer_array[pane_no],
+													window->default_tumble_rate);
+												Scene_viewer_set_zoom_rate(
+													window->scene_viewer_array[pane_no],
 													window->default_zoom_rate);
 											}
 											else
@@ -3057,9 +3061,12 @@ it.
 								window->scene_viewer_array[pane_no],
 								Graphics_window_Scene_viewer_view_changed,
 								window);
-							Scene_viewer_set_transform_rate(
-								window->scene_viewer_array[pane_no],2.0,1.5,2.0);
-
+							Scene_viewer_set_translation_rate(
+								window->scene_viewer_array[pane_no], 2.0);
+							Scene_viewer_set_tumble_rate(
+								window->scene_viewer_array[pane_no], 1.5);
+							Scene_viewer_set_zoom_rate(
+								window->scene_viewer_array[pane_no], 2.0);
 
 							/* set the initial layout */
 							Graphics_window_set_layout_mode(window,
@@ -3673,10 +3680,14 @@ Sets the layout mode in effect on the <window>.
 								window->scene_viewer_array[pane_no],
 								Graphics_window_Scene_viewer_view_changed,
 								window);
-							Scene_viewer_set_transform_rate(
+							Scene_viewer_set_translation_rate(
 								window->scene_viewer_array[pane_no],
-								window->default_translate_rate,
-								window->default_tumble_rate,
+								window->default_translate_rate);
+							Scene_viewer_set_tumble_rate(
+								window->scene_viewer_array[pane_no],
+								window->default_tumble_rate);
+							Scene_viewer_set_zoom_rate(
+								window->scene_viewer_array[pane_no],
 								window->default_zoom_rate);
 							clip_factor = 10.0;
 							Scene_viewer_set_view_simple(
@@ -3779,8 +3790,11 @@ Sets the layout mode in effect on the <window>.
 					XtUnmanageChild(window->viewing_area4);
 #endif /* defined (MOTIF) */
 					/* re-enable tumbling in main scene viewer */
-					Scene_viewer_set_transform_rate(window->scene_viewer_array[0],
-						window->default_translate_rate,window->default_tumble_rate,
+					Scene_viewer_set_translation_rate(window->scene_viewer_array[0],
+						window->default_translate_rate);
+					Scene_viewer_set_tumble_rate(window->scene_viewer_array[0],
+						window->default_tumble_rate);
+					Scene_viewer_set_zoom_rate(window->scene_viewer_array[0],
 						window->default_zoom_rate);
 #if defined (MOTIF)
 					XtVaSetValues(window->viewing_area1,
@@ -3795,8 +3809,11 @@ Sets the layout mode in effect on the <window>.
 				if (new_layout)
 				{
 					/* disable tumbling in main scene viewer */
-					Scene_viewer_set_transform_rate(window->scene_viewer_array[0],
-						window->default_translate_rate,/*tumble_rate*/0.0,
+					Scene_viewer_set_translation_rate(window->scene_viewer_array[0],
+						window->default_translate_rate);
+					Scene_viewer_set_tumble_rate(window->scene_viewer_array[0],
+						/*tumble_rate*/0.0);
+					Scene_viewer_set_zoom_rate(window->scene_viewer_array[0],
 						window->default_zoom_rate);
 #if defined (MOTIF)
 					/* single scene viewer with no tumbling, orientation controlled
@@ -3836,16 +3853,22 @@ Sets the layout mode in effect on the <window>.
 					/* make sure pane 0 is not using a custom projection */
 					Graphics_window_set_projection_mode(window,0,projection_mode);
 					/* re-enable tumbling in main scene viewer */
-					Scene_viewer_set_transform_rate(window->scene_viewer_array[0],
-						window->default_translate_rate,window->default_tumble_rate,
+					Scene_viewer_set_translation_rate(window->scene_viewer_array[0],
+						window->default_translate_rate);
+					Scene_viewer_set_tumble_rate(window->scene_viewer_array[0],
+						window->default_tumble_rate);
+					Scene_viewer_set_zoom_rate(window->scene_viewer_array[0],
 						window->default_zoom_rate);
 					/* make sure panes 1-3 use parallel projection and disable tumble */
 					for (pane_no=1;pane_no<4;pane_no++)
 					{
 						Graphics_window_set_projection_mode(window,pane_no,
 							SCENE_VIEWER_PARALLEL);
-						Scene_viewer_set_transform_rate(window->scene_viewer_array[pane_no],
-							window->default_translate_rate,/*tumble_rate*/0.0,
+						Scene_viewer_set_translation_rate(window->scene_viewer_array[pane_no],
+							window->default_translate_rate);
+						Scene_viewer_set_tumble_rate(window->scene_viewer_array[pane_no],
+							/*tumble_rate*/0.0);
+						Scene_viewer_set_zoom_rate(window->scene_viewer_array[pane_no],
 							window->default_zoom_rate);
 					}
 #if defined (MOTIF)
@@ -3893,8 +3916,11 @@ Sets the layout mode in effect on the <window>.
 					for (pane_no=0;pane_no<2;pane_no++)
 					{
 						Graphics_window_set_projection_mode(window,pane_no,projection_mode);
-						Scene_viewer_set_transform_rate(window->scene_viewer_array[pane_no],
-							window->default_translate_rate,window->default_tumble_rate,
+						Scene_viewer_set_translation_rate(window->scene_viewer_array[pane_no],
+							window->default_translate_rate);
+						Scene_viewer_set_tumble_rate(window->scene_viewer_array[pane_no],
+							window->default_tumble_rate);
+						Scene_viewer_set_zoom_rate(window->scene_viewer_array[pane_no],
 							window->default_zoom_rate);
 					}
 #if defined (MOTIF)

@@ -2118,7 +2118,7 @@ and then again with only semi transparent objects not changing the depth buffer.
 		if (!scene_viewer->order_independent_transparency_data)
 		{
 			scene_viewer->order_independent_transparency_data = 
-				order_independent_initialise();
+				order_independent_initialise(scene_viewer->user_interface);
 		}
 
 		if (scene_viewer->order_independent_transparency_data)
@@ -5785,75 +5785,173 @@ Sets the Scene_viewer scene.
 	return (return_code);
 } /* Scene_viewer_set_scene */
 
-int Scene_viewer_get_transform_rate(struct Scene_viewer *scene_viewer,
-	double *translate_rate,double *tumble_rate,double *zoom_rate)
+int Scene_viewer_get_translation_rate(struct Scene_viewer *scene_viewer,
+	double *translation_rate)
 /*******************************************************************************
-LAST MODIFIED : 15 October 1998
+LAST MODIFIED : 4 February 2005
 
 DESCRIPTION :
-Returns the rate of translate, tumble and zoom transformations in
-relation to mouse movements. Values of around 1.0 could be considered normal.
-A value of zero turns off that transform capability.
+Gets the scene viewer translation rate.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(Scene_viewer_get_transform_rate);
-	if (scene_viewer&&translate_rate&&tumble_rate&&zoom_rate)
-	{
-		*translate_rate=scene_viewer->translate_rate;
-		*tumble_rate=scene_viewer->tumble_rate;
-		*zoom_rate=scene_viewer->zoom_rate;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_get_transform_rate.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_get_transform_rate */
-
-int Scene_viewer_set_transform_rate(struct Scene_viewer *scene_viewer,
-	double translate_rate,double tumble_rate,double zoom_rate)
-/*******************************************************************************
-LAST MODIFIED : 15 October 1998
-
-DESCRIPTION :
-Sets the rate of translate, tumble and zoom transformations in
-relation to mouse movements. Values of around 1.0 could be considered normal,
-although I use 1.5 for the default tumble_rate.
-A value of zero turns off that transform capability.
-Negative values reverse the effects of mouse movement.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_viewer_set_transform_rate);
+	ENTER(Scene_viewer_get_translation_rate);
 	if (scene_viewer)
 	{
-		scene_viewer->translate_rate=translate_rate;
-		scene_viewer->tumble_rate=tumble_rate;
-		scene_viewer->zoom_rate=zoom_rate;
-		if (!scene_viewer->tumble_rate)
-		{
-			scene_viewer->tumble_angle = 0;
-		}
-		return_code=1;
+		*translation_rate = scene_viewer->translate_rate;
+		return_code = 1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_set_transform_rate.  Invalid argument(s)");
-		return_code=0;
+		display_message(ERROR_MESSAGE,"Scene_viewer_get_translation_rate.  "
+			"Missing scene_viewer parameter.");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Scene_viewer_set_transform_rate */
+} /* Scene_viewer_get_translation_rate */
+
+int Scene_viewer_set_translation_rate(struct Scene_viewer *scene_viewer,
+	double translation_rate)
+/*******************************************************************************
+LAST MODIFIED : 4 February 2005
+
+DESCRIPTION :
+Sets the scene viewer translation rate.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_set_translation_rate);
+	if (scene_viewer)
+	{
+		scene_viewer->translate_rate = translation_rate;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Scene_viewer_set_translation_rate.  "
+			"Missing scene_viewer parameter.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_set_translation_rate */
+
+int Scene_viewer_get_tumble_rate(struct Scene_viewer *scene_viewer,
+	double *tumble_rate)
+/*******************************************************************************
+LAST MODIFIED : 4 February 2005
+
+DESCRIPTION :
+Gets the scene viewer tumble rate.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_get_translation_rate);
+	if (scene_viewer)
+	{
+		*tumble_rate = scene_viewer->tumble_rate;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Scene_viewer_get_tumble_rate.  "
+			"Missing scene_viewer parameter.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_get_tumble_rate */
+
+int Scene_viewer_set_tumble_rate(struct Scene_viewer *scene_viewer,
+	double tumble_rate)
+/*******************************************************************************
+LAST MODIFIED : 4 February 2005
+
+DESCRIPTION :
+Sets the scene viewer tumble rate.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_set_tumble_rate);
+	if (scene_viewer)
+	{
+		scene_viewer->tumble_rate = tumble_rate;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Scene_viewer_set_tumble_rate.  "
+			"Missing scene_viewer parameter.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_set_tumble_rate */
+
+int Scene_viewer_get_zoom_rate(struct Scene_viewer *scene_viewer,
+	double *zoom_rate)
+/*******************************************************************************
+LAST MODIFIED : 4 February 2005
+
+DESCRIPTION :
+Gets the scene viewer zoom rate.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_get_zoom_rate);
+	if (scene_viewer)
+	{
+		*zoom_rate = scene_viewer->zoom_rate;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Scene_viewer_get_zoom_rate.  "
+			"Missing scene_viewer parameter.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_get_zoom_rate */
+
+int Scene_viewer_set_zoom_rate(struct Scene_viewer *scene_viewer,
+	double zoom_rate)
+/*******************************************************************************
+LAST MODIFIED : 4 February 2005
+
+DESCRIPTION :
+Sets the scene viewer zoom rate.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_set_zoom_rate);
+	if (scene_viewer)
+	{
+		scene_viewer->zoom_rate = zoom_rate;
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Scene_viewer_set_zoom_rate.  "
+			"Missing scene_viewer parameter.");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_set_tumble_rate */
 
 int Scene_viewer_get_transparency_mode(struct Scene_viewer *scene_viewer,
 	enum Scene_viewer_transparency_mode *transparency_mode)
