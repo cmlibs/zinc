@@ -1214,6 +1214,9 @@ DEACCESSes the member GT_object and removes any other dynamic fields.
 				}
 				if(scene_object->gt_element_group)
 				{
+					GT_element_group_remove_callback(scene_object->gt_element_group,
+						Scene_object_element_group_update_callback,
+						(void *)scene_object);
 					DEACCESS(GT_element_group)(&(scene_object->gt_element_group));
 				}
 				if(scene_object->time_object)
