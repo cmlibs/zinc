@@ -142,7 +142,7 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/64
 #elif defined (LINUX) /* switch OperatingSystem */
 #define MIRAGE
 #define UNEMAP
-/* SAB Couldn't compile cell/cell_calculate.f 
+/* SAB Couldn't compile cell/cell_calculate.f
    #define CELL */
 #if defined (OPTIMISED)
 #if defined (DYNAMIC_GL_LINUX)
@@ -525,7 +525,7 @@ XML_INC = -I$(XML_PATH)/expat_lib/include
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
 XML_LIB = -static -L$(XML_PATH)/expat_lib/lib -lExpat_linux -shared
-XML_INC = -I(XML_PATH)/expat_lib/include
+XML_INC = -I$(XML_PATH)/expat_lib/include
 #endif /* switch OperatingSystem */
 #endif /* defined (CELL) */
 
