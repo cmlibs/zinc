@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : comp_new_field.h
 
-LAST MODIFIED : 19 January 2003
+LAST MODIFIED : 20 January 2003
 
 DESCRIPTION :
 Comp_new_field's are expressions that are constructed for:
@@ -16,10 +16,11 @@ element scale factors.  When differentiating the dependent and independent
 variables are specified.  Any unspecified variables are constant.
 
 Comp_new_field's are able to be:
-- evaluated at a point (specific choice of values for degrees of freedom)
-- differentiated at a point (specific choice of values for degrees of freedom -
-	not symbolic)
-- composed ie. the results of one Comp_new_field can be used as in another
+- evaluated at a point (specific choice of values for independent variables)
+- differentiated at a point (specific choice of values for independent
+	variables ie. not symbolic)
+- composed ie. the results of one Comp_new_field can replace independent
+	variables for another Comp_new_field
 
 The shared interface to Comp_new_field's is defined here, but there are separate
 modules for specific types eg finite element, gradient and coordinate
@@ -50,12 +51,28 @@ NOTES :
 	you can only differentiate with respect to xi.  With the Comp_new_field's
 	there are ways of specifying the source fields which overlap, eg first order
 	derivative nodal values and all nodal values, and you can differentiate with
-	respect to any degree of freedom.  Comp_new_field_variable's are a flexible
+	respect to any independent variable.  Comp_new_field_variable's are a flexible
 	way of identifying the inputs and outputs of a Comp_new_field.
 5 Have split off comp_new_field_utilities and comp_new_field_commands in order
-	to focus on core of Comp_new_field's
+	to focus on core of Comp_new_field's.
+6 To say that the results of one computed field should replace independent
+	variables for a second computed field (composition of mathematical functions),
+	use Comp_new_field_variable_set_source and Comp_new_field_evaluate (temporary
+	over-riding) or Comp_new_field_set_variable (permanent).
+???DB.  Seems a bit long-winded.  May be simpler if had
+	- the source for Comp_new_field_variable_set_source being a Comp_new_field
+		(rather than a Comp_new_field_variable).  This would mean that all the
+		results of a Comp_new_field would have to be used
+	- get rid of Comp_new_fields and just have Comp_new_field_variables (or
+		equivalently just have Comp_new_fields).  Have the actual computation as
+		part of the result Comp_new_field_variables.  What about specifying
+		element/xi?
+7 Specifying variables in evaluate is only for leaf dofs?
+8 Comp_new_fields are not invertable ie. if the results are specified for an
+	evaluation, the dofs are not calculated.  Instead
+	- Newton-Raphson can be done explicitly in the calling program or command file
+	- use Comp_new_field_set_type_inverse
 
-???DB.  How should composition be set up?
 
 ???DB.  Label outputs (results) in same way that label inputs?
 	- allows use of part of output for input
@@ -64,26 +81,18 @@ NOTES :
 		specify what is wanted
 
 ???DB.  What about using a Comp_new_field multiple times within another?
-	- different ways of getting degrees of freedom each time?
+	- different ways of replacing independent variables each time?
 	- how does this affect naming of variables?
 	- duplicate Comp_new_field's that are used?  Makes caching less useful?
 		- interface allows this if add Comp_new_field_duplicate?
 		- what happens currently?
 	- separate caching and connection of Comp_new_fields (another object layer)?
 
-???DB.  Make Comp_new_fields reversible - in becomes out and out becomes in
-	(more general?)?
-	- explicitly do inversion (Newton-Raphson)
-	- could have an inverse Comp_new_field type
-
-???DB.  The variable types provided by a specific Comp_new_field need to be
-	visible in specific .h
-
 ???DB.  How should element/xi and time be "shared" between Comp_new_field's?
 	- have Mesh_location which is element/xi or node
 	- have a FE computed field which is identity returning Mesh_location and
-		others set their Mesh_location degrees of freedom to its result?  How do you
-		set Mesh_location when only have top?
+		others replace their Mesh_location independent variables with its result?
+		How do you set Mesh_location when only have top?
 		???DB.  Most transparent?
 	- have concept of a shared variable?
 	- use independent/dependent somehow?
@@ -97,21 +106,8 @@ NOTES :
 ???DB.  This is CellML in terms of having an interface with in and out and
 	saying how everything is connected.  CellML has only one model/Comp_new_field
 
-???DB.  How does MathML express things?
-
-???DB.  Is setting fixed/variable and then calculating derivatives enough?
-	What about differentiating with respect to a nodal value the Laplacian of a
-	field - in some places want xi fixed and in others variable?
-	- rather than having
-		- set fixed/variable
-		- evaluate derivative
-		need
-		- evaluate derivative with respect to these variables
-		need analogous for evaluating value (can't separate setting variables and
-			evaluation)
-
-???DB.  Want to be able to say that some degrees of freedom have to be supplied
-	(from another field)?  Force element/xi and time to be supplied?
+???DB.  Want to be able to say that some independent variables have to be
+	supplied (from another field)?  Force element/xi and time to be supplied?
 
 ???DB.  Have a Comp_new_field type which is a Comp_new_field_variable?
 
@@ -148,7 +144,7 @@ Comp_new_field and not the actual input/output.  So when a Comp_new_field is
 given a Comp_new_field_variable it can decide whether it identifies any of its
 actual input(s)/output(s).
 
-???DB.  What about names for results?  Unlike degrees of freedom, name is
+???DB.  What about names for results?  Unlike independent variables, name is
 	dependent on Comp_new_field name?
 	- Comp_new_field_variable includes pointer to Comp_new_field?
 ==============================================================================*/
@@ -230,6 +226,16 @@ DESCRIPTION :
 Makes a copy of the <variable>.
 ==============================================================================*/
 
+int Comp_new_field_variable_set_source(struct Comp_new_field_variable *variable,
+	struct Comp_new_field_variable *source);
+/*******************************************************************************
+LAST MODIFIED : 20 January 2003
+
+DESCRIPTION :
+Sets the values for <variable> to come from the values <source>.  The types of
+the values for <variable> and <source> must match.
+==============================================================================*/
+
 int Comp_new_field_variable_set_type_result(
 	struct Comp_new_field_variable *variable,struct Comp_new_field *field,
 	int component_number);
@@ -241,25 +247,14 @@ Converts the <variable> into the result for the specified <field> (all computed
 fields if NULL) and <component_number> (all components if -1).
 ==============================================================================*/
 
-int Comp_new_field_variable_set_type_degree_of_freedom(
+int Comp_new_field_variable_set_type_independent_variable(
 	struct Comp_new_field_variable *variable,struct Comp_new_field *field);
 /*******************************************************************************
 LAST MODIFIED : 19 January 2003
 
 DESCRIPTION :
-Converts the <variable> into all degrees of freedom for the specified <field>
+Converts the <variable> into all independent variables for the specified <field>
 (all computed fields if NULL).
-==============================================================================*/
-
-int Comp_new_field_variable_is_FE_value_vector(
-	struct Comp_new_field_variable *variable,int *number_of_components_address);
-/*******************************************************************************
-LAST MODIFIED : 16 January 2003
-
-DESCRIPTION :
-If the <variable> is a vector of FE_values, then returns nonzero and sets
-<*number_of_components_address> to the number of components in the vector,
-otherwise returns zero.
 ==============================================================================*/
 
 int Comp_new_field_variable_set_type_FE_value_vector(
@@ -271,6 +266,17 @@ LAST MODIFIED : 16 January 2003
 DESCRIPTION :
 Converts the <variable> into a vector of FE_values with the specified
 <number_of_components> and <values> (possibly NULL, copied).
+==============================================================================*/
+
+int Comp_new_field_variable_is_FE_value_vector(
+	struct Comp_new_field_variable *variable,int *number_of_components_address);
+/*******************************************************************************
+LAST MODIFIED : 16 January 2003
+
+DESCRIPTION :
+If the <variable> is a vector of FE_values, then returns nonzero and sets
+<*number_of_components_address> to the number of components in the vector,
+otherwise returns zero.
 ==============================================================================*/
 
 int Comp_new_field_variable_get_FE_value_vector(
@@ -366,6 +372,17 @@ DESCRIPTION :
 Gets the specified variables for the <field> and puts them in <values>.  If a
 specified variable is calculated from another field then the other field is
 returned in <values>.
+==============================================================================*/
+
+int Comp_new_field_set_type_inverse(struct Comp_new_field *inverse_field,
+	struct Comp_new_field *field,struct LIST(Comp_new_field_variable) *results);
+/*******************************************************************************
+LAST MODIFIED : 20 January 2003
+
+DESCRIPTION :
+Sets <inverse_field> to be the inverse of the <field>.  Its independent
+variables are the results of the <field> and its <results> are independent
+variables of the <field>.
 ==============================================================================*/
 
 int Comp_new_field_depends_on_Comp_new_field(struct Comp_new_field *field,
