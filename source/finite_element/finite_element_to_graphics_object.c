@@ -2314,239 +2314,241 @@ Notes:
 				derivative += number_of_segments_around+1;
 			}
 
-			/* Calculate the normals at the first and last points as we must line
-			 up at these points so that the next elements join on correctly */
-			for (i=0;i<=number_of_segments_along&&surface;i+=number_of_segments_along)
+			if (surface)
 			{
-				point = points + i * (number_of_segments_around+1);
-				derivative = normalpoints + i * (number_of_segments_around+1);
-				normal = normalpoints + i * (number_of_segments_around+1) + 1;
-				derivative_xi[0] = (*derivative)[0];
-				derivative_xi[1] = (*derivative)[1];
-				derivative_xi[2] = (*derivative)[2];
-				/* get any vector not aligned with derivative */
-				jacobian[0]=0.0;
-				jacobian[1]=0.0;
-				jacobian[2]=0.0;
-				/* make jacobian have 1.0 in the component with the least absolute
-					value in derivative_xi */
-				if (fabs(derivative_xi[0]) < fabs(derivative_xi[1]))
+				/* Calculate the normals at the first and last points as we must line
+					up at these points so that the next elements join on correctly */
+				for (i=0;i<=number_of_segments_along;i+=number_of_segments_along)
 				{
-					if (fabs(derivative_xi[2]) < fabs(derivative_xi[0]))
+					point = points + i * (number_of_segments_around+1);
+					derivative = normalpoints + i * (number_of_segments_around+1);
+					normal = normalpoints + i * (number_of_segments_around+1) + 1;
+					derivative_xi[0] = (*derivative)[0];
+					derivative_xi[1] = (*derivative)[1];
+					derivative_xi[2] = (*derivative)[2];
+					/* get any vector not aligned with derivative */
+					jacobian[0]=0.0;
+					jacobian[1]=0.0;
+					jacobian[2]=0.0;
+					/* make jacobian have 1.0 in the component with the least absolute
+						value in derivative_xi */
+					if (fabs(derivative_xi[0]) < fabs(derivative_xi[1]))
 					{
-						jacobian[2]=1.0;
+						if (fabs(derivative_xi[2]) < fabs(derivative_xi[0]))
+						{
+							jacobian[2]=1.0;
+						}
+						else
+						{
+							jacobian[0]=1.0;
+						}
 					}
 					else
 					{
-						jacobian[0]=1.0;
+						if (fabs(derivative_xi[2]) < fabs(derivative_xi[1]))
+						{
+							jacobian[2]=1.0;
+						}
+						else
+						{
+							jacobian[1]=1.0;
+						}
 					}
-				}
-				else
-				{
-					if (fabs(derivative_xi[2]) < fabs(derivative_xi[1]))
+					/* get cross product of the derivative and this vector
+						= vector normal to derivative */
+					/* Put this in the normal, we don't need the derivative anymore */
+					jacobian[3]=
+						derivative_xi[1]*jacobian[2]-derivative_xi[2]*jacobian[1];
+					jacobian[4]=
+						derivative_xi[2]*jacobian[0]-derivative_xi[0]*jacobian[2];
+					jacobian[5]=
+						derivative_xi[0]*jacobian[1]-derivative_xi[1]*jacobian[0];
+					/* make normal into a unit vector */
+					if (0.0<(length=sqrt(jacobian[3]*jacobian[3]+
+						jacobian[4]*jacobian[4]+jacobian[5]*jacobian[5])))
 					{
-						jacobian[2]=1.0;
+						jacobian[3] /= length;
+						jacobian[4] /= length;
+						jacobian[5] /= length;
 					}
-					else
-					{
-						jacobian[1]=1.0;
-					}
+					(*normal)[0] = jacobian[3];
+					(*normal)[1] = jacobian[4];
+					(*normal)[2] = jacobian[5];
 				}
-				/* get cross product of the derivative and this vector
-					= vector normal to derivative */
-				/* Put this in the normal, we don't need the derivative anymore */
-				jacobian[3]=
-					derivative_xi[1]*jacobian[2]-derivative_xi[2]*jacobian[1];
-				jacobian[4]=
-					derivative_xi[2]*jacobian[0]-derivative_xi[0]*jacobian[2];
-				jacobian[5]=
-					derivative_xi[0]*jacobian[1]-derivative_xi[1]*jacobian[0];
-				/* make normal into a unit vector */
-				if (0.0<(length=sqrt(jacobian[3]*jacobian[3]+
-					jacobian[4]*jacobian[4]+jacobian[5]*jacobian[5])))
+				end_aligned_normal[0] = (*normal)[0];
+				end_aligned_normal[1] = (*normal)[1];
+				end_aligned_normal[2] = (*normal)[2];
+
+				/* Propogate the first normal along the segments keeping it in
+					the same plane each step */
+				for (i=1;i<=number_of_segments_along;i++)
 				{
-					jacobian[3] /= length;
-					jacobian[4] /= length;
-					jacobian[5] /= length;
-				}
-				(*normal)[0] = jacobian[3];
-				(*normal)[1] = jacobian[4];
-				(*normal)[2] = jacobian[5];
-			}
-			end_aligned_normal[0] = (*normal)[0];
-			end_aligned_normal[1] = (*normal)[1];
-			end_aligned_normal[2] = (*normal)[2];
+					point = points + i * (number_of_segments_around+1);
+					derivative = normalpoints + i * (number_of_segments_around+1);
+					normal = normalpoints + i * (number_of_segments_around+1) + 1;
+					previous_point = points + (i-1) * (number_of_segments_around+1);
+					previous_normal = normalpoints + (i-1) * (number_of_segments_around+1) + 1;
 
-			/* Propogate the first normal along the segments keeping it in
-				the same plane each step */
-			for (i=1;i<=number_of_segments_along&&surface;i++)
-			{
-				point = points + i * (number_of_segments_around+1);
-				derivative = normalpoints + i * (number_of_segments_around+1);
-				normal = normalpoints + i * (number_of_segments_around+1) + 1;
-				previous_point = points + (i-1) * (number_of_segments_around+1);
-				previous_normal = normalpoints + (i-1) * (number_of_segments_around+1) + 1;
-
-				/* Get the change in position */
-				jacobian[0] = (*point)[0] - (*previous_point)[0];
-				jacobian[1] = (*point)[1] - (*previous_point)[1];
-				jacobian[2] = (*point)[2] - (*previous_point)[2];
+					/* Get the change in position */
+					jacobian[0] = (*point)[0] - (*previous_point)[0];
+					jacobian[1] = (*point)[1] - (*previous_point)[1];
+					jacobian[2] = (*point)[2] - (*previous_point)[2];
 				
-				/* Get the normal to plane which contains change_in_position
-					vector and previous_normal_vector */
-				jacobian[3] = jacobian[1] * (*previous_normal)[2] -
-					jacobian[2] * (*previous_normal)[1];
-				jacobian[4] = jacobian[2] * (*previous_normal)[0] -
-					jacobian[0] * (*previous_normal)[2];
-				jacobian[5] = jacobian[0] * (*previous_normal)[1] -
-					jacobian[1] * (*previous_normal)[0];
+					/* Get the normal to plane which contains change_in_position
+						vector and previous_normal_vector */
+					jacobian[3] = jacobian[1] * (*previous_normal)[2] -
+						jacobian[2] * (*previous_normal)[1];
+					jacobian[4] = jacobian[2] * (*previous_normal)[0] -
+						jacobian[0] * (*previous_normal)[2];
+					jacobian[5] = jacobian[0] * (*previous_normal)[1] -
+						jacobian[1] * (*previous_normal)[0];
 
-				/* Get the new normal vector which lies in the plane */
-				jacobian[0] = jacobian[4] * (*derivative)[2] -
-					jacobian[5] * (*derivative)[1];
-				jacobian[1] = jacobian[5] * (*derivative)[0] -
-					jacobian[3] * (*derivative)[2];
-				jacobian[2] = jacobian[3] * (*derivative)[1] -
-					jacobian[4] * (*derivative)[0];
+					/* Get the new normal vector which lies in the plane */
+					jacobian[0] = jacobian[4] * (*derivative)[2] -
+						jacobian[5] * (*derivative)[1];
+					jacobian[1] = jacobian[5] * (*derivative)[0] -
+						jacobian[3] * (*derivative)[2];
+					jacobian[2] = jacobian[3] * (*derivative)[1] -
+						jacobian[4] * (*derivative)[0];
 
-				/* Store this in the other normal space and normalise */
-				(*normal)[0] = jacobian[0];
-				(*normal)[1] = jacobian[1];
-				(*normal)[2] = jacobian[2];
-				if (0.0<(distance=
-					sqrt((*normal)[0]*(*normal)[0] + (*normal)[1]*(*normal)[1]+
-						(*normal)[2]*(*normal)[2])))
-				{
-					(*normal)[0]/=distance;
-					(*normal)[1]/=distance;
-					(*normal)[2]/=distance;
+					/* Store this in the other normal space and normalise */
+					(*normal)[0] = jacobian[0];
+					(*normal)[1] = jacobian[1];
+					(*normal)[2] = jacobian[2];
+					if (0.0<(distance=
+						sqrt((*normal)[0]*(*normal)[0] + (*normal)[1]*(*normal)[1]+
+							(*normal)[2]*(*normal)[2])))
+					{
+						(*normal)[0]/=distance;
+						(*normal)[1]/=distance;
+						(*normal)[2]/=distance;
+					}
 				}
-			}
 
-			/* Find the closest correlation between the end_aligned_normal and the 
-				propogated normal */
-			derivative = normalpoints + number_of_segments_along * (number_of_segments_around+1);
-			normal = normalpoints + number_of_segments_along * (number_of_segments_around+1) + 1;
+				/* Find the closest correlation between the end_aligned_normal and the 
+					propogated normal */
+				derivative = normalpoints + number_of_segments_along * (number_of_segments_around+1);
+				normal = normalpoints + number_of_segments_along * (number_of_segments_around+1) + 1;
 
-			jacobian[0] = end_aligned_normal[0];
-			jacobian[1] = end_aligned_normal[1];
-			jacobian[2] = end_aligned_normal[2];
-
-			jacobian[3]= (*derivative)[1]*jacobian[2]-(*derivative)[2]*jacobian[1];
-			jacobian[4]= (*derivative)[2]*jacobian[0]-(*derivative)[0]*jacobian[2];
-			jacobian[5]= (*derivative)[0]*jacobian[1]-(*derivative)[1]*jacobian[0];
-
-			for (j = 0 ; j < number_of_segments_around ; j++)
-			{
-				theta=PI*2.*((float)j)/((float)number_of_segments_around);
-				cos_theta=cos(theta);
-				sin_theta=sin(theta);
-				vector[0]=cos_theta*jacobian[0]+sin_theta*jacobian[3];
-				vector[1]=cos_theta*jacobian[1]+sin_theta*jacobian[4];
-				vector[2]=cos_theta*jacobian[2]+sin_theta*jacobian[5];
-				distance=
-					(vector[0]-(*normal)[0])*(vector[0]-(*normal)[0])+
-					(vector[1]-(*normal)[1])*(vector[1]-(*normal)[1])+
-					(vector[2]-(*normal)[2])*(vector[2]-(*normal)[2]);
-				if ((j==0) || (distance<minimum_distance))
-				{
-					minimum_distance=distance;
-					minimum_offset=j;
-				}
-			}
-			theta = PI*2.*((float)minimum_offset)/((float)number_of_segments_around);
-			cos_theta=cos(theta);
-			sin_theta=sin(theta);
-			vector[0]=cos_theta*jacobian[0]+sin_theta*jacobian[3];
-			vector[1]=cos_theta*jacobian[1]+sin_theta*jacobian[4];
-			vector[2]=cos_theta*jacobian[2]+sin_theta*jacobian[5];
-			distance = vector[0] * (*normal)[0] +
-				vector[1] * (*normal)[1] + vector[2] * (*normal)[2];
-			/* Combat small rounding errors */
-			if (distance > 1.0)
-			{
-				distance = 1.0;
-			}
-			if (distance < -1.0)
-			{
-				distance = -1.0;
-			}
-			theta_change = acos(distance);
-			/* Cross the vectors and dot with derivative to find sign */
-			jacobian[0] = vector[1] * (*normal)[2] - vector[2] * (*normal)[1];
-			jacobian[1] = vector[2] * (*normal)[0] - vector[0] * (*normal)[2];
-			jacobian[2] = vector[0] * (*normal)[1] - vector[1] * (*normal)[0];
-			if ((jacobian[0] * (*derivative)[0] + jacobian[1] * (*derivative)[1] + 
-				jacobian[2] * (*derivative)[2]) > 0)
-			{
-				theta_change *= -1.0;
-			}
-
-			/* Calculate the actual points and normals */
-			for (i=0;(i<=number_of_segments_along)&&surface;i++)
-			{
-				/* Get the two normals */
-				point = points + i * (number_of_segments_around+1);
-				derivative = normalpoints + i * (number_of_segments_around+1);
-				normal = normalpoints + i * (number_of_segments_around+1) + 1;
-
-				if (i < number_of_segments_along)
-				{
-					jacobian[0] = (*normal)[0];
-					jacobian[1] = (*normal)[1];
-					jacobian[2] = (*normal)[2];
-				}
-				else
-				{
-					jacobian[0] = end_aligned_normal[0];
-					jacobian[1] = end_aligned_normal[1];
-					jacobian[2] = end_aligned_normal[2];
-				}
+				jacobian[0] = end_aligned_normal[0];
+				jacobian[1] = end_aligned_normal[1];
+				jacobian[2] = end_aligned_normal[2];
 
 				jacobian[3]= (*derivative)[1]*jacobian[2]-(*derivative)[2]*jacobian[1];
 				jacobian[4]= (*derivative)[2]*jacobian[0]-(*derivative)[0]*jacobian[2];
 				jacobian[5]= (*derivative)[0]*jacobian[1]-(*derivative)[1]*jacobian[0];
 
-				/* Get the other stored values */
-				radius_value = radius_array[3*i];
-				radius_derivative = radius_array[3*i+1];
-				dS_dxi = radius_array[3*i+2];
-
-				derivative_xi[0] = (*derivative)[0];
-				derivative_xi[1] = (*derivative)[1];
-				derivative_xi[2] = (*derivative)[2];
-
-				/* Write the true normals and positions */
-				normal = normalpoints + i * (number_of_segments_around+1);				
-				for (j=number_of_segments_around;0<=j;j--)
+				for (j = 0 ; j < number_of_segments_around ; j++)
 				{
+					theta=PI*2.*((float)j)/((float)number_of_segments_around);
+					cos_theta=cos(theta);
+					sin_theta=sin(theta);
+					vector[0]=cos_theta*jacobian[0]+sin_theta*jacobian[3];
+					vector[1]=cos_theta*jacobian[1]+sin_theta*jacobian[4];
+					vector[2]=cos_theta*jacobian[2]+sin_theta*jacobian[5];
+					distance=
+						(vector[0]-(*normal)[0])*(vector[0]-(*normal)[0])+
+						(vector[1]-(*normal)[1])*(vector[1]-(*normal)[1])+
+						(vector[2]-(*normal)[2])*(vector[2]-(*normal)[2]);
+					if ((j==0) || (distance<minimum_distance))
+					{
+						minimum_distance=distance;
+						minimum_offset=j;
+					}
+				}
+				theta = PI*2.*((float)minimum_offset)/((float)number_of_segments_around);
+				cos_theta=cos(theta);
+				sin_theta=sin(theta);
+				vector[0]=cos_theta*jacobian[0]+sin_theta*jacobian[3];
+				vector[1]=cos_theta*jacobian[1]+sin_theta*jacobian[4];
+				vector[2]=cos_theta*jacobian[2]+sin_theta*jacobian[5];
+				distance = vector[0] * (*normal)[0] +
+					vector[1] * (*normal)[1] + vector[2] * (*normal)[2];
+				/* Combat small rounding errors */
+				if (distance > 1.0)
+				{
+					distance = 1.0;
+				}
+				if (distance < -1.0)
+				{
+					distance = -1.0;
+				}
+				theta_change = acos(distance);
+				/* Cross the vectors and dot with derivative to find sign */
+				jacobian[0] = vector[1] * (*normal)[2] - vector[2] * (*normal)[1];
+				jacobian[1] = vector[2] * (*normal)[0] - vector[0] * (*normal)[2];
+				jacobian[2] = vector[0] * (*normal)[1] - vector[1] * (*normal)[0];
+				if ((jacobian[0] * (*derivative)[0] + jacobian[1] * (*derivative)[1] + 
+					jacobian[2] * (*derivative)[2]) > 0)
+				{
+					theta_change *= -1.0;
+				}
+
+				/* Calculate the actual points and normals */
+				for (i=0;(i<=number_of_segments_along);i++)
+				{
+					/* Get the two normals */
+					point = points + i * (number_of_segments_around+1);
+					derivative = normalpoints + i * (number_of_segments_around+1);
+					normal = normalpoints + i * (number_of_segments_around+1) + 1;
+
 					if (i < number_of_segments_along)
 					{
-						theta = theta_change * ((float) i)/ ((float)number_of_segments_along)
-							+ PI*2.0*((float)j)/((float)number_of_segments_around);
+						jacobian[0] = (*normal)[0];
+						jacobian[1] = (*normal)[1];
+						jacobian[2] = (*normal)[2];
 					}
 					else
 					{
-						theta = PI*2.*((float)(j + minimum_offset))/
-							((float)number_of_segments_around);
+						jacobian[0] = end_aligned_normal[0];
+						jacobian[1] = end_aligned_normal[1];
+						jacobian[2] = end_aligned_normal[2];
 					}
-					cos_theta=cos(theta);
-					sin_theta=sin(theta);
-					(normal[j])[0]=cos_theta*jacobian[0]+sin_theta*jacobian[3];
-					(normal[j])[1]=cos_theta*jacobian[1]+sin_theta*jacobian[4];
-					(normal[j])[2]=cos_theta*jacobian[2]+sin_theta*jacobian[5];
-					(point[j])[0]=(point[0])[0]+radius_value*(normal[j])[0];
-					(point[j])[1]=(point[0])[1]+radius_value*(normal[j])[1];
-					(point[j])[2]=(point[0])[2]+radius_value*(normal[j])[2];
-					if ((0<radius_derivative) && (0<dS_dxi))
+
+					jacobian[3]= (*derivative)[1]*jacobian[2]-(*derivative)[2]*jacobian[1];
+					jacobian[4]= (*derivative)[2]*jacobian[0]-(*derivative)[0]*jacobian[2];
+					jacobian[5]= (*derivative)[0]*jacobian[1]-(*derivative)[1]*jacobian[0];
+
+					/* Get the other stored values */
+					radius_value = radius_array[3*i];
+					radius_derivative = radius_array[3*i+1];
+					dS_dxi = radius_array[3*i+2];
+
+					derivative_xi[0] = (*derivative)[0];
+					derivative_xi[1] = (*derivative)[1];
+					derivative_xi[2] = (*derivative)[2];
+
+					/* Write the true normals and positions */
+					normal = normalpoints + i * (number_of_segments_around+1);				
+					for (j=number_of_segments_around;0<=j;j--)
 					{
-						(normal[j])[0] -= (radius_derivative/dS_dxi)*derivative_xi[0];
-						(normal[j])[1] -= (radius_derivative/dS_dxi)*derivative_xi[1];
-						(normal[j])[2] -= (radius_derivative/dS_dxi)*derivative_xi[2];
+						if (i < number_of_segments_along)
+						{
+							theta = theta_change * ((float) i)/ ((float)number_of_segments_along)
+								+ PI*2.0*((float)j)/((float)number_of_segments_around);
+						}
+						else
+						{
+							theta = PI*2.*((float)(j + minimum_offset))/
+								((float)number_of_segments_around);
+						}
+						cos_theta=cos(theta);
+						sin_theta=sin(theta);
+						(normal[j])[0]=cos_theta*jacobian[0]+sin_theta*jacobian[3];
+						(normal[j])[1]=cos_theta*jacobian[1]+sin_theta*jacobian[4];
+						(normal[j])[2]=cos_theta*jacobian[2]+sin_theta*jacobian[5];
+						(point[j])[0]=(point[0])[0]+radius_value*(normal[j])[0];
+						(point[j])[1]=(point[0])[1]+radius_value*(normal[j])[1];
+						(point[j])[2]=(point[0])[2]+radius_value*(normal[j])[2];
+						if ((0<radius_derivative) && (0<dS_dxi))
+						{
+							(normal[j])[0] -= (radius_derivative/dS_dxi)*derivative_xi[0];
+							(normal[j])[1] -= (radius_derivative/dS_dxi)*derivative_xi[1];
+							(normal[j])[2] -= (radius_derivative/dS_dxi)*derivative_xi[2];
+						}
 					}
 				}
 			}
-
 #if defined (OLD_CODE)
 			for (i=0;(i<=number_of_segments_along)&&surface;i++)
 			{
