@@ -551,7 +551,7 @@ to be selectable. \
 #define DECLARE_CHOOSE_OBJECT_GET_CALLBACK_FUNCTION( object_type ) \
 PROTOTYPE_CHOOSE_OBJECT_GET_CALLBACK_FUNCTION(object_type) \
 /***************************************************************************** \
-LAST MODIFIED : 21 January 2000 \
+LAST MODIFIED : 9 June 2000 \
 \
 DESCRIPTION : \
 Returns a pointer to the callback item of the choose_object_widget. \
@@ -563,6 +563,7 @@ Returns a pointer to the callback item of the choose_object_widget. \
 	ENTER(CHOOSE_OBJECT_GET_CALLBACK(object_type)); \
 	if (choose_object_widget) \
 	{ \
+		choose_object=(struct CHOOSE_OBJECT(object_type) *)NULL; \
 		/* Get the pointer to the data for the choose_object dialog */ \
 		XtVaGetValues(choose_object_widget,XmNuserData,&choose_object,NULL); \
 		if (choose_object) \
@@ -591,7 +592,7 @@ Returns a pointer to the callback item of the choose_object_widget. \
 #define DECLARE_CHOOSE_OBJECT_SET_CALLBACK_FUNCTION( object_type ) \
 PROTOTYPE_CHOOSE_OBJECT_SET_CALLBACK_FUNCTION(object_type) \
 /***************************************************************************** \
-LAST MODIFIED : 21 January 2000 \
+LAST MODIFIED : 9 June 2000 \
 \
 DESCRIPTION : \
 Changes the callback item of the choose_object_widget. \
@@ -603,6 +604,7 @@ Changes the callback item of the choose_object_widget. \
 	ENTER(CHOOSE_OBJECT_SET_CALLBACK(object_type)); \
 	if (choose_object_widget&&new_callback) \
 	{ \
+		choose_object=(struct CHOOSE_OBJECT(object_type) *)NULL; \
 		/* Get the pointer to the data for the choose_object dialog */ \
 		XtVaGetValues(choose_object_widget,XmNuserData,&choose_object,NULL); \
 		if (choose_object) \
@@ -633,7 +635,7 @@ Changes the callback item of the choose_object_widget. \
 #define DECLARE_CHOOSE_OBJECT_GET_OBJECT_FUNCTION( object_type ) \
 PROTOTYPE_CHOOSE_OBJECT_GET_OBJECT_FUNCTION( object_type ) \
 /***************************************************************************** \
-LAST MODIFIED : 21 January 2000 \
+LAST MODIFIED : 9 June 2000 \
 \
 DESCRIPTION : \
 Returns the currently chosen object in the choose_object_widget. \
@@ -645,6 +647,7 @@ Returns the currently chosen object in the choose_object_widget. \
 	ENTER(CHOOSE_OBJECT_GET_OBJECT(object_type)); \
 	if (choose_object_widget) \
 	{ \
+		choose_object=(struct CHOOSE_OBJECT(object_type) *)NULL; \
 		/* Get the pointer to the data for the choose_object dialog */ \
 		XtVaGetValues(choose_object_widget,XmNuserData,&choose_object,NULL); \
 		if (choose_object) \
@@ -672,7 +675,7 @@ Returns the currently chosen object in the choose_object_widget. \
 #define DECLARE_CHOOSE_OBJECT_SET_OBJECT_FUNCTION( object_type ) \
 PROTOTYPE_CHOOSE_OBJECT_SET_OBJECT_FUNCTION(object_type) \
 /***************************************************************************** \
-LAST MODIFIED : 21 January 2000 \
+LAST MODIFIED : 9 June 2000 \
 \
 DESCRIPTION : \
 Changes the chosen object in the choose_object_widget. \
@@ -684,6 +687,7 @@ Changes the chosen object in the choose_object_widget. \
 	ENTER(CHOOSE_OBJECT_SET_OBJECT(object_type)); \
 	if (choose_object_widget) \
 	{ \
+		choose_object=(struct CHOOSE_OBJECT(object_type) *)NULL; \
 		/* Get the pointer to the data for the choose_object dialog */ \
 		XtVaGetValues(choose_object_widget,XmNuserData,&choose_object,NULL); \
 		if (choose_object) \
@@ -712,12 +716,11 @@ Changes the chosen object in the choose_object_widget. \
 	object_type ) \
 PROTOTYPE_CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION_FUNCTION(object_type) \
 /***************************************************************************** \
-LAST MODIFIED : 18 April 2000 \
+LAST MODIFIED : 9 June 2000 \
 \
 DESCRIPTION : \
-Creates an option menu from which an object from the manager may be chosen. \
-The optional conditional function permits a subset of objects in the manager \
-to be selectable. \
+Changes the conditional_function and user_data limiting the available \
+selection of objects. Also allows new_object to be set simultaneously. \
 ============================================================================*/ \
 { \
 	char **item_names; \
@@ -728,6 +731,7 @@ to be selectable. \
 	ENTER(CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION(object_type)); \
 	if (choose_object_widget) \
 	{ \
+		choose_object=(struct CHOOSE_OBJECT(object_type) *)NULL; \
 		/* Get the pointer to the data for the choose_object dialog */ \
 		XtVaGetValues(choose_object_widget,XmNuserData,&choose_object,NULL); \
 		if (choose_object) \
@@ -763,6 +767,13 @@ to be selectable. \
 					"CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION(" #object_type \
 					").  Could not update menu"); \
 			} \
+		} \
+		else \
+		{ \
+			display_message(ERROR_MESSAGE, \
+				"CHOOSE_OBJECT_CHANGE_CONDITIONAL_FUNCTION(" #object_type \
+				").  Missing widget data"); \
+			return_code=0; \
 		} \
 	} \
 	else \
