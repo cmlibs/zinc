@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : cmgui.Makefile
 #
-# LAST MODIFIED : 26 July 2004
+# LAST MODIFIED : 2 September 2004
 #
 # DESCRIPTION :
 #
@@ -601,6 +601,7 @@ API_SRCS = \
 	api/cmiss_function_gradient.cpp \
 	api/cmiss_function_inverse.cpp \
 	api/cmiss_function_matrix.cpp \
+	api/cmiss_function_matrix_sum.cpp \
 	api/cmiss_function_variable.cpp \
 	api/cmiss_function_variable_composite.cpp \
 	api/cmiss_function_variable_exclusion.cpp \
@@ -716,6 +717,7 @@ COMPUTED_VARIABLE_SRCS = \
 	computed_variable/function_identity.cpp \
 	computed_variable/function_inverse.cpp \
 	computed_variable/function_matrix.cpp \
+	computed_variable/function_matrix_sum.cpp \
 	computed_variable/function_variable.cpp \
 	computed_variable/function_variable_composite.cpp \
 	computed_variable/function_variable_element_xi.cpp \
@@ -1380,6 +1382,7 @@ LIB_COMPUTED_VARIABLE_SRCS = \
 	api/cmiss_function_gradient.cpp \
 	api/cmiss_function_inverse.cpp \
 	api/cmiss_function_matrix.cpp \
+	api/cmiss_function_matrix_sum.cpp \
 	api/cmiss_function_variable.cpp \
 	api/cmiss_function_variable_composite.cpp \
 	api/cmiss_function_variable_exclusion.cpp \
