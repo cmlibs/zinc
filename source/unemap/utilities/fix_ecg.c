@@ -75,7 +75,7 @@ DESCRIPTION :
 	}
 	else
 	{
-		printf("ERROR.  Could not read configuration file\n");
+		printf("ERROR.  Could not read signal file\n");
 	}
 
 	return (return_code);
