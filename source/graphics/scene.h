@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.h
 
-LAST MODIFIED : 16 October 2001
+LAST MODIFIED : 12 November 2001
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -340,6 +340,14 @@ LAST MODIFIED : 20 November 1998
 DESCRIPTION :
 Scene_object iterator function returning true if <scene_object> references
 <child_scene> (or any child scene if NULL).
+==============================================================================*/
+
+struct Scene *Scene_object_get_parent_scene(struct Scene_object *scene_object);
+/*******************************************************************************
+LAST MODIFIED : 29 October 2001
+
+DESCRIPTION :
+Returns the <scene> that the <scene_object> is in.
 ==============================================================================*/
 
 struct Any_object *Scene_object_get_represented_object(
@@ -1294,6 +1302,15 @@ The order in which objects are drawn is important for OpenGL transparency.
 This function returns the position of <graphics_object> in <scene>, starting
 from 1 at the top. A return value of 0 indicates an error - probably saying
 that the graphics object is not in the scene.
+==============================================================================*/
+
+int Scene_get_scene_object_position(struct Scene *scene,
+	struct Scene_object *scene_object);
+/*******************************************************************************
+LAST MODIFIED : 12 November 2001
+
+DESCRIPTION :
+Returns the position of <scene_object> in the <scene>->scene_object_list.
 ==============================================================================*/
 
 int Scene_set_scene_object_position(struct Scene *scene,

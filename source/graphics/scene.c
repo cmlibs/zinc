@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 24 October 2001
+LAST MODIFIED : 12 November 2001
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -493,6 +493,32 @@ Scene_notify_object_changed function to inform the program about the change.
 	return (return_code);
 } /* Scene_object_changed_internal */
 
+struct Scene *Scene_object_get_parent_scene(struct Scene_object *scene_object)
+/*******************************************************************************
+LAST MODIFIED : 29 October 2001
+
+DESCRIPTION :
+Returns the <scene> that the <scene_object> is in.
+==============================================================================*/
+{
+	struct Scene *parent_scene;
+
+	ENTER(Scene_object_get_parent_scene);
+	if (scene_object)
+	{
+		parent_scene = scene_object->scene;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_object_get_parent_scene.  Missing scene_object");
+		parent_scene = (struct Scene *)NULL;
+	}
+	LEAVE;
+
+	return (parent_scene);
+} /* Scene_object_get_parent_scene */
+
 static int Scene_object_set_scene(struct Scene_object *scene_object,
 	struct Scene *scene)
 /*******************************************************************************
@@ -664,7 +690,7 @@ visible.
 static int build_Scene_object(struct Scene_object *scene_object,
 	void *dummy_void)
 /*******************************************************************************
-LAST MODIFIED : 31 May 2001
+LAST MODIFIED : 5 November 2001
 
 DESCRIPTION :
 Rebuilds the display list for each uncreated or morphing graphics_object in the
@@ -880,6 +906,7 @@ scene on this window are modified, redraw.
 		{
 			case MANAGER_CHANGE_OBJECT(Scene):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Scene):
+			case MANAGER_CHANGE_IDENTIFIER(Scene):
 			{
 				if (IS_OBJECT_IN_LIST(Scene)(scene_object->child_scene,
 					message->changed_object_list))
@@ -889,7 +916,6 @@ scene on this window are modified, redraw.
 			} break;
 			case MANAGER_CHANGE_ADD(Scene):
 			case MANAGER_CHANGE_REMOVE(Scene):
-			case MANAGER_CHANGE_IDENTIFIER(Scene):
 			{
 				/* do nothing */
 			} break;
@@ -1490,14 +1516,14 @@ functions such as Scene_add_graphics_object rather creating their own scene_obje
 static int Scene_remove_Scene_object_private(struct Scene *scene,
 	struct Scene_object *scene_object)
 /*******************************************************************************
-LAST MODIFIED : 15 March 2001
+LAST MODIFIED : 5 November 2001
 
 DESCRIPTION :
 Removes <scene object> from the list of objects on <scene>. Private because it
 does not restrict the ability to remove some objects as the public version does.
 ==============================================================================*/
 {
-	int fast_changing, position, return_code, visibility;
+	int fast_changing, position, return_code;
 
 	ENTER(Scene_remove_Scene_object_private);
 	if (scene && scene_object)
@@ -1506,11 +1532,10 @@ does not restrict the ability to remove some objects as the public version does.
 			scene->scene_object_list))
 		{
 			ACCESS(Scene_object)(scene_object);
-			fast_changing=Scene_object_get_fast_changing(scene_object);
+			fast_changing = Scene_object_get_fast_changing(scene_object);
 			/* now perform the remove */
-			position=Scene_object_get_position(scene_object);
-			visibility=Scene_object_get_visibility(scene_object);
-			if (return_code=REMOVE_OBJECT_FROM_LIST(Scene_object)(scene_object,
+			position = Scene_object_get_position(scene_object);
+			if (return_code = REMOVE_OBJECT_FROM_LIST(Scene_object)(scene_object,
 				scene->scene_object_list))
 			{
 				/* clear its scene member to prevent further change calls */
@@ -1538,10 +1563,7 @@ does not restrict the ability to remove some objects as the public version does.
 				}
 				DEACCESS(Scene_object)(&scene_object);
 			}
-			if (visibility)
-			{
-				Scene_changed_private(scene,fast_changing);
-			}
+			Scene_changed_private(scene, fast_changing);
 		}
 		else
 		{
@@ -1659,10 +1681,12 @@ from <scene> in response to manager messages.
 				if ((GRAPHICAL_ELEMENT_NONE != scene->graphical_element_mode)&&
 					(GRAPHICAL_ELEMENT_MANUAL != scene->graphical_element_mode))
 				{
+					Scene_begin_cache(scene);
 					/* draw any new element_groups on window */
 					FOR_EACH_OBJECT_IN_LIST(GROUP(FE_element))(
 						element_group_to_scene, (void *)scene,
 						message->changed_object_list);
+					Scene_end_cache(scene);
 				}
 			} break;
 			case MANAGER_CHANGE_REMOVE(GROUP(FE_element)):
@@ -1670,6 +1694,7 @@ from <scene> in response to manager messages.
 				/* remove any graphical element group renditions for the deleted
 					 element_group from scene  */
 				return_code = 1;
+				Scene_begin_cache(scene);
 				while (return_code &&
 					(scene_object = FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
 						Scene_object_has_element_group_in_list,
@@ -1678,6 +1703,7 @@ from <scene> in response to manager messages.
 					return_code =
 						Scene_remove_Scene_object_private(scene, scene_object);
 				}
+				Scene_end_cache(scene);
 			} break;
 			case MANAGER_CHANGE_OBJECT(GROUP(FE_element)):
 			case MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(GROUP(FE_element)):
@@ -4327,7 +4353,7 @@ is sent. Call Scene_end_cache at the end of the changes.
 
 int Scene_end_cache(struct Scene *scene)
 /*******************************************************************************
-LAST MODIFIED : 6 June 2001
+LAST MODIFIED : 6 November 2001
 
 DESCRIPTION :
 Call after making changes preceded by a call to Scene_begin_cache to enable a
@@ -4339,17 +4365,26 @@ final message to be sent to clients.
 	ENTER(Scene_end_cache);
 	if (scene)
 	{
-		/* decrement cache to allow nesting */
-		(scene->cache)--;
-		/* once cache has run out, inform clients of all changes to date */
-		if (0 == scene->cache)
+		if (0 < scene->cache)
 		{
-			if (scene->scene_manager)
+			/* decrement cache to allow nesting */
+			(scene->cache)--;
+			/* once cache has run out, inform clients of all changes to date */
+			if (0 == scene->cache)
 			{
-				Scene_refresh(scene);
+				if (scene->scene_manager)
+				{
+					Scene_refresh(scene);
+				}
 			}
+			return_code = 1;
 		}
-		return_code = 1;
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Scene_end_cache.  Caching is already disabled");
+			return_code = 0;
+		}
 	}
 	else
 	{
@@ -4626,7 +4661,7 @@ int Scene_set_graphical_element_mode(struct Scene *scene,
 	struct FE_node_selection *data_selection,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 6 November 2001
 
 DESCRIPTION :
 Sets the mode controlling how graphical element groups are displayed in the
@@ -4646,38 +4681,48 @@ material and spectrum.
 		data_group_manager&&element_point_ranges_selection&&element_selection&&
 		node_selection&&data_selection)))
 	{
-		return_code=1;
+		return_code = 1;
+		Scene_begin_cache(scene);
 		if (GRAPHICAL_ELEMENT_NONE == graphical_element_mode)
 		{
-			scene->graphical_element_mode=graphical_element_mode;
-			scene->computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
-			scene->element_manager=(struct MANAGER(FE_element) *)NULL;
-			/* turn off element_group_manager callbacks */
-			if (scene->element_group_manager_callback_id)
-			{
-				MANAGER_DEREGISTER(GROUP(FE_element))(
-					scene->element_group_manager_callback_id,
-					scene->element_group_manager);
-				scene->element_group_manager_callback_id=(void *)NULL;
-			}
-			scene->element_group_manager=(struct MANAGER(GROUP(FE_element)) *)NULL;
 			/* remove all graphical elements from scene */
-			while (scene_object=FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
-				Scene_object_has_graphical_element_group,(void *)NULL,
-				scene->scene_object_list))
+			while (return_code && (scene_object =
+				FIRST_OBJECT_IN_LIST_THAT(Scene_object)(
+					Scene_object_has_graphical_element_group,(void *)NULL,
+					scene->scene_object_list)))
 			{
-				Scene_remove_Scene_object_private(scene,scene_object);
+				return_code = Scene_remove_Scene_object_private(scene, scene_object);
 			}
-			scene->node_manager=(struct MANAGER(FE_node) *)NULL;
-			scene->node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
-			scene->data_manager=(struct MANAGER(FE_node) *)NULL;
-			scene->data_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
-			scene->element_point_ranges_selection=
-				(struct Element_point_ranges_selection *)NULL;
-			scene->element_selection=(struct FE_element_selection *)NULL;
-			scene->node_selection=(struct FE_node_selection *)NULL;
-			scene->data_selection=(struct FE_node_selection *)NULL;
-			scene->user_interface=(struct User_interface *)NULL;
+			if (return_code)
+			{
+				scene->graphical_element_mode=graphical_element_mode;
+				scene->computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
+				scene->element_manager=(struct MANAGER(FE_element) *)NULL;
+				/* turn off element_group_manager callbacks */
+				if (scene->element_group_manager_callback_id)
+				{
+					MANAGER_DEREGISTER(GROUP(FE_element))(
+						scene->element_group_manager_callback_id,
+						scene->element_group_manager);
+					scene->element_group_manager_callback_id=(void *)NULL;
+				}
+				scene->element_group_manager=(struct MANAGER(GROUP(FE_element)) *)NULL;
+				scene->node_manager=(struct MANAGER(FE_node) *)NULL;
+				scene->node_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
+				scene->data_manager=(struct MANAGER(FE_node) *)NULL;
+				scene->data_group_manager=(struct MANAGER(GROUP(FE_node)) *)NULL;
+				scene->element_point_ranges_selection=
+					(struct Element_point_ranges_selection *)NULL;
+				scene->element_selection=(struct FE_element_selection *)NULL;
+				scene->node_selection=(struct FE_node_selection *)NULL;
+				scene->data_selection=(struct FE_node_selection *)NULL;
+				scene->user_interface=(struct User_interface *)NULL;
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,"Scene_set_graphical_element_mode.  "
+					"Could not remove graphical elements");
+			}
 		}
 		else
 		{
@@ -4743,6 +4788,7 @@ material and spectrum.
 				return_code=0;
 			}
 		}
+		Scene_end_cache(scene);
 	}
 	else
 	{
@@ -7883,10 +7929,38 @@ objects in the list puts <graphics_object> at the end.
 	return (return_code);
 } /* Scene_set_graphics_object_position */
 
+int Scene_get_scene_object_position(struct Scene *scene,
+	struct Scene_object *scene_object)
+/*******************************************************************************
+LAST MODIFIED : 12 November 2001
+
+DESCRIPTION :
+Returns the position of <scene_object> in the <scene>->scene_object_list.
+==============================================================================*/
+{
+	int position;
+
+	ENTER(Scene_get_scene_object_position);
+	if (scene && scene_object &&
+		IS_OBJECT_IN_LIST(Scene_object)(scene_object, scene->scene_object_list))
+	{
+		position = Scene_object_get_position(scene_object);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_get_scene_object_position.  Invalid argument(s)");
+		position = 0;
+	}
+	LEAVE;
+
+	return (position);
+} /* Scene_get_scene_object_position */
+
 int Scene_set_scene_object_position(struct Scene *scene,
 	struct Scene_object *scene_object,int position)
 /*******************************************************************************
-LAST MODIFIED : 15 March 2001
+LAST MODIFIED : 6 November 2001
 
 DESCRIPTION :
 The order in which objects are drawn is important for OpenGL transparency.
@@ -7901,10 +7975,12 @@ objects in the list puts <scene_object> at the end.
 	if (scene&&scene_object)
 	{
 		/* take it out of the list and add it at the new position */
+		Scene_begin_cache(scene);
 		ACCESS(Scene_object)(scene_object);
 		return_code = (Scene_remove_Scene_object_private(scene, scene_object)&&
 			Scene_add_Scene_object(scene, scene_object, position));
 		DEACCESS(Scene_object)(&scene_object);
+		Scene_end_cache(scene);
 	}
 	else
 	{
