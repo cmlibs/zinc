@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.h
 
-LAST MODIFIED : 27 March 2000
+LAST MODIFIED : 16 May 2000
 
 DESCRIPTION :
 Functions and types for executing cmiss commands.
@@ -23,7 +23,7 @@ Global types
 */
 struct Cmiss_command_data
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 16 May 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -41,10 +41,8 @@ DESCRIPTION :
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 	struct Execute_command *execute_command,*set_command;
 #if !defined (WINDOWS_DEV_FLAG)
-	/* one graphical_node_editor created with default_scene */
-	struct Graphical_node_editor *graphical_node_editor;
-	/* one graphical_element_creator always created */
-	struct Graphical_element_creator *graphical_element_creator;
+	struct Element_point_tool *element_point_tool;
+	struct Node_tool *data_tool,*node_tool;
 	/*???RC.  Single list of graphics objects - eventually set up manager ? */
 	struct LIST(GT_object) *graphics_object_list;
 	/* list of glyphs = simple graphics objects with only geometry */
@@ -61,6 +59,7 @@ DESCRIPTION :
 	struct MANAGER(GROUP(FE_element)) *element_group_manager;
 		/*???DB.  Also manages faces and lines */
 	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager;
+	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	struct MANAGER(Interactive_streamline) *interactive_streamline_manager;
 	struct MANAGER(Light) *light_manager;
 	struct Light *default_light;
@@ -81,7 +80,7 @@ DESCRIPTION :
 	/* global list of selected objects */
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	struct FE_element_selection *element_selection;
-	struct FE_node_selection *node_selection;
+	struct FE_node_selection *data_selection,*node_selection;
 	struct Spectrum *default_spectrum;
 	struct Streampoint *streampoint_list;
 		/*???SAB.  This definitely doesn't belong in here... but where? */
@@ -102,12 +101,14 @@ DESCRIPTION :
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 	struct User_interface *user_interface;
 #if !defined (WINDOWS_DEV_FLAG)
-	Widget control_curve_editor_dialog,data_editor_dialog,data_grabber_dialog,
+	Widget control_curve_editor_dialog,data_grabber_dialog,
 		emoter_slider_dialog,grid_field_calculator_dialog,input_module_dialog,
 		interactive_data_editor_dialog,interactive_node_editor_dialog,
-		interactive_streamlines_dialog,material_editor_dialog,node_editor_dialog,
+		interactive_streamlines_dialog,material_editor_dialog,
 		node_group_slider_dialog,spectrum_editor_dialog,sync_2d_3d_dialog,
 		time_editor_dialog,transformation_editor_dialog;
+	struct Node_viewer *data_viewer,*node_viewer;
+	struct Element_creator *element_creator;
 /*???RC temporary - should allow more than one??? */
 	Widget element_group_editor_dialog;
 #endif /* !defined (WINDOWS_DEV_FLAG) */
