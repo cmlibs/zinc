@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.h
 
-LAST MODIFIED : 17 May 2002
+LAST MODIFIED : 16 July 2002
 
 DESCRIPTION :
 Functions and types for executing cmiss commands.
@@ -21,7 +21,7 @@ Global types
 */
 struct Cmiss_command_data
 /*******************************************************************************
-LAST MODIFIED : 17 May 2002
+LAST MODIFIED : 16 July 2002
 
 DESCRIPTION :
 ==============================================================================*/
@@ -102,10 +102,6 @@ DESCRIPTION :
 #endif /* defined (MOTIF) */
 	struct Spectrum *default_spectrum;
 	struct Streampoint *streampoint_list;
-		/*???SAB.  This definitely doesn't belong in here... but where? */
-#if defined (UNEMAP)
-	struct System_window *unemap_system_window;
-#endif /* defined (UNEMAP) */
 	struct Time_keeper *default_time_keeper;
 #if defined (MOTIF)
 #if defined (MIRAGE)
@@ -126,14 +122,16 @@ DESCRIPTION :
 	struct Element_creator *element_creator;
 	struct Scene_editor *scene_editor;
 #endif /* defined (MOTIF) */
-	struct Unemap_package *unemap_package;
-	
+#if defined (UNEMAP)
+	struct Unemap_command_data *unemap_command_data;
+#endif /* defined (UNEMAP) */
 }; /* struct Cmiss_command_data */
 
 /*
 Global functions
 ----------------
 */
+
 int cmiss_execute_command(char *command_string,void *command_data);
 /*******************************************************************************
 LAST MODIFIED : 9 November 1998
@@ -160,4 +158,5 @@ DESCRIPTION:
 Sets the <command_string> in the command box of the CMISS command_window, ready
 for editing or entering. If there is no command_window, does nothing.
 ==============================================================================*/
+
 #endif /* !defined (COMMAND_CMISS_H) */

@@ -6,11 +6,9 @@ LAST MODIFIED : 5 July 2002
 DESCRIPTION :
 Functions for executing cmiss commands.
 ==============================================================================*/
-#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <limits.h>
 #include <math.h>
 /* for IGES */
 #include <time.h>
@@ -145,10 +143,6 @@ Functions for executing cmiss commands.
 #include "time/time_editor_dialog.h"
 #endif /* defined (MOTIF) */
 #include "time/time_keeper.h"
-#if defined (UNEMAP)
-#include "unemap/system_window.h"
-#include "unemap/unemap_package.h"
-#endif /* defined (UNEMAP) */
 #include "user_interface/filedir.h"
 #include "user_interface/confirmation.h"
 #include "user_interface/message.h"
@@ -166,6 +160,9 @@ Functions for executing cmiss commands.
 #include "perl_interpreter.h"
 #endif /* defined (PERL_INTERPRETER) */
 #endif /* defined (F90_INTERPRETER) */
+#if defined (UNEMAP)
+#include "unemap/unemap_command.h"
+#endif /* defined (UNEMAP) */
 
 /*
 Module variables
@@ -24369,363 +24366,6 @@ Executes a cm (back end) command.
 	return (return_code);
 } /* execute_command_cm */
 
-#if defined (MOTIF)
-#if defined (UNEMAP)
-static int execute_command_unemap_open(struct Parse_state *state,
-	void *dummy_to_be_modified,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 6 October 2000
-
-DESCRIPTION :
-Executes a UNEMAP OPEN command.
-==============================================================================*/
-{	
-	char *current_token,*default_torso_group_name;
-	int return_code;
-	Dimension window_width=0,window_height=0;
-	struct Cmiss_command_data *command_data;
-	struct Colour colour;
-	struct FE_field *map_fit_field;
-	struct Graphical_material *electrode_selected_material;
-	struct GROUP(FE_element) *torso_element_group;
-	struct MANAGER(Computed_field) *computed_field_manager;
-	struct System_window *system;
-	struct System_window_data
-	{
-		Position x;
-		Position y;
-	} system_window_data;
-	struct Standard_torso_defaults
-	{
-		char *standard_torso_file;
-	};
-	struct Standard_torso_defaults standard_torso_defaults;
-#define XmNstandardTorso "standardTorso"
-#define XmCStandardTorso "StandardTorso"
-
-	static XtResource resources[]=
-	{
-		{
-			XmNstandardTorso,
-			XmCStandardTorso,
-			XmRString,
-			sizeof(char *),
-			XtOffsetOf(struct Standard_torso_defaults,standard_torso_file),
-			XmRString,
-			""
-		}
-	};
-	static XtResource system_window_resources[]=
-	{
-		{
-			XmNx,
-			XmCPosition,
-			XmRPosition,
-			sizeof(Position),
-			XtOffsetOf(struct System_window_data,x),
-			XmRImmediate,
-			(XtPointer) -1
-		},
-		{
-			XmNy,
-			XmCPosition,
-			XmRPosition,
-			sizeof(Position),
-			XtOffsetOf(struct System_window_data,y),
-			XmRImmediate,
-			(XtPointer) -1
-		}
-	};
-	Widget shell;
-
-
-	ENTER(execute_command_unemap_open);
-	map_fit_field=(struct FE_field *)NULL;
-	default_torso_group_name=(char *)NULL;
-	computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
-	electrode_selected_material=(struct Graphical_material *)NULL;		
-	torso_element_group=(struct GROUP(FE_element) *)NULL;
-	USE_PARAMETER(dummy_to_be_modified);
-	/* check argument */
-	if (state)
-	{
-		if (command_data=(struct Cmiss_command_data *)command_data_void)
-		{	
-			if (!((current_token=state->current_token)&&
-				!(strcmp(PARSER_HELP_STRING,current_token)&&
-					strcmp(PARSER_RECURSIVE_HELP_STRING,current_token))))
-			{
-				/* create material "electrode_selected" to be bright white for highlighting
-					 electrode graphics */
-				if(!(FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
-					("electrode_selected",command_data->graphical_material_manager)))
-				{
-					if (electrode_selected_material=CREATE(Graphical_material)("electrode_selected"))
-					{
-						colour.red=1.0;
-						colour.green=1.0;
-						colour.blue=1.0;
-						Graphical_material_set_ambient(electrode_selected_material,&colour);
-						Graphical_material_set_diffuse(electrode_selected_material,&colour);
-						/* ACCESS so can never be destroyed */
-						ACCESS(Graphical_material)(electrode_selected_material);
-						if (!ADD_OBJECT_TO_MANAGER(Graphical_material)(electrode_selected_material,
-							command_data->graphical_material_manager))
-						{
-							DEACCESS(Graphical_material)(&electrode_selected_material);
-						}
-					}		
-				}	
-				/* create the unemap_package */
-				if(!(command_data->unemap_package))
-				{
-					computed_field_manager=Computed_field_package_get_computed_field_manager(
-						command_data->computed_field_package);
-					command_data->unemap_package = CREATE(Unemap_package)(
-						command_data->fe_field_manager,command_data->fe_time,
-						command_data->element_group_manager,
-						command_data->node_manager,command_data->data_manager,
-						command_data->data_group_manager,
-						command_data->node_group_manager,command_data->basis_manager,
-						command_data->element_manager,computed_field_manager,
-						command_data->interactive_tool_manager, 
-						command_data->node_selection);
-				}
-				if(command_data->unemap_package)
-				{
-					if (!(system=command_data->unemap_system_window))
-					{
-						/* create a shell */
-						if (shell=XtVaCreatePopupShell("system_window_shell",
-							topLevelShellWidgetClass,
-							User_interface_get_application_shell(command_data->user_interface),
-							XmNallowShellResize,False,NULL))
-						{
-							if (system=create_System_window(shell,close_emap,
-								command_data->default_time_keeper,command_data->user_interface 
-								,command_data->unemap_package,	
-								command_data->element_point_ranges_selection,
-								command_data->element_selection,
-								command_data->node_selection,
-								command_data->data_selection,
-								command_data->texture_manager,
-								command_data->interactive_tool_manager,
-								command_data->scene_manager,
-								command_data->light_model_manager,
-								command_data->light_manager,
-								command_data->spectrum_manager,
-								command_data->graphical_material_manager,
-								command_data->data_manager,
-								command_data->glyph_list,						
-								command_data->default_graphical_material,
-								command_data->computed_field_package,
-								command_data->default_light,
-								command_data->default_light_model
-																							))
-							{
-								command_data->unemap_system_window=system;
-								create_Shell_list_item(&(system->window_shell),
-									command_data->user_interface);
-								XtAddCallback(system->window_shell,XmNdestroyCallback,
-									close_emap,(XtPointer)system);
-								/* manage the system window */
-								XtManageChild(system->window);
-								/* realize the system window shell */
-								XtRealizeWidget(system->window_shell);
-								/* determine placement */
-								XtVaGetValues(system->window_shell,
-									XmNwidth,&window_width,
-									XmNheight,&window_height,
-									NULL);
-								/* Do all this to allow backward compatibility but still allow the
-									 resources to be set */
-								system_window_data.x = -1; /* These defaults match with the */
-								system_window_data.y = -1; /* default resources above */
-								XtVaGetApplicationResources(system->window_shell,
-									&system_window_data,system_window_resources,
-									XtNumber(system_window_resources),NULL);
-								if (system_window_data.x == -1)
-								{
-									system_window_data.x = (User_interface_get_screen_width(
-										command_data->user_interface)-window_width)/2;
-								}
-								if (system_window_data.y == -1)
-								{
-									system_window_data.y = (User_interface_get_screen_height(
-										command_data->user_interface)-window_height)/2;
-								}
-								XtVaSetValues(system->window_shell,
-									XmNx, system_window_data.x,
-									XmNy, system_window_data.y,
-									XmNmappedWhenManaged, True,
-									NULL);
-								return_code=1;
-								/* turn off graphics in default scene, as updating these slows things down */
-								/* for unemap 3d window */
-								Scene_set_graphical_element_mode(command_data->default_scene,
-									GRAPHICAL_ELEMENT_EMPTY,
-									Computed_field_package_get_computed_field_manager(
-										command_data->computed_field_package),
-									command_data->element_manager,
-									command_data->element_group_manager,
-									command_data->fe_field_manager,
-									command_data->node_manager,
-									command_data->node_group_manager,
-									command_data->data_manager,
-									command_data->data_group_manager,
-									command_data->element_point_ranges_selection,
-									command_data->element_selection,
-									command_data->node_selection,
-									command_data->data_selection,
-									command_data->user_interface);								
-								/* create and store the map fit field  */
-								map_fit_field=create_mapping_type_fe_field("fit",
-									command_data->fe_field_manager, command_data->fe_time);
-								set_unemap_package_map_fit_field(command_data->unemap_package,
-									map_fit_field);
-								/* get the location of the default_torso file from Xresoures*/
-								standard_torso_defaults.standard_torso_file= "";			
-								XtVaGetApplicationResources(system->window_shell,
-									&standard_torso_defaults,resources,XtNumber(resources),NULL);
-								/* do nothing if no default torso file specified */
-								if(strcmp(standard_torso_defaults.standard_torso_file,""))
-								{									
-									/* read in the default torso node and element groups */
-									if(read_FE_node_and_elem_groups_and_return_name_given_file_name(
-										standard_torso_defaults.standard_torso_file,
-										command_data->fe_field_manager,command_data->fe_time,
-										command_data->node_manager,command_data->element_manager,
-										command_data->node_group_manager,
-										command_data->data_group_manager,
-										command_data->element_group_manager,command_data->basis_manager,
-										&default_torso_group_name))
-									{
-										/* offset default torso  node and element groups */
-										offset_FE_node_and_element_identifiers_in_group(
-											default_torso_group_name,(INT_MAX/2),
-											command_data->node_manager,command_data->element_manager,
-											command_data->node_group_manager,
-											command_data->element_group_manager);									
-										/*put in name unemap_package*/
-										set_unemap_package_default_torso_name(command_data->unemap_package,
-											default_torso_group_name);
-										/* define the fit field on  the defaut torso*/
-										torso_element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),
-											name)(default_torso_group_name,command_data->element_group_manager);
-										define_fit_field_at_quad_elements_and_nodes(torso_element_group,
-											map_fit_field,command_data->basis_manager,
-											command_data->element_manager,command_data->node_manager);
-										/* add cylindrical field infor for texture mapping to defaut torso*/
-										add_cylindrical_info_to_cartesian_torso(default_torso_group_name,
-											command_data->unemap_package);
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"Can't find standardTorso specified in Cmgui/Unemap file");
-									}
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"execute_command_unemap_open.  Could not create unemap_system_window");
-								return_code=0;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"execute_command_unemap_open."
-								"  Could not create unemap_system_window shell");
-							return_code=0;
-						}
-					}
-					if (system&&return_code)
-					{						
-						/* pop up the system window shell */
-						XtPopup(system->window_shell,XtGrabNone);
-					}
-					else
-					{
-						return_code=0;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"execute_command_unemap_open. Couldn't create unemap_package");
-					return_code=0;
-				}
-			}
-			else
-			{
-				/* no help */
-				return_code=1;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"execute_command_unemap_open.  Missing command_data");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"execute_command_unemap_open.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* execute_command_unemap_open */
-#endif /* defined (UNEMAP) */
-#endif /* defined (MOTIF) */
-
-static int execute_command_unemap(struct Parse_state *state,
-	void *prompt_void,void *command_data_void)
-/*******************************************************************************
-LAST MODIFIED : 9 December 1996
-
-DESCRIPTION :
-Executes a UNEMAP command.
-==============================================================================*/
-{
-	int return_code;
-	static struct Modifier_entry option_table[]=
-	{
-#if defined (UNEMAP)
-		{"open",NULL,NULL,execute_command_unemap_open},
-#endif /* defined (UNEMAP) */
-		{NULL,NULL,NULL,execute_command_cm}
-	};
-
-	ENTER(execute_command_unemap);
-	/* check argument */
-	if (state)
-	{
-#if defined (UNEMAP)
-		(option_table[0]).user_data=command_data_void;
-		(option_table[1]).user_data=command_data_void;
-		(option_table[1]).to_be_modified=prompt_void;
-#else
-		(option_table[0]).user_data=command_data_void;
-		(option_table[0]).to_be_modified=prompt_void;
-#endif /* defined (UNEMAP) */
-		return_code=process_option(state,option_table);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"execute_command_unemap.  Missing state");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* execute_command_unemap */
-
 #if defined (CELL)
 static int execute_command_cell_open(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
@@ -27255,7 +26895,7 @@ Global functions
 void execute_command(char *command_string,void *command_data_void, int *quit,
   int *error)
 /*******************************************************************************
-LAST MODIFIED : 28 March 2001
+LAST MODIFIED : 17 July 2002
 
 DESCRIPTION:
 ==============================================================================*/
@@ -27279,7 +26919,6 @@ DESCRIPTION:
 			{
 #if defined (OLD_CODE)
 				/* add command to command history */			  
-				/*???RC put out processed tokens instead? */
 				display_message(INFORMATION_MESSAGE,
 					"%s\n", command_string);
 #endif /* defined (OLD_CODE) */
@@ -27354,9 +26993,12 @@ DESCRIPTION:
 					/* system */
 					Option_table_add_entry(option_table, "system", NULL, command_data_void,
 						execute_command_system);
+#if defined (UNEMAP)
 					/* unemap */
-					Option_table_add_entry(option_table, "unemap", NULL, command_data_void,
+					Option_table_add_entry(option_table, "unemap", NULL,
+						(void *)command_data->unemap_command_data,
 						execute_command_unemap);
+#endif /* defined (UNEMAP) */
 					/* default */
 					Option_table_add_entry(option_table, "", NULL, command_data_void,
 						execute_command_cm);
@@ -27437,7 +27079,7 @@ and then executes the returned strings
 #else /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 int cmiss_execute_command(char *command_string,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 16 June 1999
+LAST MODIFIED : 17 July 2002
 
 DESCRIPTION:
 Execute a <command_string>. If there is a command
@@ -27528,9 +27170,12 @@ Execute a <command_string>. If there is a command
 					/* system */
 					Option_table_add_entry(option_table, "system", NULL, command_data_void,
 						execute_command_system);
+#if defined (UNEMAP)
 					/* unemap */
-					Option_table_add_entry(option_table, "unemap", NULL, command_data_void,
+					Option_table_add_entry(option_table, "unemap", NULL,
+						(void *)command_data->unemap_command_data,
 						execute_command_unemap);
+#endif /* defined (UNEMAP) */
 					/* default */
 					Option_table_add_entry(option_table, "", NULL, command_data_void,
 						execute_command_cm);
