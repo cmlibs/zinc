@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material.c
 
-LAST MODIFIED : 5 April 2000
+LAST MODIFIED : 7 September 2000
 
 DESCRIPTION :
 The functions for manipulating graphical materials.
@@ -1659,11 +1659,13 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 
 int execute_Graphical_material(struct Graphical_material *material)
 /*******************************************************************************
-LAST MODIFIED : 20 April 1998
+LAST MODIFIED : 7 September 2000
 
 DESCRIPTION :
 Activates <material> by calling its display list. If the display list is not
 current, an error is reported.
+Passing a NULL material will deactivate any textures or material parameters
+that get set up with materials.
 ???RC The behaviour of materials is set up to take advantage of pre-computed
 display lists. To switch to direct rendering this routine should just call
 direct_render_Graphical_material.
@@ -1694,9 +1696,14 @@ direct_render_Graphical_material.
 	}
 	else
 	{
+#if defined (OPENGL_API)
+		/* turn off any texture */
+		return_code=execute_Texture((struct Texture *)NULL);
+#else /* defined (OPENGL_API) */
 		display_message(ERROR_MESSAGE,
-			"execute_Graphical_material.  Missing material");
+			"execute_Graphical_material.  Not defined for this API");
 		return_code=0;
+#endif /* defined (OPENGL_API) */
 	}
 	LEAVE;
 

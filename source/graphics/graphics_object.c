@@ -3036,6 +3036,7 @@ pointed to by <time_void>.
 						}
 						makegtobject(graphics_object,*time,/*draw_selected*/0);
 					}
+					execute_Graphical_material((struct Graphical_material *)NULL);
 					glEndList();
 					graphics_object->display_list_current = 1;
 				}

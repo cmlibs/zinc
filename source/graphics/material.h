@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : material.h
 
-LAST MODIFIED : 5 May 1999
+LAST MODIFIED : 7 September 2000
 
 DESCRIPTION :
 The data structures used for representing graphical materials.
@@ -314,11 +314,13 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 
 int execute_Graphical_material(struct Graphical_material *material);
 /*******************************************************************************
-LAST MODIFIED : 28 November 1997
+LAST MODIFIED : 7 September 2000
 
 DESCRIPTION :
 Activates <material> by calling its display list. If the display list is not
 current, an error is reported.
+Passing a NULL material will deactivate any textures or material parameters
+that get set up with materials.
 ???RC The behaviour of materials is set up to take advantage of pre-computed
 display lists. To switch to direct rendering this routine should just call
 direct_render_Graphical_material.
