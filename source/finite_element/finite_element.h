@@ -3345,12 +3345,20 @@ Returns true if <element> is of the given <dimension>.
 <dimension_void> must be a pointer to an int containing the dimension.
 ==============================================================================*/
 
-int FE_element_is_dimension_3(struct FE_element *element,void *dummy_user_data);
+int FE_element_is_dimension_3(struct FE_element *element,void *dummy_void);
 /*******************************************************************************
-LAST MODIFIED : 18 August 1998
+LAST MODIFIED : 1 December 1999
 
 DESCRIPTION :
 Returns true if <element> is a 3-D element (ie. not a 2-D face or 1-D line).
+==============================================================================*/
+
+int FE_element_is_top_level(struct FE_element *element,void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 1 December 1999
+
+DESCRIPTION :
+Returns true if <element> is a top-level element - CM_ELEMENT/no parents.
 ==============================================================================*/
 
 int FE_element_to_element_string(struct FE_element *element,char **name_ptr);
