@@ -7,34 +7,49 @@ SOURCE_PATH=source
 
 VPATH=$(PRODUCT_PATH)
 
+COMMON_IMAKE_RULE= \
+	cd $(SOURCE_PATH); \
+	if [ ! -z $${CMISS_ROOT:=""} ] ; then \
+		CMISS_ROOT_DEF=-DCMISS_ROOT_DEFINED; \
+		if [ -f unemap.imake ]; then \
+			UNEMAP_IMAKE_FILE="-T unemap.imake" ; \
+		else \
+			UNEMAP_IMAKE_FILE="-T $(PRODUCT_SOURCE_PATH)/unemap.imake" ; \
+		fi ; \
+		if [ -f common.imake ]; then \
+			COMMON_IMAKE_FILE="-f common.imake" ; \
+		else \
+			COMMON_IMAKE_FILE="-f $(PRODUCT_SOURCE_PATH)/common.imake" ; \
+		fi ; \
+	else \
+		CMISS_ROOT_DEF= ;\
+		UNEMAP_IMAKE_FILE="-T unemap.imake" ; \
+		COMMON_IMAKE_FILE="-f common.imake" ; \
+	fi ;
+
+COMMON_MAKE_RULE= \
+	export CMGUI_DEV_ROOT=$(PWD) ; \
+	cd $(SOURCE_PATH);	
+
 #The tags for the executables don't actually point at them (they would have to
 #have $(BIN_PATH)/unemap32 etc. but this forces them to get made (which is what 
 #we want) and shortens the name you have to type.
 #SGI debug version
 unemap32 : $(SOURCE_PATH)/unemap_sgi.make
-	export CMGUI_DEV_ROOT=$(PWD) ; \
-	cd $(SOURCE_PATH); \
+	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_sgi.make ]; then \
 		make -f unemap_sgi.make ; \
 	else \
 		make -f $(PRODUCT_SOURCE_PATH)/unemap_sgi.make ; \
 	fi
 
-$(SOURCE_PATH)/unemap_sgi.make : $(SOURCE_PATH)/unemap.imake unemap.make
-	cd $(SOURCE_PATH); \
-	if [ ! -z $${CMISS_ROOT:=""} ] ; then \
-		CMISS_ROOT_DEF=-DCMISS_ROOT_DEFINED; \
-	fi ; \
-	if [ -f unemap.imake ]; then \
-		imake -DIRIX $${CMISS_ROOT_DEF} -s unemap_sgi.make -T unemap.imake -f /dev/null; \
-	else \
-		imake -DIRIX $${CMISS_ROOT_DEF} -s unemap_sgi.make -T $(PRODUCT_SOURCE_PATH)/unemap.imake -f /dev/null; \
-	fi
+$(SOURCE_PATH)/unemap_sgi.make : $(SOURCE_PATH)/unemap.imake $(SOURCE_PATH)/common.imake unemap.make
+	$(COMMON_IMAKE_RULE) \
+	imake -DIRIX $${CMISS_ROOT_DEF} -s unemap_sgi.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 #SGI rig nodes version
 unemap_nodes : $(SOURCE_PATH)/unemap_sginodes.make
-	export CMGUI_DEV_ROOT=$(PWD) ; \
-	cd $(SOURCE_PATH); \
+	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_sginodes.make ]; then \
 		make -f unemap_sginodes.make ; \
 	else \
@@ -42,20 +57,12 @@ unemap_nodes : $(SOURCE_PATH)/unemap_sginodes.make
 	fi
 
 $(SOURCE_PATH)/unemap_sginodes.make : $(SOURCE_PATH)/unemap.imake unemap.make
-	cd $(SOURCE_PATH); \
-	if [ ! -z $${CMISS_ROOT:=""} ] ; then \
-		CMISS_ROOT_DEF=-DCMISS_ROOT_DEFINED; \
-	fi ; \
-	if [ -f unemap.imake ]; then \
-		imake -DIRIX -DUSE_UNEMAP_NODES $${CMISS_ROOT_DEF} -s unemap_sginodes.make -T unemap.imake -f /dev/null; \
-	else \
-		imake -DIRIX -DUSE_UNEMAP_NODES $${CMISS_ROOT_DEF} -s unemap_sginodes.make -T $(PRODUCT_SOURCE_PATH)/unemap.imake -f /dev/null; \
-	fi
+	$(COMMON_IMAKE_RULE) \
+	imake -DIRIX -DUSE_UNEMAP_NODES $${CMISS_ROOT_DEF} -s unemap_sginodes.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 #SGI optimised version
 unemap_optimised : $(SOURCE_PATH)/unemap_sgioptimised.make
-	export CMGUI_DEV_ROOT=$(PWD) ; \
-	cd $(SOURCE_PATH); \
+	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_sgioptimised.make ]; then \
 		make -f unemap_sgioptimised.make ; \
 	else \
@@ -63,20 +70,12 @@ unemap_optimised : $(SOURCE_PATH)/unemap_sgioptimised.make
 	fi	
 
 $(SOURCE_PATH)/unemap_sgioptimised.make : $(SOURCE_PATH)/unemap.imake unemap.make
-	cd $(SOURCE_PATH); \
-	if [ ! -z $${CMISS_ROOT:=""} ] ; then \
-		CMISS_ROOT_DEF=-DCMISS_ROOT_DEFINED; \
-	fi ; \
-	if [ -f unemap.imake ]; then \
-		imake -DIRIX -DOPTIMISED $${CMISS_ROOT_DEF} -s unemap_sgioptimised.make -T unemap.imake -f /dev/null; \
-	else \
-		imake -DIRIX -DOPTIMISED $${CMISS_ROOT_DEF} -s unemap_sgioptimised.make -T $(PRODUCT_SOURCE_PATH)/unemap.imake -f /dev/null; \
-	fi
+	$(COMMON_IMAKE_RULE) \
+	imake -DIRIX -DOPTIMISED $${CMISS_ROOT_DEF} -s unemap_sgioptimised.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 #SGI 64bit version
 unemap_64 : force $(SOURCE_PATH)/unemap_sgi64.make
-	export CMGUI_DEV_ROOT=$(PWD) ; \
-	cd $(SOURCE_PATH); \
+	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_sgi64.make ]; then \
 		make -f unemap_sgi64.make ; \
 	else \
@@ -84,20 +83,12 @@ unemap_64 : force $(SOURCE_PATH)/unemap_sgi64.make
 	fi	
 
 $(SOURCE_PATH)/unemap_sgi64.make : $(SOURCE_PATH)/unemap.imake unemap.make
-	cd $(SOURCE_PATH); \
-	if [ ! -z $${CMISS_ROOT:=""} ] ; then \
-		CMISS_ROOT_DEF=-DCMISS_ROOT_DEFINED; \
-	fi ; \
-	if [ -f unemap.imake ]; then \
-		imake -DIRIX -DO64 -DOPTIMISED $${CMISS_ROOT_DEF} -s unemap_sgi64.make -T unemap.imake -f /dev/null; \
-	else \
-		imake -DIRIX -DO64 -DOPTIMISED $${CMISS_ROOT_DEF} -s unemap_sgi64.make -T $(PRODUCT_SOURCE_PATH)/unemap.imake -f /dev/null; \
-	fi
+	$(COMMON_IMAKE_RULE) \
+	imake -DIRIX -DO64 -DOPTIMISED $${CMISS_ROOT_DEF} -s unemap_sgi64.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 #Linux version
 unemap_linux : force $(SOURCE_PATH)/unemap_linux.make
-	export CMGUI_DEV_ROOT=$(PWD) ; \
-	cd $(SOURCE_PATH); \
+	$(COMMON_MAKE_RULE) \
 	if [ -f unemap_linux.make ]; then \
 		make -f unemap_linux.make ; \
 	else \
@@ -105,15 +96,8 @@ unemap_linux : force $(SOURCE_PATH)/unemap_linux.make
 	fi
 
 $(SOURCE_PATH)/unemap_linux.make : $(SOURCE_PATH)/unemap.imake unemap.make
-	cd $(SOURCE_PATH); \
-	if [ ! -z $${CMISS_ROOT:=""} ] ; then \
-		CMISS_ROOT_DEF=-DCMISS_ROOT_DEFINED; \
-	fi ; \
-	if [ -f unemap.imake ]; then \
-		imake -DLINUX $${CMISS_ROOT_DEF} -s unemap_linux.make -T unemap.imake -f /dev/null; \
-	else \
-		imake -DLINUX $${CMISS_ROOT_DEF} -s unemap_linux.make -T $(PRODUCT_SOURCE_PATH)/unemap.imake -f /dev/null; \
-	fi
+	$(COMMON_IMAKE_RULE) \
+	imake -DLINUX $${CMISS_ROOT_DEF} -s unemap_linux.make $${UNEMAP_IMAKE_FILE} $${COMMON_IMAKE_FILE};
 
 update :
 	if ( [ "$(PWD)" -ef "$(PRODUCT_PATH)" ] && [ "$(USER)" = "cmiss" ] ); then \
@@ -161,8 +145,13 @@ cronjob :
 		echo "Must be cmiss"; \
 	fi
 
-nothing.imake :
-	echo "\n" > nothing.imake
+utilities : $(SOURCE_PATH)/unemap_sgi.make
+	$(COMMON_MAKE_RULE) \
+	if [ -f unemap_sgi.make ]; then \
+		$(MAKE) -f unemap_sgi.make utilities; \
+	else \
+		$(MAKE) -f $(PRODUCT_SOURCE_PATH)/unemap_sgi.make utilities; \
+	fi
 
 force :
 	@echo "\n" > /dev/null

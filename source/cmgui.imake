@@ -1,11 +1,9 @@
 XCOMM **************************************************************************
 XCOMM FILE : cmgui.imake
 XCOMM
-XCOMM LAST MODIFIED : 3 December 1999
+XCOMM LAST MODIFIED : 15 December 1999
 XCOMM
 XCOMM DESCRIPTION :
-XCOMM SAB.  I have changed all this to use cmgui.imake now, if you want to
-XCOMM   change things then that is the file to do it in.
 XCOMM
 XCOMM Makefile for cmgui (the front end to CMISS)
 XCOMM ???DB.  Separate make for xvg
@@ -23,7 +21,7 @@ XCOMM ???DB.  6 January 1998.  multigot linker option allows multiple Global
 XCOMM   Offset Tables
 XCOMM ==========================================================================
 
-/* The CmguiMake filename should match the filename into which this is being
+/* The Makefile filename should match the filename into which this is being
 	written.  This is done in the dependency rules in cmgui.make i.e.
 	for sgi
 		image -T cmgui.imake -f /dev/null -s cmgui.make
@@ -34,15 +32,14 @@ SHELL=/bin/sh
 
 BIN_PATH=$(CMGUI_DEV_ROOT)/bin
 SOURCE_PATH=$(CMGUI_DEV_ROOT)/source
+UTILITIES_PATH=$(CMGUI_DEV_ROOT)/utilities
 #if defined (CMISS_ROOT_DEFINED)
 PRODUCT_PATH=$(CMISS_ROOT)/cmgui
-PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source
-UTILITIES_PATH=$(CMISS_ROOT)/cmgui/utilities
 #else /* defined (CMISS_ROOT_DEFINED) */
 PRODUCT_PATH=$(CMGUI_DEV_ROOT)
-PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source
-UTILITIES_PATH=$(CMGUI_DEV_ROOT)/utilities
 #endif /* defined (CMISS_ROOT_DEFINED) */
+PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source
+PRODUCT_UTILITIES_PATH=$(PRODUCT_PATH)/utilities
 #if defined (OLD_CODE)
 PRODUCT_PATH=/usr/people/bullivan/cmgui/uni_source
 UTILITIES_PATH=/usr/people/bullivan/cmgui/cvs_unemap/utilities
@@ -56,7 +53,7 @@ PRODUCT_PATH=.
 #define MIRAGE
 #define UNEMAP
 #define XVG
-XCOMM ???DB.  Temporary.  Need xml libraries for other than n32
+/* ???DB.  Temporary.  Need xml libraries for other than n32 */
 #if !defined(O64) && !defined(OPTIMISED)
 #define CELL
 #endif /* !defined(O64) && !defined(OPTIMISED) */
@@ -67,11 +64,11 @@ XCOMM ???DB.  Temporary.  Need xml libraries for other than n32
 #if !defined (O64)
 #define UidPath uid
 #if defined (LITEWEIGHT)
-#define CmguiTarget cmgui_lite
-#define SpacesToTabsTarget $(UTILITIES_PATH)/spaces_to_tabs_lite
-#define TabsToSpacesTarget $(UTILITIES_PATH)/tabs_to_spaces_lite
-#define Uid2uidhTarget $(UTILITIES_PATH)/uid2uidh_lite
-#define CmguiMake cmgui_sgilite.make
+#define Target cmgui_lite
+#define SpacesToTabsTarget spaces_to_tabs_lite
+#define TabsToSpacesTarget tabs_to_spaces_lite
+#define Uid2uidhTarget uid2uidh_lite
+#define Makefile cmgui_sgilite.make
 #define DependMake cmgui_sgilite.depend
 #define ObjSuffix o
 OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/n32_lite
@@ -83,12 +80,12 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 /* The normal debug and memory check versions keep the same extension
 	as they only differ in one file */
 #if !defined (MEMORY_CHECK)
-#define CmguiTarget cmgui
+#define Target cmgui
 #define CmguiFiltLibrary libCmguiFilt.so
-#define SpacesToTabsTarget $(UTILITIES_PATH)/spaces_to_tabs
-#define TabsToSpacesTarget $(UTILITIES_PATH)/tabs_to_spaces
-#define Uid2uidhTarget $(UTILITIES_PATH)/uid2uidh
-#define CmguiMake cmgui_sgi.make
+#define SpacesToTabsTarget spaces_to_tabs
+#define TabsToSpacesTarget tabs_to_spaces
+#define Uid2uidhTarget uid2uidh
+#define Makefile cmgui_sgi.make
 #define DependMake cmgui_sgi.depend
 #define ObjSuffix o
 OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/n32
@@ -96,11 +93,11 @@ PRODUCT_OBJECT_PATH=$(PRODUCT_PATH)/object/cmgui/n32
 UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/n32
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #else /* !defined (MEMORY_CHECK) */
-#define CmguiTarget cmgui_memorycheck
-#define SpacesToTabsTarget $(UTILITIES_PATH)/spaces_to_tabs
-#define TabsToSpacesTarget $(UTILITIES_PATH)/tabs_to_spaces
-#define Uid2uidhTarget $(UTILITIES_PATH)/uid2uidh
-#define CmguiMake cmgui_sgi_memorycheck.make
+#define Target cmgui_memorycheck
+#define SpacesToTabsTarget spaces_to_tabs
+#define TabsToSpacesTarget tabs_to_spaces
+#define Uid2uidhTarget uid2uidh
+#define Makefile cmgui_sgi_memorycheck.make
 #define DependMake cmgui_sgi_memorycheck.depend
 #define ObjSuffix o
 OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/n32
@@ -109,11 +106,11 @@ UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/n32
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 #endif /* !defined (MEMORY_CHECK) */
 #else /* !defined (OPTIMISED) */
-#define CmguiTarget cmgui_optimised
-#define SpacesToTabsTarget $(UTILITIES_PATH)/spaces_to_tabs_optimised
-#define TabsToSpacesTarget $(UTILITIES_PATH)/tabs_to_spaces_optimised
-#define Uid2uidhTarget $(UTILITIES_PATH)/uid2uidh_optimised
-#define CmguiMake cmgui_sgioptimised.make
+#define Target cmgui_optimised
+#define SpacesToTabsTarget spaces_to_tabs_optimised
+#define TabsToSpacesTarget tabs_to_spaces_optimised
+#define Uid2uidhTarget uid2uidh_optimised
+#define Makefile cmgui_sgioptimised.make
 #define DependMake cmgui_sgioptimised.depend
 #define ObjSuffix o
 OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/n32_optimised
@@ -126,11 +123,11 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/n32
 /* The O64 version can be either OPTIMISED or not but only one
 	version is kept at the moment */
 #define UidPath uidh
-#define CmguiTarget cmgui64
-#define SpacesToTabsTarget $(UTILITIES_PATH)/spaces_to_tabs64
-#define TabsToSpacesTarget $(UTILITIES_PATH)/tabs_to_spaces64
-#define Uid2uidhTarget $(UTILITIES_PATH)/uid2uidh64
-#define CmguiMake cmgui_sgi64.make
+#define Target cmgui64
+#define SpacesToTabsTarget spaces_to_tabs64
+#define TabsToSpacesTarget tabs_to_spaces64
+#define Uid2uidhTarget uid2uidh64
+#define Makefile cmgui_sgi64.make
 #define DependMake cmgui_sgi64.depend
 #define ObjSuffix o
 OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/cmgui/64
@@ -142,15 +139,14 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/64
 #elif defined (LINUX) /* switch OperatingSystem */
 #define MIRAGE
 #define UNEMAP
-XCOMM ???DB.  Temporary.  Need xml libraries for other than n32
-XCOMM #define CELL
+/* SAB Couldn't compile cell/cell_calculate.f 
+   #define CELL */
 
-#define UidPath uid_linux
-#define CmguiTarget cmgui_linux
-#define SpacesToTabsTarget $(UTILITIES_PATH)/spaces_to_tabs_linux
-#define TabsToSpacesTarget $(UTILITIES_PATH)/tabs_to_spaces_linux
-#define Uid2uidhTarget $(UTILITIES_PATH)/uid2uidh_linux
-#define CmguiMake cmgui_linux.make
+#define Target cmgui_linux
+#define SpacesToTabsTarget spaces_to_tabs_linux
+#define TabsToSpacesTarget tabs_to_spaces_linux
+#define Uid2uidhTarget uid2uidh_linux
+#define Makefile cmgui_linux.make
 #define DependMake cmgui_linux.depend
 #define ObjSuffix o
 /* Can't use linux on its own as this is defined! */
@@ -160,83 +156,14 @@ UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/cmgui/linux_g
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/cmgui/linux_g
 #endif /* switch OperatingSystem */
 
-#if defined (IRIX) /* switch OperatingSystem */
 #if defined (CMISS_ROOT_DEFINED)
-VPATH=$(BIN_PATH):$(OBJECT_PATH):$(UIDH_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH):$(PRODUCT_UIDH_PATH)
+VPATH=$(BIN_PATH):$(UTILITIES_PATH):$(OBJECT_PATH):$(UIDH_PATH):$(PRODUCT_UTILITIES_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH):$(PRODUCT_UIDH_PATH)
 #else /* defined (CMISS_ROOT) */
-VPATH=$(BIN_PATH):$(OBJECT_PATH):$(UIDH_PATH)
+VPATH=$(BIN_PATH):$(UTILITIES_PATH):$(OBJECT_PATH):$(UIDH_PATH)
 #endif /* defined (CMISS_ROOT) */
-#elif defined (LINUX) /* switch OperatingSystem */
-#if defined (CMISS_ROOT_DEFINED)
-VPATH=$(BIN_PATH):$(OBJECT_PATH):$(UIDH_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH):$(PRODUCT_UIDH_PATH)
-#else /* defined (CMISS_ROOT) */
-VPATH=$(BIN_PATH):$(OBJECT_PATH):$(UIDH_PATH)
-#endif /* defined (CMISS_ROOT) */
-#if defined (OLD_CODE)
-XCOMM LINUX treats VPATH slightly differently and does not notice
-XCOMM	that a local *.c file has changed if a valid *.o file
-XCOMM	is found in the PRODUCT_PATH directories so use vpath and
-XCOMM the VPATH is not searched for *.olinux.  This has the penalty
-XCOMM of requiring all the objects to be built locally.
-vpath %.c $(BIN_PATH):$(OBJECT_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH)
-vpath %.f $(BIN_PATH):$(OBJECT_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH)
-vpath %.h $(BIN_PATH):$(OBJECT_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH)
-vpath %.cpp $(BIN_PATH):$(OBJECT_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH)
-vpath %.uil $(BIN_PATH):$(OBJECT_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH)
-#endif /* defined (OLD_CODE) */
-#endif /* switch OperatingSystem */
 
-
-#if defined (IRIX) /* switch OperatingSystem */
-#define WildC *.c
-UIDTOUIDH = $(UTILITIES_PATH)/uid2uidh
-#if !defined (O64)
-UIL = uil
-#else /* !defined (O64) */
-UIL = uil64
-#endif /* !defined (O64) */
-CC = cc -c
-CPP = CC -c
-FORTRAN = f77 -c
-LINK = cc
-#if defined (OPTIMISED)
-OPTIMISATION_FLAGS = -O
-COMPILE_FLAGS = -ansi -pedantic -woff 1521,1048
-COMPILE_DEFINES = 
-STRICT_FLAGS = 
-STRICT_FLAGS_PATTERN = NONE /* Must specify a pattern that doesn't match */
-#else /* defined (OPTIMISED) */
-OPTIMISATION_FLAGS = -g -mips3
-COMPILE_FLAGS = -ansi -fullwarn -pedantic -woff 1521,1048
-COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON 
-STRICT_FLAGS = -diag_error 1196
-STRICT_FLAGS_PATTERN = choose/WildC | command/WildC | curve/WildC | data/WildC | finite_element/WildC | general/WildC | graphics/WildC | material/WildC | mirage/WildC | select/WildC | three_d_drawing/WildC | time/WildC | user_interface/WildC | view/WildC
-#endif /* defined (OPTIMISED) */
-
-#if defined (O64)
-TARGET_TYPE_FLAGS = -G0 -64
-TARGET_TYPE_DEFINES = -DO64
-#else /* defined (O64) */
-TARGET_TYPE_FLAGS = -n32
-TARGET_TYPE_DEFINES =
-#endif /* defined (O64) */
-#elif defined(LINUX) /* switch OperatingSystem */
-
-UIDTOUIDH = $(UTILITIES_PATH)/uid2uidh_linux
-UIL = uil
-UIL64 = uil64  /* There is a test in the rule to see if this is available */
-CC = egcs -c
-CPP = egcs -c
-FORTRAN = g77 -c
-LINK = egcs -static -L/usr/X11R6/lib
-OPTIMISATION_FLAGS = -g
-COMPILE_FLAGS = 
-COMPILE_DEFINES = 
-STRICT_FLAGS = 
-STRICT_FLAGS_PATTERN = NONE /* Must specify a pattern that doesn't match */
-TARGET_TYPE_FLAGS =
-TARGET_TYPE_DEFINES =
-#endif /* switch OperatingSystem */
+/* Include all the common rules */
+#include INCLUDE_IMAKEFILE
 
 SOURCE_DIRECTORY_INC = -I$(SOURCE_PATH) -I$(PRODUCT_SOURCE_PATH)
 
@@ -502,8 +429,8 @@ WORMHOLE_LIB = -L${CMISS_ROOT}/wormhole/lib -lwormhole_n32
 WORMHOLE_INC = -I${CMISS_ROOT}/wormhole/source
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
-WORMHOLE_LIB = -L/usr/local/cmiss/wormhole/lib -lwormhole
-WORMHOLE_INC = -I/usr/local/cmiss/wormhole/source
+WORMHOLE_LIB = -L${CMISS_ROOT}/wormhole/lib -lwormhole_linux
+WORMHOLE_INC = -I${CMISS_ROOT}/wormhole/source
 #endif /* switch OperatingSystem */
 
 #if defined (CELL)
@@ -516,8 +443,8 @@ XML_LIB = -B static -L${CMISS_ROOT}/xml/expat_lib/lib -lExpat_n32 -B dynamic
 XML_INC = -I${CMISS_ROOT}/xml/expat_lib/include
 #endif /* defined (O64) */
 #elif defined(LINUX) /* switch OperatingSystem */
-XML_LIB = -L/usr/local/cmiss/xml/expat_lib/lib -lExpat
-XML_INC = -I/usr/local/cmiss/xml/expat_lib/include
+XML_LIB = -static -L${CMISS_ROOT}/xml/expat_lib/lib -lExpat_linux -shared
+XML_INC = -I${CMISS_ROOT}/xml/expat_lib/include
 #endif /* switch OperatingSystem */
 #endif /* defined (CELL) */
 
@@ -596,34 +523,6 @@ NAG_LIB =
 NAG_SRCS = xvg/custom/nag.c
 NAG_LIB =
 
-#if defined (OLD_CODE)
-HELP_DEFINES = -DNO_HELP
-HELP_INCLUDE =
-HELP_LIB =
-HELP_DEFINES =
-HELP_INCLUDE =
-HELP_LIB =
-HELP_OBJS = \
-	help/help_interface.o \
-	help/help_window.o \
-	help/help_work.o
-HELP_DEFINES = -DHYPERTEXT_HELP
-HELP_INCLUDE = -Ihypertext_help
-HELP_LIB = -lXaw
-HELP_LIB =
-XCOMM ???DB.  Get rid of Xaw altogether ?
-HELP_OBJS = \
-	help/help_interface.o \
-	hypertext_help/libhthelp.a \
-	html_widget/libhtmlw.a
-HELP_DEFINES = -DHYPERTEXT_HELP
-HELP_INCLUDE = -Ihypertext_help
-HELP_LIB = -lXaw
-HELP_OBJS = \
-	help/help_interface.o \
-	hypertext_help/hthelp.olb \
-	html_widget/htmlw.olb
-#endif /* defined (OLD_CODE) */
 HELP_DEFINES = -DNETSCAPE_HELP
 HELP_INCLUDE =
 HELP_LIB =
@@ -658,23 +557,6 @@ END_ALL_DEFINES =
 START_ALL_INCLUDES =
 END_ALL_INCLUDES =
 
-#if defined (OLD_CODE)
-ALL_DEFINES = $(START_ALL_DEFINES) \
-	$(PLATFORM_SWITCH) $(OPERATING_SYSTEM) $(WINDOWING_SYSTEM) \
-	$(STEREO_DISPLAY_SWITCH) $(SOCKET_DEFINES) \
-	$(CONNECTIVITY_DEFINES) \
-	$(EXTERNAL_INPUT_DEFINES) $(XVG_SWITCH) $(XVG_OPTION_DEFINES) \
-	$(ROBO_APPLICATION_SWITCH) $(FACE_APPLICATION_SWITCH) \
-	$(GRAPHICS_LIBRARY_SWITCH) $(VIDEO_SWITCH) $(HELP_DEFINES) \
-	$(POSTSCRIPT_DEFINES) $(NAME_DEFINES) $(TEMPORARY_DEVELOPMENT_FLAGS) \
-	$(UNEMAP_SWITCH) \
-	$(END_ALL_DEFINES)
-
-ALL_INCLUDES = $(START_ALL_INCLUDES) \
-	$(SOURCE_DIRECTORY_INC) $(XVG_INC) $(SOCKET_INC) $(WORMHOLE_INC) $(XML_INC) \
-	$(END_ALL_INCLUDES)
-#endif /* defined (OLD_CODE) */
-
 ALL_DEFINES = $(START_ALL_DEFINES) \
 	$(COMPILE_DEFINES) $(TARGET_TYPE_DEFINES) \
 	$(PLATFORM_SWITCH) $(OPERATING_SYSTEM) $(WINDOWING_SYSTEM) \
@@ -694,109 +576,8 @@ ALL_INCLUDES = $(START_ALL_INCLUDES) \
 ALL_FLAGS = $(OPTIMISATION_FLAGS) $(COMPILE_FLAGS) $(TARGET_TYPE_FLAGS) \
 	$(ALL_DEFINES) $(ALL_INCLUDES)
 
-#if defined (OLD_CODE)
-ALL_LIB = $(GRAPHICS_LIB) $(LIB) $(VIDEO_LIB) $(SOCKET_LIB) \
-	$(WORMHOLE_LIB) $(EXTERNAL_INPUT_LIB) $(NAG_LIB) $(HELP_LIB)
-ALL_LIB = alpha.opt/opt
-#endif /* defined (OLD_CODE) */
 ALL_LIB = $(GRAPHICS_LIB) $(HAPTIC_LIB) $(LIB) $(VIDEO_LIB) $(WORMHOLE_LIB) \
 	$(EXTERNAL_INPUT_LIB) $(NAG_LIB) $(HELP_LIB) $(MOVIE_FILE_LIB) $(XML_LIB)
-
-.MAKEOPTS : -r
-
-.SUFFIXES :
-.SUFFIXES : .ObjSuffix .c .cpp .f .uil .uidh
-
-.c.ObjSuffix: 
-	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
-		mkdir -p $(OBJECT_PATH)/$(*D); \
-	fi
-#if defined (CMISS_ROOT_DEFINED)
-	@if [ -f $*.c ]; then \
-	   case $*.c in  \
-	      $(STRICT_FLAGS_PATTERN) ) \
-	         set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $*.c;; \
-	      * ) \
-	         set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $*.c;; \
-	   esac ; \
-	else \
-	   case $*.c in  \
-	      $(STRICT_FLAGS_PATTERN) ) \
-	         set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.c;; \
-	      * ) \
-      		set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.c;; \
-	   esac ; \
-	fi
-#else /* defined (CMISS_ROOT_DEFINED) */
-	@case $*.c in  \
-	   $(STRICT_FLAGS_PATTERN) ) \
-	      set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $*.c;; \
-	   * ) \
-	      set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $*.c;; \
-	esac ;
-#endif /* defined (CMISS_ROOT_DEFINED) */
-
-.cpp.ObjSuffix:
-	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
-		mkdir -p $(OBJECT_PATH)/$(*D); \
-	fi
-	@if [ -f $*.cpp ]; then \
-	   case $*.cpp in  \
-	      $(STRICT_FLAGS_PATTERN) ) \
-   		   set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $*.cpp;; \
-	      * ) \
-	   	   set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $*.cpp;; \
-	   esac ; \
-	else \
-	   case $*.cpp in  \
-	      $(STRICT_FLAGS_PATTERN) ) \
-	        set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.cpp;; \
-	      * ) \
-	        set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.cpp;; \
-	   esac ; \
-	fi
-
-.f.ObjSuffix: 
-	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
-		mkdir -p $(OBJECT_PATH)/$(*D); \
-	fi
-	@if [ -f $*.f ]; then \
-	   case $*.f in  \
-	      * ) \
-	        set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) -o $(OBJECT_PATH)/$*.ObjSuffix $(SOURCE_DIRECTORY_INC) $*.f ;; \
-	   esac ; \
-	else \
-	   case $*.f in  \
-	      * ) \
-	        set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) -o $(OBJECT_PATH)/$*.ObjSuffix $(SOURCE_DIRECTORY_INC) $(PRODUCT_SOURCE_PATH)/$*.f ;; \
-	   esac ; \
-	fi
-#if defined (OLD_CODE) /* Used to put object in correct directory with g77 */
-#if defined (LINUX)
-	mv `echo $*.o | cut -f2 -d/` $*.ObjSuffix
-#endif /* defined (LINUX) */
-#endif /* defined (OLD_CODE) */
-
-.uil.uidh:
-	@if [ ! -d $(UIDH_PATH)/$(*D) ]; then \
-		mkdir -p $(UIDH_PATH)/$(*D); \
-	fi
-	@if [ ! -x $(UIDTOUIDH) ]; then \
-	    	if [ -f CmguiMake ]; then \
-			$(MAKE) -f CmguiMake $(UIDTOUIDH) ; \
-		else \
-			$(MAKE) -f $(PRODUCT_SOURCE_PATH)/CmguiMake $(UIDTOUIDH) ; \
-		fi \
-	fi
-	@if [ -f $*.uil ]; then \
-	   set -x ; \
-	   $(UIL) -o $(UIDH_PATH)/$*.uid $*.uil; \
-      $(UIDTOUIDH) $(UIDH_PATH)/$*.uid $(UIDH_PATH)/$*.uidh; \
-	else \
-	   set -x ; \
-	   $(UIL) -o $(UIDH_PATH)/$*.uid $(PRODUCT_SOURCE_PATH)/$*.uil; \
-      $(UIDTOUIDH) $(UIDH_PATH)/$*.uid $(UIDH_PATH)/$*.uidh; \
-	fi
 
 APPLICATION_SRCS = \
 	application/application.c 
@@ -1059,41 +840,6 @@ LIB_FILT_OBJSB = $(LIB_FILT_OBJSA:.cpp=.ObjSuffix)
 LIB_FILT_OBJS = $(LIB_FILT_OBJSB:.f=.ObjSuffix)
 #endif /* defined (MEMORY_CHECK) */
 
-all : oscheck
-	if [ -s $(PRODUCT_SOURCE_PATH)/DependMake ] ; then \
-	    	if [ -f CmguiMake ]; then \
-			$(MAKE) -f CmguiMake CmguiTarget ; \
-		else \
-			$(MAKE) -f $(PRODUCT_SOURCE_PATH)/CmguiMake CmguiTarget ; \
-		fi \
-	else \
-	    	if [ -f CmguiMake ]; then \
-			$(MAKE) -f CmguiMake depend ; \
-			$(MAKE) -f CmguiMake CmguiTarget ; \
-		else \
-			$(MAKE) -f $(PRODUCT_SOURCE_PATH)/CmguiMake depend ; \
-			$(MAKE) -f $(PRODUCT_SOURCE_PATH)/CmguiMake CmguiTarget ; \
-		fi \
-	fi
-
-XCOMM Check that the makefile is being used on the correct system
-#if defined (IRIX)
-oscheck : 
-	@if ! sysinfo > /dev/null ; then \
-	   echo "Incorrect Operating System for SGI Make" ;\
-      exit ;\
-   fi
-#else /* defined (IRIX) */
-#if defined (LINUX) 
-oscheck :
-	/* Do something that only works under LINUX */
-	@echo -n > /dev/null   
-#else /* defined (LINUX) */
-oscheck :
-	echo "No known operating system defined for imake"
-#endif  /* defined (LINUX) */
-#endif  /* defined (IRIX) */
-
 depend :
 	echo -n > DependMake
 	(makedepend -f DependMake -o.ObjSuffix -Y -- $(ALL_FLAGS) -- cmgui.c 2> DependMake.tmp)
@@ -1115,67 +861,6 @@ depend :
 	by ensuring all the uidh files already exist before you makedepend */
 	( grep uidh DependMake.tmp | grep makedepend | awk -v Obj=ObjSuffix -F "[ ,]" '{printf("%s.%s:",substr($$4, 1, length($$4) - 2),Obj); for(i = 1 ; i <= NF ; i++)  { if (match($$i,"uidh")) printf(" %s", substr($$i, 2, length($$i) -2)) } printf("\n");}' >> DependMake)
 	rm DependMake.tmp
-
-	  /* Can't put / by * or it thinks there is a comment so I have put the *
-		  into the variable and used that instead */
-#define WildObj *.ObjSuffix
-#define WildUil *.uil
-#define WildUid *.uid
-#define WildCpp *.cpp
-#define WildCmn *.cmn
-#define WildH *.h
-#define WildF *.f
-#define WildMms *.mms
-#define WildXbm *.xbm
-#define WildRc *.rc
-#define WildPx *.px
-clean :
-	-rm cmgui.ObjSuffix
-	-rm application/WildObj
-	-rm cell/WildObj
-	-rm choose/WildObj
-	-rm colour/WildObj
-	-rm comfile/WildObj
-	-rm command/WildObj
-	-rm curve/WildObj
-	-rm data/WildObj
-	-rm dof3/WildObj
-	-rm finite_element/WildObj
-	-rm general/WildObj
-	-rm graphics/WildObj
-	-rm help/WildObj
-	-rm html_widget/WildObj
-	-rm hypertext_help/WildObj
-	-rm io_devices/WildObj
-	-rm link/WildObj
-	-rm material/WildObj
-	-rm menu/WildObj
-	-rm mirage/WildObj
-	-rm node/WildObj
-	-rm prompt/WildObj
-	-rm projection/WildObj
-	-rm select/WildObj
-	-rm slider/WildObj
-	-rm socket/WildObj
-	-rm three_d_drawing/WildObj
-	-rm transformation/WildObj
-	-rm time/WildObj
-	-rm unemap/WildObj
-	-rm user_interface/WildObj
-	-rm view/WildObj
-	-rm xvg/cmgui/WildObj
-	-rm xvg/custom/WildObj
-
-clobber : clean
-	-rm object.list
-	-rm version.ObjSuffix.h
-	-rm cmgui
-	-rm UidPath/WildUid
-
-problems/mark/test_read_image : problems/mark/test_read_image.o $(OBJS)
-	$(LINK) -o test_read_image problems/mark/test_read_image.o $(OBJS) $(ALL_LIB)
-	strip test_read_image
-	mv test_read_image problems/mark
 
 transfer :
 	tar -cvf - \
@@ -1220,7 +905,8 @@ transfer :
 	unemap/WildC unemap/WildH unemap/WildUil unemap/WildRc \
 	unemap/utilities/Makefile unemap/utilities/WildC unemap/utilities/WildH  \
 	unemap/utilities/WildUil unemap/utilities/WildRc \
-	unemap_hardware_service/WildC unemap_hardware_service/WildH unemap_hardware_service/WildUil unemap_hardware_service/WildRc \
+	unemap_hardware_service/WildC unemap_hardware_service/WildH \
+	unemap_hardware_service/WildUil unemap_hardware_service/WildRc \
 	xvg/README xvg/custom/WildC xvg/custom/WildF xvg/include/WildH xvg/cmgui/WildUil \
 	xvg/cmgui/WildC xvg/cmgui/WildPx xvg/cmgui/WildH \
 	| gzip > cmgui_tar2.gz
@@ -1243,8 +929,8 @@ sed "s/./diff/;s/,.*/ >> out.diff/;h;G;G;s/\n//2;s%>> out\.diffdiff %tmp/%;s/dif
  	(cd tmp; tar -xvf cmgui_tar > tar.list;
 #endif /* defined (OLD_CODE) */
 
-descrip.mms : CmguiMake descrip_mms.sed
-	sed -f descrip_mms.sed < CmguiMake > descrip.mms
+descrip.mms : Makefile descrip_mms.sed
+	sed -f descrip_mms.sed < Makefile > descrip.mms
 
 $(OBJECT_PATH)/version.ObjSuffix.h : $(OBJS)
 	if [ ! -d $(OBJECT_PATH) ]; then \
@@ -1266,7 +952,7 @@ cmgui.ObjSuffix : cmgui.c $(OBJECT_PATH)/version.ObjSuffix.h
 	fi
 	$(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(OBJECT_PATH)/$*.ObjSuffix.c;
 
-CmguiTarget : $(OBJS) cmgui.ObjSuffix
+Target : $(OBJS) cmgui.ObjSuffix
 	if [ ! -d $(BIN_PATH) ]; then \
 		mkdir -p $(BIN_PATH); \
 	fi
@@ -1275,9 +961,12 @@ CmguiTarget : $(OBJS) cmgui.ObjSuffix
 #elif defined(LINUX) /* switch OperatingSystem */
 	cd $(OBJECT_PATH) ; (ls $(OBJS) cmgui.ObjSuffix 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
 #endif /* switch OperatingSystem */
-	cd $(OBJECT_PATH) ; rm -f product_object ; ln -s $(PRODUCT_OBJECT_PATH) product_object ; $(LINK) -o $(BIN_PATH)/CmguiTarget $(ALL_FLAGS) `cat object.list` $(ALL_LIB)
+	cd $(OBJECT_PATH) ; \
+	rm -f product_object ; \
+	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
+	$(LINK) -o $(BIN_PATH)/Target $(ALL_FLAGS) `cat object.list` $(ALL_LIB)
 
-CmguiFiltLibrary : $(LIB_FILT_OBJS) $(FILT_OBJ) CmguiMake libCmguiFiltExports
+CmguiFiltLibrary : $(LIB_FILT_OBJS) $(FILT_OBJ) Makefile libCmguiFiltExports
 	cd $(OBJECT_PATH)
 	@if [ -z "$(FILT_ROOT)" ]; then \
 	   echo "Must have filt source and set FILT_ROOT environment variable to make this library"; \
@@ -1339,36 +1028,12 @@ utilities : SpacesToTabsTarget TabsToSpacesTarget Uid2uidhTarget
 SPACES_TO_TABS_SRCS = \
 	utilities/spaces_to_tabs.c
 
-SpacesToTabsTarget: $(SPACES_TO_TABS_SRCS)
-	@if [ ! -d $(UTILITIES_PATH) ]; then \
-		mkdir -p $(UTILITIES_PATH); \
-	fi
-	$(LINK) -o SpacesToTabsTarget $(SPACES_TO_TABS_SRCS)
+BuildNormalTarget(SpacesToTabsTarget,$(UTILITIES_PATH),SPACES_TO_TABS_SRCS,SPACES_TO_TABS_OBJSA,SPACES_TO_TABS_OBJSB,SPACES_TO_TABS_OBJS,-lm) 
 
 TABS_TO_SPACES_SRCS = \
 	utilities/tabs_to_spaces.c
 
-TabsToSpacesTarget: $(TABS_TO_SPACES_SRCS)
-	@if [ ! -d $(UTILITIES_PATH) ]; then \
-		mkdir -p $(UTILITIES_PATH); \
-	fi
-	$(LINK) -o TabsToSpacesTarget $(TABS_TO_SPACES_SRCS)
-
-
-UID2UIDH_SRCS = \
-	utilities/uid2uidh.c
-
-#if defined (IRIX) /* switch OperatingSystem */
-UID2UIDH_LIB = -lgen
-#elif defined(LINUX) /* switch OperatingSystem */
-UID2UIDH_LIB =
-#endif /* switch OperatingSystem */
-
-Uid2uidhTarget: $(UID2UIDH_SRCS)
-	@if [ ! -d $(UTILITIES_PATH) ]; then \
-		mkdir -p $(UTILITIES_PATH); \
-	fi
-	$(LINK) -o Uid2uidhTarget $(UID2UIDH_SRCS) $(UID2UIDH_LIB)
+BuildNormalTarget(TabsToSpacesTarget,$(UTILITIES_PATH),TABS_TO_SPACES_SRCS,TABS_TO_SPACES_OBJSA,TABS_TO_SPACES_OBJSB,TABS_TO_SPACES_OBJS,-lm) 
 
 /* sinclude used so that the makefile can be run when the dependency file doesn't exist,
  it should then make one */

@@ -1,12 +1,10 @@
 XCOMM **************************************************************************
 XCOMM  FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 3 December 1999
+XCOMM LAST MODIFIED : 15 December 1999
 XCOMM
 XCOMM  DESCRIPTION :
 XCOMM  Makefile for unemap
-XCOMM ???DB.  Based on cmgui.imake
-XCOMM ???DB.  Isn't quite right - compare with unemap.imake.save
 XCOMM ==========================================================================
 /* The UnemapMake filename should match the filename into which this is being
 	written.  This is done in the dependency rules in unemap.make i.e.
@@ -19,10 +17,14 @@ SHELL=/bin/sh
 
 BIN_PATH=$(CMGUI_DEV_ROOT)/bin
 SOURCE_PATH=$(CMGUI_DEV_ROOT)/source
+UTILITIES_PATH=$(CMGUI_DEV_ROOT)/utilities
+#if defined (CMISS_ROOT_DEFINED)
 PRODUCT_PATH=$(CMISS_ROOT)/cmgui
+#else /* defined (CMISS_ROOT_DEFINED) */
+PRODUCT_PATH=$(CMGUI_DEV_ROOT)
+#endif /* defined (CMISS_ROOT_DEFINED) */
 PRODUCT_SOURCE_PATH=$(PRODUCT_PATH)/source
-UTILITIES_PATH=$(CMISS_ROOT)/cmgui/utilities
-
+PRODUCT_UTILITIES_PATH=$(PRODUCT_PATH)/utilities
 #if defined (OLD_CODE)
 PRODUCT_PATH=/usr/people/bullivan/cmgui/uni_source
 UTILITIES_PATH=/usr/people/bullivan/cmgui/cvs_unemap/utilities
@@ -37,22 +39,23 @@ UTILITIES_PATH=$(CMISS_ROOT)/cmgui/source/utilities
 /* 1.1 IRIX-O64 */
 /* the O64 version can be either OPTIMISED or not but only one version is kept
 	at the moment */
-#define UnemapTarget unemap64
-#define Bmsi2sigTarget unemap/utilities/bmsi2sig64
-#define ChangeCalibrationTarget unemap/utilities/change_calibration64
-#define ChangeChannelsTarget unemap/utilities/change_channels64
-#define ChangeConfigurationTarget unemap/utilities/change_configuration64
-#define ChangeEventsTarget unemap/utilities/change_events64
-#define ChangeFrequencyTarget unemap/utilities/change_frequency64
-#define CombineSignalsTarget unemap/utilities/combine_signals64
-#define DifferenceSignalsTarget unemap/utilities/difference_signals64
-#define ExtractSignalTarget unemap/utilities/extract_signal64
-#define Img2sigTarget unemap/utilities/img2sig64
-#define Plt2cnfgTarget unemap/utilities/plt2cnfg64
-#define Posdat2sigTarget unemap/utilities/posdat2sig64
-#define RegisterTarget unemap/utilities/register64
-#define TestUnemapHardwareTarget unemap/utilities/test_unemap_hardware64
-#define UnemapMake unemap_sgi64.make
+#define Target unemap64
+#define Bmsi2sigTarget unemap/bmsi2sig64
+#define ChangeCalibrationTarget unemap/change_calibration64
+#define ChangeChannelsTarget unemap/change_channels64
+#define ChangeConfigurationTarget unemap/change_configuration64
+#define ChangeEventsTarget unemap/change_events64
+#define ChangeFrequencyTarget unemap/change_frequency64
+#define CombineSignalsTarget unemap/combine_signals64
+#define DifferenceSignalsTarget unemap/difference_signals64
+#define ExtractSignalTarget unemap/extract_signal64
+#define Img2sigTarget unemap/img2sig64
+#define Plt2cnfgTarget unemap/plt2cnfg64
+#define Posdat2sigTarget unemap/posdat2sig64
+#define RegisterTarget unemap/register64
+#define TestUnemapHardwareTarget unemap/test_unemap_hardware64
+#define Uid2uidhTarget uid2uidh64
+#define Makefile unemap_sgi64.make
 #define DependMake unemap_sgi64.depend
 #define ObjSuffix o
 OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/64
@@ -61,25 +64,25 @@ UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/64
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/64
 #else /* defined (O64) */
 /* 1.2 IRIX-N32 */
-#define UidPath uid
 #if defined (OPTIMISED)
 /* 1.2.1 IRIX-N32-OPTIMISED */
-#define UnemapTarget unemap_optimised
-#define UnemapMake unemap_sgioptimised.make
-#define Bmsi2sigTarget unemap/utilities/bmsi2sig_optimised
-#define ChangeCalibrationTarget unemap/utilities/change_calibration_optimised
-#define ChangeChannelsTarget unemap/utilities/change_channels_optimised
-#define ChangeConfigurationTarget unemap/utilities/change_configuration_optimised
-#define ChangeEventsTarget unemap/utilities/change_events_optimised
-#define ChangeFrequencyTarget unemap/utilities/change_frequency_optimised
-#define CombineSignalsTarget unemap/utilities/combine_signals_optimised
-#define DifferenceSignalsTarget unemap/utilities/difference_signals_optimised
-#define ExtractSignalTarget unemap/utilities/extract_signal_optimised
-#define Img2sigTarget unemap/utilities/img2sig_optimised
-#define Plt2cnfgTarget unemap/utilities/plt2cnfg_optimised
-#define Posdat2sigTarget unemap/utilities/posdat2sig_optimised
-#define RegisterTarget unemap/utilities/register_optimised
-#define TestUnemapHardwareTarget unemap/utilities/test_unemap_hardware_optimised
+#define Target unemap_optimised
+#define Makefile unemap_sgioptimised.make
+#define Bmsi2sigTarget unemap/bmsi2sig_optimised
+#define ChangeCalibrationTarget unemap/change_calibration_optimised
+#define ChangeChannelsTarget unemap/change_channels_optimised
+#define ChangeConfigurationTarget unemap/change_configuration_optimised
+#define ChangeEventsTarget unemap/change_events_optimised
+#define ChangeFrequencyTarget unemap/change_frequency_optimised
+#define CombineSignalsTarget unemap/combine_signals_optimised
+#define DifferenceSignalsTarget unemap/difference_signals_optimised
+#define ExtractSignalTarget unemap/extract_signal_optimised
+#define Img2sigTarget unemap/img2sig_optimised
+#define Plt2cnfgTarget unemap/plt2cnfg_optimised
+#define Posdat2sigTarget unemap/posdat2sig_optimised
+#define RegisterTarget unemap/register_optimised
+#define TestUnemapHardwareTarget unemap/test_unemap_hardware_optimised
+#define Uid2uidhTarget uid2uidh
 #define DependMake unemap_sgioptimised.depend
 #define ObjSuffix o
 OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/n32_optnon
@@ -91,22 +94,23 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #if defined (USE_UNEMAP_NODES)
 /* 1.2.2.1 IRIX-N32-!OPTIMISED-USE_UNEMAP_NODES */
 /* currently only version with nodes */
-#define UnemapTarget unemap_nodes
-#define Bmsi2sigTarget unemap/utilities/bmsi2sig_nodes
-#define ChangeCalibrationTarget unemap/utilities/change_calibration_nodes
-#define ChangeChannelsTarget unemap/utilities/change_channels_nodes
-#define ChangeConfigurationTarget unemap/utilities/change_configuration_nodes
-#define ChangeEventsTarget unemap/utilities/change_events_nodes
-#define ChangeFrequencyTarget unemap/utilities/change_frequency_nodes
-#define CombineSignalsTarget unemap/utilities/combine_signals_nodes
-#define DifferenceSignalsTarget unemap/utilities/difference_signals_nodes
-#define ExtractSignalTarget unemap/utilities/extract_signal_nodes
-#define Img2sigTarget unemap/utilities/img2sig_nodes
-#define Plt2cnfgTarget unemap/utilities/plt2cnfg_nodes
-#define Posdat2sigTarget unemap/utilities/posdat2sig_nodes
-#define RegisterTarget unemap/utilities/register_nodes
-#define TestUnemapHardwareTarget unemap/utilities/test_unemap_hardware_nodes
-#define UnemapMake unemap_sginodes.make
+#define Target unemap_nodes
+#define Bmsi2sigTarget unemap/bmsi2sig_nodes
+#define ChangeCalibrationTarget unemap/change_calibration_nodes
+#define ChangeChannelsTarget unemap/change_channels_nodes
+#define ChangeConfigurationTarget unemap/change_configuration_nodes
+#define ChangeEventsTarget unemap/change_events_nodes
+#define ChangeFrequencyTarget unemap/change_frequency_nodes
+#define CombineSignalsTarget unemap/combine_signals_nodes
+#define DifferenceSignalsTarget unemap/difference_signals_nodes
+#define ExtractSignalTarget unemap/extract_signal_nodes
+#define Img2sigTarget unemap/img2sig_nodes
+#define Plt2cnfgTarget unemap/plt2cnfg_nodes
+#define Posdat2sigTarget unemap/posdat2sig_nodes
+#define RegisterTarget unemap/register_nodes
+#define TestUnemapHardwareTarget unemap/test_unemap_hardware_nodes
+#define Uid2uidhTarget uid2uidh
+#define Makefile unemap_sginodes.make
 #define DependMake unemap_sginodes.depend
 #define ObjSuffix o
 OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/n32
@@ -115,22 +119,23 @@ UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/n32
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #else /* defined (USE_UNEMAP_NODES) */
 /* 1.2.2.2 IRIX-N32-!OPTIMISED-!USE_UNEMAP_NODES */
-#define UnemapTarget unemap32
-#define Bmsi2sigTarget unemap/utilities/bmsi2sig32
-#define ChangeCalibrationTarget unemap/utilities/change_calibration32
-#define ChangeChannelsTarget unemap/utilities/change_channels32
-#define ChangeConfigurationTarget unemap/utilities/change_configuration32
-#define ChangeEventsTarget unemap/utilities/change_events32
-#define ChangeFrequencyTarget unemap/utilities/change_frequency32
-#define CombineSignalsTarget unemap/utilities/combine_signals32
-#define DifferenceSignalsTarget unemap/utilities/difference_signals32
-#define ExtractSignalTarget unemap/utilities/extract_signal32
-#define Img2sigTarget unemap/utilities/img2sig32
-#define Plt2cnfgTarget unemap/utilities/plt2cnfg32
-#define Posdat2sigTarget unemap/utilities/posdat2sig32
-#define RegisterTarget unemap/utilities/register32
-#define TestUnemapHardwareTarget unemap/utilities/test_unemap_hardware32
-#define UnemapMake unemap_sgi.make
+#define Target unemap32
+#define Bmsi2sigTarget unemap/bmsi2sig32
+#define ChangeCalibrationTarget unemap/change_calibration32
+#define ChangeChannelsTarget unemap/change_channels32
+#define ChangeConfigurationTarget unemap/change_configuration32
+#define ChangeEventsTarget unemap/change_events32
+#define ChangeFrequencyTarget unemap/change_frequency32
+#define CombineSignalsTarget unemap/combine_signals32
+#define DifferenceSignalsTarget unemap/difference_signals32
+#define ExtractSignalTarget unemap/extract_signal32
+#define Img2sigTarget unemap/img2sig32
+#define Plt2cnfgTarget unemap/plt2cnfg32
+#define Posdat2sigTarget unemap/posdat2sig32
+#define RegisterTarget unemap/register32
+#define TestUnemapHardwareTarget unemap/test_unemap_hardware32
+#define Uid2uidhTarget uid2uidh32
+#define Makefile unemap_sgi.make
 #define DependMake unemap_sgi.depend
 #define ObjSuffix o
 OBJECT_PATH=$(CMGUI_DEV_ROOT)/object/unemap/n32_nonodes
@@ -142,23 +147,23 @@ PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/n32
 #endif /* defined (O64) */
 #elif defined (LINUX) /* switch OperatingSystem */
 /* 2 LINUX */
-#define UidPath uid_linux
-#define UnemapTarget unemap_linux
-#define Bmsi2sigTarget unemap/utilities/bmsi2sig_linux
-#define ChangeCalibrationTarget unemap/utilities/change_calibration_linux
-#define ChangeChannelsTarget unemap/utilities/change_channels_linux
-#define ChangeConfigurationTarget unemap/utilities/change_configuration_linux
-#define ChangeEventsTarget unemap/utilities/change_events_linux
-#define ChangeFrequencyTarget unemap/utilities/change_frequency_linux
-#define CombineSignalsTarget unemap/utilities/combine_signals_linux
-#define DifferenceSignalsTarget unemap/utilities/difference_signals_linux
-#define ExtractSignalTarget unemap/utilities/extract_signal_linux
-#define Img2sigTarget unemap/utilities/img2sig_linux
-#define Plt2cnfgTarget unemap/utilities/plt2cnfg_linux
-#define Posdat2sigTarget unemap/utilities/posdat2sig_linux
-#define RegisterTarget unemap/utilities/register_linux
-#define TestUnemapHardwareTarget unemap/utilities/test_unemap_hardware_linux
-#define UnemapMake unemap_linux.make
+#define Target unemap_linux
+#define Bmsi2sigTarget unemap/bmsi2sig_linux
+#define ChangeCalibrationTarget unemap/change_calibration_linux
+#define ChangeChannelsTarget unemap/change_channels_linux
+#define ChangeConfigurationTarget unemap/change_configuration_linux
+#define ChangeEventsTarget unemap/change_events_linux
+#define ChangeFrequencyTarget unemap/change_frequency_linux
+#define CombineSignalsTarget unemap/combine_signals_linux
+#define DifferenceSignalsTarget unemap/difference_signals_linux
+#define ExtractSignalTarget unemap/extract_signal_linux
+#define Img2sigTarget unemap/img2sig_linux
+#define Plt2cnfgTarget unemap/plt2cnfg_linux
+#define Posdat2sigTarget unemap/posdat2sig_linux
+#define RegisterTarget unemap/register_linux
+#define TestUnemapHardwareTarget unemap/test_unemap_hardware_linux
+#define Uid2uidhTarget uid2uidh_linux
+#define Makefile unemap_linux.make
 #define DependMake unemap_linux.depend
 #define ObjSuffix o
 /* Can't use linux on its own as this is defined! */
@@ -168,124 +173,14 @@ UIDH_PATH=$(CMGUI_DEV_ROOT)/uidh/unemap/linux_g
 PRODUCT_UIDH_PATH=$(PRODUCT_PATH)/uidh/unemap/linux_g
 #endif /* switch OperatingSystem */
 
-#if defined (USE_UNEMAP_NODES)
-#if defined (IRIX) /* switch OperatingSystem */
-#if defined (O64)
-XCOMM for OpenGL without SGI movie (64bit doesnt have libraries as of Jan99)
-GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
-GRAPHICS_LIB = -lGL -lGLU
-#else /* defined (O64) */
-XCOMM  for OpenGL with SGI movie
-GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API -DSGI_MOVIE_FILE -DSGI_DIGITAL_MEDIA
-GRAPHICS_LIB = -delay_load -lmoviefile -delay_load -ldmedia -lGL -lGLU
-#endif /* defined (O64) */
-#elif defined(LINUX) /* switch OperatingSystem */
-XCOMM for OpenGL without SGI movie
-GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
-GRAPHICS_LIB = -lGL -lGLU
-#endif /* switch OperatingSystem */
-#endif /* (USE_UNEMAP_NODES) */
-
-#if defined (USE_UNEMAP_NODES)
-USE_NODES_SWITCH = -DUNEMAP_USE_NODES
-#else
-USE_NODES_SWITCH =
-#endif
-
-#if defined (IRIX) /* switch OperatingSystem */
 #if defined (CMISS_ROOT_DEFINED)
 VPATH=$(BIN_PATH):$(OBJECT_PATH):$(UIDH_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH):$(PRODUCT_UIDH_PATH)
-#else /* defined (CMISS_ROOT_DEFINED) */
+#else /* defined (CMISS_ROOT) */
 VPATH=$(BIN_PATH):$(OBJECT_PATH):$(UIDH_PATH)
-#endif /* defined (CMISS_ROOT_DEFINED) */
-#elif defined (LINUX) /* switch OperatingSystem */
-#if defined (CMISS_ROOT_DEFINED)
-VPATH=$(BIN_PATH):$(OBJECT_PATH):$(UIDH_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH):$(PRODUCT_UIDH_PATH)
-#else /* defined (CMISS_ROOT_DEFINED) */
-VPATH=$(BIN_PATH):$(OBJECT_PATH):$(UIDH_PATH)
-#endif /* defined (CMISS_ROOT_DEFINED) */
-#if defined (OLD_CODE)
-XCOMM LINUX treats VPATH slightly differently and does not notice
-XCOMM	that a local *.c file has changed if a valid *.olinux file
-XCOMM	is found in the PRODUCT_PATH directories so use vpath and
-XCOMM the VPATH is not searched for *.olinux.  This has the penalty
-XCOMM of requiring all the objects to be built locally.
-vpath %.c $(BIN_PATH):$(OBJECT_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH)
-vpath %.f $(BIN_PATH):$(OBJECT_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH)
-vpath %.h $(BIN_PATH):$(OBJECT_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH)
-vpath %.cpp $(BIN_PATH):$(OBJECT_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH)
-vpath %.uil $(BIN_PATH):$(OBJECT_PATH):$(PRODUCT_SOURCE_PATH):$(PRODUCT_OBJECT_PATH)
-#endif
-#endif /* switch OperatingSystem */
+#endif /* defined (CMISS_ROOT) */
 
-#if defined (OLD_CODE)
-CC = cc -n32 -c -o
-CPP = CC -n32 -c -o
-FORTRAN = f77 -n32 -c -o
-LINK = cc -n32 -o
-LINK = cc -n32 -multigot -o
-CC = cc -n32 -c -g -o
-CPP = CC -n32 -c -g -o
-FORTRAN = f77 -n32 -c -g -o
-LINK = ld -n32 -g -multigot -o
-LINK = cc -n32 -g -multigot -o
-LINK = f77 -n32 -g -multigot -o
-CC = cc -c -o
-CPP = CC -c -o
-FORTRAN = f77 -c -o
-LINK = cc -o
-#endif
-
-#if defined (IRIX) /* switch OperatingSystem */
-#define WildC *.c
-UIDTOUIDH = $(UTILITIES_PATH)/uid2uidh
-#if !defined (O64)
-UIL = uil
-#else /* !defined (O64) */
-UIL = uil64
-#endif /* !defined (O64) */
-CC = cc -c
-CPP = CC -c
-FORTRAN = f77 -c
-LINK = cc
-#if defined (OPTIMISED)
-OPTIMISATION_FLAGS = -O
-COMPILE_FLAGS = -ansi -pedantic -woff 1521,1048
-COMPILE_DEFINES = 
-STRICT_FLAGS = 
-STRICT_FLAGS_PATTERN = NONE /* Must specify a pattern that doesn't match */
-#else /* defined (OPTIMISED) */
-OPTIMISATION_FLAGS = -g -mips3
-COMPILE_FLAGS = -ansi -fullwarn -pedantic -woff 1521,1048
-COMPILE_DEFINES = -DREPORT_GL_ERRORS -DUSE_PARAMETER_ON 
-STRICT_FLAGS = -diag_error 1196
-STRICT_FLAGS_PATTERN = choose/WildC | command/WildC | curve/WildC | data/WildC | finite_element/WildC | general/WildC | graphics/WildC | material/WildC | mirage/WildC | select/WildC | three_d_drawing/WildC | time/WildC | user_interface/WildC | view/WildC
-#endif /* defined (OPTIMISED) */
-
-#if defined (O64)
-TARGET_TYPE_FLAGS = -G0 -64
-TARGET_TYPE_DEFINES = -DO64
-#else /* defined (O64) */
-TARGET_TYPE_FLAGS = -n32
-TARGET_TYPE_DEFINES =
-#endif /* defined (O64) */
-#elif defined(LINUX) /* switch OperatingSystem */
-
-UIDTOUIDH = $(UTILITIES_PATH)/uid2uidh_linux
-UIL = uil
-UIL64 = uil64  /* There is a test in the rule to see if this is available */
-CC = egcs -c
-CPP = egcs -c
-FORTRAN = g77 -c
-LINK = egcs -static -L/usr/X11R6/lib
-OPTIMISATION_FLAGS = -g
-COMPILE_FLAGS = 
-COMPILE_DEFINES = 
-STRICT_FLAGS = 
-STRICT_FLAGS_PATTERN = NONE /* Must specify a pattern that doesn't match */
-TARGET_TYPE_FLAGS =
-TARGET_TYPE_DEFINES =
-#endif /* switch OperatingSystem */
+/* Include all the common rules */
+#include INCLUDE_IMAKEFILE
 
 SOURCE_DIRECTORY_INC = -I$(SOURCE_PATH) -I$(PRODUCT_SOURCE_PATH)
 
@@ -313,6 +208,30 @@ WINDOWING_SYSTEM = -DMOTIF
 #if defined (OLD_CODE)
 WINDOWING_SYSTEM = -DWINDOWS
 #endif /* (OLD_CODE) */
+
+#if defined (USE_UNEMAP_NODES)
+#if defined (IRIX) /* switch OperatingSystem */
+#if defined (O64)
+XCOMM for OpenGL without SGI movie (64bit doesnt have libraries as of Jan99)
+GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
+GRAPHICS_LIB = -lGL -lGLU
+#else /* defined (O64) */
+XCOMM  for OpenGL with SGI movie
+GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API -DSGI_MOVIE_FILE -DSGI_DIGITAL_MEDIA
+GRAPHICS_LIB = -delay_load -lmoviefile -delay_load -ldmedia -lGL -lGLU
+#endif /* defined (O64) */
+#elif defined(LINUX) /* switch OperatingSystem */
+XCOMM for OpenGL without SGI movie
+GRAPHICS_LIBRARY_SWITCH = -DOPENGL_API
+GRAPHICS_LIB = -lGL -lGLU
+#endif /* switch OperatingSystem */
+#endif /* (USE_UNEMAP_NODES) */
+
+#if defined (USE_UNEMAP_NODES)
+USE_NODES_SWITCH = -DUNEMAP_USE_NODES
+#else
+USE_NODES_SWITCH =
+#endif
 
 UIDH_INC = -I$(UIDH_PATH) -I$(PRODUCT_UIDH_PATH)
 
@@ -419,95 +338,6 @@ ALL_LIB = $(LIB) $(EXTERNAL_INPUT_LIB)
 #if defined (OLD_CODE)
 ALL_LIB = alpha.opt/opt
 #endif /* defined (OLD_CODE) */
-
-.MAKEOPTS : -r
-
-.SUFFIXES :
-.SUFFIXES : .ObjSuffix .c .cpp .f .uil .uidh
-
-.c.ObjSuffix: 
-	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
-		mkdir -p $(OBJECT_PATH)/$(*D); \
-	fi
-#if defined (CMISS_ROOT_DEFINED)
-	@if [ -f $*.c ]; then \
-	   case $*.c in  \
-	      $(STRICT_FLAGS_PATTERN) ) \
-	         set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $*.c;; \
-	      * ) \
-	         set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $*.c;; \
-	   esac ; \
-	else \
-	   case $*.c in  \
-	      $(STRICT_FLAGS_PATTERN) ) \
-	         set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.c;; \
-	      * ) \
-      		set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.c;; \
-	   esac ; \
-	fi
-#else /* defined (CMISS_ROOT_DEFINED) */
-	@case $*.c in  \
-	   $(STRICT_FLAGS_PATTERN) ) \
-	      set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $*.c;; \
-	   * ) \
-	      set -x ; $(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $*.c;; \
-	esac ;
-#endif /* defined (CMISS_ROOT_DEFINED) */
-
-.cpp.ObjSuffix:
-	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
-		mkdir -p $(OBJECT_PATH)/$(*D); \
-	fi
-	@if [ -f $*.cpp ]; then \
-	   case $*.cpp in  \
-	      $(STRICT_FLAGS_PATTERN) ) \
-   		   set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $*.cpp;; \
-	      * ) \
-	   	   set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $*.cpp;; \
-	   esac ; \
-	else \
-	   case $*.cpp in  \
-	      $(STRICT_FLAGS_PATTERN) ) \
-	        set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(STRICT_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.cpp;; \
-	      * ) \
-	        set -x ; $(CPP) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(PRODUCT_SOURCE_PATH)/$*.cpp;; \
-	   esac ; \
-	fi
-
-.f.ObjSuffix: 
-	@if [ ! -d $(OBJECT_PATH)/$(*D) ]; then \
-		mkdir -p $(OBJECT_PATH)/$(*D); \
-	fi
-	@if [ -f $*.f ]; then \
-	   case $*.f in  \
-	      * ) \
-	        set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) -o $(OBJECT_PATH)/$*.ObjSuffix $(SOURCE_DIRECTORY_INC) $*.f ;; \
-	   esac ; \
-	else \
-	   case $*.f in  \
-	      * ) \
-	        set -x ; $(FORTRAN) $(OPTIMISATION_FLAGS) -o $(OBJECT_PATH)/$*.ObjSuffix $(SOURCE_DIRECTORY_INC) $(PRODUCT_SOURCE_PATH)/$*.f ;; \
-	   esac ; \
-	fi
-#if defined (OLD_CODE) /* Used to put object in correct directory with g77 */
-#if defined (LINUX)
-	mv `echo $*.o | cut -f2 -d/` $*.ObjSuffix
-#endif /* defined (LINUX) */
-#endif /* defined (OLD_CODE) */
-
-.uil.uidh:
-	@if [ ! -d $(UIDH_PATH)/$(*D) ]; then \
-		mkdir -p $(UIDH_PATH)/$(*D); \
-	fi
-	@if [ -f $*.uil ]; then \
-	   set -x ; \
-	   $(UIL) -o $(UIDH_PATH)/$*.uid $*.uil; \
-           $(UIDTOUIDH) $(UIDH_PATH)/$*.uid $(UIDH_PATH)/$*.uidh; \
-	else \
-	   set -x ; \
-	   $(UIL) -o $(UIDH_PATH)/$*.uid $(PRODUCT_SOURCE_PATH)/$*.uil; \
-      	   $(UIDTOUIDH) $(UIDH_PATH)/$*.uid $(UIDH_PATH)/$*.uidh; \
-	fi
 
 COMMAND_SRCS = \
 	command/parser.c
@@ -678,41 +508,6 @@ OBJSA = $(SRCS:.c=.ObjSuffix)
 OBJSB = $(OBJSA:.cpp=.ObjSuffix)
 OBJS = $(OBJSB:.f=.ObjSuffix)
 
-all : oscheck
-	if [ -s $(PRODUCT_SOURCE_PATH)/DependMake ] ; then \
-	    	if [ -f UnemapMake ]; then \
-			$(MAKE) -f UnemapMake UnemapTarget ; \
-		else \
-			$(MAKE) -f $(PRODUCT_SOURCE_PATH)/UnemapMake UnemapTarget ; \
-		fi \
-	else \
-	    	if [ -f UnemapMake ]; then \
-			$(MAKE) -f UnemapMake depend ; \
-			$(MAKE) -f UnemapMake UnemapTarget ; \
-		else \
-			$(MAKE) -f $(PRODUCT_SOURCE_PATH)/UnemapMake depend ; \
-			$(MAKE) -f $(PRODUCT_SOURCE_PATH)/UnemapMake UnemapTarget ; \
-		fi \
-	fi
-
-XCOMM Check that the makefile is being used on the correct system
-#if defined (IRIX)
-oscheck :
-	@if ! sysinfo > /dev/null ; then \
-	   echo "Incorrect Operating System for SGI Make" ;\
-      exit ;\
-   fi
-#else /* defined (IRIX) */
-#if defined (LINUX)
-oscheck :
-	/* Do something that only works under LINUX */
-	@echo -n > /dev/null
-#else /* defined (LINUX) */
-oscheck :
-	echo "No known operating system defined for imake"
-#endif  /* defined (LINUX) */
-#endif  /* defined (IRIX) */
-
 depend :
 	echo -n > DependMake
 	(makedepend -f DependMake -Y -o.ObjSuffix -- $(ALL_FLAGS) -- unemap.c 2> DependMake.tmp)
@@ -721,32 +516,17 @@ depend :
 	.uil.uidh rule from picking up dependencies so I remove this PATH */
 	sed "s%$(UIDH_PATH)/%%g" DependMake > DependMake.tmp2
 	mv DependMake.tmp2 DependMake
+#if defined (IRIX) /* switch OperatingSystem */
+	(ls $(SRCS) 2>&1 | sed "s%Cannot access %%;s%: No such file or directory%%;s%.*%&: &%;s%\.[^.]*:%.o:%" >> DependMake)
+#elif defined(LINUX) /* switch OperatingSystem */
+	(ls $(SRCS) 2>&1 | sed "s%ls: %%;s%: No such file or directory%%;s%.*%&: &%;s%\.[^.]*:%.o:%" >> DependMake)
+#endif /* switch OperatingSystem */
 	/* Try and make a rule for the uidhs if they don't exist already,
 	It is bad, based on the format of the error output from makedepend and it only
 	gets the first inclusion.  If it fails then you can get the correct makedepend 
 	by ensuring all the uidh files already exist before you makedepend */
 	( grep uidh DependMake.tmp | grep makedepend | awk -v Obj=ObjSuffix -F "[ ,]" '{printf("%s.%s:",substr($$4, 1, length($$4) - 2),Obj); for(i = 1 ; i <= NF ; i++)  { if (match($$i,"uidh")) printf(" %s", substr($$i, 2, length($$i) -2)) } printf("\n");}' >> DependMake)
 	rm DependMake.tmp
-
-	  /* Can't put / by * or it thinks there is a comment so I have put the * into
-			the variable and used that instead */
-#define WildObj *.ObjSuffix
-#define WildUil *.uil
-#define WildUid *.uid
-#define WildC *.c
-#define WildCpp *.cpp
-#define WildCmn *.cmn
-#define WildH *.h
-#define WildF *.f
-#define WildMms *.mms
-#define WildXbm *.xbm
-#define WildRc *.rc
-#define WildPx *.px
-clean :
-	-rm $(OBJS)
-
-clobber : clean
-	-rm unemap
 
 transfer :
 	tar -cvf - \
@@ -781,7 +561,7 @@ unemap.ObjSuffix : unemap.c $(OBJECT_PATH)/version.ObjSuffix.h
 	fi
 	$(CC) -o $(OBJECT_PATH)/$*.ObjSuffix $(ALL_FLAGS) $(OBJECT_PATH)/$*.ObjSuffix.c;
 
-UnemapTarget : $(OBJS) unemap.ObjSuffix
+Target : $(OBJS) unemap.ObjSuffix
 	if [ ! -d $(BIN_PATH) ]; then \
 		mkdir -p $(BIN_PATH); \
 	fi
@@ -790,7 +570,10 @@ UnemapTarget : $(OBJS) unemap.ObjSuffix
 #elif defined(LINUX) /* switch OperatingSystem */
 	cd $(OBJECT_PATH) ; (ls $(OBJS) unemap.ObjSuffix 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)
 #endif /* switch OperatingSystem */
-	cd $(OBJECT_PATH) ; rm -f product_object ; ln -s $(PRODUCT_OBJECT_PATH) product_object ; $(LINK) -o $(BIN_PATH)/UnemapTarget $(ALL_FLAGS) `cat object.list` $(ALL_LIB)
+	cd $(OBJECT_PATH) ; \
+	rm -f product_object ; \
+	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
+	$(LINK) -o $(BIN_PATH)/Target $(ALL_FLAGS) `cat object.list` $(ALL_LIB)
 
 utilities : Bmsi2sigTarget ChangeCalibrationTarget ChangeChannelsTarget \
 ChangeConfigurationTarget ChangeEventsTarget ChangeFrequencyTarget \
@@ -810,18 +593,7 @@ BMSI2SIG_SRCS = \
 	unemap/rig.c \
 	user_interface/message.c
 
-BMSI2SIG_OBJSA = $(BMSI2SIG_SRCS:.c=.ObjSuffix)
-BMSI2SIG_OBJSB = $(BMSI2SIG_OBJSA:.cpp=.ObjSuffix)
-BMSI2SIG_OBJS = $(BMSI2SIG_OBJSB:.f=.ObjSuffix)
-
-Bmsi2sigTarget: $(BMSI2SIG_OBJS)
-	: /* The #if leaves a blank line which isn't accepted by the makefile */
-#if defined (IRIX) /* switch OperatingSystem */
-	(ls $(BMSI2SIG_OBJS) 2>&1 | sed "s%Cannot access %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#elif defined(LINUX) /* switch OperatingSystem */
-	(ls $(BMSI2SIG_OBJS) 2>&1 | sed "s%ls: %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#endif /* switch OperatingSystem */
-	$(LINK) Bmsi2sigTarget `cat object.list` -lm
+BuildNormalTarget(Bmsi2sigTarget,$(UTILITIES_PATH),BMSI2SIG_SRCS,BMSI2SIG_OBJSA,BMSI2SIG_OBJSB,BMSI2SIG_OBJS,-lm) 
 
 CHANGE_CALIBRATION_SRCS = \
 	unemap/utilities/change_calibration.c \
@@ -835,18 +607,7 @@ CHANGE_CALIBRATION_SRCS = \
 	unemap/rig.c \
 	user_interface/message.c
 
-CHANGE_CALIBRATION_OBJSA = $(CHANGE_CALIBRATION_SRCS:.c=.ObjSuffix)
-CHANGE_CALIBRATION_OBJSB = $(CHANGE_CALIBRATION_OBJSA:.cpp=.ObjSuffix)
-CHANGE_CALIBRATION_OBJS = $(CHANGE_CALIBRATION_OBJSB:.f=.ObjSuffix)
-
-ChangeCalibrationTarget: $(CHANGE_CALIBRATION_OBJS)
-	: /* The #if leaves a blank line which isn't accepted by the makefile */
-#if defined (IRIX) /* switch OperatingSystem */
-	(ls $(CHANGE_CALIBRATION_OBJS) 2>&1 | sed "s%Cannot access %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#elif defined(LINUX) /* switch OperatingSystem */
-	(ls $(CHANGE_CALIBRATION_OBJS) 2>&1 | sed "s%ls: %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#endif /* switch OperatingSystem */
-	$(LINK) ChangeCalibrationTarget `cat object.list` -lm
+BuildNormalTarget(ChangeCalibrationTarget,$(UTILITIES_PATH),CHANGE_CALIBRATION_SRCS,CHANGE_CALIBRATION_OBJSA,CHANGE_CALIBRATION_OBJSB,CHANGE_CALIBRATION_OBJS,-lm) 
 
 CHANGE_CHANNELS_SRCS = \
 	unemap/utilities/change_channels.c \
@@ -860,18 +621,7 @@ CHANGE_CHANNELS_SRCS = \
 	unemap/rig.c \
 	user_interface/message.c
 
-CHANGE_CHANNELS_OBJSA = $(CHANGE_CHANNELS_SRCS:.c=.ObjSuffix)
-CHANGE_CHANNELS_OBJSB = $(CHANGE_CHANNELS_OBJSA:.cpp=.ObjSuffix)
-CHANGE_CHANNELS_OBJS = $(CHANGE_CHANNELS_OBJSB:.f=.ObjSuffix)
-
-ChangeChannelsTarget: $(CHANGE_CHANNELS_OBJS)
-	: /* The #if leaves a blank line which isn't accepted by the makefile */
-#if defined (IRIX) /* switch OperatingSystem */
-	(ls $(CHANGE_CHANNELS_OBJS) 2>&1 | sed "s%Cannot access %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#elif defined(LINUX) /* switch OperatingSystem */
-	(ls $(CHANGE_CHANNELS_OBJS) 2>&1 | sed "s%ls: %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#endif /* switch OperatingSystem */
-	$(LINK) ChangeChannelsTarget `cat object.list` -lm
+BuildNormalTarget(ChangeChannelsTarget,$(UTILITIES_PATH),CHANGE_CHANNELS_SRCS,CHANGE_CHANNELS_OBJSA,CHANGE_CHANNELS_OBJSB,CHANGE_CHANNELS_OBJS,-lm) 
 
 CHANGE_CONFIGURATION_SRCS = \
 	unemap/utilities/change_configuration.c \
@@ -885,34 +635,12 @@ CHANGE_CONFIGURATION_SRCS = \
 	unemap/rig.c \
 	user_interface/message.c
 
-CHANGE_CONFIGURATION_OBJSA = $(CHANGE_CONFIGURATION_SRCS:.c=.ObjSuffix)
-CHANGE_CONFIGURATION_OBJSB = $(CHANGE_CONFIGURATION_OBJSA:.cpp=.ObjSuffix)
-CHANGE_CONFIGURATION_OBJS = $(CHANGE_CONFIGURATION_OBJSB:.f=.ObjSuffix)
-
-ChangeConfigurationTarget: $(CHANGE_CONFIGURATION_OBJS)
-	: /* The #if leaves a blank line which isn't accepted by the makefile */
-#if defined (IRIX) /* switch OperatingSystem */
-	(ls $(CHANGE_CONFIGURATION_OBJS) 2>&1 | sed "s%Cannot access %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#elif defined(LINUX) /* switch OperatingSystem */
-	(ls $(CHANGE_CONFIGURATION_OBJS) 2>&1 | sed "s%ls: %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#endif /* switch OperatingSystem */
-	$(LINK) ChangeConfigurationTarget `cat object.list` -lm
+BuildNormalTarget(ChangeConfigurationTarget,$(UTILITIES_PATH),CHANGE_CONFIGURATION_SRCS,CHANGE_CONFIGURATION_OBJSA,CHANGE_CONFIGURATION_OBJSB,CHANGE_CONFIGURATION_OBJS,-lm) 
 
 CHANGE_EVENTS_SRCS = \
 	unemap/utilities/change_events.c
 
-CHANGE_EVENTS_OBJSA = $(CHANGE_EVENTS_SRCS:.c=.ObjSuffix)
-CHANGE_EVENTS_OBJSB = $(CHANGE_EVENTS_OBJSA:.cpp=.ObjSuffix)
-CHANGE_EVENTS_OBJS = $(CHANGE_EVENTS_OBJSB:.f=.ObjSuffix)
-
-ChangeEventsTarget: $(CHANGE_EVENTS_OBJS)
-	: /* The #if leaves a blank line which isn't accepted by the makefile */
-#if defined (IRIX) /* switch OperatingSystem */
-	(ls $(CHANGE_EVENTS_OBJS) 2>&1 | sed "s%Cannot access %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#elif defined(LINUX) /* switch OperatingSystem */
-	(ls $(CHANGE_EVENTS_OBJS) 2>&1 | sed "s%ls: %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#endif /* switch OperatingSystem */
-	$(LINK) ChangeEventsTarget `cat object.list` -lm
+BuildNormalTarget(ChangeEventsTarget,$(UTILITIES_PATH),CHANGE_EVENTS_SRCS,CHANGE_EVENTS_OBJSA,CHANGE_EVENTS_OBJSB,CHANGE_EVENTS_OBJS,-lm) 
 
 CHANGE_FREQUENCY_SRCS = \
 	unemap/utilities/change_frequency.c \
@@ -926,18 +654,7 @@ CHANGE_FREQUENCY_SRCS = \
 	unemap/rig.c \
 	user_interface/message.c
 
-CHANGE_FREQUENCY_OBJSA = $(CHANGE_FREQUENCY_SRCS:.c=.ObjSuffix)
-CHANGE_FREQUENCY_OBJSB = $(CHANGE_FREQUENCY_OBJSA:.cpp=.ObjSuffix)
-CHANGE_FREQUENCY_OBJS = $(CHANGE_FREQUENCY_OBJSB:.f=.ObjSuffix)
-
-ChangeFrequencyTarget: $(CHANGE_FREQUENCY_OBJS)
-	: /* The #if leaves a blank line which isn't accepted by the makefile */
-#if defined (IRIX) /* switch OperatingSystem */
-	(ls $(CHANGE_FREQUENCY_OBJS) 2>&1 | sed "s%Cannot access %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#elif defined(LINUX) /* switch OperatingSystem */
-	(ls $(CHANGE_FREQUENCY_OBJS) 2>&1 | sed "s%ls: %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#endif /* switch OperatingSystem */
-	$(LINK) ChangeFrequencyTarget `cat object.list` -lm
+BuildNormalTarget(ChangeFrequencyTarget,$(UTILITIES_PATH),CHANGE_FREQUENCY_SRCS,CHANGE_FREQUENCY_OBJSA,CHANGE_FREQUENCY_OBJSB,CHANGE_FREQUENCY_OBJS,-lm) 
 
 COMBINE_SIGNALS_SRCS = \
 	unemap/utilities/combine_signals.c \
@@ -951,18 +668,7 @@ COMBINE_SIGNALS_SRCS = \
 	unemap/rig.c \
 	user_interface/message.c
 
-COMBINE_SIGNALS_OBJSA = $(COMBINE_SIGNALS_SRCS:.c=.ObjSuffix)
-COMBINE_SIGNALS_OBJSB = $(COMBINE_SIGNALS_OBJSA:.cpp=.ObjSuffix)
-COMBINE_SIGNALS_OBJS = $(COMBINE_SIGNALS_OBJSB:.f=.ObjSuffix)
-
-CombineSignalsTarget: $(COMBINE_SIGNALS_OBJS)
-	: /* The #if leaves a blank line which isn't accepted by the makefile */
-#if defined (IRIX) /* switch OperatingSystem */
-	(ls $(COMBINE_SIGNALS_OBJS) 2>&1 | sed "s%Cannot access %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#elif defined(LINUX) /* switch OperatingSystem */
-	(ls $(COMBINE_SIGNALS_OBJS) 2>&1 | sed "s%ls: %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#endif /* switch OperatingSystem */
-	$(LINK) CombineSignalsTarget `cat object.list` -lm
+BuildNormalTarget(CombineSignalsTarget,$(UTILITIES_PATH),COMBINE_SIGNALS_SRCS,COMBINE_SIGNALS_OBJSA,COMBINE_SIGNALS_OBJSB,COMBINE_SIGNALS_OBJS,-lm) 
 
 DIFFERENCE_SIGNALS_SRCS = \
 	unemap/utilities/difference_signals.c \
@@ -976,18 +682,7 @@ DIFFERENCE_SIGNALS_SRCS = \
 	unemap/rig.c \
 	user_interface/message.c
 
-DIFFERENCE_SIGNALS_OBJSA = $(DIFFERENCE_SIGNALS_SRCS:.c=.ObjSuffix)
-DIFFERENCE_SIGNALS_OBJSB = $(DIFFERENCE_SIGNALS_OBJSA:.cpp=.ObjSuffix)
-DIFFERENCE_SIGNALS_OBJS = $(DIFFERENCE_SIGNALS_OBJSB:.f=.ObjSuffix)
-
-DifferenceSignalsTarget: $(DIFFERENCE_SIGNALS_OBJS)
-	: /* The #if leaves a blank line which isn't accepted by the makefile */
-#if defined (IRIX) /* switch OperatingSystem */
-	(ls $(DIFFERENCE_SIGNALS_OBJS) 2>&1 | sed "s%Cannot access %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#elif defined(LINUX) /* switch OperatingSystem */
-	(ls $(DIFFERENCE_SIGNALS_OBJS) 2>&1 | sed "s%ls: %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#endif /* switch OperatingSystem */
-	$(LINK) DifferenceSignalsTarget `cat object.list` -lm
+BuildNormalTarget(DifferenceSignalsTarget,$(UTILITIES_PATH),DIFFERENCE_SIGNALS_SRCS,DIFFERENCE_SIGNALS_OBJSA,DIFFERENCE_SIGNALS_OBJSB,DIFFERENCE_SIGNALS_OBJS,-lm) 
 
 EXTRACT_SIGNAL_SRCS = \
 	unemap/utilities/extract_signal.c \
@@ -1001,18 +696,7 @@ EXTRACT_SIGNAL_SRCS = \
 	unemap/rig.c \
 	user_interface/message.c
 
-EXTRACT_SIGNAL_OBJSA = $(EXTRACT_SIGNAL_SRCS:.c=.ObjSuffix)
-EXTRACT_SIGNAL_OBJSB = $(EXTRACT_SIGNAL_OBJSA:.cpp=.ObjSuffix)
-EXTRACT_SIGNAL_OBJS = $(EXTRACT_SIGNAL_OBJSB:.f=.ObjSuffix)
-
-ExtractSignalTarget: $(EXTRACT_SIGNAL_OBJS)
-	: /* The #if leaves a blank line which isn't accepted by the makefile */
-#if defined (IRIX) /* switch OperatingSystem */
-	(ls $(EXTRACT_SIGNAL_OBJS) 2>&1 | sed "s%Cannot access %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#elif defined(LINUX) /* switch OperatingSystem */
-	(ls $(EXTRACT_SIGNAL_OBJS) 2>&1 | sed "s%ls: %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#endif /* switch OperatingSystem */
-	$(LINK) ExtractSignalTarget `cat object.list` -lm
+BuildNormalTarget(ExtractSignalTarget,$(UTILITIES_PATH),EXTRACT_SIGNAL_SRCS,EXTRACT_SIGNAL_OBJSA,EXTRACT_SIGNAL_OBJSB,EXTRACT_SIGNAL_OBJS,-lm) 
 
 IMG2SIG_SRCS = \
 	unemap/utilities/img2sig.c \
@@ -1026,34 +710,12 @@ IMG2SIG_SRCS = \
 	unemap/rig.c \
 	user_interface/message.c
 
-IMG2SIG_OBJSA = $(IMG2SIG_SRCS:.c=.ObjSuffix)
-IMG2SIG_OBJSB = $(IMG2SIG_OBJSA:.cpp=.ObjSuffix)
-IMG2SIG_OBJS = $(IMG2SIG_OBJSB:.f=.ObjSuffix)
-
-Img2sigTarget: $(IMG2SIG_OBJS)
-	: /* The #if leaves a blank line which isn't accepted by the makefile */
-#if defined (IRIX) /* switch OperatingSystem */
-	(ls $(IMG2SIG_OBJS) 2>&1 | sed "s%Cannot access %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#elif defined(LINUX) /* switch OperatingSystem */
-	(ls $(IMG2SIG_OBJS) 2>&1 | sed "s%ls: %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#endif /* switch OperatingSystem */
-	$(LINK) Img2sigTarget `cat object.list` -lm
+BuildNormalTarget(Img2sigTarget,$(UTILITIES_PATH),IMG2SIG_SRCS,IMG2SIG_OBJSA,IMG2SIG_OBJSB,IMG2SIG_OBJS,-lm) 
 
 PLT2CNFG_SRCS = \
 	unemap/utilities/plt2cnfg.c
 
-PLT2CNFG_OBJSA = $(PLT2CNFG_SRCS:.c=.ObjSuffix)
-PLT2CNFG_OBJSB = $(PLT2CNFG_OBJSA:.cpp=.ObjSuffix)
-PLT2CNFG_OBJS = $(PLT2CNFG_OBJSB:.f=.ObjSuffix)
-
-Plt2cnfgTarget: $(PLT2CNFG_OBJS)
-	: /* The #if leaves a blank line which isn't accepted by the makefile */
-#if defined (IRIX) /* switch OperatingSystem */
-	(ls $(PLT2CNFG_OBJS) 2>&1 | sed "s%Cannot access %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#elif defined(LINUX) /* switch OperatingSystem */
-	(ls $(PLT2CNFG_OBJS) 2>&1 | sed "s%ls: %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#endif /* switch OperatingSystem */
-	$(LINK) Plt2cnfgTarget `cat object.list` -lm
+BuildNormalTarget(Plt2cnfgTarget,$(UTILITIES_PATH),PLT2CNFG_SRCS,PLT2CNFG_OBJSA,PLT2CNFG_OBJSB,PLT2CNFG_OBJS,-lm) 
 
 POSDAT2SIG_SRCS = \
 	unemap/utilities/posdat2sig.c \
@@ -1067,18 +729,7 @@ POSDAT2SIG_SRCS = \
 	unemap/rig.c \
 	user_interface/message.c
 
-POSDAT2SIG_OBJSA = $(POSDAT2SIG_SRCS:.c=.ObjSuffix)
-POSDAT2SIG_OBJSB = $(POSDAT2SIG_OBJSA:.cpp=.ObjSuffix)
-POSDAT2SIG_OBJS = $(POSDAT2SIG_OBJSB:.f=.ObjSuffix)
-
-Posdat2sigTarget: $(POSDAT2SIG_OBJS)
-	: /* The #if leaves a blank line which isn't accepted by the makefile */
-#if defined (IRIX) /* switch OperatingSystem */
-	(ls $(POSDAT2SIG_OBJS) 2>&1 | sed "s%Cannot access %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#elif defined(LINUX) /* switch OperatingSystem */
-	(ls $(POSDAT2SIG_OBJS) 2>&1 | sed "s%ls: %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#endif /* switch OperatingSystem */
-	$(LINK) Posdat2sigTarget `cat object.list` -lm
+BuildNormalTarget(Posdat2sigTarget,$(UTILITIES_PATH),POSDAT2SIG_SRCS,POSDAT2SIG_OBJSA,POSDAT2SIG_OBJSB,POSDAT2SIG_OBJS,-lm) 
 
 REGISTER_SRCS = \
 	unemap/utilities/register.c \
@@ -1092,18 +743,7 @@ REGISTER_SRCS = \
 	unemap/rig.c \
 	user_interface/message.c
 
-REGISTER_OBJSA = $(REGISTER_SRCS:.c=.ObjSuffix)
-REGISTER_OBJSB = $(REGISTER_OBJSA:.cpp=.ObjSuffix)
-REGISTER_OBJS = $(REGISTER_OBJSB:.f=.ObjSuffix)
-
-RegisterTarget: $(REGISTER_OBJS)
-	: /* The #if leaves a blank line which isn't accepted by the makefile */
-#if defined (IRIX) /* switch OperatingSystem */
-	(ls $(REGISTER_OBJS) 2>&1 | sed "s%Cannot access %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#elif defined(LINUX) /* switch OperatingSystem */
-	(ls $(REGISTER_OBJS) 2>&1 | sed "s%ls: %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#endif /* switch OperatingSystem */
-	$(LINK) RegisterTarget `cat object.list` $(LIB)
+BuildNormalTarget(RegisterTarget,$(UTILITIES_PATH),REGISTER_SRCS,REGISTER_OBJSA,REGISTER_OBJSB,REGISTER_OBJS,$(LIB)) 
 
 TEST_UNEMAP_HARDWARE_SRCS = \
 	unemap/utilities/test_unemap_hardware.c \
@@ -1112,38 +752,7 @@ TEST_UNEMAP_HARDWARE_SRCS = \
 	unemap/unemap_hardware_client.c \
 	user_interface/message.c
 
-TEST_UNEMAP_HARDWARE_OBJSA = $(TEST_UNEMAP_HARDWARE_SRCS:.c=.ObjSuffix)
-TEST_UNEMAP_HARDWARE_OBJSB = $(TEST_UNEMAP_HARDWARE_OBJSA:.cpp=.ObjSuffix)
-TEST_UNEMAP_HARDWARE_OBJS = $(TEST_UNEMAP_HARDWARE_OBJSB:.f=.ObjSuffix)
-
-TestUnemapHardwareTarget: $(TEST_UNEMAP_HARDWARE_OBJS)
-	: /* The #if leaves a blank line which isn't accepted by the makefile */
-#if defined (IRIX) /* switch OperatingSystem */
-	(ls $(TEST_UNEMAP_HARDWARE_OBJS) 2>&1 | sed "s%Cannot access %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#elif defined(LINUX) /* switch OperatingSystem */
-	(ls $(TEST_UNEMAP_HARDWARE_OBJS) 2>&1 | sed "s%ls: %$(PRODUCT_PATH)/%;s%: No such file or directory%%" > object.list)
-#endif /* switch OperatingSystem */
-	$(LINK) TestUnemapHardwareTarget `cat object.list` $(LIB)
-
-#if defined (OLD_CODE)
-utilities : unemap/utilities/change_channels unemap/utilities/change_events
-
-unemap/utilities/change_channels : unemap/utilities/change_channels.ObjSuffix
-	$(LINK) unemap/utilities/change_channels unemap/utilities/change_channels.ObjSuffix \
-	general/debug.ObjSuffix general/geometry.ObjSuffix general/myio.ObjSuffix general/mystring.ObjSuffix \
-	unemap/rig.ObjSuffix unemap/interpolate.ObjSuffix user_interface/message.ObjSuffix \
-	-lm
-
-unemap/utilities/change_channels.ObjSuffix : unemap/utilities/change_channels.c
-	$(CC) unemap/utilities/change_channels.ObjSuffix -I. unemap/utilities/change_channels.c
-
-unemap/utilities/change_events : unemap/utilities/change_events.ObjSuffix
-	$(LINK) unemap/utilities/change_events unemap/utilities/change_events.ObjSuffix
-
-unemap/utilities/change_events.ObjSuffix : unemap/utilities/change_events.c
-	$(CC) unemap/utilities/change_events.ObjSuffix -I. unemap/utilities/change_events.c
-#endif /* defined (OLD_CODE) */
-
+BuildNormalTarget(TestUnemapHardwareTarget,$(UTILITIES_PATH),TEST_UNEMAP_HARDWARE_SRCS,TEST_UNEMAP_HARDWARE_OBJSA,TEST_UNEMAP_HARDWARE_OBJSB,TEST_UNEMAP_HARDWARE_OBJS,$(LIB)) 
 
 /* sinclude used so that the makefile can be run when the dependency file doesn't exist,
  it should then make one */
