@@ -1476,7 +1476,7 @@ $(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
 	$(CPREPROCESS) $(ALL_DEFINES) $(OBJECT_PATH)/$(EXPORTS_FILE).c -o $(OBJECT_PATH)/$(EXPORTS_FILE).E
 	echo > $(OBJECT_PATH)/$(EXPORTS_FILE)	"CMISS_EXP_1.0 {"
 	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE)	"global:"
-	sed -n -e 's/\([^ ]+\)/  \1;/p' < $(OBJECT_PATH)/$(EXPORTS_FILE).E >> $(OBJECT_PATH)/$(EXPORTS_FILE)
+	sed -n -e 's/\([^ ]\+\)/  \1;/p' < $(OBJECT_PATH)/$(EXPORTS_FILE).E >> $(OBJECT_PATH)/$(EXPORTS_FILE)
 	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE)	"local:"
 	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE)	"  *;"
 	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE)	"};"
@@ -1496,11 +1496,11 @@ $(OBJECT_PATH)/$(EXPORTS_FILE) :	$(SRC_EXPORTS_FILE)
 	$(CPREPROCESS) $(ALL_DEFINES) $(OBJECT_PATH)/$(EXPORTS_FILE).c -o $(OBJECT_PATH)/$(EXPORTS_FILE).E
 	echo > $(OBJECT_PATH)/$(EXPORTS_FILE).c	"#define lt_preloaded_symbols some_other_symbol"
 	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"#define dynamic_ptr void *"
-	sed -n -e 's/\([^ ]+\)/extern char \1;/p' < $(OBJECT_PATH)/$(EXPORTS_FILE).E >> $(OBJECT_PATH)/$(EXPORTS_FILE).c
+	sed -n -e 's/\([^ ]\+\)/extern char \1;/p' < $(OBJECT_PATH)/$(EXPORTS_FILE).E >> $(OBJECT_PATH)/$(EXPORTS_FILE).c
 	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"#undef lt_preloaded_symbols"
 	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"const struct { const char *name; dynamic_ptr address; }"
 	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"lt_preloaded_symbols[] = {"
-	sed -n -e 's/\([^ ]+\)/  {\"\1\", (dynamic_ptr) \&\1},/p' < $(OBJECT_PATH)/$(EXPORTS_FILE).E >> $(OBJECT_PATH)/$(EXPORTS_FILE).c
+	sed -n -e 's/\([^ ]\+\)/  {\"\1\", (dynamic_ptr) \&\1},/p' < $(OBJECT_PATH)/$(EXPORTS_FILE).E >> $(OBJECT_PATH)/$(EXPORTS_FILE).c
 	echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"{0, (dynamic_ptr) 0} };"
 	$(LINK) -shared -o $(OBJECT_PATH)/$(EXPORTS_FILE) -Wl,-soname,$(EXPORTS_SONAME) $(OBJECT_PATH)/$(EXPORTS_FILE).c
 #endif /* defined (NEW_BINUTILS) */
