@@ -17,7 +17,7 @@
 #include <iostream>
 #include <stdexcept>
 
-//#define EVALUATE_RETURNS_VALUE
+#define EVALUATE_RETURNS_VALUE
 
 //#define BEFORE_CACHING
 
