@@ -107,14 +107,12 @@ ifeq ($(SYSNAME),AIX)
 all : cmgui cmgui-debug cmgui64 cmgui64-debug
 endif # SYSNAME == AIX
 ifeq ($(SYSNAME),win32)
-all :
+all : cmgui-gtk
 endif # SYSNAME == win32
 ifeq ($(SYSNAME),CYGWIN%=)
 all :
 endif # SYSNAME == CYGWIN%=
 
-#If not already cmiss become cmiss first and then propogate so that the user
-#only has to authenticate as cmiss once at the start.
 update :
 	$(CMISS_ROOT)/bin/cmissmake cmgui;
 
