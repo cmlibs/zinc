@@ -4622,6 +4622,12 @@ Converts a finite element into a graphics object with the supplied settings.
 						{
 							element_point_ranges_identifier.exact_xi[i]=settings->seed_xi[i];
 						}
+						if (settings->xi_discretization_mode
+						  == XI_DISCRETIZATION_CELL_RANDOM)
+						  {
+							 /* Lets seed with the element number so it is consistent */
+							 srand(element->cm.number);
+						  }
 						if (xi_points=Xi_discretization_mode_get_xi_points(
 							settings->xi_discretization_mode,dimension,number_in_xi,
 							element_point_ranges_identifier.exact_xi,&number_of_xi_points))
