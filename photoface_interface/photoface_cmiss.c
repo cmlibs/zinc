@@ -2414,9 +2414,9 @@ adjustment of the generic head.  On success, the <pf_job_id> is set.
 #if defined (ERROR_MESSAGE)
 									if (return_code != PF_SUCCESS_RC)
 									{
-										set_error_message(PF_ERROR_MESSAGE,"Unable to connect to cmiss after %d attempts.",
-											"  Check that your rsh connection is enabled, that your "
-											"offscreen display is valid and your window manager suitable.");
+										set_error_message(PF_ERROR_MESSAGE,"Unable to connect to cmiss after %d attempts."
+											"  Check that your rsh connection is enabled correctly.",
+											attempts);
 									}
 #endif /* defined (ERROR_MESSAGE) */
 								}
