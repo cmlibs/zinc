@@ -20,6 +20,7 @@ Main program for unemap.  Based on cmgui.
 #if defined (NOT_ACQUISITION_ONLY)
 #if defined (UNEMAP_USE_NODES)
 #include "finite_element/computed_field.h"
+#include "graphics/glyph.h"
 #include "graphics/graphics_window.h"
 #include "graphics/light.h"
 #include "graphics/light_model.h"
@@ -265,27 +266,49 @@ Main program for unemap
 #if defined (NOT_ACQUISITION_ONLY)
 	struct Unemap_package *unemap_package;
 #if defined (UNEMAP_USE_NODES)
-	struct Element_point_ranges_selection *element_point_ranges_selection;
-	struct FE_element_selection *element_selection;
-	struct FE_node_selection *node_selection;
-	struct MANAGER(Control_curve) *control_curve_manager;
-	struct MANAGER(FE_field) *fe_field_manager;
-	struct MANAGER(GROUP(FE_element)) *element_group_manager;
-	struct MANAGER(FE_node) *node_manager;	
-	struct MANAGER(FE_element) *element_manager;
-	struct MANAGER(FE_basis) *fe_basis_manager;
-	struct MANAGER(GROUP(FE_node)) *data_group_manager,*node_group_manager;
-	struct Computed_field_package *computed_field_package;
-	struct MANAGER(Computed_field) *computed_field_manager;
-	struct MANAGER(Texture) *texture_manager;	
-	struct MANAGER(Graphics_window) *graphics_window_manager;
-	struct MANAGER(Scene) *scene_manager;
-	struct MANAGER(Light_model) *light_model_manager;
-	struct MANAGER(Light) *light_manager;
-	struct MANAGER(Spectrum) *spectrum_manager;
-	struct MANAGER(Graphical_material) *graphical_material_manager;
-	struct MANAGER(FE_node) *data_manager;
-	struct LIST(GT_object) *glyph_list;
+	float default_light_direction[3]={0.0,-0.5,-1.0};
+	struct Colour ambient_colour,default_colour;	
+	struct Computed_field *computed_field=(struct Computed_field *)NULL;
+	struct Computed_field_package *computed_field_package=(struct Computed_field_package *)NULL;
+	struct Coordinate_system rect_coord_system;
+	struct Element_point_ranges_selection *element_point_ranges_selection=
+		(struct Element_point_ranges_selection *)NULL;
+	struct FE_element_selection *element_selection=(struct FE_element_selection *)NULL;
+	struct FE_node_selection *node_selection=(struct FE_node_selection *)NULL;
+	struct Graphical_material *default_graphical_material=(struct Graphical_material *)NULL;
+	struct Graphical_material *default_selected_material=(struct Graphical_material *)NULL;
+	struct GT_object *glyph=(struct GT_object *)NULL;
+	struct Light *default_light=(struct Light *)NULL;
+
+	struct Light_model *default_light_model=(struct Light_model *)NULL;
+	struct LIST(GT_object) *glyph_list=(struct LIST(GT_object) *)NULL;
+	struct MANAGER(Control_curve) *control_curve_manager=
+		(struct MANAGER(Control_curve) *)NULL;
+	struct MANAGER(Computed_field) *computed_field_manager=
+		(struct MANAGER(Computed_field) *)NULL;
+	struct MANAGER(FE_basis) *fe_basis_manager=
+		(struct MANAGER(FE_basis) *)NULL;
+	struct MANAGER(FE_field) *fe_field_manager=(struct MANAGER(FE_field) *)NULL;
+	struct MANAGER(FE_element) *element_manager=(struct MANAGER(FE_element) *)NULL;
+	struct MANAGER(FE_node) *data_manager=(struct MANAGER(FE_node) *)NULL;
+	struct MANAGER(FE_node) *node_manager=(struct MANAGER(FE_node) *)NULL;
+	struct MANAGER(Graphical_material) *graphical_material_manager=
+		(struct MANAGER(Graphical_material) *)NULL;
+	struct MANAGER(Graphics_window) *graphics_window_manager=
+		(struct MANAGER(Graphics_window) *)NULL;	
+	struct MANAGER(GROUP(FE_element)) *element_group_manager=
+		(struct MANAGER(GROUP(FE_element)) *)NULL;
+	struct MANAGER(GROUP(FE_node)) *data_group_manager=
+		(struct MANAGER(GROUP(FE_node)) *)NULL;
+	struct MANAGER(GROUP(FE_node))*node_group_manager=
+		(struct MANAGER(GROUP(FE_node))*)NULL;		
+	struct MANAGER(Light) *light_manager=
+		(struct MANAGER(Light) *)NULL;
+	struct MANAGER(Light_model) *light_model_manager=
+		(struct MANAGER(Light_model) *)NULL;
+	struct MANAGER(Scene) *scene_manager=(struct MANAGER(Scene) *)NULL;
+	struct MANAGER(Spectrum) *spectrum_manager=(struct MANAGER(Spectrum) *)NULL;
+	struct MANAGER(Texture) *texture_manager=(struct MANAGER(Texture) *)NULL;
 #endif /* defined (UNEMAP_USE_NODES) */
 	struct System_window *system;
 	struct Time_keeper *time_keeper;
@@ -591,19 +614,178 @@ Main program for unemap
 			CREATE(Element_point_ranges_selection)();
 		element_selection=CREATE(FE_element_selection)();
 		node_selection=CREATE(FE_node_selection)();
-
 		scene_manager=CREATE_MANAGER(Scene)();
-		light_model_manager=CREATE_MANAGER(Light_model)();
-		light_manager=CREATE_MANAGER(Light)();
+		if (light_model_manager=CREATE_MANAGER(Light_model)())
+		{
+			if (default_light_model=CREATE(Light_model)("default"))
+			{
+				ambient_colour.red=0.2;
+				ambient_colour.green=0.2;
+				ambient_colour.blue=0.2;
+				Light_model_set_ambient(default_light_model,&ambient_colour);
+				Light_model_set_side_mode(default_light_model,LIGHT_MODEL_TWO_SIDED);
+				/*???DB.  Include default as part of manager ? */
+				ACCESS(Light_model)(default_light_model);
+				if (!ADD_OBJECT_TO_MANAGER(Light_model)(
+					default_light_model,light_model_manager))
+				{
+					DEACCESS(Light_model)(&(default_light_model));
+				}			
+			}
+		}
+		if (light_manager=CREATE_MANAGER(Light)())
+		{
+			if (default_light=CREATE(Light)("default"))
+			{
+				set_Light_type(default_light,INFINITE_LIGHT);
+				default_colour.red=1.0;
+				default_colour.green=1.0;
+				default_colour.blue=1.0;		
+				set_Light_colour(default_light,&default_colour); 
+				
+				set_Light_direction(default_light,default_light_direction);
+				/*???DB.  Include default as part of manager ? */
+				ACCESS(Light)(default_light);
+				if (!ADD_OBJECT_TO_MANAGER(Light)(default_light,light_manager))
+				{
+					DEACCESS(Light)(&(default_light));
+				}
+			}
+		}
 		control_curve_manager=CREATE_MANAGER(Control_curve)();
-		computed_field_package=CREATE(Computed_field_package)(
-			fe_field_manager,element_manager,texture_manager,control_curve_manager);
-		computed_field_manager=Computed_field_package_get_computed_field_manager(
-				computed_field_package);
 		spectrum_manager=CREATE_MANAGER(Spectrum)();
-		graphical_material_manager=CREATE_MANAGER(Graphical_material)();
+		if (graphical_material_manager=CREATE_MANAGER(Graphical_material)())
+		{
+			struct Colour colour;
+
+			if (default_graphical_material=
+				CREATE(Graphical_material)("default"))
+			{
+				/* ACCESS so can never be destroyed */
+				ACCESS(Graphical_material)(default_graphical_material);
+				if (!ADD_OBJECT_TO_MANAGER(Graphical_material)(
+					default_graphical_material,graphical_material_manager))
+				{
+					DEACCESS(Graphical_material)(&(default_graphical_material));
+				}
+			}
+			/* create material "default_selected" to be bright red for highlighting
+				 selected graphics */
+			if (default_selected_material=CREATE(Graphical_material)(
+				"default_selected"))
+			{
+				colour.red=1.0;
+				colour.green=0.0;
+				colour.blue=0.0;
+				Graphical_material_set_ambient(default_selected_material,&colour);
+				Graphical_material_set_diffuse(default_selected_material,&colour);
+				/* ACCESS so can never be destroyed */
+				ACCESS(Graphical_material)(default_selected_material);
+				if (!ADD_OBJECT_TO_MANAGER(Graphical_material)(default_selected_material,
+					graphical_material_manager))
+				{
+					DEACCESS(Graphical_material)(&default_selected_material);
+				}
+			}
+		}
 		data_manager=CREATE_MANAGER(FE_node)();
-		glyph_list=CREATE(LIST(GT_object))();
+		if ((computed_field_package=CREATE(Computed_field_package)(
+		fe_field_manager,element_manager,texture_manager,control_curve_manager))&&
+		(computed_field_manager=Computed_field_package_get_computed_field_manager(
+			computed_field_package)))
+		{
+			if (!((computed_field=CREATE(Computed_field)("cmiss_number"))&&
+				Computed_field_set_coordinate_system(computed_field,
+					&rect_coord_system)&&
+				Computed_field_set_type_cmiss_number(computed_field)&&
+				Computed_field_set_read_only(computed_field)&&
+				ADD_OBJECT_TO_MANAGER(Computed_field)(computed_field,
+					computed_field_manager)))
+			{
+				DESTROY(Computed_field)(&computed_field);
+			}
+			if (!((computed_field=CREATE(Computed_field)("default_coordinate"))&&
+				Computed_field_set_coordinate_system(computed_field,
+					&rect_coord_system)&&
+				Computed_field_set_type_default_coordinate(computed_field,
+					computed_field_manager)&&
+				Computed_field_set_read_only(computed_field)&&
+				ADD_OBJECT_TO_MANAGER(Computed_field)(computed_field,
+					computed_field_manager)))
+			{
+				DESTROY(Computed_field)(&computed_field);
+			}
+			if (!((computed_field=CREATE(Computed_field)("xi"))&&
+				Computed_field_set_coordinate_system(computed_field,
+					&rect_coord_system)&&
+				Computed_field_set_type_xi_coordinates(computed_field)&&
+				Computed_field_set_read_only(computed_field)&&
+				ADD_OBJECT_TO_MANAGER(Computed_field)(computed_field,
+					computed_field_manager)))
+			{
+				DESTROY(Computed_field)(&computed_field);
+			}
+		}
+		if (glyph_list=CREATE(LIST(GT_object))())
+		{
+			/* add standard glyphs */
+			if (glyph=make_glyph_arrow_line("arrow_line",0.25,0.125))
+			{
+				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			}
+			if (glyph=make_glyph_arrow_solid("arrow_solid",12,2./3.,1./6.))
+			{
+				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			}
+			if (glyph=make_glyph_axes("axes",0.1,0.025,0.1))
+			{
+				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			}
+			if (glyph=make_glyph_cone("cone",12))
+			{
+				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			}
+			if (glyph=make_glyph_cross("cross"))
+			{
+				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			}
+			if (glyph=make_glyph_cylinder("cylinder6",6))
+			{
+				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			}
+			if (glyph=make_glyph_cylinder("cylinder",12))
+			{
+				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			}
+			if (glyph=make_glyph_cylinder("cylinder_hires",48))
+			{
+				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			}
+			if (glyph=make_glyph_sphere("diamond",4,2))
+			{
+				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			}
+			if (glyph=make_glyph_line("line"))
+			{
+				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			}
+			if (glyph=make_glyph_point("point",g_POINT_MARKER,0))
+			{
+				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			}
+			if (glyph=make_glyph_sheet("sheet"))
+			{
+				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			}
+			if (glyph=make_glyph_sphere("sphere",12,6))
+			{
+				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			}
+			if (glyph=make_glyph_sphere("sphere_hires",48,24))
+			{
+				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
+			}
+		}
 		unemap_package=CREATE(Unemap_package)(fe_field_manager,
 			element_group_manager,node_manager,data_group_manager,node_group_manager,
 			fe_basis_manager,element_manager,element_point_ranges_selection,
@@ -611,6 +793,12 @@ Main program for unemap
 			graphics_window_manager,texture_manager,scene_manager,light_model_manager,
 			light_manager,spectrum_manager,graphical_material_manager,data_manager,
 			glyph_list);
+		set_unemap_package_graphical_material(unemap_package,default_graphical_material);
+		set_unemap_package_computed_field_package(unemap_package,computed_field_package);
+		set_unemap_package_time_keeper(unemap_package,time_keeper);
+		set_unemap_package_light(unemap_package,default_light);
+		set_unemap_package_light_model(unemap_package,default_light_model);
+		set_unemap_package_user_interface(unemap_package,&user_interface);
 		/* FE_element_field_info manager */
 		/*???DB.  To be done */
 		all_FE_element_field_info=CREATE_LIST(FE_element_field_info)();

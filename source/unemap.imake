@@ -437,7 +437,8 @@ GRAPHICS_SRCS = \
 	graphics/environment_map.c \
 	graphics/texture_line.c \
 	graphics/mcubes.c \
-	graphics/makegtobj.c \
+	graphics/makegtobj.c \	
+	graphics/glyph.c \
 	graphics/graphical_element.c \
 	graphics/auxiliary_graphics_types.c \
 	graphics/element_group_settings.c \

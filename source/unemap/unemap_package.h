@@ -24,7 +24,8 @@ DESCRIPTION :
 Global types
 ------------
 */
-struct Unemap_package/* Still need structure, for (NULL) function parameters, */ 
+struct Unemap_package
+/* Still need structure, for (NULL) function parameters, */ 
 /*even when UNEMAP_USE_NODE not defined*/
 /*******************************************************************************
 LAST MODIFIED : 28 March 2000
@@ -74,8 +75,10 @@ the node and element groups need to be regenerated, or just have the values chan
 	int number_of_maps;
 	struct Map_info **maps_info;
 	/* these are for the cmgui graphics window */
-	int viewed_scene; /* flag to record if done "view all" on scene*/
-	struct Colour *no_interpolation_colour; /* should this and below be be in struct Map ?*/
+	/* flag to record if done "view all" on scene*/
+	int viewed_scene; 
+	/* should this and below be be in struct Map ?*/
+	struct Colour *no_interpolation_colour; 
 	struct Graphics_window *window; /*or Map_drawing_information?  */
 	struct Colour *background_colour;
 	struct Light *light;	

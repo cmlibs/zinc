@@ -4366,7 +4366,11 @@ to the drawing or writes to a postscript file.
 	USE_PARAMETER(drawing);
 	if(map)
 	{
+		/* update_colour_map_unemap() necessary for old style spectrums*/
+		/* will become obselete when cmgui methods used */
+		update_colour_map_unemap(map,drawing); 
 		return_code=new_draw_map(map);
+
 	}
 	else
 	{

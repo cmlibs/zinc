@@ -2,7 +2,7 @@
 FILE : computed_field.c
 
 LAST MODIFIED : 23 March 2000
-
+cre
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
 a wrapper Computed_field automatically generated that can be called on to

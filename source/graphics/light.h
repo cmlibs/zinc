@@ -167,6 +167,22 @@ DESCRIPTION :
 Sets the light_type of the light (infinite/point/spot).
 ==============================================================================*/
 
+int get_Light_colour(struct Light *light,struct Colour *colour);
+/*******************************************************************************
+LAST MODIFIED : 4 December 1997
+
+DESCRIPTION :
+Returns the colour of the light.
+==============================================================================*/
+
+int set_Light_colour(struct Light *light,struct Colour *colour);
+/*******************************************************************************
+LAST MODIFIED : 4 December 1997
+
+DESCRIPTION :
+Sets the colour of the light.
+==============================================================================*/
+
 int modify_Light(struct Parse_state *state,void *light_void,
 	void *modify_light_data_void);
 /*******************************************************************************
