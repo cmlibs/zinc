@@ -1322,6 +1322,8 @@ Main program for the CMISS Graphical User Interface
 
 	if (return_code)
 	{
+		/* the name of the comfile to be run on startup */
+		comfile_name=(char *)NULL;
 		if (command_list)
 		{
 #if defined (MOTIF)
@@ -1330,7 +1332,13 @@ Main program for the CMISS Graphical User Interface
 			command_data.cm_parameters_file_name=(char *)NULL;
 #endif /* defined (MOTIF) */
 #if !defined (WINDOWS_DEV_FLAG)
+#if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
+			create_interpreter(argc, argv, comfile_name, &status);
+#endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 			cmiss_execute_command("??",(void *)(&command_data));
+#if defined (F90_INTERPRETER) || defined (PERL_INTERPRETER)
+			destroy_interpreter(&status);
+#endif /* defined (F90_INTERPRETER) || defined (PERL_INTERPRETER) */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 		}
 		else
@@ -1341,8 +1349,6 @@ Main program for the CMISS Graphical User Interface
 			program_name=remove_before_first(remove_after_last(argv[0], '.'), ']');
 #endif /* defined (OLD_CODE)*/
 			i=1;
-			/* the name of the comfile to be run on startup */
-			comfile_name=(char *)NULL;
 			while (return_code&&(i<argc))
 			{
 				arg=argv[i];
