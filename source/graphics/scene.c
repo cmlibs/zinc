@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : scene.c
 
-LAST MODIFIED : 27 June 2000
+LAST MODIFIED : 29 June 2000
 
 DESCRIPTION :
 Structure for storing the collections of objects that make up a 3-D graphical
@@ -6221,7 +6221,7 @@ Removes <child_scene> from the list of scenes in <scene>.
 int Scene_add_graphical_finite_element(struct Scene *scene,
 	struct GROUP(FE_element) *element_group,char *scene_object_name)
 /*******************************************************************************
-LAST MODIFIED : 28 April 2000
+LAST MODIFIED : 28 June 2000
 
 DESCRIPTION :
 Adds a graphical <element_group> to the <scene> with some default settings
@@ -6235,7 +6235,8 @@ the same element group to be added twice.
 	char *element_group_name;
 	enum GT_visibility_type visibility;
 	int default_value,maximum_value,return_code;
-	struct Computed_field *orientation_scale_field;
+	struct Computed_field *default_coordinate_field,*element_xi_coordinate_field,
+		*orientation_scale_field;
 	struct Element_discretization element_discretization;
 	struct GROUP(FE_node) *data_group,*node_group;
 	struct GT_object *glyph;
@@ -6300,11 +6301,12 @@ the same element group to be added twice.
 								{
 									/* give the new group a default coordinate field */
 									/*???RC later get this from region */
+									default_coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(
+										Computed_field,name)("default_coordinate",
+											Computed_field_package_get_computed_field_manager(
+												scene->computed_field_package));
 									GT_element_group_set_default_coordinate_field(
-										gt_element_group,FIND_BY_IDENTIFIER_IN_MANAGER(
-											Computed_field,name)("default_coordinate",
-												Computed_field_package_get_computed_field_manager(
-													scene->computed_field_package)));
+										gt_element_group,default_coordinate_field);
 									/* set default circle and element discretization in group */
 									read_circle_discretization_defaults(&default_value,
 										&maximum_value,scene->user_interface);
@@ -6343,15 +6345,32 @@ the same element group to be added twice.
 												if (GT_element_group_add_settings(gt_element_group,
 													settings,0))
 												{
-													/* if the group has data, add data_points to the
+													/* if the group has data, and either the
+														 default_coordinate_field defined over them or the
+														 element_xi_coordinate, add data_points to the
 														 rendition */
+													element_xi_coordinate_field=
+														FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+															"element_xi_coordinate",
+															Computed_field_package_get_computed_field_manager(
+																scene->computed_field_package));
 													if (FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
 														(GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL,
-														(void *)NULL,data_group))
+														(void *)NULL,data_group)&&
+														(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+															FE_node_has_Computed_field_defined,
+															(void *)default_coordinate_field,data_group)||
+															(element_xi_coordinate_field&&
+																FIRST_OBJECT_IN_GROUP_THAT(FE_node)(
+																	FE_node_has_Computed_field_defined,
+																	(void *)element_xi_coordinate_field,
+																	data_group))))
 													{
 														if (settings=CREATE(GT_element_settings)(
 															GT_ELEMENT_SETTINGS_DATA_POINTS))
 														{
+															GT_element_settings_set_coordinate_field(settings,
+																element_xi_coordinate_field);
 															GT_element_settings_set_material(settings,
 																scene->default_material);
 															GT_element_settings_set_selected_material(settings,
