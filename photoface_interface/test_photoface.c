@@ -577,15 +577,9 @@ Runs a job through the photoface interface.
 		pf_job_id;
 	struct Obj hair_obj, obj;
 
-#if defined (MANUAL_CMISS)
-	pf_set_display_message_function(PF_ERROR_MESSAGE,display_message_function,NULL);
-	pf_set_display_message_function(PF_INFORMATION_MESSAGE,display_message_and_wait_function,NULL);
-	pf_set_display_message_function(PF_WARNING_MESSAGE,display_message_function,NULL);
-#endif /* defined (MANUAL_CMISS) */
-
 	ALLOCATE(image_array, char, 3 * IMAGE_WIDTH * IMAGE_HEIGHT);
 	ALLOCATE(texture_array, char, 3 * TEXTURE_WIDTH * TEXTURE_HEIGHT);
-	ALLOCATE(hair_texture_array, char, 3 * TEXTURE_WIDTH * TEXTURE_HEIGHT);
+	ALLOCATE(hair_texture_array, char, 4 * TEXTURE_WIDTH * TEXTURE_HEIGHT);
 	ALLOCATE(distorted_background_array, char, 3 * TEXTURE_WIDTH * TEXTURE_HEIGHT);
 
 	if (PF_SUCCESS_RC == pf_specify_paths("/home/blackett/lifefx/photoface/", "/home/blackett/lifefx/photoface/"))
