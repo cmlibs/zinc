@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap.c
 
-LAST MODIFIED : 26 July 2000
+LAST MODIFIED : 7 June 2001
 
 DESCRIPTION :
 Main program for unemap.  Based on cmgui.
@@ -26,7 +26,6 @@ Main program for unemap.  Based on cmgui.
 #include "computed_field/computed_field_component_operations.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_vector_operations.h"
-#include "curve/control_curve.h"
 #include "finite_element/import_finite_element.h"
 #include "graphics/glyph.h"
 #include "graphics/light.h"
@@ -297,8 +296,6 @@ Main program for unemap
 	struct Light *default_light=(struct Light *)NULL;
 	struct Light_model *default_light_model=(struct Light_model *)NULL;
 	struct LIST(GT_object) *glyph_list=(struct LIST(GT_object) *)NULL;
-	struct MANAGER(Control_curve) *control_curve_manager=
-		(struct MANAGER(Control_curve) *)NULL;
 	struct MANAGER(Computed_field) *computed_field_manager=
 		(struct MANAGER(Computed_field) *)NULL;
 	struct MANAGER(FE_basis) *fe_basis_manager=
@@ -712,7 +709,6 @@ Main program for unemap
 				}
 			}
 		}
-		control_curve_manager=CREATE_MANAGER(Control_curve)();
 		spectrum_manager=CREATE_MANAGER(Spectrum)();
 		if (graphical_material_manager=CREATE_MANAGER(Graphical_material)())
 		{
@@ -768,7 +764,7 @@ Main program for unemap
 		}
 		data_manager=CREATE_MANAGER(FE_node)();
 		if ((computed_field_package=CREATE(Computed_field_package)(
-		fe_field_manager,element_manager,control_curve_manager))&&
+			fe_field_manager,element_manager))&&
 		(computed_field_manager=Computed_field_package_get_computed_field_manager(
 			computed_field_package)))
 		{
@@ -1081,7 +1077,6 @@ Main program for unemap
 			DESTROY_LIST(FE_element_field_info)(&all_FE_element_field_info);
 			DESTROY_LIST(FE_element_shape)(&all_FE_element_shape);
 
-			DESTROY(MANAGER(Control_curve))(&control_curve_manager);
 			DESTROY(MANAGER(Spectrum))(&spectrum_manager);
 
 			DEACCESS(Graphical_material)(&default_graphical_material);			

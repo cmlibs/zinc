@@ -1,7 +1,7 @@
 XCOMM **************************************************************************
 XCOMM FILE : unemap.imake
 XCOMM
-XCOMM LAST MODIFIED : 9 May 2001
+XCOMM LAST MODIFIED : 7 June 2001
 XCOMM
 XCOMM DESCRIPTION :
 XCOMM Makefile for unemap
@@ -621,8 +621,6 @@ COMPUTED_FIELD_SRCS = \
 	computed_field/computed_field_fibres.c \
 	computed_field/computed_field_vector_operations.c \
 	computed_field/computed_field_wrappers.c
-CURVE_SRCS = \
-	curve/control_curve.c
 FINITE_ELEMENT_SRCS = \
 	finite_element/export_finite_element.c \
 	finite_element/field_value_index_ranges.c \
@@ -731,7 +729,6 @@ UNEMAP_SRCS = \
 CHOOSE_SRCS =
 COLOUR_SRCS =
 COMPUTED_FIELD_SRCS =
-CURVE_SRCS =
 FINITE_ELEMENT_SRCS =
 GENERAL_SRCS = \
 	general/callback.c \
@@ -800,7 +797,6 @@ SRCS = \
 	$(COLOUR_SRCS) \
 	$(COMMAND_SRCS) \
 	$(COMPUTED_FIELD_SRCS) \
-	$(CURVE_SRCS) \
 	$(FINITE_ELEMENT_SRCS) \
 	$(GENERAL_SRCS) \
 	$(GRAPHICS_SRCS) \
@@ -855,7 +851,6 @@ transfer :
 	unemap/utilities/WildC unemap/utilities/WildH unemap/utilities/WildUil \
 	command/parser.c command/parser.h \
 	computed_field/computed_field.h \
-	curve/control_curve.h \
 	finite_element/field_value_index_ranges.h finite_element/finite_element.h \
 	finite_element/finite_element_to_graphics_object.h \
 	finite_element/finite_element_to_streamlines.h \
