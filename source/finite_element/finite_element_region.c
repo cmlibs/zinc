@@ -216,6 +216,29 @@ if (0 < fe_region->number_of_clients) \
 	} \
 }
 
+#define FE_REGION_FE_ELEMENT_FE_FIELD_LIST_CHANGE(fe_region, element, \
+	change, changed_fe_field_list) \
+/***************************************************************************** \
+LAST MODIFIED : 30 May 2003 \
+\
+DESCRIPTION : \
+If <fe_region> has clients for its change messages, records the <change> to \
+<element>, then logs each FE_field in <changed_fe_field_list> as having \
+had a RELATED_OBJECT_CHANGED. If the cache_level is zero, sends an update. \
+Made into a macro for consistency/efficency/inlining. \
+============================================================================*/ \
+if (0 < fe_region->number_of_clients) \
+{ \
+	CHANGE_LOG_OBJECT_CHANGE(FE_element)(fe_region->fe_element_changes, element, \
+		change); \
+	FOR_EACH_OBJECT_IN_LIST(FE_field)(FE_field_log_FE_field_change, \
+		(void *)fe_region->fe_field_changes, changed_fe_field_list); \
+	if (0 == fe_region->change_level) \
+	{ \
+		FE_region_update(fe_region); \
+	} \
+}
+
 #define FE_REGION_FE_ELEMENT_IDENTIFIER_CHANGE(fe_region, element) \
 /***************************************************************************** \
 LAST MODIFIED : 16 November 2002 \
@@ -4032,7 +4055,7 @@ Should place multiple calls to this function between begin_change/end_change.
 struct FE_element *FE_region_merge_FE_element(struct FE_region *fe_region,
 	struct FE_element *element)
 /*******************************************************************************
-LAST MODIFIED : 27 May 2003
+LAST MODIFIED : 30 May 2003
 
 DESCRIPTION :
 Checks <element> is compatible with <fe_region> and any existing FE_element
@@ -4049,6 +4072,7 @@ A NULL value is returned on any error.
 {
 	struct CM_element_information identifier;
 	struct FE_element *merged_element;
+	struct LIST(FE_field) *changed_fe_field_list;
 
 	ENTER(FE_region_merge_FE_element);
 	merged_element = (struct FE_element *)NULL;
@@ -4104,21 +4128,33 @@ A NULL value is returned on any error.
 						 merge will be necessary, hence the following */
 					if (merged_element != element)
 					{
-						/* merge fields from element into global merged_element */
-						if (merge_FE_element(merged_element, element))
+						if (changed_fe_field_list = CREATE(LIST(FE_field))())
 						{
+							/* merge fields from element into global merged_element */
+							if (merge_FE_element(merged_element, element,
+								changed_fe_field_list))
+							{
 #if defined (DEBUG)
-					/*???debug*/printf("FE_region_merge_FE_element: %p OBJECT_NOT_IDENTIFIER_CHANGED element %p\n",fe_region,merged_element);
+								/*???debug*/printf("FE_region_merge_FE_element: %p OBJECT_NOT_IDENTIFIER_CHANGED element %p\n",fe_region,merged_element);
 #endif /* defined (DEBUG) */
-							FE_REGION_FE_ELEMENT_CHANGE(fe_region, merged_element,
-								CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_element),
-								element);
+								FE_REGION_FE_ELEMENT_FE_FIELD_LIST_CHANGE(fe_region,
+									merged_element,
+									CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_element),
+									changed_fe_field_list);
+							}
+							else
+							{
+								display_message(ERROR_MESSAGE,
+									"FE_region_merge_FE_element.  Could not merge %s %d",
+									CM_element_type_string(identifier.type), identifier.number);
+								merged_element = (struct FE_element *)NULL;
+							}
+							DESTROY(LIST(FE_field))(&changed_fe_field_list);
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"FE_region_merge_FE_element.  Could not merge %s %d",
-								CM_element_type_string(identifier.type), identifier.number);
+								"FE_region_merge_FE_element.  Could not create field list");
 							merged_element = (struct FE_element *)NULL;
 						}
 					}

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_private.h
 
-LAST MODIFIED : 13 May 2003
+LAST MODIFIED : 30 May 2003
 
 DESCRIPTION :
 Private interfaces to finite element objects to be included only by privileged
@@ -156,6 +156,18 @@ If <fe_field> is already indexed, substitutes <indexer_fe_field>.
 Does not change any of the values currently stored in <fe_field>
 Used to merge indexed fields into different FE_regions; should not be used for
 any other purpose.
+==============================================================================*/
+
+int FE_field_log_FE_field_change(struct FE_field *fe_field,
+	void *fe_field_change_log_void);
+/*******************************************************************************
+LAST MODIFIED : 30 May 2003
+
+DESCRIPTION :
+Logs the field in <fe_field> as RELATED_OBJECT_CHANGED in the
+struct CHANGE_LOG(FE_field) pointed to by <fe_field_change_log_void>.
+???RC Later may wish to allow more than just RELATED_OBJECT_CHANGED, or have
+separate functions for each type.
 ==============================================================================*/
 
 PROTOTYPE_LIST_FUNCTIONS(FE_node_field);

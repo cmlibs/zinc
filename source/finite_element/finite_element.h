@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 15 May 2003
+LAST MODIFIED : 30 May 2003
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -1496,6 +1496,7 @@ storage following them. Where existing fields in <destination> are passed in
 <source>, values from <source> take precedence, but the node field structure
 remains unchanged.
 Function is atomic; <destination> is unchanged if <source> cannot be merged.
+???RC Move to finite_element_private.h?
 ==============================================================================*/
 
 int list_FE_node(struct FE_node *node,void *list_node_information);
@@ -2967,9 +2968,10 @@ iterator_function returns FALSE for any element.
 This function is recursive.
 ==============================================================================*/
 
-int merge_FE_element(struct FE_element *destination, struct FE_element *source);
+int merge_FE_element(struct FE_element *destination, struct FE_element *source,
+	struct LIST(FE_field) *changed_fe_field_list);
 /*******************************************************************************
-LAST MODIFIED : 29 October 2000
+LAST MODIFIED : 30 May 2003
 
 DESCRIPTION :
 Merges the fields from <source> into <destination>. Existing fields in the
@@ -2978,6 +2980,12 @@ storage following them. Where existing fields in <destination> are passed in
 <source>, values from <source> take precedence, but the element field structure
 remains unchanged.
 Function is atomic; <destination> is unchanged if <source> cannot be merged.
+The <changed_fe_field_list> must be supplied. On return it contains the list
+of FE_fields that have been changed or added to <destination>. Note it is not
+sufficient to assume just the fields in <source> are changed since changes to
+common scale factors affect different fields in <destination>; the
+<change_fe_field_list> includes these fields.
+???RC Move to finite_element_private.h?
 ==============================================================================*/
 
 int list_FE_element(struct FE_element *element,void *dummy);

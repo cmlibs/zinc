@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.c
 
-LAST MODIFIED : 15 May 2003
+LAST MODIFIED : 29 May 2003
 
 DESCRIPTION :
 Functions for manipulating finite element structures.
@@ -13732,6 +13732,30 @@ any other purpose.
 	return (return_code);
 } /* FE_field_set_indexer_field */
 
+int FE_field_log_FE_field_change(struct FE_field *fe_field,
+	void *fe_field_change_log_void)
+/*******************************************************************************
+LAST MODIFIED : 30 May 2003
+
+DESCRIPTION :
+Logs the field in <fe_field> as RELATED_OBJECT_CHANGED in the
+struct CHANGE_LOG(FE_field) pointed to by <fe_field_change_log_void>.
+???RC Later may wish to allow more than just RELATED_OBJECT_CHANGED, or have
+separate functions for each type.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_field_log_FE_field_change);
+	/*???RC try to make this as efficient as possible so no argument checking */
+	return_code = CHANGE_LOG_OBJECT_CHANGE(FE_field)(
+		(struct CHANGE_LOG(FE_field) *)fe_field_change_log_void,
+		fe_field, CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
+	LEAVE;
+
+	return (return_code);
+} /* FE_field_log_FE_field_change */
+
 enum Value_type get_FE_field_value_type(struct FE_field *field)
 /*******************************************************************************
 LAST MODIFIED : 31 August 1999
@@ -25333,6 +25357,74 @@ Outputs the information contained by the element field.
 } /* list_FE_element_field */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
+static int FE_element_field_private_get_component_FE_basis(
+	struct FE_element_field *element_field, int component_number,
+	struct FE_basis **fe_basis)
+/*******************************************************************************
+LAST MODIFIED : 30 May 2003
+
+DESCRIPTION :
+If <element_field> is standard node based, returns the <fe_basis> used for
+<component_number>.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_element_field_component *component;
+
+	ENTER(FE_element_field_private_get_component_FE_basis);
+	return_code = 0;
+	if (element_field && element_field->field && fe_basis &&
+		(0 <= component_number) &&
+		(component_number < element_field->field->number_of_components))
+	{
+		*fe_basis = (struct FE_basis *)NULL;
+		/* only GENERAL_FE_FIELD has components and can be grid-based */
+		if (GENERAL_FE_FIELD == element_field->field->fe_field_type)
+		{
+			/* get first field component */
+			if (element_field->components &&
+				(component = element_field->components[component_number]))
+			{
+				if (component->basis)
+				{
+					*fe_basis = component->basis;
+					return_code = 1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"FE_element_field_private_get_component_FE_basis.  "
+						"Field does not have an FE_basis.");
+					return_code = 0;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_element_field_private_get_component_FE_basis.  "
+					"Missing element field component");
+				return_code = 0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_element_field_private_get_component_FE_basis.  "
+				"Field is not general, not grid-based");
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_field_private_get_component_FE_basis.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_field_private_get_component_FE_basis */
+
 int FE_element_field_is_coordinate_field(struct FE_element_field *element_field,
 	void *dummy_void)
 /*******************************************************************************
@@ -27619,9 +27711,11 @@ values_storage are set to zero and NULL, respectively.
 static struct FE_element_node_scale_field_info
 	*merge_create_FE_element_node_scale_field_info(
 		struct FE_element_node_scale_field_info *destination_info,
-		struct FE_element_node_scale_field_info *source_info)
+		struct FE_element_node_scale_field_info *source_info,
+		int *number_of_changed_existing_scale_factor_sets_address,
+		void ***changed_existing_scale_factor_set_identifiers_address)
 /*******************************************************************************
-LAST MODIFIED : 26 March 2003
+LAST MODIFIED : 30 May 2003
 
 DESCRIPTION :
 Static function used exclusively in merge_FE_element.
@@ -27631,22 +27725,36 @@ ones added from <source_info>. Checks that the same number of scale factors are
 used for any scale factor sets in common.
 values_storage_size and values_storage are set to zero and NULL, respectively,
 under the expectation that they will be constructed by merge_FE_element.
+On successful return there will be a non-negative number placed in
+<number_of_changed_existing_scale_factor_sets_address> and a correspondingly
+sized allocated array of void* identifiers placed at
+<changed_existing_scale_factor_set_identifiers_address>.
+It is up to the calling function to propagate appropriate change messages for
+all fields using these scale factors sets, and to DEALLOCATE the returned array.
+Note 0 and NULL are legal return values for the last two arguments.
+On a failed return no such array is allocated and returned.
 ==============================================================================*/
 {
 	FE_value *scale_factor_position, *source_scale_factor_position;
-	int destination_number_of_nodes, destination_number_of_scale_factor_sets,
+	int copy_scale_factors, destination_number_of_nodes,
+		destination_number_of_scale_factor_sets,
 		destination_number_of_scale_factors, i, j, number_of_nodes,
 		number_of_scale_factor_sets, number_of_scale_factors, return_code,
 		source_number_in_scale_factor_set, source_number_of_nodes,
 		source_number_of_scale_factor_sets, *tmp_numbers_in_scale_factors_sets;
 	struct FE_element_node_scale_field_info *node_scale_field_info;
 	struct FE_node *node, **tmp_node;
-	void *scale_factor_set_identifier, **tmp_scale_factor_set_identifier;
+	void *scale_factor_set_identifier, **tmp_scale_factor_set_identifier,
+		**changed_existing_scale_factor_set_identifiers;
 
 	ENTER(merge_create_FE_element_node_scale_field_info);
 	node_scale_field_info = (struct FE_element_node_scale_field_info *)NULL;
-	if (destination_info && source_info)
+	if (destination_info && source_info &&
+		number_of_changed_existing_scale_factor_sets_address &&
+		changed_existing_scale_factor_set_identifiers_address)
 	{
+		*number_of_changed_existing_scale_factor_sets_address = 0;
+		*changed_existing_scale_factor_set_identifiers_address = (void **)NULL;
 		return_code = 1;
 		/* get the total number of nodes, starting with those in destination_info */
 		destination_number_of_nodes = destination_info->number_of_nodes;
@@ -27776,56 +27884,93 @@ under the expectation that they will be constructed by merge_FE_element.
 								destination_info->scale_factors,
 								destination_number_of_scale_factors*sizeof(FE_value));
 						}
-						if (destination_number_of_scale_factor_sets <
-							number_of_scale_factor_sets)
+						/* incorporate new scale factor sets from source_info.
+							 Compare old and new scale factors for existing sets and if
+							 changing, use values from the source_info and remember the
+							 scale factor set identifier */
+						number_of_scale_factor_sets =
+							destination_number_of_scale_factor_sets;
+						number_of_scale_factors = destination_number_of_scale_factors;
+						source_scale_factor_position = source_info->scale_factors;
+						for (i = 0; i < source_number_of_scale_factor_sets; i++)
 						{
-							/* extract new scale factor sets plus new or changed scale factors
-								 from source_info */
-							number_of_scale_factor_sets =
-								destination_number_of_scale_factor_sets;
-							number_of_scale_factors = destination_number_of_scale_factors;
-							source_scale_factor_position = source_info->scale_factors;
-							for (i = 0; i < source_number_of_scale_factor_sets; i++)
+							scale_factor_set_identifier =
+								source_info->scale_factor_set_identifiers[i];
+							tmp_scale_factor_set_identifier =
+								node_scale_field_info->scale_factor_set_identifiers;
+							tmp_numbers_in_scale_factors_sets =
+								node_scale_field_info->numbers_in_scale_factor_sets;
+							source_number_in_scale_factor_set =
+								source_info->numbers_in_scale_factor_sets[i];
+							scale_factor_position = node_scale_field_info->scale_factors;
+							j = destination_number_of_scale_factor_sets;
+							while (j && (scale_factor_set_identifier !=
+								*tmp_scale_factor_set_identifier))
 							{
-								scale_factor_set_identifier =
-									source_info->scale_factor_set_identifiers[i];
-								tmp_scale_factor_set_identifier =
-									node_scale_field_info->scale_factor_set_identifiers;
-								tmp_numbers_in_scale_factors_sets =
-									node_scale_field_info->numbers_in_scale_factor_sets;
-								source_number_in_scale_factor_set =
-									source_info->numbers_in_scale_factor_sets[i];
-								scale_factor_position = node_scale_field_info->scale_factors;
-								j = destination_number_of_scale_factor_sets;
-								while (j && (scale_factor_set_identifier !=
-									*tmp_scale_factor_set_identifier))
-								{
-									scale_factor_position += *tmp_numbers_in_scale_factors_sets;
-									tmp_numbers_in_scale_factors_sets++;
-									tmp_scale_factor_set_identifier++;
-									j--;
-								}
-								if (!j)
-								{
-									/* position for new scale factors must be at the end of
-										 the currently set list */
-									scale_factor_position = node_scale_field_info->scale_factors +
-										number_of_scale_factors;
-									node_scale_field_info->scale_factor_set_identifiers
-										[number_of_scale_factor_sets] = scale_factor_set_identifier;
-									node_scale_field_info->numbers_in_scale_factor_sets
-										[number_of_scale_factor_sets] =
-										source_number_in_scale_factor_set;
-									number_of_scale_factor_sets++;
-									number_of_scale_factors +=
-										source_number_in_scale_factor_set;
-								}
-								/* copy scale factors from source_info */
+								scale_factor_position += *tmp_numbers_in_scale_factors_sets;
+								tmp_numbers_in_scale_factors_sets++;
+								tmp_scale_factor_set_identifier++;
+								j--;
+							}
+							copy_scale_factors = (0 < source_number_in_scale_factor_set);
+							if (j)
+							{
 								if (0 < source_number_in_scale_factor_set)
 								{
-									memcpy(scale_factor_position, source_scale_factor_position,
-										source_number_in_scale_factor_set*sizeof(FE_value));
+									/* scale factors only transfered if different if changed */
+									if (memcmp(scale_factor_position,
+										source_scale_factor_position,
+										source_number_in_scale_factor_set*sizeof(FE_value)))
+									{
+										/* remember ID of changed scale factor set so all fields
+											 using it can be noted as changed -- not just those
+											 defined on the element using source_info */
+										if (REALLOCATE(changed_existing_scale_factor_set_identifiers,
+											*changed_existing_scale_factor_set_identifiers_address,
+											void *,
+											*number_of_changed_existing_scale_factor_sets_address + 1))
+										{
+											changed_existing_scale_factor_set_identifiers[
+												*number_of_changed_existing_scale_factor_sets_address]
+												= scale_factor_set_identifier;
+											*changed_existing_scale_factor_set_identifiers_address =
+												changed_existing_scale_factor_set_identifiers;
+											(*number_of_changed_existing_scale_factor_sets_address)++;
+										}
+										else
+										{
+											display_message(ERROR_MESSAGE,
+												"merge_create_FE_element_node_scale_field_info.  Could not "
+												"reallocate changed existing scale factor set identifiers");
+											return_code = 0;
+										}
+									}
+									else
+									{
+										copy_scale_factors = 0;
+									}
 								}
+							}
+							else
+							{
+								/* position for new scale factors must be at the end of
+									 the currently set list */
+								scale_factor_position = node_scale_field_info->scale_factors +
+									number_of_scale_factors;
+								node_scale_field_info->scale_factor_set_identifiers
+									[number_of_scale_factor_sets] = scale_factor_set_identifier;
+								node_scale_field_info->numbers_in_scale_factor_sets
+									[number_of_scale_factor_sets] =
+									source_number_in_scale_factor_set;
+								number_of_scale_factor_sets++;
+								number_of_scale_factors +=
+									source_number_in_scale_factor_set;
+							}
+							/* copy scale factors from source_info */
+							if (copy_scale_factors)
+							{
+								memcpy(scale_factor_position, source_scale_factor_position,
+									source_number_in_scale_factor_set*sizeof(FE_value));
 								source_scale_factor_position +=
 									source_number_in_scale_factor_set;
 							}
@@ -27848,6 +27993,13 @@ under the expectation that they will be constructed by merge_FE_element.
 					DESTROY(FE_element_node_scale_field_info)(&node_scale_field_info);
 					node_scale_field_info =
 						(struct FE_element_node_scale_field_info *)NULL;
+					if (*changed_existing_scale_factor_set_identifiers)
+					{
+						/* on failure, caller does not need to deallocate identifiers */
+						DEALLOCATE(*changed_existing_scale_factor_set_identifiers);
+						*changed_existing_scale_factor_set_identifiers = (void **)NULL;
+						*number_of_changed_existing_scale_factor_sets_address = 0;
+					}
 				}
 			}
 			else
@@ -38207,9 +38359,127 @@ same as the element from <global_element_list1>.
 	return (return_code);
 } /* FE_element_shape_and_faces_match */
 
-int merge_FE_element(struct FE_element *destination, struct FE_element *source)
+static int FE_element_field_add_FE_field_to_list(
+	struct FE_element_field *element_field, void *fe_field_list_void)
 /*******************************************************************************
-LAST MODIFIED : 14 April 2003
+LAST MODIFIED : 30 May 2003
+
+DESCRIPTION :
+FE_element_field iterator which adds its FE_field to the LIST pointed to by
+<fe_field_list_void>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_element_field_add_FE_field_to_list);
+	/*???RC try to make this as inexpensive as possible */
+	if (element_field)
+	{
+		/* the field is not expected to be in the list already */
+		return_code = ADD_OBJECT_TO_LIST(FE_field)(element_field->field,
+			(struct LIST(FE_field) *)fe_field_list_void);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_field_add_FE_field_to_list.  Missing element_field");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_field_add_FE_field_to_list */
+
+struct FE_element_field_FE_field_to_list_if_uses_scale_factor_set_data
+/*******************************************************************************
+LAST MODIFIED : 30 May 2003
+
+DESCRIPTION :
+Data for passing to function
+FE_element_field_FE_field_to_list_if_uses_scale_factor_set
+==============================================================================*/
+{
+	struct LIST(FE_field) *fe_field_list;
+	void *scale_factor_set_identifier;
+};
+
+static int FE_element_field_FE_field_to_list_if_uses_scale_factor_set(
+	struct FE_element_field *element_field, void *scale_factor_set_data_void)
+/*******************************************************************************
+LAST MODIFIED : 30 May 2003
+
+DESCRIPTION :
+FE_element_field iterator which ensures its FE_field is in <fe_field_list> if
+it uses the <scale_factor_set_identifier>. In practise, the identifier has to
+point to an FE_basis. <scale_factor_set_data_void> points at a struct
+FE_element_field_FE_field_to_list_if_uses_scale_factor_set_data.
+==============================================================================*/
+{
+	int field_uses_set, i, number_of_components, return_code;
+	struct FE_element_field_FE_field_to_list_if_uses_scale_factor_set_data *scale_factor_set_data;
+	struct FE_basis *fe_basis;
+
+	ENTER(FE_element_field_FE_field_to_list_if_uses_scale_factor_set);
+	/*???RC try to make this as inexpensive as possible */
+	if (element_field && element_field->field && (scale_factor_set_data = (struct
+		FE_element_field_FE_field_to_list_if_uses_scale_factor_set_data *)
+		scale_factor_set_data_void))
+	{
+		return_code = 1;
+		/* trivial rejection 1: must be a GENERAL_FE_FIELD to have a basis */
+		if (GENERAL_FE_FIELD == element_field->field->fe_field_type)
+		{
+			/* trivial rejection 2: proceed only if FE_field not already in list */
+			if (!IS_OBJECT_IN_LIST(FE_field)(element_field->field,
+				scale_factor_set_data->fe_field_list))
+			{
+				number_of_components = element_field->field->number_of_components;
+				field_uses_set = 0;
+				for (i = 0; (i < number_of_components) && (!field_uses_set) &&
+							 return_code; i++)
+				{
+					if (FE_element_field_private_get_component_FE_basis(
+						element_field, /*component_number*/i, &fe_basis))
+					{
+						if ((void *)fe_basis ==
+							scale_factor_set_data->scale_factor_set_identifier)
+						{
+							if (!ADD_OBJECT_TO_LIST(FE_field)(element_field->field,
+								scale_factor_set_data->fe_field_list))
+							{
+								display_message(ERROR_MESSAGE,
+									"FE_element_field_FE_field_to_list_if_uses_scale_factor_set.  Could not add field to list");
+								return_code = 1;
+							}
+							field_uses_set = 1;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"FE_element_field_FE_field_to_list_if_uses_scale_factor_set.  Could not get basis");
+						return_code = 0;
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_field_FE_field_to_list_if_uses_scale_factor_set.  "
+			"Missing element_field");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_field_FE_field_to_list_if_uses_scale_factor_set */
+
+int merge_FE_element(struct FE_element *destination, struct FE_element *source,
+	struct LIST(FE_field) *changed_fe_field_list)
+/*******************************************************************************
+LAST MODIFIED : 30 May 2003
 
 DESCRIPTION :
 Merges the fields from <source> into <destination>. Existing fields in the
@@ -38218,10 +38488,18 @@ storage following them. Where existing fields in <destination> are passed in
 <source>, values from <source> take precedence, but the element field structure
 remains unchanged.
 Function is atomic; <destination> is unchanged if <source> cannot be merged.
+The <changed_fe_field_list> must be supplied. On return it contains the list
+of FE_fields that have been changed or added to <destination>. Note it is not
+sufficient to assume just the fields in <source> are changed since changes to
+common scale factors affect different fields in <destination>; the
+<change_fe_field_list> includes these fields.
+Note <changed_fe_field_list> is emptied at the start of this function.
 ==============================================================================*/
 {
-	int i, number_of_faces, return_code, values_storage_size;
+	int i, number_of_changed_existing_scale_factor_sets, number_of_faces,
+		return_code, values_storage_size;
 	struct FE_element **source_face;
+	struct FE_element_field_FE_field_to_list_if_uses_scale_factor_set_data scale_factor_set_data;
 	struct FE_element_field_info *destination_fields, *element_field_info,
 		*source_fields;
 	struct FE_element_field_lists_merge_data merge_data;
@@ -38230,14 +38508,21 @@ Function is atomic; <destination> is unchanged if <source> cannot be merged.
 	struct FE_region *fe_region;
 	struct LIST(FE_element_field) *element_field_list;
 	Value_storage *values_storage;
+	void **changed_existing_scale_factor_set_identifiers;
 
 	ENTER(merge_FE_element);
 	if (destination && (destination_fields = destination->fields) &&
 		(fe_region = destination_fields->fe_region) &&
 		source && (source_fields = source->fields) &&
-		(source_fields->fe_region == fe_region))
+		(source_fields->fe_region == fe_region) && changed_fe_field_list)
 	{
 		return_code = 1;
+		/* changed_fe_field_list should start with all the fields in <source> */
+		REMOVE_ALL_OBJECTS_FROM_LIST(FE_field)(changed_fe_field_list);
+		FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
+			FE_element_field_add_FE_field_to_list, (void *)changed_fe_field_list,
+			source_fields->element_field_list);
+
 		if (!FE_element_shape_and_faces_match(source,
 			/*global_element_list1*/(struct LIST(FE_element) *)NULL, destination))
 		{
@@ -38256,9 +38541,34 @@ Function is atomic; <destination> is unchanged if <source> cannot be merged.
 			{
 				if (source_info)
 				{
-					node_scale_field_info =
+					if (node_scale_field_info =
 						merge_create_FE_element_node_scale_field_info(
-							destination_info, source_info);
+							destination_info, source_info,
+							&number_of_changed_existing_scale_factor_sets,
+							&changed_existing_scale_factor_set_identifiers))
+					{
+						if (changed_existing_scale_factor_set_identifiers)
+						{
+							/* determine which destination fields are affected by changed
+								 existing scale factor sets */
+							scale_factor_set_data.fe_field_list = changed_fe_field_list;
+							for (i = 0; i < number_of_changed_existing_scale_factor_sets; i++)
+							{
+								scale_factor_set_data.scale_factor_set_identifier =
+									changed_existing_scale_factor_set_identifiers[i];
+								if (!FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
+									FE_element_field_FE_field_to_list_if_uses_scale_factor_set,
+									(void *)&scale_factor_set_data,
+									destination_fields->element_field_list))
+								{
+									display_message(ERROR_MESSAGE, "merge_FE_element.  Could not "
+										"determine fields affected by changed scale factor");
+									return_code = 0;
+								}
+							}
+							DEALLOCATE(changed_existing_scale_factor_set_identifiers);
+						}
+					}
 				}
 				else
 				{
@@ -42581,7 +42891,7 @@ Up to the calling function to clean up the returned components.
 int FE_element_field_get_component_FE_basis(struct FE_element *element,
 	struct FE_field *field, int component_number, struct FE_basis **fe_basis)
 /*******************************************************************************
-LAST MODIFIED : 19 March 2003
+LAST MODIFIED : 30 May 2003
 
 DESCRIPTION :
 If <field> is standard node based in <element>, returns the <fe_basis> used for
@@ -42590,53 +42900,17 @@ If <field> is standard node based in <element>, returns the <fe_basis> used for
 {
 	int return_code;
 	struct FE_element_field *element_field;
-	struct FE_element_field_component *component;
 
 	ENTER(FE_element_field_get_component_FE_basis);
 	return_code = 0;
-	if (element && field && fe_basis && element->fields && element->shape &&
-		(MAXIMUM_ELEMENT_XI_DIMENSIONS >= element->shape->dimension) &&
-		(0 <= component_number) && (component_number < field->number_of_components))
+	if (element && field && fe_basis && element->fields)
 	{
 		*fe_basis = (struct FE_basis *)NULL;
 		if ((element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
 			field, element->fields->element_field_list)))
 		{
-			/* only GENERAL_FE_FIELD has components and can be grid-based */
-			if (GENERAL_FE_FIELD == element_field->field->fe_field_type)
-			{
-				/* get first field component */
-				if (element_field->components &&
-					(component = element_field->components[component_number]))
-				{
-					if (component->basis)
-					{
-						*fe_basis = component->basis;
-						return_code = 1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_element_field_get_component_FE_basis.  "
-							"Field does not have and FE_basis.");
-						return_code = 0;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"FE_element_field_get_component_FE_basis.  "
-						"Missing element field component");
-					return_code = 0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_element_field_get_component_FE_basis.  "
-					"Field is not general, not grid-based");
-				return_code = 0;
-			}
+			return_code = FE_element_field_private_get_component_FE_basis(
+				element_field, component_number, fe_basis);
 		}
 		else
 		{
