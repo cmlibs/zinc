@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_finite_element.c
 
-LAST MODIFIED : 26 July 2000
+LAST MODIFIED : 16 August 2000
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -2695,12 +2695,12 @@ Not implemented yet.
 ==============================================================================*/
 
 #define Computed_field_cmiss_number_get_native_discretization_in_element \
-	Computed_field_default_get_native_discretization_in_element
+	(Computed_field_get_native_discretization_in_element_function)NULL
 /*******************************************************************************
-LAST MODIFIED : 19 July 2000
+LAST MODIFIED : 16 August 2000
 
 DESCRIPTION :
-Inherit result from first source field.
+A property of the element = not grid-based.
 ==============================================================================*/
 
 #define Computed_field_cmiss_number_find_element_xi \
@@ -4075,7 +4075,7 @@ and allows its contents to be modified.
 					option_table=CREATE(Option_table)();
 					/* fe_field */
 					Option_table_add_entry(option_table,"fe_field", &fe_field,
-					  &computed_field_finite_element_package->fe_field_manager,
+					  computed_field_finite_element_package->fe_field_manager,
 					  set_FE_field);
 					/* nodal_value_type */
 					nodal_value_type_string=nodal_value_type_strings[0];
@@ -4098,7 +4098,7 @@ and allows its contents to be modified.
 					option_table=CREATE(Option_table)();
 					/* fe_field */
 					Option_table_add_entry(option_table,"fe_field", &fe_field,
-					  &computed_field_finite_element_package->fe_field_manager,
+					  computed_field_finite_element_package->fe_field_manager,
 					  set_FE_field);
 					if (return_code=Option_table_parse(option_table,state))
 					{
@@ -4875,7 +4875,7 @@ and allows its contents to be modified.
 					option_table=CREATE(Option_table)();
 					/* fe_field */
 					Option_table_add_entry(option_table,"fe_field", &fe_field,
-					  &computed_field_finite_element_package->fe_field_manager,
+					  computed_field_finite_element_package->fe_field_manager,
 					  set_FE_field);
 					/* nodal_value_type */
 					nodal_value_type_string=nodal_value_type_strings[0];
@@ -4901,7 +4901,7 @@ and allows its contents to be modified.
 					option_table=CREATE(Option_table)();
 					/* fe_field */
 					Option_table_add_entry(option_table,"fe_field", &fe_field,
-					  &computed_field_finite_element_package->fe_field_manager,
+					  computed_field_finite_element_package->fe_field_manager,
 					  set_FE_field);
 					if (return_code=Option_table_parse(option_table,state))
 					{
@@ -5740,7 +5740,7 @@ and allows its contents to be modified.
 			option_table=CREATE(Option_table)();
 			/* fe_field */
 			Option_table_add_entry(option_table,"element_xi", &fe_field,
-				&computed_field_finite_element_package->fe_field_manager,
+				computed_field_finite_element_package->fe_field_manager,
 				set_FE_field);
 			set_field_data.conditional_function=
 				Computed_field_has_numerical_components;
