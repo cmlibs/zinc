@@ -5,7 +5,7 @@ if (!defined $path)
 
 # testing Cmiss::Variable_new::Element_xi
 
-use Cmiss::cmgui_command_data;
+use Cmiss::Cmgui_command_data;
 use Cmiss::Region;
 use Cmiss::Variable_new;
 use Cmiss::Variable_new::Element_xi;
@@ -16,7 +16,7 @@ use Cmiss::Variable_new_input;
 use Cmiss::Variable_new_input::Composite;
 
 # set up regions
-$cmgui_command_data = new Cmiss::cmgui_command_data();
+$cmgui_command_data = new Cmiss::Cmgui_command_data();
 $cmgui_command_data->execute_command("gfx read nodes $path/heart");
 $cmgui_command_data->execute_command("gfx read elements $path/heart");
 $root=$cmgui_command_data->get_cmiss_root_region();

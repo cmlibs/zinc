@@ -2,13 +2,13 @@ if (!defined $path)
 {
   $path = ".";
 }
-use Cmiss::cmgui_command_data;
+use Cmiss::Cmgui_command_data;
 use Cmiss::Value::Element_xi;
 use Cmiss::Value::FE_value_vector;
 use Cmiss::Variable::Element_xi;
 use Cmiss::Variable::Finite_element;
 use Cmiss::Region;
-$cmgui_command_data = new Cmiss::cmgui_command_data();
+$cmgui_command_data = new Cmiss::Cmgui_command_data();
 $cmgui_command_data->execute_command("gfx read nodes $path/heart");
 $cmgui_command_data->execute_command("gfx read elements $path/heart");
 $root=$cmgui_command_data->get_cmiss_root_region();
