@@ -473,6 +473,7 @@ FINITE_ELEMENT_SRCS = \
 	finite_element/finite_element.c \
 	finite_element/finite_element_adjacent_elements.c \
 	finite_element/finite_element_discretization.c \
+	finite_element/finite_element_time.c \
 	finite_element/finite_element_to_graphics_object.c \
 	finite_element/finite_element_to_iso_lines.c \
 	finite_element/finite_element_to_streamlines.c \
