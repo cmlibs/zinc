@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 14 January 2000
+LAST MODIFIED : 27 January 2000
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -10968,7 +10968,7 @@ DESCRIPTION :
 static void trace_analysis_mode_apply(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 3 January 2000
+LAST MODIFIED : 27 January 2000
 
 DESCRIPTION :
 Applies the current analysis mode settings to all signals.
@@ -11185,9 +11185,9 @@ Applies the current analysis mode settings to all signals.
 						{
 							beat_end=divisions[0];
 							max_times=beat_end-beat_start;
-							if (max_times<end-divisions[number_of_beats-1]+1)
+							if (max_times<end-divisions[number_of_beats-2]+1)
 							{
-								max_times=end-divisions[number_of_beats-1]+1;
+								max_times=end-divisions[number_of_beats-2]+1;
 							}
 							for (i=1;i<number_of_beats;i++)
 							{
@@ -11272,7 +11272,7 @@ Applies the current analysis mode settings to all signals.
 									processed_value=(buffer->signals).float_values+
 										((*device)->signal->index);
 									beat_count=beat_counts;
-									for (i=beat_end-beat_start;i>0;i--)
+									for (i=max_times;i>0;i--)
 									{
 										if (0< *beat_count)
 										{
@@ -11295,6 +11295,9 @@ Applies the current analysis mode settings to all signals.
 							display_message(ERROR_MESSAGE,
 								"trace_analysis_mode_apply.  Could not allocate beat_counts");
 						}
+						buffer->start=0;
+						buffer->end=max_times-1;
+						buffer->number_of_samples=max_times;
 #if defined (OLD_CODE)
 						/* update the times */
 						if ((0<start)||(0<(buffer->times)[start]))
@@ -11364,10 +11367,10 @@ Applies the current analysis mode settings to all signals.
 							}
 							device++;
 						}
-#endif /* defined (OLD_CODE) */
 						buffer->start=0;
 						buffer->end=beat_end-beat_start-1;
 						buffer->number_of_samples=beat_end-beat_start;
+#endif /* defined (OLD_CODE) */
 						if ((analysis->datum<0)||(buffer->end<analysis->datum))
 						{
 							analysis->datum=(buffer->end)/3;
@@ -11378,10 +11381,10 @@ Applies the current analysis mode settings to all signals.
 						{
 							analysis->potential_time=(2*(buffer->end))/3;
 						}
-						(trace->area_3).edit.first_data=0;
-						(trace->area_3).edit.last_data=beat_end-beat_start-1;
-						analysis->start_search_interval=0;
-						analysis->end_search_interval=beat_end-beat_start-1;
+						(trace->area_3).edit.first_data=buffer->start;
+						(trace->area_3).edit.last_data=buffer->end;
+						analysis->start_search_interval=buffer->start;
+						analysis->end_search_interval=buffer->end;
 						DEALLOCATE(analysis->search_interval_divisions);
 						if (1!=analysis->number_of_events)
 						{
