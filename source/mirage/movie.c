@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : movie.c
 
-LAST MODIFIED : 11 November 2000
+LAST MODIFIED : 24 November 2000
 
 DESCRIPTION :
 ==============================================================================*/
@@ -1415,7 +1415,7 @@ static int Mirage_movie_graphics_show_points(struct Scene *scene,
 	struct GROUP(FE_element) *element_group,struct Graphical_material *material,
 	struct GT_object *glyph,float point_size,struct Computed_field *label_field)
 /*******************************************************************************
-LAST MODIFIED : 11 November 2000
+LAST MODIFIED : 24 November 2000
 
 DESCRIPTION :
 Adds points in the given <material>, possibly with node numbers on to the
@@ -1423,7 +1423,7 @@ graphical finite element for <element_group> on <scene>.
 Regenerates the GFE but does not update the scene.
 ==============================================================================*/
 {
-	enum Glyph_axis_mode glyph_axis_mode;
+	enum Glyph_scaling_mode glyph_scaling_mode;
 	int return_code;
 	struct Computed_field *orientation_scale_field, *variable_scale_field;
 	struct GT_element_group *gt_element_group;
@@ -1441,7 +1441,7 @@ Regenerates the GFE but does not update the scene.
 				/*???RC temporary */
 				GT_element_settings_set_selected_material(settings, material);
 				GT_element_settings_set_select_mode(settings, GRAPHICS_SELECT_ON);
-				glyph_axis_mode = GLYPH_AXIS_1_POSITIVE;
+				glyph_scaling_mode = GLYPH_SCALING_GENERAL;
 				glyph_centre[0] = 0.0;
 				glyph_centre[1] = 0.0;
 				glyph_centre[2] = 0.0;
@@ -1454,7 +1454,7 @@ Regenerates the GFE but does not update the scene.
 				glyph_scale_factors[2] = 1.0;
 				variable_scale_field = (struct Computed_field *)NULL;
 				GT_element_settings_set_glyph_parameters(settings, glyph,
-					glyph_axis_mode, glyph_centre, glyph_size, orientation_scale_field,
+					glyph_scaling_mode, glyph_centre, glyph_size, orientation_scale_field,
 					glyph_scale_factors, variable_scale_field);
 				GT_element_settings_set_label_field(settings,label_field);
 				if (GT_element_group_add_settings(gt_element_group,settings,1))
