@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap.c
 
-LAST MODIFIED : 28 January 2002
+LAST MODIFIED : 18 July 2002
 
 DESCRIPTION :
 Main program for unemap.  Based on cmgui.
@@ -15,6 +15,7 @@ Main program for unemap.  Based on cmgui.
 #if defined (MOTIF)
 #include <Xm/MessageB.h>
 #endif /* defined (MOTIF) */
+#include "command/command.h"
 #include "general/debug.h"
 #include "general/error_handler.h"
 #if defined (IMAGEMAGICK)
@@ -43,7 +44,6 @@ Main program for unemap.  Based on cmgui.
 #endif /* defined (UNEMAP_USE_3D) */
 #include "finite_element/finite_element.h"
 #include "time/time_keeper.h"
-#include "unemap/unemap_package.h"
 #include "unemap/system_window.h"
 #else /* defined (NOT_ACQUISITION_ONLY) */
 #include "unemap/page_window.h"
@@ -56,6 +56,7 @@ Main program for unemap.  Based on cmgui.
 #endif /* defined (MIRADA) */
 #endif /* defined (WINDOWS) */
 #endif /* defined (NOT_ACQUISITION_ONLY) */
+#include "unemap/unemap_command.h"
 #include "user_interface/confirmation.h"
 #include "user_interface/event_dispatcher.h"
 #include "user_interface/message.h"
@@ -303,46 +304,32 @@ Display a unemap warning message.
 	return (return_code);
 } /* display_warning_message */
 
-#if defined (MOTIF)
-static void exit_unemap(Widget widget,XtPointer user_data,XtPointer call_data)
+void Unemap_system_window_end_application_loop(
+	struct System_window *system_window, void *user_interface_void)
 /*******************************************************************************
-LAST MODIFIED : 13 March 2001
+LAST MODIFIED : 17 July 2002
 
 DESCRIPTION :
-Exits unemap
+Ends the application main loop. Callback function for when the close button is
+clicked in the unemap system window -- but only if unemap system window is run
+as the main application.
 ==============================================================================*/
 {
-	struct Page_window *page_window;
-#if defined (NOT_ACQUISITION_ONLY)
-	struct System_window *system_window;
-#endif /* defined (NOT_ACQUISITION_ONLY) */
+	struct User_interface *user_interface;
 
-	ENTER(exit_unemap);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-#if defined (NOT_ACQUISITION_ONLY)
-	if (system_window=(struct System_window *)user_data)
+	ENTER(Unemap_system_window_end_application_loop);
+	USE_PARAMETER(system_window);
+	if (user_interface = (struct User_interface *)user_interface_void)
 	{
-		struct User_interface *user_interface;
-
-		if(user_interface=system_window->user_interface)
-		{			
-			User_interface_end_application_loop(user_interface);
-		}
-		if(page_window=(system_window->acquisition).window)
-		{
-			destroy_Page_window(&page_window);
-		}
+		User_interface_end_application_loop(user_interface);
 	}
-#else /* defined (NOT_ACQUISITION_ONLY) */
-	if (page_window=(struct Page_window *)user_data)	
-	{		 
-		destroy_Page_window(&page_window);
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Unemap_system_window_end_application_loop.  Invalid argument(s)");
 	}
-#endif /* defined (NOT_ACQUISITION_ONLY) */
 	LEAVE;
-} /* exit_unemap */
-#endif /* defined (MOTIF) */
+} /* Unemap_system_window_end_application_loop */
 
 /*
 Main program
@@ -362,23 +349,20 @@ int WINAPI WinMain(HINSTANCE current_instance,HINSTANCE previous_instance,
 	/*???DB. Win32 SDK says that don't have to call it WinMain */
 #endif /* defined (WINDOWS) */
 /*******************************************************************************
-LAST MODIFIED : 19 Julyy 2000
+LAST MODIFIED : 17 July 2002
 
 DESCRIPTION :
 Main program for unemap
 ==============================================================================*/
 {
-#if defined (MOTIF)
-	Dimension window_height,window_width;
-#endif /* defined (MOTIF) */
 #if defined (WINDOWS)
 #if defined (MIRADA)
 	HANDLE device_driver;
 #endif /* defined (MIRADA) */
 #endif /* defined (WINDOWS) */
 	int return_code;
+	struct Execute_command *execute_command;
 #if defined (NOT_ACQUISITION_ONLY)
-	struct Unemap_package *unemap_package;
 #if defined (UNEMAP_USE_3D)
 	float default_light_direction[3]={0.0,-0.5,-1.0};	
 	struct Colour ambient_colour,default_colour;	
@@ -389,15 +373,12 @@ Main program for unemap
 	struct Element_point_ranges_selection *element_point_ranges_selection=
 		(struct Element_point_ranges_selection *)NULL;
 	struct FE_element_selection *element_selection=(struct FE_element_selection *)NULL;
-	struct FE_field *map_fit_field=(struct FE_field *)NULL;
 	struct FE_node_selection *node_selection=(struct FE_node_selection *)NULL;
 	struct FE_node_selection *data_selection=(struct FE_node_selection *)NULL;
 	struct FE_time *fe_time = (struct FE_time *)NULL;
 	struct Graphical_material *default_graphical_material=(struct Graphical_material *)NULL;
 	struct Graphical_material *default_selected_material=(struct Graphical_material *)NULL;	
 	struct Graphical_material *electrode_selected_material=(struct Graphical_material *)NULL;
-	struct GROUP(FE_element) *torso_element_group=(struct GROUP(FE_element) *)NULL;	
-	struct GT_object *glyph=(struct GT_object *)NULL;
 	struct Light *default_light=(struct Light *)NULL;
 	struct Light_model *default_light_model=(struct Light_model *)NULL;
 	struct LIST(GT_object) *glyph_list=(struct LIST(GT_object) *)NULL;
@@ -427,14 +408,6 @@ Main program for unemap
 	struct MANAGER(Texture) *texture_manager=(struct MANAGER(Texture) *)NULL;	
 	struct Node_tool *node_tool=(struct Node_tool *)NULL;
 	struct Interactive_tool *transform_tool=(struct Interactive_tool *)NULL;
-	struct Standard_torso_defaults
-	{
-		char *standard_torso_file;
-	};
-#define XmNstandardTorso "standardTorso"
-#define XmCStandardTorso "StandardTorso"
-	struct Standard_torso_defaults standard_torso_defaults;
-	char *default_torso_group_name=(char *)NULL;
 #endif /* defined (UNEMAP_USE_3D) */
 	struct System_window *system;
 	struct Time_keeper *time_keeper;
@@ -476,45 +449,7 @@ Main program for unemap
 		"green"	
 	};
 
-#if defined (UNEMAP_USE_3D)
-	static XtResource standard_torso_resources[]=
-	{
-		XmNstandardTorso,
-		XmCStandardTorso,
-		XmRString,
-		sizeof(char *),
-		XtOffsetOf(struct Standard_torso_defaults,standard_torso_file),
-		XmRString,
-		""
-	};
-#endif/* defined (UNEMAP_USE_3D) */
-
-	struct System_window_data
-	{
-		Position x;
-		Position y;
-	} system_window_data;
-	static XtResource System_window_resources[]=
-	{
-		{
-			XmNx,
-			XmCPosition,
-			XmRPosition,
-			sizeof(Position),
-			XtOffsetOf(struct System_window_data,x),
-			XmRImmediate,
-			(XtPointer) -1
-		},
-		{
-			XmNy,
-			XmCPosition,
-			XmRPosition,
-			sizeof(Position),
-			XtOffsetOf(struct System_window_data,y),
-			XmRImmediate,
-			(XtPointer) -1
-		}
-	};
+	struct Unemap_command_data *unemap_command_data;
 	User_settings user_settings;
 #endif /* defined (MOTIF) */
 
@@ -547,13 +482,6 @@ Main program for unemap
 		set_display_message_function(WARNING_MESSAGE,display_warning_message,
 			user_interface);
 #endif /* defined(UNEMAP_USE_3D) */
-		/* used to output information and warnings to windows*/
-#if defined(OLD_CODE)
-		set_display_message_function(INFORMATION_MESSAGE,
-			display_information_message,user_interface);
-		set_display_message_function(WARNING_MESSAGE,display_warning_message,
-			user_interface);
-#endif
 		/* retrieve application specific constants */
 #if defined (MOTIF)
 		XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
@@ -738,13 +666,14 @@ Main program for unemap
 #endif /* !defined (NOT_ACQUISITION_ONLY) */
 
 #if defined (IMAGEMAGICK)
-	Open_image_environment(*argv);
+		Open_image_environment(*argv);
 #endif /* defined (IMAGEMAGICK) */
 
-		/* create the main window */
+		execute_command = CREATE(Execute_command)();
+
 #if defined (NOT_ACQUISITION_ONLY)
-		time_keeper=ACCESS(Time_keeper)(
-			CREATE(Time_keeper)("default",event_dispatcher,user_interface));
+		time_keeper = ACCESS(Time_keeper)(
+			CREATE(Time_keeper)("default", event_dispatcher, user_interface));
 #if defined (UNEMAP_USE_3D)
 		texture_manager=CREATE_MANAGER(Texture)();	
 		fe_field_manager=CREATE_MANAGER(FE_field)();
@@ -839,8 +768,8 @@ Main program for unemap
 					DEACCESS(Graphical_material)(&default_selected_material);
 				}
 			}			
-			/* create material "electrode_selected" to be bright white for highlighting
-				 electrode graphics */
+			/* create material "electrode_selected" to be bright white for
+				 highlighting electrode graphics */
 			if (electrode_selected_material=CREATE(Graphical_material)(
 				"electrode_selected"))
 			{
@@ -901,96 +830,42 @@ Main program for unemap
 				}
 			}
 		}
-		if (glyph_list=CREATE(LIST(GT_object))())
-		{
-			/* add standard glyphs */
-			if (glyph=make_glyph_arrow_line("arrow_line",0.25,0.125))
-			{
-				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
-			}
-			if (glyph=make_glyph_arrow_solid("arrow_solid",12,2./3.,1./6.))
-			{
-				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
-			}
-			if (glyph=make_glyph_axes("axes",0.1,0.025,0.1))
-			{
-				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
-			}
-			if (glyph=make_glyph_cone("cone",12))
-			{
-				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
-			}
-			if (glyph=make_glyph_cross("cross"))
-			{
-				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
-			}
-			if (glyph=make_glyph_cylinder("cylinder6",6))
-			{
-				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
-			}
-			if (glyph=make_glyph_cylinder("cylinder",12))
-			{
-				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
-			}
-			if (glyph=make_glyph_cylinder("cylinder_hires",48))
-			{
-				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
-			}
-			if (glyph=make_glyph_sphere("diamond",4,2))
-			{
-				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
-			}
-			if (glyph=make_glyph_line("line"))
-			{
-				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
-			}
-			if (glyph=make_glyph_point("point",g_POINT_MARKER,0))
-			{
-				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
-			}
-			if (glyph=make_glyph_sheet("sheet"))
-			{
-				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
-			}
-			if (glyph=make_glyph_sphere("sphere",12,6))
-			{
-				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
-			}
-			if (glyph=make_glyph_sphere("sphere_hires",48,24))
-			{
-				ADD_OBJECT_TO_LIST(GT_object)(glyph,glyph_list);
-			}
-		}
+		glyph_list = make_standard_glyphs();
 		node_tool=CREATE(Node_tool)(interactive_tool_manager,
 			node_manager,/*use_data*/0,node_group_manager,element_manager,
 			node_selection,computed_field_package,default_graphical_material,
-			user_interface, time_keeper);		
+			user_interface, time_keeper, execute_command);		
 		transform_tool=create_Interactive_tool_transform(user_interface);
 		ADD_OBJECT_TO_MANAGER(Interactive_tool)(transform_tool,interactive_tool_manager);
 		all_FE_element_field_info=CREATE_LIST(FE_element_field_info)();
 		/* FE_element_shape manager */
 		/*???DB.  To be done */
 		all_FE_element_shape=CREATE_LIST(FE_element_shape)();
-		unemap_package=CREATE(Unemap_package)(fe_field_manager, fe_time,
-			element_group_manager,node_manager,data_manager,data_group_manager,
-			node_group_manager,fe_basis_manager,element_manager,computed_field_manager,
-			interactive_tool_manager,node_selection);	
-#else /* defined (UNEMAP_USE_3D) */
-		unemap_package=(struct Unemap_package *)NULL;
-#endif /* defined (UNEMAP_USE_NODES) */
-		if (system=create_System_window(User_interface_get_application_shell(user_interface),
-			exit_unemap,time_keeper,user_interface,unemap_package
-#if defined (UNEMAP_USE_3D)
-			,element_point_ranges_selection,element_selection,node_selection,
-			data_selection,texture_manager,interactive_tool_manager,scene_manager,
-			light_model_manager,light_manager,spectrum_manager,
-			graphical_material_manager,data_manager,glyph_list,
-			default_graphical_material,computed_field_package,default_light,
-			default_light_model
 #endif /* defined (UNEMAP_USE_3D) */
-			))
 #else /* defined (NOT_ACQUISITION_ONLY) */
 		page_window=(struct Page_window *)NULL;
+#endif /* defined (NOT_ACQUISITION_ONLY) */
+
+		/**** create the main window ****/
+
+#if defined (NOT_ACQUISITION_ONLY)
+		if (system = CREATE(System_window)(
+			User_interface_get_application_shell(user_interface),
+			Unemap_system_window_end_application_loop, (void *)user_interface,
+#if defined (UNEMAP_USE_3D)
+			element_point_ranges_selection,element_selection,
+			fe_field_manager,node_selection,data_selection,
+			fe_time,fe_basis_manager,
+			element_manager,data_manager,node_manager,
+			element_group_manager,data_group_manager,node_group_manager,
+			texture_manager,interactive_tool_manager,scene_manager,
+			light_model_manager,light_manager,spectrum_manager,
+			graphical_material_manager,glyph_list,
+			default_graphical_material,computed_field_package,default_light,
+			default_light_model,
+#endif /* defined (UNEMAP_USE_3D) */
+			time_keeper, user_interface))
+#else /* defined (NOT_ACQUISITION_ONLY) */
 		if (open_Page_window(&page_window,
 			(struct Mapping_window **)NULL,&acquisition_rig,
 #if defined (MOTIF)
@@ -1005,106 +880,71 @@ Main program for unemap
 			5,".sig",user_interface))
 #endif /* defined (NOT_ACQUISITION_ONLY) */
 		{
+
+#if defined (OLD_CODE)
 #if defined (NOT_ACQUISITION_ONLY)
-#if defined (MOTIF)
-			create_Shell_list_item(&(system->window_shell),user_interface);
-#endif /* defined (MOTIF) */
-#if defined (MOTIF)		
-			XtAddCallback(system->window_shell,XmNdestroyCallback,close_emap,
-				(XtPointer)system);
-			/* manage the system window */
-			XtManageChild(system->window);
-			/* realize the system window shell */
-			XtRealizeWidget(system->window_shell);
-			/* determine placement */
-			XtVaGetValues(system->window_shell,
-				XmNwidth,&window_width,
-				XmNheight,&window_height,
-				NULL);
-			/* do this to allow backward compatibility but still allow the resources
-				to be set */
-			/* these defaults match with the default resources above */
-			system_window_data.x = -1;
-			system_window_data.y = -1;
-#if defined (UNEMAP_USE_3D)
-			/* create and store the map fit field  */
-			map_fit_field=create_mapping_type_fe_field("fit",fe_field_manager,
-				fe_time);
-			set_unemap_package_map_fit_field(unemap_package,map_fit_field);
-			/* get the location of the default_torso file from Xresoures*/
-			standard_torso_defaults.standard_torso_file= "";			
-			XtVaGetApplicationResources(system->window_shell,
-				&standard_torso_defaults,standard_torso_resources,
-				XtNumber(standard_torso_resources),NULL);
-			/* do nothing if no default torso file specified */
-			if(strcmp(standard_torso_defaults.standard_torso_file,""))
-			{									
-				/* read in the default torso node and element groups */
-				if(read_FE_node_and_elem_groups_and_return_name_given_file_name(
-					standard_torso_defaults.standard_torso_file,fe_field_manager,
-					fe_time, node_manager,element_manager,node_group_manager,
-					data_group_manager,element_group_manager,fe_basis_manager,
-					&default_torso_group_name))
-				{
-					/* offset default torso  node and element groups */
-					offset_FE_node_and_element_identifiers_in_group(default_torso_group_name,
-						(INT_MAX/2),node_manager,element_manager,node_group_manager,
-						element_group_manager);									
-					/*put in name unemap_package*/
-					set_unemap_package_default_torso_name(unemap_package,default_torso_group_name);
-					/* define the fit field on  the defaut torso*/
-					torso_element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
-						(default_torso_group_name,element_group_manager);
-					define_fit_field_at_quad_elements_and_nodes(torso_element_group,
-						map_fit_field,fe_basis_manager,element_manager,node_manager);
-					/* add cylindrical field infor for texture mapping to defaut torso*/
-					add_cylindrical_info_to_cartesian_torso(default_torso_group_name,
-						unemap_package);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"Can't find standardTorso specified in Cmgui/Unemap file");
-				}
-			}
-#endif /* defined (UNEMAP_USE_3D) */
-			XtVaGetApplicationResources(system->window_shell,
-				&system_window_data,System_window_resources,
-				XtNumber(System_window_resources),NULL);
-			if (-1==system_window_data.x)
-			{
-				system_window_data.x = ((User_interface_get_screen_width(user_interface))
-					-window_width)/2;
-			}
-			if (-1==system_window_data.y)
-			{
-				system_window_data.y = ((User_interface_get_screen_height(user_interface))
-					-window_height)/2;
-			}
-			XtVaSetValues(system->window_shell,
-				XmNx,system_window_data.x,
-				XmNy,system_window_data.y,
-				XmNmappedWhenManaged,True,
-				NULL);
-#endif /* defined (MOTIF) */
 #else /* defined (NOT_ACQUISITION_ONLY) */
 #if defined (MOTIF)
+			/*???RC  exit_unemap_acquisition only called destroy_Page_window. This
+				doesn't seem to end the application main loop, so I removed it
+				and destroy the Page_window with the other clean-ups below */
 			XtAddCallback(get_page_window_close_button(page_window),
-				XmNactivateCallback,exit_unemap,(XtPointer)page_window);
+				XmNactivateCallback,exit_unemap_acquisition,(XtPointer)page_window);
 #endif /* defined (MOTIF) */
-#if defined (OLD_CODE)
-#if defined (MOTIF)
-			create_Shell_list_item(&(acquisition.window_shell));
-#endif /* defined (MOTIF) */
-#endif /* defined (OLD_CODE) */
 #endif /* defined (NOT_ACQUISITION_ONLY) */
-/*???debug */
-/*			START_ERROR_HANDLING;*/
-#if defined (OLD_CODE)
-/*???DB.  create_System_window should do its own popping */
-			/* pop up the system window shell */
-			XtPopup(system->window_shell,XtGrabNone);
 #endif /* defined (OLD_CODE) */
+
+			/**** Create the Unemap_command_data ****/
+
+			unemap_command_data = CREATE(Unemap_command_data)(
+				event_dispatcher,
+				execute_command,
+				user_interface,
+#if defined (NOT_ACQUISITION_ONLY)
+#if defined (UNEMAP_USE_3D)
+#if defined (MOTIF)
+				node_tool,
+				transform_tool,
+#endif /* defined (MOTIF) */
+				glyph_list,
+				fe_time,
+				computed_field_package,
+				fe_basis_manager,
+				element_manager,
+				fe_field_manager,
+				data_manager,
+				node_manager,
+				graphical_material_manager,
+				default_graphical_material,
+				element_group_manager,
+				data_group_manager,
+				node_group_manager,
+				interactive_tool_manager,
+				light_manager,
+				default_light,
+				light_model_manager,
+				default_light_model,
+				texture_manager,
+				scene_manager,
+				spectrum_manager,
+				element_point_ranges_selection,
+				element_selection,
+				data_selection,
+				node_selection,
+#endif /* defined (UNEMAP_USE_3D) */
+				system,
+				time_keeper
+#else /* defined (NOT_ACQUISITION_ONLY) */
+				page_window,
+				acquisition_rig
+#endif /* defined (NOT_ACQUISITION_ONLY) */
+				);
+
+			Execute_command_set_command_function(execute_command,
+				unemap_execute_command, unemap_command_data);
+
+			/**** Error Handling ****/
+
 			switch (signal_code)
 			{
 #if !defined (WINDOWS)
@@ -1134,69 +974,82 @@ Main program for unemap
 						"Invalid memory reference occured");
 				} break;
 			}
-			/* user interface loop */
-			return_code=Event_dispatcher_main_loop(event_dispatcher);
+
+			/**** user interface loop ****/
+
+			return_code = Event_dispatcher_main_loop(event_dispatcher);
+
+			/**** clean up application memory ****/
+
+			DESTROY(Unemap_command_data)(&unemap_command_data);
+
 #if defined (NOT_ACQUISITION_ONLY)
-#if defined (UNEMAP_USE_3D )
-			DESTROY(Unemap_package)(&unemap_package);	
-			DESTROY(MANAGER(Scene))(&scene_manager);
-
-			/* destroy Interactive_tools and manager */
-			DESTROY(Node_tool)(&node_tool);		
-			/*???DB.  Node_tool uses computed fields, so can't destroy after
-				destroying computed fields */
-			/*???DB.  Should destroy in the reverse of creation order */
-			DESTROY(MANAGER(Interactive_tool))(&interactive_tool_manager);
-			DESTROY(Computed_field_package)(&computed_field_package);
-
-			DESTROY(FE_node_selection)(&data_selection);
-			DESTROY(FE_node_selection)(&node_selection);
-			DESTROY(FE_element_selection)(&element_selection);
-			DESTROY(Element_point_ranges_selection)(&element_point_ranges_selection);
-
-			DESTROY(LIST(GT_object))(&glyph_list);
-
-			DESTROY(MANAGER(FE_field))(&fe_field_manager);
-			DESTROY(MANAGER(GROUP(FE_node)))(&node_group_manager);
-			DESTROY(MANAGER(FE_node))(&node_manager);
-			DESTROY(MANAGER(GROUP(FE_node)))(&data_group_manager);
-			DESTROY(MANAGER(FE_node))(&data_manager);
-			DESTROY(MANAGER(GROUP(FE_element)))(&element_group_manager);
-			DESTROY(MANAGER(FE_element))(&element_manager);	
-			DESTROY(MANAGER(FE_basis))(&fe_basis_manager);
-
-			DESTROY_LIST(FE_element_field_info)(&all_FE_element_field_info);
-			DESTROY_LIST(FE_element_shape)(&all_FE_element_shape);
-
-			DESTROY(MANAGER(Spectrum))(&spectrum_manager);
-
-			DEACCESS(Graphical_material)(&default_graphical_material);			
-			DEACCESS(Graphical_material)(&default_selected_material);
-			DEACCESS(Graphical_material)(&electrode_selected_material);			
-			DESTROY(MANAGER(Graphical_material))(&graphical_material_manager);
-			DESTROY(MANAGER(Texture))(&texture_manager);
-
-			DEACCESS(FE_time)(&fe_time);
-
-			DEACCESS(Light_model)(&default_light_model);
-			DESTROY(MANAGER(Light_model))(&light_model_manager);
-			DEACCESS(Light)(&default_light);
-			DESTROY(MANAGER(Light))(&light_manager);
-#endif /* defined (UNEMAP_USE_3D) */
+			DESTROY(System_window)(&system);
+#else /* defined (NOT_ACQUISITION_ONLY) */
+			destroy_Page_window(&page_window);
 #endif /* defined (NOT_ACQUISITION_ONLY) */
-/*???debug */
-/*			END_ERROR_HANDLING;*/
-			/* free application memory */
-			/* close the user interface */
-			DESTROY(User_interface)(&user_interface);
-				/*???DB.  Should this actually be inside the application and be
-					used to set a flag that terminates the main loop ? */
+
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"Unable to create system window");
-			return_code=0;
+			display_message(ERROR_MESSAGE, "Unable to create system window");
+			return_code = 0;
 		}
+
+		/**** clean up application memory ****/
+
+#if defined (NOT_ACQUISITION_ONLY)
+#if defined (UNEMAP_USE_3D )
+		DESTROY(MANAGER(Scene))(&scene_manager);
+
+		/* destroy Interactive_tools and manager */
+		DESTROY(Node_tool)(&node_tool);		
+		/*???DB.  Node_tool uses computed fields, so can't destroy after
+			destroying computed fields */
+		/*???DB.  Should destroy in the reverse of creation order */
+		DESTROY(MANAGER(Interactive_tool))(&interactive_tool_manager);
+		DESTROY(Computed_field_package)(&computed_field_package);
+
+		DESTROY(FE_node_selection)(&data_selection);
+		DESTROY(FE_node_selection)(&node_selection);
+		DESTROY(FE_element_selection)(&element_selection);
+		DESTROY(Element_point_ranges_selection)(&element_point_ranges_selection);
+
+		DESTROY(LIST(GT_object))(&glyph_list);
+
+		DESTROY(MANAGER(FE_field))(&fe_field_manager);
+		DESTROY(MANAGER(GROUP(FE_node)))(&node_group_manager);
+		DESTROY(MANAGER(FE_node))(&node_manager);
+		DESTROY(MANAGER(GROUP(FE_node)))(&data_group_manager);
+		DESTROY(MANAGER(FE_node))(&data_manager);
+		DESTROY(MANAGER(GROUP(FE_element)))(&element_group_manager);
+		DESTROY(MANAGER(FE_element))(&element_manager);	
+		DESTROY(MANAGER(FE_basis))(&fe_basis_manager);
+
+		DESTROY_LIST(FE_element_field_info)(&all_FE_element_field_info);
+		DESTROY_LIST(FE_element_shape)(&all_FE_element_shape);
+
+		DESTROY(MANAGER(Spectrum))(&spectrum_manager);
+
+		DEACCESS(Graphical_material)(&default_graphical_material);			
+		DEACCESS(Graphical_material)(&default_selected_material);
+		DEACCESS(Graphical_material)(&electrode_selected_material);			
+		DESTROY(MANAGER(Graphical_material))(&graphical_material_manager);
+		DESTROY(MANAGER(Texture))(&texture_manager);
+
+		DEACCESS(FE_time)(&fe_time);
+
+		DEACCESS(Light_model)(&default_light_model);
+		DESTROY(MANAGER(Light_model))(&light_model_manager);
+		DEACCESS(Light)(&default_light);
+		DESTROY(MANAGER(Light))(&light_manager);
+#endif /* defined (UNEMAP_USE_3D) */
+		DEACCESS(Time_keeper)(&time_keeper);
+#else /* defined (NOT_ACQUISITION_ONLY) */
+#endif /* defined (NOT_ACQUISITION_ONLY) */
+
+		DESTROY(Execute_command)(&execute_command);
+
 #if defined (WINDOWS)
 #if defined (MIRADA)
 		if (INVALID_HANDLE_VALUE!=device_driver)
@@ -1205,11 +1058,16 @@ Main program for unemap
 		}
 #endif /* defined (MIRADA) */
 #endif /* defined (WINDOWS) */
+
+		/**** close the user interface ****/
+
+		DESTROY(User_interface)(&user_interface);
+		DESTROY(Event_dispatcher)(&event_dispatcher);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Could not open user interface");
-		return_code=0;
+		display_message(ERROR_MESSAGE, "Could not open user interface");
+		return_code = 0;
 	}
 	LEAVE;
 
