@@ -121,11 +121,7 @@ It must therefore be transposed to be used by OpenGL.
 		{
 			case INTERACTION_VOLUME_CENTRED_BOX:
 			{
-				/* use 4x4 identity matrix */
-				for (i=0;i<16;i++)
-				{
-					interaction_volume->modelview_matrix[i]=identity_matrix4[i];
-				}
+				identity_matrix4(interaction_volume->modelview_matrix);
 				interaction_volume->modelview_matrix_calculated=1;
 			} break;
 			case INTERACTION_VOLUME_RAY_FRUSTUM:
@@ -184,11 +180,7 @@ It must therefore be transposed to be used by OpenGL.
 		{
 			case INTERACTION_VOLUME_CENTRED_BOX:
 			{
-				/* start with 4x4 identity matrix */
-				for (i=0;i<16;i++)
-				{
-					interaction_volume->projection_matrix[i]=identity_matrix4[i];
-				}
+				identity_matrix4(interaction_volume->projection_matrix);
 				/* scale */
 				interaction_volume->projection_matrix[0] =
 					2.0 / interaction_volume->data.centred_box.size_x;
@@ -210,12 +202,7 @@ It must therefore be transposed to be used by OpenGL.
 			} break;
 			case INTERACTION_VOLUME_RAY_FRUSTUM:
 			{
-				/* use the projection_matrix for the view, premultiplied by picking
-					 matrix for viewport */
-				for (i=0;i<16;i++)
-				{
-					temp_matrix[i]=identity_matrix4[i];
-				}
+				identity_matrix4(temp_matrix);
 				/* scale */
 				temp_matrix[0] = interaction_volume->data.ray_frustum.viewport_width /
 					interaction_volume->data.ray_frustum.size_x;

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : matrix_vector.h
 
-LAST MODIFIED : 5 April 2002
+LAST MODIFIED : 16 November 2004
 
 DESCRIPTION:
 Code for performing vector calculations - normalize, dot product etc. -, and
@@ -28,7 +28,13 @@ vector or matrix routines that should be in here are listed in matrix_vector.c.
 
 #include "general/value.h"
 
-extern const double identity_matrix4[16];
+int identity_matrix4(double *a);
+/*******************************************************************************
+LAST MODIFIED : 16 November 2004
+
+DESCRIPTION :
+Set matrix <a> to the 4x4 identity.
+==============================================================================*/
 
 int cross_product3(double *a,double *b,double *result);
 /*******************************************************************************

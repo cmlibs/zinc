@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : matrix_vector.c
 
-LAST MODIFIED : 5 April 2002
+LAST MODIFIED : 16 November 2004
 
 DESCRIPTION:
 Code for performing vector calculations - normalize, dot product etc. -, and
@@ -32,14 +32,6 @@ graphics/matrix.c
 #include "user_interface/message.h"
 
 #define TINY 1.0e-20
-
-const double identity_matrix4[16]=
-{
-	1.0, 0.0, 0.0, 0.0,
-	0.0, 1.0, 0.0, 0.0,
-	0.0, 0.0, 1.0, 0.0,
-	0.0, 0.0, 0.0, 1.0
-};
 
 int cross_product3(double *a,double *b,double *result)
 /*******************************************************************************
@@ -300,6 +292,48 @@ Set matrix <a> to the <n> x <n> identity.
 				value++;
 			}
 		}
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "identity_matrix.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* identity_matrix */
+
+int identity_matrix4(double *a)
+/*******************************************************************************
+LAST MODIFIED : 16 November 2004
+
+DESCRIPTION :
+Set matrix <a> to the 4x4 identity.
+==============================================================================*/
+{
+	double *value;
+	int i, j, return_code;
+
+	ENTER(identity_matrix4);
+	if (a)
+	{
+		a[0] = 1;
+		a[1] = 0;
+		a[2] = 0;
+		a[3] = 0;
+		a[4] = 0;
+		a[5] = 1;
+		a[6] = 0;
+		a[7] = 0;
+		a[8] = 0;
+		a[9] = 0;
+		a[10] = 1;
+		a[11] = 0;
+		a[12] = 0;
+		a[13] = 0;
+		a[14] = 0;
+		a[15] = 1;
 		return_code = 1;
 	}
 	else
