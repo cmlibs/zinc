@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_matrix.hpp
 //
-// LAST MODIFIED : 15 July 2004
+// LAST MODIFIED : 21 July 2004
 //
 // DESCRIPTION :
 // A variable that is a matrix.
@@ -83,8 +83,8 @@ bool Function_variable_matrix_set_value_function(Value_type& value,
 // class Function_variable_iterator_representation_atomic_*.
 //==============================================================================
 
-#if !defined (EXPORT_IMPLEMENTED)
+#if !defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
 #include "computed_variable/function_variable_matrix_implementation.cpp"
-#endif // !defined (EXPORT_IMPLEMENTED)
+#endif // !defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
 
 #endif /* !defined (__FUNCTION_VARIABLE_MATRIX_HPP__) */

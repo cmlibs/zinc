@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_value.hpp
 //
-// LAST MODIFIED : 13 July 2004
+// LAST MODIFIED : 21 July 2004
 //
 // DESCRIPTION :
 // An abstract class for accessing the value of variable.  A mediator which
@@ -70,8 +70,8 @@ class Function_variable_value_specific : public Function_variable_value
 		bool (*set_function)(Value_type&,const Function_variable_handle);
 };
 
-#if !defined (EXPORT_IMPLEMENTED)
+#if !defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
 #include "computed_variable/function_variable_value_specific.cpp"
-#endif // !defined (EXPORT_IMPLEMENTED)
+#endif // !defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
 
 #endif /* !defined (__FUNCTION_VARIABLE_VALUE_HPP__) */

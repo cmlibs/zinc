@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_base.hpp
 //
-// LAST MODIFIED : 15 July 2004
+// LAST MODIFIED : 21 July 2004
 //
 // DESCRIPTION :
 // Basic declarations and #defines for functions.
@@ -16,8 +16,12 @@
 
 #include <stdexcept>
 
+//#define EXPORT_IMPLEMENTED
+#define ONE_TEMPLATE_DEFINITION_IMPLEMENTED
+
 #if defined (EXPORT_IMPLEMENTED)
 #define EXPORT export
+#define ONE_TEMPLATE_DEFINITION_IMPLEMENTED
 #else // defined (EXPORT_IMPLEMENTED)
 #define EXPORT 
 #endif // defined (EXPORT_IMPLEMENTED)

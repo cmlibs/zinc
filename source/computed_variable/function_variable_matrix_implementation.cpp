@@ -1,12 +1,10 @@
 //******************************************************************************
 // FILE : function_variable_matrix_implementation.cpp
 //
-// LAST MODIFIED : 20 July 2004
+// LAST MODIFIED : 21 July 2004
 //
 // DESCRIPTION :
 //==============================================================================
-#if !defined (__FUNCTION_VARIABLE_MATRIX_IMPLEMENTATION_CPP__)
-#define __FUNCTION_VARIABLE_MATRIX_IMPLEMENTATION_CPP__
 
 #include <sstream>
 
@@ -563,4 +561,3 @@ bool Function_variable_matrix_set_value_function(Value_type& value,
 
 	return (result);
 }
-#endif // !defined (__FUNCTION_VARIABLE_MATRIX_IMPLEMENTATION_CPP__)

@@ -1,12 +1,10 @@
 //******************************************************************************
 // FILE : function_variable_value_specific.cpp
 //
-// LAST MODIFIED : 20 July 2004
+// LAST MODIFIED : 21 July 2004
 //
 // DESCRIPTION :
 //==============================================================================
-#if !defined (__FUNCTION_VARIABLE_VALUE_SPECIFIC_CPP__)
-#define __FUNCTION_VARIABLE_VALUE_SPECIFIC_CPP__
 
 // global classes
 // ==============
@@ -44,4 +42,3 @@ bool Function_variable_value_specific<Value_type>::set(Value_type& value,
 
 	return (result);
 }
-#endif // !defined (__FUNCTION_VARIABLE_VALUE_SPECIFIC_CPP__)
