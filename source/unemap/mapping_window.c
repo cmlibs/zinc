@@ -5307,7 +5307,7 @@ window.
 					electrode_drawn=(map->electrode_drawn)[electrode_number];
 					if (electrode_drawn)
 					{
-						if (HIDE_COLOUR==map->colour_option)
+						if (HIDE_COLOUR!=map->colour_option)
 						{
 							sprintf(value_string,"%.4g",f_value);
 							name=value_string;

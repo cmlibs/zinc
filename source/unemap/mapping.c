@@ -8662,16 +8662,6 @@ printf("dxdmu=%g, dxdtheta=%g, dydmu=%g, dydtheta=%g\n",dxdmu,dxdtheta,dydmu,
 											sprintf(value_string,"%d",(*electrode)->channel->number);
 											name=value_string;
 										}
-										if ((*electrode)->highlight)
-										{
-											graphics_context=(drawing_information->graphics_context).
-												highlighted_colour;
-										}
-										else
-										{
-											graphics_context=(drawing_information->graphics_context).
-												unhighlighted_colour;
-										}
 									} break;								
 									case SHOW_ELECTRODE_VALUES:
 									{											
@@ -8689,16 +8679,6 @@ printf("dxdmu=%g, dxdtheta=%g, dydmu=%g, dydtheta=%g\n",dxdmu,dxdtheta,dydmu,
 												name=value_string;
 											}
 										}
-										if ((*electrode)->highlight)
-										{
-											graphics_context=(drawing_information->graphics_context).
-												highlighted_colour;
-										}
-										else
-										{
-											graphics_context=(drawing_information->graphics_context).
-												unhighlighted_colour;
-										};
 									}break;								
 									default:
 									{

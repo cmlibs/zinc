@@ -383,7 +383,7 @@ gets a manager of the unemap package.
 ==============================================================================*/
 #endif /* defined (UNEMAP_USE_3D)*/
 
-#if defined (UNEMAP_USE_NODES)
+#if defined (UNEMAP_USE_3D)
 struct FE_node_selection *get_unemap_package_FE_node_selection(
 	struct Unemap_package *package);
 /*******************************************************************************
@@ -392,7 +392,7 @@ LAST MODIFIED : 31 August 2000
 DESCRIPTION :
 gets a FE_node_selection of the unemap package.
 ==============================================================================*/
-#endif /* defined (UNEMAP_USE_NODES)*/
+#endif /* defined (UNEMAP_USE_3D)*/
 
 #if defined (UNEMAP_USE_3D)
 struct MANAGER(GROUP(FE_element)) *get_unemap_package_element_group_manager(

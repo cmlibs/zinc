@@ -7426,13 +7426,15 @@ If they're not, you'll get the first match.
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
-struct Device *find_device_given_rig_node(struct FE_node *node,
+struct Device **find_device_given_rig_node(struct FE_node *node,
 	struct FE_field *device_name_field,struct Rig *rig)
 /*******************************************************************************
-LAST MODIFIED : 26 September 2000
+LAST MODIFIED : 27 September 2000
 
 DESCRIPTION :
 Given a <node>, finds the corresponding Device in <rig>.
+returns a (struct Device **) rather than a (struct Device *) as pointer
+arithmetic is done on it later.
 Currently matches the names.
 Does by matching the names. Therefore assume's device/node names are unique.
 If they're not, you'll get the first match.
@@ -7440,13 +7442,14 @@ If they're not, you'll get the first match.
 {
 	char *device_name,*nodal_name;
 	int i,number_of_devices,success;
-	struct Device *device;	
+	struct Device *device,**devices;	
 	struct Device_description *description;
  
 	ENTER(find_device_given_rig_node);
 	device_name=(char *)NULL;
 	nodal_name=(char *)NULL;
 	device=(struct Device *)NULL;
+	devices=(struct Device **)NULL;
 	description=(struct Device_description *)NULL;
 	success=0;
 	if(device_name_field&&rig&&rig->devices)
@@ -7463,11 +7466,13 @@ If they're not, you'll get the first match.
 		if(success)
 		{	
 			device=*(rig->devices);
+			devices=rig->devices;
 			number_of_devices=rig->number_of_devices;
 			success=0;
 			i=0;
 			while((!success)&&(i<number_of_devices))
-			{					
+			{		
+				device=*devices;			
 				description=get_Device_description(device);
 				device_name=get_Device_description_name(description);
 				if(!strcmp(device_name,nodal_name))
@@ -7476,7 +7481,7 @@ If they're not, you'll get the first match.
 				}
 				else
 				{
-					device++;
+					devices++;
 					i++;
 				} /* if(!strcmp(required_stri */
 			}/* while(!success)&&(i<number_of_devices)*/ 
@@ -7491,7 +7496,7 @@ If they're not, you'll get the first match.
 		display_message(ERROR_MESSAGE,"find_rig_node_given_devic. Invalid argument");
 	}
  LEAVE;
- return(device);
+ return(devices);
 }/* find_device_given_rig_node */
 #endif /* defined (UNEMAP_USE_3D) */
 

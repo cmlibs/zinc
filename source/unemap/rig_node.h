@@ -956,7 +956,7 @@ If they're not, you'll get the first match.
 #endif /* defined (UNEMAP_USE_3D) */
 
 #if defined (UNEMAP_USE_3D)
-struct Device *find_device_given_rig_node(struct FE_node *node,
+struct Device **find_device_given_rig_node(struct FE_node *node,
 	struct FE_field *device_name_field,struct Rig *rig);
 /*******************************************************************************
 LAST MODIFIED : 26 September 2000
