@@ -828,9 +828,7 @@ Lists a single line about a computed field including just name, number of
 components, coordinate system and type.
 ==============================================================================*/
 
-struct Computed_field_package *CREATE(Computed_field_package)(
-	struct MANAGER(FE_field) *fe_field_manager,
-	struct MANAGER(FE_element) *fe_element_manager);
+struct Computed_field_package *CREATE(Computed_field_package)(void);
 /*******************************************************************************
 LAST MODIFIED : 21 May 2001
 

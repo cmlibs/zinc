@@ -181,9 +181,6 @@ wrappers need to be automatically created for each FE_field.
 ==============================================================================*/
 {
 	struct MANAGER(Computed_field) *computed_field_manager;
-	struct MANAGER(FE_field) *fe_field_manager;
-	struct MANAGER(FE_element) *fe_element_manager;
-	void *fe_field_manager_callback_id;
 	struct LIST(Computed_field_type_data) *computed_field_type_list;
 }; /* struct Computed_field_package */
 
@@ -4554,9 +4551,7 @@ its name matches the contents of the <other_computed_field_void>.
 	return (return_code);
 } /* Computed_field_contents_match */
 
-struct Computed_field_package *CREATE(Computed_field_package)(
-	struct MANAGER(FE_field) *fe_field_manager,
-	struct MANAGER(FE_element) *fe_element_manager)
+struct Computed_field_package *CREATE(Computed_field_package)(void)
 /*******************************************************************************
 LAST MODIFIED : 21 May 2001
 
@@ -4571,29 +4566,18 @@ FE_fields.
 	struct Computed_field_package *computed_field_package;
 
 	ENTER(CREATE(Computed_field_package));
-	if (fe_field_manager && fe_element_manager)
+	if (ALLOCATE(computed_field_package,struct Computed_field_package,1)&&
+		(computed_field_package->computed_field_manager=
+			CREATE(MANAGER(Computed_field))()))
 	{
-		if (ALLOCATE(computed_field_package,struct Computed_field_package,1)&&
-			(computed_field_package->computed_field_manager=
-				CREATE(MANAGER(Computed_field))()))
-		{
-			computed_field_package->fe_field_manager=fe_field_manager;
-			computed_field_package->fe_element_manager=fe_element_manager;
-			computed_field_package->computed_field_type_list =
-			  CREATE(LIST(Computed_field_type_data))();
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(Computed_field_package).  Not enough memory");
-			DEALLOCATE(computed_field_package);
-		}
+		computed_field_package->computed_field_type_list =
+			CREATE(LIST(Computed_field_type_data))();
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"CREATE(Computed_field_package).  Invalid argument(s)");
-		computed_field_package=(struct Computed_field_package *)NULL;
+			"CREATE(Computed_field_package).  Not enough memory");
+		DEALLOCATE(computed_field_package);
 	}
 	LEAVE;
 
