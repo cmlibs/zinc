@@ -1991,6 +1991,31 @@ playing in here
 } /* X3dThreeDDrawingGetGLXContex */
 #endif /* defined (OPENGL_API) */
 
+int X3dThreeDDrawingGetVisualID(Widget widget)
+/*******************************************************************************
+LAST MODIFIED : 9 August 2002
+
+DESCRIPTION :
+Returns the visual ID actually used by this X3d widget.
+==============================================================================*/
+{
+	int visual_id;
+	ThreeDDrawingWidget drawing_widget;
+
+	if ((drawing_widget=(ThreeDDrawingWidget)widget)&&
+		(True==IsThreeDDrawing(widget)))
+	{
+		visual_id=(drawing_widget)->three_d_drawing.normal_buffer.visual_information->visualid;
+	}
+	else
+	{
+		printf("X3dThreeDDrawingGetVisualID.  Missing widget\n");
+		visual_id = 0;
+	}
+
+	return (visual_id);
+} /* X3dThreeDDrawingGetVisualID */
+
 #if defined (OPENGL_API) && defined (MOTIF)
 int query_glx_extension(char *extName, Display *display, int screen)
 /*******************************************************************************

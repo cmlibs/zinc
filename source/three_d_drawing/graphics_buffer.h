@@ -100,6 +100,14 @@ LAST MODIFIED : 1 July 2002
 DESCRIPTION :
 ==============================================================================*/
 
+int Graphics_buffer_get_visual_id(struct Graphics_buffer *buffer);
+/*******************************************************************************
+LAST MODIFIED : 9 August 2002
+
+DESCRIPTION :
+Returns the visual id used by the graphics buffer.
+==============================================================================*/
+
 int Graphics_buffer_swap_buffers(struct Graphics_buffer *buffer);
 /*******************************************************************************
 LAST MODIFIED : 2 July 2002

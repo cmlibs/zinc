@@ -5168,7 +5168,7 @@ DESCRIPTION :
 Writes the properties of the <window> to the command window.
 ==============================================================================*/
 {
-	char line[80],*name;
+	char line[80],*name, *opengl_version, *opengl_vendor, *opengl_extensions;
 	double bottom, eye[3], far, horizontal_view_angle, left, lookat[3],
 		max_pixels_per_polygon, modelview_matrix[16],
 		NDC_height, NDC_left, NDC_top, NDC_width,
@@ -5180,7 +5180,7 @@ Writes the properties of the <window> to the command window.
 	enum Scene_viewer_projection_mode projection_mode;
 	enum Scene_viewer_transparency_mode transparency_mode;
 	enum Scene_viewer_viewport_mode viewport_mode;
-	int antialias,height,pane_no,perturb_lines,return_code,width,undistort_on;
+	int antialias,height,pane_no,perturb_lines,return_code,width,undistort_on,visual_id;
 	struct Colour colour;
 	struct Scene *overlay_scene;
 	struct Scene_viewer *scene_viewer;
@@ -5411,6 +5411,15 @@ Writes the properties of the <window> to the command window.
 		else
 		{
 			display_message(INFORMATION_MESSAGE,"  no anti-aliasing\n");
+		}
+		/* OpenGL information */
+		if (Scene_viewer_get_opengl_information(window->scene_viewer_array[0],
+			&opengl_version, &opengl_vendor, &opengl_extensions, &visual_id))
+		{
+			display_message(INFORMATION_MESSAGE,"  OpenGL Information\n");
+			display_message(INFORMATION_MESSAGE,"    Version %s\n", opengl_version);
+			display_message(INFORMATION_MESSAGE,"    Vendor %s\n", opengl_vendor);
+			display_message(INFORMATION_MESSAGE,"    Visual ID %d\n",visual_id);
 		}
 		sprintf(line,"  access count = %i\n",window->access_count);
 		display_message(INFORMATION_MESSAGE,line);

@@ -877,6 +877,18 @@ DESCRIPTION :
 Sets the width and height of the Scene_viewers drawing area.
 ==============================================================================*/
 
+int Scene_viewer_get_opengl_information(struct Scene_viewer *scene_viewer,
+	char **opengl_version, char **opengl_vendor, char **opengl_extensions,
+	int *visual_id);
+/*******************************************************************************
+LAST MODIFIED : 9 August 2002
+
+DESCRIPTION :
+Returns the OpenGL state information.  The <opengl_version>, <opengl_vendor> and
+<opengl_extensions> strings are static pointers supplied from the driver and
+so should not be modified or deallocated.
+==============================================================================*/
+
 int Scene_viewer_rotate_about_lookat_point(struct Scene_viewer *scene_viewer,
 	double axis[3],double angle);
 /*******************************************************************************

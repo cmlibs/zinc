@@ -146,6 +146,14 @@ Routine for cleaning up any dynamic module variables created with the
 Three_D_Drawing, eg. OpenGL shareable_context.
 ==============================================================================*/
 
+int X3dThreeDDrawingGetVisualID(Widget widget);
+/*******************************************************************************
+LAST MODIFIED : 9 August 2002
+
+DESCRIPTION :
+Returns the visual ID actually used by this X3d widget.
+==============================================================================*/
+
 #if defined (OPENGL_API) && defined (MOTIF)
 int query_glx_extension(char *extName, Display *display, int screen);
 /*******************************************************************************

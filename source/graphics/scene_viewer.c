@@ -5390,6 +5390,42 @@ Sets the width and height of the Scene_viewers drawing area.
 	return (return_code);
 } /* Scene_viewer_set_viewport_size */
 
+int Scene_viewer_get_opengl_information(struct Scene_viewer *scene_viewer,
+	char **opengl_version, char **opengl_vendor, char **opengl_extensions,
+	int *visual_id)
+/*******************************************************************************
+LAST MODIFIED : 9 August 2002
+
+DESCRIPTION :
+Returns the OpenGL state information.  The <opengl_version>, <opengl_vendor> and
+<opengl_extensions> strings are static pointers supplied from the driver and
+so should not be modified or deallocated.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(Scene_viewer_get_opengl_information);
+	if (scene_viewer)
+	{
+		Graphics_buffer_make_current(scene_viewer->graphics_buffer);
+		*opengl_version=(char *)glGetString(GL_VERSION);
+		*opengl_vendor=(char *)glGetString(GL_VENDOR);
+		*opengl_extensions=(char *)glGetString(GL_EXTENSIONS);
+
+		*visual_id = Graphics_buffer_get_visual_id(scene_viewer->graphics_buffer);
+		return_code=1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Scene_viewer_get_viewport_info.  Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Scene_viewer_get_viewport_info */
+
 int Scene_viewer_get_window_projection_matrix(struct Scene_viewer *scene_viewer,
 	double window_projection_matrix[16])
 /*******************************************************************************

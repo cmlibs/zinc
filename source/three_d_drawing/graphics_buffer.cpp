@@ -979,6 +979,53 @@ DESCRIPTION :
 	return (return_code);
 } /* Graphics_buffer_make_current */
 
+int Graphics_buffer_get_visual_id(struct Graphics_buffer *buffer)
+/*******************************************************************************
+LAST MODIFIED : 9 August 2002
+
+DESCRIPTION :
+Returns the visual id used by the graphics buffer.
+==============================================================================*/
+{
+	int visual_id;
+
+	ENTER(Graphics_buffer_get_visual_id);
+
+	if (buffer)
+	{
+		switch (buffer->type)
+		{
+#if defined (MOTIF)
+			case GRAPHICS_BUFFER_X3D_TYPE:
+			{
+				visual_id = X3dThreeDDrawingGetVisualID(buffer->drawing_widget);
+			} break;
+#endif /* defined (MOTIF) */
+#if defined (GTK_USER_INTERFACE)
+			case GRAPHICS_BUFFER_GTKGLAREA_TYPE:
+			{
+				visual_id = 0;
+			} break;
+#endif /* defined (GTK_USER_INTERFACE) */
+			default:
+			{
+				display_message(ERROR_MESSAGE,"Graphics_buffer_get_visual_id.  "
+					"Graphics_bufffer type unknown or not supported.");				
+				visual_id = 0;
+			} break;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"Graphics_buffer_get_visual_id.  "
+			"Graphics_bufffer missing.");				
+		visual_id = 0;
+	}
+	LEAVE;
+
+	return (visual_id);
+} /* Graphics_buffer_get_visual_id */
+
 int Graphics_buffer_swap_buffers(struct Graphics_buffer *buffer)
 /*******************************************************************************
 LAST MODIFIED : 2 July 2002
@@ -1485,7 +1532,7 @@ Activates the graphics <buffer>.
 	LEAVE;
 
 	return (return_code);
-} /* Graphics_buffer_is_visible */
+} /* Graphics_buffer_awaken */
 
 int Graphics_buffer_add_initialise_callback(struct Graphics_buffer *buffer,
 	CMISS_CALLBACK_FUNCTION(Graphics_buffer_callback) initialise_callback, void *user_data)
