@@ -1232,13 +1232,10 @@ Create the structures and retrieve the command window from the uil file.
 		{"change_scrolling",(XtPointer)change_scrolling},
 		{"command_window_close",(XtPointer)command_window_close}
 	};
-	static MrmRegisterArg identifier_list[3];
+	static MrmRegisterArg identifier_list[2];
 	XWindowAttributes window_attributes;
 #endif /* defined (MOTIF) */
 	struct Command_window *command_window;
-#if defined (MOTIF)
-	struct File_open_data *iod_file_open_data;
-#endif /* defined (MOTIF) */
 #if defined (WINDOWS)
 	BOOL win32_return_code;
 	static char *class_name="Command_window";
@@ -1336,19 +1333,6 @@ Create the structures and retrieve the command window from the uil file.
 						identifier_list[0].value=(XtPointer)command_window;
 						identifier_list[1].name="execute_command_structure";
 						identifier_list[1].value=(XtPointer)execute_command;
-#if defined (MOTIF)
-						if (iod_file_open_data=create_File_open_data(".iod",REGULAR,
-							read_iod_file_via_selection_box,(XtPointer)NULL,0,user_interface))
-						{
-							identifier_list[2].name="read_iod_file_structure";
-							identifier_list[2].value=(XtPointer)iod_file_open_data;
-						}
-						else
-#endif /* defined (MOTIF) */
-						{
-							identifier_list[2].name="read_iod_file_structure";
-							identifier_list[2].value=(XtPointer)NULL;
-						}
 						if (MrmSUCCESS==MrmRegisterNamesInHierarchy(
 							command_window_hierarchy,identifier_list,
 							XtNumber(identifier_list)))
@@ -1506,8 +1490,7 @@ DESCRIPTION:
 	int return_code;
 	struct Command_window *command_window;
 
-	if (command_window_pointer && (command_window = (struct Command_window *)
-		command_window_pointer))
+	if (command_window_pointer && (command_window = *command_window_pointer))
 	{
 		if (command_window->out_file)
 		{
