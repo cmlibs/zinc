@@ -409,6 +409,12 @@ GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_VERSION_1_4);
 #if defined (GL_EXT_texture3D)
 GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_EXT_texture3D);
 #endif /* defined (GL_EXT_texture3D) */
+#if defined (GL_EXT_abgr)
+GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_EXT_abgr);
+#endif /* defined (GL_EXT_abgr) */
+#if defined (GL_ARB_texture_compression)
+GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_texture_compression);
+#endif /* defined (GL_ARB_texture_compression) */
 #if defined (GL_ARB_vertex_program)
 GRAPHICS_LIBRARY_INITIALISE_GLEXTENSIONFLAG(GL_ARB_vertex_program);
 #endif /* defined (GL_ARB_vertex_program) */

@@ -297,8 +297,8 @@ be shared by multiple materials using the same program.
 				case MATERIAL_PROGRAM_BUMP_MAPPING_TEXTURING:
 				{
 #if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
-					if (query_gl_extension("GL_ARB_vertex_program") &&
-						 query_gl_extension("GL_ARB_fragment_program"))
+					if (Graphics_library_check_extension(GL_ARB_vertex_program) &&
+						 Graphics_library_check_extension(GL_ARB_fragment_program))
 					{
 #if ! defined (TESTING_PROGRAM_STRINGS)
 						char *fragment_program_string, *vertex_program_string;
@@ -672,8 +672,8 @@ be shared by multiple materials using the same program.
 				case MATERIAL_PROGRAM_PER_PIXEL_BUMP_MAPPING:
 				{
 #if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
-					if (query_gl_extension("GL_ARB_vertex_program") &&
-						 query_gl_extension("GL_ARB_fragment_program"))
+					if (Graphics_library_check_extension(GL_ARB_vertex_program) &&
+						 Graphics_library_check_extension(GL_ARB_fragment_program))
 					{
 						char vertex_program_string[] =
 							"!!ARBvp1.0\n"
@@ -1131,8 +1131,8 @@ be shared by multiple materials using the same program.
 							}
 
 						/* This version is not working correctly yet. */
-						if (query_gl_extension("GL_NV_vertex_program") &&
-						 query_gl_extension("GL_NV_register_combiners2"))
+						if (Graphics_library_check_extension(GL_NV_vertex_program) &&
+						 Graphics_library_check_extension(GL_NV_register_combiners2))
 						{
 							char vertex_program_string[] =
 								"!!VP1.0\n" 
@@ -1470,8 +1470,8 @@ material results.
 		else
 		{
 #if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
-			if (query_gl_extension("GL_ARB_vertex_program") &&
-				query_gl_extension("GL_ARB_fragment_program"))
+			if (Graphics_library_check_extension(GL_ARB_vertex_program) &&
+				Graphics_library_check_extension(GL_ARB_fragment_program))
 			{
 				glDisable(GL_VERTEX_PROGRAM_ARB);
 				glDisable(GL_FRAGMENT_PROGRAM_ARB);

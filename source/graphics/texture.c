@@ -295,11 +295,8 @@ DESCRIPTION :
 		} break;
 		case TEXTURE_COMPRESSED_UNSPECIFIED:
 		{
-			/* By testing for the enumerators rather than the function we can 
-				compile a version that will support texture compression on
-				hardware that has it while compiling on systems without */
-#if defined (GL_COMPRESSED_RGB_ARB) && defined (GL_COMPRESSED_RGBA_ARB)
-			if (query_gl_extension("GL_ARB_texture_compression"))
+#if defined (GL_ARB_texture_compression)
+			if (Graphics_library_check_extension(GL_ARB_texture_compression))
 			{
 				switch (number_of_components)
 				{
@@ -321,13 +318,13 @@ DESCRIPTION :
 			}
 			else
 			{
-#endif /* defined (GL_COMPRESSED_RGB_ARB) && defined (GL_COMPRESSED_RGBA_ARB) */
+#endif /* defined (GL_ARB_texture_compression) */
 				display_message(WARNING_MESSAGE, "Texture_get_hardware_storage_format.  "
 					"Texture compression not supported on this hardware.");
 				return_code = number_of_components;
-#if defined (GL_COMPRESSED_RGB_ARB) && defined (GL_COMPRESSED_RGBA_ARB)
+#if defined (GL_ARB_texture_compression)
 			}
-#endif /* defined (GL_COMPRESSED_RGB_ARB) && defined (GL_COMPRESSED_RGBA_ARB) */
+#endif /* defined (GL_ARB_texture_compression) */
 		} break;
 		default:
 		{
@@ -1095,7 +1092,7 @@ Directly outputs the commands setting up the <texture>.
 							{
 #if defined (GL_VERSION_1_2) || defined (GL_EXT_texture3D)
 								if (Graphics_library_check_extension(GL_VERSION_1_2) ||
-					Graphics_library_check_extension(GL_EXT_texture3D))
+									Graphics_library_check_extension(GL_EXT_texture3D))
 								{
 									if (reduced_image)
 									{
@@ -3284,7 +3281,7 @@ texture, and must be given a value.
 		else
 #endif /* defined (SGI_DIGITAL_MEDIA) */
 		{
-			if (query_gl_extension("GL_EXT_abgr"))
+			if (Graphics_library_check_extension(GL_EXT_abgr))
 			{
 				texture->movie = movie;
 				storage = TEXTURE_ABGR; /* This is the default format for frames from

@@ -1365,6 +1365,48 @@ the extensions succeed, false if not.
 			}
 		}
 #endif /* GL_EXT_texture3D */
+#if defined GL_EXT_abgr
+		else if (!strcmp(extension_name, "GL_EXT_abgr"))
+		{
+			if (255 != GLEXTENSIONFLAG(GL_EXT_abgr))
+			{
+				return_code = GLEXTENSIONFLAG(GL_EXT_abgr);
+			}
+			else
+			{
+				if (query_gl_extension(extension_name))
+				{
+					return_code = 1;
+				}
+				else
+				{
+					return_code = 0;
+				}
+				GLEXTENSIONFLAG(GL_EXT_abgr) = return_code;
+			}
+		}
+#endif /* GL_EXT_texture3D */
+#if defined GL_ARB_texture_compression
+		else if (!strcmp(extension_name, "GL_ARB_texture_compression"))
+		{
+			if (255 != GLEXTENSIONFLAG(GL_ARB_texture_compression))
+			{
+				return_code = GLEXTENSIONFLAG(GL_ARB_texture_compression);
+			}
+			else
+			{
+				if (query_gl_extension(extension_name))
+				{
+					return_code = 1;
+				}
+				else
+				{
+					return_code = 0;
+				}
+				GLEXTENSIONFLAG(GL_ARB_texture_compression) = return_code;
+			}
+		}
+#endif /* GL_ARB_texture_compression */
 #if defined GL_ARB_vertex_program
 		else if (!strcmp(extension_name, "GL_ARB_vertex_program"))
 		{
