@@ -10515,7 +10515,7 @@ c.f. analysis_set_range.
 		/* check that rig and highlight exist */
 		if ((rig=analysis->rig)&&(analysis->highlight)&&
 			(highlight= *(analysis->highlight)))
-		{						
+		{					
 			current_region=get_Rig_current_region(rig);			
 			/* for the electrodes in the current region */
 			if (((ELECTRODE==highlight->description->type)||
@@ -10527,10 +10527,8 @@ c.f. analysis_set_range.
 				{								
 					Signal_get_min_max(highlight->signal,&minimum,&maximum,1/*time_range*/);
 					channel_offset=highlight->channel->offset;
-					minimum=channel_gain*((float)(minimum)-channel_offset);
-					maximum=channel_gain*((float)(maximum)-channel_offset);						
-					highlight->signal_minimum=channel_offset+minimum/channel_gain;
-					highlight->signal_maximum=channel_offset+maximum/channel_gain;
+					highlight->signal_minimum=channel_gain*((float)(minimum)-channel_offset);
+					highlight->signal_maximum=channel_gain*((float)(maximum)-channel_offset);					
 				}
 			}
 			
@@ -10690,10 +10688,8 @@ own min/max
 					{								
 						Signal_get_min_max((*device)->signal,&minimum,&maximum,1/*time_range*/);
 						channel_offset=(*device)->channel->offset;
-						minimum=channel_gain*((float)(minimum)-channel_offset);
-						maximum=channel_gain*((float)(maximum)-channel_offset);						
-						(*device)->signal_minimum=channel_offset+minimum/channel_gain;
-						(*device)->signal_maximum=channel_offset+maximum/channel_gain;
+						(*device)->signal_minimum=channel_gain*((float)(minimum)-channel_offset);
+						(*device)->signal_maximum=channel_gain*((float)(maximum)-channel_offset);
 					}
 				}
 				device++;
@@ -10799,9 +10795,7 @@ then sets all signals to this range.
 					(iterative_get_rig_node_accepted_undecided_signal_min_max,
 						(void *)min_max_iterator,rig_node_group);
 				/*min_max_iterator.max,min_max_iterator.min now set  */
-				set_Min_max_iterator_count(min_max_iterator,0);			
-				set_Min_max_iterator_channel_gain_field(min_max_iterator,channel_gain_field);
-				set_Min_max_iterator_channel_offset_field(min_max_iterator,channel_offset_field);
+				set_Min_max_iterator_count(min_max_iterator,0);						
 				set_Min_max_iterator_signal_minimum_field(min_max_iterator,signal_minimum_field);
 				set_Min_max_iterator_signal_maximum_field(min_max_iterator,signal_maximum_field);
 				set_Min_max_iterator_display_start_time_field(min_max_iterator,
@@ -10908,8 +10902,8 @@ then sets all signals to this range.
 					if (0<(channel_gain=(*device)->channel->gain))
 					{
 						channel_offset=(*device)->channel->offset;
-						(*device)->signal_minimum=channel_offset+all_signals_min/channel_gain;
-						(*device)->signal_maximum=channel_offset+all_signals_max/channel_gain;
+						(*device)->signal_minimum=all_signals_min;
+						(*device)->signal_maximum=all_signals_max;				
 					}
 				}
 				device++;
@@ -10940,11 +10934,10 @@ For every electrode signal in the current region, the range is changed to be the
 same as the range for the current signal.
 ==============================================================================*/
 {	
-	float channel_gain,channel_offset,maximum,minimum;	
+	float  maximum,minimum;	
 	struct Analysis_work_area *analysis;	
 	struct FE_node *rig_node;
-	struct FE_field *channel_gain_field,*channel_offset_field,
-		*signal_minimum_field,*signal_maximum_field;	
+	struct FE_field *signal_minimum_field,*signal_maximum_field;	
 	struct FE_field_component component;
 	struct GROUP(FE_node) *rig_node_group;
 	struct Min_max_iterator *min_max_iterator;
@@ -10956,8 +10949,6 @@ same as the range for the current signal.
 	USE_PARAMETER(call_data);
 	USE_PARAMETER(widget);	
 	rig_node=(struct FE_node *)NULL;
-	channel_gain_field=(struct FE_field *)NULL;
-	channel_offset_field=(struct FE_field *)NULL;
 	signal_minimum_field=(struct FE_field *)NULL;
 	signal_maximum_field=(struct FE_field *)NULL;	
 	rig_node_group=(struct GROUP(FE_node) *)NULL;
@@ -10972,11 +10963,7 @@ same as the range for the current signal.
 		{	
 			if(min_max_iterator=CREATE(Min_max_iterator)())
 			{
-				signal_drawing_package=analysis->signal_drawing_package;			
-				channel_gain_field=get_Signal_drawing_package_channel_gain_field(
-					signal_drawing_package);
-				channel_offset_field=get_Signal_drawing_package_channel_offset_field(
-					signal_drawing_package);				
+				signal_drawing_package=analysis->signal_drawing_package;										
 				signal_minimum_field=get_Signal_drawing_package_signal_minimum_field(
 					signal_drawing_package);
 				signal_maximum_field=get_Signal_drawing_package_signal_maximum_field(
@@ -10991,25 +10978,15 @@ same as the range for the current signal.
 				}			
 				rig_node=analysis->highlight_rig_node;
 				/*get the channel gain and offset */
-				component.number=0;
-				component.field=channel_gain_field;
-				get_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,
-					&channel_gain);
-				component.field=channel_offset_field;
-				get_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,
-					&channel_offset);
+				component.number=0;			
 				component.field=signal_minimum_field;
 				get_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,
 					&minimum);
 				component.field=signal_maximum_field;
 				get_FE_nodal_FE_value_value(rig_node,&component,0,FE_NODAL_VALUE,
-					&maximum);
-				minimum=channel_gain*(minimum-channel_offset);
-				maximum=channel_gain*(maximum-channel_offset);
+					&maximum);			
 				set_Min_max_iterator_max(min_max_iterator,maximum);
-				set_Min_max_iterator_min(min_max_iterator,minimum);			
-				set_Min_max_iterator_channel_gain_field(min_max_iterator,channel_gain_field);
-				set_Min_max_iterator_channel_offset_field(min_max_iterator,channel_offset_field);
+				set_Min_max_iterator_min(min_max_iterator,minimum);							
 				set_Min_max_iterator_signal_minimum_field(min_max_iterator,signal_minimum_field);
 				set_Min_max_iterator_signal_maximum_field(min_max_iterator,signal_maximum_field);
 				/* run through all the nodes setting signals min, max */						
@@ -11046,7 +11023,10 @@ For every electrode signal in the current region, the range is changed to be the
 same as the range for the current signal.
 ==============================================================================*/
 {	
-	float channel_gain,channel_offset,maximum,minimum;
+	float maximum,minimum;
+#if defined(NEW_CODE)
+	channel_gain,channel_offset;
+#endif
 	int i;
 	struct Analysis_work_area *analysis;
 	struct Device **device,*highlight;
@@ -11063,16 +11043,17 @@ same as the range for the current signal.
 			((*device)->signal)&&(analysis->highlight)&&
 			(highlight= *(analysis->highlight)))
 		{
+					
+#if defined(NEW_CODE) /*tested, works don't want to do */	
 			channel_gain=highlight->channel->gain;
-			channel_offset=highlight->channel->offset;			
-#if defined(NEW_CODE) /*tested, works don't want to do */
+			channel_offset=highlight->channel->offset;
 			Signal_get_min_max(highlight->signal,&minimum,&maximum,1/*time_range*/);
 			minimum=channel_gain*((float)(minimum)-channel_offset);
 			maximum=channel_gain*((float)(maximum)-channel_offset);					
 #else
-			/* look up the stored range for the highlighed signal */			
-			minimum=channel_gain*((float)(highlight->signal_minimum)-channel_offset);
-			maximum=channel_gain*((float)(highlight->signal_maximum)-channel_offset);	
+			/* look up the stored range for the highlighed signal */					
+			minimum=highlight->signal_minimum;
+			maximum=highlight->signal_maximum;
 #endif
 			/* run through all the signals */			
 			current_region=get_Rig_current_region(rig);
@@ -11081,14 +11062,9 @@ same as the range for the current signal.
 				/* for the electrodes in the current region */
 				if ((ELECTRODE==(*device)->description->type)&&(!current_region||
 					(current_region==(*device)->description->region)))
-				{
-					/* set the signal minimum and maximum */
-					if (0<(channel_gain=(*device)->channel->gain))
-					{
-						channel_offset=(*device)->channel->offset;
-						(*device)->signal_minimum=channel_offset+minimum/channel_gain;
-						(*device)->signal_maximum=channel_offset+maximum/channel_gain;
-					}
+				{											
+					(*device)->signal_minimum=minimum;
+					(*device)->signal_maximum=maximum;					
 				}
 				device++;
 			}

@@ -4982,6 +4982,7 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 							return_code=0;
 						}
 					}
+
 					if (return_code)
 					{				
 						XtManageChild(mapping->projection_choice);
@@ -5123,6 +5124,7 @@ Updates the mapping region pull down menu to be consistent with the current rig.
 								region_item=get_Region_list_item_next(region_item);	
 							} /* while */
 						}
+
 						XtVaSetValues(mapping->region_choice,
 							XmNmenuHistory,current_region,
 							NULL);

@@ -6582,7 +6582,7 @@ Set the <nodes> signal_minimum,signal_maximum from the <min_max_iterator>.
 This function is called iteratively by analysis_set_range
 ==============================================================================*/
 {		
-	FE_value channel_gain,channel_offset,signal_minimum,signal_maximum;
+	FE_value signal_minimum,signal_maximum;
 	int return_code;		
 	struct FE_field_component component;
 	struct Min_max_iterator *min_max_iterator;
@@ -6592,27 +6592,16 @@ This function is called iteratively by analysis_set_range
 	if(node&&min_max_iterator_void)
 	{
 		min_max_iterator=(struct Min_max_iterator *)min_max_iterator_void;	
-		if(min_max_iterator&&min_max_iterator->channel_gain_field
-			&&min_max_iterator->channel_offset_field&&min_max_iterator->signal_minimum_field
+		if(min_max_iterator&&min_max_iterator->signal_minimum_field
 			&&min_max_iterator->signal_maximum_field)
 		{
-			if(FE_field_is_defined_at_node(min_max_iterator->channel_gain_field,node)
-				&&FE_field_is_defined_at_node(min_max_iterator->channel_offset_field,node)
-				&&FE_field_is_defined_at_node(min_max_iterator->signal_minimum_field,node)
+			if(FE_field_is_defined_at_node(min_max_iterator->signal_minimum_field,node)
 				&&FE_field_is_defined_at_node(min_max_iterator->signal_maximum_field,node))
 				/* nothing to do, but NOT an error if no signal at node*/			
 			{
-				/*get the gain and offset */
 				component.number=0;	
-				component.field=min_max_iterator->channel_gain_field;
-				get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-					&channel_gain);
-				component.field=min_max_iterator->channel_offset_field;
-				get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,
-					&channel_offset);
-				/* calculate the  new signal_minimum,signal_maximum */
-				signal_minimum=channel_offset+min_max_iterator->min/channel_gain;
-				signal_maximum=channel_offset+min_max_iterator->max/channel_gain;
+				signal_minimum=min_max_iterator->min;
+				signal_maximum=min_max_iterator->max;
 				/* set the new signal_minimum,signal_maximum*/
 				component.field = min_max_iterator->signal_minimum_field;												
 				set_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,signal_minimum);
