@@ -121,7 +121,7 @@ all :
 endif # SYSNAME == CYGWIN%=
 
 update :
-	$(CMISS_ROOT)/bin/cmissmake cmgui;
+	$(CMISS_ROOT)/bin/cmissmake unemap;
 
 cronjob:
 	if [ "$(USER)" = "cmiss" ]; then \
