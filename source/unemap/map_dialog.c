@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : map_dialog.c
 
-LAST MODIFIED : 3 February 2004
+LAST MODIFIED : 23 April 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -719,7 +719,7 @@ Finds the id of the contours row-column in the map dialog.
 			"identify_map_dialog_contours.  Missing map_dialog_structure");
 	}
 	LEAVE;
-} /* identify_map_dialog_contours*/
+} /* identify_map_dialog_contours */
 
 static void identify_map_dialog_contours_op(Widget *widget_id,
 	XtPointer map_dialog_structure,XtPointer call_data)
@@ -821,82 +821,118 @@ Saves the id of the variable thickness contours option in the map dialog.
 	LEAVE;
 } /* identify_map_dialog_contours_va */
 
-static void identify_map_dialog_contours_do(Widget *widget_id,
+static void id_map_dialog_cont_minimum(Widget *widget_id,
 	XtPointer map_dialog_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 23 April 2004
 
 DESCRIPTION :
-Finds the id of the increment number of contours arrow in the map dialog.
+Saves the id of the contour minimum row coloum in the map dialog.
 ==============================================================================*/
 {
 	struct Map_dialog *map_dialog;
 
-	ENTER(identify_map_dialog_contours_do);
+	ENTER(id_map_dialog_cont_minimum);
 	USE_PARAMETER(call_data);
 	if (map_dialog=(struct Map_dialog *)map_dialog_structure)
 	{
-		map_dialog->contours.down_arrow= *widget_id;
+		map_dialog->contours.minimum= *widget_id;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"identify_map_dialog_contours_do.  Missing map_dialog_structure");
+			"id_map_dialog_cont_minimum.  Missing map_dialog_structure");
 	}
 	LEAVE;
-} /* identify_map_dialog_contours_do */
+} /* id_map_dialog_cont_minimum */
 
-static void decrement_number_of_contours(Widget widget,
+static void id_map_dialog_cont_minimum_text(Widget *widget_id,
 	XtPointer map_dialog_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 23 April 2004
 
 DESCRIPTION :
-Decrement the number of contours.
+Saves the id of the contour minimum text in the map dialog.
 ==============================================================================*/
 {
 	struct Map_dialog *map_dialog;
-	char number_string[3];
 
-	ENTER(decrement_number_of_contours);
-	USE_PARAMETER(widget);
+	ENTER(id_map_dialog_cont_minimum_text);
 	USE_PARAMETER(call_data);
 	if (map_dialog=(struct Map_dialog *)map_dialog_structure)
 	{
-		if (99==map_dialog->number_of_contours)
-		{
-			XtManageChild(map_dialog->contours.up_arrow);
-		}
-		(map_dialog->number_of_contours)--;
-		sprintf(number_string,"%2d",map_dialog->number_of_contours);
-		XtVaSetValues(map_dialog->contours.number,
-			XmNlabelString,XmStringCreate(number_string,XmSTRING_DEFAULT_CHARSET),
-			NULL);
-		if (2==map_dialog->number_of_contours)
-		{
-			XtUnmanageChild(map_dialog->contours.down_arrow);
-		}
+		map_dialog->contours.minimum_text= *widget_id;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"decrement_number_of_contours.  Missing map_dialog_structure");
+			"id_map_dialog_cont_minimum_text.  Missing map_dialog_structure");
 	}
 	LEAVE;
-} /* decrement_number_of_contours */
+} /* id_map_dialog_cont_minimum_text */
 
-static void identify_map_dialog_contours_nu(Widget *widget_id,
+static void id_map_dialog_cont_step(Widget *widget_id,
 	XtPointer map_dialog_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 23 April 2004
 
 DESCRIPTION :
-Finds the id of the label showing the number of contours in the map dialog.
+Saves the id of the contour step row coloum in the map dialog.
 ==============================================================================*/
 {
 	struct Map_dialog *map_dialog;
 
-	ENTER(identify_map_dialog_contours_nu);
+	ENTER(id_map_dialog_cont_step);
+	USE_PARAMETER(call_data);
+	if (map_dialog=(struct Map_dialog *)map_dialog_structure)
+	{
+		map_dialog->contours.step= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_map_dialog_cont_step.  Missing map_dialog_structure");
+	}
+	LEAVE;
+} /* id_map_dialog_cont_step */
+
+static void id_map_dialog_cont_step_text(Widget *widget_id,
+	XtPointer map_dialog_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 23 April 2004
+
+DESCRIPTION :
+Saves the id of the contour step text in the map dialog.
+==============================================================================*/
+{
+	struct Map_dialog *map_dialog;
+
+	ENTER(id_map_dialog_cont_step_text);
+	USE_PARAMETER(call_data);
+	if (map_dialog=(struct Map_dialog *)map_dialog_structure)
+	{
+		map_dialog->contours.step_text= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"id_map_dialog_cont_step_text.  Missing map_dialog_structure");
+	}
+	LEAVE;
+} /* id_map_dialog_cont_step_text */
+
+static void id_map_dialog_cont_number(Widget *widget_id,
+	XtPointer map_dialog_structure,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 23 April 2004
+
+DESCRIPTION :
+Saves the id of the contour number row coloum in the map dialog.
+==============================================================================*/
+{
+	struct Map_dialog *map_dialog;
+
+	ENTER(id_map_dialog_cont_number);
 	USE_PARAMETER(call_data);
 	if (map_dialog=(struct Map_dialog *)map_dialog_structure)
 	{
@@ -905,74 +941,35 @@ Finds the id of the label showing the number of contours in the map dialog.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"identify_map_dialog_contours_nu.  Missing map_dialog_structure");
+			"id_map_dialog_cont_number.  Missing map_dialog_structure");
 	}
 	LEAVE;
-} /* identify_map_dialog_contours_nu */
+} /* id_map_dialog_cont_number */
 
-static void identify_map_dialog_contours_up(Widget *widget_id,
+static void id_map_dialog_cont_number_text(Widget *widget_id,
 	XtPointer map_dialog_structure,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1999
+LAST MODIFIED : 23 April 2004
 
 DESCRIPTION :
-Finds the id of the decrement number of contours arrow in the map dialog.
+Saves the id of the contour number text in the map dialog.
 ==============================================================================*/
 {
 	struct Map_dialog *map_dialog;
 
-	ENTER(identify_map_dialog_contours_up);
+	ENTER(id_map_dialog_cont_number_text);
 	USE_PARAMETER(call_data);
 	if (map_dialog=(struct Map_dialog *)map_dialog_structure)
 	{
-		map_dialog->contours.up_arrow= *widget_id;
+		map_dialog->contours.number_text= *widget_id;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"identify_map_dialog_contours_up.  Missing map_dialog_structure");
+			"id_map_dialog_cont_number_text.  Missing map_dialog_structure");
 	}
 	LEAVE;
-} /* identify_map_dialog_contours_up */
-
-static void increment_number_of_contours(Widget widget,
-	XtPointer map_dialog_structure,XtPointer call_data)
-/*******************************************************************************
-LAST MODIFIED : 24 November 1999
-
-DESCRIPTION :
-Increment the number of contours.
-==============================================================================*/
-{
-	struct Map_dialog *map_dialog;
-	char number_string[3];
-
-	ENTER(increment_number_of_contours);
-	USE_PARAMETER(widget);
-	USE_PARAMETER(call_data);
-	if (map_dialog=(struct Map_dialog *)map_dialog_structure)
-	{
-		if (2==map_dialog->number_of_contours)
-		{
-			XtManageChild(map_dialog->contours.down_arrow);
-		}
-		(map_dialog->number_of_contours)++;
-		sprintf(number_string,"%2d",map_dialog->number_of_contours);
-		XtVaSetValues(map_dialog->contours.number,
-			XmNlabelString,XmStringCreate(number_string,XmSTRING_DEFAULT_CHARSET),
-			NULL);
-		if (99==map_dialog->number_of_contours)
-		{
-			XtUnmanageChild(map_dialog->contours.up_arrow);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"increment_number_of_contours.  Missing map_dialog_structure");
-	}
-	LEAVE;
-} /* increment_number_of_contours */
+} /* id_map_dialog_cont_number_text */
 
 static void identify_map_dialog_elect_menu(Widget *widget_id,
 	XtPointer map_dialog_structure,XtPointer call_data)
@@ -1701,7 +1698,7 @@ Finds the id of the ok button in the map dialog.
 
 static int update_dialog_from_map(struct Map_dialog *map_dialog)
 /*******************************************************************************
-LAST MODIFIED : 3 February 2004
+LAST MODIFIED : 23 April 2004
 
 DESCRIPTION :
 Updates the dialog based on the map settings.
@@ -1709,7 +1706,8 @@ Updates the dialog based on the map settings.
 {
 	char value_string[20];
 	enum Spectrum_simple_type spectrum_type;
-	int return_code;
+	float contour_step;
+	int number_of_contours,return_code;
 	struct Map *map;
 	struct Rig *rig;
 	Widget option_widget;
@@ -1898,29 +1896,34 @@ Updates the dialog based on the map settings.
 			XtVaSetValues(map_dialog->range.minimum_value,
 				XmNvalue,value_string,
 				NULL);
-			map_dialog->number_of_contours=map->number_of_contours;
-			if (map_dialog->number_of_contours<=2)
+			/* contours */
+			number_of_contours=map->number_of_contours;
+			if (number_of_contours<1)
 			{
-				map_dialog->number_of_contours=2;
-				XtUnmanageChild(map_dialog->contours.down_arrow);
-				XtManageChild(map_dialog->contours.up_arrow);
+				number_of_contours=1;
+				contour_step=0;
 			}
 			else
 			{
-				XtManageChild(map_dialog->contours.down_arrow);
-				if (map_dialog->number_of_contours<99)
-				{
-					XtManageChild(map_dialog->contours.up_arrow);
-				}
-				else
-				{
-					map_dialog->number_of_contours=99;
-					XtUnmanageChild(map_dialog->contours.up_arrow);
-				}
+				contour_step=((map->contour_maximum)-(map->contour_minimum))/
+					(number_of_contours-1);
 			}
-			sprintf(value_string,"%2d",map_dialog->number_of_contours);
-			XtVaSetValues(map_dialog->contours.number,
-				XmNlabelString,XmStringCreate(value_string,XmSTRING_DEFAULT_CHARSET),
+			if (contour_step<=0)
+			{
+				contour_step=0;
+				number_of_contours=1;
+			}
+			sprintf(value_string,"%g",map->contour_minimum);
+			XtVaSetValues(map_dialog->contours.minimum_text,
+				XmNvalue,value_string,
+				NULL);
+			sprintf(value_string,"%g",contour_step);
+			XtVaSetValues(map_dialog->contours.step_text,
+				XmNvalue,value_string,
+				NULL);
+			sprintf(value_string,"%d",number_of_contours);
+			XtVaSetValues(map_dialog->contours.number_text,
+				XmNvalue,value_string,
 				NULL);
 			switch (map->electrodes_label_type)
 			{
@@ -2060,7 +2063,8 @@ Updates the dialog based on the map settings.
 						if ((ELECTRICAL_IMAGING==*map->analysis_mode)&&
 							(*map->first_eimaging_event))
 						{
-							/*no movies if showing (lots of little) maps of electrical imaging events*/
+							/* no movies if showing (lots of little) maps of electrical
+								imaging events */
 							XtSetSensitive(map_dialog->animation.row_column,False);
 						}
 						else
@@ -2074,8 +2078,8 @@ Updates the dialog based on the map settings.
 					{
 						if (map->projection_type==THREED_PROJECTION)
 						{
-							/*not sure what we're going to do with 3D movies yet*/
-							/*for now make them behave like bicubic 2D movies */
+							/* not sure what we're going to do with 3D movies yet */
+							/* for now make them behave like bicubic 2D movies */
 							XtSetSensitive(map_dialog->animation.row_column,True);
 						}
 						else
@@ -2116,7 +2120,7 @@ Global functions
 struct Map_dialog *create_Map_dialog(struct Map_dialog **map_dialog_address,
 	struct Map **map,Widget activation,struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 27 November 2003
+LAST MODIFIED : 23 April 2004
 
 DESCRIPTION :
 Allocates the memory for a map dialog.  Retrieves the necessary widgets and
@@ -2177,14 +2181,14 @@ initializes the appropriate fields.
 			(XtPointer)identify_map_dialog_contours_co},
 		{"identify_map_dialog_contours_va",
 			(XtPointer)identify_map_dialog_contours_va},
-		{"identify_map_dialog_contours_do",
-			(XtPointer)identify_map_dialog_contours_do},
-		{"decrement_number_of_contours",(XtPointer)decrement_number_of_contours},
-		{"identify_map_dialog_contours_nu",
-			(XtPointer)identify_map_dialog_contours_nu},
-		{"identify_map_dialog_contours_up",
-			(XtPointer)identify_map_dialog_contours_up},
-		{"increment_number_of_contours",(XtPointer)increment_number_of_contours},
+		{"id_map_dialog_cont_minimum",(XtPointer)id_map_dialog_cont_minimum},
+		{"id_map_dialog_cont_minimum_text",
+			(XtPointer)id_map_dialog_cont_minimum_text},
+		{"id_map_dialog_cont_step",(XtPointer)id_map_dialog_cont_step},
+		{"id_map_dialog_cont_step_text",(XtPointer)id_map_dialog_cont_step_text},
+		{"id_map_dialog_cont_number",(XtPointer)id_map_dialog_cont_number},
+		{"id_map_dialog_cont_number_text",
+			(XtPointer)id_map_dialog_cont_number_text},
 		{"identify_map_dialog_elect_name",
 			(XtPointer)identify_map_dialog_elect_name},
 		{"identify_map_dialog_elect_value",
@@ -2289,9 +2293,12 @@ initializes the appropriate fields.
 				map_dialog->contours.type_option.none=(Widget)NULL;
 				map_dialog->contours.type_option.constant_thickness=(Widget)NULL;
 				map_dialog->contours.type_option.variable_thickness=(Widget)NULL;
-				map_dialog->contours.down_arrow=(Widget)NULL;
+				map_dialog->contours.minimum=(Widget)NULL;
+				map_dialog->contours.minimum_text=(Widget)NULL;
+				map_dialog->contours.step=(Widget)NULL;
+				map_dialog->contours.step_text=(Widget)NULL;
 				map_dialog->contours.number=(Widget)NULL;
-				map_dialog->contours.up_arrow=(Widget)NULL;
+				map_dialog->contours.number_text=(Widget)NULL;
 				map_dialog->electrodes.label_menu=(Widget)NULL;
 				map_dialog->electrodes.label.name=(Widget)NULL;
 				map_dialog->electrodes.label.value=(Widget)NULL;

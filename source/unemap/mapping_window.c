@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping_window.c
 
-LAST MODIFIED : 21 April 2004
+LAST MODIFIED : 24 April 2004
 
 DESCRIPTION :
 ???DB.  Missing settings ?
@@ -374,7 +374,7 @@ If the <mapping> has a time keeper, stop it and destroy it's editor widget.
 static void redraw_map_from_dialog(Widget widget,XtPointer mapping_window,
 	XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 21 April 2004
+LAST MODIFIED : 24 April 2004
 
 DESCRIPTION :
 Updates the map settings based on the map dialog and redraws the map if
@@ -388,9 +388,10 @@ necessary.
 	enum Fibres_option fibres_option;
 	enum Interpolation_type interpolation_type;
 	enum Spectrum_simple_type spectrum_simple_type;
-	float maximum_range,minimum_range,value;
-	int electrodes_marker_size,map_settings_changed,number_of_mesh_columns,
-		number_of_mesh_rows,recalculate;
+	float contour_maximum,contour_minimum,contour_step,maximum_range,
+		minimum_range,value;
+	int electrodes_marker_size,map_settings_changed,number_of_contours,
+		number_of_mesh_columns,number_of_mesh_rows,recalculate;
 	struct Map *map;
 	struct Map_dialog *map_dialog;
 	struct Map_drawing_information *drawing_information;
@@ -423,7 +424,15 @@ necessary.
 		}
 		else
 		{
-			map->fixed_range=0;
+			if (map->fixed_range)
+			{
+				map->fixed_range=0;
+				map_settings_changed=1;
+				if (recalculate<2)
+				{
+					recalculate=2;
+				}
+			}
 		}
 		XtVaGetValues(map_dialog->spectrum.type_option_menu,
 			XmNmenuHistory,&option_widget,
@@ -554,6 +563,10 @@ necessary.
 		else
 		{
 			number_of_mesh_rows=map_dialog->number_of_mesh_rows;
+			sprintf(temp_string,"%d",number_of_mesh_rows);
+			XtVaSetValues((map_dialog->interpolation.mesh_rows_text),
+				XmNvalue,temp_string,
+				NULL);
 		}
 		XtFree(value_string);
 		if (map->finite_element_mesh_rows!=number_of_mesh_rows)
@@ -582,6 +595,10 @@ necessary.
 		else
 		{
 			number_of_mesh_columns=map_dialog->number_of_mesh_columns;
+			sprintf(temp_string,"%d",number_of_mesh_columns);
+			XtVaSetValues((map_dialog->interpolation.mesh_columns_text),
+				XmNvalue,temp_string,
+				NULL);
 		}
 		XtFree(value_string);
 		if (map->finite_element_mesh_columns!=number_of_mesh_columns)
@@ -605,7 +622,10 @@ necessary.
 			{
 				map_settings_changed=1;
 				map->contours_option=HIDE_CONTOURS;
-				recalculate=2;
+				if (recalculate<1)
+				{
+					recalculate=1;
+				}
 			}
 		}
 		else
@@ -614,6 +634,10 @@ necessary.
 			{
 				map_settings_changed=1;
 				map->contours_option=SHOW_CONTOURS;
+				if (recalculate<2)
+				{
+					recalculate=2;
+				}
 			}
 			if (option_widget==map_dialog->contours.type_option.constant_thickness)
 			{
@@ -626,9 +650,93 @@ necessary.
 					contour_thickness=VARIABLE_THICKNESS;
 				}
 			}
-			map->contour_thickness=contour_thickness;
-			map_settings_changed=1;
-			recalculate=2;
+			if (contour_thickness!=map->contour_thickness)
+			{
+				map->contour_thickness=contour_thickness;
+				map_settings_changed=1;
+				if (recalculate<2)
+				{
+					recalculate=2;
+				}
+			}
+			value_string=(char *)NULL;
+			XtVaGetValues((map_dialog->contours.minimum_text),
+				XmNvalue,&value_string,
+				NULL);
+			if (1!=sscanf(value_string,"%f",&contour_minimum))
+			{
+				contour_minimum=map->contour_minimum;
+				sprintf(temp_string,"%g",contour_minimum);
+				XtVaSetValues((map_dialog->contours.minimum_text),
+					XmNvalue,temp_string,
+					NULL);
+			}
+			XtFree(value_string);
+			value_string=(char *)NULL;
+			XtVaGetValues((map_dialog->contours.step_text),
+				XmNvalue,&value_string,
+				NULL);
+			if (1!=sscanf(value_string,"%f",&contour_step))
+			{
+				contour_step=0;
+				sprintf(temp_string,"%g",contour_step);
+				XtVaSetValues((map_dialog->contours.step_text),
+					XmNvalue,temp_string,
+					NULL);
+			}
+			XtFree(value_string);
+			value_string=(char *)NULL;
+			XtVaGetValues((map_dialog->contours.number_text),
+				XmNvalue,&value_string,
+				NULL);
+			if (1!=sscanf(value_string,"%d",&number_of_contours))
+			{
+				number_of_contours=map->number_of_contours;
+				sprintf(temp_string,"%d",number_of_contours);
+				XtVaSetValues((map_dialog->contours.number_text),
+					XmNvalue,temp_string,
+					NULL);
+			}
+			if (contour_step<=0)
+			{
+				contour_step=0;
+				sprintf(temp_string,"%g",contour_step);
+				XtVaSetValues((map_dialog->contours.step_text),
+					XmNvalue,temp_string,
+					NULL);
+				number_of_contours=1;
+				sprintf(temp_string,"%d",number_of_contours);
+				XtVaSetValues((map_dialog->contours.number_text),
+					XmNvalue,temp_string,
+					NULL);
+			}
+			else
+			{
+				if (number_of_contours<1)
+				{
+					number_of_contours=1;
+					sprintf(temp_string,"%d",number_of_contours);
+					XtVaSetValues((map_dialog->contours.number_text),
+						XmNvalue,temp_string,
+						NULL);
+				}
+			}
+			XtFree(value_string);
+			contour_maximum=
+				contour_minimum+contour_step*(float)(number_of_contours-1);
+			if (!((number_of_contours==map->number_of_contours)&&
+				(contour_minimum==map->contour_minimum)&&
+				(contour_maximum==map->contour_maximum)))
+			{
+				map_settings_changed=1;
+				map->number_of_contours=number_of_contours;
+				map->contour_minimum=contour_minimum;
+				map->contour_maximum=contour_maximum;
+				if (recalculate<2)
+				{
+					recalculate=2;
+				}
+			}
 		}
 		value_string=(char *)NULL;
 		XtVaGetValues((map_dialog->range.maximum_value),
@@ -637,6 +745,10 @@ necessary.
 		if (1!=sscanf(value_string,"%f",&maximum_range))
 		{
 			maximum_range=map_dialog->range_maximum;
+			sprintf(temp_string,"%g",maximum_range);
+			XtVaSetValues((map_dialog->range.maximum_value),
+				XmNvalue,temp_string,
+				NULL);
 		}
 		XtFree(value_string);
 		value_string=(char *)NULL;
@@ -646,6 +758,10 @@ necessary.
 		if (1!=sscanf(value_string,"%f",&minimum_range))
 		{
 			minimum_range=map_dialog->range_minimum;
+			sprintf(temp_string,"%g",minimum_range);
+			XtVaSetValues((map_dialog->range.minimum_value),
+				XmNvalue,temp_string,
+				NULL);
 		}
 		XtFree(value_string);
 		if (minimum_range>maximum_range)
@@ -653,45 +769,35 @@ necessary.
 			value=minimum_range;
 			minimum_range=maximum_range;
 			maximum_range=value;
+			sprintf(temp_string,"%g",minimum_range);
+			XtVaSetValues((map_dialog->range.minimum_value),
+				XmNvalue,temp_string,
+				NULL);
+			sprintf(temp_string,"%g",maximum_range);
+			XtVaSetValues((map_dialog->range.maximum_value),
+				XmNvalue,temp_string,
+				NULL);
 		}
 		if (minimum_range!=map_dialog->range_minimum)
 		{
 			map->range_changed=1;
 			map->minimum_value=minimum_range;
-			map->contour_minimum=minimum_range;
 			map_dialog->range_minimum=minimum_range;
-			if (minimum_range>map->contour_maximum)
-			{
-				map->contour_maximum=maximum_range;
-			}
 			map_settings_changed=1;
-			if (recalculate<1)
+			if (recalculate<2)
 			{
-				recalculate=1;
+				recalculate=2;
 			}
 		}
 		if (maximum_range!=map_dialog->range_maximum)
 		{
 			map->range_changed=1;
 			map->maximum_value=maximum_range;
-			map->contour_maximum=maximum_range;
 			map_dialog->range_maximum=maximum_range;
-			if (maximum_range<map->contour_minimum)
-			{
-				map->contour_minimum=minimum_range;
-			}
 			map_settings_changed=1;
-			if (recalculate<1)
+			if (recalculate<2)
 			{
-				recalculate=1;
-			}
-		}
-		if (map->number_of_contours!=map_dialog->number_of_contours)
-		{
-			map->number_of_contours=map_dialog->number_of_contours;
-			if (SHOW_CONTOURS==map->contours_option)
-			{
-				map_settings_changed=1;
+				recalculate=2;
 			}
 		}
 		XtVaGetValues(map_dialog->electrodes.label_menu,
@@ -758,6 +864,10 @@ necessary.
 		else
 		{
 			electrodes_marker_size=map_dialog->electrodes_marker_size;
+			sprintf(temp_string,"%d",electrodes_marker_size);
+			XtVaSetValues((map_dialog->electrodes.marker_size_text),
+				XmNvalue,temp_string,
+				NULL);
 		}
 		XtFree(value_string);
 		if (map->electrodes_marker_size!=electrodes_marker_size)
@@ -969,8 +1079,7 @@ necessary.
 		if (map_settings_changed)
 		{
 			/* there's more than one map, so we'll need to recalculate them */
-			if (*map->first_eimaging_event&&
-					(ELECTRICAL_IMAGING==*map->analysis_mode))
+			if (*map->first_eimaging_event&&(ELECTRICAL_IMAGING==*map->analysis_mode))
 			{
 				recalculate=2;
 			}
@@ -1355,7 +1464,7 @@ Finds the id of the mapping animate button.
 
 static int draw_activation_animation_frame(void *mapping_window)
 /*******************************************************************************
-LAST MODIFIED : 6 March 2002
+LAST MODIFIED : 24 April 2004
 
 DESCRIPTION :
 Draws a frame in the activation map animation.
@@ -1425,10 +1534,20 @@ Draws a frame in the activation map animation.
 						number_of_contours=map->number_of_contours;
 						for (i=0;i<number_of_contours;i++)
 						{
-							cell_number=(int)(((contour_maximum*(float)i+contour_minimum*
-								(float)(number_of_contours-1-i))/(float)(number_of_contours-1)-
-								minimum_value)/(maximum_value-minimum_value)*
-								(float)(number_of_spectrum_colours-1)+0.5);
+							if (1<number_of_contours)
+							{
+								cell_number=(int)(((contour_maximum*(float)i+contour_minimum*
+									(float)(number_of_contours-1-i))/
+									(float)(number_of_contours-1)-minimum_value)/
+									(maximum_value-minimum_value)*
+									(float)(number_of_spectrum_colours-1)+0.5);
+							}
+							else
+							{
+								cell_number=(int)((contour_minimum-
+									minimum_value)/(maximum_value-minimum_value)*
+									(float)(number_of_spectrum_colours-1)+0.5);
+							}
 							spectrum_rgb[cell_number].pixel=spectrum_pixels[cell_number];
 							spectrum_rgb[cell_number].flags=DoRed|DoGreen|DoBlue;
 							spectrum_rgb[cell_number].red=colour.red;
@@ -4230,7 +4349,7 @@ mapping_window.
 static int write_map_animation_files(char *file_name,void *mapping_window,
 	enum Image_file_format image_file_format)
 /*******************************************************************************
-LAST MODIFIED : 18 August 2002
+LAST MODIFIED : 24 April 2004
 
 DESCRIPTION :
 This function writes the files for drawing the animation associated with the
@@ -4373,11 +4492,20 @@ mapping_window.
 								number_of_contours=map->number_of_contours;
 								for (i=0;i<number_of_contours;i++)
 								{
-									cell_number=(int)(((contour_maximum*(float)i+contour_minimum*
-										(float)(number_of_contours-1-i))/
-										(float)(number_of_contours-1)-minimum_value)/
-										(maximum_value-minimum_value)*
-										(float)(number_of_spectrum_colours-1)+0.5);
+									if (1<number_of_contours)
+									{
+										cell_number=(int)(((contour_maximum*(float)i+
+											contour_minimum*(float)(number_of_contours-1-i))/
+											(float)(number_of_contours-1)-minimum_value)/
+											(maximum_value-minimum_value)*
+											(float)(number_of_spectrum_colours-1)+0.5);
+									}
+									else
+									{
+										cell_number=(int)((contour_minimum-minimum_value)/
+											(maximum_value-minimum_value)*
+											(float)(number_of_spectrum_colours-1)+0.5);
+									}
 									spectrum_rgb[cell_number].pixel=spectrum_pixels[cell_number];
 									spectrum_rgb[cell_number].flags=DoRed|DoGreen|DoBlue;
 									spectrum_rgb[cell_number].red=colour.red;
@@ -4622,7 +4750,7 @@ the mapping_window.
 static void mapping_window_spectrum_change(
 	struct MANAGER_MESSAGE(Spectrum) *message,void *mapping_void)
 /*******************************************************************************
-LAST MODIFIED : 30 January 2002
+LAST MODIFIED : 23 April 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -4650,8 +4778,6 @@ DESCRIPTION :
 					{
 						mapping->map->minimum_value=minimum_value;
 						mapping->map->maximum_value=maximum_value;
-						mapping->map->contour_minimum=minimum_value;
-						mapping->map->contour_maximum=maximum_value;
 						if (mapping->colour_or_auxiliary_drawing)
 						{
 							/* clear the colour or auxiliary area */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 19 April 2004
+LAST MODIFIED : 24 April 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -3441,7 +3441,8 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 	default_selected_material=(struct Graphical_material *)NULL;
 	graphical_material_manager=(struct MANAGER(Graphical_material) *)NULL;
 	group=(struct FE_region *)NULL;
-	if ((!number_of_contours)||(data_field&&scene&&map_drawing_information&&region))
+	if ((0<number_of_contours)||(data_field&&scene&&map_drawing_information&&
+		region))
 	{
 		map_3d_package=get_Region_map_3d_package(region);
 		/*non-current regions will have had map_3d_package set to NULL by */
@@ -3501,28 +3502,32 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 				{
 					for(i=0;i<old_number_of_contours;i++)
 					{
-						GT_element_group_remove_settings(gt_element_group,old_contour_settings[i]);
+						GT_element_group_remove_settings(gt_element_group,
+							old_contour_settings[i]);
 					}
 				}
 				free_map_3d_package_map_contours(map_3d_package);
-				if (number_of_contours)
+				if (1<number_of_contours)
 				{
 					/* calculate the contour intervals */
 					contour_value=contour_minimum;
 					contour_step=(contour_maximum-contour_minimum)/(number_of_contours-1);
 					/* allocate, define and set the contours */
-					ALLOCATE(contour_settings,struct GT_element_settings *,number_of_contours);
+					ALLOCATE(contour_settings,struct GT_element_settings *,
+						number_of_contours);
 					for(i=0;i<number_of_contours;i++)
 					{
 						contour_settings[i]=CREATE(GT_element_settings)
 							(GT_ELEMENT_SETTINGS_ISO_SURFACES);
-						GT_element_settings_set_material(contour_settings[i],contour_material);
+						GT_element_settings_set_material(contour_settings[i],
+							contour_material);
 						GT_element_settings_set_selected_material(contour_settings[i],
 							default_selected_material);
 						GT_element_settings_set_iso_surface_parameters(contour_settings[i],
 							data_field,contour_value);
-						GT_element_group_add_settings(gt_element_group,contour_settings[i],0);
-						contour_value+=contour_step;
+						GT_element_group_add_settings(gt_element_group,contour_settings[i],
+							0);
+						contour_value += contour_step;
 					}
 				}
 				set_map_3d_package_contours(map_3d_package,number_of_contours,
@@ -6172,11 +6177,11 @@ Draws (or erases) the map contours
 				number_of_variable_contours=0;
 			}
 			else
-				/* map->contour_thickness==VARIABLE_THICKNESS */
 			{
+				/* map->contour_thickness==VARIABLE_THICKNESS */
 				number_of_constant_contours=0;
-				/*-1 as unemap treats number of contours differently from the cmgui spectrum */
-				/* it's a fencepost thing */
+				/* -1 as unemap treats number of contours differently from the cmgui
+					spectrum it's a fencepost thing */
 				number_of_variable_contours=map->number_of_contours-1;
 			}
 		}
@@ -6197,24 +6202,24 @@ Draws (or erases) the map contours
 		Spectrum_overlay_contours(spectrum_manager,spectrum,
 			number_of_variable_contours,CONTOUR_PROPORTION);
 		region_item=get_Rig_region_list(rig);
-		while(region_item)
+		while (region_item)
 		{
 			region=get_Region_list_item_region(region_item);
 			unrejected_node_group=get_Region_unrejected_node_group(region);
 			map_3d_package=get_Region_map_3d_package(region);
-			if (unrejected_node_group&&
-				(unemap_package_rig_node_group_has_electrodes(package,unrejected_node_group))&&
-				(map_3d_package = get_Region_map_3d_package(region)))
+			if (unrejected_node_group&&(unemap_package_rig_node_group_has_electrodes(
+				package,unrejected_node_group))&&(map_3d_package=
+				get_Region_map_3d_package(region)))
 			{
-				data_field = map_get_data_field_for_3d_map(map, map_3d_package);
-				delaunay_map = map_is_delaunay(map);
+				data_field=map_get_data_field_for_3d_map(map,map_3d_package);
+				delaunay_map=map_is_delaunay(map);
 				/* draw/remove CONSTANT_THICKNESS contours */
 				map_draw_constant_thickness_contours(scene,map->drawing_information,
 					data_field,number_of_constant_contours,map->contour_minimum,
 					map->contour_maximum,region,default_torso_loaded,delaunay_map);
 			}
 			region_item=get_Region_list_item_next(region_item);
-		}/* while(region_item)*/
+		}
 	}
 	else
 	{
@@ -6225,7 +6230,7 @@ Draws (or erases) the map contours
 	LEAVE;
 
 	return (return_code);
-}/* map_draw_contours */
+} /* map_draw_contours */
 #endif /* defined (UNEMAP_USE_3D) */
 
 struct Map *create_Map(enum Map_type *map_type,enum Colour_option colour_option,
@@ -6883,7 +6888,7 @@ projection is performed, in  draw_2d_construct_2d_gouraud_image_map
 int update_colour_map_unemap_original(struct Map *map,
 	struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED : 20 September 2001
+LAST MODIFIED : 24 April 2004
 
 DESCRIPTION :
 Updates the colour map being used for map.
@@ -6937,6 +6942,7 @@ Called by (see also) update_colour_map_unemap.
 		{
 			update_pixel[i]=0;
 		}
+#if defined (OLD_CONTOUR_SPECIFICATION)
 		if (maximum_value<=minimum_value)
 		{
 			start_cell=0;
@@ -6951,16 +6957,20 @@ Called by (see also) update_colour_map_unemap.
 				(maximum_value-minimum_value)*(float)(number_of_spectrum_colours-1)+
 				0.5);
 		}
+#else /* defined (OLD_CONTOUR_SPECIFICATION) */
+		start_cell=0;
+		end_cell=number_of_spectrum_colours;
+#endif /* defined (OLD_CONTOUR_SPECIFICATION) */
 		cell_range=end_cell-start_cell;
 		/* adjust the computer colour map for colour map */
 		if ((SHOW_COLOUR==map->colour_option)&&
 			!((SINGLE_ACTIVATION== *(map->type))&&(0<=map->activation_front)&&
 			(map->activation_front<number_of_spectrum_colours)))
 		{
-			/* copy the spectrum (leave unmanaged) and generate the mapping window */
-			/* colour bar from this. Do this as need to remove  */
-			/* fix_minimum, fix_maximum from the spectrum as these prevent the mapping */
-			/* window colour bar from working correctly  */
+			/* copy the spectrum (leave unmanaged) and generate the mapping window
+				colour bar from this. Do this as need to remove fix_minimum and
+				fix_maximum from the spectrum as these prevent the mapping window colour
+				bar from working correctly  */
 			spectrum=map->drawing_information->spectrum;
 			if (spectrum_copy=CREATE(Spectrum)("spectrum_copy"))
 			{
@@ -7125,28 +7135,40 @@ Called by (see also) update_colour_map_unemap.
 				number_of_contours=map->number_of_contours;
 				for (i=0;i<number_of_contours;i++)
 				{
-					cell_number=(int)(((contour_maximum*(float)i+contour_minimum*
-						(float)(number_of_contours-1-i))/(float)(number_of_contours-1)-
-						minimum_value)/(maximum_value-minimum_value)*
-						(float)(number_of_spectrum_colours-1)+0.5);
-					spectrum_rgb[cell_number].pixel=spectrum_pixels[cell_number];
-					spectrum_rgb[cell_number].flags=DoRed|DoGreen|DoBlue;
-					if (!(spectrum_pixels[cell_number])||
-						(spectrum_rgb[cell_number].red!=colour.red)||
-						(spectrum_rgb[cell_number].green!=colour.green)||
-						(spectrum_rgb[cell_number].blue!=colour.blue))
+					if (number_of_contours>1)
 					{
-						spectrum_rgb[cell_number].red=colour.red;
-						spectrum_rgb[cell_number].blue=colour.blue;
-						spectrum_rgb[cell_number].green=colour.green;
-						update_pixel[cell_number]=1;
+						cell_number=(int)(((contour_maximum*(float)i+contour_minimum*
+							(float)(number_of_contours-1-i))/(float)(number_of_contours-1)-
+							minimum_value)/(maximum_value-minimum_value)*
+							(float)(number_of_spectrum_colours-1)+0.5);
+					}
+					else
+					{
+						cell_number=(int)((contour_minimum-minimum_value)/
+							(maximum_value-minimum_value)*
+							(float)(number_of_spectrum_colours-1)+0.5);
+					}
+					if ((0<=cell_number)&&(cell_number<number_of_spectrum_colours))
+					{
+						spectrum_rgb[cell_number].pixel=spectrum_pixels[cell_number];
+						spectrum_rgb[cell_number].flags=DoRed|DoGreen|DoBlue;
+						if (!(spectrum_pixels[cell_number])||
+							(spectrum_rgb[cell_number].red!=colour.red)||
+							(spectrum_rgb[cell_number].green!=colour.green)||
+							(spectrum_rgb[cell_number].blue!=colour.blue))
+						{
+							spectrum_rgb[cell_number].red=colour.red;
+							spectrum_rgb[cell_number].blue=colour.blue;
+							spectrum_rgb[cell_number].green=colour.green;
+							update_pixel[cell_number]=1;
+						}
 					}
 				}
 			}
 		}
 		if (drawing_information->read_only_colour_map)
 		{
-			/*loop through all the sub_maps */
+			/* loop through all the sub_maps */
 			for(j=0;j<map->number_of_sub_maps;j++)
 			{
 				sub_map=map->sub_map[j];
@@ -7261,20 +7283,20 @@ Called by (see also) update_colour_map_unemap.
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						" update_colour_map_unemap_original. Could not create spectrum copy.");
+					display_message(ERROR_MESSAGE,"update_colour_map_unemap_original.  "
+						"Could not create spectrum copy");
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					" update_colour_map_unemap_original. Spectrum is not in manager!");
+				display_message(ERROR_MESSAGE,"update_colour_map_unemap_original.  "
+					"Spectrum is not in manager");
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				" update_colour_map_unemap_original. Spectrum_manager not present");
+			display_message(ERROR_MESSAGE,"update_colour_map_unemap_original.  "
+				"Spectrum_manager not present");
 		}
 #else /* defined (UNEMAP_USE_3D) */
 		/* ensure spectrum is set correctly */
@@ -7295,7 +7317,7 @@ Called by (see also) update_colour_map_unemap.
 
 int update_colour_map_unemap(struct Map *map,struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED : 20 September  2001
+LAST MODIFIED : 20 September 2001
 
 DESCRIPTION :
 Calls update_colour_map_unemap_original, the relevant function twice,
@@ -9117,10 +9139,10 @@ static int draw_2d_constant_thickness_contours(struct Map *map,
 	struct Sub_map *sub_map,struct Drawing_2d *drawing,float *pixel_value,
 	char draw_boundary)
 /*******************************************************************************
-LAST MODIFIED : 19 September 2001
+LAST MODIFIED : 24 April 2004
 
 DESCRIPTION :
-draw the constant thickness contours
+Draw the constant thickness contours
 ==============================================================================*/
 {
 	Display *display;
@@ -9148,10 +9170,16 @@ draw the constant thickness contours
 		number_of_contours=map->number_of_contours;
 		contour_minimum=map->contour_minimum;
 		contour_maximum=map->contour_maximum;
-
 		busy_cursor_on((Widget)NULL,drawing_information->user_interface);
-		contour_step=(contour_maximum-contour_minimum)/
-			(float)(number_of_contours-1);
+		if (1<number_of_contours)
+		{
+			contour_step=(contour_maximum-contour_minimum)/
+				(float)(number_of_contours-1);
+		}
+		else
+		{
+			contour_step=0;
+		}
 		graphics_context=(drawing_information->graphics_context).contour_colour;
 		background_pixel_value=sub_map->minimum_value;
 		boundary_pixel_value=sub_map->maximum_value;
@@ -9251,8 +9279,15 @@ draw the constant thickness contours
 						}
 						else
 						{
-							start=1+(int)((min_f-contour_minimum)/
-								contour_step);
+							if (0<contour_step)
+							{
+								start=1+(int)((min_f-contour_minimum)/
+									contour_step);
+							}
+							else
+							{
+								start=number_of_contours+1;
+							}
 						}
 						if (contour_maximum<=max_f)
 						{
@@ -9260,7 +9295,14 @@ draw the constant thickness contours
 						}
 						else
 						{
-							end=(int)((max_f-contour_minimum)/contour_step);
+							if (0<contour_step)
+							{
+								end=(int)((max_f-contour_minimum)/contour_step);
+							}
+							else
+							{
+								end= -1;
+							}
 						}
 						for (k=start;k<=end;k++)
 						{
@@ -9526,7 +9568,7 @@ DESCRIPTION :
 
 static int set_map_2d_map_min_max(struct Map *map)
 /*******************************************************************************
-LAST MODIFIED : 18 September 2001
+LAST MODIFIED : 23 April 2004
 
 DESCRIPTION :
 Sets the  <map>'s minimum and maximum,
@@ -9560,8 +9602,6 @@ based upon its  sub_map(s)'  min and max.
 			}
 			map->minimum_value=min_f;
 			map->maximum_value=max_f;
-			map->contour_minimum=min_f;
-			map->contour_maximum=max_f;
 		}
 	}
 	else
@@ -9704,11 +9744,11 @@ for the case map->interpolation_type==NO_INTERPOLATION.
 static int draw_2d_contour_values(struct Map *map,struct Sub_map *sub_map,
 	struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED : 17 September 2001
+LAST MODIFIED : 24 April 2004
 
 DESCRIPTION :
-Write the values of the contours.
-Works off map min and max values, not sub_map.
+Write the values of the contours.  Works off map min and max values, not
+sub_map.
 ==============================================================================*/
 {
 	char draw_contour_value,value_string[11];
@@ -9745,7 +9785,8 @@ Works off map min and max values, not sub_map.
 		{
 			if ((frame->contour_x)&&(frame->contour_y))
 			{
-				number_of_spectrum_colours=drawing_information->number_of_spectrum_colours;
+				number_of_spectrum_colours=
+					drawing_information->number_of_spectrum_colours;
 				number_of_contour_areas=map->number_of_contour_areas;
 				contour_areas_in_x=map->number_of_contour_areas_in_x;
 				minimum_value=map->minimum_value;
@@ -9773,11 +9814,19 @@ Works off map min and max values, not sub_map.
 				for (i=number_of_contours;i>0;)
 				{
 					i--;
-					cell_number=start+(int)((float)(i*cell_range)/
-						(float)(number_of_contours-1)+0.5);
-					a=(contour_maximum*(float)i+contour_minimum*
-						(float)(number_of_contours-i-1))/
-						(float)(number_of_contours-1);
+					if (1<number_of_contours)
+					{
+						cell_number=start+(int)((float)(i*cell_range)/
+							(float)(number_of_contours-1)+0.5);
+						a=(contour_maximum*(float)i+contour_minimum*
+							(float)(number_of_contours-i-1))/
+							(float)(number_of_contours-1);
+					}
+					else
+					{
+						cell_number=start;
+						a=contour_minimum;
+					}
 					if (fabs(a)<
 						0.00001*(fabs(contour_maximum)+fabs(contour_minimum)))
 					{
@@ -11156,7 +11205,7 @@ Must call map_2d_delaunay first.
 static int draw_2d_show_map(struct Map *map,int sub_map_number,
 	struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED : 3 May 2002
+LAST MODIFIED : 24 April 2004
 
 DESCRIPTION :
 Actually draw the map from the calculated data.
@@ -11241,8 +11290,8 @@ Actually draw the map from the calculated data.
 							}
 						}
 						if ((SHOW_CONTOURS==map->contours_option)&&
-							(map->contour_minimum<map->contour_maximum)&&
-							(1<map->number_of_contours))
+							(map->contour_minimum<=map->contour_maximum)&&
+							(0<map->number_of_contours))
 						{
 							draw_contours=1;
 						}
@@ -13507,7 +13556,7 @@ static int draw_2d_make_map(struct Map *map,int recalculate,
 	struct Drawing_2d *drawing,int map_width,int map_height,int map_x_offset,
 	int map_y_offset,float frame_time,int use_potential_time)
 /*******************************************************************************
-LAST MODIFIED : 24 November 2003
+LAST MODIFIED : 23 April 2004
 
 DESCRIPTION :
 This function draws the <map> in the <drawing>, with <map_width>, <map_height>
@@ -13857,8 +13906,6 @@ to the drawing or writes to a postscript file.
 					{
 						map->minimum_value=0;
 						map->maximum_value=1;
-						map->contour_minimum=0;
-						map->contour_maximum=1;
 						display_message(WARNING_MESSAGE,"No electrodes to map!");
 					}
 				}
@@ -14260,7 +14307,8 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 
 int draw_colour_or_auxiliary_area(struct Map *map,struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED : 21 June 1997
+LAST MODIFIED : 24 April 2004
+
 DESCRIPTION :
 This function draws the colour bar or the auxiliary inputs in the <drawing>.
 It should not be called until draw_map has been called.
@@ -14274,10 +14322,7 @@ It should not be called until draw_map has been called.
 	int ascent,colour_bar_bottom,colour_bar_left,colour_bar_right,colour_bar_top,
 		descent,direction,first,i,name_end,number_of_auxiliary,number_of_devices,
 		number_of_spectrum_colours,return_code,*screen_x,*screen_y,string_length,
-#if defined (NO_ALIGNMENT)
-		text_x,text_y,
-#endif /* defined (NO_ALIGNMENT) */
-		widget_spacing,x,xmarker,x_range,yheight,ymarker;
+		text_x,text_y,widget_spacing,x,xmarker,x_range,yheight,ymarker;
 	Pixel *spectrum_pixels;
 	struct Device_description *description;
 	struct Device **auxiliary,**device;
@@ -14318,7 +14363,7 @@ It should not be called until draw_map has been called.
 				{
 					minimum_value=map->minimum_value;
 					maximum_value=map->maximum_value;
-					contour_minimum= map->contour_minimum;
+					contour_minimum=map->contour_minimum;
 					contour_maximum=map->contour_maximum;
 					colour_bar_left=widget_spacing;
 					colour_bar_right=drawing->width-widget_spacing;
@@ -14331,140 +14376,178 @@ It should not be called until draw_map has been called.
 						(float)(colour_bar_right-colour_bar_left)/
 						(maximum_value-minimum_value);
 					/* write the minimum value */
+#if defined (OLD_CONTOUR_SPECIFICATION)
 					sprintf(value_string,"%.4g",contour_minimum);
+					text_x=spectrum_left;
+#else /* defined (OLD_CONTOUR_SPECIFICATION) */
+					sprintf(value_string,"%.4g",minimum_value);
+					text_x=colour_bar_left;
+#endif /* defined (OLD_CONTOUR_SPECIFICATION) */
+					text_y=widget_spacing;
 					string_length=strlen(value_string);
 #if defined (NO_ALIGNMENT)
 					XTextExtents(font,value_string,string_length,&direction,&ascent,
 						&descent,&bounds);
-					text_x=spectrum_left-(float)bounds.rbearing;
+					text_x -= (float)bounds.rbearing;
 					if (text_x+(float)bounds.lbearing<(float)colour_bar_left)
 					{
 						text_x=(float)(colour_bar_left-bounds.lbearing);
 					}
-					text_y=widget_spacing+ascent;
+					text_y += ascent;
 #else
 					SET_HORIZONTAL_ALIGNMENT(RIGHT_ALIGNMENT);
 					SET_VERTICAL_ALIGNMENT(BOTTOM_ALIGNMENT);
 #endif
 					XPSDrawString(display,drawing->pixel_map,
 						(drawing_information->graphics_context).spectrum_text_colour,
-#if defined (NO_ALIGNMENT)
 						(int)(text_x+0.5),text_y,value_string,string_length);
-#else
-					(int)(spectrum_left+0.5),widget_spacing,value_string,string_length);
-#endif
-				/* write the maximum value */
-				sprintf(value_string,"%.4g",contour_maximum);
-				string_length=strlen(value_string);
-				XTextExtents(font,value_string,string_length,&direction,&ascent,
-					&descent,&bounds);
-#if defined (NO_ALIGNMENT)
-				text_x=spectrum_right-(float)bounds.lbearing;
-				if (text_x+(float)bounds.rbearing>(float)colour_bar_right)
-				{
-					text_x=(float)(colour_bar_right-bounds.rbearing);
-				}
-				text_y=widget_spacing+ascent;
-#else
-				SET_HORIZONTAL_ALIGNMENT(LEFT_ALIGNMENT);
-#endif
-				XPSDrawString(display,drawing->pixel_map,
-					(drawing_information->graphics_context).spectrum_text_colour,
-#if defined (NO_ALIGNMENT)
-					(int)(text_x+0.5),text_y,value_string,string_length);
-#else
-				(int)(spectrum_right+0.5),widget_spacing,value_string,
-					string_length);
-#endif
-			colour_bar_top=ascent+descent+3*widget_spacing;
-			colour_bar_bottom=drawing->height-widget_spacing;
-			/* draw the colour bar */
-			graphics_context=(drawing_information->graphics_context).spectrum;
-			if ((colour_bar_left<colour_bar_right)&&
-				(colour_bar_top<colour_bar_bottom))
-			{
-				x_range=colour_bar_right-colour_bar_left;
-				for (x=colour_bar_left;x<=colour_bar_right;x++)
-				{
-					XSetForeground(display,graphics_context,
-						spectrum_pixels[(int)((float)((x-colour_bar_left)*
-							(number_of_spectrum_colours-1))/(float)x_range+0.5)]);
-					XPSFillRectangle(display,drawing->pixel_map,graphics_context,
-						x,colour_bar_top,1,colour_bar_bottom-colour_bar_top);
-				}
-			}
-			if ((SHOW_CONTOURS==map->contours_option)&&
-				(2<map->number_of_contours)&&(contour_minimum<contour_maximum))
-			{
-				/* draw the contour markers */
-#if !defined (NO_ALIGNMENT)
-				SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
-#endif
-				graphics_context=(drawing_information->graphics_context).
-					contour_colour;
-				XPSDrawLineFloat(display,drawing->pixel_map,graphics_context,
-					spectrum_left,(float)(colour_bar_top),spectrum_left,
-					(float)colour_bar_bottom);
-				for (i=(map->number_of_contours)-2;i>0;i--)
-				{
-					contour_x=(spectrum_right*(float)i+spectrum_left*
-						(float)(map->number_of_contours-i-1))/
-						(float)(map->number_of_contours-1);
-					XPSDrawLineFloat(display,drawing->pixel_map,graphics_context,
-						contour_x,(float)colour_bar_top,contour_x,
-						(float)colour_bar_bottom);
-					/* write the contour value */
-					contour_value=(contour_maximum*(float)i+contour_minimum*
-						(float)(map->number_of_contours-i-1))/
-						(float)(map->number_of_contours-1);
-					if (fabs(contour_value)<
-						0.00001*(fabs(contour_maximum)+fabs(contour_minimum)))
-					{
-						contour_value=0;
-					}
-					sprintf(value_string,"%.4g",contour_value);
+					/* write the maximum value */
+#if defined (OLD_CONTOUR_SPECIFICATION)
+					sprintf(value_string,"%.4g",contour_maximum);
+					text_x=spectrum_right;
+#else /* defined (OLD_CONTOUR_SPECIFICATION) */
+					sprintf(value_string,"%.4g",maximum_value);
+					text_x=colour_bar_right;
+#endif /* defined (OLD_CONTOUR_SPECIFICATION) */
+					text_y=widget_spacing;
 					string_length=strlen(value_string);
 #if defined (NO_ALIGNMENT)
 					XTextExtents(font,value_string,string_length,&direction,&ascent,
 						&descent,&bounds);
-					text_x=contour_x+(float)(bounds.lbearing-bounds.rbearing)/2;
-					text_y=widget_spacing+ascent;
-#endif
-						XPSDrawString(display,drawing->pixel_map,graphics_context,
-#if defined (NO_ALIGNMENT)
-							(int)(text_x+0.5),text_y,value_string,string_length);
+					text_x -= (float)bounds.lbearing;
+					if (text_x+(float)bounds.rbearing>(float)colour_bar_right)
+					{
+						text_x=(float)(colour_bar_right-bounds.rbearing);
+					}
+					text_y += ascent;
 #else
-						(int)(contour_x+0.5),widget_spacing,value_string,
-							string_length);
+					SET_HORIZONTAL_ALIGNMENT(LEFT_ALIGNMENT);
 #endif
+					XPSDrawString(display,drawing->pixel_map,
+						(drawing_information->graphics_context).spectrum_text_colour,
+						(int)(text_x+0.5),text_y,value_string,string_length);
+					colour_bar_top=ascent+descent+3*widget_spacing;
+					colour_bar_bottom=drawing->height-widget_spacing;
+					/* draw the colour bar */
+					graphics_context=(drawing_information->graphics_context).spectrum;
+					if ((colour_bar_left<colour_bar_right)&&
+						(colour_bar_top<colour_bar_bottom))
+					{
+						x_range=colour_bar_right-colour_bar_left;
+						for (x=colour_bar_left;x<=colour_bar_right;x++)
+						{
+							XSetForeground(display,graphics_context,
+								spectrum_pixels[(int)((float)((x-colour_bar_left)*
+									(number_of_spectrum_colours-1))/(float)x_range+0.5)]);
+							XPSFillRectangle(display,drawing->pixel_map,graphics_context,
+								x,colour_bar_top,1,colour_bar_bottom-colour_bar_top);
+						}
+					}
+#if defined (OLD_CONTOUR_SPECIFICATION)
+					if ((SHOW_CONTOURS==map->contours_option)&&
+						(2<map->number_of_contours)&&(contour_minimum<contour_maximum))
+#else /* defined (OLD_CONTOUR_SPECIFICATION) */
+					if (SHOW_CONTOURS==map->contours_option)
+#endif /* defined (OLD_CONTOUR_SPECIFICATION) */
+					{
+						/* draw the contour markers */
+#if !defined (NO_ALIGNMENT)
+						SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
+#endif
+						graphics_context=(drawing_information->graphics_context).
+							contour_colour;
+#if defined (OLD_CONTOUR_SPECIFICATION)
+						XPSDrawLineFloat(display,drawing->pixel_map,graphics_context,
+							spectrum_left,(float)(colour_bar_top),spectrum_left,
+							(float)colour_bar_bottom);
+#endif /* defined (OLD_CONTOUR_SPECIFICATION) */
+#if defined (OLD_CONTOUR_SPECIFICATION)
+						for (i=(map->number_of_contours)-2;i>0;i--)
+#else /* defined (OLD_CONTOUR_SPECIFICATION) */
+						for (i=map->number_of_contours-1;i>=0;i--)
+#endif /* defined (OLD_CONTOUR_SPECIFICATION) */
+						{
+							if (1<map->number_of_contours)
+							{
+								contour_x=(spectrum_right*(float)i+spectrum_left*
+									(float)(map->number_of_contours-i-1))/
+									(float)(map->number_of_contours-1);
+								contour_value=(contour_maximum*(float)i+contour_minimum*
+									(float)(map->number_of_contours-i-1))/
+									(float)(map->number_of_contours-1);
+							}
+							else
+							{
+								contour_x=spectrum_left;
+								contour_value=contour_minimum;
+							}
+							if (((float)colour_bar_left<=contour_x)&&
+								(contour_x<=(float)colour_bar_right))
+							{
+								XPSDrawLineFloat(display,drawing->pixel_map,graphics_context,
+									contour_x,(float)colour_bar_top,contour_x,
+									(float)colour_bar_bottom);
+								/* write the contour value */
+								if (fabs(contour_value)<
+									0.00001*(fabs(contour_maximum)+fabs(contour_minimum)))
+								{
+									contour_value=0;
+								}
+								sprintf(value_string,"%.4g",contour_value);
+								string_length=strlen(value_string);
+#if defined (NO_ALIGNMENT)
+								XTextExtents(font,value_string,string_length,&direction,&ascent,
+									&descent,&bounds);
+								text_x=contour_x+(float)(bounds.lbearing-bounds.rbearing)/2;
+								text_y=widget_spacing+ascent;
+#endif
+								XPSDrawString(display,drawing->pixel_map,graphics_context,
+#if defined (NO_ALIGNMENT)
+									(int)(text_x+0.5),text_y,value_string,string_length);
+#else
+									(int)(contour_x+0.5),widget_spacing,value_string,
+									string_length);
+#endif
+							}
+						}
+#if defined (OLD_CONTOUR_SPECIFICATION)
+						XPSDrawLineFloat(display,drawing->pixel_map,graphics_context,
+							spectrum_right,(float)(colour_bar_top),spectrum_right,
+							(float)colour_bar_bottom);
+#endif /* defined (OLD_CONTOUR_SPECIFICATION) */
+					}
+					/* draw the spectrum left and right markers */
+					graphics_context=(drawing_information->graphics_context).
+						spectrum_text_colour;
+#if defined (OLD_CONTOUR_SPECIFICATION)
+					XPSDrawLineFloat(display,drawing->pixel_map,graphics_context,
+						spectrum_left,(float)(colour_bar_top-widget_spacing),spectrum_left,
+						(float)colour_bar_top);
+					XPSDrawLineFloat(display,drawing->pixel_map,graphics_context,
+						spectrum_right,(float)(colour_bar_top-widget_spacing),
+						spectrum_right,(float)colour_bar_top);
+#else /* defined (OLD_CONTOUR_SPECIFICATION) */
+					XPSDrawLineFloat(display,drawing->pixel_map,graphics_context,
+						colour_bar_left,(float)(colour_bar_top-widget_spacing),
+						colour_bar_left,(float)colour_bar_top);
+					XPSDrawLineFloat(display,drawing->pixel_map,graphics_context,
+						colour_bar_right,(float)(colour_bar_top-widget_spacing),
+						colour_bar_right,(float)colour_bar_top);
+#endif /* defined (OLD_CONTOUR_SPECIFICATION) */
+					/* save values */
+					map->colour_bar_left=colour_bar_left;
+					map->colour_bar_right=colour_bar_right;
+					map->colour_bar_bottom=colour_bar_bottom;
+					map->colour_bar_top=colour_bar_top;
 				}
-				XPSDrawLineFloat(display,drawing->pixel_map,graphics_context,
-					spectrum_right,(float)(colour_bar_top),spectrum_right,
-					(float)colour_bar_bottom);
 			}
-			/* draw the spectrum left and right markers */
-			graphics_context=(drawing_information->graphics_context).
-				spectrum_text_colour;
-			XPSDrawLineFloat(display,drawing->pixel_map,graphics_context,
-				spectrum_left,(float)(colour_bar_top-widget_spacing),spectrum_left,
-				(float)colour_bar_top);
-			XPSDrawLineFloat(display,drawing->pixel_map,graphics_context,
-				spectrum_right,(float)(colour_bar_top-widget_spacing),
-				spectrum_right,(float)colour_bar_top);
-			/* save values */
-			map->colour_bar_left=colour_bar_left;
-			map->colour_bar_right=colour_bar_right;
-			map->colour_bar_bottom=colour_bar_bottom;
-			map->colour_bar_top=colour_bar_top;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"draw_colour_or_auxiliary_area.  NULL map->rig_pointer");
-		return_code=0;
-	}
-	/*??? more */
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"draw_colour_or_auxiliary_area.  NULL map->rig_pointer");
+				return_code=0;
+			}
+			/*??? more */
 		}
 		else
 		{
@@ -15282,7 +15365,8 @@ Create and  and set it's components
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"CREATE(Map_3d_package).  Not enough memory");
+			display_message(ERROR_MESSAGE,"CREATE(Map_3d_package).  "
+				"Not enough memory");
 			if (map_3d_package)
 			{
 				DEALLOCATE(map_3d_package);
@@ -15299,7 +15383,8 @@ int free_map_3d_package_map_contours(struct Map_3d_package *map_3d_package)
 LAST MODIFIED : 7 July 2000
 
 DESCRIPTION :
-Frees the array of map contour GT_element_settings stored in the <map_3d_package>
+Frees the array of map contour GT_element_settings stored in the
+<map_3d_package>
 ==============================================================================*/
 {
 	int i,number_of_contours,return_code;
@@ -15309,7 +15394,7 @@ Frees the array of map contour GT_element_settings stored in the <map_3d_package
 	{
 		return_code=1;
 		number_of_contours=map_3d_package->number_of_contours;
-		if (number_of_contours)
+		if (0<number_of_contours)
 		{
 			for(i=0;i<number_of_contours;i++)
 			{
@@ -15867,7 +15952,7 @@ int get_map_3d_package_contours(struct Map_3d_package *map_3d_package,
 LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
-gets the <number_of_contours> and <contour_settings> for map_3d_package
+Gets the <number_of_contours> and <contour_settings> for map_3d_package.
 ==============================================================================*/
 {
 	int return_code;
@@ -15898,7 +15983,7 @@ int set_map_3d_package_contours(struct Map_3d_package *map_3d_package,
 LAST MODIFIED : 5 July 2000
 
 DESCRIPTION :
-sets the <number_of_contours> and <contour_settings> for map_3d_package
+Sets the <number_of_contours> and <contour_settings> for map_3d_package.
 ==============================================================================*/
 {
 	int i,return_code;

@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : map_dialog.uil
 !
-!LAST MODIFIED : 27 November 2003
+!LAST MODIFIED : 23 April 2004
 !
 !DESCRIPTION :
 !The widgets/gadgets for the map dialog in the mapping work area.
@@ -38,11 +38,12 @@ procedure
 	identify_map_dialog_contours_no;
 	identify_map_dialog_contours_co;
 	identify_map_dialog_contours_va;
-	identify_map_dialog_contours_up;
-	increment_number_of_contours;
-	identify_map_dialog_contours_nu;
-	identify_map_dialog_contours_do;
-	decrement_number_of_contours;
+	id_map_dialog_cont_minimum;
+	id_map_dialog_cont_minimum_text;
+	id_map_dialog_cont_step;
+	id_map_dialog_cont_step_text;
+	id_map_dialog_cont_number;
+	id_map_dialog_cont_number_text;
 	identify_map_dialog_elect_menu;
 	identify_map_dialog_elect_name;
 	identify_map_dialog_elect_value;
@@ -793,7 +794,7 @@ object
 		{
 		arguments
 			{
-			XmNnumColumns = 2;
+			XmNnumColumns = 4;
 			XmNorientation = XmHORIZONTAL;
 			XmNspacing = widget_spacing;
 			XmNborderWidth = 0;
@@ -808,7 +809,9 @@ object
 		controls
 			{
 			XmOptionMenu map_dialog_contours_type_option;
-			XmForm map_dialog_contours_number_form;
+			XmRowColumn map_dialog_cont_minimum;
+			XmRowColumn map_dialog_cont_step;
+			XmRowColumn map_dialog_cont_number;
 			};
 		callbacks
 			{
@@ -894,96 +897,138 @@ object
 				};
 			};
 		};
-	map_dialog_contours_number_form: XmForm
+	map_dialog_cont_minimum: XmRowColumn
 		{
 		arguments
 			{
 			XmNborderWidth = 0;
+			XmNnumColumns = 2;
+			XmNorientation = XmHORIZONTAL;
+			XmNspacing = widget_spacing;
 			};
 		controls
 			{
-			XmArrowButtonGadget map_dialog_contours_down;
-			XmLabel map_dialog_contours_number;
-			XmArrowButtonGadget map_dialog_contours_up;
-			};
-		};
-	map_dialog_contours_down: XmArrowButtonGadget
-		{
-		arguments
-			{
-			XmNarrowDirection = XmARROW_DOWN;
-			XmNshadowThickness = 0;
-			XmNhighlightThickness = 0;
-			XmNleftAttachment = XmATTACH_FORM;
-			XmNleftOffset = 0;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
+			XmLabel
+				{
+				arguments
+					{
+					XmNlabelString =
+					compound_string("minimum");
+					XmNfontList = button_font;
+					};
+				};
+			XmTextField map_dialog_cont_minimum_text;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedures
 				{
-				identify_map_dialog_contours_do(map_dialog_structure);
-				};
-			XmNactivateCallback = procedures
-				{
-				decrement_number_of_contours(map_dialog_structure);
+				id_map_dialog_cont_minimum(map_dialog_structure);
 				};
 			};
 		};
-	map_dialog_contours_number: XmLabel
+	map_dialog_cont_minimum_text: XmTextField
 		{
 		arguments
 			{
-			XmNlabelString =
-			compound_string("99");
+			XmNcolumns = 8;
 			XmNfontList = button_font;
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftWidget = XmArrowButtonGadget map_dialog_contours_down;
-			XmNleftOffset = 0;
-			XmNrightAttachment = XmATTACH_NONE;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedures
 				{
-				identify_map_dialog_contours_nu(map_dialog_structure);
+				id_map_dialog_cont_minimum_text(map_dialog_structure);
 				};
 			};
 		};
-	map_dialog_contours_up: XmArrowButtonGadget
+	map_dialog_cont_step: XmRowColumn
 		{
 		arguments
 			{
-			XmNarrowDirection = XmARROW_UP;
-			XmNshadowThickness = 0;
-			XmNhighlightThickness = 0;
-			XmNleftAttachment = XmATTACH_WIDGET;
-			XmNleftWidget = XmLabel map_dialog_contours_number;
-			XmNleftOffset = 0;
-			XmNrightAttachment = XmATTACH_FORM;
-			XmNrightOffset = 0;
-			XmNtopAttachment = XmATTACH_FORM;
-			XmNtopOffset = 0;
-			XmNbottomAttachment = XmATTACH_FORM;
-			XmNbottomOffset = 0;
+			XmNborderWidth = 0;
+			XmNnumColumns = 2;
+			XmNorientation = XmHORIZONTAL;
+			XmNspacing = widget_spacing;
+			};
+		controls
+			{
+			XmLabel
+				{
+				arguments
+					{
+					XmNlabelString =
+					compound_string("step");
+					XmNfontList = button_font;
+					};
+				};
+			XmTextField map_dialog_cont_step_text;
 			};
 		callbacks
 			{
 			MrmNcreateCallback = procedures
 				{
-				identify_map_dialog_contours_up(map_dialog_structure);
+				id_map_dialog_cont_step(map_dialog_structure);
 				};
-			XmNactivateCallback = procedures
+			};
+		};
+	map_dialog_cont_step_text: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 8;
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
 				{
-				increment_number_of_contours(map_dialog_structure);
+				id_map_dialog_cont_step_text(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_cont_number: XmRowColumn
+		{
+		arguments
+			{
+			XmNborderWidth = 0;
+			XmNnumColumns = 2;
+			XmNorientation = XmHORIZONTAL;
+			XmNspacing = widget_spacing;
+			};
+		controls
+			{
+			XmLabel
+				{
+				arguments
+					{
+					XmNlabelString =
+					compound_string("number");
+					XmNfontList = button_font;
+					};
+				};
+			XmTextField map_dialog_cont_number_text;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_map_dialog_cont_number(map_dialog_structure);
+				};
+			};
+		};
+	map_dialog_cont_number_text: XmTextField
+		{
+		arguments
+			{
+			XmNcolumns = 2;
+			XmNfontList = button_font;
+			};
+		callbacks
+			{
+			MrmNcreateCallback = procedures
+				{
+				id_map_dialog_cont_number_text(map_dialog_structure);
 				};
 			};
 		};

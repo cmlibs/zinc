@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : map_dialog.h
 
-LAST MODIFIED : 1 November 2001
+LAST MODIFIED : 23 April 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -22,7 +22,7 @@ Global types
 */
 struct Map_dialog
 /*******************************************************************************
-LAST MODIFIED :1 November 2001
+LAST MODIFIED : 23 April 2004
 
 DESCRIPTION :
 The dialog box for configuring a map.
@@ -89,12 +89,14 @@ The dialog box for configuring a map.
 			Widget constant_thickness;
 			Widget variable_thickness;
 		} type_option;
-		Widget down_arrow;
+		Widget minimum;
+		Widget minimum_text;
 		Widget number;
-		Widget up_arrow;
+		Widget number_text;
+		Widget step;
+		Widget step_text;
 	} contours;
 #endif /* defined (MOTIF) */
-	int number_of_contours;
 #if defined (MOTIF)
 	struct
 	{
