@@ -300,11 +300,11 @@ DESCRIPTION :
 Creates an variable list.
 ==============================================================================*/
 {
-#if defined (NOT_DEBUG)
 	return (reinterpret_cast<Cmiss_function_variable_list_id>(
 		new std::list<Function_variable_handle>));
-#else // defined (NOT_DEBUG)
+#if defined (NOT_DEBUG)
 	return (reinterpret_cast<Cmiss_function_variable_list_id>(0));
+#else // defined (NOT_DEBUG)
 #endif // defined (NOT_DEBUG)
 }
 
