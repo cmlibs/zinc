@@ -699,7 +699,7 @@ already) and allows its contents to be modified.
 			option_table = CREATE(Option_table)();
 			/* curve */
 			Option_table_add_entry(option_table, "curve", &curve,
-				computed_field_control_curve_package->computed_field_manager,
+				computed_field_control_curve_package->control_curve_manager,
 				set_Control_curve);
 			/* source */
 			set_source_field_data.computed_field_manager =
