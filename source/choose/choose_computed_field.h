@@ -10,7 +10,7 @@ Widget for choosing a Computed_field, based on choose_object macro.
 #define CHOOSE_COMPUTED_FIELD_H
 
 #include "choose/choose_object.h"
-#include "finite_element/computed_field.h"
+#include "computed_field/computed_field.h"
 
 PROTOTYPE_CHOOSE_OBJECT_GLOBAL_FUNCTIONS(Computed_field);
 

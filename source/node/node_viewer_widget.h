@@ -12,7 +12,7 @@ Note the node passed to this widget should be a non-managed local copy.
 #define NODE_VIEWER_WIDGET_H
 
 #include "general/callback.h"
-#include "finite_element/computed_field.h"
+#include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 
 /*

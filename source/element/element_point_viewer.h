@@ -12,7 +12,7 @@ selected element point, or set it if entered in this dialog.
 #define ELEMENT_POINT_VIEWER_H
 
 #include "general/callback.h"
-#include "finite_element/computed_field.h"
+#include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "graphics/element_point_ranges.h"
 #include "selection/element_point_ranges_selection.h"

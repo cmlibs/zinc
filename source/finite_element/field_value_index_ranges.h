@@ -10,7 +10,7 @@ Used, eg., to indicate which components have been modified in an editor.
 #if !defined (FIELD_VALUE_INDEX_RANGES_H)
 #define FIELD_VALUE_INDEX_RANGES_H
 
-#include "finite_element/computed_field.h"
+#include "computed_field/computed_field.h"
 #include "general/list.h"
 #include "general/multi_range.h"
 #include "general/object.h"

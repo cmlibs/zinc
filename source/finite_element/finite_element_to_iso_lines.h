@@ -10,7 +10,7 @@ value over 2-D elements.
 #if !defined (FINITE_ELEMENT_TO_ISO_LINES_H)
 #define FINITE_ELEMENT_TO_ISO_LINES_H
 
-#include "finite_element/computed_field.h"
+#include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_object.h"

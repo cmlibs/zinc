@@ -10,7 +10,7 @@ appearance of graphical finite element groups.
 #if !defined (ELEMENT_GROUP_SETTINGS_H)
 #define ELEMENT_GROUP_SETTINGS_H
 
-#include "finite_element/computed_field.h"
+#include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_graphics_object.h"
 #include "graphics/auxiliary_graphics_types.h"

@@ -12,7 +12,7 @@ this dialog.
 #define NODE_VIEWER_H
 
 #include "general/callback.h"
-#include "finite_element/computed_field.h"
+#include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "selection/node_selection.h"
 
