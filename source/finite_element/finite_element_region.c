@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element_region.c
 
-LAST MODIFIED : 11 June 2003
+LAST MODIFIED : 18 June 2003
 
 DESCRIPTION :
 Object comprising a single finite element mesh including nodes, elements and
@@ -7763,7 +7763,7 @@ Assumes all master_fe_regions are in parents of the owning cmiss_region.
 int Cmiss_regions_merge_FE_regions(struct Cmiss_region *global_region,
 	struct Cmiss_region *region)
 /*******************************************************************************
-LAST MODIFIED : 30 April 2003
+LAST MODIFIED : 18 June 2003
 
 DESCRIPTION :
 Merges into <global_region> the fields, nodes and elements from <region>.
@@ -7798,7 +7798,8 @@ FE_regions_merge would have to be changed.
 		/*???RC embedding data currenty only allows embedding elements to be in
 			the root region */
 		embedding_data.root_fe_region = Cmiss_region_get_FE_region(global_region);
-		if (embedding_data.root_fe_region->data_hack)
+		if (embedding_data.root_fe_region&&
+			(embedding_data.root_fe_region->data_hack))
 		{
 			embedding_data.root_fe_region =
 				embedding_data.root_fe_region->master_fe_region;
