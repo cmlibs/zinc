@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_finite_element.cpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 23 August 2004
 //
 // DESCRIPTION :
 // Finite element types - element, element/xi and finite element field.
@@ -1456,7 +1456,7 @@ Function_variable_iterator_representation_atomic_nodal_values::
 	value_types(0),number_of_values(0),value_type_index(0),fe_region(0),
 	number_of_versions(0),atomic_variable(0),variable(variable)
 //******************************************************************************
-// LAST MODIFIED : 19 July 2004
+// LAST MODIFIED : 23 August 2004
 //
 // DESCRIPTION :
 // Constructor.  If <begin> then the constructed iterator points to the first
@@ -1467,115 +1467,119 @@ Function_variable_iterator_representation_atomic_nodal_values::
 {
 	Function_finite_element_handle function_finite_element;
 
-	if (begin&&variable&&(function_finite_element=boost::dynamic_pointer_cast<
+	if (variable&&(function_finite_element=boost::dynamic_pointer_cast<
 		Function_finite_element,Function>(variable->function())))
 	{
-		struct FE_node *node;
-
 		fe_region=function_finite_element->region();
 		ACCESS(FE_region)(fe_region);
-		node=variable->node;
-		if (!node)
+		if (begin)
 		{
-			struct Get_next_node_data get_next_node_data;
+			struct FE_node *node;
 
-			// want first so set found to true
-			get_next_node_data.found=1;
-			get_next_node_data.current_node=(struct FE_node *)NULL;
-			get_next_node_data.function_finite_element=function_finite_element;
-			get_next_node_data.component_number=variable->component_number;
-			get_next_node_data.version=variable->version;
-			get_next_node_data.value_type=variable->value_type;
-			node=FE_region_get_first_FE_node_that(fe_region,get_next_node,
-				&get_next_node_data);
-		}
-		if (node)
-		{
-			Function_size_type component_number;
-			Function_variable_handle out_variable;
-			Function_variable_matrix_components_handle variable_finite_element(0);
-			Function_variable_iterator component_end,component_iterator;
-
-			ACCESS(FE_node)(node);
-			out_variable=function_finite_element->output();
-			component_iterator=out_variable->begin_atomic();
-			component_end=out_variable->end_atomic();
-			component_number=1;
-			while ((component_iterator!=component_end)&&
-				(((component_number!=variable->component_number)&&
-				(0!=variable->component_number))||
-				(!(variable_finite_element=boost::dynamic_pointer_cast<
-				Function_variable_matrix_components,Function_variable>(
-				*component_iterator)))||
-				(1!=variable_finite_element->number_differentiable())))
+			node=variable->node;
+			if (!node)
 			{
-				component_iterator++;
-				component_number++;
+				struct Get_next_node_data get_next_node_data;
+
+				// want first so set found to true
+				get_next_node_data.found=1;
+				get_next_node_data.current_node=(struct FE_node *)NULL;
+				get_next_node_data.function_finite_element=function_finite_element;
+				get_next_node_data.component_number=variable->component_number;
+				get_next_node_data.version=variable->version;
+				get_next_node_data.value_type=variable->value_type;
+				node=FE_region_get_first_FE_node_that(fe_region,get_next_node,
+					&get_next_node_data);
 			}
-			if (component_iterator!=component_end)
+			if (node)
 			{
-				Function_size_type version;
+				Function_size_type component_number;
+				Function_variable_handle out_variable;
+				Function_variable_matrix_components_handle variable_finite_element(0);
+				Function_variable_iterator component_end,component_iterator;
 
-				version=variable->version;
-				if (0==version)
+				ACCESS(FE_node)(node);
+				out_variable=function_finite_element->output();
+				component_iterator=out_variable->begin_atomic();
+				component_end=out_variable->end_atomic();
+				component_number=1;
+				while ((component_iterator!=component_end)&&
+					(((component_number!=variable->component_number)&&
+					(0!=variable->component_number))||
+					(!(variable_finite_element=boost::dynamic_pointer_cast<
+					Function_variable_matrix_components,Function_variable>(
+					*component_iterator)))||
+					(1!=variable_finite_element->number_differentiable())))
 				{
-					version=1;
+					component_iterator++;
+					component_number++;
 				}
-				number_of_versions=(function_finite_element->number_of_versions)(
-					component_number,node);
-				if (version<=number_of_versions)
+				if (component_iterator!=component_end)
 				{
-					number_of_values=1+(function_finite_element->number_of_derivatives)(
-						component_number,node);
-					if ((0<number_of_values)&&
-						(value_types=(function_finite_element->nodal_value_types)(
-						component_number,node)))
-					{
-						enum FE_nodal_value_type value_type,*value_type_ptr;
+					Function_size_type version;
 
-						value_type_index=0;
-						value_type=FE_NODAL_UNKNOWN;
-						if (FE_NODAL_UNKNOWN==variable->value_type)
+					version=variable->version;
+					if (0==version)
+					{
+						version=1;
+					}
+					number_of_versions=(function_finite_element->number_of_versions)(
+						component_number,node);
+					if (version<=number_of_versions)
+					{
+						number_of_values=1+(function_finite_element->number_of_derivatives)(
+							component_number,node);
+						if ((0<number_of_values)&&
+							(value_types=(function_finite_element->nodal_value_types)(
+							component_number,node)))
 						{
-							value_type=value_types[value_type_index];
-						}
-						else
-						{
-							value_type_ptr=value_types;
-							while ((value_type_index<number_of_values)&&
-								(*value_type_ptr!=variable->value_type))
-							{
-								value_type_index++;
-								value_type_ptr++;
-							}
-							if (value_type_index<number_of_values)
+							enum FE_nodal_value_type value_type,*value_type_ptr;
+
+							value_type_index=0;
+							value_type=FE_NODAL_UNKNOWN;
+							if (FE_NODAL_UNKNOWN==variable->value_type)
 							{
 								value_type=value_types[value_type_index];
 							}
-						}
-						if (FE_NODAL_UNKNOWN!=value_type)
-						{
-							if (atomic_variable=Function_variable_matrix_nodal_values_handle(
-								new Function_variable_matrix_nodal_values(
-								function_finite_element,component_number,node,value_type,
-								version)))
+							else
 							{
-								atomic_variable->value_private=Function_variable_value_handle(
-									new Function_variable_value_specific<Scalar>(
-									Function_variable_matrix_set_value_function<Scalar>));
+								value_type_ptr=value_types;
+								while ((value_type_index<number_of_values)&&
+									(*value_type_ptr!=variable->value_type))
+								{
+									value_type_index++;
+									value_type_ptr++;
+								}
+								if (value_type_index<number_of_values)
+								{
+									value_type=value_types[value_type_index];
+								}
+							}
+							if (FE_NODAL_UNKNOWN!=value_type)
+							{
+								if (atomic_variable=
+									Function_variable_matrix_nodal_values_handle(
+									new Function_variable_matrix_nodal_values(
+									function_finite_element,component_number,node,value_type,
+									version)))
+								{
+									atomic_variable->value_private=Function_variable_value_handle(
+										new Function_variable_value_specific<Scalar>(
+										Function_variable_matrix_set_value_function<Scalar>));
+								}
 							}
 						}
 					}
+					if (!atomic_variable)
+					{
+						number_of_versions=0;
+						number_of_values=0;
+						DEALLOCATE(value_types);
+						value_type_index=0;
+					}
 				}
-				if (!atomic_variable)
-				{
-					number_of_versions=0;
-					number_of_values=0;
-					DEALLOCATE(value_types);
-					value_type_index=0;
-				}
+				DEACCESS(FE_node)(&node);
 			}
-			DEACCESS(FE_node)(&node);
 		}
 	}
 }
