@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_time.c
 
-LAST MODIFIED : 01 October 2003
+LAST MODIFIED : 14 January 2004
 
 DESCRIPTION :
 Implements a number of basic component wise operations on computed fields.
@@ -620,23 +620,76 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_is_type_time_value */
 
-#define Computed_field_time_value_clear_type_specific \
-   Computed_field_default_clear_type_specific
+static int Computed_field_time_value_clear_type_specific(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 19 September 2003
+LAST MODIFIED : 14 January 2005
 
 DESCRIPTION :
-No type specific data
 ==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_time_value_type_specific_data *data;	
 
-#define Computed_field_time_value_copy_type_specific \
-   Computed_field_default_copy_type_specific
+	ENTER(Computed_field_time_value_clear_type_specific);
+	if (field && 
+		(data = (struct Computed_field_time_value_type_specific_data *)field->type_specific_data))
+	{
+		DESTROY(Time_object)(&data->time_object);
+		DEALLOCATE(data);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_time_value_clear_type_specific.  "
+			"Invalid field");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_time_value_clear_type_specific */
+
+static void *Computed_field_time_value_copy_type_specific(
+	struct Computed_field *source, struct Computed_field *destination)
 /*******************************************************************************
-LAST MODIFIED : 19 September 2003
+LAST MODIFIED : 14 January 2005
 
 DESCRIPTION :
-No type specific data
 ==============================================================================*/
+{
+	struct Computed_field_time_value_type_specific_data *destination_data,
+		*source_data;
+	struct Time_object *time_object;
+
+	ENTER(Computed_field_time_value_copy_type_specific);
+	if (source && destination &&
+		(source_data = (struct Computed_field_time_value_type_specific_data *)source->type_specific_data))
+	{
+		if ((time_object = CREATE(Time_object)(destination->name)) &&
+			ALLOCATE(destination_data, struct Computed_field_time_value_type_specific_data, 1))
+		{
+			Time_object_set_time_keeper(time_object, Time_object_get_time_keeper(source_data->time_object));
+			destination_data->time_object = time_object;
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"Computed_field_time_value_copy_type_specific.  "
+				"Unable to create duplicate type specific data.");
+			destination_data = NULL;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_time_value_copy_type_specific.  "
+			"Invalid source or destination field.");
+		destination_data = NULL;
+	}
+	LEAVE;
+
+	return ((void *)destination_data);
+} /* Computed_field_time_value_copy_type_specific */
 
 #define Computed_field_time_value_clear_cache_type_specific \
    (Computed_field_clear_cache_type_specific_function)NULL
@@ -647,14 +700,40 @@ DESCRIPTION :
 This function is not needed for this type.
 ==============================================================================*/
 
-#define Computed_field_time_value_type_specific_contents_match \
-   Computed_field_default_type_specific_contents_match
+static int Computed_field_time_value_type_specific_contents_match(
+	struct Computed_field *field, struct Computed_field *other_computed_field)
 /*******************************************************************************
-LAST MODIFIED : 19 September 2003
+LAST MODIFIED : 14 January 2005
 
 DESCRIPTION :
-No type specific data
 ==============================================================================*/
+{
+	int return_code;
+	struct Computed_field_time_value_type_specific_data *data1, *data2;
+
+	ENTER(Computed_field_time_value_type_specific_contents_match);
+	if (field && other_computed_field &&
+		(data1 = (struct Computed_field_time_value_type_specific_data *)field->type_specific_data) &&
+		(data2 = (struct Computed_field_time_value_type_specific_data *)other_computed_field->type_specific_data))
+	{
+		if (data1->time_object && data2->time_object && 
+			(Time_object_get_time_keeper(data1->time_object) == Time_object_get_time_keeper(data2->time_object)))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* Computed_field_time_value_type_specific_contents_match */
 
 #define Computed_field_time_value_is_defined_in_element \
 	Computed_field_default_is_defined_in_element
