@@ -60,6 +60,17 @@ Variable_input::Variable_input(const Variable_input& input)
 	specification_string=input.specification_string;
 } // Variable_input::Variable_input
 
+Variable_input::~Variable_input()
+//******************************************************************************
+// LAST MODIFIED : 9 September 2003
+//
+// DESCRIPTION :
+// Destructor.
+//==============================================================================
+{
+	//do nothing
+} // Variable_input::~Variable_input
+
 Variable_input_value::Variable_input_value(Variable_input *input,
 	Variable *value)
 //******************************************************************************
@@ -85,6 +96,17 @@ Variable_input_value::Variable_input_value(
 	input_private=input_value.input_private;
 	value_private=input_value.value_private;
 } // Variable_input::Variable_input_value
+
+Variable_input_value::~Variable_input_value()
+//******************************************************************************
+// LAST MODIFIED : 9 September 2003
+//
+// DESCRIPTION :
+// Destructor.
+//==============================================================================
+{
+	//do nothing
+} // Variable_input_value::~Variable_input_value
 
 Variable *Variable_input_value::value()
 //******************************************************************************
@@ -137,7 +159,7 @@ Variable::~Variable()
 //==============================================================================
 {
 	//do nothing
-} // Variable::Variable
+} // Variable::~Variable
 
 class Get_set_input_value
 //******************************************************************************
