@@ -10,6 +10,7 @@
 #include <new>
 #include <string>
 #include <stdio.h>
+#include <iostream>
 
 //???DB.  Put in include?
 const bool Assert_on=true;
@@ -1489,7 +1490,7 @@ static int nodal_value_calculate_component_values(
 	int *number_of_nodal_values_address,int **numbers_of_component_values_address,
 	FE_value ****component_values_address)
 /*******************************************************************************
-LAST MODIFIED : 13 November 2003
+LAST MODIFIED : 26 November 2003
 
 DESCRIPTION :
 Calculate the component values for the derivatives of the specified components
@@ -1569,8 +1570,7 @@ for the <fe_field> and <element> and can be passed in or computed in here.
 		{
 			//???DB.  To be done/Needs finishing
 			/* set up working storage */
-			Variable_handle
-				element_field_saved_nodal_values[number_of_element_field_nodes];
+			Variable_handle *element_field_saved_nodal_values;
 
 			ALLOCATE(element_field_nodal_value_offsets,int,
 				number_of_element_field_nodes);
@@ -1578,6 +1578,8 @@ for the <fe_field> and <element> and can be passed in or computed in here.
 				number_of_element_field_nodes);
 			ALLOCATE(element_field_number_of_nodal_values,int,
 				number_of_element_field_nodes);
+			element_field_saved_nodal_values=
+				new Variable_handle[number_of_element_field_nodes];
 			if (element_field_nodal_value_offsets&&
 				element_field_number_of_specified_nodal_values&&
 				element_field_number_of_nodal_values&&element_field_saved_nodal_values)
@@ -1842,9 +1844,7 @@ for the <fe_field> and <element> and can be passed in or computed in here.
 				return_code=0;
 			}
 			/* get rid of working storage */
-#if defined (OLD_CODE)
-			DEALLOCATE(element_field_saved_nodal_values);
-#endif // defined (OLD_CODE)
+			delete [] element_field_saved_nodal_values;
 			DEALLOCATE(element_field_number_of_nodal_values);
 			DEALLOCATE(element_field_number_of_specified_nodal_values);
 			DEALLOCATE(element_field_nodal_value_offsets);
@@ -2076,7 +2076,7 @@ class Variable_finite_element_check_derivative_functor
 void Variable_finite_element::evaluate_derivative_local(Matrix& matrix,
 	std::list<Variable_input_handle>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 10 November 2003
+// LAST MODIFIED : 26 November 2003
 //
 // DESCRIPTION :
 // ???DB.  Throw an exception for failure?
@@ -2152,144 +2152,154 @@ void Variable_finite_element::evaluate_derivative_local(Matrix& matrix,
 			}
 			if (return_code)
 			{
-				bool carry;
-				FE_value **derivative_component_values=(FE_value **)NULL,
-					*value_address_1,*value_address_2,xi_array[number_of_xi];
-				Variable_size_type column_number,i;
-				boost::numeric::ublas::vector<Variable_size_type>
-					derivative_independent_values(derivative_order+1);
-				int j,xi_derivative_orders[number_of_xi];
-				Scalar component_value;
+				FE_value *xi_array;
+				int *xi_derivative_orders;
 
-				for (i=0;i<=derivative_order;i++)
+				xi_array=new FE_value[number_of_xi];
+				xi_derivative_orders=new int[number_of_xi];
+				if (xi_array&&xi_derivative_orders)
 				{
-					derivative_independent_values[i]=0;
-				}
-				for (i=0;i<number_of_xi;i++)
-				{
-					xi_array[i]=(FE_value)(xi[i]);
-				}
-				/* chose the component values to use for calculating the
-					values */
-				if (nodal_values_input)
-				{
-					derivative_component_values=nodal_value_component_values[0];
-				}
-				else
-				{
-					derivative_component_values=component_values;
-				}
-				/* loop over the values within the derivative block */
-				column_number=0;
-				while (return_code&&
-					(0==derivative_independent_values[derivative_order]))
-				{
-					if (derivative_component_values)
+					bool carry;
+					FE_value **derivative_component_values=(FE_value **)NULL,
+						*value_address_1,*value_address_2;
+					Variable_size_type column_number,i;
+					boost::numeric::ublas::vector<Variable_size_type>
+						derivative_independent_values(derivative_order+1);
+					int j;
+					Scalar component_value;
+
+					for (i=0;i<=derivative_order;i++)
 					{
-						for (i=0;i<number_of_xi;i++)
+						derivative_independent_values[i]=0;
+					}
+					for (i=0;i<number_of_xi;i++)
+					{
+						xi_array[i]=(FE_value)(xi[i]);
+					}
+					/* chose the component values to use for calculating the
+						values */
+					if (nodal_values_input)
+					{
+						derivative_component_values=nodal_value_component_values[0];
+					}
+					else
+					{
+						derivative_component_values=component_values;
+					}
+					/* loop over the values within the derivative block */
+					column_number=0;
+					while (return_code&&
+						(0==derivative_independent_values[derivative_order]))
+					{
+						if (derivative_component_values)
 						{
-							xi_derivative_orders[i]=0;
+							for (i=0;i<number_of_xi;i++)
+							{
+								xi_derivative_orders[i]=0;
+							}
+							for (i=0;i<derivative_order;i++)
+							{
+								if (element_xi_inputs[i])
+								{
+									// element/xi derivative
+									if (0<element_xi_inputs[i]->indices.size())
+									{
+										xi_derivative_orders[(element_xi_inputs[i]->indices)[
+											derivative_independent_values[i]]-1]++;
+									}
+									else
+									{
+										xi_derivative_orders[
+											derivative_independent_values[i]]++;
+									}
+								}
+							}
+							/* loop over components */
+							i=0;
+							while (return_code&&(i<number_of_components))
+							{
+								if (return_code=calculate_monomial_derivative_values(
+									number_of_xi,component_monomial_info[i]+1,
+									xi_derivative_orders,xi_array,monomial_derivative_values))
+								{
+									/* calculate the derivative */
+									component_value=(Scalar)0;
+									value_address_1=monomial_derivative_values;
+									value_address_2=derivative_component_values[i];
+									for (j=numbers_of_component_values[i];j>0;j--)
+									{
+										component_value +=
+											(double)(*value_address_1)*
+											(double)(*value_address_2);
+										value_address_1++;
+										value_address_2++;
+									}
+									matrix(i,column_number)=component_value;
+								}
+								i++;
+							}
 						}
-						for (i=0;i<derivative_order;i++)
+						/* step to next value within derivative block */
+						column_number++;
+						i=0;
+						carry=true;
+						do
 						{
+							derivative_independent_values[i]++;
 							if (element_xi_inputs[i])
 							{
-								// element/xi derivative
-								if (0<element_xi_inputs[i]->indices.size())
+								Variable_size_type
+									number_of_values=(element_xi_inputs[i]->indices).size();
+
+								if (0<number_of_values)
 								{
-									xi_derivative_orders[(element_xi_inputs[i]->indices)[
-										derivative_independent_values[i]]-1]++;
+									if (derivative_independent_values[i]>=number_of_values)
+									{
+										derivative_independent_values[i]=0;
+									}
+									else
+									{
+										carry=false;
+									}
 								}
 								else
 								{
-									xi_derivative_orders[
-										derivative_independent_values[i]]++;
+									if (derivative_independent_values[i]>=number_of_xi)
+									{
+										derivative_independent_values[i]=0;
+									}
+									else
+									{
+										carry=false;
+									}
 								}
 							}
-						}
-						/* loop over components */
-						i=0;
-						while (return_code&&(i<number_of_components))
-						{
-							if (return_code=calculate_monomial_derivative_values(
-								number_of_xi,component_monomial_info[i]+1,
-								xi_derivative_orders,xi_array,monomial_derivative_values))
+							else
 							{
-								/* calculate the derivative */
-								component_value=(Scalar)0;
-								value_address_1=monomial_derivative_values;
-								value_address_2=derivative_component_values[i];
-								for (j=numbers_of_component_values[i];j>0;j--)
+								if (derivative_independent_values[i]>=
+									(Variable_size_type)number_of_nodal_values)
 								{
-									component_value +=
-										(double)(*value_address_1)*
-										(double)(*value_address_2);
-									value_address_1++;
-									value_address_2++;
+									derivative_independent_values[i]=0;
 								}
-								matrix(i,column_number)=component_value;
+								else
+								{
+									carry=false;
+								}
+								// update the component values to use for calculating the values
+								derivative_component_values=
+									nodal_value_component_values[
+									derivative_independent_values[i]];
 							}
 							i++;
-						}
-					}
-					/* step to next value within derivative block */
-					column_number++;
-					i=0;
-					carry=true;
-					do
-					{
-						derivative_independent_values[i]++;
-						if (element_xi_inputs[i])
+						} while ((i<derivative_order)&&carry);
+						if (carry)
 						{
-							Variable_size_type
-								number_of_values=(element_xi_inputs[i]->indices).size();
-
-							if (0<number_of_values)
-							{
-								if (derivative_independent_values[i]>=number_of_values)
-								{
-									derivative_independent_values[i]=0;
-								}
-								else
-								{
-									carry=false;
-								}
-							}
-							else
-							{
-								if (derivative_independent_values[i]>=number_of_xi)
-								{
-									derivative_independent_values[i]=0;
-								}
-								else
-								{
-									carry=false;
-								}
-							}
+							derivative_independent_values[derivative_order]++;
 						}
-						else
-						{
-							if (derivative_independent_values[i]>=
-								(Variable_size_type)number_of_nodal_values)
-							{
-								derivative_independent_values[i]=0;
-							}
-							else
-							{
-								carry=false;
-							}
-							// update the component values to use for calculating the values
-							derivative_component_values=
-								nodal_value_component_values[
-								derivative_independent_values[i]];
-						}
-						i++;
-					} while ((i<derivative_order)&&carry);
-					if (carry)
-					{
-						derivative_independent_values[derivative_order]++;
 					}
 				}
+				delete [] xi_array;
+				delete [] xi_derivative_orders;
 			}
 		}
 		// remove temporary storage
