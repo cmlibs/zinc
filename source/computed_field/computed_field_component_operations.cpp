@@ -290,6 +290,9 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+#define Computed_field_power_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
+
 static int list_Computed_field_power(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -826,6 +829,10 @@ LAST MODIFIED : 13 July 2000
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
+
+#define Computed_field_multiply_components_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
+
 
 static int list_Computed_field_multiply_components(
 	struct Computed_field *field)
@@ -1366,6 +1373,9 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+#define Computed_field_divide_components_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
+
 static int list_Computed_field_divide_components(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -1902,6 +1912,9 @@ LAST MODIFIED : 14 July 2000
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
+
+#define Computed_field_add_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
 
 static int list_Computed_field_add(
 	struct Computed_field *field)
@@ -2568,6 +2581,9 @@ LAST MODIFIED : 14 July 2000
 DESCRIPTION :
 Inherit result from first source field.
 ==============================================================================*/
+
+#define Computed_field_scale_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
 
 static int Computed_field_scale_find_element_xi(struct Computed_field *field,
 	FE_value *values, int number_of_values, struct FE_element **element, 
@@ -3360,6 +3376,9 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+#define Computed_field_clamp_maximum_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
+
 static int list_Computed_field_clamp_maximum(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -4081,6 +4100,9 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+#define Computed_field_clamp_minimum_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
+
 static int list_Computed_field_clamp_minimum(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -4757,6 +4779,9 @@ DESCRIPTION :
 Inherit result from first source field.
 ==============================================================================*/
 
+#define Computed_field_offset_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
+
 static int Computed_field_offset_find_element_xi(struct Computed_field *field,
 	FE_value *values, int number_of_values, struct FE_element **element, 
 	FE_value *xi, int element_dimension, struct Cmiss_region *search_region)
@@ -5425,6 +5450,9 @@ LAST MODIFIED : 13 December 2001
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
+
+#define Computed_field_sum_components_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
 
 static int list_Computed_field_sum_components(
 	struct Computed_field *field)
@@ -6129,6 +6157,9 @@ LAST MODIFIED : 18 December 2001
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
+
+#define Computed_field_edit_mask_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
 
 static int list_Computed_field_edit_mask(
 	struct Computed_field *field)

@@ -579,6 +579,9 @@ DESCRIPTION :
 Inherit result from first source field.
 ==============================================================================*/
 
+#define Computed_field_coordinate_transformation_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
+
 static int Computed_field_coordinate_transformation_find_element_xi(
 	struct Computed_field *field,
 	FE_value *values, int number_of_values, struct FE_element **element, 
@@ -1331,6 +1334,9 @@ LAST MODIFIED : 8 November 2001
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
+
+#define Computed_field_vector_coordinate_transformation_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
 
 static int list_Computed_field_vector_coordinate_transformation(
 	struct Computed_field *field)

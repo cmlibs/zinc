@@ -522,6 +522,18 @@ int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS] can be passed to this function.
 Returns 0 with no errors if the field is not grid-based.
 ==============================================================================*/
 
+int Computed_field_get_native_resolution(struct Computed_field *field,
+        int *dimension, int **sizes, FE_value **minimums, FE_value **maximums,
+	struct Computed_field **texture_coordinate_field);
+/*******************************************************************************
+LAST MODIFIED : 03 February 2005
+
+DESCRIPTION :
+Gets the <dimension>, <sizes>, <minimums>, <maximums> and <texture_coordinate_field> from
+the <field>. These parameters will be used in image processing.
+
+==============================================================================*/
+
 int Computed_field_get_number_of_components(struct Computed_field *field);
 /*******************************************************************************
 LAST MODIFIED : 23 December 1998

@@ -1142,6 +1142,9 @@ Returns 0 with no errors if the field is not grid-based.
 	return (return_code);
 } /* Computed_field_get_native_discretization_in_element */
 
+#define Computed_field_finite_element_get_native_resolution \
+            (Computed_field_get_native_resolution_function)NULL
+
 static int Computed_field_finite_element_find_element_xi(
 	struct Computed_field *field, 
 	FE_value *values, int number_of_values, struct FE_element **element,
@@ -1754,6 +1757,9 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+#define Computed_field_cmiss_number_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
+
 static int list_Computed_field_cmiss_number(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -2091,6 +2097,9 @@ LAST MODIFIED : 19 July 2000
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
+
+#define Computed_field_access_count_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
 
 static int list_Computed_field_access_count(
 	struct Computed_field *field)
@@ -2513,6 +2522,9 @@ LAST MODIFIED : 19 July 2000
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
+
+#define Computed_field_xi_coordinates_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
 
 static int list_Computed_field_xi_coordinates(
 	struct Computed_field *field)
@@ -3166,6 +3178,9 @@ LAST MODIFIED : 19 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
+
+#define Computed_field_node_value_get_native_resolution \
+   (Computed_field_get_native_resolution_function)NULL
 
 static int list_Computed_field_node_value(
 	struct Computed_field *field)
@@ -4043,6 +4058,9 @@ LAST MODIFIED : 20 July 2000
 
 DESCRIPTION :
 ==============================================================================*/
+
+#define Computed_field_embedded_get_native_resolution \
+   (Computed_field_get_native_resolution_function)NULL
 
 static int list_Computed_field_embedded(
 	struct Computed_field *field)

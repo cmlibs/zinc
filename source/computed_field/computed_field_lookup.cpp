@@ -417,6 +417,9 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+#define Computed_field_nodal_lookup_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
+
 static int list_Computed_field_nodal_lookup(
 	struct Computed_field *field)
 /*******************************************************************************

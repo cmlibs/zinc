@@ -277,6 +277,9 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+#define Computed_field_sin_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
+
 static int list_Computed_field_sin(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -789,6 +792,9 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+#define Computed_field_cos_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
+
 static int list_Computed_field_cos(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -1300,6 +1306,9 @@ LAST MODIFIED : 10 June 2004
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
+
+#define Computed_field_tan_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
 
 static int list_Computed_field_tan(
 	struct Computed_field *field)
@@ -1821,6 +1830,9 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+#define Computed_field_asin_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
+
 static int list_Computed_field_asin(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -2341,6 +2353,9 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+#define Computed_field_acos_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
+
 static int list_Computed_field_acos(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -2853,6 +2868,9 @@ LAST MODIFIED : 10 June 2004
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
+
+#define Computed_field_atan_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
 
 static int list_Computed_field_atan(
 	struct Computed_field *field)
@@ -3374,6 +3392,9 @@ LAST MODIFIED : 02 October 2003
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
+
+#define Computed_field_atan2_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
 
 static int list_Computed_field_atan2(
 	struct Computed_field *field)

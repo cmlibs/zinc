@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field_private.h
 
-LAST MODIFIED : 8 October 2002
+LAST MODIFIED : 20 January 2005
 
 DESCRIPTION :
 ==============================================================================*/
@@ -52,11 +52,15 @@ typedef int (*List_Computed_field_function)(struct Computed_field *field);
 typedef char* (*Computed_field_get_command_string_function)(
 	struct Computed_field *field);
 typedef int (*Computed_field_has_multiple_times_function)(struct Computed_field *field);
-
+typedef int (*Computed_field_get_native_resolution_function)(struct Computed_field *field,
+        int *dimension, int **sizes, FE_value **minimums, FE_value **maximums,
+	struct Computed_field **texture_coordinate_field);
+	
 /* Used by the register_type_function, Computed_field_type_data and 
 	Computed_field_add_type_to_option_table*/
 typedef int (*Define_Computed_field_type_function)(
 	struct Parse_state *state,void *field_void,void *computed_field_package_void);
+
 
 /*
 Module types
@@ -149,6 +153,8 @@ DESCRIPTION :
 		computed_field_get_command_string_function;
 	Computed_field_has_multiple_times_function 
 	   computed_field_has_multiple_times_function;
+	Computed_field_get_native_resolution_function
+	   computed_field_get_native_resolution_function;
 
 	void *type_specific_data;
 	/* The type string identifies the type, it should not be copied but
@@ -165,6 +171,7 @@ DESCRIPTION :
 	FE_value *source_values;
 
 	int access_count;
+	
 }; /* struct Computed_field */
 
 #define COMPUTED_FIELD_ESTABLISH_METHODS( field_type ) \
@@ -214,7 +221,9 @@ field->list_Computed_field_function = \
 field->computed_field_get_command_string_function =  \
 	Computed_field_ ## field_type ## _get_command_string; \
 field->computed_field_has_multiple_times_function =  \
-	Computed_field_ ## field_type ## _has_multiple_times
+	Computed_field_ ## field_type ## _has_multiple_times; \
+field->computed_field_get_native_resolution_function = \
+        Computed_field_ ## field_type ## _get_native_resolution
 
 int Computed_field_changed(struct Computed_field *field,
 	struct MANAGER(Computed_field) *computed_field_manager);

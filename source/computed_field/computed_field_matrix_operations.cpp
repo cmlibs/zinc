@@ -535,6 +535,9 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+#define Computed_field_eigenvalues_get_native_resolution \
+   (Computed_field_get_native_resolution_function)NULL
+
 static int list_Computed_field_eigenvalues(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 7 November 2000
@@ -1061,6 +1064,9 @@ LAST MODIFIED : 7 November 2000
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
+
+#define Computed_field_eigenvectors_get_native_resolution \
+   (Computed_field_get_native_resolution_function)NULL
 
 static int list_Computed_field_eigenvectors(
 	struct Computed_field *field)
@@ -1740,6 +1746,9 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+#define Computed_field_matrix_invert_get_native_resolution \
+   (Computed_field_get_native_resolution_function)NULL
+
 static int list_Computed_field_matrix_invert(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 11 December 2000
@@ -2366,6 +2375,9 @@ LAST MODIFIED : 26 September 2000
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
+
+#define Computed_field_matrix_multiply_get_native_resolution \
+   (Computed_field_get_native_resolution_function)NULL
 
 static int list_Computed_field_matrix_multiply(struct Computed_field *field)
 /*******************************************************************************
@@ -3174,6 +3186,9 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+#define Computed_field_projection_get_native_resolution \
+   (Computed_field_get_native_resolution_function)NULL
+
 static int list_Computed_field_projection(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 27 September 2000
@@ -3949,6 +3964,9 @@ LAST MODIFIED : 26 October 2000
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
+
+#define Computed_field_transpose_get_native_resolution \
+   (Computed_field_get_native_resolution_function)NULL
 
 static int list_Computed_field_transpose(struct Computed_field *field)
 /*******************************************************************************

@@ -425,6 +425,9 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+#define Computed_field_sample_texture_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
+
 static int list_Computed_field_sample_texture(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -566,12 +569,12 @@ although its cache may be lost.
 				field->number_of_components = number_of_components;
 				source_fields[0]=ACCESS(Computed_field)(texture_coordinate_field);
 				field->source_fields=source_fields;
-				field->number_of_source_fields=number_of_source_fields;			
+				field->number_of_source_fields=number_of_source_fields;
 				field->type_specific_data = (void *)data;
 				data->texture = ACCESS(Texture)(texture);
 				data->minimum = minimum;
 				data->maximum = maximum;
-
+				
 				/* Set all the methods */
 				COMPUTED_FIELD_ESTABLISH_METHODS(sample_texture);
 			}

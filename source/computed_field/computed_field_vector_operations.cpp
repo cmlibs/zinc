@@ -288,6 +288,9 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+#define Computed_field_normalise_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
+
 static int list_Computed_field_normalise(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -940,6 +943,9 @@ LAST MODIFIED : 11 July 2000
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
+
+#define Computed_field_cross_product_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
 
 static int list_Computed_field_cross_product(
 	struct Computed_field *field)
@@ -1604,6 +1610,9 @@ LAST MODIFIED : 11 July 2000
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
+
+#define Computed_field_dot_product_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
 
 static int list_Computed_field_dot_product(
 	struct Computed_field *field)
@@ -2299,6 +2308,9 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+#define Computed_field_magnitude_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
+
 static int list_Computed_field_magnitude(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -2817,6 +2829,9 @@ LAST MODIFIED : 11 July 2000
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
+
+#define Computed_field_cubic_texture_coordinates_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
 
 static int list_Computed_field_cubic_texture_coordinates(
 	struct Computed_field *field)

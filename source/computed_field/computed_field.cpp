@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : computed_field.c
 
-LAST MODIFIED : 28 October 2004
+LAST MODIFIED : 27 January 2005
 
 DESCRIPTION :
 A Computed_field is an abstraction of an FE_field. For each FE_field there is
@@ -284,7 +284,7 @@ DECLARE_INDEXED_LIST_FUNCTIONS(Computed_field_type_data)
 
 int Computed_field_clear_type(struct Computed_field *field)
 /*******************************************************************************
-LAST MODIFIED : 18 June 1999
+LAST MODIFIED : 27 January 2005
 
 DESCRIPTION :
 Used internally by DESTROY and Computed_field_set_type_*() functions to
@@ -389,6 +389,8 @@ Calls Computed_field_clear_cache before clearing the type.
 			(List_Computed_field_function)NULL;
 		field->computed_field_get_command_string_function =
 			(Computed_field_get_command_string_function)NULL;
+		field->computed_field_get_native_resolution_function =	
+			(Computed_field_get_native_resolution_function)NULL;
 	}
 	else
 	{
@@ -458,7 +460,7 @@ Global functions
 
 struct Computed_field *CREATE(Computed_field)(char *name)
 /*******************************************************************************
-LAST MODIFIED : 8 October 2002
+LAST MODIFIED : 27 January 2005
 
 DESCRIPTION :
 Creates a basic Computed_field with the given <name>. Its type is initially
@@ -531,6 +533,8 @@ COMPUTED_FIELD_INVALID with no components.
 				(Computed_field_get_command_string_function)NULL;
 			field->computed_field_has_multiple_times_function =
 				(Computed_field_has_multiple_times_function)NULL;
+			field->computed_field_get_native_resolution_function =	
+			        (Computed_field_get_native_resolution_function)NULL;
 
 			/* for all types of Computed_field calculated from others */
 			field->source_fields = (struct Computed_field **)NULL;
@@ -668,7 +672,7 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Computed_field,name)
 
 PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Computed_field,name)
 /*******************************************************************************
-LAST MODIFIED : 4 November 1999
+LAST MODIFIED : 27 January 2005
 
 DESCRIPTION :
 Do not allow copy if:
@@ -779,6 +783,8 @@ functions to check if read_only flag is set.
 						source->list_Computed_field_function;
 					destination->computed_field_get_command_string_function =
 						source->computed_field_get_command_string_function;
+					destination->computed_field_get_native_resolution_function =	
+						source->computed_field_get_native_resolution_function;
 					if (source->type_specific_data)
 					{
 						destination->type_specific_data = type_specific_data;
@@ -3352,6 +3358,46 @@ The calling function must not deallocate the returned string.
 
 	return (return_string);
 } /* Computed_field_get_type_string */
+
+int Computed_field_get_native_resolution(struct Computed_field *field,
+        int *dimension, int **sizes, FE_value **minimums, FE_value **maximums,
+	struct Computed_field **texture_coordinate_field)
+/*******************************************************************************
+LAST MODIFIED : 20 January 2005
+
+DESCRIPTION :
+Gets the <dimension>, <sizes>, <minimums>, <maximums> and <texture_coordinate_field> from
+the <field>. These parameters will be used in image processing.
+
+==============================================================================*/
+{       
+        int return_code;
+	
+	ENTER(Computed_field_get_native_resolution);
+	if (field)
+	{
+		
+		if (field->computed_field_get_native_resolution_function)
+		{
+			return_code = field->computed_field_get_native_resolution_function(
+				field, dimension, sizes, minimums, maximums, 
+				texture_coordinate_field);
+		}
+		else
+		{
+			return_code = 0;
+		}
+		
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_get_native_resolution.  Missing field");
+		return_code=0;
+	}
+
+	return (return_code);
+} /* Computed_field_get_native_resolution */
 
 int Computed_field_has_numerical_components(struct Computed_field *field,
 	void *dummy_void)

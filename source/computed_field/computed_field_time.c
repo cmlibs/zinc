@@ -281,6 +281,9 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+#define Computed_field_time_lookup_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
+
 static int list_Computed_field_time_lookup(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -897,6 +900,9 @@ LAST MODIFIED : 19 September 2003
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
+
+#define Computed_field_time_value_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
 
 static int list_Computed_field_time_value(
 	struct Computed_field *field)

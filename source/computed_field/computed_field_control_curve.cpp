@@ -439,6 +439,9 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+#define Computed_field_curve_lookup_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
+
 static int list_Computed_field_curve_lookup(
 	struct Computed_field *field)
 /*******************************************************************************

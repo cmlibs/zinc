@@ -1076,6 +1076,9 @@ DESCRIPTION :
 Inherit result from first source field.
 ==============================================================================*/
 
+#define Computed_field_window_projection_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
+
 static int Computed_field_window_projection_find_element_xi(struct Computed_field *field, 
 	FE_value *values, int number_of_values, struct FE_element **element,
 	FE_value *xi, int element_dimension, struct Cmiss_region *search_region)

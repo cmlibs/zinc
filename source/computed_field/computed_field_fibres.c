@@ -426,6 +426,9 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+#define Computed_field_fibre_axes_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
+
 static int list_Computed_field_fibre_axes(struct Computed_field *field)
 /*******************************************************************************
 LAST MODIFIED : 18 October 2000

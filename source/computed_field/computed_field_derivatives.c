@@ -381,6 +381,9 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+#define Computed_field_derivative_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
+
 static int list_Computed_field_derivative(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -967,6 +970,9 @@ LAST MODIFIED : 17 July 2000
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
+
+#define Computed_field_curl_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
 
 static int list_Computed_field_curl(
 	struct Computed_field *field)
@@ -1581,6 +1587,9 @@ DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
 
+#define Computed_field_divergence_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
+
 static int list_Computed_field_divergence(
 	struct Computed_field *field)
 /*******************************************************************************
@@ -2177,6 +2186,9 @@ LAST MODIFIED : 17 July 2000
 DESCRIPTION :
 Not implemented yet.
 ==============================================================================*/
+
+#define Computed_field_gradient_get_native_resolution \
+	(Computed_field_get_native_resolution_function)NULL
 
 static int list_Computed_field_gradient(struct Computed_field *field)
 /*******************************************************************************
