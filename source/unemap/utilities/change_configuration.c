@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : change_configuration.c
 
-LAST MODIFIED : 7 December 2001
+LAST MODIFIED : 22 September 2004
 
 DESCRIPTION :
 Allow the user to change the configuration for a signal file.  Do not use
@@ -11,6 +11,7 @@ X-windows.
 #include <stdio.h>
 #include <stdarg.h>
 #include "general/debug.h"
+#include "unemap/analysis.h"
 #include "unemap/rig.h"
 #include "user_interface/user_interface.h"
 
@@ -50,7 +51,7 @@ Main program
 */
 int main(int argc,char *argv[])
 /*******************************************************************************
-LAST MODIFIED : 7 December 2001
+LAST MODIFIED : 22 September 2004
 
 DESCRIPTION :
 ==============================================================================*/
@@ -74,13 +75,26 @@ DESCRIPTION :
 	scanf("%s",file_name);
 	if (read_configuration_file(file_name,(void *)(&configuration_rig)))
 	{
+		char calculate_events;
+		enum Datum_type datum_type;
+		enum Edit_order edit_order;
+		enum Event_detection_algorithm detection;
+		enum Signal_order signal_order;
+		float level;
+		int analysis_information,average_width,datum,end_search_interval,
+			event_number,minimum_separation,number_of_events,potential_time,
+			start_search_interval,threshold;
+
 		/* read the signal file */
 		printf("Signal file name ? ");
 		scanf("%s",file_name);
-		if ((signal_file=fopen(file_name,"rb"))&&read_signal_file(signal_file,
-			&signal_rig))
+		analysis_information=0;
+		if (analysis_read_signal_file(file_name,&signal_rig,&analysis_information,
+			&datum,&calculate_events,&detection,&event_number,&number_of_events,
+			&potential_time,&minimum_separation,&threshold,&datum_type,&edit_order,
+			&signal_order,&start_search_interval,&end_search_interval,&level,
+			&average_width))
 		{
-			fclose(signal_file);
 			/* check that the configurations are consistent */
 			configuration_device=configuration_rig->devices;
 			i=configuration_rig->number_of_devices;
@@ -122,8 +136,25 @@ DESCRIPTION :
 				/* write out the signal file with the new rig */
 				printf("New signal file name ? ");
 				scanf("%s",file_name);
-				if ((signal_file=fopen(file_name,"wb"))&&write_signal_file(signal_file,
-					configuration_rig))
+				return_code=0;
+				if (analysis_information)
+				{
+					return_code=analysis_write_signal_file(file_name,configuration_rig,
+						datum,potential_time,start_search_interval,end_search_interval,
+						calculate_events,detection,event_number,number_of_events,
+						minimum_separation,threshold,datum_type,edit_order,signal_order,
+						level,average_width);
+				}
+				else
+				{
+					return_code=(signal_file=fopen(file_name,"wb"))&&
+						write_signal_file(signal_file,configuration_rig);
+					if (signal_file)
+					{
+						fclose(signal_file);
+					}
+				}
+				if (return_code)
 				{
 					printf("New signal file created\n");
 				}
