@@ -8,13 +8,17 @@ Icon/tool representing the transform function on a graphics window.
 Eventually use to store parameters for the transform function.
 ==============================================================================*/
 #include "general/debug.h"
+#if defined (MOTIF)
 #include "motif/image_utilities.h"
+#endif /* defined (MOTIF) */
 #include "interaction/interaction_volume.h"
 #include "interaction/interactive_event.h"
 #include "interaction/interactive_tool.h"
 #include "interaction/interactive_tool_private.h"
 #include "graphics/transform_tool.h"
+#if defined (MOTIF)
 #include "graphics/transform_tool.uidh"
+#endif /* defined (MOTIF) */
 #include "user_interface/message.h"
 
 /*
@@ -48,10 +52,12 @@ DESCRIPTION :
 #endif /* defined (MOTIF) */
 }; /* struct Transform_tool */
 
+#if defined (MOTIF)
 struct Transform_tool_defaults
 {
 	Boolean free_spin;
 };
+#endif /* defined (MOTIF) */
 
 /*
 Module functions
@@ -67,15 +73,18 @@ DESCRIPTION :
 Fetches the appropriate icon for the interactive tool.
 ==============================================================================*/
 {
+#if defined (MOTIF)
 	Display *display;
 	Pixel background_pixel, foreground_pixel;
 	Pixmap pixmap;
+#endif /* defined (MOTIF) */
 	struct Cmgui_image *image;
 	struct Transform_tool *transform_tool;
 
 	ENTER(Transform_tool_get_icon);
 	if ((transform_tool=(struct Transform_tool *)transform_tool_void))
 	{
+#if defined (MOTIF)
 		if (MrmOpenHierarchy_base64_string(transform_tool_uidh,
 			&transform_tool_hierarchy,&transform_tool_hierarchy_open))
 		{
@@ -101,6 +110,11 @@ Fetches the appropriate icon for the interactive tool.
 				"Could not open heirarchy");
 			image = (struct Cmgui_image *)NULL;
 		}
+#else /* defined (MOTIF) */
+		display_message(WARNING_MESSAGE, "Transform_tool_get_icon.  "
+			"Not implemented for this version.");
+		image = (struct Cmgui_image *)NULL;
+#endif /* defined (MOTIF) */
 	}
 	else
 	{
@@ -244,6 +258,7 @@ Creates a transform type Interactive_tool which control the transformation of
 scene_viewers.
 ==============================================================================*/
 {
+#if defined (MOTIF)
 #define XmNtransformFreeSpin "transformFreeSpin"
 #define XmCtransformFreeSpin "TransformFreeSpin"
 	struct Transform_tool_defaults transform_tool_defaults;
@@ -259,6 +274,7 @@ scene_viewers.
 			"false"
 		}
 	};
+#endif /* defined (MOTIF) */
 	struct Interactive_tool *interactive_tool;
 	struct Transform_tool *transform_tool;
 
@@ -267,6 +283,7 @@ scene_viewers.
 	{
 		if (ALLOCATE(transform_tool,struct Transform_tool,1))
 		{
+#if defined (MOTIF)
 			transform_tool_defaults.free_spin = False;
 			XtVaGetApplicationResources(User_interface_get_application_shell(user_interface),
 				&transform_tool_defaults,resources,XtNumber(resources),NULL);
@@ -279,6 +296,9 @@ scene_viewers.
 			{
 				transform_tool->free_spin_flag = 0;
 			}
+#else /* defined (MOTIF) */
+			transform_tool->free_spin_flag = 0;
+#endif /* defined (MOTIF) */
 			interactive_tool=CREATE(Interactive_tool)(
 				"transform_tool","Transform tool",
 				Interactive_tool_transform_type_string,
