@@ -405,7 +405,7 @@ ifeq ($(SYSNAME),Linux)
       #For the dynamic link we really need to statically link the c++ as this
       #seems to be particularly variable between distributions.
       ifdef USE_UNEMAP_3D
-         LIB = -lg2c -lm -ldl -lc -lpthread /usr/lib/libcrypt.a -lstdc+
+         LIB = -lg2c -lm -ldl -lc -lpthread /usr/lib/libcrypt.a -lstdc++
       else # USE_UNEMAP_3D
          LIB = -lm -ldl -lc -lpthread /usr/lib/libcrypt.a 
       endif # USE_UNEMAP_3D
