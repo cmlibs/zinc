@@ -996,14 +996,14 @@ ifeq ($(SYSNAME),Linux)
 					fi
             ifdef CMISS_ROOT_DEFINED
 					if [ -f $(SRC_EXPORTS_FILE) ]; then \
-						cp $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
+						cp $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c; \
 					else \
-						cp $(PRODUCT_SOURCE_PATH)/$(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
+						cp $(PRODUCT_SOURCE_PATH)/$(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c; \
 					fi
             else # CMISS_ROOT_DEFINED
-					cp $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c
+					cp $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c
             endif # CMISS_ROOT_DEFINED
-				$(CPREPROCESS) $(ALL_DEFINES) $(OBJECT_PATH)/$(EXPORTS_FILE).c -o $(OBJECT_PATH)/$(EXPORTS_FILE).E
+				$(CPREPROCESS) $(ALL_DEFINES) $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c -o $(OBJECT_PATH)/$(EXPORTS_FILE).E
 				echo > $(OBJECT_PATH)/$(EXPORTS_FILE)	"CMISS_EXP_1.0 {"
 				echo >> $(OBJECT_PATH)/$(EXPORTS_FILE)	"global:"
 				sed -n -e 's/\([^ ]\+\)/  \1;/p' < $(OBJECT_PATH)/$(EXPORTS_FILE).E >> $(OBJECT_PATH)/$(EXPORTS_FILE)
@@ -1027,14 +1027,14 @@ ifeq ($(SYSNAME),Linux)
 					fi
             ifdef CMISS_ROOT_DEFINED
 					if [ -f $(SRC_EXPORTS_FILE) ]; then \
-						cp $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
+						cp $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c; \
 					else \
-						cp $(PRODUCT_SOURCE_PATH)/$(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c; \
+						cp $(PRODUCT_SOURCE_PATH)/$(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c; \
 					fi
             else # CMISS_ROOT_DEFINED
-					cp $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(EXPORTS_FILE).c
+					cp $(SRC_EXPORTS_FILE) $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c
             endif # CMISS_ROOT_DEFINED
-				$(CPREPROCESS) $(ALL_DEFINES) $(OBJECT_PATH)/$(EXPORTS_FILE).c -o $(OBJECT_PATH)/$(EXPORTS_FILE).E
+				$(CPREPROCESS) $(ALL_DEFINES) $(OBJECT_PATH)/$(SRC_EXPORTS_FILE).list.c -o $(OBJECT_PATH)/$(EXPORTS_FILE).E
 				echo > $(OBJECT_PATH)/$(EXPORTS_FILE).c	"#define lt_preloaded_symbols some_other_symbol"
 				echo >> $(OBJECT_PATH)/$(EXPORTS_FILE).c	"#define dynamic_ptr void *"
 				sed -n -e 's/\([^ ]\+\)/extern char \1;/p' < $(OBJECT_PATH)/$(EXPORTS_FILE).E >> $(OBJECT_PATH)/$(EXPORTS_FILE).c
