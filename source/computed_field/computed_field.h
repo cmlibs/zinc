@@ -769,19 +769,6 @@ although its cache may be lost.
 The <coordinate_field>s must have no more than 3 components.
 ==============================================================================*/
 
-int Computed_field_set_type_cmiss_number(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 24 June 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_CMISS_NUMBER, which can be evaluated
-as a single component field - ie. the node/element/face/line number is converted
-into an FE_value - or more commonly, is evaluated as a string name.
-Sets the number of components to 1.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-
 int Computed_field_get_type_component(struct Computed_field *field,
 	struct Computed_field **source_field,int *component_no);
 /*******************************************************************************
@@ -881,44 +868,6 @@ DESCRIPTION :
 Converts <field> to type COMPUTED_FIELD_CURVE_LOOKUP, returning the value of
 <curve> at the time/parameter value given by scalar <source_field>.
 Sets number of components to same number as <curve>.
-If function fails, field is guaranteed to be unchanged from its original state,
-although its cache may be lost.
-==============================================================================*/
-
-int Computed_field_get_type_default_coordinate(struct Computed_field *field,
-	struct MANAGER(Computed_field) **computed_field_manager);
-/*******************************************************************************
-LAST MODIFIED : 20 January 1999
-
-DESCRIPTION :
-If the field is of type COMPUTED_FIELD_DEFAULT_COORDINATE, the computed field
-manager referred to by it is returned - otherwise an error is reported.
-Use function Computed_field_get_type to determine the field type.
-==============================================================================*/
-
-int Computed_field_set_type_default_coordinate(struct Computed_field *field,
-	struct MANAGER(Computed_field) *computed_field_manager);
-/*******************************************************************************
-LAST MODIFIED : 11 March 1999
-
-DESCRIPTION :
-Converts <field> to type COMPUTED_FIELD_DEFAULT_COORDINATE, which returns the
-values/derivatives of the first [coordinate] field defined for the element/node
-in rectangular cartesian coordinates. This type is intended to replace the
-NULL coordinate_field option in the calculate_FE_element_field_values function.
-When a field of this type is calculated at and element/node, the evaluate
-function finds the first FE_field (coordinate type) defined over it, then gets
-its Computed_field wrapper from the manager and proceeds from there.
-Consequences of this behaviour are:
-- the field allocates its source_fields to point to the computed_field for the
-actual coordinate field in the evaluate phase.
-- when the source field changes the current one's cache is cleared and it is
-deaccessed.
-- when the cache is cleared, so is any reference to the source_field.
-- always performs the conversion to RC since cannot predict the coordinate
-system used by the eventual source_field. Coordinate_system of this type of
-field need not be RC, although it usually will be.
-Sets number of components to 3.
 If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
