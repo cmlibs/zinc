@@ -230,7 +230,7 @@ Returns second derivatives of 1-D Hermite basis functions at <xi> in [0.0, 1.0].
 int define_FE_field_at_node_simple(struct FE_node *node, struct FE_field *field,
 	int number_of_derivatives, enum FE_nodal_value_type *nodal_value_types)
 /*******************************************************************************
-LAST MODIFIED : 10 May 2001
+LAST MODIFIED : 19 September 2002
 
 DESCRIPTION :
 Defines <field> at <node> using the same <number_of_derivatives>
@@ -264,6 +264,7 @@ and <nodal_value_types> for each component, and only 1 version.
 					"Could not define field at node");
 				return_code = 0;
 			}
+			DESTROY(FE_node_field_creator)(&(node_field_creator));
 		}
 		else
 		{
