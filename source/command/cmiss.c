@@ -8091,6 +8091,10 @@ Executes a GFX CREATE VOLUMES command.
 			{
 				DEACCESS(VT_volume_texture)(&volume_texture);
 			}
+			if (displacement_map_field)
+			{
+				DEACCESS(Computed_field)(&displacement_map_field);
+			}
 			if (blur_field)
 			{
 				DEACCESS(Computed_field)(&blur_field);
@@ -20918,12 +20922,12 @@ Executes a LIST_MEMORY command.
 			if (suppress_pointers)
 			{
 				return_code=list_memory(count_number, /*show_pointers*/0,
-					increment_counter);
+					increment_counter, /*show_structures*/0);
 			}
 			else
 			{
 				return_code=list_memory(count_number, /*show_pointers*/1,
-					increment_counter);
+					increment_counter, /*show_structures*/1);
 			}
 		} /* parse error, help */
 		else
@@ -21351,7 +21355,7 @@ DESCRIPTION :
 Executes a SET DIR command.
 ==============================================================================*/
 {
-	char *directory_name, *example_directory, example_flag, *temp_char;
+	char *directory_name, *example_directory, example_flag, *temp_char, *token;
 	int directory_name_length, file_name_length, i, return_code;
 	struct Cmiss_command_data *command_data;
 	static struct Modifier_entry option_table[]=
@@ -21368,7 +21372,7 @@ Executes a SET DIR command.
 	{
 		if (command_data=(struct Cmiss_command_data *)command_data_void)
 		{
-			if (state->current_token)
+			if (token = state->current_token)
 			{
 				directory_name = (char *)NULL;
 				example_flag = 0;
@@ -21407,6 +21411,9 @@ Executes a SET DIR command.
 								DEALLOCATE(command_data->example_directory);
 								command_data->example_directory=example_directory;
 								/* send command to the back end */
+								/* have to reset the token position to get it to
+									export the command */
+								state->current_token = token;
 								return_code=execute_command_cm(state,(void *)NULL,
 									command_data_void);
 							}
