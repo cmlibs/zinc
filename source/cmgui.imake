@@ -225,7 +225,7 @@ TARGET_TYPE_FLAGS =
 TARGET_TYPE_DEFINES =
 #endif /* switch OperatingSystem */
 
-BASE_DIRECTORY_INC = -I$(CMGUI_ROOT)/source -I$(PRODUCT_SOURCE_PATH)
+BASE_DIRECTORY_INC = -I$(CMGUI_ROOT)/source -I$(PRODUCT_SOURCE_PATH) -I$(PRODUCT_UIDH_PATH)
 
 #if defined (IRIX) /* switch OperatingSystem */
 PLATFORM_SWITCH = -DSGI -Dmips
