@@ -11,8 +11,8 @@ or set to another value.
 
 #include <new>
 #include "api/cmiss_function_variable.h"
-#if defined (NOT_DEBUG)
 #include "computed_variable/function_variable.hpp"
+#if defined (NOT_DEBUG)
 #else // defined (NOT_DEBUG)
 #endif // defined (NOT_DEBUG)
 extern "C"
