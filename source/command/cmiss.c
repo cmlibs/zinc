@@ -23080,12 +23080,17 @@ Executes a SET DIR command.
 									DEALLOCATE(command_data->example_directory);
 								}
 								command_data->example_directory=example_directory;
-								/* send command to the back end */
-								/* have to reset the token position to get it to
-									export the command */
-								state->current_token = token;
-								return_code=execute_command_cm(state,(void *)NULL,
-								  command_data_void);
+#if defined (LINK_CMISS)
+								if (CMISS)
+								{
+									/* send command to the back end */
+									/* have to reset the token position to get it to
+										export the command */
+									state->current_token = token;
+									return_code=execute_command_cm(state,(void *)NULL,
+										command_data_void);
+								}
+#endif /* defined (LINK_CMISS) */
 							}
 							else
 							{
