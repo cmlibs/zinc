@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : multi_range.h
 
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 1 September 2000
 
 DESCRIPTION :
 Structure for storing and manipulating multiple, non-overlapping ranges of
@@ -17,6 +17,19 @@ At present, limited to int type, but could be converted to other number types.
 Global types
 ------------
 */
+
+struct Single_range
+/*******************************************************************************
+LAST MODIFIED : 1 September 2000
+
+DESCRIPTION :
+A Multi_range is built out of list of these; this structure is made available
+for use eg. in iterator functions for modifing Multi_ranges in objects.
+==============================================================================*/
+{
+	int start,stop;
+};
+
 struct Multi_range;
 
 /*

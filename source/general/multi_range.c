@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : multi_range.c
 
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 1 September 2000
 
 DESCRIPTION :
 Structure for storing and manipulating multiple, non-overlapping ranges of
@@ -20,10 +20,6 @@ At present, limited to int type, but could be converted to other number types.
 Module types
 ------------
 */
-struct Single_range
-{
-	int start,stop;
-};
 
 struct Multi_range
 {
