@@ -19268,6 +19268,10 @@ Can now specify individual node groups to write with the <group> option.
 					}
 				}
 			}
+			if (field)
+			{
+				DEACCESS(FE_field)(&field);
+			}
 			if (node_group)
 			{
 				DEACCESS(GROUP(FE_node))(&node_group);
@@ -19370,6 +19374,10 @@ Can also write individual element groups with the <group> option.
 						}
 					}
 				}
+			}
+			if (field)
+			{
+				DEACCESS(FE_field)(&field);
 			}
 			if (element_group)
 			{
@@ -19474,6 +19482,10 @@ Can now specify individual node groups to write with the <group> option.
 						}
 					}
 				}
+			}
+			if (field)
+			{
+				DEACCESS(FE_field)(&field);
 			}
 			if (node_group)
 			{
