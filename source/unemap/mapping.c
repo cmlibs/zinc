@@ -8115,7 +8115,7 @@ opengl texture reasons (at least on the SGI).
 			{
 				DEALLOCATE(map->electrode_tex_y);
 			}	
-			if(map->electrode_rgbs);
+			if(map->electrode_rgbs)
 			{
 				DEALLOCATE(map->electrode_rgbs);
 			}									
@@ -8347,7 +8347,7 @@ opengl texture reasons (at least on the SGI).
 			{
 				DEALLOCATE(map->electrode_tex_y);
 			}	
-			if(map->electrode_rgbs);
+			if(map->electrode_rgbs)
 			{
 				DEALLOCATE(map->electrode_rgbs);
 			}									
