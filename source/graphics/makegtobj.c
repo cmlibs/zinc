@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : makegtobj.c
 
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 30 May 2000
 
 DESCRIPTION :
 Call graphics routines in the API.
@@ -22,7 +22,7 @@ Call graphics routines in the API.
 
 int makegtobject(gtObject *object,float time,int draw_selected)
 /*******************************************************************************
-LAST MODIFIED : 22 March 2000
+LAST MODIFIED : 30 May 2000
 
 DESCRIPTION :
 Convert graphical object into API object.
@@ -32,6 +32,7 @@ un-selected graphics are drawn.
 {
 	float proportion,*times;
 	int itime,name_selected,return_code,strip,wireframe_flag;
+	struct Graphical_material *material;
 	struct GT_glyph_set *interpolate_glyph_set,*glyph_set,*glyph_set_2;
 	struct GT_nurbs *nurbs;
 	struct GT_point *point;
@@ -41,6 +42,7 @@ un-selected graphics are drawn.
 	struct GT_userdef *userdef;
 	struct GT_voltex *voltex;
 	struct Multi_range *selected_name_ranges;
+	struct Spectrum *spectrum;
 
 	ENTER(makegtobject);
 /*???debug */
@@ -49,6 +51,15 @@ un-selected graphics are drawn.
 	/* check arguments */
 	if (object)
 	{
+		spectrum=object->spectrum;
+		if (draw_selected)
+		{
+			material=object->selected_material;
+		}
+		else
+		{
+			material=object->default_material;
+		}
 		if ((itime=object->number_of_times)>0)
 		{
 			if ((itime>1)&&(times=object->times))
@@ -132,7 +143,7 @@ un-selected graphics are drawn.
 										interpolate_glyph_set->n_data_components,
 										interpolate_glyph_set->data,
 										interpolate_glyph_set->names,
-										object->default_material,object->spectrum,
+										material,spectrum,
 										draw_selected,selected_name_ranges);
 									DESTROY(GT_glyph_set)(&interpolate_glyph_set);
 								}
@@ -155,7 +166,7 @@ un-selected graphics are drawn.
 									glyph_set->axis2_list,glyph_set->axis3_list,glyph_set->glyph,
 									glyph_set->labels,glyph_set->n_data_components,
 									glyph_set->data,glyph_set->names,
-									object->default_material,object->spectrum,
+									material,spectrum,
 									draw_selected,selected_name_ranges);
 								glyph_set=glyph_set->ptrnext;
 							}
@@ -178,10 +189,11 @@ un-selected graphics are drawn.
 				{
 					if (point=(object->gu.gt_point)[itime])
 					{
-						draw_pointsetGL(1, point->position, &(point->text), point->marker_type,
+						draw_pointsetGL(1, point->position, &(point->text),
+							point->marker_type,
 							point->marker_size, /*names*/(int *)NULL, 
 							point->n_data_components, point->data,
-							object->default_material,object->spectrum);
+							material,spectrum);
 						return_code=1;
 					}
 					else
@@ -215,7 +227,7 @@ un-selected graphics are drawn.
 										interpolate_point_set->marker_size, point_set->names,
 										interpolate_point_set->n_data_components,
 										interpolate_point_set->data,
-										object->default_material,object->spectrum);
+										material,spectrum);
 									DESTROY(GT_pointset)(&interpolate_point_set);
 								}
 								point_set=point_set->ptrnext;
@@ -229,7 +241,7 @@ un-selected graphics are drawn.
 								draw_pointsetGL(point_set->n_pts,point_set->pointlist,
 									point_set->text,point_set->marker_type,point_set->marker_size,
 									point_set->names,point_set->n_data_components,point_set->data,
-									object->default_material,object->spectrum);
+									material,spectrum);
 								point_set=point_set->ptrnext;
 							}
 						}
@@ -271,7 +283,7 @@ un-selected graphics are drawn.
 								voltex->iso_poly_material,voltex->iso_env_map,
 								voltex->texturemap_coord,voltex->texturemap_index,
 								voltex->n_data_components,voltex->data,
-								object->default_material,object->spectrum);
+								material,spectrum);
 							voltex=voltex->ptrnext;
 						}
 						return_code=1;
@@ -319,8 +331,8 @@ un-selected graphics are drawn.
 												draw_polylineGL(interpolate_line->pointlist,
 													interpolate_line->normallist, interpolate_line->n_pts,
 													interpolate_line->n_data_components,
-													interpolate_line->data, object->default_material,
-													object->spectrum);
+													interpolate_line->data, material,
+													spectrum);
 												DESTROY(GT_polyline)(&interpolate_line);
 											}
 										}
@@ -341,7 +353,7 @@ un-selected graphics are drawn.
 										{
 											draw_polylineGL(line->pointlist,line->normallist,
 												line->n_pts, line->n_data_components, line->data,
-												object->default_material,object->spectrum);
+												material,spectrum);
 										}
 										line=line->ptrnext;
 									}
@@ -378,8 +390,8 @@ un-selected graphics are drawn.
 												draw_dc_polylineGL(interpolate_line->pointlist,
 													interpolate_line->normallist, interpolate_line->n_pts,
 													interpolate_line->n_data_components,
-													interpolate_line->data,object->default_material,
-													object->spectrum);
+													interpolate_line->data,
+													material,spectrum);
 												DESTROY(GT_polyline)(&interpolate_line);
 											}
 										}
@@ -400,7 +412,7 @@ un-selected graphics are drawn.
 										{
 											draw_dc_polylineGL(line->pointlist,line->normallist, 
 												line->n_pts,line->n_data_components,line->data,
-												object->default_material,object->spectrum);
+												material,spectrum);
 										}
 										line=line->ptrnext;
 									}
@@ -478,7 +490,7 @@ un-selected graphics are drawn.
 													interpolate_surface->polygon,
 													interpolate_surface->n_data_components,
 													interpolate_surface->data,
-													object->default_material, object->spectrum);
+													material, spectrum);
 												DESTROY(GT_surface)(&interpolate_surface);
 											}
 										}
@@ -501,7 +513,7 @@ un-selected graphics are drawn.
 												surface->texturelist, surface->n_pts1,
 												surface->n_pts2, surface->polygon,
 												surface->n_data_components, surface->data,
-												object->default_material, object->spectrum);
+												material, spectrum);
 										}
 										surface=surface->ptrnext;
 									}
@@ -540,8 +552,8 @@ un-selected graphics are drawn.
 													interpolate_surface->n_pts2,
 													interpolate_surface->polygon,strip,
 													interpolate_surface->n_data_components,
-													interpolate_surface->data,object->default_material,
-													object->spectrum);
+													interpolate_surface->data,
+													material,spectrum);
 												DESTROY(GT_surface)(&interpolate_surface);
 											}
 										}
@@ -563,8 +575,7 @@ un-selected graphics are drawn.
 											draw_dc_surfaceGL(surface->pointlist,surface->normallist,
 												surface->texturelist,surface->n_pts1,surface->n_pts2,
 												surface->polygon,strip, surface->n_data_components,
-												surface->data,object->default_material,
-												object->spectrum);
+												surface->data,material,spectrum);
 										}
 										surface=surface->ptrnext;
 									}
