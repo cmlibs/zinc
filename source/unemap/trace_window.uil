@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : trace_window.uil
 !
-!LAST MODIFIED : 22 February 2000
+!LAST MODIFIED : 25 February 2000
 !
 !DESCRIPTION :
 !The widgets/gadgets for the trace window in the analysis work area.
@@ -1610,7 +1610,7 @@ object
 			XmPushButton trace_edit_accept_button;
 			XmPushButton trace_edit_reject_button;
 			XmOptionMenu trace_edit_order_choice;
-			XmToggleButton trace_edit_objective_toggle;
+			XmToggleButtonGadget trace_edit_objective_toggle;
 !OLD_CODE begin
 !?????DB.  A bit of a hack to get accelerators for previous, next, accept and
 !?????  reject.  Required because Motif is so restrictive.
@@ -1952,7 +1952,7 @@ object
 				};
 			};
 		};
-	trace_edit_objective_toggle: XmToggleButton
+	trace_edit_objective_toggle: XmToggleButtonGadget
 		{
 		arguments
 			{
