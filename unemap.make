@@ -82,7 +82,7 @@ unemap unemap-debug unemap-debug-memorycheck unemap-static unemap-static-debug u
 	cd source ; \
 	$(MAKE) -f $(SUBMAKEFILE) $(OPTIONS) ;
 
-ESU_BUILD_LIST = unemap unemap-debug unemap-debug-memorycheck unemap-static unemap-static-debug unemap64 unemap-nodes unemap-3d unemap-3d-debug utilities utilities64
+ESU_BUILD_LIST = unemap unemap-debug unemap-debug-memorycheck unemap64 unemap-nodes unemap-3d unemap-3d-debug utilities utilities64
 ESU_BUILD_PATH = '\$${CMISS_ROOT}/cmgui'
 ESU_BUILD_MACHINE = 130.216.208.35 #esu35
 ESP_BUILD_LIST = unemap unemap-debug unemap-debug-memorycheck unemap-static unemap-static-debug unemap-3d unemap-3d-debug utilities
