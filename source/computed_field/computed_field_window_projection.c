@@ -1116,7 +1116,7 @@ DESCRIPTION :
 					source_values[2] = (result[2] / result[3]);
 					return_code=Computed_field_find_element_xi(
 						field->source_fields[0], source_values, 3, element,
-						xi, search_element_group);
+						xi, search_element_group, /*propagate_field*/1);
 				}
 				else
 				{

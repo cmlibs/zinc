@@ -614,7 +614,8 @@ Zero is used for any source field values that aren't set from the composite fiel
 				}
 				return_code=Computed_field_find_element_xi(
 					field->source_fields[source_field_number],source_values,
-					number_of_source_values,element, xi, search_element_group);
+					number_of_source_values,element, xi, search_element_group,
+					/*propagate_field*/1);
 				DEALLOCATE(source_values);
 			}
 			else

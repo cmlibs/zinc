@@ -214,7 +214,7 @@ DESCRIPTION :
 				if (Computed_field_find_element_xi(
 					field->source_fields[1], field->source_fields[0]->values,
 					field->source_fields[0]->number_of_components, &element, xi,
-					data->element_group) && element)
+					data->element_group, /*propagate_field*/1) && element)
 				{
 					/* calculate the third source_field at this new location */
 					return_code = Computed_field_is_defined_in_element(
@@ -285,7 +285,7 @@ Evaluate the fields cache at the node.
 			if (return_code = Computed_field_find_element_xi(field->source_fields[1],
 				field->source_fields[0]->values,
 				field->source_fields[0]->number_of_components,
-				&compose_element, compose_xi, data->element_group))
+				&compose_element, compose_xi, data->element_group, /*propagate_field*/1))
 			{
 				/* calculate the third source_field at this new location */
 				return_code=Computed_field_evaluate_cache_in_element(
@@ -344,7 +344,7 @@ Evaluate the fields cache at the node.
 			if (return_code = Computed_field_find_element_xi(field->source_fields[1],
 				field->source_fields[0]->values,
 				field->source_fields[0]->number_of_components,
-				&compose_element, compose_xi, data->element_group))
+				&compose_element, compose_xi, data->element_group, /*propagate_field*/1))
 			{
 				/* calculate the third source_field at this new location */
 				return_code=Computed_field_evaluate_cache_in_element(

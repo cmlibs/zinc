@@ -2057,7 +2057,7 @@ DESCRIPTION :
 			{
 				return_code=Computed_field_find_element_xi(
 					field->source_fields[0],source_values,number_of_values,element,
-					xi,search_element_group);
+					xi,search_element_group,/*propagate_field*/1);
 			}
 			DEALLOCATE(source_values);
 		}
@@ -4225,7 +4225,7 @@ DESCRIPTION :
 			}
 			return_code=Computed_field_find_element_xi(
 				field->source_fields[0],source_values,number_of_values,element,
-				xi,search_element_group);
+				xi,search_element_group,/*propagate_field*/1);
 			DEALLOCATE(source_values);
 		}
 		else

@@ -603,7 +603,7 @@ DESCRIPTION :
 			/*jacobian*/(float *)NULL) && Computed_field_find_element_xi(
 			field->source_fields[0],source_field_coordinates,
 			field->source_fields[0]->number_of_components,element,
-			xi,search_element_group);
+			xi,search_element_group, /*propagate_field*/1);
 		if (!return_code)
 		{
 			display_message(ERROR_MESSAGE,
