@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : element_group_settings.c
 
-LAST MODIFIED : 1 March 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 GT_element_settings structure and routines for describing and manipulating the
@@ -2350,6 +2350,7 @@ Sets the xi_discretization_mode controlling where glyphs are displayed for
 	if (settings&&(GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type))
 	{
 		settings->xi_discretization_mode=xi_discretization_mode;
+		return_code=1;
 	}
 	else
 	{
@@ -4116,7 +4117,7 @@ Makes a copy of the settings and puts it in the list_of_settings.
 static int element_to_graphics_object(struct FE_element *element,
 	void *settings_to_object_data_void)
 /*******************************************************************************
-LAST MODIFIED : 1 March 2000
+LAST MODIFIED : 22 March 2000
 
 DESCRIPTION :
 Converts a finite element into a graphics object with the supplied settings.
@@ -4124,7 +4125,8 @@ Converts a finite element into a graphics object with the supplied settings.
 {
 	FE_value initial_xi[3];
 	float time;
-	int dimension,edit_mode,i,number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+	int dimension,draw_element,draw_selected,edit_mode,i,name_selected,
+		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		number_of_xi_points,process,return_code,
 		top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct Element_point_ranges *element_point_ranges;
@@ -4168,6 +4170,19 @@ Converts a finite element into a graphics object with the supplied settings.
 		return_code=1;
 		if (process)
 		{
+			if ((GRAPHICS_DRAW_SELECTED==settings->select_mode)||
+				(GRAPHICS_DRAW_UNSELECTED==settings->select_mode))
+			{
+				draw_selected=(GRAPHICS_DRAW_SELECTED==settings->select_mode);
+				name_selected=IS_OBJECT_IN_LIST(FE_element)(element,
+					settings_to_object_data->selected_element_list);
+				draw_element=((draw_selected&&name_selected)||
+					((!draw_selected)&&(!name_selected)));
+			}
+			else
+			{
+				draw_element=1;
+			}
 			/* determine discretization of element for graphic */
 			top_level_element=(struct FE_element *)NULL;
 			if (GT_ELEMENT_SETTINGS_ELEMENT_POINTS==settings->settings_type)
@@ -4201,75 +4216,85 @@ Converts a finite element into a graphics object with the supplied settings.
 				{
 					case GT_ELEMENT_SETTINGS_LINES:
 					{
-						if (polyline=create_GT_polyline_from_FE_element(element,
-							settings_to_object_data->rc_coordinate_field,settings->data_field,
-							number_in_xi[0],top_level_element))
+						if (edit_mode)
 						{
-							if (edit_mode)
+							GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_polyline)(
+								settings->graphics_object,time,element->cm.number);
+						}
+						if (draw_element)
+						{
+							if (polyline=create_GT_polyline_from_FE_element(element,
+								settings_to_object_data->rc_coordinate_field,
+								settings->data_field,number_in_xi[0],top_level_element))
 							{
-								GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_polyline)(
-									settings->graphics_object,time,element->cm.number);
+								if (!GT_OBJECT_ADD(GT_polyline)(
+									settings->graphics_object,time,polyline))
+								{
+									DESTROY(GT_polyline)(&polyline);
+									return_code=0;
+								}
 							}
-							if (!GT_OBJECT_ADD(GT_polyline)(
-								settings->graphics_object,time,polyline))
+							else
 							{
-								DESTROY(GT_polyline)(&polyline);
 								return_code=0;
 							}
-						}
-						else
-						{
-							return_code=0;
 						}
 					} break;
 					case GT_ELEMENT_SETTINGS_CYLINDERS:
 					{
-						if (surface=create_cylinder_from_FE_element(element,
-							settings_to_object_data->rc_coordinate_field,settings->data_field,
-							settings->constant_radius,settings->radius_scale_factor,
-							settings->radius_scalar_field,number_in_xi[0],
-							settings_to_object_data->circle_discretization,top_level_element))
+						if (edit_mode)
 						{
-							if (edit_mode)
+							GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_surface)(
+								settings->graphics_object,time,element->cm.number);
+						}
+						if (draw_element)
+						{
+							if (surface=create_cylinder_from_FE_element(element,
+								settings_to_object_data->rc_coordinate_field,
+								settings->data_field,settings->constant_radius,
+								settings->radius_scale_factor,settings->radius_scalar_field,
+								number_in_xi[0],settings_to_object_data->circle_discretization,
+								top_level_element))
 							{
-								GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_surface)(
-									settings->graphics_object,time,element->cm.number);
+								if (!GT_OBJECT_ADD(GT_surface)(
+									settings->graphics_object,time,surface))
+								{
+									DESTROY(GT_surface)(&surface);
+									return_code=0;
+								}
 							}
-							if (!GT_OBJECT_ADD(GT_surface)(
-								settings->graphics_object,time,surface))
+							else
 							{
-								DESTROY(GT_surface)(&surface);
 								return_code=0;
 							}
-						}
-						else
-						{
-							return_code=0;
 						}
 					} break;
 					case GT_ELEMENT_SETTINGS_SURFACES:
 					{
-						if (surface=create_GT_surface_from_FE_element(element,
-							settings_to_object_data->rc_coordinate_field,
-							settings->texture_coordinate_field,settings->data_field,
-							number_in_xi[0],number_in_xi[1],
-							/*reverse_normals*/0,top_level_element))
+						if (edit_mode)
 						{
-							if (edit_mode)
+							GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_surface)(
+								settings->graphics_object,time,element->cm.number);
+						}
+						if (draw_element)
+						{
+							if (surface=create_GT_surface_from_FE_element(element,
+								settings_to_object_data->rc_coordinate_field,
+								settings->texture_coordinate_field,settings->data_field,
+								number_in_xi[0],number_in_xi[1],
+								/*reverse_normals*/0,top_level_element))
 							{
-								GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_surface)(
-									settings->graphics_object,time,element->cm.number);
+								if (!GT_OBJECT_ADD(GT_surface)(
+									settings->graphics_object,time,surface))
+								{
+									DESTROY(GT_surface)(&surface);
+									return_code=0;
+								}
 							}
-							if (!GT_OBJECT_ADD(GT_surface)(
-								settings->graphics_object,time,surface))
+							else
 							{
-								DESTROY(GT_surface)(&surface);
 								return_code=0;
 							}
-						}
-						else
-						{
-							return_code=0;
 						}
 					} break;
 					case GT_ELEMENT_SETTINGS_ISO_SURFACES:
@@ -4285,15 +4310,18 @@ Converts a finite element into a graphics object with the supplied settings.
 										GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_voltex)(
 											settings->graphics_object,time,element->cm.number);
 									}
-									return_code=create_iso_surfaces_from_FE_element(element,
-										settings->iso_value,time,(struct Clipping *)NULL,
-										settings_to_object_data->rc_coordinate_field,
-										settings->data_field,settings->iso_scalar_field,
-										(struct Computed_field *)NULL,number_in_xi,
-										settings->material,settings->graphics_object,
-										(struct GROUP(FE_node) *)NULL,
-										(struct MANAGER(FE_node) *)NULL,
-										(struct MANAGER(FE_field) *)NULL);
+									if (draw_element)
+									{
+										return_code=create_iso_surfaces_from_FE_element(element,
+											settings->iso_value,time,(struct Clipping *)NULL,
+											settings_to_object_data->rc_coordinate_field,
+											settings->data_field,settings->iso_scalar_field,
+											(struct Computed_field *)NULL,number_in_xi,
+											settings->material,settings->graphics_object,
+											(struct GROUP(FE_node) *)NULL,
+											(struct MANAGER(FE_node) *)NULL,
+											(struct MANAGER(FE_field) *)NULL);
+									}
 								}
 								else
 								{
@@ -4310,11 +4338,14 @@ Converts a finite element into a graphics object with the supplied settings.
 										GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_polyline)(
 											settings->graphics_object,time,element->cm.number);
 									}
-									return_code=create_iso_lines_from_FE_element(element,
-										settings_to_object_data->rc_coordinate_field,
-										settings->iso_scalar_field,settings->iso_value,
-										settings->data_field,number_in_xi[0],number_in_xi[1],
-										top_level_element,settings->graphics_object,time);
+									if (draw_element)
+									{
+										return_code=create_iso_lines_from_FE_element(element,
+											settings_to_object_data->rc_coordinate_field,
+											settings->iso_scalar_field,settings->iso_value,
+											settings->data_field,number_in_xi[0],number_in_xi[1],
+											top_level_element,settings->graphics_object,time);
+									}
 								}
 								else
 								{
@@ -4404,26 +4435,30 @@ Converts a finite element into a graphics object with the supplied settings.
 					} break;
 					case GT_ELEMENT_SETTINGS_VOLUMES:
 					{
-						/* not an error if no voltex produced. Iso-value probably just
-							 out of range of voltex data */
-						if (voltex=generate_clipped_GT_voltex_from_FE_element(
-							(struct Clipping *)NULL,element,
-							settings_to_object_data->rc_coordinate_field,settings->data_field,
-							settings->volume_texture,
-							settings->displacement_map_field,
-							settings->displacement_map_xi_direction,
-							settings->blur_field))
+						if (edit_mode)
 						{
-							if (edit_mode)
+							GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_voltex)(
+								settings->graphics_object,time,element->cm.number);
+						}
+						if (draw_element)
+						{
+							/* not an error if no voltex produced. Iso-value probably just
+								 out of range of voltex data */
+							if (voltex=generate_clipped_GT_voltex_from_FE_element(
+								(struct Clipping *)NULL,element,
+								settings_to_object_data->rc_coordinate_field,
+								settings->data_field,
+								settings->volume_texture,
+								settings->displacement_map_field,
+								settings->displacement_map_xi_direction,
+								settings->blur_field))
 							{
-								GT_OBJECT_REMOVE_PRIMITIVES_WITH_OBJECT_NAME(GT_voltex)(
-									settings->graphics_object,time,element->cm.number);
-							}
-							if (!GT_OBJECT_ADD(GT_voltex)(
-								settings->graphics_object,time,voltex))
-							{
-								DESTROY(GT_voltex)(&voltex);
-								return_code=0;
+								if (!GT_OBJECT_ADD(GT_voltex)(
+									settings->graphics_object,time,voltex))
+								{
+									DESTROY(GT_voltex)(&voltex);
+									return_code=0;
+								}
 							}
 						}
 					} break;
