@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.h
 
-LAST MODIFIED : 19 November 2000
+LAST MODIFIED : 1 April 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -56,7 +56,7 @@ OVERLAP = signals overlap vertically
 
 enum Event_detection_objective
 /*******************************************************************************
-LAST MODIFIED : 25 April 2000
+LAST MODIFIED :  April 2001
 
 DESCRIPTION :
 The objective used when detecting an event.
@@ -65,7 +65,9 @@ The objective used when detecting an event.
 	ABSOLUTE_SLOPE,
 	NEGATIVE_SLOPE,
 	POSITIVE_SLOPE,
-	VALUE_OBJECTIVE
+	ABSOLUTE_VALUE,
+	NEGATIVE_VALUE,
+	POSITIVE_VALUE
 }; /* enum Event_detection_objective */
 
 enum Event_detection_algorithm

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : system_window.c
 
-LAST MODIFIED : 3 September 2000
+LAST MODIFIED : 1 April 2001
 
 DESCRIPTION :
 ???DB.  Have to have a proper destroy callback for the system window
@@ -1128,7 +1128,7 @@ struct System_window *create_System_window(Widget shell,
 #endif /* defined (UNEMAP_USE_3D) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 3 September 2000
+LAST MODIFIED : 1 April 2001
 
 DESCRIPTION :
 This function allocates the memory for a system window structure.  It then
@@ -1540,13 +1540,35 @@ pointer to the created structure if successful and NULL if unsuccessful.
 					}
 					else
 					{
+						/* for backwards compatability */
 						if (fuzzy_string_compare(temp_string,"value"))
 						{
-							system->analysis.objective=VALUE_OBJECTIVE;
+							system->analysis.objective=POSITIVE_VALUE;
 						}
 						else
 						{
-							system->analysis.objective=ABSOLUTE_SLOPE;
+							if (fuzzy_string_compare(temp_string,"absolute value"))
+							{
+								system->analysis.objective=ABSOLUTE_VALUE;
+							}
+							else
+							{
+								if (fuzzy_string_compare(temp_string,"positive value"))
+								{
+									system->analysis.objective=POSITIVE_VALUE;
+								}
+								else
+								{
+									if (fuzzy_string_compare(temp_string,"negative value"))
+									{
+										system->analysis.objective=NEGATIVE_VALUE;
+									}
+									else
+									{
+										system->analysis.objective=ABSOLUTE_SLOPE;
+									}
+								}
+							}
 						}
 					}
 				}

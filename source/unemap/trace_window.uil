@@ -1,7 +1,7 @@
 !*******************************************************************************
 !FILE : trace_window.uil
 !
-!LAST MODIFIED : 25 April 2000
+!LAST MODIFIED : 1 April 2001
 !
 !DESCRIPTION :
 !The widgets/gadgets for the trace window in the analysis work area.
@@ -82,14 +82,18 @@ procedure
 	identify_detection_threshold_bu;
 	set_detection_threshold;
 	identify_trace_enlarge_objectiv;
-	identify_objective_absolute_but;
+	identify_obj_absolute_slope_but;
 	set_objective_absolute_slope;
-	identify_objective_positive_but;
+	identify_obj_positive_slope_but;
 	set_objective_positive_slope;
-	identify_objective_negative_but;
+	identify_obj_negative_slope_but;
 	set_objective_negative_slope;
-	identify_objective_value_button;
-	set_objective_value;
+	identify_obj_absolute_value_but;
+	set_objective_absolute_value;
+	identify_obj_positive_value_but;
+	set_objective_positive_value;
+	identify_obj_negative_value_but;
+	set_objective_negative_value;
 	identify_trace_enlarge_calculat;
 	calculate_all_event_markers;
 	identify_trace_enlarge_datum_ch;
@@ -1702,7 +1706,7 @@ object
 							{
 							MrmNcreateCallback = procedures
 								{
-								identify_objective_absolute_but(trace_window_structure);
+								identify_obj_absolute_slope_but(trace_window_structure);
 								};
 							XmNactivateCallback = procedures
 								{
@@ -1722,7 +1726,7 @@ object
 							{
 							MrmNcreateCallback = procedures
 								{
-								identify_objective_positive_but(trace_window_structure);
+								identify_obj_positive_slope_but(trace_window_structure);
 								};
 							XmNactivateCallback = procedures
 								{
@@ -1742,7 +1746,7 @@ object
 							{
 							MrmNcreateCallback = procedures
 								{
-								identify_objective_negative_but(trace_window_structure);
+								identify_obj_negative_slope_but(trace_window_structure);
 								};
 							XmNactivateCallback = procedures
 								{
@@ -1755,18 +1759,58 @@ object
 						arguments
 							{
 							XmNlabelString =
-							compound_string("Value");
+							compound_string("Absolute value");
 							XmNfontList = button_font;
 							};
 						callbacks
 							{
 							MrmNcreateCallback = procedures
 								{
-								identify_objective_value_button(trace_window_structure);
+								identify_obj_absolute_value_but(trace_window_structure);
 								};
 							XmNactivateCallback = procedures
 								{
-								set_objective_value(analysis_work_area_structure);
+								set_objective_absolute_value(analysis_work_area_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("Positive value");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_obj_positive_value_but(trace_window_structure);
+								};
+							XmNactivateCallback = procedures
+								{
+								set_objective_positive_value(analysis_work_area_structure);
+								};
+							};
+						};
+					XmPushButtonGadget
+						{
+						arguments
+							{
+							XmNlabelString =
+							compound_string("Negative value");
+							XmNfontList = button_font;
+							};
+						callbacks
+							{
+							MrmNcreateCallback = procedures
+								{
+								identify_obj_negative_value_but(trace_window_structure);
+								};
+							XmNactivateCallback = procedures
+								{
+								set_objective_negative_value(analysis_work_area_structure);
 								};
 							};
 						};

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.c
 
-LAST MODIFIED : 1 November 2000
+LAST MODIFIED : 1 April 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -2808,7 +2808,7 @@ Saves the id of the trace enlarge detection threshold button.
 static void identify_trace_enlarge_objectiv(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 20 August 1997
+LAST MODIFIED : 1 April 2001
 
 DESCRIPTION :
 Saves the id of the trace enlarge objective choice.
@@ -2830,10 +2830,10 @@ Saves the id of the trace enlarge objective choice.
 	LEAVE;
 } /* identify_trace_enlarge_objectiv */
 
-static void identify_objective_absolute_but(Widget *widget_id,
+static void identify_obj_absolute_slope_but(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 20 August 1997
+LAST MODIFIED : 1 April 2001
 
 DESCRIPTION :
 Saves the id of the trace enlarge objective absolute slope button.
@@ -2841,7 +2841,7 @@ Saves the id of the trace enlarge objective absolute slope button.
 {
 	struct Trace_window *trace;
 
-	ENTER(identify_objective_absolute_but);
+	ENTER(identify_obj_absolute_slope_but);
 	USE_PARAMETER(call_data);
 	if (trace=(struct Trace_window *)trace_window)
 	{
@@ -2850,15 +2850,15 @@ Saves the id of the trace enlarge objective absolute slope button.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"identify_objective_absolute_but.  Missing trace_window");
+			"identify_obj_absolute_slope_but.  Missing trace_window");
 	}
 	LEAVE;
-} /* identify_objective_absolute_but */
+} /* identify_obj_absolute_slope_but */
 
-static void identify_objective_positive_but(Widget *widget_id,
+static void identify_obj_positive_slope_but(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 20 August 1997
+LAST MODIFIED : 1 April 2001
 
 DESCRIPTION :
 Saves the id of the trace enlarge objective positive slope button.
@@ -2866,7 +2866,7 @@ Saves the id of the trace enlarge objective positive slope button.
 {
 	struct Trace_window *trace;
 
-	ENTER(identify_objective_positive_but);
+	ENTER(identify_obj_positive_slope_but);
 	USE_PARAMETER(call_data);
 	if (trace=(struct Trace_window *)trace_window)
 	{
@@ -2875,15 +2875,15 @@ Saves the id of the trace enlarge objective positive slope button.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"identify_objective_positive_but.  Missing trace_window");
+			"identify_obj_positive_slope_but.  Missing trace_window");
 	}
 	LEAVE;
-} /* identify_objective_positive_but */
+} /* identify_obj_positive_slope_but */
 
-static void identify_objective_negative_but(Widget *widget_id,
+static void identify_obj_negative_slope_but(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 20 August 1997
+LAST MODIFIED : 1 April 2001
 
 DESCRIPTION :
 Saves the id of the trace enlarge objective negative slope button.
@@ -2891,7 +2891,7 @@ Saves the id of the trace enlarge objective negative slope button.
 {
 	struct Trace_window *trace;
 
-	ENTER(identify_objective_negative_but);
+	ENTER(identify_obj_negative_slope_but);
 	USE_PARAMETER(call_data);
 	if (trace=(struct Trace_window *)trace_window)
 	{
@@ -2900,35 +2900,85 @@ Saves the id of the trace enlarge objective negative slope button.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"identify_objective_negative_but.  Missing trace_window");
+			"identify_obj_negative_slope_but.  Missing trace_window");
 	}
 	LEAVE;
-} /* identify_objective_negative_but */
+} /* identify_obj_negative_slope_but */
 
-static void identify_objective_value_button(Widget *widget_id,
+static void identify_obj_absolute_value_but(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 25 April 2000
+LAST MODIFIED : 1 April 2001
 
 DESCRIPTION :
-Saves the id of the trace enlarge objective value button.
+Saves the id of the trace enlarge objective absolute value button.
 ==============================================================================*/
 {
 	struct Trace_window *trace;
 
-	ENTER(identify_objective_value_button);
+	ENTER(identify_obj_absolute_value_but);
 	USE_PARAMETER(call_data);
 	if (trace=(struct Trace_window *)trace_window)
 	{
-		trace->area_1.enlarge.objective.value_button= *widget_id;
+		trace->area_1.enlarge.objective.absolute_value_button= *widget_id;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"identify_objective_value_button.  Missing trace_window");
+			"identify_obj_absolute_value_but.  Missing trace_window");
 	}
 	LEAVE;
-} /* identify_objective_value_button */
+} /* identify_obj_absolute_value_but */
+
+static void identify_obj_positive_value_but(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 1 April 2001
+
+DESCRIPTION :
+Saves the id of the trace enlarge objective positive value button.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_obj_positive_value_but);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.enlarge.objective.positive_value_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_obj_positive_value_but.  Missing trace_window");
+	}
+	LEAVE;
+} /* identify_obj_positive_value_but */
+
+static void identify_obj_negative_value_but(Widget *widget_id,
+	XtPointer trace_window,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 1 April 2001
+
+DESCRIPTION :
+Saves the id of the trace enlarge objective negative value button.
+==============================================================================*/
+{
+	struct Trace_window *trace;
+
+	ENTER(identify_obj_negative_value_but);
+	USE_PARAMETER(call_data);
+	if (trace=(struct Trace_window *)trace_window)
+	{
+		trace->area_1.enlarge.objective.negative_value_button= *widget_id;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"identify_obj_negative_value_but.  Missing trace_window");
+	}
+	LEAVE;
+} /* identify_obj_negative_value_but */
 
 static void identify_trace_enlarge_datum_ch(Widget *widget_id,
 	XtPointer trace_window,XtPointer call_data)
@@ -6623,7 +6673,7 @@ static struct Trace_window *create_Trace_window(
 	struct Signal_drawing_information *signal_drawing_information,
 	struct User_interface *user_interface)
 /*******************************************************************************
-LAST MODIFIED : 25 April 2000
+LAST MODIFIED : 1 April 2001
 
 DESCRIPTION :
 This function allocates the memory for an trace window and sets the fields to
@@ -6755,14 +6805,18 @@ the created trace window.  If unsuccessful, NULL is returned.
 			(XtPointer)identify_detection_threshold_bu},
 		{"identify_trace_enlarge_objectiv",
 			(XtPointer)identify_trace_enlarge_objectiv},
-		{"identify_objective_absolute_but",
-			(XtPointer)identify_objective_absolute_but},
-		{"identify_objective_positive_but",
-			(XtPointer)identify_objective_positive_but},
-		{"identify_objective_negative_but",
-			(XtPointer)identify_objective_negative_but},
-		{"identify_objective_value_button",
-			(XtPointer)identify_objective_value_button},
+		{"identify_obj_absolute_slope_but",
+			(XtPointer)identify_obj_absolute_slope_but},
+		{"identify_obj_positive_slope_but",
+			(XtPointer)identify_obj_positive_slope_but},
+		{"identify_obj_negative_slope_but",
+			(XtPointer)identify_obj_negative_slope_but},
+		{"identify_obj_absolute_value_but",
+			(XtPointer)identify_obj_absolute_value_but},
+		{"identify_obj_positive_value_but",
+			(XtPointer)identify_obj_positive_value_but},
+		{"identify_obj_negative_value_but",
+			(XtPointer)identify_obj_negative_value_but},
 		{"identify_trace_enlarge_calculat",
 			(XtPointer)identify_trace_enlarge_calculat},
 		{"identify_trace_enlarge_datum_ch",
@@ -7062,7 +7116,9 @@ the created trace window.  If unsuccessful, NULL is returned.
 				trace->area_1.enlarge.objective.absolute_slope_button=(Widget)NULL;
 				trace->area_1.enlarge.objective.positive_slope_button=(Widget)NULL;
 				trace->area_1.enlarge.objective.negative_slope_button=(Widget)NULL;
-				trace->area_1.enlarge.objective.value_button=(Widget)NULL;
+				trace->area_1.enlarge.objective.absolute_value_button=(Widget)NULL;
+				trace->area_1.enlarge.objective.positive_value_button=(Widget)NULL;
+				trace->area_1.enlarge.objective.negative_value_button=(Widget)NULL;
 				trace->area_1.enlarge.datum_choice=(Widget)NULL;
 				trace->area_1.enlarge.datum.automatic_button=(Widget)NULL;
 				trace->area_1.enlarge.datum.fixed_button=(Widget)NULL;
@@ -8139,11 +8195,23 @@ the created trace window.  If unsuccessful, NULL is returned.
 										XmNmenuHistory,
 										trace->area_1.enlarge.objective.negative_slope_button,NULL);
 								} break;
-								case VALUE_OBJECTIVE:
+								case ABSOLUTE_VALUE:
 								{
 									XtVaSetValues(trace->area_1.enlarge.objective_choice,
 										XmNmenuHistory,
-										trace->area_1.enlarge.objective.value_button,NULL);
+										trace->area_1.enlarge.objective.absolute_value_button,NULL);
+								} break;
+								case POSITIVE_VALUE:
+								{
+									XtVaSetValues(trace->area_1.enlarge.objective_choice,
+										XmNmenuHistory,
+										trace->area_1.enlarge.objective.positive_value_button,NULL);
+								} break;
+								case NEGATIVE_VALUE:
+								{
+									XtVaSetValues(trace->area_1.enlarge.objective_choice,
+										XmNmenuHistory,
+										trace->area_1.enlarge.objective.negative_value_button,NULL);
 								} break;
 								default:
 								{

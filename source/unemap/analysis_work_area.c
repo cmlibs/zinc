@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis_work_area.c
 
-LAST MODIFIED : 23 February 2001
+LAST MODIFIED : 1 April 2001
 
 DESCRIPTION :
 ???DB.  Have yet to tie event objective and preprocessor into the event times
@@ -1811,13 +1811,13 @@ Sets the objective for the detection algorithm to negative slope.
 	LEAVE;
 } /* set_objective_negative_slope */
 
-static void set_objective_value(Widget widget,
+static void set_objective_absolute_value(Widget widget,
 	XtPointer analysis_work_area,XtPointer call_data)
 /*******************************************************************************
-LAST MODIFIED : 21 February 2000
+LAST MODIFIED : 1 April 2001
 
 DESCRIPTION :
-Sets the objective for the detection algorithm to negative slope.
+Sets the objective for the detection algorithm to absolute value.
 ==============================================================================*/
 {
 	struct Analysis_work_area *analysis;
@@ -1829,21 +1829,21 @@ Sets the objective for the detection algorithm to negative slope.
 	struct Mapping_window *mapping;
 #endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
 
-	ENTER(set_objective_value);
+	ENTER(set_objective_absolute_value);
 	USE_PARAMETER(widget);
 	USE_PARAMETER(call_data);
 	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
 		(analysis->user_interface))
 	{
-		if (VALUE_OBJECTIVE!=analysis->objective)
+		if (ABSOLUTE_VALUE!=analysis->objective)
 		{
-			analysis->objective=VALUE_OBJECTIVE;
+			analysis->objective=ABSOLUTE_VALUE;
 			if (analysis->trace)
 			{
 				/* enlarge area */
 				enlarge= &(analysis->trace->area_1.enlarge);
 				XtVaSetValues(enlarge->objective_choice,
-					XmNmenuHistory,enlarge->objective.value_button,
+					XmNmenuHistory,enlarge->objective.absolute_value_button,
 					NULL);
 			}
 			if ((analysis->trace)&&
@@ -1891,10 +1891,180 @@ Sets the objective for the detection algorithm to negative slope.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"set_objective_value.  Missing analysis_work_area");
+			"set_objective_absolute_value.  Missing analysis_work_area");
 	}
 	LEAVE;
-} /* set_objective_value */
+} /* set_objective_absolute_value */
+
+static void set_objective_positive_value(Widget widget,
+	XtPointer analysis_work_area,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 1 April 2001
+
+DESCRIPTION :
+Sets the objective for the detection algorithm to positive value.
+==============================================================================*/
+{
+	struct Analysis_work_area *analysis;
+	struct Enlarge_area *enlarge;
+	struct Device *processed_device;
+	struct Signal_buffer *processed_buffer;
+#if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
+	struct Map *map;
+	struct Mapping_window *mapping;
+#endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
+
+	ENTER(set_objective_positive_value);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
+		(analysis->user_interface))
+	{
+		if (POSITIVE_VALUE!=analysis->objective)
+		{
+			analysis->objective=POSITIVE_VALUE;
+			if (analysis->trace)
+			{
+				/* enlarge area */
+				enlarge= &(analysis->trace->area_1.enlarge);
+				XtVaSetValues(enlarge->objective_choice,
+					XmNmenuHistory,enlarge->objective.positive_value_button,
+					NULL);
+			}
+			if ((analysis->trace)&&
+				(processed_device=analysis->trace->processed_device)&&
+				(processed_device->signal)&&(processed_device->signal->next)&&
+				(processed_buffer=processed_device->signal->next->buffer))
+			{
+				/* calculate objective function */
+				calculate_device_objective(processed_device,analysis->detection,
+					analysis->objective,((processed_buffer->signals).float_values)+
+					(processed_device->signal->next->index),
+					processed_buffer->number_of_samples,
+					processed_buffer->number_of_signals,analysis->average_width);
+				redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)(analysis->trace),
+					(XtPointer)NULL);
+			}
+#if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
+			/* clear the present markers */
+				/* ???signals area only ? */
+			draw_all_markers(0,0,analysis);
+			destroy_all_events(analysis->rig);
+			/* update the mapping window */
+			if (((SINGLE_ACTIVATION==analysis->map_type)||
+				(MULTIPLE_ACTIVATION==analysis->map_type))&&(analysis->mapping_window)&&
+				(map=analysis->mapping_window->map))
+			{
+				analysis->map_type=NO_MAP_FIELD;
+				map->colour_option=HIDE_COLOUR;
+				map->contours_option=HIDE_CONTOURS;
+				map->electrodes_option=SHOW_ELECTRODE_NAMES;
+				/* clear the colour map */
+				map->activation_front= -1;
+				update_mapping_drawing_area(analysis->mapping_window,2);
+				update_mapping_colour_or_auxili(analysis->mapping_window);
+				XtSetSensitive(analysis->mapping_window->animate_button,False);
+			}
+			XtSetSensitive(analysis->window->file_menu.save_times_button,True);
+			XtSetSensitive(analysis->window->map_menu.single_activation_button,True);
+			XtSetSensitive(analysis->window->map_menu.multiple_activation_button,
+				True);
+			analysis->calculate_events=0;
+#endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_objective_positive_value.  Missing analysis_work_area");
+	}
+	LEAVE;
+} /* set_objective_positive_value */
+
+static void set_objective_negative_value(Widget widget,
+	XtPointer analysis_work_area,XtPointer call_data)
+/*******************************************************************************
+LAST MODIFIED : 1 April 2001
+
+DESCRIPTION :
+Sets the objective for the detection algorithm to negative value.
+==============================================================================*/
+{
+	struct Analysis_work_area *analysis;
+	struct Enlarge_area *enlarge;
+	struct Device *processed_device;
+	struct Signal_buffer *processed_buffer;
+#if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
+	struct Map *map;
+	struct Mapping_window *mapping;
+#endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
+
+	ENTER(set_objective_negative_value);
+	USE_PARAMETER(widget);
+	USE_PARAMETER(call_data);
+	if ((analysis=(struct Analysis_work_area *)analysis_work_area)&&
+		(analysis->user_interface))
+	{
+		if (NEGATIVE_VALUE!=analysis->objective)
+		{
+			analysis->objective=NEGATIVE_VALUE;
+			if (analysis->trace)
+			{
+				/* enlarge area */
+				enlarge= &(analysis->trace->area_1.enlarge);
+				XtVaSetValues(enlarge->objective_choice,
+					XmNmenuHistory,enlarge->objective.negative_value_button,
+					NULL);
+			}
+			if ((analysis->trace)&&
+				(processed_device=analysis->trace->processed_device)&&
+				(processed_device->signal)&&(processed_device->signal->next)&&
+				(processed_buffer=processed_device->signal->next->buffer))
+			{
+				/* calculate objective function */
+				calculate_device_objective(processed_device,analysis->detection,
+					analysis->objective,((processed_buffer->signals).float_values)+
+					(processed_device->signal->next->index),
+					processed_buffer->number_of_samples,
+					processed_buffer->number_of_signals,analysis->average_width);
+				redraw_trace_3_drawing_area((Widget)NULL,(XtPointer)(analysis->trace),
+					(XtPointer)NULL);
+			}
+#if defined (CLEAR_EVENTS_ON_SEARCH_CHANGE)
+			/* clear the present markers */
+				/* ???signals area only ? */
+			draw_all_markers(0,0,analysis);
+			destroy_all_events(analysis->rig);
+			/* update the mapping window */
+			if (((SINGLE_ACTIVATION==analysis->map_type)||
+				(MULTIPLE_ACTIVATION==analysis->map_type))&&(analysis->mapping_window)&&
+				(map=analysis->mapping_window->map))
+			{
+				analysis->map_type=NO_MAP_FIELD;
+				map->colour_option=HIDE_COLOUR;
+				map->contours_option=HIDE_CONTOURS;
+				map->electrodes_option=SHOW_ELECTRODE_NAMES;
+				/* clear the colour map */
+				map->activation_front= -1;
+				update_mapping_drawing_area(analysis->mapping_window,2);
+				update_mapping_colour_or_auxili(analysis->mapping_window);
+				XtSetSensitive(analysis->mapping_window->animate_button,False);
+			}
+			XtSetSensitive(analysis->window->file_menu.save_times_button,True);
+			XtSetSensitive(analysis->window->map_menu.single_activation_button,True);
+			XtSetSensitive(analysis->window->map_menu.multiple_activation_button,
+				True);
+			analysis->calculate_events=0;
+#endif /* defined (CLEAR_EVENTS_ON_SEARCH_CHANGE) */
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"set_objective_negative_value.  Missing analysis_work_area");
+	}
+	LEAVE;
+} /* set_objective_negative_value */
 
 static int file_analysis_write_signal_file(char *file_name,
 	void *analysis_work_area)
@@ -16254,7 +16424,7 @@ int create_analysis_work_area(struct Analysis_work_area *analysis,
 	struct User_interface *user_interface, struct Time_keeper *time_keeper,
 	struct Unemap_package *package)
 /*******************************************************************************
-LAST MODIFIED : 25 May 2000
+LAST MODIFIED : 1 April 2001
 
 DESCRIPTION :
 Creates the windows associated with the analysis work area.
@@ -16292,7 +16462,9 @@ Creates the windows associated with the analysis work area.
 		{"set_objective_absolute_slope",(XtPointer)set_objective_absolute_slope},
 		{"set_objective_positive_slope",(XtPointer)set_objective_positive_slope},
 		{"set_objective_negative_slope",(XtPointer)set_objective_negative_slope},
-		{"set_objective_value",(XtPointer)set_objective_value},
+		{"set_objective_absolute_value",(XtPointer)set_objective_absolute_value},
+		{"set_objective_positive_value",(XtPointer)set_objective_positive_value},
+		{"set_objective_negative_value",(XtPointer)set_objective_negative_value},
 		{"decrement_number_of_events",(XtPointer)decrement_number_of_events},
 		{"increment_number_of_events",(XtPointer)increment_number_of_events},
 		{"analysis_previous_event",(XtPointer)analysis_previous_event},

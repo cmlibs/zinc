@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : analysis.c
 
-LAST MODIFIED : 19 November 2000
+LAST MODIFIED : 1 April 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -188,7 +188,7 @@ int calculate_device_objective(struct Device *device,
 	enum Event_detection_objective objective,float *objective_values,
 	int number_of_objective_values,int objective_values_step,int average_width)
 /*******************************************************************************
-LAST MODIFIED : 25 April 2000
+LAST MODIFIED : 1 April 2001
 
 DESCRIPTION :
 Calculates the specified <objective>/<detection> function for the <device>.
@@ -272,11 +272,36 @@ Storing the values in the array (<objective_values> every
 				case EDA_INTERVAL:
 				case EDA_THRESHOLD:
 				{
-					if (VALUE_OBJECTIVE==objective)
+					if ((ABSOLUTE_VALUE==objective)||(POSITIVE_VALUE==objective)||
+						(NEGATIVE_VALUE==objective))
 					{
 						/* take moving average */
 						return_code=calculate_moving_average(objective_values,
 							number_of_samples,objective_values_step,average_width);
+						switch (objective)
+						{
+							case ABSOLUTE_VALUE:
+							{
+								objective_value=objective_values;
+								for (i=number_of_samples;i>0;i--)
+								{
+									if (*objective_value<0)
+									{
+										*objective_value= -(*objective_value);
+									}
+									objective_value += objective_values_step;
+								}
+							} break;
+							case NEGATIVE_VALUE:
+							{
+								objective_value=objective_values;
+								for (i=number_of_samples;i>0;i--)
+								{
+									*objective_value= -(*objective_value);
+									objective_value += objective_values_step;
+								}
+							} break;
+						}
 					}
 					else
 					{
@@ -394,7 +419,6 @@ Storing the values in the array (<objective_values> every
 								}
 							} break;
 							case POSITIVE_SLOPE:
-							case VALUE_OBJECTIVE:
 							{
 								objective_value=objective_values;
 								objective_minimum= *objective_value;

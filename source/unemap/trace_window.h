@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : trace_window.h
 
-LAST MODIFIED : 25 April 2000
+LAST MODIFIED : 1 April 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -99,7 +99,7 @@ The type of signal used for Calculate
 
 struct Enlarge_area
 /*******************************************************************************
-LAST MODIFIED : 25 April 2000
+LAST MODIFIED : 1 April 2001
 
 DESCRIPTION :
 The area of the trace window where the enlarged signal is drawn.
@@ -120,7 +120,9 @@ The area of the trace window where the enlarged signal is drawn.
 		Widget absolute_slope_button;
 		Widget positive_slope_button;
 		Widget negative_slope_button;
-		Widget value_button;
+		Widget absolute_value_button;
+		Widget negative_value_button;
+		Widget positive_value_button;
 	} objective;
 	Widget datum_choice;
 	struct
