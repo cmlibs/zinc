@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware.c
 
-LAST MODIFIED : 21 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 Code for controlling the National Instruments (NI) data acquisition and unemap
@@ -4204,7 +4204,7 @@ Stops the <da_channel> for the specified NI card(s).
 #if defined (NI_DAQ)
 static int calibration_callback(void *dummy)
 /*******************************************************************************
-LAST MODIFIED : 21 June 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 Output a square wave which alternates between +/- a known voltage.  Wait for the
@@ -4337,11 +4337,11 @@ stage 4 is calculating the offset
 							/* start with full-range voltage */
 							if (PXI6071E_AD_DA==ni_card->type)
 							{
-								*calibrate_amplitude=5;
+								*calibrate_amplitude=(float)5;
 							}
 							else
 							{
-								*calibrate_amplitude=10;
+								*calibrate_amplitude=(float)10;
 							}
 							/* use half-range */
 							*calibrate_amplitude /= 2;
@@ -4692,11 +4692,11 @@ stage 4 is calculating the offset
 							/* start with full-range voltage */
 							if (PXI6071E_AD_DA==ni_card->type)
 							{
-								*calibrate_amplitude=5;
+								*calibrate_amplitude=(float)5;
 							}
 							else
 							{
-								*calibrate_amplitude=10;
+								*calibrate_amplitude=(float)10;
 							}
 							/* use half-range */
 							*calibrate_amplitude /= 2;
@@ -4860,11 +4860,11 @@ stage 4 is calculating the offset
 								/* start with full-range voltage */
 								if (PXI6071E_AD_DA==ni_card->type)
 								{
-									*calibrate_amplitude=5;
+									*calibrate_amplitude=(float)5;
 								}
 								else
 								{
-									*calibrate_amplitude=10;
+									*calibrate_amplitude=(float)10;
 								}
 								/* use half-range */
 								*calibrate_amplitude /= 2;

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_service.c
 
-LAST MODIFIED : 16 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The unemap service which runs under NT and talks to unemap via sockets.
@@ -111,6 +111,7 @@ char error_string[501];
 /* this event is signalled when the service should end */
 HANDLE hServerStopEvent=NULL;
 #if defined (USE_SOCKETS)
+HANDLE acquired_socket_mutex=NULL;
 SOCKET acquired_socket=INVALID_SOCKET,calibration_socket=INVALID_SOCKET,
 	command_socket=INVALID_SOCKET,scrolling_socket=INVALID_SOCKET;
 #endif /* defined (USE_SOCKETS) */
@@ -198,14 +199,8 @@ Wrapper function for recv.
 #define SEND_BLOCK_SIZE 4096
 
 #if defined (USE_SOCKETS)
-static int socket_send(
-#if defined (WIN32)
-	SOCKET socket,
-#endif /* defined (WIN32) */
-#if defined (UNIX)
-	int socket,
-#endif /* defined (UNIX) */
-	unsigned char *buffer,int buffer_length,int flags)
+static int socket_send(SOCKET socket,unsigned char *buffer,int buffer_length,
+	int flags)
 /*******************************************************************************
 LAST MODIFIED : 14 July 1999
 
@@ -527,7 +522,7 @@ Called by unemap hardware.  Sends the information down the calibration socket.
 #if defined (USE_SOCKETS)
 DWORD WINAPI acquired_thread_function(LPVOID acquired_file_void)
 /*******************************************************************************
-LAST MODIFIED : 3 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 Reads samples out of the file and sends them down the acquired socket.
@@ -544,6 +539,16 @@ Reads samples out of the file and sends them down the acquired socket.
 	return_code=0;
 	if (acquired_file=(FILE *)acquired_file_void)
 	{
+		if (acquired_socket_mutex)
+		{
+			if (WAIT_FAILED==WaitForSingleObject(acquired_socket_mutex,INFINITE))
+			{
+				sprintf(error_string,
+				"acquired_thread_function.  WaitForSingleObject failed.  Error code %d",
+					WSAGetLastError());
+				AddToMessageLog(TEXT(error_string));
+			}
+		}
 		rewind(acquired_file);
 		fread((char *)&channel_number,sizeof(channel_number),1,acquired_file);
 		fread((char *)&number_of_channels,sizeof(number_of_channels),1,
@@ -594,6 +599,10 @@ Reads samples out of the file and sends them down the acquired socket.
 		}
 		/* acquired_file is temporary so it is automatically deleted on closing */
 		fclose(acquired_file);
+		if (acquired_socket_mutex)
+		{
+			ReleaseMutex(acquired_socket_mutex);
+		}
 	}
 
 	return (return_code);
@@ -2892,7 +2901,7 @@ DESCRIPTION :
 
 VOID ServiceStart(DWORD dwArgc,LPTSTR *lpszArgv)
 /*******************************************************************************
-LAST MODIFIED : 2 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 Actual code of the service that does the work.
@@ -2975,10 +2984,13 @@ Actual code of the service that does the work.
 							scrolling_socket_listen=socket(AF_INET,socket_type,0);
 							calibration_socket_listen=socket(AF_INET,socket_type,0);
 							acquired_socket_listen=socket(AF_INET,socket_type,0);
+							acquired_socket_mutex=CreateMutex(/*no security attributes*/NULL,
+								/*do not initially own*/FALSE,/*no name*/(LPCTSTR)NULL);
 							if ((INVALID_SOCKET!=acquired_socket_listen)&&
 								(INVALID_SOCKET!=calibration_socket_listen)&&
 								(INVALID_SOCKET!=command_socket_listen)&&
-								(INVALID_SOCKET!=scrolling_socket_listen))
+								(INVALID_SOCKET!=scrolling_socket_listen)&&
+								acquired_socket_mutex)
 							{
 								/* can't have different event objects for different network
 									events */
@@ -3347,6 +3359,10 @@ Actual code of the service that does the work.
 								sprintf(error_string,"Error creating listening sockets.  %d",
 									WSAGetLastError());
 								AddToMessageLog(TEXT(error_string));
+							}
+							if (acquired_socket_mutex)
+							{
+								CloseHandle(acquired_socket_mutex);
 							}
 							if (INVALID_SOCKET!=acquired_socket_listen)
 							{

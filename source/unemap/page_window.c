@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 23 July 2000
+LAST MODIFIED : 29 July 2000
 
 DESCRIPTION :
 
@@ -20,19 +20,15 @@ WINDOWS - win32 acquisition only version
 	created and it displayed/brought to the front/opened.
 ==============================================================================*/
 
-/*#define BACKGROUND_SAVING*/
+#define BACKGROUND_SAVING
 
 #include <stddef.h>
 #include <stdlib.h>
 #include <math.h>
 #include <limits.h>
-#if defined (BACKGROUND_SAVING)
+#if defined (BACKGROUND_SAVING) && defined (MOTIF)
 #include <pthread.h>
-#if defined (OLD_CODE)
-#include <sys/types.h>
-#include <sys/prctl.h>
-#endif /* defined (OLD_CODE) */
-#endif /* defined (BACKGROUND_SAVING) */
+#endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 #if defined (MOTIF)
 #include <X11/Xlib.h>
 #include <X11/Intrinsic.h>
@@ -226,7 +222,7 @@ typedef struct
 
 struct Save_write_signal_file_background_data
 {
-	FILE *output_file;
+	char *file_name,*temp_file_name;
 	int all_channels,number_of_samples;
 	short *samples;
 	struct Page_window *page_window;
@@ -1044,7 +1040,7 @@ static void scrolling_hardware_callback(int number_of_channels,
 	int *channel_numbers,int number_of_values_per_channel,short *signal_values,
 	void *page_window_void)
 /*******************************************************************************
-LAST MODIFIED : 2 August 1999
+LAST MODIFIED : 29 July 2000
 
 DESCRIPTION :
 ???DB.  Used to be in WM_USER.
@@ -1103,8 +1099,13 @@ DESCRIPTION :
 			unemap_get_gain(((page_window->scrolling_devices)[i])->channel->number,
 				&pre_filter_gain,&post_filter_gain);
 			gain=(page_window->scrolling_coefficients)[i]*
+				(((page_window->scrolling_devices)[i])->channel->gain_correction)/
+				(pre_filter_gain*post_filter_gain);
+#if defined (OLD_CODE)
+			gain=(page_window->scrolling_coefficients)[i]*
 				(((page_window->scrolling_devices)[i])->channel->gain)/
 				(pre_filter_gain*post_filter_gain);
+#endif /* defined (OLD_CODE) */
 			offset=((page_window->scrolling_devices)[i])->channel->offset;
 			temp_float[0] += gain*((float)signal_values[j]-offset);
 			j++;
@@ -1297,19 +1298,25 @@ DESCRIPTION :
 } /* set_scrolling_device */
 
 #if defined (BACKGROUND_SAVING)
+#if defined (MOTIF)
 static void *save_write_signal_file_process(
-#if defined (OLD_CODE)
-static void save_write_signal_file_process(
-#endif /* defined (OLD_CODE) */
 	void *save_write_signal_file_background_data_void)
+#endif /* defined (MOTIF) */
+#if defined (WINDOWS)
+DWORD WINAPI save_write_signal_file_process(
+	LPVOID save_write_signal_file_background_data_void)
+#endif /* defined (WINDOWS) */
 /*******************************************************************************
-LAST MODIFIED : 23 July 2000
+LAST MODIFIED : 29 July 2000
 
 DESCRIPTION :
 Called by unemap_get_samples_acquired_background to actually write the data.
 ==============================================================================*/
 {
+	FILE *output_file;
+#if defined (OLD_CODE)
 	float *gains,post_filter_gain,pre_filter_gain;
+#endif /* defined (OLD_CODE) */
 	int channel_number,i,j,number_of_channels,number_of_samples,number_of_signals,
 		return_code;
 	short *destination,*samples,*source;
@@ -1321,9 +1328,10 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 	struct Signal_buffer *signal_buffer;
 
 	ENTER(save_write_signal_file_process);
-	/*???debug */
-	printf("enter save_write_signal_file_process\n");
 #if defined (DEBUG)
+	/*???debug */
+	printf("enter save_write_signal_file_process %p\n",
+		save_write_signal_file_background_data_void);
 #endif /* defined (DEBUG) */
 	return_code=0;
 	/* check arguments */
@@ -1336,137 +1344,159 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 		(samples=save_write_signal_file_background_data->samples)&&
 		(page_window=save_write_signal_file_background_data->page_window)&&
 		(page_window->rig_address)&&(rig= *(page_window->rig_address))&&
-		(save_write_signal_file_background_data->output_file))
+		unemap_get_number_of_channels(&number_of_channels)&&
+		(save_write_signal_file_background_data->file_name)&&
+		(save_write_signal_file_background_data->temp_file_name)&&
+		(output_file=fopen(save_write_signal_file_background_data->file_name,"wb")))
 	{
-		if (unemap_get_number_of_channels(&number_of_channels))
+		i=rig->number_of_devices;
+		device=rig->devices;
+		while (i>0)
 		{
-			i=rig->number_of_devices;
+			if ((*device)&&((*device)->signal)&&((*device)->channel)&&
+				(signal_buffer=(*device)->signal->buffer))
+			{
+				signal_buffer->start=0;
+				signal_buffer->end=(int)(number_of_samples-1);
+				channel_number=((*device)->channel->number)-1;
+				number_of_signals=signal_buffer->number_of_signals;
+				destination=((signal_buffer->signals).short_int_values)+
+					((*device)->signal->index);
+				if ((0<=channel_number)&&(channel_number<number_of_channels))
+				{
+					source=(short *)samples+channel_number;
+					for (j=(int)number_of_samples;j>0;j--)
+					{
+						*destination= *source;
+						source += number_of_channels;
+						destination += number_of_signals;
+					}
+				}
+				else
+				{
+					for (j=(int)number_of_samples;j>0;j--)
+					{
+						*destination=0;
+						destination += number_of_signals;
+					}
+				}
+			}
+			i--;
+			device++;
+		}
+#if defined (DEBUG)
+		/*???debug */
+		printf("after reordering\n");
+#endif /* defined (DEBUG) */
+#if !defined (MIRADA)
+#if defined (OLD_CODE)
+		gains=(float *)NULL;
+		i=rig->number_of_devices;
+		if (ALLOCATE(gains,float,i))
+		{
 			device=rig->devices;
 			while (i>0)
 			{
-				if ((*device)&&((*device)->signal)&&((*device)->channel)&&
-					(signal_buffer=(*device)->signal->buffer))
+				if ((*device)&&((*device)->signal)&&((*device)->signal->buffer)&&
+					((*device)->channel))
 				{
-					signal_buffer->start=0;
-					signal_buffer->end=(int)(number_of_samples-1);
-					channel_number=((*device)->channel->number)-1;
-					number_of_signals=signal_buffer->number_of_signals;
-					destination=((signal_buffer->signals).short_int_values)+
-						((*device)->signal->index);
-					if ((0<=channel_number)&&
-						((unsigned long)channel_number<number_of_channels))
+					gains[i-1]=(*device)->channel->gain;
+					if (unemap_get_gain((*device)->channel->number,&pre_filter_gain,
+						&post_filter_gain))
 					{
-						source=(short *)samples+channel_number;
-						for (j=(int)number_of_samples;j>0;j--)
-						{
-							*destination= *source;
-							source += number_of_channels;
-							destination += number_of_signals;
-						}
-					}
-					else
-					{
-						for (j=(int)number_of_samples;j>0;j--)
-						{
-							*destination=0;
-							destination += number_of_signals;
-						}
+						/*???DB.  Changes size of scrolling signal when saving in
+							background */
+						(*device)->channel->gain /= pre_filter_gain*post_filter_gain;
 					}
 				}
 				i--;
 				device++;
 			}
-#if defined (DEBUG)
-			/*???debug */
-			printf("after reordering\n");
-#endif /* defined (DEBUG) */
-#if !defined (MIRADA)
-			gains=(float *)NULL;
-			i=rig->number_of_devices;
-			if (ALLOCATE(gains,float,i))
-			{
-				device=rig->devices;
-				while (i>0)
-				{
-					if ((*device)&&((*device)->signal)&&((*device)->signal->buffer)&&
-						((*device)->channel))
-					{
-						gains[i-1]=(*device)->channel->gain;
-						if (unemap_get_gain((*device)->channel->number,&pre_filter_gain,
-							&post_filter_gain))
-						{
-							(*device)->channel->gain /= pre_filter_gain*post_filter_gain;
-						}
-					}
-					i--;
-					device++;
-				}
-			}
-#endif /* !defined (MIRADA) */
-			return_code=write_signal_file(
-				save_write_signal_file_background_data->output_file,rig);
-			if (return_code)
-			{
-				page_window->data_saved=1;
-			}
-#if !defined (MIRADA)
-			if (gains)
-			{
-				i=rig->number_of_devices;
-				device=rig->devices;
-				while (i>0)
-				{
-					if ((*device)&&((*device)->signal)&&((*device)->signal->buffer))
-					{
-						(*device)->channel->gain=gains[i-1];
-					}
-					i--;
-					device++;
-				}
-				DEALLOCATE(gains);
-			}
-#endif /* !defined (MIRADA) */
 		}
-		fclose(save_write_signal_file_background_data->output_file);
+#endif /* defined (OLD_CODE) */
+#endif /* !defined (MIRADA) */
+		return_code=write_signal_file(output_file,rig);
+#if !defined (MIRADA)
+#if defined (OLD_CODE)
+		if (gains)
+		{
+			i=rig->number_of_devices;
+			device=rig->devices;
+			while (i>0)
+			{
+				if ((*device)&&((*device)->signal)&&((*device)->signal->buffer))
+				{
+					(*device)->channel->gain=gains[i-1];
+				}
+				i--;
+				device++;
+			}
+			DEALLOCATE(gains);
+		}
+#endif /* defined (OLD_CODE) */
+#endif /* !defined (MIRADA) */
+		fclose(output_file);
+		if (return_code)
+		{
+			page_window->data_saved=1;
+			rename(save_write_signal_file_background_data->temp_file_name,
+				save_write_signal_file_background_data->file_name);
+		}
+		else
+		{
+			remove(save_write_signal_file_background_data->temp_file_name);
+		}
 		DEALLOCATE(save_write_signal_file_background_data->samples);
+		DEALLOCATE(save_write_signal_file_background_data->temp_file_name);
+		DEALLOCATE(save_write_signal_file_background_data->file_name);
 		DEALLOCATE(save_write_signal_file_background_data);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"save_write_signal_file_process.  Invalid arguments %d %d %p %p",
-			channel_number,number_of_samples,samples,
-			save_write_signal_file_background_data_void);
+			"save_write_signal_file_process.  Invalid arguments %d %p %p",
+			number_of_samples,samples,save_write_signal_file_background_data_void);
 		return_code=0;
 	}
 	DEALLOCATE(save_write_signal_file_background_data);
+#if defined (DEBUG)
 	/*???debug */
 	printf("leave save_write_signal_file_process\n");
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	LEAVE;
 
-	return (NULL);
+#if defined (MOTIF)
+	return ((void *)NULL);
+#endif /* defined (MOTIF) */
+#if defined (WINDOWS)
+	return ((DWORD0return_code);
+#endif /* defined (WINDOWS) */
 } /* save_write_signal_file_process */
 
 static void save_write_signal_file_background(const int all_channels,
 	const int number_of_samples,const short *samples,
 	void *save_write_signal_file_background_data_void)
 /*******************************************************************************
-LAST MODIFIED : 23 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 Called by unemap_get_samples_acquired_background to actually write the data.
 ==============================================================================*/
 {
+#if defined (MOTIF)
 	pthread_t thread_id;
+#endif /* defined (MOTIF) */
+#if defined (WINDOWS)
+	DWORD thread_id;
+#endif /* defined (WINDOWS) */
 	struct Save_write_signal_file_background_data
 		*save_write_signal_file_background_data;
 
 	ENTER(save_write_signal_file_background);
-	/*???debug */
-	printf("enter save_write_signal_file_background\n");
 #if defined (DEBUG)
+	/*???debug */
+	printf("enter save_write_signal_file_background.  %p\n",
+		save_write_signal_file_background_data_void);
 #endif /* defined (DEBUG) */
 	/* check arguments */
 	if (save_write_signal_file_background_data=
@@ -1476,19 +1506,25 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 		save_write_signal_file_background_data->all_channels=all_channels;
 		save_write_signal_file_background_data->number_of_samples=number_of_samples;
 		save_write_signal_file_background_data->samples=(short *)samples;
+#if defined (MOTIF)
 		if (pthread_create(&thread_id,(pthread_attr_t *)NULL,
 			save_write_signal_file_process,
 			save_write_signal_file_background_data_void))
-#if defined (OLD_CODE)
-		if (-1==sproc(save_write_signal_file_process,PR_SALL,
-			save_write_signal_file_background_data_void))
-#endif /* defined (OLD_CODE) */
+#endif /* defined (MOTIF) */
+#if defined (WINDOWS)
+		if (CreateThread(/*no security attributes*/NULL,/*use default stack size*/0,
+			save_write_signal_file_process,
+			(LPVOID)save_write_signal_file_background_data_void,
+			/*use default creation flags*/0,&thread_id))
+#endif /* defined (WINDOWS) */
 		{
 			display_message(ERROR_MESSAGE,
+#if defined (MOTIF)
 				"save_write_signal_file_background.  pthread_create failed");
-#if defined (OLD_CODE)
-				"save_write_signal_file_background.  sproc failed");
-#endif /* defined (OLD_CODE) */
+#endif /* defined (MOTIF) */
+#if defined (WINDOWS)
+				"save_write_signal_file_background.  CreateThread failed");
+#endif /* defined (WINDOWS) */
 			DEALLOCATE(save_write_signal_file_background_data);
 			DEALLOCATE(samples);
 		}
@@ -1500,213 +1536,130 @@ Called by unemap_get_samples_acquired_background to actually write the data.
 			all_channels,number_of_samples,samples,
 			save_write_signal_file_background_data_void);
 	}
+#if defined (DEBUG)
 	/*???debug */
 	printf("leave save_write_signal_file_background\n");
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	LEAVE;
 } /* save_write_signal_file_background */
-
-#if defined (OLD_CODE)
-static void save_write_signal_file_background(const int all_channels,
-	const int number_of_samples,const short *samples,
-	void *save_write_signal_file_background_data_void)
-/*******************************************************************************
-LAST MODIFIED : 9 July 2000
-
-DESCRIPTION :
-Called by unemap_get_samples_acquired_background to actually write the data.
-==============================================================================*/
-{
-	float *gains,post_filter_gain,pre_filter_gain;
-	int channel_number,i,j,number_of_channels,number_of_signals,return_code;
-	short *destination,*source;
-	struct Device **device;
-	struct Page_window *page_window;
-	struct Rig *rig;
-	struct Save_write_signal_file_background_data
-		*save_write_signal_file_background_data;
-	struct Signal_buffer *signal_buffer;
-
-	ENTER(save_write_signal_file_background);
-	/*???debug */
-	printf("enter save_write_signal_file_background\n");
-#if defined (DEBUG)
-#endif /* defined (DEBUG) */
-	return_code=0;
-	/* check arguments */
-	if ((0==all_channels)&&(0<number_of_samples)&&samples&&
-		(save_write_signal_file_background_data=
-		(struct Save_write_signal_file_background_data *)
-		save_write_signal_file_background_data_void)&&
-		(page_window=save_write_signal_file_background_data->page_window)&&
-		(page_window->rig_address)&&(rig= *(page_window->rig_address))&&
-		(save_write_signal_file_background_data->output_file))
-	{
-		if (unemap_get_number_of_channels(&number_of_channels))
-		{
-			i=rig->number_of_devices;
-			device=rig->devices;
-			while (i>0)
-			{
-				if ((*device)&&((*device)->signal)&&((*device)->channel)&&
-					(signal_buffer=(*device)->signal->buffer))
-				{
-					signal_buffer->start=0;
-					signal_buffer->end=(int)(number_of_samples-1);
-					channel_number=((*device)->channel->number)-1;
-					number_of_signals=signal_buffer->number_of_signals;
-					destination=((signal_buffer->signals).short_int_values)+
-						((*device)->signal->index);
-					if ((0<=channel_number)&&
-						((unsigned long)channel_number<number_of_channels))
-					{
-						source=(short *)samples+channel_number;
-						for (j=(int)number_of_samples;j>0;j--)
-						{
-							*destination= *source;
-							source += number_of_channels;
-							destination += number_of_signals;
-						}
-					}
-					else
-					{
-						for (j=(int)number_of_samples;j>0;j--)
-						{
-							*destination=0;
-							destination += number_of_signals;
-						}
-					}
-				}
-				i--;
-				device++;
-			}
-#if defined (DEBUG)
-			/*???debug */
-			printf("after reordering\n");
-#endif /* defined (DEBUG) */
-#if !defined (MIRADA)
-			gains=(float *)NULL;
-			i=rig->number_of_devices;
-			if (ALLOCATE(gains,float,i))
-			{
-				device=rig->devices;
-				while (i>0)
-				{
-					if ((*device)&&((*device)->signal)&&((*device)->signal->buffer)&&
-						((*device)->channel))
-					{
-						gains[i-1]=(*device)->channel->gain;
-						if (unemap_get_gain((*device)->channel->number,&pre_filter_gain,
-							&post_filter_gain))
-						{
-							(*device)->channel->gain /= pre_filter_gain*post_filter_gain;
-						}
-					}
-					i--;
-					device++;
-				}
-			}
-#endif /* !defined (MIRADA) */
-			return_code=write_signal_file(
-				save_write_signal_file_background_data->output_file,rig);
-			if (return_code)
-			{
-				page_window->data_saved=1;
-			}
-#if !defined (MIRADA)
-			if (gains)
-			{
-				i=rig->number_of_devices;
-				device=rig->devices;
-				while (i>0)
-				{
-					if ((*device)&&((*device)->signal)&&((*device)->signal->buffer))
-					{
-						(*device)->channel->gain=gains[i-1];
-					}
-					i--;
-					device++;
-				}
-				DEALLOCATE(gains);
-			}
-#endif /* !defined (MIRADA) */
-		}
-		fclose(save_write_signal_file_background_data->output_file);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"save_write_signal_file_background.  Invalid arguments %d %d %p %p",
-			channel_number,number_of_samples,samples,
-			save_write_signal_file_background_data_void);
-		return_code=0;
-	}
-	DEALLOCATE(save_write_signal_file_background_data);
-	/*???debug */
-	printf("leave save_write_signal_file_background\n");
-#if defined (DEBUG)
-#endif /* defined (DEBUG) */
-	LEAVE;
-} /* save_write_signal_file_background */
-#endif /* defined (OLD_CODE) */
 #endif /* defined (BACKGROUND_SAVING) */
 
 #if defined (BACKGROUND_SAVING)
 static int save_write_signal_file(char *file_name,void *page_window_void)
 /*******************************************************************************
-LAST MODIFIED : 9 July 2000
+LAST MODIFIED : 29 July 2000
 
 DESCRIPTION :
 This function writes the rig configuration and interval of signal data to the
 named file.
 ==============================================================================*/
 {
+	char *temp_file_name;
+	FILE *output_file,*temp_output_file;
+	float post_filter_gain,pre_filter_gain;
+	int i,return_code;
+	struct Device **device;
+	struct Page_window *page_window;
+	struct Rig *rig;
 	struct Save_write_signal_file_background_data
 		*save_write_signal_file_background_data;
-	int return_code;
-	struct Page_window *page_window;
 
 	ENTER(save_write_signal_file);
-	/*???debug */
-	printf("enter save_write_signal_file\n");
 	return_code=0;
 	/* check that the rig exists */
 	if ((page_window=(struct Page_window *)page_window_void)&&
-		(page_window->rig_address)&&(*(page_window->rig_address)))
+		(page_window->rig_address)&&(rig= *(page_window->rig_address)))
 	{
-		if (ALLOCATE(save_write_signal_file_background_data,
-			struct Save_write_signal_file_background_data,1))
+		/* open the output file */
+		if (output_file=fopen(file_name,"wb"))
 		{
-			/* open the output file */
-			if (save_write_signal_file_background_data->output_file=fopen(file_name,
-				"wb"))
+			/* get a temporary file to write to in background */
+			if ((temp_file_name=tmpnam((char *)NULL))&&
+				(temp_output_file=fopen(temp_file_name,"wb")))
 			{
-				save_write_signal_file_background_data->page_window=page_window;
-				if (unemap_get_samples_acquired_background(0,
-					save_write_signal_file_background,
-					(void *)save_write_signal_file_background_data))
+				fclose(output_file);
+				remove(file_name);
+				fclose(temp_output_file);
+				remove(temp_file_name);
+				if (ALLOCATE(save_write_signal_file_background_data,
+					struct Save_write_signal_file_background_data,1))
 				{
-					return_code=1;
+					save_write_signal_file_background_data->file_name=(char *)NULL;
+					save_write_signal_file_background_data->temp_file_name=(char *)NULL;
+					if (ALLOCATE(save_write_signal_file_background_data->file_name,char,
+						strlen(file_name)+1)&&
+						ALLOCATE(save_write_signal_file_background_data->temp_file_name,
+						char,strlen(temp_file_name)+1))
+					{
+						strcpy(save_write_signal_file_background_data->file_name,file_name);
+						strcpy(save_write_signal_file_background_data->temp_file_name,
+							temp_file_name);
+						save_write_signal_file_background_data->page_window=page_window;
+						if (unemap_get_samples_acquired_background(0,
+							save_write_signal_file_background,
+							(void *)save_write_signal_file_background_data))
+						{
+							i=rig->number_of_devices;
+							device=rig->devices;
+							while (i>0)
+							{
+								if ((*device)&&((*device)->signal)&&
+									((*device)->signal->buffer)&&((*device)->channel))
+								{
+									if (unemap_get_gain((*device)->channel->number,
+										&pre_filter_gain,&post_filter_gain))
+									{
+										(*device)->channel->gain=
+											((*device)->channel->gain_correction)/
+											(pre_filter_gain*post_filter_gain);
+									}
+								}
+								i--;
+								device++;
+							}
+							return_code=1;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"save_write_signal_file.  Could not retrieve samples");
+							DEALLOCATE(save_write_signal_file_background_data->file_name);
+							DEALLOCATE(save_write_signal_file_background_data->
+								temp_file_name);
+							DEALLOCATE(save_write_signal_file_background_data);
+							return_code=0;
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"save_write_signal_file.  Could not allocate file names");
+						DEALLOCATE(save_write_signal_file_background_data->file_name);
+						DEALLOCATE(save_write_signal_file_background_data->temp_file_name);
+						DEALLOCATE(save_write_signal_file_background_data);
+						return_code=0;
+					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"save_write_signal_file.  Could not retrieve samples");
+"save_write_signal_file.  Could not allocate save_write_signal_file_background_data");
 					return_code=0;
 				}
 			}
 			else
 			{
-				display_message(WARNING_MESSAGE,
-					"save_write_signal_file.  Invalid file: %s",file_name);
+				display_message(ERROR_MESSAGE,
+					"save_write_signal_file.  Could not get temporary file");
+				fclose(output_file);
+				remove(file_name);
 				return_code=0;
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-"save_write_signal_file.  Could not allocate save_write_signal_file_background_data");
+			display_message(WARNING_MESSAGE,
+				"save_write_signal_file.  Invalid file: %s",file_name);
 			return_code=0;
 		}
 	}
@@ -1715,8 +1668,6 @@ named file.
 		display_message(ERROR_MESSAGE,"save_write_signal_file.  Missing rig");
 		return_code=0;
 	}
-	/*???debug */
-	printf("leave save_write_signal_file\n");
 	LEAVE;
 
 	return (return_code);
@@ -1724,7 +1675,7 @@ named file.
 #else /* defined (BACKGROUND_SAVING) */
 static int save_write_signal_file(char *file_name,void *page_window_void)
 /*******************************************************************************
-LAST MODIFIED : 19 July 1999
+LAST MODIFIED : 29 July 2000
 
 DESCRIPTION :
 This function writes the rig configuration and interval of signal data to the
@@ -1736,7 +1687,10 @@ named file.
 	struct Page_window *page_window;
 	struct Rig *rig;
 #if !defined (MIRADA)
-	float *gains,post_filter_gain,pre_filter_gain;
+#if defined (OLD_CODE)
+	float *gains;
+#endif /* defined (OLD_CODE) */
+	float post_filter_gain,pre_filter_gain;
 	int i;
 	struct Device **device;
 #endif /* !defined (MIRADA) */
@@ -1750,6 +1704,24 @@ named file.
 		if (output_file=fopen(file_name,"wb"))
 		{
 #if !defined (MIRADA)
+			i=rig->number_of_devices;
+			device=rig->devices;
+			while (i>0)
+			{
+				if ((*device)&&((*device)->signal)&&((*device)->signal->buffer)&&
+					((*device)->channel))
+				{
+					if (unemap_get_gain((*device)->channel->number,&pre_filter_gain,
+						&post_filter_gain))
+					{
+						(*device)->channel->gain=((*device)->channel->gain_correction)/
+							(pre_filter_gain*post_filter_gain);
+					}
+				}
+				i--;
+				device++;
+			}
+#if defined (OLD_CODE)
 			gains=(float *)NULL;
 			i=rig->number_of_devices;
 			if (ALLOCATE(gains,float,i))
@@ -1771,6 +1743,7 @@ named file.
 					device++;
 				}
 			}
+#endif /* defined (OLD_CODE) */
 #endif /* !defined (MIRADA) */
 			return_code=write_signal_file(output_file,rig);
 			fclose(output_file);
@@ -1783,6 +1756,7 @@ named file.
 				remove(file_name);
 			}
 #if !defined (MIRADA)
+#if defined (OLD_CODE)
 			if (gains)
 			{
 				i=rig->number_of_devices;
@@ -1798,6 +1772,7 @@ named file.
 				}
 				DEALLOCATE(gains);
 			}
+#endif /* defined (OLD_CODE) */
 #endif /* !defined (MIRADA) */
 		}
 		else
@@ -2866,8 +2841,8 @@ scrolling display.  Returns 1 if it is able to update, otherwise it returns 0
 						update_display_minimum(page_window);
 						show_display_gain(page_window);
 						/* reset range when change channel */
-						page_window->signal_maximum=0;
-						page_window->signal_minimum=1;
+						page_window->signal_maximum=(float)0;
+						page_window->signal_minimum=(float)1;
 						draw_scrolling_display_background(page_window);
 #if defined (OLD_CODE)
 #if defined (WINDOWS)
@@ -4069,7 +4044,7 @@ Motif wrapper for start_isolating and stop_isolating.
 
 static int page_read_calibration_file(char *file_name,struct Rig *rig)
 /*******************************************************************************
-LAST MODIFIED : 2 August 1999
+LAST MODIFIED : 29 July 2000
 
 DESCRIPTION :
 Assumes that the calibration file is normalized.
@@ -4090,6 +4065,7 @@ Assumes that the calibration file is normalized.
 			if (0==return_code)
 			{
 				(*device_address)->channel->gain=(float)1;
+				(*device_address)->channel->gain_correction=(float)1;
 				(*device_address)->channel->offset=(float)0;
 			}
 			if (unemap_get_voltage_range(channel_number,&minimum_voltage,
@@ -4100,6 +4076,8 @@ Assumes that the calibration file is normalized.
 				(*device_address)->channel->gain *= (float)1000*pre_filter_gain*
 					post_filter_gain*(maximum_voltage-minimum_voltage)/
 					(float)(maximum_signal_value-minimum_signal_value);
+				(*device_address)->channel->gain_correction=
+					(*device_address)->channel->gain;
 			}
 		}
 		device_address++;
@@ -4353,6 +4331,10 @@ Called to start experiment on the <page_window>.
 				{
 					if (!(page_window->hardware_initialized))
 					{
+#if defined (DEBUG)
+						/*???debug */
+						printf("before page_window_set_gain\n");
+#endif /* defined (DEBUG) */
 						page_window_set_gain(page_window,0,page_window->initial_gain);
 						/* initialize the hardware */
 #if defined (MIRADA)
@@ -5758,8 +5740,8 @@ DESCRIPTION :
 		update_display_minimum(page_window);
 		show_display_gain(page_window);
 		/* reset range when change channel */
-		page_window->signal_maximum=0;
-		page_window->signal_minimum=1;
+		page_window->signal_maximum=(float)0;
+		page_window->signal_minimum=(float)1;
 #if defined (MOTIF)
 		XtVaSetValues((page_window->electrode).value,XmNvalue,
 			device->description->name,NULL);
@@ -7598,7 +7580,10 @@ the created page window.  If unsuccessful, NULL is returned.
 					if (page_window->display_device=display_device)
 					{
 						page_window->display_device_number=device_number;
+						channel_gain=display_device->channel->gain_correction;
+#if defined (OLD_CODE)
 						channel_gain=display_device->channel->gain;
+#endif /* defined (OLD_CODE) */
 						channel_offset=display_device->channel->offset;
 						unemap_get_gain(display_device->channel->number,
 							&pre_filter_gain,&post_filter_gain);

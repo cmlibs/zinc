@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.c
 
-LAST MODIFIED : 27 July 2000
+LAST MODIFIED : 29 July 2000
 
 DESCRIPTION :
 Contains function definitions for measurement rigs.
@@ -215,7 +215,7 @@ frees the memory for <**description> and changes <*description> to NULL.
 
 struct Channel *create_Channel(int number,float offset,float gain)
 /*******************************************************************************
-LAST MODIFIED : 9 September 1992
+LAST MODIFIED : 29 July 2000
 
 DESCRIPTION :
 This function allocates memory for a channel and initializes the fields to the
@@ -231,6 +231,7 @@ NULL if unsuccessful.
 		channel->number=number;
 		channel->offset=offset;
 		channel->gain=gain;
+		channel->gain_correction=(float)1;
 	}
 	else
 	{
@@ -3057,7 +3058,7 @@ pointer to the rig if successful and NULL if unsuccessful.
 
 int read_calibration_file(char *file_name,void *rig)
 /*******************************************************************************
-LAST MODIFIED : 16 July 1999
+LAST MODIFIED : 29 July 2000
 
 DESCRIPTION :
 This function reads in the characteristics of the acquisition channels for the
@@ -3095,6 +3096,7 @@ This function reads in the characteristics of the acquisition channels for the
 					{
 						(*device)->channel->offset=offset;
 						(*device)->channel->gain=gain;
+						(*device)->channel->gain_correction=gain;
 					}
 				}
 				if (feof(input_file))
@@ -3705,7 +3707,7 @@ returns a non-zero if successful and zero if unsuccessful.
 int show_config(struct Rig *rig,FILE *output_file,
 	enum Rig_file_type file_type)
 /*******************************************************************************
-LAST MODIFIED : 17 June 1999
+LAST MODIFIED : 29 July 2000
 
 DESCRIPTION :
 Similar to write_configuration() but in more detail. A bit inefficient and
@@ -3860,11 +3862,16 @@ Assumes that the <output_file> has been opened with the specified <file_type>
 							/* (*(rig->devices))->chanel */
 							fprintf(output_file,"     ->channel \n");
 							/* (*(rig->devices))->chanel->number */
-							fprintf(output_file,"      ->number %d\n",device->channel->number);
+							fprintf(output_file,"      ->number %d\n",
+								device->channel->number);
 							/* (*(rig->devices))->chanel->gain */
 							fprintf(output_file,"      ->gain %f\n",device->channel->gain);
+							/* (*(rig->devices))->chanel->gain_correction */
+							fprintf(output_file,"      ->gain_correction %f\n",
+								device->channel->gain_correction);
 							/* (*(rig->devices))->chanel->offset */
-							fprintf(output_file,"      ->offset %f\n",device->channel->offset);
+							fprintf(output_file,"      ->offset %f\n",
+								device->channel->offset);
 							/* (*(rig->devices))->signal */
 							fprintf(output_file,"     ->signal ");
 							if(device->signal)
@@ -4084,6 +4091,9 @@ Assumes that the <output_file> has been opened with the specified <file_type>
 							fprintf(output_file,"      ->number %d\n",device->channel->number);
 							/* rig->page_list->page->device_list->device->chanel->gain */
 							fprintf(output_file,"      ->gain %f\n",device->channel->gain);
+							/* (*(rig->devices))->chanel->gain_correction */
+							fprintf(output_file,"      ->gain_correction %f\n",
+								device->channel->gain_correction);
 							/* rig->page_list->page->device_list->device->chanel->offset */
 							fprintf(output_file,"      ->offset %f\n",device->channel->offset);
 							/* rig->page_list->page->device_list->device->signal */
@@ -4673,7 +4683,7 @@ int read_signal_file(FILE *input_file,struct Rig **rig_pointer
 #endif /* defined (UNEMAP_USE_NODES)*/
 			)
 /*******************************************************************************
-LAST MODIFIED : 27 July 2000
+LAST MODIFIED : 29 July 2000
 
 DESCRIPTION :
 This function reads in a rig configuration and an interval of signal data from
@@ -4815,6 +4825,7 @@ the <input_file>.
 														(char *)&((*device)->channel->gain),sizeof(float),1,
 														input_file)))
 													{
+														(*device)->channel->gain_correction=(float)1;
 														/* allow multiple signals for each device */
 														if (temp_int<0)
 														{

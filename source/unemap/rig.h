@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.h
 
-LAST MODIFIED : 26 June 2000
+LAST MODIFIED : 29 July 2000
 
 DESCRIPTION :
 Contains data and function descriptions for measurement rigs.
@@ -209,15 +209,21 @@ DESCRIPTION :
 
 struct Channel
 /*******************************************************************************
-LAST MODIFIED : 24 November 1993
+LAST MODIFIED : 29 July 2000
 
 DESCRIPTION :
 ???info about channel - frequency, type (AD, DA, DD)
+???DB.  For data acquisition, would like to be able to specify the starting
+	gain, but also need a gain correction (approximately 1) to allow for the
+	hardware not being exact.  This will mean a modification to calibrate.dat or
+	a new file (have calibrate.dat and the gain corrections inside the unemap
+	hardware?), but currently I'm only fixing a problem to do with displaying a
+	scrolling signal and save a signal file at the same time.
 ==============================================================================*/
 {
 	int number;
 		/*???temporary */
-	float gain,offset;
+	float gain,gain_correction,offset;
 }; /* struct Channel */
 
 enum Signal_value_type

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : unemap_hardware_client.c
 
-LAST MODIFIED : 24 July 2000
+LAST MODIFIED : 29 July 2000
 
 DESCRIPTION :
 Code for talking to the unemap hardware service (running under NT).  This is an
@@ -18,6 +18,7 @@ QUESTIONS :
 
 TO DO :
 1 Speed up save/transfer of data.  Needs to be made thread safe for this
+1.1 Sort out BACKGROUND_SAVING/MOTIF/UNIX/WIN32
 2 Synchronize stimulating between cards and then crates
 ==============================================================================*/
 
@@ -26,15 +27,13 @@ TO DO :
 
 #define CACHE_CLIENT_INFORMATION
 
-/*#define BACKGROUND_SAVING*/
+#define BACKGROUND_SAVING
+#define UNEMAP_THREAD_SAFE
 
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#if defined (BACKGROUND_SAVING) && defined (MOTIF)
-#include <pthread.h>
-#endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 #if defined (WIN32)
 /*???DB.  Assume that running on Intel machine */
 #define __BYTE_ORDER 1234
@@ -60,6 +59,9 @@ TO DO :
 #include <errno.h>
 extern int errno;
 #endif /* defined (UNIX) */
+#if defined (BACKGROUND_SAVING) && defined (MOTIF)
+#include <pthread.h>
+#endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "user_interface/message.h"
@@ -123,7 +125,7 @@ functions.
 
 struct Unemap_crate
 /*******************************************************************************
-LAST MODIFIED : 23 July 2000
+LAST MODIFIED : 29 July 2000
 
 DESCRIPTION :
 Information needed for each SCU crate/NI computer pair.
@@ -134,16 +136,20 @@ Information needed for each SCU crate/NI computer pair.
 #if defined (WIN32)
 	SOCKET acquired_socket;
 	HANDLE acquired_socket_thread_stop_event;
+	HANDLE acquired_socket_mutex;
 	SOCKET calibration_socket;
 	HANDLE calibration_socket_thread_stop_event;
 	SOCKET command_socket;
+	HANDLE command_socket_mutex;
 	SOCKET scrolling_socket;
 	HANDLE scrolling_socket_thread_stop_event;
 #endif /* defined (WIN32) */
 #if defined (UNIX)
 	int acquired_socket;
+	pthread_mutex_t *acquired_socket_mutex,acquired_socket_mutex_storage;
 	int calibration_socket;
 	int command_socket;
+	pthread_mutex_t *command_socket_mutex,command_socket_mutex_storage;
 	int scrolling_socket;
 #endif /* defined (UNIX) */
 #if defined (MOTIF)
@@ -215,6 +221,82 @@ void *module_acquired_callback_data=(void *)NULL;
 Module functions
 ----------------
 */
+static int lock_mutex(
+#if defined (WIN32)
+	HANDLE mutex
+#endif /* defined (WIN32) */
+#if defined (UNIX)
+	pthread_mutex_t *mutex
+#endif /* defined (UNIX) */
+	)
+/*******************************************************************************
+LAST MODIFIED : 27 July 2000
+
+DESCRIPTION :
+Locks the <mutex>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(lock_mutex);
+	return_code=1;
+#if defined (UNEMAP_THREAD_SAFE)
+	if (mutex)
+	{
+#if defined (WIN32)
+		if (WAIT_FAILED==WaitForSingleObject(mutex,INFINITE))
+		{
+			display_message(ERROR_MESSAGE,
+				"lock_mutex.  WaitForSingleObject failed.  Error code %d",
+				WSAGetLastError());
+			return_code=0;
+		}
+#endif /* defined (WIN32) */
+#if defined (UNIX)
+		pthread_mutex_lock(mutex);
+#endif /* defined (UNIX) */
+	}
+#endif /* defined (UNEMAP_THREAD_SAFE) */
+	LEAVE;
+
+	return (return_code);
+} /* lock_mutex */
+
+static int unlock_mutex(
+#if defined (WIN32)
+	HANDLE mutex
+#endif /* defined (WIN32) */
+#if defined (UNIX)
+	pthread_mutex_t *mutex
+#endif /* defined (UNIX) */
+	)
+/*******************************************************************************
+LAST MODIFIED : 27 July 2000
+
+DESCRIPTION :
+Unlocks the <mutex>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(unlock_mutex);
+	return_code=1;
+#if defined (UNEMAP_THREAD_SAFE)
+	if (mutex)
+	{
+#if defined (WIN32)
+		ReleaseMutex(mutex);
+#endif /* defined (WIN32) */
+#if defined (UNIX)
+		pthread_mutex_unlock(mutex);
+#endif /* defined (UNIX) */
+	}
+#endif /* defined (UNEMAP_THREAD_SAFE) */
+	LEAVE;
+
+	return (return_code);
+} /* unlock_mutex */
+
 #if defined (WINDOWS)
 static void sleep(unsigned seconds)
 {
@@ -224,7 +306,7 @@ static void sleep(unsigned seconds)
 
 static int close_crate_connection(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 2 July 2000
+LAST MODIFIED : 29 July 2000
 
 DESCRIPTION :
 Closes the connection with the unemap hardware service for the <crate>.
@@ -239,6 +321,7 @@ Closes the connection with the unemap hardware service for the <crate>.
 		return_code=1;
 		if (INVALID_SOCKET!=crate->command_socket)
 		{
+			lock_mutex(crate->command_socket_mutex);
 #if defined (WIN32)
 			closesocket(crate->command_socket);
 #endif /* defined (WIN32) */
@@ -246,6 +329,7 @@ Closes the connection with the unemap hardware service for the <crate>.
 			close(crate->command_socket);
 #endif /* defined (UNIX) */
 			crate->command_socket=INVALID_SOCKET;
+			unlock_mutex(crate->command_socket_mutex);
 		}
 #if defined (WIN32)
 		if (crate->scrolling_socket_thread_stop_event)
@@ -317,6 +401,25 @@ Closes the connection with the unemap hardware service for the <crate>.
 			crate->acquired_socket=INVALID_SOCKET;
 		}
 #endif /* defined (MOTIF) */
+		/* free mutex's */
+		if (crate->command_socket_mutex)
+		{
+#if defined (WIN32)
+			CloseHandle(crate->command_socket_mutex);
+#endif /* defined (WIN32) */
+#if defined (UNIX)
+			pthread_mutex_destroy(crate->command_socket_mutex);
+#endif /* defined (UNIX) */
+		}
+		if (crate->acquired_socket_mutex)
+		{
+#if defined (WIN32)
+			CloseHandle(crate->acquired_socket_mutex);
+#endif /* defined (WIN32) */
+#if defined (UNIX)
+			pthread_mutex_destroy(crate->acquired_socket_mutex);
+#endif /* defined (UNIX) */
+		}
 #if defined (CACHE_CLIENT_INFORMATION)
 		DEALLOCATE(crate->unemap_cards);
 		DEALLOCATE(crate->stimulator_card_indices);
@@ -564,7 +667,7 @@ static void acquired_socket_callback(
 	)
 #endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 /*******************************************************************************
-LAST MODIFIED : 24 July 2000
+LAST MODIFIED : 29 July 2000
 
 DESCRIPTION :
 Called when there is input on the acquired socket.
@@ -586,8 +689,8 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 #endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 	/*???debug */
 #if defined (BACKGROUND_SAVING) && defined (MOTIF)
-	printf("enter acquired_socket_callback_process.  %p\n",crate_void);
 #if defined (DEBUG)
+	printf("enter acquired_socket_callback_process.  %p\n",crate_void);
 #endif /* defined (DEBUG) */
 #else /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 #if defined (DEBUG)
@@ -602,7 +705,7 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 #endif /* defined (MOTIF) */
 	if (crate=(struct Unemap_crate *)crate_void)
 	{
-		(crate->acquired).complete=1;
+		lock_mutex(crate->acquired_socket_mutex);
 		/* get the header back */
 		if (SOCKET_ERROR!=socket_recv(crate->acquired_socket,message_header,
 			2+sizeof(long),0))
@@ -624,7 +727,7 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 								0))
 							{
 								message_size -= sizeof(number_of_samples);
-								if (number_of_channels*number_of_samples*sizeof(short)==
+								if (number_of_channels*(long)(number_of_samples*sizeof(short))==
 									message_size)
 								{
 									ALLOCATE(samples,short,number_of_channels*number_of_samples);
@@ -653,6 +756,8 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 				(crate->acquired).number_of_samples=0;
 			}
 		}
+		/*???DB.  Should this be thread protected? */
+		(crate->acquired).complete=1;
 		i=module_number_of_unemap_crates;
 		crate=module_unemap_crates;
 		number_of_channels=0;
@@ -677,7 +782,7 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 					if (0==module_acquired_channel_number)
 					{
 						sample=samples;
-						for (j=0;j<number_of_samples;j++)
+						for (j=0;j<(long)number_of_samples;j++)
 						{
 							crate=module_unemap_crates;
 							for (i=module_number_of_unemap_crates;i>0;i--)
@@ -718,11 +823,12 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 			crate->acquired_socket,(XtPointer)XtInputReadMask,
 			acquired_socket_callback,(XtPointer)crate);
 #endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
+		unlock_mutex(crate->acquired_socket_mutex);
 	}
 	/*???debug */
 #if defined (BACKGROUND_SAVING) && defined (MOTIF)
-	printf("leave acquired_socket_callback_process\n");
 #if defined (DEBUG)
+	printf("leave acquired_socket_callback_process\n");
 #endif /* defined (DEBUG) */
 #else /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
 #if defined (DEBUG)
@@ -750,17 +856,17 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 	struct Unemap_crate *crate;
 
 	ENTER(acquired_socket_callback);
+#if defined (DEBUG)
 	/*???debug */
 	printf("enter acquired_socket_callback.  %p\n",crate_void);
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	USE_PARAMETER(source);
 	USE_PARAMETER(id);
 	if ((crate=(struct Unemap_crate *)crate_void)&&(crate->acquired_socket_xid))
 	{
+#if defined (DEBUG)
 		/*???debug */
 		printf("crate->acquired_socket_xid=%lx\n",crate->acquired_socket_xid);
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 		/* so that don't get multiple acquired_socket_callback calls */
 		XtRemoveInput(crate->acquired_socket_xid);
@@ -771,19 +877,11 @@ The <module_acquired_callback> is responsible for deallocating the samples.
 			acquired_socket_callback_process((void *)crate_void);
 			display_message(ERROR_MESSAGE,
 				"acquired_socket_callback.  pthread_create failed");
-			/*???debug */
-			printf("acquired_socket_callback.  pthread_create failed");
 		}
-		/*???debug */
-		printf("thread_id=%x\n",thread_id);
-#if defined (DEBUG)
-#endif /* defined (DEBUG) */
-#if defined (NEW_CODE)
-#endif /* defined (NEW_CODE) */
 	}
+#if defined (DEBUG)
 	/*???debug */
 	printf("leave acquired_socket_callback\n");
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	LEAVE;
 #endif /* defined (BACKGROUND_SAVING) && defined (MOTIF) */
@@ -1502,7 +1600,7 @@ static int crate_configure_start(struct Unemap_crate *crate,int slave,
 	Unemap_hardware_callback *scrolling_callback,void *scrolling_callback_data,
 	float scrolling_refresh_frequency,int synchronization_card)
 /*******************************************************************************
-LAST MODIFIED : 9 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 Configures the <crate> for sampling at the specified <sampling_frequency> and
@@ -1588,6 +1686,7 @@ See <unemap_configure> for more details.
 						(XtPointer)crate)))
 #endif /* defined (MOTIF) */
 					{
+						lock_mutex(crate->command_socket_mutex);
 						buffer[0]=UNEMAP_CONFIGURE_CODE;
 						buffer[1]=BIG_ENDIAN_CODE;
 						buffer_size=2+sizeof(message_size);
@@ -1661,6 +1760,7 @@ See <unemap_configure> for more details.
 						{
 							display_message(ERROR_MESSAGE,
 								"crate_configure_start.  socket_send() failed");
+							unlock_mutex(crate->command_socket_mutex);
 						}
 					}
 					else
@@ -1732,6 +1832,10 @@ DESCRIPTION :
 	unsigned char buffer[2+sizeof(long)];
 
 	ENTER(crate_configure_end);
+#if defined (DEBUG)
+	/*???debug */
+	printf("enter crate_configure_end\n");
+#endif /* defined (DEBUG) */
 	return_code=0;
 	/* check argument */
 	if (crate)
@@ -1757,12 +1861,17 @@ DESCRIPTION :
 			display_message(ERROR_MESSAGE,
 				"crate_configure_end.  socket_recv() failed");
 		}
+		unlock_mutex(crate->command_socket_mutex);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"crate_configure_end.  Invalid argument");
 		return_code=0;
 	}
+#if defined (DEBUG)
+	/*???debug */
+	printf("leave crate_configure_end\n");
+#endif /* defined (DEBUG) */
 	LEAVE;
 
 	return (return_code);
@@ -2018,7 +2127,7 @@ See <unemap_configure> for more details.
 
 static int crate_configured(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 Returns a non-zero if <the crate> is configured and zero otherwise.
@@ -2032,6 +2141,7 @@ Returns a non-zero if <the crate> is configured and zero otherwise.
 	return_code=0;
 	if (crate&&(INVALID_SOCKET!=crate->command_socket))
 	{
+		lock_mutex(crate->command_socket_mutex);
 		buffer[0]=UNEMAP_CONFIGURED_CODE;
 		buffer[1]=BIG_ENDIAN_CODE;
 		buffer_size=2+sizeof(message_size);
@@ -2075,6 +2185,7 @@ Returns a non-zero if <the crate> is configured and zero otherwise.
 			display_message(ERROR_MESSAGE,
 				"crate_configured.  socket_send() failed");
 		}
+		unlock_mutex(crate->command_socket_mutex);
 	}
 	else
 	{
@@ -2088,7 +2199,7 @@ Returns a non-zero if <the crate> is configured and zero otherwise.
 
 static int crate_deconfigure(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 12 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 Stops acquisition and signal generation for the <crate>.  Frees buffers
@@ -2109,6 +2220,7 @@ associated with the hardware.
 	{
 		if (INVALID_SOCKET!=crate->command_socket)
 		{
+			lock_mutex(crate->command_socket_mutex);
 			buffer[0]=UNEMAP_DECONFIGURE_CODE;
 			buffer[1]=BIG_ENDIAN_CODE;
 			buffer_size=2+sizeof(message_size);
@@ -2150,6 +2262,7 @@ associated with the hardware.
 				display_message(ERROR_MESSAGE,
 					"crate_deconfigure.  socket_send() failed");
 			}
+			unlock_mutex(crate->command_socket_mutex);
 		}
 		else
 		{
@@ -2179,7 +2292,7 @@ associated with the hardware.
 static int crate_get_hardware_version(struct Unemap_crate *crate,
 	int *hardware_version)
 /*******************************************************************************
-LAST MODIFIED : 8 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -2202,6 +2315,7 @@ Returns the unemap <hardware_version> for the <crate>.
 	{
 		if (INVALID_SOCKET!=crate->command_socket)
 		{
+			lock_mutex(crate->command_socket_mutex);
 			buffer[0]=UNEMAP_GET_HARDWARE_VERSION_CODE;
 			buffer[1]=BIG_ENDIAN_CODE;
 			buffer_size=2+sizeof(message_size);
@@ -2253,6 +2367,7 @@ Returns the unemap <hardware_version> for the <crate>.
 				display_message(ERROR_MESSAGE,
 					"crate_get_hardware_version.  socket_send() failed");
 			}
+			unlock_mutex(crate->command_socket_mutex);
 		}
 		else
 		{
@@ -2277,7 +2392,7 @@ Returns the unemap <hardware_version> for the <crate>.
 
 static int crate_shutdown(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 8 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 Shuts down NT running on the signal conditioning unit computer (<crate>).
@@ -2298,6 +2413,7 @@ Shuts down NT running on the signal conditioning unit computer (<crate>).
 		the command_socket is valid */
 	if (crate&&(INVALID_SOCKET!=crate->command_socket))
 	{
+		lock_mutex(crate->command_socket_mutex);
 		buffer[0]=UNEMAP_SHUTDOWN_CODE;
 		buffer[1]=BIG_ENDIAN_CODE;
 		buffer_size=2+sizeof(message_size);
@@ -2458,6 +2574,7 @@ Shuts down NT running on the signal conditioning unit computer (<crate>).
 		}
 #endif /* defined (MOTIF) */
 #endif /* defined (NEW_CODE) */
+		unlock_mutex(crate->command_socket_mutex);
 	}
 	else
 	{
@@ -2476,7 +2593,7 @@ Shuts down NT running on the signal conditioning unit computer (<crate>).
 static int crate_set_scrolling_channel(struct Unemap_crate *crate,
 	int channel_number)
 /*******************************************************************************
-LAST MODIFIED : 8 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -2494,6 +2611,7 @@ unemap_configure).
 	return_code=0;
 	if (crate&&(INVALID_SOCKET!=crate->command_socket))
 	{
+		lock_mutex(crate->command_socket_mutex);
 		buffer[0]=UNEMAP_SET_SCROLLING_CHANNEL_CODE;
 		buffer[1]=BIG_ENDIAN_CODE;
 		buffer_size=2+sizeof(message_size);
@@ -2536,6 +2654,7 @@ unemap_configure).
 			display_message(ERROR_MESSAGE,
 				"crate_set_scrolling_channel.  socket_send() failed");
 		}
+		unlock_mutex(crate->command_socket_mutex);
 	}
 	else
 	{
@@ -2550,7 +2669,7 @@ unemap_configure).
 
 static int crate_clear_scrolling_channels(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -2569,6 +2688,7 @@ scrolling_callback by the <crate> (see unemap_configure).
 		the command_socket is valid */
 	if (crate&&(INVALID_SOCKET!=crate->command_socket))
 	{
+		lock_mutex(crate->command_socket_mutex);
 		buffer[0]=UNEMAP_CLEAR_SCROLLING_CHANNELS_CODE;
 		buffer[1]=BIG_ENDIAN_CODE;
 		buffer_size=2+sizeof(message_size);
@@ -2610,6 +2730,7 @@ scrolling_callback by the <crate> (see unemap_configure).
 			display_message(ERROR_MESSAGE,
 				"crate_clear_scrolling_channels.  socket_send() failed");
 		}
+		unlock_mutex(crate->command_socket_mutex);
 	}
 	else
 	{
@@ -2624,7 +2745,7 @@ scrolling_callback by the <crate> (see unemap_configure).
 
 static int crate_start_scrolling(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -2641,6 +2762,7 @@ to get messages/callbacks.  Allows sampling without scrolling.
 	return_code=0;
 	if (crate&&(INVALID_SOCKET!=crate->command_socket))
 	{
+		lock_mutex(crate->command_socket_mutex);
 		buffer[0]=UNEMAP_START_SCROLLING_CODE;
 		buffer[1]=BIG_ENDIAN_CODE;
 		buffer_size=2+sizeof(message_size);
@@ -2682,6 +2804,7 @@ to get messages/callbacks.  Allows sampling without scrolling.
 			display_message(ERROR_MESSAGE,
 				"crate_start_scrolling.  socket_send() failed");
 		}
+		unlock_mutex(crate->command_socket_mutex);
 	}
 	else
 	{
@@ -2696,7 +2819,7 @@ to get messages/callbacks.  Allows sampling without scrolling.
 
 static int crate_stop_scrolling(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -2713,6 +2836,7 @@ get messages/callbacks.  Allows sampling without scrolling.
 	return_code=0;
 	if (crate&&(INVALID_SOCKET!=crate->command_socket))
 	{
+		lock_mutex(crate->command_socket_mutex);
 		buffer[0]=UNEMAP_STOP_SCROLLING_CODE;
 		buffer[1]=BIG_ENDIAN_CODE;
 		buffer_size=2+sizeof(message_size);
@@ -2754,6 +2878,7 @@ get messages/callbacks.  Allows sampling without scrolling.
 			display_message(ERROR_MESSAGE,
 				"crate_stop_scrolling.  socket_send() failed");
 		}
+		unlock_mutex(crate->command_socket_mutex);
 	}
 	else
 	{
@@ -2768,7 +2893,7 @@ get messages/callbacks.  Allows sampling without scrolling.
 
 static int crate_calibrate(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -2784,6 +2909,7 @@ Starts calibration for the <crate>.
 	return_code=0;
 	if (crate&&(INVALID_SOCKET!=crate->command_socket))
 	{
+		lock_mutex(crate->command_socket_mutex);
 		buffer[0]=UNEMAP_CALIBRATE_CODE;
 		buffer[1]=BIG_ENDIAN_CODE;
 		buffer_size=2+sizeof(message_size);
@@ -2824,6 +2950,7 @@ Starts calibration for the <crate>.
 		{
 			display_message(ERROR_MESSAGE,"crate_calibrate.  socket_send() failed");
 		}
+		unlock_mutex(crate->command_socket_mutex);
 	}
 	else
 	{
@@ -2838,7 +2965,7 @@ Starts calibration for the <crate>.
 
 static int crate_start_sampling(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -2855,6 +2982,7 @@ Starts sampling for the <crate>.
 	return_code=0;
 	if (crate&&(INVALID_SOCKET!=crate->command_socket))
 	{
+		lock_mutex(crate->command_socket_mutex);
 		buffer[0]=UNEMAP_START_SAMPLING_CODE;
 		buffer[1]=BIG_ENDIAN_CODE;
 		buffer_size=2+sizeof(message_size);
@@ -2896,6 +3024,7 @@ Starts sampling for the <crate>.
 			display_message(ERROR_MESSAGE,
 				"crate_start_sampling.  socket_send() failed");
 		}
+		unlock_mutex(crate->command_socket_mutex);
 	}
 	else
 	{
@@ -2910,7 +3039,7 @@ Starts sampling for the <crate>.
 
 static int crate_stop_sampling(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -2926,6 +3055,7 @@ Stops sampling for the <crate>.
 	return_code=0;
 	if (crate&&(INVALID_SOCKET!=crate->command_socket))
 	{
+		lock_mutex(crate->command_socket_mutex);
 		buffer[0]=UNEMAP_STOP_SAMPLING_CODE;
 		buffer[1]=BIG_ENDIAN_CODE;
 		buffer_size=2+sizeof(message_size);
@@ -2967,6 +3097,7 @@ Stops sampling for the <crate>.
 			display_message(ERROR_MESSAGE,
 				"crate_stop_sampling.  socket_send() failed");
 		}
+		unlock_mutex(crate->command_socket_mutex);
 	}
 	else
 	{
@@ -2982,7 +3113,7 @@ Stops sampling for the <crate>.
 static int crate_set_isolate_record_mode_start(struct Unemap_crate *crate,
 	int channel_number,int isolate)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -3011,6 +3142,7 @@ to a calibration signal.
 	return_code=0;
 	if (crate&&(INVALID_SOCKET!=crate->command_socket))
 	{
+		lock_mutex(crate->command_socket_mutex);
 		buffer[0]=UNEMAP_SET_ISOLATE_RECORD_MODE_CODE;
 		buffer[1]=BIG_ENDIAN_CODE;
 		buffer_size=2+sizeof(message_size);
@@ -3053,7 +3185,7 @@ to a calibration signal.
 
 static int crate_set_isolate_record_mode_end(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -3103,6 +3235,7 @@ to a calibration signal.
 			display_message(ERROR_MESSAGE,
 				"crate_set_isolate_record_mode_end.  socket_recv() failed");
 		}
+		unlock_mutex(crate->command_socket_mutex);
 	}
 	else
 	{
@@ -3216,7 +3349,7 @@ to a calibration signal.
 static int crate_get_isolate_record_mode(struct Unemap_crate *crate,
 	int channel_number,int *isolate)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -3241,6 +3374,7 @@ If the group is in isolate mode, then <*isolate> is set to 1.  Otherwise
 	{
 		if (INVALID_SOCKET!=crate->command_socket)
 		{
+			lock_mutex(crate->command_socket_mutex);
 			buffer[0]=UNEMAP_GET_ISOLATE_RECORD_MODE_CODE;
 			buffer[1]=BIG_ENDIAN_CODE;
 			buffer_size=2+sizeof(message_size);
@@ -3294,6 +3428,7 @@ If the group is in isolate mode, then <*isolate> is set to 1.  Otherwise
 				display_message(ERROR_MESSAGE,
 					"crate_get_isolate_record_mode.  socket_send() failed");
 			}
+			unlock_mutex(crate->command_socket_mutex);
 		}
 		else
 		{
@@ -3315,7 +3450,7 @@ If the group is in isolate mode, then <*isolate> is set to 1.  Otherwise
 static int crate_set_antialiasing_filter_frequency(struct Unemap_crate *crate,
 	int channel_number,float frequency)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -3345,6 +3480,7 @@ unemap_get_antialiasing_filter.
 	return_code=0;
 	if (crate&&(INVALID_SOCKET!=crate->command_socket))
 	{
+		lock_mutex(crate->command_socket_mutex);
 		buffer[0]=UNEMAP_SET_ANTIALIASING_FILTER_FREQUENCY_CODE;
 		buffer[1]=BIG_ENDIAN_CODE;
 		buffer_size=2+sizeof(message_size);
@@ -3389,6 +3525,7 @@ unemap_get_antialiasing_filter.
 			display_message(ERROR_MESSAGE,
 				"crate_set_antialiasing_filter_frequency.  socket_send() failed");
 		}
+		unlock_mutex(crate->command_socket_mutex);
 	}
 	else
 	{
@@ -3404,7 +3541,7 @@ unemap_get_antialiasing_filter.
 static int crate_set_powerup_antialiasing_filter_frequency(
 	struct Unemap_crate *crate,int channel_number)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -3427,6 +3564,7 @@ group.
 	return_code=0;
 	if (crate&&(INVALID_SOCKET!=crate->command_socket))
 	{
+		lock_mutex(crate->command_socket_mutex);
 		buffer[0]=UNEMAP_SET_POWERUP_ANTIALIASING_FILTER_FREQUENCY_CODE;
 		buffer[1]=BIG_ENDIAN_CODE;
 		buffer_size=2+sizeof(message_size);
@@ -3469,6 +3607,7 @@ group.
 			display_message(ERROR_MESSAGE,
 			"crate_set_powerup_antialiasing_filter_frequency.  socket_send() failed");
 		}
+		unlock_mutex(crate->command_socket_mutex);
 	}
 	else
 	{
@@ -3484,7 +3623,7 @@ group.
 static int crate_get_antialiasing_filter_frequency(struct Unemap_crate *crate,
 	int channel_number,float *frequency)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -3508,6 +3647,7 @@ Otherwise, the function fails.
 	{
 		if (INVALID_SOCKET!=crate->command_socket)
 		{
+			lock_mutex(crate->command_socket_mutex);
 			buffer[0]=UNEMAP_GET_ANTIALIASING_FILTER_FREQUENCY_CODE;
 			buffer[1]=BIG_ENDIAN_CODE;
 			buffer_size=2+sizeof(message_size);
@@ -3562,6 +3702,7 @@ Otherwise, the function fails.
 				display_message(ERROR_MESSAGE,
 					"crate_get_antialiasing_filter_frequency.  socket_send() failed");
 			}
+			unlock_mutex(crate->command_socket_mutex);
 		}
 		else
 		{
@@ -3583,7 +3724,7 @@ Otherwise, the function fails.
 static int crate_get_number_of_channels(struct Unemap_crate *crate,
 	int *number_of_channels)
 /*******************************************************************************
-LAST MODIFIED : 6 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -3603,6 +3744,7 @@ The total number of hardware channels for the <crate> is assigned to
 	{
 		if (INVALID_SOCKET!=crate->command_socket)
 		{
+			lock_mutex(crate->command_socket_mutex);
 			buffer[0]=UNEMAP_GET_NUMBER_OF_CHANNELS_CODE;
 			buffer[1]=BIG_ENDIAN_CODE;
 			buffer_size=2+sizeof(message_size);
@@ -3656,6 +3798,7 @@ The total number of hardware channels for the <crate> is assigned to
 				display_message(ERROR_MESSAGE,
 					"crate_get_number_of_channels.  socket_send() failed");
 			}
+			unlock_mutex(crate->command_socket_mutex);
 		}
 		else
 		{
@@ -3677,7 +3820,7 @@ The total number of hardware channels for the <crate> is assigned to
 static int crate_get_sample_range(struct Unemap_crate *crate,
 	long int *minimum_sample_value,long int *maximum_sample_value)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -3698,6 +3841,7 @@ For the <crate>.  The minimum possible sample value is assigned to
 	{
 		if (INVALID_SOCKET!=crate->command_socket)
 		{
+			lock_mutex(crate->command_socket_mutex);
 			buffer[0]=UNEMAP_GET_SAMPLE_RANGE_CODE;
 			buffer[1]=BIG_ENDIAN_CODE;
 			buffer_size=2+sizeof(message_size);
@@ -3754,6 +3898,7 @@ For the <crate>.  The minimum possible sample value is assigned to
 				display_message(ERROR_MESSAGE,
 					"crate_get_sample_range.  socket_send() failed");
 			}
+			unlock_mutex(crate->command_socket_mutex);
 		}
 		else
 		{
@@ -3775,7 +3920,7 @@ For the <crate>.  The minimum possible sample value is assigned to
 static int crate_get_voltage_range_start(struct Unemap_crate *crate,
 	int channel_number)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -3800,6 +3945,7 @@ The voltage range, allowing for gain, is returned via <*minimum_voltage> and
 	{
 		if (INVALID_SOCKET!=crate->command_socket)
 		{
+			lock_mutex(crate->command_socket_mutex);
 			buffer[0]=UNEMAP_GET_VOLTAGE_RANGE_CODE;
 			buffer[1]=BIG_ENDIAN_CODE;
 			buffer_size=2+sizeof(message_size);
@@ -3842,7 +3988,7 @@ The voltage range, allowing for gain, is returned via <*minimum_voltage> and
 static int crate_get_voltage_range_end(struct Unemap_crate *crate,
 	float *minimum_voltage,float *maximum_voltage)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -3904,6 +4050,7 @@ The voltage range, allowing for gain, is returned via <*minimum_voltage> and
 				display_message(ERROR_MESSAGE,
 					"crate_get_voltage_range_end.  socket_recv() failed");
 			}
+			unlock_mutex(crate->command_socket_mutex);
 		}
 		else
 		{
@@ -4031,7 +4178,7 @@ The voltage range, allowing for gain, is returned via <*minimum_voltage> and
 static int crate_get_number_of_samples_acquired(struct Unemap_crate *crate,
 	unsigned long *number_of_samples)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -4051,6 +4198,7 @@ For the <crate>.  The number of samples acquired per channel since
 	{
 		if (INVALID_SOCKET!=crate->command_socket)
 		{
+			lock_mutex(crate->command_socket_mutex);
 			buffer[0]=UNEMAP_GET_NUMBER_OF_SAMPLES_ACQUIRED_CODE;
 			buffer[1]=BIG_ENDIAN_CODE;
 			buffer_size=2+sizeof(message_size);
@@ -4104,6 +4252,7 @@ For the <crate>.  The number of samples acquired per channel since
 				display_message(ERROR_MESSAGE,
 					"crate_get_number_of_samples_acquired.  socket_send() failed");
 			}
+			unlock_mutex(crate->command_socket_mutex);
 		}
 		else
 		{
@@ -4125,7 +4274,7 @@ For the <crate>.  The number of samples acquired per channel since
 static int crate_get_samples_acquired(struct Unemap_crate *crate,
 	int channel_number,short int *samples)
 /*******************************************************************************
-LAST MODIFIED : 12 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -4153,6 +4302,7 @@ Otherwise the function fails.
 	{
 		if (INVALID_SOCKET!=crate->command_socket)
 		{
+			lock_mutex(crate->command_socket_mutex);
 			buffer[0]=UNEMAP_GET_SAMPLES_ACQUIRED_CODE;
 			buffer[1]=BIG_ENDIAN_CODE;
 			buffer_size=2+sizeof(message_size);
@@ -4222,6 +4372,7 @@ Otherwise the function fails.
 				display_message(ERROR_MESSAGE,
 					"crate_get_samples_acquired.  socket_send() failed");
 			}
+			unlock_mutex(crate->command_socket_mutex);
 		}
 		else
 		{
@@ -4247,7 +4398,7 @@ Otherwise the function fails.
 static int crate_get_samples_acquired_background_start(
 	struct Unemap_crate *crate,int channel_number)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -4272,6 +4423,7 @@ Otherwise the function fails.
 	/* check arguments */
 	if (crate&&(INVALID_SOCKET!=crate->command_socket))
 	{
+		lock_mutex(crate->command_socket_mutex);
 		buffer[0]=UNEMAP_GET_SAMPLES_ACQUIRED_BACKGROUND_CODE;
 		buffer[1]=BIG_ENDIAN_CODE;
 		buffer_size=2+sizeof(message_size);
@@ -4312,7 +4464,7 @@ Otherwise the function fails.
 
 static int crate_get_samples_acquired_background_end(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -4358,6 +4510,7 @@ Otherwise the function fails.
 			display_message(ERROR_MESSAGE,
 				"crate_get_samples_acquired_background_end.  socket_recv() failed");
 		}
+		unlock_mutex(crate->command_socket_mutex);
 	}
 	else
 	{
@@ -4465,7 +4618,7 @@ Otherwise the function fails.
 static int crate_get_maximum_number_of_samples(struct Unemap_crate *crate,
 	unsigned long *number_of_samples)
 /*******************************************************************************
-LAST MODIFIED : 6 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -4485,6 +4638,7 @@ channel, is assigned to <*number_of_samples>.
 	{
 		if (INVALID_SOCKET!=crate->command_socket)
 		{
+			lock_mutex(crate->command_socket_mutex);
 			buffer[0]=UNEMAP_GET_MAXIMUM_NUMBER_OF_SAMPLES_CODE;
 			buffer[1]=BIG_ENDIAN_CODE;
 			buffer_size=2+sizeof(message_size);
@@ -4537,6 +4691,7 @@ channel, is assigned to <*number_of_samples>.
 				display_message(ERROR_MESSAGE,
 					"crate_get_maximum_number_of_samples.  socket_send() failed");
 			}
+			unlock_mutex(crate->command_socket_mutex);
 		}
 		else
 		{
@@ -4558,7 +4713,7 @@ channel, is assigned to <*number_of_samples>.
 static int crate_get_sampling_frequency(struct Unemap_crate *crate,
 	float *frequency)
 /*******************************************************************************
-LAST MODIFIED : 6 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -4577,6 +4732,7 @@ The sampling frequency is assigned to <*frequency>.
 	{
 		if (INVALID_SOCKET!=crate->command_socket)
 		{
+			lock_mutex(crate->command_socket_mutex);
 			buffer[0]=UNEMAP_GET_SAMPLING_FREQUENCY_CODE;
 			buffer[1]=BIG_ENDIAN_CODE;
 			buffer_size=2+sizeof(message_size);
@@ -4629,6 +4785,7 @@ The sampling frequency is assigned to <*frequency>.
 				display_message(ERROR_MESSAGE,
 					"crate_get_sampling_frequency.  socket_send() failed");
 			}
+			unlock_mutex(crate->command_socket_mutex);
 		}
 		else
 		{
@@ -4649,7 +4806,7 @@ The sampling frequency is assigned to <*frequency>.
 
 static int crate_get_gain_start(struct Unemap_crate *crate,int channel_number)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -4673,6 +4830,7 @@ The <*pre_filter_gain> and <*post_filter_gain> for the group are assigned.
 	{
 		if (INVALID_SOCKET!=crate->command_socket)
 		{
+			lock_mutex(crate->command_socket_mutex);
 			buffer[0]=UNEMAP_GET_GAIN_CODE;
 			buffer[1]=BIG_ENDIAN_CODE;
 			buffer_size=2+sizeof(message_size);
@@ -4714,7 +4872,7 @@ The <*pre_filter_gain> and <*post_filter_gain> for the group are assigned.
 static int crate_get_gain_end(struct Unemap_crate *crate,
 	float *pre_filter_gain,float *post_filter_gain)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -4775,6 +4933,7 @@ The <*pre_filter_gain> and <*post_filter_gain> for the group are assigned.
 				display_message(ERROR_MESSAGE,
 					"crate_get_gain_end.  socket_recv() failed");
 			}
+			unlock_mutex(crate->command_socket_mutex);
 		}
 		else
 		{
@@ -4900,7 +5059,7 @@ The <*pre_filter_gain> and <*post_filter_gain> for the group are assigned.
 static int crate_set_gain(struct Unemap_crate *crate,int channel_number,
 	float pre_filter_gain,float post_filter_gain)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 29 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -4935,6 +5094,7 @@ For UNEMAP_2V1 and UNEMAP_2V2, the post filter gain can be 11, 22, 55, 110, 220,
 	return_code=0;
 	if (crate&&(INVALID_SOCKET!=crate->command_socket))
 	{
+		lock_mutex(crate->command_socket_mutex);
 		buffer[0]=UNEMAP_SET_GAIN_CODE;
 		buffer[1]=BIG_ENDIAN_CODE;
 		buffer_size=2+sizeof(message_size);
@@ -4968,42 +5128,6 @@ For UNEMAP_2V1 and UNEMAP_2V2, the post filter gain can be 11, 22, 55, 110, 220,
 				if ((2+sizeof(long)==retval)&&(0==buffer_size)&&(buffer[0]))
 				{
 					return_code=1;
-#if defined (CACHE_CLIENT_INFORMATION)
-					if (crate->unemap_cards)
-					{
-						module_force_connection=1;
-						if (0==channel_number)
-						{
-							unemap_card=crate->unemap_cards;
-							for (i=crate->number_of_unemap_cards*
-								NUMBER_OF_CHANNELS_ON_NI_CARD;i>0;
-								i -= NUMBER_OF_CHANNELS_ON_NI_CARD)
-							{
-								crate_get_gain_start(crate,i);
-								crate_get_gain_end(crate,&(unemap_card->pre_filter_gain),
-									&(unemap_card->post_filter_gain));
-#if defined (OLD_CODE)
-								crate_get_gain(crate,i,&(unemap_card->pre_filter_gain),
-									&(unemap_card->post_filter_gain));
-#endif /* defined (OLD_CODE) */
-							}
-						}
-						else
-						{
-							unemap_card=(crate->unemap_cards)+
-								((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD);
-							crate_get_gain_start(crate,channel_number);
-							crate_get_gain_end(crate,&(unemap_card->pre_filter_gain),
-								&(unemap_card->post_filter_gain));
-#if defined (OLD_CODE)
-							crate_get_gain(crate,channel_number,
-								&(unemap_card->pre_filter_gain),
-								&(unemap_card->post_filter_gain));
-#endif /* defined (OLD_CODE) */
-						}
-						module_force_connection=0;
-					}
-#endif /* defined (CACHE_CLIENT_INFORMATION) */
 				}
 			}
 			else
@@ -5015,6 +5139,46 @@ For UNEMAP_2V1 and UNEMAP_2V2, the post filter gain can be 11, 22, 55, 110, 220,
 		{
 			display_message(ERROR_MESSAGE,"crate_set_gain.  socket_send() failed");
 		}
+		unlock_mutex(crate->command_socket_mutex);
+#if defined (CACHE_CLIENT_INFORMATION)
+		/*???DB.  Has to be here because of mutexs */
+		if (return_code)
+		{
+			if (crate->unemap_cards)
+			{
+				module_force_connection=1;
+				if (0==channel_number)
+				{
+					unemap_card=crate->unemap_cards;
+					for (i=crate->number_of_unemap_cards*NUMBER_OF_CHANNELS_ON_NI_CARD;
+						i>0;i -= NUMBER_OF_CHANNELS_ON_NI_CARD)
+					{
+						crate_get_gain_start(crate,i);
+						crate_get_gain_end(crate,&(unemap_card->pre_filter_gain),
+							&(unemap_card->post_filter_gain));
+#if defined (OLD_CODE)
+						crate_get_gain(crate,i,&(unemap_card->pre_filter_gain),
+							&(unemap_card->post_filter_gain));
+#endif /* defined (OLD_CODE) */
+					}
+				}
+				else
+				{
+					unemap_card=(crate->unemap_cards)+
+						((channel_number-1)/NUMBER_OF_CHANNELS_ON_NI_CARD);
+					crate_get_gain_start(crate,channel_number);
+					crate_get_gain_end(crate,&(unemap_card->pre_filter_gain),
+						&(unemap_card->post_filter_gain));
+#if defined (OLD_CODE)
+					crate_get_gain(crate,channel_number,
+						&(unemap_card->pre_filter_gain),
+						&(unemap_card->post_filter_gain));
+#endif /* defined (OLD_CODE) */
+				}
+				module_force_connection=0;
+			}
+		}
+#endif /* defined (CACHE_CLIENT_INFORMATION) */
 	}
 	else
 	{
@@ -5030,7 +5194,7 @@ static int crate_load_voltage_stimulating(struct Unemap_crate *crate,
 	int number_of_channels,int *channel_numbers,int number_of_voltages,
 	float voltages_per_second,float *voltages)
 /*******************************************************************************
-LAST MODIFIED : 2 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -5067,6 +5231,7 @@ Use <unemap_start_stimulating> to start the stimulating.
 	{
 		if (INVALID_SOCKET!=crate->command_socket)
 		{
+			lock_mutex(crate->command_socket_mutex);
 			buffer[0]=UNEMAP_LOAD_VOLTAGE_STIMULATING_CODE;
 			buffer[1]=BIG_ENDIAN_CODE;
 			buffer_size=2+sizeof(message_size);
@@ -5117,7 +5282,7 @@ Use <unemap_start_stimulating> to start the stimulating.
 						buffer_size);
 #endif /* defined (DEBUG) */
 					if ((2+sizeof(long)==retval)&&
-						(sizeof(float)*number_of_voltages==buffer_size)&&(buffer[0]))
+						((int)sizeof(float)*number_of_voltages==buffer_size)&&(buffer[0]))
 					{
 						if (0<buffer_size)
 						{
@@ -5150,6 +5315,7 @@ Use <unemap_start_stimulating> to start the stimulating.
 				display_message(ERROR_MESSAGE,
 					"crate_load_voltage_stimulating.  socket_send() failed");
 			}
+			unlock_mutex(crate->command_socket_mutex);
 		}
 		else
 		{
@@ -5172,7 +5338,7 @@ static int crate_load_current_stimulating(struct Unemap_crate *crate,
 	int number_of_channels,int *channel_numbers,int number_of_currents,
 	float currents_per_second,float *currents)
 /*******************************************************************************
-LAST MODIFIED : 2 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -5207,6 +5373,7 @@ used.
 	{
 		if (INVALID_SOCKET!=crate->command_socket)
 		{
+			lock_mutex(crate->command_socket_mutex);
 			buffer[0]=UNEMAP_LOAD_CURRENT_STIMULATING_CODE;
 			buffer[1]=BIG_ENDIAN_CODE;
 			buffer_size=2+sizeof(message_size);
@@ -5257,7 +5424,7 @@ used.
 						buffer_size);
 #endif /* defined (DEBUG) */
 					if ((2+sizeof(long)==retval)&&
-						(sizeof(float)*number_of_currents==buffer_size)&&(buffer[0]))
+						((long)sizeof(float)*number_of_currents==buffer_size)&&(buffer[0]))
 					{
 						if (0<buffer_size)
 						{
@@ -5290,6 +5457,7 @@ used.
 				display_message(ERROR_MESSAGE,
 					"crate_load_current_stimulating.  socket_send() failed");
 			}
+			unlock_mutex(crate->command_socket_mutex);
 		}
 		else
 		{
@@ -5310,7 +5478,7 @@ used.
 
 static int crate_start_stimulating(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 2 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -5330,6 +5498,7 @@ have not yet started.
 	{
 		if (INVALID_SOCKET!=crate->command_socket)
 		{
+			lock_mutex(crate->command_socket_mutex);
 			buffer[0]=UNEMAP_START_STIMULATING_CODE;
 			buffer[1]=BIG_ENDIAN_CODE;
 			buffer_size=2+sizeof(message_size);
@@ -5371,6 +5540,7 @@ have not yet started.
 				display_message(ERROR_MESSAGE,
 					"crate_start_stimulating.  socket_send() failed");
 			}
+			unlock_mutex(crate->command_socket_mutex);
 		}
 		else
 		{
@@ -5650,7 +5820,7 @@ used.
 
 static int crate_stop_stimulating(struct Unemap_crate *crate,int channel_number)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -5672,6 +5842,7 @@ Stops stimulating for the channels in the group.
 	return_code=0;
 	if (crate&&(INVALID_SOCKET!=crate->command_socket))
 	{
+		lock_mutex(crate->command_socket_mutex);
 		buffer[0]=UNEMAP_STOP_STIMULATING_CODE;
 		buffer[1]=BIG_ENDIAN_CODE;
 		buffer_size=2+sizeof(message_size);
@@ -5714,6 +5885,7 @@ Stops stimulating for the channels in the group.
 			display_message(ERROR_MESSAGE,
 				"crate_stop_stimulating.  socket_send() failed");
 		}
+		unlock_mutex(crate->command_socket_mutex);
 	}
 	else
 	{
@@ -5729,7 +5901,7 @@ Stops stimulating for the channels in the group.
 static int crate_set_channel_stimulating(struct Unemap_crate *crate,
 	int channel_number,int stimulating)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -5748,6 +5920,7 @@ is 0, then all channels are set to <stimulating>.  Otherwise the function fails.
 	return_code=0;
 	if (crate&&(INVALID_SOCKET!=crate->command_socket))
 	{
+		lock_mutex(crate->command_socket_mutex);
 		buffer[0]=UNEMAP_SET_CHANNEL_STIMULATING_CODE;
 		buffer[1]=BIG_ENDIAN_CODE;
 		buffer_size=2+sizeof(message_size);
@@ -5792,6 +5965,7 @@ is 0, then all channels are set to <stimulating>.  Otherwise the function fails.
 			display_message(ERROR_MESSAGE,
 				"crate_set_channel_stimulating.  socket_send() failed");
 		}
+		unlock_mutex(crate->command_socket_mutex);
 	}
 	else
 	{
@@ -5807,7 +5981,7 @@ is 0, then all channels are set to <stimulating>.  Otherwise the function fails.
 static int crate_get_channel_stimulating(struct Unemap_crate *crate,
 	int channel_number,int *stimulating)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -5828,6 +6002,7 @@ stimulating and 0 otherwise.  Otherwise the function fails.
 	{
 		if (INVALID_SOCKET!=crate->command_socket)
 		{
+			lock_mutex(crate->command_socket_mutex);
 			buffer[0]=UNEMAP_GET_CHANNEL_STIMULATING_CODE;
 			buffer[1]=BIG_ENDIAN_CODE;
 			buffer_size=2+sizeof(message_size);
@@ -5881,6 +6056,7 @@ stimulating and 0 otherwise.  Otherwise the function fails.
 				display_message(ERROR_MESSAGE,
 					"crate_get_channel_stimulating.  socket_send() failed");
 			}
+			unlock_mutex(crate->command_socket_mutex);
 		}
 		else
 		{
@@ -5903,7 +6079,7 @@ static int crate_start_calibrating(struct Unemap_crate *crate,
 	int channel_number,int number_of_voltages,float voltages_per_second,
 	float *voltages)
 /*******************************************************************************
-LAST MODIFIED : 13 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -5934,6 +6110,7 @@ the actual values used.
 	{
 		if (INVALID_SOCKET!=crate->command_socket)
 		{
+			lock_mutex(crate->command_socket_mutex);
 			buffer[0]=UNEMAP_START_CALIBRATING_CODE;
 			buffer[1]=BIG_ENDIAN_CODE;
 			buffer_size=2+sizeof(message_size);
@@ -6012,6 +6189,7 @@ the actual values used.
 				display_message(ERROR_MESSAGE,
 					"crate_start_calibrating.  socket_send() failed");
 			}
+			unlock_mutex(crate->command_socket_mutex);
 		}
 		else
 		{
@@ -6032,7 +6210,7 @@ the actual values used.
 
 static int crate_stop_calibrating(struct Unemap_crate *crate,int channel_number)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -6054,6 +6232,7 @@ Stops generating the calibration signal for the channels in the group.
 	return_code=0;
 	if (crate&&(INVALID_SOCKET!=crate->command_socket))
 	{
+		lock_mutex(crate->command_socket_mutex);
 		buffer[0]=UNEMAP_STOP_CALIBRATING_CODE;
 		buffer[1]=BIG_ENDIAN_CODE;
 		buffer_size=2+sizeof(message_size);
@@ -6096,6 +6275,7 @@ Stops generating the calibration signal for the channels in the group.
 			display_message(ERROR_MESSAGE,
 				"crate_stop_calibrating.  socket_send() failed");
 		}
+		unlock_mutex(crate->command_socket_mutex);
 	}
 	else
 	{
@@ -6110,7 +6290,7 @@ Stops generating the calibration signal for the channels in the group.
 
 static int crate_set_power_start(struct Unemap_crate *crate,int on)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -6127,6 +6307,7 @@ hardware is powered on.
 	return_code=0;
 	if (crate&&(INVALID_SOCKET!=crate->command_socket))
 	{
+		lock_mutex(crate->command_socket_mutex);
 		buffer[0]=UNEMAP_SET_POWER_CODE;
 		buffer[1]=BIG_ENDIAN_CODE;
 		buffer_size=2+sizeof(message_size);
@@ -6163,7 +6344,7 @@ hardware is powered on.
 
 static int crate_set_power_end(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -6201,6 +6382,7 @@ hardware is powered on.
 			display_message(ERROR_MESSAGE,
 				"crate_set_power_end.  socket_recv() failed");
 		}
+		unlock_mutex(crate->command_socket_mutex);
 	}
 	else
 	{
@@ -6288,7 +6470,7 @@ hardware is powered on.
 
 static int crate_get_power(struct Unemap_crate *crate,int *on)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -6308,6 +6490,7 @@ If the hardware power is on for the <crate> then <*on> is set to 1, otherwise
 	{
 		if (INVALID_SOCKET!=crate->command_socket)
 		{
+			lock_mutex(crate->command_socket_mutex);
 			buffer[0]=UNEMAP_GET_POWER_CODE;
 			buffer[1]=BIG_ENDIAN_CODE;
 			buffer_size=2+sizeof(message_size);
@@ -6359,6 +6542,7 @@ If the hardware power is on for the <crate> then <*on> is set to 1, otherwise
 				display_message(ERROR_MESSAGE,
 					"crate_get_power.  socket_send() failed");
 			}
+			unlock_mutex(crate->command_socket_mutex);
 		}
 		else
 		{
@@ -6378,7 +6562,7 @@ If the hardware power is on for the <crate> then <*on> is set to 1, otherwise
 
 static int crate_get_number_of_stimulators_start(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -6398,6 +6582,7 @@ The total number of hardware stimulators for the <crate> is assigned to
 	{
 		if (INVALID_SOCKET!=crate->command_socket)
 		{
+			lock_mutex(crate->command_socket_mutex);
 			buffer[0]=UNEMAP_GET_NUMBER_OF_STIMULATORS_CODE;
 			buffer[1]=BIG_ENDIAN_CODE;
 			buffer_size=2+sizeof(message_size);
@@ -6438,7 +6623,7 @@ The total number of hardware stimulators for the <crate> is assigned to
 static int crate_get_number_of_stimulators_end(struct Unemap_crate *crate,
 	int *number_of_stimulators)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -6492,6 +6677,7 @@ The total number of hardware stimulators for the <crate> is assigned to
 				display_message(ERROR_MESSAGE,
 					"crate_get_number_of_stimulators_end.  socket_recv() failed");
 			}
+			unlock_mutex(crate->command_socket_mutex);
 		}
 		else
 		{
@@ -6609,7 +6795,7 @@ The total number of hardware stimulators for the <crate> is assigned to
 static int crate_channel_valid_for_stimulator_start(struct Unemap_crate *crate,
 	int stimulator_number,int channel_number)
 /*******************************************************************************
-LAST MODIFIED : 11 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -6628,6 +6814,7 @@ Returns non-zero if <stimulator_number> can stimulate down <channel_number> for
 	{
 		if (INVALID_SOCKET!=crate->command_socket)
 		{
+			lock_mutex(crate->command_socket_mutex);
 			buffer[0]=UNEMAP_CHANNEL_VALID_FOR_STIMULATOR_CODE;
 			buffer[1]=BIG_ENDIAN_CODE;
 			buffer_size=2+sizeof(message_size);
@@ -6671,7 +6858,7 @@ Returns non-zero if <stimulator_number> can stimulate down <channel_number> for
 
 static int crate_channel_valid_for_stimulator_end(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function does not need the hardware to be configured.
@@ -6711,6 +6898,7 @@ Returns non-zero if <stimulator_number> can stimulate down <channel_number> for
 				display_message(ERROR_MESSAGE,
 					"crate_channel_valid_for_stimulator_end.  socket_recv() failed");
 			}
+			unlock_mutex(crate->command_socket_mutex);
 		}
 		else
 		{
@@ -6819,7 +7007,7 @@ static int crate_get_card_state(struct Unemap_crate *crate,int channel_number,
 	int *NI_gain,int *input_mode,int *polarity,float *tol_settling,
 	int *sampling_interval,int *settling_step_max)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -6843,6 +7031,7 @@ Intended for diagnostic use only.
 	{
 		if (INVALID_SOCKET!=crate->command_socket)
 		{
+			lock_mutex(crate->command_socket_mutex);
 			buffer[0]=UNEMAP_GET_CARD_STATE_CODE;
 			buffer[1]=BIG_ENDIAN_CODE;
 			buffer_size=2+sizeof(message_size);
@@ -6917,6 +7106,7 @@ Intended for diagnostic use only.
 				display_message(ERROR_MESSAGE,
 					"crate_get_card_state.  socket_send() failed");
 			}
+			unlock_mutex(crate->command_socket_mutex);
 		}
 		else
 		{
@@ -6940,7 +7130,7 @@ Intended for diagnostic use only.
 static int crate_toggle_shift_register(struct Unemap_crate *crate,
 	int channel_number,int register_number)
 /*******************************************************************************
-LAST MODIFIED : 9 March 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 The function fails if the hardware is not configured.
@@ -6961,6 +7151,7 @@ Intended for diagnostic use only.
 		the command_socket is valid */
 	if (crate&&(INVALID_SOCKET!=crate->command_socket))
 	{
+		lock_mutex(crate->command_socket_mutex);
 		buffer[0]=UNEMAP_TOGGLE_SHIFT_REGISTER_CODE;
 		buffer[1]=BIG_ENDIAN_CODE;
 		buffer_size=2+sizeof(message_size);
@@ -7005,6 +7196,7 @@ Intended for diagnostic use only.
 			display_message(ERROR_MESSAGE,
 				"crate_toggle_shift_register.  socket_send() failed");
 		}
+		unlock_mutex(crate->command_socket_mutex);
 	}
 	else
 	{
@@ -7019,7 +7211,7 @@ Intended for diagnostic use only.
 
 static int crate_initialize_connection(struct Unemap_crate *crate)
 /*******************************************************************************
-LAST MODIFIED : 2 July 2000
+LAST MODIFIED : 25 July 2000
 
 DESCRIPTION :
 Sets up the connection with the unemap hardware service for the <crate>.
@@ -7030,6 +7222,9 @@ Sets up the connection with the unemap hardware service for the <crate>.
 	struct hostent *internet_host_data;
 	struct sockaddr_in server_socket;
 	unsigned long internet_address;
+#if defined (UNIX)
+	int error_code;
+#endif /* defined (UNIX) */
 #endif /* defined (USE_SOCKETS) */
 
 	ENTER(crate_initialize_connection);
@@ -7048,118 +7243,216 @@ Sets up the connection with the unemap hardware service for the <crate>.
 #if defined (USE_SOCKETS)
 		if (INVALID_SOCKET==crate->command_socket)
 		{
-			if (isalpha((crate->server_name)[0]))
+			/* create mutex's */
+				/*???DB.  When do others, free if failure */
+#if defined (WIN32)
+			if (crate->command_socket_mutex=CreateMutex(
+				/*no security attributes*/NULL,/*do not initially own*/FALSE,
+				/*no name*/(LPCTSTR)NULL))
 			{
-				/* server address is a name */
-				internet_host_data=gethostbyname(crate->server_name);
+				if (crate->acquired_socket_mutex=CreateMutex(
+					/*no security attributes*/NULL,/*do not initially own*/FALSE,
+					/*no name*/(LPCTSTR)NULL))
+				{
+					return_code=1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+"initialize_connection.  CreateMutex failed for acquired_socket_mutex.  Error code %d",
+						WSAGetLastError());
+					CloseHandle(crate->command_socket_mutex);
+					crate->command_socket_mutex=NULL;
+				}
 			}
 			else
 			{
-				/* server address is a "." format IP address */
-				internet_address=inet_addr(crate->server_name);
-				internet_host_data=gethostbyaddr((char *)&internet_address,
-					sizeof(internet_address),AF_INET);
+				display_message(ERROR_MESSAGE,
+"initialize_connection.  CreateMutex failed for command_socket_mutex.  Error code %d",
+					WSAGetLastError());
 			}
-			if (internet_host_data)
+#endif /* defined (WIN32) */
+#if defined (UNIX)
+			if (0==(error_code=pthread_mutex_init(
+				&(crate->command_socket_mutex_storage),
+				(pthread_mutexattr_t *)NULL)))
 			{
-				/* create the acquired socket.  Do this before the command
-					socket because the service responds to the command socket
-					connection */
-				socket_type=DEFAULT_SOCKET_TYPE;
-				crate->acquired_socket=socket(AF_INET,socket_type,0);
-				if (INVALID_SOCKET!=crate->acquired_socket)
+				crate->command_socket_mutex=
+					&(crate->command_socket_mutex_storage);
+				if (0==(error_code=pthread_mutex_init(
+					&(crate->acquired_socket_mutex_storage),
+					(pthread_mutexattr_t *)NULL)))
 				{
-					/* connect to the server */
-					memset(&server_socket,0,sizeof(server_socket));
-						/*???DB.  Have to use memset because some implementations of
-							struct sockaddr_in don't have the sin_len field */
-					memcpy(&(server_socket.sin_addr),internet_host_data->h_addr,
-						internet_host_data->h_length);
-					server_socket.sin_family=internet_host_data->h_addrtype;
-					server_socket.sin_port=htons(crate->acquired_port);
-#if defined (DEBUG)
-					/*???debug */
-					printf("acquired_port=%d\n",crate->acquired_port);
-#endif /* defined (DEBUG) */
-					if (SOCKET_ERROR!=connect(crate->acquired_socket,
-						(struct sockaddr *)&server_socket,sizeof(server_socket)))
+					crate->acquired_socket_mutex=
+						&(crate->acquired_socket_mutex_storage);
+					return_code=1;
+				}
+				else
+				{
+					return_code=0;
+					display_message(ERROR_MESSAGE,
+	"initialize_connection.  pthread_mutex_init failed for acquired_socket_mutex.  Error code %d",
+						error_code);
+					crate->acquired_socket_mutex=(pthread_mutex_t *)NULL;
+					pthread_mutex_destroy(crate->command_socket_mutex);
+					crate->command_socket_mutex=(pthread_mutex_t *)NULL;
+				}
+			}
+			else
+			{
+				return_code=0;
+				display_message(ERROR_MESSAGE,
+"initialize_connection.  pthread_mutex_init failed for command_socket_mutex.  Error code %d",
+					error_code);
+				crate->acquired_socket_mutex=(pthread_mutex_t *)NULL;
+				crate->command_socket_mutex=(pthread_mutex_t *)NULL;
+			}
+#endif /* defined (UNIX) */
+			if (return_code)
+			{
+				return_code=0;
+				if (isalpha((crate->server_name)[0]))
+				{
+					/* server address is a name */
+					internet_host_data=gethostbyname(crate->server_name);
+				}
+				else
+				{
+					/* server address is a "." format IP address */
+					internet_address=inet_addr(crate->server_name);
+					internet_host_data=gethostbyaddr((char *)&internet_address,
+						sizeof(internet_address),AF_INET);
+				}
+				if (internet_host_data)
+				{
+					/* create the acquired socket.  Do this before the command
+						socket because the service responds to the command socket
+						connection */
+					socket_type=DEFAULT_SOCKET_TYPE;
+					crate->acquired_socket=socket(AF_INET,socket_type,0);
+					if (INVALID_SOCKET!=crate->acquired_socket)
 					{
-						/* create the calibration socket.  Do this before the command
-							socket because the service responds to the command socket
-							connection */
-						socket_type=DEFAULT_SOCKET_TYPE;
-						crate->calibration_socket=socket(AF_INET,socket_type,0);
-						if (INVALID_SOCKET!=crate->calibration_socket)
+						/* connect to the server */
+						memset(&server_socket,0,sizeof(server_socket));
+							/*???DB.  Have to use memset because some implementations of
+								struct sockaddr_in don't have the sin_len field */
+						memcpy(&(server_socket.sin_addr),internet_host_data->h_addr,
+							internet_host_data->h_length);
+						server_socket.sin_family=internet_host_data->h_addrtype;
+						server_socket.sin_port=htons(crate->acquired_port);
+#if defined (DEBUG)
+						/*???debug */
+						printf("acquired_port=%d\n",crate->acquired_port);
+#endif /* defined (DEBUG) */
+						if (SOCKET_ERROR!=connect(crate->acquired_socket,
+							(struct sockaddr *)&server_socket,sizeof(server_socket)))
 						{
-							/* connect to the server */
-							memset(&server_socket,0,sizeof(server_socket));
-								/*???DB.  Have to use memset because some implementations of
-									struct sockaddr_in don't have the sin_len field */
-							memcpy(&(server_socket.sin_addr),internet_host_data->h_addr,
-								internet_host_data->h_length);
-							server_socket.sin_family=internet_host_data->h_addrtype;
-							server_socket.sin_port=htons(crate->calibration_port);
-#if defined (DEBUG)
-							/*???debug */
-							printf("calibration_port=%d\n",crate->calibration_port);
-#endif /* defined (DEBUG) */
-							if (SOCKET_ERROR!=connect(crate->calibration_socket,
-								(struct sockaddr *)&server_socket,sizeof(server_socket)))
+							/* create the calibration socket.  Do this before the command
+								socket because the service responds to the command socket
+								connection */
+							socket_type=DEFAULT_SOCKET_TYPE;
+							crate->calibration_socket=socket(AF_INET,socket_type,0);
+							if (INVALID_SOCKET!=crate->calibration_socket)
 							{
-								/* create the scrolling socket.  Do this before the command
-									socket because the service responds to the command socket
-									connection */
-								socket_type=DEFAULT_SOCKET_TYPE;
-								crate->scrolling_socket=socket(AF_INET,socket_type,0);
-								if (INVALID_SOCKET!=crate->scrolling_socket)
+								/* connect to the server */
+								memset(&server_socket,0,sizeof(server_socket));
+									/*???DB.  Have to use memset because some implementations of
+										struct sockaddr_in don't have the sin_len field */
+								memcpy(&(server_socket.sin_addr),internet_host_data->h_addr,
+									internet_host_data->h_length);
+								server_socket.sin_family=internet_host_data->h_addrtype;
+								server_socket.sin_port=htons(crate->calibration_port);
+#if defined (DEBUG)
+								/*???debug */
+								printf("calibration_port=%d\n",crate->calibration_port);
+#endif /* defined (DEBUG) */
+								if (SOCKET_ERROR!=connect(crate->calibration_socket,
+									(struct sockaddr *)&server_socket,sizeof(server_socket)))
 								{
-									/* connect to the server */
-									memset(&server_socket,0,sizeof(server_socket));
-										/*???DB.  Have to use memset because some implementations
-											of struct sockaddr_in don't have the sin_len field */
-									memcpy(&(server_socket.sin_addr),internet_host_data->h_addr,
-										internet_host_data->h_length);
-									server_socket.sin_family=internet_host_data->h_addrtype;
-									server_socket.sin_port=htons(crate->scrolling_port);
-#if defined (DEBUG)
-									/*???debug */
-									printf("scrolling_port=%d\n",crate->scrolling_port);
-#endif /* defined (DEBUG) */
-									if (SOCKET_ERROR!=connect(crate->scrolling_socket,
-										(struct sockaddr *)&server_socket,sizeof(server_socket)))
+									/* create the scrolling socket.  Do this before the command
+										socket because the service responds to the command socket
+										connection */
+									socket_type=DEFAULT_SOCKET_TYPE;
+									crate->scrolling_socket=socket(AF_INET,socket_type,0);
+									if (INVALID_SOCKET!=crate->scrolling_socket)
 									{
-										/* create the command socket */
-										socket_type=DEFAULT_SOCKET_TYPE;
-										crate->command_socket=socket(AF_INET,socket_type,0);
-										if (INVALID_SOCKET!=crate->command_socket)
-										{
-											/* connect to the server */
-											memset(&server_socket,0,sizeof(server_socket));
-												/*???DB.  Have to use memset because some
-													implementations of struct sockaddr_in don't have the
-													sin_len field */
-											memcpy(&(server_socket.sin_addr),
-												internet_host_data->h_addr,
-												internet_host_data->h_length);
-											server_socket.sin_family=internet_host_data->h_addrtype;
-											server_socket.sin_port=htons(crate->command_port);
+										/* connect to the server */
+										memset(&server_socket,0,sizeof(server_socket));
+											/*???DB.  Have to use memset because some implementations
+												of struct sockaddr_in don't have the sin_len field */
+										memcpy(&(server_socket.sin_addr),internet_host_data->h_addr,
+											internet_host_data->h_length);
+										server_socket.sin_family=internet_host_data->h_addrtype;
+										server_socket.sin_port=htons(crate->scrolling_port);
 #if defined (DEBUG)
-											/*???debug */
-											printf("command_port=%d\n",crate->command_port);
+										/*???debug */
+										printf("scrolling_port=%d\n",crate->scrolling_port);
 #endif /* defined (DEBUG) */
-											if (SOCKET_ERROR!=connect(crate->command_socket,
-												(struct sockaddr *)&server_socket,
-												sizeof(server_socket)))
+										if (SOCKET_ERROR!=connect(crate->scrolling_socket,
+											(struct sockaddr *)&server_socket,sizeof(server_socket)))
+										{
+											/* create the command socket */
+											socket_type=DEFAULT_SOCKET_TYPE;
+											crate->command_socket=socket(AF_INET,socket_type,0);
+											if (INVALID_SOCKET!=crate->command_socket)
 											{
-												if (crate_get_number_of_channels(crate,
-													&(crate->number_of_channels)))
+												/* connect to the server */
+												memset(&server_socket,0,sizeof(server_socket));
+													/*???DB.  Have to use memset because some
+														implementations of struct sockaddr_in don't have the
+														sin_len field */
+												memcpy(&(server_socket.sin_addr),
+													internet_host_data->h_addr,
+													internet_host_data->h_length);
+												server_socket.sin_family=internet_host_data->h_addrtype;
+												server_socket.sin_port=htons(crate->command_port);
+#if defined (DEBUG)
+												/*???debug */
+												printf("command_port=%d\n",crate->command_port);
+#endif /* defined (DEBUG) */
+												if (SOCKET_ERROR!=connect(crate->command_socket,
+													(struct sockaddr *)&server_socket,
+													sizeof(server_socket)))
 												{
-													return_code=1;
+													if (crate_get_number_of_channels(crate,
+														&(crate->number_of_channels)))
+													{
+														return_code=1;
+													}
+													else
+													{
+														display_message(ERROR_MESSAGE,
+					"crate_initialize_connection.  Could not get the number of channels");
+#if defined (WIN32)
+														closesocket(crate->acquired_socket);
+														closesocket(crate->calibration_socket);
+														closesocket(crate->scrolling_socket);
+														closesocket(crate->command_socket);
+#endif /* defined (WIN32) */
+#if defined (UNIX)
+														close(crate->acquired_socket);
+														close(crate->calibration_socket);
+														close(crate->scrolling_socket);
+														close(crate->command_socket);
+#endif /* defined (UNIX) */
+														crate->acquired_socket=INVALID_SOCKET;
+														crate->calibration_socket=INVALID_SOCKET;
+														crate->scrolling_socket=INVALID_SOCKET;
+														crate->command_socket=INVALID_SOCKET;
+													}
 												}
 												else
 												{
 													display_message(ERROR_MESSAGE,
-					"crate_initialize_connection.  Could not get the number of channels");
+"crate_initialize_connection.  Could not connect command_socket.  Port %hu. Error code %d",
+														crate->command_port,
+#if defined (WIN32)
+														WSAGetLastError()
+#endif /* defined (WIN32) */
+#if defined (UNIX)
+														errno
+#endif /* defined (UNIX) */
+														);
 #if defined (WIN32)
 													closesocket(crate->acquired_socket);
 													closesocket(crate->calibration_socket);
@@ -7181,8 +7474,7 @@ Sets up the connection with the unemap hardware service for the <crate>.
 											else
 											{
 												display_message(ERROR_MESSAGE,
-"crate_initialize_connection.  Could not connect command_socket.  Port %hu. Error code %d",
-													crate->command_port,
+"crate_initialize_connection.  Could not create command_socket.  Error code %d",
 #if defined (WIN32)
 													WSAGetLastError()
 #endif /* defined (WIN32) */
@@ -7194,24 +7486,22 @@ Sets up the connection with the unemap hardware service for the <crate>.
 												closesocket(crate->acquired_socket);
 												closesocket(crate->calibration_socket);
 												closesocket(crate->scrolling_socket);
-												closesocket(crate->command_socket);
 #endif /* defined (WIN32) */
 #if defined (UNIX)
 												close(crate->acquired_socket);
 												close(crate->calibration_socket);
 												close(crate->scrolling_socket);
-												close(crate->command_socket);
 #endif /* defined (UNIX) */
 												crate->acquired_socket=INVALID_SOCKET;
 												crate->calibration_socket=INVALID_SOCKET;
 												crate->scrolling_socket=INVALID_SOCKET;
-												crate->command_socket=INVALID_SOCKET;
 											}
 										}
 										else
 										{
 											display_message(ERROR_MESSAGE,
-"crate_initialize_connection.  Could not create command_socket.  Error code %d",
+"crate_initialize_connection.  Could not connect scrolling_socket.  Port %hu.  Error code %d",
+												crate->scrolling_port,
 #if defined (WIN32)
 												WSAGetLastError()
 #endif /* defined (WIN32) */
@@ -7237,8 +7527,7 @@ Sets up the connection with the unemap hardware service for the <crate>.
 									else
 									{
 										display_message(ERROR_MESSAGE,
-"crate_initialize_connection.  Could not connect scrolling_socket.  Port %hu.  Error code %d",
-											crate->scrolling_port,
+"crate_initialize_connection.  Could not create scrolling_socket.  Error code %d",
 #if defined (WIN32)
 											WSAGetLastError()
 #endif /* defined (WIN32) */
@@ -7249,22 +7538,20 @@ Sets up the connection with the unemap hardware service for the <crate>.
 #if defined (WIN32)
 										closesocket(crate->acquired_socket);
 										closesocket(crate->calibration_socket);
-										closesocket(crate->scrolling_socket);
 #endif /* defined (WIN32) */
 #if defined (UNIX)
 										close(crate->acquired_socket);
 										close(crate->calibration_socket);
-										close(crate->scrolling_socket);
 #endif /* defined (UNIX) */
 										crate->acquired_socket=INVALID_SOCKET;
 										crate->calibration_socket=INVALID_SOCKET;
-										crate->scrolling_socket=INVALID_SOCKET;
 									}
 								}
 								else
 								{
 									display_message(ERROR_MESSAGE,
-"crate_initialize_connection.  Could not create scrolling_socket.  Error code %d",
+"crate_initialize_connection.  Could not connect calibration_socket.  Port %hu.  Error code %d",
+										crate->calibration_port,
 #if defined (WIN32)
 										WSAGetLastError()
 #endif /* defined (WIN32) */
@@ -7287,8 +7574,7 @@ Sets up the connection with the unemap hardware service for the <crate>.
 							else
 							{
 								display_message(ERROR_MESSAGE,
-"crate_initialize_connection.  Could not connect calibration_socket.  Port %hu.  Error code %d",
-									crate->calibration_port,
+"crate_initialize_connection.  Could not create calibration_socket.  Error code %d",
 #if defined (WIN32)
 									WSAGetLastError()
 #endif /* defined (WIN32) */
@@ -7298,20 +7584,18 @@ Sets up the connection with the unemap hardware service for the <crate>.
 									);
 #if defined (WIN32)
 								closesocket(crate->acquired_socket);
-								closesocket(crate->calibration_socket);
 #endif /* defined (WIN32) */
 #if defined (UNIX)
 								close(crate->acquired_socket);
-								close(crate->calibration_socket);
 #endif /* defined (UNIX) */
 								crate->acquired_socket=INVALID_SOCKET;
-								crate->calibration_socket=INVALID_SOCKET;
 							}
 						}
 						else
 						{
 							display_message(ERROR_MESSAGE,
-"crate_initialize_connection.  Could not create calibration_socket.  Error code %d",
+"crate_initialize_connection.  Could not connect acquired_socket.  Port %hu.  Error code %d",
+								crate->acquired_port,
 #if defined (WIN32)
 								WSAGetLastError()
 #endif /* defined (WIN32) */
@@ -7331,8 +7615,7 @@ Sets up the connection with the unemap hardware service for the <crate>.
 					else
 					{
 						display_message(ERROR_MESSAGE,
-"crate_initialize_connection.  Could not connect acquired_socket.  Port %hu.  Error code %d",
-							crate->acquired_port,
+"crate_initialize_connection.  Could not create acquired_socket.  Error code %d",
 #if defined (WIN32)
 							WSAGetLastError()
 #endif /* defined (WIN32) */
@@ -7340,33 +7623,36 @@ Sets up the connection with the unemap hardware service for the <crate>.
 							errno
 #endif /* defined (UNIX) */
 							);
-#if defined (WIN32)
-						closesocket(crate->acquired_socket);
-#endif /* defined (WIN32) */
-#if defined (UNIX)
-						close(crate->acquired_socket);
-#endif /* defined (UNIX) */
-						crate->acquired_socket=INVALID_SOCKET;
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-"crate_initialize_connection.  Could not create acquired_socket.  Error code %d",
-#if defined (WIN32)
-						WSAGetLastError()
-#endif /* defined (WIN32) */
-#if defined (UNIX)
-						errno
-#endif /* defined (UNIX) */
-						);
+					"crate_initialize_connection.  Could not resolve server name [%s]",
+						crate->server_name);
 				}
 			}
-			else
+			if (!return_code)
 			{
-				display_message(ERROR_MESSAGE,
-				"crate_initialize_connection.  Could not resolve server name [%s]",
-					crate->server_name);
+				/* free mutex's */
+				if (crate->command_socket_mutex)
+				{
+#if defined (WIN32)
+					CloseHandle(crate->command_socket_mutex);
+#endif /* defined (WIN32) */
+#if defined (UNIX)
+					pthread_mutex_destroy(crate->command_socket_mutex);
+#endif /* defined (UNIX) */
+				}
+				if (crate->acquired_socket_mutex)
+				{
+#if defined (WIN32)
+					CloseHandle(crate->acquired_socket_mutex);
+#endif /* defined (WIN32) */
+#if defined (UNIX)
+					pthread_mutex_destroy(crate->acquired_socket_mutex);
+#endif /* defined (UNIX) */
+				}
 			}
 		}
 		else
@@ -7392,7 +7678,7 @@ Sets up the connection with the unemap hardware service for the <crate>.
 
 static int initialize_connection(void)
 /*******************************************************************************
-LAST MODIFIED : 12 March 2000
+LAST MODIFIED : 25 July 2000
 
 DESCRIPTION :
 Sets up the connections with the unemap crates.
@@ -7520,69 +7806,76 @@ Sets up the connections with the unemap crates.
 					crate=module_unemap_crates;
 					while (return_code&&(number_of_servers>0))
 					{
-						/*???DB.  The port doesn't have to be unique, only the port and
-							machine being connected to */
-						port=DEFAULT_PORT;
+						if (return_code)
+						{
 #if defined (WIN32)
-						crate->acquired_socket=(SOCKET)INVALID_SOCKET;
-						crate->acquired_socket_thread_stop_event=NULL;
-						crate->calibration_socket=(SOCKET)INVALID_SOCKET;
-						crate->calibration_socket_thread_stop_event=NULL;
-						crate->command_socket=(SOCKET)INVALID_SOCKET;
-						crate->scrolling_socket=(SOCKET)INVALID_SOCKET;
-						crate->scrolling_socket_thread_stop_event=NULL;
+							crate->acquired_socket=(SOCKET)INVALID_SOCKET;
+							crate->acquired_socket_thread_stop_event=NULL;
+							crate->acquired_socket_mutex=(HANDLE)NULL;
+							crate->calibration_socket=(SOCKET)INVALID_SOCKET;
+							crate->calibration_socket_thread_stop_event=NULL;
+							crate->command_socket=(SOCKET)INVALID_SOCKET;
+							crate->command_socket_mutex=(HANDLE)NULL;
+							crate->scrolling_socket=(SOCKET)INVALID_SOCKET;
+							crate->scrolling_socket_thread_stop_event=NULL;
 #endif /* defined (WIN32) */
 #if defined (UNIX)
-						crate->acquired_socket=(int)INVALID_SOCKET;
-						crate->calibration_socket=(int)INVALID_SOCKET;
-						crate->command_socket=(int)INVALID_SOCKET;
-						crate->scrolling_socket=(int)INVALID_SOCKET;
+							crate->acquired_socket=(int)INVALID_SOCKET;
+							crate->acquired_socket_mutex=(pthread_mutex_t *)NULL;
+							crate->calibration_socket=(int)INVALID_SOCKET;
+							crate->command_socket=(int)INVALID_SOCKET;
+							crate->command_socket_mutex=(pthread_mutex_t *)NULL;
+							crate->scrolling_socket=(int)INVALID_SOCKET;
 #endif /* defined (UNIX) */
 #if defined (MOTIF)
-						crate->acquired_socket_xid=0;
-						crate->calibration_socket_xid=0;
-						crate->scrolling_socket_xid=0;
+							crate->acquired_socket_xid=0;
+							crate->calibration_socket_xid=0;
+							crate->scrolling_socket_xid=0;
 #endif /* defined (MOTIF) */
-						crate->command_port=port;
-						port++;
-						crate->scrolling_port=port;
-						port++;
-						crate->calibration_port=port;
-						port++;
-						crate->acquired_port=port;
-						port++;
-						(crate->acquired).complete=0;
-						(crate->acquired).number_of_channels=0;
-						(crate->acquired).number_of_samples=0;
-						(crate->acquired).samples=(short *)NULL;
-						(crate->calibration).complete=0;
-						(crate->calibration).number_of_channels=0;
-						(crate->calibration).channel_numbers=(int *)NULL;
-						(crate->calibration).channel_offsets=(float *)NULL;
-						(crate->calibration).channel_gains=(float *)NULL;
-						(crate->scrolling).complete=0;
-						(crate->scrolling).number_of_channels=0;
-						(crate->scrolling).number_of_values_per_channel=0;
-						(crate->scrolling).channel_numbers=(int *)NULL;
-						(crate->scrolling).values=(short *)NULL;
-						crate->number_of_channels=0;
+							/*???DB.  The port doesn't have to be unique, only the port and
+								machine being connected to */
+							port=DEFAULT_PORT;
+							crate->command_port=port;
+							port++;
+							crate->scrolling_port=port;
+							port++;
+							crate->calibration_port=port;
+							port++;
+							crate->acquired_port=port;
+							port++;
+							(crate->acquired).complete=0;
+							(crate->acquired).number_of_channels=0;
+							(crate->acquired).number_of_samples=0;
+							(crate->acquired).samples=(short *)NULL;
+							(crate->calibration).complete=0;
+							(crate->calibration).number_of_channels=0;
+							(crate->calibration).channel_numbers=(int *)NULL;
+							(crate->calibration).channel_offsets=(float *)NULL;
+							(crate->calibration).channel_gains=(float *)NULL;
+							(crate->scrolling).complete=0;
+							(crate->scrolling).number_of_channels=0;
+							(crate->scrolling).number_of_values_per_channel=0;
+							(crate->scrolling).channel_numbers=(int *)NULL;
+							(crate->scrolling).values=(short *)NULL;
+							crate->number_of_channels=0;
 #if defined (CACHE_CLIENT_INFORMATION)
-						crate->number_of_stimulators=0;
-						crate->stimulator_card_indices=(int *)NULL;
-						crate->number_of_unemap_cards=0;
-						crate->unemap_cards=(struct Unemap_card *)NULL;
+							crate->number_of_stimulators=0;
+							crate->stimulator_card_indices=(int *)NULL;
+							crate->number_of_unemap_cards=0;
+							crate->unemap_cards=(struct Unemap_card *)NULL;
 #endif /* defined (CACHE_CLIENT_INFORMATION) */
-						if (return_code=crate_initialize_connection(crate))
-						{
-							module_number_of_channels += crate->number_of_channels;
-							module_number_of_unemap_crates++;
-							number_of_servers--;
-							crate++;
+							if (return_code=crate_initialize_connection(crate))
+							{
+								module_number_of_channels += crate->number_of_channels;
+								module_number_of_unemap_crates++;
+								number_of_servers--;
+								crate++;
+							}
 						}
-						else
-						{
-							close_connection();
-						}
+					}
+					if (!return_code)
+					{
+						close_connection();
 					}
 #if defined (WIN32)
 				}
@@ -8731,7 +9024,7 @@ many samples were acquired.
 
 int unemap_get_sampling(void)
 /*******************************************************************************
-LAST MODIFIED : 16 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 Returns a non-zero if unemap is sampling and zero otherwise.
@@ -8749,6 +9042,7 @@ Returns a non-zero if unemap is sampling and zero otherwise.
 		(INVALID_SOCKET!=module_unemap_crates->command_socket)&&
 		(0<module_number_of_unemap_crates))
 	{
+		lock_mutex(module_unemap_crates->command_socket_mutex);
 		buffer[0]=UNEMAP_GET_SAMPLING_CODE;
 		buffer[1]=BIG_ENDIAN_CODE;
 		buffer_size=2+sizeof(message_size);
@@ -8792,6 +9086,7 @@ Returns a non-zero if unemap is sampling and zero otherwise.
 			display_message(ERROR_MESSAGE,
 				"unemap_get_sampling.  socket_send() failed");
 		}
+		unlock_mutex(module_unemap_crates->command_socket_mutex);
 	}
 	else
 	{
@@ -9780,9 +10075,9 @@ background in a client/server arrangement.
 	struct Unemap_crate *crate;
 
 	ENTER(unemap_get_samples_acquired_background);
+#if defined (DEBUG)
 	/*???debug */
 	printf("enter unemap_get_samples_acquired_background\n");
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	return_code=0;
 	/* check arguments */
@@ -9879,9 +10174,9 @@ background in a client/server arrangement.
 		display_message(ERROR_MESSAGE,
 			"unemap_get_samples_acquired_background.  Missing callback");
 	}
+#if defined (DEBUG)
 	/*???debug */
 	printf("leave unemap_get_samples_acquired_background\n");
-#if defined (DEBUG)
 #endif /* defined (DEBUG) */
 	LEAVE;
 
