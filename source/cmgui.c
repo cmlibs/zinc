@@ -706,6 +706,10 @@ Main program for the CMISS Graphical User Interface
 	struct Option_table *option_table;
 	struct Parse_state *state;
 	User_settings user_settings;
+#if defined (WIN32_USER_INTERFACE)
+	int argc = 1;
+	char *argv[] = {"cmgui_win32"};
+#endif /* defined (WIN32_USER_INTERFACE) */
 
 #if defined (MOTIF)
 	XColor rgb;
