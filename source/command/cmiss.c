@@ -53,6 +53,7 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_adjust_contrast.h"
 #include "image_processing/computed_field_canny_filter.h"
 #include "image_processing/computed_field_color_based_segment.h"
+#include "image_processing/computed_field_cube_plugin_all.h
 #include "image_processing/computed_field_dilate_filter.h"
 #include "image_processing/computed_field_erode_filter.h"
 #include "image_processing/computed_field_first_order_statistics.h"
@@ -74,6 +75,7 @@ Functions for executing cmiss commands.
 #include "image_processing/computed_field_local_std.h"
 #include "image_processing/computed_field_local_mean_smooth.h"
 #include "image_processing/computed_field_median_filter.h"
+
 #include "image_processing/computed_field_wavelet_decomp.h"
 #include "image_processing/computed_field_sobel_filter.h"
 #include "image_processing/computed_field_throw_away_weakest.h"
@@ -24238,6 +24240,9 @@ Initialise all the subcomponents of cmgui and create the Cmiss_command_data
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_color_based_segment(
+					command_data->computed_field_package,
+					command_data->root_region, command_data->graphics_buffer_package);
+				Computed_field_register_types_cube_plugin_all(
 					command_data->computed_field_package,
 					command_data->root_region, command_data->graphics_buffer_package);
 				Computed_field_register_types_dilate_filter(

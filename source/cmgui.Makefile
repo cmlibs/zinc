@@ -843,6 +843,7 @@ IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_adjust_contrast.c \
 	image_processing/computed_field_canny_filter.c \
 	image_processing/computed_field_color_based_segment.c \
+	image_processing/computed_field_cube_plugin_all.c \
 	image_processing/computed_field_dilate_filter.c \
 	image_processing/computed_field_erode_filter.c \
 	image_processing/computed_field_first_order_statistics.c \
@@ -873,6 +874,7 @@ IMAGE_PROCESSING_SRCS = \
 	image_processing/computed_field_image_tv_restoration.c \
 	image_processing/computed_field_binomial_filter.c \
 	image_processing/computed_field_heat_equation.c \
+	image_processing/morphology_functions.c \
 	image_processing/image_cache.c
 INTERACTION_SRCS = \
 	interaction/interaction_graphics.c \
