@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : interactive_toolbar_widget.c
 
-LAST MODIFIED : 8 May 2000
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 Widget for choosing the Interactive_tool currently in-use in a dialog from a
@@ -448,7 +448,7 @@ Returns the currently chosen interactive_tool in <interactive_toolbar_widget>.
 int interactive_toolbar_widget_set_current_interactive_tool(
 	Widget interactive_toolbar_widget,struct Interactive_tool *interactive_tool)
 /*******************************************************************************
-LAST MODIFIED : 8 May 2000
+LAST MODIFIED : 13 June 2000
 
 DESCRIPTION :
 Sets the current interactive_tool in the <interactive_toolbar_widget>.
@@ -467,19 +467,36 @@ Sets the current interactive_tool in the <interactive_toolbar_widget>.
 			XmNuserData,&interactive_toolbar,NULL);
 		if (interactive_toolbar)
 		{
-			if (toggle_button=interactive_toolbar_get_widget_for_interactive_tool(
-				interactive_toolbar,interactive_tool))
+			if (interactive_tool != interactive_toolbar->current_interactive_tool)
 			{
-				XmToggleButtonSetState(toggle_button,/*state*/True,
-					/*notify*/False);
-				return_code=1;
+				interactive_toolbar->last_updated_interactive_tool=interactive_tool;
+				if (toggle_button=interactive_toolbar_get_widget_for_interactive_tool(
+					interactive_toolbar,interactive_tool))
+				{
+					XmToggleButtonSetState(toggle_button,/*state*/True,/*notify*/False);
+					/* uncheck the last tool */
+					if (toggle_button=interactive_toolbar_get_widget_for_interactive_tool(
+						interactive_toolbar,interactive_toolbar->current_interactive_tool))
+					{
+						XmToggleButtonSetState(toggle_button,/*state*/False,
+							/*notify*/False);
+					}
+					interactive_toolbar->current_interactive_tool=interactive_tool;
+					return_code=1;
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE,
+						"interactive_toolbar_widget_set_current_interactive_tool.  "
+						"Tool is not in toolbar");
+					return_code=0;
+					/* tell the client the tool is left as is was */
+					interactive_toolbar_widget_update(interactive_toolbar);
+				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"interactive_toolbar_widget_set_current_interactive_tool.  "
-					"Tool is not in toolbar");
-				return_code=0;
+				return_code=1;
 			}
 		}
 		else
@@ -596,3 +613,93 @@ Iterator version of interactive_toolbar_widget_add_interactive_tool.
 
 	return (return_code);
 } /* add_interactive_tool_to_interactive_toolbar_widget */
+
+#if defined (OLD_CODE)
+char **interactive_toolbar_get_tool_names(Widget interactive_toolbar_widget,
+	int *number_of_tools,struct Interactive_tool *current_interactive_tool,
+	char **current_interactive_tool_string)
+/*******************************************************************************
+LAST MODIFIED : 12 June 2000
+
+DESCRIPTION :
+Returns an array of strings containing the names of the tools - suitable for
+choosing in a text command. On success, also returns <*number_of_tools>. Also
+returns in <current_interactive_tool_string> the pointer to the tool_names
+string for <current_interactive_tool>, or the first one if it is not found.
+Up to calling function to deallocate the returned array AND the strings in it.
+==============================================================================*/
+{
+	char **tool_names;
+	int i,j,num_children;
+	struct Interactive_tool *interactive_tool;
+	struct Interactive_toolbar_widget_struct *interactive_toolbar;
+	Widget *child_list;
+
+	ENTER(interactive_toolbar_get_tool_names);
+	tool_names=(char **)NULL;
+	if (interactive_toolbar_widget&&number_of_tools&&
+		current_interactive_tool_string)
+	{
+		*interactive_tool_string=(char *)NULL;
+		interactive_toolbar=(struct Interactive_toolbar_widget_struct *)NULL;
+		/* get the interactive_toolbar structure from the widget */
+		XtVaGetValues(interactive_toolbar_widget,
+			XmNuserData,&interactive_toolbar,NULL);
+		if (interactive_toolbar)
+		{
+			num_children=0;
+			XtVaGetValues(interactive_toolbar_widget,
+				XmNnumChildren,&num_children,
+				XmNchildren,&child_list,NULL);
+			if ((0==num_children)||ALLOCATE(tool_names,char *,num_children))
+			{
+				for (i=0;(i<num_children)&&tool_names;i++)
+				{
+					interactive_tool=(struct Interactive_tool *)NULL;
+					XtVaGetValues(child_list[i],XmNuserData,&interactive_tool,NULL);
+					if (interactive_tool&&
+						GET_NAME(Interactive_tool)(interactive_tool,&(tool_names[i])))
+					{
+						if (interactive_tool == current_interactive_tool)
+						{
+							*interactive_tool_string = tool_names[i];
+						}
+					}
+					else
+					{
+						display_message(WARNING_MESSAGE,
+							"interactive_toolbar_get_tool_names.  Could not get tool name");
+						for (j=0;j<i;j++)
+						{
+							DEALLOCATE(tool_names[i]);
+						}
+						DEALLOCATE(tool_names);
+					}
+				}
+				if (tool_names&&((char *)NULL == *interactive_tool_string))
+				{
+					*interactive_tool_string = tool_names[0];
+				}
+			}
+			else
+			{
+				display_message(WARNING_MESSAGE,
+					"interactive_toolbar_get_tool_names.  Not enough memory");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"interactive_toolbar_get_tool_names.  Missing widget data");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"interactive_toolbar_get_tool_names.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (tool_names);
+} /* interactive_toolbar_get_tool_names */
+#endif /* defined (OLD_CODE) */

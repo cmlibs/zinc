@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : interactive_toolbar_widget.h
 
-LAST MODIFIED : 8 May 2000
+LAST MODIFIED : 9 June 2000
 
 DESCRIPTION :
 Widget for choosing the Interactive_tool currently in-use in a dialog from a
