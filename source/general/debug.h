@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : debug.h
 
-LAST MODIFIED : 10 June 1999
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Function definitions for debugging.
@@ -15,6 +15,26 @@ Function definitions for debugging.
 Macros
 ------
 */
+
+#define ENTER( function_name )
+
+#define LEAVE
+
+/* Following are the only question mark operators allowed in CMGUI, needed
+	 because it is machine dependent whether a pointer or NULL is returned for
+	 an allocation of zero size. Inlined for optimisation */
+#if defined (OPTIMISED)
+
+#define ALLOCATE( result , type , number ) \
+ ( result = ( 0 < ( number ) ) ? ( type * )malloc( ( number ) * sizeof( type ) ) : ( type * )NULL )
+
+#define DEALLOCATE( ptr ) { if ( ptr ) { free( (char *)( ptr ) ); ( ptr ) = NULL; } }
+
+#define REALLOCATE( final , initial , type , number ) \
+ ( final = ( 0 < ( number ) ) ? ( type * )realloc( (char *)( initial ) , ( number ) * sizeof( type ) ) : ( type * )NULL )
+
+#else /* defined (OPTIMISED) */
+
 #define ALLOCATE( result , type , number ) \
 ( result = ( type *) allocate( ( number ) * sizeof( type ) , __FILE__ , \
 	__LINE__, #type ))
@@ -22,18 +42,17 @@ Macros
 #define DEALLOCATE( ptr ) \
 { deallocate((char *) ptr , __FILE__ , __LINE__ ); ( ptr )=NULL;}
 
-#define ENTER( function_name )
-
-#define LEAVE
-
 #define REALLOCATE( final , initial , type , number ) \
 ( final = ( type *) reallocate( (char *)( initial ) , \
 	( number ) * sizeof( type ) , __FILE__ , __LINE__, #type ))
+
+#endif /* defined (OPTIMISED) */
 
 /*
 Global variables
 ----------------
 */
+
 /* temporary storage string */
 #define GLOBAL_TEMP_STRING_SIZE 1000
 extern char global_temp_string[GLOBAL_TEMP_STRING_SIZE];
@@ -58,6 +77,8 @@ is swallowed with the call USE_PARAMETER(dummy_void); at the start of function.
 #define USE_PARAMETER(dummy)
 #endif /* defined (USE_PARAMETER_ON) */
 
+#if !defined (OPTIMISED)
+
 char *allocate(unsigned size,char *file_name,int line_number, char *type);
 /*******************************************************************************
 LAST MODIFIED : 7 January 1998
@@ -81,6 +102,8 @@ LAST MODIFIED : 7 January 1998
 DESCRIPTION :
 Wrapper for realloc.
 ==============================================================================*/
+
+#endif /* !defined (OPTIMISED) */
 
 int list_memory(int count, int show_pointers, int increment_counter, 
 	int show_structures);

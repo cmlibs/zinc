@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : debug.c
 
-LAST MODIFIED : 6 January 2000
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Function definitions for debugging.
@@ -37,6 +37,7 @@ Function definitions for debugging.
 Module types
 ------------
 */
+
 #if defined (MEMORY_CHECKING)
 struct Memory_block
 /*******************************************************************************
@@ -57,6 +58,7 @@ Keeps a record of where a block of memory was allocated
 Module functions
 ----------------
 */
+
 #if defined (MEMORY_CHECKING)
 static struct Memory_block *CREATE(Memory_block)(void *pointer,
 	char *filename, int line, char *type_string, int size,
@@ -186,10 +188,11 @@ char global_temp_string[GLOBAL_TEMP_STRING_SIZE];
 Global functions
 ----------------
 */
+
 #if defined (USE_PARAMETER_ON)
 void use_parameter(int dummy, ... )
 /*******************************************************************************
-LAST MODIFIED : 10 June 1999
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Definition of function which is called in the development stage (when
@@ -198,12 +201,17 @@ would otherwise cause compiler warnings. For example, parameter <dummy_void>
 is swallowed with the call USE_PARAMETER(dummy_void); at the start of function.
 ==============================================================================*/
 {
+	if (dummy)
+	{
+	}
 } /* use_parameter */
 #endif /* defined (USE_PARAMETER_ON) */
 
+#if !defined (OPTIMISED)
+
 char *allocate(unsigned size,char *filename,int line, char *type)
 /*******************************************************************************
-LAST MODIFIED : 25 July 1998
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Wrapper for allocate which keeps track of allocated memory.
@@ -215,6 +223,11 @@ Wrapper for allocate which keeps track of allocated memory.
 #endif /* defined (MEMORY_CHECKING) */
 
 	ENTER(allocate);
+#if !defined (MEMORY_CHECKING)
+	USE_PARAMETER(filename);
+	USE_PARAMETER(line);
+	USE_PARAMETER(type);
+#endif /* !defined (MEMORY_CHECKING) */
 	if (0<size)
 	{
 		result=malloc(size);
@@ -274,6 +287,10 @@ Wrapper for deallocate which keeps track of allocated memory.
 #endif /* defined (MEMORY_CHECKING) */
 
 	ENTER(deallocate);
+#if !defined (MEMORY_CHECKING)
+	USE_PARAMETER(filename);
+	USE_PARAMETER(line);
+#endif /* !defined (MEMORY_CHECKING) */
 	if (ptr)
 	{
 #if defined (MEMORY_CHECKING)
@@ -311,6 +328,11 @@ Wrapper for reallocate which keeps track of allocated memory.
 #endif /* defined (MEMORY_CHECKING) */
 
 	ENTER(reallocate);
+#if !defined (MEMORY_CHECKING)
+	USE_PARAMETER(filename);
+	USE_PARAMETER(line);
+	USE_PARAMETER(type);
+#endif /* !defined (MEMORY_CHECKING) */
 	if (0<size)
 	{
 #if defined (MEMORY_CHECKING)
@@ -385,6 +407,8 @@ Wrapper for reallocate which keeps track of allocated memory.
 	return (result);
 } /* reallocate */
 
+#endif /* !defined (OPTIMISED) */
+
 #if defined (MEMORY_CHECKING)
 struct List_memory_data
 {
@@ -458,7 +482,7 @@ DESCRIPTION :
 int list_memory(int count,int show_pointers,int increment_counter,
 	int show_structures)
 /*******************************************************************************
-LAST MODIFIED : 29 February 2000
+LAST MODIFIED : 26 November 2001
 
 DESCRIPTION :
 Writes out memory blocks currently allocated.  Each time this is called an
@@ -488,7 +512,6 @@ actual object type and then the appropriate list function is called.
 #endif /* defined (MEMORY_CHECKING) */
 
 	ENTER(list_memory);
-	return_code=0;
 #if defined (MEMORY_CHECKING)
 	if (ALLOCATE(list_memory_data.count_total, int, maximum_count + 1))
 	{
@@ -527,6 +550,12 @@ actual object type and then the appropriate list function is called.
 		printf("Unable to allocate memory total array\n");
 		return_code = 0;
 	}
+#else /* defined (MEMORY_CHECKING) */
+	USE_PARAMETER(count);
+	USE_PARAMETER(show_pointers);
+	USE_PARAMETER(increment_counter);
+	USE_PARAMETER(show_structures);
+	return_code = 0;
 #endif /* defined (MEMORY_CHECKING) */
 	LEAVE;
 
