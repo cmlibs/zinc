@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : import_finite_element.c
 
-LAST MODIFIED : 27 October 2004
+LAST MODIFIED : 10 November 2004
 
 DESCRIPTION :
 Functions for importing finite element data from a file into the graphical
@@ -2117,7 +2117,7 @@ Note the returned shape will be NULL if the dimension is 0, denoting nodes.
 static struct FE_basis *read_FE_basis(struct IO_stream *input_file,
 	struct FE_region *fe_region)
 /*******************************************************************************
-LAST MODIFIED : 5 November 2004
+LAST MODIFIED : 10 November 2004
 
 DESCRIPTION :
 Reads a basis description from an <input_file> or the socket (if <input_file> is
@@ -2167,6 +2167,7 @@ Some examples of basis descriptions in an input file are:
 					"Error convering basis description to type array.  %s",location);
 				DEALLOCATE(location);
 			}
+			DEALLOCATE(basis_description_string);
 		}
 		else
 		{
