@@ -5021,7 +5021,7 @@ static void save_data(
 #endif /* defined (WINDOWS) */
 	)
 /*******************************************************************************
-LAST MODIFIED : 10 July 2000
+LAST MODIFIED : 27 July 2000
 
 DESCRIPTION :
 Called when the save button is pressed.
@@ -5169,8 +5169,7 @@ Called when the save button is pressed.
 						number_of_signals=signal_buffer->number_of_signals;
 						destination=((signal_buffer->signals).short_int_values)+
 							((*device)->signal->index);
-						if ((0<=channel_number)&&
-							((unsigned long)channel_number<number_of_channels))
+						if ((0<=channel_number)&&(channel_number<number_of_channels))
 						{
 							source=samples+channel_number;
 							for (j=(int)number_of_samples;j>0;j--)
