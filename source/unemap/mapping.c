@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : mapping.c
 
-LAST MODIFIED : 16 November 2000
+LAST MODIFIED : 5 March 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -683,7 +683,7 @@ sets a node's values storage with the coordinate system component versions and v
 	struct FE_field_component component;
 
 	ENTER(set_mapping_FE_node_coord_values)
-	if(node&&position_field&&coords_comp_0&&coords_comp_1&&
+	if (node&&position_field&&coords_comp_0&&coords_comp_1&&
 		coords_comp_2)
 	{
 		return_code=1;
@@ -757,7 +757,7 @@ sets a node's values storage with the coordinate system component versions and v
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/* set_mapping_FE_node_coord_values */
 
 #endif /* #if defined (UNEMAP_USE_3D) */
@@ -779,7 +779,7 @@ Sets a node's values storage with the values  potential<f> and derivatives
 
 	ENTER(set_mapping_FE_node_fit_values);
 	return_code =1;
-	if(node&&fit_field)
+	if (node&&fit_field)
 	{
 		component.field=fit_field;
 		component.number=component_number;
@@ -796,7 +796,7 @@ Sets a node's values storage with the values  potential<f> and derivatives
 		return_code =0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/* set_mapping_FE_node_fit_values */
 #endif /* #if defined (UNEMAP_USE_3D) */
 
@@ -901,7 +901,7 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 	};	
 	char *position_str = "_fit_point_position";
 
-	if(package)
+	if (package)
 	{	
 		success = 1;				
 		fit_point_name = (char *)NULL;
@@ -932,7 +932,7 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 		string_length = strlen(map_type_str);
 		string_length += strlen(position_str);
 		string_length++;
-		if(ALLOCATE(fit_point_name,char,string_length))
+		if (ALLOCATE(fit_point_name,char,string_length))
 		{	
 			strcpy(fit_point_name,map_type_str);
 			strcat(fit_point_name,position_str);
@@ -941,7 +941,7 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 			{
 				case SOCK:
 				{	
-					if(the_field_order_info=
+					if (the_field_order_info=
 						CREATE(FE_field_order_info)(NUM_MAPPING_FIELDS))
 					{					
 						/* set up the info needed to create the  fit point position field */
@@ -973,7 +973,7 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 				}break;			
 				case TORSO:
 				{		
-					if(the_field_order_info=
+					if (the_field_order_info=
 						CREATE(FE_field_order_info)(NUM_MAPPING_FIELDS))
 					{				 								
 						/* set up the info needed to create the  fit point position field */
@@ -1004,7 +1004,7 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 				}break;		
 				case PATCH:
 				{	
-					if(the_field_order_info=
+					if (the_field_order_info=
 						CREATE(FE_field_order_info)(NUM_MAPPING_FIELDS))
 					{								
 						/* set up the info needed to create the  fit point position field */
@@ -1040,16 +1040,16 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 					success=0;
 				}break;			
 			} /* switch */		
-			if(success)
+			if (success)
 			{
 				set_FE_field_order_info_field(the_field_order_info,field_number,
 					position_field);
 				field_number++;					
 			}
 			/* create fields common to all nodes*/
-			if(success)
+			if (success)
 			{
-				if(potential_field=get_unemap_package_map_fit_field(package))
+				if (potential_field=get_unemap_package_map_fit_field(package))
 				{
 					set_FE_field_order_info_field(the_field_order_info,field_number,
 						potential_field);
@@ -1061,7 +1061,7 @@ Creates the mapping fields, returns them in a FE_field_order_info.
 						"create_mapping_fields. Could not retrieve potential_value field");
 					success=0;
 				}				
-			} /* if(success)*/
+			} /* if (success)*/
 			DEALLOCATE(fit_point_name);
 		}
 		else
@@ -1108,7 +1108,7 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 		torso_fit_point_components_number_of_versions[3]; /* defined below*/
 
 	ENTER(create_mapping_template_node);
-	if(package)
+	if (package)
 	{			
 		/* *ptr_fit_components = fit_components_nodal_value_types; */
 		switch(region_type)
@@ -1170,7 +1170,7 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 						components_value_types);
 				}break;
 			}
-			if(success)
+			if (success)
 			{		
 				/* 2nd field in field_order_info is fit_field */
 				fit_components_value_types[0]=fit_bicubic_component;
@@ -1179,7 +1179,7 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 					fit_components_number_of_derivatives,
 					fit_components_number_of_versions,
 				  fit_components_value_types);
-			} /* if(success)*/		
+			} /* if (success)*/		
 		}	
 		else
 		{
@@ -1187,7 +1187,7 @@ Creates and returns a mapping template node for interpolation_function_to_node_g
 				"create_mapping_template_node.  Could not create node");
 			success=0;
 		}				
-		if(!success)
+		if (!success)
 		{
 			DESTROY(FE_node)(&node);
 			node = (struct FE_node *)NULL;			
@@ -1299,7 +1299,7 @@ i.e sock is a hemisphere, torso is a cylinder.
 				number_of_nodes = (number_of_rows+1)*(number_of_columns+1);
 			}break;
 		}					
-		if(node_order_info=CREATE(FE_node_order_info)(number_of_nodes))
+		if (node_order_info=CREATE(FE_node_order_info)(number_of_nodes))
 		{								
 			/* create the template node, based upon the region_type */			
 			switch(region_type)
@@ -1321,18 +1321,18 @@ i.e sock is a hemisphere, torso is a cylinder.
 					dfdx=function->dfdx[0];
 					dfdy=function->dfdy[0];
 					d2fdxdy=function->d2fdxdy[0];							
-					if(!(node=create_and_set_mapping_FE_node(template_node,node_manager,
+					if (!(node=create_and_set_mapping_FE_node(template_node,node_manager,
 						region_type,node_number,field_order_info,1,1,number_of_columns,
 						&lambda,&mu,function->x_mesh,f,dfdx,dfdy,d2fdxdy)))
 					{
 						display_message(ERROR_MESSAGE,"interpolation_function_to_node_group."
 							" Error creating node");
 					}		
-					if(node)
+					if (node)
 					{ 
-						if(ADD_OBJECT_TO_MANAGER(FE_node)(node,node_manager))
+						if (ADD_OBJECT_TO_MANAGER(FE_node)(node,node_manager))
 						{						
-							if(ADD_OBJECT_TO_GROUP(FE_node)(node,interpolation_node_group))
+							if (ADD_OBJECT_TO_GROUP(FE_node)(node,interpolation_node_group))
 							{
 								set_FE_node_order_info_node(node_order_info,0,
 									node);
@@ -1346,7 +1346,7 @@ i.e sock is a hemisphere, torso is a cylinder.
 								REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
 								node=(struct FE_node *)NULL;									
 							}							
-						}/* if(!ADD_OBJECT_TO_MANAGER(FE_node) */
+						}/* if (!ADD_OBJECT_TO_MANAGER(FE_node) */
 						else
 						{
 							display_message(ERROR_MESSAGE,
@@ -1354,7 +1354,7 @@ i.e sock is a hemisphere, torso is a cylinder.
 							REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
 							node=(struct FE_node *)NULL;								
 						}
-					}/*	if(node) */	
+					}/*	if (node) */	
 					last_node_number = node_number;		
 					count=1;
 					if (template_node)
@@ -1380,7 +1380,7 @@ i.e sock is a hemisphere, torso is a cylinder.
 								dfdx=function->dfdx[f_index];
 								dfdy=function->dfdy[f_index];
 								d2fdxdy=function->d2fdxdy[f_index];							
-								if(!(node=create_and_set_mapping_FE_node(template_node,node_manager,region_type,
+								if (!(node=create_and_set_mapping_FE_node(template_node,node_manager,region_type,
 									node_number,field_order_info,1,1,1,&lambda,&mu,&theta,f,
 									dfdx,dfdy,d2fdxdy)))
 								{
@@ -1388,11 +1388,11 @@ i.e sock is a hemisphere, torso is a cylinder.
 										" Error creating node");
 								}		
 								last_node_number = node_number;															
-								if(node)
+								if (node)
 								{ 
-									if(ADD_OBJECT_TO_MANAGER(FE_node)(node,node_manager))
+									if (ADD_OBJECT_TO_MANAGER(FE_node)(node,node_manager))
 									{						
-										if(ADD_OBJECT_TO_GROUP(FE_node)(node,interpolation_node_group))
+										if (ADD_OBJECT_TO_GROUP(FE_node)(node,interpolation_node_group))
 										{
 											set_FE_node_order_info_node(node_order_info,count,
 												node);								
@@ -1406,7 +1406,7 @@ i.e sock is a hemisphere, torso is a cylinder.
 											REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
 											node=(struct FE_node *)NULL;									
 										}							
-									}/* if(!ADD_OBJECT_TO_MANAGER(FE_node) */
+									}/* if (!ADD_OBJECT_TO_MANAGER(FE_node) */
 									else
 									{
 										display_message(ERROR_MESSAGE,
@@ -1415,7 +1415,7 @@ i.e sock is a hemisphere, torso is a cylinder.
 										REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
 										node=(struct FE_node *)NULL;								
 									}
-								}/*	if(node) */	
+								}/*	if (node) */	
 								count++;
 							} /* for(j= */
 						} /* for(i= */
@@ -1508,7 +1508,7 @@ i.e sock is a hemisphere, torso is a cylinder.
 								dfdx=function->dfdx[f_index];
 								dfdy=function->dfdy[f_index];
 								d2fdxdy=function->d2fdxdy[f_index];
-								if(!(node=create_and_set_mapping_FE_node(template_node,node_manager,region_type,
+								if (!(node=create_and_set_mapping_FE_node(template_node,node_manager,region_type,
 									node_number,field_order_info,1,1,1,r_value_and_derivatives,&theta,&z,f,dfdx,
 									dfdy,d2fdxdy)))
 								{
@@ -1516,11 +1516,11 @@ i.e sock is a hemisphere, torso is a cylinder.
 										" Error creating node");
 								}		
 								last_node_number = node_number;														
-								if(node)
+								if (node)
 								{ 
-									if(ADD_OBJECT_TO_MANAGER(FE_node)(node,node_manager))
+									if (ADD_OBJECT_TO_MANAGER(FE_node)(node,node_manager))
 									{						
-										if(ADD_OBJECT_TO_GROUP(FE_node)(node,interpolation_node_group))
+										if (ADD_OBJECT_TO_GROUP(FE_node)(node,interpolation_node_group))
 										{
 											set_FE_node_order_info_node(node_order_info,count,
 												node);
@@ -1534,7 +1534,7 @@ i.e sock is a hemisphere, torso is a cylinder.
 											REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
 											node=(struct FE_node *)NULL;									
 										}							
-									}/* if(!ADD_OBJECT_TO_MANAGER(FE_node) */
+									}/* if (!ADD_OBJECT_TO_MANAGER(FE_node) */
 									else
 									{
 										display_message(ERROR_MESSAGE,
@@ -1543,7 +1543,7 @@ i.e sock is a hemisphere, torso is a cylinder.
 										REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
 										node=(struct FE_node *)NULL;								
 									}
-								}/*	if(node) */	
+								}/*	if (node) */	
 								count++;
 							} /* for(j= */
 						} /* for(i= */
@@ -1574,7 +1574,7 @@ i.e sock is a hemisphere, torso is a cylinder.
 								dfdx=function->dfdx[count];
 								dfdy=function->dfdy[count];
 								d2fdxdy=function->d2fdxdy[count];
-								if(!(node=create_and_set_mapping_FE_node(template_node,node_manager,
+								if (!(node=create_and_set_mapping_FE_node(template_node,node_manager,
 									region_type,node_number,field_order_info,1,1,1,&x,&y,&z,f,dfdx,dfdy,
 									d2fdxdy)))
 								{
@@ -1582,11 +1582,11 @@ i.e sock is a hemisphere, torso is a cylinder.
 										" Error creating node");
 								}		
 								last_node_number = node_number;														
-								if(node)
+								if (node)
 								{ 
-									if(ADD_OBJECT_TO_MANAGER(FE_node)(node,node_manager))
+									if (ADD_OBJECT_TO_MANAGER(FE_node)(node,node_manager))
 									{						
-										if(ADD_OBJECT_TO_GROUP(FE_node)(node,interpolation_node_group))
+										if (ADD_OBJECT_TO_GROUP(FE_node)(node,interpolation_node_group))
 										{
 											set_FE_node_order_info_node(node_order_info,count,
 												node);
@@ -1600,7 +1600,7 @@ i.e sock is a hemisphere, torso is a cylinder.
 											REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
 											node=(struct FE_node *)NULL;									
 										}
-									}/* if(!ADD_OBJECT_TO_MANAGER(FE_node) */
+									}/* if (!ADD_OBJECT_TO_MANAGER(FE_node) */
 									else
 									{
 										display_message(ERROR_MESSAGE,
@@ -1609,7 +1609,7 @@ i.e sock is a hemisphere, torso is a cylinder.
 										REMOVE_OBJECT_FROM_MANAGER(FE_node)(node,node_manager);
 										node=(struct FE_node *)NULL;								
 									}
-								}/*	if(node) */	
+								}/*	if (node) */	
 								count++;
 							} /* for(j= */
 						} /* for(i= */
@@ -1639,14 +1639,14 @@ i.e sock is a hemisphere, torso is a cylinder.
 			set_map_3d_package_fit_field(map_3d_package,map_fit_field);
 			set_map_3d_package_node_group(map_3d_package,interpolation_node_group);
 			set_Region_map_3d_package(region,map_3d_package);
-		} /* if(node_order_info=CREATE(FE */
+		} /* if (node_order_info=CREATE(FE */
 		else
 		{			 
 			display_message(ERROR_MESSAGE,"interpolation_function_to_node_group "
 				"CREATE(FE_node_order_info) failed ");												
 		}
 		MANAGER_END_CACHE(FE_node)(node_manager);
-		if(interpolation_node_group)
+		if (interpolation_node_group)
 		{
 			MANAGED_GROUP_END_CACHE(FE_node)(interpolation_node_group);
 		}					
@@ -2271,7 +2271,7 @@ nodes in <node_order_info>, and fills them in with values from <function>.
 
 	ENTER(change_fit_node_group_value);
 	return_code=1;		
-	if(node_order_info&&function&&name&&node_group_manager&&element_group_manager)
+	if (node_order_info&&function&&name&&node_group_manager&&element_group_manager)
 	{
 		region_type=function->region_type;	
 		number_of_rows=function->number_of_rows;
@@ -2294,7 +2294,7 @@ nodes in <node_order_info>, and fills them in with values from <function>.
 					/* set node values here. */					
 					/* get the apex node from the node_order_info, check  it's in the group */
 					node_managed=get_FE_node_order_info_node(node_order_info,0);
-					if(node_managed=FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
+					if (node_managed=FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
 						get_FE_node_cm_node_identifier(node_managed),existing_node_group))
 					{
 						/* create a node to work with */
@@ -2340,7 +2340,7 @@ nodes in <node_order_info>, and fills them in with values from <function>.
 								d2fdxdy=function->d2fdxdy[f_index];	
 								/* set node values here.  */						
 								node_managed=get_FE_node_order_info_node(node_order_info,count);
-								if(node_managed=FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
+								if (node_managed=FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
 									get_FE_node_cm_node_identifier(node_managed),existing_node_group))
 								{
 									/* create a node to work with */
@@ -2393,7 +2393,7 @@ nodes in <node_order_info>, and fills them in with values from <function>.
 								d2fdxdy=function->d2fdxdy[f_index];						
 								/* set node values here.  */								
 								node_managed=get_FE_node_order_info_node(node_order_info,count);
-								if(node_managed=FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
+								if (node_managed=FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
 									get_FE_node_cm_node_identifier(node_managed),existing_node_group))
 								{
 									/* create a node to work with */
@@ -2445,7 +2445,7 @@ nodes in <node_order_info>, and fills them in with values from <function>.
 								d2fdxdy=function->d2fdxdy[count];
 								/* set node values here.  */							
 								node_managed=get_FE_node_order_info_node(node_order_info,count);
-								if(node_managed=FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
+								if (node_managed=FIND_BY_IDENTIFIER_IN_GROUP(FE_node,cm_node_identifier)(
 									get_FE_node_cm_node_identifier(node_managed),existing_node_group))
 								{
 									/* create a node to work with */
@@ -2497,7 +2497,7 @@ nodes in <node_order_info>, and fills them in with values from <function>.
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/* change_fit_node_group_values */
 #endif /* #if defined (UNEMAP_USE_3D) */
 
@@ -2523,7 +2523,7 @@ Conditional function returning true if <node>  in the z range of <data_void>.
 		component.number=2;
 		get_FE_nodal_FE_value_value(torso_node,&component,0,FE_NODAL_VALUE,
 							&torso_node_z);
-		if((torso_node_z>=z_value_data->map_min_z)&&
+		if ((torso_node_z>=z_value_data->map_min_z)&&
 			(torso_node_z<=z_value_data->map_max_z))
 		{
 			return_code=1;		
@@ -2564,11 +2564,11 @@ Also sets the fit field at the torso nodes
 	return_code=1;
 	element_torso_data=(struct Element_torso_data *)NULL;
 	element_nodes=(struct LIST(FE_node) *)NULL;
-	if(torso_element&&element_torso_data_void&&(element_torso_data
+	if (torso_element&&element_torso_data_void&&(element_torso_data
 		=(struct Element_torso_data *)element_torso_data_void))
 	{	
 		/* only deal with elements, not lines */
-		if(torso_element->cm.type==CM_ELEMENT)
+		if (torso_element->cm.type==CM_ELEMENT)
 		{
 			element_nodes=CREATE_LIST(FE_node)();
 			/*get all nodes in element */
@@ -2576,12 +2576,12 @@ Also sets the fit field at the torso nodes
 				(struct FE_field *)NULL,element_nodes);
 			number_of_nodes=NUMBER_IN_LIST(FE_node)(element_nodes);
 			/* do nothing if not 4 nodes */
-			if(number_of_nodes==4)
+			if (number_of_nodes==4)
 			{
 				/* determine if all element nodes in z range list */
 				node_is_in_list_data.node_list=
 					element_torso_data->torso_nodes_in_z_range;
-				if(FOR_EACH_OBJECT_IN_LIST(FE_node)(node_is_in_list,
+				if (FOR_EACH_OBJECT_IN_LIST(FE_node)(node_is_in_list,
 					(void *)&node_is_in_list_data,element_nodes))
 				{
 					/* add torso element to group*/
@@ -2599,7 +2599,7 @@ Also sets the fit field at the torso nodes
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/* add_torso_elements_if_nodes_in_z_range */
 #endif /* defined (UNEMAP_USE_3D) */
 
@@ -2651,7 +2651,7 @@ nodes z values are defined by the electrodes.
 	default_torso_element_group=(struct GROUP(FE_element) *)NULL;
 	mapped_torso_node_group=(struct GROUP(FE_node) *)NULL;
 	torso_correct_z_node_list=(struct LIST(FE_node) *)NULL;
-	if(region&&(default_torso_group_name=
+	if (region&&(default_torso_group_name=
 		get_unemap_package_default_torso_name(unemap_package))
 		&&(element_group_manager=get_unemap_package_element_group_manager(unemap_package))
 		&&(node_group_manager=get_unemap_package_node_group_manager(unemap_package))
@@ -2719,7 +2719,7 @@ nodes z values are defined by the electrodes.
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/* make_mapped_torso_node_and_element_groups */
 #endif /* defined (UNEMAP_USE_3D) */
 
@@ -2758,7 +2758,7 @@ Defines and sets the value of the fit field at <torso_node>.
 	torso_position_field=(struct FE_field *)NULL;
 	node=(struct FE_node *)NULL;
 	node_manager=(struct MANAGER(FE_node) *)NULL;
-	if(torso_node&&(torso_position_field=
+	if (torso_node&&(torso_position_field=
 		get_FE_node_default_coordinate_field(torso_node))&&map_3d_package&&torso_element&&
 		(node_manager=map_3d_package->node_manager))
 	{
@@ -2790,7 +2790,7 @@ Defines and sets the value of the fit field at <torso_node>.
 			/* Ntheta is the theta element number, i.e the column number */
 			Ntheta=(int)(Ntheta_plus_xi);
 			/* handle case with theta point exactly on 2PI*/
-			if(Ntheta>=num_theta_elements)
+			if (Ntheta>=num_theta_elements)
 			{				
 				Ntheta=num_theta_elements-1;
 			}
@@ -2801,7 +2801,7 @@ Defines and sets the value of the fit field at <torso_node>.
 			/* Nz is the z element number, i.e the row number */
 			Nz=(int)(Nz_plus_xi);
 			/* handle case with z point exactly on cylinder edge*/
-			if(Nz>=num_z_elements)
+			if (Nz>=num_z_elements)
 			{
 				Nz=num_z_elements-1;
 			}
@@ -2813,7 +2813,7 @@ Defines and sets the value of the fit field at <torso_node>.
 			element_information.number=element_number+first_torso_element_number-1;
 			cylinder_element=FIND_BY_IDENTIFIER_IN_GROUP(FE_element,identifier)
 				(&element_information,map_3d_package->element_group);
-			if(cylinder_element)
+			if (cylinder_element)
 			{				
 				/* get the cylinder fit value and jacobian */				
 				if (calculate_FE_element_field_values(cylinder_element,map_fit_field,
@@ -2935,7 +2935,7 @@ Defines and sets the value of the fit field at <torso_node>.
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 } /* set_map_fit_field_at_torso_node */
 #endif /* defined (UNEMAP_USE_3D) */
 
@@ -2956,14 +2956,14 @@ already set.
 
 	ENTER(set_map_fit_field_if_required);
 	map_value_torso_data=(struct Map_value_torso_data *)NULL;
-	if(torso_node&&map_value_torso_data_void&&
+	if (torso_node&&map_value_torso_data_void&&
 		(map_value_torso_data=(struct Map_value_torso_data *)map_value_torso_data_void))
 	{	
 		/* if object is already in processed list, have nothing to do*/
-		if(!(IS_OBJECT_IN_LIST(FE_node)(torso_node,map_value_torso_data->processed_nodes)))
+		if (!(IS_OBJECT_IN_LIST(FE_node)(torso_node,map_value_torso_data->processed_nodes)))
 		{	
 			/* set the fit field at the node */		
-			if(return_code=set_map_fit_field_at_torso_node(torso_node,
+			if (return_code=set_map_fit_field_at_torso_node(torso_node,
 				map_value_torso_data->torso_element,map_value_torso_data->map_3d_package,
 				map_value_torso_data->first_torso_element_number))
 			{
@@ -2979,7 +2979,7 @@ already set.
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/* set_map_fit_field_if_required */
 
 static int set_map_fit_field_at_torso_element_nodes(
@@ -2998,7 +2998,7 @@ Set the  nodal values of the fit field at the <torso_element> nodes
 	ENTER(set_map_fit_field_at_torso_element_nodes);
 	element_nodes=(struct LIST(FE_node) *)NULL;
 	map_value_torso_data=(struct Map_value_torso_data *)NULL;
-	if(torso_element&&map_value_torso_data_void&&
+	if (torso_element&&map_value_torso_data_void&&
 		(map_value_torso_data=(struct Map_value_torso_data *)map_value_torso_data_void))
 	{
 		element_nodes=CREATE_LIST(FE_node)();
@@ -3019,7 +3019,7 @@ Set the  nodal values of the fit field at the <torso_element> nodes
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/* set_map_fit_field_at_torso_element_nodes */
 #endif /* defined (UNEMAP_USE_3D) */
 
@@ -3043,7 +3043,7 @@ set the nodal values of the fit field at the nodes of the elements in
 	mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;
 	element_group=(struct GROUP(FE_element) *)NULL;
 	first_element=(struct FE_element *)NULL;
-	if(map_3d_package)
+	if (map_3d_package)
 	{
 		return_code=1;
 		/* find the identifier of the first element */
@@ -3074,7 +3074,7 @@ set the nodal values of the fit field at the nodes of the elements in
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/* set_torso_fit_field_values*/
 #endif /* defined (UNEMAP_USE_3D) */
 
@@ -3096,7 +3096,7 @@ Constructs the fit name from the region.
 	fit_name=(char *)NULL;
 	type_str=(char *)NULL;
 	string_error=0;
-	if(name&&region)
+	if (name&&region)
 	{		
 		/* construct the fit node group's name, from the name and region type*/
 		string_length = strlen(name);
@@ -3119,7 +3119,7 @@ Constructs the fit name from the region.
 		}
 		string_length += strlen(type_str);
 		string_length++;
-		if(ALLOCATE(fit_name,char,string_length))
+		if (ALLOCATE(fit_name,char,string_length))
 		{	
 			strcpy(fit_name,name);
 			strcat(fit_name,fit_str);
@@ -3178,16 +3178,16 @@ do similar with the mapped torso node group
 	element_group=(struct GROUP(FE_element) *)NULL;
 	mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;
 	delauney_torso_element_group=(struct GROUP(FE_element) *)NULL;
-	if(function&&package&&name)
+	if (function&&package&&name)
 	{	
 		return_code=1;
-		if(fit_name=make_fit_name(region,name))
+		if (fit_name=make_fit_name(region,name))
 		{
 			/* check if the function properties are the same as the last one, i.e */
 			/* identical node and element groups should already exist, and that no */
 			/* electrodes have recently been accpeted or rejected */
 			map_3d_package=get_Region_map_3d_package(region);
-			if(map_3d_package)
+			if (map_3d_package)
 			{
 				element_group=get_map_3d_package_element_group(map_3d_package);
 				mapped_torso_element_group=
@@ -3195,7 +3195,7 @@ do similar with the mapped torso node group
 				delauney_torso_element_group=
 					get_map_3d_package_delauney_torso_element_group(map_3d_package);
 			}
-			if(map_3d_package&&(get_map_3d_package_number_of_map_rows(map_3d_package)
+			if (map_3d_package&&(get_map_3d_package_number_of_map_rows(map_3d_package)
 				  ==function->number_of_rows)&&
 				 (get_map_3d_package_number_of_map_columns(map_3d_package)
 				  ==function->number_of_columns)&&(region->type
@@ -3211,14 +3211,14 @@ do similar with the mapped torso node group
 					get_unemap_package_node_manager(package));
 
 				/* if the region is a torso, and loaded a default torso, set it's fit field values */
-				if((region->type==TORSO)&&(get_unemap_package_default_torso_name(package)))
+				if ((region->type==TORSO)&&(get_unemap_package_default_torso_name(package)))
 				{					
 					set_torso_fit_field_values(map_3d_package);
 				}						
 			}
 			else
 			{				
-				if(map_3d_package)
+				if (map_3d_package)
 				{
 					/*this will do a deaccess*/
 					set_Region_map_3d_package(region,(struct Map_3d_package *)NULL);
@@ -3235,7 +3235,7 @@ do similar with the mapped torso node group
 					function->number_of_columns,
 					function->x_mesh,function->y_mesh,region);
 				/* if have loaded  a default_torso and if the region is a torso*/
-				if((get_unemap_package_default_torso_name(package))&&(region->type==TORSO))
+				if ((get_unemap_package_default_torso_name(package))&&(region->type==TORSO))
 				{		
 					/*  set up the mapped torso node and element groups */				
 					make_mapped_torso_node_and_element_groups(region,package);									
@@ -3245,7 +3245,7 @@ do similar with the mapped torso node group
 					set_torso_fit_field_values(map_3d_package);																
 				}
 			}
-		}/* if(ALLOCATE( */
+		}/* if (ALLOCATE( */
 		else
 		{
 			display_message(ERROR_MESSAGE,"make_fit_node_and_element_groups."
@@ -3261,7 +3261,7 @@ do similar with the mapped torso node group
 	}
 	DEALLOCATE(fit_name);
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/*make_fit_node_and_element_groups */
 
 #endif /* #if defined (UNEMAP_USE_3D) */
@@ -3299,21 +3299,21 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 	default_selected_material=(struct Graphical_material *)NULL;
 	graphical_material_manager=(struct MANAGER(Graphical_material) *)NULL;
 	element_group=(struct GROUP(FE_element) *)NULL;
-	if((!number_of_contours)||(data_field&&scene&&map_drawing_information&&region))
+	if ((!number_of_contours)||(data_field&&scene&&map_drawing_information&&region))
 	{			
 		map_3d_package=get_Region_map_3d_package(region);		
 		/*non-current regions will have had map_3d_package set to NULL by */
 		/* set_Region_map_3d_package(NULL) in draw_map_3d */
-		if(map_3d_package)
+		if (map_3d_package)
 		{
-			if(delauney_map) /* the interpolation_type, stored in the map?*/
+			if (delauney_map) /* the interpolation_type, stored in the map?*/
 			{
 				/* do contour on delauney*/
 				element_group=get_map_3d_package_delauney_torso_element_group(map_3d_package);
 			}
 			else
 			{
-				if(default_torso_loaded&&(region->type==TORSO))
+				if (default_torso_loaded&&(region->type==TORSO))
 				{	
 					/* do contour on torso surface*/
 					element_group=get_map_3d_package_mapped_torso_element_group(map_3d_package);
@@ -3325,7 +3325,7 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 				}
 			}
 			/* not an error if no element group, this is case with NO_INTERPOLATION, ie no surface*/
-			if(element_group) 
+			if (element_group) 
 			{
 				graphical_material_manager=
 					get_map_drawing_information_Graphical_material_manager(map_drawing_information);
@@ -3338,7 +3338,7 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 				/* create material for the contour, so can colour it black, indep of the  */
 				/* map surface (default) material*/
 				MANAGER_BEGIN_CACHE(Graphical_material)(graphical_material_manager);
-				if(!(contour_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
+				if (!(contour_material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)
 					("contour",graphical_material_manager)))	
 				{	
 					if (contour_material=CREATE(Graphical_material)(
@@ -3355,7 +3355,7 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 				}
 				MANAGER_END_CACHE(Graphical_material)(graphical_material_manager);
 				/* remove the old contour settings from the gt_element_group */
-				if(old_number_of_contours)
+				if (old_number_of_contours)
 				{					
 					for(i=0;i<old_number_of_contours;i++)
 					{					
@@ -3363,7 +3363,7 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 					}		
 				}
 				free_map_3d_package_map_contours(map_3d_package);
-				if(number_of_contours)
+				if (number_of_contours)
 				{
 					/* calculate the contour intervals */
 					contour_value=contour_minimum;
@@ -3397,7 +3397,7 @@ spaced between <contour_minimum> and <contour_maximum>. If <number_of_contour>
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/* map_draw_constant_thickness_contours */
 #endif /* #if defined (UNEMAP_USE_3D) */
 
@@ -3431,16 +3431,16 @@ Draws (or erases) the map contours
 	region_item=(struct Region_list_item *)NULL;	
 	region=(struct Region *)NULL; 
 	/*data_field can be NULL*/
-	if(map&&&package&&spectrum&&(map->rig_pointer)&&(rig= *(map->rig_pointer))&&
+	if (map&&&package&&spectrum&&(map->rig_pointer)&&(rig= *(map->rig_pointer))&&
 		(map->drawing_information)&&(spectrum_manager=
 			get_map_drawing_information_spectrum_manager(map->drawing_information))&&
 		(scene=get_map_drawing_information_scene(map->drawing_information)))
 	{
 		/* Show the contours */	
-		if((map->contours_option==SHOW_CONTOURS)&&
+		if ((map->contours_option==SHOW_CONTOURS)&&
 			(map->interpolation_type!=NO_INTERPOLATION))
 		{
-			if(map->contour_thickness==CONSTANT_THICKNESS)
+			if (map->contour_thickness==CONSTANT_THICKNESS)
 			{
 				number_of_constant_contours=map->number_of_contours;
 				number_of_variable_contours=0;
@@ -3460,7 +3460,7 @@ Draws (or erases) the map contours
 			number_of_constant_contours=0;
 		}					
 		/* draw/remove VARIABLE_THICKNESS contours*/
-		if(get_unemap_package_default_torso_name(package))
+		if (get_unemap_package_default_torso_name(package))
 		{
 			default_torso_loaded=1;
 		}
@@ -3475,7 +3475,7 @@ Draws (or erases) the map contours
 		{
 			region=get_Region_list_item_region(region_item);			
 			unrejected_node_group=get_Region_unrejected_node_group(region);
-			if(unrejected_node_group&&
+			if (unrejected_node_group&&
 				(unemap_package_rig_node_group_has_electrodes(package,unrejected_node_group)))
 			{			
 				/* draw/remove CONSTANT_THICKNESS contours */
@@ -3493,7 +3493,7 @@ Draws (or erases) the map contours
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/* map_draw_contours */
 #endif /* defined (UNEMAP_USE_3D) */
 
@@ -3546,7 +3546,7 @@ Also applies <number_of_contours> contours to surface.
 		{			
 			GT_element_group_get_element_discretization(gt_element_group,
 				&discretization);			
-			if(direct_interpolation)
+			if (direct_interpolation)
 			{
 				required_discretization=1;
 			}
@@ -3555,7 +3555,7 @@ Also applies <number_of_contours> contours to surface.
 				read_element_discretization_defaults(&required_discretization,
 					&maximum_discretization,user_interface);				
 			}	
-			if(!((discretization.number_in_xi1==required_discretization)&&
+			if (!((discretization.number_in_xi1==required_discretization)&&
 				(discretization.number_in_xi2==required_discretization)&&
 				(discretization.number_in_xi3==required_discretization)))
 			{
@@ -3574,14 +3574,14 @@ Also applies <number_of_contours> contours to surface.
 				GT_element_settings_get_data_spectrum_parameters(settings,&existing_data_field,
 					&existing_spectrum);
 				/* did we use a spectrum and data_field last time?*/
-				if(existing_spectrum&&existing_data_field)
+				if (existing_spectrum&&existing_data_field)
 				{
-					if(data_field&&spectrum)
+					if (data_field&&spectrum)
 					{
 						/* change the spectrum, if it's different from the existing one */
-						if(!((data_field==existing_data_field)&&(spectrum==existing_spectrum)))
+						if (!((data_field==existing_data_field)&&(spectrum==existing_spectrum)))
 						{
-							if(new_settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_SURFACES))
+							if (new_settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_SURFACES))
 							{															
 								GT_element_settings_set_data_spectrum_parameters(new_settings,data_field,
 									spectrum);
@@ -3597,19 +3597,19 @@ Also applies <number_of_contours> contours to surface.
 								return_code=0;
 							}
 						}
-					}/* if(data_field&&spectrum) */
+					}/* if (data_field&&spectrum) */
 					else
 					{		
 						new_settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_SURFACES);
 						/* change the material colour to our no_interpolation_colour */
 						material_copy=CREATE(Graphical_material)("");							
-						if(new_settings&&material_copy&&
+						if (new_settings&&material_copy&&
 							MANAGER_COPY_WITH_IDENTIFIER(Graphical_material,name)
 							(material_copy,material))
 						{																	
 							Graphical_material_set_ambient(material_copy,no_interpolation_colour);
 							Graphical_material_set_diffuse(material_copy,no_interpolation_colour);
-							if(MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name)(
+							if (MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name)(
 								material,material_copy,graphical_material_manager))
 							{
 								/* following removes spectrum from element group,*/
@@ -3635,21 +3635,21 @@ Also applies <number_of_contours> contours to surface.
 							"map_show_surface. Couldn't copy material ");							
 							return_code=0;
 						}																
-					}/* if(!(data_field&&spectrum))	*/			
+					}/* if (!(data_field&&spectrum))	*/			
 				}
 				/* used the no_interpolation colour last time*/
 				else
 				{
-					if(data_field&&spectrum)/* nothing to do if data_field,spectrum NULL*/
+					if (data_field&&spectrum)/* nothing to do if data_field,spectrum NULL*/
 					{
 						/*change the material's colour to white */
 						material_copy=CREATE(Graphical_material)("");
 						new_settings=CREATE(GT_element_settings)(GT_ELEMENT_SETTINGS_SURFACES);
-						if(material_copy&&new_settings&&
+						if (material_copy&&new_settings&&
 							MANAGER_COPY_WITH_IDENTIFIER(Graphical_material,name)
 							(material_copy,material))
 						{																								
-							if(MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name)(
+							if (MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name)(
 								material,material_copy,graphical_material_manager))
 							{
 								/* use the spectrum and data_field*/									
@@ -3663,7 +3663,7 @@ Also applies <number_of_contours> contours to surface.
 								GT_element_group_build_graphics_objects(gt_element_group,
 									(struct FE_element *)NULL,(struct FE_node *)NULL);
 								
-							}	/* if(MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name */
+							}	/* if (MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name */
 							else
 							{	
 								display_message(ERROR_MESSAGE,
@@ -3677,8 +3677,8 @@ Also applies <number_of_contours> contours to surface.
 							"map_show_surface. Couldn't copy material ");							
 							return_code=0;
 						}		
-					}/* if(data_field&&spectrum) */
-				}	/* if(existing_spectrum&&existing_data_field) */
+					}/* if (data_field&&spectrum) */
+				}	/* if (existing_spectrum&&existing_data_field) */
 			}	/* if (settings=first_settings_in_*/
 			else
 			{
@@ -3687,7 +3687,7 @@ Also applies <number_of_contours> contours to surface.
 				{			
 					return_code=1;
 					/* use the spectrum and data field*/
-					if(data_field&&spectrum)
+					if (data_field&&spectrum)
 					{
 						GT_element_settings_set_data_spectrum_parameters(settings,data_field,
 							spectrum);
@@ -3696,13 +3696,13 @@ Also applies <number_of_contours> contours to surface.
 					/* change the material to our neutral colour  */	
 					{
 						material_copy=CREATE(Graphical_material)("");
-						if(material_copy&&MANAGER_COPY_WITH_IDENTIFIER(Graphical_material,name)
+						if (material_copy&&MANAGER_COPY_WITH_IDENTIFIER(Graphical_material,name)
 							(material_copy,material))
 						{							
 							/* just chose a neutral colour. Need to store somewhere*/					
 							Graphical_material_set_ambient(material_copy,no_interpolation_colour);
 							Graphical_material_set_diffuse(material_copy,no_interpolation_colour);
-							if(!MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name)(
+							if (!MANAGER_MODIFY_NOT_IDENTIFIER(Graphical_material,name)(
 								material,material_copy,graphical_material_manager))							
 							{	
 								display_message(ERROR_MESSAGE,
@@ -3752,11 +3752,11 @@ Also applies <number_of_contours> contours to surface.
 			"map_show_surface.  Invalid argument(s)");
 		return_code=0;
 	}	
-	if(new_settings)
+	if (new_settings)
 	{
 		DESTROY(GT_element_settings)(&new_settings);
 	}
-	if(material_copy)
+	if (material_copy)
 	{
 		DESTROY(Graphical_material)(&material_copy);
 	}
@@ -3816,10 +3816,10 @@ map_electode_position field
 	component_names=(char **)NULL;
 	
 	ENTER(make_and_add_map_electrode_position_fields);
-	if(unemap_package&&rig_node_group&&region)
+	if (unemap_package&&rig_node_group&&region)
 	{	
 		/* if delauney, just use the electrode_position_field */
-		if(delauney_map)		
+		if (delauney_map)		
 		{
 			map_electrode_position_field=get_Region_electrode_position_field(region);
 			set_Region_map_electrode_position_field(region,map_electrode_position_field);
@@ -3851,12 +3851,12 @@ map_electode_position field
 					return_code=0;
 				}break;	
 			}
-			if(return_code)
+			if (return_code)
 			{
 				string_length = strlen(region_type_str);
 				string_length += strlen(position_str);
 				string_length++;
-				if(ALLOCATE(field_name,char,string_length))
+				if (ALLOCATE(field_name,char,string_length))
 				{		
 					strcpy(field_name,region_type_str);
 					strcat(field_name,position_str);					
@@ -3866,7 +3866,7 @@ map_electode_position field
 					field_manager=get_unemap_package_FE_field_manager(unemap_package);	
 					/* assemble all info for get_FE_field_manager_matched_field */
 					/* ??JW what if map_position_field hasn't been created?  */
-					if((get_FE_field_CM_field_information(map_position_field,&field_info))&&
+					if ((get_FE_field_CM_field_information(map_position_field,&field_info))&&
 						(coordinate_system=get_FE_field_coordinate_system(map_position_field))&&
 						(number_of_components=
 							get_FE_field_number_of_components(map_position_field))&&
@@ -3882,7 +3882,7 @@ map_electode_position field
 							component_names++;
 						}
 						component_names-=number_of_components;
-						if(field_type==INDEXED_FE_FIELD)
+						if (field_type==INDEXED_FE_FIELD)
 						{
 							get_FE_field_type_indexed(map_position_field,&indexer_field,
 								&number_of_indexed_values);
@@ -3902,7 +3902,7 @@ map_electode_position field
 							struct FE_field *old_map_electrode_position_field;
 							old_map_electrode_position_field=
 								get_Region_map_electrode_position_field(region);
-							if(old_map_electrode_position_field!=map_electrode_position_field)
+							if (old_map_electrode_position_field!=map_electrode_position_field)
 							{								
 								/* add it to the region, so can use it later */
 								set_Region_map_electrode_position_field(region,
@@ -3932,18 +3932,18 @@ map_electode_position field
 						return_code=0;
 						DESTROY(FE_field)(&map_electrode_position_field);			
 					}
-					if(component_names)
+					if (component_names)
 					{
 						DEALLOCATE(component_names);
 					}
-				}/* if(ALLOCATE(field_name,char,string_length)) */
+				}/* if (ALLOCATE(field_name,char,string_length)) */
 				else
 				{	
 					display_message(ERROR_MESSAGE,"make_and_add_map_electrode_position_fields."
 						"Out of memory ");
 					return_code=0;
 				}
-			}/* if(return_code)*/
+			}/* if (return_code)*/
 		}
 	}
 	else
@@ -3954,7 +3954,7 @@ map_electode_position field
 	}
 	DEALLOCATE(field_name);
 	LEAVE;
-	return(return_code);
+	return (return_code);
 } /* make_and_add_map_electrode_position_fields */
 #endif /* #if defined (UNEMAP_USE_3D) */
 
@@ -3974,7 +3974,7 @@ Also sets the glyph in the <map_3d_package>
 
 	ENTER(map_get_map_electrodes_glyph);
 	glyph=(struct GT_object *)NULL;
-	if(drawing_information)
+	if (drawing_information)
 	{
 		/* match the names to the marker types. Maybe store the marker types ??JW*/
 		/* see also map_update_map_electrodes */					
@@ -4005,7 +4005,7 @@ Also sets the glyph in the <map_3d_package>
 					"invalide glyph type ");glyph=(struct GT_object *)NULL;
 			}break;
 		}	
-		if(glyph)
+		if (glyph)
 		{		
 			set_map_3d_package_electrode_glyph(map_3d_package,glyph);
 		}
@@ -4041,12 +4041,12 @@ the surface.
 	time_field=(struct Computed_field *)NULL;
 	time_field_copy=(struct Computed_field *)NULL;	
 	computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
-	if(package&&(computed_field_manager=
+	if (package&&(computed_field_manager=
 		get_unemap_package_Computed_field_manager(package)))
 	{		
 		return_code=1;		
 		/* check if time_field exists */
-		if(!(time_field=get_unemap_package_time_field(package)))
+		if (!(time_field=get_unemap_package_time_field(package)))
 		{
 			display_message(ERROR_MESSAGE,
 			"map_update_electrode_colour_from_time. No time field to alter");
@@ -4106,7 +4106,7 @@ Sets the <time> of the time field.
 	channel_gain_field=(struct FE_field *)NULL;
 	channel_offset_field=(struct FE_field *)NULL;
 	computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
-	if(package&&spectrum&&settings&&(computed_field_manager=
+	if (package&&spectrum&&settings&&(computed_field_manager=
 		get_unemap_package_Computed_field_manager(package))&&
 		(signal_field=get_unemap_package_signal_field(package))
 		&&(channel_gain_field=get_unemap_package_channel_gain_field(package))
@@ -4124,11 +4124,11 @@ Sets the <time> of the time field.
 		/* ??JW do as a constant field for now*/
 		/* create new time_field*/
 		MANAGER_BEGIN_CACHE(Computed_field)(computed_field_manager);
-		if(!(time_field=get_unemap_package_time_field(package)))
+		if (!(time_field=get_unemap_package_time_field(package)))
 		{
-			if(time_field=CREATE(Computed_field)("signal_time"))
+			if (time_field=CREATE(Computed_field)("signal_time"))
 			{
-				if(!((Computed_field_set_type_constant(time_field,1,&time))&&
+				if (!((Computed_field_set_type_constant(time_field,1,&time))&&
 					(ADD_OBJECT_TO_MANAGER(Computed_field)(time_field,
 						computed_field_manager))&&
 					set_unemap_package_time_field(package,time_field)))
@@ -4139,12 +4139,12 @@ Sets the <time> of the time field.
 		}	
 		/* create new data_field,using time_field*/
 		/*signal value at time*/
-		if(!(signal_value_at_time_field=get_unemap_package_signal_value_at_time_field
+		if (!(signal_value_at_time_field=get_unemap_package_signal_value_at_time_field
 			(package)))
 		{
-			if(signal_value_at_time_field=CREATE(Computed_field)("signal_value_at_time"))
+			if (signal_value_at_time_field=CREATE(Computed_field)("signal_value_at_time"))
 			{
-				if(!((Computed_field_set_type_node_array_value_at_time(
+				if (!((Computed_field_set_type_node_array_value_at_time(
 					signal_value_at_time_field,signal_field,FE_NODAL_VALUE,0,time_field))&&
 					(ADD_OBJECT_TO_MANAGER(Computed_field)(signal_value_at_time_field,
 						computed_field_manager))&&
@@ -4156,12 +4156,12 @@ Sets the <time> of the time field.
 			}
 		}	
 		/*offset the signal value*/
-		if(!(offset_signal_value_at_time_field=get_unemap_package_offset_signal_value_at_time_field
+		if (!(offset_signal_value_at_time_field=get_unemap_package_offset_signal_value_at_time_field
 			(package)))
 		{
-			if(offset_signal_value_at_time_field=CREATE(Computed_field)("offset_signal_value_at_time"))
+			if (offset_signal_value_at_time_field=CREATE(Computed_field)("offset_signal_value_at_time"))
 			{
-				if(!((Computed_field_set_type_add(offset_signal_value_at_time_field,
+				if (!((Computed_field_set_type_add(offset_signal_value_at_time_field,
 					signal_value_at_time_field,1,computed_offset_field,-1))&&
 					(ADD_OBJECT_TO_MANAGER(Computed_field)(offset_signal_value_at_time_field,
 						computed_field_manager))&&
@@ -4173,13 +4173,13 @@ Sets the <time> of the time field.
 			}
 		}
 		/* scale the signal value by the gain */	
-		if(!(scaled_offset_signal_value_at_time_field=
+		if (!(scaled_offset_signal_value_at_time_field=
 			get_unemap_package_scaled_offset_signal_value_at_time_field(package)))
 		{
-			if(scaled_offset_signal_value_at_time_field=CREATE(Computed_field)
+			if (scaled_offset_signal_value_at_time_field=CREATE(Computed_field)
 				("scaled_offset_signal_value_at_time"))
 			{
-				if(!((Computed_field_set_type_dot_product(scaled_offset_signal_value_at_time_field,
+				if (!((Computed_field_set_type_dot_product(scaled_offset_signal_value_at_time_field,
 					offset_signal_value_at_time_field,computed_gain_field))&&
 					(ADD_OBJECT_TO_MANAGER(Computed_field)(scaled_offset_signal_value_at_time_field,
 						computed_field_manager))&&
@@ -4318,7 +4318,7 @@ Construct the settings and build the graphics objects for the glyphs.
 					GT_element_settings_set_glyph_parameters(selected_settings, glyph,
 						glyph_scaling_mode, glyph_centre, glyph_size, orientation_scale_field,
 						glyph_scale_factors, variable_scale_field);			 
-					if(map->colour_electrodes_with_signal)
+					if (map->colour_electrodes_with_signal)
 					/* else electrode takes colour of electrode_material*/
 					{
 						map_set_electrode_colour_from_time(package,map->drawing_information->spectrum,
@@ -4334,12 +4334,12 @@ Construct the settings and build the graphics objects for the glyphs.
 						case SHOW_ELECTRODE_NAMES:
 						{							
 							field=get_unemap_package_device_name_field(package);
-							if(field)
+							if (field)
 							{
 								computed_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 									Computed_field_is_read_only_with_fe_field,
 									(void *)(field),computed_field_manager);
-								if(computed_field)
+								if (computed_field)
 								{
 									label_field=computed_field;
 								}
@@ -4348,12 +4348,12 @@ Construct the settings and build the graphics objects for the glyphs.
 						case SHOW_CHANNEL_NUMBERS:
 						{
 							field=get_unemap_package_channel_number_field(package);
-							if(field)
+							if (field)
 							{
 								computed_field=FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 									Computed_field_is_read_only_with_fe_field,
 									(void *)(field),computed_field_manager);
-								if(computed_field)
+								if (computed_field)
 								{
 									label_field=computed_field;
 								}
@@ -4421,10 +4421,10 @@ in <region>
 	int return_code;
   
 	ENTER(map_remove_map_electrode_glyphs);
-	if(package&&rig_node_group&&drawing_information)
+	if (package&&rig_node_group&&drawing_information)
   {		    
     free_unemap_package_rig_node_group_glyphs(drawing_information,package,rig_node_group);
-    if(map_3d_package)
+    if (map_3d_package)
     {
 	    set_map_3d_package_electrode_glyph(map_3d_package,(struct GT_object *)NULL);
     }
@@ -4435,7 +4435,7 @@ in <region>
 			"map_remove_map_electrode_glyphs . Invalid argument(s)");
 		return_code=0;
 	}
-	return(return_code);
+	return (return_code);
 	LEAVE;
 }/* map_remove_map_electrode_glyphs */
 #endif /* #if defined (UNEMAP_USE_3D) */
@@ -4456,20 +4456,20 @@ rig_node_group in <region>. Glyph type taken from
 	struct GT_object *electrode_glyph=(struct GT_object *)NULL;
 	struct Map_3d_package *map_3d_info=(struct Map_3d_package *)NULL;
 	ENTER(map_update_map_electrodes);	 		
-	if(package&&region&&map)
+	if (package&&region&&map)
 	{	
 		/* get the glyph*/
-		if((map_3d_info=get_Region_map_3d_package(region))&&
+		if ((map_3d_info=get_Region_map_3d_package(region))&&
 			!(electrode_glyph=get_map_3d_package_electrode_glyph(map_3d_info)))
 		{
 			electrode_glyph=map_get_map_electrodes_glyph(map->drawing_information,
 				map_3d_info,map->electrodes_marker_type);	
 		}
 		/* glyph can be NULL for no markers */		
-		if(electrode_glyph)		
+		if (electrode_glyph)		
 		{
 			map_show_map_electrodes(package,electrode_glyph,map,time,region);
-			if(map->colour_electrodes_with_signal)
+			if (map->colour_electrodes_with_signal)
 			{
 				map_update_electrode_colour_from_time(package,time);
 			}
@@ -4482,7 +4482,7 @@ rig_node_group in <region>. Glyph type taken from
 		return_code=0;
 	}	
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/* map_update_map_electrodes */
 #endif /* #if defined (UNEMAP_USE_3D) */
 
@@ -4504,10 +4504,10 @@ haven't
 	ENTER(map_electrodes_properties_changed);	
  	electrode_glyph=(struct GT_object *)NULL;	
 	electrode_glyph_name=(char *)NULL;
-	if(map&&map_3d_package)
+	if (map&&map_3d_package)
 	{
 		return_code=0;		
-		if(electrode_glyph=get_map_3d_package_electrode_glyph(map_3d_package))
+		if (electrode_glyph=get_map_3d_package_electrode_glyph(map_3d_package))
 		{			
 			/* match the names to the marker types. Maybe store the marker types ??JW*/
 			/*??JW maybe we should just store a flag to indicate that the electrode has*/
@@ -4517,7 +4517,7 @@ haven't
 			/* in mapping_window.c */
 			GET_NAME(GT_object)(electrode_glyph,&electrode_glyph_name);	
 			/*Glyph type has changed */		
-			if((((!strcmp(electrode_glyph_name,"cross"))&&
+			if ((((!strcmp(electrode_glyph_name,"cross"))&&
 				(map->electrodes_marker_type!=PLUS_ELECTRODE_MARKER))||
 				((!strcmp(electrode_glyph_name,"sphere"))&&
 					(map->electrodes_marker_type!=CIRCLE_ELECTRODE_MARKER))||
@@ -4544,7 +4544,7 @@ haven't
 		return_code=0;
 	} 	
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/* map_electrodes_properties_changed */
 #endif /* UNEMAP_USE_3D */
 
@@ -4576,7 +4576,7 @@ region(s)
 	region=(struct Region *)NULL;
 	current_region=(struct Region *)NULL;
 	rig=(struct Rig *)NULL;
-	if(unemap_package&&map&&(drawing_information=map->drawing_information)&&
+	if (unemap_package&&map&&(drawing_information=map->drawing_information)&&
 		(map->rig_pointer)&&(rig= *(map->rig_pointer)))
 	{	
 		return_code=1;
@@ -4584,7 +4584,7 @@ region(s)
 		electrodes_properties_changed=0;
 		current_region=get_Rig_current_region(rig);
 		/*if current_region NULL, displayong all regions*/
-		if(!current_region)
+		if (!current_region)
 		{
 			display_all_regions=1;
 		}		
@@ -4595,7 +4595,7 @@ region(s)
 			region=get_Region_list_item_region(region_item);			
 			unrejected_node_group=get_Region_unrejected_node_group(region);
 			map_3d_package=get_Region_map_3d_package(region);
-			if(map_3d_package)
+			if (map_3d_package)
 			{
 				electrodes_properties_changed=
 					map_electrodes_properties_changed(map,map_3d_package);
@@ -4605,14 +4605,14 @@ region(s)
 				electrodes_properties_changed=0;
 			}
 			/* remove undisplayed or changed electrodes */
-			if(electrodes_properties_changed||(!display_all_regions||
+			if (electrodes_properties_changed||(!display_all_regions||
 				(region!=current_region)))
 			{									
 				map_remove_map_electrode_glyphs(drawing_information,
 					unemap_package,map_3d_package,unrejected_node_group);
 			}
 			/* draw current electrodes */
-			if(unrejected_node_group&&map_3d_package&&
+			if (unrejected_node_group&&map_3d_package&&
 				(unemap_package_rig_node_group_has_electrodes(unemap_package,
 					unrejected_node_group))&&((region==current_region)||display_all_regions))
 			{
@@ -4627,7 +4627,7 @@ region(s)
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/* map_draw_map_electrodes*/
 #endif /* defined (UNEMAP_USE_3D) */
 
@@ -4658,12 +4658,12 @@ Creates a pair of arm labels, and adds to the scene.
 	Triple *scale_list=(Triple *)NULL;
 
 	ENTER(draw_torso_arm_labels);
-	if(region&&drawing_information)
+	if (region&&drawing_information)
 	{				
 		return_code=1;
 		/*??JW should probably maintain a list of graphics_objects, and*/
 		/*search in this list, as CMGUI does*/
-		if((!(graphics_object=
+		if ((!(graphics_object=
 				get_map_drawing_information_torso_arm_labels(drawing_information)))&&
 			  get_node_group_position_min_max(
 				get_Region_rig_node_group(region),
@@ -4770,7 +4770,7 @@ Creates a pair of arm labels, and adds to the scene.
 			"draw_torso_arm_labels.  Invalid argument(s)");	
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/* draw_torso_arm_labels */
 #endif /* UNEMAP_USE_3D */
 
@@ -4802,7 +4802,7 @@ time computed fields used by the glyphs.
 	map_3d_package=(struct Map_3d_package *)NULL;
 	drawing_information	=(struct Map_drawing_information *)NULL;
 	unemap_package=(struct Unemap_package *)NULL;
-	if(map&&(map->rig_pointer)&&(rig= *(map->rig_pointer))&&
+	if (map&&(map->rig_pointer)&&(rig= *(map->rig_pointer))&&
 		(unemap_package=map->unemap_package)&&
 		(drawing_information=map->drawing_information))
 	{
@@ -4813,7 +4813,7 @@ time computed fields used by the glyphs.
 			region=get_Region_list_item_region(region_item);
 			unrejected_node_group=get_Region_unrejected_node_group(region);
 			map_3d_package=get_Region_map_3d_package(region);
-			if(unrejected_node_group&&map_3d_package&&
+			if (unrejected_node_group&&map_3d_package&&
 				(unemap_package_rig_node_group_has_electrodes(unemap_package,
 					unrejected_node_group)))
 			{
@@ -4830,7 +4830,7 @@ time computed fields used by the glyphs.
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/* map_remove_all_electrodes */
 #endif /* defined (UNEMAP_USE_3D) */
 
@@ -4865,7 +4865,7 @@ Merges the template_element containing the fit field in
 	{
 		return_code=1;
 		/* only operate on top level (quad elements, not lines */
-		if(element->cm.type==CM_ELEMENT)
+		if (element->cm.type==CM_ELEMENT)
 		{
 			/* make template element use nodes from global element */
 			i=0;
@@ -5141,7 +5141,7 @@ defines the fit field in <define_fit_field_at_torso_element_nodes_data> at
 	node_manager=(struct MANAGER(FE_node) *)NULL;
 	define_fit_field_at_torso_element_nodes_data=
 		(struct Define_fit_field_at_torso_element_nodes_data *)NULL;
-	if(torso_element&&(define_fit_field_at_torso_element_nodes_data_void)&&
+	if (torso_element&&(define_fit_field_at_torso_element_nodes_data_void)&&
 		(define_fit_field_at_torso_element_nodes_data=
 			(struct Define_fit_field_at_torso_element_nodes_data *)
 			define_fit_field_at_torso_element_nodes_data_void)&&
@@ -5155,12 +5155,12 @@ defines the fit field in <define_fit_field_at_torso_element_nodes_data> at
 		calculate_FE_element_field_nodes(torso_element,(struct FE_field *)NULL,
 			element_nodes);
 		/* only deal with elements, not lines */		
-		if(torso_element->cm.type==CM_ELEMENT)
+		if (torso_element->cm.type==CM_ELEMENT)
 		{
 			return_code=1;
 			number_of_nodes=NUMBER_IN_LIST(FE_node)(element_nodes);
 			/* do nothing if not 4 nodes */
-			if(number_of_nodes==4)
+			if (number_of_nodes==4)
 			{
 				fit_components_value_types[0]=fit_bicubic_component;
 				/* define the fit field at the element's nodes*/			
@@ -5171,7 +5171,7 @@ defines the fit field in <define_fit_field_at_torso_element_nodes_data> at
 					fit_components_number_of_versions;
 				define_FE_field_at_node_data.nodal_value_types=fit_components_value_types;
 				define_FE_field_at_node_data.node_manager=node_manager;
-				if(return_code=FOR_EACH_OBJECT_IN_LIST(FE_node)
+				if (return_code=FOR_EACH_OBJECT_IN_LIST(FE_node)
 					(iterative_define_FE_field_at_node,
 					(void *)(&define_FE_field_at_node_data),element_nodes))
 				{
@@ -5189,7 +5189,7 @@ defines the fit field in <define_fit_field_at_torso_element_nodes_data> at
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 } /* define_fit_field_at_torso_element_nodes*/
 #endif /* defined (UNEMAP_USE_3D) */
 
@@ -5222,26 +5222,26 @@ vertices_data->vertices we've filled in.
 	struct FE_field_component component;
 	struct Vertices_data *vertices_data;
 
-	if(node&&vertices_data_void&&(vertices_data=
+	if (node&&vertices_data_void&&(vertices_data=
 		(struct Vertices_data *)vertices_data_void)
 		&&(position_field=vertices_data->position_field))
 	{
 		component.field=position_field;
 		component.number=0;
 		return_code=get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&value);
-		if(return_code)
+		if (return_code)
 		{
 			vertices_data->vertices[vertices_data->current_element]=(float)(value);
 			vertices_data->current_element++;
 			component.number=1;
 			return_code=get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&value);
-			if(return_code)
+			if (return_code)
 			{
 				vertices_data->vertices[vertices_data->current_element]=(float)(value);
 				vertices_data->current_element++;
 				component.number=2;
 				return_code=get_FE_nodal_FE_value_value(node,&component,0,FE_NODAL_VALUE,&value);
-				if(return_code)
+				if (return_code)
 				{
 					vertices_data->vertices[vertices_data->current_element]=(float)(value);
 					vertices_data->current_element++;
@@ -5255,7 +5255,7 @@ vertices_data->vertices we've filled in.
 			" put_electrode_pos_into_vertices. invalid arguments ");
 		return_code=0;
 	}
-	return(return_code);
+	return (return_code);
 }/* put_electrode_pos_into_vertices */
 
 static struct FE_element *make_delauney_template_element(
@@ -5303,7 +5303,7 @@ Therefore must deaccess the returned element outside this function
 	coordinate_system=(struct Coordinate_system *)NULL;
 	data_coordinate_system=(struct Coordinate_system *)NULL;
 
-	if(basis_manager&&element_manager&&data_field&&coordinate_field)
+	if (basis_manager&&element_manager&&data_field&&coordinate_field)
 	{
 		if (basis=make_FE_basis(basis_type,basis_manager))
 		{
@@ -5428,12 +5428,12 @@ Therefore must deaccess the returned element outside this function
 									success=0;
 								}
 							}				
-							if(data_components)
+							if (data_components)
 							{
 								DESTROY(FE_element_field_component)(&(data_components[0]));
 								DEALLOCATE(data_components);
 							}
-							if(coord_components)
+							if (coord_components)
 							{
 								DESTROY(FE_element_field_component)(&(coord_components[0]));
 								DESTROY(FE_element_field_component)(&(coord_components[1]));
@@ -5487,7 +5487,7 @@ Therefore must deaccess the returned element outside this function
 			" make_delauney_template_element. invalid arguments ");
 		success=0;
 	}
-	if(success==0)
+	if (success==0)
 	{
 		DEACCESS(FE_element)(&template_element);
 		template_element=(struct FE_element *)NULL;
@@ -5545,7 +5545,7 @@ Stores node and element groups in region <map_3d_package>
 	element=(struct FE_element *)NULL;
 	node_order_info=(struct FE_node_order_info *)NULL;
 	map_3d_package=(struct Map_3d_package *)NULL;
-	if(source_nodes&&electrode_postion_field&&delauney_signal_field&&unemap_package
+	if (source_nodes&&electrode_postion_field&&delauney_signal_field&&unemap_package
 		&&region&&(element_group_manager=
 			get_unemap_package_element_group_manager(unemap_package))&&
 		(node_group_manager=
@@ -5557,7 +5557,7 @@ Stores node and element groups in region <map_3d_package>
 		(element_manager=get_unemap_package_element_manager(unemap_package)))
 	{			
 		/* check fields defined at all nodes*/
-		if(!(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(FE_node_field_is_not_defined,
+		if (!(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(FE_node_field_is_not_defined,
 			(void *)delauney_signal_field,source_nodes))&&
 			!(FIRST_OBJECT_IN_GROUP_THAT(FE_node)(FE_node_field_is_not_defined,
 				(void *)electrode_postion_field,source_nodes))&&
@@ -5568,13 +5568,13 @@ Stores node and element groups in region <map_3d_package>
 			element_identifier.type=CM_ELEMENT;
 			element_identifier.number=1;
 			number_of_vertices=(NUMBER_IN_GROUP(FE_node)(source_nodes));
-			if(ALLOCATE(vertices,float,3*number_of_vertices))
+			if (ALLOCATE(vertices,float,3*number_of_vertices))
 			{
 				/* put the nodal position field data into the vertex array*/
 				vertices_data.current_element=0;
 				vertices_data.vertices=vertices;
 				vertices_data.position_field=electrode_postion_field;
-				if((return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(put_electrode_pos_into_vertices,
+				if ((return_code=FOR_EACH_OBJECT_IN_GROUP(FE_node)(put_electrode_pos_into_vertices,
 					(void *)&vertices_data,source_nodes))&&
 					/*perform the delauney triangularisation*/
 					(return_code=cylinder_delauney(number_of_vertices,vertices,
@@ -5589,13 +5589,13 @@ Stores node and element groups in region <map_3d_package>
 					delauney_element_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_element),name)
 						(delauney_group_name,element_group_manager);	
 					MANAGED_GROUP_BEGIN_CACHE(FE_element)(delauney_element_group);						
-					if(delauney_element_group&&delauney_node_group)
+					if (delauney_element_group&&delauney_node_group)
 					{
 						return_code=1;
-						if(return_code)
+						if (return_code)
 						{
 							/* make a node_order_info, so can match nodes to vertices  */
-							if((node_order_info=CREATE(FE_node_order_info)(0))&&
+							if ((node_order_info=CREATE(FE_node_order_info)(0))&&
 								(FOR_EACH_OBJECT_IN_GROUP(FE_node)(fill_FE_node_order_info,
 									(void *)node_order_info,source_nodes)))
 							{													
@@ -5613,11 +5613,11 @@ Stores node and element groups in region <map_3d_package>
 									{				
 										vertex_node=get_FE_node_order_info_node(node_order_info,
 											*vertex_number);
-										if(vertex_node)
+										if (vertex_node)
 										{							
 											/* store triangle nodes to make element*/
 											triangle_nodes[j]=vertex_node;
-											if((!IS_OBJECT_IN_GROUP(FE_node)(vertex_node,
+											if ((!IS_OBJECT_IN_GROUP(FE_node)(vertex_node,
 												delauney_node_group))&&
 												(!ADD_OBJECT_TO_GROUP(FE_node)(vertex_node,
 													delauney_node_group)))
@@ -5705,11 +5705,11 @@ Stores node and element groups in region <map_3d_package>
 									i++;
 								}	/* while((i<number_of_triangles)&&(return_code)) */
 								/* store the created groups */
-								if(return_code)
+								if (return_code)
 								{
 									/* create map_3d_package, if necessary */
 									map_3d_package=get_Region_map_3d_package(region);						
-									if(!map_3d_package)
+									if (!map_3d_package)
 									{
 										map_3d_package=CREATE(Map_3d_package)(
 											get_unemap_package_FE_field_manager(unemap_package),
@@ -5758,19 +5758,19 @@ Stores node and element groups in region <map_3d_package>
 						"Could not do delauney triangularisation ");
 					return_code=0;
 				}
-				if(node_order_info)
+				if (node_order_info)
 				{
 					DESTROY(FE_node_order_info)(&node_order_info);
 				}
-				if(template_element)
+				if (template_element)
 				{					
 					DEACCESS(FE_element)(&template_element);
 				}
-				if(vertices)
+				if (vertices)
 				{
 					DEALLOCATE(vertices);
 				}
-				if(triangles)
+				if (triangles)
 				{
 					DEALLOCATE(triangles);
 				}
@@ -5796,7 +5796,7 @@ Stores node and element groups in region <map_3d_package>
 		return_code=0;
 	} 
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/* make_delauney_node_and_element_group */
 
 struct Set_delauney_signal_data
@@ -5848,7 +5848,7 @@ cf map_set_electrode_colour_from_time
 	channel_offset_field=(struct FE_field *)NULL;
 	node_manager=(struct MANAGER(FE_node) *)NULL;
 	set_delauney_signal_data=(struct Set_delauney_signal_data *)NULL;
-	if(node&&set_delauney_signal_data_void&&(set_delauney_signal_data=
+	if (node&&set_delauney_signal_data_void&&(set_delauney_signal_data=
 		(struct Set_delauney_signal_data *)set_delauney_signal_data_void))
 	{	
 		time=set_delauney_signal_data->time;
@@ -5858,7 +5858,7 @@ cf map_set_electrode_colour_from_time
 		channel_gain_field=set_delauney_signal_data->channel_gain_field;
 		channel_offset_field=set_delauney_signal_data->channel_offset_field;
 		node_manager=set_delauney_signal_data->node_manager;
-		if(FE_field_is_defined_at_node(signal_field,node)&&
+		if (FE_field_is_defined_at_node(signal_field,node)&&
 			FE_field_is_defined_at_node(delauney_signal_field,node)&&
 			FE_field_is_defined_at_node(channel_gain_field,node)&&
 			FE_field_is_defined_at_node(channel_offset_field,node))
@@ -5888,7 +5888,7 @@ cf map_set_electrode_colour_from_time
 					return_code=0;
 				}break;
 			}
-			if(return_code)
+			if (return_code)
 			{	
 				/* scale and offset */
 				component.field=channel_gain_field;			
@@ -5934,7 +5934,7 @@ cf map_set_electrode_colour_from_time
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code); 
+	return (return_code); 
 } /*iterative_set_delauney_signal_nodal_value */
 
 #endif /* defined (UNEMAP_USE_3D) */
@@ -5970,14 +5970,14 @@ Makes and/or sets the nodal values in the delauney node and element groups
 	map_3d_package=(struct Map_3d_package *)NULL;	
 	delauney_torso_node_group=(struct GROUP(FE_node) *)NULL;
 	node=(struct FE_node *)NULL;
-	if(region&&unemap_package&&	
+	if (region&&unemap_package&&	
 		(node_manager=get_unemap_package_node_manager(unemap_package))&&
 		(electrode_postion_field=get_Region_electrode_position_field(region))&&		
 		(rig_node_group=get_Region_rig_node_group(region)))
 	{	
 		return_code=1;
 		/* if necessary, make the delauney_signal_field , and define it at the nodes*/
-		if(!(delauney_signal_field=
+		if (!(delauney_signal_field=
 			get_unemap_package_delauney_signal_field(unemap_package)))
 		{
 			delauney_signal_field=create_mapping_type_fe_field
@@ -5988,12 +5988,12 @@ Makes and/or sets the nodal values in the delauney node and element groups
 		}		
 		node=FIRST_OBJECT_IN_GROUP_THAT(FE_node)
 					((GROUP_CONDITIONAL_FUNCTION(FE_node) *)NULL, NULL,rig_node_group);
-	  if(node&&delauney_signal_field)
+	  if (node&&delauney_signal_field)
 		{
 			/* define field at all nodes, not just unrejected ones, as rejected ones may */
 			/* be accepted later*/
 			/*is field not defined at first node, assume it's not defined at the rest*/
-			if(!FE_field_is_defined_at_node(delauney_signal_field,node))
+			if (!FE_field_is_defined_at_node(delauney_signal_field,node))
 			{
 				/* define delauney_signal field at nodes */
 				components_value_types[0]=component;
@@ -6017,20 +6017,20 @@ Makes and/or sets the nodal values in the delauney node and element groups
 		/* check if haven't made delauney groups yet, or for newly rejected/accpted */
 		/*electrodes to see if remake delauney groups */
 		map_3d_package=get_Region_map_3d_package(region);
-		if(nodes_rejected_or_accepted||(!map_3d_package)||(map_3d_package&&
+		if (nodes_rejected_or_accepted||(!map_3d_package)||(map_3d_package&&
 			(!get_map_3d_package_delauney_torso_node_group(map_3d_package))))
 		{
 			
-			if(map_3d_package)
+			if (map_3d_package)
 			{
 				/*this will do a deaccess*/
 				set_Region_map_3d_package(region,(struct Map_3d_package *)NULL);
 			}
 			/*  make delauney groups */
-			if((!map_3d_package)||(map_3d_package&&
+			if ((!map_3d_package)||(map_3d_package&&
 				(!get_map_3d_package_delauney_torso_node_group(map_3d_package))))
 			{
-				if(return_code&&(unrejected_nodes=get_Region_unrejected_node_group(region)))
+				if (return_code&&(unrejected_nodes=get_Region_unrejected_node_group(region)))
 				{
 					return_code=make_delauney_node_and_element_group(unrejected_nodes,
 						electrode_postion_field,delauney_signal_field,unemap_package,region);	
@@ -6040,11 +6040,11 @@ Makes and/or sets the nodal values in the delauney node and element groups
 					display_message(ERROR_MESSAGE,"make_and_set_delauney"
 							" failed to make delauney node and element groups");
 				}				
-			}/* if((!map_3d_package)||(map_3d_package&& */
+			}/* if ((!map_3d_package)||(map_3d_package&& */
 		}/* (nodes_rejected_or_accepted) */			
 		/* map_3d_package may have changed*/
 		map_3d_package=get_Region_map_3d_package(region);
-		if(map_3d_package&&(delauney_torso_node_group=
+		if (map_3d_package&&(delauney_torso_node_group=
 			get_map_3d_package_delauney_torso_node_group(map_3d_package)))
 		{		
 			MANAGER_BEGIN_CACHE(FE_node)(node_manager);	
@@ -6079,7 +6079,7 @@ Makes and/or sets the nodal values in the delauney node and element groups
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/* make_and_set_delauney */
 #endif /*defined (UNEMAP_USE_3D) */
 
@@ -6432,7 +6432,7 @@ deallocates the memory for <**map> and sets <*map> to NULL.
 				DEALLOCATE(frame->contour_x);
 				DEALLOCATE(frame->contour_y);
 				DEALLOCATE(frame->pixel_values);
-				if(frame->image)
+				if (frame->image)
 				{
 					DEALLOCATE(frame->image->data);
 					XFree((char *)(frame->image));
@@ -6796,7 +6796,7 @@ Updates the colour map being used for map.
 		DESTROY(Spectrum)(&spectrum_copy);
 #if defined (UNEMAP_USE_3D)	
 		spectrum=map->drawing_information->spectrum;
-		if(spectrum_manager=
+		if (spectrum_manager=
 			get_map_drawing_information_spectrum_manager(drawing_information))
 		{
 			if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
@@ -6860,9 +6860,9 @@ and do Scene_remove_graphics_object in the DESTROY Map_3d_package
 {
 	int return_code;	
 	ENTER(map_remove_torso_arm_labels);
-	if(drawing_information)
+	if (drawing_information)
 	{
-		if(drawing_information->torso_arm_labels)
+		if (drawing_information->torso_arm_labels)
 		{
 			Scene_remove_graphics_object(drawing_information->scene,
 				drawing_information->torso_arm_labels);
@@ -6875,7 +6875,7 @@ and do Scene_remove_graphics_object in the DESTROY Map_3d_package
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/* map_remove_torso_arm_labels */
 #endif /* defined (UNEMAP_USE_3D) */
 
@@ -6938,13 +6938,13 @@ Removes 3d drawing for non-current region(s).
 	unrejected_node_group=(struct GROUP(FE_node) *)NULL;		
 	mapped_torso_element_group=(struct GROUP(FE_element) *)NULL;
 	delauney_torso_element_group=(struct GROUP(FE_element) *)NULL;
-	if(map&&(drawing_information=map->drawing_information))
+	if (map&&(drawing_information=map->drawing_information))
 	{		
 		range_set=0;
 		display_all_regions=0;
 		unemap_package=map->unemap_package;
 		/* do we have a default torso loaded ? */
-		if(get_unemap_package_default_torso_name(unemap_package))
+		if (get_unemap_package_default_torso_name(unemap_package))
 		{
 			default_torso_loaded=1;
 		}
@@ -6961,11 +6961,11 @@ Removes 3d drawing for non-current region(s).
 			map_type=NO_MAP_FIELD;
 		}
 		/* do we have a default torso loaded ? */ 
-		if(map->interpolation_type==DIRECT_INTERPOLATION)
+		if (map->interpolation_type==DIRECT_INTERPOLATION)
 		{	
 			/* can only have DIRECT_INTERPOLATION for TORSO,THREED_PROJECTION*/	
 			/* these conditions should be ensured in open_map_dialog()*/
-			if((map->projection_type==THREED_PROJECTION)&&(rig=*(map->rig_pointer))&&
+			if ((map->projection_type==THREED_PROJECTION)&&(rig=*(map->rig_pointer))&&
 				(rig->current_region)&&(rig->current_region->type==TORSO))
 			{
 				delauney_map=1;
@@ -6995,7 +6995,7 @@ Removes 3d drawing for non-current region(s).
 			frame_time=map->frame_start_time; 
 			current_region=get_Rig_current_region(rig);				
 			/*if current_region NULL, displaying all regions*/
-			if(!current_region)
+			if (!current_region)
 			{
 				display_all_regions=1;
 			}		
@@ -7011,19 +7011,19 @@ Removes 3d drawing for non-current region(s).
 					unrejected_node_group=get_Region_unrejected_node_group(region);
 					map_3d_package=get_Region_map_3d_package(region);	
 					/* free everything except the current region(s) map_3d_package*/
-					if((region!=current_region)&&(!display_all_regions))
+					if ((region!=current_region)&&(!display_all_regions))
 					{	
 						/*this will do a deaccess*/
 						set_Region_map_3d_package(region,(struct Map_3d_package *)NULL);
 						drawing_information->viewed_scene=0;							
 					}
 					/*draw the current region(s) */
-					else if(((region==current_region)||display_all_regions)&&
+					else if (((region==current_region)||display_all_regions)&&
 						(unemap_package_rig_node_group_has_electrodes(unemap_package,
 							unrejected_node_group)))
 					{						
 						/* create the mapping fields */
-						if(region->type==SOCK)
+						if (region->type==SOCK)
 						{
 							focus=FIT_SOCK_FOCUS;
 						}
@@ -7032,11 +7032,11 @@ Removes 3d drawing for non-current region(s).
 							focus=0;
 						}
 						field_order_info=create_mapping_fields(region->type,focus,unemap_package);
-						if(map->interpolation_type==NO_INTERPOLATION)						
+						if (map->interpolation_type==NO_INTERPOLATION)						
 						{	
 							/* no surface, just electrodes */
 							map_3d_package=get_Region_map_3d_package(region);
-							if(map_3d_package)
+							if (map_3d_package)
 							{
 								element_group=get_map_3d_package_element_group(map_3d_package);
 								mapped_torso_element_group=
@@ -7046,7 +7046,7 @@ Removes 3d drawing for non-current region(s).
 							}
 							/* if no map_3d_package or last one wasn't NO_INTERPOLATION, */
 							/* create a map_3d_package and destroy the any old one*/
-							if((!map_3d_package)||(map_3d_package&&(element_group||
+							if ((!map_3d_package)||(map_3d_package&&(element_group||
 								mapped_torso_element_group||delauney_torso_element_group)))
 							{
 								map_3d_package=CREATE(Map_3d_package)(				
@@ -7069,11 +7069,11 @@ Removes 3d drawing for non-current region(s).
 								/* will deaccess the old map_3d_package*/
 								set_Region_map_3d_package(region,map_3d_package);
 							}
-						} /* if(map->interpolation_type==NO_INTERPOLATION)	*/
+						} /* if (map->interpolation_type==NO_INTERPOLATION)	*/
 						else
 						{
 							/* BICUBIC_INTERPOLATION or DIRECT_INTERPOLATION */
-							if(delauney_map)
+							if (delauney_map)
 							{
 								make_and_set_delauney(region,unemap_package,time,
 									nodes_rejected_or_accepted);						
@@ -7105,7 +7105,7 @@ Removes 3d drawing for non-current region(s).
 							}
 							/* get map_3d_package again, it may have changed */
 							map_3d_package=get_Region_map_3d_package(region);
-							if(delauney_map)
+							if (delauney_map)
 							{
 								/* do gouraund torso surface*/
 								element_group=
@@ -7114,7 +7114,7 @@ Removes 3d drawing for non-current region(s).
 							else
 							{
 								/* Show the map element surface */							
-								if((region->type==TORSO)&&default_torso_loaded)
+								if ((region->type==TORSO)&&default_torso_loaded)
 								{	
 									/* do smooth torso surface*/
 									element_group=
@@ -7127,7 +7127,7 @@ Removes 3d drawing for non-current region(s).
 								}
 							}					
 							/* if no interpolation, or no spectrum selected(HIDE_COLOUR) don't use them!*/
-							if((map->interpolation_type==NO_INTERPOLATION)||
+							if ((map->interpolation_type==NO_INTERPOLATION)||
 								(map->colour_option==HIDE_COLOUR))
 							{
 								/* No Spectrum or computed field used.*/
@@ -7146,7 +7146,7 @@ Removes 3d drawing for non-current region(s).
 							else 
 							{
 								/* Get the map "fit" field, to use for the surface */
-								if(map->interpolation_type==DIRECT_INTERPOLATION)
+								if (map->interpolation_type==DIRECT_INTERPOLATION)
 								{		
 									fit_field=get_unemap_package_delauney_signal_field(unemap_package);
 								}	
@@ -7171,13 +7171,13 @@ Removes 3d drawing for non-current region(s).
 						} 
 						/* can't do electrodes on default_torso surface yet*/	
 						/*(possibly)  make the map_electrode_position_field, add to the rig nodes*/
-						if((region->type!=TORSO)||(!(default_torso_loaded&&(!delauney_map))))
+						if ((region->type!=TORSO)||(!(default_torso_loaded&&(!delauney_map))))
 						{
 							make_and_add_map_electrode_position_field(unemap_package,
 								rig_node_group,region,delauney_map);
 						}
 						/*draw (or remove) the arms  */				
-						if((region->type==TORSO)&&(!default_torso_loaded)&&
+						if ((region->type==TORSO)&&(!default_torso_loaded)&&
 							(!delauney_map)/*&&map_3d_package*/)/*FOR AJP*/
 						{
 							draw_torso_arm_labels(drawing_information,region);	
@@ -7187,15 +7187,15 @@ Removes 3d drawing for non-current region(s).
 							map_remove_torso_arm_labels(drawing_information);
 						}
 						DESTROY(FE_field_order_info)(&field_order_info);
-					}/* if(unemap_package_rig_node_group_has_electrodes */					
+					}/* if (unemap_package_rig_node_group_has_electrodes */					
 					region_item=get_Region_list_item_next(region_item);
 				} /* while */
 				/* Alter the spectrum */
 										
 				/* spectrum range changed and fixed */
-				if(map->fixed_range)
+				if (map->fixed_range)
 				{		
-					if(map->range_changed)
+					if (map->range_changed)
 					{
 						map->range_changed=0;	
 						minimum=map->minimum_value;
@@ -7203,7 +7203,7 @@ Removes 3d drawing for non-current region(s).
 						range_set=1;
 					}
 					/* remove electrode on default_torso*/
-					if((default_torso_loaded)&&(!delauney_map))
+					if ((default_torso_loaded)&&(!delauney_map))
 					{
 						map_remove_all_electrodes(map);
 					}
@@ -7218,14 +7218,14 @@ Removes 3d drawing for non-current region(s).
 					/* Also remove electodes for default torso surface, as can't display these yet */
 					/* Electrodes added below. This is a little inefficient, as must then */
 					/* re-add electrodes. */
-					if((map->interpolation_type==BICUBIC_INTERPOLATION)||
+					if ((map->interpolation_type==BICUBIC_INTERPOLATION)||
 						(map->interpolation_type==DIRECT_INTERPOLATION)||
 						(default_torso_loaded))
 					{
 						map_remove_all_electrodes(map);
 					}
 					/* NO_INTERPOLATION-map range comes from the signals (i.e electrodes) */
-					if(map->interpolation_type==NO_INTERPOLATION)
+					if (map->interpolation_type==NO_INTERPOLATION)
 					{													
 						get_rig_node_group_signal_min_max_at_time(
 							get_Rig_all_devices_rig_node_group(rig),								
@@ -7247,8 +7247,8 @@ Removes 3d drawing for non-current region(s).
 					map->contour_minimum=minimum;
 					map->contour_maximum=maximum;
 					map->range_changed=0;
-				}	/* if(map->fixed_range) */
-				if(range_set)
+				}	/* if (map->fixed_range) */
+				if (range_set)
 				{
 					map->range_changed=0;					
 					if (IS_MANAGED(Spectrum)(spectrum,spectrum_manager))
@@ -7279,16 +7279,16 @@ Removes 3d drawing for non-current region(s).
 					}				
 				}				
 				/* can't do electrodes on default_torso surface yet*/							
-				if((region->type!=TORSO)||(!(default_torso_loaded&&(!delauney_map))))
+				if ((region->type!=TORSO)||(!(default_torso_loaded&&(!delauney_map))))
 				{		 
 					map_draw_map_electrodes(unemap_package,map,time);
 				}
 				map_draw_contours(map,spectrum,unemap_package,data_field,delauney_map);
 				/* First time the scene's viewed  do "view_all"*/
-				if(!get_map_drawing_information_viewed_scene(drawing_information))				
+				if (!get_map_drawing_information_viewed_scene(drawing_information))				
 				{						
 					/* set z as the up vector for default torso */
-					if((region->type==TORSO)&&(default_torso_loaded))
+					if ((region->type==TORSO)&&(default_torso_loaded))
 					{
 						up_vector=z_up;						
 					}
@@ -7297,7 +7297,7 @@ Removes 3d drawing for non-current region(s).
 						up_vector=(double *)NULL;
 					}
 					/* unemap_package_align_scene does Scene_viewer_view_all */					
-					if(map_drawing_information_align_scene(drawing_information,up_vector))					
+					if (map_drawing_information_align_scene(drawing_information,up_vector))					
 					{																			
 						/* perturb the lines(for the contours) */
 						Scene_viewer_set_perturb_lines(get_map_drawing_information_scene_viewer
@@ -7331,15 +7331,16 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 	int return_code;
 
 	ENTER(draw_map);
-	if(map)
+	if (map)
 	{
 #if defined (UNEMAP_USE_3D) 
 		/* 3d map for 3d projection */
-		if(map->projection_type==THREED_PROJECTION)
+		if (map->projection_type==THREED_PROJECTION)
 		{			
 			return_code=draw_map_3d(map);	
-			/* update_colour_map_unemap() necessary for old style colur strip at top of*/
-			/* mapping window. Will become obselete when only cmgui methods used */						
+			/*???JW.  update_colour_map_unemap() necessary for old style colour strip
+				at top of mapping window. Will become obselete when only cmgui methods
+				used */						
 			update_colour_map_unemap(map,drawing);		
 		}
 		else
@@ -7347,7 +7348,7 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 			return_code=draw_map_2d(map,recalculate,drawing);		
 		}	
 #else
-		/* old, 2d map*/
+		/* old, 2d map */
 		return_code=draw_map_2d(map,recalculate,drawing);
 #endif /*defined( UNEMAP_USE_3D) */	
 	}
@@ -7358,8 +7359,9 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 		return_code=0;
 	}	
 	LEAVE;
-	return(return_code);
-}/*draw_map  */
+
+	return (return_code);
+} /* draw_map  */
 
 /* #define one of these but not both. Or none, the usual case. */
 /*
@@ -7369,7 +7371,7 @@ Call draw_map_2d or draw_map_3d depending upon <map>->projection_type.
 
 int draw_map_2d(struct Map *map,int recalculate,struct Drawing_2d *drawing)
 /*******************************************************************************
-LAST MODIFIED : 31 May 2000
+LAST MODIFIED : 5 March 2001
 
 DESCRIPTION :
 This function draws the <map> in the <drawing>.  If <recalculate> is >0 then the
@@ -7430,21 +7432,21 @@ comparison with 3D maps.
 	float *y_item=(float *)NULL;
 	float *y_mesh=(float *)NULL;
 	GC graphics_context;
-	int after,ascent,before,bit_map_pad,bit_map_unit,
-		boundary_type,cell_number,cell_range,column,datum,contour_area,
-		contour_areas_in_x,contour_areas_in_y,contour_x_spacing,contour_y_spacing,
-		descent,direction,drawing_height,drawing_width,end,end_search_interval,
-		event_number,fibre_iteration,fibre_spacing,found,frame_number,i,i_j,i_jm1,
-		im1_j,im1_jm1,j,k,l,marker_size,maximum_x,maximum_y,middle,
-		minimum_x,minimum_y,name_length,next_contour_x,number_of_devices,
-		number_of_columns,number_of_contour_areas,number_of_contours,
+	int after,ascent,before,bit_map_pad,bit_map_unit,boundary_type,cell_number,
+		cell_range,column,contour_area,contour_areas_in_x,contour_areas_in_y,
+		contour_x_spacing,contour_y_spacing,datum,descent,direction,drawing_height,
+		drawing_width,*draw_region_number,end,end_search_interval,event_number,
+		fibre_iteration,fibre_spacing,found,frame_number,i,i_j,i_jm1,im1_j,im1_jm1,
+		j,k,l,marker_size,maximum_x,maximum_y,middle,minimum_x,minimum_y,
+		name_length,next_contour_x,number_of_devices,number_of_columns,
+		number_of_contour_areas,number_of_contours,number_of_drawn_regions,
 		number_of_electrodes,number_of_frames,number_of_mesh_columns,
 		number_of_mesh_rows,number_of_regions,number_of_rows,number_of_signals,
 		number_of_spectrum_colours,pixel_left,pixel_top,region_number,return_code,
-		row,scan_line_bytes,screen_region_height,screen_region_width,
-		start,start_search_interval,string_length,
-		temp_int,valid_i_j,valid_i_jm1,valid_im1_j,valid_im1_jm1,x_border,
-		x_name_border,x_offset,x_pixel,x_separation,
+		row,scan_line_bytes,screen_region_height,screen_region_width,start,
+		start_search_interval,string_length,temp_int,temp_region_number,valid_i_j,
+		valid_i_jm1,valid_im1_j,valid_im1_jm1,x_border,x_name_border,x_offset,
+		x_pixel,x_separation,
 #if defined (NO_ALIGNMENT)
 		x_string,
 #endif /* defined (NO_ALIGNMENT) */
@@ -7496,8 +7498,8 @@ comparison with 3D maps.
 		discretisation,index,mesh_col_width,new_i,new_j,new_pixel_index,
 		num_pixels,min_x_pixel,min_y_pixel,max_x_pixel,max_y_pixel,mesh_row_height,
 		pixel_index,px,py,rw;
-	float fl_act_height,fl_act_width,fl_q_col_width,fl_q_row_height,*just_map_pixel_value,
-		left_y,right_y,*new_pixel_value,pu,pv;
+	float fl_act_height,fl_act_width,fl_q_col_width,fl_q_row_height,
+		*just_map_pixel_value,left_y,right_y,*new_pixel_value,pu,pv;
 	min_x_pixel=10000;
 	min_y_pixel=10000;
 	max_x_pixel=0;max_y_pixel=0;
@@ -7509,6 +7511,7 @@ comparison with 3D maps.
 #if defined(GOURAUD_FROM_MESH)
 	float top_x,bot_x,left_y,right_y;
 #endif /* defined(GOURAUD_FROM_MESH) */
+
 	ENTER(draw_map_2d);
 	return_code=1;
 	/* check arguments */
@@ -7537,7 +7540,7 @@ comparison with 3D maps.
 		{
 			map_type=NO_MAP_FIELD;
 		}		
-		if(map_type==NO_MAP_FIELD)
+		if (map_type==NO_MAP_FIELD)
 		/* if we have no map, don't colour electrodes with the signal  */
 		{								
 			map->colour_electrodes_with_signal=0;
@@ -7605,21 +7608,19 @@ comparison with 3D maps.
 		}
 		if (map->rig_pointer)
 		{
-			if (rig= *(map->rig_pointer))
+			if ((rig= *(map->rig_pointer))&&
+				(0<(number_of_regions=rig->number_of_regions))&&
+				ALLOCATE(draw_region_number,int,number_of_regions))
 			{
+				for (i=0;i<number_of_regions;i++)
+				{
+					draw_region_number[i]=0;
+				}
+				current_region=get_Rig_current_region(rig);
 				pi_over_2=2*atan(1);
 				pi=2*pi_over_2;
 				two_pi=2*pi;
-				/* determine the number of map regions */				
-				if(current_region=get_Rig_current_region(rig))
-				{
-					number_of_regions=1;
-				}
-				else
-				{
-					number_of_regions=rig->number_of_regions;
-				}
-				/* count the electrodes */
+				/* determine the number of regions to draw and count the electrodes */
 				number_of_electrodes=0;
 				device=rig->devices;
 				number_of_devices=rig->number_of_devices;
@@ -7628,10 +7629,24 @@ comparison with 3D maps.
 					if ((ELECTRODE==(description=(*device)->description)->type)&&
 						(!current_region||(current_region==description->region)))
 					{
+						draw_region_number[description->region->number]++;
 						number_of_electrodes++;
 					}
 					device++;
 					number_of_devices--;
+				}
+				number_of_drawn_regions=0;
+				for (i=0;i<number_of_regions;i++)
+				{
+					if (0<draw_region_number[i])
+					{
+						draw_region_number[i]=number_of_drawn_regions;
+						number_of_drawn_regions++;
+					}
+					else
+					{
+						draw_region_number[i]= -1;
+					}
 				}
 				map->number_of_electrodes=number_of_electrodes;
 				if (number_of_electrodes>0)
@@ -7648,15 +7663,15 @@ comparison with 3D maps.
 					ALLOCATE(screen_y,int,number_of_electrodes);
 					ALLOCATE(electrode_value,float,number_of_electrodes);
 					ALLOCATE(electrode_drawn,char,number_of_electrodes);
-					ALLOCATE(first,char,number_of_regions);
-					ALLOCATE(max_x,float,number_of_regions);
-					ALLOCATE(min_x,float,number_of_regions);
-					ALLOCATE(max_y,float,number_of_regions);
-					ALLOCATE(min_y,float,number_of_regions);
-					ALLOCATE(stretch_x,float,number_of_regions);
-					ALLOCATE(stretch_y,float,number_of_regions);
-					ALLOCATE(start_x,int,number_of_regions);
-					ALLOCATE(start_y,int,number_of_regions);
+					ALLOCATE(first,char,number_of_drawn_regions);
+					ALLOCATE(max_x,float,number_of_drawn_regions);
+					ALLOCATE(min_x,float,number_of_drawn_regions);
+					ALLOCATE(max_y,float,number_of_drawn_regions);
+					ALLOCATE(min_y,float,number_of_drawn_regions);
+					ALLOCATE(stretch_x,float,number_of_drawn_regions);
+					ALLOCATE(stretch_y,float,number_of_drawn_regions);
+					ALLOCATE(start_x,int,number_of_drawn_regions);
+					ALLOCATE(start_y,int,number_of_drawn_regions);
 					if (x&&y&&electrode&&screen_x&&screen_y&&electrode_value&&
 						electrode_drawn&&first&&max_x&&min_x&&max_y&&min_y&&stretch_x&&
 						stretch_y&&start_x&&start_y)
@@ -7672,7 +7687,7 @@ comparison with 3D maps.
 						number_of_devices=rig->number_of_devices;
 						x_item=x;
 						y_item=y;
-						for (i=number_of_regions;i>0;)
+						for (i=number_of_drawn_regions;i>0;)
 						{
 							i--;
 							first[i]=1;
@@ -7704,14 +7719,7 @@ comparison with 3D maps.
 									}
 								}
 								/* perform projection and update ranges */
-								if (current_region)
-								{
-									region_number=0;
-								}
-								else
-								{
-									region_number=description->region->number;
-								}
+								region_number=draw_region_number[description->region->number];
 								position= &(description->properties.electrode.position);
 								switch (description->region->type)
 								{
@@ -8067,40 +8075,12 @@ comparison with 3D maps.
 							number_of_devices--;
 						}
 						/* divide the drawing area into regions */
-						if (current_region)
+						region_item=get_Rig_region_list(rig);
+						for (temp_region_number=0;temp_region_number<number_of_regions;
+							temp_region_number++)
 						{
-							switch (current_region->type)
-							{
-								case SOCK:
-								{
-									switch (map->projection_type)
-									{
-										case HAMMER_PROJECTION:
-										{
-											Hammer_projection(max_x[0],0,&a,max_y,(float *)NULL);
-											min_x[0]= -1;
-											max_x[0]=1;
-											min_y[0]= -1;
-										} break;
-										case POLAR_PROJECTION:
-										{
-											min_x[0]= -max_x[0];
-											min_y[0]=min_x[0];
-											max_y[0]=max_x[0];
-										} break;
-									}
-								} break;
-								case TORSO:
-								{
-									min_x[0]= -pi;
-									max_x[0]=pi;
-								} break;
-							}
-						}
-						else
-						{
-							region_item=get_Rig_region_list(rig);
-							for (i=0;i<number_of_regions;i++)
+							region_number=draw_region_number[temp_region_number];
+							if (0<=region_number)
 							{
 								region=get_Region_list_item_region(region_item);
 								switch (region->type)
@@ -8111,41 +8091,43 @@ comparison with 3D maps.
 										{
 											case HAMMER_PROJECTION:
 											{
-												Hammer_projection(max_x[i],0,&a,max_y+i,(float *)NULL);
-												min_x[i]= -1;
-												max_x[i]=1;
-												min_y[i]= -1;
+												Hammer_projection(max_x[region_number],0,&a,
+													max_y+region_number,(float *)NULL);
+												min_x[region_number]= -1;
+												max_x[region_number]=1;
+												min_y[region_number]= -1;
 											} break;
 											case POLAR_PROJECTION:
 											{
-												min_x[i]= -max_x[i];
-												min_y[i]=min_x[i];
-												max_y[i]=max_x[i];
+												min_x[region_number]= -max_x[region_number];
+												min_y[region_number]=min_x[region_number];
+												max_y[region_number]=max_x[region_number];
 											} break;
 										}
 									} break;
 									case TORSO:
 									{
-										min_x[i]= -pi;
-										max_x[i]=pi;
+										min_x[region_number]= -pi;
+										max_x[region_number]=pi;
 									} break;
 								}
-								region_item=get_Region_list_item_next(region_item);
 							}
+							region_item=get_Region_list_item_next(region_item);
 						}
-						number_of_columns=(int)(0.5+sqrt((double)number_of_regions));
-						if(number_of_columns<1)
+						number_of_columns=(int)(0.5+sqrt((double)number_of_drawn_regions));
+						if (number_of_columns<1)
 						{
 							number_of_columns=1;
 						}
-						number_of_rows=(number_of_regions-1)/number_of_columns+1;												
-						if(number_of_rows<1)
+						number_of_rows=(number_of_drawn_regions-1)/number_of_columns+1;
+						if (number_of_rows<1)
 						{
 							number_of_rows=1;
 						}
 						/* equalize the columns */
-						if ((number_of_regions>1)&&(number_of_columns>1)&&
-							((i=number_of_rows*number_of_columns-number_of_regions-1)>0))
+						if ((number_of_drawn_regions>1)&&(number_of_columns>1)&&
+							((i=number_of_rows*number_of_columns-
+							number_of_drawn_regions-1)>0))
 						{
 							number_of_rows -= i/(number_of_columns-1);
 						}
@@ -8155,7 +8137,7 @@ comparison with 3D maps.
 						/* calculate the transformation from map coordinates to screen
 							 coordinates */
 						pixel_aspect_ratio=get_pixel_aspect_ratio(display);
-						for (i=0;i<number_of_regions;i++)
+						for (i=0;i<number_of_drawn_regions;i++)
 						{
 							if ((map->maintain_aspect_ratio)&&(max_x[i]!=min_x[i])&&
 								(screen_region_width>2*x_border+1)&&(max_y[i]!=min_y[i])&&
@@ -8222,14 +8204,8 @@ comparison with 3D maps.
 						screen_y=map->electrode_y;
 						for (i=number_of_electrodes;i>0;i--)
 						{
-							if (number_of_regions>1)
-							{
-								region_number=(*electrode)->description->region->number;
-							}
-							else
-							{
-								region_number=0;
-							}
+							region_number=draw_region_number[
+								(*electrode)->description->region->number];
 							/* calculate screen position */
 							*screen_x=start_x[region_number]+
 								(int)(((*x_item)-min_x[region_number])*
@@ -8260,7 +8236,7 @@ comparison with 3D maps.
 									contour_x_spacing=
 										drawing_information->pixels_between_contour_values;
 									contour_areas_in_x=drawing_width/contour_x_spacing;
-									if(contour_areas_in_x<1)
+									if (contour_areas_in_x<1)
 									{
 										contour_areas_in_x=1;
 									}
@@ -8280,7 +8256,7 @@ comparison with 3D maps.
 									contour_y_spacing=
 										drawing_information->pixels_between_contour_values;
 									contour_areas_in_y=drawing_height/contour_y_spacing;
-									if(contour_areas_in_y<1)
+									if (contour_areas_in_y<1)
 									{
 										contour_areas_in_y=1;
 									}
@@ -8313,6 +8289,8 @@ comparison with 3D maps.
 											/* allocate memory for drawing contour values */
 											contour_x=(short int *)NULL;
 											contour_y=(short int *)NULL;
+											/*???DB.  This REALLOC causes unemap to crash when being
+												run under XWin32 at Cedars Sinai */
 											if (REALLOCATE(contour_x,frame->contour_x,short int,
 												number_of_contour_areas*number_of_spectrum_colours)&&
 												REALLOCATE(contour_y,frame->contour_y,short int,
@@ -8485,457 +8463,506 @@ comparison with 3D maps.
 													minimum_region=(struct Region *)NULL;	
 													/* for each region */
 													region_item=get_Rig_region_list(rig);
-													for (region_number=0;region_number<number_of_regions;
-															 region_number++)
+													for (temp_region_number=0;
+														temp_region_number<number_of_regions;
+														temp_region_number++)
 													{
-														if (number_of_regions>1)
+														region_number=
+															draw_region_number[temp_region_number];
+														if (0<=region_number)
 														{
-															current_region=get_Region_list_item_region(region_item);
-														}
-														else
-														{
-															current_region=get_Rig_current_region(rig);
-														}
-														/* interpolate data */
-														if ((0!=stretch_x[region_number])&&
-															(0!=stretch_y[region_number])&&
-															(function=calculate_interpolation_functio(
-																map_type,rig,current_region,map->event_number,
-																frame_time,map->datum,map->start_search_interval,
-																map->end_search_interval,undecided_accepted,
-																map->finite_element_mesh_rows,
-																map->finite_element_mesh_columns,
-																map->membrane_smoothing,
-																map->plate_bending_smoothing)))
-														{
-															f=function->f;
-															dfdx=function->dfdx;
-															dfdy=function->dfdy;
-															d2fdxdy=function->d2fdxdy;
-															number_of_mesh_rows=function->number_of_rows;
-															number_of_mesh_columns=
-																function->number_of_columns;
-															y_mesh=function->y_mesh;
-															x_mesh=function->x_mesh;
-															/* calculate pixel values */
-															pixel_left=((region_number/number_of_rows)*
-																drawing_width)/number_of_columns;
-															pixel_top=((region_number%number_of_rows)*
-																drawing_height)/number_of_rows;
-															x_screen_step=1/stretch_x[region_number];
-															y_screen_step= -1/stretch_y[region_number];
-															x_screen_left=min_x[region_number]+
-																(pixel_left-start_x[region_number])*
-																x_screen_step;
-															y_screen_top=min_y[region_number]+
-																(pixel_top-start_y[region_number])*
-																y_screen_step;
-															y_screen=y_screen_top;
-															y_pixel=pixel_top;
-													
-#if defined(GOURAUD_FROM_PIXEL_VALUE) 
-															/* Allocate space for pixel-array-without-border. */
-															/*This will be a bit too big, but don't know exact size yet*/
-															if (!(ALLOCATE(just_map_pixel_value,float,drawing_width*drawing_height)))
-															{	
-																display_message(ERROR_MESSAGE,
-																	"draw_map_2d. ALLOCATE just_map_pixel_value failed");
-															}														
-#endif /* defined(GOURAUD_FROM_PIXEL_VALUE) */
-															for (j=0;j<screen_region_height;j++)
+															current_region=get_Region_list_item_region(
+																region_item);
+															/* interpolate data */
+															if ((0!=stretch_x[region_number])&&
+																(0!=stretch_y[region_number])&&
+																(function=calculate_interpolation_functio(
+																	map_type,rig,current_region,map->event_number,
+																	frame_time,map->datum,
+																	map->start_search_interval,
+																	map->end_search_interval,undecided_accepted,
+																	map->finite_element_mesh_rows,
+																	map->finite_element_mesh_columns,
+																	map->membrane_smoothing,
+																	map->plate_bending_smoothing)))
 															{
-																x_screen=x_screen_left;
-																x_pixel=pixel_left;
-																for (i=0;i<screen_region_width;i++)
+																f=function->f;
+																dfdx=function->dfdx;
+																dfdy=function->dfdy;
+																d2fdxdy=function->d2fdxdy;
+																number_of_mesh_rows=function->number_of_rows;
+																number_of_mesh_columns=
+																	function->number_of_columns;
+																y_mesh=function->y_mesh;
+																x_mesh=function->x_mesh;
+																/* calculate pixel values */
+																pixel_left=((region_number/number_of_rows)*
+																	drawing_width)/number_of_columns;
+																pixel_top=((region_number%number_of_rows)*
+																	drawing_height)/number_of_rows;
+																x_screen_step=1/stretch_x[region_number];
+																y_screen_step= -1/stretch_y[region_number];
+																x_screen_left=min_x[region_number]+
+																	(pixel_left-start_x[region_number])*
+																	x_screen_step;
+																y_screen_top=min_y[region_number]+
+																	(pixel_top-start_y[region_number])*
+																	y_screen_step;
+																y_screen=y_screen_top;
+																y_pixel=pixel_top;
+#if defined(GOURAUD_FROM_PIXEL_VALUE) 
+																/* Allocate space for
+																	pixel-array-without-border.  This will be a
+																	bit too big, but don't know exact size yet */
+																if (!(ALLOCATE(just_map_pixel_value,float,
+																	drawing_width*drawing_height)))
+																{	
+																	display_message(ERROR_MESSAGE,
+																		"draw_map_2d. ALLOCATE just_map_pixel_value failed");
+																}														
+#endif /* defined(GOURAUD_FROM_PIXEL_VALUE) */
+																for (j=0;j<screen_region_height;j++)
 																{
-																	/* calculate the element coordinates */
-																	switch (current_region->type)
+																	x_screen=x_screen_left;
+																	x_pixel=pixel_left;
+																	for (i=0;i<screen_region_width;i++)
 																	{
-																		case SOCK:
+																		/* calculate the element coordinates */
+																		switch (current_region->type)
 																		{
-																			switch (map->projection_type)
+																			case SOCK:
 																			{
-																				case HAMMER_PROJECTION:
+																				switch (map->projection_type)
 																				{
-																					/*???avoid singularity ? */
-																					if ((x_screen!=0)||
-																						((y_screen!=1)&&(y_screen!= -1)))
+																					case HAMMER_PROJECTION:
 																					{
-																						a=x_screen*x_screen;
-																						b=y_screen*y_screen;
-																						c=2-a-b;
-																						if (c>1)
+																						/*???avoid singularity ? */
+																						if ((x_screen!=0)||
+																							((y_screen!=1)&&(y_screen!= -1)))
 																						{
-																							d=y_screen*sqrt(c);
-																							if (d>=1)
+																							a=x_screen*x_screen;
+																							b=y_screen*y_screen;
+																							c=2-a-b;
+																							if (c>1)
 																							{
-																								mu=pi;
+																								d=y_screen*sqrt(c);
+																								if (d>=1)
+																								{
+																									mu=pi;
+																								}
+																								else
+																								{
+																									if (d<= -1)
+																									{
+																										mu=0;
+																									}
+																									else
+																									{
+																										mu=pi_over_2+asin(d);
+																									}
+																								}
+																								d=sqrt((a*c)/(1-b*c));
+																								if (x_screen>0)
+																								{
+																									if (d>=1)
+																									{
+																										theta=two_pi;
+																									}
+																									else
+																									{
+																										theta=pi-2*asin(d);
+																									}
+																								}
+																								else
+																								{
+																									if (d>=1)
+																									{
+																										theta=0;
+																									}
+																									else
+																									{
+																										theta=pi+2*asin(d);
+																									}
+																								}
+																								u=theta;
+																								v=mu;
+																								valid_u_and_v=1;
 																							}
 																							else
 																							{
-																								if (d<= -1)
-																								{
-																									mu=0;
-																								}
-																								else
-																								{
-																									mu=pi_over_2+asin(d);
-																								}
+																								valid_u_and_v=0;
 																							}
-																							d=sqrt((a*c)/(1-b*c));
-																							if (x_screen>0)
-																							{
-																								if (d>=1)
-																								{
-																									theta=two_pi;
-																								}
-																								else
-																								{
-																									theta=pi-2*asin(d);
-																								}
-																							}
-																							else
-																							{
-																								if (d>=1)
-																								{
-																									theta=0;
-																								}
-																								else
-																								{
-																									theta=pi+2*asin(d);
-																								}
-																							}
-																							u=theta;
-																							v=mu;
-																							valid_u_and_v=1;
 																						}
 																						else
 																						{
 																							valid_u_and_v=0;
 																						}
-																					}
-																					else
+																					} break;
+																					case POLAR_PROJECTION:
 																					{
-																						valid_u_and_v=0;
-																					}
-																				} break;
-																				case POLAR_PROJECTION:
-																				{
-																					mu=sqrt(x_screen*x_screen+
-																						y_screen*y_screen);
-																					if (mu>0)
-																					{
-																						if (x_screen>0)
+																						mu=sqrt(x_screen*x_screen+
+																							y_screen*y_screen);
+																						if (mu>0)
 																						{
-																							if (y_screen>0)
+																							if (x_screen>0)
 																							{
-																								theta=asin(y_screen/mu);
+																								if (y_screen>0)
+																								{
+																									theta=asin(y_screen/mu);
+																								}
+																								else
+																								{
+																									theta=two_pi+
+																										asin(y_screen/mu);
+																								}
 																							}
 																							else
 																							{
-																								theta=two_pi+asin(y_screen/mu);
+																								theta=pi-asin(y_screen/mu);
 																							}
 																						}
 																						else
 																						{
-																							theta=pi-asin(y_screen/mu);
+																							theta=0;
 																						}
-																					}
-																					else
-																					{
-																						theta=0;
-																					}
-																					u=theta;
-																					v=mu;
-																					valid_u_and_v=1;
-																				} break;
-																			}
-																		} break;
-																		case PATCH:
-																		{
-																			u=x_screen;
-																			v=y_screen;
-																			valid_u_and_v=1;
-																		} break;
-																		case TORSO:
-																		{
-																			/*???DB.  Need scaling in x ? */
-																			u=x_screen;
-																			v=y_screen;
-																			valid_u_and_v=1;
-																		} break;
-																	}
-																	if (valid_u_and_v)
-																	{
-																		/* determine which element the point is
-																			 in */
-																		column=0;
-																		while ((column<number_of_mesh_columns)&&
-																			(u>=x_mesh[column]))
-																		{
-																			column++;
-																		}
-																		if ((column>0)&&(u<=x_mesh[column]))
-																		{
-																			row=0;
-																			while ((row<number_of_mesh_rows)&&
-																				(v>=y_mesh[row]))
-																			{
-																				row++;
-																			}
-																			if ((row>0)&&(v<=y_mesh[row]))
-																			{																				
-																				/* calculate basis function values */
-																				width=x_mesh[column]-x_mesh[column-1];
-																				h11_u=h12_u=u-x_mesh[column-1];
-																				u=h11_u/width;
-																				h01_u=(2*u-3)*u*u+1;
-																				h11_u *= (u-1)*(u-1);
-																				h02_u=u*u*(3-2*u);
-																				h12_u *= u*(u-1);
-																				height=y_mesh[row]-y_mesh[row-1];
-																				h11_v=h12_v=v-y_mesh[row-1];
-																				v=h11_v/height;
-																				h01_v=(2*v-3)*v*v+1;
-																				h11_v *= (v-1)*(v-1);
-																				h02_v=v*v*(3-2*v);
-																				h12_v *= v*(v-1);
-																				/* calculate the interpolation function
-																					 coefficients */
-																				f_im1_jm1=h01_u*h01_v;
-																				f_im1_j=h02_u*h01_v;
-																				f_i_j=h02_u*h02_v;
-																				f_i_jm1=h01_u*h02_v;
-																				dfdx_im1_jm1=h11_u*h01_v;
-																				dfdx_im1_j=h12_u*h01_v;
-																				dfdx_i_j=h12_u*h02_v;
-																				dfdx_i_jm1=h11_u*h02_v;
-																				dfdy_im1_jm1=h01_u*h11_v;
-																				dfdy_im1_j=h02_u*h11_v;
-																				dfdy_i_j=h02_u*h12_v;
-																				dfdy_i_jm1=h01_u*h12_v;
-																				d2fdxdy_im1_jm1=h11_u*h11_v;
-																				d2fdxdy_im1_j=h12_u*h11_v;
-																				d2fdxdy_i_j=h12_u*h12_v;
-																				d2fdxdy_i_jm1=h11_u*h12_v;
-																				/* calculate node numbers
-																					 NB the local coordinates have the top
-																					 right corner of the element as the
-																					 origin.  This means that
-																					 (i-1,j-1) is the bottom left corner
-																					 (i,j-1) is the top left corner
-																					 (i,j) is the top right corner
-																					 (i-1,j) is the bottom right corner */
-																				/* (i-1,j-1) node (bottom left
-																					 corner) */
-																				im1_jm1=
-																					(row-1)*(number_of_mesh_columns+1)+
-																					column-1;
-																				/* (i,j-1) node (top left corner) */
-																				i_jm1=row*(number_of_mesh_columns+1)+
-																					column-1;
-																				/* (i,j) node (top right corner) */
-																				i_j=
-																					row*(number_of_mesh_columns+1)+column;
-																				/* (i-1,j) node (bottom right corner) */
-																				im1_j=
-																					(row-1)*(number_of_mesh_columns+1)+
-																					column;
-#if defined(GOURAUD_FROM_MESH) /* this does Gourand shading, using the mesh row and column corners */
-																				top_x=f[i_jm1]-(f[i_jm1]-f[i_j])*u;
-																				bot_x=f[im1_jm1]-(f[im1_jm1]-f[im1_j])*u;
-																				left_y=f[i_jm1]-(f[i_jm1]-f[im1_jm1])*(1-v);
-																				right_y=f[i_j]-(f[i_j]-f[im1_j])*(1-v);
-																				/* or f_approx=(1-u)*left_y+(u)*right_y;*/
-																				/* (left_y,right_y redundant)*/
-																				f_approx=(v)*top_x+(1-v)*bot_x;
-#else/* <THIS> is the Normal case*/
-																			
-																				f_approx=
-																					f[im1_jm1]*f_im1_jm1+
-																					f[i_jm1]*f_i_jm1+
-																					f[i_j]*f_i_j+
-																					f[im1_j]*f_im1_j+
-																					dfdx[im1_jm1]*dfdx_im1_jm1+
-																					dfdx[i_jm1]*dfdx_i_jm1+
-																					dfdx[i_j]*dfdx_i_j+
-																					dfdx[im1_j]*dfdx_im1_j+
-																					dfdy[im1_jm1]*dfdy_im1_jm1+
-																					dfdy[i_jm1]*dfdy_i_jm1+
-																					dfdy[i_j]*dfdy_i_j+
-																					dfdy[im1_j]*dfdy_im1_j+
-																					d2fdxdy[im1_jm1]*d2fdxdy_im1_jm1+
-																					d2fdxdy[i_jm1]*d2fdxdy_i_jm1+
-																					d2fdxdy[i_j]*d2fdxdy_i_j+
-																					d2fdxdy[im1_j]*d2fdxdy_im1_j;
-#endif /* defined(GOURAUD_FROM_MESH) */
-																				if (max_f<min_f)
-																				{
-																					min_f=f_approx;
-																					max_f=f_approx;
-																					maximum_region=current_region;
-																					minimum_region=current_region;
-																					maximum_x=i;
-																					maximum_y=j;
-																					minimum_x=i;
-																					minimum_y=j;
+																						u=theta;
+																						v=mu;
+																						valid_u_and_v=1;
+																					} break;
 																				}
-																				else
+																			} break;
+																			case PATCH:
+																			{
+																				u=x_screen;
+																				v=y_screen;
+																				valid_u_and_v=1;
+																			} break;
+																			case TORSO:
+																			{
+																				/*???DB.  Need scaling in x ? */
+																				u=x_screen;
+																				v=y_screen;
+																				valid_u_and_v=1;
+																			} break;
+																		}
+																		if (valid_u_and_v)
+																		{
+																			/* determine which element the point is
+																				 in */
+																			column=0;
+																			while ((column<number_of_mesh_columns)&&
+																				(u>=x_mesh[column]))
+																			{
+																				column++;
+																			}
+																			if ((column>0)&&(u<=x_mesh[column]))
+																			{
+																				row=0;
+																				while ((row<number_of_mesh_rows)&&
+																					(v>=y_mesh[row]))
 																				{
-																					if (f_approx<min_f)
+																					row++;
+																				}
+																				if ((row>0)&&(v<=y_mesh[row]))
+																				{																				
+																					/* calculate basis function values */
+																					width=x_mesh[column]-x_mesh[column-1];
+																					h11_u=h12_u=u-x_mesh[column-1];
+																					u=h11_u/width;
+																					h01_u=(2*u-3)*u*u+1;
+																					h11_u *= (u-1)*(u-1);
+																					h02_u=u*u*(3-2*u);
+																					h12_u *= u*(u-1);
+																					height=y_mesh[row]-y_mesh[row-1];
+																					h11_v=h12_v=v-y_mesh[row-1];
+																					v=h11_v/height;
+																					h01_v=(2*v-3)*v*v+1;
+																					h11_v *= (v-1)*(v-1);
+																					h02_v=v*v*(3-2*v);
+																					h12_v *= v*(v-1);
+																					/* calculate the interpolation
+																						function coefficients */
+																					f_im1_jm1=h01_u*h01_v;
+																					f_im1_j=h02_u*h01_v;
+																					f_i_j=h02_u*h02_v;
+																					f_i_jm1=h01_u*h02_v;
+																					dfdx_im1_jm1=h11_u*h01_v;
+																					dfdx_im1_j=h12_u*h01_v;
+																					dfdx_i_j=h12_u*h02_v;
+																					dfdx_i_jm1=h11_u*h02_v;
+																					dfdy_im1_jm1=h01_u*h11_v;
+																					dfdy_im1_j=h02_u*h11_v;
+																					dfdy_i_j=h02_u*h12_v;
+																					dfdy_i_jm1=h01_u*h12_v;
+																					d2fdxdy_im1_jm1=h11_u*h11_v;
+																					d2fdxdy_im1_j=h12_u*h11_v;
+																					d2fdxdy_i_j=h12_u*h12_v;
+																					d2fdxdy_i_jm1=h11_u*h12_v;
+																					/* calculate node numbers
+																						 NB the local coordinates have the
+																						 top right corner of the element as
+																						 the origin.  This means that
+																						 (i-1,j-1) is the bottom left corner
+																						 (i,j-1) is the top left corner
+																						 (i,j) is the top right corner
+																						 (i-1,j) is the bottom right
+																						 corner */
+																					/* (i-1,j-1) node (bottom left
+																						 corner) */
+																					im1_jm1=
+																						(row-1)*(number_of_mesh_columns+1)+
+																						column-1;
+																					/* (i,j-1) node (top left corner) */
+																					i_jm1=row*(number_of_mesh_columns+1)+
+																						column-1;
+																					/* (i,j) node (top right corner) */
+																					i_j=
+																						row*(number_of_mesh_columns+1)+
+																						column;
+																					/* (i-1,j) node (bottom right
+																						corner) */
+																					im1_j=
+																						(row-1)*(number_of_mesh_columns+1)+
+																						column;
+#if defined(GOURAUD_FROM_MESH)
+/* this does Gourand shading, using the mesh row and column corners */
+																					top_x=f[i_jm1]-(f[i_jm1]-f[i_j])*u;
+																					bot_x=f[im1_jm1]-
+																						(f[im1_jm1]-f[im1_j])*u;
+																					left_y=f[i_jm1]-(f[i_jm1]-f[im1_jm1])*
+																						(1-v);
+																					right_y=f[i_j]-(f[i_j]-f[im1_j])*
+																						(1-v);
+																					/* or f_approx=(1-u)*left_y+(u)*
+																						right_y;*/
+																					/* (left_y,right_y redundant)*/
+																					f_approx=(v)*top_x+(1-v)*bot_x;
+#else
+/* <THIS> is the Normal case*/
+																					f_approx=
+																						f[im1_jm1]*f_im1_jm1+
+																						f[i_jm1]*f_i_jm1+
+																						f[i_j]*f_i_j+
+																						f[im1_j]*f_im1_j+
+																						dfdx[im1_jm1]*dfdx_im1_jm1+
+																						dfdx[i_jm1]*dfdx_i_jm1+
+																						dfdx[i_j]*dfdx_i_j+
+																						dfdx[im1_j]*dfdx_im1_j+
+																						dfdy[im1_jm1]*dfdy_im1_jm1+
+																						dfdy[i_jm1]*dfdy_i_jm1+
+																						dfdy[i_j]*dfdy_i_j+
+																						dfdy[im1_j]*dfdy_im1_j+
+																						d2fdxdy[im1_jm1]*d2fdxdy_im1_jm1+
+																						d2fdxdy[i_jm1]*d2fdxdy_i_jm1+
+																						d2fdxdy[i_j]*d2fdxdy_i_j+
+																						d2fdxdy[im1_j]*d2fdxdy_im1_j;
+#endif /* defined(GOURAUD_FROM_MESH) */
+																					if (max_f<min_f)
 																					{
 																						min_f=f_approx;
+																						max_f=f_approx;
+																						maximum_region=current_region;
 																						minimum_region=current_region;
+																						maximum_x=i;
+																						maximum_y=j;
 																						minimum_x=i;
 																						minimum_y=j;
 																					}
 																					else
 																					{
-																						if (f_approx>max_f)
+																						if (f_approx<min_f)
 																						{
-																							max_f=f_approx;
-																							maximum_region=current_region;
-																							maximum_x=i;
-																							maximum_y=j;
+																							min_f=f_approx;
+																							minimum_region=current_region;
+																							minimum_x=i;
+																							minimum_y=j;
+																						}
+																						else
+																						{
+																							if (f_approx>max_f)
+																							{
+																								max_f=f_approx;
+																								maximum_region=current_region;
+																								maximum_x=i;
+																								maximum_y=j;
+																							}
 																						}
 																					}
-																				}
-																				pixel_value[y_pixel*drawing_width+
-																					x_pixel]=f_approx;
-																				background_map_boundary_base[
-																					y_pixel*drawing_width+x_pixel]=1;
+																					pixel_value[y_pixel*drawing_width+
+																						x_pixel]=f_approx;
+																					background_map_boundary_base[
+																						y_pixel*drawing_width+x_pixel]=1;
 #if defined(GOURAUD_FROM_PIXEL_VALUE)
-																				/* record actual (minus border) drawing width via min and max */
-																				/* fill in the pixels-without-border-array*/
-																				just_map_pixel_value[num_pixels]=f_approx;
-																				num_pixels++;
-																				if(min_x_pixel>x_pixel) min_x_pixel=x_pixel;
-																				if(min_y_pixel>y_pixel) min_y_pixel=y_pixel;
-																				if(max_x_pixel<x_pixel) max_x_pixel=x_pixel;
-																				if(max_y_pixel<y_pixel) max_y_pixel=y_pixel;
-#endif /* defined(GOURAUD_FROM_PIXEL_VALUE)*/
+																					/* record actual (minus border)
+																						drawing width via min and max */
+																					/* fill in the
+																						pixels-without-border-array */
+																					just_map_pixel_value[num_pixels]=
+																						f_approx;
+																					num_pixels++;
+																					if (min_x_pixel>x_pixel)
+																					{
+																						min_x_pixel=x_pixel;
+																					}
+																					if (min_y_pixel>y_pixel)
+																					{
+																						min_y_pixel=y_pixel;
+																					}
+																					if (max_x_pixel<x_pixel)
+																					{
+																						max_x_pixel=x_pixel;
+																					}
+																					if (max_y_pixel<y_pixel)
+																					{
+																						max_y_pixel=y_pixel;
+																					}
+#endif /* defined(GOURAUD_FROM_PIXEL_VALUE) */
+																				}
 																			}
 																		}
+																		x_screen += x_screen_step;
+																		x_pixel++;																
 																	}
-																	x_screen += x_screen_step;
-																	x_pixel++;																
-																}/*for (i=0;i<screen_region_width;i++)*/
-																y_screen += y_screen_step;
-																y_pixel++;															
-															}/* for (j=0;j<screen_region_height;j++) */
-															destroy_Interpolation_function(&function);
+																	y_screen += y_screen_step;
+																	y_pixel++;															
+																}
+																destroy_Interpolation_function(&function);
 #if defined(GOURAUD_FROM_PIXEL_VALUE)
-															/* Gouraud shading from pixel_value (f_approx) values */
-															act_width=max_x_pixel-min_x_pixel;
-															act_height=max_y_pixel-min_y_pixel;
-															/* use electrodes_marker_size so can change easily, without */
-															/* adding another widget */
-															discretisation=map->electrodes_marker_size;
-															mesh_col_width=act_width/number_of_mesh_columns;
-															mesh_row_height=act_height/number_of_mesh_rows;														
-															fl_act_width=act_width;
-															fl_act_height=act_height;														
-															fl_q_col_width=(float)(fl_act_width/(float)(number_of_mesh_columns))
-																/(float)(discretisation);
-															fl_q_row_height= (float)(fl_act_height/(float)(number_of_mesh_rows))
-																/(float)(discretisation);																											
-															/* now need to do gouraud shading, from just_map_pixel_value to new_pixel_value */
-															if(!(ALLOCATE(new_pixel_value,float,num_pixels)))
-															{	
-																display_message(ERROR_MESSAGE,
-																	"draw_map_2d. ALLOCATE new_pixel_value failed");
-															}
-															/* reset the min and max */
-															min_f=100;
-															max_f=-100;
-															for(py=0;py<act_height+1;py++)
-															{
-																for(px=0;px<act_width+1;px++)
+																/* Gouraud shading from pixel_value (f_approx)
+																	values */
+																act_width=max_x_pixel-min_x_pixel;
+																act_height=max_y_pixel-min_y_pixel;
+																/* use electrodes_marker_size so can change
+																	easily, without */
+																/* adding another widget */
+																discretisation=map->electrodes_marker_size;
+																mesh_col_width=act_width/number_of_mesh_columns;
+																mesh_row_height=act_height/number_of_mesh_rows;
+																fl_act_width=act_width;
+																fl_act_height=act_height;
+																fl_q_col_width=(float)(fl_act_width/
+																	(float)(number_of_mesh_columns))/
+																	(float)(discretisation);
+																fl_q_row_height=(float)(fl_act_height/
+																	(float)(number_of_mesh_rows))/
+																	(float)(discretisation);
+																/* now need to do gouraud shading, from
+																	just_map_pixel_value to new_pixel_value */
+																if (!(ALLOCATE(new_pixel_value,float,
+																	num_pixels)))
+																{	
+																	display_message(ERROR_MESSAGE,
+																		"draw_map_2d. ALLOCATE new_pixel_value failed");
+																}
+																/* reset the min and max */
+																min_f=100;
+																max_f=-100;
+																for(py=0;py<act_height+1;py++)
 																{
-																	index=py*(act_width+1)+px;																
-																	rw=(float)(px)/fl_q_col_width;
-																	if(rw==number_of_mesh_columns*discretisation) 
+																	for(px=0;px<act_width+1;px++)
 																	{
-																		rw-=1;
-																	}
-																	col=(float)(py)/fl_q_row_height;
-																	if(c==number_of_mesh_rows*discretisation) 
-																	{
-																		col-=1;
-																	}
-																/*A,B,C,D are corners of Gouraud rectangle */															
-																	Ax=fl_q_col_width*rw;
-																	Ay=(col+1)*fl_q_row_height;
-																	Ai=Ay*(act_width+1)+Ax;	
-																	Bx=fl_q_col_width*rw;
-																	By=col*fl_q_row_height;
-																	Bi=By*(act_width+1)+Bx;	
-																	Cx=fl_q_col_width*(rw+1);
-																	Cy=col*fl_q_row_height;
-																	Ci=Cy*(act_width+1)+Cx;	
-																	Dx=fl_q_col_width*(rw+1);
-																	Dy=(col+1)*fl_q_row_height;
-																	Di=Dy*(act_width+1)+Dx;	
-																	pu=((float)px-(float)Bx)/((float)Cx-(float)Bx);
-																	pv=((float)py-(float)By)/((float)Ay-(float)By);
-																/* do this, or below. Result is same.
-																	 top_x=just_map_pixel_value[Bi]-(just_map_pixel_value[Bi]-
-																	 just_map_pixel_value[Ci])*pu;
-																	 bot_x=just_map_pixel_value[Ai]-(just_map_pixel_value[Ai]-
-																	 just_map_pixel_value[Di])*pu;
-																	 new_pixel_value[index]=(1-pv)*top_x+(pv)*bot_x;
-																*/
-																/* calc Gouraud value */
-																	left_y=just_map_pixel_value[Bi]-
-																		(just_map_pixel_value[Bi]-just_map_pixel_value[Ai])*(pv);
-																	right_y=just_map_pixel_value[Ci]-
-																		(just_map_pixel_value[Ci]-just_map_pixel_value[Di])*(pv);	
-																	new_pixel_value[index]=(1-pu)*left_y+(pu)*right_y;
-																	/* recalc min,max*/
-																	if(new_pixel_value[index]>max_f ) 
-																	{
-																		max_f=new_pixel_value[index];
-																	}
-																	if(new_pixel_value[index]<min_f )
-																	{
-																		min_f=new_pixel_value[index];
+																		index=py*(act_width+1)+px;
+																		rw=(float)(px)/fl_q_col_width;
+																		if (rw==number_of_mesh_columns*
+																			discretisation) 
+																		{
+																			rw-=1;
+																		}
+																		col=(float)(py)/fl_q_row_height;
+																		if (c==number_of_mesh_rows*discretisation) 
+																		{
+																			col-=1;
+																		}
+																		/* A,B,C,D are corners of Gouraud
+																			rectangle */															
+																		Ax=fl_q_col_width*rw;
+																		Ay=(col+1)*fl_q_row_height;
+																		Ai=Ay*(act_width+1)+Ax;	
+																		Bx=fl_q_col_width*rw;
+																		By=col*fl_q_row_height;
+																		Bi=By*(act_width+1)+Bx;	
+																		Cx=fl_q_col_width*(rw+1);
+																		Cy=col*fl_q_row_height;
+																		Ci=Cy*(act_width+1)+Cx;	
+																		Dx=fl_q_col_width*(rw+1);
+																		Dy=(col+1)*fl_q_row_height;
+																		Di=Dy*(act_width+1)+Dx;	
+																		pu=((float)px-(float)Bx)/
+																			((float)Cx-(float)Bx);
+																		pv=((float)py-(float)By)/
+																			((float)Ay-(float)By);
+																		/* do this, or below. Result is same.
+																		top_x=just_map_pixel_value[Bi]-
+																			(just_map_pixel_value[Bi]-
+																			just_map_pixel_value[Ci])*pu;
+																			bot_x=just_map_pixel_value[Ai]-
+																			(just_map_pixel_value[Ai]-
+																			just_map_pixel_value[Di])*pu;
+																		new_pixel_value[index]=
+																			(1-pv)*top_x+(pv)*bot_x;
+																		*/
+																		/* calc Gouraud value */
+																		left_y=just_map_pixel_value[Bi]-
+																			(just_map_pixel_value[Bi]-
+																			just_map_pixel_value[Ai])*(pv);
+																		right_y=just_map_pixel_value[Ci]-
+																			(just_map_pixel_value[Ci]-
+																			just_map_pixel_value[Di])*(pv);	
+																		new_pixel_value[index]=
+																			(1-pu)*left_y+(pu)*right_y;
+																		/* recalc min,max*/
+																		if (new_pixel_value[index]>max_f ) 
+																		{
+																			max_f=new_pixel_value[index];
+																		}
+																		if (new_pixel_value[index]<min_f )
+																		{
+																			min_f=new_pixel_value[index];
+																		}
 																	}
 																}
-															}
-															/* dots at Gouraud corners.Have to loop again now have f_min,f_ max */
-															index=0;															
-															for(rw=0;rw<number_of_mesh_rows*discretisation+1;rw++)
-															{																
-																for(col=0;col<number_of_mesh_columns*discretisation+1;col++)
-																{																		
-																	index=(fl_q_col_width*col)+
-																		(int)(fl_q_row_height*rw)*(act_width+1);										
-																	new_pixel_value[index]=max_f;
-																}																	
-															}																	
-															/* this copies new_pixel values to the correct place in pixel_value*/
-															for(j=0;j<drawing_height;j++)
-															{
-																for(i=0;i<drawing_width;i++)
-																{
-																	pixel_index=j*drawing_width+i;
-																	if((j>=min_y_pixel)&&(j<=(min_y_pixel+act_height))&&
-																		(i>=min_x_pixel)&&(i<=(min_x_pixel+act_width)))
-																	{
-																		new_i=i-min_x_pixel;
-																		new_j=j-min_y_pixel;
-																		new_pixel_index=new_j*act_width+new_i+new_j;
-																		pixel_value[pixel_index]=new_pixel_value[new_pixel_index];
+																/* dots at Gouraud corners.  Have to loop again
+																	now have f_min,f_ max */
+																index=0;															
+																for(rw=0;rw<number_of_mesh_rows*
+																	discretisation+1;rw++)
+																{																
+																	for(col=0;col<number_of_mesh_columns*
+																		discretisation+1;col++)
+																	{																		
+																		index=(fl_q_col_width*col)+
+																			(int)(fl_q_row_height*rw)*(act_width+1);
+																		new_pixel_value[index]=max_f;
 																	}
-																}															
-															}
-															DEALLOCATE(just_map_pixel_value);
-															DEALLOCATE(new_pixel_value);
+																}
+																/* this copies new_pixel values to the correct
+																	place in pixel_value*/
+																for(j=0;j<drawing_height;j++)
+																{
+																	for(i=0;i<drawing_width;i++)
+																	{
+																		pixel_index=j*drawing_width+i;
+																		if ((j>=min_y_pixel)&&
+																			(j<=(min_y_pixel+act_height))&&
+																			(i>=min_x_pixel)&&
+																			(i<=(min_x_pixel+act_width)))
+																		{
+																			new_i=i-min_x_pixel;
+																			new_j=j-min_y_pixel;
+																			new_pixel_index=
+																				new_j*act_width+new_i+new_j;
+																			pixel_value[pixel_index]=
+																				new_pixel_value[new_pixel_index];
+																		}
+																	}															
+																}
+																DEALLOCATE(just_map_pixel_value);
+																DEALLOCATE(new_pixel_value);
 #endif /* defined(GOURAUD_FROM_PIXEL_VALUE) */
+															}
 														}
 														region_item=get_Region_list_item_next(region_item);
-													}/*	for (region_number=0;region_number<number_of_regions */
-
+													}
 													frame->maximum_region=maximum_region;
 													frame->minimum_region=minimum_region;
 													if (max_f<min_f)
@@ -9548,63 +9575,60 @@ comparison with 3D maps.
 										minimum_region=(struct Region *)NULL;
 										/* for each region */
 										region_item=get_Rig_region_list(rig);
-										for (region_number=0;region_number<number_of_regions;
-												 region_number++)
+										for (temp_region_number=0;
+											temp_region_number<number_of_regions;temp_region_number++)
 										{
-											if (number_of_regions>1)
+											region_number=draw_region_number[temp_region_number];
+											if (0<=region_number)
 											{
 												current_region=get_Region_list_item_region(region_item);
-											}
-											else
-											{
-												current_region=get_Rig_current_region(rig);
-											}
-											/* find maximum and minimum electrodes for region */
-											electrode=map->electrodes;
-											screen_x=map->electrode_x;
-											screen_y=map->electrode_y;
-											electrode_value=map->electrode_value;
-											for (i=number_of_electrodes;i>0;i--)
-											{
-												if (current_region==(*electrode)->description->region)
+												/* find maximum and minimum electrodes for region */
+												electrode=map->electrodes;
+												screen_x=map->electrode_x;
+												screen_y=map->electrode_y;
+												electrode_value=map->electrode_value;
+												for (i=number_of_electrodes;i>0;i--)
 												{
-													f_approx= *electrode_value;
-													if (max_f<min_f)
+													if (current_region==(*electrode)->description->region)
 													{
-														min_f=f_approx;
-														max_f=f_approx;
-														maximum_region=current_region;
-														minimum_region=current_region;
-														maximum_x= *screen_x;
-														maximum_y= *screen_y;
-														minimum_x=maximum_x;
-														minimum_y=minimum_y;
-													}
-													else
-													{
-														if (f_approx<min_f)
+														f_approx= *electrode_value;
+														if (max_f<min_f)
 														{
 															min_f=f_approx;
+															max_f=f_approx;
+															maximum_region=current_region;
 															minimum_region=current_region;
-															minimum_x= *screen_x;
-															minimum_y= *screen_y;
+															maximum_x= *screen_x;
+															maximum_y= *screen_y;
+															minimum_x=maximum_x;
+															minimum_y=minimum_y;
 														}
 														else
 														{
-															if (f_approx>max_f)
+															if (f_approx<min_f)
 															{
-																max_f=f_approx;
-																maximum_region=current_region;
-																maximum_x= *screen_x;
-																maximum_y= *screen_y;
+																min_f=f_approx;
+																minimum_region=current_region;
+																minimum_x= *screen_x;
+																minimum_y= *screen_y;
+															}
+															else
+															{
+																if (f_approx>max_f)
+																{
+																	max_f=f_approx;
+																	maximum_region=current_region;
+																	maximum_x= *screen_x;
+																	maximum_y= *screen_y;
+																}
 															}
 														}
 													}
+													electrode++;
+													screen_x++;
+													screen_y++;
+													electrode_value++;
 												}
-												electrode++;
-												screen_x++;
-												screen_y++;
-												electrode_value++;
 											}
 											region_item=get_Region_list_item_next(region_item);
 										}
@@ -9823,391 +9847,407 @@ comparison with 3D maps.
 							}
 							/* for each region */
 							region_item=get_Rig_region_list(rig);
-							for (region_number=0;region_number<number_of_regions;
-									 region_number++)
+							for (temp_region_number=0;temp_region_number<number_of_regions;
+								temp_region_number++)
 							{
-								if (number_of_regions>1)
+								region_number=draw_region_number[temp_region_number];
+								if (0<=region_number)
 								{
 									current_region=get_Region_list_item_region(region_item);
-								}
-								else
-								{
-									current_region=get_Rig_current_region(rig);
-								}
-								if ((SOCK==current_region->type)&&
-									(0!=stretch_x[region_number])&&(0!=stretch_y[region_number]))
-								{
-									/* draw fibres */
-									pixel_left=((region_number/number_of_rows)*
-										drawing_width)/number_of_columns+fibre_spacing/2;
-									pixel_top=((region_number%number_of_rows)*
-										drawing_height)/number_of_rows+fibre_spacing/2;
-									x_screen_step=(float)fibre_spacing/stretch_x[region_number];
-									y_screen_step= -(float)fibre_spacing/stretch_y[region_number];
-									x_screen_left=min_x[region_number]+
-										(pixel_left-start_x[region_number])/
-										stretch_x[region_number];
-									y_screen_top=min_y[region_number]-
-										(pixel_top-start_y[region_number])/stretch_y[region_number];
-									y_screen=y_screen_top;
-									y_pixel=pixel_top;
-									for (j=screen_region_height/fibre_spacing;j>0;j--)
+									if ((SOCK==current_region->type)&&
+										(0!=stretch_x[region_number])&&
+										(0!=stretch_y[region_number]))
 									{
-										x_screen=x_screen_left;
-										x_pixel=pixel_left;
-										for (i=screen_region_width/fibre_spacing;i>0;i--)
+										/* draw fibres */
+										pixel_left=((region_number/number_of_rows)*
+											drawing_width)/number_of_columns+fibre_spacing/2;
+										pixel_top=((region_number%number_of_rows)*
+											drawing_height)/number_of_rows+fibre_spacing/2;
+										x_screen_step=(float)fibre_spacing/stretch_x[region_number];
+										y_screen_step=
+											-(float)fibre_spacing/stretch_y[region_number];
+										x_screen_left=min_x[region_number]+
+											(pixel_left-start_x[region_number])/
+											stretch_x[region_number];
+										y_screen_top=min_y[region_number]-
+											(pixel_top-start_y[region_number])/
+											stretch_y[region_number];
+										y_screen=y_screen_top;
+										y_pixel=pixel_top;
+										for (j=screen_region_height/fibre_spacing;j>0;j--)
 										{
-											/* calculate the element coordinates and the Jacobian for
-												 the transformation from element coordinates to physical
-												 coordinates */
-											switch (map->projection_type)
+											x_screen=x_screen_left;
+											x_pixel=pixel_left;
+											for (i=screen_region_width/fibre_spacing;i>0;i--)
 											{
-												case HAMMER_PROJECTION:
+												/* calculate the element coordinates and the Jacobian
+													for the transformation from element coordinates to
+													physical coordinates */
+												switch (map->projection_type)
 												{
-													/*???avoid singularity ? */
-													if ((x_screen!=0)||
-														((y_screen!=1)&&(y_screen!= -1)))
+													case HAMMER_PROJECTION:
 													{
-														a=x_screen*x_screen;
-														b=y_screen*y_screen;
-														c=2-a-b;
-														if (c>1)
+														/*???avoid singularity ? */
+														if ((x_screen!=0)||
+															((y_screen!=1)&&(y_screen!= -1)))
 														{
-															sin_mu_hat=y_screen*sqrt(c);
-															if (sin_mu_hat>=1)
+															a=x_screen*x_screen;
+															b=y_screen*y_screen;
+															c=2-a-b;
+															if (c>1)
 															{
-																mu=pi;
-																sin_mu_hat=1;
-																cos_mu_hat=0;
-															}
-															else
-															{
-																if (sin_mu_hat<= -1)
+																sin_mu_hat=y_screen*sqrt(c);
+																if (sin_mu_hat>=1)
 																{
-																	mu=0;
-																	sin_mu_hat= -1;
+																	mu=pi;
+																	sin_mu_hat=1;
 																	cos_mu_hat=0;
 																}
 																else
 																{
-																	mu=pi_over_2+asin(sin_mu_hat);
-																	cos_mu_hat=sqrt(1-sin_mu_hat*sin_mu_hat);
+																	if (sin_mu_hat<= -1)
+																	{
+																		mu=0;
+																		sin_mu_hat= -1;
+																		cos_mu_hat=0;
+																	}
+																	else
+																	{
+																		mu=pi_over_2+asin(sin_mu_hat);
+																		cos_mu_hat=sqrt(1-sin_mu_hat*sin_mu_hat);
+																	}
 																}
-															}
-															sin_theta_hat=sqrt((a*c)/(1-b*c));
-															if (x_screen>0)
-															{
-																if (sin_theta_hat>=1)
+																sin_theta_hat=sqrt((a*c)/(1-b*c));
+																if (x_screen>0)
 																{
-																	theta=0;
-																	sin_theta_hat= -1;
-																	cos_theta_hat=0;
+																	if (sin_theta_hat>=1)
+																	{
+																		theta=0;
+																		sin_theta_hat= -1;
+																		cos_theta_hat=0;
+																	}
+																	else
+																	{
+																		theta=pi-2*asin(sin_theta_hat);
+																		cos_theta_hat=
+																			sqrt(1-sin_theta_hat*sin_theta_hat);
+																		sin_theta_hat= -sin_theta_hat;
+																	}
 																}
 																else
 																{
-																	theta=pi-2*asin(sin_theta_hat);
-																	cos_theta_hat=
-																		sqrt(1-sin_theta_hat*sin_theta_hat);
-																	sin_theta_hat= -sin_theta_hat;
+																	if (sin_theta_hat>=1)
+																	{
+																		theta=two_pi;
+																		sin_theta_hat=1;
+																		cos_theta_hat=0;
+																	}
+																	else
+																	{
+																		theta=pi+2*asin(sin_theta_hat);
+																		cos_theta_hat=
+																			sqrt(1-sin_theta_hat*sin_theta_hat);
+																	}
 																}
+																a=cos_theta_hat*cos_mu_hat;
+																b=1/(1+a);
+																a += 2;
+																b /= sqrt(b)*2;
+																dxdmu=a*b*sin_mu_hat*sin_theta_hat;
+																dydmu=b*(cos_theta_hat+a*cos_mu_hat);
+																b /= 2;
+																dxdtheta=
+																	-b*cos_mu_hat*(cos_mu_hat+a*cos_theta_hat);
+																dydtheta= b*sin_theta_hat*sin_mu_hat*cos_mu_hat;
+																valid_mu_and_theta=1;
 															}
 															else
 															{
-																if (sin_theta_hat>=1)
-																{
-																	theta=two_pi;
-																	sin_theta_hat=1;
-																	cos_theta_hat=0;
-																}
-																else
-																{
-																	theta=pi+2*asin(sin_theta_hat);
-																	cos_theta_hat=
-																		sqrt(1-sin_theta_hat*sin_theta_hat);
-																}
+																valid_mu_and_theta=0;
 															}
-															a=cos_theta_hat*cos_mu_hat;
-															b=1/(1+a);
-															a += 2;
-															b /= sqrt(b)*2;
-															dxdmu=a*b*sin_mu_hat*sin_theta_hat;
-															dydmu=b*(cos_theta_hat+a*cos_mu_hat);
-															b /= 2;
-															dxdtheta=
-																-b*cos_mu_hat*(cos_mu_hat+a*cos_theta_hat);
-															dydtheta= b*sin_theta_hat*sin_mu_hat*cos_mu_hat;
-															valid_mu_and_theta=1;
 														}
 														else
 														{
 															valid_mu_and_theta=0;
 														}
-													}
-													else
+													} break;
+													case POLAR_PROJECTION:
 													{
-														valid_mu_and_theta=0;
-													}
-												} break;
-												case POLAR_PROJECTION:
-												{
-													mu=sqrt(x_screen*x_screen+
-														y_screen*y_screen);
-													if (mu>0)
-													{
-														if (x_screen>0)
+														mu=sqrt(x_screen*x_screen+
+															y_screen*y_screen);
+														if (mu>0)
 														{
-															if (y_screen>0)
+															if (x_screen>0)
 															{
-																theta=asin(y_screen/mu);
+																if (y_screen>0)
+																{
+																	theta=asin(y_screen/mu);
+																}
+																else
+																{
+																	theta=two_pi+asin(y_screen/mu);
+																}
 															}
 															else
 															{
-																theta=two_pi+asin(y_screen/mu);
+																theta=pi-asin(y_screen/mu);
 															}
+															dxdtheta= -y_screen;
+															dxdmu=x_screen/mu;
+															dydtheta=x_screen;
+															dydmu=y_screen/mu;
 														}
 														else
 														{
-															theta=pi-asin(y_screen/mu);
+															theta=0;
+															dxdtheta=0;
+															dxdmu=0;
+															dydtheta=0;
+															dydmu=0;
 														}
-														dxdtheta= -y_screen;
-														dxdmu=x_screen/mu;
-														dydtheta=x_screen;
-														dydmu=y_screen/mu;
-													}
-													else
+														valid_mu_and_theta=1;
+													} break;
+													default:
 													{
-														theta=0;
-														dxdtheta=0;
-														dxdmu=0;
-														dydtheta=0;
-														dydmu=0;
-													}
-													valid_mu_and_theta=1;
-												} break;
-												default:
+														valid_mu_and_theta=0;
+													} break;
+												}
+												if (valid_mu_and_theta)
 												{
-													valid_mu_and_theta=0;
-												} break;
-											}
-											if (valid_mu_and_theta)
-											{
-												/* calculate the angle between the fibre direction and
-													 the positive theta direction */
-												/*???DB.  Eventually this will form part of the
-													"cardiac database" */
-												/* the fibre direction has been fitted with a bilinear*/
-												/* determine which element the point is in */
-												column=0;
-												local_fibre_node_1=global_fibre_nodes+
-													(NUMBER_OF_FIBRE_COLUMNS-1);
-												local_fibre_node_2=global_fibre_nodes;
-												local_fibre_node_3=local_fibre_node_1+
-													NUMBER_OF_FIBRE_COLUMNS;
-												local_fibre_node_4=local_fibre_node_2+
-													NUMBER_OF_FIBRE_COLUMNS;
-												k=NUMBER_OF_FIBRE_ROWS;
-												xi_1= -1;
-												xi_2= -1;
-												while ((k>0)&&((xi_2<0)||(xi_2>1)||(xi_1<0)||(xi_1>1)))
-												{
-													l=NUMBER_OF_FIBRE_COLUMNS;
-													while ((l>0)&&
+													/* calculate the angle between the fibre direction and
+														 the positive theta direction */
+													/*???DB.  Eventually this will form part of the
+														"cardiac database" */
+													/* the fibre direction has been fitted with a
+														bilinear*/
+													/* determine which element the point is in */
+													column=0;
+													local_fibre_node_1=global_fibre_nodes+
+														(NUMBER_OF_FIBRE_COLUMNS-1);
+													local_fibre_node_2=global_fibre_nodes;
+													local_fibre_node_3=local_fibre_node_1+
+														NUMBER_OF_FIBRE_COLUMNS;
+													local_fibre_node_4=local_fibre_node_2+
+														NUMBER_OF_FIBRE_COLUMNS;
+													k=NUMBER_OF_FIBRE_ROWS;
+													xi_1= -1;
+													xi_2= -1;
+													while ((k>0)&&
 														((xi_2<0)||(xi_2>1)||(xi_1<0)||(xi_1>1)))
 													{
-														/* calculate the element coordinates */
-														/*???DB.  Is there a better way of doing this ? */
-														mu_1=local_fibre_node_1->mu;
-														mu_2=local_fibre_node_2->mu;
-														mu_3=local_fibre_node_3->mu;
-														mu_4=local_fibre_node_4->mu;
-														if (((mu_1<mu)||(mu_2<mu)||(mu_3<mu)||(mu_4<mu))&&
-															((mu_1>mu)||(mu_2>mu)||(mu_3>mu)||(mu_4>mu)))
+														l=NUMBER_OF_FIBRE_COLUMNS;
+														while ((l>0)&&
+															((xi_2<0)||(xi_2>1)||(xi_1<0)||(xi_1>1)))
 														{
-															theta_1=local_fibre_node_1->theta;
-															theta_2=local_fibre_node_2->theta;
-															theta_3=local_fibre_node_3->theta;
-															theta_4=local_fibre_node_4->theta;
-															/* make sure that theta is increasing in xi1 */
-															if (theta_1>theta_2)
+															/* calculate the element coordinates */
+															/*???DB.  Is there a better way of doing this ? */
+															mu_1=local_fibre_node_1->mu;
+															mu_2=local_fibre_node_2->mu;
+															mu_3=local_fibre_node_3->mu;
+															mu_4=local_fibre_node_4->mu;
+															if (((mu_1<mu)||(mu_2<mu)||(mu_3<mu)||(mu_4<mu))&&
+																((mu_1>mu)||(mu_2>mu)||(mu_3>mu)||(mu_4>mu)))
 															{
-																if (theta>theta_1)
-																{
-																	theta_2 += two_pi;
-																}
-																else
-																{
-																	theta_1 -= two_pi;
-																}
-															}
-															if (theta_3>theta_4)
-															{
-																if (theta>theta_3)
-																{
-																	theta_4 += two_pi;
-																}
-																else
-																{
-																	theta_3 -= two_pi;
-																}
-															}
-															if (theta_1+pi<theta_3)
-															{
-																if (theta>theta_3)
-																{
-																	theta_1 += two_pi;
-																	theta_2 += two_pi;
-																}
-																else
-																{
-																	theta_3 -= two_pi;
-																	theta_4 -= two_pi;
-																}
-															}
-															else
-															{
-																if (theta_1-pi>theta_3)
+																theta_1=local_fibre_node_1->theta;
+																theta_2=local_fibre_node_2->theta;
+																theta_3=local_fibre_node_3->theta;
+																theta_4=local_fibre_node_4->theta;
+																/* make sure that theta is increasing in xi1 */
+																if (theta_1>theta_2)
 																{
 																	if (theta>theta_1)
 																	{
-																		theta_3 += two_pi;
-																		theta_4 += two_pi;
+																		theta_2 += two_pi;
 																	}
 																	else
 																	{
 																		theta_1 -= two_pi;
-																		theta_2 -= two_pi;
+																	}
+																}
+																if (theta_3>theta_4)
+																{
+																	if (theta>theta_3)
+																	{
+																		theta_4 += two_pi;
+																	}
+																	else
+																	{
+																		theta_3 -= two_pi;
+																	}
+																}
+																if (theta_1+pi<theta_3)
+																{
+																	if (theta>theta_3)
+																	{
+																		theta_1 += two_pi;
+																		theta_2 += two_pi;
+																	}
+																	else
+																	{
+																		theta_3 -= two_pi;
+																		theta_4 -= two_pi;
+																	}
+																}
+																else
+																{
+																	if (theta_1-pi>theta_3)
+																	{
+																		if (theta>theta_1)
+																		{
+																			theta_3 += two_pi;
+																			theta_4 += two_pi;
+																		}
+																		else
+																		{
+																			theta_1 -= two_pi;
+																			theta_2 -= two_pi;
+																		}
+																	}
+																}
+																if (((theta_1<theta)||(theta_2<theta)||
+																	(theta_3<theta)||(theta_4<theta))&&
+																	((theta_1>theta)||(theta_2>theta)||
+																		(theta_3>theta)||(theta_4>theta)))
+																{
+																	mu_4 += mu_1-mu_2-mu_3;
+																	mu_3 -= mu_1;
+																	mu_2 -= mu_1;
+																	mu_1 -= mu;
+																	theta_4 += theta_1-theta_2-theta_3;
+																	theta_3 -= theta_1;
+																	theta_2 -= theta_1;
+																	theta_1 -= theta;
+																	xi_1=0.5;
+																	xi_2=0.5;
+																	fibre_iteration=0;
+																	do
+																	{
+																		a=mu_2+mu_4*xi_2;
+																		b=mu_3+mu_4*xi_1;
+																		error_mu=mu_1+mu_2*xi_1+b*xi_2;
+																		c=theta_2+theta_4*xi_2;
+																		d=theta_3+theta_4*xi_1;
+																		error_theta=theta_1+theta_2*xi_1+d*xi_2;
+																		if (0!=(det=a*d-b*c))
+																		{
+																			xi_1 -= (d*error_mu-b*error_theta)/det;
+																			xi_2 -= (a*error_theta-c*error_mu)/det;
+																		}
+																		fibre_iteration++;
+																	} while ((0!=det)&&(error_theta*error_theta+
+																		error_mu*error_mu>FIBRE_TOLERANCE)&&
+																		(fibre_iteration<FIBRE_MAXIMUM_ITERATIONS));
+																	if (error_theta*error_theta+error_mu*error_mu>
+																		FIBRE_TOLERANCE)
+																	{
+																		xi_2= -1;
 																	}
 																}
 															}
-															if (((theta_1<theta)||(theta_2<theta)||
-																(theta_3<theta)||(theta_4<theta))&&
-																((theta_1>theta)||(theta_2>theta)||
-																	(theta_3>theta)||(theta_4>theta)))
+															if ((xi_2<0)||(xi_2>1)||(xi_1<0)||(xi_1>1))
 															{
-																mu_4 += mu_1-mu_2-mu_3;
-																mu_3 -= mu_1;
-																mu_2 -= mu_1;
-																mu_1 -= mu;
-																theta_4 += theta_1-theta_2-theta_3;
-																theta_3 -= theta_1;
-																theta_2 -= theta_1;
-																theta_1 -= theta;
-																xi_1=0.5;
-																xi_2=0.5;
-																fibre_iteration=0;
-																do
-																{
-																	a=mu_2+mu_4*xi_2;
-																	b=mu_3+mu_4*xi_1;
-																	error_mu=mu_1+mu_2*xi_1+b*xi_2;
-																	c=theta_2+theta_4*xi_2;
-																	d=theta_3+theta_4*xi_1;
-																	error_theta=theta_1+theta_2*xi_1+d*xi_2;
-																	if (0!=(det=a*d-b*c))
-																	{
-																		xi_1 -= (d*error_mu-b*error_theta)/det;
-																		xi_2 -= (a*error_theta-c*error_mu)/det;
-																	}
-																	fibre_iteration++;
-																} while ((0!=det)&&(error_theta*error_theta+
-																	error_mu*error_mu>FIBRE_TOLERANCE)&&
-																	(fibre_iteration<FIBRE_MAXIMUM_ITERATIONS));
-																if (error_theta*error_theta+error_mu*error_mu>
-																	FIBRE_TOLERANCE)
-																{
-																	xi_2= -1;
-																}
+																local_fibre_node_1=local_fibre_node_2;
+																local_fibre_node_2++;
+																local_fibre_node_3=local_fibre_node_4;
+																local_fibre_node_4++;
+																l--;
 															}
 														}
 														if ((xi_2<0)||(xi_2>1)||(xi_1<0)||(xi_1>1))
 														{
-															local_fibre_node_1=local_fibre_node_2;
-															local_fibre_node_2++;
-															local_fibre_node_3=local_fibre_node_4;
-															local_fibre_node_4++;
-															l--;
+															local_fibre_node_1=local_fibre_node_3;
+															local_fibre_node_3 += NUMBER_OF_FIBRE_COLUMNS;
+															k--;
 														}
 													}
-													if ((xi_2<0)||(xi_2>1)||(xi_1<0)||(xi_1>1))
+													if ((0<=xi_1)&&(xi_1<=1)&&(0<=xi_2)&&(xi_2<=1))
 													{
-														local_fibre_node_1=local_fibre_node_3;
-														local_fibre_node_3 += NUMBER_OF_FIBRE_COLUMNS;
-														k--;
+														/*???debug */
+														/*printf("k=%d, l=%d\n",k,l);
+															printf("xi_1=%g, xi_2=%g\n",xi_1,xi_2);
+															printf("mu_1=%g, mu_2=%g, mu_3=%g, mu_4=%g\n",
+																local_fibre_node_1->mu,local_fibre_node_2->mu,
+																local_fibre_node_3->mu,local_fibre_node_4->mu);
+															printf("mu_1=%g, mu_2=%g, mu_3=%g, mu_4=%g\n",
+																mu_1,mu_2,mu_3,mu_4);
+															printf(
+																"theta_1=%g, theta_2=%g, theta_3=%g, theta_4=%g\n",
+																local_fibre_node_1->theta,
+																local_fibre_node_2->theta,
+																local_fibre_node_3->theta,
+																local_fibre_node_4->theta);
+															printf(
+																"theta_1=%g, theta_2=%g, theta_3=%g, theta_4=%g\n",
+																theta_1,theta_2,theta_3,theta_4);
+															printf("x_pixel=%d, y_pixel=%d\n",x_pixel,
+																y_pixel);
+															printf("mu=%g, theta=%g\n",mu,theta);
+															printf(
+																"dxdmu=%g, dxdtheta=%g, dydmu=%g, dydtheta=%g\n",
+																dxdmu,dxdtheta,dydmu,dydtheta);*/
+#if defined (OLD_CODE)
+														dmudxi1=mu_2+mu_4*xi_2;
+														dmudxi2=mu_3+mu_4*xi_1;
+														dthetadxi1=theta_2+theta_4*xi_2;
+														dthetadxi2=theta_3+theta_4*xi_1;
+														/*???debug */
+														/*printf(
+															"dmudxi1=%g, dmudxi2=%g, dthetadxi1=%g, dthetadxi2=%g\n",
+															dmudxi1,dmudxi2,dthetadxi1,dthetadxi2);*/
+#endif /* defined (OLD_CODE) */
+														/* calculate the fibre angle */
+														fibre_angle_1=local_fibre_node_1->fibre_angle;
+														fibre_angle_2=local_fibre_node_2->fibre_angle;
+														fibre_angle_3=local_fibre_node_3->fibre_angle;
+														fibre_angle_4=local_fibre_node_4->fibre_angle;
+														fibre_angle=fibre_angle_1+
+															(fibre_angle_2-fibre_angle_1)*xi_1+
+															((fibre_angle_3-fibre_angle_1)+
+																(fibre_angle_4+fibre_angle_1-fibre_angle_2-
+																	fibre_angle_3)*xi_1)*xi_2;
+														/* calculate the fibre vector in element
+															coordinates*/
+#if defined (OLD_CODE)
+														a=cos(fibre_angle);
+														b=sin(fibre_angle);
+														/*???debug */
+														/*printf("fibre angle=%g, a=%g, b=%g\n",fibre_angle,
+															a,b);*/
+														/* transform to prolate */
+														c=dmudxi1*a+dmudxi2*b;
+														a=dthetadxi1*a+dthetadxi2*b;
+#endif /* defined (OLD_CODE) */
+														a=cos(fibre_angle);
+														c=sin(fibre_angle);
+														/* perform projection and screen scaling */
+														fibre_x=stretch_x[region_number]*
+															(dxdmu*c+dxdtheta*a);
+														fibre_y= -stretch_y[region_number]*
+															(dydmu*c+dydtheta*a);
+														if (0<(fibre_length=
+															fibre_x*fibre_x+fibre_y*fibre_y))
+														{
+															/* draw the fibre */
+															fibre_length=
+																(float)(fibre_spacing)/(2*sqrt(fibre_length));
+															fibre_x *= fibre_length;
+															fibre_y *= fibre_length;
+															XPSDrawLine(display,drawing->pixel_map,
+																graphics_context,
+																x_pixel-(short)fibre_x,y_pixel-(short)fibre_y,
+																x_pixel+(short)fibre_x,y_pixel+(short)fibre_y);
+														}
+														/*???debug */
+														/*printf("fibre_x=%g, fibre_y=%g\n\n",fibre_x,
+															fibre_y);*/
 													}
 												}
-												if ((0<=xi_1)&&(xi_1<=1)&&(0<=xi_2)&&(xi_2<=1))
-												{
-													/*???debug */
-													/*printf("k=%d, l=%d\n",k,l);
-														printf("xi_1=%g, xi_2=%g\n",xi_1,xi_2);
-														printf("mu_1=%g, mu_2=%g, mu_3=%g, mu_4=%g\n",local_fibre_node_1->mu,
-														local_fibre_node_2->mu,local_fibre_node_3->mu,local_fibre_node_4->mu);
-														printf("mu_1=%g, mu_2=%g, mu_3=%g, mu_4=%g\n",mu_1,mu_2,mu_3,mu_4);
-														printf("theta_1=%g, theta_2=%g, theta_3=%g, theta_4=%g\n",
-														local_fibre_node_1->theta,local_fibre_node_2->theta,local_fibre_node_3->theta,
-														local_fibre_node_4->theta);
-														printf("theta_1=%g, theta_2=%g, theta_3=%g, theta_4=%g\n",theta_1,theta_2,
-														theta_3,theta_4);
-														printf("x_pixel=%d, y_pixel=%d\n",x_pixel,y_pixel);
-														printf("mu=%g, theta=%g\n",mu,theta);
-														printf("dxdmu=%g, dxdtheta=%g, dydmu=%g, dydtheta=%g\n",dxdmu,dxdtheta,dydmu,
-														dydtheta);*/
-#if defined (OLD_CODE)
-													dmudxi1=mu_2+mu_4*xi_2;
-													dmudxi2=mu_3+mu_4*xi_1;
-													dthetadxi1=theta_2+theta_4*xi_2;
-													dthetadxi2=theta_3+theta_4*xi_1;
-													/*???debug */
-													/*printf("dmudxi1=%g, dmudxi2=%g, dthetadxi1=%g, dthetadxi2=%g\n",dmudxi1,dmudxi2,
-														dthetadxi1,dthetadxi2);*/
-#endif /* defined (OLD_CODE) */
-													/* calculate the fibre angle */
-													fibre_angle_1=local_fibre_node_1->fibre_angle;
-													fibre_angle_2=local_fibre_node_2->fibre_angle;
-													fibre_angle_3=local_fibre_node_3->fibre_angle;
-													fibre_angle_4=local_fibre_node_4->fibre_angle;
-													fibre_angle=fibre_angle_1+
-														(fibre_angle_2-fibre_angle_1)*xi_1+
-														((fibre_angle_3-fibre_angle_1)+
-															(fibre_angle_4+fibre_angle_1-fibre_angle_2-
-																fibre_angle_3)*xi_1)*xi_2;
-													/* calculate the fibre vector in element coordinates*/
-#if defined (OLD_CODE)
-													a=cos(fibre_angle);
-													b=sin(fibre_angle);
-													/*???debug */
-													/*printf("fibre angle=%g, a=%g, b=%g\n",fibre_angle,a,b);*/
-													/* transform to prolate */
-													c=dmudxi1*a+dmudxi2*b;
-													a=dthetadxi1*a+dthetadxi2*b;
-#endif /* defined (OLD_CODE) */
-													a=cos(fibre_angle);
-													c=sin(fibre_angle);
-													/* perform projection and screen scaling */
-													fibre_x=stretch_x[region_number]*(dxdmu*c+dxdtheta*a);
-													fibre_y= -stretch_y[region_number]*
-														(dydmu*c+dydtheta*a);
-													if (0<(fibre_length=fibre_x*fibre_x+fibre_y*fibre_y))
-													{
-														/* draw the fibre */
-														fibre_length=
-															(float)(fibre_spacing)/(2*sqrt(fibre_length));
-														fibre_x *= fibre_length;
-														fibre_y *= fibre_length;
-														XPSDrawLine(display,drawing->pixel_map,
-															graphics_context,
-															x_pixel-(short)fibre_x,y_pixel-(short)fibre_y,
-															x_pixel+(short)fibre_x,y_pixel+(short)fibre_y);
-													}
-													/*???debug */
-													/*printf("fibre_x=%g, fibre_y=%g\n\n",fibre_x,fibre_y);*/
-												}
+												x_screen += x_screen_step;
+												x_pixel += fibre_spacing;
 											}
-											x_screen += x_screen_step;
-											x_pixel += fibre_spacing;
+											y_screen += y_screen_step;
+											y_pixel += fibre_spacing;
 										}
-										y_screen += y_screen_step;
-										y_pixel += fibre_spacing;
 									}
 								}
 								region_item=get_Region_list_item_next(region_item);
@@ -10221,88 +10261,85 @@ comparison with 3D maps.
 								XSetForeground(display,graphics_context,
 									drawing_information->landmark_colour);
 							region_item=get_Rig_region_list(rig);
-							for (region_number=0;region_number<number_of_regions;
-									 region_number++)
+							for (temp_region_number=0;temp_region_number<number_of_regions;
+								temp_region_number++)
 							{
-								if (number_of_regions>1)
+								region_number=draw_region_number[temp_region_number];
+								if (0<=region_number)
 								{
 									current_region=get_Region_list_item_region(region_item);
-								}
-								else
-								{
-									current_region=get_Rig_current_region(rig);
-								}
-								switch (current_region->type)
-								{
-									case SOCK:
+									switch (current_region->type)
 									{
-										landmark_point=landmark_points;
-										for (i=NUMBER_OF_LANDMARK_POINTS;i>0;i--)
+										case SOCK:
 										{
-											cartesian_to_prolate_spheroidal(landmark_point[0],
-												landmark_point[1],landmark_point[2],LANDMARK_FOCUS,
-												&lambda,&mu,&theta,(float *)NULL);
-											switch (map->projection_type)
+											landmark_point=landmark_points;
+											for (i=NUMBER_OF_LANDMARK_POINTS;i>0;i--)
 											{
-												case HAMMER_PROJECTION:
+												cartesian_to_prolate_spheroidal(landmark_point[0],
+													landmark_point[1],landmark_point[2],LANDMARK_FOCUS,
+													&lambda,&mu,&theta,(float *)NULL);
+												switch (map->projection_type)
 												{
-													Hammer_projection(mu,theta,&x_screen,&y_screen,
-														(float *)NULL);
-												} break;
-												case POLAR_PROJECTION:
-												{
-													polar_projection(mu,theta,&x_screen,&y_screen,
-														(float *)NULL);
-												} break;
+													case HAMMER_PROJECTION:
+													{
+														Hammer_projection(mu,theta,&x_screen,&y_screen,
+															(float *)NULL);
+													} break;
+													case POLAR_PROJECTION:
+													{
+														polar_projection(mu,theta,&x_screen,&y_screen,
+															(float *)NULL);
+													} break;
+												}
+												x_pixel=start_x[region_number]+
+													(int)((x_screen-min_x[region_number])*
+														stretch_x[region_number]);
+												y_pixel=start_y[region_number]-
+													(int)((y_screen-min_y[region_number])*
+														stretch_y[region_number]);
+												/* draw asterisk */
+												XPSDrawLine(display,drawing->pixel_map,graphics_context,
+													x_pixel-2,y_pixel,x_pixel+2,y_pixel);
+												XPSDrawLine(display,drawing->pixel_map,graphics_context,
+													x_pixel,y_pixel-2,x_pixel,y_pixel+2);
+												XPSDrawLine(display,drawing->pixel_map,graphics_context,
+													x_pixel-2,y_pixel-2,x_pixel+2,y_pixel+2);
+												XPSDrawLine(display,drawing->pixel_map,graphics_context,
+													x_pixel+2,y_pixel+2,x_pixel-2,y_pixel-2);
+												landmark_point += 3;
 											}
+										} break;
+										case TORSO:
+										{
+											/* draw boundary between front and back */
 											x_pixel=start_x[region_number]+
-												(int)((x_screen-min_x[region_number])*
-													stretch_x[region_number]);
-											y_pixel=start_y[region_number]-
-												(int)((y_screen-min_y[region_number])*
-													stretch_y[region_number]);
-											/* draw asterisk */
-											XPSDrawLine(display,drawing->pixel_map,graphics_context,
-												x_pixel-2,y_pixel,x_pixel+2,y_pixel);
-											XPSDrawLine(display,drawing->pixel_map,graphics_context,
-												x_pixel,y_pixel-2,x_pixel,y_pixel+2);
-											XPSDrawLine(display,drawing->pixel_map,graphics_context,
-												x_pixel-2,y_pixel-2,x_pixel+2,y_pixel+2);
-											XPSDrawLine(display,drawing->pixel_map,graphics_context,
-												x_pixel+2,y_pixel+2,x_pixel-2,y_pixel-2);
-											landmark_point += 3;
-										}
-									} break;
-									case TORSO:
-									{
-										/* draw boundary between front and back */
-										x_pixel=start_x[region_number]+
-											(int)((max_x[region_number]-min_x[region_number])*0.5*
+												(int)((max_x[region_number]-min_x[region_number])*0.5*
 												stretch_x[region_number]);
-										XPSDrawLine(display,drawing->pixel_map,graphics_context,
-											x_pixel,start_y[region_number],x_pixel,
-											start_y[region_number]-(int)((max_y[region_number]-
+											XPSDrawLine(display,drawing->pixel_map,graphics_context,
+												x_pixel,start_y[region_number],x_pixel,
+												start_y[region_number]-(int)((max_y[region_number]-
 												min_y[region_number])*stretch_y[region_number]));
-										x_pixel=start_x[region_number];
-										XPSDrawLine(display,drawing->pixel_map,graphics_context,
-											x_pixel,start_y[region_number],x_pixel,
-											start_y[region_number]-(int)((max_y[region_number]-
+											x_pixel=start_x[region_number];
+											XPSDrawLine(display,drawing->pixel_map,graphics_context,
+												x_pixel,start_y[region_number],x_pixel,
+												start_y[region_number]-(int)((max_y[region_number]-
 												min_y[region_number])*stretch_y[region_number]));
-										/* draw shoulders */
-										y_pixel=start_y[region_number]-
-											(int)((max_y[region_number]-min_y[region_number])*
+											/* draw shoulders */
+											y_pixel=start_y[region_number]-
+												(int)((max_y[region_number]-min_y[region_number])*
 												stretch_y[region_number]);
-										XPSDrawLine(display,drawing->pixel_map,graphics_context,
-											start_x[region_number],y_pixel,start_x[region_number]+
-											(int)((max_x[region_number]-min_x[region_number])*
+											XPSDrawLine(display,drawing->pixel_map,graphics_context,
+												start_x[region_number],y_pixel,start_x[region_number]+
+												(int)((max_x[region_number]-min_x[region_number])*
 												0.1875*stretch_x[region_number]),y_pixel-5);
-										XPSDrawLine(display,drawing->pixel_map,graphics_context,
-											start_x[region_number]+(int)((max_x[region_number]-
+											XPSDrawLine(display,drawing->pixel_map,graphics_context,
+												start_x[region_number]+(int)((max_x[region_number]-
 												min_x[region_number])*0.5*stretch_x[region_number]),
-											y_pixel,start_x[region_number]+
-											(int)((max_x[region_number]-min_x[region_number])*0.3125*
-												stretch_x[region_number]),y_pixel-5);
-									} break;
+												y_pixel,start_x[region_number]+
+												(int)((max_x[region_number]-min_x[region_number])*
+												0.3125*stretch_x[region_number]),y_pixel-5);
+										} break;
+									}
 								}
 								region_item=get_Region_list_item_next(region_item);
 							}
@@ -10321,156 +10358,153 @@ comparison with 3D maps.
 									XSetForeground(display,graphics_context,
 										drawing_information->landmark_colour);
 								region_item=get_Rig_region_list(rig);
-								for (region_number=0;region_number<number_of_regions;
-										 region_number++)
+								for (temp_region_number=0;temp_region_number<number_of_regions;
+									temp_region_number++)
 								{
-									if (number_of_regions>1)
+									region_number=draw_region_number[temp_region_number];
+									if (0<=region_number)
 									{
 										current_region=get_Region_list_item_region(region_item);
-									}
-									else
-									{
-										current_region=get_Rig_current_region(rig);
-									}
-									if (frame->maximum_region==current_region)
-									{
-										/* draw plus */
-										XPSFillRectangle(display,drawing->pixel_map,
-											graphics_context,frame->maximum_x-5,frame->maximum_y-1,11,
-											3);
-										XPSFillRectangle(display,drawing->pixel_map,
-											graphics_context,frame->maximum_x-1,frame->maximum_y-5,3,
-											11);
-										/* if not animation */
-										if (map->activation_front<0)
+										if (frame->maximum_region==current_region)
 										{
-											/* write value */
-											sprintf(value_string,"%.4g",frame->maximum);
-											name=value_string;
-											name_length=strlen(value_string);
-											x_string=frame->maximum_x;
-#if defined (NO_ALIGNMENT)
-											XTextExtents(font,name,name_length,&direction,&ascent,
-												&descent,&bounds);
-											x_string += (bounds.lbearing-bounds.rbearing+1)/2;
-#else
-											SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
-#endif
-											if (frame->maximum_y>drawing_height/2)
+											/* draw plus */
+											XPSFillRectangle(display,drawing->pixel_map,
+												graphics_context,frame->maximum_x-5,frame->maximum_y-1,
+												11,3);
+											XPSFillRectangle(display,drawing->pixel_map,
+												graphics_context,frame->maximum_x-1,frame->maximum_y-5,
+												3,11);
+											/* if not animation */
+											if (map->activation_front<0)
 											{
-												y_string=frame->maximum_y-6;
+												/* write value */
+												sprintf(value_string,"%.4g",frame->maximum);
+												name=value_string;
+												name_length=strlen(value_string);
+												x_string=frame->maximum_x;
 #if defined (NO_ALIGNMENT)
-												y_string -= descent+1;
-#else
-												SET_VERTICAL_ALIGNMENT(BOTTOM_ALIGNMENT);
-#endif
-											}
-											else
-											{
-												y_string=frame->maximum_y+6;
-#if defined (NO_ALIGNMENT)
-												y_string += ascent+1;
-#else
-												SET_VERTICAL_ALIGNMENT(TOP_ALIGNMENT);
-#endif
-											}
-#if defined (NO_ALIGNMENT)
-											/* make sure that the string doesn't extend outside the
-												 window */
-											if (x_string-bounds.lbearing<0)
-											{
-												x_string=bounds.lbearing;
-											}
-											else
-											{
-												if (x_string+bounds.rbearing>drawing_width)
+												XTextExtents(font,name,name_length,&direction,&ascent,
+													&descent,&bounds);
+												x_string += (bounds.lbearing-bounds.rbearing+1)/2;
+#else /* defined (NO_ALIGNMENT) */
+												SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
+#endif /* defined (NO_ALIGNMENT) */
+												if (frame->maximum_y>drawing_height/2)
 												{
-													x_string=drawing_width-bounds.rbearing;
+													y_string=frame->maximum_y-6;
+#if defined (NO_ALIGNMENT)
+													y_string -= descent+1;
+#else /* defined (NO_ALIGNMENT) */
+													SET_VERTICAL_ALIGNMENT(BOTTOM_ALIGNMENT);
+#endif /* defined (NO_ALIGNMENT) */
 												}
-											}
-											if (y_string-ascent<0)
-											{
-												y_string=ascent;
-											}
-											else
-											{
-												if (y_string+descent>drawing_height)
+												else
 												{
-													y_string=drawing_height-descent;
+													y_string=frame->maximum_y+6;
+#if defined (NO_ALIGNMENT)
+													y_string += ascent+1;
+#else /* defined (NO_ALIGNMENT) */
+													SET_VERTICAL_ALIGNMENT(TOP_ALIGNMENT);
+#endif /* defined (NO_ALIGNMENT) */
 												}
+#if defined (NO_ALIGNMENT)
+												/* make sure that the string doesn't extend outside the
+													 window */
+												if (x_string-bounds.lbearing<0)
+												{
+													x_string=bounds.lbearing;
+												}
+												else
+												{
+													if (x_string+bounds.rbearing>drawing_width)
+													{
+														x_string=drawing_width-bounds.rbearing;
+													}
+												}
+												if (y_string-ascent<0)
+												{
+													y_string=ascent;
+												}
+												else
+												{
+													if (y_string+descent>drawing_height)
+													{
+														y_string=drawing_height-descent;
+													}
+												}
+#endif /* defined (NO_ALIGNMENT) */
+												XPSDrawString(display,drawing->pixel_map,
+													graphics_context,x_string,y_string,name,name_length);
 											}
-#endif
-											XPSDrawString(display,drawing->pixel_map,graphics_context,
-												x_string,y_string,name,name_length);
 										}
-									}
-									if (frame->minimum_region==current_region)
-									{
-										/* draw minus */
-										XPSFillRectangle(display,drawing->pixel_map,
-											graphics_context,
-											frame->minimum_x-5,frame->minimum_y-1,11,3);
-										/* if not animation */
-										if (map->activation_front<0)
+										if (frame->minimum_region==current_region)
 										{
-											/* write value */
-											sprintf(value_string,"%.4g",frame->minimum);
-											name=value_string;
-											name_length=strlen(value_string);
-											x_string=frame->minimum_x;
-#if defined (NO_ALIGNMENT)
-											XTextExtents(font,name,name_length,&direction,&ascent,
-												&descent,&bounds);
-											x_string += (bounds.lbearing-bounds.rbearing+1)/2;
-#else
-											SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
-#endif
-											if (frame->minimum_y>drawing_height/2)
+											/* draw minus */
+											XPSFillRectangle(display,drawing->pixel_map,
+												graphics_context,
+												frame->minimum_x-5,frame->minimum_y-1,11,3);
+											/* if not animation */
+											if (map->activation_front<0)
 											{
-												y_string=frame->minimum_y-6;
+												/* write value */
+												sprintf(value_string,"%.4g",frame->minimum);
+												name=value_string;
+												name_length=strlen(value_string);
+												x_string=frame->minimum_x;
 #if defined (NO_ALIGNMENT)
-												y_string -= descent+1;
-#else
-												SET_VERTICAL_ALIGNMENT(BOTTOM_ALIGNMENT);
-#endif
-											}
-											else
-											{
-												y_string=frame->minimum_y+6;
-#if defined (NO_ALIGNMENT)
-												y_string += ascent+1;
-#else
-												SET_VERTICAL_ALIGNMENT(TOP_ALIGNMENT);
-#endif
-											}
-#if defined (NO_ALIGNMENT)
-											/* make sure that the string doesn't extend outside the
-												 window */
-											if (x_string-bounds.lbearing<0)
-											{
-												x_string=bounds.lbearing;
-											}
-											else
-											{
-												if (x_string+bounds.rbearing>drawing_width)
+												XTextExtents(font,name,name_length,&direction,&ascent,
+													&descent,&bounds);
+												x_string += (bounds.lbearing-bounds.rbearing+1)/2;
+#else /* defined (NO_ALIGNMENT) */
+												SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
+#endif /* defined (NO_ALIGNMENT) */
+												if (frame->minimum_y>drawing_height/2)
 												{
-													x_string=drawing_width-bounds.rbearing;
+													y_string=frame->minimum_y-6;
+#if defined (NO_ALIGNMENT)
+													y_string -= descent+1;
+#else /* defined (NO_ALIGNMENT) */
+													SET_VERTICAL_ALIGNMENT(BOTTOM_ALIGNMENT);
+#endif /* defined (NO_ALIGNMENT) */
 												}
-											}
-											if (y_string-ascent<0)
-											{
-												y_string=ascent;
-											}
-											else
-											{
-												if (y_string+descent>drawing_height)
+												else
 												{
-													y_string=drawing_height-descent;
+													y_string=frame->minimum_y+6;
+#if defined (NO_ALIGNMENT)
+													y_string += ascent+1;
+#else /* defined (NO_ALIGNMENT) */
+													SET_VERTICAL_ALIGNMENT(TOP_ALIGNMENT);
+#endif /* defined (NO_ALIGNMENT) */
 												}
+#if defined (NO_ALIGNMENT)
+												/* make sure that the string doesn't extend outside the
+													 window */
+												if (x_string-bounds.lbearing<0)
+												{
+													x_string=bounds.lbearing;
+												}
+												else
+												{
+													if (x_string+bounds.rbearing>drawing_width)
+													{
+														x_string=drawing_width-bounds.rbearing;
+													}
+												}
+												if (y_string-ascent<0)
+												{
+													y_string=ascent;
+												}
+												else
+												{
+													if (y_string+descent>drawing_height)
+													{
+														y_string=drawing_height-descent;
+													}
+												}
+#endif /* defined (NO_ALIGNMENT) */
+												XPSDrawString(display,drawing->pixel_map,
+													graphics_context,x_string,y_string,name,name_length);
 											}
-#endif
-											XPSDrawString(display,drawing->pixel_map,graphics_context,
-												x_string,y_string,name,name_length);
 										}
 									}
 									region_item=get_Region_list_item_next(region_item);
@@ -10481,13 +10515,12 @@ comparison with 3D maps.
 								display_message(ERROR_MESSAGE,"draw_map_2d.  Invalid frames");
 							}
 						}
-
 						/* for each electrode draw a 'plus' at its position and its name
 							 above */
 #if !defined (NO_ALIGNMENT)
 						SET_HORIZONTAL_ALIGNMENT(CENTRE_HORIZONTAL_ALIGNMENT);
 						SET_VERTICAL_ALIGNMENT(BOTTOM_ALIGNMENT);
-#endif
+#endif /* !defined (NO_ALIGNMENT) */
 						electrode=map->electrodes;
 						screen_x=map->electrode_x;
 						screen_y=map->electrode_y;
@@ -10569,7 +10602,7 @@ comparison with 3D maps.
 								} break;
 							} /* switch (map->electrodes_option) */
 							/* colour with data values*/
-							if(map->colour_electrodes_with_signal)
+							if (map->colour_electrodes_with_signal)
 							{
 								/* electrode_drawn and electrode_value already calculated */
 								f_value= *electrode_value;
@@ -10656,7 +10689,7 @@ comparison with 3D maps.
 										}
 									}
 								}
-							} /* if(map->colour_electrodes_with_signal) */
+							} /* if (map->colour_electrodes_with_signal) */
 							else
 							{												
 								if ((*electrode)->highlight)
@@ -10753,52 +10786,53 @@ comparison with 3D maps.
 #else
 										(*screen_x),(*screen_y)-marker_size,name,name_length);
 #endif
-								}
-								else
-								{
-									XPSDrawString(display,drawing->pixel_map,
-										(drawing_information->graphics_context).
-										node_marker_colour,
+									}
+									else
+									{
+										XPSDrawString(display,drawing->pixel_map,
+											(drawing_information->graphics_context).
+											node_marker_colour,
 #if defined (NO_ALIGNMENT)
-										x_string,y_string,name,name_length);
+											x_string,y_string,name,name_length);
 #else
-									(*screen_x),(*screen_y)-marker_size,name,name_length);
+											(*screen_x),(*screen_y)-marker_size,name,name_length);
 #endif
+									}
+								}
 							}
+							electrode++;
+							screen_x++;
+							screen_y++;
+							electrode_drawn++;
+							electrode_value++;
 						}
 					}
-					electrode++;
-					screen_x++;
-					screen_y++;
-					electrode_drawn++;
-					electrode_value++;
+					else
+					{
+						DEALLOCATE(screen_x);
+						DEALLOCATE(screen_y);
+						DEALLOCATE(electrode_value);
+						DEALLOCATE(electrode_drawn);
+						DEALLOCATE(first);
+						display_message(ERROR_MESSAGE,
+							"draw_map_2d.  Could not allocate x and/or y and/or electrodes");
+						return_code=0;
+					}
+					DEALLOCATE(x);
+					DEALLOCATE(y);
+					DEALLOCATE(first);
+					DEALLOCATE(max_x);
+					DEALLOCATE(min_x);
+					DEALLOCATE(max_y);
+					DEALLOCATE(min_y);
+					DEALLOCATE(stretch_x);
+					DEALLOCATE(stretch_y);
+					DEALLOCATE(start_x);
+					DEALLOCATE(start_y);
 				}
+				DEALLOCATE(draw_region_number);
 			}
-			else
-			{
-				DEALLOCATE(screen_x);
-				DEALLOCATE(screen_y);
-				DEALLOCATE(electrode_value);
-				DEALLOCATE(electrode_drawn);
-				DEALLOCATE(first);
-				display_message(ERROR_MESSAGE,
-					"draw_map_2d.  Could not allocate x and/or y and/or electrodes");
-				return_code=0;
-			}
-			DEALLOCATE(x);
-			DEALLOCATE(y);
-			DEALLOCATE(first);
-			DEALLOCATE(max_x);
-			DEALLOCATE(min_x);
-			DEALLOCATE(max_y);
-			DEALLOCATE(min_y);
-			DEALLOCATE(stretch_x);
-			DEALLOCATE(stretch_y);
-			DEALLOCATE(start_x);
-			DEALLOCATE(start_y);
 		}
-	}
-}
 	}
 	else
 	{
@@ -11214,7 +11248,7 @@ struct Map_drawing_information *create_Map_drawing_information(
 #endif /* defined (UNEMAP_USE_3D) */
       )
 /*******************************************************************************
-LAST MODIFIED : 17 July 2000
+LAST MODIFIED : 5 March 2001
 
 DESCRIPTION :
 ==============================================================================*/
@@ -11241,10 +11275,36 @@ DESCRIPTION :
 #define XmCLandmarkColour "LandmarkColour"
 #define XmNmaintainMapAspectRatio "maintainMapAspectRatio"
 #define XmCMaintainMapAspectRatio "MaintainMapAspectRatio"
+#define XmNmapBackgroundColour "mapBackgroundColour"
+#define XmCMapBackgroundColour "MapBackgroundColour"
 #define XmNpixelsBetweenContourValues "pixelsBetweenContourValues"
 #define XmCPixelsBetweenContourValues "PixelsBetweenContourValues"
 #define XmNunhighlightedColour "unhighlightedColour"
 #define XmCUnhighlightedColour "UnhighlightedColour"
+	static XtResource background_colour_default_resource[]=
+	{
+		{
+			XmNdrawingBackgroundColour,
+			XmCDrawingBackgroundColour,
+			XmRString,
+			sizeof(String),
+			0,
+			XmRString,
+			"lightgray"
+		},
+	};
+	static XtResource background_colour_resource[]=
+	{
+		{
+			XmNmapBackgroundColour,
+			XmCMapBackgroundColour,
+			XmRPixel,
+			sizeof(Pixel),
+			XtOffsetOf(Map_drawing_information_settings,background_drawing_colour),
+			XmRString,
+			(String)NULL
+		},
+	};
 	static XtResource resources[]=
 	{
 		{
@@ -11273,15 +11333,6 @@ DESCRIPTION :
 			XtOffsetOf(Map_drawing_information_settings,node_text_colour),
 			XmRString,
 			"yellow"
-		},
-		{
-			XmNdrawingBackgroundColour,
-			XmCDrawingBackgroundColour,
-			XmRPixel,
-			sizeof(Pixel),
-			XtOffsetOf(Map_drawing_information_settings,background_drawing_colour),
-			XmRString,
-			"lightgray"
 		},
 		{
 			XmNfibreColour,
@@ -11402,7 +11453,7 @@ visual=default_visual;
 			if (map_drawing_information->electrode_graphical_material=
 			  CREATE(Graphical_material)("electrode"))
 			{									
-				if(map_drawing_information->electrode_colour =create_Colour(1,0,0))
+				if (map_drawing_information->electrode_colour =create_Colour(1,0,0))
 				{
 					Graphical_material_set_ambient(
 						map_drawing_information->electrode_graphical_material,
@@ -11505,6 +11556,15 @@ printf("read only colour map\n");
 			}
 			map_drawing_information->spectrum_colours=(Pixel *)NULL;
 			/* retrieve_settings */
+			XtVaGetApplicationResources(user_interface->application_shell,
+				&((background_colour_resource[0]).default_addr),
+				background_colour_default_resource,
+				XtNumber(background_colour_default_resource),NULL);
+			/* NB.  XtVaGetApplicationResources does not allocate memory for the
+				default colour String, so it does not need to be free'd */
+			XtVaGetApplicationResources(user_interface->application_shell,
+				map_drawing_information,background_colour_resource,
+				XtNumber(background_colour_resource),NULL);
 			XtVaGetApplicationResources(user_interface->application_shell,
 				map_drawing_information,resources,XtNumber(resources),NULL);
 			/* create the graphics contexts */
@@ -11727,7 +11787,7 @@ Create and  and set it's components
 
 	ENTER(CREATE(Map_3d_package));
 	map_3d_package=(struct Map_3d_package *)NULL;
-	if(fe_field_manager&&element_group_manager&&data_manager&&data_group_manager&&
+	if (fe_field_manager&&element_group_manager&&data_manager&&data_group_manager&&
 		node_manager&&node_group_manager&&element_manager&&computed_field_manager)
 	{
 		if (ALLOCATE(map_3d_package,struct Map_3d_package,1))
@@ -11787,11 +11847,11 @@ Frees the array of map contour GT_element_settings stored in the <map_3d_package
 	int i,number_of_contours,return_code;	
 
 	ENTER(free_map_3d_package_map_contours);
-	if(map_3d_package)
+	if (map_3d_package)
 	{
 		return_code=1;
 		number_of_contours=map_3d_package->number_of_contours;
-		if(number_of_contours)
+		if (number_of_contours)
 		{					
 			for(i=0;i<number_of_contours;i++)
 			{										
@@ -11856,7 +11916,7 @@ to NULL.
 		map_element_group=map_3d_package->element_group;
 		/* deaccess map_element_group. map_node_group deaccessed in */
 		/*free_node_and_element_and_data_groups*/
-		if(map_element_group)
+		if (map_element_group)
 		{
 			temp_map_element_group=map_element_group;
 			DEACCESS(GROUP(FE_element))(&temp_map_element_group);
@@ -11869,11 +11929,11 @@ to NULL.
 		/* mapped_torso_element_group,mapped_torso_node_group accesssed by map_3d_package, but */
 		/* corresponding data group isn't */
 		temp_map_element_group=map_3d_package->mapped_torso_element_group;			 
-		if(temp_map_element_group)
+		if (temp_map_element_group)
 		{
 			GET_NAME(GROUP(FE_element))(temp_map_element_group,&group_name);
 			DEACCESS(GROUP(FE_element))(&temp_map_element_group);
-			if(MANAGED_GROUP_CAN_BE_DESTROYED(FE_element)
+			if (MANAGED_GROUP_CAN_BE_DESTROYED(FE_element)
 				(map_3d_package->mapped_torso_element_group))
 			{
 				REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_element))
@@ -11882,10 +11942,10 @@ to NULL.
 			}	
 		}
 		temp_map_node_group=map_3d_package->mapped_torso_node_group;
-		if(temp_map_node_group)
+		if (temp_map_node_group)
 		{
 			DEACCESS(GROUP(FE_node))(&temp_map_node_group);
-			if(MANAGED_GROUP_CAN_BE_DESTROYED(FE_node)
+			if (MANAGED_GROUP_CAN_BE_DESTROYED(FE_node)
 				(map_3d_package->mapped_torso_node_group))
 			{
 				REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))
@@ -11895,7 +11955,7 @@ to NULL.
 		}
 	
 		map_element_group=map_3d_package->delauney_torso_element_group;
-		if(map_element_group)
+		if (map_element_group)
 		{	
 			/* deaccess delauney_torso_element_group. delauney_torso_node_group deaccessed in */
 			/*free_node_and_element_and_data_groups*/
@@ -11909,7 +11969,7 @@ to NULL.
 		if (group_name&&(data_group=FIND_BY_IDENTIFIER_IN_MANAGER(GROUP(FE_node),name)
 			(group_name,data_group_manager)))
 		{							
-			if(MANAGED_GROUP_CAN_BE_DESTROYED(FE_node)(data_group))
+			if (MANAGED_GROUP_CAN_BE_DESTROYED(FE_node)(data_group))
 			{
 				REMOVE_OBJECT_FROM_MANAGER(GROUP(FE_node))(data_group,
 					data_group_manager);
@@ -11917,18 +11977,18 @@ to NULL.
 		}	
 		DEALLOCATE(group_name);
 		/* computed_fields */
-		if(map_3d_package->map_fit_field)
+		if (map_3d_package->map_fit_field)
 		{
 			remove_computed_field_from_manager_given_FE_field(
 				computed_field_manager,map_3d_package->map_fit_field);
 		}
-		if(map_3d_package->map_position_field)
+		if (map_3d_package->map_position_field)
 		{
 			remove_computed_field_from_manager_given_FE_field(computed_field_manager,
 				map_3d_package->map_position_field);		
 		}
 		/* map_fit_field */
-		if(map_3d_package->map_fit_field)
+		if (map_3d_package->map_fit_field)
 		{
 			temp_field=map_3d_package->map_fit_field; 		
 			DEACCESS(FE_field)(&temp_field);
@@ -11937,7 +11997,7 @@ to NULL.
 			map_3d_package->map_fit_field=(struct FE_field *)NULL;
 		}
 		/* map_position_field */
-		if(map_3d_package->map_position_field)
+		if (map_3d_package->map_position_field)
 		{
 			temp_field=map_3d_package->map_position_field; 		
 			DEACCESS(FE_field)(&temp_field);
@@ -11972,7 +12032,7 @@ gets the map_electrode_glyph for map_3d_package
 	struct GT_object *electrode_glyph;
 
 	ENTER(get_map_3d_package_electrode_glyph);
-	if(map_3d_package)	
+	if (map_3d_package)	
 	{
 		electrode_glyph=map_3d_package->electrode_glyph;		
 	}
@@ -11999,7 +12059,7 @@ Sets the <electrode_glyph>  for <map_3d_package>
 	int return_code;
 
 	ENTER(set_map_3d_package_electrode_glyph);
-	if(map_3d_package)
+	if (map_3d_package)
 	{		
 		return_code =1;
 		REACCESS(GT_object)
@@ -12026,7 +12086,7 @@ gets the map_electrode_size for map_3d_package <map_number>
 	FE_value electrode_size;
 
 	ENTER(get_map_3d_package_electrode_size);
-	if(map_3d_package)	
+	if (map_3d_package)	
 	{	
 		electrode_size=map_3d_package->electrode_size;	
 	}
@@ -12052,7 +12112,7 @@ Sets the electrode_size  for map_3d_package <map_number>
 	int return_code;
 
 	ENTER(set_map_3d_package_electrode_size);
-	if(map_3d_package)
+	if (map_3d_package)
 	{		
 		return_code =1;
 		map_3d_package->electrode_size=electrode_size;
@@ -12078,7 +12138,7 @@ gets the map_electrodes_min_z for map_3d_package <map_number>
 	FE_value electrodes_min_z;
 
 	ENTER(get_map_3d_package_electrodes_min_z);
-	if(map_3d_package)	
+	if (map_3d_package)	
 	{	
 		electrodes_min_z=map_3d_package->electrodes_min_z;	
 	}
@@ -12104,7 +12164,7 @@ Sets the electrodes_min_z  for map_3d_package <map_number>
 	int return_code;
 
 	ENTER(set_map_3d_package_electrodes_min_z);
-	if(map_3d_package)
+	if (map_3d_package)
 	{		
 		return_code =1;
 		map_3d_package->electrodes_min_z=electrodes_min_z;
@@ -12130,7 +12190,7 @@ gets the map_electrodes_max_z for map_3d_package <map_number>
 	FE_value electrodes_max_z;
 
 	ENTER(get_map_3d_package_electrodes_max_z);
-	if(map_3d_package)	
+	if (map_3d_package)	
 	{	
 		electrodes_max_z=map_3d_package->electrodes_max_z;	
 	}
@@ -12156,7 +12216,7 @@ Sets the electrodes_max_z  for map_3d_package <map_number>
 	int return_code;
 
 	ENTER(set_map_3d_package_electrodes_max_z);
-	if(map_3d_package)
+	if (map_3d_package)
 	{		
 		return_code =1;
 		map_3d_package->electrodes_max_z=electrodes_max_z;
@@ -12183,7 +12243,7 @@ gets the map_electrodes_option for map_3d_package <map_number>
 	enum Electrodes_option electrodes_option;
 
 	ENTER(get_map_3d_package_electrodes_option);
-	if(map_3d_package)	
+	if (map_3d_package)	
 	{	
 		electrodes_option=map_3d_package->electrodes_option;	
 	}
@@ -12209,7 +12269,7 @@ Sets the electrodes_option  for map_3d_package <map_number>
 	int return_code;
 
 	ENTER(set_map_3d_package_electrodes_option);
-	if(map_3d_package)
+	if (map_3d_package)
 	{		
 		return_code =1;
 		map_3d_package->electrodes_option=electrodes_option;
@@ -12236,7 +12296,7 @@ gets the map_colour_electrodes_with_signal for map_3d_package
 	int colour_electrodes_with_signal;
 
 	ENTER(get_map_3d_package_colour_electrodes_with_signal);
-	if(map_3d_package)	
+	if (map_3d_package)	
 	{		
 		colour_electrodes_with_signal=
 			map_3d_package->colour_electrodes_with_signal;	
@@ -12263,7 +12323,7 @@ Sets the colour_electrodes_with_signal  for map_3d_package
 	int return_code;
 
 	ENTER(set_map_3d_package_colour_electrodes_with_signal);
-	if(map_3d_package)
+	if (map_3d_package)
 	{		
 		return_code =1;
 		map_3d_package->colour_electrodes_with_signal=
@@ -12292,7 +12352,7 @@ Returns -1 on error
 	int number_of_map_rows;
 
 	ENTER(get_map_3d_package_number_of_map_rows);		
-	if(map_3d_package)	
+	if (map_3d_package)	
 	{		
 		number_of_map_rows=map_3d_package->number_of_map_rows;			
 	}	
@@ -12318,7 +12378,7 @@ sets the number_of_map_rows for map_3d_package
 	int return_code;
 
 	ENTER(set_map_3d_package_number_of_map_rows);		
-	if(map_3d_package)	
+	if (map_3d_package)	
 	{	
 		return_code=1;
 		map_3d_package->number_of_map_rows=number_of_map_rows;
@@ -12345,7 +12405,7 @@ Returns -1 on error
 	int number_of_map_columns;
 
 	ENTER(get_map_3d_package_number_of_map_columns);
-	if(map_3d_package)	
+	if (map_3d_package)	
 	{	
 		number_of_map_columns=map_3d_package->number_of_map_columns;	
 	}
@@ -12371,7 +12431,7 @@ sets the number_of_map_columns for map_3d_package
 	int return_code;
 
 	ENTER(set_map_3d_package_number_of_map_columns);		
-	if(map_3d_package)	
+	if (map_3d_package)	
 	{	
 		return_code=1;
 		map_3d_package->number_of_map_columns=number_of_map_columns;
@@ -12399,7 +12459,7 @@ gets the <number_of_contours> and <contour_settings> for map_3d_package
 
 	ENTER(get_map_3d_package_contours);
 	return_code=1;
-	if(map_3d_package)	
+	if (map_3d_package)	
 	{				
 		*number_of_contours=map_3d_package->number_of_contours;
 		*contour_settings=map_3d_package->contour_settings;
@@ -12429,7 +12489,7 @@ sets the <number_of_contours> and <contour_settings> for map_3d_package
 
 	ENTER(set_map_3d_package_contours)
 	return_code=0;
-	if(map_3d_package)	
+	if (map_3d_package)	
 	{
 	
 		return_code=1;	
@@ -12461,7 +12521,7 @@ gets the fit_name for map_3d_package
 	char *fit_name;
 
 	ENTER(get_map_3d_package_fit_name);
-	if(map_3d_package)			
+	if (map_3d_package)			
 	{	
 		fit_name=map_3d_package->fit_name;		
 	}
@@ -12487,12 +12547,12 @@ sets the fit_name for map_3d_package
 	int return_code,string_length;
 
 	ENTER(set_map_3d_package_fit_name);
-	if(map_3d_package)			
+	if (map_3d_package)			
 	{	
 		return_code=1;		
 		string_length = strlen(fit_name);	
 		string_length++;			
-		if(ALLOCATE(map_3d_package->fit_name,char,string_length))
+		if (ALLOCATE(map_3d_package->fit_name,char,string_length))
 		{	
 			strcpy(map_3d_package->fit_name,fit_name);			
 			return_code=1;	
@@ -12526,7 +12586,7 @@ gets the node_order_info for map_3d_package
 	struct FE_node_order_info *node_order_info;
 
 	ENTER(get_map_3d_package_node_order_info);	
-	if(map_3d_package)	
+	if (map_3d_package)	
 	{	
 		node_order_info=map_3d_package->node_order_info;	
 	}
@@ -12552,7 +12612,7 @@ sets the node_order_info for map_3d_package
 	int return_code;
 
 	ENTER(set_map_3d_package_node_order_info);	
-	if(map_3d_package&&node_order_info)	
+	if (map_3d_package&&node_order_info)	
 	{		
 		map_3d_package->node_order_info=ACCESS(FE_node_order_info)
 				(node_order_info);
@@ -12579,7 +12639,7 @@ gets the map_position_field for map_3d_package
 	struct FE_field *map_position_field;
 
 	ENTER(get_map_3d_package_position_field);	
-	if(map_3d_package)		
+	if (map_3d_package)		
 	{	
 		map_position_field=map_3d_package->map_position_field;	
 	}
@@ -12605,7 +12665,7 @@ sets the map_position_field for map_3d_package
 	int return_code;
 
 	ENTER(set_map_3d_package_position_field);
-	if(map_3d_package)	
+	if (map_3d_package)	
 	{	
 		return_code=1;
 		map_3d_package->map_position_field=ACCESS(FE_field)(position_field);	
@@ -12631,7 +12691,7 @@ gets the map_fit_field for map_3d_package
 	struct FE_field *map_fit_field;
 
 	ENTER(get_map_3d_package_fit_field);
-	if(map_3d_package)	
+	if (map_3d_package)	
 	{	
 		map_fit_field=map_3d_package->map_fit_field;	
 	}
@@ -12657,7 +12717,7 @@ sets the map_fit_field for map_3d_package
 	int return_code;
 
 	ENTER(set_map_3d_package_fit_field);
-	if(map_3d_package)	
+	if (map_3d_package)	
 	{	
 		return_code=1;
 		map_3d_package->map_fit_field=ACCESS(FE_field)(fit_field);	
@@ -12683,7 +12743,7 @@ gets the node_group for map_3d_package
 	struct GROUP(FE_node) *map_node_group;
 
 	ENTER(get_map_3d_package_node_group);
-	if(map_3d_package)	
+	if (map_3d_package)	
 	{		
 		map_node_group=map_3d_package->node_group;		
 	}
@@ -12709,7 +12769,7 @@ sets the node_group for map_3d_package
 	int return_code;
 
 	ENTER(set_map_3d_package_node_group);
-	if(map_3d_package)	
+	if (map_3d_package)	
 	{		
 		map_3d_package->node_group=ACCESS(GROUP(FE_node))(map_node_group);
 		return_code=1;		
@@ -12736,7 +12796,7 @@ gets the element_group for map_3d_package
 	struct GROUP(FE_element) *map_element_group;
 
 	ENTER(get_map_3d_package_element_group);
-	if(map_3d_package)
+	if (map_3d_package)
 	{				
 		map_element_group=map_3d_package->element_group;	
 	}
@@ -12762,7 +12822,7 @@ Sets the element_group for map_3d_package
 	int return_code;
 
 	ENTER(set_map_3d_package_element_group);
-	if(map_3d_package)
+	if (map_3d_package)
 	{		
 		return_code =1;
 		REACCESS(GROUP(FE_element))
@@ -12790,7 +12850,7 @@ gets the mapped_torso_element_group for map_3d_package
 	struct GROUP(FE_element) *mapped_torso_element_group;
 
 	ENTER(get_map_3d_package_mapped_torso_element_group);
-	if(map_3d_package)
+	if (map_3d_package)
 	{				
 		mapped_torso_element_group=map_3d_package->mapped_torso_element_group;	
 	}
@@ -12816,7 +12876,7 @@ Sets the mapped_torso_element_group for map_3d_package
 	int return_code;
 
 	ENTER(set_map_3d_package_mapped_torso_element_group);
-	if(map_3d_package)
+	if (map_3d_package)
 	{		
 		return_code =1;
 		REACCESS(GROUP(FE_element))
@@ -12844,7 +12904,7 @@ gets the mapped_torso_node_group for map_3d_package
 	struct GROUP(FE_node) *mapped_torso_node_group;
 
 	ENTER(get_map_3d_package_mapped_torso_node_group);
-	if(map_3d_package)
+	if (map_3d_package)
 	{				
 		mapped_torso_node_group=map_3d_package->mapped_torso_node_group;	
 	}
@@ -12870,7 +12930,7 @@ Sets the mapped_torso_node_group for map_3d_package
 	int return_code;
 
 	ENTER(set_map_3d_package_mapped_torso_node_group);
-	if(map_3d_package)
+	if (map_3d_package)
 	{		
 		return_code =1;
 		REACCESS(GROUP(FE_node))
@@ -12898,7 +12958,7 @@ gets the delauney_torso_element_group for map_3d_package
 	struct GROUP(FE_element) *delauney_torso_element_group;
 
 	ENTER(get_map_3d_package_delauney_torso_element_group);
-	if(map_3d_package)
+	if (map_3d_package)
 	{				
 		delauney_torso_element_group=map_3d_package->delauney_torso_element_group;	
 	}
@@ -12924,7 +12984,7 @@ Sets the delauney_torso_element_group for map_3d_package
 	int return_code;
 
 	ENTER(set_map_3d_package_delauney_torso_element_group);
-	if(map_3d_package)
+	if (map_3d_package)
 	{		
 		return_code =1;
 		REACCESS(GROUP(FE_element))
@@ -12952,7 +13012,7 @@ gets the delauney_torso_node_group for map_3d_package
 	struct GROUP(FE_node) *delauney_torso_node_group;
 
 	ENTER(get_map_3d_package_delauney_torso_node_group);
-	if(map_3d_package)
+	if (map_3d_package)
 	{				
 		delauney_torso_node_group=map_3d_package->delauney_torso_node_group;	
 	}
@@ -12978,7 +13038,7 @@ Sets the delauney_torso_node_group for map_3d_package
 	int return_code;
 
 	ENTER(set_map_3d_package_delauney_torso_node_group);
-	if(map_3d_package)
+	if (map_3d_package)
 	{		
 		return_code =1;
 		REACCESS(GROUP(FE_node))
@@ -13006,7 +13066,7 @@ gets the viewed_scene flag of the <map_drawing_information>
 	int viewed_scene;
 
 	ENTER(get_map_drawing_information_viewed_scene)
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		viewed_scene=map_drawing_information->viewed_scene;
 	}
@@ -13034,9 +13094,9 @@ sets the viewed_scene flag of the <map_drawing_information>
 	int return_code;
 
 	ENTER(set_map_drawing_information_viewed_scene)
-	if(map_drawing_information&&(scene_viewed>-1))
+	if (map_drawing_information&&(scene_viewed>-1))
 	{
-		if(scene_viewed)
+		if (scene_viewed)
 		{
 			/* scene has been viewed */
 			map_drawing_information->viewed_scene=1;
@@ -13054,7 +13114,7 @@ sets the viewed_scene flag of the <map_drawing_information>
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/* set_map_drawing_information_viewed_scene */
 
 struct GT_object *get_map_drawing_information_torso_arm_labels(
@@ -13070,7 +13130,7 @@ gets the map_torso_arm_labels for map_drawing_information <map_number>
 	struct GT_object *torso_arm_labels;
 
 	ENTER(get_map_drawing_information_torso_arm_labels);
-	if(drawing_information)	
+	if (drawing_information)	
 	{
 		torso_arm_labels=drawing_information->torso_arm_labels;
 	}
@@ -13098,7 +13158,7 @@ Sets the torso_arm_labels  for map_drawing_information
 	int return_code;
 
 	ENTER(set_map_drawing_information_torso_arm_labels);
-	if(drawing_information&&torso_arm_labels)
+	if (drawing_information&&torso_arm_labels)
 	{		
 		return_code =1;
 		REACCESS(GT_object)
@@ -13126,7 +13186,7 @@ gets the electrodes_accepted_or_rejected flag of the <map_drawing_information>
 	int electrodes_accepted_or_rejected;
 
 	ENTER(get_map_drawing_information_electrodes_accepted_or_rejected)
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		electrodes_accepted_or_rejected=map_drawing_information->electrodes_accepted_or_rejected;
 	}
@@ -13154,9 +13214,9 @@ sets the electrodes_accepted_or_rejected flag of the <map_drawing_information>
 	int return_code;
 
 	ENTER(set_map_drawing_information_electrodes_accepted_or_rejected)
-	if(map_drawing_information&&(accep_rej>-1))
+	if (map_drawing_information&&(accep_rej>-1))
 	{
-		if(accep_rej)
+		if (accep_rej)
 		{
 			/* scene has been viewed */
 			map_drawing_information->electrodes_accepted_or_rejected=1;
@@ -13174,7 +13234,7 @@ sets the electrodes_accepted_or_rejected flag of the <map_drawing_information>
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/* set_map_drawing_information_electrodes_accepted_or_rejected */
 
 struct Colour *get_map_drawing_information_background_colour(
@@ -13188,7 +13248,7 @@ gets the Colour of the <map_drawing_information>.
 {
 	struct Colour *background_colour;
 	ENTER(get_map_drawing_information_background_colour);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		background_colour=map_drawing_information->background_colour;
 	}
@@ -13215,7 +13275,7 @@ Sets the Colour of the <map_drawing_information>.
 	int return_code;
 
 	ENTER(set_map_drawing_information_background_colour);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		return_code =1;
 		map_drawing_information->background_colour->red=background_colour->red;
@@ -13245,7 +13305,7 @@ gets the no_interpolation_colour of the <map_drawing_information>.
 	struct Colour *no_interpolation_colour;
 
 	ENTER(get_map_drawing_information_no_interpolation_colour)
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		no_interpolation_colour=map_drawing_information->no_interpolation_colour;
 	}
@@ -13271,7 +13331,7 @@ gets a manager of the <map_drawing_information>.
 	struct MANAGER(Light) *light_manager;
 
 	ENTER(get_map_drawing_information_Light_manager);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		light_manager=map_drawing_information->light_manager;
 	}
@@ -13297,7 +13357,7 @@ gets a manager of the <map_drawing_information>.
 	struct MANAGER(Texture) *texture_manager;
 
 	ENTER(get_map_drawing_information_Texture_manager);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		texture_manager=map_drawing_information->texture_manager;
 	}
@@ -13323,7 +13383,7 @@ gets a manager of the <map_drawing_information>.
 	struct MANAGER(Scene) *scene_manager;
 
 	ENTER(get_map_drawing_information_Scene_manager);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		scene_manager=map_drawing_information->scene_manager;
 	}
@@ -13349,7 +13409,7 @@ gets a manager of the <map_drawing_information>.
 	struct MANAGER(Light_model) *light_model_manager;
 
 	ENTER(get_map_drawing_information_Light_model_manager);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		light_model_manager=map_drawing_information->light_model_manager;
 	}
@@ -13376,7 +13436,7 @@ gets a manager of the <map_drawing_information>.
 	struct MANAGER(Graphical_material) *graphical_material_manager;
 
 	ENTER(get_map_drawing_information_Graphical_material_manager);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		graphical_material_manager=map_drawing_information->graphical_material_manager;
 	}
@@ -13401,7 +13461,7 @@ gets the Light of the <map_drawing_information>.
 {
 	struct Light *light;
 	ENTER(get_map_drawing_information_light);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		light=map_drawing_information->light;
 	}
@@ -13428,7 +13488,7 @@ Sets the Light of the <map_drawing_information>.
 	int return_code;
 
 	ENTER(set_map_drawing_information_light);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		return_code =1;	
 		REACCESS(Light)(&(map_drawing_information->light),light);
@@ -13454,7 +13514,7 @@ gets the Light_model of the <map_drawing_information>.
 {
 	struct Light_model *light_model;
 	ENTER(get_map_drawing_information_light_model);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		light_model=map_drawing_information->light_model;
 	}
@@ -13481,7 +13541,7 @@ Sets the Light_model of the <map_drawing_information>.
 	int return_code;
 
 	ENTER(set_map_drawing_information_light_model);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		return_code =1;	
 		REACCESS(Light_model)(&(map_drawing_information->light_model),light_model);
@@ -13507,7 +13567,7 @@ gets the Scene_viewer of the <map_drawing_information>.
 {
 	struct Scene_viewer *scene_viewer;
 	ENTER(get_map_drawing_information_scene_viewer);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		scene_viewer=map_drawing_information->scene_viewer;
 	}
@@ -13534,7 +13594,7 @@ Sets the Scene_viewer of the <map_drawing_information>.
 	int return_code;
 
 	ENTER(set_map_drawing_information_scene_viewer);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		return_code =1;	
 		map_drawing_information->scene_viewer=scene_viewer;
@@ -13560,7 +13620,7 @@ gets the Scene of the <map_drawing_information>.
 {
 	struct Scene *scene;
 	ENTER(get_map_drawing_information_scene);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		scene=map_drawing_information->scene;
 	}
@@ -13587,7 +13647,7 @@ Sets the Scene of the <map_drawing_information>.
 	int return_code;
 
 	ENTER(set_map_drawing_information_scene);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		return_code =1;	
 		REACCESS(Scene)(&(map_drawing_information->scene),scene);
@@ -13613,7 +13673,7 @@ gets the User_interface of the <map_drawing_information>.
 {
 	struct User_interface *user_interface;
 	ENTER(get_map_drawing_information_user_interface);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		user_interface=map_drawing_information->user_interface;
 	}
@@ -13640,7 +13700,7 @@ Sets the User_interface of the <map_drawing_information>.
 	int return_code;
 
 	ENTER(set_map_drawing_information_user_interface);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		return_code =1;	
 		/* don't ACCESS as there's only ever one user_interface */
@@ -13667,7 +13727,7 @@ gets the map_graphical_material of the <map_drawing_information>.
 {
 	struct Graphical_material *map_graphical_material;
 	ENTER(get_map_drawing_information_map_graphical_material);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		map_graphical_material=map_drawing_information->map_graphical_material;
 	}
@@ -13694,7 +13754,7 @@ Sets the map_graphical_material of the <map_drawing_information>.
 	int return_code;
 
 	ENTER(set_map_drawing_information_map_graphical_material);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		return_code =1;		
 		REACCESS(Graphical_material)
@@ -13721,7 +13781,7 @@ gets the electrode_graphical_material of the <map_drawing_information>.
 {
 	struct Graphical_material *electrode_graphical_material;
 	ENTER(get_map_drawing_information_electrode_graphical_material);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		electrode_graphical_material=
 			map_drawing_information->electrode_graphical_material;
@@ -13747,7 +13807,7 @@ gets the Computed_field_package of the <map_drawing_information>.
 {
 	struct Computed_field_package *computed_field_package;
 	ENTER(get_map_drawing_information_computed_field_package);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		computed_field_package=map_drawing_information->computed_field_package;
 	}
@@ -13774,7 +13834,7 @@ Sets the Computed_field_package of the <map_drawing_information>.
 	int return_code;
 
 	ENTER(set_map_drawing_information_computed_field_package);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		return_code =1;
 		/* don't ACCESS as only one*/
@@ -13801,7 +13861,7 @@ gets the Time_keeper of the <map_drawing_information>.
 {
 	struct Time_keeper *time_keeper;
 	ENTER(get_map_drawing_information_time_keeper);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		time_keeper=map_drawing_information->time_keeper;
 	}
@@ -13828,7 +13888,7 @@ Sets the Time_keeper of the <map_drawing_information>.
 	int return_code;
 
 	ENTER(set_map_drawing_information_time_keeper);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		return_code =1;			
 		REACCESS(Time_keeper)(&(map_drawing_information->time_keeper),time_keeper);		
@@ -13858,10 +13918,10 @@ Creates the map_drawing_information scene, if isn't already present.
 
 	ENTER(map_drawing_information_make_map_scene);
 	map_scene=(struct Scene *)NULL;
-	if(map_drawing_information&&package)
+	if (map_drawing_information&&package)
 	{
 		/* create the map scene, if haven't already got one */	
-		if(!(map_drawing_information->scene))
+		if (!(map_drawing_information->scene))
 		{
 			if (map_scene=CREATE(Scene)("map"))
 			{
@@ -13917,7 +13977,7 @@ Creates the map_drawing_information scene, if isn't already present.
 		return_code =0;
 	}
 	LEAVE;
-	return(return_code);
+	return (return_code);
 }/* map_drawing_information_make_map_scene */
 
 struct MANAGER(Spectrum) *get_map_drawing_information_spectrum_manager(
@@ -13931,7 +13991,7 @@ gets the spectrum_manager of the <map_drawing_information>.
 {
 	struct MANAGER(Spectrum) *spectrum_manager;
 	ENTER(get_map_drawing_information_spectrum_manager);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		spectrum_manager=map_drawing_information->spectrum_manager;
 	}
@@ -13956,7 +14016,7 @@ gets the glyph_list of the <map_drawing_information>
 {
 	struct LIST(GT_object) *glyph_list;
 	ENTER(get_map_drawing_information_glyph_list);
-	if(map_drawing_information)
+	if (map_drawing_information)
 	{
 		glyph_list=map_drawing_information->glyph_list;
 	}
@@ -14001,7 +14061,7 @@ Should be in Scene_viewer? RC doesn't think so.
 	if (map_drawing_information&&(scene_viewer=
 		get_map_drawing_information_scene_viewer(map_drawing_information)))
 	{							
-		if(Scene_get_graphics_range(Scene_viewer_get_scene(scene_viewer),
+		if (Scene_get_graphics_range(Scene_viewer_get_scene(scene_viewer),
 			&centre[0],&centre[1],&centre[2],&size[0],&size[1],&size[2]))
 		{	
 			radius=0.5*sqrt(size[0]*size[0] + size[1]*size[1] + size[2]*size[2]);		
@@ -14011,7 +14071,7 @@ Should be in Scene_viewer? RC doesn't think so.
 			radius *= width_factor;
 			/*???RC clip_factor should be read in from defaults file: */
 			clip_factor = 10.0;		
-			if((Scene_viewer_set_view_simple(scene_viewer,centre[0],centre[1],
+			if ((Scene_viewer_set_view_simple(scene_viewer,centre[0],centre[1],
 				centre[2],radius,40,clip_factor*radius))&&
 			/*now done the equiv of Scene_viewer_view_all,&  have size[0],&size[1],&size[2] */
 			(Scene_viewer_get_lookat_parameters(scene_viewer,
@@ -14025,12 +14085,12 @@ Should be in Scene_viewer? RC doesn't think so.
 				max_index=0;				
 				for(i=0;i<3;i++)
 				{
-					if(size[i]>max)
+					if (size[i]>max)
 					{
 						max=size[i];
 						max_index=i;
 					}
-					if(size[i]<min)
+					if (size[i]<min)
 					{
 						min=size[i];
 						min_index=i;
@@ -14042,7 +14102,7 @@ Should be in Scene_viewer? RC doesn't think so.
 				middle_index=0;
 				for(i=0;i<3;i++)
 				{
-					if((size[i]<max)&&(size[i]>min))
+					if ((size[i]<max)&&(size[i]>min))
 					{
 						middle=size[i];
 						middle_index=i;
@@ -14050,9 +14110,9 @@ Should be in Scene_viewer? RC doesn't think so.
 				}		
 #endif /*defined (NEW_CODE)	 */
 				/* to prevent colinearity of eye[] and up[] vectors*/
-				if(min_index==max_index)
+				if (min_index==max_index)
 				{
-					if(min_index<2)
+					if (min_index<2)
 					{
 						min_index++;
 					}
@@ -14062,7 +14122,7 @@ Should be in Scene_viewer? RC doesn't think so.
 					}
 				}
 				/* if we've specified an up_vector, use it*/
-				if(up_vector)				
+				if (up_vector)				
 				{
 					for(i=0;i<3;i++)
 					{
@@ -14142,7 +14202,7 @@ for these elements defines <fit_field> at the element, and it's nodes.
 		define_fit_field_at_torso_element_nodes_data;
 
 	ENTER(define_fit_field_at_quad_elements_and_nodes);
-	if(torso_element_group&&fit_field)
+	if (torso_element_group&&fit_field)
 	{
 		define_fit_field_at_torso_element_nodes_data.quad_element_group=
 			CREATE(GROUP(FE_element))("quad");
@@ -14166,7 +14226,8 @@ for these elements defines <fit_field> at the element, and it's nodes.
 		return_code=0;
 	}
 	LEAVE;
-	return(return_code);
+	
+	return (return_code);
 }/* define_fit_field_at_quad_elements_and_nodes */
 #endif /* defined (UNEMAP_USE_3D) */
 
@@ -14186,7 +14247,7 @@ creates a 1 component  <field_name>
 
 	ENTER(create_mapping_type_fe_field);
 	map_fit_field=(struct FE_field *)NULL;	
-	if(field_name&&fe_field_manager)
+	if (field_name&&fe_field_manager)
 	{
 		/* set up the info needed to create the potential field */			
 		set_CM_field_information(&field_info,CM_FIELD,(int *)NULL);		
@@ -14209,6 +14270,7 @@ creates a 1 component  <field_name>
 				"create_mapping_type_fe_field. invalid argument");
 	}
 	LEAVE;
+	
 	return(map_fit_field);
 }/* create_mapping_type_fe_field */
 #endif /* defined (UNEMAP_USE_3D) */
