@@ -2174,6 +2174,7 @@ The string should be freed when no longer required.
 	if (ALLOCATE(*message, char, strlen(error_message) + 1))
 	{
 		strcpy(*message, error_message);
+		return_code = PF_SUCCESS_RC;
 	}
 	else
 	{
