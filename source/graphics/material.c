@@ -546,9 +546,11 @@ material results.
 		}
 		else
 		{
+#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
 			glDisable(GL_VERTEX_PROGRAM_ARB);
 			glDisable(GL_FRAGMENT_PROGRAM_ARB);
 			glDisable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
+#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 		}
 		return_code=1;
 

@@ -259,9 +259,11 @@ un-selected graphics are drawn.
 						/*???RC glPushAttrib and glPopAttrib are *very* slow */
 						glPushAttrib(GL_ENABLE_BIT);
 						glDisable(GL_LIGHTING);
+#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
 						glDisable(GL_VERTEX_PROGRAM_ARB);
 						glDisable(GL_FRAGMENT_PROGRAM_ARB);
 						glDisable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
+#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 #endif /* defined (OPENGL_API) */
 						if (proportion>0)
 						{
@@ -387,9 +389,11 @@ un-selected graphics are drawn.
 							/*???RC glPushAttrib and glPopAttrib are *very* slow */
 							glPushAttrib(GL_ENABLE_BIT);
 							glDisable(GL_LIGHTING);
+#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
 							glDisable(GL_VERTEX_PROGRAM_ARB);
 							glDisable(GL_FRAGMENT_PROGRAM_ARB);
 							glDisable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
+#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
 						}
 						if (picking_names)
 						{
