@@ -5211,6 +5211,7 @@ appropriateness to curve usage.
 	struct Control_curve *curve;
 	struct FE_basis *fe_basis;
 	struct FE_region *fe_region;
+	struct LIST(FE_element_shape) *element_shape_list;
 	struct MANAGER(FE_basis) *basis_manager;
 
 	ENTER(create_Control_curve_from_file);
@@ -5221,6 +5222,7 @@ appropriateness to curve usage.
 		{
 			/* create group managers needed to use import_finite_element functions  */
 			basis_manager = curve->basis_manager;
+			element_shape_list = curve->element_shape_list;
 			if (ALLOCATE(file_name,char,strlen(file_name_stem)+14))
 			{
 				cmiss_region = (struct Cmiss_region *)NULL;
@@ -5232,11 +5234,11 @@ appropriateness to curve usage.
 				{
 					element_region = (struct Cmiss_region *)NULL;
 					if ((cmiss_region = read_exregion_file(node_file,
-						basis_manager, (struct FE_import_time_index *)NULL)) &&
+						basis_manager, element_shape_list, (struct FE_import_time_index *)NULL)) &&
 						(element_region = read_exregion_file(element_file,
-							basis_manager, (struct FE_import_time_index *)NULL)) &&
+							basis_manager, element_shape_list, (struct FE_import_time_index *)NULL)) &&
 						Cmiss_regions_FE_regions_can_be_merged(cmiss_region, element_region)
-						&&
+ 						&&
 						Cmiss_regions_merge_FE_regions(cmiss_region, element_region) &&
 						Cmiss_region_get_child_region(cmiss_region, /*child_number*/0,
 							&child_cmiss_region))
@@ -5265,7 +5267,7 @@ appropriateness to curve usage.
 						(region_file=fopen(file_name,"r")))
 					{
 						if (cmiss_region = read_exregion_file(region_file,
-							basis_manager, (struct FE_import_time_index *)NULL))
+							basis_manager, element_shape_list, (struct FE_import_time_index *)NULL))
 						{
 							if (!(fe_region = Cmiss_region_get_FE_region(cmiss_region)))
 							{
