@@ -1151,11 +1151,14 @@ Main program for unemap
 #if defined (UNEMAP_USE_3D )
 			DESTROY(Unemap_package)(&unemap_package);	
 			DESTROY(MANAGER(Scene))(&scene_manager);
-			DESTROY(Computed_field_package)(&computed_field_package);
 
 			/* destroy Interactive_tools and manager */
 			DESTROY(Node_tool)(&node_tool);		
+			/*???DB.  Node_tool uses computed fields, so can't destroy after
+				destroying computed fields */
+			/*???DB.  Should destroy in the reverse of creation order */
 			DESTROY(MANAGER(Interactive_tool))(&interactive_tool_manager);
+			DESTROY(Computed_field_package)(&computed_field_package);
 
 			DESTROY(FE_node_selection)(&data_selection);
 			DESTROY(FE_node_selection)(&node_selection);
