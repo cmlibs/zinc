@@ -348,14 +348,16 @@ ifeq ($(USER_INTERFACE),MOTIF_USER_INTERFACE)
 
 UID2UIDH = uid2uidh
 UID2UIDH_BIN := $(wildcard $(UTILITIES_PATH)/$(UID2UIDH))
-ifeq ($(UIDTOUID_BIN),)
+ifeq ($(UID2UID_BIN),)
    ifdef CMISS_ROOT_DEFINED
 	   UID2UIDH_BIN := $(wildcard $(PRODUCT_UTILITIES_PATH)/$(UID2UIDH))
    endif # CMISS_ROOT_DEFINED
 endif # $(UID2UIDH_BIN) ==
-ifeq ($(UIDTOUID_BIN),)
+ifeq ($(UID2UIDH_BIN),)
    #If it still isn't found then assume we will build a local one.
    UID2UIDH_BIN := $(UTILITIES_PATH)/$(UID2UIDH)
+else
+   UID2UIDH_FOUND = true
 endif
 
 %.uidh : %.uil $(UID2UIDH_BIN)
@@ -381,3 +383,4 @@ define BuildNormalTarget
 	(ls $($(3)) 2>&1 | sed "s%ls: %product_object/%;s%: No such file or directory%%" > object.list)  ; \
 	$(LINK) -o $(2)/$(1) $(ALL_FLAGS) `cat object.list` $(4)
 endef
+
