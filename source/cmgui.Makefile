@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : cmgui.Makefile
 #
-# LAST MODIFIED : 23 December 2003
+# LAST MODIFIED : 11 April 2004
 #
 # DESCRIPTION :
 #
@@ -589,6 +589,13 @@ API_SRCS = \
 	api/cmiss_command.c \
 	api/cmiss_computed_field.c \
 	api/cmiss_core.c \
+	api/cmiss_function.cpp \
+	api/cmiss_function_matrix.cpp \
+	api/cmiss_function_variable.cpp \
+	api/cmiss_function_variable_composite.cpp \
+	api/cmiss_function_variable_exclusion.cpp \
+	api/cmiss_function_variable_intersection.cpp \
+	api/cmiss_function_variable_union.cpp \
 	api/cmiss_region.c \
 	api/cmiss_scene_viewer.c \
 	api/cmiss_value_derivative_matrix.c \
@@ -686,6 +693,19 @@ COMPUTED_VARIABLE_SRCS = \
 	computed_variable/computed_variable_finite_element.c \
 	computed_variable/computed_variable_identity.c \
 	computed_variable/computed_variable_standard_operations.c \
+	computed_variable/function.cpp \
+	computed_variable/function_derivative_matrix.cpp \
+	computed_variable/function_composite.cpp \
+	computed_variable/function_finite_element.cpp \
+	computed_variable/function_matrix.cpp \
+	computed_variable/function_variable.cpp \
+	computed_variable/function_variable_composite.cpp \
+	computed_variable/function_variable_exclusion.cpp \
+	computed_variable/function_variable_intersection.cpp \
+	computed_variable/function_variable_union.cpp \
+	computed_variable/function_variable_value.cpp \
+	computed_variable/function_variable_value_element.cpp \
+	computed_variable/function_variable_value_scalar.cpp \
 	computed_variable/variable.cpp \
 	computed_variable/variable_composite.cpp \
 	computed_variable/variable_composition.cpp \
@@ -1294,6 +1314,13 @@ SO_LIB_COMPUTED_VARIABLE = cmgui_computed_variable
 SO_LIB_COMPUTED_VARIABLE_TARGET = lib$(SO_LIB_COMPUTED_VARIABLE)$(TARGET_SUFFIX)$(SO_LIB_SUFFIX)
 SO_LIB_COMPUTED_VARIABLE_SONAME = lib$(SO_LIB_COMPUTED_VARIABLE)$(SO_LIB_SUFFIX)
 LIB_COMPUTED_VARIABLE_SRCS = \
+	api/cmiss_function.cpp \
+	api/cmiss_function_matrix.cpp \
+	api/cmiss_function_variable.cpp \
+	api/cmiss_function_variable_composite.cpp \
+	api/cmiss_function_variable_exclusion.cpp \
+	api/cmiss_function_variable_intersection.cpp \
+	api/cmiss_function_variable_union.cpp \
 	api/cmiss_variable_new.cpp \
 	api/cmiss_variable_new_composite.cpp \
 	api/cmiss_variable_new_composition.cpp \
