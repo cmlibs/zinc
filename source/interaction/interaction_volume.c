@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : interaction_volume.c
 
-LAST MODIFIED : 27 April 2000
+LAST MODIFIED : 14 June 2000
 
 DESCRIPTION :
 Structure representing volume of space and centre interacted on by input
@@ -360,7 +360,7 @@ struct Interaction_volume *create_Interaction_volume_bounding_box(
 	struct Interaction_volume *interaction_volume1,
 	struct Interaction_volume *interaction_volume2)
 /*******************************************************************************
-LAST MODIFIED : 9 May 2000
+LAST MODIFIED : 14 June 2000
 
 DESCRIPTION :
 Creates an Interaction_volume between the centres of <interaction_volume1> and
@@ -378,8 +378,7 @@ and will span between their centres.
 
 	ENTER(create_Interaction_volume_bounding_box);
 	interaction_volume=(struct Interaction_volume *)NULL;
-	if (interaction_volume1&&interaction_volume2&&
-		(interaction_volume1 != interaction_volume2))
+	if (interaction_volume1&&interaction_volume2)
 	{
 		if (interaction_volume1->type==interaction_volume2->type)
 		{
