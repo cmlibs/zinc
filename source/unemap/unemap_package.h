@@ -63,8 +63,10 @@ eg light model, and managers. Split into along these lines?
 	/* prolate spheroidal coords. Therefore store multiple fields */
 	int number_of_electrode_position_fields;
 	struct FE_field **electrode_position_fields;
+	int number_of_map_electrode_position_fields;
+	struct FE_field **map_electrode_position_fields;
 	/* these fields are always the same, no matter what the  Region_type*/
-	struct FE_field *device_name_field; 
+	struct FE_field *device_name_field;
 	struct FE_field *device_type_field;
 	struct FE_field *channel_number_field;
 	struct FE_field *signal_field;
@@ -82,8 +84,9 @@ eg light model, and managers. Split into along these lines?
 	/* flag to record if done "view all" on scene*/
 	int viewed_scene; 
 	/* should this and below be be in struct Map ?*/
+	/*or Map_drawing_information?  */
 	struct Colour *no_interpolation_colour; 
-	struct Graphics_window *window; /*or Map_drawing_information?  */
+	struct Graphics_window *window;
 	struct Colour *background_colour;
 	struct Light *light;	
 	struct Light_model *light_model;	
@@ -193,20 +196,16 @@ struct FE_field *get_unemap_package_map_electrode_position_field(
 LAST MODIFIED : October 19 1999
 
 DESCRIPTION :
-gets the map_electrode_position_field for map_info <map_number> in <package>.
-get (and set) with map_number 0,1,2... (an array), but package->number_of_maps
-is 1,2,3... i.e 
+gets the map_electrode_position_field in <package>.
 ==============================================================================*/
 
 int set_unemap_package_map_electrode_position_field(struct Unemap_package *package,
-	struct FE_field *map_electrode_position_field,int map_number);
+	struct FE_field *map_electrode_position_field);
 /*******************************************************************************
 LAST MODIFIED : October 19 1999
 
 DESCRIPTION :
-Sets the map_electrode_position_field  for map_info <map_number> in <package>.
-Set (and get) with map_number 0,1,2... (an array), but package->number_of_maps
-is 1,2,3...
+Sets the map_electrode_position_field  in <package>.
 ==============================================================================*/
 
 struct GT_object *get_unemap_package_map_electrode_glyph(

@@ -4970,8 +4970,7 @@ static int rig_node_add_map_electrode_position_field(struct FE_node *node,
 LAST MODIFIED : 13 October 1999
 
 DESCRIPTION :
-Add an electrode_position_field  to the rig_node,
-in addition to the one created with create_config_template_node.
+Add a map  electrode_position_field  to the rig_node.
 
 Called by rig_node_group_add_map_electrode_position_field
 ==============================================================================*/
@@ -5012,6 +5011,8 @@ Called by rig_node_group_add_map_electrode_position_field
 			(node_manager=add_map_electrode_position_info->node_manager)&&		
 			(field_manager=add_map_electrode_position_info->field_manager))
 		{					
+			/* if we have a electrode_position_field, want a map_electrode_position_field */
+			/* if we don't it's an auxilliary node-do nothing. */
 			if ((electrode_position_field=
 				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)sock_electrode_position_str,
 				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node))||
@@ -5021,39 +5022,36 @@ Called by rig_node_group_add_map_electrode_position_field
 				(electrode_position_field=
 				FIND_BY_IDENTIFIER_IN_MANAGER(FE_field,name)((char *)patch_electrode_position_str,
 				field_manager))&&(FE_field_is_defined_at_node(electrode_position_field,node)))
-				/* if we don't have an electrode_position_field, it's an auxilliary
-					 node-do nothing */
 			{	
-				node_unmanaged=CREATE(FE_node)(0,(struct FE_node *)NULL);
-				if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
-					(node_unmanaged,node))
-				{												
-					if(define_FE_field_at_node(node_unmanaged,map_electrode_position_field,
-						map_electrode_components_number_of_derivatives
-						,map_electrode_components_number_of_versions,
-						map_electrode_components_nodal_value_types))
-					{	
-						/* need to fill in nodal values*/
-					}
+				/* if its already deined, have nothing to do */
+				if(!FE_field_is_defined_at_node(map_electrode_position_field,node))
+				{
+					node_unmanaged=CREATE(FE_node)(0,(struct FE_node *)NULL);
+					if (MANAGER_COPY_WITH_IDENTIFIER(FE_node,cm_node_identifier)
+						(node_unmanaged,node))
+					{						
+						if(!define_FE_field_at_node(node_unmanaged,map_electrode_position_field,
+							map_electrode_components_number_of_derivatives
+							,map_electrode_components_number_of_versions,
+							map_electrode_components_nodal_value_types))					
+						{
+							display_message(ERROR_MESSAGE,"rig_node_add_map_electrode_position_field."
+								"error defining electrode_position_field");	
+							return_code =0;
+						}	
+						/* copy node back into the manager */
+						MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
+							(node,node_unmanaged,node_manager);
+					}  	/* if (MANAGER_COPY_WITH_IDENTIFIER */
 					else
 					{
-						display_message(ERROR_MESSAGE,"rig_node_add_map_electrode_position_field."
-							"error defining electrode_position_field");	
-						return_code =0;
-					}	
-					/* copy node back into the manager */
-					MANAGER_MODIFY_NOT_IDENTIFIER(FE_node,cm_node_identifier)
-						(node,node_unmanaged,node_manager);
-				}  	/* if (MANAGER_COPY_WITH_IDENTIFIER */
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"rig_node_add_map_electrode_position_field"
-						"  MANAGER_COPY_WITH_IDENTIFIER failed");
-					return_code=0;
+						display_message(ERROR_MESSAGE,
+							"rig_node_add_map_electrode_position_field"
+							"  MANAGER_COPY_WITH_IDENTIFIER failed");
+						return_code=0;
+					}
+					DESTROY(FE_node)(&node_unmanaged);
 				}
-				DESTROY(FE_node)(&node_unmanaged);
-
 			}/* if ((electrode_position_field= */
 		}	/* if(add_map_electrode_position_info */
 		else

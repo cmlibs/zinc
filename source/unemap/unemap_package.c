@@ -31,7 +31,7 @@ struct Map_info
 	enum Region_type region_type;
 	char *fit_name;
 	struct FE_node_order_info *node_order_info;
-	struct FE_field *map_position_field,*map_fit_field,*map_electrode_position_field;
+	struct FE_field *map_position_field,*map_fit_field;
 	struct GROUP(FE_node) *node_group;
 	struct GROUP(FE_element) *element_group;
 	struct MANAGER(FE_field) *fe_field_manager;
@@ -82,8 +82,7 @@ Create and  and set it's components
 				map_info->region_type=region_type;				
 				map_info->node_order_info=ACCESS(FE_node_order_info)
 					(node_order_info);
-				map_info->map_position_field=ACCESS(FE_field)(map_position_field);
-				map_info->map_electrode_position_field=(struct FE_field *)NULL;
+				map_info->map_position_field=ACCESS(FE_field)(map_position_field);			
 				map_info->map_fit_field=ACCESS(FE_field)(map_fit_field);
 				map_info->node_group=ACCESS(GROUP(FE_node))(node_group);
 				map_info->fe_field_manager=fe_field_manager;
@@ -185,9 +184,7 @@ to NULL.
 		remove_computed_field_from_manager_given_FE_field(
 			computed_field_manager,map_info->map_fit_field);		
 		remove_computed_field_from_manager_given_FE_field(computed_field_manager,
-			map_info->map_position_field);
-		remove_computed_field_from_manager_given_FE_field(computed_field_manager,
-			map_info->map_electrode_position_field);
+			map_info->map_position_field);		
 		/* map_fit_field */
 		temp_field=map_info->map_fit_field; 		
 		DEACCESS(FE_field)(&temp_field);
@@ -238,32 +235,8 @@ to NULL.
 					"Couldn't destroy map_position_field");
 			}	
 		}
+
 		/* map_electrode_position_field */
-		temp_field=map_info->map_electrode_position_field; 		
-		DEACCESS(FE_field)(&temp_field);
-		if(map_info->map_electrode_position_field)
-		{	
-			if (FE_field_can_be_destroyed
-				(map_info->map_electrode_position_field))
-			{
-				if(REMOVE_OBJECT_FROM_MANAGER(FE_field)
-					(map_info->map_electrode_position_field,fe_field_manager))
-				{
-					map_info->map_electrode_position_field=(struct FE_field *)NULL;
-				}
-				else
-				{
-					display_message(WARNING_MESSAGE,"DESTROY(Map_info)."
-						" Couldn't remove map_electrode_position_field from manager");
-				}
-			}
-			else
-			{
-				/* probably not an eror, as the same field can be used by several maps*/
-				display_message(WARNING_MESSAGE,"DESTROY(Map_info). "
-					"Couldn't destroy map_electrode_position_field");
-			}	
-		}
 		/* fit_name */
 		DEALLOCATE(map_info->fit_name);
 		DEALLOCATE(*map_info_address);
@@ -443,7 +416,9 @@ The fields are filed in with set_unemap_package_fields()
 			package->computed_field_manager=computed_field_manager;			
 			/* fields of the rig_nodes */
 			package->number_of_electrode_position_fields=0;
-			package->electrode_position_fields=(struct FE_field **)NULL;
+			package->electrode_position_fields=(struct FE_field **)NULL;			
+			package->number_of_map_electrode_position_fields=0;
+			package->map_electrode_position_fields=(struct FE_field **)NULL;
 			package->device_name_field=(struct FE_field *)NULL;
 			package->device_type_field=(struct FE_field *)NULL;
 			package->channel_number_field=(struct FE_field *)NULL;
@@ -517,9 +492,14 @@ to NULL.
 		{
 			DEACCESS(FE_field)(&(package->electrode_position_fields[count]));		
 		}
+		for(count=0;count<package->number_of_map_electrode_position_fields;count++)
+		{
+			DEACCESS(FE_field)(&(package->map_electrode_position_fields[count]));		
+		}
 		destroy_Colour(&package->no_interpolation_colour);
 		destroy_Colour(&package->background_colour);
 		package->number_of_electrode_position_fields=0;	
+		package->number_of_map_electrode_position_fields=0;
 		DEACCESS(FE_field)(&(package->device_name_field));
 		DEACCESS(FE_field)(&(package->device_type_field));
 		DEACCESS(FE_field)(&(package->channel_number_field));
@@ -708,62 +688,70 @@ struct FE_field *get_unemap_package_map_electrode_position_field(
 LAST MODIFIED : October 19 1999
 
 DESCRIPTION :
-gets the map_electrode_position_field for map_info <map_number> in <package>.
-get (and set) with map_number 0,1,2... (an array), but package->number_of_maps
-is 1,2,3... i.e 
+gets the map_electrode_position_field  in <package>.
 ==============================================================================*/
 {
 	struct FE_field *map_electrode_position_field;
 
 	ENTER(get_unemap_package_map_electrode_position_field);
-	if((package)&&(map_number>-1)&&(map_number<=package->number_of_maps))	
-	{
-		if(package->number_of_maps==map_number)
+	if(package&&(map_number>=0)&&
+		(map_number<=package->number_of_map_electrode_position_fields))
+	{		
+		if(package->number_of_map_electrode_position_fields==map_number)
 		{			
 			/* No map_info,map_electrode_position_field =NULL */	
 			map_electrode_position_field=(struct FE_field *)NULL;		
 		}
-		else
+		else	
 		{
-			map_electrode_position_field=package->maps_info[map_number]->map_electrode_position_field;
+			map_electrode_position_field=package->map_electrode_position_fields[map_number];
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"get_unemap_package_map_electrode_position_field."
-			" invalid arguments");
-		map_electrode_position_field=(struct FE_field *)NULL;
+				" invalid arguments");
+		map_electrode_position_field = (struct FE_field *)NULL;
 	}
 	LEAVE;
-	return (map_electrode_position_field);	
+	return (map_electrode_position_field);
 } /* get_unemap_package_map_electrode_position_field */
 
 int set_unemap_package_map_electrode_position_field(struct Unemap_package *package,
-	struct FE_field *map_electrode_position_field,int map_number)
+	struct FE_field *map_electrode_position_field)
 /*******************************************************************************
 LAST MODIFIED : October 19 1999
 
 DESCRIPTION :
-Sets the map_electrode_position_field  for map_info <map_number> in <package>.
-Set (and get) with map_number 0,1,2... (an array), but package->number_of_maps
-is 1,2,3...
+Sets the map_electrode_position_field  in <package>.
 ==============================================================================*/
 {
 	int return_code;
+	struct FE_field **fields;
 
 	ENTER(set_unemap_package_map_electrode_position_field);
-	if(package&&map_electrode_position_field&&(map_number>-1)&&
-		(map_number<package->number_of_maps))
-	{		
-		return_code =1;
-		REACCESS(FE_field)
-			(&(package->maps_info[map_number]->map_electrode_position_field),
-				map_electrode_position_field);
+	if(package)
+	{
+		return_code =1;		
+		package->number_of_map_electrode_position_fields++;
+		if(REALLOCATE(fields,package->map_electrode_position_fields,struct FE_field *,
+			package->number_of_map_electrode_position_fields))
+		{									
+			package->map_electrode_position_fields=fields;
+			package->map_electrode_position_fields[package->number_of_map_electrode_position_fields-1]
+				=ACCESS(FE_field)(map_electrode_position_field);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"set_unemap_package_map_electrode_position."
+				" out of memory");
+			return_code =0;
+		}	
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"set_unemap_package_map_electrode_position_field ."
-			" invalid arguments");
+		display_message(ERROR_MESSAGE,"set_unemap_package_map_electrode_position_field."
+				" invalid arguments");
 		return_code =0;
 	}
 	LEAVE;
@@ -1996,6 +1984,15 @@ field manager
 					computed_field_manager,unemap_package->electrode_position_fields[count]);
 			}
 		}		
+		if(unemap_package->map_electrode_position_fields)
+		{
+			for(count=0;count<unemap_package->number_of_map_electrode_position_fields;count++)
+			{
+				remove_computed_field_from_manager_given_FE_field(
+					computed_field_manager,unemap_package->map_electrode_position_fields[count]);
+			}
+		}		
+
 		if(unemap_package->device_name_field)
 		{
 			remove_computed_field_from_manager_given_FE_field(
@@ -2097,6 +2094,34 @@ Do this last, as it attempts to remove the fields from the managers.
 			}
 			package->number_of_electrode_position_fields=0;
 		}		
+		if(package->map_electrode_position_fields)
+		{
+			for(count=0;count<package->number_of_map_electrode_position_fields;count++)
+			{
+				temp_field=package->map_electrode_position_fields[count]; 
+				DEACCESS(FE_field)(&temp_field);
+				if (FE_field_can_be_destroyed(package->map_electrode_position_fields[count]))
+				{
+					if(REMOVE_OBJECT_FROM_MANAGER(FE_field)
+						(package->map_electrode_position_fields[count],fe_field_manager))
+					{
+						package->map_electrode_position_fields[count]	=(struct FE_field *)NULL;
+					}
+					else
+					{
+						display_message(WARNING_MESSAGE,"free_unemap_package_rig_fields."
+							" Couldn't remove map_electrode_position_field from manager");
+					}
+				}
+				else
+				{
+					display_message(WARNING_MESSAGE,"free_unemap_package_rig_fields."
+						" Couldn't destroy map_electrode_position_field");
+				}
+			}
+			package->number_of_map_electrode_position_fields=0;
+		}
+
 		temp_field=package->device_name_field; 
 		DEACCESS(FE_field)(&temp_field);
 		if(package->device_name_field)

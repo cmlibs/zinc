@@ -947,7 +947,13 @@ necessary.
 							DEALLOCATE(frame->contour_x);
 							DEALLOCATE(frame->contour_y);
 							DEALLOCATE(frame->pixel_values);
-							DEALLOCATE(frame->image->data);
+							if(frame->image)
+							{
+								if(frame->image->data)
+								{
+									DEALLOCATE(frame->image->data);
+								}
+							}
 							XFree((char *)(frame->image));
 							frame++;
 							i--;
