@@ -3922,95 +3922,105 @@ Merges the <element_field> into the <list>.
 												(new_scale_factor_index=(*new_standard_node_map)->
 													scale_factor_indices))
 											{
-												/* determine the node index */
-												node=merge->nodes;
-												new_node=(merge->new_nodes)[(*new_standard_node_map)->
-													node_index];
-												/*???RC since using this function in
-													define_FE_field_at_element, have to handle case of
-													NULL nodes just by using existing node_index */
-												if (new_node)
+												/* check that the new node_index is actually for a
+													 real node */
+												node_index = (*new_standard_node_map)->node_index;
+												if ((0 <= node_index) &&
+													(node_index < merge->new_number_of_nodes) &&
+													(merge->new_nodes))
 												{
-													node_index=0;
-													while ((node_index<merge->number_of_nodes)&&
-														(*node!=new_node))
+													/* determine the node index */
+													node = merge->nodes;
+													new_node = (merge->new_nodes)[node_index];
+													/*???RC since using this function in
+														define_FE_field_at_element, have to handle case of
+														NULL nodes just by using existing node_index */
+													if (new_node)
 													{
-														node_index++;
-														node++;
+														node_index=0;
+														while ((node_index<merge->number_of_nodes)&&
+															(*node!=new_node))
+														{
+															node_index++;
+															node++;
+														}
 													}
-												}
-												else
-												{
-													node_index=(*new_standard_node_map)->node_index;
-												}
-												/* determine the new scale factor set */
-												start_new_scale_factor_set=0;
-												l=merge->new_number_of_scale_factor_sets;
-												new_number_in_scale_factor_set=
-													merge->new_numbers_in_scale_factor_sets;
-												new_scale_factor_set_identifier=
-													merge->new_scale_factor_set_identifiers;
-												while ((l>0)&&(*new_scale_factor_index>=
-													start_new_scale_factor_set+
-													(*new_number_in_scale_factor_set)))
-												{
-													start_new_scale_factor_set +=
-														*new_number_in_scale_factor_set;
-													new_scale_factor_set_identifier++;
-													new_number_in_scale_factor_set++;
-													l--;
-												}
-												/* determine the element scale factor set */
-												start_scale_factor_set=0;
-												l=merge->number_of_scale_factor_sets;
-												number_in_scale_factor_set=
-													merge->numbers_in_scale_factor_sets;
-												scale_factor_set_identifier=
-													merge->scale_factor_set_identifiers;
-												while ((l>0)&&(*scale_factor_set_identifier!=
-													*new_scale_factor_set_identifier))
-												{
-													start_scale_factor_set +=
-														*number_in_scale_factor_set;
-													scale_factor_set_identifier++;
-													number_in_scale_factor_set++;
-													l--;
-												}
-												if ((*node==new_node)&&
-													((!number_in_scale_factor_set)||(
-														(*scale_factor_set_identifier==
-															*new_scale_factor_set_identifier)&&
-														(*number_in_scale_factor_set==
-															*new_number_in_scale_factor_set)))&&
-													(*standard_node_map=
-														CREATE(Standard_node_to_element_map)(node_index,k)))
-												{
-													value_index=(*standard_node_map)->
-														nodal_value_indices;
-													scale_factor_index=
-														(*standard_node_map)->scale_factor_indices;
-													l=start_scale_factor_set-
-														start_new_scale_factor_set;
-													while (k>0)
+													/* determine the new scale factor set */
+													start_new_scale_factor_set=0;
+													l=merge->new_number_of_scale_factor_sets;
+													new_number_in_scale_factor_set=
+														merge->new_numbers_in_scale_factor_sets;
+													new_scale_factor_set_identifier=
+														merge->new_scale_factor_set_identifiers;
+													while ((l>0)&&(*new_scale_factor_index>=
+														start_new_scale_factor_set+
+														(*new_number_in_scale_factor_set)))
 													{
-														*value_index= *new_value_index;
-														*scale_factor_index=(*new_scale_factor_index)+l;
-														value_index++;
-														new_value_index++;
-														scale_factor_index++;
-														new_scale_factor_index++;
-														k--;
+														start_new_scale_factor_set +=
+															*new_number_in_scale_factor_set;
+														new_scale_factor_set_identifier++;
+														new_number_in_scale_factor_set++;
+														l--;
 													}
-													standard_node_map++;
-													new_standard_node_map++;
-													j--;
+													/* determine the element scale factor set */
+													start_scale_factor_set=0;
+													l=merge->number_of_scale_factor_sets;
+													number_in_scale_factor_set=
+														merge->numbers_in_scale_factor_sets;
+													scale_factor_set_identifier=
+														merge->scale_factor_set_identifiers;
+													while ((l>0)&&(*scale_factor_set_identifier!=
+														*new_scale_factor_set_identifier))
+													{
+														start_scale_factor_set +=
+															*number_in_scale_factor_set;
+														scale_factor_set_identifier++;
+														number_in_scale_factor_set++;
+														l--;
+													}
+													if ((*node==new_node)&&
+														((!number_in_scale_factor_set)||(
+															(*scale_factor_set_identifier==
+																*new_scale_factor_set_identifier)&&
+															(*number_in_scale_factor_set==
+																*new_number_in_scale_factor_set)))&&
+														(*standard_node_map=
+															CREATE(Standard_node_to_element_map)(node_index,k)))
+													{
+														value_index=(*standard_node_map)->
+															nodal_value_indices;
+														scale_factor_index=
+															(*standard_node_map)->scale_factor_indices;
+														l=start_scale_factor_set-
+															start_new_scale_factor_set;
+														while (k>0)
+														{
+															*value_index= *new_value_index;
+															*scale_factor_index=(*new_scale_factor_index)+l;
+															value_index++;
+															new_value_index++;
+															scale_factor_index++;
+															new_scale_factor_index++;
+															k--;
+														}
+														standard_node_map++;
+														new_standard_node_map++;
+														j--;
+													}
+													else
+													{
+														display_message(ERROR_MESSAGE,
+															"merge_FE_element_field_into_list.  "
+															"Invalid node or scale factor information");
+														return_code = 0;
+													}
 												}
 												else
 												{
 													display_message(ERROR_MESSAGE,
 														"merge_FE_element_field_into_list.  "
-														"Invalid node or scale factor information");
-													return_code=0;
+														"Node index out of range");
+													return_code = 0;
 												}
 											}
 											else
@@ -7774,27 +7784,57 @@ Adds the <node> to the list if its not already in it.
 #endif /* defined (OLD_CODE) */
 
 static int FE_element_parent_contains_node(
-	struct FE_element_parent *element_parent,void *node_void)
+	struct FE_element_parent *element_parent, void *node_void)
 /*******************************************************************************
-LAST MODIFIED : 10 February 1998
+LAST MODIFIED : 25 May 2001
 
 DESCRIPTION :
-Calls FE_element_contains_node for the element in the FE_element_parent.
+Calls FE_element_or_parent_contains_node for the element in the
+FE_element_parent.
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_node *node;
 
 	ENTER(FE_element_parent_contains_node);
-	if (element_parent&&(node=(struct FE_node *)node_void))
+	if (element_parent)
 	{
-		return_code=FE_element_or_parent_contains_node(element_parent->parent,node);
+		return_code =
+			FE_element_or_parent_contains_node(element_parent->parent, node_void);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"FE_element_parent_contains_node.  Invalid argument(s)");
-		return_code=0;
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_parent_contains_node */
+
+static int FE_element_parent_contains_node_in_list(
+	struct FE_element_parent *element_parent, void *node_list_void)
+/*******************************************************************************
+LAST MODIFIED : 25 May 2001
+
+DESCRIPTION :
+Calls FE_element_or_parent_contains_node_in_list for the element in
+<element_parent>.
+==============================================================================*/
+{
+	int return_code;
+
+	ENTER(FE_element_parent_contains_node);
+	if (element_parent)
+	{
+		return_code = FE_element_or_parent_contains_node_in_list(
+			element_parent->parent, node_list_void);
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_parent_contains_node.  Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
@@ -8071,50 +8111,54 @@ can use this function to determing if either are defined.
 	return (return_code);
 } /* find_FE_nodal_values_storage_dest */
 
-static int FE_node_field_has_embedded_element(struct FE_node_field *node_field,
-	void *data_void)
+static int FE_node_field_is_embedded_in_changed_element(
+	struct FE_node_field *node_field, void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 April 1999
+LAST MODIFIED : 25 May 2001
 
 DESCRIPTION :
-Returns true if <node> conatins a field which depends on <element_void>.
+Returns true if <node_field> is an element:xi field embedded in an element from
+the <changed_element_list> or using a node in the <changed_node_list> from
+<data_void>.
+For efficiency, function returns true for some faces and lines only their
+top-level elements away from the face have been affected. This is because it is
+very expensive to compute the nodes on faces and lines.
 ==============================================================================*/
 {
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int i, j, return_code;
+	int component_number_of_versions, i, j, number_of_components, return_code;
 	struct FE_element *element;
-	struct FE_node_field_has_embedded_element_data *data;
+	struct FE_node_is_embedded_in_changed_element_data *data;
 
-	ENTER(FE_node_field_has_embedded_element);
-
+	ENTER(FE_node_field_is_embedded_in_changed_element);
 	return_code = 0;
-	if (node_field&&(data=(struct FE_node_field_has_embedded_element_data *)data_void))
+	if (node_field &&
+		(data = (struct FE_node_is_embedded_in_changed_element_data *)data_void))
 	{
-		if (ELEMENT_XI_VALUE==get_FE_field_value_type(node_field->field))
+		if (ELEMENT_XI_VALUE == get_FE_field_value_type(node_field->field))
 		{
-			for (i = 0 ; (!return_code) && (i < get_FE_field_number_of_components(node_field->field)) ; i++)
+			/* generally 1 component 1 version for this type of field */
+			number_of_components =
+				get_FE_field_number_of_components(node_field->field);
+			for (i = 0; (i < number_of_components) && (!return_code); i++)
 			{
-				for (j = 0 ; (!return_code) && (j < get_FE_node_field_component_number_of_versions(
-					data->node, node_field->field, i)) ; j++)
+				component_number_of_versions =
+					get_FE_node_field_component_number_of_versions(
+						data->node, node_field->field, i);
+				for (j = 0; (j < component_number_of_versions) && (!return_code); j++)
 				{
-					if (get_FE_nodal_element_xi_value(data->node,
-						node_field->field, i, j, FE_NODAL_VALUE,
-						&element, xi))
+					if (get_FE_nodal_element_xi_value(data->node, node_field->field,
+						i, j, FE_NODAL_VALUE, &element, xi))
 					{
-						if (element)
+						if (data->changed_element_list)
 						{
-							if (element == data->changed_element)
-							{
-								return_code = 1;
-							}
-							else
-							{
-								if (data->changed_node)
-								{
-									return_code = FE_element_or_parent_contains_node(element,
-										(void *)data->changed_node);
-								}
-							}
+							return_code = IS_OBJECT_IN_LIST(FE_element)(element,
+								data->changed_element_list);
+						}
+						if (data->changed_node_list)
+						{
+							return_code = FE_element_or_parent_contains_node_in_list(element,
+								data->changed_node_list);
 						}
 					}
 				}
@@ -8123,13 +8167,13 @@ Returns true if <node> conatins a field which depends on <element_void>.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"FE_node_field_has_embedded_element.  Invalid argument(s)");
-		return_code=0;
+		display_message(ERROR_MESSAGE,
+			"FE_node_field_is_embedded_in_changed_element.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (return_code);
-} /* FE_node_field_has_embedded_element */
+} /* FE_node_field_is_embedded_in_changed_element */
 
 static int FE_element_parent_is_in_group(
 	struct FE_element_parent *element_parent,void *element_group_void)
@@ -10937,6 +10981,103 @@ If <node> is in <node_list> it is taken out, otherwise it is added.
 	return (return_code);
 } /* toggle_FE_node_in_list */
 
+struct FE_node_group_list_data
+/*******************************************************************************
+LAST MODIFIED : 24 May 2001
+
+DESCRIPTION :
+Data for FE_node list iterator and conditional functions that require both
+an node group and a list to proceed. Example:
+FE_node_add_to_list_if_in_group.
+==============================================================================*/
+{
+	struct GROUP(FE_node) *node_group;
+	struct LIST(FE_node) *node_list;
+};
+
+static int FE_node_add_to_list_if_in_group(struct FE_node *node,
+	void *group_list_data_void)
+/*******************************************************************************
+LAST MODIFIED : 24 May 2001
+
+DESCRIPTION :
+If <node> is in the <group_list_data>->node_group, it is added to
+<group_list_data>->node_list.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_node_group_list_data *group_list_data;
+
+	ENTER(FE_node_add_to_list_if_in_group);
+	if (node && (group_list_data =
+		(struct FE_node_group_list_data *)group_list_data_void))
+	{
+		if (IS_OBJECT_IN_GROUP(FE_node)(node, group_list_data->node_group))
+		{
+			return_code = ADD_OBJECT_TO_LIST(FE_node)(node,
+				group_list_data->node_list);
+		}
+		else
+		{
+			return_code = 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_add_to_list_if_in_group.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_node_add_to_list_if_in_group */
+
+struct LIST(FE_node) *
+FE_node_group_list_intersection(struct GROUP(FE_node) *node_group,
+	struct LIST(FE_node) *node_list)
+/*******************************************************************************
+LAST MODIFIED : 24 May 2001
+
+DESCRIPTION :
+Creates and returns a list containing all the nodes that are in both
+<node_list> and <node_group>.
+==============================================================================*/
+{
+	struct FE_node_group_list_data group_list_data;
+	struct LIST(FE_node) *intersection_list;
+
+	if (node_group && node_list)
+	{
+		if (intersection_list = CREATE(LIST(FE_node))())
+		{
+			group_list_data.node_group = node_group;
+			group_list_data.node_list = intersection_list;
+			if (!FOR_EACH_OBJECT_IN_LIST(FE_node)(
+				FE_node_add_to_list_if_in_group, (void *)&group_list_data,
+				node_list))
+			{
+				display_message(ERROR_MESSAGE,"FE_node_group_list_intersection.  "
+					"Intersection may be incomplete");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_node_group_list_intersection.  Invalid argument(s)");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_node_group_list_intersection.  Invalid argument(s)");
+		intersection_list = (struct LIST(FE_node) *)NULL;
+	}
+	LEAVE;
+
+	return (intersection_list);
+} /* FE_node_group_list_intersection */
+
 int FE_node_can_be_destroyed(struct FE_node *node)
 /*******************************************************************************
 LAST MODIFIED : 16 April 1999
@@ -10963,24 +11104,27 @@ Returns true if the <node> is only accessed once (assumed to be by the manager).
 	return (return_code);
 } /* FE_node_can_be_destroyed */
 
-int FE_node_has_embedded_element_or_node(struct FE_node *node,void *data_void)
+int FE_node_is_embedded_in_changed_element(struct FE_node *node,
+	void *data_void)
 /*******************************************************************************
-LAST MODIFIED : 28 April 1999
+LAST MODIFIED : 25 May 2001
 
 DESCRIPTION :
-Returns true if <node> conatins a field which depends on the changed_element
-of changed_node in the <data_void>.
+Returns true if <node> contains a field which is embedded in one of the elements
+in the <changed_element_list>, or in any elements using nodes from the
+<changed_node_list>, both passed in the <data_void>.
 ==============================================================================*/
 {
 	int return_code;
-	struct FE_node_field_has_embedded_element_data *data;
+	struct FE_node_is_embedded_in_changed_element_data *data;
 
-	ENTER(FE_node_has_embedded_element);
-	if (node&&(data=(struct FE_node_field_has_embedded_element_data *)data_void))
+	ENTER(FE_node_is_embedded_in_changed_element);
+	if (node &&
+		(data = (struct FE_node_is_embedded_in_changed_element_data *)data_void))
 	{
 		data->node = node;
 		if (FIRST_OBJECT_IN_LIST_THAT(FE_node_field)(
-			FE_node_field_has_embedded_element, data_void,
+			FE_node_field_is_embedded_in_changed_element, data_void,
 			node->fields->node_field_list))
 		{
 			return_code = 1;
@@ -10992,13 +11136,14 @@ of changed_node in the <data_void>.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"FE_node_has_embedded_element.  Invalid argument(s)");
-		return_code=0;
+		display_message(ERROR_MESSAGE,"FE_node_is_embedded_in_changed_element.  "
+			"Invalid argument(s)");
+		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* FE_node_has_embedded_element */
+} /* FE_node_is_embedded_in_changed_element */
 
 int FE_node_has_FE_field_and_string_data(struct FE_node *node,void *data_void)
 /*******************************************************************************
@@ -21266,7 +21411,7 @@ specified <dimension> and <type>.  If one is not found, a shape is created (with
 										{
 											linked_coordinate += linked_offsets[linked_coordinate];
 										}
-#if defined (RC_CODE_IN_PROGRESS)
+#if !defined (RC_CODE_IN_PROGRESS)
 										k = 1;
 #else /* defined (RC_CODE_IN_PROGRESS) */
 										/* ???RC this screws up simplex(2)*simplex*line as
@@ -21351,7 +21496,7 @@ specified <dimension> and <type>.  If one is not found, a shape is created (with
 											simplex_coordinate=xi_coordinate+
 												linked_offsets[xi_coordinate];
 											linked_coordinate=simplex_coordinate;
-#if defined (RC_CODE_IN_PROGRESS)
+#if !defined (RC_CODE_IN_PROGRESS)
 											k = 1;
 #else /* defined (RC_CODE_IN_PROGRESS) */
 											/* ???RC this screws up simplex(2)*simplex*line as
@@ -24036,6 +24181,65 @@ Note: this function is recursive.
 
 	return (return_code);
 } /* add_FE_element_and_faces_to_group */
+
+int add_FE_element_and_faces_to_list(struct FE_element *element,
+	void *element_list_void)
+/*******************************************************************************
+LAST MODIFIED : 1 June 2001
+
+DESCRIPTION :
+Ensures <element>, its faces (and theirs etc.) are in <element_list>.
+Note: this function is recursive.
+==============================================================================*/
+{
+	int i, return_code;
+	struct FE_element **face;
+	struct LIST(FE_element) *element_list;
+
+	ENTER(add_FE_element_and_faces_to_list);
+	if (element && element->shape &&
+		(element_list = (struct LIST(FE_element) *)element_list_void))
+	{
+		return_code = 1;
+		if (face = element->faces)
+		{
+			for (i = element->shape->number_of_faces; (0 < i) && return_code; i--)
+			{
+				if (*face)
+				{
+					if (!add_FE_element_and_faces_to_list(*face, element_list_void))
+					{
+						display_message(ERROR_MESSAGE,
+							"add_FE_element_and_faces_to_list.  Could not add face");
+						return_code = 0;
+					}
+				}
+				face++;
+			}
+		}
+		if (return_code)
+		{
+			if (!IS_OBJECT_IN_LIST(FE_element)(element, element_list))
+			{
+				if (!ADD_OBJECT_TO_LIST(FE_element)(element, element_list))
+				{
+					display_message(ERROR_MESSAGE,
+						"add_FE_element_and_faces_to_list.  Could not add element");
+					return_code = 0;
+				}
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"add_FE_element_and_faces_to_list.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* add_FE_element_and_faces_to_list */
 
 struct Add_FE_element_and_faces_to_manager_data
   *CREATE(Add_FE_element_and_faces_to_manager_data)(
@@ -32355,13 +32559,11 @@ either case the top_level_number_in_xi used is returned.
 int FE_element_or_parent_contains_node(struct FE_element *element,
 	void *node_void)
 /*******************************************************************************
-LAST MODIFIED : 25 February 1998
+LAST MODIFIED : 25 May 2001
 
 DESCRIPTION :
 FE_element conditional function returning 1 if <element> or all of its parents
 or parent's parents contains <node>.
-Routine is used with graphical finite elements to redraw only those elements
-affected by a node change when the mesh is edited.
 ==============================================================================*/
 {
 	int i,number_of_nodes,return_code;
@@ -32420,6 +32622,165 @@ affected by a node change when the mesh is edited.
 
 	return (return_code);
 } /* FE_element_or_parent_contains_node */
+
+int FE_element_or_parent_contains_node_in_list(struct FE_element *element,
+	void *node_list_void)
+/*******************************************************************************
+LAST MODIFIED : 31 May 2001
+
+DESCRIPTION :
+FE_element conditional function returning 1 if <element> or all of its parents
+or parent's parents contains nodes in <node_list>.
+Routine is used with graphical finite elements to redraw only those elements
+affected by a node change when the mesh is edited.
+==============================================================================*/
+{
+	int i, number_of_nodes, return_code;
+	struct FE_node **nodes;
+	struct LIST(FE_node) *node_list;
+
+	ENTER(FE_element_or_parent_contains_node_in_list);
+	return_code = 0;
+	if (element && (node_list = (struct LIST(FE_node) *)node_list_void))
+	{
+		if (element->information)
+		{
+			if ((0 < (number_of_nodes = element->information->number_of_nodes)) &&
+				(nodes = element->information->nodes))
+			{
+				for (i = number_of_nodes; (0 < i) && (!return_code); i--)
+				{
+					if (IS_OBJECT_IN_LIST(FE_node)(*nodes, node_list))
+					{
+						return_code = 1;
+					}
+					nodes++;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_element_or_parent_contains_node_in_list.  "
+					"Invalid node information");
+			}
+		}
+		else
+		{
+			if (0 < NUMBER_IN_LIST(FE_element_parent)(element->parent_list))
+			{
+				/* return true if any parents (or their parents) contain the node */
+				if (FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
+					FE_element_parent_contains_node_in_list, node_list_void,
+					element->parent_list))
+				{
+					return_code = 1;
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_element_or_parent_contains_node_in_list.  "
+					"Element has neither node information nor parents");
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_or_parent_contains_node_in_list.  Invalid argument(s)");
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_or_parent_contains_node_in_list */
+
+static int FE_element_parent_is_in_list(
+	struct FE_element_parent *element_parent, void *element_list_void)
+/*******************************************************************************
+LAST MODIFIED : 1 June 2001
+
+DESCRIPTION :
+Returns true if the parent element referred to by the <element_parent> is in the
+<element_list>. Note this is not recursive; it does not check parents' parents.
+==============================================================================*/
+{
+	int return_code;
+	struct LIST(FE_element) *element_list;
+
+	ENTER(FE_element_parent_is_in_list);
+	if (element_parent &&
+		(element_list = (struct LIST(FE_element) *)element_list_void))
+	{
+		if (IS_OBJECT_IN_LIST(FE_element)(element_parent->parent, element_list))
+		{
+			return_code = 1;
+		}
+		else
+		{
+			return_code = 0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_parent_is_in_list.  Invalid argument(s)");
+		return_code = 0;
+	}
+
+	return (return_code);
+} /* FE_element_parent_is_in_list */
+
+int add_FE_element_using_node_list_to_list(struct FE_element *element,
+	void *element_list_node_list_data_void)
+/*******************************************************************************
+LAST MODIFIED : 1 June 2001
+
+DESCRIPTION :
+If <element> has a parent already in <element_list>, or it or any of its parents
+uses any nodes in <node_list>, then <element> is added to <element_list>.
+Used to build up a list of elements [probably] affected by changes to the nodes
+in <node_list>.
+Note: for the sake of speed it is sometimes inaccurate for faces and lines. It
+also relies on list being ordered with CM_ELEMENT first, then CM_FACE, then
+CM_LINE for efficiency -- that's why it checks if any parents are in list first.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_element_list_FE_node_list_data *element_list_node_list_data
+
+	ENTER(add_FE_element_using_node_list_to_list);
+	if (element && (element_list_node_list_data =
+		(struct FE_element_list_FE_node_list_data *)
+		element_list_node_list_data_void))
+	{
+		if ((((struct FE_element_parent *)NULL !=
+			FIRST_OBJECT_IN_LIST_THAT(FE_element_parent)(
+				FE_element_parent_is_in_list,
+				(void *)element_list_node_list_data->element_list,
+				element->parent_list)) ||
+			FE_element_or_parent_contains_node_in_list(element,
+				(void *)element_list_node_list_data->node_list)) &&
+			(!IS_OBJECT_IN_LIST(FE_element)(element,
+				element_list_node_list_data->element_list)))
+		{
+			return_code = ADD_OBJECT_TO_LIST(FE_element)(element,
+				element_list_node_list_data->element_list);
+		}
+		else
+		{
+			return_code = 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"add_FE_element_using_node_list_to_list.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* add_FE_element_using_node_list_to_list */
 
 int FE_element_parent_is_exterior(struct FE_element_parent *element_parent,
 	void *dummy_user_data)
@@ -33295,6 +33656,103 @@ If <element> is in <element_list> it is taken out, otherwise it is added.
 	return (return_code);
 } /* toggle_FE_element_in_list */
 
+struct FE_element_group_list_data
+/*******************************************************************************
+LAST MODIFIED : 24 May 2001
+
+DESCRIPTION :
+Data for FE_element list iterator and conditional functions that require both
+an element group and a list to proceed. Example:
+FE_element_add_to_list_if_in_group.
+==============================================================================*/
+{
+	struct GROUP(FE_element) *element_group;
+	struct LIST(FE_element) *element_list;
+};
+
+static int FE_element_add_to_list_if_in_group(struct FE_element *element,
+	void *group_list_data_void)
+/*******************************************************************************
+LAST MODIFIED : 24 May 2001
+
+DESCRIPTION :
+If <element> is in the <group_list_data>->element_group, it is added to
+<group_list_data>->element_list.
+==============================================================================*/
+{
+	int return_code;
+	struct FE_element_group_list_data *group_list_data;
+
+	ENTER(FE_element_add_to_list_if_in_group);
+	if (element && (group_list_data =
+		(struct FE_element_group_list_data *)group_list_data_void))
+	{
+		if (IS_OBJECT_IN_GROUP(FE_element)(element, group_list_data->element_group))
+		{
+			return_code = ADD_OBJECT_TO_LIST(FE_element)(element,
+				group_list_data->element_list);
+		}
+		else
+		{
+			return_code = 1;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_add_to_list_if_in_group.  Invalid argument(s)");
+		return_code = 0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* FE_element_add_to_list_if_in_group */
+
+struct LIST(FE_element) *
+FE_element_group_list_intersection(struct GROUP(FE_element) *element_group,
+	struct LIST(FE_element) *element_list)
+/*******************************************************************************
+LAST MODIFIED : 24 May 2001
+
+DESCRIPTION :
+Creates and returns a list containing all the elements that are in both
+<element_list> and <element_group>.
+==============================================================================*/
+{
+	struct FE_element_group_list_data group_list_data;
+	struct LIST(FE_element) *intersection_list;
+
+	if (element_group && element_list)
+	{
+		if (intersection_list = CREATE(LIST(FE_element))())
+		{
+			group_list_data.element_group = element_group;
+			group_list_data.element_list = intersection_list;
+			if (!FOR_EACH_OBJECT_IN_LIST(FE_element)(
+				FE_element_add_to_list_if_in_group, (void *)&group_list_data,
+				element_list))
+			{
+				display_message(ERROR_MESSAGE,"FE_element_group_list_intersection.  "
+					"Intersection may be incomplete");
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_element_group_list_intersection.  Invalid argument(s)");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_group_list_intersection.  Invalid argument(s)");
+		intersection_list = (struct LIST(FE_element) *)NULL;
+	}
+	LEAVE;
+
+	return (intersection_list);
+} /* FE_element_group_list_intersection */
+
 int ensure_FE_element_and_faces_are_in_group(struct FE_element *element,
 	void *element_group_void)
 /*******************************************************************************
@@ -34110,7 +34568,7 @@ int FE_field_is_coordinate_field(struct FE_field *field,void *dummy_void)
 LAST MODIFIED : 18 May 2000
 
 DESCRIPTION :
-Conditional function returning true if the <field> is a coodinate field, as
+Conditional function returning true if the <field> is a coordinate field, as
 defined by having a CM_field_type of coordinate, a Value_type of FE_VALUE_VALUE
 and from 1 to 3 components.
 ==============================================================================*/

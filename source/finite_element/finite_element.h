@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : finite_element.h
 
-LAST MODIFIED : 26 March 2001
+LAST MODIFIED : 1 June 2001
 
 DESCRIPTION :
 The data structures used for representing finite elements in the graphical
@@ -815,18 +815,20 @@ Used by FE_element_parent_face_of_element_in_group.
 	struct GROUP(FE_element) *element_group;
 }; /* struct FE_element_parent_face_of_element_in_group_data */
 
-struct FE_node_field_has_embedded_element_data
+struct FE_node_is_embedded_in_changed_element_data
 /*******************************************************************************
-LAST MODIFIED : 28 April 1999
+LAST MODIFIED : 25 May 2001
 
 DESCRIPTION :
-Keeps the current <node> and the <changed_element> or <changed_node>.
+Data for passing to FE_node_is_embedded_in_changed_element function.
+Keeps the current <node> and the <changed_element_list> or <changed_node_list>.
 ==============================================================================*/
 {
+	/* node is used internally; do not have to set it */
 	struct FE_node *node;
-	struct FE_element *changed_element;
-	struct FE_node *changed_node;
-}; /* struct FE_node_field_has_embedded_element_data */
+	struct LIST(FE_element) *changed_element_list;
+	struct LIST(FE_node) *changed_node_list;
+}; /* struct FE_node_is_embedded_in_changed_element_data */
 
 struct Set_FE_field_conditional_data
 /*******************************************************************************
@@ -954,6 +956,19 @@ DESCRIPTION :
 used by all_nodes_in_list 
 ==============================================================================*/
 {
+	struct LIST(FE_node) *node_list;
+};
+
+struct FE_element_list_FE_node_list_data
+/*******************************************************************************
+LAST MODIFIED : 1 June 2001
+
+DESCRIPTION :
+Structure for passing an FE_element list and an FE_node list to a list iterator
+or conditional function, eg. add_FE_element_using_node_list_to_list.
+==============================================================================*/
+{
+	struct LIST(FE_element) *element_list;
 	struct LIST(FE_node) *node_list;
 };
 
@@ -1428,6 +1443,17 @@ DESCRIPTION :
 If <node> is in <node_list> it is taken out, otherwise it is added.
 ==============================================================================*/
 
+struct LIST(FE_node) *
+FE_node_group_list_intersection(struct GROUP(FE_node) *node_group,
+	struct LIST(FE_node) *node_list);
+/*******************************************************************************
+LAST MODIFIED : 24 May 2001
+
+DESCRIPTION :
+Creates and returns a list containing all the nodes that are in both
+<node_list> and <node_group>.
+==============================================================================*/
+
 int FE_node_can_be_destroyed(struct FE_node *node);
 /*******************************************************************************
 LAST MODIFIED : 16 April 1999
@@ -1436,13 +1462,15 @@ DESCRIPTION :
 Returns true if the <node> is only accessed once (assumed to be by the manager).
 ==============================================================================*/
 
-int FE_node_has_embedded_element_or_node(struct FE_node *node,void *data_void);
+int FE_node_is_embedded_in_changed_element(struct FE_node *node,
+	void *data_void);
 /*******************************************************************************
-LAST MODIFIED : 28 April 1999
+LAST MODIFIED : 25 May 2001
 
 DESCRIPTION :
-Returns true if <node> conatins a field which depends on the changed_element
-of changed_node in the <data_void>.
+Returns true if <node> contains a field which is embedded in one of the elements
+in the <changed_element_list>, or in any elements using nodes from the
+<changed_node_list>, both passed in the <data_void>.
 ==============================================================================*/
 
 int FE_node_has_FE_field_and_string_data(struct FE_node *node,void *data_void);
@@ -2844,6 +2872,16 @@ Ensures <element>, its faces (and theirs etc.) are in <element_group>.
 Note: this function is recursive.
 ==============================================================================*/
 
+int add_FE_element_and_faces_to_list(struct FE_element *element,
+	void *element_list_void);
+/*******************************************************************************
+LAST MODIFIED : 1 June 2001
+
+DESCRIPTION :
+Ensures <element>, its faces (and theirs etc.) are in <element_list>.
+Note: this function is recursive.
+==============================================================================*/
+
 struct Add_FE_element_and_faces_to_manager_data
   *CREATE(Add_FE_element_and_faces_to_manager_data)(
 	struct MANAGER(FE_element) *element_manager);
@@ -3806,6 +3844,34 @@ Routine is used with graphical finite elements to redraw only those elements
 affected by a node change when the mesh is edited.
 ==============================================================================*/
 
+int FE_element_or_parent_contains_node_in_list(struct FE_element *element,
+	void *node_list_void);
+/*******************************************************************************
+LAST MODIFIED : 31 May 2001
+
+DESCRIPTION :
+FE_element conditional function returning 1 if <element> or all of its parents
+or parent's parents contains nodes in <node_list>.
+Routine is used with graphical finite elements to redraw only those elements
+affected by a node change when the mesh is edited.
+==============================================================================*/
+
+int add_FE_element_using_node_list_to_list(struct FE_element *element,
+	void *element_list_node_list_data_void);
+/*******************************************************************************
+LAST MODIFIED : 1 June 2001
+
+DESCRIPTION :
+If <element> has a parent already in <element_list>, or it or any of its parents
+uses any nodes in <node_list>, then <element> is added to <element_list>.
+Used to build up a list of elements [probably] affected by changes to the nodes
+in <node_list>.
+Second argument is pointer to a struct FE_element_list_FE_node_list_data.
+Note: for the sake of speed it is sometimes inaccurate for faces and lines. It
+also relies on list being ordered with CM_ELEMENT first, then CM_FACE, then
+CM_LINE for efficiency -- that's why it checks if any parents are in list first.
+==============================================================================*/
+
 int FE_element_parent_is_exterior(struct FE_element_parent *element_parent,
 	void *dummy_user_data);
 /*******************************************************************************
@@ -3987,6 +4053,17 @@ LAST MODIFIED : 25 February 2000
 
 DESCRIPTION :
 If <element> is in <element_list> it is taken out, otherwise it is added.
+==============================================================================*/
+
+struct LIST(FE_element) *
+FE_element_group_list_intersection(struct GROUP(FE_element) *element_group,
+	struct LIST(FE_element) *element_list);
+/*******************************************************************************
+LAST MODIFIED : 24 May 2001
+
+DESCRIPTION :
+Creates and returns a list containing all the elements that are in both
+<element_list> and <element_group>.
 ==============================================================================*/
 
 int ensure_FE_element_and_faces_are_in_group(struct FE_element *element,
