@@ -1453,7 +1453,7 @@ Target : $(OBJS) $(COMPILED_RESOURCE_FILES) cmgui.ObjSuffix $(OBJECT_PATH)/$(EXP
 	cd $(OBJECT_PATH) ; \
 	rm -f product_object ; \
 	ln -s $(PRODUCT_OBJECT_PATH) product_object ; \
-	$(LINK) -o /tmp/Target $(ALL_FLAGS) `cat object.list` $(ALL_LIB) $(EXPORTS_LINK_FLAGS) $(COMPILED_RESOURCE_FILES)
+	$(LINK) -o $(BIN_PATH)/Target $(ALL_FLAGS) `cat object.list` $(ALL_LIB) $(EXPORTS_LINK_FLAGS) $(COMPILED_RESOURCE_FILES)
 
 CmguiFiltLibrary : $(LIB_FILT_OBJS) $(FILT_OBJ) Makefile libCmguiFiltExports
 	cd $(OBJECT_PATH)
