@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : graphical_element_editor.c
 
-LAST MODIFIED : 24 March 2000
+LAST MODIFIED : 18 April 2000
 
 DESCRIPTION :
 Provides the widgets to manipulate graphical element group settings.
@@ -1642,7 +1642,7 @@ Creates a graphical_element_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(Computed_field)(
 								gelem_editor->default_coordinate_field_form,
 								(struct Computed_field *)NULL,computed_field_manager,
-								Computed_field_has_1_to_3_components)))
+								Computed_field_has_1_to_3_components,(void *)NULL)))
 							{
 								init_widgets=0;
 							}
@@ -1651,7 +1651,7 @@ Creates a graphical_element_editor widget.
 								CREATE_CHOOSE_OBJECT_WIDGET(FE_field)(
 								gelem_editor->native_discretization_field_form,
 								(struct FE_field *)NULL,fe_field_manager,
-								(MANAGER_CONDITIONAL_FUNCTION(FE_field) *)NULL)))
+								(MANAGER_CONDITIONAL_FUNCTION(FE_field) *)NULL,(void *)NULL)))
 							{
 								init_widgets=0;
 							}
