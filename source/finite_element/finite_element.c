@@ -1866,8 +1866,8 @@ returns true if <node_field> has a field of type CM_coordinate
 ==============================================================================*/
 {
 	int return_code;
-	ENTER(FE_node_field_is_type_CM_coordinate);
 
+	ENTER(FE_node_field_is_type_CM_coordinate);
 	if(node_field&&!dummy)
 	{
 		return_code = (node_field->field->cm.type == CM_COORDINATE_FIELD); 	
