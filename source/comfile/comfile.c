@@ -14,9 +14,7 @@ Commands for comfiles.
 #include "comfile/comfile_window.h"
 #endif /* defined (MOTIF) */
 #include "command/command.h"
-#if defined (MOTIF)
 #include "general/mystring.h"
-#endif /* defined (MOTIF) */
 #include "general/object.h"
 #include "user_interface/confirmation.h"
 #include "user_interface/filedir.h"
