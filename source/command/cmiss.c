@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cmiss.c
 
-LAST MODIFIED : 15 December 1999
+LAST MODIFIED : 17 January 2000
 
 DESCRIPTION :
 Functions for executing cmiss commands.
@@ -492,11 +492,10 @@ DESCRIPTION :
 } /* gfx_change_identifier */
 #endif /* !defined (WINDOWS_DEV_FLAG) */
 
-#if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_annotation(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 24 November 1998
+LAST MODIFIED : 17 January 2000
 
 DESCRIPTION :
 Executes a GFX CREATE ANNOTATION command. Creates a graphics object containing
@@ -505,22 +504,14 @@ a single point in 3-D space with a text string drawn beside it.
 {
 	char *annotation_text,*graphics_object_name,**text;
 	float time;
-	int i,number_of_components,return_code;
+	int number_of_components,return_code;
 	static char default_name[]="annotation";
 	static char default_annotation_text[]="\"annotation text\"";
-	static struct Modifier_entry option_table[]=
-	{
-		{"as",NULL,(void *)1,set_name},
-		{"material",NULL,NULL,set_Graphical_material},
-		{"position",NULL,NULL,set_float_vector},
-		{"text",NULL,(void *)1,set_name},
-		{"time",NULL,NULL,set_float},
-		{NULL,NULL,NULL,NULL}
-	};
 	struct Cmiss_command_data *command_data;
 	struct Graphical_material *material;
 	struct GT_object *graphics_object;
 	struct GT_pointset *point_set;
+	struct Option_table *option_table;
 	Triple *pointlist,position;
 
 	ENTER(gfx_create_annotation);
@@ -541,7 +532,6 @@ a single point in 3-D space with a text string drawn beside it.
 			/* must access it now, because we deaccess it later */
 			material=
 				ACCESS(Graphical_material)(command_data->default_graphical_material);
-			number_of_components=3;
 			position[0]=0.0;
 			position[1]=0.0;
 			position[2]=0.0;
@@ -554,25 +544,25 @@ a single point in 3-D space with a text string drawn beside it.
 				annotation_text=(char *)NULL;
 			}
 			time=0.0;
-			i=0;
+
+			option_table=CREATE(Option_table)();
 			/* as */
-			(option_table[i]).to_be_modified= &graphics_object_name;
-			i++;
+			Option_table_add_entry(option_table,"as",&graphics_object_name,
+				(void *)1,set_name);
 			/* material */
-			(option_table[i]).to_be_modified= &material;
-			(option_table[i]).user_data=command_data->graphical_material_manager;
-			i++;
+			Option_table_add_entry(option_table,"material",&material,
+				command_data->graphical_material_manager,set_Graphical_material);
 			/* position */
-			(option_table[i]).to_be_modified= position;
-			(option_table[i]).user_data= &number_of_components;
-			i++;
+			number_of_components=3;
+			Option_table_add_entry(option_table,"position",position,
+				&number_of_components,set_float_vector);
 			/* text */
-			(option_table[i]).to_be_modified= &annotation_text;
-			i++;
+			Option_table_add_entry(option_table,"text",&annotation_text,
+				(void *)1,set_name);
 			/* time */
-			(option_table[i]).to_be_modified= &time;
-			i++;
-			if (return_code=process_multiple_options(state,option_table))
+			Option_table_add_entry(option_table,"time",&time,NULL,set_float);
+			return_code=Option_table_multi_parse(option_table,state);
+			if (return_code)
 			{
 				if (annotation_text)
 				{
@@ -668,6 +658,7 @@ a single point in 3-D space with a text string drawn beside it.
 					return_code=0;
 				}
 			}
+			DESTROY(Option_table)(&option_table);
 			if (annotation_text)
 			{
 				DEALLOCATE(annotation_text);
@@ -691,13 +682,12 @@ a single point in 3-D space with a text string drawn beside it.
 
 	return (return_code);
 } /* gfx_create_annotation */
-#endif /* !defined (WINDOWS_DEV_FLAG) */
 
 #if !defined (WINDOWS_DEV_FLAG)
 static int gfx_create_colour_bar(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 20 November 1998
+LAST MODIFIED : 18 January 2000
 
 DESCRIPTION :
 Executes a GFX CREATE COLOUR_BAR command. Creates a colour bar graphics object
@@ -706,28 +696,12 @@ with tick marks and labels for showing the scale of a spectrum.
 {
 	char *graphics_object_name,number_format[16],number_string[48];
 	float bar_length,bar_radius,extend_length,tick_length;
-	int i,number_of_components,return_code,significant_figures,tick_divisions;
+	int number_of_components,return_code,significant_figures,tick_divisions;
 	static char default_name[]="colour_bar";
-	static struct Modifier_entry option_table[]=
-	{
-		{"as",NULL,(void *)1,set_name},
-		{"axis",NULL,NULL,set_float_vector},
-		{"centre",NULL,NULL,set_float_vector},
-		{"divisions",NULL,NULL,set_int_non_negative},
-		{"extend_length",NULL,NULL,set_float_non_negative},
-		{"label_material",NULL,NULL,set_Graphical_material},
-		{"length",NULL,NULL,set_float_positive},
-		{"material",NULL,NULL,set_Graphical_material},
-		{"radius",NULL,NULL,set_float_positive},
-		{"significant_figures",NULL,NULL,set_int_positive},
-		{"spectrum",NULL,NULL,set_Spectrum},
-		{"tick_direction",NULL,NULL,set_float_vector},
-		{"tick_length",NULL,NULL,set_float_non_negative},
-		{NULL,NULL,NULL,NULL}
-	};
 	struct Cmiss_command_data *command_data;
 	struct Graphical_material *label_material,*material;
 	struct GT_object *graphics_object;
+	struct Option_table *option_table;
 	struct Spectrum *spectrum;
 	Triple bar_axis,bar_centre,side_axis;
 
@@ -768,53 +742,48 @@ with tick marks and labels for showing the scale of a spectrum.
 			significant_figures=4;
 			tick_length=0.04;
 			tick_divisions=10;
-			i=0;
+
+			option_table=CREATE(Option_table)();
 			/* as */
-			(option_table[i]).to_be_modified= &graphics_object_name;
-			i++;
+			Option_table_add_entry(option_table,"as",&graphics_object_name,
+				(void *)1,set_name);
 			/* axis */
-			(option_table[i]).to_be_modified= bar_axis;
-			(option_table[i]).user_data= &number_of_components;
-			i++;
+			Option_table_add_entry(option_table,"axis",bar_axis,
+				&number_of_components,set_float_vector);
 			/* centre */
-			(option_table[i]).to_be_modified= bar_centre;
-			(option_table[i]).user_data= &number_of_components;
-			i++;
+			Option_table_add_entry(option_table,"centre",bar_centre,
+				&number_of_components,set_float_vector);
 			/* divisions */
-			(option_table[i]).to_be_modified= &tick_divisions;
-			i++;
+			Option_table_add_entry(option_table,"divisions",&tick_divisions,
+				NULL,set_int_non_negative);
 			/* extend_length */
-			(option_table[i]).to_be_modified= &extend_length;
-			i++;
+			Option_table_add_entry(option_table,"extend_length",&extend_length,
+				NULL,set_float_non_negative);
 			/* label_material */
-			(option_table[i]).to_be_modified= &label_material;
-			(option_table[i]).user_data=command_data->graphical_material_manager;
-			i++;
+			Option_table_add_entry(option_table,"label_material",&label_material,
+				command_data->graphical_material_manager,set_Graphical_material);
 			/* length */
-			(option_table[i]).to_be_modified= &bar_length;
-			i++;
+			Option_table_add_entry(option_table,"length",&bar_length,
+				NULL,set_float_positive);
 			/* material */
-			(option_table[i]).to_be_modified= &material;
-			(option_table[i]).user_data=command_data->graphical_material_manager;
-			i++;
+			Option_table_add_entry(option_table,"material",&material,
+				command_data->graphical_material_manager,set_Graphical_material);
 			/* radius */
-			(option_table[i]).to_be_modified= &bar_radius;
-			i++;
+			Option_table_add_entry(option_table,"radius",&bar_radius,
+				NULL,set_float_positive);
 			/* significant_figures */
-			(option_table[i]).to_be_modified= &significant_figures;
-			i++;
+			Option_table_add_entry(option_table,"significant_figures",
+				&significant_figures,NULL,set_int_positive);
 			/* spectrum */
-			(option_table[i]).to_be_modified= &spectrum;
-			(option_table[i]).user_data=command_data->spectrum_manager;
-			i++;
+			Option_table_add_entry(option_table,"spectrum",&spectrum,
+				command_data->spectrum_manager,set_Spectrum);
 			/* tick_direction */
-			(option_table[i]).to_be_modified= side_axis;
-			(option_table[i]).user_data= &number_of_components;
-			i++;
+			Option_table_add_entry(option_table,"tick_direction",side_axis,
+				&number_of_components,set_float_vector);
 			/* tick_length */
-			(option_table[i]).to_be_modified= &tick_length;
-			i++;
-			if (return_code=process_multiple_options(state,option_table))
+			Option_table_add_entry(option_table,"tick_length",&tick_length,
+				NULL,set_float_non_negative);
+			if (return_code=Option_table_multi_parse(option_table,state))
 			{
 				if (20 < significant_figures)
 				{
@@ -853,6 +822,7 @@ with tick marks and labels for showing the scale of a spectrum.
 					}
 				}
 			} /* parse error, help */
+			DESTROY(Option_table)(&option_table);
 			DEACCESS(Graphical_material)(&label_material);
 			DEACCESS(Graphical_material)(&material);
 			DEACCESS(Spectrum)(&spectrum);
@@ -880,7 +850,7 @@ with tick marks and labels for showing the scale of a spectrum.
 static int gfx_create_cylinders(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 20 August 1999
+LAST MODIFIED : 18 January 2000
 
 DESCRIPTION :
 Executes a GFX CREATE CYLINDERS command.
@@ -889,25 +859,8 @@ Executes a GFX CREATE CYLINDERS command.
 	char exterior_flag,*graphics_object_name;
 	float constant_radius,scale_factor,time;
 	gtObject *graphics_object;
-	int face_number,i,return_code;
+	int face_number,return_code;
 	static char default_name[]="cylinders";
-	static struct Modifier_entry option_table[]=
-	{
-		{"as",NULL,(void *)1,set_name},
-		{"constant_radius",NULL,NULL,set_float},
-		{"coordinate",NULL,NULL,set_Computed_field_conditional},
-		{"data",NULL,NULL,set_Computed_field_conditional},
-		{"exterior",NULL,NULL,set_char_flag},
-		{"face",NULL,NULL,set_exterior},
-		{"from",NULL,NULL,set_FE_element_group},
-		{"material",NULL,NULL,set_Graphical_material},
-		{"radius_scalar",NULL,NULL,set_Computed_field_conditional},
-		{"scale_factor",NULL,NULL,set_float},
-		{"spectrum",NULL,NULL,set_Spectrum},
-		{"time",NULL,NULL,set_float},
-		{"with",NULL,NULL,set_Element_discretization},
-		{NULL,NULL,NULL,NULL}
-	};
 	struct Cmiss_command_data *command_data;
 	struct Element_discretization discretization;
 	struct Element_to_cylinder_data element_to_cylinder_data;
@@ -915,6 +868,7 @@ Executes a GFX CREATE CYLINDERS command.
 	struct Graphical_material *material;
 	struct GROUP(FE_element) *element_group;
 	struct MANAGER(Computed_field) *computed_field_manager;
+	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_data_field_data,set_radius_field_data;
 	struct Spectrum *spectrum;
@@ -955,68 +909,61 @@ Executes a GFX CREATE CYLINDERS command.
 			discretization.number_in_xi3=0;
 			exterior_flag=0;
 			face_number=0;
-			i=0;
+
+			option_table=CREATE(Option_table)();
 			/* as */
-			(option_table[i]).to_be_modified= &graphics_object_name;
-			i++;
+			Option_table_add_entry(option_table,"as",&graphics_object_name,
+				(void *)1,set_name);
 			/* constant_radius */
-			(option_table[i]).to_be_modified= &constant_radius;
-			i++;
+			Option_table_add_entry(option_table,"constant_radius",&constant_radius,
+				NULL,set_float);
 			/* coordinate */
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_1_to_3_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &coordinate_field;
-			(option_table[i]).user_data= &set_coordinate_field_data;
-			i++;
+			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
+				&set_coordinate_field_data,set_Computed_field_conditional);
 			/* data */
 			set_data_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_data_field_data.conditional_function=
 				Computed_field_has_at_least_1_component;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &data_field;
-			(option_table[i]).user_data= &set_data_field_data;
-			i++;
+			Option_table_add_entry(option_table,"data",&data_field,
+				&set_data_field_data,set_Computed_field_conditional);
 			/* exterior */
-			(option_table[i]).to_be_modified= &exterior_flag;
-			i++;
+			Option_table_add_entry(option_table,"exterior",&exterior_flag,
+				NULL,set_char_flag);
 			/* face */
-			(option_table[i]).to_be_modified= &face_number;
-			i++;
+			Option_table_add_entry(option_table,"face",&face_number,
+				NULL,set_exterior);
 			/* from */
-			(option_table[i]).to_be_modified= &element_group;
-			(option_table[i]).user_data=command_data->element_group_manager;
-			i++;
+			Option_table_add_entry(option_table,"from",&element_group,
+				command_data->element_group_manager,set_FE_element_group);
 			/* material */
-			(option_table[i]).to_be_modified= &material;
-			(option_table[i]).user_data=command_data->graphical_material_manager;
-			i++;
+			Option_table_add_entry(option_table,"material",&material,
+				command_data->graphical_material_manager,set_Graphical_material);
 			/* radius_scalar */
 			set_radius_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_radius_field_data.conditional_function=Computed_field_has_1_component;
 			set_radius_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &radius_field;
-			(option_table[i]).user_data= &set_radius_field_data;
-			i++;
+			Option_table_add_entry(option_table,"radius_scalar",&radius_field,
+				&set_radius_field_data,set_Computed_field_conditional);
 			/* scale_factor */
-			(option_table[i]).to_be_modified= &scale_factor;
-			i++;
+			Option_table_add_entry(option_table,"scale_factor",&scale_factor,
+				NULL,set_float);
 			/* spectrum */
-			(option_table[i]).to_be_modified= &spectrum;
-			(option_table[i]).user_data=command_data->spectrum_manager;
-			i++;
+			Option_table_add_entry(option_table,"spectrum",&spectrum,
+				command_data->spectrum_manager,set_Spectrum);
 			/* time */
-			(option_table[i]).to_be_modified= &time;
-			i++;
+			Option_table_add_entry(option_table,"time",&time,NULL,set_float);
 			/* with */
-			(option_table[i]).to_be_modified= &discretization;
-			(option_table[i]).user_data=(void *)command_data->user_interface;
-			i++;
-			return_code=process_multiple_options(state,option_table);
+			Option_table_add_entry(option_table,"with",&discretization,
+				command_data->user_interface,set_Element_discretization);
+			return_code=Option_table_multi_parse(option_table,state);
 			/* no errors, not asking for help */
 			if (return_code)
 			{
@@ -1109,6 +1056,7 @@ Executes a GFX CREATE CYLINDERS command.
 					Computed_field_end_wrap(&(element_to_cylinder_data.coordinate_field));
 				}
 			} /* parse error, help */
+			DESTROY(Option_table)(&option_table);
 			if (coordinate_field)
 			{
 				DEACCESS(Computed_field)(&coordinate_field);
@@ -1151,7 +1099,7 @@ Executes a GFX CREATE CYLINDERS command.
 static int gfx_create_element_points(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 21 December 1999
+LAST MODIFIED : 18 January 2000
 
 DESCRIPTION :
 Executes a GFX CREATE ELEMENT_POINTS command.
@@ -1186,8 +1134,7 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 			(computed_field_manager=Computed_field_package_get_computed_field_manager(
 				command_data->computed_field_package)))
 		{
-			option_table=CREATE(Option_table)();
-			/* as */
+			/* initialise defaults */
 			if (ALLOCATE(graphics_object_name,char,strlen(default_name)+1))
 			{
 				strcpy(graphics_object_name,default_name);
@@ -1196,6 +1143,41 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 			{
 				graphics_object_name=(char *)NULL;
 			}
+			number_of_components=3;
+			glyph_centre[0]=0.0;
+			glyph_centre[1]=0.0;
+			glyph_centre[2]=0.0;
+			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+				"default_coordinate",computed_field_manager);
+			ACCESS(Computed_field)(coordinate_field);
+			data_field=(struct Computed_field *)NULL;
+			exterior_flag=0;
+			face_number=0;
+			element_group=(struct GROUP(FE_element) *)NULL;
+			if (glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
+				command_data->glyph_list))
+			{
+				ACCESS(GT_object)(glyph);
+			}
+			label_field=(struct Computed_field *)NULL;
+			material=
+				ACCESS(Graphical_material)(command_data->default_graphical_material);
+			native_discretization_field=(struct FE_field *)NULL;
+			orientation_scale_field=(struct Computed_field *)NULL;
+			glyph_scale_factors[0]=1.0;
+			glyph_scale_factors[1]=1.0;
+			glyph_scale_factors[2]=1.0;
+			glyph_size[0]=1.0;
+			glyph_size[1]=1.0;
+			glyph_size[2]=1.0;
+			spectrum=ACCESS(Spectrum)(command_data->default_spectrum);
+			time=0.0;
+			discretization.number_in_xi1=1;
+			discretization.number_in_xi2=1;
+			discretization.number_in_xi3=1;
+
+			option_table=CREATE(Option_table)();
+			/* as */
 			Option_table_add_entry(option_table,"as",&graphics_object_name,
 				(void *)1,set_name);
 			/* cell_centres/cell_corners/cell_random */ 
@@ -1207,16 +1189,9 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 				valid_strings,&xi_discretization_mode_string);
 			DEALLOCATE(valid_strings);
 			/* centre [of glyph] */
-			number_of_components=3;
-			glyph_centre[0]=0.0;
-			glyph_centre[1]=0.0;
-			glyph_centre[2]=0.0;
 			Option_table_add_entry(option_table,"centre",glyph_centre,
 				&(number_of_components),set_float_vector);
 			/* coordinate */
-			coordinate_field=FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-				"default_coordinate",computed_field_manager);
-			ACCESS(Computed_field)(coordinate_field);
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
@@ -1225,7 +1200,6 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				&set_coordinate_field_data,set_Computed_field_conditional);
 			/* data */
-			data_field=(struct Computed_field *)NULL;
 			set_data_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_data_field_data.conditional_function=
@@ -1234,27 +1208,18 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 			Option_table_add_entry(option_table,"data",&data_field,
 				&set_data_field_data,set_Computed_field_conditional);
 			/* exterior */
-			exterior_flag=0;
 			Option_table_add_entry(option_table,"exterior",&exterior_flag,
 				NULL,set_char_flag);
 			/* face */
-			face_number=0;
 			Option_table_add_entry(option_table,"face",&face_number,
 				NULL,set_exterior);
 			/* from [element_group] */
-			element_group=(struct GROUP(FE_element) *)NULL;
 			Option_table_add_entry(option_table,"from",&element_group,
 				command_data->element_group_manager,set_FE_element_group);
 			/* glyph */
-			if (glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",
-				command_data->glyph_list))
-			{
-				ACCESS(GT_object)(glyph);
-			}
 			Option_table_add_entry(option_table,"glyph",&glyph,
 				command_data->glyph_list,set_Graphics_object);
 			/* label */
-			label_field=(struct Computed_field *)NULL;
 			set_label_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_label_field_data.conditional_function=
@@ -1263,17 +1228,13 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 			Option_table_add_entry(option_table,"label",&label_field,
 				&set_label_field_data,set_Computed_field_conditional);
 			/* material */
-			material=
-				ACCESS(Graphical_material)(command_data->default_graphical_material);
 			Option_table_add_entry(option_table,"material",&material,
 				command_data->graphical_material_manager,set_Graphical_material);
 			/* native_discretization */
-			native_discretization_field=(struct FE_field *)NULL;
 			Option_table_add_entry(option_table,"native_discretization",
 				&native_discretization_field,command_data->fe_field_manager,
 				set_FE_field);
 			/* orientation */
-			orientation_scale_field=(struct Computed_field *)NULL;
 			set_orientation_scale_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_orientation_scale_field_data.conditional_function=
@@ -1284,28 +1245,17 @@ Executes a GFX CREATE ELEMENT_POINTS command.
 				&orientation_scale_field,&set_orientation_scale_field_data,
 				set_Computed_field_conditional);
 			/* scale_factors */
-			glyph_scale_factors[0]=1.0;
-			glyph_scale_factors[1]=1.0;
-			glyph_scale_factors[2]=1.0;
 			Option_table_add_entry(option_table,"scale_factors",
 				glyph_scale_factors,"*",set_special_float3);
 			/* size [of glyph] */
-			glyph_size[0]=1.0;
-			glyph_size[1]=1.0;
-			glyph_size[2]=1.0;
 			Option_table_add_entry(option_table,"size",
 				glyph_size,"*",set_special_float3);
 			/* spectrum */
-			spectrum=ACCESS(Spectrum)(command_data->default_spectrum);
 			Option_table_add_entry(option_table,"spectrum",
 				&spectrum,command_data->spectrum_manager,set_Spectrum);
 			/* time */
-			time=0.0;
 			Option_table_add_entry(option_table,"time",&time,NULL,set_float);
 			/* with */
-			discretization.number_in_xi1=1;
-			discretization.number_in_xi2=1;
-			discretization.number_in_xi3=1;
 			Option_table_add_entry(option_table,"with",&discretization,
 				command_data->user_interface,set_Element_discretization);
 			/* use_elements/use_faces/use_lines */
@@ -2397,25 +2347,18 @@ Executes a GFX CREATE MORE_FLOW_PARTICLES command.
 static int gfx_modify_flow_particles(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 14 June 1999
+LAST MODIFIED : 18 January 2000
 
 DESCRIPTION :
-Executes a GFX CREATE STREAMLINES command.
+Executes a GFX MODIFY FLOW_PARTICLES command.
 ==============================================================================*/
 {
-	int i,return_code;
+	int return_code;
 	float stepsize,time;
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *coordinate_field,*stream_vector_field;
 	struct MANAGER(Computed_field) *computed_field_manager;
-	static struct Modifier_entry option_table[]=
-	{
-		{"coordinate",NULL,NULL,set_Computed_field_conditional},
-		{"stepsize",NULL,NULL,set_float},
-		{"time",NULL,NULL,set_float},
-		{"vector",NULL,NULL,set_Computed_field_conditional},
-		{NULL,NULL,NULL,NULL}
-	};
+	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_stream_vector_field_data;
 
@@ -2441,32 +2384,30 @@ Executes a GFX CREATE STREAMLINES command.
 			/* If time of 0 is sent the previous points are updated at the previous
 				time value */
 			time=0;
-			i=0;
+
+			option_table=CREATE(Option_table)();
 			/* coordinate */
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_1_to_3_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &coordinate_field;
-			(option_table[i]).user_data= &set_coordinate_field_data;
-			i++;
+			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
+				&set_coordinate_field_data,set_Computed_field_conditional);
 			/* stepsize */
-			(option_table[i]).to_be_modified= &stepsize;
-			i++;
+			Option_table_add_entry(option_table,"stepsize",&stepsize,
+				NULL,set_float);
 			/* time */
-			(option_table[i]).to_be_modified= &time;
-			i++;
+			Option_table_add_entry(option_table,"time",&time,NULL,set_float);
 			/* vector */
 			set_stream_vector_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_stream_vector_field_data.conditional_function=
 				Computed_field_is_stream_vector_capable;
 			set_stream_vector_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &stream_vector_field;
-			(option_table[i]).user_data= &set_stream_vector_field_data;
-			i++;
-			return_code=process_multiple_options(state,option_table);
+			Option_table_add_entry(option_table,"vector",&stream_vector_field,
+				&set_stream_vector_field_data,set_Computed_field_conditional);
+			return_code=Option_table_multi_parse(option_table,state);
 			/* no errors,not asking for help */
 			if (return_code)
 			{
@@ -2474,6 +2415,7 @@ Executes a GFX CREATE STREAMLINES command.
 					command_data->streampoint_list,coordinate_field,stream_vector_field,
 					stepsize,time);
 			}
+			DESTROY(Option_table)(&option_table);
 			if (coordinate_field)
 			{
 				DEACCESS(Computed_field)(&coordinate_field);
@@ -3067,17 +3009,15 @@ float parameters.
 static int gfx_create_iso_surfaces(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 23 August 1999
+LAST MODIFIED : 18 January 1999
 
 DESCRIPTION :
 Executes a GFX CREATE ISO_SURFACES command.
-???RC Currently, only iso_scalar is converted to Computed_fields, since voltex
-code is not yet converted (but should be).
 ==============================================================================*/
 {
 	char *graphics_object_name;
 	float time;
-	int i,return_code;
+	int return_code;
 	static char default_name[]="iso_surfaces";
 	struct Clipping *clipping;
 	struct Cmiss_command_data *command_data;
@@ -3089,23 +3029,7 @@ code is not yet converted (but should be).
 	struct GROUP(FE_node) *surface_data_group;
 	struct GT_object *graphics_object;
 	struct MANAGER(Computed_field) *computed_field_manager;
-	static struct Modifier_entry option_table[]=
-	{
-		{"as",NULL,(void *)1,set_name},
-		{"clipping",NULL,NULL,set_Clipping},
-		{"coordinate",NULL,NULL,set_Computed_field_conditional},
-		{"data",NULL,NULL,set_Computed_field_conditional},
-		{"from",NULL,NULL,set_FE_element_group},
-		{"iso_scalar",NULL,NULL,set_Computed_field_conditional},
-		{"iso_value",NULL,NULL,set_double},
-		{"material",NULL,NULL,set_Graphical_material},
-		{"spectrum",NULL,NULL,set_Spectrum},
-		{"surface_data_density",NULL,NULL,set_Computed_field_conditional},
-		{"surface_data_group",NULL,NULL,set_FE_node_group},
-		{"time",NULL,NULL,set_float},
-		{"with",NULL,NULL,set_Element_discretization},
-		{NULL,NULL,NULL,NULL}
-	};
+	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_data_field_data, set_iso_scalar_field_data,
 		set_surface_data_density_field_data;
@@ -3146,79 +3070,71 @@ code is not yet converted (but should be).
 			element_to_iso_surface_data.discretization.number_in_xi1=4;
 			element_to_iso_surface_data.discretization.number_in_xi2=4;
 			element_to_iso_surface_data.discretization.number_in_xi3=4;
-			i=0;
+
+			option_table=CREATE(Option_table)();
 			/* as */
-			(option_table[i]).to_be_modified= &graphics_object_name;
-			i++;
+			Option_table_add_entry(option_table,"as",&graphics_object_name,
+				(void *)1,set_name);
 			/* clipping */
-			(option_table[i]).to_be_modified= &clipping;
-			i++;
+			Option_table_add_entry(option_table,"clipping",&clipping,
+				NULL,set_Clipping);
 			/* coordinate */
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_1_to_3_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &coordinate_field;
-			(option_table[i]).user_data= &set_coordinate_field_data;
-			i++;
+			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
+				&set_coordinate_field_data,set_Computed_field_conditional);
 			/* data */
 			set_data_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_data_field_data.conditional_function=
 				Computed_field_has_at_least_1_component;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &data_field;
-			(option_table[i]).user_data= &set_data_field_data;
-			i++;
+			Option_table_add_entry(option_table,"data",&data_field,
+				&set_data_field_data,set_Computed_field_conditional);
 			/* from */
-			(option_table[i]).to_be_modified= &element_group;
-			(option_table[i]).user_data=command_data->element_group_manager;
-			i++;
+			Option_table_add_entry(option_table,"from",&element_group,
+				command_data->element_group_manager,set_FE_element_group);
 			/* iso_scalar */
 			set_iso_scalar_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_iso_scalar_field_data.conditional_function=
 				Computed_field_has_1_component;
 			set_iso_scalar_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &iso_scalar_field;
-			(option_table[i]).user_data= &set_iso_scalar_field_data;
-			i++;
+			Option_table_add_entry(option_table,"iso_scalar",&iso_scalar_field,
+				&set_iso_scalar_field_data,set_Computed_field_conditional);
 			/* iso_value */
-			(option_table[i]).to_be_modified=
-				&(element_to_iso_surface_data.iso_value);
-			i++;
+			Option_table_add_entry(option_table,"iso_value",
+				&(element_to_iso_surface_data.iso_value),NULL,set_double);
 			/* material */
-			(option_table[i]).to_be_modified=
-				&(element_to_iso_surface_data.material);
-			(option_table[i]).user_data=command_data->graphical_material_manager;
-			i++;
+			Option_table_add_entry(option_table,"material",
+				&(element_to_iso_surface_data.material),
+				command_data->graphical_material_manager,set_Graphical_material);
 			/* spectrum */
-			(option_table[i]).to_be_modified= &spectrum;
-			(option_table[i]).user_data=command_data->spectrum_manager;
-			i++;
-			/* surface_data_density_field */
+			Option_table_add_entry(option_table,"spectrum",&spectrum,
+				command_data->spectrum_manager,set_Spectrum);
+			/* surface_data_density */
 			set_surface_data_density_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_surface_data_density_field_data.conditional_function=
 				Computed_field_has_1_to_4_components;
-			set_surface_data_density_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &surface_data_density_field;
-			(option_table[i]).user_data= &set_surface_data_density_field_data;
-			i++;
+			set_surface_data_density_field_data.conditional_function_user_data=
+				(void *)NULL;
+			Option_table_add_entry(option_table,"surface_data_density",
+				&surface_data_density_field,&set_surface_data_density_field_data,
+				set_Computed_field_conditional);
 			/* surface_data_group */
-			(option_table[i]).to_be_modified= &surface_data_group;
-			(option_table[i]).user_data=command_data->data_group_manager;
-			i++;
+			Option_table_add_entry(option_table,"surface_data_group",
+				&surface_data_group,command_data->data_group_manager,set_FE_node_group);
 			/* time */
-			(option_table[i]).to_be_modified= &time;
-			i++;
+			Option_table_add_entry(option_table,"time",&time,NULL,set_float);
 			/* with */
-			(option_table[i]).to_be_modified=
-				&(element_to_iso_surface_data.discretization);
-			(option_table[i]).user_data=(void *)(command_data->user_interface);
-			i++;
-			return_code=process_multiple_options(state,option_table);
+			Option_table_add_entry(option_table,"with",
+				&(element_to_iso_surface_data.discretization),
+				command_data->user_interface,set_Element_discretization);
+			return_code=Option_table_multi_parse(option_table,state);
 			if(surface_data_group&&(!surface_data_density_field))
 			{
 				display_message(ERROR_MESSAGE,
@@ -3368,6 +3284,7 @@ code is not yet converted (but should be).
 					}
 				}
 			} /* parse error, help */
+			DESTROY(Option_table)(&option_table);
 			if (coordinate_field)
 			{
 				DEACCESS(Computed_field)(&coordinate_field);
@@ -3616,7 +3533,7 @@ Executes a GFX CREATE LMODEL command.
 static int gfx_create_lines(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 15 December 1999
+LAST MODIFIED : 17 January 2000
 
 DESCRIPTION :
 Executes a GFX CREATE LINES command.
@@ -3674,8 +3591,10 @@ Executes a GFX CREATE LINES command.
 			face_number=0;
 
 			option_table=CREATE(Option_table)();
+			/* as */
 			Option_table_add_entry(option_table,"as",&graphics_object_name,
 				(void *)1,set_name);
+			/* coordinate */
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
@@ -3683,6 +3602,7 @@ Executes a GFX CREATE LINES command.
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
 				&set_coordinate_field_data,set_Computed_field_conditional);
+			/* data */
 			set_data_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_data_field_data.conditional_function=
@@ -3690,17 +3610,24 @@ Executes a GFX CREATE LINES command.
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
 			Option_table_add_entry(option_table,"data",&data_field,
 				&set_data_field_data,set_Computed_field_conditional);
+			/* exterior */
 			Option_table_add_entry(option_table,"exterior",&exterior_flag,
 				NULL,set_char_flag);
+			/* face */
 			Option_table_add_entry(option_table,"face",&face_number,
 				NULL,set_exterior);
+			/* from */
 			Option_table_add_entry(option_table,"from",&element_group,
 				command_data->element_group_manager,set_FE_element_group);
+			/* material */
 			Option_table_add_entry(option_table,"material",&material,
 				command_data->graphical_material_manager,set_Graphical_material);
+			/* spectrum */
 			Option_table_add_entry(option_table,"spectrum",&spectrum,
 				command_data->spectrum_manager,set_Spectrum);
+			/* time */
 			Option_table_add_entry(option_table,"time",&time,NULL,set_float);
+			/* with */
 			Option_table_add_entry(option_table,"with",&discretization,
 				command_data->user_interface,set_Element_discretization);
 			return_code=Option_table_multi_parse(option_table,state);
@@ -4221,7 +4148,7 @@ Executes a GFX CREATE DATA_EDITOR command.
 static int gfx_create_node_points(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 20 August 1999
+LAST MODIFIED : 18 January 2000
 
 DESCRIPTION :
 Executes a GFX CREATE NODE_POINTS command.
@@ -4230,7 +4157,7 @@ Executes a GFX CREATE NODE_POINTS command.
 	static char default_name[]="node_glyphs";
 	char *graphics_object_name;
 	float time;
-	int i,number_of_components,return_code;
+	int number_of_components,return_code;
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *coordinate_field,*data_field,*label_field,
 		*orientation_scale_field,*rc_coordinate_field,
@@ -4240,23 +4167,7 @@ Executes a GFX CREATE NODE_POINTS command.
 	struct GT_glyph_set *glyph_set;
 	struct GT_object *glyph,*graphics_object;
 	struct MANAGER(Computed_field) *computed_field_manager;
-	static struct Modifier_entry option_table[]=
-	{
-		{"as",NULL,(void *)1,set_name},
-		{"centre",NULL,NULL,set_float_vector},
-		{"coordinate",NULL,NULL,set_Computed_field_conditional},
-		{"data",NULL,NULL,set_Computed_field_conditional},
-		{"from",NULL,NULL,set_FE_node_group},
-		{"glyph",NULL,NULL,set_Graphics_object},
-		{"label",NULL,NULL,set_Computed_field_conditional},
-		{"material",NULL,NULL,set_Graphical_material},
-		{"orientation",NULL,NULL,set_Computed_field_conditional},
-		{"scale_factors",NULL,NULL,set_special_float3},
-		{"size",NULL,NULL,set_special_float3},
-		{"spectrum",NULL,NULL,set_Spectrum},
-		{"time",NULL,NULL,set_float},
-		{NULL,NULL,NULL,NULL}
-	};
+	struct Option_table *option_table;
 	struct Spectrum *spectrum;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_data_field_data,set_label_field_data,set_orientation_scale_field_data;
@@ -4297,7 +4208,6 @@ Executes a GFX CREATE NODE_POINTS command.
 			label_field=(struct Computed_field *)NULL;
 			orientation_scale_field=(struct Computed_field *)NULL;
 			spectrum=ACCESS(Spectrum)(command_data->default_spectrum);
-			i=0;
 			time=0.0;
 			/* final_size = size + scale_factors*magnitude */
 			glyph_scale_factors[0]=1.0;
@@ -4310,80 +4220,69 @@ Executes a GFX CREATE NODE_POINTS command.
 			glyph_centre[0]=0.0;
 			glyph_centre[1]=0.0;
 			glyph_centre[2]=0.0;
+
+			option_table=CREATE(Option_table)();
 			/* as */
-			(option_table[i]).to_be_modified= &graphics_object_name;
-			i++;
-			/* centre */
-			(option_table[i]).to_be_modified= glyph_centre;
-			(option_table[i]).user_data= &number_of_components;
-			i++;
+			Option_table_add_entry(option_table,"as",&graphics_object_name,
+				(void *)1,set_name);
+			/* centre [of glyph] */
+			Option_table_add_entry(option_table,"centre",glyph_centre,
+				&(number_of_components),set_float_vector);
 			/* coordinate */
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_1_to_3_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &coordinate_field;
-			(option_table[i]).user_data= &set_coordinate_field_data;
-			i++;
+			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
+				&set_coordinate_field_data,set_Computed_field_conditional);
 			/* data */
 			set_data_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_data_field_data.conditional_function=
 				Computed_field_has_at_least_1_component;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &data_field;
-			(option_table[i]).user_data= &set_data_field_data;
-			i++;
-			/* from */
-			(option_table[i]).to_be_modified= &node_group;
-			(option_table[i]).user_data= command_data->node_group_manager;
-			i++;
+			Option_table_add_entry(option_table,"data",&data_field,
+				&set_data_field_data,set_Computed_field_conditional);
+			/* from [node_group] */
+			Option_table_add_entry(option_table,"from",&node_group,
+				command_data->node_group_manager,set_FE_node_group);
 			/* glyph */
-			(option_table[i]).to_be_modified= &glyph;
-			(option_table[i]).user_data= command_data->glyph_list;
-			i++;
+			Option_table_add_entry(option_table,"glyph",&glyph,
+				command_data->glyph_list,set_Graphics_object);
 			/* label */
 			set_label_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_label_field_data.conditional_function=
 				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
 			set_label_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &label_field;
-			(option_table[i]).user_data= &set_label_field_data;
-			i++;
+			Option_table_add_entry(option_table,"label",&label_field,
+				&set_label_field_data,set_Computed_field_conditional);
 			/* material */
-			(option_table[i]).to_be_modified= &material;
-			(option_table[i]).user_data=command_data->graphical_material_manager;
-			i++;
-			/* orientation_scale */
+			Option_table_add_entry(option_table,"material",&material,
+				command_data->graphical_material_manager,set_Graphical_material);
+			/* orientation */
 			set_orientation_scale_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_orientation_scale_field_data.conditional_function=
 				Computed_field_is_orientation_scale_capable;
 			set_orientation_scale_field_data.conditional_function_user_data=
 				(void *)NULL;
-			(option_table[i]).to_be_modified= &orientation_scale_field;
-			(option_table[i]).user_data= &set_orientation_scale_field_data;
-			i++;
+			Option_table_add_entry(option_table,"orientation",
+				&orientation_scale_field,&set_orientation_scale_field_data,
+				set_Computed_field_conditional);
 			/* scale_factors */
-			(option_table[i]).to_be_modified= glyph_scale_factors;
-			(option_table[i]).user_data= "*";
-			i++;
-			/* size */
-			(option_table[i]).to_be_modified= glyph_size;
-			(option_table[i]).user_data= "*";
-			i++;
+			Option_table_add_entry(option_table,"scale_factors",
+				glyph_scale_factors,"*",set_special_float3);
+			/* size [of glyph] */
+			Option_table_add_entry(option_table,"size",
+				glyph_size,"*",set_special_float3);
 			/* spectrum */
-			(option_table[i]).to_be_modified= &spectrum;
-			(option_table[i]).user_data=command_data->spectrum_manager;
-			i++;
+			Option_table_add_entry(option_table,"spectrum",
+				&spectrum,command_data->spectrum_manager,set_Spectrum);
 			/* time */
-			(option_table[i]).to_be_modified= &time;
-			i++;
-			return_code=process_multiple_options(state,option_table);
-			/* no errors, not asking for help */
-			if (return_code)
+			Option_table_add_entry(option_table,"time",&time,NULL,set_float);
+			if (return_code=Option_table_multi_parse(option_table,state))
 			{
 				if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
 					graphics_object_name,command_data->graphics_object_list))
@@ -4474,6 +4373,7 @@ Executes a GFX CREATE NODE_POINTS command.
 					}
 				} /* not duplicate name */
 			} /* parse error, help */
+			DESTROY(Option_table)(&option_table);
 			if (coordinate_field)
 			{
 				DEACCESS(Computed_field)(&coordinate_field);
@@ -4520,7 +4420,7 @@ Executes a GFX CREATE NODE_POINTS command.
 static int gfx_create_data_points(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 20 August 1999
+LAST MODIFIED : 18 January 2000
 
 DESCRIPTION :
 Executes a GFX CREATE DATA_POINTS command.
@@ -4529,7 +4429,7 @@ Executes a GFX CREATE DATA_POINTS command.
 	static char default_name[]="data_glyphs";
 	char *graphics_object_name;
 	float time;
-	int i,number_of_components,return_code;
+	int number_of_components,return_code;
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *coordinate_field,*data_field,*label_field,
 		*orientation_scale_field,*rc_coordinate_field,
@@ -4539,23 +4439,7 @@ Executes a GFX CREATE DATA_POINTS command.
 	struct GT_glyph_set *glyph_set;
 	struct GT_object *glyph,*graphics_object;
 	struct MANAGER(Computed_field) *computed_field_manager;
-	static struct Modifier_entry option_table[]=
-	{
-		{"as",NULL,(void *)1,set_name},
-		{"centre",NULL,NULL,set_float_vector},
-		{"coordinate",NULL,NULL,set_Computed_field_conditional},
-		{"data",NULL,NULL,set_Computed_field_conditional},
-		{"from",NULL,NULL,set_FE_node_group},
-		{"glyph",NULL,NULL,set_Graphics_object},
-		{"label",NULL,NULL,set_Computed_field_conditional},
-		{"material",NULL,NULL,set_Graphical_material},
-		{"orientation",NULL,NULL,set_Computed_field_conditional},
-		{"scale_factors",NULL,NULL,set_special_float3},
-		{"size",NULL,NULL,set_special_float3},
-		{"spectrum",NULL,NULL,set_Spectrum},
-		{"time",NULL,NULL,set_float},
-		{NULL,NULL,NULL,NULL}
-	};
+	struct Option_table *option_table;
 	struct Spectrum *spectrum;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_data_field_data,set_label_field_data,set_orientation_scale_field_data;
@@ -4596,7 +4480,6 @@ Executes a GFX CREATE DATA_POINTS command.
 			label_field=(struct Computed_field *)NULL;
 			orientation_scale_field=(struct Computed_field *)NULL;
 			spectrum=ACCESS(Spectrum)(command_data->default_spectrum);
-			i=0;
 			time=0.0;
 			/* final_size = size + scale_factors*magnitude */
 			glyph_scale_factors[0]=1.0;
@@ -4609,80 +4492,69 @@ Executes a GFX CREATE DATA_POINTS command.
 			glyph_centre[0]=0.0;
 			glyph_centre[1]=0.0;
 			glyph_centre[2]=0.0;
+
+			option_table=CREATE(Option_table)();
 			/* as */
-			(option_table[i]).to_be_modified= &graphics_object_name;
-			i++;
-			/* centre */
-			(option_table[i]).to_be_modified= glyph_centre;
-			(option_table[i]).user_data= &number_of_components;
-			i++;
+			Option_table_add_entry(option_table,"as",&graphics_object_name,
+				(void *)1,set_name);
+			/* centre [of glyph] */
+			Option_table_add_entry(option_table,"centre",glyph_centre,
+				&(number_of_components),set_float_vector);
 			/* coordinate */
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_1_to_3_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &coordinate_field;
-			(option_table[i]).user_data= &set_coordinate_field_data;
-			i++;
+			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
+				&set_coordinate_field_data,set_Computed_field_conditional);
 			/* data */
 			set_data_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_data_field_data.conditional_function=
 				Computed_field_has_at_least_1_component;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &data_field;
-			(option_table[i]).user_data= &set_data_field_data;
-			i++;
-			/* from */
-			(option_table[i]).to_be_modified= &data_group;
-			(option_table[i]).user_data= command_data->data_group_manager;
-			i++;
+			Option_table_add_entry(option_table,"data",&data_field,
+				&set_data_field_data,set_Computed_field_conditional);
+			/* from [data_group] */
+			Option_table_add_entry(option_table,"from",&data_group,
+				command_data->data_group_manager,set_FE_node_group);
 			/* glyph */
-			(option_table[i]).to_be_modified= &glyph;
-			(option_table[i]).user_data= command_data->glyph_list;
-			i++;
+			Option_table_add_entry(option_table,"glyph",&glyph,
+				command_data->glyph_list,set_Graphics_object);
 			/* label */
 			set_label_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_label_field_data.conditional_function=
 				(MANAGER_CONDITIONAL_FUNCTION(Computed_field) *)NULL;
 			set_label_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &label_field;
-			(option_table[i]).user_data= &set_label_field_data;
-			i++;
+			Option_table_add_entry(option_table,"label",&label_field,
+				&set_label_field_data,set_Computed_field_conditional);
 			/* material */
-			(option_table[i]).to_be_modified= &material;
-			(option_table[i]).user_data=command_data->graphical_material_manager;
-			i++;
-			/* orientation_scale */
+			Option_table_add_entry(option_table,"material",&material,
+				command_data->graphical_material_manager,set_Graphical_material);
+			/* orientation */
 			set_orientation_scale_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_orientation_scale_field_data.conditional_function=
 				Computed_field_is_orientation_scale_capable;
 			set_orientation_scale_field_data.conditional_function_user_data=
 				(void *)NULL;
-			(option_table[i]).to_be_modified= &orientation_scale_field;
-			(option_table[i]).user_data= &set_orientation_scale_field_data;
-			i++;
+			Option_table_add_entry(option_table,"orientation",
+				&orientation_scale_field,&set_orientation_scale_field_data,
+				set_Computed_field_conditional);
 			/* scale_factors */
-			(option_table[i]).to_be_modified= glyph_scale_factors;
-			(option_table[i]).user_data= "*";
-			i++;
-			/* size */
-			(option_table[i]).to_be_modified= glyph_size;
-			(option_table[i]).user_data= "*";
-			i++;
+			Option_table_add_entry(option_table,"scale_factors",
+				glyph_scale_factors,"*",set_special_float3);
+			/* size [of glyph] */
+			Option_table_add_entry(option_table,"size",
+				glyph_size,"*",set_special_float3);
 			/* spectrum */
-			(option_table[i]).to_be_modified= &spectrum;
-			(option_table[i]).user_data=command_data->spectrum_manager;
-			i++;
+			Option_table_add_entry(option_table,"spectrum",
+				&spectrum,command_data->spectrum_manager,set_Spectrum);
 			/* time */
-			(option_table[i]).to_be_modified= &time;
-			i++;
-			return_code=process_multiple_options(state,option_table);
-			/* no errors, not asking for help */
-			if (return_code)
+			Option_table_add_entry(option_table,"time",&time,NULL,set_float);
+			if (return_code=Option_table_multi_parse(option_table,state))
 			{
 				if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
 					graphics_object_name,command_data->graphics_object_list))
@@ -4773,6 +4645,7 @@ Executes a GFX CREATE DATA_POINTS command.
 					}
 				} /* not duplicate name */
 			} /* parse error, help */
+			DESTROY(Option_table)(&option_table);
 			if (coordinate_field)
 			{
 				DEACCESS(Computed_field)(&coordinate_field);
@@ -5685,21 +5558,20 @@ Executes a GFX CREATE SPECTRUM command.
 static int gfx_create_streamlines(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 14 June 1999
+LAST MODIFIED : 18 January 2000
 
 DESCRIPTION :
 Executes a GFX CREATE STREAMLINES command.
 ==============================================================================*/
 {
 	static char default_name[]="streamlines";
-	char ellipse_flag,field_scalar_flag,*graphics_object_name,line_flag,
-		magnitude_scalar_flag,no_data_flag,rectangle_flag,reverse_track,ribbon_flag,
-		travel_scalar_flag;
+	char *graphics_object_name,reverse_track,*streamline_data_type_string,
+		*streamline_type_string,**valid_strings;
 	enum Streamline_type streamline_type;
 	enum Streamline_data_type streamline_data_type;
 	FE_value seed_xi[3];
 	float length,time,width;
-	int i,return_code,number_of_components;
+	int number_of_components,number_of_valid_strings,return_code;
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *coordinate_field,*data_field,*stream_vector_field;
 	struct Element_to_streamline_data element_to_streamline_data;
@@ -5712,44 +5584,7 @@ Executes a GFX CREATE STREAMLINES command.
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Node_to_streamline_data node_to_streamline_data;
 	struct Spectrum *spectrum;
-	static struct Modifier_entry
-		profile_option_table[]=
-		{
-			{"ellipse",NULL,NULL,set_char_flag},
-			{"line",NULL,NULL,set_char_flag},
-			{"rectangle",NULL,NULL,set_char_flag},
-			{"ribbon",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		},
-		scalar_option_table[]=
-		{
-			{"no_data",NULL,NULL,set_char_flag},
-			{"field_scalar",NULL,NULL,set_char_flag},
-			{"magnitude_scalar",NULL,NULL,set_char_flag},
-			{"travel_scalar",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		},
-		option_table[]=
-		{
-			{"as",NULL,(void *)1,set_name},
-			{"coordinate",NULL,NULL,set_Computed_field_conditional},
-			{"data",NULL,NULL,set_Computed_field_conditional},
-			{NULL,NULL,NULL,NULL},
-			{"from",NULL,NULL,set_FE_element_group},
-			{"length",NULL,NULL,set_float},
-			{"material",NULL,NULL,set_Graphical_material},
-			{NULL,NULL,NULL,NULL},
-			{"reverse",NULL,NULL,set_char_flag},
-			{"seed_data_field",NULL,NULL,set_FE_field_conditional},
-			{"seed_data_group",NULL,NULL,set_FE_node_group},
-			{"seed_element",NULL,NULL,set_FE_element_dimension_3},
-			{"spectrum",NULL,NULL,set_Spectrum},
-			{"time",NULL,NULL,set_float},
-			{"vector",NULL,NULL,set_Computed_field_conditional},
-			{"width",NULL,NULL,set_float},
-			{"xi",NULL,NULL,set_FE_value_array},
-			{NULL,NULL,NULL,NULL}
-	};
+	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_data_field_data,set_stream_vector_field_data;
 	struct Set_FE_field_conditional_data set_seed_data_field_data;
@@ -5789,16 +5624,6 @@ Executes a GFX CREATE STREAMLINES command.
 			time=0;
 			length=1;
 			width = 1;
-			/* profile options */
-			ellipse_flag = 0;
-			line_flag = 0;
-			rectangle_flag = 0;
-			ribbon_flag = 0;
-			/* scalar options */
-			no_data_flag = 0;
-			field_scalar_flag = 0;
-			magnitude_scalar_flag = 0;
-			travel_scalar_flag = 0;
 			reverse_track = 0;
 			number_of_components = 3;
 			seed_xi[0] = 0.5;
@@ -5809,98 +5634,85 @@ Executes a GFX CREATE STREAMLINES command.
 				ACCESS(Graphical_material)(command_data->default_graphical_material);
 			spectrum=
 				ACCESS(Spectrum)(command_data->default_spectrum);
-			i=0;
+
+			option_table=CREATE(Option_table)();
 			/* as */
-			(option_table[i]).to_be_modified= &graphics_object_name;
-			i++;
+			Option_table_add_entry(option_table,"as",&graphics_object_name,
+				(void *)1,set_name);
 			/* coordinate */
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_1_to_3_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &coordinate_field;
-			(option_table[i]).user_data= &set_coordinate_field_data;
-			i++;
+			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
+				&set_coordinate_field_data,set_Computed_field_conditional);
 			/* data */
 			set_data_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_data_field_data.conditional_function=
 				Computed_field_has_at_least_1_component;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &data_field;
-			(option_table[i]).user_data= &set_data_field_data;
-			i++;
+			Option_table_add_entry(option_table,"data",&data_field,
+				&set_data_field_data,set_Computed_field_conditional);
 			/* ellipse/line/rectangle/ribbon */
-			(profile_option_table[0]).to_be_modified= &ellipse_flag;
-			(profile_option_table[1]).to_be_modified= &line_flag;
-			(profile_option_table[2]).to_be_modified= &rectangle_flag;
-			(profile_option_table[3]).to_be_modified= &ribbon_flag;
-			(option_table[i]).user_data=profile_option_table;
-			i++;
+			streamline_type_string=Streamline_type_string(STREAM_LINE);
+			valid_strings=Streamline_type_get_valid_strings(&number_of_valid_strings);
+			Option_table_add_enumerator(option_table,number_of_valid_strings,
+				valid_strings,&streamline_type_string);
+			DEALLOCATE(valid_strings);
 			/* from */
-			(option_table[i]).to_be_modified= &element_group;
-			(option_table[i]).user_data=command_data->element_group_manager;
-			i++;
+			Option_table_add_entry(option_table,"from",&element_group,
+				command_data->element_group_manager,set_FE_element_group);
 			/* length */
-			(option_table[i]).to_be_modified= &length;
-			i++;
+			Option_table_add_entry(option_table,"length",&length,NULL,set_float);
 			/* material */
-			(option_table[i]).to_be_modified= &material;
-			(option_table[i]).user_data=command_data->graphical_material_manager;
-			i++;
+			Option_table_add_entry(option_table,"material",&material,
+				command_data->graphical_material_manager,set_Graphical_material);
 			/* no_data/field_scalar/magnitude_scalar/travel_scalar */
-			(scalar_option_table[0]).to_be_modified= &no_data_flag;
-			(scalar_option_table[1]).to_be_modified= &field_scalar_flag;
-			(scalar_option_table[2]).to_be_modified= &magnitude_scalar_flag;
-			(scalar_option_table[3]).to_be_modified= &travel_scalar_flag;
-			(option_table[i]).user_data=scalar_option_table;
-			i++;
+			streamline_data_type_string=Streamline_data_type_string(STREAM_NO_DATA);
+			valid_strings=
+				Streamline_data_type_get_valid_strings(&number_of_valid_strings);
+			Option_table_add_enumerator(option_table,number_of_valid_strings,
+				valid_strings,&streamline_data_type_string);
+			DEALLOCATE(valid_strings);
 			/* reverse */
 			/*???RC use negative length to denote reverse track instead? */
-			(option_table[i]).to_be_modified= &reverse_track;
-			i++;
+			Option_table_add_entry(option_table,"reverse",
+				&reverse_track,NULL,set_char_flag);
 			/* seed_data_field */
 			set_seed_data_field_data.fe_field_manager=command_data->fe_field_manager;
 			set_seed_data_field_data.conditional_function=FE_field_has_value_type;
-			set_seed_data_field_data.conditional_function_user_data=(void *)ELEMENT_XI_VALUE;
-			(option_table[i]).to_be_modified= &seed_data_field;
-			(option_table[i]).user_data= &set_seed_data_field_data;
-			i++;
+			set_seed_data_field_data.conditional_function_user_data=
+				(void *)ELEMENT_XI_VALUE;
+			Option_table_add_entry(option_table,"seed_data_field",&seed_data_field,
+				&set_seed_data_field_data,set_Computed_field_conditional);
 			/* seed_data_group */
-			(option_table[i]).to_be_modified= &seed_data_group;
-			(option_table[i]).user_data= command_data->data_group_manager;
-			i++;
+			Option_table_add_entry(option_table,"seed_data_group",&seed_data_group,
+				command_data->data_group_manager,set_FE_node_group);
 			/* seed_element */
-			(option_table[i]).to_be_modified= &seed_element;
-			(option_table[i]).user_data= command_data->element_manager;
-			i++;
+			Option_table_add_entry(option_table,"seed_element",
+				&seed_element,command_data->element_manager,
+				set_FE_element_dimension_3);
 			/* spectrum */
-			(option_table[i]).to_be_modified= &spectrum;
-			(option_table[i]).user_data=command_data->spectrum_manager;
-			i++;
+			Option_table_add_entry(option_table,"spectrum",&spectrum,
+				command_data->spectrum_manager,set_Spectrum);
 			/* time */
-			(option_table[i]).to_be_modified= &time;
-			i++;
+			Option_table_add_entry(option_table,"time",&time,NULL,set_float);
 			/* vector */
 			set_stream_vector_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_stream_vector_field_data.conditional_function=
 				Computed_field_is_stream_vector_capable;
 			set_stream_vector_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &stream_vector_field;
-			(option_table[i]).user_data= &set_stream_vector_field_data;
-			i++;
+			Option_table_add_entry(option_table,"vector",&stream_vector_field,
+				&set_stream_vector_field_data,set_Computed_field_conditional);
 			/* width */
-			(option_table[i]).to_be_modified= &width;
-			i++;
+			Option_table_add_entry(option_table,"width",&width,NULL,set_float);
 			/* xi */
-			(option_table[i]).to_be_modified= &seed_xi;
-			(option_table[i]).user_data= &number_of_components;
-			i++;
-			return_code=process_multiple_options(state,option_table);
-			/* no errors, not asking for help */
-			if (return_code)
+			Option_table_add_entry(option_table,"xi",
+				seed_xi,&number_of_components,set_float_vector);
+			if (return_code=Option_table_multi_parse(option_table,state))
 			{
 				if (element_group&&seed_element&&(!IS_OBJECT_IN_GROUP(FE_element)(
 					seed_element,element_group)))
@@ -5914,18 +5726,26 @@ Executes a GFX CREATE STREAMLINES command.
 					display_message(ERROR_MESSAGE,"Must specify a vector");
 					return_code=0;
 				}
-				if (1<(ellipse_flag+line_flag+rectangle_flag+ribbon_flag))
+				streamline_type=Streamline_type_from_string(streamline_type_string);
+				streamline_data_type=
+					Streamline_data_type_from_string(streamline_data_type_string);
+				if (data_field)
 				{
-					display_message(ERROR_MESSAGE,
-						"Only one of ellipse|line|rectangle|ribbon");
-					return_code=0;
+					if (STREAM_FIELD_SCALAR != streamline_data_type)
+					{
+						display_message(WARNING_MESSAGE,
+							"Must use field_scalar option with data; ensuring this");
+						streamline_data_type=STREAM_FIELD_SCALAR;
+					}
 				}
-				if (1<(no_data_flag+field_scalar_flag+magnitude_scalar_flag+
-					travel_scalar_flag))
+				else
 				{
-					display_message(ERROR_MESSAGE,
-						"Only one of no_data|field_scalar|magnitude_scalar|travel_scalar");
-					return_code=0;
+					if (STREAM_FIELD_SCALAR == streamline_data_type)
+					{
+						display_message(WARNING_MESSAGE,
+							"Must specify data field with field_scalar option");
+						streamline_data_type=STREAM_NO_DATA;
+					}
 				}
 				if (seed_data_field&&(!seed_data_group))
 				{
@@ -5941,47 +5761,6 @@ Executes a GFX CREATE STREAMLINES command.
 				}
 				if (return_code)
 				{
-					/* get the streamline_type from flags */
-					if (ellipse_flag)
-					{
-						streamline_type=STREAM_EXTRUDED_ELLIPSE;
-					}
-					else if (rectangle_flag)
-					{
-						streamline_type=STREAM_EXTRUDED_RECTANGLE;
-					}
-					else if (ribbon_flag)
-					{
-						streamline_type=STREAM_RIBBON;
-					}
-					else
-					{
-						/* default */
-						streamline_type=STREAM_LINE;
-					}
-					/* get the streamline_data_type from flags */
-					if (magnitude_scalar_flag)
-					{
-						streamline_data_type=STREAM_MAGNITUDE_SCALAR;
-					}
-					else if (travel_scalar_flag)
-					{
-						streamline_data_type=STREAM_TRAVEL_SCALAR;
-					}
-					else if ((!no_data_flag)&&(data_field))
-					{
-						streamline_data_type=STREAM_FIELD_SCALAR;
-					}
-					else
-					{
-						streamline_data_type=STREAM_NO_DATA;
-					}
-					if (data_field&&(STREAM_FIELD_SCALAR != streamline_data_type))
-					{
-						display_message(WARNING_MESSAGE,
-							"Must use field_scalar option with scalar; ensuring this");
-						streamline_data_type=STREAM_FIELD_SCALAR;
-					}
 					if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
 						graphics_object_name,command_data->graphics_object_list))
 					{
@@ -6126,6 +5905,7 @@ Executes a GFX CREATE STREAMLINES command.
 					}
 				}
 			} /* parse error, help */
+			DESTROY(Option_table)(&option_table);
 			if (coordinate_field)
 			{
 				DEACCESS(Computed_field)(&coordinate_field);
@@ -6180,21 +5960,20 @@ Executes a GFX CREATE STREAMLINES command.
 static int gfx_create_interactive_streamline(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 14 June 1999
+LAST MODIFIED : 18 January 2000
 
 DESCRIPTION :
 Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
 ==============================================================================*/
 {
 	static char default_name[]="interactive_streamline";
-	char ellipse_flag,field_scalar_flag,*graphics_object_name,line_flag,
-		*line_graphics_object_name,magnitude_scalar_flag,no_data_flag,
-		rectangle_flag,reverse_track,ribbon_flag,travel_scalar_flag;
+	char *graphics_object_name,*line_graphics_object_name,reverse_track,
+		*streamline_data_type_string,*streamline_type_string,**valid_strings;
 	enum Streamline_type streamline_type;
 	enum Streamline_data_type streamline_data_type;
 	FE_value seed_xi[3];
 	float length,width;
-	int i,return_code,number_of_components;
+	int number_of_components,number_of_valid_strings,return_code;
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *coordinate_field,*data_field,*rc_coordinate_field,
 		*stream_vector_field,*wrapper_stream_vector_field;
@@ -6208,41 +5987,7 @@ Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
 	struct Interactive_streamline *streamline;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct Spectrum *spectrum;
-	static struct Modifier_entry
-		profile_option_table[]=
-		{
-			{"ellipse",NULL,NULL,set_char_flag},
-			{"line",NULL,NULL,set_char_flag},
-			{"rectangle",NULL,NULL,set_char_flag},
-			{"ribbon",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		},
-		scalar_option_table[]=
-		{
-			{"no_data",NULL,NULL,set_char_flag},
-			{"field_scalar",NULL,NULL,set_char_flag},
-			{"magnitude_scalar",NULL,NULL,set_char_flag},
-			{"travel_scalar",NULL,NULL,set_char_flag},
-			{NULL,NULL,NULL,NULL}
-		},
-		option_table[]=
-		{
-			{"as",NULL,(void *)1,set_name},
-			{"coordinate",NULL,NULL,set_Computed_field_conditional},
-			{"data",NULL,NULL,set_Computed_field_conditional},
-			{NULL,NULL,NULL,NULL},
-			{"from",NULL,NULL,set_FE_element_group},
-			{"initial_xi",NULL,NULL,set_FE_value_array},
-			{"length",NULL,NULL,set_float},
-			{"material",NULL,NULL,set_Graphical_material},
-			{NULL,NULL,NULL,NULL},
-			{"reverse",NULL,NULL,set_char_flag},
-			{"seed_element",NULL,NULL,set_FE_element_dimension_3},
-			{"spectrum",NULL,NULL,set_Spectrum},
-			{"vector",NULL,NULL,set_Computed_field_conditional},
-			{"width",NULL,NULL,set_float},
-			{NULL,NULL,NULL,NULL}
-	};
+	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_data_field_data,set_stream_vector_field_data;
 
@@ -6278,16 +6023,6 @@ Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
 			seed_element=(struct FE_element *)NULL;
 			length=1;
 			width = 1;
-			/* profile options */
-			ellipse_flag = 0;
-			line_flag = 0;
-			rectangle_flag = 0;
-			ribbon_flag = 0;
-			/* scalar options */
-			no_data_flag = 0;
-			field_scalar_flag = 0;
-			magnitude_scalar_flag = 0;
-			travel_scalar_flag = 0;
 			reverse_track = 0;
 			number_of_components = 3;
 			seed_xi[0] = 0.5;
@@ -6300,84 +6035,73 @@ Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
 				ACCESS(Graphical_material)(command_data->default_graphical_material);
 			spectrum=
 				ACCESS(Spectrum)(command_data->default_spectrum);
-			i=0;
+
+			option_table=CREATE(Option_table)();
 			/* as */
-			(option_table[i]).to_be_modified= &graphics_object_name;
-			i++;
+			Option_table_add_entry(option_table,"as",&graphics_object_name,
+				(void *)1,set_name);
 			/* coordinate */
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_1_to_3_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &coordinate_field;
-			(option_table[i]).user_data= &set_coordinate_field_data;
-			i++;
+			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
+				&set_coordinate_field_data,set_Computed_field_conditional);
 			/* data */
 			set_data_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_data_field_data.conditional_function=
 				Computed_field_has_at_least_1_component;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &data_field;
-			(option_table[i]).user_data= &set_data_field_data;
-			i++;
+			Option_table_add_entry(option_table,"data",&data_field,
+				&set_data_field_data,set_Computed_field_conditional);
 			/* ellipse/line/rectangle/ribbon */
-			(profile_option_table[0]).to_be_modified= &ellipse_flag;
-			(profile_option_table[1]).to_be_modified= &line_flag;
-			(profile_option_table[2]).to_be_modified= &rectangle_flag;
-			(profile_option_table[3]).to_be_modified= &ribbon_flag;
-			(option_table[i]).user_data=profile_option_table;
-			i++;
+			streamline_type_string=Streamline_type_string(STREAM_LINE);
+			valid_strings=Streamline_type_get_valid_strings(&number_of_valid_strings);
+			Option_table_add_enumerator(option_table,number_of_valid_strings,
+				valid_strings,&streamline_type_string);
+			DEALLOCATE(valid_strings);
 			/* from */
-			(option_table[i]).to_be_modified= &element_group;
-			(option_table[i]).user_data=command_data->element_group_manager;
-			i++;
+			Option_table_add_entry(option_table,"from",&element_group,
+				command_data->element_group_manager,set_FE_element_group);
 			/* initial_xi */
-			(option_table[i]).to_be_modified= &seed_xi;
-			(option_table[i]).user_data= &number_of_components;
-			i++;
+			Option_table_add_entry(option_table,"initial_xi",
+				seed_xi,&number_of_components,set_float_vector);
 			/* length */
-			(option_table[i]).to_be_modified= &length;
-			i++;
+			Option_table_add_entry(option_table,"length",&length,NULL,set_float);
 			/* material */
-			(option_table[i]).to_be_modified= &material;
-			(option_table[i]).user_data=command_data->graphical_material_manager;
-			i++;
+			Option_table_add_entry(option_table,"material",&material,
+				command_data->graphical_material_manager,set_Graphical_material);
 			/* no_data/field_scalar/magnitude_scalar/travel_scalar */
-			(scalar_option_table[0]).to_be_modified= &no_data_flag;
-			(scalar_option_table[1]).to_be_modified= &field_scalar_flag;
-			(scalar_option_table[2]).to_be_modified= &magnitude_scalar_flag;
-			(scalar_option_table[3]).to_be_modified= &travel_scalar_flag;
-			(option_table[i]).user_data=scalar_option_table;
-			i++;
+			streamline_data_type_string=Streamline_data_type_string(STREAM_NO_DATA);
+			valid_strings=
+				Streamline_data_type_get_valid_strings(&number_of_valid_strings);
+			Option_table_add_enumerator(option_table,number_of_valid_strings,
+				valid_strings,&streamline_data_type_string);
+			DEALLOCATE(valid_strings);
 			/* reverse */
 			/*???RC use negative length to denote reverse track instead? */
-			(option_table[i]).to_be_modified= &reverse_track;
-			i++;
+			Option_table_add_entry(option_table,"reverse",
+				&reverse_track,NULL,set_char_flag);
 			/* seed_element */
-			(option_table[i]).to_be_modified= &seed_element;
-			(option_table[i]).user_data= command_data->element_manager;
-			i++;
+			Option_table_add_entry(option_table,"seed_element",
+				&seed_element,command_data->element_manager,
+				set_FE_element_dimension_3);
 			/* spectrum */
-			(option_table[i]).to_be_modified= &spectrum;
-			(option_table[i]).user_data=command_data->spectrum_manager;
-			i++;
+			Option_table_add_entry(option_table,"spectrum",&spectrum,
+				command_data->spectrum_manager,set_Spectrum);
 			/* vector */
 			set_stream_vector_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_stream_vector_field_data.conditional_function=
 				Computed_field_is_stream_vector_capable;
 			set_stream_vector_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &stream_vector_field;
-			(option_table[i]).user_data= &set_stream_vector_field_data;
-			i++;
+			Option_table_add_entry(option_table,"vector",&stream_vector_field,
+				&set_stream_vector_field_data,set_Computed_field_conditional);
 			/* width */
-			(option_table[i]).to_be_modified= &width;
-			i++;
-			return_code=process_multiple_options(state,option_table);
-			/* no errors, not asking for help */
-			if (return_code)
+			Option_table_add_entry(option_table,"width",&width,NULL,set_float);
+			if (return_code=Option_table_multi_parse(option_table,state))
 			{
 				if (seed_element)
 				{
@@ -6399,62 +6123,29 @@ Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
 					display_message(ERROR_MESSAGE,"Must specify a vector");
 					return_code=0;
 				}
-				if (1<(ellipse_flag+line_flag+rectangle_flag+ribbon_flag))
+				streamline_type=Streamline_type_from_string(streamline_type_string);
+				streamline_data_type=
+					Streamline_data_type_from_string(streamline_data_type_string);
+				if (data_field)
 				{
-					display_message(ERROR_MESSAGE,
-						"Only one of ellipse|line|rectangle|ribbon");
-					return_code=0;
+					if (STREAM_FIELD_SCALAR != streamline_data_type)
+					{
+						display_message(WARNING_MESSAGE,
+							"Must use field_scalar option with data; ensuring this");
+						streamline_data_type=STREAM_FIELD_SCALAR;
+					}
 				}
-				if (1<(no_data_flag+field_scalar_flag+magnitude_scalar_flag+
-					travel_scalar_flag))
+				else
 				{
-					display_message(ERROR_MESSAGE,
-						"Only one of no_data|field_scalar|magnitude_scalar|travel_scalar");
-					return_code=0;
+					if (STREAM_FIELD_SCALAR == streamline_data_type)
+					{
+						display_message(WARNING_MESSAGE,
+							"Must specify data field with field_scalar option");
+						streamline_data_type=STREAM_NO_DATA;
+					}
 				}
 				if (return_code)
 				{
-					/* get the streamline_type from flags */
-					if (ellipse_flag)
-					{
-						streamline_type=STREAM_EXTRUDED_ELLIPSE;
-					}
-					else if (rectangle_flag)
-					{
-						streamline_type=STREAM_EXTRUDED_RECTANGLE;
-					}
-					else if (ribbon_flag)
-					{
-						streamline_type=STREAM_RIBBON;
-					}
-					else
-					{
-						/* default */
-						streamline_type=STREAM_LINE;
-					}
-					/* get the streamline_data_type from flags */
-					if (magnitude_scalar_flag)
-					{
-						streamline_data_type=STREAM_MAGNITUDE_SCALAR;
-					}
-					else if (travel_scalar_flag)
-					{
-						streamline_data_type=STREAM_TRAVEL_SCALAR;
-					}
-					else if ((!no_data_flag)&&(data_field))
-					{
-						streamline_data_type=STREAM_FIELD_SCALAR;
-					}
-					else
-					{
-						streamline_data_type=STREAM_NO_DATA;
-					}
-					if (data_field&&(STREAM_FIELD_SCALAR != streamline_data_type))
-					{
-						display_message(WARNING_MESSAGE,
-							"Must use field_scalar option with scalar; ensuring this");
-						streamline_data_type=STREAM_FIELD_SCALAR;
-					}
 					if (graphics_object=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)(
 						graphics_object_name,command_data->graphics_object_list))
 					{
@@ -6611,6 +6302,7 @@ Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
 					}
 				}
 			} /* parse error, help */
+			DESTROY(Option_table)(&option_table);
 			if (coordinate_field)
 			{
 				DEACCESS(Computed_field)(&coordinate_field);
@@ -6658,7 +6350,7 @@ Executes a GFX CREATE INTERACTIVE_STREAMLINE command.
 static int gfx_create_surfaces(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 20 August 1999
+LAST MODIFIED : 18 January 2000
 
 DESCRIPTION :
 Executes a GFX CREATE SURFACES command.
@@ -6668,25 +6360,8 @@ Executes a GFX CREATE SURFACES command.
 	enum GT_object_type object_type;
 	float time;
 	gtObject *graphics_object;
-	int face_number,i,return_code;
+	int face_number,return_code;
 	static char default_name[]="surfaces";
-	static struct Modifier_entry option_table[]=
-	{
-		{"as",NULL,(void *)1,set_name},
-		{"coordinate",NULL,NULL,set_Computed_field_conditional},
-		{"data",NULL,NULL,set_Computed_field_conditional},
-		{"exterior",NULL,NULL,set_char_flag},
-		{"face",NULL,NULL,set_exterior},
-		{"from",NULL,NULL,set_FE_element_group},
-		{"material",NULL,NULL,set_Graphical_material},
-		{"nurb",NULL,NULL,set_char_flag},
-		{"reverse_normals",NULL,NULL,set_char_flag},
-		{"spectrum",NULL,NULL,set_Spectrum},
-		{"texture_coordinates",NULL,NULL,set_Computed_field_conditional},
-		{"time",NULL,NULL,set_float},
-		{"with",NULL,NULL,set_Element_discretization},
-		{NULL,NULL,NULL,NULL}
-	};
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *coordinate_field,*data_field,*texture_coordinate_field;
 	struct Element_discretization discretization;
@@ -6694,6 +6369,7 @@ Executes a GFX CREATE SURFACES command.
 	struct Element_to_surface_data element_to_surface_data;
 	struct Graphical_material *material;
 	struct GROUP(FE_element) *element_group;
+	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_data_field_data, set_texture_coordinate_field_data;
 	struct Spectrum *spectrum;
@@ -6734,68 +6410,63 @@ Executes a GFX CREATE SURFACES command.
 			face_number=0;
 			nurb=0;
 			reverse_normals=0;
-			i=0;
+
+			option_table=CREATE(Option_table)();
 			/* as */
-			(option_table[i]).to_be_modified= &graphics_object_name;
-			i++;
+			Option_table_add_entry(option_table,"as",&graphics_object_name,
+				(void *)1,set_name);
 			/* coordinate */
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_1_to_3_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &coordinate_field;
-			(option_table[i]).user_data= &set_coordinate_field_data;
-			i++;
+			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
+				&set_coordinate_field_data,set_Computed_field_conditional);
 			/* data */
 			set_data_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_data_field_data.conditional_function=
 				Computed_field_has_at_least_1_component;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &data_field;
-			(option_table[i]).user_data= &set_data_field_data;
-			i++;
+			Option_table_add_entry(option_table,"data",&data_field,
+				&set_data_field_data,set_Computed_field_conditional);
 			/* exterior */
-			(option_table[i]).to_be_modified= &exterior_flag;
-			i++;
+			Option_table_add_entry(option_table,"exterior",&exterior_flag,
+				NULL,set_char_flag);
 			/* face */
-			(option_table[i]).to_be_modified= &face_number;
-			i++;
+			Option_table_add_entry(option_table,"face",&face_number,
+				NULL,set_exterior);
 			/* from */
-			(option_table[i]).to_be_modified= &element_group;
-			(option_table[i]).user_data=command_data->element_group_manager;
-			i++;
+			Option_table_add_entry(option_table,"from",&element_group,
+				command_data->element_group_manager,set_FE_element_group);
 			/* material */
-			(option_table[i]).to_be_modified= &material;
-			(option_table[i]).user_data=command_data->graphical_material_manager;
-			i++;
+			Option_table_add_entry(option_table,"material",&material,
+				command_data->graphical_material_manager,set_Graphical_material);
 			/* nurb */
-			(option_table[i]).to_be_modified= &nurb;
-			i++;
+			Option_table_add_entry(option_table,"nurb",&nurb,NULL,set_char_flag);
 			/* reverse_normals */
-			(option_table[i]).to_be_modified= &reverse_normals;
-			i++;
+			Option_table_add_entry(option_table,"reverse_normals",
+				&reverse_normals,NULL,set_char_flag);
 			/* spectrum */
-			(option_table[i]).to_be_modified= &spectrum;
-			(option_table[i]).user_data=command_data->spectrum_manager;
-			i++;
+			Option_table_add_entry(option_table,"spectrum",&spectrum,
+				command_data->spectrum_manager,set_Spectrum);
 			/* texture_coordinates */
 			set_texture_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
-			set_texture_coordinate_field_data.conditional_function=Computed_field_has_1_to_3_components;
-			set_texture_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[i]).to_be_modified= &texture_coordinate_field;
-			(option_table[i]).user_data= &set_texture_coordinate_field_data;
-			i++;
+			set_texture_coordinate_field_data.conditional_function=
+				Computed_field_has_1_to_3_components;
+			set_texture_coordinate_field_data.conditional_function_user_data=
+				(void *)NULL;
+			Option_table_add_entry(option_table,"texture_coordinates",
+				&texture_coordinate_field,&set_texture_coordinate_field_data,
+				set_Computed_field_conditional);
 			/* time */
-			(option_table[i]).to_be_modified= &time;
-			i++;
+			Option_table_add_entry(option_table,"time",&time,NULL,set_float);
 			/* with */
-			(option_table[i]).to_be_modified= &discretization;
-			(option_table[i]).user_data=(void *)(command_data->user_interface);
-			i++;
-			return_code=process_multiple_options(state,option_table);
+			Option_table_add_entry(option_table,"with",&discretization,
+				command_data->user_interface,set_Element_discretization);
+			return_code=Option_table_multi_parse(option_table,state);
 			/* no errors, not asking for help */
 			if (return_code)
 			{
@@ -6905,6 +6576,7 @@ Executes a GFX CREATE SURFACES command.
 				}
 				Computed_field_end_wrap(&(element_to_surface_data.coordinate_field));
 			} /* parse error, help */
+			DESTROY(Option_table)(&option_table);
 			if (coordinate_field)
 			{
 				DEACCESS(Computed_field)(&coordinate_field);
@@ -7997,7 +7669,7 @@ Executes a GFX CREATE VOLUME_EDITOR command.
 static int gfx_create_volumes(struct Parse_state *state,
 	void *dummy_to_be_modified,void *command_data_void)
 /*******************************************************************************
-LAST MODIFIED : 5 July 1999
+LAST MODIFIED : 18 January 2000
 
 DESCRIPTION :
 Executes a GFX CREATE VOLUMES command.
@@ -8007,24 +7679,6 @@ Executes a GFX CREATE VOLUMES command.
 	float time;
 	int displacement_map_xi_direction, return_code;
 	static char default_name[]="volumes";
-	static struct Modifier_entry option_table[]=
-	{
-		{"as",NULL,(void *)1,set_name},
-		{"clipping",NULL,NULL,set_Clipping},
-		{"coordinate",NULL,NULL,set_Computed_field_conditional},
-		{"data",NULL,NULL,set_Computed_field_conditional},
-		{"displacement_map_field",NULL,NULL,set_Computed_field_conditional},
-		{"displacement_map_xi_direction",NULL,NULL,set_int_positive},
-		{"from",NULL,NULL,set_FE_element_group},
-		{"seed_element",NULL,NULL,set_FE_element_dimension_3},
-		{"smooth_field",NULL,NULL,set_Computed_field_conditional},
-		{"spectrum",NULL,NULL,set_Spectrum},
-		{"surface_data_density",NULL,NULL,set_Computed_field_conditional},
-		{"surface_data_group",NULL,NULL,set_FE_node_group},
-		{"time",NULL,NULL,set_float},
-		{"vtexture",NULL,NULL,set_VT_volume_texture},
-		{NULL,NULL,NULL,NULL}
-	};
 	struct Clipping *clipping;
 	struct Cmiss_command_data *command_data;
 	struct Computed_field *coordinate_field, *data_field,
@@ -8037,6 +7691,7 @@ Executes a GFX CREATE VOLUMES command.
 	struct GROUP(FE_element) *element_group;
 	struct GROUP(FE_node) *surface_data_group;
 	struct GT_object *graphics_object;
+	struct Option_table *option_table;
 	struct Set_Computed_field_conditional_data set_coordinate_field_data,
 		set_data_field_data, set_displacement_map_field_data, 
 		set_surface_data_density_field_data, set_blur_field_data;
@@ -8076,74 +7731,90 @@ Executes a GFX CREATE VOLUMES command.
 			displacement_map_field = (struct Computed_field *)NULL;
 			displacement_map_xi_direction=3;
 			blur_field = (struct Computed_field *)NULL;
-			(option_table[0]).to_be_modified= &graphics_object_name;
-			(option_table[1]).to_be_modified= &clipping;
+
+			option_table=CREATE(Option_table)();
+			/* as */
+			Option_table_add_entry(option_table,"as",&graphics_object_name,
+				(void *)1,set_name);
+			/* clipping */
+			Option_table_add_entry(option_table,"clipping",&clipping,
+				NULL,set_Clipping);
 			/* coordinate */
 			set_coordinate_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_coordinate_field_data.conditional_function=
 				Computed_field_has_1_to_3_components;
 			set_coordinate_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[2]).to_be_modified= &coordinate_field;
-			(option_table[2]).user_data= &set_coordinate_field_data;
+			Option_table_add_entry(option_table,"coordinate",&coordinate_field,
+				&set_coordinate_field_data,set_Computed_field_conditional);
 			/* data */
 			set_data_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_data_field_data.conditional_function=
 				Computed_field_has_at_least_1_component;
 			set_data_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[3]).to_be_modified= &data_field;
-			(option_table[3]).user_data= &set_data_field_data;
+			Option_table_add_entry(option_table,"data",&data_field,
+				&set_data_field_data,set_Computed_field_conditional);
 			/* displacement_map_field */
 			set_displacement_map_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_displacement_map_field_data.conditional_function=
 				Computed_field_has_1_to_4_components;
-			set_displacement_map_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[4]).to_be_modified= &displacement_map_field;
-			(option_table[4]).user_data = &set_displacement_map_field_data;
-			(option_table[5]).to_be_modified= &displacement_map_xi_direction;
-			(option_table[6]).to_be_modified= &element_group;
-			(option_table[6]).user_data=command_data->element_group_manager;
-			(option_table[7]).to_be_modified= &seed_element;
-			(option_table[7]).user_data=command_data->element_manager;
+			set_displacement_map_field_data.conditional_function_user_data=
+				(void *)NULL;
+			Option_table_add_entry(option_table,"displacement_map_field",
+				&displacement_map_field,&set_displacement_map_field_data,
+				set_Computed_field_conditional);
+			/* displacement_map_xi_direction */
+			Option_table_add_entry(option_table,"displacement_map_xi_direction",
+				&displacement_map_xi_direction,NULL,set_int_positive);
+			/* from */
+			Option_table_add_entry(option_table,"from",&element_group,
+				command_data->element_group_manager,set_FE_element_group);
+			/* seed_element */
+			Option_table_add_entry(option_table,"seed_element",
+				&seed_element,command_data->element_manager,set_FE_element_dimension_3);
 			/* smooth_field */
 			set_blur_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_blur_field_data.conditional_function=
 				Computed_field_has_1_to_4_components;
 			set_blur_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[8]).to_be_modified= &blur_field;
-			(option_table[8]).user_data= &set_blur_field_data;
-			(option_table[9]).to_be_modified= &spectrum;
-			(option_table[9]).user_data=command_data->spectrum_manager;
-			/* surface_data_density_field */
+			Option_table_add_entry(option_table,"smooth_field",
+				&blur_field,&set_blur_field_data,set_Computed_field_conditional);
+			/* spectrum */
+			Option_table_add_entry(option_table,"spectrum",&spectrum,
+				command_data->spectrum_manager,set_Spectrum);
+			/* surface_data_density */
 			set_surface_data_density_field_data.computed_field_package=
 				command_data->computed_field_package;
 			set_surface_data_density_field_data.conditional_function=
 				Computed_field_has_1_to_4_components;
-			set_surface_data_density_field_data.conditional_function_user_data=(void *)NULL;
-			(option_table[10]).to_be_modified= &surface_data_density_field;
-			(option_table[10]).user_data= &set_surface_data_density_field_data;
-			(option_table[11]).to_be_modified= &surface_data_group;
-			(option_table[11]).user_data=command_data->data_group_manager;
-			(option_table[12]).to_be_modified= &time;
-			(option_table[13]).to_be_modified= &volume_texture;
-			(option_table[13]).user_data=command_data->volume_texture_manager;
-			return_code=process_multiple_options(state,option_table);
-
+			set_surface_data_density_field_data.conditional_function_user_data=
+				(void *)NULL;
+			Option_table_add_entry(option_table,"surface_data_density",
+				&surface_data_density_field,&set_surface_data_density_field_data,
+				set_Computed_field_conditional);
+			/* surface_data_group */
+			Option_table_add_entry(option_table,"surface_data_group",
+				&surface_data_group,command_data->data_group_manager,set_FE_node_group);
+			/* time */
+			Option_table_add_entry(option_table,"time",&time,NULL,set_float);
+			/* vtexture */
+			Option_table_add_entry(option_table,"vtexture",
+				&volume_texture,command_data->volume_texture_manager,
+				set_VT_volume_texture);
+			return_code=Option_table_multi_parse(option_table,state);
 			if(surface_data_group&&(!surface_data_density_field))
 			{
-				display_message(ERROR_MESSAGE,
-					"gfx_create_volumes."
-					"  Must supply a surface_data_density_field with a surface_data_group");
+				display_message(ERROR_MESSAGE,"gfx_create_volumes.  "
+					"Must supply a surface_data_density_field with a surface_data_group");
 				return_code=0;
 			}
 			if((!surface_data_group)&&surface_data_density_field)
 			{
-				display_message(ERROR_MESSAGE,
-					"gfx_create_volumes."
-					"  Must supply a surface_data_group with a surface_data_density_field");
+				display_message(ERROR_MESSAGE,"gfx_create_volumes.  "
+					"Must supply a surface_data_group with a surface_data_density_field");
 				return_code=0;
 			}
 
@@ -8285,6 +7956,7 @@ Executes a GFX CREATE VOLUMES command.
 					}
 				}
 			} /* parse error, help */
+			DESTROY(Option_table)(&option_table);
 			/* DEACCESS blur and displacement map stuff ? */
 			if (coordinate_field)
 			{
