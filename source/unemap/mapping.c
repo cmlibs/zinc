@@ -4970,8 +4970,8 @@ Creates a pair of arms, and adds to the scene. Or removes if not required.
 {	
 	int return_code,rig_node_group_number;
 	char **labels;
-	char *left ="Left";
-	char *right ="Right";
+	char *left =(char *)NULL;
+	char *right =(char *)NULL;
 	FE_value min_x,max_x,min_y,max_y,min_z,max_z,x_offset,y_offset,z_offset;
 	struct Graphical_material *graphical_material=(struct Graphical_material *)NULL;
 	struct GT_glyph_set *glyph_set=(struct GT_glyph_set *)NULL;
@@ -5002,8 +5002,10 @@ Creates a pair of arms, and adds to the scene. Or removes if not required.
 				(glyph=FIND_BY_IDENTIFIER_IN_LIST(GT_object,name)("point",glyph_list))&&
 				ALLOCATE(point_list,Triple,2)&&ALLOCATE(axis1_list,Triple,2)&&
 				ALLOCATE(axis2_list,Triple,2)&&ALLOCATE(axis3_list,Triple,2)&&
-				ALLOCATE(labels,char *,2))
+				ALLOCATE(labels,char *,2)&&ALLOCATE(left,char,5)&&ALLOCATE(right,char,6))
 			{
+				strcpy(left,"Left");
+				strcpy(right,"Right");
 				x_offset=max_x*1.4;	
 				y_offset=0;
 				z_offset=max_z*1.05;			
@@ -5043,6 +5045,8 @@ Creates a pair of arms, and adds to the scene. Or removes if not required.
 					DEALLOCATE(axis2_list);
 					DEALLOCATE(axis3_list);
 					DEALLOCATE(labels);
+					DEALLOCATE(left);
+					DEALLOCATE(right);
 				}
 			}
 			if (glyph_set)

@@ -200,7 +200,7 @@ to NULL.
 		/* electrode_glyph*/
 		DEACCESS(GT_object)(&(map_info->electrode_glyph));
 		/* torso_arm_labels*/
-		DEACCESS(GT_object)(&(map_info->torso_arm_labels));/*FOR AJP*/			
+		DEACCESS(GT_object)(&(map_info->torso_arm_labels));/*FOR AJP*/
 		/* node_order_info */
 		DEACCESS(FE_node_order_info)(&(map_info->node_order_info));
 		/*element_group */
@@ -3130,7 +3130,7 @@ stored in the unemap package. Also frees any associated fe_fields
 ==============================================================================*/
 {
 	int return_code;
-	struct Computed_field *computed_field,*temp_field;
+	struct Computed_field *computed_field;
 	struct FE_field *fe_field;
 	struct MANAGER(Computed_field) *computed_field_manager;
 	struct MANAGER(FE_field) *fe_field_manager;
@@ -3138,17 +3138,16 @@ stored in the unemap package. Also frees any associated fe_fields
 	ENTER(free_unemap_package_time_computed_fields);
 	if(unemap_package)
 	{
-		computed_field=(struct Computed_field *)NULL;
-		temp_field=(struct Computed_field *)NULL;
-		temp_field=(struct Computed_field *)NULL;
+		computed_field=(struct Computed_field *)NULL;	
 		fe_field=(struct FE_field *)NULL;
 		computed_field_manager=(struct MANAGER(Computed_field) *)NULL;
 		fe_field_manager=(struct MANAGER(FE_field) *)NULL;
 		return_code=1;
 		computed_field_manager=get_unemap_package_Computed_field_manager(unemap_package);
 		computed_field=get_unemap_package_signal_value_at_time_field(unemap_package);
-		temp_field=computed_field;
-		DEACCESS(Computed_field)(&temp_field);
+		/* following does deaccess*/
+		set_unemap_package_signal_value_at_time_field
+						(unemap_package,(struct Computed_field *)NULL);
 		if(computed_field)
 		{	
 			if (Computed_field_can_be_destroyed
@@ -3167,9 +3166,6 @@ stored in the unemap package. Also frees any associated fe_fields
 				if(REMOVE_OBJECT_FROM_MANAGER(Computed_field)
 					(computed_field,computed_field_manager))
 				{
-					computed_field=(struct Computed_field *)NULL;
-					set_unemap_package_signal_value_at_time_field
-						(unemap_package,(struct Computed_field *)NULL);	
 					if (fe_field)
 					{
 						return_code=REMOVE_OBJECT_FROM_MANAGER(FE_field)(
@@ -3189,9 +3185,10 @@ stored in the unemap package. Also frees any associated fe_fields
 			}
 		}/* if(computed_field) */
 
-		computed_field=get_unemap_package_time_field(unemap_package);
-		temp_field=computed_field;
-		DEACCESS(Computed_field)(&temp_field);
+		computed_field=get_unemap_package_time_field(unemap_package);	
+		/* following does deaccess */
+		set_unemap_package_time_field
+						(unemap_package,(struct Computed_field *)NULL);
 		if(computed_field)
 		{	
 			if (Computed_field_can_be_destroyed
@@ -3209,9 +3206,6 @@ stored in the unemap package. Also frees any associated fe_fields
 				if(REMOVE_OBJECT_FROM_MANAGER(Computed_field)
 					(computed_field,computed_field_manager))
 				{
-					computed_field=(struct Computed_field *)NULL;
-					set_unemap_package_time_field
-						(unemap_package,(struct Computed_field *)NULL);
 					if (fe_field)
 					{
 						return_code=REMOVE_OBJECT_FROM_MANAGER(FE_field)(
@@ -4251,13 +4245,15 @@ cf free_unemap_package_maps
 		/*remove the torso arms from the scene */
 		/*??JW probably a bad place to do this. perhaps should maintain */
 		/*a list of GT_objects cf CMGUI. Arms show be temporary anyway*//*FOR AJP*/
-		if((package->maps_info)&&(package->maps_info[map_number])
+		if((package->maps_info)&&(map_number<package->number_of_maps)&&
+			(package->maps_info[map_number])
 			&&(package->maps_info[map_number]->torso_arm_labels)&&(package->scene))
 		{
 			Scene_remove_graphics_object(package->scene,
 				package->maps_info[map_number]->torso_arm_labels);
 		}
-		if((package->maps_info)&&(package->maps_info[map_number]))
+		if((package->maps_info)&&(map_number<package->number_of_maps)
+			&&(package->maps_info[map_number]))
 		{
 			DEACCESS(Map_info)(&(package->maps_info[map_number]));		
 			package->viewed_scene=0;
