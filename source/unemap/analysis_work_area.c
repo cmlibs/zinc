@@ -10700,7 +10700,7 @@ should be done as a callback from the trace_window.
 
 static struct Rig *create_processed_rig(struct Rig *raw_rig)
 /*******************************************************************************
-LAST MODIFIED : 24 July 2002
+LAST MODIFIED : 15 August 2002
 
 DESCRIPTION :
 Duplicates the raw rig, except that
@@ -10986,11 +10986,46 @@ Duplicates the raw rig, except that
 														auxiliary= &((description->properties).auxiliary);
 														raw_auxiliary= &(((*raw_device)->description->
 															properties).auxiliary);
+														auxiliary->type=raw_auxiliary->type;
 														switch (raw_auxiliary->type)
 														{
 															case AUXILIARY_DEVICE_EXPRESSION:
 															{
-																/*???DB.  To be done */
+																if (((raw_auxiliary->combination).expression.
+																	device_expression_string)&&ALLOCATE(
+																	(auxiliary->combination).expression.
+																	device_expression_string,char,strlen(
+																	(raw_auxiliary->combination).expression.
+																	device_expression_string)+1))
+																{
+																	strcpy((auxiliary->combination).
+																		expression.device_expression_string,
+																		(raw_auxiliary->combination).expression.
+																		device_expression_string);
+																	(auxiliary->combination).expression.
+																		device_expression=
+																		parse_device_expression_string(
+																		(auxiliary->combination).expression.
+																		device_expression_string,
+																		(struct Device_list_item *)NULL,
+																		(rig->number_of_devices)-1,rig->devices);
+																	if (!((raw_auxiliary->combination).expression.
+																		device_expression))
+																	{
+																		display_message(ERROR_MESSAGE,
+																			"create_processed_rig.  Could not parse "
+																			"auxiliary device expression string");
+																		destroy_Rig(&rig);
+																	}
+																}
+																else
+																{
+																	display_message(ERROR_MESSAGE,
+																		"create_processed_rig.  Could not allocate "
+																		"memory for an auxiliary device expression "
+																		"string");
+																	destroy_Rig(&rig);
+																}
 															} break;
 															case AUXILIARY_DEVICE_SUM:
 															{
@@ -11029,7 +11064,10 @@ Duplicates the raw rig, except that
 																			else
 																			{
 																				display_message(ERROR_MESSAGE,
-"create_processed_rig.  Could not create electrode for an auxiliary device that is a linear combination");
+																					"create_processed_rig.  Could not "
+																					"create electrode for an auxiliary "
+																					"device that is a linear "
+																					"combination");
 																				while (j>0)
 																				{
 																					j--;
@@ -11043,7 +11081,9 @@ Duplicates the raw rig, except that
 																	else
 																	{
 																		display_message(ERROR_MESSAGE,
-"create_processed_rig.  Could not allocate memory for an auxiliary device that is a linear combination");
+																			"create_processed_rig.  Could not "
+																			"allocate memory for an auxiliary device "
+																			"that is a linear combination");
 																		DEALLOCATE((auxiliary->combination).sum.
 																			electrodes);
 																		DEALLOCATE((auxiliary->combination).sum.
@@ -11200,28 +11240,19 @@ Duplicates the raw rig, except that
 							{
 #if defined (DEVICE_EXPRESSIONS)
 								if (device[i]&&(device[i]->description)&&(AUXILIARY==
-									device[i]->description->type))
+									device[i]->description->type)&&(AUXILIARY_DEVICE_SUM==
+									(auxiliary=&((device[i]->description->properties).
+									auxiliary))->type))
 								{
-									auxiliary= &((device[i]->description->properties).auxiliary);
-									switch (auxiliary->type)
+									for (j=0;j<(auxiliary->combination).sum.number_of_electrodes;
+										j++)
 									{
-										case AUXILIARY_DEVICE_EXPRESSION:
-										{
-											/*???DB.  To be done */
-										} break;
-										case AUXILIARY_DEVICE_SUM:
-										{
-											for (j=0;
-												j<(auxiliary->combination).sum.number_of_electrodes;j++)
-											{
-												device_number=(((auxiliary->combination).sum.
-													electrodes)[j])->number;
-												destroy_Device(((auxiliary->combination).sum.
-													electrodes)+j);
-												((auxiliary->combination).sum.electrodes)[j]=
-													device[device_number];
-											}
-										} break;
+										device_number=(((auxiliary->combination).sum.
+											electrodes)[j])->number;
+										destroy_Device(((auxiliary->combination).sum.
+											electrodes)+j);
+										((auxiliary->combination).sum.electrodes)[j]=
+											device[device_number];
 									}
 								}
 #else /* defined (DEVICE_EXPRESSIONS) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : page_window.c
 
-LAST MODIFIED : 11 August 2002
+LAST MODIFIED : 16 August 2002
 
 DESCRIPTION :
 
@@ -155,7 +155,7 @@ DESCRIPTION :
 
 struct Page_window
 /*******************************************************************************
-LAST MODIFIED : 24 May 2002
+LAST MODIFIED : 16 August 2002
 
 DESCRIPTION :
 The page window object.
@@ -375,7 +375,10 @@ The page window object.
 #endif /* defined (WIN32_USER_INTERFACE) */
 	char *calibration_directory;
 	int unemap_hardware_version;
-	float initial_gain,sampling_frequency,*scrolling_coefficients;
+	float initial_gain,sampling_frequency;
+#if !defined (DEVICE_EXPRESSIONS)
+	float *scrolling_coefficients;
+#endif /* !defined (DEVICE_EXPRESSIONS) */
 #if defined (OLD_CODE)
 	float display_maximum,display_minimum,signal_maximum,signal_minimum;
 #endif /* defined (OLD_CODE) */
@@ -1620,21 +1623,23 @@ static void scrolling_hardware_callback(int number_of_channels,
 	int *channel_numbers,int number_of_values_per_channel,short *signal_values,
 	void *page_window_void)
 /*******************************************************************************
-LAST MODIFIED : 6 June 2002
+LAST MODIFIED : 16 August 2002
 
 DESCRIPTION :
 ???DB.  Used to be in WM_USER.
 ==============================================================================*/
 {
 #if !defined (NO_SCROLLING_HARDWARE_CALLBACK_BODY)
-	float device_maximum,device_minimum,gain,offset,post_filter_gain,
-		pre_filter_gain,*scrolling_coefficient,signal_value,temp_float[4];
-	int i,j,j_start,k,height,number_of_channels_device,
-		number_of_scrolling_devices,width;
+	float device_maximum,device_minimum,signal_value,temp_float[4];
+	int i,k,height,number_of_scrolling_devices,width;
 	short int y_offset;
 	struct Device **scrolling_device;
-	struct Channel **scrolling_channel;
 	struct Page_window *page_window;
+#if !defined (DEVICE_EXPRESSIONS)
+	float gain,offset,post_filter_gain,pre_filter_gain,*scrolling_coefficient;
+	int j,j_start,number_of_channels_device;
+	struct Channel **scrolling_channel;
+#endif /* !defined (DEVICE_EXPRESSIONS) */
 #if defined (MOTIF)
 	Display *display;
 	Drawable drawable;
@@ -1705,16 +1710,16 @@ DESCRIPTION :
 #endif /* defined (WIN32_USER_INTERFACE) */
 #endif /* !defined (NO_SCROLLING_WINDOW_UPDATE) */
 #if !defined (NO_SCROLLING_SIGNAL) && !defined (NO_SCROLLING_WINDOW_UPDATE)
-		j_start=0;
 		number_of_scrolling_devices=page_window->number_of_scrolling_devices;
 		height /= number_of_scrolling_devices;
 		scrolling_device=page_window->scrolling_devices;
+#if !defined (DEVICE_EXPRESSIONS)
+		j_start=0;
 		scrolling_channel=page_window->scrolling_channels;
 		scrolling_coefficient=page_window->scrolling_coefficients;
+#endif /* !defined (DEVICE_EXPRESSIONS) */
 		for (k=0;k<number_of_scrolling_devices;k++)
 		{
-			number_of_channels_device=
-				(page_window->number_of_scrolling_channels_device)[k];
 			device_minimum=(*scrolling_device)->signal_display_minimum;
 			device_maximum=(*scrolling_device)->signal_display_maximum;
 			y_offset=(short)((number_of_scrolling_devices-k-1)*height);
@@ -1722,6 +1727,11 @@ DESCRIPTION :
 			temp_float[1]=(float)0;
 			temp_float[2]=(float)0;
 			temp_float[3]=(float)0;
+#if defined (DEVICE_EXPRESSIONS)
+			/*???DB.  To be done */
+#else /* defined (DEVICE_EXPRESSIONS) */
+			number_of_channels_device=
+				(page_window->number_of_scrolling_channels_device)[k];
 			j=j_start;
 			for (i=0;i<number_of_channels_device;i++)
 			{
@@ -1742,6 +1752,7 @@ DESCRIPTION :
 				scrolling_coefficient++;
 			}
 			j_start += 4*number_of_channels_device;
+#endif /* defined (DEVICE_EXPRESSIONS) */
 			signal_line[4].y=(page_window->last_scrolling_value_device)[k];
 			for (i=0;i<4;i++)
 			{
@@ -2034,35 +2045,38 @@ DESCRIPTION :
 static int add_scrolling_device(struct Page_window *page_window,
 	struct Device *device)
 /*******************************************************************************
-LAST MODIFIED : 24 July 2002
+LAST MODIFIED : 16 August 2002
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	float *scrolling_coefficients;
-	int i,j,*last_scrolling_value_device,number_of_scrolling_channels,
+	int i,*last_scrolling_value_device,number_of_scrolling_channels,
 		*number_of_scrolling_channels_device,return_code;
-	struct Auxiliary_properties *auxiliary_properties;
 	struct Channel **scrolling_channels;
 	struct Device **scrolling_devices;
+#if !defined (DEVICE_EXPRESSIONS)
+	float *scrolling_coefficients;
+	int j;
+	struct Auxiliary_properties *auxiliary_properties;
+#endif /* !defined (DEVICE_EXPRESSIONS) */
 
 	ENTER(add_scrolling_device);
 	return_code=0;
 	if (page_window&&device)
 	{
+#if defined (DEVICE_EXPRESSIONS)
+		number_of_scrolling_channels=page_window->number_of_scrolling_channels;
+		return_code=calculate_device_channels(device,
+			&(page_window->number_of_scrolling_channels),
+			&(page_window->scrolling_channels));
+		if (return_code)
+#else /* defined (DEVICE_EXPRESSIONS) */
 		number_of_scrolling_channels=1;
 		if ((device->channel)||
 			((device->description)&&(AUXILIARY==device->description->type)&&
-#if defined (DEVICE_EXPRESSIONS)
-			/*???DB.  To be done */
-			(AUXILIARY_DEVICE_SUM==(device->description->properties).auxiliary.type)&&
 			(0<(number_of_scrolling_channels=(device->description->properties).
-			auxiliary.combination.sum.number_of_electrodes))
-#else /* defined (DEVICE_EXPRESSIONS) */
-			(0<(number_of_scrolling_channels=(device->description->properties).
-			auxiliary.number_of_electrodes))
+			auxiliary.number_of_electrodes))))
 #endif /* defined (DEVICE_EXPRESSIONS) */
-			))
 		{
 			if (REALLOCATE(scrolling_devices,page_window->scrolling_devices,
 				struct Device *,(page_window->number_of_scrolling_devices)+1))
@@ -2082,6 +2096,9 @@ DESCRIPTION :
 			{
 				page_window->last_scrolling_value_device=last_scrolling_value_device;
 			}
+#if defined (DEVICE_EXPRESSIONS)
+			scrolling_channels=page_window->scrolling_channels;
+#else /* defined (DEVICE_EXPRESSIONS) */
 			if (REALLOCATE(scrolling_channels,page_window->scrolling_channels,
 				struct Channel *,(page_window->number_of_scrolling_channels)+
 				number_of_scrolling_channels))
@@ -2094,13 +2111,24 @@ DESCRIPTION :
 			{
 				page_window->scrolling_coefficients=scrolling_coefficients;
 			}
-			if (scrolling_channels&&scrolling_devices&&scrolling_coefficients&&
+#endif /* defined (DEVICE_EXPRESSIONS) */
+			if (scrolling_channels&&scrolling_devices&&
+#if !defined (DEVICE_EXPRESSIONS)
+				scrolling_coefficients&&
+#endif /* !defined (DEVICE_EXPRESSIONS) */
 				number_of_scrolling_channels_device&&last_scrolling_value_device)
 			{
 				scrolling_devices[page_window->number_of_scrolling_devices]=device;
 				number_of_scrolling_channels_device[page_window->
 					number_of_scrolling_devices]=number_of_scrolling_channels;
 				last_scrolling_value_device[page_window->number_of_scrolling_devices]=0;
+#if defined (DEVICE_EXPRESSIONS)
+				for (i=number_of_scrolling_channels;
+					i<page_window->number_of_scrolling_channels;i++)
+				{
+					unemap_set_scrolling_channel(scrolling_channels[i]->number);
+				}
+#else /* defined (DEVICE_EXPRESSIONS) */
 				if (device->channel)
 				{
 					scrolling_channels[page_window->number_of_scrolling_channels]=
@@ -2116,25 +2144,16 @@ DESCRIPTION :
 					for (i=0;i<number_of_scrolling_channels;i++)
 					{
 						scrolling_channels[j]=
-#if defined (DEVICE_EXPRESSIONS)
-							(((auxiliary_properties->combination).sum.electrodes)[i])->
-							channel;
-#else /* defined (DEVICE_EXPRESSIONS) */
 							((auxiliary_properties->electrodes)[i])->channel;
-#endif /* defined (DEVICE_EXPRESSIONS) */
 						scrolling_coefficients[j]=
-#if defined (DEVICE_EXPRESSIONS)
-							((auxiliary_properties->combination).sum.
-							electrode_coefficients)[i];
-#else /* defined (DEVICE_EXPRESSIONS) */
 							(auxiliary_properties->electrode_coefficients)[i];
-#endif /* defined (DEVICE_EXPRESSIONS) */
 						unemap_set_scrolling_channel((scrolling_channels[j])->number);
 						j++;
 					}
 				}
 				page_window->number_of_scrolling_channels +=
 					number_of_scrolling_channels;
+#endif /* defined (DEVICE_EXPRESSIONS) */
 				(page_window->number_of_scrolling_devices)++;
 				return_code=1;
 			}
@@ -2209,8 +2228,10 @@ DESCRIPTION :
 			{
 				(page_window->scrolling_channels)[i]=
 					(page_window->scrolling_channels)[i+k];
+#if !defined (DEVICE_EXPRESSIONS)
 				(page_window->scrolling_coefficients)[i]=
 					(page_window->scrolling_coefficients)[i+k];
+#endif /* !defined (DEVICE_EXPRESSIONS) */
 			}
 			unemap_clear_scrolling_channels();
 			for (i=0;i<page_window->number_of_scrolling_channels;i++)
@@ -10284,7 +10305,9 @@ if (INVALID_HANDLE_VALUE!=page_window->device_driver)
 		DEALLOCATE(page_window->scrolling_devices);
 		DEALLOCATE(page_window->number_of_scrolling_channels_device);
 		DEALLOCATE(page_window->last_scrolling_value_device);
+#if !defined (DEVICE_EXPRESSIONS)
 		DEALLOCATE(page_window->scrolling_coefficients);
+#endif /* !defined (DEVICE_EXPRESSIONS) */
 		DEALLOCATE(page_window);
 		*page_window_address=(struct Page_window *)NULL;
 	}
@@ -10642,7 +10665,9 @@ as a standalone application.
 				page_window->scrolling_devices=(struct Device **)NULL;
 				page_window->number_of_scrolling_channels_device=(int *)NULL;
 				page_window->last_scrolling_value_device=(int *)NULL;
+#if !defined (DEVICE_EXPRESSIONS)
 				page_window->scrolling_coefficients=(float *)NULL;
+#endif /* !defined (DEVICE_EXPRESSIONS) */
 				page_window->number_of_stimulators=0;
 				unemap_get_number_of_stimulators(&(page_window->number_of_stimulators));
 				page_window->unemap_hardware_version=0;

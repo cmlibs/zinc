@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.h
 
-LAST MODIFIED : 24 July 2002
+LAST MODIFIED : 16 August 2002
 
 DESCRIPTION :
 Contains data and function descriptions for measurement rigs.
@@ -637,13 +637,15 @@ the memory for <**device> and changes <*device> to NULL.
 ==============================================================================*/
 
 struct Device_expression *parse_device_expression_string(
-	char *device_expression_string,int number_of_devices,struct Device **devices);
+	char *device_expression_string,struct Device_list_item *device_list,
+	int number_of_devices,struct Device **devices);
 /*******************************************************************************
-LAST MODIFIED : 18 June 2002
+LAST MODIFIED : 15 August 2002
 
 DESCRIPTION :
 Parses the <device_expression_string> to create a device expression and returns
-it.
+it.  <device_list> and (<number_of_devices>,<devices>) are exclusive
+alternatives for specifying the list of devices to use.
 ==============================================================================*/
 
 int destroy_Device_expression(struct Device_expression **expression_address);
@@ -654,15 +656,17 @@ DESCRIPTION :
 Destroys a device expression.
 ==============================================================================*/
 
-int calculate_device_channel_number_list(struct Device *device,
-	int *number_of_channels_address,int **channel_numbers_address);
+int calculate_device_channels(struct Device *device,
+	int *number_of_channels_address,struct Channel ***channels_address);
 /*******************************************************************************
-LAST MODIFIED : 24 July 2002
+LAST MODIFIED : 16 August 2002
 
 DESCRIPTION :
-From the <device>, calculate the <channel_numbers> whose values are needed in
-order to evaluate the <device>.  The order of the <channel_numbers> and the 
-values need to be passed in the same order to <evaluate_device>.
+From the <device>, calculate the channels whose values are needed in order to
+evaluate the <device>.  <*number_of_channels_address> and <*channels_address>
+are "incremented" to include these channels.  The values passed to
+<evaluate_device> need to be in the same order as the channels calculated by
+this routine.
 ==============================================================================*/
 
 int evaluate_device(struct Device *device,float **channel_values_address,
@@ -673,8 +677,8 @@ LAST MODIFIED : 24 July 2002
 DESCRIPTION :
 Evaluates the <device> using the <*channel_values_address>.  The values
 should be for and in the order of the channels returned by
-<calculate_device_channel_number_list>.  Increments <*channel_values_address> as
-it steps through.
+<calculate_device_channels>.  Increments <*channel_values_address> as it steps
+through.
 ==============================================================================*/
 
 struct Signal *get_Device_signal(struct Device *device);

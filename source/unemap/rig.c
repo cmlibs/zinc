@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : rig.c
 
-LAST MODIFIED : 8 August 2002
+LAST MODIFIED : 16 August 2002
 
 DESCRIPTION :
 Contains function definitions for measurement rigs.
@@ -393,13 +393,15 @@ the memory for <**device> and changes <*device> to NULL.
 
 #if defined (DEVICE_EXPRESSIONS)
 struct Device_expression *parse_device_expression_string(
-	char *device_expression_string,int number_of_devices,struct Device **devices)
+	char *device_expression_string,struct Device_list_item *device_list,
+	int number_of_devices,struct Device **devices)
 /*******************************************************************************
-LAST MODIFIED : 25 July 2002
+LAST MODIFIED : 15 August 2002
 
 DESCRIPTION :
 Parses the <device_expression_string> to create a device expression and returns
-it.
+it.  <device_list> and (<number_of_devices>,<devices>) are exclusive 
+alternatives for specifying the list of devices to use.
 ???DB.  Add expression (keep sum) as an auxiliary type and enclose device names
 	in <> ?
 ==============================================================================*/
@@ -409,8 +411,9 @@ it.
 		special_characters[]="+-*/()",start_device_name;
 	enum Device_expression_operator_type operator;
 	float coefficient;
-	int count,first_length,found,i,level,return_code,second_length,skipped;
-	struct Device **device;
+	int count,first_length,i,level,return_code,second_length,skipped;
+	struct Device *device,**device_address;
+	struct Device_list_item *device_list_item;
 	struct Device_expression *expression;
 
 	ENTER(parse_device_expression_string);
@@ -418,9 +421,11 @@ it.
 	start_device_name='<';
 	end_device_name='>';
 	/* check arguments */
-	if (device_expression_string&&((0==number_of_devices)||(devices&&
-		(0<number_of_devices)))&&!strchr(special_characters,start_device_name)&&
-		!strchr(special_characters,end_device_name))
+	if (device_expression_string&&!strchr(special_characters,start_device_name)&&
+		!strchr(special_characters,end_device_name)&&
+		(((!device_list)&&(0==number_of_devices))||
+		(device_list&&(0==number_of_devices))||
+		((!device_list)&&(0<number_of_devices)&&devices)))
 	{
 		return_code=1;
 		if ('\0'==start_device_name)
@@ -476,6 +481,7 @@ it.
 				{
 					/* find matching ) */
 					level=0;
+					second=first+1;
 					do
 					{
 						/* ignore operators and ()s inside device names */
@@ -574,6 +580,7 @@ it.
 							/* ignore ()'d sub-expressions */
 							skipped=1;
 							/* find matching ) */
+							second++;
 							level=0;
 							do
 							{
@@ -642,10 +649,12 @@ it.
 					case '+':
 					{
 						operator=DEVICE_EXPRESSION_ADD_OPERATOR;
+						second++;
 					} break;
 					case '-':
 					{
 						operator=DEVICE_EXPRESSION_SUBTRACT_OPERATOR;
+						second++;
 					} break;
 					default:
 					{
@@ -785,11 +794,11 @@ it.
 								expression->type=DEVICE_EXPRESSION_EXPRESSION;
 								(expression->expression).binary->type=operator;
 								(expression->expression).binary->first=
-									parse_device_expression_string(first_copy,number_of_devices,
-									devices);
+									parse_device_expression_string(first_copy,device_list,
+									number_of_devices,devices);
 								(expression->expression).binary->second=
-									parse_device_expression_string(second_copy,number_of_devices,
-									devices);
+									parse_device_expression_string(second_copy,device_list,
+									number_of_devices,devices);
 								if (!(((expression->expression).binary->first)&&
 									((expression->expression).binary->second)))
 								{
@@ -826,7 +835,7 @@ it.
 									strncpy(first_copy,first+1,second-first-1);
 									first_copy[second-first-1]='\0';
 									expression=parse_device_expression_string(first_copy,
-										number_of_devices,devices);
+										device_list,number_of_devices,devices);
 									DEALLOCATE(first_copy);
 								}
 							}
@@ -858,29 +867,48 @@ it.
 										{
 											strncpy(first_copy,first,first_length);
 											first_copy[first_length]='\0';
-											i=number_of_devices;
-											device=devices;
-											found=0;
-											while ((i>0)&&!found)
+											device=(struct Device *)NULL;
+											if (device_list_item=device_list)
 											{
-												if ((*device)&&((*device)->description)&&
-													((*device)->description->name)&&!strcmp(first_copy,
-													(*device)->description->name))
+												while (device_list_item&&!device)
 												{
-													found=1;
-												}
-												else
-												{
-													i--;
-													device++;
+													if ((device_list_item->device)&&
+														(device_list_item->device->description)&&
+														(device_list_item->device->description->name)&&
+														!strcmp(first_copy,device_list_item->device->
+														description->name))
+													{
+														device=device_list_item->device;
+													}
+													else
+													{
+														device_list_item=device_list_item->next;
+													}
 												}
 											}
-											if (found)
+											else
+											{
+												i=number_of_devices;
+												device_address=devices;
+												while ((i>0)&&!device)
+												{
+													device= *device_address;
+													if (!(device&&(device->description)&&
+														(device->description->name)&&!strcmp(first_copy,
+														device->description->name)))
+													{
+														i--;
+														device_address++;
+														device=(struct Device *)NULL;
+													}
+												}
+											}
+											if (device)
 											{
 												if (ALLOCATE(expression,struct Device_expression,1))
 												{
 													expression->type=DEVICE_EXPRESSION_DEVICE;
-													(expression->expression).device= *device;
+													(expression->expression).device=device;
 												}
 											}
 											DEALLOCATE(first_copy);
@@ -903,30 +931,49 @@ it.
 									{
 										strncpy(first_copy,first,first_length);
 										first_copy[first_length]='\0';
-										i=number_of_devices;
-										device=devices;
-										found=0;
-										while ((i>0)&&!found)
+										device=(struct Device *)NULL;
+										if (device_list_item=device_list)
 										{
-											if ((*device)&&((*device)->description)&&
-												((*device)->description->name)&&!strcmp(first_copy,
-												(*device)->description->name))
+											while (device_list_item&&!device)
 											{
-												found=1;
-											}
-											else
-											{
-												i--;
-												device++;
+												if ((device_list_item->device)&&
+													(device_list_item->device->description)&&
+													(device_list_item->device->description->name)&&
+													!strcmp(first_copy,device_list_item->device->
+													description->name))
+												{
+													device=device_list_item->device;
+												}
+												else
+												{
+													device_list_item=device_list_item->next;
+												}
 											}
 										}
-										if (found)
+										else
+										{
+											i=number_of_devices;
+											device_address=devices;
+											while ((i>0)&&!device)
+											{
+												device= *device_address;
+												if (!(device&&(device->description)&&
+													(device->description->name)&&!strcmp(first_copy,
+													device->description->name)))
+												{
+													i--;
+													device_address++;
+													device=(struct Device *)NULL;
+												}
+											}
+										}
+										if (device)
 										{
 											/* device */
 											if (ALLOCATE(expression,struct Device_expression,1))
 											{
 												expression->type=DEVICE_EXPRESSION_DEVICE;
-												(expression->expression).device= *device;
+												(expression->expression).device=device;
 											}
 										}
 										else
@@ -1017,27 +1064,28 @@ Destroys a device expression.
 	return (return_code);
 } /* destroy_Device_expression */
 
-static int calculate_device_expression_channel_number_list(
+static int calculate_device_expression_channels(
 	struct Device_expression *expression,int *number_of_channels_address,
-	int **channel_numbers_address)
+	struct Channel ***channels_address)
 /*******************************************************************************
-LAST MODIFIED : 25 July 2002
+LAST MODIFIED : 16 August 2002
 
 DESCRIPTION :
-From the device <expression>, calculate the <channel_numbers> whose values are
-needed in order to evaluate the <expression>.  The order of the
-<channel_numbers> and the values need to be passed in the same order to
-<evaluate_device>.
+From the device <expression>, calculate the channels whose values are needed in
+order to evaluate the <expression>.  <*number_of_channels_address> and
+<*channels_address> are "incremented" to include these channels.  The values
+passed to <evaluate_device> need to be in the same order as the channels
+calculated by this routine.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(calculate_device_expression_channel_number_list);
+	ENTER(calculate_device_expression_channels);
 	return_code=0;
 	/* check arguments */
-	if (number_of_channels_address&&channel_numbers_address&&
-		(((0== *number_of_channels_address)&&!(*channel_numbers_address))||
-		((0< *number_of_channels_address)&&(*channel_numbers_address))))
+	if (number_of_channels_address&&channels_address&&
+		(((0== *number_of_channels_address)&&!(*channels_address))||
+		((0< *number_of_channels_address)&&(*channels_address))))
 	{
 		if (expression)
 		{
@@ -1045,21 +1093,20 @@ needed in order to evaluate the <expression>.  The order of the
 			{
 				case DEVICE_EXPRESSION_DEVICE:
 				{
-					return_code=calculate_device_channel_number_list(
-						(expression->expression).device,number_of_channels_address,
-						channel_numbers_address);
+					return_code=calculate_device_channels((expression->expression).device,
+						number_of_channels_address,channels_address);
 				} break;
 				case DEVICE_EXPRESSION_EXPRESSION:
 				{
 					if ((expression->expression).binary)
 					{
-						if (return_code=calculate_device_expression_channel_number_list(
+						if (return_code=calculate_device_expression_channels(
 							((expression->expression).binary)->first,
-							number_of_channels_address,channel_numbers_address))
+							number_of_channels_address,channels_address))
 						{
-							return_code=calculate_device_expression_channel_number_list(
+							return_code=calculate_device_expression_channels(
 								((expression->expression).binary)->second,
-								number_of_channels_address,channel_numbers_address);
+								number_of_channels_address,channels_address);
 						}
 					}
 				} break;
@@ -1071,43 +1118,44 @@ needed in order to evaluate the <expression>.  The order of the
 		}
 		else
 		{
-			*number_of_channels_address=0;
-			*channel_numbers_address=(int *)NULL;
-			return_code=1;
+			display_message(ERROR_MESSAGE,"calculate_device_expression_channels.  "
+				"Missing expression");
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"calculate_device_expression_channel_number_list.  "
+		display_message(ERROR_MESSAGE,"calculate_device_expression_channels.  "
 			"Invalid argument(s).  %p %p",number_of_channels_address,
-			channel_numbers_address);
+			channels_address);
 	}
 	LEAVE;
 
 	return (return_code);
-} /* calculate_device_expression_channel_number_list */
+} /* calculate_device_expression_channels */
 
-int calculate_device_channel_number_list(struct Device *device,
-	int *number_of_channels_address,int **channel_numbers_address)
+int calculate_device_channels(struct Device *device,
+	int *number_of_channels_address,struct Channel ***channels_address)
 /*******************************************************************************
-LAST MODIFIED : 25 July 2002
+LAST MODIFIED : 16 August 2002
 
 DESCRIPTION :
-From the <device>, calculate the <channel_numbers> whose values are needed in
-order to evaluate the <device>.  The order of the <channel_numbers> and the
-values need to be passed in the same order to <evaluate_device>.
+From the <device>, calculate the channels whose values are needed in order to 
+evaluate the <device>.  <*number_of_channels_address> and <*channels_address>
+are "incremented" to include these channels.  The values passed to 
+<evaluate_device> need to be in the same order as the channels calculated by 
+this routine.
 ==============================================================================*/
 {
-	int *channel_numbers,i,number_of_channels,return_code;
+	int i,number_of_channels,return_code;
+	struct Channel **channels;
 	struct Device **device_address;
 
-	ENTER(calculate_device_channel_number_list);
+	ENTER(calculate_device_channels);
 	return_code=0;
 	/* check arguments */
-	if (number_of_channels_address&&channel_numbers_address&&
-		(((0== *number_of_channels_address)&&!(*channel_numbers_address))||
-		((0< *number_of_channels_address)&&(*channel_numbers_address))))
+	if (number_of_channels_address&&channels_address&&
+		(((0== *number_of_channels_address)&&!(*channels_address))||
+		((0< *number_of_channels_address)&&(*channels_address))))
 	{
 		if (device)
 		{
@@ -1116,11 +1164,11 @@ values need to be passed in the same order to <evaluate_device>.
 				description->properties).auxiliary.type)))
 			{
 				number_of_channels= *number_of_channels_address;
-				if ((device->channel)&&REALLOCATE(channel_numbers,
-					*channel_numbers_address,int,number_of_channels+1))
+				if ((device->channel)&&REALLOCATE(channels,*channels_address,
+					struct Channel *,number_of_channels+1))
 				{
-					*channel_numbers_address=channel_numbers;
-					channel_numbers[number_of_channels]=device->channel->number;
+					*channels_address=channels;
+					channels[number_of_channels]=device->channel;
 					(*number_of_channels_address)++;
 					return_code=1;
 				}
@@ -1133,10 +1181,10 @@ values need to be passed in the same order to <evaluate_device>.
 					{
 						case AUXILIARY_DEVICE_EXPRESSION:
 						{
-							return_code=calculate_device_expression_channel_number_list(
+							return_code=calculate_device_expression_channels(
 								(device->description->properties).auxiliary.combination.
 								expression.device_expression,number_of_channels_address,
-								channel_numbers_address);
+								channels_address);
 						} break;
 						case AUXILIARY_DEVICE_SUM:
 						{
@@ -1158,9 +1206,9 @@ values need to be passed in the same order to <evaluate_device>.
 								{
 									if (*device_address)
 									{
-										return_code=calculate_device_channel_number_list(
+										return_code=calculate_device_channels(
 											*device_address,number_of_channels_address,
-											channel_numbers_address);
+											channels_address);
 										device_address++;
 										i--;
 									}
@@ -1177,21 +1225,20 @@ values need to be passed in the same order to <evaluate_device>.
 		}
 		else
 		{
-			*number_of_channels_address=0;
-			*channel_numbers_address=(int *)NULL;
-			return_code=1;
+			display_message(ERROR_MESSAGE,
+				"calculate_device_channels.  Missing device");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"calculate_device_channel_number_list.  Invalid argument(s).  %p %p",
-			number_of_channels_address,channel_numbers_address);
+			"calculate_device_channels.  Invalid argument(s).  %p %p",
+			number_of_channels_address,channels_address);
 	}
 	LEAVE;
 
 	return (return_code);
-} /* calculate_device_channel_number_list */
+} /* calculate_device_channels */
 
 static int evaluate_device_expression(struct Device_expression *expression,
 	float **channel_values_address,float *result)
@@ -1201,8 +1248,8 @@ LAST MODIFIED : 24 July 2002
 DESCRIPTION :
 Evaluates the <expression> using the <*channel_values_address>.  The values
 should be for and in the order of the channels returned by
-<calculate_device_channel_number_list>.  Increments <*channel_values_address> as
-it steps through.
+<calculate_device_channels>.  Increments <*channel_values_address> as it steps
+through.
 ==============================================================================*/
 {
 	float *channel_values,first_result,second_result;
@@ -1298,8 +1345,8 @@ LAST MODIFIED : 25 July 2002
 DESCRIPTION :
 Evaluates the <device> using the <*channel_values_address>.  The values
 should be for and in the order of the channels returned by
-<calculate_device_channel_number_list>.  Increments <*channel_values_address> as
-it steps through.
+<calculate_device_channels>.  Increments <*channel_values_address> as it steps
+through.
 ==============================================================================*/
 {
 	float *channel_values,*electrode_coefficient,electrode_value,sum;
@@ -3017,9 +3064,9 @@ struct Rig *read_configuration(FILE *input_file,enum Rig_file_type file_type,
 #if defined (UNEMAP_USE_3D)
 	,struct Unemap_package *unemap_package
 #endif /* defined (UNEMAP_USE_3D)*/
-       )
+	)
 /*******************************************************************************
-LAST MODIFIED : 25 July 2002
+LAST MODIFIED : 15 August 2002
 
 DESCRIPTION :
 Assumes that the <input_file> has been opened, the <file_type> (binary or text)
@@ -3212,6 +3259,11 @@ pointer to the rig if successful and NULL if unsuccessful.
 																			&channel_number))
 																		{
 																			/* single channel */
+#if defined (DEVICE_EXPRESSIONS)
+																			(last_device_item->device->description->
+																				properties).auxiliary.type=
+																				AUXILIARY_DEVICE_CHANNEL;
+#endif /* defined (DEVICE_EXPRESSIONS) */
 																			/* create the channel */
 																			if (!(last_device_item->device->channel=
 																				create_Channel(channel_number,(float)0,
@@ -3236,15 +3288,20 @@ pointer to the rig if successful and NULL if unsuccessful.
 																		if (('s'==string[0])&&('u'==string[1])&&
 																			('m'==string[2])&&('\0'==string[3]))
 																		{
-																			fscanf(input_file," : ");
-																			sign=(float)1;
+																			/* linear combination of devices */
 																			auxiliary_properties=
 																				&((last_device_item->device->
 																				description->properties).auxiliary);
-																			/* linear combination of devices */
+#if defined (DEVICE_EXPRESSIONS)
+																			auxiliary_properties->type=
+																				AUXILIARY_DEVICE_SUM;
+#endif /* defined (DEVICE_EXPRESSIONS) */
+																			fscanf(input_file," : ");
+																			sign=(float)1;
 																			do
 																			{
-																				/*???DB.  Stops on a * for the "[^+-\n]" */
+																				/*???DB.  Stops on a * for the
+																					"[^+-\n]" */
 																				if (read_string(input_file,"[^\n+-]",
 																					&dummy))
 																				{
@@ -3426,12 +3483,82 @@ pointer to the rig if successful and NULL if unsuccessful.
 																		}
 																		else
 																		{
-																			display_message(ERROR_MESSAGE,
-													"read_configuration.  Invalid auxiliary device %s %s",
-																				last_device_item->device->description->
-																				name,string);
-																			destroy_Device_list(&device_list,1);
-																			destroy_Rig(&rig);
+#if defined (DEVICE_EXPRESSIONS)
+																			if (('e'==string[0])&&('x'==string[1])&&
+																				('p'==string[2])&&('r'==string[3])&&
+																				('\0'==string[4]))
+																			{
+																				/* arithmetic expression of devices */
+																				auxiliary_properties=
+																					&((last_device_item->device->
+																					description->properties).auxiliary);
+																				auxiliary_properties->type=
+																					AUXILIARY_DEVICE_EXPRESSION;
+																				fscanf(input_file," : ");
+																				if (read_string(input_file,"[^\n]",
+																					&((auxiliary_properties->combination).
+																					expression.
+																					device_expression_string)))
+																				{
+																					fscanf(input_file,"%c",&separator);
+																					/* don't allow the expression to use
+																						the current device */
+																					if (last_device_item->previous)
+																					{
+																						last_device_item->previous->next=
+																							(struct Device_list_item *)NULL;
+																					}
+																					(auxiliary_properties->combination).
+																						expression.device_expression=
+																						parse_device_expression_string(
+																						(auxiliary_properties->combination).
+																						expression.device_expression_string,
+																						device_list,0,
+																						(struct Device **)NULL);
+																					/* reconnect the current device to the
+																						device list */
+																					if (last_device_item->previous)
+																					{
+																						last_device_item->previous->next=
+																							last_device_item;
+																					}
+																					if (!((auxiliary_properties->
+																						combination).expression.
+																						device_expression))
+																					{
+																						display_message(ERROR_MESSAGE,
+																							"read_configuration.  Error "
+																							"parsing expression string for "
+																							"/%s/",last_device_item->device->
+																							description->name);
+																						destroy_Device_list(&device_list,1);
+																						destroy_Rig(&rig);
+																					}
+																				}
+																				else
+																				{
+																					display_message(ERROR_MESSAGE,
+																						"read_configuration.  Could not "
+																						"read expression string for /%s/",
+																						last_device_item->device->
+																						description->name);
+																					destroy_Device_list(&device_list,1);
+																					destroy_Rig(&rig);
+																				}
+																			}
+																			else
+																			{
+#endif /* defined (DEVICE_EXPRESSIONS) */
+																				display_message(ERROR_MESSAGE,
+																					"read_configuration.  "
+																					"Invalid auxiliary device %s %s",
+																					last_device_item->device->
+																					description->name,string);
+																				destroy_Device_list(&device_list,1);
+																				destroy_Rig(&rig);
+#if defined (DEVICE_EXPRESSIONS)
+																			}
+#endif /* defined (DEVICE_EXPRESSIONS) */
 																		}
 																	}
 																} break;
@@ -3470,7 +3597,7 @@ pointer to the rig if successful and NULL if unsuccessful.
 																						destroy_Device_list(
 																							&last_device_item,1);
 																						destroy_Rig(&rig);
-																					}																				 
+																					}
 																				} break;
 																				case PATCH:
 																				{
@@ -3750,7 +3877,7 @@ pointer to the rig if successful and NULL if unsuccessful.
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"read_configuration.  Invalid device type %s",string);
+									"read_configuration.  Invalid device type /%s/",string);
 								destroy_Rig(&rig);
 							}
 						}
@@ -3952,7 +4079,198 @@ pointer to the rig if successful and NULL if unsuccessful.
 #if defined (DEVICE_EXPRESSIONS)
 														if (new_auxiliary_type)
 														{
-															/*???DB.  To be done */
+															/* read auxiliary device type */
+															auxiliary_properties= &((last_device_item->
+																device->description->properties).auxiliary);
+															BINARY_FILE_READ(
+																(char *)&(auxiliary_properties->type),
+																sizeof(enum Auxiliary_device_type),1,
+																input_file);
+															switch (auxiliary_properties->type)
+															{
+																case AUXILIARY_DEVICE_CHANNEL:
+																{
+																	/* read channel number */
+																	BINARY_FILE_READ((char *)&channel_number,
+																		sizeof(int),1,input_file);
+																	/* create the channel */
+																	if (!(last_device_item->device->channel=
+																		create_Channel(channel_number,(float)0,
+																		(float)1)))
+																	{
+																		display_message(ERROR_MESSAGE,
+																			"read_configuration.  Could not "
+																			"create channel for /%s/",
+																			last_device_item->device->
+																			description->name);
+																		destroy_Device_list(&device_list,1);
+																		destroy_Rig(&rig);
+																	}
+																} break;
+																case AUXILIARY_DEVICE_EXPRESSION:
+																{
+																	/* read expression string */
+																	BINARY_FILE_READ((char *)&string_length,
+																		sizeof(int),1,
+																		input_file);
+																	if (ALLOCATE(auxiliary_properties->
+																		combination.expression.
+																		device_expression_string,char,
+																		string_length+1))
+																	{
+																		BINARY_FILE_READ(auxiliary_properties->
+																			combination.expression.
+																			device_expression_string,sizeof(char),
+																			string_length,input_file);
+																		(auxiliary_properties->combination.
+																			expression.device_expression_string)
+																			[string_length]='\0';
+																		/* don't allow the expression to use
+																			the current device */
+																		if (last_device_item->previous)
+																		{
+																			last_device_item->previous->next=
+																				(struct Device_list_item *)NULL;
+																		}
+																		(auxiliary_properties->combination).
+																			expression.device_expression=
+																			parse_device_expression_string(
+																			(auxiliary_properties->combination).
+																			expression.device_expression_string,
+																			device_list,0,(struct Device **)NULL);
+																		/* reconnect the current device to the
+																			device list */
+																		if (last_device_item->previous)
+																		{
+																			last_device_item->previous->next=
+																				last_device_item;
+																		}
+																		if (!((auxiliary_properties->
+																			combination).expression.
+																			device_expression))
+																		{
+																			display_message(ERROR_MESSAGE,
+																				"read_configuration.  Error "
+																				"parsing expression string for "
+																				"/%s/",last_device_item->device->
+																				description->name);
+																			destroy_Device_list(&device_list,1);
+																			destroy_Rig(&rig);
+																		}
+																	}
+																	else
+																	{
+																		display_message(ERROR_MESSAGE,
+																			"read_configuration.  Could not read "
+																			"auxiliary expression for /%s/",
+																			last_device_item->device->
+																			description->name);
+																		destroy_Device_list(&device_list,1);
+																		destroy_Rig(&rig);
+																	}
+																} break;
+																case AUXILIARY_DEVICE_SUM:
+																{
+																	/* read number of electrodes */
+																	BINARY_FILE_READ((char *)&channel_number,
+																		sizeof(int),1,input_file);
+																	if (channel_number>0)
+																	{
+																		/* linear combination of devices */
+																		auxiliary_properties->type=
+																			AUXILIARY_DEVICE_SUM;
+																		ALLOCATE((auxiliary_properties->
+																			combination).sum.
+																			electrode_coefficients,float,
+																			channel_number);
+																		ALLOCATE((auxiliary_properties->
+																			combination).sum.electrodes,
+																			struct Device *,channel_number);
+																		if ((auxiliary_properties->combination.
+																			sum.electrode_coefficients)&&
+																			(auxiliary_properties->combination.
+																			sum.electrodes))
+																		{
+																			auxiliary_properties->combination.sum.
+																				number_of_electrodes=channel_number;
+																			i=0;
+																			while (rig&&(i<channel_number))
+																			{
+																				/* have to create dummy devices
+																					because the device with the
+																					specified number may not have been
+																					read in yet */
+																				if ((auxiliary_properties->
+																					combination.sum.electrodes)[i]=
+																					create_Device(0,
+																					(struct Device_description *)NULL,
+																					(struct Channel *)NULL,
+																					(struct Signal *)NULL))
+																				{
+																					BINARY_FILE_READ((char *)(
+																						((auxiliary_properties->
+																						combination).sum.
+																						electrode_coefficients)+i),
+																						sizeof(float),1,input_file);
+																					BINARY_FILE_READ((char *)&(
+																						(((auxiliary_properties->
+																						combination).sum.
+																						electrodes)[i])->number),
+																						sizeof(int),1,input_file);
+																					i++;
+																				}
+																				else
+																				{
+																					display_message(ERROR_MESSAGE,
+																						"read_configuration.  Could "
+																						"not create dummy device for "
+																						"auxiliary");
+																					while (i>0)
+																					{
+																						destroy_Device(
+																							(auxiliary_properties->
+																							combination.sum.electrodes)+
+																							i);
+																						i--;
+																					}
+																					destroy_Device_list(&device_list,
+																						1);
+																					destroy_Rig(&rig);
+																				}
+																			}
+																		}
+																		else
+																		{
+																			display_message(ERROR_MESSAGE,
+																				"read_configuration.  Could not "
+																				"allocate electrodes and "
+																				"coefficients for auxiliary");
+																			destroy_Device_list(&device_list,1);
+																			destroy_Rig(&rig);
+																		}
+																	}
+																	else
+																	{
+																		display_message(ERROR_MESSAGE,
+																			"read_configuration.  Invalid number "
+																			"of electrodes for auxiliary sum "
+																			"/%s/",last_device_item->device->
+																			description->name);
+																		destroy_Device_list(&device_list,1);
+																		destroy_Rig(&rig);
+																	}
+																} break;
+																default:
+																{
+																	display_message(ERROR_MESSAGE,
+																		"read_configuration.  Invalid "
+																		"auxiliary device type for /%s/",
+																		last_device_item->device->description->
+																		name);
+																	destroy_Device_list(&device_list,1);
+																	destroy_Rig(&rig);
+																} break;
+															}
 														}
 														else
 														{
@@ -4223,30 +4541,44 @@ pointer to the rig if successful and NULL if unsuccessful.
 									count=0;
 									for (i=0;i<number_of_devices;i++)
 									{
+#if defined (DEVICE_EXPRESSIONS)
+										if (device[i]&&(device[i]->description)&&(AUXILIARY==
+											device[i]->description->type)&&(AUXILIARY_DEVICE_SUM==
+											(auxiliary_properties= &((device[i]->description->
+											properties).auxiliary))->type))
+										{
+											for (j=0;j<auxiliary_properties->combination.sum.
+												number_of_electrodes;j++)
+											{
+												device_number=((auxiliary_properties->combination.sum.
+													electrodes)[j])->number;
+												destroy_Device((auxiliary_properties->combination.sum.
+													electrodes)+j);
+												if ((0<=device_number)&&
+													(device_number<number_of_devices)&&
+													device[device_number]&&(device[device_number]->
+													channel))
+												{
+													(auxiliary_properties->combination.sum.electrodes)[j]=
+														device[device_number];
+												}
+												else
+												{
+													count++;
+												}
+											}
+										}
+#else /* defined (DEVICE_EXPRESSIONS) */
 										if (device[i]&&(device[i]->description)&&(AUXILIARY==
 											device[i]->description->type)&&(0<(auxiliary_properties=
 											&((device[i]->description->properties).auxiliary))->
-#if defined (DEVICE_EXPRESSIONS)
-											combination.sum.
-#endif /* defined (DEVICE_EXPRESSIONS) */
 											number_of_electrodes))
 										{
-											for (j=0;j<auxiliary_properties->
-#if defined (DEVICE_EXPRESSIONS)
-												combination.sum.
-#endif /* defined (DEVICE_EXPRESSIONS) */
-												number_of_electrodes;j++)
+											for (j=0;j<auxiliary_properties->number_of_electrodes;j++)
 											{
-												device_number=((auxiliary_properties->
-#if defined (DEVICE_EXPRESSIONS)
-													combination.sum.
-#endif /* defined (DEVICE_EXPRESSIONS) */
-													electrodes)[j])->number;
-												destroy_Device((auxiliary_properties->
-#if defined (DEVICE_EXPRESSIONS)
-													combination.sum.
-#endif /* defined (DEVICE_EXPRESSIONS) */
-													electrodes)+j);
+												device_number=((auxiliary_properties->electrodes)[j])->
+													number;
+												destroy_Device((auxiliary_properties->electrodes)+j);
 												if ((0<=device_number)&&
 													(device_number<number_of_devices)&&
 													device[device_number]&&(device[device_number]->
@@ -4257,11 +4589,8 @@ pointer to the rig if successful and NULL if unsuccessful.
 #endif /* defined (OLD_CODE) */
 													channel))
 												{
-													(auxiliary_properties->
-#if defined (DEVICE_EXPRESSIONS)
-														combination.sum.
-#endif /* defined (DEVICE_EXPRESSIONS) */
-														electrodes)[j]=device[device_number];
+													(auxiliary_properties->electrodes)[j]=
+														device[device_number];
 												}
 												else
 												{
@@ -4269,6 +4598,7 @@ pointer to the rig if successful and NULL if unsuccessful.
 												}
 											}
 										}
+#endif /* defined (DEVICE_EXPRESSIONS) */
 									}
 									if (count>0)
 									{
@@ -4612,7 +4942,7 @@ the specified configuration and returns a pointer to it.
 int write_configuration(struct Rig *rig,FILE *output_file,
 	enum Rig_file_type file_type)
 /*******************************************************************************
-LAST MODIFIED : 25 July 2002
+LAST MODIFIED : 15 August 2002
 
 DESCRIPTION :
 Assumes that the <output_file> has been opened with the specified <file_type>
@@ -4620,6 +4950,7 @@ Assumes that the <output_file> has been opened with the specified <file_type>
 <output_file>.  It returns a non-zero if successful and zero if unsuccessful.
 ==============================================================================*/
 {
+	enum Device_type device_type;
 	enum Region_type rig_type;
 	int i,line_length,number_of_devices,number_of_pages,number_of_regions,
 		return_code,string_length;
@@ -4715,27 +5046,65 @@ Assumes that the <output_file> has been opened with the specified <file_type>
 										{
 											auxiliary_properties=
 												&((*device)->description->properties.auxiliary);
-											if (0<auxiliary_properties->
 #if defined (DEVICE_EXPRESSIONS)
-												combination.sum.
-#endif /* defined (DEVICE_EXPRESSIONS) */
-												number_of_electrodes)
+											switch (auxiliary_properties->type)
+											{
+												case AUXILIARY_DEVICE_CHANNEL:
+												{
+													/* write the channel */
+													fprintf(output_file,"channel : %d\n",
+														(*device)->channel->number);
+												} break;
+												case AUXILIARY_DEVICE_EXPRESSION:
+												{
+													/* write the channel */
+													fprintf(output_file,"expr : %s\n",
+														auxiliary_properties->combination.expression.
+														device_expression_string);
+												} break;
+												case AUXILIARY_DEVICE_SUM:
+												{
+													if (0<auxiliary_properties->combination.sum.
+														number_of_electrodes)
+													{
+														fprintf(output_file,"sum : ");
+														for (i=0;i<auxiliary_properties->combination.sum.
+															number_of_electrodes;i++)
+														{
+															fprintf(output_file,"%+g*%s",
+																(auxiliary_properties->combination.sum.
+																electrode_coefficients)[i],
+																((auxiliary_properties->combination.sum.
+																electrodes)[i])->description->name);
+														}
+														fprintf(output_file,"\n");
+													}
+													else
+													{
+														display_message(ERROR_MESSAGE,
+															"write_configuration.  Invalid "
+															"number_of_electrodes for auxiliary device /%s/",
+															(*device)->description->name);
+														return_code=0;
+													}
+												} break;
+												default:
+												{
+													display_message(ERROR_MESSAGE,"write_configuration.  "
+														"Invalid auxiliary device type for /%s/",
+														(*device)->description->name);
+													return_code=0;
+												} break;
+											}
+#else /* defined (DEVICE_EXPRESSIONS) */
+											if (0<auxiliary_properties->number_of_electrodes)
 											{
 												fprintf(output_file,"sum : ");
-												for (i=0;i<auxiliary_properties->
-#if defined (DEVICE_EXPRESSIONS)
-													combination.sum.
-#endif /* defined (DEVICE_EXPRESSIONS) */
-													number_of_electrodes;i++)
+												for (i=0;i<auxiliary_properties->number_of_electrodes;
+													i++)
 												{
 													fprintf(output_file,"%+g*%s",(auxiliary_properties->
-#if defined (DEVICE_EXPRESSIONS)
-														combination.sum.
-#endif /* defined (DEVICE_EXPRESSIONS) */
 														electrode_coefficients)[i],((auxiliary_properties->
-#if defined (DEVICE_EXPRESSIONS)
-														combination.sum.
-#endif /* defined (DEVICE_EXPRESSIONS) */
 														electrodes)[i])->description->name);
 												}
 												fprintf(output_file,"\n");
@@ -4746,6 +5115,7 @@ Assumes that the <output_file> has been opened with the specified <file_type>
 												fprintf(output_file,"channel : %d\n",
 													(*device)->channel->number);
 											}
+#endif /* defined (DEVICE_EXPRESSIONS) */
 										} break;
 										case ELECTRODE:
 										{
@@ -4887,8 +5257,15 @@ Assumes that the <output_file> has been opened with the specified <file_type>
 								if ((*device)->description->region==region)
 								{
 									/* write the device type */
-									BINARY_FILE_WRITE((char *)&((*device)->description->type),
-										sizeof(enum Device_type),1,output_file);
+									device_type=(*device)->description->type;
+#if defined (DEVICE_EXPRESSIONS)
+									if (AUXILIARY==device_type)
+									{
+										device_type=(enum Device_type)-1;
+									}
+#endif /* defined (DEVICE_EXPRESSIONS) */
+									BINARY_FILE_WRITE((char *)&device_type,sizeof(device_type),1,
+										output_file);
 									/* write the device number */
 									BINARY_FILE_WRITE((char *)&((*device)->number),sizeof(int),1,
 										output_file);
@@ -4905,39 +5282,82 @@ Assumes that the <output_file> has been opened with the specified <file_type>
 										{
 											auxiliary_properties=
 												&((*device)->description->properties.auxiliary);
-											/* assuming that channel numbers are not negative */
-											if (0<auxiliary_properties->
 #if defined (DEVICE_EXPRESSIONS)
-												combination.sum.
-#endif /* defined (DEVICE_EXPRESSIONS) */
-												number_of_electrodes)
+											BINARY_FILE_WRITE((char *)&(auxiliary_properties->type),
+												sizeof(enum Auxiliary_device_type),1,output_file);
+											switch (auxiliary_properties->type)
 											{
-												i= -auxiliary_properties->
-#if defined (DEVICE_EXPRESSIONS)
-													combination.sum.
-#endif /* defined (DEVICE_EXPRESSIONS) */
-													number_of_electrodes;
-												BINARY_FILE_WRITE((char *)&i,sizeof(int),1,output_file);
-												for (i=0;i<auxiliary_properties->
-#if defined (DEVICE_EXPRESSIONS)
-													combination.sum.
-#endif /* defined (DEVICE_EXPRESSIONS) */
-													number_of_electrodes;i++)
+												case AUXILIARY_DEVICE_CHANNEL:
 												{
-#if defined (DEVICE_EXPRESSIONS)
-													BINARY_FILE_WRITE((char *)(((auxiliary_properties->
-														combination).sum.electrode_coefficients)+i),
-														sizeof(float),1,output_file);
-													BINARY_FILE_WRITE((char *)&((((auxiliary_properties->
-														combination).sum.electrodes)[i])->number),
-														sizeof(int),1,output_file);
+													/* write the channel */
+													BINARY_FILE_WRITE(
+														(char *)&((*device)->channel->number),sizeof(int),1,
+														output_file);
+												} break;
+												case AUXILIARY_DEVICE_EXPRESSION:
+												{
+													/* write the device name */
+													string_length=strlen(auxiliary_properties->
+														combination.expression.device_expression_string);
+													BINARY_FILE_WRITE((char *)&string_length,sizeof(int),
+														1,output_file);
+													BINARY_FILE_WRITE(auxiliary_properties->combination.
+														expression.device_expression_string,sizeof(char),
+														string_length,output_file);
+												} break;
+												case AUXILIARY_DEVICE_SUM:
+												{
+													/* assuming that channel numbers are not negative */
+													if (0<auxiliary_properties->combination.sum.
+														number_of_electrodes)
+													{
+														BINARY_FILE_WRITE((char *)&(auxiliary_properties->
+															combination.sum.number_of_electrodes),sizeof(int),
+															1,output_file);
+														for (i=0;i<auxiliary_properties->combination.sum.
+															number_of_electrodes;i++)
+														{
+															BINARY_FILE_WRITE(
+																(char *)(((auxiliary_properties->combination).
+																sum.electrode_coefficients)+i),sizeof(float),1,
+																output_file);
+															BINARY_FILE_WRITE(
+																(char *)&((((auxiliary_properties->combination).
+																sum.electrodes)[i])->number),sizeof(int),1,
+																output_file);
+														}
+													}
+													else
+													{
+														display_message(ERROR_MESSAGE,
+															"write_configuration.  Invalid "
+															"number_of_electrodes for auxiliary device /%s/",
+															(*device)->description->name);
+														return_code=0;
+													}
+												} break;
+												default:
+												{
+													display_message(ERROR_MESSAGE,"write_configuration.  "
+														"Invalid auxiliary device type for /%s/",
+														(*device)->description->name);
+													return_code=0;
+												} break;
+											}
 #else /* defined (DEVICE_EXPRESSIONS) */
+											/* assuming that channel numbers are not negative */
+											if (0<auxiliary_properties->number_of_electrodes)
+											{
+												i= -auxiliary_properties->number_of_electrodes;
+												BINARY_FILE_WRITE((char *)&i,sizeof(int),1,output_file);
+												for (i=0;i<auxiliary_properties->number_of_electrodes;
+													i++)
+												{
 													BINARY_FILE_WRITE((char *)((auxiliary_properties->
 														electrode_coefficients)+i),sizeof(float),1,
 														output_file);
 													BINARY_FILE_WRITE((char *)&(((auxiliary_properties->
 														electrodes)[i])->number),sizeof(int),1,output_file);
-#endif /* defined (DEVICE_EXPRESSIONS) */
 												}
 											}
 											else
@@ -4946,6 +5366,7 @@ Assumes that the <output_file> has been opened with the specified <file_type>
 												BINARY_FILE_WRITE((char *)&((*device)->channel->number),
 													sizeof(int),1,output_file);
 											}
+#endif /* defined (DEVICE_EXPRESSIONS) */
 										} break;
 										case ELECTRODE:
 										{
@@ -7496,10 +7917,11 @@ DESCRIPTION :adds <new_event> to the end of the event list
 	{
 		return_code=0;
 		display_message(ERROR_MESSAGE,
-			"add_Electrical_imaging_event_to_unsorted_list. invalid arguments");
+			"add_Electrical_imaging_event_to_unsorted_list.  Invalid argument(s)");
 	}
 	LEAVE;
-	return(return_code);
+
+	return (return_code);
 } /* add_Electrical_imaging_event_to_unsorted_list */
 
 int destroy_Electrical_imaging_event_list(
