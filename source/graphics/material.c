@@ -1426,8 +1426,11 @@ specified name and the default properties.
 		if (read_string(file,"s",&material_name))
 		{
 			/*???DB.  Should this read function be in another module ? */
-			if (material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
-				material_name,graphical_material_manager))
+			/* either find an existing material of that name, use no material if the
+				 name is "none", or make a material of the given name */
+			if ((material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+				material_name,graphical_material_manager))||
+				fuzzy_string_compare_same_length(material_name,"NONE"))
 			{
 				*material_address=material;
 				return_code=1;
