@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_dot_product.cpp
 //
-// LAST MODIFIED : 12 November 2004
+// LAST MODIFIED : 14 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -21,7 +21,7 @@ Function_handle
 	Function_variable_matrix_dot_product<Scalar>::evaluate_derivative(
 	std::list<Function_variable_handle>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 12 November 2004
+// LAST MODIFIED : 14 January 2005
 //
 // DESCRIPTION :
 // ???DB.  To be done
@@ -39,11 +39,25 @@ Function_handle
 		Function_size_type number_of_columns,number_of_rows;
 		boost::intrusive_ptr< Function_matrix<Scalar> > variable_1,variable_2;
 
-		if ((variable_1=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
+		if (
+#if defined (EVALUATE_RETURNS_VALUE)
+			(variable_1=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
 			Function>(function_matrix_dot_product->variable_1_private->evaluate()))&&
+#else // defined (EVALUATE_RETURNS_VALUE)
+			(function_matrix_dot_product->variable_1_private->evaluate)()&&
+			(variable_1=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
+			Function>(function_matrix_dot_product->variable_1_private->get_value()))&&
+#endif // defined (EVALUATE_RETURNS_VALUE)
+#if defined (EVALUATE_RETURNS_VALUE)
 			(variable_2=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
 			Function>(function_matrix_dot_product->variable_2_private->
-			evaluate()))&&(0<(number_of_rows=variable_1->number_of_rows()))&&
+			evaluate()))&&
+#else // defined (EVALUATE_RETURNS_VALUE)
+			(function_matrix_dot_product->variable_2_private->evaluate)()&&
+			(variable_2=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
+			Function>(function_matrix_dot_product->variable_2_private->get_value()))&&
+#endif // defined (EVALUATE_RETURNS_VALUE)
+			(0<(number_of_rows=variable_1->number_of_rows()))&&
 			(0<(number_of_columns=variable_1->number_of_columns()))&&
 			(number_of_rows==variable_2->number_of_rows())&&
 			(number_of_columns==variable_2->number_of_columns()))

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_trace_implementation.cpp
 //
-// LAST MODIFIED : 7 December 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -24,7 +24,7 @@ EXPORT template<typename Value_type>
 class Function_variable_matrix_trace :
 	public Function_variable_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 3 December 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -43,6 +43,7 @@ class Function_variable_matrix_trace :
 			return (Function_variable_handle(
 				new Function_variable_matrix_trace<Value_type>(*this)));
 		};
+#if defined (EVALUATE_RETURNS_VALUE)
 		Function_handle evaluate()
 		{
 			Function_handle result(0);
@@ -106,6 +107,70 @@ class Function_variable_matrix_trace :
 
 			return (result);
 		};
+#else // defined (EVALUATE_RETURNS_VALUE)
+		bool evaluate()
+		{
+			bool result(true);
+			boost::intrusive_ptr< Function_matrix_trace<Value_type> >
+				function_matrix_trace;
+
+			if (function_matrix_trace=boost::dynamic_pointer_cast<
+				Function_matrix_trace<Value_type>,Function>(function()))
+			{
+#if defined (BEFORE_CACHING)
+				Function_size_type number_of_rows;
+				boost::intrusive_ptr< Function_matrix<Value_type> > matrix;
+
+				result=false;
+				if ((function_matrix_trace->matrix_private->evaluate)()&&
+					(matrix=boost::dynamic_pointer_cast<Function_matrix<Value_type>,
+					Function>(function_matrix_trace->matrix_private->get_value()))&&
+					(matrix->number_of_columns()==
+					(number_of_rows=matrix->number_of_rows())))
+				{
+					Function_size_type i;
+					Value_type sum;
+
+					sum=0;
+					for (i=1;i<=number_of_rows;i++)
+					{
+						sum += (*matrix)(i,i);
+					}
+					function_matrix_trace->values(0,0)=sum;
+					result=true;
+				}
+#else // defined (BEFORE_CACHING)
+				if (!(function_matrix_trace->evaluated()))
+				{
+					Function_size_type number_of_rows;
+					boost::intrusive_ptr< Function_matrix<Value_type> > matrix;
+
+					result=false;
+					if ((function_matrix_trace->matrix_private->evaluate)()&&
+						(matrix=boost::dynamic_pointer_cast<Function_matrix<Value_type>,
+						Function>(function_matrix_trace->matrix_private->get_value()))&&
+						(matrix->number_of_columns()==
+						(number_of_rows=matrix->number_of_rows())))
+					{
+						Function_size_type i;
+						Value_type sum;
+
+						sum=0;
+						for (i=1;i<=number_of_rows;i++)
+						{
+							sum += (*matrix)(i,i);
+						}
+						function_matrix_trace->values(0,0)=sum;
+						function_matrix_trace->set_evaluated();
+						result=true;
+					}
+				}
+#endif // defined (BEFORE_CACHING)
+			}
+
+			return (result);
+		};
+#endif // defined (EVALUATE_RETURNS_VALUE)
 		Function_handle evaluate_derivative(std::list<Function_variable_handle>&)
 		{
 			return (0);
@@ -276,17 +341,26 @@ bool Function_matrix_trace<Value_type>::operator==(
 }
 
 EXPORT template<typename Value_type>
-Function_handle Function_matrix_trace<Value_type>::evaluate(
+#if defined (EVALUATE_RETURNS_VALUE)
+Function_handle
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	Function_matrix_trace<Value_type>::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 1 October 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	boost::intrusive_ptr< Function_variable_matrix<Value_type> >
 		atomic_variable_matrix_trace;
+#if defined (EVALUATE_RETURNS_VALUE)
 	Function_handle result(0);
+#else // defined (EVALUATE_RETURNS_VALUE)
+	bool result(true);
+#endif // defined (EVALUATE_RETURNS_VALUE)
 
 	if (atomic_variable&&
 		equivalent(Function_handle(this),(atomic_variable->function)())&&

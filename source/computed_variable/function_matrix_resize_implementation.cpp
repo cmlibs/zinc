@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_resize_implementation.cpp
 //
-// LAST MODIFIED : 7 December 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -25,7 +25,7 @@ EXPORT template<typename Value_type>
 class Function_variable_matrix_resize :
 	public Function_variable_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 3 December 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -49,6 +49,7 @@ class Function_variable_matrix_resize :
 			return (Function_variable_handle(
 				new Function_variable_matrix_resize<Value_type>(*this)));
 		};
+#if defined (EVALUATE_RETURNS_VALUE)
 		Function_handle evaluate()
 		{
 			Function_handle result(0);
@@ -176,6 +177,90 @@ class Function_variable_matrix_resize :
 
 			return (result);
 		};
+#else // defined (EVALUATE_RETURNS_VALUE)
+		bool evaluate()
+		{
+			bool result(true);
+			boost::intrusive_ptr< Function_matrix_resize<Value_type> >
+				function_matrix_resize;
+
+			if (function_matrix_resize=boost::dynamic_pointer_cast<
+				Function_matrix_resize<Value_type>,Function>(function()))
+			{
+#if defined (BEFORE_CACHING)
+				Function_size_type number_of_columns,number_of_columns_input,
+					number_of_rows,size;
+				boost::intrusive_ptr< Function_matrix<Value_type> > matrix;
+
+				result=false;
+				if ((function_matrix_resize->matrix_private->evaluate)()&&
+					(matrix=boost::dynamic_pointer_cast<Function_matrix<Value_type>,
+					Function>(function_matrix_resize->matrix_private->get_value()))&&
+					(0<(size=(number_of_columns_input=matrix->number_of_columns())*
+					(matrix->number_of_rows())))&&(0<(number_of_columns=
+					function_matrix_resize->number_of_columns_private))&&
+					(0==size%number_of_columns)&&
+					(row_private<=(number_of_rows=size/number_of_columns))&&
+					(column_private<=number_of_columns))
+				{
+					Function_size_type i,j,k;
+
+					function_matrix_resize->values.resize(number_of_rows,
+						number_of_columns);
+					k=0;
+					for (i=0;i<number_of_rows;i++)
+					{
+						for (j=0;j<number_of_columns;j++)
+						{
+							function_matrix_resize->values(i,j)=(*matrix)(
+								k/number_of_columns_input+1,k%number_of_columns_input+1);
+							k++;
+						}
+					}
+					result=true;
+				}
+#else // defined (BEFORE_CACHING)
+				if (!(function_matrix_resize->evaluated()))
+				{
+					Function_size_type number_of_columns,number_of_columns_input,
+						number_of_rows,size;
+					boost::intrusive_ptr< Function_matrix<Value_type> > matrix;
+
+					result=false;
+					if ((function_matrix_resize->matrix_private->evaluate)()&&
+						(matrix=boost::dynamic_pointer_cast<Function_matrix<Value_type>,
+						Function>(function_matrix_resize->matrix_private->get_value()))&&
+						(0<(size=(number_of_columns_input=matrix->number_of_columns())*
+						(matrix->number_of_rows())))&&(0<(number_of_columns=
+						function_matrix_resize->number_of_columns_private))&&
+						(0==size%number_of_columns)&&
+						(row_private<=(number_of_rows=size/number_of_columns))&&
+						(column_private<=number_of_columns))
+					{
+						Function_size_type i,j,k;
+
+						function_matrix_resize->values.resize(number_of_rows,
+							number_of_columns);
+						k=0;
+						for (i=0;i<number_of_rows;i++)
+						{
+							for (j=0;j<number_of_columns;j++)
+							{
+								function_matrix_resize->values(i,j)=(*matrix)(
+									k/number_of_columns_input+1,k%number_of_columns_input+1);
+								k++;
+							}
+						}
+						function_matrix_resize->set_evaluated();
+						result=true;
+					}
+				}
+#endif // defined (BEFORE_CACHING)
+			}
+
+			return (result);
+		};
+#endif // defined (EVALUATE_RETURNS_VALUE)
 		Function_handle evaluate_derivative(std::list<Function_variable_handle>&)
 		{
 			return (0);
@@ -351,17 +436,26 @@ bool Function_matrix_resize<Value_type>::operator==(
 }
 
 EXPORT template<typename Value_type>
-Function_handle Function_matrix_resize<Value_type>::evaluate(
+#if defined (EVALUATE_RETURNS_VALUE)
+Function_handle
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	Function_matrix_resize<Value_type>::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 7 October 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	boost::intrusive_ptr< Function_variable_matrix_resize<Value_type> >
 		atomic_variable_matrix_resize;
+#if defined (EVALUATE_RETURNS_VALUE)
 	Function_handle result(0);
+#else // defined (EVALUATE_RETURNS_VALUE)
+	bool result(true);
+#endif // defined (EVALUATE_RETURNS_VALUE)
 
 	if ((atomic_variable_matrix_resize=boost::dynamic_pointer_cast<
 		Function_variable_matrix_resize<Value_type>,Function_variable>(

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_resize.cpp
 //
-// LAST MODIFIED : 24 November 2004
+// LAST MODIFIED : 14 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -13,11 +13,16 @@
 #endif // defined (ONE_TEMPLATE_DEFINITION_IMPLEMENTED)
 
 #if !defined (AIX)
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#include "computed_variable/function_derivative.hpp"
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
 template<>
 Function_handle Function_variable_matrix_resize<Scalar>::evaluate_derivative(
 	std::list<Function_variable_handle>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 24 November 2004
+// LAST MODIFIED : 14 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -33,18 +38,39 @@ Function_handle Function_variable_matrix_resize<Scalar>::evaluate_derivative(
 		Function_size_type number_of_columns,number_of_independent_values,
 			number_of_rows,size;
 		boost::intrusive_ptr< Function_matrix<Scalar> > derivative,matrix;
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		Function_derivatnew_handle temp_function;
+		Function_variable_handle temp_variable;
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 
-		if ((matrix=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
+		if (
+#if defined (EVALUATE_RETURNS_VALUE)
+			(matrix=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
 			Function>(function_matrix_resize->matrix_private->evaluate()))&&
+#else // defined (EVALUATE_RETURNS_VALUE)
+			(function_matrix_resize->matrix_private->evaluate)()&&
+			(matrix=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
+			Function>(function_matrix_resize->matrix_private->get_value()))&&
+#endif // defined (EVALUATE_RETURNS_VALUE)
 			(0<(size=(matrix->number_of_columns())*(matrix->number_of_rows())))&&
 			(0<(number_of_columns=
 			function_matrix_resize->number_of_columns_private))&&
 			(0==size%number_of_columns)&&
 			(row_private<=(number_of_rows=size/number_of_columns))&&
 			(column_private<=number_of_columns)&&
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 			(derivative=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
 			Function>(function_matrix_resize->matrix_private->
 			evaluate_derivative(independent_variables)))&&
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			(temp_function=boost::dynamic_pointer_cast<Function_derivatnew,
+			Function>(function_matrix_resize->matrix_private->derivative(
+			independent_variables)))&&(temp_variable=temp_function->output())&&
+			(temp_variable->evaluate())&&(temp_variable=temp_function->matrix(
+			independent_variables))&&(derivative=boost::dynamic_pointer_cast<
+			Function_matrix<Scalar>,Function>(temp_variable->get_value()))&&
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 			(number_of_rows*number_of_columns==
 			derivative->number_of_rows()))
 		{

@@ -64,7 +64,13 @@ print "$fun_6a\n";
 $fun_6b=$var_1->evaluate_derivative(independent=>[new Cmiss::Function_variable::Composite($fun_1->xi(index=>1),$fun_1->xi(index=>3))]);
 print "$fun_6b\n";
 $fun_6c=$var_1->evaluate_derivative(independent=>[$fun_5a->xi()]);
-print "$fun_6c\n";
+if (defined($fun_6c)&&($fun_6c))
+{
+	print "$fun_6c\n";
+} else
+{
+	print "undefined\n";
+}
 $fun_7=$var_1->evaluate_derivative(independent=>[$fun_1->nodal_values()]);
 print "$fun_7\n";
 print "\n";

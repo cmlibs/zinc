@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_matrix_implementation.cpp
 //
-// LAST MODIFIED : 3 September 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -352,6 +352,7 @@ string_handle Function_variable_matrix<Value_type>::get_string_representation()
 }
 
 EXPORT template<typename Value_type>
+#if defined (EVALUATE_RETURNS_VALUE)
 Function_handle Function_variable_matrix<Value_type>::evaluate()
 //******************************************************************************
 // LAST MODIFIED : 3 September 2004
@@ -458,6 +459,86 @@ Function_handle Function_variable_matrix<Value_type>::evaluate()
 
 	return (result);
 }
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool Function_variable_matrix<Value_type>::evaluate()
+//******************************************************************************
+// LAST MODIFIED : 13 January 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	bool result;
+	Function_handle function_local;
+
+	result=false;
+	if (function_local=function())
+	{
+		if (0<row_private)
+		{
+			if (0<column_private)
+			{
+				result=(function_local->evaluate)(Function_variable_handle(this));
+			}
+			else
+			{
+				boost::intrusive_ptr< Function_variable_matrix<Value_type> >
+					temp_variable;
+				Function_size_type j,number_of_columns=this->number_of_columns();
+
+				result=true;
+				j=0;
+				while (result&&(j<number_of_columns))
+				{
+					result=(temp_variable=(*this)(row_private,j+1))&&
+						(function_local->evaluate)(temp_variable);
+					j++;
+				}
+			}
+		}
+		else
+		{
+			if (0<column_private)
+			{
+				boost::intrusive_ptr< Function_variable_matrix<Value_type> >
+					temp_variable;
+				Function_size_type i,number_of_rows=this->number_of_rows();
+
+				result=true;
+				i=0;
+				while (result&&(i<number_of_rows))
+				{
+					result=(temp_variable=(*this)(i+1,column_private))&&
+						(function_local->evaluate)(temp_variable);
+					i++;
+				}
+			}
+			else
+			{
+				boost::intrusive_ptr< Function_variable_matrix<Value_type> >
+					temp_variable;
+				Function_size_type i,j,number_of_columns=this->number_of_columns(),
+					number_of_rows=this->number_of_rows();
+
+				result=true;
+				i=0;
+				while (result&&(i<number_of_rows))
+				{
+					j=0;
+					while (result&&(j<number_of_columns))
+					{
+						result=(temp_variable=(*this)(i+1,j+1))&&
+							(function_local->evaluate)(temp_variable);
+						j++;
+					}
+					i++;
+				}
+			}
+		}
+	}
+
+	return (result);
+}
+#endif // defined (EVALUATE_RETURNS_VALUE)
 
 EXPORT template<typename Value_type>
 Function_handle Function_variable_matrix<Value_type>::get_value() const

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_transpose_implementation.cpp
 //
-// LAST MODIFIED : 7 December 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -25,7 +25,7 @@ EXPORT template<typename Value_type>
 class Function_variable_matrix_transpose :
 	public Function_variable_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 3 December 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -49,6 +49,7 @@ class Function_variable_matrix_transpose :
 			return (Function_variable_handle(
 				new Function_variable_matrix_transpose<Value_type>(*this)));
 		};
+#if defined (EVALUATE_RETURNS_VALUE)
 		Function_handle evaluate()
 		{
 			Function_handle result(0);
@@ -160,6 +161,74 @@ class Function_variable_matrix_transpose :
 
 			return (result);
 		};
+#else // defined (EVALUATE_RETURNS_VALUE)
+		bool evaluate()
+		{
+			bool result(true);
+			boost::intrusive_ptr< Function_matrix_transpose<Value_type> >
+				function_matrix_transpose;
+
+			if (function_matrix_transpose=boost::dynamic_pointer_cast<
+				Function_matrix_transpose<Value_type>,Function>(function()))
+			{
+#if defined (BEFORE_CACHING)
+				Function_size_type number_of_columns,number_of_rows;
+				boost::intrusive_ptr< Function_matrix<Value_type> > matrix;
+
+				result=false;
+				if ((function_matrix_transpose->matrix_private->evaluate)()&&
+					(matrix=boost::dynamic_pointer_cast<Function_matrix<Value_type>,
+					Function>(function_matrix_transpose->matrix_private->get_value()))&&
+					(row_private<=(number_of_rows=matrix->number_of_columns()))&&
+					(column_private<=(number_of_columns=matrix->number_of_rows())))
+				{
+					Function_size_type i,j;
+
+					function_matrix_transpose->values.resize(number_of_rows,
+						number_of_columns);
+					for (i=1;i<=number_of_rows;i++)
+					{
+						for (j=1;j<=number_of_columns;j++)
+						{
+							function_matrix_transpose->values(i-1,j-1)=(*matrix)(j,i);
+						}
+					}
+					result=true;
+				}
+#else // defined (BEFORE_CACHING)
+				if (!(function_matrix_transpose->evaluated()))
+				{
+					Function_size_type number_of_columns,number_of_rows;
+					boost::intrusive_ptr< Function_matrix<Value_type> > matrix;
+
+					result=false;
+					if ((function_matrix_transpose->matrix_private->evaluate)()&&
+						(matrix=boost::dynamic_pointer_cast<Function_matrix<Value_type>,
+						Function>(function_matrix_transpose->matrix_private->get_value()))&&
+						(row_private<=(number_of_rows=matrix->number_of_columns()))&&
+						(column_private<=(number_of_columns=matrix->number_of_rows())))
+					{
+						Function_size_type i,j;
+
+						function_matrix_transpose->values.resize(number_of_rows,
+							number_of_columns);
+						for (i=1;i<=number_of_rows;i++)
+						{
+							for (j=1;j<=number_of_columns;j++)
+							{
+								function_matrix_transpose->values(i-1,j-1)=(*matrix)(j,i);
+							}
+						}
+						function_matrix_transpose->set_evaluated();
+						result=true;
+					}
+				}
+#endif // defined (BEFORE_CACHING)
+			}
+
+			return (result);
+		};
+#endif // defined (EVALUATE_RETURNS_VALUE)
 		Function_handle evaluate_derivative(std::list<Function_variable_handle>&)
 		{
 			return (0);
@@ -332,17 +401,26 @@ bool Function_matrix_transpose<Value_type>::operator==(
 }
 
 EXPORT template<typename Value_type>
-Function_handle Function_matrix_transpose<Value_type>::evaluate(
+#if defined (EVALUATE_RETURNS_VALUE)
+Function_handle
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	Function_matrix_transpose<Value_type>::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 7 October 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	boost::intrusive_ptr< Function_variable_matrix_transpose<Value_type> >
 		atomic_variable_matrix_transpose;
+#if defined (EVALUATE_RETURNS_VALUE)
 	Function_handle result(0);
+#else // defined (EVALUATE_RETURNS_VALUE)
+	bool result(true);
+#endif // defined (EVALUATE_RETURNS_VALUE)
 
 	if ((atomic_variable_matrix_transpose=boost::dynamic_pointer_cast<
 		Function_variable_matrix_transpose<Value_type>,Function_variable>(

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_composite.hpp
 //
-// LAST MODIFIED : 29 November 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 // A list of functions whose output is the composite of the functions' outputs
@@ -16,7 +16,7 @@
 
 class Function_composite : public Function
 //******************************************************************************
-// LAST MODIFIED : 29 November 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 // A composite of other function(s).
@@ -40,7 +40,11 @@ class Function_composite : public Function
 		Function_variable_handle input();
 		Function_variable_handle output();
 	private:
+#if defined (EVALUATE_RETURNS_VALUE)
 		Function_handle evaluate(Function_variable_handle atomic_variable);
+#else // defined (EVALUATE_RETURNS_VALUE)
+		bool evaluate(Function_variable_handle atomic_variable);
+#endif // defined (EVALUATE_RETURNS_VALUE)
 		bool evaluate_derivative(Scalar& derivative,
 			Function_variable_handle atomic_variable,
 			std::list<Function_variable_handle>& atomic_independent_variables);

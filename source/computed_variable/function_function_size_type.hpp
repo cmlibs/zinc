@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_function_size_type.hpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 14 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -19,7 +19,7 @@ typedef boost::intrusive_ptr<Function_function_size_type>
 
 class Function_function_size_type : public Function
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 14 January 2005
 //
 // DESCRIPTION :
 // An identity function whose input/output is a function_size_type
@@ -43,7 +43,11 @@ class Function_function_size_type : public Function
 	public:
 		Function_size_type value() const;
 	private:
+#if defined (EVALUATE_RETURNS_VALUE)
 		Function_handle evaluate(Function_variable_handle atomic_variable);
+#else // defined (EVALUATE_RETURNS_VALUE)
+		bool evaluate(Function_variable_handle atomic_variable);
+#endif // defined (EVALUATE_RETURNS_VALUE)
 		bool evaluate_derivative(Scalar& derivative,
 			Function_variable_handle atomic_variable,
 			std::list<Function_variable_handle>& atomic_independent_variables);

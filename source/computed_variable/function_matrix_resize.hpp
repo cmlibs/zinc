@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_resize.hpp
 //
-// LAST MODIFIED : 7 October 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -19,7 +19,7 @@ class Function_variable_matrix_resize;
 EXPORT template<typename Value_type>
 class Function_matrix_resize : public Function_matrix<Value_type>
 //******************************************************************************
-// LAST MODIFIED : 7 October 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 // Output is the resize of the matrix variable.  Input is the matrix
@@ -44,7 +44,11 @@ class Function_matrix_resize : public Function_matrix<Value_type>
 		Function_variable_handle input();
 		Function_variable_handle output();
 	private:
+#if defined (EVALUATE_RETURNS_VALUE)
 		Function_handle evaluate(Function_variable_handle atomic_variable);
+#else // defined (EVALUATE_RETURNS_VALUE)
+		bool evaluate(Function_variable_handle atomic_variable);
+#endif // defined (EVALUATE_RETURNS_VALUE)
 		bool evaluate_derivative(Scalar& derivative,
 			Function_variable_handle atomic_variable,
 			std::list<Function_variable_handle>& atomic_independent_variables);

@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix.hpp
 //
-// LAST MODIFIED : 14 September 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -15,7 +15,7 @@
 EXPORT template<typename Value_type>
 class Function_matrix : public Function
 //******************************************************************************
-// LAST MODIFIED : 14 September 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 // An identity function whose input/output is a matrix
@@ -55,7 +55,11 @@ class Function_matrix : public Function
 		// calculate the determinant (zero for non-square matrix)
 		virtual bool determinant(Value_type&);
 	private:
+#if defined (EVALUATE_RETURNS_VALUE)
 		virtual Function_handle evaluate(Function_variable_handle atomic_variable);
+#else // defined (EVALUATE_RETURNS_VALUE)
+		virtual bool evaluate(Function_variable_handle atomic_variable);
+#endif // defined (EVALUATE_RETURNS_VALUE)
 		virtual bool evaluate_derivative(Scalar& derivative,
 			Function_variable_handle atomic_variable,
 			std::list<Function_variable_handle>& atomic_independent_variables);

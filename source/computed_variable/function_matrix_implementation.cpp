@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_implementation.cpp
 //
-// LAST MODIFIED : 1 September 2004
+// LAST MODIFIED : 26 January 2005
 //
 // DESCRIPTION :
 //???DB.  Should be linear transformation (with Function_variable_matrix as an
@@ -98,9 +98,13 @@ Function_variable_handle Function_matrix<Value_type>::output()
 }
 
 EXPORT template<typename Value_type>
-bool Function_matrix<Value_type>::operator==(const Function& function) const
+bool Function_matrix<Value_type>::operator==(const Function&
+#if defined (OLD_CODE)
+	function
+#endif // defined (OLD_CODE)
+	) const
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 26 January 2005
 //
 // DESCRIPTION :
 // Equality operator.
@@ -109,6 +113,8 @@ bool Function_matrix<Value_type>::operator==(const Function& function) const
 	bool result;
 
 	result=false;
+#if defined (OLD_CODE)
+	//???DB.  Removed so that can create unique functions from a matrix
 	if (this)
 	{
 		try
@@ -139,6 +145,7 @@ bool Function_matrix<Value_type>::operator==(const Function& function) const
 			// do nothing
 		}
 	}
+#endif // defined (OLD_CODE)
 
 	return (result);
 }
@@ -269,15 +276,23 @@ template<>
 bool Function_matrix<Scalar>::determinant(Scalar&);
 
 EXPORT template<typename Value_type>
+#if defined (EVALUATE_RETURNS_VALUE)
 Function_handle Function_matrix<Value_type>::evaluate(
 	Function_variable_handle atomic_variable)
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool Function_matrix<Value_type>::evaluate(Function_variable_handle)
+#endif // defined (EVALUATE_RETURNS_VALUE)
 //******************************************************************************
-// LAST MODIFIED : 6 August 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
 {
+#if defined (EVALUATE_RETURNS_VALUE)
 	return (get_value(atomic_variable));
+#else // defined (EVALUATE_RETURNS_VALUE)
+	return (true);
+#endif // defined (EVALUATE_RETURNS_VALUE)
 }
 
 EXPORT template<typename Value_type>

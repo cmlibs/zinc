@@ -83,7 +83,13 @@ print "$function_21\n";
 $function_22=$variable_1->evaluate_derivative(independent=>[$function_1->input()]);
 print "$function_22\n";
 $function_23=$variable_1->evaluate_derivative(independent=>[$function_1->element()]);
-print "$function_23\n";
+if (defined($function_23)&&($function_23))
+{
+	print "$function_23\n";
+} else
+{
+	print "undefined\n";
+}
 $function_24=$variable_1->evaluate_derivative(independent=>[$function_1->xi(index=>3)]);
 print "$function_24\n";
 $function_25=$variable_1->evaluate_derivative(independent=>[$function_1->xi(index=>2)]);

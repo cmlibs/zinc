@@ -44,6 +44,7 @@ $fun_3=new Cmiss::Function::Element_xi(element=>$heart->get_element(name=>21),xi
 #   being evaluated.  Check that function being evaluated isn't changed
 $fun_4=$var_1->evaluate(input=>$fun_1a->element_xi(),value=>$fun_3);
 print "$fun_1($fun_3)=$fun_4\n";
+#???DB.  input is not being set to value.  Check evaluate_derivative in api.  Check set_value for derivatnew
 $fun_4a=($fun_1a->output())->evaluate_derivative(independent=>[$var_1a],input=>$fun_1a->element_xi(),value=>$fun_3);
 print "$fun_4a\n";
 $return_code=($fun_1a->element_xi())->set_value($fun_3);

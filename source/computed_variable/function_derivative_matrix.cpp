@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_derivative_matrix.cpp
 //
-// LAST MODIFIED : 1 December 2004
+// LAST MODIFIED : 14 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -1760,6 +1760,7 @@ Function_handle Function_derivative_matrix::inverse()
 	return (result);
 }
 
+#if defined (EVALUATE_RETURNS_VALUE)
 Function_handle Function_derivative_matrix::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
@@ -1770,6 +1771,17 @@ Function_handle Function_derivative_matrix::evaluate(
 {
 	return (get_value(atomic_variable));
 }
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool Function_derivative_matrix::evaluate(Function_variable_handle)
+//******************************************************************************
+// LAST MODIFIED : 14 January 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	return (true);
+}
+#endif // defined (EVALUATE_RETURNS_VALUE)
 
 bool Function_derivative_matrix::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,

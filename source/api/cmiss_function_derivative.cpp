@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_function_derivative.cpp
 
-LAST MODIFIED : 9 June 2004
+LAST MODIFIED : 17 January 2005
 
 DESCRIPTION :
 The public interface to the Cmiss_function derivative object.
@@ -20,7 +20,7 @@ Cmiss_function_id Cmiss_function_derivative_create(
 	Cmiss_function_variable_id dependent_variable,
 	Cmiss_function_variable_list_id independent_variables)
 /*******************************************************************************
-LAST MODIFIED : 9 June 2004
+LAST MODIFIED : 17 January 2005
 
 DESCRIPTION :
 Creates a Cmiss_function derivative with the supplied <dependent_variable>
@@ -38,8 +38,14 @@ and <independent_variables>.
 		Function_variable_handle> *>(independent_variables)))
 	{
 		result=reinterpret_cast<Cmiss_function_id>(
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 			new Function_derivative_handle(new Function_derivative(
-			*dependent_variable_handle_address,*independent_variables_address)));
+			*dependent_variable_handle_address,*independent_variables_address))
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			new Function_handle((*dependent_variable_handle_address)->derivative(
+			*independent_variables_address))
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			);
 	}
 
 	return (result);

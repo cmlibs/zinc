@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable.hpp
 //
-// LAST MODIFIED : 3 December 2004
+// LAST MODIFIED : 23 January 2005
 //
 // DESCRIPTION :
 // An abstract class for specifying input/independent and output/dependent
@@ -17,6 +17,8 @@
 
 #include "computed_variable/function_base.hpp"
 #include "computed_variable/function_variable_value.hpp"
+
+//#define USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE
 
 class Function_variable_iterator_representation
 //******************************************************************************
@@ -112,7 +114,7 @@ class Function_variable_iterator:
 
 class Function_variable
 //******************************************************************************
-// LAST MODIFIED : 3 December 2004
+// LAST MODIFIED : 23 January 2005
 //
 // DESCRIPTION :
 // A specification for an input/independent and/or output/dependent variable of
@@ -129,12 +131,19 @@ class Function_variable
 		virtual Function_handle function() const;
 		// returns a specification for the type of variable's value
 		virtual Function_variable_value_handle value();
+#if defined (EVALUATE_RETURNS_VALUE)
 		// evaluate creates a new Function which is the variable's value with the
 		//   specified <input> replaced by the given <value>.  For a dependent
 		//   variable, this will involve evaluating the variable's function
 		virtual Function_handle evaluate();
 		virtual Function_handle evaluate(Function_variable_handle input,
 			Function_handle value);
+#else // defined (EVALUATE_RETURNS_VALUE)
+		// for a dependent variable, the variable's function will be evaluated.  For
+		//   an independent variable, nothing will happen
+		virtual bool evaluate();
+#endif // defined (EVALUATE_RETURNS_VALUE)
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		// evaluate_derivative creates a new Function which is the value of the
 		//   variable differentiated with respect to the <independent_variables>
 		//   and the specified <input> replaced with given the <value>
@@ -143,6 +152,12 @@ class Function_variable
 		virtual Function_handle evaluate_derivative(
 			std::list<Function_variable_handle>& independent_variables,
 			Function_variable_handle input,Function_handle value);
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		// derivative creates a new Function which calculates the value of this
+		//   variable differentiated with respect to the <independent_variables>
+		virtual Function_handle derivative(
+			const std::list<Function_variable_handle>& independent_variables);
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		// set_value changes the variable to have the <value> in the same order as
 		//   evaluate.  Returns true if the variable is changed and false otherwise
 		virtual bool set_value(Function_handle value);

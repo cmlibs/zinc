@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : api/cmiss_function_variable.cpp
 
-LAST MODIFIED : 5 March 2004
+LAST MODIFIED : 13 January 2005
 
 DESCRIPTION :
 The public interface to the Cmiss_function_variable object.  Variables specify
@@ -11,6 +11,10 @@ or set to another value.
 
 #include <new>
 #include "api/cmiss_function_variable.h"
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#include "computed_variable/function_derivative.hpp"
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 #include "computed_variable/function_variable.hpp"
 extern "C"
 {
@@ -92,7 +96,7 @@ Cmiss_function_id Cmiss_function_variable_evaluate(
 	Cmiss_function_variable_id variable,Cmiss_function_variable_id input,
 	Cmiss_function_id value)
 /*******************************************************************************
-LAST MODIFIED : 5 March 2004
+LAST MODIFIED : 13 January 2005
 
 DESCRIPTION :
 See the include file.
@@ -106,8 +110,14 @@ See the include file.
 	if ((variable_handle_address=reinterpret_cast<Function_variable_handle *>(
 		variable))&&(*variable_handle_address))
 	{
+#if defined (EVALUATE_RETURNS_VALUE)
+#else // defined (EVALUATE_RETURNS_VALUE)
+		Function_handle current_value(0);
+#endif // defined (EVALUATE_RETURNS_VALUE)
+
 		input_handle_address=reinterpret_cast<Function_variable_handle *>(input);
 		value_handle_address=reinterpret_cast<Function_handle *>(value);
+#if defined (EVALUATE_RETURNS_VALUE)
 		if (input_handle_address&&value_handle_address)
 		{
 			temp=(*variable_handle_address)->evaluate(
@@ -117,6 +127,21 @@ See the include file.
 		{
 			temp=(*variable_handle_address)->evaluate();
 		}
+#else // defined (EVALUATE_RETURNS_VALUE)
+		if (input_handle_address&&value_handle_address)
+		{
+			current_value=(*input_handle_address)->get_value();
+			(*input_handle_address)->set_value(*value_handle_address);
+		}
+		if ((*variable_handle_address)->evaluate())
+		{
+			temp=(*variable_handle_address)->get_value();
+		}
+		if (current_value)
+		{
+			(*input_handle_address)->rset_value(current_value);
+		}
+#endif // defined (EVALUATE_RETURNS_VALUE)
 		if (temp)
 		{
 			result=reinterpret_cast<Cmiss_function_id>(
@@ -132,7 +157,7 @@ Cmiss_function_id Cmiss_function_variable_evaluate_derivative(
 	Cmiss_function_variable_list_id independent_variables,
 	Cmiss_function_variable_id input,Cmiss_function_id value)
 /*******************************************************************************
-LAST MODIFIED : 5 March 2004
+LAST MODIFIED : 5 January 2005
 
 DESCRIPTION :
 See the include file.
@@ -142,27 +167,79 @@ See the include file.
 	Function_handle *value_handle_address;
 	Function_variable_handle *input_handle_address,*variable_handle_address;
 	std::list<Function_variable_handle> *independent_variables_address;
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+	Function_derivatnew_handle function_derivative;
+	Function_variable_handle variable_derivative;
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 
 	result=0;
 	if ((variable_handle_address=reinterpret_cast<Function_variable_handle *>(
 		variable))&&(*variable_handle_address)&&
 		(independent_variables_address=reinterpret_cast<std::list<
-		Function_variable_handle> *>(independent_variables)))
+		Function_variable_handle> *>(independent_variables))
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		&&(function_derivative=boost::dynamic_pointer_cast<Function_derivatnew,
+		Function>((*variable_handle_address)->derivative(
+		*independent_variables_address)))&&
+		(variable_derivative=function_derivative->output())
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		)
 	{
 		input_handle_address=reinterpret_cast<Function_variable_handle *>(input);
 		value_handle_address=reinterpret_cast<Function_handle *>(value);
 		if (input_handle_address&&value_handle_address)
 		{
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 			result=reinterpret_cast<Cmiss_function_id>(
 				new Function_handle(((*variable_handle_address)->
 				evaluate_derivative)(*independent_variables_address,
 				*input_handle_address,*value_handle_address)));
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#if defined (EVALUATE_RETURNS_VALUE)
+			if ((variable_derivative->evaluate)(*input_handle_address,
+				*value_handle_address))
+			{
+				result=reinterpret_cast<Cmiss_function_id>(new Function_handle(
+					(function_derivative->matrix(*independent_variables_address))->
+					get_value()));
+			}
+#else // defined (EVALUATE_RETURNS_VALUE)
+			Function_handle current_value(0);
+
+			if (input_handle_address&&value_handle_address)
+			{
+				current_value=(*input_handle_address)->get_value();
+				(*input_handle_address)->set_value(*value_handle_address);
+			}
+			if (variable_derivative->evaluate())
+			{
+				result=reinterpret_cast<Cmiss_function_id>(new Function_handle(
+					(function_derivative->matrix(*independent_variables_address))->
+					get_value()));
+			}
+			if (current_value)
+			{
+				(*input_handle_address)->rset_value(current_value);
+			}
+#endif // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		}
 		else
 		{
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 			result=reinterpret_cast<Cmiss_function_id>(
 				new Function_handle(((*variable_handle_address)->
 				evaluate_derivative)(*independent_variables_address)));
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			if ((variable_derivative->evaluate)())
+			{
+				result=reinterpret_cast<Cmiss_function_id>(new Function_handle(
+					(function_derivative->matrix(*independent_variables_address))->
+					get_value()));
+			}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		}
 	}
 

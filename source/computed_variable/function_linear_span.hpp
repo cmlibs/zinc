@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_linear_span.hpp
 //
-// LAST MODIFIED : 10 November 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -18,7 +18,7 @@ typedef boost::intrusive_ptr<Function_linear_span> Function_linear_span_handle;
 
 class Function_linear_span : public Function_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 10 November 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 // Evaluates to a vector whose entries are the result of evaluating the spanned
@@ -44,7 +44,11 @@ class Function_linear_span : public Function_matrix<Scalar>
 		Function_variable_handle input();
 		Function_variable_handle output();
 	private:
+#if defined (EVALUATE_RETURNS_VALUE)
 		Function_handle evaluate(Function_variable_handle atomic_variable);
+#else // defined (EVALUATE_RETURNS_VALUE)
+		bool evaluate(Function_variable_handle atomic_variable);
+#endif // defined (EVALUATE_RETURNS_VALUE)
 		bool evaluate_derivative(Scalar& derivative,
 			Function_variable_handle atomic_variable,
 			std::list<Function_variable_handle>& atomic_independent_variables);

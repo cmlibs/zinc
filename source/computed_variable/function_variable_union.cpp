@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_union.cpp
 //
-// LAST MODIFIED : 7 December 2004
+// LAST MODIFIED : 11 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -311,7 +311,7 @@ Function_variable_union::Function_variable_union(
 
 Function_variable_handle Function_variable_union::clone() const
 //******************************************************************************
-// LAST MODIFIED : 23 November 2004
+// LAST MODIFIED : 11 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -336,6 +336,8 @@ Function_variable_handle Function_variable_union::clone() const
 			{
 				local_variables_list.push_back(Function_variable_handle(0));
 			}
+			iterator++;
+			i--;
 		}
 	}
 	if (result=Function_variable_union_handle(new Function_variable_union(

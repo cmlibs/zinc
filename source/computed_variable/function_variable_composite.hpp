@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_composite.hpp
 //
-// LAST MODIFIED : 7 December 2004
+// LAST MODIFIED : 7 February 2005
 //
 // DESCRIPTION :
 // A list of specifiers joined together end on end.  There can be repeats in the
@@ -16,7 +16,7 @@
 
 class Function_variable_composite : public Function_variable
 //******************************************************************************
-// LAST MODIFIED : 7 December 2004
+// LAST MODIFIED : 7 February 2005
 //
 // DESCRIPTION :
 // A composite of other variable(s).

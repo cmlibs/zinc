@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_coordinates.cpp
 //
-// LAST MODIFIED : 2 December 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -825,15 +825,24 @@ Function_size_type Function_prolate_spheroidal_to_rectangular_cartesian::
 	return (number_of_components_private);
 }
 
-Function_handle Function_prolate_spheroidal_to_rectangular_cartesian::evaluate(
+#if defined (EVALUATE_RETURNS_VALUE)
+Function_handle
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	Function_prolate_spheroidal_to_rectangular_cartesian::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 2 December 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
 {
+#if defined (EVALUATE_RETURNS_VALUE)
 	Function_handle result(0);
+#else // defined (EVALUATE_RETURNS_VALUE)
+	bool result(true);
+#endif // defined (EVALUATE_RETURNS_VALUE)
 	Function_variable_matrix_rectangular_cartesian_handle
 		atomic_variable_rectangular_cartesian;
 
@@ -846,33 +855,51 @@ Function_handle Function_prolate_spheroidal_to_rectangular_cartesian::evaluate(
 		number_of_components()))
 	{
 #if defined (BEFORE_CACHING)
+#if defined (EVALUATE_RETURNS_VALUE)
 		Matrix result_matrix(1,1);
+#else // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (EVALUATE_RETURNS_VALUE)
 
+#if defined (EVALUATE_RETURNS_VALUE)
 		result_matrix(0,0)=0;
+#else // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (EVALUATE_RETURNS_VALUE)
 		switch (atomic_variable_rectangular_cartesian->row_private)
 		{
 			case 1:
 			{
 				x_private=(Scalar)((double)focus_private*
 					cosh((double)lambda_private)*cos((double)mu_private));
+#if defined (EVALUATE_RETURNS_VALUE)
 				result_matrix(0,0)=x_private;
+#else // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (EVALUATE_RETURNS_VALUE)
 			} break;
 			case 2:
 			{
 				y_private=(Scalar)((double)focus_private*
 					sinh((double)lambda_private)*sin((double)mu_private)*
 					cos((double)theta_private));
+#if defined (EVALUATE_RETURNS_VALUE)
 				result_matrix(0,0)=y_private;
+#else // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (EVALUATE_RETURNS_VALUE)
 			} break;
 			case 3:
 			{
 				z_private=(Scalar)((double)focus_private*
 					sinh((double)lambda_private)*sin((double)mu_private)*
 					sin((double)theta_private));
+#if defined (EVALUATE_RETURNS_VALUE)
 				result_matrix(0,0)=z_private;
+#else // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (EVALUATE_RETURNS_VALUE)
 			} break;
 		}
+#if defined (EVALUATE_RETURNS_VALUE)
 		result=Function_handle(new Function_matrix<Scalar>(result_matrix));
+#else // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (EVALUATE_RETURNS_VALUE)
 #else // defined (BEFORE_CACHING)
 		if (!evaluated())
 		{
@@ -886,6 +913,7 @@ Function_handle Function_prolate_spheroidal_to_rectangular_cartesian::evaluate(
 			z_private=(Scalar)(temp_double*sin((double)theta_private));
 			set_evaluated();
 		}
+#if defined (EVALUATE_RETURNS_VALUE)
 		if (evaluated())
 		{
 			Matrix result_matrix(1,1);
@@ -908,6 +936,8 @@ Function_handle Function_prolate_spheroidal_to_rectangular_cartesian::evaluate(
 			}
 			result=Function_handle(new Function_matrix<Scalar>(result_matrix));
 		}
+#else // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (EVALUATE_RETURNS_VALUE)
 #endif // defined (BEFORE_CACHING)
 	}
 	else

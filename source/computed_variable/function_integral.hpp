@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_integral.hpp
 //
-// LAST MODIFIED : 4 November 2004
+// LAST MODIFIED : 28 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -16,7 +16,7 @@ class Quadrature_scheme;
 
 class Function_integral : public Function_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 4 November 2004
+// LAST MODIFIED : 28 January 2005
 //
 // DESCRIPTION :
 // An integral of another function.
@@ -25,6 +25,7 @@ class Function_integral : public Function_matrix<Scalar>
 	template<class Value_type_1,class Value_type_2>
 		friend bool equivalent(boost::intrusive_ptr<Value_type_1> const &,
 		boost::intrusive_ptr<Value_type_2> const &);
+	friend class Function_derivatnew_integral;
 	friend class Function_variable_integral;
 	public:
 		// for construction exception
@@ -43,7 +44,11 @@ class Function_integral : public Function_matrix<Scalar>
 		Function_variable_handle input();
 		Function_variable_handle output();
 	private:
+#if defined (EVALUATE_RETURNS_VALUE)
 		Function_handle evaluate(Function_variable_handle atomic_variable);
+#else // defined (EVALUATE_RETURNS_VALUE)
+		bool evaluate(Function_variable_handle atomic_variable);
+#endif // defined (EVALUATE_RETURNS_VALUE)
 		bool evaluate_derivative(Scalar& derivative,
 			Function_variable_handle atomic_variable,
 			std::list<Function_variable_handle>& atomic_independent_variables);

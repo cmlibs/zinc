@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable_composite.cpp
 //
-// LAST MODIFIED : 7 December 2004
+// LAST MODIFIED : 11 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -83,7 +83,9 @@ class Function_variable_iterator_representation_atomic_composite: public
 		{
 			if (variables_list_iterator!=(source->variables_list).end())
 			{
+				//???DB.  prefix doesn't need a clone
 				atomic_variable_iterator++;
+//				++atomic_variable_iterator;
 				if (atomic_variable_iterator==
 					((*variables_list_iterator)->end_atomic)())
 				{
@@ -325,7 +327,7 @@ Function_variable_composite::Function_variable_composite(
 
 Function_variable_handle Function_variable_composite::clone() const
 //******************************************************************************
-// LAST MODIFIED : 23 November 2004
+// LAST MODIFIED : 11 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -350,6 +352,8 @@ Function_variable_handle Function_variable_composite::clone() const
 			{
 				local_variables_list.push_back(Function_variable_handle(0));
 			}
+			iterator++;
+			i--;
 		}
 	}
 	if (result=Function_variable_composite_handle(new Function_variable_composite(

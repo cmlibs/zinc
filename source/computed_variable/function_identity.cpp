@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_identity.cpp
 //
-// LAST MODIFIED : 7 December 2004
+// LAST MODIFIED : 14 January 2005
 //
 // DESCRIPTION :
 //???DB.  Need to be able to get to the variable it wraps so that can do
@@ -129,6 +129,7 @@ bool Function_identity::operator==(const Function& function) const
 	return (result);
 }
 
+#if defined (EVALUATE_RETURNS_VALUE)
 Function_handle Function_identity::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
@@ -149,6 +150,17 @@ Function_handle Function_identity::evaluate(
 
 	return (result);
 }
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool Function_identity::evaluate(Function_variable_handle)
+//******************************************************************************
+// LAST MODIFIED : 14 January 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	return (true);
+}
+#endif // defined (EVALUATE_RETURNS_VALUE)
 
 bool Function_identity::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,

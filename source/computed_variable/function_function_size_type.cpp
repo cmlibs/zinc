@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_function_size_type.cpp
 //
-// LAST MODIFIED : 1 December 2004
+// LAST MODIFIED : 14 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -448,6 +448,7 @@ Function_size_type Function_function_size_type::value() const
 	return (value_private);
 }
 
+#if defined (EVALUATE_RETURNS_VALUE)
 Function_handle Function_function_size_type::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
@@ -458,6 +459,17 @@ Function_handle Function_function_size_type::evaluate(
 {
 	return (get_value(atomic_variable));
 }
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool Function_function_size_type::evaluate(Function_variable_handle)
+//******************************************************************************
+// LAST MODIFIED : 14 January 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	return (true);
+}
+#endif // defined (EVALUATE_RETURNS_VALUE)
 
 bool Function_function_size_type::evaluate_derivative(Scalar&,
 	Function_variable_handle,std::list<Function_variable_handle>&)

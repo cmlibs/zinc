@@ -1,7 +1,7 @@
 # **************************************************************************
 # FILE : cmgui.Makefile
 #
-# LAST MODIFIED : 10 November 2004
+# LAST MODIFIED : 23 December 2004
 #
 # DESCRIPTION :
 #
@@ -744,6 +744,7 @@ COMPUTED_VARIABLE_SRCS = \
 	computed_variable/computed_variable_finite_element.c \
 	computed_variable/computed_variable_identity.c \
 	computed_variable/computed_variable_standard_operations.c \
+	computed_variable/derivative_matrix.cpp \
 	computed_variable/function.cpp \
 	computed_variable/function_composite.cpp \
 	computed_variable/function_composition.cpp \

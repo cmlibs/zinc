@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_finite_element.hpp
 //
-// LAST MODIFIED : 3 November 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -21,7 +21,7 @@ extern "C"
 
 class Function_element : public Function
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 // An identity function whose input/output is and element.
@@ -49,7 +49,11 @@ class Function_element : public Function
 		//   the returned element
 		struct FE_element* element_value();
 	private:
+#if defined (EVALUATE_RETURNS_VALUE)
 		Function_handle evaluate(Function_variable_handle atomic_variable);
+#else // defined (EVALUATE_RETURNS_VALUE)
+		bool evaluate(Function_variable_handle atomic_variable);
+#endif // defined (EVALUATE_RETURNS_VALUE)
 		bool evaluate_derivative(Scalar& derivative,
 			Function_variable_handle atomic_variable,
 			std::list<Function_variable_handle>& atomic_independent_variables);
@@ -71,7 +75,7 @@ typedef boost::intrusive_ptr<Function_element> Function_element_handle;
 
 class Function_element_xi : public Function
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 // An identity function whose input/output is element/xi.
@@ -108,7 +112,11 @@ class Function_element_xi : public Function
 		// return the xi value 1<=index<=number_of_xi
 		Scalar xi_value(Function_size_type index);
 	private:
+#if defined (EVALUATE_RETURNS_VALUE)
 		Function_handle evaluate(Function_variable_handle atomic_variable);
+#else // defined (EVALUATE_RETURNS_VALUE)
+		bool evaluate(Function_variable_handle atomic_variable);
+#endif // defined (EVALUATE_RETURNS_VALUE)
 		bool evaluate_derivative(Scalar& derivative,
 			Function_variable_handle atomic_variable,
 			std::list<Function_variable_handle>& atomic_independent_variables);
@@ -135,7 +143,7 @@ typedef boost::intrusive_ptr<Function_finite_element>
 
 class Function_finite_element : public Function
 //******************************************************************************
-// LAST MODIFIED : 18 November 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 // A function for a finite element interpolation field.
@@ -230,7 +238,11 @@ class Function_finite_element : public Function
 	   int define_tensor_product_basis_on_element(
 			struct FE_element *element, int dimension, enum FE_basis_type basis_type);
 	private:
+#if defined (EVALUATE_RETURNS_VALUE)
 		Function_handle evaluate(Function_variable_handle atomic_variable);
+#else // defined (EVALUATE_RETURNS_VALUE)
+		bool evaluate(Function_variable_handle atomic_variable);
+#endif // defined (EVALUATE_RETURNS_VALUE)
 		bool evaluate_derivative(Scalar& derivative,
 			Function_variable_handle atomic_variable,
 			std::list<Function_variable_handle>& atomic_independent_variables);

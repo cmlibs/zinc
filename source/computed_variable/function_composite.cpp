@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_composite.cpp
 //
-// LAST MODIFIED : 6 December 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 //???DB.  Should make a Matrix if it can?  Changes type in constructors?
@@ -235,6 +235,7 @@ bool Function_composite::operator==(const Function& function) const
 	return (result);
 }
 
+#if defined (EVALUATE_RETURNS_VALUE)
 Function_handle Function_composite::evaluate(
 	Function_variable_handle atomic_variable)
 //******************************************************************************
@@ -259,6 +260,31 @@ Function_handle Function_composite::evaluate(
 
 	return (result);
 }
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool Function_composite::evaluate(Function_variable_handle atomic_variable)
+//******************************************************************************
+// LAST MODIFIED : 13 January 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	bool result(true);
+	Function_size_type i=functions_list.size();
+	std::list<Function_handle>::iterator function_iterator=functions_list.begin();
+
+	while (result&&(i>0))
+	{
+		if (*function_iterator)
+		{
+			result=(*function_iterator)->evaluate(atomic_variable);
+		}
+		i--;
+		function_iterator++;
+	}
+
+	return (result);
+}
+#endif // defined (EVALUATE_RETURNS_VALUE)
 
 bool Function_composite::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,

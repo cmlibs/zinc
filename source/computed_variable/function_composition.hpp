@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_composition.hpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -17,12 +17,13 @@ typedef boost::intrusive_ptr<Function_composition> Function_composition_handle;
 
 class Function_composition : public Function
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 // A composition of other function(s).
 //==============================================================================
 {
+	friend class Function_derivatnew_composition;
 	friend class Function_variable_composition;
 	friend class Function_variable_iterator_representation_atomic_composition;
 	template<class Value_type_1,class Value_type_2>
@@ -41,7 +42,11 @@ class Function_composition : public Function
 		Function_variable_handle input();
 		Function_variable_handle output();
 	private:
+#if defined (EVALUATE_RETURNS_VALUE)
 		Function_handle evaluate(Function_variable_handle atomic_variable);
+#else // defined (EVALUATE_RETURNS_VALUE)
+		bool evaluate(Function_variable_handle atomic_variable);
+#endif // defined (EVALUATE_RETURNS_VALUE)
 		bool evaluate_derivative(Scalar& derivative,
 			Function_variable_handle atomic_variable,
 			std::list<Function_variable_handle>& atomic_independent_variables);

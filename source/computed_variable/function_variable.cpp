@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_variable.cpp
 //
-// LAST MODIFIED : 7 December 2004
+// LAST MODIFIED : 24 January 2005
 //
 // DESCRIPTION :
 // See function_variable.hpp
@@ -175,6 +175,9 @@
 //???debug.  See t/37.com
 //#define CHANGE_ELEMENT_DIMENSION
 
+//???DB.  For Function_variable::derivative
+#include "computed_variable/function_derivative.hpp"
+//???DB.  For Function_variable::evaluate_derivative
 #include "computed_variable/function_derivative_matrix.hpp"
 #include "computed_variable/function_matrix.hpp"
 #include "computed_variable/function_variable.hpp"
@@ -430,6 +433,7 @@ Function_variable_value_handle Function_variable::value()
 	return (value_private);
 }
 
+#if defined (EVALUATE_RETURNS_VALUE)
 Function_handle Function_variable::evaluate()
 //******************************************************************************
 // LAST MODIFIED : 11 November 2004
@@ -491,7 +495,39 @@ Function_handle Function_variable::evaluate()
 
 	return (result);
 }
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool Function_variable::evaluate()
+//******************************************************************************
+// LAST MODIFIED : 14 January 2005
+//
+// DESCRIPTION :
+//???DB.  Merge atomic_results functions ie. join scalars onto vectors?
+//==============================================================================
+{
+	bool result(true);
 
+	if (this)
+	{
+		Function_variable_iterator atomic_iterator=begin_atomic();
+
+		// do the local evaluate
+		while (result&&(atomic_iterator!=end_atomic()))
+		{
+			Assert((*atomic_iterator)&&((*atomic_iterator)->function()),
+				std::logic_error(
+				"Function_variable::evaluate().  Atomic variable missing function()"));
+			result=((*atomic_iterator)->function())->evaluate(*atomic_iterator);
+			//???DB.  prefix doesn't need a clone
+			atomic_iterator++;
+//			++atomic_iterator;
+		}
+	}
+
+	return (result);
+}
+#endif // defined (EVALUATE_RETURNS_VALUE)
+
+#if defined (EVALUATE_RETURNS_VALUE)
 Function_handle Function_variable::evaluate(Function_variable_handle input,
 	Function_handle value)
 //******************************************************************************
@@ -523,7 +559,10 @@ Function_handle Function_variable::evaluate(Function_variable_handle input,
 
 	return (result);
 }
+#else // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (EVALUATE_RETURNS_VALUE)
 
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 Function_handle Function_variable::evaluate_derivative(
 	std::list<Function_variable_handle>& independent_variables)
 //******************************************************************************
@@ -594,6 +633,33 @@ Function_handle Function_variable::evaluate_derivative(
 
 	return (result);
 }
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+Function_handle Function_variable::derivative(
+	const std::list<Function_variable_handle>& independent_variables)
+//******************************************************************************
+// LAST MODIFIED : 24 January 2005
+//
+// DESCRIPTION :
+// Default.  Fails.
+//
+// DEVELOPMENT PLAN :
+// 1 Change so that derivatives are cached
+// 1.1 Make a new Function_derivative, called Function_derivatnew, which is
+//     Function_derivative_matrix modified so that <evaluate> calculates the
+//     <matrices> instead of the constructor
+// 1.2 Change this function to return a Function_derivatnew
+// 1.3 Add derivative method to Perl
+// 1.4 Remove evaluate_derivative method
+// 1.4 Test
+// 2 Change evaluate so that it does not return a value?
+// ???DB.  Move Function_derivatnew to function.hpp and have derivative return
+//   a Function_derivatnew_handle?
+//==============================================================================
+{
+	return (Function_handle(new Function_derivatnew(
+		Function_variable_handle(this),independent_variables)));
+}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 
 bool Function_variable::set_value(Function_handle value)
 //******************************************************************************

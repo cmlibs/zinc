@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_base.hpp
 //
-// LAST MODIFIED : 11 November 2004
+// LAST MODIFIED : 12 January 2005
 //
 // DESCRIPTION :
 // Basic declarations and #defines for functions.
@@ -16,6 +16,8 @@
 
 #include <iostream>
 #include <stdexcept>
+
+//#define EVALUATE_RETURNS_VALUE
 
 //#define BEFORE_CACHING
 

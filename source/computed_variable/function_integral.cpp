@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_integral.cpp
 //
-// LAST MODIFIED : 7 December 2004
+// LAST MODIFIED : 11 February 2005
 //
 // DESCRIPTION :
 //???DB.  Need more memory management for Integration_scheme
@@ -227,24 +227,101 @@ class Quadrature_scheme
 		struct FE_basis *exactly_integrated_basis;
 };
 
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+// class Function_derivatnew_integral
+// ----------------------------------
+
+class Function_derivatnew_integral : public Function_derivatnew
+//******************************************************************************
+// LAST MODIFIED : 23 January 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	public:
+		// for construction exception
+		class Construction_exception {};
+		// constructor
+		Function_derivatnew_integral(
+			const Function_variable_handle& dependent_variable,
+			const std::list<Function_variable_handle>& independent_variables);
+		// destructor
+		~Function_derivatnew_integral();
+	// inherited
+	private:
+#if defined (EVALUATE_RETURNS_VALUE)
+		virtual Function_handle evaluate(Function_variable_handle atomic_variable);
+#else // defined (EVALUATE_RETURNS_VALUE)
+		virtual bool evaluate(Function_variable_handle atomic_variable);
+#endif // defined (EVALUATE_RETURNS_VALUE)
+};
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+
 // class Function_variable_integral
 // --------------------------------
 
 struct Integrate_over_element_data
+//******************************************************************************
+// LAST MODIFIED : 7 February 2005
+//
+// DESCRIPTION :
+//==============================================================================
 {
 	friend int integrate_over_element(struct FE_element *,void *);
 	public:
-		// constructor
+		// constructors
 		Integrate_over_element_data(Function_variable_handle integrand_output,
 			Function_size_type row,Function_size_type column,
 			Function_variable_handle integrand_input,
 			Function_variable_handle independent_output,
 			Function_variable_handle independent_input,
-			Quadrature_scheme *scheme,Matrix& result_matrix):first_private(true),
-			column(column),row(row),independent_input(independent_input),
+			Quadrature_scheme *scheme,Matrix& result_matrix):
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			derivative_private(false),
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			first_private(true),
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			dummy_derivative_matrix(),
+			result_derivative_matrix(dummy_derivative_matrix),derivative_function(0),
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			column(column),number_of_columns(0),number_of_rows(0),row(row),
+			element_xi_input(0),independent_input(independent_input),
 			independent_output(independent_output),integrand_input(integrand_input),
-			integrand_output(integrand_output),scheme(scheme),
-			result_matrix_private(result_matrix){};
+			integrand_output(integrand_output),jacobian_determinant_output(0),
+			dummy_matrix(),
+			result_matrix_private(result_matrix),
+			scheme(scheme)
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			,dummy_derivative_variables(0),
+			derivative_variables(dummy_derivative_variables)
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			{};
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		Integrate_over_element_data(Function_variable_handle integrand_output,
+			Function_size_type row,Function_size_type column,
+			const std::list<Function_variable_handle>& derivative_variables,
+			Function_variable_handle integrand_input,
+			Function_variable_handle independent_output,
+			Function_variable_handle independent_input,
+			Quadrature_scheme *scheme,Derivative_matrix& result_derivative_matrix):
+			derivative_private(true),first_private(true),dummy_derivative_matrix(),
+			result_derivative_matrix(result_derivative_matrix),derivative_function(0),
+			column(column),number_of_columns(0),number_of_rows(0),row(row),
+			element_xi_input(0),independent_input(independent_input),
+			independent_output(independent_output),integrand_input(integrand_input),
+			integrand_output(integrand_output),jacobian_determinant_output(0),
+			dummy_matrix(),
+			result_matrix_private(dummy_matrix),
+			scheme(scheme),
+			dummy_derivative_variables(0),
+			derivative_variables(derivative_variables)
+			{};
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		// destructor
 		~Integrate_over_element_data(){};
 		bool first()
@@ -257,18 +334,35 @@ struct Integrate_over_element_data
 		// assignment
 		Integrate_over_element_data& operator=(const Integrate_over_element_data&);
 	private:
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		bool derivative_private;
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		bool first_private;
-		Function_size_type column,row;
-		Function_variable_handle independent_input,independent_output,
-			integrand_input,integrand_output;
-		Quadrature_scheme *scheme;
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		Derivative_matrix dummy_derivative_matrix;
+		Derivative_matrix& result_derivative_matrix;
+		Function_derivatnew_handle derivative_function;
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		Function_size_type column,number_of_columns,number_of_rows,row;
+		Function_variable_handle element_xi_input,independent_input,
+			independent_output,integrand_input,integrand_output,
+			jacobian_determinant_output;
+		Matrix dummy_matrix;
 		Matrix& result_matrix_private;
+		Quadrature_scheme *scheme;
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		const std::list<Function_variable_handle> dummy_derivative_variables;
+		const std::list<Function_variable_handle>& derivative_variables;
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 };
 
 int integrate_over_element(struct FE_element *element,
 	void *integrate_over_element_data_void)
 //******************************************************************************
-// LAST MODIFIED : 10 November 2004
+// LAST MODIFIED : 11 February 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -290,62 +384,77 @@ int integrate_over_element(struct FE_element *element,
 		(dimension==get_FE_element_dimension(element))&&(0<(number_of_points=
 		scheme->number_of_points))&&(points=scheme->points))
 	{
-		Function_size_type column,row;
+		boost::intrusive_ptr< Function_matrix<Scalar> > integrand(0);
+		Function_element_xi_handle element_xi(0);
+		Function_size_type column,i,j,number_of_columns,number_of_rows,point_number,
+			row;
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		Function_size_type k;
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		Function_variable_handle element_xi_input(0),independent_input(0),
 			independent_output(0),jacobian_determinant_output(0);
+		Scalar multiplier,temp_scalar;
 		Vector& weights=scheme->weights;
 
+		number_of_rows=0;
+		number_of_columns=0;
+		point_number=0;
 		row=data->row;
 		column=data->column;
-		if ((independent_input=data->independent_input)&&
-			(independent_output=data->independent_output))
+		if (data->first_private)
 		{
-			std::list<Function_variable_handle> independent_variables(1,
-				independent_input);
-			Function_handle integrand=Function_handle(new Function_composition(
-				integrand_output,integrand_input,independent_input)),
-				jacobian=Function_handle(new Function_derivative(independent_output,
-				independent_variables));
-			Function_variable_handle jacobian_output;
-
-			if (integrand&&(integrand_output=integrand->output())&&jacobian&&
-				(jacobian_output=jacobian->output()))
+			data->first_private=false;
+			if ((independent_input=data->independent_input)&&
+				(independent_output=data->independent_output))
 			{
-				Function_handle jacobian_determinant=Function_handle(
-					new Function_matrix_determinant<Scalar>(jacobian_output));
+				std::list<Function_variable_handle> independent_variables(1,
+					independent_input);
+				Function_handle integrand=Function_handle(new Function_composition(
+					integrand_output,integrand_input,independent_output)),jacobian=
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+					Function_handle(new Function_derivative(independent_output,
+					independent_variables))
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+					independent_output->derivative(independent_variables)
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+					;
+				Function_variable_handle jacobian_output;
 
-				if (jacobian_determinant&&
-					(jacobian_determinant_output=jacobian_determinant->output()))
+				if (integrand&&(integrand_output=integrand->output())&&jacobian&&
+					(jacobian_output=jacobian->output()))
 				{
-					element_xi_input=independent_input;
-					return_code=1;
+					Function_handle jacobian_determinant=Function_handle(
+						new Function_matrix_determinant<Scalar>(jacobian_output));
+
+					if (jacobian_determinant&&
+						(jacobian_determinant_output=jacobian_determinant->output()))
+					{
+						element_xi_input=independent_input;
+						return_code=1;
+					}
 				}
 			}
-		}
-		else
-		{
-			independent_input=0;
-			element_xi_input=integrand_input;
-			return_code=1;
-		}
-		if (return_code)
-		{
-			Function_element_xi_handle element_xi(0);
-			boost::intrusive_ptr< Function_matrix<Scalar> > integrand(0);
-			Function_size_type i,j,number_of_columns,number_of_rows,point_number;
-			Scalar multiplier,temp_scalar;
-			Matrix& result_matrix=data->result_matrix_private;
-
-			number_of_rows=0;
-			number_of_columns=0;
-			point_number=0;
-			if (data->first_private)
+			else
 			{
-				data->first_private=false;
+				independent_input=0;
+				element_xi_input=integrand_input;
+				return_code=1;
+			}
+			if (return_code)
+			{
 				if ((element_xi=new Function_element_xi(element,points[point_number]))&&
+#if defined (EVALUATE_RETURNS_VALUE)
 					(integrand=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
 					Function>(integrand_output->evaluate(element_xi_input,
-					element_xi))))
+					element_xi)))
+#else // defined (EVALUATE_RETURNS_VALUE)
+					(element_xi_input->set_value)(element_xi)&&
+					(integrand_output->evaluate)()&&
+					(integrand=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
+					Function>(integrand_output->get_value()))
+#endif // defined (EVALUATE_RETURNS_VALUE)
+					)
 				{
 					multiplier=weights[point_number];
 					number_of_rows=integrand->number_of_rows();
@@ -355,9 +464,15 @@ int integrate_over_element(struct FE_element *element,
 						boost::intrusive_ptr< Function_matrix<Scalar> >
 							jacobian_determinant(0);
 
+#if defined (EVALUATE_RETURNS_VALUE)
 						if (jacobian_determinant=boost::dynamic_pointer_cast<
 							Function_matrix<Scalar>,Function>(jacobian_determinant_output->
 							evaluate(element_xi_input,element_xi)))
+#else // defined (EVALUATE_RETURNS_VALUE)
+						if ((jacobian_determinant_output->evaluate)()&&
+							(jacobian_determinant=boost::dynamic_pointer_cast<Function_matrix<
+							Scalar>,Function>(jacobian_determinant_output->get_value())))
+#endif // defined (EVALUATE_RETURNS_VALUE)
 						{
 							temp_scalar=(*jacobian_determinant)(1,1);
 							if (temp_scalar<0)
@@ -373,46 +488,170 @@ int integrate_over_element(struct FE_element *element,
 					}
 					if (return_code)
 					{
-						if (0==row)
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+						if (data->derivative_private)
 						{
-							if (0==column)
+							if ((data->derivative_function=
+								boost::dynamic_pointer_cast<Function_derivatnew,Function>(
+								integrand_output->derivative(data->derivative_variables)))&&
+								(integrand_output=data->derivative_function->output())&&
+								(integrand_output->evaluate()))
 							{
-								result_matrix.resize(number_of_rows,number_of_columns);
+								std::list<Matrix> matrices;
+								std::list<Matrix>::iterator matrix_iterator,matrix_iterator_end;
 
-								for (i=0;i<number_of_rows;i++)
+								matrix_iterator=
+									(data->derivative_function->derivative_matrix).begin();
+								matrix_iterator_end=
+									(data->derivative_function->derivative_matrix).end();
+								if (0==row)
 								{
-									for (j=0;j<number_of_columns;j++)
+									if (0==column)
 									{
-										result_matrix(i,j)=multiplier*(*integrand)(i+1,j+1);
+										while (matrix_iterator!=matrix_iterator_end)
+										{
+											Matrix &temp_matrix=(*matrix_iterator);
+											Function_size_type
+												temp_number_of_columns=temp_matrix.size2(),
+												temp_number_of_rows=temp_matrix.size1();
+											Matrix result_matrix(temp_number_of_rows,
+												temp_number_of_columns);
+
+											for (i=0;i<temp_number_of_rows;i++)
+											{
+												for (j=0;j<temp_number_of_columns;j++)
+												{
+													result_matrix(i,j)=multiplier*temp_matrix(i,j);
+												}
+											}
+											matrices.push_back(result_matrix);
+											++matrix_iterator;
+										}
+									}
+									else
+									{
+										while (matrix_iterator!=matrix_iterator_end)
+										{
+											Matrix &temp_matrix=(*matrix_iterator);
+											Function_size_type
+												temp_number_of_columns=temp_matrix.size2(),
+												temp_number_of_rows=number_of_rows;
+											Matrix result_matrix(temp_number_of_rows,
+												temp_number_of_columns);
+
+											k=column-1;
+											for (i=0;i<temp_number_of_rows;i++)
+											{
+												for (j=0;j<temp_number_of_columns;j++)
+												{
+													result_matrix(i,j)=multiplier*temp_matrix(k,j);
+												}
+												k += number_of_columns;
+											}
+											matrices.push_back(result_matrix);
+											++matrix_iterator;
+										}
+									}
+								}
+								else
+								{
+									if (0==column)
+									{
+										while (matrix_iterator!=matrix_iterator_end)
+										{
+											Matrix &temp_matrix=(*matrix_iterator);
+											Function_size_type
+												temp_number_of_columns=temp_matrix.size2(),
+												temp_number_of_rows=number_of_columns;
+											Matrix result_matrix(temp_number_of_rows,
+												temp_number_of_columns);
+
+											k=(row-1)*number_of_columns;
+											for (i=0;i<temp_number_of_rows;i++)
+											{
+												for (j=0;j<temp_number_of_columns;j++)
+												{
+													result_matrix(i,j)=multiplier*temp_matrix(k,j);
+												}
+												k++;
+											}
+											matrices.push_back(result_matrix);
+											++matrix_iterator;
+										}
+									}
+									else
+									{
+										while (matrix_iterator!=matrix_iterator_end)
+										{
+											Matrix &temp_matrix=(*matrix_iterator);
+											Function_size_type
+												temp_number_of_columns=temp_matrix.size2();
+											Matrix result_matrix(1,temp_number_of_columns);
+
+											k=(row-1)*number_of_columns+column-1;
+											for (j=0;j<temp_number_of_columns;j++)
+											{
+												result_matrix(0,j)=multiplier*temp_matrix(k,j);
+											}
+											matrices.push_back(result_matrix);
+											++matrix_iterator;
+										}
+									}
+								}
+								data->result_derivative_matrix=Derivative_matrix(matrices);
+							}
+							else
+							{
+								return_code=0;
+							}
+						}
+						else
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+						{
+							Matrix& result_matrix=data->result_matrix_private;
+
+							if (0==row)
+							{
+								if (0==column)
+								{
+									result_matrix.resize(number_of_rows,number_of_columns);
+
+									for (i=0;i<number_of_rows;i++)
+									{
+										for (j=0;j<number_of_columns;j++)
+										{
+											result_matrix(i,j)=multiplier*(*integrand)(i+1,j+1);
+										}
+									}
+								}
+								else
+								{
+									result_matrix.resize(number_of_rows,1);
+
+									for (i=0;i<number_of_rows;i++)
+									{
+										result_matrix(i,0)=multiplier*(*integrand)(i+1,column);
 									}
 								}
 							}
 							else
 							{
-								result_matrix.resize(number_of_rows,1);
-
-								for (i=0;i<number_of_rows;i++)
+								if (0==column)
 								{
-									result_matrix(i,0)=multiplier*(*integrand)(i+1,column);
-								}
-							}
-						}
-						else
-						{
-							if (0==column)
-							{
-								result_matrix.resize(1,number_of_columns);
+									result_matrix.resize(1,number_of_columns);
 
-								for (j=0;j<number_of_columns;j++)
+									for (j=0;j<number_of_columns;j++)
+									{
+										result_matrix(0,j)=multiplier*(*integrand)(row,j+1);
+									}
+								}
+								else
 								{
-									result_matrix(0,j)=multiplier*(*integrand)(row,j+1);
-								}
-							}
-							else
-							{
-								result_matrix.resize(1,1);
+									result_matrix.resize(1,1);
 
-								result_matrix(0,0)=multiplier*(*integrand)(row,column);
+									result_matrix(0,0)=multiplier*(*integrand)(row,column);
+								}
 							}
 						}
 					}
@@ -423,85 +662,262 @@ int integrate_over_element(struct FE_element *element,
 				}
 				point_number++;
 			}
-			else
+			data->element_xi_input=element_xi_input;
+			data->integrand_output=integrand_output;
+			data->jacobian_determinant_output=jacobian_determinant_output;
+			data->number_of_rows=number_of_rows;
+			data->number_of_columns=number_of_columns;
+		}
+		else
+		{
+			element_xi_input=data->element_xi_input;
+			jacobian_determinant_output=data->jacobian_determinant_output;
+			number_of_rows=data->number_of_rows;
+			number_of_columns=data->number_of_columns;
+			return_code=1;
+		}
+		while (return_code&&(point_number<number_of_points))
+		{
+			if ((element_xi=new Function_element_xi(element,points[point_number]))&&
+#if defined (EVALUATE_RETURNS_VALUE)
+				(integrand_output->evaluate(element_xi_input,element_xi))
+#else // defined (EVALUATE_RETURNS_VALUE)
+				(element_xi_input->set_value)(element_xi)&&
+				(integrand_output->evaluate)()
+#endif // defined (EVALUATE_RETURNS_VALUE)
+				)
 			{
-				number_of_rows=result_matrix.size1();
-				number_of_columns=result_matrix.size2();
-			}
-			while (return_code&&(point_number<number_of_points))
-			{
-				if ((element_xi=new Function_element_xi(element,points[point_number]))&&
-					(integrand=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
-					Function>(integrand_output->evaluate(element_xi_input,
-					element_xi)))&&(number_of_rows==integrand->number_of_rows())&&
-					(number_of_columns==integrand->number_of_columns()))
+				multiplier=weights[point_number];
+				if (jacobian_determinant_output)
 				{
-					multiplier=weights[point_number];
-					if (jacobian_determinant_output)
-					{
-						boost::intrusive_ptr< Function_matrix<Scalar> >
-							jacobian_determinant(0);
+					boost::intrusive_ptr< Function_matrix<Scalar> >
+						jacobian_determinant(0);
 
-						if (jacobian_determinant=boost::dynamic_pointer_cast<
-							Function_matrix<Scalar>,Function>(jacobian_determinant_output->
-							evaluate(element_xi_input,element_xi)))
+#if defined (EVALUATE_RETURNS_VALUE)
+					if (jacobian_determinant=boost::dynamic_pointer_cast<
+						Function_matrix<Scalar>,Function>(jacobian_determinant_output->
+						evaluate(element_xi_input,element_xi)))
+#else // defined (EVALUATE_RETURNS_VALUE)
+					if ((jacobian_determinant_output->evaluate)()&&
+						(jacobian_determinant=boost::dynamic_pointer_cast<
+						Function_matrix<Scalar>,Function>(jacobian_determinant_output->
+						get_value())))
+#endif // defined (EVALUATE_RETURNS_VALUE)
+					{
+						multiplier=(*jacobian_determinant)(1,1);
+						if (temp_scalar<0)
 						{
-							multiplier=(*jacobian_determinant)(1,1);
-							if (temp_scalar<0)
+							temp_scalar= -temp_scalar;
+						}
+						multiplier *= temp_scalar;
+					}
+					else
+					{
+						return_code=0;
+					}
+				}
+				if (return_code)
+				{
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+					if (data->derivative_private)
+					{
+						if ((data->result_derivative_matrix).size()==
+							(data->derivative_function->derivative_matrix).size())
+						{
+							std::list<Matrix>::iterator matrix_iterator,matrix_iterator_end,
+								result_matrix_iterator;
+
+							matrix_iterator=
+								(data->derivative_function->derivative_matrix).begin();
+							matrix_iterator_end=
+								(data->derivative_function->derivative_matrix).end();
+							result_matrix_iterator=(data->result_derivative_matrix).begin();
+							if (0==row)
 							{
-								temp_scalar= -temp_scalar;
+								if (0==column)
+								{
+									while (return_code&&(matrix_iterator!=matrix_iterator_end))
+									{
+										Matrix &temp_matrix=(*matrix_iterator);
+										Matrix &result_matrix=(*result_matrix_iterator);
+										Function_size_type
+											temp_number_of_columns=result_matrix.size2(),
+											temp_number_of_rows=result_matrix.size1();
+
+										if ((temp_number_of_rows==temp_matrix.size1())&&
+											(temp_number_of_columns==temp_matrix.size2()))
+										{
+											for (i=0;i<temp_number_of_rows;i++)
+											{
+												for (j=0;j<temp_number_of_columns;j++)
+												{
+													result_matrix(i,j) += multiplier*temp_matrix(i,j);
+												}
+											}
+										}
+										else
+										{
+											return_code=0;
+										}
+										++matrix_iterator;
+										++result_matrix_iterator;
+									}
+								}
+								else
+								{
+									while (return_code&&(matrix_iterator!=matrix_iterator_end))
+									{
+										Matrix &temp_matrix=(*matrix_iterator);
+										Matrix &result_matrix=(*result_matrix_iterator);
+										Function_size_type
+											temp_number_of_columns=result_matrix.size2(),
+											temp_number_of_rows=result_matrix.size1();
+
+										if (
+											(number_of_rows*number_of_columns==temp_matrix.size1())&&
+											(temp_number_of_columns==temp_matrix.size2()))
+										{
+											k=column-1;
+											for (i=0;i<temp_number_of_rows;i++)
+											{
+												for (j=0;j<temp_number_of_columns;j++)
+												{
+													result_matrix(i,j) += multiplier*temp_matrix(k,j);
+												}
+												k += number_of_columns;
+											}
+										}
+										else
+										{
+											return_code=0;
+										}
+										++matrix_iterator;
+										++result_matrix_iterator;
+									}
+								}
 							}
-							multiplier *= temp_scalar;
+							else
+							{
+								if (0==column)
+								{
+									while (return_code&&(matrix_iterator!=matrix_iterator_end))
+									{
+										Matrix &temp_matrix=(*matrix_iterator);
+										Matrix &result_matrix=(*result_matrix_iterator);
+										Function_size_type
+											temp_number_of_columns=result_matrix.size2(),
+											temp_number_of_rows=result_matrix.size1();
+
+										if (
+											(number_of_rows*number_of_columns==temp_matrix.size1())&&
+											(temp_number_of_columns==temp_matrix.size2()))
+										{
+											k=(row-1)*number_of_columns;
+											for (i=0;i<temp_number_of_rows;i++)
+											{
+												for (j=0;j<temp_number_of_columns;j++)
+												{
+													result_matrix(i,j) += multiplier*temp_matrix(k,j);
+												}
+												k++;
+											}
+										}
+										else
+										{
+											return_code=0;
+										}
+										++matrix_iterator;
+										++result_matrix_iterator;
+									}
+								}
+								else
+								{
+									while (return_code&&(matrix_iterator!=matrix_iterator_end))
+									{
+										Matrix &temp_matrix=(*matrix_iterator);
+										Matrix &result_matrix=(*result_matrix_iterator);
+										Function_size_type
+											temp_number_of_columns=result_matrix.size2();
+
+										if (
+											(number_of_rows*number_of_columns==temp_matrix.size1())&&
+											(temp_number_of_columns==temp_matrix.size2()))
+										{
+											k=(row-1)*number_of_columns+column-1;
+											for (j=0;j<temp_number_of_columns;j++)
+											{
+												result_matrix(0,j) += multiplier*temp_matrix(k,j);
+											}
+										}
+										else
+										{
+											return_code=0;
+										}
+										++matrix_iterator;
+										++result_matrix_iterator;
+									}
+								}
+							}
 						}
 						else
 						{
 							return_code=0;
 						}
 					}
-					if (return_code)
+					else
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 					{
-						if (0==row)
+						if ((integrand=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
+							Function>(integrand_output->get_value()))&&
+							(number_of_rows==integrand->number_of_rows())&&
+							(number_of_columns==integrand->number_of_columns()))
 						{
-							if (0==column)
+							Matrix& result_matrix=data->result_matrix_private;
+
+							if (0==row)
 							{
-								for (i=0;i<number_of_rows;i++)
+								if (0==column)
 								{
-									for (j=0;j<number_of_columns;j++)
+									for (i=0;i<number_of_rows;i++)
 									{
-										result_matrix(i,j) += multiplier*(*integrand)(i+1,j+1);
+										for (j=0;j<number_of_columns;j++)
+										{
+											result_matrix(i,j) += multiplier*(*integrand)(i+1,j+1);
+										}
+									}
+								}
+								else
+								{
+									for (i=0;i<number_of_rows;i++)
+									{
+										result_matrix(i,0) += multiplier*(*integrand)(i+1,column);
 									}
 								}
 							}
 							else
 							{
-								for (i=0;i<number_of_rows;i++)
+								if (0==column)
 								{
-									result_matrix(i,0) += multiplier*(*integrand)(i+1,column);
+									for (j=0;j<number_of_columns;j++)
+									{
+										result_matrix(0,j) += multiplier*(*integrand)(row,j+1);
+									}
 								}
-							}
-						}
-						else
-						{
-							if (0==column)
-							{
-								for (j=0;j<number_of_columns;j++)
+								else
 								{
-									result_matrix(0,j) += multiplier*(*integrand)(row,j+1);
+									result_matrix(0,0) += multiplier*(*integrand)(row,column);
 								}
-							}
-							else
-							{
-								result_matrix(0,0) += multiplier*(*integrand)(row,column);
 							}
 						}
 					}
 				}
-				else
-				{
-					return_code=0;
-				}
-				point_number++;
 			}
+			else
+			{
+				return_code=0;
+			}
+			point_number++;
 		}
 	}
 
@@ -510,7 +926,7 @@ int integrate_over_element(struct FE_element *element,
 
 class Function_variable_integral : public Function_variable_matrix<Scalar>
 //******************************************************************************
-// LAST MODIFIED : 3 December 2004
+// LAST MODIFIED : 7 February 2005
 //
 // DESCRIPTION :
 //==============================================================================
@@ -534,6 +950,8 @@ class Function_variable_integral : public Function_variable_matrix<Scalar>
 		{
 			return (Function_variable_handle(new Function_variable_integral(*this)));
 		};
+		// overload Function_variable::evaluate
+#if defined (EVALUATE_RETURNS_VALUE)
 		Function_handle evaluate()
 		{
 			boost::intrusive_ptr<Function_integral> function_integral;
@@ -684,6 +1102,59 @@ class Function_variable_integral : public Function_variable_matrix<Scalar>
 
 			return (result);
 		};
+#else // defined (EVALUATE_RETURNS_VALUE)
+		bool evaluate()
+		{
+			bool result(true);
+			boost::intrusive_ptr<Function_integral> function_integral;
+
+			if (function_integral=boost::dynamic_pointer_cast<
+				Function_integral,Function>(function()))
+			{
+#if defined (BEFORE_CACHING)
+				struct Integrate_over_element_data integrate_over_element_data(
+					function_integral->integrand_output_private,row_private,
+					column_private,function_integral->integrand_input_private,
+					function_integral->independent_output_private,
+					function_integral->independent_input_private,
+					function_integral->scheme_private,
+					function_integral->values);
+
+				result=false;
+				if (FE_region_for_each_FE_element(function_integral->domain_private,
+					integrate_over_element,&integrate_over_element_data)&&
+					!(integrate_over_element_data.first()))
+				{
+					result=true;
+				}
+#else // defined (BEFORE_CACHING)
+				if (!(function_integral->evaluated()))
+				{
+					struct Integrate_over_element_data integrate_over_element_data(
+						function_integral->integrand_output_private,row_private,
+						column_private,function_integral->integrand_input_private,
+						function_integral->independent_output_private,
+						function_integral->independent_input_private,
+						function_integral->scheme_private,
+						function_integral->values);
+
+					result=false;
+					if (FE_region_for_each_FE_element(function_integral->domain_private,
+						integrate_over_element,&integrate_over_element_data)&&
+						!(integrate_over_element_data.first()))
+					{
+						function_integral->set_evaluated();
+						result=true;
+					}
+				}
+#endif // defined (BEFORE_CACHING)
+			}
+
+			return (result);
+		};
+#endif // defined (EVALUATE_RETURNS_VALUE)
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		// overload Function_variable::evaluate_derivative
 		Function_handle evaluate_derivative(
 			std::list<Function_variable_handle>& independent_variables)
 		{
@@ -779,6 +1250,14 @@ class Function_variable_integral : public Function_variable_matrix<Scalar>
 
 			return (result);
 		};
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		Function_handle derivative(
+			const std::list<Function_variable_handle>& independent_variables)
+		{
+			return (Function_handle(new Function_derivatnew_integral(
+				Function_variable_handle(this),independent_variables)));
+		}
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 		string_handle get_string_representation()
 		{
 			boost::intrusive_ptr<Function_integral> function_integral=
@@ -831,12 +1310,139 @@ class Function_variable_integral : public Function_variable_matrix<Scalar>
 
 			return (return_string);
 		};
+		Function_size_type number_differentiable()
+		{
+			boost::intrusive_ptr<Function_integral> function_integral=
+				boost::dynamic_pointer_cast<Function_integral,Function>(function());
+			Function_size_type result;
+
+			result=0;
+			if (function_integral)
+			{
+				result=
+					function_integral->integrand_output_private->number_differentiable();
+			}
+
+			return (result);
+		}
 	private:
 		// copy constructor
 		Function_variable_integral(
 			const Function_variable_integral& variable_integral):
 			Function_variable_matrix<Scalar>(variable_integral){};
 };
+
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+// class Function_derivatnew_integral
+// ----------------------------------
+
+Function_derivatnew_integral::Function_derivatnew_integral(
+	const Function_variable_handle& dependent_variable,
+	const std::list<Function_variable_handle>& independent_variables):
+	Function_derivatnew(dependent_variable,independent_variables)
+//******************************************************************************
+// LAST MODIFIED : 28 January 2005
+//
+// DESCRIPTION :
+// Constructor.
+//==============================================================================
+{
+	if (!(boost::dynamic_pointer_cast<Function_variable_integral,
+		Function_variable>(dependent_variable)&&
+		boost::dynamic_pointer_cast<Function_integral,
+		Function>(dependent_variable->function())))
+	{
+		throw Function_derivatnew_integral::Construction_exception();
+	}
+}
+
+Function_derivatnew_integral::~Function_derivatnew_integral(){}
+//******************************************************************************
+// LAST MODIFIED : 27 January 2005
+//
+// DESCRIPTION :
+// Destructor.
+//==============================================================================
+
+#if defined (EVALUATE_RETURNS_VALUE)
+Function_handle Function_derivatnew_integral::evaluate(
+	Function_variable_handle atomic_variable)
+//******************************************************************************
+// LAST MODIFIED : 27 January 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	Function_handle result(0);
+
+	if (!evaluated())
+	{
+		Function_integral_handle function_integral;
+
+		if (boost::dynamic_pointer_cast<Function_variable_integral,
+			Function_variable>(dependent_variable)&&(function_integral=
+			boost::dynamic_pointer_cast<Function_integral,Function>(
+			dependent_variable->function())))
+		{
+			//???DB.  To be done
+		}
+	}
+	if (evaluated())
+	{
+		result=get_value(atomic_variable);
+	}
+
+	return (result);
+}
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool Function_derivatnew_integral::evaluate(
+	Function_variable_handle atomic_variable)
+//******************************************************************************
+// LAST MODIFIED : 28 January 2005
+//
+// DESCRIPTION :
+//==============================================================================
+{
+	bool result(true);
+
+	if (equivalent(Function_handle(this),atomic_variable->function())&&
+		!evaluated())
+	{
+		boost::intrusive_ptr<Function_integral> function_integral;
+		Function_handle integrand(0);
+		boost::intrusive_ptr<Function_variable_integral> variable_integral;
+		Function_variable_handle derivative_dependent_variable;
+
+		result=false;
+		if ((variable_integral=boost::dynamic_pointer_cast<
+			Function_variable_integral,Function_variable>(dependent_variable))&&
+			(function_integral=boost::dynamic_pointer_cast<Function_integral,
+			Function>(dependent_variable->function()))&&
+			(integrand=function_integral->integrand_output_private->derivative(
+			independent_variables)))
+		{
+			struct Integrate_over_element_data integrate_over_element_data(
+				function_integral->integrand_output_private,variable_integral->row(),
+				variable_integral->column(),independent_variables,
+				function_integral->integrand_input_private,
+				function_integral->independent_output_private,
+				function_integral->independent_input_private,
+				function_integral->scheme_private,derivative_matrix);
+
+			if (FE_region_for_each_FE_element(function_integral->domain_private,
+				integrate_over_element,&integrate_over_element_data)&&
+				!(integrate_over_element_data.first()))
+			{
+				result=true;
+			}
+		}
+	}
+
+	return (result);
+}
+#endif // defined (EVALUATE_RETURNS_VALUE)
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 
 
 // global classes
@@ -1063,16 +1669,24 @@ bool Function_integral::operator==(const Function& function) const
 	return (result);
 }
 
-Function_handle Function_integral::evaluate(
-	Function_variable_handle atomic_variable)
+#if defined (EVALUATE_RETURNS_VALUE)
+Function_handle
+#else // defined (EVALUATE_RETURNS_VALUE)
+bool
+#endif // defined (EVALUATE_RETURNS_VALUE)
+	Function_integral::evaluate(Function_variable_handle atomic_variable)
 //******************************************************************************
-// LAST MODIFIED : 3 November 2004
+// LAST MODIFIED : 14 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	boost::intrusive_ptr<Function_variable_integral> atomic_variable_integral;
+#if defined (EVALUATE_RETURNS_VALUE)
 	Function_handle result(0);
+#else // defined (EVALUATE_RETURNS_VALUE)
+	bool result(true);
+#endif // defined (EVALUATE_RETURNS_VALUE)
 
 	if (this&&(atomic_variable_integral=boost::dynamic_pointer_cast<
 		Function_variable_integral,Function_variable>(atomic_variable))&&
@@ -1090,12 +1704,13 @@ bool Function_integral::evaluate_derivative(Scalar& derivative,
 	Function_variable_handle atomic_variable,
 	std::list<Function_variable_handle>& atomic_independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 3 November 2004
+// LAST MODIFIED : 28 January 2005
 //
 // DESCRIPTION :
 //==============================================================================
 {
 	bool result;
+	boost::intrusive_ptr< Function_matrix<Scalar> > derivative_value;
 	boost::intrusive_ptr<Function_variable_integral> atomic_variable_integral;
 
 	result=false;
@@ -1106,15 +1721,32 @@ bool Function_integral::evaluate_derivative(Scalar& derivative,
 		(0<atomic_variable_integral->column())&&
 		(0<atomic_independent_variables.size()))
 	{
-		boost::intrusive_ptr< Function_matrix<Scalar> > derivative_matrix=
-			boost::dynamic_pointer_cast<Function_matrix<Scalar>,Function>(
-			atomic_variable_integral->evaluate_derivative(
-			atomic_independent_variables));
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+		Function_derivatnew_handle derivative_function;
+		Function_variable_handle derivative_variable;
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
 
-		if (derivative_matrix)
+		if (
+#if defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			(derivative_value=boost::dynamic_pointer_cast<
+			Function_matrix<Scalar>,Function>(atomic_variable_integral->
+			evaluate_derivative(atomic_independent_variables)))&&
+#else // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			(derivative_function=boost::dynamic_pointer_cast<Function_derivatnew,
+			Function>(atomic_variable_integral->derivative(
+			atomic_independent_variables)))&&(derivative_variable=
+			derivative_function->output())&&(derivative_variable->evaluate())&&
+			(derivative_variable=derivative_function->matrix(
+			atomic_independent_variables))&&
+			(derivative_value=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
+			Function>(derivative_variable->get_value()))&&
+#endif // defined (USE_FUNCTION_VARIABLE__EVALUATE_DERIVATIVE)
+			(1==derivative_value->number_of_rows())&&
+			(1==derivative_value->number_of_columns()))
 		{
+			derivative=(*derivative_value)(1,1);
 			result=true;
-			derivative=(*derivative_matrix)(1,1);
 		}
 	}
 

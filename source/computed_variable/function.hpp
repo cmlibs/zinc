@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function.hpp
 //
-// LAST MODIFIED : 6 December 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 // Functions are expressions that are constructed for:
@@ -22,7 +22,7 @@
 
 class Function
 //******************************************************************************
-// LAST MODIFIED : 6 December 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 // A function maintains storage for all its inputs and the outputs that can be
@@ -45,6 +45,7 @@ class Function
 		//   for specifying subsets of the outputs.  Components can be iterated
 		//   using output()->begin_atomic() and output()->end_atomic()
 		virtual Function_variable_handle output()=0;
+#if defined (EVALUATE_RETURNS_VALUE)
 		// if <atomic_variable> is not a variable of the function, then a zero
 		//   handle is returned.  Otherwise, evaluate returns a new Function which
 		//   is the value of the <atomic_variable>.  For a dependent variable, this
@@ -52,6 +53,16 @@ class Function
 		//   function (outputs the same as inputs)
 		virtual Function_handle evaluate(
 			Function_variable_handle atomic_variable)=0;
+#else // defined (EVALUATE_RETURNS_VALUE)
+		// for a dependent variable, this function is evaluated and true returned
+		//   for success, false for failure).  For other variables, nothing is done
+		//   and true is returned.
+		// ???DB.  Distinguish between other variables?
+		//   For a independent variable, true is
+		//   returned.  For a variable which is not for this function, false is
+		//   returned
+		virtual bool evaluate(Function_variable_handle atomic_variable)=0;
+#endif // defined (EVALUATE_RETURNS_VALUE)
 		// if <atomic_variable> is not a differentiable atomic variable, that is
 		//   1!=atomic_variable->number_differentiable(), of the function or
 		//   <atomic_independent_variables> are not differentiable atomic variables,

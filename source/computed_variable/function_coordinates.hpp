@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_coordinates.hpp
 //
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 // Functions which transform between coordinate systems.
@@ -20,7 +20,7 @@ typedef
 
 class Function_prolate_spheroidal_to_rectangular_cartesian : public Function
 //******************************************************************************
-// LAST MODIFIED : 13 August 2004
+// LAST MODIFIED : 13 January 2005
 //
 // DESCRIPTION :
 // Converts from prolate spheroidal to rectangular cartesian.
@@ -63,7 +63,11 @@ class Function_prolate_spheroidal_to_rectangular_cartesian : public Function
 			z_value();
 		Function_size_type number_of_components();
 	private:
+#if defined (EVALUATE_RETURNS_VALUE)
 		Function_handle evaluate(Function_variable_handle atomic_variable);
+#else // defined (EVALUATE_RETURNS_VALUE)
+		bool evaluate(Function_variable_handle atomic_variable);
+#endif // defined (EVALUATE_RETURNS_VALUE)
 		bool evaluate_derivative(Scalar& derivative,
 			Function_variable_handle atomic_variable,
 			std::list<Function_variable_handle>& atomic_independent_variables);

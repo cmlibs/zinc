@@ -56,11 +56,29 @@ print "\n";
 
 # check evaluating_derivative
 $function_3=$variable_1->evaluate_derivative(independent=>[$function_1->output()]);
-print "$function_3\n";
+if (defined($function_3)&&($function_3))
+{
+	print "$function_3\n";
+} else
+{
+	print "undefined\n";
+}
 $function_4=$variable_1->evaluate_derivative(independent=>[new Cmiss::Function_variable::Intersection($function_2->output(),$function_1->output())]);
-print "$function_4\n";
+if (defined($function_4)&&($function_4))
+{
+	print "$function_4\n";
+} else
+{
+	print "undefined\n";
+}
 $function_5=$variable_1->evaluate_derivative(independent=>[$variable_1]);
-print "$function_5\n";
+if (defined($function_5)&&($function_5))
+{
+	print "$function_5\n";
+} else
+{
+	print "undefined\n";
+}
 print "\n";
 
 # check entry

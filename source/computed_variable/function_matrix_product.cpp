@@ -1,7 +1,7 @@
 //******************************************************************************
 // FILE : function_matrix_product.cpp
 //
-// LAST MODIFIED : 12 November 2004
+// LAST MODIFIED : 14 January 2005
 //
 // DESCRIPTION :
 //
@@ -50,7 +50,7 @@ template<>
 Function_handle Function_variable_matrix_product<Scalar>::evaluate_derivative(
 	std::list<Function_variable_handle>& independent_variables)
 //******************************************************************************
-// LAST MODIFIED : 12 November 2004
+// LAST MODIFIED : 14 January 2005
 //
 // DESCRIPTION :
 // ???DB.  To be done
@@ -69,11 +69,24 @@ Function_handle Function_variable_matrix_product<Scalar>::evaluate_derivative(
 		boost::intrusive_ptr< Function_matrix<Scalar> > multiplicand,
 			multiplier;
 
-		if ((multiplier=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
+		if (
+#if defined (EVALUATE_RETURNS_VALUE)
+			(multiplier=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
 			Function>(function_matrix_product->multiplier_private->evaluate()))&&
+#else // defined (EVALUATE_RETURNS_VALUE)
+			(function_matrix_product->multiplier_private->evaluate)()&&
+			(multiplier=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
+			Function>(function_matrix_product->multiplier_private->get_value()))&&
+#endif // defined (EVALUATE_RETURNS_VALUE)
+#if defined (EVALUATE_RETURNS_VALUE)
 			(multiplicand=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
 			Function>(function_matrix_product->multiplicand_private->
 			evaluate()))&&
+#else // defined (EVALUATE_RETURNS_VALUE)
+			(function_matrix_product->multiplicand_private->evaluate)()&&
+			(multiplicand=boost::dynamic_pointer_cast<Function_matrix<Scalar>,
+			Function>(function_matrix_product->multiplicand_private->get_value()))&&
+#endif // defined (EVALUATE_RETURNS_VALUE)
 			(row_private<=(number_of_rows=multiplier->number_of_rows()))&&
 			((number_in_sum=multiplier->number_of_columns())==
 			multiplicand->number_of_rows())&&
