@@ -92,7 +92,8 @@ Runs a job through the photoface interface.
 		marker_fitted_3d_positions[3 * 9],
 		error, eye_point[3], interest_point[3], up_vector[3], 
 		*vertex_3d_locations, view_angle;
-	int i, j, number_of_markers = 9, number_of_modes, number_of_vertices;
+	int i, j, number_of_markers = 9, number_of_modes, number_of_vertices,
+		pf_job_id;
 	struct Obj obj;
 
 #if defined (MANUAL_CMISS)
@@ -105,18 +106,18 @@ Runs a job through the photoface interface.
 	/* pf_specify_paths("/hosts/netapp/home/shane/photoface/", "/hosts/netapp/home/shane/photoface/"); */
 	pf_specify_paths("/blackett/mirage/photoface/", "/blackett/mirage/photoface/");
 
-	pf_setup("rachel", "");
+	pf_setup("rachel", "", &pf_job_id);
 	
 	printf("Completed pf_setup\n");
 
-	pf_specify_markers(number_of_markers, marker_names,
+	pf_specify_markers(pf_job_id, number_of_markers, marker_names,
 		marker_2d_positions, marker_confidences);
 	printf("Completed pf_specify_markers.\n");
 
-	pf_view_align(&error);
+	pf_view_align(pf_job_id, &error);
 	printf("Completed pf_view_align.\n");
 
-	if (0 == pf_get_view(eye_point, interest_point, up_vector, &view_angle))
+	if (0 == pf_get_view(pf_job_id, eye_point, interest_point, up_vector, &view_angle))
 	{
 		printf("Got view parameters.\n");
 		printf("   Eye point %f %f %f.\n", eye_point[0], eye_point[1], eye_point[2]);
@@ -126,10 +127,10 @@ Runs a job through the photoface interface.
 		printf("   View angle %f.\n", view_angle);
 	}
 
-	pf_fit(&error);
+	pf_fit(pf_job_id, &error);
 	printf("Completed pf_fit.\n");
 
-	if (0 == pf_get_head_model(&(obj.number_of_vertices), &(obj.vertex_3d_locations),
+	if (0 == pf_get_head_model(pf_job_id, &(obj.number_of_vertices), &(obj.vertex_3d_locations),
 		&(obj.number_of_texture_vertices), &(obj.texture_vertex_3d_locations),
 		&(obj.number_of_triangles), &(obj.triangle_vertices),
 	  &(obj.triangle_texture_vertices)))
@@ -153,7 +154,7 @@ Runs a job through the photoface interface.
 		}
 	}
 	
-	if (0 == pf_get_marker_fitted_positions(number_of_markers, 
+	if (0 == pf_get_marker_fitted_positions(pf_job_id, number_of_markers, 
 		marker_names, marker_fitted_3d_positions))
 	{
 		printf("Fitted positions:\n");
@@ -165,7 +166,7 @@ Runs a job through the photoface interface.
 		}
 	}
 
-	if (0 == pf_get_basis(&number_of_modes, &number_of_vertices,
+	if (0 == pf_get_basis(pf_job_id, &number_of_modes, &number_of_vertices,
 		&vertex_3d_locations))
 	{
 		printf("Basis:  Modes %d, vertices %d\n", number_of_modes,
@@ -174,9 +175,9 @@ Runs a job through the photoface interface.
 			3 * number_of_vertices + 10]);
 	}
 
-	pf_specify_image(IMAGE_WIDTH, IMAGE_HEIGHT, PF_RGB_IMAGE, image_array);
+	pf_specify_image(pf_job_id, IMAGE_WIDTH, IMAGE_HEIGHT, PF_RGB_IMAGE, image_array);
 
-	if (0 == pf_get_texture(TEXTURE_WIDTH, TEXTURE_HEIGHT, texture_array))
+	if (0 == pf_get_texture(pf_job_id, TEXTURE_WIDTH, TEXTURE_HEIGHT, texture_array))
 	{
 		printf ("Texture[30][30]: %d %d %d\n", texture_array[3 * 30 * 100 + 3 * 30],
 			texture_array[3 * 30 * 100 + 3 * 30 + 1], texture_array[3 * 30 * 100 + 3 * 30 + 2]);

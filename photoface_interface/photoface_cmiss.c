@@ -11,6 +11,7 @@ return code - zero is success, non-zero is failure.
 #include "stdafx.h"
 #endif
 
+#include <errno.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,6 +29,9 @@ return code - zero is success, non-zero is failure.
 
 #define CMISSDLLEXPORT
 #include "photoface_cmiss.h"
+
+#define PF_LOCK_DIRNAME "pflock"
+#define PF_STRUCTURE_FILENAME "pf_job.struct"
 
 /*
 Macros
@@ -70,13 +74,19 @@ struct Obj
 	int *triangle_texture_vertices;
 }; /* struct Obj */
 
+struct Pf_job
+{
+	int pf_job_id;
+	char *working_path;
+	char *remote_working_path;
+	float ndc_texture_scaling, ndc_texture_offset;
+}; /* struct Pf_job */
 /*
 Module variables
 ----------------
 */
-static struct Marker_struct *markers = NULL;
-static char *photoface_linux_path = NULL,*photoface_windows_path = NULL;
-static float ndc_texture_scaling = 0, ndc_texture_offset = 0;
+static char *photoface_remote_path = NULL,*photoface_local_path = NULL;
+struct Marker_struct *markers;
 
 #if defined (MANUAL_CMISS)
 static PF_display_message_function
@@ -197,6 +207,7 @@ used.
 	ENTER(linux_execute);
 	return_code=0;
 	va_start(ap,format);
+#if defined (OLD_CODE)
 	if ((user=getenv("PF_CMISS_USER"))&&(host=getenv("PF_CMISS_HOST")))
 	{
 #if defined (WIN32)
@@ -207,10 +218,13 @@ used.
 		vsprintf(command_string+strlen(command_string),format,ap);
 		sprintf(command_string+strlen(command_string)," '");
 #if defined (DEBUG)
-		vsprintf(command_string,format,ap);
 #endif /* defined (DEBUG) */
 
 #endif /* defined (WIN32) */
+#else /* defined (OLD_CODE) */
+	{
+		vsprintf(command_string,format,ap);
+#endif /* defined (OLD_CODE) */
 		if (-1!=system(command_string))
 		{
 			return_code=1;
@@ -668,8 +682,8 @@ DESCRIPTION :
 {
 	char text[512], *word, face_word[MAX_OBJ_VERTICES][128];
 	FILE *objfile;
-	int i, n_face_vertices, nfiles = 0, n_v = 1, n_t=0, n_vt=1, n_vn=1, n_mat=0;
-	int id = 0, return_code;
+	int i, n_face_vertices, n_v = 1, n_t=0, n_vt=1, n_vn=1;
+	int return_code;
 	double *v, *vn, *vt;
 	int *t;
 	int n_lines = 0;
@@ -1456,7 +1470,7 @@ m, n and a parts as this is all that is stored in a version 2 file.
 } /* read_basis_version1and2 */
 
 static int convert_2d_to_ndc(int number_of_markers, float *twod_coordinates,
-	float *ndc_coordinates)
+	float *ndc_coordinates, struct Pf_job *pf_job)
 /*******************************************************************************
 LAST MODIFIED : 15 February 2001
 
@@ -1490,18 +1504,20 @@ DESCRIPTION :
 	if (maximum != minimum)
 	{
 		/* Store the maximum plus a bit for later */
-		ndc_texture_scaling = 2.0f / (padding_factor * (maximum - minimum));
-		ndc_texture_offset = minimum - (padding_factor - 1.0f) / (padding_factor * ndc_texture_scaling);
+		pf_job->ndc_texture_scaling = 2.0f / (padding_factor * (maximum - minimum));
+		pf_job->ndc_texture_offset = minimum - (padding_factor - 1.0f) / 
+			(padding_factor * pf_job->ndc_texture_scaling);
 	}
 	else
 	{
-		ndc_texture_scaling = 1.0f;
-		ndc_texture_offset = minimum;
+		pf_job->ndc_texture_scaling = 1.0f;
+		pf_job->ndc_texture_offset = minimum;
 	}
 
 #if defined (CMISS_DEBUG)	
 	printf("Minimum %f Maximum %f\n", minimum, maximum);
-	printf("Scaling %f Offset %f\n", ndc_texture_scaling, ndc_texture_offset);
+	printf("Scaling %f Offset %f\n", pf_job->ndc_texture_scaling, 
+		pf_job->ndc_texture_offset);
 #endif /* defined (CMISS_DEBUG) */
 	
 	/* Scale all the coordinates by this maximum plus a bit */
@@ -1509,15 +1525,18 @@ DESCRIPTION :
 	ndc_index = ndc_coordinates;
 	for (i = 0 ; i < number_of_markers ; i++)
 	{
-		*ndc_index = (*twod_index - ndc_texture_offset) * ndc_texture_scaling - 1.0f;
+		*ndc_index = (*twod_index - pf_job->ndc_texture_offset) * 
+			pf_job->ndc_texture_scaling - 1.0f;
 		twod_index++;
 		ndc_index++;
 		/* Y goes in the reverse direction */
-		*ndc_index = - (*twod_index - ndc_texture_offset) * ndc_texture_scaling + 1.0f;
+		*ndc_index = - (*twod_index - pf_job->ndc_texture_offset) * 
+			pf_job->ndc_texture_scaling + 1.0f;
 		twod_index++;
 		ndc_index++;
 #if defined (CMISS_DEBUG)	
-		printf ("Coordinates %f %f -> %f %f\n", *(twod_index-2), *(twod_index-1), *(ndc_index-2), *(ndc_index-1));
+		printf ("Coordinates %f %f -> %f %f\n", *(twod_index-2), 
+			*(twod_index-1), *(ndc_index-2), *(ndc_index-1));
 #endif /* defined (CMISS_DEBUG) */
 	}	
 
@@ -1525,6 +1544,348 @@ DESCRIPTION :
 
 	return (return_code);
 } /* convert_2d_to_ndc */
+
+static int create_Pf_job(int *pf_job_id_address)
+/*******************************************************************************
+LAST MODIFIED : 29 May 2001
+
+DESCRIPTION :
+This routine creates a new pf_job, creating the required directories and
+initialising the pf_job data.  This function returns the pf_job_id if 
+successful.
+==============================================================================*/
+{
+	char *working_path;
+	FILE *pf_job_file;
+	int pf_job_id, return_code;
+
+	ENTER(create_Pf_job);
+
+	return_code = PF_SUCCESS_RC;
+	if (ALLOCATE(working_path, char, strlen(photoface_local_path) + 100))
+	{
+		/* Create a new directory */
+		pf_job_id = random() / 2386;
+		sprintf(working_path, "%sworking/job%06d/", photoface_local_path,
+			pf_job_id);
+		while (0 != mkdir(working_path, S_IRWXU))
+		{
+			if (EEXIST == errno)
+			{
+				/* Try another directory */
+				pf_job_id = random() / 2386;
+				sprintf(working_path, "%sworking/job%06d/", photoface_local_path,
+					pf_job_id);
+			}
+			else
+			{
+				return_code = PF_OPEN_FILE_FAILURE_RC;
+			}
+		}
+		if (PF_SUCCESS_RC == return_code)
+		{
+			/* Create a new pf_job data file */
+			sprintf(working_path, "%sworking/job%06d/%s", 
+				photoface_local_path, pf_job_id, PF_STRUCTURE_FILENAME);
+			if (pf_job_file = fopen(working_path, "w"))
+			{
+				fprintf(pf_job_file, "%f\n", 0.0f);
+				fprintf(pf_job_file, "%f\n", 0.0f);
+				fclose(pf_job_file);
+
+				*pf_job_id_address = pf_job_id;
+			}
+			else
+			{
+#if defined (MANUAL_CMISS)
+				display_message(PF_ERROR_MESSAGE, "save_state_Pf_job_and_unlock:"
+					"Unable to open structure data.");
+#endif /* defined (MANUAL_CMISS) */
+				return_code= PF_OPEN_FILE_FAILURE_RC;
+			}
+		}
+	}
+	else
+	{
+#if defined (MANUAL_CMISS)
+		display_message(PF_ERROR_MESSAGE, "delete_pf_job:"
+			"Could not allocate working string.");
+#endif /* defined (MANUAL_CMISS) */
+		return_code= PF_ALLOCATE_FAILURE_RC;
+	}
+
+	LEAVE;
+
+	return (return_code);
+} /* create_Pf_job */
+
+static int delete_Pf_job(int pf_job_id)
+/*******************************************************************************
+LAST MODIFIED : 29 May 2001
+
+DESCRIPTION :
+This routine cleans up the working directory and destroys the specified job.
+==============================================================================*/
+{
+	char *working_path, *working_path2;
+	int return_code;
+	struct stat stat_buffer;
+
+	ENTER(delete_Pf_job);
+
+	return_code = PF_SUCCESS_RC;
+	if (ALLOCATE(working_path, char, strlen(photoface_local_path) + 100)
+		&& ALLOCATE(working_path2, char, strlen(photoface_local_path) + 100))
+	{
+		/* Look for the correct working directory */
+		sprintf(working_path, "%sworking/job%06d/", photoface_local_path,
+			pf_job_id);
+		if ((0 == stat(working_path, &stat_buffer)) && 
+			S_ISDIR(stat_buffer.st_mode))
+		{
+			/* Lock it or wait */
+			strcat(working_path, PF_LOCK_DIRNAME);
+			while (mkdir (working_path, S_IRWXU))
+			{
+				if (EEXIST == errno)
+				{
+					/* Wait */
+					sleep (2);
+				}
+				else
+				{
+					return_code = PF_OPEN_FILE_FAILURE_RC;
+				}
+			}
+			if (PF_SUCCESS_RC == return_code)
+			{
+				sprintf(working_path2, "%sworking/job%06dx", photoface_local_path,
+					pf_job_id);
+				/* Move the directory away so no other processes find it */
+				rename(working_path, working_path2);
+
+				/* Delete the directory */
+				sprintf(working_path2, "rm -r %sworking/job%06dx", photoface_local_path,
+					pf_job_id);
+				system(working_path2);
+			}
+		}
+		else
+		{
+#if defined (MANUAL_CMISS)
+			display_message(PF_ERROR_MESSAGE, "delete_pf_job:"
+				"Working directory for specified job does not exist.");
+#endif /* defined (MANUAL_CMISS) */
+			return_code= PF_FIND_FILE_FAILURE_RC;
+		}
+	}
+	else
+	{
+#if defined (MANUAL_CMISS)
+		display_message(PF_ERROR_MESSAGE, "delete_pf_job:"
+			"Could not allocate working string.");
+#endif /* defined (MANUAL_CMISS) */
+		return_code= PF_ALLOCATE_FAILURE_RC;
+	}
+
+	LEAVE;
+
+	return (return_code);
+} /* delete_Pf_job */
+
+static int get_Pf_job_from_id_and_lock(int pf_job_id, struct Pf_job **pf_job_address)
+/*******************************************************************************
+LAST MODIFIED : 29 May 2001
+
+DESCRIPTION :
+This routine uses the <pf_job_id> to find the correct working directory, returns
+the corresponding Pf_job structure and locks the directory for that stucture
+giving this process exclusive access.
+==============================================================================*/
+{
+	char *working_path;
+	FILE *pf_job_file;
+	int return_code;
+	struct Pf_job *pf_job;
+	struct stat stat_buffer;
+
+	ENTER(get_Pf_job_from_id_and_lock);
+
+	return_code = PF_SUCCESS_RC;
+	if (ALLOCATE(working_path, char, strlen(photoface_local_path) + 100))
+	{
+		/* Look for the correct working directory */
+		sprintf(working_path, "%sworking/job%06d/", photoface_local_path,
+			pf_job_id);
+		if ((0 == stat(working_path, &stat_buffer)) && 
+			S_ISDIR(stat_buffer.st_mode))
+		{
+			/* Lock it or wait */
+			strcat(working_path, PF_LOCK_DIRNAME);
+			while (mkdir (working_path, S_IRWXU))
+			{
+				if (EEXIST == errno)
+				{
+					/* Wait */
+					sleep (2);
+				}
+				else
+				{
+					return_code = PF_OPEN_FILE_FAILURE_RC;
+				}
+			}
+			if (PF_SUCCESS_RC == return_code)
+			{
+				/* Allocate a Pf_job structure */
+				if (ALLOCATE(pf_job, struct Pf_job, 1) && ALLOCATE(pf_job->working_path,
+					char, strlen(photoface_local_path) + 25)
+					&& ALLOCATE(pf_job->remote_working_path,
+					char, strlen(photoface_remote_path) + 25))
+				{
+					*pf_job_address = pf_job;
+					pf_job->pf_job_id = pf_job_id;
+					sprintf(pf_job->working_path, "%sworking/job%06d", 
+						photoface_local_path, pf_job_id);
+					sprintf(pf_job->remote_working_path, "%sworking/job%06d", 
+						photoface_remote_path, pf_job_id);
+					/* Read the data for this job into the structure */
+					sprintf(working_path, "%sworking/job%06d/%s", 
+						photoface_local_path, pf_job_id, PF_STRUCTURE_FILENAME);
+					if (pf_job_file = fopen(working_path, "r"))
+					{
+						fscanf(pf_job_file, "%f", &(pf_job->ndc_texture_scaling));
+						fscanf(pf_job_file, "%f", &(pf_job->ndc_texture_offset));
+						fclose(pf_job_file);
+					}
+					else
+					{
+#if defined (MANUAL_CMISS)
+						display_message(PF_ERROR_MESSAGE, "get_Pf_job_from_id_and_lock:"
+							"Unable to open structure data.");
+#endif /* defined (MANUAL_CMISS) */
+						return_code= PF_OPEN_FILE_FAILURE_RC;
+					}					
+				}
+				else
+				{
+#if defined (MANUAL_CMISS)
+					display_message(PF_ERROR_MESSAGE, "get_Pf_job_from_id_and_lock:"
+						"Could not allocate Pf_job structure");
+#endif /* defined (MANUAL_CMISS) */
+					return_code= PF_ALLOCATE_FAILURE_RC;
+				}
+			}
+		}
+		else
+		{
+#if defined (MANUAL_CMISS)
+			display_message(PF_ERROR_MESSAGE, "get_Pf_job_from_id_and_lock:"
+				"Working directory for specified job does not exist.");
+#endif /* defined (MANUAL_CMISS) */
+			return_code= PF_FIND_FILE_FAILURE_RC;
+		}
+	}
+	else
+	{
+#if defined (MANUAL_CMISS)
+		display_message(PF_ERROR_MESSAGE, "get_Pf_job_from_id_and_lock:"
+			"Could not allocate working string.");
+#endif /* defined (MANUAL_CMISS) */
+		return_code= PF_ALLOCATE_FAILURE_RC;
+	}
+
+	LEAVE;
+
+	return (return_code);
+} /* get_Pf_job_from_id_and_lock */
+
+static int save_state_Pf_job_and_unlock(struct Pf_job **pf_job_address)
+/*******************************************************************************
+LAST MODIFIED : 29 May 2001
+
+DESCRIPTION :
+This routine saves the state corresponding to the specified <pf_job>, deallocates
+the memory associated with it and unlocks the access to that job.
+==============================================================================*/
+{
+	char *working_path;
+	FILE *pf_job_file;
+	int return_code;
+	struct Pf_job *pf_job;
+	struct stat stat_buffer;
+
+	ENTER(get_Pf_job_from_id_and_lock);
+
+	return_code = PF_SUCCESS_RC;
+	if (pf_job = *pf_job_address)
+	{
+		if (ALLOCATE(working_path, char, strlen(photoface_local_path) + 100))
+		{
+			/* Look for the correct working directory */
+			sprintf(working_path, "%sworking/job%06d/%s", photoface_local_path,
+				pf_job->pf_job_id, PF_LOCK_DIRNAME);
+			if ((0 == stat(working_path, &stat_buffer)) && 
+				S_ISDIR(stat_buffer.st_mode))
+			{
+				/* Save the data for the pf_job */
+				sprintf(working_path, "%sworking/job%06d/%s", 
+					photoface_local_path, pf_job->pf_job_id, PF_STRUCTURE_FILENAME);
+				if (pf_job_file = fopen(working_path, "w"))
+				{
+					fprintf(pf_job_file, "%f\n", pf_job->ndc_texture_scaling);
+					fprintf(pf_job_file, "%f\n", pf_job->ndc_texture_offset);
+					fclose(pf_job_file);
+				}
+				else
+				{
+#if defined (MANUAL_CMISS)
+					display_message(PF_ERROR_MESSAGE, "save_state_Pf_job_and_unlock:"
+						"Unable to open structure data.");
+#endif /* defined (MANUAL_CMISS) */
+					return_code= PF_OPEN_FILE_FAILURE_RC;
+				}					
+
+				DEALLOCATE(pf_job->working_path);
+				DEALLOCATE(pf_job->remote_working_path);
+				/* Deallocate the pf_job structure */
+				DEALLOCATE(*pf_job_address);
+
+				/* Unlock the directory */
+				sprintf(working_path, "%sworking/job%06d/%s", photoface_local_path,
+					pf_job->pf_job_id, PF_LOCK_DIRNAME);
+				rmdir(working_path);
+			}
+			else
+			{
+#if defined (MANUAL_CMISS)
+				display_message(PF_ERROR_MESSAGE, "get_Pf_job_from_id_and_lock:"
+					"Lock does not exist in correct place.");
+#endif /* defined (MANUAL_CMISS) */
+				return_code= PF_FIND_FILE_FAILURE_RC;
+			}
+		}
+		else
+		{
+#if defined (MANUAL_CMISS)
+			display_message(PF_ERROR_MESSAGE, "save_state_Pf_job_and_unlock:"
+				"Could not allocate working string.");
+#endif /* defined (MANUAL_CMISS) */
+			return_code= PF_ALLOCATE_FAILURE_RC;
+		}
+	}
+	else
+	{
+#if defined (MANUAL_CMISS)
+		display_message(PF_ERROR_MESSAGE, "save_state_Pf_job_and_unlock:"
+			"Invalid arguments.");
+#endif /* defined (MANUAL_CMISS) */
+		return_code= PF_INVALID_ARGUMENTS_FAILURE_RC;
+	}
+
+	LEAVE;
+
+	return (return_code);
+} /* save_state_Pf_job_and_unlock */
 
 /*
 Global functions
@@ -1598,14 +1959,14 @@ If either path is NULL the internal storage for that path is free'd.
 	ENTER(pf_specify_paths);
 	return_code=PF_SUCCESS_RC;
 	/* Deallocate the old paths */
-	DEALLOCATE(photoface_windows_path);
-	DEALLOCATE(photoface_linux_path);
+	DEALLOCATE(photoface_local_path);
+	DEALLOCATE(photoface_remote_path);
 	if (photoface_main_windows_path)
 	{
-		if (ALLOCATE(photoface_windows_path,char,
+		if (ALLOCATE(photoface_local_path,char,
 			strlen(photoface_main_windows_path)+1))
 		{
-			strcpy(photoface_windows_path, photoface_main_windows_path);
+			strcpy(photoface_local_path, photoface_main_windows_path);
 		}
 		else
 		{
@@ -1618,10 +1979,10 @@ If either path is NULL the internal storage for that path is free'd.
 	}
 	if (photoface_main_linux_path)
 	{
-		if (ALLOCATE(photoface_linux_path,char,
+		if (ALLOCATE(photoface_remote_path,char,
 			strlen(photoface_main_linux_path)+1))
 		{
-			strcpy(photoface_linux_path, photoface_main_linux_path);
+			strcpy(photoface_remote_path, photoface_main_linux_path);
 		}
 		else
 		{
@@ -1644,14 +2005,14 @@ DWORD WINAPI start_cmgui_thread_function(LPVOID dummy)
 
 	ENTER(start_cmgui_thread_function);
 	return_code=0;
-	linux_execute("%sbin/cmgui_bg",photoface_linux_path);
+	linux_execute("%sbin/cmgui_bg",photoface_remote_path);
 	LEAVE;
 
 	return (return_code);
 } /* start_cmgui_thread_function */
 #endif /* defined (WIN32) */
 
-int pf_setup(char *model_name,char *state)
+int pf_setup(char *model_name,char *state,int *pf_job_id)
 /*******************************************************************************
 LAST MODIFIED : 15 February 2001
 
@@ -1659,12 +2020,13 @@ DESCRIPTION :
 <model_name> is the name of head model.  cmiss will have a directory containing
 the files (generic obj etc) need for each model.  <state> is additional
 information about the face in the image, such as "smiling", which may allow
-adjustment of the generic head.
+adjustment of the generic head.  On success, the <pf_job_id> is set.
 ==============================================================================*/
 {
 	char *model_path, *working_path;
 	FILE *setup_comfile;
 	int length, return_code;
+	struct Pf_job *pf_job;
 	struct stat stat_buffer;
 #if defined (WIN32)
 	DWORD start_cmgui_thread_id;
@@ -1674,180 +2036,178 @@ adjustment of the generic head.
 
 	ENTER(pf_setup);
 	return_code=PF_GENERAL_FAILURE_RC;
-	/* Check that we have the files available for the specified model and state */
-	if (ALLOCATE(model_path,char,
-		strlen(photoface_windows_path)+strlen(model_name)+30))
+	/* Start a new job and lock it */
+	if (PF_SUCCESS_RC == (return_code = create_Pf_job(pf_job_id)) &&
+		(PF_SUCCESS_RC == (return_code = get_Pf_job_from_id_and_lock
+			(*pf_job_id, &pf_job))))
 	{
+		/* Check that we have the files available for the specified model and state */
+		if (ALLOCATE(model_path,char,
+			strlen(photoface_local_path)+strlen(model_name)+30))
+		{
 #if defined (WIN32)
-		/* Have to remove the trailing / unless it is the root of a drive specification */
-		strcpy(model_path, photoface_windows_path);
-		length = strlen(model_path);
-		if ((length > 1) && (':' != model_path[length - 2]))
-		{
+			/* Have to remove the trailing / unless it is the root of a drive specification */
+			strcpy(model_path, photoface_local_path);
+			length = strlen(model_path);
+			if ((length > 1) && (':' != model_path[length - 2]))
+			{
 				model_path[length - 1] = 0;
-		}
+			}
 #else /* defined (WIN32) */
-		strcpy(model_path, photoface_windows_path);
+			strcpy(model_path, photoface_local_path);
 #endif /* defined (WIN32) */
-		if (0 == stat(model_path, &stat_buffer))
-		{
-			sprintf(model_path,"%smodels/%s/%s.obj",photoface_windows_path,model_name,
-				model_name);
 			if (0 == stat(model_path, &stat_buffer))
 			{
-				if (ALLOCATE(working_path,char,2*strlen(photoface_windows_path)+30))
+				sprintf(model_path,"%smodels/%s/%s.obj",photoface_local_path,model_name,
+					model_name);
+				if (0 == stat(model_path, &stat_buffer))
 				{
-					sprintf(working_path, "%sworking", photoface_windows_path);
-					if (0 == stat(working_path, &stat_buffer))
+					if (ALLOCATE(working_path,char,2*strlen(photoface_local_path)+30))
 					{
-						sprintf(working_path, "%scmiss", photoface_windows_path);
-						if (0 == stat(working_path, &stat_buffer))
+						if (0 == stat(pf_job->working_path, &stat_buffer))
 						{
-							/* Create the source files that represent the selected model and
-								state, source.obj, source.basis, source.markers */
-							sprintf(working_path, "%sworking/source.obj",
-								photoface_windows_path);
-							copy_file(model_path, working_path);
-							sprintf(model_path,"%smodels/%s/%s.basis",photoface_windows_path,
-								model_name,model_name);
-							sprintf(working_path,"%sworking/source.basis",
-								photoface_windows_path);
-							copy_file(model_path, working_path);
-							sprintf(model_path,"%smodels/%s/%s.markers",
-								photoface_windows_path,model_name,model_name);
-							sprintf(working_path,"%sworking/source.markers",
-								photoface_windows_path);
-							copy_file(model_path, working_path);
-							sprintf(model_path,"%smodels/%s/%s_eyes.exnode",
-								photoface_windows_path,model_name,model_name);
-							sprintf(working_path,"%sworking/source_eyes.exnode",
-								photoface_windows_path);
-							copy_file(model_path, working_path);
-
-
-							/* Create the startup comfile */
-							sprintf(working_path, "%sworking/pf_setup_main.com", photoface_windows_path);
-							if (setup_comfile = fopen(working_path, "w"))
+							sprintf(working_path, "%scmiss", photoface_local_path);
+							if (0 == stat(working_path, &stat_buffer))
 							{
-								fprintf(setup_comfile, "$PHOTOFACE_WORKING = \"%sworking\"\n",
-									photoface_linux_path);
-								fprintf(setup_comfile, "$PHOTOFACE_CMISS = \"%scmiss\"\n",
-									photoface_linux_path);
-								fprintf(setup_comfile, "$PHOTOFACE_BIN = \"%sbin\"\n",
-									photoface_linux_path);
-								fprintf(setup_comfile, "$LFX_MODELER_CMISS = \"%s../lfx_modeler/cmiss\"\n",
-									photoface_linux_path);
-								fprintf(setup_comfile, "open comfile $PHOTOFACE_CMISS/pf_setup.com exec\n");
+								/* Create the source files that represent the selected model and
+									state, source.obj, source.basis, source.markers */
+								sprintf(working_path, "%s/source.obj",
+									pf_job->working_path);
+								copy_file(model_path, working_path);
+								sprintf(model_path,"%smodels/%s/%s.basis",photoface_local_path,
+									model_name,model_name);
+								sprintf(working_path,"%s/source.basis",
+									pf_job->working_path);
+								copy_file(model_path, working_path);
+								sprintf(model_path,"%smodels/%s/%s.markers",
+									photoface_local_path,model_name,model_name);
+								sprintf(working_path,"%s/source.markers",
+									pf_job->working_path);
+								copy_file(model_path, working_path);
+								sprintf(model_path,"%smodels/%s/%s_eyes.exnode",
+									photoface_local_path,model_name,model_name);
+								sprintf(working_path,"%s/source_eyes.exnode",
+									pf_job->working_path);
+								copy_file(model_path, working_path);
 
-								fclose(setup_comfile);
 
-								/* Start cmgui in a forked thread and load this model */
-#if defined (WIN32)
-								CreateThread(/*no security attributes*/NULL,
-									/*use default stack size*/0,start_cmgui_thread_function,
-									(LPVOID)NULL,/*use default creation flags*/0,
-									&start_cmgui_thread_id);
-								/* Main process comes here */
-								Sleep((DWORD)10000);
-#else /* defined (WIN32) */
-								if (!(pid = fork()))
+								/* Create the startup comfile */
+								sprintf(working_path, "%s/pf_setup_main.com",
+									pf_job->working_path);
+								if (setup_comfile = fopen(working_path, "w"))
 								{
-#if defined (MANUAL_CMISS)
-									if (display_message(PF_INFORMATION_MESSAGE,
-#else /* defined (MANUAL_CMISS) */
-									if (linux_execute(
-#endif /* defined (MANUAL_CMISS) */
-										"%sbin/cmgui_bg", photoface_linux_path))
+									fprintf(setup_comfile, "$PHOTOFACE_WORKING = \"%s\"\n",
+										pf_job->remote_working_path);
+									fprintf(setup_comfile, "$PHOTOFACE_CMISS = \"%scmiss\"\n",
+										photoface_remote_path);
+									fprintf(setup_comfile, "$PHOTOFACE_BIN = \"%sbin\"\n",
+										photoface_remote_path);
+									fprintf(setup_comfile, "$LFX_MODELER_CMISS = \"%s../lfx_modeler/cmiss\"\n",
+										photoface_remote_path);
+									fprintf(setup_comfile, "open comfile $PHOTOFACE_CMISS/pf_setup.com exec\n");
+
+									fclose(setup_comfile);
+
+									/* Start cmgui in a forked thread and load this model */
+#if defined (WIN32)
+									CreateThread(/*no security attributes*/NULL,
+										/*use default stack size*/0,start_cmgui_thread_function,
+										(LPVOID)NULL,/*use default creation flags*/0,
+										&start_cmgui_thread_id);
+									/* Main process comes here */
+									Sleep((DWORD)10000);
+#else /* defined (WIN32) */
+									if (!(pid = fork()))
+									{
+										if (linux_execute("%sbin/cmgui_bg", 
+											photoface_remote_path))
+										{
+											return_code=PF_SUCCESS_RC;
+										}
+										exit(0);
+									}
+									/* Main process comes here */
+									sleep(10);
+#endif /* defined (WIN32) */
+									if (linux_execute("cmgui_control 'open comfile %s/pf_setup_main.com exec'",
+										pf_job->working_path))
 									{
 										return_code=PF_SUCCESS_RC;
 									}
-									exit(0);
+
 								}
-								/* Main process comes here */
-								sleep(10);
-#endif /* defined (WIN32) */
-#if defined (MANUAL_CMISS)
-								if (display_message(PF_INFORMATION_MESSAGE,
-#else /* defined (MANUAL_CMISS) */
-								if (linux_execute(
-#endif /* defined (MANUAL_CMISS) */
-									"cmgui_control 'open comfile %sworking/pf_setup_main.com exec'",
-									photoface_linux_path))
+								else
 								{
-									return_code=PF_SUCCESS_RC;
+#if defined (MANUAL_CMISS)
+									display_message(PF_ERROR_MESSAGE,"Unable to open file %s",
+										working_path);
+#endif /* defined (MANUAL_CMISS) */
+									return_code = PF_OPEN_FILE_FAILURE_RC;
 								}
 
 							}
 							else
 							{
 #if defined (MANUAL_CMISS)
-								display_message(PF_ERROR_MESSAGE,"Unable to open file %s",
-									working_path);
+								display_message(PF_ERROR_MESSAGE,
+									"Unable to find cmiss directory %s",working_path);
 #endif /* defined (MANUAL_CMISS) */
-								return_code = PF_OPEN_FILE_FAILURE_RC;
+								return_code = PF_FIND_FILE_FAILURE_RC;
 							}
-
 						}
 						else
 						{
 #if defined (MANUAL_CMISS)
 							display_message(PF_ERROR_MESSAGE,
-								"Unable to find cmiss directory %s",working_path);
+								"Unable to find model directory %s",working_path);
 #endif /* defined (MANUAL_CMISS) */
 							return_code = PF_FIND_FILE_FAILURE_RC;
 						}
+						DEALLOCATE(working_path);
 					}
 					else
 					{
 #if defined (MANUAL_CMISS)
 						display_message(PF_ERROR_MESSAGE,
-							"Unable to find model directory %s",working_path);
+							"Could not allocate required string");
 #endif /* defined (MANUAL_CMISS) */
-						return_code = PF_FIND_FILE_FAILURE_RC;
+						return_code = PF_ALLOCATE_FAILURE_RC;
 					}
-					DEALLOCATE(working_path);
 				}
 				else
 				{
 #if defined (MANUAL_CMISS)
-					display_message(PF_ERROR_MESSAGE,
-						"Could not allocate required string");
+					display_message(PF_ERROR_MESSAGE,"Unable to find model directory %s",
+						model_path);
 #endif /* defined (MANUAL_CMISS) */
-					return_code = PF_ALLOCATE_FAILURE_RC;
+					return_code = PF_FIND_FILE_FAILURE_RC;
 				}
+				DEALLOCATE(model_path);
 			}
 			else
 			{
 #if defined (MANUAL_CMISS)
-				display_message(PF_ERROR_MESSAGE,"Unable to find model directory %s",
-					model_path);
+				display_message(PF_ERROR_MESSAGE, "Unable to find photoface directory %s",
+					photoface_local_path);
 #endif /* defined (MANUAL_CMISS) */
 				return_code = PF_FIND_FILE_FAILURE_RC;
 			}
-			DEALLOCATE(model_path);
 		}
 		else
 		{
 #if defined (MANUAL_CMISS)
-			display_message(PF_ERROR_MESSAGE, "Unable to find photoface directory %s",
-				photoface_windows_path);
+			display_message(PF_ERROR_MESSAGE,"Could not allocate required string");
 #endif /* defined (MANUAL_CMISS) */
-			return_code = PF_FIND_FILE_FAILURE_RC;
+			return_code = PF_ALLOCATE_FAILURE_RC;
 		}
-	}
-	else
-	{
-#if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE,"Could not allocate required string");
-#endif /* defined (MANUAL_CMISS) */
-		return_code = PF_ALLOCATE_FAILURE_RC;
+		save_state_Pf_job_and_unlock(&pf_job);
 	}
 	LEAVE;
 
 	return (return_code);
 } /* pf_setup */
 
-int pf_close(void)
+int pf_close(int pf_job_id)
 /*******************************************************************************
 LAST MODIFIED : 15 February 2001
 
@@ -1856,15 +2216,21 @@ Closes the cmiss library.  Freeing any internal memory and stopping any
 internal processes.
 ==============================================================================*/
 {
+#if defined (OLD_CODE)
 	char **name_address;
-	int i,return_code;
+	int i;
+#endif /* defined (OLD_CODE) */
+	int return_code;
+	struct Pf_job *pf_job;
 
 	ENTER(pf_close);
 	return_code=PF_GENERAL_FAILURE_RC;
+#if defined (OLD_CODE)
+	/* This is only the end of this job, not all jobs. */
 #if defined (LINUX_CMISS)
 	/* deallocate the paths */
-	DEALLOCATE(photoface_windows_path);
-	DEALLOCATE(photoface_linux_path);
+	DEALLOCATE(photoface_local_path);
+	DEALLOCATE(photoface_remote_path);
 #endif /* defined (LINUX_CMISS) */
 	/* free markers */
 	if (markers)
@@ -1880,22 +2246,33 @@ internal processes.
 		DEALLOCATE(markers->marker_positions);
 		DEALLOCATE(markers);
 	}
-	/* close cmgui */
-#if defined (MANUAL_CMISS)
-	if (display_message(PF_INFORMATION_MESSAGE,
-#else /* defined (MANUAL_CMISS) */
-	if (linux_execute(
-#endif /* defined (MANUAL_CMISS) */
-		"cmgui_control 'quit'"))
+#endif /* defined (OLD_CODE) */
+
+	if(PF_SUCCESS_RC == (return_code = 
+		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
 	{
-		return_code=PF_SUCCESS_RC;
+		/* close cmgui */
+		if (linux_execute("cmgui_control 'quit'"))
+		{
+			return_code=PF_SUCCESS_RC;
+		}
+		save_state_Pf_job_and_unlock(&pf_job);
+		delete_Pf_job(pf_job_id);
 	}
+	else
+	{
+#if defined (MANUAL_CMISS)
+		display_message(PF_ERROR_MESSAGE,
+			"Problem locking job.");
+#endif /* defined (MANUAL_CMISS) */
+	}
+
 	LEAVE;
 
 	return (return_code);
 } /* pf_close */
 
-int pf_define_markers(int number_of_markers,char **marker_names,
+int pf_define_markers(int pf_job_id,int number_of_markers,char **marker_names,
 	float *marker_3d_generic_positions)
 /*******************************************************************************
 LAST MODIFIED : 13 February 2001
@@ -1920,92 +2297,106 @@ Please note that
 	char filename[200], *new_marker_name, **new_marker_names;
 	float *new_marker_positions;	
 	int i, j, marker_index, return_code, *new_marker_indices;
+	struct Pf_job *pf_job;
 
 	ENTER(pf_define_markers);
+
 	return_code=PF_SUCCESS_RC;
 	/* If we haven't already done so read the marker definition file */
-	if (!markers)
+	if(PF_SUCCESS_RC == (return_code = 
+		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
 	{
-		sprintf(filename, "%sworking/source.markers", photoface_windows_path);
-		markers = read_marker_file(filename);
-	}
-	if (markers)
-	{
-		/* Find the node number equivalents for each of the marker names */
-		for(i = 0 ; i < number_of_markers ; i++)
+		if (!markers)
 		{
-			marker_index = 0;
-			j = 0;
-			while ((j < markers->number_of_markers) &&
-				(!fuzzy_string_compare_same_length(marker_names[i],
-				markers->marker_names[j])))
+			sprintf(filename, "%s/source.markers", pf_job->working_path);
+			markers = read_marker_file(filename);
+		}
+		if (markers)
+		{
+			/* Find the node number equivalents for each of the marker names */
+			for(i = 0 ; i < number_of_markers ; i++)
 			{
-				if (markers->marker_indices[j] >= marker_index)
+				marker_index = 0;
+				j = 0;
+				while ((j < markers->number_of_markers) &&
+					(!fuzzy_string_compare_same_length(marker_names[i],
+						markers->marker_names[j])))
 				{
-					marker_index = markers->marker_indices[j] + 1;
+					if (markers->marker_indices[j] >= marker_index)
+					{
+						marker_index = markers->marker_indices[j] + 1;
+					}
+					j++;
 				}
-				j++;
-			}
-			if (j < markers->number_of_markers)
-			{
-#if defined (MANUAL_CMISS)
-				display_message(PF_ERROR_MESSAGE,
-					"Marker name \"%s\" already defined for current model,"
-					" respecifying 3D position", marker_names[i]);
-#endif /* defined (MANUAL_CMISS) */
-				markers->marker_positions[3*j]=marker_3d_generic_positions[3 * i];
-				markers->marker_positions[3*j+1]=marker_3d_generic_positions[3 * i + 1];
-				markers->marker_positions[3*j+2]=marker_3d_generic_positions[3 * i + 2];
-			}
-			else
-			{
-				if (REALLOCATE(new_marker_names,markers->marker_names,char *,
-					markers->number_of_markers+1)&&
-					REALLOCATE(new_marker_indices,markers->marker_indices,int,
-					markers->number_of_markers + 1)&&
-					REALLOCATE(new_marker_positions,markers->marker_positions,float,
-					3*(markers->number_of_markers+1))&&
-					ALLOCATE(new_marker_name,char,strlen(marker_names[i])+1))
-				{
-					markers->marker_names = new_marker_names;
-					markers->marker_indices = new_marker_indices;
-					markers->marker_positions = new_marker_positions;
-					new_marker_names[markers->number_of_markers] = new_marker_name;
-					strcpy(new_marker_name, marker_names[i]);
-					new_marker_indices[markers->number_of_markers] = marker_index;
-					marker_index++;
-					new_marker_positions[3 * markers->number_of_markers] = 
-						marker_3d_generic_positions[3 * i];
-					new_marker_positions[3 * markers->number_of_markers + 1] = 
-						marker_3d_generic_positions[3 * i + 1];
-					new_marker_positions[3 * markers->number_of_markers + 2] = 
-						marker_3d_generic_positions[3 * i + 2];
-					markers->number_of_markers++;
-				}
-				else
+				if (j < markers->number_of_markers)
 				{
 #if defined (MANUAL_CMISS)
 					display_message(PF_ERROR_MESSAGE,
-						"Problem with reallocating marker storage");
+						"Marker name \"%s\" already defined for current model,"
+						" respecifying 3D position", marker_names[i]);
 #endif /* defined (MANUAL_CMISS) */
-					return_code = PF_ALLOCATE_FAILURE_RC;
+					markers->marker_positions[3*j]=marker_3d_generic_positions[3 * i];
+					markers->marker_positions[3*j+1]=marker_3d_generic_positions[3 * i + 1];
+					markers->marker_positions[3*j+2]=marker_3d_generic_positions[3 * i + 2];
+				}
+				else
+				{
+					if (REALLOCATE(new_marker_names,markers->marker_names,char *,
+						markers->number_of_markers+1)&&
+						REALLOCATE(new_marker_indices,markers->marker_indices,int,
+							markers->number_of_markers + 1)&&
+						REALLOCATE(new_marker_positions,markers->marker_positions,float,
+							3*(markers->number_of_markers+1))&&
+						ALLOCATE(new_marker_name,char,strlen(marker_names[i])+1))
+					{
+						markers->marker_names = new_marker_names;
+						markers->marker_indices = new_marker_indices;
+						markers->marker_positions = new_marker_positions;
+						new_marker_names[markers->number_of_markers] = new_marker_name;
+						strcpy(new_marker_name, marker_names[i]);
+						new_marker_indices[markers->number_of_markers] = marker_index;
+						marker_index++;
+						new_marker_positions[3 * markers->number_of_markers] = 
+							marker_3d_generic_positions[3 * i];
+						new_marker_positions[3 * markers->number_of_markers + 1] = 
+							marker_3d_generic_positions[3 * i + 1];
+						new_marker_positions[3 * markers->number_of_markers + 2] = 
+							marker_3d_generic_positions[3 * i + 2];
+						markers->number_of_markers++;
+					}
+					else
+					{
+#if defined (MANUAL_CMISS)
+						display_message(PF_ERROR_MESSAGE,
+							"Problem with reallocating marker storage");
+#endif /* defined (MANUAL_CMISS) */
+						return_code = PF_ALLOCATE_FAILURE_RC;
+					}
 				}
 			}
 		}
+		else
+		{
+#if defined (MANUAL_CMISS)
+			display_message(PF_ERROR_MESSAGE, "Unable to read markers file");
+#endif /* defined (MANUAL_CMISS) */
+			return_code = PF_READ_FILE_FAILURE_RC;
+		}
+		save_state_Pf_job_and_unlock(&pf_job);
 	}
 	else
 	{
 #if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE, "Unable to read markers file");
+		display_message(PF_ERROR_MESSAGE,
+			"Problem locking job.");
 #endif /* defined (MANUAL_CMISS) */
-		return_code = PF_READ_FILE_FAILURE_RC;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* pf_define_markers */
 
-int pf_specify_markers(int number_of_markers,char **marker_names,
+int pf_specify_markers(int pf_job_id,int number_of_markers,char **marker_names,
 	float *marker_2d_positions,float *marker_confidences)
 /*******************************************************************************
 LAST MODIFIED : 15 February 2001
@@ -2027,98 +2418,108 @@ Specify <number_of_markers> using
 	char *filename;
 	float *marker_positions, *marker_ndc_positions;
 	int i, j, *marker_indices, return_code;
+	struct Pf_job *pf_job;
 
 	ENTER(pf_specify_markers);
 	return_code=PF_GENERAL_FAILURE_RC;
-	if (ALLOCATE(filename,char,strlen(photoface_windows_path)+50))
+	if(PF_SUCCESS_RC == (return_code = 
+		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
 	{
-		/* If we haven't already done so read the marker definition file */
-		if (!markers)
+		if (ALLOCATE(filename,char,strlen(photoface_local_path)+50))
 		{
-			sprintf(filename, "%sworking/source.markers", photoface_windows_path);
-			markers = read_marker_file(filename);
-		}
-		if (markers)
-		{
-			ALLOCATE(marker_indices,int,number_of_markers);
-			ALLOCATE(marker_ndc_positions,float,number_of_markers*2);
-			ALLOCATE(marker_positions,float,number_of_markers*3);
-			if (marker_indices&&marker_ndc_positions&&marker_positions)
+			/* If we haven't already done so read the marker definition file */
+			if (!markers)
 			{
-				/* Find the node number equivalents for each of the marker names */
-				for(i = 0 ; i < number_of_markers ; i++)
+				sprintf(filename, "%s/source.markers", pf_job->working_path);
+				markers = read_marker_file(filename);
+			}
+			if (markers)
+			{
+				ALLOCATE(marker_indices,int,number_of_markers);
+				ALLOCATE(marker_ndc_positions,float,number_of_markers*2);
+				ALLOCATE(marker_positions,float,number_of_markers*3);
+				if (marker_indices&&marker_ndc_positions&&marker_positions)
 				{
-					/* Zero indicates that it is not defined and so is the default */
-					marker_indices[i] = 0;
-					marker_positions[3 * i] = 0.0;
-					marker_positions[3 * i + 1] = 0.0;
-					marker_positions[3 * i + 2] = 0.0;
+					/* Find the node number equivalents for each of the marker names */
+					for(i = 0 ; i < number_of_markers ; i++)
+					{
+						/* Zero indicates that it is not defined and so is the default */
+						marker_indices[i] = 0;
+						marker_positions[3 * i] = 0.0;
+						marker_positions[3 * i + 1] = 0.0;
+						marker_positions[3 * i + 2] = 0.0;
 
-					j = 0;
-					while ((j < markers->number_of_markers) &&
-						(!fuzzy_string_compare_same_length(marker_names[i],
-						markers->marker_names[j])))
-					{
-						j++;
-					}
-					if (j < markers->number_of_markers)
-					{
-						marker_indices[i] = markers->marker_indices[j];
-						marker_ndc_positions[2 * i] = marker_2d_positions[2 * j];
-						marker_ndc_positions[2 * i + 1] = marker_2d_positions[2 * j + 1];
-						marker_positions[3 * i] = markers->marker_positions[3 * j];
-						marker_positions[3 * i + 1] = markers->marker_positions[3 * j + 1];
-						marker_positions[3 * i + 2] = markers->marker_positions[3 * j + 2];
-					}
-#if defined (MANUAL_CMISS)
-					else
-					{
-						display_message(PF_ERROR_MESSAGE,
-							"Marker name \"%s\" not defined for current model,"
-							" ignoring 2D position", marker_names[i]);
-					}
-#endif /* defined (MANUAL_CMISS) */
-				}
-				/* Write out the placed_2d_points.exnode that specifies the these 2D
-					positions for calculate_ptm and fit.pl in ndc coordinates */
-				sprintf(filename,"%sworking/specified_2D_positions.exnode",
-					photoface_windows_path);
-				convert_2d_to_ndc(number_of_markers, marker_2d_positions, marker_ndc_positions);
-				if (!(return_code=write_exnode(filename,"fiducial","ndc_coordinates",
-					2, number_of_markers, marker_indices, marker_ndc_positions)))
-				{
-					sprintf(filename, "%sworking/specified_marker_confidence.exnode",
-						photoface_windows_path);
-					if (!(return_code=write_exnode(filename,"fiducial",
-						"marker_confidence",1,number_of_markers,marker_indices,
-						marker_confidences)))
-					{
-						/* Write out the 3D model positions for these nodes */
-						sprintf(filename, "%sworking/source_coordinates.exnode",
-							photoface_windows_path);
-						if (!(return_code=write_exnode(filename,"fiducial",
-							"marker_coordinates",3,number_of_markers,marker_indices,
-							marker_positions)))
+						j = 0;
+						while ((j < markers->number_of_markers) &&
+							(!fuzzy_string_compare_same_length(marker_names[i],
+								markers->marker_names[j])))
 						{
-							/* Write the same values as the target_coordinates as we just want
-								to define the field for all these nodes and then cmgui will
-								overwrite the actual target positions */
-							sprintf(filename, "%sworking/target_coordinates.exnode",
-								photoface_windows_path);
-							if (!(return_code = write_exnode(filename, "fiducial", 
-								"target_coordinates", 3, number_of_markers, marker_indices, 
+							j++;
+						}
+						if (j < markers->number_of_markers)
+						{
+							marker_indices[i] = markers->marker_indices[j];
+							marker_ndc_positions[2 * i] = marker_2d_positions[2 * j];
+							marker_ndc_positions[2 * i + 1] = marker_2d_positions[2 * j + 1];
+							marker_positions[3 * i] = markers->marker_positions[3 * j];
+							marker_positions[3 * i + 1] = markers->marker_positions[3 * j + 1];
+							marker_positions[3 * i + 2] = markers->marker_positions[3 * j + 2];
+						}
+#if defined (MANUAL_CMISS)
+						else
+						{
+							display_message(PF_ERROR_MESSAGE,
+								"Marker name \"%s\" not defined for current model,"
+								" ignoring 2D position", marker_names[i]);
+						}
+#endif /* defined (MANUAL_CMISS) */
+					}
+					/* Write out the placed_2d_points.exnode that specifies the these 2D
+						positions for calculate_ptm and fit.pl in ndc coordinates */
+					sprintf(filename,"%s/specified_2D_positions.exnode",
+						pf_job->working_path);
+					convert_2d_to_ndc(number_of_markers, marker_2d_positions,
+						marker_ndc_positions, pf_job);
+					if (!(return_code=write_exnode(filename,"fiducial","ndc_coordinates",
+						2, number_of_markers, marker_indices, marker_ndc_positions)))
+					{
+						sprintf(filename, "%s/specified_marker_confidence.exnode",
+							pf_job->working_path);
+						if (!(return_code=write_exnode(filename,"fiducial",
+							"marker_confidence",1,number_of_markers,marker_indices,
+							marker_confidences)))
+						{
+							/* Write out the 3D model positions for these nodes */
+							sprintf(filename, "%s/source_coordinates.exnode",
+								pf_job->working_path);
+							if (!(return_code=write_exnode(filename,"fiducial",
+								"marker_coordinates",3,number_of_markers,marker_indices,
 								marker_positions)))
 							{
-								/* Define these fields and nodes */
-#if defined (MANUAL_CMISS)
-								if (display_message(PF_INFORMATION_MESSAGE,
-#else /* defined (MANUAL_CMISS) */
-								if (linux_execute(
-#endif /* defined (MANUAL_CMISS) */
-									"cmgui_control 'open comfile %scmiss/pf_specify_markers.com exec'",
-									photoface_linux_path))
+								/* Write the same values as the target_coordinates as we just want
+									to define the field for all these nodes and then cmgui will
+									overwrite the actual target positions */
+								sprintf(filename, "%s/target_coordinates.exnode",
+									pf_job->working_path);
+								if (!(return_code = write_exnode(filename, "fiducial", 
+									"target_coordinates", 3, number_of_markers, marker_indices, 
+									marker_positions)))
 								{
-									return_code=PF_SUCCESS_RC;
+									/* Define these fields and nodes */
+									if (linux_execute(
+										"cmgui_control 'open comfile %scmiss/pf_specify_markers.com exec'",
+										photoface_remote_path))
+									{
+										return_code=PF_SUCCESS_RC;
+									}
+								}
+								else
+								{
+#if defined (MANUAL_CMISS)
+									display_message(PF_ERROR_MESSAGE,"Unable to write file %s",
+										filename);
+#endif /* defined (MANUAL_CMISS) */
+									return_code = PF_WRITE_FILE_FAILURE_RC;
 								}
 							}
 							else
@@ -2142,7 +2543,7 @@ Specify <number_of_markers> using
 					else
 					{
 #if defined (MANUAL_CMISS)
-						display_message(PF_ERROR_MESSAGE,"Unable to write file %s",
+						display_message(PF_ERROR_MESSAGE, "Unable to write file %s",
 							filename);
 #endif /* defined (MANUAL_CMISS) */
 						return_code = PF_WRITE_FILE_FAILURE_RC;
@@ -2151,47 +2552,47 @@ Specify <number_of_markers> using
 				else
 				{
 #if defined (MANUAL_CMISS)
-					display_message(PF_ERROR_MESSAGE, "Unable to write file %s",
-						filename);
+					display_message(PF_ERROR_MESSAGE,
+						"Unable to allocate marker indices array");
 #endif /* defined (MANUAL_CMISS) */
-					return_code = PF_WRITE_FILE_FAILURE_RC;
+					return_code = PF_ALLOCATE_FAILURE_RC;
 				}
+				DEALLOCATE(marker_indices);
+				DEALLOCATE(marker_ndc_positions);
+				DEALLOCATE(marker_positions);
 			}
 			else
 			{
 #if defined (MANUAL_CMISS)
-				display_message(PF_ERROR_MESSAGE,
-					"Unable to allocate marker indices array");
+				display_message(PF_ERROR_MESSAGE,"Unable to read markers file");
 #endif /* defined (MANUAL_CMISS) */
-				return_code = PF_ALLOCATE_FAILURE_RC;
+				return_code = PF_READ_FILE_FAILURE_RC;
 			}
-			DEALLOCATE(marker_indices);
-			DEALLOCATE(marker_ndc_positions);
-			DEALLOCATE(marker_positions);
+			DEALLOCATE(filename);
 		}
 		else
 		{
 #if defined (MANUAL_CMISS)
-			display_message(PF_ERROR_MESSAGE,"Unable to read markers file");
+			display_message(PF_ERROR_MESSAGE,"Unable to allocate filename string");
 #endif /* defined (MANUAL_CMISS) */
-			return_code = PF_READ_FILE_FAILURE_RC;
+			return_code = PF_ALLOCATE_FAILURE_RC;
 		}
-		DEALLOCATE(filename);
+		save_state_Pf_job_and_unlock(&pf_job);
 	}
 	else
 	{
 #if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE,"Unable to allocate filename string");
+		display_message(PF_ERROR_MESSAGE,
+			"Problem locking job.");
 #endif /* defined (MANUAL_CMISS) */
-		return_code = PF_ALLOCATE_FAILURE_RC;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* pf_specify_markers */
 
-int pf_get_marker_fitted_positions(int number_of_markers,char **marker_names,
-	float *marker_fitted_3d_positions)
+int pf_get_marker_fitted_positions(int pf_job_id,int number_of_markers,
+	char **marker_names,float *marker_fitted_3d_positions)
 /*******************************************************************************
 LAST MODIFIED : 15 February 2001
 
@@ -2205,160 +2606,169 @@ which is assumed to be allocated large enough for 3*<number_of_markers> floats
 	FILE *warped_file;
 	float *marker_positions, marker_x, marker_y, marker_z;
 	int i, j, *marker_indices, return_code;
+	struct Pf_job *pf_job;
 
 	ENTER(pf_get_marker_fitted_positions);
 	return_code=PF_GENERAL_FAILURE_RC;
-	if (ALLOCATE(filename,char,strlen(photoface_windows_path)+50))
+	if(PF_SUCCESS_RC == (return_code = 
+		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
 	{
-		/* If we haven't already done so read the marker definition file */
-		if (!markers)
+		if (ALLOCATE(filename,char,strlen(photoface_local_path)+50))
 		{
-			sprintf(filename, "%sworking/source.markers", photoface_windows_path);
-			markers = read_marker_file(filename);
-		}
-		if (markers)
-		{
-			if (ALLOCATE(marker_indices,int,number_of_markers)&&
-				ALLOCATE(marker_positions,float,number_of_markers*3))
+			/* If we haven't already done so read the marker definition file */
+			if (!markers)
 			{
-				/* Work out which marker names correspond to which nodes */
-				for(i = 0 ; i < number_of_markers ; i++)
+				sprintf(filename, "%s/source.markers", pf_job->working_path);
+				markers = read_marker_file(filename);
+			}
+			if (markers)
+			{
+				if (ALLOCATE(marker_indices,int,number_of_markers)&&
+					ALLOCATE(marker_positions,float,number_of_markers*3))
 				{
-					/* Zero indicates that it is not defined and so is the default */
-					marker_indices[i] = 0;
-					marker_positions[3 * i] = 0.0;
-					marker_positions[3 * i + 1] = 0.0;
-					marker_positions[3 * i + 2] = 0.0;
+					/* Work out which marker names correspond to which nodes */
+					for(i = 0 ; i < number_of_markers ; i++)
+					{
+						/* Zero indicates that it is not defined and so is the default */
+						marker_indices[i] = 0;
+						marker_positions[3 * i] = 0.0;
+						marker_positions[3 * i + 1] = 0.0;
+						marker_positions[3 * i + 2] = 0.0;
 
-					j = 0;
-					while ((j < markers->number_of_markers) &&
-						(!fuzzy_string_compare_same_length(marker_names[i],
-						markers->marker_names[j])))
-					{
-						j++;
-					}
-					if (j < markers->number_of_markers)
-					{
-						marker_indices[i] = markers->marker_indices[j];
-						marker_positions[3 * i] = markers->marker_positions[3 * j];
-						marker_positions[3 * i + 1] = markers->marker_positions[3 * j + 1];
-						marker_positions[3 * i + 2] = markers->marker_positions[3 * j + 2];
-					}
-#if defined (MANUAL_CMISS)
-					else
-					{
-						display_message(PF_WARNING_MESSAGE,
-							"Marker name \"%s\" not defined for current model, ignoring",
-							marker_names[i]);
-					}
-#endif /* defined (MANUAL_CMISS) */
-				}
-
-				/* Write out the original.exnode that specifies the the original
-					3D positions for fit.pl */
-				sprintf(filename, "%sworking/original.exnode", photoface_windows_path);
-				if (!(return_code = write_exnode(filename, "get_marker_positions", 
-					"marker_coordinates",
-					3, number_of_markers, marker_indices, marker_positions)))
-				{
-					/* Define these fields and nodes */
-#if defined (MANUAL_CMISS)
-					if (display_message(PF_INFORMATION_MESSAGE,
-#else /* defined (MANUAL_CMISS) */
-					if (linux_execute(
-#endif /* defined (MANUAL_CMISS) */
-						"cmgui_control 'open comfile %scmiss/pf_get_marker_fitted_positions.com exec'",
-						photoface_linux_path))
-					{
-						return_code=PF_SUCCESS_RC;
-					}
-					/* Read the generated exnode file and return the results */
-					sprintf(filename, "%sworking/warped.exnode",
-						photoface_windows_path);
-					if (warped_file = fopen(filename, "r"))
-					{
-						i = 0;
-						return_code = PF_SUCCESS_RC;
-						while ((return_code == PF_SUCCESS_RC) && (!feof(warped_file)) && 
-							(!read_line(warped_file, buffer, MARKER_BUFFER_SIZE)))
+						j = 0;
+						while ((j < markers->number_of_markers) &&
+							(!fuzzy_string_compare_same_length(marker_names[i],
+								markers->marker_names[j])))
 						{
-							if (3 == sscanf(buffer, "%f%f%f", &marker_x, &marker_y,
-								&marker_z))
-							{
-								if (i >= number_of_markers)
-								{
-#if defined (MANUAL_CMISS)
-									display_message(PF_ERROR_MESSAGE,
-										"Unexpected marker positions in file %s",filename);
-#endif /* defined (MANUAL_CMISS) */
-									return_code = PF_READ_FILE_FAILURE_RC;
-								}
-								marker_fitted_3d_positions[3 * i] = marker_x;
-								marker_fitted_3d_positions[3 * i + 1] = marker_y;
-								marker_fitted_3d_positions[3 * i + 2] = marker_z;
-								i++;
-							}
+							j++;
 						}
-						if (i < number_of_markers)
+						if (j < markers->number_of_markers)
+						{
+							marker_indices[i] = markers->marker_indices[j];
+							marker_positions[3 * i] = markers->marker_positions[3 * j];
+							marker_positions[3 * i + 1] = markers->marker_positions[3 * j + 1];
+							marker_positions[3 * i + 2] = markers->marker_positions[3 * j + 2];
+						}
+#if defined (MANUAL_CMISS)
+						else
+						{
+							display_message(PF_WARNING_MESSAGE,
+								"Marker name \"%s\" not defined for current model, ignoring",
+								marker_names[i]);
+						}
+#endif /* defined (MANUAL_CMISS) */
+					}
+
+					/* Write out the original.exnode that specifies the the original
+						3D positions for fit.pl */
+					sprintf(filename, "%s/original.exnode", pf_job->working_path);
+					if (!(return_code = write_exnode(filename, "get_marker_positions", 
+						"marker_coordinates",
+						3, number_of_markers, marker_indices, marker_positions)))
+					{
+						/* Define these fields and nodes */
+						if (linux_execute(
+							"cmgui_control 'open comfile %scmiss/pf_get_marker_fitted_positions.com exec'",
+							photoface_remote_path))
+						{
+							return_code=PF_SUCCESS_RC;
+						}
+						/* Read the generated exnode file and return the results */
+						sprintf(filename, "%s/warped.exnode",
+							pf_job->working_path);
+						if (warped_file = fopen(filename, "r"))
+						{
+							i = 0;
+							return_code = PF_SUCCESS_RC;
+							while ((return_code == PF_SUCCESS_RC) && (!feof(warped_file)) && 
+								(!read_line(warped_file, buffer, MARKER_BUFFER_SIZE)))
+							{
+								if (3 == sscanf(buffer, "%f%f%f", &marker_x, &marker_y,
+									&marker_z))
+								{
+									if (i >= number_of_markers)
+									{
+#if defined (MANUAL_CMISS)
+										display_message(PF_ERROR_MESSAGE,
+											"Unexpected marker positions in file %s",filename);
+#endif /* defined (MANUAL_CMISS) */
+										return_code = PF_READ_FILE_FAILURE_RC;
+									}
+									marker_fitted_3d_positions[3 * i] = marker_x;
+									marker_fitted_3d_positions[3 * i + 1] = marker_y;
+									marker_fitted_3d_positions[3 * i + 2] = marker_z;
+									i++;
+								}
+							}
+							if (i < number_of_markers)
+							{
+#if defined (MANUAL_CMISS)
+								display_message(PF_ERROR_MESSAGE,
+									"Insufficient marker positions in file %s",filename);
+#endif /* defined (MANUAL_CMISS) */
+								return_code = PF_READ_FILE_FAILURE_RC;
+							}
+							fclose(warped_file);
+						}
+						else
 						{
 #if defined (MANUAL_CMISS)
 							display_message(PF_ERROR_MESSAGE,
-								"Insufficient marker positions in file %s",filename);
+								"Unable to open warped positions file %s",filename);
 #endif /* defined (MANUAL_CMISS) */
-							return_code = PF_READ_FILE_FAILURE_RC;
+							return_code = PF_OPEN_FILE_FAILURE_RC;
 						}
-						fclose(warped_file);
 					}
 					else
 					{
 #if defined (MANUAL_CMISS)
 						display_message(PF_ERROR_MESSAGE,
-							"Unable to open warped positions file %s",filename);
+							"Unable to write original positions");
 #endif /* defined (MANUAL_CMISS) */
-						return_code = PF_OPEN_FILE_FAILURE_RC;
+						return_code = PF_WRITE_FILE_FAILURE_RC;
 					}
+					DEALLOCATE(marker_indices);
+					DEALLOCATE(marker_positions);
 				}
 				else
 				{
 #if defined (MANUAL_CMISS)
 					display_message(PF_ERROR_MESSAGE,
-						"Unable to write original positions");
+						"Unable to allocate marker indices array");
 #endif /* defined (MANUAL_CMISS) */
-					return_code = PF_WRITE_FILE_FAILURE_RC;
+					return_code = PF_ALLOCATE_FAILURE_RC;
 				}
-				DEALLOCATE(marker_indices);
-				DEALLOCATE(marker_positions);
 			}
 			else
 			{
 #if defined (MANUAL_CMISS)
-				display_message(PF_ERROR_MESSAGE,
-					"Unable to allocate marker indices array");
+				display_message(PF_ERROR_MESSAGE,"Unable to read markers file");
 #endif /* defined (MANUAL_CMISS) */
-				return_code = PF_ALLOCATE_FAILURE_RC;
+				return_code = PF_READ_FILE_FAILURE_RC;
 			}
 		}
 		else
 		{
 #if defined (MANUAL_CMISS)
-			display_message(PF_ERROR_MESSAGE,"Unable to read markers file");
+			display_message(PF_ERROR_MESSAGE,"Unable to allocate filename string");
 #endif /* defined (MANUAL_CMISS) */
-			return_code = PF_READ_FILE_FAILURE_RC;
+			return_code = PF_ALLOCATE_FAILURE_RC;
 		}
+		save_state_Pf_job_and_unlock(&pf_job);
 	}
 	else
 	{
 #if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE,"Unable to allocate filename string");
+		display_message(PF_ERROR_MESSAGE,
+			"Problem locking job.");
 #endif /* defined (MANUAL_CMISS) */
-		return_code = PF_ALLOCATE_FAILURE_RC;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* pf_get_marker_fitted_positions */
 
-int pf_view_align(float *error_measure)
+int pf_view_align(int pf_job_id,float *error_measure)
 /*******************************************************************************
 LAST MODIFIED : 15 February 2001
 
@@ -2368,31 +2778,40 @@ an <error_measure>.
 ==============================================================================*/
 {
 	int return_code;
+	struct Pf_job *pf_job;
 
 	ENTER(pf_view_align);
 	return_code=PF_GENERAL_FAILURE_RC;
-	/* For now this is all done by the comfile, until we have more direct control
-		over cmgui */
-#if defined (MANUAL_CMISS)
-	if (display_message(PF_INFORMATION_MESSAGE,
-#else /* defined (MANUAL_CMISS) */
-	if (linux_execute(
-#endif /* defined (MANUAL_CMISS) */
-		"cmgui_control 'open comfile %scmiss/pf_view_align.com exec'",
-		photoface_linux_path))
+	if(PF_SUCCESS_RC == (return_code = 
+		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
 	{
-		return_code=PF_SUCCESS_RC;
+		/* For now this is all done by the comfile, until we have more direct control
+			over cmgui */
+		if (linux_execute(
+			"cmgui_control 'open comfile %scmiss/pf_view_align.com exec'",
+			photoface_remote_path))
+		{
+			return_code=PF_SUCCESS_RC;
+		}
+		/* Run the filt program calculate_ptm */
+		/* Load the projection into cmgui so that the fields are updated relative to
+			it */
+		save_state_Pf_job_and_unlock(&pf_job);
 	}
-	/* Run the filt program calculate_ptm */
-	/* Load the projection into cmgui so that the fields are updated relative to
-		it */
+	else
+	{
+#if defined (MANUAL_CMISS)
+		display_message(PF_ERROR_MESSAGE,
+			"Problem locking job.");
+#endif /* defined (MANUAL_CMISS) */
+	}
 	LEAVE;
 
 	return (return_code);
 } /* pf_view_align */
 
-int pf_get_view(float *eye_point,float *interest_point,float *up_vector,
-	float *view_angle)
+int pf_get_view(int pf_job_id,float *eye_point,float *interest_point,
+	float *up_vector,float *view_angle)
 /*******************************************************************************
 LAST MODIFIED : 15 February 2001
 
@@ -2406,61 +2825,70 @@ Returns the current view as an <eye_point> (3 component vector), an
 	char filename[100], line[GET_VIEW_LINE_LIMIT];
 	FILE *window_commands_file;
 	int return_code;
+	struct Pf_job *pf_job;
 
 	ENTER(pf_get_view);
 	return_code=PF_GENERAL_FAILURE_RC;
-	/* Get the current viewing parameters from cmgui */
-	/* Export the window projection from cmgui to a file */
-#if defined (MANUAL_CMISS)
-	if (display_message(PF_INFORMATION_MESSAGE,
-#else /* defined (MANUAL_CMISS) */
-	if (linux_execute(
-#endif /* defined (MANUAL_CMISS) */
-		"cmgui_control 'open comfile %scmiss/pf_get_view.com exec'",
-		photoface_linux_path))
+	if(PF_SUCCESS_RC == (return_code = 
+		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
 	{
-		return_code=PF_SUCCESS_RC;
-	}
-	sprintf(filename, "%sworking/window_placement.com", photoface_windows_path);
-	if (window_commands_file = fopen(filename, "r"))
-	{
-		return_code= PF_READ_FILE_FAILURE_RC;
-		while ((return_code == PF_READ_FILE_FAILURE_RC) 
-			&& (!read_line (window_commands_file, line, GET_VIEW_LINE_LIMIT)))
+		/* Get the current viewing parameters from cmgui */
+		/* Export the window projection from cmgui to a file */
+		if (linux_execute(
+			"cmgui_control 'open comfile %scmiss/pf_get_view.com exec'",
+			photoface_remote_path))
 		{
-			if (10 == sscanf(line, "gfx modify window 1 view perspective eye_point %f %f %f "
-				"interest_point %f %f %f up_vector %f %f %f view_angle %f",
-				eye_point, eye_point + 1, eye_point + 2,
-				interest_point, interest_point + 1, interest_point + 2,
-				up_vector, up_vector + 1, up_vector + 2, view_angle))
+			return_code=PF_SUCCESS_RC;
+		}
+		sprintf(filename, "%s/window_placement.com", pf_job->working_path);
+		if (window_commands_file = fopen(filename, "r"))
+		{
+			return_code= PF_READ_FILE_FAILURE_RC;
+			while ((return_code == PF_READ_FILE_FAILURE_RC) 
+				&& (!read_line (window_commands_file, line, GET_VIEW_LINE_LIMIT)))
 			{
-				return_code = PF_SUCCESS_RC;
+				if (10 == sscanf(line, "gfx modify window 1 view perspective eye_point %f %f %f "
+					"interest_point %f %f %f up_vector %f %f %f view_angle %f",
+					eye_point, eye_point + 1, eye_point + 2,
+					interest_point, interest_point + 1, interest_point + 2,
+					up_vector, up_vector + 1, up_vector + 2, view_angle))
+				{
+					return_code = PF_SUCCESS_RC;
+				}
 			}
-		}
-		fclose(window_commands_file);
+			fclose(window_commands_file);
 #if defined (MANUAL_CMISS)
-		if (return_code == PF_READ_FILE_FAILURE_RC)
-		{
-			display_message(PF_ERROR_MESSAGE,
-				"Unable to find the window projection command in %s",filename);
-		}
+			if (return_code == PF_READ_FILE_FAILURE_RC)
+			{
+				display_message(PF_ERROR_MESSAGE,
+					"Unable to find the window projection command in %s",filename);
+			}
 #endif /* defined (MANUAL_CMISS) */
+		}
+		else
+		{
+#if defined (MANUAL_CMISS)
+			display_message(PF_ERROR_MESSAGE, "Unable to open file %s for reading",
+				filename);
+#endif /* defined (MANUAL_CMISS) */
+			return_code= PF_OPEN_FILE_FAILURE_RC;
+		}
+		save_state_Pf_job_and_unlock(&pf_job);
 	}
 	else
 	{
 #if defined (MANUAL_CMISS)
-		display_message(PF_ERROR_MESSAGE, "Unable to open file %s for reading",
-			filename);
+		display_message(PF_ERROR_MESSAGE,
+			"Problem locking job.");
 #endif /* defined (MANUAL_CMISS) */
-		return_code= PF_OPEN_FILE_FAILURE_RC;
 	}
 	LEAVE;
 
 	return (return_code);
 } /* pf_get_view */
 
-int pf_specify_view(float *eye_point,float *interest_point,float *up_vector,
-	float view_angle)
+int pf_specify_view(int pf_job_id,float *eye_point,float *interest_point,
+	float *up_vector,float view_angle)
 /*******************************************************************************
 LAST MODIFIED : 15 February 2001
 
@@ -2471,29 +2899,38 @@ Sets the current view as an <eye_point> (3 component vector), an
 ==============================================================================*/
 {
 	int return_code;
+	struct Pf_job *pf_job;
 
 	ENTER(pf_specify_view);
 	return_code=PF_GENERAL_FAILURE_RC;
-	/* Set the viewing parameters in cmgui */
-#if defined (MANUAL_CMISS)
-	if (display_message(PF_INFORMATION_MESSAGE,
-#else /* defined (MANUAL_CMISS) */
-	if (linux_execute(
-#endif /* defined (MANUAL_CMISS) */
-		"cmgui_control 'gfx modify window 1 view eye %f %f %f "
-		"interest %f %f %f up %f %f %f view_angle %f'",
-		eye_point[0], eye_point[1], eye_point[2],
-		interest_point[0], interest_point[1], interest_point[2],
-		up_vector[0], up_vector[1], up_vector[2], view_angle))
+	if(PF_SUCCESS_RC == (return_code = 
+		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
 	{
-		return_code=PF_SUCCESS_RC;
+		/* Set the viewing parameters in cmgui */
+		if (linux_execute(
+			"cmgui_control 'gfx modify window 1 view eye %f %f %f "
+			"interest %f %f %f up %f %f %f view_angle %f'",
+			eye_point[0], eye_point[1], eye_point[2],
+			interest_point[0], interest_point[1], interest_point[2],
+			up_vector[0], up_vector[1], up_vector[2], view_angle))
+		{
+			return_code=PF_SUCCESS_RC;
+		}
+		save_state_Pf_job_and_unlock(&pf_job);
+	}
+	else
+	{
+#if defined (MANUAL_CMISS)
+		display_message(PF_ERROR_MESSAGE,
+			"Problem locking job.");
+#endif /* defined (MANUAL_CMISS) */
 	}
 	LEAVE;
 
 	return (return_code);
 } /* pf_specify_view */
 
-int pf_fit(float *error_measure)
+int pf_fit(int pf_job_id,float *error_measure)
 /*******************************************************************************
 LAST MODIFIED : 15 February 2001
 
@@ -2503,40 +2940,48 @@ matrix, and returns an <error_measure>.
 ==============================================================================*/
 {
 	int return_code;
+	struct Pf_job *pf_job;
 
 	ENTER(pf_fit);
 	return_code=PF_GENERAL_FAILURE_RC;
-	/* For now this is all done by the comfile, until we have more direct
-		control over cmgui */
-#if defined (MANUAL_CMISS)
-	if (display_message(PF_INFORMATION_MESSAGE,
-#else /* defined (MANUAL_CMISS) */
-	if (linux_execute(
-#endif /* defined (MANUAL_CMISS) */
-		"cmgui_control 'open comfile %scmiss/pf_fit.com exec'",
-		photoface_linux_path))
+	if(PF_SUCCESS_RC == (return_code = 
+		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
 	{
-		return_code=PF_SUCCESS_RC;
+		/* For now this is all done by the comfile, until we have more direct
+			control over cmgui */
+		if (linux_execute(
+			"cmgui_control 'open comfile %scmiss/pf_fit.com exec'",
+			photoface_remote_path))
+		{
+			return_code=PF_SUCCESS_RC;
+		}
+
+		/* Use cmgui to calculate 3D positions for markers where the 2D point is 
+			specified and write these out */
+
+		/* Run fit.pl */
+
+		/* Load the fitted model into cmgui */
+
+		/* Place the eyes */
+		save_state_Pf_job_and_unlock(&pf_job);
 	}
-
-	/* Use cmgui to calculate 3D positions for markers where the 2D point is 
-		specified and write these out */
-
-	/* Run fit.pl */
-
-	/* Load the fitted model into cmgui */
-
-	/* Place the eyes */
-
+	else
+	{
+#if defined (MANUAL_CMISS)
+		display_message(PF_ERROR_MESSAGE,
+			"Problem locking job.");
+#endif /* defined (MANUAL_CMISS) */
+	}
 	LEAVE;
 
 	return (return_code);
 } /* pf_fit */
 
-int pf_get_head_model(int *number_of_vertices,float **vertex_3d_locations,
-	int *number_of_texture_vertices,float **texture_vertex_3d_locations,
-	int *number_of_triangles,int **triangle_vertices,
-	int **triangle_texture_vertices)
+int pf_get_head_model(int pf_job_id,int *number_of_vertices,
+	float **vertex_3d_locations,int *number_of_texture_vertices,
+	float **texture_vertex_3d_locations,int *number_of_triangles,
+	int **triangle_vertices,int **triangle_texture_vertices)
 /*******************************************************************************
 LAST MODIFIED : 13 February 2001
 
@@ -2556,33 +3001,46 @@ Returns the current transformed generic head as
 	char filename[100];
 	int return_code;
 	struct Obj *obj;
+	struct Pf_job *pf_job;
 
 	ENTER(pf_get_head_model);
-	return_code=PF_SUCCESS_RC;
-	/* Read the fitted obj file and return all the values */
-	sprintf(filename, "%sworking/standin.obj", photoface_windows_path);
-	if(obj = read_obj(filename))
+	if(PF_SUCCESS_RC == (return_code = 
+		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
 	{
-		*number_of_vertices = obj->number_of_vertices;
-		*vertex_3d_locations = obj->vertex_3d_locations;
-		*number_of_texture_vertices = obj->number_of_texture_vertices;
-		*texture_vertex_3d_locations = obj->texture_vertex_3d_locations;
-		*number_of_triangles = obj->number_of_triangles;
-		*triangle_vertices = obj->triangle_vertices;
-		*triangle_texture_vertices = obj->triangle_texture_vertices;
-		DEALLOCATE(obj);
 		return_code=PF_SUCCESS_RC;
+		/* Read the fitted obj file and return all the values */
+		sprintf(filename, "%s/standin.obj", pf_job->working_path);
+		if(obj = read_obj(filename))
+		{
+			*number_of_vertices = obj->number_of_vertices;
+			*vertex_3d_locations = obj->vertex_3d_locations;
+			*number_of_texture_vertices = obj->number_of_texture_vertices;
+			*texture_vertex_3d_locations = obj->texture_vertex_3d_locations;
+			*number_of_triangles = obj->number_of_triangles;
+			*triangle_vertices = obj->triangle_vertices;
+			*triangle_texture_vertices = obj->triangle_texture_vertices;
+			DEALLOCATE(obj);
+			return_code=PF_SUCCESS_RC;
+		}
+		else
+		{
+			return_code= PF_OPEN_FILE_FAILURE_RC;
+		}
+		save_state_Pf_job_and_unlock(&pf_job);
 	}
 	else
 	{
-		return_code= PF_OPEN_FILE_FAILURE_RC;
+#if defined (MANUAL_CMISS)
+		display_message(PF_ERROR_MESSAGE,
+			"Problem locking job.");
+#endif /* defined (MANUAL_CMISS) */
 	}
 	LEAVE;
 
 	return (return_code);
 } /* pf_get_head_model */
 
-int pf_get_basis(int *number_of_modes,int *number_of_vertices,
+int pf_get_basis(int pf_job_id,int *number_of_modes,int *number_of_vertices,
 	float **vertex_3d_locations_or_offsets)
 /*******************************************************************************
 LAST MODIFIED : 15 February 2001
@@ -2596,33 +3054,43 @@ mode number fastest.
 {
 	char filename[200];
 	int return_code;
+	struct Pf_job *pf_job;
+
 
 	ENTER(pf_get_basis);
-	return_code=PF_GENERAL_FAILURE_RC;
-	/* Calculate the basis based on the current host mesh transformation
-		??? (or do this as a separate step, or as part of doing the fit) */
-#if defined (MANUAL_CMISS)
-	if (display_message(PF_INFORMATION_MESSAGE,
-#else /* defined (MANUAL_CMISS) */
-	if (linux_execute(
-#endif /* defined (MANUAL_CMISS) */
-		"cmgui_control 'open comfile %scmiss/pf_get_basis.com exec'",
-		photoface_linux_path))
+	if(PF_SUCCESS_RC == (return_code = 
+		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
 	{
-		return_code=PF_SUCCESS_RC;
-	}
+		return_code=PF_GENERAL_FAILURE_RC;
+		/* Calculate the basis based on the current host mesh transformation
+			??? (or do this as a separate step, or as part of doing the fit) */
+		if (linux_execute(
+			"cmgui_control 'open comfile %scmiss/pf_get_basis.com exec'",
+			photoface_remote_path))
+		{
+			return_code=PF_SUCCESS_RC;
+		}
 
-	/* Read the fitted basis file and return all the values */
-	sprintf(filename, "%sworking/standin.basis", photoface_windows_path);
-	if (0 == (return_code = read_basis_version1and2(filename, number_of_vertices,
-		number_of_modes, vertex_3d_locations_or_offsets, 1)))
-	{
-		*number_of_vertices /= 3; /* Each component is a separate number */
-		return_code=PF_SUCCESS_RC;
+		/* Read the fitted basis file and return all the values */
+		sprintf(filename, "%s/standin.basis", pf_job->working_path);
+		if (0 == (return_code = read_basis_version1and2(filename, number_of_vertices,
+			number_of_modes, vertex_3d_locations_or_offsets, 1)))
+		{
+			*number_of_vertices /= 3; /* Each component is a separate number */
+			return_code=PF_SUCCESS_RC;
+		}
+		else
+		{
+			return_code=PF_OPEN_FILE_FAILURE_RC;
+		}
+		save_state_Pf_job_and_unlock(&pf_job);
 	}
 	else
 	{
-		return_code=PF_OPEN_FILE_FAILURE_RC;
+#if defined (MANUAL_CMISS)
+		display_message(PF_ERROR_MESSAGE,
+			"Problem locking job.");
+#endif /* defined (MANUAL_CMISS) */
 	}
 	LEAVE;
 
@@ -2631,8 +3099,8 @@ mode number fastest.
 
 /* #define CMGUI_BUG_PAD_HACK */
 
-int pf_specify_image(int width,int height,enum PF_image_format image_format,
-	char *image)
+int pf_specify_image(int pf_job_id,int width,int height,
+	enum PF_image_format image_format,char *image)
 /*******************************************************************************
 LAST MODIFIED : 15 February 2001
 
@@ -2644,99 +3112,112 @@ Used to specify the image to be texture mapped onto the model.
 	float texture_ndc_x, texture_ndc_y, texture_ndc_width, texture_ndc_height;
 	FILE *image_file, *image_comfile;
 	int i, return_code;
+	struct Pf_job *pf_job;
 
 	ENTER(pf_specify_image);
-	return_code=PF_GENERAL_FAILURE_RC;
-	/* Create the rgb image for this image and make the image square by padding */
-	sprintf(filename, "%sworking/source_image.raw", photoface_windows_path);
-	if (image_file = fopen(filename, "wb"))
+	if(PF_SUCCESS_RC == (return_code = 
+		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
 	{
-#if defined CMGUI_BUG_PAD_HACK
+		return_code=PF_GENERAL_FAILURE_RC;
+		/* Create the rgb image for this image and make the image square by padding */
+		sprintf(filename, "%s/source_image.raw", pf_job->working_path);
+		if (image_file = fopen(filename, "wb"))
 		{
-			char padding[3] = {(char)255,(char)255,(char)255};
-			int j, pad;
-
-			if (width % 4)
+#if defined CMGUI_BUG_PAD_HACK
 			{
-				pad = 4 - (width % 4);
+				char padding[3] = {(char)255,(char)255,(char)255};
+				int j, pad;
+
+				if (width % 4)
+				{
+					pad = 4 - (width % 4);
+				}
+				else
+				{
+					pad = 0;
+				}
+				image_ptr = image;
+				for (i = 0 ; i < height ; i++)
+				{
+					for (j = 0 ; j < width ; j++)
+					{
+						fwrite(image_ptr, 1, 3, image_file);
+						image_ptr += 3;
+					}
+					for (j = 0 ; j < pad ; j++)
+					{
+						fwrite(padding, 1, 3, image_file);		
+					}
+				}
+				fclose(image_file);
+				if (pad)
+				{
+					width += pad;
+				}
+			}
+#else /* defined CMGUI_BUG_PAD_HACK */
+			image_ptr = image;
+			for (i = 0 ; i < width * height ; i++)
+			{
+				fwrite(image_ptr, 1, 3, image_file);
+				image_ptr += 3;
+			}
+			fclose(image_file);
+#endif /* defined CMGUI_BUG_PAD_HACK */
+
+			/* Calculate the texture placement coordinates in ndc space */
+			texture_ndc_x = - pf_job->ndc_texture_offset * pf_job->ndc_texture_scaling
+				- 1.0f;
+			texture_ndc_y = pf_job->ndc_texture_offset * pf_job->ndc_texture_scaling
+				- 1.0f;
+			texture_ndc_width = ((float)width - pf_job->ndc_texture_offset) *
+				pf_job->ndc_texture_scaling - 1.0f - texture_ndc_x;
+			/* OK This appears to be insane, i.e. texture_ndc_x is used where you might expect texture_ndc_y but that
+				is because the y position is already mangled */
+			texture_ndc_height = ((float)height - pf_job->ndc_texture_offset)
+				* pf_job->ndc_texture_scaling - 1.0f - texture_ndc_x;
+
+			sprintf(filename, "%s/pf_specify_image.com", pf_job->working_path);
+			if (image_comfile = fopen(filename, "w"))
+			{
+				fprintf(image_comfile, "gfx modify texture source_image image rgb:%s/source_image.raw specify_width %d specify_height %d raw_interleaved\n",
+					pf_job->remote_working_path, width, height);
+				fprintf(image_comfile, "gfx modify window 1 background tex_placement %f %f %f %f\n",
+					texture_ndc_x, texture_ndc_y, texture_ndc_width, texture_ndc_height);
+
+				fclose(image_comfile);
+
+				if (linux_execute(
+					"cmgui_control 'open comfile %s/pf_specify_image.com exec'",
+					pf_job->remote_working_path))
+				{
+					return_code=PF_SUCCESS_RC;
+				}
 			}
 			else
 			{
-				pad = 0;
-			}
-			image_ptr = image;
-			for (i = 0 ; i < height ; i++)
-			{
-				for (j = 0 ; j < width ; j++)
-				{
-					fwrite(image_ptr, 1, 3, image_file);
-					image_ptr += 3;
-				}
-				for (j = 0 ; j < pad ; j++)
-				{
-					fwrite(padding, 1, 3, image_file);		
-				}
-			}
-			fclose(image_file);
-			if (pad)
-			{
-				width += pad;
-			}
-		}
-#else /* defined CMGUI_BUG_PAD_HACK */
-		image_ptr = image;
-		for (i = 0 ; i < width * height ; i++)
-		{
-			fwrite(image_ptr, 1, 3, image_file);
-			image_ptr += 3;
-		}
-		fclose(image_file);
-#endif /* defined CMGUI_BUG_PAD_HACK */
-
-		/* Calculate the texture placement coordinates in ndc space */
-		texture_ndc_x = - ndc_texture_offset * ndc_texture_scaling - 1.0f;
-		texture_ndc_y = ndc_texture_offset * ndc_texture_scaling - 1.0f;
-		texture_ndc_width = ((float)width - ndc_texture_offset) * ndc_texture_scaling - 1.0f - texture_ndc_x;
-		/* OK This appears to be insane, i.e. texture_ndc_x is used where you might expect texture_ndc_y but that
-			 is because the y position is already mangled */
-		texture_ndc_height = ((float)height - ndc_texture_offset) * ndc_texture_scaling - 1.0f - texture_ndc_x;
-
-		sprintf(filename, "%sworking/pf_specify_image.com", photoface_windows_path);
-		if (image_comfile = fopen(filename, "w"))
-		{
-			fprintf(image_comfile, "gfx modify texture source_image image rgb:%sworking/source_image.raw specify_width %d specify_height %d raw_interleaved\n",
-				photoface_linux_path, width, height);
-			fprintf(image_comfile, "gfx modify window 1 background tex_placement %f %f %f %f\n",
-				texture_ndc_x, texture_ndc_y, texture_ndc_width, texture_ndc_height);
-
-			fclose(image_comfile);
-
-#if defined (MANUAL_CMISS)
-			if (display_message(PF_INFORMATION_MESSAGE,
-#else /* defined (MANUAL_CMISS) */
-			if (linux_execute(
-#endif /* defined (MANUAL_CMISS) */
-				"cmgui_control 'open comfile %sworking/pf_specify_image.com exec'",
-				photoface_linux_path))
-			{
-				return_code=PF_SUCCESS_RC;
+				return_code=PF_OPEN_FILE_FAILURE_RC;
 			}
 		}
 		else
 		{
 			return_code=PF_OPEN_FILE_FAILURE_RC;
 		}
+		save_state_Pf_job_and_unlock(&pf_job);
 	}
 	else
 	{
-		return_code=PF_OPEN_FILE_FAILURE_RC;
+#if defined (MANUAL_CMISS)
+		display_message(PF_ERROR_MESSAGE,
+			"Problem locking job.");
+#endif /* defined (MANUAL_CMISS) */
 	}
 	LEAVE;
 
 	return (return_code);
 } /* pf_specify_image */
 
-int pf_get_texture(int width,int height,char *texture)
+int pf_get_texture(int pf_job_id,int width,int height,char *texture)
 /*******************************************************************************
 LAST MODIFIED : 15 February 2001
 
@@ -2750,11 +3231,15 @@ is filled in based on the current model.
 	int i, number_of_bytes_per_component, number_of_components, return_code;
 	long int file_height, file_width;
 	long unsigned *image;
+	struct Pf_job *pf_job;
 
 	ENTER(pf_get_texture);
+	if(PF_SUCCESS_RC == (return_code = 
+		get_Pf_job_from_id_and_lock(pf_job_id, &pf_job)))
+	{
 	return_code=PF_GENERAL_FAILURE_RC;
 	/* Use cmgui to calculate the texture based on the specified image */
-	sprintf(filename, "%sworking/pf_get_texture.com", photoface_windows_path);
+	sprintf(filename, "%s/pf_get_texture.com", pf_job->working_path);
 	if (texture_comfile = fopen(filename, "w"))
 	{
 		fprintf(texture_comfile, "$width = %d\n", width);
@@ -2765,8 +3250,8 @@ is filled in based on the current model.
 #if defined (BACKWARD_PROJECTION)
 		/* This is the original precise texture calculation */
 		fprintf(texture_comfile, "gfx modify texture face_mapped width 1 height 1 evaluate_image field mapped_texture spectrum rgba_spectrum width $width height $height texture_coord texture element_group objface format rgba\n");
-		fprintf(texture_comfile, "gfx write texture face_mapped file %sworking/standin.rgb rgb\n",
-			photoface_linux_path);
+		fprintf(texture_comfile, "gfx write texture face_mapped file %s/standin.rgb rgb\n",
+			pf_job->remote_working_path);
 #else /* defined (BACKWARD_PROJECTION) */
 		/* This is the projection just involving drawing the image in texture space which is 
 			faster with a potentially small degradation in quality */
@@ -2791,13 +3276,13 @@ is filled in based on the current model.
 		fprintf(texture_comfile, "gfx modify window texture_projection layout 2d ortho_axes z -y width $width height $height\n");
 		fprintf(texture_comfile, "gfx modify window texture_projection image scene texture_projection\n");
 		fprintf(texture_comfile, "gfx modify window texture_projection view parallel eye_point 0.5 0.5 3 interest_point 0.5 0.5 0 up_vector 0.00580574 0.999983 0 view_angle 26.525435202 near_clipping_plane 0.0288485 far_clipping_plane 10.3095 relative_viewport ndc_placement -1 -1 2 2 viewport_coordinates -1 -1 400 400\n");
-		fprintf(texture_comfile, "gfx print window texture_projection rgb file %sworking/standin.rgb width $width height $height\n",
-			photoface_linux_path);
-		fprintf(texture_comfile, "gfx modify texture face_mapped image %sworking/standin.rgb\n",
-			photoface_linux_path);
+		fprintf(texture_comfile, "gfx print window texture_projection rgb file %s/standin.rgb width $width height $height\n",
+			pf_job->remote_working_path);
+		fprintf(texture_comfile, "gfx modify texture face_mapped image %s/standin.rgb\n",
+			pf_job->remote_working_path);
 #endif /* defined (BACKWARD_PROJECTION) */
 		fprintf(texture_comfile, "open comfile %scmiss/pf_make_standin_texture.com exec\n",
-			photoface_linux_path);
+			photoface_remote_path);
 		fprintf(texture_comfile, "gfx modify material skin texture face_mapped\n");
 		fprintf(texture_comfile, "gfx modify g_element objface surfaces select_on material skin texture_coord texture\n");
 		fprintf(texture_comfile, "gfx mod win 1 back texture none\n");
@@ -2807,13 +3292,13 @@ is filled in based on the current model.
 #else /* defined (MANUAL_CMISS) */
 		if (linux_execute(
 #endif /* defined (MANUAL_CMISS) */
-			"cmgui_control 'open comfile %sworking/pf_get_texture.com exec'",
-			photoface_linux_path))
+			"cmgui_control 'open comfile %s/pf_get_texture.com exec'",
+			pf_job->remote_working_path))
 		{
 			return_code=PF_SUCCESS_RC;
 		}
 
-		sprintf(filename, "%sworking/standin.rgb", photoface_windows_path);
+		sprintf(filename, "%s/standin.rgb", pf_job->working_path);
 		if (read_rgb_image_file(filename, &number_of_components,
 			&number_of_bytes_per_component, &file_height, &file_width, &image))
 		{
@@ -2865,6 +3350,15 @@ is filled in based on the current model.
 	else
 	{
 		return_code=PF_OPEN_FILE_FAILURE_RC;
+	}
+		save_state_Pf_job_and_unlock(&pf_job);
+	}
+	else
+	{
+#if defined (MANUAL_CMISS)
+		display_message(PF_ERROR_MESSAGE,
+			"Problem locking job.");
+#endif /* defined (MANUAL_CMISS) */
 	}
 	LEAVE;
 
