@@ -1984,8 +1984,8 @@ scene_viewer.
 				centre_y=viewport_height-(double)(motion_event->y)-1.0;
 				button_number=-1;
 				/* Keep position for automatic tumbling update */
-				scene_viewer->previous_pointer_x = button_event->x;
-				scene_viewer->previous_pointer_y = button_event->y;
+				scene_viewer->previous_pointer_x = motion_event->x;
+				scene_viewer->previous_pointer_y = motion_event->y;
 				modifier_state=motion_event->state;
 				mouse_event=1;
 			} break;
