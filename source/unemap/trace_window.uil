@@ -1046,7 +1046,8 @@ object
 	trace_enlarge_threshold_scroll: XmScrollBar
 		{
 		arguments
-			{
+			{	
+			XmNwidth = 100;
 			XmNminimum = 0;
 			XmNsliderSize = 10;
 			XmNmaximum = 110;
@@ -1100,7 +1101,8 @@ object
 	trace_enlarge_separation_scroll: XmScrollBar
 		{
 		arguments
-			{
+			{	
+			XmNwidth = 100;
 			XmNminimum = 1;
 			XmNsliderSize = 50;
 			XmNmaximum = 550;
