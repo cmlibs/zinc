@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_calculate.h
 
-LAST MODIFIED : 21 February 2001
+LAST MODIFIED : 04 April 2001
 
 DESCRIPTION :
 Routines for model calculation
@@ -201,6 +201,86 @@ DESCRIPTION :
 Checks the <value_string> for a valid value for the integration tabt and
 if one is found, returns the value in the correct format string. Returns NULL
 if a valid value is not found.
+==============================================================================*/
+int Cell_calculate_set_data_file_name(struct Cell_calculate *cell_calculate,
+  char *name);
+/*******************************************************************************
+LAST MODIFIED : 03 April 2001
+
+DESCRIPTION :
+Sets the data file name for the given <cell_calculate> object.
+==============================================================================*/
+char *Cell_calculate_get_data_file_name(struct Cell_calculate *cell_calculate);
+/*******************************************************************************
+LAST MODIFIED : 03 April 2001
+
+DESCRIPTION :
+Gets the data file name for the given <cell_calculate> object.
+==============================================================================*/
+int Cell_calculate_list(struct Cell_calculate *cell_calculate);
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Lists out the current set of calculation properties
+==============================================================================*/
+float Cell_calculate_get_start_time(struct Cell_calculate *cell_calculate);
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the current integration start time.
+==============================================================================*/
+float Cell_calculate_get_end_time(struct Cell_calculate *cell_calculate);
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the current integration end time.
+==============================================================================*/
+float Cell_calculate_get_dt(struct Cell_calculate *cell_calculate);
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the current integration time step size.
+==============================================================================*/
+float Cell_calculate_get_tabt(struct Cell_calculate *cell_calculate);
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the current integration tabulation interval.
+==============================================================================*/
+int Cell_calculate_set_start_time(struct Cell_calculate *cell_calculate,
+  float Tstart);
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Sets the current integration start time.
+==============================================================================*/
+int Cell_calculate_set_end_time(struct Cell_calculate *cell_calculate,
+  float Tend);
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Sets the current integration end time.
+==============================================================================*/
+int Cell_calculate_set_dt(struct Cell_calculate *cell_calculate,float dT);
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Sets the current integration dT.
+==============================================================================*/
+int Cell_calculate_set_tabt(struct Cell_calculate *cell_calculate,float tabT);
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Sets the current integration tabT.
 ==============================================================================*/
 
 #endif /* !defined (CELL_CALCULATE_H) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_interface.c
 
-LAST MODIFIED : 05 February 2001
+LAST MODIFIED : 04 April 2001
 
 DESCRIPTION :
 The Cell Interface.
@@ -661,34 +661,6 @@ listing is given, otherwise simply gives a list of names.
   LEAVE;
   return(return_code);
 } /* Cell_interface_list_components() */
-
-int Cell_interface_list_variables(
-  struct Cell_interface *cell_interface,int full)
-/*******************************************************************************
-LAST MODIFIED : 10 July 2000
-
-DESCRIPTION :
-Lists out the current set of cell variables. If <full> is not 0, then a full
-listing is given, otherwise simply gives a list of names.
-==============================================================================*/
-{
-  int return_code = 0;
-
-  ENTER(Cell_interface_list_variables);
-  if (cell_interface)
-  {
-    return_code = FOR_EACH_OBJECT_IN_LIST(Cell_variable)(
-      Cell_variable_list,(void *)(&full),cell_interface->variable_list);
-  }
-  else
-  {
-    display_message(ERROR_MESSAGE,"Cell_interface_list_variables.  "
-      "Missing Cell interface object");
-    return_code = 0;
-  }
-  LEAVE;
-  return(return_code);
-} /* Cell_interface_list_variables() */
 
 int Cell_interface_list_XMLParser_properties(
   struct Cell_interface *cell_interface)
@@ -1531,4 +1503,564 @@ Exports an IPMATC file
   return(return_code);
 } /* Cell_interface_export_to_ipmatc() */
 #endif /* defined (CELL_DISTRIBUTED) */
+
+int Cell_interface_list_variables(struct Cell_interface *cell_interface,
+  char *component_name,char *variable_name,int full)
+/*******************************************************************************
+LAST MODIFIED : 03 April 2001
+
+DESCRIPTION :
+If a <component_name> and a <variable_name> are specified, lists out the
+variable if it is found in the component, else if only a <component_name> is
+given, lists out all the variables in the component. If neither a
+<component_name> or a <variable_name> is specified, lists out all the variables
+in the model. If only a <variable_name> is specified, looks for that variable
+in the main variable list and if found lists it out.
+==============================================================================*/
+{
+  struct Cell_component *cell_component;
+  struct Cell_variable *cell_variable;
+  struct LIST(Cell_variable) *variable_list;
+  int return_code;
+
+  ENTER(Cell_interface_list_variable_value);
+  if (cell_interface)
+  {
+    /* get the appropriate component */
+    if (component_name)
+    {
+      if (cell_component = FIND_BY_IDENTIFIER_IN_LIST(Cell_component,name)(
+        component_name,cell_interface->component_list))
+      {
+        variable_list = Cell_component_get_variable_list(cell_component);
+      }
+      else
+      {
+        variable_list = (struct LIST(Cell_variable) *)NULL;
+      }
+    }
+    else
+    {
+      cell_component = (struct Cell_component *)NULL;
+      variable_list = cell_interface->variable_list;
+    }
+    if (cell_component && variable_name)
+    {
+      if (cell_variable = Cell_component_get_cell_variable_by_name(
+        cell_component,variable_name))
+      {
+        return_code = Cell_variable_list(cell_variable,(void *)(&full));
+      }
+      else
+      {
+        display_message(ERROR_MESSAGE,"Cell_interface_list_variables.  "
+          "Unable to find the variable \"%s\" in the component \"%s\"",
+          variable_name,component_name);
+        return_code = 0;
+      }
+    }
+    else if (variable_list && variable_name)
+    {
+      if (cell_variable = FIND_BY_IDENTIFIER_IN_LIST(Cell_variable,name)(
+        variable_name,variable_list))
+      {
+        return_code = Cell_variable_list(cell_variable,(void *)(&full));
+      }
+      else
+      {
+        display_message(ERROR_MESSAGE,"Cell_interface_list_variables.  "
+          "Unable to find the variable \"%s\"",variable_name);
+        return_code = 0;
+      }
+    }
+    else if (variable_list)
+    {
+      return_code = FOR_EACH_OBJECT_IN_LIST(Cell_variable)(
+        Cell_variable_list,(void *)(&full),variable_list);
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,"Cell_interface_list_variables.  "
+        "Unable to get the cell component");
+      return_code = 0;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_interface_list_variables.  "
+      "Invalid argument(s)");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* Cell_interface_list_variable() */
+
+int Cell_interface_set_variable_value_from_string(
+  struct Cell_interface *cell_interface,char *component_name,
+  char *variable_name,char *value_string)
+/*******************************************************************************
+LAST MODIFIED : 03 April 2001
+
+DESCRIPTION :
+If a <component_name> and a <variable_name> are specified and the given variable
+is found in the variable list for the given component, the variable's value is
+set to the given <value_string>. If no <component_name> is specified, the root
+component is assumed.
+==============================================================================*/
+{
+  struct Cell_component *cell_component;
+  struct Cell_variable *cell_variable;
+  int return_code;
+
+  ENTER(Cell_interface_list_variable_value);
+  if (cell_interface && variable_name)
+  {
+    /* get the appropriate component */
+    if (component_name)
+    {
+      cell_component = FIND_BY_IDENTIFIER_IN_LIST(Cell_component,name)(
+        component_name,cell_interface->component_list);
+    }
+    else
+    {
+      cell_component = FIND_BY_IDENTIFIER_IN_LIST(Cell_component,name)(
+        ROOT_ELEMENT_ID,cell_interface->component_list);
+    }
+    if (cell_component)
+    {
+      if (cell_variable = Cell_component_get_cell_variable_by_name(
+        cell_component,variable_name))
+      {
+        if (return_code = Cell_variable_set_value_from_string(cell_variable,
+          value_string))
+        {
+          /* Set the changed flag for the variable */
+          Cell_variable_set_changed(cell_variable,1);
+        }
+      }
+      else
+      {
+        display_message(ERROR_MESSAGE,"Cell_interface_set_variable_value.  "
+          "Unable to find the variable \"%s\" in the component \"%s\"",
+          variable_name,component_name ? component_name : ROOT_ELEMENT_ID);
+        return_code = 0;
+      }
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,"Cell_interface_set_variable_value.  "
+        "Unable to get the cell component");
+      return_code = 0;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_interface_set_variable_value.  "
+      "Invalid argument(s)");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* Cell_interface_set_variable_value() */
+
+int Cell_interface_set_calculate(struct Cell_interface *cell_interface,
+  float Tstart,float Tend,float dT,float tabT,char *model_routine_name,
+  char *model_dso_name,char *intg_routine_name,char *intg_dso_name,
+  char *data_file_name)
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Sets the values of the <cell_interface>'s calculate objec to those specified.
+==============================================================================*/
+{
+  int return_code = 0;
+
+  ENTER(Cell_interface_set_calculate);
+  if (cell_interface && model_routine_name && intg_routine_name &&
+    (Tstart <= Tend) && (dT > 0) && (tabT > 0))
+  {
+    if (cell_interface->calculate)
+    {
+      if (Cell_calculate_set_model_routine_name(cell_interface->calculate,
+        model_routine_name) &&
+        Cell_calculate_set_dso_name(cell_interface->calculate,model_dso_name) &&
+        Cell_calculate_set_intg_routine_name(cell_interface->calculate,
+          intg_routine_name) &&
+        Cell_calculate_set_intg_dso_name(cell_interface->calculate,
+          intg_dso_name) &&
+        Cell_calculate_set_data_file_name(cell_interface->calculate,
+          data_file_name) &&
+        Cell_calculate_set_start_time(cell_interface->calculate,Tstart) &&
+        Cell_calculate_set_end_time(cell_interface->calculate,Tend) &&
+        Cell_calculate_set_dt(cell_interface->calculate,dT) &&
+        Cell_calculate_set_tabt(cell_interface->calculate,tabT))
+      {
+        return_code = 1;
+      }
+      else
+      {
+        display_message(ERROR_MESSAGE,"Cell_interface_set_calculate.  "
+          "Unable to set all parameters");
+        return_code = 0;
+      }
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,"Cell_interface_set_calculate.  "
+        "Missing cell calculate object");
+      return_code = 0;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_interface_set_calculate.  "
+      "Invalid argument(s)");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* Cell_interface_set_calculate() */
+
+int Cell_interface_list_calculate(struct Cell_interface *cell_interface)
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Lists out the current calculate object.
+==============================================================================*/
+{
+  int return_code = 0;
+
+  ENTER(Cell_interface_list_calculate);
+  if (cell_interface)
+  {
+    if (cell_interface->calculate)
+    {
+      return_code = Cell_calculate_list(cell_interface->calculate);
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,"Cell_interface_list_calculate.  "
+        "Missing cell calculate object");
+      return_code = 0;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_interface_list_calculate.  "
+      "Missing Cell interface object");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* Cell_interface_list_calculate() */
+
+float Cell_interface_get_start_time(struct Cell_interface *cell_interface)
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the integration start time as a float.
+==============================================================================*/
+{
+  float start_time;
+
+  ENTER(Cell_interface_get_start_time);
+  if (cell_interface)
+  {
+    if (cell_interface->calculate)
+    {
+      start_time = Cell_calculate_get_start_time(cell_interface->calculate);
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,"Cell_interface_get_start_time.  "
+        "Missing calculation object");
+      start_time = 0.0;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_interface_get_start_time.  "
+      "Invalid argument(s)");
+    start_time = 0.0;
+  }
+  LEAVE;
+  return(start_time);
+} /* Cell_interface_get_start_time() */
+
+float Cell_interface_get_end_time(struct Cell_interface *cell_interface)
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the integration end time as a float.
+==============================================================================*/
+{
+  float end_time;
+
+  ENTER(Cell_interface_get_end_time);
+  if (cell_interface)
+  {
+    if (cell_interface->calculate)
+    {
+      end_time = Cell_calculate_get_end_time(cell_interface->calculate);
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,"Cell_interface_get_end_time.  "
+        "Missing calculation object");
+      end_time = 0.0;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_interface_get_end_time.  "
+      "Invalid argument(s)");
+    end_time = 0.0;
+  }
+  LEAVE;
+  return(end_time);
+} /* Cell_interface_get_end_time() */
+
+float Cell_interface_get_dt(struct Cell_interface *cell_interface)
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the integration time step as a float.
+==============================================================================*/
+{
+  float dt;
+
+  ENTER(Cell_interface_get_dt);
+  if (cell_interface)
+  {
+    if (cell_interface->calculate)
+    {
+      dt = Cell_calculate_get_dt(cell_interface->calculate);
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,"Cell_interface_get_dt.  "
+        "Missing calculation object");
+      dt = 0.0;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_interface_get_dt.  "
+      "Invalid argument(s)");
+    dt = 0.0;
+  }
+  LEAVE;
+  return(dt);
+} /* Cell_interface_get_dt() */
+
+float Cell_interface_get_tabt(struct Cell_interface *cell_interface)
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the integration tabulation interval as a float.
+==============================================================================*/
+{
+  float tabt;
+
+  ENTER(Cell_interface_get_tabt);
+  if (cell_interface)
+  {
+    if (cell_interface->calculate)
+    {
+      tabt = Cell_calculate_get_tabt(cell_interface->calculate);
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,"Cell_interface_get_tabt.  "
+        "Missing calculation object");
+      tabt = 0.0;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_interface_get_tabt.  "
+      "Invalid argument(s)");
+    tabt = 0.0;
+  }
+  LEAVE;
+  return(tabt);
+} /* Cell_interface_get_tabt() */
+
+char *Cell_interface_get_model_routine_name(
+  struct Cell_interface *cell_interface)
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the model routine name.
+==============================================================================*/
+{
+  char *name;
+
+  ENTER(Cell_interface_get_model_routine_name);
+  if (cell_interface)
+  {
+    if (cell_interface->calculate)
+    {
+      name = Cell_calculate_get_model_routine_name(cell_interface->calculate);
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,"Cell_interface_get_model_routine_name.  "
+        "Missing calculation object");
+      name = (char *)NULL;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_interface_get_model_routine_name.  "
+      "Invalid argument(s)");
+    name = (char *)NULL;
+  }
+  LEAVE;
+  return(name);
+} /* Cell_interface_get_model_routine_name() */
+
+char *Cell_interface_get_model_dso_name(struct Cell_interface *cell_interface)
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the model DSO name.
+==============================================================================*/
+{
+  char *name;
+
+  ENTER(Cell_interface_get_model_dso_name);
+  if (cell_interface)
+  {
+    if (cell_interface->calculate)
+    {
+      name = Cell_calculate_get_dso_name(cell_interface->calculate);
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,"Cell_interface_get_model_dso_name.  "
+        "Missing calculation object");
+      name = (char *)NULL;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_interface_get_model_dso_name.  "
+      "Invalid argument(s)");
+    name = (char *)NULL;
+  }
+  LEAVE;
+  return(name);
+} /* Cell_interface_get_model_dso_name() */
+
+char *Cell_interface_get_intg_routine_name(
+  struct Cell_interface *cell_interface)
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the integrator routine name.
+==============================================================================*/
+{
+  char *name;
+
+  ENTER(Cell_interface_get_intg_routine_name);
+  if (cell_interface)
+  {
+    if (cell_interface->calculate)
+    {
+      name = Cell_calculate_get_intg_routine_name(cell_interface->calculate);
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,"Cell_interface_get_intg_routine_name.  "
+        "Missing calculation object");
+      name = (char *)NULL;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_interface_get_intg_routine_name.  "
+      "Invalid argument(s)");
+    name = (char *)NULL;
+  }
+  LEAVE;
+  return(name);
+} /* Cell_interface_get_intg_routine_name() */
+
+char *Cell_interface_get_intg_dso_name(struct Cell_interface *cell_interface)
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the integrator DSO name.
+==============================================================================*/
+{
+  char *name;
+
+  ENTER(Cell_interface_get_intg_dso_name);
+  if (cell_interface)
+  {
+    if (cell_interface->calculate)
+    {
+      name = Cell_calculate_get_intg_dso_name(cell_interface->calculate);
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,"Cell_interface_get_intg_dso_name.  "
+        "Missing calculation object");
+      name = (char *)NULL;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_interface_get_intg_dso_name.  "
+      "Invalid argument(s)");
+    name = (char *)NULL;
+  }
+  LEAVE;
+  return(name);
+} /* Cell_interface_get_intg_dso_name() */
+
+char *Cell_interface_get_data_file_name(struct Cell_interface *cell_interface)
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the data file name.
+==============================================================================*/
+{
+  char *name;
+
+  ENTER(Cell_interface_get_data_file_name);
+  if (cell_interface)
+  {
+    if (cell_interface->calculate)
+    {
+      name = Cell_calculate_get_data_file_name(cell_interface->calculate);
+    }
+    else
+    {
+      display_message(ERROR_MESSAGE,"Cell_interface_get_data_file_name.  "
+        "Missing calculation object");
+      name = (char *)NULL;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_interface_get_data_file_name.  "
+      "Invalid argument(s)");
+    name = (char *)NULL;
+  }
+  LEAVE;
+  return(name);
+} /* Cell_interface_get_data_file_name() */
 

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_component.c
 
-LAST MODIFIED : 20 November 2000
+LAST MODIFIED : 04 April 2001
 
 DESCRIPTION :
 Routines for using the Cell_component objects
@@ -68,14 +68,12 @@ DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Cell_component,name,char *,strcmp)
 
 static void Cell_component_list_full(struct Cell_component *cell_component)
 /*******************************************************************************
-LAST MODIFIED : 17 October 2000
+LAST MODIFIED : 03 April 2001
 
 DESCRIPTION :
 Does a full listing of the <cell_component>.
 ==============================================================================*/
 {
-  int full = 0;
-  
   ENTER(Cell_component_list_full);
   if (cell_component)
   {
@@ -86,9 +84,6 @@ Does a full listing of the <cell_component>.
     display_message(INFORMATION_MESSAGE,"  ID: %d\n",cell_component->id);
     display_message(INFORMATION_MESSAGE,"  access count: %d\n",
       cell_component->access_count);
-    display_message(INFORMATION_MESSAGE,"  Variables:\n");
-    FOR_EACH_OBJECT_IN_LIST(Cell_variable)(Cell_variable_list,(void *)(&full),
-      cell_component->variable_list);
   }
   else
   {
@@ -101,7 +96,7 @@ Does a full listing of the <cell_component>.
 static void Cell_component_list_brief(struct Cell_component *cell_component,
   void *indent_level_void)
 /*******************************************************************************
-LAST MODIFIED : 17 October 2000
+LAST MODIFIED : 03 April 2001
 
 DESCRIPTION :
 Does a brief listing of the <cell_component>. Can be used as an iterator
@@ -109,7 +104,6 @@ function.
 ==============================================================================*/
 {
   int *indent_level = (int *)indent_level_void;
-  int full = 1;
   
   ENTER(Cell_component_list_brief);
   if (cell_component)
@@ -117,9 +111,6 @@ function.
     WRITE_INDENT(*indent_level);
     display_message(INFORMATION_MESSAGE,"Component: %s\n",
       cell_component->name);
-    display_message(INFORMATION_MESSAGE,"  Variables:\n");
-    FOR_EACH_OBJECT_IN_LIST(Cell_variable)(Cell_variable_list,(void *)(&full),
-      cell_component->variable_list);
   }
   else
   {

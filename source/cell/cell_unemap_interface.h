@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_unemap_interface.h
 
-LAST MODIFIED : 22 January 2001
+LAST MODIFIED : 03 April 2001
 
 DESCRIPTION :
 The interface between Cell and UnEMAP
@@ -114,6 +114,14 @@ LAST MODIFIED : 05 November 2000
 
 DESCRIPTION :
 Sets the save signals toggle in the <cell_unemap_interface> object.
+==============================================================================*/
+int Cell_unemap_interface_get_save_signals(
+  struct Cell_unemap_interface *cell_unemap_interface);
+/*******************************************************************************
+LAST MODIFIED : 03 April 2001
+
+DESCRIPTION :
+Gets the save signals toggle in the <cell_unemap_interface> object.
 ==============================================================================*/
 
 #endif /* !defined (CELL_UNEMAP_INTERFACE_H) */

@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_interface.h
 
-LAST MODIFIED : 02 February 2001
+LAST MODIFIED : 04 April 2001
 
 DESCRIPTION :
 The Cell Interface.
@@ -136,15 +136,6 @@ LAST MODIFIED : 09 July 2000
 
 DESCRIPTION :
 Lists out the current set of cell components. If <full> is not 0, then a full
-listing is given, otherwise simply gives a list of names.
-==============================================================================*/
-int Cell_interface_list_variables(
-  struct Cell_interface *cell_interface,int full);
-/*******************************************************************************
-LAST MODIFIED : 10 July 2000
-
-DESCRIPTION :
-Lists out the current set of cell variables. If <full> is not 0, then a full
 listing is given, otherwise simply gives a list of names.
 ==============================================================================*/
 int Cell_interface_list_XMLParser_properties(
@@ -326,6 +317,109 @@ LAST MODIFIED : 02 February 2001
 
 DESCRIPTION :
 Exports an IPMATC file
+==============================================================================*/
+int Cell_interface_list_variables(struct Cell_interface *cell_interface,
+  char *component_name,char *variable_name,int full);
+/*******************************************************************************
+LAST MODIFIED : 03 April 2001
+
+DESCRIPTION :
+If found in the given <component_name> component, variable <variable_name> will
+be listed out.
+==============================================================================*/
+int Cell_interface_set_variable_value_from_string(
+  struct Cell_interface *cell_interface,char *component_name,
+  char *variable_name,char *value_string);
+/*******************************************************************************
+LAST MODIFIED : 03 April 2001
+
+DESCRIPTION :
+If a <component_name> and a <variable_name> are specified and the given variable
+is found in the variable list for the given component, the variable's value is
+set to the given <value_string>. If no <component_name> is specified, the root
+component is assumed.
+==============================================================================*/
+int Cell_interface_list_calculate(struct Cell_interface *cell_interface);
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Lists out the current calculate object.
+==============================================================================*/
+int Cell_interface_set_calculate(struct Cell_interface *cell_interface,
+  float Tstart,float Tend,float dT,float tabT,char *model_routine_name,
+  char *model_dso_name,char *intg_routine_name,char *intg_dso_name,
+  char *data_file_name);
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Sets the values of the <cell_interface>'s calculate objec to those specified.
+==============================================================================*/
+float Cell_interface_get_start_time(struct Cell_interface *cell_interface);
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the integration start time as a float.
+==============================================================================*/
+float Cell_interface_get_end_time(struct Cell_interface *cell_interface);
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the integration end time as a float.
+==============================================================================*/
+float Cell_interface_get_dt(struct Cell_interface *cell_interface);
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the integration time step as a float.
+==============================================================================*/
+float Cell_interface_get_tabt(struct Cell_interface *cell_interface);
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the integration tabulation interval as a float.
+==============================================================================*/
+char *Cell_interface_get_model_routine_name(
+  struct Cell_interface *cell_interface);
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the model routine name.
+==============================================================================*/
+char *Cell_interface_get_model_dso_name(struct Cell_interface *cell_interface);
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the model DSO name.
+==============================================================================*/
+char *Cell_interface_get_intg_routine_name(
+  struct Cell_interface *cell_interface);
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the integrator routine name.
+==============================================================================*/
+char *Cell_interface_get_intg_dso_name(struct Cell_interface *cell_interface);
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the integrator DSO name.
+==============================================================================*/
+char *Cell_interface_get_data_file_name(struct Cell_interface *cell_interface);
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the data file name.
 ==============================================================================*/
 
 #endif /* !defined (CELL_INTERFACE_H) */

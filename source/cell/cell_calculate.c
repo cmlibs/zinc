@@ -1,7 +1,7 @@
 /*******************************************************************************
 FILE : cell_calculate.c
 
-LAST MODIFIED : 15 March 2001
+LAST MODIFIED : 04 April 2001
 
 DESCRIPTION :
 Routines for model calculation
@@ -57,7 +57,7 @@ Wrapper used in a cell variabl iterator function.
 
 struct Cell_calculate
 /*******************************************************************************
-LAST MODIFIED : 21 February 2001
+LAST MODIFIED : 03 April 2001
 
 DESCRIPTION :
 A data object which stores information used in the calculation of models
@@ -77,6 +77,8 @@ A data object which stores information used in the calculation of models
   struct Cell_unemap_interface *cell_unemap_interface;
   /* The calculate dialog */
   struct Cell_calculate_dialog *dialog;
+  /* The data file name */
+  char *data_file_name;
 }; /* struct Cell_calculate */
 
 /*
@@ -434,6 +436,106 @@ Integrates a cell model from <Tstart> to <Tend> in steps of <dT>
   return(return_code);
 } /* integrate_model() */
 
+static int write_solution_to_data_file(int save,int number_of_signals,
+  struct Cell_variable_unemap_interface **variable_unemap_interfaces,
+  float tabT,char *file_name)
+/*******************************************************************************
+LAST MODIFIED : 21 February 2001
+
+DESCRIPTION :
+Writes out the current solution to the specified <file_name>. If the <save>
+flag is true, then the current solution is appended to the end of the file, if
+it already exists.
+==============================================================================*/
+{
+  int return_code = 0;
+  FILE *file;
+  int number_of_samples,i,j;
+  char *name,*value_string;
+  
+  ENTER(write_solution_to_data_file);
+  if (variable_unemap_interfaces && (tabT > 0) && file_name)
+  {
+    /* ?? For now, asssume that all the variables have the same number of
+       ?? values - which might not be true once we start keeping old
+       ?? calculations in the rig
+    */
+    number_of_samples = Cell_variable_unemap_interface_get_number_of_values(
+      variable_unemap_interfaces[0]);
+    if ((number_of_samples > 0) && (number_of_signals > 0))
+    {
+      file = save ? fopen(file_name,"a") : fopen(file_name,"w");
+      if (file)
+      {
+        /* Write out some header information */
+        fprintf(file,"Number of signals: %d\n",number_of_signals);
+        fprintf(file,"Number of samples: %d\n",number_of_samples);
+        for (i=0;i<number_of_signals;i++)
+        {
+          if (i>0)
+          {
+            fprintf(file,"\t");
+          }
+          if (name = Cell_variable_unemap_interface_get_name(
+            variable_unemap_interfaces[i]))
+          {
+            fprintf(file,"%20s",name);
+            DEALLOCATE(name);
+          }
+          else
+          {
+            fprintf(file,"%20s","UnknownName");
+          }
+        }
+        fprintf(file,"\n");
+        /* Now write out the signal data */
+        for (i=0;i<number_of_samples;i++)
+        {
+          for (j=0;j<number_of_signals;j++)
+          {
+            if (j>0)
+            {
+              fprintf(file,"\t");
+            }
+            if (value_string =
+              Cell_variable_unemap_interface_get_value_as_string_at_position(
+                variable_unemap_interfaces[j],i))
+            {
+              fprintf(file,"%20s",value_string);
+              DEALLOCATE(value_string);
+            }
+            else
+            {
+              fprintf(file,"%20s","-999999.0");
+            }
+          }
+          fprintf(file,"\n");
+        }
+      }
+      else
+      {
+        display_message(ERROR_MESSAGE,"write_solution_to_data_file.  "
+          "Unable to open the file: \"%s\"",file_name);
+        return_code = 0;
+      }
+    }
+    else
+    {
+      display_message(WARNING_MESSAGE,"write_solution_to_data_file.  "
+        "Nothing to write!!");
+      return_code = 1;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"write_solution_to_data_file.  "
+      "Invalid argument(s)");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* write_solution_to_data_file() */
+
 static void *get_routine_handle(void *dso_handle,char *name)
 /*******************************************************************************
 LAST MODIFIED : 21 February 2001
@@ -496,10 +598,12 @@ Fortran routines which have at least one _ in the routine name.
 static int calculate_model(struct Cell_calculate *cell_calculate,
   struct LIST(Cell_variable) *variable_list)
 /*******************************************************************************
-LAST MODIFIED : 26 October 2000
+LAST MODIFIED : 03 April 2001
 
 DESCRIPTION :
-Calculates a cell model
+Calculates a cell model. If data_file_name in <cell_calculate> is non-NULL, then
+it specifies the file name for all the values for the current solution to be
+written to.
 ==============================================================================*/
 {
   int return_code = 0,number_of_signals;
@@ -638,6 +742,16 @@ Calculates a cell model
                           Cell_unemap_interface_clear_analysis_work_area(
                             cell_calculate->cell_unemap_interface);
                         }
+                        /* and if required write out the data file */
+                        if (cell_calculate->data_file_name)
+                        {
+                          return_code = write_solution_to_data_file(
+                            Cell_unemap_interface_get_save_signals(
+                              cell_calculate->cell_unemap_interface),
+                            number_of_signals,variable_unemap_interfaces,
+                            cell_calculate->tabT,
+                            cell_calculate->data_file_name);
+                        }
                       }
                       else
                       {
@@ -735,7 +849,7 @@ Global functions
 struct Cell_calculate *CREATE(Cell_calculate)(
   struct Cell_unemap_interface *cell_unemap_interface)
 /*******************************************************************************
-LAST MODIFIED : 04 November 2000
+LAST MODIFIED : 03 April 2001
 
 DESCRIPTION :
 Creates a Cell_calculate object.
@@ -757,6 +871,7 @@ Creates a Cell_calculate object.
     cell_calculate->tabT = 0.0;
     cell_calculate->cell_unemap_interface = cell_unemap_interface;
     cell_calculate->dialog = (struct Cell_calculate_dialog *)NULL;
+    cell_calculate->data_file_name = (char *)NULL;
   }
   else
   {
@@ -770,7 +885,7 @@ Creates a Cell_calculate object.
 
 int DESTROY(Cell_calculate)(struct Cell_calculate **cell_calculate_address)
 /*******************************************************************************
-LAST MODIFIED : 26 October 2000
+LAST MODIFIED : 03 April 2001
 
 DESCRIPTION :
 Destroys a Cell_calculate object.
@@ -801,6 +916,10 @@ Destroys a Cell_calculate object.
     if (cell_calculate->dialog)
     {
       DESTROY(Cell_calculate_dialog)(&(cell_calculate->dialog));
+    }
+    if (cell_calculate->data_file_name)
+    {
+      DEALLOCATE(cell_calculate->data_file_name);
     }
     DEALLOCATE(*cell_calculate_address);
     *cell_calculate_address = (struct Cell_calculate *)NULL;
@@ -1642,4 +1761,359 @@ if a valid value is not found.
   LEAVE;
   return(new_value_string);
 } /* Cell_calculate_set_tabt_from_string() */
+
+int Cell_calculate_set_data_file_name(struct Cell_calculate *cell_calculate,
+  char *name)
+/*******************************************************************************
+LAST MODIFIED : 03 April 2001
+
+DESCRIPTION :
+Sets the data file name for the given <cell_calculate> object. A NULL file name
+is allowed.
+==============================================================================*/
+{
+  int return_code = 0;
+
+  ENTER(Cell_calculate_set_data_file_name);
+  if (cell_calculate)
+  {
+    /* Free up any existing name */
+    if (cell_calculate->data_file_name)
+    {
+      DEALLOCATE(cell_calculate->data_file_name);
+      cell_calculate->data_file_name = (char *)NULL;
+    }
+    if (name)
+    {
+      /* grab a copy of the name string for the object */
+      if (ALLOCATE(cell_calculate->data_file_name,char,strlen(name)+1))
+      {
+        strcpy(cell_calculate->data_file_name,name);
+        return_code = 1;
+      }
+      else
+      {
+        display_message(ERROR_MESSAGE,"Cell_calculate_set_data_file_name.  "
+          "Unable to allocate memory for the data file name string");
+        cell_calculate->data_file_name = (char *)NULL;
+        return_code = 0;
+      }
+    }
+    else
+    {
+      cell_calculate->data_file_name = (char *)NULL;
+      return_code = 1;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_calculate_set_data_file_name.  "
+      "Invalid argument(s)");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* Cell_calculate_set_data_file_name() */
+
+char *Cell_calculate_get_data_file_name(struct Cell_calculate *cell_calculate)
+/*******************************************************************************
+LAST MODIFIED : 03 April 2001
+
+DESCRIPTION :
+Gets the data file name for the given <cell_calculate> object.
+==============================================================================*/
+{
+  char *name;
+
+  ENTER(Cell_calculate_get_data_file_name);
+  if (cell_calculate)
+  {
+    if (cell_calculate->data_file_name)
+    {
+      /* grab a copy of the name string for the object */
+      if (ALLOCATE(name,char,strlen(cell_calculate->data_file_name)+1))
+      {
+        strcpy(name,cell_calculate->data_file_name);
+      }
+      else
+      {
+        display_message(ERROR_MESSAGE,"Cell_calculate_get_data_file_name.  "
+          "Unable to allocate memory for the data file name string");
+        name = (char *)NULL;
+      }
+    }
+    else
+    {
+      name = (char *)NULL;
+    }
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_calculate_get_data_file_name.  "
+      "Invalid argument(s)");
+    name = (char *)NULL;
+  }
+  LEAVE;
+  return(name);
+} /* Cell_calculate_get_data_file_name() */
+
+int Cell_calculate_list(struct Cell_calculate *cell_calculate)
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Lists out the current set of calculation properties
+==============================================================================*/
+{
+  int return_code = 0;
+  
+  ENTER(Cell_calculate_list);
+  if (cell_calculate)
+  {
+    display_message(INFORMATION_MESSAGE,"Cell calculation parameters:\n");
+    /* First the model routine */
+    display_message(INFORMATION_MESSAGE,"  Cellular model routine name: %s\n",
+      cell_calculate->model_routine_name ? cell_calculate->model_routine_name :
+      "Unspecified");
+    /* and the model DSO */
+    display_message(INFORMATION_MESSAGE,"  Cellular model routine DSO: %s\n",
+      cell_calculate->dso_name ? cell_calculate->dso_name : "Built-in");
+    /* Now the integration parameters */
+    display_message(INFORMATION_MESSAGE,"  Integrator routine name: %s\n",
+      cell_calculate->intg_routine_name ? cell_calculate->intg_routine_name :
+      "Unspecified");
+    display_message(INFORMATION_MESSAGE,"  Integrator routine DSO: %s\n",
+      cell_calculate->intg_dso_name ? cell_calculate->intg_dso_name :
+      "Built-in");
+    display_message(INFORMATION_MESSAGE,"  Integrator start time: %10.5E ms\n",
+      cell_calculate->Tstart);
+    display_message(INFORMATION_MESSAGE,"  Integrator end time: %10.5E ms\n",
+      cell_calculate->Tend);
+    display_message(INFORMATION_MESSAGE,
+      "  Integrator time step size: %10.5E ms\n",
+      cell_calculate->dT);
+    display_message(INFORMATION_MESSAGE,
+      "  Integrator tabulation interval: %10.5E ms\n",
+      cell_calculate->tabT);
+    /* and finally the data file name */
+    display_message(INFORMATION_MESSAGE,"  Data file: %s\n",
+      cell_calculate->data_file_name ? cell_calculate->data_file_name :
+      "Unspecified");
+    return_code = 1;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_calculate_list.  "
+      "Invalid argument(s)");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* Cell_calculate_list() */
+
+float Cell_calculate_get_start_time(struct Cell_calculate *cell_calculate)
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the current integration start time.
+==============================================================================*/
+{
+  float start_time;
+
+  ENTER(Cell_calculate_get_start_time);
+  if (cell_calculate)
+  {
+    start_time = cell_calculate->Tstart;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_calculate_get_start_time.  "
+      "Invalid argument(s)");
+    start_time = 0.0;
+  }
+  LEAVE;
+  return(start_time);
+} /* Cell_calculate_get_start_time() */
+
+float Cell_calculate_get_end_time(struct Cell_calculate *cell_calculate)
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the current integration end time.
+==============================================================================*/
+{
+  float end_time;
+
+  ENTER(Cell_calculate_get_end_time);
+  if (cell_calculate)
+  {
+    end_time = cell_calculate->Tend;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_calculate_get_end_time.  "
+      "Invalid argument(s)");
+    end_time = 0.0;
+  }
+  LEAVE;
+  return(end_time);
+} /* Cell_calculate_get_end_time() */
+
+float Cell_calculate_get_dt(struct Cell_calculate *cell_calculate)
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the current integration time step size.
+==============================================================================*/
+{
+  float dt;
+
+  ENTER(Cell_calculate_get_dt);
+  if (cell_calculate)
+  {
+    dt = cell_calculate->dT;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_calculate_get_dt.  "
+      "Invalid argument(s)");
+    dt = 0.0;
+  }
+  LEAVE;
+  return(dt);
+} /* Cell_calculate_get_dt() */
+
+float Cell_calculate_get_tabt(struct Cell_calculate *cell_calculate)
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Returns the current integration tabulation interval.
+==============================================================================*/
+{
+  float tabt;
+
+  ENTER(Cell_calculate_get_tabt);
+  if (cell_calculate)
+  {
+    tabt = cell_calculate->tabT;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_calculate_get_tabt.  "
+      "Invalid argument(s)");
+    tabt = 0.0;
+  }
+  LEAVE;
+  return(tabt);
+} /* Cell_calculate_get_tabt() */
+
+int Cell_calculate_set_start_time(struct Cell_calculate *cell_calculate,
+  float Tstart)
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Sets the current integration start time.
+==============================================================================*/
+{
+  int return_code = 0;
+
+  ENTER(Cell_calculate_set_start_time);
+  if (cell_calculate)
+  {
+    cell_calculate->Tstart = Tstart;
+    return_code = 1;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_calculate_set_start_time.  "
+      "Invalid argument(s)");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* Cell_calculate_set_start_time() */
+
+int Cell_calculate_set_end_time(struct Cell_calculate *cell_calculate,
+  float Tend)
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Sets the current integration end time.
+==============================================================================*/
+{
+  int return_code = 0;
+
+  ENTER(Cell_calculate_set_end_time);
+  if (cell_calculate)
+  {
+    cell_calculate->Tend = Tend;
+    return_code = 1;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_calculate_set_end_time.  "
+      "Invalid argument(s)");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* Cell_calculate_set_end_time() */
+
+int Cell_calculate_set_dt(struct Cell_calculate *cell_calculate,float dT)
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Sets the current integration dT.
+==============================================================================*/
+{
+  int return_code = 0;
+
+  ENTER(Cell_calculate_set_dt);
+  if (cell_calculate)
+  {
+    cell_calculate->dT = dT;
+    return_code = 1;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_calculate_set_dt.  "
+      "Invalid argument(s)");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* Cell_calculate_set_dt() */
+
+int Cell_calculate_set_tabt(struct Cell_calculate *cell_calculate,float tabT)
+/*******************************************************************************
+LAST MODIFIED : 04 April 2001
+
+DESCRIPTION :
+Sets the current integration tabT.
+==============================================================================*/
+{
+  int return_code = 0;
+
+  ENTER(Cell_calculate_set_tabt);
+  if (cell_calculate)
+  {
+    cell_calculate->tabT = tabT;
+    return_code = 1;
+  }
+  else
+  {
+    display_message(ERROR_MESSAGE,"Cell_calculate_set_tabt.  "
+      "Invalid argument(s)");
+    return_code = 0;
+  }
+  LEAVE;
+  return(return_code);
+} /* Cell_calculate_set_tabt() */
 
