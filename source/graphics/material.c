@@ -518,8 +518,7 @@ be shared by multiple materials using the same program.
 						append_string(&fragment_program_string, 
 							"MAD		finalCol, lightContrib.z, state.lightprod[0].specular, finalCol;\n"
 							"MAD		finalCol, finalCol, attenuation.x, state.material.emission;\n"
-							"MOV     result.color.xyz, finalCol;\n"
-							"ADD		result.color.xyz, finalCol, state.lightmodel.scenecolor;\n"
+							"MAD		result.color.xyz, fragment.color, state.lightmodel.ambient, finalCol;\n"
 							"MOV		result.color.w, state.material.diffuse.w;\n"
 							"END"
 							, &error);
